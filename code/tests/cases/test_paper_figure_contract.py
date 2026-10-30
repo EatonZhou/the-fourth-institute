@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 from PIL import Image, ImageDraw
 
-from management_portal import paper_backend, paper_projection
+from management_portal import paper_figure_extraction, paper_figure_jobs, paper_figures, paper_projection, paper_store
 from tests.cases.test_paper_figure_transactions import figure_store
 
 
@@ -29,9 +29,9 @@ def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypat
     """
     source = Path(__file__).parent / 'fixtures' / fixture
     assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
-    caption = next(item for item in paper_backend._prepare_figure_caption_blocks(
-        paper_backend._extract_figure_caption_blocks(source)) if item['page'] == 2)
-    rendered = paper_backend._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
+    caption = next(item for item in paper_figure_extraction._prepare_figure_caption_blocks(
+        paper_figure_extraction._extract_figure_caption_blocks(source)) if item['page'] == 2)
+    rendered = paper_figure_extraction._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
     with Image.open(rendered) as opened:
         page = opened.convert('RGB')
     origins = {id(page): (0, 0)}
@@ -47,7 +47,7 @@ def test_heading_chart_keeps_unprefixed_footer_source_pixels(tmp_path, monkeypat
         return result
 
     monkeypatch.setattr(Image.Image, 'crop', crop_with_origin)
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     left, top = origins[id(result)]
     right, bottom = left + result.width, top + result.height
@@ -96,7 +96,7 @@ def test_heading_chart_groups_aligned_footer_sentences_across_label_whitespace(s
         draw.rectangle(tuple(line[k] * scale for k in ('x_min', 'y_min', 'x_max', 'y_max')), fill=color)
     caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
                'page_width': 600, 'page_height': 800, 'page_lines': lines}
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     for color in ((0, 128, 0), (255, 0, 0)):
         expected = list(page.getdata()).count(color) if note_gap == 31 else 0
@@ -122,7 +122,7 @@ def test_heading_chart_keeps_title_and_explicit_footer_without_body(scale):
         draw.rectangle(tuple(line[k] * scale for k in ('x_min', 'y_min', 'x_max', 'y_max')), fill=color)
     caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
                'page_width': 600, 'page_height': 800, 'page_lines': lines}
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     for color in ((255, 0, 0), (0, 0, 255), (0, 128, 0), (0, 128, 128)):
         assert list(result.getdata()).count(color) == list(page.getdata()).count(color)
@@ -148,7 +148,7 @@ def test_heading_chart_footer_pair_flush_with_heading_needs_explicit_prefix(scal
         draw.rectangle(tuple(line[k] * scale for k in ('x_min', 'y_min', 'x_max', 'y_max')), fill=color)
     caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
                'page_width': 600, 'page_height': 800, 'page_lines': lines}
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     source = {color: count for count, color in page.getcolors(page.width * page.height)}
     kept = {color: count for count, color in result.getcolors(result.width * result.height)}
@@ -177,7 +177,7 @@ def test_heading_inside_frame_is_not_a_caption_below_another_figure(framed):
         draw.rectangle((line['x_min'], line['y_min'], line['x_max'], line['y_max']), fill=color)
     caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
                'page_width': 600, 'page_height': 800, 'page_lines': lines}
-    result = paper_backend._crop_figure_below_heading(page, caption)
+    result = paper_figure_extraction._crop_figure_below_heading(page, caption)
     if not framed:
         # A separate rule above the caption provides no evidence of an enclosing frame.
         assert result is None
@@ -207,7 +207,7 @@ def test_heading_figure_keeps_annotation_and_excludes_following_section():
         draw.rectangle((line['x_min'], line['y_min'], line['x_max'], line['y_max']), fill=color)
     caption = {**lines[0], 'caption': lines[0]['text'], 'number': '1',
                'page_width': 600, 'page_height': 800, 'page_lines': lines}
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     colors = set(result.getdata())
     assert (0, 128, 0) in colors
@@ -229,7 +229,7 @@ def test_figure_crop_preserves_sparse_title_pixels_below_distant_body_text():
                'caption': 'Figure 1. Measured signal.', 'number': '1',
                'page_lines': [{'text': 'This is preceding body prose that is separate from the chart.',
                                'x_min': 40, 'x_max': 540, 'y_min': 50, 'y_max': 62}]}
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     assert (200, 0, 0) in result.getdata()
     # The unrelated prose must remain outside the crop.
@@ -251,7 +251,7 @@ def test_heading_figure_padding_does_not_cut_through_excluded_prose():
                    {'text': 'This following body paragraph must not enter the figure as partial text.',
                     'x_min': 50, 'x_max': 550, 'y_min': 175, 'y_max': 189},
                ]}
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     assert (0, 128, 128) in result.getdata()
     assert (255, 0, 0) not in result.getdata()
@@ -263,18 +263,18 @@ def explanation(figure_store, monkeypatch):
     paper['created_by'] = 'test-actor'
     image = path.parent / 'figure.png'
     Image.new('RGB', (20, 20), 'white').save(image)
-    monkeypatch.setattr(paper_backend, '_figure_image_path', lambda *args: image)
+    monkeypatch.setattr(paper_figure_jobs, '_figure_image_path', lambda *args: image)
     payload = {'schema': RESULT_SCHEMA, 'paper_id': paper['id'], 'figure_id': 'fig-001',
                'status': 'generated', 'explanation': '## 图在表达什么\n合成样本 A=20 ms，B=10 ms。', 'error': ''}
     generate = Mock(side_effect=lambda *args, **kwargs: (json.dumps(payload, ensure_ascii=False), {'message_id': 'msg_fixture'}))
-    monkeypatch.setattr(paper_backend, '_run_figure_resident', generate)
+    monkeypatch.setattr(paper_figure_jobs, '_run_figure_resident', generate)
     return paper, path, payload, generate
 
 
 def test_explanation_generation_and_formal_save_have_distinct_verified_states(explanation):
     """图解释的生成与正式保存分别记录状态，保存后附带内容哈希回执"""
     paper, path, payload, generate = explanation
-    response = paper_backend.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')
+    response = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')
     stored = json.loads(path.read_text())[0]
     assert stored['explanation'] == payload['explanation']
     assert stored['explanation_status'] == 'done'
@@ -299,7 +299,7 @@ def test_invalid_or_failed_generation_is_never_saved_as_done(explanation, change
     """图解释结果格式不符、ID 不匹配、报错或内容为空时不会保存为完成"""
     paper, path, payload, _ = explanation
     payload.update(change)
-    result = paper_backend.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
+    result = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
     assert result['explanation_status'] == 'error'
     assert result['explanation_generation_status'] == 'error'
     assert result['explanation_persistence_status'] == 'not_saved'
@@ -312,7 +312,7 @@ def test_free_text_is_not_mistaken_for_a_structured_generation_receipt(explanati
     paper, path, _, generate = explanation
     generate.side_effect = None
     generate.return_value = ('正式产物提交未执行。以下为解读正文，请补充提交协议。', {})
-    result = paper_backend.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
+    result = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
     assert result['explanation_status'] == 'error'
     assert not json.loads(path.read_text())[0].get('explanation')
 
@@ -321,22 +321,23 @@ def test_contract_validation_does_not_filter_phrases_from_valid_content(explanat
     """合法的图解释即使含有“正式产物提交未执行”等字样也原样保存"""
     paper, path, payload, _ = explanation
     payload['explanation'] = '## 图在表达什么\n图中文字引用了“正式产物提交未执行”，这是待解释的原文。'
-    paper_backend.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')
+    paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')
     assert json.loads(path.read_text())[0]['explanation'] == payload['explanation']
 
 
 def test_successful_generation_does_not_hide_a_failed_artifact_write(explanation, monkeypatch):
     """图解释生成成功但写入失败时报告保存错误，不留下解释内容"""
     paper, path, _, _ = explanation
-    write = paper_backend._write_json
+    write = paper_store._write_json
 
     def fail_commit(target, figures):
         if figures[0].get('explanation_persistence_status') == 'saved':
             raise OSError('fixture disk full')
         return write(target, figures)
 
-    monkeypatch.setattr(paper_backend, '_write_json', fail_commit)
-    result = paper_backend.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
+    monkeypatch.setattr(paper_store, '_write_json', fail_commit)
+    monkeypatch.setattr(paper_figures, '_write_json', paper_store._write_json)
+    result = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
     assert result['explanation_status'] == 'error'
     assert result['explanation_generation_status'] == 'generated'
     assert result['explanation_persistence_status'] == 'error'
@@ -348,8 +349,8 @@ def test_successful_generation_does_not_hide_a_failed_artifact_write(explanation
 def test_notification_failure_after_durable_commit_does_not_falsely_report_unsaved(explanation, monkeypatch):
     """图解释已持久保存后通知失败，仍报告为已保存"""
     paper, path, payload, _ = explanation
-    monkeypatch.setattr(paper_backend, '_notify_paper_projection', Mock(side_effect=RuntimeError('notification unavailable')))
-    result = paper_backend.explain_figure({'paper_id': paper['id'], 'figure_id': 'fig-001'}, 'test-actor')['figure']
+    monkeypatch.setattr(paper_figures, '_notify_paper_projection', Mock(side_effect=RuntimeError('notification unavailable')))
+    result = paper_figure_jobs.explain_figure({'paper_id': paper['id'], 'figure_id': 'fig-001'}, 'test-actor')['figure']
     assert result['explanation_status'] == 'done'
     assert result['explanation_persistence_status'] == 'saved'
     assert json.loads(path.read_text())[0]['explanation'] == payload['explanation']
@@ -359,11 +360,11 @@ def test_an_old_identical_artifact_is_not_a_receipt_for_a_new_unwritten_commit(e
     """新一次图解释未能写入时报错，内容相同的旧产物不能充当保存回执"""
     paper, path, _, _ = explanation
     payload = {'paper_id': paper['id'], 'figure_id': 'fig-001'}
-    paper_backend.explain_figure(payload, 'test-actor')
+    paper_figure_jobs.explain_figure(payload, 'test-actor')
     original = path.read_bytes()
-    monkeypatch.setattr(paper_backend, '_write_figures', lambda *args: None)
+    monkeypatch.setattr(paper_figures, '_write_figures', lambda *args: None)
     with pytest.raises(RuntimeError, match='persist'):
-        paper_backend.explain_figure(payload, 'test-actor')
+        paper_figure_jobs.explain_figure(payload, 'test-actor')
     assert path.read_bytes() == original
 
 
@@ -423,10 +424,10 @@ def test_real_pdf_crop_keeps_axis_title_ticks_and_categories_without_body(tmp_pa
     """从真实 PDF 裁剪图时保留坐标轴标题、刻度和类别标签，不含正文"""
     source = tmp_path / 'tau-synthetic-two-pages.pdf'
     write_synthetic_axes_pdf(source)
-    captions = paper_backend._extract_figure_caption_blocks(source)
+    captions = paper_figure_extraction._extract_figure_caption_blocks(source)
     assert len(captions) == 1 and captions[0]['page'] == 2
     caption = captions[0]
-    rendered = paper_backend._render_pdf_page_png(source, 2, tmp_path / 'rendered', dpi=dpi)
+    rendered = paper_figure_extraction._render_pdf_page_png(source, 2, tmp_path / 'rendered', dpi=dpi)
     with Image.open(rendered) as opened:
         page = opened.convert('RGB')
     captured = []
@@ -438,7 +439,7 @@ def test_real_pdf_crop_keeps_axis_title_ticks_and_categories_without_body(tmp_pa
         return crop(image, box)
 
     monkeypatch.setattr(Image.Image, 'crop', capture)
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     left, top, right, bottom = captured[-1]
     scale_x = page.width / caption['page_width']
@@ -462,10 +463,10 @@ def test_numbered_chart_heading_above_matching_caption_keeps_source_title(tmp_pa
     :design-point:
     """
     source = Path(__file__).parent / 'fixtures' / 'paper-synthetic-heading-caption.pdf'
-    captions = paper_backend._extract_figure_caption_blocks(source)
+    captions = paper_figure_extraction._extract_figure_caption_blocks(source)
     lower, = [item for item in captions if item['page'] == 2]
     heading = next(line for line in lower['page_lines'] if line['text'] == 'Figure 1. Invented group means')
-    rendered = paper_backend._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
+    rendered = paper_figure_extraction._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
     with Image.open(rendered) as opened:
         page = opened.convert('RGB')
     origins = {id(page): (0, 0)}
@@ -481,7 +482,7 @@ def test_numbered_chart_heading_above_matching_caption_keeps_source_title(tmp_pa
         return result
 
     monkeypatch.setattr(Image.Image, 'crop', capture)
-    result = paper_backend._crop_figure_above_caption(page, lower)
+    result = paper_figure_extraction._crop_figure_above_caption(page, lower)
     assert result is not None
     left, top = origins[id(result)]
     right, bottom = left + result.width, top + result.height
@@ -509,11 +510,11 @@ def test_short_caption_real_pdf_preserves_complete_chart(tmp_path, monkeypatch, 
     assert hashlib.sha256(source.read_bytes()).hexdigest() == (
         '4c2230d239cc25068987fe73988d5435c1beacadb9410b59e8d3c9e1e012f49c'
     )
-    captions = paper_backend._prepare_figure_caption_blocks(
-        paper_backend._extract_figure_caption_blocks(source)
+    captions = paper_figure_extraction._prepare_figure_caption_blocks(
+        paper_figure_extraction._extract_figure_caption_blocks(source)
     )
     caption = next(item for item in captions if item['page'] == 2)
-    rendered = paper_backend._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
+    rendered = paper_figure_extraction._render_pdf_page_png(source, 2, tmp_path / 'page', dpi=dpi)
     with Image.open(rendered) as opened:
         page = opened.convert('RGB')
     origins = {id(page): (0, 0)}
@@ -529,7 +530,7 @@ def test_short_caption_real_pdf_preserves_complete_chart(tmp_path, monkeypatch, 
         return result
 
     monkeypatch.setattr(Image.Image, 'crop', crop_with_origin)
-    result = paper_backend._crop_figure_above_caption(page, caption)
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
     assert result is not None
     left, top = origins[id(result)]
     right, bottom = left + result.width, top + result.height

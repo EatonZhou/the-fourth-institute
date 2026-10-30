@@ -16,7 +16,7 @@ import pytest
 
 from management_portal import device_identity_backend as device
 from management_portal import local_terminal_backend as terminal
-from management_portal import paper_backend
+from management_portal import paper_collection_jobs, paper_library
 from management_portal import portal_deployment_router as router
 from management_portal import serve_management_portal as portal
 from management_portal import access_audit_store
@@ -333,7 +333,7 @@ def test_paper_machine_entry_preserves_the_authenticated_resident(monkeypatch, r
     lineage = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=lambda lineage_id, actor: actor))
     monkeypatch.setattr(society_service, "get_society_service", lambda: lineage)
     observed = []
-    monkeypatch.setattr(paper_backend, "list_library", lambda params, actor: observed.append(actor) or {"papers": []})
+    monkeypatch.setattr(paper_library, "list_library", lambda params, actor: observed.append(actor) or {"papers": []})
     with _server(portal.Handler) as server:
         connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
         try:
@@ -357,7 +357,7 @@ def test_paper_machine_entry_rechecks_current_membership(monkeypatch):
     lineage = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=rejected))
     monkeypatch.setattr(society_service, "get_society_service", lambda: lineage)
     observed = []
-    monkeypatch.setattr(paper_backend, "list_library", lambda params, actor: observed.append(actor) or {"papers": []})
+    monkeypatch.setattr(paper_library, "list_library", lambda params, actor: observed.append(actor) or {"papers": []})
     with _server(portal.Handler) as server:
         connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
         try:
@@ -381,7 +381,7 @@ def test_paper_machine_write_needs_a_resident_active_in_its_lineage(monkeypatch,
     lineage = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=lambda lineage_id, actor: actor))
     monkeypatch.setattr(society_service, "get_society_service", lambda: lineage)
     observed = []
-    monkeypatch.setattr(paper_backend, "delete_paper_collection_job", lambda payload, actor: observed.append(actor) or {"deleted": True})
+    monkeypatch.setattr(paper_collection_jobs, "delete_paper_collection_job", lambda payload, actor: observed.append(actor) or {"deleted": True})
     headers = {"Authorization": "Bearer synthetic-fixture", "Content-Type": "application/json"}
     if lineage_header:
         headers["X-Portal-Lineage-ID"] = lineage_header

@@ -4,10 +4,10 @@
 """
 from __future__ import annotations
 
-from management_portal import paper_backend, paper_projection
+from management_portal import paper_projection, paper_reading_jobs
 
 
-def _result(message: str = "# Analysis\n\n" + paper_backend.DEEP_READ_HEADINGS) -> dict:
+def _result(message: str = "# Analysis\n\n" + paper_reading_jobs.DEEP_READ_HEADINGS) -> dict:
     return {
         "resident_id": "resident_deepread01",
         "message_id": "msg_deepread01",
@@ -19,39 +19,39 @@ def _result(message: str = "# Analysis\n\n" + paper_backend.DEEP_READ_HEADINGS) 
 
 def _install_job(monkeypatch, tmp_path, state: dict) -> None:
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "_latest_deep_read_job",
         lambda **_kwargs: dict(state),
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "_set_deep_read_job",
         lambda _job_id, patch: state.update(patch) or dict(state),
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "get_paper_detail",
         lambda _paper_id: {
             "paper": {"id": state["paper_id"], "title": "Paper"}
         },
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "_local_pdf_for_paper",
         lambda _paper: tmp_path / "paper.pdf",
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "_extract_pdf_text",
         lambda *_args, **_kwargs: "paper text " * 200,
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "_write_analysis_file",
         lambda *_args: tmp_path / "analysis.md",
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_reading_jobs,
         "_update_paper_fields",
         lambda *_args, **_kwargs: {},
     )
@@ -90,7 +90,7 @@ def test_deep_read_submits_its_task_to_the_role_resident_and_persists_binding(
         complete,
     )
 
-    paper_backend._run_deep_read_job(state["job_id"])
+    paper_reading_jobs._run_deep_read_job(state["job_id"])
 
     assert observed["resident_scope"] == "paper:deep-read"
     assert observed["business_ref"] == "paper-deep-read:deep-read-test"
@@ -134,7 +134,7 @@ def test_deep_read_recovery_resumes_bound_resident_without_resubmitting(
         calls["resume"] += 1
         assert kwargs["resident_id"] == "resident_deepread01"
         assert kwargs["message_id"] == "msg_deepread01"
-        return _result("# Recovered\n" + paper_backend.DEEP_READ_HEADINGS)
+        return _result("# Recovered\n" + paper_reading_jobs.DEEP_READ_HEADINGS)
 
     def submit(**_kwargs):
         calls["submit"] += 1
@@ -149,7 +149,7 @@ def test_deep_read_recovery_resumes_bound_resident_without_resubmitting(
         submit,
     )
 
-    paper_backend._run_deep_read_job(state["job_id"])
+    paper_reading_jobs._run_deep_read_job(state["job_id"])
 
     assert calls == {"resume": 1, "submit": 0}
     assert state["status"] == "done"
@@ -185,7 +185,7 @@ def test_a_failed_deep_read_is_an_error_and_is_not_delivered_again(
 
     monkeypatch.setattr("management_portal.paper_projection.turn", complete)
 
-    paper_backend._run_deep_read_job(state["job_id"])
+    paper_reading_jobs._run_deep_read_job(state["job_id"])
 
     assert calls == ["paper-deep-read:deep-read-failure"]
     assert state["resident_input_message_id"] == "msg_deepread01"
@@ -201,11 +201,11 @@ def test_deep_read_that_is_not_an_analysis_is_an_error_and_is_not_saved(monkeypa
     state = {"job_id": "deep-read-narration", "paper_id": "paper_0123456789ab", "status": "queued", "created_by": "sample_admin"}
     _install_job(monkeypatch, tmp_path, state)
     written = []
-    monkeypatch.setattr(paper_backend, "_write_analysis_file", lambda *args: written.append(args) or tmp_path / "analysis.md")
+    monkeypatch.setattr(paper_reading_jobs, "_write_analysis_file", lambda *args: written.append(args) or tmp_path / "analysis.md")
     narration = "我先查询当前 Resident 的上下文与产物位置，同时读取环境配置。请稍候。```bash\ncat resident.md\n```"
     monkeypatch.setattr("management_portal.paper_projection.turn", lambda **_kwargs: _result(narration))
 
-    paper_backend._run_deep_read_job(state["job_id"])
+    paper_reading_jobs._run_deep_read_job(state["job_id"])
 
     assert state["status"] == "error"
     assert "9 个必需小节只出现 0 个" in state["error"]

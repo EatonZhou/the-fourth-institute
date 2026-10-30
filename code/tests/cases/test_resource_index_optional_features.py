@@ -67,7 +67,7 @@ def test_installed_index_feature_with_missing_internal_dependency_fails(broken):
     """
     probe = r'''
 import importlib.abc, sys
-name = 'management_portal.' + sys.argv[1] + ('_identity_backend' if sys.argv[1] == 'article' else '_backend')
+name = 'management_portal.' + sys.argv[1] + ('_identity_backend' if sys.argv[1] == 'article' else '_store')
 class Broken(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
         if fullname == name:
@@ -111,10 +111,10 @@ def test_paper_code_change_rebuilds_unchanged_sources(adapter_name, tmp_path, mo
 
     :design: decision_8dc6b3d03ca7
     """
-    from management_portal import paper_backend, paper_resource_index
+    from management_portal import paper_resource_index, paper_store
     from management_portal import resource_index_backend as backend
 
-    papers = paper_backend.PaperStore(tmp_path / "papers")
+    papers = paper_store.PaperStore(tmp_path / "papers")
     package = papers.items_root / "2026" / "example"
     package.mkdir(parents=True)
     paper_id = "paper_0123456789ab"
@@ -127,7 +127,7 @@ def test_paper_code_change_rebuilds_unchanged_sources(adapter_name, tmp_path, mo
     reviews.mkdir()
     (reviews / (review_id + ".md")).write_text(
         f"---\nreview_id: {review_id}\npaper_id: {paper_id}\n---\n# Original\n\nBody\n")
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", papers)
+    monkeypatch.setattr(paper_store, "PAPER_STORE", papers)
     adapter = (paper_resource_index.PaperManifestAdapter() if adapter_name == "paper"
                else paper_resource_index.PaperReviewAdapter())
     store = backend.IndexStore()

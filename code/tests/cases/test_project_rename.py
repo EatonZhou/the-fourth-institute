@@ -176,13 +176,13 @@ def world(monkeypatch, tmp_path, permissions):
     services.mkdir()
     (services / "job.py").write_text(f'ROOT = "{old_root}"\n')
     # A paper in the shared library, outside the Project, related to it and to another Project.
-    from management_portal import paper_backend
+    from management_portal import paper_store
 
     paper = tmp_path / "Papers/items/2026/paper-one/manifest.json"
     paper.parent.mkdir(parents=True)
     paper.write_text(json.dumps({"paper_id": "paper_aaaaaaaaaaaa", "relations": {"projects": [
         {"project_id": "Old", "relation": "relevant"}, {"project_id": "OldX", "relation": "relevant"}]}}))
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", paper_backend.PaperStore(tmp_path / "Papers"))
+    monkeypatch.setattr(paper_store, "PAPER_STORE", paper_store.PaperStore(tmp_path / "Papers"))
     units = tmp_path / "units"
     units.mkdir()
     mountinfo = tmp_path / "mountinfo"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest import mock
 
-from management_portal import paper_backend
+from management_portal import paper_library
 
 
 def _paper(paper_id: str, title: str, **fields: object) -> dict:
@@ -37,10 +37,10 @@ def test_library_text_search_prioritizes_title_before_metadata_matches_contracts
             ),
         ]
         with (
-            mock.patch.object(paper_backend, "resource_index_papers", return_value=papers),
-            mock.patch.object(paper_backend, "_all_reviews", return_value=[]),
+            mock.patch.object(paper_library, "resource_index_papers", return_value=papers),
+            mock.patch.object(paper_library, "_all_reviews", return_value=[]),
         ):
-            result = paper_backend.list_library({"q": "GaP", "compact": "1"}, actor="sample_admin")
+            result = paper_library.list_library({"q": "GaP", "compact": "1"}, actor="sample_admin")
 
         assert [paper["id"] for paper in result["papers"]] == [
             "paper_ac946c60be00",
@@ -61,10 +61,10 @@ def test_library_text_search_prioritizes_title_before_metadata_matches_contracts
             ),
         ]
         with (
-            mock.patch.object(paper_backend, "resource_index_papers", return_value=papers),
-            mock.patch.object(paper_backend, "_all_reviews", return_value=[]),
+            mock.patch.object(paper_library, "resource_index_papers", return_value=papers),
+            mock.patch.object(paper_library, "_all_reviews", return_value=[]),
         ):
-            result = paper_backend.list_library(
+            result = paper_library.list_library(
                 {"q": "Variational Automation", "compact": "1"},
                 actor="sample_admin",
             )
@@ -83,12 +83,12 @@ def test_library_preview_keeps_tree_and_export_rows_then_hydrates_next_page(isol
             for index in range(3)
         ]
         with (
-            mock.patch.object(paper_backend, "resource_index_papers", return_value=papers),
-            mock.patch.object(paper_backend, "_all_reviews", return_value=[]),
+            mock.patch.object(paper_library, "resource_index_papers", return_value=papers),
+            mock.patch.object(paper_library, "_all_reviews", return_value=[]),
         ):
-            full = paper_backend.list_library({"compact": "1"}, actor="sample_admin")
-            library = paper_backend.list_library({"compact": "1", "preview_limit": "1"}, actor="sample_admin")
-            page = paper_backend.list_library(
+            full = paper_library.list_library({"compact": "1"}, actor="sample_admin")
+            library = paper_library.list_library({"compact": "1", "preview_limit": "1"}, actor="sample_admin")
+            page = paper_library.list_library(
                 {"compact": "1", "rows_only": "1", "offset": "1", "limit": "2"},
                 actor="sample_admin",
             )

@@ -13,7 +13,7 @@ from unittest import mock
 import pytest
 
 from management_common.scan_cancellation import ScanCancelled, cancellable_scan
-from management_portal import paper_backend, resource_index_backend as backend
+from management_portal import paper_store, resource_index_backend as backend
 from skill_board_lan import skill_backend
 from tests.cases.test_resource_index_backend import _record
 
@@ -37,7 +37,7 @@ def _slow_tree(tmp_path, monkeypatch):
         return original(path)
 
     monkeypatch.setattr(os, "scandir", scandir)
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", paper_backend.PaperStore(root))
+    monkeypatch.setattr(paper_store, "PAPER_STORE", paper_store.PaperStore(root))
     return year, entered, visited
 
 
@@ -48,7 +48,7 @@ def test_filesystem_scans_stop_even_when_no_file_matches(tmp_path, monkeypatch, 
     stop = threading.Event()
     cancelled = []
     callbacks = {
-        "paper": paper_backend.PAPER_STORE.manifest_paths,
+        "paper": paper_store.PAPER_STORE.manifest_paths,
         "review": PaperReviewAdapter._markdown_paths,
         "paths": lambda: backend._tree_paths([year]),
         "skill": lambda: skill_backend._candidate_markdown_files(year),
@@ -195,8 +195,8 @@ def test_stop_wakes_waiters_and_discards_a_scan_finishing_after_stop(monkeypatch
 
 def test_paper_scope_uses_the_configured_store(tmp_path, monkeypatch):
     """论文适配器的来源范围使用当前配置的 PaperStore 目录"""
-    store = paper_backend.PaperStore(tmp_path)
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", store)
+    store = paper_store.PaperStore(tmp_path)
+    monkeypatch.setattr(paper_store, "PAPER_STORE", store)
     adapter = PaperManifestAdapter()
     assert adapter.source_scope()["trees"][0]["root"] == str(store.items_root)
 

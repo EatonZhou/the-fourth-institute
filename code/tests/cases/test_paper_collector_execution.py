@@ -9,7 +9,7 @@ import pytest
 
 from management_common.operation_identity import current_operation_identity, operation_identity_scope
 from management_common.principal import OperationIdentity, Principal
-from management_portal import paper_backend, paper_collector, paper_projection, paper_state_store, resident_handoff
+from management_portal import paper_collection_jobs, paper_collector, paper_pdf, paper_projection, paper_records, paper_state_store, resident_handoff
 
 
 ACTOR = "collector_test_owner"
@@ -29,7 +29,7 @@ def test_public_collector_exposes_stored_receipt_without_private_context(monkeyp
     runner = Mock(side_effect=AssertionError("public read must not execute a Resident"))
     monkeypatch.setattr(paper_projection, "turn", runner)
 
-    public = paper_backend._public_paper_collection_job(job)
+    public = paper_collection_jobs._public_paper_collection_job(job)
 
     assert public["invocation"] == receipt
     assert "private" not in json.dumps(public)
@@ -42,7 +42,7 @@ def test_public_collector_keeps_missing_receipt_missing(receipt):
     """收集任务没有回执时，公开视图的 invocation 保持为空"""
     job = {"job_id": "collector-legacy", "created_by": ACTOR, "invocation": receipt}
 
-    assert paper_backend._public_paper_collection_job(job)["invocation"] is None
+    assert paper_collection_jobs._public_paper_collection_job(job)["invocation"] is None
 
 
 @pytest.fixture
@@ -51,18 +51,18 @@ def collector(monkeypatch, tmp_path):
            "created_by": ACTOR, "created_at": 100, "max_papers": 1, "status": "queued",
            "collector_contract": paper_collector.CONTRACT, "requested_message_id": "msg_planned"}
     updates, library = [], [{"id": PAPER, "title": "Attention Is All You Need", "created_at": 50}]
-    monkeypatch.setattr(paper_backend, "PAPER_COLLECTOR_WORK_ROOT", tmp_path)
-    monkeypatch.setattr(paper_backend, "_paper_collection_job_by_id", lambda _: deepcopy(job))
+    monkeypatch.setattr(paper_collection_jobs, "PAPER_COLLECTOR_WORK_ROOT", tmp_path)
+    monkeypatch.setattr(paper_collection_jobs, "_paper_collection_job_by_id", lambda _: deepcopy(job))
 
     def save(_, patch):
         updates.append(deepcopy(patch))
         job.update(deepcopy(patch))
         return deepcopy(job)
 
-    monkeypatch.setattr(paper_backend, "_set_paper_collection_job", save)
+    monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", save)
     index = Mock(side_effect=lambda *, actor: deepcopy(library) if actor == ACTOR else pytest.fail("wrong actor"))
-    monkeypatch.setattr(paper_backend, "resource_index_papers", index)
-    monkeypatch.setattr(paper_backend.subprocess, "run", Mock(side_effect=AssertionError("legacy subprocess")))
+    monkeypatch.setattr(paper_collection_jobs, "resource_index_papers", index)
+    monkeypatch.setattr(paper_pdf.subprocess, "run", Mock(side_effect=AssertionError("legacy subprocess")))
     with paper_collector.authenticated_request({"type": "human", "id": ACTOR}):
         yield job, updates, library, index
 
@@ -100,7 +100,7 @@ def test_canonical_full_request_receipt_and_existing_count(monkeypatch, collecto
     job, updates, _, index = collector
     job["direction"] += "约束" * 700 + "尾部禁止联网"
     native = install_native(monkeypatch, json.dumps(output(job)))
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert native.call_count == 1 and index.call_count == 2
     request = json.loads(native.call_args.kwargs["prompt"].split("本次请求 JSON：\n")[1])
     assert request == {k: job[k] for k in ("job_id", "direction", "max_papers")}
@@ -113,9 +113,9 @@ def test_canonical_full_request_receipt_and_existing_count(monkeypatch, collecto
     assert job["usage"]["usage_reported_message_id"] == "provider_usage"
     receipts = [u["invocation"] for u in updates if "invocation" in u]
     assert receipts[0]["input_identity_status"] == "unconfirmed" and not receipts[0]["input_message_id"]
-    public = paper_backend._public_paper_collection_job(job)
+    public = paper_collection_jobs._public_paper_collection_job(job)
     assert public["result_count"] == 1 and public["registered_count"] == 0
-    summary = paper_backend._paper_collection_filter_summary(job["job_id"])
+    summary = paper_collection_jobs._paper_collection_filter_summary(job["job_id"])
     assert summary["result_count"] == 1 and summary["registered_count"] == 0
 
 
@@ -127,7 +127,7 @@ def test_failure_stops_without_provider_retry_or_crawl(monkeypatch, collector, e
     native = Mock(side_effect=error)
     monkeypatch.setattr(paper_projection.native, "turn", native)
     with pytest.raises(type(error), match=str(error)):
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert native.call_count == 1 and job["status"] == "error"
     assert (tmp_path / job["job_id"] / "stderr.log").read_text() == str(error)
 
@@ -138,7 +138,7 @@ def test_missing_business_receipt_is_not_done(monkeypatch, collector, bad):
     job, *_ = collector
     install_native(monkeypatch, bad)
     with pytest.raises(ValueError):
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert job["status"] == "error"
 
 
@@ -156,7 +156,7 @@ def test_result_contract_visibility_and_registration_claims(monkeypatch, collect
     job, *_ = collector
     install_native(monkeypatch, json.dumps(output(job, **overrides)))
     with pytest.raises(exception):
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert job["status"] == "error" and not job.get("results")
 
 
@@ -165,7 +165,7 @@ def test_final_read_revocation_prevents_success(monkeypatch, collector):
     job, _, library, _ = collector
     install_native(monkeypatch, json.dumps(output(job)), lambda _: library.clear())
     with pytest.raises(PermissionError):
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert job["status"] == "error"
 
 
@@ -175,7 +175,7 @@ def test_new_registration_requires_saved_resource(monkeypatch, collector):
     library.clear()
     install_native(monkeypatch, json.dumps(output(job, papers=[{"paper_id": PAPER, "action": "registered"}])),
                    lambda _: library.append({"id": PAPER, "title": "Real saved paper", "created_at": 101}))
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert job["registered_count"] == 1 and job["status"] == "done"
 
 
@@ -183,7 +183,7 @@ def test_zero_matches_is_distinct_from_execution_failure(monkeypatch, collector)
     """没有匹配论文时收集任务正常完成且结果为空，与执行失败区分开"""
     job, *_ = collector
     install_native(monkeypatch, json.dumps(output(job, papers=[], summary="No matching papers")))
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert job["status"] == "done" and job["results"] == [] and job["registered_count"] == 0
 
 
@@ -194,9 +194,9 @@ def test_noncanonical_job_is_not_replayed_or_modified(monkeypatch, collector):
     old, native = deepcopy(job), Mock()
     monkeypatch.setattr(paper_projection.native, "turn", native)
     with pytest.raises(RuntimeError, match="current execution contract"):
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
     with pytest.raises(RuntimeError, match="current execution contract"):
-        paper_backend._start_paper_collection_task(job)
+        paper_collection_jobs._start_paper_collection_task(job)
     assert job == old and not updates
     native.assert_not_called()
 
@@ -208,7 +208,7 @@ def test_terminal_job_is_not_replayed(monkeypatch, collector, status):
     job["status"] = status
     native = Mock()
     monkeypatch.setattr(paper_projection.native, "turn", native)
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     native.assert_not_called()
     assert not updates
 
@@ -217,7 +217,7 @@ def test_deleted_while_running_is_not_marked_done(monkeypatch, collector):
     """运行中被删除的论文收集任务不会被标为完成"""
     job, *_ = collector
     install_native(monkeypatch, json.dumps(output(job)), lambda _: job.update(status="deleted", deleted=True))
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     assert job["status"] == "deleted"
 
 
@@ -228,7 +228,7 @@ def test_resume_observes_confirmed_input_without_new_turn(monkeypatch, collector
     resume, native = Mock(return_value=raw_result(json.dumps(output(job)))), Mock()
     monkeypatch.setattr(resident_handoff, "resume_and_wait", resume)
     monkeypatch.setattr(paper_projection.native, "turn", native)
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     native.assert_not_called()
     assert resume.call_args.kwargs["message_id"] == "msg_actual" and job["status"] == "done"
 
@@ -259,17 +259,17 @@ def test_listing_recovers_original_collector_input_after_web_restart(monkeypatch
         assert release.wait(2)
         return raw_result(json.dumps(output(job)))
     monkeypatch.setattr(resident_handoff, "resume_and_wait", resume)
-    original = paper_backend._run_paper_collection_job
+    original = paper_collection_jobs._run_paper_collection_job
     def run(job_id):
         try:
             original(job_id)
         finally:
             finished.set()
-    monkeypatch.setattr(paper_backend, "_run_paper_collection_job", run)
+    monkeypatch.setattr(paper_collection_jobs, "_run_paper_collection_job", run)
     try:
-        paper_backend.list_paper_collection_jobs(ACTOR)
+        paper_collection_jobs.list_paper_collection_jobs(ACTOR)
         assert entered.wait(2)
-        assert paper_backend.list_paper_collection_jobs(ACTOR)["jobs"][0]["status"] == "running"
+        assert paper_collection_jobs.list_paper_collection_jobs(ACTOR)["jobs"][0]["status"] == "running"
     finally:
         release.set()
         assert finished.wait(2)
@@ -290,7 +290,7 @@ def test_listing_does_not_recover_collector_without_trusted_confirmed_input(monk
     from management_portal import business_tasks
     job, *_ = collector
     job.update(invocation=paper_projection.receipt_from_resident_handle(HANDLE),
-               existing_paper_ids=[PAPER], status="running", updated_at=paper_backend._now())
+               existing_paper_ids=[PAPER], status="running", updated_at=paper_records._now())
     context = nullcontext()
     if condition == "untrusted":
         context = operation_identity_scope(None)
@@ -307,13 +307,13 @@ def test_listing_does_not_recover_collector_without_trusted_confirmed_input(monk
         job["collector_contract"] = "old"
     paper_state_store.append("collector_jobs", deepcopy(job))
     start = Mock(side_effect=AssertionError("must not recover this input"))
-    monkeypatch.setattr(paper_backend, "_start_paper_collection_task", start)
+    monkeypatch.setattr(paper_collection_jobs, "_start_paper_collection_task", start)
     with context:
-        assert paper_backend.list_paper_collection_jobs(ACTOR)["jobs"][0]["status"] == "running"
+        assert paper_collection_jobs.list_paper_collection_jobs(ACTOR)["jobs"][0]["status"] == "running"
     start.assert_not_called()
 
 
-def test_collector_listing_restores_the_server_authenticated_request_context():
+def test_collector_listing_restores_the_server_authenticated_request_context(monkeypatch):
     """Collector 列表使用服务端认证请求身份
 
     列表恢复仅传递服务端认证的当前调用者身份，忽略路由外部身份值，并在请求结束后还原调用上下文。
@@ -330,7 +330,7 @@ def test_collector_listing_restores_the_server_authenticated_request_context():
     def listing(actor):
         observed.append((actor, current_operation_identity().principal.id))
         return {"jobs": []}
-    http.backend = lambda: SimpleNamespace(list_paper_collection_jobs=listing)
+    monkeypatch.setattr(paper_collection_jobs, "list_paper_collection_jobs", listing)
     with operation_identity_scope(None):
         assert http.get_route(http.collector_jobs)(object(), SimpleNamespace(query=""), "untrusted") == (200, {"jobs": []})
         assert current_operation_identity() is None
@@ -344,7 +344,7 @@ def test_unconfirmed_delivery_never_resubmits(monkeypatch, collector):
     native = Mock()
     monkeypatch.setattr(paper_projection.native, "turn", native)
     with pytest.raises(RuntimeError, match="unconfirmed"):
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
     native.assert_not_called()
 
 
@@ -353,7 +353,7 @@ def test_untrusted_actor_rejected_before_writes(monkeypatch, principal):
     """缺少身份、服务身份或他人身份发起收集时在写入前被拒绝"""
     identity = OperationIdentity(principal, principal) if principal else None
     with operation_identity_scope(identity), pytest.raises(PermissionError):
-        paper_backend.start_paper_collection({"direction": "request", "actor": ACTOR}, ACTOR)
+        paper_collection_jobs.start_paper_collection({"direction": "request", "actor": ACTOR}, ACTOR)
     assert paper_state_store.records("collector_jobs") == []
 
 
@@ -367,12 +367,12 @@ def test_authenticated_boundary_rejects_conflicting_identity():
 
 def test_start_preserves_direction_and_uses_authenticated_owner(monkeypatch, tmp_path):
     """创建收集任务时完整保存研究方向，owner 取认证身份，超长方向直接拒绝"""
-    monkeypatch.setattr(paper_backend, "_start_paper_collection_task", lambda job: job)
+    monkeypatch.setattr(paper_collection_jobs, "_start_paper_collection_task", lambda job: job)
     direction = "Attention " + "a" * 1200 + " 不联网、不重复登记"
     with paper_collector.authenticated_request({"type": "human", "id": ACTOR}):
-        paper_backend.start_paper_collection({"direction": direction, "max_papers": 1, "created_by": "spoof"}, ACTOR)
+        paper_collection_jobs.start_paper_collection({"direction": direction, "max_papers": 1, "created_by": "spoof"}, ACTOR)
         with pytest.raises(ValueError, match="no input was truncated"):
-            paper_backend.start_paper_collection({"direction": "x" * (paper_collector.MAX_DIRECTION_CHARS + 1)}, ACTOR)
+            paper_collection_jobs.start_paper_collection({"direction": "x" * (paper_collector.MAX_DIRECTION_CHARS + 1)}, ACTOR)
     saved = paper_state_store.records("collector_jobs")
     assert len(saved) == 1 and saved[0]["direction"] == direction and saved[0]["max_papers"] == 1
     assert saved[0]["created_by"] == ACTOR and "owner_ids" not in saved[0]
@@ -389,10 +389,10 @@ def test_trusted_context_survives_real_business_thread(monkeypatch, collector):
         observed.append((current_operation_identity().principal.id, request_context.get()))
         finished.set()
 
-    monkeypatch.setattr(paper_backend, "_run_paper_collection_job", run)
+    monkeypatch.setattr(paper_collection_jobs, "_run_paper_collection_job", run)
     token = request_context.set("authenticated-context")
     try:
-        paper_backend._start_paper_collection_task(job)
+        paper_collection_jobs._start_paper_collection_task(job)
         assert finished.wait(2), "background task did not observe the request context"
     finally:
         request_context.reset(token)
@@ -428,7 +428,7 @@ def test_native_resolves_collector_from_four_and_passes_workflow_binding(monkeyp
 
     execute_mock = Mock(side_effect=execute)
     monkeypatch.setattr(resident_handoff, "run_resident_turn", execute_mock)
-    paper_backend._run_paper_collection_job(job["job_id"])
+    paper_collection_jobs._run_paper_collection_job(job["job_id"])
     initialize.assert_called_once_with("paper", ACTOR)
     graph.assert_called_once_with(ACTOR, binding["lineage_id"])
     assert install.call_args.kwargs["name"] == "paper:collector"
@@ -448,11 +448,11 @@ def test_only_final_linked_reply_is_a_business_receipt(monkeypatch, collector, f
     raw["message"] = progress + "\n" + final
     monkeypatch.setattr(paper_projection.native, "turn", Mock(return_value=raw))
     if final_is_valid:
-        paper_backend._run_paper_collection_job(job["job_id"])
+        paper_collection_jobs._run_paper_collection_job(job["job_id"])
         assert job["status"] == "done"
     else:
         with pytest.raises(ValueError):
-            paper_backend._run_paper_collection_job(job["job_id"])
+            paper_collection_jobs._run_paper_collection_job(job["job_id"])
         assert job["status"] == "error"
     assert (tmp_path / job["job_id"] / "stdout.json").read_text() == raw["message"]
 
@@ -467,24 +467,24 @@ def test_listing_marks_a_collector_job_whose_task_is_gone_as_interrupted(monkeyp
     now = 2_000_000_000
     jobs = {
         "collector-000000000001": {"job_id": "collector-000000000001", "status": "running", "created_by": ACTOR,
-                                   "updated_at": now - paper_backend.COLLECTOR_STALE_SECONDS - 1},
+                                   "updated_at": now - paper_collection_jobs.COLLECTOR_STALE_SECONDS - 1},
         "collector-000000000002": {"job_id": "collector-000000000002", "status": "running", "created_by": ACTOR,
                                    "updated_at": now - 60},
         "collector-000000000003": {"job_id": "collector-000000000003", "status": "queued", "created_by": ACTOR,
-                                   "updated_at": now - paper_backend.COLLECTOR_STALE_SECONDS - 1},
+                                   "updated_at": now - paper_collection_jobs.COLLECTOR_STALE_SECONDS - 1},
     }
 
     def set_job(job_id, patch):
         jobs[job_id] = {**jobs[job_id], **patch, "updated_at": now}
         return jobs[job_id]
 
-    monkeypatch.setattr(paper_backend, "_now", lambda: now)
-    monkeypatch.setattr(paper_backend, "_all_paper_collection_jobs", lambda: list(jobs.values()))
-    monkeypatch.setattr(paper_backend, "_set_paper_collection_job", set_job)
+    monkeypatch.setattr(paper_collection_jobs, "_now", lambda: now)
+    monkeypatch.setattr(paper_collection_jobs, "_all_paper_collection_jobs", lambda: list(jobs.values()))
+    monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", set_job)
     # The third job is still running in this process.
     monkeypatch.setattr(business_tasks, "is_active", lambda task_id: task_id == "paper-collection:collector-000000000003")
 
-    listed = {job["job_id"]: job for job in paper_backend.list_paper_collection_jobs(ACTOR)["jobs"]}
+    listed = {job["job_id"]: job for job in paper_collection_jobs.list_paper_collection_jobs(ACTOR)["jobs"]}
 
     assert jobs["collector-000000000001"]["status"] == "error" and jobs["collector-000000000001"]["step"] == "stale"
     assert listed["collector-000000000001"]["status"] == "error"

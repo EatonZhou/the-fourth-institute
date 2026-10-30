@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal import paper_backend
+from management_portal import paper_detail, paper_store
 
 
 def test_paper_asset_paths_cannot_escape_the_registered_bundle(tmp_path):
@@ -13,7 +13,7 @@ def test_paper_asset_paths_cannot_escape_the_registered_bundle(tmp_path):
     inside.write_bytes(b"inside")
     outside = tmp_path / "outside.png"
     outside.write_bytes(b"outside")
-    store = paper_backend.PaperStore(tmp_path / "paper-store")
+    store = paper_store.PaperStore(tmp_path / "paper-store")
     paper = {
         "id": "paper_0123456789ab",
         "_store_root": str(bundle),
@@ -27,15 +27,15 @@ def test_paper_asset_paths_cannot_escape_the_registered_bundle(tmp_path):
     assert store.paper_file(paper, "pdf") is None
 
     with (
-        mock.patch.object(paper_backend, "_paper_for_asset_lookup", return_value=paper),
+        mock.patch.object(paper_detail, "_paper_for_asset_lookup", return_value=paper),
         mock.patch.object(
-            paper_backend,
+            paper_detail,
             "_load_figures",
             return_value=[{"figure_id": "figure_one", "image_rel_path": "../outside.png"}],
         ),
         pytest.raises(FileNotFoundError, match="figure"),
     ):
-        paper_backend.resolve_asset(paper["id"], "figure", "figure_one")
+        paper_detail.resolve_asset(paper["id"], "figure", "figure_one")
 
 
 

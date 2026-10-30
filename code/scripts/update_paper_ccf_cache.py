@@ -21,7 +21,7 @@ from management_portal.resident_shell_environment import portal_database_url  # 
 # RunScript starts this script without Portal's service environment.
 os.environ.setdefault("PORTAL_DATABASE_URL", portal_database_url())
 
-from management_portal import paper_backend  # noqa: E402
+from management_portal import paper_ccf, paper_ccf_enrichment, paper_records, paper_store  # noqa: E402
 from management_common.limit_contract import normalize_optional_limit  # noqa: E402
 
 
@@ -33,15 +33,15 @@ def _is_retryable_error(error: str) -> bool:
 
 
 def retry_previous_errors(*, delay_seconds: float, retry_all_errors: bool, min_paper_year: int | None, paper_ranks: str) -> dict:
-    source_path = paper_backend.CCF_REFRESH_REPORT_PATH
-    retry_path = paper_backend.CCF_DBLP_CACHE_ROOT / "retry-report.json"
+    source_path = paper_ccf.CCF_REFRESH_REPORT_PATH
+    retry_path = paper_ccf_enrichment.CCF_DBLP_CACHE_ROOT / "retry-report.json"
     source = json.loads(source_path.read_text(encoding="utf-8")) if source_path.is_file() else {}
     errors = [item for item in source.get("errors", []) if isinstance(item, dict)]
-    auto_paper_ranks = paper_backend._normalize_ccf_paper_ranks(paper_ranks)
+    auto_paper_ranks = paper_ccf._normalize_ccf_paper_ranks(paper_ranks)
     report = {
         "schema": "tfi.paper.ccf_retry.v1",
         "source_report": str(source_path),
-        "started_at": paper_backend._now(),
+        "started_at": paper_records._now(),
         "finished_at": None,
         "source_error_count": len(errors),
         "retried": 0,
@@ -56,7 +56,7 @@ def retry_previous_errors(*, delay_seconds: float, retry_all_errors: bool, min_p
         "errors": [],
     }
     retry_path.parent.mkdir(parents=True, exist_ok=True)
-    paper_backend._write_json(retry_path, report)
+    paper_store._write_json(retry_path, report)
     for item in errors:
         venue = str(item.get("venue") or "").strip()
         stage = str(item.get("stage") or "").strip()
@@ -64,41 +64,41 @@ def retry_previous_errors(*, delay_seconds: float, retry_all_errors: bool, min_p
         error_text = str(item.get("error") or "")
         if not venue or (not retry_all_errors and not _is_retryable_error(error_text)):
             report["skipped"] += 1
-            paper_backend._write_json(retry_path, report)
+            paper_store._write_json(retry_path, report)
             continue
         if stage == "papers" and auto_paper_ranks:
-            venue_info = paper_backend._ccf_venue_by_key(venue) or {}
+            venue_info = paper_ccf._ccf_venue_by_key(venue) or {}
             rank = str(venue_info.get("rank") or "").strip().upper()
             if rank and rank not in auto_paper_ranks:
                 report["skipped"] += 1
                 report["skipped_by_rank"] += 1
-                paper_backend._write_json(retry_path, report)
+                paper_store._write_json(retry_path, report)
                 continue
         if stage == "papers" and report["min_paper_year"] is not None:
-            entry_year = paper_backend._ccf_entry_year(item)
+            entry_year = paper_ccf._ccf_entry_year(item)
             if entry_year and entry_year < report["min_paper_year"]:
                 report["skipped"] += 1
-                paper_backend._write_json(retry_path, report)
+                paper_store._write_json(retry_path, report)
                 continue
         try:
             if stage == "years":
-                paper_backend.ccf_years({"venue": venue, "refresh": "1"})
+                paper_ccf.ccf_years({"venue": venue, "refresh": "1"})
             elif stage == "papers" and entry_id:
-                paper_backend.ccf_papers_cache({"venue": venue, "year": entry_id, "refresh": "1"})
+                paper_ccf.ccf_papers_cache({"venue": venue, "year": entry_id, "refresh": "1"})
             else:
                 report["skipped"] += 1
-                paper_backend._write_json(retry_path, report)
+                paper_store._write_json(retry_path, report)
                 continue
             report["retried"] += 1
             report["succeeded"] += 1
         except Exception as exc:
             report["retried"] += 1
             report["errors"].append({**item, "retry_error": str(exc)})
-        paper_backend._write_json(retry_path, report)
+        paper_store._write_json(retry_path, report)
         if delay_seconds:
             time.sleep(max(0.0, delay_seconds))
-    report["finished_at"] = paper_backend._now()
-    paper_backend._write_json(retry_path, report)
+    report["finished_at"] = paper_records._now()
+    paper_store._write_json(retry_path, report)
     return report
 
 
@@ -125,7 +125,7 @@ def main() -> int:
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
         return 1 if args.fail_on_errors and report.get("errors") else 0
 
-    report = paper_backend.refresh_ccf_cache(
+    report = paper_ccf.refresh_ccf_cache(
         latest_years=None if args.all_years else args.latest_years,
         min_paper_year=None if args.all_paper_years else args.min_paper_year,
         paper_ranks=args.paper_ranks,

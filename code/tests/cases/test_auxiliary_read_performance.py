@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal import paper_backend, resident_workspace_adapter
+from management_portal import paper_ccf, paper_chat_context, paper_collection_jobs, paper_library, paper_search, resident_workspace_adapter
 from management_portal.society_service import lineage_read_cache
 
 
@@ -155,12 +155,12 @@ def test_paper_session_read_skips_library_context_but_prepare_keeps_it(monkeypat
     :design-point:
     """
     calls = []
-    monkeypatch.setattr(paper_backend, 'chat_workspace_display_context',
+    monkeypatch.setattr(paper_chat_context, 'chat_workspace_display_context',
                         lambda **kw: calls.append(('display', kw)) or {
                             'title': 'Research Chat', 'subtitle': 'Selected paper',
                             'prompt_context': '',
                         })
-    monkeypatch.setattr(paper_backend, 'chat_workspace_prompt_context',
+    monkeypatch.setattr(paper_chat_context, 'chat_workspace_prompt_context',
                         lambda **kw: calls.append(('prompt', kw)) or {
                             'title': 'Research Chat', 'subtitle': 'Selected paper',
                             'prompt_context': 'Actual paper context for send',
@@ -197,8 +197,12 @@ def test_paper_display_read_never_hydrates_resource_catalog(monkeypatch):
     """
     def forbidden(*args, **kwargs):
         pytest.fail('Session GET must not load every paper')
-    monkeypatch.setattr(paper_backend, 'resource_index_papers', forbidden)
-    monkeypatch.setattr(paper_backend, 'PAPER_STORE', SimpleNamespace(
+    monkeypatch.setattr(paper_search, 'resource_index_papers', forbidden)
+    monkeypatch.setattr(paper_ccf, 'resource_index_papers', paper_search.resource_index_papers)
+    monkeypatch.setattr(paper_collection_jobs, 'resource_index_papers', paper_search.resource_index_papers)
+    monkeypatch.setattr(paper_library, 'resource_index_papers', paper_search.resource_index_papers)
+    monkeypatch.setattr(paper_chat_context, 'resource_index_papers', paper_search.resource_index_papers)
+    monkeypatch.setattr(paper_chat_context, 'PAPER_STORE', SimpleNamespace(
         paper_by_id=lambda paper_id: {'id': paper_id, 'title': 'Specific paper'},
     ))
     monkeypatch.setattr(resident_workspace_adapter.discussion_residents, 'resolve', lambda **kw: {})

@@ -8,7 +8,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from management_portal import http_paper, paper_backend, paper_favorites, presentation_store, serve_management_portal as portal
+from management_portal import http_paper, paper_favorites, paper_library, presentation_store, serve_management_portal as portal
 from tests.cases.test_resource_portal_routes import _server
 
 
@@ -71,16 +71,16 @@ def test_library_favorite_filter_intersects_current_visibility_and_search_withou
         {"id": OTHER, "title": "Attention second", "year": "2025", "venue": "Test"},
     ]
     visible = Mock(return_value=papers)
-    monkeypatch.setattr(paper_backend, "resource_index_papers", visible)
-    monkeypatch.setattr(paper_backend, "_all_reviews", lambda: [])
-    result = paper_backend.list_library({"favorite": "1", "q": "Attention", "year": "2026", "compact": "1"}, actor="alice")
+    monkeypatch.setattr(paper_library, "resource_index_papers", visible)
+    monkeypatch.setattr(paper_library, "_all_reviews", lambda: [])
+    result = paper_library.list_library({"favorite": "1", "q": "Attention", "year": "2026", "compact": "1"}, actor="alice")
     visible.assert_called_with(actor="alice")
     assert [item["id"] for item in result["papers"]] == [PAPER]
     assert result["summary"]["visible_count"] == 1
     assert set(result["favorite_ids"]) == {PAPER, HIDDEN}
-    assert paper_backend.list_library({"favorite": "1"}, actor="bob")["papers"] == []
-    assert paper_backend.list_library({"favorite": "1", "q": "absent"}, actor="alice")["papers"] == []
-    assert len(paper_backend.list_library({}, actor="alice")["papers"]) == 2
+    assert paper_library.list_library({"favorite": "1"}, actor="bob")["papers"] == []
+    assert paper_library.list_library({"favorite": "1", "q": "absent"}, actor="alice")["papers"] == []
+    assert len(paper_library.list_library({}, actor="alice")["papers"]) == 2
     assert all("favorite" not in item for item in papers)
 
 
@@ -88,15 +88,15 @@ def test_favorite_filter_keeps_absolute_semantic_order(resources, monkeypatch):
     """收藏筛选与语义检索同时使用时按语义排名排序"""
     for item in [PAPER, OTHER]:
         paper_favorites.set_favorite("alice", item, True)
-    monkeypatch.setattr(paper_backend, "resource_index_papers", lambda **_: [{"id": PAPER, "title": "A"}, {"id": OTHER, "title": "B"}])
-    monkeypatch.setattr(paper_backend, "_all_reviews", lambda: [])
-    monkeypatch.setattr(paper_backend.semantic_search_jobs, "search_view", lambda *a, **k: {
+    monkeypatch.setattr(paper_library, "resource_index_papers", lambda **_: [{"id": PAPER, "title": "A"}, {"id": OTHER, "title": "B"}])
+    monkeypatch.setattr(paper_library, "_all_reviews", lambda: [])
+    monkeypatch.setattr(paper_library.semantic_search_jobs, "search_view", lambda *a, **k: {
         "summary": {"status": "done"}, "result_map": {
             PAPER: {"rank": 8, "score": 65, "reason": "A"},
             OTHER: {"rank": 2, "score": 90, "reason": "B"},
         },
     })
-    result = paper_backend.list_library({"favorite": "1", "semantic": "search_0123456789ab"}, actor="alice")
+    result = paper_library.list_library({"favorite": "1", "semantic": "search_0123456789ab"}, actor="alice")
     assert [(item["id"], item["semantic_rank"], item["semantic_score"]) for item in result["papers"]] == [(OTHER, 2, 90), (PAPER, 8, 65)]
 
 

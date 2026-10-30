@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal import paper_backend, serve_management_portal
+from management_portal import paper_figure_jobs, paper_registration, serve_management_portal
 from management_portal.execution.harness import AgentHarness
 from management_portal.execution.harness_settings import normalize_agent_harness_settings
 from management_portal.serve_management_portal import _read_request_multipart
@@ -145,16 +145,16 @@ def test_oversized_multipart_route_returns_413_without_reading_contracts(monkeyp
             assert handler.rfile.read_sizes == []
     with subtests.test(contract='test_paper_uploads_enforce_domain_byte_limits_before_processing'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(paper_backend, "PAPER_PDF_UPLOAD_MAX_BYTES", 4)
+            monkeypatch.setattr(paper_registration, "PAPER_PDF_UPLOAD_MAX_BYTES", 4)
             with pytest.raises(ValueError, match="pdf file is too large"):
-                paper_backend.upload_paper_pdf(
+                paper_registration.upload_paper_pdf(
                     {"paper_id": "paper_test", "data_bytes": b"%PDF-1.4"},
                     "sample_admin",
                 )
 
-            monkeypatch.setattr(paper_backend, "PAPER_FIGURE_IMAGE_MAX_BYTES", 1)
+            monkeypatch.setattr(paper_figure_jobs, "PAPER_FIGURE_IMAGE_MAX_BYTES", 1)
             with pytest.raises(ValueError, match="image file is too large"):
-                paper_backend.upload_figure_input_image(
+                paper_figure_jobs.upload_figure_input_image(
                     {"paper_id": "paper_test", "data_bytes": b"image"},
                     "sample_admin",
                 )
@@ -171,13 +171,13 @@ def test_paper_image_rejects_pixel_limit_before_decode(
         def load(self) -> None:
             raise AssertionError("oversized image must not be decoded")
 
-    monkeypatch.setattr(paper_backend, "PAPER_FIGURE_IMAGE_MAX_PIXELS", 50)
-    monkeypatch.setattr(paper_backend, "_paper_by_id", lambda _paper_id: {"id": "paper_test"})
-    monkeypatch.setattr(paper_backend, "_paper_root", lambda _paper: tmp_path)
-    monkeypatch.setattr(paper_backend.Image, "open", lambda _stream: OversizedImage())
+    monkeypatch.setattr(paper_figure_jobs, "PAPER_FIGURE_IMAGE_MAX_PIXELS", 50)
+    monkeypatch.setattr(paper_figure_jobs, "_paper_by_id", lambda _paper_id: {"id": "paper_test"})
+    monkeypatch.setattr(paper_figure_jobs, "_paper_root", lambda _paper: tmp_path)
+    monkeypatch.setattr(paper_figure_jobs.Image, "open", lambda _stream: OversizedImage())
 
     with pytest.raises(ValueError, match="dimensions are too large"):
-        paper_backend.upload_figure_input_image(
+        paper_figure_jobs.upload_figure_input_image(
             {"paper_id": "paper_test", "data_bytes": b"image"},
             "sample_admin",
         )

@@ -9,7 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal import (
-    board_semantic_search_backend, paper_backend, resident_handoff, semantic_search_jobs, semantic_search_store,
+    board_semantic_search_backend, paper_search, resident_handoff, semantic_search_jobs, semantic_search_store,
     shared_search_adapter as adapter, shared_search_invocation,
 )
 from knowledge_board_lan import knowledge_backend
@@ -52,7 +52,7 @@ def make_surface_jobs(surface, tmp_path, monkeypatch):
     if board:
         monkeypatch.setattr(board_semantic_search_backend, 'search_catalog', lambda job: records(job['created_by']))
     elif surface == 'paper':
-        monkeypatch.setattr(paper_backend, 'resource_index_papers', lambda *, actor: records(actor))
+        monkeypatch.setattr(paper_search, 'resource_index_papers', lambda *, actor: records(actor))
     elif surface == 'knowledge':
         monkeypatch.setattr(knowledge_backend, 'resource_index_snapshot', lambda *, actor, active_only: {'items': records(actor)})
     else:

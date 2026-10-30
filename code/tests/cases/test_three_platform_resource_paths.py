@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal import article_identity_backend as article
-from management_portal import paper_backend as paper
+from management_portal import paper_assets, paper_ccf_enrichment, paper_figure_jobs, paper_resources
 from management_portal import project_rename, repo_workspace_backend as repo
 from management_portal.resources.providers import folder_files
 from management_portal.workbench_projections import host_directories
@@ -24,7 +24,7 @@ from knowledge_board_lan import knowledge_backend
 
 
 @pytest.mark.parametrize("value", ["../secret", "a/../secret", "/absolute"])
-@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper._safe_paper_relative_path, repo._safe_relative_path])
+@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo._safe_relative_path])
 def test_resource_relative_names_cannot_become_native_absolute_or_alias_paths(value, cleaner):
     with pytest.raises(ValueError):
         cleaner(value)
@@ -37,7 +37,7 @@ def test_folder_addresses_reject_native_path_escape(value, monkeypatch):
         folder_files.file_parts(value)
 
 
-@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper._safe_paper_relative_path, repo._safe_relative_path])
+@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo._safe_relative_path])
 @pytest.mark.parametrize("value", ["C:/outside.txt", "C:outside.txt", r"a\..\secret", "note:stream", "NUL", "COM1"])
 def test_consumer_windows_names_refuse_native_escape(cleaner, value, monkeypatch):
     monkeypatch.setattr(secure_paths, "os", SimpleNamespace(**{**vars(os), "name": "nt"}))
@@ -60,7 +60,7 @@ def test_posix_root_and_file_names_retain_literal_colon_and_backslash(tmp_path, 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX native names")
 def test_posix_consumer_name_compatibility_is_preserved():
-    for cleaner in (article._safe_relative_path, paper._safe_paper_relative_path):
+    for cleaner in (article._safe_relative_path, paper_resources._safe_paper_relative_path):
         assert cleaner(r"dir:label/literal\name") == r"dir:label/literal\name"
         assert cleaner("dir//./file") == "dir/file"
     assert repo._safe_relative_path("dir:label/.Git/file") == "dir:label/.Git/file"
@@ -77,10 +77,10 @@ def test_paper_images_require_a_path_component_boundary(tmp_path, monkeypatch):
     outside.write_bytes(b"image")
     inside = root / "figure.png"
     inside.write_bytes(b"inside")
-    monkeypatch.setattr(paper, "_paper_root", lambda _: root)
-    assert paper._figure_image_path({}, {"image_rel_path": str(outside)}) is None
-    assert paper._generated_figure_image_path({}, {"generated": [{"generated_id": "g", "image_rel_path": str(outside)}]}, "g") is None
-    assert paper._figure_image_path({}, {"image_rel_path": "figure.png"}) == inside
+    monkeypatch.setattr(paper_figure_jobs, "_paper_root", lambda _: root)
+    assert paper_figure_jobs._figure_image_path({}, {"image_rel_path": str(outside)}) is None
+    assert paper_figure_jobs._generated_figure_image_path({}, {"generated": [{"generated_id": "g", "image_rel_path": str(outside)}]}, "g") is None
+    assert paper_figure_jobs._figure_image_path({}, {"image_rel_path": "figure.png"}) == inside
 
 
 def test_folder_reads_and_directory_browse_do_not_need_linux_proc(tmp_path, monkeypatch):
@@ -349,18 +349,18 @@ def test_paper_enrichment_lock_covers_cache_read_and_releases_on_exit(tmp_path, 
     cache = tmp_path / "enrichment.json"
     lock = cache.with_suffix(".lock")
     lock.write_bytes(b"existing lock contents")
-    monkeypatch.setattr(paper, "_ccf_enrichment_cache_path", lambda _: cache)
+    monkeypatch.setattr(paper_ccf_enrichment, "_ccf_enrichment_cache_path", lambda _: cache)
     def read(*args):
         _assert_held(lock)
         if failure:
             raise OSError("cache failed")
         return {"status": "done"}
-    monkeypatch.setattr(paper, "_load_json", read)
+    monkeypatch.setattr(paper_ccf_enrichment, "_load_json", read)
     if failure:
         with pytest.raises(OSError, match="cache failed"):
-            paper.ccf_paper_enrichment({"paper": {"title": "fixture"}}, actor="fixture")
+            paper_ccf_enrichment.ccf_paper_enrichment({"paper": {"title": "fixture"}}, actor="fixture")
     else:
-        assert paper.ccf_paper_enrichment({"paper": {"title": "fixture"}}, actor="fixture") == {"status": "done"}
+        assert paper_ccf_enrichment.ccf_paper_enrichment({"paper": {"title": "fixture"}}, actor="fixture") == {"status": "done"}
     _assert_released(lock)
     assert lock.read_bytes() == b"existing lock contents"
 
@@ -369,19 +369,19 @@ def test_paper_enrichment_lock_covers_cache_read_and_releases_on_exit(tmp_path, 
 def test_paper_asset_lock_covers_lookup_and_preserves_contents(tmp_path, monkeypatch, missing):
     lock = tmp_path / "assets.lock"
     lock.write_bytes(b"stable lock")
-    monkeypatch.setattr(paper, "_paper_asset_lock_path", lambda: lock)
-    monkeypatch.setattr(paper, "_paper_run_record_by_job_id", lambda *a: {"status": "queued"})
-    monkeypatch.setattr(paper, "_update_paper_run_record", lambda *a, **kw: None)
+    monkeypatch.setattr(paper_assets, "_paper_asset_lock_path", lambda: lock)
+    monkeypatch.setattr(paper_assets, "_paper_run_record_by_job_id", lambda *a: {"status": "queued"})
+    monkeypatch.setattr(paper_assets, "_update_paper_run_record", lambda *a, **kw: None)
     def lookup(*args):
         _assert_held(lock)
         return None if missing else {"paper_id": "fixture"}
-    monkeypatch.setattr(paper, "_paper_by_id", lookup)
-    monkeypatch.setattr(paper, "_local_pdf_for_paper", lambda _: None)
+    monkeypatch.setattr(paper_assets, "_paper_by_id", lookup)
+    monkeypatch.setattr(paper_assets, "_local_pdf_for_paper", lambda _: None)
     if missing:
         with pytest.raises(KeyError):
-            paper._run_assets_job("fixture", job_id="fixture")
+            paper_assets._run_assets_job("fixture", job_id="fixture")
     else:
-        assert paper._run_assets_job("fixture", job_id="fixture")["skipped"]
+        assert paper_assets._run_assets_job("fixture", job_id="fixture")["skipped"]
     _assert_released(lock)
     assert lock.read_bytes() == b"stable lock"
 

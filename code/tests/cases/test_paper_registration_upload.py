@@ -6,15 +6,15 @@ from unittest import mock
 
 import pytest
 
-from management_portal import paper_backend
+from management_portal import paper_ccf, paper_registration, paper_registration_metadata, paper_store, paper_summaries
 from tests.cases.registry_support import write_projects
 
 
 
 
 
-def _draft_store(tmp_path: Path) -> paper_backend.PaperStore:
-    store = paper_backend.PaperStore(tmp_path / "papers")
+def _draft_store(tmp_path: Path) -> paper_store.PaperStore:
+    store = paper_store.PaperStore(tmp_path / "papers")
     store.ensure()
     return store
 
@@ -27,14 +27,15 @@ def test_registration_rejects_unavailable_local_pdf_before_creating_paper(tmp_pa
     if outside_allowed_root:
         source.write_bytes(b"%PDF-1.7\nfixture")
     with (
-        mock.patch.object(paper_backend, "PAPER_STORE", store),
-        mock.patch.object(paper_backend, "ALLOWED_FILE_ROOTS", [store.root] if outside_allowed_root else [tmp_path]),
+        mock.patch.object(paper_store, "PAPER_STORE", store),
+        mock.patch.object(paper_registration, "PAPER_STORE", paper_store.PAPER_STORE),
+        mock.patch.object(paper_store, "ALLOWED_FILE_ROOTS", [store.root] if outside_allowed_root else [tmp_path]),
         mock.patch.object(store, "register") as register,
-        mock.patch.object(paper_backend, "_start_summary_task") as summary,
-        mock.patch.object(paper_backend, "_start_assets_task") as assets,
+        mock.patch.object(paper_registration, "_start_summary_task") as summary,
+        mock.patch.object(paper_registration, "_start_assets_task") as assets,
     ):
         with pytest.raises(ValueError, match="registration PDF is unavailable"):
-            paper_backend.register_paper({"title": "Unavailable source", "pdf_path": str(source)}, "alice")
+            paper_registration.register_paper({"title": "Unavailable source", "pdf_path": str(source)}, "alice")
     register.assert_not_called()
     summary.assert_not_called()
     assets.assert_not_called()
@@ -45,15 +46,15 @@ def test_empty_summary_material_records_failure_without_calling_model_or_writing
     path = tmp_path / "summary.md"
     paper = {"id": "paper_012345abcdef", "title": "No source", "abstract": ""}
     with (
-        mock.patch.object(paper_backend, "_paper_by_id", return_value=paper),
-        mock.patch.object(paper_backend, "_paper_store_file", return_value=path),
-        mock.patch.object(paper_backend, "_analysis_text", return_value="  "),
-        mock.patch.object(paper_backend, "_pdf_text_for_paper", return_value="\n"),
-        mock.patch.object(paper_backend, "_resident_reply") as reply,
-        mock.patch.object(paper_backend, "_update_paper_run_record") as record,
+        mock.patch.object(paper_summaries, "_paper_by_id", return_value=paper),
+        mock.patch.object(paper_summaries, "_paper_store_file", return_value=path),
+        mock.patch.object(paper_summaries, "_analysis_text", return_value="  "),
+        mock.patch.object(paper_summaries, "_pdf_text_for_paper", return_value="\n"),
+        mock.patch.object(paper_summaries, "_resident_reply") as reply,
+        mock.patch.object(paper_summaries, "_update_paper_run_record") as record,
     ):
         with pytest.raises(ValueError, match="requires an abstract"):
-            paper_backend._run_summary_job(paper["id"], actor="alice", job_id="summary-source-test")
+            paper_summaries._run_summary_job(paper["id"], actor="alice", job_id="summary-source-test")
     reply.assert_not_called()
     assert not path.exists()
     assert record.call_args.args[1]["status"] == "error"
@@ -65,23 +66,23 @@ def test_registration_pdf_upload_creates_owned_background_draft_contracts(tmp_pa
     with subtests.test(contract='test_registration_pdf_upload_creates_owned_background_draft'), isolated_portal_case() as case_path:
         tmp_path = case_path
         store = _draft_store(tmp_path)
-        with mock.patch.object(paper_backend, 'PAPER_STORE', store), mock.patch('management_portal.business_tasks.start', return_value=True) as start:
-            draft = paper_backend.create_paper_registration_draft({'filename': 'example.pdf', 'data_bytes': b'%PDF-1.7\nregistration upload'}, 'alice')
+        with mock.patch.object(paper_registration, 'PAPER_STORE', store), mock.patch('management_portal.business_tasks.start', return_value=True) as start:
+            draft = paper_registration.create_paper_registration_draft({'filename': 'example.pdf', 'data_bytes': b'%PDF-1.7\nregistration upload'}, 'alice')
             assert draft['status'] == 'queued'
             assert draft['upload_id'].startswith('paper-upload-')
             assert 'actor' not in draft
-            assert paper_backend._paper_registration_draft_pdf(draft['upload_id']).read_bytes().startswith(b'%PDF')
+            assert paper_registration._paper_registration_draft_pdf(draft['upload_id']).read_bytes().startswith(b'%PDF')
             start.assert_called_once()
             # ISA admission governs access; the draft retains its original identity.
-            assert paper_backend.get_paper_registration_draft(draft['upload_id'], 'bob') == draft
+            assert paper_registration.get_paper_registration_draft(draft['upload_id'], 'bob') == draft
     with subtests.test(contract='test_registration_metadata_uses_body_title_and_filename_arxiv_id'), isolated_portal_case() as case_path:
         tmp_path = case_path
         pdf_path = tmp_path / 'paper.pdf'
         pdf_path.write_bytes(b'%PDF-1.7\nfixture')
         pdf_text = '\nRedwood: A Scalable Architecture for Modern AI Workloads\n\nAda Author        Ben Builder\n\nAbstract\nThis paper presents a scalable accelerator architecture for modern AI workloads.\n\n1 Introduction\nPaper body.\n'
-        with mock.patch.object(paper_backend, '_pdf_document_properties', return_value={'title': '2608.26418v2.pdf'}):
-            metadata = paper_backend._deterministic_paper_registration_metadata(pdf_path, filename='2608.26418v2.pdf', pdf_text=pdf_text)
-            metadata_without_text = paper_backend._deterministic_paper_registration_metadata(pdf_path, filename='2608.26418v2.pdf', pdf_text='')
+        with mock.patch.object(paper_registration_metadata, '_pdf_document_properties', return_value={'title': '2608.26418v2.pdf'}):
+            metadata = paper_registration_metadata._deterministic_paper_registration_metadata(pdf_path, filename='2608.26418v2.pdf', pdf_text=pdf_text)
+            metadata_without_text = paper_registration_metadata._deterministic_paper_registration_metadata(pdf_path, filename='2608.26418v2.pdf', pdf_text='')
         assert metadata['title'] == 'Redwood: A Scalable Architecture for Modern AI Workloads'
         assert metadata['arxiv'] == '2608.26418v2'
         assert metadata_without_text['title'] == ''
@@ -90,8 +91,8 @@ def test_registration_pdf_upload_creates_owned_background_draft_contracts(tmp_pa
         tmp_path = case_path
         pdf_path = tmp_path / 'paper.pdf'
         pdf_path.write_bytes(b'%PDF-1.7\nfixture')
-        with mock.patch.object(paper_backend, '_pdf_document_properties', return_value={}):
-            metadata = paper_backend._deterministic_paper_registration_metadata(pdf_path, filename='2608.26418v2.pdf', pdf_text='arXiv:2608.12345v3\n\nA Paper Title from the PDF Body')
+        with mock.patch.object(paper_registration_metadata, '_pdf_document_properties', return_value={}):
+            metadata = paper_registration_metadata._deterministic_paper_registration_metadata(pdf_path, filename='2608.26418v2.pdf', pdf_text='arXiv:2608.12345v3\n\nA Paper Title from the PDF Body')
         assert metadata['arxiv'] == '2608.12345v3'
 
 
@@ -131,24 +132,24 @@ def test_registration_draft_extracts_editable_metadata(
         "arxiv": "2607.01088",
     }
     with (
-        mock.patch.object(paper_backend, "PAPER_STORE", store),
+        mock.patch.object(paper_registration, "PAPER_STORE", store),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_extract_pdf_text_file",
             return_value="Paper body",
         ),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_deterministic_paper_registration_metadata",
             return_value={key: [] if isinstance(value, list) else "" for key, value in ai_metadata.items()},
         ),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_ai_paper_registration_metadata",
             return_value=(ai_metadata, {"model": "fixture"}),
         ) as extract,
     ):
-        result = paper_backend._run_paper_registration_draft(upload_id)
+        result = paper_registration._run_paper_registration_draft(upload_id)
 
     assert result["status"] == "done"
     assert result["metadata"] == ai_metadata
@@ -191,24 +192,25 @@ def test_register_consumes_uploaded_pdf_and_draft_metadata(tmp_path, subtests, i
             resource_service.new_id.return_value = "paper_012345abcdef"
             resource_service.validate_id.return_value = None
             with (
-                mock.patch.object(paper_backend, "PAPER_STORE", store),
+                mock.patch.object(paper_store, "PAPER_STORE", store),
+                mock.patch.object(paper_registration, "PAPER_STORE", paper_store.PAPER_STORE),
                 mock.patch.object(
-                    paper_backend,
+                    paper_store,
                     "ALLOWED_FILE_ROOTS",
                     [tmp_path, store.root],
                 ),
                 mock.patch.object(
-                    paper_backend,
+                    paper_store,
                     "get_resource_service",
                     return_value=resource_service,
                 ),
-                mock.patch.object(paper_backend, "_start_summary_task") as summary,
-                mock.patch.object(paper_backend, "_start_assets_task") as assets,
+                mock.patch.object(paper_registration, "_start_summary_task") as summary,
+                mock.patch.object(paper_registration, "_start_assets_task") as assets,
             ):
                 payload = {"registration_upload_id": upload_id}
                 if author_value != "omitted":
                     payload.update(authors=author_value, tags=[], doi="", abstract="")
-                detail = paper_backend.register_paper(payload, "alice")
+                detail = paper_registration.register_paper(payload, "alice")
 
             paper = detail["paper"]
             assert paper["id"] == "paper_012345abcdef"
@@ -231,12 +233,12 @@ def test_registration_upload_reuses_pdf_validation_contracts(subtests, isolated_
     """论文上传拒绝非 PDF 且元数据与分类经登记流程补全"""
     with subtests.test(contract='test_registration_upload_reuses_pdf_validation'), isolated_portal_case() as case_path:
         with pytest.raises(ValueError, match='look like a PDF'):
-            paper_backend._validated_pdf_upload({'filename': 'bad.pdf', 'data_bytes': b'not a pdf'})
+            paper_registration._validated_pdf_upload({'filename': 'bad.pdf', 'data_bytes': b'not a pdf'})
     with subtests.test(contract='test_front_matter_fallback_ignores_arxiv_header'), isolated_portal_case() as case_path:
-        metadata = paper_backend._paper_front_matter_metadata('\n            Sequence to Sequence Learning\n                with Neural Networks\n\n        Ilya Sutskever        Oriol Vinyals        Quoc V. Le\narXiv:1409.3215v3 [cs.CL] 14 Dec 2014\n\nGoogle                 Google                 Google\n\nAbstract\nPaper abstract.\n')
+        metadata = paper_registration_metadata._paper_front_matter_metadata('\n            Sequence to Sequence Learning\n                with Neural Networks\n\n        Ilya Sutskever        Oriol Vinyals        Quoc V. Le\narXiv:1409.3215v3 [cs.CL] 14 Dec 2014\n\nGoogle                 Google                 Google\n\nAbstract\nPaper abstract.\n')
         assert metadata == {'title': 'Sequence to Sequence Learning with Neural Networks', 'authors': 'Ilya Sutskever, Oriol Vinyals, Quoc V. Le'}
     with subtests.test(contract='test_local_registration_classification_covers_embodied_systems'), isolated_portal_case() as case_path:
-        result = paper_backend._heuristic_paper_registration_classification({'title': 'Zetta: An Efficient Closed-Loop Embodied Harness', 'abstract': 'A self-evolving embodied agent for physical robot execution with online adaptation, a frozen base policy, and runtime recovery skills.'}, 'The robotic system improves policy inference speed on physical tasks.', project_catalog=[{'id': 'OSForAgent', 'description': 'Agentic operating systems'}, {'id': 'RobotWorker', 'description': 'Robot manipulation'}])
+        result = paper_registration_metadata._heuristic_paper_registration_classification({'title': 'Zetta: An Efficient Closed-Loop Embodied Harness', 'abstract': 'A self-evolving embodied agent for physical robot execution with online adaptation, a frozen base policy, and runtime recovery skills.'}, 'The robotic system improves policy inference speed on physical tasks.', project_catalog=[{'id': 'OSForAgent', 'description': 'Agentic operating systems'}, {'id': 'RobotWorker', 'description': 'Robot manipulation'}])
         assert result['session'] == 'OSForAgent'
         assert result['tags'][:2] == ['embodied intelligence', 'robotics']
         assert 'robot control' in result['workload']
@@ -247,8 +249,8 @@ def test_registration_upload_reuses_pdf_validation_contracts(subtests, isolated_
         assert 'runtime recovery' in result['optimization']
     with subtests.test(contract='test_registration_metadata_is_one_task_for_its_role_resident'), isolated_portal_case() as case_path:
         resident_result = {'message': json.dumps({'title': 'Fixture Paper', 'authors': ['A. Author'], 'venue': 'arXiv', 'year': '2026', 'session': 'OSForAgent', 'abstract': 'Fixture abstract.', 'tags': ['agents'], 'workload': ['agent inference'], 'platform': [], 'architecture': ['agent runtime'], 'optimization': [], 'doi': '', 'arxiv': '2601.00001'}), 'usage': {'total_tokens': 123}}
-        with mock.patch.object(paper_backend, '_paper_registration_project_catalog', return_value=[{'id': 'OSForAgent', 'description': 'Agent OS'}]), mock.patch('management_portal.paper_projection.turn', return_value=resident_result) as run_resident:
-            metadata, usage = paper_backend._ai_paper_registration_metadata('Fixture PDF text', actor='alice')
+        with mock.patch.object(paper_registration_metadata, '_paper_registration_project_catalog', return_value=[{'id': 'OSForAgent', 'description': 'Agent OS'}]), mock.patch('management_portal.paper_projection.turn', return_value=resident_result) as run_resident:
+            metadata, usage = paper_registration_metadata._ai_paper_registration_metadata('Fixture PDF text', actor='alice')
         assert metadata['session'] == 'OSForAgent'
         assert metadata['authors'] == 'A. Author'
         # The usage is the role Resident's own; it runs with its own Provider and model.
@@ -260,8 +262,8 @@ def test_registration_upload_reuses_pdf_validation_contracts(subtests, isolated_
         assert 'Fixture PDF text' in kwargs['prompt']
         assert not {'provider', 'runtime_options', 'lineage_scope'} & set(kwargs)
     with subtests.test(contract='test_ccf_registration_preserves_related_projects'), isolated_portal_case() as case_path:
-        with mock.patch.object(paper_backend, 'register_paper', return_value={'paper': {'id': 'paper_fixture'}}) as register:
-            paper_backend.register_ccf_dblp_paper({'paper': {'title': 'Fixture Paper'}, 'project_ids': ['OSForAgent'], 'session': 'OSForAgent'}, 'alice')
+        with mock.patch.object(paper_ccf, 'register_paper', return_value={'paper': {'id': 'paper_fixture'}}) as register:
+            paper_ccf.register_ccf_dblp_paper({'paper': {'title': 'Fixture Paper'}, 'project_ids': ['OSForAgent'], 'session': 'OSForAgent'}, 'alice')
         registered_payload = register.call_args.args[0]
         assert registered_payload['project_ids'] == ['OSForAgent']
         assert registered_payload['session'] == 'OSForAgent'
@@ -312,24 +314,24 @@ def test_identifier_metadata_is_preserved_while_model_enriches_classification(
         "arxiv": "2501.01234",
     }
     with (
-        mock.patch.object(paper_backend, "PAPER_STORE", store),
+        mock.patch.object(paper_registration, "PAPER_STORE", store),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_extract_pdf_text_file",
             return_value="Paper body",
         ),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_deterministic_paper_registration_metadata",
             return_value=base,
         ),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_identifier_paper_registration_metadata",
             return_value=authoritative,
         ),
         mock.patch.object(
-            paper_backend,
+            paper_registration,
             "_ai_paper_registration_metadata",
             return_value=({
                 "title": "Model should not replace this title",
@@ -342,7 +344,7 @@ def test_identifier_metadata_is_preserved_while_model_enriches_classification(
             }, {"total_tokens": 42}),
         ) as ai,
     ):
-        result = paper_backend._run_paper_registration_draft(upload_id)
+        result = paper_registration._run_paper_registration_draft(upload_id)
 
     assert result["status"] == "done"
     assert result["metadata"]["title"] == "Authoritative title"
@@ -367,18 +369,19 @@ def test_registering_a_paper_already_held_relates_it_to_the_project_without_reru
         resource_service.new_id.return_value = "paper_0123456789ab"
         resource_service.validate_id.return_value = None
         with (
-            mock.patch.object(paper_backend, "PAPER_STORE", store),
-            mock.patch.object(paper_backend, "ALLOWED_FILE_ROOTS", [case_path, store.root]),
-            mock.patch.object(paper_backend, "get_resource_service", return_value=resource_service),
-            mock.patch.object(paper_backend, "_start_summary_task") as summary,
-            mock.patch.object(paper_backend, "_start_assets_task") as assets,
+            mock.patch.object(paper_store, "PAPER_STORE", store),
+            mock.patch.object(paper_registration, "PAPER_STORE", paper_store.PAPER_STORE),
+            mock.patch.object(paper_store, "ALLOWED_FILE_ROOTS", [case_path, store.root]),
+            mock.patch.object(paper_store, "get_resource_service", return_value=resource_service),
+            mock.patch.object(paper_registration, "_start_summary_task") as summary,
+            mock.patch.object(paper_registration, "_start_assets_task") as assets,
         ):
-            first = paper_backend.register_paper(
+            first = paper_registration.register_paper(
                 {"title": "Held Paper", "doi": "10.1000/held", "project_ids": ["AI员工"]}, "alice",
             )["paper"]
             summary.reset_mock()
             assets.reset_mock()
-            again = paper_backend.register_paper(
+            again = paper_registration.register_paper(
                 {"title": "Held Paper", "doi": "10.1000/held", "project_ids": ["RobotCompany"]}, "alice",
             )["paper"]
         assert again["id"] == first["id"]
@@ -404,13 +407,14 @@ def test_a_paper_is_related_only_to_registered_projects(tmp_path, isolated_porta
         resource_service.new_id.return_value = "paper_0123456789ab"
         resource_service.validate_id.return_value = None
         with (
-            mock.patch.object(paper_backend, "PAPER_STORE", store),
-            mock.patch.object(paper_backend, "ALLOWED_FILE_ROOTS", [case_path, store.root]),
-            mock.patch.object(paper_backend, "get_resource_service", return_value=resource_service),
-            mock.patch.object(paper_backend, "_start_summary_task"),
-            mock.patch.object(paper_backend, "_start_assets_task"),
+            mock.patch.object(paper_store, "PAPER_STORE", store),
+            mock.patch.object(paper_registration, "PAPER_STORE", paper_store.PAPER_STORE),
+            mock.patch.object(paper_store, "ALLOWED_FILE_ROOTS", [case_path, store.root]),
+            mock.patch.object(paper_store, "get_resource_service", return_value=resource_service),
+            mock.patch.object(paper_registration, "_start_summary_task"),
+            mock.patch.object(paper_registration, "_start_assets_task"),
         ):
-            paper = paper_backend.register_paper({
+            paper = paper_registration.register_paper({
                 "title": "Journal Paper", "doi": "10.1000/journal", "session": "Science Robotics",
                 "project_ids": ["AI员工", "ROSProxy"],
             }, "alice")["paper"]

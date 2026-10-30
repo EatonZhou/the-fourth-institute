@@ -8,7 +8,7 @@ import psycopg
 import pytest
 from psycopg.types.json import Jsonb
 
-from management_portal import paper_backend, paper_state_store
+from management_portal import paper_ccf, paper_state_store
 
 
 def _ids(kind: str, **filters) -> list[str]:
@@ -116,7 +116,7 @@ def test_ccf_catalog_reads_curated_venues_from_the_database():
                 (venue["dblp_conf_key"], Jsonb(venue)),
             )
 
-    venues = paper_backend.ccf_venues({"rank": "CURATED"})["venues"]
+    venues = paper_ccf.ccf_venues({"rank": "CURATED"})["venues"]
 
     assert [venue["dblp_conf_key"] for venue in venues] == ["dac", "iccad"]
     assert all(venue["rank"] == "Curated" and venue["curated"] for venue in venues)

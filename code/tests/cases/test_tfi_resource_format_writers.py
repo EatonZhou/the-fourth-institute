@@ -318,7 +318,7 @@ from pathlib import Path
 import pytest
 from cryptography.fernet import Fernet
 
-from management_portal import paper_backend as prw_paper
+from management_portal import paper_collection_jobs, paper_figure_jobs, paper_store
 from management_portal import paper_collector as prw_collector
 from management_portal import paper_projection as prw_projection
 from management_portal import repo_credentials_backend as prw_credentials
@@ -335,7 +335,7 @@ def _prw_forbid_write(*args, **kwargs):
 
 
 def test_paper_writer_new_manifest_and_legacy_fingerprints(tmp_path, monkeypatch):
-    store = prw_paper.PaperStore(tmp_path / "papers")
+    store = paper_store.PaperStore(tmp_path / "papers")
     paper = {"id": "paper_0123456789ab", "title": "Stable paper identity", "year": "2026",
              "doi": "10.0000/synthetic", "_identifiers": {"doi": "10.0000/synthetic"}}
     root = store.items_root / "2026" / "synthetic"
@@ -352,7 +352,7 @@ def test_paper_writer_new_manifest_and_legacy_fingerprints(tmp_path, monkeypatch
     assert "doi:10.0000/synthetic" in old_fingerprints
     store.index_path("fingerprints.json").write_text(
         json.dumps({key: paper["id"] for key in old_fingerprints}), encoding="utf-8")
-    monkeypatch.setattr(prw_paper, "_write_json", _prw_forbid_write)
+    monkeypatch.setattr(paper_store, "_write_json", _prw_forbid_write)
     assert store.read_manifest(legacy_path) == legacy
     assert store.find_existing_id(legacy) == store.find_existing_id(manifest) == paper["id"]
     assert _prw_file_state(legacy_path) == before
@@ -400,10 +400,10 @@ def test_paper_writer_receipt_resume_keeps_confirmed_identity(namespace, monkeyp
 
 def test_paper_writer_collection_contract_prompt_and_result(monkeypatch):
     saved = []
-    monkeypatch.setattr(prw_paper.paper_state_store, "append", lambda section, job: saved.append(copy.deepcopy(job)))
-    monkeypatch.setattr(prw_paper, "_start_paper_collection_task", lambda job: job)
+    monkeypatch.setattr(paper_collection_jobs.paper_state_store, "append", lambda section, job: saved.append(copy.deepcopy(job)))
+    monkeypatch.setattr(paper_collection_jobs, "_start_paper_collection_task", lambda job: job)
     with prw_collector.authenticated_request({"type": "user", "id": "writer-fixture"}):
-        prw_paper.start_paper_collection({"direction": "existing library only", "max_papers": 1}, actor="writer-fixture")
+        paper_collection_jobs.start_paper_collection({"direction": "existing library only", "max_papers": 1}, actor="writer-fixture")
     job = saved[0]
     assert job["collector_contract"] == "tfi.paper.collector.v2"
     assert job["created_by"] == "writer-fixture"
@@ -427,7 +427,7 @@ def test_paper_writer_collection_contract_prompt_and_result(monkeypatch):
             with pytest.raises(ValueError, match="schema/job identity"):
                 prw_collector._validate_result(json.dumps({**parsed, "schema": bad}), job, set(), [])
     with pytest.raises(PermissionError, match="authenticated"):
-        prw_paper.start_paper_collection({"direction": "must not launch"}, actor="writer-fixture")
+        paper_collection_jobs.start_paper_collection({"direction": "must not launch"}, actor="writer-fixture")
 
 
 @pytest.mark.parametrize("namespace", ["archive", "tfi"])
@@ -446,20 +446,20 @@ def test_paper_writer_figure_prompt_commit_and_content_digest(tmp_path, monkeypa
         prompts.append(prompt)
         return raw, {"fixture": True}
 
-    monkeypatch.setattr(prw_paper, "_paper_store_file", lambda *args: None)
-    monkeypatch.setattr(prw_paper, "_read_text_preview", lambda *args, **kwargs: "")
-    monkeypatch.setattr(prw_paper, "_figure_image_path", lambda *args: image_path)
-    monkeypatch.setattr(prw_paper, "_run_figure_resident", generate)
-    monkeypatch.setattr(prw_paper, "_paper_by_id", lambda paper_id: paper)
-    monkeypatch.setattr(prw_paper, "_load_figures", lambda value: [copy.deepcopy(figure)])
-    monkeypatch.setattr(prw_paper, "_set_figure_fields", lambda paper_id, figure_id, updates: figure.update(updates))
+    monkeypatch.setattr(paper_figure_jobs, "_paper_store_file", lambda *args: None)
+    monkeypatch.setattr(paper_figure_jobs, "_read_text_preview", lambda *args, **kwargs: "")
+    monkeypatch.setattr(paper_figure_jobs, "_figure_image_path", lambda *args: image_path)
+    monkeypatch.setattr(paper_figure_jobs, "_run_figure_resident", generate)
+    monkeypatch.setattr(paper_figure_jobs, "_paper_by_id", lambda paper_id: paper)
+    monkeypatch.setattr(paper_figure_jobs, "_load_figures", lambda value: [copy.deepcopy(figure)])
+    monkeypatch.setattr(paper_figure_jobs, "_set_figure_fields", lambda paper_id, figure_id, updates: figure.update(updates))
     original_figure, original_image = copy.deepcopy(figure), _prw_file_state(image_path)
     if namespace == "archive":
         with pytest.raises(ValueError, match="schema or Paper/Figure identity mismatch"):
-            prw_paper.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture")
+            paper_figure_jobs.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture")
         assert figure == original_figure
     else:
-        prw_paper.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture")
+        paper_figure_jobs.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture")
     assert '"schema": "tfi.paper.figure-explanation.result.v1"' in prompts[0]
     assert _prw_file_state(image_path) == original_image
     if namespace == "tfi":

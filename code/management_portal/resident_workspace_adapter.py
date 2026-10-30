@@ -36,7 +36,7 @@ def _context_for(
 ) -> dict[str, Any]:
     context = context if isinstance(context, dict) else {}
     if surface == "paper":
-        from . import paper_backend
+        from . import paper_chat_context
 
         paper_id = str(context.get("paper_id") or "").strip()
         if workspace_key.startswith("paper:") and not paper_id:
@@ -46,13 +46,13 @@ def _context_for(
         if paper_id and workspace_key != f"paper:{paper_id}":
             raise ValueError("workspace_key does not match paper_id")
         if not include_prompt_context:
-            return paper_backend.chat_workspace_display_context(
+            return paper_chat_context.chat_workspace_display_context(
                 paper_id=paper_id,
                 collection_label=str(
                     context.get("collection_label") or ""
                 ),
             )
-        return paper_backend.chat_workspace_prompt_context(
+        return paper_chat_context.chat_workspace_prompt_context(
             paper_id=paper_id,
             query=message,
             paper_ids=[

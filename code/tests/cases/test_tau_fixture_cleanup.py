@@ -209,7 +209,7 @@ def test_paper_fixture_cleanup_uses_product_deletion_and_preserves_failures(tmp_
     :importance: P1
     :design: decision_c953eab654cd
     """
-    from management_portal import isa_client, paper_backend as paper
+    from management_portal import isa_client, paper_resources, paper_store
     from management_portal.resources.providers import paper as paper_provider
     providers = {}
     paper_provider.install_mutation_provider(SimpleNamespace(register_mutation_provider=lambda kind, **kwargs: providers.update(kwargs)))
@@ -225,7 +225,7 @@ def test_paper_fixture_cleanup_uses_product_deletion_and_preserves_failures(tmp_
     monkeypatch.setattr(isa_client, 'call', unregister)
     exists = outcome != 'missing'
     calls = []
-    monkeypatch.setattr(paper, '_paper_by_id', lambda rid: {'id': rid} if exists else None)
+    monkeypatch.setattr(paper_store, '_paper_by_id', lambda rid: {'id': rid} if exists else None)
     def delete(payload, actor):
         nonlocal exists
         assert payload == {'paper_id': paper_id} and actor == 'test-actor'
@@ -235,7 +235,7 @@ def test_paper_fixture_cleanup_uses_product_deletion_and_preserves_failures(tmp_
         if outcome != 'incomplete': exists = False
         if outcome == 'raced': raise KeyError('paper not found')
         return {'deleted': True}
-    monkeypatch.setattr(paper, 'delete_paper', delete)
+    monkeypatch.setattr(paper_resources, 'delete_paper', delete)
     if outcome in {'busy', 'denied', 'incomplete'}:
         with pytest.raises(RuntimeError, match='review busy|permission denied|删除尚未完成'):
             tau_fixtures.cleanup(tmp_path)
@@ -251,7 +251,7 @@ def test_paper_fixture_cleanup_uses_product_deletion_and_preserves_failures(tmp_
 @pytest.mark.parametrize('outcome', ['deleted', 'missing', 'raced', 'busy', 'denied', 'incomplete', 'generating'])
 def test_review_cleanup_uses_paper_owner_and_retains_failed_allocations(tmp_path, monkeypatch, outcome):
     """评审资源经论文后端删除，删除失败、未完成或仍在生成时留在清单中"""
-    from management_portal import isa_client, paper_backend, paper_state_store
+    from management_portal import isa_client, paper_reviews, paper_state_store
     from management_portal.resources.providers import install_mutation_providers
     providers = {}
     install_mutation_providers.for_type(SimpleNamespace(
@@ -276,7 +276,7 @@ def test_review_cleanup_uses_paper_owner_and_retains_failed_allocations(tmp_path
         if outcome != 'incomplete': exists = False
         if outcome == 'raced': raise KeyError('review not found')
 
-    monkeypatch.setattr(paper_backend, 'delete_review', delete)
+    monkeypatch.setattr(paper_reviews, 'delete_review', delete)
     monkeypatch.setattr(isa_client, 'call', lambda actor, name, arguments, **kwargs:
                         providers['review']['unregister'](arguments['resource_id'], actor=actor))
     if outcome in {'busy', 'denied', 'incomplete', 'generating'}:

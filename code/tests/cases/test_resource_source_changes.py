@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from unittest import mock
 
-from management_portal import paper_backend
+from management_portal import paper_reviews, paper_store
 from management_portal import resource_index_backend as backend
 from management_portal import resource_source_changes
 
@@ -334,11 +334,11 @@ def test_knowledge_change_counts_entry_files_like_the_full_scan(tmp_path: Path) 
         assert item["attributes"]["file_count_truncated"] is True
 
 
-def _symlinked_paper_store(tmp_path: Path) -> tuple[paper_backend.PaperStore, Path]:
+def _symlinked_paper_store(tmp_path: Path) -> tuple[paper_store.PaperStore, Path]:
     """A store whose items directory is a link, as /share/Papers/items is."""
     real_items = tmp_path / "data" / "items"
     real_items.mkdir(parents=True)
-    store = paper_backend.PaperStore(tmp_path / "papers")
+    store = paper_store.PaperStore(tmp_path / "papers")
     store.root.mkdir()
     store.items_root.symlink_to(real_items)
     return store, real_items
@@ -366,7 +366,7 @@ def test_paper_change_keeps_the_manifest_time_and_the_store_path(tmp_path: Path)
 
     write_manifest("Example", 200)
     adapter = PaperManifestAdapter()
-    with mock.patch.object(paper_backend, "PAPER_STORE", store):
+    with mock.patch.object(paper_store, "PAPER_STORE", store):
         [record], _state = adapter.scan()
         write_manifest("Example edited", 300)
         changes = adapter.scan_changes([str(manifest_path)], [record], {})
@@ -401,9 +401,9 @@ def test_paper_review_change_matches_the_full_scan(tmp_path: Path) -> None:
     write_review(review_path, "Review")
     adapter = PaperReviewAdapter()
     live = {"review_id": REVIEW_ID, "paper_id": PAPER_ONE, "overall_recommendation": "accept"}
-    with mock.patch.object(paper_backend, "PAPER_STORE", store), mock.patch.object(
-        paper_backend, "_paper_by_id", return_value={"id": PAPER_ONE, "title": "Paper", "project_ids": []},
-    ), mock.patch.object(paper_backend, "_all_reviews", return_value=[]) as all_reviews:
+    with mock.patch.object(paper_store, "PAPER_STORE", store), mock.patch.object(
+        paper_store, "_paper_by_id", return_value={"id": PAPER_ONE, "title": "Paper", "project_ids": []},
+    ), mock.patch.object(paper_reviews, "_paper_by_id", paper_store._paper_by_id), mock.patch.object(paper_reviews, "_all_reviews", return_value=[]) as all_reviews:
         [record], _state = adapter.scan()
 
         write_review(review_path, "Review edited")

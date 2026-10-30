@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from management_portal import paper_backend, semantic_search_jobs
+from management_portal import paper_collection_jobs, paper_detail, paper_refs, paper_registration, paper_resources, paper_store, semantic_search_jobs
 from management_portal.resources.providers import paper as paper_provider
 
 PAPER_ONE = "paper_000000000001"
@@ -17,7 +17,7 @@ class PaperStoreIndexTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.root = Path(self.temp_dir.name) / "papers"
-        self.store = paper_backend.PaperStore(self.root)
+        self.store = paper_store.PaperStore(self.root)
         self.store.ensure()
 
     def tearDown(self) -> None:
@@ -131,17 +131,17 @@ class PaperStoreIndexTest(unittest.TestCase):
         self.move_items_to_external_disk()
 
         with (
-            mock.patch.object(paper_backend, "PAPER_STORE", self.store),
-            mock.patch.object(paper_backend, "ALLOWED_FILE_ROOTS", [self.root]),
+            mock.patch.object(paper_store, "PAPER_STORE", self.store),
+            mock.patch.object(paper_store, "ALLOWED_FILE_ROOTS", [self.root]),
         ):
             paper = self.store.manifest_to_paper(record, item_root / "manifest.json")
-            public = paper_backend._paper_public(paper)
+            public = paper_store._paper_public(paper)
             self.assertTrue(public["has_pdf"])
             self.assertTrue(public["has_analysis"])
             for path in (pdf_path, analysis_path):
-                self.assertEqual(paper_backend._safe_file_path(str(path)), path.resolve())
-                self.assertEqual(paper_backend._safe_file_path(str(path.resolve())), path.resolve())
-            asset, content_type = paper_backend.resolve_asset(PAPER_ONE, "pdf")
+                self.assertEqual(paper_store._safe_file_path(str(path)), path.resolve())
+                self.assertEqual(paper_store._safe_file_path(str(path.resolve())), path.resolve())
+            asset, content_type = paper_detail.resolve_asset(PAPER_ONE, "pdf")
 
         self.assertEqual(asset.read_bytes(), b"%PDF-1.7\nfixture")
         self.assertEqual(content_type, "application/pdf")
@@ -156,29 +156,29 @@ class PaperStoreIndexTest(unittest.TestCase):
         escaped.symlink_to(neighbor)
 
         with (
-            mock.patch.object(paper_backend, "PAPER_STORE", self.store),
-            mock.patch.object(paper_backend, "ALLOWED_FILE_ROOTS", [self.root]),
+            mock.patch.object(paper_store, "PAPER_STORE", self.store),
+            mock.patch.object(paper_store, "ALLOWED_FILE_ROOTS", [self.root]),
         ):
-            self.assertIsNone(paper_backend._safe_file_path(str(neighbor)))
-            self.assertIsNone(paper_backend._safe_file_path(str(escaped)))
+            self.assertIsNone(paper_store._safe_file_path(str(neighbor)))
+            self.assertIsNone(paper_store._safe_file_path(str(escaped)))
 
     def test_paper_id_is_canonical(self) -> None:
         """论文标识校验接受规范格式且拒绝外部私有标识"""
-        self.assertEqual(paper_backend._validated_paper_id(PAPER_ONE), PAPER_ONE)
+        self.assertEqual(paper_store._validated_paper_id(PAPER_ONE), PAPER_ONE)
         with self.assertRaisesRegex(ValueError, "invalid Paper ID"):
-            paper_backend._validated_paper_id("provider-specific-id")
+            paper_store._validated_paper_id("provider-specific-id")
 
     def test_paper_mutations_reject_generic_id_fields(self) -> None:
         """论文修改接口拒绝以通用 id 字段替代专用标识"""
         with self.assertRaisesRegex(ValueError, "paper_id required"):
-            paper_backend.delete_paper({"id": PAPER_ONE}, "sample_admin")
+            paper_resources.delete_paper({"id": PAPER_ONE}, "sample_admin")
         with self.assertRaisesRegex(ValueError, "paper_id required"):
-            paper_backend.upload_paper_pdf(
+            paper_registration.upload_paper_pdf(
                 {"id": PAPER_ONE, "data_bytes": b"%PDF-1.7"},
                 "sample_admin",
             )
         with self.assertRaisesRegex(ValueError, "paper collection job id required"):
-            paper_backend.delete_paper_collection_job({"id": "not-a-collection-job"}, "sample_admin")
+            paper_collection_jobs.delete_paper_collection_job({"id": "not-a-collection-job"}, "sample_admin")
         with self.assertRaisesRegex(ValueError, "semantic search id required"):
             semantic_search_jobs.delete_search(
                 "paper",
@@ -191,13 +191,13 @@ class PaperStoreIndexTest(unittest.TestCase):
         record = self.write_record(PAPER_ONE, "First")
         manifest_path = Path(record["root"]) / "manifest.json"
 
-        preview = paper_backend.scan_and_clean_paper_ids(
+        preview = paper_resources.scan_and_clean_paper_ids(
             paper_root=self.root,
             apply=False,
         )
         self.assertEqual(preview["changed_count"], 0)
         self.assertEqual(preview["invalid_count"], 0)
-        applied = paper_backend.scan_and_clean_paper_ids(
+        applied = paper_resources.scan_and_clean_paper_ids(
             paper_root=self.root,
             apply=True,
         )
@@ -205,7 +205,7 @@ class PaperStoreIndexTest(unittest.TestCase):
 
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual(manifest["paper_id"], PAPER_ONE)
-        resolved = paper_backend.resolve_paper_address(
+        resolved = paper_resources.resolve_paper_address(
             PAPER_ONE,
             paper_root=self.root,
         )
@@ -224,12 +224,12 @@ class PaperStoreIndexTest(unittest.TestCase):
         manifest["root"] = str(item_root)
         manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
-        root = paper_backend.resolve_paper_address(
+        root = paper_resources.resolve_paper_address(
             PAPER_ONE,
             paper_root=self.root,
         )
         with mock.patch.object(
-            paper_backend,
+            paper_resources,
             "PAPER_STORE",
             self.store,
         ):
@@ -245,14 +245,14 @@ class PaperStoreIndexTest(unittest.TestCase):
 
     def test_new_paper_uses_unified_id(self) -> None:
         """新论文分配统一格式标识且不附加 resource_id"""
-        paper = paper_backend._clean_paper({"title": "New Paper"}, actor="sample_admin")
+        paper = paper_store._clean_paper({"title": "New Paper"}, actor="sample_admin")
         self.assertRegex(paper["id"], r"^paper_[0-9a-f]{12}$")
         self.assertNotIn("resource_id", paper)
 
     def test_ref_context_requires_source_paper_id(self) -> None:
         """参考文献上下文要求提供来源 paper_id"""
         with self.assertRaisesRegex(ValueError, "paper_id required"):
-            paper_backend._ref_context("ref-1")
+            paper_refs._ref_context("ref-1")
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal import paper_backend, paper_state_store
+from management_portal import paper_ccf_enrichment, paper_reviews, paper_state_store, paper_store, paper_summaries
 
 
 @pytest.mark.parametrize("saved_result", [False, True])
@@ -25,17 +25,17 @@ def test_review_settles_dead_owner_without_regenerating(tmp_path, saved_result):
     paper_state_store.append("review_jobs", job)
     if saved_result:
         paper_state_store.append("reviews", review)
-    with (mock.patch.object(paper_backend, "_notify_paper_projection"),
-          mock.patch.object(paper_backend, "_generate_ai_review") as generate):
-        settled = paper_backend.get_review_status(job_id="interrupted", actor="alice")["job"]
+    with (mock.patch.object(paper_reviews, "_notify_paper_projection"),
+          mock.patch.object(paper_reviews, "_generate_ai_review") as generate):
+        settled = paper_reviews.get_review_status(job_id="interrupted", actor="alice")["job"]
         assert settled["status"] == ("done" if saved_result else "error")
         assert settled["result"] == (review if saved_result else {})
-        assert paper_backend.get_review_status(job_id="interrupted", actor="alice")["job"] == settled
+        assert paper_reviews.get_review_status(job_id="interrupted", actor="alice")["job"] == settled
         if saved_result:
-            assert paper_backend.wait_review("interrupted", actor="alice") == review
+            assert paper_reviews.wait_review("interrupted", actor="alice") == review
         else:
             with pytest.raises(RuntimeError, match="interrupted"):
-                paper_backend.wait_review("interrupted", actor="alice")
+                paper_reviews.wait_review("interrupted", actor="alice")
         generate.assert_not_called()
 
 
@@ -54,7 +54,7 @@ def test_review_does_not_settle_live_or_unproven_owner():
     for identity in (owner, {}):
         job = {"job_id": "active", "status": "running", "process_owner": identity}
         with mock.patch.object(paper_state_store, "merge") as write:
-            assert paper_backend._settle_interrupted_review(job) == job
+            assert paper_reviews._settle_interrupted_review(job) == job
             write.assert_not_called()
 
 
@@ -70,7 +70,7 @@ def test_review_recovery_preserves_concurrent_completion():
     completed["result"] = review
     with (mock.patch("management_portal.business_tasks.process_is_alive", return_value=False),
           mock.patch.object(paper_state_store, "merge") as write):
-        assert paper_backend._settle_interrupted_review(job) == completed
+        assert paper_reviews._settle_interrupted_review(job) == completed
         write.assert_not_called()
 
 
@@ -82,11 +82,11 @@ def test_review_status_recovers_latest_current_actor_job_contracts(subtests, iso
         other = {'job_id': 'other', 'paper_id': 'paper_one', 'created_by': 'bob', 'status': 'running', 'created_at': 3}
         for job in (older, current, other):
             paper_state_store.append('review_jobs', job)
-        assert paper_backend.get_review_status(paper_id='paper_one', actor='alice') == {'job': current}
-        assert paper_backend.get_review_status(paper_id='paper_two', actor='alice') == {'job': None}
+        assert paper_reviews.get_review_status(paper_id='paper_one', actor='alice') == {'job': current}
+        assert paper_reviews.get_review_status(paper_id='paper_two', actor='alice') == {'job': None}
     with subtests.test(contract='test_review_status_rejects_unknown_job_without_starting_work'), isolated_portal_case() as case_path:
-        with mock.patch.object(paper_backend, '_review_job_by_id', return_value=None), pytest.raises(KeyError):
-            paper_backend.get_review_status(job_id='missing', actor='alice')
+        with mock.patch.object(paper_reviews, '_review_job_by_id', return_value=None), pytest.raises(KeyError):
+            paper_reviews.get_review_status(job_id='missing', actor='alice')
 
 
 def test_review_status_checks_actor_and_paper(subtests, isolated_portal_case):
@@ -103,12 +103,12 @@ def test_review_status_checks_actor_and_paper(subtests, isolated_portal_case):
     for actor, paper_id, error in scenarios:
         with subtests.test(actor=actor, paper_id=paper_id), isolated_portal_case():
             job = {"job_id": "current", "paper_id": "paper_one", "created_by": "alice", "status": "running"}
-            with mock.patch.object(paper_backend, "_review_job_by_id", return_value=job):
+            with mock.patch.object(paper_reviews, "_review_job_by_id", return_value=job):
                 if error is None:
-                    assert paper_backend.get_review_status(job_id="current", paper_id=paper_id, actor=actor) == {"job": job}
+                    assert paper_reviews.get_review_status(job_id="current", paper_id=paper_id, actor=actor) == {"job": job}
                 else:
                     with pytest.raises(error):
-                        paper_backend.get_review_status(job_id="current", paper_id=paper_id, actor=actor)
+                        paper_reviews.get_review_status(job_id="current", paper_id=paper_id, actor=actor)
 
 
 def test_paper_summary_and_ccf_send_one_task_to_their_role_residents(subtests, isolated_portal_case):
@@ -122,11 +122,11 @@ def test_paper_summary_and_ccf_send_one_task_to_their_role_residents(subtests, i
     for feature, scope in [("summary", "paper:summary"), ("ccf", "paper:ccf")]:
         with subtests.test(feature=feature), isolated_portal_case() as case_path:
             paper = {"id": "paper_0123456789ab", "title": "Test fixture", "abstract": "Synthetic material"}
-            with mock.patch.object(paper_backend, "_resident_reply", return_value=("受控测试摘要。", {})) as complete:
+            with mock.patch.object(paper_summaries, "_resident_reply", return_value=("受控测试摘要。", {})) as complete, mock.patch.object(paper_ccf_enrichment, "_resident_reply", paper_summaries._resident_reply):
                 if feature == "summary":
-                    paper_backend._generate_paper_summary(paper, actor="alice")
+                    paper_summaries._generate_paper_summary(paper, actor="alice")
                 else:
-                    paper_backend._generate_ccf_enrichment_summary(paper, [], actor="alice")
+                    paper_ccf_enrichment._generate_ccf_enrichment_summary(paper, [], actor="alice")
             complete.assert_called_once()
             assert complete.call_args.kwargs == {"actor": "alice", "resident_scope": scope}
 
@@ -145,9 +145,9 @@ def test_a_failed_paper_summary_is_an_error_and_is_not_delivered_again():
         "abstract": "Synthetic material",
     }
     with mock.patch.object(
-        paper_backend, "_resident_reply", side_effect=RuntimeError("paper:summary returned an empty reply"),
+        paper_summaries, "_resident_reply", side_effect=RuntimeError("paper:summary returned an empty reply"),
     ) as complete, pytest.raises(RuntimeError, match="empty reply"):
-        paper_backend._generate_paper_summary(paper, actor="alice")
+        paper_summaries._generate_paper_summary(paper, actor="alice")
 
     complete.assert_called_once()
     # The request keeps the source's own qualifiers (synthetic, example, unverified) instead of promoting them.
@@ -172,14 +172,14 @@ def test_paper_review_runs_as_portal_business_task(
         "created_by": "sample_admin",
     }
     with (
-        mock.patch.object(paper_backend, "DATA_ROOT", tmp_path),
+        mock.patch.object(paper_store, "DATA_ROOT", tmp_path),
         mock.patch.object(
-            paper_backend,
+            paper_reviews,
             "_all_papers",
             return_value=[paper],
         ),
         mock.patch.object(
-            paper_backend,
+            paper_reviews,
             "get_resource_service",
         ) as resource_service,
         mock.patch(
@@ -188,7 +188,7 @@ def test_paper_review_runs_as_portal_business_task(
         ) as start,
     ):
         resource_service.return_value.new_id.return_value = review["review_id"]
-        job = paper_backend.start_review(
+        job = paper_reviews.start_review(
             {"paper_id": paper["id"]},
             "sample_admin",
         )
@@ -200,27 +200,27 @@ def test_paper_review_runs_as_portal_business_task(
 
         with (
             mock.patch.object(
-                paper_backend,
+                paper_reviews,
                 "_generate_ai_review",
                 return_value=review,
             ),
             mock.patch.object(
-                paper_backend,
+                paper_reviews,
                 "_review_markdown_path",
                 return_value=tmp_path / "review.md",
             ),
             mock.patch.object(
-                paper_backend,
+                paper_reviews,
                 "_write_review_markdown",
             ),
         ):
-            result = paper_backend._run_review_job(job["job_id"])
+            result = paper_reviews._run_review_job(job["job_id"])
 
         assert result == review
-        stored_job = paper_backend._review_job_by_id(job["job_id"])
+        stored_job = paper_reviews._review_job_by_id(job["job_id"])
         assert stored_job["status"] == "done"
         assert stored_job["result"] == review
-        assert paper_backend.list_reviews(paper["id"]) == {"reviews": [review]}
+        assert paper_reviews.list_reviews(paper["id"]) == {"reviews": [review]}
         # The stored review list has no file to watch; the review index is told.
         resource_service.return_value.notify_source_changed.assert_called_once_with(
             resource_type="review", kind="updated",
@@ -237,7 +237,7 @@ def test_review_status_by_job_checks_the_job_paper(isolated_portal_case):
         respond, require = mock.Mock(), mock.Mock(side_effect=PermissionError("hidden"))
         http = PaperHttp(respond=respond, exception_response=None, media_file=None, get_auth=None, authorize=None,
                          read_json=None, read_multipart=None, multipart_limit=0, body_too_large=None,
-                         backend=lambda: paper_backend, require_resource=require, require_active_actor=None,
+                         require_resource=require, require_active_actor=None,
                          project_ids=None, notify_index=None)
         with pytest.raises(PermissionError):
             http.review_status(None, {"job_id": ["job_one"]}, "bob")

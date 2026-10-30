@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 
-from management_portal import paper_backend, paper_projection
+from management_portal import paper_figure_extraction, paper_figure_jobs, paper_figures, paper_projection, paper_store
 
 
 @pytest.fixture
@@ -16,29 +16,30 @@ def figure_store(tmp_path, monkeypatch):
     paper = {"id": "paper_0123456789ab", "_store_root": str(tmp_path), "created_by": "alice"}
     path = tmp_path / "figures.json"
     path.write_text(json.dumps([{"figure_id": "fig-001", "generated": [{"generated_id": "gen-one", "status": "queued"}]}]))
-    monkeypatch.setattr(paper_backend, "_ensure_data_root", lambda: None)
-    monkeypatch.setattr(paper_backend, "_paper_by_id", lambda identifier: paper)
-    monkeypatch.setattr(paper_backend, "_figures_json_path", lambda value: path)
-    monkeypatch.setattr(paper_backend, "_notify_paper_projection", lambda *args, **kwargs: None)
+    monkeypatch.setattr(paper_store, "_ensure_data_root", lambda: None)
+    monkeypatch.setattr(paper_figures, "_paper_by_id", lambda identifier: paper)
+    monkeypatch.setattr(paper_figure_jobs, "_paper_by_id", paper_figures._paper_by_id)
+    monkeypatch.setattr(paper_figures, "_figures_json_path", lambda value: path)
+    monkeypatch.setattr(paper_figures, "_notify_paper_projection", lambda *args, **kwargs: None)
     return paper, path
 
 
 def test_concurrent_figure_updates_preserve_each_completion(figure_store, monkeypatch):
     """并发更新插图与生成项保留各自完成字段"""
     paper, path = figure_store
-    original = paper_backend._load_figures
+    original = paper_figures._load_figures
 
     def delayed(value):
         result = original(value)
         time.sleep(0.005)
         return result
 
-    monkeypatch.setattr(paper_backend, "_load_figures", delayed)
+    monkeypatch.setattr(paper_figures, "_load_figures", delayed)
     def update(index):
         if index % 2:
-            paper_backend._set_figure_generated_item(paper["id"], "fig-001", "gen-one", {f"field{index}": index})
+            paper_figure_jobs._set_figure_generated_item(paper["id"], "fig-001", "gen-one", {f"field{index}": index})
         else:
-            paper_backend._set_figure_fields(paper["id"], "fig-001", {f"field{index}": index})
+            paper_figure_jobs._set_figure_fields(paper["id"], "fig-001", {f"field{index}": index})
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(update, range(16)))
@@ -52,8 +53,8 @@ def test_concurrent_figure_updates_preserve_each_completion(figure_store, monkey
 def test_figure_failure_is_not_published_as_ai_success(figure_store):
     """插图解释失败时记录错误且不发布成功内容"""
     paper, path = figure_store
-    with mock.patch.object(paper_backend, "_generate_figure_explanation", side_effect=RuntimeError("provider unavailable")):
-        result = paper_backend.run_figure_explain_job(paper["id"], "fig-001", "alice")
+    with mock.patch.object(paper_figure_jobs, "_generate_figure_explanation", side_effect=RuntimeError("provider unavailable")):
+        result = paper_figure_jobs.run_figure_explain_job(paper["id"], "fig-001", "alice")
     assert result["figure"]["explanation_status"] == "error"
     assert result["figure"]["explanation_error"] == "provider unavailable"
     assert not json.loads(path.read_text())[0].get("explanation")
@@ -65,10 +66,10 @@ def test_fast_figure_completion_is_not_overwritten_by_launcher(figure_store):
 
     paper, path = figure_store
     def finish(*args, **kwargs):
-        paper_backend._set_figure_fields(paper["id"], "fig-001", {"explanation_status": "done"})
+        paper_figure_jobs._set_figure_fields(paper["id"], "fig-001", {"explanation_status": "done"})
 
     with mock.patch.object(business_tasks, "start", side_effect=finish):
-        assert paper_backend._start_figure_explain_task(paper, "fig-001", "alice") == ""
+        assert paper_figure_jobs._start_figure_explain_task(paper, "fig-001", "alice") == ""
     assert json.loads(path.read_text())[0]["explanation_status"] == "done"
 
 
@@ -96,7 +97,7 @@ def test_paper_figure_media_uses_authorized_resident_upload(figure_store):
             }),
         },
     ) as turn:
-        paper_backend._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain", images=[image])
+        paper_figure_jobs._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain", images=[image])
     payload = uploader.call_args.args[0]
     assert payload["resident_id"] == "resident_figure01"
     assert uploader.call_args.kwargs["actor"] == "alice"
@@ -113,7 +114,7 @@ def test_paper_figure_rejects_outside_images_before_creating_resident(figure_sto
     paper["_store_root"] = str(tmp_path / "paper")
     Path(paper["_store_root"]).mkdir()
     with mock.patch.object(native, "ensure") as ensure, pytest.raises(PermissionError):
-        paper_backend._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain", images=[outside])
+        paper_figure_jobs._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain", images=[outside])
     ensure.assert_not_called()
 
 
@@ -121,7 +122,7 @@ def test_paper_registration_preserves_complete_tag_tokens(subtests, isolated_por
     """论文登记完整保留字符串或列表中的标签词"""
     for tags in ["synthetic, optimization", ["synthetic", "optimization"]]:
         with subtests.test(tags=tags), isolated_portal_case() as case_path:
-            result = paper_backend._clean_paper({"id": "paper_0123456789ab", "title": "Synthetic paper", "tags": tags}, "alice")
+            result = paper_store._clean_paper({"id": "paper_0123456789ab", "title": "Synthetic paper", "tags": tags}, "alice")
             assert result["tags"] == ["synthetic", "optimization"]
 
 
@@ -146,7 +147,7 @@ def test_figure_persists_input_binding_before_waiting(figure_store):
         raise RuntimeError("process interrupted")
 
     with mock.patch.object(paper_projection, "turn", side_effect=invoke), pytest.raises(RuntimeError):
-        paper_backend._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain")
+        paper_figure_jobs._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain")
     assert json.loads(path.read_text())[0]["explanation_invocation"]["resident_id"] == "resident_figure01"
 
 
@@ -168,7 +169,7 @@ def test_figure_resumes_same_input_without_upload_or_submit(figure_store, genera
         "actor": "alice",
     }
     with mock.patch.object(resident_handoff, "resume_and_wait", return_value={"message": "Recovered image result", "resident_id": "resident_figure01", "lineage_id": "lineage_paper01", "message_id": "msg_original"}) as resume, mock.patch.object(paper_projection, "turn") as submit, mock.patch.object(native, "ensure") as ensure:
-        content, usage = paper_backend._run_figure_resident("Unused", paper, figure, "explain", images=[path.parent / "not-staged.png"], generated_id=generated_id)
+        content, usage = paper_figure_jobs._run_figure_resident("Unused", paper, figure, "explain", images=[path.parent / "not-staged.png"], generated_id=generated_id)
     assert content == "Recovered image result"
     assert resume.call_args.kwargs["message_id"] == "msg_original"
     submit.assert_not_called()
@@ -181,8 +182,8 @@ def test_interrupted_legacy_figure_has_explicit_error_without_resubmission(figur
     paper, path = figure_store
     figure = {"figure_id": "fig-001", "explanation_status": status, "generated": [{"generated_id": "gen-one", "status": status}]}
     path.write_text(json.dumps([figure]))
-    with mock.patch.object(paper_backend, "_start_figure_explain_task") as explain, mock.patch.object(paper_backend, "_start_figure_draft_task") as draft:
-        paper_backend._recover_figure_tasks(paper)
+    with mock.patch.object(paper_figure_jobs, "_start_figure_explain_task") as explain, mock.patch.object(paper_figure_jobs, "_start_figure_draft_task") as draft:
+        paper_figure_jobs._recover_figure_tasks(paper)
     result = json.loads(path.read_text())[0]
     assert result["explanation_status"] == "error"
     assert "no input was resubmitted" in result["explanation_error"]
@@ -205,8 +206,8 @@ def test_active_figure_worker_is_not_recovered_twice(figure_store):
             "message_id": "msg_original",
         }),
     }]))
-    with mock.patch.object(business_tasks, "is_active", return_value=True), mock.patch.object(paper_backend, "_start_figure_explain_task") as start:
-        paper_backend._recover_figure_tasks(paper)
+    with mock.patch.object(business_tasks, "is_active", return_value=True), mock.patch.object(paper_figure_jobs, "_start_figure_explain_task") as start:
+        paper_figure_jobs._recover_figure_tasks(paper)
     start.assert_not_called()
     assert json.loads(path.read_text())[0]["explanation_status"] == "running"
 
@@ -233,10 +234,10 @@ def test_figure_recovery_writes_cancelled_input_as_artifact_error(figure_store):
         return True
 
     def explain(current_paper, figure):
-        return paper_backend._run_figure_resident("unused", current_paper, figure, "explain")
+        return paper_figure_jobs._run_figure_resident("unused", current_paper, figure, "explain")
 
-    with mock.patch.object(business_tasks, "start", side_effect=launch), mock.patch.object(paper_backend, "_generate_figure_explanation", side_effect=explain), mock.patch.object(resident_handoff, "resume_and_wait", side_effect=RuntimeError("Resident input ended with cancelled")), mock.patch.object(paper_projection, "turn") as submit:
-        paper_backend._recover_figure_tasks(paper)
+    with mock.patch.object(business_tasks, "start", side_effect=launch), mock.patch.object(paper_figure_jobs, "_generate_figure_explanation", side_effect=explain), mock.patch.object(resident_handoff, "resume_and_wait", side_effect=RuntimeError("Resident input ended with cancelled")), mock.patch.object(paper_projection, "turn") as submit:
+        paper_figure_jobs._recover_figure_tasks(paper)
     result = json.loads(path.read_text())[0]
     assert result["explanation_status"] == "error"
     assert result["explanation_error"] == "Resident input ended with cancelled"
@@ -249,7 +250,7 @@ def test_synchronous_figure_generation_also_registers_before_invocation(figure_s
     def generate(current_paper, figure, request, generated_id, **options):
         stored = json.loads(path.read_text())[0]["generated"]
         assert any(item["generated_id"] == generated_id for item in stored)
-        paper_backend._set_figure_generated_item(
+        paper_figure_jobs._set_figure_generated_item(
             paper["id"],
             "fig-001",
             generated_id,
@@ -261,8 +262,8 @@ def test_synchronous_figure_generation_also_registers_before_invocation(figure_s
         )
         return "figures/generated/test.png", "Generated", {}
 
-    with mock.patch.object(paper_backend, "_generate_figure_image", side_effect=generate):
-        paper_backend.generate_figure_draft({"paper_id": paper["id"], "figure_id": "fig-001", "request": "Change colors"}, "alice")
+    with mock.patch.object(paper_figure_jobs, "_generate_figure_image", side_effect=generate):
+        paper_figure_jobs.generate_figure_draft({"paper_id": paper["id"], "figure_id": "fig-001", "request": "Change colors"}, "alice")
     completed = next(item for item in json.loads(path.read_text())[0]["generated"] if item.get("status") == "done")
     assert completed["invocation"]["input_message_id"] == "msg_current"
 
@@ -293,7 +294,7 @@ def test_figure_heading_detection_requires_graphics_below_not_above(subtests, is
                     {"x_min": 25, "x_max": 35, "y_min": 115, "y_max": 128, "text": "1.0"},
                     {"x_min": 180, "x_max": 230, "y_min": 294, "y_max": 307, "text": "Toy budget"},
                 ])
-            cropped = paper_backend._crop_figure_below_heading(image, caption)
+            cropped = paper_figure_extraction._crop_figure_below_heading(image, caption)
             if graphic_above and lower_number != "1":
                 assert cropped is None
             else:

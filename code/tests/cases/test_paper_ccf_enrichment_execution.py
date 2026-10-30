@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from unittest import mock
 
-from management_portal import paper_backend
+from management_portal import paper_ccf_enrichment, paper_store
 
 
 def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
@@ -19,17 +19,17 @@ def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
     work_root = tmp_path / "ccf-enrichment"
     with (
         mock.patch.object(
-            paper_backend,
+            paper_ccf_enrichment,
             "CCF_ENRICHMENT_CACHE_ROOT",
             work_root,
         ),
-        mock.patch.object(paper_backend, "DATA_ROOT", tmp_path / "data"),
+        mock.patch.object(paper_store, "DATA_ROOT", tmp_path / "data"),
         mock.patch(
             "management_portal.business_tasks.start",
             return_value=True,
         ) as start,
     ):
-        accepted = paper_backend.ccf_paper_enrichment(
+        accepted = paper_ccf_enrichment.ccf_paper_enrichment(
             {"paper": paper},
             actor="sample_admin",
         )
@@ -38,15 +38,15 @@ def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
         assert accepted["business_task_id"].startswith("paper-ccf:")
         assert "execution_id" not in accepted
         start.assert_called_once()
-        request_path = paper_backend._ccf_enrichment_request_path(
-            paper_backend._ccf_enrichment_cache_path(paper)
+        request_path = paper_ccf_enrichment._ccf_enrichment_request_path(
+            paper_ccf_enrichment._ccf_enrichment_cache_path(paper)
         )
         request = json.loads(request_path.read_text(encoding="utf-8"))
         assert request["paper"]["title"] == paper["title"]
 
         with (
             mock.patch.object(
-                paper_backend,
+                paper_ccf_enrichment,
                 "_fetch_ccf_enrichment_sources",
                 return_value=[
                     {
@@ -56,7 +56,7 @@ def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
                 ],
             ),
             mock.patch.object(
-                paper_backend,
+                paper_ccf_enrichment,
                 "_generate_ccf_enrichment_summary",
                 return_value=(
                     "共享且可恢复的论文摘要。",
@@ -64,10 +64,10 @@ def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
                 ),
             ),
         ):
-            paper_backend._run_ccf_enrichment_request(request_path)
+            paper_ccf_enrichment._run_ccf_enrichment_request(request_path)
 
         completed = json.loads(
-            paper_backend._ccf_enrichment_cache_path(paper).read_text(
+            paper_ccf_enrichment._ccf_enrichment_cache_path(paper).read_text(
                 encoding="utf-8"
             )
         )

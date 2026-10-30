@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 from cryptography.fernet import Fernet
 
-from management_portal import paper_backend, paper_collector, paper_projection
+from management_portal import paper_collection_jobs, paper_collector, paper_figure_jobs, paper_projection, paper_reading_jobs, paper_store, paper_summaries
 from management_portal import repo_credentials_backend as credentials
 
 
@@ -47,19 +47,22 @@ def figure_reader(tmp_path, monkeypatch):
     pdf.write_bytes(b"isolated PDF path; no model invocation")
     paper = {"id": PAPER_ID, "title": "Existing paper", "pdf_path": str(pdf)}
     figure = {"figure_id": FIGURE_ID, "caption": "Existing caption"}
-    monkeypatch.setattr(paper_backend, "_paper_store_file", lambda *args: analysis)
-    monkeypatch.setattr(paper_backend, "_safe_file_path", lambda value: pdf)
-    monkeypatch.setattr(paper_backend, "_figure_image_path", lambda *args: image)
-    monkeypatch.setattr(paper_backend, "atomic_replace_json", forbid_write)
+    monkeypatch.setattr(paper_figure_jobs, "_paper_store_file", lambda *args: analysis)
+    monkeypatch.setattr(paper_figure_jobs, "_safe_file_path", lambda value: pdf)
+    monkeypatch.setattr(paper_figure_jobs, "_figure_image_path", lambda *args: image)
+    monkeypatch.setattr(paper_store, "atomic_replace_json", forbid_write)
+    monkeypatch.setattr(paper_summaries, "atomic_replace_json", paper_store.atomic_replace_json)
+    monkeypatch.setattr(paper_figure_jobs, "atomic_replace_json", paper_store.atomic_replace_json)
+    monkeypatch.setattr(paper_reading_jobs, "atomic_replace_json", paper_store.atomic_replace_json)
     usage = {"source": "isolated response fixture"}
 
     def read(payload):
         before = {p: file_state(p) for p in (analysis, image, pdf)}
         inputs = copy.deepcopy((paper, figure, payload))
         raw = json.dumps(payload, ensure_ascii=False)
-        monkeypatch.setattr(paper_backend, "_run_figure_resident", lambda *a, **k: (raw, usage))
+        monkeypatch.setattr(paper_figure_jobs, "_run_figure_resident", lambda *a, **k: (raw, usage))
         try:
-            return paper_backend._generate_figure_explanation(paper, figure)
+            return paper_figure_jobs._generate_figure_explanation(paper, figure)
         finally:
             assert (paper, figure, payload) == inputs
             assert {p: file_state(p) for p in before} == before
@@ -152,12 +155,12 @@ def test_collection_start_contract_keeps_real_identity_guard(monkeypatch, namesp
     from management_portal import business_tasks
 
     monkeypatch.setattr(business_tasks, "start", forbid_write)
-    monkeypatch.setattr(paper_backend, "_set_paper_collection_job", forbid_write)
+    monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", forbid_write)
     monkeypatch.setattr(paper_collector, "current_operation_identity", lambda: None)
     job = {"collector_contract": f"{namespace}.paper.collector.v2", "created_by": "fixture-user"}
     before = copy.deepcopy(job)
     with pytest.raises(PermissionError, match="original authenticated"):
-        paper_backend._start_paper_collection_task(job)
+        paper_collection_jobs._start_paper_collection_task(job)
     assert job == before
 
 
@@ -166,7 +169,7 @@ def test_collection_start_rejects_bad_contract_before_identity(monkeypatch):
     for tag in bad_tags("paper.collector", 2):
         job = {"collector_contract": tag}
         with pytest.raises(RuntimeError, match="current execution contract"):
-            paper_backend._start_paper_collection_task(job)
+            paper_collection_jobs._start_paper_collection_task(job)
         assert job == {"collector_contract": tag}
 
 
@@ -183,10 +186,10 @@ def recovery_reader(monkeypatch):
     calls = []
     identity = SimpleNamespace(principal=SimpleNamespace(kind="user", id="fixture-user"))
     monkeypatch.setattr(paper_collector, "current_operation_identity", lambda: identity)
-    monkeypatch.setattr(paper_backend.paper_state_store, "locked", lambda *a: nullcontext())
-    monkeypatch.setattr(paper_backend.paper_state_store, "get", lambda *a: (calls.append("read"), current)[1])
-    monkeypatch.setattr(paper_backend.paper_state_store, "merge", forbid_write)
-    monkeypatch.setattr(paper_backend, "_start_paper_collection_task", forbid_write)
+    monkeypatch.setattr(paper_collection_jobs.paper_state_store, "locked", lambda *a: nullcontext())
+    monkeypatch.setattr(paper_collection_jobs.paper_state_store, "get", lambda *a: (calls.append("read"), current)[1])
+    monkeypatch.setattr(paper_collection_jobs.paper_state_store, "merge", forbid_write)
+    monkeypatch.setattr(paper_collection_jobs, "_start_paper_collection_task", forbid_write)
     monkeypatch.setattr(business_tasks, "is_active", lambda *a: False)
     monkeypatch.setattr(business_tasks, "process_identity", lambda: {"pid": "isolated-here"})
     monkeypatch.setattr(business_tasks, "process_is_alive", lambda owner: (calls.append("confirmed-owner"), True)[1])
@@ -202,7 +205,7 @@ def recovery_reader(monkeypatch):
         before = copy.deepcopy((job, current))
         calls.clear()
         try:
-            return paper_backend._recover_paper_collection_job(job, actor)
+            return paper_collection_jobs._recover_paper_collection_job(job, actor)
         finally:
             assert (job, current) == before
 

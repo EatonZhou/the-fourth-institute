@@ -25,7 +25,7 @@ PORTAL_PACKAGES = ("management_portal", "management_common", "knowledge_board_la
 RETURNED_MODULES = {
     "repo_backend": "management_portal.resource_identity_backend",
     "article_backend": "management_portal.article_identity_backend",
-    "paper_backend": "management_portal.paper_backend",
+    "paper_resources": "management_portal.paper_resources",
     "search_backend": "management_portal.search_identity_backend",
     "_device_backend": "management_portal.device_identity_backend",
 }

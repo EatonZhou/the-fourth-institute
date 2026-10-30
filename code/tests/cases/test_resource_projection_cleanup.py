@@ -201,14 +201,14 @@ def test_rotating_slot_deletes_old_projection_before_overwriting_mapping(tmp_pat
 
 def test_paper_delete_cleans_paper_and_its_reviews_before_removing_files(monkeypatch):
     """删除论文先清理论文及其评审的投影，评审清理失败时不删除文件"""
-    from management_portal import paper_backend as paper
-    monkeypatch.setattr(paper, '_paper_by_id', lambda _: {'paper_id': 'paper_111111111111'})
-    monkeypatch.setattr(paper, '_all_reviews', lambda: [{'review_id': 'review_111111111111', 'paper_id': 'paper_111111111111'}])
+    from management_portal import paper_resources, paper_store
+    monkeypatch.setattr(paper_resources, '_paper_by_id', lambda _: {'paper_id': 'paper_111111111111'})
+    monkeypatch.setattr(paper_resources, '_all_reviews', lambda: [{'review_id': 'review_111111111111', 'paper_id': 'paper_111111111111'}])
     clean = Mock(side_effect=[None, RuntimeError('review busy')])
     monkeypatch.setattr(resource_lifecycle, 'release_resource', clean)
     remove = Mock()
-    monkeypatch.setattr(paper.PAPER_STORE, 'delete_paper', remove)
+    monkeypatch.setattr(paper_store.PAPER_STORE, 'delete_paper', remove)
     with pytest.raises(RuntimeError, match='review busy'):
-        paper.delete_paper({'paper_id': 'paper_111111111111'}, 'owner')
+        paper_resources.delete_paper({'paper_id': 'paper_111111111111'}, 'owner')
     assert [c.args[0] for c in clean.call_args_list] == ['paper_111111111111', 'review_111111111111']
     remove.assert_not_called()

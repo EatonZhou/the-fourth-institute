@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from management_portal import paper_backend
+from management_portal import paper_references
 from management_portal.http_routes import (
     ROUTE_NOT_FOUND,
     RouteDefinition,
@@ -115,11 +115,11 @@ def test_route_dispatcher_enforces_owner_and_phase() -> None:
 def test_reference_title_rules_are_ordered_and_share_candidate_validation(monkeypatch) -> None:
     """参考文献标题规则按顺序尝试，共用候选校验并跳过年份和 URL"""
     rules = (
-        paper_backend._ReferenceTitleRule("invalid-year", lambda _raw: "2024"),
-        paper_backend._ReferenceTitleRule("valid-title", lambda _raw: "Learning Robots from Data"),
-        paper_backend._ReferenceTitleRule("never-reached", lambda _raw: "Wrong Result"),
+        paper_references._ReferenceTitleRule("invalid-year", lambda _raw: "2024"),
+        paper_references._ReferenceTitleRule("valid-title", lambda _raw: "Learning Robots from Data"),
+        paper_references._ReferenceTitleRule("never-reached", lambda _raw: "Wrong Result"),
     )
-    monkeypatch.setattr(paper_backend, "_REFERENCE_TITLE_RULES", rules)
+    monkeypatch.setattr(paper_references, "_REFERENCE_TITLE_RULES", rules)
 
-    assert paper_backend._guess_ref_title("reference") == "Learning Robots from Data"
-    assert paper_backend._validated_ref_title_candidate("https://example.org/paper.pdf") == ""
+    assert paper_references._guess_ref_title("reference") == "Learning Robots from Data"
+    assert paper_references._validated_ref_title_candidate("https://example.org/paper.pdf") == ""

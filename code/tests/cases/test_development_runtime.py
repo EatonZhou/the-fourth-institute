@@ -72,9 +72,9 @@ class PairedRuntimeTest(unittest.TestCase):
         self.assertEqual(affected(["code/management_portal/society_service/personal_ama.py"], loaded),
                          ["resource", "society", "web", "dev-web"])
         # Not imported yet: the services read the new source when they first need it.
-        self.assertEqual(affected(["code/management_portal/paper_backend.py"], loaded), ["web", "dev-web"])
+        self.assertEqual(affected(["code/management_portal/paper_store.py"], loaded), ["web", "dev-web"])
         # Without a record of its imports a service is restarted for any changed module.
-        self.assertEqual(affected(["code/management_portal/paper_backend.py"],
+        self.assertEqual(affected(["code/management_portal/paper_store.py"],
                                   {k: v for k, v in loaded.items() if k != "worker"}),
                          ["worker", "web", "dev-web"])
         # The permission port runs in every service with a HATG kernel, ResourceService included.

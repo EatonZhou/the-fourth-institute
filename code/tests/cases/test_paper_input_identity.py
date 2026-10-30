@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from management_portal import paper_backend, paper_projection, resident_handoff
+from management_portal import paper_figure_jobs, paper_projection, paper_reading_jobs, resident_handoff
 from tests.cases.test_paper_figure_transactions import figure_store
 from tests.cases.test_paper_deep_read_execution_boundary import _install_job
 
@@ -161,11 +161,11 @@ def test_figure_persists_delivered_id_before_wait_and_reconciles_on_resume(figur
     submit = Mock(side_effect=native)
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
     with pytest.raises(SystemExit):
-        paper_backend._run_figure_resident('Explain', paper, figure, 'explain', generated_id=generated_id)
+        paper_figure_jobs._run_figure_resident('Explain', paper, figure, 'explain', generated_id=generated_id)
     figure = json.loads(path.read_text())[0]
     observed = Mock(return_value=result())
     monkeypatch.setattr(resident_handoff, 'resume_and_wait', observed)
-    content, usage = paper_backend._run_figure_resident('Unused', paper, figure, 'explain', generated_id=generated_id)
+    content, usage = paper_figure_jobs._run_figure_resident('Unused', paper, figure, 'explain', generated_id=generated_id)
     assert content == 'Verified generated content'
     assert observed.call_args.kwargs['message_id'] == HANDLE['message_id']
     submit.assert_called_once()
@@ -201,7 +201,7 @@ def test_unconfirmed_figure_never_looks_up_planned_id_or_resubmits(figure_store,
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
     monkeypatch.setattr(resident_handoff, 'resume_and_wait', observe)
     with pytest.raises(RuntimeError, match='unconfirmed'):
-        paper_backend._run_figure_resident('Unused', paper, figure, 'explain')
+        paper_figure_jobs._run_figure_resident('Unused', paper, figure, 'explain')
     submit.assert_not_called()
     observe.assert_not_called()
 
@@ -218,7 +218,7 @@ def test_missing_bound_input_remains_an_input_error_not_permission_or_resubmissi
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
     monkeypatch.setattr(resident_handoff, 'resume_and_wait', Mock(side_effect=KeyError(HANDLE['message_id'])))
     with pytest.raises(KeyError):
-        paper_backend._run_figure_resident('Unused', paper, figure, 'explain')
+        paper_figure_jobs._run_figure_resident('Unused', paper, figure, 'explain')
     submit.assert_not_called()
 
 
@@ -248,11 +248,11 @@ def test_deep_read_uses_same_canonical_receipt_and_never_retries_unconfirmed_del
         assert 'resident_message_id' not in state
         if outcome == 'identity_conflict':
             return {**result(), 'message_id': 'msg_wrong_input'}
-        return {**result(), 'message': '# Paper\n' + paper_backend.DEEP_READ_HEADINGS}
+        return {**result(), 'message': '# Paper\n' + paper_reading_jobs.DEEP_READ_HEADINGS}
 
     submit = Mock(side_effect=native)
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
-    paper_backend._run_deep_read_job(state['job_id'])
+    paper_reading_jobs._run_deep_read_job(state['job_id'])
     submit.assert_called_once()
     if outcome == 'queued':
         assert state['status'] == 'error'

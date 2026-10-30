@@ -75,9 +75,9 @@ def _delete_with(monkeypatch, service, *, validate=None, papers=None, project_re
         domain_calls.append(list(service.unregistered))
         return {"lineage_ids": ["lineage_aaaaaaaaaaaa"], "resident_ids": [], "project_path": "/share/Projects/Example"}
 
-    from management_portal import paper_backend
+    from management_portal import paper_store
 
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", papers or SimpleNamespace(replace_project=lambda *args, **kwargs: []))
+    monkeypatch.setattr(paper_store, "PAPER_STORE", papers or SimpleNamespace(replace_project=lambda *args, **kwargs: []))
     monkeypatch.setattr(resource_isa, "_service", lambda: service)
     monkeypatch.setattr(resource_isa, "_project_record",
                         project_record or (lambda project_id, actor: {"resource_id": "Example"}))
@@ -216,7 +216,7 @@ def test_papers_related_to_a_deleted_project_lose_the_relation_and_stay_in_the_l
     """删除项目解除论文关联并保留论文库条目"""
     # FastRobotDemo could not be deleted: its related papers were unregistered
     # like project content, and papers have no unregistration.
-    from management_portal import paper_backend
+    from management_portal import paper_store
 
     manifests = {}
     for name, projects in {"only": ["Example"], "shared": ["Example", "Other"], "other": ["Other"]}.items():
@@ -226,7 +226,7 @@ def test_papers_related_to_a_deleted_project_lose_the_relation_and_stay_in_the_l
             "projects": [{"project_id": item, "relation": "relevant"} for item in projects]}}))
         manifests[name] = path
     service = _ResourceService([*RESOURCES, {"resource_id": "paper_shared", "resource_type": "paper"}])
-    result, _calls = _delete_with(monkeypatch, service, papers=paper_backend.PaperStore(tmp_path))
+    result, _calls = _delete_with(monkeypatch, service, papers=paper_store.PaperStore(tmp_path))
 
     assert "paper_shared" not in service.unregistered
     assert sorted(result["unlinked"]["paper"]) == ["paper_only", "paper_shared"]

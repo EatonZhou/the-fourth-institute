@@ -317,7 +317,7 @@ def test_knowledge_semantic_search_jobs_are_scoped_to_resource_categories() -> N
 
 def test_paper_collection_jobs_are_listed_to_everyone_without_an_owner_list() -> None:
     """论文收集任务对所有用户列出，任务记录只写创建者，不带 owner 名单"""
-    from management_portal import paper_backend, paper_state_store
+    from management_portal import paper_collection_jobs, paper_state_store
 
     paper_state_store.append("collector_jobs", {
         "job_id": "collector-0123456789ab",
@@ -326,11 +326,11 @@ def test_paper_collection_jobs_are_listed_to_everyone_without_an_owner_list() ->
         "status": "done",
     })
 
-    [job] = paper_backend.list_paper_collection_jobs("bob")["jobs"]
+    [job] = paper_collection_jobs.list_paper_collection_jobs("bob")["jobs"]
     assert job["job_id"] == "collector-0123456789ab"
     assert job["created_by"] == "alice"
     assert "owner_ids" not in job
-    assert not hasattr(paper_backend, "update_paper_collection_owners")
+    assert not hasattr(paper_collection_jobs, "update_paper_collection_owners")
 
 
 def test_scoped_resource_semantic_result_and_search_resolution(tmp_path: Path) -> None:

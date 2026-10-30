@@ -10,7 +10,7 @@ import yaml
 
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_common.text_values import stripped_text
-from management_portal import paper_backend
+from management_portal import paper_reviews, paper_store
 from management_portal.resource_index_backend import ChangeSet, RESOURCE_IDENTITY, _PathsAdapter, _dedupe, _known_path, _path_modified_at, _resolved_path, _resolved_root, _watch_tree, resource_record
 from management_portal.resources.schema import resource_relation
 
@@ -44,7 +44,7 @@ _PAPER_ATTRIBUTE_FIELDS = {
 def _paper_store_path(path: Path) -> Path:
     """A real path under the Paper items root, written as a full scan finds
     it (through the configured, possibly symlinked, items root)."""
-    items_root = Path(paper_backend.PAPER_STORE.items_root)
+    items_root = Path(paper_store.PAPER_STORE.items_root)
     try:
         return items_root / path.relative_to(_resolved_root(items_root))
     except ValueError:
@@ -52,7 +52,7 @@ def _paper_store_path(path: Path) -> Path:
 
 
 def _paper_watch_directories() -> list[Path]:
-    root = Path(paper_backend.PAPER_STORE.items_root)
+    root = Path(paper_store.PAPER_STORE.items_root)
     directories = set(_watch_tree(root, max_depth=2))
     for paper_dir in tuple(directories):
         try:
@@ -72,7 +72,7 @@ class PaperManifestAdapter(_PathsAdapter):
 
     @property
     def roots(self) -> tuple[Path, ...]:
-        return (Path(paper_backend.PAPER_STORE.items_root),)
+        return (Path(paper_store.PAPER_STORE.items_root),)
 
     def source_scope(self) -> dict[str, Any]:
         """Each package's manifest and the files named beside it (packages
@@ -125,19 +125,19 @@ class PaperManifestAdapter(_PathsAdapter):
         )
 
     def _record_for_manifest(self, manifest_path: Path) -> dict[str, Any]:
-        with paper_backend.LOCK:
-            manifest = paper_backend.PAPER_STORE.read_manifest(manifest_path)
+        with paper_store.LOCK:
+            manifest = paper_store.PAPER_STORE.read_manifest(manifest_path)
             if not manifest:
                 raise ValueError(f"invalid Paper manifest: {manifest_path}")
-            paper = paper_backend._paper_public(
-                paper_backend.PAPER_STORE.manifest_to_paper(manifest, manifest_path)
+            paper = paper_store._paper_public(
+                paper_store.PAPER_STORE.manifest_to_paper(manifest, manifest_path)
             )
         return self._record_for_paper(paper)
 
     def scan(self) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         records: list[dict[str, Any]] = []
         resource_errors: list[dict[str, str]] = []
-        for manifest_path in paper_backend.PAPER_STORE.manifest_paths():
+        for manifest_path in paper_store.PAPER_STORE.manifest_paths():
             check_scan_cancelled()
             try:
                 records.append(self._record_for_manifest(manifest_path))
@@ -227,7 +227,7 @@ class PaperReviewAdapter(_PathsAdapter):
 
     @staticmethod
     def _markdown_paths() -> list[Path]:
-        items_root = Path(paper_backend.PAPER_STORE.items_root)
+        items_root = Path(paper_store.PAPER_STORE.items_root)
         if not items_root.is_dir():
             return []
         return sorted(
@@ -240,11 +240,11 @@ class PaperReviewAdapter(_PathsAdapter):
         """Every package's reviews/review_*.md.
 
         The stored review list is a database table; its writers ask for a
-        rescan (paper_backend._announce_review_changes).
+        rescan (paper_reviews._announce_review_changes).
         """
         return {
             "trees": [{
-                "root": str(_resolved_root(paper_backend.PAPER_STORE.items_root)),
+                "root": str(_resolved_root(paper_store.PAPER_STORE.items_root)),
                 "max_depth": 3,
                 "only": {"3": ["reviews"]},
                 "files": ["review_*.md"],
@@ -256,7 +256,7 @@ class PaperReviewAdapter(_PathsAdapter):
 
     def owns_path(self, path: Path) -> bool:
         resolved = _resolved_path(path)
-        items_root = _resolved_root(paper_backend.PAPER_STORE.items_root)
+        items_root = _resolved_root(paper_store.PAPER_STORE.items_root)
         return resolved == items_root or items_root in resolved.parents
 
     @staticmethod
@@ -315,7 +315,7 @@ class PaperReviewAdapter(_PathsAdapter):
         RESOURCE_IDENTITY.validate(paper_id, "paper")
         if not path.is_file():
             raise ValueError(f"Paper review source is missing: {path}")
-        paper = paper_backend._paper_by_id(paper_id) or {}
+        paper = paper_store._paper_by_id(paper_id) or {}
         if not paper:
             raise ValueError(f"Paper review references a missing Paper: {paper_id}")
         return resource_record(
@@ -356,7 +356,7 @@ class PaperReviewAdapter(_PathsAdapter):
         A review ID that another file or the stored review list places
         elsewhere needs the whole scan.
         """
-        items_root = _resolved_root(paper_backend.PAPER_STORE.items_root)
+        items_root = _resolved_root(paper_store.PAPER_STORE.items_root)
         previous_records = list(previous)
         previous_by_path = {
             _known_path(source_path): record
@@ -376,7 +376,7 @@ class PaperReviewAdapter(_PathsAdapter):
         upserts: list[dict[str, Any]] = []
         deletes: list[str] = []
         resource_errors: list[dict[str, str]] = []
-        with paper_backend.LOCK:
+        with paper_store.LOCK:
             live_reviews: dict[str, dict[str, Any]] | None = None
             for path in sorted(markdown_paths, key=str):
                 previous_record = previous_by_path.get(path)
@@ -399,14 +399,14 @@ class PaperReviewAdapter(_PathsAdapter):
                 if live_reviews is None:
                     live_reviews = {
                         stripped_text(item.get("review_id")): dict(item)
-                        for item in paper_backend._all_reviews()
+                        for item in paper_reviews._all_reviews()
                         if isinstance(item, dict)
                     }
                 live = live_reviews.get(review_id)
                 record_path = _paper_store_path(path)
                 if live is not None:
                     try:
-                        live_path = paper_backend._review_markdown_path(live)
+                        live_path = paper_reviews._review_markdown_path(live)
                     except Exception as exc:
                         # As in the full scan, the file alone stands for it.
                         resource_errors.append(
@@ -437,10 +437,10 @@ class PaperReviewAdapter(_PathsAdapter):
         )
 
     def scan(self) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-        with paper_backend.LOCK:
+        with paper_store.LOCK:
             live_reviews = [
                 dict(item)
-                for item in paper_backend._all_reviews()
+                for item in paper_reviews._all_reviews()
                 if isinstance(item, dict)
             ]
             reviews_by_id: dict[str, tuple[dict[str, Any], Path]] = {}
@@ -476,7 +476,7 @@ class PaperReviewAdapter(_PathsAdapter):
                 review_id = stripped_text(review.get("review_id"))
                 try:
                     RESOURCE_IDENTITY.validate(review_id, "review")
-                    path = paper_backend._review_markdown_path(review)
+                    path = paper_reviews._review_markdown_path(review)
                 except Exception as exc:
                     resource_errors.append(
                         {

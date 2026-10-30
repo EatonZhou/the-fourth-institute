@@ -11,7 +11,7 @@ import yaml
 from management_portal.society_service import project_domain
 from tests.cases.test_project_deletion import _configure_project
 from tests.cases.test_paper_figure_transactions import figure_store
-from management_portal import paper_backend, paper_state_store
+from management_portal import paper_assets, paper_collection_jobs, paper_figure_jobs, paper_figures, paper_notes, paper_reading_jobs, paper_refs, paper_reviews, paper_state_store, paper_store
 from management_portal.resources.providers import project
 from management_portal.resources.registry_store import RegistryWriter
 from tests.cases.registry_support import ProjectRegistryYaml
@@ -147,7 +147,7 @@ def test_figure_delete_cannot_unlink_prefix_sibling(figure_store, tmp_path):
     protected = sibling / "keep.png"
     protected.write_bytes(b"fixture-neighbor")
     metadata.write_text(json.dumps([{"figure_id": "fig-001", "generated": [{"generated_id": "gen-one", "image_rel_path": "../" + sibling.name + "/keep.png"}]}]))
-    paper_backend.delete_generated_figure({"paper_id": paper["id"], "figure_id": "fig-001", "generated_id": "gen-one"}, "alice")
+    paper_figure_jobs.delete_generated_figure({"paper_id": paper["id"], "figure_id": "fig-001", "generated_id": "gen-one"}, "alice")
     assert protected.read_bytes() == b"fixture-neighbor"
 
 
@@ -155,16 +155,16 @@ def test_figure_dedupe_stale_metadata_and_scoped_delete(figure_store, monkeypatc
     """相同的图表重绘请求复用生成项，过期项标为错误后重建，删除只影响指定生成项"""
     paper, metadata = figure_store
     launch = Mock(return_value="")
-    monkeypatch.setattr(paper_backend, "_start_figure_draft_task", launch)
+    monkeypatch.setattr(paper_figure_jobs, "_start_figure_draft_task", launch)
     payload = {"paper_id": paper["id"], "figure_id": "fig-001", "request": "fixture", "source_generated_id": "base"}
-    first = paper_backend.start_figure_draft(payload, "alice")
-    second = paper_backend.start_figure_draft(payload, "alice")
+    first = paper_figure_jobs.start_figure_draft(payload, "alice")
+    second = paper_figure_jobs.start_figure_draft(payload, "alice")
     assert first["generated"]["generated_id"] == second["generated"]["generated_id"]
     assert launch.call_count == 1
     figures = json.loads(metadata.read_text())
     figures[0]["generated"][0]["updated_at"] = 1
     metadata.write_text(json.dumps(figures))
-    third = paper_backend.start_figure_draft(payload, "alice")
+    third = paper_figure_jobs.start_figure_draft(payload, "alice")
     assert third["generated"]["generated_id"] != first["generated"]["generated_id"]
     figures = json.loads(metadata.read_text())
     old = next(entry for entry in figures[0]["generated"] if entry["generated_id"] == first["generated"]["generated_id"])
@@ -173,26 +173,26 @@ def test_figure_dedupe_stale_metadata_and_scoped_delete(figure_store, monkeypatc
     before_neighbor = dict(old)
     image = tmp_path / "generated.png"
     image.write_bytes(b"fixture")
-    paper_backend._set_figure_generated_item(paper["id"], "fig-001", third["generated"]["generated_id"], {"image_rel_path": image.name})
-    paper_backend.delete_generated_figure({**payload, "generated_id": third["generated"]["generated_id"]}, "alice")
+    paper_figure_jobs._set_figure_generated_item(paper["id"], "fig-001", third["generated"]["generated_id"], {"image_rel_path": image.name})
+    paper_figure_jobs.delete_generated_figure({**payload, "generated_id": third["generated"]["generated_id"]}, "alice")
     assert not image.exists()
     assert next(entry for entry in json.loads(metadata.read_text())[0]["generated"] if entry["generated_id"] == old["generated_id"]) == before_neighbor
     with pytest.raises(KeyError):
-        paper_backend.delete_generated_figure({**payload, "generated_id": "missing"}, "alice")
+        paper_figure_jobs.delete_generated_figure({**payload, "generated_id": "missing"}, "alice")
 
 
 def test_note_creation_persists_markdown_deletion_preserves_neighbors(monkeypatch, tmp_path):
     """论文笔记创建时写入 Markdown 文件，删除一条笔记不影响其他笔记"""
     paper = {"id": "paper_0123456789ab", "title": "fixture"}
-    monkeypatch.setattr(paper_backend, "_ensure_data_root", lambda: None)
-    monkeypatch.setattr(paper_backend, "_all_papers", lambda: [paper])
-    monkeypatch.setattr(paper_backend, "_paper_by_id", lambda *_args: paper)
-    monkeypatch.setattr(paper_backend, "_paper_store_file", lambda *_args: tmp_path / "notes")
-    first = paper_backend.create_note({"paper_id": paper["id"], "body": "first"}, "alice")
-    second = paper_backend.create_note({"paper_id": paper["id"], "body": "second"}, "alice")
+    monkeypatch.setattr(paper_store, "_ensure_data_root", lambda: None)
+    monkeypatch.setattr(paper_notes, "_all_papers", lambda: [paper])
+    monkeypatch.setattr(paper_notes, "_paper_by_id", lambda *_args: paper)
+    monkeypatch.setattr(paper_notes, "_paper_store_file", lambda *_args: tmp_path / "notes")
+    first = paper_notes.create_note({"paper_id": paper["id"], "body": "first"}, "alice")
+    second = paper_notes.create_note({"paper_id": paper["id"], "body": "second"}, "alice")
     assert "first" in (tmp_path / "notes" / (first["note_id"] + ".md")).read_text()
     before = (tmp_path / "notes" / (second["note_id"] + ".md")).read_bytes()
-    paper_backend.delete_note({"note_id": first["note_id"]}, "alice")
+    paper_notes.delete_note({"note_id": first["note_id"]}, "alice")
     assert paper_state_store.records("notes") == [second]
     assert (tmp_path / "notes" / (second["note_id"] + ".md")).read_bytes() == before
 
@@ -205,17 +205,17 @@ def test_assets_worker_records_skip_counts_errors_and_stable_paper(monkeypatch, 
     if mode != "missing":
         pdf.write_bytes(b"%PDF-fixture")
     records = []
-    monkeypatch.setattr(paper_backend, "_paper_run_record_by_job_id", lambda *_args: None)
-    monkeypatch.setattr(paper_backend, "_write_paper_run_record", lambda identity, patch: records.append((identity, patch)))
-    monkeypatch.setattr(paper_backend, "_update_paper_run_record", lambda identity, patch: records.append((identity, patch)))
-    monkeypatch.setattr(paper_backend, "_paper_asset_lock_path", lambda: tmp_path / "assets.lock")
-    monkeypatch.setattr(paper_backend, "_paper_by_id", lambda *_args: {"id": paper_id})
-    monkeypatch.setattr(paper_backend, "_local_pdf_for_paper", lambda *_args: pdf)
+    monkeypatch.setattr(paper_assets, "_paper_run_record_by_job_id", lambda *_args: None)
+    monkeypatch.setattr(paper_assets, "_write_paper_run_record", lambda identity, patch: records.append((identity, patch)))
+    monkeypatch.setattr(paper_assets, "_update_paper_run_record", lambda identity, patch: records.append((identity, patch)))
+    monkeypatch.setattr(paper_assets, "_paper_asset_lock_path", lambda: tmp_path / "assets.lock")
+    monkeypatch.setattr(paper_assets, "_paper_by_id", lambda *_args: {"id": paper_id})
+    monkeypatch.setattr(paper_assets, "_local_pdf_for_paper", lambda *_args: pdf)
     refs = Mock(side_effect=OSError("synthetic refs failure")) if mode == "partial_error" else Mock(return_value={"count": 2})
     figures = Mock(return_value={"count": 3})
-    monkeypatch.setattr(paper_backend, "extract_refs", refs)
-    monkeypatch.setattr(paper_backend, "extract_figures", figures)
-    result = paper_backend._run_assets_job(paper_id, actor="fixture", job_id="fixture-assets")
+    monkeypatch.setattr(paper_assets, "extract_refs", refs)
+    monkeypatch.setattr(paper_assets, "extract_figures", figures)
+    result = paper_assets._run_assets_job(paper_id, actor="fixture", job_id="fixture-assets")
     assert all(identity == paper_id for identity, _patch in records)
     assert [patch["status"] for _identity, patch in records] == ["queued", "running", {"missing": "skipped", "done": "done", "partial_error": "error"}[mode]]
     if mode == "missing":
@@ -232,15 +232,15 @@ def test_assets_worker_records_skip_counts_errors_and_stable_paper(monkeypatch, 
 def test_deep_read_real_analysis_persistence_and_error_terminal(monkeypatch, tmp_path, mode):
     """精读任务成功时写入分析文件并标记 analysis_ready，写入或文本提取失败时以错误结束"""
     from tests.cases.test_paper_deep_read_execution_boundary import _install_job, _result
-    original_writer = paper_backend._write_analysis_file
+    original_writer = paper_reading_jobs._write_analysis_file
     state = {"job_id": "fixture-deep", "paper_id": "paper_0123456789ab", "status": "queued", "created_by": "fixture"}
     _install_job(monkeypatch, tmp_path, state)
     path = tmp_path / "analysis.md"
-    monkeypatch.setattr(paper_backend, "_write_analysis_file", original_writer)
-    monkeypatch.setattr(paper_backend, "_paper_store_file", lambda *_args: path)
+    monkeypatch.setattr(paper_reading_jobs, "_write_analysis_file", original_writer)
+    monkeypatch.setattr(paper_reading_jobs, "_paper_store_file", lambda *_args: path)
     fields = Mock(return_value={})
-    monkeypatch.setattr(paper_backend, "_update_paper_fields", fields)
-    completion = Mock(return_value=_result("# Synthetic Analysis\n" + paper_backend.DEEP_READ_HEADINGS + "\nfixture"))
+    monkeypatch.setattr(paper_reading_jobs, "_update_paper_fields", fields)
+    completion = Mock(return_value=_result("# Synthetic Analysis\n" + paper_reading_jobs.DEEP_READ_HEADINGS + "\nfixture"))
     monkeypatch.setattr("management_portal.paper_projection.turn", completion)
     if mode == "write_error":
         original_write = Path.write_text
@@ -250,8 +250,8 @@ def test_deep_read_real_analysis_persistence_and_error_terminal(monkeypatch, tmp
             return original_write(target, *args, **kwargs)
         monkeypatch.setattr(Path, "write_text", fail_analysis)
     if mode == "extract_error":
-        monkeypatch.setattr(paper_backend, "_extract_pdf_text", Mock(side_effect=OSError("synthetic extraction failure")))
-    paper_backend._run_deep_read_job(state["job_id"])
+        monkeypatch.setattr(paper_reading_jobs, "_extract_pdf_text", Mock(side_effect=OSError("synthetic extraction failure")))
+    paper_reading_jobs._run_deep_read_job(state["job_id"])
     assert state["status"] == ("done" if mode == "done" else "error")
     if mode == "done":
         assert "Synthetic Analysis" in path.read_text()
@@ -270,11 +270,11 @@ def test_exp_start_deduplicates_or_retires_stale_job(monkeypatch, tmp_path, stal
     paper = {"id": "paper_0123456789ab", "title": "fixture"}
     old = {"job_id": "old", "paper_id": paper["id"], "status": "running", "created_at": 1}
     paper_state_store.append("exp_jobs", old)
-    monkeypatch.setattr(paper_backend, "_all_papers", lambda: [paper])
-    monkeypatch.setattr(paper_backend, "_is_stale_exp_job", lambda *_args: stale)
+    monkeypatch.setattr(paper_reading_jobs, "_all_papers", lambda: [paper])
+    monkeypatch.setattr(paper_reading_jobs, "_is_stale_exp_job", lambda *_args: stale)
     start = Mock(side_effect=lambda job: job)
-    monkeypatch.setattr(paper_backend, "_start_exp_task", start)
-    result = paper_backend.start_exp({"paper_id": paper["id"]}, "fixture")
+    monkeypatch.setattr(paper_reading_jobs, "_start_exp_task", start)
+    result = paper_reading_jobs.start_exp({"paper_id": paper["id"]}, "fixture")
     jobs = paper_state_store.records("exp_jobs")
     if not stale:
         assert result["job_id"] == "old" and jobs == [old]
@@ -293,15 +293,15 @@ def test_exp_real_markdown_commit_and_write_failure(monkeypatch, tmp_path, failu
     paper = {"id": "paper_0123456789ab", "title": "fixture", "_store_root": str(tmp_path)}
     state = {"job_id": "fixture-exp", "paper_id": paper["id"], "created_by": "fixture"}
     path = tmp_path / "exp.md"
-    monkeypatch.setattr(paper_backend, "_set_exp_job", lambda _identity, patch: state.update(patch) or dict(state))
-    monkeypatch.setattr(paper_backend, "get_paper_detail", lambda *_args: {"paper": paper})
-    extraction = "# Synthetic Experiment\n" + "\n".join(f"## {name}" for name in paper_backend.EXP_SECTIONS)
-    monkeypatch.setattr(paper_backend, "_generate_exp_extraction", lambda *_args, **_kwargs: (extraction, {"model": "fixture"}))
-    monkeypatch.setattr(paper_backend, "_paper_store_file", lambda *_args: path)
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", SimpleNamespace(update_paper=Mock(return_value={})))
+    monkeypatch.setattr(paper_reading_jobs, "_set_exp_job", lambda _identity, patch: state.update(patch) or dict(state))
+    monkeypatch.setattr(paper_reading_jobs, "get_paper_detail", lambda *_args: {"paper": paper})
+    extraction = "# Synthetic Experiment\n" + "\n".join(f"## {name}" for name in paper_reading_jobs.EXP_SECTIONS)
+    monkeypatch.setattr(paper_reading_jobs, "_generate_exp_extraction", lambda *_args, **_kwargs: (extraction, {"model": "fixture"}))
+    monkeypatch.setattr(paper_reading_jobs, "_paper_store_file", lambda *_args: path)
+    monkeypatch.setattr(paper_reading_jobs, "PAPER_STORE", SimpleNamespace(update_paper=Mock(return_value={})))
     if failure:
         path.mkdir()
-    paper_backend._run_exp_job("fixture-exp")
+    paper_reading_jobs._run_exp_job("fixture-exp")
     assert state["status"] == ("error" if failure else "done")
     if not failure:
         assert state["exp_path"] == str(path)
@@ -322,12 +322,12 @@ def test_exp_that_is_not_an_extraction_is_an_error_and_is_not_saved(monkeypatch,
     paper = {"id": "paper_0123456789ab", "title": "fixture", "_store_root": str(tmp_path)}
     state = {"job_id": "fixture-exp", "paper_id": paper["id"], "created_by": "fixture"}
     path = tmp_path / "exp.md"
-    monkeypatch.setattr(paper_backend, "_set_exp_job", lambda _identity, patch: state.update(patch) or dict(state))
-    monkeypatch.setattr(paper_backend, "get_paper_detail", lambda *_args: {"paper": paper})
+    monkeypatch.setattr(paper_reading_jobs, "_set_exp_job", lambda _identity, patch: state.update(patch) or dict(state))
+    monkeypatch.setattr(paper_reading_jobs, "get_paper_detail", lambda *_args: {"paper": paper})
     narration = "我先读取环境配置与注册信息，确认产物位置。```bash\ncat agent_profile.yaml\n```"
-    monkeypatch.setattr(paper_backend, "_generate_exp_extraction", lambda *_args, **_kwargs: (narration, {"model": "fixture"}))
-    monkeypatch.setattr(paper_backend, "_paper_store_file", lambda *_args: path)
-    paper_backend._run_exp_job("fixture-exp")
+    monkeypatch.setattr(paper_reading_jobs, "_generate_exp_extraction", lambda *_args, **_kwargs: (narration, {"model": "fixture"}))
+    monkeypatch.setattr(paper_reading_jobs, "_paper_store_file", lambda *_args: path)
+    paper_reading_jobs._run_exp_job("fixture-exp")
     assert state["status"] == "error"
     assert "Exp 返回的不是规定产物" in state["error"]
     assert not path.exists()
@@ -388,10 +388,12 @@ def test_paper_delete_removes_markdown_and_index_or_restores_index(monkeypatch, 
     target.write_text("target")
     neighbor = directory / (neighbor_id + ".md")
     neighbor.write_text("neighbor")
-    monkeypatch.setattr(paper_backend, "_ensure_data_root", lambda: None)
-    monkeypatch.setattr(paper_backend, "_paper_by_id", lambda *_args: {"id": "paper_0123456789ab"})
-    monkeypatch.setattr(paper_backend, "_paper_store_file", lambda *_args: directory)
-    remove = getattr(paper_backend, "delete_" + kind)
+    monkeypatch.setattr(paper_store, "_ensure_data_root", lambda: None)
+    monkeypatch.setattr(paper_reviews, "_paper_by_id", lambda *_args: {"id": "paper_0123456789ab"})
+    monkeypatch.setattr(paper_notes, "_paper_by_id", paper_reviews._paper_by_id)
+    monkeypatch.setattr(paper_reviews, "_paper_store_file", lambda *_args: directory)
+    monkeypatch.setattr(paper_notes, "_paper_store_file", paper_reviews._paper_store_file)
+    remove = paper_reviews.delete_review if kind == "review" else paper_notes.delete_note
     if unlink_fails:
         original_unlink = Path.unlink
         def failed_unlink(path, *args, **kwargs):
@@ -416,9 +418,9 @@ def test_figure_extract_real_synthetic_pdf_rebuilds_metadata(figure_store, monke
     paper, metadata = figure_store
     source = tmp_path / "synthetic.pdf"
     write_synthetic_axes_pdf(source)
-    monkeypatch.setattr(paper_backend, "_local_pdf_for_paper", lambda *_args: source)
-    monkeypatch.setattr(paper_backend, "_figures_dir", lambda *_args: tmp_path / "figures")
-    result = paper_backend.extract_figures({"paper_id": paper["id"]}, "fixture")
+    monkeypatch.setattr(paper_figures, "_local_pdf_for_paper", lambda *_args: source)
+    monkeypatch.setattr(paper_figures, "_figures_dir", lambda *_args: tmp_path / "figures")
+    result = paper_figures.extract_figures({"paper_id": paper["id"]}, "fixture")
     stored = json.loads(metadata.read_text())
     assert result["count"] == len(stored) == 1
     # A newly extracted figure gets an opaque identity that survives reordering; its position is the index.
@@ -432,22 +434,22 @@ def test_reference_registration_reuses_or_registers_and_returns_detail(monkeypat
     paper = {"id": "paper_0123456789ab", "title": "Existing"}
     ref = {"ref_id": "fixture", "paper_id": "paper_abcdef012345", "title": "Reference", "registered_paper_id": paper["id"]}
     papers = [paper]
-    monkeypatch.setattr(paper_backend, "_ref_context", lambda *_args: ({"id": ref["paper_id"]}, ref, [ref]))
-    monkeypatch.setattr(paper_backend, "_all_papers", lambda: papers)
-    monkeypatch.setattr(paper_backend, "_paper_public", lambda value: dict(value))
-    monkeypatch.setattr(paper_backend, "get_paper_detail", lambda identity: {"id": identity})
+    monkeypatch.setattr(paper_refs, "_ref_context", lambda *_args: ({"id": ref["paper_id"]}, ref, [ref]))
+    monkeypatch.setattr(paper_refs, "_all_papers", lambda: papers)
+    monkeypatch.setattr(paper_refs, "_paper_public", lambda value: dict(value))
+    monkeypatch.setattr(paper_refs, "get_paper_detail", lambda identity: {"id": identity})
     lookup = Mock(return_value={"title": "Resolved Reference", "source_url": "https://fixture.invalid"})
-    monkeypatch.setattr(paper_backend, "_lookup_ref_metadata", lookup)
+    monkeypatch.setattr(paper_refs, "_lookup_ref_metadata", lookup)
     register = Mock(return_value=paper)
-    monkeypatch.setattr(paper_backend, "PAPER_STORE", SimpleNamespace(register=register))
+    monkeypatch.setattr(paper_refs, "PAPER_STORE", SimpleNamespace(register=register))
     writes = Mock()
-    monkeypatch.setattr(paper_backend, "_write_store_refs", writes)
-    first = paper_backend.register_ref({"ref_id": "fixture"}, "fixture")
+    monkeypatch.setattr(paper_refs, "_write_store_refs", writes)
+    first = paper_refs.register_ref({"ref_id": "fixture"}, "fixture")
     assert first["paper"]["id"] == paper["id"] and first["detail"]["id"] == paper["id"]
     lookup.assert_not_called()
     register.assert_not_called()
     papers.clear()
-    second = paper_backend.register_ref({"ref_id": "fixture", "paper_id": ref["paper_id"]}, "fixture")
+    second = paper_refs.register_ref({"ref_id": "fixture", "paper_id": ref["paper_id"]}, "fixture")
     lookup.assert_called_once()
     register.assert_called_once()
     assert second["ref"]["registered_paper_id"] == paper["id"]
@@ -457,11 +459,11 @@ def test_reference_registration_reuses_or_registers_and_returns_detail(monkeypat
 def test_collector_job_listed_and_deleted_by_other_users_keeps_runtime_binding(monkeypatch):
     """其他用户可以查看和删除论文收集任务，创建者与 Resident、Lineage 绑定保持不变"""
     state = {"job_id": "fixture", "created_by": "alice", "status": "done", "resident_id": "resident_fixture", "lineage_id": "lineage_fixture"}
-    monkeypatch.setattr(paper_backend, "_paper_collection_job_by_id", lambda *_args: dict(state))
-    monkeypatch.setattr(paper_backend, "_all_paper_collection_jobs", lambda: [dict(state)])
-    monkeypatch.setattr(paper_backend, "_set_paper_collection_job", lambda _identity, patch: state.update(patch) or dict(state))
-    assert len(paper_backend.list_paper_collection_jobs("bob")["jobs"]) == 1
+    monkeypatch.setattr(paper_collection_jobs, "_paper_collection_job_by_id", lambda *_args: dict(state))
+    monkeypatch.setattr(paper_collection_jobs, "_all_paper_collection_jobs", lambda: [dict(state)])
+    monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", lambda _identity, patch: state.update(patch) or dict(state))
+    assert len(paper_collection_jobs.list_paper_collection_jobs("bob")["jobs"]) == 1
     assert state["resident_id"] == "resident_fixture" and state["lineage_id"] == "lineage_fixture"
-    paper_backend.delete_paper_collection_job({"job_id": "fixture"}, "bob")
+    paper_collection_jobs.delete_paper_collection_job({"job_id": "fixture"}, "bob")
     assert state["deleted"] and state["status"] == "deleted"
-    assert paper_backend.list_paper_collection_jobs("bob")["jobs"] == []
+    assert paper_collection_jobs.list_paper_collection_jobs("bob")["jobs"] == []

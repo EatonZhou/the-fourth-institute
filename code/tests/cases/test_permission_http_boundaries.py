@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from management_portal import http_paper, paper_backend, serve_management_portal as server
+from management_portal import http_paper, paper_registration, serve_management_portal as server
 from management_portal.resource_backup_backend import ResourceBackupBackend
 from tests.cases.test_permission_entrypoints import checkpoint_entries
 
@@ -18,7 +18,7 @@ D = 'article_111111111111'
 def test_paper_upload_rejects_oversized_multipart_before_mutation(monkeypatch):
     """论文上传在修改前拒绝超限 multipart 请求并返回 413"""
     upload = mock.Mock()
-    monkeypatch.setattr(paper_backend, "upload_paper_pdf", upload)
+    monkeypatch.setattr(paper_registration, "upload_paper_pdf", upload)
     monkeypatch.setattr(server, "_get_agent_api_auth", lambda handler: {"type": "human", "id": "bob"})
     monkeypatch.setattr(http_paper, "authorize_api", lambda handler, auth, **_: "bob")
     monkeypatch.setattr(

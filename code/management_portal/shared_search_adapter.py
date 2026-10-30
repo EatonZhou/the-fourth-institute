@@ -117,9 +117,9 @@ def authorized_catalog(job: dict) -> list[dict]:
 
         records = board_semantic_search_backend.search_catalog(job)
     elif surface == 'paper':
-        from management_portal import paper_backend
+        from management_portal import paper_search
 
-        records = paper_backend.semantic_search_catalog(actor=actor, project=str(job.get('project') or ''))
+        records = paper_search.semantic_search_catalog(actor=actor, project=str(job.get('project') or ''))
     elif surface == 'knowledge':
         from knowledge_board_lan import knowledge_backend
 

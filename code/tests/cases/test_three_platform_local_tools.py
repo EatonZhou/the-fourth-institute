@@ -15,7 +15,7 @@ import pytest
 from management_common import process_runtime
 from management_portal import article_texlab_backend as texlab
 from management_portal import embedding_setup as embeddings
-from management_portal import paper_backend as paper
+from management_portal import paper_figure_extraction, paper_pdf, paper_store
 
 
 def test_texlab_initialization_failure_releases_process(monkeypatch, tmp_path):
@@ -55,16 +55,16 @@ def test_texlab_local_install_uses_native_executable_lookup(monkeypatch, tmp_pat
 
 
 def test_missing_required_poppler_has_install_diagnostic(monkeypatch, tmp_path):
-    monkeypatch.setattr(paper.shutil, 'which', lambda _: None)
+    monkeypatch.setattr(paper_pdf.shutil, 'which', lambda _: None)
     with pytest.raises(RuntimeError, match='pdftotext.*Poppler'):
-        paper._extract_pdf_text_file(tmp_path / 'paper.pdf')
+        paper_pdf._extract_pdf_text_file(tmp_path / 'paper.pdf')
 
 
 def test_optional_pdfinfo_keeps_metadata_fallback_with_diagnostic(monkeypatch, tmp_path, caplog):
-    monkeypatch.setattr(paper.shutil, 'which', lambda _: None)
+    monkeypatch.setattr(paper_pdf.shutil, 'which', lambda _: None)
     # A missing optional tool cannot turn metadata extraction into registration failure.
     monkeypatch.setattr(subprocess, 'run', lambda *a, **kw: (_ for _ in ()).throw(FileNotFoundError('missing')))
-    assert paper._pdf_document_properties(tmp_path / 'paper.pdf') == {}
+    assert paper_pdf._pdf_document_properties(tmp_path / 'paper.pdf') == {}
     assert 'pdfinfo' in caplog.text and 'Poppler' in caplog.text
 
 
@@ -75,14 +75,14 @@ def test_optional_pdfinfo_keeps_metadata_fallback_with_diagnostic(monkeypatch, t
 ])
 def test_poppler_argv_encoding_and_timeout_contract(monkeypatch, tmp_path, platform, executable):
     calls = []
-    monkeypatch.setattr(paper.shutil, 'which', lambda name: executable)
+    monkeypatch.setattr(paper_pdf.shutil, 'which', lambda name: executable)
     def run(argv, **kwargs):
         calls.append((argv, kwargs))
         return subprocess.CompletedProcess(argv, 0, '论文文字'.encode(), b'')
     monkeypatch.setattr(process_runtime, 'run_process', run)
     monkeypatch.setattr(sys, 'platform', platform)
     target = tmp_path / '论文 a & b.pdf'
-    assert paper._extract_pdf_text_file(target) == '论文文字'
+    assert paper_pdf._extract_pdf_text_file(target) == '论文文字'
     argv, options = calls[0]
     assert argv == [executable, '-layout', '-enc', 'UTF-8', str(target), '-']
     assert options['timeout'] == 360
@@ -245,10 +245,10 @@ print('论文文字', flush=True)
     target = tmp_path / '论文 & space.pdf'
     if timeout:
         with pytest.raises(subprocess.TimeoutExpired) as caught:
-            paper._extract_pdf_text_file(target)
+            paper_pdf._extract_pdf_text_file(target)
         assert '论文文字'.encode() in caught.value.output
     else:
-        assert paper._extract_pdf_text_file(target) == '论文文字'
+        assert paper_pdf._extract_pdf_text_file(target) == '论文文字'
     assert not process_runtime.process_alive(int(target.with_suffix('.pid').read_text()))
 
 
@@ -312,9 +312,9 @@ def test_embedding_missing_installer_is_explicit_failure(monkeypatch, tmp_path):
 @pytest.mark.parametrize('directory', ['/opt/poppler tools/', '/opt/homebrew/bin/', 'C:\\Program Files\\Poppler\\bin\\'])
 def test_all_poppler_commands_use_native_argv_and_managed_deadlines(monkeypatch, tmp_path, directory):
     calls = []
-    monkeypatch.setattr(paper.shutil, 'which', lambda name: directory + name + ('.exe' if directory.startswith('C:') else ''))
-    monkeypatch.setattr(paper, '_all_papers', lambda: [])
-    monkeypatch.setattr(paper, 'PDF_TEXT_ROOT', tmp_path / 'text')
+    monkeypatch.setattr(paper_store.shutil, 'which', lambda name: directory + name + ('.exe' if directory.startswith('C:') else ''))
+    monkeypatch.setattr(paper_store, '_all_papers', lambda: [])
+    monkeypatch.setattr(paper_store, 'PDF_TEXT_ROOT', tmp_path / 'text')
     def run(command, **kwargs):
         calls.append((command, kwargs))
         if 'pdfinfo' in command[0]:
@@ -328,13 +328,13 @@ def test_all_poppler_commands_use_native_argv_and_managed_deadlines(monkeypatch,
         return subprocess.CompletedProcess(command, 0, '', '')
     monkeypatch.setattr(process_runtime, 'run_process', run)
     source = tmp_path / '论文 a & b.pdf'
-    assert paper._pdf_document_properties(source) == {'title': '中文标题'}
-    assert paper._extract_pdf_text_raw(source, paper_id='paper_test') == '中文原文'
-    assert paper._extract_figure_caption_blocks(source) == []
-    assert paper._render_pdf_page_png(source, 1, tmp_path / 'page').is_file()
+    assert paper_pdf._pdf_document_properties(source) == {'title': '中文标题'}
+    assert paper_store._extract_pdf_text_raw(source, paper_id='paper_test') == '中文原文'
+    assert paper_figure_extraction._extract_figure_caption_blocks(source) == []
+    assert paper_figure_extraction._render_pdf_page_png(source, 1, tmp_path / 'page').is_file()
     extracted = tmp_path / 'extracted'
     extracted.mkdir()
-    assert paper._extract_embedded_pdf_images(source, extracted, tmp_path, 'paper_test', 'fixture') == []
+    assert paper_figure_extraction._extract_embedded_pdf_images(source, extracted, tmp_path, 'paper_test', 'fixture') == []
     assert len(calls) == 6
     assert [options['timeout'] for _, options in calls] == [90, 360, 360, 270, 270, 360]
     for command, options in calls:

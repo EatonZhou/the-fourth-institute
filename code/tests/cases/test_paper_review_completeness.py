@@ -8,7 +8,7 @@ import copy
 import json
 from unittest import mock
 
-from management_portal import paper_backend, paper_state_store
+from management_portal import paper_reviews, paper_state_store, paper_store
 
 
 def test_review_completion_preserves_incomplete_output_without_fabricating_reviewers(tmp_path, monkeypatch, subtests):
@@ -48,23 +48,23 @@ def test_review_completion_preserves_incomplete_output_without_fabricating_revie
     analysis_path = tmp_path / "analysis.md"
     analysis_path.write_text(analysis, encoding="utf-8")
     paper["analysis_path"] = str(analysis_path)
-    monkeypatch.setattr(paper_backend, "ALLOWED_FILE_ROOTS", [tmp_path])
-    monkeypatch.setattr(paper_backend, "_all_papers", lambda: [paper])
-    monkeypatch.setattr(paper_backend, "_pdf_text_for_paper", lambda _: "PDF")
-    monkeypatch.setattr(paper_backend, "_related_papers", lambda *_: [])
-    monkeypatch.setattr(paper_backend, "DATA_ROOT", tmp_path)
+    monkeypatch.setattr(paper_store, "ALLOWED_FILE_ROOTS", [tmp_path])
+    monkeypatch.setattr(paper_reviews, "_all_papers", lambda: [paper])
+    monkeypatch.setattr(paper_reviews, "_pdf_text_for_paper", lambda _: "PDF")
+    monkeypatch.setattr(paper_reviews, "_related_papers", lambda *_: [])
+    monkeypatch.setattr(paper_store, "DATA_ROOT", tmp_path)
     for name, content, complete in cases:
         with subtests.test(case=name):
             state = {"job_id": name, "review_id": "review_abcdef012345", "paper_id": paper["id"], "created_by": "alice"}
             stored = []
             output = tmp_path / f"{name}.md"
-            monkeypatch.setattr(paper_backend, "_review_job_by_id", lambda _: dict(state))
-            monkeypatch.setattr(paper_backend, "_set_review_job", lambda _, patch: state.update(patch) or dict(state))
+            monkeypatch.setattr(paper_reviews, "_review_job_by_id", lambda _: dict(state))
+            monkeypatch.setattr(paper_reviews, "_set_review_job", lambda _, patch: state.update(patch) or dict(state))
             monkeypatch.setattr(paper_state_store, "get", lambda *_: None)
             monkeypatch.setattr(paper_state_store, "append", lambda _, record: stored.append(record) or record)
-            monkeypatch.setattr(paper_backend, "_review_markdown_path", lambda _: output)
-            with mock.patch.object(paper_backend, "_resident_reply", return_value=(content, {"total_tokens": 123})) as call:
-                result = paper_backend._run_review_job(name)
+            monkeypatch.setattr(paper_reviews, "_review_markdown_path", lambda _: output)
+            with mock.patch.object(paper_reviews, "_resident_reply", return_value=(content, {"total_tokens": 123})) as call:
+                result = paper_reviews._run_review_job(name)
             call.assert_called_once()
             assert call.call_args.kwargs["resident_scope"] == "paper:review"
             assert analysis[:80_000] in call.call_args.args[0]

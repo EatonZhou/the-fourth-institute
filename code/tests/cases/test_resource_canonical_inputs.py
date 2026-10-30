@@ -103,12 +103,12 @@ def test_source_site_remote_mapping_cannot_assign_repo_ownership(obsolete_settin
 
 
 def test_paper_generated_metadata_is_canonical_and_authored_source_is_preserved(obsolete_settings, monkeypatch):
-    from management_portal import paper_backend as paper
+    from management_portal import paper_ccf
     entries = [{"dblp_conf_key": "fixture"}, {"dblp_conf_key": "authored", "source": "Editorial source"}]
-    monkeypatch.setattr(paper.paper_state_store, "curated_venues", lambda: entries)
-    venues = paper._load_curated_venues()
+    monkeypatch.setattr(paper_ccf.paper_state_store, "curated_venues", lambda: entries)
+    venues = paper_ccf._load_curated_venues()
     assert venues[0]["source"] == "TFI Portal curated chip/circuit venue list"
     assert venues[1]["source"] == "Editorial source"
     assert entries == [{"dblp_conf_key": "fixture"}, {"dblp_conf_key": "authored", "source": "Editorial source"}]
-    monkeypatch.setattr(paper, "_ccf_catalog", lambda **kwargs: venues)
-    assert paper.ccf_venues()["summary"]["source_version"] == "CCF recommended list v7 / 2026 + TFI Portal curated chip/circuit venues"
+    monkeypatch.setattr(paper_ccf, "_ccf_catalog", lambda **kwargs: venues)
+    assert paper_ccf.ccf_venues()["summary"]["source_version"] == "CCF recommended list v7 / 2026 + TFI Portal curated chip/circuit venues"

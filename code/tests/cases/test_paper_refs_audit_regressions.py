@@ -1,6 +1,6 @@
 """Reference extraction regressions from the September 2026 library audit."""
 import pytest
-from management_portal import paper_backend as pb
+from management_portal import paper_references, paper_refs
 
 
 @pytest.mark.parametrize('heading', ['References:', 'References', '7 References:', 'Bibliography:', 'REFERENCES:'])
@@ -10,13 +10,13 @@ def test_explicit_bibliography_keeps_short_lists_and_colon_headings(heading, cou
     entries = [f'[{i}] B. Munger et al., “Processor architecture number {i},” ISSCC, pp. 38-39, 2023.' for i in range(1, count + 1)]
     # References can start before the final 55% of a short conference PDF.
     text = 'Introduction\n' + heading + '\n' + '\n'.join(entries) + '\nAppendix\n' + 'Supplementary material.\n' * 100
-    assert pb._parse_references_from_text(text) == entries
+    assert paper_references._parse_references_from_text(text) == entries
 
 
 def test_short_numbered_body_list_is_not_a_bibliography():
     """正文中的短编号步骤列表不作为参考文献"""
     text = 'Introduction\n1. Our evaluation method uses these steps.\n2. We examine task completion.\n3. The robot stops.\n'
-    assert pb._parse_references_from_text(text) == []
+    assert paper_references._parse_references_from_text(text) == []
 
 
 @pytest.mark.parametrize('entry', [
@@ -25,7 +25,7 @@ def test_short_numbered_body_list_is_not_a_bibliography():
 ])
 def test_bibliography_entries_are_not_fragments_due_to_topic_or_missing_venue_keyword(entry):
     """参考文献不因主题或缺少出版场所关键词被视为残片"""
-    assert not pb._looks_like_reference_fragment(entry)
+    assert not paper_references._looks_like_reference_fragment(entry)
 
 
 @pytest.mark.parametrize('raw,title', [
@@ -38,14 +38,14 @@ def test_bibliography_entries_are_not_fragments_due_to_topic_or_missing_venue_ke
 ])
 def test_title_boundaries_keep_initials_authors_and_doi_out_of_title(raw, title):
     """参考标题边界排除作者缩写与 DOI"""
-    assert pb._guess_ref_title(raw) == title
+    assert paper_references._guess_ref_title(raw) == title
 
 
 def test_structured_rules_continue_after_invalid_candidate():
     """参考标题候选无效时继续尝试后续结构规则"""
     # The generic author/title rule sees the year first; the next precise rule owns it.
     raw = 'John Smith and Bob Jones. 2024. Learning from observations. In Conference on Robotics.'
-    assert pb._guess_ref_title(raw) == 'Learning from observations'
+    assert paper_references._guess_ref_title(raw) == 'Learning from observations'
 
 
 @pytest.mark.parametrize('line', [
@@ -56,13 +56,13 @@ def test_structured_rules_continue_after_invalid_candidate():
 ])
 def test_numbered_reference_authors_support_unicode_and_compact_initials(line):
     """编号参考文献支持 Unicode 作者与紧凑缩写"""
-    assert pb._looks_like_numbered_reference_line(line)
+    assert paper_references._looks_like_numbered_reference_line(line)
 
 
 def test_nested_typographic_quotes_keep_full_title():
     """参考标题包含嵌套弯引号时保留完整标题"""
     raw = '[3] B. Cohen, M. Subramony, M. Clark, “Next Generation “Zen 5” Core,” Hot Chips, 2024.'
-    assert pb._guess_ref_title(raw) == 'Next Generation “Zen 5” Core'
+    assert paper_references._guess_ref_title(raw) == 'Next Generation “Zen 5” Core'
 
 
 def test_extract_refs_persists_correct_short_bibliography(tmp_path, monkeypatch):
@@ -71,12 +71,12 @@ def test_extract_refs_persists_correct_short_bibliography(tmp_path, monkeypatch)
 
     paper = {'id': 'paper_0123456789ab', 'title': 'Source', '_store_root': str(tmp_path), '_files': {'refs': 'refs/references.json'}}
     text = 'References:\n[1] S. Lloyd, “Universal quantum simulators”, Science, vol.273, pp.1073-1078, 1996, DOI: 10.1126/science.273.5278.1073.\n'
-    monkeypatch.setattr(pb, '_all_papers', lambda: [paper])
-    monkeypatch.setattr(pb, '_paper_by_id', lambda _: paper)
-    monkeypatch.setattr(pb, '_paper_public', lambda p: p)
-    monkeypatch.setattr(pb, '_local_pdf_for_paper', lambda _: tmp_path / 'paper.pdf')
-    monkeypatch.setattr(pb, '_extract_pdf_text_raw', lambda *args, **kwargs: text)
-    result = pb.extract_refs({'paper_id': paper['id']}, 'test-actor')
+    monkeypatch.setattr(paper_refs, '_all_papers', lambda: [paper])
+    monkeypatch.setattr(paper_refs, '_paper_by_id', lambda _: paper)
+    monkeypatch.setattr(paper_refs, '_paper_public', lambda p: p)
+    monkeypatch.setattr(paper_refs, '_local_pdf_for_paper', lambda _: tmp_path / 'paper.pdf')
+    monkeypatch.setattr(paper_refs, '_extract_pdf_text_raw', lambda *args, **kwargs: text)
+    result = paper_refs.extract_refs({'paper_id': paper['id']}, 'test-actor')
     assert result['count'] == 1
     persisted = json.loads((tmp_path / 'refs/references.json').read_text())
     assert persisted == result['refs']
@@ -88,7 +88,7 @@ def test_extract_refs_persists_correct_short_bibliography(tmp_path, monkeypatch)
 def test_unicode_single_author_is_not_returned_as_title(author):
     """Unicode 单作者姓名不会误识别为参考标题"""
     raw = f'[1] {author}. Learning from demonstrations. In Conference on Robot Learning, 2024.'
-    assert pb._guess_ref_title(raw) == 'Learning from demonstrations'
+    assert paper_references._guess_ref_title(raw) == 'Learning from demonstrations'
 
 
 def test_unnumbered_bibliography_is_not_reclassified_by_wrapped_page_numbers():
@@ -96,7 +96,7 @@ def test_unnumbered_bibliography_is_not_reclassified_by_wrapped_page_numbers():
     text = ('References\nBellemare, Marc G., and Bowling, Michael. Learning from demonstrations. '
             'Journal of Robotics, pp. 60–\n74. Springer-Verlag, 2008.\n'
             'Sutton, Richard S., and Barto, Andrew G. Learning value functions. Journal of Robotics, 2018.\n')
-    refs = pb._parse_references_from_text(text)
+    refs = paper_references._parse_references_from_text(text)
     assert len(refs) == 2
     assert refs[0].startswith('Bellemare,')
     assert refs[1].startswith('Sutton,')
@@ -105,12 +105,12 @@ def test_unnumbered_bibliography_is_not_reclassified_by_wrapped_page_numbers():
 def test_author_year_precedes_generic_author_title_rule():
     """参考标题识别优先处理作者年份格式"""
     raw = 'John Smith and Jane Doe. 2024. A Task Learning Method. In Proceedings of Robotics, pp. 1–10.'
-    assert pb._guess_ref_title(raw) == 'A Task Learning Method'
+    assert paper_references._guess_ref_title(raw) == 'A Task Learning Method'
 
 
 def test_spaced_hyphenated_initials_are_numbered_reference_start():
     """带空格与连字符的作者缩写可识别为文献起始"""
-    assert pb._looks_like_numbered_reference_line('[7] M. -D. Tsai et al., “A 12nm CMOS RF Transceiver,” ISSCC, 2024.')
+    assert paper_references._looks_like_numbered_reference_line('[7] M. -D. Tsai et al., “A 12nm CMOS RF Transceiver,” ISSCC, 2024.')
 
 
 @pytest.mark.parametrize('raw,title', [
@@ -119,13 +119,13 @@ def test_spaced_hyphenated_initials_are_numbered_reference_start():
 ])
 def test_terminal_author_initial_is_also_a_title_boundary(raw, title):
     """作者末尾缩写句点可分隔参考标题"""
-    assert pb._guess_ref_title(raw) == title
+    assert paper_references._guess_ref_title(raw) == title
 
 
 def test_comma_separated_initial_authors_are_not_the_title():
     """逗号分隔的缩写作者不会混入参考标题"""
     raw = '[195] A. Borah, R. Mihalcea, Towards implicit bias detection and mitigation in multi-agent llm interactions, 2024, arXiv preprint arXiv:2410.02584.'
-    assert pb._guess_ref_title(raw) == 'Towards implicit bias detection and mitigation in multi-agent llm interactions'
+    assert paper_references._guess_ref_title(raw) == 'Towards implicit bias detection and mitigation in multi-agent llm interactions'
 
 
 def test_short_list_support_preserves_existing_detached_label_fallback():
@@ -133,6 +133,6 @@ def test_short_list_support_preserves_existing_detached_label_fallback():
     numbered = '[1] A. Smith and B. Jones. First learning method. Journal of Robotics, 2024.\n'
     detached = '\n'.join(f'[{i}]' for i in range(2, 8))
     entries = '\n'.join(f'{name}, A., and Jones, B. Learning method {i}. Journal of Robotics, 2024.' for i, name in enumerate(['Brown', 'Davis', 'Evans', 'Foster', 'Grant', 'Hill']))
-    result = pb._parse_references_from_text('References\n' + numbered + detached + '\n' + entries)
+    result = paper_references._parse_references_from_text('References\n' + numbered + detached + '\n' + entries)
     assert len(result) >= 6
     assert any('Hill,' in entry for entry in result)

@@ -30,15 +30,15 @@ def test_paper_refresh_count_limits_do_not_treat_zero_as_all(
     monkeypatch,
 ) -> None:
     """CCF 论文缓存刷新的 max_venues 或 latest_years 为 0 时一项也不选"""
-    from management_portal import paper_backend
+    from management_portal import paper_ccf
 
     monkeypatch.setattr(
-        paper_backend,
+        paper_ccf,
         "CCF_REFRESH_REPORT_PATH",
         tmp_path / "refresh-report.json",
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_ccf,
         "_ccf_catalog",
         lambda **_kwargs: [
             {
@@ -50,25 +50,25 @@ def test_paper_refresh_count_limits_do_not_treat_zero_as_all(
         ],
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_ccf,
         "_dblp_entries_for_venue",
         lambda *_args, **_kwargs: [{"entry_id": "2026", "year": 2026}],
     )
     monkeypatch.setattr(
-        paper_backend,
+        paper_ccf,
         "ccf_papers",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("zero latest_years must select zero entries")
         ),
     )
 
-    no_venues = paper_backend.refresh_ccf_cache(
+    no_venues = paper_ccf.refresh_ccf_cache(
         max_venues=0,
         refresh_catalog=False,
     )
     assert no_venues["venue_count"] == 0
 
-    no_years = paper_backend.refresh_ccf_cache(
+    no_years = paper_ccf.refresh_ccf_cache(
         latest_years=0,
         min_paper_year=None,
         max_venues=None,
