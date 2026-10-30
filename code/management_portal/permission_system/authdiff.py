@@ -203,7 +203,7 @@ def _judged(view: View, tree: str, element: str, owners: Mapping[str, str] | Non
 
 def _owners(principals: list[str]) -> Mapping[str, str]:
     """The owners decisions judge personal AMA Residents as (decision_b820faf42218 §5.5)."""
-    from management_portal.society_service.personal_ama import owners_of
+    from management_portal.permission_system.personal_ama import owners_of
 
     return owners_of(principals)
 

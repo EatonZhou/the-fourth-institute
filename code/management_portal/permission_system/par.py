@@ -37,7 +37,7 @@ def _is_portal(actor: Any) -> bool:
 
 def represents(principal: str) -> str:
     """The owner User a personal AMA's Resident is judged as, with every scheme (decision_b820faf42218 §5.5)."""
-    from management_portal.society_service.personal_ama import owner_of
+    from management_portal.permission_system.personal_ama import owner_of
 
     return owner_of(principal)
 

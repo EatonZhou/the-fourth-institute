@@ -48,7 +48,7 @@ class LoanRefused(PermissionError):
 
 def _party(principal: str) -> str:
     """Who ``principal`` acts as: the owner of a personal AMA's Resident, otherwise itself."""
-    from management_portal.society_service.personal_ama import party
+    from management_portal.permission_system.personal_ama import party
 
     return party(principal).casefold()
 
@@ -142,7 +142,7 @@ def revoke(store: Store, credential_id: str, *, actor: str) -> dict[str, Any]:
 
 def listing(store: Store, principal: str) -> list[dict[str, Any]]:
     """Live credentials the principal issued or received; a personal AMA's Resident also sees its owner's."""
-    from management_portal.society_service.personal_ama import owner_of
+    from management_portal.permission_system.personal_ama import owner_of
 
     names = list(dict.fromkeys(item for item in (principal, owner_of(principal)) if item))
     with store.read() as connection:

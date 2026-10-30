@@ -50,7 +50,7 @@ def _user(actor: Any) -> str:
     except ValueError:
         return ""
     if principal.kind == "resident":
-        from management_portal.society_service.personal_ama import owner_of
+        from management_portal.permission_system.personal_ama import owner_of
 
         return owner_of(principal.id)
     return principal.id if principal.kind == "user" else ""
