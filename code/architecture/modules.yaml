@@ -284,12 +284,13 @@ modules:
       - "management_portal/dsh_runtime"
       - "management_portal/opencode_bridge.py"
       - "systemd/portal-kimi-code-config.toml"
-    responsibility: "隔离并承载 Codex、Claude、Kimi、DSH 和 OpenCode 原生会话；把本地 IPC 请求送入各自模型客户端。"
+    responsibility: "隔离并承载 Codex、Claude、Kimi、DSH、OpenCode 和 Antigravity 原生会话；把本地 IPC 请求送入各自模型客户端。"
     runtime: "多个可独立重启的服务或子进程；不是一个统一 daemon"
     deployment:
       - "<service_prefix>-codex-app-server@<account_id>.service"
       - "<service_prefix>-claude-code.service"
       - "<service_prefix>-kimi-code.service"
+      - "Antigravity ACP stdio 子进程：每次执行启动，结束后回收，按账号保留原生会话"
     level: "runtime"
   - id: "notifications"
     designs: []
@@ -704,6 +705,7 @@ modules:
       - "management_portal/execution/claude_backend.py"
       - "management_portal/execution/dsh_backend.py"
       - "management_portal/execution/kimi_backend.py"
+      - "management_portal/execution/antigravity_backend.py"
       - "management_portal/execution/chat_completion_service.py"
       - "management_portal/execution/contracts.py"
       - "management_portal/execution/session_*.py"
@@ -736,6 +738,10 @@ modules:
       - "management_portal/claude_provider_catalog.py"
       - "management_portal/claude_runtime.py"
       - "management_portal/claude_tool_bridge.py"
+      - "management_portal/antigravity_accounts.py"
+      - "management_portal/antigravity_client.py"
+      - "management_portal/antigravity_runtime.py"
+      - "scripts/antigravity_account.py"
       - "management_portal/execution/provider_catalog.py"
     designs:
       - "decision_91eb3626d323"
@@ -1590,11 +1596,12 @@ protocols:
       - "decision_6b9e42f1c8a7"
       - "decision_3948ce9b9443"
       - "decision_276105b5d67b"
+      - "decision_44f8f67d7390"
     related_designs:
       - "decision_e587fe1c472e"
       - "decision_5c62deb8253a"
-    description: "Codex App Server、Claude daemon、Kimi Server 与 DSH/OpenCode bridge 各自拥有原生会话；Adapter 将各自事件归一为 Portal 执行事件。"
-    example: "Codex Adapter 向 App Server 发起 turn → 原生线程返回增量和工具事件 → Runtime 写入运行记录；取消时使用该轮原生标识。"
+    description: "Codex App Server、Claude daemon、Kimi Server、DSH/OpenCode bridge 与 Antigravity ACP 各自拥有原生会话；Adapter 将各自事件归一为 Portal 执行事件。Antigravity 使用 stdio 传输会话请求，并通过仅本次执行有效的 loopback HTTP MCP 端点调用获准工具。"
+    example: "Antigravity Adapter 用 session/load 恢复账号绑定的原生会话 → 安装当次系统规则和工具端点 → session/prompt 提交输入 → ACP 增量与工具事件写入运行记录；取消时发送 session/cancel，连接中断且交付状态不明时不自动重发。"
   - id: "model-api"
     title: "模型 API 与 VM 代理协议"
     modules:
