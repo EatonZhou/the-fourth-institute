@@ -517,6 +517,18 @@ def commit_resident_intake_state(
     }
 
 
+def resident_execution_stopped_message_id(job: Mapping[str, Any]) -> str:
+    """The identity of the notice that a Job's turn was stopped."""
+
+    turn = str(job.get("user_message_id") or job.get("execution_id") or "")
+    expected_execution_id = str(job.get("execution_id") or "")
+    # One notice per stopped turn: a message put back in the Mailbox can be
+    # stopped again in a later Job (decision_b5d349190743).
+    return resident_message_contract.derived_message_identity(
+        "resident-turn-cancelled", *((turn, expected_execution_id) if expected_execution_id and expected_execution_id != turn else (turn,)),
+    )
+
+
 def resident_execution_stopped_event(
     actor: str,
     job: dict[str, Any],
@@ -530,16 +542,10 @@ def resident_execution_stopped_event(
     )
     if queue_continues:
         content += "下一条排队消息将继续执行。"
-    turn = str(job.get("user_message_id") or job.get("execution_id") or "")
-    expected_execution_id = str(job.get("execution_id") or "")
     return build_message(
         "system",
         content,
-        # One notice per stopped turn: a message put back in the Mailbox can be
-        # stopped again in a later Job (decision_b5d349190743).
-        message_id=resident_message_contract.derived_message_identity(
-            "resident-turn-cancelled", *((turn, expected_execution_id) if expected_execution_id and expected_execution_id != turn else (turn,)),
-        ),
+        message_id=resident_execution_stopped_message_id(job),
         reply_to_message_id=str(job.get("user_message_id") or ""),
         created_at=str(
             job.get("stop_requested_at")

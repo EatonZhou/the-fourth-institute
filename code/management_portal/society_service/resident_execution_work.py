@@ -722,6 +722,17 @@ def _post_execution_commit(
         raise first_error
 
 
+def authorized_projection(job: Mapping[str, Any], *, execution_id: str, message_id: str) -> dict[str, Any] | None:
+    """The message a Job authorized for projection under ``message_id`` and not yet acknowledged."""
+
+    stored_intents = job.get(CONVERSATION_PROJECTION_INTENTS)
+    intent = stored_intents.get(message_id) if isinstance(stored_intents, Mapping) else None
+    if not isinstance(intent, Mapping) or str(intent.get("execution_id") or "") != str(execution_id or ""):
+        return None
+    message = intent.get("message")
+    return copy.deepcopy(dict(message)) if isinstance(message, Mapping) else None
+
+
 def authorize_conversation_projection(
     record: Mapping[str, object],
     *,

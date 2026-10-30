@@ -9,6 +9,7 @@ import pytest
 from management_portal.society_service import (
     lifecycle,
     resident_conversation_stream,
+    resident_domain_common,
     resident_execution_domain,
     resident_execution_work,
     resident_input_queue_domain,
@@ -84,9 +85,15 @@ def test_manual_stop_keeps_first_operator_distinct_from_submitter(cancelling):
 
 
 def test_unattributed_notice_survives_publication_and_ack_retry(cancelling, monkeypatch):
-    """无停止者的通知仍与精确输入/执行绑定，发布和确认重试不重复提示。"""
+    """无停止者的通知仍与精确输入/执行绑定，发布和确认重试不重复提示。
+
+    重试比第一次晚，也沿用第一次授权的通知（通知身份包含写入时间）。
+    """
     record, repo = cancelling
     rid = record['resident_id']
+    # Each attempt runs in a later second than the one before.
+    seconds = iter(range(10, 60))
+    monkeypatch.setattr(resident_domain_common, 'now_iso', lambda: f'2026-10-19T01:23:{next(seconds)}Z')
     original = repo.set_input_state
     def fail_terminal(*args, **kwargs):
         if args[2] == 'cancelled':

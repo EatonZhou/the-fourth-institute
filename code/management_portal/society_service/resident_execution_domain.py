@@ -386,7 +386,17 @@ def apply_cancelled_continuation(
         job = resident_execution_work.read(record)
         if not resident_execution_work.matches_continuation(job, continuation_id):
             return False
-        now = str(job.get("stop_requested_at") or resident_domain_common.now_iso())
+        # A retry after a failed publication shows the notice the first attempt
+        # authorized: the notice's identity covers its content and its time.
+        authorized_notice = resident_execution_work.authorized_projection(
+            job, execution_id=str(job.get("execution_id") or ""),
+            message_id=resident_input_queue_domain.resident_execution_stopped_message_id(job),
+        )
+        now = str(
+            job.get("stop_requested_at")
+            or (authorized_notice or {}).get("created_at")
+            or resident_domain_common.now_iso()
+        )
         job.update({
             "error": "",
             "execution_terminal_status": "cancelled",
@@ -405,7 +415,7 @@ def apply_cancelled_continuation(
                 and str(current.get("user_message_id") or "") == user_message_id)
     started = not user_message_id or repository.agent_data.chat_message(resident_id, user_message_id) is not None
     if started:
-        notice = resident_input_queue_domain.resident_execution_stopped_event(
+        notice = authorized_notice or resident_input_queue_domain.resident_execution_stopped_event(
             # Submission identity is not evidence of a Stop request. Provider
             # or infrastructure cancellation may have no recorded operator.
             str(job.get("stopped_by") or ""), job,
