@@ -755,6 +755,7 @@ def provider_runtime_status(*, refresh=False):
         try:
             installed = " ".join(runtime.installed())
         except Exception:
+            LOGGER.warning("Installed version of %s unreadable; showing the last observation", provider, exc_info=True)
             installed = observed.get("installed_version", "")
         result[provider] = {"installed_version": installed,
                             "available_version": observed.get("available_version", ""),

@@ -763,7 +763,10 @@ def _claude_project_key(path: str) -> str:
         from claude_agent_sdk import project_key_for_directory
 
         return project_key_for_directory(path)
-    except Exception:  # noqa: BLE001 - the CLI's own rule for short paths
+    except ImportError:  # no Claude SDK in this process: the CLI's own rule for short paths
+        return re.sub(r"[^a-zA-Z0-9]", "-", path)
+    except Exception:  # noqa: BLE001 - the same rule when the SDK cannot tell
+        LOGGER.warning("Claude SDK project key unavailable; the short-path rule is used", exc_info=True)
         return re.sub(r"[^a-zA-Z0-9]", "-", path)
 
 

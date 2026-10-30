@@ -8,6 +8,7 @@ again after a reconnect or on another Worker.
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -478,7 +479,8 @@ class CodexTurnRunner:
                     waiter.turn_id,
                 )
             except Exception:
-                pass
+                logging.getLogger(__name__).warning(
+                    "Codex turn %s of thread %s was not interrupted", waiter.turn_id, waiter.thread_id, exc_info=True)
 
     def bind_turn_waiter(self, waiter: TurnWaiter, turn_id: str) -> None:
         if not turn_id:

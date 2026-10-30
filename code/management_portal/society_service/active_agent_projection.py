@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from typing import Any
 
 from management_portal.execution.accounts import shared_account_configuration
@@ -14,6 +15,8 @@ from . import (
     resident_protocol,
 )
 from management_common.clock import utc_now_iso
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _resident_account_id(
@@ -73,6 +76,7 @@ def _capacity_snapshot() -> tuple[int, dict[str, int]]:
         account_limits = {item["account_id"]: max(1, int(item.get("max_concurrency") or 1)) for item in accounts}
         return max(1, sum(account_limits.values())), account_limits
     except Exception:
+        LOGGER.warning("Execution account capacity unreadable; the projection assumes one slot", exc_info=True)
         return 1, {}
 
 

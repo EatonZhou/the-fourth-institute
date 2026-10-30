@@ -13,6 +13,7 @@ from __future__ import annotations
 from management_common.operation_errors import OperationError
 
 import json
+import logging
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
@@ -21,7 +22,8 @@ from . import trigger_paths
 from .effect_artifacts import ArtifactStore
 from .state_store import get_lineage_data_store
 
-SCHEMA = "tfi.effect-script-journal.v1"
+LOGGER = logging.getLogger(__name__)
+SCHEMA ="tfi.effect-script-journal.v1"
 MAX_RESULT_BYTES = 256 * 1024
 MAX_RECORD_BYTES = 2 * 1024 * 1024
 FINISHED_STATES = frozenset({"succeeded", "failed", "cancelled", "timed_out"})
@@ -93,6 +95,8 @@ def cleanup(lineage_id: str, key: str) -> bool:
         ArtifactStore().clear_recovery(lineage_id, key)
         return store.complete_effect_cleanup(lineage_id, key, expected_instructions=task["instructions"])
     except Exception:
+        LOGGER.warning("Lineage %s Effect %s cleanup failed; the task stays queued for retry", lineage_id, key,
+                       exc_info=True)
         return False
 
 

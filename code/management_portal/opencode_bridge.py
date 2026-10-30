@@ -770,7 +770,8 @@ class Bridge:
             return True
         try:
             status = self.server.request("GET", "/session/status") or {}
-        except Exception:  # noqa: BLE001 - the event stream decides
+        except Exception as error:  # noqa: BLE001 - the event stream decides
+            log(f"session status: {error}")
             return False
         state = str((status.get(self.opencode_session) or {}).get("type") or "idle")
         if state == "idle" and (turn.busy or now_ms() - turn.started_ms > 15000):
@@ -821,7 +822,8 @@ class Bridge:
             for provider in providers.get("providers") or []:
                 if provider.get("id") == self.server.service:
                     return int((((provider.get("models") or {}).get(model) or {}).get("limit") or {}).get("context") or 0)
-        except Exception:  # noqa: BLE001 - the window is optional
+        except Exception as error:  # noqa: BLE001 - the window is optional
+            log(f"context window of {model}: {error}")
             return 0
         return 0
 

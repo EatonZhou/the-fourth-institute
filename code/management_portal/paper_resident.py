@@ -16,7 +16,7 @@ def _parse_json_object_from_text(text: str) -> dict:
         parsed = json.loads(raw)
         if isinstance(parsed, dict):
             return parsed
-    except Exception:
+    except ValueError:  # not JSON as a whole: look for an object inside below
         pass
     match = re.search(r"\{[\s\S]*\}", raw)
     if match:

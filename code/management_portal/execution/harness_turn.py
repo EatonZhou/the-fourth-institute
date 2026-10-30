@@ -8,6 +8,7 @@ control signals always propagate.
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass, replace
@@ -30,6 +31,7 @@ from .harness import (
 from .harness_effectiveness import classify_failure
 from .harness_observer import ContextSavingsObserver
 
+LOGGER = logging.getLogger(__name__)
 
 # A feature of the plan: its ID, the feature and its configuration.
 PlannedFeature = tuple[str, HarnessFeature, dict[str, Any]]
@@ -84,7 +86,10 @@ class HarnessTurn:
             if callable(begin_turn):
                 try:
                     self._adaptive_runtime = begin_turn(decision)
+                except (InterruptedError, ExecutionControlSignal):
+                    raise
                 except Exception:
+                    LOGGER.warning("Adaptive Harness turn policy did not start; the turn runs without it", exc_info=True)
                     self._adaptive_runtime = None
         raw_feature_configs = config.get("features")
         self.feature_configs = (
@@ -166,7 +171,10 @@ class HarnessTurn:
                 feature_id,
                 feature_config,
             )
+        except (InterruptedError, ExecutionControlSignal):
+            raise
         except Exception:
+            LOGGER.warning("Adaptive Harness configuration of %s failed; the planned one is used", feature_id, exc_info=True)
             return feature_config
 
     def observe_tool_batch(self, batch: AgentLoopToolBatch) -> None:
@@ -179,8 +187,10 @@ class HarnessTurn:
                     self.observer.context_pressure_percent
                 ),
             )
+        except (InterruptedError, ExecutionControlSignal):
+            raise
         except Exception:
-            pass
+            LOGGER.warning("Adaptive Harness turn policy could not observe a tool batch", exc_info=True)
 
     def record_feature_result(
         self,
@@ -195,8 +205,10 @@ class HarnessTurn:
                 applied=bool(transformed.applied),
                 metrics=transformed.metrics,
             )
+        except (InterruptedError, ExecutionControlSignal):
+            raise
         except Exception:
-            pass
+            LOGGER.warning("Adaptive Harness turn policy could not record the result of %s", feature_id, exc_info=True)
 
     def prepared_details(self) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """The prepared event and the feature reports it carries."""
@@ -409,7 +421,8 @@ class HarnessTurn:
                 result=result,
             )
         except Exception:
-            pass
+            # The Provider has already returned; its completion report stands.
+            LOGGER.warning("Harness could not record the manual plan's component reports", exc_info=True)
 
 
 class ToolBatchPipeline:

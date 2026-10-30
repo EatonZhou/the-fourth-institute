@@ -11,6 +11,7 @@ across Portal processes.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import threading
 import time
@@ -303,6 +304,8 @@ class CodexLoadedThreads:
             try:
                 self.unsubscribe_idle()
             except Exception:
+                logging.getLogger(__name__).warning("Codex idle thread maintenance failed; it runs again in a minute",
+                                                    exc_info=True)
                 continue
 
     def _in_use(self, thread_id: str) -> bool:
@@ -338,6 +341,8 @@ class CodexLoadedThreads:
                 self._rpc.request("thread/unsubscribe", {"threadId": thread_id}, timeout=45.0)
                 self.forget(thread_id)
             except Exception:
+                logging.getLogger(__name__).warning("Idle Codex thread %s was not unsubscribed", thread_id,
+                                                    exc_info=True)
                 continue
             finally:
                 lock.release()

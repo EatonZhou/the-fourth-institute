@@ -154,7 +154,7 @@ def _report_tool_events(
         try:
             processor.process_event(event)
         except Exception:  # noqa: BLE001 - observation never fails a turn
-            LOGGER.debug("Harness event observer failed", exc_info=True)
+            LOGGER.warning("Harness event observer failed", exc_info=True)
 
 
 def _observe_tool_edit_artifacts(

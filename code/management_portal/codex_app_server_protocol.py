@@ -355,7 +355,7 @@ _TOKEN_USAGE_KEYS = (
 def _nonnegative_int(value: object) -> int:
     try:
         number = int(value or 0)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return 0
     return number if number > 0 else 0
 

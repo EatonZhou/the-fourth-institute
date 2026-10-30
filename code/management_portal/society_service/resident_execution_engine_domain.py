@@ -290,7 +290,12 @@ def _flush_pending_active_turn_controls(
                 or resident_input_queue_domain.resident_input_control_id(resident_id, message_id),
                 source_segment_id=execution_port.input_source_segment_id(resident_id, message_id),
             )
-        except Exception:
+        except Exception as error:
+            print(
+                f"Resident {resident_id} turn input {message_id} not appended to Execution {execution_id};"
+                f" it stays pending: {type(error).__name__}: {error}",
+                file=sys.stderr,
+            )
             return
         if str(delivery.get("status") or "") not in {
             "delivered",
@@ -340,7 +345,12 @@ def _flush_pending_active_turn_controls(
                 service_tier=str(item.get("service_tier") or ""),
                 control_id=str(item.get("control_id") or ""),
             )
-        except Exception:
+        except Exception as error:
+            print(
+                f"Resident {resident_id} turn settings not sent to Execution {execution_id};"
+                f" they stay pending: {type(error).__name__}: {error}",
+                file=sys.stderr,
+            )
             return
         if str(delivery.get("status") or "") not in {
             "delivered",

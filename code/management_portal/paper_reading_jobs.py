@@ -36,8 +36,8 @@ def _set_job_with_run_record(kind: str, job_id: str, patch: dict) -> dict:
         found = paper_state_store.merge(kind, job_id, {**patch, "updated_at": _now()})
         try:
             PAPER_STORE.write_run_record(found)
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[paper-run-record] {kind} {job_id} not recorded: {type(exc).__name__}: {exc}", flush=True)
     return found
 
 

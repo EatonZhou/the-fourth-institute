@@ -727,7 +727,12 @@ def reconcile_queued_turn_inputs(
                 except ValueError:
                     # Refused, so never delivered: it goes to the next turn.
                     receipt = {"status": "failed"}
-        except Exception:
+        except Exception as error:
+            print(
+                f"Resident {resident_id} Send now input {message_id} unreconciled; the next snapshot retries:"
+                f" {type(error).__name__}: {error}",
+                file=sys.stderr,
+            )
             resolved = False
             continue
         if receipt.get("status") not in {"delivered", "failed"}:

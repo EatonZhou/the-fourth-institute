@@ -3,6 +3,7 @@ from __future__ import annotations
 from management_common.format_tags import schema_matches
 
 import json
+import logging
 import math
 import ssl
 import time
@@ -12,7 +13,7 @@ from collections.abc import Callable
 from typing import Any
 
 
-
+LOGGER = logging.getLogger(__name__)
 SCHEMA = "tfi.provider-transport.v1"
 PHASES = {"opening_response", "reading_response_body", "decoding_response_json"}
 ERROR_KINDS = {"none", "timeout", "read_timeout", "http_error", "tls_error", "connection_error", "url_error", "invalid_json", "unknown"}
@@ -119,4 +120,4 @@ class ProviderTransportObservation:
                 observer(sanitize_transport_observation(self.value))
             except Exception:
                 # Telemetry cannot replace the request outcome, or trigger a retry.
-                pass
+                LOGGER.warning("Provider transport observation was not recorded", exc_info=True)

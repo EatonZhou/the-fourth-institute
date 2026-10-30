@@ -51,7 +51,8 @@ class ResidentContextWorker:
         try:
             self.context.store.release_worker_lease(self.holder)
         except Exception:  # noqa: BLE001 - the lease expires by itself
-            pass
+            _LOG.warning("Resident context worker lease release failed; another holder waits for it to expire",
+                         exc_info=True)
 
     def _run(self) -> None:
         holding = False

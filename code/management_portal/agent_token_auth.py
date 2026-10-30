@@ -51,7 +51,9 @@ def verify_token_hash(stored: str, token: str) -> bool:
         expected = bytes.fromhex(key_hex)
         actual = hashlib.pbkdf2_hmac(alg, token.encode("utf-8"), salt, PBKDF2_ROUNDS)
         return hmac.compare_digest(actual, expected)
-    except Exception:
+    except (AttributeError, TypeError, ValueError):
+        # Not a stored hash of this format (no string, wrong field count, bad hex,
+        # unknown algorithm), or a token that is not text.
         return False
 
 

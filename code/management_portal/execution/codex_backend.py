@@ -766,7 +766,8 @@ class CodexBackend:
                     self.account_registry.default_for_new_session().account_id
                     or ""
                 ).strip()
-            except Exception:
+            except ValueError:
+                # CodexRoutes: no enabled default account, several, or an unknown route.
                 clean_route_id = ""
         if clean_route_id:
             routes.sort(
@@ -785,7 +786,8 @@ class CodexBackend:
                         encoding="utf-8"
                     )
                 )
-            except Exception:
+            except (OSError, ValueError):
+                # No model cache yet, or one that is not JSON.
                 continue
             entries = (
                 payload.get("models")
@@ -1122,5 +1124,6 @@ class CodexBackend:
                     )
                     paused = True
                 except Exception:
+                    LOGGER.warning("Codex goal of thread %s was not paused", backend_session_id, exc_info=True)
                     paused = False
         return bool(turn_id) or paused

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 import re
@@ -30,6 +31,7 @@ from management_portal.resources import get_resource_service
 from management_portal.shared_state import atomic_replace_json, exclusive_file_lock
 
 
+LOGGER = logging.getLogger(__name__)
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT = Path(os.getenv("PAPER_WORKSPACE_ROOT", str(portal_path("staging_root") / "shared" / "portal_paper_workspace")))
 PAPER_STORE_ROOT = Path(os.getenv("PAPER_STORE_ROOT", str(portal_path("share_root") / "Papers")))
@@ -289,6 +291,7 @@ class PaperStore:
             try:
                 papers.append(self.manifest_to_paper(manifest, path))
             except Exception:
+                LOGGER.warning("Paper manifest %s could not be read; the paper is left out", path, exc_info=True)
                 continue
         return papers
 
@@ -439,7 +442,7 @@ class PaperStore:
                     last_error = exc
                     try:
                         tmp.unlink(missing_ok=True)
-                    except Exception:
+                    except OSError:  # the download error above is the one reported
                         pass
                 if attempt + 1 < attempts:
                     time.sleep(max(0.0, float(retry_backoff_s)) * (attempt + 1))
@@ -585,7 +588,8 @@ class PaperStore:
             resolved_dir = paper_dir.resolve(strict=False)
             resolved_items = self.items_root.resolve(strict=False)
             resolved_root = self.root.resolve(strict=False)
-        except Exception:
+        except (OSError, RuntimeError, ValueError):
+            LOGGER.warning("Paper %s directory %s could not be resolved; nothing deleted", paper_id, paper_dir, exc_info=True)
             return None
         if not (resolved_dir == resolved_items or resolved_items in resolved_dir.parents):
             raise ValueError(f"refusing to delete path outside Paper items: {paper_dir}")
@@ -757,7 +761,7 @@ def _load_json(path: Path, default):
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return data if isinstance(data, type(default)) else default
-    except Exception:
+    except (OSError, ValueError):  # missing or unreadable file, or not JSON
         return default
 
 
@@ -793,7 +797,7 @@ def _read_text_preview(path: Path | None, limit: int = 120_000) -> str:
         return ""
     try:
         return path.read_text(encoding="utf-8", errors="replace")[:limit]
-    except Exception:
+    except OSError:
         return ""
 
 
@@ -980,6 +984,8 @@ def _pdf_text_for_paper(paper: dict) -> str:
     try:
         return _extract_pdf_text(_local_pdf_for_paper(paper), paper_id=str(paper.get("id") or ""))
     except Exception:
+        paper_id = paper.get("id") if isinstance(paper, dict) else None
+        LOGGER.warning("PDF text for paper %s is unavailable", paper_id, exc_info=True)
         return ""
 
 

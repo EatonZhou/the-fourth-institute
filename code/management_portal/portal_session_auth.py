@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 import os
 import re
 import secrets
@@ -15,6 +16,7 @@ from management_common.portal_paths import path as portal_path, resolve_director
 from management_common.site_config import read_site_config
 
 from .portal_access_control import PortalAccessStore, PortalCredentialStore, get_portal_access_store
+LOGGER = logging.getLogger(__name__)
 SESSION_COOKIE = "db_session"
 SESSION_TOKEN_VERSION = 1
 _AUTH_ENV = {
@@ -184,7 +186,12 @@ class PortalSessionAuthority:
             if int(payload.get("exp") or 0) < int(time.time() if now is None else now):
                 return ""
             return username
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            # A malformed or foreign token: non-ASCII, bad base64 or JSON, not an object.
+            return ""
         except Exception:
+            # The signing key or the access store could not be read; the token is not echoed.
+            LOGGER.warning("Portal session could not be verified", exc_info=True)
             return ""
 
     def verify_cookie(self, cookie_header: str, now: int | None = None) -> str:

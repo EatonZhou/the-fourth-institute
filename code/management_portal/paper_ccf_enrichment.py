@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
+import logging
 from pathlib import Path
 import re
 from urllib.parse import urlencode
@@ -16,6 +18,11 @@ from management_portal.paper_resident import (
 )
 from management_portal.paper_store import PAPER_STORE_ROOT, _load_json, _notify_paper_projection, _write_json
 
+
+LOGGER = logging.getLogger(__name__)
+# What a lookup of a remote catalog raises: the connection or HTTP status
+# (OSError, with URLError and HTTPError), a broken response, a body that is not JSON.
+REMOTE_LOOKUP_FAILURES = (OSError, http.client.HTTPException, ValueError)
 
 CCF_DBLP_CACHE_ROOT = PAPER_STORE_ROOT / "_work" / "ccf_dblp"
 CCF_ENRICHMENT_CACHE_ROOT = CCF_DBLP_CACHE_ROOT / "_enrichment"
@@ -73,7 +80,7 @@ def _abstract_from_openalex_inverted_index(value: object) -> str:
         for index in indexes:
             try:
                 positioned.append((int(index), str(word)))
-            except Exception:
+            except (TypeError, ValueError, OverflowError):
                 continue
     return " ".join(word for _, word in sorted(positioned)).strip()
 
@@ -102,7 +109,8 @@ def _fetch_openalex_ccf_candidate(paper: dict) -> dict | None:
     for url in urls:
         try:
             payload = json.loads(_http_get_text(url, timeout=48))
-        except Exception:
+        except REMOTE_LOOKUP_FAILURES as exc:
+            LOGGER.warning("OpenAlex lookup failed: %s: %s", type(exc).__name__, exc)
             continue
         results = payload.get("results") if isinstance(payload, dict) else []
         for item in results if isinstance(results, list) else []:
@@ -142,7 +150,8 @@ def _fetch_semantic_scholar_ccf_candidate(paper: dict) -> dict | None:
     })
     try:
         payload = json.loads(_http_get_text(url, timeout=48))
-    except Exception:
+    except REMOTE_LOOKUP_FAILURES as exc:
+        LOGGER.warning("Semantic Scholar lookup failed: %s: %s", type(exc).__name__, exc)
         return None
     results = payload.get("data") if isinstance(payload, dict) else []
     for item in results if isinstance(results, list) else []:

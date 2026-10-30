@@ -113,7 +113,8 @@ class NoticeBoardClassifier:
             worked = False
             try:
                 worked = self.run_once()
-            except Exception:
+            except Exception as exc:
+                print(f"Notice Board classifier pass failed: {type(exc).__name__}: {exc}", file=sys.stderr)
                 worked = False
             self._wake.wait(0.2 if worked else self.poll_seconds)
             self._wake.clear()

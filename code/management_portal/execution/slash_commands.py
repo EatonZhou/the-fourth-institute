@@ -171,7 +171,7 @@ def _token_usage_content(token_usage: object) -> str:
 def _nonnegative_int(value: object) -> int:
     try:
         n = int(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return 0
     return n if n > 0 else 0
 

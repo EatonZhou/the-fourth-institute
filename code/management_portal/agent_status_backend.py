@@ -88,7 +88,7 @@ def _now_ts() -> float:
 def _read_status_cache() -> dict[str, Any]:
     try:
         payload = json.loads(STATUS_CACHE_PATH.read_text(encoding="utf-8"))
-    except Exception:
+    except (OSError, ValueError):  # no cache yet, or a torn one
         return {}
     return payload if isinstance(payload, dict) else {}
 
@@ -178,7 +178,7 @@ def _date_today() -> date:
 def _nonnegative_int(value: object) -> int:
     try:
         number = int(value or 0)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return 0
     return number if number > 0 else 0
 
@@ -271,7 +271,7 @@ def _gpu_memory_used_percent(gpu: dict[str, Any]) -> float | None:
     if gpu.get("unified_memory_used_percent") is not None:
         try:
             return float(gpu.get("unified_memory_used_percent") or 0)
-        except Exception:
+        except (TypeError, ValueError, OverflowError):
             return None
     if gpu.get("memory_util_percent") is not None:
         return float(_nonnegative_int(gpu.get("memory_util_percent")))
@@ -550,11 +550,11 @@ def _parse_df_output(text: str) -> list[dict[str, Any]]:
             size_bytes = int(size)
             used_bytes = int(used)
             available_bytes = int(available)
-        except Exception:
+        except ValueError:  # the fields of a split line are strings
             continue
         try:
             used_percent = float(str(capacity).strip().rstrip("%"))
-        except Exception:
+        except ValueError:
             used_percent = (used_bytes / size_bytes * 100) if size_bytes > 0 else 0.0
         if used_percent >= DISK_CRITICAL_USED_PERCENT:
             status = "critical"
@@ -735,7 +735,7 @@ def _human_size_to_bytes(text: str) -> int:
         return 0
     try:
         number = float(match.group(1))
-    except Exception:
+    except ValueError:  # the pattern admits only decimal digits; kept as a guard
         return 0
     unit = match.group(2).upper()
     scale = {"": 1, "K": 1024, "M": 1024 ** 2, "G": 1024 ** 3, "T": 1024 ** 4, "P": 1024 ** 5, "E": 1024 ** 6}.get(unit, 1)

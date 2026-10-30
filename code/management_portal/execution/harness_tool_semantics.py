@@ -1,8 +1,11 @@
 """Shared classification of tool calls and inline media payloads."""
 from __future__ import annotations
+import logging
 import re
 import shlex
 from typing import Any
+
+LOGGER = logging.getLogger(__name__)
 
 
 def inline_media_bytes(value: object) -> int:
@@ -65,6 +68,8 @@ def declared_tool_reads(tool: Any, arguments: dict[str, Any]) -> bool:
         try:
             return bool(read_only(arguments))
         except Exception:  # noqa: BLE001 - a tool that cannot tell is not a read
+            LOGGER.warning("Harness tool %s could not tell whether a call only reads",
+                           getattr(tool, "name", ""), exc_info=True)
             return False
     return read_only is True
 

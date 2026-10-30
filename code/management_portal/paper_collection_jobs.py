@@ -52,7 +52,7 @@ def _paper_collection_result_items(job: dict | None) -> list[dict]:
             if not isinstance(parsed, dict):
                 try:
                     parsed = _extract_json_object(path.read_text(encoding="utf-8", errors="replace"))
-                except Exception:
+                except (OSError, ValueError):  # unreadable, or no JSON object in the output
                     parsed = {}
         raw_results = parsed.get("registered") if isinstance(parsed.get("registered"), list) else []
     results = []
@@ -183,7 +183,7 @@ def start_paper_collection(payload: dict, actor: str = "") -> dict:
         raise ValueError(f"collection direction exceeds {MAX_DIRECTION_CHARS} characters; no input was truncated")
     try:
         max_papers = int(payload.get("max_papers") or 50)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         max_papers = 50
     max_papers = max(1, min(50, max_papers))
     job_id = f"collector-{secrets.token_hex(6)}"

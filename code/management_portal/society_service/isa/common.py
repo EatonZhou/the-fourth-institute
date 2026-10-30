@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import wraps
+import logging
 from typing import Any, Callable
 
 from management_portal.hatg.contracts import invalid, not_found
@@ -11,6 +12,7 @@ from management_portal.hatg.lineage_versions import DEFINITION_MUTATIONS
 from ..lineage_definition_versions import PRECONDITIONS, Preconditions
 
 
+LOGGER = logging.getLogger(__name__)
 PLACEMENT_FIELDS = ("near_resident_id", "placement", "x", "y")
 
 
@@ -127,6 +129,8 @@ def placement(inv: Invocation, lineage_id: str) -> dict[str, Any]:
         try:
             members = lineage_state().lineage_access_projection(lineage_id)["lineage_node_ids"]
         except Exception:  # noqa: BLE001 - placement is best effort
+            LOGGER.warning("Lineage %s members unreadable; new nodes are not placed near %s", lineage_id,
+                           inv.caller, exc_info=True)
             members = []
         if inv.caller in members:
             fields["near_resident_id"] = inv.caller
@@ -140,7 +144,8 @@ def caller_account(inv: Invocation, provider: str = "") -> str:
         return ""
     try:
         record = protocol().get_resident(inv.caller, inv.caller)
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 - no account is inherited
+        LOGGER.warning("Resident %s unreadable; its account is not inherited", inv.caller, exc_info=True)
         return ""
     if provider and str(record.get("provider") or "codex") != provider:
         return ""

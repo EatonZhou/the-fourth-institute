@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import threading
 import time
@@ -43,6 +44,7 @@ from .harness_policy_table import (
     with_overrides,
 )
 
+LOGGER = logging.getLogger(__name__)
 
 HARNESS_AUTO_POLICY_VERSION = 6
 HARNESS_MODE_AUTO = "auto"
@@ -1036,7 +1038,7 @@ class AdaptiveHarnessController:
             )
         except Exception:
             # Effectiveness telemetry must never fail the provider turn.
-            pass
+            LOGGER.warning("Harness effectiveness record of an adaptive turn failed", exc_info=True)
         return state_updated
 
 
@@ -1079,7 +1081,9 @@ class AdaptiveHarnessController:
             return False
         try:
             return bool(has_scope(scope))
-        except Exception:
+        except (OSError, ValueError):
+            # HarnessArtifactStore.has_scope: an unreadable scope directory, or a
+            # scope that cannot be encoded.
             return False
 
     def _repo_available(self, cwd: str) -> bool:

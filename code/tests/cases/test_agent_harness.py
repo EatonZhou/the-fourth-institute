@@ -536,6 +536,58 @@ def test_harness_preparation_ordinary_failures_remain_fail_open(subtests, isolat
             assert harness.prepare_invocation(invocation) is invocation
 
 
+def test_harness_turn_policy_hooks_preserve_execution_control(subtests, isolated_portal_case):
+    """Harness 回合内的自适应策略钩子遇到中断、恢复延后或执行控制信号时原样抛出
+
+    自适应策略开始回合、给出插件配置、观察工具批次和记录插件结果时抛出的执行控制信号属于 Worker，不能被当作可降级的优化失败吞掉；普通异常仍然降级，Provider 照常返回。
+    """
+
+    class CapturingFeature:
+        feature_id = "tool_output_offloading"
+
+        def after_tool_batch(self, *, batch: AgentLoopToolBatch, **_kwargs: object) -> AgentLoopToolBatchTransform:
+            return AgentLoopToolBatchTransform(batch=batch, applied=False, reason="captured")
+
+    class Provider(_RecordingProvider):
+        def execute(self, invocation: BackendInvocation, context: BackendContext) -> BackendResult:
+            del context
+            invocation.tool_batch_processor.process(_plain_tool_batch(call_id="call-1", content="output"))
+            return BackendResult(output={"message": "done"})
+
+    for stage in ["begin_turn", "feature_config", "observe_tool_batch", "record_feature_result"]:
+        for error_type in [InterruptedError, ExecutionRecoveryDeferred, ExecutionControlSignal, RuntimeError]:
+            with subtests.test(stage=stage, error_type=error_type), isolated_portal_case():
+                error = error_type(f"{stage} failed")
+                runtime = mock.Mock()
+                runtime.feature_config.side_effect = lambda _feature_id, config: config
+                runtime.report.return_value = {}
+                controller = mock.Mock()
+                controller.resolve.return_value = SimpleNamespace(
+                    features={"tool_output_offloading": {"enabled": True, "timing": "after_tool_batch"}},
+                    report=lambda: {},
+                )
+                controller.begin_turn.return_value = runtime
+                controller.observe.return_value = True
+                if stage == "begin_turn":
+                    controller.begin_turn.side_effect = error
+                else:
+                    getattr(runtime, stage).side_effect = error
+                harness = AgentHarness((CapturingFeature(),), adaptive_controller=controller)
+                invocation = replace(_invocation({"mode": "auto"}), harness_tools=(object(),))
+                provider = Provider()
+
+                def run() -> BackendResult:
+                    return harness.execute(
+                        provider=provider, invocation=invocation, context=_context([]),
+                        execute=provider.execute,
+                    )
+
+                if error_type is RuntimeError:
+                    assert run().output == {"message": "done"}
+                else:
+                    with pytest.raises(error_type) as raised:
+                        run()
+                    assert raised.value is error
 
 
 

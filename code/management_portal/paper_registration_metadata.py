@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import html as html_lib
+import http.client
 import json
+import logging
 from pathlib import Path
 import re
 import urllib.error
@@ -18,6 +20,8 @@ from management_portal.paper_records import (
 from management_portal.paper_references import _guess_ref_title
 from management_portal.paper_resident import _parse_json_object_from_text, _resident_reply
 from management_portal.paper_store import WORKSPACE_ROOT
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _deterministic_paper_registration_metadata(
@@ -219,7 +223,9 @@ def _crossref_registration_metadata(doi: str) -> dict:
     try:
         with urllib.request.urlopen(request, timeout=90) as response:
             payload = json.loads(response.read(2_000_000))
-    except Exception:
+    except (OSError, http.client.HTTPException, ValueError) as exc:
+        # The connection or HTTP status (URLError, HTTPError), a broken response, a body that is not JSON.
+        LOGGER.warning("Crossref lookup of %s failed: %s: %s", clean_doi, type(exc).__name__, exc)
         return {}
     message = payload.get("message") if isinstance(payload, dict) else {}
     if not isinstance(message, dict):
@@ -304,6 +310,7 @@ def _paper_registration_project_catalog() -> list[dict[str, str]]:
 
         projects = project_registry.projects()
     except Exception:
+        LOGGER.warning("Project catalog unreadable; the registration draft offers no projects", exc_info=True)
         return []
     result: list[dict[str, str]] = []
     for item in projects or []:

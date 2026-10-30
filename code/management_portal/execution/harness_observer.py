@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .harness_history import (
     approximate_value_tokens,
     positive_int,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ContextSavingsObserver:
@@ -27,6 +30,8 @@ class ContextSavingsObserver:
             try:
                 observation = observe_window(invocation=invocation)
             except Exception:
+                LOGGER.warning("%s context window unreadable; savings are counted without it",
+                               self.provider_id, exc_info=True)
                 observation = None
             self._context_window_tokens = positive_int(
                 getattr(observation, "tokens", 0)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import threading
 import time
 from collections import Counter, deque
@@ -31,6 +32,7 @@ from .harness_native_items import (
 )
 from .control_messages import AGENT_HARNESS_RUNTIME_CHECKPOINT_TAG
 
+LOGGER = logging.getLogger(__name__)
 
 NATIVE_TOOL_LOOP_GOVERNOR_FEATURE_ID = "native_tool_loop_governor"
 DEFAULT_NATIVE_CHECKPOINT_INTERVAL = 80
@@ -735,7 +737,7 @@ class NativeToolLoopRuntime:
         try:
             self._emit(details)
         except Exception:
-            pass
+            LOGGER.warning("Native tool loop control result was not emitted", exc_info=True)
 
     def _on_token_usage(self, params: dict[str, Any], now: float) -> None:
         payload = params.get("tokenUsage")
@@ -879,7 +881,7 @@ class NativeToolLoopRuntime:
             try:
                 observe(self._ledger())
             except Exception:
-                pass
+                LOGGER.warning("Adaptive Harness turn policy could not observe the native tool loop", exc_info=True)
         cumulative_output = self._planned_limits.get(
             "cumulative_output_bytes",
             0,

@@ -33,7 +33,7 @@ def _strip_html(value: str) -> str:
 def _ccf_cache_fresh(path: Path, max_age_seconds: int = 30 * 24 * 60 * 60) -> bool:
     try:
         return path.is_file() and _now() - int(path.stat().st_mtime) < max_age_seconds
-    except Exception:
+    except OSError:  # removed between the two calls, or unreadable
         return False
 
 

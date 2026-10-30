@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import logging
 import time
 
 from management_portal.society_service import get_society_service, SocietyServiceUnavailable
@@ -9,6 +10,8 @@ from management_portal.hatg.contracts import InstructionError
 from management_portal.application_bindings import resolve_application_lineage
 from management_portal.test_framework.tau import CaseNotSent
 from management_portal.test_framework.tau_residents import TAU_ACTOR
+
+LOGGER = logging.getLogger(__name__)
 
 # TAU Campaigns work in the Lineage configured for ``tau``; a paused admission
 # refuses new Campaigns before they are recorded (records.py).
@@ -279,6 +282,7 @@ def reserved_account_quota(route_id: str) -> dict[str, Any] | None:
     try:
         accounts = ExecutionService().accounts().get("accounts", [])
     except Exception:  # noqa: BLE001 - an unreadable quota never blocks a run
+        LOGGER.warning("Account quota of route %s unreadable; the run is not held for it", route_id, exc_info=True)
         return None
     for account in accounts:
         quota = account.get("quota_reserve") or {}

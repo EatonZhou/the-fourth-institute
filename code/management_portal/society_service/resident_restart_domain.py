@@ -32,12 +32,14 @@ from typing import Any, Mapping
 import copy
 import hashlib
 import json
+import logging
 import math
 import secrets
 import time
 
 from . import resident_domain_common, resident_session_preservation as preservation
 
+LOGGER = logging.getLogger(__name__)
 SESSION_RESTART_STRATEGIES = frozenset(
     {"preserve", "smart", "native", "compact", "visible", "fresh"}
 )
@@ -234,6 +236,8 @@ def _previous_compaction_summary(resident_id: str, *, since: str = "") -> str:
     try:
         segment = execution_port.latest_context_compaction(resident_id, since=since)
     except Exception:  # noqa: BLE001 - the handoff still carries the visible conversation
+        LOGGER.warning("Resident %s compaction summary unreadable; the restart hands over only the visible"
+                       " conversation", resident_id, exc_info=True)
         return ""
     content = (segment or {}).get("content")
     history = content.get("replacement_history") if isinstance(content, Mapping) else None

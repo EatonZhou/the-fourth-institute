@@ -120,7 +120,7 @@ def _normalize_openrouter_credits(payload: dict[str, Any]) -> dict[str, Any]:
 def _float_or_none(value: object) -> float | None:
     try:
         number = float(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
     return number if math.isfinite(number) else None
 

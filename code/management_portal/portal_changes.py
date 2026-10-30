@@ -7,7 +7,10 @@ read (``authorize``) and builds the payload it receives (``payload``).
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable
+
+LOGGER = logging.getLogger(__name__)
 
 
 class PortalChanges:
@@ -170,6 +173,8 @@ class PortalChanges:
             for domain, instruction in (("resident", "GetResident"), ("lineage", "GetLineage")):
                 candidates[domain] = readable_ids(instruction, domain + "_id", candidates[domain], actor=self.actor)
         except Exception:
+            LOGGER.warning("Change feed of %s: collaboration permissions unreadable; a snapshot is required",
+                           self.actor, exc_info=True)
             candidates["resident"] = set()
             candidates["lineage"] = set()
             self.snapshot_required = True
@@ -191,6 +196,8 @@ class PortalChanges:
             conversation_ids = readable_ids("GetConversation", "resident_id",
                                             [event.get("resident_id") for event in self.resident_events], actor=self.actor)
         except Exception:
+            LOGGER.warning("Change feed of %s: Conversation permissions unreadable; a snapshot is required",
+                           self.actor, exc_info=True)
             conversation_ids = set()
             self.snapshot_required = True
         self.visible_resident_events = [
@@ -211,6 +218,8 @@ class PortalChanges:
                 from management_portal.permission_system import readable_ids
                 readable = readable_ids("ResolveResource", "address", resource_projection_ids, actor=self.actor)
             except Exception:
+                LOGGER.warning("Change feed of %s: resource permissions unreadable; their projections need snapshots",
+                               self.actor, exc_info=True)
                 readable = set()
                 self.resource_projection_snapshots.update(self.resource_projection_candidates)
             for adapter, resource_ids in self.resource_projection_candidates.items():

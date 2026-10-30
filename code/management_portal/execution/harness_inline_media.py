@@ -4,6 +4,7 @@ import base64
 import copy
 import hashlib
 import io
+import logging
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -11,6 +12,7 @@ from .harness import AgentLoopToolBatch, AgentLoopToolBatchTransform, HarnessFea
 from .harness_capabilities import INPUT_IMAGE_DETAIL, PORTAL_TOOLS, requires
 from .harness_history import bounded_int, serialized_bytes
 
+LOGGER = logging.getLogger(__name__)
 
 INLINE_MEDIA_HISTORY_FEATURE_ID = "inline_media_history"
 DEFAULT_MAX_INLINE_MEDIA_BYTES = 512 * 1024
@@ -124,6 +126,7 @@ def _compress_inline_image_url(
                     len(image_url.encode("utf-8")) - smallest_size,
                 )
     except Exception:
+        LOGGER.warning("Inline image could not be recompressed; it stays as sent", exc_info=True)
         return image_url, 0
     return image_url, 0
 

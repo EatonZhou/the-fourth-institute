@@ -26,7 +26,7 @@ PERIODS = ("daily", "weekly", "monthly")
 def _read_json(path: Path, default: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    except (OSError, ValueError):  # not published yet, or a file that is not JSON
         return default
 
 

@@ -147,7 +147,7 @@ class InferredReset:
 def _read_json_line(line: str) -> dict[str, Any] | None:
     try:
         payload = json.loads(line)
-    except Exception:
+    except ValueError:  # JSONDecodeError and UnicodeDecodeError: a torn or binary line
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -160,7 +160,7 @@ def _parse_timestamp(value: object) -> datetime | None:
         if raw.endswith("Z"):
             raw = raw[:-1] + "+00:00"
         parsed = datetime.fromisoformat(raw)
-    except Exception:
+    except ValueError:
         return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
@@ -170,7 +170,7 @@ def _parse_timestamp(value: object) -> datetime | None:
 def _nonnegative_int(value: object) -> int:
     try:
         number = int(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return 0
     return number if number > 0 else 0
 
@@ -178,7 +178,7 @@ def _nonnegative_int(value: object) -> int:
 def _float_or_none(value: object) -> float | None:
     try:
         return float(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -1782,7 +1782,7 @@ def _estimate_full_usage_cost(cost_usd: object, used_percent: object) -> float |
     try:
         cost = float(cost_usd)
         used = float(used_percent)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
     if used <= 0:
         return None
@@ -2189,7 +2189,7 @@ def _fmt_percent(value: object) -> str:
         return ""
     try:
         return f"{float(value):.1f}%"
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return str(value)
 
 
@@ -2224,14 +2224,14 @@ def _fmt_usd(value: object) -> str:
         return ""
     try:
         return f"${float(value):,.2f}"
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return str(value)
 
 
 def _fmt_hours(interval_days: object) -> str:
     try:
         hours = float(interval_days) * 24
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return ""
     if abs(hours - round(hours)) < 0.05:
         return f"{round(hours):.0f}"
@@ -2243,7 +2243,7 @@ def _fmt_lag_minutes(value: object) -> str:
         return ""
     try:
         minutes = float(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return str(value)
     if minutes < 60:
         return f"+{minutes:.0f}m"

@@ -34,6 +34,7 @@ from __future__ import annotations
 from management_common.site_compatibility import compatibility_value
 
 import json
+import logging
 import math
 import random
 import re
@@ -61,6 +62,7 @@ from .harness_evolution import (
 )
 from .harness_policy_table import TUNABLES, policy_parameters
 
+LOGGER = logging.getLogger(__name__)
 
 EVALUATION_SCHEMA = "tfi.harness-evolution-evaluation.v1"
 REVIEW_SAMPLE_SCHEMA = "tfi.harness-review-sample.v1"
@@ -803,6 +805,7 @@ def sample_for_review(
         try:
             cells = HarnessEvolutionStore().cells()
         except Exception:
+            LOGGER.warning("Harness policy cells unreadable; the review sample ignores challengers", exc_info=True)
             cells = []
     exposure_by_cell = {
         cell.key: exposure_of(changed_tunables(cell.provider, cell.champion, cell.challenger))

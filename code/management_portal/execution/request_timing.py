@@ -4,7 +4,11 @@ Adapters may copy timestamps from an actual local request boundary or a native
 request event. Missing timestamps stay unknown. There is no URL rewriting,
 HTTP listener, response inspection or synchronous remote lookup.
 """
+import logging
+
 from .service_settings import ExecutionSettings
+
+LOGGER = logging.getLogger(__name__)
 
 
 class RequestTimingModule:
@@ -25,4 +29,5 @@ def observed_timing(value):
         return {key: value.get(key) for key in ('started_at', 'finished_at')}
     except Exception:
         # A broken observation setting must not discard a model's response.
+        LOGGER.warning("Model request timing setting unreadable; timing not recorded", exc_info=True)
         return {}

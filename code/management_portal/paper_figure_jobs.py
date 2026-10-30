@@ -29,7 +29,7 @@ FIGURE_EXPLANATION_RESULT_SCHEMA = "tfi.paper.figure-explanation.result.v1"
 def _env_int(name: str, default: int, *, minimum: int = 0) -> int:
     try:
         return max(minimum, int(os.getenv(name, str(default)) or str(default)))
-    except Exception:
+    except ValueError:  # a setting that is not an integer
         return max(minimum, int(default))
 
 
@@ -474,7 +474,9 @@ def delete_generated_figure(payload: dict, actor: str) -> dict:
                 path = (paper_root / rel_path).resolve(strict=False)
                 if paper_root.resolve() in path.parents and path.is_file():
                     path.unlink()
-            except Exception:
+            except (OSError, RuntimeError, ValueError):
+                # Gone already or unremovable; resolve() raises RuntimeError on a
+                # symlink loop and ValueError on a NUL character.
                 pass
     return {"figure": _figure_public(updated_figure, paper_id), "deleted": generated_id}
 
@@ -778,7 +780,7 @@ def _safe_figure_input_image_paths(paper: dict, raw_paths: object) -> list[Path]
     safe_paths: list[Path] = []
     try:
         resolved_root = paper_root.resolve(strict=False)
-    except Exception:
+    except (OSError, RuntimeError, ValueError):  # RuntimeError: a symlink loop; ValueError: a NUL character
         return []
     for raw in raw_paths[:8]:
         path = _safe_file_path(str(raw or ""))
@@ -787,7 +789,7 @@ def _safe_figure_input_image_paths(paper: dict, raw_paths: object) -> list[Path]
         try:
             resolved = path.resolve(strict=False)
             resolved.relative_to(resolved_root)
-        except Exception:
+        except (OSError, RuntimeError, ValueError):  # ValueError: outside the paper's folder
             continue
         if resolved.is_file():
             safe_paths.append(resolved)

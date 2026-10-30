@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import gc
+import logging
 import re
 import secrets
 from dataclasses import dataclass
@@ -44,6 +45,7 @@ from .evidence import (
 from .source import LineageResidentSource
 from .store import ResidentContextStore, after
 
+LOGGER = logging.getLogger(__name__)
 CONVERSATION_REASONS = {"context_cursor_advanced", "conversation_messages_changed"}
 
 
@@ -617,7 +619,7 @@ class ResidentContext:
             try:
                 vector = self._vector_candidates(query, documents, limit=limit)
             except Exception:  # noqa: BLE001 - search degrades to lexical without the model
-                pass
+                LOGGER.warning("Resident vector search failed; ranking is lexical only", exc_info=True)
         combined: dict[str, dict[str, Any]] = {}
         scores: dict[str, float] = {}
         sources: dict[str, set[str]] = {}

@@ -6,6 +6,7 @@ an active goal is followed until Codex reports it done, blocked or limited.
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -263,5 +264,6 @@ class CodexGoalRunner:
                 try:
                     self._controls.interrupt_turn(thread_id, waiter.turn_id)
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).warning(
+                        "Codex turn %s of paused goal %s was not interrupted", waiter.turn_id, thread_id, exc_info=True)
         raise InterruptedError(f"Codex goal paused for {thread_id}")

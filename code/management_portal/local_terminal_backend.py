@@ -64,11 +64,11 @@ def _close_session(session: TerminalSession) -> None:
 def _safe_size(cols: object = None, rows: object = None) -> tuple[int, int]:
     try:
         clean_cols = int(cols)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         clean_cols = 100
     try:
         clean_rows = int(rows)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         clean_rows = 30
     return max(20, min(240, clean_cols)), max(6, min(80, clean_rows))
 
@@ -147,7 +147,7 @@ def _public_state(session: TerminalSession, cursor: object = 0) -> dict:
         session.last_access = time.time()
         try:
             start = int(cursor or 0)
-        except Exception:
+        except (TypeError, ValueError, OverflowError):
             start = 0
         next_cursor = session.output_start + len(session.output)
         if start < session.output_start or start > next_cursor:

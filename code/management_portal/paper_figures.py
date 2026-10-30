@@ -125,7 +125,7 @@ def _dedupe_figures_by_label(figures: list[dict]) -> list[dict]:
         if path and path.is_file():
             try:
                 path.unlink()
-            except Exception:
+            except OSError:
                 pass
     kept = sorted(
         best_by_label.values(),

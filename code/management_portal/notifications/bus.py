@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import queue
 import threading
 import time
@@ -12,6 +13,7 @@ from typing import Any, Callable
 from .config import nats_client_name, nats_enabled, nats_url
 from .subjects import business_projection_subject
 
+LOGGER = logging.getLogger(__name__)
 
 MAX_NOTIFICATION_BYTES = 900 * 1024
 MAX_LOCAL_NOTIFICATIONS = 4096
@@ -56,6 +58,7 @@ class NotificationHub:
             try:
                 subscriber(notification)
             except Exception:
+                LOGGER.warning("Notification subscriber failed on %s", notification.subject, exc_info=True)
                 continue
         return notification
 
@@ -309,7 +312,7 @@ class NatsNotificationListener:
                         payload = json.loads(bytes(message.data))
                         if not isinstance(payload, dict):
                             raise ValueError("notification payload must be an object")
-                    except Exception:
+                    except (TypeError, ValueError):  # no bytes, not JSON, or not an object: a plain change
                         payload = {"kind": "changed"}
                     self.hub.publish(str(message.subject or ""), payload)
                     with self._lock:

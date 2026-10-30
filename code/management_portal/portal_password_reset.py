@@ -2,6 +2,7 @@ from __future__ import annotations
 from management_common.format_tags import schema_matches
 
 import hashlib
+import logging
 import os
 import queue
 import secrets
@@ -18,6 +19,7 @@ from .identity_store import IdentityState
 from management_common.site_config import site_name
 from .portal_session_auth import authentication_setting
 
+LOGGER = logging.getLogger(__name__)
 
 RESET_SCHEMA = "tfi.portal-password-resets.v1"
 RESET_MAX_AGE = 30 * 60
@@ -265,7 +267,9 @@ class PortalPasswordResetService:
                     self.mailer.send_reset(email, token)
                 elif kind == "changed":
                     self.mailer.send_password_changed(email)
-            except Exception:
+            except Exception as exc:
+                # Only the error type: SMTP errors can quote the recipient's address.
+                LOGGER.warning("Password %s email for %s not sent: %s", kind, username, type(exc).__name__)
                 if kind == "reset":
                     self.store.invalidate(token)
             finally:

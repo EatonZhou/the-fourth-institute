@@ -22,7 +22,7 @@ FIGURE_NUMBER_RE = r"[0-9]+(?:\.[0-9]+)*[A-Za-z]?"
 def _float_attr(node: ET.Element, name: str, default: float = 0.0) -> float:
     try:
         return float(node.attrib.get(name) or default)
-    except Exception:
+    except (TypeError, ValueError):  # an attribute that is not a number
         return default
 
 
@@ -468,7 +468,7 @@ def _pdfimages_pages(pdf_path: Path) -> list[int]:
             continue
         try:
             pages.append(int(parts[0]))
-        except Exception:
+        except ValueError:  # isdigit() also admits digits int() rejects, such as "²"
             pages.append(0)
     return pages
 
@@ -486,7 +486,7 @@ def _extract_embedded_pdf_images(
     for old in extracted_dir.glob("_embedded-*"):
         try:
             old.unlink()
-        except Exception:
+        except OSError:
             pass
     pages = _pdfimages_pages(pdf_path)
     result = process_runtime.run_process(
@@ -546,7 +546,7 @@ def _extract_embedded_pdf_images(
     for leftover in extracted_dir.glob("_embedded-*"):
         try:
             leftover.unlink()
-        except Exception:
+        except OSError:
             pass
     return figures
 

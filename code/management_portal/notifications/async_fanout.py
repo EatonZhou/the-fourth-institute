@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 from collections import deque
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from typing import Callable
 
 from .bus import Notification, NotificationHub
 
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PENDING_NOTIFICATIONS = 4096
 DEFAULT_SUBSCRIBER_QUEUE_SIZE = 64
@@ -82,6 +84,7 @@ class AsyncNotificationSubscription:
             if not self._predicate(notification):
                 return
         except Exception:
+            LOGGER.warning("Notification filter failed; this subscriber misses the notification", exc_info=True)
             return
         try:
             self._queue.put_nowait(notification)

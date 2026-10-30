@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 import re
 import secrets
@@ -21,6 +22,7 @@ from management_portal.paper_store import (
 )
 from management_portal.paper_summaries import _start_summary_task
 
+LOGGER = logging.getLogger(__name__)
 
 PAPER_PDF_UPLOAD_MAX_BYTES = 512 * 1024 * 1024
 
@@ -205,7 +207,8 @@ def create_paper_registration_draft(payload: dict, actor: str) -> dict:
                 "error": str(exc),
             })
         except Exception:
-            pass
+            LOGGER.exception("Paper registration draft %s failed (%s) and its error was not recorded",
+                             upload_id, type(exc).__name__)
 
     try:
         business_tasks.start(

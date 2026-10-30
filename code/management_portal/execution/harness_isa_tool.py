@@ -12,12 +12,14 @@ this tool, not of the instruction), together with the cursor to resume from.
 from __future__ import annotations
 
 import json
+import logging
 import queue
 import threading
 from typing import Any, Callable
 
 from .harness import HarnessTool, attach_harness_tools, current_tool_call_id, stable_json_result
 
+LOGGER = logging.getLogger(__name__)
 
 ISA_TOOL_NAME = "hatg_instruction"
 DEFAULT_WAIT_SECONDS = 30.0
@@ -97,7 +99,7 @@ def _first_batch(
                 try:
                     close()
                 except Exception:  # noqa: BLE001
-                    pass
+                    LOGGER.warning("ISA stream of a Harness tool call did not close cleanly", exc_info=True)
 
     threading.Thread(target=pump, name="hatg-harness-stream", daemon=True).start()
     try:
@@ -179,7 +181,7 @@ def _only_reads(arguments: dict[str, Any]) -> bool:
 
     try:
         declaration = routing.declaration_for(str(arguments.get("instruction") or ""))
-    except Exception:  # noqa: BLE001 - an unknown instruction is not a read
+    except routing.InstructionError:  # instruction.unknown: an unknown instruction is not a read
         return False
     return not declaration.mutates and not declaration.streaming
 

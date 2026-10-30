@@ -180,6 +180,8 @@ class ExecutionWorkerManager:
         self._health_write_error_signature = ""
         self._health_write_error_logged_at = 0.0
         self._health_write_suppressed = 0
+        # (method, worker id) -> (last printed lifecycle request error, when).
+        self._lifecycle_failures: dict[tuple[str, str], tuple[str, float]] = {}
 
     def request_reload(self, _signum: int, _frame: object) -> None:
         self._reload.set()
@@ -510,7 +512,8 @@ class ExecutionWorkerManager:
                 "scheduler.worker.state",
                 {"worker_id": worker.worker_id, "state": "draining"},
             )
-        except Exception:
+        except Exception as exc:
+            self._note_lifecycle_failure("scheduler.worker.state", worker.worker_id, exc)
             return
         # Retain the health field as the time stop was requested; it does not
         # prove the process or tree has exited. Failed requests are retried.
@@ -537,7 +540,8 @@ class ExecutionWorkerManager:
                 "scheduler.worker.handover",
                 {"worker_id": worker.worker_id},
             )
-        except Exception:
+        except Exception as exc:
+            self._note_lifecycle_failure("scheduler.worker.handover", worker.worker_id, exc)
             return None
         return result if isinstance(result, dict) else {}
 
@@ -586,14 +590,34 @@ class ExecutionWorkerManager:
                 "scheduler.worker.unregister",
                 {"worker_id": worker_id},
             )
-        except Exception:
+        except Exception as exc:
+            self._note_lifecycle_failure("scheduler.worker.unregister", worker_id, exc)
             return False
         return True
+
+    def _note_lifecycle_failure(self, method: str, worker_id: str, exc: BaseException) -> None:
+        """Print a failed lifecycle request; the same error again at most once per log interval.
+
+        The callers retry on the next pass, every half second while a Worker drains.
+        """
+        error = self._compact_error(exc)
+        now = time.monotonic()
+        previous, logged_at = self._lifecycle_failures.get((method, worker_id), ("", 0.0))
+        if error == previous and now - logged_at < self.failure_log_interval:
+            return
+        self._lifecycle_failures[(method, worker_id)] = (error, now)
+        print(
+            f"ExecutionWorkerManager {method} failed for {worker_id or 'the Scheduler'}; "
+            f"retrying later: {error}",
+            file=sys.stderr,
+            flush=True,
+        )
 
     def _cleanup_offline_registrations(self) -> None:
         try:
             health = ExecutionServiceClient().health()
-        except Exception:
+        except Exception as exc:
+            self._note_lifecycle_failure("health", "", exc)
             return
         scheduler = (
             health.get("scheduler")

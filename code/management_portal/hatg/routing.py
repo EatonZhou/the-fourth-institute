@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import copy
 import importlib
+import logging
 import os
 import threading
 from typing import Any, Iterator, Mapping
@@ -37,6 +38,7 @@ from .kernel import (
     register_kernel,
 )
 
+LOGGER = logging.getLogger(__name__)
 
 KERNEL_BUILDERS = {
     "lineage": "management_portal.society_service.isa:build_kernel",
@@ -85,7 +87,10 @@ def assign_instruction_id(call: InstructionCall | Mapping[str, Any], *, reuse: s
     try:
         parsed = _as_call(call)
         declaration = declaration_for(parsed.instruction)
-    except Exception:  # noqa: BLE001 - execute reports the same error
+    except InstructionError:  # an invalid call or unknown instruction: execute reports the same error
+        return ""
+    except Exception:  # noqa: BLE001 - so does execute for any other
+        LOGGER.warning("Instruction ID not assigned; the call cannot be routed", exc_info=True)
         return ""
     if declaration.owner == "entry":
         return ""

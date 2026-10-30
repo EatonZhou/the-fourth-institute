@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 from functools import lru_cache
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from pathlib import Path
 from typing import Mapping
 
@@ -46,7 +46,7 @@ def request_locale(headers: Mapping, *, language: object = None, default: str = 
     cookie = SimpleCookie()
     try:
         cookie.load(headers.get("Cookie", ""))
-    except Exception:
+    except (CookieError, AttributeError):  # a malformed Cookie header, or one that is not text
         pass
     selected = normalize_language(language if language is not None else (
         cookie["portal_language"].value if "portal_language" in cookie else "auto"))

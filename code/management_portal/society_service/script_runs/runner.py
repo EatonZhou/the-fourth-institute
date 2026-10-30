@@ -102,7 +102,9 @@ def _reads_only(instruction) -> bool:
     try:
         from management_portal.hatg.catalog import declaration
         return not declaration(str(instruction)).mutates
-    except Exception:
+    except Exception as error:  # treated as a mutation: the result goes back to the script
+        print(f"Script runner: declaration of {instruction!s:.80} unreadable: {type(error).__name__}: {error}",
+              file=sys.stderr)
         return False
 
 

@@ -133,7 +133,8 @@ def _decode_deployment_preference(raw: str) -> tuple[str, str]:
         if not username or not backend:
             return "", ""
         return username, backend
-    except Exception:
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        # A malformed preference cookie: not ASCII, base64 or JSON, or not an object.
         return "", ""
 
 
@@ -443,7 +444,7 @@ class PortalRouterHandler(BaseHTTPRequestHandler):
                 try:
                     self.log_error("Portal backend unavailable: %s", exc)
                     self._json(502, _public_backend_error())
-                except Exception:
+                except (OSError, ValueError):  # the client is gone, or its stream closed meanwhile
                     pass
         finally:
             connection.close()

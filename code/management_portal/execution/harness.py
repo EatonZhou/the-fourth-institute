@@ -3,6 +3,7 @@ from __future__ import annotations
 from management_common.format_tags import schema_matches
 
 import json
+import logging
 import threading
 import time
 from contextlib import contextmanager
@@ -19,6 +20,7 @@ from .harness_capabilities import (
     unmet_requirement,
 )
 
+LOGGER = logging.getLogger(__name__)
 
 AGENT_HARNESS_RUNTIME_KEY = "agent_harness"
 HARNESS_TIMING_BEFORE_TURN = "before_turn"
@@ -673,6 +675,7 @@ class AgentHarness:
             raise
         except Exception:
             # The checkpoint is an aid for recovery; the turn does not depend on it.
+            LOGGER.warning("Harness plan was not saved with the recovery checkpoint", exc_info=True)
             return
 
     def _record_attempt_plan(
@@ -746,6 +749,7 @@ class AgentHarness:
         except Exception:
             # Adaptive policy is optional. Its failure must not make the
             # underlying Provider execution depend on this optimization.
+            LOGGER.warning("Adaptive Harness policy failed; the turn runs the manual plan", exc_info=True)
             saved_plan = self._saved_plan(invocation)
             return self._without_unavailable(
                 {
@@ -841,6 +845,7 @@ class AgentHarness:
             except (InterruptedError, ExecutionControlSignal):
                 raise
             except Exception:
+                LOGGER.warning("Harness feature %s could not prepare the invocation", feature.feature_id, exc_info=True)
                 continue
         return current
 
@@ -851,6 +856,7 @@ class AgentHarness:
         except Exception:
             # Harness telemetry is observational and must never make Portal depend
             # on the optional Harness path.
+            LOGGER.warning("Harness event %s was not emitted", event_type, exc_info=True)
             return
 
     def execute(

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from management_common.format_tags import schema_matches
 
+import logging
 import threading
 from typing import Any, Callable
 
@@ -25,6 +26,7 @@ from .contracts import (
 )
 from .control_messages import report_harness_control
 
+LOGGER = logging.getLogger(__name__)
 POLL_SECONDS = 0.25
 STOP_WAIT_SECONDS = 60.0
 
@@ -106,10 +108,16 @@ class TurnInputPump:
             self._thread.join(STOP_WAIT_SECONDS)
 
     def _run(self) -> None:
+        failing = False
         while not self._stopped.is_set():
             try:
                 delivered_any = self.pump_once()
+                failing = False
             except Exception:  # noqa: BLE001 - the pump must never fail the turn
+                # Once per run of failures: the pump polls four times a second.
+                if not failing:
+                    LOGGER.warning("Turn input pump failed; it keeps polling", exc_info=True)
+                failing = True
                 delivered_any = False
             if not delivered_any:
                 self._stopped.wait(self._poll_seconds)
@@ -175,7 +183,7 @@ class TurnInputPump:
                 if taken:
                     report_harness_control(self._context, control)
         except Exception:  # noqa: BLE001 - a lost receipt falls back to the next turn
-            pass
+            LOGGER.warning("Receipt of turn control %s was not recorded", control.get("control_id"), exc_info=True)
 
 
 class _NoTurnInput:

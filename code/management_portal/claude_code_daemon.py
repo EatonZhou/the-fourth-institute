@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import dataclasses
 import json
+import logging
 import os
 import re
 import signal
@@ -47,6 +48,7 @@ from management_portal.claude_runtime import native_cli_path
 from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRuns
 
 
+LOGGER = logging.getLogger(__name__)
 DEFAULT_SOCKET_PATH = (portal_path("staging_root") / "portal_locks" / "claude-code-daemon.sock")
 APP_SERVER_PROTOCOL_VERSION = 1
 
@@ -329,6 +331,7 @@ async def _report_context_usage(handle: SessionHandle, turn_id: str, emit) -> No
         tokens = int(usage.get("totalTokens") or 0)
         window = int(usage.get("maxTokens") or 0)
     except Exception:
+        LOGGER.warning("Claude Code context usage unreadable for turn %s", turn_id, exc_info=True)
         return
     if tokens <= 0 or window <= 0 or handle.active_turn_id != turn_id:
         return
@@ -619,6 +622,7 @@ class TurnConnection:
                 except Exception:
                     # The Worker closed its connection (a handover, or it
                     # died); the next Worker attaches to this turn.
+                    LOGGER.warning("Worker connection lost; holding the turn's events for the next Worker", exc_info=True)
                     self._detach()
             self._hold(event)
 
@@ -635,6 +639,7 @@ class TurnConnection:
                     await emit(self.held[0])
                     del self.held[0]
             except Exception:
+                LOGGER.warning("Attaching Worker connection lost; %d events stay held", len(self.held), exc_info=True)
                 return
             self.emit = emit
             self.dispatch_tool = dispatch_tool
@@ -749,7 +754,7 @@ async def _disconnect(handle: SessionHandle) -> None:
     try:
         await asyncio.wait_for(handle.client.disconnect(), timeout=30)
     except Exception:
-        pass
+        LOGGER.warning("Claude Code CLI of session %s did not disconnect cleanly", handle.session_id, exc_info=True)
 
 
 @dataclass(frozen=True)
@@ -1639,6 +1644,7 @@ class ClaudeCodeDaemon:
             try:
                 await handle.client.stop_task(task_id)
             except Exception:  # noqa: BLE001 - the turn stops all the same
+                LOGGER.warning("Claude Code could not stop background subagent task %s", task_id, exc_info=True)
                 handle.subagent_stops.discard(tool_use_id)
 
     async def compact_session(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -1995,7 +2001,8 @@ class WorkerRequest:
                     "error": {"class": exc.__class__.__name__, "message": str(exc)},
                 })
             except Exception:
-                pass
+                LOGGER.warning("Claude Code request %s failed (%s) and the Worker connection is gone",
+                               self.request_id, exc.__class__.__name__)
         finally:
             self.writer.close()
             try:

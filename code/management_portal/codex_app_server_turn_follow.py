@@ -83,7 +83,9 @@ class CodexTurnFollower:
                 try:
                     self._controls.interrupt_turn(thread_id, waiter.turn_id)
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).warning(
+                        "Cancelled Codex turn %s of thread %s was not interrupted", waiter.turn_id, thread_id,
+                        exc_info=True)
                 raise InterruptedError(f"Codex turn cancelled for {thread_id}")
             if turn_control_provider is not None and waiter.turn_id:
                 self._controls.deliver_turn_control(

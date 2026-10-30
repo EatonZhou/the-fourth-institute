@@ -47,14 +47,14 @@ def _coerce_timestamp(value, default: int | None = None) -> int:
         default = _now()
     try:
         return int(value)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         pass
     text = str(value or "").strip()
     if not text:
         return default
     try:
         return int(datetime.fromisoformat(text.replace("Z", "+00:00")).timestamp())
-    except Exception:
+    except (ValueError, OverflowError, OSError):  # not ISO 8601, or outside the platform's time range
         return default
 
 

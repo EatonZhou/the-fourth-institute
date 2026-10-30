@@ -1,6 +1,7 @@
 """Resident instructions (decision_d19b9909a674)."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from management_portal.hatg.contracts import InstructionError, invalid
@@ -21,7 +22,7 @@ from .common import (
 )
 from .. import lineage_aggregate
 
-
+LOGGER = logging.getLogger(__name__)
 
 
 def _family_to_join(lineage_id: str, inv: Invocation) -> str:
@@ -373,6 +374,7 @@ def _writer_identity(resident_id: str) -> tuple[str, str]:
     try:
         account = str(resident_backend.execution_account(record).get("account_id") or "")
     except Exception:  # noqa: BLE001 - an unresolved account is recorded as unknown
+        LOGGER.warning("Execution account of Resident %s unresolved; recorded as unknown", resident_id, exc_info=True)
         account = ""
     model = str(settings.get("model") or "")
     effort = str(settings.get("reasoning_effort") or "")

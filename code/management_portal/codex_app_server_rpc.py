@@ -8,6 +8,7 @@ thread and hands the server's own requests and notifications to the client.
 from __future__ import annotations
 
 import json
+import logging
 import socket
 import threading
 import time
@@ -50,12 +51,12 @@ class ReleasedTransport:
         try:
             if self.transport is not None:
                 self.transport.close()
-        except Exception:
+        except OSError:  # WebSocketTransport.close lets only its socket's close fail
             pass
         try:
             if self.socket is not None:
                 self.socket.close()
-        except Exception:
+        except OSError:
             pass
         for item in self.pending:
             fail_waiter(item, CodexAppServerUnavailable(str(error)))
@@ -246,7 +247,9 @@ class CodexRpcConnection:
                 raw = transport.recv_text()
                 try:
                     message = json.loads(raw)
-                except Exception:
+                except ValueError:  # recv_text returns text; a frame that is not JSON is skipped
+                    logging.getLogger(__name__).warning(
+                        "Codex app-server sent a frame that is not JSON (%d characters)", len(raw))
                     continue
                 if not isinstance(message, dict):
                     continue

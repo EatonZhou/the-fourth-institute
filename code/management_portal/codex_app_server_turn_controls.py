@@ -177,7 +177,7 @@ class CodexTurnControls:
                         type(exc).__name__,
                     )
                 except Exception:
-                    pass
+                    logging.getLogger(__name__).exception("Codex turn control result callback failed")
             return None
         if control is None:
             return None

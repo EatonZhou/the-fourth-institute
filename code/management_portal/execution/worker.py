@@ -166,7 +166,7 @@ class _ClaimedExecution:
             if interrupt_provider:
                 self._worker.runtime.interrupt(self.execution_id)
         except Exception:
-            pass
+            LOGGER.warning("Fenced execution %s: Provider interrupt failed", self.execution_id, exc_info=True)
 
     def claim_scoped(self, call: Any, *, retry_unknown: bool = False) -> Any:
         # A missing service socket is not a Provider failure. Retain the
@@ -369,6 +369,7 @@ class _ClaimedExecution:
                 if self.heartbeat_stop.wait(1.0):
                     return
             except BaseException:
+                LOGGER.exception("Heartbeat of execution %s failed; fencing its claim", self.execution_id)
                 self.fence()
                 return
 
@@ -802,7 +803,7 @@ class ExecutionWorkerDaemon:
             try:
                 self.worker.scheduler.set_state("draining")
             except Exception:
-                pass
+                LOGGER.warning("ExecutionWorker could not announce draining to the Scheduler", exc_info=True)
             deadline = time.monotonic() + self.drain_timeout
             with self._active_changed:
                 while self._active and (
@@ -816,7 +817,7 @@ class ExecutionWorkerDaemon:
             try:
                 self.worker.scheduler.set_state("offline")
             except Exception:
-                pass
+                LOGGER.warning("ExecutionWorker could not announce going offline to the Scheduler", exc_info=True)
             self._write_health()
         return 0
 
