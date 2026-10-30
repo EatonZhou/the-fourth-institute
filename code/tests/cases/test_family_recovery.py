@@ -126,6 +126,37 @@ def test_continue_requeues_failed_member_once_and_keeps_original_link(family):
     assert command not in family_facade.relay_links(_record(family))
 
 
+@pytest.mark.parametrize("control,selected,visible", [
+    ("mute", "wrong", False),
+    ("mute", "right", True),
+    ("solo", "wrong", True),
+    ("solo", "right", False),
+])
+def test_recovery_history_opens_with_personal_chat_controls(family, control, selected, visible):
+    """A recovered request uses the same relay projection as ordinary history."""
+    from management_portal.society_service import family_chat_preferences, resident_protocol
+
+    root = _send(family, "恢复后的历史也遵守个人 M/S")
+    member_message, _ = _round(family["wrong"], state="failed", text="原请求")
+    family_facade.complete_relay((family["facade"], root), family["wrong"], member_message)
+    command = _send(family, "continue")
+    facade = _record(family)
+    family_chat_preferences.change(family["facade"], "sample_admin", family[selected], control, True)
+
+    snapshot = resident_protocol.get_resident_conversation_snapshot(family["facade"], "sample_admin")
+
+    shown_ids = {message["message_id"] for message in snapshot["messages"]}
+    assert (root in shown_ids) is visible
+    assert (command in shown_ids) is visible
+    assert _view(family, command)["via"] == [
+        {"resident_id": family["facade"], "title": facade["title"]},
+    ]
+    # The viewer's preference never changes the retained original input.
+    repository = resident_conversation_stream.get_repository()
+    assert repository.message(family["facade"], command)
+    assert family_facade.relay_links(facade)[root]["message_id"] == member_message
+
+
 def test_failed_routing_uses_original_payload_and_new_deduplicated_occurrence(family, monkeypatch):
     """Family 路由重试保留原请求并使用独立去重标识"""
     monkeypatch.setattr(family_facade, "family_members", lambda _record: list(family["members"]))

@@ -267,12 +267,20 @@ def routing_failed(event, error: str, *, node_id: str = ""):
 
 
 def view(facade, entry):
+    """Project recovery progress with the same member objects as ordinary relays."""
     result = {"state": "recovery", **entry, "original_message_id": entry.get("request_message_id") or ""}
     if entry.get("request_message_id") and entry.get("status") in {"routing", "observing"}:
         current = request_status(facade, entry["request_message_id"])
         result.update({key: value for key, value in current.items() if key != "state"})
         result["status"] = current["state"]
+    if "via" in result:
+        result["via"] = [
+            {"resident_id": resident_id, **family_facade._member_view(resident_id)}
+            for resident_id in result["via"]
+        ]
     return result
+
+
 def archive_result(facade_id: str, message_id: str, steward_message_id: str, actor: str, *, reason: str) -> dict:
     """Attach a completed organizational review without executing the request again.
 
