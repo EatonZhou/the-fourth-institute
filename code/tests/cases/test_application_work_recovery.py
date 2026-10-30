@@ -193,9 +193,73 @@ def test_domain_constructor_has_real_mailbox_links_and_preparing_executions(owne
             connection.rollback()
 
 
-def test_available_account_resumes_same_input_execution_only_once(domain_waiting, owners, monkeypatch):
+def unavailable_accounts(receipt, monkeypatch):
+    """Enter the real no-fallback branch; no migration rows are fabricated."""
+    from management_portal.society_service import resident_backend
+    accounts = []
+    for item in receipt['residents']:
+        record = resident_record_domain.find_resident(item['resident_id'])
+        account = _account(resident_backend.execution_account(record)['backend_route_id'], 9)
+        if account not in accounts:
+            accounts.append(account)
+    from types import SimpleNamespace
+    monkeypatch.setattr(execution_port, 'service', lambda: SimpleNamespace(accounts=lambda: {'accounts': accounts}))
+    for item in receipt['residents']:
+        record = resident_record_domain.find_resident(item['resident_id'])
+        before = retained(item['resident_id'])
+        assert family_quota.ensure_role_reserve(record)
+        incident = family_quota.role_migration(record)
+        assert incident['status'] == 'unavailable'
+        assert not incident.get('pending_restart')
+        assert incident['attempts'] == 0 and incident['tried_accounts'] == []
+        assert incident['owner_notified'] is True
+        for _ in range(3):
+            assert recovery._prepare_resident_continuation(record) is None
+            assert recovery.resume_resident_execution(item['resident_id'])['residents'] == 0
+        assert retained(item['resident_id']) == before
+    return accounts
+
+
+def test_unavailable_owner_proof_and_v60_migration(domain_waiting, owners, monkeypatch):
+    unavailable_accounts(domain_waiting, monkeypatch)
+    import psycopg
+    from psycopg import sql
+    from scripts import tfi_application_work as proof_owner
+    from scripts.tfi_release_schema import upgrade
+    from tests.cases.test_release_schema import origin
+    from tests.cases.test_application_work import SchemaConnection
+    from management_portal.society_service.state_store import get_lineage_data_store
+    with psycopg.connect(owners.data.database.dsn) as connection:
+        try:
+            for database, name in ((get_lineage_data_store().database, 'lineage'),
+                                   (owners.data.database, 'agent'), (owners.scheduler.database, 'execution_runtime')):
+                connection.execute(sql.SQL('ALTER SCHEMA {} RENAME TO {}').format(
+                    sql.Identifier(database.schema), sql.Identifier(name)))
+            connection.execute('SET LOCAL search_path TO lineage')
+            # Reconstruct only historical schema columns, retaining the real
+            # owner's work rows, then execute the actual v60 -> v65 migration.
+            origin(SchemaConnection(connection), 60)
+            before = proof_owner.inspect(None, None, connection=connection)
+            assert before['counts'] == {'queued': 4, 'preparing': 2}
+            from psycopg.rows import dict_row
+            rows = connection.cursor(row_factory=dict_row).execute(
+                'SELECT * FROM lineage.family_quota_migrations').fetchall()
+            assert before['retained']['family_quota_migrations'] == proof_owner.fingerprint(rows)
+            assert upgrade(SchemaConnection(connection))['previous_schema'].endswith('v60')
+            assert proof_owner.inspect(None, None, connection=connection) == before
+            connection.execute("UPDATE lineage.family_quota_migrations SET migration_json="
+                               "jsonb_set(migration_json::jsonb,'{reason}','\"different arbitrary text\"')")
+            assert proof_owner.inspect(None, None, connection=connection) != before
+        finally:
+            connection.rollback()
+
+
+@pytest.mark.parametrize('quota_unavailable', [False, True], ids=['account-wait', 'quota-unavailable'])
+def test_available_account_resumes_same_input_execution_only_once(domain_waiting, owners, monkeypatch, quota_unavailable):
     """Real preparation/thread/submit owner; only the remote endpoint is replaced."""
     from management_portal.society_service import resident_backend
+    if quota_unavailable:
+        unavailable_accounts(domain_waiting, monkeypatch)
     targets = domain_waiting["residents"]
     before = {item["resident_id"]: retained(item["resident_id"]) for item in targets}
     arrived = {item["execution_id"]: threading.Event() for item in targets}

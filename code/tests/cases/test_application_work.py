@@ -214,6 +214,51 @@ def test_incomplete_or_ambiguous_evidence_refuses(database, sql):
         work.inspect(api, {})
 
 
+@pytest.mark.parametrize('mutation,code', [
+    ({'status': 'migrating', 'pending_restart': None}, 'quota_migration_in_flight'),
+    ({'status': 'future'}, 'quota_migration_in_flight'),
+    ({'pending_restart': {'idempotency_key': 'kept-intent'}}, 'quota_migration_in_flight'),
+    ({'pending_restart': {}}, 'quota_migration_in_flight'),
+    ({'pending_restart': False}, 'quota_migration_in_flight'),
+    ({'future_intent': False}, 'unknown_quota_evidence'),
+    ({'attempts': True}, 'invalid_quota_evidence'),
+])
+def test_unavailable_cannot_hide_restart_or_unknown_evidence(database, mutation, code):
+    dsn, api = database
+    incident = {'status': 'unavailable', 'epoch': 'fixture-epoch', 'attempts': 0,
+                'tried_accounts': [], 'checked_at': 123, 'owner_notified': True,
+                'reason': 'arbitrary text, not evidence'}
+    incident.update(mutation)
+    with psycopg.connect(dsn) as c:
+        c.execute('UPDATE lineage.family_quota_migrations SET migration_json=%s', (Jsonb(incident),))
+    with pytest.raises(work.WorkProofError, match=code):
+        work.inspect(api, {})
+
+
+@pytest.mark.parametrize('mutation,code', [
+    ("INSERT INTO lineage.resident_lifecycle_operations VALUES('unfinished','resident_000000000004',"
+     "'{\"status\":\"failed\",\"next_step\":1,\"steps\":[{\"kind\":\"session_restart\"},{\"kind\":\"execution_ack\"}]}',now(),'')",
+     'pending_resident_lifecycle_operations'),
+    ("INSERT INTO lineage.resident_sessions(resident_id,session_restart_json) VALUES('resident_000000000004',"
+     "'{\"status\":\"accepted\",\"phase\":\"creating_session\"}')", 'session_restart_unsettled'),
+    ("INSERT INTO lineage.resident_sessions(resident_id,session_restart_json) VALUES('resident_000000000004',"
+     "'{\"status\":\"completed\",\"deferred\":{\"phase\":\"waiting\"}}')", 'deferred_restart_pending'),
+    ("UPDATE lineage.resident_execution_work SET progress_json=progress_json || '{\"submitted_at\":\"recorded\"}'",
+     'submission_continuation_or_projection_evidence'),
+    ("UPDATE lineage.family_quota_migrations SET resident_id='missing' WHERE resident_id='resident_000000000004'",
+     'quota_resident_identity_mismatch'),
+])
+def test_unavailable_still_requires_independent_work_proof(database, mutation, code):
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        c.execute('UPDATE lineage.family_quota_migrations SET migration_json=%s', (Jsonb({
+            'status': 'unavailable', 'epoch': 'fixture-epoch', 'attempts': 0,
+            'tried_accounts': [], 'checked_at': 123}),))
+        c.execute(mutation)
+    with pytest.raises(work.WorkProofError, match=code):
+        work.inspect(api, {})
+
+
 @pytest.mark.parametrize('status', ['queued', 'running', 'completed', 'future'])
 def test_scheduler_record_never_classified_by_reason_or_terminal_label(database, status):
     dsn, api = database

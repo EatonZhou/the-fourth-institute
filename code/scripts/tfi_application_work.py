@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from datetime import date, datetime, timezone
 
 
@@ -84,6 +85,39 @@ INERT_PROGRESS = {'actor', 'activation_policy', 'intake_admitted_at', 'updated_a
                   'started_at', 'dispatched_at'}
 
 
+def retained_quota_wait(migration):
+    """Validate an inert admission incident, never a restart acknowledgement.
+
+    Both v60 and current ensure_role_reserve persist unavailable when no safe
+    fallback exists. Conversely, clearing pending_restart only acknowledges a
+    return from RestartSession, which may have enqueued lifecycle work. Even
+    migrating + null therefore remains outside this proof.
+    """
+    from management_portal.society_service.family_quota import MIGRATION_FIELDS, MAX_MIGRATIONS
+    require(not set(migration) - MIGRATION_FIELDS, 'unknown_quota_evidence')
+    require(migration.get('status') in (None, '', 'waiting', 'unavailable')
+            and migration.get('pending_restart') is None, 'quota_migration_in_flight')
+    for name in ('epoch', 'reason', 'account_wait'):
+        require(name not in migration or isinstance(migration[name], str), 'invalid_quota_evidence')
+    require('owner_notified' not in migration or type(migration['owner_notified']) is bool,
+            'invalid_quota_evidence')
+    if 'attempts' in migration:
+        require(type(migration['attempts']) is int and 0 <= migration['attempts'] <= MAX_MIGRATIONS,
+                'invalid_quota_evidence')
+    if 'checked_at' in migration:
+        checked = migration['checked_at']
+        require(type(checked) in (int, float) and math.isfinite(checked) and checked >= 0,
+                'invalid_quota_evidence')
+    if 'tried_accounts' in migration:
+        tried = migration['tried_accounts']
+        require(isinstance(tried, list) and all(isinstance(item, str) and item for item in tried)
+                and len(set(tried)) == len(tried) and len(tried) == migration.get('attempts'),
+                'invalid_quota_evidence')
+    if migration.get('status') == 'unavailable':
+        require({'epoch', 'attempts', 'tried_accounts', 'checked_at'} <= set(migration)
+                and bool(migration['epoch']), 'incomplete_quota_wait')
+
+
 def _inspect(cursor):
     from scripts.tfi_release_schema import columns_for, version
     from management_portal.execution.agent_data_tables import AGENT_DATA_COLUMNS
@@ -130,20 +164,26 @@ def _inspect(cursor):
     require(not rows('execution_runtime', 'execution_input_controls'), 'scheduler_control_present')
     for row in data['operator_work']:
         require(not object_value(row['checkpoint_json']).get('pending_deliveries'), 'operator_delivery_pending')
+    residents = {r['resident_id']: r for r in data['residents']}
+    nodes = {r['node_id']: r for r in data['lineage_nodes']}
     for row in data['family_quota_migrations']:
         migration = object_value(row['migration_json'])
-        require(migration.get('status') in (None, '', 'waiting') and not migration.get('pending_restart'),
-                'quota_migration_in_flight')
+        retained_quota_wait(migration)
+        resident, node = residents.get(row['resident_id']), nodes.get(row['resident_id'])
+        require(resident is not None and resident['deleted_at'] is None
+                and resident['registration_state'] == 'ready' and node is not None
+                and node['node_type'] == 'resident' and node['deleted_at'] is None
+                and node['lineage_id'] == row['lineage_id'], 'quota_resident_identity_mismatch')
     for row in data['resident_sessions']:
         restart = object_value(row['session_restart_json'] or {})
         require(not restart.get('deferred'), 'deferred_restart_pending')
+        require(not restart or restart.get('status') in ('completed', 'failed', 'cancelled'),
+                'session_restart_unsettled')
 
     states = {(r['resident_id'], r['message_id']): r for r in data['conversation_input_states']}
     active = {key: r for key, r in states.items() if r['state'] in ('queued', 'running')}
     require(all(r['state'] in ('queued', 'running', 'completed', 'failed', 'cancelled') for r in states.values()),
             'unknown_input_state')
-    residents = {r['resident_id']: r for r in data['residents']}
-    nodes = {r['node_id']: r for r in data['lineage_nodes']}
     # Keyed creation commits this permanent association with identity and graph
     # membership. It is reused after success, not deleted like pending work.
     # The association alone does not acknowledge Resource publication: require
