@@ -15,6 +15,7 @@ import pytest
 
 from management_portal import localization
 from management_portal import serve_management_portal as portal
+from management_portal import user_preferences
 
 
 def headers(**values):
@@ -42,13 +43,13 @@ def test_explicit_language_wins_over_cookie_and_browser_without_changing_account
     assert localization.request_locale(headers(Cookie="portal_language=en", Accept_Language="zh-CN")) == "en"
     assert localization.request_locale(headers(Accept_Language="en"), language="zh-CN") == "zh-CN"
     assert localization.request_locale(headers()) == "en"
-    preferences = portal._merge_portal_user_preferences(
+    preferences = user_preferences._merge_portal_user_preferences(
         {"appearance": {"motion": "reduced", "language": "zh-CN"}, "onboarding": {"welcome_dismissed": True}},
         {"appearance": {"language": "en"}},
     )
     assert preferences["appearance"] == {"motion": "reduced", "language": "en"}
     assert preferences["onboarding"]["welcome_dismissed"] is True
-    assert portal._normalize_portal_user_preferences({"appearance": {"language": "<script>"}})["appearance"]["language"] == "auto"
+    assert user_preferences._normalize_portal_user_preferences({"appearance": {"language": "<script>"}})["appearance"]["language"] == "auto"
 
 
 def test_http_error_localization_changes_only_display_fields_and_preserves_placeholders(monkeypatch):
@@ -131,7 +132,7 @@ def test_original_mode_preserves_mixed_copy_preferences_and_http_bytes():
     assert localization.normalize_language("original") == "original"
     assert localization.request_locale(headers(X_Portal_Language="original", Cookie="portal_language=en", Accept_Language="en")) == "original"
     assert localization.request_locale(headers(Cookie="portal_language=original", Accept_Language="en")) == "original"
-    preferences = portal._merge_portal_user_preferences({"appearance": {"motion": "reduced"}}, {"appearance": {"language": "original"}})
+    preferences = user_preferences._merge_portal_user_preferences({"appearance": {"motion": "reduced"}}, {"appearance": {"language": "original"}})
     assert preferences["appearance"] == {"motion": "reduced", "language": "original"}
     for message in ("Access denied", "无访问权限", "Resource {p1} is unavailable"):
         assert localization.translate_message(message, "original") == message

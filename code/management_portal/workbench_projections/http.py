@@ -128,7 +128,8 @@ def post(path: str, payload: dict, actor: str):
 
 
 def handle(handler, parsed, actor: str, *, write: bool = False):
-    from management_portal.serve_management_portal import _read_bounded_json_object, _serve_json
+    from management_portal.http_request_body import _read_bounded_json_object
+    from management_portal.http_responses import _serve_json
     try:
         from .application_http import PREFIX, LIBRARY_PREFIX, serve_asset, serve_library
         from management_portal.distribution.page import PublishedPackaging

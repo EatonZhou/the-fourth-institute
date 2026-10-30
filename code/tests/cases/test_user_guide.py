@@ -53,6 +53,7 @@ def _request(accept=""):
 def test_agents_get_markdown_and_people_get_the_page(monkeypatch):
     """指南按请求类型提供 Markdown 或网页并支持缓存校验"""
     from management_portal import serve_management_portal as portal
+    from management_portal import http_documents
 
     sent, headers = [], []
 
@@ -60,7 +61,7 @@ def test_agents_get_markdown_and_people_get_the_page(monkeypatch):
         sent.append((status, content_type, data))
         headers.append(kwargs.get("extra_headers") or {})
 
-    monkeypatch.setattr(portal, "_serve_bytes", serve)
+    monkeypatch.setattr(http_documents, "_serve_bytes", serve)
     guide.guide_page(_request("text/markdown"), urlsplit("/guide"), "")
     guide.guide_page(_request("text/html,application/xhtml+xml"), urlsplit("/guide"), "")
     guide.guide_markdown(_request(), urlsplit("/guide/agent.md"), "")

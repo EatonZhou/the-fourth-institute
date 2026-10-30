@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_common import process_runtime
-from management_portal import article_identity_backend as backend
+from management_portal import article_build
 
 
 @pytest.fixture
@@ -28,20 +28,20 @@ def build(tmp_path, monkeypatch):
 
     # Track real children so a regression cannot leave the test's helpers alive.
     monkeypatch.setattr(subprocess, "Popen", track)
-    monkeypatch.setattr(backend, "get_resource_service", lambda: SimpleNamespace(
+    monkeypatch.setattr(article_build, "get_resource_service", lambda: SimpleNamespace(
         is_valid_id=lambda value, kind: value == article_id and kind == "article"))
-    backend._begin_article_build(article_id)
+    article_build._begin_article_build(article_id)
     try:
         yield article_id, tmp_path, processes
     finally:
         for process in processes:
             process_runtime.terminate_process_tree(process, timeout=1, force=True)
-        backend._finish_article_build(article_id)
+        article_build._finish_article_build(article_id)
 
 
 def run(build, code, timeout=5, **kwargs):
     article_id, root, _ = build
-    return backend._run_article_build_command(
+    return article_build._run_article_build_command(
         article_id, [sys.executable, "-u", "-c", code],
         cwd=root, timeout_seconds=timeout, **kwargs)
 
@@ -83,7 +83,7 @@ def test_result_keeps_output_cwd_environment_and_exit_code(build, returncode):
     assert completed.returncode == returncode
     assert completed.stdout == f"编译✓\n{build[1].name}\ndiagnostic\n"
     assert completed.stderr is None
-    assert build[0] not in backend._ACTIVE_ARTICLE_BUILDS
+    assert build[0] not in article_build._ACTIVE_ARTICLE_BUILDS
 
 
 def test_normal_leader_exit_reaps_descendant_with_inherited_output(build):
@@ -100,7 +100,7 @@ def test_stop_helper_reaps_descendant_after_leader_exit(build):
     process.wait(timeout=5)
     child = int((build[1] / "descendant.pid").read_text())
     assert process_runtime.process_alive(child)
-    backend._terminate_article_process(process)
+    article_build._terminate_article_process(process)
     assert not process_runtime.process_alive(child)
 
 
@@ -112,7 +112,7 @@ def test_timeout_preserves_partial_output_once_and_cleans_tree(build):
     assert caught.value.timeout == 1
     assert caught.value.stdout.count("leader-ready\n") == 1
     assert not process_runtime.process_alive(int((build[1] / "descendant.pid").read_text()))
-    assert build[0] not in backend._ACTIVE_ARTICLE_BUILDS
+    assert build[0] not in article_build._ACTIVE_ARTICLE_BUILDS
 
 
 def test_stop_retains_partial_output_and_rejects_concurrent_same_article(build):
@@ -129,16 +129,16 @@ def test_stop_retains_partial_output_and_rejects_concurrent_same_article(build):
     try:
         wait_for(lambda: (build[1] / "descendant.pid").exists())
         with pytest.raises(RuntimeError, match="already running"):
-            backend._begin_article_build(build[0])
-        assert backend.stop_article_compile(build[0]) == {
+            article_build._begin_article_build(build[0])
+        assert article_build.stop_article_compile(build[0]) == {
             "id": build[0], "running": True, "stop_requested": True}
         thread.join(8)
         assert not thread.is_alive()
-        assert len(result) == 1 and isinstance(result[0], backend.ArticleCompilationStopped)
+        assert len(result) == 1 and isinstance(result[0], article_build.ArticleCompilationStopped)
         assert "descendant-ready\n" in result[0].output
         assert not process_runtime.process_alive(int((build[1] / "descendant.pid").read_text()))
-        assert build[0] not in backend._ACTIVE_ARTICLE_BUILDS
-        assert build[0] in backend._STOP_REQUESTED_ARTICLE_BUILDS
+        assert build[0] not in article_build._ACTIVE_ARTICLE_BUILDS
+        assert build[0] in article_build._STOP_REQUESTED_ARTICLE_BUILDS
     finally:
         for process in build[2]:
             process_runtime.terminate_process_tree(process, timeout=1, force=True)
@@ -146,18 +146,18 @@ def test_stop_retains_partial_output_and_rejects_concurrent_same_article(build):
 
 
 def test_stop_before_spawn_is_not_lost(build):
-    backend.stop_article_compile(build[0])
-    with pytest.raises(backend.ArticleCompilationStopped):
+    article_build.stop_article_compile(build[0])
+    with pytest.raises(article_build.ArticleCompilationStopped):
         run(build, "import time; time.sleep(30)")
-    assert build[0] not in backend._ACTIVE_ARTICLE_BUILDS
+    assert build[0] not in article_build._ACTIVE_ARTICLE_BUILDS
 
 
 def test_spawn_failure_keeps_stop_and_running_state_for_outer_owner(build):
     with pytest.raises(FileNotFoundError):
-        backend._run_article_build_command(
+        article_build._run_article_build_command(
             build[0], [str(build[1] / "missing-executable")], cwd=build[1], timeout_seconds=1)
-    assert build[0] not in backend._ACTIVE_ARTICLE_BUILDS
-    assert build[0] in backend._RUNNING_ARTICLE_BUILDS
+    assert build[0] not in article_build._ACTIVE_ARTICLE_BUILDS
+    assert build[0] in article_build._RUNNING_ARTICLE_BUILDS
 
 
 @pytest.mark.parametrize("outcome", ["normal", "stop", "timeout", "wait_error", "cleanup_error"])
@@ -177,8 +177,8 @@ def test_owned_runtime_contract_without_posix_process_identity(build, monkeypatc
                 raise OSError("wait unavailable")
             if outcome == "stop":
                 # Repeated requests only set the shared flag; one owner cleans.
-                backend.stop_article_compile(build[0])
-                backend.stop_article_compile(build[0])
+                article_build.stop_article_compile(build[0])
+                article_build.stop_article_compile(build[0])
                 raise subprocess.TimeoutExpired("fixture", timeout)
             if outcome == "timeout":
                 time.sleep(timeout)
@@ -207,7 +207,7 @@ def test_owned_runtime_contract_without_posix_process_identity(build, monkeypatc
     if outcome == "normal":
         assert run(build, "fixture").stdout == "partial\nshutdown\n"
     elif outcome == "stop":
-        with pytest.raises(backend.ArticleCompilationStopped) as caught:
+        with pytest.raises(article_build.ArticleCompilationStopped) as caught:
             run(build, "fixture")
         assert caught.value.output == "partial\nshutdown\n"
     elif outcome == "timeout":
@@ -220,4 +220,4 @@ def test_owned_runtime_contract_without_posix_process_identity(build, monkeypatc
             run(build, "fixture")
     assert len(cleanup_calls) == 1
     assert streams[0].closed
-    assert build[0] not in backend._ACTIVE_ARTICLE_BUILDS
+    assert build[0] not in article_build._ACTIVE_ARTICLE_BUILDS

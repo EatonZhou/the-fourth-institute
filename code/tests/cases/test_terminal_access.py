@@ -82,7 +82,7 @@ def test_user_category_changes_are_audited_and_unchanged_ones_are_not_changes(op
     """
     users = {"alice": {"configured": True, "status": "active"}, "bob": {"configured": True, "status": "active"}}
     audit = []
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(_require_authenticated_actor=lambda _caller: None))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_require_authenticated_actor=lambda _caller: None))
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(
         user=lambda name: users.get(name, {"configured": False}), is_active=lambda name: users[name]["status"] == "active",
         audit=lambda *args, **kwargs: audit.append((args, kwargs))))

@@ -100,7 +100,7 @@ def test_mark_inbox_read_accepts_the_scalar_version_and_rejects_a_changed_row(mo
 
     monkeypatch.setattr(conversation_read_state, "read_rows", lambda *args: {})
     monkeypatch.setattr(web_isa, "_inbox_entry", lambda *args: {"key": key})
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(_set_agent_conversation_read_state=set_read))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_set_agent_conversation_read_state=set_read))
     kernel = InstructionKernel(web_isa.binding(), store=None, authorize=lambda *args: None)
     instruction = InstructionCall.from_payload({
         "instruction": "MarkMailboxItemRead", "arguments": {"key": key}, "expected_version": "7",
@@ -128,7 +128,7 @@ def test_opening_a_chat_reads_through_the_latest_alert(monkeypatch):
         _set_agent_conversation_read_state=set_read,
         resident_api=SimpleNamespace(resolve_resident_identity=lambda *args: resolved.append(args) or {}),
     )
-    monkeypatch.setattr(web_isa, "web", lambda: web)
+    monkeypatch.setattr(web_isa, "web", lambda _module: web)
     kernel = InstructionKernel(web_isa.binding(), store=None, authorize=lambda *args: None)
     result = kernel.execute(
         InstructionCall.from_payload({"instruction": "MarkMailboxItemRead", "arguments": {"key": key}}),

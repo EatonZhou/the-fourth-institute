@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_overview, web_clients
 from management_portal.society_service import SocietyServiceBusy
 
 
@@ -23,27 +24,27 @@ def test_society_service_status_reports_ready_contracts(monkeypatch, subtests, i
     """SocietyService 状态接口区分就绪、断开和繁忙"""
     with subtests.test(contract='test_society_service_status_reports_ready'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(portal, "_SOCIETY_SERVICE", _HealthySocietyService())
+            monkeypatch.setattr(web_clients, "_SOCIETY_SERVICE", _HealthySocietyService())
 
-            payload = portal._society_service_status_payload()
+            payload = http_overview._society_service_status_payload()
 
             assert payload["ready"] is True
             assert payload["state"] == "ready"
             assert payload["health"]["build_id"] == "test-build"
     with subtests.test(contract='test_society_service_status_recovers_unannounced_outage'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(portal, "_SOCIETY_SERVICE", _UnavailableSocietyService())
+            monkeypatch.setattr(web_clients, "_SOCIETY_SERVICE", _UnavailableSocietyService())
 
-            payload = portal._society_service_status_payload()
+            payload = http_overview._society_service_status_payload()
 
             assert payload["ready"] is False
             assert payload["state"] == "unavailable"
             assert payload["retry_after_ms"] > 0
     with subtests.test(contract='test_society_service_status_distinguishes_busy_from_disconnected'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(portal, "_SOCIETY_SERVICE", _BusySocietyService())
+            monkeypatch.setattr(web_clients, "_SOCIETY_SERVICE", _BusySocietyService())
 
-            payload = portal._society_service_status_payload()
+            payload = http_overview._society_service_status_payload()
 
             assert payload["ready"] is False
             assert payload["state"] == "busy"

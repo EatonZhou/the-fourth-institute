@@ -40,7 +40,7 @@ def web_paths():
     # Execute only the real approved config assignments/imports. Full Web import
     # starts services and is deliberately excluded from this isolated check.
     from management_portal import portal_session_auth as auth
-    source=Path(auth.__file__).with_name('serve_management_portal.py')
+    source=Path(auth.__file__).with_name('web_accounts.py')
     tree=ast.parse(source.read_text());nodes=[]
     for n in tree.body:
         if isinstance(n,ast.ImportFrom) and n.module=='management_portal.portal_session_auth':nodes.append(n)

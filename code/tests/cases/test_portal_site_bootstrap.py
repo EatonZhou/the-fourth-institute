@@ -50,20 +50,21 @@ def test_plain_preview_does_not_consume_site_configuration(monkeypatch):
 def test_real_reader_default_and_configured_name_reach_public_and_signed_in_shells(tmp_path, monkeypatch):
     from pathlib import Path
     from management_portal import serve_management_portal as portal
+    from management_portal import http_auth, http_documents, http_responses, user_preferences
 
     config = tmp_path / "site.json"
     monkeypatch.setenv("PORTAL_SITE_CONFIG", str(config))
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: handler)
-    monkeypatch.setattr(portal, "_portal_user_preferences", lambda username: {"appearance": {"language": "en"}})
-    monkeypatch.setattr(portal, "_serve_payload", lambda *args, **kwargs: args[2])
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: handler)
+    monkeypatch.setattr(user_preferences, "_portal_user_preferences", lambda username: {"appearance": {"language": "en"}})
+    monkeypatch.setattr(http_responses, "_serve_payload", lambda *args, **kwargs: args[2])
     root = Path(portal.__file__).parent
     for actor, page in (("", "login.html"), ("", "join.html"), ("someone", "index.html")):
         source = (root / page).read_bytes()
-        default = portal._serve_bytes(actor, 200, source, "text/html").decode()
+        default = http_documents._serve_bytes(actor, 200, source, "text/html").decode()
         assert '"site_name": "TFI Portal"' in default
         assert 'id="portalSiteScript"' in default
         config.write_text('{"site_name":"Research & Lab", "private_test_key":"must-not-be-public"}')
-        configured = portal._serve_bytes(actor, 200, source, "text/html").decode()
+        configured = http_documents._serve_bytes(actor, 200, source, "text/html").decode()
         assert '"site_name": "Research \\u0026 Lab"' in configured
         assert "must-not-be-public" not in configured
         assert "Research &amp; Lab" in configured

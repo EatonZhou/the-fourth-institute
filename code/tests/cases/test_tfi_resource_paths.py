@@ -109,13 +109,14 @@ def test_avatar_canonical_root_and_records_only(isolated,monkeypatch,kind,subjec
 
 def test_tool_defaults_follow_user_home(isolated,monkeypatch):
     home,_=isolated
-    from management_portal import resource_identity_backend as rid,repo_workspace_network as repo,article_identity_backend as article,article_texlab_backend as texlab
-    importlib.reload(rid);importlib.reload(repo);importlib.reload(article)
+    from management_portal import resource_identity_backend as rid,repo_workspace_network as repo,article_texlab_backend as texlab
+    from management_portal import article_toolchain
+    importlib.reload(rid);importlib.reload(repo);importlib.reload(article_toolchain)
     assert rid.DEFAULT_SSH_KEY_ROOT==repo._SSH_KEY_ROOT==home/'.ssh'
-    assert all(str(p).startswith(str(home)) for p in article.TEX_BIN_DIRS)
+    assert all(str(p).startswith(str(home)) for p in article_toolchain.TEX_BIN_DIRS)
     tiny=home/'.TinyTeX/bin/x86_64-linux';tiny.mkdir(parents=True)
-    importlib.reload(article)
-    assert str(tiny) in article._tex_search_path().split(':')
+    importlib.reload(article_toolchain)
+    assert str(tiny) in article_toolchain._tex_search_path().split(':')
     executable=put(home/'.local/bin/texlab','#!/bin/sh\n');executable.chmod(0o700)
     monkeypatch.setenv('PATH', str(home/'empty-bin'))
     assert texlab._texlab_command()==str(executable)

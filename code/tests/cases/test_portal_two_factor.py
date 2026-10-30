@@ -12,6 +12,7 @@ from tests.cases.security_http_support import server as _server
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_sign_in, web_accounts
 from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
 from management_portal.portal_two_factor import (
     PortalTwoFactorStore,
@@ -66,21 +67,21 @@ def test_setup_confirmation_enables_factor_and_rejects_initial_code_replay(
     store = PortalTwoFactorStore(tmp_path / "two_factor.key")
     secret = generate_totp_secret()
     token = "pending-setup"
-    monkeypatch.setattr(portal, "_PORTAL_TWO_FACTOR", store)
-    portal._TWO_FACTOR_SETUPS.clear()
-    portal._TWO_FACTOR_SETUPS[token] = {
+    monkeypatch.setattr(web_accounts, "_PORTAL_TWO_FACTOR", store)
+    http_sign_in._TWO_FACTOR_SETUPS.clear()
+    http_sign_in._TWO_FACTOR_SETUPS[token] = {
         "username": "engineer",
         "secret": secret,
         "expires_at": 4_102_444_800,
     }
     code = totp_code(secret)
 
-    recovery_codes = portal._confirm_two_factor_setup("engineer", token, code)
+    recovery_codes = http_sign_in._confirm_two_factor_setup("engineer", token, code)
 
     assert len(recovery_codes) == 10
     assert store.enabled("engineer") is True
     assert store.verify("engineer", code) is None
-    assert token not in portal._TWO_FACTOR_SETUPS
+    assert token not in http_sign_in._TWO_FACTOR_SETUPS
 
 
 class _QuietHandler(portal.Handler):
@@ -112,15 +113,15 @@ def test_enrolled_login_requires_second_factor_before_session(
     factor_store.enable("engineer", secret)
     signing_key_path = tmp_path / "session.key"
     signing_key_path.write_bytes(b"two-factor-test-session-signing-key-32-bytes")
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal, "_PORTAL_TWO_FACTOR", factor_store)
-    monkeypatch.setattr(portal, "_SESSION_SIGNING_KEY_PATH", signing_key_path)
-    monkeypatch.setattr(portal, "_SESSION_AUTHORITY", None)
-    monkeypatch.setattr(portal, "_SESSION_AUTHORITY_CONFIG", None)
-    monkeypatch.setattr(portal, "_verify_credentials", lambda *_args: True)
-    monkeypatch.setattr(portal, "_portal_user_allowed", lambda *_args: True)
-    monkeypatch.setattr(portal, "_load_users", lambda: {"engineer": "hash"})
-    portal._LOGIN_CHALLENGES.clear()
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_TWO_FACTOR", factor_store)
+    monkeypatch.setattr(web_accounts, "_SESSION_SIGNING_KEY_PATH", signing_key_path)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY", None)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY_CONFIG", None)
+    monkeypatch.setattr(web_accounts, "_verify_credentials", lambda *_args: True)
+    monkeypatch.setattr(web_accounts, "_portal_user_allowed", lambda *_args: True)
+    monkeypatch.setattr(web_accounts, "_load_users", lambda: {"engineer": "hash"})
+    http_sign_in._LOGIN_CHALLENGES.clear()
 
     with _server(_QuietHandler) as server:
         origin = f"http://127.0.0.1:{server.server_address[1]}"

@@ -547,13 +547,14 @@ def _inbox(monkeypatch, actor: str) -> list[dict]:
 
     from management_portal import notice_board_backend
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
 
-    monkeypatch.setattr(portal.agent_conversation_index_backend, "build_entries_page", lambda *_a, **_k: {
+    monkeypatch.setattr(web_inbox.agent_conversation_index_backend, "build_entries_page", lambda *_a, **_k: {
         "entries": [], "next_page_token": "", "page_size": 50, "paged": True,
     })
-    monkeypatch.setattr(portal.agent_conversation_index_backend, "build_entries", lambda *_a, **_k: [])
+    monkeypatch.setattr(web_inbox.agent_conversation_index_backend, "build_entries", lambda *_a, **_k: [])
     monkeypatch.setattr(notice_board_backend.notice_board, "mention_events", lambda _actor: [])
-    return portal._agent_conversation_payload(actor)["entries"]
+    return web_inbox._agent_conversation_payload(actor)["entries"]
 
 
 def test_a_chatroom_is_an_inbox_conversation_with_its_own_unread(lineage, monkeypatch):
@@ -564,6 +565,7 @@ def test_a_chatroom_is_an_inbox_conversation_with_its_own_unread(lineage, monkey
     :design: decision_a6bebf4ac283, decision_b4e5ea4a47ec
     """
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
 
     quiet = chatroom_backend.create_chatroom(DAVE, [])["chatroom_id"]
     chatroom_id = chatroom_backend.create_chatroom(ALICE, [BOB], "周会")["chatroom_id"]
@@ -580,10 +582,10 @@ def test_a_chatroom_is_an_inbox_conversation_with_its_own_unread(lineage, monkey
     chatroom_backend.mark_read(ALICE, chatroom_id)
     assert lineage.inboxes[-1] == [ALICE]
     assert _inbox(monkeypatch, ALICE)[0]["unread"] is False
-    result = portal._set_agent_conversation_read_state(ALICE, entry["key"], unread=True)
+    result = web_inbox._set_agent_conversation_read_state(ALICE, entry["key"], unread=True)
     assert result["unread"] is True
     assert chatroom_backend.get_chatroom(ALICE, chatroom_id)["unread_count"] == 1
-    portal._set_agent_conversation_read_state(ALICE, entry["key"], unread=False)
+    web_inbox._set_agent_conversation_read_state(ALICE, entry["key"], unread=False)
     assert chatroom_backend.get_chatroom(ALICE, chatroom_id)["unread_count"] == 0
 
     # A new message brings the entry back up as unread; clearing unread reads the Chatroom.
@@ -593,25 +595,25 @@ def test_a_chatroom_is_an_inbox_conversation_with_its_own_unread(lineage, monkey
     assert (entry["subtitle"], entry["unread"], entry["unread_count"]) == ("bob：别迟到", True, 2)
 
     def clear_unread():
-        return portal._clear_agent_conversations(ALICE, mode="unread", entries=chatroom_backend.inbox_entries(ALICE))
+        return web_inbox._clear_agent_conversations(ALICE, mode="unread", entries=chatroom_backend.inbox_entries(ALICE))
 
     result = clear_unread()
     assert (result["clear_mode"], result["cleared_count"]) == ("unread", 1)
     assert chatroom_backend.get_chatroom(ALICE, chatroom_id)["unread_count"] == 0
     chatroom_backend.update_chatroom(ALICE, chatroom_id, muted=True)
     chatroom_backend.post_message(BOB, chatroom_id, text("普通更新"))
-    muted = portal._agent_conversation_payload(ALICE)
+    muted = web_inbox._agent_conversation_payload(ALICE)
     assert muted["unread_count"] == 0 and muted["entries"][0]["unread_count"] == 1
     assert muted["entries"][0]["muted"] and not muted["entries"][0]["attention_unread"]
     chatroom_backend.post_message(BOB, chatroom_id, text("@alice 请确认"))
-    pinged = portal._agent_conversation_payload(ALICE)
+    pinged = web_inbox._agent_conversation_payload(ALICE)
     assert pinged["unread_count"] == 1 and pinged["entries"][0]["unread_mention_count"] == 1
     result = clear_unread()
     assert result["cleared_count"] == 1 and chatroom_backend.get_chatroom(ALICE, chatroom_id)["unread_count"] == 0
     chatroom_backend.post_message(BOB, chatroom_id, text("仅灰色未读"))
     result = clear_unread()
     assert result["cleared_count"] == 1
-    portal._set_agent_conversation_read_state(DAVE, entry["key"], unread=True)
+    web_inbox._set_agent_conversation_read_state(DAVE, entry["key"], unread=True)
 
 
 def test_clearing_all_hides_a_chatroom_until_its_next_message(lineage, monkeypatch):
@@ -621,11 +623,12 @@ def test_clearing_all_hides_a_chatroom_until_its_next_message(lineage, monkeypat
     :design: decision_a6bebf4ac283, decision_b4e5ea4a47ec
     """
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
 
     chatroom_id = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
     chatroom_backend.post_message(BOB, chatroom_id, text("在吗"))
     entries = _inbox(monkeypatch, ALICE)
-    portal._clear_agent_conversations(ALICE, mode="all", entries=entries)
+    web_inbox._clear_agent_conversations(ALICE, mode="all", entries=entries)
     assert _inbox(monkeypatch, ALICE) == []
     assert chatroom_backend.get_chatroom(ALICE, chatroom_id)["unread_count"] == 0
     chatroom_backend.post_message(BOB, chatroom_id, text("在吗？"))

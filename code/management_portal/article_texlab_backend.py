@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from urllib.request import url2pathname
 
 from management_common import process_runtime
-from . import article_identity_backend
+from . import article_registry
 
 
 _TEXLAB_MANAGERS_LOCK = threading.RLock()
@@ -488,7 +488,7 @@ def article_texlab_request(
 ) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("TexLab payload must be an object")
-    _record, _root_item, root = article_identity_backend._article_source_context(
+    _record, _root_item, root = article_registry._article_source_context(
         article_id
     )
     manager = _manager(article_id, root)
@@ -512,7 +512,7 @@ def article_texlab_request(
     raw_path = str(payload.get("path") or "").strip()
     if not raw_path:
         raise ValueError("TexLab document path required")
-    _article_root, path = article_identity_backend._article_target_path(
+    _article_root, path = article_registry._article_target_path(
         article_id, raw_path
     )
     if path.suffix.casefold() not in {".tex", ".bib", ".sty", ".cls"}:

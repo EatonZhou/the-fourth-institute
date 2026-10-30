@@ -15,6 +15,7 @@ terminal or when a reader finds the delivery still open.
 """
 from __future__ import annotations
 
+import logging
 import re
 import secrets
 from collections.abc import Callable, Iterable, Mapping
@@ -31,6 +32,8 @@ from .chatroom_store import ChatroomState
 from .conversation_receipt_store import VersionConflict
 from .mailbox_sources import MailboxSource
 from . import chatroom_store
+
+LOGGER = logging.getLogger(__name__)
 
 
 SCHEMA = "tfi.chatroom.v2"
@@ -305,7 +308,7 @@ def _publish_inbox(users: Iterable[str]) -> None:
         import sys
 
         # A Portal Web process drops the users' cached Inbox so the next read sees this change.
-        web = sys.modules.get("management_portal.serve_management_portal")
+        web = sys.modules.get("management_portal.web_read_caches")
         for user in clean if web is not None else ():
             web._forget_cached_inbox(user)
         from management_portal.notifications import business_projection_subject, get_notification_publisher
@@ -314,7 +317,11 @@ def _publish_inbox(users: Iterable[str]) -> None:
             business_projection_subject("agent-conversation-index", "current"),
             {"kind": "changed", "actors": sorted({user.casefold() for user in clean}), "fields": ["chatroom"]},
         )
-    except Exception:  # noqa: BLE001 - notifications only wake readers
+    except Exception as exc:  # noqa: BLE001 - notifications only wake readers
+        from .http_errors import failure_frames
+
+        LOGGER.warning("Chatroom Inbox wake-up failed for %d users: %s; frames=%s", len(clean), type(exc).__name__,
+                       failure_frames(exc))
         return
 
 

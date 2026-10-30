@@ -259,14 +259,15 @@ def test_application_http_transport_preserves_identity_and_error_contract(monkey
         with subtests.test(error=error, status=status), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
                 from management_portal import serve_management_portal as portal
+                from management_portal import http_auth, http_responses
 
                 payload = {"resident_id": RESIDENT_ID, "application_id": "notes", "operation": "save", "args": {"date": "2026-09-09"}, "actor": "spoofed"}
                 invoke = Mock(return_value={"accepted": True}, side_effect=error)
                 # The route reads its body through the Agent Workbench adapter's JSON reader.
                 monkeypatch.setattr(portal._AGENT_WORKBENCH_HTTP, "read_json", lambda *args, **kwargs: payload)
-                monkeypatch.setattr(portal, "_get_session_username", lambda handler: "alice")
+                monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "alice")
                 monkeypatch.setattr(portal.watchboard_applications, "action", invoke)
-                monkeypatch.setattr(portal, "_serve_json", lambda handler, code, body: (code, body))
+                monkeypatch.setattr(http_responses, "_serve_json", lambda handler, code, body: (code, body))
                 parsed = urlparse("/api/agent-workbench/residents/watchboard-application")
                 handler = object.__new__(portal.Handler)
                 handler.headers = {}

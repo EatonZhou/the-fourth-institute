@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal import http_paper, paper_favorites, paper_library, presentation_store, serve_management_portal as portal
+from management_portal import http_auth, web_accounts, web_resources
 from tests.cases.test_resource_portal_routes import _server
 
 
@@ -103,11 +104,11 @@ def test_favorite_filter_keeps_absolute_semantic_order(resources, monkeypatch):
 def test_http_uses_authenticated_actor_without_the_paper_check(resources, monkeypatch):
     """Paper 收藏接口使用认证得到的 actor，忽略请求体里的 actor，且不做 Paper 资源检查。"""
     auth = {"username": "alice"}
-    monkeypatch.setattr(portal, "_get_agent_api_auth", lambda request: auth)
+    monkeypatch.setattr(http_auth, "_get_agent_api_auth", lambda request: auth)
     authorize = Mock(return_value="alice")
     monkeypatch.setattr(http_paper, "authorize_api", authorize)
     paper_check = Mock(side_effect=AssertionError("personal favorites must not check the Paper resource"))
-    monkeypatch.setattr(portal, "_require_resource", paper_check)
+    monkeypatch.setattr(web_resources, "_require_resource", paper_check)
     server, thread, origin = _server()
     try:
         def send(payload):
@@ -142,7 +143,7 @@ def test_account_personal_data_removal_includes_paper_favorites(resources, monke
     """删除用户个人数据时一并清除其论文收藏，不影响其他用户"""
     paper_favorites.set_favorite("alice", PAPER, True)
     paper_favorites.set_favorite("bob", OTHER, True)
-    monkeypatch.setattr(portal, "_PORTAL_USER_UPLOAD_ROOTS", [])
-    assert portal._delete_portal_user_personal_data("alice")["favorites"]
+    monkeypatch.setattr(web_accounts, "_PORTAL_USER_UPLOAD_ROOTS", [])
+    assert web_accounts._delete_portal_user_personal_data("alice")["favorites"]
     assert paper_favorites.favorite_ids("alice") == []
     assert paper_favorites.favorite_ids("bob") == [OTHER]

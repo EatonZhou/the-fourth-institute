@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, unquote, urlencode
 from management_common.operation_errors import OperationError
 from management_portal import portal_features, script_groups
 from management_portal.http_errors import instruction_error_payload
+from management_portal.http_routes import RouteDefinition
 
 
 def wall_page_location(query):
@@ -141,3 +142,38 @@ class PortalPagesHttp:
         if not location:
             return self.resource_not_found(request, address)
         return self._redirect(request, location)
+
+    def routes(self, principal_route):
+        """The Portal's authenticated documents and page redirects.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            principal_route("GET", "/workbenches/create", self.workbenches_create, "portal-portal-get"),
+            principal_route("GET", "/workbenches/edit", self.workbenches_edit, "portal-portal-get"),
+            principal_route("GET", "/workbenches", self.workbenches, "portal-portal-get", page=True),
+            principal_route("GET", "/workbenches/", self.workbenches, "portal-portal-get", page=True),
+            principal_route("GET", "/workbenches/view", self.workbenches, "portal-portal-get", page=True),
+            principal_route("GET", "/development", self.workbenches, "portal-portal-get", page=True),
+            principal_route("GET", "/development/native-views", self.development_native_views, "portal-portal-get"),
+            RouteDefinition("GET", "/r/", self.resource_redirect, "portal-pages-get", match="prefix"),
+            RouteDefinition("GET", "/wall", self.wall, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/wall/", self.wall, "portal-pages-get", page=True),
+            RouteDefinition("GET", "", self.home, "portal-pages-get"),
+            RouteDefinition("GET", "/", self.home, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/index.html", self.home, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/lineage", self.lineage, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/lineage/", self.lineage, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/lineage.html", self.lineage, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/hatg-panel.html", self.hatg_panel, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/chat-workspace/api/session", self.chat_workspace_session, "portal-pages-get"),
+            RouteDefinition("GET", "/principal-backpack", self.principal_backpack, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/principal-backpack/", self.principal_backpack, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/principal_backpack.html", self.principal_backpack, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/settings", self.settings, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/settings/", self.settings, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/settings.html", self.settings, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/portal-management", self.portal_management, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/portal-management/", self.portal_management, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/portal_management.html", self.portal_management, "portal-pages-get", page=True),
+        )

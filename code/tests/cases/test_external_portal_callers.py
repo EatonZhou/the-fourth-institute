@@ -24,7 +24,7 @@ PORTAL_PACKAGES = ("management_portal", "management_common", "knowledge_board_la
 # resource_id.py binds the modules _portal_backends() and _device_backend() return to these names.
 RETURNED_MODULES = {
     "repo_backend": "management_portal.resource_identity_backend",
-    "article_backend": "management_portal.article_identity_backend",
+    "article_backend": "management_portal.article_registry",
     "paper_resources": "management_portal.paper_resources",
     "search_backend": "management_portal.search_identity_backend",
     "_device_backend": "management_portal.device_identity_backend",

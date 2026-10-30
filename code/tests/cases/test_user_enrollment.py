@@ -147,16 +147,17 @@ def test_user_bearer_is_not_a_resident(enrollment, monkeypatch):
 
     :design: decision_6eac174d85bf"""
     from management_portal import asgi, serve_management_portal as portal, page_api_auth
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
     from management_common.principal import authenticated_principal
 
     secret, _ = invitation(enrollment)
     token = "dbu_" + secrets.token_urlsafe(32)
     enrollment.accept_invitation(secret, secret_sha256=digest(token))
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", enrollment.access)
-    monkeypatch.setattr(portal, "_get_session_username", lambda request: "")
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", enrollment.access)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda request: "")
     handler = SimpleNamespace(headers={"Authorization": "Bearer " + token, "X-Portal-Lineage-ID": "spoof"})
-    auth = portal._get_agent_api_auth(handler)
+    auth = http_auth._get_agent_api_auth(handler)
     assert authenticated_principal(auth).kind == "user"
     assert page_api_auth.authorize(auth) == "sample_editor"
     req = Request({"type": "http", "headers": [(b"authorization", ("Bearer " + token).encode())]})
@@ -190,15 +191,16 @@ def test_invitation_http_contract(enrollment, monkeypatch):
 
     :design: decision_6eac174d85bf"""
     from management_portal import serve_management_portal as portal, http_user_enrollment
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_serve_json", lambda request, code, body: (code, body))
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(http_responses, "_serve_json", lambda request, code, body: (code, body))
     secret, _ = invitation(enrollment)
     payload = {"invitation_secret": secret, "secret_sha256": digest("dbu_" + secrets.token_urlsafe(32))}
-    monkeypatch.setattr(portal, "_read_bounded_json_object", lambda request, **kwargs: payload)
+    monkeypatch.setattr(http_request_body, "_read_bounded_json_object", lambda request, **kwargs: payload)
     request = SimpleNamespace(headers={"Content-Type": "text/plain"})
     assert http_user_enrollment.accept_invitation(request, None, "")[0] == 403
     request.headers = {"Content-Type": "application/json", "Origin": "https://evil.invalid"}
-    monkeypatch.setattr(portal, "_same_origin_request", lambda request: False)
+    monkeypatch.setattr(http_auth, "_same_origin_request", lambda request: False)
     assert http_user_enrollment.accept_invitation(request, None, "")[0] == 403
     request.headers = {"Content-Type": "application/json"}
     payload["username"] = "CASE-A"
@@ -216,11 +218,12 @@ def test_invitation_preview_shows_only_the_offer_and_only_while_pending(enrollme
     :importance: P2
     """
     from management_portal import serve_management_portal as portal, http_user_enrollment
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_serve_json", lambda request, code, body: (code, body))
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(http_responses, "_serve_json", lambda request, code, body: (code, body))
     secret, _ = invitation(enrollment)
     payload = {"invitation_secret": secret}
-    monkeypatch.setattr(portal, "_read_bounded_json_object", lambda request, **kwargs: payload)
+    monkeypatch.setattr(http_request_body, "_read_bounded_json_object", lambda request, **kwargs: payload)
     request = SimpleNamespace(headers={"Content-Type": "application/json"})
     code, body = http_user_enrollment.preview_invitation(request, None, "")
     assert code == 200 and set(body) == {"username", "display_name", "expires_at"}
@@ -267,9 +270,10 @@ def test_setup_link_makes_the_first_administrator_only_while_there_is_none(enrol
     :design: decision_b820faf42218
     """
     from management_portal import permission_system, serve_management_portal as portal, http_user_enrollment
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", enrollment.access)
-    monkeypatch.setattr(portal, "_serve_json", lambda request, code, body: (code, body))
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", enrollment.access)
+    monkeypatch.setattr(http_responses, "_serve_json", lambda request, code, body: (code, body))
     old = secrets.token_urlsafe(32)
     enrollment.create_invitation("portal-setup", "root", digest(old), expires_in_days=1, first_admin=True)
     # Running the setup command again replaces the earlier link.
@@ -282,7 +286,7 @@ def test_setup_link_makes_the_first_administrator_only_while_there_is_none(enrol
     assert "first_admin" not in enrollment.preview_invitation(plain)
 
     payload = {"invitation_secret": secret, "password": "A-secure-password-123"}
-    monkeypatch.setattr(portal, "_read_bounded_json_object", lambda request, **kwargs: payload)
+    monkeypatch.setattr(http_request_body, "_read_bounded_json_object", lambda request, **kwargs: payload)
     code, body = http_user_enrollment.accept_invitation(SimpleNamespace(headers={"Content-Type": "application/json"}), None, "")
     assert code == 201 and body["administrator"] == {"granted": True}
     assert permission_system.user_categories() == {"root": "portal_admin"} and permission_system.allows("root", "CreateUser")
@@ -334,9 +338,10 @@ def test_user_isa_permissions_and_idempotency(enrollment, monkeypatch):
 
     :design: decision_6eac174d85bf"""
     from management_portal import serve_management_portal as portal, web_isa
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
     from management_portal.hatg.contracts import InstructionCall, InstructionContext
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", enrollment.access)
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", enrollment.access)
     enrollment.access.upsert_user("CASE-A", actor="CASE-A")
     enrollment.create_account("CASE-A", "ordinary", password="Ordinary-password-123")
     kernel = web_isa.build_kernel()
@@ -369,9 +374,10 @@ def test_create_user_creates_only_the_account(enrollment, monkeypatch):
     :design: decision_6eac174d85bf
     """
     from management_portal import serve_management_portal as portal, web_isa
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
     from management_portal.hatg.contracts import InstructionCall, InstructionContext
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", enrollment.access)
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", enrollment.access)
     enrollment.access.upsert_user("CASE-A", actor="CASE-A")
     kernel = web_isa.build_kernel()
     account = {"user_id": "sample_editor", "initial_password": "Sample-Editor-password-1234"}
@@ -394,12 +400,13 @@ def test_user_updates_own_profile_but_not_other_accounts(enrollment, monkeypatch
     :design: decision_b820faf42218
     """
     from management_portal import serve_management_portal as portal, web_isa
+    from management_portal import http_auth, http_request_body, http_responses, web_accounts
     from management_portal.hatg.contracts import InstructionCall, InstructionContext
 
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", enrollment.access)
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", enrollment.access)
     invalidated = []
-    monkeypatch.setattr(portal._PORTAL_PASSWORD_RESETS, "invalidate_user", invalidated.append)
+    monkeypatch.setattr(web_accounts._PORTAL_PASSWORD_RESETS, "invalidate_user", invalidated.append)
     enrollment.access.upsert_user("CASE-A", actor="CASE-A")
     enrollment.create_account("CASE-A", "ordinary", password="Ordinary-password-123")
     enrollment.create_account("CASE-A", "neighbour", password="Neighbour-password-123")

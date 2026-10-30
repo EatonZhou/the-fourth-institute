@@ -56,37 +56,39 @@ def test_declared_eager_workbenches_are_included_in_manifest():
 def test_html_response_injects_after_versioning_without_changing_identity_or_cache_policy(monkeypatch):
     """HTML 响应在资源加版本号后注入启动脚本，身份引导顺序和缓存策略不变"""
     from management_portal import serve_management_portal as portal
+    from management_portal import http_auth, http_documents, http_instance, http_responses, user_preferences
 
-    monkeypatch.setattr(portal, "_PORTAL_BUILD_ID", "boot-contract")
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: "playwright")
-    monkeypatch.setattr(portal, "_portal_user_preferences", lambda username: {})
-    monkeypatch.setattr(portal, "_serve_payload", lambda *args, **kwargs: (args, kwargs))
+    monkeypatch.setattr(http_instance, "_PORTAL_BUILD_ID", "boot-contract")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "playwright")
+    monkeypatch.setattr(user_preferences, "_portal_user_preferences", lambda username: {})
+    monkeypatch.setattr(http_responses, "_serve_payload", lambda *args, **kwargs: (args, kwargs))
     html = b'''<html><head><script src="/static/portal_theme.js"></script>
       <script src="/static/portal_identity.js"></script></head>
       <body><header data-portal-site-header></header></body></html>'''
-    args, options = portal._serve_bytes(None, 200, html, "text/html", cache_control="private, no-cache")
+    args, options = http_documents._serve_bytes(None, 200, html, "text/html", cache_control="private, no-cache")
     result = args[2].decode()
     config = json.loads(re.search(r'\}\s*\)\((\{.*?\})\);</script>', result).group(1))
     assert config["assets"] == ["/static/portal_theme.js?portal_v=boot-contract", "/static/portal_identity.js?portal_v=boot-contract"]
     assert result.index('id="portalPageBootScript"') < result.index('__PORTAL_IDENTITY_BOOTSTRAP__')
     assert result.index('__PORTAL_IDENTITY_BOOTSTRAP__') < result.index('src="/static/portal_identity.js')
     assert options["cache_control"] == "private, no-cache"
-    args, _ = portal._serve_bytes(None, 200, b'{}', "application/json")
+    args, _ = http_documents._serve_bytes(None, 200, b'{}', "application/json")
     assert args[2] == b'{}'
 
 
 def test_html_response_expands_script_groups_before_versioning(monkeypatch):
     """HTML 响应先展开页面写的脚本组，组内脚本与其他脚本一样带版本号并列入启动清单"""
     from management_portal import script_groups, serve_management_portal as portal
+    from management_portal import http_auth, http_documents, http_instance, http_responses, user_preferences
 
-    monkeypatch.setattr(portal, "_PORTAL_BUILD_ID", "group-contract")
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: "playwright")
-    monkeypatch.setattr(portal, "_portal_user_preferences", lambda username: {})
-    monkeypatch.setattr(portal, "_serve_payload", lambda *args, **kwargs: (args, kwargs))
+    monkeypatch.setattr(http_instance, "_PORTAL_BUILD_ID", "group-contract")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "playwright")
+    monkeypatch.setattr(user_preferences, "_portal_user_preferences", lambda username: {})
+    monkeypatch.setattr(http_responses, "_serve_payload", lambda *args, **kwargs: (args, kwargs))
     html = b'''<html><head><script src="/static/portal_theme.js"></script>
       <script data-portal-script-group="chat-workspace"></script></head>
       <body><header data-portal-site-header></header></body></html>'''
-    args, _ = portal._serve_bytes(None, 200, html, "text/html")
+    args, _ = http_documents._serve_bytes(None, 200, html, "text/html")
     result = args[2].decode()
     config = json.loads(re.search(r'\}\s*\)\((\{.*?\})\);</script>', result).group(1))
     assert config["assets"] == [f"{source}?portal_v=group-contract" for source in (

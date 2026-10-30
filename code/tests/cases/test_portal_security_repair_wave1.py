@@ -14,6 +14,7 @@ import pytest
 
 from management_portal import portal_deployment_router as router_module
 from management_portal import serve_management_portal as portal
+from management_portal import web_accounts
 from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
 from management_portal.portal_deployment_registry import PortalDeployment
 
@@ -63,10 +64,10 @@ def _configure_portal_session(
 ) -> Path:
     key_path = tmp_path / "session.key"
     key_path.write_bytes(b"test-portal-session-signing-key-32-bytes")
-    monkeypatch.setattr(portal, "_SESSION_SIGNING_KEY_PATH", key_path)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal, "_SESSION_AUTHORITY", None)
-    monkeypatch.setattr(portal, "_SESSION_AUTHORITY_CONFIG", None)
+    monkeypatch.setattr(web_accounts, "_SESSION_SIGNING_KEY_PATH", key_path)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY", None)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY_CONFIG", None)
     return key_path
 
 
@@ -94,8 +95,8 @@ def test_missing_session_key_is_generated_contracts(monkeypatch, tmp_path, subte
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             signing_key_path = tmp_path / 'session.key'
-            monkeypatch.setattr(portal, '_SESSION_SIGNING_KEY_PATH', signing_key_path)
-            portal._ensure_session_signing_key()
+            monkeypatch.setattr(web_accounts, '_SESSION_SIGNING_KEY_PATH', signing_key_path)
+            web_accounts._ensure_session_signing_key()
             assert len(signing_key_path.read_bytes()) == 32
             assert signing_key_path.stat().st_mode & 0o777 == 0o600
     with subtests.test(contract='test_web_and_router_share_the_same_session_authority'), isolated_portal_case() as case_path:
@@ -103,9 +104,9 @@ def test_missing_session_key_is_generated_contracts(monkeypatch, tmp_path, subte
             tmp_path = case_path
             access = _access_store(tmp_path)
             key_path = _configure_portal_session(tmp_path, monkeypatch, access)
-            token = portal._issue_session_token('engineer')
+            token = web_accounts._issue_session_token('engineer')
             verifier = router_module.PortalSessionAuthority(key_path, access_store=access)
-            assert portal._verify_session_token(token) == 'engineer'
+            assert web_accounts._verify_session_token(token) == 'engineer'
             assert verifier.verify(token) == 'engineer'
             assert verifier.verify_cookie(f'db_session={token}; db_session=invalid') == 'engineer'
     with subtests.test(contract='test_login_rejects_foreign_origin_before_issuing_a_cookie'), isolated_portal_case() as case_path:
@@ -113,9 +114,9 @@ def test_missing_session_key_is_generated_contracts(monkeypatch, tmp_path, subte
             tmp_path = case_path
             access = _access_store(tmp_path)
             _configure_portal_session(tmp_path, monkeypatch, access)
-            monkeypatch.setattr(portal, '_verify_credentials', lambda *_args: True)
-            monkeypatch.setattr(portal, '_portal_user_allowed', lambda *_args: True)
-            monkeypatch.setattr(portal, '_load_users', lambda: {'engineer': 'hash'})
+            monkeypatch.setattr(web_accounts, '_verify_credentials', lambda *_args: True)
+            monkeypatch.setattr(web_accounts, '_portal_user_allowed', lambda *_args: True)
+            monkeypatch.setattr(web_accounts, '_load_users', lambda: {'engineer': 'hash'})
             with _server(_QuietHandler) as server:
                 status, headers, _body = _request(server, 'POST', '/login', headers={'Content-Type': 'application/x-www-form-urlencoded', 'Origin': 'https://foreign.example'}, body=b'username=engineer&password=valid')
             assert status == 403
@@ -125,30 +126,30 @@ def test_missing_session_key_is_generated_contracts(monkeypatch, tmp_path, subte
             tmp_path = case_path
             access = _access_store(tmp_path)
             _configure_portal_session(tmp_path, monkeypatch, access)
-            monkeypatch.setattr(portal, '_portal_user_allowed', lambda *_args: True)
-            monkeypatch.setattr(portal, '_load_users', lambda: {'engineer': 'hash'})
-            token = portal._issue_session_token('engineer')
+            monkeypatch.setattr(web_accounts, '_portal_user_allowed', lambda *_args: True)
+            monkeypatch.setattr(web_accounts, '_load_users', lambda: {'engineer': 'hash'})
+            token = web_accounts._issue_session_token('engineer')
             cookie = f'db_session={token}'
             with _server(_TrustedHttpsHandler) as server:
                 for method in ('GET', 'HEAD'):
                     status, _headers, _body = _request(server, method, '/logout', headers={'Cookie': cookie})
                     assert status == 405
-                    assert portal._verify_session_token(token) == 'engineer'
+                    assert web_accounts._verify_session_token(token) == 'engineer'
                 public_origin = f'https://127.0.0.1:{server.server_address[1]}'
                 status, headers, _body = _request(server, 'POST', '/logout', headers={'Cookie': cookie, 'Origin': public_origin, 'X-Forwarded-Proto': 'https'})
             assert status == 302
             assert headers['Location'] == '/login'
             assert 'Max-Age=0' in headers['Set-Cookie']
             assert 'Secure' in headers['Set-Cookie']
-            assert portal._verify_session_token(token) is None
+            assert web_accounts._verify_session_token(token) is None
     with subtests.test(contract='test_https_login_cookie_is_secure'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             access = _access_store(tmp_path)
             _configure_portal_session(tmp_path, monkeypatch, access)
-            monkeypatch.setattr(portal, '_verify_credentials', lambda *_args: True)
-            monkeypatch.setattr(portal, '_portal_user_allowed', lambda *_args: True)
-            monkeypatch.setattr(portal, '_load_users', lambda: {'engineer': 'hash'})
+            monkeypatch.setattr(web_accounts, '_verify_credentials', lambda *_args: True)
+            monkeypatch.setattr(web_accounts, '_portal_user_allowed', lambda *_args: True)
+            monkeypatch.setattr(web_accounts, '_load_users', lambda: {'engineer': 'hash'})
             with _server(_TrustedHttpsHandler) as server:
                 public_origin = f'https://127.0.0.1:{server.server_address[1]}'
                 status, headers, _body = _request(server, 'POST', '/login', headers={'Content-Type': 'application/x-www-form-urlencoded', 'Origin': public_origin, 'X-Forwarded-Proto': 'https'}, body=b'username=engineer&password=valid')

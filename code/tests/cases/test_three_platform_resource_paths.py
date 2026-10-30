@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal import article_identity_backend as article
+from management_portal import article_tex, article_toolchain
 from management_portal import paper_assets, paper_ccf_enrichment, paper_figure_jobs, paper_resources
 from management_portal import project_rename, repo_workspace_checkout, repo_workspace_network
 from management_portal.resources.providers import folder_files
@@ -24,7 +24,7 @@ from knowledge_board_lan import knowledge_backend
 
 
 @pytest.mark.parametrize("value", ["../secret", "a/../secret", "/absolute"])
-@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo_workspace_checkout._safe_relative_path])
+@pytest.mark.parametrize("cleaner", [article_tex._safe_relative_path, paper_resources._safe_paper_relative_path, repo_workspace_checkout._safe_relative_path])
 def test_resource_relative_names_cannot_become_native_absolute_or_alias_paths(value, cleaner):
     with pytest.raises(ValueError):
         cleaner(value)
@@ -37,7 +37,7 @@ def test_folder_addresses_reject_native_path_escape(value, monkeypatch):
         folder_files.file_parts(value)
 
 
-@pytest.mark.parametrize("cleaner", [article._safe_relative_path, paper_resources._safe_paper_relative_path, repo_workspace_checkout._safe_relative_path])
+@pytest.mark.parametrize("cleaner", [article_tex._safe_relative_path, paper_resources._safe_paper_relative_path, repo_workspace_checkout._safe_relative_path])
 @pytest.mark.parametrize("value", ["C:/outside.txt", "C:outside.txt", r"a\..\secret", "note:stream", "NUL", "COM1"])
 def test_consumer_windows_names_refuse_native_escape(cleaner, value, monkeypatch):
     monkeypatch.setattr(secure_paths, "os", SimpleNamespace(**{**vars(os), "name": "nt"}))
@@ -60,7 +60,7 @@ def test_posix_root_and_file_names_retain_literal_colon_and_backslash(tmp_path, 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX native names")
 def test_posix_consumer_name_compatibility_is_preserved():
-    for cleaner in (article._safe_relative_path, paper_resources._safe_paper_relative_path):
+    for cleaner in (article_tex._safe_relative_path, paper_resources._safe_paper_relative_path):
         assert cleaner(r"dir:label/literal\name") == r"dir:label/literal\name"
         assert cleaner("dir//./file") == "dir/file"
     assert repo_workspace_checkout._safe_relative_path("dir:label/.Git/file") == "dir:label/.Git/file"
@@ -284,10 +284,10 @@ def test_project_native_mount_blocks_rename_without_proc(tmp_path, monkeypatch):
 def test_tex_lookup_uses_installed_user_platform_directory(tmp_path, monkeypatch, platform, relative):
     tools = tmp_path / relative
     tools.mkdir(parents=True)
-    monkeypatch.setattr(article.sys, "platform", platform)
-    monkeypatch.setattr(article.Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(article_toolchain.sys, "platform", platform)
+    monkeypatch.setattr(article_toolchain.Path, "home", lambda: tmp_path)
     monkeypatch.delenv("APPDATA", raising=False)
-    assert article._tinytex_bin_dirs() == (tools,)
+    assert article_toolchain._tinytex_bin_dirs() == (tools,)
 
 
 @pytest.mark.parametrize("deny", [False, True])

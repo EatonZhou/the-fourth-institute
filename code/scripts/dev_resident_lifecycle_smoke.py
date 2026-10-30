@@ -501,9 +501,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=int, default=240)
     args = parser.parse_args(argv)
 
-    from management_portal import serve_management_portal as portal
+    from management_portal import web_accounts
 
-    token = portal._issue_session_token(args.actor)
+    token = web_accounts._issue_session_token(args.actor)
     client = PortalClient(args.base_url, token, timeout=args.timeout)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     marker = stamp.replace("T", "_").replace("Z", "")

@@ -176,13 +176,14 @@ def test_observe_sets_boolean_without_activity_or_completion_scan(chat, monkeypa
     :design-point:
     """
     from management_portal import serve_management_portal as portal
+    from management_portal import web_clients, web_inbox
     from management_portal.society_service import resident_conversation_projection_domain
 
     say(chat, 'request')
     chat.set_input_state(RESIDENT, 'request', 'failed')
     monkeypatch.setattr(resident_conversation_projection_domain, 'conversation_family_summaries',
                         lambda *a: pytest.fail('reading must not scan completed work'))
-    portal._set_agent_conversation_read_state('sample_admin', f'resident:{RESIDENT}', unread=False)
+    web_inbox._set_agent_conversation_read_state('sample_admin', f'resident:{RESIDENT}', unread=False)
     assert not unread()
 
 
@@ -194,11 +195,11 @@ def test_mailbox_mark_read_persists_through_isa_and_state_refresh(chat, monkeypa
     """
     from types import SimpleNamespace
     from management_portal import resident_view_projection, serve_management_portal as portal, web_isa
+    from management_portal import web_clients, web_inbox
 
     say(chat, 'request')
     chat.set_input_state(RESIDENT, 'request', 'failed')
-    monkeypatch.setattr(portal.resident_api, 'resolve_resident_identity', lambda *a: {})
-    monkeypatch.setattr(web_isa, 'web', lambda: portal)
+    monkeypatch.setattr(web_clients.resident_api, 'resolve_resident_identity', lambda *a: {})
     revision = 0
     for value in (False, True, False):
         call = SimpleNamespace(caller='sample_admin', argument={'key': KEY, 'unread': value}.get,
@@ -223,13 +224,13 @@ def test_marking_read_with_a_seen_revision_keeps_a_newer_alert_unread(chat, monk
     """
     from types import SimpleNamespace
     from management_portal import serve_management_portal as portal, web_isa
+    from management_portal import web_clients, web_inbox
     from management_portal.hatg.contracts import InstructionError
 
     say(chat, 'outward', 'agent', recipients=[{'kind': 'user', 'id': 'sample_admin'}])
     seen = reads.row(reads.load('sample_admin'), KEY)['read_revision']
     say(chat, 'outward-next', 'agent', recipients=[{'kind': 'user', 'id': 'sample_admin'}])
-    monkeypatch.setattr(portal.resident_api, 'resolve_resident_identity', lambda *a: {})
-    monkeypatch.setattr(web_isa, 'web', lambda: portal)
+    monkeypatch.setattr(web_clients.resident_api, 'resolve_resident_identity', lambda *a: {})
 
     def mark(expected):
         return web_isa.mark_inbox_item_read(SimpleNamespace(

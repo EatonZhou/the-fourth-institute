@@ -402,6 +402,7 @@ def test_committed_registration_error_preserves_identity_over_rpc_and_http(monke
     :aspects: functional
     """
     from management_portal import serve_management_portal
+    from management_portal import http_responses
     from management_portal.society_service.server import _error_payload
     from management_portal.society_service.transport import SocietyServiceClient
 
@@ -417,8 +418,8 @@ def test_committed_registration_error_preserves_identity_over_rpc_and_http(monke
         SocietyServiceClient._raise_remote_error(_error_payload(original))
     assert remote.value.details == original.details
     replies = []
-    monkeypatch.setattr(serve_management_portal, "_serve_json", lambda handler, status, payload: replies.append((status, payload)))
-    serve_management_portal._serve_agent_workbench_error(object(), remote.value)
+    monkeypatch.setattr(http_responses, "_serve_json", lambda handler, status, payload: replies.append((status, payload)))
+    http_responses._serve_agent_workbench_error(object(), remote.value)
     status, payload = replies[0]
     assert status == 503
     assert payload["code"] == "projection.pending"

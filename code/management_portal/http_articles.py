@@ -6,8 +6,13 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import parse_qs, quote
 
-from management_portal import article_identity_backend, article_texlab_backend
+from management_portal import (
+    article_build, article_build_profile, article_build_results, article_files, article_git, article_registry,
+    article_semantic_index, article_settings, article_synctex, article_texlab_backend, http_auth,
+    http_documents, http_files, http_request_body, http_responses, web_resources,
+)
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
+from management_portal.resources import get_resource_service
 
 ROOT = Path(__file__).resolve().parent
 
@@ -15,7 +20,7 @@ ROOT = Path(__file__).resolve().parent
 class ArticlesHttp:
     def __init__(self, *, respond, exception_response, read_json, read_multipart,
                  multipart_limit, body_too_large, session_actor, require_resource,
-                 notify_index, identity_backend, texlab_backend,
+                 notify_index, texlab_backend,
                  resource_service, serve_media, serve_download, media_content_type):
         self.respond = respond
         self.exception_response = exception_response
@@ -26,7 +31,6 @@ class ArticlesHttp:
         self.session_actor = session_actor
         self.require_resource = require_resource
         self.notify_index = notify_index
-        self.identity_backend = identity_backend
         self.texlab_backend = texlab_backend
         self.resource_service = resource_service
         self.serve_media = serve_media
@@ -49,12 +53,12 @@ class ArticlesHttp:
                     resource_types=["article"], actor=user, limit=5000,
                 ).get("resources") or []
             }
-            for record in self.identity_backend().load_article_records():
+            for record in article_registry.load_article_records():
                 if str(record.get("id") or "") not in visible_ids:
                     continue
                 item = dict(record)
                 try:
-                    pdf_path = self.identity_backend().compiled_article_pdf(str(record.get("id") or ""))
+                    pdf_path = article_build_results.compiled_article_pdf(str(record.get("id") or ""))
                     item["compiled_pdf"] = {
                         "available": True,
                         "size": pdf_path.stat().st_size,
@@ -79,31 +83,30 @@ class ArticlesHttp:
         qs = parse_qs(parsed.query)
         try:
             self.require_resource(article_id, self.session_actor(request) or "")
-            backend = self.identity_backend()
             if action == "files":
-                result = backend.list_article_files(article_id)
+                result = article_files.list_article_files(article_id)
             elif action in {"file", "raw"}:
                 relative_path = str((qs.get("path") or [""])[0]).strip()
                 if not relative_path:
                     raise ValueError("article file path required")
                 if action == "raw":
-                    file_path = backend.resolve_article_raw_file(article_id, relative_path)
+                    file_path = article_files.resolve_article_raw_file(article_id, relative_path)
                     content_type = self.media_content_type(file_path)
                     if (qs.get("download") or [""])[0] == "1" or not content_type:
                         return self.serve_download(request, file_path)
                     return self.serve_media(request, file_path, content_type)
-                reader = backend.describe_article_file if (qs.get("meta") or [""])[0] == "1" else backend.read_article_file
+                reader = article_files.describe_article_file if (qs.get("meta") or [""])[0] == "1" else article_files.read_article_file
                 result = reader(article_id, relative_path)
             elif action == "search":
-                result = backend.search_article_files(article_id, str((qs.get("q") or [""])[0]))
+                result = article_files.search_article_files(article_id, str((qs.get("q") or [""])[0]))
             elif action == "settings":
-                result = backend.load_article_settings(article_id)
+                result = article_settings.load_article_settings(article_id)
             elif action == "preflight":
-                result = backend.article_build_preflight(article_id)
+                result = article_build_profile.article_build_preflight(article_id)
             elif action == "semantic":
-                result = backend.article_semantic_index(article_id)
+                result = article_semantic_index.article_semantic_index(article_id)
             else:
-                result = backend.load_article_build_report(article_id)
+                result = article_build_results.load_article_build_report(article_id)
                 if result.get("pdf_available"):
                     result["pdf_url"] = f"/api/articles/{article_id}/pdf"
             return self.respond(request, 200, result)
@@ -124,14 +127,13 @@ class ArticlesHttp:
         qs = parse_qs(parsed.query)
         try:
             self.require_resource(article_id, self.session_actor(request) or "")
-            backend = self.identity_backend()
             if action == "diff":
                 commit_sha = str((qs.get("commit") or [""])[0]).strip()
-                result = backend.article_git_commit_diff(article_id, commit_sha) if commit_sha else backend.article_git_diff(article_id, str((qs.get("path") or [""])[0]))
+                result = article_git.article_git_commit_diff(article_id, commit_sha) if commit_sha else article_git.article_git_diff(article_id, str((qs.get("path") or [""])[0]))
             elif action == "history":
-                result = backend.article_git_history(article_id, limit=int((qs.get("limit") or [20])[0]))
+                result = article_git.article_git_history(article_id, limit=int((qs.get("limit") or [20])[0]))
             else:
-                result = backend.article_git_status(article_id)
+                result = article_git.article_git_status(article_id)
             return self.respond(request, 200, result)
         except KeyError:
             return self.respond(request, 404, {"error": "article not found"})
@@ -150,7 +152,7 @@ class ArticlesHttp:
             return ROUTE_NOT_FOUND
         try:
             self.require_resource(article_id, self.session_actor(request) or "")
-            path = self.identity_backend().compiled_article_pdf(article_id)
+            path = article_build_results.compiled_article_pdf(article_id)
             return self.serve_media(request, path, "application/pdf")
         except PermissionError as exc:
             return self.respond(request, 403, {"error": str(exc)})
@@ -162,7 +164,7 @@ class ArticlesHttp:
     def preflight(self, request, parsed, actor):
         payload = self.read_json(request)
         try:
-            result = self.identity_backend().inspect_article_build_profile(
+            result = article_build_profile.inspect_article_build_profile(
                 str(payload.get("path") or ""),
                 primary_file=str(payload.get("primary_file") or ""),
                 compiler=str(payload.get("compiler") or ""),
@@ -191,7 +193,7 @@ class ArticlesHttp:
             if action == "texlab":
                 result = self.texlab_backend().article_texlab_request(article_id, payload)
             elif action == "source-to-pdf":
-                result = self.identity_backend().article_source_to_pdf(
+                result = article_synctex.article_source_to_pdf(
                     article_id,
                     path=str(payload.get("path") or ""),
                     line=int(payload.get("line") or 1),
@@ -199,7 +201,7 @@ class ArticlesHttp:
                     page_hint=int(payload.get("page_hint") or 0),
                 )
             else:
-                result = self.identity_backend().article_pdf_to_source(
+                result = article_synctex.article_pdf_to_source(
                     article_id,
                     page=int(payload.get("page") or 1),
                     x=float(payload.get("x") or 0),
@@ -235,29 +237,29 @@ class ArticlesHttp:
             ):
                 payload = self.read_multipart(
                     request,
-                    max_bytes=self.multipart_limit(self.identity_backend().ARTICLE_UPLOAD_MAX_BYTES),
+                    max_bytes=self.multipart_limit(article_files.ARTICLE_UPLOAD_MAX_BYTES),
                 )
             else:
                 payload = self.read_json(request)
             if action == "file":
-                result = self.identity_backend().write_article_file(
+                result = article_files.write_article_file(
                     article_id, str(payload.get("path") or "").strip(),
                     str(payload.get("content") or ""),
                 )
             elif action == "entries":
-                result = self.identity_backend().create_article_entry(
+                result = article_files.create_article_entry(
                     article_id, str(payload.get("path") or "").strip(),
                     str(payload.get("kind") or "").strip(),
                 )
             elif action == "upload":
-                result = self.identity_backend().upload_article_file(
+                result = article_files.upload_article_file(
                     article_id,
                     filename=str(payload.get("filename") or ""),
                     data=bytes(payload.get("data_bytes") or b""),
                     directory=str(payload.get("directory") or "").strip(),
                 )
             else:
-                result = self.identity_backend().update_article_settings(article_id, payload)
+                result = article_settings.update_article_settings(article_id, payload)
             self.notify_index(resource_id=article_id, resource_type="article", kind="updated")
             return self.respond(request, 201 if action in {"entries", "upload"} else 200, result)
         except KeyError:
@@ -285,17 +287,17 @@ class ArticlesHttp:
         try:
             self.require_resource(article_id, actor)
             if action == "init":
-                result = self.identity_backend().initialize_article_git(article_id)
+                result = article_git.initialize_article_git(article_id)
             elif action == "stage":
                 raw_paths = payload.get("paths") or []
                 if not isinstance(raw_paths, list):
                     raise ValueError("paths must be a list")
-                result = self.identity_backend().stage_article_git_paths(
+                result = article_git.stage_article_git_paths(
                     article_id, [str(path) for path in raw_paths],
                     staged=bool(payload.get("staged", True)),
                 )
             else:
-                result = self.identity_backend().commit_article_git_changes(
+                result = article_git.commit_article_git_changes(
                     article_id, str(payload.get("message") or ""),
                     description=str(payload.get("description") or ""), actor=actor,
                 )
@@ -319,12 +321,12 @@ class ArticlesHttp:
         try:
             self.require_resource(article_id, self.session_actor(request) or "")
             if action == "stop":
-                return self.respond(request, 200, self.identity_backend().stop_article_compile(article_id))
+                return self.respond(request, 200, article_build.stop_article_compile(article_id))
             payload = self.read_json(request)
             from_scratch = payload.get("from_scratch", False)
             if not isinstance(from_scratch, bool):
                 raise ValueError("from_scratch must be a boolean")
-            result = self.identity_backend().compile_article_pdf(article_id, from_scratch=from_scratch)
+            result = article_build.compile_article_pdf(article_id, from_scratch=from_scratch)
             result["pdf_url"] = f"/api/articles/{article_id}/pdf?v={int(time.time())}"
             return self.respond(request, 200, result)
         except KeyError:
@@ -354,25 +356,24 @@ def page_assets() -> tuple[str, ...]:
 def routes(portal):
     """The Article workspace page, list and API (``web.routes``); ``portal`` is the Web shell."""
     http = ArticlesHttp(
-        respond=lambda *args: portal._serve_json(*args),
-        exception_response=lambda request, exc: portal._serve_exception_json(request, exc),
-        read_json=lambda request: portal._read_request_json(request),
-        read_multipart=lambda request, **kwargs: portal._read_request_multipart(request, **kwargs),
-        multipart_limit=lambda size: portal._multipart_body_limit(size),
-        body_too_large=portal.RequestBodyTooLarge,
-        session_actor=lambda request: portal._get_session_username(request),
-        require_resource=lambda *args: portal._require_resource(*args),
-        notify_index=lambda **kwargs: portal._notify_resource_index(**kwargs),
-        identity_backend=lambda: article_identity_backend,
+        respond=lambda *args: http_responses._serve_json(*args),
+        exception_response=lambda request, exc: http_responses._serve_exception_json(request, exc),
+        read_json=lambda request: http_request_body._read_request_json(request),
+        read_multipart=lambda request, **kwargs: http_request_body._read_request_multipart(request, **kwargs),
+        multipart_limit=lambda size: http_request_body._multipart_body_limit(size),
+        body_too_large=http_request_body.RequestBodyTooLarge,
+        session_actor=lambda request: http_auth._get_session_username(request),
+        require_resource=lambda *args: web_resources._require_resource(*args),
+        notify_index=lambda **kwargs: web_resources._notify_resource_index(**kwargs),
         texlab_backend=lambda: article_texlab_backend,
-        resource_service=lambda: portal.get_resource_service(),
-        serve_media=lambda *args: portal._serve_media_file(*args),
-        serve_download=lambda *args: portal._serve_download_file(*args),
-        media_content_type=lambda path: portal._media_content_type(path),
+        resource_service=lambda: get_resource_service(),
+        serve_media=lambda *args: http_files._serve_media_file(*args),
+        serve_download=lambda *args: http_files._serve_download_file(*args),
+        media_content_type=lambda path: http_files._media_content_type(path),
     )
 
     def page(request, parsed, actor):
-        return portal._serve_authenticated_document(request, 200, (ROOT / "article_workspace.html").read_bytes())
+        return http_documents._serve_authenticated_document(request, 200, (ROOT / "article_workspace.html").read_bytes())
 
     read, write, git = http.workspace_read, http.workspace, http.git_read
     templates = (

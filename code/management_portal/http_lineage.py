@@ -2,6 +2,8 @@
 
 from urllib.parse import parse_qs
 
+from management_portal.http_routes import RouteDefinition
+
 
 class LineageHttp:
     def __init__(self, *, respond, exception_response, service_unavailable,
@@ -48,3 +50,15 @@ class LineageHttp:
         if not lineage_id or not resident_id:
             return self.respond(request, 400, {"error": "Lineage id and resident_id required"})
         return self.respond(request, 200, self.lineage().get_lineage_node_metadata(lineage_id, resident_id, actor))
+
+    def routes(self, principal_route):
+        """The Lineage API.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            RouteDefinition("GET", "/lineage/api/service-status", self.get_route(self.status), "lineage"),
+            principal_route("GET", "/lineage/api/lineages", self.get_route(self.lineages), "lineage"),
+            RouteDefinition("GET", "/lineage/api/node-message-counts", self.get_route(self.node_message_counts), "lineage"),
+            RouteDefinition("GET", "/lineage/api/node-metadata", self.get_route(self.node_metadata), "lineage"),
+        )

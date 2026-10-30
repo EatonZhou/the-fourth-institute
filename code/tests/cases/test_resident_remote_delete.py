@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from management_portal import serve_management_portal as portal, permission_system
+from management_portal import web_read_caches
 from management_portal.notifications import Notification
 from management_portal.society_service import (
     changes,
@@ -33,14 +34,14 @@ def test_deleted_notification_keeps_authorization_and_normal_identity_refresh():
     def event(i,target,kind='deleted',scope='identity'):
         return Notification(sequence=i,subject=f'portal.resident.changed.{target}.{scope}',payload={'kind':kind},received_at=0)
     def readable(instruction,parameter,ids,**kwargs):return set(ids)&{RID}
-    with patch.object(permission_system,'readable_ids',side_effect=readable),patch.object(portal,'_forget_cached_inbox'):
-        result=portal._portal_change_payload('case_actor',[event(1,RID,'changed'),event(2,RID),event(3,private)],{'resident'})
+    with patch.object(permission_system,'readable_ids',side_effect=readable),patch.object(web_read_caches,'_forget_cached_inbox'):
+        result=web_read_caches._portal_change_payload('case_actor',[event(1,RID,'changed'),event(2,RID),event(3,private)],{'resident'})
         assert result['resident_changes']=={RID:['deleted','identity']}
         assert private not in json.dumps(result)
         assert result['snapshot_required'] is True
-        assert portal._portal_change_payload('case_actor',[event(1,RID,'changed')],{'resident'})['resident_changes']=={RID:['identity']}
-        assert portal._portal_change_payload('case_actor',[event(1,RID,'deleted','runtime')],{'resident'})['resident_changes']=={RID:['runtime']}
-        assert portal._portal_change_payload('case_actor',[event(1,RID)],{'lineage'})['resident_changes']=={}
+        assert web_read_caches._portal_change_payload('case_actor',[event(1,RID,'changed')],{'resident'})['resident_changes']=={RID:['identity']}
+        assert web_read_caches._portal_change_payload('case_actor',[event(1,RID,'deleted','runtime')],{'resident'})['resident_changes']=={RID:['runtime']}
+        assert web_read_caches._portal_change_payload('case_actor',[event(1,RID)],{'lineage'})['resident_changes']=={}
 
 
 def test_deleted_notification_waits_for_owner_commit_and_state_unlock():

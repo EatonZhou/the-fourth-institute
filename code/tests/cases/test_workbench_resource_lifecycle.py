@@ -11,6 +11,7 @@ from unittest import mock
 import pytest
 
 from management_portal import serve_management_portal
+from management_portal import http_auth
 from management_portal.resources import ResourceOperationError
 from management_portal.resources.server import ResourceServiceServer
 from management_portal.resources.transport import ResourceServiceClient
@@ -52,8 +53,8 @@ def test_browser_http_routes_complete_resource_lifecycle(lifecycle, monkeypatch)
 
     创建时必须给出位置：没有 project_ids 或 @public 与 Project 同时给出都返回 400；公共内容写 @public，保存为不属于任何 Project。
     """
-    monkeypatch.setattr(serve_management_portal, "_check_session", lambda handler: True)
-    monkeypatch.setattr(serve_management_portal, "_get_session_username", lambda handler: "alice")
+    monkeypatch.setattr(http_auth, "_check_session", lambda handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "alice")
     class Handler(serve_management_portal.Handler):
         def log_message(self, *args):
             pass

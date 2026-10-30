@@ -108,21 +108,21 @@ class OptionalDependencies(unittest.TestCase):
 
     def test_article_without_tex_can_be_inspected_and_rechecks_after_tools_added(self):
         """无 TeX 时资料预检仍可用、编译明确受阻，工具加入后重新检测即可编译。"""
-        from management_portal import article_identity_backend as article
+        from management_portal import article_build_profile, article_toolchain
         root = Path(self.directory.name)
         (root / "main.tex").write_text(
             "\\documentclass{article}\n\\begin{document}Hello\\end{document}", encoding="utf-8")
-        with patch.object(article, "_tex_which", return_value=None) as tool, \
-                patch.object(article, "_kpsewhich_file", return_value="/fixture/article.cls"), \
-                patch.object(article, "latex_environment", return_value={}), \
-                patch.object(article.repo_backend, "project_ids_for_path", return_value=[]):
-            inspect = article.inspect_article_build_profile(root, require_toolchain=False)
+        with patch.object(article_toolchain, "_tex_which", return_value=None) as tool, \
+                patch.object(article_toolchain, "_kpsewhich_file", return_value="/fixture/article.cls"), \
+                patch.object(article_toolchain, "latex_environment", return_value={}), \
+                patch.object(article_build_profile.repo_backend, "project_ids_for_path", return_value=[]):
+            inspect = article_build_profile.inspect_article_build_profile(root, require_toolchain=False)
             self.assertEqual(inspect["status"], "warning")
-            blocked = article.inspect_article_build_profile(root)
+            blocked = article_build_profile.inspect_article_build_profile(root)
             self.assertEqual(blocked["status"], "blocked")
             self.assertTrue(any("请自行安装" in row["message"] for row in blocked["issues"]))
             tool.return_value = "/fixture/tool"
-            self.assertEqual(article.inspect_article_build_profile(root)["status"], "ready")
+            self.assertEqual(article_build_profile.inspect_article_build_profile(root)["status"], "ready")
 
 
 if __name__ == "__main__":

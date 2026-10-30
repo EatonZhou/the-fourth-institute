@@ -6,6 +6,7 @@ from unittest import mock
 from urllib.parse import urlparse
 
 from management_portal import serve_management_portal
+from management_portal import http_auth, http_files, web_clients
 
 
 class _ResponseHarness:
@@ -38,7 +39,7 @@ def test_remote_workspace_image_path_is_restored_after_transport_contracts(monke
             image_bytes = b"\x89PNG\r\n\x1a\nportal-preview"
             image_path.write_bytes(image_bytes)
             monkeypatch.setattr(
-                serve_management_portal,
+                web_clients,
                 "workspace_api",
                 SimpleNamespace(
                     resolve_workspace_link_file_path=lambda *_args, **_kwargs: str(
@@ -47,7 +48,7 @@ def test_remote_workspace_image_path_is_restored_after_transport_contracts(monke
                 ),
             )
             monkeypatch.setattr(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 lambda _handler: "sample_admin",
             )
@@ -65,7 +66,7 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
     with subtests.test(contract='test_workbench_link_file_permission_denial_is_fixed_403'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             monkeypatch.setattr(
-                serve_management_portal,
+                web_clients,
                 "workspace_api",
                 SimpleNamespace(
                     get_workspace_link_file=mock.Mock(
@@ -74,7 +75,7 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
                 ),
             )
             monkeypatch.setattr(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 lambda _handler: "[SECURITY-TEST:run_20260825_first_batch50_extension]owner",
             )
@@ -87,7 +88,7 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
         with monkeypatch.context() as monkeypatch:
             metadata = mock.Mock(side_effect=AssertionError("shared files are not project items"))
             monkeypatch.setattr(
-                serve_management_portal,
+                web_clients,
                 "workspace_api",
                 SimpleNamespace(
                     get_workspace_link_file=mock.Mock(
@@ -105,7 +106,7 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
                 SimpleNamespace(item_metadata_for_path=metadata),
             )
             monkeypatch.setattr(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 lambda _handler: "test-actor",
             )
@@ -121,17 +122,17 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
             serve_media = mock.Mock()
             serve_download = mock.Mock()
             monkeypatch.setattr(
-                serve_management_portal,
+                web_clients,
                 "workspace_api",
                 SimpleNamespace(resolve_workspace_link_file_path=resolver),
             )
             monkeypatch.setattr(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 lambda _handler: "[SECURITY-TEST:run_20260825_first_batch50_extension]owner",
             )
-            monkeypatch.setattr(serve_management_portal, "_serve_media_file", serve_media)
-            monkeypatch.setattr(serve_management_portal, "_serve_download_file", serve_download)
+            monkeypatch.setattr(http_files, "_serve_media_file", serve_media)
+            monkeypatch.setattr(http_files, "_serve_download_file", serve_download)
             handler = _ResponseHarness()
 
             serve_management_portal._AGENT_WORKBENCH_HTTP.get_link_file_raw(handler, urlparse('/api/agent-workbench/link-file-raw?path=controlled.txt'), '')
@@ -143,7 +144,7 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
     with subtests.test(contract='test_resident_projection_permission_denial_is_403'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             monkeypatch.setattr(
-                serve_management_portal,
+                web_clients,
                 "resident_api",
                 SimpleNamespace(
                     get_resident_session_projection=mock.Mock(
@@ -152,7 +153,7 @@ def test_workbench_link_file_permission_denial_is_fixed_403_contracts(monkeypatc
                 ),
             )
             monkeypatch.setattr(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 lambda _handler: "sample_admin",
             )
@@ -174,7 +175,7 @@ def test_versioned_media_preview_is_private_and_immutable_contracts(tmp_path, su
             path=f"/preview/chart.png?_preview_mtime={version}",
         )
 
-        serve_management_portal._serve_media_file(handler, image_path, "image/png")
+        http_files._serve_media_file(handler, image_path, "image/png")
 
         assert handler.status == 200
         assert handler.response_headers["Cache-Control"] == (
@@ -186,13 +187,13 @@ def test_versioned_media_preview_is_private_and_immutable_contracts(tmp_path, su
         image_path = tmp_path / "chart.png"
         image_path.write_bytes(b"preview")
         initial = _ResponseHarness(path="/preview/chart.png")
-        serve_management_portal._serve_media_file(initial, image_path, "image/png")
+        http_files._serve_media_file(initial, image_path, "image/png")
         cached = _ResponseHarness(
             path="/preview/chart.png",
             headers={"If-None-Match": initial.response_headers["ETag"]},
         )
 
-        serve_management_portal._serve_media_file(cached, image_path, "image/png")
+        http_files._serve_media_file(cached, image_path, "image/png")
 
         assert cached.status == 304
         assert cached.response_headers["Cache-Control"] == "private, no-cache"
@@ -203,7 +204,7 @@ def test_versioned_media_preview_is_private_and_immutable_contracts(tmp_path, su
         download_path.write_bytes(b"%PDF-1.4\nheader-safe")
         handler = _ResponseHarness()
 
-        serve_management_portal._serve_download_file(handler, download_path)
+        http_files._serve_download_file(handler, download_path)
 
         disposition = handler.response_headers["Content-Disposition"]
         assert "\n" not in disposition

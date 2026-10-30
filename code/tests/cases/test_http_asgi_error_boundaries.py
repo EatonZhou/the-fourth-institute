@@ -6,6 +6,7 @@ import json
 from unittest import mock
 
 from management_portal import asgi
+from management_portal import http_auth
 
 
 def _response(path: str, method: str = "GET"):
@@ -81,7 +82,7 @@ def test_independent_api_failures_use_private_json_error():
     failing = mock.Mock(side_effect=RuntimeError("private marker"))
     cases = (
         # An identity lookup failure is a 503 of its own; the failure comes after it.
-        ("/api/events", "GET", (mock.patch.object(asgi.portal, "_get_page_api_actor", return_value="alice"),
+        ("/api/events", "GET", (mock.patch.object(http_auth, "_get_page_api_actor", return_value="alice"),
                                 mock.patch.object(asgi, "ensure_notification_listener", failing))),
         ("/api/instructions/execute", "POST", (mock.patch.object(asgi, "_instruction_principal", failing),)),
         ("/api/uploads/upload_0123456789ab", "GET", (mock.patch.object(asgi, "_instruction_principal", failing),)),

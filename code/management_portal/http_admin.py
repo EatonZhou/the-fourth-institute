@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from urllib.parse import parse_qs
 from management_common import portal_network, portal_paths
+from management_portal.http_routes import RouteDefinition
 from scripts.migrate_portal_paths import job_status, queue_migration
 
 class AdminHttp:
@@ -173,3 +174,23 @@ class AdminHttp:
         except Exception as exc:
             print(f'Portal access-control read failed: {type(exc).__name__}', file=sys.stderr)
             return self.respond(request, 500, {'error': 'Unable to load access control.'})
+
+    def routes(self):
+        """The administration API."""
+        return (
+            RouteDefinition("GET", "/api/admin/access-control", self.access_control_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/network", self.network_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/instances", self.instances_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/paths", self.paths_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/embeddings", self.embeddings_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/wall-scheduling", self.wall_scheduling_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/feature-switch", self.feature_switch_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/admin/paths/migration", self.paths_status_get, "portal-portal-get"),
+            RouteDefinition("POST", "/api/admin/network", self.network_post, "portal-portal-post"),
+            RouteDefinition("POST", "/api/admin/instances", self.instances_post, "portal-portal-post"),
+            RouteDefinition("POST", "/api/admin/paths", self.paths_post, "portal-portal-post"),
+            RouteDefinition("POST", "/api/admin/embeddings", self.embeddings_post, "portal-portal-post"),
+            RouteDefinition("POST", "/api/admin/wall-scheduling", self.wall_scheduling_post, "portal-portal-post"),
+            RouteDefinition("POST", "/api/admin/feature-switch", self.feature_switch_post, "portal-portal-post"),
+            RouteDefinition("POST", "/api/admin/embeddings/install", self.embeddings_install_post, "portal-portal-post"),
+        )

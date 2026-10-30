@@ -255,14 +255,15 @@ def test_writer_legacy_source_v1_retry_keeps_original_authenticated_proof(projec
 
 def test_writer_registered_repo_article_device_and_ignores_keep_existing_rows(tmp_path):
     from tests.cases.test_resource_identity_backend import _make_repo
-    from management_portal import resource_identity_backend as repos, article_identity_backend as articles
+    from management_portal import resource_identity_backend as repos
+    from management_portal import article_registration, article_sections
     from management_portal import device_identity_backend as devices, resource_auto_registration as auto
     from management_portal.resources.registry_store import get_registry_store
     checkout = tmp_path/'checkout'; _make_repo(checkout,'https://example.invalid/writer/repo.git')
     repo = repos.register_repo_checkout(checkout)
     article_root = tmp_path/'article'; article_root.mkdir()
     (article_root/'main.tex').write_text(r'\documentclass{article}\begin{document}Body\end{document}')
-    article = articles.register_article(article_root)
+    article = article_registration.register_article(article_root)
     device = devices.register_device({'name':'isolated','device_kind':'workstation','hostname':'isolated-host'})
     registry = get_registry_store()
     for kind,record in [('repo',repo),('article',article),('device',device)]:
@@ -281,7 +282,7 @@ def test_writer_registered_repo_article_device_and_ignores_keep_existing_rows(tm
         writer.put(auto.IGNORE_COLLECTION,ignore_id,{**old_ignore,'schema':'archive.resource-auto-ignores.v1'})
     snapshot = _writer_registry_snapshot(registry)
     assert repos.resolve_repo_address(repo['id'])['schema'] == 'tfi.resource_resolution.v2'
-    assert articles.resolve_article_address(article['id'])['schema'] == 'tfi.resource_resolution.v2'
+    assert article_sections.resolve_article_address(article['id'])['schema'] == 'tfi.resource_resolution.v2'
     with pytest.raises(ValueError, match='invalid schema'):
         devices.resolve_device_address(device['id'])
     assert str(checkout) in auto.suppressed_paths('repo')

@@ -6,6 +6,7 @@ import unittest
 from unittest import mock
 
 from management_portal import serve_management_portal as portal
+from management_portal import web_inbox, web_read_caches
 from management_portal.notifications import Notification
 
 
@@ -36,29 +37,29 @@ def _unavailable(instruction, parameter, identifiers, *, actor, **kwargs):
 class PortalSseTest(unittest.TestCase):
     def test_inbox_change_discards_only_the_notified_viewers_cached_index(self) -> None:
         """收件箱变更通知只清除被通知用户的会话索引缓存"""
-        cache = portal._CoalescingReadCache(60)
+        cache = web_read_caches._CoalescingReadCache(60)
         current = {"unread_count": 0}
-        with mock.patch.object(portal, "_AGENT_CONVERSATION_READ_CACHE", cache), mock.patch.object(
-            portal, "_agent_conversation_payload", side_effect=lambda *args, **kwargs: dict(current),
+        with mock.patch.object(web_read_caches, "_AGENT_CONVERSATION_READ_CACHE", cache), mock.patch.object(
+            web_inbox, "_agent_conversation_payload", side_effect=lambda *args, **kwargs: dict(current),
         ):
-            self.assertEqual(portal._cached_agent_conversation_payload("CASE-A")["unread_count"], 0)
-            self.assertEqual(portal._cached_agent_conversation_payload("other")["unread_count"], 0)
+            self.assertEqual(web_inbox._cached_agent_conversation_payload("CASE-A")["unread_count"], 0)
+            self.assertEqual(web_inbox._cached_agent_conversation_payload("other")["unread_count"], 0)
             current["unread_count"] = 1
             notification = _notification(
                 1, "portal.projection.changed.agent-conversation-index.current",
                 {"actors": ["case-a"], "fields": ["chatroom"]},
             )
-            portal._portal_change_payload("other", [notification], {"projection"})
-            self.assertEqual(portal._cached_agent_conversation_payload("other")["unread_count"], 0)
-            payload = portal._portal_change_payload("CASE-A", [notification], {"projection"})
+            web_read_caches._portal_change_payload("other", [notification], {"projection"})
+            self.assertEqual(web_inbox._cached_agent_conversation_payload("other")["unread_count"], 0)
+            payload = web_read_caches._portal_change_payload("CASE-A", [notification], {"projection"})
             self.assertIn("agent-conversation-index", payload["projection_changes"])
-            self.assertEqual(portal._cached_agent_conversation_payload("CASE-A")["unread_count"], 1)
-            self.assertEqual(portal._cached_agent_conversation_payload("other")["unread_count"], 0)
+            self.assertEqual(web_inbox._cached_agent_conversation_payload("CASE-A")["unread_count"], 1)
+            self.assertEqual(web_inbox._cached_agent_conversation_payload("other")["unread_count"], 0)
 
     def test_reconnected_gateway_discards_cached_inbox_before_snapshot(self) -> None:
         """网关重连后先清除该用户的收件箱缓存，并要求重新取快照"""
-        with mock.patch.object(portal, "_forget_cached_inbox") as forget:
-            payload = portal._portal_change_payload(
+        with mock.patch.object(web_read_caches, "_forget_cached_inbox") as forget:
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A", [_notification(1, "portal.gateway.reconnected")], {"projection"},
             )
         self.assertTrue(payload["snapshot_required"])
@@ -71,7 +72,7 @@ class PortalSseTest(unittest.TestCase):
         :design-point:
         """
         with mock.patch.object(permission_system, "readable_ids", side_effect=_readable("resident_111111111111")):
-            payload = portal._portal_change_payload("CASE-A", [
+            payload = web_read_caches._portal_change_payload("CASE-A", [
                 _notification(1, "portal.resident.changed.resident_111111111111.identity"),
                 _notification(2, "portal.resident.changed.resident_111111111111.runtime"),
                 _notification(3, "portal.resident.changed.resident_111111111111.identity"),
@@ -88,7 +89,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_readable("resident_111111111111"),
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 [
                     _notification(
@@ -127,7 +128,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_readable("resident_111111111111"),
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 [
                     _notification(
@@ -165,7 +166,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_unavailable,
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 [
                     _notification(
@@ -193,7 +194,7 @@ class PortalSseTest(unittest.TestCase):
 
     def test_change_payload_filters_execution_changes_by_actor(self) -> None:
         """执行变更只下发给该执行的发起者"""
-        payload = portal._portal_change_payload(
+        payload = web_read_caches._portal_change_payload(
             "CASE-A",
             [
                 _notification(
@@ -215,7 +216,7 @@ class PortalSseTest(unittest.TestCase):
 
     def test_change_payload_filters_business_projection_changes_by_actor(self) -> None:
         """业务投影变更按 actor 过滤，并带上变更字段和详情"""
-        payload = portal._portal_change_payload(
+        payload = web_read_caches._portal_change_payload(
             "CASE-A",
             [
                 _notification(
@@ -290,7 +291,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_readable("resident_111111111111"),
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 notifications,
                 {"resident", "lineage"},
@@ -309,7 +310,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_readable("resident_111111111111"),
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 [
                     _notification(
@@ -333,7 +334,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_readable("todo_111111111111"),
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 [
                     _notification(
@@ -373,7 +374,7 @@ class PortalSseTest(unittest.TestCase):
             "readable_ids",
             side_effect=_unavailable,
         ):
-            payload = portal._portal_change_payload(
+            payload = web_read_caches._portal_change_payload(
                 "CASE-A",
                 [
                     _notification(

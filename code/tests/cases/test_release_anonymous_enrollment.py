@@ -11,11 +11,12 @@ def test_desktop_setup_status_reads_current_authority_without_session(monkeypatc
     import json
     from urllib.request import ProxyHandler, build_opener
     from management_portal import serve_management_portal as portal
+    from management_portal import http_auth, http_instance, web_accounts
     from scripts.tfi_windows_launcher import DefaultStartup
 
     configured = False
-    monkeypatch.setattr(portal, '_USER_ENROLLMENT', SimpleNamespace(has_accounts=lambda: configured))
-    monkeypatch.setattr(portal, '_PORTAL_INSTANCE', 'setup-fixture')
+    monkeypatch.setattr(web_accounts, '_USER_ENROLLMENT', SimpleNamespace(has_accounts=lambda: configured))
+    monkeypatch.setattr(http_instance, '_PORTAL_INSTANCE', 'setup-fixture')
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -45,6 +46,7 @@ def test_desktop_setup_status_reads_current_authority_without_session(monkeypatc
 
 def test_first_admin_page_loads_and_submits_without_a_session(monkeypatch):
     from management_portal import serve_management_portal as portal, personal_ama
+    from management_portal import http_auth, http_instance, web_accounts
 
     calls = []
 
@@ -60,11 +62,11 @@ def test_first_admin_page_loads_and_submits_without_a_session(monkeypatch):
         calls.append("accept")
         return dict(user={"username": "fixture-admin"}, credential={}, first_admin=True)
 
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", SimpleNamespace(
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", SimpleNamespace(
         preview_invitation=preview, accept_invitation=accept))
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", SimpleNamespace(audit=lambda *a, **k: None))
-    monkeypatch.setattr(portal, "_get_session_username", lambda request: "")
-    monkeypatch.setattr(portal, "_check_session", lambda request: False)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", SimpleNamespace(audit=lambda *a, **k: None))
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda request: "")
+    monkeypatch.setattr(http_auth, "_check_session", lambda request: False)
     monkeypatch.setattr(personal_ama, "provision_account", lambda username: {})
 
     class Handler(BaseHTTPRequestHandler):

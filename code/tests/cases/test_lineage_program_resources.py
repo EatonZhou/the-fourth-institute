@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal import society_service, serve_management_portal
+from management_portal import web_resources
 from management_portal.society_service import contracts, lineage_program, lineage_reads
 from management_portal.society_service import lineage_aggregate
 from management_portal.resources.providers import collaboration
@@ -165,11 +166,11 @@ def test_attached_event_reference(program_resources, actor, missing, expected_st
 def test_bridge_preserves_program_target_or_fails(program_resources, monkeypatch, actor, missing):
     """资源桥接保留程序目标且缺失时返回空地址"""
     service, definition, _, _ = program_resources
-    monkeypatch.setattr(serve_management_portal, "get_resource_service", lambda: service)
+    monkeypatch.setattr(web_resources, "get_resource_service", lambda: service)
     address = lineage_program.program_component_address(ROOT_ID, ITEMS[0][2])
     if missing:
         definition["program"]["components"] = []
-    location = serve_management_portal._resource_portal_location(address, actor)
+    location = web_resources._resource_portal_location(address, actor)
     assert location == (
         f"/lineage?lineage={ROOT_ID}&program_item={ITEMS[0][2]}"
         if not missing else ""

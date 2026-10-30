@@ -8,6 +8,7 @@ from urllib.parse import parse_qs
 from management_portal.society_service import SocietyServiceUnavailable
 from management_portal.society_service.errors import SocietyServiceBusy
 from management_portal.resources.errors import ResourceServiceUnavailable
+from management_portal.http_routes import RouteDefinition
 
 
 class AgentWorkbenchHttp:
@@ -388,4 +389,37 @@ class AgentWorkbenchHttp:
         except Exception as exc:
             return self.error(request, exc)
         return self.respond(request, 200, result)
+
+    def routes(self, principal_route):
+        """The Agent Workbench API: runtime catalogs, favorites, Residents, attachments, terminals, links and discovery.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            RouteDefinition("GET", "/api/agent-workbench/agent-backends", self.agent_backends, "agent-workbench-runtime"),
+            principal_route("GET", "/api/agent-workbench/agent-runtime-catalog", self.runtime_catalog, "agent-workbench-runtime"),
+            RouteDefinition("GET", "/api/agent-workbench/favorites", self.get_favorites, "agent-workbench-favorites"),
+            RouteDefinition("GET", "/api/agent-workbench/residents", self.get_residents, "agent-workbench-residents"),
+            RouteDefinition("GET", "/api/agent-workbench/residents/shortcuts", self.get_resident_shortcuts, "agent-workbench-residents"),
+            RouteDefinition("GET", "/api/agent-workbench/residents/navigation-target", self.get_residents_navigation_target, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/residents/projection", self.get_residents_projection, "agent-workbench-residents"),
+            RouteDefinition("GET", "/api/agent-workbench/residents/watchboard", self.get_residents_watchboard, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/residents/session-restart-options", self.get_residents_session_restart_options, "agent-workbench-residents"),
+            RouteDefinition("GET", "/api/agent-workbench/residents/forward-targets", self.get_residents_forward_targets, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/chat-attachments/image", self.get_chat_attachments_image, "agent-workbench-chat-attachments"),
+            RouteDefinition("GET", "/api/agent-workbench/local-terminal/read", self.get_local_terminal_read, "agent-workbench-local-terminal"),
+            RouteDefinition("GET", "/api/agent-workbench/link-file", self.get_link_file, "agent-workbench-link-file"),
+            RouteDefinition("GET", "/api/agent-workbench/link-file-raw", self.get_link_file_raw, "agent-workbench-link-file-raw"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/contexts", self.post_route(self.discovery_contexts), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/recommend", self.post_route(self.discovery_recommend), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/recommend/latest", self.post_route(self.discovery_recommend_latest), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/recommend/result", self.post_route(self.discovery_recommend_result), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/routing-evals/residents/search", self.post_route(self.discovery_routing_residents_search), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/routing-evals/submit", self.post_route(self.discovery_routing_submit), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/search", self.post_route(self.discovery_search), "agent-workbench-resident-discovery"),
+            RouteDefinition("POST", "/api/agent-workbench/local-terminal/start", self.post_route(self.post_local_terminal_start), "agent-workbench-local-terminal"),
+            RouteDefinition("POST", "/api/agent-workbench/local-terminal/input", self.post_route(self.post_local_terminal_input), "agent-workbench-local-terminal"),
+            RouteDefinition("POST", "/api/agent-workbench/local-terminal/control", self.post_route(self.post_local_terminal_control), "agent-workbench-local-terminal"),
+            RouteDefinition("POST", "/api/agent-workbench/residents/watchboard-application", self.post_route(self.post_residents_watchboard_application), "agent-workbench-residents"),
+        )
 

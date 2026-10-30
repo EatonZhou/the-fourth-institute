@@ -19,6 +19,7 @@ from management_portal import local_terminal_backend as terminal
 from management_portal import paper_collection_jobs, paper_library
 from management_portal import portal_deployment_router as router
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth, http_sign_in, web_accounts
 from management_portal import access_audit_store
 from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
 from management_portal.portal_password_reset import PortalPasswordResetService, PortalPasswordResetStore
@@ -43,18 +44,18 @@ def account_boundary(tmp_path, monkeypatch):
         credentials.set_password(actor, PASSWORD)
     factors = PortalTwoFactorStore(tmp_path / "factor.key")
     resets = SimpleNamespace(configured=False, invalidate_user=Mock())
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
     monkeypatch.setattr("management_portal.portal_access_control.get_portal_access_store", lambda: access)
-    monkeypatch.setattr(portal, "_PORTAL_CREDENTIALS", credentials)
-    monkeypatch.setattr(portal, "_PORTAL_TWO_FACTOR", factors)
-    monkeypatch.setattr(portal, "_PORTAL_PASSWORD_RESETS", resets)
-    monkeypatch.setattr(portal, "_PORTAL_PASSKEYS", PortalPasskeyService())
-    monkeypatch.setattr(portal, "_PORTAL_ALLOWED_USERS", set())
-    monkeypatch.setattr(portal, "_TWO_FACTOR_SETUPS", {})
-    monkeypatch.setattr(portal, "_LOGIN_CHALLENGES", {})
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: "fixture-user")
+    monkeypatch.setattr(web_accounts, "_PORTAL_CREDENTIALS", credentials)
+    monkeypatch.setattr(web_accounts, "_PORTAL_TWO_FACTOR", factors)
+    monkeypatch.setattr(web_accounts, "_PORTAL_PASSWORD_RESETS", resets)
+    monkeypatch.setattr(web_accounts, "_PORTAL_PASSKEYS", PortalPasskeyService())
+    monkeypatch.setattr(web_accounts, "_PORTAL_ALLOWED_USERS", set())
+    monkeypatch.setattr(http_sign_in, "_TWO_FACTOR_SETUPS", {})
+    monkeypatch.setattr(http_sign_in, "_LOGIN_CHALLENGES", {})
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "fixture-user")
     sessions = []
-    monkeypatch.setattr(portal, "_issue_session_token", lambda actor: sessions.append(actor) or "synthetic-session")
+    monkeypatch.setattr(web_accounts, "_issue_session_token", lambda actor: sessions.append(actor) or "synthetic-session")
     return SimpleNamespace(root=tmp_path, access=access, credentials=credentials, factors=factors, resets=resets, sessions=sessions)
 
 
@@ -90,12 +91,12 @@ def test_internal_password_reset_is_targeted(account_boundary):
     :design: decision_30528aff7035"""
     before = account_boundary.credentials.load()
     payload = {"action": "reset_password", "username": "fixture-peer", "password": PASSWORD + "-changed"}
-    result = portal._admin_access_action("CASE-A", payload)
+    result = web_accounts._admin_access_action("CASE-A", payload)
     after = account_boundary.credentials.load()
     assert after["fixture-user"] == before["fixture-user"]
     assert after["CASE-A"] == before["CASE-A"]
     assert after["fixture-peer"] != before["fixture-peer"]
-    assert portal._verify_credentials("fixture-peer", PASSWORD + "-changed")
+    assert web_accounts._verify_credentials("fixture-peer", PASSWORD + "-changed")
     assert result["user"]["session_version"] == 1
     account_boundary.resets.invalidate_user.assert_called_once_with("fixture-peer")
     assert PASSWORD not in _audit_text()
@@ -104,14 +105,14 @@ def test_internal_password_reset_is_targeted(account_boundary):
 def test_deleted_user_absent_from_admin_list(account_boundary):
     """已删除用户不出现在管理列表且列表不含密码"""
     account_boundary.access.retire_user("fixture-peer", actor="CASE-A")
-    users = portal._admin_access_payload("CASE-A")["users"]
+    users = web_accounts._admin_access_payload("CASE-A")["users"]
     assert {user["username"] for user in users} == {"CASE-A", "fixture-user"}
     assert all("password" not in user for user in users)
 
 
 def test_login_failures_have_identical_public_response(account_boundary, monkeypatch):
     """不同登录失败原因返回相同公开响应且不签发会话"""
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: None)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: None)
     results = []
     with _server(portal.Handler) as server:
         for actor, password, state, allowed in (
@@ -121,7 +122,7 @@ def test_login_failures_have_identical_public_response(account_boundary, monkeyp
             ("fixture-user", PASSWORD, "active", {"fixture-peer"}),
         ):
             account_boundary.access.upsert_user("fixture-user", actor="CASE-A", status=state)
-            monkeypatch.setattr(portal, "_PORTAL_ALLOWED_USERS", allowed)
+            monkeypatch.setattr(web_accounts, "_PORTAL_ALLOWED_USERS", allowed)
             status, headers, body = request(server, "/login", {"username": actor, "password": password}, form=True)
             assert "Set-Cookie" not in headers
             results.append((status, headers.get("Location"), body))
@@ -169,9 +170,9 @@ def test_setup_password_only_and_ephemeral_pending(account_boundary, monkeypatch
     assert query["secret"] == [setup["secret"]]
     assert query["issuer"] == ["Fixture Institute"]
     assert base64.b64decode(setup["qr_code_data_url"].split(",", 1)[1]).startswith(b"<?xml")
-    monkeypatch.setattr(portal, "_TWO_FACTOR_SETUPS", {})
+    monkeypatch.setattr(http_sign_in, "_TWO_FACTOR_SETUPS", {})
     with pytest.raises(PermissionError, match="expired"):
-        portal._confirm_two_factor_setup("fixture-user", setup["setup_token"], totp_code(setup["secret"]))
+        http_sign_in._confirm_two_factor_setup("fixture-user", setup["setup_token"], totp_code(setup["secret"]))
     assert not account_boundary.factors.enabled("fixture-user")
 
 
@@ -182,7 +183,7 @@ def test_passkey_login_checks_current_account_status(account_boundary, monkeypat
         account_boundary.access.retire_user("fixture-user", actor="CASE-A")
     else:
         account_boundary.access.upsert_user("fixture-user", actor="CASE-A", status=status)
-    monkeypatch.setattr(portal._PORTAL_PASSKEYS, "finish_authentication", lambda **kwargs: "fixture-user")
+    monkeypatch.setattr(web_accounts._PORTAL_PASSKEYS, "finish_authentication", lambda **kwargs: "fixture-user")
     with _server(portal.Handler) as server:
         response, headers, body = request(server, "/api/auth/passkeys/verify", {"ceremony_token": "synthetic", "credential": {"id": "synthetic"}})
     assert response == 403
@@ -193,7 +194,7 @@ def test_passkey_login_checks_current_account_status(account_boundary, monkeypat
 @pytest.mark.parametrize("failure", ["missing_challenge", "corrupt_store"])
 def test_passkey_corruption_never_issues_session(account_boundary, failure):
     """Passkey 挑战缺失或存储损坏时不签发会话"""
-    service = portal._PORTAL_PASSKEYS
+    service = web_accounts._PORTAL_PASSKEYS
     token = "missing"
     if failure == "corrupt_store":
         token = service.begin_authentication(rp_id="localhost", origin="http://localhost")["ceremony_token"]
@@ -257,8 +258,8 @@ def test_router_direct_peer_and_backend_proxy_trust():
             handler.client_address = scope['client']
         scope = {'type':'http', 'scheme':'http', 'client':(peer,1234), 'headers':[(b'x-forwarded-proto',b'https'),(b'x-forwarded-for',b'198.51.100.7')]}
         asyncio.run(ProxyHeadersMiddleware(app, trusted_hosts=['127.0.0.1'])(scope, receive, send))
-        assert portal._request_scheme(handler) == expected_scheme
-        assert portal._request_client_key(handler) == expected_client
+        assert http_auth._request_scheme(handler) == expected_scheme
+        assert http_auth._request_client_key(handler) == expected_client
     public = router._public_runtime_status({"state": "blocked", "message": "unavailable", "details": {"private_path": "/synthetic-secret", "token": "synthetic"}, "traceback": "private"})
     assert public == {"state": "blocked", "message": "unavailable"}
 
@@ -318,18 +319,18 @@ def test_qr_encoder_receives_exact_displayed_seed(account_boundary, monkeypatch)
         encoded.append(uri)
         return make(uri, **kwargs)
     monkeypatch.setattr(qrcode, "make", capture)
-    setup = portal._begin_two_factor_setup("fixture-user")
+    setup = http_sign_in._begin_two_factor_setup("fixture-user")
     assert encoded == [setup["otpauth_uri"]]
     assert parse_qs(urlsplit(encoded[0]).query)["secret"] == [setup["secret"]]
-    assert setup["qr_code_data_url"] == portal._totp_qr_data_url(setup["otpauth_uri"])
+    assert setup["qr_code_data_url"] == http_sign_in._totp_qr_data_url(setup["otpauth_uri"])
 
 
 def test_paper_machine_entry_preserves_the_authenticated_resident(monkeypatch, record_property):
     """论文机器入口向业务后端传递已认证 Resident 身份"""
     from management_portal import society_service
     resident = "resident_123456789abc"
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: None)
-    monkeypatch.setattr(portal.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: None)
+    monkeypatch.setattr(http_auth.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
     lineage = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=lambda lineage_id, actor: actor))
     monkeypatch.setattr(society_service, "get_society_service", lambda: lineage)
     observed = []
@@ -350,9 +351,9 @@ def test_paper_machine_entry_preserves_the_authenticated_resident(monkeypatch, r
 def test_paper_machine_entry_rechecks_current_membership(monkeypatch):
     """论文机器入口重新检查 Resident 当前 Lineage 成员身份"""
     resident = "resident_123456789abc"
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: None)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: None)
     from management_portal import society_service
-    monkeypatch.setattr(portal.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
+    monkeypatch.setattr(http_auth.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
     rejected = Mock(side_effect=PermissionError("Resident identity belongs to another Lineage"))
     lineage = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=rejected))
     monkeypatch.setattr(society_service, "get_society_service", lambda: lineage)
@@ -376,8 +377,8 @@ def test_paper_machine_write_needs_a_resident_active_in_its_lineage(monkeypatch,
     """论文机器写入要求提供所属 Lineage 并保持 Resident 身份"""
     from management_portal import society_service
     resident = "resident_123456789abc"
-    monkeypatch.setattr(portal, "_get_session_username", lambda handler: None)
-    monkeypatch.setattr(portal.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: None)
+    monkeypatch.setattr(http_auth.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
     lineage = SimpleNamespace(lineage=SimpleNamespace(authorize_lineage_resident_principal=lambda lineage_id, actor: actor))
     monkeypatch.setattr(society_service, "get_society_service", lambda: lineage)
     observed = []
@@ -400,13 +401,13 @@ def test_paper_machine_write_needs_a_resident_active_in_its_lineage(monkeypatch,
 def test_proxy_metadata_cannot_replace_authenticated_actor(account_boundary, monkeypatch):
     """代理元数据不能替换已认证用户或 Resident 身份"""
     resident = "resident_123456789abc"
-    monkeypatch.setattr(portal.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
+    monkeypatch.setattr(http_auth.agent_token_auth, "authenticate_bearer_token", lambda token, *, scope="": {"agent_id": resident})
     for peer in ("127.0.0.1", "192.0.2.1"):
         handler = SimpleNamespace(client_address=(peer, 1234), headers={"Authorization": "Bearer synthetic", "X-Forwarded-User": "forged", "X-Forwarded-For": "198.51.100.9", "X-Portal-Lineage-ID": "lineage_123456789abc"})
-        assert portal._get_agent_api_auth(handler) == {"type": "human", "id": "fixture-user"}
+        assert http_auth._get_agent_api_auth(handler) == {"type": "human", "id": "fixture-user"}
         with monkeypatch.context() as patch:
-            patch.setattr(portal, "_get_session_username", lambda handler: None)
-            assert portal._get_agent_api_auth(handler)["id"] == resident
+            patch.setattr(http_auth, "_get_session_username", lambda handler: None)
+            assert http_auth._get_agent_api_auth(handler)["id"] == resident
 
 
 def test_account_delete_preserves_lineage_definition(projection_fixture, account_boundary, monkeypatch):
@@ -415,9 +416,9 @@ def test_account_delete_preserves_lineage_definition(projection_fixture, account
     store = lineage_aggregate.lineage_catalog_store()
     lineage_id = created["lineage_id"]
     before = store.get(lineage_id)
-    monkeypatch.setattr(portal, "_delete_portal_user_personal_data", lambda actor: {})
+    monkeypatch.setattr(web_accounts, "_delete_portal_user_personal_data", lambda actor: {})
     monkeypatch.setattr("management_portal.portal_access_control.get_portal_access_store", lambda: account_boundary.access)
-    result = portal._admin_access_action("CASE-A", {"action": "delete", "username": "fixture-peer"})
+    result = web_accounts._admin_access_action("CASE-A", {"action": "delete", "username": "fixture-peer"})
     assert result["deleted"]
     assert account_boundary.access.user("fixture-peer")["status"] == "deleted"
     assert store.get(lineage_id) == before

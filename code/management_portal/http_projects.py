@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from management_portal import http_documents
 from management_portal.http_routes import RouteDefinition
 
 PAGE = Path(__file__).resolve().parent / "projects.html"
@@ -21,7 +22,7 @@ RESOURCE_ROUTES = {"project": ("/projects", "project"), "direction": ("/projects
 def routes(portal):
     """The Projects page (``web.routes``); ``portal`` is the Web shell."""
     def page(request, _parsed, _actor):
-        return portal._serve_authenticated_document(request, 200, PAGE.read_bytes())
+        return http_documents._serve_authenticated_document(request, 200, PAGE.read_bytes())
 
     return tuple(RouteDefinition("GET", path, page, "portal-pages-get", page=True)
                  for path in ("/projects", "/projects/"))

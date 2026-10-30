@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 
-from management_portal import article_identity_backend as backend
+from management_portal import article_build, article_build_profile, article_build_results, article_discovery, article_files, article_git, article_registration, article_registry, article_semantic_index, article_settings, article_synctex, article_tex, article_toolchain
 from management_portal import article_texlab_backend
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources import ResourceService
@@ -89,7 +89,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            backend.extract_article_title(manuscript),
+            article_tex.extract_article_title(manuscript),
             "ArchExplorer: Automated Architecture Discovery",
         )
 
@@ -117,7 +117,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-        inspected = backend.inspect_article_root(
+        inspected = article_discovery.inspect_article_root(
             article_root,
         )
         self.assertEqual(
@@ -126,10 +126,10 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         )
         self.assertEqual(inspected["title"], "Physical AI Infrastructure")
 
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
-        settings = backend.load_article_settings(
+        settings = article_settings.load_article_settings(
             record["id"],
             build_root=self.root / "article-build",
         )
@@ -145,7 +145,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         _make_article_repo(arxiv, "One Logical Article", "https://example.invalid/arxiv.git")
         empty.mkdir()
 
-        report = backend.scan_and_sync_article_registry(
+        report = article_registration.scan_and_sync_article_registry(
             [self.project],
             apply=True,
         )
@@ -153,7 +153,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(report["logical_article_count"], 1)
         self.assertEqual(report["created_count"], 1)
         self.assertEqual(report["skipped_count"], 1)
-        record = backend.load_article_records()[0]
+        record = article_registry.load_article_records()[0]
         self.assertRegex(record["id"], r"^article_[0-9a-f]{12}$")
         self.assertEqual(record["canonical_root"], str(canonical))
         self.assertEqual(record["project_ids"], ["ExampleProject"])
@@ -164,7 +164,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         )
         self.assertEqual(len(record["roots"]), 2)
 
-        repeated = backend.scan_and_sync_article_registry(
+        repeated = article_registration.scan_and_sync_article_registry(
             [self.project],
             apply=True,
         )
@@ -187,7 +187,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         )
         article_root = self.project / "article"
         _make_article_repo(article_root, "Resolvable Article", "https://example.invalid/article.git")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         article_id = record["id"]
@@ -247,7 +247,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         (self.project / "outside.txt").write_text("outside\n", encoding="utf-8")
         _git(self.project, "add", "article/main.tex", "outside.txt")
         _git(self.project, "commit", "-q", "-m", "initial")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         article_id = record["id"]
@@ -256,54 +256,54 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\documentclass{article}\n\\begin{document}\nModel revision.\n\\end{document}\n",
             encoding="utf-8",
         )
-        status = backend.article_git_status(article_id)
+        status = article_git.article_git_status(article_id)
         self.assertTrue(status["available"])
         self.assertEqual(status["branch"], "main")
         self.assertEqual([item["path"] for item in status["changes"]], ["main.tex"])
-        diff = backend.article_git_diff(
+        diff = article_git.article_git_diff(
             article_id, "main.tex"
         )
         self.assertIn("-First draft.", diff["diff"])
         self.assertIn("+Model revision.", diff["diff"])
 
-        staged = backend.stage_article_git_paths(
+        staged = article_git.stage_article_git_paths(
             article_id,
             ["main.tex"],
             staged=True,
         )
         self.assertEqual(staged["staged_count"], 1)
-        unstaged = backend.stage_article_git_paths(
+        unstaged = article_git.stage_article_git_paths(
             article_id,
             ["main.tex"],
             staged=False,
         )
         self.assertEqual(unstaged["staged_count"], 0)
-        backend.stage_article_git_paths(
+        article_git.stage_article_git_paths(
             article_id,
             ["main.tex"],
             staged=True,
         )
-        committed = backend.commit_article_git_changes(
+        committed = article_git.commit_article_git_changes(
             article_id,
             "Revise manuscript",
             actor="model-agent",
         )
         self.assertEqual(committed["commit"]["subject"], "Revise manuscript")
         self.assertFalse(committed["status"]["dirty"])
-        history = backend.article_git_history(
+        history = article_git.article_git_history(
             article_id
         )
         revised_commit = next(
             item for item in history["commits"] if item["subject"] == "Revise manuscript"
         )
-        revised_diff = backend.article_git_commit_diff(
+        revised_diff = article_git.article_git_commit_diff(
             article_id, revised_commit["sha"]
         )
         self.assertIn("+Model revision.", revised_diff["diff"])
         initial_commit = next(
             item for item in history["commits"] if item["subject"] == "initial"
         )
-        initial_diff = backend.article_git_commit_diff(
+        initial_diff = article_git.article_git_commit_diff(
             article_id, initial_commit["sha"]
         )
         self.assertIn("article/main.tex", initial_diff["diff"])
@@ -315,13 +315,13 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         )
         (self.project / "outside.txt").write_text("outside staged\n", encoding="utf-8")
         _git(self.project, "add", "outside.txt")
-        backend.stage_article_git_paths(
+        article_git.stage_article_git_paths(
             article_id,
             ["main.tex"],
             staged=True,
         )
         with self.assertRaisesRegex(ValueError, "Article 目录之外"):
-            backend.commit_article_git_changes(
+            article_git.commit_article_git_changes(
                 article_id,
                 "Must stay scoped",
             )
@@ -338,16 +338,16 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\documentclass{article}\n\\begin{document}\nDraft.\n\\end{document}\n",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         article_id = record["id"]
-        unavailable = backend.article_git_status(
+        unavailable = article_git.article_git_status(
             article_id
         )
         self.assertFalse(unavailable["available"])
 
-        initialized = backend.initialize_article_git(
+        initialized = article_git.initialize_article_git(
             article_id
         )
         self.assertTrue(initialized["available"])
@@ -361,42 +361,42 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         second = self.project / "article_submission"
         _make_article_repo(first, "Working Title", "https://example.invalid/working.git")
         _make_article_repo(second, "Final Title", "https://example.invalid/final.git")
-        record = backend.register_article(
+        record = article_registration.register_article(
             first,
         )
-        attached = backend.register_article(
+        attached = article_registration.register_article(
             second,
             article_id=record["id"],
         )
         self.assertEqual(attached["id"], record["id"])
         self.assertEqual(len(attached["roots"]), 2)
-        self.assertEqual(len(backend.load_article_records()), 1)
+        self.assertEqual(len(article_registry.load_article_records()), 1)
 
     def test_unregister_removes_only_the_registry_record(self) -> None:
         """注销 Article 只删除登记记录，不删除目录和文件"""
         article_root = self.project / "article"
         _make_article_repo(article_root, "Registered Article", "https://example.invalid/article.git")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
 
-        result = backend.unregister_article(record["id"])
+        result = article_registration.unregister_article(record["id"])
 
         self.assertTrue(result["deleted"])
         self.assertTrue(article_root.is_dir())
         self.assertTrue((article_root / "main.tex").is_file())
-        self.assertEqual(backend.load_article_records(), [])
+        self.assertEqual(article_registry.load_article_records(), [])
 
     def test_compile_writes_pdf_to_build_cache_not_article_directory(self) -> None:
         """编译 Article 时 PDF 写入构建缓存，不写入 Article 目录"""
         article_root = self.project / "article"
         _make_article_repo(article_root, "Compilable Article", "https://example.invalid/article.git")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "article-build"
 
-        result = backend.compile_article_pdf(
+        result = article_build.compile_article_pdf(
             record["id"],
             build_root=build_root,
             from_scratch=True,
@@ -409,7 +409,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertFalse(result["warnings"])
         self.assertTrue(result["from_scratch"])
         self.assertFalse((article_root / "main.pdf").exists())
-        report = backend.load_article_build_report(
+        report = article_build_results.load_article_build_report(
             record["id"], build_root=build_root
         )
         self.assertEqual(report["status"], "success")
@@ -434,24 +434,24 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\end{document}\n",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "article-build"
-        backend.update_article_settings(
+        article_settings.update_article_settings(
             record["id"],
             {"compile_mode": "draft"},
             build_root=build_root,
         )
 
-        draft = backend.compile_article_pdf(
+        draft = article_build.compile_article_pdf(
             record["id"],
             build_root=build_root,
             from_scratch=True,
         )
 
         self.assertEqual(draft["compile_mode"], "draft")
-        cache_root = backend.article_build_cache_path(record["id"], build_root=build_root)
+        cache_root = article_build_results.article_build_cache_path(record["id"], build_root=build_root)
         wrapper = cache_root / "draft" / "portal-draft.tex"
         self.assertIn("PassOptionsToPackage{draft}{graphicx}", wrapper.read_text())
         draft_text = subprocess.run(
@@ -465,12 +465,12 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         sentinel = cache_root / "keep-between-incremental-builds"
         sentinel.write_text("cached", encoding="utf-8")
 
-        backend.update_article_settings(
+        article_settings.update_article_settings(
             record["id"],
             {"compile_mode": "normal"},
             build_root=build_root,
         )
-        normal = backend.compile_article_pdf(
+        normal = article_build.compile_article_pdf(
             record["id"],
             build_root=build_root,
         )
@@ -485,7 +485,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         ).stdout
         self.assertNotIn("pixel.png", normal_text)
 
-        backend.compile_article_pdf(
+        article_build.compile_article_pdf(
             record["id"],
             build_root=build_root,
             from_scratch=True,
@@ -503,17 +503,17 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\end{document}\n",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "article-build"
 
-        backend.update_article_settings(
+        article_settings.update_article_settings(
             record["id"],
             {"error_handling": "continue"},
             build_root=build_root,
         )
-        continued = backend.compile_article_pdf(
+        continued = article_build.compile_article_pdf(
             record["id"],
             build_root=build_root,
             from_scratch=True,
@@ -522,18 +522,18 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(continued["status"], "warning")
         self.assertGreater(continued["counts"]["error"], 0)
 
-        backend.update_article_settings(
+        article_settings.update_article_settings(
             record["id"],
             {"error_handling": "stop"},
             build_root=build_root,
         )
         with self.assertRaisesRegex(RuntimeError, "LaTeX compilation failed"):
-            backend.compile_article_pdf(
+            article_build.compile_article_pdf(
                 record["id"],
                 build_root=build_root,
                 from_scratch=True,
             )
-        stopped = backend.load_article_build_report(record["id"], build_root=build_root)
+        stopped = article_build_results.load_article_build_report(record["id"], build_root=build_root)
         self.assertEqual(stopped["status"], "error")
         self.assertFalse(stopped["pdf_available"])
         self.assertGreater(stopped["counts"]["error"], 0)
@@ -542,37 +542,37 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         """Article 工作区支持新建目录和文件、读写、上传与全文搜索，拒绝越出目录的路径"""
         article_root = self.project / "article"
         _make_article_repo(article_root, "Editable Article", "https://example.invalid/article.git")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         article_id = record["id"]
 
-        folder = backend.create_article_entry(
+        folder = article_files.create_article_entry(
             article_id,
             "sections",
             "directory",
         )
         self.assertEqual(folder["type"], "directory")
-        created = backend.create_article_entry(
+        created = article_files.create_article_entry(
             article_id,
             "sections/method.tex",
             "file",
         )
         self.assertEqual(created["path"], "sections/method.tex")
 
-        saved = backend.write_article_file(
+        saved = article_files.write_article_file(
             article_id,
             "sections/method.tex",
             "\\section{Method}\nRuntime rewiring is searchable.\n",
         )
         self.assertGreater(saved["size"], 0)
-        content = backend.read_article_file(
+        content = article_files.read_article_file(
             article_id,
             "sections/method.tex",
         )
         self.assertIn("Runtime rewiring", content["content"])
 
-        uploaded = backend.upload_article_file(
+        uploaded = article_files.upload_article_file(
             article_id,
             filename="notes.md",
             data=b"# Notes\nworkspace upload\n",
@@ -583,12 +583,12 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
         )
         (article_root / "sections" / "diagram.png").write_bytes(image_bytes)
-        image_path = backend.resolve_article_raw_file(
+        image_path = article_files.resolve_article_raw_file(
             article_id,
             "sections/diagram.png",
         )
         self.assertEqual(image_path, article_root / "sections" / "diagram.png")
-        descriptor = backend.describe_article_file(
+        descriptor = article_files.describe_article_file(
             article_id, "sections/diagram.png"
         )
         self.assertEqual(descriptor["mediaType"], "image/png")
@@ -596,11 +596,11 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertNotIn("content", descriptor)
         self.assertIn("/raw?path=sections%2Fdiagram.png", descriptor["rawUrl"])
         with self.assertRaises(ValueError):
-            backend.resolve_article_raw_file(
+            article_files.resolve_article_raw_file(
                 article_id,
                 "../outside.png",
             )
-        tree = backend.list_article_files(
+        tree = article_files.list_article_files(
             article_id,
             build_root=self.root / "article-build",
         )
@@ -609,14 +609,14 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertIn("sections/method.tex", paths)
         self.assertIn("sections/notes.md", paths)
 
-        results = backend.search_article_files(
+        results = article_files.search_article_files(
             article_id,
             "runtime rewiring",
         )
         self.assertEqual(results["results"][0]["path"], "sections/method.tex")
         self.assertEqual(results["results"][0]["line"], 2)
         with self.assertRaises(ValueError):
-            backend.read_article_file(
+            article_files.read_article_file(
                 article_id,
                 "../outside.txt",
             )
@@ -625,7 +625,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         """Article 文件描述不读入大文件全文，按内容判断二进制，拒绝越界路径和指向外部的符号链接"""
         article_root = self.project / "article"
         _make_article_repo(article_root, "Document Article", "https://example.invalid/article.git")
-        article_id = backend.register_article(
+        article_id = article_registration.register_article(
             article_root,
         )["id"]
         pdf = article_root / "figure.pdf"
@@ -633,7 +633,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             stream.write(b"%PDF-1.7\n")
             stream.truncate(20 * 1024 * 1024)
         with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("unbounded read")):
-            descriptor = backend.describe_article_file(
+            descriptor = article_files.describe_article_file(
                 article_id, "figure.pdf"
             )
         self.assertEqual(descriptor["mediaType"], "application/pdf")
@@ -643,18 +643,18 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertTrue(descriptor["downloadUrl"].endswith("&download=1"))
         source = article_root / "utf8.txt"
         source.write_text("a" * 4095 + "中", encoding="utf-8")
-        self.assertFalse(backend.describe_article_file(
+        self.assertFalse(article_files.describe_article_file(
             article_id, source.name
         )["binary"])
         (article_root / "unknown.bin").write_bytes(b"\xff\xfe\xfd")
-        self.assertTrue(backend.describe_article_file(
+        self.assertTrue(article_files.describe_article_file(
             article_id, "unknown.bin"
         )["binary"])
         outside = self.project / "private.pdf"
         outside.write_bytes(b"%PDF-private")
         (article_root / "escape.pdf").symlink_to(outside)
         for path in ("../private.pdf", "escape.pdf", str(outside)):
-            for reader in (backend.describe_article_file, backend.resolve_article_raw_file):
+            for reader in (article_files.describe_article_file, article_files.resolve_article_raw_file):
                 with self.subTest(path=path, reader=reader.__name__), self.assertRaises(ValueError):
                     reader(article_id, path)
 
@@ -685,11 +685,11 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\end{document}\n",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
 
-        index = backend.article_semantic_index(
+        index = article_semantic_index.article_semantic_index(
             record["id"],
             build_root=self.root / "article-build",
         )
@@ -719,17 +719,17 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         """编译生成 SyncTeX，支持从源码到 PDF 和从 PDF 到源码的双向定位"""
         article_root = self.project / "article"
         _make_article_repo(article_root, "Synchronized Article", "https://example.invalid/article.git")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "article-build"
-        backend.compile_article_pdf(
+        article_build.compile_article_pdf(
             record["id"],
             build_root=build_root,
             from_scratch=True,
         )
 
-        forward = backend.article_source_to_pdf(
+        forward = article_synctex.article_source_to_pdf(
             record["id"],
             path="main.tex",
             line=6,
@@ -739,7 +739,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
 
         self.assertEqual(forward["direction"], "source-to-pdf")
         self.assertGreaterEqual(forward["match"]["page"], 1)
-        reverse = backend.article_pdf_to_source(
+        reverse = article_synctex.article_pdf_to_source(
             record["id"],
             page=forward["match"]["page"],
             x=forward["match"]["x"],
@@ -770,7 +770,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         content = main_path.read_text(encoding="utf-8")
@@ -826,12 +826,12 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\documentclass{article}\\begin{document}Alternate\\end{document}",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "article-build"
 
-        settings = backend.update_article_settings(
+        settings = article_settings.update_article_settings(
             record["id"],
             {"compiler": "xelatex", "primary_file": "alternate.tex"},
             build_root=build_root,
@@ -842,7 +842,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(settings["compile_mode"], "normal")
         self.assertTrue(settings["syntax_check"])
         self.assertEqual(settings["error_handling"], "continue")
-        settings = backend.update_article_settings(
+        settings = article_settings.update_article_settings(
             record["id"],
             {
                 "auto_compile": True,
@@ -858,18 +858,18 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(settings["compile_mode"], "draft")
         self.assertFalse(settings["syntax_check"])
         self.assertEqual(settings["error_handling"], "stop")
-        loaded = backend.load_article_settings(
+        loaded = article_settings.load_article_settings(
             record["id"],
             build_root=build_root,
         )
         self.assertEqual(loaded["compiler_label"], "XeLaTeX")
         self.assertEqual(
-            backend.article_build_store.settings(record["id"])["compiler"],
+            article_settings.article_build_store.settings(record["id"])["compiler"],
             loaded["compiler"],
         )
 
         with self.assertRaises(ValueError):
-            backend.update_article_settings(
+            article_settings.update_article_settings(
                 record["id"],
                 {"compiler": "unknown", "primary_file": "main.tex"},
                 build_root=build_root,
@@ -879,11 +879,11 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         """运行中的 Article 构建命令可被停止"""
         article_id = "article_0123456789ab"
         outcome: list[BaseException] = []
-        backend._begin_article_build(article_id)
+        article_build._begin_article_build(article_id)
 
         def run() -> None:
             try:
-                backend._run_article_build_command(
+                article_build._run_article_build_command(
                     article_id,
                     [sys.executable, "-c", "import time; time.sleep(30)"],
                     cwd=self.root,
@@ -892,24 +892,24 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             except BaseException as exc:
                 outcome.append(exc)
             finally:
-                backend._finish_article_build(article_id)
+                article_build._finish_article_build(article_id)
 
         thread = threading.Thread(target=run)
         thread.start()
         deadline = time.monotonic() + 3
         while time.monotonic() < deadline:
-            with backend._ACTIVE_ARTICLE_BUILDS_LOCK:
-                if article_id in backend._ACTIVE_ARTICLE_BUILDS:
+            with article_build._ACTIVE_ARTICLE_BUILDS_LOCK:
+                if article_id in article_build._ACTIVE_ARTICLE_BUILDS:
                     break
             time.sleep(0.01)
 
-        stopped = backend.stop_article_compile(article_id)
+        stopped = article_build.stop_article_compile(article_id)
         thread.join(timeout=5)
 
         self.assertTrue(stopped["stop_requested"])
         self.assertFalse(thread.is_alive())
         self.assertEqual(len(outcome), 1)
-        self.assertIsInstance(outcome[0], backend.ArticleCompilationStopped)
+        self.assertIsInstance(outcome[0], article_build.ArticleCompilationStopped)
 
     def test_running_latex_compile_can_be_stopped(self) -> None:
         """运行中的 LaTeX 编译可被停止，构建报告记为已停止且没有 PDF"""
@@ -924,7 +924,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\end{document}\n",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         article_id = record["id"]
@@ -933,7 +933,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
 
         def run() -> None:
             try:
-                backend.compile_article_pdf(
+                article_build.compile_article_pdf(
                     article_id,
                     build_root=build_root,
                     timeout_seconds=35,
@@ -946,25 +946,25 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         thread.start()
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
-            with backend._ACTIVE_ARTICLE_BUILDS_LOCK:
-                if article_id in backend._ACTIVE_ARTICLE_BUILDS:
+            with article_build._ACTIVE_ARTICLE_BUILDS_LOCK:
+                if article_id in article_build._ACTIVE_ARTICLE_BUILDS:
                     break
             time.sleep(0.01)
 
-        stopped = backend.stop_article_compile(article_id)
+        stopped = article_build.stop_article_compile(article_id)
         thread.join(timeout=6)
 
         self.assertTrue(stopped["stop_requested"])
         self.assertFalse(thread.is_alive())
         self.assertEqual(len(outcome), 1)
-        self.assertIsInstance(outcome[0], backend.ArticleCompilationStopped)
-        report = backend.load_article_build_report(article_id, build_root=build_root)
+        self.assertIsInstance(outcome[0], article_build.ArticleCompilationStopped)
+        report = article_build_results.load_article_build_report(article_id, build_root=build_root)
         self.assertEqual(report["status"], "stopped")
         self.assertFalse(report["pdf_available"])
 
     def test_latex_diagnostics_extract_errors_and_locations(self) -> None:
         """LaTeX 日志解析出错误与警告及其文件、行号和类别，忽略 Info 信息"""
-        diagnostics = backend.parse_latex_diagnostics(
+        diagnostics = article_build_results.parse_latex_diagnostics(
             "! LaTeX Error: File `missing.sty' not found.\n"
             "./main.tex:42: Misplaced alignment tab character &.\n"
             "Package natbib Warning: Citation `demo' undefined.\n"
@@ -989,7 +989,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-        preflight = backend.inspect_article_build_profile(
+        preflight = article_build_profile.inspect_article_build_profile(
             article_root,
         )
 
@@ -998,7 +998,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(preflight["status"], "warning")
         self.assertIn("请确认主文档", preflight["issues"][0]["message"])
 
-        selected = backend.inspect_article_build_profile(
+        selected = article_build_profile.inspect_article_build_profile(
             article_root,
             primary_file="supplement.tex",
             compiler="pdflatex",
@@ -1013,11 +1013,11 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\documentclass{article}\n\\begin{document}x\\end{document}\n",
             encoding="utf-8",
         )
-        with mock.patch.object(backend, "_tex_which", return_value=""):
-            registration = backend.inspect_article_build_profile(
+        with mock.patch.object(article_toolchain, "_tex_which", return_value=""):
+            registration = article_build_profile.inspect_article_build_profile(
                 article_root, require_toolchain=False
             )
-            build = backend.inspect_article_build_profile(article_root)
+            build = article_build_profile.inspect_article_build_profile(article_root)
         self.assertNotEqual(registration["status"], "blocked")
         self.assertEqual(build["status"], "blocked")
         self.assertTrue(any("latexmk" in item["message"] for item in build["issues"]))
@@ -1034,7 +1034,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             encoding="utf-8",
         )
 
-        preflight = backend.inspect_article_build_profile(
+        preflight = article_build_profile.inspect_article_build_profile(
             article_root,
             primary_file="main.tex",
         )
@@ -1055,18 +1055,18 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "\\section{Body fragment}\n",
             encoding="utf-8",
         )
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "build"
 
-        settings = backend.load_article_settings(
+        settings = article_settings.load_article_settings(
             record["id"],
             build_root=build_root,
         )
         self.assertEqual(settings["primary_candidates"], ["main.tex"])
         with self.assertRaisesRegex(ValueError, r"must contain \\documentclass"):
-            backend.update_article_settings(
+            article_settings.update_article_settings(
                 record["id"],
                 {"primary_file": "body.tex"},
                 build_root=build_root,
@@ -1077,16 +1077,16 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         article_root = self.project / "article"
         _make_article_repo(article_root, "Build Profile", "https://example.invalid/build.git")
         (article_root / ".latexmkrc").write_text("$max_repeat = 7;\n", encoding="utf-8")
-        record = backend.register_article(
+        record = article_registration.register_article(
             article_root,
         )
         build_root = self.root / "build"
-        settings = backend.update_article_settings(
+        settings = article_settings.update_article_settings(
             record["id"],
             {"use_project_latexmkrc": True, "shell_escape": True},
             build_root=build_root,
         )
-        self.assertEqual(settings["schema"], backend.ARTICLE_BUILD_PROFILE_SCHEMA)
+        self.assertEqual(settings["schema"], article_settings.ARTICLE_BUILD_PROFILE_SCHEMA)
         self.assertTrue(settings["use_project_latexmkrc"])
         self.assertTrue(settings["shell_escape"])
 
@@ -1102,8 +1102,8 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             (outdir / "main.log").write_text("Output written on main.pdf.\n", encoding="utf-8")
             return subprocess.CompletedProcess(command, 0, "LaTeX Warning: Citation `old' undefined.\n", None)
 
-        with mock.patch.object(backend, "_run_article_build_command", side_effect=fake_build):
-            report = backend.compile_article_pdf(
+        with mock.patch.object(article_build, "_run_article_build_command", side_effect=fake_build):
+            report = article_build.compile_article_pdf(
                 record["id"],
                 build_root=build_root,
             )

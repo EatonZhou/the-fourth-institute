@@ -9,6 +9,7 @@ from tests.cases.security_http_support import server as _server
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import web_accounts
 from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
 from management_portal.portal_password_reset import PortalPasswordResetStore
 
@@ -101,11 +102,11 @@ def test_password_reset_request_is_non_enumerating_and_confirm_revokes_sessions(
     credentials = PortalCredentialStore()
     credentials.set_password("engineer", "Current-Pass7!")
     resets = _FakePasswordResets()
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal, "_PORTAL_CREDENTIALS", credentials)
-    monkeypatch.setattr(portal, "_PORTAL_PASSWORD_RESETS", resets)
-    monkeypatch.setattr(portal, "_load_users", credentials.load)
-    monkeypatch.setattr(portal, "_portal_user_allowed", lambda username: username == "engineer")
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_CREDENTIALS", credentials)
+    monkeypatch.setattr(web_accounts, "_PORTAL_PASSWORD_RESETS", resets)
+    monkeypatch.setattr(web_accounts, "_load_users", credentials.load)
+    monkeypatch.setattr(web_accounts, "_portal_user_allowed", lambda username: username == "engineer")
 
     with _server(_QuietHandler) as server:
         known = _post(server, "/api/auth/password-reset/request", {"email": "engineer@example.com"})
@@ -126,7 +127,7 @@ def test_password_reset_request_is_non_enumerating_and_confirm_revokes_sessions(
     assert resets.requests[1]["username"] == ""
     assert status == 200
     assert result["message"].startswith("密码已重置")
-    assert portal._verify_credentials("engineer", "Ab1!") is True
+    assert web_accounts._verify_credentials("engineer", "Ab1!") is True
     assert access.session_version("engineer") == 1
     assert resets.invalidated == ["engineer"]
     assert resets.notifications == ["engineer@example.com"]
@@ -140,11 +141,11 @@ def test_password_reset_cannot_open_login_for_an_unfinished_account(tmp_path, mo
     access.upsert_user("engineer", actor="CASE-A", status="active", email="engineer@example.com")
     credentials = PortalCredentialStore()
     resets = _FakePasswordResets()
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal, "_PORTAL_CREDENTIALS", credentials)
-    monkeypatch.setattr(portal, "_PORTAL_PASSWORD_RESETS", resets)
-    monkeypatch.setattr(portal, "_load_users", credentials.load)
-    monkeypatch.setattr(portal, "_portal_user_allowed", lambda username: username == "engineer")
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_CREDENTIALS", credentials)
+    monkeypatch.setattr(web_accounts, "_PORTAL_PASSWORD_RESETS", resets)
+    monkeypatch.setattr(web_accounts, "_load_users", credentials.load)
+    monkeypatch.setattr(web_accounts, "_portal_user_allowed", lambda username: username == "engineer")
     with _server(_QuietHandler) as server:
         known = _post(server, "/api/auth/password-reset/request", {"email": "engineer@example.com"})
         unknown = _post(server, "/api/auth/password-reset/request", {"email": "missing@example.com"})

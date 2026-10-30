@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from management_portal.serve_management_portal import _inject_portal_identity_bootstrap
+from management_portal.http_documents import _inject_portal_identity_bootstrap
 
 
 def test_portal_identity_bootstrap_precedes_shared_identity_module_contracts(subtests, isolated_portal_case):

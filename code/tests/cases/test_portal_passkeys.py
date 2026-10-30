@@ -9,6 +9,7 @@ from tests.cases.security_http_support import server as _server
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import web_accounts
 from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
 from management_portal.portal_passkeys import PortalPasskeyService, PortalPasskeyStore
 
@@ -87,12 +88,12 @@ def test_passkey_login_issues_portal_session(
     PortalCredentialStore().set_password("engineer", "Passkey-Test9!")
     signing_key_path = tmp_path / "session.key"
     signing_key_path.write_bytes(b"passkey-test-portal-session-key-32-bytes")
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal, "_PORTAL_PASSKEYS", _FakePasskeys())
-    monkeypatch.setattr(portal, "_SESSION_SIGNING_KEY_PATH", signing_key_path)
-    monkeypatch.setattr(portal, "_SESSION_AUTHORITY", None)
-    monkeypatch.setattr(portal, "_SESSION_AUTHORITY_CONFIG", None)
-    monkeypatch.setattr(portal, "_portal_user_allowed", lambda username: username == "engineer")
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_PASSKEYS", _FakePasskeys())
+    monkeypatch.setattr(web_accounts, "_SESSION_SIGNING_KEY_PATH", signing_key_path)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY", None)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY_CONFIG", None)
+    monkeypatch.setattr(web_accounts, "_portal_user_allowed", lambda username: username == "engineer")
 
     with _server(_QuietHandler) as server:
         status, _headers, options = _json_request(

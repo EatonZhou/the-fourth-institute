@@ -2,7 +2,7 @@
 import hashlib
 from pathlib import Path
 
-from management_portal import article_identity_backend
+from management_portal import article_registry
 from management_portal.resource_index_backend import resource_record
 from management_common.text_values import stripped_text
 
@@ -12,10 +12,10 @@ PROJECTION_CODE_FINGERPRINT = hashlib.sha256(Path(__file__).read_bytes()).hexdig
 
 class ArticleRegistryProjection:
     resource_type = "article"
-    collection = article_identity_backend.ARTICLE_COLLECTION
+    collection = article_registry.ARTICLE_COLLECTION
 
     def validate(self, resource_id, raw):
-        return article_identity_backend._validated_article(resource_id, raw)
+        return article_registry._validated_article(resource_id, raw)
 
     def project(self, item, *, adapter):
         resource_id = stripped_text(item.get("resource_id") or item.get("id"))

@@ -97,10 +97,11 @@ def test_user_avatar_delete_removes_only_the_selected_users_records_and_images(t
 def test_user_avatar_image_read_needs_no_viewer_permission(tmp_path, monkeypatch):
     """读取用户头像图片无需查看者身份或权限，响应可长期缓存"""
     from management_portal import serve_management_portal as server
+    from management_portal import web_accounts
     store = avatars.UserAvatarStore(tmp_path / 'avatars')
     monkeypatch.setattr(avatars, 'user_avatar_store', lambda: store)
     principal = {'admin': False}
-    monkeypatch.setattr(server, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True, has_portal_authority=lambda user: principal['admin']))
+    monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True, has_portal_authority=lambda user: principal['admin']))
     monkeypatch.setattr(server._ACCOUNT_HTTP, 'respond', lambda handler, status, payload: (status, payload))
     monkeypatch.setattr(server._ACCOUNT_HTTP, 'serve_bytes', lambda handler, status, data, mime, **kwargs: (status, data, mime, kwargs))
     address = urlparse(store.update('alice', image_payload())['url'])
@@ -112,9 +113,9 @@ def test_user_avatar_image_read_needs_no_viewer_permission(tmp_path, monkeypatch
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, 'bob')[0] == 200
     # Reading an avatar never asks who is looking.
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, '')[0] == 200
-    monkeypatch.setattr(server, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: False))
+    monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: False))
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, 'bob')[0] == 200
-    monkeypatch.setattr(server, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
+    monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
     principal['admin'] = True
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, 'bob')[0] == 200
 
@@ -122,16 +123,17 @@ def test_user_avatar_image_read_needs_no_viewer_permission(tmp_path, monkeypatch
 def test_message_avatar_metadata_exposes_only_avatar(tmp_path, monkeypatch):
     """按 principal 查询用户头像只返回头像，查自己的头像设置需登录，参数非法返回 400"""
     from management_portal import serve_management_portal as server
+    from management_portal import web_accounts
     store = avatars.UserAvatarStore(tmp_path / 'avatars')
     monkeypatch.setattr(avatars, 'user_avatar_store', lambda: store)
-    monkeypatch.setattr(server, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
+    monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
     monkeypatch.setattr(server._ACCOUNT_HTTP, 'respond', lambda handler, status, payload: (status, payload))
     store.update('alice', {'kind': 'sprite', 'sprite_index': 3})
     address = urlparse('/api/account/avatar?principal=alice')
     status, payload = server._ACCOUNT_HTTP.avatar_get(Mock(), address, 'bob')
     assert status == 200 and payload == {'avatar': avatars.sprite(3)}
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, '') == (200, {'avatar': avatars.sprite(3)})
-    monkeypatch.setattr(server, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: False))
+    monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: False))
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, 'bob')[0] == 200
     # Only one's own avatar settings need to know who is asking.
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), urlparse('/api/account/avatar'), '')[0] == 403
@@ -142,7 +144,8 @@ def test_message_avatar_metadata_exposes_only_avatar(tmp_path, monkeypatch):
 def test_resident_message_avatar_is_shared_without_node_read_permission(monkeypatch):
     """无需节点读取权限即可获取 Resident 头像，没有头像时返回空头像"""
     from management_portal import serve_management_portal as server, resources, resident_avatar
-    monkeypatch.setattr(server, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
+    from management_portal import web_accounts
+    monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
     monkeypatch.setattr(server._ACCOUNT_HTTP, 'respond', lambda handler, status, payload: (status, payload))
     service = Mock()
     service.get.side_effect = PermissionError('denied')

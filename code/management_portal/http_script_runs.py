@@ -11,6 +11,8 @@ from urllib.parse import parse_qs, quote
 
 from . import isa_client
 
+from management_portal.http_routes import RouteDefinition
+
 
 MAX_ARTIFACT_BYTES = 50 * 1024 * 1024
 ARTIFACT_CSP = (
@@ -86,3 +88,9 @@ class ScriptRunHttp:
                                 cache_control="no-store", extra_headers=headers)
         except Exception as exc:
             return self.exception(request, exc)
+
+    def routes(self):
+        """The script run artifacts."""
+        return (
+            RouteDefinition("GET", "/api/script-runs/artifact", self.artifact, "portal-script-runs"),
+        )

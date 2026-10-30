@@ -91,6 +91,6 @@ def read_asset(path, actor):
 
 
 def serve_asset(handler, path, actor):
-    from management_portal.serve_management_portal import _serve_payload
+    from management_portal.http_responses import _serve_payload
     content, content_type, headers = read_asset(path, actor)
     return _serve_payload(handler, 200, content, content_type, cache_control='private, no-store', extra_headers=headers)

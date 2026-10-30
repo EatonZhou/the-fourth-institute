@@ -239,6 +239,7 @@ def test_mailbox_activity_does_not_repeat_older_trace_on_next_page(tmp_path, mon
 def test_http_payload_uses_bounded_page_instead_of_full_discovery(monkeypatch):
     """会话 HTTP 响应使用有界分页读取"""
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
 
     calls = []
 
@@ -249,9 +250,9 @@ def test_http_payload_uses_bounded_page_instead_of_full_discovery(monkeypatch):
     def unexpected_full_read(*args, **kwargs):
         pytest.fail("paginated HTTP request used full conversation discovery")
 
-    monkeypatch.setattr(portal.agent_conversation_index_backend, "build_entries_page", page)
-    monkeypatch.setattr(portal, "_agent_conversation_entries", unexpected_full_read)
-    result = portal._agent_conversation_payload("CASE-A", page_size=3, page_token="previous")
+    monkeypatch.setattr(web_inbox.agent_conversation_index_backend, "build_entries_page", page)
+    monkeypatch.setattr(web_inbox, "_agent_conversation_entries", unexpected_full_read)
+    result = web_inbox._agent_conversation_payload("CASE-A", page_size=3, page_token="previous")
     assert calls == [("CASE-A", {"page_size": 3, "page_token": "previous"})]
     assert result["next_page_token"] == "next"
     assert result["paged"] is True
@@ -260,6 +261,7 @@ def test_http_payload_uses_bounded_page_instead_of_full_discovery(monkeypatch):
 def test_first_index_page_carries_notice_board_mentions(monkeypatch):
     """会话索引首页附带公告提及且后续页不重复"""
     from management_portal import notice_board_backend, serve_management_portal as portal
+    from management_portal import web_inbox
 
     mention = {
         "event_id": "post_1:post:2026-09-30T00:00:00Z", "post_id": "post_1",
@@ -273,12 +275,12 @@ def test_first_index_page_carries_notice_board_mentions(monkeypatch):
         return [mention]
 
     monkeypatch.setattr(notice_board_backend.notice_board, "mention_events", mention_events)
-    monkeypatch.setattr(portal.agent_conversation_index_backend, "build_entries_page", lambda actor, **options: {
+    monkeypatch.setattr(web_inbox.agent_conversation_index_backend, "build_entries_page", lambda actor, **options: {
         "entries": [], "paged": True, "page_size": 3, "next_page_token": "",
     })
-    first = portal._agent_conversation_payload("CASE-A", page_size=3)
+    first = web_inbox._agent_conversation_payload("CASE-A", page_size=3)
     assert [entry["key"] for entry in first["entries"]] == ["notice-board:post_1"]
     assert first["entries"][0]["kind"] == "notice-board-mention"
-    later = portal._agent_conversation_payload("CASE-A", page_size=3, page_token="next")
+    later = web_inbox._agent_conversation_payload("CASE-A", page_size=3, page_token="next")
     assert later["entries"] == []
     assert requested == ["CASE-A"]

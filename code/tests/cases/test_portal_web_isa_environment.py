@@ -70,7 +70,7 @@ def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
         AssertionError("clear unread must not scan the inbox")
     ))
     monkeypatch.setattr(mailbox_sources, "sources", lambda: [])
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _clear_agent_conversations=lambda actor, **kwargs: (
             calls.append((actor, kwargs)) or {"clear_mode": "unread", "cleared_count": 1, "items": []}
         ),
@@ -98,7 +98,7 @@ def test_resident_favorites_sit_beside_lineage_and_project_favorites(monkeypatch
         favorites[:] = [item for item in favorites if item != address] + ([address] if favorite else [])
 
     with isolated_portal_case():
-        monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+        monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
             _lineage_favorite_payload=lambda caller: {"favorites": list(favorites)},
             _set_lineage_favorite=set_favorite,
             _PORTAL_ACCESS=SimpleNamespace(user=lambda name: {"configured": True}),
@@ -155,7 +155,7 @@ def test_list_inbox_pages_through_the_conversation_index_within_its_page_limit(m
         return {"entries": [{"key": key, "updated_at": at, "pinned": pinned, "unread": key != "b"}
                             for key, at, pinned in rows], "next_page_token": token}
 
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(_agent_conversation_payload=payload))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_agent_conversation_payload=payload))
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(user=lambda _user: {"configured": True}))
     result = web_isa.get_user_mailbox(invocation({"user_id": "sample_admin"}, "GetMailbox"))
     assert [item["key"] for item in result["items"]] == ["pinned", "a", "b", "c", "old-notice"]
@@ -204,7 +204,7 @@ def test_mark_resident_read_checks_access_and_uses_persisted_boolean_without_sca
     monkeypatch.setattr(web_isa, "_inbox_entries", lambda *args: pytest.fail("marking a Resident read must not scan the index"))
     def check_access(resident_id, caller):
         seen.append((resident_id, caller))
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         resident_api=SimpleNamespace(resolve_resident_identity=check_access),
         _set_agent_conversation_read_state=apply,
     ))
@@ -218,9 +218,9 @@ def test_mark_resident_read_checks_access_and_uses_persisted_boolean_without_sca
     assert seen == [("resident_aaaaaaaaaaaa", "sample_admin"), ("sample_admin", key, False, "5")]
     def deny_access(*args):
         raise PermissionError("no access")
-    denied_web = web_isa.web()
+    denied_web = web_isa.web("web_clients")
     denied_web.resident_api.resolve_resident_identity = deny_access
-    monkeypatch.setattr(web_isa, "web", lambda: denied_web)
+    monkeypatch.setattr(web_isa, "web", lambda _module: denied_web)
     with pytest.raises(PermissionError):
         web_isa.mark_inbox_item_read(call)
     assert len(seen) == 2
@@ -247,7 +247,7 @@ def test_mark_notification_read_stops_at_the_page_that_contains_it(monkeypatch):
     monkeypatch.setattr(mailbox_sources, "sources", lambda: [mailbox_sources.MailboxSource(
         "chatroom:", lambda caller: [], conversation=True, set_unread=lambda *a, **kw: {},
         contains=lambda chatroom_id, caller: chatroom_id == "chatroom_aaaaaaaaaaaa")])
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _agent_conversation_payload=payload,
         _set_agent_conversation_read_state=lambda caller, exact, *, unread, expected_revision: {
             "key": exact, "unread": unread, "read_revision": 4},
@@ -277,7 +277,7 @@ def test_resident_chat_read_checks_identity_before_updating_persisted_flag(monke
     key = "resident:" + resident_id
     checks, writes = [], []
     resident_api = SimpleNamespace(resolve_resident_identity=lambda rid, actor: checks.append((rid, actor)))
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         resident_api=resident_api,
         _set_agent_conversation_read_state=lambda caller, exact, *, unread, expected_revision: (
             writes.append((caller, exact, unread, expected_revision))

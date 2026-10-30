@@ -174,10 +174,11 @@ def test_public_http_entry_uses_session_actor_and_rejects_identity_overrides(obs
     :risk: no-external-side-effects
     """
     from management_portal import serve_management_portal as web
+    from management_portal import http_auth
 
     server, thread, base = _server()
     try:
-        with patch.object(web, "_check_session", return_value=True), patch.object(web, "_get_session_username", return_value="bob"):
+        with patch.object(http_auth, "_check_session", return_value=True), patch.object(http_auth, "_get_session_username", return_value="bob"):
             endpoint = base + f"/api/searches/diagnostics?search_id={SEARCH}&generation=1"
             with urllib.request.urlopen(endpoint) as response:
                 assert response.status == 200
@@ -196,7 +197,7 @@ def test_public_http_entry_uses_session_actor_and_rejects_identity_overrides(obs
             with pytest.raises(urllib.error.HTTPError) as failed:
                 urllib.request.urlopen(endpoint)
             assert failed.value.code == 500 and SECRET not in failed.value.read().decode()
-        with patch.object(web, "_check_session", return_value=True), patch.object(web, "_get_session_username", return_value="mallory"):
+        with patch.object(http_auth, "_check_session", return_value=True), patch.object(http_auth, "_get_session_username", return_value="mallory"):
             with pytest.raises(urllib.error.HTTPError) as denied:
                 urllib.request.urlopen(endpoint)
             assert denied.value.code == 403

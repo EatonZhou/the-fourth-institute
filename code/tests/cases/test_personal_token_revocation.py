@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth, http_sign_in, web_accounts
 from management_portal.portal_session_auth import PortalSessionAuthority
 from management_portal.portal_two_factor import generate_totp_secret, totp_code
 from management_portal.user_enrollment import UserEnrollment
@@ -31,11 +32,11 @@ def test_browser_logout_preserves_personal_tokens(account_boundary, monkeypatch,
     key.write_bytes(secrets.token_bytes(32))
     authority = PortalSessionAuthority(key, access_store=boundary.access)
     cookie = authority.issue('fixture-user', max_age=3600)
-    monkeypatch.setattr(portal, '_same_origin_request', lambda request: True)
-    monkeypatch.setattr(portal, '_get_session_token', lambda request: cookie)
-    monkeypatch.setattr(portal, '_verify_session_token', authority.verify)
-    monkeypatch.setattr(portal, '_clear_session_cookie', Mock())
-    portal._route_logout_post(Mock(), None, 'fixture-user')
+    monkeypatch.setattr(http_auth, '_same_origin_request', lambda request: True)
+    monkeypatch.setattr(http_auth, '_get_session_token', lambda request: cookie)
+    monkeypatch.setattr(web_accounts, '_verify_session_token', authority.verify)
+    monkeypatch.setattr(http_auth, '_clear_session_cookie', Mock())
+    http_auth._route_logout_post(Mock(), None, 'fixture-user')
     assert not authority.verify(cookie)
     assert enrollment.authenticate(token) == 'fixture-user'
     assert enrollment.list_tokens('fixture-user')[0]['status'] == 'active'
@@ -51,10 +52,10 @@ def test_security_changes_revoke_all_personal_tokens_for_only_the_target(account
     tokens = [issue(enrollment, 'fixture-user') for _ in range(2)]
     peer = issue(enrollment, 'fixture-peer')
     if operation == 'change_password':
-        portal._change_portal_password('fixture-user', {'current_password': PASSWORD,
+        web_accounts._change_portal_password('fixture-user', {'current_password': PASSWORD,
             'new_password': PASSWORD + '-new', 'new_password_confirmation': PASSWORD + '-new'})
     elif operation.startswith('admin_'):
-        portal._admin_access_action('CASE-A', {'username': 'fixture-user', 'action':
+        web_accounts._admin_access_action('CASE-A', {'username': 'fixture-user', 'action':
             'reset_password' if operation == 'admin_reset' else 'revoke_sessions', 'password': PASSWORD + '-new'})
     else:
         http = portal._ACCOUNT_HTTP
@@ -62,7 +63,7 @@ def test_security_changes_revoke_all_personal_tokens_for_only_the_target(account
         monkeypatch.setattr(http, 'require_reauthentication', Mock())
         monkeypatch.setattr(http, 'respond', lambda request, status, body, **kwargs: (status, body))
         if operation == 'totp_enable':
-            setup = portal._begin_two_factor_setup('fixture-user')
+            setup = http_sign_in._begin_two_factor_setup('fixture-user')
             monkeypatch.setattr(http, 'read_bounded_json', lambda *args, **kwargs:
                 {'setup_token': setup['setup_token'], 'code': totp_code(setup['secret'])})
             result = http.two_factor_confirm_post(Mock(), None, 'fixture-user')

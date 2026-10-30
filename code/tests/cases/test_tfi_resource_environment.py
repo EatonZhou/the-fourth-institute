@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SETTINGS = [
     ('resource_auto_registration', 'DEFAULT_RUN_STATE_PATH', 'RESOURCE_AUTO_REGISTER_STATE_PATH'),
     ('resource_identity_backend', 'DEFAULT_SSH_KEY_ROOT', 'SSH_KEY_ROOT'),
-    ('article_identity_backend', 'DEFAULT_BUILD_ROOT', 'ARTICLE_BUILD_ROOT'),
+    ('article_build_results', 'DEFAULT_BUILD_ROOT', 'ARTICLE_BUILD_ROOT'),
     ('device_identity_backend', 'DEFAULT_STATUS_PATH', 'DEVICE_STATUS_PATH'),
     ('device_identity_backend', 'DEFAULT_DEVICE_SECRET_ROOT', 'DEVICE_SECRET_ROOT'),
     ('repo_credentials_backend', 'DEFAULT_CREDENTIAL_ROOT', 'REPO_CREDENTIAL_ROOT'),

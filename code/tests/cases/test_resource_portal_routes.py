@@ -16,6 +16,7 @@ from management_portal import (
     repo_workspace_operations, repo_workspace_overview, resource_backup_backend, semantic_search_jobs,
     serve_management_portal,
 )
+from management_portal import http_auth, http_repo, web_accounts, web_clients, web_resources
 from management_portal.hatg.contracts import InstructionError
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources.portal import (
@@ -60,8 +61,10 @@ def _authenticated_resource_api(resource_id: str):
     service.get.return_value = {"resource_id": resource_id}
     service.query.return_value = {"resources": [{"resource_id": resource_id}]}
     with (
-        mock.patch.object(serve_management_portal, "_get_session_username", return_value="CASE-A"),
+        mock.patch.object(http_auth, "_get_session_username", return_value="CASE-A"),
         mock.patch.object(serve_management_portal, "get_resource_service", return_value=service),
+        mock.patch.object(web_resources, "get_resource_service", return_value=service),
+        mock.patch.object(http_repo, "get_resource_service", return_value=service),
     ):
         yield
 
@@ -74,9 +77,10 @@ def test_resource_http_routes_preserve_actor_and_validation() -> None:
     server, thread, base = _server()
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="CASE-A"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="CASE-A"),
             mock.patch.object(serve_management_portal, "get_resource_service", return_value=service),
+            mock.patch.object(web_resources, "get_resource_service", return_value=service),
         ):
             with urllib.request.urlopen(
                 f"{base}/api/resources/resolve?address=repo_0123456789ab"
@@ -120,7 +124,7 @@ def test_resource_route_script_is_generated_from_the_public_contract_contracts(s
         resident_id = 'resident_fedcba987654'
         server, thread, base = _server()
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal.resident_api, 'get_resident_session_projection', return_value={'resident_id': resident_id}) as get_detail:
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_session_username', return_value='CASE-A'), mock.patch.object(web_clients.resident_api, 'get_resident_session_projection', return_value={'resident_id': resident_id}) as get_detail:
                 with urllib.request.urlopen(f'{base}/api/agent-workbench/residents/projection?id={resident_id}') as response:
                     assert response.status == 200
                     projection = json.loads(response.read().decode('utf-8'))
@@ -136,7 +140,7 @@ def test_resource_route_script_is_generated_from_the_public_contract_contracts(s
         lineage_id = 'lineage_0123456789ab'
         server, thread, base = _server()
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal.resident_api, 'resolve_resident_identity', return_value={'resident_id': resident_id, 'lineage_id': lineage_id}) as resolve_identity:
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_session_username', return_value='CASE-A'), mock.patch.object(web_clients.resident_api, 'resolve_resident_identity', return_value={'resident_id': resident_id, 'lineage_id': lineage_id}) as resolve_identity:
                 with urllib.request.urlopen(f'{base}/api/agent-workbench/residents/navigation-target?id={resident_id}') as response:
                     assert response.status == 200
                     assert json.loads(response.read().decode('utf-8')) == {'resident_id': resident_id, 'lineage_id': lineage_id}
@@ -151,8 +155,8 @@ def test_resource_route_script_is_generated_from_the_public_contract_contracts(s
         resource_service = mock.Mock()
         resource_service.reference.return_value = {'resource_id': resident_id, 'resource_type': 'resident', 'url': f'/lineage?resident={resident_id}'}
         navigation = mock.Mock(return_value={'url': f'/lineage?lineage={lineage_id}&resident={resident_id}'})
-        with mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(serve_management_portal.conversation_index_projection, 'get_resident_navigation', navigation):
-            payload = serve_management_portal._resource_reference_payload(resident_id, 'sample_admin')
+        with mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(web_resources, 'get_resource_service', return_value=resource_service), mock.patch.object(web_resources.conversation_index_projection, 'get_resident_navigation', navigation):
+            payload = web_resources._resource_reference_payload(resident_id, 'sample_admin')
         assert payload['url'] == f'/lineage?lineage={lineage_id}&resident={resident_id}'
         resource_service.reference.assert_called_once_with(resident_id, actor='sample_admin')
         navigation.assert_called_once_with(resident_id, actor='sample_admin')
@@ -172,8 +176,8 @@ def test_chat_workspace_session_preserves_committed_projection_error():
     server, thread, base = _server()
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="test-actor"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="test-actor"),
             mock.patch.object(serve_management_portal.resident_workspace_adapter, "get_workspace", side_effect=failure) as project,
             pytest.raises(urllib.error.HTTPError) as caught,
         ):
@@ -211,22 +215,27 @@ def test_shared_skill_chat_route_accepts_global_read_scope(tmp_path) -> None:
     try:
         with (
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_check_session",
                 return_value=True,
             ),
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 return_value=actor,
             ),
             mock.patch.object(
-                serve_management_portal,
+                web_accounts,
                 "_PORTAL_ACCESS",
                 access,
             ),
             mock.patch.object(
                 serve_management_portal,
+                "get_resource_service",
+                return_value=service,
+            ),
+            mock.patch.object(
+                web_resources,
                 "get_resource_service",
                 return_value=service,
             ),
@@ -294,22 +303,27 @@ def test_shared_skill_graph_uses_resource_read_access(tmp_path) -> None:
     try:
         with (
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_check_session",
                 return_value=True,
             ),
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 return_value=actor,
             ),
             mock.patch.object(
-                serve_management_portal,
+                web_accounts,
                 "_PORTAL_ACCESS",
                 access,
             ),
             mock.patch.object(
                 serve_management_portal,
+                "get_resource_service",
+                return_value=service,
+            ),
+            mock.patch.object(
+                web_resources,
                 "get_resource_service",
                 return_value=service,
             ),
@@ -358,7 +372,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
         resource_service.reference.return_value = {'resource_id': resident_id, 'resource_type': 'resident', 'url': f'/lineage?resident={resident_id}'}
         navigation = mock.Mock(side_effect=serve_management_portal.SocietyServiceUnavailable('socket unavailable'))
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(serve_management_portal.conversation_index_projection, 'get_resident_navigation', navigation):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(web_resources, 'get_resource_service', return_value=resource_service), mock.patch.object(web_resources.conversation_index_projection, 'get_resident_navigation', navigation):
                 with pytest.raises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(f'{base}/api/resources/reference?address={resident_id}')
             assert error.value.code == 503
@@ -373,9 +387,9 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
     with subtests.test(contract='test_resource_query_reports_service_unavailable_as_retryable'), isolated_portal_case() as case_path:
         server, thread, base = _server()
         service = mock.Mock()
-        service.query.side_effect = serve_management_portal.ResourceService.Unavailable('socket unavailable')
+        service.query.side_effect = web_resources.ResourceService.Unavailable('socket unavailable')
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=service):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=service), mock.patch.object(web_resources, 'get_resource_service', return_value=service):
                 with pytest.raises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(f'{base}/api/resource-index/query?resource_type=repo')
             assert error.value.code == 503
@@ -395,7 +409,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
         from tests.cases.permission_test_support import portal_admin
         portal_admin('sample_admin')
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='sample_admin'), mock.patch.object(serve_management_portal.local_terminal_backend, 'start_device_terminal', return_value=started) as start_terminal:
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_session_username', return_value='sample_admin'), mock.patch.object(serve_management_portal.local_terminal_backend, 'start_device_terminal', return_value=started) as start_terminal:
                 status, payload = _post_json(f'{base}/api/terminal/start', {'device_id': 'device_0123456789ab', 'cols': 120, 'rows': 40})
             assert status == 200
             assert payload == started
@@ -409,7 +423,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
         skill_id = 'skill_0123456789ab'
         deleted = {'deleted': True, 'resource_type': 'skill', 'skill_id': skill_id, 'kb_id': skill_id, 'path': '/share/Skills/example', 'trash_path': '/share/Skills/.trash/example'}
         try:
-            with _authenticated_resource_api(skill_id), mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal.knowledge_backend, 'delete_item', return_value=deleted) as delete_item, mock.patch.object(serve_management_portal, '_notify_resource_index') as notify:
+            with _authenticated_resource_api(skill_id), mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal.knowledge_backend, 'delete_item', return_value=deleted) as delete_item, mock.patch.object(web_resources, '_notify_resource_index') as notify:
                 status, payload = _post_json(f'{base}/knowledge/api/detail/delete', {'kb_id': skill_id})
             assert status == 200
             assert payload == deleted
@@ -422,7 +436,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
     with subtests.test(contract='test_resource_backup_routes_preserve_conflict_status'), isolated_portal_case() as case_path:
         server, thread, base = _server()
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='sample_admin'), mock.patch.object(resource_backup_backend, 'request_backup', side_effect=resource_backup_backend.ResourceBackupConflict('backup already running')):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_session_username', return_value='sample_admin'), mock.patch.object(resource_backup_backend, 'request_backup', side_effect=resource_backup_backend.ResourceBackupConflict('backup already running')):
                 request = urllib.request.Request(f'{base}/api/resource-backup/runs', data=json.dumps({'profile': 'content'}).encode('utf-8'), headers={'Content-Type': 'application/json'}, method='POST')
                 try:
                     urllib.request.urlopen(request)
@@ -453,9 +467,10 @@ def test_resource_content_download_preserves_the_resolved_filename(tmp_path) -> 
     server, thread, base = _server()
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="CASE-A"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="CASE-A"),
             mock.patch.object(serve_management_portal, "get_resource_service", return_value=service),
+            mock.patch.object(web_resources, "get_resource_service", return_value=service),
         ):
             content_url = f"{base}/api/resources/content?address={resource_id}"
             with urllib.request.urlopen(content_url) as response:
@@ -511,9 +526,10 @@ def test_resource_content_prefers_provider_media_type_for_extensionless_files(tm
     server, thread, base = _server()
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="CASE-A"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="CASE-A"),
             mock.patch.object(serve_management_portal, "get_resource_service", return_value=service),
+            mock.patch.object(web_resources, "get_resource_service", return_value=service),
         ):
             with urllib.request.urlopen(
                 f"{base}/api/resources/content?address={urllib.parse.quote(resource_id, safe='')}"
@@ -531,7 +547,7 @@ def test_resource_routes_expose_category_shells_and_canonical_deep_links() -> No
     """资源分类页输出各自的页面骨架，/r/ 短链和 address 参数跳到规范详情地址"""
     server, thread, base = _server()
     try:
-        with mock.patch.object(serve_management_portal, "_check_session", return_value=True):
+        with mock.patch.object(http_auth, "_check_session", return_value=True):
             with urllib.request.urlopen(f"{base}/resource") as response:
                 html = response.read().decode("utf-8")
                 assert response.geturl().endswith("/resource/knowledge")
@@ -656,12 +672,12 @@ def test_resource_backup_routes_read_projection_and_queue_fixed_actions() -> Non
     try:
         with (
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_check_session",
                 return_value=True,
             ),
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 return_value="sample_admin",
             ),
@@ -725,7 +741,7 @@ def test_resource_bridge_routes_do_not_fall_back_to_the_generic_resolver_page_co
         server, thread, base = _server()
         address = 'dataset_0123456789ab'
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_resource_portal_location', return_value=''):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(web_resources, '_resource_portal_location', return_value=''):
                 for path in (f'/r/{address}', f'/{address}', f'/resource?address={address}', f'/resource.html?address={address}'):
                     try:
                         urllib.request.urlopen(f'{base}{path}')
@@ -745,7 +761,7 @@ def test_resource_bridge_routes_do_not_fall_back_to_the_generic_resolver_page_co
         resource_service = mock.Mock()
         resource_service.capabilities.return_value = {'resource_type': 'device', 'indexed': True, 'resolvable': True, 'readable': False, 'registerable': True, 'updatable': False, 'unregisterable': True, 'actions': ['ssh.test']}
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_session_username', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=resource_service), mock.patch.object(web_resources, 'get_resource_service', return_value=resource_service):
                 with urllib.request.urlopen(f'{base}/api/resources/capabilities?resource_type=device') as response:
                     payload = json.loads(response.read().decode('utf-8'))
             assert response.status == 200
@@ -758,14 +774,14 @@ def test_resource_bridge_routes_do_not_fall_back_to_the_generic_resolver_page_co
     with subtests.test(contract='test_agent_api_auth_carries_claimed_lineage_scope'), isolated_portal_case() as case_path:
         handler = mock.Mock()
         handler.headers = {'Authorization': 'Bearer resident-token', 'X-Portal-Lineage-ID': 'lineage_0123456789ab', 'X-Portal-Execution-ID': 'execution-test'}
-        with mock.patch.object(serve_management_portal, '_get_session_username', return_value=None), mock.patch.object(serve_management_portal.agent_token_auth, 'authenticate_bearer_token', return_value={'agent_id': 'resident_0123456789ab', 'categories': ['resource:read']}):
-            auth = serve_management_portal._get_agent_api_auth(handler)
+        with mock.patch.object(http_auth, '_get_session_username', return_value=None), mock.patch.object(http_auth.agent_token_auth, 'authenticate_bearer_token', return_value={'agent_id': 'resident_0123456789ab', 'categories': ['resource:read']}):
+            auth = http_auth._get_agent_api_auth(handler)
             assert auth == {'type': 'agent', 'id': 'resident_0123456789ab', 'lineage_id': 'lineage_0123456789ab', 'execution_id': 'execution-test'}
     with subtests.test(contract='test_resource_knowledge_surface_excludes_resources_with_dedicated_pages'), isolated_portal_case() as case_path:
         server, thread, base = _server()
         view = mock.Mock(return_value={'items': [], 'allowed_types': [], 'projects': [], 'page': {'offset': 0, 'limit': 200, 'count': 0, 'total': 0}})
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True), mock.patch.object(serve_management_portal.resource_views, 'knowledge_index', view):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal.resource_views, 'knowledge_index', view):
                 with urllib.request.urlopen(f'{base}/knowledge/api/index?active_only=0&surface=resource-knowledge') as response:
                     assert response.status == 200
                 assert view.call_args.kwargs['excluded_resource_types'] == ('skill', 'experiment')
@@ -787,7 +803,7 @@ def test_resource_semantic_search_routes_preserve_the_requested_scope() -> None:
     try:
         with (
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_check_session",
                 return_value=True,
             ),
@@ -802,7 +818,7 @@ def test_resource_semantic_search_routes_preserve_the_requested_scope() -> None:
                 return_value=job,
             ) as start_search,
             mock.patch.object(
-                serve_management_portal,
+                web_resources,
                 "_notify_resource_index",
             ) as notify,
         ):
@@ -863,7 +879,7 @@ def test_repo_workspace_routes_dispatch_git_reads_and_mutations() -> None:
         with (
             _authenticated_resource_api(repo_id),
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_check_session",
                 return_value=True,
             ),
@@ -922,7 +938,7 @@ def test_repo_workspace_routes_dispatch_git_reads_and_mutations() -> None:
                 },
             ) as auto_commit,
             mock.patch.object(
-                serve_management_portal,
+                web_resources,
                 "_notify_resource_index",
             ) as notify,
         ):
@@ -1040,7 +1056,7 @@ def test_repo_description_route_generates_and_notifies_resource_index() -> None:
         with (
             _authenticated_resource_api(repo_id),
             mock.patch.object(
-                serve_management_portal,
+                http_auth,
                 "_check_session",
                 return_value=True,
             ),
@@ -1050,7 +1066,7 @@ def test_repo_description_route_generates_and_notifies_resource_index() -> None:
                 return_value=generated,
             ) as generate,
             mock.patch.object(
-                serve_management_portal,
+                web_resources,
                 "_notify_resource_index",
             ) as notify,
         ):

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import parse_qs
 
-from management_portal import notice_board_backend
+from management_portal import http_documents, http_responses, notice_board_backend
 from management_portal.http_routes import RouteDefinition
 
 # The Notice Board panel on Home with its dialogs, styles and script (web.home_panel).
@@ -28,6 +28,6 @@ class NoticeBoardHttp:
 
 def routes(portal):
     """Notice Board images (``web.routes``); posts go through the ISA."""
-    http = NoticeBoardHttp(respond=portal._serve_json, serve_bytes=portal._serve_bytes)
+    http = NoticeBoardHttp(respond=http_responses._serve_json, serve_bytes=http_documents._serve_bytes)
     return (RouteDefinition("GET", "/api/notice-board/image", http.get_image, "portal-notice-board"),)
 

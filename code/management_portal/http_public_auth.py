@@ -3,6 +3,8 @@
 import sys
 import time
 
+from management_portal.http_routes import RouteDefinition
+
 
 class PublicAuthHttp:
     def __init__(
@@ -150,3 +152,12 @@ class PublicAuthHttp:
         else:
             request.send_header("Location", "/login/verify?error=1")
         request.end_headers()
+
+    def routes(self):
+        """Signing in and resetting a password."""
+        return (
+            RouteDefinition("POST", "/api/auth/password-reset/request", self.password_reset_request, "portal-public-post", phase="public"),
+            RouteDefinition("POST", "/api/auth/password-reset/confirm", self.password_reset_confirm, "portal-public-post", phase="public"),
+            RouteDefinition("POST", "/login", self.login, "portal-public-post", phase="public"),
+            RouteDefinition("POST", "/login/verify", self.login_verify, "portal-public-post", phase="public"),
+        )

@@ -9,19 +9,19 @@ if TYPE_CHECKING:
 
 
 def install_resolver(service: "ResourceService") -> None:
-    from management_portal import article_identity_backend, resource_identity_backend
+    from management_portal import article_sections, resource_identity_backend
 
     service.register_resolver(
         "article",
         lambda address, **context: canonical_resolution(
-            article_identity_backend.resolve_article_address(address)
+            article_sections.resolve_article_address(address)
         ),
         read_content=resource_identity_backend.read_resolved_resource_content,
     )
 
 
 def install_mutation_provider(service: "ResourceService") -> None:
-    from management_portal import article_identity_backend, resource_identity_backend
+    from management_portal import article_registration, resource_identity_backend
 
     def register(
         payload: dict[str, Any],
@@ -45,7 +45,7 @@ def install_mutation_provider(service: "ResourceService") -> None:
             "primary_file": str(payload.get("primary_file") or "").strip(),
             "compiler": str(payload.get("compiler") or "").strip(),
         }
-        record = article_identity_backend.register_article(path, **options)
+        record = article_registration.register_article(path, **options)
         if not automatic:
             from management_portal import resource_auto_registration
 
@@ -58,7 +58,7 @@ def install_mutation_provider(service: "ResourceService") -> None:
         actor: str = "",
     ) -> dict[str, Any]:
         del actor
-        result = article_identity_backend.unregister_article(resource_id)
+        result = article_registration.unregister_article(resource_id)
         from management_portal import resource_auto_registration
 
         resource_auto_registration.suppress_paths(

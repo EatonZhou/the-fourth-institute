@@ -5,6 +5,7 @@ from __future__ import annotations
 from urllib.parse import parse_qs
 
 from management_portal import agent_status_backend
+from management_portal.http_routes import RouteDefinition
 
 
 class AgentStatusHttp:
@@ -54,4 +55,19 @@ class AgentStatusHttp:
 
     def refresh_usage(self, request, _parsed, actor):
         return self.respond(request, 200, agent_status_backend.get_token_usage_summary(actor, force_refresh=True))
+
+    def routes(self, principal_route):
+        """The agent status API.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            RouteDefinition("GET", "/api/agent-status/account-residents", self.account_residents, "portal-agent-status"),
+            principal_route("GET", "/api/agent-status", self.summary, "portal-agent-status"),
+            RouteDefinition("GET", "/api/agent-status/usage", self.usage, "portal-agent-status"),
+            RouteDefinition("GET", "/api/agent-status/active-agents", self.active_agents, "portal-agent-status"),
+            RouteDefinition("GET", "/api/agent-status/scheduled-triggered", self.scheduled_triggered, "portal-agent-status"),
+            RouteDefinition("POST", "/api/agent-status/refresh", self.refresh, "portal-agent-status"),
+            RouteDefinition("POST", "/api/agent-status/usage/refresh", self.refresh_usage, "portal-agent-status"),
+        )
 

@@ -67,7 +67,7 @@ def test_installed_index_feature_with_missing_internal_dependency_fails(broken):
     """
     probe = r'''
 import importlib.abc, sys
-name = 'management_portal.' + sys.argv[1] + ('_identity_backend' if sys.argv[1] == 'article' else '_store')
+name = 'management_portal.' + sys.argv[1] + ('_registry' if sys.argv[1] == 'article' else '_store')
 class Broken(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
         if fullname == name:

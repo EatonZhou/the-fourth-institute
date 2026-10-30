@@ -44,8 +44,9 @@ def test_guide_language_follows_explicit_query_then_portal_preference():
 
 def test_guide_markdown_caches_keep_language_variants_separate(monkeypatch):
     from management_portal import serve_management_portal as portal
+    from management_portal import http_documents
     sent = []
-    monkeypatch.setattr(portal, "_serve_bytes", lambda *args, **kwargs: sent.append((args, kwargs)))
+    monkeypatch.setattr(http_documents, "_serve_bytes", lambda *args, **kwargs: sent.append((args, kwargs)))
     for language in ("en", "zh-CN"):
         guide.guide_markdown(SimpleNamespace(headers={"Cookie": f"portal_language={language}"}),
                              urlsplit("/guide/agent.md"), "")

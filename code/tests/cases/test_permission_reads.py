@@ -35,14 +35,15 @@ def test_unreadable_instance_does_not_become_an_allow(permissions, monkeypatch):
 def test_sse_hides_conversation_and_identity_after_deny(permissions):
     """deny 表项写入后 SSE 隐藏会话，身份读取同样被隐藏"""
     from management_portal import serve_management_portal as portal
+    from management_portal import web_read_caches
     permissions.place(Fact('resident', R))
     notification = SimpleNamespace(subject=f'portal.resident.changed.{R}.conversation', payload={
         'kind': 'conversation_event', 'event': {'resident_id': R, 'event_type': 'conversation.message.appended',
                                               'cursor': 1, 'payload': {'message': {'text': 'protected reply'}}},
     })
-    assert portal._portal_change_payload('bob', [notification], {'resident'})['resident_events']
+    assert web_read_caches._portal_change_payload('bob', [notification], {'resident'})['resident_events']
     permissions.deny('bob', R)
-    result = portal._portal_change_payload('bob', [notification], {'resident'})
+    result = web_read_caches._portal_change_payload('bob', [notification], {'resident'})
     assert result['resident_events'] == []
     assert 'protected reply' not in str(result)
     assert permission_system.readable_ids('GetResident', 'resident_id', [R], actor='bob') == set()

@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, unquote
 from management_portal import semantic_search_jobs
 from management_portal.society_service import SocietyServiceUnavailable
 from management_portal.resources.content_payload import resolved_media_type
+from management_portal.http_routes import RouteDefinition
 
 ROOT = Path(__file__).resolve().parent
 
@@ -233,3 +234,36 @@ class ResourceHttp:
             return self.respond(request, 202, self.resource_service().refresh(adapters=adapters, path=str(payload.get('path') or '').strip(), wait=bool(payload.get('wait')), timeout=float(payload.get('timeout') or 180)))
         except Exception as exc:
             return self.resource_error(request, exc)
+
+    def routes(self, principal_route):
+        """The resource catalog, index and content API and the resource pages.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            RouteDefinition("GET", "/api/resource-semantic-searches", self.semantic_searches, "portal-catalog-get"),
+            RouteDefinition("GET", "/resource/api/service-status", self.service_status, "portal-catalog-get"),
+            RouteDefinition("GET", "/api/resource-index/query", self.index_query, "portal-catalog-get"),
+            RouteDefinition("GET", "/api/resource-index/suggest", self.index_suggest, "portal-catalog-get"),
+            RouteDefinition("GET", "/api/resource-index/status", self.index_status, "portal-catalog-get"),
+            RouteDefinition("GET", "/api/resource-index/resources/{resource_id}", self.index_detail, "portal-resource-index", match="template"),
+            principal_route("GET", "/api/resources/capabilities", self.capabilities, "portal-resources"),
+            principal_route("GET", "/api/resources/resolve", self.resolve, "portal-resources"),
+            principal_route("GET", "/api/resources/reference", self.reference, "portal-resources"),
+            principal_route("GET", "/api/resources/content", self.content, "portal-resources"),
+            RouteDefinition("GET", "/resource/knowledge", self.knowledge_page, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/knowledge/", self.knowledge_page, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/skill", (lambda request, parsed, actor: self.skill_page(request, parsed, actor, resource_category="skill")), "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/skill/", (lambda request, parsed, actor: self.skill_page(request, parsed, actor, resource_category="skill")), "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/experiment", (lambda request, parsed, actor: self.skill_page(request, parsed, actor, resource_category="experiment")), "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/experiment/", (lambda request, parsed, actor: self.skill_page(request, parsed, actor, resource_category="experiment")), "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/device", self.device_page, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/device/", self.device_page, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource", self.resource_page, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource/", self.resource_page, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/resource.html", self.resource_page, "portal-pages-get", page=True),
+            RouteDefinition("POST", "/api/resource-semantic-search/start", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="start")), "portal-terminal-post"),
+            RouteDefinition("POST", "/api/resource-semantic-search/refresh", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="refresh")), "portal-terminal-post"),
+            RouteDefinition("POST", "/api/resource-semantic-search/delete", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="delete")), "portal-terminal-post"),
+            RouteDefinition("POST", "/api/resource-index/refresh", self.index_refresh, "portal-resources-post"),
+        )

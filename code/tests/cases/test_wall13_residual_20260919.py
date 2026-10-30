@@ -7,6 +7,7 @@ import pytest
 
 from management_portal import notice_board_backend, portal_pulse_backend
 from management_portal import serve_management_portal as portal
+from management_portal import http_overview
 
 
 def test_daily_news_unreadable_today_does_not_fallback(tmp_path, monkeypatch):
@@ -16,7 +17,7 @@ def test_daily_news_unreadable_today_does_not_fallback(tmp_path, monkeypatch):
     current.write_text("unreadable fixture")
     previous = tmp_path / f"{(today - timedelta(days=1)).isoformat()}__daily_news.md"
     previous.write_text("must not return this")
-    monkeypatch.setattr(portal, "DAILY_NEWS_ROOT", tmp_path)
+    monkeypatch.setattr(http_overview, "DAILY_NEWS_ROOT", tmp_path)
     original = Path.read_text
 
     def read_text(path, *args, **kwargs):
@@ -25,7 +26,7 @@ def test_daily_news_unreadable_today_does_not_fallback(tmp_path, monkeypatch):
         return original(path, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", read_text)
-    result = portal._daily_news_payload()
+    result = http_overview._daily_news_payload()
     assert result["status"] == "error"
     assert result["content"] == ""
     assert result["path"] == str(current)

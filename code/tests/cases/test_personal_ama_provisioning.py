@@ -20,6 +20,7 @@ from management_portal.society_service import (
     resident_execution_engine_domain,
 )
 from management_portal.society_service import lineage_aggregate
+from management_portal import http_request_body, http_responses, web_accounts
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
 
 
@@ -407,12 +408,13 @@ def test_provision_points_a_missing_entry_at_the_new_ama(ui_state, society_servi
 @pytest.fixture
 def portal(monkeypatch, tmp_path):
     from management_portal import serve_management_portal as portal
+    from management_portal import http_request_body, http_responses, web_accounts
     from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
     from management_portal.user_enrollment import UserEnrollment
 
     enrollment = UserEnrollment(PortalAccessStore(), PortalCredentialStore())
-    monkeypatch.setattr(portal, "_USER_ENROLLMENT", enrollment)
-    monkeypatch.setattr(portal, "_PORTAL_ACCESS", enrollment.access)
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", enrollment.access)
     enrollment.access.upsert_user("CASE-A", actor="CASE-A")
     return portal
 
@@ -442,9 +444,9 @@ def test_account_creation_provisions_the_ama_and_survives_its_failure(portal, mo
         raise RuntimeError("SocietyService unavailable")
 
     monkeypatch.setattr(personal_ama, "provision", unavailable)
-    result = portal._admin_access_action("CASE-A", {"action": "create", "username": "sample_reviewer", "password": "Sample-Reviewer-password-1234"})
+    result = web_accounts._admin_access_action("CASE-A", {"action": "create", "username": "sample_reviewer", "password": "Sample-Reviewer-password-1234"})
     assert result["personal_ama"] == {"error": "SocietyService unavailable"}
-    assert portal._PORTAL_ACCESS.user("sample_reviewer")["configured"]
+    assert web_accounts._PORTAL_ACCESS.user("sample_reviewer")["configured"]
 
 
 def test_accepted_invitation_provisions_the_ama(portal, monkeypatch):
@@ -459,13 +461,13 @@ def test_accepted_invitation_provisions_the_ama(portal, monkeypatch):
     from management_portal import http_user_enrollment, personal_ama
 
     secret = secrets.token_urlsafe(32)
-    portal._USER_ENROLLMENT.create_invitation("CASE-A", "sample_editor", hashlib.sha256(secret.encode()).hexdigest())
+    web_accounts._USER_ENROLLMENT.create_invitation("CASE-A", "sample_editor", hashlib.sha256(secret.encode()).hexdigest())
     provisioned = []
     monkeypatch.setattr(personal_ama, "provision", lambda username: provisioned.append(username) or {})
-    monkeypatch.setattr(portal, "_read_bounded_json_object", lambda *_args, **_kwargs: {
+    monkeypatch.setattr(http_request_body, "_read_bounded_json_object", lambda *_args, **_kwargs: {
         "invitation_secret": secret, "password": "Sample-Editor-password-1234",
     })
-    monkeypatch.setattr(portal, "_serve_json", lambda _request, status, payload: (status, payload))
+    monkeypatch.setattr(http_responses, "_serve_json", lambda _request, status, payload: (status, payload))
     request = SimpleNamespace(headers={"Content-Type": "application/json"})
     status, payload = http_user_enrollment.accept_invitation(request, None, "")
     assert (status, payload["username"]) == (201, "sample_editor")
@@ -486,9 +488,9 @@ def test_successful_login_retries_personal_ama_without_blocking_session(portal, 
             raise RuntimeError('temporary Lineage failure')
         return {'resident_id': 'resident_0123456789ab', 'created': True}
     monkeypatch.setattr(personal_ama, 'provision', provision)
-    monkeypatch.setattr(portal, '_session_authority', lambda: SimpleNamespace(issue=lambda *a, **kw: 'valid-session'))
-    assert portal._issue_session_token('sample_editor') == 'valid-session'
-    assert portal._issue_session_token('sample_editor') == 'valid-session'
+    monkeypatch.setattr(web_accounts, '_session_authority', lambda: SimpleNamespace(issue=lambda *a, **kw: 'valid-session'))
+    assert web_accounts._issue_session_token('sample_editor') == 'valid-session'
+    assert web_accounts._issue_session_token('sample_editor') == 'valid-session'
     assert attempted == ['sample_editor', 'sample_editor']
 
 

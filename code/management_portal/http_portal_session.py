@@ -6,6 +6,7 @@ import re
 from urllib.parse import parse_qs
 
 from management_portal.resources.errors import resource_error_http_response
+from management_portal.http_routes import RouteDefinition
 
 # Instructions /api/me answers for the current User (access.allows), so pages
 # show account management, execution settings and scheduler forms only to
@@ -164,3 +165,19 @@ class PortalSessionHttp:
         except Exception as exc:
             status, payload = resource_error_http_response(exc)
             return self.respond(request, status, {"error": "Search diagnostics unavailable", "code": payload["code"]})
+
+    def routes(self, principal_route):
+        """The signed-in session API: identity, preferences, conversations and diagnostics.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            principal_route("GET", "/api/me", self.me, "portal-portal-get"),
+            principal_route("GET", "/__portal_router/preference", self.router_preference, "portal-portal-get"),
+            principal_route("GET", "/api/preferences", self.preferences_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/resident-invocations/diagnostics", self.resident_invocations_diagnostics, "portal-portal-get"),
+            principal_route("GET", "/api/agent-conversations", self.conversations_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/searches/diagnostics", self.search_diagnostics, "portal-searches"),
+            principal_route("POST", "/api/preferences", self.preferences_post, "portal-portal-post"),
+            RouteDefinition("POST", "/chat-workspace/api/prepare", self.chat_workspace_prepare, "portal-portal-post"),
+        )

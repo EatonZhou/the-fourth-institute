@@ -30,6 +30,7 @@ def test_workbench_http_uses_public_operation_error_contract(monkeypatch, subtes
             with subtests.test(status=status, remote=remote), isolated_portal_case() as case_path:
                 with monkeypatch.context() as monkeypatch:
                     from management_portal import serve_management_portal
+                    from management_portal import http_request_body, http_responses
                     from management_portal.resources.errors import (
                         resource_error_from_payload,
                         resource_error_http_response,
@@ -43,7 +44,7 @@ def test_workbench_http_uses_public_operation_error_contract(monkeypatch, subtes
                     def reject(*args, **kwargs):
                         raise error
                     monkeypatch.setattr(http, "get", reject)
-                    monkeypatch.setattr(serve_management_portal, "_serve_json", lambda handler, code, payload: (code, payload))
+                    monkeypatch.setattr(http_responses, "_serve_json", lambda handler, code, payload: (code, payload))
                     result = http.handle(object(), urlsplit("/api/workbenches/detail?id=unused"), "test-user")
                     assert result == resource_error_http_response(error)
 
@@ -62,14 +63,15 @@ def test_workbench_http_uses_shared_builtin_errors(monkeypatch, subtests, isolat
             with subtests.test(error=error, write=write), isolated_portal_case() as case_path:
                 with monkeypatch.context() as monkeypatch:
                     from management_portal import serve_management_portal
+                    from management_portal import http_request_body, http_responses
                     from management_portal.resources.errors import resource_error_http_response
                     from management_portal.workbench_projections import http
 
                     def reject(*args, **kwargs):
                         raise error
                     monkeypatch.setattr(http, "post" if write else "get", reject)
-                    monkeypatch.setattr(serve_management_portal, "_read_bounded_json_object", lambda *args, **kwargs: {})
-                    monkeypatch.setattr(serve_management_portal, "_serve_json", lambda handler, code, payload: (code, payload))
+                    monkeypatch.setattr(http_request_body, "_read_bounded_json_object", lambda *args, **kwargs: {})
+                    monkeypatch.setattr(http_responses, "_serve_json", lambda handler, code, payload: (code, payload))
                     result = http.handle(object(), urlsplit("/api/workbenches/detail?id=unused"), "test-user", write=write)
                     assert result == resource_error_http_response(error)
 

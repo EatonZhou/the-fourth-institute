@@ -17,6 +17,7 @@ from urllib.request import Request, urlopen
 import pytest
 
 from management_portal import resources, serve_management_portal as portal
+from management_portal import http_auth, web_resources
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import COLLABORATION_DESCRIPTOR_SCHEMA, CollaborationDescriptorStore
 from management_portal.resources.errors import ResourceOperationError
@@ -505,8 +506,9 @@ def resource_http(workspace, tmp_path, monkeypatch):
     assert rpc.started.wait(2)
     client = ResourceServiceClient(rpc.socket_path, timeout=2)
     monkeypatch.setattr(portal, "get_resource_service", lambda: client)
-    monkeypatch.setattr(portal, "_check_session", lambda _handler: True)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "alice")
+    monkeypatch.setattr(web_resources, "get_resource_service", lambda: client)
+    monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "alice")
     http = ThreadingHTTPServer(("127.0.0.1", 0), portal.Handler)
     browser = threading.Thread(target=http.serve_forever, daemon=True)
     browser.start()

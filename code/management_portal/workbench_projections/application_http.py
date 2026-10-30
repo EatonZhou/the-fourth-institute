@@ -53,7 +53,7 @@ def read_asset(path: str, actor: str, store):
 def serve_asset(handler, path: str, actor: str, store):
     # _serve_bytes injects the Portal shell into HTML. Package bytes must remain
     # exact and inert when opened directly; only the sandbox host bootstraps them.
-    from management_portal.serve_management_portal import _serve_payload
+    from management_portal.http_responses import _serve_payload
 
     content, content_type, headers = read_asset(path, actor, store)
     return _serve_payload(handler, 200, content, content_type,
@@ -62,7 +62,7 @@ def serve_asset(handler, path: str, actor: str, store):
 
 def serve_library(handler, path: str, actor: str, store):
     """Expose the reviewed catalog and its exact files, never an arbitrary path."""
-    from management_portal.serve_management_portal import _serve_json, _serve_payload
+    from management_portal.http_responses import _serve_json, _serve_payload
 
     match = _LIBRARY.fullmatch(path.removeprefix(LIBRARY_PREFIX)) if path.startswith(LIBRARY_PREFIX) else None
     if not match:

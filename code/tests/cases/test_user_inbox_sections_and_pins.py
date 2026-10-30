@@ -124,7 +124,7 @@ def test_resident_can_add_user_todo_via_isa_with_idempotency(monkeypatch, isolat
 
     resident = "resident_111111111111"
     with isolated_portal_case():
-        monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+        monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
             _PORTAL_ACCESS=SimpleNamespace(user=lambda name: {"configured": name == "CASE-A", "status": "active"}),
             _load_users=lambda: {"CASE-A": {}},
         ))
@@ -249,6 +249,7 @@ def test_old_pins_are_in_page_one_and_not_repeated_on_later_pages(monkeypatch, i
 
     :design-point:"""
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
 
     with isolated_portal_case():
         old = item("resident:resident_111111111111", at="2026-09-01T00:00:00Z")
@@ -258,13 +259,13 @@ def test_old_pins_are_in_page_one_and_not_repeated_on_later_pages(monkeypatch, i
             "entries": [old] if kwargs["page_token"] else [new], "next_page_token": "next" if not kwargs["page_token"] else "",
             "paged": True, "page_size": 1,
         })
-        monkeypatch.setattr(portal, "_agent_conversation_entries", lambda actor, resident_ids: [old])
-        monkeypatch.setattr(portal, "_mailbox_source_entries", lambda actor: [])
-        first = portal._agent_conversation_payload("CASE-A", page_size=1)
+        monkeypatch.setattr(web_inbox, "_agent_conversation_entries", lambda actor, resident_ids: [old])
+        monkeypatch.setattr(web_inbox, "_mailbox_source_entries", lambda actor: [])
+        first = web_inbox._agent_conversation_payload("CASE-A", page_size=1)
         assert [entry["key"] for entry in first["entries"]] == [old["key"], new["key"]]
-        assert portal._agent_conversation_payload("CASE-A", page_size=1, page_token="next")["entries"] == []
-        monkeypatch.setattr(portal, "_agent_conversation_entries", lambda actor, resident_ids: [])
-        portal._agent_conversation_payload("CASE-A", page_size=1)
+        assert web_inbox._agent_conversation_payload("CASE-A", page_size=1, page_token="next")["entries"] == []
+        monkeypatch.setattr(web_inbox, "_agent_conversation_entries", lambda actor, resident_ids: [])
+        web_inbox._agent_conversation_payload("CASE-A", page_size=1)
         assert read_state.load("CASE-A")["pinned_keys"] == []
 
 
@@ -285,13 +286,14 @@ def test_pin_source_failure_does_not_remove_pins(monkeypatch, isolated_portal_ca
 
     :design-point:"""
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
 
     with isolated_portal_case():
         read_state.set_pinned("CASE-A", "chatroom:room", True)
         monkeypatch.setattr(index, "build_entries_page", lambda *a, **kw: {"entries": [], "next_page_token": "", "paged": True})
-        monkeypatch.setattr(portal, "_mailbox_source_entries", lambda actor: (_ for _ in ()).throw(RuntimeError("source unavailable")))
+        monkeypatch.setattr(web_inbox, "_mailbox_source_entries", lambda actor: (_ for _ in ()).throw(RuntimeError("source unavailable")))
         with pytest.raises(RuntimeError, match="source unavailable"):
-            portal._agent_conversation_payload("CASE-A")
+            web_inbox._agent_conversation_payload("CASE-A")
         assert read_state.load("CASE-A")["pinned_keys"] == ["chatroom:room"]
 
 
@@ -304,6 +306,7 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
     """
     from management_portal import conversation_index_projection as projection
     from management_portal import serve_management_portal as portal
+    from management_portal import web_inbox
     from management_portal.society_service import resident_protocol
 
     resident_id = "resident_111111111111"
@@ -337,7 +340,7 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
         monkeypatch.setattr(projection, "collect_entries", lambda **kwargs: list(activity))
         monkeypatch.setattr(projection, "get_avatar", lambda *_: {})
         monkeypatch.setattr(web_isa, "_inbox_entry", inbox_entry)
-        monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+        monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
             _forget_cached_inbox=lambda *_: None,
             _publish_conversation_read_changes=lambda *a, **kw: None,
         ))
@@ -355,12 +358,12 @@ def test_node_menu_can_pin_a_visible_resident_without_conversation_or_read_side_
         # Refreshing the first Mailbox page retains this pin even without activity.
         monkeypatch.setattr(index, "build_entries_page", lambda *a, **kw: {"entries": [], "paged": True})
         monkeypatch.setattr(index, "unread_resident_entries", lambda *a: [])
-        monkeypatch.setattr(portal, "_mailbox_source_entries", lambda *_: [])
-        assert portal._agent_conversation_payload("CASE-A")["entries"][0]["key"] == key
+        monkeypatch.setattr(web_inbox, "_mailbox_source_entries", lambda *_: [])
+        assert web_inbox._agent_conversation_payload("CASE-A")["entries"][0]["key"] == key
         with monkeypatch.context() as unavailable:
             unavailable.setattr(projection, "resident_pin_entry", lambda *a: (_ for _ in ()).throw(RuntimeError("source unavailable")))
             with pytest.raises(RuntimeError, match="source unavailable"):
-                portal._agent_conversation_payload("CASE-A")
+                web_inbox._agent_conversation_payload("CASE-A")
             assert read_state.load("CASE-A")["pinned_keys"] == [key]
         assert web_isa.pin_inbox_item(invocation(key=key, pinned=False))["item"] == {}
         assert index.build_entries("CASE-A", resident_ids=[resident_id]) == []
@@ -399,7 +402,7 @@ def test_clear_instruction_only_changes_selected_section(monkeypatch, mode):
         for entry in entries
     }})
     monkeypatch.setattr(mailbox_sources, "sources", lambda: [])
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _clear_agent_conversations=lambda actor, **kwargs: calls.append(kwargs) or {
             "cleared_count": len(kwargs["entries"]), "items": []},
     ))
@@ -445,7 +448,7 @@ def test_watch_uses_authorized_browser_changes_and_resumable_checkpoints(monkeyp
         return {"resident_events": [notification.payload["event"] for notification in batch
                                     if notification.payload["actor"] == actor]}
 
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _portal_change_payload=authorized_payload, _PORTAL_ACCESS=SimpleNamespace(user=lambda name: {"configured": True})))
     monkeypatch.setattr(web_isa, "_inbox_entries", lambda *_: pytest.fail("WatchMailbox must not poll GetMailbox"))
     stream = web_isa.watch_inbox(invocation(user_id="CASE-A", timeout_seconds=1))

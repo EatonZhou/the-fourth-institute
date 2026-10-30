@@ -8,10 +8,10 @@ from unittest import mock
 import pytest
 
 from management_portal import (
-    article_identity_backend,
     resource_auto_registration,
     resource_identity_backend,
 )
+from management_portal import article_registry
 from management_portal.resources import ResourceService
 from management_portal.resources.providers import install_mutation_providers
 from management_portal.resources.registry_store import get_registry_store
@@ -106,7 +106,7 @@ def test_existing_projects_are_reconciled_without_treating_articles_as_repos(
     assert len(report["registered"]) == 2
     assert report["removed"] == [misclassified_article_repo]
     repo_records = resource_identity_backend.load_repo_records()
-    article_records = article_identity_backend.load_article_records()
+    article_records = article_registry.load_article_records()
     assert {
         item["path"]
         for record in repo_records
@@ -310,9 +310,9 @@ def test_article_record_errors_keep_valid_roots_and_report_original_read_error(t
         "title": "Registered manuscript",
         "roots": [{"path": str(root)}],
     }
-    with get_registry_store().writer(article_identity_backend.ARTICLE_COLLECTION) as writer:
-        writer.put(article_identity_backend.ARTICLE_COLLECTION, valid["id"], valid)
-        writer.put(article_identity_backend.ARTICLE_COLLECTION, "article_abcdef012345", {"id": "invalid"})
+    with get_registry_store().writer(article_registry.ARTICLE_COLLECTION) as writer:
+        writer.put(article_registry.ARTICLE_COLLECTION, valid["id"], valid)
+        writer.put(article_registry.ARTICLE_COLLECTION, "article_abcdef012345", {"id": "invalid"})
 
     source = portal_features.contribution("resource.article_registration")
     records, errors = source.records()

@@ -35,7 +35,7 @@ class FeatureInstallation(importlib.abc.MetaPathFinder):
     def find_spec(self, name, path=None, target=None):
         if mode == "missing" and article_module(name):
             raise ModuleNotFoundError(f"No module named {name!r}", name=name)
-        if mode == "broken" and name == "management_portal.article_identity_backend":
+        if mode == "broken" and name == "management_portal.article_registry":
             raise ModuleNotFoundError("Article dependency is broken", name="optional_probe_missing_dependency")
 
 sys.meta_path.insert(0, FeatureInstallation())
@@ -128,9 +128,9 @@ else:
         assert report["skipped_articles"] == []
         assert all(value.startswith("repo_") for value in report["registered"])
     else:
-        from management_portal import article_identity_backend
+        from management_portal import article_registry
         assert paths == {str(code)}, paths
-        assert {item["path"] for row in article_identity_backend.load_article_records() for item in row["roots"]} == {str(article)}
+        assert {item["path"] for row in article_registry.load_article_records() for item in row["roots"]} == {str(article)}
         assert {value.split("_")[0] for value in report["registered"]} == {"repo", "article"}
     assert set(projected) == set(report["registered"])
     repeated = run()

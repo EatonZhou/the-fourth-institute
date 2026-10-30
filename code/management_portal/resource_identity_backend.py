@@ -999,6 +999,6 @@ def read_resolved_resource_content(
         content_type = mimetypes.guess_type(resolved["relative_path"])[0] or "application/octet-stream"
         return proc.stdout, content_type, resolved
     if kind == "article_section":
-        from . import article_identity_backend
-        return article_identity_backend.read_article_section(resolved, max_bytes=max_bytes)
+        from . import article_sections
+        return article_sections.read_article_section(resolved, max_bytes=max_bytes)
     raise ValueError(f"{resolved.get('resource_type') or 'resource'} root has no byte content")

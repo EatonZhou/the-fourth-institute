@@ -176,11 +176,12 @@ def test_wall_http_preserves_remote_committed_projection_receipt(monkeypatch):
     import urllib.error
     from management_common.operation_errors import OperationError
     from management_portal import http_wall, serve_management_portal as portal, wall_backend
+    from management_portal import http_auth
     from tests.cases.test_resource_portal_routes import _server
 
     error = OperationError("projection pending", code="projection.pending", http_status=503, commit_state="committed", details={"domain_committed": True, "recovery": "projection_only", "resident_creation": {"lineage_id": "lineage_111111111111", "request_id": "invocation-create:fixture"}})
-    monkeypatch.setattr(portal, "_check_session", lambda _: True)
-    monkeypatch.setattr(http_wall, "api_actor", lambda shell, request, *, write: "alice" if write else pytest.fail("write authentication required"))
+    monkeypatch.setattr(http_auth, "_check_session", lambda _: True)
+    monkeypatch.setattr(http_wall, "api_actor", lambda request, *, write: "alice" if write else pytest.fail("write authentication required"))
     monkeypatch.setattr(wall_backend, "handle_post", lambda *args: (_ for _ in ()).throw(error))
     server, thread, base = _server()
     try:

@@ -10,6 +10,7 @@ wrap keep their own storage and checks.
 """
 from __future__ import annotations
 
+import importlib
 import os
 import re
 import sys
@@ -31,10 +32,9 @@ _INBOX_WATCH_EPOCH = uuid.uuid4().hex
 _INBOX_NON_INDEX_EVENTS = frozenset({"resident.activity.changed", "resident.queue.changed", "resident.runtime_settings.changed"})
 
 
-def web():
-    from management_portal import serve_management_portal
-
-    return serve_management_portal
+def web(module: str):
+    """A Portal Web module, imported on first use: Web-owned instructions act on this Web process's state."""
+    return importlib.import_module(f"management_portal.{module}")
 
 
 # -- inbox ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ def _inbox_entries(caller: str, resident_id: str = "") -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     token = ""
     while True:
-        payload = web()._agent_conversation_payload(
+        payload = web("web_inbox")._agent_conversation_payload(
             caller, resident_id=resident_id, page_size=INBOX_PAGE_SIZE, page_token=token,
         )
         entries.extend(entry for entry in payload.get("entries") or [] if isinstance(entry, dict))
@@ -64,7 +64,7 @@ def _inbox_entry(caller: str, key: str) -> dict[str, Any] | None:
         return next((item for item in _inbox_entries(caller, match.group(1)) if item.get("key") == key), None)
     token = ""
     while True:
-        payload = web()._agent_conversation_payload(
+        payload = web("web_inbox")._agent_conversation_payload(
             caller, page_size=INBOX_PAGE_SIZE, page_token=token,
         )
         entry = next((item for item in payload.get("entries") or [] if item.get("key") == key), None)
@@ -111,7 +111,7 @@ def mark_inbox_item_read(inv: Invocation) -> dict[str, Any]:
     key = str(inv.argument("key") or "")
     source = mailbox_sources.source_of(key)
     if key.startswith("resident:"):
-        web().resident_api.resolve_resident_identity(key.removeprefix("resident:"), inv.caller)
+        web("web_clients").resident_api.resolve_resident_identity(key.removeprefix("resident:"), inv.caller)
     elif source is not None and source.contains is not None:
         if not source.contains(key.removeprefix(source.prefix), inv.caller):
             raise not_found(f"Mailbox 条目不存在：{key}")
@@ -121,7 +121,7 @@ def mark_inbox_item_read(inv: Invocation) -> dict[str, Any]:
         raise not_found(f"Mailbox 条目不存在：{key}")
     expected = inv.expected_version_for(key)
     try:
-        item = web()._set_agent_conversation_read_state(
+        item = web("web_inbox")._set_agent_conversation_read_state(
             inv.caller, key, unread=bool(inv.argument("unread")), expected_revision=expected,
         )
     except VersionConflict as exc:
@@ -155,8 +155,8 @@ def pin_inbox_item(inv: Invocation) -> dict[str, Any]:
         conversation_read_state.set_pinned(inv.caller, key, bool(inv.argument("pinned")))
     except ValueError as exc:
         raise invalid(str(exc)) from exc
-    web()._forget_cached_inbox(inv.caller)
-    web()._publish_conversation_read_changes(inv.caller, {key}, bulk=True)
+    web("web_read_caches")._forget_cached_inbox(inv.caller)
+    web("web_inbox")._publish_conversation_read_changes(inv.caller, {key}, bulk=True)
     return {"item": _inbox_entry(inv.caller, key) or {}}
 
 
@@ -200,7 +200,7 @@ def watch_inbox(inv: Invocation):
         notifications, high_watermark = hub.wait(after, timeout=max(0, deadline - time.monotonic()))
         gap = hub.cursor_has_gap(after)
         after = high_watermark
-        payload = web()._portal_change_payload(user_id, notifications, {"resident", "projection"})
+        payload = web("web_read_caches")._portal_change_payload(user_id, notifications, {"resident", "projection"})
         keys, snapshot = inbox_change_keys(payload)
         if keys or snapshot or gap or not notifications:
             yield [{"keys": keys, "cursor": f"{prefix}{after}", "snapshot_required": snapshot or gap}]
@@ -214,7 +214,7 @@ def _named_user(inv: Invocation) -> str:
         user_id = validate_user_id(inv.argument("user_id"))
     except ValueError as exc:
         raise invalid("user_id 必须是 User") from exc
-    if not _access().user(user_id).get("configured") and user_id not in web()._load_users():
+    if not _access().user(user_id).get("configured") and user_id not in web("web_accounts")._load_users():
         raise not_found(f"用户不存在：{user_id}")
     return user_id
 
@@ -241,7 +241,7 @@ def clear_user_mailbox(inv: Invocation) -> dict[str, Any]:
     else:
         entries = [entry for entry in _inbox_entries(user_id)
                    if (not section or index.section_of(entry) == section) and not entry.get("pinned")]
-    result = web()._clear_agent_conversations(user_id, mode=mode, entries=entries)
+    result = web("web_inbox")._clear_agent_conversations(user_id, mode=mode, entries=entries)
     return {"status": "cleared", "cleared": result["cleared_count"], "items": result["items"]}
 
 
@@ -257,7 +257,7 @@ def mailbox_todo(inv: Invocation) -> dict[str, Any]:
     if name == "CreateMailboxTodo":
         recipient = mailbox_todos.owner(inv.caller, inv.argument("user_id"))
         user = _access().user(recipient)
-        if not user.get("configured") and recipient not in web()._load_users():
+        if not user.get("configured") and recipient not in web("web_accounts")._load_users():
             raise not_found(f"用户不存在：{recipient}")
         if user.get("status") == "disabled":
             raise invalid("待办接收用户已停用")
@@ -271,7 +271,7 @@ def mailbox_todo(inv: Invocation) -> dict[str, Any]:
 
 
 def _access():
-    return web()._PORTAL_ACCESS
+    return web("web_accounts")._PORTAL_ACCESS
 
 
 def _public(user: dict[str, Any]) -> dict[str, Any]:
@@ -291,7 +291,7 @@ def with_user_allows(actor: str, users: list[dict[str, Any]]) -> list[dict[str, 
 
 
 def list_users(inv: Invocation) -> dict[str, Any]:
-    users = _access().list_users(web()._load_users().keys())
+    users = _access().list_users(web("web_accounts")._load_users().keys())
     status = inv.argument("status")
     query = str(inv.argument("q") or "").strip().casefold()
     if status:
@@ -375,8 +375,8 @@ def open_terminal(inv: Invocation) -> dict[str, Any]:
 
 
 def user_invitation(inv: Invocation) -> dict[str, Any]:
-    web()._require_authenticated_actor(inv.caller)
-    service = web()._USER_ENROLLMENT
+    web("web_accounts")._require_authenticated_actor(inv.caller)
+    service = web("web_accounts")._USER_ENROLLMENT
     if inv.call.instruction == "ListUserInvitations":
         return {"invitations": service.list_invitations()}
     if inv.call.instruction == "RevokeUserInvitation":
@@ -392,7 +392,7 @@ def user_access_token(inv: Invocation) -> dict[str, Any]:
 
     if actor_principal(inv.caller).kind != "user":
         raise InstructionError("instruction.forbidden", "个人访问凭据仅适用于 User")
-    service = web()._USER_ENROLLMENT
+    service = web("web_accounts")._USER_ENROLLMENT
     if inv.call.instruction == "RevokeUserAccessToken":
         return {"credential": service.revoke_token(inv.caller, inv.argument("credential_id"))}
     owner = _named_user(inv)
@@ -413,7 +413,7 @@ def create_user(inv: Invocation) -> dict[str, Any]:
         "display_name": inv.argument("display_name"),
         "email": inv.argument("recovery_email"),
     }
-    result = web()._admin_access_action(inv.caller, payload)
+    result = web("web_accounts")._admin_access_action(inv.caller, payload)
     return {"user": result.get("user") or {}, "personal_ama": result.get("personal_ama") or {}}
 
 
@@ -423,7 +423,7 @@ def update_user(inv: Invocation) -> dict[str, Any]:
     unknown = sorted(set(changes) - {"display_name", "recovery_email", "avatar", "status", "category"})
     if unknown:
         raise invalid("changes 只能包含 display_name、recovery_email、avatar、status 与 category")
-    web()._require_authenticated_actor(inv.caller)
+    web("web_accounts")._require_authenticated_actor(inv.caller)
     # The account owner edits its profile; enabling or disabling an account is for whoever may delete it.
     from management_portal import permission_system
 
@@ -440,7 +440,7 @@ def update_user(inv: Invocation) -> dict[str, Any]:
     with listed:
         category_changed = "category" in changes and _set_user_category(inv, username, changes.pop("category"))
         if changes:
-            result = web()._admin_access_action(inv.caller, {
+            result = web("web_accounts")._admin_access_action(inv.caller, {
                 "action": "update", "username": username,
                 "display_name": changes.get("display_name"),
                 "email": changes.get("recovery_email"),
@@ -460,15 +460,15 @@ def reset_user_password(inv: Invocation) -> dict[str, Any]:
     if username.casefold() == inv.caller.casefold():
         raise invalid("修改自己的密码须在 Settings 中验证当前密码")
     password = inv.argument("new_password")
-    web()._PORTAL_CREDENTIALS.validate_password(password)
-    result = web()._admin_access_action(inv.caller, {
+    web("web_accounts")._PORTAL_CREDENTIALS.validate_password(password)
+    result = web("web_accounts")._admin_access_action(inv.caller, {
         "action": "reset_password", "username": username, "password": password,
     })
     return {"user": result.get("user") or {}}
 
 
 def revoke_user_sessions(inv: Invocation) -> dict[str, Any]:
-    result = web()._admin_access_action(inv.caller, {
+    result = web("web_accounts")._admin_access_action(inv.caller, {
         "action": "revoke_sessions", "username": inv.argument("user_id"),
     })
     return {"user": result.get("user") or {}}
@@ -496,7 +496,7 @@ def delete_user(inv: Invocation) -> dict[str, Any]:
     with _administrator_change(inv.caller, username, delete=True):
         if permission_system.user_category(username) == "portal_admin":
             _access().upsert_user(username, actor=inv.caller, status="disabled", revoke_sessions=True)
-    result = web()._admin_access_action(inv.caller, {"action": "delete", "username": inv.argument("user_id")})
+    result = web("web_accounts")._admin_access_action(inv.caller, {"action": "delete", "username": inv.argument("user_id")})
     return {"user_id": str(result.get("username") or inv.argument("user_id"))}
 
 
@@ -519,8 +519,8 @@ def _navigation_items(caller: str) -> list[str]:
 
     # A deleted Project or Lineage stops being a favorite (decision_3e07c6d35cac).
     favorites = project_favorite_statuses(
-        caller, web()._lineage_favorite_payload(caller),
-        lambda selection: web()._set_lineage_favorite(caller, selection, False),
+        caller, web("user_preferences")._lineage_favorite_payload(caller),
+        lambda selection: web("user_preferences")._set_lineage_favorite(caller, selection, False),
     ).get("favorites") or []
     residents = presentation_store.favorite_ids(caller, RESIDENT_FAVORITE_SURFACE)
     return list(dict.fromkeys([*(item.split(":", 1)[1] for item in favorites if ":" in item), *residents]))
@@ -541,7 +541,7 @@ def update_user_navigation(inv: Invocation) -> dict[str, Any]:
             raise invalid("object_id 不是有效的 Resident ID")
         presentation_store.set_favorite(user_id, RESIDENT_FAVORITE_SURFACE, object_id, favorite)
     else:
-        web()._set_lineage_favorite(user_id, _navigation_address(object_id), favorite)
+        web("user_preferences")._set_lineage_favorite(user_id, _navigation_address(object_id), favorite)
     return {"items": _navigation_items(user_id)}
 
 

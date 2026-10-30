@@ -3,6 +3,7 @@
 :aspects: behavior, architecture-conformance
 """
 from management_portal import serve_management_portal as portal
+from management_portal import user_preferences
 import pytest
 from types import SimpleNamespace
 from management_portal import principal_favorites
@@ -17,16 +18,16 @@ def test_project_favorites_persist_separately_from_lineage_and_do_not_grant_acce
     """
     project = "project:AI员工"
     lineage = "lineage:lineage_112233445566"
-    assert portal._set_lineage_favorite("CASE-A", project, True)["favorites"] == [project]
-    portal._set_lineage_favorite("CASE-A", lineage, True)
-    assert portal._lineage_favorite_payload("CASE-A")["favorites"] == [project, lineage]
-    assert portal._lineage_favorite_payload("other")["favorites"] == []
+    assert user_preferences._set_lineage_favorite("CASE-A", project, True)["favorites"] == [project]
+    user_preferences._set_lineage_favorite("CASE-A", lineage, True)
+    assert user_preferences._lineage_favorite_payload("CASE-A")["favorites"] == [project, lineage]
+    assert user_preferences._lineage_favorite_payload("other")["favorites"] == []
     # Removing a bookmark requires only its address, including after access loss.
-    assert portal._set_lineage_favorite("CASE-A", project, False)["favorites"] == [lineage]
+    assert user_preferences._set_lineage_favorite("CASE-A", project, False)["favorites"] == [lineage]
     with pytest.raises(ValueError):
-        portal._set_lineage_favorite("CASE-A", "project:", True)
+        user_preferences._set_lineage_favorite("CASE-A", "project:", True)
     with pytest.raises(ValueError):
-        portal._set_lineage_favorite("CASE-A", "project:unsafe\nname", True)
+        user_preferences._set_lineage_favorite("CASE-A", "project:unsafe\nname", True)
 
 
 def test_favorite_status_uses_authorized_tombstones_and_distinguishes_access_from_existence(monkeypatch):
@@ -73,8 +74,8 @@ def test_a_deleted_lineage_leaves_my_favorite(monkeypatch):
 
     :design: decision_3e07c6d35cac, decision_8fe87d812a4c"""
     deleted, kept = "lineage:lineage_aabbccddeeff", "project:Kept"
-    portal._set_lineage_favorite("CASE-A", deleted, True)
-    portal._set_lineage_favorite("CASE-A", kept, True)
+    user_preferences._set_lineage_favorite("CASE-A", deleted, True)
+    user_preferences._set_lineage_favorite("CASE-A", kept, True)
 
     def resolve(resource_id, *, actor):
         status = "deleted" if resource_id == "lineage_aabbccddeeff" else "active"
@@ -82,11 +83,11 @@ def test_a_deleted_lineage_leaves_my_favorite(monkeypatch):
 
     monkeypatch.setattr(principal_favorites, "get_resource_service", lambda: SimpleNamespace(resolve=resolve))
     payload = principal_favorites.project_favorite_statuses(
-        "CASE-A", portal._lineage_favorite_payload("CASE-A"),
-        lambda selection: portal._set_lineage_favorite("CASE-A", selection, False),
+        "CASE-A", user_preferences._lineage_favorite_payload("CASE-A"),
+        lambda selection: user_preferences._set_lineage_favorite("CASE-A", selection, False),
     )
     assert payload["favorites"] == [kept]
-    assert portal._lineage_favorite_payload("CASE-A")["favorites"] == [kept]
+    assert user_preferences._lineage_favorite_payload("CASE-A")["favorites"] == [kept]
 
 
 def test_user_navigation_drops_a_deleted_favorite(monkeypatch):
@@ -95,20 +96,19 @@ def test_user_navigation_drops_a_deleted_favorite(monkeypatch):
     :design: decision_3e07c6d35cac, decision_8fe87d812a4c"""
     from management_portal import presentation_store, web_isa
 
-    portal._set_lineage_favorite("CASE-A", "lineage:lineage_aabbccddeeff", True)
-    portal._set_lineage_favorite("CASE-A", "lineage:lineage_112233445566", True)
+    user_preferences._set_lineage_favorite("CASE-A", "lineage:lineage_aabbccddeeff", True)
+    user_preferences._set_lineage_favorite("CASE-A", "lineage:lineage_112233445566", True)
 
     def resolve(resource_id, *, actor):
         status = "deleted" if resource_id == "lineage_aabbccddeeff" else "active"
         return {"record": {"title": resource_id, "status": status, "attributes": {}}}
 
     monkeypatch.setattr(principal_favorites, "get_resource_service", lambda: SimpleNamespace(resolve=resolve))
-    monkeypatch.setattr(web_isa, "web", lambda: portal)
     favorite_ids = presentation_store.favorite_ids
     monkeypatch.setattr(presentation_store, "favorite_ids", lambda caller, surface:
                         [] if surface == web_isa.RESIDENT_FAVORITE_SURFACE else favorite_ids(caller, surface))
     assert web_isa._navigation_items("CASE-A") == ["lineage_112233445566"]
-    assert portal._lineage_favorite_payload("CASE-A")["favorites"] == ["lineage:lineage_112233445566"]
+    assert user_preferences._lineage_favorite_payload("CASE-A")["favorites"] == ["lineage:lineage_112233445566"]
 
 
 def test_favorites_batch_current_policy_and_keep_bookmarks_when_policy_unavailable(monkeypatch):

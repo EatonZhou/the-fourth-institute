@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 import subprocess
 
-from management_portal import http_projects, portal_features
+from management_portal import http_documents, http_projects, portal_features
 from management_portal.resources import portal as resource_portal
 
 
@@ -46,7 +46,8 @@ def test_research_map_page_steers_directions():
 def test_projects_feature_serves_the_page_and_owns_project_links(monkeypatch):
     """Projects 功能提供页面、导航入口和 Project 的打开地址；没有安装时 Project 打开按它筛选的知识"""
     served = []
-    shell = type("Shell", (), {"_serve_authenticated_document": staticmethod(lambda *args: served.append(args) or "page")})
+    monkeypatch.setattr(http_documents, "_serve_authenticated_document", lambda *args: served.append(args) or "page")
+    shell = type("Shell", (), {})
     routes = http_projects.routes(shell)
     assert {(route.method, route.path) for route in routes} == {("GET", "/projects"), ("GET", "/projects/")}
     assert routes[0].handler("request", None, "alice") == "page"

@@ -7,6 +7,7 @@ from urllib.parse import parse_qs
 
 from management_portal.hatg.contracts import InstructionError
 from management_portal.resources.errors import ResourceOperationError, ResourceServiceUnavailable
+from management_portal.http_routes import RouteDefinition
 
 
 _LOG = logging.getLogger(__name__)
@@ -66,3 +67,13 @@ class PrincipalBackpackHttp:
             query = parse_qs(parsed.query, keep_blank_values=True)
             return backend.detail(principal, (query.get("principal") or [principal])[0])
         return self._run(request, "detail", action)
+
+    def routes(self):
+        """The principal backpack API."""
+        return (
+            RouteDefinition("GET", "/api/principal-backpack/catalog", self.catalog_get, "portal-principal-backpack"),
+            RouteDefinition("GET", "/api/principal-backpack/detail", self.detail_get, "portal-principal-backpack"),
+            RouteDefinition("GET", "/api/principal-backpack/", self.not_found, "portal-principal-backpack", match="prefix_fallback"),
+            RouteDefinition("POST", "/api/principal-backpack/catalog", self.write_not_allowed, "portal-principal-backpack"),
+            RouteDefinition("POST", "/api/principal-backpack/detail", self.write_not_allowed, "portal-principal-backpack"),
+        )

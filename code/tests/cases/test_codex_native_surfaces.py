@@ -356,6 +356,7 @@ def test_nested_delivery_retains_exact_message_identity(resident_record):
 def test_runtime_catalog_uses_authorized_society_service_route(resident_record, monkeypatch):
     """运行模型目录按调用者有权访问的 Resident 路由读取，无权时返回 403"""
     from management_portal import serve_management_portal as portal
+    from management_portal import http_auth, web_clients
     from tests.cases.test_portal_security_repair_wave6 import _ResponseHarness
 
     resident_id = resident_record["resident_id"]
@@ -370,9 +371,9 @@ def test_runtime_catalog_uses_authorized_society_service_route(resident_record, 
         {"source": "model/list", "account_id": "bound-route", "models": ["gpt-6.1-sol"],
          "efforts_by_model": {"gpt-6.1-sol": ["high"]}},
     ))
-    monkeypatch.setattr(portal, "resident_api", SimpleNamespace(get_resident_runtime_route=route))
-    monkeypatch.setattr(portal, "execution_api", SimpleNamespace(runtime_catalog=catalog))
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "test-actor")
+    monkeypatch.setattr(web_clients, "resident_api", SimpleNamespace(get_resident_runtime_route=route))
+    monkeypatch.setattr(web_clients, "execution_api", SimpleNamespace(runtime_catalog=catalog))
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "test-actor")
     monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", Mock(side_effect=AssertionError("Web cannot access Lineage runtime ports")))
     handler = _ResponseHarness()
     parsed = urlparse(f"/api/agent-workbench/agent-runtime-catalog?resident_id={resident_id}")

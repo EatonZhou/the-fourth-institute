@@ -53,14 +53,15 @@ def test_relative_config_uses_installation_not_cwd(tmp_path, monkeypatch):
 
 def test_anonymous_web_response_uses_reader_and_escapes_display_name(configured_site, monkeypatch):
     from management_portal import serve_management_portal as portal
+    from management_portal import http_auth, http_documents, http_responses
     _, write = configured_site
     name = '研究\u2028 "A" <Lab> & </script><script>bad()</script>'
     write(name, deployment={'secret_not_public': 'not-in-bootstrap'})
-    monkeypatch.setattr(portal, '_get_session_username', lambda _: '')
-    monkeypatch.setattr(portal, '_serve_payload', lambda *args, **kwargs: args[2])
+    monkeypatch.setattr(http_auth, '_get_session_username', lambda _: '')
+    monkeypatch.setattr(http_responses, '_serve_payload', lambda *args, **kwargs: args[2])
     doc = b'''<html><head><title data-portal-site-title='["Login"]'>Login</title></head><body>
     <a data-portal-site-name>Portal</a><p>User content</p></body></html>'''
-    result = portal._serve_bytes(None,200,doc,'text/html').decode()
+    result = http_documents._serve_bytes(None,200,doc,'text/html').decode()
     assert 'not-in-bootstrap' not in result
     assert result.count('</script>') == 1
     assert html.unescape(re.search(r'<title[^>]*>(.*?)</title>',result,re.S).group(1)) == 'Login — '+name

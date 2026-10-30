@@ -5,6 +5,7 @@ from urllib.parse import parse_qs
 
 from management_common.distribution_features import included
 from management_common.operation_errors import OperationError
+from management_portal import http_documents, http_request_body, http_responses, http_static_files
 from management_portal.http_routes import RouteDefinition
 from management_portal.test_framework import api as test_framework_api
 from management_portal.test_framework import live_adapter as test_live_adapter
@@ -210,17 +211,17 @@ def routes(portal):
     ``/test/api/`` callers pass the shell's agent-token or session check first.
     """
     http = TestLabHttp(
-        respond=lambda *args, **kwargs: portal._serve_json(*args, **kwargs),
-        exception_response=lambda request, exc: portal._serve_exception_json(request, exc),
-        serve_bytes=lambda *args, **kwargs: portal._serve_bytes(*args, **kwargs),
-        unavailable_response=lambda request: portal._serve_unavailable_json(request),
-        read_json=lambda request: portal._read_bounded_json_object(request),
+        respond=lambda *args, **kwargs: http_responses._serve_json(*args, **kwargs),
+        exception_response=lambda request, exc: http_responses._serve_exception_json(request, exc),
+        serve_bytes=lambda *args, **kwargs: http_documents._serve_bytes(*args, **kwargs),
+        unavailable_response=lambda request: http_responses._serve_unavailable_json(request),
+        read_json=lambda request: http_request_body._read_bounded_json_object(request),
     )
 
     def asset(request, parsed, actor):
         name = Path(parsed.path).name
         content_type = "text/css; charset=utf-8" if name.endswith(".css") else "text/javascript; charset=utf-8"
-        return portal._serve_static_file(request, PAGE_ROOT / name, content_type)
+        return http_static_files._serve_static_file(request, PAGE_ROOT / name, content_type)
 
     api = (
         ('GET', 'catalog', http.catalog), ('GET', 'catalog/case', http.catalog_case),

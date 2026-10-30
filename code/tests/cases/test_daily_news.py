@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_overview
 
 
 def test_daily_news_uses_latest_valid_report_until_today_exists(
@@ -12,9 +13,9 @@ def test_daily_news_uses_latest_valid_report_until_today_exists(
     previous_date = today - timedelta(days=2)
     previous_path = tmp_path / f"{previous_date.isoformat()}__daily_news.md"
     previous_path.write_text("# Previous report\n", encoding="utf-8")
-    monkeypatch.setattr(portal, "DAILY_NEWS_ROOT", tmp_path)
+    monkeypatch.setattr(http_overview, "DAILY_NEWS_ROOT", tmp_path)
 
-    fallback = portal._daily_news_payload()
+    fallback = http_overview._daily_news_payload()
 
     assert fallback["status"] == "ok"
     assert fallback["date"] == previous_date.isoformat()
@@ -25,7 +26,7 @@ def test_daily_news_uses_latest_valid_report_until_today_exists(
     current_path = tmp_path / f"{today.isoformat()}__daily_news.md"
     current_path.write_text("# Current report\n", encoding="utf-8")
 
-    current = portal._daily_news_payload()
+    current = http_overview._daily_news_payload()
 
     assert current["status"] == "ok"
     assert current["date"] == today.isoformat()

@@ -6,6 +6,7 @@ from management_common.portal_paths import path as portal_path
 from urllib.parse import parse_qs, parse_qsl, urlencode
 
 from management_portal import semantic_search_jobs
+from management_portal.http_routes import RouteDefinition
 
 
 class KnowledgeHttp:
@@ -260,3 +261,34 @@ class KnowledgeHttp:
 
     def post_archive_delete(self, request, payload, actor):
         return self.respond(request, 200, self.knowledge_archive_backend().knowledge_archive_backend.delete_job(actor, str(payload.get('archive_id') or '').strip()))
+
+    def routes(self):
+        """The Knowledge pages and API."""
+        return (
+            RouteDefinition("GET", "/knowledge", self.get_home, "knowledge"),
+            RouteDefinition("GET", "/knowledge/", self.get_home, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/index", self.get_api_index, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/item", self.get_api_item, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/semantic-searches", self.get_api_semantic_searches, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/graph", self.get_api_graph, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/detail", self.get_api_detail, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/item-graph", self.get_api_item_graph, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/item-chat", self.get_api_item_chat, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/item-chat/attachment-image", self.get_api_item_chat_attachment_image, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/archive/jobs", self.get_api_archive_jobs, "knowledge"),
+            RouteDefinition("GET", "/knowledge/api/archive/job", self.get_api_archive_job, "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/detail/save", self.post_route(self.post_detail_save), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/detail/delete", self.post_route(self.post_detail_delete), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/item-chat/prepare", self.post_route(self.post_chat_prepare), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/item-chat", self.post_route(self.post_chat), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/semantic-search/start", self.post_route(self.post_search_start), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/semantic-search/refresh", self.post_route(self.post_search_refresh), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/semantic-search/delete", self.post_route(self.post_search_delete), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/create", self.post_route(self.post_archive_create), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/chat", self.post_route(self.post_archive_chat), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/candidates", self.post_route(self.post_archive_candidates), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/drafts", self.post_route(self.post_archive_drafts), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/apply", self.post_route(self.post_archive_apply), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/draft/save", self.post_route(self.post_archive_draft_save), "knowledge"),
+            RouteDefinition("POST", "/knowledge/api/archive/delete", self.post_route(self.post_archive_delete), "knowledge"),
+        )

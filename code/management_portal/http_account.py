@@ -6,6 +6,7 @@ import sys
 from urllib.parse import parse_qs
 
 from management_portal import user_avatar
+from management_portal.http_routes import RouteDefinition
 
 
 class AccountHttp:
@@ -279,3 +280,24 @@ class AccountHttp:
             return self.respond(request, 400, {'error': str(exc)})
         token = self.issue_token(actor)
         return self.respond(request, 200, {'enabled': False, 'session_version': user['session_version']}, extra_headers={'Set-Cookie': self.session_cookie(token, secure=self.request_is_https(request))})
+
+    def routes(self, principal_route):
+        """The account API: avatar, security, password, passkeys and the authenticator.
+
+        ``principal_route`` declares a route Users and Residents both call.
+        """
+        return (
+            principal_route("GET", "/api/account/avatar", self.avatar_get, "portal-portal-get"),
+            principal_route("GET", "/api/account/avatar/image", self.avatar_get, "portal-portal-get"),
+            RouteDefinition("GET", "/api/account/security", self.security_get, "portal-portal-get"),
+            RouteDefinition("POST", "/api/auth/passkeys/options", self.public_passkey_options, "portal-public-post", phase="public"),
+            RouteDefinition("POST", "/api/auth/passkeys/verify", self.public_passkey_verify, "portal-public-post", phase="public"),
+            RouteDefinition("POST", "/api/account/password", self.password_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/passkeys/registration/options", self.passkey_options_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/passkeys/registration/verify", self.passkey_verify_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/passkeys/delete", self.passkey_delete_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/two-factor/setup", self.two_factor_setup_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/two-factor/confirm", self.two_factor_confirm_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/two-factor/recovery-codes", self.two_factor_recovery_codes_post, "portal-account-post"),
+            RouteDefinition("POST", "/api/account/two-factor/disable", self.two_factor_disable_post, "portal-account-post"),
+        )

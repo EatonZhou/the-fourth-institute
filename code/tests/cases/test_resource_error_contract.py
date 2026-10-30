@@ -11,6 +11,7 @@ from unittest import mock
 import pytest
 
 from management_portal import serve_management_portal
+from management_portal import http_auth, web_resources
 from management_portal.http_errors import normalize_json_error
 from management_portal.resources import ResourceOperationError, ResourceService
 from management_portal.resources.errors import (
@@ -225,11 +226,12 @@ def test_resource_read_http_errors_use_the_shared_contract(
     monkeypatch.setattr(local, "resolve", mock.Mock(side_effect=error))
     monkeypatch.setattr(local, "read_content", mock.Mock(side_effect=error))
     monkeypatch.setattr(local, "open_content", mock.Mock(side_effect=error))
-    monkeypatch.setattr(serve_management_portal, "_check_session", lambda _handler: True)
-    monkeypatch.setattr(serve_management_portal, "_get_session_username", lambda _handler: "test-user")
+    monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "test-user")
     monkeypatch.setattr(serve_management_portal, "get_resource_service", lambda: remote)
+    monkeypatch.setattr(web_resources, "get_resource_service", lambda: remote)
     monkeypatch.setattr(
-        serve_management_portal, "_get_agent_api_auth",
+        http_auth, "_get_agent_api_auth",
         lambda _handler: {"type": "human", "id": "test-user"},
     )
     server = ThreadingHTTPServer(("127.0.0.1", 0), QuietHandler)

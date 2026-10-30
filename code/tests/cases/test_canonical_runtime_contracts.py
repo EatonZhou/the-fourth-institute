@@ -9,9 +9,10 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal import paper_figure_jobs, paper_registration, serve_management_portal
+from management_portal import http_auth, http_request_body, web_resources
 from management_portal.execution.harness import AgentHarness
 from management_portal.execution.harness_settings import normalize_agent_harness_settings
-from management_portal.serve_management_portal import _read_request_multipart
+from management_portal.http_request_body import _read_request_multipart
 
 
 def _multipart_handler(body: bytes, boundary: str = "portal-boundary") -> SimpleNamespace:
@@ -121,14 +122,14 @@ def test_oversized_multipart_route_returns_413_without_reading_contracts(monkeyp
     """上传在读取前检查权限并在处理前检查容量"""
     with subtests.test(contract='test_article_upload_checks_role_before_reading_body'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(serve_management_portal, "_check_session", lambda _handler: True)
+            monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
             monkeypatch.setattr(
-                serve_management_portal,
+                http_auth,
                 "_get_session_username",
                 lambda _handler: "scoped-user",
             )
             monkeypatch.setattr(
-                serve_management_portal,
+                web_resources,
                 "_require_resource",
                 lambda *_args, **_kwargs: (_ for _ in ()).throw(
                     PermissionError("sign-in required")

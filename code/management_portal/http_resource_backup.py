@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from management_portal import resource_backup_backend
+from management_portal import (
+    http_documents, http_request_body, http_responses, resource_backup_backend,
+)
 from management_portal.http_routes import RouteDefinition
 
 ROOT = Path(__file__).resolve().parent
@@ -16,28 +18,28 @@ def routes(portal):
     """The Resource Backup page, overview and requests (``web.routes``); ``portal`` is the Web shell."""
     def overview(request, parsed, actor):
         try:
-            return portal._serve_json(request, 200, resource_backup_backend.get_overview(actor or ''))
+            return http_responses._serve_json(request, 200, resource_backup_backend.get_overview(actor or ''))
         except Exception as exc:
-            return portal._serve_exception_json(request, exc)
+            return http_responses._serve_exception_json(request, exc)
 
     def backup_runs(request, _parsed, actor):
-        payload = portal._read_request_json(request)
+        payload = http_request_body._read_request_json(request)
         try:
             result = resource_backup_backend.request_backup(str(payload.get('profile') or ''), actor)
-            return portal._serve_json(request, 202, result)
+            return http_responses._serve_json(request, 202, result)
         except Exception as exc:
-            return portal._serve_exception_json(request, exc)
+            return http_responses._serve_exception_json(request, exc)
 
     def verifications(request, _parsed, actor):
-        payload = portal._read_request_json(request)
+        payload = http_request_body._read_request_json(request)
         try:
             result = resource_backup_backend.request_verification(str(payload.get('mode') or ''), actor)
-            return portal._serve_json(request, 202, result)
+            return http_responses._serve_json(request, 202, result)
         except Exception as exc:
-            return portal._serve_exception_json(request, exc)
+            return http_responses._serve_exception_json(request, exc)
 
     def page(request, parsed, actor):
-        return portal._serve_authenticated_document(request, 200, (ROOT / 'resource_backup.html').read_bytes())
+        return http_documents._serve_authenticated_document(request, 200, (ROOT / 'resource_backup.html').read_bytes())
 
     return (
         RouteDefinition('GET', '/api/resource-backup/overview', overview, 'portal-catalog-get'),

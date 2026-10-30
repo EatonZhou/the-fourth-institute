@@ -20,6 +20,7 @@ from tests.cases.registry_support import remove_registry_document
 
 from management_portal import resource_index_backend as backend
 from management_portal import serve_management_portal
+from management_portal import http_auth, web_resources
 from management_portal.resources import query as resource_query
 from management_portal.resources.collaboration_registry import (
     CollaborationDescriptorStore,
@@ -954,7 +955,7 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
         thread.start()
         base = f'http://127.0.0.1:{server.server_address[1]}'
         try:
-            with mock.patch.object(serve_management_portal, '_check_session', return_value=True):
+            with mock.patch.object(http_auth, '_check_session', return_value=True):
                 with pytest.raises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(f'{base}/api/resource-index/resources/repo_0123456789ab/file/README.md')
                 # The route takes one resource ID segment; a nested address is no resource route.
@@ -1167,10 +1168,15 @@ def test_resource_index_http_query_get_refresh_and_status_routes() -> None:
     resource_service.status.return_value = {"schema": backend.SCHEMA, "resource_count": 1, "resource_types": ["paper", "resident"]}
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="alice"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
             mock.patch.object(
                 serve_management_portal,
+                "get_resource_service",
+                return_value=resource_service,
+            ),
+            mock.patch.object(
+                web_resources,
                 "get_resource_service",
                 return_value=resource_service,
             ),

@@ -5,9 +5,10 @@ from pathlib import Path
 from urllib.parse import parse_qs
 
 from management_portal import (
-    page_api_auth, paper_ccf, paper_ccf_enrichment, paper_collection_jobs, paper_detail, paper_favorites,
-    paper_figure_jobs, paper_figures, paper_library, paper_notes, paper_reading_jobs, paper_refs,
-    paper_registration, paper_resources, paper_reviews, semantic_search_jobs,
+    http_auth, http_documents, http_files, http_request_body, http_responses, page_api_auth, paper_ccf,
+    paper_ccf_enrichment, paper_collection_jobs, paper_detail, paper_favorites, paper_figure_jobs,
+    paper_figures, paper_library, paper_notes, paper_reading_jobs, paper_refs, paper_registration,
+    paper_resources, paper_reviews, semantic_search_jobs, web_accounts, web_resources,
 )
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
 from management_portal.paper_collector import authenticated_request
@@ -294,35 +295,35 @@ NAVIGATION = ({"id": "paper", "label": "Paper", "href": "/paper", "order": 40},)
 def routes(portal):
     """The Paper page and API (``web.routes``); ``portal`` is the Web shell."""
     http = PaperHttp(
-        respond=lambda *args: portal._serve_json(*args),
-        exception_response=lambda request, exc: portal._serve_exception_json(request, exc),
-        media_file=lambda *args: portal._serve_media_file(*args),
-        get_auth=lambda request: portal._get_agent_api_auth(request),
-        authorize=lambda request, auth: authorize_api(request, auth, respond=portal._serve_json),
-        read_json=lambda request: portal._read_request_json(request),
-        read_multipart=lambda request, **kwargs: portal._read_request_multipart(request, **kwargs),
-        multipart_limit=lambda size: portal._multipart_body_limit(size),
-        body_too_large=portal.RequestBodyTooLarge,
-        require_resource=lambda *args: portal._require_resource(*args),
-        require_active_actor=lambda *args: portal._require_active_actor(*args),
+        respond=lambda *args: http_responses._serve_json(*args),
+        exception_response=lambda request, exc: http_responses._serve_exception_json(request, exc),
+        media_file=lambda *args: http_files._serve_media_file(*args),
+        get_auth=lambda request: http_auth._get_agent_api_auth(request),
+        authorize=lambda request, auth: authorize_api(request, auth, respond=http_responses._serve_json),
+        read_json=lambda request: http_request_body._read_request_json(request),
+        read_multipart=lambda request, **kwargs: http_request_body._read_request_multipart(request, **kwargs),
+        multipart_limit=lambda size: http_request_body._multipart_body_limit(size),
+        body_too_large=http_request_body.RequestBodyTooLarge,
+        require_resource=lambda *args: web_resources._require_resource(*args),
+        require_active_actor=lambda *args: web_accounts._require_active_actor(*args),
         project_ids=payload_project_ids,
-        notify_index=lambda **kwargs: portal._notify_resource_index(**kwargs),
+        notify_index=lambda **kwargs: web_resources._notify_resource_index(**kwargs),
     )
 
     def unknown_api(request, parsed, _actor, *, method):
         if not parsed.path.startswith("/paper/api/"):
             return ROUTE_NOT_FOUND
-        auth = portal._get_agent_api_auth(request)
+        auth = http_auth._get_agent_api_auth(request)
         if not auth:
-            return portal._serve_json(request, 401, {"error": "agent token or human session required"})
-        if not authorize_api(request, auth, respond=portal._serve_json):
+            return http_responses._serve_json(request, 401, {"error": "agent token or human session required"})
+        if not authorize_api(request, auth, respond=http_responses._serve_json):
             return None
         if method == "POST":
-            portal._read_request_json(request)
-        return portal._serve_http_error(request, 404, "API route not found")
+            http_request_body._read_request_json(request)
+        return http_responses._serve_http_error(request, 404, "API route not found")
 
     def page(request, parsed, actor):
-        return portal._serve_authenticated_document(request, 200, (ROOT / "paper.html").read_bytes())
+        return http_documents._serve_authenticated_document(request, 200, (ROOT / "paper.html").read_bytes())
 
     get, post, backend = http.get_route, http.post_route, http.post_backend
 

@@ -14,6 +14,8 @@ from urllib.parse import unquote
 
 from markdown_it import MarkdownIt
 from management_common.site_config import site_name
+from management_portal import http_documents, http_responses
+from management_portal.http_routes import RouteDefinition
 
 GUIDE_ROOT = Path(__file__).resolve().parent.parent / "docs" / "guide"
 GUIDES = ("human", "agent", "admin")
@@ -129,36 +131,30 @@ def _wants_markdown(request) -> bool:
 
 
 def guide_page(request, parsed, _actor):
-    from . import serve_management_portal as portal
-
     if _wants_markdown(request):
-        return portal._serve_bytes(request, 200, guide_index().encode("utf-8"), "text/markdown; charset=utf-8",
-                                   cache_control=_MARKDOWN_CACHE_CONTROL)
-    return portal._serve_bytes(request, 200, render_guide_page(_language(request, parsed)), "text/html; charset=utf-8")
+        return http_documents._serve_bytes(request, 200, guide_index().encode("utf-8"), "text/markdown; charset=utf-8",
+                                           cache_control=_MARKDOWN_CACHE_CONTROL)
+    return http_documents._serve_bytes(request, 200, render_guide_page(_language(request, parsed)), "text/html; charset=utf-8")
 
 
 def guide_markdown(request, parsed, _actor):
-    from . import serve_management_portal as portal
-
     name = Path(parsed.path).name.removesuffix(".md")
     if name not in GUIDES:
-        return portal._send_empty(request, 404)
+        return http_responses._send_empty(request, 404)
     body = guide_source(name, _language(request, parsed)).encode("utf-8")
     # The ETag tells an agent whether the guide changed since it last read it; a matching If-None-Match gets 304.
     etag = f'"{hashlib.sha256(body).hexdigest()[:16]}"'
     unchanged = etag in [tag.strip() for tag in request.headers.get("If-None-Match", "").split(",")]
-    return portal._serve_bytes(request, 304 if unchanged else 200, b"" if unchanged else body, "text/markdown; charset=utf-8",
-                               cache_control=_MARKDOWN_CACHE_CONTROL, extra_headers={
-                                   "ETag": etag,
-                                   "Content-Language": _language(request, parsed),
-                                   "Vary": "Accept-Language, Cookie, X-Portal-Language",
-                               })
+    return http_documents._serve_bytes(request, 304 if unchanged else 200, b"" if unchanged else body, "text/markdown; charset=utf-8",
+                                       cache_control=_MARKDOWN_CACHE_CONTROL, extra_headers={
+                                           "ETag": etag,
+                                           "Content-Language": _language(request, parsed),
+                                           "Vary": "Accept-Language, Cookie, X-Portal-Language",
+                                       })
 
 
 def client_script(request, _parsed, _actor):
     """The standard-library User client, so an agent can fetch it from the Portal it is joining."""
-    from . import serve_management_portal as portal
-
     source = GUIDE_ROOT.parent.parent / "scripts" / "portal_user.py"
     private_source = source.parent.parent / "management_common" / "file_permissions.py"
     body = source.read_text(encoding="utf-8").replace(
@@ -166,12 +162,22 @@ def client_script(request, _parsed, _actor):
         "_BUNDLED_PRIVATE_FILES = " + repr(private_source.read_text(encoding="utf-8")),
         1,
     ).encode("utf-8")
-    return portal._serve_bytes(request, 200, body, "text/x-python; charset=utf-8",
-                               cache_control=_MARKDOWN_CACHE_CONTROL)
+    return http_documents._serve_bytes(request, 200, body, "text/x-python; charset=utf-8",
+                                       cache_control=_MARKDOWN_CACHE_CONTROL)
 
 
 def llms_txt(request, _parsed, _actor):
-    from . import serve_management_portal as portal
+    return http_documents._serve_bytes(request, 200, guide_index().encode("utf-8"), "text/plain; charset=utf-8",
+                                       cache_control=_MARKDOWN_CACHE_CONTROL)
 
-    return portal._serve_bytes(request, 200, guide_index().encode("utf-8"), "text/plain; charset=utf-8",
-                               cache_control=_MARKDOWN_CACHE_CONTROL)
+
+def routes() -> tuple[RouteDefinition, ...]:
+    """The user guides and the User client."""
+    return (
+        RouteDefinition("GET", "/guide", guide_page, "portal-public-get", phase="public", page=True),
+        RouteDefinition("GET", "/guide/human.md", guide_markdown, "portal-public-get", phase="public"),
+        RouteDefinition("GET", "/guide/agent.md", guide_markdown, "portal-public-get", phase="public"),
+        RouteDefinition("GET", "/guide/admin.md", guide_markdown, "portal-public-get", phase="public"),
+        RouteDefinition("GET", "/guide/portal_user.py", client_script, "portal-public-get", phase="public"),
+        RouteDefinition("GET", "/llms.txt", llms_txt, "portal-public-get", phase="public"),
+    )

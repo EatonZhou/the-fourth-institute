@@ -9,6 +9,7 @@ from tests.cases.security_http_support import server as _server
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth
 
 
 class _QuietHandler(portal.Handler):
@@ -41,8 +42,8 @@ def _authenticated_terminal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> list[tuple[object, ...]]:
     calls: list[tuple[object, ...]] = []
-    monkeypatch.setattr(portal, "_check_session", lambda _handler: True)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "tester")
+    monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "tester")
     # Opening a Terminal is OpenTerminal, which the Portal 管理员 category may run.
     from tests.cases.permission_test_support import portal_admin
 

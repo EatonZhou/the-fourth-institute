@@ -11,6 +11,7 @@ from threading import Thread
 from urllib.parse import quote
 
 from management_portal import serve_management_portal
+from management_portal import http_auth, http_documents, http_instance, http_responses, http_static_files
 
 
 class _QuietHandler(serve_management_portal.Handler):
@@ -28,7 +29,7 @@ def test_public_login_language_assets_are_served_without_authentication(isolated
     :design: decision_27253e25f016
     """
     with isolated_portal_case():
-        monkeypatch.setattr(serve_management_portal, '_get_session_username', lambda handler: '')
+        monkeypatch.setattr(http_auth, '_get_session_username', lambda handler: '')
         server = ThreadingHTTPServer(('127.0.0.1', 0), _QuietHandler)
         thread = Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -54,7 +55,7 @@ def test_a_static_file_outside_the_public_list_is_revalidated_not_cached_by_heur
     on the public static list.  Served with Last-Modified alone, a browser kept
     an old copy for hours and new Chat code called functions it lacked."""
     with isolated_portal_case():
-        monkeypatch.setattr(serve_management_portal, '_get_session_username', lambda handler: 'alice')
+        monkeypatch.setattr(http_auth, '_get_session_username', lambda handler: 'alice')
         server = ThreadingHTTPServer(('127.0.0.1', 0), _QuietHandler)
         thread = Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -113,12 +114,12 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
                 raise AssertionError('static revalidation should return 304')
             for instance in ('dev', 'release'):
                 with monkeypatch.context() as patch:
-                    patch.setattr(serve_management_portal, '_PORTAL_INSTANCE', instance)
-                    for version in ('', 'previous-build', serve_management_portal._PORTAL_BUILD_ID):
+                    patch.setattr(http_instance, '_PORTAL_INSTANCE', instance)
+                    for version in ('', 'previous-build', http_instance._PORTAL_BUILD_ID):
                         versioned_url = f'{url}?portal_v={quote(str(version), safe="")}'
                         expected_cache = (
                             'public, max-age=31536000, immutable'
-                            if instance == 'release' and version == serve_management_portal._PORTAL_BUILD_ID
+                            if instance == 'release' and version == http_instance._PORTAL_BUILD_ID
                             else 'public, max-age=0, must-revalidate'
                         )
                         versioned = urllib.request.Request(versioned_url, headers={'Accept-Encoding': 'gzip'})
@@ -142,15 +143,15 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
             thread.join(timeout=2)
     with subtests.test(contract='test_html_static_references_receive_current_build_version'), isolated_portal_case() as case_path:
         source = b'<script src="/static/portal_identity.js"></script><link href="/static/app.css?theme=1">'
-        versioned = serve_management_portal._version_static_asset_urls(source)
-        version = quote(str(serve_management_portal._PORTAL_BUILD_ID), safe='').encode('ascii')
+        versioned = http_static_files._version_static_asset_urls(source)
+        version = quote(str(http_instance._PORTAL_BUILD_ID), safe='').encode('ascii')
         assert b'/static/portal_identity.js?portal_v=' + version in versioned
         assert b'/static/app.css?theme=1&amp;' not in versioned
         assert b'/static/app.css?theme=1&portal_v=' + version in versioned
     with subtests.test(contract='test_concurrent_static_requests_share_one_compression'), isolated_portal_case() as case_path:
         asset = case_path / 'cacheable.js'
         asset.write_bytes(b'const payload = "static-cache";\n' * 200)
-        real_compress = serve_management_portal.gzip.compress
+        real_compress = http_static_files.gzip.compress
         compression_calls = 0
 
         def counted_compress(*args, **kwargs):
@@ -158,15 +159,15 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
             compression_calls += 1
             return real_compress(*args, **kwargs)
 
-        monkeypatch.setattr(serve_management_portal.gzip, 'compress', counted_compress)
-        with serve_management_portal._STATIC_PAYLOAD_CACHE_LOCK:
-            serve_management_portal._STATIC_PAYLOAD_CACHE.clear()
-            serve_management_portal._STATIC_PAYLOAD_BUILD_LOCKS.clear()
+        monkeypatch.setattr(http_static_files.gzip, 'compress', counted_compress)
+        with http_static_files._STATIC_PAYLOAD_CACHE_LOCK:
+            http_static_files._STATIC_PAYLOAD_CACHE.clear()
+            http_static_files._STATIC_PAYLOAD_BUILD_LOCKS.clear()
 
         def request_static(_index):
             handler = _ResponseHarness()
             handler.path = '/static/cacheable.js?portal_v=test'
-            serve_management_portal._serve_static_file(
+            http_static_files._serve_static_file(
                 handler,
                 asset,
                 'application/javascript; charset=utf-8',
@@ -180,7 +181,7 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
     with subtests.test(contract='test_large_json_responses_are_compressed_but_remain_no_store'), isolated_portal_case() as case_path:
         handler = _ResponseHarness()
         payload = {'items': [{'id': index, 'text': 'resource payload' * 20} for index in range(40)]}
-        serve_management_portal._serve_json(handler, 200, payload)
+        http_responses._serve_json(handler, 200, payload)
         assert handler.status == 200
         assert handler.response_headers['Content-Encoding'] == 'gzip'
         assert handler.response_headers['Cache-Control'] == 'no-store'
@@ -188,16 +189,16 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
         assert json.loads(gzip.decompress(handler.wfile.getvalue())) == payload
     with subtests.test(contract='test_authenticated_documents_are_private_and_revalidated'), isolated_portal_case() as case_path:
         handler = _ResponseHarness()
-        serve_management_portal._serve_authenticated_document(handler, 200, b'<!doctype html>')
+        http_documents._serve_authenticated_document(handler, 200, b'<!doctype html>')
         assert handler.response_headers['Cache-Control'] == 'private, no-cache'
     with subtests.test(contract='test_public_and_sensitive_html_remain_no_store'), isolated_portal_case() as case_path:
         handler = _ResponseHarness()
-        serve_management_portal._serve_bytes(handler, 200, b'<!doctype html>', 'text/html; charset=utf-8')
+        http_documents._serve_bytes(handler, 200, b'<!doctype html>', 'text/html; charset=utf-8')
         assert handler.response_headers['Cache-Control'] == 'no-store'
     with subtests.test(contract='test_extra_headers_cannot_bypass_cache_policy'), isolated_portal_case() as case_path:
         handler = _ResponseHarness()
         try:
-            serve_management_portal._serve_bytes(
+            http_documents._serve_bytes(
                 handler,
                 200,
                 b'payload',
@@ -211,12 +212,12 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
     with subtests.test(contract='test_document_routes_apply_cache_policy_after_authentication'), isolated_portal_case() as case_path:
         authenticated = {"value": True}
         monkeypatch.setattr(
-            serve_management_portal,
+            http_auth,
             "_check_session",
             lambda _handler: authenticated["value"],
         )
         monkeypatch.setattr(
-            serve_management_portal,
+            http_auth,
             "_get_session_username",
             lambda _handler: "sample_admin" if authenticated["value"] else None,
         )

@@ -10,6 +10,7 @@ import time
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import web_inbox
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import (
@@ -39,18 +40,18 @@ def test_page_residents_are_not_hydrated_again_for_overlapping_pins(monkeypatch,
             f"request-{i}", "user", "isolated fixture", author_id=actor,
         ))
     # Initialize cold readers and portraits before timing a repeat read.
-    head = portal._agent_conversation_payload(actor)
+    head = web_inbox._agent_conversation_payload(actor)
     assert {entry["resident_id"] for entry in head["entries"]} == set(ids)
     for rid in ids[:10]:
-        portal.conversation_read_state.set_pinned(actor, "resident:" + rid, True)
+        web_inbox.conversation_read_state.set_pinned(actor, "resident:" + rid, True)
     redundant = []
-    original = portal._agent_conversation_entries
+    original = web_inbox._agent_conversation_entries
     def track(actor, resident_ids=None):
         redundant.extend(resident_ids or [])
         return original(actor, resident_ids)
-    monkeypatch.setattr(portal, "_agent_conversation_entries", track)
+    monkeypatch.setattr(web_inbox, "_agent_conversation_entries", track)
     start = time.perf_counter()
-    result = portal._agent_conversation_payload(actor)
+    result = web_inbox._agent_conversation_payload(actor)
     print(json.dumps({"environment": "isolated-pg", "actor": actor, "count": count,
         "overlapping_pins": min(count, 10), "redundant_residents": redundant,
         "elapsed_ms": round((time.perf_counter()-start)*1000, 3)}))
@@ -70,27 +71,27 @@ def test_off_page_pins_still_load_and_release_only_missing_targets(monkeypatch):
     actor, other = "home-perf-viewer", "home-perf-other"
     on_page, older, no_chat, hidden, deleted = [f"resident_{i:012x}" for i in range(1, 6)]
     for rid in (on_page, older, no_chat, hidden, deleted):
-        portal.conversation_read_state.set_pinned(actor, "resident:" + rid, True)
-    portal.conversation_read_state.set_pinned(other, "resident:" + hidden, True)
-    portal.conversation_read_state.set_read(actor, "resident:" + older, unread_value=True)
-    monkeypatch.setattr(portal.agent_conversation_index_backend, "build_entries_page",
+        web_inbox.conversation_read_state.set_pinned(actor, "resident:" + rid, True)
+    web_inbox.conversation_read_state.set_pinned(other, "resident:" + hidden, True)
+    web_inbox.conversation_read_state.set_read(actor, "resident:" + older, unread_value=True)
+    monkeypatch.setattr(web_inbox.agent_conversation_index_backend, "build_entries_page",
         lambda who, **options: {"entries": [_entry(on_page)], "paged": True,
                                "page_size": 1, "next_page_token": "older-page"})
-    monkeypatch.setattr(portal, "_mailbox_source_entries", lambda who: [])
+    monkeypatch.setattr(web_inbox, "_mailbox_source_entries", lambda who: [])
     calls = []
     def pinned(who, ids):
         calls.append((who, set(ids)))
         # The authorized source confirms absent/forbidden targets by omission,
         # while a visible node with no Chat still has its pin entry.
         return [_entry(rid) for rid in ids if rid in {older, no_chat}]
-    monkeypatch.setattr(portal, "_agent_conversation_entries", pinned)
-    monkeypatch.setattr(portal.agent_conversation_index_backend, "unread_resident_entries",
+    monkeypatch.setattr(web_inbox, "_agent_conversation_entries", pinned)
+    monkeypatch.setattr(web_inbox.agent_conversation_index_backend, "unread_resident_entries",
         lambda who, state: [])
-    result = portal._agent_conversation_payload(actor, page_size=1)
+    result = web_inbox._agent_conversation_payload(actor, page_size=1)
     assert calls == [(actor, {older, no_chat, hidden, deleted})]
     assert {e["resident_id"] for e in result["entries"]} == {on_page, older, no_chat}
     assert result["next_page_token"] == "older-page" and result["page_size"] == 1
     assert result["unread_count"] == result["mailbox_summary"]["unread_count"] == 1
-    assert set(portal.conversation_read_state.load(actor)["pinned_keys"]) == {
+    assert set(web_inbox.conversation_read_state.load(actor)["pinned_keys"]) == {
         "resident:" + rid for rid in (on_page, older, no_chat)}
-    assert portal.conversation_read_state.load(other)["pinned_keys"] == ["resident:" + hidden]
+    assert web_inbox.conversation_read_state.load(other)["pinned_keys"] == ["resident:" + hidden]

@@ -2,6 +2,8 @@
 
 from urllib.parse import parse_qs, quote
 
+from management_portal.http_routes import RouteDefinition
+
 
 class SkillsHttp:
     def home(self, request, parsed, actor):
@@ -12,3 +14,10 @@ class SkillsHttp:
         request.send_response(302)
         request.send_header("Location", location)
         request.end_headers()
+
+    def routes(self):
+        """The Skills board entry."""
+        return (
+            RouteDefinition("GET", "/skills", self.home, "skills", page=True),
+            RouteDefinition("GET", "/skills/", self.home, "skills", page=True),
+        )

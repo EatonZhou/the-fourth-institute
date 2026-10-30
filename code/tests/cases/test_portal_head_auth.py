@@ -7,6 +7,7 @@ from http.server import ThreadingHTTPServer
 from unittest import mock
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth
 
 
 class _QuietHandler(portal.Handler):
@@ -44,7 +45,7 @@ def _head(server: ThreadingHTTPServer, path: str) -> tuple[int, dict[str, str], 
 def test_unauthenticated_head_uses_the_get_authentication_dispatch_contracts(subtests, isolated_portal_case):
     """未登录的 HEAD 请求与 GET 一样跳转登录页，公开路由返回 200 且无响应体"""
     with subtests.test(contract='test_unauthenticated_head_uses_the_get_authentication_dispatch'), isolated_portal_case() as case_path:
-        with mock.patch.object(portal, '_check_session', return_value=False), _portal_server() as server:
+        with mock.patch.object(http_auth, '_check_session', return_value=False), _portal_server() as server:
             for path in ('/', '/index.html', '/settings'):
                 status, headers, body = _head(server, path)
                 assert status == 302, path
@@ -52,7 +53,7 @@ def test_unauthenticated_head_uses_the_get_authentication_dispatch_contracts(sub
                 assert 'Last-Modified' not in headers, path
                 assert body == b'', path
     with subtests.test(contract='test_public_head_routes_keep_their_get_visibility_without_a_body'), isolated_portal_case() as case_path:
-        with mock.patch.object(portal, '_check_session', return_value=False), _portal_server() as server:
+        with mock.patch.object(http_auth, '_check_session', return_value=False), _portal_server() as server:
             for path in ('/login', '/join', '/api/health', '/static/portal_theme.js'):
                 status, _headers, body = _head(server, path)
                 assert status == 200, path

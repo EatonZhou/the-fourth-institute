@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 import json
 import os
@@ -23,8 +24,10 @@ from starlette.responses import FileResponse, JSONResponse, PlainTextResponse, R
 from starlette.routing import Route
 
 from . import serve_management_portal as portal
-from . import portal_features, resident_sidebar_backend
-from .http_errors import exception_http_error, normalize_json_error
+from . import (
+    http_auth, http_instance, http_responses, portal_features, resident_sidebar_backend, web_read_caches,
+)
+from .http_errors import exception_http_error, failure_frames, normalize_json_error
 from .http_timing import capture_timings
 from .knowledge_archive_projection import (
     ensure_knowledge_archive_projection_watcher,
@@ -37,6 +40,8 @@ from .notifications import (
     get_notification_hub,
 )
 
+
+LOGGER = logging.getLogger(__name__)
 
 MAX_REQUEST_BODY_BYTES = 520 * 1024 * 1024
 SPOOL_MEMORY_BYTES = 2 * 1024 * 1024
@@ -151,8 +156,8 @@ def _run_sync_handler(
     handler.server = SimpleNamespace(server_address=(server_host, int(server_port or 0)))
     method = getattr(handler, f"do_{handler.command}", None)
     if method is None:
-        if portal._is_json_api_path(handler.path):
-            portal._serve_http_error(handler, 405, "Method Not Allowed")
+        if http_responses._is_json_api_path(handler.path):
+            http_responses._serve_http_error(handler, 405, "Method Not Allowed")
         else:
             handler.send_error(405, "Method Not Allowed")
     else:
@@ -210,7 +215,7 @@ async def portal_http(request: Request) -> StreamingResponse:
                 execute,
             )
     except Exception as exc:
-        if portal._is_json_api_path(request.url.path):
+        if http_responses._is_json_api_path(request.url.path):
             status, payload = exception_http_error(exc)
             response = JSONResponse(payload, status_code=status)
             if timings:
@@ -257,7 +262,7 @@ def _event_subscription_predicate(request: Request, domains: set[str]):
     def accepts(notification) -> bool:
         if notification.subject == "portal.gateway.reconnected":
             return True
-        domain, target_id = portal._notification_target(notification.subject)
+        domain, target_id = web_read_caches._notification_target(notification.subject)
         if domain not in domains:
             return False
         if domain != "resident" or not notification.subject.endswith(".conversation"):
@@ -276,11 +281,13 @@ def _event_subscription_predicate(request: Request, domains: set[str]):
 
 async def portal_events(request: Request):
     try:
-        actor = await asyncio.to_thread(portal._get_page_api_actor,
+        actor = await asyncio.to_thread(http_auth._get_page_api_actor,
                                        SimpleNamespace(headers=_request_headers(request)))
     except PermissionError as exc:
         return _json_error(403, str(exc))
-    except Exception:
+    except Exception as exc:
+        LOGGER.warning("Page event stream identity verification failed: %s; frames=%s",
+                       type(exc).__name__, failure_frames(exc))
         return _json_error(503, "Page identity verification unavailable")
     if not actor:
         if request.headers.get("Authorization"):
@@ -310,11 +317,11 @@ async def portal_events(request: Request):
         try:
             yield b"retry: 1500\n\n"
             # A page that reconnects to a newly started Web reloads to get the new assets.
-            yield _sse("portal-ready", {"snapshot_required": True, "server_started_at": portal._SERVER_STARTED_AT})
+            yield _sse("portal-ready", {"snapshot_required": True, "server_started_at": http_instance._SERVER_STARTED_AT})
             while True:
                 batch = await subscription.wait(SSE_HEARTBEAT_SECONDS)
                 if batch is None:
-                    yield _sse("heartbeat", {"at": portal.time.time()})
+                    yield _sse("heartbeat", {"at": time.time()})
                     continue
                 if batch.closed:
                     return
@@ -332,7 +339,7 @@ async def portal_events(request: Request):
                 payload_future = loop.run_in_executor(
                     payload_executor,
                     partial(
-                        portal._portal_change_payload,
+                        web_read_caches._portal_change_payload,
                         actor,
                         list(batch.notifications),
                         domains,
@@ -393,7 +400,7 @@ def _instruction_principal(request: Request) -> tuple[str, str]:
     """
 
     handler = SimpleNamespace(headers=_request_headers(request))
-    identity = portal._get_agent_api_auth(handler, scope="instructions")
+    identity = http_auth._get_agent_api_auth(handler, scope="instructions")
     if identity is None:
         return "", ""
     return str(identity["id"]), "web" if identity["type"] == "human" else "cli"
@@ -410,7 +417,7 @@ def _execution_id(request: Request, entry: str) -> str:
 
 def _same_origin(request: Request) -> bool:
     handler = SimpleNamespace(headers=_request_headers(request), _asgi_request_scheme=request.url.scheme)
-    return bool(portal._same_origin_request(handler))
+    return bool(http_auth._same_origin_request(handler))
 
 
 async def instruction_execute(request: Request):
@@ -495,7 +502,7 @@ async def instruction_execute(request: Request):
                 try:
                     kind, value = await asyncio.wait_for(queue.get(), timeout=SSE_HEARTBEAT_SECONDS)
                 except asyncio.TimeoutError:
-                    yield _sse("heartbeat", {"at": portal.time.time()})
+                    yield _sse("heartbeat", {"at": time.time()})
                     continue
                 if kind == "batch":
                     cursor = value[-1].get("cursor") if value and isinstance(value[-1], dict) else None
@@ -663,7 +670,7 @@ async def lifespan(_app: Starlette):
     def invalidate_sidebar_projection(notification) -> None:
         subject = str(getattr(notification, "subject", "") or "")
         if subject.endswith(".conversation"):
-            portal._invalidate_agent_conversation_cache()
+            web_read_caches._invalidate_agent_conversation_cache()
             return
         if subject.startswith("portal.execution."):
             return
@@ -717,7 +724,7 @@ async def lifespan(_app: Starlette):
 async def _route_http_error(request: Request, exc: HTTPException):
     if exc.status_code in {204, 304}:
         return Response(status_code=exc.status_code, headers=exc.headers)
-    if portal._is_json_api_path(request.url.path):
+    if http_responses._is_json_api_path(request.url.path):
         response = _json_error(exc.status_code, str(exc.detail))
         if exc.headers:
             response.headers.update(exc.headers)

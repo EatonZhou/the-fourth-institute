@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from management_portal import conversation_read_state
 from management_portal import serve_management_portal as portal
+from management_portal import user_preferences, web_clients, web_inbox, web_read_caches
 
 
 def test_read_change_publishes_actor_scoped_resident_state(monkeypatch, isolated_portal_case):
     """已读状态变化发布带用户范围的 Resident 视图和会话索引变更"""
     changes = []
-    monkeypatch.setattr(portal, "publish_projection_change",
+    monkeypatch.setattr(web_inbox, "publish_projection_change",
                         lambda projection, target, **payload: changes.append((projection, target, payload)))
     key = "resident:resident_111111111111"
     with isolated_portal_case():
-        portal._set_agent_conversation_read_state("sample_admin", key, unread=True)
+        web_inbox._set_agent_conversation_read_state("sample_admin", key, unread=True)
     assert ("resident-view-state", "resident_111111111111",
             {"actor": "sample_admin", "fields": ["unread"]}) in changes
     assert ("agent-conversation-index", "current",
@@ -37,23 +38,23 @@ def test_read_notification_reaches_local_and_other_portal_instances(monkeypatch)
 
 def test_inbox_reconciliation_waits_for_fresh_snapshot_instead_of_serving_stale(monkeypatch):
     """收件箱对账在缓存失效后等待新快照，不返回过期数据"""
-    cache = portal._CoalescingReadCache(30)
-    monkeypatch.setattr(portal, "_AGENT_CONVERSATION_READ_CACHE", cache)
+    cache = web_read_caches._CoalescingReadCache(30)
+    monkeypatch.setattr(web_read_caches, "_AGENT_CONVERSATION_READ_CACHE", cache)
     current = {"unread_count": 1}
-    monkeypatch.setattr(portal, "_agent_conversation_payload", lambda *a, **k: dict(current))
-    assert portal._cached_agent_conversation_payload("sample_admin")["unread_count"] == 1
+    monkeypatch.setattr(web_inbox, "_agent_conversation_payload", lambda *a, **k: dict(current))
+    assert web_inbox._cached_agent_conversation_payload("sample_admin")["unread_count"] == 1
     cache.invalidate(preserve_stale=True)
     current["unread_count"] = 0
-    assert portal._cached_agent_conversation_payload("sample_admin")["unread_count"] == 0
+    assert web_inbox._cached_agent_conversation_payload("sample_admin")["unread_count"] == 0
 
 
 def test_event_target_reads_current_projection_without_waiting_for_cache_ttl(monkeypatch):
     """指定 Resident 的会话读取直接取当前投影，不等缓存过期"""
     current = {"unread": True}
-    monkeypatch.setattr(portal, "_agent_conversation_payload", lambda *a, **k: dict(current))
-    assert portal._cached_agent_conversation_payload("sample_admin", resident_id="resident_111111111111")["unread"]
+    monkeypatch.setattr(web_inbox, "_agent_conversation_payload", lambda *a, **k: dict(current))
+    assert web_inbox._cached_agent_conversation_payload("sample_admin", resident_id="resident_111111111111")["unread"]
     current["unread"] = False
-    assert not portal._cached_agent_conversation_payload("sample_admin", resident_id="resident_111111111111")["unread"]
+    assert not web_inbox._cached_agent_conversation_payload("sample_admin", resident_id="resident_111111111111")["unread"]
 
 
 def test_targeted_conversation_payload_exposes_the_canonical_resident_cursor(monkeypatch) -> None:
@@ -67,26 +68,26 @@ def test_targeted_conversation_payload_exposes_the_canonical_resident_cursor(mon
         calls.append("cursor")
         return 7 if (actor, target) == ("sample_admin", resident_id) else 0
     monkeypatch.setattr(
-        portal,
+        web_inbox,
         "_agent_conversation_entries",
         entries,
     )
     monkeypatch.setattr(
-        portal.agent_conversation_index_backend,
+        web_inbox.agent_conversation_index_backend,
         "canonical_resident_cursor",
         cursor,
     )
     monkeypatch.setattr(
-        portal.resident_api,
+        web_clients.resident_api,
         "resolve_resident_identity",
         lambda target, actor: {
             "resident_id": target,
             "lineage_id": "lineage_777777777777",
         },
     )
-    monkeypatch.setattr(portal, "_portal_user_preferences", lambda _actor: {})
+    monkeypatch.setattr(user_preferences, "_portal_user_preferences", lambda _actor: {})
 
-    payload = portal._agent_conversation_payload("sample_admin", resident_id=resident_id)
+    payload = web_inbox._agent_conversation_payload("sample_admin", resident_id=resident_id)
 
     assert payload["resident_id"] == resident_id
     assert payload["entries"] == []
@@ -105,11 +106,11 @@ def test_targeted_conversation_payload_returns_an_authoritative_deleted_tombston
 
             def deleted(_resident_id, _actor):
                 raise KeyError(_resident_id)
-            monkeypatch.setattr(portal.resident_api, 'resolve_resident_identity', deleted)
-            monkeypatch.setattr(portal.agent_conversation_index_backend, 'canonical_resident_cursor', lambda *_args: (_ for _ in ()).throw(AssertionError('cursor must not be read')))
-            monkeypatch.setattr(portal, '_agent_conversation_entries', lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError('entries must not be read')))
-            monkeypatch.setattr(portal, '_portal_user_preferences', lambda _actor: {})
-            payload = portal._agent_conversation_payload('sample_admin', resident_id=resident_id)
+            monkeypatch.setattr(web_clients.resident_api, 'resolve_resident_identity', deleted)
+            monkeypatch.setattr(web_inbox.agent_conversation_index_backend, 'canonical_resident_cursor', lambda *_args: (_ for _ in ()).throw(AssertionError('cursor must not be read')))
+            monkeypatch.setattr(web_inbox, '_agent_conversation_entries', lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError('entries must not be read')))
+            monkeypatch.setattr(user_preferences, '_portal_user_preferences', lambda _actor: {})
+            payload = web_inbox._agent_conversation_payload('sample_admin', resident_id=resident_id)
             assert payload['resident_id'] == resident_id
             assert payload['target_state'] == 'deleted'
             assert payload['target_present'] is False
@@ -121,9 +122,9 @@ def test_targeted_conversation_payload_returns_an_authoritative_deleted_tombston
 
             def forbidden(_resident_id, _actor):
                 raise PermissionError(_resident_id)
-            monkeypatch.setattr(portal.resident_api, 'resolve_resident_identity', forbidden)
-            monkeypatch.setattr(portal, '_portal_user_preferences', lambda _actor: {})
-            payload = portal._agent_conversation_payload('sample_admin', resident_id=resident_id)
+            monkeypatch.setattr(web_clients.resident_api, 'resolve_resident_identity', forbidden)
+            monkeypatch.setattr(user_preferences, '_portal_user_preferences', lambda _actor: {})
+            payload = web_inbox._agent_conversation_payload('sample_admin', resident_id=resident_id)
             assert payload['target_state'] == 'forbidden'
             assert payload['target_present'] is False
             assert payload['entries'] == []
@@ -144,16 +145,16 @@ def test_one_row_handles_manual_unread_read_and_new_alerts(isolated_portal_case)
     key = "resident:resident_111111111111"
     with isolated_portal_case():
         assert _row("sample_admin", key) == {**_row("sample_admin", key), "unread": False, "read_revision": 0}
-        unread = portal._set_agent_conversation_read_state("sample_admin", key, unread=True)
+        unread = web_inbox._set_agent_conversation_read_state("sample_admin", key, unread=True)
         assert unread["unread"] and unread["read_revision"] > 0
-        read = portal._set_agent_conversation_read_state("sample_admin", key, unread=False)
+        read = web_inbox._set_agent_conversation_read_state("sample_admin", key, unread=False)
         assert not read["unread"] and read["read_revision"] > unread["read_revision"]
         # Reading what is already read changes nothing.
-        assert portal._set_agent_conversation_read_state("sample_admin", key, unread=False) == read
+        assert web_inbox._set_agent_conversation_read_state("sample_admin", key, unread=False) == read
         assert conversation_read_state.alert(["@SAMPLE_ADMIN"], key, "reply-2") == ["sample_admin"]
         alerted = _row("sample_admin", key)
         assert alerted["unread"] and alerted["read_revision"] > read["read_revision"]
-        portal._set_agent_conversation_read_state("sample_admin", key, unread=False)
+        web_inbox._set_agent_conversation_read_state("sample_admin", key, unread=False)
         # The same event delivered again does not alert again.
         assert conversation_read_state.alert(["sample_admin"], key, "reply-2") == []
         assert not _row("sample_admin", key)["unread"]
@@ -168,13 +169,13 @@ def test_clear_unread_is_atomic_and_new_reply_remains_unread(isolated_portal_cas
     key = "resident:resident_111111111111"
     with isolated_portal_case():
         conversation_read_state.alert(["sample_admin"], key, "reply-2")
-        result = portal._clear_agent_conversations("sample_admin", mode="unread", entries=[{"key": key, "unread": True}])
+        result = web_inbox._clear_agent_conversations("sample_admin", mode="unread", entries=[{"key": key, "unread": True}])
         assert result["cleared_count"] == 1
         assert [item["key"] for item in result["items"]] == [key] and not result["items"][0]["unread"]
         assert not _row("sample_admin", key)["unread"]
         conversation_read_state.alert(["sample_admin"], key, "reply-3")
         assert _row("sample_admin", key)["unread"]
-        portal._set_agent_conversation_read_state("sample_admin", key, unread=False)
+        web_inbox._set_agent_conversation_read_state("sample_admin", key, unread=False)
         assert not _row("sample_admin", key)["unread"]
 
 
@@ -193,7 +194,7 @@ def test_cleared_conversation_returns_with_new_activity_or_alert(isolated_portal
     alerted = {"key": "resident:resident_333333333333", "kind": "resident-main", "updated_at": "2026-10-16T01:00:00Z"}
     with isolated_portal_case():
         conversation_read_state.set_pinned("sample_admin", pinned["key"], True)
-        result = portal._clear_agent_conversations(
+        result = web_inbox._clear_agent_conversations(
             "sample_admin", mode="all", entries=[old, {**pinned, "pinned": True}, alerted])
         assert result["cleared_count"] == 2
 
@@ -210,24 +211,24 @@ def test_cleared_conversation_returns_with_new_activity_or_alert(isolated_portal
 def test_preferences_remain_user_scoped(isolated_portal_case):
     """用户偏好按用户隔离，收藏的 Lineage 去重保存"""
     with isolated_portal_case():
-        portal._set_portal_user_preferences("sample_admin", {"preferences": {
+        user_preferences._set_portal_user_preferences("sample_admin", {"preferences": {
             "appearance": {"motion": "full"},
             "lineage": {"favorite_lineage_ids": ["lineage_111111111111", "lineage_111111111111"]},
         }})
-        assert portal._portal_user_preferences("sample_admin")["appearance"]["motion"] == "full"
-        assert portal._portal_user_preferences("CASE-A")["appearance"]["motion"] == "system"
-        assert portal._portal_user_preferences("sample_admin")["lineage"]["favorite_lineage_ids"] == ["lineage_111111111111"]
-        assert portal._portal_user_preferences("CASE-A")["lineage"]["favorite_lineage_ids"] == []
+        assert user_preferences._portal_user_preferences("sample_admin")["appearance"]["motion"] == "full"
+        assert user_preferences._portal_user_preferences("CASE-A")["appearance"]["motion"] == "system"
+        assert user_preferences._portal_user_preferences("sample_admin")["lineage"]["favorite_lineage_ids"] == ["lineage_111111111111"]
+        assert user_preferences._portal_user_preferences("CASE-A")["lineage"]["favorite_lineage_ids"] == []
 
 
 def test_article_workspace_preference_survives_read_state_refactor(isolated_portal_case):
     """文章工作区上次打开的条目按用户保存在偏好中"""
     with isolated_portal_case():
-        portal._set_portal_user_preferences("sample_admin", {"preferences": {
+        user_preferences._set_portal_user_preferences("sample_admin", {"preferences": {
             "resource_workspaces": {"article": {"last_item_id": "article_111111111111"}},
         }})
-        assert portal._portal_user_preferences("sample_admin")["resource_workspaces"]["article"]["last_item_id"] == "article_111111111111"
-        assert portal._portal_user_preferences("CASE-A")["resource_workspaces"]["article"]["last_item_id"] == ""
+        assert user_preferences._portal_user_preferences("sample_admin")["resource_workspaces"]["article"]["last_item_id"] == "article_111111111111"
+        assert user_preferences._portal_user_preferences("CASE-A")["resource_workspaces"]["article"]["last_item_id"] == ""
 
 
 def test_read_state_is_removed_with_actor_data(isolated_portal_case):

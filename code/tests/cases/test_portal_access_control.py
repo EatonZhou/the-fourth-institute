@@ -187,9 +187,10 @@ def test_every_user_may_operate_the_test_lab() -> None:
     :importance: P2
     """
     from management_portal import serve_management_portal as portal_server
+    from management_portal import http_auth, web_accounts
 
     for actor in ("viewer", "engineer"):
-        assert portal_server._test_lab_access(actor) == {"actor": actor, "can_operate": True}
+        assert http_auth._test_lab_access(actor) == {"actor": actor, "can_operate": True}
 
 
 def test_user_disable_and_retirement_are_distinct_lifecycle_states_contracts(tmp_path, subtests, isolated_portal_case):
@@ -253,6 +254,7 @@ def test_admin_delete_user_removes_only_account_private_data(
 ) -> None:
     """管理员删除用户只清除其密码、偏好、收藏、上传、头像和 Telegram 绑定，用户名不能再创建"""
     from management_portal import serve_management_portal as portal_server
+    from management_portal import http_auth, web_accounts
     from management_portal import user_avatar as avatars
 
     _projects()
@@ -285,17 +287,17 @@ def test_admin_delete_user_removes_only_account_private_data(
         telegram.save(connection, {"telegram_user_id": "1111111", "name": "engineer", "portal_actor": "Engineer"})
         telegram.save(connection, {"telegram_user_id": "2222222", "name": "colleague", "portal_actor": "colleague"})
 
-    monkeypatch.setattr(portal_server, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal_server, "_PORTAL_CREDENTIALS", credentials)
-    monkeypatch.setattr(portal_server, "_PORTAL_USER_UPLOAD_ROOTS", upload_roots)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_CREDENTIALS", credentials)
+    monkeypatch.setattr(web_accounts, "_PORTAL_USER_UPLOAD_ROOTS", upload_roots)
     monkeypatch.setattr(avatars, "user_avatar_store", lambda: avatar_store)
 
     with pytest.raises(ValueError, match="unknown access-control action"):
-        portal_server._admin_access_action("CASE-A", {"action": "archive", "username": "engineer"})
+        web_accounts._admin_access_action("CASE-A", {"action": "archive", "username": "engineer"})
     assert "engineer" in credentials.load()
     assert avatar_store.get("engineer") == avatars.sprite(1)
 
-    result = portal_server._admin_access_action(
+    result = web_accounts._admin_access_action(
         "CASE-A", {"action": "delete", "username": "engineer"}
     )
 
@@ -319,7 +321,7 @@ def test_admin_delete_user_removes_only_account_private_data(
     assert avatar_store.get("engineer") == avatars.sprite(0)
     assert avatar_store.get("colleague") == colleague_avatar
     with pytest.raises(FileExistsError, match="retired"):
-        portal_server._admin_access_action(
+        web_accounts._admin_access_action(
             "CASE-A",
             {
                 "action": "create",
@@ -335,28 +337,29 @@ def test_user_can_change_own_password_and_revoke_existing_sessions(
 ) -> None:
     """用户校验当前密码和强度后可改自己的密码，旧会话随之失效并写入审计"""
     from management_portal import serve_management_portal as portal_server
+    from management_portal import http_auth, web_accounts
 
     access = PortalAccessStore()
     credentials = PortalCredentialStore()
     credentials.set_password("engineer", "Current-Pass7!")
     access.upsert_user("engineer", actor="CASE-A")
     original_version = access.session_version("engineer")
-    monkeypatch.setattr(portal_server, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal_server, "_PORTAL_CREDENTIALS", credentials)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_CREDENTIALS", credentials)
     monkeypatch.setattr(
-        portal_server,
+        web_accounts,
         "_PORTAL_TWO_FACTOR",
         type("DisabledTwoFactor", (), {"enabled": lambda self, username: False})(),
     )
     signing_key_path = tmp_path / "session.key"
     signing_key_path.write_bytes(b"test-portal-session-signing-key-32-bytes")
-    monkeypatch.setattr(portal_server, "_SESSION_SIGNING_KEY_PATH", signing_key_path)
-    monkeypatch.setattr(portal_server, "_SESSION_AUTHORITY", None)
-    monkeypatch.setattr(portal_server, "_SESSION_AUTHORITY_CONFIG", None)
-    original_token = portal_server._issue_session_token("engineer")
+    monkeypatch.setattr(web_accounts, "_SESSION_SIGNING_KEY_PATH", signing_key_path)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY", None)
+    monkeypatch.setattr(web_accounts, "_SESSION_AUTHORITY_CONFIG", None)
+    original_token = web_accounts._issue_session_token("engineer")
 
     with pytest.raises(PermissionError, match="Current password"):
-        portal_server._change_portal_password(
+        web_accounts._change_portal_password(
             "engineer",
             {
                 "current_password": "Wrong-Pass6!",
@@ -366,7 +369,7 @@ def test_user_can_change_own_password_and_revoke_existing_sessions(
         )
 
     with pytest.raises(ValueError, match="at least three"):
-        portal_server._change_portal_password(
+        web_accounts._change_portal_password(
             "engineer",
             {
                 "current_password": "Current-Pass7!",
@@ -374,9 +377,9 @@ def test_user_can_change_own_password_and_revoke_existing_sessions(
                 "new_password_confirmation": "weak-password",
             },
         )
-    assert portal_server._verify_credentials("engineer", "Current-Pass7!")
+    assert web_accounts._verify_credentials("engineer", "Current-Pass7!")
 
-    result = portal_server._change_portal_password(
+    result = web_accounts._change_portal_password(
         "engineer",
         {
             "current_password": "Current-Pass7!",
@@ -387,12 +390,12 @@ def test_user_can_change_own_password_and_revoke_existing_sessions(
 
     assert result["changed"]
     assert access.session_version("engineer") == original_version + 1
-    assert portal_server._verify_session_token(original_token) is None
-    assert portal_server._verify_session_token(
-        portal_server._issue_session_token("engineer")
+    assert web_accounts._verify_session_token(original_token) is None
+    assert web_accounts._verify_session_token(
+        web_accounts._issue_session_token("engineer")
     ) == "engineer"
-    assert not portal_server._verify_credentials("engineer", "Current-Pass7!")
-    assert portal_server._verify_credentials("engineer", "Replacement-Pass8!")
+    assert not web_accounts._verify_credentials("engineer", "Current-Pass7!")
+    assert web_accounts._verify_credentials("engineer", "Replacement-Pass8!")
     assert access.recent_audit()[0]["action"] == "password_changed"
 
 
@@ -402,6 +405,7 @@ def test_password_change_requires_second_factor_when_enabled(
 ) -> None:
     """启用两步验证后修改密码必须提供验证码"""
     from management_portal import serve_management_portal as portal_server
+    from management_portal import http_auth, web_accounts
 
     access = PortalAccessStore()
     credentials = PortalCredentialStore()
@@ -415,9 +419,9 @@ def test_password_change_requires_second_factor_when_enabled(
         def verify(self, username: str, code: str) -> str | None:
             return "totp" if username == "engineer" and code == "123456" else None
 
-    monkeypatch.setattr(portal_server, "_PORTAL_ACCESS", access)
-    monkeypatch.setattr(portal_server, "_PORTAL_CREDENTIALS", credentials)
-    monkeypatch.setattr(portal_server, "_PORTAL_TWO_FACTOR", EnabledTwoFactor())
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_CREDENTIALS", credentials)
+    monkeypatch.setattr(web_accounts, "_PORTAL_TWO_FACTOR", EnabledTwoFactor())
 
     payload = {
         "current_password": "Current-Pass7!",
@@ -425,15 +429,15 @@ def test_password_change_requires_second_factor_when_enabled(
         "new_password_confirmation": "Replacement-Pass8!",
     }
     with pytest.raises(PermissionError, match="authenticator"):
-        portal_server._change_portal_password("engineer", payload)
-    assert portal_server._verify_credentials("engineer", "Current-Pass7!")
+        web_accounts._change_portal_password("engineer", payload)
+    assert web_accounts._verify_credentials("engineer", "Current-Pass7!")
 
-    result = portal_server._change_portal_password(
+    result = web_accounts._change_portal_password(
         "engineer",
         {**payload, "verification_code": "123456"},
     )
     assert result["changed"]
-    assert portal_server._verify_credentials("engineer", "Replacement-Pass8!")
+    assert web_accounts._verify_credentials("engineer", "Replacement-Pass8!")
 
 
 def test_registered_project_residents_share_resource_read_access(

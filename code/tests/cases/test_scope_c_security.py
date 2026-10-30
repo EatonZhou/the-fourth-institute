@@ -12,6 +12,7 @@ from management_portal import (
 )
 from management_portal import permission_system
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
+from management_portal import http_auth
 from tests.cases.permission_test_support import permissions  # noqa: F401
 from tests.cases.test_repo_workspace_backend import _git, _repo
 from tests.cases.test_wall02_residual_20260919 import account_boundary, PASSWORD
@@ -38,12 +39,13 @@ def test_management_flag_follows_the_administrator_rule_only(permissions):
 def test_password_reset_requires_an_administrator(permissions, monkeypatch):
     """ResetUserPassword 要求管理员，对账号本身的 admin 不足以重置他人密码"""
     from management_portal import serve_management_portal as server
+    from management_portal import http_auth, web_accounts
     from tests.cases.permission_test_support import user_fact
     permissions.place(user_fact("alice"), user_fact("bob"))
     permissions.administrator("alice")
     action = Mock(return_value={"user": {"username": "alice"}})
-    monkeypatch.setattr(server, "_admin_access_action", action)
-    monkeypatch.setattr(server, "_require_authenticated_actor", lambda actor: None)
+    monkeypatch.setattr(web_accounts, "_admin_access_action", action)
+    monkeypatch.setattr(web_accounts, "_require_authenticated_actor", lambda actor: None)
     kernel = web_isa.build_kernel()
     permissions.grant("bob", "alice", "@admin")
     arguments = {"user_id": "alice", "new_password": PASSWORD}
@@ -72,7 +74,7 @@ def test_script_token_rechecks_user_state(account_boundary, monkeypatch, status)
     import time
 
     portal = asgi.portal
-    monkeypatch.setattr(portal, "_get_session_username", lambda _: "")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _: "")
     token = agent_token_auth.generate_token()
     lease = account_boundary.root / "script.lease"
     lease.touch()
@@ -130,18 +132,19 @@ def test_scoped_staging_treats_pathspec_magic_literally(tmp_path, staged):
 def test_authentication_windows_survive_new_challenges(account_boundary, monkeypatch):
     """登录与二次验证的失败计数跨新挑战和新实例保留，超限后正确密码也被拦截"""
     from management_portal import serve_management_portal as portal
+    from management_portal import http_auth, web_accounts
     from management_portal.authentication_attempts import AuthenticationAttempts
     attempts = AuthenticationAttempts(limit=2, window=60, capacity=2)
-    monkeypatch.setattr(portal, '_AUTH_ATTEMPTS', attempts)
-    assert not portal._verify_credentials('fixture-user', 'wrong')
-    assert not portal._verify_credentials('fixture-user', 'wrong')
-    assert not portal._verify_credentials('fixture-user', PASSWORD)
+    monkeypatch.setattr(web_accounts, '_AUTH_ATTEMPTS', attempts)
+    assert not web_accounts._verify_credentials('fixture-user', 'wrong')
+    assert not web_accounts._verify_credentials('fixture-user', 'wrong')
+    assert not web_accounts._verify_credentials('fixture-user', PASSWORD)
     attempts.succeeded('password', 'fixture-user')
-    assert portal._verify_credentials('fixture-user', PASSWORD)
+    assert web_accounts._verify_credentials('fixture-user', PASSWORD)
     verifier = Mock(return_value=None)
-    monkeypatch.setattr(portal._PORTAL_TWO_FACTOR, 'verify', verifier)
+    monkeypatch.setattr(web_accounts._PORTAL_TWO_FACTOR, 'verify', verifier)
     for _ in range(3):
-        portal._verify_second_factor('fixture-user', '000000')
+        web_accounts._verify_second_factor('fixture-user', '000000')
     assert verifier.call_count == 2
     assert not AuthenticationAttempts(limit=2, window=60).allow('factor', 'fixture-user')
 

@@ -337,21 +337,23 @@ def test_exp_that_is_not_an_extraction_is_an_error_and_is_not_saved(monkeypatch,
 def test_article_actual_http_branch_roles_and_error_mapping(monkeypatch, action, error, status):
     """Article 工作区写入先校验资源权限，并把后端错误映射为 404、409、400、403、413"""
     # The Article workspace writes go through ArticlesHttp.workspace (the route table's handler).
+    from management_portal import article_files
     from management_portal.http_articles import ArticlesHttp
-    from management_portal.serve_management_portal import RequestBodyTooLarge
+    from management_portal.http_request_body import RequestBodyTooLarge
 
     require = Mock()
     if error == "too_large":
         error = RequestBodyTooLarge("fixture upload too large")
-    backend = SimpleNamespace(**{name: Mock(side_effect=error) for name in ["create_article_entry", "write_article_file", "upload_article_file"]},
-                              ARTICLE_UPLOAD_MAX_BYTES=1024)
+    for name in ["create_article_entry", "write_article_file", "upload_article_file"]:
+        monkeypatch.setattr(article_files, name, Mock(side_effect=error))
+    monkeypatch.setattr(article_files, "ARTICLE_UPLOAD_MAX_BYTES", 1024)
     http = ArticlesHttp(
         respond=lambda _request, code, payload: (code, payload),
         exception_response=lambda _request, exc: (500, {"error": str(exc)}),
         read_json=Mock(side_effect=error) if action == "upload" else (lambda _request: {"path": "main.tex", "content": "fixture"}),
         read_multipart=Mock(), multipart_limit=lambda size: size, body_too_large=RequestBodyTooLarge,
         session_actor=lambda _request: "fixture", require_resource=require, notify_index=Mock(),
-        identity_backend=lambda: backend, texlab_backend=Mock(), resource_service=Mock(),
+        texlab_backend=Mock(), resource_service=Mock(),
         serve_media=Mock(), serve_download=Mock(), media_content_type=Mock(),
     )
     response = http.workspace(SimpleNamespace(headers={}), None, "fixture",

@@ -14,6 +14,7 @@ import pytest
 
 from knowledge_board_lan import knowledge_backend
 from management_portal import serve_management_portal
+from management_portal import http_auth, http_request_body, web_resources
 
 
 def test_knowledge_projection_preserves_search_resource_type():
@@ -139,9 +140,10 @@ def test_knowledge_detail_route_preserves_resource_errors(error, status):
     thread.start()
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="reader"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="reader"),
             mock.patch.object(serve_management_portal, "get_resource_service", return_value=service),
+            mock.patch.object(web_resources, "get_resource_service", return_value=service),
             pytest.raises(urllib.error.HTTPError) as caught,
         ):
             urllib.request.urlopen(
@@ -172,8 +174,8 @@ def test_knowledge_attachment_image_uses_authenticated_actor(tmp_path):
     thread.start()
     try:
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="reader"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="reader"),
             mock.patch.object(
                 serve_management_portal.knowledge_item_chat_backend.knowledge_item_chat_backend,
                 "resolve_attachment_image", side_effect=resolve,
@@ -205,8 +207,8 @@ def test_knowledge_archive_unavailable_keeps_service_error_response():
         )
         unavailable = serve_management_portal.knowledge_archive_backend.KnowledgeArchiveServiceUnavailable
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="reader"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="reader"),
             mock.patch.object(
                 serve_management_portal.knowledge_archive_backend.knowledge_archive_backend,
                 "create_job", side_effect=unavailable("archive unavailable"),
@@ -234,12 +236,12 @@ def test_knowledge_post_rejects_oversized_json_before_business_call():
             data=b"{}",
             headers={
                 "Content-Type": "application/json",
-                "Content-Length": str(serve_management_portal._JSON_REQUEST_MAX_BYTES + 1),
+                "Content-Length": str(http_request_body._JSON_REQUEST_MAX_BYTES + 1),
             },
             method="POST",
         )
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
             mock.patch.object(
                 serve_management_portal.knowledge_archive_backend.knowledge_archive_backend,
                 "create_job",
@@ -436,14 +438,19 @@ def test_knowledge_card_click_http_chain_accepts_public_records_without_file_id(
         with knowledge_backend._LOCK:
             knowledge_backend._ITEM_GRAPH_CACHE.clear()
         with (
-            mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-            mock.patch.object(serve_management_portal, "_get_session_username", return_value="playwright"),
+            mock.patch.object(http_auth, "_check_session", return_value=True),
+            mock.patch.object(http_auth, "_get_session_username", return_value="playwright"),
             mock.patch.object(
                 serve_management_portal,
                 "get_resource_service",
                 return_value=index,
             ),
-            mock.patch.object(serve_management_portal, "_require_resource"),
+            mock.patch.object(
+                web_resources,
+                "get_resource_service",
+                return_value=index,
+            ),
+            mock.patch.object(web_resources, "_require_resource"),
             mock.patch.object(
                 knowledge_backend,
                 "resolve_item_address",

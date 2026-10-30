@@ -5,6 +5,7 @@ from io import BytesIO
 
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_request_body
 
 
 class _ResponseHarness:
@@ -36,7 +37,7 @@ def test_default_json_body_limit_accepts_payload_larger_than_64_kib() -> None:
     }
     handler.rfile = BytesIO(body)
 
-    payload = portal._read_bounded_json_object(handler)
+    payload = http_request_body._read_bounded_json_object(handler)
 
     assert payload == {"content": "x" * 70_000}
 

@@ -69,13 +69,15 @@ def test_overflow_record_reaches_full_index_and_archive_recovery(monkeypatch, tm
 def test_missing_resource_socket_returns_503_without_stale_success(monkeypatch, tmp_path):
     """资源套接字缺失时返回 503 且不携带过期成功数据"""
     from management_portal import asgi
+    from management_portal import http_auth, web_resources
     from management_portal.resources.transport import ResourceServiceClient
     from tests.cases.test_portal_asgi import _request, _response_body
 
     client = ResourceServiceClient(socket_path=tmp_path / "absent.sock", timeout=0.1)
-    monkeypatch.setattr(asgi.portal, "_check_session", lambda handler: True)
-    monkeypatch.setattr(asgi.portal, "_get_session_username", lambda handler: "alice")
+    monkeypatch.setattr(http_auth, "_check_session", lambda handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "alice")
     monkeypatch.setattr(asgi.portal, "get_resource_service", lambda: client)
+    monkeypatch.setattr(web_resources, "get_resource_service", lambda: client)
     response = asyncio.run(asgi.portal_http(
         _request("/api/resources/resolve?address=resident_111111111111"),
     ))

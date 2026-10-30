@@ -29,7 +29,7 @@ def accounts(monkeypatch):
     from management_portal.permission_system.categories import accounts as store
 
     actions = []
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _require_authenticated_actor=lambda _caller: None, _PORTAL_ACCESS=store(),
         _admin_access_action=lambda caller, payload: actions.append((caller, payload)) or {"username": payload["username"]}))
     for username in ("alice", "bob", "carol"):
@@ -175,7 +175,7 @@ def test_concurrent_changes_keep_an_active_administrator(open_mode, accounts, mo
         store().upsert_user(payload["username"], actor=caller, status=payload["status"])
         return {"user": {}}
 
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _require_authenticated_actor=lambda _caller: None, _PORTAL_ACCESS=store(), _admin_access_action=write))
     first = threading.Thread(target=_update, args=("alice", "bob"), kwargs={"status": "disabled"})
     first.start()

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from management_portal.paper_resource_index import PaperManifestAdapter, PaperReviewAdapter
-from management_portal import article_identity_backend
+from management_portal import article_registry
 
 import unittest
 import json
@@ -19,6 +19,7 @@ from management_portal import (
     resource_index_backend,
     serve_management_portal,
 )
+from management_portal import http_auth, web_resources
 from management_portal.resources import ResourceService
 from management_portal.resources.providers import install_resolvers
 from tests.cases.registry_support import put_registry_document
@@ -158,10 +159,10 @@ class ResourceResolverPortalTests(unittest.TestCase):
                 }
             ],
         }
-        put_registry_document(article_identity_backend.ARTICLE_COLLECTION, record["id"], record)
+        put_registry_document(article_registry.ARTICLE_COLLECTION, record["id"], record)
         adapter = resource_index_backend.ResourceRegistryAdapter()
         with mock.patch.object(
-            article_identity_backend,
+            article_registry,
             "_validated_article",
             return_value=record,
         ):
@@ -236,10 +237,15 @@ class ResourceResolverPortalTests(unittest.TestCase):
         }
         try:
             with (
-                mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-                mock.patch.object(serve_management_portal, "_get_session_username", return_value="alice"),
+                mock.patch.object(http_auth, "_check_session", return_value=True),
+                mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
                 mock.patch.object(
                     serve_management_portal,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
+                    web_resources,
                     "get_resource_service",
                     return_value=resource_service,
                 ),
@@ -343,10 +349,15 @@ class ResourceResolverPortalTests(unittest.TestCase):
             )
             try:
                 with (
-                    mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-                    mock.patch.object(serve_management_portal, "_get_session_username", return_value="alice"),
+                    mock.patch.object(http_auth, "_check_session", return_value=True),
+                    mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
                     mock.patch.object(
                         serve_management_portal,
+                        "get_resource_service",
+                        return_value=resource_service,
+                    ),
+                    mock.patch.object(
+                        web_resources,
                         "get_resource_service",
                         return_value=resource_service,
                     ),
@@ -398,10 +409,15 @@ class ResourceResolverPortalTests(unittest.TestCase):
 
             try:
                 with (
-                    mock.patch.object(serve_management_portal, "_check_session", return_value=True),
-                    mock.patch.object(serve_management_portal, "_get_session_username", return_value="alice"),
+                    mock.patch.object(http_auth, "_check_session", return_value=True),
+                    mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
                     mock.patch.object(
                         serve_management_portal,
+                        "get_resource_service",
+                        return_value=resource_service,
+                    ),
+                    mock.patch.object(
+                        web_resources,
                         "get_resource_service",
                         return_value=resource_service,
                     ),

@@ -8,6 +8,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 import pytest
 
 from management_portal import asgi, permission_system, serve_management_portal as portal, society_service
+from management_portal import http_auth, user_preferences
 from management_portal.workbench_projections import http as workbench_http, native
 from tests.cases.security_http_support import server
 from tests.cases.test_portal_asgi import _request
@@ -26,9 +27,9 @@ class NoRedirect(HTTPRedirectHandler):
 @pytest.fixture
 def browser_http(monkeypatch):
     state = SimpleNamespace(enabled=True, member=True, readable=True)
-    monkeypatch.setattr(portal, "_get_session_username", lambda request:
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda request:
                         "viewer" if request.headers.get("Cookie") == "fixture=user" else None)
-    monkeypatch.setattr(portal.agent_token_auth, "authenticate_bearer_token", lambda token, **kwargs:
+    monkeypatch.setattr(http_auth.agent_token_auth, "authenticate_bearer_token", lambda token, **kwargs:
                         {"agent_id": RESIDENT} if state.enabled and token == "fixture-resident" else None)
 
     def membership(lineage_id, actor):
@@ -52,7 +53,7 @@ def browser_http(monkeypatch):
                               authorized=lambda *a: True, state=app_state),
         summary=lambda app: {"url": "/workbenches"}))
     monkeypatch.setattr(native, "with_binding_status", lambda app, actor: app)
-    monkeypatch.setattr(portal, "_portal_user_preferences", lambda actor: {"owner": actor})
+    monkeypatch.setattr(user_preferences, "_portal_user_preferences", lambda actor: {"owner": actor})
     monkeypatch.setattr(permission_system, "allows", lambda *a, **kw: False)
     monkeypatch.setattr(permission_system, "user_category", lambda *a: "member")
     monkeypatch.setattr(permission_system, "mode", lambda: "enabled")

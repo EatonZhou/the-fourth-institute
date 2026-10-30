@@ -12,6 +12,7 @@ from unittest import mock
 import pytest
 
 from management_portal import society_service, serve_management_portal
+from management_portal import http_auth, web_accounts
 from management_portal.test_framework import web as test_web
 
 
@@ -51,13 +52,13 @@ def test_api(monkeypatch):
         society_service, "get_society_service",
         lambda: SimpleNamespace(lineage=resident),
     )
-    monkeypatch.setattr(serve_management_portal, "_get_session_username", username)
+    monkeypatch.setattr(http_auth, "_get_session_username", username)
     monkeypatch.setattr(
-        serve_management_portal.agent_token_auth, "authenticate_bearer_token", authenticate,
+        http_auth.agent_token_auth, "authenticate_bearer_token", authenticate,
     )
     access = mock.Mock()
     access.is_active.return_value = True
-    monkeypatch.setattr(serve_management_portal, "_PORTAL_ACCESS", access)
+    monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
     api = SimpleNamespace(**{
         name: mock.Mock(return_value={"ok": True})
         for name in (

@@ -12,6 +12,7 @@ from management_portal import agent_token_auth
 from management_portal import device_identity_backend
 from management_portal import manage_agent_tokens
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth, http_sign_in, web_accounts
 from tests.cases.security_http_support import server as _server
 
 
@@ -31,13 +32,13 @@ def test_login_challenge_only_consumes_one_concurrent_valid_factor(monkeypatch):
             concurrent_verification.set()
         return 'recovery'
 
-    monkeypatch.setattr(portal, '_LOGIN_CHALLENGES', {})
-    monkeypatch.setattr(portal, '_PORTAL_TWO_FACTOR', SimpleNamespace(verify=verify))
-    challenge = portal._start_login_challenge('audit-user')
+    monkeypatch.setattr(http_sign_in, '_LOGIN_CHALLENGES', {})
+    monkeypatch.setattr(web_accounts, '_PORTAL_TWO_FACTOR', SimpleNamespace(verify=verify))
+    challenge = http_sign_in._start_login_challenge('audit-user')
     with ThreadPoolExecutor(max_workers=2) as executor:
-        first = executor.submit(portal._verify_login_challenge, challenge, 'first-code')
+        first = executor.submit(http_sign_in._verify_login_challenge, challenge, 'first-code')
         assert first_verification.wait(5)
-        second = executor.submit(portal._verify_login_challenge, challenge, 'second-code')
+        second = executor.submit(http_sign_in._verify_login_challenge, challenge, 'second-code')
         concurrent_verification.wait(0.15)
         release_verification.set()
         results = [first.result(timeout=5), second.result(timeout=5)]
@@ -48,15 +49,15 @@ def test_login_challenge_only_consumes_one_concurrent_valid_factor(monkeypatch):
 def test_login_challenge_checks_attempt_budget_before_verifying(monkeypatch):
     """登录挑战尝试次数用尽后不再校验验证码并作废该挑战"""
     attempts = []
-    monkeypatch.setattr(portal, '_LOGIN_CHALLENGES', {})
-    monkeypatch.setattr(portal, '_PORTAL_TWO_FACTOR', SimpleNamespace(
+    monkeypatch.setattr(http_sign_in, '_LOGIN_CHALLENGES', {})
+    monkeypatch.setattr(web_accounts, '_PORTAL_TWO_FACTOR', SimpleNamespace(
         verify=lambda username, code: attempts.append(code) or 'recovery',
     ))
-    challenge = portal._start_login_challenge('audit-user')
-    portal._LOGIN_CHALLENGES[challenge]['attempts'] = portal._LOGIN_CHALLENGE_MAX_ATTEMPTS
-    assert portal._verify_login_challenge(challenge, 'unused-code') is None
+    challenge = http_sign_in._start_login_challenge('audit-user')
+    http_sign_in._LOGIN_CHALLENGES[challenge]['attempts'] = http_sign_in._LOGIN_CHALLENGE_MAX_ATTEMPTS
+    assert http_sign_in._verify_login_challenge(challenge, 'unused-code') is None
     assert attempts == []
-    assert challenge not in portal._LOGIN_CHALLENGES
+    assert challenge not in http_sign_in._LOGIN_CHALLENGES
 
 
 def test_admin_unexpected_errors_do_not_expose_internal_details(monkeypatch, subtests, isolated_portal_case):
@@ -64,14 +65,14 @@ def test_admin_unexpected_errors_do_not_expose_internal_details(monkeypatch, sub
     for method in ['GET']:
         with subtests.test(method=method), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
-                monkeypatch.setattr(portal, '_check_session', lambda handler: True)
-                monkeypatch.setattr(portal, '_get_session_username', lambda handler: 'test-actor')
+                monkeypatch.setattr(http_auth, '_check_session', lambda handler: True)
+                monkeypatch.setattr(http_auth, '_get_session_username', lambda handler: 'test-actor')
 
                 def fail(*args):
                     raise RuntimeError('private-storage-path-and-sensitive-diagnostic')
 
-                monkeypatch.setattr(portal, '_admin_access_payload', fail)
-                monkeypatch.setattr(portal, '_admin_access_action', fail)
+                monkeypatch.setattr(web_accounts, '_admin_access_payload', fail)
+                monkeypatch.setattr(web_accounts, '_admin_access_action', fail)
                 with _server(portal.Handler) as server:
                     connection = http.client.HTTPConnection('127.0.0.1', server.server_address[1], timeout=5)
                     try:

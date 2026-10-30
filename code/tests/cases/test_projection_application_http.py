@@ -91,12 +91,13 @@ def test_asset_route_serves_exact_bytes_without_portal_shell(monkeypatch, assets
     :profiles: local.fixture
     """
     from management_portal import serve_management_portal as web
+    from management_portal import http_documents, http_responses
 
     store, _, _ = assets
     sent = []
     monkeypatch.setattr(http, "get_service", lambda: SimpleNamespace(store=store))
-    monkeypatch.setattr(web, "_serve_payload", lambda *args, **kwargs: sent.append((args, kwargs)))
-    monkeypatch.setattr(web, "_serve_bytes", lambda *args, **kwargs: pytest.fail("must not inject privileged Portal bootstrap"))
+    monkeypatch.setattr(http_responses, "_serve_payload", lambda *args, **kwargs: sent.append((args, kwargs)))
+    monkeypatch.setattr(http_documents, "_serve_bytes", lambda *args, **kwargs: pytest.fail("must not inject privileged Portal bootstrap"))
     handler = object()
     http.handle(handler, urlparse(BASE + "entry.html"), "alice")
     args, kwargs = sent[0]
@@ -112,6 +113,7 @@ def test_library_routes_authorize_revision_and_only_read_registered_files(monkey
     :profiles: local.fixture
     """
     from management_portal import serve_management_portal as web
+    from management_portal import http_documents, http_responses
 
     store, build, calls = assets
     base = f"{application_http.LIBRARY_PREFIX}{APP}/3"
@@ -125,8 +127,8 @@ def test_library_routes_authorize_revision_and_only_read_registered_files(monkey
 
     monkeypatch.setitem(sys.modules, "management_portal.workbench_projections.libraries", SimpleNamespace(registry=lambda: catalog, read_library=read_library))
     monkeypatch.setattr(http, "get_service", lambda: SimpleNamespace(store=store))
-    monkeypatch.setattr(web, "_serve_json", lambda *args, **kwargs: sent.append((args, kwargs)))
-    monkeypatch.setattr(web, "_serve_payload", lambda *args, **kwargs: sent.append((args, kwargs)))
+    monkeypatch.setattr(http_responses, "_serve_json", lambda *args, **kwargs: sent.append((args, kwargs)))
+    monkeypatch.setattr(http_responses, "_serve_payload", lambda *args, **kwargs: sent.append((args, kwargs)))
     handler = object()
     http.handle(handler, urlparse(base), "alice")
     assert calls[-1] == (APP, "alice", 3)

@@ -11,6 +11,7 @@ from management_portal import resident_recommendation_backend as recommendation
 from management_portal.society_service.contracts import DOMAIN_METHODS
 from management_portal.society_service.transport import SocietyServiceClient, SocietyServiceUnavailable
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth, http_request_body, http_responses
 
 
 def _lineage_client(monkeypatch) -> tuple[SocietyServiceClient, list]:
@@ -102,7 +103,7 @@ def test_portal_discovery_route_uses_session_actor_and_scope(monkeypatch):
         "resident_ids": ["resident_aaaaaaaaaaaa"],
     }).encode("utf-8")
     handler = _ResponseHarness(body)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "CASE-A")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "CASE-A")
     monkeypatch.setattr(portal, "ResidentDiscoveryClient", FakeClient)
     _dispatch_discovery_post(handler)
     assert handler.status == 200
@@ -128,7 +129,7 @@ def test_portal_discovery_contexts_and_recommendation_routes_preserve_actor(monk
             calls.append(("latest", kwargs))
             return {"status": "completed"}
 
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "CASE-A")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "CASE-A")
     monkeypatch.setattr(portal, "ResidentDiscoveryClient", FakeClient)
     monkeypatch.setattr(portal, "resident_recommendation_backend", FakeRecommendationBackend())
 
@@ -157,9 +158,9 @@ def test_portal_discovery_rejects_oversized_json_before_read(monkeypatch):
 
     handler = _ResponseHarness(b"")
     handler.path = "/api/agent-workbench/resident-discovery/search"
-    handler.headers["Content-Length"] = str(portal._JSON_REQUEST_MAX_BYTES + 1)
+    handler.headers["Content-Length"] = str(http_request_body._JSON_REQUEST_MAX_BYTES + 1)
     handler.rfile = UnreadableStream()
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "CASE-A")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "CASE-A")
 
     _dispatch_discovery_post(handler)
 
@@ -170,10 +171,10 @@ def test_portal_discovery_unavailable_uses_service_error_contract(monkeypatch):
     """Resident 发现服务不可用时接口返回 503 与 operation.unavailable"""
     class UnavailableClient:
         def search(self, **_kwargs):
-            raise portal.ResidentDiscoveryUnavailable("Resident Discovery service is unavailable")
+            raise http_responses.ResidentDiscoveryUnavailable("Resident Discovery service is unavailable")
 
     monkeypatch.setattr(portal, "ResidentDiscoveryClient", UnavailableClient)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "CASE-A")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "CASE-A")
     handler = _ResponseHarness(b"{}")
 
     _dispatch_discovery_post(handler)
@@ -204,7 +205,7 @@ def test_portal_routing_eval_submit_uses_session_actor(monkeypatch):
     }).encode("utf-8")
     handler = _ResponseHarness(body)
     handler.path = "/api/agent-workbench/resident-discovery/routing-evals/submit"
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "sample_peer")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "sample_peer")
     monkeypatch.setattr(portal, "ResidentDiscoveryClient", FakeClient)
 
     _dispatch_discovery_post(handler)
@@ -230,7 +231,7 @@ def test_portal_routing_eval_directory_search_uses_session_actor(monkeypatch):
     }).encode("utf-8")
     handler = _ResponseHarness(body)
     handler.path = "/api/agent-workbench/resident-discovery/routing-evals/residents/search"
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "sample_peer")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "sample_peer")
     monkeypatch.setattr(portal, "ResidentDiscoveryClient", FakeClient)
 
     _dispatch_discovery_post(handler)
@@ -278,7 +279,7 @@ def test_recommendation_result_route_preserves_no_match_contract(
 
     monkeypatch.setattr(client, "call", reply)
     monkeypatch.setattr(recommendation, "get_society_service", lambda: client)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "test-actor")
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "test-actor")
     handler = _ResponseHarness(json.dumps({
         "resident_id": resident_id, "message_id": message_id,
     }).encode("utf-8"))

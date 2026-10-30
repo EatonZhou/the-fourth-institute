@@ -141,8 +141,7 @@ def test_downloaded_cli_carries_private_owner_and_works_without_repo(tmp_path, m
     from management_portal import http_user_guide as guide
     sent=[]
     server=SimpleNamespace(_serve_bytes=lambda req,status,data,*a,**kw: sent.append(data))
-    monkeypatch.setitem(sys.modules, 'management_portal.serve_management_portal', server)
-    monkeypatch.setattr(__import__('management_portal'), 'serve_management_portal', server, raising=False)
+    monkeypatch.setattr(guide.http_documents, '_serve_bytes', server._serve_bytes)
     guide.client_script(None,None,None)
     script=tmp_path/'downloaded.py'; script.write_bytes(sent[0])
     path=tmp_path/'token.json'; path.write_text(json.dumps({'url':'https://portal.example','token':'dbu_fixture','status':'active'})); path.chmod(0o600)

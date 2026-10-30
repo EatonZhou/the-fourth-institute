@@ -10,6 +10,7 @@ import pytest
 
 from management_portal import http_terminal
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth
 
 
 class _QuietHandler(portal.Handler):
@@ -60,8 +61,8 @@ def test_terminal_routes_use_selected_policy_for_scoped_users(
         calls.append("backend")
         return {}
 
-    monkeypatch.setattr(portal, "_check_session", lambda _handler: True)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "bob")
+    monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "bob")
     fake_backend = SimpleNamespace(
         open_terminal=backend,
         read_terminal=backend,
@@ -107,7 +108,7 @@ def test_terminal_a_still_requires_login(method, terminal_prefix, monkeypatch):
 
     验证 A 下所有已登录 User 可使用本机与设备终端，B 保留入口限制，未登录访问、错误配置及跨用户会话访问不获得新增权限。
     """
-    monkeypatch.setattr(portal, "_check_session", lambda _handler: False)
+    monkeypatch.setattr(http_auth, "_check_session", lambda _handler: False)
     with _server(_QuietHandler) as server:
         connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
         try:

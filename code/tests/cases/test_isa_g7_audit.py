@@ -211,7 +211,7 @@ def test_get_and_list_user_include_public_avatar(monkeypatch):
     access = SimpleNamespace(user=lambda name: {"configured": True, "status": "active", "email": "private"},
         list_users=lambda keys: [{"username": "alice", "status": "active"}], _revision=lambda: 1)
     monkeypatch.setattr(web_isa, "_access", lambda: access)
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(_load_users=lambda: {"alice": {}}))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_load_users=lambda: {"alice": {}}))
     monkeypatch.setattr("management_portal.user_avatar.user_avatar_store", lambda: SimpleNamespace(get=lambda name: avatar))
     user = web_isa.get_user(invoke("GetUser", {"user_id": "alice"}, caller="bob"))["user"]
     assert user["avatar"] == avatar and user["email"] == "private"
@@ -245,7 +245,7 @@ def test_rejected_account_change_does_not_write_avatar(monkeypatch):
     :module: platform.core"""
     def reject(*args):
         raise ValueError("invalid account transition")
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _require_authenticated_actor=lambda actor: actor, _admin_access_action=reject))
     monkeypatch.setattr(web_isa, "_set_avatar", lambda *a: pytest.fail("rejected request wrote avatar"))
     with pytest.raises(ValueError, match="invalid account transition"):
@@ -260,7 +260,7 @@ def test_admitted_avatar_update_targets_only_the_requested_user(tmp_path, monkey
     from management_portal.user_avatar import UserAvatarStore
     store = UserAvatarStore(tmp_path / "avatars")
     monkeypatch.setattr("management_portal.user_avatar.user_avatar_store", lambda: store)
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(_require_authenticated_actor=lambda actor: actor))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_require_authenticated_actor=lambda actor: actor))
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(user=lambda name: {"username": name}))
     result = web_isa.update_user(invoke("UpdateUser", {"user_id":"alice", "changes": {"avatar": {"sprite_index": 3}}}))
     assert result["user"]["avatar"]["sprite_index"] == 3
@@ -273,7 +273,7 @@ def test_invalid_recovery_email_does_not_write_avatar(monkeypatch):
     """找回邮箱无效时 UpdateUser 不写入同一请求中的头像"""
     def reject(*a, **k):
         raise ValueError("invalid email")
-    monkeypatch.setattr(web_isa, "web", lambda: SimpleNamespace(
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
         _require_authenticated_actor=lambda actor: actor, _admin_access_action=reject))
     monkeypatch.setattr(web_isa, "_set_avatar", lambda *a: pytest.fail("invalid request wrote avatar"))
     with pytest.raises(ValueError, match="invalid email"):

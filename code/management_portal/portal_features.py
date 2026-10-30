@@ -21,9 +21,11 @@ Hooks:
 
 ``web.routes`` ``(portal) -> Iterable[http_routes.RouteDefinition]``
     The feature's pages, APIs and public static files.  ``portal`` is the Web
-    shell module (``serve_management_portal``); handlers answer through its
-    request and response helpers.  The shell serves them after its own
-    routes and before its fallbacks.
+    shell module (``serve_management_portal``), whose ``_PUBLIC_PAGES_HTTP``
+    serves public static files; handlers answer through the Web request and
+    response modules (``http_responses``, ``http_request_body``, ``http_auth``,
+    ``http_documents``, ``http_files``, ``http_static_files``).  The shell
+    serves them after its own routes and before its fallbacks.
 ``web.lifespan`` ``() -> stop | None``
     Start the feature's background work when Web starts; the returned
     callable stops it when Web stops.

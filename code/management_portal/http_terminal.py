@@ -3,6 +3,7 @@
 from urllib.parse import parse_qs
 
 from management_portal import local_terminal_backend
+from management_portal.http_routes import RouteDefinition
 
 
 class TerminalHttp:
@@ -84,3 +85,12 @@ class TerminalHttp:
             return self.respond(request, 400, {"error": str(exc)})
         except Exception as exc:
             return self.exception_response(request, exc)
+
+    def routes(self):
+        """The terminal API."""
+        return (
+            RouteDefinition("GET", "/api/terminal/read", self.read, "portal-terminal"),
+            RouteDefinition("POST", "/api/terminal/start", self.start, "portal-terminal"),
+            RouteDefinition("POST", "/api/terminal/input", self.input, "portal-terminal"),
+            RouteDefinition("POST", "/api/terminal/control", self.control, "portal-terminal"),
+        )

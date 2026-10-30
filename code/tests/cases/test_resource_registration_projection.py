@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from management_portal import article_identity_backend
+from management_portal import article_registry
 
 from unittest import mock
 
@@ -125,14 +125,14 @@ def test_registry_change_reads_only_changed_document(resource_type):
     }[resource_type]
     collection = {
         "repo": backend.resource_identity_backend.REPO_COLLECTION,
-        "article": article_identity_backend.ARTICLE_COLLECTION,
+        "article": article_registry.ARTICLE_COLLECTION,
         "device": backend.device_identity_backend.DEVICE_COLLECTION,
     }[resource_type]
     registry = mock.Mock()
     registry.get.return_value = dict(document)
     validator = {
         "repo": (backend.resource_identity_backend, "_validated_repo"),
-        "article": (article_identity_backend, "_validated_article"),
+        "article": (article_registry, "_validated_article"),
         "device": (backend.device_identity_backend, "_normalize_record"),
     }[resource_type]
     with mock.patch.object(backend, "get_registry_store", return_value=registry), \

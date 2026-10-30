@@ -47,6 +47,12 @@ def normalize_json_error(status: int, payload: dict[str, Any] | list[Any]) -> di
     return result
 
 
+def failure_frames(error: BaseException) -> str:
+    """Where a failure was raised: each frame's file, line and function, never messages or locals."""
+    frames = traceback.extract_tb(error.__traceback__)
+    return " -> ".join(f"{frame.filename}:{frame.lineno} {frame.name}" for frame in frames)
+
+
 def exception_http_error(error: Exception) -> tuple[int, dict[str, Any]]:
     """Map an uncaught endpoint error while keeping unknown server details private."""
 
@@ -55,11 +61,10 @@ def exception_http_error(error: Exception) -> tuple[int, dict[str, Any]]:
     if status >= 500 and not isinstance(error, OperationError):
         # Keep enough provenance to diagnose a masked failure without recording
         # exception messages, source lines, locals or request/credential content.
-        frames = traceback.extract_tb(error.__traceback__)
         logging.getLogger(__name__).error(
             "Unhandled Portal HTTP exception: %s; frames=%s",
             type(error).__name__,
-            " -> ".join(f"{frame.filename}:{frame.lineno} {frame.name}" for frame in frames),
+            failure_frames(error),
         )
         payload["message"] = "Portal request failed"
         payload["details"] = {}

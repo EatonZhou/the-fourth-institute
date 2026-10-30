@@ -9,6 +9,7 @@ from tests.cases.security_http_support import server as _server
 import pytest
 
 from management_portal import serve_management_portal as portal
+from management_portal import http_auth, http_request_body, web_accounts
 
 
 class _QuietHandler(portal.Handler):
@@ -61,7 +62,7 @@ def test_legacy_json_parser_rejects_invalid_non_object_requests(subtests, isolat
             )
 
             with pytest.raises(ValueError):
-                portal._read_request_json(handler)
+                http_request_body._read_request_json(handler)
 
 
 def test_malformed_json_never_reaches_business_handler(
@@ -74,9 +75,9 @@ def test_malformed_json_never_reaches_business_handler(
         nonlocal invoked
         invoked = True
 
-    monkeypatch.setattr(portal, "_check_session", lambda _handler: True)
-    monkeypatch.setattr(portal, "_get_session_username", lambda _handler: "tester")
-    monkeypatch.setattr(portal, "_same_origin_request", lambda _handler: True)
+    monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "tester")
+    monkeypatch.setattr(http_auth, "_same_origin_request", lambda _handler: True)
     monkeypatch.setattr(portal.local_terminal_backend, "start_device_terminal", _unexpected)
 
     with _server(_QuietHandler) as server:
@@ -113,8 +114,8 @@ def test_login_rejects_invalid_body_before_credential_work(
         invoked = True
         return True
 
-    monkeypatch.setattr(portal, "_same_origin_request", lambda _handler: True)
-    monkeypatch.setattr(portal, "_verify_credentials", _unexpected)
+    monkeypatch.setattr(http_auth, "_same_origin_request", lambda _handler: True)
+    monkeypatch.setattr(web_accounts, "_verify_credentials", _unexpected)
 
     with _server(_QuietHandler) as server:
         status, _response_body = _request(

@@ -81,14 +81,14 @@ def _portal_backends() -> tuple[object, object, object, object]:
     portal_root = str(DEFAULT_PORTAL_ROOT)
     if portal_root not in sys.path:
         sys.path.insert(0, portal_root)
-    from management_portal import article_identity_backend
+    from management_portal import article_registry
     from management_portal import paper_resources
     from management_portal import resource_identity_backend
     from management_portal import search_identity_backend
 
     return (
         resource_identity_backend,
-        article_identity_backend,
+        article_registry,
         paper_resources,
         search_identity_backend,
     )
@@ -292,7 +292,9 @@ def command_list_types(args: argparse.Namespace, registry: dict) -> int:
 def command_scan_repo(args: argparse.Namespace, registry: dict) -> int:
     del registry
     repo_backend, article_backend, _paper_resources, _search_backend = _portal_backends()
-    article_roots, skipped_articles = article_backend.discover_article_roots(
+    from management_portal import article_discovery
+
+    article_roots, skipped_articles = article_discovery.discover_article_roots(
         args.roots or None,
     )
     excluded_roots = {
@@ -318,9 +320,11 @@ def command_scan_repo(args: argparse.Namespace, registry: dict) -> int:
 
 def command_scan_article(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _repo_backend, article_backend, _paper_resources, _search_backend = _portal_backends()
+    _portal_backends()
+    from management_portal import article_registration
+
     _print(
-        article_backend.scan_and_sync_article_registry(
+        article_registration.scan_and_sync_article_registry(
             args.roots or None,
             apply=args.apply,
         )
@@ -992,9 +996,11 @@ def command_register_repo(args: argparse.Namespace, registry: dict) -> int:
 
 def command_register_article(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _repo_backend, article_backend, _paper_resources, _search_backend = _portal_backends()
+    _portal_backends()
+    from management_portal import article_registration
+
     _print(
-        article_backend.register_article(
+        article_registration.register_article(
             args.path,
             project_ids=args.project_id,
             article_id=args.article_id,

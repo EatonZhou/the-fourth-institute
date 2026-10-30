@@ -15,6 +15,7 @@ import pytest
 from starlette.requests import Request
 
 from management_portal import asgi, http_ui_state, http_timing
+from management_portal import http_auth, http_instance, http_overview, web_accounts, web_read_caches, web_resources
 from management_portal import permission_system
 from management_portal.notifications import AsyncNotificationFanout, NotificationHub
 
@@ -25,7 +26,7 @@ def test_unreadable_resident_identity_revalidates_open_editors_without_disclosin
     resident_id = 'resident_0123456789ab'
     notification = SimpleNamespace(subject=f'portal.resident.changed.{resident_id}.{scope}', payload={})
     with mock.patch.object(permission_system, 'readable_ids', return_value=set()):
-        payload = asgi.portal._portal_change_payload('viewer', [notification], {'resident'})
+        payload = web_read_caches._portal_change_payload('viewer', [notification], {'resident'})
     assert payload['snapshot_required'] is requires_snapshot
     assert resident_id not in json.dumps(payload)
 
@@ -136,7 +137,7 @@ def test_static_assets_remain_available_when_domain_http_pool_is_busy(isolated_p
         try:
             while not started.is_set():
                 await asyncio.sleep(0.001)
-            with mock.patch.object(asgi.portal, '_portal_health_payload', return_value={'ok': True}):
+            with mock.patch.object(http_overview, '_portal_health_payload', return_value={'ok': True}):
                 ordinary = asyncio.create_task(asgi.portal_http(_request('/api/health', app=app)))
                 for method in ('GET', 'HEAD'):
                     response = await asyncio.wait_for(
@@ -171,7 +172,7 @@ def test_asgi_errors_use_portal_json_contract():
     async def exercise():
         with mock.patch.object(asgi, "MAX_REQUEST_BODY_BYTES", 2):
             too_large = await asgi.portal_http(_request("/api/upload", method="POST", body=b"abc"))
-        with mock.patch.object(asgi.portal, "_get_page_api_actor", side_effect=PermissionError("credential revoked")):
+        with mock.patch.object(http_auth, "_get_page_api_actor", side_effect=PermissionError("credential revoked")):
             denied = await asgi.portal_events(_request("/api/events"))
         for response, status, code in (
             (too_large, 413, "operation.too_large"),
@@ -281,7 +282,7 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
             )
             try:
                 with mock.patch.object(
-                    asgi.portal,
+                    http_overview,
                     '_portal_health_payload',
                     return_value={'ok': True, 'pool': 'handler'},
                 ):
@@ -300,7 +301,7 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
         asyncio.run(isolated_handler_pool())
     with subtests.test(contract='test_asgi_bridge_preserves_json_response'), isolated_portal_case() as case_path:
         request = _request('/api/health')
-        with mock.patch.object(asgi.portal, '_portal_health_payload', return_value={'ok': True, 'transport': 'asgi'}):
+        with mock.patch.object(http_overview, '_portal_health_payload', return_value={'ok': True, 'transport': 'asgi'}):
             response = asyncio.run(asgi.portal_http(request))
             body = asyncio.run(_response_body(response))
         assert response.status_code == 200
@@ -308,7 +309,7 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
         assert b'"transport": "asgi"' in body
     with subtests.test(contract='test_asgi_bridge_preserves_head_authentication_without_a_body'), isolated_portal_case() as case_path:
         request = _request('/', method='HEAD')
-        with mock.patch.object(asgi.portal, '_check_session', return_value=False):
+        with mock.patch.object(http_auth, '_check_session', return_value=False):
             response = asyncio.run(asgi.portal_http(request))
             body = asyncio.run(_response_body(response))
         assert response.status_code == 302
@@ -333,14 +334,14 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
             executor = ThreadPoolExecutor(max_workers=1)
             app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, sse_payload_executor=executor, realtime_lifecycle=asgi.RealtimeConnectionLifecycle()))
             request = _request('/api/events', app=app)
-            with mock.patch.object(asgi.portal, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'), mock.patch.object(hub, 'wait', side_effect=AssertionError('sync wait used')), mock.patch.object(asgi.portal, '_portal_change_payload', return_value={'domains': ['resource'], 'changed': {'resource': ['skill-one']}, 'snapshot_required': False}):
+            with mock.patch.object(http_auth, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'), mock.patch.object(hub, 'wait', side_effect=AssertionError('sync wait used')), mock.patch.object(web_read_caches, '_portal_change_payload', return_value={'domains': ['resource'], 'changed': {'resource': ['skill-one']}, 'snapshot_required': False}):
                 response = await asgi.portal_events(request)
                 iterator = response.body_iterator
                 assert await anext(iterator) == b'retry: 1500\n\n'
                 ready = await anext(iterator)
                 # Pages compare the Web start time to reload after a restart.
                 assert b'event: portal-ready' in ready
-                assert f'"server_started_at":{asgi.portal._SERVER_STARTED_AT}'.encode() in ready
+                assert f'"server_started_at":{http_instance._SERVER_STARTED_AT}'.encode() in ready
                 hub.publish('portal.resource.changed.skill.skill-one', {})
                 change = await asyncio.wait_for(anext(iterator), timeout=1)
                 assert b'event: portal-change' in change
@@ -357,7 +358,7 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
             executor = ThreadPoolExecutor(max_workers=1)
             app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, sse_payload_executor=executor, realtime_lifecycle=asgi.RealtimeConnectionLifecycle()))
             subscription = fanout.subscribe()
-            with mock.patch.object(asgi.portal, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'):
+            with mock.patch.object(http_auth, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'):
                 open_stream = (await asgi.portal_events(_request('/api/events', app=app))).body_iterator
                 await anext(open_stream)
                 await anext(open_stream)
@@ -381,7 +382,7 @@ def test_asgi_bridge_preserves_json_response_contracts(subtests, isolated_portal
             executor = ThreadPoolExecutor(max_workers=1)
             lifecycle = asgi.RealtimeConnectionLifecycle()
             app = SimpleNamespace(state=SimpleNamespace(notification_fanout=fanout, sse_payload_executor=executor, realtime_lifecycle=lifecycle))
-            with mock.patch.object(asgi.portal, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'):
+            with mock.patch.object(http_auth, '_get_session_username', return_value='alice'), mock.patch.object(asgi, 'ensure_notification_listener'), mock.patch.object(asgi, 'ensure_knowledge_archive_projection_watcher'):
                 response = await asgi.portal_events(_request('/api/events', app=app))
                 asgi.end_realtime_streams(app.state)
                 with pytest.raises(StopAsyncIteration):
@@ -400,9 +401,9 @@ def test_usage_routes_use_authenticated_actor(subtests, isolated_portal_case):
             with subtests.test(method=method, path=path, authenticated=authenticated), isolated_portal_case() as case_path:
                 snapshot = {"snapshot_version": 7, "actor": "alice", "refreshing": False}
                 with (
-                    mock.patch.object(asgi.portal, "_check_session", return_value=authenticated),
-                    mock.patch.object(asgi.portal, "_get_session_username", return_value="alice"),
-                    mock.patch.object(asgi.portal.agent_status_backend, "get_token_usage_summary", return_value=snapshot) as usage,
+                    mock.patch.object(http_auth, "_check_session", return_value=authenticated),
+                    mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
+                    mock.patch.object(web_read_caches.agent_status_backend, "get_token_usage_summary", return_value=snapshot) as usage,
                 ):
                     response = asyncio.run(asgi.portal_http(_request(path, method=method)))
                     body = asyncio.run(_response_body(response))
@@ -423,8 +424,8 @@ def test_asgi_bridge_preserves_proxy_validated_scheme_for_origin_checks_contract
     """ASGI 桥接按代理确认的 https 协议做同源检查，超大请求在分发前返回 413"""
     with subtests.test(contract='test_asgi_bridge_preserves_proxy_validated_scheme_for_origin_checks'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
-            monkeypatch.setattr(asgi.portal, '_check_session', lambda _handler: True)
-            monkeypatch.setattr(asgi.portal, '_get_session_username', lambda _handler: 'tester')
+            monkeypatch.setattr(http_auth, '_check_session', lambda _handler: True)
+            monkeypatch.setattr(http_auth, '_get_session_username', lambda _handler: 'tester')
             monkeypatch.setattr(asgi.portal.local_terminal_backend, 'open_terminal', lambda *_args, **_kwargs: {'ok': True})
             payload = json.dumps({'device_id': 'device', 'session_id': 'session'}).encode()
             request = _request('/api/terminal/start', method='POST', body=payload)
@@ -467,10 +468,10 @@ def test_asgi_events_replace_a_stalled_payload_with_snapshot_recovery() -> None:
             }
 
         with (
-            mock.patch.object(asgi.portal, "_get_session_username", return_value="alice"),
+            mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
             mock.patch.object(asgi, "ensure_notification_listener"),
             mock.patch.object(asgi, "ensure_knowledge_archive_projection_watcher"),
-            mock.patch.object(asgi.portal, "_portal_change_payload", side_effect=stalled_payload),
+            mock.patch.object(web_read_caches, "_portal_change_payload", side_effect=stalled_payload),
             mock.patch.object(asgi, "SSE_PAYLOAD_TIMEOUT_SECONDS", 0.01),
         ):
             response = await asgi.portal_events(request)
@@ -496,12 +497,12 @@ def test_portal_routes_and_api_errors_share_http_contract(monkeypatch, isolated_
             response = await asgi.portal_http(_request(path, method=method, body=body, headers=headers))
             return response.status_code, json.loads(await _response_body(response))
 
-        monkeypatch.setattr(asgi.portal, "_check_session", lambda _handler: False)
+        monkeypatch.setattr(http_auth, "_check_session", lambda _handler: False)
         status, payload = asyncio.run(call("/api/agent-workbench/favorites"))
         assert (status, payload["code"]) == (401, "operation.unauthenticated")
 
-        monkeypatch.setattr(asgi.portal, "_check_session", lambda _handler: True)
-        monkeypatch.setattr(asgi.portal, "_get_session_username", lambda _handler: "alice")
+        monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "alice")
         monkeypatch.setattr("management_portal.principal_favorites.project_favorite_statuses",
                             lambda actor, payload, forget=None: {"actor": actor, "favorites": []})
         status, payload = asyncio.run(call("/api/agent-workbench/favorites"))
@@ -515,11 +516,11 @@ def test_portal_routes_and_api_errors_share_http_contract(monkeypatch, isolated_
         status, payload = asyncio.run(call("/api/agent-workbench/favorites"))
         assert (status, payload["code"]) == (404, "operation.not_found")
 
-        monkeypatch.setattr(asgi.portal, "_same_origin_request", lambda _handler: False)
+        monkeypatch.setattr(http_auth, "_same_origin_request", lambda _handler: False)
         status, payload = asyncio.run(call("/api/ui-state/associations/put", method="POST", body=b"{}"))
         assert (status, payload["code"]) == (403, "operation.forbidden")
 
-        monkeypatch.setattr(asgi.portal, "_same_origin_request", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_same_origin_request", lambda _handler: True)
         stored = []
         monkeypatch.setattr("management_portal.portal_ui_state.get_portal_ui_state_store", lambda: type("Store", (), {
             "put": staticmethod(lambda actor, namespace, key, value: stored.append(actor) or {"key": key, "value": value}),
@@ -535,8 +536,8 @@ def test_portal_routes_and_api_errors_share_http_contract(monkeypatch, isolated_
 def test_portal_pages_routes_preserve_redirects_actor_and_admin_access(monkeypatch, isolated_portal_case):
     """页面路由保持旧地址重定向和登录用户身份，未授权访问管理页返回 403"""
     with isolated_portal_case():
-        monkeypatch.setattr(asgi.portal, "_check_session", lambda _handler: True)
-        monkeypatch.setattr(asgi.portal, "_get_session_username", lambda _handler: "alice")
+        monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "alice")
 
         async def call(path):
             response = await asgi.portal_http(_request(path))
@@ -568,11 +569,11 @@ def test_portal_pages_routes_preserve_redirects_actor_and_admin_access(monkeypat
             "context": {"project_id": "", "paper_id": "one", "query": ""},
         }
 
-        monkeypatch.setattr(asgi.portal, "_resource_portal_location", lambda address, actor: f"/resource?address={address}&actor={actor}")
+        monkeypatch.setattr(web_resources, "_resource_portal_location", lambda address, actor: f"/resource?address={address}&actor={actor}")
         status, headers, _ = asyncio.run(call("/r/repo_0123456789ab"))
         assert (status, headers["location"]) == (302, "/resource?address=repo_0123456789ab&actor=alice")
 
-        monkeypatch.setattr(asgi.portal, "_require_authenticated_actor", lambda actor: (_ for _ in ()).throw(PermissionError("authentication required")))
+        monkeypatch.setattr(web_accounts, "_require_authenticated_actor", lambda actor: (_ for _ in ()).throw(PermissionError("authentication required")))
         status, _, body = asyncio.run(call("/portal-management"))
         assert (status, json.loads(body)["error"]) == (403, "authentication required")
 
@@ -580,9 +581,9 @@ def test_portal_pages_routes_preserve_redirects_actor_and_admin_access(monkeypat
 def test_ui_association_routes_use_actor_and_http_error_contract(monkeypatch, isolated_portal_case):
     """UI 关联路由按登录用户读写，参数错误返回 400，存储故障返回 500 且不泄露细节"""
     with isolated_portal_case():
-        monkeypatch.setattr(asgi.portal, "_check_session", lambda _handler: True)
-        monkeypatch.setattr(asgi.portal, "_get_session_username", lambda _handler: "alice")
-        monkeypatch.setattr(asgi.portal, "_same_origin_request", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "alice")
+        monkeypatch.setattr(http_auth, "_same_origin_request", lambda _handler: True)
 
         store = SimpleNamespace(
             list=lambda actor, namespace: [{"actor": actor, "namespace": namespace}],
@@ -624,9 +625,9 @@ def test_ui_association_routes_use_actor_and_http_error_contract(monkeypatch, is
 def test_agent_status_routes_preserve_actor_refresh_and_account_errors(monkeypatch, isolated_portal_case):
     """Agent 状态路由按登录用户返回数据，refresh 参数触发刷新，旧账户控制 URL 返回 404"""
     with isolated_portal_case():
-        monkeypatch.setattr(asgi.portal, "_check_session", lambda _handler: True)
-        monkeypatch.setattr(asgi.portal, "_get_session_username", lambda _handler: "alice")
-        monkeypatch.setattr(asgi.portal, "_same_origin_request", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_check_session", lambda _handler: True)
+        monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "alice")
+        monkeypatch.setattr(http_auth, "_same_origin_request", lambda _handler: True)
         adapter = asgi.portal._AGENT_STATUS_HTTP
         monkeypatch.setattr(adapter, "cached_summary", lambda actor: {"actor": actor, "cached": True})
         monkeypatch.setattr(adapter, "cached_active", lambda actor: {"actor": actor, "active": []})
@@ -634,11 +635,11 @@ def test_agent_status_routes_preserve_actor_refresh_and_account_errors(monkeypat
         schedule_invalidations = []
         monkeypatch.setattr(adapter, "invalidate_scheduled_triggered", lambda actor: schedule_invalidations.append(actor))
         monkeypatch.setattr(
-            asgi.portal.agent_status_backend, "get_agent_status_summary",
+            web_read_caches.agent_status_backend, "get_agent_status_summary",
             lambda actor, force_refresh=False: {"actor": actor, "refreshed": force_refresh},
         )
         monkeypatch.setattr(
-            asgi.portal.agent_status_backend, "get_token_usage_summary",
+            web_read_caches.agent_status_backend, "get_token_usage_summary",
             lambda actor, force_refresh=False: {"actor": actor, "refreshed": force_refresh},
         )
         monkeypatch.setattr(adapter, "resident_api", SimpleNamespace(
@@ -696,7 +697,7 @@ def test_resident_detail_subscription_filters_before_fanout_and_keeps_read_permi
         requested = f"{visible_id},{private_id}" if selected else ""
         request = _request(f"/api/events?domains=resident&resident_ids={requested}", app=app)
         with (
-            mock.patch.object(asgi.portal, "_get_session_username", return_value="viewer"),
+            mock.patch.object(http_auth, "_get_session_username", return_value="viewer"),
             mock.patch.object(asgi, "ensure_notification_listener"),
             mock.patch.object(asgi, "ensure_knowledge_archive_projection_watcher"),
             mock.patch.object(permission_system, "readable_ids", side_effect=lambda instruction, parameter, identifiers, **kw: set(identifiers) & {visible_id, other_id}),
@@ -790,10 +791,10 @@ def test_asgi_realtime_drain_expires_inflight_payload_before_returning_event() -
             )
         )
         with (
-            mock.patch.object(asgi.portal, "_get_session_username", return_value="alice"),
+            mock.patch.object(http_auth, "_get_session_username", return_value="alice"),
             mock.patch.object(asgi, "ensure_notification_listener"),
             mock.patch.object(asgi, "ensure_knowledge_archive_projection_watcher"),
-            mock.patch.object(asgi.portal, "_portal_change_payload", side_effect=blocked_payload),
+            mock.patch.object(web_read_caches, "_portal_change_payload", side_effect=blocked_payload),
         ):
             response = await asgi.portal_events(_request("/api/events", app=app))
             iterator = response.body_iterator

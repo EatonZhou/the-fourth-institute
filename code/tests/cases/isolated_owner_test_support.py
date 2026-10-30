@@ -71,6 +71,7 @@ class CapturingHTTPServer(ThreadingHTTPServer):
 class PortalOwnerHTTP:
     def __init__(self, directory, monkeypatch):
         from management_portal import portal_ui_state, serve_management_portal
+        from management_portal import http_responses, web_accounts
         from management_portal.portal_access_control import PortalAccessStore, PortalCredentialStore
         from management_portal.portal_session_auth import PortalSessionAuthority
 
@@ -89,9 +90,9 @@ class PortalOwnerHTTP:
         access.upsert_user(self.actor, actor=self.actor, status="active")
         PortalCredentialStore().set_password(self.actor, "Synthetic-test-password-908!")
         authority = PortalSessionAuthority(signing_key, access_store=access)
-        monkeypatch.setattr(serve_management_portal, "_session_authority", lambda: authority)
-        monkeypatch.setattr(serve_management_portal, "_PORTAL_ACCESS", access)
-        monkeypatch.setattr(serve_management_portal, "_PORTAL_ALLOWED_USERS", {self.actor})
+        monkeypatch.setattr(web_accounts, "_session_authority", lambda: authority)
+        monkeypatch.setattr(web_accounts, "_PORTAL_ACCESS", access)
+        monkeypatch.setattr(web_accounts, "_PORTAL_ALLOWED_USERS", {self.actor})
         monkeypatch.setattr(portal_ui_state, "_STORE", self.store)
         self.token = authority.issue(self.actor, max_age=3600)
         owner = self
@@ -102,7 +103,7 @@ class PortalOwnerHTTP:
 
             def do_GET(self):
                 if self.path == "/__isolated__/observations":
-                    return serve_management_portal._serve_json(self, 200, owner.observations())
+                    return http_responses._serve_json(self, 200, owner.observations())
                 owner.trace.append({"event": "http_start", "method": "GET", "path": self.path})
                 try:
                     return super().do_GET()
@@ -113,7 +114,7 @@ class PortalOwnerHTTP:
                 if self.path == "/__isolated__/control":
                     payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
                     owner.control(payload)
-                    return serve_management_portal._serve_json(self, 200, {"ok": True})
+                    return http_responses._serve_json(self, 200, {"ok": True})
                 owner.trace.append({"event": "http_start", "method": "POST", "path": self.path})
                 try:
                     return super().do_POST()
