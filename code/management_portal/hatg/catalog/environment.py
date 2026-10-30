@@ -141,8 +141,8 @@ DECLARATIONS = (
     ), (R("check", "object", "status、passed、model、configuration_current 与脱敏提示"),), owner="execution"),
     _d("OpenProviderAccountLogin", FIXED, "打开订阅账号登录会话。", (R("account_id", description="执行账号 ID"),),
        (R("session", "object", LOGIN_SESSION),), mutates=True, target="account_id", owner="execution"),
-    _d("UpdateProviderAccountLogin", FIXED, "向已有的 Claude 登录会话提交一次性授权码。", (
-        R("account_id", description="执行账号 ID"), R("authorization_code", description="Claude 浏览器返回的授权码；只送到当前登录进程，不保存或回显"),
+    _d("UpdateProviderAccountLogin", FIXED, "向已有登录会话提交 Claude 授权码或 Antigravity 完整回调地址。", (
+        R("account_id", description="执行账号 ID"), R("authorization_code", description="Claude 授权码或 Antigravity 完整回调地址；只送到当前登录进程，不保存或回显"),
     ), (R("session", "object", "提交授权码后的" + LOGIN_SESSION),), mutates=True, target="account_id", owner="execution"),
     _d("GetProviderAccountLogin", FIXED, "读取登录会话和账号认证状态。", (R("account_id", description="执行账号 ID"),),
        (R("session", "any", "登录会话；尚未开始时为 null"),

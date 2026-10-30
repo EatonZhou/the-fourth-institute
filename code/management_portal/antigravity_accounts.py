@@ -131,6 +131,7 @@ def main():
                 print("Invalid callback URL; paste the full address from this login.", flush=True)
 
     threading.Thread(target=receive_callback, daemon=True).start()
+    client = None
     try:
         # LoginManager already supplied the isolated account and approved network route.
         import os
@@ -138,6 +139,9 @@ def main():
             client.initialize()
             client.call("authenticate", {"methodId": "oauth-personal"}, timeout=900)
     except Exception:
+        # A fixed diagnostic code is the only failure output crossing the
+        # subprocess boundary; native text can contain tokens and account data.
+        print("ANTIGRAVITY_LOGIN_ERROR:" + ((client.login_failure if client else "") or "native_failed"), flush=True)
         return 1
     return 0
 

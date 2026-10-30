@@ -272,7 +272,7 @@ class LoginOutputParser:
     def __init__(self, provider):
         self.provider = provider
         self._pending = ""
-        self.code = self.url = ""
+        self.code = self.url = self.error = ""
 
     def feed(self, data, *, final=False):
         self._pending += data.decode("utf-8", errors="replace") if isinstance(data, bytes) else data
@@ -280,6 +280,9 @@ class LoginOutputParser:
         self._pending = "" if final else lines.pop()[-16384:]
         for raw in lines:
             line = ANSI.sub("", raw).strip()
+            if self.provider == "antigravity" and line.startswith("ANTIGRAVITY_LOGIN_ERROR:"):
+                from management_portal.antigravity_client import LOGIN_FAILURES
+                self.error = LOGIN_FAILURES.get(line.partition(":")[2], "")
             for candidate in re.findall(r"https://[^\s\x1b<>]+", line):
                 candidate = candidate.rstrip(".,;)")
                 parts = urlsplit(candidate)
@@ -413,7 +416,7 @@ class LoginManager:
                 if process.poll() is not None:
                     success = process.returncode == 0 and provider_logged_in(registration["provider"], session["account_id"])
                     changed = self.store.transition(session, "succeeded" if success else "failed",
-                                                    error="" if success else "Provider 未确认登录成功，请重试")
+                                                    error="" if success else parser.error or "Provider 未确认登录成功，请重试")
                     if changed and success:
                         self.store.observe(session["account_id"], "logged_in")
                         if registration["provider"] == "codex" and registration.get("enabled", True):

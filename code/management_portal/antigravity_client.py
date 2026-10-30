@@ -29,11 +29,37 @@ class AuthenticationRequired(AcpError):
         super().__init__(-32000, "Antigravity requires Google login; open the account login in Portal")
 
 
+LOGIN_FAILURES = {
+    "authorization_timeout": "Google 授权等待超时，请重新打开登录。",
+    "token_exchange_failed": "Google 授权码交换失败，请重新打开登录并提交本次回调地址。",
+    "account_ineligible": "Google 判定此账号暂不符合 Antigravity 接入条件，请检查账号资格。",
+    "onboarding_failed": "Google 账号接入初始化失败，请检查 Antigravity 账号权益与服务可用性。",
+    "network_failed": "连接 Google 授权服务失败，请检查 Provider 出口后重试。",
+    "native_failed": "Antigravity 原生登录失败，请重新打开登录。",
+}
+
+
+def login_failure_reason(message):
+    """Classify native diagnostics without retaining or displaying their contents."""
+    value = str(message).lower()
+    for reason, phrases in (
+        ("account_ineligible", ("ineligible",)),
+        ("authorization_timeout", ("timed out waiting for the authentication",)),
+        ("token_exchange_failed", ("authentication flow did not complete", "invalid_grant")),
+        ("network_failed", ("proxyerror", "sslerror", "connectionerror", "connection refused", "urlopen error")),
+        ("onboarding_failed", ("onboarding failed", "onboarduser operation failed", "onboarding_failed")),
+    ):
+        if any(phrase in value for phrase in phrases):
+            return reason
+    return ""
+
+
 class AcpClient:
     def __init__(self, command, *, env, cwd=None, on_update=None, on_request=None, on_login_url=None):
         self.on_update = on_update or (lambda params: None)
         self.on_request = on_request or (lambda method, params: None)
         self.on_login_url = on_login_url
+        self.login_failure = ""
         self._lock = threading.Lock()
         self._pending = {}
         self._next = 0
@@ -62,6 +88,10 @@ class AcpClient:
     def _read_stderr(self):
         # Discard native diagnostics: they can include account and token data.
         for line in self.process.stderr:
+            if self.on_login_url is not None:
+                reason = login_failure_reason(line)
+                if reason and (not self.login_failure or self.login_failure == "onboarding_failed"):
+                    self.login_failure = reason
             for url in re.findall(r"https://[^\s<>]+", line):
                 parsed = urlsplit(url)
                 if parsed.hostname == "accounts.google.com" and "oauth" in parsed.path:
@@ -141,6 +171,10 @@ class AcpClient:
                     raise message
                 if "error" in message:
                     error = message["error"]
+                    if self.on_login_url is not None:
+                        reason = login_failure_reason(error.get("message", ""))
+                        if reason and (not self.login_failure or self.login_failure == "onboarding_failed"):
+                            self.login_failure = reason
                     # Native error bodies can include sensitive auth/transport data.
                     if error.get("code") == -32000:
                         raise AuthenticationRequired()

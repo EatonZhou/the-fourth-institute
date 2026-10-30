@@ -444,3 +444,20 @@ class ConfiguredAccounts:
 
     def observe(self, account, *, force=False):
         return {"status": "ok", "rate_limits": []}
+
+
+class AntigravityAccounts(ConfiguredAccounts):
+    """Only native authentication is evidence of a subscription login."""
+
+    def __init__(self, **kwargs):
+        super().__init__(AGENT_PROVIDERS["antigravity"])
+
+    def observe(self, account, *, force=False):
+        from management_portal.antigravity_accounts import logged_in
+        from .account_login import now
+        observed_at = now().isoformat()
+        # The probe stops at an interactive authorization request. It neither
+        # reads credentials nor starts the Portal login flow.
+        state = "logged_in" if logged_in(account.account_id) else "logged_out"
+        return {"status": "ok" if state == "logged_in" else "unknown", "rate_limits": [],
+                "login_observation": state, "login_observed_at": observed_at}

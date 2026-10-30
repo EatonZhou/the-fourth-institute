@@ -210,6 +210,52 @@ def test_ordinary_request_never_waits_for_interactive_login(agent):
             client.call("authenticate", {"methodId": "oauth-personal"})
 
 
+@pytest.mark.parametrize("authenticated", [False, True])
+def test_account_monitor_records_native_login_instead_of_runtime_availability(agent, monkeypatch, authenticated):
+    from management_portal.execution import account_registrations
+    from management_portal.execution.account_adapters import AntigravityAccounts
+    from management_portal.execution.account_monitor import AccountMonitor
+    from management_portal.execution.accounts import ExecutionAccounts
+    from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider: [{
+        "account_id": "antigravity_one", "route_id": "one", "kind": "subscription_login",
+        "config": {}, "max_concurrency": 4}])
+    monkeypatch.setattr(accounts, "environment", lambda account: {
+        "GEMINI_HOME": str(agent), **({} if authenticated else {"FAKE_LOGIN": "1"})})
+    adapter = AntigravityAccounts()
+    assert AGENT_PROVIDERS["antigravity"].account_adapter == "AntigravityAccounts"
+    collection = ExecutionAccounts((adapter,))
+    store = mock.Mock()
+    monitor = AccountMonitor(collection, mock.Mock(), usage_store=mock.Mock(), login_state_store=store)
+    monitor.refresh_account(collection.get("antigravity_one"))
+    call = store.observe.call_args
+    assert call.args == ("antigravity_one", "logged_in" if authenticated else "logged_out")
+    assert call.kwargs["observed_at"].tzinfo is not None
+
+
+def test_account_observation_failure_does_not_invent_login_state(monkeypatch):
+    from management_portal.execution.account_adapters import AntigravityAccounts
+    adapter = object.__new__(AntigravityAccounts)
+    monkeypatch.setattr(accounts, "logged_in", mock.Mock(side_effect=ValueError("status unavailable")))
+    with pytest.raises(ValueError, match="status unavailable"):
+        adapter.observe(SimpleNamespace(account_id="antigravity_one"))
+
+
+def test_login_diagnostics_only_expose_known_failure_categories():
+    from management_portal.antigravity_client import login_failure_reason, LOGIN_FAILURES
+    from management_portal.execution.account_login import LoginOutputParser
+    reason = login_failure_reason("Onboarding failed: User is ineligible for free-tier. access_token=secret")
+    assert reason == "account_ineligible"
+    parser = LoginOutputParser("antigravity")
+    parser.feed("ANTIGRAVITY_LOGIN_ERROR:" + reason + "\n")
+    assert parser.error == LOGIN_FAILURES[reason]
+    assert "secret" not in parser.error
+    parser.feed("ANTIGRAVITY_LOGIN_ERROR:secret-token\n")
+    assert parser.error == ""
+    assert login_failure_reason("access_token=secret") == ""
+
+
 def test_callback_relay_accepts_only_its_google_loopback_and_state():
     auth = "https://accounts.google.com/o/oauth2/auth?state=right&redirect_uri=http%3A%2F%2Flocalhost%3A23456%2F"
     with mock.patch.object(accounts, "build_opener") as opener:
