@@ -1125,6 +1125,10 @@ def observed_status(state, *, request_timeout=3):
 
 def start_blocker(state):
     """One readiness contract shared by the CLI and instance management UI."""
+    if state.get("target", {}).get("shared_code_root"):
+        from scripts.tfi_application_upgrade import pending
+        if pending(Path(state['target']['shared_code_root']).parent):
+            return "Interrupted application upgrade requires application-recover"
     if state.get("migration", {}).get("business_execution_allowed") is False:
         return "Migration has not completed its cutover checks"
     if "database" not in state.get("completed", []):
@@ -1232,7 +1236,7 @@ def first_admin(root, username, *, if_needed=False):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("plan", "install", "upgrade", "recover", "status", "start", "stop", "cleanup", "first-admin", "_component", "_service"))
+    parser.add_argument("command", choices=("plan", "install", "upgrade", "recover", "application-check", "application-upgrade", "application-recover", "status", "start", "stop", "cleanup", "first-admin", "_component", "_service"))
     parser.add_argument("--target", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--root", type=Path)
@@ -1274,17 +1278,22 @@ def main(argv=None):
                              defer_data_verification=args.defer_data_verification, skip_file_verification=args.skip_file_verification)
         elif args.command == "first-admin":
             result = first_admin(args.root, args.username, if_needed=args.if_needed)
-        elif args.command in {"upgrade", "recover"}:
-            target = owned_state(args.root)['target']
+        elif args.command in {"upgrade", "recover", "application-check", "application-upgrade", "application-recover"}:
+            application_command = args.command.startswith('application-')
+            if application_command:
+                from scripts.tfi_application_upgrade import states
+                target = states(Path(args.root).absolute())[0]['target']
+            else:
+                target = owned_state(args.root)['target']
             python = runtime_python(target)
-            if Path(python).absolute() != Path(sys.executable).absolute():
+            if args.command != 'application-recover' and Path(python).absolute() != Path(sys.executable).absolute():
                 # Database maintenance must use this site's verified packages,
                 # even when the operator starts from the base Python runtime.
                 environment = clean_environment(target)
                 # This is still the operator's service controller, not an
                 # application service. Keep its user bus and service directory;
                 # child services continue to use clean_environment(target).
-                for key in ("HOME", "USERPROFILE", "XDG_CONFIG_HOME", "XDG_RUNTIME_DIR",
+                for key in ("HOME", "USERPROFILE", "LOCALAPPDATA", "TFI_WINDOWS_SERVICE_DIRECTORY", "XDG_CONFIG_HOME", "XDG_RUNTIME_DIR",
                             "DBUS_SESSION_BUS_ADDRESS"):
                     if key in os.environ:
                         environment[key] = os.environ[key]
@@ -1292,10 +1301,11 @@ def main(argv=None):
                         environment.pop(key, None)
                 os.execve(python, [python, str(Path(__file__).resolve()),
                                   *(sys.argv[1:] if argv is None else argv)], environment)
-            from scripts import tfi_release_upgrade
+            from scripts import tfi_release_upgrade, tfi_application_upgrade
             # Pass this module even when executed as __main__, preserving one
             # shared installation owner and platform adapter.
-            result = tfi_release_upgrade.run(sys.modules[__name__], args.command, args.root, args.manifest)
+            owner = tfi_application_upgrade if application_command else tfi_release_upgrade
+            result = owner.run(sys.modules[__name__], args.command, args.root, args.manifest)
         else:
             result = lifecycle(args.command, args.root)
         print(json.dumps(result, ensure_ascii=False, indent=2))
