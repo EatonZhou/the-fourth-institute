@@ -982,7 +982,7 @@ def test_warm_waits_for_index_readiness(tmp_path, monkeypatch) -> None:
     """ResourceService 预热时索引尚未就绪则重试直到可查询"""
     # The server warm-up queries the index once, waiting for an index that is
     # still starting.
-    from management_portal.resources import service as service_module
+    from management_portal.resources import service_index as service_module
     from management_portal.resources.errors import ResourceServiceUnavailable
 
     index = mock.Mock()

@@ -3,7 +3,7 @@ import hashlib
 from pathlib import Path
 
 from management_portal import article_registry
-from management_portal.resource_index_backend import resource_record
+from management_portal.resource_index_records import resource_record
 from management_common.text_values import stripped_text
 
 # Snapshot the loaded projection; later disk edits take effect after reload.

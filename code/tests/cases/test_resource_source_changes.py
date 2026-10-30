@@ -13,6 +13,9 @@ from unittest import mock
 
 from management_portal import paper_reviews, paper_store
 from management_portal import resource_index_backend as backend
+from management_portal import (
+    resource_index_adapters, resource_index_knowledge, resource_index_records, resource_index_refresh,
+)
 from management_portal import resource_source_changes
 
 PAPER_ONE = "paper_000000000001"
@@ -70,7 +73,7 @@ def test_change_finder_reports_what_changed_since_a_moment(tmp_path: Path) -> No
         "files": [str(reviews), str(tmp_path / "absent.json")],
         "paths": [str(link), str(tmp_path / "gone.md")],
     }
-    found = backend._find_source_changes(request)
+    found = resource_index_refresh._find_source_changes(request)
 
     assert found == resource_source_changes.find_changes(request)
     assert found["changed"] == sorted([
@@ -99,14 +102,14 @@ def test_a_request_larger_than_a_pipe_reaches_a_finder_that_starts_slowly(tmp_pa
     """
     slow = tmp_path / "slow_finder.py"
     slow.write_text("import runpy, time\ntime.sleep(0.5)\n"
-                    f"runpy.run_path({str(backend._SOURCE_CHANGE_FINDER)!r}, run_name='__main__')\n", encoding="utf-8")
-    monkeypatch.setattr(backend, "_SOURCE_CHANGE_FINDER", slow)
-    monkeypatch.setattr(backend, "SOURCE_CHANGE_TIMEOUT_SECONDS", 20.0)
+                    f"runpy.run_path({str(resource_index_refresh._SOURCE_CHANGE_FINDER)!r}, run_name='__main__')\n", encoding="utf-8")
+    monkeypatch.setattr(resource_index_refresh, "_SOURCE_CHANGE_FINDER", slow)
+    monkeypatch.setattr(resource_index_refresh, "SOURCE_CHANGE_TIMEOUT_SECONDS", 20.0)
     paths = [str(tmp_path / "items" / f"package-{index:05d}" / "manifest.json") for index in range(4000)]
     request = {"since": time.time(), "trees": [], "files": [], "paths": paths}
     assert len(json.dumps(request)) > 256 * 1024
     started = time.monotonic()
-    assert backend._find_source_changes(request)["missing"] == sorted(paths)
+    assert resource_index_refresh._find_source_changes(request)["missing"] == sorted(paths)
     assert time.monotonic() - started < 10
 
 
@@ -150,7 +153,7 @@ class _TrackedAdapter:
 
     def _record(self, path: Path) -> dict:
         data = json.loads(path.read_text(encoding="utf-8"))
-        return backend.resource_record(
+        return resource_index_records.resource_record(
             resource_id=data["id"],
             resource_type="paper",
             title=data["title"],
@@ -195,7 +198,7 @@ class _TrackedAdapter:
                 upserts.append(self._record(path))
             elif raw_path in ids_by_path:
                 deletes.append(ids_by_path[raw_path])
-        return backend.ChangeSet(adapter=self.name, upserts=tuple(upserts), deletes=tuple(deletes))
+        return resource_index_records.ChangeSet(adapter=self.name, upserts=tuple(upserts), deletes=tuple(deletes))
 
 
 def _write_paper(path: Path, paper_id: str, title: str) -> None:
@@ -211,7 +214,7 @@ def test_tracked_adapter_rereads_only_the_changed_sources(tmp_path: Path, isolat
 
     普通刷新在来源未变时不读取；修改、新增、删除的来源和等待期间加入的路径按路径应用；强制刷新、登记表版本或索引代码变化、适配器无法单独应用路径时读取完整快照。
     """
-    with isolated_portal_case(), mock.patch.object(backend, "SOURCE_CHANGE_MARGIN_SECONDS", 0.0):
+    with isolated_portal_case(), mock.patch.object(resource_index_refresh, "SOURCE_CHANGE_MARGIN_SECONDS", 0.0):
         root = tmp_path / "papers"
         root.mkdir()
         first = root / "first.json"
@@ -220,7 +223,7 @@ def test_tracked_adapter_rereads_only_the_changed_sources(tmp_path: Path, isolat
         _write_paper(second, PAPER_TWO, "Second")
         adapter = _TrackedAdapter(root)
         store = backend.IndexStore()
-        layer = backend.AdapterLayer(store, [adapter], start_worker=False)
+        layer = resource_index_refresh.AdapterLayer(store, [adapter], start_worker=False)
         _settle()
 
         layer.refresh_now("paper")
@@ -260,7 +263,7 @@ def test_tracked_adapter_rereads_only_the_changed_sources(tmp_path: Path, isolat
         assert adapter.scans == 3
 
         _settle()
-        with mock.patch.object(backend, "_CURRENT_PROJECTION_CODE_FINGERPRINT", "changed index code"):
+        with mock.patch.object(resource_index_adapters, "_CURRENT_PROJECTION_CODE_FINGERPRINT", "changed index code"):
             layer.refresh_now("paper")
             assert adapter.scans == 4
             _settle()
@@ -288,7 +291,7 @@ def test_a_forced_full_refresh_rescans_but_a_forced_path_does_not(tmp_path: Path
     """
     with isolated_portal_case():
         adapter = _TrackedAdapter(tmp_path)
-        layer = backend.AdapterLayer(backend.IndexStore(), [adapter], start_worker=False)
+        layer = resource_index_refresh.AdapterLayer(backend.IndexStore(), [adapter], start_worker=False)
         layer.request_refresh(["paper"], force=True, paths=[str(tmp_path / "one.json")])
         assert layer._pending["paper"].rescan is False
         layer.request_refresh(["paper"])
@@ -316,10 +319,10 @@ def test_knowledge_change_counts_entry_files_like_the_full_scan(tmp_path: Path) 
     for name in ("a.md", "b.md", "c.md"):
         (entry / name).write_text(name, encoding="utf-8")
     project = {"id": "Example", "status": "active", "path": str(project_root)}
-    adapter = backend.ProjectKnowledgeAdapter()
+    adapter = resource_index_knowledge.ProjectKnowledgeAdapter()
     with mock.patch.object(
-        backend.knowledge_backend, "_parse_projects_yaml", return_value=[project],
-    ), mock.patch.object(backend.knowledge_backend, "_INDEX_ENTRY_FILE_LIMIT", 2):
+        resource_index_knowledge.knowledge_source, "_parse_projects_yaml", return_value=[project],
+    ), mock.patch.object(resource_index_knowledge.knowledge_source, "_INDEX_ENTRY_FILE_LIMIT", 2):
         added = adapter.scan_changes([str(readme)], [], {})
         assert added is not None
         [record] = added.upserts

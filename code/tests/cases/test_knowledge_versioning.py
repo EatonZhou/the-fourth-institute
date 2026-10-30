@@ -8,7 +8,7 @@ import yaml
 import pytest
 
 from knowledge_board_lan import knowledge_backend, knowledge_source
-from management_portal.resource_index_backend import ProjectKnowledgeAdapter
+from management_portal.resource_index_knowledge import ProjectKnowledgeAdapter
 
 
 KNOWLEDGE_ID = "thinking_0123456789ab"

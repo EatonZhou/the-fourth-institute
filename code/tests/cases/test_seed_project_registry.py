@@ -46,7 +46,7 @@ def test_case_filter_preserves_other_project_metadata_and_unrelated_sql():
 def test_base_seed_index_and_permission_completion_keep_retained_knowledge(monkeypatch):
     """Use real packaged knowledge, registry, indexing and the PostgreSQL PAR store."""
     from types import SimpleNamespace
-    from management_portal import project_registry, resource_index_backend
+    from management_portal import project_registry, resource_index_knowledge
     from management_portal.permission_system.facts import collect_portal_facts, TooManyRemoved
     from management_portal.resources.service import ResourceService
     from tests.cases.permission_test_support import enable
@@ -63,7 +63,7 @@ def test_base_seed_index_and_permission_completion_keep_retained_knowledge(monke
         for project in document['projects']]}
     put_registry_document('project_registry', 'projects', document)
     project_registry.reset_cache_for_tests()
-    adapter = resource_index_backend.ProjectKnowledgeAdapter()
+    adapter = resource_index_knowledge.ProjectKnowledgeAdapter()
     service = SimpleNamespace(
         _collaboration=SimpleNamespace(list=lambda kind: []),
         _index=lambda: SimpleNamespace(authorization_snapshot=lambda: {'records': adapter.scan()[0]}))

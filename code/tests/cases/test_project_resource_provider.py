@@ -162,13 +162,13 @@ def test_a_project_is_named_only_by_its_id():
     """项目仅以标识命名并拒绝额外名称字段"""
     # AI员工 once also showed as AlignMe: its record carried a display name that
     # titled it and found it.  The ID is a Project's only name.
-    from management_portal import resource_index_backend
+    from management_portal import resource_index_registries
 
     put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, {
         "schema_version": 1, "projects": [{"id": "AI员工", "name": "AlignMe", "status": "active"}]})
     with pytest.raises(KeyError):
         project._project_record("AlignMe")
-    record = resource_index_backend.ProjectRegistryAdapter().project_record("project", project_registry.project("AI员工"))
+    record = resource_index_registries.ProjectRegistryAdapter().project_record("project", project_registry.project("AI员工"))
     assert record["title"] == "AI员工" and "name" not in record["attributes"]
     # A record with a display name is not written, and blocks writes until it loses it.
     with pytest.raises(ValueError, match="name"):

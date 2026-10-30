@@ -94,7 +94,7 @@ def test_feature_projection_code_invalidates_fingerprint(feature, monkeypatch):
     :design: decision_8dc6b3d03ca7
     """
     from management_portal import article_resource_index, paper_resource_index
-    from management_portal.resource_index_backend import ResourceRegistryAdapter
+    from management_portal.resource_index_registries import ResourceRegistryAdapter
 
     module, adapter = (
         (article_resource_index, ResourceRegistryAdapter()) if feature == "article"
@@ -113,6 +113,7 @@ def test_paper_code_change_rebuilds_unchanged_sources(adapter_name, tmp_path, mo
     """
     from management_portal import paper_resource_index, paper_store
     from management_portal import resource_index_backend as backend
+    from management_portal import resource_index_refresh
 
     papers = paper_store.PaperStore(tmp_path / "papers")
     package = papers.items_root / "2026" / "example"
@@ -131,13 +132,13 @@ def test_paper_code_change_rebuilds_unchanged_sources(adapter_name, tmp_path, mo
     adapter = (paper_resource_index.PaperManifestAdapter() if adapter_name == "paper"
                else paper_resource_index.PaperReviewAdapter())
     store = backend.IndexStore()
-    layer = backend.AdapterLayer(store, [adapter], start_worker=False)
+    layer = resource_index_refresh.AdapterLayer(store, [adapter], start_worker=False)
     try:
         layer.refresh_now(adapter_name)
         assert [r["title"] for r in store.records_for_adapter(adapter_name)] == ["Original"]
         before = store.adapter_source_state(adapter_name)["projection_code_fingerprint"]
         # No source changes: simulate a reloaded adapter with a changed projection rule.
-        monkeypatch.setattr(backend, "_find_source_changes", lambda _: {
+        monkeypatch.setattr(resource_index_refresh, "_find_source_changes", lambda _: {
             "changed": [], "missing": [], "resolved": {},
         })
         method = "_record_for_paper" if adapter_name == "paper" else "_record_for_review"

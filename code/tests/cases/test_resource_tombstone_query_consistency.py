@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal import resource_index_backend as backend
+from management_portal import resource_index_records, resource_index_registries
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import (
@@ -38,7 +39,7 @@ def query_owner(tmp_path, monkeypatch):
     access.upsert_user(ACTOR, actor=ACTOR)
     access.upsert_user(OTHER, actor=ACTOR)
     store = backend.IndexStore( portal_access=access)
-    adapter = backend.CollaborationRegistryAdapter()
+    adapter = resource_index_registries.CollaborationRegistryAdapter()
     store.publish_snapshot(adapter.name, [], {})
     index = backend.ResourceIndexService(store=store, adapters=[adapter], start_worker=False)
     index.adapter_layer._on_projection_changed = None
@@ -161,7 +162,7 @@ def test_index_only_and_other_resource_types_retain_existing_query_behavior(quer
     target = query_owner
     legacy = "resident_030318500031"
     concept = "concept_030318500032"
-    records = [backend.resource_record(resource_id=resource_id, resource_type=resource_type, title=title, adapter="fixture", attributes={"project_ids": [PROJECT], "status": "active"}, facets=facets) for resource_id, resource_type, title, facets in [(legacy, "resident", "Legacy", ["collaboration"]), (concept, "concept", "Known non-collaboration", ["knowledge"])]]
+    records = [resource_index_records.resource_record(resource_id=resource_id, resource_type=resource_type, title=title, adapter="fixture", attributes={"project_ids": [PROJECT], "status": "active"}, facets=facets) for resource_id, resource_type, title, facets in [(legacy, "resident", "Legacy", ["collaboration"]), (concept, "concept", "Known non-collaboration", ["knowledge"])]]
     target.store.publish_snapshot("fixture", records, {})
     assert ids(target.resource.query(q=QUERY_SCOPE, actor=ACTOR, resource_types=["resident"])) == [legacy]
     assert ids(target.resource.query(q=QUERY_SCOPE, actor=ACTOR, facets=["knowledge"])) == [concept]

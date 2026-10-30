@@ -19,6 +19,10 @@ import pytest
 from tests.cases.registry_support import remove_registry_document
 
 from management_portal import resource_index_backend as backend
+from management_portal import (
+    resource_index_adapters, resource_index_knowledge, resource_index_records, resource_index_refresh,
+    resource_index_registries, resource_index_store,
+)
 from management_portal import serve_management_portal
 from management_portal import http_auth, web_resources
 from management_portal.resources import query as resource_query
@@ -33,10 +37,10 @@ def test_projection_fingerprint_changes_with_knowledge_parser(tmp_path, monkeypa
     """知识解析器内容改变时投影指纹随之变化"""
     parser = tmp_path / "knowledge_parser.py"
     parser.write_text("title = folder_name\n")
-    monkeypatch.setattr(backend.knowledge_backend, "__file__", str(parser))
-    previous = backend._current_projection_code_fingerprint()
+    monkeypatch.setattr(resource_index_adapters.knowledge_source, "__file__", str(parser))
+    previous = resource_index_adapters._current_projection_code_fingerprint()
     parser.write_text("title = document_heading\n")
-    assert backend._current_projection_code_fingerprint() != previous
+    assert resource_index_adapters._current_projection_code_fingerprint() != previous
 
 
 def test_index_times_are_utc_iso(tmp_path):
@@ -49,9 +53,9 @@ def test_index_times_are_utc_iso(tmp_path):
     source = tmp_path / "source.md"
     source.write_text("body", encoding="utf-8")
     os.utime(source, (0, 86400))
-    assert backend._path_modified_at(source) == "1970-01-02T00:00:00Z"
-    assert backend._timestamp_iso(86400) == "1970-01-02T00:00:00Z"
-    assert backend._now_iso().endswith("Z")
+    assert resource_index_records._path_modified_at(source) == "1970-01-02T00:00:00Z"
+    assert resource_index_records._timestamp_iso(86400) == "1970-01-02T00:00:00Z"
+    assert resource_index_records._now_iso().endswith("Z")
 
 
 def test_workbench_scan_reads_the_database_without_watching_files():
@@ -61,7 +65,7 @@ def test_workbench_scan_reads_the_database_without_watching_files():
     from management_portal.workbench_projections import store as workbench_store
 
     workbench_store.Store()
-    adapter = backend.WorkbenchAdapter()
+    adapter = resource_index_registries.WorkbenchAdapter()
     assert adapter.source_paths() == []
     assert adapter.scan() == ([], {"workbench_count": 0})
 
@@ -72,7 +76,7 @@ def test_workbench_scan_reads_committed_apps_without_writing(isolated_portal_cas
 
     with isolated_portal_case():
         source = workbench_store.Store()
-        adapter = backend.WorkbenchAdapter()
+        adapter = resource_index_registries.WorkbenchAdapter()
         app = {"workbench_id": "workbench_111111111111", "title": "已提交的工作台", "bindings": {}}
         before_write = adapter.fingerprint()
         with source.connect() as connection:
@@ -94,7 +98,7 @@ def test_workspace_index_follows_typed_lifecycle_without_registry_revision(
     from management_portal.resources.workspace_store import get_workspace_store
 
     with isolated_portal_case() as root:
-        registry = backend.get_registry_store()
+        registry = resource_index_registries.get_registry_store()
         revisions = registry.revisions
 
         def current_revisions(collections):
@@ -102,7 +106,7 @@ def test_workspace_index_follows_typed_lifecycle_without_registry_revision(
             return revisions(collections)
 
         monkeypatch.setattr(registry, "revisions", current_revisions)
-        adapter = backend.CollaborationRegistryAdapter()
+        adapter = resource_index_registries.CollaborationRegistryAdapter()
         workspace = get_workspace_store()
         wid = "workspace_123456789abc"
         before = adapter.fingerprint()
@@ -138,7 +142,7 @@ def _record(
     terms: tuple[str, ...] = (),
     modified_at: str = "2026-07-22T12:00:00+08:00",
 ) -> dict:
-    return backend.resource_record(
+    return resource_index_records.resource_record(
         resource_id=resource_id,
         resource_type=resource_type,
         title=title,
@@ -159,14 +163,14 @@ def test_get_evaluates_resource_read_access_once(monkeypatch, isolated_portal_ca
         store = backend.IndexStore()
         resource_id = "skill_0123456789ab"
         store.publish_snapshot("test", [_record(resource_id, "skill")], {})
-        original = backend.readable_flags
+        original = resource_index_store.readable_flags
         actors = []
 
         def tracked(records, actor, **kwargs):
             actors.append(actor)
             return original(records, actor, **kwargs)
 
-        monkeypatch.setattr(backend, "readable_flags", tracked)
+        monkeypatch.setattr(resource_index_store, "readable_flags", tracked)
         assert store.get(resource_id, actor="alice")["capabilities"]["read"]
         assert actors == ["alice"]
         with pytest.raises(KeyError):
@@ -404,7 +408,7 @@ def test_store_get_supports_plain_project_ids_contracts(tmp_path, subtests, isol
         registry_root = tmp_path / 'resources'
         store = CollaborationDescriptorStore()
         descriptor = store.put({'schema': 'tfi.collaboration-descriptor.v2', 'resource_id': 'resident_fedcba987654', 'title': 'Derived resident', 'summary': '', 'status': 'active', 'project_ids': [], 'relations': [{'kind': 'root', 'target_id': 'resident_0123456789ab'}], 'attributes': {}, 'created_at': '', 'updated_at': '', 'deleted_at': ''})
-        adapter = backend.CollaborationRegistryAdapter()
+        adapter = resource_index_registries.CollaborationRegistryAdapter()
         adapter.registry_root = registry_root
         record = adapter._index_record(descriptor, store)
         assert record['url'] == '/lineage?resident=resident_fedcba987654'
@@ -413,7 +417,7 @@ def test_store_get_supports_plain_project_ids_contracts(tmp_path, subtests, isol
         nested = tmp_path / 'one' / 'two'
         nested.mkdir(parents=True)
         changes: queue.Queue[str] = queue.Queue()
-        detector = backend.RecursiveFileChangeWatcher([tmp_path], changes.put, lambda: None)
+        detector = resource_index_refresh.RecursiveFileChangeWatcher([tmp_path], changes.put, lambda: None)
         detector.start()
         try:
             deadline = time.monotonic() + 2
@@ -432,7 +436,7 @@ def test_store_get_supports_plain_project_ids_contracts(tmp_path, subtests, isol
         nested = tmp_path / 'nested'
         nested.mkdir()
         changes: queue.Queue[str] = queue.Queue()
-        detector = backend.RecursiveFileChangeWatcher([tmp_path], changes.put, lambda: None, recursive=False)
+        detector = resource_index_refresh.RecursiveFileChangeWatcher([tmp_path], changes.put, lambda: None, recursive=False)
         detector.start()
         try:
             deadline = time.monotonic() + 2
@@ -455,7 +459,7 @@ def test_store_get_supports_plain_project_ids_contracts(tmp_path, subtests, isol
     with subtests.test(contract='test_file_change_detector_tracks_new_subdirectory_trees_without_recursive_startup'), isolated_portal_case() as case_path:
         tmp_path = case_path
         changes: queue.Queue[str] = queue.Queue()
-        detector = backend.RecursiveFileChangeWatcher([tmp_path], changes.put, lambda: None, recursive=False, track_new_directories=True)
+        detector = resource_index_refresh.RecursiveFileChangeWatcher([tmp_path], changes.put, lambda: None, recursive=False, track_new_directories=True)
         detector.start()
         try:
             deadline = time.monotonic() + 2
@@ -482,7 +486,7 @@ def test_store_get_supports_plain_project_ids_contracts(tmp_path, subtests, isol
         sibling = tmp_path / 'sibling'
         child.mkdir(parents=True)
         sibling.mkdir()
-        assert backend._watch_directories([child, parent, child.parent, sibling]) == sorted([parent.resolve(), child.parent.resolve(), child.resolve(), sibling.resolve()], key=str)
+        assert resource_index_adapters._watch_directories([child, parent, child.parent, sibling]) == sorted([parent.resolve(), child.parent.resolve(), child.resolve(), sibling.resolve()], key=str)
 
 
 def test_query_exposes_all_private_resources_to_resident_contracts(subtests, isolated_portal_case):
@@ -507,7 +511,7 @@ def test_query_exposes_all_private_resources_to_resident_contracts(subtests, iso
         record = _record('paper_0123456789ab', 'paper', adapter='paper')
         adapter = FakeAdapter('paper', [record])
         store = backend.IndexStore()
-        layer = backend.AdapterLayer(store, [adapter], start_worker=False)
+        layer = resource_index_refresh.AdapterLayer(store, [adapter], start_worker=False)
         first = layer.refresh_now('paper')
         assert first['changed'] is True
         assert first['scanned'] is True
@@ -525,8 +529,8 @@ def test_query_exposes_all_private_resources_to_resident_contracts(subtests, iso
         adapter = FakeAdapter('paper', [])
         adapter.error = RuntimeError('broken source')
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [adapter])
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [adapter])
         try:
             assert layer.wait(['paper'], timeout=1) is False
             assert store.status()['adapters']['paper']['last_error'] == 'broken source'
@@ -536,8 +540,8 @@ def test_query_exposes_all_private_resources_to_resident_contracts(subtests, iso
         record = _record('paper_0123456789ab', 'paper', adapter='paper')
         adapter = FakeAdapter('paper', [record])
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [adapter])
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [adapter])
         try:
             assert layer.wait(timeout=1)
             assert adapter.scan_count == 1
@@ -553,8 +557,8 @@ def test_query_exposes_all_private_resources_to_resident_contracts(subtests, iso
         record = _record('paper_0123456789ab', 'paper', adapter='paper')
         adapter = FakeAdapter('paper', [record])
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [adapter], reconcile_seconds=0.05)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [adapter], reconcile_seconds=0.05)
         try:
             assert layer.wait(timeout=1)
             assert adapter.scan_count == 1
@@ -701,8 +705,8 @@ def test_queries_with_collaboration_candidates_give_only_returned_rows_current_u
     resident = _record("resident_0123456789ab", "resident", title="Target resident", facets=("collaboration",))
     store.publish_snapshot("test", [paper, resident], {})
     computed: list[str] = []
-    current_url = backend.portal_url_for_resource
-    monkeypatch.setattr(backend, "portal_url_for_resource",
+    current_url = resource_index_store.portal_url_for_resource
+    monkeypatch.setattr(resource_index_store, "portal_url_for_resource",
                         lambda resource_id, *args, **kwargs: computed.append(resource_id) or current_url(resource_id, *args, **kwargs))
 
     # The paper ranks first; the resident is a candidate that is never returned.
@@ -829,7 +833,7 @@ def test_collaboration_adapter_lets_authenticated_actors_read(
                 "updated_at": "",
                 "deleted_at": "",
             })
-    adapter = backend.CollaborationRegistryAdapter()
+    adapter = resource_index_registries.CollaborationRegistryAdapter()
     indexed, _state = adapter.scan()
     store = backend.IndexStore()
     store.publish_snapshot("collaboration", indexed, {})
@@ -847,7 +851,7 @@ def test_incremental_retry_merges_each_path_resource_error() -> None:
         if len(changed_paths) > 1:
             raise RuntimeError("batch failed")
         path = changed_paths[0]
-        return backend.ChangeSet(
+        return resource_index_records.ChangeSet(
             adapter="paper",
             source_state={
                 "resource_errors": [
@@ -856,7 +860,7 @@ def test_incremental_retry_merges_each_path_resource_error() -> None:
             },
         )
 
-    changes = backend.AdapterLayer._retry_incremental_paths(
+    changes = resource_index_refresh.AdapterLayer._retry_incremental_paths(
         "paper",
         scan,
         paths,
@@ -875,8 +879,8 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
         adapter = FakeAdapter('paper', [record], fingerprint='existing')
         store = backend.IndexStore()
         store.publish_snapshot('paper', [record], {'fingerprint': 'existing'})
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [adapter], reconcile_seconds=60)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [adapter], reconcile_seconds=60)
         try:
             time.sleep(0.1)
             assert adapter.scan_count == 0
@@ -887,8 +891,8 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
         adapter = FakeAdapter('paper', [record], fingerprint='changed')
         store = backend.IndexStore()
         store.publish_snapshot('paper', [record], {'fingerprint': 'existing'})
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [adapter], reconcile_seconds=60)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [adapter], reconcile_seconds=60)
         try:
             assert layer.wait(timeout=1)
             assert adapter.scan_count == 1
@@ -899,8 +903,8 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
         adapter = FakeAdapter('paper', [])
         adapter.error = RuntimeError('broken source')
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            runtime = backend.ResourceIndexRuntime(store=store, adapters=[adapter], adapter_layer_factory=backend.AdapterLayer)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            runtime = backend.ResourceIndexRuntime(store=store, adapters=[adapter], adapter_layer_factory=resource_index_refresh.AdapterLayer)
         try:
             with pytest.raises(ResourceServiceUnavailable, match='resource projection unavailable: paper'):
                 runtime.query(resource_types=['paper'])
@@ -918,8 +922,8 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
         skill = FakeAdapter('skill', [_record(skill_id, 'skill', adapter='skill')])
         project = FakeAdapter('project', [])
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            runtime = backend.ResourceIndexRuntime(store=store, adapters=[paper, skill, project], adapter_layer_factory=backend.AdapterLayer)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            runtime = backend.ResourceIndexRuntime(store=store, adapters=[paper, skill, project], adapter_layer_factory=resource_index_refresh.AdapterLayer)
         try:
             assert runtime.status()['resource_types'] == ['paper', 'project', 'skill']
             result = runtime.query(resource_types=['skill'], actor='test-actor')
@@ -941,7 +945,7 @@ def test_existing_projection_does_not_scan_during_service_startup_contracts(subt
         record = _record('paper_0123456789ab', 'paper', adapter='paper')
         adapter = FakeAdapter('paper', [record])
         observed: list[tuple[str, dict]] = []
-        layer = backend.AdapterLayer(backend.IndexStore(), [adapter], start_worker=False, on_projection_changed=lambda name, result: observed.append((name, result)))
+        layer = resource_index_refresh.AdapterLayer(backend.IndexStore(), [adapter], start_worker=False, on_projection_changed=lambda name, result: observed.append((name, result)))
         layer.refresh_now('paper')
         layer.refresh_now('paper')
         layer.refresh_now('paper', force=True)
@@ -975,20 +979,20 @@ def test_watch_tree_stops_at_the_declared_depth_contracts(tmp_path, subtests, is
         second = first / 'second'
         third = second / 'third'
         third.mkdir(parents=True)
-        assert backend._watch_tree(tmp_path, max_depth=2) == [tmp_path.resolve(), first.resolve(), second.resolve()]
+        assert resource_index_adapters._watch_tree(tmp_path, max_depth=2) == [tmp_path.resolve(), first.resolve(), second.resolve()]
     with subtests.test(contract='test_adapter_watch_directories_do_not_enumerate_source_paths'), isolated_portal_case() as case_path:
         tmp_path = case_path
         root = tmp_path / 'facts'
         root.mkdir()
 
-        class RootOnlyAdapter(backend._PathsAdapter):
+        class RootOnlyAdapter(resource_index_adapters._PathsAdapter):
             roots = (root,)
 
             def source_paths(self) -> list[Path]:
                 raise AssertionError('watch setup must not enumerate source paths')
         assert RootOnlyAdapter().watch_directories() == [root.resolve()]
     with subtests.test(contract='test_collaboration_adapter_watches_no_files'), isolated_portal_case() as case_path:
-        adapter = backend.CollaborationRegistryAdapter()
+        adapter = resource_index_registries.CollaborationRegistryAdapter()
         assert adapter.watch_directories() == []
         assert not adapter.owns_path(case_path / 'residents' / 'resident_0123456789ab.yaml')
         assert not adapter.owns_path(case_path / 'repos' / 'repo_0123456789ab.yaml')
@@ -997,7 +1001,7 @@ def test_watch_tree_stops_at_the_declared_depth_contracts(tmp_path, subtests, is
         payload = {'schema': 'tfi.collaboration-descriptor.v2', 'resource_id': resource_id, 'title': 'Before', 'summary': '', 'status': 'active', 'project_ids': [], 'relations': [], 'attributes': {}, 'created_at': '', 'updated_at': '2026-08-04T00:00:00Z', 'deleted_at': ''}
         descriptors = CollaborationDescriptorStore()
         descriptors.put(payload)
-        adapter = backend.CollaborationRegistryAdapter()
+        adapter = resource_index_registries.CollaborationRegistryAdapter()
         previous, state = adapter.scan()
         assert [item['title'] for item in previous] == ['Before']
         fingerprint = adapter.fingerprint()
@@ -1017,8 +1021,8 @@ def test_watch_tree_stops_at_the_declared_depth_contracts(tmp_path, subtests, is
         article = tmp_path / 'knowledge_base' / 'skill' / 'article.md'
         article.parent.mkdir(parents=True)
         article.write_text('---\nkb_id: skill_abcdef123456\ntype: skill\nproject: Example\n---\n\n# Skill notes\n', encoding='utf-8')
-        raw = backend.skill_backend._get_item_cached(root=article, primary_path=article, files=[article], project='Example', source='project', source_label='Project')
-        record = backend.SkillPackageAdapter()._record_for_item(raw, statuses={'Example': 'active'}, order=0)
+        raw = resource_index_knowledge.skill_backend._get_item_cached(root=article, primary_path=article, files=[article], project='Example', source='project', source_label='Project')
+        record = resource_index_knowledge.SkillPackageAdapter()._record_for_item(raw, statuses={'Example': 'active'}, order=0)
         assert raw['skill_id'] == 'skill_abcdef123456'
         assert record['resource_id'] == 'skill_abcdef123456'
         assert record['attributes']['single_file'] is True
@@ -1029,8 +1033,8 @@ def test_watch_tree_stops_at_the_declared_depth_contracts(tmp_path, subtests, is
         primary = package / 'SKILL.md'
         package.mkdir()
         primary.write_text('---\nname: shared-skill\nid: skill_0123456789ab\n---\n\n# Shared skill\n', encoding='utf-8')
-        raw = backend.skill_backend._get_item_cached(root=package, primary_path=primary, files=[primary], project='Shared Skills', source='shared', source_label='Shared')
-        record = backend.SkillPackageAdapter()._record_for_item(raw, statuses={}, order=0)
+        raw = resource_index_knowledge.skill_backend._get_item_cached(root=package, primary_path=primary, files=[primary], project='Shared Skills', source='shared', source_label='Shared')
+        record = resource_index_knowledge.SkillPackageAdapter()._record_for_item(raw, statuses={}, order=0)
         assert record['attributes']['project_ids'] == []
         assert record['attributes']['read_scope'] == 'global'
 
@@ -1039,7 +1043,7 @@ def test_existing_source_parse_failure_cannot_delete_last_good_record(tmp_path: 
     """源文件仍在但解析失败时保留最后有效索引记录"""
     source = tmp_path / "manifest.json"
     source.write_text("{}", encoding="utf-8")
-    record = backend.resource_record(
+    record = resource_index_records.resource_record(
         resource_id="paper_0123456789ab",
         resource_type="paper",
         title="Paper",
@@ -1047,7 +1051,7 @@ def test_existing_source_parse_failure_cannot_delete_last_good_record(tmp_path: 
         path=source,
     )
 
-    class ProtectedAdapter(backend._PathsAdapter):
+    class ProtectedAdapter(resource_index_adapters._PathsAdapter):
         name = "protected"
         protect_existing_sources = True
 
@@ -1063,7 +1067,7 @@ def test_existing_source_parse_failure_cannot_delete_last_good_record(tmp_path: 
 
     adapter = ProtectedAdapter()
     store = backend.IndexStore()
-    layer = backend.AdapterLayer(store, [adapter], start_worker=False)
+    layer = resource_index_refresh.AdapterLayer(store, [adapter], start_worker=False)
     layer.refresh_now("protected")
 
     adapter.records = []
@@ -1109,8 +1113,8 @@ def test_knowledge_adapter_updates_one_existing_item_incrementally(tmp_path: Pat
         )
 
     write_item("Original")
-    allowed, _folders, reverse, config_hash = backend.knowledge_backend._get_tag_config()
-    raw = backend.knowledge_backend._get_md_item_cached(
+    allowed, _folders, reverse, config_hash = resource_index_knowledge.knowledge_source._get_tag_config()
+    raw = resource_index_knowledge.knowledge_source._get_md_item_cached(
         primary,
         tag_root,
         [primary],
@@ -1119,7 +1123,7 @@ def test_knowledge_adapter_updates_one_existing_item_incrementally(tmp_path: Pat
         set(allowed),
         reverse,
     )
-    adapter = backend.ProjectKnowledgeAdapter()
+    adapter = resource_index_knowledge.ProjectKnowledgeAdapter()
     original = adapter._record_for_item(
         raw,
         statuses={"Example": "active"},
@@ -1130,7 +1134,7 @@ def test_knowledge_adapter_updates_one_existing_item_incrementally(tmp_path: Pat
     write_item("Updated")
     project = {"id": "Example", "status": "active", "path": str(project_root)}
     with mock.patch.object(
-        backend.knowledge_backend,
+        resource_index_knowledge.knowledge_source,
         "_parse_projects_yaml",
         return_value=[project],
     ):
@@ -1157,7 +1161,7 @@ def test_resource_index_http_query_get_refresh_and_status_routes() -> None:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     base = f"http://127.0.0.1:{server.server_address[1]}"
-    query_payload = {"schema": backend.SCHEMA, "resources": [], "total": 0}
+    query_payload = {"schema": resource_index_store.SCHEMA, "resources": [], "total": 0}
     resource_payload = _record("paper_0123456789ab", "paper")
     resource_payload.pop("search_terms")
     resource_service = mock.Mock()
@@ -1165,7 +1169,7 @@ def test_resource_index_http_query_get_refresh_and_status_routes() -> None:
     resource_service.suggest.return_value = {"resources": [resource_payload]}
     resource_service.get.return_value = resource_payload
     resource_service.refresh.return_value = {"queued": ["paper"], "finished": False}
-    resource_service.status.return_value = {"schema": backend.SCHEMA, "resource_count": 1, "resource_types": ["paper", "resident"]}
+    resource_service.status.return_value = {"schema": resource_index_store.SCHEMA, "resource_count": 1, "resource_types": ["paper", "resident"]}
     try:
         with (
             mock.patch.object(http_auth, "_check_session", return_value=True),
@@ -1231,8 +1235,8 @@ def test_reconcile_recovers_a_missed_change_while_other_adapters_stay_busy(isola
         busy = FakeAdapter('paper', [_record('paper_0123456789ab', 'paper', adapter='paper')])
         missed = FakeAdapter('skill', [_record('skill_0123456789ab', 'skill', adapter='skill')])
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [busy, missed], reconcile_seconds=0.05)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [busy, missed], reconcile_seconds=0.05)
         stop = threading.Event()
 
         def keep_busy():
@@ -1259,15 +1263,15 @@ def test_a_slow_or_long_queued_index_refresh_is_reported_with_its_adapter(isolat
     """索引刷新缓慢或排队过久时报告对应适配器与耗时"""
     with isolated_portal_case():
         reports = []
-        monkeypatch.setattr(backend, 'SLOW_REFRESH_SECONDS', 0.0)
-        monkeypatch.setattr(backend.timing, 'report_slow', lambda label, seconds, threshold=0.2, **details: reports.append((label, details)) if seconds >= threshold else None)
+        monkeypatch.setattr(resource_index_refresh, 'SLOW_REFRESH_SECONDS', 0.0)
+        monkeypatch.setattr(resource_index_refresh.timing, 'report_slow', lambda label, seconds, threshold=0.2, **details: reports.append((label, details)) if seconds >= threshold else None)
         logged = mock.Mock()
-        monkeypatch.setattr(backend.LOGGER, 'exception', logged)
+        monkeypatch.setattr(resource_index_refresh.LOGGER, 'exception', logged)
         adapter = FakeAdapter('paper', [])
         adapter.error = RuntimeError('broken source')
         store = backend.IndexStore()
-        with mock.patch.object(backend, 'WATCH_FILESYSTEM', False):
-            layer = backend.AdapterLayer(store, [adapter], reconcile_seconds=60)
+        with mock.patch.object(resource_index_refresh, 'WATCH_FILESYSTEM', False):
+            layer = resource_index_refresh.AdapterLayer(store, [adapter], reconcile_seconds=60)
         try:
             layer.wait(['paper'], timeout=1)
             assert logged.call_args.args == ('resource index refresh failed: %s', 'paper')
@@ -1297,7 +1301,7 @@ def test_projection_only_adapter_reports_content_changes() -> None:
 
     adapter = ProjectionAdapter()
     store = backend.IndexStore()
-    layer = backend.AdapterLayer(
+    layer = resource_index_refresh.AdapterLayer(
         store,
         [adapter],
         start_worker=False,
@@ -1324,10 +1328,10 @@ def test_todo_knowledge_uses_frontmatter_identity_state_and_incremental_files(tm
         "finished_at: '2026-10-11T10:00:00Z'\n---\n" + body
     )
     path.write_text(document)
-    monkeypatch.setattr(backend.knowledge_backend, "_parse_projects_yaml", lambda: [
+    monkeypatch.setattr(resource_index_knowledge.knowledge_source, "_parse_projects_yaml", lambda: [
         {"id": "Example", "status": "active", "path": str(tmp_path / "Example")},
     ])
-    adapter = backend.ProjectKnowledgeAdapter()
+    adapter = resource_index_knowledge.ProjectKnowledgeAdapter()
     changes = adapter.scan_changes([str(path)], [], {})
     assert len(changes.upserts) == 1
     record = changes.upserts[0]
@@ -1344,7 +1348,7 @@ def test_todo_knowledge_uses_frontmatter_identity_state_and_incremental_files(tm
     assert path.read_text().endswith(body)
     # A filename never supplies the missing formal id.
     path.write_text(document.replace(f"id: {todo_id}\n", ""))
-    assert not backend.knowledge_backend._read_kb_file(
+    assert not resource_index_knowledge.knowledge_source._read_kb_file(
         str(path), "Example", {"todo"}, {}, entry_root=root, entry_files=[path],
     )
     path.unlink()
@@ -1354,7 +1358,8 @@ def test_todo_knowledge_uses_frontmatter_identity_state_and_incremental_files(tm
 
 def test_resource_index_persists_only_changed_rows():
     """资源索引持久化仅更新发生变化的记录行"""
-    from management_portal.resource_index_backend import IndexStore, ChangeSet, resource_record
+    from management_portal.resource_index_backend import IndexStore
+    from management_portal.resource_index_records import ChangeSet, resource_record
     from tests.cases.database_test_support import connect
     store = IndexStore()
     first = resource_record(resource_id='paper_111111111111', resource_type='paper', title='First', adapter='paper')

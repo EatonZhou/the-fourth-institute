@@ -127,7 +127,8 @@ def test_provider_groups_install_once_and_experiment_owns_its_resolver(isolated_
 
 def test_index_filters_before_paging_and_retains_disabled_instances(isolated_portal_case):
     """停用类型退出分页、计数与建议，索引仍保留已有实例用于直接读取。"""
-    from management_portal.resource_index_backend import IndexStore, ChangeSet
+    from management_portal.resource_index_backend import IndexStore
+    from management_portal.resource_index_records import ChangeSet
     from management_portal.resources.resource_types import ResourceTypes
     with isolated_portal_case():
         store = IndexStore()

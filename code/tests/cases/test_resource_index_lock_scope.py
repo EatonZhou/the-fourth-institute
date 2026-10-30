@@ -12,6 +12,7 @@ from __future__ import annotations
 import threading
 
 from management_portal import resource_index_backend as backend
+from management_portal import resource_index_store
 from tests.cases.test_resource_index_backend import _record
 
 FIRST = "skill_0123456789ab"
@@ -20,10 +21,10 @@ SLOW_THREAD = "slow-refresh"
 
 
 def _pause_in_slow_thread(monkeypatch, name: str):
-    """Make ``backend.<name>`` stop in the refresh thread until released."""
+    """Make ``resource_index_store.<name>`` stop in the refresh thread until released."""
 
     entered, release = threading.Event(), threading.Event()
-    original = getattr(backend, name)
+    original = getattr(resource_index_store, name)
 
     def paused(*args, **kwargs):
         if threading.current_thread().name == SLOW_THREAD and not entered.is_set():
@@ -31,7 +32,7 @@ def _pause_in_slow_thread(monkeypatch, name: str):
             assert release.wait(5)
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(backend, name, paused)
+    monkeypatch.setattr(resource_index_store, name, paused)
     return entered, release
 
 

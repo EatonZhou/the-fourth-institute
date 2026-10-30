@@ -14,6 +14,7 @@ import pytest
 
 from management_common.scan_cancellation import ScanCancelled, cancellable_scan
 from management_portal import paper_store, resource_index_backend as backend
+from management_portal import resource_index_adapters, resource_index_refresh
 from skill_board_lan import skill_backend
 from tests.cases.test_resource_index_backend import _record
 
@@ -50,7 +51,7 @@ def test_filesystem_scans_stop_even_when_no_file_matches(tmp_path, monkeypatch, 
     callbacks = {
         "paper": paper_store.PAPER_STORE.manifest_paths,
         "review": PaperReviewAdapter._markdown_paths,
-        "paths": lambda: backend._tree_paths([year]),
+        "paths": lambda: resource_index_adapters._tree_paths([year]),
         "skill": lambda: skill_backend._candidate_markdown_files(year),
     }
 
@@ -78,13 +79,13 @@ def test_filesystem_scans_stop_even_when_no_file_matches(tmp_path, monkeypatch, 
 def test_stop_cancels_paper_scan_without_publishing_partial_snapshot(tmp_path, monkeypatch):
     """停止索引时取消进行中的论文扫描，保留上一份完整快照且不发布部分结果"""
     _year, entered, _visited = _slow_tree(tmp_path, monkeypatch)
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
     store = backend.IndexStore()
     record = _record("paper_0123456789ab", "paper", adapter="paper")
     store.publish_snapshot("paper", [record], {})
     before = store.status()["adapters"]["paper"]
     notify = mock.Mock()
-    layer = backend.AdapterLayer(store, [PaperManifestAdapter()], on_projection_changed=notify)
+    layer = resource_index_refresh.AdapterLayer(store, [PaperManifestAdapter()], on_projection_changed=notify)
     try:
         assert entered.wait(5)
         layer.stop(timeout=2)
@@ -111,22 +112,22 @@ def _slow_finder(tmp_path, monkeypatch):
         "time.sleep(30)\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(backend, "_SOURCE_CHANGE_FINDER", script)
+    monkeypatch.setattr(resource_index_refresh, "_SOURCE_CHANGE_FINDER", script)
     return marker
 
 
 def test_stop_reaps_source_change_finder_without_marking_source_failed(tmp_path, monkeypatch):
     """停止索引回收来源变更查找子进程，且不把该来源记为失败"""
     marker = _slow_finder(tmp_path, monkeypatch)
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
     adapter = mock.Mock(name="adapter")
     adapter.name = "paper"
-    adapter.fingerprint.side_effect = lambda: backend._find_source_changes({})
+    adapter.fingerprint.side_effect = lambda: resource_index_refresh._find_source_changes({})
     # No source_scope / scan_changes means a plain fingerprint-based adapter.
     del adapter.source_scope
     del adapter.scan_changes
     store = backend.IndexStore()
-    layer = backend.AdapterLayer(store, [adapter])
+    layer = resource_index_refresh.AdapterLayer(store, [adapter])
     try:
         deadline = time.monotonic() + 5
         while not marker.exists() and time.monotonic() < deadline:
@@ -145,9 +146,9 @@ def test_stop_reaps_source_change_finder_without_marking_source_failed(tmp_path,
 def test_source_change_timeout_reaps_the_child(tmp_path, monkeypatch):
     """来源变更查找超时后回收其子进程"""
     marker = _slow_finder(tmp_path, monkeypatch)
-    monkeypatch.setattr(backend, "SOURCE_CHANGE_TIMEOUT_SECONDS", 0.5)
+    monkeypatch.setattr(resource_index_refresh, "SOURCE_CHANGE_TIMEOUT_SECONDS", 0.5)
     with pytest.raises(subprocess.TimeoutExpired):
-        backend._find_source_changes({})
+        resource_index_refresh._find_source_changes({})
     with pytest.raises(ProcessLookupError):
         os.kill(int(marker.read_text()), 0)
 
@@ -155,7 +156,7 @@ def test_source_change_timeout_reaps_the_child(tmp_path, monkeypatch):
 def test_stop_wakes_waiters_and_discards_a_scan_finishing_after_stop(monkeypatch):
     """停止索引唤醒等待者，并丢弃停止后才完成的扫描结果"""
     entered, release = threading.Event(), threading.Event()
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
 
     class Adapter:
         name = "paper"
@@ -172,7 +173,7 @@ def test_stop_wakes_waiters_and_discards_a_scan_finishing_after_stop(monkeypatch
     record = _record("paper_0123456789ab", "paper", adapter="paper")
     store.publish_snapshot("paper", [record], {})
     before = store.status()["adapters"]["paper"]
-    layer = backend.AdapterLayer(store, [Adapter()])
+    layer = resource_index_refresh.AdapterLayer(store, [Adapter()])
     result = []
     waiter = threading.Thread(target=lambda: result.append(layer.wait(timeout=5)))
     try:

@@ -7,6 +7,7 @@ from unittest import mock
 import pytest
 
 from management_portal import resource_index_backend as backend
+from management_portal import resource_index_records, resource_index_registries
 from management_portal.resources import ResourceService
 from management_portal.resources.registry_store import registry_change_key
 
@@ -14,24 +15,24 @@ from management_portal.resources.registry_store import registry_change_key
 @pytest.mark.parametrize(
     ("resource_type", "adapter_class", "record"),
     [
-        ("repo", backend.ResourceRegistryAdapter, {
+        ("repo", resource_index_registries.ResourceRegistryAdapter, {
             "resource_id": "repo_0123456789ab", "name": "Immediate repo",
             "project_ids": [], "checkouts": [], "remotes": [],
         }),
-        ("article", backend.ResourceRegistryAdapter, {
+        ("article", resource_index_registries.ResourceRegistryAdapter, {
             "resource_id": "article_0123456789ab", "title": "Immediate article",
             "project_ids": [], "roots": [],
         }),
-        ("device", backend.DeviceRegistryAdapter, {
+        ("device", resource_index_registries.DeviceRegistryAdapter, {
             "resource_id": "device_0123456789ab", "name": "Immediate device",
             "device_kind": "device", "lifecycle": "active", "network": {},
             "access_methods": {}, "monitor": {},
         }),
-        ("project", backend.ProjectRegistryAdapter, {
+        ("project", resource_index_registries.ProjectRegistryAdapter, {
             "resource_id": "ImmediateProject", "name": "Immediate Project",
             "status": "active", "tags": [],
         }),
-        ("workbench", backend.WorkbenchAdapter, {
+        ("workbench", resource_index_registries.WorkbenchAdapter, {
             "resource_id": "workbench_0123456789ab", "title": "Immediate workbench",
             "created_by": "test-actor", "bindings": {},
         }),
@@ -76,18 +77,18 @@ def test_older_full_and_incremental_scans_cannot_erase_direct_projection(
     """登记前开始的全量或增量扫描不会抹掉登记时直接写入的索引记录"""
     with isolated_portal_case():
         store = backend.IndexStore()
-        adapter = backend.ResourceRegistryAdapter()
+        adapter = resource_index_registries.ResourceRegistryAdapter()
         store.publish_snapshot(adapter.name, [], {})
         scan_generation = store.generation()
         summary = adapter.project_record("repo", {
             "resource_id": "repo_0123456789ab", "name": "Immediate repo",
             "project_ids": [], "checkouts": [], "remotes": [],
         })
-        store.apply(backend.ChangeSet(adapter.name, upserts=(summary,)), direct=True)
+        store.apply(resource_index_records.ChangeSet(adapter.name, upserts=(summary,)), direct=True)
         store.publish_snapshot(adapter.name, [], {}, scan_started_generation=scan_generation)
         assert store.internal_get(summary["resource_id"])["title"] == "Immediate repo"
         store.apply(
-            backend.ChangeSet(adapter.name, deletes=(summary["resource_id"],)),
+            resource_index_records.ChangeSet(adapter.name, deletes=(summary["resource_id"],)),
             scan_started_generation=scan_generation,
         )
         assert store.internal_get(summary["resource_id"])["title"] == "Immediate repo"
@@ -95,18 +96,18 @@ def test_older_full_and_incremental_scans_cannot_erase_direct_projection(
 
 def test_project_registry_document_change_projects_only_changed_projects():
     """Project 登记文档变更后只投影新增或变化的 Project"""
-    adapter = backend.ProjectRegistryAdapter()
+    adapter = resource_index_registries.ProjectRegistryAdapter()
     before = adapter.project_record("project", {
         "id": "Existing", "status": "active", "tags": [],
     })
-    with mock.patch.object(backend.project_provider, "load_projects_payload", return_value={
+    with mock.patch.object(resource_index_registries.project_provider, "load_projects_payload", return_value={
         "projects": [
             {"id": "Existing", "status": "active", "tags": []},
             {"id": "New", "status": "active", "tags": []},
         ],
     }):
         changes = adapter.scan_changes(
-            [backend.project_registry.CHANGE_PATH], [before], {},
+            [resource_index_registries.project_registry.CHANGE_PATH], [before], {},
         )
     assert [record["resource_id"] for record in changes.upserts] == ["New"]
     assert changes.deletes == ()
@@ -115,7 +116,7 @@ def test_project_registry_document_change_projects_only_changed_projects():
 @pytest.mark.parametrize("resource_type", ["repo", "article", "device"])
 def test_registry_change_reads_only_changed_document(resource_type):
     """仓库、文章或设备登记变更时只读取发生变化的那份文档"""
-    adapter = backend.DeviceRegistryAdapter() if resource_type == "device" else backend.ResourceRegistryAdapter()
+    adapter = resource_index_registries.DeviceRegistryAdapter() if resource_type == "device" else resource_index_registries.ResourceRegistryAdapter()
     resource_id = f"{resource_type}_0123456789ab"
     document = {
         "repo": {"id": resource_id, "name": "Immediate repo", "project_ids": [], "checkouts": [], "remotes": []},
@@ -124,20 +125,20 @@ def test_registry_change_reads_only_changed_document(resource_type):
                    "network": {}, "access_methods": {}, "monitor": {}},
     }[resource_type]
     collection = {
-        "repo": backend.resource_identity_backend.REPO_COLLECTION,
+        "repo": resource_index_registries.resource_identity_backend.REPO_COLLECTION,
         "article": article_registry.ARTICLE_COLLECTION,
-        "device": backend.device_identity_backend.DEVICE_COLLECTION,
+        "device": resource_index_registries.device_identity_backend.DEVICE_COLLECTION,
     }[resource_type]
     registry = mock.Mock()
     registry.get.return_value = dict(document)
     validator = {
-        "repo": (backend.resource_identity_backend, "_validated_repo"),
+        "repo": (resource_index_registries.resource_identity_backend, "_validated_repo"),
         "article": (article_registry, "_validated_article"),
-        "device": (backend.device_identity_backend, "_normalize_record"),
+        "device": (resource_index_registries.device_identity_backend, "_normalize_record"),
     }[resource_type]
-    with mock.patch.object(backend, "get_registry_store", return_value=registry), \
+    with mock.patch.object(resource_index_registries, "get_registry_store", return_value=registry), \
          mock.patch.object(*validator, return_value=dict(document)), \
-         mock.patch.object(backend.device_identity_backend, "load_device_observations", return_value={}):
+         mock.patch.object(resource_index_registries.device_identity_backend, "load_device_observations", return_value={}):
         changes = adapter.scan_changes([registry_change_key(collection, resource_id)], [], {})
     registry.get.assert_called_once_with(collection, resource_id)
     assert [record["resource_id"] for record in changes.upserts] == [resource_id]

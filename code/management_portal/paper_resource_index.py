@@ -11,7 +11,8 @@ import yaml
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_common.text_values import stripped_text
 from management_portal import paper_reviews, paper_store
-from management_portal.resource_index_backend import ChangeSet, RESOURCE_IDENTITY, _PathsAdapter, _dedupe, _known_path, _path_modified_at, _resolved_path, _resolved_root, _watch_tree, resource_record
+from management_portal.resource_index_adapters import _PathsAdapter, _known_path, _resolved_path, _resolved_root, _watch_tree
+from management_portal.resource_index_records import ChangeSet, RESOURCE_IDENTITY, _dedupe, _path_modified_at, resource_record
 from management_portal.resources.schema import resource_relation
 
 # Snapshot the loaded projection; later disk edits take effect after reload.

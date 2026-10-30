@@ -20,6 +20,7 @@ import knowledge_board_lan.knowledge_details as knowledge_details
 import knowledge_board_lan.knowledge_source as knowledge_source
 from management_common import site_registry
 from management_portal import portal_access_control, resource_index_backend
+from management_portal import resource_index_knowledge, resource_index_records, resource_index_registries
 from management_portal.execution import agent_data_store, service as execution_service
 from management_portal.execution.accounts import ExecutionAccounts
 from management_portal.execution.contracts import ExecutionRequest
@@ -158,10 +159,10 @@ def owners(tmp_path, monkeypatch):
     descriptors = CollaborationDescriptorStore()
     registrations = ResourceRegistrationStore()
     index_store = resource_index_backend.IndexStore( portal_access=access)
-    project_adapter = resource_index_backend.ProjectRegistryAdapter()
+    project_adapter = resource_index_registries.ProjectRegistryAdapter()
     index = resource_index_backend.ResourceIndexService(
         store=index_store,
-        adapters=[project_adapter, resource_index_backend.ProjectKnowledgeAdapter()],
+        adapters=[project_adapter, resource_index_knowledge.ProjectKnowledgeAdapter()],
         start_worker=False,  portal_access=access,
     )
     resource = ResourceService(
@@ -202,7 +203,7 @@ def owners(tmp_path, monkeypatch):
     }, actor=ACTOR)
     content_path = Path(created["path"])
     assert content_path.is_relative_to(tmp_path)
-    knowledge_record = resource_index_backend.resource_record(
+    knowledge_record = resource_index_records.resource_record(
         resource_id=CONTENT_ID, resource_type="concept", title="Isolated body",
         adapter="project_knowledge", path=content_path, facets=["knowledge"],
         attributes={

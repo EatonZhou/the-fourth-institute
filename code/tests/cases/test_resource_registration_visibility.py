@@ -9,6 +9,7 @@ import pytest
 
 from knowledge_board_lan import knowledge_backend, knowledge_details, knowledge_source
 from management_portal import resource_index_backend as backend
+from management_portal import resource_index_knowledge
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
 from management_portal.resources.providers import experiment, knowledge
@@ -38,7 +39,7 @@ def knowledge_service(tmp_path, monkeypatch):
     monkeypatch.setenv('PORTAL_RESOURCE_SERVICE_PROCESS', '0')
     monkeypatch.setenv('PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE', str(tmp_path / 'unused.key'))
     store = backend.IndexStore()
-    adapter = backend.ProjectKnowledgeAdapter()
+    adapter = resource_index_knowledge.ProjectKnowledgeAdapter()
     store.publish_snapshot(adapter.name, [], {'fixture_generation': 0})
     index = backend.ResourceIndexService(store=store, adapters=[adapter], start_worker=False)
     index.adapter_layer._on_projection_changed = None

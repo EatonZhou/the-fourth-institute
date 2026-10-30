@@ -17,7 +17,8 @@ def test_overflow_record_reaches_full_index_and_archive_recovery(monkeypatch, tm
     """文件监听溢出触发全索引刷新与归档快照恢复"""
     from management_portal import knowledge_archive_projection as archive
     from management_portal.notifications import file_watch
-    from management_portal.resource_index_backend import AdapterLayer, IndexStore
+    from management_portal.resource_index_backend import IndexStore
+    from management_portal.resource_index_refresh import AdapterLayer
 
     layer = AdapterLayer(
         IndexStore(),

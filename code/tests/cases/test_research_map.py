@@ -284,7 +284,7 @@ def test_knowledge_entries_record_what_they_name_as_related(tmp_path):
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "knowledge_board_lan"))
     import knowledge_source
-    from management_portal import resource_index_backend
+    from management_portal import resource_index_knowledge
 
     entry = tmp_path / "knowledge_base" / "decision" / "20261029__decision__Use_RTC__decision_0123456789ab.md"
     entry.parent.mkdir(parents=True)
@@ -293,7 +293,7 @@ def test_knowledge_entries_record_what_they_name_as_related(tmp_path):
                      "---\n# Use RTC\n\nBody\n", encoding="utf-8")
     item = knowledge_source._read_kb_file(str(entry), "Demo", {"decision"}, {}, entry_root=entry.parent, entry_files=[entry])
     assert item["related"] == ["direction_00000000000a", "decision_ba9876543210"]
-    adapter = resource_index_backend.ProjectKnowledgeAdapter()
+    adapter = resource_index_knowledge.ProjectKnowledgeAdapter()
     record = adapter._record_for_item(item, statuses={}, order=0)
     assert record["attributes"]["relations"] == [{"kind": "related", "target_id": "direction_00000000000a"},
                                                   {"kind": "related", "target_id": "decision_ba9876543210"}]

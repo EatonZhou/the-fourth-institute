@@ -57,7 +57,6 @@ FAILURE_CALL = re.compile(r"(error|fail|unavailable|reject|notif|alert)", re.IGN
 COLLECT = {"append", "add", "extend", "update", "setdefault", "insert", "put"}
 
 _C1 = "owned by area C1 in round 4"
-_R2 = "owned by area R2 in round 4"
 
 # path::qualified function -> (silent broad handlers in it, why they stay silent)
 ALLOWED: dict[str, tuple[int, str]] = {
@@ -82,9 +81,6 @@ ALLOWED: dict[str, tuple[int, str]] = {
     "scripts/tfi_release_windows_service.py::run_command_service.service_main": (
         1, "forced stop of the child after the error was written to the .error.log"),
     # Files other round-4 areas are changing: fixed after that area lands.
-    "management_portal/resource_backup_backend.py::ResourceBackupBackend._schedule_status": (1, _R2),
-    "management_portal/resource_index_backend.py::AdapterLayer._scan_paths": (1, _R2),
-    "management_portal/resource_index_backend.py::DeviceRegistryAdapter.scan_changes": (1, _R2),
     "management_portal/chatroom_backend.py::_active_deliveries": (1, "owned by areas C1 and R3 in round 4"),
     "management_portal/chatroom_backend.py::_publish": (1, "owned by areas C1 and R3 in round 4"),
     "management_portal/chatroom_backend.py::reconcile_deliveries": (1, "owned by areas C1 and R3 in round 4"),

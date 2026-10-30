@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 from management_common.site_config import portal_project_ids
-from management_portal.resource_index_backend import _PathsAdapter, _timestamp_iso, resource_record
+from management_portal.resource_index_adapters import _PathsAdapter
+from management_portal.resource_index_records import _timestamp_iso, resource_record
 from management_portal.test_framework.catalog import ROOT
 from management_portal.test_framework.catalog_source import catalog_paths
 

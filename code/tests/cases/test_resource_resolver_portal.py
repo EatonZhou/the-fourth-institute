@@ -16,7 +16,7 @@ from unittest import mock
 
 from management_portal import (
     device_identity_backend,
-    resource_index_backend,
+    resource_index_registries,
     serve_management_portal,
 )
 from management_portal import http_auth, web_resources
@@ -127,10 +127,10 @@ class ResourceResolverPortalTests(unittest.TestCase):
                 {"name": "origin", "url": "git@example.invalid:team/example.git"}
             ],
         }
-        put_registry_document(resource_index_backend.resource_identity_backend.REPO_COLLECTION, record["id"], record)
-        adapter = resource_index_backend.ResourceRegistryAdapter()
+        put_registry_document(resource_index_registries.resource_identity_backend.REPO_COLLECTION, record["id"], record)
+        adapter = resource_index_registries.ResourceRegistryAdapter()
         with mock.patch.object(
-            resource_index_backend.resource_identity_backend,
+            resource_index_registries.resource_identity_backend,
             "_validated_repo",
             return_value=record,
         ):
@@ -160,7 +160,7 @@ class ResourceResolverPortalTests(unittest.TestCase):
             ],
         }
         put_registry_document(article_registry.ARTICLE_COLLECTION, record["id"], record)
-        adapter = resource_index_backend.ResourceRegistryAdapter()
+        adapter = resource_index_registries.ResourceRegistryAdapter()
         with mock.patch.object(
             article_registry,
             "_validated_article",

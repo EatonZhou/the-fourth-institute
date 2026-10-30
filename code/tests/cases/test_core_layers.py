@@ -117,13 +117,14 @@ ALLOWED: dict[tuple[str, str], str] = {
     ("resources.providers.folder_files", "society_service.lineage_storage"):
         "a Lineage Folder's files are read under the Lineage's canonical folder",
     ("resources.providers.workspace", "society_service.lineage_access_policy"): AMA_AREAS,
-    ("resources.runtime", "resource_index_backend"): "ResourceService's index is resource_index_backend; waits for the ResourceService area",
+    ("resources.runtime", "resource_index_backend"): "ResourceService's index is resource_index_backend, whose resource_index_* modules are still top-level",
     ("resources.server", "resource_auto_registration"): "ResourceService runs the automatic registration of Repos and Articles",
-    ("resources.service", "society_service.business_fact_views"):
-        "Lineage, Resident and Family projections commit in SocietyService's projection transaction; waits for the "
-        "ResourceService area",
-    ("resources.service", "society_service.lineage_access_policy"):
-        "reading a Workspace record applies the personal AMA rule (hidden_private_ids); waits for the ResourceService area",
+    ("resources.service_collaboration", "society_service.business_fact_views"):
+        "Lineage, Resident and Family projections commit in SocietyService's projection transaction",
+    ("resources.service_index", "society_service.business_fact_views"):
+        "collaboration descriptors are completed from SocietyService's business fact views (project_resources)",
+    ("resources.service_index", "society_service.lineage_access_policy"):
+        "reading a Workspace record applies the personal AMA rule (hidden_private_ids)",
     ("execution.isa", "society_service.resource_client"):
         "Home's token usage groups Residents by their current Lineage and Project, read from SocietyService's catalog",
     ("resources.providers.collaboration", "resident_handoff"):

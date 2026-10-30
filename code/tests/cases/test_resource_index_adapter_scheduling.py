@@ -2,6 +2,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from management_portal import resource_index_backend as backend
+from management_portal import resource_index_records, resource_index_refresh
 from tests.cases.test_resource_index_backend import _record
 
 
@@ -20,7 +21,7 @@ def test_wait_includes_a_direct_refresh(isolated_portal_case):
             assert release.wait(3)
             return [], {}
     with isolated_portal_case():
-        layer = backend.AdapterLayer(backend.IndexStore(), [Adapter()], start_worker=False)
+        layer = resource_index_refresh.AdapterLayer(backend.IndexStore(), [Adapter()], start_worker=False)
         with ThreadPoolExecutor(1) as pool:
             refreshing = pool.submit(layer.refresh_now, "resource_registry", force=True)
             try:
@@ -37,7 +38,7 @@ def test_wait_does_not_follow_later_refresh_batches(isolated_portal_case, monkey
     """刷新等待不被后到批次延长"""
     entered, release = threading.Event(), threading.Event()
     later, release_later, waiting = threading.Event(), threading.Event(), threading.Event()
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
 
     class Adapter:
         name = "resource_registry"
@@ -57,7 +58,7 @@ def test_wait_does_not_follow_later_refresh_batches(isolated_portal_case, monkey
             return [], {}
 
     with isolated_portal_case():
-        layer = backend.AdapterLayer(backend.IndexStore(), [Adapter()])
+        layer = resource_index_refresh.AdapterLayer(backend.IndexStore(), [Adapter()])
         original_wait = layer._condition.wait
         def wait(timeout=None):
             if threading.current_thread().name.startswith("barrier"):
@@ -81,7 +82,7 @@ def test_wait_does_not_follow_later_refresh_batches(isolated_portal_case, monkey
 
 def test_short_change_burst_has_one_refresh(isolated_portal_case, monkeypatch):
     """密集资源变化合并为一次刷新"""
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
     class Adapter:
         name = "resource_registry"
         scans = 0
@@ -92,7 +93,7 @@ def test_short_change_burst_has_one_refresh(isolated_portal_case, monkeypatch):
             return [], {}
     with isolated_portal_case():
         adapter = Adapter()
-        layer = backend.AdapterLayer(backend.IndexStore(), [adapter], merge_seconds=.2)
+        layer = resource_index_refresh.AdapterLayer(backend.IndexStore(), [adapter], merge_seconds=.2)
         try:
             for _ in range(50):
                 layer.request_refresh(force=True)
@@ -108,7 +109,7 @@ def test_background_adapters_refresh_serially_while_existing_records_remain_read
     """后台适配器串行刷新且旧索引记录持续可读"""
     entered, release = threading.Event(), threading.Event()
     articles_entered = threading.Event()
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
 
     class Knowledge:
         name = "project_knowledge"
@@ -136,7 +137,7 @@ def test_background_adapters_refresh_serially_while_existing_records_remain_read
         store.publish_snapshot("resource_registry", [
             _record("article_3067381f9309", "article", adapter="resource_registry", title="cached"),
         ], {})
-        layer = backend.AdapterLayer(store, [Knowledge(), Articles()])
+        layer = resource_index_refresh.AdapterLayer(store, [Knowledge(), Articles()])
         try:
             assert entered.wait(2)
             assert not articles_entered.wait(0.2)
@@ -156,7 +157,7 @@ def test_changes_during_a_scan_are_coalesced_and_committed_sequentially(
 ):
     """扫描期间多次变更合并后串行提交最新结果"""
     entered, release = threading.Event(), threading.Event()
-    monkeypatch.setattr(backend, "WATCH_FILESYSTEM", False)
+    monkeypatch.setattr(resource_index_refresh, "WATCH_FILESYSTEM", False)
 
     class Articles:
         name = "resource_registry"
@@ -182,7 +183,7 @@ def test_changes_during_a_scan_are_coalesced_and_committed_sequentially(
     with isolated_portal_case():
         store = backend.IndexStore()
         adapter = Articles()
-        layer = backend.AdapterLayer(store, [adapter])
+        layer = resource_index_refresh.AdapterLayer(store, [adapter])
         try:
             assert entered.wait(2)
             for title in ("intermediate", "latest"):
@@ -216,10 +217,10 @@ def test_unregistration_fences_an_inflight_scan_even_before_first_indexing(isola
                     assert release.wait(3)
                     return [record], {}
             store = backend.IndexStore()
-            layer = backend.AdapterLayer(store, [Adapter()], start_worker=False)
+            layer = resource_index_refresh.AdapterLayer(store, [Adapter()], start_worker=False)
             try:
                 if already_indexed:
-                    store.apply(backend.ChangeSet("resource_registry", upserts=(record,)))
+                    store.apply(resource_index_records.ChangeSet("resource_registry", upserts=(record,)))
                 with ThreadPoolExecutor(1) as pool:
                     running = pool.submit(layer.refresh_now, "resource_registry", force=True)
                     try:
@@ -249,14 +250,14 @@ def test_unregistration_of_type_with_multiple_sources(isolated_portal_case):
         with isolated_portal_case():
             store = backend.IndexStore()
             adapters = [Reviews("project_knowledge"), Reviews("paper_review")]
-            layer = backend.AdapterLayer(store, adapters, start_worker=False)
+            layer = resource_index_refresh.AdapterLayer(store, adapters, start_worker=False)
             rid, other_id = "review_123456789abc", "review_987654321abc"
             try:
                 if indexed_owner:
-                    store.apply(backend.ChangeSet(indexed_owner, upserts=(
+                    store.apply(resource_index_records.ChangeSet(indexed_owner, upserts=(
                         _record(rid, "review", adapter=indexed_owner),
                     )))
-                store.apply(backend.ChangeSet("project_knowledge", upserts=(
+                store.apply(resource_index_records.ChangeSet("project_knowledge", upserts=(
                     _record(other_id, "review", adapter="project_knowledge"),
                 )))
                 generation = store.generation()
@@ -265,7 +266,7 @@ def test_unregistration_of_type_with_multiple_sources(isolated_portal_case):
                 for adapter in adapters:
                     # Model a scan that captured the source before the deletion,
                     # including a source whose first projection was still pending.
-                    result = store.apply(backend.ChangeSet(adapter.name, upserts=(
+                    result = store.apply(resource_index_records.ChangeSet(adapter.name, upserts=(
                         _record(rid, "review", adapter=adapter.name),
                     )), scan_started_generation=generation)
                     assert result["upserted"] == 0

@@ -12,22 +12,22 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from management_portal import resource_index_backend as backend
+from management_portal import resource_index_adapters, resource_index_refresh
 
 
-def _adapter(name: str, root: Path) -> backend._PathsAdapter:
-    adapter = backend._PathsAdapter()
+def _adapter(name: str, root: Path) -> resource_index_adapters._PathsAdapter:
+    adapter = resource_index_adapters._PathsAdapter()
     adapter.name = name
     adapter.roots = (root,)
     return adapter
 
 
-def _layer(tmp_path: Path, count: int) -> backend.AdapterLayer:
+def _layer(tmp_path: Path, count: int) -> resource_index_refresh.AdapterLayer:
     roots = [tmp_path / f"root{index}" for index in range(count)]
     for root in roots:
         root.mkdir()
     adapters = [_adapter(f"adapter{index}", root) for index, root in enumerate(roots)]
-    return backend.AdapterLayer(None, adapters, start_worker=False)
+    return resource_index_refresh.AdapterLayer(None, adapters, start_worker=False)
 
 
 def _lstat_calls(monkeypatch) -> list[str]:
@@ -62,10 +62,10 @@ def test_a_moved_root_is_followed_once_its_resolution_expires(tmp_path, monkeypa
     second.mkdir()
     link = tmp_path / "link"
     link.symlink_to(first)
-    layer = backend.AdapterLayer(None, [_adapter("linked", link)], start_worker=False)
+    layer = resource_index_refresh.AdapterLayer(None, [_adapter("linked", link)], start_worker=False)
     assert layer.matching_adapters(path=str(first / "item.yaml")) == ["linked"]
     link.unlink()
     link.symlink_to(second)
-    monkeypatch.setattr(backend, "ROOT_RESOLUTION_SECONDS", 0.0)
+    monkeypatch.setattr(resource_index_adapters, "ROOT_RESOLUTION_SECONDS", 0.0)
     assert layer.matching_adapters(path=str(second / "item.yaml")) == ["linked"]
     assert layer.matching_adapters(path=str(first / "item.yaml")) == []

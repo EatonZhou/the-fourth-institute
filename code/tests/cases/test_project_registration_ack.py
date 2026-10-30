@@ -90,14 +90,14 @@ def test_committed_project_is_readable_to_principal_initialization_before_scan(
     :importance: P1
     :design: decision_4648f7fa3295
     """
-    from management_portal import society_service, resource_index_backend
+    from management_portal import society_service, resource_index_registries
     from management_portal.society_service import resource_client
 
     service, index, _, _ = project_registration
     # Keep this fixture's registered path in its isolated directory rather
     # than translating the shared-root alias to the host's /share.
     monkeypatch.setattr(project, '_registry_value_for_path', lambda path: str(path))
-    adapter = resource_index_backend.ProjectRegistryAdapter()
+    adapter = resource_index_registries.ProjectRegistryAdapter()
     records = {}
 
     def publish(resource_type, record):

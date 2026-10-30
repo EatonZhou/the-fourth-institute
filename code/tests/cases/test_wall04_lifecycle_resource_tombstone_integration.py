@@ -10,6 +10,7 @@ import pytest
 
 from management_common.json_columns import json_value
 from management_portal import resource_index_backend
+from management_portal import resource_index_registries
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.session_manager import SessionManager
 from management_portal.society_service import (
@@ -60,7 +61,7 @@ def integration(tmp_path, monkeypatch):
     write_projects("schema_version: 1\nprojects:\n  - id: FixtureLifecycle\n")
     access.upsert_user(ACTOR, actor=ACTOR)
     index_store = resource_index_backend.IndexStore( portal_access=access)
-    adapter = resource_index_backend.CollaborationRegistryAdapter()
+    adapter = resource_index_registries.CollaborationRegistryAdapter()
     index_store.publish_snapshot(adapter.name, [], {"fixture": True})
     index = resource_index_backend.ResourceIndexService(store=index_store, adapters=[adapter], start_worker=False)
     index.adapter_layer._on_projection_changed = None

@@ -210,6 +210,12 @@ modules:
     code_paths:
       - "management_portal/resources/server.py"
       - "management_portal/resources/service.py"
+      - "management_portal/resources/service_collaboration.py"
+      - "management_portal/resources/service_index.py"
+      - "management_portal/resources/service_mutations.py"
+      - "management_portal/resources/service_permissions.py"
+      - "management_portal/resources/service_providers.py"
+      - "management_portal/resources/service_reads.py"
       - "management_portal/resources/config.py"
       - "management_portal/resources/isa.py"
       - "management_portal/resources"
@@ -1159,6 +1165,9 @@ modules:
     instruction_owners: []
     code_paths:
       - "management_portal/resource_backup_backend.py"
+      - "management_portal/resource_backup_policy.py"
+      - "management_portal/resource_backup_runs.py"
+      - "management_portal/resource_backup_values.py"
       - "management_portal/resource_backup.html"
       - "management_portal/http_resource_backup.py"
       - "management_portal/backup_lineage.py"

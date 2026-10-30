@@ -296,6 +296,7 @@ def test_resource_search_and_identity_reads_hide_a_personal_ama_like_its_domain(
     from unittest import mock
 
     from management_portal import resource_index_backend as backend
+    from management_portal import resource_index_records
     from management_portal.resources import ResourceService
     from management_portal.resources.collaboration_registry import COLLABORATION_DESCRIPTOR_SCHEMA, CollaborationDescriptorStore
     from management_portal.resources.registration import ResourceRegistrationStore
@@ -303,7 +304,7 @@ def test_resource_search_and_identity_reads_hide_a_personal_ama_like_its_domain(
     attributes = {AMA_LINEAGE: {'lineage_membership': 'personal', 'created_by': 'owner'}, AMA: {'personal_owner_id': 'owner'},
                   TEAM: {'lineage_membership': 'shared', 'created_by': 'owner'}, WORKER: {}}
     store = backend.IndexStore()
-    store.publish_snapshot('test', [backend.resource_record(
+    store.publish_snapshot('test', [resource_index_records.resource_record(
         resource_id=resource_id, resource_type=resource_id.split('_')[0], title='Resource', summary='', adapter='test',
         path=f'/tmp/{resource_id}.json', modified_at='2026-10-12T00:00:00Z', facets=('collaboration',),
         attributes=values, search_terms=(), url=f'/{resource_id}',
@@ -334,6 +335,7 @@ def test_a_personal_ama_folder_answers_only_to_that_ama(monkeypatch, isolated_po
 
     Workspaces registered inside the AMA's Lineage folder, its files by path, and its README as agent context."""
     from management_portal import agent_context_selection, resource_index_backend as backend
+    from management_portal import resource_index_records
     from management_portal.society_service import resident_workspace_domain, workspace_domain
     from management_portal.society_service.state_store import get_lineage_data_store
     from management_portal.resources.workspace_store import get_workspace_store
@@ -372,7 +374,7 @@ def test_a_personal_ama_folder_answers_only_to_that_ama(monkeypatch, isolated_po
         monkeypatch.setattr(resident_workspace_domain, 'resolve_resident_identity', lambda resident_id, _actor: {'resident_id': resident_id})
 
         store = backend.IndexStore()
-        store.publish_snapshot('test', [backend.resource_record(
+        store.publish_snapshot('test', [resource_index_records.resource_record(
             resource_id=workspace_id, resource_type='workspace', title='Workspace', summary='', adapter='test',
             path=f'/tmp/{workspace_id}.json', modified_at='2026-10-12T00:00:00Z', facets=('collaboration',),
             attributes={'path': str(path)}, search_terms=(), url=f'/{workspace_id}',

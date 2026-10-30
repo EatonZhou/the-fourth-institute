@@ -513,7 +513,7 @@ def test_indexed_knowledge_documents_open_with_real_content_and_keep_paper_revie
     """已索引的 todo 和 review 知识文档打开时显示原文，论文的 review 对象仍走论文页面
 
     :importance: P2"""
-    from management_portal import resource_index_backend, resource_views
+    from management_portal import resource_index_knowledge, resource_views
     from management_portal.resources import indexed_content
     resource_id = kind + "_0123456789ab"
     root = tmp_path / "Example" / "knowledge_base" / kind
@@ -526,7 +526,7 @@ def test_indexed_knowledge_documents_open_with_real_content_and_keep_paper_revie
     monkeypatch.setattr(knowledge_source, "_parse_projects_yaml", lambda: [
         {"id": "Example", "status": "active", "path": str(tmp_path / "Example")},
     ])
-    record = resource_index_backend.ProjectKnowledgeAdapter().scan_changes([str(path)], [], {}).upserts[0]
+    record = resource_index_knowledge.ProjectKnowledgeAdapter().scan_changes([str(path)], [], {}).upserts[0]
     index = mock.Mock()
     index.get_resource.return_value = record
     index.indexed_types.return_value = {kind}

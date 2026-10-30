@@ -7,7 +7,8 @@ from urllib.parse import urlparse
 
 import pytest
 
-from management_portal.resource_index_backend import IndexStore, ResourceIndexService, resource_record
+from management_portal.resource_index_backend import IndexStore, ResourceIndexService
+from management_portal.resource_index_records import resource_record
 from management_portal.resources.service import ResourceService
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 

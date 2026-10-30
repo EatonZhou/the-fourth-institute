@@ -13,7 +13,7 @@ from management_portal.resources.portal import (
     portal_url_for_address,
     portal_url_for_resource,
 )
-from management_portal.resource_index_backend import resource_record
+from management_portal.resource_index_records import resource_record
 from management_portal.resources import ResourceService
 from management_portal.resources.access import ResourceAccessPolicy
 

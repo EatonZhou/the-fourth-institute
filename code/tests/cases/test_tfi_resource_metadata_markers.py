@@ -10,6 +10,7 @@ import pytest
 
 from management_common.portal_database import portal_database
 from management_portal import resource_index_backend as index
+from management_portal import resource_index_store
 from management_portal.resources import registry_store as registry
 from tests.cases.test_resource_index_backend import _record
 
@@ -30,7 +31,7 @@ def marker_store(request, monkeypatch):
         table, suffix = "registry_meta", "resource-registry.v2"
         rows_table = "registry_documents"
     else:
-        monkeypatch.setattr(index, "resource_database_schema", lambda: schema)
+        monkeypatch.setattr(resource_index_store, "resource_database_schema", lambda: schema)
         reopen = index.IndexStore
         table, suffix = "resource_index_meta", "resource-index-store.v1"
         rows_table = "resource_index_records"

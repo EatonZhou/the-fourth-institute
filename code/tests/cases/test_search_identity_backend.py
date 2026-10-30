@@ -258,17 +258,17 @@ def test_board_surfaces_share_search_ids_and_resolve(tmp_path: Path) -> None:
 def test_resource_index_search_record_uses_one_canonical_id_contracts(subtests, isolated_portal_case):
     """检索在资源索引中只用一个规范 ID，记录创建者，由根解析器分发"""
     with subtests.test(contract='test_resource_index_search_record_uses_one_canonical_id'), isolated_portal_case() as case_path:
-        from management_portal import resource_index_backend
+        from management_portal import resource_index_records, resource_index_registries
         record = {'id': 'search_0123456789ab', 'search_id': 'search_0123456789ab', 'query': 'robot acceleration', 'surface': 'paper', 'project': 'RobotWorker', 'search_kind': 'semantic', 'status': 'done', 'result_count': 4, 'created_by': 'alice'}
-        with mock.patch.object(resource_index_backend.search_identity_backend, 'scan_search_resources', return_value=([record], [])) as load:
-            entries, _state = resource_index_backend.SavedSearchAdapter().scan()
+        with mock.patch.object(resource_index_registries.search_identity_backend, 'scan_search_resources', return_value=([record], [])) as load:
+            entries, _state = resource_index_registries.SavedSearchAdapter().scan()
         load.assert_called_once_with()
         assert entries[0]['resource_type'] == 'search'
         assert entries[0]['resource_id'] == 'search_0123456789ab'
         assert entries[0]['url'] == '/paper?semantic=search_0123456789ab'
         assert entries[0]['attributes']['created_by'] == 'alice'
         assert entries[0]['attributes']['project_ids'] == ['RobotWorker']
-        resource_index_backend._validate_record(entries[0], 'saved_search')
+        resource_index_records._validate_record(entries[0], 'saved_search')
         assert 'aliases' not in entries[0]
         assert entries[0]['summary'] == 'Paper semantic search · 4 results'
         assert entries[0]['search_terms'] == ['search_0123456789ab', 'robot acceleration', 'paper', 'semantic', 'done']

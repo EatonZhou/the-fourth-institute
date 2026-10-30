@@ -13,6 +13,7 @@ from management_portal import (
     device_identity_backend,
     resource_index_backend,
 )
+from management_portal import resource_index_registries
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
 from management_portal.resources.providers import device
@@ -321,17 +322,17 @@ def test_device_index_merges_live_gpu_attributes_contracts(tmp_path, subtests, i
         }
         with (
             mock.patch.object(
-                resource_index_backend.device_identity_backend,
+                resource_index_registries.device_identity_backend,
                 "scan_device_records",
                 return_value=(records, []),
             ),
             mock.patch.object(
-                resource_index_backend.device_identity_backend,
+                resource_index_registries.device_identity_backend,
                 "load_device_observations",
                 return_value=observations,
             ),
         ):
-            indexed, state = resource_index_backend.DeviceRegistryAdapter().scan()
+            indexed, state = resource_index_registries.DeviceRegistryAdapter().scan()
 
         by_id = {item["resource_id"]: item for item in indexed}
         assert state["counts"] == {"gpu_server": 1, "gpu": 1}
@@ -397,7 +398,7 @@ def test_device_index_merges_live_gpu_attributes_contracts(tmp_path, subtests, i
             mock.patch.object(device_identity_backend, "scan_device_records", return_value=(records, [])),
             mock.patch.object(device_identity_backend, "load_device_observations", return_value={}),
         ):
-            indexed, state = resource_index_backend.DeviceRegistryAdapter().scan()
+            indexed, state = resource_index_registries.DeviceRegistryAdapter().scan()
             assert not state["resource_errors"]
             store.publish_snapshot("device", indexed, state, persist=False)
             listed = service.query(resource_types=["device"], actor="device-reader")

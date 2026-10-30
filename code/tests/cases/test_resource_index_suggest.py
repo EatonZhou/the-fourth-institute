@@ -1,7 +1,8 @@
 """:module: spec.design-governance"""
 from __future__ import annotations
 
-from management_portal.resource_index_backend import IndexStore, resource_record
+from management_portal.resource_index_backend import IndexStore
+from management_portal.resource_index_records import resource_record
 
 
 def _record(number: int, *, title: str = "Match", summary: str = "Summary term") -> dict:
