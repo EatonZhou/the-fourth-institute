@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_backend, knowledge_details, knowledge_source
 from management_portal import serve_management_portal
 from management_portal import http_auth, http_request_body, web_resources
 
@@ -103,7 +103,7 @@ class _FixtureResourceIndex:
     def resolve(self, address: str, *, actor: str = "") -> dict:
         item = self.resolved[address]
         path = Path(str(item.get("selected_path") or item.get("path") or ""))
-        detail = knowledge_backend.public_item_record(item)
+        detail = knowledge_source.public_item_record(item)
         record = next(
             value
             for value in self.query()["resources"]
@@ -114,7 +114,7 @@ class _FixtureResourceIndex:
             "root_id": str(item.get("kb_id") or ""),
             "record": record,
             "detail": detail,
-            "content_kind": knowledge_backend._file_kind(path),
+            "content_kind": knowledge_source._file_kind(path),
             "filename": path.name,
             "resolved_path": str(path),
         }
@@ -301,7 +301,7 @@ def test_knowledge_graph_retains_actor_and_does_not_share_cached_read_access(tmp
     def graph_records(actor=""):
         assert actor in {"alice", "bob"}
         return dict(records) if actor == "alice" else {root: records[root]}
-    with knowledge_backend._LOCK:
+    with knowledge_source._LOCK:
         knowledge_backend._ITEM_GRAPH_CACHE.clear()
     try:
         with (
@@ -317,7 +317,7 @@ def test_knowledge_graph_retains_actor_and_does_not_share_cached_read_access(tmp
             with pytest.raises(PermissionError, match="revoked"):
                 knowledge_backend.build_item_graph(root, actor="alice")
     finally:
-        with knowledge_backend._LOCK:
+        with knowledge_source._LOCK:
             knowledge_backend._ITEM_GRAPH_CACHE.clear()
 
 
@@ -347,6 +347,8 @@ def test_global_knowledge_graph_queries_and_caches_the_callers_view(tmp_path):
         mock.patch.dict(knowledge_backend._KNOWLEDGE_GRAPH_CACHE, clear=True),
         mock.patch.object(knowledge_backend, "resource_index_snapshot", side_effect=index) as snapshot,
         mock.patch.object(knowledge_backend, "get_resource_service", return_value=service),
+        mock.patch.object(knowledge_source, "get_resource_service", return_value=service),
+        mock.patch.object(knowledge_details, "get_resource_service", return_value=service),
     ):
         alice = knowledge_backend.build_knowledge_graph(actor="alice")
         bob = knowledge_backend.build_knowledge_graph(actor="bob")
@@ -422,7 +424,7 @@ def test_knowledge_card_click_http_chain_accepts_public_records_without_file_id(
     public_items = [
         {
             key: value
-            for key, value in knowledge_backend.public_item_record(item).items()
+            for key, value in knowledge_source.public_item_record(item).items()
             if key != "files"
         }
         for item in resolved.values()
@@ -435,7 +437,7 @@ def test_knowledge_card_click_http_chain_accepts_public_records_without_file_id(
     base = f"http://127.0.0.1:{server.server_address[1]}"
     index = _FixtureResourceIndex(public_items, resolved)
     try:
-        with knowledge_backend._LOCK:
+        with knowledge_source._LOCK:
             knowledge_backend._ITEM_GRAPH_CACHE.clear()
         with (
             mock.patch.object(http_auth, "_check_session", return_value=True),

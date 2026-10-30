@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_backend, knowledge_details, knowledge_source
 
 from management_portal import resource_views
 from management_portal.portal_access_control import PortalAccessStore
@@ -309,7 +309,16 @@ def test_knowledge_mutations_sync_canonical_project_and_creator_permissions(
         lambda: [{"id": "AI员工", "path": str(project_root)}],
     )
     monkeypatch.setattr(
+        knowledge_source, "_parse_projects_yaml",
+        lambda: [{"id": "AI员工", "path": str(project_root)}],
+    )
+    monkeypatch.setattr(
         knowledge_backend, "_get_tag_config",
+        lambda: ([resource_type], {resource_type: resource_type},
+                 {resource_type: resource_type}, "test"),
+    )
+    monkeypatch.setattr(
+        knowledge_source, "_get_tag_config",
         lambda: ([resource_type], {resource_type: resource_type},
                  {resource_type: resource_type}, "test"),
     )
@@ -356,7 +365,7 @@ def test_knowledge_mutations_sync_canonical_project_and_creator_permissions(
         "expected_version": {"number": 1},
     }, actor=actor)
     assert updated["project_ids"] == created["project_ids"]
-    assert knowledge_backend._yaml_front_matter(path.read_text(encoding="utf-8"))["version"]["number"] == 2
+    assert knowledge_source._yaml_front_matter(path.read_text(encoding="utf-8"))["version"]["number"] == 2
     assert placed(resource_id) == ["AI员工", resource_id]
     assert permissions.holds(member, "@admin", resource_id)
 
@@ -424,7 +433,22 @@ def test_register_knowledge_item_writes_canonical_versioned_markdown(tmp_path, m
                     lambda: [{"id": "AI员工", "path": str(project_root)}],
                 )
                 monkeypatch.setattr(
+                    knowledge_source,
+                    "_parse_projects_yaml",
+                    lambda: [{"id": "AI员工", "path": str(project_root)}],
+                )
+                monkeypatch.setattr(
                     knowledge_backend,
+                    "_get_tag_config",
+                    lambda: (
+                        ["decision"],
+                        {"decision": "decision"},
+                        {"decision": "decision"},
+                        "test",
+                    ),
+                )
+                monkeypatch.setattr(
+                    knowledge_source,
                     "_get_tag_config",
                     lambda: (
                         ["decision"],
@@ -457,7 +481,7 @@ def test_register_knowledge_item_writes_canonical_versioned_markdown(tmp_path, m
 
                 path = project_root / "knowledge_base" / "decision" / created["path"].split("/")[-1]
                 text = path.read_text(encoding="utf-8")
-                metadata = knowledge_backend._yaml_front_matter(text)
+                metadata = knowledge_source._yaml_front_matter(text)
                 assert created["created"] is True
                 assert repeated["created"] is False
                 assert created["project_ids"] == ["AI员工"]
@@ -498,6 +522,9 @@ def test_indexed_knowledge_documents_open_with_real_content_and_keep_paper_revie
     monkeypatch.setattr(knowledge_backend, "_parse_projects_yaml", lambda: [
         {"id": "Example", "status": "active", "path": str(tmp_path / "Example")},
     ])
+    monkeypatch.setattr(knowledge_source, "_parse_projects_yaml", lambda: [
+        {"id": "Example", "status": "active", "path": str(tmp_path / "Example")},
+    ])
     record = resource_index_backend.ProjectKnowledgeAdapter().scan_changes([str(path)], [], {}).upserts[0]
     index = mock.Mock()
     index.get_resource.return_value = record
@@ -506,6 +533,8 @@ def test_indexed_knowledge_documents_open_with_real_content_and_keep_paper_revie
     from management_portal.resources.providers import indexed
     indexed.install_resolver(service)
     monkeypatch.setattr(knowledge_backend, "get_resource_service", lambda: service)
+    monkeypatch.setattr(knowledge_source, "get_resource_service", lambda: service)
+    monkeypatch.setattr(knowledge_details, "get_resource_service", lambda: service)
     detail = resource_views.knowledge_detail(resource_id, service=service, actor="tester")
     assert detail["kind"] == "markdown"
     assert detail["text"] == path.read_text()

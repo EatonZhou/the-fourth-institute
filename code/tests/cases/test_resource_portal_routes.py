@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import urllib.error
 import urllib.parse
@@ -16,7 +17,7 @@ from management_portal import (
     repo_workspace_operations, repo_workspace_overview, resource_backup_backend, semantic_search_jobs,
     serve_management_portal,
 )
-from management_portal import http_auth, http_repo, web_accounts, web_clients, web_resources
+from management_portal import http_auth, http_repo, http_static_files, web_accounts, web_clients, web_resources
 from management_portal.hatg.contracts import InstructionError
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources.portal import (
@@ -53,6 +54,18 @@ def _post_json(url: str, payload: dict) -> tuple[int, dict]:
         raise AssertionError(
             f"POST {url} returned HTTP {exc.code}: {body}"
         ) from exc
+
+
+def _with_board_scripts(html: str) -> str:
+    """The Knowledge board page followed by the knowledge_board*.js scripts it loads, which hold its code.
+
+    The scripts are read from the files the private static route serves for their addresses.
+    """
+    parts = [html]
+    for src in re.findall(r'<script src="(/static/knowledge_board[^"]*)"', html):
+        static_file = http_static_files._static_fallback_file(urllib.parse.urlsplit(src).path)
+        parts.append(static_file.read_text(encoding="utf-8"))
+    return "\n".join(parts)
 
 
 @contextmanager
@@ -549,7 +562,7 @@ def test_resource_routes_expose_category_shells_and_canonical_deep_links() -> No
     try:
         with mock.patch.object(http_auth, "_check_session", return_value=True):
             with urllib.request.urlopen(f"{base}/resource") as response:
-                html = response.read().decode("utf-8")
+                html = _with_board_scripts(response.read().decode("utf-8"))
                 assert response.geturl().endswith("/resource/knowledge")
                 assert 'data-resource-category="knowledge"' in html
                 assert 'data-resource-section-header' in html
@@ -583,7 +596,7 @@ def test_resource_routes_expose_category_shells_and_canonical_deep_links() -> No
             with urllib.request.urlopen(
                 f"{base}/resource/skill?item=skill_0123456789ab&embedded=1"
             ) as response:
-                skill_detail_html = response.read().decode("utf-8")
+                skill_detail_html = _with_board_scripts(response.read().decode("utf-8"))
                 assert 'data-resource-category="skill"' in skill_detail_html
                 assert "portal_resource_detail.js" in skill_detail_html
                 assert "PortalResourceDetail.createGuest" in skill_detail_html
@@ -620,7 +633,7 @@ def test_resource_routes_expose_category_shells_and_canonical_deep_links() -> No
             with urllib.request.urlopen(
                 f"{base}/resource/experiment?item=experiment_0123456789ab&embedded=1"
             ) as response:
-                experiment_detail_html = response.read().decode("utf-8")
+                experiment_detail_html = _with_board_scripts(response.read().decode("utf-8"))
                 assert 'data-resource-category="experiment"' in experiment_detail_html
                 assert "portal_resource_detail.js" in experiment_detail_html
                 assert "PortalResourceDetail.createGuest" in experiment_detail_html

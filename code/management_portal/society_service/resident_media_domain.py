@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from . import (
     resident_backend,
-    resident_domain_common,
     resident_message_contract,
     resident_record_domain,
     workspace_contracts,
@@ -11,6 +10,7 @@ from . import (
 from .workspace_attachments import authorize_attachment_read
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_common.actor_identity import canonical_actor_id
+from management_common.path_containment import path_is_within
 from management_portal.execution.contracts import (
     InputMedia,
     MAX_INPUT_MEDIA_ITEMS,
@@ -250,7 +250,7 @@ def resident_input_media(
                 except ValueError:
                     relative_path = None
                 workspace_path = any(
-                    resident_domain_common.path_is_within(path, root)
+                    path_is_within(path, root)
                     for root in allowed_workspace_roots
                 )
                 metadata: dict[str, Any] = {}

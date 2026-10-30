@@ -117,14 +117,14 @@ def test_experiment_retirement_uses_project_knowledge_trash(
 
 def test_experiment_index_preserves_registered_title_instead_of_folder_slug(experiment_service):
     """实验索引保留注册标题"""
-    from knowledge_board_lan import knowledge_backend
+    from knowledge_board_lan import knowledge_source
 
     service, project_root = experiment_service
     created = service.register("experiment", {
         "project_id": "OSForAgent", "title": "Readable experiment title", "slug": "different_path",
     }, actor="resident_aaaaaaaaaaaa")
     document = next(project_root.glob("knowledge_base/experiment/*/experiment.md"))
-    indexed = knowledge_backend._read_kb_file(
+    indexed = knowledge_source._read_kb_file(
         str(document), "OSForAgent", {"experiment"}, {},
         entry_root=document.parent, entry_files=[document],
     )

@@ -3,10 +3,11 @@ const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const html = fs.readFileSync(path.resolve(__dirname, '../../../knowledge_board_lan/knowledge_board.html'), 'utf8');
-const extract = (start, end) => html.slice(html.indexOf(start), html.indexOf(end, html.indexOf(start)));
-const deletion = extract('      async function deleteDetail()', '      function resetDetailChat()');
-const loading = extract('      function applyIndexPage(', '      // ── Modal');
+const script = name => fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', name), 'utf8');
+// From `start` to `end`, or to the end of the script.
+const extract = (source, start, end) => source.slice(source.indexOf(start), end ? source.indexOf(end, source.indexOf(start)) : undefined);
+const deletion = extract(script('knowledge_board_detail.js'), 'async function deleteDetail()', 'async function openDetailFile(');
+const loading = extract(script('knowledge_board_loading.js'), 'function applyIndexPage(');
 function harness(receipt = {deleted:true, kb_id:'information_1234'}) {
   const errors = [], renders = [];
   const state = {raw:{items:[{kb_id:'information_1234'},{kb_id:'information_5678'}]},

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Protocol
 from urllib.parse import quote
 
-import knowledge_board_lan.knowledge_backend as knowledge_backend
+import knowledge_board_lan.knowledge_source as knowledge_backend
 import skill_board_lan.skill_backend as skill_backend
 
 from management_common.json_columns import json_text, json_value

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_source
 
 
 @pytest.mark.parametrize(
@@ -20,9 +20,9 @@ def test_discovery_keeps_identity_and_version_for_valid_yaml(tmp_path, prefix, n
     path = tmp_path / "item.md"
     path.write_bytes(text.encode("utf-8"))
     original = (path.read_bytes(), path.stat().st_mtime_ns)
-    assert knowledge_backend.knowledge_version_record(text)["number"] == 9
+    assert knowledge_source.knowledge_version_record(text)["number"] == 9
 
-    record = knowledge_backend._read_kb_file(
+    record = knowledge_source._read_kb_file(
         str(path), "Fixture", {"decision"}, {"decision": "decision"},
         entry_root=tmp_path, entry_files=[path],
     )
@@ -44,7 +44,7 @@ def test_discovery_rejects_missing_or_malformed_yaml_identity(tmp_path, text):
     path = tmp_path / "item.md"
     path.write_text(text, encoding="utf-8")
     original = (path.read_bytes(), path.stat().st_mtime_ns)
-    assert knowledge_backend._read_kb_file(
+    assert knowledge_source._read_kb_file(
         str(path), "Fixture", {"decision"}, {"decision": "decision"},
         entry_root=tmp_path, entry_files=[path],
     ) == {}

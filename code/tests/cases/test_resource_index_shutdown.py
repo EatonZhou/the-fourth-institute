@@ -203,12 +203,12 @@ def test_paper_scope_uses_the_configured_store(tmp_path, monkeypatch):
 
 def test_knowledge_enumeration_cancels_between_entries_and_restores_context(tmp_path, monkeypatch):
     """知识条目枚举在条目之间响应取消，之后同一线程仍可完整枚举"""
-    from knowledge_board_lan import knowledge_backend
+    from knowledge_board_lan import knowledge_source
 
     for name in ("first.md", "second.md"):
         (tmp_path / name).write_text("# Example\n", encoding="utf-8")
     stop = threading.Event()
-    original = knowledge_backend._read_file_text
+    original = knowledge_source._read_file_text
     reads = []
 
     def read(path):
@@ -216,10 +216,10 @@ def test_knowledge_enumeration_cancels_between_entries_and_restores_context(tmp_
         stop.set()
         return original(path)
 
-    monkeypatch.setattr(knowledge_backend, "_read_file_text", read)
+    monkeypatch.setattr(knowledge_source, "_read_file_text", read)
     with pytest.raises(ScanCancelled), cancellable_scan(stop):
-        knowledge_backend._index_entry_specs(tmp_path)
+        knowledge_source._index_entry_specs(tmp_path)
     assert len(reads) == 1
     # Cancellation belongs to that scan only; later calls on the same thread
     # may enumerate normally even though its owner's event remains set.
-    assert len(knowledge_backend._index_entry_specs(tmp_path)) == 2
+    assert len(knowledge_source._index_entry_specs(tmp_path)) == 2

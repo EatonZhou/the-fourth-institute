@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from knowledge_board_lan import knowledge_backend as backend
+from knowledge_board_lan import knowledge_backend as backend, knowledge_source, knowledge_versions
 from management_common.execution_association import execution_scope
 from management_portal.resources.content_changes import ContentChangeStore
 from management_portal.resources.errors import ResourceVersionConflict
@@ -26,7 +26,7 @@ ACTOR = "resident_300dead2872a"
 def version_case(tmp_path, monkeypatch):
     primary = tmp_path / "item.md"
     original = _markdown(number=14)
-    damaged = backend.stamp_knowledge_version(original, creating=True)
+    damaged = knowledge_versions.stamp_knowledge_version(original, creating=True)
     primary.write_text(damaged)
     record = {"address": KNOWLEDGE_ID, "kb_id": KNOWLEDGE_ID, "type": "thinking",
               "project_ids": ["AI员工"], "path": str(primary), "selected_path": str(primary), "selected_file_id": "primary"}
@@ -35,7 +35,7 @@ def version_case(tmp_path, monkeypatch):
     store = ContentChangeStore()
     def snapshot(text):
         return {"text": text, "sha256": hashlib.sha256(text.encode()).hexdigest(),
-                "version": backend.knowledge_version_record(text)}
+                "version": knowledge_source.knowledge_version_record(text)}
     body = "# Body after the damaged first write\n"
     changes = [{"schema": "tfi.resource-content-change.v1", "change_id": cid,
                 "resource_id": KNOWLEDGE_ID, "address": KNOWLEDGE_ID, "path": str(primary),
@@ -84,9 +84,9 @@ def test_normal_primary_update_uses_server_version_and_creation_audit(version_ca
     assert version["updated_by"] == {"user": "", "agent": ACTOR}
     # Omitting only the version block in otherwise complete Markdown is safe:
     # the writer still advances from its locked server-owned predecessor.
-    proposal = backend._replace_frontmatter_block(updated["text"], "version", [])
+    proposal = knowledge_versions._replace_frontmatter_block(updated["text"], "version", [])
     assert service.update(KNOWLEDGE_ID, {"text": proposal}, actor=ACTOR)["version"]["number"] == 16
-    assert backend.stamp_knowledge_version("# Unversioned text\n") == "# Unversioned text\n"
+    assert knowledge_versions.stamp_knowledge_version("# Unversioned text\n") == "# Unversioned text\n"
 
 
 def test_resource_update_recovers_retained_high_water_once_and_keeps_original_receipts(version_case, monkeypatch):

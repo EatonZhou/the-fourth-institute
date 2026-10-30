@@ -2,9 +2,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const html = fs.readFileSync(path.resolve(__dirname, '../../../knowledge_board_lan/knowledge_board.html'), 'utf8');
-const start = html.indexOf('      async function openDetail(fileId, options = {}) {');
-const end = html.indexOf('      async function applyDetailHistoryState()', start);
+const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/knowledge_board_detail.js'), 'utf8');
+const start = source.indexOf('async function openDetail(fileId, options = {}) {');
+const end = source.indexOf('async function applyDetailHistoryState()', start);
 assert(start >= 0 && end > start);
 
 (async () => {
@@ -18,7 +18,7 @@ assert(start >= 0 && end > start);
     detailHistory: {open: () => {throw knowledgePreview;}},
     window: {location: {assign: url => navigations.push(url)}},
   });
-  vm.runInContext(html.slice(start, end), context);
+  vm.runInContext(source.slice(start, end), context);
   assert.equal(await context.openDetail('search_8176d8f8cf7a'), true);
   assert.deepEqual(navigations, ['/r/search_8176d8f8cf7a']);
   await assert.rejects(context.openDetail('decision_f2a6a5dd4646'), error => error === knowledgePreview);

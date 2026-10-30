@@ -7,7 +7,7 @@ from unittest import mock
 import yaml
 import pytest
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_backend, knowledge_source
 from management_portal.resource_index_backend import ProjectKnowledgeAdapter
 
 
@@ -47,7 +47,7 @@ def _frontmatter(text: str) -> dict:
 def test_version_record_exposes_user_and_agent_attribution_contracts(subtests, isolated_portal_case):
     """版本记录分别给出创建和更新的用户与 agent，旧格式只取日期且不编造创建者"""
     with subtests.test(contract='test_version_record_exposes_user_and_agent_attribution'), isolated_portal_case() as case_path:
-        version = knowledge_backend.knowledge_version_record(
+        version = knowledge_source.knowledge_version_record(
             _markdown(),
             mtime=1784730000,
         )
@@ -67,7 +67,7 @@ def test_version_record_exposes_user_and_agent_attribution_contracts(subtests, i
             "recorded": True,
         }
     with subtests.test(contract='test_legacy_version_record_uses_dates_without_inventing_creators'), isolated_portal_case() as case_path:
-        version = knowledge_backend.knowledge_version_record(
+        version = knowledge_source.knowledge_version_record(
             "---\ncreated_at: 2026-07-22\n---\n\nLegacy\n",
             mtime=1784730000,
         )
@@ -87,7 +87,7 @@ def test_project_knowledge_index_projects_the_version_contract_contracts(tmp_pat
         primary = tmp_path / "item.md"
         primary.write_text(_markdown(), encoding="utf-8")
 
-        item = knowledge_backend._read_kb_file(
+        item = knowledge_source._read_kb_file(
             str(primary),
             "AlignMe",
             {"thinking"},

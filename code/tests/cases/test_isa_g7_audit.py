@@ -96,7 +96,7 @@ def test_read_version_can_be_reused_for_knowledge_updates(monkeypatch):
 
 def test_real_knowledge_provider_reuses_read_token_and_rejects_stale_writes(tmp_path, monkeypatch):
     """知识条目用读取得到的版本更新成功，再用旧版本写入返回冲突且文件不变"""
-    from knowledge_board_lan import knowledge_backend
+    from knowledge_board_lan import knowledge_backend, knowledge_source
     from management_portal.resources.providers.knowledge import _update_knowledge
     from tests.cases.test_knowledge_versioning import KNOWLEDGE_ID, _markdown
 
@@ -107,7 +107,7 @@ def test_real_knowledge_provider_reuses_read_token_and_rejects_stale_writes(tmp_
     monkeypatch.setattr(knowledge_backend, "resolve_item_address", lambda *a, **k: record)
     def read(*a, **k):
         return primary.read_bytes(), "text/markdown", {"record": {
-            "version": knowledge_backend.knowledge_version_record(primary.read_text(encoding="utf-8")),
+            "version": knowledge_source.knowledge_version_record(primary.read_text(encoding="utf-8")),
         }}
     monkeypatch.setattr(isa, "_service", lambda: SimpleNamespace(read_content=read,
         update=lambda identifier, changes, **k: _update_knowledge(identifier, changes, actor=k["actor"])))

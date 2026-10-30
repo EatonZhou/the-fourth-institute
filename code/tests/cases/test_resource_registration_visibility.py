@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_backend, knowledge_details, knowledge_source
 from management_portal import resource_index_backend as backend
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
@@ -24,7 +24,14 @@ def knowledge_service(tmp_path, monkeypatch):
     monkeypatch.setattr(knowledge_backend, '_parse_projects_yaml', lambda: [
         {'id': 'Fixture', 'path': str(project_root), 'status': 'active'},
     ])
+    monkeypatch.setattr(knowledge_source, '_parse_projects_yaml', lambda: [
+        {'id': 'Fixture', 'path': str(project_root), 'status': 'active'},
+    ])
     monkeypatch.setattr(knowledge_backend, '_get_tag_config', lambda: (
+        ['information'], {'information': 'information'},
+        {'information': 'information'}, 'visibility-fixture',
+    ))
+    monkeypatch.setattr(knowledge_source, '_get_tag_config', lambda: (
         ['information'], {'information': 'information'},
         {'information': 'information'}, 'visibility-fixture',
     ))
@@ -43,6 +50,8 @@ def knowledge_service(tmp_path, monkeypatch):
         mutation_provider_loader=knowledge.install_mutation_provider,
     )
     monkeypatch.setattr(knowledge_backend, 'get_resource_service', lambda: service)
+    monkeypatch.setattr(knowledge_source, 'get_resource_service', lambda: service)
+    monkeypatch.setattr(knowledge_details, 'get_resource_service', lambda: service)
     return service, index
 
 
@@ -139,6 +148,12 @@ def test_experiment_registration_is_immediately_queryable(knowledge_service, mon
     project_root = tmp_path / 'Fixture'
     monkeypatch.setattr(experiment, '_project_roots', lambda: [('Fixture', project_root)])
     monkeypatch.setattr(knowledge_backend, '_get_tag_config', lambda: (
+        ['information', 'experiment'],
+        {'information': 'information', 'experiment': 'experiment'},
+        {'information': 'information', 'experiment': 'experiment'},
+        'visibility-fixture',
+    ))
+    monkeypatch.setattr(knowledge_source, '_get_tag_config', lambda: (
         ['information', 'experiment'],
         {'information': 'information', 'experiment': 'experiment'},
         {'information': 'information', 'experiment': 'experiment'},

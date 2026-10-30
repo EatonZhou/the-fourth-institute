@@ -291,12 +291,14 @@ def test_writer_registered_repo_article_device_and_ignores_keep_existing_rows(tm
 
 def test_writer_knowledge_graph_response_keeps_actor_boundary(monkeypatch):
     from unittest.mock import Mock
-    from knowledge_board_lan import knowledge_backend as knowledge
+    from knowledge_board_lan import knowledge_backend as knowledge, knowledge_details, knowledge_source
     index = Mock(return_value={"items":[]})
     service = Mock()
     service.query.return_value = {"resources":[]}
     monkeypatch.setattr(knowledge, "resource_index_snapshot", index)
     monkeypatch.setattr(knowledge, "get_resource_service", lambda:service)
+    monkeypatch.setattr(knowledge_source, "get_resource_service", lambda:service)
+    monkeypatch.setattr(knowledge_details, "get_resource_service", lambda:service)
     result = knowledge.build_knowledge_graph(actor="isolated-writer", refresh=True)
     assert result["schema"] == "tfi.knowledge_graph.v1"
     assert result["nodes"] == result["edges"] == []

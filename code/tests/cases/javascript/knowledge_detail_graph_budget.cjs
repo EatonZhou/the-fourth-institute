@@ -4,12 +4,12 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {performance} = require('node:perf_hooks');
 
-const html = fs.readFileSync(path.resolve(__dirname, '../../../knowledge_board_lan/knowledge_board.html'), 'utf8');
-const start = html.indexOf('      function detailGraphRingPositions(');
-const end = html.indexOf('      function detailGraphLinePosition(', start);
+const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/knowledge_board_detail_graph.js'), 'utf8');
+const start = source.indexOf('function detailGraphRingPositions(');
+const end = source.indexOf('function detailGraphLinePosition(', start);
 assert(start >= 0 && end > start);
 const context = vm.createContext({});
-vm.runInContext(html.slice(start, end), context);
+vm.runInContext(source.slice(start, end), context);
 
 // A normal two-hop knowledge item can have dozens of neighbours. Rendering
 // must keep every node without monopolising the browser's main thread.

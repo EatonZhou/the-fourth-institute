@@ -45,14 +45,12 @@ def render_knowledge_html(
     if hide_detail_graph:
         body_attributes.append('data-resource-detail-hide-graph="1"')
     if body_attributes:
-        html = html.replace(
-            '<body class="portalBoardShell">',
-            f'<body class="portalBoardShell" {" ".join(body_attributes)}>',
-            1,
+        # The page's body tag carries more classes than portalBoardShell
+        # (knowledgeInitializing until the board has loaded).
+        html = re.sub(
+            r"<body\b([^>]*)>",
+            lambda match: f'<body{match.group(1)} {" ".join(body_attributes)}>',
+            html,
+            count=1,
         )
-    html = html.replace(
-        'const params = new URLSearchParams({ active_only: "0" });',
-        'const params = new URLSearchParams({ active_only: "0", surface: "resource-knowledge" });',
-        1,
-    )
     return html.encode("utf-8")

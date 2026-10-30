@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_backend, knowledge_details, knowledge_source
 
 
 class KnowledgeEntryRootsTest(unittest.TestCase):
@@ -50,6 +50,16 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
             with (
                 mock.patch.object(
                     knowledge_backend,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
+                    knowledge_source,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
+                    knowledge_details,
                     "get_resource_service",
                     return_value=resource_service,
                 ),
@@ -102,6 +112,16 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
                     return_value=resource_service,
                 ),
                 mock.patch.object(
+                    knowledge_source,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
+                    knowledge_details,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
                     knowledge_backend,
                     "knowledge_resource_id_for_path",
                     side_effect=KeyError("knowledge item not found"),
@@ -145,7 +165,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
             ],
         }
 
-        public = knowledge_backend.public_item_record(item)
+        public = knowledge_source.public_item_record(item)
 
         self.assertEqual(public["kb_id"], item["kb_id"])
         self.assertNotIn("id", public)
@@ -170,7 +190,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
 
             with mock.patch.object(knowledge_backend.skill_backend, "_path_is_allowed", return_value=True):
                 self.assertEqual(knowledge_backend._valid_item_path(str(attachment)), attachment.resolve())
-            self.assertEqual(knowledge_backend._file_kind(attachment), "pdf")
+            self.assertEqual(knowledge_source._file_kind(attachment), "pdf")
 
     def test_directory_is_one_entry_and_nested_reports_are_companions(self):
         """目录作为单个知识条目且嵌套报告作为附属文件"""
@@ -182,7 +202,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
             (entry / "experiment.md").write_text("# Camera probe\n", encoding="utf-8")
             report.write_text("# Internal report\n", encoding="utf-8")
 
-            specs = knowledge_backend._entry_specs(tag_root, "experiment")
+            specs = knowledge_source._entry_specs(tag_root, "experiment")
 
             self.assertEqual(len(specs), 1)
             root, primary, files = specs[0]
@@ -207,14 +227,14 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
             ignored.mkdir(parents=True)
             (ignored / "ignored.js").write_text("ignored", encoding="utf-8")
 
-            specs = knowledge_backend._index_entry_specs(tag_root)
+            specs = knowledge_source._index_entry_specs(tag_root)
 
             self.assertEqual(len(specs), 1)
             _root, selected, files, truncated = specs[0]
             self.assertEqual(selected, primary)
             self.assertEqual(
                 len(files),
-                knowledge_backend._INDEX_ENTRY_FILE_LIMIT,
+                knowledge_source._INDEX_ENTRY_FILE_LIMIT,
             )
             self.assertTrue(truncated)
             self.assertIn(primary, files)
@@ -250,7 +270,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
                     "path": str(related_path),
                 },
             }
-            with knowledge_backend._LOCK:
+            with knowledge_source._LOCK:
                 knowledge_backend._ITEM_GRAPH_CACHE.clear()
             with (
                 mock.patch.object(
@@ -337,7 +357,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
                     for kb_id, path in paths.items()
                 ],
             }
-            with knowledge_backend._LOCK:
+            with knowledge_source._LOCK:
                 knowledge_backend._KNOWLEDGE_GRAPH_CACHE.clear()
             with (
                 mock.patch.object(
@@ -347,6 +367,16 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
                 ) as snapshot,
                 mock.patch.object(
                     knowledge_backend,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
+                    knowledge_source,
+                    "get_resource_service",
+                    return_value=resource_service,
+                ),
+                mock.patch.object(
+                    knowledge_details,
                     "get_resource_service",
                     return_value=resource_service,
                 ),
@@ -400,7 +430,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            item = knowledge_backend._read_kb_file(
+            item = knowledge_source._read_kb_file(
                 str(path),
                 "Test",
                 {"thinking"},

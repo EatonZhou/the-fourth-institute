@@ -12,6 +12,7 @@ from urllib.parse import unquote
 import yaml
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_common.portal_paths import path as portal_path
+from management_common.text_values import strip_quotes
 
 from management_portal import project_registry
 
@@ -50,12 +51,6 @@ _IMAGE_FILE_EXTENSIONS = {
     ".webp",
 }
 
-def _strip_quotes(value: str) -> str:
-    v = value.strip()
-    if len(v) >= 2 and v[0] == v[-1] and v[0] in {"'", '"'}:
-        return v[1:-1]
-    return v
-
 
 def _parse_front_matter(md_text: str) -> tuple[dict[str, str], str]:
     text = md_text.lstrip("\ufeff")
@@ -77,7 +72,7 @@ def _parse_front_matter(md_text: str) -> tuple[dict[str, str], str]:
         if ":" not in raw:
             continue
         k, v = raw.split(":", 1)
-        meta[k.strip()] = _strip_quotes(v.strip())
+        meta[k.strip()] = strip_quotes(v.strip())
     rest = "\n".join(lines[end_index + 1:])
     return meta, rest
 

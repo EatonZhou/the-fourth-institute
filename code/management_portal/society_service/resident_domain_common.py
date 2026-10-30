@@ -4,7 +4,6 @@ from management_common.portal_paths import path as portal_path
 import copy
 import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Mapping
 from datetime import datetime, timezone
 import json
@@ -128,14 +127,6 @@ def truncate_text(text: str, limit: int = MAX_MESSAGE_CHARS) -> str:
     if len(value) <= limit:
         return value
     return value[:limit].rstrip() + "\n\n[content truncated for portal preview]"
-
-
-def path_is_within(path: Path, root: Path) -> bool:
-    try:
-        path.relative_to(root)
-    except ValueError:
-        return False
-    return True
 
 
 def resident_status_signature(payload: dict[str, Any]) -> str:

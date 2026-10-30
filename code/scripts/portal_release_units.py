@@ -168,10 +168,11 @@ def script_group_unit(root: Path, group: str) -> tuple[str, ...]:
 
 
 # The Paper, Article, Repo and Projects pages each load their root script after
-# the module scripts it creates its parts from; the home and component demo
-# pages keep their style sheets, and the demo page its script, in static files.
-# The page lists them, so the page and every script and style sheet it loads by
-# the page's prefix are one unit.
+# the module scripts it creates its parts from, and the Knowledge board its root
+# script after the part scripts that share its globals; the home and component
+# demo pages keep their style sheets, and the demo page its script, in static
+# files. The page lists them, so the page and every script and style sheet it
+# loads by the page's prefix are one unit.
 PAGES = (
     ('management_portal/paper.html', 'paper'),
     ('management_portal/article_workspace.html', 'article_workspace'),
@@ -179,6 +180,7 @@ PAGES = (
     ('management_portal/projects.html', 'project'),
     ('management_portal/index.html', 'home'),
     ('management_portal/test_demo_components.html', 'test_demo_components'),
+    ('knowledge_board_lan/knowledge_board.html', 'knowledge_board'),
 )
 
 

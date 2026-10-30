@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from knowledge_board_lan import knowledge_backend
+from knowledge_board_lan import knowledge_source, knowledge_versions
 from management_portal.permission_system.scheme.compiler import SchemeError, compile_scheme
 from management_portal.permission_system.scheme.repository import builtin_documents, source_digest
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
@@ -162,7 +162,7 @@ def recovery_evidence(tmp_path, tag, *, corrupt=False):
     path.write_text(current)
     def snapshot(text):
         return {"text": text, "sha256": hashlib.sha256(text.encode()).hexdigest(),
-                "version": knowledge_backend.knowledge_version_record(text)}
+                "version": knowledge_source.knowledge_version_record(text)}
     change_id = "1" * 32
     change = {"schema": tag, "change_id": change_id, "actor": RESIDENT, "execution_id": "isolated",
               "resource_id": KNOWLEDGE, "address": KNOWLEDGE, "path": str(path),
@@ -181,9 +181,9 @@ def test_recovery_reads_evidence_without_changing_receipt_or_content(tmp_path, n
     stamp = path.stat().st_mtime_ns
     if namespace == "archive":
         with pytest.raises(ValueError, match="different scope or order"):
-            knowledge_backend._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids)
+            knowledge_versions._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids)
     else:
-        assert knowledge_backend._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids) == original
+        assert knowledge_versions._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids) == original
     assert store.for_changes(ids) == retained
     assert path.read_text() == current
     assert path.stat().st_mtime_ns == stamp
@@ -195,7 +195,7 @@ def test_recovery_rejects_bad_schema_without_changing_evidence(tmp_path, tag):
     path, _, current, store, ids = recovery_evidence(tmp_path, tag)
     retained = store.for_changes(ids)
     with pytest.raises(ValueError, match="different scope or order"):
-        knowledge_backend._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids)
+        knowledge_versions._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids)
     assert store.for_changes(ids) == retained
     assert path.read_text() == current
 
@@ -210,6 +210,6 @@ def test_recovery_alias_cannot_bypass_snapshot_hash(tmp_path, namespace):
     # The canonical case must reach hash validation; the alias fails earlier.
     reason = "different scope or order" if namespace == "archive" else "snapshot hash is invalid"
     with pytest.raises(ValueError, match=reason):
-        knowledge_backend._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids)
+        knowledge_versions._knowledge_version_recovery_source(KNOWLEDGE, path, current, ids)
     assert store.for_changes(ids) == retained
     assert path.read_text() == current

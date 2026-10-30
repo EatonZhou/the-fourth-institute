@@ -16,6 +16,8 @@ import pytest
 import yaml
 
 import knowledge_board_lan.knowledge_backend as knowledge_backend
+import knowledge_board_lan.knowledge_details as knowledge_details
+import knowledge_board_lan.knowledge_source as knowledge_source
 from management_common import site_registry
 from management_portal import portal_access_control, resource_index_backend
 from management_portal.execution import agent_data_store, service as execution_service
@@ -170,6 +172,8 @@ def owners(tmp_path, monkeypatch):
     monkeypatch.setattr(resource_client, "get_resource_service", lambda: resource)
     monkeypatch.setattr(resources, "get_resource_service", lambda: resource)
     monkeypatch.setattr(knowledge_backend, "get_resource_service", lambda: resource)
+    monkeypatch.setattr(knowledge_source, "get_resource_service", lambda: resource)
+    monkeypatch.setattr(knowledge_details, "get_resource_service", lambda: resource)
     monkeypatch.setattr(resource_index_backend, "get_service", lambda: index)
     for method_name in (
         "sync_lineage", "sync_resident",
@@ -325,6 +329,8 @@ def test_project_binding_resource_and_execution_follow_real_domain_ports(owners,
         collaboration_store=fresh_descriptors, registration_store=ResourceRegistrationStore(), resolver_loader=install_resolvers,
     )
     owners.monkeypatch.setattr(knowledge_backend, "get_resource_service", lambda: fresh_resource)
+    owners.monkeypatch.setattr(knowledge_source, "get_resource_service", lambda: fresh_resource)
+    owners.monkeypatch.setattr(knowledge_details, "get_resource_service", lambda: fresh_resource)
     owners.monkeypatch.setattr(resource_client, "get_resource_service", lambda: fresh_resource)
     assert fresh_resource.read_content(CONTENT_ID, actor=ACTOR)[0] == body
     assert binding in resident_record_domain.find_resident(owners.resident_id)["workspace_bindings"]
