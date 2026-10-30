@@ -883,7 +883,10 @@
         const runs = batches.flat();
         const pending = watchboardRuns.get(residentId);
         if (pending) {
-          const detail = await execute("GetTriggerPath", {lineage_id: lineageId, trigger_path_id: pending.trigger_path_id});
+          const [detail] = await Promise.all([
+            execute("GetTriggerPath", {lineage_id: lineageId, trigger_path_id: pending.trigger_path_id}),
+            globalThis.PortalUIPrimitives.loadAsset("/static/portal_script_runs.js", {ready: () => !!window.PortalScriptRuns}),
+          ]);
           const calls = window.PortalScriptRuns.effectCalls(detail).items;
           const call = calls.find(item => item.script_run_id);
           if (call) {

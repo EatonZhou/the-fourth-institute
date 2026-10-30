@@ -986,10 +986,11 @@
     persistence: { schemaVersion: 1 },
     create: mountWorkbenchTerminalPanel,
   };
+  // A page offers the Terminal panel by loading portal_terminal.js before this script.
   const panelPackages = Object.freeze({
     authored: Object.freeze(authoredPanelPackage),
     preview: Object.freeze(previewPanelPackage),
-    terminal: Object.freeze(terminalPanelPackage),
+    ...(window.PortalTerminal ? { terminal: Object.freeze(terminalPanelPackage) } : {}),
   });
   window.PortalWorkspaceSurface = Object.freeze({
     createDocumentEditorTools,
