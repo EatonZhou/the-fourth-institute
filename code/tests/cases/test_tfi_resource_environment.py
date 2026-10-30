@@ -99,7 +99,9 @@ def test_resource_backup_and_registration_environment(mode, tmp_path, monkeypatc
     class InlineThread:
         def __init__(self, target, **kwargs): self.target = target
         def start(self): self.target()
-    monkeypatch.setattr(registration.threading, 'Thread', InlineThread)
+    # Only registration's own name: other threads still running from earlier tests (a
+    # PostgreSQL pool spawning its workers) must keep the real threading.Thread.
+    monkeypatch.setattr(registration, 'threading', SimpleNamespace(Thread=InlineThread, Event=registration.threading.Event))
     monkeypatch.setattr(registration, 'ResourceAutoRegistrar', lambda **kwargs: object())
     monkeypatch.setattr(registration, 'reconcile_if_due',
                         lambda registrar, interval_seconds: intervals.append(interval_seconds) or {})
