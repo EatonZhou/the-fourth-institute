@@ -45,7 +45,7 @@ def assert_no_clients(connection):
     while True:
         connection.execute('SELECT pg_stat_clear_snapshot()')
         count = connection.execute("""SELECT count(*) FROM pg_stat_activity
-            WHERE datname=current_database() AND pid<>pg_backend_pid()
+            WHERE pid<>pg_backend_pid()
             AND backend_type='client backend'""").fetchone()[0]
         if not count:
             return

@@ -50,6 +50,19 @@ def test_existing_uncommitted_writer_refuses_freeze(database):
                 pytest.fail('An uncommitted writer must prevent the offline barrier')
 
 
+def test_other_database_client_blocks_cluster_shutdown_without_cancellation(database):
+    from scripts import tfi_application_clients as clients
+    api = SimpleNamespace(clean_environment=lambda _: {'PORTAL_DATABASE_URL': database})
+    with barrier.freeze(api, [{'target': {}}]) as held:
+        with psycopg.connect(os.environ['PORTAL_POSTGRES_TEST_DSN'], autocommit=True) as other:
+            with pytest.raises(RuntimeError, match='Other database'):
+                clients.plan_disconnected(held[0], None, None)
+            with pytest.raises(RuntimeError, match='other client'):
+                barrier.assert_no_clients(held[0])
+            assert other.execute('SELECT 1').fetchone() == (1,)
+        barrier.assert_no_clients(held[0])
+
+
 def test_guarded_cancel_wakes_only_blocked_sql_and_zero_clients_still_required(database):
     # Real PG signal/lock semantics; process ownership is exercised separately
     # by the Windows adapter/native acceptance, never inferred from this fake.

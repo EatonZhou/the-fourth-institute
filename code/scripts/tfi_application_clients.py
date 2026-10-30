@@ -10,6 +10,7 @@ import json
 import socket
 import struct
 import sys
+import time
 
 
 class WindowsProcesses:
@@ -166,6 +167,7 @@ def ancestry(processes, pid, roots):
 
 
 def capture(connection, processes, roots):
+    assert_no_foreign_clients(connection)
     server, port, barrier_pid = connection.execute(
         'SELECT host(inet_server_addr()),inet_server_port(),pg_backend_pid()').fetchone()
     if not server or not ipaddress.ip_address(server).is_loopback or ':' in server:
@@ -192,6 +194,22 @@ def capture(connection, processes, roots):
     return {'barrier_pid': barrier_pid, 'clients': captured}
 
 
+def assert_no_foreign_clients(connection):
+    # Stopping this PostgreSQL instance stops its entire cluster. Clients in
+    # another database are never candidates for maintenance SQL cancellation.
+    deadline = time.monotonic() + 2
+    while True:
+        connection.execute('SELECT pg_stat_clear_snapshot()')
+        count = connection.execute("""SELECT count(*) FROM pg_stat_activity
+            WHERE backend_type='client backend' AND datname IS DISTINCT FROM current_database()
+            AND pid<>pg_backend_pid()""").fetchone()[0]
+        if not count:
+            return
+        if time.monotonic() >= deadline:
+            raise RuntimeError('Other database has client sessions; cluster shutdown refused')
+        time.sleep(.05)
+
+
 def lock_requests(connection, pid, blocker):
     rows = connection.execute("""SELECT w.database,w.relation,w.mode,
         EXISTS(SELECT 1 FROM pg_locks b WHERE b.pid=%s AND b.granted
@@ -207,8 +225,9 @@ def lock_requests(connection, pid, blocker):
     return [f'{db}:{relation}:{mode}' for db, relation, mode, _ in rows]
 
 
-def clear_disconnected(connection, processes, evidence):
-    """One query-cancel signal only for pinned, dead-client, own-barrier waits."""
+def plan_disconnected(connection, processes, evidence):
+    """Validate all candidates without issuing any signal."""
+    assert_no_foreign_clients(connection)
     residual = clients(connection)
     locks = {}
     for row in residual:
@@ -222,6 +241,18 @@ def clear_disconnected(connection, processes, evidence):
                 or row['blockers'] != [evidence['barrier_pid']]):
             raise RuntimeError('Residual database client is not a proven disconnected service wait')
         locks[row['pid']] = lock_requests(connection, row['pid'], evidence['barrier_pid'])
+    return residual, locks
+
+
+def clear_disconnected(connection, processes, evidence, plan=None):
+    """One query-cancel signal only for pinned, dead-client, own-barrier waits."""
+    residual, locks = plan_disconnected(connection, processes, evidence)
+    if plan is not None:
+        original = {row['pid']: row for row in plan[0]}
+        if any(original.get(row['pid']) != row or plan[1].get(row['pid']) != locks[row['pid']]
+               for row in residual):
+            raise RuntimeError('Disconnected SQL changed after all-instance validation')
+    signals = 0
     for row in residual:
         known = evidence['clients'][row['pid']]
         connection.execute('SELECT pg_stat_clear_snapshot()')
@@ -240,12 +271,28 @@ def clear_disconnected(connection, processes, evidence):
             AND NOT EXISTS(SELECT 1 FROM pg_locks w WHERE w.pid=s.pid AND NOT w.granted
                 AND NOT EXISTS(SELECT 1 FROM pg_locks b WHERE b.pid=%s AND b.granted
                     AND b.locktype='relation' AND b.mode='ShareLock'
-                    AND b.database=w.database AND b.relation=w.relation))""",
+                    AND b.database=w.database AND b.relation=w.relation))
+            AND NOT EXISTS(SELECT 1 FROM pg_stat_activity other
+                WHERE other.backend_type='client backend' AND other.pid<>pg_backend_pid()
+                AND (other.datname IS DISTINCT FROM current_database()
+                     OR other.pid<>ALL(%s::integer[])))""",
             (*[known['identity'][k] for k in IDENTITY], evidence['barrier_pid'],
-             row['query_start'], row['xact_start'], locks[row['pid']], evidence['barrier_pid'])).fetchall()
+             row['query_start'], row['xact_start'], locks[row['pid']], evidence['barrier_pid'],
+             [item['pid'] for item in residual])).fetchall()
+        if not result and not any(peer['pid'] == row['pid'] for peer in clients(connection)):
+            continue  # The pinned original backend disappeared naturally.
         if result != [(True,)]:
             raise RuntimeError('Disconnected service SQL wait changed before cancellation')
-    return len(residual)
+        signals += 1
+    return signals
+
+
+def clear_all(connections, processes, evidence):
+    # An unknown client in a later instance must refuse before any instance is
+    # signalled. Each action then revalidates; final cluster-zero guards remain.
+    plans = [plan_disconnected(c, processes, e) for c, e in zip(connections, evidence, strict=True)]
+    return [clear_disconnected(c, processes, e, p)
+            for c, e, p in zip(connections, evidence, plans, strict=True)]
 
 
 @contextmanager
@@ -279,7 +326,6 @@ def owned_clients(api, records, connections):
                     raise ValueError('Owned service process identity changed')
                 roots[state['child_pid']] = (state['child_created'], state['pid'], state['created'])
         evidence = [capture(c, processes, roots) for c in connections]
-        yield lambda: [clear_disconnected(c, processes, e)
-                       for c, e in zip(connections, evidence, strict=True)]
+        yield lambda: clear_all(connections, processes, evidence)
     finally:
         processes.close()

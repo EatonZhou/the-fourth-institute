@@ -36,6 +36,7 @@ def captured(monkeypatch):
     current = [row()]
     monkeypatch.setattr(clients, 'clients', lambda _: copy.deepcopy(current))
     monkeypatch.setattr(clients, 'lock_requests', lambda *_: ['1:42:RowExclusiveLock'])
+    monkeypatch.setattr(clients, 'assert_no_foreign_clients', lambda *_: None)
     connection = Mock()
     connection.execute.return_value.fetchone.return_value = ('127.0.0.1', 5432, 30)
     evidence = clients.capture(connection, processes, {11: (200, 10, 100)})
@@ -64,7 +65,7 @@ def test_only_pinned_disconnected_service_wait_receives_one_signal(monkeypatch):
     signal = [call for call in connection.execute.call_args_list if 'pg_cancel_backend' in call.args[0]]
     assert len(signal) == 1
     assert signal[0].args[1] == (20, row()['backend_start'], 1, 2, '127.0.0.1', 43210, 30,
-        row()['query_start'], row()['xact_start'], ['1:42:RowExclusiveLock'], 30)
+        row()['query_start'], row()['xact_start'], ['1:42:RowExclusiveLock'], 30, [20])
 
 
 @pytest.mark.parametrize('case', ['new', 'generation', 'user', 'endpoint', 'live_client',
@@ -116,6 +117,25 @@ def test_unknown_among_known_clients_prevents_all_signals(monkeypatch):
     current.append({**row(), 'pid': 21})
     with pytest.raises(RuntimeError, match='not a proven'):
         clients.clear_disconnected(connection, processes, evidence)
+    connection.execute.assert_not_called()
+
+
+def test_second_instance_unknown_prevents_first_instance_signals(monkeypatch):
+    connection, processes, current, evidence = captured(monkeypatch)
+    other = Mock()
+    monkeypatch.setattr(clients, 'clients', lambda c: copy.deepcopy(current if c is connection else [{**row(), 'pid':21}]))
+    with pytest.raises(RuntimeError, match='not a proven'):
+        clients.clear_all([connection, other], processes, [evidence, evidence])
+    connection.execute.assert_not_called()
+    other.execute.assert_not_called()
+
+
+def test_query_change_after_global_validation_is_not_cancelled(monkeypatch):
+    connection, processes, current, evidence = captured(monkeypatch)
+    plan = clients.plan_disconnected(connection, processes, evidence)
+    current[0]['query_start'] += '1'
+    with pytest.raises(RuntimeError, match='all-instance validation'):
+        clients.clear_disconnected(connection, processes, evidence, plan)
     connection.execute.assert_not_called()
 
 
