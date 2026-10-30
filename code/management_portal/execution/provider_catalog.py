@@ -3,6 +3,7 @@
 Native SDKs, route parsing and model constraints stay behind these adapters.
 Adding a backend must not add provider tests to Resident or ExecutionRuntime.
 """
+import logging
 from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
@@ -22,6 +23,7 @@ from .harness_capabilities import (
     TURN_REASONING_EFFORT,
 )
 
+LOGGER = logging.getLogger(__name__)
 
 # The slash commands a Provider's session may answer, in menu order.  Which
 # of them it answers follows from what it declares (``native_commands``).
@@ -142,7 +144,10 @@ class AgentProvider:
             return (hook(route) if hook else "") or self.upstream
         try:
             return str(self.catalog(route).get("upstream_provider") or self.upstream)
-        except Exception:  # noqa: BLE001 - an unknown route keeps the Provider's own service
+        except (KeyError, ValueError):  # an unknown or disabled route keeps the Provider's own service
+            return self.upstream
+        except Exception:  # noqa: BLE001 - an unreadable catalog keeps the Provider's own service
+            LOGGER.warning("%s route %r catalog unreadable; using %s", self.provider, route, self.upstream, exc_info=True)
             return self.upstream
 
     def harness_capabilities(self, route: str = "") -> frozenset[str]:
@@ -163,7 +168,10 @@ class AgentProvider:
             return hook(route) if hook else True
         try:
             return bool(self.catalog(route)["capabilities"]["media"])
-        except Exception:  # noqa: BLE001 - an unknown route offers no image input
+        except (KeyError, ValueError):  # an unknown route, or one that declares no media, offers no image input
+            return False
+        except Exception:  # noqa: BLE001 - an unreadable catalog offers no image input
+            LOGGER.warning("%s route %r catalog unreadable; no image input", self.provider, route, exc_info=True)
             return False
 
     def _account_hook(self, name: str):

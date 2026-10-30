@@ -46,6 +46,8 @@ def _mailbox_terminal(fact: ResidentTerminalFact) -> list[str]:
             return []
         return resident_mailbox.finish_group(record, fact.message_id, fact.terminal_status)
     except Exception:  # noqa: BLE001 - member reads follow the group even without this write
+        LOGGER.warning("Mailbox group %s of %s did not finish its members", fact.message_id,
+                       fact.resident_id, exc_info=True)
         return []
 
 

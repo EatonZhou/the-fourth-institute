@@ -56,8 +56,6 @@ FAILURE = re.compile(
 FAILURE_CALL = re.compile(r"(error|fail|unavailable|reject|notif|alert)", re.IGNORECASE)
 COLLECT = {"append", "add", "extend", "update", "setdefault", "insert", "put"}
 
-_C1 = "owned by area C1 in round 4"
-
 # path::qualified function -> (silent broad handlers in it, why they stay silent)
 ALLOWED: dict[str, tuple[int, str]] = {
     "management_portal/claude_code_daemon.py::ClaudeCodeDaemon.run_turn.discard_later": (
@@ -76,18 +74,13 @@ ALLOWED: dict[str, tuple[int, str]] = {
         1, "closing a client at stop or after the failure was stored in _last_error"),
     "management_portal/personal_ama.py::_provision_session": (
         1, "a failed probe only provisions again; provisioning reads the same store and reports its failure"),
+    "management_portal/resources/isa.py::reads_only": (
+        1, "classification only: an unreadable target or undeclared action is recorded as a change, and "
+           "RunResourceAction then rejects it with the real error"),
     "scripts/tfi_application_clients.py::plan_disconnected": (
         1, "the failed re-read is recorded as fresh_observation='read_error' in the raised proof"),
     "scripts/tfi_release_windows_service.py::run_command_service.service_main": (
         1, "forced stop of the child after the error was written to the .error.log"),
-    # Files other round-4 areas are changing: fixed after that area lands.
-    "management_portal/chatroom_backend.py::_active_deliveries": (1, "owned by areas C1 and R3 in round 4"),
-    "management_portal/chatroom_backend.py::_publish": (1, "owned by areas C1 and R3 in round 4"),
-    "management_portal/chatroom_backend.py::reconcile_deliveries": (1, "owned by areas C1 and R3 in round 4"),
-    "management_portal/execution/provider_catalog.py::AgentProvider._route_takes_images": (1, _C1),
-    "management_portal/execution/provider_catalog.py::AgentProvider.upstream_for": (1, _C1),
-    "management_portal/resources/isa.py::reads_only": (1, _C1),
-    "management_portal/society_service/runtime/backend_adapter.py::_mailbox_terminal": (1, _C1),
 }
 
 

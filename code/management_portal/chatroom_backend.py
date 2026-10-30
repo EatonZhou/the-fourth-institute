@@ -299,7 +299,7 @@ def _publish(room: Mapping[str, Any], *, fields: Iterable[str], inbox: bool = Tr
             },
         )
     except Exception:  # noqa: BLE001 - notifications only wake readers
-        pass
+        LOGGER.warning("Chatroom %s change notification not published", room.get("chatroom_id"), exc_info=True)
     if inbox:
         _publish_inbox(room.get("members") or [])
 
@@ -544,6 +544,8 @@ def _active_deliveries(room: Mapping[str, Any]) -> list[dict[str, Any]]:
                     "include_progress": True,
                 }, str(delivery["delivered_by"]))
             except Exception:  # noqa: BLE001 - one unreadable Resident must not hide the others
+                LOGGER.warning("Chatroom %s delivery %s: input state of %s unreadable", room.get("chatroom_id"),
+                               delivery["id"], delivery["resident_id"], exc_info=True)
                 continue
             input_state = result.get("input_state") if isinstance(result, Mapping) else None
             input_state = input_state if isinstance(input_state, Mapping) else {}
@@ -1291,6 +1293,7 @@ def reconcile_deliveries(chatroom_id: object) -> None:
             if current.get("status") == "delivered":
                 _project_terminal(clean_id, current)
         except Exception:  # noqa: BLE001 - one unreadable delivery must not block the others
+            LOGGER.warning("Chatroom %s delivery %s not reconciled", clean_id, delivery_id, exc_info=True)
             continue
 
 
