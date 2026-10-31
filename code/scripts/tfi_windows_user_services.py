@@ -20,6 +20,14 @@ import sys
 import tempfile
 import time
 
+DEFINITION_ENV = "TFI_SERVICE_DEFINITION"
+RESTART_DELAY_SECONDS = 3
+RESTART_DELAY_MAX_SECONDS = 60
+RESTART_RESET_SECONDS = 60
+REVIVE_INTERVAL_SECONDS = 60
+REVIVE_DELAY_MAX_SECONDS = 1800
+CREATE_BREAKAWAY_FROM_JOB = 0x01000000
+
 
 def _record_operation(path, operation):
     """Allow brief sharing/delete-pending windows, never assume access denied = absent."""
@@ -240,20 +248,33 @@ class WindowsServiceControl:
         if value is None:
             return self.scm().status(name)
         record = {}
+        path = state_path(value)
         try:
-            record = json.loads(read_record(state_path(value)))
+            record = json.loads(read_record(path))
         except FileNotFoundError:
             pass
         active = bool(record.get("pid") and record.get("created") is not None
                       and process_stamp(record["pid"]) == record["created"]
                       and record.get("child_pid") and record.get("child_created") is not None
                       and process_stamp(record["child_pid"]) == record["child_created"])
-        # Keep a living supervisor visible even while its child is stopping.
+        # Keep a living supervisor visible even while its child is stopping
+        # or waiting to restart after a failure.
         supervisor = bool(record.get("pid") and record.get("created") is not None
                           and process_stamp(record["pid"]) == record["created"])
-        return {"service": name, "load": "loaded", "active": "active" if active else "inactive",
-                "sub": "running" if active else "stopping" if supervisor else "dead",
-                "pid": record["pid"] if supervisor else 0}
+        if active:
+            return {"service": name, "load": "loaded", "active": "active", "sub": "running", "pid": record["pid"]}
+        if supervisor:
+            try:
+                stopping = read_record(path.with_suffix(".stop")) == str(record["created"])
+            except FileNotFoundError:
+                stopping = False
+            return {"service": name, "load": "loaded", "active": "deactivating" if stopping else "activating",
+                    "sub": "stopping" if stopping else "auto-restart", "pid": record["pid"]}
+        # A supervisor removes its record on every exit it can observe. A
+        # record that outlived its supervisor means the supervisor itself was
+        # terminated: report it like systemd's failed unit, never as stopped.
+        return {"service": name, "load": "loaded", "active": "failed" if record else "inactive",
+                "sub": "failed" if record else "dead", "pid": 0}
 
     def start(self, *names):
         for name in names:
@@ -262,8 +283,8 @@ class WindowsServiceControl:
                 self.scm().start(name)
                 continue
             status = self.status(name)
-            if status["active"] == "active":
-                continue
+            if status["active"] in {"active", "activating"}:
+                continue  # A supervisor waiting to restart its child owns the start.
             if status["pid"]:
                 raise RuntimeError("Wait for the component to stop: " + name)
             from management_common.file_lock import lock_stream
@@ -275,12 +296,21 @@ class WindowsServiceControl:
                     raise RuntimeError("Wait for the component to stop: " + name)
                 log = Path(value["root"]) / "runtime" / ((value["name"] if value["component"] == "codex" else value["component"]) + ".log")
                 with log.open("ab") as output:
-                    process = subprocess.Popen(
-                        [value["python"], str(Path(value["code"]) / "scripts/tfi_windows_user_services.py"),
-                         "--definition", str(self.directory / (name + ".json"))],
-                        stdin=subprocess.DEVNULL, stdout=output, stderr=output,
-                        creationflags=subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP,
-                        close_fds=True)
+                    arguments = [value["python"], str(Path(value["code"]) / "scripts/tfi_windows_user_services.py"),
+                                 "--definition", str(self.directory / (name + ".json"))]
+                    flags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
+                    # A caller inside a component's kill-on-close Job (for
+                    # example ExecutionService account hosting) must not make
+                    # this supervisor die silently with that component.
+                    try:
+                        process = subprocess.Popen(arguments, stdin=subprocess.DEVNULL, stdout=output,
+                                                   stderr=output, close_fds=True,
+                                                   creationflags=flags | CREATE_BREAKAWAY_FROM_JOB)
+                    except PermissionError:
+                        # An outer Job that forbids breakaway (some shells and
+                        # task hosts); none of the instance's own Jobs do.
+                        process = subprocess.Popen(arguments, stdin=subprocess.DEVNULL, stdout=output,
+                                                   stderr=output, close_fds=True, creationflags=flags)
                 deadline = time.monotonic() + 60
                 while time.monotonic() < deadline:
                     if self.status(name)["active"] == "active":
@@ -316,24 +346,90 @@ class WindowsServiceControl:
         self.start(name)
 
 
+def failed_units(target, directory):
+    """Name every user unit of this installation whose supervisor was terminated."""
+    from scripts import tfi_release_install as api
+    from scripts.tfi_release_provider_services import owned_services
+    control = WindowsServiceControl(directory)
+    units = {api.unit_name(target, c): control for c in api.COMPONENTS}
+    units.update((owned_services(target, directory) or {}).get("controllers", {}))
+    return {name: unit for name, unit in units.items()
+            if unit.definition(name) is not None and unit.status(name)["active"] == "failed"}
+
+
+def revive_failed(definition, attempts, now=time.monotonic):
+    """Start this installation's failed user units once; the caller repeats.
+
+    A unit is failed only when its supervisor died without removing its
+    record, so explicit stops and normal exits are never revived. The pass
+    skips while an installer, upgrade or recovery owns the instance, and backs
+    off per unit after a failed start. ``attempts`` carries that backoff.
+    """
+    from scripts import tfi_release_install as api
+    definition = Path(definition)
+    value = validate_definition(json.loads(definition.read_text(encoding="utf-8")), definition.stem)
+    root = Path(value["root"])
+    state = api.owned_state(root)
+    if state.get("migration", {}).get("business_execution_allowed") is False:
+        return []
+    target = state["target"]
+    if target.get("shared_code_root"):
+        from scripts.tfi_application_upgrade import pending
+        if pending(Path(target["shared_code_root"]).parent):
+            return []
+    failed = failed_units(target, definition.parent)
+    for name in set(attempts) - set(failed):
+        attempts.pop(name)
+    due = [name for name in sorted(failed) if attempts.get(name, (0, 0))[1] <= now()]
+    if not due:
+        return []
+    results = []
+    try:
+        with api.installation_lock(root):
+            failed = failed_units(target, definition.parent)
+            for name in due:
+                if name not in failed:
+                    continue
+                try:
+                    failed[name].start(name)
+                except Exception as exc:
+                    count = attempts.get(name, (0, 0))[0] + 1
+                    attempts[name] = (count, now() + min(REVIVE_DELAY_MAX_SECONDS, REVIVE_INTERVAL_SECONDS * 2 ** count))
+                    results.append({"service": name, "result": "failed", "error_type": type(exc).__name__})
+                else:
+                    attempts.pop(name, None)
+                    results.append({"service": name, "result": "started"})
+    except BlockingIOError:
+        return []  # An installer command owns the instance; try next pass.
+    return results
+
+
 def supervise(path):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from scripts import tfi_release_install as api
     from management_common.process_runtime import spawn_process, terminate_process_tree
     from scripts.tfi_instance_layout import database_root
     value = validate_definition(json.loads(path.read_text(encoding="utf-8")), path.stem)
-    state = api.owned_state(Path(value["root"]))
-    if state.get("migration", {}).get("business_execution_allowed") is False and value["component"] != "postgres":
-        raise ValueError("Migration cutover has not been approved")
-    target = state["target"]
-    if value["component"] == "codex":
-        command, env = value["command"], api.clean_environment(target)
-    else:
-        command, env = api.component_command(target, value["component"])
-    # A native Python crash otherwise leaves no traceback in the component log.
-    process = spawn_process(command, cwd=value["code"], env={**env, "PYTHONFAULTHANDLER": "1"},
-                            stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr,
-                            creationflags=subprocess.CREATE_NO_WINDOW)
+
+    def launch():
+        state = api.owned_state(Path(value["root"]))
+        if state.get("migration", {}).get("business_execution_allowed") is False and value["component"] != "postgres":
+            raise ValueError("Migration cutover has not been approved")
+        target = state["target"]
+        if value["component"] == "codex":
+            command, env = value["command"], api.clean_environment(target)
+        else:
+            command, env = api.component_command(target, value["component"])
+        # A native Python crash otherwise leaves no traceback in the component
+        # log. The definition lets a core service revive this installation's
+        # failed units (revive_failed) without guessing its service directory.
+        env = {**env, "PYTHONFAULTHANDLER": "1", DEFINITION_ENV: str(path.resolve())}
+        child = spawn_process(command, cwd=value["code"], env=env,
+                              stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr,
+                              creationflags=subprocess.CREATE_NO_WINDOW)
+        return child, target, env
+
+    process, target, env = launch()
     record_path = state_path(value)
     created = process_stamp(os.getpid())
     reason = "child_exit"
@@ -343,25 +439,50 @@ def supervise(path):
             "event": name, "supervisor_pid": os.getpid(), "child_pid": process.pid,
             **details,
         }), flush=True)
-    try:
+    stop = record_path.with_suffix(".stop")
+    def stop_requested():
+        try:
+            return read_record(stop) == str(created)
+        except FileNotFoundError:
+            return False
+    def publish():
         write_record(record_path, json.dumps({"pid": os.getpid(), "created": created,
                                              "child_pid": process.pid, "child_created": process_stamp(process.pid)}))
+    try:
+        publish()
         event("started")
-        stop = record_path.with_suffix(".stop")
-        while process.poll() is None:
-            try:
-                requested = read_record(stop) == str(created)
-            except FileNotFoundError:
-                requested = False
-            if requested:
+        delay = 0
+        while True:
+            started = time.monotonic()
+            while process.poll() is None:
+                if stop_requested():
+                    reason = "stop_requested"
+                    event("stop_requested")
+                    if value["component"] == "postgres":
+                        subprocess.run([str(Path(target["pg_bin"]) / "pg_ctl.exe"), "stop", "-D",
+                                        str(database_root(target)), "-m", "fast", "-w", "-t", "60"],
+                                       env=env, check=True, timeout=210)
+                    break
+                time.sleep(0.2)
+            if reason == "stop_requested" or process.returncode == 0:
+                break
+            # Restart=on-failure parity: a failed child restarts after a
+            # backoff that resets once a generation stayed up for a minute.
+            delay = RESTART_DELAY_SECONDS if time.monotonic() - started >= RESTART_RESET_SECONDS \
+                else min(RESTART_DELAY_MAX_SECONDS, max(RESTART_DELAY_SECONDS, delay * 2))
+            code = process.returncode
+            event("child_failed", exit_code=code, exit_code_hex=f"0x{code & 0xffffffff:08X}", restart_in=delay)
+            terminate_process_tree(process, timeout=30)
+            deadline = time.monotonic() + delay
+            while time.monotonic() < deadline and not stop_requested():
+                time.sleep(0.2)
+            if stop_requested():
                 reason = "stop_requested"
                 event("stop_requested")
-                if value["component"] == "postgres":
-                    subprocess.run([str(Path(target["pg_bin"]) / "pg_ctl.exe"), "stop", "-D",
-                                    str(database_root(target)), "-m", "fast", "-w", "-t", "60"],
-                                   env=env, check=True, timeout=210)
                 break
-            time.sleep(0.2)
+            process, target, env = launch()
+            publish()
+            event("restarted")
     except BaseException as exc:
         reason = "supervisor_error"
         event("supervisor_error", error_type=type(exc).__name__)

@@ -162,6 +162,7 @@ class ApplicationUpgrade:
         origins = declaration.get('from_manifest_sha256', [])
         if not origins or any(not re.fullmatch('[0-9a-f]{64}', str(v)) for v in origins):
             raise ValueError('Application upgrade requires exact supported origins')
+        failed = []
         for state in records:
             target = state['target']
             if state['manifest_sha256'] not in origins:
@@ -172,7 +173,13 @@ class ApplicationUpgrade:
                 'supervisor_resident_id': manifest.get('supervisor_resident_id', '')})
             self.api.platform_preflight(manifest)
             self.api.check_available(target, existing=True)
-            providers.owned_services(target, self.api.unit_directory())
+            plan = providers.owned_services(target, self.api.unit_directory()) or {}
+            control = self.api.service_controller()
+            # A terminated supervisor is reported, never revived or treated as
+            # an intentional stop here: the upgrade keeps it as it found it.
+            failed.extend(name for name in [*(self.api.unit_name(target, c) for c in self.api.COMPONENTS),
+                                            *plan.get('names', [])]
+                          if plan.get('controllers', {}).get(name, control).status(name)['active'] == 'failed')
             if (database_root(target) / 'PG_VERSION').read_text().strip() != '16':
                 raise ValueError('This migration preserves PostgreSQL 16 only')
             if self.api.observed_status(state)['status'] != 'installed':
@@ -201,6 +208,7 @@ class ApplicationUpgrade:
             self.database_check(state)
             checks.append(self.schema(state))
         return records, manifest, {'schemas': checks, 'waiting_work_candidates': waiting,
+            'failed_services': sorted(failed),
             'offline_proof_required': True, 'required_free_bytes': needed,
             'observed_metadata_sha256': __import__('hashlib').sha256(
                 json.dumps(observed, sort_keys=True).encode()).hexdigest()}
@@ -508,7 +516,8 @@ class ApplicationUpgrade:
                 self.save(journal, 'starting')
                 self.resume(journal, updated, 'complete')
                 return {'status': 'installed', 'run_id': manifest['run_id'],
-                    'manifest_sha256': journal['manifest_sha256'], 'backup': str(parent / 'backup')}
+                    'manifest_sha256': journal['manifest_sha256'], 'backup': str(parent / 'backup'),
+                    'failed_services': checks.get('failed_services', [])}
             except Exception:
                 if journal.get('phase') in {'resuming', 'complete'}:
                     # Already admitted work may have progressed. Retry startup

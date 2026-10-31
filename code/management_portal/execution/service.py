@@ -772,8 +772,27 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         threading.Thread(
             target=self._count_self_started_usage, name="execution-self-started-usage", daemon=True,
         ).start()
+        if os.name == "nt" and os.environ.get("TFI_SERVICE_DEFINITION"):
+            threading.Thread(
+                target=self._revive_failed_units, name="execution-revive-failed-units", daemon=True,
+            ).start()
         self.started.set()
         super().serve_forever(poll_interval)
+
+    def _revive_failed_units(self) -> None:
+        """Windows user units have no service manager restarting a terminated
+        supervisor (systemd Restart=, launchd KeepAlive); this pass does."""
+        from scripts import tfi_windows_user_services as services
+
+        attempts: dict[str, tuple[int, float]] = {}
+        while not self._closing.wait(services.REVIVE_INTERVAL_SECONDS):
+            try:
+                for result in services.revive_failed(os.environ[services.DEFINITION_ENV], attempts):
+                    LOGGER.warning("Failed Windows unit %s: %s", result["service"],
+                                   result["result"] if result["result"] == "started"
+                                   else "start failed (" + result["error_type"] + ")")
+            except Exception:
+                LOGGER.exception("Failed Windows units could not be revived")
 
     def _count_self_started_usage(self) -> None:
         from .provider_catalog import AGENT_PROVIDERS
