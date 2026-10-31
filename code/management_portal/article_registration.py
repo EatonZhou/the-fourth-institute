@@ -53,17 +53,8 @@ def register_article(
     changed = [*report["created"], *report["updated"]]
     if changed:
         record = changed[0]
-        if str(item["primary_file"]).casefold().endswith(".tex"):
-            article_settings.update_article_settings(
-                str(record.get("id") or ""),
-                {
-                    "primary_file": item["primary_file"],
-                    "compiler": compiler or article_discovery._tex_program_hint(
-                        Path(item["path"]) / item["primary_file"]
-                    ) or "pdflatex",
-                },
-                build_root=build_root,
-            )
+        _apply_build_settings(record, item, created=bool(report["created"]), primary_file=primary_file,
+                              compiler=compiler, build_root=build_root)
         return record
     resolved_path = str(Path(path).resolve(strict=False))
     for record in article_registry.load_article_records():
@@ -72,19 +63,30 @@ def register_article(
             and str(Path(stripped_text(root.get("path"))).resolve(strict=False)) == resolved_path
             for root in record.get("roots") or []
         ):
-            if str(item["primary_file"]).casefold().endswith(".tex"):
-                article_settings.update_article_settings(
-                    str(record.get("id") or ""),
-                    {
-                        "primary_file": item["primary_file"],
-                        "compiler": compiler or article_discovery._tex_program_hint(
-                            Path(item["path"]) / item["primary_file"]
-                        ) or "pdflatex",
-                    },
-                    build_root=build_root,
-                )
+            _apply_build_settings(record, item, created=False, primary_file=primary_file,
+                                  compiler=compiler, build_root=build_root)
             return record
     raise KeyError(path)
+
+
+def _apply_build_settings(record, item, *, created, primary_file, compiler, build_root) -> None:
+    """A new article gets its first build settings; an article registered before keeps
+    its own and changes only what the caller names, e.g. when a moved directory is re-registered."""
+    if not str(item["primary_file"]).casefold().endswith(".tex"):
+        return
+    if created:
+        settings = {
+            "primary_file": item["primary_file"],
+            "compiler": compiler or article_discovery._tex_program_hint(
+                Path(item["path"]) / item["primary_file"]
+            ) or "pdflatex",
+        }
+    else:
+        settings = {key: value for key, value in (("primary_file", primary_file and item["primary_file"]),
+                                                  ("compiler", compiler)) if value}
+        if not settings:
+            return
+    article_settings.update_article_settings(str(record.get("id") or ""), settings, build_root=build_root)
 
 
 def unregister_article(article_id: str) -> dict[str, Any]:

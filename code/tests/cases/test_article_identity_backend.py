@@ -372,6 +372,26 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(len(attached["roots"]), 2)
         self.assertEqual(len(article_registry.load_article_records()), 1)
 
+    def test_reregistering_a_moved_directory_keeps_build_settings(self) -> None:
+        """搬走后重新登记已有 Article 的目录时，保留它原来的编译设置"""
+        first = self.project / "article"
+        _make_article_repo(first, "Moved Article", "https://example.invalid/moved.git")
+        record = article_registration.register_article(first)
+        build_root = self.root / "article-build"
+        article_settings.update_article_settings(record["id"], {"compiler": "xelatex"}, build_root=build_root)
+        moved = self.project / "papers" / "article"
+        moved.parent.mkdir()
+        first.rename(moved)
+
+        attached = article_registration.register_article(moved)
+        again = article_registration.register_article(moved)
+
+        self.assertEqual(attached["id"], record["id"])
+        self.assertEqual(again["id"], record["id"])
+        settings = article_settings.load_article_settings(record["id"], build_root=build_root)
+        self.assertEqual(settings["compiler"], "xelatex")
+        self.assertEqual(settings["primary_file"], "main.tex")
+
     def test_unregister_removes_only_the_registry_record(self) -> None:
         """注销 Article 只删除登记记录，不删除目录和文件"""
         article_root = self.project / "article"
