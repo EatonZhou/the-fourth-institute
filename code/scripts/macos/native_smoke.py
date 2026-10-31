@@ -6,6 +6,7 @@ import secrets
 import subprocess
 import time
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
 
 from scripts.windows.native_smoke import LocalModelApi
@@ -23,15 +24,32 @@ class InstalledSession:
         self.base = f"http://127.0.0.1:{target['ports']['web']}"
         self.client = build_opener(ProxyHandler({}), HTTPCookieProcessor(http.cookiejar.CookieJar()))
         self.model_api = None
+        self.private_values = set()
 
     def request(self, path, payload=None, *, form=False):
+        if isinstance(payload, dict):
+            self.private_values.update(str(value) for key, value in payload.items()
+                                       if key in {'password', 'invitation_secret', 'secret'} and value)
         data = None if payload is None else (urlencode(payload) if form else json.dumps(payload)).encode('utf-8')
         headers = {'Origin': self.base}
         if data is not None:
             headers['Content-Type'] = 'application/x-www-form-urlencoded' if form else 'application/json'
-        with self.client.open(Request(self.base + path, data=data, headers=headers), timeout=30) as response:
-            body = response.read()
-            return json.loads(body) if 'application/json' in response.headers.get('Content-Type', '') else body
+        try:
+            with self.client.open(Request(self.base + path, data=data, headers=headers), timeout=30) as response:
+                body = response.read()
+                return json.loads(body) if 'application/json' in response.headers.get('Content-Type', '') else body
+        except HTTPError as exc:
+            try:
+                error = json.loads(exc.read(8192)).get('error', {})
+                detail = ({key: error[key] for key in ('code', 'message') if key in error}
+                          if isinstance(error, dict) else str(error))
+                detail = json.dumps(detail, ensure_ascii=False)
+            except (ValueError, AttributeError):
+                detail = 'Non-JSON error response'
+            for value in self.private_values:
+                detail = detail.replace(value, '[redacted]')
+            operation = (payload or {}).get('instruction', '') if isinstance(payload, dict) else ''
+            raise RuntimeError(f'{path.split("?", 1)[0]} {operation}: HTTP {exc.code}: {detail}') from exc
 
     def instruction(self, name, arguments):
         response = self.request('/api/instructions/execute', {'instruction': name, 'arguments': arguments})

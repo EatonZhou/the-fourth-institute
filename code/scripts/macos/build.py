@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import traceback
 from urllib.request import urlopen
 
 REPO = Path(__file__).resolve().parents[3]
@@ -376,6 +377,6 @@ if __name__ == "__main__":
     try:
         build(REPO, parser.parse_args().output)
     except Exception as exc:
-        message = str(exc)[-12000:].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        message = traceback.format_exc()[-12000:].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
         print("::error title=macOS native build failed::" + message, flush=True)
         raise
