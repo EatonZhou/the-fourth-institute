@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-20'
 version:
-  number: 12
+  number: 13
   created_at: "2026-10-20"
   created_by:
     user: ""
     agent: "resident_977d1a613d44"
-  updated_at: "2026-10-31T16:42:19Z"
+  updated_at: "2026-10-31T16:44:50Z"
   updated_by:
     user: ""
     agent: "resident_24014e2b9bf6"
@@ -185,7 +185,11 @@ links:
 
 ## 服务进程的 HOME 与工作环境
 
-服务进程以 `<实例根目录>/home` 为 HOME。Windows 同时设置 `USERPROFILE`、`APPDATA` 和 `LOCALAPPDATA`。
+程序按环境变量 `HOME`（即 `~`）决定把配置、登录状态和缓存写到哪里，例如 `~/.config`、`~/.ssh`、`~/.cache`。实例启动服务时把 `HOME` 设为 `<实例根目录>/home`，这个目录称为服务 HOME。服务以及由它启动的进程，包括 Resident 调用的 Provider CLI 和 Resident 在终端里运行的命令，看到的 `~` 都是它。
+
+服务 HOME 与运行服务的操作系统用户的主目录（例如 Linux 上的 `/home/<用户>`）是两个目录。后者是人登录主机时的 `~`，属于主机层。一台主机上的每个实例各有自己的服务 HOME，彼此的工具配置不会互相覆盖。
+
+Windows 同时设置 `USERPROFILE`、`APPDATA` 和 `LOCALAPPDATA`。
 
 - **HOME 里放什么**：只放工具的配置和登录状态，例如 Git 配置、SSH known_hosts、CLI 设置。
 - **Resident 的实验环境**：conda 环境、虚拟环境、编译产物等放在 Workspace 或 staging。
