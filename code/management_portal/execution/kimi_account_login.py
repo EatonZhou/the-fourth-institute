@@ -29,7 +29,8 @@ REGIONS = ({"id": "mainland-cn", "label": "中国区"}, {"id": "global", "label"
 
 
 def _flow_region(flow):
-    host = urlsplit(flow.get("verification_uri_complete") or flow.get("verification_uri") or "").hostname
+    host = urlsplit(flow.get("verification_uri_complete") or flow.get("verification_uri")
+                    or flow.get("verification_url") or "").hostname
     return {"www.kimi.com": "mainland-cn", "kimi.com": "mainland-cn",
             "www.kimi.ai": "global", "kimi.ai": "global"}.get(host)
 
@@ -77,4 +78,5 @@ def login(row, action, *, region=None):
         session = store.get(account_id)
         return {"session": {**session, "requires_code_input": False} if session else None,
                 "login_state": store.login_state(account_id),
-                "login_options": {"regions": list(REGIONS), "region": _flow_region(flow) or "mainland-cn"}}
+                "login_options": {"regions": list(REGIONS),
+                                  "region": _flow_region(flow) or _flow_region(session or {}) or "mainland-cn"}}

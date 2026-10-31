@@ -136,6 +136,11 @@ def test_login_region_replaces_foreign_flow_but_reuses_same_region(monkeypatch):
         assert sum(method == "POST" for method, _, _ in calls) == before + 1
     with pytest.raises(login.InstructionError):
         login.login(row, "open", region="unsupported")
+    # The native service can discard a flow before Portal's saved prompt expires.
+    # The selector must still describe the .ai link the page is displaying.
+    flow.clear()
+    store.session["verification_url"] = "https://www.kimi.ai/code/authorize_device"
+    assert login.login(row, "get")["login_options"]["region"] == "global"
 
 
 def test_login_region_contract_and_dispatch(monkeypatch):
