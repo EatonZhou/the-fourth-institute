@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-20'
 version:
-  number: 22
+  number: 23
   created_at: "2026-10-20"
   created_by:
     user: ""
     agent: "resident_977d1a613d44"
-  updated_at: "2026-10-31T19:06:16Z"
+  updated_at: "2026-10-31T19:17:31Z"
   updated_by:
     user: ""
     agent: "resident_24014e2b9bf6"
@@ -183,7 +183,7 @@ Resident 的 Workspace、代码仓库（`repo_*`）等资源登记的是一个�
 | `skills` | 共享 Skill；核心 Skill 属于代码层，不在这里 |
 | `papers` | 论文库 |
 | `uploads` | 用户上传的文件，例如对话中的图片和附件；头像存在数据库中，不在这里 |
-| `features` | 各功能自己的持久数据，例如 Paper 工作区、对话工作区、归档任务 |
+| `features` | 各功能自己的持久数据，例如 Paper 工作区、对话工作区、归档任务、工作台应用的构建产物 |
 | `provider-state` | Portal 为 Provider 保存的本实例状态 |
 
 项目文件夹的结构：
@@ -204,6 +204,11 @@ Resident 的 Workspace、代码仓库（`repo_*`）等资源登记的是一个�
   - 属于项目的，放在 projects 区域的 `<项目>/agents/<lineage_id>/`，与项目知识库 `knowledge_base/` 并列。Lineage 目录里是 Resident 的文件夹、Workspace 和工作中产生的文件，不是知识条目，所以不放进知识库。
   - 不属于项目的，放在 lineages 区域的 `<lineage_id>/`。
   - 修改所属项目时移动目录。要找一个 Lineage 的目录，按所属项目计算，不设指向它的入口软链接。
+- **工作台的文件**：工作台由三部分组成，分别存放。
+  - 定义：页面、版本、关联的项目和绑定的 Lineage 存在数据库中，不占用区域。
+  - 应用源码：是登记的代码仓库，按仓库目录所在的位置归属，在区域内就是实例文件，在区域外就属于主机。
+  - 构建产物：放在 features 区域。产物按内容哈希命名，写入后不再修改；已发布的工作台版本按哈希引用产物中的文件，产物丢了这个版本就打不开。所以它和可以重建的 `cache/` 不同，要随实例备份。
+  - 构建产物不放在项目文件夹中：一个工作台可以关联零个或多个项目，换版本时关联可以改变；Portal 自带的系统工作台不属于任何项目；内容相同的产物只存一份，可以被多个工作台共用。
 
 ### 路径的两条规则
 
