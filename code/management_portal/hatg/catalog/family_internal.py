@@ -34,7 +34,7 @@ DECLARATIONS = (
         P("message_id", description="可选稳定派发消息 ID，用于幂等"),
         P("event", "object", "触发 Event，只传身份及主题，不附全量历史"),
     ), (R("message_id", description="发给内部角色的任务消息"),), target="resident_id"),
-    _d("RelayFamilyMessage", ON_RESIDENT, "按 Router 的选择转交门面原请求；成员周额度低于 10% 时先交 steward 复核；"
+    _d("RelayFamilyMessage", ON_RESIDENT, "按 Router 的选择转交门面原请求；成员周额度低于 5% 时先交 steward 复核；"
        "带 scope_gap 时请求不在现有成员职责内，先交 steward 决定是否新建成员，steward 安排后以 scope_reviewed=true 转交给所选成员。"
        "reassign=true 时把已交给其他成员的请求改派给所选成员，并记下这次纠正。", (
         R("resident_id", description="Family 门面"), R("message_id", description="门面中的原请求"),

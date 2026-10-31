@@ -210,7 +210,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 - `RegisterProviderAccount`：参数 `account_id`、`provider`、`kind`（`subscription_login`、`api_profile` 或 `service`）、`route_id`（可选）、`config`（可选；`api_profile` 用 `config.api_id` 引用已有模型接口）、`max_concurrency`（可选，初始并发）、`enabled`（可选）、`secret`（可选，`api_profile` 的一次性密钥，只写入密钥文件，不回显）。结果 `registration`。
 - `UpdateProviderAccountRegistration`：参数 `account_id`、`changes`（配置、`enabled` 与初始并发）。结果 `registration`。调用信封的 `expected_version` 给出登记版本（`ListProviderAccounts` 每个账号的 `registration_version`）时按它比较，版本不符以 `instruction.version_conflict` 失败；省略时直接更新。
 - `DeleteProviderAccount`：参数 `account_id`。账号仍有绑定会话或排队、运行中的执行时以 `instruction.conflict` 失败，`details` 给出 `reason: account.busy`、会话数 `session_count` 和执行数 `execution_count`；仍被 Backend 角色引用时以 `instruction.conflict`（`reason: account.role_in_use`）失败。结果为被删除的 `account_id`。
-- `OpenProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（Claude 浏览器返回的授权码，只送到当前登录进程，不保存或回显）。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
+- `OpenProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`：参数都以 `account_id` 指定订阅账号；`UpdateProviderAccountLogin` 另有 `authorization_code`（Claude 浏览器返回的授权码，只送到当前登录进程，不保存或回显）；`OpenProviderAccountLogin` 另有可选 `region`，仅用于 Kimi：`mainland-cn` 为中国区、`global` 为国际区，切换区域会替换未完成的授权流程，省略时沿用原生选择。Open、Update、Cancel 返回 `session`；Get 返回 `session`（尚未开始时为 null）与 `login_state`。每个账号同一时间只有一个登录会话。
 - 账号相关的失败使用通用错误码，`details.reason` 给出具体原因，页面按 `reason` 选择提示：
 
 | 情形 | 错误码 | `details.reason` |
@@ -337,7 +337,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个实例各有自
 | `RegisterProviderAccount` | `account_id`、`provider`、`kind`、`route_id`、`config`、`max_concurrency`、`enabled`、`secret` |
 | `UpdateProviderAccountRegistration` | `account_id`、`changes` |
 | `DeleteProviderAccount` | `account_id` |
-| `OpenProviderAccountLogin` | `account_id` |
+| `OpenProviderAccountLogin` | `account_id`、`region` |
 | `UpdateProviderAccountLogin` | `account_id`、`authorization_code` |
 | `GetProviderAccountLogin` | `account_id` |
 | `CancelProviderAccountLogin` | `account_id` |

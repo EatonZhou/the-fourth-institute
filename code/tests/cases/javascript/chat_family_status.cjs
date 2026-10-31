@@ -37,13 +37,13 @@ w.PortalUI.toast = (message, tone) => toasts.push([String(message), tone]);
 const now = Math.floor(Date.now() / 1000);
 const fresh = windows => ({ fresh: true, valid_until: now + 600, windows });
 const accounts = [
-  { account_id: 'acct_lead', label: 'Lead account', quota_reserve: fresh([{ window: 'seven_day', remaining_percent: 10 }]) },
+  { account_id: 'acct_lead', label: 'Lead account', quota_reserve: fresh([{ window: 'seven_day', remaining_percent: 5 }]) },
   { account_id: 'acct_a', label: 'Account A', quota_reserve: fresh([
     { window: 'seven_day', remaining_percent: 42, resets_at: '2026-11-01T00:00:00Z' }, { window_duration_mins: 10080, remaining_percent: 35 },
     { window: 'five_hour', remaining_percent: 1 }]) },
   { account_id: 'acct_route', provider: 'claude', backend_route_id: 'route_x', label: 'Routed account',
     quota_reserve: { fresh: false, valid_until: now + 600, windows: [{ window: 'seven_day', remaining_percent: 50 }] } },
-  { account_id: 'acct_low', label: 'Low account', quota_reserve: fresh([{ window: 'seven_day', remaining_percent: 8 }]) },
+  { account_id: 'acct_low', label: 'Low account', quota_reserve: fresh([{ window: 'seven_day', remaining_percent: 4 }]) },
   { account_id: 'acct_usd', label: 'Balance account', quota_reserve: { fresh: true, currency: 'USD', remaining_balance: 12.5 } },
   { account_id: 'acct_expired', label: 'Expired account', quota_reserve: { fresh: true, valid_until: now - 5, windows: [{ window: 'seven_day', remaining_percent: 70 }] } },
 ];
@@ -175,9 +175,9 @@ async function membersQuotaAndSummary() {
     assert.equal(quota('res_fail').getAttribute('title'), '无有效周额度观测');
     assert.equal(text(quota('res_idle')), '12.5 USD', 'a balance account shows its balance');
     assert.equal(quota('res_stop').className, 'familyStatusAttention');
-    assert.equal(quota('res_stop').getAttribute('title'), '低于 10% · 新请求须 steward 评估');
-    assert.equal(text(quota('res_stop')), '8%!');
-    assert.equal(quota('res_lead').getAttribute('title'), '额度不足 · 平台负责迁移', 'a steward is low at 10%');
+    assert.equal(quota('res_stop').getAttribute('title'), '低于 5% · 新请求须 steward 评估');
+    assert.equal(text(quota('res_stop')), '4%!');
+    assert.equal(quota('res_lead').getAttribute('title'), '额度不足 · 平台负责迁移', 'a steward is low at 5%');
     assert.equal(quota('res_run').className, '');
 
     const mix = (id, mode) => row(root(), id).querySelector(`[data-family-mix="${mode}"]`);

@@ -314,7 +314,7 @@ def test_both_roles_migrate_on_short_window_pressure_and_keep_context(configured
     _, block = configured_family
     record = _find_resident(block["family"][role])
     resident_input_queue_domain.commit_resident_intake_state(record, "open")
-    accounts = [_account("one", 90, short=8), _account("two", 90)]
+    accounts = [_account("one", 90, short=4), _account("two", 90)]
     monkeypatch.setattr(family_quota, "resident_account", lambda record, accounts: accounts[0])
     calls = []
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session", lambda *args, **kwargs: calls.append((args, kwargs)))

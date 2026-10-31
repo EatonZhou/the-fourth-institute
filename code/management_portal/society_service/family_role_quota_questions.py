@@ -18,6 +18,8 @@ from typing import Any, Mapping
 from management_common.async_questions import answered_set
 from management_common.message_identity import derived_message_identity
 
+from .resident_account_policy import MIGRATION_RESERVE_PERCENT
+
 BUSINESS_REF = "family-role-quota"
 CONTINUE = "用当前账号的 credits 继续"
 WAIT = "等额度重置"
@@ -60,7 +62,7 @@ def ask(record: Mapping[str, Any], facade: Mapping[str, Any], account: Mapping[s
         waiting = 0
     label = str(account.get("label") or account.get("account_id") or "当前账号")
     text = (f"Family 的 {role}（{record.get('title') or record['resident_id']}）所用账号 {label} "
-            f"额度剩余 {remaining:g}%，没有剩余额度超过 10% 的账号可以接替，"
+            f"额度剩余 {remaining:g}%，没有剩余额度超过 {MIGRATION_RESERVE_PERCENT:g}% 的账号可以接替，"
             f"{'有 ' + str(waiting) + ' 条工作在等它，' if waiting else ''}整个 Family 因此暂停。"
             f"额度预计 {_reset_text(account)} 重置。请选择接下来怎么办：")
     written = outward_messages.post_platform_notice(

@@ -12,7 +12,7 @@ from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
 from management_portal.execution.account_migration_types import migration_type
 
-MIGRATION_RESERVE_PERCENT = 10.0
+MIGRATION_RESERVE_PERCENT = 5.0
 
 
 def _percent(value: Any) -> bool:

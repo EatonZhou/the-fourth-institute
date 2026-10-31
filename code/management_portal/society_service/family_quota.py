@@ -544,7 +544,8 @@ def answer_role_quota_question(facade_id: str, message_id: str, actor: str) -> N
     elif choice == questions.WAIT:
         text = "好的，保持等待。额度重置或补上可用账号后，Family 会自动继续，排队的工作不会丢。"
     elif choice == questions.ADD_ACCOUNT:
-        text = "请在[首页](/)的 AI 账号中新增或启用一个剩余额度超过 10% 的账号；补好后 Family 会自动换过去继续。"
+        text = (f"请在[首页](/)的 AI 账号中新增或启用一个剩余额度超过 {MIGRATION_RESERVE_PERCENT:g}% 的订阅账号；"
+                "补好后 Family 会自动换过去继续。")
     else:
         text = f"未识别的选择：{choice or '（空）'}，没有做任何改动。"
     questions.post_result(facade_id, message_id, actor, text)

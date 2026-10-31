@@ -73,12 +73,12 @@ def test_family_switching_stays_among_subscriptions_unless_a_kind_is_allowed():
     assert pick([source, api]) == "codex_api"
 
 
-def test_reserve_targets_require_weekly_above_ten_or_a_funded_metered_agent():
+def test_reserve_targets_require_weekly_above_five_or_a_funded_metered_agent():
     """Family 周额度预防与监督
 
     :design: decision_44cf587c1721
     """
-    candidates = [_account("one", 9), _account("two", 10), _account("three", 50, fresh=False),
+    candidates = [_account("one", 4), _account("two", 5), _account("three", 50, fresh=False),
                   _account("four", 45), _account("claude_one", 80, provider="claude")]
     assert accounts_policy.fallback_account(candidates, "codex", "one", [], reserve=True)["backend_route_id"] == "four"
     assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True)["provider"] == "claude"
@@ -113,7 +113,7 @@ def quota_family(team, monkeypatch):
     for rid, route in ((member_id, "one"), (steward_id, "one"), (spare_id, "two")):
         record = _record(rid); record["backend_route_id"] = route
         resident_record_domain.save_resident_record(record, commit_configuration=True)
-    accounts = [_account("one", 9), _account("two", 90)]
+    accounts = [_account("one", 4), _account("two", 90)]
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
     message_id = "msg_1234567890abcdef"
     resident_domain.deliver_resident_message_content(facade_id, ACTOR, "持续检查权限并修复所有缺陷", message_id=message_id)
@@ -157,7 +157,7 @@ def test_low_weekly_request_waits_for_the_steward_then_relays_original_content_o
     projected = family_facade.project_messages(_record(f.facade), [repo.message(f.facade, f.message)],
                                                input_states={f.message: "queued"})
     assert projected[0]["relay"]["state"] == "quota_review"
-    assert projected[0]["relay"]["quota_remaining_percent"] == 9
+    assert projected[0]["relay"]["quota_remaining_percent"] == 4
     review_id = result["steward_message_id"]
     assert repo.message(f.steward, review_id)["author_id"] == f.facade
     again = family_quota.relay_message(f.facade, f.message, f.member, ACTOR)
@@ -176,7 +176,7 @@ def test_low_weekly_request_waits_for_the_steward_then_relays_original_content_o
     assert len(resident_execution_work.normalized_queue(resident_execution_work.read(_record(f.member)))) == 0
 
 
-@pytest.mark.parametrize("weekly,short", [(10, 90), (70, 11)])
+@pytest.mark.parametrize("weekly,short", [(5, 90), (70, 6)])
 def test_member_with_available_windows_does_not_require_review(quota_family, weekly, short):
     """Family 周额度预防与监督
 
@@ -322,7 +322,7 @@ def test_answer_and_organization_requests_can_reach_own_steward(quota_family, ty
     with pytest.raises(ValueError, match="不属于"):
         family_quota.relay_message(f.facade, f.message, "resident_ffffffffffff", ACTOR)
 
-    # The steward's own week is low (9%), but it keeps its own reserve and is not asked to review itself.
+    # The steward's own week is low (4%), but it keeps its own reserve and is not asked to review itself.
     done = family_quota.relay_message(f.facade, answer, f.steward, ACTOR)
     assert done["status"] == "relayed" and done["member_id"] == f.steward
     delivered = repo.message(f.steward, done["message_id"])
@@ -346,8 +346,8 @@ def test_answer_and_organization_requests_can_reach_own_steward(quota_family, ty
         assert family_facade.relay_links(facade)[answer]["resident_id"] == f.member
 
 
-@pytest.mark.parametrize("weekly,should_migrate", [(9, True), (10, True), (11, False)])
-def test_platform_migrates_steward_before_execution_at_or_below_ten(quota_family, monkeypatch, weekly, should_migrate):
+@pytest.mark.parametrize("weekly,should_migrate", [(4, True), (5, True), (6, False)])
+def test_platform_migrates_steward_before_execution_at_or_below_five(quota_family, monkeypatch, weekly, should_migrate):
     """Family 周额度预防与监督
 
     :design: decision_44cf587c1721
@@ -385,7 +385,7 @@ def test_steward_without_a_safe_target_retains_work_and_notifies_once(quota_fami
     register_familizer(f.facade, 'family-creator')
     job = {"input_message": {"origin": message_origin(f.facade, initiated_by=ACTOR if human_initiator else f.member)}}
     monkeypatch.setattr(resident_execution_work, "read", lambda _: job)
-    f.accounts[:] = [_account("one", 9), _account("two", 10)]
+    f.accounts[:] = [_account("one", 4), _account("two", 5)]
     resident_input_queue_domain.commit_resident_intake_state(_record(f.steward), "open")
     notices = []
     monkeypatch.setattr(lineage_human_notifications, "create_notification", lambda *args, **kwargs: notices.append(kwargs))
@@ -607,7 +607,7 @@ def test_wait_migration_preserves_a_steward_input_that_has_not_entered_execution
     assert (pending['execution_id'], pending["user_message_id"], pending["actor"]) == ("job_pending", "msg_pending", "alice")
 
 
-@pytest.mark.parametrize("weekly", [9, 70])
+@pytest.mark.parametrize("weekly", [4, 70])
 def test_selected_member_effect_keeps_admission_and_original_request(quota_family, weekly):
     """Router 选择成员后仍保留配额准入和原请求内容
 
