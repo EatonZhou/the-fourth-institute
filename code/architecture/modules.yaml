@@ -1778,6 +1778,7 @@ protocols:
       - "decision_25eb93d803a4"
       - "decision_c604274e21dd"
       - "decision_e587fe1c472e"
+      - "decision_6b9e42f1c8a7"
       - "decision_ecf0f2b2de28"
     description: "部署控制面提交并发布 Dev 的文件，按组件能力重启或换代；路由入口按用户部署选择转发。Web 停止时结束实时流，浏览器从新连接的 portal-ready.server_started_at 判断进程更新并重载。管理员网络接口调用部署层 portal_network 读写站点配置，保存按原始文件版本校验；网段在下次连接生效，代理由新进程读取，保存不自动重启服务。"
     example: "Dev 提交 → Release 快进并推送 → 激活受影响组件；Web 结束旧实时流 → portal_events 重连 → portal_theme 观察更新的 server_started_at 并重载页面。"
