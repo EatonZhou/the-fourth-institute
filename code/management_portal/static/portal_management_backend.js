@@ -701,8 +701,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
     const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
     const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", newAccountId, {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
-    const register = canCreateAccount ? field(options, "同时添加为 AI 账号，继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
-    if (register) { register.checked = true; hint(register, "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。"); }
+    const register = canCreateAccount ? field(options, "保存后继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
+    if (register) { register.checked = true; hint(register, "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。"); }
     const harness = register ? select(form, "Agent 运行器", "harness", []) : null;
     if (harness) hint(harness, "Agent 运行器能执行命令、编辑文件和使用工具；请在高级设置中声明或测试接口支持的协议。直连只对话。模型还需支持工具调用。");
     const renderHarnesses = () => {
@@ -728,7 +728,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (harness && [...harness.options].some(option => option.value === newProvider && !option.disabled)) harness.value = newProvider;
     responses.addEventListener("change", renderHarnesses);
     anthropic.addEventListener("change", () => { showAnthropic(); renderHarnesses(); });
-    let createdId = "";
+    let createdId = "", provisionedAccounts = [], retryApiRoutes = false;
     saveButton(form); form.addEventListener("submit", event => {
       event.preventDefault(); if (busy) return;
       const apiId = id.value.trim() || generatedId;
@@ -754,18 +754,27 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (secret.value) changes.secret = secret.value; secret.value = "";
       void run(async () => {
         try {
-          if (!createdId) {
-            await execute(api ? "UpdateModelApi" : "CreateModelApi", api ? {api_id: api.api_id, changes} : {api_id: apiId, ...changes});
+          if (!createdId || retryApiRoutes) {
+            const saved = await execute(api || retryApiRoutes ? "UpdateModelApi" : "CreateModelApi", api || retryApiRoutes ? {api_id: api?.api_id || createdId, changes} : {api_id: apiId, ...changes});
+            retryApiRoutes = false;
+            provisionedAccounts = saved.accounts || [];
             if (!api) { createdId = apiId; id.value = apiId; }
           }
+        }
+        catch (error) {
+          if (!api && error.details?.reason === "model_api.routes_incomplete") {
+            createdId = error.details.api_id; id.value = createdId; id.disabled = true; retryApiRoutes = true;
+          }
+          throw error;
         }
         finally { delete changes.secret; }
         if (register?.checked) {
           const backend = harness?.value || "provider_api";
           // Direct calls are scheduled under the API's own name; a harness account takes another.
-          const accountId = account.value.trim() || (backend === "provider_api" ? createdId : `${createdId}-${backend}`);
+          const existing = provisionedAccounts.find(row => row.provider === backend || (backend === "provider_api" && row.account_id === createdId));
+          const accountId = account.value.trim() || existing?.account_id || (backend === "provider_api" ? createdId : `${createdId}-${backend}`);
           try {
-            await execute("RegisterProviderAccount", {account_id: accountId, provider: backend, kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
+            if (!provisionedAccounts.some(row => row.account_id === accountId)) await execute("RegisterProviderAccount", {account_id: accountId, provider: backend, kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
           } catch (_) {
             options.parentElement.open = true;
             for (const input of [id, provider, url, model, path, models, responses, anthropic, anthropicUrl, anthropicAuth, probe, secret, enabled]) input.disabled = true;

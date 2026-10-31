@@ -74,7 +74,7 @@ DECLARATIONS = (
        (R("apis", "array", "模型接口登记：api_id、base_url、default_model、provider、enabled、version、"
           "harness_protocols（Agent Harness 可用的协议）…；不含密钥"),),
        owner="execution"),
-    _d("CreateModelApi", FIXED, "登记一个新的模型接口。", (
+    _d("CreateModelApi", FIXED, "登记模型接口并自动登记协议兼容的执行路线；不启动模型调用。", (
         R("api_id", description="新模型接口的 ID"),
         R("base_url", description="接口基础地址，请求发往其下的 chat/completions"),
         R("default_model", description="调用时未指定 model 所用的模型"), P("secret_file", description="密钥文件路径"),
@@ -89,12 +89,13 @@ DECLARATIONS = (
         P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),
         P("headers", "object", "不含密钥"), P("enabled", "boolean", "是否启用，默认 true；停用后不能调用"),
-    ), (MODEL_API,), mutates=True, owner="execution"),
-    _d("UpdateModelApi", FIXED, "修改一个模型接口的登记。", (
+    ), (MODEL_API, P("accounts", "array", "该接口可用的执行路线登记", items={"type": "object"})), mutates=True, owner="execution"),
+    _d("UpdateModelApi", FIXED, "修改模型接口并补齐缺少的协议兼容执行路线；保留现有路线和停用设置。", (
         R("api_id", description="模型接口 ID"),
         R("changes", "object", "要修改的登记字段，如 base_url、default_model、models、protocols、enabled；不能改 api_id"),
         P("secret", description="一次性密钥")), (
         MODEL_API, R("version", "integer", "修改后的登记版本"),
+        P("accounts", "array", "该接口可用的执行路线登记", items={"type": "object"}),
     ), mutates=True, target="api_id", owner="execution"),
     _d("DeleteModelApi", FIXED, "删除一个模型接口的登记；仍有执行账号使用时拒绝。", (R("api_id", description="模型接口 ID"),),
        (R("api_id", description="被删除的模型接口"),),

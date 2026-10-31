@@ -116,11 +116,24 @@
           session_title: String(entry.title || entry.resident_title || entry.resident_id),
           status: "unread",
         }));
-      const groupsByAccount = new Map(sourceGroups.map(group => [
-        String(group?.account_id || ""), { ...group, unread_runs: [] },
-      ]));
+      const aliases = new Map();
+      for (const account of executionAccounts(currentAgentStatusData())) {
+        for (const id of account.execution_account_ids || []) aliases.set(id, account.account_id);
+      }
+      const homeAccount = id => aliases.get(id) || id;
+      const groupsByAccount = new Map();
+      for (const group of sourceGroups) {
+        const id = homeAccount(String(group?.account_id || ""));
+        if (!groupsByAccount.has(id)) groupsByAccount.set(id, {account_id: id, running: 0,
+          queued_display_count: 0, running_runs: [], queued_runs: [], unread_runs: []});
+        const target = groupsByAccount.get(id);
+        target.running += Math.max(0, Number(group.running || 0));
+        target.queued_display_count += Math.max(0, Number(group.queued_display_count || 0));
+        target.running_runs.push(...(group.running_runs || []));
+        target.queued_runs.push(...(group.queued_runs || []));
+      }
       for (const run of unreadRuns) {
-        const accountId = String(run.account_id || "other");
+        const accountId = homeAccount(String(run.account_id || "other"));
         if (!groupsByAccount.has(accountId)) groupsByAccount.set(accountId, { account_id: accountId, unread_runs: [] });
         groupsByAccount.get(accountId).unread_runs.push(run);
       }

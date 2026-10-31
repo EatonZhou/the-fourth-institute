@@ -150,3 +150,18 @@ def test_deepseek_proxy_non_balance_response_is_not_a_successful_zero(monkeypatc
     result = native.BillingObservations().observe('api')
     assert result['reason'] == 'invalid_response' and result['status'] == 'unavailable'
     assert 'amount' not in result and 'SECRET' not in json.dumps(result)
+
+
+def test_home_groups_harness_routes_by_billing_api_without_adding_balances():
+    from management_portal.execution.account_resources import home_account_resources
+    balance = {'id': 'deepseek', 'status': 'ok', 'display': '0 CNY', 'amount': 0, 'currency': 'CNY'}
+    subscription = {'account_id': 'claude_one', 'kind': 'subscription_login', 'rate_limits': [{'remaining_percent': 50}]}
+    rows = home_account_resources([subscription, *[
+        {'account_id': name, 'billing_account_id': 'deepseek', 'balance': balance}
+        for name in ('deepseek', 'dsh_deepseek', 'deepseek-opencode')]], {})
+    assert len(rows) == 2 and rows[0] == subscription
+    api = rows[1]
+    assert api['account_id'] == 'deepseek' and api['details_scope'] == 'model_api'
+    assert api['execution_account_ids'] == ['deepseek', 'dsh_deepseek', 'deepseek-opencode']
+    assert api['balance']['amount'] == 0
+    assert balance == {'id': 'deepseek', 'status': 'ok', 'display': '0 CNY', 'amount': 0, 'currency': 'CNY'}

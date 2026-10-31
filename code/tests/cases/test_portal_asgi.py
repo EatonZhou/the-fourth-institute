@@ -643,7 +643,7 @@ def test_agent_status_routes_preserve_actor_refresh_and_account_errors(monkeypat
             lambda actor, force_refresh=False: {"actor": actor, "refreshed": force_refresh},
         )
         monkeypatch.setattr(adapter, "resident_api", SimpleNamespace(
-            get_account_resident_summary=lambda account_id, *, actor: {"account_id": account_id, "actor": actor},
+            get_account_resident_summary=lambda account_id, *, actor, **options: {"account_id": account_id, "actor": actor, **options},
         ))
 
         async def call(path, *, method="GET", payload=None):
@@ -662,6 +662,9 @@ def test_agent_status_routes_preserve_actor_refresh_and_account_errors(monkeypat
         assert asyncio.run(call("/api/agent-status/background-agents"))[0] == 404
         assert asyncio.run(call("/api/agent-status/account-residents?account_id=account-1")) == (
             200, {"account_id": "account-1", "actor": "alice"}
+        )
+        assert asyncio.run(call("/api/agent-status/account-residents?account_id=api-1&account_scope=model_api")) == (
+            200, {"account_id": "api-1", "actor": "alice", "account_scope": "model_api"}
         )
         assert asyncio.run(call("/api/agent-status/refresh", method="POST")) == (
             200, {"actor": "alice", "refreshed": True}

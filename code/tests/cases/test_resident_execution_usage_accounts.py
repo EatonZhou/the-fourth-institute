@@ -560,3 +560,28 @@ def test_continued_turn_usage_follows_its_terminal_reply_in_pages_forks_and_even
         assert footer(store.read_chat_messages("resident_complete")) == expected
     assert store.segment(last) == before  # Projection never writes counters into content.
     assert "usage" not in store.segment(first)["metadata"]["message"]
+
+
+def test_api_details_include_all_visible_harness_nodes(monkeypatch):
+    """按计费 API 汇总跨 Harness 节点，批量操作名单仍受读取权限过滤。"""
+    from types import SimpleNamespace
+    domain = resident_intake_domain
+    accounts = [dict(account_id=name, provider=name, backend_route_id='', billing_account_id=api)
+                for name, api in [('direct', 'shared'), ('dsh', 'shared'), ('claude', 'shared'), ('other', 'separate')]]
+    residents = [dict(resident_id=name, backend=name) for name in ('direct', 'dsh', 'claude', 'other')]
+    monkeypatch.setattr(domain.execution_port, 'service', lambda: SimpleNamespace(accounts=lambda: {'accounts': accounts}))
+    monkeypatch.setattr(domain.resident_lineage, 'all', lambda: residents)
+    monkeypatch.setattr(domain, '_resident_visible_to_actor', lambda record, actor: record['resident_id'] != 'claude')
+    monkeypatch.setattr(domain.resident_backend, 'execution_binding_id', lambda record: record['resident_id'])
+    monkeypatch.setattr(domain.resident_backend, 'session_routes_for_bindings', lambda ids: {})
+    monkeypatch.setattr(domain.resident_backend, 'execution_provider', lambda record: record['backend'])
+    monkeypatch.setattr(domain.resident_backend, 'execution_account_route', lambda record, binding: '')
+    monkeypatch.setattr(domain.resident_conversation_stream, 'get_repository', lambda: SimpleNamespace(
+        state_snapshots=lambda ids: {name: {'state': {'intake_state': 'open', 'work_state': 'idle'}} for name in ids}))
+    result = backend.get_account_resident_summary('shared', 'CASE-A', account_scope='model_api')
+    assert result['total'] == 2
+    assert result['account_scope'] == 'model_api'
+    assert result['open_resident_ids'] == ['direct', 'dsh']
+    assert backend.get_account_resident_summary('dsh', 'CASE-A')['total'] == 1
+    with pytest.raises(ValueError):
+        backend.get_account_resident_summary('absent', 'CASE-A', account_scope='model_api')

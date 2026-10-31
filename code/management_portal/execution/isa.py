@@ -169,6 +169,16 @@ def list_model_apis(inv: Invocation) -> dict[str, Any]:
     return {"apis": [_public_api(item, version) for item, version in model_api_store.apis()]}
 
 
+def _saved_api_accounts(item, actor):
+    from .model_api_accounts import ensure_routes
+    try:
+        return ensure_routes(item, actor)
+    except Exception as exc:
+        raise InstructionError("instruction.failed", "模型 API 已保存，执行路线登记未完成；请重新保存该接口以重试。",
+                               details={"reason": "model_api.routes_incomplete", "api_id": item["id"],
+                                        "api_saved": True}) from exc
+
+
 def create_model_api(inv: Invocation) -> dict[str, Any]:
     api_id = str(inv.argument("api_id") or "").strip()
     if not api_id:
@@ -177,6 +187,8 @@ def create_model_api(inv: Invocation) -> dict[str, Any]:
     item = {"id": api_id, "kind": "openai_compatible_chat", "enabled": True, **_stored_fields(values)}
     _check_api_kind(item)
     try:
+        from .model_api_accounts import check_identity
+        check_identity(api_id)
         created = model_api_store.create_api(item, inv.caller, secret=inv.argument("secret"))
     except InstructionError:
         raise
@@ -184,7 +196,8 @@ def create_model_api(inv: Invocation) -> dict[str, Any]:
         raise invalid(str(exc)) from exc
     if not created:
         raise InstructionError("instruction.conflict", f"模型接口已经存在：{api_id}")
-    return {"api": _public_api(item, 1)}
+    accounts = _saved_api_accounts(item, inv.caller)
+    return {"api": _public_api(item, 1), "accounts": accounts}
 
 
 def update_model_api(inv: Invocation) -> dict[str, Any]:
@@ -219,7 +232,8 @@ def update_model_api(inv: Invocation) -> dict[str, Any]:
     if reconfigures:
         codex_api_accounts.refresh(codex_api_accounts.api_accounts(api_id))
     item, version = updated
-    return {"api": _public_api(item, version), "version": version}
+    accounts = _saved_api_accounts(item, inv.caller)
+    return {"api": _public_api(item, version), "version": version, "accounts": accounts}
 
 
 def delete_model_api(inv: Invocation) -> dict[str, Any]:

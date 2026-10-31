@@ -22,9 +22,12 @@ class AgentStatusHttp:
         self.invalidate_scheduled_triggered = invalidate_scheduled_triggered
 
     def account_residents(self, request, parsed, actor):
-        account_id = str((parse_qs(parsed.query).get("account_id") or [""])[0])
+        query = parse_qs(parsed.query)
+        account_id = str((query.get("account_id") or [""])[0])
+        scope = str((query.get("account_scope") or ["execution"])[0])
         try:
-            result = self.resident_api.get_account_resident_summary(account_id, actor=actor)
+            options = {"account_scope": scope} if scope != "execution" else {}
+            result = self.resident_api.get_account_resident_summary(account_id, actor=actor, **options)
         except PermissionError as exc:
             return self.respond(request, 403, {"error": str(exc)})
         except (KeyError, ValueError) as exc:

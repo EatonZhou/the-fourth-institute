@@ -19,8 +19,8 @@ def test_subscription_quota_preserves_stale_and_unknown_values() -> None:
     subprocess.run(["node", str(script)], check=True, cwd=ROOT)
 
 
-def test_subscription_summary_and_paired_api_rows_fit_in_browser() -> None:
-    """订阅额度保持原布局，API 每行两项；覆盖刷新、未知值及宽窄屏。"""
+def test_subscription_and_api_rows_align_in_browser() -> None:
+    """API 与订阅对齐；覆盖刷新、未知值及宽窄屏。"""
     script = Path(__file__).with_name("javascript") / "home_quota_layout.cjs"
     subprocess.run(["node", str(script)], check=True, cwd=ROOT, timeout=60)
 

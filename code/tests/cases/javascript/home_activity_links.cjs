@@ -88,3 +88,14 @@ assert.equal(stateReads, readsBeforeAnonymous, 'Anonymous activities must not re
 assert.doesNotMatch(main.querySelector('.agent-status-creature').title, /Mailbox/);
 console.log('Home activity: real targets, fallback-avatar links, queue counts, overflow and privacy passed');
 dom.window.close();
+
+// Native route identities share one billing API label; icon targets are untouched.
+context.executionAccounts = () => [{account_id:'shared',execution_account_ids:['direct','dsh']}];
+context.window.PortalResidentProtocol.stateSnapshot = () => null;
+main.innerHTML = context.agentStatusRunboard({running:2,queued:0,account_groups:[
+  {account_id:'direct',running:1,running_runs:[run]},
+  {account_id:'dsh',running:1,running_runs:[{...run,resident_id:'resident_000000000052'}]},
+]});
+assert.equal(main.querySelectorAll('[data-agent-account-group="shared"]').length,1);
+assert.equal(main.querySelectorAll('a.agent-status-creature').length,2);
+assert.equal(main.querySelector('[data-agent-account-group="dsh"]'),null);

@@ -812,10 +812,10 @@ a.agent-status-creature.queued:hover {
 .agent-status-account-limit .agent-status-account-rate-windows {
   grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
 }
-.agent-status-api-list { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 28px; min-width: 0; }
-.agent-status-api-account { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, max-content) auto; align-items: center; gap: 10px; min-width: 0; font-size: 12px; }
+.agent-status-api-list { display: contents; }
 .agent-status-api-account .agent-status-account-name { white-space: normal; overflow-wrap: anywhere; }
-.agent-status-api-account .agent-status-account-details { grid-column: 3; }
+.agent-status-api-account .agent-status-account-balance { grid-column: 1; font-variant-numeric: tabular-nums; }
+.agent-status-api-account .agent-status-account-details { grid-column: 2; }
 .agent-status-account-balance { min-width: 0; font-size: 12px; }
 .agent-status-balance-value { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .agent-status-account-balance.is-stale .agent-status-balance-value,
@@ -1462,7 +1462,7 @@ details[open] > summary .statusDisclosureIcon { transform: rotate(180deg); }
   .agent-status-account-details { grid-column: 1; }
 }
 @container home-accounts (max-width: 600px) {
-  .agent-status-api-list { grid-template-columns: minmax(0, 1fr); }
+  .agent-status-api-account .agent-status-account-windows { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 }
 @container home-panel (max-width: 900px) {
   .scheduled-triggered-grid {

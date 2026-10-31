@@ -5,6 +5,7 @@ const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
 let apis = [];
 let failRegistration = true;
+let provisionAutomatically = false;
 const offered = protocols => ['openai_chat', ...Object.keys(protocols || {})];
 window.PortalI18n = {t: (text, values = {}) => text.replace(/\{(p\d+)\}/g, (_, key) => values[key])};
 window.PortalUI = {createDialogController: ({modal, onClose}) => ({
@@ -23,7 +24,7 @@ window.PortalInstructionClient = {execute: async (name, args) => {
     case 'ListProviderAccounts': return {accounts: []};
     case 'ListBackendRoles': return {roles: []};
     case 'ListModelApis': return {apis};
-    case 'CreateModelApi': apis = [{...args, harness_protocols: offered(args.protocols), version: 1}]; return {api: apis[0]};
+    case 'CreateModelApi': apis = [{...args, harness_protocols: offered(args.protocols), version: 1}]; return {api: apis[0], accounts: provisionAutomatically ? [{account_id:args.api_id,provider:'provider_api'}, {account_id:args.api_id+'-kimi',provider:'kimi'}, {account_id:args.api_id+'-opencode',provider:'opencode'}] : []};
     case 'UpdateModelApi': {
       const index = apis.findIndex(api => api.api_id === args.api_id);
       apis[index] = {...apis[index], ...args.changes, version: apis[index].version + 1};
@@ -109,5 +110,13 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   submit(form); await flush();
   assert.deepEqual(last('RegisterProviderAccount').config, {api_id: 'gateway'});
 
+  provisionAutomatically = true;
+  click('新增模型 API'); form = window.document.querySelector('dialog form');
+  form.elements.api_id.value = 'automatic'; form.elements.base_url.value = 'https://example.invalid';
+  form.elements.default_model.value = 'chat'; form.elements.harness.value = 'kimi';
+  const registeredBefore = calls.filter(call => call.name === 'RegisterProviderAccount').length;
+  submit(form); await flush();
+  assert.equal(calls.filter(call => call.name === 'RegisterProviderAccount').length, registeredBefore);
+  assert.equal(last('GetProviderAccountSetup').account_id,'automatic-kimi');
   panel.destroy(); dom.window.close(); console.log('API key harness choices passed');
 })().catch(error => {console.error(error); dom.window.close(); process.exitCode = 1;});

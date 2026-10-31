@@ -41,6 +41,13 @@ def _failure(handler, **arguments) -> str:
     return error.value.code
 
 
+def _remove_api_accounts(api_id):
+    from management_portal.execution import account_registrations
+    for row in account_registrations.registrations():
+        if row['config'].get('api_id') == api_id:
+            account_registrations.delete_registration(row['account_id'])
+
+
 def test_model_api_instructions_keep_versioned_rows_in_postgres():
     """模型接口登记的增删改只写 PostgreSQL 的带版本行
 
@@ -73,6 +80,7 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
     with model_api_store.database().read() as connection:
         assert connection.execute("SELECT updated_by FROM apis WHERE api_id='moonshot_test'").fetchone()[0] == "bob"
 
+    _remove_api_accounts("moonshot_test")
     assert _call(execution_isa.delete_model_api, api_id="moonshot_test") == {"api_id": "moonshot_test"}
     assert _failure(execution_isa.update_model_api, api_id="moonshot_test", changes={}) == "instruction.not_found"
     assert _failure(execution_isa.delete_model_api, api_id="moonshot_test") == "instruction.not_found"
@@ -175,7 +183,7 @@ def test_explicit_routes_are_validated_and_follow_the_api_lifecycle():
     assert _failure(execution_isa.create_model_api, **MOONSHOT, routes=[route]) == "instruction.invalid_arguments"
     assert model_api_store.api_version("moonshot_test") is None
     assert _failure(execution_isa.update_model_api, api_id="deepseek_test",
-                    changes={"provider": "moonshot"}) == "instruction.invalid_arguments"
+                    changes={"provider": "moonshot"}) == "instruction.conflict"
     assert AIProviderRegistry().get("deepseek_test")["provider"] == "deepseek"
     _call(execution_isa.create_model_api, **{**DEEPSEEK, "api_id": "deepseek_second"}, provider="deepseek")
     assert _failure(execution_isa.update_model_api, api_id="deepseek_second",
@@ -183,6 +191,7 @@ def test_explicit_routes_are_validated_and_follow_the_api_lifecycle():
     _call(execution_isa.update_model_api, api_id="deepseek_test", changes={"routes": []})
     _call(execution_isa.update_model_api, api_id="deepseek_second", changes={"routes": [route]})
     assert model_api_store.route_api_id("dsh", "deepseek") == "deepseek_second"
+    _remove_api_accounts("deepseek_second")
     _call(execution_isa.delete_model_api, api_id="deepseek_second")
     assert model_api_store.route_api_id("dsh", "deepseek") is None
 
@@ -201,6 +210,8 @@ def test_model_apis_declare_the_protocols_agent_harnesses_may_use():
     assert AIProviderRegistry.harness_endpoint(entry, "openai_responses") == ("https://gateway.invalid/v1", "bearer")
     assert AIProviderRegistry.harness_endpoint(entry, "anthropic_messages") == ("https://gateway.invalid", "x-api-key")
     assert AIProviderRegistry.harness_models(entry) == ["gpt-test"]
+    from management_portal.execution import account_registrations
+    account_registrations.delete_registration("gateway_test-codex")
     _call(execution_isa.update_model_api, api_id="gateway_test", changes={
         "protocols": {"anthropic_messages": {"base_url": "https://claude.gateway.invalid/"}}})
     entry = AIProviderRegistry().get("gateway_test")
@@ -213,6 +224,7 @@ def test_model_apis_declare_the_protocols_agent_harnesses_may_use():
     assert legacy["api"]["harness_protocols"] == ["openai_chat", "anthropic_messages"]
     assert AIProviderRegistry.harness_endpoint(AIProviderRegistry().get("deepseek_test"), "anthropic_messages") == (
         "https://deepseek.invalid/anthropic", "bearer")
+    _remove_api_accounts("deepseek_test")
     declared = _call(execution_isa.update_model_api, api_id="deepseek_test", changes={"protocols": {}})
     assert declared["api"]["harness_protocols"] == ["openai_chat"]
 
@@ -244,9 +256,10 @@ def test_a_model_api_in_use_by_an_execution_account_is_not_deleted():
     with pytest.raises(InstructionError) as error:
         _call(execution_isa.delete_model_api, api_id="moonshot_test")
     assert error.value.code == "instruction.conflict"
-    assert error.value.details == {"reason": "account.api_in_use", "account_ids": ["moonshot_direct"]}
+    assert error.value.details == {"reason": "account.api_in_use", "account_ids": ["moonshot_test", "moonshot_test-kimi", "moonshot_test-opencode", "moonshot_direct"]}
     assert model_api_store.api_version("moonshot_test") == 1
     account_registrations.delete_registration("moonshot_direct")
+    _remove_api_accounts("moonshot_test")
     assert _call(execution_isa.delete_model_api, api_id="moonshot_test") == {"api_id": "moonshot_test"}
 
 

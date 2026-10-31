@@ -464,7 +464,7 @@ def _require_execution_account(
 
 
 @resident_lineage.access_snapshot_scope()
-def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
+def get_account_resident_summary(account_id: str, actor: str, account_scope: str = "execution") -> dict[str, Any]:
     operator = canonical_actor_id(actor)
     if not operator:
         raise PermissionError("需要登录后查看账号节点详情")
@@ -472,7 +472,15 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
     if not account_id:
         raise ValueError("account_id required")
     accounts = execution_port.service().accounts().get("accounts", [])
-    _require_execution_account(account_id, accounts)
+    if account_scope == "model_api":
+        selected_accounts = {item["account_id"] for item in accounts if item.get("billing_account_id") == account_id}
+        if not selected_accounts:
+            raise ValueError("Unknown Model API account")
+    elif account_scope == "execution":
+        _require_execution_account(account_id, accounts)
+        selected_accounts = {account_id}
+    else:
+        raise ValueError("Unknown account scope")
     resolve_account = _resident_quota_account_resolver(accounts)
     # Only the Residents the caller can read (GetResident) are counted, whoever the caller is.
     residents = [
@@ -487,7 +495,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
         if resolve_account(
             record,
             bindings.get(resident_backend.execution_binding_id(record)) or {},
-        ) == account_id
+        ) in selected_accounts
     ]
     snapshots = resident_conversation_stream.get_repository().state_snapshots([
         resident_domain_common.record_resident_id(record) for record in selected
@@ -526,7 +534,7 @@ def get_account_resident_summary(account_id: str, actor: str) -> dict[str, Any]:
         None,
     ) or {"status": "unknown"}
     return {
-        "account_id": account_id, "observed_at": resident_domain_common.now_iso(),
+        "account_id": account_id, "account_scope": account_scope, "observed_at": resident_domain_common.now_iso(),
         "scope": "visible", "total": len(selected),
         "intake": intake, "open_resident_ids": intake_ids["open"], "closed_resident_ids": intake_ids["closed"],
         "work": work, "latest_input": latest_input,

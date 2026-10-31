@@ -139,10 +139,11 @@
 
     function accountApiRow(account) {
       const id = String(account.account_id || "");
-      return window.PortalI18n.html`<div class="agent-status-api-account" data-account-api="${esc(id)}">
+      return window.PortalI18n.html`<div class="agent-status-account-limit agent-status-api-account" data-account-api="${esc(id)}">
         <span class="agent-status-account-name" title="${esc(id)}">${esc(id)}</span>
-        ${accountBalanceHtml(account) || window.PortalI18n.html`<span class="agent-status-muted" title="${window.PortalI18n.t("余额暂不可用")}">—</span>`}
+        <div class="agent-status-account-windows">${accountBalanceHtml(account) || window.PortalI18n.html`<span class="agent-status-muted" title="${window.PortalI18n.t("余额暂不可用")}">—</span>`}
         ${account.capabilities?.resident_details === false ? "" : window.PortalI18n.html`<button class="portalButton is-compact agent-status-account-details" type="button" data-account-details="${esc(id)}" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-details">详情</button>`}
+        </div>
       </div>`;
     }
 
@@ -303,9 +304,10 @@
       details.error = "";
       renderAccountDetails();
       try {
-        const snapshot = await homeApi.get(`/api/agent-status/account-residents?account_id=${encodeURIComponent(accountId)}`, { signal: details.abort.signal });
+        const scope = executionAccounts(currentAgentStatusData()).find(item => item.account_id === accountId)?.details_scope;
+        const snapshot = await homeApi.get(`/api/agent-status/account-residents?account_id=${encodeURIComponent(accountId)}${scope === "model_api" ? "&account_scope=model_api" : ""}`, { signal: details.abort.signal });
         if (version !== details.requestVersion || accountDetails !== details || !details.popover.isOpen()) return;
-        if (snapshot?.account_id !== accountId) throw new Error("账号详情响应不匹配，请刷新重试");
+        if (snapshot?.account_id !== accountId || (scope === "model_api" && snapshot.account_scope !== scope)) throw new Error("账号详情响应不匹配，请刷新重试");
         details.snapshot = snapshot;
       } catch (error) {
         if (version !== details.requestVersion || accountDetails !== details || !details.popover.isOpen()) return;

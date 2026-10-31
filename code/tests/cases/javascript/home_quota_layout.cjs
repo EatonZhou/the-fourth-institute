@@ -51,8 +51,8 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
         const overlap=(a,b)=>a.left<b.right-1 && a.right>b.left+1 && a.top<b.bottom-1 && a.bottom>b.top+1;
         if(document.documentElement.scrollWidth>innerWidth) issues.push('page overflow');
         const apis=[...document.querySelectorAll('[data-account-api]')];
-        if(innerWidth>632 && Math.abs(box(apis[0]).top-box(apis[1]).top)>1) issues.push('APIs not paired');
-        if(innerWidth<=632 && box(apis[1]).top<=box(apis[0]).top) issues.push('APIs not single column');
+        if(innerWidth>1082 && Math.abs(box(apis[0].querySelector('[data-account-details]')).left-box(document.querySelector('[data-account-limit-account] [data-account-details]')).left)>1) issues.push('API and subscription actions not aligned');
+        if(box(apis[1]).top<=box(apis[0]).top) issues.push('APIs not single column');
         for(const row of [...apis,...document.querySelectorAll('.agent-status-account-window')]) {
           const children=[...row.children], bounds=box(row);
           for(let i=0;i<children.length;i++) {
@@ -65,6 +65,6 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       });
       assert.deepEqual(problems,[],width+'px');
     }
-    console.log('Subscription summaries unchanged; two API amounts per row, mobile single column, no coins; six widths pass');
+    console.log('Subscription summaries unchanged; API and subscription rows aligned, no coins; six widths pass');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -18,7 +18,7 @@ from management_common.clock import utc_now_iso
 
 from . import device_identity_backend
 from .execution.service import ExecutionService
-from .execution.account_resources import with_account_resources
+from .execution.account_resources import home_account_resources
 from .society_service import get_society_service
 from . import status_cache_store, token_usage_snapshot_cache, usage_read_model
 
@@ -1750,7 +1750,7 @@ def _build_agent_status_summary(actor: str = "", force_refresh: bool = False) ->
         return {"generated_at": utc_now_iso(), "refreshing": False, "accounts_error": "账号状态暂不可读取"}
     return {
         "generated_at": utc_now_iso(),
-        "accounts": with_account_resources(account_snapshot.get("accounts", []), account_snapshot.get("exchange_rates") or {}),
+        "accounts": home_account_resources(account_snapshot.get("accounts", []), account_snapshot.get("exchange_rates") or {}),
         "refreshing": bool(account_snapshot.get("refreshing")),
         "refresh_retry_after_seconds": int(account_snapshot.get("refresh_retry_after_seconds") or 0),
     }

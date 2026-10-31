@@ -1,4 +1,6 @@
 {
+  "保存后继续接入与测试": {"zh-CN": "保存后继续接入与测试", "en": "Continue setup and testing after saving"},
+  "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。": {"zh-CN": "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。", "en": "Saving makes every protocol-compatible runner available when creating a Resident. Select one here to test; testing calls the model and may incur charges."},
   "用量刷新失败": {"zh-CN": "用量刷新失败", "en": "Usage refresh failed"},
   "每月总额度": {"zh-CN": "每月总额度", "en": "Monthly total quota"},
   "每月编程额度": {"zh-CN": "每月编程额度", "en": "Monthly coding quota"},
