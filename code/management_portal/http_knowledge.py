@@ -9,6 +9,12 @@ from management_portal import semantic_search_jobs
 from management_portal.http_routes import RouteDefinition
 
 
+def _archive_service() -> str:
+    """The knowledge archive agent's unit as this installation names it, for a 503 answer."""
+    from scripts.portal_service_units import installation_service_name
+    return installation_service_name("knowledge-archive-agent.service")
+
+
 class KnowledgeHttp:
     def __init__(
         self, *, respond, exception_response, resource_error,
@@ -43,7 +49,7 @@ class KnowledgeHttp:
                     self.require_resource(kb_id, session_actor)
                 return operation(request, payload, session_actor)
             except self.knowledge_archive_backend().KnowledgeArchiveServiceUnavailable as exc:
-                return self.respond(request, 503, {"error": str(exc), "service": "knowledge-archive-agent.service"})
+                return self.respond(request, 503, {"error": str(exc), "service": _archive_service()})
             except KeyError as exc:
                 return self.respond(request, 404, {"error": str(exc) or "not found"})
             except PermissionError as exc:
@@ -182,7 +188,7 @@ class KnowledgeHttp:
         try:
             return self.respond(request, 200, self.knowledge_archive_backend().knowledge_archive_backend.list_jobs(actor, limit=limit))
         except self.knowledge_archive_backend().KnowledgeArchiveServiceUnavailable as exc:
-            return self.respond(request, 503, {'error': str(exc), 'service': 'knowledge-archive-agent.service'})
+            return self.respond(request, 503, {'error': str(exc), 'service': _archive_service()})
 
     def get_api_archive_job(self, request, parsed, actor):
         qs = parse_qs(parsed.query)
@@ -193,7 +199,7 @@ class KnowledgeHttp:
         try:
             return self.respond(request, 200, self.knowledge_archive_backend().knowledge_archive_backend.get_job(actor, archive_id))
         except self.knowledge_archive_backend().KnowledgeArchiveServiceUnavailable as exc:
-            return self.respond(request, 503, {'error': str(exc), 'service': 'knowledge-archive-agent.service'})
+            return self.respond(request, 503, {'error': str(exc), 'service': _archive_service()})
         except KeyError:
             return self.respond(request, 404, {'error': 'archive job not found'})
         except PermissionError as exc:

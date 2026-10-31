@@ -115,6 +115,18 @@ def _native_provider_service(unit):
     return adapter, directory, name, expected
 
 
+def installation_service_name(unit: str) -> str:
+    """The user unit an isolated installation runs for ``unit`` (``<service_prefix>-<name>``).
+
+    ``portal-`` is dropped from the logical name, as for the Provider daemons; outside an
+    isolated Linux installation the logical name is the unit itself.
+    """
+    isolated = _isolated_provider_context()
+    if isolated is None:
+        return unit
+    return isolated["service_prefix"] + "-" + unit.removeprefix("portal-")
+
+
 def provider_runtime_services(unit: str) -> tuple[str, ...]:
     """Resolve a daemon's running services in this installation only."""
     if unit not in {"portal-claude-code.service", "portal-kimi-code.service"}:

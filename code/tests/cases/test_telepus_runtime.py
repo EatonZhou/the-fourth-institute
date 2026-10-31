@@ -17,7 +17,7 @@ class Systemd:
         self.calls.append(command)
         if command[2] == "show":
             blocks = []
-            for unit in UNITS:
+            for unit in [argument for argument in command[3:] if argument.endswith(".service")]:
                 installed = unit not in self.missing
                 blocks.append("\n".join((f"Id={unit}", f"LoadState={'loaded' if installed else 'not-found'}",
                                          f"ActiveState={'active' if installed and self.enabled else 'inactive'}",
@@ -30,7 +30,7 @@ class Systemd:
 
 def test_switch_stops_and_disables_all_telepus_units_then_starts_them():
     systemd = Systemd()
-    runtime = TelepusRuntime(systemd)
+    runtime = TelepusRuntime(systemd, units=UNITS)
     assert runtime.status()["complete"]
     off = runtime.set_enabled(False)
     assert not off["enabled"] and not off["running"]
@@ -44,7 +44,7 @@ def test_switch_stops_and_disables_all_telepus_units_then_starts_them():
 
 def test_missing_unit_blocks_enable_but_does_not_block_disabling_installed_units():
     systemd = Systemd(missing=(UNITS[1],))
-    runtime = TelepusRuntime(systemd)
+    runtime = TelepusRuntime(systemd, units=UNITS)
     with pytest.raises(OperationError, match="缺少 Telepus 服务"):
         runtime.set_enabled(True)
     assert all(command[2] == "show" for command in systemd.calls)
@@ -53,11 +53,27 @@ def test_missing_unit_blocks_enable_but_does_not_block_disabling_installed_units
     assert systemd.calls[-2] == ["systemctl", "--user", "disable", "--now", UNITS[0], UNITS[2]]
 
 
+def test_isolated_installation_reads_and_switches_its_prefixed_units(monkeypatch):
+    """隔离安装的实例按自己的服务前缀读取和切换 Telepus 单元，不碰无前缀的同名单元"""
+    from scripts import portal_service_units
+    monkeypatch.setattr(portal_service_units, "_isolated_provider_context",
+                        lambda: {"service_prefix": "tfi-sample"})
+    prefixed = tuple("tfi-sample-" + unit for unit in UNITS)
+    systemd = Systemd()
+    runtime = TelepusRuntime(systemd)
+    assert runtime.units == prefixed
+    assert [unit["name"] for unit in runtime.status()["units"]] == list(prefixed)
+    runtime.set_enabled(False)
+    assert systemd.calls[0][3:6] == list(prefixed)
+    assert [command for command in systemd.calls if command[2] != "show"] == [
+        ["systemctl", "--user", "disable", "--now", *prefixed]]
+
+
 def test_unavailable_systemd_does_not_attempt_mutation():
     def unavailable(_command, **_kwargs):
         raise FileNotFoundError("systemctl")
 
-    runtime = TelepusRuntime(unavailable)
+    runtime = TelepusRuntime(unavailable, units=UNITS)
     assert runtime.status()["available"] is False
     with pytest.raises(OperationError, match="systemctl"):
         runtime.set_enabled(False)

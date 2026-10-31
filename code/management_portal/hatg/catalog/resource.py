@@ -79,7 +79,7 @@ DECLARATIONS = (
         R("state", description="修改后的状态：enabled 或 disabled"),
         R("version", "integer", "修改后类型启停状态的版本，可作下一次修改的 expected_version")),
        mutates=True, target="resource_type"),
-    _d("RegisterResource", (On("resource_type", place={"project": ("fields.project_id", "fields.project_ids")}),), "按资源类型的要求登记一个新资源，调用者成为它的 owner。", (
+    _d("RegisterResource", (On("resource_type", place={"project": ("fields.project_id", "fields.project_ids")}),), "按资源类型的要求登记一个新资源，调用者记为它的创建者（created_by）。", (
         R("resource_type", description="资源类型"),
         P("fields", "object", "该类型要求的字段，例如知识条目的 project_id、title 与 body。"
           "放在 Project 下的类型必须给出位置：知识条目与实验写 project_id，repo 与 Workbench 写 project_ids，公共内容写 [\"@public\"]",

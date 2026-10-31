@@ -310,6 +310,34 @@ def test_every_declared_capability_names_the_test_of_each_adapter_that_honours_i
                 assert f"capability_contracts.{contract.EVENT_CHECKS[capability]}(" in inspect.getsource(test), node
 
 
+def test_catalog_declares_what_the_adapter_class_implements() -> None:
+    """按类核对的能力由声明它的 Provider 的适配器类实现
+
+    ``CLASS_CHECKED`` 中的能力不登记适配器测试，在这里核对：声明 auto_compact_threshold 的 Provider，其适配器类定义 configure_auto_compact_threshold。
+
+    A capability checked on the Adapter class is implemented by every declaring Provider's Adapter class.
+
+    :module: execution.harness
+    :design: decision_5c62deb8253a
+    """
+    import importlib
+
+    from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+    from tests.cases import capability_contracts as contract
+
+    hooks = {capabilities.AUTO_COMPACT_THRESHOLD: "configure_auto_compact_threshold"}
+    assert set(hooks) == set(contract.CLASS_CHECKED)
+    declaring = set()
+    for name, definition in AGENT_PROVIDERS.items():
+        module, _, class_name = definition.adapter.rpartition(".")
+        adapter = getattr(importlib.import_module(module), class_name)
+        for capability, hook in hooks.items():
+            if capability in contract.declared(definition):
+                declaring.add(name)
+                assert callable(getattr(adapter, hook, None)), (name, hook)
+    assert declaring
+
+
 def test_codex_takes_a_reasoning_effort_and_an_image_detail_for_each_turn() -> None:
     """Codex 每个回合使用各自的推理强度和图片细节
 
