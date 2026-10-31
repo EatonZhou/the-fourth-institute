@@ -26,21 +26,15 @@
 .managementNetworkHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .managementNetworkHeader h2 { margin:0; }
 .managementNetworkSection { margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
-.managementNetworkSection fieldset { min-width:0; margin:0; padding:0; border:0; }
-.managementNetworkSection legend { padding:0; font-size:17px; font-weight:650; }
-.managementNetworkSection p, .managementNetworkSection small { line-height:1.6; overflow-wrap:anywhere; }
-.managementNetworkFields { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:14px; }
-.managementNetwork .portalField { min-width:0; }
+.managementNetworkSection p { line-height:1.6; overflow-wrap:anywhere; }
 .managementNetworkSection h3 { margin:0 0 12px; font-size:17px; }
+.managementNetworkValues { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:14px; margin:0; }
+.managementNetworkValues dt { color:var(--muted); font-size:13px; }
+.managementNetworkValues dd { margin:4px 0 0; overflow-wrap:anywhere; }
 .managementNetworkUrls { display:grid; gap:8px; }
 .managementNetworkUrl { display:flex; gap:8px; align-items:center; }
 .managementNetworkUrl input { flex:1; min-width:0; }
-.managementNetworkAdvanced { margin:14px 0; }
-.managementNetworkAdvanced summary { cursor:pointer; }
-.managementNetworkAdvanced .portalField { margin-top:10px; max-width:260px; }
-.managementNetwork textarea { width:100%; min-height:130px; box-sizing:border-box; resize:vertical; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; line-height:1.5; }
 .managementNetworkHint, .managementNetwork [data-network-source] { color:var(--muted); }
-.managementNetwork fieldset:disabled { opacity:.65; }
 .managementInstanceCard {
   border-top: 1px solid #ccd5df;
   padding: 1rem 0;

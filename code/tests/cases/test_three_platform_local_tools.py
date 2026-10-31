@@ -14,7 +14,6 @@ import pytest
 
 from management_common import process_runtime
 from management_portal import article_texlab_backend as texlab
-from management_portal import embedding_setup as embeddings
 from management_portal import paper_figure_extraction, paper_pdf, paper_store
 
 
@@ -87,42 +86,6 @@ def test_poppler_argv_encoding_and_timeout_contract(monkeypatch, tmp_path, platf
     assert argv == [executable, '-layout', '-enc', 'UTF-8', str(target), '-']
     assert options['timeout'] == 360
     assert not options.get('shell')
-
-
-def test_embedding_probe_timeout_is_readiness_diagnostic(monkeypatch, tmp_path):
-    python = tmp_path / 'python'
-    python.touch()
-    monkeypatch.setattr(embeddings, 'runtime_python', lambda: python)
-    monkeypatch.setattr(embeddings, 'model_directory', lambda: tmp_path)
-    monkeypatch.setattr(embeddings, 'platform_issue', lambda: None)
-    monkeypatch.setattr(embeddings, 'enabled', lambda: False)
-    monkeypatch.setattr(embeddings, 'job_status', lambda: {'state': 'idle'})
-    def timeout(*a, **kw):
-        raise subprocess.TimeoutExpired('probe', 20)
-    monkeypatch.setattr(process_runtime, 'run_process', timeout)
-    monkeypatch.setattr(subprocess, 'run', timeout)
-    result = embeddings.readiness()
-    assert result['ready'] is False
-    assert any('超时' in item for item in result['missing'])
-
-
-def test_embedding_launch_uses_owned_detached_tree(monkeypatch, tmp_path):
-    monkeypatch.setattr(embeddings, 'job_file', lambda: tmp_path / 'job.json')
-    monkeypatch.setattr(embeddings, 'platform_issue', lambda: None)
-    calls = []
-    process = SimpleNamespace(pid=456, wait=lambda: 0)
-    def spawn(argv, **kwargs):
-        calls.append((argv, kwargs))
-        embeddings._write_job({'state': 'complete'})
-        return process
-    monkeypatch.setattr(process_runtime, 'spawn_process', spawn)
-    monkeypatch.setattr(process_runtime, 'terminate_process_tree', lambda *a, **kw: None)
-    monkeypatch.setattr(subprocess, 'Popen', lambda *a, **kw: process)
-    assert embeddings.start_install()['pid'] == 456
-    assert len(calls) == 1
-    assert calls[0][1]['kill_on_owner_exit'] is False
-    assert 'creationflags' not in calls[0][1] and 'start_new_session' not in calls[0][1]
-    assert embeddings.job_status()['state'] == 'complete'
 
 
 LSP_STUB = r'''
@@ -217,15 +180,6 @@ def test_texlab_reader_start_failure_releases_owned_tree(monkeypatch, tmp_path):
     assert session.process is None
 
 
-def test_embedding_cleanup_failure_is_diagnostic_after_completion(monkeypatch, tmp_path, caplog):
-    monkeypatch.setattr(embeddings, 'job_file', lambda: tmp_path / 'job.json')
-    embeddings._write_job({'state': 'complete'})
-    monkeypatch.setattr(process_runtime, 'terminate_process_tree', lambda *a, **kw:
-                        (_ for _ in ()).throw(TimeoutError('tree still alive')))
-    embeddings._reap_install(SimpleNamespace(wait=lambda: 0), 'this-job')
-    assert 'cleanup failed' in caplog.text and 'tree still alive' in caplog.text
-
-
 @pytest.mark.skipif(sys.platform != 'linux', reason='Linux native PATH executable fixture')
 @pytest.mark.parametrize('timeout', [False, True])
 def test_native_poppler_cleanup_on_exit_and_timeout(monkeypatch, tmp_path, timeout):
@@ -250,63 +204,6 @@ print('论文文字', flush=True)
     else:
         assert paper_pdf._extract_pdf_text_file(target) == '论文文字'
     assert not process_runtime.process_alive(int(target.with_suffix('.pid').read_text()))
-
-
-def test_native_embedding_installer_log_and_tree_cleanup(monkeypatch, tmp_path):
-    """Use only a temporary stand-in; never execute the real installer."""
-    scripts = tmp_path / 'scripts'
-    scripts.mkdir()
-    job = tmp_path / 'job.json'
-    child_pid = tmp_path / 'child.pid'
-    (scripts / 'install_portal_embeddings.py').write_text(f'''
-import json, pathlib, subprocess, sys
-child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
-pathlib.Path({str(child_pid)!r}).write_text(str(child.pid))
-print('本地安装器替身', flush=True)
-pathlib.Path({str(job)!r}).write_text(json.dumps({{'state': 'complete'}}))
-''', encoding='utf-8')
-    monkeypatch.setattr(embeddings, 'ROOT', tmp_path)
-    monkeypatch.setattr(embeddings, 'job_file', lambda: job)
-    monkeypatch.setattr(embeddings, 'platform_issue', lambda: None)
-    done = threading.Event()
-    reaper = embeddings._reap_install
-    def reap(*args):
-        try:
-            reaper(*args)
-        finally:
-            done.set()
-    monkeypatch.setattr(embeddings, '_reap_install', reap)
-    result = embeddings.start_install()
-    assert done.wait(8), 'installer tree did not finish'
-    assert embeddings.job_status()['state'] == 'complete'
-    assert '本地安装器替身' in job.with_suffix('.log').read_text(encoding='utf-8')
-    assert not process_runtime.process_alive(result['pid'])
-    assert not process_runtime.process_alive(int(child_pid.read_text()))
-
-
-def test_embedding_unexpected_exit_does_not_leave_running_job(monkeypatch, tmp_path):
-    monkeypatch.setattr(embeddings, 'job_file', lambda: tmp_path / 'job.json')
-    embeddings._write_job({'state': 'running', 'started_at': 'this-job'})
-    stopped = []
-    process = SimpleNamespace(wait=lambda: 17)
-    monkeypatch.setattr(process_runtime, 'terminate_process_tree', lambda p, **kw: stopped.append(p))
-    embeddings._reap_install(process, 'this-job')
-    assert stopped == [process]
-    assert embeddings.job_status()['state'] == 'failed'
-    assert 'exit 17' in embeddings.job_status()['error']
-    embeddings._write_job({'state': 'running', 'started_at': 'newer-job'})
-    embeddings._reap_install(process, 'this-job')
-    assert embeddings.job_status()['started_at'] == 'newer-job'
-    assert embeddings.job_status()['state'] == 'running'
-
-
-def test_embedding_missing_installer_is_explicit_failure(monkeypatch, tmp_path):
-    monkeypatch.setattr(embeddings, 'ROOT', tmp_path)
-    monkeypatch.setattr(embeddings, 'job_file', lambda: tmp_path / 'job.json')
-    monkeypatch.setattr(embeddings, 'platform_issue', lambda: None)
-    with pytest.raises(FileNotFoundError, match='installer is missing'):
-        embeddings.start_install()
-    assert embeddings.job_status()['state'] == 'failed'
 
 
 @pytest.mark.parametrize('directory', ['/opt/poppler tools/', '/opt/homebrew/bin/', 'C:\\Program Files\\Poppler\\bin\\'])

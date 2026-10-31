@@ -29,13 +29,13 @@ from management_portal.resources.transport import ResourceServiceClient
 
 WORKSPACE = "workspace_0123456789ab"
 RESIDENT = "resident_0123456789ab"
-ADDRESS = WORKSPACE + "/file/sample/.wall/plans/设计 plan.md"
+ADDRESS = WORKSPACE + "/file/sample/plans/设计 plan.md"
 
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
     root = tmp_path / "workspace"
-    file = root / "sample/.wall/plans/设计 plan.md"
+    file = root / "sample/plans/设计 plan.md"
     file.parent.mkdir(parents=True)
     file.write_text("# Verified report\n", encoding="utf-8")
     descriptors = CollaborationDescriptorStore()
@@ -93,7 +93,7 @@ def test_registered_workspace_reference_and_live_content(workspace, actor):
     resolved = service.resolve(ADDRESS, actor=actor)
     assert resolved["exists"] is True
     assert resolved["target_kind"] == "file"
-    assert resolved["relative_path"] == "sample/.wall/plans/设计 plan.md"
+    assert resolved["relative_path"] == "sample/plans/设计 plan.md"
     assert not resolved.get("resolved_path")
     reference = service.reference(ADDRESS, actor=actor)
     assert reference["resource_id"] == WORKSPACE
@@ -293,7 +293,7 @@ def test_current_registered_directory_overrides_stale_index_path(workspace):
     验证 Workspace 注册目录迁移后，即使索引仍指向旧路径，read_content 也从当前描述符登记的新目录读取文件。
     """
     new_root = workspace.root.with_name("relocated")
-    new_file = new_root / "sample/.wall/plans/设计 plan.md"
+    new_file = new_root / "sample/plans/设计 plan.md"
     new_file.parent.mkdir(parents=True)
     new_file.write_text("current directory")
     from management_portal.resources.workspace_store import get_workspace_store
@@ -459,6 +459,40 @@ def test_update_workspace_file_refuses_absolute_paths(workspace, monkeypatch):
             expected_version=None, name="UpdateWorkspaceFile"))
     assert refused.value.code == "instruction.invalid_arguments"
     assert workspace.file.read_text(encoding="utf-8") == "# Verified report\n"
+
+
+@pytest.mark.parametrize("relative", [".env", "sample/.git/config", "secrets/key.txt", "sample/Credentials/token.json"])
+def test_workspace_sensitive_paths_are_neither_read_nor_written_by_address(workspace, monkeypatch, relative):
+    """Workspace 文件地址不读写敏感路径
+
+    以 . 开头的段或 secrets、credentials 等目录：读取像文件不存在一样被拒绝，UpdateWorkspaceFile 拒绝写入且不创建文件，与 Lineage Folder 相同。
+
+    :importance: P0
+    :aspects: functional, behavior
+    """
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.resources import isa as resource_isa
+
+    target = workspace.root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("token", encoding="utf-8")
+    address = WORKSPACE + "/file/" + relative
+    for operation in ("resolve", "read_content"):
+        with pytest.raises(KeyError):
+            getattr(workspace.service, operation)(address, actor="alice")
+    monkeypatch.setattr(resource_isa, "_service", lambda: workspace.service)
+    with pytest.raises(InstructionError) as refused:
+        resource_isa.update_workspace_file(SimpleNamespace(
+            argument={"address": address, "content": "changed"}.get, caller="alice",
+            expected_version=None, name="UpdateWorkspaceFile"))
+    assert refused.value.code == "instruction.forbidden"
+    assert target.read_text(encoding="utf-8") == "token"
+    target.unlink()
+    with pytest.raises(InstructionError):
+        resource_isa.update_workspace_file(SimpleNamespace(
+            argument={"address": address, "content": "new"}.get, caller="alice",
+            expected_version=None, name="UpdateWorkspaceFile"))
+    assert not target.exists()
 
 
 def test_update_workspace_file_needs_contributor_on_the_workspace(workspace, monkeypatch):

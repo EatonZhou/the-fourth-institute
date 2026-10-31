@@ -8,7 +8,7 @@
   // an input when it changes.
 
   const DEPENDENCIES = Object.freeze([
-    "allows", "executionSection", "me", "panelState", "readEmbeddings", "readFeatureSwitches", "readSchemes",
+    "allows", "executionSection", "me", "panelState", "readFeatureSwitches", "readSchemes",
     "readTelepus", "readWallScheduling", "root", "savePermissionSystem", "showReadNote", "syncPermissionSystem",
   ]);
 
@@ -16,7 +16,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalManagementExecution is missing: ${missing.join(", ")}`);
     const {
-      allows, executionSection, me, panelState, readEmbeddings, readFeatureSwitches, readSchemes, readTelepus,
+      allows, executionSection, me, panelState, readFeatureSwitches, readSchemes, readTelepus,
       readWallScheduling, root, savePermissionSystem, showReadNote, syncPermissionSystem,
     } = dependencies;
 
@@ -72,7 +72,6 @@
     const readExecutionSettings = () => {
       if (executionRead) { void readTelepus(); void readWallScheduling(); readFeatureSwitches(); return; }
       executionRead = true;
-      void readEmbeddings();
       void readTelepus();
       void readWallScheduling();
       readFeatureSwitches();

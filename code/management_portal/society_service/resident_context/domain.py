@@ -22,10 +22,6 @@ def search_residents(actor: str, query: str, limit: int = 8, resident_ids: list[
     return resident_context().search(actor=actor, query=query, limit=int(limit or 8), resident_ids=_ids(resident_ids))
 
 
-def set_resident_embeddings_enabled(enabled: bool) -> dict[str, bool]:
-    return resident_context().set_embeddings_enabled(enabled)
-
-
 def resident_routing_candidates(
     actor: str, query: str, limit: int = 40, resident_ids: list[str] | None = None,
 ) -> dict[str, Any]:

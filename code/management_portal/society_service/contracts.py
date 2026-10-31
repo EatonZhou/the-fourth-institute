@@ -97,7 +97,7 @@ DOMAIN_OPERATIONS = {
             search_resident_directory get_resident_contexts
         """),
         (Operation('write', 'resident', implementation='management_portal.society_service.resident_context.domain'), """
-            request_resident_summary_rebuild submit_routing_eval_correction set_resident_embeddings_enabled
+            request_resident_summary_rebuild submit_routing_eval_correction
         """),
     ),
     "workspace": _catalog(

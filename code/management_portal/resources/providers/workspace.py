@@ -56,7 +56,8 @@ def _resolve(service: "ResourceService", address, *, actor="", **_context):
     file_path = str(root.joinpath(*parts))
     if not workspace_reaches(actor, root_id, write=False, path=file_path):
         raise KeyError(address)
-    return folder_files.describe(result, root, parts, hide=False)
+    # Sensitive paths (.env, secrets/, ...) read as missing, as in the Lineage Folder.
+    return folder_files.describe(result, root, parts, hide=True)
 
 
 def _read_content(resolved, *, max_bytes=4 * 1024 * 1024, **_context):

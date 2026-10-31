@@ -187,7 +187,8 @@ def install(args: argparse.Namespace) -> int:
                                 only_binary=only_binary), dry_run=args.dry_run)
         run([str(python), str(ROOT / "scripts" / "install_portal_embedding_model.py")],
             dry_run=args.dry_run)
-        print("Embedding packages and model are ready; enable the feature in Portal Management.")
+        print("Embedding packages and model are ready; to turn Resident semantic search on, write "
+              '{"enabled": true} to settings/resident_embeddings.json under the Portal instances root.')
 
     return 0
 

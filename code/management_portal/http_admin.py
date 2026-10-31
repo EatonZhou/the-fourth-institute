@@ -53,6 +53,7 @@ class AdminHttp:
             return self.respond(request, 503, {"error": str(exc)})
 
     def network_get(self, request, _parsed, _actor):
+        """The installation's network settings, read only: its target configuration owns them."""
         try:
             self._require_admin(request)
             return self.respond(request, 200, portal_network.read_settings())
@@ -60,22 +61,6 @@ class AdminHttp:
             return self.respond(request, 403, {'error': str(exc)})
         except Exception:
             return self.respond(request, 500, {'error': '无法读取网络设置'})
-
-    def network_post(self, request, _parsed, _actor):
-        try:
-            self._require_admin(request)
-        except PermissionError as exc:
-            return self.respond(request, 403, {'error': str(exc)})
-        return self.respond(request, 409, {'error': 'Standalone TFI network settings are owned by install_tfi_release target configuration', 'supported': False})
-
-    def embeddings_get(self, request, _parsed, _actor):
-        return self.respond(request, 404, {'error': 'This distribution does not include Resident semantic search'})
-
-    def embeddings_post(self, request, _parsed, _actor):
-        return self.respond(request, 404, {'error': 'This distribution does not include Resident semantic search'})
-
-    def embeddings_install_post(self, request, _parsed, _actor):
-        return self.respond(request, 404, {'error': 'This distribution does not include Resident semantic search'})
 
     def wall_scheduling_get(self, request, _parsed, _actor):
         try:
@@ -182,15 +167,11 @@ class AdminHttp:
             RouteDefinition("GET", "/api/admin/network", self.network_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/instances", self.instances_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/paths", self.paths_get, "portal-portal-get"),
-            RouteDefinition("GET", "/api/admin/embeddings", self.embeddings_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/wall-scheduling", self.wall_scheduling_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/feature-switch", self.feature_switch_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/paths/migration", self.paths_status_get, "portal-portal-get"),
-            RouteDefinition("POST", "/api/admin/network", self.network_post, "portal-portal-post"),
             RouteDefinition("POST", "/api/admin/instances", self.instances_post, "portal-portal-post"),
             RouteDefinition("POST", "/api/admin/paths", self.paths_post, "portal-portal-post"),
-            RouteDefinition("POST", "/api/admin/embeddings", self.embeddings_post, "portal-portal-post"),
             RouteDefinition("POST", "/api/admin/wall-scheduling", self.wall_scheduling_post, "portal-portal-post"),
             RouteDefinition("POST", "/api/admin/feature-switch", self.feature_switch_post, "portal-portal-post"),
-            RouteDefinition("POST", "/api/admin/embeddings/install", self.embeddings_install_post, "portal-portal-post"),
         )

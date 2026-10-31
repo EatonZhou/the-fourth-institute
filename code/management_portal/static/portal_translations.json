@@ -39061,10 +39061,6 @@
     "en": "Resident binding",
     "zh-CN": "Resident 绑定"
   },
-  "Resident 语义搜索": {
-    "en": "Resident semantic search",
-    "zh-CN": "Resident 语义搜索"
-  },
   "Workspace 名称": {
     "en": "Workspace name",
     "zh-CN": "Workspace 名称"
@@ -39289,14 +39285,6 @@
     "en": "External call result unknown",
     "zh-CN": "外部调用结果未知"
   },
-  "安装 Resident 语义搜索？": {
-    "en": "Install Resident semantic search?",
-    "zh-CN": "安装 Resident 语义搜索？"
-  },
-  "安装失败：{p0}": {
-    "en": "Installation failed: {p0}",
-    "zh-CN": "安装失败：{p0}"
-  },
   "安装并开启": {
     "en": "Install and enable",
     "zh-CN": "安装并开启"
@@ -39489,10 +39477,6 @@
     "en": "Unable to read target models. Select the account again and retry: {p0}",
     "zh-CN": "无法读取目标模型，请重新选择账号后重试：{p0}"
   },
-  "无法读取语义搜索设置": {
-    "en": "Unable to read semantic search settings",
-    "zh-CN": "无法读取语义搜索设置"
-  },
   "无法读取迁移进度": {
     "en": "Unable to read migration progress",
     "zh-CN": "无法读取迁移进度"
@@ -39629,10 +39613,6 @@
     "en": "The body and attachments will be hidden, leaving a retraction notice. Tasks already sent to a Resident will continue.",
     "zh-CN": "正文和附件会从聊天中隐藏，保留撤回提示。已交给 Resident 的任务仍会继续。"
   },
-  "此设备暂不支持自动安装语义搜索：{p0}": {
-    "en": "Automatic semantic search installation is not supported on this device: {p0}",
-    "zh-CN": "此设备暂不支持自动安装语义搜索：{p0}"
-  },
   "没有匹配的引用": {
     "en": "No matching references",
     "zh-CN": "没有匹配的引用"
@@ -39761,22 +39741,6 @@
     "en": "No accounts are available for this Provider.",
     "zh-CN": "该 Provider 暂无可用账号。"
   },
-  "语义搜索已关闭。缺少：{p0}。": {
-    "en": "Semantic search is disabled. Missing: {p0}.",
-    "zh-CN": "语义搜索已关闭。缺少：{p0}。"
-  },
-  "语义搜索已关闭；所需包和模型已就绪。": {
-    "en": "Semantic search is disabled; the required packages and models are ready.",
-    "zh-CN": "语义搜索已关闭；所需包和模型已就绪。"
-  },
-  "语义搜索已开启。": {
-    "en": "Semantic search is enabled.",
-    "zh-CN": "语义搜索已开启。"
-  },
-  "请查看安装日志": {
-    "en": "Check the installation log",
-    "zh-CN": "请查看安装日志"
-  },
   "读取 Provider 和账号失败：{p0}": {
     "en": "Unable to read Providers and accounts: {p0}",
     "zh-CN": "读取 Provider 和账号失败：{p0}"
@@ -39896,10 +39860,6 @@
   "页面未能完成加载": {
     "en": "Page could not finish loading",
     "zh-CN": "页面未能完成加载"
-  },
-  "默认关闭。开启后使用本地模型做向量检索；未安装时会提示缺少的包和模型，并可一键安装。关闭时仍可使用普通关键词搜索。": {
-    "en": "Off by default. When enabled, a local model provides vector search. Missing packages and models are listed with an installation action. Ordinary keyword search remains available when disabled.",
-    "zh-CN": "默认关闭。开启后使用本地模型做向量检索；未安装时会提示缺少的包和模型，并可一键安装。关闭时仍可使用普通关键词搜索。"
   },
   "例如：/path/to/worktree": {
     "en": "For example: /path/to/worktree",
@@ -40205,9 +40165,9 @@
     "en": "Network settings",
     "zh-CN": "网络设置"
   },
-  "重新读取（保留草稿）": {
-    "en": "Reload (keep draft)",
-    "zh-CN": "重新读取（保留草稿）"
+  "网络设置由 Portal 的安装配置决定，这里只显示当前值。": {
+    "en": "The Portal installation's configuration sets the network settings; this page only shows the current values.",
+    "zh-CN": "网络设置由 Portal 的安装配置决定，这里只显示当前值。"
   },
   "正在读取网络设置…": {
     "en": "Loading network settings…",
@@ -40241,33 +40201,21 @@
     "en": "Allow other devices",
     "zh-CN": "允许其他设备访问"
   },
-  "高级设置：端口": {
-    "en": "Advanced: port",
-    "zh-CN": "高级设置：端口"
-  },
-  "当前仍沿用旧版网段限制。保存新范围后，旧规则会移除；选择允许其他设备访问时，请使用主机防火墙控制具体来源。": {
-    "en": "Legacy subnet restrictions are still active. Saving a new scope removes the old rules. When allowing other devices, use the host firewall to control permitted sources.",
-    "zh-CN": "当前仍沿用旧版网段限制。保存新范围后，旧规则会移除；选择允许其他设备访问时，请使用主机防火墙控制具体来源。"
-  },
-  "保存后 Router 将重启，访问可能短暂中断；若从其他设备切换为“仅本机”，请在本机继续访问。": {
-    "en": "Saving restarts Router and may briefly interrupt access. If switching to “This computer only” from another device, continue on the host computer.",
-    "zh-CN": "保存后 Router 将重启，访问可能短暂中断；若从其他设备切换为“仅本机”，请在本机继续访问。"
-  },
-  "保存访问设置": {
-    "en": "Save access settings",
-    "zh-CN": "保存访问设置"
+  "当前仍沿用旧版网段限制。": {
+    "en": "Legacy subnet restrictions are still active.",
+    "zh-CN": "当前仍沿用旧版网段限制。"
   },
   "网络代理": {
     "en": "Network proxy",
     "zh-CN": "网络代理"
   },
-  "当前代理来自服务环境。首次保存网络代理后，将使用此处的显式配置。": {
-    "en": "The current proxy comes from the service environment. After the first save, the explicit configuration here will be used.",
-    "zh-CN": "当前代理来自服务环境。首次保存网络代理后，将使用此处的显式配置。"
+  "当前代理来自服务环境。": {
+    "en": "The current proxy comes from the service environment.",
+    "zh-CN": "当前代理来自服务环境。"
   },
-  "代理地址支持 http:// 或 https://。HTTP、HTTPS 可分别设置，“统一代理”用于其余未单独设置的请求。代理地址全部留空时直接连接。": {
-    "en": "Proxy addresses support http:// and https://. Configure HTTP and HTTPS separately; the default proxy applies to requests without a separate setting. Leave all proxy addresses blank to connect directly.",
-    "zh-CN": "代理地址支持 http:// 或 https://。HTTP、HTTPS 可分别设置，“统一代理”用于其余未单独设置的请求。代理地址全部留空时直接连接。"
+  "当前使用已保存的代理设置。": {
+    "en": "The saved proxy settings are in use.",
+    "zh-CN": "当前使用已保存的代理设置。"
   },
   "HTTP 代理 URL": {
     "en": "HTTP proxy URL",
@@ -40285,17 +40233,13 @@
     "en": "Proxy bypass addresses",
     "zh-CN": "不使用代理的地址"
   },
-  "以逗号分隔；localhost、127.0.0.1、::1 始终不使用代理。": {
-    "en": "Separate with commas. localhost, 127.0.0.1, and ::1 always bypass the proxy.",
-    "zh-CN": "以逗号分隔；localhost、127.0.0.1、::1 始终不使用代理。"
+  "无法读取网络设置，请重试。": {
+    "en": "Unable to load the network settings. Try again.",
+    "zh-CN": "无法读取网络设置，请重试。"
   },
-  "保存的代理供新启动的 Portal 服务和 AI 进程使用。已运行的服务需要重启后生效。": {
-    "en": "New Portal services and AI processes use the saved proxy. Restart running services to apply it.",
-    "zh-CN": "保存的代理供新启动的 Portal 服务和 AI 进程使用。已运行的服务需要重启后生效。"
-  },
-  "保存网络代理": {
-    "en": "Save network proxy",
-    "zh-CN": "保存网络代理"
+  "服务器未返回完整的网络设置，请重新读取。": {
+    "en": "The server did not return complete network settings. Reload them.",
+    "zh-CN": "服务器未返回完整的网络设置，请重新读取。"
   },
   "服务与自动化": {
     "en": "Services and automation",

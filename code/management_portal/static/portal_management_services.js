@@ -4,24 +4,20 @@
   if (window.PortalManagementServices) return;
 
   // The services and optional features of the execution settings: Telepus,
-  // WALL scheduling, the feature switches and Resident semantic search,
-  // each read when the tab opens and switched from its toggle.
+  // WALL scheduling and the feature switches, each read when the tab opens
+  // and switched from its toggle.
 
   const DEPENDENCIES = Object.freeze([
-    "allows", "executionSection", "included", "me", "panelState", "portalAdmin",
+    "allows", "executionSection", "included", "panelState", "portalAdmin",
   ]);
 
   function createServices(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalManagementServices is missing: ${missing.join(", ")}`);
     const {
-      allows, executionSection, included, me, panelState, portalAdmin,
+      allows, executionSection, included, panelState, portalAdmin,
     } = dependencies;
 
-    const embeddingsSection = executionSection.querySelector("[data-management-embeddings]");
-    const embeddingsToggle = embeddingsSection.querySelector("[data-embeddings-enabled]");
-    const embeddingsStatus = embeddingsSection.querySelector("[data-embeddings-status]");
-    embeddingsSection.hidden = !included("resident_semantic_search") || me.access?.user_category !== "portal_admin";
     const telepusSection = executionSection.querySelector("[data-management-telepus]");
     const telepusToggle = telepusSection.querySelector("[data-telepus-enabled]");
     const telepusStatus = telepusSection.querySelector("[data-telepus-status]");
@@ -146,65 +142,9 @@
       return read;
     });
     const readFeatureSwitches = () => featureSwitches.forEach(read => { void read(); });
-    let embeddingPoll = 0;
-    const embeddingRequest = async (url, body) => {
-      const response = await fetch(url, {
-        method: body === undefined ? "GET" : "POST", credentials: "same-origin",
-        ...(body === undefined ? {} : {headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)}),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || window.PortalI18n.t("无法读取语义搜索设置"));
-      return result;
-    };
-    let embeddingInstalling = false;
-    const renderEmbeddings = state => {
-      embeddingInstalling = state.job?.state === "running";
-      embeddingsToggle.checked = state.enabled === true;
-      embeddingsToggle.disabled = state.job?.state === "running";
-      const missing = Array.isArray(state.missing) ? state.missing : [];
-      embeddingsStatus.textContent = state.job?.state === "running"
-        ? window.PortalI18n.t("正在后台安装语义搜索包和模型；完成后请再次打开开关。")
-        : state.job?.state === "failed"
-          ? window.PortalI18n.text`安装失败：${state.job.error || window.PortalI18n.t("请查看安装日志")}`
-          : state.platform_issue ? window.PortalI18n.text`此设备暂不支持自动安装语义搜索：${state.platform_issue}`
-          : state.active ? window.PortalI18n.t("语义搜索已开启。") : missing.length
-            ? window.PortalI18n.text`语义搜索已关闭。缺少：${missing.join("、")}。`
-            : window.PortalI18n.t("语义搜索已关闭；所需包和模型已就绪。");
-      window.clearTimeout(embeddingPoll);
-      if (state.job?.state === "running" && !panelState.destroyed) {
-        embeddingPoll = window.setTimeout(() => { void readEmbeddings(); }, 2500);
-      }
-    };
-    const readEmbeddings = async () => {
-      if (embeddingsSection.hidden || panelState.destroyed) return;
-      try { renderEmbeddings(await embeddingRequest("/api/admin/embeddings")); }
-      catch (error) { embeddingsStatus.textContent = error.message; }
-    };
-    embeddingsToggle.addEventListener("change", async () => {
-      const requested = embeddingsToggle.checked;
-      embeddingsToggle.disabled = true;
-      try {
-        const state = await embeddingRequest("/api/admin/embeddings", {enabled: requested});
-        renderEmbeddings(state);
-        if (requested && state.needs_install) {
-          const approved = await window.PortalUI.confirm({
-            title: window.PortalI18n.t("安装 Resident 语义搜索？"),
-            message: window.PortalI18n.text`本机缺少：${state.missing.join("、")}。安装会下载模型并安装 Python 包；完成后请再次打开开关。`,
-            confirmLabel: window.PortalI18n.t("安装"),
-          });
-          if (approved) {
-            await embeddingRequest("/api/admin/embeddings/install", {});
-            await readEmbeddings();
-          }
-        }
-      } catch (error) { embeddingsStatus.textContent = error.message; await readEmbeddings(); }
-      finally {
-        if (!panelState.destroyed && !embeddingInstalling) embeddingsToggle.disabled = false;
-      }
-    });
 
     return {
-      readEmbeddings, readFeatureSwitches, readTelepus, readWallScheduling,
+      readFeatureSwitches, readTelepus, readWallScheduling,
     };
   }
 

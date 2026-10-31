@@ -8,7 +8,6 @@ import zipfile
 import pytest
 
 from scripts import install_article_tooling as article
-from scripts import install_portal_embeddings as embeddings
 from management_portal import dsh_client
 
 
@@ -106,22 +105,3 @@ def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypa
     assert article.install() == target
     assert target.read_bytes() == b'verified fixture executable'
     assert list(bin_dir.iterdir()) == [target]
-
-
-@pytest.mark.parametrize('failure', ['stop', 'state'])
-def test_embedding_install_restores_handlers_and_records_failure(tmp_path, monkeypatch, failure):
-    writes, restored, handler = [], [], []
-    monkeypatch.setattr(embeddings, 'install_shutdown_handlers', lambda fn: handler.append(fn) or 'previous')
-    monkeypatch.setattr(embeddings, 'restore_shutdown_handlers', restored.append)
-    def status():
-        if failure == 'state':
-            raise OSError('job state unavailable')
-        return {'started_at':'fixture'}
-    monkeypatch.setattr(embeddings, 'job_status', status)
-    monkeypatch.setattr(embeddings, '_write_job', writes.append)
-    monkeypatch.setattr(embeddings, 'runtime_python', lambda:tmp_path/'venv/bin/python')
-    monkeypatch.setattr(embeddings, 'run_process', lambda *a, **kw:handler[0]())
-    assert embeddings.main() == 1
-    assert restored == ['previous']
-    assert writes[-1]['state'] == 'failed'
-    assert ('stopped' if failure == 'stop' else 'unavailable') in writes[-1]['error']

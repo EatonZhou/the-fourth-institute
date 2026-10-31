@@ -30,11 +30,3 @@ def enabled() -> bool:
         return payload.get("enabled") is True
     except (OSError, ValueError, TypeError):
         return False
-
-
-def set_enabled(value: bool) -> None:
-    target = settings_file()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
-    temporary.write_text(json.dumps({"enabled": bool(value)}) + "\n", encoding="utf-8")
-    os.replace(temporary, target)

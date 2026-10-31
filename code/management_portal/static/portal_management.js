@@ -102,16 +102,6 @@
             <input type="checkbox" role="switch" data-execution-setting="harness_recording_enabled" disabled />
           </label>
         </div>
-        <div class="managementExecutionGroup" data-management-embeddings>
-          <h3>可选功能</h3>
-          <label class="settingsPreferenceRow">
-            <span class="settingsPreferenceCopy"><strong>Resident 语义搜索</strong>
-              <small>默认关闭。开启后使用本地模型做向量检索；未安装时会提示缺少的包和模型，并可一键安装。关闭时仍可使用普通关键词搜索。</small>
-            </span>
-            <input type="checkbox" role="switch" data-embeddings-enabled disabled />
-          </label>
-          <p data-embeddings-status role="status"></p>
-        </div>
         <div class="managementExecutionGroup">
           <h3>服务与自动化</h3>
           <div data-management-telepus>
@@ -208,8 +198,9 @@
       <div class="managementNetwork">
         <header class="managementNetworkHeader">
           <h2>网络设置</h2>
-          <button class="portalButton" type="button" data-network-reload>重新读取（保留草稿）</button>
+          <button class="portalButton" type="button" data-network-reload>重新读取</button>
         </header>
+        <p class="managementNetworkHint">网络设置由 Portal 的安装配置决定，这里只显示当前值。</p>
         <p data-network-status role="status" aria-live="polite"></p>
         <section class="managementNetworkSection" aria-label="Portal 访问地址">
           <h3>Portal 访问地址</h3>
@@ -217,39 +208,27 @@
           <div data-network-urls class="managementNetworkUrls"></div>
           <p class="managementNetworkHint">其他设备须使用这台电脑的可达地址；若经过反向代理，请使用代理提供的地址。主机防火墙仍可能限制连接。</p>
         </section>
-        <form data-network-form="access" class="managementNetworkSection">
-          <fieldset disabled>
-            <legend>访问范围</legend>
-            <label class="portalField"><span>允许从哪里访问</span><select data-network-field="access_mode"><option value="local">仅本机</option><option value="remote">允许其他设备访问</option></select></label>
-            <details class="managementNetworkAdvanced"><summary>高级设置：端口</summary><label class="portalField"><span>Portal 端口</span><input data-network-field="port" type="number" min="1024" max="65535" step="1" inputmode="numeric" /></label></details>
-            <p data-network-legacy-note class="managementNetworkHint" hidden>当前仍沿用旧版网段限制。保存新范围后，旧规则会移除；选择允许其他设备访问时，请使用主机防火墙控制具体来源。</p>
-            <p class="managementNetworkHint">保存后 Router 将重启，访问可能短暂中断；若从其他设备切换为“仅本机”，请在本机继续访问。</p>
-            <button class="portalButton is-primary" type="submit">保存访问设置</button>
-          </fieldset>
-          <p data-network-message="access" role="status" aria-live="polite"></p>
-        </form>
-        <form data-network-form="proxy" class="managementNetworkSection">
-          <fieldset disabled>
-            <legend>网络代理</legend>
-            <p data-network-source></p>
-            <p id="management-network-proxy-help">代理地址支持 http:// 或 https://。HTTP、HTTPS 可分别设置，“统一代理”用于其余未单独设置的请求。代理地址全部留空时直接连接。</p>
-            <div class="managementNetworkFields" aria-describedby="management-network-proxy-help">
-              <label class="portalField"><span>HTTP 代理 URL</span><input data-network-field="http" type="url" autocomplete="off" spellcheck="false" placeholder="http://proxy.example:8080" /></label>
-              <label class="portalField"><span>HTTPS 代理 URL</span><input data-network-field="https" type="url" autocomplete="off" spellcheck="false" placeholder="http://proxy.example:8080" /></label>
-              <label class="portalField"><span>统一代理 URL</span><input data-network-field="all" type="url" autocomplete="off" spellcheck="false" placeholder="http://proxy.example:8080" /></label>
-              <label class="portalField"><span>不使用代理的地址</span><input data-network-field="no_proxy" autocomplete="off" spellcheck="false" placeholder="localhost,127.0.0.1,::1,.example.com" /><small>以逗号分隔；localhost、127.0.0.1、::1 始终不使用代理。</small></label>
-            </div>
-            <p class="managementNetworkHint">保存的代理供新启动的 Portal 服务和 AI 进程使用。已运行的服务需要重启后生效。</p>
-            <button class="portalButton is-primary" type="submit">保存网络代理</button>
-          </fieldset>
-          <p data-network-message="proxy" role="status" aria-live="polite"></p>
-        </form>
+        <section class="managementNetworkSection" aria-label="访问范围">
+          <h3>访问范围</h3>
+          <dl class="managementNetworkValues">
+            <div><dt>允许从哪里访问</dt><dd data-network-value="access_mode"></dd></div>
+            <div><dt>Portal 端口</dt><dd data-network-value="port"></dd></div>
+          </dl>
+          <p data-network-legacy-note class="managementNetworkHint" hidden>当前仍沿用旧版网段限制。</p>
+        </section>
+        <section class="managementNetworkSection" aria-label="网络代理">
+          <h3>网络代理</h3>
+          <p data-network-source></p>
+          <dl class="managementNetworkValues">
+            <div><dt>HTTP 代理 URL</dt><dd data-network-value="http"></dd></div>
+            <div><dt>HTTPS 代理 URL</dt><dd data-network-value="https"></dd></div>
+            <div><dt>统一代理 URL</dt><dd data-network-value="all"></dd></div>
+            <div><dt>不使用代理的地址</dt><dd data-network-value="no_proxy"></dd></div>
+          </dl>
+        </section>
       </div>`;
-    const groups = ["access", "proxy"];
     const proxyKeys = ["http", "https", "all", "no_proxy"];
-    const field = key => container.querySelector(`[data-network-field="${key}"]`);
-    const forms = Object.fromEntries(groups.map(group => [group, container.querySelector(`[data-network-form="${group}"]`)]));
-    const messages = Object.fromEntries(groups.map(group => [group, container.querySelector(`[data-network-message="${group}"]`)]));
+    const value = key => container.querySelector(`[data-network-value="${key}"]`);
     const reload = container.querySelector("[data-network-reload]");
     const status = container.querySelector("[data-network-status]");
     const source = container.querySelector("[data-network-source]");
@@ -280,46 +259,25 @@
         row.append(input, button);
         urls.append(row);
       }
+    };
+    // The installation's target configuration owns these settings; the page only shows them.
+    const show = data => {
+      value("access_mode").textContent = data.access.mode === "remote" ? t("允许其他设备访问") : t("仅本机");
+      value("port").textContent = String(data.access.port);
       legacyNote.hidden = !data.access.legacy_restriction;
+      source.textContent = data.proxy_source === "saved" ? t("当前使用已保存的代理设置。") : t("当前代理来自服务环境。");
+      for (const key of proxyKeys) value(key).textContent = data.proxy[key] || t("未设置");
+      updateUrls(data);
     };
-    const baselines = {};
-    let version = "", busy = false, conflicted = false, destroyed = false;
+    let busy = false, destroyed = false;
     const requests = new AbortController();
-    const values = group => group === "access" ? { mode: field("access_mode").value, port: field("port").value }
-      : Object.fromEntries(proxyKeys.map(key => [key, field(key).value]));
-    const snapshot = group => JSON.stringify(values(group));
-    const dirty = group => baselines[group] !== undefined && snapshot(group) !== baselines[group];
-    const serverValues = (group, data) => group === "access" ? { mode: data.access.mode, port: String(data.access.port) }
-      : Object.fromEntries(proxyKeys.map(key => [key, data.proxy[key]]));
-    const applyGroup = (group, data) => {
-      if (group === "access") { field("access_mode").value = data.access.mode; field("port").value = String(data.access.port); }
-      else proxyKeys.forEach(key => { field(key).value = data.proxy[key]; });
-    };
-    const updateSource = data => {
-      source.textContent = data.proxy_source === "saved"
-        ? t("当前使用已保存的代理设置。")
-        : t("当前代理来自服务环境。首次保存网络代理后，将使用此处的显式配置。");
-    };
-    const controls = () => {
-      if (destroyed) return;
-      container.setAttribute("aria-busy", String(busy));
-      reload.disabled = busy;
-      for (const group of groups) forms[group].querySelector("fieldset").disabled = busy || !version || conflicted;
-    };
-    const request = async body => {
-      const response = await fetch("/api/admin/network", {
-        method: body === undefined ? "GET" : "POST", credentials: "same-origin", signal: requests.signal,
-        ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
-      });
+    const request = async () => {
+      const response = await fetch("/api/admin/network", { credentials: "same-origin", signal: requests.signal });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(typeof data.error === "string" ? data.error : t("无法读取或保存网络设置，请重试。"));
-        error.status = response.status;
-        throw error;
-      }
-      if (typeof data.version !== "string" || !data.version || !["local", "remote"].includes(data.access?.mode)
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : t("无法读取网络设置，请重试。"));
+      if (!["local", "remote"].includes(data.access?.mode)
         || !Number.isInteger(data.access?.port) || !Array.isArray(data.access?.urls)
-        || !data.access.urls.every(value => typeof value === "string")
+        || !data.access.urls.every(item => typeof item === "string")
         || !proxyKeys.every(key => typeof data.proxy?.[key] === "string")
         || !["environment", "saved"].includes(data.proxy_source)) {
         throw new Error(t("服务器未返回完整的网络设置，请重新读取。"));
@@ -328,56 +286,25 @@
     };
     const read = async () => {
       if (busy || destroyed) return;
-      const keepDraft = Object.fromEntries(groups.map(group => [group, dirty(group)]));
-      busy = true; controls(); status.textContent = t("正在读取网络设置…");
+      busy = true; container.setAttribute("aria-busy", "true"); reload.disabled = true;
+      status.textContent = t("正在读取网络设置…");
       try {
         const data = await request();
         if (destroyed) return;
-        for (const group of groups) {
-          if (!keepDraft[group]) applyGroup(group, data);
-          baselines[group] = JSON.stringify(serverValues(group, data));
-          messages[group].textContent = "";
-        }
-        version = data.version; conflicted = false; updateSource(data); updateUrls(data);
-        status.textContent = Object.values(keepDraft).some(Boolean)
-          ? t("已读取最新设置，未保存的草稿已保留；请检查后再次保存。") : "";
+        show(data);
+        status.textContent = "";
       } catch (error) {
         if (!destroyed) status.textContent = error.message;
-      } finally { busy = false; controls(); }
+      } finally {
+        busy = false;
+        if (!destroyed) { container.setAttribute("aria-busy", "false"); reload.disabled = false; }
+      }
     };
-    for (const group of groups) {
-      forms[group].addEventListener("submit", async event => {
-        event.preventDefault();
-        if (destroyed || busy || !version || conflicted) return;
-        const changes = group === "access"
-          ? { access: { mode: field("access_mode").value, port: Number(field("port").value) } }
-          : { proxy: Object.fromEntries(proxyKeys.map(key => [key, field(key).value.trim()])) };
-        busy = true; controls(); messages[group].textContent = t("正在保存…");
-        try {
-          const data = await request({ version, ...changes });
-          if (destroyed) return;
-          // The other group may hold a draft: only the saved group accepts canonical values.
-          applyGroup(group, data); baselines[group] = snapshot(group); version = data.version;
-          if (group === "proxy") updateSource(data);
-          else updateUrls(data);
-          status.textContent = "";
-          messages[group].textContent = group === "access"
-            ? t("访问设置已保存；Router 即将重启，页面可能短暂断开。")
-            : t("网络代理已保存，供新启动的服务和 AI 进程使用；已运行的服务需重启。");
-        } catch (error) {
-          if (!destroyed) {
-            conflicted = error.status === 409;
-            messages[group].textContent = conflicted
-              ? t("设置已被其他人修改。请点击“重新读取”，检查保留的草稿后再次保存。") : error.message;
-          }
-        } finally { busy = false; controls(); }
-      });
-    }
     reload.addEventListener("click", read);
     void read();
     return {
       isBusy: () => busy,
-      hasUnsavedChanges: () => groups.some(dirty),
+      hasUnsavedChanges: () => false,
       destroy() { destroyed = true; requests.abort(); },
     };
   }
@@ -391,8 +318,8 @@
   //     migrations
   //   portal_management_execution.js  the execution settings: reading them
   //     when the tab opens and saving an input when it changes
-  //   portal_management_services.js  Telepus, WALL scheduling, the feature
-  //     switches and Resident semantic search
+  //   portal_management_services.js  Telepus, WALL scheduling and the
+  //     feature switches
   //   portal_management_permission_system.js  the scheme in use and turning
   //     the permission system on or off
   //   portal_management_guards.js  form baselines, the account dialogs, user
@@ -450,7 +377,7 @@
       acceptExecution, executionStatus, included, maySwitch, permissionSwitches, readExecutionSettings, showSetting,
       startExecutionInputs, switchMessages,
     } = managementPart("PortalManagementExecution").createExecution({
-      allows, executionSection, me, panelState, readEmbeddings: (...args) => readEmbeddings(...args),
+      allows, executionSection, me, panelState,
       readFeatureSwitches: (...args) => readFeatureSwitches(...args), readSchemes: (...args) => readSchemes(...args),
       readTelepus: (...args) => readTelepus(...args), readWallScheduling: (...args) => readWallScheduling(...args),
       root, savePermissionSystem: (...args) => savePermissionSystem(...args),
@@ -458,9 +385,9 @@
       syncPermissionSystem: (...args) => syncPermissionSystem(...args),
     });
     const {
-      readEmbeddings, readFeatureSwitches, readTelepus, readWallScheduling,
+      readFeatureSwitches, readTelepus, readWallScheduling,
     } = managementPart("PortalManagementServices").createServices({
-      allows, executionSection, included, me, panelState, portalAdmin,
+      allows, executionSection, included, panelState, portalAdmin,
     });
     const {
       readSchemes, savePermissionSystem, showReadNote, syncPermissionSystem,

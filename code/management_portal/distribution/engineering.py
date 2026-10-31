@@ -305,17 +305,6 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             ResourceTypeRegistry(resource_types).declarations
         from .permissions import adapt_builtin_schemes
         permission_validation = adapt_builtin_schemes(code)
-        # Reject source-router network changes before saving; return a concrete
-        # unsupported result rather than an asynchronous success notification.
-        admin = code / "management_portal/http_admin.py"
-        if admin.exists():
-            tree = ast.parse(admin.read_text())
-            for statement in ast.walk(tree):
-                if isinstance(statement, ast.FunctionDef) and statement.name == "network_post":
-                    statement.body = ast.parse('return self.respond(request, 409, {"error": "Standalone TFI network settings are owned by install_tfi_release target configuration", "supported": False})').body
-                if isinstance(statement, ast.FunctionDef) and statement.name in {"embeddings_get", "embeddings_post", "embeddings_install_post"} and "resident_semantic_search" not in resolved.get("features", []):
-                    statement.body = ast.parse('return self.respond(request, 404, {"error": "This distribution does not include Resident semantic search"})').body
-            admin.write_text(ast.unparse(tree) + "\n")
         for root in ROOTS:
             (destination / "data" / root).mkdir(parents=True)
         from .file_scope import FileScope

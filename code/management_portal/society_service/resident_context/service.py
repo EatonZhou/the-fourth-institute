@@ -9,7 +9,6 @@ Resident holding the Portal duty ``resident-summary``, through
 from __future__ import annotations
 
 import hashlib
-import gc
 import logging
 import re
 import secrets
@@ -18,11 +17,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from management_common.json_columns import json_value
-from management_common.embedding_feature import set_enabled as set_embeddings_enabled
 
 from .embedder import (
     EMBEDDING_RUNTIME_LOCK, ResidentEmbedder, resident_embeddings_available,
-    shared_embedder, unload_shared_embedder,
+    shared_embedder,
 )
 from .evidence import (
     MAX_SUMMARY_RESIDENTS,
@@ -91,19 +89,6 @@ class ResidentContext:
         # A previously loaded shared model must not bypass a switch turned off at runtime.
         # Explicitly injected embedders are used by isolated callers and tests.
         return self._explicit_embedder or resident_embeddings_available()
-
-    def set_embeddings_enabled(self, value: bool) -> dict[str, bool]:
-        """Apply the switch in the process that owns the model and vector jobs."""
-        if not isinstance(value, bool):
-            raise ValueError("enabled must be a boolean")
-        with EMBEDDING_RUNTIME_LOCK:
-            set_embeddings_enabled(value)
-            if not value:
-                if not self._explicit_embedder:
-                    self._embedder = None
-                unload_shared_embedder()
-                gc.collect()
-            return {"enabled": value}
 
     # -- catalog and change detection -----------------------------------------
 

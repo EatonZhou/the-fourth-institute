@@ -705,6 +705,10 @@ def update_workspace_file(inv: Invocation) -> dict[str, Any]:
         raise invalid("地址应为 <workspace-id>/file/<相对路径>") from exc
     if namespace != "file":
         raise invalid("地址应为 <workspace-id>/file/<相对路径>")
+    from .providers.folder_files import hidden
+
+    if hidden(parts):
+        raise InstructionError("instruction.forbidden", "不能写入隐藏或敏感路径（以 . 开头，或 secrets、credentials 等目录）")
     content = str(inv.argument("content") or "")
     encoded = content.encode("utf-8")
     if len(encoded) > MAX_WORKSPACE_TEXT_BYTES:

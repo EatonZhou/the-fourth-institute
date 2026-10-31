@@ -87,7 +87,7 @@ test('late HATG forms, tooltips, and accessibility labels translate without touc
   assert.equal(input.placeholder, 'Leave blank to use “Untitled Lineage”.');
 });
 
-test('management service descriptions and network form render full English text', async t => {
+test('management service descriptions and network settings render full English text', async t => {
   const w = await harness(t);
   w.eval(functionSource('management_portal/static/portal_management.js', 'panelMarkup') + ';window.auditPanelMarkup=panelMarkup;');
   const host = w.document.getElementById('host');
@@ -106,8 +106,9 @@ test('management service descriptions and network form render full English text'
   assert.ok(markup);
   host.innerHTML = w.eval(markup);
   assert.match(host.textContent, /Network settings/);
-  assert.match(host.textContent, /Save access settings/);
-  assert.match(host.textContent, /Save network proxy/);
+  assert.match(host.textContent, /only shows the current values/);
+  assert.match(host.textContent, /Network proxy/);
+  assert.match(host.textContent, /Legacy subnet restrictions are still active\./);
   assert.ok(!/[\u3400-\u9fff]/.test(host.textContent), host.textContent);
 });
 

@@ -132,7 +132,7 @@ DECLARATIONS = (
         R("upload_id", description="被删除的上传 ID"),
     ), mutates=True, target="upload_id"),
     _d("UpdateWorkspaceFile", (On("address"),), "把文本内容写入工作区中的一个文件。", (
-        R("address", description="<工作区ID>/file/<相对路径>；不接受绝对路径"),
+        R("address", description="<工作区ID>/file/<相对路径>；不接受绝对路径，也不接受以 . 开头或 secrets、credentials 等敏感路径"),
         R("content", description="文件文本内容", allow_empty=True),
     ), (
         R("version", description="写入后的内容摘要"),

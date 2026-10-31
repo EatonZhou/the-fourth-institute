@@ -145,8 +145,7 @@ class ResidentEmbedder:
 
 _SHARED: ResidentEmbedder | None = None
 _SHARED_LOCK = threading.Lock()
-# Search, embedding jobs and switch changes share this gate. A disable response
-# is sent only after any in-flight vector operation has finished and unloaded.
+# Vector search and embedding jobs take turns on the shared model.
 EMBEDDING_RUNTIME_LOCK = threading.RLock()
 
 
@@ -158,14 +157,3 @@ def shared_embedder() -> ResidentEmbedder:
         if _SHARED is None:
             _SHARED = ResidentEmbedder()
         return _SHARED
-
-
-def unload_shared_embedder() -> None:
-    """Release the model held by this SocietyService process."""
-
-    global _SHARED
-    with _SHARED_LOCK:
-        embedder = _SHARED
-        _SHARED = None
-    if embedder is not None:
-        embedder.unload()
