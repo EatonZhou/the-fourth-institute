@@ -20309,9 +20309,17 @@
     "en": "will from the corresponding",
     "zh-CN": "会从对应的"
   },
-  "会停止这个 Family 正在执行的全部 {p0} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。": {
-    "en": "Will stop all {p0} requests currently executing in this Family: members currently processing will stop this round, and member selection in progress will be withdrawn.",
-    "zh-CN": "会停止这个 Family 正在执行的全部 {p0} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。"
+  "这个 Stop 会一次停止这里正在执行的全部 {p0} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。": {
+    "en": "This Stop stops all {p0} requests executing here at once: members currently processing will stop this round, and member selection in progress will be withdrawn.",
+    "zh-CN": "这个 Stop 会一次停止这里正在执行的全部 {p0} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。"
+  },
+  "只想停止某位成员时，请取消，再点那条请求状态栏里的“停止”。": {
+    "en": "To stop only one member, cancel and use \"Stop\" in that request's status bar.",
+    "zh-CN": "只想停止某位成员时，请取消，再点那条请求状态栏里的“停止”。"
+  },
+  "被 Mute／Solo 隐藏的成员不受影响。": {
+    "en": "Members hidden by Mute/Solo are not affected.",
+    "zh-CN": "被 Mute／Solo 隐藏的成员不受影响。"
   },
   "会话已经换成新的，这个子 agent 不在其中": {
     "en": "The session was replaced; this subagent is not in it",
@@ -20993,9 +21001,9 @@
     "en": "A stopped or failed round can be put back into the queue: the original message and accompanying info return to waiting as the original sender, while the stopped or failed record remains in the conversation.",
     "zh-CN": "停止或失败的一轮可以放回队列：原消息与随行 info 以原发送者回到等待，停止或失败的记录留在对话中。"
   },
-  "停止整个 Family 的执行？": {
-    "en": "Stop execution for the entire Family?",
-    "zh-CN": "停止整个 Family 的执行？"
+  "停止这里显示的全部请求？": {
+    "en": "Stop all requests shown here?",
+    "zh-CN": "停止这里显示的全部请求？"
   },
   "停止这个子 agent": {
     "en": "Stop this subagent",

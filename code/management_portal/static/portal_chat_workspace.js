@@ -3310,21 +3310,29 @@
       return request.promise;
     }
 
-    // A facade's Stop stops the whole Family's execution, so it asks first:
-    // each running request is stopped at its member, each one being routed is withdrawn.
+    // A facade's Stop stops every request shown here at once, so it asks first and
+    // points to each request's own Stop: each running request is stopped at its
+    // member, each one being routed is withdrawn. Members hidden by M/S keep working.
     async stopFamily() {
       const target = this.target();
-      const { active, waiting } = familyExecution(this.protocol?.snapshot?.() || {});
+      const snapshot = this.protocol?.snapshot?.() || {};
+      const { active, waiting } = familyExecution(snapshot);
       if (!target.resident_id || !active.length) return null;
       const counts = new Map();
       active.forEach(request => {
         const label = request.state === "routing" ? window.PortalI18n.t("正在选择成员") : request.member;
         counts.set(label, (counts.get(label) || 0) + 1);
       });
+      const preferences = snapshot.family_facade?.chat_preferences || {};
+      const filtered = Boolean(preferences.solo_member_id || preferences.muted_member_ids?.length);
       const confirmed = await window.PortalUI.confirm({
-        title: window.PortalI18n.t("停止整个 Family 的执行？"),
-        message: window.PortalI18n.text`会停止这个 Family 正在执行的全部 ${active.length} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。`,
-        description: waiting ? window.PortalI18n.text`排队中的 ${waiting} 条请求不受影响，会照常开始；需要时可以逐条撤回。` : "",
+        title: window.PortalI18n.t("停止这里显示的全部请求？"),
+        message: window.PortalI18n.text`这个 Stop 会一次停止这里正在执行的全部 ${active.length} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。`,
+        description: [
+          window.PortalI18n.t("只想停止某位成员时，请取消，再点那条请求状态栏里的“停止”。"),
+          filtered ? window.PortalI18n.t("被 Mute／Solo 隐藏的成员不受影响。") : "",
+          waiting ? window.PortalI18n.text`排队中的 ${waiting} 条请求不受影响，会照常开始；需要时可以逐条撤回。` : "",
+        ].filter(Boolean).join(" "),
         metadata: [...counts].map(([label, count]) => ({ label, value: `${count} 条` })),
         confirmLabel: window.PortalI18n.t("全部停止"),
         tone: "danger",
