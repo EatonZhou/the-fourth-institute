@@ -10,6 +10,10 @@ let holdDefault = false, finishDefault;
 let preparation = 'missing', prepareResult = 'ready', loginState = 'logged_in', setupError = false;
 let holdPrepare = false, finishPrepare;
 let provider = 'claude', emptyCatalog = false, holdSetup = false, finishSetup, loginSession;
+let kimiRegion, holdLoginPoll = false, finishLoginPoll, failLoginStart = false;
+const kimiOptions = () => ({regions: [{id:'mainland-cn', label:'中国区'}, {id:'global', label:'国际区'}], region: kimiRegion || 'mainland-cn'});
+const kimiResult = () => ({login_options: kimiOptions(), session: kimiRegion ? {state:'awaiting_user',
+  verification_code: kimiRegion, verification_url: `https://www.kimi.${kimiRegion === 'global' ? 'ai' : 'com'}/code/authorize_device`} : null});
 const timers = new Map(), intervals = new Map(); let timerId = 0;
 const later = (fn, collection) => { collection.set(++timerId, fn); return timerId; };
 const tick = () => { const [id, fn] = timers.entries().next().value; timers.delete(id); fn(); };
@@ -34,12 +38,21 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'CheckProviderAccount':
       if (holdCheck) return new Promise(resolve => { finishCheck = resolve; });
       return {execution_id: 'execution_check'};
-    case 'OpenProviderAccountLogin': return {session: {state: 'pending'}};
+    case 'OpenProviderAccountLogin':
+      if (args.account_id === 'kimi_sub') {
+        if (failLoginStart) throw Error('temporary login failure');
+        kimiRegion = args.region; return kimiResult();
+      }
+      return {session: {state: 'pending'}};
     case 'UpdateProviderAccountLogin':
       assert.equal(args.authorization_code, 'http://localhost:1234/?code=synthetic&state=test');
       return {session: {state: 'succeeded'}};
     case 'CancelProviderAccountLogin': return {};
     case 'GetProviderAccountLogin':
+      if (args.account_id === 'kimi_sub') {
+        if (holdLoginPoll) return new Promise(resolve => { finishLoginPoll = resolve; });
+        return kimiResult();
+      }
       if (loginError) throw new Error('暂时无法读取登录状态');
       if (loginSession) return {session: loginSession};
       return {session: {state: loginCancelled ? 'cancelled' : 'pending'}};
@@ -255,5 +268,39 @@ const click = text => {
   assert(!('authorization_code' in calls.find(c => c.name === 'UpdateProviderAccountLogin').args));
   assert.match(window.document.querySelector('[data-backend-login-state]').textContent, /登录成功/);
   googleLogin.close();
+  calls.length = 0;
+  const kimiLogin = context.openLogin('kimi_sub'); await flush();
+  const regionSelect = window.document.querySelector('[name=login_region]');
+  assert.equal(regionSelect.value, 'mainland-cn');
+  assert.deepEqual([...regionSelect.options].map(o => o.textContent), ['中国区', '国际区']);
+  assert(!calls.some(c => c.name === 'OpenProviderAccountLogin'), 'choose region before native login');
+  assert.equal(timers.size, 0, 'no polling before login');
+  click('获取登录授权'); await flush();
+  const loginLink = window.document.querySelector('dialog a');
+  assert.equal(new URL(loginLink.href).hostname, 'www.kimi.com');
+  assert.equal(calls.find(c => c.name === 'OpenProviderAccountLogin').args.region, 'mainland-cn');
+  holdLoginPoll = true; tick(); await flush();
+  const oldResult = kimiResult();
+  regionSelect.value = 'global'; regionSelect.dispatchEvent(new window.Event('change'));
+  assert(loginLink.hidden && !loginLink.hasAttribute('href'), 'hide old authorization when region changes');
+  click('获取登录授权'); await flush();
+  finishLoginPoll(oldResult); holdLoginPoll = false; await flush();
+  assert.equal(new URL(loginLink.href).hostname, 'www.kimi.ai', 'late poll cannot restore the previous region');
+  assert.equal(window.document.querySelector('[data-backend-login-code]').textContent, 'global');
+  kimiLogin.close();
+  const reopened = context.openLogin('kimi_sub'); await flush();
+  const reopenedRegion = window.document.querySelector('[name=login_region]');
+  assert.equal(reopenedRegion.value, 'global', 'reopen shows the existing flow region');
+  reopenedRegion.value = 'mainland-cn'; reopenedRegion.dispatchEvent(new window.Event('change'));
+  failLoginStart = true; click('获取登录授权'); await flush();
+  assert.match(window.document.querySelector('[data-backend-login-state]').textContent, /temporary login failure/);
+  assert(!reopenedRegion.disabled, 'failure permits retry');
+  failLoginStart = false; click('获取登录授权'); await flush();
+  assert.equal(new URL(window.document.querySelector('dialog a').href).hostname, 'www.kimi.com');
+  click('取消登录'); await flush();
+  click('获取登录授权'); await flush();
+  assert.equal(window.document.querySelector('[data-backend-login-code]').textContent, 'mainland-cn');
+  reopened.close();
+  assert.equal(timers.size, 0); assert.equal(intervals.size, 0);
   console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

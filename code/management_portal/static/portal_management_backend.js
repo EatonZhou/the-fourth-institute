@@ -81,11 +81,12 @@ function dialog(title, onClose = () => {}) {
 
 export function openLogin(accountId, {onChanged = () => {}} = {}) {
   if (logins.has(accountId)) return logins.get(accountId);
-  let timer, closed = false, terminal = false, pending = true;
-  const startedAt = Date.now();
+  let timer, closed = false, terminal = false, pending = true, generation = 0;
+  let regionSelect, startButton, startedAt = Date.now();
   const waiting = () => t("正在获取登录授权信息…已等待 {p0} 秒。显示授权链接或设备码后，请在浏览器完成授权。", {
     p0: Math.floor((Date.now() - startedAt) / 1000)});
-  const progressTimer = setInterval(() => { if (!closed && pending) status.textContent = waiting(); }, 1000);
+  const showProgress = () => { if (!closed && pending) status.textContent = waiting(); };
+  let progressTimer = setInterval(showProgress, 1000);
   const abort = new AbortController();
   const view = dialog(t("账号登录：{p0}", {p0: accountId}), () => {
     closed = true; clearTimeout(timer); clearInterval(progressTimer); abort.abort(); logins.delete(accountId);
@@ -93,6 +94,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
   const status = node("p", waiting(), {role: "status", "data-backend-login-state": "", "aria-busy": "true"});
   const code = node("code", "", {"data-backend-login-code": ""});
   const link = node("a", t("打开授权页面"), {target: "_blank", rel: "noopener noreferrer", hidden: true});
+  const regionForm = node("div", undefined, {class: "backendForm", hidden: true});
   const authorization = node("form", undefined, {class: "backendForm", hidden: true});
   const response = field(authorization, "浏览器返回的授权码", "authorization_code", "", {type: "password", required: true, autocomplete: "off"});
   const inputHelp = node("small", "", {class: "backendHint", id: "backend-login-help", hidden: true});
@@ -108,13 +110,13 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     finally { delete args.authorization_code; }
   });
   const cancel = button("取消登录", async () => {
-    cancel.disabled = true; clearTimeout(timer);
+    cancel.disabled = true; clearTimeout(timer); generation++;
     try {
       await call("CancelProviderAccountLogin", {account_id: accountId});
       if (!closed) { terminal = true; pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false"); status.textContent = t("登录已取消"); code.textContent = ""; link.hidden = true; authorization.hidden = true; response.value = ""; }
     } catch (error) { if (!closed) { status.textContent = errorText(error); cancel.disabled = false; } }
   }, true);
-  view.el.append(status, code, link, authorization, cancel); view.open(); logins.set(accountId, view);
+  view.el.append(regionForm, status, code, link, authorization, cancel); view.open(); logins.set(accountId, view);
   const render = result => {
     if (closed || terminal) return;
     const session = result.session || {};
@@ -144,16 +146,56 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     response.title = session.input_hint || "";
     submit.disabled = session.state !== "awaiting_user";
     if (session.state === "succeeded") { code.textContent = ""; link.hidden = true; onChanged(); }
+    if (regionSelect) { regionSelect.disabled = session.state === "succeeded"; startButton.disabled = session.state === "succeeded"; }
     if (!terminal) timer = setTimeout(poll, 2000);
   };
   const poll = async () => {
-    try { render(await call("GetProviderAccountLogin", {account_id: accountId}, {signal: abort.signal})); }
-    catch (error) { if (!closed && !terminal) { pending = false; status.setAttribute("aria-busy", "false"); status.textContent = errorText(error); timer = setTimeout(poll, 4000); } }
+    const current = generation;
+    try {
+      const result = await call("GetProviderAccountLogin", {account_id: accountId}, {signal: abort.signal});
+      if (current === generation) render(result);
+    } catch (error) { if (current === generation && !closed && !terminal) { pending = false; status.setAttribute("aria-busy", "false"); status.textContent = errorText(error); timer = setTimeout(poll, 4000); } }
   };
-  void call("OpenProviderAccountLogin", {account_id: accountId}, {signal: abort.signal}).then(render).catch(error => {
+  const failed = error => {
     pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false");
-    if (!closed) status.textContent = errorText(error);
-  });
+    if (!closed) {
+      status.textContent = errorText(error);
+      if (regionSelect) { regionSelect.disabled = false; startButton.disabled = false; }
+    }
+  };
+  const start = async () => {
+    const current = ++generation;
+    clearTimeout(timer); clearInterval(progressTimer); terminal = false; pending = true; startedAt = Date.now();
+    code.textContent = ""; link.hidden = true; link.removeAttribute("href"); cancel.disabled = true;
+    status.textContent = waiting(); status.setAttribute("aria-busy", "true");
+    if (regionSelect) { regionSelect.disabled = true; startButton.disabled = true; }
+    progressTimer = setInterval(showProgress, 1000);
+    try {
+      const args = {account_id: accountId, ...(regionSelect ? {region: regionSelect.value} : {})};
+      const result = await call("OpenProviderAccountLogin", args, {signal: abort.signal});
+      if (current === generation) render(result);
+    } catch (error) { if (current === generation) failed(error); }
+  };
+  // Read the provider's login choices before creating an authorization flow.
+  void call("GetProviderAccountLogin", {account_id: accountId}, {signal: abort.signal}).then(result => {
+    if (closed) return;
+    const options = result.login_options;
+    if (!options?.regions?.length) { void start(); return; }
+    regionForm.hidden = false;
+    regionSelect = select(regionForm, "账号所属区域", "login_region", options.regions.map(r => [r.id, t(r.label)]), options.region);
+    hint(regionSelect, "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。");
+    startButton = button("获取登录授权", () => void start()); regionForm.append(startButton);
+    regionSelect.addEventListener("change", () => {
+      generation++; clearTimeout(timer); clearInterval(progressTimer); pending = false;
+      code.textContent = ""; link.hidden = true; link.removeAttribute("href");
+      status.setAttribute("aria-busy", "false"); status.textContent = t("请获取所选区域的登录授权。");
+    });
+    if (result.session?.state) render(result);
+    else {
+      pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false");
+      status.textContent = t("请选择账号所属区域，然后获取登录授权。");
+    }
+  }).catch(failed);
   return view;
 }
 

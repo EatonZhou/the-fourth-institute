@@ -104,6 +104,59 @@ def test_subscription_hook_patch_never_writes_redacted_credentials(monkeypatch, 
     assert set(calls[-1][2]) == {"hooks"}
 
 
+def test_login_region_replaces_foreign_flow_but_reuses_same_region(monkeypatch):
+    store, calls = Store(), []
+    flow = {}
+    def request(method, path, payload=None):
+        calls.append((method, path, payload))
+        if path == "auth":
+            return {"managed_provider": {"status": "unauthenticated"}}
+        if method == "POST":
+            suffix = "com" if payload["region"] == "mainland-cn" else "ai"
+            flow.update(status="pending", verification_uri=f"https://www.kimi.{suffix}/code/authorize_device",
+                        user_code=suffix, expires_at=(login.now() + timedelta(minutes=20)).isoformat())
+        return dict(flow)
+    monkeypatch.setattr(login, "_lock", lambda _: nullcontext())
+    monkeypatch.setattr(login, "login_store", lambda: store)
+    monkeypatch.setattr(login, "client_for_route", lambda _: SimpleNamespace(_request=request))
+    row = {"account_id": "kimi_sub", "route_id": "sub"}
+    first = login.login(row, "get")
+    assert first["session"] is None
+    assert first["login_options"]["region"] == "mainland-cn"
+    assert [r["id"] for r in first["login_options"]["regions"]] == ["mainland-cn", "global"]
+    assert not any(method == "POST" for method, _, _ in calls)
+    for region, code in [("global", "ai"), ("mainland-cn", "com"), ("global", "ai")]:
+        before = sum(method == "POST" for method, _, _ in calls)
+        opened = login.login(row, "open", region=region)
+        assert opened["session"]["code"] == code
+        assert opened["login_options"]["region"] == region
+        assert sum(method == "POST" for method, _, _ in calls) == before + 1
+        login.login(row, "open", region=region)
+        login.login(row, "get")
+        assert sum(method == "POST" for method, _, _ in calls) == before + 1
+    with pytest.raises(login.InstructionError):
+        login.login(row, "open", region="unsupported")
+
+
+def test_login_region_contract_and_dispatch(monkeypatch):
+    from management_portal.execution import account_login
+    from management_portal.hatg.catalog import declaration
+    from unittest.mock import Mock
+    declaration("OpenProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "mainland-cn"})
+    with pytest.raises(Exception):
+        declaration("OpenProviderAccountLogin").validate_arguments({"account_id": "kimi_sub", "region": "cn"})
+    row = {"provider": "kimi"}
+    monkeypatch.setattr(account_login, "_registration", lambda _: row)
+    native = Mock(return_value={"session": None})
+    monkeypatch.setattr(login, "login", native)
+    inv = SimpleNamespace(argument={"account_id": "kimi_sub", "region": "mainland-cn"}.get)
+    account_login.open_provider_account_login(inv)
+    native.assert_called_once_with(row, "open", region="mainland-cn")
+    row["provider"] = "claude"
+    with pytest.raises(login.InstructionError, match="仅 Kimi"):
+        account_login.open_provider_account_login(inv)
+
+
 @pytest.mark.parametrize("status,expected", [(None, "logged_out"), ("unauthenticated", "logged_out"),
     ("authenticated", "logged_in"), ("expired", "login_expired"), ("revoked", "login_expired")])
 def test_subscription_monitor_uses_native_auth_not_service_availability(monkeypatch, status, expected):

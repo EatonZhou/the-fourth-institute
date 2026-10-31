@@ -1,4 +1,13 @@
 {
+  "中国区": {"zh-CN": "中国区", "en": "Mainland China"},
+  "国际区": {"zh-CN": "国际区", "en": "International"},
+  "账号所属区域": {"zh-CN": "账号所属区域", "en": "Account region"},
+  "获取登录授权": {"zh-CN": "获取登录授权", "en": "Start authorization"},
+  "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。": {"zh-CN": "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。", "en": "Mainland China accounts use kimi.com; international accounts use kimi.ai. Start a new authorization after switching regions."},
+  "请获取所选区域的登录授权。": {"zh-CN": "请获取所选区域的登录授权。", "en": "Start authorization for the selected region."},
+  "请选择账号所属区域，然后获取登录授权。": {"zh-CN": "请选择账号所属区域，然后获取登录授权。", "en": "Choose your account region, then start authorization."},
+  "不支持的 Kimi 登录区域": {"zh-CN": "不支持的 Kimi 登录区域", "en": "Unsupported Kimi login region"},
+  "仅 Kimi 订阅登录支持选择区域": {"zh-CN": "仅 Kimi 订阅登录支持选择区域", "en": "Region selection is supported only for Kimi subscription login"},
   "点击输入路径打开文件": {"en": "Click to type a path and open the file", "zh-CN": "点击输入路径打开文件"},
   "{p0}\n点击输入路径打开文件": {"en": "{p0}\nClick to type a path and open the file", "zh-CN": "{p0}\n点击输入路径打开文件"},
   "当前文件路径：{p0}": {"en": "Current file path: {p0}", "zh-CN": "当前文件路径：{p0}"},

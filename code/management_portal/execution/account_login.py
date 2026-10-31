@@ -517,9 +517,12 @@ def _session_result(registration, session):
 
 def open_provider_account_login(inv):
     registration = _registration(inv)
+    region = inv.argument("region")
     if registration["provider"] == "kimi":
         from .kimi_account_login import login
-        return login(registration, "open")
+        return login(registration, "open", region=region)
+    if region is not None:
+        raise invalid("仅 Kimi 订阅登录支持选择区域")
     try:
         session = LoginManager().start(registration)
     except (ValueError, OSError):

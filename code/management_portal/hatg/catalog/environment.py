@@ -139,14 +139,18 @@ DECLARATIONS = (
     _d("GetProviderAccountCheck", FIXED, "读取账号测试结果；账号登记或模型 API 配置改变后原测试失效。", (
         R("account_id", description="执行账号"), R("execution_id", description="CheckProviderAccount 返回的执行 ID"),
     ), (R("check", "object", "status、passed、model、configuration_current 与脱敏提示"),), owner="execution"),
-    _d("OpenProviderAccountLogin", FIXED, "打开订阅账号登录会话。", (R("account_id", description="执行账号 ID"),),
-       (R("session", "object", LOGIN_SESSION),), mutates=True, target="account_id", owner="execution"),
+    _d("OpenProviderAccountLogin", FIXED, "打开订阅账号登录会话。", (
+        R("account_id", description="执行账号 ID"),
+        P("region", description="仅 Kimi：mainland-cn 中国区或 global 国际区；切换区域会替换未完成的授权流程，省略则沿用原生选择", enum=("mainland-cn", "global")),
+    ), (R("session", "object", LOGIN_SESSION),
+        P("login_options", "object", "Kimi 登录的 regions（id、label）及当前 region")), mutates=True, target="account_id", owner="execution"),
     _d("UpdateProviderAccountLogin", FIXED, "向已有登录会话提交 Claude 授权码或 Antigravity 完整回调地址。", (
         R("account_id", description="执行账号 ID"), R("authorization_code", description="Claude 授权码或 Antigravity 完整回调地址；只送到当前登录进程，不保存或回显"),
     ), (R("session", "object", "提交授权码后的" + LOGIN_SESSION),), mutates=True, target="account_id", owner="execution"),
     _d("GetProviderAccountLogin", FIXED, "读取登录会话和账号认证状态。", (R("account_id", description="执行账号 ID"),),
        (R("session", "any", "登录会话；尚未开始时为 null"),
-        R("login_state", description="账号认证状态：logged_in、login_expired 或 logged_out")),
+        R("login_state", description="账号认证状态：logged_in、login_expired 或 logged_out"),
+        P("login_options", "object", "Kimi 登录的 regions（id、label）及当前 region；无历史流程时建议 mainland-cn")),
        owner="execution"),
     _d("CancelProviderAccountLogin", FIXED, "取消订阅账号登录并结束登录进程。", (R("account_id", description="执行账号 ID"),),
        (R("session", "any", "取消后的会话；尚未开始时为 null"),), mutates=True, target="account_id", owner="execution"),

@@ -25,7 +25,18 @@ def _lock(account_id):
         yield
 
 
-def login(row, action):
+REGIONS = ({"id": "mainland-cn", "label": "中国区"}, {"id": "global", "label": "国际区"})
+
+
+def _flow_region(flow):
+    host = urlsplit(flow.get("verification_uri_complete") or flow.get("verification_uri") or "").hostname
+    return {"www.kimi.com": "mainland-cn", "kimi.com": "mainland-cn",
+            "www.kimi.ai": "global", "kimi.ai": "global"}.get(host)
+
+
+def login(row, action, *, region=None):
+    if region is not None and region not in {item["id"] for item in REGIONS}:
+        raise InstructionError("instruction.invalid_arguments", "不支持的 Kimi 登录区域")
     account_id = row["account_id"]
     with _lock(account_id):
         client = client_for_route(row["route_id"])
@@ -37,9 +48,13 @@ def login(row, action):
             if session:
                 store.transition(session, "failed", error="登录已取消")
         else:
-            if action == "open" and flow.get("status") != "pending":
-                flow = client._request("POST", "oauth/login", {})
-            if action == "open" and (not session or session["state"] not in ACTIVE):
+            start = action == "open" and (flow.get("status") != "pending"
+                                          or region is not None and _flow_region(flow) != region)
+            if start:
+                # The native server replaces its pending flow atomically. Never
+                # rewrite a verification URL: the device code belongs to its region.
+                flow = client._request("POST", "oauth/login", {"region": region} if region else {})
+            if action == "open" and (start or not session or session["state"] not in ACTIVE):
                 expires = datetime.fromisoformat(flow["expires_at"].replace("Z", "+00:00")) if flow.get("expires_at") else None
                 seconds = max(1, min(1800, int((expires - now()).total_seconds()))) if expires else 900
                 session = store.begin(account_id, expires_seconds=seconds)
@@ -61,4 +76,5 @@ def login(row, action):
                       "login_expired" if state in {"expired", "revoked"} else "logged_out")
         session = store.get(account_id)
         return {"session": {**session, "requires_code_input": False} if session else None,
-                "login_state": store.login_state(account_id)}
+                "login_state": store.login_state(account_id),
+                "login_options": {"regions": list(REGIONS), "region": _flow_region(flow) or "mainland-cn"}}
