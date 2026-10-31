@@ -1,5 +1,5 @@
 {
-  "request": "20261101.1-r4",
+  "request": "20261101.1-r5",
   "purpose": "ET Mac clean install with current shared installer and Provider lifecycle fixes; native offline install, registration, API-only chat and restart acceptance; no real credentials or inference",
   "delivery": "Portal test download; no GitHub Release"
 }

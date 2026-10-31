@@ -64,11 +64,14 @@ class LocalModelApi:
         self.thread.start()
 
     def register(self, instruction):
-        instruction('CreateModelApi', {'api_id': 'native_api_only', 'provider': 'deepseek',
+        created = instruction('CreateModelApi', {'api_id': 'native_api_only', 'provider': 'deepseek',
             'base_url': f'http://127.0.0.1:{self.server.server_port}/v1',
             'default_model': self.model, 'secret': 'disposable-native-fixture'})
-        instruction('RegisterProviderAccount', {'account_id': 'native_api_only',
-            'provider': 'provider_api', 'kind': 'api_profile', 'config': {'api_id': 'native_api_only'}})
+        check(any(account.get('account_id') == 'native_api_only'
+                  and account.get('provider') == 'provider_api'
+                  and account.get('config', {}).get('api_id') == 'native_api_only'
+                  for account in created.get('accounts', [])),
+              'CreateModelApi did not provision its direct execution account')
         accounts = instruction('ListProviderAccounts', {})['accounts']
         check(not any(account.get('provider') == 'codex' for account in accounts),
               'API-only fixture unexpectedly has a Codex account')
