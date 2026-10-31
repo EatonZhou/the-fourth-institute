@@ -865,7 +865,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   sections.apis.actions.append(button("新增模型 API", () => apiEditor(), !canWrite));
   sections.roles.actions.append(button("新增 Backend 角色", () => roleEditor(), !canWrite));
   for (const key of Object.keys(sections)) sections[key].actions.append(button("刷新", () => void refresh(key)));
-  await Promise.all(Object.keys(sections).map(refresh));
+  await Promise.all(Object.keys(sections).map(key => refresh(key)));
   function focusAccount(id) {
     if (!id) return;
     const row = [...root.querySelectorAll("[data-backend-account]")].find(el => el.dataset.backendAccount === id);

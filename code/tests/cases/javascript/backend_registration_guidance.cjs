@@ -9,6 +9,7 @@ window.PortalUI = {createDialogController: ({modal, onClose}) => ({
   open: () => modal.setAttribute('open', ''), close: onClose, destroy() {},
 })};
 window.PortalInstructionClient = {execute: async (name, args) => {
+  assert(args && typeof args === 'object' && !Array.isArray(args), `${name} arguments must be an object`);
   calls.push({name, args: JSON.parse(JSON.stringify(args))});
   switch (name) {
     case 'ListProviders': return {providers: [
