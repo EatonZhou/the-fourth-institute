@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import os
 import re
-from contextlib import ExitStack
 from functools import lru_cache
 
 from psycopg.types.json import Jsonb
@@ -73,8 +72,9 @@ def config_fields(provider, kind):
     # A Codex API account can be the default route; it never falls back to a subscription.
     if kind == "api_profile":
         return {"api_id", "is_default"} if provider == "codex" else {"api_id"}
-    return {"fallback_account_ids", "is_default", "reuse_local_login"} if provider == "codex" else \
-        {"models", "default_model", "reuse_local_login"} if provider == "claude" else set()
+    fields = {"fallback_account_ids", "is_default"} if provider == "codex" else \
+        {"models", "default_model"} if provider == "claude" else set()
+    return fields | ({"account_dir"} if kind == "subscription_login" else set())
 
 
 def default_route(rows):
@@ -107,8 +107,12 @@ def _validate(data):
         raise invalid("备用账号不能重复或指向自身")
     if "is_default" in config and type(config["is_default"]) is not bool:
         raise invalid("is_default 必须是 boolean")
-    if "reuse_local_login" in config and type(config["reuse_local_login"]) is not bool:
-        raise invalid("reuse_local_login 必须是 boolean")
+    if "account_dir" in config:
+        from management_common.provider_account_paths import canonical_directory
+        try:
+            canonical_directory(config["account_dir"])
+        except ValueError as exc:
+            raise invalid(str(exc)) from None
     if "models" in config and (not isinstance(config["models"], list) or any(not isinstance(v, (str, dict)) for v in config["models"])):
         raise invalid("models 必须是模型数组")
     limit = data.get("max_concurrency", 8)
@@ -124,21 +128,32 @@ def create_registration(data, actor):
             data.get("provider") == "kimi" and data.get("kind") == "service"):
         data["route_id"] = str(data.get("account_id") or "").removeprefix("codex_") if data.get("provider") == "codex" else data.get("account_id", "")
     _validate(data)
-    from .account_local_login import registration_lock
-    with registration_lock(data["provider"], data["account_id"]), ExitStack() as prepared, database().transaction("registrations") as c:
-        if c.execute("SELECT 1 FROM registrations WHERE account_id=%s", (data["account_id"],)).fetchone():
-            return None
-        _check_relationships(c, data)
-        if data.get("config", {}).get("reuse_local_login"):
-            from .account_local_login import registration_home
-            prepared.enter_context(registration_home(data["provider"], data["account_id"]))
-        return _decode(c.execute("""INSERT INTO registrations
-            (account_id,provider,kind,route_id,config,max_concurrency,enabled,version,created_at,created_by,updated_at,updated_by)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,1,%s,%s,%s,%s)
-            ON CONFLICT(account_id) DO NOTHING RETURNING *""",
-            (data["account_id"], data["provider"], data["kind"], data.get("route_id", ""),
-             Jsonb(data.get("config", {})), data.get("max_concurrency", 8), data.get("enabled", True),
-             now(), actor, now(), actor)).fetchone())
+    created = None
+    try:
+        with database().transaction("registrations") as c:
+            if c.execute("SELECT 1 FROM registrations WHERE account_id=%s", (data["account_id"],)).fetchone():
+                return None
+            _check_relationships(c, data)
+            from .account_hosting import prepare_registration_directory
+            try:
+                created = prepare_registration_directory(data)
+            except (OSError, ValueError) as exc:
+                raise invalid(str(exc)) from None
+            _check_relationships(c, data)
+            return _decode(c.execute("""INSERT INTO registrations
+                (account_id,provider,kind,route_id,config,max_concurrency,enabled,version,created_at,created_by,updated_at,updated_by)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,1,%s,%s,%s,%s)
+                ON CONFLICT(account_id) DO NOTHING RETURNING *""",
+                (data["account_id"], data["provider"], data["kind"], data.get("route_id", ""),
+                 Jsonb(data.get("config", {})), data.get("max_concurrency", 8), data.get("enabled", True),
+                 now(), actor, now(), actor)).fetchone())
+    except BaseException:
+        if created is not None:
+            try:
+                created.rmdir()  # Only our still-empty directory; never Provider files.
+            except OSError:
+                pass
+        raise
 
 
 def update_registration(account_id, changes, expected_version, actor):
@@ -151,6 +166,12 @@ def update_registration(account_id, changes, expected_version, actor):
         _check_version(account_id, row["version"], expected_version, "账号登记版本已改变")
         row.update(changes)
         _validate(row)
+        if row["kind"] == "subscription_login":
+            if not row["config"].get("account_dir"):
+                raise invalid("订阅登记必须保留 config.account_dir")
+            from .account_hosting import registered_home
+            if not registered_home(row).is_dir():
+                raise invalid("账号目录不存在")
         if row["config"].get("is_default"):
             # Marking an existing account moves the mark in one transaction, so
             # a Provider never has two defaults or, in between, none.
@@ -165,6 +186,10 @@ def update_registration(account_id, changes, expected_version, actor):
 
 
 def _check_relationships(c, row):
+    directory = row.get("config", {}).get("account_dir")
+    if directory and c.execute("SELECT 1 FROM registrations WHERE config->>'account_dir'=%s AND account_id<>%s",
+                               (directory, row["account_id"])).fetchone():
+        raise InstructionError("instruction.conflict", "账号目录已在本实例登记")
     if row["provider"] != "provider_api" and c.execute("SELECT 1 FROM registrations WHERE provider=%s AND route_id=%s AND account_id<>%s",
                                                        (row["provider"], row.get("route_id", ""), row["account_id"])).fetchone():
         raise InstructionError("instruction.conflict", "Provider 路线已被其他账号登记")

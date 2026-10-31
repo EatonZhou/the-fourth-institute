@@ -103,7 +103,7 @@ def test_isolation_uses_data_configuration_and_release_owner(installation, tmp_p
     instances = Path(configured['instances_root'])
     assert isolation.run_root() == staging / 'shared/script_runs'
     expected_dirs = [staging / 'portal_locks', staging / 'shared/portal_locks',
-                     staging / 'shared/portal_runtime', Path(configured['accounts_root']),
+                     staging / 'shared/portal_runtime',
                      Path(configured['secrets_dir'])]
     for p in expected_dirs:
         p.mkdir(parents=True)

@@ -64,18 +64,18 @@ def owned_services(target, directory):
         return ({"template": None, "daemons": daemons,
                  "names": [path.name for path in daemons]} if daemons else None)
     root = Path(target["install_root"])
-    accounts = Path(target["data_roots"]["accounts_root"])
     if template.is_symlink() or not template.is_file():
         raise ValueError("Provider service template ownership mismatch")
     lines = set(template.read_text().splitlines())
     required = {
         f"Environment=HOME={root / 'home'}",
-        f"WorkingDirectory={accounts}/codex/%i",
-        f"Environment=CODEX_HOME={accounts}/codex/%i",
+
     }
     locator_lines = {f"Environment=PORTAL_PATHS_CONFIG={root / 'config/target.json'}",
                      f"Environment=PORTAL_PATHS_CONFIG={root / 'config/paths.json'}"}
-    if not required.issubset(lines) or not lines.intersection(locator_lines):
+    if (not required.issubset(lines) or not lines.intersection(locator_lines)
+            or not any(line.startswith("ExecStart=") and line.endswith(
+                f"--account-config {root}/runtime/provider-accounts/codex/%i/launch.json") for line in lines)):
         raise ValueError("Provider service belongs to another instance")
     for name in sorted(names):
         if not re.fullmatch(re.escape(prefix) + ACCOUNT_UNIT, name):
@@ -95,7 +95,6 @@ def _macos_owned_services(target, directory):
     from scripts.tfi_instance_layout import code_root
     from scripts.tfi_release_dependencies import runtime_python
     root = Path(target["data_roots"]["instances_root"]).resolve()
-    accounts = Path(target["data_roots"]["accounts_root"])
     scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:10]
     prefix = ServiceControl.label("portal-codex-app-server@")
     names = _native_daemons(target, directory, adapter)
@@ -111,7 +110,7 @@ def _macos_owned_services(target, directory):
             raise ValueError("Provider launch agent command mismatch")
         expected_command = [runtime_python(target), "-m", "management_portal.codex_app_server_host",
                             "--socket", str(root / "sockets" / f"codex-{account}.sock"),
-                            "--binary", argv[6], "--account-home", str(accounts / "codex" / account)]
+                            "--binary", argv[6], "--account-config", str(Path(target["install_root"]) / "runtime/provider-accounts/codex" / account / "launch.json")]
         environment = definition.get("EnvironmentVariables")
         if environment is not None:
             _check_macos_environment(target, environment)
@@ -186,13 +185,14 @@ def _windows_owned_services(target, directory):
         else:
             command = value.get("command", [])
             if (len(command) != 9 or command[:3] != [runtime_python(target), "-m", "management_portal.codex_app_server_host"]
-                    or command[3::2] != ["--socket", "--binary", "--account-home"]
+                    or command[3::2] != ["--socket", "--binary", "--account-config"]
                     or not all(isinstance(arg, str) and Path(arg).is_absolute() for arg in command[4::2])):
                 raise ValueError("Provider SCM command ownership mismatch")
-            home = Path(command[-1])
-            if (home.parent.resolve() != (Path(target["data_roots"]["accounts_root"]) / "codex").resolve()
-                    or Path(command[4]).resolve() != (root / "sockets" / f"codex-{home.name}.sock").resolve()
-                    or name != f"portal-codex-app-server@{home.name}-{scope}.service"
+            launch = Path(command[-1])
+            account_id = launch.parent.name
+            if (launch != Path(target["install_root"]) / "runtime/provider-accounts/codex" / account_id / "launch.json"
+                    or Path(command[4]).resolve() != (root / "sockets" / f"codex-{account_id}.sock").resolve()
+                    or name != f"portal-codex-app-server@{account_id}-{scope}.service"
                     or Path(value.get("cwd", "")).resolve() != code_root(target).resolve()
                     or value.get("account") != target["windows_service_account"]):
                 raise ValueError("Provider SCM service belongs to another installation")
@@ -230,7 +230,7 @@ def _check_macos_environment(target, environment):
     if not isinstance(environment, dict):
         raise ValueError("Provider launch agent environment is invalid")
     expected = api.clean_environment(target)
-    required = {"PORTAL_INSTANCES_ROOT", "PORTAL_ACCOUNTS_ROOT", "PORTAL_SECRETS_DIR",
+    required = {"PORTAL_INSTANCES_ROOT", "PORTAL_SECRETS_DIR",
                 "PORTAL_NETWORK_CONFIG", "PORTAL_SITE_CONFIG", "PORTAL_PATHS_CONFIG",
                 "PATH", "HOME", "PYTHONNOUSERSITE", "PYTHONDONTWRITEBYTECODE", "PYTHONUTF8"}
     allowed = required | {"XDG_CONFIG_HOME", "XDG_CACHE_HOME", "TMPDIR", "LANG",

@@ -48,11 +48,13 @@ def test_framework_isolation_hides_site_account_and_secret_roots(monkeypatch, tm
     secrets.mkdir()
     alias = tmp_path / "account-alias"
     alias.symlink_to(accounts, target_is_directory=True)
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(alias))
+    from management_portal.execution.account_registrations import create_registration
+    create_registration({"account_id": "claude_external", "provider": "claude", "kind": "subscription_login",
+                         "config": {"account_dir": str(accounts)}}, "test")
     monkeypatch.setenv("PORTAL_SECRETS_DIR", str(secrets))
     from management_common import portal_paths
     values = portal_paths.path_values()
-    monkeypatch.setattr(portal_paths, "path_values", lambda: {**values, "accounts_root": str(alias), "secrets_dir": str(secrets)})
+    monkeypatch.setattr(portal_paths, "path_values", lambda: {**values, "secrets_dir": str(secrets)})
     paths = credential_paths(tmp_path / "empty-home")
     assert accounts in paths
     assert secrets in paths

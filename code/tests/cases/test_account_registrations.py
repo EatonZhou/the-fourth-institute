@@ -63,7 +63,7 @@ def test_marking_another_default_route_moves_the_mark_in_one_update(monkeypatch)
                                    "route_id": "three", "config": {"is_default": True}}, "alice")
     assert error.value.code == "instruction.conflict"
     assert reported() == "one"
-    moved = store.update_registration("codex_two", {"config": {"is_default": True}}, 1, "bob")
+    moved = store.update_registration("codex_two", {"config": {**store.registration("codex_two")["config"], "is_default": True}}, 1, "bob")
     assert moved["config"]["is_default"] is True
     previous = store.registration("codex_one")
     assert (previous["config"]["is_default"], previous["version"], previous["updated_by"]) == (False, 2, "bob")
@@ -98,7 +98,7 @@ def test_role_blocks_account_deletion(monkeypatch):
         pytest.fail("A referenced account must not lose login data or its home")
     monkeypatch.setattr(isa, "account_busy_counts", lambda _: {"session_count": 0, "execution_count": 0})
     monkeypatch.setattr(account_login, "delete_login_data", unexpected)
-    monkeypatch.setattr(account_hosting, "remove_account_home", unexpected)
+    monkeypatch.setattr(account_hosting, "remove_account_runtime", unexpected)
     with pytest.raises(InstructionError) as refused:
         isa.delete_provider_account(SimpleNamespace(argument={"account_id": "claude_test"}.get))
     assert refused.value.details == error.value.details
@@ -162,7 +162,7 @@ def test_adapters_derive_routes_homes_and_fallback_order(tmp_path, monkeypatch):
     """Codex 路由从登记推导路径、保留容量键与备用顺序。"""
     from management_portal.execution import account_registrations as store
     from management_portal.execution.account_adapters import CodexAccounts, CodexRoutes, ClaudeAccounts
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
     monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(tmp_path / "instances"))
     for name, config in (("one", {"is_default": True, "fallback_account_ids": ["codex_two", "codex_zero"]}),
                          ("two", {}), ("zero", {})):
@@ -170,7 +170,7 @@ def test_adapters_derive_routes_homes_and_fallback_order(tmp_path, monkeypatch):
                                    "route_id": name, "config": config, "max_concurrency": 12}, "alice")
     routes = CodexRoutes()
     assert [r.account_id for r in routes.candidates(allow_fallback=True)] == ["one", "two", "zero"]
-    assert routes.get("codex_one").codex_home == tmp_path / "accounts/codex/codex_one"
+    assert routes.get("codex_one").codex_home == tmp_path / "accounts/.codex-accounts/one"
     assert routes.get("one").socket_path == tmp_path / "instances/sockets/codex-codex_one.sock"
     account = CodexAccounts().resolve("", {})
     assert (account.account_id, account.route_id, account.capacity_key, account.max_concurrency) == ("codex_one", "one", "codex:one", 12)
@@ -178,7 +178,7 @@ def test_adapters_derive_routes_homes_and_fallback_order(tmp_path, monkeypatch):
                                "route_id": "claude_test", "config": {"models": [{"id": "example"}], "default_model": "example"}}, "alice")
     assert ClaudeAccounts().accounts()[0].account_id == "claude_test"
     from management_portal.claude_provider_catalog import profile, config_directory, catalog
-    assert config_directory(profile("claude_test")) == tmp_path / "accounts/claude/claude_test"
+    assert config_directory(profile("claude_test")) == tmp_path / "accounts/.claude-accounts/test"
     assert catalog("claude_test")["models"] == ["example"]
 
 
@@ -365,10 +365,7 @@ def test_only_model_api_instructions_compare_model_api_versions(monkeypatch):
 def test_reenable_starts_registered_codex_instance(tmp_path, monkeypatch):
     """恢复登记时启动该账号的模板实例。"""
     from management_portal.execution import account_registrations as store, account_hosting as host, isa
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
-    home = host.account_home("codex", "codex_one")
-    home.parent.mkdir(parents=True)
-    home.mkdir()
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
     store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
                                "route_id": "one", "enabled": False}, "alice")
     started = []

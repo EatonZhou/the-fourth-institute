@@ -18,10 +18,6 @@ def instance_root() -> Path:
     return portal_paths.path("instances_root")
 
 
-def accounts_root() -> Path:
-    return portal_paths.path("accounts_root")
-
-
 def secrets_dir() -> Path:
     return portal_paths.path("secrets_dir")
 

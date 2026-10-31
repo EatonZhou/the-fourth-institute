@@ -336,31 +336,31 @@ runpy.run_module('scripts.tfi_release_install', run_name='__main__')
                     self.assertNotIn(library_key, environment)
                     self.assertNotIn(target['pg_lib'], environment['PATH'])
 
-    def test_external_accounts_root_requires_explicit_declaration(self):
+    def test_external_staging_root_requires_explicit_declaration(self):
         external = self.base / "ssd" / "accounts"
-        self.target["data_roots"]["accounts_root"] = str(external)
+        self.target["data_roots"]["staging_root"] = str(external)
         with self.assertRaisesRegex(ValueError, "inside install_root"):
             installer.target_plan(self.target)
-        self.target["external_data_roots"] = ["accounts_root"]
+        self.target["external_data_roots"] = ["staging_root"]
         target = installer.target_plan(self.target)
-        self.assertEqual(target["data_roots"]["accounts_root"], str(external))
-        self.assertEqual(installer.clean_environment(target)["PORTAL_ACCOUNTS_ROOT"], str(external))
+        self.assertEqual(target["data_roots"]["staging_root"], str(external))
+        self.assertEqual(installer.clean_environment(target)["PORTAL_AGENT_STAGING_ROOT"], str(external))
         self.assertEqual(installer.target_plan(target), target)
 
     def test_external_data_roots_reject_invalid_declarations(self):
-        for value in (True, "accounts_root", ["unknown"], ["accounts_root", "accounts_root"], [None]):
+        for value in (True, "staging_root", ["unknown"], ["staging_root", "staging_root"], [None]):
             with self.subTest(value=value):
                 self.target["external_data_roots"] = value
                 with self.assertRaisesRegex(ValueError, "external_data_roots"):
                     installer.target_plan(self.target)
 
     def test_external_data_roots_still_reject_source_and_data_overlap(self):
-        self.target["external_data_roots"] = ["accounts_root", "secrets_dir"]
-        self.target["data_roots"]["accounts_root"] = str(installer.SOURCE_ROOT / "accounts")
+        self.target["external_data_roots"] = ["staging_root", "secrets_dir"]
+        self.target["data_roots"]["staging_root"] = str(installer.SOURCE_ROOT / "accounts")
         with self.assertRaisesRegex(ValueError, "overlap"):
             installer.target_plan(self.target)
         external = self.base / "ssd" / "accounts"
-        self.target["data_roots"]["accounts_root"] = str(external)
+        self.target["data_roots"]["staging_root"] = str(external)
         self.target["data_roots"]["secrets_dir"] = str(external / "secrets")
         with self.assertRaisesRegex(ValueError, "overlap"):
             installer.target_plan(self.target)
@@ -370,7 +370,7 @@ runpy.run_module('scripts.tfi_release_install', run_name='__main__')
         with self.assertRaisesRegex(ValueError, "overlaps"):
             installer.target_plan(self.target)
         self.target["install_root"] = str(self.base / "instance")
-        self.target["data_roots"]["secrets_dir"] = self.target["data_roots"]["accounts_root"] + "/secrets"
+        self.target["data_roots"]["secrets_dir"] = self.target["data_roots"]["staging_root"] + "/secrets"
         with self.assertRaisesRegex(ValueError, "overlap"):
             installer.target_plan(self.target)
 

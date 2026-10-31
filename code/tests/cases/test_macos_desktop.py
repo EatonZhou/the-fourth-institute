@@ -220,13 +220,13 @@ class MacDesktop(unittest.TestCase):
                 root = Path(target["data_roots"]["instances_root"]).resolve()
                 scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:10]
                 name = f"portal-codex-app-server@fixture-{scope}.service"
-                home = Path(target["data_roots"]["accounts_root"]) / "codex/fixture"
+                home = Path(target["install_root"]) / "runtime/provider-accounts/codex/fixture"
                 home.mkdir(parents=True)
                 marker = home / "user-data"
                 marker.write_text("preserve")
                 argv = [target["python"], "-m", "management_portal.codex_app_server_host",
                         "--socket", str(root / "sockets/codex-fixture.sock"),
-                        "--binary", "/fixture/codex", "--account-home", str(home)]
+                        "--binary", "/fixture/codex", "--account-config", str(home / "launch.json")]
                 content = adapter.command_unit_text(name, argv, cwd=code_root(target), log_root=root / "logs", log_name=name)
                 adapter.register_services(registry, {name: content})
                 return target, name, marker
@@ -261,7 +261,7 @@ class MacDesktop(unittest.TestCase):
             name = f"portal-codex-app-server@fixture-{scope}.service"
             registry = base / "LaunchAgents"
             content = adapter.command_unit_text(name, ["/other/python", "-m", "management_portal.codex_app_server_host",
-                "--socket", "/other/s.sock", "--binary", "/fixture/codex", "--account-home", "/other/account"],
+                "--socket", "/other/s.sock", "--binary", "/fixture/codex", "--account-config", "/other/launch.json"],
                 cwd="/other/code", log_root="/other/logs", log_name=name)
             adapter.register_services(registry, {name: content})
             with patch.object(providers.sys, "platform", "darwin"), self.assertRaisesRegex(ValueError, "another instance"):

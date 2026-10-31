@@ -35,7 +35,7 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
         binary.write_bytes(b"test")
     from management_common import portal_paths
     original_path = portal_paths.path_values
-    monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "accounts_root": str(tmp_path / "accounts")})
+    monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "instances_root": str(tmp_path / "instance")})
     monkeypatch.setenv("PORTAL_WINDOWS_SERVICE_ACCOUNT", "local\\portal")
     monkeypatch.setenv("PORTAL_WINDOWS_SERVICE_PASSWORD", "mock-secret")
     if user_mode:
@@ -45,11 +45,14 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
         (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": {
             "install_root": str(root), "shared_code_root": str(units.SOURCE_ROOT),
             "python": units.sys.executable, "windows_service_mode": "user",
-            "data_roots": {"accounts_root": str(tmp_path / "accounts"), "instances_root": str(units.instance_root())}}}))
+            "data_roots": {"instances_root": str(units.instance_root())}}}))
         monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/target.json"))
+        monkeypatch.setattr(portal_paths, "CONFIG_PATH", root / "config/target.json")
         monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_ACCOUNT")
         monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_PASSWORD")
     monkeypatch.setattr(tfi_release_platform_macos, "unit_directory", lambda: tmp_path / "agents")
+    from management_portal.execution.account_registrations import create_registration
+    create_registration({"account_id": "sample", "provider": "codex", "kind": "subscription_login"}, "test")
     events = []
     definitions = {}
 
@@ -109,7 +112,7 @@ def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, p
         assert "mock-secret" not in definition
     assert command[:3] == [str(tmp_path / "Python.exe"), "-m", "management_portal.codex_app_server_host"]
     assert command[command.index("--binary") + 1] == str(binary)
-    assert command[command.index("--account-home") + 1].endswith("accounts/codex/sample")
+    assert command[command.index("--account-config") + 1].endswith("provider-accounts/codex/sample/launch.json")
     assert events[:2] == [("register", name), ("start", name)]
     units.stop_codex_instance("sample")
     units.remove_codex_instance("sample")
@@ -129,8 +132,10 @@ def test_native_start_failure_rolls_back_new_registration(tmp_path, monkeypatch)
     monkeypatch.setattr(shutil, "which", lambda name: str(binary))
     from management_common import portal_paths
     original_path = portal_paths.path_values
-    monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "accounts_root": str(tmp_path / "accounts")})
+    monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "instances_root": str(tmp_path / "instance")})
     monkeypatch.setattr(adapter, "unit_directory", lambda: tmp_path / "agents")
+    from management_portal.execution.account_registrations import create_registration
+    create_registration({"account_id": "sample", "provider": "codex", "kind": "subscription_login"}, "test")
     events = []
     monkeypatch.setattr(adapter, "register_services", lambda d, u: list(u))
     monkeypatch.setattr(adapter, "remove_services", lambda d, n: events.append("removed"))
@@ -158,7 +163,7 @@ def test_windows_scm_host_reads_registered_codex_command(tmp_path, monkeypatch):
     definition = tmp_path / "portal-codex-app-server@test.service.json"
     command = [str(tmp_path / "Python With Spaces.exe"), "-m", "management_portal.codex_app_server_host",
                "--socket", str(tmp_path / "codex.sock"), "--binary", str(tmp_path / "Codex With Spaces.cmd"),
-               "--account-home", str(tmp_path / "account home")]
+               "--account-config", str(tmp_path / "launch.json")]
     definition.write_text(json.dumps({"name": definition.stem, "command": command,
                                       "cwd": str(tmp_path), "log_path": str(tmp_path / "host.log")}))
     received = []

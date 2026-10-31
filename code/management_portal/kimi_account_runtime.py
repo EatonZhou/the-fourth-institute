@@ -15,7 +15,8 @@ import time
 
 from management_common.file_lock import lock_stream
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
-from management_common.instance_paths import accounts_root
+from management_common.provider_account_paths import account_runtime, runtime_root
+from management_portal.execution.account_hosting import registered_home
 from management_common.process_runtime import spawn_process, terminate_process_tree
 from management_portal import kimi_provider_catalog, kimi_code_server, kimi_portal_tools, model_api_store, kimi_windows_runtime
 from management_portal.ai_provider_registry import AIProviderRegistry
@@ -24,7 +25,7 @@ from management_portal.resident_shell_environment import resident_process_enviro
 
 
 def root():
-    return accounts_root() / "kimi"
+    return runtime_root() / "kimi"
 
 
 def account_for_route(route):
@@ -35,9 +36,12 @@ def account_for_route(route):
 
 
 def home(account):
-    path = root() / account["account_id"]
-    if path.is_symlink() or path.parent.is_symlink():
-        raise ValueError("Kimi account directories must not be symbolic links")
+    return registered_home(account)
+
+
+def control(account):
+    path = account_runtime("kimi", account["account_id"])
+    ensure_private_directory(path)
     return path
 
 
@@ -137,7 +141,7 @@ def _stop_server(account, target, state):
     _, alive = psutil.wait_procs([process, *descendants], timeout=15)
     if alive:
         raise TimeoutError("Owned Kimi process did not stop")
-    (target / "server.json").unlink(missing_ok=True)
+    (control(account) / "server.json").unlink(missing_ok=True)
 
 
 def running_accounts():
@@ -146,7 +150,7 @@ def running_accounts():
         if account["kind"] == "service":
             continue
         target = home(account)
-        state = _read(target / "server.json")
+        state = _read(control(account) / "server.json")
         if _owned_process(target, state) is not None:
             result.append((account, target, state))
     return result
@@ -166,8 +170,8 @@ def runtime_busy():
 def restart_account(account_id):
     account = account_for_route(account_id)
     target = home(account)
-    with (target / "launch.lock").open("a+") as stream, lock_stream(stream):
-        _stop_server(account, target, _read(target / "server.json"))
+    with (control(account) / "launch.lock").open("a+") as stream, lock_stream(stream):
+        _stop_server(account, target, _read(control(account) / "server.json"))
     client_for_route(account_id)
 
 
@@ -177,10 +181,12 @@ def client_for_route(route, *, for_control=False):
     if account["kind"] == "service":
         return shared_client()
     target = home(account)
+    if account["kind"] == "subscription_login" and not target.is_dir():
+        raise FileNotFoundError("Registered Kimi account directory is missing")
     ensure_private_directory(target)
     tree_id = f"kimi-account-{account['account_id']}"
-    with (target / "launch.lock").open("a+") as stream, lock_stream(stream):
-        marker = target / "server.json"
+    with (control(account) / "launch.lock").open("a+") as stream, lock_stream(stream):
+        marker = control(account) / "server.json"
         state = _read(marker)
         version = [account["version"], model_api_store.api_version(account["config"]["api_id"])
                    if account["kind"] == "api_profile" else None]
@@ -208,9 +214,10 @@ def client_for_route(route, *, for_control=False):
         env, _ = resident_process_environment({})
         env["KIMI_CODE_HOME"] = str(target)
         env.update(kimi_windows_runtime.environment())
-        with (target / "server.log").open("ab") as log:
-            process = spawn_process([str(binary), "web", "--no-open", "--host", "127.0.0.1", "--port", str(port),
-                                     "--dangerous-bypass-auth"], cwd=target, env=env, stdout=log, stderr=log,
+        with (control(account) / "server.log").open("ab") as log:
+            process = spawn_process([os.sys.executable, str(Path(__file__).with_name("provider_daemon_host.py")),
+                                     "--account-dir", str(target), "--", str(binary), "web", "--no-open",
+                                     "--host", "127.0.0.1", "--port", str(port), "--dangerous-bypass-auth"], cwd=target, env=env, stdout=log, stderr=log,
                                     tree_id=tree_id, kill_on_owner_exit=False)
         client = _client(target, port)
         try:
@@ -251,7 +258,7 @@ def remove_account(account):
     target = home(account)
     if not target.exists():
         return
-    with (target / "launch.lock").open("a+") as stream, lock_stream(stream):
-        state = _read(target / "server.json")
+    with (control(account) / "launch.lock").open("a+") as stream, lock_stream(stream):
+        state = _read(control(account) / "server.json")
         _stop_server(account, target, state)
-    shutil.rmtree(target)
+    shutil.rmtree(control(account))

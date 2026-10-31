@@ -22,14 +22,13 @@ class ProviderCleanupTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.target = {"install_root": str(self.root / "instance"),
                        "service_prefix": "tfi-one",
-                       "data_roots": {"accounts_root": str(self.root / "instance/accounts")}}
+                       "data_roots": {"secrets_dir": str(self.root / "instance/secrets")}}
         self.template = self.root / "tfi-one-codex-app-server@.service"
         self.unit = "tfi-one-codex-app-server@account.service"
         self.template.write_text(
             f"Environment=HOME={self.root}/instance/home\n"
             f"Environment=PORTAL_PATHS_CONFIG={self.root}/instance/config/target.json\n"
-            f"WorkingDirectory={self.root}/instance/accounts/codex/%i\n"
-            f"Environment=CODEX_HOME={self.root}/instance/accounts/codex/%i\n")
+            f"ExecStart=python -m management_portal.codex_app_server_host --account-config {self.root}/instance/runtime/provider-accounts/codex/%i/launch.json\n")
         self.runner = Mock(side_effect=self.run_systemctl)
         self.platform = patch.object(providers.sys, "platform", "linux")
         self.platform.start()

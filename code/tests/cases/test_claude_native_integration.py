@@ -20,21 +20,22 @@ from management_portal.society_service import resident_runtime_domain
 def native_routes(monkeypatch, tmp_path):
     from management_portal.execution import account_registrations as registrations
     from management_portal.execution.account_hosting import account_home
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
     profiles = {name: {
         "id": name, "kind": "subscription_login", "provider": "claude", "enabled": True,
-        "config_dir": str(account_home("claude", name)), "default_model": "sonnet",
+        "default_model": "sonnet",
         "models": [{"id": "sonnet", "enabled": True, "support_efforts": ["high"]}],
     } for name in ("claude_one", "claude_two")}
     for name, profile in profiles.items():
         row = registrations.registration(name)
         config = {"default_model": profile["default_model"], "models": profile["models"]}
         if row:
-            registrations.update_registration(name, {"config": config}, row["version"], "test")
+            registrations.update_registration(name, {"config": {**row["config"], **config}}, row["version"], "test")
         else:
             registrations.create_registration({"account_id": name, "provider": "claude",
                                                "kind": "subscription_login", "route_id": name,
                                                "config": config}, "test")
+        profile["config_dir"] = str(account_home("claude", name))
     monkeypatch.setattr(claude_provider_catalog, "profile", lambda key, **_: profiles[key])
     return profiles
 

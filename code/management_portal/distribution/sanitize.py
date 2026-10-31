@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 
 RESOURCE_ID = re.compile(r"\b[a-z][a-z0-9_]*_[0-9a-f]{12}\b")
 SECRET_FIELDS = re.compile(r"(^|_)(password|passwd|secret|credential|private_key|api_key|authorization|cookie|auth_json)(_|$)|^(?:access|refresh|bearer|auth|login|session)_token$", re.I)
-ACCOUNT_FIELDS = {"provider_account_id", "account_id", "execution_account", "backend_account_id", "backend_route_id", "auth_file", "secret_file", "credential_path"}
+ACCOUNT_FIELDS = {"provider_account_id", "account_id", "account_dir", "execution_account", "backend_account_id", "backend_route_id", "auth_file", "secret_file", "credential_path"}
 HUMAN_FIELDS = {"created_by", "updated_by", "deleted_by", "actor", "actor_ref", "created_by_actor_ref", "updated_by_actor_ref", "performed_by_actor_ref", "username", "user_id", "user", "owner", "owner_id", "personal_owner_id", "sender_id", "sender", "sender_name", "author", "author_id", "display_name", "human_name", "issued_by", "selected_by"}
 ANONYMOUS_USER_ID = 'tfi-exported-user'
 ANONYMOUS_LABEL = 'TFI portal'
@@ -16,7 +16,7 @@ ANONYMIZATION = {'schema': 'tfi.release-anonymization.v1', 'human_principal': {'
                  'rule_version': 2, 'recipient_collision_rule': 'one anonymous User per recipient set; other principals preserved',
                  'human_display_name': ANONYMOUS_LABEL, 'authentication_exported': False,
                  'resident_service_mailbox_identities': 'preserved'}
-PRIVATE_PARTS = {".git", ".env", ".ssh", ".aws", ".codex", ".claude", ".tfi", ".portal-accounts", "secrets", "node_modules", ".venv", ".nodeenv", "__pycache__", ".pytest_cache"}
+PRIVATE_PARTS = {".git", ".env", ".ssh", ".aws", ".codex", ".claude", ".tfi", ".codex-accounts", ".claude-accounts", ".kimi-accounts", ".antigravity-accounts", "secrets", "node_modules", ".venv", ".nodeenv", "__pycache__", ".pytest_cache"}
 PRIVATE_FILES = {"auth.json", "credentials.json", "id_rsa", "id_ed25519", ".pgpass", ".netrc"}
 SECRET_VALUE = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|\b(?:sk|ghp|github_pat)-[A-Za-z0-9_-]{20,}|\bghp_[A-Za-z0-9]{20,}|(?i:bearer)\s+[A-Za-z0-9._-]{24,}|(?i:postgres(?:ql)?://)[^\s:/]+:[^\s@]+@")
 

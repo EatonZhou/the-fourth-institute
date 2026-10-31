@@ -38,7 +38,7 @@ def cli(monkeypatch, tmp_path):
     monkeypatch.setenv('PORTAL_ROOT', str(REPO))
     paths = tmp_path / 'paths.json'
     paths.write_text(json.dumps({key: str(tmp_path / key) for key in
-        ('share_root', 'staging_root', 'instances_root', 'accounts_root', 'secrets_dir')}))
+        ('share_root', 'staging_root', 'instances_root', 'secrets_dir')}))
     monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(paths))
     from management_common import portal_paths
     monkeypatch.setattr(portal_paths, 'CONFIG_PATH', paths)
@@ -164,7 +164,8 @@ def test_resource_id_bootstraps_helper_from_selected_root_without_env_write(tmp_
     for name in ('product_environment.py', 'site_compatibility.py', 'site_config.py', 'portal_paths.py',
                  'instance_config.py', 'file_lock.py'):
         shutil.copyfile(REPO / 'management_common' / name, common / name)
-    env = site_environ({'PATH': os.defpath, 'PYTHONDONTWRITEBYTECODE': '1'})
+    env = site_environ({'PATH': os.defpath, 'PYTHONDONTWRITEBYTECODE': '1',
+                        'PORTAL_PATHS_CONFIG': str(tmp_path / 'uninstalled-paths.json')})
     if mode in ('new', 'both'):
         env['PORTAL_ROOT'] = str(root)
         env['PORTAL_PYTHON'] = str(root / 'new-python')

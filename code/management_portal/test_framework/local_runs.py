@@ -203,6 +203,8 @@ class PytestGroup:
         results_file.write_text("", encoding="utf-8")
         command, environment = self.command(items, group_dir)
         environment["PORTAL_TEST_RESULTS_FILE"] = str(results_file)
+        if self.lane == "isolated":
+            environment["PORTAL_ACCOUNT_HOST_HOME"] = str(group_dir.resolve() / "host-home")
         scratch: list[tuple[Path, Path]] = []
         container = None
         if self.lane == "isolated":
@@ -569,8 +571,9 @@ class ContainerPytest:
             entries = args_file.read_text(encoding="utf-8").splitlines()
             paths.update(entry.split("::", 1)[0] for entry in entries)
             protected = [p.resolve() for p in protected]
-            from management_common.instance_paths import accounts_root, secrets_dir
-            protected += [accounts_root().resolve(), secrets_dir().resolve()]
+            from management_common.instance_paths import secrets_dir
+            from management_common.provider_account_paths import provider_root, PROVIDERS
+            protected += [secrets_dir().resolve(), *(provider_root(p).resolve() for p in PROVIDERS)]
             for name in sorted(paths):
                 relative = Path(name)
                 if relative.is_absolute() or ".." in relative.parts:
@@ -578,7 +581,7 @@ class ContainerPytest:
                 original = root / relative
                 if not original.exists():
                     continue
-                if (any(part.startswith('.env') or part in {'.git', '.ssh', '.gnupg', 'portal_instances', '.portal-accounts'} for part in relative.parts)
+                if (any(part.startswith('.env') or part in {'.git', '.ssh', '.gnupg', 'portal_instances', '.codex-accounts', '.claude-accounts', '.kimi-accounts', '.antigravity-accounts'} for part in relative.parts)
                         or original.suffix.lower() in {'.env', '.key', '.pem', '.p12'}
                         or any(original.resolve().is_relative_to(p) for p in protected)):
                     continue
@@ -691,7 +694,7 @@ def _container_worker(plan_file: Path) -> int:
                 '--mount', f"type=bind,src={plan['source']},dst=/app,readonly",
                 '--mount', f"type=bind,src={plan['artifacts']},dst=/artifacts",
                 '--entrypoint', '/usr/bin/env', info['Id'], '-i', 'PATH=/usr/local/bin:/usr/bin:/bin',
-                'HOME=/tmp', 'LANG=C.UTF-8', 'PYTHONUNBUFFERED=1', 'PYTHONIOENCODING=utf-8', 'PYTHONDONTWRITEBYTECODE=1',
+                'HOME=/tmp', 'PORTAL_ACCOUNT_HOST_HOME=/tmp/host-home', 'LANG=C.UTF-8', 'PYTHONUNBUFFERED=1', 'PYTHONIOENCODING=utf-8', 'PYTHONDONTWRITEBYTECODE=1',
                 'PORTAL_TEST_RESULTS_FILE=/artifacts/results.jsonl', *plan['argv']]
         create_attempted = True
         created = _docker_control(plan, argv)

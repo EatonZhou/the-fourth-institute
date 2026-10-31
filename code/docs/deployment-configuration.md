@@ -16,7 +16,7 @@
 
 已安装实例不再生成或需要 `config/paths.json`；数据目录直接读取 `target.json` 的 `data_roots`。新生成服务的 `PORTAL_PATHS_CONFIG` 指向 `config/target.json`。尚未重启的旧进程可以继续携带旧的 `config/paths.json` 定位值：它只用于识别实例目录，不读取该文件，文件不存在也不会改变路径。部署服务定义更新后，旧定位值在下一次正常启动时退出，无需为删除副本重启服务。
 
-没有安装状态的源码运行和测试仍可使用独立的五项路径配置；它不属于已安装实例的配置输出。
+没有安装状态的源码运行和测试仍可使用独立的四项路径配置；它不属于已安装实例的配置输出。
 
 配置事务使用稳定的 `.configuration.lock` 协调读取和提交，避免在线导入时读到“新 target、旧状态摘要”的中间组合。旧实例的只读检查不创建文件；首次导入和后续写入建立该锁。代码升级备份和恢复保留当前锁文件的身份。
 
@@ -43,7 +43,7 @@ Provider 当前版本的稳定入口在 `config/site.json` 的 `deployment.provi
 
 这些值为绝对路径，保留最后一级软链接；不能把入口解析成某个版本后再写入服务定义。启动方和更新器使用相同字段，更新器通过切换该入口选择新版本，并继续遵守空闲检查与失败回退。版本包仍安装在 `runtime_root` 下。未配置入口的源码安装保留首次接入的发现和引导默认值。
 
-Codex 各账号独立保存凭据、会话和 socket，共用 `codex_binary`。账号下由 Codex 自身生成的 `packages/app-server-daemon` 属于独立的自管理安装产物，不能充当 Portal 程序入口；清理前须检查运行进程和实际服务命令是否引用它。
+Codex 各账号的主机目录保存凭据和会话，共用 `codex_binary`；socket 和 Portal 控制文件保存在实例 runtime。账号下由 Codex 自身生成的 `packages/app-server-daemon` 属于独立的自管理安装产物，不能充当 Portal 程序入口；清理前须检查运行进程和实际服务命令是否引用它。
 
 ## 导入已有实例
 
@@ -65,3 +65,11 @@ python3 code/scripts/tfi_instance_config.py check --root /实际实例目录
 `check` 验证生成文件和受管理服务字段，包括 URI 编码后的数据库连接、内部 socket、公共网关和双入口定义。手工修改配置导致漂移时会明确报错。中断事务保留备份和日志；`recover` 仅恢复仍匹配事务前后内容的文件，拒绝覆盖后续人工修改。
 
 已有公共网关可以有独立的入口端口和网络访问策略；实例配置工具更新其共享数据路径、数据库地址和双入口路由 drop-in，保留由网关维护的网络配置。
+
+## 执行账号目录
+
+实例的四个数据根为 share、staging、instances 和 secrets。订阅账号的主机目录由登记的 `config.account_dir` 持有，必须是规范绝对路径且不能经过软链接。默认位置按 Provider 为 `~/.codex-accounts/<名称>`、`~/.claude-accounts/<名称>`、`~/.kimi-accounts/<名称>`、`~/.antigravity-accounts/<名称>`；名称去掉账号 ID 的 `<provider>_` 前缀。主目录取操作系统用户记录，忽略服务的 `HOME`。测试与安装器可显式设置 `PORTAL_ACCOUNT_HOST_HOME`，运行服务不需要配置该变量。
+
+新建账号在默认位置建空目录后登录；接入现有账号直接登记其路径。Portal 不复制凭据，不移动或改名目录，删除登记保留 Provider 数据。运行时必须使用登记路径，缺失目录或登记路径时直接报错。更改目录需要账号无绑定会话、执行或登录，随后按新登记重建常驻进程。
+
+每个 Codex 服务使用实例 `runtime/provider-accounts/codex/<account_id>/launch.json` 中的生成记录启动；生成记录来自账号登记。Kimi 按账号使用同一 runtime 下的控制目录。常驻宿主在账号目录的父目录持有 `.<名称>.portal-daemon.lock`，锁占用时报冲突；终端直接调用 CLI 不受此锁约束。索引备份、启动锁、作业状态与日志保存在实例 runtime。

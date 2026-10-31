@@ -73,7 +73,6 @@ def test_login_and_enrollment_render_with_windows_roots(windows_paths, style):
             assert 'id="portalSiteScript"' in text
             expected = json.dumps(PureWindowsPath(values['share_root']).as_posix())
             assert expected in text
-            assert '"accounts_root"' not in text
             assert '"secrets_dir"' not in text
     asyncio.run(exercise())
     assert page_bootstrap._public_paths()['test_results_root'] == (root / 'test-results').as_posix()

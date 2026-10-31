@@ -441,8 +441,6 @@ def check(root):
                         if key == 'PORTAL_INSTANCES_ROOT' and value.startswith(env[key] + '/'):
                             continue
                         raise ValueError('Service configuration drift: ' + path.name + ' ' + key)
-                    if key == 'CODEX_HOME' and value != target['data_roots']['accounts_root'] + '/codex/%i':
-                        raise ValueError('Service configuration drift: ' + path.name + ' CODEX_HOME')
     return {'ok': True, 'configuration': str(root / TARGET_FILE),
             'configuration_sha256': configuration_digest(target), 'state_schema': state['schema']}
 

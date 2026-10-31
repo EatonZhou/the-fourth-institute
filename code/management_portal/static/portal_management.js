@@ -63,7 +63,6 @@
             <label class="portalField"><span>共享资料</span><input data-path-key="share_root" required /></label>
             <label class="portalField"><span>临时运行数据</span><input data-path-key="staging_root" required /></label>
             <label class="portalField"><span>Portal 实例</span><input data-path-key="instances_root" required /></label>
-            <label class="portalField"><span>账户数据</span><input data-path-key="accounts_root" required /></label>
             <label class="portalField"><span>密钥目录</span><input data-path-key="secrets_dir" required /></label>
           </div>
           <button class="portalButton is-primary" type="submit">迁移并保存</button>

@@ -23,7 +23,8 @@ from management_common.portal_paths import path as portal_path
 from management_portal.shared_state import atomic_replace_json  # noqa: E402
 
 
-DEFAULT_CODEX_ACCOUNTS_ROOT = portal_path("accounts_root") / "codex"
+from management_common.provider_account_paths import provider_root
+DEFAULT_CODEX_DIRECTORY = provider_root("codex")
 DEFAULT_OUTPUT_ROOT = portal_path("staging_root") / "shared/codex_weekly_usage"
 DEFAULT_DAILY_SNAPSHOT_ROOT = portal_path("staging_root") / "shared/codex_limit_usage/daily"
 DEFAULT_TIMEZONE = "Asia/Hong_Kong"
@@ -2307,7 +2308,7 @@ def _safe_account_label(value: object) -> str:
 def _discover_session_sources(
     *,
     sessions_root: Path | None,
-    accounts_root: Path,
+    account_directory: Path,
     accounts: list[str],
 ) -> list[tuple[str, Path]]:
     if sessions_root is not None:
@@ -2315,7 +2316,7 @@ def _discover_session_sources(
         label = expanded.parent.name if expanded.name == "sessions" else expanded.name
         return [(_safe_account_label(label), expanded)]
 
-    root = accounts_root.expanduser()
+    root = account_directory.expanduser()
     if accounts:
         candidates = [(account, root / account / "sessions") for account in accounts]
     else:
@@ -2563,9 +2564,9 @@ def build_payload_for_sessions(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Summarize Codex token usage between adjacent weekly quota reset buckets.")
     parser.add_argument("--isa", action="store_true", help="Read sanitized usage observations through the RunScript ISA socket.")
-    parser.add_argument("--sessions-root", type=Path, default=None, help="Scan one explicit Codex sessions directory. If omitted, scan account sessions under --accounts-root separately.")
-    parser.add_argument("--accounts-root", type=Path, default=DEFAULT_CODEX_ACCOUNTS_ROOT, help="Root containing registered Codex account directories.")
-    parser.add_argument("--account", action="append", default=[], help="Account directory name under --accounts-root to scan. Can be repeated. Defaults to every account with a sessions directory.")
+    parser.add_argument("--sessions-root", type=Path, default=None, help="Scan one explicit Codex sessions directory. If omitted, scan account sessions under --account-directory separately.")
+    parser.add_argument("--account-directory", type=Path, default=DEFAULT_CODEX_DIRECTORY, help="Root containing registered Codex account directories.")
+    parser.add_argument("--account", action="append", default=[], help="Account directory name under --account-directory to scan. Can be repeated. Defaults to every account with a sessions directory.")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--snapshot-root", type=Path, default=DEFAULT_DAILY_SNAPSHOT_ROOT, help="Root containing YYYY-MM-DD direct 05:00 limit snapshots.")
     parser.add_argument("--timezone", default=DEFAULT_TIMEZONE)
@@ -2609,18 +2610,18 @@ def main(argv: list[str] | None = None) -> int:
     # The temporary export is private to this script run and is always removed.
     with tempfile.TemporaryDirectory(prefix="codex-usage-") as export_directory:
         if args.isa:
-            if args.sessions_root is not None or args.accounts_root != DEFAULT_CODEX_ACCOUNTS_ROOT:
+            if args.sessions_root is not None or args.account_directory != DEFAULT_CODEX_DIRECTORY:
                 parser.error("--isa 不接受本机账号目录")
             sources = export_isa_sessions(Path(export_directory), account_ids=args.account,
                                           since=_iso_utc(since_utc), until=_iso_utc(until_utc))
         else:
             sources = _discover_session_sources(
                 sessions_root=args.sessions_root,
-                accounts_root=args.accounts_root,
+                account_directory=args.account_directory,
                 accounts=[item.strip() for item in args.account if item.strip()],
             )
         if not sources:
-            raise SystemExit(f"no Codex session sources found under {args.accounts_root.expanduser()}")
+            raise SystemExit(f"no Codex session sources found under {args.account_directory.expanduser()}")
 
         payloads = []
         pipeline_failed = False

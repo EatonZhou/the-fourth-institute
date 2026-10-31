@@ -49,7 +49,7 @@ class NativeTargetTests(unittest.TestCase):
                         'listen_addresses': cls.c.execute('SHOW listen_addresses').fetchone()['listen_addresses'],
                         'postgres_version': cls.c.execute('SELECT version() AS version').fetchone()['version'],
                         'source_services_called': False, 'checks': {}}
-        cls.roots = {k: str(cls.root / 'data' / k) for k in ('share_root','staging_root','instances_root','accounts_root','secrets_dir')}
+        cls.roots = {k: str(cls.root / 'data' / k) for k in ('share_root','staging_root','instances_root','secrets_dir')}
         cls.paths = cls.root / 'paths.json'
         cls.paths.write_text(json.dumps(cls.roots))
         cls.environment = patch.dict(os.environ, {'PORTAL_PATHS_CONFIG': str(cls.paths),

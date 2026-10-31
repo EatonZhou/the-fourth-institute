@@ -1,4 +1,6 @@
 {
+  "已有账号目录（可选）": {"zh-CN": "已有账号目录（可选）", "en": "Existing account directory (optional)"},
+  "填写主机上已有账号目录的绝对路径，直接使用其中的登录。留空会在主机用户目录中新建空账号目录，然后登录。": {"zh-CN": "填写主机上已有账号目录的绝对路径，直接使用其中的登录。留空会在主机用户目录中新建空账号目录，然后登录。", "en": "Enter the absolute path of an existing host account directory to use its login. Leave empty to create a new account directory under the OS user's home, then sign in."},
   "约每 ¥10 一枚金币，四舍五入": {"zh-CN": "约每 ¥10 一枚金币，四舍五入", "en": "About one coin per ¥10, rounded to the nearest coin"},
   "约 {p0} CNY · 汇率 {p1}": {"zh-CN": "约 {p0} CNY · 汇率 {p1}", "en": "About {p0} CNY · Exchange rate dated {p1}"},
   "充值 / 账单": {"zh-CN": "充值 / 账单", "en": "Top up / billing"},
@@ -39789,10 +39791,6 @@
   "读取 Provider 和账号失败：{p0}": {
     "en": "Unable to read Providers and accounts: {p0}",
     "zh-CN": "读取 Provider 和账号失败：{p0}"
-  },
-  "账户数据": {
-    "en": "Account data",
-    "zh-CN": "账户数据"
   },
   "资源加载失败：{p0}": {
     "en": "Resource failed to load: {p0}",

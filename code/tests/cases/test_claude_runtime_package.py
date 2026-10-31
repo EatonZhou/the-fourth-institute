@@ -46,7 +46,7 @@ def test_packaged_claude_catalog_reads_registration_without_model_api(tmp_path):
     from management_portal.execution.account_registrations import create_registration
     from scripts.claude_app_server_package import build_package
 
-    create_registration({"account_id": "claude_packaged", "provider": "claude",
+    registration = create_registration({"account_id": "claude_packaged", "provider": "claude",
                          "kind": "subscription_login", "config": {
                              "default_model": "sonnet", "models": [{"id": "sonnet"}]}}, "test")
     package = tmp_path / "runtime"
@@ -61,10 +61,10 @@ print(json.dumps({key: entry[key] for key in ('id', 'kind', 'config_dir', 'defau
 """
     env = {**os.environ, "PYTHONPATH": str(package),
            "PORTAL_PATHS_CONFIG": str(tmp_path / "no-site-config.json"),
-           "PORTAL_ACCOUNTS_ROOT": str(tmp_path / "accounts")}
+           "PORTAL_ACCOUNT_HOST_HOME": str(tmp_path / "accounts")}
     result = subprocess.run([sys.executable, "-c", code], cwd=tmp_path,
                             env=env, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout) == {
         "id": "claude_packaged", "kind": "subscription_login", "default_model": "sonnet",
-        "config_dir": str(tmp_path / "accounts/claude/claude_packaged")}
+        "config_dir": registration["config"]["account_dir"]}

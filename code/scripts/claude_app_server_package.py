@@ -14,7 +14,7 @@ MODULES = {
     "management_portal/hatg": ("contracts",),
     "management_common": (
         "provider_subagent_runs", "domain_database", "portal_database", "postgres_database",
-        "instance_paths", "instance_config", "portal_paths", "operation_errors",
+        "instance_paths", "instance_config", "portal_paths", "provider_account_paths", "operation_errors",
         "file_permissions", "filesystem_paths", "format_tags", "product_environment", "site_compatibility",
         "site_config", "portal_network", "file_lock", "local_ipc",
     ),

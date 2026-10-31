@@ -564,18 +564,14 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const extra = node("div", undefined, {class: "backendForm"}); form.append(extra);
     const renderFields = () => {
       extra.replaceChildren();
-      const localLogin = state.providers.find(p => p.provider === provider.value)?.local_login;
       if (kind.value === "subscription_login") {
-        if (localLogin?.available) {
-          const reuse = field(extra, "复用本机已有登录", "reuse_local_login", "", {type: "checkbox"});
-          reuse.checked = true;
-          hint(reuse, "使用运行 Portal 的 Linux 用户已有授权；保留终端原配置，不导入聊天历史。取消勾选可登录其他账号。");
-        }
+        const directory = field(extra, "已有账号目录（可选）", "account_dir", "", {autocomplete: "off"});
+        hint(directory, "填写主机上已有账号目录的绝对路径，直接使用其中的登录。留空会在主机用户目录中新建空账号目录，然后登录。");
       }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;
       if (kind.value === "subscription_login" && provider.value === "claude") {
-        const model = field(extra, "默认模型", "default_model", localLogin?.default_model || "sonnet", {readOnly: true});
+        const model = field(extra, "默认模型", "default_model", "sonnet", {readOnly: true});
         hint(model, "已自动选择默认模型，接入后可在模型目录中修改。");
       } else if (kind.value === "api_profile") {
         const backend = state.providers.find(p => p.provider === provider.value) || {};
@@ -607,8 +603,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       event.preventDefault(); if (busy) return;
       const value = name => form.elements.namedItem(name)?.value || "";
       const config = {};
-      if (kind.value === "subscription_login" && form.elements.reuse_local_login) {
-        config.reuse_local_login = form.elements.reuse_local_login.checked;
+      if (kind.value === "subscription_login" && value("account_dir").trim()) {
+        config.account_dir = value("account_dir").trim();
       }
       if (kind.value === "subscription_login" && provider.value === "claude") {
         config.default_model = value("default_model");

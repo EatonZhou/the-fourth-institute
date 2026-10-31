@@ -50,6 +50,7 @@ def test_real_codex_start_initialize_catalog_and_cleanup(tmp_path, monkeypatch, 
     logical = tmp_path / ("实例" * 40 if long_path else "short") / "codex.sock"
     physical = host.unix_socket_path(logical, platform="darwin")
     home = tmp_path / "empty-account"
+    home.mkdir()
     # Never pass the invoking Resident's auth, proxy or provider environment.
     clean = {"PATH": os.environ.get("PATH", os.defpath), "HOME": str(tmp_path / "home"),
              "LANG": "C.UTF-8", "CODEX_HOME": str(home)}

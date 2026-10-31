@@ -35,7 +35,7 @@ def installation(monkeypatch, tmp_path):
     for key in [*portal_paths.ENV_KEYS.values(), 'PORTAL_SHARE_ROOT']:
         monkeypatch.delenv(key, raising=False)
     paths = {key: 'data/' + key for key in portal_paths.KEYS}
-    paths.update(accounts_root='PRIVATE-ACCOUNT-ROOT', secrets_dir='PRIVATE-SECRET-ROOT')
+    paths.update(secrets_dir='PRIVATE-SECRET-ROOT')
     def write_paths(**changes):
         paths.update(changes)
         portal_paths.CONFIG_PATH.write_text(json.dumps(paths))
@@ -81,7 +81,7 @@ def test_defaults_refresh_and_whitelisted_projection(installation, monkeypatch):
     assert config['site_name'] == 'Custom site'
     assert config['paths']['share_root'] == str(installation.install / 'updated-share')
     assert config['paths']['test_results_root'] == str(installation.install / 'runs/artifacts')
-    for hidden in [b'PRIVATE-', b'DBENV-MARKER', b'database_env_file', b'deployment', b'accounts_root', b'secrets_dir']:
+    for hidden in [b'PRIVATE-', b'DBENV-MARKER', b'database_env_file', b'deployment', b'secrets_dir']:
         assert hidden not in data
 
 

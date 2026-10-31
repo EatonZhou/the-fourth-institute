@@ -10,7 +10,7 @@ const registering = ['register', 'local-register', 'local-other'].includes(scena
 const local = scenario.startsWith('local-');
 // Registration picks the default model itself (the local login's, else sonnet);
 // repair edits the catalog explicitly.
-const model = scenario === 'register' ? 'sonnet' : 'opus-5.5';
+const model = registering ? 'sonnet' : 'opus-5.5';
 
 (async () => {
   const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
@@ -24,7 +24,7 @@ const model = scenario === 'register' ? 'sonnet' : 'opus-5.5';
   window.PortalInstructionClient = {execute: async (name, args, options) => {
     calls.push({name, args: structuredClone(args), options});
     if (name === 'ListProviders') return {providers: [{provider: 'claude', kinds: ['subscription_login'],
-      ...(local ? {local_login: {available: true, default_model: 'opus-5.5'}} : {})}]};
+}]};
     if (name === 'ListProviderAccounts') return {accounts};
     if (name === 'ListBackendRoles') return {roles: [{role: 'default', account_id: 'another'}]};
     if (name === 'ListModelApis') return {apis: []};
@@ -69,13 +69,11 @@ const model = scenario === 'register' ? 'sonnet' : 'opus-5.5';
     assert.equal(form.elements.default_model.readOnly, true);
     assert.equal(form.elements.default_model.value, model);
     assert(!form.elements.models, 'registration does not ask for a model catalog');
-    if (local) {
-      assert.equal(form.elements.reuse_local_login.checked, true);
-      if (scenario === 'local-other') form.elements.reuse_local_login.checked = false;
-    } else assert(!form.elements.reuse_local_login);
+    assert(form.elements.account_dir);
+    if (scenario === 'local-register') form.elements.account_dir.value = '/host/native-claude';
     submit(); await flush(); await flush();
   } else {
-    assert(!form.elements.reuse_local_login);
+    assert(!form.elements.account_dir);
     form.elements.default_model.value = model;
     for (const invalid of ['{}', '[{"id":"opus-5.5","enabled":false}]', '[{"id":"other"}]']) {
       form.elements.models.value = invalid; submit(); await flush();
@@ -97,7 +95,8 @@ const model = scenario === 'register' ? 'sonnet' : 'opus-5.5';
   const config = mutation.args.config || mutation.args.changes.config;
   assert.equal(config.default_model, model);
   assert.deepEqual(config.models, [{id: model}]);
-  if (local) assert.equal(config.reuse_local_login, scenario === 'local-register');
+  if (scenario === 'local-register') assert.equal(config.account_dir, '/host/native-claude');
+  else assert(!config.account_dir);
   assert.equal(mutations().length, 1);
   assert(window.document.querySelector('[data-backend-setup-status]'));
   assert(!calls.some(c => c.name === 'CheckProviderAccount'), 'saving config does not start a paid check');

@@ -50,7 +50,7 @@ python3 code/scripts/tfi_release_install.py status --root instance/实例二
 功能验收继续显示 `pending_resident`。
 
 若部署者明确接受保留的 Workspace 文件尚未全面核查，可在安装及续跑时指定
-`--defer-data-verification`：延后五数据根的 inventory 集合和摘要核对，仍核对代码、SQL、
+`--defer-data-verification`：延后四数据根的 inventory 集合和摘要核对，仍核对代码、SQL、
 实例身份及空凭据目录，复制过程中仍拒绝符号链接和特殊文件。安装记录将标记
 `data_verification=deferred_by_operator`；此选项不代表数据完整性通过，也不会回源补齐文件。
 
@@ -128,7 +128,6 @@ Article 的资料预检不要求工具齐全；实际编译时检测缺失并提
     "share_root": "/opt/tfi-instances/run-example/data/share",
     "staging_root": "/opt/tfi-instances/run-example/data/staging",
     "instances_root": "/opt/tfi-instances/run-example/data/instances",
-    "accounts_root": "/opt/tfi-instances/run-example/data/accounts",
     "secrets_dir": "/opt/tfi-instances/run-example/data/secrets"
   },
   "ports": {"web": 28086, "postgres": 56432, "nats": 14223},
@@ -141,7 +140,7 @@ Article 的资料预检不要求工具齐全；实际编译时检测缺失并提
 ```
 
 需要额外 PostgreSQL 动态库时提供 `pg_lib`。路径不能含引号、反斜杠、控制字符
-或 systemd 展开字符。安装根须与当前源码和五数据根完全分离，五个目标数据根
+或 systemd 展开字符。安装根须与当前源码和四数据根完全分离，四个目标数据根
 均位于安装根内且彼此不重叠。Unix socket 路径长度受系统限制，安装根宜短。
 用户直接安装普通发布工程时，`supervisor_resident_id` 可为空，须与 manifest 一致；
 完整测试工程必须保留生成阶段指派的真实监督 Resident，安装参数不能改派或清空。
@@ -247,3 +246,5 @@ existing-local-installation；没有获取新依赖时不臆造下载来源，�
 依赖前检失败发生在安装落盘或升级停服务前，修复依赖后可沿同一目标重试。
 
 维护规范归SPEC.md索引中的decision_15aab18c0ab3；本文件仅保留必要安装操作说明。
+
+订阅执行账号使用主机用户目录，默认按 Provider 位于 `~/.codex-accounts/<名称>`、`~/.claude-accounts/<名称>`、`~/.kimi-accounts/<名称>` 或 `~/.antigravity-accounts/<名称>`。主目录取操作系统用户记录，与实例服务的 `HOME` 分开。账号登记的 `config.account_dir` 保存规范绝对路径；接入已有登录时直接登记目录，删除登记保留目录。

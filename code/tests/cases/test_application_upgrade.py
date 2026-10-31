@@ -27,7 +27,7 @@ def application(tmp_path):
     (root / 'data/share/content-directory').mkdir()
     state = {'target': {'install_root': str(root), 'shared_code_root': str(app / 'code'),
         'service_prefix': 'tfi-one', 'windows_service_mode': 'user', 'data_roots': {
-            'accounts_root': str(root / 'data/accounts'), 'share_root': str(root / 'data/share'),
+            'share_root': str(root / 'data/share'),
             'instances_root': str(root / 'data/instances')}},
         'manifest_sha256': 'a' * 64, 'status': 'installed', 'completed': ['database']}
     installer.write_json(root / 'installation.json', state)
@@ -375,7 +375,7 @@ def test_stopped_codex_definition_rebinds_only_after_new_runtime_is_ready(applic
     value = {'name': name, 'mode': 'user', 'component': 'codex', 'root': str(root),
         'code': str(app / 'code'), 'python': current[0], 'command': [current[0], '-m',
         'management_portal.codex_app_server_host', '--socket', str(instances / 'sockets/codex-fixture.sock'),
-        '--binary', str(root / 'data/codex.cmd'), '--account-home', str(root / 'data/accounts/codex/fixture')]}
+        '--binary', str(root / 'data/codex.cmd'), '--account-config', str(root / 'runtime/provider-accounts/codex/fixture/launch.json')]}
     installer.write_json(path, value)
     control = tfi_windows_user_services.WindowsServiceControl(directory)
     monkeypatch.setattr(control, 'status', lambda _: {'pid': 12, 'active': 'active'})

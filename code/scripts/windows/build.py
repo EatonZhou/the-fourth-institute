@@ -30,7 +30,7 @@ def public_seed(repo):
     rows = [row for row in inventory(seed) if row["path"] != "manifest.json"]
     if rows != sorted(specification["inventory"], key=lambda row: row["path"]):
         raise ValueError("Public seed differs from its inventory")
-    for name in ("accounts_root", "secrets_dir"):
+    for name in ("secrets_dir",):
         directory = seed / specification["engineering"]["files"][name]
         if directory.exists() and any(directory.iterdir()):
             raise ValueError("Public seed contains account or secret files")

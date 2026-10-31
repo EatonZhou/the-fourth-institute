@@ -167,15 +167,17 @@ def world(monkeypatch, tmp_path, permissions):
     home = tmp_path / "home"
     (home / ".codex").mkdir(parents=True)
     (home / ".codex/config.toml").write_text(f'[projects."{old_root}/src"]\ntrust_level = "trusted"\n')
-    # Execution accounts live under the accounts root; HOME/.codex-accounts only links to them.
+    # Only explicitly registered Provider directories participate in project moves.
     accounts = tmp_path / "accounts"
     codex_account = accounts / "codex/codex_one"
     codex_account.mkdir(parents=True)
     (codex_account / "config.toml").write_text(f'[projects."{old_root}/wt"]\ntrust_level = "trusted"\n')
-    (home / ".codex-accounts").mkdir()
-    (home / ".codex-accounts/one").symlink_to(codex_account)
     claude = accounts / "claude/claude_one/projects"
     (claude / project_rename._claude_project_key(str(old_root)) / "memory").mkdir(parents=True)
+    from management_portal.execution.account_registrations import update_registration, registration
+    for account_id, path in (("codex_one", codex_account), ("claude_one", claude.parent)):
+        row = registration(account_id)
+        update_registration(account_id, {"config": {**row["config"], "account_dir": str(path)}}, row["version"], "test")
     kimi = tmp_path / "kimi"
     kimi.mkdir()
     (kimi / "workspaces.json").write_text(json.dumps({"workspaces": {"w": {"root": str(old_root)}}}))
@@ -195,7 +197,7 @@ def world(monkeypatch, tmp_path, permissions):
     mountinfo = tmp_path / "mountinfo"
     mountinfo.write_text("")
     for name, value in {
-        "PROJECTS_ROOT": projects, "SHARE_ROOT": tmp_path, "HOME": home, "ACCOUNTS_ROOT": accounts, "KIMI_HOME": kimi,
+        "PROJECTS_ROOT": projects, "SHARE_ROOT": tmp_path, "HOME": home, "KIMI_HOME": kimi,
         "SYMLINK_ROOTS": (projects, agents), "SERVICE_SCRIPT_ROOTS": (services,),
         "SYSTEMD_UNIT_DIRS": (units,), "MOUNTINFO": mountinfo,
     }.items():
@@ -314,7 +316,7 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
                           text=True).stdout.count(str(new_root / "wt")) == 1
     assert os.readlink(world["agents"] / "notes") == str(new_root / "notes.md")
     # Provider state kept per working directory.
-    assert f'[projects."{new_root}/src"]' in (world["home"] / ".codex/config.toml").read_text()
+    assert f'[projects."{world["old_root"]}/src"]' in (world["home"] / ".codex/config.toml").read_text()
     assert (world["accounts"] / "codex/codex_one/config.toml").read_text().count(f'[projects."{new_root}/wt"]') == 1
     claude = world["accounts"] / "claude/claude_one/projects"
     assert (claude / project_rename._claude_project_key(str(new_root)) / "memory").is_dir()

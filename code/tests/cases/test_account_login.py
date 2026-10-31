@@ -37,11 +37,14 @@ def isolated_login(tmp_path, tmp_path_factory, monkeypatch):
     # Real Unix sockets must fit sun_path even with the runner's UUID basetemp.
     # Keep account data under the case path; only the IPC root needs a short name.
     monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(tmp_path_factory.mktemp("login")))
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
-    monkeypatch.setattr(account_hosting, "accounts_root", lambda: tmp_path / "accounts")
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
     monkeypatch.delenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", raising=False)
     store = login.LoginSessionStore()
     monkeypatch.setattr(login, "login_store", lambda: store)
+    from management_portal.execution.account_registrations import create_registration
+    for account_id, provider in [("login_claude", "claude"), ("login_codex_reload", "codex"), ("login_codex", "codex"),
+                                 *(('login_' + action, 'codex') for action in ('cancel', 'expire', 'reject_status'))]:
+        create_registration({"account_id": account_id, "provider": provider, "kind": "subscription_login"}, "test")
     return store
 
 
@@ -84,7 +87,7 @@ def test_login_environment_excludes_other_credentials_and_requires_configured_pr
     proxy.write_text('HTTPS_PROXY="http://127.0.0.1:3128"\nANTHROPIC_API_KEY=synthetic-ignored\n')
     monkeypatch.setenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", str(proxy))
     env = login.login_environment("claude", "login_claude")
-    assert env["CLAUDE_CONFIG_DIR"] == str(tmp_path / "accounts/claude/login_claude")
+    assert env["CLAUDE_CONFIG_DIR"] == str(account_hosting.account_home("claude", "login_claude"))
     assert "ANTHROPIC_API_KEY" not in env and "CODEX_HOME" not in env
     assert env["HTTPS_PROXY"] == "http://127.0.0.1:3128"
     proxy.unlink()
@@ -116,8 +119,8 @@ def test_login_store_expiration_and_late_observations(isolated_login, monkeypatc
 
 
 @pytest.mark.parametrize("provider,authenticated", [("codex", True), ("codex", False), ("claude", True), ("claude", False)])
-def test_first_login_state_reads_native_status_through_migration_link(isolated_login, monkeypatch, tmp_path, provider, authenticated):
-    """迁移账号首次读取原生认证状态并缓存，临时目录软链不妨碍只读查询
+def test_first_login_state_reads_native_status_from_registered_directory(isolated_login, monkeypatch, tmp_path, provider, authenticated):
+    """已登记目录首次读取原生认证状态并缓存
 
     :design: decision_7956d7cb4bde
     :importance: P1
@@ -125,9 +128,9 @@ def test_first_login_state_reads_native_status_through_migration_link(isolated_l
     registration = {"account_id": "login_migrated", "provider": provider, "kind": "subscription_login"}
     legacy = tmp_path / "legacy"
     legacy.mkdir()
-    home = login.account_home(provider, registration["account_id"])
-    home.parent.mkdir(parents=True, exist_ok=True)
-    home.symlink_to(legacy, target_is_directory=True)
+    from management_portal.execution.account_registrations import create_registration
+    registration = create_registration({**registration, "config": {"account_dir": str(legacy)}}, "test")
+    home = legacy
     monkeypatch.setattr(login, "login_command", lambda name, *, status: [name, "status"])
 
     def native_status(command, *, env, **kwargs):
@@ -239,7 +242,10 @@ def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, pro
     script = f"import sys; print({url!r},flush=True); code=input(); sys.exit(0 if code=='synthetic-authorization' else 1)"
     monkeypatch.setattr(login, "login_command", lambda *args, **kwargs: [sys.executable, "-c", script])
     monkeypatch.setattr(login, "provider_logged_in", lambda *_: True)
-    registration = {"account_id": "login_claude", "provider": provider, "kind": "subscription_login", "enabled": True}
+    from management_common.provider_account_paths import default_directory
+    default_directory(provider, "login_claude").mkdir(parents=True, exist_ok=True)
+    registration = {"account_id": "login_claude", "provider": provider, "kind": "subscription_login", "enabled": True,
+                    "config": {"account_dir": str(default_directory(provider, "login_claude"))}}
     from management_portal.execution import account_registrations
     monkeypatch.setattr(account_registrations, "registration", lambda _: registration)
     second = login.LoginManager(store)

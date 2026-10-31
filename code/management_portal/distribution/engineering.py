@@ -15,7 +15,7 @@ from .store import canonical, digest
 from management_common.release_dependencies import declaration as runtime_dependencies
 
 SCHEMA = "tfi.release-engineering.v1"
-ROOTS = ("share_root", "staging_root", "instances_root", "accounts_root", "secrets_dir")
+ROOTS = ("share_root", "staging_root", "instances_root", "secrets_dir")
 
 
 def relative(value):

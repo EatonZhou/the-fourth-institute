@@ -119,7 +119,8 @@ def test_provider_roots_and_quota_defaults_share_site_paths(site, monkeypatch):
     staging = Path(site[2]["staging_root"])
     assert codex_daily_limit_snapshot.DEFAULT_OUTPUT_ROOT == staging / "shared/codex_limit_usage/daily"
     assert codex_weekly_quota_usage.DEFAULT_OUTPUT_ROOT == staging / "shared/codex_weekly_usage"
-    assert codex_weekly_quota_usage.DEFAULT_CODEX_ACCOUNTS_ROOT == Path(site[2]["accounts_root"]) / "codex"
+    from management_common.provider_account_paths import provider_root
+    assert codex_weekly_quota_usage.DEFAULT_CODEX_DIRECTORY == provider_root("codex")
     monkeypatch.setenv("PORTAL_DSH_RUNTIME_ROOT", str(runtime / "explicit"))
     importlib.reload(dsh_client)
     assert dsh_client.RUNTIME == runtime / "explicit"

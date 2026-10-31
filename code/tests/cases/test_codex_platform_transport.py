@@ -59,7 +59,7 @@ def start_host(tmp_path):
     failures = []
     def run():
         try:
-            host.run_host(endpoint, Path(sys.executable), tmp_path / "account", stop,
+            host.run_host(endpoint, Path(sys.executable), tmp_path, stop,
                           platform="win32", startup_timeout=2)
         except BaseException as error:
             failures.append(error)
@@ -118,7 +118,7 @@ def test_native_host_resolves_private_egress_at_startup(tmp_path, fake_codex, mo
     try:
         assert endpoint.exists(), failures
         assert observed[0].get("HTTPS_PROXY") == (inherited if saved is None else saved).get("HTTPS_PROXY")
-        assert observed[0]["CODEX_HOME"] == str(tmp_path / "account")
+        assert observed[0]["CODEX_HOME"] == str(tmp_path)
     finally:
         stop.set(); thread.join(5)
     assert not failures
@@ -128,7 +128,7 @@ def test_startup_timeout_reaps_process_and_never_advertises(tmp_path, fake_codex
     fake_codex[0].write_text("import time;time.sleep(60)")
     endpoint = tmp_path / "endpoint.json"
     with pytest.raises(TimeoutError):
-        host.run_host(endpoint, Path(sys.executable), tmp_path / "account", threading.Event(),
+        host.run_host(endpoint, Path(sys.executable), tmp_path, threading.Event(),
                       platform="win32", startup_timeout=0.15)
     assert fake_codex[1][0].poll() is not None
     assert not endpoint.exists()
@@ -152,7 +152,7 @@ def test_posix_startup_does_not_adopt_or_remove_old_socket(tmp_path, fake_codex,
             pytest.fail('Connected to a socket predating this child')
         monkeypatch.setattr(host, 'connect_transport', wrong_owner)
         with pytest.raises(TimeoutError):
-            host.run_host(endpoint, Path(sys.executable), tmp_path / 'account', threading.Event(),
+            host.run_host(endpoint, Path(sys.executable), tmp_path, threading.Event(),
                           platform='linux', startup_timeout=.1)
         assert endpoint.exists()
     assert fake_codex[1][0].poll() is not None

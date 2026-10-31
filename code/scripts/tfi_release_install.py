@@ -625,7 +625,7 @@ def validate_engineering_layout(manifest, bundle):
         directory = engineering_path(bundle, value)
         if not directory.is_dir():
             raise ValueError(f"Engineering data directory is missing: {key}")
-        if key in {"accounts_root", "secrets_dir"} and any(directory.iterdir()):
+        if key in {"secrets_dir"} and any(directory.iterdir()):
             raise ValueError("Engineering must not supply account or secret files")
     declaration = manifest.get("installer")
     entrypoint = declaration.get("entrypoint") if isinstance(declaration, dict) else None

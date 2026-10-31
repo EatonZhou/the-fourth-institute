@@ -52,7 +52,7 @@ def test_prepared_case_extracts_once_without_seed_or_hashing_and_reports_progres
         path = launcher.unpack_engineering(tmp_path, progress=messages.append)
     assert not (tmp_path / 'instance/example_instance/seed').exists()
     assert (path.parent / 'data/share_root/Lenia/example.txt').read_text() == 'example'
-    assert (path.parent / 'data/accounts_root').is_dir()
+    assert (path.parent / 'data/secrets_dir').is_dir()
     assert '0/' in messages[0] and '100%' in messages[-1]
     assert 'MiB' in messages[-1]
     with patch.object(zipfile.ZipFile, 'open', autospec=True, wraps=None) as opened:

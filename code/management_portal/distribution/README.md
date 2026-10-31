@@ -72,11 +72,11 @@ run ID；已有成功工程不会被重写，也不修改源库、源文件或�
 失败重试用 `--attempt 2` 等生成兄弟目录，保留旧工程及失败证据。阶段记录包含
 新 manifest SHA256；同一已生成 attempt 的回执重试不重写产物，也不覆盖后续安装失败。
 
-manifest 使用 `tfi.release-engineering.v1`。代码、PostgreSQL SQL、五数据根
+manifest 使用 `tfi.release-engineering.v1`。代码、PostgreSQL SQL、四数据根
 和安装入口均为工程相对路径；`inventory` 只排除工程根 manifest 本身，
-包含嵌套同名文件。结构化路径用 `${share_root}` 等五根及 `${code_root}`
+包含嵌套同名文件。结构化路径用 `${share_root}` 等四根及 `${code_root}`
 映射。记录 Git 基线和代码树摘要，具体文件内容由 inventory 固定。
-账号及密钥目录为空，源认证 schema 不导出；Backend 角色保留并等待新站映射。
+密钥目录为空，订阅账号在目标主机登记，源认证 schema 不导出；Backend 角色保留并等待新站映射。
 Repo 从注册的 canonical_checkout 复制代码，Paper 从注册 manifest 所在目录
 复制 PDF 与附件；找不到这些实际内容时进入未解析状态，不静默省略。
 发行 Repo 保留原 ID/schema，以 `source_kind=exported_tree` 声明不带 `.git` 的源码树。

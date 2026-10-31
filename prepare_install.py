@@ -41,7 +41,7 @@ def prepare(repo, *, target_platforms=None, include_examples=True):
     actual = [row for row in inventory(seed) if row['path'] != 'manifest.json']
     if actual != sorted(specification['inventory'], key=lambda row: row['path']):
         raise ValueError('Example seed differs from its recorded inventory')
-    for name in ('accounts_root', 'secrets_dir'):
+    for name in ('secrets_dir',):
         if any((seed / manifest['files'][name]).iterdir()):
             raise ValueError('Example seed must not contain live accounts or secrets')
     from scripts.tfi_seed_selection import plan

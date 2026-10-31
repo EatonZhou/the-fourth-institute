@@ -446,9 +446,6 @@ def list_providers(inv):
                           "api_protocol": definition.api_protocol if definition else ""})
         from .provider_updates import preparation_status
         providers[-1]["preparation"] = preparation_status(provider)
-        if provider in {"codex", "claude"}:
-            from .account_local_login import describe
-            providers[-1]["local_login"] = describe(provider)
     return {"providers": providers}
 
 
@@ -527,6 +524,24 @@ def update_provider_account_registration(inv):
     from . import account_hosting as host
     account_id = inv.argument("account_id")
     previous = _registered_account(account_id)
+    config = (inv.argument("changes") or {}).get("config", previous["config"])
+    if not isinstance(config, dict):
+        raise invalid("config 必须是对象")
+    changed_directory = previous["kind"] == "subscription_login" and config.get("account_dir") != previous["config"]["account_dir"]
+    if changed_directory:
+        from management_common.provider_account_paths import canonical_directory
+        try:
+            directory = canonical_directory(config.get("account_dir", ""))
+        except ValueError as exc:
+            raise invalid(str(exc)) from None
+        if not directory.is_dir():
+            raise invalid("账号目录不存在")
+        if any(account_busy_counts(previous).values()):
+            raise InstructionError("instruction.conflict", "账号仍有绑定会话或排队、运行中的执行")
+        from .account_login import login_store
+        login = login_store().get(account_id)
+        if login and login.get("state") in {"starting", "awaiting_user"}:
+            raise InstructionError("instruction.conflict", "账号正在登录")
     api_id = (inv.argument("changes") or {}).get("config", {}).get("api_id")
     changed_api = previous["kind"] == "api_profile" and bool(api_id) and api_id != previous["config"].get("api_id")
     if changed_api:
@@ -538,6 +553,12 @@ def update_provider_account_registration(inv):
                                    details={"reason": "account.busy", **account_busy_counts(previous)})
     row = store.update_registration(account_id, dict(inv.argument("changes") or {}),
                                     _registration_expected_version(inv, account_id, minimum=1), inv.caller)
+    if changed_directory:
+        if previous["provider"] == "codex":
+            host.stop_codex_instance(account_id)
+        elif previous["provider"] == "kimi":
+            from management_portal.kimi_account_runtime import remove_account
+            remove_account(previous)
     # Disabled accounts drain through Scheduler admission; existing turns retain
     # their Provider process until explicit deletion or service maintenance.
     if row["provider"] == "codex" and row["kind"] == "api_profile":
@@ -549,7 +570,7 @@ def update_provider_account_registration(inv):
             if runtime_available("codex"):
                 codex_api_accounts.prepare(row)
                 host.start_codex_instance(account_id)
-    elif row["provider"] == "codex" and not previous["enabled"] and row["enabled"]:
+    elif row["provider"] == "codex" and (changed_directory or not previous["enabled"]) and row["enabled"]:
         host.start_codex_instance(account_id)
     return {"registration": _registration_public(row, inv.caller)}
 
@@ -586,9 +607,7 @@ def delete_provider_account(inv):
         from management_portal.kimi_account_runtime import remove_account
         remove_account(row)
     delete_login_data(row["account_id"])
-    # A Codex API account's home holds its key in auth.json.
-    if row["kind"] == "subscription_login" or row["provider"] == "codex":
-        host.remove_account_home(row["provider"], row["account_id"])
+    host.remove_account_runtime(row["provider"], row["account_id"])
     store.delete_registration(row["account_id"])
     return {"account_id": row["account_id"]}
 

@@ -17,7 +17,8 @@ def run_root() -> Path:
 
 def credential_paths(home: Path | None = None) -> list[Path]:
     """Only paths, never credential contents; include real targets of symlinks."""
-    from management_common.instance_paths import accounts_root, secrets_dir
+    from management_common.instance_paths import secrets_dir
+    from management_common.provider_account_paths import provider_root, host_user_home, PROVIDERS
 
     from scripts import portal_release
 
@@ -33,12 +34,16 @@ def credential_paths(home: Path | None = None) -> list[Path]:
     if not isinstance(configured, list) or any(not isinstance(p, str) for p in configured):
         raise ValueError("Configured credential paths must be a string list")
     paths.extend((home / p).expanduser() for p in configured)
-    paths.extend((accounts_root(), secrets_dir()))
+    paths.extend([secrets_dir(), *(provider_root(p) for p in PROVIDERS)])
+    from management_portal.execution.account_registrations import registrations
+    paths.extend(Path(row["config"]["account_dir"]) for row in registrations()
+                 if row["kind"] == "subscription_login")
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
     # Each Provider names its own credential and session stores.
     for definition in AGENT_PROVIDERS.values():
         for pattern in definition.credential_globs:
             paths.extend(home.glob(pattern))
+            paths.extend(host_user_home().glob(pattern))
         if definition.credential_paths_provider:
             module, name = definition.credential_paths_provider.rsplit('.', 1)
             paths.extend(getattr(import_module(module), name)())

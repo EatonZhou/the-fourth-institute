@@ -16,7 +16,7 @@ def isolated_installation_paths(tmp_path, monkeypatch):
     # A missing explicit test config must never fall back to the user's legacy
     # installation config, including when an individual test replaces CONFIG_PATH.
     config = tmp_path / 'site-paths.json'
-    config.write_text(json.dumps({key: str(tmp_path / {"share_root": "share", "staging_root": "staging", "instances_root": "instance", "accounts_root": "accounts", "secrets_dir": "secrets"}.get(key, key)) for key in instance_paths.portal_paths.KEYS}))
+    config.write_text(json.dumps({key: str(tmp_path / {"share_root": "share", "staging_root": "staging", "instances_root": "instance", "secrets_dir": "secrets"}.get(key, key)) for key in instance_paths.portal_paths.KEYS}))
     monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(config))
     monkeypatch.setattr(instance_paths.portal_paths, 'CONFIG_PATH', config)
 
@@ -27,30 +27,20 @@ def test_account_paths_and_private_lifecycle(tmp_path, monkeypatch):
     :design: decision_7956d7cb4bde
     :importance: P1
     """
-    monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(tmp_path / "instance"))
-    monkeypatch.delenv("PORTAL_ACCOUNTS_ROOT", raising=False)
-    monkeypatch.delenv("PORTAL_SECRETS_DIR", raising=False)
-    # The unified installation paths also own the account/secret defaults.
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
-    monkeypatch.setenv("PORTAL_SECRETS_DIR", str(tmp_path / "secrets"))
-    assert instance_paths.accounts_root() == tmp_path / "accounts"
-    assert instance_paths.secrets_dir() == tmp_path / "secrets"
-    home = hosting.ensure_account_home("codex", "codex_one")
-    assert home == tmp_path / "accounts/codex/codex_one"
+    from management_portal.execution.account_registrations import create_registration, delete_registration
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "host-home"))
+    create_registration({"account_id": "codex_private", "provider": "codex", "kind": "subscription_login"}, "test")
+    home = hosting.ensure_account_home("codex", "codex_private")
+    assert home == tmp_path / "host-home/.codex-accounts/private"
     assert stat.S_IMODE(home.stat().st_mode) == 0o700
-    assert hosting.account_home("claude", "claude_one") == tmp_path / "accounts/claude/claude_one"
-    assert hosting.codex_socket_path("codex_one") == tmp_path / "instance/sockets/codex-codex_one.sock"
+    assert hosting.codex_socket_path("codex_private") == tmp_path / "instance/sockets/codex-codex_private.sock"
     for value in ("../one", "one/two", "one\n", "", "@one"):
         with pytest.raises(ValueError):
             hosting.account_home("codex", value)
     (home / "state").write_text("provider-owned")
-    hosting.remove_account_home("codex", "codex_one")
-    assert not home.exists()
-    hosting.remove_account_home("codex", "codex_one")
-    home.symlink_to(tmp_path, target_is_directory=True)
-    with pytest.raises(ValueError):
-        hosting.remove_account_home("codex", "codex_one")
-    assert tmp_path.exists()
+    delete_registration("codex_private")
+    hosting.remove_account_runtime("codex", "codex_private")
+    assert (home / "state").read_text() == "provider-owned"
 
 
 def test_secret_replace_is_private_atomic_and_silent(tmp_path, monkeypatch, capsys):
@@ -89,17 +79,15 @@ def test_site_environment_shared_by_unit_rendering(tmp_path, monkeypatch):
     instance_paths.portal_paths.write_config({
         key: str(tmp_path / name)
         for key, name in zip(instance_paths.portal_paths.KEYS,
-                             ("share", "staging", "instance", "accounts", "secrets"))
+                             ("share", "staging", "instance", "secrets"))
     })
-    for name in ("PORTAL_INSTANCES_ROOT", "PORTAL_ACCOUNTS_ROOT", "PORTAL_SECRETS_DIR", "PORTAL_PROVIDER_EGRESS_ENV_FILE"):
+    for name in ("PORTAL_INSTANCES_ROOT", "PORTAL_SECRETS_DIR", "PORTAL_PROVIDER_EGRESS_ENV_FILE"):
         monkeypatch.delenv(name, raising=False)
     template = tmp_path / "unit"
     template.write_text("[Service]\nExecStart=@PORTAL_INSTANCES_ROOT@/bin/python\n")
     rendered = storage.render_unit(template)
-    assert f"Environment=PORTAL_ACCOUNTS_ROOT={tmp_path}/accounts" in rendered
     assert f"Environment=PORTAL_SECRETS_DIR={tmp_path}/secrets" in rendered
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "override"))
-    assert storage.site_environment()["PORTAL_ACCOUNTS_ROOT"] == str(tmp_path / "accounts")
+    assert set(instance_paths.portal_paths.KEYS) == {"share_root", "staging_root", "instances_root", "secrets_dir"}
 
 
 def test_codex_template_and_instance_control(tmp_path, monkeypatch):
@@ -111,7 +99,8 @@ def test_codex_template_and_instance_control(tmp_path, monkeypatch):
     from types import SimpleNamespace
     from scripts import portal_service_units as units
     monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(tmp_path / "instance"))
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(tmp_path / "accounts"))
+    from management_portal.execution.account_registrations import create_registration
+    create_registration({"account_id": "codex_test", "provider": "codex", "kind": "subscription_login"}, "test")
     monkeypatch.setenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", str(tmp_path / "proxy.env"))
     monkeypatch.setattr(units, "USER_UNIT_ROOT", tmp_path / "units")
     monkeypatch.setattr(shutil, "which", lambda _: "/opt/bin/codex")
@@ -122,7 +111,7 @@ def test_codex_template_and_instance_control(tmp_path, monkeypatch):
     monkeypatch.setattr(units, "_run", run)
     target = units.install_codex_unit_template()
     content = target.read_text()
-    for part in ("CODEX_HOME=" + str(tmp_path / "accounts/codex/%i"),
+    for part in ("--account-config " + str(tmp_path / "instance/runtime/provider-accounts/codex/%i/launch.json"),
                  str(tmp_path / "instance/sockets/codex-%i.sock"),
                  "EnvironmentFile=" + str(tmp_path / "proxy.env"),
                  "MemoryHigh=32G", "MemoryMax=36G", "MemorySwapMax=1G", "Restart=always"):

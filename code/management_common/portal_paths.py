@@ -18,12 +18,11 @@ from management_common.site_compatibility import compatibility_value
 
 
 PORTAL_ROOT = Path(__file__).resolve().parents[1]
-KEYS = ("share_root", "staging_root", "instances_root", "accounts_root", "secrets_dir")
+KEYS = ("share_root", "staging_root", "instances_root", "secrets_dir")
 ENV_KEYS = {
     "share_root": "PORTAL_SHARE_ROOT",
     "staging_root": "PORTAL_AGENT_STAGING_ROOT",
     "instances_root": "PORTAL_INSTANCES_ROOT",
-    "accounts_root": "PORTAL_ACCOUNTS_ROOT",
     "secrets_dir": "PORTAL_SECRETS_DIR",
 }
 
@@ -77,7 +76,7 @@ def _defaults() -> dict[str, str]:
     # adopts these portable defaults. No installation borrows another host's paths.
     return {key: "portal_data/" + name for key, name in (
         ("share_root", "share"), ("staging_root", "staging"),
-        ("instances_root", "instances"), ("accounts_root", "accounts"),
+        ("instances_root", "instances"),
         ("secrets_dir", "secrets"),
     )}
 

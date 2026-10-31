@@ -30,7 +30,7 @@ SETTINGS = [
 def isolated_paths(tmp_path, monkeypatch):
     paths = tmp_path / 'paths.json'
     paths.write_text(json.dumps({key: str(tmp_path / key) for key in
-        ('share_root', 'staging_root', 'instances_root', 'accounts_root', 'secrets_dir')}))
+        ('share_root', 'staging_root', 'instances_root', 'secrets_dir')}))
     monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(paths))
     from management_common import portal_paths
     monkeypatch.setattr(portal_paths, 'CONFIG_PATH', paths)

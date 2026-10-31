@@ -96,7 +96,7 @@ def test_service_template_uses_configured_home_and_explicit_owned_refresh(tmp_pa
     original = target.read_text()
     assert "-m management_portal.codex_app_server_host --socket " in original
     assert "Environment=PYTHONPATH=" + deployment["source_root"] in original
-    assert "WorkingDirectory=" in original and "Environment=CODEX_HOME=" in original
+    assert "--account-config " in original and "/provider-accounts/codex/%i/launch.json" in original
     deployment["source_root"] = str(tmp_path / "moved-source")
     with pytest.raises(ValueError, match="different Provider"):
         units.install_codex_unit_template(reload=False)
@@ -118,6 +118,7 @@ def test_native_history_resume_and_fork_survive_configured_account_move(tmp_path
         pytest.skip("Installed Codex runtime unavailable")
     endpoint = tmp_path / "codex.sock"
     original = tmp_path / "account"
+    original.mkdir()
     failures = []
 
     def start(home):

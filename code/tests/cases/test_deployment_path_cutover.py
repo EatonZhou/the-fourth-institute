@@ -350,7 +350,8 @@ def test_config_to_real_account_and_service_consumers(tmp_path,monkeypatch):
     monkeypatch.delenv('PORTAL_NETWORK_CONFIG',raising=False)
     monkeypatch.delenv('PORTAL_PROVIDER_EGRESS_ENV_FILE',raising=False)
     monkeypatch.setattr(portal_paths,'CONFIG_PATH',config)
-    assert account_home('codex','codex_two')==root/'accounts_root/codex/codex_two'
+    from management_portal.execution.account_registrations import registration
+    assert account_home('codex','codex_two')==Path(registration('codex_two')['config']['account_dir'])
     assert codex_socket_path('codex_two')==root/'instances_root/sockets/codex-codex_two.sock'
     source=Path(cutover.__file__).resolve().parents[1]
     for name in ['config/systemd/portal-codex-app-server@.service.in',
@@ -361,7 +362,7 @@ def test_config_to_real_account_and_service_consumers(tmp_path,monkeypatch):
         assert str(root) in rendered
     rendered=storage.render_unit(source/'config/systemd/portal-codex-app-server@.service.in')
     assert str(root/'providers/codex/bin/codex') in rendered
-    assert str(root/'accounts_root/codex/%i') in rendered
+    assert str(root/'instances_root/runtime/provider-accounts/codex/%i/launch.json') in rendered
 
 
 def unit(name, **kwargs):

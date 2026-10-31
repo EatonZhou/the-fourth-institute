@@ -62,6 +62,7 @@ sweep_abandoned_roots(Path(tempfile.gettempdir()))
 _PYTEST_DATABASE_TEMP_DIR = tempfile.TemporaryDirectory(prefix=TEMP_PREFIX)
 _PYTEST_DATABASE_ROOT = Path(_PYTEST_DATABASE_TEMP_DIR.name)
 mark_owner(_PYTEST_DATABASE_ROOT)
+os.environ["PORTAL_ACCOUNT_HOST_HOME"] = str(_PYTEST_DATABASE_ROOT / "host-home")
 # Database selection above checks the real deployment before isolation. All
 # subsequent domain configuration belongs to this disposable test site.
 _PYTEST_SITE_CONFIG = _PYTEST_DATABASE_ROOT / "site.json"
@@ -349,6 +350,7 @@ def _register_test_site(request, monkeypatch, root):
 
 @pytest.fixture(autouse=True)
 def isolate_portal_databases(request, monkeypatch, tmp_path):
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "host-home"))
     _truncate_test_schemas()
     try:
         yield _register_test_site(request, monkeypatch, tmp_path)

@@ -85,6 +85,12 @@ def connect_transport(path, *, timeout=15.0, platform=None):
 
 
 def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
+    from management_common.provider_account_paths import daemon_lock
+    with daemon_lock(Path(account_home)):
+        return _run_host(path, binary, account_home, stop_event, platform=platform, startup_timeout=startup_timeout)
+
+
+def _run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
     windows = _platform(platform) == "win32"
     path, binary, account_home = Path(path), Path(binary), Path(account_home)
     if not windows:
@@ -113,6 +119,7 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     if windows:
         command += ["--ws-auth", "capability-token", "--ws-token-sha256", hashlib.sha256(token.encode()).hexdigest()]
     env = dict(os.environ, CODEX_HOME=str(account_home))
+    env.pop("PORTAL_ACCOUNT_HOST_HOME", None)
     # Native service definitions contain configuration paths, never proxy
     # credentials. Resolve the same saved egress as login at process startup.
     from management_common import portal_network
@@ -216,12 +223,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
     parser.add_argument("--binary", required=True)
-    parser.add_argument("--account-home", required=True)
+    parser.add_argument("--account-config", required=True)
     args = parser.parse_args()
     stop = threading.Event()
     previous = install_shutdown_handlers(lambda *_: stop.set())
     try:
-        return run_host(args.socket, args.binary, args.account_home, stop)
+        from management_common.provider_account_paths import canonical_directory
+        record = json.loads(read_private_bytes(Path(args.account_config)))
+        home = canonical_directory(record["account_dir"])
+        return run_host(args.socket, args.binary, home, stop)
     finally:
         restore_shutdown_handlers(previous)
 

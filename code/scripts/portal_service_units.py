@@ -232,8 +232,17 @@ def install_codex_unit_template(*, reload: bool = True, refresh: bool = False) -
             existing = set(existing_content.splitlines())
             if not required.issubset(existing) or not existing.intersection(locators):
                 raise ValueError("Provider service template belongs to another instance")
-            from management_common.file_permissions import atomic_write_private_bytes
-            atomic_write_private_bytes(target, content.encode())
+            # Unit definitions may be public (0644); private credential writers
+            # deliberately reject those. Replace this owned definition atomically.
+            with tempfile.NamedTemporaryFile(dir=target.parent, prefix=".codex-unit-", delete=False) as stream:
+                temporary = Path(stream.name)
+                try:
+                    stream.write(content.encode())
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                    temporary.replace(target)
+                finally:
+                    temporary.unlink(missing_ok=True)
         if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             with target.open("x") as stream:
@@ -432,7 +441,7 @@ def _codex_unit(account_id: str) -> str:
 
 
 def _native_codex_service(account_id: str):
-    from management_portal.execution.account_hosting import account_home, codex_socket_path
+    from management_portal.execution.account_hosting import write_codex_launch, codex_socket_path
     from management_common.site_config import read_site_config
     from management_common.portal_paths import resolve_directory
     if sys.platform == "win32":
@@ -461,10 +470,10 @@ def _native_codex_service(account_id: str):
     if not binary or not Path(binary).is_absolute() or not Path(binary).is_file():
         raise FileNotFoundError("Absolute Codex executable is unavailable")
     name = _codex_unit(account_id)
-    home = account_home("codex", account_id)
+    launch = write_codex_launch(account_id)
     command = [sys.executable, "-m", "management_portal.codex_app_server_host",
                "--socket", str(codex_socket_path(account_id)), "--binary", binary,
-               "--account-home", str(home)]
+               "--account-config", str(launch)]
     directory = install_codex_unit_template()
     if sys.platform == "win32":
         account = os.environ.get("PORTAL_WINDOWS_SERVICE_ACCOUNT", "")
@@ -601,6 +610,8 @@ def start_codex_instance(account_id: str) -> dict[str, Any]:
                         adapter.remove_services(directory, created)
                 raise
         return _native_codex_state(account_id)
+    from management_portal.execution.account_hosting import write_codex_launch
+    write_codex_launch(account_id)
     install_codex_unit_template()
     _run("systemctl", "--user", "enable", "--now", _codex_unit(account_id))
     return codex_instance_state(account_id)

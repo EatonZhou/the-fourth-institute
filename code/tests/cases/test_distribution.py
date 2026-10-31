@@ -267,7 +267,7 @@ def test_engineering_real_content_no_history_or_auth(tmp_path):
     assert manifest['runtime_dependencies']['profiles'] == ['core']
     assert json.loads((target / 'code/config/principal-labels.json').read_text()) == {
         'user': {'tfi-exported-user': 'TFI portal'}}
-    assert manifest["files"]["accounts_root"] == "data/accounts_root"
+    assert set(manifest["files"]) >= {"share_root", "staging_root", "instances_root", "secrets_dir"}
     with pytest.raises(FileExistsError):
         generate(source_root=source, destination=target, snapshot={}, resolved=resolved, database_sql="")
     with pytest.raises(ValueError, match="isolated"):

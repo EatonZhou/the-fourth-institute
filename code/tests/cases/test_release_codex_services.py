@@ -69,7 +69,7 @@ def test_context_rejects_mismatched_code_and_roots(tmp_path, monkeypatch):
     config = root / "config/paths.json"
     config.write_text("{}")
     target = {"install_root": str(root), "service_prefix": "tfi-check",
-              "data_roots": {"accounts_root": str(root / "accounts")}}
+              "data_roots": {"secrets_dir": str(root / "accounts")}}
     (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(config))
     with pytest.raises(ValueError, match="ownership"):
@@ -90,7 +90,7 @@ def test_paired_provider_control_accepts_only_registered_worktrees(tmp_path, mon
     (root / "config").mkdir(parents=True)
     dev, release = tmp_path / "dev/code", tmp_path / "release/code"
     target = {"install_root": str(root), "service_prefix": "tfi-check",
-              "data_roots": {"accounts_root": str(root / "accounts")},
+              "data_roots": {"secrets_dir": str(root / "accounts")},
               "development": {"dev_code": str(dev), "release_code": str(release)}}
     (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
     monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/paths.json"))

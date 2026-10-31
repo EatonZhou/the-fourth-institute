@@ -28,7 +28,6 @@ def site_environment(deployment: dict | None = None) -> dict[str, str]:
                   if instance_paths.CONFIG_PATH.exists() else {})
     result = {
         "PORTAL_INSTANCES_ROOT": str(instance_root()),
-        "PORTAL_ACCOUNTS_ROOT": str(portal_path("accounts_root")),
         "PORTAL_SECRETS_DIR": str(portal_path("secrets_dir")),
         "PORTAL_NETWORK_CONFIG": str(portal_network.config_path()),
         "PORTAL_SITE_CONFIG": str(resolve_directory(os.environ.get("PORTAL_SITE_CONFIG", str(ROOT / "config/site.json")))),
@@ -84,6 +83,8 @@ def render_unit(source: Path) -> str:
         if not binary or any(character.isspace() or character in "'\"\\%$" for character in binary):
             raise ValueError("Codex executable is missing or its path cannot be used by systemd")
         content = content.replace("@PORTAL_CODEX_BINARY@", binary)
+    from management_common.provider_account_paths import runtime_root
+    values["PORTAL_ACCOUNT_RUNTIME_ROOT"] = str(runtime_root())
     for name, value in (values | environment).items():
         content = content.replace(f"@{name}@", value)
     if re.search(r"@PORTAL_[A-Z_]+@", content):

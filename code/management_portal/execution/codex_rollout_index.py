@@ -81,8 +81,10 @@ def prepare_account_index(home: Path | str) -> dict:
                 updates.append((relative, thread, old))
             backup_path = None
             if updates:
-                folder = home / "portal-index-backups"
-                folder.mkdir(mode=0o700, exist_ok=True)
+                from management_common.provider_account_paths import directory_runtime
+                from management_common.file_permissions import ensure_private_directory
+                folder = directory_runtime(home) / "index-backups"
+                ensure_private_directory(folder)
                 stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
                 backup_path = folder / f"{database.stem}-{stamp}.sqlite"
                 with sqlite3.connect(backup_path) as backup:

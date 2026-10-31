@@ -7,7 +7,7 @@
 功能验收继续显示 `pending_resident`。
 
 若部署者明确接受保留的 Workspace 文件尚未全面核查，可在安装及续跑时指定
-`--defer-data-verification`：延后五数据根的 inventory 集合和摘要核对，仍核对代码、SQL、
+`--defer-data-verification`：延后四数据根的 inventory 集合和摘要核对，仍核对代码、SQL、
 实例身份及空凭据目录，复制过程中仍拒绝符号链接和特殊文件。安装记录将标记
 `data_verification=deferred_by_operator`；此选项不代表数据完整性通过，也不会回源补齐文件。
 
@@ -82,7 +82,6 @@ Test/TAU/Provider profile 仍要求主机具备 Node.js >=20 与 npm；安装器
     "share_root": "/opt/tfi-instances/run-example/data/share",
     "staging_root": "/opt/tfi-instances/run-example/data/staging",
     "instances_root": "/opt/tfi-instances/run-example/data/instances",
-    "accounts_root": "/opt/tfi-instances/run-example/data/accounts",
     "secrets_dir": "/opt/tfi-instances/run-example/data/secrets"
   },
   "ports": {"web": 28086, "postgres": 56432, "nats": 14223},
@@ -95,7 +94,7 @@ Test/TAU/Provider profile 仍要求主机具备 Node.js >=20 与 npm；安装器
 ```
 
 需要额外 PostgreSQL 动态库时提供 `pg_lib`。路径不能含引号、反斜杠、控制字符
-或 systemd 展开字符。安装根须与当前源码和五数据根完全分离，五个目标数据根
+或 systemd 展开字符。安装根须与当前源码和四数据根完全分离，四个目标数据根
 均位于安装根内且彼此不重叠。Unix socket 路径长度受系统限制，安装根宜短。
 Web 默认仅本机访问；指定 `bind: "0.0.0.0"` 后，可用该机器地址和 Web 端口访问。
 用户直接安装普通发布工程时，`supervisor_resident_id` 可为空，须与 manifest 一致；

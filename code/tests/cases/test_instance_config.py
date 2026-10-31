@@ -229,13 +229,13 @@ class InstanceConfigurationTests(unittest.TestCase):
 
     def test_one_root_change_updates_projection_and_provider_environment(self):
         self.adopt()
-        old = self.target['data_roots']['accounts_root']
+        old = self.target['data_roots']['staging_root']
         unit = self.units / (self.target['service_prefix'] + '-codex-app-server@.service')
         unit.write_text(f'[Service]\nWorkingDirectory={old}/codex/%i\nEnvironment="CODEX_HOME={old}/codex/%i"\nExecStart="/native/codex" "--home" "{old}/codex/%i"\n')
         changed = copy.deepcopy(self.target)
         new = str(self.root / 'data/new-accounts')
         Path(new).mkdir(parents=True)
-        changed['data_roots']['accounts_root'] = new
+        changed['data_roots']['staging_root'] = new
         with patch.object(config, 'assert_stopped'), patch.object(config.subprocess, 'run') as run:
             config.apply(self.root, changed, expected_sha256=owner.configuration_digest(self.target))
         self.assertIn(new + '/codex/%i', unit.read_text())
@@ -282,12 +282,12 @@ class InstanceConfigurationTests(unittest.TestCase):
 
     def test_single_configuration_update_never_moves_or_aliases_data(self):
         self.adopt()
-        old = Path(self.target['data_roots']['accounts_root'])
+        old = Path(self.target['data_roots']['staging_root'])
         (old / 'session').write_text('history')
         changed = copy.deepcopy(self.target)
         new = self.root / 'data/new-account-root'
         new.mkdir()
-        changed['data_roots']['accounts_root'] = str(new)
+        changed['data_roots']['staging_root'] = str(new)
         with patch.object(config, 'assert_stopped'):
             config.apply(self.root, changed, expected_sha256=owner.configuration_digest(self.target))
         self.assertEqual((old / 'session').read_text(), 'history')

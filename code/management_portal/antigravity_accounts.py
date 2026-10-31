@@ -15,6 +15,7 @@ from management_common.file_permissions import atomic_write_private_bytes
 from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
 from management_portal.antigravity_runtime import command
 from management_portal.execution.account_hosting import account_home
+from management_common.provider_account_paths import account_runtime
 
 
 def account_for_route(route):
@@ -47,14 +48,14 @@ def save_catalog(account_id, session):
     value = {"models": models, "default_model": default, "efforts_by_model": {},
              "default_efforts_by_model": {}, "service_tiers_by_model": {},
              "capabilities": {"media": False}, "observed_at": time.time()}
-    atomic_write_private_bytes(account_home("antigravity", account_id) / "catalog.json", json.dumps(value).encode())
+    atomic_write_private_bytes(account_runtime("antigravity", account_id) / "catalog.json", json.dumps(value).encode())
     return value
 
 
 def catalog(route=""):
     row = account_for_route(route)
     home = account_home("antigravity", row["account_id"])
-    cached = home / "catalog.json"
+    cached = account_runtime("antigravity", row["account_id"]) / "catalog.json"
     if cached.is_file():
         value = json.loads(cached.read_text())
         if time.time() - value.get("observed_at", 0) < 300:

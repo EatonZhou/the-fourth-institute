@@ -42,7 +42,7 @@ class MacUpgrade(unittest.TestCase):
         self.root = root
         self.target = {"install_root": str(root), "shared_code_root": str(self.platform / "code"),
                        "python": str(self.platform / "dependencies/python/bin/python3"),
-                       "data_roots": {"share_root": str(root / "data/share"), "accounts_root": str(root / "data/accounts")}}
+                       "data_roots": {"share_root": str(root / "data/share"), "secrets_dir": str(root / "data/secrets")}}
         self.state = {"target": self.target, "status": "installed", "manifest_sha256": "original-seed", "completed": ["database"],
                       "stages": [{"status": "installed"}]}
         installer.write_json(root / "installation.json", self.state)
@@ -215,9 +215,9 @@ class MacUpgrade(unittest.TestCase):
     def test_foreign_journal_and_redirected_data_are_refused(self):
         with self.assertRaisesRegex(ValueError, "不属于"):
             self.manager.paths({"platform": "/other", "id": "upgrade-" + "a" * 32})
-        external = self.platform.parent / "external-accounts"
-        (self.root / "data/accounts").rename(external)
-        (self.root / "data/accounts").symlink_to(external, target_is_directory=True)
+        external = self.platform.parent / "external-secrets"
+        (self.root / "data/secrets").rename(external)
+        (self.root / "data/secrets").symlink_to(external, target_is_directory=True)
         with self.assertRaisesRegex(ValueError, "外部数据目录"):
             self.manager.apply(lambda: None)
         self.api.service_controller.assert_not_called()
@@ -251,10 +251,10 @@ class MacProviderOwnership(unittest.TestCase):
             root = platform / "instance/desktop"
             target = {"install_root": str(root), "shared_code_root": str(platform / "code"), "service_prefix": "tfi-desktop",
                       "python": str(platform / "dependencies/python/bin/python3"),
-                      "data_roots": {"instances_root": str(root / "data/instances"), "accounts_root": str(root / "data/accounts")}}
+                      "data_roots": {"instances_root": str(root / "data/instances")}}
             installer.write_json(root / "config/site.json", {})
             environment = {"PORTAL_INSTANCES_ROOT": str(root / "data/instances"),
-                           "PORTAL_ACCOUNTS_ROOT": str(root / "data/accounts"), "PORTAL_SECRETS_DIR": str(root / "data/secrets"),
+                           "PORTAL_SECRETS_DIR": str(root / "data/secrets"),
                            "PORTAL_NETWORK_CONFIG": str(root / "config/network.env"), "PORTAL_SITE_CONFIG": str(root / "config/site.json"),
                            "PORTAL_PATHS_CONFIG": str(root / "config/paths.json"), "PATH": "/native/bin:/usr/bin:/bin",
                            "HOME": str(root / "home"), "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUTF8": "1"}
@@ -264,7 +264,7 @@ class MacProviderOwnership(unittest.TestCase):
             directory.mkdir()
             command = [target["python"], "-m", "management_portal.codex_app_server_host", "--socket",
                        str(root / "data/instances/sockets/codex-one.sock"), "--binary", "/local/codex",
-                       "--account-home", str(root / "data/accounts/codex/one")]
+                       "--account-config", str(root / "runtime/provider-accounts/codex/one/launch.json")]
             def write(env):
                 content = adapter.command_unit_text(name, command, cwd=platform / "code",
                     log_root=root / "data/instances/logs", log_name=name, environment=env)

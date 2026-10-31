@@ -11,11 +11,11 @@ def register_codex(monkeypatch, root, *, names=("zero", "one"), default="one", l
     with database().transaction("fixture") as c:
         c.execute("DELETE FROM backend_roles WHERE account_id IN (SELECT account_id FROM registrations WHERE provider='codex')")
         c.execute("DELETE FROM registrations WHERE provider='codex'")
-    monkeypatch.setenv("PORTAL_ACCOUNTS_ROOT", str(Path(root) / "accounts"))
+    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(Path(root) / "host-home"))
     monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(Path(root) / "instances"))
     from management_common import portal_paths
     values = {**portal_paths.path_values(),
-        "accounts_root": str(Path(root) / "accounts"), "instances_root": str(Path(root) / "instances")}
+        "instances_root": str(Path(root) / "instances")}
     # Installation configuration is outside the directory under test, just as
     # it is in an installed instance. Atomic-write tests can then inspect that
     # directory for leaked temporary files without seeing our fixture itself.

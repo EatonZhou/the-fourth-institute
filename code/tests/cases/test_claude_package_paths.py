@@ -14,7 +14,7 @@ def test_standalone_package_resolves_installed_paths_without_source_tree(tmp_pat
     instance = tmp_path / "instance"
     (instance / "config").mkdir(parents=True)
     roots = {key: str(instance / key) for key in (
-        "share_root", "staging_root", "instances_root", "accounts_root", "secrets_dir",
+        "share_root", "staging_root", "instances_root", "secrets_dir",
     )}
     target = {"install_root": str(instance), "data_roots": roots}
     locator = instance / "config" / "target.json"

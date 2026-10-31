@@ -103,7 +103,6 @@ def agent_branches(provider, python, binary, root, code, evidence):
                'PROGRAMDATA', 'LANG', 'LD_LIBRARY_PATH'}
     env = {key: value for key, value in os.environ.items() if key.upper() in allowed}
     env.update(PYTHONUTF8='1', PORTAL_NO_SITE_ENV='1', PORTAL_NO_PATHS_ENV='1',
-               PORTAL_ACCOUNTS_ROOT=str(root / 'accounts'),
                PORTAL_PROVIDER_STAGING_DIR=str(root / 'staging'),
                PORTAL_SHARE_ROOT=str(root / 'share'))
     try:

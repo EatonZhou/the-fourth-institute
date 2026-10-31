@@ -142,14 +142,15 @@ def validate_definition(value, name):
                 or not isinstance(command, list) or len(command) != 9
                 or not all(isinstance(arg, str) and not any(c in arg for c in "\0\r\n") for arg in command)
                 or command[:3] != [value["python"], "-m", "management_portal.codex_app_server_host"]
-                or command[3::2] != ["--socket", "--binary", "--account-home"]
+                or command[3::2] != ["--socket", "--binary", "--account-config"]
                 or not all(Path(arg).is_absolute() for arg in command[4::2])):
             raise ValueError("Codex user service ownership mismatch")
-        home = Path(command[-1]).resolve()
+        launch = Path(command[-1])
+        account_id = launch.parent.name
         scope = hashlib.sha256(os.fsencode(Path(target["data_roots"]["instances_root"]).resolve())).hexdigest()[:10]
-        if (home.parent != (Path(target["data_roots"]["accounts_root"]) / "codex").resolve()
-                or Path(command[4]).resolve() != (Path(target["data_roots"]["instances_root"]) / "sockets" / f"codex-{home.name}.sock").resolve()
-                or name != f"portal-codex-app-server@{home.name}-{scope}.service"):
+        if (launch != root / "runtime/provider-accounts/codex" / account_id / "launch.json"
+                or Path(command[4]).resolve() != (Path(target["data_roots"]["instances_root"]) / "sockets" / f"codex-{account_id}.sock").resolve()
+                or name != f"portal-codex-app-server@{account_id}-{scope}.service"):
             raise ValueError("Codex user service account ownership mismatch")
     else:
         from scripts.tfi_instance_layout import code_root

@@ -67,7 +67,7 @@ def make_target(platform, name, manifest, *, lan=False, ports=None):
         "ports": ports or choose_ports(),
         "data_roots": {key: str(root / "data" / folder) for key, folder in (
             ("share_root", "share"), ("staging_root", "staging"),
-            ("instances_root", "instances"), ("accounts_root", "accounts"), ("secrets_dir", "secrets"))},
+            ("instances_root", "instances"), ("secrets_dir", "secrets"))},
     }
     receipt_path = platform / 'windows-package.json'
     if receipt_path.is_file():
@@ -262,7 +262,7 @@ def seed_destination_paths(platform, spec):
         for key, folder in spec['engineering']['files'].items():
             if relative.startswith(folder + '/'):
                 installed = {'share_root': 'share', 'staging_root': 'staging',
-                             'instances_root': 'instances', 'accounts_root': 'accounts',
+                             'instances_root': 'instances',
                              'secrets_dir': 'secrets'}[key]
                 yield platform / 'instance/example_instance/data' / installed / relative[len(folder) + 1:]
 

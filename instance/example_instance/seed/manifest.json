@@ -4888,7 +4888,6 @@
       "share_root": "data/share_root",
       "staging_root": "data/staging_root",
       "instances_root": "data/instances_root",
-      "accounts_root": "data/accounts_root",
       "secrets_dir": "data/secrets_dir"
     },
     "directory_mappings": [
@@ -4905,11 +4904,6 @@
       {
         "placeholder": "${instances_root}",
         "root": "instances_root",
-        "path": "."
-      },
-      {
-        "placeholder": "${accounts_root}",
-        "root": "accounts_root",
         "path": "."
       },
       {
@@ -31224,8 +31218,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md",
-      "sha256": "39e0ae637c2fa9517b3e9666ee0f01e7abe8bc6d24121b610dd532cb57640e83",
-      "size": 11155
+      "sha256": "1ac14e80974f7cb9967d9eed8b1daee4e5d6c3729c2b30787ab179fc667af124",
+      "size": 25023
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261029__decision__研究地图：项目研发方向的地图、修订与指令__decision_9d15ae2053c4.md",
@@ -31309,8 +31303,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-codex-accounts.md",
-      "sha256": "54c9492e1bb1983897f65fd6211bd4d896c7d3ea490d1863bfcbb54c7242615a",
-      "size": 2770
+      "sha256": "dfab6e6d55634a5f14d9de0c572f7c74283a56fcd83d6d8d3c5d5e0db0a20422",
+      "size": 3551
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-context-injection.md",
