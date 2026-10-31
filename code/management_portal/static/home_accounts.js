@@ -61,13 +61,17 @@
 
     function accountSummaryQuotaWindows(account) {
       const windows = accountQuotaWindows(account);
-      if (account.provider !== "antigravity") return windows;
-      // Home shows the shared Gemini subscription limits. Model-specific and
-      // other model groups remain available in the account's full details.
-      return [
+      const summary = account.provider === "kimi" && account.kind === "subscription_login" ? [
+        ["limit5h", window.PortalI18n.t("5 小时")],
+        ["limit7d", window.PortalI18n.t("每周")],
+      ] : account.provider === "antigravity" ? [
         ["Gemini Models/Five Hour Limit Remaining", window.PortalI18n.t("5 小时")],
         ["Gemini Models/Weekly Limit Remaining", window.PortalI18n.t("每周")],
-      ].flatMap(([id, label]) => {
+      ] : null;
+      // Home keeps the two shared rolling windows; monthly and model-specific
+      // limits remain in the full details, including after an in-place refresh.
+      if (!summary) return windows;
+      return summary.flatMap(([id, label]) => {
         const quotaWindow = windows.find(item => item.id === id);
         return quotaWindow ? [{...quotaWindow, full_label: quotaWindow.label, label}] : [];
       });
@@ -91,7 +95,7 @@
       const known = typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
       const remaining = known ? Number(value.toFixed(2)) : null;
       const stale = accountQuotaWindowIsStale(quotaWindow);
-      const label = String(quotaWindow?.label || quotaWindow?.id || window.PortalI18n.t("额度"));
+      const label = window.PortalI18n.t(String(quotaWindow?.label || quotaWindow?.id || "额度"));
       const reset = quotaWindow?.resets_at ? formatDateTime(quotaWindow.resets_at * 1000) : "";
       const observed = quotaWindow?.observed_at;
       const sampled = formatDateTime(typeof observed === "number" ? observed * 1000 : observed || "");

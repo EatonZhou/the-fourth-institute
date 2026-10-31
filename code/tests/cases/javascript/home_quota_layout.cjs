@@ -31,16 +31,30 @@ const renderer = homeStatements().filter(({node: n}) => n.type === 'FunctionDecl
         'Gemini 4 Argon · Gemini 4 Argon Weekly Limit'];
       const account = {account_id:'antigravity_one', provider:'antigravity', rate_limits: labels.map((label, i) => ({id:label.replace(' · ', '/'),label,
         remaining_percent: i === 3 ? null : 100, stale:i === 2, observed_at:Date.now()/1000, resets_at:Date.now()/1000+3600}))};
-      const agentStatusData = {accounts: [account,
+      const kimi = {account_id:'kimi-code', provider:'kimi', kind:'subscription_login', rate_limits: [
+        {id:'monthTotal',label:'每月总额度',remaining_percent:89},
+        {id:'limit7d',label:'每周',remaining_percent:58},
+        {id:'limit5h',label:'5 小时',remaining_percent:75},
+        {id:'monthCode',label:'每月编程额度',remaining_percent:90}]};
+      const agentStatusData = {accounts: [account, kimi,
         {account_id:'codex_one', rate_limits:[{id:'weekly',label:'Weekly',remaining_percent:3}]},
         {account_id:'claude_one', rate_limits:[{id:'five_hour',label:'5 小时',remaining_percent:72},{id:'weekly',label:'每周',remaining_percent:64}]}]};
       document.querySelector('main > div').innerHTML = agentStatusData.accounts.map(accountLimitRow).join('');
       document.querySelector('aside > div').innerHTML = account.rate_limits.map(w => accountQuotaWindow(account,w)).join('');
+      const kimiDetails = document.createElement('div');
+      kimiDetails.className = 'agent-status-account-rate-windows';
+      kimiDetails.dataset.kimiDetails = '';
+      kimiDetails.innerHTML = accountQuotaWindows(kimi).map(w => accountQuotaWindow(kimi,w)).join('');
+      document.querySelector('aside').append(kimiDetails);
     `});
     const home = page.locator('[data-account-limit-account="antigravity_one"]');
     assert.deepEqual(await home.locator('.agent-status-window-name').allTextContents(), ['5 小时', '每周']);
     assert.equal(await home.locator('[data-account-quota-window]').count(), 2);
-    assert.equal(await page.locator('aside [data-account-quota-window]').count(), 5);
+    assert.equal(await page.locator('aside [data-account-quota-window]').count(), 9);
+    const kimiHome = page.locator('[data-account-limit-account="kimi-code"]');
+    assert.deepEqual(await kimiHome.locator('.agent-status-window-name').allTextContents(), ['5 小时', '每周']);
+    assert.deepEqual(await kimiHome.locator('.agent-status-limit-meta').allTextContents(), ['75%', '58%']);
+    assert.equal(await page.locator('[data-kimi-details] [data-account-quota-window]').count(), 4);
     assert.deepEqual(await page.locator('[data-account-limit-account="claude_one"] .agent-status-window-name').allTextContents(), ['5 小时', '每周']);
     assert.deepEqual(await page.locator('[data-account-limit-account="codex_one"] .agent-status-window-name').allTextContents(), ['Weekly']);
     assert.match(await home.locator('[data-account-quota-window]').first().getAttribute('title'), /Gemini Models · Five Hour Limit Remaining/);
@@ -48,12 +62,15 @@ const renderer = homeStatements().filter(({node: n}) => n.type === 'FunctionDecl
     await page.evaluate(() => {
       account.rate_limits[0].stale = true;
       account.rate_limits[1].remaining_percent = null;
+      kimi.rate_limits[2].stale = true;
       refreshAccountQuotaWindows();
     });
     assert.deepEqual(await home.locator('.agent-status-window-name').allTextContents(), ['5 小时', '每周']);
     assert.deepEqual(await home.locator('.agent-status-limit-meta').allTextContents(), ['—', '100%*']);
-    assert.equal(await page.locator('aside [data-account-quota-window]').count(), 5);
-    assert.deepEqual(await page.locator('aside .agent-status-window-name').allTextContents(), await page.evaluate(() => labels));
+    assert.equal(await page.locator('aside [data-account-quota-window]').count(), 9);
+    assert.deepEqual(await page.locator('aside > div:first-child .agent-status-window-name').allTextContents(), await page.evaluate(() => labels));
+    assert.deepEqual(await kimiHome.locator('.agent-status-limit-meta').allTextContents(), ['75%*', '58%']);
+    assert.equal(await page.locator('[data-kimi-details] [data-account-quota-window]').count(), 4);
     for (const width of [1920, 1440, 1024, 768, 390, 320]) {
       await page.setViewportSize({width, height:1100});
       const problems = await page.evaluate(() => {
@@ -94,6 +111,6 @@ const renderer = homeStatements().filter(({node: n}) => n.type === 'FunctionDecl
         await page.screenshot({path:path.join(process.env.PORTAL_TEST_SCREENSHOTS, `quota-${width}.png`),fullPage:true});
       }
     }
-    console.log('Home shows only Gemini 5-hour/weekly side by side; all five windows remain in details, including after refresh; layout fits six widths');
+    console.log('Gemini and Kimi summaries show 5-hour/weekly; full details survive refresh; layout fits six widths');
   } finally { await browser.close(); }
 })().catch(error => {console.error(error);process.exitCode=1;});

@@ -1,4 +1,6 @@
 {
+  "每月总额度": {"zh-CN": "每月总额度", "en": "Monthly total quota"},
+  "每月编程额度": {"zh-CN": "每月编程额度", "en": "Monthly coding quota"},
   "中国区": {"zh-CN": "中国区", "en": "Mainland China"},
   "国际区": {"zh-CN": "国际区", "en": "International"},
   "账号所属区域": {"zh-CN": "账号所属区域", "en": "Account region"},

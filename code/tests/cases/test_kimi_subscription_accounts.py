@@ -38,7 +38,8 @@ def test_subscription_catalog_only_exposes_authenticated_managed_models(monkeypa
     assert catalog.catalog(row)["models"] == ["subscription-model"]
     accounts = KimiAccounts.__new__(KimiAccounts)
     accounts.entries = [row]
-    assert accounts.accounts()[0].billing_account_id == "kimi_sub"
+    assert accounts.accounts()[0].billing_account_id == ""
+    assert accounts.accounts()[0].quota_policy == "reserve"
     auth["managed_provider"]["status"] = "expired"
     with pytest.raises(ValueError, match="订阅登录"):
         catalog.catalog(row)

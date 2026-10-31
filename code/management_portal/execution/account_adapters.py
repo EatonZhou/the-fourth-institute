@@ -377,7 +377,8 @@ class KimiAccounts:
         from management_portal.kimi_code_server import provider_profile_id
         profile = provider_profile_id()
         return tuple(ExecutionAccount(row["account_id"], self.provider, row["route_id"], f"account:{row['account_id']}",
-                                      row["max_concurrency"], billing_account_id=(row["account_id"] if row["kind"] == "subscription_login"
+                                      row["max_concurrency"], quota_policy=("reserve" if row["kind"] == "subscription_login" else "none"),
+                                      billing_account_id=("" if row["kind"] == "subscription_login"
                                           else row["config"].get("api_id", profile)),
                                       kind=row["kind"]) for row in self.entries)
 
@@ -399,16 +400,10 @@ class KimiAccounts:
         if account.kind != "subscription_login":
             return {"status": "ok", "rate_limits": []}
         from management_portal.kimi_account_runtime import client_for_route
-        from .account_login import now
-        observed_at = now().isoformat()
+        from .kimi_account_usage import observe
         # Monitoring must neither launch a server nor infer authentication from
         # process availability. The native managed provider owns this fact.
-        auth = client_for_route(account.route_id, for_control=True)._request("GET", "auth")
-        status = (auth.get("managed_provider") or {}).get("status")
-        state = ("logged_in" if status == "authenticated" else
-                 "login_expired" if status in {"expired", "revoked"} else "logged_out")
-        return {"status": "ok" if state == "logged_in" else "unknown", "rate_limits": [],
-                "login_observation": state, "login_observed_at": observed_at}
+        return observe(client_for_route(account.route_id, for_control=True))
 
 
 class ConfiguredAccounts:

@@ -70,6 +70,9 @@ class AccountMonitor:
                     self._login_store.observe(account.account_id, "login_expired", observed_at=observed_at)
                 elif sample.get("status") in {"ok", "available"}:
                     self._login_store.observe(account.account_id, "logged_in", observed_at=observed_at)
+            if sample.get("status") == "unavailable":
+                with self._lock:
+                    sample = self._failed_sample(account, sample)
             if account.billing_account_id and account.quota_policy != "reserve":
                 from .account_quota import finite_number
                 balance = self.billing.observe(account.billing_account_id)
@@ -96,14 +99,17 @@ class AccountMonitor:
             else:
                 error_code, message = "account_read_unavailable", "账号用量暂不可读取"
             with self._lock:
-                previous = deepcopy(self._samples.get(account.account_id) or {})
-                previous.update(status="unavailable", error_code=error_code, error=message, refreshing=False)
-                for window in previous.get("rate_limits") or []:
-                    window["stale"] = True
-                if isinstance(previous.get("credits"), dict):
-                    previous["credits"]["stale"] = True
-                self._samples[account.account_id] = previous
+                self._samples[account.account_id] = self._failed_sample(account, {
+                    "status": "unavailable", "error_code": error_code, "error": message, "refreshing": False})
         self.refresh_usage(account)
+
+    def _failed_sample(self, account, sample):
+        previous = deepcopy(self._samples.get(account.account_id) or {})
+        for window in previous.get("rate_limits") or []:
+            window["stale"] = True
+        if isinstance(previous.get("credits"), dict):
+            previous["credits"]["stale"] = True
+        return {**previous, **sample}
 
     def _reads_usage(self, account):
         # Daily usage buckets describe a subscription; an API key's spend is its balance.
