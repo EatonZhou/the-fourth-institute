@@ -3114,9 +3114,15 @@
       }
       const stopping = Boolean(this.stopRequest);
       this.workspace.setStopPending(stopping);
-      const protocolCanStop = snapshot
-        ? snapshot.controls?.can_stop === true
-        : Boolean(composer.can_stop);
+      // A facade's Stop stops the requests this viewer sees executing. Its
+      // work state and controls cover the whole Family, ignore Mute/Solo and
+      // differ between the Conversation and Resident state reads, so the
+      // M/S-filtered requests decide, as they do for what Stop cancels.
+      const protocolCanStop = snapshot?.family_facade
+        ? familyExecution(snapshot).active.length > 0
+        : snapshot
+          ? snapshot.controls?.can_stop === true
+          : Boolean(composer.can_stop);
       return stopping || protocolCanStop || Boolean(this.pendingTurnForTarget());
     }
 

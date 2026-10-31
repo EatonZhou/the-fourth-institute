@@ -189,6 +189,7 @@ function inbox(t) {
     assert.deepEqual(errors, [], "no production or DOM errors");
   });
   return {
+    w,
     // Each call is a new page: the previous Inbox is torn down and a fresh one mounts.
     page() {
       w.PortalAgentInbox.destroy();
@@ -199,6 +200,27 @@ function inbox(t) {
     switchUser(name) { username = name; },
   };
 }
+
+test("mobile Mailbox toggles from a WebKit-style click without pointerType", async t => {
+  const app = inbox(t);
+  app.w.PortalResponsive = { isMobile: () => true };
+  const root = app.page();
+  const trigger = root.querySelector("[data-agent-conversation-trigger]");
+  trigger.dispatchEvent(new app.w.MouseEvent("click", { bubbles: true }));
+  assert.equal(root.dataset.expanded, "true");
+  assert.equal(root.dataset.mobileOverlay, "true");
+  assert.equal(trigger.getAttribute("aria-expanded"), "true");
+  assert.equal(app.w.document.body.classList.contains("portalAgentInboxOverlayOpen"), true);
+  const close = root.querySelector("[data-agent-inbox-mobile-close]");
+  assert.equal(close.hidden, false);
+  close.dispatchEvent(new app.w.MouseEvent("click", { bubbles: true }));
+  assert.equal(root.dataset.expanded, "false");
+  assert.equal(root.dataset.mobileOverlay, "false");
+  assert.equal(trigger.getAttribute("aria-expanded"), "false");
+  assert.equal(close.hidden, true);
+  assert.equal(app.w.document.body.classList.contains("portalAgentInboxOverlayOpen"), false);
+  await app.answer(null);
+});
 
 test("a new page draws the assistant next to Mailbox from the last confirmed target, then follows the server", async t => {
   const app = inbox(t);
@@ -406,4 +428,37 @@ test('failed cancellation can retry the same accepted input before the stream ca
   assert.deepEqual(app.requests.filter(r => r.instruction === 'CancelInput').map(r => r.args.message_id), [id, id]);
   assert.equal(app.panel.pendingTurnSubmissions.size, 0);
   assert.equal(app.requests.filter(r => r.instruction === 'DeliverMessage').length, 1, 'retry cancellation never replays input');
+});
+
+test("a facade's Stop follows the requests this viewer sees, not the Family-wide state", async t => {
+  const SOLO = "resident_333333333333";
+  const request = (id, state) => ({ message_id: id, role: "user", author_id: "playwright", created_at: "2026-10-31T00:00:00Z",
+    content_parts: [{ type: "text", text: id }], relay: { state, resident_id: SOLO, title: "Solo" } });
+  // Under Solo the hidden member's running request is filtered out, but the
+  // facade state and controls still describe it.
+  const visible = request("msg_solo", "completed");
+  const app = chat(t, {
+    GetConversation: () => ({ resident: { resident_id: FACADE, lineage_id: LINEAGE }, messages: [visible], input_states: [], cursor: 1,
+      state: { work_state: "running", active_message_id: "msg_hidden" }, controls: { can_send: true, can_stop: true }, queue: { items: [] },
+      family_facade: { chat_preferences: { muted_member_ids: [], solo_member_id: SOLO } } }),
+    CancelInput: args => ({ message_id: args.message_id, input_state: { message_id: args.message_id, state: "cancelled" } }),
+  });
+  await app.load();
+  assert.equal(app.panel.workspace.state.composer.can_stop, false, "a hidden member's work shows no Stop");
+  inputEvent(app, 2, "resident.state.changed", { state: { work_state: "running", active_message_id: "msg_hidden" }, controls: { can_send: true, can_stop: true } });
+  await drain();
+  assert.equal(app.panel.workspace.state.composer.can_stop, false);
+  inputEvent(app, 3, "conversation.message.updated", { message_id: "msg_solo", message: request("msg_solo", "running") });
+  await drain();
+  assert.equal(app.panel.workspace.state.composer.can_stop, true, "a visible running request shows Stop");
+  const button = app.panel.workspace.els.stop;
+  assert.ok(button?.isConnected);
+  // A Resident state read of the facade itself carries no member work.
+  inputEvent(app, 4, "resident.state.changed", { state: { work_state: "idle", active_message_id: "" }, controls: { can_send: true, can_stop: false } });
+  await drain();
+  assert.equal(app.panel.workspace.state.composer.can_stop, true, "Stop stays while the visible request runs");
+  assert.equal(app.panel.workspace.els.stop, button);
+  app.w.PortalUI.confirm = async () => true;
+  await app.panel.stopFamily();
+  assert.deepEqual(app.requests.filter(r => r.instruction === "CancelInput").map(r => r.args.message_id), ["msg_solo"]);
 });
