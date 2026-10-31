@@ -182,15 +182,16 @@ def _inspect(cursor):
         require(not data[table], 'pending_' + table)
     # A provider account check (account_setup.check) is only read back by
     # GetProviderAccountCheck: never acknowledged, never routed to a Resident,
-    # removed by terminal retention. Its ended row is retained and hashed. Any
-    # other scheduler record, even an ended one, may still owe a Resident its
-    # outcome.
+    # removed by terminal retention. Other ended receipts are inert only after
+    # their consumer acknowledged the outcome and released Resident work.
+    # Both kinds remain in the snapshot and its fingerprint.
     scheduler = rows('execution_runtime', 'executions')
     work_executions = {r['execution_id'] for r in data['resident_execution_work']}
     for row in scheduler:
         metadata = object_value(row['request_json']).get('metadata')
-        require(row['status'] in ('completed', 'failed', 'cancelled') and row['acknowledged_at'] is None
-                and isinstance(metadata, dict) and isinstance(metadata.get('provider_account_check'), dict)
+        consumed = row['acknowledged_at'] is not None
+        account_check = isinstance(metadata, dict) and isinstance(metadata.get('provider_account_check'), dict)
+        require(row['status'] in ('completed', 'failed', 'cancelled') and (consumed or account_check)
                 and row['execution_id'] not in work_executions, 'scheduler_execution_present')
     require(not rows('execution_runtime', 'execution_input_controls'), 'scheduler_control_present')
     for row in data['operator_work']:

@@ -459,7 +459,7 @@ def test_other_scheduler_records_still_refuse(database, monkeypatch, metadata, s
         work.inspect(api, {})
 
 
-def test_acknowledged_or_work_named_account_check_refuses(database, monkeypatch):
+def test_work_named_account_check_refuses_even_when_acknowledged(database, monkeypatch):
     dsn, api = database
     eid = scheduler_execution(dsn, monkeypatch, metadata=ACCOUNT_CHECK, status='failed')
     with psycopg.connect(dsn) as c:
@@ -468,7 +468,29 @@ def test_acknowledged_or_work_named_account_check_refuses(database, monkeypatch)
     with pytest.raises(work.WorkProofError, match='scheduler_execution_present'):
         work.inspect(api, {})
     with psycopg.connect(dsn) as c:
-        c.execute('UPDATE execution_runtime.executions SET execution_id=%s, acknowledged_at=now()', (eid,))
+        c.execute('UPDATE execution_runtime.executions SET acknowledged_at=now()')
+    with pytest.raises(work.WorkProofError, match='scheduler_execution_present'):
+        work.inspect(api, {})
+
+
+@pytest.mark.parametrize('status', ['completed', 'failed', 'cancelled'])
+def test_acknowledged_terminal_receipt_is_retained_and_hashed(database, monkeypatch, status):
+    dsn, api = database
+    eid = scheduler_execution(dsn, monkeypatch, metadata={'message_id': 'consumed'}, status=status)
+    from management_portal.execution.scheduler import Scheduler
+    Scheduler().acknowledge(eid, actor='fixture_user')
+    proof = work.inspect(api, {})
+    assert proof['retained']['execution_runtime.executions']['count'] == 1
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE execution_runtime.executions SET error='changed receipt' WHERE execution_id=%s", (eid,))
+    assert work.inspect(api, {}) != proof
+
+
+def test_acknowledged_nonterminal_receipt_still_refuses(database, monkeypatch):
+    dsn, api = database
+    eid = scheduler_execution(dsn, monkeypatch, metadata={}, status='queued')
+    with psycopg.connect(dsn) as c:
+        c.execute('UPDATE execution_runtime.executions SET acknowledged_at=now() WHERE execution_id=%s', (eid,))
     with pytest.raises(work.WorkProofError, match='scheduler_execution_present'):
         work.inspect(api, {})
 
