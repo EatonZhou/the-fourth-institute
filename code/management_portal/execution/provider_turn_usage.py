@@ -11,7 +11,8 @@ Portal counts every token a turn sent to the model and every token it got back:
 An Execution reports ``{"last": <turn>, "context": <last request>,
 "modelContextWindow": <window>}`` with camelCase keys, like the Codex App
 Server.  The turn is the sum of all model requests; the last request shows how
-full the context window is.
+full the context window is.  ``reasoningEffort`` is the effort the Provider
+says it sent the last request with, when it says (see ``provider_default_efforts``).
 
 Codex already reports this.  Claude Code and Kimi Code report input without
 its cache, and their result covers only the Provider's last query: when a
@@ -69,10 +70,12 @@ class ObservedTurnUsage:
     requests: tuple[RequestUsage, ...] = ()
     # The context window of the session's model, when the Provider tells.
     context_window: int = 0
+    # The reasoning effort the Provider ran the last main-context request with.
+    effort: str = ""
 
 
 def _observed(requests: list[dict[str, Any]], *, prefix: str) -> ObservedTurnUsage | None:
-    """Sum requests (``id``, ``usage``, ``at``, ``model``, ``context``) in order."""
+    """Sum requests (``id``, ``usage``, ``at``, ``model``, ``effort``, ``context``) in order."""
 
     if not requests:
         return None
@@ -85,6 +88,7 @@ def _observed(requests: list[dict[str, Any]], *, prefix: str) -> ObservedTurnUsa
         turn=turn,
         context=dict(last.get("usage") or {}),
         model=str(last.get("model") or ""),
+        effort=str(last.get("effort") or ""),
         requests=tuple(
             RequestUsage(f"{prefix}:{request['id']}", dict(request["usage"]), _iso(request["at"]))
             for request in requests
@@ -248,6 +252,8 @@ def read_claude_turn_usage(path: str | Path, *, since: str, until: str = "") -> 
             "at": previous["at"] if previous is not None else moment,
             "context": not entry.get("isSidechain"),
             "model": str(message.get("model") or ""),
+            # Claude Code stamps each entry with the effort the request was sent with.
+            "effort": str(entry.get("effort") or (previous or {}).get("effort") or ""),
         }
     return _observed(sorted(requests.values(), key=lambda request: request["at"]), prefix="claude")
 
@@ -302,10 +308,13 @@ def claude_turn_usage(
 
     last_query = anthropic_request_usage(reported)
     if observed is None or observed.turn.get("total_tokens", 0) < last_query.get("total_tokens", 0):
-        turn, context, model = last_query, {}, ""
+        turn, context, model, effort = last_query, {}, "", ""
     else:
-        turn, context, model = observed.turn, observed.context, observed.model
-    return usage_payload(turn, context, claude_context_window(model_usage, model))
+        turn, context, model, effort = observed.turn, observed.context, observed.model, observed.effort
+    payload = usage_payload(turn, context, claude_context_window(model_usage, model))
+    if payload and effort:
+        payload["reasoningEffort"] = effort
+    return payload
 
 
 # Kimi -----------------------------------------------------------------------

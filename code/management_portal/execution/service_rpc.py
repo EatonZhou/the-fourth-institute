@@ -6,8 +6,10 @@ call the ``scheduler.*`` methods with their claim.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable
 
+from . import provider_default_efforts
 from .activity_redaction import redact_sensitive_mapping
 from .contracts import (
     ExecutionInputControl,
@@ -18,6 +20,7 @@ from .contracts import (
 )
 from management_portal.notifications import business_projection_subject
 
+LOGGER = logging.getLogger(__name__)
 
 EXECUTION_SERVICE_SCHEMA = "tfi.execution-service.v1"
 
@@ -101,11 +104,16 @@ def resolve_account(server: Any, params: dict[str, Any]) -> Any:
 
 
 def runtime_catalog(server: Any, params: dict[str, Any]) -> Any:
-    return server.accounts.runtime_catalog(
+    catalog = server.accounts.runtime_catalog(
         str(params.get("account_id") or ""),
         backend=str(params.get("backend") or ""),
         include_backends=bool(params.get("include_backends")),
     )
+    try:
+        return provider_default_efforts.apply(server.scheduler.changes, catalog)
+    except Exception:  # noqa: BLE001 - the catalog stands without the observed defaults
+        LOGGER.warning("Observed default efforts unavailable", exc_info=True)
+        return catalog
 
 
 def submit_execution(server: Any, params: dict[str, Any]) -> Any:
@@ -473,6 +481,7 @@ def finish_execution(server: Any, params: dict[str, Any]) -> Any:
         **_claim(params),
     )
     server.record_accounted_usage(finished)
+    server.record_provider_default_effort(finished)
     snapshot = server.publish_change(finished)
     if execution_result.usage:
         server.notification_publisher.publish(

@@ -29,6 +29,7 @@ from .contracts import (
     ExecutionServiceHealth,
     ExecutionSnapshot,
 )
+from . import provider_default_efforts
 from .scheduler import Scheduler
 from .service_rpc import RPC_HANDLERS
 from .session_manager import SessionManager
@@ -905,6 +906,15 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         except Exception:  # noqa: BLE001 - the ledger already holds the count; the record is display
             LOGGER.warning("Counted usage of %s could not be recorded", snapshot.get("execution_id"), exc_info=True)
 
+    def record_provider_default_effort(self, snapshot: Mapping[str, Any]) -> None:
+        """Keep the effort the Provider chose for an ended turn that requested none."""
+
+        result = snapshot.get("result") if isinstance(snapshot.get("result"), dict) else {}
+        try:
+            provider_default_efforts.record(self.scheduler.changes, result)
+        except Exception:  # noqa: BLE001 - only Resident Settings' default label depends on it
+            LOGGER.warning("Default effort of %s could not be recorded", snapshot.get("execution_id"), exc_info=True)
+
     def _reconcile_terminal_agent_data(self) -> None:
         for canonical in self.agent_data.running_executions():
             clean_execution_id = str(
@@ -941,6 +951,7 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
                 ),
             )
             self.record_accounted_usage(snapshot)
+            self.record_provider_default_effort(snapshot)
             if changed:
                 self.publish_change(snapshot)
 

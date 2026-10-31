@@ -41,6 +41,7 @@ from .provider_continuation import (
     run_provider_continuation,
 )
 from .provider_failures import is_egress_block_failure, is_network_failure
+from .provider_default_efforts import mark_provider_default
 from .provider_turn_usage import ObservedTurnUsage
 from .transport import ExecutionClaimOwnershipLost, ExecutionResponseUnknown, ExecutionServiceUnavailable
 from .turn_input_pump import NO_TURN_INPUT as _NO_TURN_INPUT, TurnInputPump, text_input
@@ -630,6 +631,8 @@ class NativeTurnRun:
             if not detached:
                 observed_usage = self._record_turn_effects()
         usage = backend.turn_usage(result, observed_usage)
+        if usage.get("reasoningEffort") and not str(self.options.get("effort") or "").strip():
+            usage = mark_provider_default(usage, model=self._requested_model())
         _report_context_usage(invocation, usage)
         return BackendResult(
             output={
@@ -698,6 +701,18 @@ class NativeTurnRun:
                 if not (is_egress_block_failure(again) or is_network_failure(again)):
                     raise
                 failure = again
+
+    def _requested_model(self) -> str:
+        """The model the turn asked for: the Resident's, else the route's default."""
+
+        model = str(self.options.get("model") or "").strip()
+        if model:
+            return model
+        try:
+            return str(self.provider.catalog(self.route_id).get("default_model") or "")
+        except Exception:  # noqa: BLE001 - the default effort then stays unobserved
+            LOGGER.warning("%s catalog unavailable for route %s", self.backend.provider_id, self.route_id, exc_info=True)
+            return ""
 
     def _record_turn_effects(self) -> ObservedTurnUsage | None:
         """Record what the turn left, however it ended; the usage the Provider recorded."""
