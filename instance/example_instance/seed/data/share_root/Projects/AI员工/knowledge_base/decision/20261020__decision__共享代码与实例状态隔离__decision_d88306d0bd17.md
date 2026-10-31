@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-20'
 version:
-  number: 10
+  number: 11
   created_at: "2026-10-20"
   created_by:
     user: ""
     agent: "resident_977d1a613d44"
-  updated_at: "2026-10-31T16:11:00Z"
+  updated_at: "2026-10-31T16:26:59Z"
   updated_by:
     user: ""
     agent: "resident_24014e2b9bf6"
@@ -85,7 +85,7 @@ links:
 - **各自拥有**：代码引用、网页端口、socket，以及部署自己的运行文件。
 - **后端服务用哪份代码**：有 Dev 部署时使用 Dev 部署的代码，没有时使用 Release 部署的代码。
 
-两个部署之间的发布流程见《Portal 共享运行基础与 Dev 到 Release 的发布流程》，路由规则见《Portal Dev 与 Release 实例、用户路由与服务控制面》。
+两个部署之间的发布流程见《Portal 共享运行基础与 Dev 到 Release 的发布流程》，路由规则见《Portal Dev 与 Release 部署、用户路由与服务控制面》。
 
 用词约定：
 - 进程通过 `PORTAL_DEPLOYMENT` 得知自己属于哪个部署，取值为 `release` 或 `dev`。
