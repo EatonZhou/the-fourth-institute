@@ -31,6 +31,8 @@ def definition(tmp_path, monkeypatch):
     tools = root / "bundled tools"
     tools.mkdir()
     (tools / "tfi-fixture-python").symlink_to(sys.executable)
+    # The registered account directory exists; the host locks it before starting Codex.
+    (root / "account").mkdir()
     monkeypatch.setattr(units, "sys", SimpleNamespace(platform="darwin", executable=sys.executable))
     monkeypatch.setattr(units, "instance_root", lambda: root)
     monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {"providers": {"codex_binary": str(binary)}}})
