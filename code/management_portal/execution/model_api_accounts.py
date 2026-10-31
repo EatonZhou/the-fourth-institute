@@ -56,4 +56,4 @@ def ensure_routes(entry, actor):
                 raise ValueError(f"API route registration changed concurrently: {name}")
             rows.append(row)
             result.append(row)
-    return result
+    return list({row["account_id"]: row for row in result}.values())

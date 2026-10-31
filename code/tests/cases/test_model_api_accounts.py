@@ -44,6 +44,7 @@ def test_existing_api_routes_are_reused():
                                       'config': {'api_id': 'deepseek'}, 'max_concurrency': 5}, 'test')
     saved = _call(isa.update_model_api, api_id='deepseek', changes={})
     assert {r['account_id'] for r in saved['accounts']} == {'deepseek', 'dsh_deepseek', 'deepseek-kimi', 'deepseek-opencode'}
+    assert len(saved['accounts']) == 4, 'native and direct reuse must not duplicate the returned identity'
     assert accounts.registration('deepseek')['max_concurrency'] == 5
 
 
