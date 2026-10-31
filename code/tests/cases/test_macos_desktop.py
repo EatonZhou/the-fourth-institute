@@ -400,6 +400,8 @@ class MacCodexNative(unittest.TestCase):
         self.assertTrue(binary and Path(binary).is_file(), "Set TFI_TEST_CODEX_BINARY to the validation-only Codex CLI")
         with tempfile.TemporaryDirectory(prefix="tfi-codex-check-", dir="/tmp") as tmp:
             base = Path(tmp).resolve()
+            account_home = base / "empty-account"
+            account_home.mkdir(mode=0o700)
             registry = base / "LaunchAgents"
             clean = {"PATH": os.environ.get("PATH", os.defpath), "HOME": str(base / "home"),
                      "TFI_MACOS_SERVICE_DIRECTORY": str(registry), "LANG": "en_US.UTF-8"}
@@ -416,7 +418,7 @@ class MacCodexNative(unittest.TestCase):
                     stack.enter_context(patch.object(site_config, "read_site_config", return_value={
                         "deployment": {"providers": {"codex_binary": binary}}}))
                     stack.enter_context(patch.object(storage, "site_environment", return_value=site_env))
-                    stack.enter_context(patch.object(account_hosting, "account_home", return_value=base / "empty-account"))
+                    stack.enter_context(patch.object(account_hosting, "account_home", return_value=account_home))
                     stack.enter_context(patch.object(account_hosting, "codex_socket_path", return_value=logical))
                     _, directory, job, content, controller = units._native_codex_service("fixture")
                     adapter.register_services(directory, {job: content})
