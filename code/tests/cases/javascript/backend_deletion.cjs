@@ -10,7 +10,7 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(resolv
     if (!w.PortalOverlay) w.eval(fs.readFileSync('management_portal/static/portal_overlay.js', 'utf8'));
     const calls = [];
     let accounts = [{account_id: 'my-ai', provider: 'provider_api', kind: 'api_profile', enabled: true,
-      config: {api_id: 'my-api'}, registration: {version: 1, enabled: true, config: {api_id: 'my-api'}}}];
+      registration_version: 1, config: {api_id: 'my-api'}, registration: {version: 1, enabled: true, config: {api_id: 'my-api'}}}];
     let apis = [{api_id: 'my-api', provider: 'deepseek', default_model: 'test-model', enabled: true}];
     let rejection = null, finishDelete;
     w.PortalInstructionClient = {execute: async (name, args) => {
@@ -82,7 +82,8 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(resolv
     assert.equal(apis.length, 0);
     panel.destroy();
     accounts = [{account_id: 'service', provider: 'kimi', kind: 'service', enabled: true},
-      {account_id: 'ordinary', provider: 'provider_api', kind: 'api_profile', enabled: true}];
+      {account_id: 'registered-service', provider: 'kimi', kind: 'service', enabled: true, registration_version: 1},
+      {account_id: 'ordinary', provider: 'provider_api', kind: 'api_profile', enabled: true, registration_version: 1}];
     apis = [{api_id: 'my-api'}];
     panel = await w.mountBackend(h.root, {me: {access: {allows: {UpdateProviderAccount: true}}}});
     assert([...section('accounts').querySelectorAll('.backendDelete button')].filter(b => !b.hidden).every(b => b.disabled));
@@ -92,6 +93,8 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(resolv
     panel = await w.mountBackend(h.root, {me: {access: {allows: {DeleteProviderAccount: true, DeleteModelApi: true}}}});
     assert(deleteButton('accounts').disabled, 'service identity stays read-only');
     assert.match(deleteButton('accounts').title, /Provider/);
+    assert(!section('accounts').querySelector('[data-backend-account="registered-service"] .backendDelete button').disabled,
+      'registered service accounts use the same server-side reference checks as other accounts');
     assert(!section('accounts').querySelector('[data-backend-account="ordinary"] .backendDelete button').disabled);
     assert(!deleteButton('apis').disabled, 'specific delete permission is sufficient');
     console.log('PASS backend deletion confirmation, refusal, recovery, retry and non-cascading success');

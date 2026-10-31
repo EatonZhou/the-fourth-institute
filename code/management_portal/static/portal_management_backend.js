@@ -821,8 +821,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             await reload(); }), readonly)] : []),
           button(a.enabled === false ? "启用" : "停用", () => void run(async () => { await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {enabled: a.enabled === false}}, {expectedVersion: a.registration_version}); await reload(); }), readonly),
           button("编辑初始并发", () => concurrencyEditor(a), readonly),
-          deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || a.kind === "service",
-            a.kind === "service" ? "服务账号由 Provider 管理，不能在此删除。" : "当前身份没有删除权限。"))]};
+          deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || !Number.isInteger(a.registration_version),
+            !Number.isInteger(a.registration_version) ? "Provider 内置身份没有可删除的账号登记。" : "当前身份没有删除权限。"))]};
     })),
     apis: () => table("apis", ["连接名称", "服务商", "接口地址", "默认模型", "状态", "操作"], state.apis.map(api => {
       const result = node("span", "", {role: "status"});

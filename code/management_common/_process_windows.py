@@ -164,6 +164,25 @@ def spawn_options():
     return {"creationflags": CREATE_NEW_PROCESS_GROUP}
 
 
+def _in_current_job(pid):
+    """Query the caller's immediate Job, including nested descendant Jobs."""
+    capacity = 64
+    while capacity <= 1048576:
+        class ProcessIds(ctypes.Structure):
+            _fields_ = [("assigned", w.DWORD), ("count", w.DWORD),
+                        ("pids", ctypes.c_size_t * capacity)]
+        info = ProcessIds()
+        if _api().QueryInformationJobObject(None, 3, ctypes.byref(info), ctypes.sizeof(info), None):
+            if info.count > capacity:
+                raise RuntimeError("Invalid Windows Job process count")
+            return pid in info.pids[:info.count]
+        error = ctypes.get_last_error()
+        if error != 234:  # ERROR_MORE_DATA: membership changed or buffer too small.
+            raise ctypes.WinError(error)
+        capacity = max(capacity * 2, info.assigned)
+    raise RuntimeError("Windows Job membership could not be observed")
+
+
 def spawn_process(*args, tree_id=None, kill_on_owner_exit=True, **kwargs):
     from ._windows_command import prepare
     if kwargs.get('shell'):
@@ -200,11 +219,14 @@ def spawn_process(*args, tree_id=None, kill_on_owner_exit=True, **kwargs):
         # when the OS command line includes an explicit batch interpreter.
         process.args = original_command
         if not kill_on_owner_exit:
-            # A nested host Job may stop breakaway partway up the chain.
-            # Check before assigning our new Job and before the child runs.
+            # Windows task hosts can retain a non-breakaway outer Job. The
+            # successor must leave the caller's owned tree, not the OS session.
+            # All Portal Jobs allow explicit breakaway, so it leaves their
+            # chain before reaching that host. Prove this before it can run;
+            # a host that prevents leaving the immediate Job still refuses.
             inherited = w.BOOL()
             _check(_api().IsProcessInJob(int(process._handle), None, ctypes.byref(inherited)))
-            if inherited.value:
+            if inherited.value and _in_current_job(process.pid):
                 raise PermissionError("Host Job prevents independent process-tree ownership")
         _check(_api().AssignProcessToJobObject(job.handle, int(process._handle)))
         process._portal_job = job

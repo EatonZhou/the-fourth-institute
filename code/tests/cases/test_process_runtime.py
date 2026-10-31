@@ -175,8 +175,8 @@ def test_windows_assignment_failure_kills_suspended_child(monkeypatch):
     assert events == ["kill", "wait"] and job.closed
 
 
-@pytest.mark.parametrize("inherited", [False, True])
-def test_windows_successor_must_leave_all_ancestor_jobs(monkeypatch, inherited):
+@pytest.mark.parametrize("inherited,same_tree", [(False, False), (True, False), (True, True)])
+def test_windows_successor_must_leave_callers_tree(monkeypatch, inherited, same_tree):
     events = []
     job = FakeJob([0])
     class Process:
@@ -198,8 +198,9 @@ def test_windows_successor_must_leave_all_ancestor_jobs(monkeypatch, inherited):
     monkeypatch.setattr(windows.subprocess, "Popen", popen)
     monkeypatch.setattr(windows, "_api", lambda: SimpleNamespace(
         IsProcessInJob=in_job, AssignProcessToJobObject=lambda *args: events.append("assign") or 1))
+    monkeypatch.setattr(windows, "_in_current_job", lambda pid: same_tree)
     monkeypatch.setattr(windows, "_resume", lambda _: events.append("resume"))
-    if inherited:
+    if inherited and same_tree:
         with pytest.raises(PermissionError, match="Host Job"):
             windows.spawn_process(["successor"], kill_on_owner_exit=False)
         assert events == ["kill", "wait"] and job.closed
@@ -220,6 +221,33 @@ def test_windows_job_allows_explicit_but_not_silent_breakaway(monkeypatch, kill_
     job = windows.Job.create("successor", kill_on_close)
     assert limits == [windows.BREAKAWAY_OK | (windows.KILL_ON_JOB_CLOSE if kill_on_close else 0)]
     job.close()
+
+
+@pytest.mark.parametrize("member", [False, True])
+def test_windows_job_membership_retries_a_growing_process_list(monkeypatch, member):
+    capacities = []
+    def query(job, kind, result, size, returned):
+        assert job is None and kind == 3
+        info = result._obj
+        capacities.append(len(info.pids))
+        if len(capacities) == 1:
+            info.assigned = 130
+            return 0
+        info.count = 2
+        info.pids[0], info.pids[1] = 10, 567 if member else 20
+        return 1
+    monkeypatch.setattr(windows, "_api", lambda: SimpleNamespace(QueryInformationJobObject=query))
+    monkeypatch.setattr(windows.ctypes, "get_last_error", lambda: 234, raising=False)
+    assert windows._in_current_job(567) is member
+    assert capacities == [64, 130]
+
+
+def test_windows_job_membership_denied_does_not_mean_detached(monkeypatch):
+    monkeypatch.setattr(windows, "_api", lambda: SimpleNamespace(QueryInformationJobObject=lambda *args: 0))
+    monkeypatch.setattr(windows.ctypes, "get_last_error", lambda: 5, raising=False)
+    monkeypatch.setattr(windows.ctypes, "WinError", lambda code: PermissionError(code), raising=False)
+    with pytest.raises(PermissionError):
+        windows._in_current_job(567)
 
 
 @pytest.mark.parametrize("state,alive", [(0, False), (258, True)])
