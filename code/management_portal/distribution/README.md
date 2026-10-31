@@ -14,9 +14,11 @@
 不依赖另传的一份自然语言任务文本。
 
 核心执行规则默认来自仓库 `core_skills/tfi-agent-rule` 与
-`core_skills/tfi-unified-id`。显式 `source_root` 只改变读取根，目录名仍必须为
-这两个 canonical 名称；不读取旧 Skill 名称、域值或格式前缀别名。
-必需规则及统一 ID CLI 缺失时生成失败，不回退到本站共享目录。
+`core_skills/tfi-unified-id`；共用规则要求必读的 `core_skills/manage-knowledge-base`、
+`core_skills/create-skill` 也属于核心 Skill，整个目录随发行带出（`__pycache__` 除外）。
+显式 `source_root` 只改变读取根，目录名仍必须为这四个 canonical 名称；不读取旧 Skill
+名称、域值或格式前缀别名。必需规则、统一 ID CLI 或这两个 Skill 缺失时生成失败，
+不回退到本站共享目录。
 导出保持 canonical 目录，安装时按目标五根展开路径。
 
 `candidates/release_features` 的 `resolution.resource_dependencies` 是类型到页面、

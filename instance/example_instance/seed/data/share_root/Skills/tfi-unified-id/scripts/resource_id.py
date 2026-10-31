@@ -81,15 +81,15 @@ def _portal_backends() -> tuple[object, object, object, object]:
     portal_root = str(DEFAULT_PORTAL_ROOT)
     if portal_root not in sys.path:
         sys.path.insert(0, portal_root)
-    from management_portal import article_identity_backend
-    from management_portal import paper_backend
+    from management_portal import article_registry
+    from management_portal import paper_resources
     from management_portal import resource_identity_backend
     from management_portal import search_identity_backend
 
     return (
         resource_identity_backend,
-        article_identity_backend,
-        paper_backend,
+        article_registry,
+        paper_resources,
         search_identity_backend,
     )
 
@@ -291,8 +291,10 @@ def command_list_types(args: argparse.Namespace, registry: dict) -> int:
 
 def command_scan_repo(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    repo_backend, article_backend, _paper_backend, _search_backend = _portal_backends()
-    article_roots, skipped_articles = article_backend.discover_article_roots(
+    repo_backend, article_backend, _paper_resources, _search_backend = _portal_backends()
+    from management_portal import article_discovery
+
+    article_roots, skipped_articles = article_discovery.discover_article_roots(
         args.roots or None,
     )
     excluded_roots = {
@@ -318,9 +320,11 @@ def command_scan_repo(args: argparse.Namespace, registry: dict) -> int:
 
 def command_scan_article(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _repo_backend, article_backend, _paper_backend, _search_backend = _portal_backends()
+    _portal_backends()
+    from management_portal import article_registration
+
     _print(
-        article_backend.scan_and_sync_article_registry(
+        article_registration.scan_and_sync_article_registry(
             args.roots or None,
             apply=args.apply,
         )
@@ -499,9 +503,9 @@ def command_scan_resident(args: argparse.Namespace, registry: dict) -> int:
 
 def command_scan_paper(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _repo_backend, _article_backend, paper_backend, _search_backend = _portal_backends()
+    _repo_backend, _article_backend, paper_resources, _search_backend = _portal_backends()
     _print(
-        paper_backend.scan_and_clean_paper_ids(
+        paper_resources.scan_and_clean_paper_ids(
             paper_root=args.paper_root,
             apply=args.apply,
         )
@@ -514,7 +518,7 @@ def command_scan_search(args: argparse.Namespace, registry: dict) -> int:
     (
         _repo_backend,
         _article_backend,
-        _paper_backend,
+        _paper_resources,
         search_backend,
     ) = _portal_backends()
     _print(search_backend.scan_search_ids(apply=args.apply))
@@ -975,7 +979,7 @@ def command_scan_system(args: argparse.Namespace, registry: dict) -> int:
 
 def command_register_repo(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    repo_backend, article_backend, _paper_backend, _search_backend = _portal_backends()
+    repo_backend, article_backend, _paper_resources, _search_backend = _portal_backends()
     if article_backend.is_article_storage_path(args.path):
         raise AddressError(
             "Article storage uses article_* and cannot be registered as repo_*"
@@ -992,9 +996,11 @@ def command_register_repo(args: argparse.Namespace, registry: dict) -> int:
 
 def command_register_article(args: argparse.Namespace, registry: dict) -> int:
     del registry
-    _repo_backend, article_backend, _paper_backend, _search_backend = _portal_backends()
+    _portal_backends()
+    from management_portal import article_registration
+
     _print(
-        article_backend.register_article(
+        article_registration.register_article(
             args.path,
             project_ids=args.project_id,
             article_id=args.article_id,
@@ -1020,13 +1026,13 @@ def command_list(args: argparse.Namespace, registry: dict) -> int:
     if args.resource_type == "device":
         _print(_device_backend().load_device_records())
         return 0
-    repo_backend, article_backend, paper_backend, search_backend = _portal_backends()
+    repo_backend, article_backend, paper_resources, search_backend = _portal_backends()
     if args.resource_type == "repo":
         result = repo_backend.load_repo_records()
     elif args.resource_type == "article":
         result = article_backend.load_article_records()
     elif args.resource_type == "paper":
-        result = paper_backend.load_paper_resources(args.paper_root)
+        result = paper_resources.load_paper_resources(args.paper_root)
     elif args.resource_type == "search":
         result = search_backend.load_search_resources(
             actor=args.actor,

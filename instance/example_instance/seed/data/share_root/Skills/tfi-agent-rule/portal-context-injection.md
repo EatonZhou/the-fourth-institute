@@ -62,7 +62,7 @@ Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入�
 decision_ccbb1cac24aa 与 decision_c47a13e8b962。
 恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分；切换账号不自动重试失败输入。
 
-修改规则时同步源码 `code/core_skills/tfi-agent-rule/`、发行 seed 和本站共用目录，
+修改规则时同步源码 `code/core_skills/` 下的对应核心 Skill、发行 seed 和本站共用目录，
 再用 `PreviewPromptInjection` 检查物化正文与发送时机。文件更新不改写已有 Provider
 session 中已送达的内容；后续是否发送按各部分设置与 Provider 保留策略决定。不得仅因
 预览读到新正文就宣称所有运行中 Resident 已更新，也不为文档同步重启正在执行的任务。

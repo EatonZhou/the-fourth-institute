@@ -35,4 +35,6 @@ Portal 托管的 Codex 关闭自动项目文档加载，因此不能只修改 `A
 `${share_root}/Skills/tfi-agent-rule/` 中的主文件及对应角色文件。`resident` 角色通过其中的
 开发任务规则读取 `portal-development.md` 和 SPEC；不会自动注入 development 角色全文。
 修改后同步发行 seed 与本站共用目录，并通过 `PreviewPromptInjection` 检查正文和发送时机。
+共用规则要求必读的 `create-skill`、`manage-knowledge-base` 同样以 `code/core_skills/` 为源码，
+按同一方式同步。
 已送达的会话内容不会因文件变化而被改写；首轮、后续轮次、压缩后发送各按注入设置执行。

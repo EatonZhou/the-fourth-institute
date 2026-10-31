@@ -7,6 +7,8 @@ from management_portal.agent_skill_context import PORTAL_ROLE_FILES, materialize
 CORE_SUPPORT_FILES = ('SKILL.md', 'scripts/resource_id.py')
 SYSTEM_SKILL = 'tfi-agent-rule'
 IDENTITY_SKILL = 'tfi-unified-id'
+# The common rule requires these Skills by name; each ships whole with the code.
+REQUIRED_SKILLS = ('manage-knowledge-base', 'create-skill')
 
 
 def canonical_resources():
@@ -14,7 +16,7 @@ def canonical_resources():
     import yaml
     root = Path(__file__).resolve().parents[2] / 'core_skills'
     resources = {}
-    for name in (SYSTEM_SKILL, IDENTITY_SKILL):
+    for name in (SYSTEM_SKILL, IDENTITY_SKILL, *REQUIRED_SKILLS):
         text = (root / name / 'SKILL.md').read_text(encoding='utf-8')
         metadata = yaml.safe_load(text.split('---', 2)[1])
         resources[metadata['metadata']['id']] = root / name
@@ -27,9 +29,9 @@ def export_core_skills(destination, *, source_root=None, source_usernames=()):
     source_root = Path(source_root) if source_root is not None else repository / "core_skills"
     source = source_root / SYSTEM_SKILL
     target = Path(destination) / "data/share_root/Skills" / SYSTEM_SKILL
-    mappings = ((str(source_root / SYSTEM_SKILL), "${share_root}/Skills/" + SYSTEM_SKILL),
-                (str(source_root / IDENTITY_SKILL), "${share_root}/Skills/" + IDENTITY_SKILL),
-                (str(repository), "${code_root}"))
+    mappings = tuple((str(source_root / name), "${share_root}/Skills/" + name)
+                     for name in (SYSTEM_SKILL, IDENTITY_SKILL, *REQUIRED_SKILLS)) + (
+                (str(repository), "${code_root}"),)
     pending = {"SKILL.md", *PORTAL_ROLE_FILES.values()}
     files = []
     seen = set()
@@ -66,5 +68,23 @@ def export_core_skills(destination, *, source_root=None, source_usernames=()):
                      source_usernames=source_usernames)
         files.append({"path": output.relative_to(destination).as_posix(),
                       "sha256": checksum(output), "size": output.stat().st_size})
+    # Knowledge base and Skill authoring rules are read whole, so every file ships.
+    for name in REQUIRED_SKILLS:
+        root = source_root / name
+        if root.is_symlink() or not (root / 'SKILL.md').is_file():
+            raise ValueError("Required Portal core Skill file is unavailable: " + name + "/SKILL.md")
+        for path in sorted(root.rglob('*')):
+            relative = path.relative_to(root)
+            if '__pycache__' in relative.parts or (path.is_dir() and not path.is_symlink()):
+                continue
+            if path.is_symlink() or not path.is_file():
+                raise ValueError("Required Portal core Skill file is unavailable: "
+                                 + name + "/" + relative.as_posix())
+            output = target.parent / name / relative
+            copy_content(path, output, selected=set(), anonymize=False,
+                         mappings=mappings,
+                         source_usernames=source_usernames)
+            files.append({"path": output.relative_to(destination).as_posix(),
+                          "sha256": checksum(output), "size": output.stat().st_size})
     return {"reason": "Required by Portal execution before model invocation",
             "files": files, "roles": ["general", *PORTAL_ROLE_FILES]}

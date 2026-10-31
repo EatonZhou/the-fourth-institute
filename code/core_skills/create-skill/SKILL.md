@@ -120,7 +120,7 @@ python3 ${share_root}/Skills/create-skill/scripts/quick_validate.py <skill-folde
 
 用户说“Portal 的 shared skill”“TFI Portal shared skill”，或希望 Portal Skills 页面和任务技能选择器可见时，默认创建在 `${share_root}/Skills/<skill-name>/SKILL.md`。
 
-维护已有 Skill 时保留 ID，核对入口、所有附文和脚本中的实际操作。逐项检查指令参数、数据真值、路径来源、触发方式、权限和部署范围；不能只替换术语或检查文件存在。删除失效分支及其独占附件，并同步有效引用。核心规则以 `${code_root}/core_skills/` 为源码，通过该工程的发布与共享同步流程生效；不要只修共享副本。
+维护已有 Skill 时保留 ID，核对入口、所有附文和脚本中的实际操作。逐项检查指令参数、数据真值、路径来源、触发方式、权限和部署范围；不能只替换术语或检查文件存在。删除失效分支及其独占附件，并同步有效引用。核心 Skill 是 `tfi-agent-rule`、`tfi-unified-id`、`create-skill`（本 Skill）和 `manage-knowledge-base`，以 `${code_root}/core_skills/` 为源码，通过该工程的发布与共享同步流程生效；不要只修共享副本。
 
 不要创建 `agents/` 或 `agents/openai.yaml`。
 

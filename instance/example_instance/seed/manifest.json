@@ -6101,33 +6101,33 @@
       "files": [
         {
           "path": "data/share_root/Skills/tfi-agent-rule/SKILL.md",
-          "sha256": "7a88796ba3c1ec29d50f8bb36734cd2caa9b2fb05576ba04738ec5776cf53da3",
-          "size": 13064
+          "sha256": "2260d6b9bd1006724815e2bcadb3319f1bf7b66a107123bd19d8605b0d183bb2",
+          "size": 15071
         },
         {
           "path": "data/share_root/Skills/tfi-agent-rule/portal-codex-accounts.md",
-          "sha256": "54c9492e1bb1983897f65fd6211bd4d896c7d3ea490d1863bfcbb54c7242615a",
-          "size": 2770
+          "sha256": "dfab6e6d55634a5f14d9de0c572f7c74283a56fcd83d6d8d3c5d5e0db0a20422",
+          "size": 3551
         },
         {
           "path": "data/share_root/Skills/tfi-agent-rule/portal-context-injection.md",
-          "sha256": "3f5d5c5cfb61563f27dddc330c5f8975632c1fade993c66ecd7cefd16061a8d4",
-          "size": 5350
+          "sha256": "144905c8564ec394d035a253e1c266e6d81f99f4e102f596cfb167701bbc73ac",
+          "size": 6967
         },
         {
           "path": "data/share_root/Skills/tfi-agent-rule/portal-development.md",
-          "sha256": "7a100077fc061afecfae2a6e36097549045216f92702c71fb7251450b3c98c60",
-          "size": 11356
+          "sha256": "1293a90a5f82b632c209ad06d0bdd05109a80abf1a685ef95c7458e9d59e9820",
+          "size": 11417
         },
         {
           "path": "data/share_root/Skills/tfi-agent-rule/portal-resident-folder.md",
-          "sha256": "19179a755f05796a4f0bd8ce1456aa157675821de2c40bc2f82783ebafb66121",
-          "size": 2666
+          "sha256": "74af18ac2a0c40de2c7623baee9ffe91dc157ae29d503f096339d6843bd2666c",
+          "size": 2925
         },
         {
           "path": "data/share_root/Skills/tfi-agent-rule/portal-resident.md",
-          "sha256": "55eebb5bf3337bb9fc3ef3fdbd7ad9479cd920d0718aec1a57d97abba650be3d",
-          "size": 6009
+          "sha256": "5b613321a2c2ab06092ced4ae245eaf4d33be48b62dc0f89145c9a3fa985b810",
+          "size": 6688
         },
         {
           "path": "data/share_root/Skills/tfi-unified-id/SKILL.md",
@@ -6136,8 +6136,153 @@
         },
         {
           "path": "data/share_root/Skills/tfi-unified-id/scripts/resource_id.py",
-          "sha256": "b241829a5ad395257b50559bfd283599aa975c0ec35999b8e79aa093e188e5ab",
-          "size": 45556
+          "sha256": "4410b6d498d16b6ea26a6b27a0c6bcd847a446ad3f9311f8f502adbf2847be25",
+          "size": 45603
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/SKILL.md",
+          "sha256": "a3d2131740db67cc6bfd4ef429f67e48331e0c292da7ad1e225bb147ec5b0ece",
+          "size": 2551
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-concept-item.md",
+          "sha256": "b9f6aaff85c0141ae68cb0fe2968635b38730991b9aa32dcefa89123a8480aa9",
+          "size": 692
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-decision-item.md",
+          "sha256": "6be8fd524f2c714135bbbb208e82355119618f00a908ec4a1a7e80847bea1c18",
+          "size": 3303
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-examples.md",
+          "sha256": "ab46fcfe94ad22090981df107ba66ff99fb71e0e64f624c4ee6a3ccaf14985fb",
+          "size": 1495
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-idea-item.md",
+          "sha256": "a1438f8dfbc270fc5efbaa16dc41f3938fb16b247246f03ff7928b64e2721833",
+          "size": 538
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-insight-item.md",
+          "sha256": "4669461e91907159264e44516665e01f57bd81dd822246f50786915bdaee38f1",
+          "size": 557
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-plan-item.md",
+          "sha256": "3893d0ef970869b6412b98b69bb3b0c45f5d5ea09f20182e0fada67dfc3fdf2b",
+          "size": 3899
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-question-item.md",
+          "sha256": "61ac15cf59e4d6ef2e4b66664909aebc23c07d01db2f948199f5b1f83328ab0c",
+          "size": 575
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-thinking-item.md",
+          "sha256": "0e69f44e2702d66d171505e58bcd3534bc270eed9c39c825806f0c5c3bff63b7",
+          "size": 577
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/archive-todo-item.md",
+          "sha256": "f6757d72f76319966d42deff1614a8161a1d51b17d676d48b9d430b6dd35cb27",
+          "size": 1384
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/audit-examples.md",
+          "sha256": "40cd424938ad9ec9bbccdd27018d3b89030c5e08491e300201321d19e328109d",
+          "size": 1169
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/audit.md",
+          "sha256": "0b8bd2a1edfdca5908f3a80a5e8933c0d2d1e3d6db9a13007c290d8965aeb4ef",
+          "size": 1920
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/automation.md",
+          "sha256": "380b9953dd5a55a4f052f26ee960b700d526a86a8e280f3370323b0132d49424",
+          "size": 1613
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/cleanup-examples.md",
+          "sha256": "710fe4589fab5d0ad89ef29a669a73ebd554e787941cf50371a9b09fae103e15",
+          "size": 70
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/cleanup-knowledge-base.md",
+          "sha256": "753cddc42664a6e1f6b433225856f5fa7fbb475f62a9d250335a524cd642607e",
+          "size": 958
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/condense-entry.md",
+          "sha256": "abc46e03010708f0f979343753e4eaf8d9db68da45b1285c06628d87e3b625f6",
+          "size": 1441
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/condense-examples.md",
+          "sha256": "ea8f662060dabf4a401fd7889ce36998223440a2c5c8dc80d39d93d327f89bd8",
+          "size": 1145
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/create-entry.md",
+          "sha256": "2d1ec66be6f3fd8cc973006e90405ee3faf21f9b046f590a0bed8aa9d500bbfc",
+          "size": 2412
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/knowledge-base-rules.md",
+          "sha256": "cf35b4c48b430da61c0d2994a858c4071566446b545d9a7ec446a474f82de968",
+          "size": 7783
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/materials.md",
+          "sha256": "f6ccb2651b30fe8cce381284c24966faf3408899ece9649c84b2809269c71db3",
+          "size": 3646
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/modify-entry.md",
+          "sha256": "39824b5c4c6187a7437475f48f14cf24a333b6942e0b32f56267a271b7cb8a53",
+          "size": 1706
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/search-examples.md",
+          "sha256": "3426d76598663f576f73c934a2e052adbfc3a8a86caafc501deb0fe5a4a8b451",
+          "size": 606
+        },
+        {
+          "path": "data/share_root/Skills/manage-knowledge-base/search.md",
+          "sha256": "76dd4c20b65b5c9f53918e6285f527628755dadd4ccb39e4df0d68fa72e1fd99",
+          "size": 1664
+        },
+        {
+          "path": "data/share_root/Skills/create-skill/SKILL.md",
+          "sha256": "a248aabfce235caab41a79a4b5579fb91794765d4ee5182f01e6d50ade273b9c",
+          "size": 6766
+        },
+        {
+          "path": "data/share_root/Skills/create-skill/portal-role-skill.md",
+          "sha256": "a6f1e8820dbcd76853c586da2621f5424599f5993ad7cc9e137267d9b45b7f78",
+          "size": 1838
+        },
+        {
+          "path": "data/share_root/Skills/create-skill/project-local-skill.md",
+          "sha256": "dd6e7c57dce4608da5ea8c53366dcf22b41e9ee435a659a24a45467577c630fe",
+          "size": 785
+        },
+        {
+          "path": "data/share_root/Skills/create-skill/scripts/quick_validate.py",
+          "sha256": "04247b0fdca49935fb5e4bb888c5c949de0499c2c6e356a2aab330d2a6a5aa98",
+          "size": 4204
+        },
+        {
+          "path": "data/share_root/Skills/create-skill/shared-skill.md",
+          "sha256": "642bfd18aa59d600e3592689814b43806e3b3f181d49e2f2edf94946425c6ffd",
+          "size": 1876
+        },
+        {
+          "path": "data/share_root/Skills/create-skill/third-party-skill.md",
+          "sha256": "7f19766dfb13468be309cc15493446388dd6d709aabd809418680de819253473",
+          "size": 560
         }
       ],
       "roles": [
@@ -9448,10 +9593,6 @@
         {
           "source": "${share_root}/Codes/repo_bd47ffeac5c8",
           "target": "data/share_root/Codes/repo_bd47ffeac5c8"
-        },
-        {
-          "source": "${share_root}/Skills/skill_d004894307e7",
-          "target": "data/share_root/Skills/skill_d004894307e7"
         },
         {
           "source": "${share_root}/Projects/AI员工/knowledge_base/thinking/20260907__thinking__Meta_of_Meta：人的管理重心逐步上移__thinking_218380bb8148.md",
@@ -31218,8 +31359,8 @@
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md",
-      "sha256": "23f66cd75aaff8c932dcbf1bd68706219ac7f43bd705a9edd031d9d7d915ebe5",
-      "size": 27292
+      "sha256": "59223de31020ba099c653e782047040d43bd9169c4db79e7b21791a39587fbd1",
+      "size": 27596
     },
     {
       "path": "data/share_root/Projects/AI员工/knowledge_base/decision/20261029__decision__研究地图：项目研发方向的地图、修订与指令__decision_9d15ae2053c4.md",
@@ -31267,39 +31408,154 @@
       "size": 22
     },
     {
-      "path": "data/share_root/Skills/skill_d004894307e7/SKILL.md",
-      "sha256": "e2047c8c0c5b969b6a747d66e02f3b73436389d4e51fc994a716d5add40875b6",
-      "size": 6664
+      "path": "data/share_root/Skills/create-skill/SKILL.md",
+      "sha256": "a248aabfce235caab41a79a4b5579fb91794765d4ee5182f01e6d50ade273b9c",
+      "size": 6766
     },
     {
-      "path": "data/share_root/Skills/skill_d004894307e7/portal-role-skill.md",
+      "path": "data/share_root/Skills/create-skill/portal-role-skill.md",
       "sha256": "a6f1e8820dbcd76853c586da2621f5424599f5993ad7cc9e137267d9b45b7f78",
       "size": 1838
     },
     {
-      "path": "data/share_root/Skills/skill_d004894307e7/project-local-skill.md",
+      "path": "data/share_root/Skills/create-skill/project-local-skill.md",
       "sha256": "dd6e7c57dce4608da5ea8c53366dcf22b41e9ee435a659a24a45467577c630fe",
       "size": 785
     },
     {
-      "path": "data/share_root/Skills/skill_d004894307e7/scripts/quick_validate.py",
+      "path": "data/share_root/Skills/create-skill/scripts/quick_validate.py",
       "sha256": "04247b0fdca49935fb5e4bb888c5c949de0499c2c6e356a2aab330d2a6a5aa98",
       "size": 4204
     },
     {
-      "path": "data/share_root/Skills/skill_d004894307e7/shared-skill.md",
+      "path": "data/share_root/Skills/create-skill/shared-skill.md",
       "sha256": "642bfd18aa59d600e3592689814b43806e3b3f181d49e2f2edf94946425c6ffd",
       "size": 1876
     },
     {
-      "path": "data/share_root/Skills/skill_d004894307e7/third-party-skill.md",
+      "path": "data/share_root/Skills/create-skill/third-party-skill.md",
       "sha256": "7f19766dfb13468be309cc15493446388dd6d709aabd809418680de819253473",
       "size": 560
     },
     {
+      "path": "data/share_root/Skills/manage-knowledge-base/SKILL.md",
+      "sha256": "a3d2131740db67cc6bfd4ef429f67e48331e0c292da7ad1e225bb147ec5b0ece",
+      "size": 2551
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-concept-item.md",
+      "sha256": "b9f6aaff85c0141ae68cb0fe2968635b38730991b9aa32dcefa89123a8480aa9",
+      "size": 692
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-decision-item.md",
+      "sha256": "6be8fd524f2c714135bbbb208e82355119618f00a908ec4a1a7e80847bea1c18",
+      "size": 3303
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-examples.md",
+      "sha256": "ab46fcfe94ad22090981df107ba66ff99fb71e0e64f624c4ee6a3ccaf14985fb",
+      "size": 1495
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-idea-item.md",
+      "sha256": "a1438f8dfbc270fc5efbaa16dc41f3938fb16b247246f03ff7928b64e2721833",
+      "size": 538
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-insight-item.md",
+      "sha256": "4669461e91907159264e44516665e01f57bd81dd822246f50786915bdaee38f1",
+      "size": 557
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-plan-item.md",
+      "sha256": "3893d0ef970869b6412b98b69bb3b0c45f5d5ea09f20182e0fada67dfc3fdf2b",
+      "size": 3899
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-question-item.md",
+      "sha256": "61ac15cf59e4d6ef2e4b66664909aebc23c07d01db2f948199f5b1f83328ab0c",
+      "size": 575
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-thinking-item.md",
+      "sha256": "0e69f44e2702d66d171505e58bcd3534bc270eed9c39c825806f0c5c3bff63b7",
+      "size": 577
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/archive-todo-item.md",
+      "sha256": "f6757d72f76319966d42deff1614a8161a1d51b17d676d48b9d430b6dd35cb27",
+      "size": 1384
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/audit-examples.md",
+      "sha256": "40cd424938ad9ec9bbccdd27018d3b89030c5e08491e300201321d19e328109d",
+      "size": 1169
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/audit.md",
+      "sha256": "0b8bd2a1edfdca5908f3a80a5e8933c0d2d1e3d6db9a13007c290d8965aeb4ef",
+      "size": 1920
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/automation.md",
+      "sha256": "380b9953dd5a55a4f052f26ee960b700d526a86a8e280f3370323b0132d49424",
+      "size": 1613
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/cleanup-examples.md",
+      "sha256": "710fe4589fab5d0ad89ef29a669a73ebd554e787941cf50371a9b09fae103e15",
+      "size": 70
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/cleanup-knowledge-base.md",
+      "sha256": "753cddc42664a6e1f6b433225856f5fa7fbb475f62a9d250335a524cd642607e",
+      "size": 958
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/condense-entry.md",
+      "sha256": "abc46e03010708f0f979343753e4eaf8d9db68da45b1285c06628d87e3b625f6",
+      "size": 1441
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/condense-examples.md",
+      "sha256": "ea8f662060dabf4a401fd7889ce36998223440a2c5c8dc80d39d93d327f89bd8",
+      "size": 1145
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/create-entry.md",
+      "sha256": "2d1ec66be6f3fd8cc973006e90405ee3faf21f9b046f590a0bed8aa9d500bbfc",
+      "size": 2412
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/knowledge-base-rules.md",
+      "sha256": "cf35b4c48b430da61c0d2994a858c4071566446b545d9a7ec446a474f82de968",
+      "size": 7783
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/materials.md",
+      "sha256": "f6ccb2651b30fe8cce381284c24966faf3408899ece9649c84b2809269c71db3",
+      "size": 3646
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/modify-entry.md",
+      "sha256": "39824b5c4c6187a7437475f48f14cf24a333b6942e0b32f56267a271b7cb8a53",
+      "size": 1706
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/search-examples.md",
+      "sha256": "3426d76598663f576f73c934a2e052adbfc3a8a86caafc501deb0fe5a4a8b451",
+      "size": 606
+    },
+    {
+      "path": "data/share_root/Skills/manage-knowledge-base/search.md",
+      "sha256": "76dd4c20b65b5c9f53918e6285f527628755dadd4ccb39e4df0d68fa72e1fd99",
+      "size": 1664
+    },
+    {
       "path": "data/share_root/Skills/tfi-agent-rule/SKILL.md",
-      "sha256": "6770ed1cfc2183f95620136e4c6da2a5812e68c11efd401914ca8741f0517efd",
-      "size": 14926
+      "sha256": "2260d6b9bd1006724815e2bcadb3319f1bf7b66a107123bd19d8605b0d183bb2",
+      "size": 15071
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-codex-accounts.md",
@@ -31308,8 +31564,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-context-injection.md",
-      "sha256": "a69ebc49d6783bd853dfed076e692d5a6a24eeca7edbf09200934de3f7044549",
-      "size": 6957
+      "sha256": "144905c8564ec394d035a253e1c266e6d81f99f4e102f596cfb167701bbc73ac",
+      "size": 6967
     },
     {
       "path": "data/share_root/Skills/tfi-agent-rule/portal-development.md",
@@ -31333,8 +31589,8 @@
     },
     {
       "path": "data/share_root/Skills/tfi-unified-id/scripts/resource_id.py",
-      "sha256": "b241829a5ad395257b50559bfd283599aa975c0ec35999b8e79aa093e188e5ab",
-      "size": 45556
+      "sha256": "4410b6d498d16b6ea26a6b27a0c6bcd847a446ad3f9311f8f502adbf2847be25",
+      "size": 45603
     },
     {
       "path": "data/staging_root/shared/projection_applications/654de6b50342a8baf4ff1fd8af7be877cdfe3d3f85b18e322718ccaae213a5d6/artifact.json",

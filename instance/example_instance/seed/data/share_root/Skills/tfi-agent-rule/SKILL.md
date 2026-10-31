@@ -27,7 +27,7 @@ metadata:
 
 节点身份文件固定为 Resident Folder 内的小写 `resident.md`，由 Portal 显式读取并注入。它与本 Skill 的共用规则、角色规则是不同部分。仓库 `AGENTS.md` 是开发入口说明；Portal 托管的 Codex 已关闭自动项目文档加载，不依赖它传递规则。`/guide/agent.md` 则是以 User 身份连接 Portal 的外部客户端指南。
 
-共用规则以 `code/core_skills/tfi-agent-rule/` 为源码，发行 seed 与本站 `${share_root}/Skills/tfi-agent-rule/` 保持同步。服务端读取本站共用目录，再按 Resident 的 `prompt_injection` 设置发送；文件更新不会改写已送达的会话内容。用 `PreviewPromptInjection` 核对下一次注入，不把仓库文件已更新等同于所有运行中会话已收到。
+核心 Skill 以 `code/core_skills/` 为源码：本 Skill、`tfi-unified-id`，以及下文要求必读的 `create-skill`、`manage-knowledge-base`。发行 seed 与本站 `${share_root}/Skills/` 下的同名目录保持同步；修改时改源码再同步，不只改共享副本。服务端读取本站共用目录，再按 Resident 的 `prompt_injection` 设置发送；文件更新不会改写已送达的会话内容。用 `PreviewPromptInjection` 核对下一次注入，不把仓库文件已更新等同于所有运行中会话已收到。
 
 任务涉及 Portal 的执行账号登记、Backend 角色、Codex 账号、`CODEX_HOME`、账号路由、登录身份或故障切换时，还必须读取 `./portal-codex-accounts.md`；通过 HATG ISA 查询和修改当前站点登记。
 

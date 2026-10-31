@@ -302,6 +302,9 @@ def test_fresh_engineering_preserves_evidence_hash_and_installed_bindings(tmp_pa
     (support / 'scripts').mkdir(parents=True)
     (support / 'SKILL.md').write_text('Portable identity rule\n')
     (support / 'scripts/resource_id.py').write_text('print("identity")\n')
+    for name in core_skills.REQUIRED_SKILLS:
+        (source.checkout / 'core_skills' / name).mkdir()
+        (source.checkout / 'core_skills' / name / 'SKILL.md').write_text('Portable required Skill\n')
     monkeypatch.setattr(core_skills, '__file__', str(source.checkout / 'management_portal/distribution/core_skills.py'))
     frozen = declarations(source, [{'id': APP, 'revision': 2}])
     scope = resolve_files(source, frozen)

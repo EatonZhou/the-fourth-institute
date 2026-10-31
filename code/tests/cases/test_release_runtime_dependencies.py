@@ -117,7 +117,7 @@ def test_core_manifest_uses_target_skill_directory_in_a_fresh_interpreter(tmp_pa
         'from skill_board_lan import skill_backend as s; print(s.SHARED_SKILLS_ROOT); print(len(s._iter_shared_skill_roots()))'],
         env={**os.environ, 'PORTAL_PATHS_CONFIG': str(config)}, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
-    assert result.stdout.splitlines() == [str(share / 'Skills'), '2']
+    assert result.stdout.splitlines() == [str(share / 'Skills'), str(len(canonical_resources()))]
     for identity, source in canonical_resources().items():
         assert identity in (share / 'Skills' / source.name / 'SKILL.md').read_text()
 

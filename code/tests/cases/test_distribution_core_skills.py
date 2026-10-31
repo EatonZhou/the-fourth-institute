@@ -21,6 +21,13 @@ def source_rules(tmp_path):
     (support/'scripts').mkdir(parents=True)
     (support/'SKILL.md').write_text('Resource identity rules\n')
     (support/'scripts/resource_id.py').write_text('print("resource identity CLI")\n')
+    for name in core_skills.REQUIRED_SKILLS:
+        (source/name).mkdir()
+        (source/name/'SKILL.md').write_text(f'{name} rules ./guide.md source-person\n')
+        (source/name/'guide.md').write_text('Guide\n')
+    (source/'create-skill/scripts/__pycache__').mkdir(parents=True)
+    (source/'create-skill/scripts/quick_validate.py').write_text('print("validate")\n')
+    (source/'create-skill/scripts/__pycache__/quick_validate.pyc').write_bytes(b'cache')
     return source
 
 
@@ -28,10 +35,13 @@ def test_core_rules_transitive_dependency_and_native_materialization(tmp_path):
     source = source_rules(tmp_path)
     destination = tmp_path/'package'
     report = export_core_skills(destination, source_root=source, source_usernames=('source-person',))
-    assert len(report['files']) == 6
+    assert len(report['files']) == 11
     assert (destination/'data/share_root/Skills/tfi-unified-id/scripts/resource_id.py').is_file()
     output = destination/'data/share_root/Skills'
     assert not (output/'tfi-agent-rule/unselected.md').exists()
+    assert (output/'create-skill/scripts/quick_validate.py').is_file()
+    assert not (output/'create-skill/scripts/__pycache__').exists()
+    assert (output/'manage-knowledge-base/guide.md').is_file()
     for role in report['roles']:
         result = materialize_portal_skills(role, skill_root=str(output))
         assert result.status == 'fresh'
@@ -58,6 +68,15 @@ def test_core_rules_reject_symlink(tmp_path):
         export_core_skills(tmp_path/'package', source_root=source)
 
 
+def test_required_skill_rejects_symlink(tmp_path):
+    source = source_rules(tmp_path)
+    guide = source/'manage-knowledge-base/guide.md'
+    guide.unlink()
+    guide.symlink_to(source/'tfi-agent-rule/portal-resident.md')
+    with pytest.raises(ValueError, match='manage-knowledge-base/guide.md'):
+        export_core_skills(tmp_path/'package', source_root=source)
+
+
 def test_default_rules_use_repository_canonical_source(tmp_path, monkeypatch):
     source = source_rules(tmp_path)
     repository = tmp_path/'repository'
@@ -78,11 +97,12 @@ def test_explicit_source_maps_canonical_rule_paths(tmp_path):
     destination = tmp_path/'package'
     export_core_skills(destination, source_root=source)
     output = destination/'data/share_root/Skills'
-    assert {path.name for path in output.iterdir()} == {'tfi-agent-rule', 'tfi-unified-id'}
+    assert {path.name for path in output.iterdir()} == {
+        'tfi-agent-rule', 'tfi-unified-id', 'manage-knowledge-base', 'create-skill'}
     assert '${share_root}/Skills/tfi-unified-id' in (output/'tfi-agent-rule/SKILL.md').read_text()
 
 
-@pytest.mark.parametrize('name', ['tfi-agent-rule', 'tfi-unified-id'])
+@pytest.mark.parametrize('name', ['tfi-agent-rule', 'tfi-unified-id', 'manage-knowledge-base', 'create-skill'])
 def test_explicit_source_rejects_noncanonical_rule_directory(tmp_path, name):
     source = source_rules(tmp_path)
     (source/name).rename(source/'archived-rule')

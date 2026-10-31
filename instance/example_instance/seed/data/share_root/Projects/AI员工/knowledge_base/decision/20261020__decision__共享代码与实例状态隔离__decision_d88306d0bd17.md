@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-20'
 version:
-  number: 21
+  number: 22
   created_at: "2026-10-20"
   created_by:
     user: ""
     agent: "resident_977d1a613d44"
-  updated_at: "2026-10-31T18:42:37Z"
+  updated_at: "2026-10-31T19:06:16Z"
   updated_by:
     user: ""
     agent: "resident_24014e2b9bf6"
@@ -52,7 +52,7 @@ links:
 
 规则如下：
 - **只读**：多个实例可以同时使用同一个代码目录。实例的服务进程只读代码，代码目录也不记录任何实例的位置。开发者修改 Dev 代码目录属于开发流程，不是实例的写入。
-- **核心 Skill**：`code/core_skills/` 下的 `tfi-agent-rule`、`tfi-unified-id` 说明的是这一版代码的指令、路径和做法，属于代码层。拼 Resident 系统规则的后台服务，直接读取自己所运行代码目录中的这些文件，实例里不放副本。这样规则和执行指令的代码总是同一版本，也只能经开发流程修改。站点需要补充的规则，另写成实例中的 Skill。
+- **核心 Skill**：`code/core_skills/` 下有四个 Skill，属于代码层：`tfi-agent-rule`（所有 Resident 的共用规则）、`tfi-unified-id`（资源 ID 与地址解析）、`manage-knowledge-base`（项目知识库的操作方法）和 `create-skill`（编写 Skill 的方法）。它们说明的是这一版代码的指令、路径和做法；后两个是共用规则要求必读的，如果放在实例里，新装的实例就会缺少它们。拼 Resident 系统规则的后台服务和 Resident 直接读取所运行代码目录中的这些文件，实例里不放副本。这样规则和执行指令的代码总是同一版本，也只能经开发流程修改。站点需要补充的规则，另写成实例中的 Skill。
 - **随代码带来的实例内容**：有些内容由代码定义，却要写进实例、允许在实例中修改，例如内置权限方案的规则。创建实例时把它们写入数据库；以后代码更新、服务重启时，服务把代码中的新版本合并进数据库，保留实例中的编辑。写入后它们就是实例数据，随实例备份和搬迁。
 
 ### 主机层
