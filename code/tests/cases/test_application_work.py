@@ -291,6 +291,67 @@ def test_preparing_retry_after_terminal_failure_is_retained(database):
     assert work.inspect(api, {}) != before
 
 
+def test_owner_failure_promotion_of_an_unsubmitted_turn_is_retained(database, monkeypatch):
+    """The real owner records the failure, then releases the unsubmitted predecessor as cancelled.
+
+    :purpose: ET 10-31 steward: previous_execution_failure at 13:17:34, its
+      never-submitted Execution ended cancelled 1 s later by the same write.
+    """
+    from management_common.postgres_database import PostgresDatabase
+    from management_portal.society_service import resident_conversation_stream, resident_input_queue_domain
+    from management_portal.society_service.lineage_data_executions import ResidentExecutions
+    dsn, api = database
+    monkeypatch.setenv('PORTAL_DATABASE_URL', dsn)
+    monkeypatch.delenv('PORTAL_DATABASE_NAMESPACE', raising=False)
+    store = ResidentExecutions(PostgresDatabase(dsn, schema='lineage', min_size=1, max_size=2))
+    rid, old, nxt = 'resident_000000000004', 'execution-' + '0' * 23 + '4', 'msg_next'
+    envelope = {'message_id': nxt, 'role': 'user', 'content_parts': [{'type': 'text', 'text': 'synthetic next'}]}
+    with psycopg.connect(dsn) as c:
+        c.execute("INSERT INTO lineage.conversation_input_states VALUES(%s,%s,'queued','{}',%s)", (rid, nxt, STAMP))
+        c.execute("UPDATE lineage.residents SET backend='codex' WHERE resident_id=%s", (rid,))
+    job =store.resident_execution_record_with_revision(rid)['state']
+    job['queue'] = [{'user_message_id': nxt, 'actor': 'fixture_user', 'input_message': envelope,
+                     'raw_message': 'synthetic next', 'enqueued_at': STAMP}]
+    store.put_resident_execution_record(rid, job)
+    failed_inputs = []
+    monkeypatch.setattr(resident_conversation_stream, 'get_repository', lambda: SimpleNamespace(
+        set_input_state=lambda *args, **kwargs: failed_inputs.append(args[:3])))
+    job = store.resident_execution_record_with_revision(rid)['state']
+    job['failure_message_persisted_at'] = '2026-10-31T13:17:34Z'
+    assert resident_input_queue_domain.promote_queue_after_failed_execution(
+        job, rid, '2026-10-31T13:17:34Z', 'Codex app-server socket unavailable',
+        {'code': 'unknown', 'message': 'x', 'raw_error': 'x', 'source': 'execution_result'})
+    store.put_resident_execution_record(rid, job)
+    with psycopg.connect(dsn) as c:
+        # Input-state projection is outside this storage owner: the failed
+        # input as set_input_state recorded it, the promoted one as admitted.
+        c.execute("UPDATE lineage.conversation_input_states SET state='failed' WHERE resident_id=%s AND message_id=%s",
+                  failed_inputs[0][:2])
+        c.execute("UPDATE lineage.conversation_input_states SET state='running' WHERE resident_id=%s AND message_id=%s",
+                  (rid, nxt))
+        # retain_input_checkpoint's entry for the promoted input, as seed_waiting models it.
+        c.execute("UPDATE lineage.resident_mailbox_progress SET progress_json=%s WHERE resident_id=%s",
+                  (Jsonb({'checkpoints': [{'message_id': nxt, 'execution_id': job['execution_id'],
+                                           'started_at': STAMP, 'infos': [],
+                                           'item': {'user_message_id': nxt, 'input_message': envelope}}]}), rid))
+        released = c.execute("SELECT status,started_at,finished_at FROM agent.executions WHERE execution_id=%s",
+                             (old,)).fetchone()
+        current = c.execute("SELECT execution_id,progress_json FROM lineage.resident_execution_work "
+                            "WHERE resident_id=%s", (rid,)).fetchone()
+    assert released[0] == 'cancelled' and released[1] is None and released[2] is not None
+    assert current[0] != old and current[1]['previous_execution_failure']['execution_id'] == old
+    before = work.inspect(api, {})
+    assert before['counts'] == {'queued': 4, 'preparing': 2}
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE lineage.resident_execution_work SET progress_json=jsonb_set(progress_json,"
+                  "'{previous_execution_failure,error}','\"changed\"') WHERE resident_id=%s", (rid,))
+    assert work.inspect(api, {}) != before
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE agent.executions SET status='completed' WHERE execution_id=%s", (old,))
+    with pytest.raises(work.WorkProofError, match='previous_failure_not_terminal'):
+        work.inspect(api, {})
+
+
 @pytest.mark.parametrize('variant,code', [
     ({'status': 'completed'}, 'previous_failure_not_terminal'),
     ({'status': 'preparing', 'finished': False}, 'work_preparation_count_mismatch'),

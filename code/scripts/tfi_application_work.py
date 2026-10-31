@@ -85,8 +85,11 @@ INERT_PROGRESS = {'actor', 'activation_policy', 'intake_admitted_at', 'updated_a
                   'started_at', 'dispatched_at'}
 # promote_queue_after_failed_execution records the failed predecessor when it
 # promotes the next queued input. Nothing reads it back; it is retained only
-# while it names another terminal failed Execution of the same Resident.
+# while it names another ended Execution of the same Resident. The same write
+# releases the predecessor: one never submitted is ended as cancelled
+# (ResidentExecutions._release_execution), a submitted one keeps its outcome.
 PREVIOUS_FAILURE_FIELDS = frozenset({'execution_id', 'error', 'runtime_error', 'failed_at'})
+PREVIOUS_FAILURE_STATUSES = frozenset({'failed', 'cancelled'})
 
 
 def retained_previous_failure(value, rid, eid, executions):
@@ -98,7 +101,7 @@ def retained_previous_failure(value, rid, eid, executions):
             'previous_failure_evidence_invalid')
     failed = executions.get(value['execution_id'])
     require(value['execution_id'] != eid and failed is not None and failed['agent_id'] == rid
-            and failed['status'] == 'failed' and bool(failed['finished_at']),
+            and failed['status'] in PREVIOUS_FAILURE_STATUSES and bool(failed['finished_at']),
             'previous_failure_not_terminal')
 
 
