@@ -441,6 +441,38 @@ def test_steward_reserve_preserves_manual_boundaries_and_an_admitted_turn(quota_
     assert not family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
 
 
+def test_facade_quota_release_lets_steward_run_on_credits_without_a_safe_account(quota_family, monkeypatch):
+    """门面人工放行后 steward 在额度用完的账号上继续运行
+
+    :design: decision_a64b3ea2c3c5
+    """
+    f = quota_family
+    f.accounts[:] = [_account("one", 0), _account("two", 5)]
+    resident_input_queue_domain.commit_resident_intake_state(_record(f.steward), "open")
+    synced = []
+    monkeypatch.setattr(execution_port, "configure_binding_quota_overrides", lambda policies: synced.extend(policies))
+    monkeypatch.setattr(resident_restart_domain, "restart_resident_session", lambda *args, **kwargs: pytest.fail("no safe target"))
+    monkeypatch.setattr(lineage_human_notifications, "create_notification", lambda *args, **kwargs: None)
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+
+    facade = _record(f.facade)
+    facade["quota_reserve_override"] = {"binding_id": resident_backend.execution_binding_id(facade), "enabled": True, "revision": 3}
+    resident_record_domain.save_resident_record(facade, commit_configuration=True)
+    assert not family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    steward_policy = {"binding_id": f"resident:{f.steward}", "enabled": True, "revision": 1}
+    assert _record(f.steward)["quota_reserve_override"] == steward_policy
+    assert synced == [steward_policy]
+    assert not family_quota.role_migration(_record(f.steward)).get("status")
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts) is False
+    assert synced == [steward_policy]  # Already following: no new revision.
+
+    facade = _record(f.facade)
+    facade["quota_reserve_override"] = {**facade["quota_reserve_override"], "enabled": False, "revision": 4}
+    resident_record_domain.save_resident_record(facade, commit_configuration=True)
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    assert synced[-1] == {"binding_id": f"resident:{f.steward}", "enabled": False, "revision": 2}
+
+
 @pytest.mark.parametrize("remaining,short,fresh,expected", [
     (80, 9, True, 9), (10, 80, True, 10), (0, 80, False, None),
 ])

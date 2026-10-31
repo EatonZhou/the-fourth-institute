@@ -296,11 +296,41 @@ def auto_migration_priority(record: dict) -> list[str]:
     return list(row["auto_migrate_priority"]) if row else []
 
 
+def _follow_facade_quota_release(record: dict[str, Any], facade: dict[str, Any]) -> dict[str, Any]:
+    """Router and Steward share the facade's manual quota release.
+
+    A person releases a Family on its facade; the roles that actually run for
+    it then keep working on the used-up account's credits like the facade
+    would. The role keeps its own binding and revision so the Execution
+    contract (binding_id, revision, enabled) is unchanged; a facade without a
+    release leaves the role's own setting alone.
+    """
+    from . import resident_backend, resident_input_queue_domain, resident_record_domain
+    release = resident_record_domain.resident_quota_override(facade)
+    if not release or resident_record_domain.resident_quota_override(record).get("enabled") is release["enabled"]:
+        return record
+    with resident_record_domain.state_lock(record["resident_id"]):
+        current = resident_record_domain.find_resident_canonical(record["resident_id"])
+        if not current or current.get("deleted_at"):
+            return record
+        policy = resident_record_domain.resident_quota_override(current)
+        if policy.get("enabled") is not release["enabled"]:
+            current["quota_reserve_override"] = {
+                "binding_id": resident_backend.execution_binding_id(current),
+                "enabled": release["enabled"],
+                "revision": int(policy.get("revision") or 0) + 1,
+            }
+            resident_record_domain.save_resident_record(current, commit_configuration=True)
+    resident_input_queue_domain.sync_resident_quota_overrides([current])
+    return resident_record_domain.find_resident(record["resident_id"]) or current
+
+
 def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     """Keep internal operating roles open unless their whole Family is paused.
 
-    Reuse the intake transition owner; this never overrides quota admission,
-    recreates a deleted role, requeues a cancelled input or restarts a Session.
+    Reuse the intake transition owner; this never recreates a deleted role,
+    requeues a cancelled input or restarts a Session. The roles follow the
+    facade's manual quota release, also while the Family is paused.
     """
     from . import family_storage, resident_management_domain
     from . import resident_record_domain
@@ -309,7 +339,10 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     with get_lineage_data_store().database.read() as connection:
         facade_ids = family_storage.roles_of(connection, record["family"]["family_id"])["facade"]
     facade = resident_record_domain.find_resident(facade_ids[0]) if facade_ids else None
-    if not facade or facade.get("deleted_at") or resident_record_domain.resident_intake_state(facade) != "open":
+    if not facade or facade.get("deleted_at"):
+        return None
+    record = _follow_facade_quota_release(record, facade)
+    if resident_record_domain.resident_intake_state(facade) != "open":
         return None
     if resident_record_domain.resident_intake_state(record) != "open":
         if resident_record_domain.lifecycle_operations().pending(record["resident_id"]):
@@ -378,7 +411,10 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 healthy.clear()
         return False
     if remaining is None:
-        return bool(role_migration(record).get("status"))  # Stale observations cannot clear an outstanding incident.
+        # Stale observations cannot clear an outstanding incident; a manual
+        # quota release still lets the turn run.
+        return (bool(role_migration(record).get("status"))
+                and resident_record_domain.resident_quota_override(record).get("enabled") is not True)
     epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
     now = time.time()
     with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
@@ -395,7 +431,11 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         if migration.get("epoch") != epoch:
             migration.clear()
             migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": []})
-        if now - float(migration.get("checked_at") or 0) < RECHECK_SECONDS:
+        # A manual quota release (the role's own, or the facade's for Router
+        # and Steward) lets the turn run on the current account's credits when
+        # no safe account takes it; a safe account is still preferred.
+        released = resident_record_domain.resident_quota_override(current).get("enabled") is True
+        if not released and now - float(migration.get("checked_at") or 0) < RECHECK_SECONDS:
             return True
         migration["checked_at"] = now
         migration.update(status="waiting", reason=f"后端额度剩余 {remaining:g}%，正在寻找可用账号")
@@ -413,6 +453,13 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                            "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
                 migration["pending_restart"] = payload
                 migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
+        if not payload and released:
+            # Keep the window's attempts so the release does not retry
+            # migrations; only the waiting state ends.
+            migration.pop("status", None)
+            migration.pop("reason", None)
+    if not payload and released:
+        return False
     if payload:
         if resident_record_domain.lifecycle_operations().pending(resident_id):
             return True
