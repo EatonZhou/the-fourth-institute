@@ -419,6 +419,8 @@ class MacCodexNative(unittest.TestCase):
                         "deployment": {"providers": {"codex_binary": binary}}}))
                     stack.enter_context(patch.object(storage, "site_environment", return_value=site_env))
                     stack.enter_context(patch.object(account_hosting, "account_home", return_value=account_home))
+                    stack.enter_context(patch.object(account_hosting, "account_runtime",
+                        side_effect=lambda provider, account: base / "runtime" / provider / account))
                     stack.enter_context(patch.object(account_hosting, "codex_socket_path", return_value=logical))
                     _, directory, job, content, controller = units._native_codex_service("fixture")
                     adapter.register_services(directory, {job: content})
