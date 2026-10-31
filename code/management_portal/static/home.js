@@ -41,7 +41,7 @@ const {
 });
 
 const {
-  executionAccounts, staleExecutionAccounts, refreshAccountQuotaWindows, accountLimitRow,
+  executionAccounts, staleExecutionAccounts, refreshAccountQuotaWindows, accountRows,
   accountManagementActions, accountEmptyState, syncAccountDetailsButtons, destroyAccountDetails,
 } = window.PortalHomeAccounts.createAccounts({
   currentActiveAgentStatusRefresh: () => activeAgentStatusRefresh,
@@ -141,7 +141,7 @@ function renderAgentStatus(data) {
       <div class="agent-status-limit-list">
 
         ${accounts.length
-          ? accounts.map(accountLimitRow).join("")
+          ? accountRows(accounts)
           : accountEmptyState(data)}
       </div>
       ${refreshNote}

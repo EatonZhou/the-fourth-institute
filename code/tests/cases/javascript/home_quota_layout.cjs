@@ -1,116 +1,70 @@
-// Exercise the production quota renderer and styles in a real layout engine.
 const assert = require('node:assert/strict');
-const fs = require('node:fs'), path = require('node:path');
+const path = require('node:path');
 const {homeStatements} = require('./home_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
-const functions = ['executionAccounts', 'accountQuotaWindowIsStale', 'accountQuotaWindows',
-  'accountSummaryQuotaWindows', 'refreshAccountQuotaWindows', 'accountQuotaWindow', 'accountLimitRow'];
-const renderer = homeStatements().filter(({node: n}) => n.type === 'FunctionDeclaration' && functions.includes(n.id.name))
-  .map(statement => statement.source).join('\n');
-
-(async () => {
-  const browser = await chromium.launch({headless: true, executablePath: process.env.PORTAL_TEST_CHROMIUM || undefined, args: ['--no-sandbox']});
+const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
+  'accountSummaryQuotaWindows','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
+  'accountRows','accountApiRow','accountBalanceHtml'];
+const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
+(async()=>{
+  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   try {
-    const page = await browser.newPage();
-    await page.setContent('<main data-home-component="agent-accounts"><div class="agent-status-limit-list"></div></main><aside class="account-details"><div class="agent-status-account-rate-windows"></div></aside>');
-    await page.addStyleTag({content: 'body { margin:16px; font:14px Arial,sans-serif; --muted:#687584; --border:#ccd6de; --chip:#f1f4f6; } aside { width:min(356px,100%); margin-top:32px; }'});
-    await page.addStyleTag({path: path.join(root, 'management_portal/static/home_workbench.css')});
-    await page.addStyleTag({path: path.join(root, 'management_portal/static/home.css')});
-    await page.addScriptTag({content: `
-      const tag = (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] ?? ''), '');
-      window.PortalI18n = {t: x => x, html: tag, text: tag};
-      const esc = x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
-      const formatDateTime = x => x ? new Date(x).toISOString() : '';
-      const canSetScheduler = false;
-      const currentCanSetScheduler = () => canSetScheduler;
-      const currentAgentStatusData = () => agentStatusData;
+    const page=await browser.newPage();
+    await page.setContent('<main data-home-component="agent-accounts"><div class="agent-status-limit-list"></div></main>');
+    await page.addStyleTag({content:'body {margin:16px;font:14px Arial;--muted:#687584;--border:#ccd6de;--chip:#f1f4f6;}'});
+    for(const file of ['home_workbench.css','home.css']) await page.addStyleTag({path:path.join(root,'management_portal/static',file)});
+    await page.addScriptTag({content:`
+      const tag=(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'');
+      window.PortalI18n={t:x=>x,html:tag,text:tag};
+      const esc=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+      const formatDateTime=x=>x?new Date(x).toISOString():'';
+      const currentCanSetScheduler=()=>false;
+      const currentAgentStatusData=()=>data;
       ${renderer}
-      const labels = ['Gemini Models · Weekly Limit Remaining', 'Gemini Models · Five Hour Limit Remaining',
-        'Claude and GPT models · Weekly Limit Remaining', 'Claude and GPT models · Five Hour Limit Remaining',
-        'Gemini 4 Argon · Gemini 4 Argon Weekly Limit'];
-      const account = {account_id:'antigravity_one', provider:'antigravity', rate_limits: labels.map((label, i) => ({id:label.replace(' · ', '/'),label,
-        remaining_percent: i === 3 ? null : 100, stale:i === 2, observed_at:Date.now()/1000, resets_at:Date.now()/1000+3600}))};
-      const kimi = {account_id:'kimi-code', provider:'kimi', kind:'subscription_login', rate_limits: [
-        {id:'monthTotal',label:'每月总额度',remaining_percent:89},
-        {id:'limit7d',label:'每周',remaining_percent:58},
-        {id:'limit5h',label:'5 小时',remaining_percent:75},
-        {id:'monthCode',label:'每月编程额度',remaining_percent:90}]};
-      const agentStatusData = {accounts: [account, kimi,
-        {account_id:'codex_one', rate_limits:[{id:'weekly',label:'Weekly',remaining_percent:3}]},
-        {account_id:'claude_one', rate_limits:[{id:'five_hour',label:'5 小时',remaining_percent:72},{id:'weekly',label:'每周',remaining_percent:64}]}]};
-      document.querySelector('main > div').innerHTML = agentStatusData.accounts.map(accountLimitRow).join('');
-      document.querySelector('aside > div').innerHTML = account.rate_limits.map(w => accountQuotaWindow(account,w)).join('');
-      const kimiDetails = document.createElement('div');
-      kimiDetails.className = 'agent-status-account-rate-windows';
-      kimiDetails.dataset.kimiDetails = '';
-      kimiDetails.innerHTML = accountQuotaWindows(kimi).map(w => accountQuotaWindow(kimi,w)).join('');
-      document.querySelector('aside').append(kimiDetails);
+      const quota=(id,label,value)=>({id,label,remaining_percent:value,resets_at:Date.now()/1000+3600});
+      const api=(id,balance,capabilities)=>({account_id:id,kind:'api_profile',balance,capabilities});
+      const data={accounts:[
+        api('deepseek', {status:'ok',display:'123.45 CNY',comparison_amount:123,comparison_currency:'CNY'}),
+        {account_id:'claude_one',provider:'claude',kind:'subscription_login',rate_limits:[quota('five_hour','5 小时',72),quota('weekly','每周',64)]},
+        {account_id:'antigravity_one',provider:'antigravity',kind:'subscription_login',rate_limits:[quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',100),quota('Gemini Models/Five Hour Limit Remaining','Gemini Five Hour',90),quota('other','other models',10)]},
+        {account_id:'kimi-code',provider:'kimi',kind:'subscription_login',rate_limits:[quota('limit5h','5 小时',75),quota('limit7d','每周',58),quota('monthCode','每月编程额度',85)]},
+        api('a_very_long_api_account_name', {status:'ok',display:'0 USD'}, {resident_details:false}),
+        api('stale', {status:'unavailable',display:'52.12 USD',stale:true}),
+        api('unknown', {status:'not_supported'}),
+        api('availability', {status:'ok',metric_kind:'availability'})]};
+      document.querySelector('main > div').innerHTML=accountRows(data.accounts);
     `});
-    const home = page.locator('[data-account-limit-account="antigravity_one"]');
-    assert.deepEqual(await home.locator('.agent-status-window-name').allTextContents(), ['5 小时', '每周']);
-    assert.equal(await home.locator('[data-account-quota-window]').count(), 2);
-    assert.equal(await page.locator('aside [data-account-quota-window]').count(), 9);
-    const kimiHome = page.locator('[data-account-limit-account="kimi-code"]');
-    assert.deepEqual(await kimiHome.locator('.agent-status-window-name').allTextContents(), ['5 小时', '每周']);
-    assert.deepEqual(await kimiHome.locator('.agent-status-limit-meta').allTextContents(), ['75%', '58%']);
-    assert.equal(await page.locator('[data-kimi-details] [data-account-quota-window]').count(), 4);
-    assert.deepEqual(await page.locator('[data-account-limit-account="claude_one"] .agent-status-window-name').allTextContents(), ['5 小时', '每周']);
-    assert.deepEqual(await page.locator('[data-account-limit-account="codex_one"] .agent-status-window-name').allTextContents(), ['Weekly']);
-    assert.match(await home.locator('[data-account-quota-window]').first().getAttribute('title'), /Gemini Models · Five Hour Limit Remaining/);
-    // Polling updates both views without restoring long labels or hidden windows on Home.
-    await page.evaluate(() => {
-      account.rate_limits[0].stale = true;
-      account.rate_limits[1].remaining_percent = null;
-      kimi.rate_limits[2].stale = true;
-      refreshAccountQuotaWindows();
-    });
-    assert.deepEqual(await home.locator('.agent-status-window-name').allTextContents(), ['5 小时', '每周']);
-    assert.deepEqual(await home.locator('.agent-status-limit-meta').allTextContents(), ['—', '100%*']);
-    assert.equal(await page.locator('aside [data-account-quota-window]').count(), 9);
-    assert.deepEqual(await page.locator('aside > div:first-child .agent-status-window-name').allTextContents(), await page.evaluate(() => labels));
-    assert.deepEqual(await kimiHome.locator('.agent-status-limit-meta').allTextContents(), ['75%*', '58%']);
-    assert.equal(await page.locator('[data-kimi-details] [data-account-quota-window]').count(), 4);
-    for (const width of [1920, 1440, 1024, 768, 390, 320]) {
-      await page.setViewportSize({width, height:1100});
-      const problems = await page.evaluate(() => {
-        const problems = [];
-        const box = el => el.getBoundingClientRect();
-        const overlaps = (a,b) => a.left < b.right-1 && a.right > b.left+1 && a.top < b.bottom-1 && a.bottom > b.top+1;
-        if (document.documentElement.scrollWidth > innerWidth) problems.push('horizontal page overflow');
-        for (const group of document.querySelectorAll('.agent-status-account-rate-windows')) {
-          const windows = [...group.querySelectorAll('.agent-status-account-window')];
-          for (let i=0;i<windows.length;i++) {
-            const row=windows[i], bounds=box(row), nodes=[...row.children];
-            if (i && group.closest('aside') && box(windows[i-1]).bottom > bounds.top+1) problems.push('detail quotas share a line');
-            for (let k=i+1;k<windows.length;k++) if(overlaps(bounds,box(windows[k]))) problems.push('quota windows overlap');
-            if (group.closest('main')) {
-              if (nodes.some(node => Math.abs(box(node).top + box(node).height/2 - (bounds.top + bounds.height/2)) > 1))
-                problems.push('Home label, bar and percentage are not on one row');
-              if (i && box(group).width >= 370 && Math.abs(box(windows[0]).top - bounds.top) > 1)
-                problems.push('Home quota windows are not side by side');
-            }
-            for (let j=0;j<nodes.length;j++) {
-              const b=box(nodes[j]);
-              if (b.left < bounds.left-1 || b.right > bounds.right+1 || nodes[j].scrollWidth > nodes[j].clientWidth+1)
-                problems.push(`quota content overflows: ${nodes[j].className} ${nodes[j].textContent} (${nodes[j].clientWidth}/${nodes[j].scrollWidth})`);
-              for(let k=j+1;k<nodes.length;k++) if(overlaps(b,box(nodes[k]))) problems.push('label, bar or percentage overlap');
-            }
+    for(const id of ['claude_one','antigravity_one','kimi-code']) {
+      const row=page.locator('[data-account-limit-account="'+id+'"]');
+      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
+    }
+    assert.deepEqual(await page.locator('[data-account-api] [data-account-balance]').allTextContents(),['123.45 CNY','0 USD','52.12 USD*','—','—']);
+    assert.equal(await page.locator('.agent-status-balance-coins').count(),0);
+    assert.equal(await page.locator('[data-account-api="a_very_long_api_account_name"] [data-account-details]').count(),0);
+    await page.evaluate(()=>{data.accounts[3].rate_limits[0].stale=true;refreshAccountQuotaWindows();});
+    assert.deepEqual(await page.locator('[data-account-limit-account="kimi-code"] .agent-status-limit-meta').allTextContents(),['75%*','58%']);
+    for(const width of [1920,1440,1024,768,390,320]) {
+      await page.setViewportSize({width,height:1000});
+      const problems=await page.evaluate(()=>{
+        const issues=[],box=el=>el.getBoundingClientRect();
+        const overlap=(a,b)=>a.left<b.right-1 && a.right>b.left+1 && a.top<b.bottom-1 && a.bottom>b.top+1;
+        if(document.documentElement.scrollWidth>innerWidth) issues.push('page overflow');
+        const apis=[...document.querySelectorAll('[data-account-api]')];
+        if(innerWidth>632 && Math.abs(box(apis[0]).top-box(apis[1]).top)>1) issues.push('APIs not paired');
+        if(innerWidth<=632 && box(apis[1]).top<=box(apis[0]).top) issues.push('APIs not single column');
+        for(const row of [...apis,...document.querySelectorAll('.agent-status-account-window')]) {
+          const children=[...row.children], bounds=box(row);
+          for(let i=0;i<children.length;i++) {
+            const a=box(children[i]);
+            if(a.left<bounds.left-1 || a.right>bounds.right+1 || children[i].scrollWidth>children[i].clientWidth+1) issues.push('content overflows');
+            for(let j=i+1;j<children.length;j++) if(overlap(a,box(children[j]))) issues.push('content overlaps');
           }
         }
-        for(const row of document.querySelectorAll('.agent-status-account-limit')) {
-          const quotas=box(row.querySelector('.agent-status-account-rate-windows'));
-          for(const selector of ['.agent-status-account-name','.agent-status-account-details','.agent-status-account-refresh'])
-            if(overlaps(quotas,box(row.querySelector(selector)))) problems.push('quota overlaps account controls');
-        }
-        return problems;
+        return issues;
       });
-      assert.deepEqual(problems, [], `quota layout at ${width}px`);
-      if (process.env.PORTAL_TEST_SCREENSHOTS && [1440,390].includes(width)) {
-        fs.mkdirSync(process.env.PORTAL_TEST_SCREENSHOTS, {recursive:true});
-        await page.screenshot({path:path.join(process.env.PORTAL_TEST_SCREENSHOTS, `quota-${width}.png`),fullPage:true});
-      }
+      assert.deepEqual(problems,[],width+'px');
     }
-    console.log('Gemini and Kimi summaries show 5-hour/weekly; full details survive refresh; layout fits six widths');
-  } finally { await browser.close(); }
-})().catch(error => {console.error(error);process.exitCode=1;});
+    console.log('Subscription summaries unchanged; two API amounts per row, mobile single column, no coins; six widths pass');
+  } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

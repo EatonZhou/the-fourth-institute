@@ -130,7 +130,7 @@
 - [Home Notice Board 的发布与讨论](/r/decision_605810a1292b)
 - [Home Agent Access 的常用 Resident 入口](/r/decision_152d5c046a23)
 - [Home 活动 Agent 状态、头像与会话入口](/r/decision_e30897dd3dc3)
-- [Home AI 账号面板：额度、余额、调度设置与批量接单](/r/decision_4dea0db1f45a)
+- [Home AI 账号面板：订阅额度、API 金额与节点状态](/r/decision_4dea0db1f45a)
 - [Home Usage Attribution 的 token 统计](/r/decision_fc26f883773d)
 - [Home 定时与自动触发：查看与操作](/r/decision_481dc4e6292c)
 - [Home GPU 与磁盘资源状态](/r/decision_ed57c4ad1001)

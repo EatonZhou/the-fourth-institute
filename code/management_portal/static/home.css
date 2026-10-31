@@ -794,40 +794,6 @@ a.agent-status-creature.queued:hover {
   font-weight: 700;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-.account-details-settings { margin: 0 0 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
-.account-details .account-details-settings h4 { margin-top: 0; }
-.account-details-settings fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 0; padding: 0; border: 0; min-width: 0; }
-.account-details-settings label { grid-column: 1 / -1; font-size: 12px; line-height: 1.4; white-space: normal; }
-.account-details-settings button[type="submit"] { justify-self: end; align-self: end; }
-.agent-status-account-concurrency,
-.agent-status-account-interval,
-.agent-status-account-threshold {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px 6px;
-  color: var(--muted);
-  min-width: 0;
-}
-.agent-status-account-concurrency { grid-template-columns: minmax(0, 1fr); }
-.agent-status-account-interval { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
-.agent-status-account-concurrency input,
-.agent-status-account-interval input,
-.agent-status-account-threshold input {
-  width: 100%;
-  min-width: 0;
-  height: 30px;
-  box-sizing: border-box;
-  padding: 5px 6px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--panel);
-  color: var(--text);
-  font: 600 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  text-align: center;
-}
-.account-details-settings input:disabled,
-.account-details-settings button:disabled { opacity: 0.55; cursor: default; }
 .agent-status-account-windows {
   display: grid;
   grid-template-columns: subgrid;
@@ -839,7 +805,6 @@ a.agent-status-creature.queued:hover {
 .agent-status-account-rate-windows {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  container: account-quotas / inline-size;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -847,18 +812,14 @@ a.agent-status-creature.queued:hover {
 .agent-status-account-limit .agent-status-account-rate-windows {
   grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
 }
-.agent-status-account-balance { display: grid; grid-template-columns: 6em minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; font-size: 12px; }
-.agent-status-account-balance .agent-status-balance-value { grid-column: 2; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; font-size: inherit; font-weight: 400; }
+.agent-status-api-list { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 28px; min-width: 0; }
+.agent-status-api-account { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, max-content) auto; align-items: center; gap: 10px; min-width: 0; font-size: 12px; }
+.agent-status-api-account .agent-status-account-name { white-space: normal; overflow-wrap: anywhere; }
+.agent-status-api-account .agent-status-account-details { grid-column: 3; }
+.agent-status-account-balance { min-width: 0; font-size: 12px; }
+.agent-status-balance-value { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .agent-status-account-balance.is-stale .agent-status-balance-value,
 .agent-status-account-balance .is-availability { color: var(--muted); }
-.agent-status-balance-coins { grid-column: 2; justify-self: start; position: relative; display: inline-block; max-width: 100%; height: 15px; }
-.agent-status-balance-coins i { position: absolute; top: 0; left: calc((100% - 15px) * var(--coin-position)); box-sizing: border-box; width: 15px; height: 15px; border: 1.5px solid #bd9033; border-radius: 50%; background: #f5e3ab; }
-.agent-status-balance-coins i::after { content: ""; position: absolute; inset: 3px; border: 1.5px solid #bd9033; border-radius: 50%; }
-.agent-status-account-balance.is-stale .agent-status-balance-coins, .agent-status-balance-coins.is-stale { opacity: .45; }
-/* Codex credits sit beside the quota windows in the same quiet type, label then number. */
-.agent-status-account-credits { display: flex; align-items: baseline; gap: 7px; min-width: 0; white-space: nowrap; }
-.agent-status-account-credits-value { overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
-.agent-status-account-credits.is-stale .agent-status-account-credits-value { color: var(--muted); }
 .agent-status-account-window {
   display: grid;
   grid-template-columns: minmax(0, min(40%, 22em)) minmax(44px, 1fr) max-content;
@@ -881,12 +842,7 @@ a.agent-status-creature.queued:hover {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-@container account-quotas (max-width: 420px) {
-  .account-details .agent-status-account-window { grid-template-columns: minmax(0, 1fr) max-content; }
-  .account-details .agent-status-window-name { grid-column: 1; grid-row: 1; }
-  .account-details .agent-status-limit-meta { grid-column: 2; grid-row: 1; }
-  .account-details .agent-status-limit-track { grid-column: 1 / -1; grid-row: 2; }
-}
+
 .agent-status-account-details {
   justify-self: start;
 }
@@ -928,7 +884,6 @@ a.agent-status-creature.queued:hover {
 .account-details-metrics div { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; padding: 3px 6px; background: var(--chip); border-radius: 4px; }
 .account-details-metrics dt,
 .account-details-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.account-details [data-account-billing-link] { overflow-wrap: anywhere; }
 .account-details-metrics dd { margin: 0; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .account-details-more { margin-top: 8px; color: var(--muted); font-size: 12px; }
 .account-details-more summary { cursor: pointer; width: fit-content; padding: 4px 0; }
@@ -1500,15 +1455,14 @@ details[open] > summary .statusDisclosureIcon { transform: rotate(180deg); }
     white-space: normal;
   }
 }
-@container home-accounts (min-width: 761px) {
-  .agent-status-account-balance { grid-template-columns: 6em 18ch 245px; }
-  .agent-status-account-balance .agent-status-balance-coins { grid-column: 3; }
-}
 @container home-accounts (max-width: 760px) {
   .agent-status-limit-list { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .agent-status-account-name,
   .agent-status-account-windows { grid-column: 1; }
   .agent-status-account-details { grid-column: 1; }
+}
+@container home-accounts (max-width: 600px) {
+  .agent-status-api-list { grid-template-columns: minmax(0, 1fr); }
 }
 @container home-panel (max-width: 900px) {
   .scheduled-triggered-grid {

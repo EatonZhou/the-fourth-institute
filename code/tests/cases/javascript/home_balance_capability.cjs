@@ -17,13 +17,14 @@ const render = balance => {
 try {
   for (const balance of [{status: 'not_supported'}, {status: 'unavailable', reason: 'unsupported_endpoint'}]) {
     const el = render(balance);
-    assert.match(el.textContent, /此连接未提供余额查询/);
+    assert.match(el.querySelector('[data-account-balance]').title, /此连接未提供余额查询/);
+    assert.equal(el.textContent, '—');
     assert.doesNotMatch(el.textContent, /余额不足|API 状态不可用|0 CNY/);
     assert.equal(el.querySelector('.agent-status-balance-coins'), null);
   }
-  assert.match(render({reason: 'unauthorized'}).textContent, /余额查询未获授权/);
-  assert.match(render({reason: 'invalid_response'}).textContent, /余额返回格式无法识别/);
-  assert.match(render({status: 'unavailable', reason: 'unsupported_endpoint', display: '12 CNY', stale: true}).textContent, /12 CNY（上次记录）/);
+  assert.match(render({reason: 'unauthorized'}).firstChild.title, /余额查询未获授权/);
+  assert.match(render({reason: 'invalid_response'}).firstChild.title, /余额返回格式无法识别/);
+  assert.match(render({status: 'unavailable', reason: 'unsupported_endpoint', display: '12 CNY', stale: true}).textContent, /12 CNY\*/);
   assert.match(render({status: 'ok', display: '0 CNY', amount: 0}).textContent, /0 CNY/);
   console.log('Billing capability, failed reads and actual zero remain distinct');
 } finally { dom.window.close(); }

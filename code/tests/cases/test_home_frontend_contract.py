@@ -13,14 +13,14 @@ def test_balance_distinguishes_unsupported_queries_from_zero_and_failed_reads():
     subprocess.run(["node", str(script)], cwd=ROOT, check=True)
 
 
-def test_credits_show_their_own_sample_time_and_failed_read_state() -> None:
-    """Credits 详情使用自身采样时间，过期保留旧值，未知时间不借用账号检查时间。"""
+def test_subscription_quota_preserves_stale_and_unknown_values() -> None:
+    """订阅额度保留未知值与读取失败时的过期标识。"""
     script = Path(__file__).with_name("javascript") / "home_account_freshness.cjs"
     subprocess.run(["node", str(script)], check=True, cwd=ROOT)
 
 
-def test_home_quota_summary_and_complete_details_fit_in_browser() -> None:
-    """首页仅并排显示 Gemini 两个窗口，详情保留全部；覆盖刷新、过期、未知值及宽窄屏。"""
+def test_subscription_summary_and_paired_api_rows_fit_in_browser() -> None:
+    """订阅额度保持原布局，API 每行两项；覆盖刷新、未知值及宽窄屏。"""
     script = Path(__file__).with_name("javascript") / "home_quota_layout.cjs"
     subprocess.run(["node", str(script)], check=True, cwd=ROOT, timeout=60)
 
@@ -34,12 +34,12 @@ def test_activity_icons_keep_identity_links_with_fallback_avatars() -> None:
     subprocess.run(["node", str(script)], check=True, cwd=ROOT)
 
 
-def test_account_details_own_scheduler_form_and_async_save() -> None:
-    """账号详情保留草稿、权限和异步保存目标。
+def test_account_details_only_show_resident_information() -> None:
+    """账号详情只保留节点统计和批量接单，移除计费和调度表单。
 
     :design: decision_4dea0db1f45a
     """
-    script = Path(__file__).with_name("javascript") / "home_account_settings.cjs"
+    script = Path(__file__).with_name("javascript") / "home_account_details.cjs"
     subprocess.run(["node", str(script)], cwd=ROOT, check=True)
 
 

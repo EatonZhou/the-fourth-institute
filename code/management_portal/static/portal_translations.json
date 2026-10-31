@@ -1,4 +1,5 @@
 {
+  "用量刷新失败": {"zh-CN": "用量刷新失败", "en": "Usage refresh failed"},
   "每月总额度": {"zh-CN": "每月总额度", "en": "Monthly total quota"},
   "每月编程额度": {"zh-CN": "每月编程额度", "en": "Monthly coding quota"},
   "中国区": {"zh-CN": "中国区", "en": "Mainland China"},
