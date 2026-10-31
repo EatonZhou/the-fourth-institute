@@ -98,7 +98,7 @@
     return controlAcknowledgement(window.PortalResidentService.clearMailbox(payload));
   }
 
-  // Mailbox organization (decision_b5d349190743): merge, split and reorder waiting messages.
+  // Mailbox organization (decision_15f7df737ed5): merge, split and reorder waiting messages.
   function mergeMailboxItems(payload) {
     return currentActorResponse(window.PortalResidentService.mergeMailboxItems(payload));
   }

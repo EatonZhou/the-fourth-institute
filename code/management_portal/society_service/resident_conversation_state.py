@@ -135,7 +135,7 @@ class ConversationProjection:
         )
 
     def queues(self, resident_ids: Iterable[object]) -> dict[str, dict[str, Any]]:
-        """Each Resident's waiting queue, read from its Mailbox (decision_b5d349190743).
+        """Each Resident's waiting queue, read from its Mailbox (decision_15f7df737ed5).
 
         Nothing keeps a copy of it: the queue is the Mailbox's queue rows, behind
         a Job head that is held.

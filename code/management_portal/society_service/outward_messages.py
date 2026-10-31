@@ -3,7 +3,7 @@
 A Resident sends to a user with the same ``DeliverMessage`` it uses for a
 Resident.  The message starts no work: it is written into the sender's own
 Conversation as the sender's message, naming the user in ``recipients``, and
-the user sees that Conversation in the Inbox as unread (decision_b4e5ea4a47ec).
+the user sees that Conversation in the Inbox as unread (decision_15f7df737ed5).
 Whether to answer, and to whom, is up to whoever receives a message; nothing
 is routed back automatically.
 

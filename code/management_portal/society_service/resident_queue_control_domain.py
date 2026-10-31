@@ -32,7 +32,7 @@ def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str
         raise ValueError("queue_item_id required")
     now = resident_domain_common.now_iso()
     # A waiting info is not in the queue; withdrawing it ends it before any
-    # request carries it (decision_b5d349190743).
+    # request carries it (decision_15f7df737ed5).
     info_record = resident_record_domain.find_resident(resident_id)
     if info_record and not family_facade.is_facade(info_record) and resident_held_infos.withdraw(
         info_record, target_item_id, actor_id, manager=True,
@@ -79,7 +79,7 @@ def _reordered_ids(
     after_message_id: str,
     order: list[str] | None,
 ) -> list[str]:
-    """The waiting order after one relative move or a complete permutation (decision_b5d349190743)."""
+    """The waiting order after one relative move or a complete permutation (decision_15f7df737ed5)."""
 
     if order is not None:
         wanted = [str(item or "").strip() for item in order]

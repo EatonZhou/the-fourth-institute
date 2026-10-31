@@ -1140,7 +1140,7 @@ def test_latest_notification_bounds_round_trips_across_control_receipts(monkeypa
 
     连续控制回执不覆盖历史真实结果；逐步扩大候选窗口并限制每轮查询数量。
 
-    :design: decision_b4e5ea4a47ec
+    :design: decision_15f7df737ed5
     :design-point:
     """
     resident_id = "resident_111111111111"
@@ -1209,7 +1209,7 @@ def test_control_receipts_preserve_unread_version_until_a_real_outcome(outcome):
 
     验证注入及系统回执保持旧未读版本；真实回复、失败和中断推进通知；批量与单个摘要一致且隔离用户与Resident。
 
-    :design: decision_b4e5ea4a47ec
+    :design: decision_15f7df737ed5
     """
     resident_id = "resident_111111111111"
     other_id = "resident_222222222222"

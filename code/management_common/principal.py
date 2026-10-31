@@ -11,7 +11,7 @@ USER_ID = re.compile(r"[A-Za-z0-9_.@+-]{1,80}\Z")
 SERVICE_IDS = frozenset({"portal", "ai-socket-relay"})
 # Message senders that are not Principals keep their IDs out of User names:
 # a User called "mailbox" would read as the author of Mailbox group messages
-# (decision_b5d349190743).
+# (decision_15f7df737ed5).
 NON_PRINCIPAL_SENDER_IDS = frozenset({"mailbox"})
 
 
@@ -106,7 +106,7 @@ MAILBOX_ORIGIN_SCHEMA = "tfi.message-origin.v2"
 
 
 def mailbox_origin(initiated_by: object, *, producer_service: str = "portal") -> dict[str, object]:
-    """Origin of a Mailbox group message (decision_b5d349190743).
+    """Origin of a Mailbox group message (decision_15f7df737ed5).
 
     The Mailbox is only a kind of message sender: it is never a Principal,
     cannot sign in, own anything or call instructions.  ``initiated_by`` is

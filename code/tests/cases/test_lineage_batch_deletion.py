@@ -223,7 +223,7 @@ def test_deleting_a_resident_cancels_what_still_waits_in_its_mailbox(deletion_se
 
     :module: resident.conversation
     :importance: P1
-    :design: decision_b5d349190743, decision_0f57656a2acd
+    :design: decision_15f7df737ed5, decision_0f57656a2acd
     """
     # Until 10-10 deletion left these rows and inputs behind; nothing could
     # process or withdraw them once the Resident was gone.

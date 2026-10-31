@@ -16,7 +16,7 @@ handed to the steward.
 
 A waiting info can be withdrawn before a request carries it (CancelInput),
 and the infos of a stopped or failed round wait again when that round is put
-back in the queue (RequeueMessage, decision_b5d349190743): they stay where
+back in the queue (RequeueMessage, decision_15f7df737ed5): they stay where
 they first entered the trace, and are shown with the request that carries
 them next.
 """

@@ -529,7 +529,7 @@
           ...(String(payload.reason || "").trim() ? { reason: String(payload.reason).trim() } : {}),
         }, keyed(payload, "family-reassign"));
       },
-      // The Mailbox tab (decision_b5d349190743): what waits, the round in progress and the recent rounds.
+      // The Mailbox tab (decision_15f7df737ed5): what waits, the round in progress and the recent rounds.
       mailbox(residentId) {
         return execute("GetMailbox", { resident_id: required(residentId, "resident_id") });
       },

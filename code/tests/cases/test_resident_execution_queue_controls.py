@@ -355,7 +355,7 @@ def test_a_send_now_input_the_execution_refuses_waits_for_the_next_turn(
 
     :module: resident.conversation
     :importance: P1
-    :design: decision_b5d349190743
+    :design: decision_15f7df737ed5
     """
     resident_id = str(resident_record["resident_id"])
     message_id = "msg_dddddddddddddddddddddddddddddddd"

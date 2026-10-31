@@ -523,7 +523,7 @@ def resident_execution_stopped_message_id(job: Mapping[str, Any]) -> str:
     turn = str(job.get("user_message_id") or job.get("execution_id") or "")
     expected_execution_id = str(job.get("execution_id") or "")
     # One notice per stopped turn: a message put back in the Mailbox can be
-    # stopped again in a later Job (decision_b5d349190743).
+    # stopped again in a later Job (decision_15f7df737ed5).
     return resident_message_contract.derived_message_identity(
         "resident-turn-cancelled", *((turn, expected_execution_id) if expected_execution_id and expected_execution_id != turn else (turn,)),
     )

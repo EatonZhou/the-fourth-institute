@@ -1030,7 +1030,7 @@ def _stored_resident_input_state(
         resident_id,
         message_id,
     )
-    # A Mailbox group member reports its group and follows it (decision_b5d349190743).
+    # A Mailbox group member reports its group and follows it (decision_15f7df737ed5).
     record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
     projected = resident_mailbox.project_input_state(record, message_id, dict(state))
     if family_facade.is_facade(record):

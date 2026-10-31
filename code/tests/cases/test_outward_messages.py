@@ -2,7 +2,7 @@
 
 A message to a user stays in the Conversation it is sent from and names its
 recipient; only the recipient finds it unread (decision_c524c775e0be,
-decision_b4e5ea4a47ec).  A Family member or steward speaks to anyone outside
+decision_15f7df737ed5).  A Family member or steward speaks to anyone outside
 its Family as the outermost facade that holds it but not the recipient
 (decision_44cf587c1721).
 
@@ -50,7 +50,7 @@ def test_a_message_to_a_user_is_activity_and_news_only_for_that_user():
     Resident 对话中注明收件人的消息让收件用户在会话活动和会话摘要中看到这个对话与最新一条发给他的消息；其他用户看不到；消息内部（工具调用参数）出现 recipients 键不算发给谁；对话被清空后不再计入。
 
     :module: platform.core
-    :design: decision_c524c775e0be, decision_b4e5ea4a47ec
+    :design: decision_c524c775e0be, decision_15f7df737ed5
     """
     store = AgentDataStore()
     resident, other = "resident_sender", "resident_quiet"
@@ -267,7 +267,7 @@ def test_a_resident_sends_a_user_a_message_in_its_own_conversation(delivery_resi
     DeliverMessage 给出 user_id 时，消息以 Resident 的 agent 消息写入它自己的对话并立即显示，注明收件人，不进入队列、不开始工作；同一幂等键重试得到同一条消息，同一消息 ID 换正文报冲突；只有收件人看到未读和会话条目，能看这段对话的其他用户没有。
 
     :module: resident.conversation
-    :design: decision_c524c775e0be, decision_b4e5ea4a47ec
+    :design: decision_c524c775e0be, decision_15f7df737ed5
     """
     sender = delivery_resident["resident_id"]
     readers[sender] = {"CASE-A", "sample_admin"}
@@ -441,7 +441,7 @@ def test_the_newer_of_an_answer_and_a_message_to_the_user_is_what_is_unread(deli
 
     :module: resident.conversation
     :importance: P2
-    :design: decision_b4e5ea4a47ec
+    :design: decision_15f7df737ed5
     """
     resident = delivery_resident["resident_id"]
     repository = resident_conversation_stream.get_repository()
@@ -478,7 +478,7 @@ def test_a_conversation_where_the_user_was_sent_a_message_is_an_inbox_entry(monk
 
     :module: workbench.chat
     :importance: P2
-    :design: decision_b4e5ea4a47ec
+    :design: decision_15f7df737ed5
     """
     from management_portal import conversation_index_projection as index
 

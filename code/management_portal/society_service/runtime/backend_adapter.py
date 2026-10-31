@@ -36,7 +36,7 @@ def _chatroom_terminal(fact: ResidentTerminalFact) -> dict[str, Any]:
 
 
 def _mailbox_terminal(fact: ResidentTerminalFact) -> list[str]:
-    """A finished Mailbox group finishes its members with its state and replies (decision_b5d349190743)."""
+    """A finished Mailbox group finishes its members with its state and replies (decision_15f7df737ed5)."""
 
     try:
         from .. import resident_mailbox, resident_record_domain

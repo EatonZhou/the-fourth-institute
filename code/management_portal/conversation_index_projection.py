@@ -328,7 +328,7 @@ def resident_entries(
         )
         last_user_is_actor = _same_actor(resident.get("last_user_actor"), actor)
         actor_last_user_message_at = resident.get("actor_last_user_message_at")
-        # The actor talked here, or a message here was sent to the actor (decision_b4e5ea4a47ec).
+        # The actor talked here, or a message here was sent to the actor (decision_15f7df737ed5).
         actor_engaged = bool(activity_timestamp(actor_last_user_message_at) or activity_timestamp(resident.get("actor_addressed_at")))
         if actor_engaged:
             url = _resident_session_url(

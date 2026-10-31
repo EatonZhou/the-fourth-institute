@@ -115,7 +115,7 @@ def conversation_family_summaries(
             {"message_id": input_state.get("message_id")},
             input_state,
         )
-        # A message sent to the actor is itself worth reading (decision_b4e5ea4a47ec).
+        # A message sent to the actor is itself worth reading (decision_15f7df737ed5).
         addressed_id = str(summary.get("actor_addressed_message_id") or "")
         addressed_at = str(summary.get("actor_addressed_at") or "")
         if addressed_id and (resident_domain_common.parse_iso(addressed_at) or resident_domain_common.EARLIEST, addressed_id) > (

@@ -1,4 +1,4 @@
-"""The global conversation list shows a Resident from its first accepted input (decision_b4e5ea4a47ec).
+"""The global conversation list shows a Resident from its first accepted input (decision_15f7df737ed5).
 
 A user who has just sent the first message to a Resident sees that Resident in
 the Agent Inbox while the input still waits in the queue, before any reply.

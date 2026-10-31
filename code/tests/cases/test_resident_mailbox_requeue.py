@@ -1,4 +1,4 @@
-"""Putting a stopped or failed round back in the Mailbox, withdrawing a waiting info, and the Mailbox view (decision_b5d349190743).
+"""Putting a stopped or failed round back in the Mailbox, withdrawing a waiting info, and the Mailbox view (decision_15f7df737ed5).
 
 :module: resident.conversation
 """
@@ -108,7 +108,7 @@ def test_a_stopped_round_goes_back_first_with_its_infos_and_their_senders(team):
 
     停止的一轮用 RequeueMessage 放回：原请求以原消息 ID、发送者和正文排到等待队列最前，不带执行和 Job 字段，输入状态回到 queued 且没有回复与错误；随行的两条 info 回到等待列表最前，仍是 steward 与用户各自发出，状态回到 queued，不再折叠在原请求里；之后到达的 info 排在它们后面；停止提示留在对话中，这一轮离开最近记录。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id, (head, waiting) = _queue(team, 2)
     stopped, infos = _round(resident_id, infos=((STEWARD, "记忆库更正了发布界限。"), (ACTOR, "临时放行没有有效期。")))
@@ -154,7 +154,7 @@ def test_an_idle_resident_takes_a_failed_round_back_as_its_next_input(team):
 
     Resident 空闲时放回失败的一轮，它直接成为当前 Job（不带原执行绑定），输入状态 queued；接单关闭时它在 GetMailbox 的等待项中排在最前。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     failed, _ = _round(resident_id, state="failed")
@@ -177,7 +177,7 @@ def test_completed_running_or_missing_inputs_cannot_go_back(team):
 
     已完成的一轮、仍在进行的一轮和没有输入记录的消息都以 instruction.conflict 拒绝，错误说明原因，且不创建任何工作。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     completed, _ = _round(resident_id, state="completed")
@@ -195,7 +195,7 @@ def test_requeue_retried_with_its_key_returns_the_first_result(team):
 
     同一幂等键重试 RequeueMessage 返回第一次的结果（replayed），不重复放回；换一个键再放回同一条已在等待的消息也返回原输入，不重复入队。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     stopped, _ = _round(resident_id)
@@ -218,7 +218,7 @@ def test_only_those_who_organize_the_mailbox_put_a_round_back(team, monkeypatch)
 
     没有管理该 Resident 权限的用户调用 RequeueMessage 得到 instruction.forbidden，消息保持 cancelled，这一轮仍在最近记录中。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     from management_portal.society_service import resident_directory_domain
 
@@ -240,7 +240,7 @@ def test_a_stopped_group_goes_back_with_its_members(team):
 
     停止的 Mailbox 群体放回后仍带全部成员，群体与成员的输入状态回到 queued，成员仍报告所属群体；单独放回群体中的成员按冲突拒绝。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id, (_head, a, b) = _queue(team, 3)
     group_id = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]}).result["group_message_id"]
@@ -280,7 +280,7 @@ def test_a_waiting_info_is_withdrawn_with_cancel_queue_item(team):
 
     撤回一条等待中的 info：结果状态 cancelled、错误代码 info_withdrawn；它离开等待列表，下一条请求只带上其余 info。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     kept = _info(resident_id, STEWARD, "保留的 info")
@@ -301,7 +301,7 @@ def test_the_mailbox_lists_what_waits_what_runs_and_the_recent_rounds(team, monk
 
     GetMailbox 先列队列中的请求、再列等待中的 info（带发送者与摘要）；处理中是当前请求及随它送达的 info；最近几轮新的在前，停止的一轮可以放回、完成的不能，并附随行 info；返回整理权限与 revision。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     finished, _ = _round(resident_id, state="completed", text="已完成的一轮")
@@ -344,7 +344,7 @@ def test_rounds_keep_the_last_ten_and_drop_what_completed_rounds_no_longer_need(
     记录 12 轮后只剩最近 10 轮；/compact 不是一轮；失败的轮次保留原队列项，完成的轮次在下一轮记录时只留摘要。
 
     :aspects: functional, performance
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     for index in range(12):
@@ -373,7 +373,7 @@ def test_a_promoted_input_carries_its_own_reference_source_and_group():
 
     队列中的下一条消息成为当前工作时，业务引用、发起者换成它自己的，上一条的 run_id 与 Mailbox 成员不会留下。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     job = {
         'execution_id': "job_a", "user_message_id": "msg_" + "a" * 32, "actor": ACTOR, "business_ref": "ref-a",
@@ -396,7 +396,7 @@ def test_each_stop_of_a_message_has_its_own_notice():
 
     同一条消息在两个 Job 中被停止，两条停止提示的消息 ID 不同，都回复这条消息。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     message_id = "msg_" + "c" * 32
     first = resident_input_queue_domain.resident_execution_stopped_event(ACTOR, {"user_message_id": message_id, 'execution_id': "job_1"})

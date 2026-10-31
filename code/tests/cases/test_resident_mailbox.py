@@ -149,7 +149,7 @@ def test_merge_puts_one_group_where_the_first_member_waited_and_split_restores_t
 
     MergeMailboxItems 生成署名为 Mailbox 的群体消息；SplitMailboxItem 把原消息按顺序放回，群体以 mailbox_split 结束。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id, (head, a, x, b) = _queue(team)
 
@@ -236,7 +236,7 @@ def test_merging_a_group_keeps_one_level_and_the_finished_group_finishes_its_mem
 
     选中已有群体时按成员展开再合并；群体完成后每个成员得到同样的终态和回复。
 
-    :design: decision_b5d349190743
+    :design: decision_15f7df737ed5
     """
     resident_id, (_head, a, b, c) = _queue(team)
     first = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]}).result
@@ -269,7 +269,7 @@ def test_messages_from_different_senders_merge_and_run_as_the_organizer(team):
 
     群体输入逐条写明发送者并提示由 Resident 自行判断；多发送者的群体以整理者身份执行，单一发送者保持原身份。
 
-    :design: decision_b5d349190743
+    :design: decision_15f7df737ed5
     """
     other = "resident_eeeeeeeeeeee"
     resident_id, (_head, a, b, c) = _queue(team, actors=[ACTOR, ACTOR, other, ACTOR])
@@ -293,7 +293,7 @@ def test_single_unknown_or_non_group_items_are_not_organized(team):
 
     合并少于两条、包含不在队列中的消息，或拆分普通消息时返回冲突，队列不变。
 
-    :design: decision_b5d349190743, decision_2a3ff353165c
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id, (_head, a, b, _c) = _queue(team)
 
@@ -312,7 +312,7 @@ def test_cancelling_a_group_cancels_its_members_and_its_terminal_fact_finishes_t
 
     取消等待中的群体时成员一起取消；群体执行结束的终态事实把同样的终态写给每个成员。
 
-    :design: decision_b5d349190743
+    :design: decision_15f7df737ed5
     """
     from management_portal.society_service.runtime import backend_adapter
     from management_portal.society_service.runtime.contracts import ResidentTerminalFact

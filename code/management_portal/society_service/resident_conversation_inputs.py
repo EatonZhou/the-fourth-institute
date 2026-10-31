@@ -239,7 +239,7 @@ class ConversationInputs:
                 )
 
     def reopen_input(self, resident_id: object, message_id: object) -> dict[str, Any]:
-        """Put a finished input back to ``queued`` for a Mailbox requeue (decision_b5d349190743).
+        """Put a finished input back to ``queued`` for a Mailbox requeue (decision_15f7df737ed5).
 
         Every other writer keeps an input's first terminal state (see
         ``set_input_state``); only putting a stopped or failed round back

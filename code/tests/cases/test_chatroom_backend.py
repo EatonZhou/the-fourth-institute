@@ -562,7 +562,7 @@ def test_a_chatroom_is_an_inbox_conversation_with_its_own_unread(lineage, monkey
 
     :module: resident.conversation
     :importance: P1
-    :design: decision_a6bebf4ac283, decision_b4e5ea4a47ec
+    :design: decision_a6bebf4ac283, decision_15f7df737ed5
     """
     from management_portal import serve_management_portal as portal
     from management_portal import web_inbox
@@ -620,7 +620,7 @@ def test_clearing_all_hides_a_chatroom_until_its_next_message(lineage, monkeypat
     """Inbox 清除全部后聊天室条目隐藏，直到出现新消息
 
     :module: resident.conversation
-    :design: decision_a6bebf4ac283, decision_b4e5ea4a47ec
+    :design: decision_a6bebf4ac283, decision_15f7df737ed5
     """
     from management_portal import serve_management_portal as portal
     from management_portal import web_inbox
@@ -700,7 +700,7 @@ def test_a_chatroom_change_wakes_its_members_chatroom_view_and_inbox(lineage, mo
     """聊天室变化同时唤醒成员的聊天室视图和 Inbox
 
     :module: resident.conversation
-    :design: decision_a6bebf4ac283, decision_b4e5ea4a47ec
+    :design: decision_a6bebf4ac283, decision_15f7df737ed5
     """
     import management_portal.notifications as notifications
     from management_portal.notifications import business_projection_subject

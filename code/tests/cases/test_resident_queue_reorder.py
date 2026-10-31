@@ -1,7 +1,7 @@
-"""ReorderMailbox changes only the waiting order (decision_b5d349190743, decision_2a3ff353165c).
+"""ReorderMailbox changes only the waiting order (decision_15f7df737ed5, decision_2a3ff353165c).
 
 :module: resident.session
-:design: decision_b5d349190743, decision_2a3ff353165c
+:design: decision_15f7df737ed5, decision_2a3ff353165c
 """
 
 from __future__ import annotations

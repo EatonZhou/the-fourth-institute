@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  // The Mailbox tab of the node dialog (decision_b5d349190743): what waits for a
+  // The Mailbox tab of the node dialog (decision_15f7df737ed5): what waits for a
   // Resident, the round in progress and the rounds that ended recently. Every
   // change goes through the same Resident queue instructions as the Chat queue;
   // the tab re-reads GetMailbox when the Resident's Conversation changes, and

@@ -194,7 +194,7 @@
       return window.PortalI18n.html`<details class="familyRelay heldInfo attachedInfos" data-message-disclosure="attached-infos"><summary class="familyRelayStatus">附带背景更新 ${infos.length} 条${note}</summary>${rows}</details>`;
     }
 
-    // A Mailbox group's body is its members (decision_b5d349190743), each with
+    // A Mailbox group's body is its members (decision_15f7df737ed5), each with
     // its own sender, time and text; a long one opens from a one-line preview.
     function mailboxGroupBody(members, context) {
       const rows = members.map(member => {

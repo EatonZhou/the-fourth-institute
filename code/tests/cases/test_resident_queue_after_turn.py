@@ -2,7 +2,7 @@
 
 :module: resident.conversation
 :importance: P1
-:design: decision_b5d349190743
+:design: decision_15f7df737ed5
 """
 
 from __future__ import annotations

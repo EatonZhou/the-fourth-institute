@@ -153,7 +153,7 @@ def test_filtered_conversation_page_scans_activity_once_and_keeps_overflow(tmp_p
 
     跳过大量已删除或不可见对话时只读取一次活动索引，并确保溢出的可见对象在下一页仍可读取。
 
-    :design: decision_b4e5ea4a47ec
+    :design: decision_15f7df737ed5
     :design-point:
     """
     store = make_history(tmp_path, count=41)

@@ -1,7 +1,7 @@
 """
 :module: lineage.service
 :aspects: functional, performance
-:design: decision_71aa039e3211, decision_b4e5ea4a47ec
+:design: decision_71aa039e3211, decision_15f7df737ed5
 """
 from management_portal.society_service import business_fact_views
 """State refresh reuses checked records and scans Chat user facts once."""
