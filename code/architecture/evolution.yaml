@@ -308,19 +308,6 @@ retired_directions:
     replaced_by: []
 
 plans:
-  - id: plan_ce8d3c73ac2d
-    title: 按指令逐批接入资源凭证授权
-    status: proposed
-    source: {ref: plan_ce8d3c73ac2d, version: '21'}
-    modules: [kernel.isa, resources.access, lineage.conversation, web.identity]
-    depends_on: []
-    suggested_after: []
-    cost_level: high
-    cost: 高（定性估计）。每批需核对指令参数、资源父关系、调用主体与委派链，并验证通过、拒绝和撤销后的行为。
-    review_notes:
-      - 正文已注明业务 owner 迁移取消，且保留历史规划；逐批接入范围需按现行策略与用户选择重新确认。
-      - 本图未读取实时策略，不能据该 Plan 的历史阶段判断当前受保护指令、管理员限制或凭证状态。
-
   - id: plan_2d3d04345a3c
     title: 跨资源编辑时保住草稿，并让每次保存可确认
     status: proposed
