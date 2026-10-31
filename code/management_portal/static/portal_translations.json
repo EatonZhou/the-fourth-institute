@@ -1,4 +1,8 @@
 {
+  "点击输入路径打开文件": {"en": "Click to type a path and open the file", "zh-CN": "点击输入路径打开文件"},
+  "{p0}\n点击输入路径打开文件": {"en": "{p0}\nClick to type a path and open the file", "zh-CN": "{p0}\n点击输入路径打开文件"},
+  "当前文件路径：{p0}": {"en": "Current file path: {p0}", "zh-CN": "当前文件路径：{p0}"},
+  "输入文件路径或资源 ID，回车打开": {"en": "Type a file path or resource ID, press Enter to open", "zh-CN": "输入文件路径或资源 ID，回车打开"},
   "门面展示": {"en": "Facade display", "zh-CN": "门面展示"},
   "{p1} · 工作详情": {"en": "{p1} · Work details", "zh-CN": "{p1} · 工作详情"},
   "置顶消息": {"en": "Pin message", "zh-CN": "置顶消息"},

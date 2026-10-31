@@ -173,6 +173,13 @@
         openMessageLink(openLinkButton);
         return;
       }
+      const copyLinkButton = event.target.closest("[data-portal-message-copy-link]");
+      if (copyLinkButton) {
+        event.preventDefault();
+        closeMessageMenu();
+        void window.PortalUI.copyText(copyLinkButton.dataset.portalMessageCopyLink, window.PortalI18n.t("链接"));
+        return;
+      }
       const actionButton = event.target.closest("[data-portal-message-action]");
       if (actionButton) {
         runMessageAction(actionButton);
@@ -203,17 +210,24 @@
       }
       return null;
     };
-    // A web link under the pointer adds "open link" to the menu.
+    // A web link under the pointer adds "open link" and "copy link" to the menu.
     const offerMessageLink = (menu, article, target) => {
-      menu.querySelector("[data-portal-message-open-link]")?.remove();
+      menu.querySelectorAll("[data-portal-message-open-link], [data-portal-message-copy-link]").forEach(node => node.remove());
       const link = target.closest("a[href]");
       if (!link || !article.contains(link) || !["http:", "https:"].includes(link.protocol)) return;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.portalMessageOpenLink = link.href;
-      button.textContent = window.PortalI18n.t("打开链接");
-      button.title = window.PortalI18n.t("在新标签页打开这个网页链接");
-      menu.insertBefore(button, menu.querySelector("[data-portal-message-copy]"));
+      const open = document.createElement("button");
+      open.type = "button";
+      open.dataset.portalMessageOpenLink = link.href;
+      open.textContent = window.PortalI18n.t("打开链接");
+      open.title = window.PortalI18n.t("在新标签页打开这个网页链接");
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.dataset.portalMessageCopyLink = link.href;
+      copy.textContent = window.PortalI18n.t("复制链接");
+      copy.title = link.href;
+      const anchor = menu.querySelector("[data-portal-message-copy]");
+      menu.insertBefore(open, anchor);
+      menu.insertBefore(copy, anchor);
     };
     // The reading pane owns its context menu, including blank space and status
     // blocks. Only an actual message may supply message actions.

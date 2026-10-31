@@ -1854,8 +1854,34 @@ dialog.portalDetailSurface::backdrop {
 
 .portalPreviewDocumentPath[data-portal-preview-path] {
   max-width: none;
-  cursor: copy;
   user-select: text;
+}
+
+.portalPreviewDocumentPath.is-editable {
+  cursor: text;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.portalPreviewDocumentPath.is-editable:hover,
+.portalPreviewDocumentPath.is-editable:focus-visible {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+  outline: none;
+}
+
+.portalPreviewPathInput {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 22px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  padding: 0 6px;
+  outline: none;
 }
 
 .portalPreviewSelectionToolbar {

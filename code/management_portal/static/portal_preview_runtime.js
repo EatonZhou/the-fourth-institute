@@ -55,6 +55,15 @@
     link.remove();
   }
 
+  // The path "copy path" puts on the clipboard: a Portal resource keeps its
+  // address, a file link its resolved absolute path without the line locator.
+  function fileMenuPath(target) {
+    if (target.resourceAddress) return target.resourceAddress;
+    const raw = String(target.path || target.href || "").trim();
+    if (!raw) return "";
+    return window.PortalFileLinks?.describe?.(raw, { allowAnyLocalPath: true })?.path || raw;
+  }
+
   function openFileMenu({ event, trigger, request: input, onOpen = request } = {}) {
     if (!input) return false;
     const target = contract.normalizeRequest(input);
@@ -85,6 +94,10 @@
         const selected = context;
         const action = button.dataset.previewFileAction;
         popover.close(event);
+        if (action === "copy-path") {
+          void window.PortalUI.copyText(fileMenuPath(selected.target), window.PortalI18n.t("文件路径"));
+          return;
+        }
         Promise.resolve().then(() => action === "download"
           ? downloadFile(selected.target)
           : selected.onOpen({ ...selected.target, mode: "new-tab" })
@@ -105,7 +118,11 @@
           popover.close();
           context = next;
           const downloadable = next.target.resourceAddress || window.PortalFileLinks?.describe(next.target.path);
-          panel.innerHTML = window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="new-tab">在新标签页打开</button>${downloadable ? window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="download">下载</button>` : ""}`;
+          panel.innerHTML = window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="new-tab">在新标签页打开</button>${downloadable ? window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="download">下载</button>` : ""}${window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="copy-path">复制路径</button>`}`;
+          const copyPath = panel.querySelector("[data-preview-file-action=copy-path]");
+          const copyValue = fileMenuPath(next.target);
+          if (copyValue) copyPath.title = copyValue;
+          else copyPath.remove();
           const rect = next.trigger?.getBoundingClientRect();
           const point = next.event?.type === "contextmenu" && (next.event.clientX || next.event.clientY)
             ? { x: next.event.clientX, y: next.event.clientY }

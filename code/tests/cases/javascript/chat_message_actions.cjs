@@ -143,18 +143,25 @@ const pressEscape = () => w.document.dispatchEvent(new w.KeyboardEvent('keydown'
       boxes.clear();
     }
     {
-      // A web link under the pointer adds "open link" to the menu.
+      // A web link under the pointer adds "open link" and "copy link" to the menu.
       const { workspace, row, menuOf, rightClick, click } = fresh('link');
       workspace.setMessages([agent('a0', 'see [docs](https://docs.fixture.invalid/x) or [mail](mailto:x@fixture.invalid)')]);
       rightClick(row('a0').querySelector('a[href^="https:"]'));
       const openLink = menuOf('a0').querySelector('[data-portal-message-open-link]');
+      const copyLink = menuOf('a0').querySelector('[data-portal-message-copy-link]');
       assert.ok(openLink, 'a web link offers to open it');
-      assert.equal(openLink.nextElementSibling, menuOf('a0').querySelector('[data-portal-message-copy]'), 'before the copy items');
+      assert.equal(openLink.nextElementSibling, copyLink, 'and to copy it');
+      assert.equal(copyLink.nextElementSibling, menuOf('a0').querySelector('[data-portal-message-copy]'), 'before the copy items');
       click(openLink);
       assert.deepEqual(opened.splice(0), [['https://docs.fixture.invalid/x', '_blank', 'noopener,noreferrer']]);
       assert.equal(menuOf('a0').hidden, true, 'opening the link closes the menu');
+      rightClick(row('a0').querySelector('a[href^="https:"]'));
+      click(menuOf('a0').querySelector('[data-portal-message-copy-link]'));
+      assert.deepEqual(copied.splice(0), ['https://docs.fixture.invalid/x']);
+      assert.equal(menuOf('a0').hidden, true, 'copying the link closes the menu');
       rightClick(row('a0').querySelector('.messageContent'));
       assert.equal(menuOf('a0').querySelector('[data-portal-message-open-link]'), null, 'away from a link the item is gone');
+      assert.equal(menuOf('a0').querySelector('[data-portal-message-copy-link]'), null, 'with its copy item');
       rightClick(row('a0').querySelector('a[href^="mailto:"]'));
       assert.equal(menuOf('a0').querySelector('[data-portal-message-open-link]'), null, 'only web links are offered');
       pressEscape();

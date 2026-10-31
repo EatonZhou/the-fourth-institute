@@ -128,23 +128,96 @@
       toolbarState.textContent = text;
       if (path && text) {
         toolbarState.dataset.portalPreviewPath = text;
-        toolbarState.title = window.PortalI18n.text`${text}\n双击复制文件路径`;
-        toolbarState.setAttribute("aria-label", window.PortalI18n.text`当前文件路径：${text}。双击复制`);
+        toolbarState.title = openPath
+          ? window.PortalI18n.text`${text}\n点击输入路径打开文件`
+          : text;
+        toolbarState.setAttribute("aria-label", window.PortalI18n.text`当前文件路径：${text}`);
       } else {
         delete toolbarState.dataset.portalPreviewPath;
-        toolbarState.title = text;
+        toolbarState.title = openPath ? window.PortalI18n.t("点击输入路径打开文件") : text;
         toolbarState.removeAttribute("aria-label");
       }
       return text;
     };
-    toolbarState?.addEventListener("dblclick", event => {
-      const path = String(toolbarState.dataset.portalPreviewPath || "").trim();
-      if (!path) return;
-      event.preventDefault();
-      event.stopPropagation();
-      const copyText = options.copyText || window.PortalUI?.copyText;
-      if (typeof copyText === "function") void Promise.resolve(copyText(path, window.PortalI18n.t("文件路径")));
-    });
+    // The path line doubles as an address bar: clicking it edits the path
+    // (selected, so it can also be copied) and Enter opens what was typed
+    // through the page's Preview hosts. A relative path resolves against the
+    // folder of the file shown.
+    const openPath = typeof options.onOpenPath === "function"
+      ? options.onOpenPath
+      : options.pathInput === false ? null : request => window.PortalPreview.request(request);
+    const resolveTypedPath = value => {
+      const current = String(toolbarState.dataset.portalPreviewPath || "");
+      if (/^(?:[a-z][a-z0-9+.-]*:|\/|~|#)/i.test(value) || /^[a-z]+_[0-9a-f]{12}\b/.test(value)) return value;
+      if (!current.startsWith("/")) return value;
+      const parts = current.split("/").slice(0, -1);
+      value.split("/").forEach(part => {
+        if (part === "..") { if (parts.length > 1) parts.pop(); }
+        else if (part && part !== ".") parts.push(part);
+      });
+      return parts.join("/") || "/";
+    };
+    const editPath = () => {
+      if (!openPath || !toolbarState || toolbarState.hidden) return;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "portalPreviewPathInput";
+      input.spellcheck = false;
+      input.value = String(toolbarState.dataset.portalPreviewPath || "");
+      input.placeholder = window.PortalI18n.t("输入文件路径或资源 ID，回车打开");
+      input.setAttribute("aria-label", window.PortalI18n.t("输入文件路径或资源 ID，回车打开"));
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        input.remove();
+        toolbarState.hidden = false;
+      };
+      input.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          finish();
+          toolbarState.focus({ preventScroll: true });
+          return;
+        }
+        if (event.key !== "Enter" || event.isComposing) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const typed = input.value.trim();
+        const target = typed ? resolveTypedPath(typed) : "";
+        finish();
+        if (!target || target === toolbarState.dataset.portalPreviewPath) return;
+        const name = target.split(/[\\/]/).filter(Boolean).at(-1) || target;
+        Promise.resolve(openPath({ path: target, href: target, title: name, source: "preview-path", target: root }))
+          .then(handled => {
+            if (handled === false) throw new Error(window.PortalI18n.t("当前页面无法打开此文件"));
+          })
+          .catch(error => window.PortalUI?.toast?.(error?.message || String(error), "error"));
+      });
+      input.addEventListener("blur", finish);
+      toolbarState.hidden = true;
+      toolbarState.after(input);
+      input.focus({ preventScroll: true });
+      input.select();
+    };
+    if (toolbarState && openPath) {
+      toolbarState.classList.add("is-editable");
+      toolbarState.tabIndex = 0;
+      toolbarState.setAttribute("role", "button");
+      toolbarState.title = window.PortalI18n.t("点击输入路径打开文件");
+      toolbarState.addEventListener("click", event => {
+        const selection = window.getSelection?.();
+        if (selection && !selection.isCollapsed && toolbarState.contains(selection.anchorNode)) return;
+        event.preventDefault();
+        editPath();
+      });
+      toolbarState.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        editPath();
+      });
+    }
     const component = Object.freeze({
       root,
       ids,
