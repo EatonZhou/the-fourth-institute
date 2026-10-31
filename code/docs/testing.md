@@ -3,8 +3,7 @@
 Tests belong to the shared source tree. User records, test accounts, browser
 sessions, test reports and TAU Resident assignments belong to the selected
 instance. A release containing the Test capability includes `tests/cases`, its
-fixtures and explicit TAU case definitions. The retired `tests/ui` Playwright
-suite is not a runner; browser acceptance uses TAU.
+fixtures and explicit TAU case definitions. Browser acceptance uses TAU.
 
 ## Local regression
 
@@ -36,10 +35,10 @@ retired deployment registry selects the target automatically.
 
 TAU runs through the configured application Lineage and module Resident slots.
 Cases may mutate only their declared test fixtures; they must retain cleanup
-and evidence of any incomplete work. Use the actual feature set of the package.
-The retired Project page, RoboLab integration and semantic-vector search are
-not acceptance requirements of this distribution. Project resources and their
-ISA operations remain supported and keep their tests.
+and evidence of any incomplete work. Use the actual feature set of the package: an optional feature the package
+leaves out, such as the Projects page or Resident semantic search, is not an
+acceptance requirement of that package. Project resources and their ISA
+operations are supported in every package and keep their tests.
 
 ## Publication evidence
 
