@@ -167,7 +167,14 @@ def world(monkeypatch, tmp_path, permissions):
     home = tmp_path / "home"
     (home / ".codex").mkdir(parents=True)
     (home / ".codex/config.toml").write_text(f'[projects."{old_root}/src"]\ntrust_level = "trusted"\n')
-    claude = home / ".claude-accounts/one/projects"
+    # Execution accounts live under the accounts root; HOME/.codex-accounts only links to them.
+    accounts = tmp_path / "accounts"
+    codex_account = accounts / "codex/codex_one"
+    codex_account.mkdir(parents=True)
+    (codex_account / "config.toml").write_text(f'[projects."{old_root}/wt"]\ntrust_level = "trusted"\n')
+    (home / ".codex-accounts").mkdir()
+    (home / ".codex-accounts/one").symlink_to(codex_account)
+    claude = accounts / "claude/claude_one/projects"
     (claude / project_rename._claude_project_key(str(old_root)) / "memory").mkdir(parents=True)
     kimi = tmp_path / "kimi"
     kimi.mkdir()
@@ -188,7 +195,7 @@ def world(monkeypatch, tmp_path, permissions):
     mountinfo = tmp_path / "mountinfo"
     mountinfo.write_text("")
     for name, value in {
-        "PROJECTS_ROOT": projects, "SHARE_ROOT": tmp_path, "HOME": home, "KIMI_HOME": kimi,
+        "PROJECTS_ROOT": projects, "SHARE_ROOT": tmp_path, "HOME": home, "ACCOUNTS_ROOT": accounts, "KIMI_HOME": kimi,
         "SYMLINK_ROOTS": (projects, agents), "SERVICE_SCRIPT_ROOTS": (services,),
         "SYSTEMD_UNIT_DIRS": (units,), "MOUNTINFO": mountinfo,
     }.items():
@@ -228,7 +235,7 @@ def world(monkeypatch, tmp_path, permissions):
     permissions.grant("alice", "Taken", "@viewer")
     yield {"projects": projects, "old_root": old_root, "new_root": projects / "New", "repository": repository,
            "paper": paper,
-           "agents": agents, "home": home, "kimi": kimi, "units": units, "probe": probe,
+           "agents": agents, "home": home, "accounts": accounts, "kimi": kimi, "units": units, "probe": probe,
            "permissions": permissions}
     with database.transaction() as connection:
         connection.execute(f'DROP SCHEMA IF EXISTS "{probe}" CASCADE')
@@ -308,7 +315,8 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
     assert os.readlink(world["agents"] / "notes") == str(new_root / "notes.md")
     # Provider state kept per working directory.
     assert f'[projects."{new_root}/src"]' in (world["home"] / ".codex/config.toml").read_text()
-    claude = world["home"] / ".claude-accounts/one/projects"
+    assert (world["accounts"] / "codex/codex_one/config.toml").read_text().count(f'[projects."{new_root}/wt"]') == 1
+    claude = world["accounts"] / "claude/claude_one/projects"
     assert (claude / project_rename._claude_project_key(str(new_root)) / "memory").is_dir()
     assert json.loads((world["kimi"] / "workspaces.json").read_text())["workspaces"]["w"]["root"] == str(new_root)
     assert result["files"].get("errors") is None

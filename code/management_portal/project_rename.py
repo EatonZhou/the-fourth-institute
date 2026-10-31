@@ -44,6 +44,8 @@ LOGGER = logging.getLogger(__name__)
 SHARE_ROOT = portal_path("share_root")
 PROJECTS_ROOT = SHARE_ROOT / "Projects"
 HOME = Path.home()
+# Execution accounts: <accounts_root>/<provider>/<account_id>, each the Provider's own home.
+ACCOUNTS_ROOT = portal_path("accounts_root")
 # Places outside Portal whose configuration may run code in a Project.
 SYSTEMD_UNIT_DIRS = (HOME / ".config/systemd/user", Path("/etc/systemd/system"))
 SERVICE_SCRIPT_ROOTS = (SHARE_ROOT / "Services",)
@@ -774,11 +776,16 @@ def _fix_provider_state(
     change: ProjectRename, rewriter: Rewriter, residents_paths: list[tuple[str, str]], result: FileChanges,
 ) -> None:
     # Codex trusts working directories by path.
-    for config in sorted({*HOME.glob(".codex/config.toml"), *HOME.glob(".codex-accounts/*/config.toml")}):
+    # The same account can also be reached through a link, so each real file is visited once.
+    for config in sorted({path.resolve() for path in (
+            *HOME.glob(".codex/config.toml"), *HOME.glob(".codex-accounts/*/config.toml"),
+            *ACCOUNTS_ROOT.glob("codex/*/config.toml"))}):
         _rewrite_file(config, rewriter.path, result, result.provider_state)
     # Claude Code keeps each working directory's sessions and memory in a folder named after it.
     directories = [*residents_paths, (str(change.old_root), str(change.new_root))]
-    for projects in sorted({*HOME.glob(".claude/projects"), *HOME.glob(".claude-accounts/*/projects")}):
+    for projects in sorted({path.resolve() for path in (
+            *HOME.glob(".claude/projects"), *HOME.glob(".claude-accounts/*/projects"),
+            *ACCOUNTS_ROOT.glob("claude/*/projects"))}):
         for old, new in directories:
             source = projects / _claude_project_key(old)
             target = projects / _claude_project_key(new)
