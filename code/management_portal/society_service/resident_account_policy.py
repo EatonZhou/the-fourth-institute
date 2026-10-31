@@ -71,14 +71,21 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
 
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
-                     tried: list[str], *, reserve: bool = False, priority: list[str] | None = None) -> dict[str, Any]:
+                     tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
+                     subscription_only: bool = False) -> dict[str, Any]:
+    """The account to switch to.  ``subscription_only`` (Family switching) never
+    leaves subscriptions on its own: a service or API kind qualifies only when it
+    is the source's own kind or the user listed it in ``priority``."""
     eligible = sufficient_reserve if reserve else account_available
-    candidates = [a for a in accounts if eligible(a)
-                  and (a.get("provider"), str(a.get("backend_route_id") or "")) != (provider, route)
-                  and str(a.get("account_id") or "") not in tried]
     source = next((a for a in accounts if a.get("provider") == provider
                    and str(a.get("backend_route_id") or "") == route), {"provider": provider})
     source_type = migration_type(source)["id"]
+    allowed = set(priority or []) | {source_type}
+    candidates = [a for a in accounts if eligible(a)
+                  and (a.get("provider"), str(a.get("backend_route_id") or "")) != (provider, route)
+                  and str(a.get("account_id") or "") not in tried
+                  and (not subscription_only or a.get("kind") == "subscription_login"
+                       or migration_type(a)["id"] in allowed)]
     order = {key: index for index, key in enumerate(priority or [])}
     def rank(account):
         kind = migration_type(account)

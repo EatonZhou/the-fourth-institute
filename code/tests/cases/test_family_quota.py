@@ -31,8 +31,8 @@ from tests.cases.test_resident_mailbox_requeue import _record
 from management_portal.society_service import resident_input_queue_domain
 
 
-def _account(route, weekly, *, short=90, provider="codex", fresh=True, duration=False):
-    return {"account_id": f"{provider}_{route}", "provider": provider, "backend_route_id": route,
+def _account(route, weekly, *, short=90, provider="codex", fresh=True, duration=False, kind="subscription_login"):
+    return {"account_id": f"{provider}_{route}", "provider": provider, "backend_route_id": route, "kind": kind,
             "quota_reserve": {"status": "available", "fresh": fresh, "remaining": min(weekly, short),
                               "windows": [{"window": "primary" if duration else "seven_day",
                                            "window_duration_mins": 10080 if duration else None,
@@ -49,6 +49,28 @@ def test_weekly_headroom_uses_the_weekly_window_and_supports_codex_durations(wee
     assert accounts_policy.weekly_remaining(_account("one", weekly, short=short)) == expected
     assert accounts_policy.weekly_remaining(_account("one", weekly, short=short, duration=True)) == expected
     assert accounts_policy.weekly_remaining(_account("one", weekly, fresh=False)) is None
+
+
+def test_family_switching_stays_among_subscriptions_unless_a_kind_is_allowed():
+    """Family 自动切换只在订阅账号之间进行
+
+    服务账号和 API 只有在用户列入 auto_migrate_priority，或与原账号同种类时才会被自动选中。
+
+    :design: decision_a64b3ea2c3c5
+    """
+    api = {**_account("api", 90), "kind": "api_profile", "billing_account_id": "openai"}
+    service = _account("svc", 95, provider="kimi", kind="service")
+    pick = lambda accounts, **kwargs: accounts_policy.fallback_account(
+        accounts, "codex", "one", [], reserve=True, subscription_only=True, **kwargs).get("account_id", "")
+    assert pick([_account("one", 5), api, service]) == ""
+    assert pick([_account("one", 5), api, service, _account("two", 40, provider="claude")]) == "claude_two"
+    assert pick([_account("one", 5), api, service], priority=["codex:api_profile:openai"]) == "codex_api"
+    assert pick([_account("one", 5), api, service], priority=["kimi:service"]) == "kimi_svc"
+    # Without the Family rule every eligible kind remains a candidate.
+    assert accounts_policy.fallback_account([_account("one", 5), api], "codex", "one", [], reserve=True)["account_id"] == "codex_api"
+    # The source's own non-subscription kind stays allowed.
+    source = {**_account("one", 5), "kind": "api_profile", "billing_account_id": "openai"}
+    assert pick([source, api]) == "codex_api"
 
 
 def test_reserve_targets_require_weekly_above_ten_or_a_funded_metered_agent():

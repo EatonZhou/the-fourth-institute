@@ -453,7 +453,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         payload = migration.get("pending_restart")
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                      migration["tried_accounts"], reserve=True, priority=auto_migration_priority(current))
+                                      migration["tried_accounts"], reserve=True, priority=auto_migration_priority(current),
+                                      subscription_only=True)
             if target:
                 migration["attempts"] += 1
                 migration["tried_accounts"].append(target["account_id"])

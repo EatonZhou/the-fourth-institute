@@ -235,7 +235,9 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 _notify_steward_blocked(record, message_id, "steward 备用后端切换已失败两次")
                 continue
             tried = list(recovery.get("tried_accounts") or [])
-            target = fallback_account(accounts or [], provider, route, tried, reserve=True, priority=resident_domain_port.auto_migration_priority(record))
+            # A Family switches only between subscriptions unless the user listed another kind.
+            target = fallback_account(accounts or [], provider, route, tried, reserve=True, priority=resident_domain_port.auto_migration_priority(record),
+                                      subscription_only=bool((record.get("family") or {}).get("role")))
             if not target:
                 _notify_steward_blocked(record, message_id, "没有已确认有可用额度的备用账号或后端")
                 continue

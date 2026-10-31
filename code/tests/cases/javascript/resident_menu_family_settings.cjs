@@ -61,3 +61,43 @@ test('saved Family policy refreshes the canvas snapshot used to reopen the menu'
   h.ctx.renderFamilySettings(h.ctx.nodeMenuContext);
   assert.match(h.root.html,/aria-checked="false"/);
 });
+
+test('automatic switching lists only subscriptions until the user allows another kind',async()=>{
+  const {JSDOM}=require('jsdom');
+  const menu=fs.readFileSync(require('node:path').resolve(__dirname,'../../../management_portal/static/portal_resident_menu.js'),'utf8');
+  const start=menu.indexOf('  function mountMigrationPriority(');
+  const body=menu.slice(start,menu.indexOf('\n  }\n',start)+4);
+  const dom=new JSDOM('<div id="root"></div>',{runScripts:'outside-only'});
+  const w=dom.window,calls=[],kinds=[
+    {id:'codex:api_profile:openai',label:'Codex · API（openai）',default_priority:201},
+    {id:'codex:subscription_login',label:'Codex · 订阅',default_priority:1},
+    {id:'claude:subscription_login',label:'Claude Code · 订阅',default_priority:0},
+    {id:'kimi:service',label:'Kimi Code · 服务账号',default_priority:102}];
+  let saved=[];
+  w.PortalUIPrimitives={escapeHtml:value=>String(value).replace(/[&<>"]/g,c=>`&#${c.charCodeAt(0)};`)};
+  w.PortalI18n={t:value=>value};
+  w.PortalInstructionClient={execute:async(name,args)=>{calls.push({name,args});
+    if(name==='ListProviderAccounts')return{accounts:kinds.map(migration_type=>({migration_type}))};
+    if(name==='GetLineage')return{revision:3,lineage:{function_blocks:[{id:'family',family:{auto_migrate_priority:saved}}]}};
+    saved=[...args.auto_migrate_priority];return{};}};
+  w.eval(`window.mount=(()=>{const esc=value=>window.PortalUIPrimitives.escapeHtml(value);${body}\nreturn mountMigrationPriority;})()`);
+  const root=w.document.getElementById('root');
+  w.mount(root,{lineageId:'lineage_one',familyId:'family'});
+  const details=root.querySelector('details');details.open=true;details.dispatchEvent(new w.Event('toggle'));
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  const listed=()=>[...root.querySelectorAll('ol li span')].map(node=>node.textContent);
+  assert.deepEqual(listed(),['Claude Code · 订阅','Codex · 订阅']);
+  assert.deepEqual([...root.querySelectorAll('[data-priority-allow]')].map(node=>node.dataset.priorityAllow),['kimi:service','codex:api_profile:openai']);
+  root.querySelector('[data-priority-save]').click();
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(saved,[],'the default order stores no explicit kinds');
+  details.open=true;
+  root.querySelector('[data-priority-allow="codex:api_profile:openai"]').click();
+  assert.deepEqual(listed(),['Claude Code · 订阅','Codex · 订阅','Codex · API（openai）']);
+  root.querySelector('[data-priority-save]').click();
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(saved,['claude:subscription_login','codex:subscription_login','codex:api_profile:openai']);
+  details.open=true;
+  root.querySelector('[data-priority-revoke="codex:api_profile:openai"]').click();
+  assert.deepEqual(listed(),['Claude Code · 订阅','Codex · 订阅']);
+});

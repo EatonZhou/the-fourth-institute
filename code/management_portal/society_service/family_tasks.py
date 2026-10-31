@@ -79,7 +79,7 @@ TASKS = {
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
         "核验并处理当前未解决故障。"),
     "quota": ("recheck_recovery", "steward", "业务成员额度不足",
-        "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序，未列种类排末尾；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+        "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序；自动更换只在订阅账号之间进行，服务账号和 API 只在与原账号同种类或用户已列入 auto_migrate_priority 时可选，否则等待原额度或请用户明确授权；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
         "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
@@ -110,6 +110,12 @@ _PRE_UNIFIED_REVIEW_GUIDE = '按需查看成员职责、近期活动和队列，
 _PRE_UNIFIED_SUMMARY_GUIDE = '用 GetFamilySummaryInputs(resident_id=facade, overview_only=true) 找到待归纳成员，再按需读取GetResidentSummaries(include_maintenance=true)。Resident 记录近期事实，Steward 归纳阶段与长期层；用 UpdateResidentWorkSummary 的 consolidation 和 expected_revision 提交，覆盖已归纳片段。所有层与字段共用总字数预算；保留未完成承诺、阻塞、重要约束及来源。项目长记录独立保存，摘要只留当前结论与入口。达到预算时重写取舍，不按时间删除未解决事项。'
 _PRE_UNIFIED_SUMMARY_PROMPT = '按需归纳到期摘要，在总预算内保留有效认知。\n${facts}\n指南：${guide_path}（${guide_version}）'
 
+_PRE_SUBSCRIPTION_QUOTA_GUIDE = (
+    "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序，未列种类排末尾；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+    "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
+    "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。")
+
+
 def saved_fields(trigger: str, saved: dict) -> dict:
     fields = {k: v for k, v in saved.items() if k in {"guide", "prompt"}}
     previous = {"route": {"guide": _OLD_ROUTE_GUIDE},
@@ -117,6 +123,7 @@ def saved_fields(trigger: str, saved: dict) -> dict:
                 "recovery": {"guide": _OLD_RECOVERY_GUIDE},
                 "queue": {"guide": (_OLD_QUEUE_GUIDE, _PRE_UNIFIED_QUEUE_GUIDE), "prompt": _OLD_QUEUE_PROMPT},
                 "review": {"guide": _PRE_UNIFIED_REVIEW_GUIDE},
+                "quota": {"guide": _PRE_SUBSCRIPTION_QUOTA_GUIDE},
                 "summary": {"guide": _PRE_UNIFIED_SUMMARY_GUIDE, "prompt": _PRE_UNIFIED_SUMMARY_PROMPT}}.get(trigger, {})
     for field, old in previous.items():
         if fields.get(field) in (old if isinstance(old, tuple) else (old,)):
@@ -238,6 +245,6 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
     if entry["role"] == "steward":
         enabled = block["family"].get("auto_migrate", True)
         prompt += "\n行动前用 GetLineage 核对当前 auto_migrate。Family 自动转组：" + ("开启。" if enabled else "关闭。不得自动更换账号；等待额度恢复或用户明确授权。")
-        prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。先选同种类可用账号，再按排序；空数组使用默认（订阅、服务账号、API）。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类。"
+        prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。先选同种类可用账号，再按排序；自动更换只在订阅账号之间进行，服务账号和 API 只有列在此数组中（用户明确允许）或与原账号同种类时才可选；空数组表示只用订阅、按默认顺序。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类。"
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
         guide_path=path, guide_version=version if guide_version is None else guide_version)

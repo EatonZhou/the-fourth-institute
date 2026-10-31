@@ -9,17 +9,31 @@
     const execute = (...args) => window.PortalInstructionClient.execute(...args);
     root.innerHTML = `<details class="familyMigrationPriority"><summary>${esc(t("账号种类优先级"))}</summary><div data-priority-body></div></details>`;
     const panel = root.querySelector('[data-priority-body]');
-    const defaults = () => [...types.values()].sort((a,b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(item => item.id);
+    // Automatic switching stays among subscriptions; a service or API kind
+    // takes part only once the user allows it, by listing it in the policy.
+    const subscription = key => key.split(':')[1] === 'subscription_login';
+    const byDefault = (a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id);
+    const defaults = () => [...types.values()].filter(item => subscription(item.id)).sort(byDefault).map(item => item.id);
     const expand = selected => [...new Set([...selected, ...defaults()])];
+    const label = key => types.get(key)?.label || key;
     const draw = () => {
-      panel.innerHTML = `<p class="paneNote">${esc(t("先换同种类的可用账号，再按以下顺序切换。"))}</p>
-        <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + (types.get(key)?.label || key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + (types.get(key)?.label || key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button></li>`).join('')}</ol>
+      const others = [...types.values()].filter(item => !order.includes(item.id)).sort(byDefault).map(item => item.id);
+      panel.innerHTML = `<p class="paneNote">${esc(t("自动切换只在订阅账号之间进行：先换同种类的可用账号，再按以下顺序切换。"))}</p>
+        <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + label(key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + label(key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button>${subscription(key) ? '' : `<button class="portalButton is-compact" type="button" data-priority-revoke="${esc(key)}" aria-label="${esc(t('不再允许') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('不再允许'))}</button>`}</li>`).join('')}</ol>
+        ${others.length ? `<p class="paneNote">${esc(t("以下种类不会自动切换，需要明确允许："))}</p>
+        <ul>${others.map(key => `<li><span>${esc(label(key))}</span><button class="portalButton is-compact" type="button" data-priority-allow="${esc(key)}" aria-label="${esc(t('允许自动切换') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('允许自动切换'))}</button></li>`).join('')}</ul>` : ''}
         <p role="alert" data-priority-error hidden></p>
         <div><button type="button" class="portalButton is-compact" data-priority-save${readonly || busy ? ' disabled' : ''}>${esc(t('保存顺序'))}</button> <button type="button" class="portalButton is-compact" data-priority-cancel${busy ? ' disabled' : ''}>${esc(t('取消'))}</button> <button type="button" class="portalButton is-compact" data-priority-default${readonly || busy ? ' disabled' : ''}>${esc(t('恢复默认'))}</button></div>`;
       panel.querySelectorAll('[data-priority-move]').forEach(button => button.onclick = () => {
         const i = Number(button.dataset.priorityMove), j = i + Number(button.dataset.direction);
         [order[i], order[j]] = [order[j], order[i]]; draw();
         panel.querySelector(`[data-priority-move="${j}"][data-direction="${button.dataset.direction}"]`)?.focus();
+      });
+      panel.querySelectorAll('[data-priority-allow]').forEach(button => button.onclick = () => {
+        order = [...order, button.dataset.priorityAllow]; draw();
+      });
+      panel.querySelectorAll('[data-priority-revoke]').forEach(button => button.onclick = () => {
+        order = order.filter(key => key !== button.dataset.priorityRevoke); draw();
       });
       panel.querySelector('[data-priority-cancel]').onclick = () => { order = expand(baseline); draw(); root.querySelector('details').open = false; };
       panel.querySelector('[data-priority-default]').onclick = () => { order = defaults(); draw(); };

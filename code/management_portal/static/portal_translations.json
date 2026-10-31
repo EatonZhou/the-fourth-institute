@@ -26366,6 +26366,22 @@
     "en": "Restore defaults",
     "zh-CN": "恢复默认"
   },
+  "自动切换只在订阅账号之间进行：先换同种类的可用账号，再按以下顺序切换。": {
+    "en": "Automatic switching stays among subscription accounts: first an available account of the same kind, then in the order below.",
+    "zh-CN": "自动切换只在订阅账号之间进行：先换同种类的可用账号，再按以下顺序切换。"
+  },
+  "以下种类不会自动切换，需要明确允许：": {
+    "en": "These kinds are not switched to automatically unless you allow them:",
+    "zh-CN": "以下种类不会自动切换，需要明确允许："
+  },
+  "允许自动切换": {
+    "en": "Allow automatic switching",
+    "zh-CN": "允许自动切换"
+  },
+  "不再允许": {
+    "en": "Stop allowing",
+    "zh-CN": "不再允许"
+  },
   "恢复默认布局": {
     "en": "Restore default layout",
     "zh-CN": "恢复默认布局"
