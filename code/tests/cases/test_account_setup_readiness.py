@@ -70,3 +70,24 @@ def test_jev_account_check_submits_required_typed_question(tmp_path, monkeypatch
     account_setup.check(inv)
     assert requests[0].runtime_options["parameters"]["questions"]["greeting"]["type"] == "noul"
     assert requests[0].provider == "jev"
+
+
+def test_kimi_service_account_check_explains_a_missing_shared_service(monkeypatch):
+    """Kimi 服务账号在本站没有共享服务模型 API 时给出明确原因，不提交注定失败的测试
+
+    :design: decision_d40f59f5508f
+    """
+    from types import SimpleNamespace
+    import pytest
+    from management_portal import kimi_code_server
+    from management_portal.hatg.contracts import InstructionError
+    row = {"account_id": "kimi", "provider": "kimi", "kind": "service", "enabled": True, "config": {}, "route_id": ""}
+    monkeypatch.setattr(account_setup, "account", lambda account: row)
+    monkeypatch.setattr(account_setup.provider_updates, "runtime_available", lambda provider: True)
+    monkeypatch.setattr(kimi_code_server, "provider_profile", lambda: (_ for _ in ()).throw(RuntimeError("missing")))
+    monkeypatch.setattr(account_setup, "ExecutionClient", lambda: pytest.fail("must not submit a check"))
+    inv = SimpleNamespace(caller="alice", argument=lambda name: "kimi" if name == "account_id" else None)
+    with pytest.raises(InstructionError) as raised:
+        account_setup.check(inv)
+    assert raised.value.details["reason"] == "account.service_unconfigured"
+    assert not kimi_code_server.service_configured()

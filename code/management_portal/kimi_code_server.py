@@ -52,6 +52,19 @@ def provider_profile() -> dict:
     return _provider_profile(provider_profile_id())
 
 
+def service_configured() -> bool:
+    """Whether this site has the Model API the shared Kimi Code service bills to.
+
+    A Kimi ``service`` account runs on that shared service; without the
+    profile the service cannot start, so the account kind is not usable here.
+    """
+    try:
+        provider_profile()
+    except RuntimeError:
+        return False
+    return True
+
+
 def _provider_profile(profile_id: str) -> dict:
     profiles = AIProviderRegistry().entries()
     for item in profiles:

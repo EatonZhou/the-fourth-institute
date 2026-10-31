@@ -427,6 +427,11 @@ def list_providers(inv):
     rows = registrations()
     providers = []
     for provider, kinds in PROVIDER_KINDS.items():
+        if provider == "kimi" and "service" in kinds:
+            from management_portal.kimi_code_server import service_configured
+            if not service_configured():
+                # New Kimi accounts cannot use a shared service this site lacks.
+                kinds = tuple(kind for kind in kinds if kind != "service")
         definition = AGENT_PROVIDERS.get(provider)
         own = [row for row in rows if row["provider"] == provider]
         # Providers whose registrations mark a default report the route that is used.

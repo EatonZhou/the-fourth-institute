@@ -164,6 +164,19 @@ def check(inv):
             raise InstructionError("instruction.owner_unavailable",
                 "Claude 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查本站后台服务日志。",
                 details={"reason": "account.service_not_ready"}, retryable=True) from None
+    elif row["provider"] == "kimi" and row["kind"] == "service":
+        from management_portal.kimi_code_server import provider_profile_id, service_configured
+        from scripts.portal_service_units import provider_runtime_services
+        if not service_configured():
+            raise InstructionError("instruction.conflict",
+                f"Kimi 服务账号使用本站登记的 Kimi 模型 API（{provider_profile_id()}）运行共享服务，本站还没有这个模型 API。"
+                "请改用“订阅登录”接入 Kimi 会员账号，或用“模型 API 账号”填写 Kimi API Key。",
+                details={"reason": "account.service_unconfigured"})
+        if not provider_runtime_services("portal-kimi-code.service"):
+            raise InstructionError("instruction.owner_unavailable",
+                "本站的 Kimi Code 共享服务没有运行。请检查本站后台服务，或改用“订阅登录”或“模型 API 账号”接入。",
+                details={"reason": "account.service_not_running"}, retryable=True)
+        info = None
     else:
         info = None
     model = inv.argument("model") or (info if info is not None else catalog(row)).get("default_model", "")
