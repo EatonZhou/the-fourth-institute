@@ -74,10 +74,10 @@ def figure_result(tag):
             "status": "generated", "explanation": "  ## Original explanation\n", "error": ""}
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_figure_result_alias_keeps_content_usage_and_files(figure_reader, namespace):
+def test_figure_result_alias_keeps_content_usage_and_files(figure_reader):
+    """规范标签的图表解读结果按原内容与用量读出，不改动输入和文件"""
     read, usage = figure_reader
-    assert read(figure_result(f"{namespace}.paper.figure-explanation.result.v1")) == (
+    assert read(figure_result("tfi.paper.figure-explanation.result.v1")) == (
         "## Original explanation", usage)
 
 
@@ -104,9 +104,9 @@ def collector_case(tag):
     return job, papers, payload
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_collector_result_alias_keeps_raw_payload_and_verified_results(namespace):
-    job, papers, payload = collector_case(f"{namespace}.paper.collector.result.v1")
+def test_collector_result_alias_keeps_raw_payload_and_verified_results():
+    """规范标签的论文收集结果保留原始载荷，只返回已核实的论文，不改动输入"""
+    job, papers, payload = collector_case("tfi.paper.collector.result.v1")
     original = copy.deepcopy((job, papers, payload))
     parsed, results, registered = paper_collector._validate_result(json.dumps(payload), job, {PAPER_ID}, papers)
     assert parsed == payload
@@ -130,9 +130,9 @@ def test_collector_result_rejects_bad_tag_job_and_unverified_claims():
         paper_collector._validate_result(json.dumps(forged), job, {PAPER_ID}, papers)
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_collector_contract_alias_still_requires_real_request_identity(monkeypatch, namespace):
-    job = {"collector_contract": f"{namespace}.paper.collector.v2", "created_by": "fixture-user"}
+def test_collector_contract_alias_still_requires_real_request_identity(monkeypatch):
+    """规范收集合同的任务仍须带原始认证身份才能运行，被拒时不改动任务"""
+    job = {"collector_contract": "tfi.paper.collector.v2", "created_by": "fixture-user"}
     before = copy.deepcopy(job)
     backend = SimpleNamespace(_paper_collection_job_by_id=lambda job_id: job)
     monkeypatch.setattr(paper_collector, "current_operation_identity", lambda: None)
@@ -150,14 +150,14 @@ def test_collector_contract_rejects_bad_versions_before_actor_lookup(monkeypatch
         assert job == {"collector_contract": tag}
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_collection_start_contract_keeps_real_identity_guard(monkeypatch, namespace):
+def test_collection_start_contract_keeps_real_identity_guard(monkeypatch):
+    """启动规范合同的收集任务前核对原始认证身份，缺失时不启动也不写任务"""
     from management_portal import business_tasks
 
     monkeypatch.setattr(business_tasks, "start", forbid_write)
     monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", forbid_write)
     monkeypatch.setattr(paper_collector, "current_operation_identity", lambda: None)
-    job = {"collector_contract": f"{namespace}.paper.collector.v2", "created_by": "fixture-user"}
+    job = {"collector_contract": "tfi.paper.collector.v2", "created_by": "fixture-user"}
     before = copy.deepcopy(job)
     with pytest.raises(PermissionError, match="original authenticated"):
         paper_collection_jobs._start_paper_collection_task(job)
@@ -212,12 +212,11 @@ def recovery_reader(monkeypatch):
     return job, current, calls, read
 
 
-@pytest.mark.parametrize("outer", ["tfi"])
-@pytest.mark.parametrize("inner", ["tfi"])
-def test_collection_recovery_accepts_each_contract_at_locked_read(recovery_reader, outer, inner):
+def test_collection_recovery_accepts_each_contract_at_locked_read(recovery_reader):
+    """任务与加锁读取的记录都为规范合同时恢复采用加锁读取的记录，并核对输入回执与进程归属"""
     job, current, calls, read = recovery_reader
-    job["collector_contract"] = f"{outer}.paper.collector.v2"
-    current["collector_contract"] = f"{inner}.paper.collector.v2"
+    job["collector_contract"] = "tfi.paper.collector.v2"
+    current["collector_contract"] = "tfi.paper.collector.v2"
     assert read() is current
     assert calls == ["read", "receipt", "confirmed-owner"]
 
@@ -234,10 +233,10 @@ def test_collection_recovery_rejects_bad_outer_and_locked_contract(recovery_read
         assert calls == ["read"]
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_collection_recovery_retains_identity_state_and_confirmed_input_guards(recovery_reader, monkeypatch, namespace):
+def test_collection_recovery_retains_identity_state_and_confirmed_input_guards(recovery_reader, monkeypatch):
+    """收集任务恢复保留创建者、删除与状态检查，输入未确认或回执不完整时不接管，没有认证身份时不读取"""
     job, current, calls, read = recovery_reader
-    job["collector_contract"] = current["collector_contract"] = f"{namespace}.paper.collector.v2"
+    job["collector_contract"] = current["collector_contract"] = "tfi.paper.collector.v2"
     baseline = copy.deepcopy((job, current))
     for row, expected_calls in ((job, []), (current, ["read"])):
         for field, value in (("created_by", "another-user"), ("deleted", True), ("status", "done")):
@@ -259,9 +258,9 @@ def test_collection_recovery_retains_identity_state_and_confirmed_input_guards(r
     assert calls == []
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_input_receipt_alias_keeps_input_identity_and_original_dictionary(namespace):
-    raw = {"schema": f"{namespace}.paper-resident-input.v1", "resident_id": "resident_0123456789ab",
+def test_input_receipt_alias_keeps_input_identity_and_original_dictionary():
+    """规范标签的 Paper 输入回执投影出完整输入身份，缺少输入消息时标为未确认，不改动原字典"""
+    raw = {"schema": "tfi.paper-resident-input.v1", "resident_id": "resident_0123456789ab",
            "lineage_id": "lineage_0123456789ab", "requested_message_id": "msg_original",
            "input_message_id": "msg_confirmed", "reply_message_ids": ["msg_reply", ""]}
     original = copy.deepcopy(raw)
@@ -304,9 +303,9 @@ def no_credential_writes(monkeypatch):
     monkeypatch.setattr(credentials, "_atomic_write", forbid_write)
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
-def test_encrypted_record_alias_keeps_authenticated_plaintext_and_token(tmp_path, no_credential_writes, namespace):
-    path, cipher, record, plaintext = encrypted_fixture(tmp_path, f"{namespace}.repo-git-credential.v1")
+def test_encrypted_record_alias_keeps_authenticated_plaintext_and_token(tmp_path, no_credential_writes):
+    """规范标签的加密 Git 凭据按认证后的明文读出，不重写密文文件"""
+    path, cipher, record, plaintext = encrypted_fixture(tmp_path, "tfi.repo-git-credential.v1")
     before = file_state(path)
     assert credentials._read_record(path, cipher) == record
     assert file_state(path) == before
@@ -323,10 +322,10 @@ def test_encrypted_record_rejects_bad_schema_without_rewriting_token(tmp_path, n
         assert cipher.decrypt(path.read_bytes()) == plaintext
 
 
-@pytest.mark.parametrize("namespace", ["tfi"])
 @pytest.mark.parametrize("defect", ["tampered", "wrong-key", "permissions"])
-def test_schema_alias_never_bypasses_crypto_or_private_file_checks(tmp_path, no_credential_writes, namespace, defect):
-    path, cipher, _, _ = encrypted_fixture(tmp_path, f"{namespace}.repo-git-credential.v1")
+def test_schema_alias_never_bypasses_crypto_or_private_file_checks(tmp_path, no_credential_writes, defect):
+    """规范标签不能绕过加密认证与私有文件检查：篡改、密钥错误或权限过宽都拒绝读取"""
+    path, cipher, _, _ = encrypted_fixture(tmp_path, "tfi.repo-git-credential.v1")
     error = "cannot be decrypted"
     if defect == "tampered":
         token = bytearray(base64.urlsafe_b64decode(path.read_bytes()))

@@ -54,3 +54,19 @@ def test_family_chat_members_controls():
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_resident_menu_family_auto_migrate_switch_saves_against_fresh_revision():
+    """门面菜单 Settings 的自动转组开关默认开、在成员表之前，按刚读到的修订号保存
+
+    关闭开关发送 UpdateFamily(auto_migrate=false) 并带最新修订号；保存被拒时保留显示的设置并显示错误，不自动重试；重复点击被忽略，
+    读取期间切换到其他菜单不会改动另一个 Family；保存后刷新画布快照，重开菜单显示新值。
+
+    :module: lineage.family
+    :design: decision_44cf587c1721
+    """
+    result = subprocess.run(
+        ['node', '--test', str(Path(__file__).with_name('javascript') / 'resident_menu_family_settings.cjs')],
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -159,30 +159,6 @@ def clear_lineage_resident_queue(
     return resident_protocol.clear_resident_queue(_node_resident_id(node), actor_id)
 
 
-def cancel_lineage_resident_queue_item(
-    lineage_id: str,
-    payload: dict[str, Any],
-    actor: str,
-) -> dict[str, Any]:
-    """Cancel one queued Resident turn without changing the active turn."""
-
-    (
-        actor_id,
-        resident_id,
-        queue_item_id,
-    ) = _lineage_resident_queue_target(lineage_id, payload, actor)
-    result = resident_protocol.cancel_resident_queue_item(
-        resident_id,
-        actor_id,
-        queue_item_id,
-    )
-    return {
-        **result,
-        "resident_id": resident_id,
-        "message_id": queue_item_id,
-    }
-
-
 def quiesce_lineage_resident(
     lineage_id: str,
     payload: dict[str, Any],

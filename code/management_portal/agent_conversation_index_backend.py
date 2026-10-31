@@ -165,46 +165,6 @@ def mailbox_summary(entries: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def build_target_update(
-    actor: str,
-    change_type: str,
-    target_id: str,
-    payload: object = None,
-) -> dict[str, Any]:
-    del payload
-    actor_id = str(actor or "").strip()
-    target = str(target_id or "").strip()
-    result = {
-        "entries": [],
-        "remove_keys": [],
-        "remove_prefixes": [],
-        "remove_suffixes": [],
-    }
-    if not actor_id or not target:
-        return result
-    if change_type == "resident":
-        result["remove_keys"] = [f"resident:{target}"]
-        entries = conversation_index_projection.collect_entries(
-            actor=actor_id,
-            resident_ids=[target],
-            lineage_ids=[],
-        )
-        result["entries"] = normalized_entries(
-            [dict(item) for item in entries or [] if isinstance(item, dict)]
-        )
-    elif change_type == "lineage":
-        result["remove_prefixes"] = [f"lineage-notification:{target}:"]
-        entries = conversation_index_projection.collect_entries(
-            actor=actor_id,
-            resident_ids=[],
-            lineage_ids=[target],
-        )
-        result["entries"] = normalized_entries(
-            [dict(item) for item in entries or [] if isinstance(item, dict)]
-        )
-    return result
-
-
 def decorate_entries(
     entries: list[dict[str, Any]],
     read_state: object,

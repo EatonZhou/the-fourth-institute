@@ -55,8 +55,7 @@ def test_catalog_projects_follow_share_and_explicit_relative_override(tmp_path, 
     from management_common import portal_paths
     monkeypatch.setattr(portal_paths, "path", lambda key: tmp_path / "share")
     monkeypatch.setattr(portal_paths, "PORTAL_ROOT", tmp_path / "install")
-    for key in ["PORTAL_PROJECTS_ROOT", "PORTAL_PROJECTS_ROOT"]:
-        monkeypatch.delenv(key, raising=False)
+    monkeypatch.delenv("PORTAL_PROJECTS_ROOT", raising=False)
     relative = "management_portal/test_framework/tools/sync_catalog.py"
     assert load(relative, "tfi_catalog_default").PROJECTS_ROOT == tmp_path / "share/Projects"
     monkeypatch.setenv("PORTAL_PROJECTS_ROOT", "configured/projects")

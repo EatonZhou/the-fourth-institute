@@ -130,16 +130,17 @@ class PortalSlashCommandsTest(unittest.TestCase):
         ])
 
         # The others offer what they declare: no Codex goal, Plan mode or
-        # service tier; DSH has no permission setting.
+        # service tier; DSH has no permission setting. A backend that is not
+        # a registered Provider offers only Portal's own commands.
         portal = ["/portal-help", "/portal-tokens"]
         self.assertEqual({
             backend: [item["command"] for item in slash_commands.slash_command_catalog(backend=backend)]
-            for backend in ("claude", "kimi", "dsh", "portal")
+            for backend in ("claude", "kimi", "dsh", "unregistered")
         }, {
             "claude": ["/status", "/model", "/permissions", "/compact", *portal],
             "kimi": ["/status", "/model", "/permissions", "/compact", *portal],
             "dsh": ["/status", "/model", "/compact", *portal],
-            "portal": portal,
+            "unregistered": portal,
         })
 
     def test_model_capabilities_come_from_bound_provider(self) -> None:

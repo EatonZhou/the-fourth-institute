@@ -83,6 +83,31 @@ def test_arrange_uses_measured_card_sizes():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_compact_branch_layout_follows_canvas_ratio_without_overlap():
+    """HATG 紧凑布局按画布宽高比排布独立分量，分支、汇合与环保持不重叠
+
+    computeBranchAwareLayout 对相同输入给出确定结果；宽画布更宽、窄画布更高；分支、汇合加反馈边和环的拓扑与输入不变；Leader 位于其连通工作的左侧并与首个成员同行。
+
+    :module: lineage.hatg
+    """
+    script = Path(__file__).with_name("javascript") / "hatg_compact_layout.cjs"
+    result = subprocess.run(["node", "--test", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_workspace_graph_layout_is_stable_bounded_and_uses_both_dimensions():
+    """Workspace 图布局与输入顺序无关、标签不重叠、两个方向都用上且计算有界
+
+    私有加共享 Workspace、一个共享多 Resident、未绑定成员与 Handoff 链和环等规模下：不修改输入，位置不随输入顺序变化，标签不重叠；
+    二十个节点以上时宽高比在 0.55 到 2.8 之间，单次计算低于 500 毫秒；Resident 靠近其专属 Workspace。
+
+    :module: lineage.hatg
+    """
+    script = Path(__file__).with_name("javascript") / "workspace_graph_layout.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_hatg_arrange_fits_nodes_below_toolbar():
     """HATG 自动整理后完整显示节点，不被工具栏和窄面板裁切
 

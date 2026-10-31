@@ -21,11 +21,9 @@ from tests.cases.test_resident_folder_creation_contract import future_creation_s
 
 AMA_LINEAGE = 'lineage_aaaaaaaaaaaa'
 AMA = 'resident_aaaaaaaaaaaa'
-AMA_WORKSPACE = 'workspace_aaaaaaaaaaaa'
 TEAM = 'lineage_bbbbbbbbbbbb'
 WORKER = 'resident_bbbbbbbbbbbb'
 SIBLING = 'resident_cccccccccccc'
-SHARED = 'workspace_bbbbbbbbbbbb'
 
 
 def test_the_rule_answers_a_personal_ama_by_its_owner_without_the_permission_port(monkeypatch):

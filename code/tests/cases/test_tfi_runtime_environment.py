@@ -1,4 +1,4 @@
-"""Runtime owners preserve identity while migrating product environment names.
+"""Runtime owners take identity only from canonical PORTAL_* names and keep it request-local.
 
 :module: execution.providers
 :aspects: functional
@@ -32,12 +32,10 @@ def clean_identity_environment(monkeypatch):
             monkeypatch.delenv(prefix + suffix, raising=False)
 
 
-@pytest.mark.parametrize('prefixes', [('PORTAL_',)])
-def test_self_stop_recognizes_exact_execution_with_either_environment(monkeypatch, prefixes):
-    """新旧身份命名均保留自停止保护，其他执行仍不命中。"""
-    for prefix in prefixes:
-        monkeypatch.setenv(prefix + 'RESIDENT_ID', RID)
-        monkeypatch.setenv(prefix + 'RESIDENT_EXECUTION_ID', EID)
+def test_self_stop_recognizes_exact_execution_with_either_environment(monkeypatch):
+    """PORTAL_ 身份环境下的自停止保护只命中当前执行，其他执行或其他 Resident 不命中。"""
+    monkeypatch.setenv('PORTAL_RESIDENT_ID', RID)
+    monkeypatch.setenv('PORTAL_RESIDENT_EXECUTION_ID', EID)
     record = {'resident_id': RID, 'lineage_id': LID}
     assert resident_execution_work.is_self_stop_request(record, {'execution_id': EID})
     assert not resident_execution_work.is_self_stop_request(record, {'execution_id': 'other'})
@@ -55,9 +53,8 @@ def test_self_stop_uses_canonical_identity_and_ignores_old_fields(monkeypatch, s
 
 
 def test_runtime_identity_is_record_owned_and_request_local(monkeypatch):
-    """身份由当前记录确定，双注入不会读取调用者环境或污染下一请求。"""
+    """CLI 身份环境由当前记录生成，不读取调用者继承的环境，也不污染下一请求。"""
     monkeypatch.setenv('PORTAL_RESIDENT_ID', 'inherited-wrong-owner')
-    monkeypatch.setenv('PORTAL_RESIDENT_ID', 'different-inherited-owner')
     before = dict(os.environ)
     record = {'resident_id': RID, 'lineage_id': LID, 'backend': 'codex'}
     result = resident_runtime_domain.resident_cli_environment(record)
@@ -77,7 +74,7 @@ def test_runtime_identity_is_record_owned_and_request_local(monkeypatch):
 
 @pytest.mark.parametrize('owner', [False, True])
 def test_codex_turn_mirrors_context_and_drops_both_stale_execution_ids(monkeypatch, tmp_path, owner):
-    """两种执行 ID 均清除，权威上下文路径双注入，数据库授权规则不变。"""
+    """Codex 回合清除继承的执行 ID，写入权威的执行上下文路径，数据库授权规则不变。"""
     monkeypatch.setenv('PORTAL_EXECUTION_STATE_ROOT', str(tmp_path/'execution'))
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'postgresql://fixture-only/not-a-real-endpoint')
     environment = {
@@ -110,7 +107,7 @@ def test_codex_turn_mirrors_context_and_drops_both_stale_execution_ids(monkeypat
 ])
 @pytest.mark.parametrize('platform', ['linux', 'darwin'])
 def test_script_run_persists_selected_url_without_starting_a_process(monkeypatch, tmp_path, values, expected, platform):
-    """真实启动配置写入采用新 URL 优先；平台启动与凭据签发使用隔离替身。"""
+    """脚本运行的启动配置只采用 PORTAL_URL，旧名被忽略、显式空值保留；平台启动与凭据签发使用隔离替身。"""
     for key in ('PORTAL_URL', 'ARCHIVE_PORTAL_URL'):
         monkeypatch.delenv(key, raising=False)
     for key, value in values.items():
@@ -144,7 +141,7 @@ def test_script_run_persists_selected_url_without_starting_a_process(monkeypatch
 
 
 def test_dsh_verification_injects_both_names_before_any_model_operation(monkeypatch, tmp_path):
-    """验收脚本的真实参数装配双注入身份，在首次模型调用前终止。"""
+    """验收脚本的真实参数装配以 PORTAL_ 名称注入 Resident 与 Lineage 身份，在首次模型调用前终止。"""
     captured = []
     class NoModelOperation(Exception):
         pass

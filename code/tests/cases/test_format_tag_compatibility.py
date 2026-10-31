@@ -2,7 +2,8 @@ from management_common.format_tags import schema_matches
 
 
 def test_legacy_alias_is_exact_and_never_rewrites_input():
-    record = {'schema': 'archive.execution-request.v8', 'value': {'schema':'opaque'}}
+    """格式标签只与完整的规范 tfi 标签匹配，旧 archive 标签、其他版本、前缀、大小写或类型都不匹配，判断不改写输入"""
+    record ={'schema': 'archive.execution-request.v8', 'value': {'schema':'opaque'}}
     assert not schema_matches(record['schema'], 'tfi.execution-request.v8')
     assert schema_matches('tfi.execution-request.v8', 'tfi.execution-request.v8')
     assert record == {'schema': 'archive.execution-request.v8', 'value': {'schema':'opaque'}}

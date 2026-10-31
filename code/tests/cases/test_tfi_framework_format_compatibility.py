@@ -138,7 +138,7 @@ def test_framework_keeps_non_schema_validation(reader):
 
 
 def test_run_index_writer_still_emits_legacy_format(tmp_path):
-    """4B 新写入使用 tfi；沿用测试入口以保留稳定 ID，读取不改写文件。"""
+    """测试运行索引写入规范 tfi.test-run-index.v1 标签，读回原运行记录且读取不改写文件。"""
     path = tmp_path / "index.json"
     records = RunRecords(path)
     records._write_index([deepcopy(RUN)])

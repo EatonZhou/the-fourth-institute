@@ -53,3 +53,17 @@ def test_mailbox_original_read_provenance():
     script = Path(__file__).with_name('javascript') / 'tau_mailbox_read_provenance.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_mailbox_original_request_causes_and_navigation_prerequisites():
+    """Mailbox 原请求取证保留真实调用来源与导航前置，不发业务请求
+
+    隔离 Chromium 中核对：带修饰的导航名称与折叠的 HATG，原指令与其错误元数据，实际 CDP 调用栈，Page、frame 与 loader 分开记录；登记前的请求被排除，重复身份被拒绝，私有载荷不入证据，停止后的采样不可变。
+
+    :design: decision_c953eab654cd
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    script = Path(__file__).with_name('javascript') / 'tau_mailbox_request_evidence.cjs'
+    result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

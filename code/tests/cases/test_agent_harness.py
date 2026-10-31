@@ -1095,12 +1095,12 @@ def test_default_agent_harness_can_still_be_fully_bypassed_contracts(subtests, i
 
 
 
-def test_retired_milestone_setting_cannot_rewrite_or_replace_session_contracts(tmp_path, subtests, isolated_portal_case):
-    """已退役的 milestone 设置不能改写或替换会话
+def test_native_image_observation_and_artifact_store_contracts(tmp_path, subtests, isolated_portal_case):
+    """原生图片观察不打断进行中的回合，Harness 产物存储按内容与范围去重并精确分块读取
 
-    旧的 milestone 设置残留时，不会触发会话改写或换新会话。
+    Provider 已持有的大图片只计入原生内联媒体估算，不产生控制动作，也不计入工具内联媒体；同一范围内相同内容（包括重新打开存储后）得到同一句柄，不同范围得到不同句柄，分块读取返回准确的片段、下一偏移和结束标记。
 
-    :module: resident.fork-handoff
+    :module: execution.harness
     :importance: P1
     """
     with subtests.test(contract='test_native_input_image_observation_does_not_interrupt_active_turn'), isolated_portal_case() as case_path:

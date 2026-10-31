@@ -2,6 +2,7 @@
 
 from html.parser import HTMLParser
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -59,3 +60,17 @@ def test_navigation_hosts_load_theme_before_normalizing_preferences(scripts):
     assert theme_index < nav_index
     assert "async" not in theme and "async" not in nav
     assert "defer" not in theme or "defer" in nav
+
+
+def test_dynamic_chat_waits_for_shared_file_links_and_preview_requests_match():
+    """动态打开 Chat 前等待共享文件链接加载，文件链接与 Workspace 预览发出相同的编码请求
+
+    Resident 菜单动态加载 Chat 时只请求一次 portal_file_links.js，加载完成前不打开组件；对含中文、空格和 ?#& 的本机路径，
+    文件链接探测与预览元数据、内容读取使用同一个 link-file 地址，共享地址不授予写权限。
+
+    :module: workbench.preview
+    :design: decision_61e50306cc79
+    """
+    script = Path(__file__).with_name("javascript") / "chat_file_link_loader.cjs"
+    result = subprocess.run(["node", "--test", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

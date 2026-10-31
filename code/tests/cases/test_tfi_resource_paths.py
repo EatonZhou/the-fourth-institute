@@ -7,7 +7,7 @@ import pytest
 def isolated(tmp_path,monkeypatch):
     home=tmp_path/'home';home.mkdir()
     monkeypatch.setattr(Path,'home',classmethod(lambda cls:home))
-    for name in ['PORTAL_NETWORK_CONFIG','PORTAL_PROVIDER_EGRESS_ENV_FILE','PORTAL_SCOPE_AVATAR_ROOT','PORTAL_RESIDENT_AVATAR_ROOT','PORTAL_USER_AVATAR_ROOT','PORTAL_SSH_KEY_ROOT','PORTAL_SSH_KEY_ROOT','HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','all_proxy','no_proxy']:
+    for name in ['PORTAL_NETWORK_CONFIG','PORTAL_PROVIDER_EGRESS_ENV_FILE','PORTAL_SCOPE_AVATAR_ROOT','PORTAL_RESIDENT_AVATAR_ROOT','PORTAL_USER_AVATAR_ROOT','PORTAL_SSH_KEY_ROOT','HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','all_proxy','no_proxy']:
         monkeypatch.delenv(name,raising=False)
     site=tmp_path/'site.json';site.write_text('{}')
     monkeypatch.setenv('PORTAL_SITE_CONFIG',str(site))

@@ -52,6 +52,7 @@ def invalid_tags(suffix):
 
 @pytest.mark.parametrize("namespace", ["archive", "tfi"])
 def test_descriptor_get_accepts_both_tags_without_persisting(namespace):
+    """协作描述符读取只接受规范 tfi 标签，旧 archive 标签被拒；两种情况都不写回存储、不改动原载荷"""
     raw = descriptor(f"{namespace}.collaboration-descriptor.v2")
     registry = ReadOnlyRows({("resident", RESIDENT): raw})
     before = copy.deepcopy(registry.rows)
@@ -118,7 +119,11 @@ def test_historical_retry_rejects_bad_tag_or_unproven_receipt_without_writes():
 
 
 def test_permission_scheme_alias_preserves_rules_and_raw_source_digest():
-    old = {**builtin_documents()["default"], "schema": "archive.permission-scheme.v2"}
+    """权限方案只编译规范标签，旧 archive 标签在 schema 处被拒；规范方案规则与内置默认方案一致，摘要按原始内容计算且包含标签
+
+    编译不改动输入；复制来源摘要排除显示身份但包含 schema，所以新旧标签的摘要不同。
+    """
+    old ={**builtin_documents()["default"], "schema": "archive.permission-scheme.v2"}
     new = {**copy.deepcopy(old), "schema": "tfi.permission-scheme.v2"}
     old_bytes = json.dumps(old, ensure_ascii=False, sort_keys=True)
     new_bytes = json.dumps(new, ensure_ascii=False, sort_keys=True)

@@ -4,7 +4,11 @@
 :importance: P1
 :design: decision_27253e25f016
 """
+import os
+from pathlib import Path
 import re
+import subprocess
+import sys
 from types import SimpleNamespace
 from urllib.parse import urlsplit
 
@@ -75,5 +79,22 @@ def test_english_project_initialization_preserves_user_description_and_existing_
     with pytest.raises(ValueError, match="template language"):
         project.create_project({"id": "InvalidLanguage", "language": "fr"})
     assert not (tmp_path / "Projects" / "InvalidLanguage").exists()
+
+
+def test_english_page_translates_dynamic_ui_without_touching_user_text():
+    """英文界面翻译动态生成的表单、提示和按钮，不改动用户输入和名称
+
+    在加载真实翻译与 Chat 工作区脚本的英文页面中：后加载的 HATG 表单、提示与无障碍标签被翻译而输入值不变；管理页服务说明与网络表单显示完整英文；
+    动态消息保留用户值和形似参数的文字；截止时间使用英文单复数；Chat 标题翻译系统前缀但保留账号与 Resident 名称；忙碌按钮的临时文字被翻译且恢复原按钮；Family 标题先翻译成员标签再接运行状态。
+
+    :module: workbench.shell
+    :design: decision_27253e25f016
+    """
+    result = subprocess.run(
+        ["node", "--test", str(Path(__file__).with_name("javascript") / "portal_i18n_audit.cjs")],
+        env={**os.environ, "TFI_TEST_PYTHON": sys.executable},
+        capture_output=True, text=True, timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 

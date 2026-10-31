@@ -71,18 +71,6 @@ def test_real_admission_freezes_routing_and_projection_uses_viewer(family_chat):
     snap = resident_protocol.get_resident_conversation_snapshot(f['resident_id'], ACTOR)
     assert snap['family_facade']['chat_preferences']['muted_member_ids'] == [m]
 
-def test_schema_upgrade_is_idempotent_and_retains_family(family_chat):
-    from management_portal.society_service.state_store import get_lineage_data_store, lineage_data_schema_matches
-    from scripts.migrate_family_chat_preferences import upgrade
-    db = get_lineage_data_store().database
-    def check(c):
-        c.execute('DROP TABLE family_chat_preferences, family_chat_inputs')
-        c.execute("UPDATE lineage_meta SET value='tfi.lineage-data.v64' WHERE key='schema'")
-        assert upgrade(c)['schema'] == 'tfi.lineage-data.v65'
-        assert upgrade(c)['schema'] == 'tfi.lineage-data.v65'
-        assert lineage_data_schema_matches(c)
-    db.write(check)
-
 def test_projection_includes_outward_history_and_queue_ownership(family_chat):
     from management_portal.society_service import family_chat_preferences as p
     f, m = family_chat

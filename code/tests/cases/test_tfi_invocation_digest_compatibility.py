@@ -1,4 +1,4 @@
-"""Frozen search plans survive the format namespace transition without rewriting."""
+"""Frozen search plans keep their canonical digest; retired plan tags are rejected without rewriting."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import hashlib
@@ -56,9 +56,9 @@ def test_retired_plan_digest_is_rejected(runtime, monkeypatch):
     assert saved_rows() == before
 
 
-@pytest.mark.parametrize("schema", [NEW])
-def test_diagnostics_rejects_changed_identity_manifest_or_digest(runtime, monkeypatch, schema):
-    monkeypatch.setattr(contract, "PLAN_SCHEMA", schema)
+def test_diagnostics_rejects_changed_identity_manifest_or_digest(runtime, monkeypatch):
+    """检索计划诊断只认原任务身份、批次清单与规范摘要，任何一项被改动都拒绝且不写库"""
+    monkeypatch.setattr(contract, "PLAN_SCHEMA", NEW)
     identity = job()
     manifest = contract.batch_manifest(identity, ["one", "two"])
     plan = runtime.owner.prepare_batches(job=identity, surface="knowledge", batches=manifest)

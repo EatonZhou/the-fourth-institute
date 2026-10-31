@@ -23,7 +23,6 @@ from management_portal.kimi_code_client import KimiCodeTurnFailed, KimiCodeUnava
 from management_portal.native_agent_transport import NativeAgentUnavailable
 from tests.cases import capability_contracts
 
-TURN_STARTED = {"method": "turn/started", "params": {"threadId": "session-1", "turn": {"id": "turn-1"}}}
 ANSWER = SimpleNamespace(response="done", session_id="session-1", turn_id="turn-1:continue1", usage={})
 
 

@@ -20,7 +20,6 @@ from management_portal.society_service import lineage_aggregate
 
 ACTOR = "sample_admin"
 WORK_A = "resident_aaaaaaaaaaaa"
-WORK_B = "resident_bbbbbbbbbbbb"
 LINEAGE_ID = "lineage_aaaaaaaaaaaa"
 
 
@@ -326,51 +325,3 @@ def test_quiesce_delegates_close_and_non_continuing_stop(
     assert state_calls[0]["transition"] == "close"
     assert stop_calls[0]["continue_queue"] is False
     assert result["cleared_queue_count"] == 2
-
-
-def test_queue_item_controls_resolve_created_resident_authority(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Lineage 对成员 Resident 队列项的优先和取消以调用者身份转交给该 Resident"""
-    created_resident_id = "resident_cccccccccccc"
-    monkeypatch.setattr(
-        lineage_aggregate,
-        "read_lineage",
-        lambda _lineage_id, **_kwargs: {
-            "lineage_id": "lineage_aaaaaaaaaaaa",
-            "nodes": [
-                {
-                    **_worker(created_resident_id),
-                }
-            ],
-        },
-    )
-    monkeypatch.setattr(lineage_aggregate, "ensure_manager", lambda *_args: None)
-    from management_portal.society_service import resident_protocol
-
-    calls: list[tuple[str, str, str, str]] = []
-    monkeypatch.setattr(
-        resident_protocol,
-        "cancel_resident_queue_item",
-        lambda resident_id, actor, queue_item_id: (
-            calls.append(
-                ("cancel", resident_id, actor, queue_item_id)
-            )
-            or {"queue": []}
-        ),
-    )
-
-    cancelled = lineage_resident_controls.cancel_lineage_resident_queue_item(
-        "lineage_aaaaaaaaaaaa",
-        {"resident_id": created_resident_id, "message_id": "queue_item_cancel"},
-        ACTOR,
-    )
-
-    assert calls == [
-        ("cancel", created_resident_id, ACTOR, "queue_item_cancel"),
-    ]
-    assert cancelled == {
-        "resident_id": created_resident_id,
-        "message_id": "queue_item_cancel",
-        "queue": [],
-    }

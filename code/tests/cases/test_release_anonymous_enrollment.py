@@ -98,3 +98,17 @@ def test_first_admin_page_loads_and_submits_without_a_session(monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join()
+
+
+def test_lan_http_enrollment_hashes_the_secret_without_web_crypto():
+    """局域网 HTTP 来源的用户邀请界面在无 Web Crypto 时仍只提交密钥摘要
+
+    Chromium 打开命名的 HTTP 来源（非安全上下文、无 crypto.subtle），portal_user_enrollment.js 的 SHA-256 与 Node 对空串、中文与 emoji 及多种长度一致；
+    生成的随机密钥不重复且为 43 位 URL 安全字符；提交只带 secret_sha256 和 user_id，原密钥不离开浏览器；复制走后备路径。
+
+    :module: security.device-credentials
+    :design: decision_30528aff7035
+    """
+    script = Path(__file__).with_name("javascript") / "release_http_enrollment.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

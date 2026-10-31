@@ -63,11 +63,6 @@ def _register(service, **options):
         'body': 'Isolated UTF-8 fixture: 中文。',
     }, **options)
 
-def _publish(index, record):
-    index.adapter_layer.refresh_now(
-        'project_knowledge', paths=[record['path']], force=True,
-    )
-
 def test_committed_mutation_reports_unconfirmed_projection(subtests, isolated_portal_case):
     """更新或注销已提交但索引刷新未确认时，结果标记投影未确认且不泄露内部错误"""
     for operation in ['update', 'unregister']:

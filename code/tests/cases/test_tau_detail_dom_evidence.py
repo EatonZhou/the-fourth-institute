@@ -38,3 +38,18 @@ def test_wall_selected_discussion_with_hidden_single_tab_header():
     script = Path(__file__).with_name('javascript') / 'tau_wall_selected_panel.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_wall_chat_and_watchboard_prerequisites_read_native_structure():
+    """WALL Chat 与 Watchboard 前置检查读取原生模板中的准确消息和结构
+
+    在原生 WALL 模板中按 Work 消息键和面板实例读取已选面板，拒绝隐藏、只读或有歧义的面板，区分空讨论；Watchboard 的缺失、部分、完整与折叠结构分别识别，样本不可变且不发请求。
+
+    :module: operations.test-framework
+    :design: decision_c953eab654cd
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    script = Path(__file__).with_name('javascript') / 'tau_detail_prerequisites.cjs'
+    result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

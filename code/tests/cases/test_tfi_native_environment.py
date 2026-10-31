@@ -1,4 +1,4 @@
-"""Native process environment migration; no socket, database or model connection."""
+"""Native process environments carry only canonical PORTAL_* identity; no socket, database or model connection."""
 import asyncio
 import json
 import os
@@ -30,8 +30,9 @@ def isolated_environment(monkeypatch):
     monkeypatch.setattr(shell.portal_network, 'saved_proxy_environment', lambda: None)
 
 
-@pytest.mark.parametrize('identity', [NEW])
-def test_shell_mirrors_identity_and_keeps_allowlist_proxy_boundary(monkeypatch, identity):
+def test_shell_mirrors_identity_and_keeps_allowlist_proxy_boundary(monkeypatch):
+    """Resident Shell 环境只带记录给出的 PORTAL_ 身份与允许的变量，代理取托管设置，不继承调用者的身份、数据库地址或其他秘密"""
+    identity = NEW
     monkeypatch.setenv('PATH', '/test/bin')
     monkeypatch.setenv('HTTP_PROXY', 'http://worker.invalid')
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'postgresql://fixture-only')
@@ -141,12 +142,12 @@ def sdk_sink(monkeypatch, tmp_path):
     return daemon.ClaudeCodeDaemon(), params, factory, client
 
 
-@pytest.mark.parametrize('identity', [NEW])
 @pytest.mark.parametrize('is_owner', [True, False])
 @pytest.mark.parametrize('allow_subagents', [None, False])
-def test_daemon_actual_sdk_options_mirror_identity_without_widening_permissions(sdk_sink, identity, is_owner, allow_subagents):
+def test_daemon_actual_sdk_options_mirror_identity_without_widening_permissions(sdk_sink, is_owner, allow_subagents):
+    """Claude 守护进程传给 SDK 的环境带 PORTAL_ 身份、清空数据库地址，工具权限按所有者与子 agent 设置收紧而不放宽"""
     instance, params, factory, client = sdk_sink
-    asyncio.run(instance._create_handle({**params, 'resident_environment': identity, 'is_owner': is_owner,
+    asyncio.run(instance._create_handle({**params, 'resident_environment': NEW, 'is_owner': is_owner,
                                        'allow_subagents': allow_subagents}))
     options = factory.call_args.args[0]
     assert {key: options.env[key] for key in NEW} == NEW
@@ -216,16 +217,16 @@ def test_fork_still_excludes_database_from_process_environment(monkeypatch, tmp_
     assert env['PATH'] == '/test/bin'
 
 
-@pytest.mark.parametrize('prefix', ['PORTAL_'])
-def test_relay_reads_both_name_generations_with_same_numeric_constraints(monkeypatch, prefix):
+def test_relay_reads_both_name_generations_with_same_numeric_constraints(monkeypatch):
+    """AI Relay 从 PORTAL_AI_RELAY_* 读取地址、端口、来源网段与上限，非数字端口被拒绝"""
     values = {'HOST': '127.0.0.2', 'PORT': '19001', 'ALLOWED_IPS': '127.0.0.0/8',
               'MAX_BYTES': '2048', 'MAX_CONCURRENT': '3'}
     for suffix, value in values.items():
-        monkeypatch.setenv(prefix + 'AI_RELAY_' + suffix, value)
+        monkeypatch.setenv('PORTAL_AI_RELAY_' + suffix, value)
     args = relay._build_arg_parser().parse_args([])
     assert (args.host, args.port, args.allowed_ips, args.max_bytes, args.max_concurrent) == (
         '127.0.0.2', 19001, '127.0.0.0/8', 2048, 3)
-    monkeypatch.setenv(prefix + 'AI_RELAY_PORT', 'invalid')
+    monkeypatch.setenv('PORTAL_AI_RELAY_PORT', 'invalid')
     with pytest.raises(ValueError):
         relay._build_arg_parser()
 

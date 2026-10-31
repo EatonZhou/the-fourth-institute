@@ -347,7 +347,7 @@ def test_paper_poll_recovers_lost_observer_and_deduplicates_active_business_task
 
 
 @pytest.mark.parametrize(
-    'surface_jobs', [surface for surface in SURFACES if surface not in {'paper', 'wall', 'todo', 'review'}], indirect=True)
+    'surface_jobs', [surface for surface in SURFACES if surface not in {'paper', 'wall'}], indirect=True)
 def test_knowledge_detail_poll_recovers_for_admitted_actors_without_owner_gate(surface_jobs, monkeypatch):
     """知识详情轮询为任何已准入用户恢复检索，不限于创建者"""
     jobs = surface_jobs

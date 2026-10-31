@@ -38,7 +38,7 @@ test('region native chat resolves its own facade and sends saved region context'
   }};
   w.PortalWorkbench={registerPanelPackage(){},model:{stack:(ids,active)=>({ids,active}),split:(...args)=>args},
     create:options=>{definitions=options;return {
-      getPanel:id=>options.initialEditors.some(x=>x.id===id)?{ready:Promise.resolve()}:null,
+      getPanel:id=>options.initialEditors.some(x=>x.id===id)?{ready:Promise.resolve(),isVisible:()=>true}:null,
       getLayout:()=>({type:'split',children:[{id:'content',type:'stack',children:[{panelId:'packaging'},{panelId:'chat-packaging'}]},{id:'conversation',type:'stack',children:[{panelId:'facade'}]}]}),
       focusPanel:()=>true,showPanel:(id,placement)=>{shown.push({id,placement});return true;},setVisible:value=>visibility.push(value),destroy(){},contextStore:{get:()=>null,revision:0}};},
     createActivityRail:()=>({setItems(){},setActiveView(){},destroy(){}})};

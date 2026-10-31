@@ -17,7 +17,6 @@ from management_portal.society_service import resident_usage_projection as proje
 
 
 NOW = datetime(2026, 10, 8, 13, 30, tzinfo=timezone.utc)
-START = NOW.replace(hour=0, minute=0, second=0)
 R1, R2, R3, PRIVATE = [f"resident_{i:012d}" for i in range(1, 5)]
 L1, L2, HIDDEN = [f"lineage_{i:012d}" for i in range(1, 4)]
 

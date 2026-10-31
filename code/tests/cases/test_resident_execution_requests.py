@@ -454,11 +454,11 @@ def test_runtime_mode_rejects_invalid_values_without_writing(
     assert resident_runtime_domain.read_resident_runtime_settings(resident_record) == previous
 
 
-@pytest.mark.parametrize("provider", ["claude", "kimi", "portal"])
+@pytest.mark.parametrize("provider", ["claude", "kimi", "provider_api"])
 def test_runtime_mode_rejects_non_codex_provider(
     resident_record: dict[str, object], provider: str,
 ) -> None:
-    """非 codex Provider 拒绝协作模式设置"""
+    """非 codex 后端（Claude、Kimi 与 Model API）拒绝协作模式设置"""
     record = {**resident_record, "backend": provider}
     with pytest.raises(ValueError, match="collaboration_mode|不支持运行设置"):
         resident_runtime_domain.validate_backend_runtime_updates(record, {}, {"collaboration_mode": "plan"})

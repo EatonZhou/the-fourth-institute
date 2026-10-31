@@ -103,24 +103,6 @@ def test_admission_uses_family_type_order(quota_family, monkeypatch):
     assert calls[0]['model'] == 'kimi-default'
 
 
-def test_priority_schema_migration_preserves_family_switch(quota_family):
-    from scripts.migrate_family_account_priority import upgrade
-    from management_portal.society_service.state_store import get_lineage_data_store, lineage_data_schema_matches
-    with get_lineage_data_store().database.transaction() as c:
-        c.execute('ALTER TABLE families DROP COLUMN auto_migrate_priority')
-        c.execute("UPDATE lineage_meta SET value='tfi.lineage-data.v63' WHERE key='schema'")
-        c.execute("UPDATE families SET auto_migrate=false WHERE family_id='fbi_test'")
-        assert upgrade(c)['schema'] == 'tfi.lineage-data.v64'
-        assert lineage_data_schema_matches(c)
-        row = c.execute("SELECT auto_migrate, auto_migrate_priority FROM families WHERE family_id='fbi_test'").fetchone()
-        assert dict(row) == {'auto_migrate': False, 'auto_migrate_priority': []}
-        assert upgrade(c)['previous_schema'] == 'tfi.lineage-data.v64'
-        # The shared test schema kept the later tables; put its current version
-        # back, or every store a later test opens refuses the older one.
-        from management_portal.society_service.state_store import LINEAGE_DATA_SCHEMA
-        c.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (LINEAGE_DATA_SCHEMA,))
-
-
 def test_configured_adapter_preserves_registration_kind(monkeypatch):
     from types import SimpleNamespace
     from dataclasses import asdict

@@ -38,7 +38,6 @@ from management_portal.society_service import resident_record_domain
 from management_portal.society_service import resident_runtime_domain
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 CANONICAL_RESIDENT_TARGETS = lineage_state._resident_targets
 
 

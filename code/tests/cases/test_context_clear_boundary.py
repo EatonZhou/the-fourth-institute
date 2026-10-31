@@ -216,22 +216,6 @@ def _operation_positions(store, agent):
             (store.trace_sequence_id(agent),)).fetchall()}
 
 
-
-
-def _turn_output(store: AgentDataStore, agent_id: str, segment_id: str, started_at: str, created_at: str,
-                 kind: str) -> None:
-    execution_id = "execution_" + segment_id
-    store.begin_execution(execution_id=execution_id, agent_id=agent_id, actor_ref="sample_admin", provider="codex",
-                          started_at=started_at)
-    store.put_segment(segment_id=segment_id, segment_type=kind, content=segment_id, started_at=created_at,
-                      created_by_agent_id=agent_id, execution_id=execution_id)
-    store.append_agent_segments(agent_id, [segment_id], actor_ref='sample_admin')
-
-
-
-
-
-
 def test_clearing_a_resident_marks_its_trace(future_creation_store, monkeypatch) -> None:  # noqa: F811
     """ClearContext 在清空时的 trace 末尾写入清空标记
 

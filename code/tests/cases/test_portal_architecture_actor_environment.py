@@ -13,7 +13,7 @@ from scripts import check_portal_architecture as check
 def actor_probe(monkeypatch):
     for name in list(os.environ):
         if name.startswith('PORTAL_SCRIPT_') or name in (
-                'PORTAL_ISA_SOCKET', 'PORTAL_RESIDENT_ID', 'PORTAL_RESIDENT_ID'):
+                'PORTAL_ISA_SOCKET', 'PORTAL_RESIDENT_ID'):
             monkeypatch.delenv(name)
     selected = []
     audited = []

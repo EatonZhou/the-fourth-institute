@@ -267,34 +267,6 @@ def test_session_index_exposes_metadata_without_transcript_content_contracts(mon
                 "CASE-A", {"residents": [resident]}
             )[0]
             assert completed["status"] == "idle"
-    with subtests.test(contract='test_resident_target_update_replaces_the_exact_canonical_entry'), isolated_portal_case() as case_path:
-        with monkeypatch.context() as monkeypatch:
-            resident_id = "resident_111111111111"
-            calls: list[dict] = []
-
-            monkeypatch.setattr(
-                backend.conversation_index_projection,
-                "collect_entries",
-                lambda **kwargs: (
-                    calls.append(kwargs)
-                    or [{"key": f"resident:{resident_id}", "kind": "resident", "status": "idle"}]
-                ),
-            )
-
-            update = backend.build_target_update("sample_admin", "resident", resident_id)
-
-            assert update["remove_keys"] == [f"resident:{resident_id}"]
-            assert update["remove_prefixes"] == []
-            assert update["entries"] == [
-                {"key": f"resident:{resident_id}", "kind": "resident", "status": "idle", "section": "conversation"}
-            ]
-            assert calls == [
-                {
-                    "actor": "sample_admin",
-                    "resident_ids": [resident_id],
-                    "lineage_ids": [],
-                }
-            ]
     with subtests.test(contract='test_top_level_resident_is_not_duplicated_by_a_family_preview'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             parent_id = "resident_111111111111"

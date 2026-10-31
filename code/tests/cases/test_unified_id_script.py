@@ -27,11 +27,6 @@ def _script_env() -> dict[str, str]:
     return env
 
 
-def _write_json(path: Path, payload: object) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-
 def _write_skill(path: Path, skill_id: str = "skill_0123456789ab") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

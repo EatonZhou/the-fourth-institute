@@ -381,15 +381,14 @@ def test_unbound_provider_without_execution_account_is_not_quota_managed(
     resident_record,
     monkeypatch,
 ):
-    """无执行账号的未绑定 Provider 不参与额度管理"""
+    """未绑定路由且解析不到执行账号的 Resident 不参与额度管理，同一 Provider 只解析一次默认账号"""
     accounts = ExecutionService().accounts()["accounts"]
     resolve = mock.Mock(return_value={})
     monkeypatch.setattr(ExecutionService, "resolve_account", resolve)
     account_for = resident_intake_domain._resident_quota_account_resolver(accounts)
     unaccounted = {
         **resident_record,
-        "backend": "portal",
-        "provider": "portal",
+        "backend": "opencode",
     }
 
     assert account_for(unaccounted, {}) == ""

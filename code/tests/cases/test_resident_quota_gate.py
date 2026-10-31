@@ -2,6 +2,8 @@
 
 :design: decision_d40f59f5508f, decision_c524c775e0be
 """
+from pathlib import Path
+import subprocess
 from types import SimpleNamespace
 import time
 
@@ -217,3 +219,17 @@ def test_family_role_unknown_quota_is_not_projected_as_healthy(catalog, monkeypa
     assert '执行服务暂不可达' in roles['router']['availability']['reason']
     assert roles['steward']['availability']['status'] == 'unavailable'
     assert '角色不存在' in roles['steward']['availability']['reason']
+
+
+def test_browser_protocol_keeps_the_latest_quota_gate_across_events_and_receipts():
+    """前端 Resident 协议保留最新的额度闸门，事件和控制回执不会把它误判为开放
+
+    resident_protocol.js 中缺少闸门的状态显示为未知；手动关闭优先于额度覆盖，额度用尽、预留与恢复未确认显示 CLOSED。
+    不带闸门的状态事件和精简的控制回执保留已知闸门与发送提示；同一游标下批量刷新的新额度结果可以到达对话且不回退工作状态；
+    批量刷新失败可重试且不清除已知保护；只订阅 Chat 的页面也参与批量刷新。
+
+    :module: resident.conversation
+    """
+    script = Path(__file__).with_name("javascript") / "resident_execution_gate.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

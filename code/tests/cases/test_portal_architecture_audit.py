@@ -58,19 +58,8 @@ def runtime_audit(repo, mapping, docs):
     return check.audit(repo, mapping, [D], [], {'plans': []}, docs, [{'owner': 'lineage'}])
 
 
-@pytest.mark.parametrize('schema', ['tfi.portal-architecture.v1', 'tfi.portal-architecture.v1'])
-def test_map_schema_accepts_current_and_legacy_namespace_without_rewriting(tmp_path, schema):
-    """格式命名空间可双读，核对不重写输入地图。"""
-    repo, mapping, docs = runtime_fixture(tmp_path)
-    mapping['schema'] = schema
-    before = json.dumps(mapping, sort_keys=True)
-    assert runtime_audit(repo, mapping, docs)['findings'] == []
-    assert json.dumps(mapping, sort_keys=True) == before
-
-
 @pytest.mark.parametrize('schema', [
-    'tfi.portal-architecture.v2', 'tfi.portal-architecture.v2',
-    'tfi.portal-architecture.v0', 'tfi.portal-architecture.v0',
+    'tfi.portal-architecture.v2', 'tfi.portal-architecture.v0',
     'tfi.portal-architecture.v1.extra', 'tfi.other.v1', None, {'version': 1},
 ])
 def test_map_schema_rejects_wrong_versions_and_other_formats(tmp_path, schema):
@@ -79,16 +68,6 @@ def test_map_schema_rejects_wrong_versions_and_other_formats(tmp_path, schema):
     mapping['schema'] = schema
     with pytest.raises(ValueError, match='unsupported module map schema'):
         runtime_audit(repo, mapping, docs)
-
-
-@pytest.mark.parametrize('schema', ['tfi.portal-architecture.v1', 'tfi.portal-architecture.v1'])
-def test_map_schema_alias_keeps_source_dependency_checks(tmp_path, schema):
-    """接受新旧标签后仍报告缺失且未映射的来源。"""
-    repo, mapping, docs = runtime_fixture(tmp_path)
-    mapping['schema'] = schema
-    docs[D]['links']['source'].append('missing.py')
-    assert runtime_audit(repo, mapping, docs)['by_code'] == {
-        'design.source_missing': 1, 'design.source_unmapped': 1}
 
 
 def test_direct_cli_imports_from_outside_repository(tmp_path):

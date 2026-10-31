@@ -198,3 +198,19 @@ def test_real_pptx_and_legacy_ppt(tmp_path, monkeypatch):
 
 def test_browser_contract():
     subprocess.run(['node', str(Path(__file__).with_name('javascript') / 'presentation_preview.cjs')], check=True, timeout=30)
+
+
+def test_chromium_renders_converted_pdf_pages_zoom_and_original_download():
+    """共享 Preview 在 Chromium 中逐页渲染演示文稿转换出的 PDF，可缩放且下载原文件
+
+    用两页 PDF 夹具代替 LibreOffice 输出，经支持 Range 的本地内容路由读取；核对页数、首尾页文字、滚动渲染、放大和原 slides.pptx 下载。
+
+    :module: workbench.preview
+    """
+    pdf = Path(__file__).with_name('fixtures') / 'paper-synthetic-counts.pdf'
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'presentation_preview.browser.cjs'),
+         str(pdf), '2', 'Synthetic Counts Study', 'TAU SYNTHETIC SAMPLE - continued'],
+        capture_output=True, text=True, timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

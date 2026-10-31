@@ -124,15 +124,6 @@ def _session(tmp_path: Path, *, ended: bool = True) -> Path:
     return transcript
 
 
-class _Client:
-    def __init__(self) -> None:
-        self.calls: list[dict] = []
-
-    def run_turn(self, **kwargs):
-        self.calls.append(kwargs)
-        raise RuntimeError("not needed")
-
-
 def test_the_card_is_an_artifact_of_the_trace_shown_in_the_chat(tmp_path: Path, resident_record) -> None:
     """子 agent 卡片是轨迹中的 artifact 并显示在 Chat
 
