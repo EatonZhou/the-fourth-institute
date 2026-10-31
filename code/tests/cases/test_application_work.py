@@ -259,6 +259,79 @@ def test_unavailable_still_requires_independent_work_proof(database, mutation, c
         work.inspect(api, {})
 
 
+def previous_failure(connection, *, status='failed', finished=True, same_agent=True, record=None):
+    eid, rid = connection.execute("SELECT execution_id,agent_id FROM agent.executions "
+                                  "WHERE status='preparing' ORDER BY execution_id LIMIT 1").fetchone()
+    other = connection.execute("SELECT agent_id FROM agent.executions WHERE agent_id<>%s LIMIT 1", (rid,)).fetchone()[0]
+    connection.execute("INSERT INTO agent.executions(execution_id,agent_id,actor_ref,provider,provider_turn_id,status,"
+                       "usage_json,created_at,started_at,finished_at) VALUES('execution-failed-before',%s,'fixture_user',"
+                       "'codex','',%s,'{}',now(),now(),%s)",
+                       (rid if same_agent else other, status, 'now' if finished else None))
+    value = {'execution_id': 'execution-failed-before', 'error': 'Codex app-server socket unavailable',
+             'runtime_error': {'code': 'unknown', 'message': 'x', 'raw_error': 'x', 'source': 'execution_result'},
+             'failed_at': STAMP} if record is None else record
+    connection.execute("UPDATE lineage.resident_execution_work SET progress_json=progress_json || %s "
+                       "WHERE execution_id=%s", (Jsonb({'previous_execution_failure': value, 'error': ''}), eid))
+    return eid
+
+
+def test_preparing_retry_after_terminal_failure_is_retained(database):
+    """Preparing work promoted after a failed predecessor keeps its inert failure record.
+
+    :purpose: ET 10-31 kept a steward's next input preparing after its Codex turn failed.
+    """
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        previous_failure(c)
+    before = work.inspect(api, {})
+    assert before['classes']['preparing'] >= 1
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE lineage.resident_execution_work SET progress_json=jsonb_set(progress_json,"
+                  "'{previous_execution_failure,error}','\"changed\"') WHERE progress_json ? 'previous_execution_failure'")
+    assert work.inspect(api, {}) != before
+
+
+@pytest.mark.parametrize('variant,code', [
+    ({'status': 'completed'}, 'previous_failure_not_terminal'),
+    ({'status': 'preparing', 'finished': False}, 'work_preparation_count_mismatch'),
+    ({'finished': False}, 'previous_failure_not_terminal'),
+    ({'same_agent': False}, 'previous_failure_not_terminal'),
+    ({'record': {'execution_id': 'execution-missing', 'error': '', 'runtime_error': {}, 'failed_at': STAMP}},
+     'previous_failure_not_terminal'),
+    ({'record': {'execution_id': 'execution-failed-before', 'error': '', 'runtime_error': {}}},
+     'previous_failure_evidence_invalid'),
+    ({'record': {'execution_id': 'execution-failed-before', 'error': '', 'runtime_error': {},
+                 'failed_at': STAMP, 'continuation_id': 'c'}}, 'previous_failure_evidence_invalid'),
+    ({'record': 'failed'}, 'previous_failure_evidence_invalid'),
+])
+def test_previous_failure_must_name_a_terminal_failed_execution(database, variant, code):
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        previous_failure(c, **variant)
+    with pytest.raises(work.WorkProofError, match=code):
+        work.inspect(api, {})
+
+
+def test_previous_failure_cannot_name_the_preparing_execution(database):
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        eid = previous_failure(c)
+        c.execute("UPDATE lineage.resident_execution_work SET progress_json=jsonb_set(progress_json,"
+                  "'{previous_execution_failure,execution_id}',%s) WHERE execution_id=%s", (Jsonb(eid), eid))
+    with pytest.raises(work.WorkProofError, match='previous_failure_not_terminal'):
+        work.inspect(api, {})
+
+
+def test_previous_failure_does_not_hide_other_progress_evidence(database):
+    dsn, api = database
+    with psycopg.connect(dsn) as c:
+        eid = previous_failure(c)
+        c.execute("UPDATE lineage.resident_execution_work SET progress_json=progress_json || "
+                  "'{\"submitted_at\":\"recorded\"}' WHERE execution_id=%s", (eid,))
+    with pytest.raises(work.WorkProofError, match='submission_continuation_or_projection_evidence'):
+        work.inspect(api, {})
+
+
 @pytest.mark.parametrize('status', ['queued', 'running', 'completed', 'future'])
 def test_scheduler_record_never_classified_by_reason_or_terminal_label(database, status):
     dsn, api = database

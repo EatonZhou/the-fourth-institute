@@ -83,6 +83,23 @@ RETAINED_TABLES = (
 # bind_execution.submitted_at. Never infer safety from the age of any timestamp.
 INERT_PROGRESS = {'actor', 'activation_policy', 'intake_admitted_at', 'updated_at',
                   'started_at', 'dispatched_at'}
+# promote_queue_after_failed_execution records the failed predecessor when it
+# promotes the next queued input. Nothing reads it back; it is retained only
+# while it names another terminal failed Execution of the same Resident.
+PREVIOUS_FAILURE_FIELDS = frozenset({'execution_id', 'error', 'runtime_error', 'failed_at'})
+
+
+def retained_previous_failure(value, rid, eid, executions):
+    if value in (None, '', False, {}, []):
+        return
+    require(isinstance(value, dict) and set(value) == PREVIOUS_FAILURE_FIELDS
+            and isinstance(value['error'], str) and isinstance(value['runtime_error'], dict)
+            and isinstance(value['failed_at'], str) and bool(value['failed_at']),
+            'previous_failure_evidence_invalid')
+    failed = executions.get(value['execution_id'])
+    require(value['execution_id'] != eid and failed is not None and failed['agent_id'] == rid
+            and failed['status'] == 'failed' and bool(failed['finished_at']),
+            'previous_failure_not_terminal')
 
 
 def retained_quota_wait(migration):
@@ -298,8 +315,11 @@ def _inspect(cursor):
         p = object_value(job['progress_json'])
         require(set(p) <= PROGRESS, 'unknown_progress_evidence')
         require(p.get('actor') == execution['actor_ref'] and bool(p.get('actor')), 'actor_mismatch')
-        require(all(key in INERT_PROGRESS or value in (None, '', False, {}, []) for key, value in p.items()),
+        require(all(key in INERT_PROGRESS or key == 'previous_execution_failure'
+                    or value in (None, '', False, {}, []) for key, value in p.items()),
                 'submission_continuation_or_projection_evidence')
+        retained_previous_failure(p.get('previous_execution_failure'), rid, eid,
+                                  {r['execution_id']: r for r in executions})
         require(p.get('activation_policy', 'enqueue_and_trigger') == 'enqueue_and_trigger', 'unsupported_activation')
         refs = [r for r in references if r['execution_id'] == eid]
         require(len(refs) == 1 and refs[0]['message_id'] == mid and refs[0]['role'] == 'primary', 'execution_input_mismatch')
