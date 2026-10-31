@@ -810,8 +810,21 @@ def _deliver_to_facade(
             lambda: family_facade.forward_info(record, facade_message, request.actor_id)
         )
         return _receipt(request)
-    from . import family_recovery
+    from . import family_recovery, family_role_quota_questions
 
+    if family_role_quota_questions.question_of(record_id, facade_message) is not None:
+        # The facade asked this itself; the Router never routes the answer.
+        # DeliverMessage carries out the choice once the answer is stored.
+        if not existing_resident_delivery(record_id, facade_item):
+            def accept_quota_answer() -> None:
+                resident_lifecycle_domain.accept_resident_user_message(request.resident_id, facade_message)
+                family_facade.show_request(request.resident_id, facade_message_id)
+                resident_conversation_stream.get_repository().set_input_state(
+                    request.resident_id, facade_message_id, "completed",
+                )
+
+            invariant_locks.defer_until_state_unlock(accept_quota_answer)
+        return _receipt(request)
     if existing_resident_delivery(record_id, facade_item):
         invariant_locks.defer_until_state_unlock(lambda: family_recovery.handle(record, facade_message_id))
         return _receipt(request)

@@ -113,7 +113,7 @@ LAYERS = (
     """,
     # The Resident domain and the Events about Resident messages.
     """
-    family_chat_preferences family_recovery lineage_event_observers lineage_event_reconciliation
+    family_chat_preferences family_recovery family_role_quota_questions lineage_event_observers lineage_event_reconciliation
     lineage_failure_notifications lineage_message_events lineage_program_polling resident_actual_sent_domain
     resident_context.work_summary resident_context_evidence resident_conversation_event_relay
     resident_conversation_projection_domain resident_deferred_restart resident_delivery_work

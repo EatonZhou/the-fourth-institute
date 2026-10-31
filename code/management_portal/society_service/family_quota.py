@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, Mapping
 
-from . import family_facade, family_storage, resident_execution_work, resident_message_contract
+from . import family_facade, family_role_quota_questions, family_storage, resident_execution_work, resident_message_contract
 from .domain_ports import execution_port
 from .resident_account_policy import (
     MIGRATION_RESERVE_PERCENT, fallback_account, resident_account, sufficient_reserve, migration_target_options,
@@ -24,7 +24,7 @@ from management_common.clock import utc_now_iso
 
 MIGRATION_FIELDS = frozenset({
     "epoch", "attempts", "tried_accounts", "checked_at", "pending_restart", "owner_notified",
-    "status", "reason", "account_wait",
+    "status", "reason", "account_wait", "question_facade_id", "question_message_id",
 })
 RECHECK_SECONDS = 60
 MAX_MIGRATIONS = 2
@@ -325,6 +325,15 @@ def _follow_facade_quota_release(record: dict[str, Any], facade: dict[str, Any])
     return resident_record_domain.find_resident(record["resident_id"]) or current
 
 
+def _facade_of(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The live facade of a Family Resident's Family."""
+    from . import resident_record_domain
+    with get_lineage_data_store().database.read() as connection:
+        facade_ids = family_storage.roles_of(connection, record["family"]["family_id"])["facade"]
+    facade = resident_record_domain.find_resident(facade_ids[0]) if facade_ids else None
+    return facade if facade and not facade.get("deleted_at") else None
+
+
 def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     """Keep internal operating roles open unless their whole Family is paused.
 
@@ -332,14 +341,12 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     requeues a cancelled input or restarts a Session. The roles follow the
     facade's manual quota release, also while the Family is paused.
     """
-    from . import family_storage, resident_management_domain
+    from . import resident_management_domain
     from . import resident_record_domain
     if not family_facade.is_operating_role(record) or record.get("deleted_at"):
         return None
-    with get_lineage_data_store().database.read() as connection:
-        facade_ids = family_storage.roles_of(connection, record["family"]["family_id"])["facade"]
-    facade = resident_record_domain.find_resident(facade_ids[0]) if facade_ids else None
-    if not facade or facade.get("deleted_at"):
+    facade = _facade_of(record)
+    if not facade:
         return None
     record = _follow_facade_quota_release(record, facade)
     if resident_record_domain.resident_intake_state(facade) != "open":
@@ -408,7 +415,9 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             or remaining is None and sufficient_reserve(account)):
         if role_migration(record):
             with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
+                asked = (healthy.get("question_facade_id"), healthy.get("question_message_id"))
                 healthy.clear()
+            family_role_quota_questions.close(*asked)
         return False
     if remaining is None:
         # Stale observations cannot clear an outstanding incident; a manual
@@ -417,6 +426,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 and resident_record_domain.resident_quota_override(record).get("enabled") is not True)
     epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
     now = time.time()
+    expired: tuple[Any, Any] = (None, None)
     with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
         current = resident_record_domain.find_resident(resident_id)
         if (not current or current["lineage_id"] != record["lineage_id"]
@@ -429,6 +439,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             return False
         _validate_migration(migration)
         if migration.get("epoch") != epoch:
+            expired = (migration.get("question_facade_id"), migration.get("question_message_id"))
             migration.clear()
             migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": []})
         # A manual quota release (the role's own, or the facade's for Router
@@ -458,6 +469,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             # migrations; only the waiting state ends.
             migration.pop("status", None)
             migration.pop("reason", None)
+    family_role_quota_questions.close(*expired)  # A new quota window asks again.
     if not payload and released:
         return False
     if payload:
@@ -481,13 +493,60 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 recipients=owners, severity="warning", created_by="portal",
                 notification_id=f"steward-reserve:{resident_id}:{epoch}",
             )
-            from .outward_messages import message_creator
-            message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
-                            text=f"Family 内部角色 {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
+            facade = _facade_of(record) if family_facade.is_operating_role(record) else None
+            asked = ""
+            if facade:
+                # The people managing the facade decide in its Conversation:
+                # credits, wait for the reset, or another account.
+                asked = family_role_quota_questions.ask(record, facade, account, remaining, epoch)
+            else:
+                from .outward_messages import message_creator
+                message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
+                                text=f"Family 内部角色 {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
             with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
                 if committed.get("epoch") == epoch:
                     committed["owner_notified"] = True
+                    if asked:
+                        committed.update(question_facade_id=facade["resident_id"], question_message_id=asked)
     return True
+
+
+def answer_role_quota_question(facade_id: str, message_id: str, actor: str) -> None:
+    """Carry out a delivered answer to a facade's role quota question, then say what happened.
+
+    Continuing on credits is the facade's manual quota release, made by the
+    person answering with their own right to manage the facade; its Router
+    and Steward follow it (_follow_facade_quota_release).
+    """
+    from . import resident_access, resident_conversation_stream, resident_management_domain, resident_record_domain
+    questions = family_role_quota_questions
+    answer = resident_conversation_stream.get_repository().message(facade_id, message_id)
+    if questions.question_of(facade_id, answer) is None:
+        return
+    choice = questions.choice_of(answer)
+    if choice == questions.CONTINUE:
+        facade = resident_record_domain.find_resident(facade_id) or {}
+        if not resident_access.can_manage_resident(dict(facade), actor):
+            text = "你没有管理这个门面的权限，未放行。请让有管理权限的人选择。"
+        else:
+            try:
+                if resident_record_domain.resident_quota_override(facade).get("enabled") is not True:
+                    resident_management_domain.transition_resident_state(facade_id, actor, transition="open")
+            except (KeyError, PermissionError, ValueError) as exc:
+                text = f"放行失败：{exc}"
+            else:
+                released = resident_record_domain.resident_quota_override(
+                    resident_record_domain.find_resident(facade_id) or {}).get("enabled") is True
+                text = ("已对门面人工放行。Router 和 steward 会跟随放行，用当前账号的 credits 继续工作；"
+                        "之后在门面上关闭接单即可取消放行。" if released else
+                        "已提交放行，但回读门面时还没有生效，请在 Family 状态中检查接单设置。")
+    elif choice == questions.WAIT:
+        text = "好的，保持等待。额度重置或补上可用账号后，Family 会自动继续，排队的工作不会丢。"
+    elif choice == questions.ADD_ACCOUNT:
+        text = "请在[首页](/)的 AI 账号中新增或启用一个剩余额度超过 10% 的账号；补好后 Family 会自动换过去继续。"
+    else:
+        text = f"未识别的选择：{choice or '（空）'}，没有做任何改动。"
+    questions.post_result(facade_id, message_id, actor, text)
 
 
 def check_role_availability(lineage_id: str, family_id: str, actor: str) -> dict[str, Any]:

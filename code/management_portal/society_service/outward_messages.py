@@ -36,6 +36,7 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from management_common.actor_identity import canonical_actor_id
+from management_common.async_questions import normalize_async_questions, question_message_parts
 from management_common.message_identity import derived_message_identity
 from management_common.operation_identity import current_operation_identity, operation_identity_scope
 from management_common.principal import OperationIdentity, Principal, actor_principal, message_origin
@@ -238,6 +239,7 @@ def post_platform_notice(
     *,
     message_id: str,
     business_ref: str = "",
+    questions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Portal writes to users in a Resident's name, starting no work (decision_15f7df737ed5).
 
@@ -246,7 +248,8 @@ def post_platform_notice(
     Family the message goes out as its facade, like any message to a user.
     One message names every user who can view that Conversation; the others
     come back as ``unreached`` for another channel.  A message already
-    written under ``message_id`` stays as it is.
+    written under ``message_id`` stays as it is.  ``questions`` makes it ask
+    a question set; whoever handles the notice's ``business_ref`` takes the answer.
     """
 
     users = [str(user) for user in dict.fromkeys(user_ids) if str(user or "").strip()]
@@ -268,7 +271,8 @@ def post_platform_notice(
             "author_id": speaker,
             "origin": message_origin(speaker, initiated_by="portal"),
             "recipients": recipients,
-            "content_parts": [{"type": "text", "text": text}],
+            "content_parts": ([{"type": "text", "text": text}] if not questions else question_message_parts(
+                text, normalize_async_questions(questions), speaker, message_id)),
         }
         if business_ref:
             message["business_ref"] = str(business_ref).strip()[:500]

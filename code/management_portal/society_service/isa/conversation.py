@@ -135,6 +135,10 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
     if credentials:
         # The message exists now and its input is open: the credentials end with that input (decision_b820faf42218 §5.6).
         result["temporary_credentials"] = _lend(inv, result["resident_id"], result["message_id"], credentials)
+    if any(isinstance(part, dict) and part.get("type") == "async_question_answer" for part in message.get("content_parts") or []):
+        from management_portal.society_service import family_quota
+        # A facade's own question about its Router/Steward account is answered here, not by any Resident.
+        family_quota.answer_role_quota_question(result["resident_id"], result["message_id"], inv.caller)
     return result
 
 

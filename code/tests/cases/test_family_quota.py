@@ -473,6 +473,63 @@ def test_facade_quota_release_lets_steward_run_on_credits_without_a_safe_account
     assert synced[-1] == {"binding_id": f"resident:{f.steward}", "enabled": False, "revision": 2}
 
 
+@pytest.mark.parametrize("choice", ["用当前账号的 credits 继续", "等额度重置", "recovered"])
+def test_role_without_a_safe_account_asks_the_facade_managers(quota_family, monkeypatch, choice):
+    """内部角色找不到安全账号时在门面对话中询问管理者
+
+    steward 额度确认不足且没有可接替的账号时，门面在自己的对话里发一组问题（credits 继续 / 等重置 /
+    补账号），每个额度周期一次。回答留在门面、不交给 Router；选择 credits 继续即对门面人工放行，
+    steward 跟随放行运行；账号恢复后未回答的问题关闭。
+    """
+    from management_common.async_questions import question_answer_id, question_set
+    from management_portal.society_service.family_owners import register_familizer
+    from tests.cases.isa_test_support import run
+
+    f = quota_family
+    repo = resident_conversation_stream.get_repository()
+    register_familizer(f.facade, ACTOR)
+    f.accounts[:] = [_account("one", 0), _account("two", 5)]
+    resident_input_queue_domain.commit_resident_intake_state(_record(f.steward), "open")
+    monkeypatch.setattr(execution_port, "configure_binding_quota_overrides", lambda policies: None, raising=False)
+    monkeypatch.setattr(resident_restart_domain, "restart_resident_session", lambda *args, **kwargs: pytest.fail("no safe target"))
+    monkeypatch.setattr(lineage_human_notifications, "create_notification", lambda *args, **kwargs: None)
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    state = family_quota.role_migration(_record(f.steward))
+    asked = state["question_message_id"]
+    assert state["question_facade_id"] == f.facade
+    questions = question_set(repo.message(f.facade, asked))
+    assert questions["questions"][0]["options"] == ["用当前账号的 credits 继续", "等额度重置", "我去补账号"]
+    # Once per quota window.
+    with family_quota.get_lineage_data_store().family_quota_migrations.transaction(_record(f.steward)['lineage_id'], f.steward) as migration:
+        migration["checked_at"] = 0
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    assert [m["message_id"] for m in repo.read_messages(f.facade) if question_set(m)] == [asked]
+
+    if choice == "recovered":
+        f.accounts[:] = [_account("one", 60), _account("two", 5)]
+        assert not family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+        assert repo.question_set_state(f.facade, asked) == "closed"
+        return
+    answer_id = question_answer_id(f.facade, asked)
+    run("DeliverMessage", {"resident_id": f.facade, "message": {"message_id": answer_id, "content_parts": [
+        {"type": "text", "text": choice},
+        {"type": "async_question_answer", "source_message_id": asked, "answers": [{"question_index": 0, "answer": choice}]},
+    ]}}, actor=ACTOR, key=f"quota-answer-{choice}").raise_for_error()
+    assert repo.question_set_state(f.facade, asked) == "answered"
+    assert answer_id not in family_facade.relay_links(_record(f.facade))
+    assert repo.input_state(f.facade, answer_id)["state"] == "completed"
+    from management_common.message_identity import derived_message_identity
+    result = repo.message(f.facade, derived_message_identity("family-role-quota-result", f.facade, answer_id))
+    text = result["content_parts"][0]["text"]
+    released = resident_record_domain.resident_quota_override(_record(f.facade)).get("enabled") is True
+    if choice == "等额度重置":
+        assert not released and "保持等待" in text
+        assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    else:
+        assert released and "已对门面人工放行" in text
+        assert not family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+
+
 @pytest.mark.parametrize("remaining,short,fresh,expected", [
     (80, 9, True, 9), (10, 80, True, 10), (0, 80, False, None),
 ])
