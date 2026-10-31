@@ -10,8 +10,8 @@ Without one, a repeatable-read, read-only transaction is used.
 Seal the receipt before migration and compare it after migration or restore,
 before starting Society. The schema marker is deliberately not in the receipt:
 v60..v65 migrations change configuration, not these durable work rows. This
-narrow proof rejects scheduler records (even completed ones), grouped
-inputs, pending delivery/continuation/restart work and unknown evidence. The
+narrow proof rejects scheduler records (even completed ones) other than
+ended provider account checks, grouped inputs, pending delivery/continuation/restart work and unknown evidence. The
 existing check_quiescent contract remains unchanged.
 """
 from __future__ import annotations
@@ -180,7 +180,18 @@ def _inspect(cursor):
                if r['role'] == 'facade' and r['family_id'] in live_families}
     for table in EMPTY_TABLES:
         require(not data[table], 'pending_' + table)
-    require(not rows('execution_runtime', 'executions'), 'scheduler_execution_present')
+    # A provider account check (account_setup.check) is only read back by
+    # GetProviderAccountCheck: never acknowledged, never routed to a Resident,
+    # removed by terminal retention. Its ended row is retained and hashed. Any
+    # other scheduler record, even an ended one, may still owe a Resident its
+    # outcome.
+    scheduler = rows('execution_runtime', 'executions')
+    work_executions = {r['execution_id'] for r in data['resident_execution_work']}
+    for row in scheduler:
+        metadata = object_value(row['request_json']).get('metadata')
+        require(row['status'] in ('completed', 'failed', 'cancelled') and row['acknowledged_at'] is None
+                and isinstance(metadata, dict) and isinstance(metadata.get('provider_account_check'), dict)
+                and row['execution_id'] not in work_executions, 'scheduler_execution_present')
     require(not rows('execution_runtime', 'execution_input_controls'), 'scheduler_control_present')
     for row in data['operator_work']:
         require(not object_value(row['checkpoint_json']).get('pending_deliveries'), 'operator_delivery_pending')
@@ -374,6 +385,7 @@ def _inspect(cursor):
     retained['agent.executions'] = fingerprint(executions)
     retained['agent.execution_inputs'] = fingerprint(references)
     retained['agent.facade_originals'] = fingerprint(facade_messages)
+    retained['execution_runtime.executions'] = fingerprint(scheduler)
     for table, introduced in (('family_task_dispatches', 61), ('family_chat_preferences', 65), ('family_chat_inputs', 65)):
         retained[table] = fingerprint(rows('lineage', table) if number >= introduced else [])
     # Migration adds Family configuration columns; the original v60 fields

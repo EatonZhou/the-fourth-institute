@@ -115,7 +115,7 @@ def retained(rid):
 @pytest.mark.parametrize("missing", [True, False], ids=["account-wait", "quota-wait"])
 def test_repeated_formal_recovery_preserves_waiting_work(quota_family, missing):
     f = quota_family
-    f.accounts[:] = [] if missing else [_account("one", 9)]
+    f.accounts[:] = [] if missing else [_account("one", 4)]
     record = resident_record_domain.find_resident(f.steward)
     resident_input_queue_domain.commit_resident_intake_state(record, "open")
     mid = "msg_" + uuid.uuid4().hex
@@ -199,7 +199,7 @@ def unavailable_accounts(receipt, monkeypatch):
     accounts = []
     for item in receipt['residents']:
         record = resident_record_domain.find_resident(item['resident_id'])
-        account = _account(resident_backend.execution_account(record)['backend_route_id'], 9)
+        account = _account(resident_backend.execution_account(record)['backend_route_id'], 4)
         if account not in accounts:
             accounts.append(account)
     from types import SimpleNamespace

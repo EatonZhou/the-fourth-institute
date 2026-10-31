@@ -403,6 +403,76 @@ def test_scheduler_record_never_classified_by_reason_or_terminal_label(database,
         work.inspect(api, {})
 
 
+def scheduler_execution(dsn, monkeypatch, *, metadata, status):
+    """Submit and end one execution through the real Scheduler owner."""
+    from management_portal.execution.contracts import ExecutionRequest, ExecutionResult, SessionOptions
+    from management_portal.execution.scheduler import Scheduler
+    monkeypatch.setenv('PORTAL_DATABASE_URL', dsn)
+    monkeypatch.delenv('PORTAL_DATABASE_NAMESPACE', raising=False)
+    scheduler = Scheduler(dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
+    # The shape account_setup.check submits for a model API account test.
+    request = ExecutionRequest.new(
+        actor='fixture_user', prompt='Reply with a short greeting.', service_type='chat_completion',
+        provider='test-api', operation='generate', session=SessionOptions(), metadata=metadata)
+    scheduler.submit(request)
+    if status == 'queued':
+        return request.execution_id
+    scheduler.register_worker(worker_id='fixture-worker', build_id='fixture-build',
+                              capabilities=[request.capability], state='standby')
+    scheduler.activate_worker('fixture-worker')
+    claimed = scheduler.claim(worker_id='fixture-worker', capabilities=[request.capability])
+    assert claimed['claimed'] and claimed['execution']['execution_id'] == request.execution_id
+    token = claimed['claim_token']
+    scheduler.start(request.execution_id, worker_id='fixture-worker', claim_token=token)
+    scheduler.finish(ExecutionResult(execution_id=request.execution_id, status=status, output='',
+                                     error='kimi service unreachable' if status == 'failed' else ''),
+                     worker_id='fixture-worker', claim_token=token)
+    return request.execution_id
+
+
+ACCOUNT_CHECK = {'provider_account_check': {'account_id': 'kimi_service', 'model': 'kimi-for-coding'}}
+
+
+@pytest.mark.parametrize('status', ['failed', 'completed'])
+def test_ended_provider_account_check_is_retained_and_hashed(database, monkeypatch, status):
+    """已结束且未确认的账号接入测试调度行不对应 Resident 工作，证明保留它并计入指纹"""
+    dsn, api = database
+    before = work.inspect(api, {})
+    eid = scheduler_execution(dsn, monkeypatch, metadata=ACCOUNT_CHECK, status=status)
+    proof = work.inspect(api, {})
+    assert proof['counts'] == before['counts'] and proof['classes'] == before['classes']
+    assert proof['retained']['execution_runtime.executions']['count'] == 1
+    with psycopg.connect(dsn) as c:
+        c.execute("UPDATE execution_runtime.executions SET error='changed' WHERE execution_id=%s", (eid,))
+    assert work.inspect(api, {}) != proof
+
+
+@pytest.mark.parametrize('metadata, status', [
+    (ACCOUNT_CHECK, 'queued'),
+    ({'message_id': 'msg_turn'}, 'failed'),
+    ({'provider_account_check': 'not an object'}, 'completed'),
+])
+def test_other_scheduler_records_still_refuse(database, monkeypatch, metadata, status):
+    dsn, api = database
+    scheduler_execution(dsn, monkeypatch, metadata=metadata, status=status)
+    with pytest.raises(work.WorkProofError, match='scheduler_execution_present'):
+        work.inspect(api, {})
+
+
+def test_acknowledged_or_work_named_account_check_refuses(database, monkeypatch):
+    dsn, api = database
+    eid = scheduler_execution(dsn, monkeypatch, metadata=ACCOUNT_CHECK, status='failed')
+    with psycopg.connect(dsn) as c:
+        work_eid = c.execute('SELECT execution_id FROM lineage.resident_execution_work LIMIT 1').fetchone()[0]
+        c.execute('UPDATE execution_runtime.executions SET execution_id=%s WHERE execution_id=%s', (work_eid, eid))
+    with pytest.raises(work.WorkProofError, match='scheduler_execution_present'):
+        work.inspect(api, {})
+    with psycopg.connect(dsn) as c:
+        c.execute('UPDATE execution_runtime.executions SET execution_id=%s, acknowledged_at=now()', (eid,))
+    with pytest.raises(work.WorkProofError, match='scheduler_execution_present'):
+        work.inspect(api, {})
+
+
 def test_receipt_detects_payload_checkpoint_and_input_state_changes(database):
     dsn, api = database
     before = work.inspect(api, {})
