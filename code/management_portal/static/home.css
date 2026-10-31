@@ -816,7 +816,13 @@ a.agent-status-creature.queued:hover {
 .agent-status-api-account .agent-status-account-name { white-space: normal; overflow-wrap: anywhere; }
 .agent-status-api-account .agent-status-account-balance { grid-column: 1; font-variant-numeric: tabular-nums; }
 .agent-status-api-account .agent-status-account-details { grid-column: 2; }
-.agent-status-account-balance { min-width: 0; font-size: 12px; }
+.agent-status-account-balance { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-width: 0; font-size: 12px; }
+.agent-status-balance-visual { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; }
+.agent-status-balance-coins { position: relative; display: inline-block; flex-shrink: 1; min-width: 15px; max-width: 100%; height: 15px; }
+.agent-status-balance-coins i { position: absolute; top: 0; left: calc((100% - 15px) * var(--coin-position)); box-sizing: border-box; width: 15px; height: 15px; border: 1.5px solid #bd9033; border-radius: 50%; background: #f5e3ab; }
+.agent-status-balance-coins i::after { content: ""; position: absolute; inset: 3px; border: 1.5px solid #bd9033; border-radius: 50%; }
+.agent-status-balance-visual.is-stale { opacity: .45; }
+.agent-status-coins-more { white-space: nowrap; color: var(--muted); }
 .agent-status-balance-value { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .agent-status-account-balance.is-stale .agent-status-balance-value,
 .agent-status-account-balance .is-availability { color: var(--muted); }

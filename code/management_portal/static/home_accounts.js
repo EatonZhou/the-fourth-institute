@@ -121,10 +121,17 @@
       const explanation = available ? (balance.status === "ok" ? "API 可用 · 余额未提供" : "API 状态不可用 · 余额未提供")
         : balance.status === "loading" ? "正在读取余额…" : hasValue ? (fresh ? "剩余余额" : "数据已过期，数值为上次采样") : missing;
       const value = !available && hasValue ? `${balance.display}${fresh ? "" : "*"}` : "—";
+      const amount = balance.comparison_amount;
+      const coinCount = !available && hasValue && balance.comparison_currency === "CNY"
+        && typeof amount === "number" && Number.isFinite(amount) && amount > 0 ? Math.round(amount / 10) : 0;
+      const shownCoins = Math.min(24, coinCount);
+      const coins = shownCoins ? window.PortalI18n.html`<span class="agent-status-balance-visual${!fresh || balance.comparison_stale ? " is-stale" : ""}" aria-hidden="true"><span class="agent-status-balance-coins" style="width:${15 + 10 * (shownCoins - 1)}px">${Array.from({length: shownCoins}, (_, index) => `<i style="--coin-position:${shownCoins > 1 ? index / (shownCoins - 1) : 0}"></i>`).join("")}</span>${coinCount > shownCoins ? `<span class="agent-status-coins-more">+${coinCount - shownCoins}</span>` : ""}</span>` : "";
       const sampled = formatDateTime(balance.updated_at || "");
       const title = [window.PortalI18n.t(explanation), balance.source_account_id && window.PortalI18n.text`计费账号 ${balance.source_account_id}`,
+        shownCoins && window.PortalI18n.t("约每 ¥10 一枚金币，四舍五入"),
+        shownCoins && balance.currency !== "CNY" && window.PortalI18n.text`约 ${amount.toFixed(2)} CNY · 汇率 ${balance.exchange_rate_date || ""}`,
         sampled && window.PortalI18n.text`更新于 ${sampled}`, balance.error].filter(Boolean).join(" · ");
-      return window.PortalI18n.html`<span class="agent-status-account-balance${balance.stale ? " is-stale" : ""}" data-account-balance title="${esc(title)}"><span class="agent-status-balance-value${available ? " is-availability" : ""}">${esc(value)}</span></span>`;
+      return window.PortalI18n.html`<span class="agent-status-account-balance${balance.stale ? " is-stale" : ""}" data-account-balance title="${esc(title)}"><span class="agent-status-balance-value${available ? " is-availability" : ""}">${esc(value)}</span>${coins}</span>`;
     }
 
     function accountRows(accounts) {
@@ -341,11 +348,17 @@
       </details>`;
       }
       const account = executionAccounts(currentAgentStatusData()).find(item => item.account_id === details.accountId);
+      let billingUrl = "";
+      try {
+        const url = new URL(account?.balance?.billing_url || "");
+        if (["https:", "http:"].includes(url.protocol)) billingUrl = url.href;
+      } catch (_) { /* Unknown billing destinations do not get a link. */ }
       const focusedElement = details.panel.contains(document.activeElement) ? document.activeElement : null;
       const focused = focusedElement?.dataset.accountAction;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
     <div class="account-details-body">${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
+      ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>
       ${account?.capabilities?.resident_details === false ? "" : window.PortalI18n.html`<div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="close-all" data-account-close-residents="${esc(details.accountId)}" ${!snapshot?.open_resident_ids?.length || details.loading || details.error || busy ? "disabled" : ""} title="将当前账号下 Resident 设为手动 Closed，保留队列与正在执行的任务">${pendingAction === "close" ? window.PortalI18n.t("关闭中…") : window.PortalI18n.t("全部关闭")}</button>
       <button class="portalButton is-compact" type="button" data-account-action="open-all" data-account-open-residents="${esc(details.accountId)}" ${!snapshot?.closed_resident_ids?.length || details.loading || details.error || busy ? "disabled" : ""} title="将当前账号下全部关闭的 Resident 按人工 Open 打开">${pendingAction === "open" ? window.PortalI18n.t("打开中…") : window.PortalI18n.t("全部打开")}</button></div>`}</footer>`;

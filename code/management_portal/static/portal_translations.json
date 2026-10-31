@@ -1,4 +1,7 @@
 {
+  "约每 ¥10 一枚金币，四舍五入": {"zh-CN": "约每 ¥10 一枚金币，四舍五入", "en": "About one coin per ¥10, rounded to the nearest coin"},
+  "约 {p0} CNY · 汇率 {p1}": {"zh-CN": "约 {p0} CNY · 汇率 {p1}", "en": "About {p0} CNY · Exchange rate dated {p1}"},
+  "充值 / 账单": {"zh-CN": "充值 / 账单", "en": "Top up / billing"},
   "保存后继续接入与测试": {"zh-CN": "保存后继续接入与测试", "en": "Continue setup and testing after saving"},
   "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。": {"zh-CN": "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。", "en": "Saving makes every protocol-compatible runner available when creating a Resident. Select one here to test; testing calls the model and may incur charges."},
   "用量刷新失败": {"zh-CN": "用量刷新失败", "en": "Usage refresh failed"},

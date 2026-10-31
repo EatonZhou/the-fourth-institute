@@ -34,8 +34,8 @@ def test_activity_icons_keep_identity_links_with_fallback_avatars() -> None:
     subprocess.run(["node", str(script)], check=True, cwd=ROOT)
 
 
-def test_account_details_only_show_resident_information() -> None:
-    """账号详情只保留节点统计和批量接单，移除计费和调度表单。
+def test_account_details_show_resident_information_and_billing_link() -> None:
+    """账号详情保留节点统计和批量接单，提供充值链接，不恢复调度表单。
 
     :design: decision_4dea0db1f45a
     """

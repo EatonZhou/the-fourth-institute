@@ -32,6 +32,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
         api('a_very_long_api_account_name', {status:'ok',display:'0 USD'}, {resident_details:false}),
         api('stale', {status:'unavailable',display:'52.12 USD',stale:true}),
         api('unknown', {status:'not_supported'}),
+        api('large', {status:'ok',display:'100000 CNY',currency:'CNY',comparison_amount:100000,comparison_currency:'CNY'}),
         api('availability', {status:'ok',metric_kind:'availability'})]};
       document.querySelector('main > div').innerHTML=accountRows(data.accounts);
     `});
@@ -39,8 +40,9 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       const row=page.locator('[data-account-limit-account="'+id+'"]');
       assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
     }
-    assert.deepEqual(await page.locator('[data-account-api] [data-account-balance]').allTextContents(),['123.45 CNY','0 USD','52.12 USD*','—','—']);
-    assert.equal(await page.locator('.agent-status-balance-coins').count(),0);
+    assert.deepEqual(await page.locator('[data-account-api] .agent-status-balance-value').allTextContents(),['123.45 CNY','0 USD','52.12 USD*','—','100000 CNY','—']);
+    assert.equal(await page.locator('[data-account-api=deepseek] .agent-status-balance-coins i').count(),12);
+    assert.equal(await page.locator('[data-account-api=large] .agent-status-balance-coins i').count(),24);
     assert.equal(await page.locator('[data-account-api="a_very_long_api_account_name"] [data-account-details]').count(),0);
     await page.evaluate(()=>{data.accounts[3].rate_limits[0].stale=true;refreshAccountQuotaWindows();});
     assert.deepEqual(await page.locator('[data-account-limit-account="kimi-code"] .agent-status-limit-meta').allTextContents(),['75%*','58%']);
@@ -53,7 +55,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
         const apis=[...document.querySelectorAll('[data-account-api]')];
         if(innerWidth>1082 && Math.abs(box(apis[0].querySelector('[data-account-details]')).left-box(document.querySelector('[data-account-limit-account] [data-account-details]')).left)>1) issues.push('API and subscription actions not aligned');
         if(box(apis[1]).top<=box(apis[0]).top) issues.push('APIs not single column');
-        for(const row of [...apis,...document.querySelectorAll('.agent-status-account-window')]) {
+        for(const row of [...apis,...document.querySelectorAll('.agent-status-account-window, .agent-status-account-balance, .agent-status-balance-visual')]) {
           const children=[...row.children], bounds=box(row);
           for(let i=0;i<children.length;i++) {
             const a=box(children[i]);
@@ -65,6 +67,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       });
       assert.deepEqual(problems,[],width+'px');
     }
-    console.log('Subscription summaries unchanged; API and subscription rows aligned, no coins; six widths pass');
+    if (process.env.PORTAL_LAYOUT_SCREENSHOT) { await page.setViewportSize({width:1440,height:650}); await page.screenshot({path:process.env.PORTAL_LAYOUT_SCREENSHOT}); }
+    console.log('Subscription summaries unchanged; API and subscription rows aligned, bounded coins; six widths pass');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

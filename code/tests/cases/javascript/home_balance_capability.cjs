@@ -26,5 +26,20 @@ try {
   assert.match(render({reason: 'invalid_response'}).firstChild.title, /余额返回格式无法识别/);
   assert.match(render({status: 'unavailable', reason: 'unsupported_endpoint', display: '12 CNY', stale: true}).textContent, /12 CNY\*/);
   assert.match(render({status: 'ok', display: '0 CNY', amount: 0}).textContent, /0 CNY/);
-  console.log('Billing capability, failed reads and actual zero remain distinct');
+  const cny = amount => ({status:'ok',display:`${amount} CNY`,currency:'CNY',comparison_amount:amount,comparison_currency:'CNY'});
+  for (const [amount,count] of [[0,0],[-10,0],[4,0],[5,1],[10,1],[80.38,8],[125,13],[100000,24]]) {
+    const el=render(cny(amount));
+    assert.equal(el.querySelectorAll('.agent-status-balance-coins i').length,count);
+    assert.equal(el.querySelector('.agent-status-balance-value').textContent,`${amount} CNY`);
+  }
+  assert.equal(render(cny(100000)).querySelector('.agent-status-coins-more').textContent,'+9976');
+  const dollars={...cny(70),display:'10 USD',currency:'USD',exchange_rate_date:'2026-10-31'};
+  assert.equal(render(dollars).querySelectorAll('.agent-status-balance-coins i').length,7);
+  assert.match(render(dollars).querySelector('[data-account-balance]').title,/70.00 CNY.*2026-10-31/);
+  assert.equal(render({...dollars,comparison_amount:undefined}).querySelector('.agent-status-balance-coins'),null);
+  assert.equal(render({...cny(50),metric_kind:'availability'}).querySelector('.agent-status-balance-coins'),null);
+  for(const stale of [{stale:true,status:'unavailable'}, {comparison_stale:true}]) {
+    assert(render({...cny(50),...stale}).querySelector('.agent-status-balance-visual.is-stale'));
+  }
+  console.log('Coins use rounded CNY / 10; missing balances and FX are not fabricated, stale values stay marked');
 } finally { dom.window.close(); }

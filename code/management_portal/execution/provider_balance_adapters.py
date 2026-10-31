@@ -15,7 +15,7 @@ def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 BILLING = {
-    "deepseek": ("balance", "https://platform.deepseek.com/usage"),
+    "deepseek": ("balance", "https://platform.deepseek.com/top_up"),
     "moonshot": ("balance", "https://platform.moonshot.cn/console/account"),
     "openrouter": ("balance", "https://openrouter.ai/settings/credits"),
     "google": ("availability", "https://aistudio.google.com/usage?tab=billing"),
