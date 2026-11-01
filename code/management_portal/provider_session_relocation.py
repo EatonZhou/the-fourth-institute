@@ -3,7 +3,8 @@
 Providers keep some session state keyed by the directory a session works in:
 Codex trust entries in each account's ``config.toml``, Claude Code's per-directory
 project folder under each account's ``projects/``, and Kimi's workspace and
-session records in the instance's Kimi home. When Portal moves directories (a
+session records in the instance's Kimi home, plus OpenCode's native SQLite
+directory metadata. When Portal moves directories (a
 Project rename, a Lineage folder move, moving an area, relocating an instance),
 ``relocate_provider_sessions`` moves this state from the old path prefix to the
 new one so Residents continue in their existing sessions.
@@ -17,7 +18,9 @@ import json
 import logging
 import os
 import re
+import sqlite3
 import unicodedata
+from contextlib import closing
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -247,6 +250,65 @@ def _relocate_dsh(prefix: _Prefix, apply: bool, result: dict) -> None:
             _rewrite_file(config, prefix, apply, result)
 
 
+def _relocate_opencode(prefix: _Prefix, apply: bool, result: dict) -> None:
+    """Keep native session identity/history while moving its directory metadata."""
+    from management_common.portal_paths import path as portal_path
+    state = portal_path('provider-state') / 'opencode'
+    for folder in sorted(state.glob('opencode-*')):
+        if folder.is_symlink() or not folder.is_dir():
+            continue
+        database = folder / 'opencode.db'
+        if database.is_symlink() or not database.is_file():
+            continue
+        changed = False
+        try:
+            # The owning instance has stopped its Provider processes before this call.
+            # Open read-only for previews, and never create a missing database.
+            with closing(sqlite3.connect(database.as_uri() + ('?mode=rw' if apply else '?mode=ro'), uri=True)) as connection, connection:
+                for table, fields in (
+                    ('session', ('directory', 'path')),
+                    ('project', ('worktree', 'sandboxes')),
+                    ('workspace', ('directory',)),
+                    ('project_directory', ('directory',)),
+                ):
+                    columns = {row[1] for row in connection.execute(f'PRAGMA table_info("{table}")')}
+                    for column in fields:
+                        if column not in columns:
+                            continue
+                        for rowid, value in connection.execute(f'SELECT rowid, "{column}" FROM "{table}"').fetchall():
+                            if not isinstance(value, str):
+                                continue
+                            if column == 'sandboxes':
+                                paths = json.loads(value)
+                                if not isinstance(paths, list):
+                                    raise ValueError('OpenCode project sandboxes must be a path list')
+                                mapped = [prefix.map(p) if isinstance(p, str) and prefix.under(p) else p for p in paths]
+                                after = json.dumps(mapped, ensure_ascii=False) if mapped != paths else value
+                            elif column == 'path' and not value.startswith('/'):
+                                after = prefix.map('/' + value).lstrip('/') if prefix.under('/' + value) else value
+                            else:
+                                after = prefix.map(value) if prefix.under(value) else value
+                            if after == value:
+                                continue
+                            changed = True
+                            if apply:
+                                connection.execute(f'UPDATE "{table}" SET "{column}"=? WHERE rowid=?', (after, rowid))
+            if changed:
+                result['changed'].append(str(database))
+            launch = folder / 'launch.json'
+            if launch.is_file() and not launch.is_symlink():
+                config = json.loads(launch.read_text())
+                updated = {key: prefix.map(value) if isinstance(value, str) and prefix.under(value) else value
+                           for key, value in config.items()}
+                if updated != config:
+                    if apply:
+                        from management_common.configuration_files import atomic_json
+                        atomic_json(launch, updated)
+                    result['changed'].append(str(launch))
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            result['errors'].append({'path': str(database), 'error': str(exc) or type(exc).__name__})
+
+
 def relocate_provider_sessions(old_prefix: str | os.PathLike, new_prefix: str | os.PathLike,
                                *, apply: bool = True) -> dict[str, Any]:
     """Move Provider session state of directories under ``old_prefix`` to ``new_prefix``.
@@ -296,4 +358,5 @@ def relocate_provider_sessions(old_prefix: str | os.PathLike, new_prefix: str | 
                             *home.glob("sessions/*/*/state.json")}):
             _rewrite_file(path, prefix, apply, result)
     _relocate_dsh(prefix, apply, result)
+    _relocate_opencode(prefix, apply, result)
     return result
