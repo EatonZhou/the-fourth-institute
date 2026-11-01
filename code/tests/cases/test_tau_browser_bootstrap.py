@@ -445,6 +445,26 @@ def test_the_bootstrap_waits_for_one_message_by_its_own_input_state(tmp_path, po
     assert 'resident_111111111111' not in text and 'msg_a' not in text
 
 
+def test_template_account_preflight_checks_steward_before_apply(tmp_path, portal):
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "const assert=require('node:assert/strict');"
+        "await p.page.setContent('<div role=dialog aria-label=Apply>' +"
+        "['Router','Steward'].map((role,i)=>'<fieldset><legend>'+role+'</legend>'"
+        "+'<label>Provider<select><option>'+ (i?'claude':'codex')+'</option></select></label>'"
+        "+'<label>Account<select><option>'+ (i?'one':'two')+'</option></select></label></fieldset>').join('')"
+        "+'<button>Apply</button></div>');"
+        "const dialog=p.page.getByRole('dialog',{name:'Apply'});let applied=0;"
+        "const preflight=async()=>{await p.preflightResidentRoleAccounts(dialog,{provider:'codex',account:'two'});return true;};"
+        "await assert.rejects(p.action('apply-template',async()=>{applied++;},{preflight,ready:async()=>true}),"
+        "{code:'tau.resident_role_account_mismatch'});assert.equal(applied,0);"
+        "await dialog.getByRole('group',{name:'Steward'}).evaluate(e=>{"
+        "e.querySelectorAll('option')[0].value='codex';e.querySelectorAll('option')[1].value='two';});"
+        "await p.action('apply-template',async()=>{applied++;},{preflight,ready:async()=>true});"
+        "assert.equal(applied,1);"
+    ))
+    assert result.returncode == 0, result.stderr
+
+
 def test_region_wait_follows_replaced_dom_and_requires_settled_attribute(tmp_path, portal):
     result = _open(tmp_path, portal, 'test-actor', body=(
         "const assert=require('node:assert/strict');"

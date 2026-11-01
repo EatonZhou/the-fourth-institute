@@ -55,6 +55,8 @@ Program/Trigger Path 的完成独立于某个 Resident 输入完成。共享 `po
 
 网络报告的 failure_kind 按原浏览器错误区分 aborted、connection_refused、其他网络失败和未给出错误；保留旧字段 unknown_count 的含义为“没有取消证明”，并不表示这些请求全是未知取消。unproven_abort_count 才是 ERR_ABORTED 且缺少证明的数量。连接拒绝独立保留，不能为它补造取消证明或仅凭时间邻近判定由某次部署引起；分类本身不豁免网络门禁，verdict 仍须依据完整用例事实。
 
+Campaign 明确只允许某个 Codex 账号时，Family 创建前必须配置全部新建角色，包括 Router、Steward 和嵌套 Family 的内部角色；不能只配置 Router。创建本身会发结构通知并启动 Steward，不能等首次用户消息前才核对。逐组选择 Provider=codex 和本轮指定账号、标准速度，Apply 的 preflight 必须调用 `await portal.preflightResidentRoleAccounts(dialog, {provider:'codex', account:本轮账号routeID, providerLabel:'Provider', accountLabel:实际账号字段名})` 并保存返回值后 return true；工具只读枚举整个对话框的角色组，任何默认/其他账号都会阻止首次 Apply。若某角色没有可用的创建前设置，报告前置阻塞，不能先让它使用默认账号再迁移。仅用指定账号的临时 Family 还应关闭 auto_migrate，优先使用创建参数，否则通过已授权的正式配置入口关闭并读回；不允许额度不足自动选择备用账号。它不修改全局默认、模板默认或独立 API 模型；不涉及账号约束的普通 Campaign 不使用该强制前置。只核“当前 Codex 成员”不够，因为原生 Claude Steward 可自动切换到另一个 Codex 账号。
+
 等待已观察到 aria-busy 契约的区域，可在原 ready 中调用 `await portal.waitForRegionReady(regionLocator)`：它每次重新解析 Locator，等待唯一可见且 busy=false 的当前节点。返回只证明读取已结算，仍须核目标身份、无错误及预期内容。不要将 `await locator.elementHandle()` 传给长时间 waitForFunction；刷新、改名或菜单重建会替换节点，旧 ElementHandle 可永久停留 busy=true，即使当前页面已经完成。Locator 也应使用稳定范围或新的预期名称，不沿用被改掉的旧名称。
 
 Family 成员表的 region aria-busy 覆盖成员与运行设置的读取；表格和身份已出现仍可能正在读取 Backend/账号/模型，等待 busy=false 后核对实际配置和明确错误，不能以表格出现为 ready。周额度 Unknown 只表示没有有效额度观测，与运行设置未加载分开判定，不要求所有额度都变成数字。HTML select 的选项显示名与 value 可能不同；准备阶段先读取实际选项，按 label 选择后用对应 value 核验。正式 ISA 写入前读取当前 GetInstructionSchema 并核对字段，不能把自行猜测的字段提交后再用 ready 发现它未生效；Family 成员增删应按当前 Schema，不用资源的输出结构猜写入参数。

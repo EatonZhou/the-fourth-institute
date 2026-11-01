@@ -6,7 +6,8 @@ const { createHash } = require('crypto');
 const names = new Set(['Error', 'TypeError', 'ReferenceError', 'SyntaxError', 'RangeError', 'URIError', 'EvalError', 'AggregateError', 'TimeoutError', 'AbortError']);
 const networkCodes = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EPIPE'];
 const diagnosticCodes = new Set(['tau.action_nested', 'tau.action_invalid_arguments',
-  'tau.action_preflight_unconfirmed', 'tau.action_ready_unconfirmed', 'tau.observation_ended']);
+  'tau.action_preflight_unconfirmed', 'tau.action_ready_unconfirmed', 'tau.observation_ended',
+  'tau.resident_role_account_mismatch']);
 const staticRoot = path.resolve(__dirname, '../../management_portal/static');
 const sources = new Set();
 function indexSources(dir, prefix = '/static/') {

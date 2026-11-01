@@ -333,6 +333,31 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
   }
 
+  async function preflightResidentRoleAccounts(dialog, { provider, account,
+    providerLabel = 'Provider', accountLabel = 'Account' } = {}) {
+    if (!provider || !account) throw new TypeError('Explicit campaign Provider and account are required');
+    const groups = dialog.getByRole('group'), observed = [];
+    for (let i = 0; i < await groups.count(); i++) {
+      const group = groups.nth(i), accountField = group.getByRole('combobox', {name: accountLabel, exact: true});
+      if (!await accountField.count()) continue;
+      const providerField = group.getByRole('combobox', {name: providerLabel, exact: true});
+      if (await accountField.count() !== 1 || await providerField.count() !== 1) {
+        throw Object.assign(new Error('Every created role needs an explicit account configuration'),
+          {code: 'tau.resident_role_account_mismatch'});
+      }
+      const row = {role: await group.evaluate(element => element.querySelector('legend')?.textContent || element.getAttribute('aria-label') || ''),
+        provider: await providerField.inputValue(), account: await accountField.inputValue()};
+      observed.push(row);
+      if (row.provider !== provider || row.account !== account) {
+        throw Object.assign(new Error('A created role differs from the required campaign account'),
+          {code: 'tau.resident_role_account_mismatch'});
+      }
+    }
+    if (!observed.length) throw Object.assign(new Error('No configurable Resident roles were observed'),
+      {code: 'tau.resident_role_account_mismatch'});
+    return observed;
+  }
+
   async function waitForRegionReady(region, { timeoutMs = 60_000, intervalMs = 50 } = {}) {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
@@ -422,7 +447,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
     action: (name, operation, { page: target = page, preflight, ready } = {}) => observer.action(target, name, operation, { preflight, ready }),
-    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForTriggerPath, waitForInput, waitForRegionReady, waitForRunningActivity,
+    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForTriggerPath, waitForInput, preflightResidentRoleAccounts, waitForRegionReady, waitForRunningActivity,
     sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }
 
