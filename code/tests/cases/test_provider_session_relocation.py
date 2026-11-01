@@ -100,3 +100,66 @@ def test_existing_target_folder_is_merged_without_overwriting(accounts):
 def test_relative_prefixes_are_rejected(accounts):
     with pytest.raises(ValueError):
         relocation.relocate_provider_sessions("relative/old", "/new")
+
+
+@pytest.mark.parametrize('apply', [False, True])
+def test_opencode_relocation_preserves_native_identity_and_messages(tmp_path, monkeypatch, accounts, apply):
+    """OpenCode 区域搬迁修改原生目录元数据，保留会话身份及消息正文。"""
+    import sqlite3
+    from management_common import portal_paths
+    monkeypatch.setattr(portal_paths, 'path', lambda name: tmp_path)
+    old, new = '/projects/项目', '/moved/项目'
+    folder = tmp_path / 'opencode/opencode-123'
+    folder.mkdir(parents=True)
+    database = folder / 'opencode.db'
+    with sqlite3.connect(database) as c:
+        c.executescript('''
+            CREATE TABLE session (id TEXT PRIMARY KEY, directory TEXT, path TEXT);
+            CREATE TABLE project (id TEXT PRIMARY KEY, worktree TEXT, sandboxes TEXT);
+            CREATE TABLE workspace (id TEXT PRIMARY KEY, directory TEXT);
+            CREATE TABLE project_directory (project_id TEXT, directory TEXT, PRIMARY KEY(project_id, directory));
+            CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT, data TEXT);
+        ''')
+        c.executemany('INSERT INTO session VALUES (?,?,?)', [('ses_original', old + '/work', (old + '/work').lstrip('/')),
+                                                            ('ses_other', old + '-other', None)])
+        c.execute('INSERT INTO project VALUES (?,?,?)', ('project_original', old, json.dumps([old + '/sandbox', '/other'])))
+        c.execute('INSERT INTO workspace VALUES (?,?)', ('ws_original', old + '/work'))
+        c.execute('INSERT INTO project_directory VALUES (?,?)', ('project_original', old))
+        c.execute('INSERT INTO message VALUES (?,?,?)', ('msg_original', 'ses_original', json.dumps({'text': old})))
+    launch = folder / 'launch.json'
+    launch.write_text(json.dumps({'cwd': old + '/work', 'session_id': 'opencode-123'}))
+    result = relocation.relocate_provider_sessions(old, new, apply=apply)
+    assert not result['errors'] and str(database) in result['changed']
+    expected = new if apply else old
+    with sqlite3.connect(database) as c:
+        assert c.execute('SELECT * FROM session ORDER BY id').fetchall() == [
+            ('ses_original', expected + '/work', (expected + '/work').lstrip('/')), ('ses_other', old + '-other', None)]
+        assert c.execute('SELECT * FROM message').fetchone() == ('msg_original', 'ses_original', json.dumps({'text': old}))
+        project = c.execute('SELECT * FROM project').fetchone()
+        assert project[:2] == ('project_original', expected)
+        assert json.loads(project[2]) == [expected + '/sandbox', '/other']
+        assert c.execute('SELECT directory FROM workspace').fetchone() == (expected + '/work',)
+        assert c.execute('SELECT directory FROM project_directory').fetchone() == (expected,)
+    assert json.loads(launch.read_text()) == {'cwd': expected + '/work', 'session_id': 'opencode-123'}
+    if apply:
+        assert relocation.relocate_provider_sessions(old, new)['changed'] == []
+
+
+def test_opencode_conflict_rolls_back_all_native_changes(tmp_path, monkeypatch):
+    """原生目录键冲突时整库回滚，不留下已改的会话目录。"""
+    import sqlite3
+    from management_common import portal_paths
+    monkeypatch.setattr(portal_paths, 'path', lambda name: tmp_path)
+    folder = tmp_path / 'opencode/opencode-123'
+    folder.mkdir(parents=True)
+    database = folder / 'opencode.db'
+    with sqlite3.connect(database) as c:
+        c.executescript('''CREATE TABLE session (directory TEXT);
+                           INSERT INTO session VALUES ('/old/work');
+                           CREATE TABLE project_directory (directory TEXT UNIQUE);
+                           INSERT INTO project_directory VALUES ('/old'), ('/new');''')
+    result = {'changed': [], 'errors': [], 'conflicts': []}
+    relocation._relocate_opencode(relocation._Prefix('/old', '/new'), True, result)
+    assert result['errors'] and not result['changed']
+    with sqlite3.connect(database) as c:
+        assert c.execute('SELECT directory FROM session').fetchone() == ('/old/work',)
