@@ -35,8 +35,9 @@
         let revision = 0, reading = null, unsubscribe = null, refreshPending = false;
         const notify = () => listeners.forEach(listener => listener());
         state = {
-          policy: null, busy: false,
+          policy: null, busy: false, available: true,
           refresh() {
+            if (!state.available) return Promise.resolve();
             if (state.busy) { refreshPending = true; return Promise.resolve(); }
             if (reading) return reading;
             const started = ++revision;
@@ -59,7 +60,9 @@
             ++revision; reading = null;
             state.busy = true; notify();
             try {
-              state.policy = await window.PortalInstructionClient.execute('UpdateFamilyChatPreferences', args);
+              const saved = await window.PortalInstructionClient.execute('UpdateFamilyChatPreferences', args);
+              if (!state.available) return;
+              state.policy = saved;
               notify();
               window.PortalResidentProjection?.invalidate?.(residentId);
               await window.PortalResidentProtocol.loadSnapshot(residentId, {force: true});
@@ -81,7 +84,18 @@
         // Delay the initial read until the first mount has assigned its handle.
         queueMicrotask(() => {
           if (!listeners.size) return;
-          unsubscribe = window.PortalResidentProjection?.subscribe(residentId, () => { void state.refresh(); });
+          unsubscribe = window.PortalResidentProjection?.subscribe(residentId, update => {
+            // The owning Resident projection reports deletion/access/recovery.
+            // Do not turn an unavailable target into repeated preference reads
+            // and global error toasts; the Chat already presents its state.
+            state.available = !update?.error;
+            if (!state.available) {
+              ++revision; reading = null; refreshPending = false;
+              state.policy = null; notify();
+              return;
+            }
+            void state.refresh();
+          });
           void state.refresh();
         });
       }

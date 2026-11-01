@@ -10,7 +10,7 @@ const deferred = () => { let resolve, reject; const promise = new Promise((a, b)
 const empty = () => ({muted_member_ids: [], solo_member_id: ''});
 let policy = empty(), save, snapshot, delayedRead;
 const watchers = new Set(), errors = [];
-let writes = 0;
+let writes = 0, reads = 0;
 w.PortalUI = {toast: error => errors.push(error)};
 w.PortalResidentProjection = {
   subscribe: (_, fn) => { watchers.add(fn); queueMicrotask(() => fn({detail: {}})); return () => watchers.delete(fn); },
@@ -18,7 +18,7 @@ w.PortalResidentProjection = {
 };
 w.PortalInstructionClient = {execute: async (name, args) => {
   if (name === 'GetLineage') return {lineage: {function_blocks: [{id: 'family', family: {facade: 'facade', members: ['member']}}]}};
-  if (name === 'GetFamilyChatPreferences') return delayedRead ? delayedRead.promise : structuredClone(policy);
+  if (name === 'GetFamilyChatPreferences') { reads++; return delayedRead ? delayedRead.promise : structuredClone(policy); }
   assert.equal(name, 'UpdateFamilyChatPreferences'); writes++;
   await save.promise;
   policy = {muted_member_ids: [], solo_member_id: args.enabled ? args.member_id : ''};
@@ -66,6 +66,28 @@ const button = host => host.querySelector('[data-family-mix="solo"]');
   policy = {muted_member_ids: [], solo_member_id: 'member'};
   w.PortalResidentProjection.invalidate(); await tick();
   assert.equal(button(root).getAttribute('aria-pressed'), 'true');
+  // Unfamilize removes the facade while mounted reply controls may still
+  // receive old conversation snapshots. The projection owns availability.
+  delayedRead = deferred(); w.PortalResidentProjection.invalidate(); await tick();
+  const beforeUnavailable = reads, errorCount = errors.length;
+  for (const fn of watchers) fn({error: Object.assign(new Error('resident not found'), {status:404})});
+  delayedRead.reject(Object.assign(new Error('resident not found'), {status:404}));
+  delayedRead = null;
+  reply.update({...family(), chat_preferences:null});
+  for (const fn of watchers) fn({error: Object.assign(new Error('Resident has been deleted'), {code:'resident.deleted'})});
+  await tick();
+  assert.equal(reads, beforeUnavailable, 'unavailable projection must not dispatch more preference reads');
+  assert.equal(errors.length, errorCount, 'late reads must not toast over the unavailable Chat');
+  assert.equal(own.hidden, true);
+  // A recovered projection (for example after a transient read failure) can
+  // restore the controls; an HTTP error alone is not a permanent tombstone.
+  w.PortalResidentProjection.invalidate(); await tick();
+  assert.equal(own.hidden, false);
+  assert.equal(reads, beforeUnavailable + 1);
+  save = deferred(); snapshot = deferred(); original.click(); await tick();
+  for (const fn of watchers) fn({error: Object.assign(new Error('Resident has been deleted'), {code:'resident.deleted'})});
+  save.resolve(); await tick();
+  assert.equal(own.hidden, true, 'late preference save cannot revive a deleted facade');
   reply.destroy(); member.destroy(); assert.equal(watchers.size, 0);
   dom.window.close(); console.log('PASS: stable M/S nodes, shared saves, stale reads, rollback, external refresh, cleanup');
 })().catch(error => { console.error(error); dom.window.close(); process.exitCode = 1; });
