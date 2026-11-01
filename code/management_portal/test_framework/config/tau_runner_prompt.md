@@ -5,8 +5,8 @@
 const checkPersistedView = async page => {
   // expectedRegion/expectedText/refreshButton 来自本轮页面实际枚举。
   const matches = expectedRegion.getByText(expectedText, {exact:true});
-  if (await matches.count() !== 1) throw new Error('Ready locator is not unique');
   await matches.waitFor({state:'visible'});
+  if (await matches.count() !== 1) throw new Error('Ready locator is not unique');
   return true;
 };
 await portal.action('first-refresh', async page => {
@@ -17,6 +17,8 @@ await portal.action('first-refresh', async page => {
 }, {preflight: checkPersistedView, ready: checkPersistedView});
 ```
 预检失败还没有发生第一次刷新；只读修正后可以继续原定首次点击。operation 已提交且 ready 失败则保留原失败，不能重放或回填。其他业务步骤继续完成。前往资源地址会改变当前面板：之后先读新页面快照、显示相应面板，再定位其中的旧对象，不能假定导航前 HATG、Chat、菜单仍可见。
+
+ready 必须等待异步挂载和加载完成后再断言：刷新或导航后的 count() 可能暂时为 0，菜单值可能仍是 Reading；先用唯一目标 locator.waitFor 或有界的只读轮询等待可见及实际值，再核对身份/正文。不要在等待之前把一次 count()=0、isVisible()=false 或旧投影值直接抛成失败。多目标歧义、错误身份、明确业务拒绝仍如实报告；不得用 first()、重发或事后回填消除错误。预检验证同一定位与条件，不意味着刷新后无需等待。
 
 不要把准备步骤的失败扩大成尚未发生的业务动作失败。每个阶段明确保留“尚未提交 / 已提交、观察中 / 终态”；只有已经实际发生的首次动作才存在不能重放的首次样本。尚未点过刷新就继续只读修正定位，完成原定首次刷新后再进入删除；已经接纳的输入或写操作始终沿原身份观察。点击前除 role/name 之外读取该实际控件的 aria-description、aria-haspopup 和可见提示，分清直接执行与打开菜单/对话框；不能仅因名字有 Fork 就假定第一次点击只打开表单。这样取得的实际界面证据属于第一阶段，不必读源码。
 

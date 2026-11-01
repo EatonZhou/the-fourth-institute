@@ -137,6 +137,28 @@ def _open(tmp_path: Path, origin: str, user: str, body: str = "") -> subprocess.
     return subprocess.run(["node", "-e", script], cwd=evidence, capture_output=True, text=True, timeout=120)
 
 
+def test_prompt_first_refresh_waits_for_the_original_view_to_remount(tmp_path, portal):
+    """Execute the published readiness example against an asynchronously refreshed view."""
+    prompt = (ROOT / 'management_portal/test_framework/config/tau_runner_prompt.md').read_text()
+    example = prompt.split('```javascript\n', 1)[1].split('```', 1)[0]
+    result = _open(tmp_path, portal, 'test-actor',
+        "const portal=p; const page=p.page;"
+        "await page.setContent('<button>Refresh</button><section role=region aria-label=Fixture><span>Persisted</span></section>');"
+        "await page.evaluate(()=>{window.clicks=0;document.querySelector('button').onclick=()=>{"
+        " window.clicks++; const region=document.querySelector('section'); region.innerHTML='';"
+        " setTimeout(()=>{region.innerHTML='<span>Persisted</span>';},200); };});"
+        "const expectedRegion=page.getByRole('region',{name:'Fixture'}), expectedText='Persisted';"
+        "const refreshButton=page.getByRole('button',{name:'Refresh'});"
+        "const waitForOriginalResponse=()=>Promise.resolve({original:true});"
+        + example +
+        "if(await page.evaluate(()=>window.clicks)!==1)throw Error('repeated refresh');")
+    assert result.returncode == 0, result.stderr
+    rows = [json.loads(line) for line in (tmp_path / 'evidence/tau-browser-observations.jsonl').read_text().splitlines()]
+    ends = [row for row in rows if row['kind'] == 'action_finished']
+    assert len(ends) == 1 and ends[0]['status'] == 'completed'
+    assert ends[0]['duration_ms'] >= 200
+
+
 def test_instruction_has_an_explicit_finite_budget_and_never_replays_transport_timeouts(tmp_path, portal):
     result = _open(tmp_path, portal, 'test-actor',
         "const post = p.context.request.post.bind(p.context.request);"
