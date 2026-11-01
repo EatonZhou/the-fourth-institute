@@ -15,6 +15,69 @@ def open_scope(root):
     return LifecycleStore().open(str(root.resolve()), actor='test-actor', run_id=root.name, case_id='case')
 
 
+@pytest.mark.parametrize('mode', ['finite', 'stream', 'foreign', 'closed', 'ordinary'])
+def test_asgi_instruction_carries_lifecycle_to_owner_thread(tmp_path, monkeypatch, mode):
+    """真实 ASGI 入口跨线程传递用例归属，owner 拒绝越权与迟到请求，普通调用不被接管。"""
+    import asyncio
+    import json
+    from management_portal import asgi
+    from management_portal.hatg import routing
+    from management_portal.hatg.contracts import InstructionResult, failed_result, normalize_error
+    from tests.cases.test_portal_asgi import _request, _response_body
+
+    store = LifecycleStore()
+    scope = open_scope(tmp_path)
+    if mode == 'closed':
+        store.seal(scope)
+    monkeypatch.setattr(asgi, '_instruction_principal', lambda _request: (
+        'unrelated' if mode == 'foreign' else 'test-actor', 'web'))
+    monkeypatch.setattr(asgi, '_same_origin', lambda _request: True)
+    monkeypatch.setattr(routing, 'declaration_for', lambda _name: SimpleNamespace(streaming=mode == 'stream'))
+    created = []
+
+    def allocate(context):
+        # The same boundary used by local and remote kernels, on the actual
+        # executor thread rather than the request's asyncio context.
+        with InstructionKernel._identity_scope(InstructionContext.from_payload(context.to_payload())):
+            created.append(get_resource_type_registry().new_id('workspace'))
+            return {'resource_id': created[-1], 'scope_id': current_lifecycle()}
+
+    def execute(call, context):
+        try:
+            return InstructionResult('inst_web_test', call.instruction, 'committed', result=allocate(context))
+        except Exception as exc:
+            return failed_result('inst_web_test', call.instruction, normalize_error(exc))
+
+    def stream(call, context, **_options):
+        yield [allocate(context)]
+
+    monkeypatch.setattr(routing, 'execute', execute)
+    monkeypatch.setattr(routing, 'stream', stream)
+
+    async def request():
+        app = SimpleNamespace(state=SimpleNamespace())
+        response = await asgi.instruction_execute(_request(
+            '/api/instructions/execute', method='POST', app=app,
+            body=json.dumps({'instruction': 'CreateUpload', 'arguments': {}}).encode(),
+            headers={} if mode == 'ordinary' else {'X-Portal-Resource-Lifecycle': scope},
+        ))
+        if mode == 'stream':
+            assert scope.encode() in await _response_body(response)
+        elif mode in {'foreign', 'closed'}:
+            assert response.status_code != 200
+        else:
+            assert response.status_code == 200
+
+    asyncio.run(request())
+    if mode in {'foreign', 'closed'}:
+        assert created == []
+        assert store.pending(scope) == []
+    else:
+        assert len(created) == 1
+        assert store.pending(scope) == ([] if mode == 'ordinary' else created)
+    assert current_lifecycle() == ''
+
+
 def test_workspaces_are_tracked_and_retired_after_their_resident(tmp_path, monkeypatch):
     """额外 Workspace 自动跟踪，Resident 先退役，已有 Workspace 不被接管"""
     store = LifecycleStore()

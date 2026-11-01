@@ -440,7 +440,10 @@ async def instruction_execute(request: Request):
         call = InstructionCall.from_payload(payload)
         from management_common.principal import actor_principal
         execution_id = _execution_id(request, entry) if actor_principal(caller).kind == "resident" else ""
-        context = InstructionContext(caller=caller, entry=entry, execution_id=execution_id)
+        context = InstructionContext(
+            caller=caller, entry=entry, execution_id=execution_id,
+            resource_lifecycle_id=request.headers.get("X-Portal-Resource-Lifecycle", ""),
+        )
         declaration = routing.declaration_for(call.instruction)
     except InstructionError as exc:
         name = str(payload.get("instruction") or "") if isinstance(payload, dict) else ""
