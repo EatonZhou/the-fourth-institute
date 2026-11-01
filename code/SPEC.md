@@ -68,6 +68,7 @@
 - [Family：把多个 Resident 组合为对外一个 Resident](/r/decision_44cf587c1721)
 - [Family 消息路由与对外对话（含个人 Mute／Solo 与界面入口）](/r/decision_9ad68dd077d4)
 - [Resident Conversation、Input 与运行控制协议（含异步受理及后台媒体清理）](/r/decision_c524c775e0be)
+- [输入的生命周期与状态](/r/decision_60aea3e0d452)
 - [Mailbox：Resident 和 User 的收件](/r/decision_15f7df737ed5)
 - [Chatroom：用户聊天室与 @ Resident 投递](/r/decision_a6bebf4ac283)
 - [Telepus 外部消息、联系人映射与 Resident 投递](/r/decision_692a484e9bea)
