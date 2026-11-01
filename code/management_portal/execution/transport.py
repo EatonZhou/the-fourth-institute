@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from management_common.service_socket import SERVICE_RESTART_WAIT_SECONDS, connect_service
+from management_common.operation_errors import OperationError
 
 from .config import execution_service_socket
 
@@ -15,8 +16,11 @@ DEFAULT_REQUEST_TIMEOUT_SECONDS = 90.0
 CONTROL_REQUEST_TIMEOUT_SECONDS = 15.0
 
 
-class ExecutionServiceUnavailable(RuntimeError):
-    pass
+class ExecutionServiceUnavailable(OperationError):
+    """ExecutionService cannot accept an RPC request at its configured endpoint."""
+
+    code = "execution.unavailable"
+    http_status = 503
 
 
 class ExecutionResponseUnknown(RuntimeError):

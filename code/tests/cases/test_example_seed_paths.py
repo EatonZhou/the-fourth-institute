@@ -23,13 +23,14 @@ from prepare_install import inventory
 
 class ExamplePaths(unittest.TestCase):
     def test_public_seed_bootstraps_current_lineage_schema(self):
-        """Both installer choices must satisfy Society's real startup contract."""
+        """Both installer choices must satisfy the domain startup contracts."""
         import psycopg
         from psycopg.rows import dict_row
         from tests.cases.postgres_test_database import start_disposable_cluster
         from management_portal.society_service.state_store import (
             LINEAGE_DATA_SCHEMA, lineage_data_schema_matches,
         )
+        from management_portal.resources.registry_store import _TABLES as registry_tables
         from scripts.tfi_seed_selection import plan
         from scripts.tfi_release_install import map_directories
 
@@ -53,6 +54,11 @@ class ExamplePaths(unittest.TestCase):
                         "SELECT value FROM lineage_meta WHERE key='schema'"
                     ).fetchone()['value'], LINEAGE_DATA_SCHEMA)
                     self.assertTrue(lineage_data_schema_matches(connection))
+                    actual_registry_tables = {row['table_name'] for row in connection.execute(
+                        "SELECT table_name FROM information_schema.tables "
+                        "WHERE table_schema='resource_registry'"
+                    ).fetchall()}
+                    self.assertEqual(actual_registry_tables, registry_tables)
                     connection.rollback()
 
     def test_seed_metadata_initializes_only_storage_schema(self):
@@ -122,6 +128,8 @@ class ExamplePaths(unittest.TestCase):
             elif table == ("resource_registry", "registry_documents") and row["collection"] in {"repo", "article"}:
                 document = row["document_json"]
                 located.append(document.get("canonical_checkout") or document["canonical_root"])
+            elif table == ("resource_registry", "registry_documents") and row["collection"] == 'project_registry':
+                located.extend(project['path'] for project in row['document_json']['projects'])
         self.assertTrue(located)
         for reference in located:
             if reference == "${code_root}":

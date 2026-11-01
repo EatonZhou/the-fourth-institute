@@ -1745,10 +1745,10 @@ CREATE SEQUENCE resource_registry.registry_revision_seq
 
 
 --
--- Name: retired_identities; Type: TABLE; Schema: resource_registry; Owner: -
+-- Name: deleted_identities; Type: TABLE; Schema: resource_registry; Owner: -
 --
 
-CREATE TABLE resource_registry.retired_identities (
+CREATE TABLE resource_registry.deleted_identities (
     resource_id text NOT NULL
 );
 
@@ -16091,7 +16091,7 @@ INSERT INTO "resource_registry"."registry_documents" ("collection","document_id"
 
 INSERT INTO "resource_registry"."registry_documents" ("collection","document_id","revision","document_json") VALUES ('domain_live_sources','resident_33af539c4a17',9522220,'{"attributes":{"backend":"codex","created_by":"resident_5e2304eac184","personal_owner_id":"","principal_hierarchy":{"category":"lineage_member","level":"resident","scope_ids":["元胞自动机研究"]}},"created_at":"2026-10-15T15:33:33Z","deleted_at":"","project_ids":["元胞自动机研究"],"relations":[{"kind":"lineage","target_id":"lineage_75e3399f4877"},{"kind":"workspace","target_id":"workspace_0656e99ec344"},{"kind":"workspace","target_id":"workspace_1f42a07e78bd"},{"kind":"workspace","target_id":"workspace_3b7b890d41a7"}],"resource_id":"resident_33af539c4a17","schema":"tfi.collaboration-descriptor.v2","status":"active","summary":"","title":"研究点拓展 · 新问题与思想分支","updated_at":"2026-10-15T15:33:33Z"}');
 
-INSERT INTO "resource_registry"."registry_documents" ("collection","document_id","revision","document_json") VALUES ('project_registry','projects',9540208,'{"projects":[{"ddl":"2026-08-30 23:59:59","description":"公司AI员工开发与管理","id":"AI员工","path":"/Projects/AI员工","status":"active","tags":["meta","workflow"]},{"created_by":"resident_5e2304eac184","ddl":"","description":"研究变化的环境如何塑造 Lenia 人工生命的经验学习与适应性演化；探索新的局部学习机制、身体记忆和环境时间尺度，并以可调参数动画呈现真实实验。","id":"元胞自动机研究","path":"/Projects/元胞自动机研究","project_type":"academic","status":"active","tags":["人工生命","元胞自动机","Lenia","自主科研"]}],"schema_version":1,"status_vocab":["not_started","active","paused","done","archived"],"tag_vocab":[{"description":"待办/待处理事项（可在日终统一汇总）","folder":"todo","id":"todo"},{"description":"会议/讨论（包含参与人与时间）","folder":"meeting","id":"meeting"},{"description":"技能/方法（可复用的能力片段：目标、输入/输出、关键步骤）","folder":"skill","id":"skill"},{"description":"问题/困惑（需要查证、求助或后续思考）","folder":"question","id":"question"},{"description":"想法（可直接进入知识库或写作素材）","folder":"idea","id":"idea"},{"description":"洞见/顿悟（可直接进入知识库或写作素材）","folder":"insight","id":"insight"},{"description":"决策（记录取舍与理由，减少反复）","folder":"decision","id":"decision"},{"description":"规划/方案（考虑未来实现的方案）","folder":"plan","id":"plan"},{"description":"实验/尝试（包含结果与观察）","folder":"experiment","id":"experiment"},{"description":"审阅/复核（记录检查意见、批注、审计结论与需要回看的内容）","folder":"review","id":"review"},{"description":"思考/推理（记录复杂的逻辑、假设或解决方案）","folder":"thinking","id":"thinking"},{"description":"风险/隐患（提前暴露，避免遗忘）","folder":"risk","id":"risk"},{"description":"概念（记录本项目定义的概念/术语/约定）","folder":"concept","id":"concept"},{"description":"信息（收集到的与项目相关的信息/资料/链接等）","folder":"information","id":"information"},{"description":"专利相关事项（记录申请、申请状态、到期时间等）","folder":"patent","id":"patent"},{"description":"做的PPT文件视频等多媒体文件","folder":"material","id":"material"}]}');
+INSERT INTO "resource_registry"."registry_documents" ("collection","document_id","revision","document_json") VALUES ('project_registry','projects',9540208,'{"projects":[{"ddl":"2026-08-30 23:59:59","description":"公司AI员工开发与管理","id":"AI员工","path":"projects:AI员工","status":"active","tags":["meta","workflow"]},{"created_by":"resident_5e2304eac184","ddl":"","description":"研究变化的环境如何塑造 Lenia 人工生命的经验学习与适应性演化；探索新的局部学习机制、身体记忆和环境时间尺度，并以可调参数动画呈现真实实验。","id":"元胞自动机研究","path":"projects:元胞自动机研究","project_type":"academic","status":"active","tags":["人工生命","元胞自动机","Lenia","自主科研"]}],"schema_version":1,"status_vocab":["not_started","active","paused","done","archived"],"tag_vocab":[{"description":"待办/待处理事项（可在日终统一汇总）","folder":"todo","id":"todo"},{"description":"会议/讨论（包含参与人与时间）","folder":"meeting","id":"meeting"},{"description":"技能/方法（可复用的能力片段：目标、输入/输出、关键步骤）","folder":"skill","id":"skill"},{"description":"问题/困惑（需要查证、求助或后续思考）","folder":"question","id":"question"},{"description":"想法（可直接进入知识库或写作素材）","folder":"idea","id":"idea"},{"description":"洞见/顿悟（可直接进入知识库或写作素材）","folder":"insight","id":"insight"},{"description":"决策（记录取舍与理由，减少反复）","folder":"decision","id":"decision"},{"description":"规划/方案（考虑未来实现的方案）","folder":"plan","id":"plan"},{"description":"实验/尝试（包含结果与观察）","folder":"experiment","id":"experiment"},{"description":"审阅/复核（记录检查意见、批注、审计结论与需要回看的内容）","folder":"review","id":"review"},{"description":"思考/推理（记录复杂的逻辑、假设或解决方案）","folder":"thinking","id":"thinking"},{"description":"风险/隐患（提前暴露，避免遗忘）","folder":"risk","id":"risk"},{"description":"概念（记录本项目定义的概念/术语/约定）","folder":"concept","id":"concept"},{"description":"信息（收集到的与项目相关的信息/资料/链接等）","folder":"information","id":"information"},{"description":"专利相关事项（记录申请、申请状态、到期时间等）","folder":"patent","id":"patent"},{"description":"做的PPT文件视频等多媒体文件","folder":"material","id":"material"}]}');
 
 INSERT INTO "resource_registry"."registry_documents" ("collection","document_id","revision","document_json") VALUES ('domain_live_sources','lineage_9b778b82974f',9701531,'{"attributes":{"created_by":"tfi-exported-user","kind":"","leader_resident_id":"resident_03eb8a8bda0b","lineage_membership":"formal"},"created_at":"2026-09-09T02:08:45Z","deleted_at":"","project_ids":["AI员工"],"relations":[],"resource_id":"lineage_9b778b82974f","schema":"tfi.collaboration-descriptor.v2","status":"active","summary":"Workbenches 中由普通 Lineage 提供的 AI 页面生成模块","title":"投影工坊","updated_at":"2026-10-20T00:32:52Z"}');
 
@@ -18155,11 +18155,11 @@ ALTER TABLE ONLY resource_registry.registry_meta
 
 
 --
--- Name: retired_identities retired_identities_pkey; Type: CONSTRAINT; Schema: resource_registry; Owner: -
+-- Name: deleted_identities deleted_identities_pkey; Type: CONSTRAINT; Schema: resource_registry; Owner: -
 --
 
-ALTER TABLE ONLY resource_registry.retired_identities
-    ADD CONSTRAINT retired_identities_pkey PRIMARY KEY (resource_id);
+ALTER TABLE ONLY resource_registry.deleted_identities
+    ADD CONSTRAINT deleted_identities_pkey PRIMARY KEY (resource_id);
 
 
 --

@@ -4,6 +4,24 @@ from management_common.operation_errors import OperationError
 from management_portal.http_errors import exception_http_error, normalize_json_error
 
 
+def test_execution_service_unavailable_has_dependency_error_contract() -> None:
+    from management_portal.execution.transport import ExecutionServiceUnavailable
+
+    status, payload = exception_http_error(ExecutionServiceUnavailable("ExecutionService unavailable"))
+    assert status == 503
+    assert payload['code'] == 'execution.unavailable'
+    assert payload['commit_state'] == 'unknown'
+    assert payload['retryable'] is False
+
+
+def test_execution_response_loss_does_not_claim_safe_retry() -> None:
+    from management_portal.execution.transport import ExecutionResponseUnknown
+
+    status, payload = exception_http_error(ExecutionResponseUnknown("request accepted, response lost"))
+    assert payload['commit_state'] == 'unknown'
+    assert payload['retryable'] is False
+
+
 def test_http_error_envelope_preserves_public_message_and_explicit_receipt() -> None:
     """HTTP 错误信封保留公开错误信息以及显式给出的错误码和提交状态"""
     assert normalize_json_error(403, {"error": "access denied"}) == {
