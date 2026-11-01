@@ -164,10 +164,11 @@ def install(args: argparse.Namespace) -> int:
         report("正在准备浏览器自动化工具与 Chromium，首次需要下载")
         npm = shutil.which("npm") or "npm"
         node = shutil.which("node") or "node"
-        run([npm, "install", "--package-lock=false", "--no-audit", "--no-fund"], cwd=TAU_PACKAGE,
+        run([npm, "ci", "--ignore-scripts", "--no-audit", "--no-fund"], cwd=TAU_PACKAGE,
             dry_run=args.dry_run)
         run([node, str(TAU_PACKAGE / "node_modules" / "playwright" / "cli.js"),
-             "install", "chromium"], cwd=TAU_PACKAGE, dry_run=args.dry_run)
+             "install", "chromium"], cwd=TAU_PACKAGE, dry_run=args.dry_run,
+            env={**os.environ, "PLAYWRIGHT_SKIP_BROWSER_GC": "1"})
         print("TAU browser installed; provision the test-operator storage state and restart Portal services before running a campaign.")
 
     if "provider" in profiles:
