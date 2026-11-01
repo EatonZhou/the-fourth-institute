@@ -11,6 +11,50 @@ from pathlib import Path
 from management_portal.shared_state import atomic_replace_json
 
 
+def fixture_root(root: Path) -> Path:
+    """Registrable content belongs to an area; evidence stays in runtime."""
+    from management_common.instance_locations import current_instance
+    return current_instance().area('features') / 'test-framework/fixtures' / _name(root)
+
+
+def inspect_content(root: Path) -> Path | None:
+    receipt = root / 'content-fixture.json'
+    if receipt.is_symlink():
+        raise ValueError('TAU content fixture receipt cannot be a symlink')
+    if not receipt.exists():
+        return None
+    record = json.loads(receipt.read_text())
+    path = fixture_root(root)
+    if record.get('evidence_dir') != str(root.resolve()):
+        raise ValueError('TAU content fixture belongs to another case')
+    if path.is_symlink() or path.resolve() != path:
+        raise ValueError('TAU content fixture cannot escape its area')
+    if path.exists():
+        stat = path.stat()
+        if (not path.is_dir() or stat.st_uid != os.getuid()
+                or [stat.st_dev, stat.st_ino] != record.get('identity')):
+            raise ValueError('TAU content fixture directory was replaced')
+    return path
+
+
+def prepare_content(root: Path) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    existing = inspect_content(root)
+    if existing is not None:
+        if not existing.is_dir():
+            raise ValueError('TAU content fixture was already removed')
+        return existing
+    path = fixture_root(root)
+    if path.resolve() != path:
+        raise ValueError('TAU content fixture cannot escape its area')
+    path.mkdir(parents=True, mode=0o700)
+    stat = path.stat()
+    atomic_replace_json(root / 'content-fixture.json', {
+        'evidence_dir': str(root.resolve()), 'identity': [stat.st_dev, stat.st_ino],
+    })
+    return path
+
+
 def _bases() -> list[Path]:
     return list(dict.fromkeys(Path(p).resolve() for p in (tempfile.gettempdir(), '/var/tmp', '/tmp')))
 

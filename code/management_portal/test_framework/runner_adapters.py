@@ -517,8 +517,9 @@ class _TauCaseRun:
         # first navigation).
         run_dir = self.run_dir
         run_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-        for name in ('fixtures', 'helpers'):
-            (run_dir / name).mkdir(exist_ok=True, mode=0o700)
+        (run_dir / 'helpers').mkdir(exist_ok=True, mode=0o700)
+        from management_portal.test_framework.tau_fixture_paths import prepare_content
+        fixture_dir = prepare_content(run_dir)
         context = {
             "run_id": self.run_id,
             "case_id": str(self.planned["case_id"]),
@@ -535,6 +536,7 @@ class _TauCaseRun:
             # upgrading an older context with the durable cleanup scope.
             context = {**context, **json.loads(path.read_text(encoding="utf-8")),
                        "resource_lifecycle_id": self.lifecycle_id}
+        context['fixture_dir'] = str(fixture_dir)
         standalone_reason = self.planned["implementation"].get("standalone_git_fixture", "")
         if not isinstance(standalone_reason, str):
             raise ValueError("Invalid TAU standalone_git_fixture")
@@ -648,6 +650,7 @@ class _TauCaseRun:
         )
 
     def _invoke(self) -> dict[str, Any]:
+        from management_common.instance_locations import current_instance
         adapter, planned = self.adapter, self.planned
         current_assignment = adapter.assignments.assignment(self.module)
         if self.required_account and current_assignment.get("backend_route_id") != self.required_account:
@@ -661,7 +664,7 @@ class _TauCaseRun:
             prompt=build_prompt(planned, adapter.config, self.run_dir, self.target, self.run_id, assignment=current_assignment),
             provider=adapter.config.provider,
             backend_route_id=str(current_assignment.get("backend_route_id") or ""),
-            cwd=str(ROOT),
+            cwd=str(current_instance().code_root()),
             resident_scope=self.resident_scope,
             lineage_scope=self.lineage_scope,
             title=f"Portal TAU · {planned['module']}",

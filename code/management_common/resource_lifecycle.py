@@ -84,6 +84,14 @@ class LifecycleStore:
         with self.db.read() as db:
             return [row[0] for row in db.execute("SELECT resource_id FROM allocations WHERE scope_id=%s AND NOT released ORDER BY ordinal DESC", (scope_id,)).fetchall()]
 
+    def actors(self, scope_id):
+        """Residents assigned to this operation, including its new identities."""
+        with self.db.read() as db:
+            return {row[0] for row in db.execute(
+                "SELECT actor FROM members WHERE scope_id=%s UNION "
+                "SELECT resource_id FROM allocations WHERE scope_id=%s AND resource_id LIKE 'resident_%%'",
+                (scope_id, scope_id)).fetchall()}
+
     def released(self, scope_id, resource_id):
         self.db.write(lambda db: db.execute("UPDATE allocations SET released=TRUE WHERE scope_id=%s AND resource_id=%s", (scope_id, resource_id)))
 
@@ -131,9 +139,9 @@ def lifecycle_scope(scope_id='', *, actor='', discover=False):
 
 def record_allocation(resource_id):
     scope_id = current_lifecycle()
-    # Workspaces belong to Residents and are removed by their lifecycle;
-    # notices are durable operational history, not disposable test fixtures.
-    if not scope_id or resource_id.partition('_')[0] in {'workspace', 'notice'}:
+    # Additional Workspaces survive unbinding and need explicit retirement.
+    # Notices are durable operational history, not disposable test fixtures.
+    if not scope_id or resource_id.partition('_')[0] == 'notice':
         return
     store = LifecycleStore()
     store.db.write(lambda db: db.execute(

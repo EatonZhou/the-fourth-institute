@@ -34,6 +34,28 @@ def _delete_upload(upload_id: str, key: str) -> None:
             raise
 
 
+def _release_workspace(resource_id: str, key: str, actors: set[str]) -> None:
+    """Only detach this operation's users of a Workspace it allocated."""
+    from management_portal import isa_client
+
+    try:
+        _release_resource(resource_id, key)
+        return
+    except InstructionError as exc:
+        users = exc.details.get('users') or []
+        if (exc.code != 'instruction.conflict' or exc.details.get('reason') != 'workspace_in_use'
+                or not users or any(user.get('usage') != 'binding' or user.get('resident_id') not in actors
+                                    for user in users)):
+            raise
+    for user in users:
+        resident_id = user['resident_id']
+        isa_client.call(TAU_ACTOR, 'UnbindWorkspace',
+                        {'resident_id': resident_id, 'workspace_id': resource_id},
+                        key=f'{key}:unbind:{resident_id}')
+    # A new key is needed after the not_committed refusal has been repaired.
+    _release_resource(resource_id, key + ':unbound')
+
+
 def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     from management_portal import portal_features
 
@@ -54,6 +76,7 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
         raise ValueError('测试清理清单必须是对象')
     from management_portal.test_framework import tau_fixture_paths
     tau_fixture_paths.inspect(root)
+    content = tau_fixture_paths.inspect_content(root)
     resources = manifest.get('resources', [])
     if not isinstance(resources, list) or any(
         not isinstance(resource_id, str)
@@ -71,23 +94,33 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     # the report parsed or its author cited one of the files as evidence.
     scratch = [root / name for name in ('fixtures', 'helpers')]
     errors, released = [], {}
-    if manifest or any(p.exists() for p in scratch):
+    if manifest or any(p.exists() for p in scratch) or (content and content.exists()):
         # Each feature releases what the run made in it (WALL: projects under
         # the run, recorded cards); its owner, not the test, does the work.
-        for _feature, release in portal_features.contributions('test.fixtures'):
-            report, failed = release(root, manifest, TAU_ACTOR, timeout=timeout)
-            released.update(report)
-            errors.extend(failed)
+        for source in [root, *([content] if content and content.exists() else [])]:
+            for _feature, release in portal_features.contributions('test.fixtures'):
+                report, failed = release(source, manifest, TAU_ACTOR, timeout=timeout)
+                for name, value in report.items():
+                    if name in released and isinstance(value, (list, int)):
+                        released[name] += value
+                    else:
+                        released[name] = value
+                errors.extend(failed)
     # New allocations and legacy manifests use the same domain deletion entry.
     automatic = lifecycle.pending(scope_id)
     # Business objects own their projection members; release those objects
     # before any directly allocated members or temporary teams.
     targets = sorted(dict.fromkeys([*automatic, *resources]),
-                     key=lambda rid: {'resident': 1, 'lineage': 2}.get(rid.partition('_')[0], 0))
+                     key=lambda rid: {'resident': 1, 'lineage': 2, 'workspace': 3}.get(rid.partition('_')[0], 0))
+    actors = lifecycle.actors(scope_id)
     released_resources = []
     for resource_id in targets:
         try:
-            _release_resource(resource_id, f'tau-fixture:{root.name}:{resource_id}:{attempt_id}')
+            key = f'tau-fixture:{root.name}:{resource_id}:{attempt_id}'
+            if resource_id.startswith('workspace_') and resource_id in automatic:
+                _release_workspace(resource_id, key, actors)
+            else:
+                _release_resource(resource_id, key)
             lifecycle.released(scope_id, resource_id)
             released_resources.append(resource_id)
             if resource_id in resources:
@@ -108,6 +141,10 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
         # A registered/running project must keep its files for the next attempt.
         raise RuntimeError('；'.join(errors))
     standalone_paths = tau_fixture_paths.cleanup(root)
+    if content and content.exists():
+        # Recheck the receipt after the product owners have finished.
+        shutil.rmtree(tau_fixture_paths.inspect_content(root))
+        standalone_paths.append(str(content))
     lifecycle.complete(scope_id)
     removed = standalone_paths
     for path in scratch:

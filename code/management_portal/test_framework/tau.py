@@ -159,6 +159,7 @@ def build_prompt(
     assignment: dict[str, Any] | None = None,
 ) -> str:
     runner_prompt = (ROOT / "management_portal/test_framework/config/tau_runner_prompt.md").read_text(encoding="utf-8").strip().replace("<test-actor>", test_actor())
+    from management_portal.test_framework.tau_fixture_paths import fixture_root
     task_prompt = (str(planned["implementation"].get("task_prompt") or "").strip()
         .replace("<test-actor>", test_actor())
         .replace("<tau-native-forms-fixture>", str(ROOT / "tests/cases/fixtures/tau_mcp_forms.py")))
@@ -248,7 +249,7 @@ def build_prompt(
 - {test_actor()} Playwright storage state：{config.storage_state}
 - 共享浏览器启动器：{ROOT / 'management_portal/test_framework/tau_browser.js'}
 - 证据目录：{run_dir}
-- 测试工程、条目来源与样例文件目录：{run_dir / 'fixtures'}
+- 测试工程、条目来源与样例文件目录：{fixture_root(run_dir)}（run-context.json 的 fixture_dir）
 - 辅助脚本目录：{run_dir / 'helpers'}
 - 仓库根目录：{ROOT}
 - 框架 Python 解释器：{sys.executable}（本次执行器实际运行环境；单元回归仍使用 tests/cases 的隔离数据库）
@@ -345,7 +346,8 @@ ListResidentStates 的 portal_state_read 只归因到凭据中的实际发起 re
 指令请求（读完第一批积压就关闭的 Watch* 流、调用方放弃的调用）也在其中，url 为
 `/api/instructions/execute`，另带 instruction。判定预期取消必须逐条核对实际请求 ID、所属 frame/文档以及真实取消或生命周期事实，
 不能把路径相同或时间接近当作已证明的因果。未知原因保持 unknown，原失败证据不补造。
-所有可修改的测试工程必须放在 fixtures 子目录，通过正常产品入口登记；辅助脚本必须放在 helpers。
+所有可修改的测试工程必须放在上面的 fixture_dir，通过正常产品入口登记；辅助脚本必须放在证据目录的 helpers。
+证据目录属于 runtime，不得把它或其子目录登记、绑定为 Workspace。旧用例中的 evidence_dir/fixtures 路径统一使用 fixture_dir。
 用例完成、失败或取消均须清理自建测试对象。先停止本用例的工作，再删除测试条目、取消工程登记，最后删除样例文件及脚本。
 在已有工程中创建测试条目后，立即把精确地址写入证据目录 test-fixtures.json 的 wall_items 数组（每项 project、block）；
 公共浏览器助手和本用例 Resident 指令中新分配的资源 ID 自动归入本用例生命周期，框架结束时通过 UnregisterResource 调用产品原有删除流程。必须使用公共浏览器助手，让请求携带框架写入 run-context.json 的资源生命周期标识；不要自行创建无关联的浏览器上下文。无需手写 resources 清单；创建理由、类型与回执另存证据文件。旧清单仅用于恢复历史用例，禁止登记输入资源、既有对象或固定团队。

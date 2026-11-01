@@ -15,6 +15,25 @@ def open_scope(root):
     return LifecycleStore().open(str(root.resolve()), actor='test-actor', run_id=root.name, case_id='case')
 
 
+def test_workspaces_are_tracked_and_retired_after_their_resident(tmp_path, monkeypatch):
+    """额外 Workspace 自动跟踪，Resident 先退役，已有 Workspace 不被接管"""
+    store = LifecycleStore()
+    scope = open_scope(tmp_path)
+    registry = get_resource_type_registry()
+    existing = registry.new_id('workspace')
+    with lifecycle_scope(scope, actor='test-actor'):
+        resident = registry.new_id('resident')
+        workspace = registry.new_id('workspace')
+        registry.validate(existing, 'workspace')
+    assert set(store.pending(scope)) == {resident, workspace}
+    assert resident in store.actors(scope)
+    released = []
+    monkeypatch.setattr(tau_fixtures, '_release_resource', lambda rid, key: released.append(rid))
+    tau_fixtures.cleanup(tmp_path)
+    assert released == [resident, workspace]
+    assert store.pending(scope) == []
+
+
 def test_parallel_lifecycles_capture_only_new_ids_and_survive_failed_request(tmp_path):
     """并行的资源生命周期各自只记录新分配的 ID，请求失败后记录仍保留"""
     store = LifecycleStore()

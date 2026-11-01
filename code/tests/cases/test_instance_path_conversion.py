@@ -33,13 +33,31 @@ def test_deleted_outside_locations_and_missing_registrations_are_reported(tmp_pa
     instance = InstanceManifest(tmp_path / 'instance', {'areas': {'projects': str(project)}})
     converter = Conversion(instance, PrefixMap([]))
     missing = str(project / 'missing')
-    assert converter.convert({'path': missing}, 'record')['path'] == missing
+    assert converter.convert({'path': missing}, 'record')['path'] == 'projects:missing'
     assert converter.missing['record.path'] == {missing}
     deleted = {'path': missing, 'deleted_at': '2026-01-01'}
     assert converter.convert(deleted, 'deleted')['path'] == 'projects:missing'
     outside = str(tmp_path / 'old-host')
     assert converter.convert({'path': outside, 'deleted_at': '2026-01-01'}, 'deleted')['path'] == outside
     assert 'deleted.path' not in converter.missing
+
+
+def test_missing_locations_in_all_record_shapes_and_invalid_instance_paths(tmp_path):
+    """缺失目录仍按区域编码；固定目录违规登记在缺失报告之外独立报告"""
+    root = tmp_path / 'instance'
+    instance = InstanceManifest(root, {})
+    converter = Conversion(instance, PrefixMap([]))
+    missing = str(instance.area('projects') / 'missing')
+    payload = {'canonical_checkout': missing, 'checkouts': [{'path': missing}],
+               'cwd': missing, 'evidence_paths': [missing], 'text': missing}
+    result = converter.convert(payload, 'registry')
+    assert result == {'canonical_checkout': 'projects:missing',
+                      'checkouts': [{'path': 'projects:missing'}],
+                      'cwd': 'projects:missing', 'evidence_paths': ['projects:missing'], 'text': missing}
+    invalid = str(root / 'maintenance/expired/code')
+    assert converter.location(invalid, 'workspace.workspaces.path') == invalid
+    assert converter.unclassified['workspace.workspaces.path'] == {invalid}
+    assert converter.missing['workspace.workspaces.path'] == {invalid}
 
 
 def test_prefix_mappings_compose_and_respect_path_boundaries(tmp_path):

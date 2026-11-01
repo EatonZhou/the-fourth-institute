@@ -1851,6 +1851,11 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
         from management_portal.resident_handoff import run_resident_turn
         inspect.signature(run_resident_turn).bind(**kwargs)
         captured.update(kwargs)
+        from management_common.instance_locations import current_instance
+        assert kwargs['cwd'] == str(current_instance().code_root())
+        context = json.loads((run_dir / 'run-context.json').read_text())
+        assert Path(context['fixture_dir']).is_relative_to(current_instance().area('features'))
+        assert context['fixture_dir'] in kwargs['prompt']
         if standalone_fixture:
             context = json.loads((run_dir / 'run-context.json').read_text())
             fixture = Path(context['standalone_fixture_dir'])

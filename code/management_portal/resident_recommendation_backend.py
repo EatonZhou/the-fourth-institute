@@ -7,6 +7,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from management_common.instance_locations import current_instance
+
 from .resident_discovery_client import ResidentDiscoveryClient, ResidentDiscoveryUnavailable
 from .society_service import get_society_service, resident_media_domain
 from .society_service.resident_protocol import WORKING_DIRECTORY_FIELD
@@ -19,7 +21,7 @@ from .resident_handoff import (
 )
 
 
-PORTAL_ROOT = Path(__file__).resolve().parent.parent
+PORTAL_ROOT = current_instance().code_root()
 RECOMMENDATION_UI_NAMESPACE = "resident-recommendation"
 RECOMMENDATION_UI_KEY = "latest"
 RECOMMENDATION_CAPABILITY = "resident-discovery"

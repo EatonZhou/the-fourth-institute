@@ -16,6 +16,7 @@ import urllib.request
 
 from management_common import process_runtime
 from management_common.instance_manifest import AREAS
+from management_common.instance_locations import current_instance
 from management_common.portal_paths import path as portal_path
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_portal import paper_state_store
@@ -32,7 +33,7 @@ from management_portal.shared_state import atomic_replace_json, exclusive_file_l
 
 
 LOGGER = logging.getLogger(__name__)
-WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_ROOT = current_instance().code_root()
 DATA_ROOT = portal_path("features") / "paper_workspace"
 PAPER_STORE_ROOT = portal_path('papers')
 # Reviews, notes, job records and curated venues live in paper_state_store.

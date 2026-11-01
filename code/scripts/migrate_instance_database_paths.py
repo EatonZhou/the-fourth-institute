@@ -59,9 +59,9 @@ class Conversion:
             return value
         if not path.exists() and not deleted:
             self.missing.setdefault(field, set()).add(value)
-            # A recorded move establishes the new location even if the leaf has expired.
-            if mapped == value:
-                return value
+            # Area ownership is determined by the manifest, not by whether
+            # an expired leaf still exists. Keep reporting missing directories
+            # independently of encoding their known location.
         if path.is_relative_to(self.instance.root) and not inside and not deleted:
             self.unclassified.setdefault(field, set()).add(str(path))
         if reference != value:

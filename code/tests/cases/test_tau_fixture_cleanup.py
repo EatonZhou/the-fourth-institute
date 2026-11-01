@@ -7,6 +7,73 @@ from management_portal.test_framework import tau_fixtures
 from management_portal.test_framework.runner_adapters import TauAdapter
 
 
+@pytest.mark.parametrize('refusal', ['', 'foreign', 'owner', 'denied'])
+def test_workspace_cleanup_only_detaches_its_own_operation_users(monkeypatch, refusal):
+    """正式解绑本用例成员；外部使用者、owner 和权限拒绝均保留登记"""
+    from management_portal import isa_client
+    from management_portal.hatg.contracts import InstructionError
+    rid, wid = 'resident_aaaaaaaaaaaa', 'workspace_bbbbbbbbbbbb'
+    calls = []
+    def call(actor, name, args, **kw):
+        calls.append((name, args, kw['key']))
+        assert actor == 'test-actor'
+        if len(calls) == 1:
+            raise InstructionError('instruction.conflict', 'in use', details={
+                'reason': 'workspace_in_use', 'users': [{
+                    'resident_id': rid if refusal != 'foreign' else 'resident_cccccccccccc',
+                    'usage': 'owner' if refusal == 'owner' else 'binding'}]})
+        if name == 'UnbindWorkspace' and refusal == 'denied':
+            raise InstructionError('instruction.forbidden', 'denied')
+    monkeypatch.setattr(isa_client, 'call', call)
+    if refusal:
+        with pytest.raises(InstructionError):
+            tau_fixtures._release_workspace(wid, 'cleanup', {rid})
+        assert len(calls) == (2 if refusal == 'denied' else 1)
+    else:
+        tau_fixtures._release_workspace(wid, 'cleanup', {rid})
+        assert [c[0] for c in calls] == ['UnregisterResource', 'UnbindWorkspace', 'UnregisterResource']
+        assert calls[1][1] == {'resident_id': rid, 'workspace_id': wid}
+        assert calls[0][2] != calls[-1][2]
+
+
+def test_content_fixture_is_in_area_and_cleanup_reaches_wall_owner(tmp_path, monkeypatch):
+    """WALL 夹具落在 features 区域，先注销产品再删文件，证据仍在 runtime"""
+    from management_common.instance_locations import current_instance
+    from management_portal.test_framework import tau_fixture_paths
+    from management_portal import portal_features
+    root = tmp_path / 'run'; root.mkdir()
+    content = tau_fixture_paths.prepare_content(root)
+    assert content.is_relative_to(current_instance().area('features'))
+    assert current_instance().reference(content).startswith('features:')
+    assert tau_fixture_paths.prepare_content(root) == content
+    repo = content / 'wall-test-repo'; repo.mkdir()
+    (root / 'evidence.png').write_bytes(b'png')
+    calls = []
+    def release(path, manifest, actor, **kwargs):
+        assert repo.is_dir()
+        calls.append(path)
+        return {'projects': ['sample'] if path == content else [], 'items': 0}, []
+    monkeypatch.setattr(portal_features, 'contributions', lambda name: [('wall', release)])
+    result = tau_fixtures.cleanup(root)
+    assert calls == [root.resolve(), content]
+    assert result['projects'] == ['sample']
+    assert not content.exists() and (root / 'evidence.png').exists()
+
+
+def test_content_fixture_replacement_is_refused_before_product_cleanup(tmp_path, monkeypatch):
+    """夹具根被替换时不得注销或删除替代目录"""
+    from management_portal.test_framework import tau_fixture_paths
+    from management_portal import portal_features
+    root = tmp_path / 'run'; root.mkdir()
+    content = tau_fixture_paths.prepare_content(root)
+    content.rmdir()
+    content.symlink_to(tmp_path, target_is_directory=True)
+    monkeypatch.setattr(portal_features, 'contributions', lambda name: pytest.fail('cleanup reached product'))
+    with pytest.raises(ValueError, match='escape'):
+        tau_fixtures.cleanup(root)
+    content.unlink()
+
+
 @pytest.mark.parametrize('resources', [
     [{'resource_id': 'resident_123456789abc', 'deleted': True}],
     'resident_123456789abc', ['not-a-resource'], [None],
