@@ -69,9 +69,8 @@ def _launch(root: Path, record: dict) -> None:
                                      | subprocess.CREATE_BREAKAWAY_FROM_JOB)
             record["pid"] = child.pid
     elif sys.platform == "darwin":
-        subprocess.run(["launchctl", "submit", "-l", record["unit"],
-                        "-o", str(log), "-e", str(log), "--", *args],
-                       env=env, check=True, capture_output=True, timeout=45)
+        from scripts.tfi_release_platform_macos import launch_control_job
+        launch_control_job(instance, record, args, env, log)
     else:
         raise ValueError("Area moves are not supported on this platform")
 

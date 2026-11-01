@@ -123,6 +123,8 @@ def remove_definitions(instance, selected_components=None):
     """Delete this instance's stopped definitions; foreign ones are refused."""
     platform = platform_name()
     native = adapter()
+    if platform == 'macos' and selected_components is None:
+        native.remove_control_jobs(instance)
     directory = definition_directory(instance)
     control = controller(instance)
     selected = components(instance) if selected_components is None else tuple(selected_components)

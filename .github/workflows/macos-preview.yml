@@ -49,6 +49,21 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: |
           python code/scripts/macos/build.py
+      - name: Record package verification
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          fields = ('source_commit', 'target', 'dmg_sha256', 'dmg_bytes',
+                    'native_installation_smoke', 'app_signature_verification',
+                    'dmg_app_signature_verification', 'signing_identity')
+          receipts = [{key: value.get(key) for key in fields}
+                      for path in Path('.build/macos').glob('*.json')
+                      if (value := json.loads(path.read_text())).get('dmg_sha256')]
+          assert receipts
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write('Package verification\n\n```json\n' + json.dumps(receipts, indent=2) + '\n```\n')
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: macos-${{ matrix.arch }}

@@ -1,5 +1,5 @@
 {
-  "request": "20261101.1-lifecycle-codex-one-r4",
-  "purpose": "Build current macOS arm64 and Intel packages from a fresh checkout; native fixture checks for instance lifecycle, shared account directory handling and transaction validation. CI uses no real credentials or inference; personal Mac acceptance is separate.",
+  "request": "20261102.1-lifecycle-codex-one-r5",
+  "purpose": "Build arm64 and Intel from fresh source; validate native one-shot launchd control jobs, area migration and session continuation, installer lifecycle and cleanup. No real model credentials are used in CI.",
   "delivery": "Actions artifacts only; no GitHub Release"
 }

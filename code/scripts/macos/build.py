@@ -136,6 +136,11 @@ def smoke(executable, destination, instance_root, included, *, require_long_rpc_
         session = InstalledSession(before, included)
         session.register()
         session.connect_and_chat()
+        session.move_projects()
+        moved = registered_instance(destination)
+        if moved['manifest']['instance_id'] != before['manifest']['instance_id']:
+            raise ValueError('Area move changed instance identity')
+        before = moved
         marker = instance_root / "data/features/restart-check.txt"
         marker.write_text("user data survives unregister and restart")
         command(cleanup, timeout=120)
@@ -367,7 +372,7 @@ with tempfile.TemporaryDirectory() as tmp:
             instance_root = long_rpc_root(Path(tmp).resolve() / ("f" if included else "b"))
             smoke(executables / "TheFourthInstitute", destination, instance_root, included,
                   require_long_rpc_path=True)
-    receipt["native_installation_smoke"] = "passed: temporary instance create/test/retire, native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, code update with database row, GUI copy/retry"
+    receipt["native_installation_smoke"] = "passed: temporary instance create/test/retire, native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, area move with session continuation, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, code update with database row, GUI copy/retry"
     receipt["api_only_chat_smoke"] = "passed: loopback fixture only, no Codex account, Harness-only settings, default-model API chat, model catalog/save, persisted chat after service restart; no real model or key"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"

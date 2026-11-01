@@ -119,6 +119,32 @@ class InstalledSession:
     def chat(self):
         self.model_api.chat(self.instruction, self.ama['resident_id'])
 
+    def move_projects(self):
+        paths = self.request('/api/admin/paths')
+        source = Path(next(row['path'] for row in paths['areas'] if row['name'] == 'projects'))
+        target = self.root / 'data/projects-moved'
+        accepted = self.request('/api/admin/paths', {'area': 'projects', 'target': str(target)})
+        identifier = accepted['operation']['id']
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
+            record = json.loads((self.root / 'runtime/portal-control.json').read_text())
+            if record['id'] == identifier and record['status'] not in {'queued', 'running'}:
+                check(record['status'] == 'completed', 'Native area move failed: ' + str(record.get('error')))
+                break
+            time.sleep(0.25)
+        else:
+            raise RuntimeError('Native area move did not finish')
+        check(target.is_dir() and not source.exists(), 'Native area move retained its source')
+        for _ in range(60):
+            try:
+                if self.request('/api/health')['ok']:
+                    self.chat()
+                    return
+            except OSError:
+                pass
+            time.sleep(0.5)
+        raise RuntimeError('Native area move did not restore Web readiness')
+
     def close(self):
         if self.model_api is not None:
             self.model_api.close()
