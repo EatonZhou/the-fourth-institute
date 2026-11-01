@@ -69,7 +69,7 @@ def test_usage_memberships_keep_live_request_order_and_only_two_fields(canonical
 
 
 def test_unavailable_domain_fails_usage_reads_and_other_resources_pass_through(canonical, monkeypatch):
-    """领域不可用时 Usage 归属读取明确报错，非 Family 资源投影原样通过
+    """领域不可用时 Usage 和生命周期读取明确报错，不属于该领域的资源原样通过
 
     :design: decision_cf27d39e39cd
     :design-point:
@@ -81,6 +81,9 @@ def test_unavailable_domain_fails_usage_reads_and_other_resources_pass_through(c
     monkeypatch.setattr(canonical.state.database, 'snapshot', unavailable)
     with pytest.raises(RuntimeError, match='does not match its schema'):
         canonical.state.resident_usage_memberships([R])
-    for kind, rid in (('resident', R), ('lineage', L), ('file', 'unrelated')):
+    for kind, rid in (('resident', R), ('lineage', L)):
+        with pytest.raises(RuntimeError, match='does not match its schema'):
+            facts.project_resources([{'resource_type': kind, 'resource_id': rid}])
+    for kind, rid in (('file', 'unrelated'), ('repo', 'repo_aaaaaaaaaaaa')):
         item = {'resource_type': kind, 'resource_id': rid, 'attributes': {'retained': True}}
         assert facts.project_resources([item])[0] is item

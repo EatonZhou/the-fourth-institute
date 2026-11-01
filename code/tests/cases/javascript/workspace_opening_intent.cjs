@@ -45,7 +45,7 @@ function page({identity, resolveResource, readRoot} = {}) {
     initialResidentIdFromUrl: () => '', initialLineageIdFromUrl: () => '', initialChatroomIdFromUrl: () => '',
     residentSidebarRefreshCoordinator: {start() {}},
     societyServiceRecovery: {isUnavailable: () => false},
-    lineageWorkbench: {getState: () => ({hidden: []}), focusPanel: id => focus.push(id), isPanelExpanded: () => true},
+    lineageWorkbench: {getState: () => ({hidden: []}), getPanel: () => null, focusPanel: id => focus.push(id), isPanelExpanded: () => true},
     currentLineageWorkbench: () => context.lineageWorkbench,
     showPersonalWorkspaces: () => ({openResource: async resource => { opened.push(resource); await readRoot?.(); }}),
     history: {state: {}, replaceState: (_state, _title, url) => urls.push(url)},

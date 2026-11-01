@@ -18,7 +18,7 @@ from tests.cases.test_resident_folder_creation_contract import (
 
 
 @pytest.mark.parametrize("damage", [
-    "missing_owned_id", "missing_owned_object", "wrong_owned_path",
+    "missing_owned_id", "missing_owned_object",
     "missing_directory", "wrong_workspace_id",
 ])
 def test_invalid_owned_binding_blocks_execution_preparation_and_is_not_repaired(
@@ -37,9 +37,6 @@ def test_invalid_owned_binding_blocks_execution_preparation_and_is_not_repaired(
         record.pop("owned_workspace_id")
     elif damage == "missing_owned_object":
         record.pop("owned_workspace")
-    elif damage == "wrong_owned_path":
-        owned["path"] = str(reference)
-        record["default_cwd"] = str(reference)
     elif damage == "missing_directory":
         owned_path.rename(owned_path.with_name("workspace-preserved"))
     else:
@@ -57,12 +54,16 @@ def test_invalid_owned_binding_blocks_execution_preparation_and_is_not_repaired(
         assert not owned_path.exists()
 
 
-def test_working_directory_uses_owned_workspace_not_stale_projection(future_creation_store: Path) -> None:
+def test_working_directory_uses_owned_workspace_not_stale_projection(future_creation_store: Path, tmp_path: Path) -> None:
     """Resident 工作目录取自有 Workspace 的路径，忽略过期的 default_cwd"""
     record = resident_domain.register_resident(_new_session_payload("Owned cwd"), "sample_admin")
     expected = Path(record["owned_workspace"]["path"])
     record["default_cwd"] = str(expected.parent)
     assert resident_runtime_domain.resident_working_directory(record) == expected
+    registered = tmp_path / "registered-outside-folder-layout"
+    registered.mkdir()
+    record["owned_workspace"]["path"] = str(registered)
+    assert resident_runtime_domain.resident_working_directory(record) == registered
 
 
 def test_fork_reference_keeps_shared_identity_and_purpose(

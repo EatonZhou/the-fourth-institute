@@ -24,8 +24,8 @@ test('the edit dialog saves a Resident name and refuses an empty one', async t =
   const updates = () => page.requests.filter(request => request.body?.instruction === 'UpdateResident');
   const residentReads = () => page.requests.filter(request => request.path === '/api/agent-workbench/residents').length;
   const submit = () => $('residentEditForm').dispatchEvent(new page.window.Event('submit', { cancelable: true }));
-  // The first load and the sidebar's own first refresh both read the list.
-  await page.until(() => page.parts.PortalLineageWorkbenchResidentDialogs && residentReads() >= 2);
+  // Wait for the shared initial catalog load; sidebar consumers reuse it.
+  await page.until(() => page.parts.PortalLineageWorkbenchResidentDialogs && residentReads() >= 1);
   const { openResidentEditModal } = page.parts.PortalLineageWorkbenchResidentDialogs.exports;
 
   openResidentEditModal({ resident_id: MEMBER, title: 'Fixture Member' });

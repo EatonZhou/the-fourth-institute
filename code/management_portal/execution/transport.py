@@ -22,6 +22,10 @@ class ExecutionServiceUnavailable(OperationError):
     code = "execution.unavailable"
     http_status = 503
 
+    def failure_payload(self) -> dict[str, Any]:
+        # Keep endpoint diagnostics in the local exception, not the public RPC/HTTP envelope.
+        return {**super().failure_payload(), "message": "ExecutionService is unavailable"}
+
 
 class ExecutionResponseUnknown(RuntimeError):
     """The connection accepted a request but its result was not observed."""

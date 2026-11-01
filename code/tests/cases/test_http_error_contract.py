@@ -7,11 +7,15 @@ from management_portal.http_errors import exception_http_error, normalize_json_e
 def test_execution_service_unavailable_has_dependency_error_contract() -> None:
     from management_portal.execution.transport import ExecutionServiceUnavailable
 
-    status, payload = exception_http_error(ExecutionServiceUnavailable("ExecutionService unavailable"))
+    error = ExecutionServiceUnavailable("request failed at /private/fixture.sock: ConnectionRefusedError")
+    status, payload = exception_http_error(error)
     assert status == 503
     assert payload['code'] == 'execution.unavailable'
     assert payload['commit_state'] == 'unknown'
     assert payload['retryable'] is False
+    assert payload['message'] == 'ExecutionService is unavailable'
+    assert payload['error'] == payload['message']
+    assert '/private/fixture.sock' in str(error), 'internal diagnostics remain available'
 
 
 def test_execution_response_loss_does_not_claim_safe_retry() -> None:

@@ -125,6 +125,7 @@ def test_resource_publication_locks_identity_but_not_runtime(locked_table):
     :design-point:
     """
     from concurrent.futures import ThreadPoolExecutor
+    from management_portal.society_service.errors import ResourceProjectionConflict
     from management_portal.society_service import resource_client
     from management_portal.society_service.state_store import get_lineage_data_store
     from tests.cases.canonical_domain_fixture import canonical_projection
@@ -146,7 +147,7 @@ def test_resource_publication_locks_identity_but_not_runtime(locked_table):
             if locked_table == "resident_observation_cache":
                 future.result(timeout=5)
             else:
-                with pytest.raises(Exception, match="could not obtain lock"):
+                with pytest.raises(ResourceProjectionConflict, match="Canonical domain projection is busy"):
                     future.result(timeout=5)
 
 

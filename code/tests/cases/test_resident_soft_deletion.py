@@ -14,6 +14,7 @@ def deleted_identity(monkeypatch):
     record = {
         "resident_id": "resident_0123456789ab",
         "lineage_id": "lineage_0123456789ab",
+        "owned_workspace_id": "workspace_0123456789ab",
         "deleted_at": "2026-10-08T00:00:00Z",
         "deleted_by": "original-owner",
     }

@@ -92,11 +92,14 @@ def integration(tmp_path, monkeypatch):
     assert resident_runtime_domain.resident_working_directory(record) == owned
     register_session(record, "synthetic-release-session", backend_route_id="synthetic-route")
     operations = ResidentLifecycleOperations(LineageDataStore())
+    # Projection steps follow the committed canonical deletion in production.
+    # Keep the fixture live for its initial access assertions below.
     target = SimpleNamespace(root=tmp_path, resource=resource, descriptors=descriptors, index=index, record=record, definition=definition, operations=operations, folder=folder, owned=owned, marker=marker, neighbor_folder=neighbor_folder, archive=tmp_path / "archived-folder")
     assert LINEAGE in query_ids(target)
     assert resource.reference(LINEAGE, actor=ACTOR)["resource_id"] == LINEAGE
     assert LINEAGE in query_ids(target, actor="fixture-stranger")
     assert resource.reference(LINEAGE, actor="fixture-stranger")["resource_id"] == LINEAGE
+    state.remove_lineage(LINEAGE, deleted_by=ACTOR)
     yield target
     index.adapter_layer.stop()
 

@@ -1,6 +1,7 @@
 """The bootstrap CLI must be safe to inspect before installing dependencies."""
 
 import os
+import json
 import runpy
 import builtins
 import subprocess
@@ -193,7 +194,8 @@ def test_article_install_explains_optional_user_managed_tex(tmp_path, monkeypatc
     environment = tmp_path / "portal-venv"
     assert script["main"](["install", "article", "--venv", str(environment)]) == 0
     assert not any('install_article_tooling.py' in str(part) for command in commands for part in command)
-    assert '由用户自行安装' in capsys.readouterr().err
+    messages = [json.loads(line.removeprefix('@TFI_PROGRESS ')) for line in capsys.readouterr().err.splitlines() if line.startswith('@TFI_PROGRESS ')]
+    assert any('由用户自行安装' in message.get('message', '') for message in messages)
     assert commands[-1][0].startswith(str(environment))
     assert not environment.exists()
 

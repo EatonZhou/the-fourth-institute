@@ -39,7 +39,7 @@ test('both lists show Which Resident and the assistant facade, follow its title 
   t.after(page.close);
   const doc = page.document;
   const lists = () => ['agentList', 'favoriteAgentList'].map(id => doc.getElementById(id));
-  const facade = list => list.querySelector('.personalAssistantResident');
+  const facade = list => list?.querySelector('.personalAssistantResident');
   const shows = title => lists().every(list => facade(list)?.querySelector('.agentTitle')?.textContent === title);
   await page.until(() => shows(assistant.title));
   for (const list of lists()) {

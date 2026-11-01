@@ -468,7 +468,7 @@ def test_resident_catalog_rejects_noncanonical_records(tmp_path: Path) -> None:
     alias_workspace = alias_root / "residents/resident_333333333333/workspace"
     aliased_binding["default_cwd"] = str(alias_workspace)
     aliased_binding["owned_workspace"]["path"] = str(alias_workspace)
-    with pytest.raises(ValueError, match="default Workspace Binding"):
+    with pytest.raises(ValueError, match="Registered Workspace path must be canonical"):
         catalog.upsert(aliased_binding)
 
 
