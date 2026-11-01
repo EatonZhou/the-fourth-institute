@@ -344,7 +344,14 @@
       const placed = [];
       const labelWidth = 112;
       const labelHeight = 52;
-      const offsets = [0, -56, 56, -112, 112, -168, 168];
+      // Node placement does not reserve space for edge labels. Include endpoint
+      // cards as obstacles here too: path detours intentionally exclude them.
+      const cards = state.model.nodes.map(node => {
+        const position = nodePosition(node), half = nodeHalfExtents(node);
+        return { x: position.x / 100 * worldSize.width, y: position.y / 100 * worldSize.height,
+          halfWidth: half.x / 100 * worldSize.width + 8,
+          halfHeight: half.y / 100 * worldSize.height + 8 };
+      });
       [...edges]
         .filter(edge => edge.type !== "workspace_binding")
         .sort((left, right) => String(left?.id || "").localeCompare(String(right?.id || "")))
@@ -356,12 +363,19 @@
           }
           const x = geometry.labelX / 100 * worldSize.width;
           const baseY = geometry.labelY / 100 * worldSize.height;
-          const offset = offsets.find(candidate => placed.every(label => (
-            Math.abs(x - label.x) >= labelWidth
-            || Math.abs(baseY + candidate - label.y) >= labelHeight
-          ))) ?? offsets[offsets.length - 1] + placed.length * labelHeight;
-          geometry.labelY += offset / worldSize.height * 100;
-          placed.push({ x, y: baseY + offset });
+          const obstacles = [...cards, ...placed].filter(box =>
+            Math.abs(x - box.x) < labelWidth / 2 + box.halfWidth);
+          // Nearest free vertical position lies at the desired point or at an
+          // obstacle boundary. Unlike a fixed list of offsets, this also works
+          // for tall cards and crowded diagrams without an unchecked fallback.
+          const candidates = [baseY, ...obstacles.flatMap(box => [
+            box.y - box.halfHeight - labelHeight / 2 - 1,
+            box.y + box.halfHeight + labelHeight / 2 + 1,
+          ])].sort((left, right) => Math.abs(left - baseY) - Math.abs(right - baseY) || left - right);
+          const y = candidates.find(candidate => obstacles.every(box =>
+            Math.abs(candidate - box.y) >= labelHeight / 2 + box.halfHeight));
+          geometry.labelY = y / worldSize.height * 100;
+          placed.push({ x, y, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2 });
           edgeGeometryMap.set(String(edge.id || ""), geometry);
         });
     }

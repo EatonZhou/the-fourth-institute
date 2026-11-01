@@ -37,6 +37,31 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
   await page.mouse.move(x+18,y+18,{steps:3});await page.mouse.move(x,y,{steps:3});
   await page.mouse.up();await verify('drag completion');
   await page.locator('#canvas').evaluate(n=>Object.assign(n.style,{width:'440px',height:'420px'}));await verify('resize');
-  assert.deepEqual(errors,[]);console.log('Crossing Route labels remain separate through refresh, fit, drag and resize');
+  // Two non-overlapping cards can leave less room than their Route label.
+  // Endpoint cards are excluded from path detours, but must still exclude labels.
+  await page.locator('#canvas').evaluate(n=>Object.assign(n.style,{width:'1000px',height:'760px'}));
+  await page.evaluate(()=>{
+   const canvas=document.querySelector('#canvas');
+   const width=Number(canvas.dataset.worldWidth);
+   const cardWidth=document.querySelector('.hatgNode').offsetWidth;
+   graph.render({nodes:[{id:'near-a',x:40,y:50},{id:'near-b',x:40+(cardWidth+10)/width*100,y:50}]
+     .map(n=>({...n,kind:'agent',title:n.id})),
+     edges:[{id:'near-route',source:'near-a',target:'near-b',type:'packet',label:'Route'}]});
+  });
+  const verifyCards=async stage=>{
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const overlaps=await page.evaluate(()=>{
+    const label=document.querySelector('.edgeLabelBtn').getBoundingClientRect();
+    return [...document.querySelectorAll('.hatgNode')].filter(node=>{
+     const card=node.getBoundingClientRect();
+     return label.left<card.right && label.right>card.left && label.top<card.bottom && label.bottom>card.top;
+    }).map(node=>node.dataset.nodeId);
+   });
+   assert.deepEqual(overlaps,[],stage+': Route label must not be covered by endpoint cards');
+  };
+  await verifyCards('close endpoints');
+  await page.evaluate(()=>graph.refresh());await verifyCards('close endpoints refreshed');
+  await page.evaluate(()=>graph.fit({duration:0}));await verifyCards('close endpoints fit');
+  assert.deepEqual(errors,[]);console.log('Route labels avoid labels and cards through geometry changes');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
