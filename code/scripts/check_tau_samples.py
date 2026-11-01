@@ -19,6 +19,7 @@ SAMPLES = (
     "test_tau_browser_bootstrap.py::test_template_account_preflight_checks_steward_before_apply",
     "test_tau_browser_bootstrap.py::test_region_wait_follows_replaced_dom_and_requires_settled_attribute",
     "test_tau_browser_bootstrap.py::test_trigger_path_wait_observes_original_path_after_input_completion",
+    "test_tau_browser_bootstrap.py::test_terminal_wait_retains_transient_reads_and_original_deadline",
     "test_tau_browser_bootstrap.py::test_prompt_first_refresh_waits_for_the_original_view_to_remount",
     "test_family_lifecycle_elements.py::test_tau_fixture_isolation_preserves_existing_family_policy_and_members",
 )

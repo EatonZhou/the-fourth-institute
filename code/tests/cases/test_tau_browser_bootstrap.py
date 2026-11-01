@@ -44,6 +44,14 @@ class _Portal(BaseHTTPRequestHandler):
             'instruction': call['instruction'], 'key': call.get('idempotency_key'),
             'request_id': self.headers.get('X-Portal-Request-ID'),
         })
+        failures = type(self).read_failures.get(call['instruction'], [])
+        if failures:
+            status = failures.pop(0)
+            self.send_response(status)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status':'failed','error':{'code':'fixture.read_unavailable'}}).encode())
+            return
         if call['instruction'] == 'Delayed':
             time.sleep(0.05)
             self.send_response(200)
@@ -116,6 +124,7 @@ def portal():
     _Portal.input_reads = 0
     _Portal.requests = []
     _Portal.trigger_requests = []
+    _Portal.read_failures = {}
     server = ThreadingHTTPServer(("127.0.0.1", 0), _Portal)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_address[1]}"
@@ -501,6 +510,41 @@ def test_trigger_path_wait_observes_original_path_after_input_completion(tmp_pat
     assert all(r == {'lineage_id': 'lineage_fixture', 'trigger_path_id': 'path_delayed_terminal'}
                for r in _Portal.trigger_requests)
     assert {r['instruction'] for r in _Portal.requests} == {'GetTriggerPath', 'GetInputState'}
+
+
+def test_terminal_wait_retains_transient_reads_and_original_deadline(tmp_path, portal):
+    _Portal.read_failures = {'GetInputState':[503], 'GetTriggerPath':[502]}
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "const assert=require('node:assert/strict');"
+        "const post=p.context.request.post.bind(p.context.request);let disconnected=false;"
+        "p.context.request.post=(url,options)=>{if(!disconnected&&options.data.instruction==='GetInputState'){"
+        "disconnected=true;return Promise.reject(new Error('connect ECONNREFUSED'));}return post(url,options);};"
+        "const done=await p.waitForInput('resident_fixture','msg_fixture',{timeoutMs:2000,intervalMs:5});"
+        "assert.equal(done.state,'completed');"
+        "const path=await p.waitForTriggerPath('lineage_fixture','path_delayed_terminal',{timeoutMs:2000,intervalMs:5});"
+        "assert.equal(path.path.status,'completed');"
+        "await assert.rejects(p.waitForTriggerPath('lineage_fixture','path_mismatch',{timeoutMs:1000,intervalMs:1}),/different or missing/);"
+        "let writes=0;p.context.request.post=()=>{writes++;return Promise.reject(new Error('connect ECONNREFUSED'));};"
+        "await assert.rejects(p.instruction('DeliverMessage',{}, {key:'original'}));assert.equal(writes,1);"
+        "const start=Date.now();await assert.rejects(p.waitForInput('resident_fixture','msg_timeout',"
+        "{timeoutMs:80,intervalMs:5}),{code:'tau.terminal_timeout'});assert.ok(Date.now()-start<500);"
+        "let forbidden=0;p.context.request.post=async()=>{forbidden++;return {ok:()=>false,status:()=>403,"
+        "json:async()=>({error:{code:'authorization.denied'}})};};"
+        "await assert.rejects(p.waitForInput('resident_fixture','msg_forbidden',{timeoutMs:1000,intervalMs:1}),"
+        "{status:403});assert.equal(forbidden,1);"
+    ))
+    assert result.returncode == 0, result.stderr
+    rows = [json.loads(line) for line in (tmp_path / 'evidence/tau-helper-calls.jsonl').read_text().splitlines()]
+    attempts = [row for row in rows if row['kind'] == 'request_finished']
+    assert any(row.get('error', {}).get('network_code') == 'ECONNREFUSED' for row in attempts)
+    assert {502, 503} <= {row['http_status'] for row in attempts if row['http_status']}
+    waits = [row for row in rows if row['kind'] == 'terminal_wait_finished']
+    assert [row['status'] for row in waits] == ['completed', 'completed', 'failed', 'failed', 'failed']
+    assert waits[0]['transient_errors'] == 2
+    assert waits[1]['transient_errors'] == 1
+    assert waits[3]['duration_ms'] >= 80
+    assert all(row['timeout_ms'] <= 2000 for row in rows
+               if row['kind'] == 'request_started' and row['tool'] in {'GetInputState','GetTriggerPath'})
 
 
 def test_trigger_path_read_keeps_both_identities_and_pagination_without_retriggering(tmp_path, portal):

@@ -276,11 +276,11 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
   }
 
-  async function inputState(residentId, messageId) {
-    return (await instruction("GetInputState", { resident_id: residentId, message_id: messageId })).input_state || {};
+  async function inputState(residentId, messageId, options = {}) {
+    return (await instruction("GetInputState", { resident_id: residentId, message_id: messageId }, options)).input_state || {};
   }
 
-  async function triggerPath(lineageId, triggerPathId, { offset, limit, artifact_activation_key } = {}) {
+  async function triggerPath(lineageId, triggerPathId, { offset, limit, artifact_activation_key, timeoutMs } = {}) {
     if (typeof lineageId !== 'string' || !lineageId.trim() ||
         typeof triggerPathId !== 'string' || !triggerPathId.trim()) {
       throw new TypeError('triggerPath requires both lineageId and triggerPathId');
@@ -289,40 +289,63 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     if (offset !== undefined) args.offset = offset;
     if (limit !== undefined) args.limit = limit;
     if (artifact_activation_key !== undefined) args.artifact_activation_key = artifact_activation_key;
-    const result = await instruction('GetTriggerPath', args);
+    const result = await instruction('GetTriggerPath', args, timeoutMs === undefined ? {} : {timeoutMs});
     if (result.path?.trigger_path_id !== triggerPathId) {
       throw new Error('GetTriggerPath returned a different or missing path identity');
     }
     return result;
   }
 
-  async function waitForInput(residentId, messageId, { states = ["completed", "failed", "cancelled"], timeoutMs = 600_000, intervalMs = 1000 } = {}) {
+  // Only the two explicit terminal readers below may resume after transport
+  // loss. Every failed ISA read remains in the original call log. This never
+  // repeats a command or starts a new business input, context or deadline.
+  async function waitForTerminal(tool, read, stateOf, {states, timeoutMs, intervalMs}) {
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 600_000
+        || !Number.isFinite(intervalMs) || intervalMs < 1)
+      throw new TypeError('Terminal observation requires a finite positive deadline and interval');
+    const waitId = randomUUID(), started = Date.now();
     const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      const current = await inputState(residentId, messageId);
-      if (states.includes(String(current.state || ""))) return current;
-      if (Date.now() > deadline) {
-        throw Object.assign(new Error(`${messageId} stayed ${current.state || "unknown"}; expected ${states.join("/")}`), { inputState: current });
+    let transientErrors = 0, status = 'failed', current;
+    const append = row => fs.appendFileSync(path.join(evidence, 'tau-helper-calls.jsonl'),
+      JSON.stringify({wait_id:waitId, tool, helper_pid:process.pid, at:new Date().toISOString(), ...row}) + '\n');
+    const expired = () => Object.assign(new Error('Original terminal observation deadline exceeded'),
+      {code:'tau.terminal_timeout', ...(tool === 'GetInputState' ? {inputState:current} : {triggerPath:current})});
+    append({kind:'terminal_wait_started', timeout_ms:timeoutMs});
+    try {
+      for (;;) {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) throw expired();
+        try {
+          current = await read(Math.min(180_000, remaining));
+          if (Date.now() > deadline) throw expired();
+          if (states.includes(String(stateOf(current) || ''))) { status = 'completed'; return current; }
+        } catch (error) {
+          const transport = error?.code === 'tau.transport_failed' && (
+            ['ECONNREFUSED','ECONNRESET','ETIMEDOUT','EAI_AGAIN','EPIPE'].includes(error.diagnostic?.network_code)
+            || error.diagnostic?.name === 'TimeoutError');
+          if (!transport && ![502,503,504].includes(error?.status)) throw error;
+          transientErrors += 1;
+          append({kind:'terminal_read_retry', error:safeInstructionError(error), remaining_ms:Math.max(0,deadline-Date.now())});
+        }
+        const pause = Math.min(intervalMs, deadline - Date.now());
+        if (pause <= 0) throw expired();
+        await sleep(pause);
       }
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    } finally {
+      append({kind:'terminal_wait_finished',status,duration_ms:Date.now()-started,transient_errors:transientErrors});
     }
+  }
+
+  async function waitForInput(residentId, messageId, { states = ["completed", "failed", "cancelled"], timeoutMs = 600_000, intervalMs = 1000 } = {}) {
+    return waitForTerminal('GetInputState', budget => inputState(residentId,messageId,{timeoutMs:budget}),
+      current => current.state, {states,timeoutMs,intervalMs});
   }
 
   async function waitForTriggerPath(lineageId, triggerPathId, {
     states = ["completed", "failed", "cancelled"], timeoutMs = 600_000, intervalMs = 1000,
   } = {}) {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      // A completed Resident input can precede its enclosing path settlement.
-      // Each read keeps the accepted path identity and its own original RTT.
-      const current = await triggerPath(lineageId, triggerPathId);
-      if (states.includes(String(current.path.status || ""))) return current;
-      if (Date.now() > deadline) {
-        throw Object.assign(new Error("Original Trigger Path observation has not reached the requested state"),
-          { triggerPath: current });
-      }
-      await sleep(intervalMs);
-    }
+    return waitForTerminal('GetTriggerPath', budget => triggerPath(lineageId,triggerPathId,{timeoutMs:budget}),
+      current => current.path.status, {states,timeoutMs,intervalMs});
   }
 
   async function preflightResidentRoleAccounts(dialog, { provider, account,

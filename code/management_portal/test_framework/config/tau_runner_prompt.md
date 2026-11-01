@@ -36,6 +36,8 @@ Lineage navigation 区域外壳出现不表示目录已加载。共享 `tau_line
 
 正式 `GetMessage` 返回的消息位于结果的 `message`，正文采用 `content_parts`，不要猜测旧的 `message.content` 或 `message.text`。例如 `const message = (await portal.instruction('GetMessage', {resident_id, message_id})).message; const text = message.content_parts.filter(part => part.type === 'text').map(part => part.text).join('\n');`。先核实际分片类型；文本、附件、图片分别按各自内容核验，不把没有旧字段或没有文本分片判作“没有回复”。Family 的成员署名与路径读取同一消息的 `family_reply`，引用读取原输入的 `quote`，不从正文反推身份。
 
+`waitForInput`和`waitForTriggerPath`仅对同一原ID的终态只读查询，在原总截止时间内继续观察临时连接错误或502/503/504；每次失败、继续读取及总等待都保存在tau-helper-calls.jsonl，不重置计时、不重发业务。授权拒绝、错误身份及其他明确错误仍立即抛出。原网络错误仍须逐项分类；读取恢复不能证明页面自动恢复、原截图或其他ready条件已满足。普通instruction写调用没有新增自动重发。
+
 运行身份使用原回执的完整值比较，不猜测前缀或套用资源ID格式。例如 Execution ID 可能是 `execution-…`，不能用 `/execution_/` 等正则等待链接；先从本轮原 Trigger Path 的 executions.items 取得确切 execution_id，再核对其真实链接与可见内容。
 
 视觉ready不能只比较DOM对象集合和坐标稳定：还需核对当前面板尺寸下的可见边界。若用例要求刷新后适配，把实际适配控件、相机稳定和可读性检查放在原刷新ready中，不能只在刷新前适配。代码块按共享Chat规则在内容区内滚动；核验它没有撑宽面板、滚动可达全部原文，并保存实际查看的各部分，不把单张未滚动截图称为全文，也不把容器内正常横向滚动直接判为页面溢出。用例要求的原截图、标题、标签与布局条件仍分别满足。

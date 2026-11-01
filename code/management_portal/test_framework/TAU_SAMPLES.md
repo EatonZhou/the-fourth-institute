@@ -17,6 +17,7 @@ python3 code/scripts/check_tau_samples.py
 | 菜单到表单 | HATG New node 直接打开表单；目录 Lineage 菜单还需 Attach、New Resident 两步才出现注册标题输入框；打开菜单不算表单 ready |
 | Family 夹具隔离 | 真实 ISA 的隔离数据库测试仅移出临时成员，完整比较其余名册和策略，Resident 保留；角色账号 preflight 拒绝错误 Steward 且 Apply 尚未执行 |
 | 终态读取 | 原 Trigger Path 在输入完成后仍 running 时继续只读同一 ID；页面快照区分 running/idle、错误节点与隐藏节点，旧采样不被后续状态改写 |
+| 终态读取断线 | 原ID只读等待跨越临时断线及502/503，原失败和等待耗时保留；总截止时间不重置，403和身份错误立即失败，写指令不自动重发 |
 | 原生 HATG 宿主 | 实际 Workbench HATG 宿主与有隐式 region 语义的 `section#hatgPane` 均可读取身份、节点状态、Fork 与观察板前提；单独画布不能冒充完整区域 |
 | HATG 加载后适配 | 延迟实际图读取，证明工具条已出现时宿主仍busy、节点为空；过早Fit被目标恢复变成125%，挂载结算后解除busy属性、正确身份就绪，再Fit达到100% |
 | 原刷新窗口 | 提示中的实际刷新示例在区域重建后等待新的完整内容；旧 ElementHandle 不能替代当前 Locator 的 busy 状态 |
