@@ -5,6 +5,13 @@ the pinned Playwright package in this directory and the matching Chromium binary
 The removed Playwright test suite is not needed. Core and ordinary `test` installs
 do not install this runtime.
 
+`package-lock.json` is published with the source. The installer uses `npm ci`
+to reproduce its package versions. Browser installation sets
+`PLAYWRIGHT_SKIP_BROWSER_GC=1` so it cannot remove browsers used by other
+applications sharing the host cache. To refresh only the Node packages without
+installing browsers, run `npm ci --ignore-scripts --no-audit --no-fund` in this
+directory.
+
 Install it in the Portal instance that serves the Test Workbench:
 
 ```sh
