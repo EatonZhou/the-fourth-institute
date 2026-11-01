@@ -11,7 +11,17 @@ function originalHatgSets(snapshot) {
 }
 ```
 
-发现目标Chat使用`tau_chat_ready_evidence.js`的`visibleResidentChatRoots(page,{residentId})`，返回当前可见、原生头部精确绑定该Resident的全部Editor Locator。先count/evaluateAll记录候选，再按本轮实际面板选择唯一Editor并传给readResidentChatReady；零候选继续原有界等待，多个候选不取first掩盖歧义。可访问名称可能由aria-labelledby计算，不能要求DOM存在aria-label，也不能把getAttribute('aria-label').includes('Chat')作为发现门禁。
+发现目标Chat使用`tau_chat_ready_evidence.js`的`visibleResidentChatRoots(page,{residentId})`，同步返回一个Playwright Locator，可匹配当前可见、原生头部精确绑定该Resident的全部Editor；必须调用`await roots.count()`，不能用`roots.length`或`roots[0]`。先count/evaluateAll记录候选，再按本轮实际面板选择唯一Editor并传给readResidentChatReady；零候选继续原有界等待，多个候选不取first掩盖歧义。可访问名称可能由aria-labelledby计算，不能要求DOM存在aria-label，也不能把getAttribute('aria-label').includes('Chat')作为发现门禁。计划只有一个Editor时可复用以下准备函数；返回null表示继续原等待，返回Locator后仍须readResidentChatReady核验实际ready：
+
+```js
+// tau-native-chat-locator
+async function uniqueResidentChat(page, residentId) {
+  const roots = visibleResidentChatRoots(page, {residentId});
+  const count = await roots.count();
+  if (count > 1) throw new Error('Multiple native Chat Editors; resolve the planned panel first');
+  return count === 1 ? roots : null;
+}
+```
 
 图几何稳定和普通成员执行可用是两个检查。executionResidentIds应来自原基线中本轮需要执行的普通成员；如果当前图只有Family门面，则列表为空、requireExecutionOpen=false，仍检查门面身份、可见错误、完整集合和稳定几何。空列表配true会被助手拒绝。参数组合可使用以下示例；它不替代成员账号预检或消息路由验收：
 

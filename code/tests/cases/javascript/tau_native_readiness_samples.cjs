@@ -20,6 +20,11 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   // Negative control for the archived 300bee4 readiness condition.
   assert.equal(sample.ready && sample.session_identity_ready, false);
   const prompt = fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
+  const discoveryExample=prompt.match(/```js\n(\/\/ tau-native-chat-locator\n[\s\S]*?)\n```/);
+  assert.ok(discoveryExample, 'the public Chat discovery example must specify its Locator contract');
+  const uniqueResidentChat=new Function('visibleResidentChatRoots',discoveryExample[1]+'; return uniqueResidentChat;')(visibleResidentChatRoots);
+  assert.equal(await (await uniqueResidentChat(page,residentId)).getAttribute('id'),await root.getAttribute('id'));
+  assert.equal(await uniqueResidentChat(page,'resident_absent'),null);
   assert.ok(!prompt.includes('首次真实输入建立Session后现场等 session_identity_ready'),
     'the archived public prompt requires a Session header absent from the native page');
   await root.getByRole('button', {name: 'Resident Menu', exact: true}).click();
@@ -103,6 +108,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   },childId);
   await page.locator('#sample-second-editor .chatHead [data-workspace-resident-id]').waitFor({state:'visible'});
   const discovered = await children.evaluateAll(nodes=>nodes.map(n=>n.id));
+  await assert.rejects(uniqueResidentChat(page,childId), /Multiple native Chat Editors/);
   assert.deepEqual(new Set(discovered),new Set([originalEditor,'sample-second-editor']));
   assert.equal((await readResidentChatReady(children,{residentId:childId})).ready,false,'ambiguous Editors cannot become ready');
   await assert.rejects(children.waitFor({state:'visible',timeout:150}),/strict mode violation/,
