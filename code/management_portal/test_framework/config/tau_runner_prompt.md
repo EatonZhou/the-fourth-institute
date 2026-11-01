@@ -1,5 +1,19 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+Society 默认布局隐藏 HATG；普通 `/lineage?lineage=...` 只绑定目标并保留布局，不保证出现画布。导航原 ready 先核验页面与实际入口，不能等待仍隐藏的 HATG 身份。随后用独立原动作点击当前原生 Show HATG（或本轮发现的 Lineage 导航入口），在该动作 ready 内核验完整 Lineage 身份与图。页面已经显示 HATG 时不重复点击显示按钮。显式 `view=hatg` 是设计支持的画布入口，但仍遵守用例规定的导航方式。下面只发现控件，返回 Locator 或 null；不点击、不修改布局、不代替身份核验。
+
+```js
+// tau-hatg-opening
+async function nativeHatgShowControl(page) {
+  const graph = page.getByRole('region', {name: 'HATG', exact: true});
+  if (await graph.count() === 1 && await graph.isVisible()) return null;
+  const show = page.getByRole('button', {name: 'Show HATG', exact: true});
+  if (await show.count() !== 1 || !await show.isVisible() || !await show.isEnabled())
+    throw new Error('Current native HATG opening control is unavailable');
+  return show;
+}
+```
+
 HATG新建组件的身份来自本次原始CreateComponent回执`result.component_id`，其`result.component.id`必须一致；GetLineage的`lineage.program.components`里字段是`id`，不是`component_id`。不要按标题扫描后取不存在的字段，也不接受undefined作为原ready的目标。以下函数接收完整ISA回执，不发送请求、不代替完整原图集合核验。
 
 ```js
