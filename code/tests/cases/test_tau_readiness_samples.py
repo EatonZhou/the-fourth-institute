@@ -38,3 +38,13 @@ def test_loaded_graph_fit_survives_late_workbench_catalogs():
         capture_output=True, text=True, timeout=90,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_graph_readiness_preserves_geometry_and_execution_errors():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'tau_home_chat_navigation.cjs'),
+         '--graph-readiness-samples'],
+        env={**os.environ, 'TFI_TEST_PYTHON': sys.executable},
+        capture_output=True, text=True, timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -13,6 +13,10 @@ module.exports = async ({page, residentId, releaseGraph, errors}) => {
   const mounting=await readSessionLineageIdentity(panel,{lineageId:'lineage_222222222222'});
   assert.equal(mounting.mount_loading,true);
   assert.equal(mounting.identity_ready,false);
+  const {readHatgViewSnapshot}=require('../../../management_portal/test_framework/tau_hatg_view_evidence');
+  const busyGraph=await readHatgViewSnapshot(panel,{lineageId:'lineage_222222222222'});
+  assert.equal(busyGraph.identity_ready,false);
+  assert.equal(busyGraph.candidates[0].busy,true);
   await fit.click();
   releaseGraph();
   await panel.locator(`[data-node-id="${residentId}"]`).waitFor({state:'visible'});

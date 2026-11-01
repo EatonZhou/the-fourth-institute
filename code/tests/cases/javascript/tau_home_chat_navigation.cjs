@@ -12,6 +12,7 @@ const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}
 const readinessSamples = process.argv.includes('--readiness-samples');
 const cameraSamples = process.argv.includes('--camera-samples');
 const lateCameraSamples = process.argv.includes('--late-camera-samples');
+const graphReadinessSamples = process.argv.includes('--graph-readiness-samples');
 let releaseGraph;
 const graphGate = cameraSamples ? new Promise(resolve => { releaseGraph = resolve; }) : Promise.resolve();
 let releaseCatalog;
@@ -20,6 +21,8 @@ const sessionId = 'opaque.full-session-id-for-native-menu';
 const childId = 'resident_333333333333';
 let forked = false;
 const deletedResidents = new Set();
+const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSamples
+  ? {state:'unknown',reason:'execution_unavailable'} : {state:'open',reason:''}});
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -39,7 +42,8 @@ const deletedResidents = new Set();
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return route.fulfill({ path: file });
       if (u.pathname === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: '' });
       const makeResident = id => ({id, resident_id:id, lineage_id:lineageId,
-        title:id === childId ? 'Fixture Child' : 'Fixture Resident', owner:'fixture', backend:'codex', kind:'agent', x:id === childId ? 400 : 0, y:0});
+        title:id === childId ? 'Fixture Child' : 'Fixture Resident', owner:'fixture', backend:'codex', kind:'agent', x:id === childId ? 400 : 0, y:0,
+        ...(graphReadinessSamples ? {resident_state:{execution_gate:{state:'unknown',reason:'execution_unavailable'}}} : {})});
       const targetId = body?.arguments?.resident_id || u.searchParams.get('id') || residentId;
       if (deletedResidents.has(targetId) && (u.pathname.endsWith('/projection') || body?.instruction === 'GetConversation'))
         return route.fulfill({status:404,json:{code:'resident.deleted',error:'Resident deleted'}});
@@ -68,11 +72,11 @@ const deletedResidents = new Set();
           return route.fulfill({ status: 400, json: { error: { code: 'fixture.unexpected_instruction' } } });
         }
         if (body.instruction === 'MarkMailboxItemRead') result = { item: { resident_id: residentId, unread: false, read_revision: 1 } };
-        if (body.instruction === 'GetConversation') result = { resident, messages: [], queue: { items: [] }, controls: { can_send: true }, state: 'idle' };
+        if (body.instruction === 'GetConversation') result = { resident, messages: [], queue: { items: [] }, controls: { can_send: true }, state: runtimeState() };
         if (body.instruction === 'GetResident') result = {resident};
         if (body.instruction === 'ListWorkbenches') result = {workbenches:[]};
         if (body.instruction === 'ForkResident') { forked = true; result = {resident_id:childId}; }
-        if (body.instruction === 'ListResidentStates') result = { states: [{ resident_id: residentId, state: 'idle', cursor: 1, viewer_state: { unread: false } }] };
+        if (body.instruction === 'ListResidentStates') result = { states: [{ resident_id: residentId, state: runtimeState(), cursor: 1, viewer_state: { unread: false } }] };
         if (body.instruction === 'GetLineage') {
           await graphGate;
           result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges: [], seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
@@ -92,6 +96,10 @@ const deletedResidents = new Set();
     });
     const chat = await readResidentChatReady(root, { residentId });
     assert.equal(chat.ready, true, JSON.stringify({ chat, errors, requests }));
+    if (graphReadinessSamples) {
+      await require('./tau_native_graph_readiness.cjs')({page,residentId,lineageId,errors});
+      return;
+    }
     if (lateCameraSamples) {
       await require('./tau_native_late_camera.cjs')({page, releaseCatalog, errors});
       return;

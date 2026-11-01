@@ -51,6 +51,12 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const {readWatchboardNodePrerequisites} = require('../../../management_portal/test_framework/tau_watchboard_node_prerequisites');
   const nativePane = hatg.locator('section#hatgPane[data-lineage-pane="hatg"]');
   assert.equal(await nativePane.getAttribute('role'), null);
+  const {waitForHatgView} = require('../../../management_portal/test_framework/tau_hatg_view_evidence');
+  const geometrySamples=[];
+  const graphReady=await waitForHatgView(hatg,{lineageId:'lineage_222222222222',nodeIds:[residentId],edgeIds:[],
+    requireExecutionOpen:true,requireWithinCanvas:true,stableMs:120,intervalMs:30,timeoutMs:3000,
+    record:s=>geometrySamples.push(s)});
+  assert.ok(graphReady.ready && geometrySamples.length>=3);
   for (const panel of [nativePane, hatg]) {
     assert.equal((await readSessionLineageIdentity(panel, {lineageId:'lineage_222222222222'})).identity_ready, true);
     assert.equal((await readSessionLineageIdentity(panel, {lineageId:'lineage_other'})).identity_ready, false);

@@ -1,0 +1,82 @@
+'use strict';
+
+// Original-window evidence only. This module never navigates, fits, submits,
+// takes a screenshot or infers a business result. Callers supply exact sets
+// from their original receipts and persist every sample, including failures.
+async function readHatgViewSnapshot(panel, {lineageId}) {
+  if (!/^lineage_[a-z0-9]+$/.test(lineageId || '')) throw new TypeError('Exact Lineage identity required');
+  const candidates = await panel.evaluateAll(roots => roots.map(root => {
+    const visible = n => !!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')
+      && n.checkVisibility({checkOpacity:true, checkVisibilityCSS:true});
+    const box = n => {
+      const b = n.getBoundingClientRect();
+      return Object.fromEntries(['x','y','width','height'].map(k => [k,Math.round(b[k]*10)/10]));
+    };
+    const mount = root.closest('.portalHatgPanelComponent') || root;
+    const canvas = root.querySelector('#hatgCanvas');
+    const bounds = canvas && visible(canvas) ? box(canvas) : null;
+    const nodes = [...root.querySelectorAll('[data-node-id]')].filter(visible).map(n => {
+      const geometry = box(n);
+      return {id:n.getAttribute('data-node-id'), geometry,
+        within_canvas:!!bounds && geometry.x >= bounds.x-1 && geometry.y >= bounds.y-1
+          && geometry.x+geometry.width <= bounds.x+bounds.width+1
+          && geometry.y+geometry.height <= bounds.y+bounds.height+1};
+    }).sort((a,b)=>a.id.localeCompare(b.id));
+    const edgeGeometry = [...root.querySelectorAll('[data-edge-id]')].filter(visible)
+      .map(n=>({id:n.getAttribute('data-edge-id'),tag:n.tagName,geometry:box(n),path:n.getAttribute('d')}))
+      .sort((a,b)=>`${a.id}:${a.tag}`.localeCompare(`${b.id}:${b.tag}`));
+    const edges = [...new Set(edgeGeometry.map(n=>n.id))].sort();
+    const errors = [...root.querySelectorAll('[role="alert"],#lineageLoadError,#graphSyncStatus[data-state="error"]')]
+      .filter(visible).map(n=>({id:n.id, text:n.textContent.trim()}));
+    const gates = [...root.querySelectorAll('[data-node-id] [data-execution-gate]')].filter(visible)
+      .map(n=>({resident_id:n.closest('[data-node-id]').getAttribute('data-node-id'),
+        state:n.getAttribute('data-execution-gate'), text:n.textContent.trim(), title:n.getAttribute('title')}));
+    return {native:root.matches('.portalHatgPanelComponent[role="region"],#lineage-hatg-panel[role="region"],section#hatgPane[data-lineage-pane="hatg"][aria-label]'),
+      visible:visible(root), lineage_ids:[...root.querySelectorAll('#activeLineageIdentity [data-portal-resource-id]')]
+        .filter(visible).map(n=>n.getAttribute('data-portal-resource-id')),
+      busy:mount.inert || mount.getAttribute('aria-busy') === 'true', bounds,
+      zoom:canvas?.getAttribute('data-zoom') || null, nodes, edges, edge_geometry:edgeGeometry, errors, execution_gates:gates};
+  }));
+  const view = candidates.length === 1 ? candidates[0] : null;
+  return {observed_at_ms:Date.now(), lineage_id:lineageId, candidates,
+    identity_ready:!!view && view.native && view.visible && !view.busy && !!view.bounds
+      && view.lineage_ids.length === 1 && view.lineage_ids[0] === lineageId};
+}
+
+async function waitForHatgView(panel, {lineageId, nodeIds, edgeIds, record,
+  requireWithinCanvas=false, requireExecutionOpen=false, executionResidentIds=nodeIds,
+  timeoutMs=10000, stableMs=350, intervalMs=75}) {
+  const validSet = a => Array.isArray(a) && a.every(x=>typeof x==='string' && x) && new Set(a).size===a.length;
+  if (!validSet(nodeIds) || !validSet(edgeIds) || !validSet(executionResidentIds)
+      || executionResidentIds.some(id=>!nodeIds.includes(id)) || (requireExecutionOpen && !executionResidentIds.length)
+      || typeof record !== 'function'
+      || !Number.isFinite(timeoutMs) || timeoutMs<=0 || timeoutMs>600000
+      || !Number.isFinite(stableMs) || stableMs<100 || stableMs>=timeoutMs
+      || !Number.isFinite(intervalMs) || intervalMs<1 || intervalMs>stableMs)
+    throw new TypeError('Exact node/edge sets, persistence callback and bounded stable window required');
+  const expectedNodes=JSON.stringify([...nodeIds].sort()), expectedEdges=JSON.stringify([...edgeIds].sort());
+  const started=Date.now(), deadline=started+timeoutMs;
+  let signature=null, stableSince=null, last=null;
+  while (Date.now()<deadline) {
+    last=await readHatgViewSnapshot(panel,{lineageId});
+    const v=last.candidates.length===1 ? last.candidates[0] : null;
+    const matches=last.identity_ready && !v.errors.length
+      && JSON.stringify(v.nodes.map(n=>n.id).sort())===expectedNodes && JSON.stringify(v.edges)===expectedEdges
+      && (!requireWithinCanvas || v.nodes.every(n=>n.within_canvas))
+      && (!requireExecutionOpen || v.execution_gates.filter(g=>executionResidentIds.includes(g.resident_id))
+        .every(g=>g.state==='open'));
+    const next=matches ? JSON.stringify({nodes:v.nodes,bounds:v.bounds,edges:v.edge_geometry,zoom:v.zoom}) : null;
+    if (!matches || next!==signature) stableSince=matches ? Date.now() : null;
+    signature=next;
+    last.stable_for_ms=stableSince===null ? 0 : Date.now()-stableSince;
+    last.ready=!!matches && last.stable_for_ms>=stableMs;
+    last.elapsed_ms=Date.now()-started;
+    await record(last);
+    if (last.ready && Date.now()<=deadline) return last;
+    await new Promise(resolve=>setTimeout(resolve,Math.min(intervalMs,Math.max(0,deadline-Date.now()))));
+  }
+  const error=new Error('Original HATG view did not settle before its deadline');
+  error.code='tau.hatg_view_timeout'; error.snapshot=last; throw error;
+}
+
+module.exports={readHatgViewSnapshot,waitForHatgView};
