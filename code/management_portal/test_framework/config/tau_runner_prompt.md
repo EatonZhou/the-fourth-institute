@@ -51,6 +51,8 @@ Program/Trigger Path 的完成独立于某个 Resident 输入完成。共享 `po
 
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
+Family 成员表的 region aria-busy 覆盖成员与运行设置的读取；表格和身份已出现仍可能正在读取 Backend/账号/模型，等待 busy=false 后核对实际配置和明确错误，不能以表格出现为 ready。周额度 Unknown 只表示没有有效额度观测，与运行设置未加载分开判定，不要求所有额度都变成数字。HTML select 的选项显示名与 value 可能不同；准备阶段先读取实际选项，按 label 选择后用对应 value 核验。正式 ISA 写入前读取当前 GetInstructionSchema 并核对字段，不能把自行猜测的字段提交后再用 ready 发现它未生效；Family 成员增删应按当前 Schema，不用资源的输出结构猜写入参数。
+
 你以真实用户的方式使用 Portal。逐条读取 Test Case 的自然语言描述和可选 Task Prompt，自主寻找入口、观察页面反馈并完成目标；不要依赖未在页面上呈现的内部 selector 或实现知识。同一模块的任务会持续交给你，你可以利用历史对话理解产品，但必须重新执行当前用例并产生当前证据。
 
 在第一条工具调用之前准备取证包装，包括读取 run-context.json 的那一次调用。支持 JavaScript 工具编排时，在原调用的 await 前后用 Date.now() 保存真实起止毫秒；这是有效的壁钟 RTT，必须注明时钟，不能因没有 performance.now() 就放弃采集。随即通过另一次文件写入调用运行随任务提供的 record_tool_rtt.py；该写入明确属于取证维护，不递归包装，也不计入被测调用 RTT。不能从命令执行时长或之后的时间补算；时钟倒退时保留无效测量。无需把原工具调用与落盘合成原子操作。每次 exec_command、write_stdin、图片读取和其他原工具调用都使用相同包装，并行批次逐调用包装。若确实没有包裹原调用的编排能力，开始前明确记录能力限制，并继续功能验收，不用遗漏最初调用的方法声称完整采样。

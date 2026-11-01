@@ -255,6 +255,7 @@
         if (disposed) return;
         const chatPolicy = mix.state.policy, mixBusy = mix.state.busy;
         const all = [...rows.values()];
+        root.setAttribute("aria-busy", String(loading || all.some(row => row.settingsLoading)));
         const running = all.filter(working).length;
         const queued = all.reduce((n, row) => n + Number(row.snapshot?.state?.queued_count || 0), 0);
         const attention = all.filter(row => failed(row) || migration(row) || (weekly(accountOf(row)) !== null
@@ -386,9 +387,12 @@
             render();
           }));
           loading = false; render();
-        } catch (error) { root.innerHTML = window.PortalI18n.html`<p>${escapeHtml(error.message)}</p>`; }
+        } catch (error) {
+          if (!disposed) root.innerHTML = window.PortalI18n.html`<p role="alert">${escapeHtml(error.message)}</p>`;
+        }
         finally {
           loading = false;
+          if (!disposed) root.setAttribute("aria-busy", String([...rows.values()].some(row => row.settingsLoading)));
           if (reloadRequested) {
             reloadRequested = false;
             if (!disposed && isOpen()) void load();

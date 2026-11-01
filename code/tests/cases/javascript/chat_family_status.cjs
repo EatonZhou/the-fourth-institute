@@ -327,12 +327,54 @@ async function openedAndMounted() {
   }
 }
 
+async function pendingMemberSettings() {
+  const container = w.document.createElement('div');
+  w.document.body.append(container);
+  family = { title: 'Pending Family', nodes: [nodes[1]] };
+  const originalBind = w.PortalResidentRuntimeController.bind;
+  let finishRead;
+  const pending = new Promise(resolve => { finishRead = resolve; });
+  w.PortalResidentRuntimeController.bind = (id, handlers) => {
+    const runtime = originalBind(id, handlers);
+    const load = runtime.load;
+    runtime.load = async () => { await pending; return load(); };
+    return runtime;
+  };
+  const view = w.PortalChatWorkspace.mountFamilyStatus('res_pending', container);
+  try {
+    await settle();
+    const root = container.querySelector('.familyStatusPanel');
+    assert.ok(row(root, 'res_run'), 'member identity arrives before its runtime');
+    assert.equal(root.getAttribute('aria-busy'), 'true', 'a visible roster is still loading member settings');
+    finishRead(); await settle();
+    assert.equal(root.getAttribute('aria-busy'), 'false');
+    assert.match(text(cells(root, 'res_run')[1]), /model-x/);
+    assert.match(text(cells(root, 'res_run')[2]), /35%/);
+    const handlers = runtimes.get('res_run').handlers;
+    handlers.onState({ loading: true });
+    assert.equal(root.getAttribute('aria-busy'), 'true', 'a later runtime read also marks the region busy');
+    handlers.onState({ loading: false });
+    assert.equal(root.getAttribute('aria-busy'), 'false');
+    const project = w.PortalResidentService.projection;
+    try {
+      w.PortalResidentService.projection = async () => { throw new Error('family unavailable'); };
+      view.refresh(); await settle();
+      assert.equal(root.getAttribute('aria-busy'), 'false', 'failed read has settled');
+      assert.match(text(root.querySelector('[role="alert"]')), /family unavailable/);
+    } finally { w.PortalResidentService.projection = project; }
+  } finally {
+    finishRead(); view.destroy(); container.remove();
+    w.PortalResidentRuntimeController.bind = originalBind;
+  }
+}
+
 const watchdog = setTimeout(() => { console.error('Family status test did not complete'); process.exit(1); }, 15000);
 (async () => {
   try {
     if (w.document.readyState === 'loading') await new Promise(resolve => w.document.addEventListener('DOMContentLoaded', resolve, { once: true }));
     await membersQuotaAndSummary();
     await openedAndMounted();
+    await pendingMemberSettings();
     console.log('PASS: Family status, quota, intake, details and lifecycle');
   } finally {
     observers.forEach(observer => observer.disconnect());
