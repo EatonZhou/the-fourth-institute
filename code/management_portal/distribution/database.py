@@ -22,6 +22,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from management_common.portal_database import _database_schema, portal_database_url
+from management_portal.resources.config import resource_database_schema
 from .sanitize import scrub
 
 SCHEMAS = ("lineage", "agent", "resident_context", "resource_registry", "workspace", "templates", "permission", "workbenches", "execution_accounts", "article")
@@ -90,8 +91,7 @@ class DatabaseSnapshot:
 
     def read_index(self, *, resource_ids=None, resource_type=None, query=''):
         # The index is a projection, used only to locate explicitly selected content.
-        logical = os.getenv("PORTAL_RESOURCE_DATABASE_SCHEMA") or ("resources" if os.getenv("PORTAL_DATABASE_NAMESPACE") else "resource_dev")
-        schema = _database_schema(logical)
+        schema = _database_schema(resource_database_schema())
         present = self.connection.execute("SELECT to_regclass(%s) AS name", (schema + ".resource_index_records",)).fetchone()
         if not present["name"]:
             return {}
