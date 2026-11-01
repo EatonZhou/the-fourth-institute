@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
   'accountSummaryQuotaWindows','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
-  'accountRows','accountApiRow','accountBalanceHtml'];
+  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -16,17 +16,20 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     for(const file of ['home_workbench.css','home.css']) await page.addStyleTag({path:path.join(root,'management_portal/static',file)});
     await page.addScriptTag({content:`
       const tag=(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'');
-      window.PortalI18n={t:x=>x,html:tag,text:tag};
+      window.PortalI18n={t:x=>x,html:tag,text:tag,markup:x=>x};
       const esc=x=>String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
       const formatDateTime=x=>x?new Date(x).toISOString():'';
       const currentCanSetScheduler=()=>false;
       const currentAgentStatusData=()=>data;
+      const accountIntakePending=new Map();
+      const syncAccountDetailsButtons=()=>{};
+      let accountDetails=null;
       ${renderer}
       const quota=(id,label,value)=>({id,label,remaining_percent:value,resets_at:Date.now()/1000+3600});
       const api=(id,balance,capabilities)=>({account_id:id,kind:'api_profile',balance,capabilities});
       const data={accounts:[
         api('deepseek', {status:'ok',display:'123.45 CNY',comparison_amount:123,comparison_currency:'CNY'}),
-        {account_id:'claude_one',provider:'claude',kind:'subscription_login',rate_limits:[quota('five_hour','5 小时',72),quota('weekly','每周',64)]},
+        {account_id:'claude_one',provider:'claude',kind:'subscription_login',credits:{balance:44904.19},rate_limits:[quota('five_hour','5 小时',72),quota('weekly','每周',64)]},
         {account_id:'antigravity_one',provider:'antigravity',kind:'subscription_login',rate_limits:[quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',100),quota('Gemini Models/Five Hour Limit Remaining','Gemini Five Hour',90),quota('other','other models',10)]},
         {account_id:'kimi-code',provider:'kimi',kind:'subscription_login',rate_limits:[quota('limit5h','5 小时',75),quota('limit7d','每周',58),quota('monthCode','每月编程额度',85)]},
         api('a_very_long_api_account_name', {status:'ok',display:'0 USD'}, {resident_details:false}),
@@ -67,6 +70,21 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       });
       assert.deepEqual(problems,[],width+'px');
     }
+    await page.evaluate(()=>{
+      const panel=document.createElement('section'); panel.className='account-details portalDetailSurface';
+      document.body.append(panel);
+      accountDetails={accountId:'claude_one',panel,snapshot:{total:1,intake:{},work:{}},
+        popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}};
+      renderAccountDetails();
+    });
+    assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
+    for(const width of [1440,390,320]) {
+      await page.setViewportSize({width,height:900});
+      assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }
+    await page.evaluate(()=>{data.accounts[1].credits={balance:0,stale:true};refreshAccountQuotaWindows();});
+    assert.equal(await page.locator('[data-account-credits] dd').innerText(),'0*');
     if (process.env.PORTAL_LAYOUT_SCREENSHOT) { await page.setViewportSize({width:1440,height:650}); await page.screenshot({path:process.env.PORTAL_LAYOUT_SCREENSHOT}); }
     console.log('Subscription summaries unchanged; API and subscription rows aligned, bounded coins; six widths pass');
   } finally {await browser.close();}

@@ -88,6 +88,7 @@
         if (quotaWindow) node.outerHTML = accountQuotaWindow(account, quotaWindow);
         else if (account) node.remove();
       }
+      renderAccountDetails();
     }
 
     function accountQuotaWindow(account, quotaWindow) {
@@ -132,6 +133,20 @@
         shownCoins && balance.currency !== "CNY" && window.PortalI18n.text`约 ${amount.toFixed(2)} CNY · 汇率 ${balance.exchange_rate_date || ""}`,
         sampled && window.PortalI18n.text`更新于 ${sampled}`, balance.error].filter(Boolean).join(" · ");
       return window.PortalI18n.html`<span class="agent-status-account-balance${balance.stale ? " is-stale" : ""}" data-account-balance title="${esc(title)}"><span class="agent-status-balance-value${available ? " is-availability" : ""}">${esc(value)}</span>${coins}</span>`;
+    }
+
+    function accountCreditsHtml(account) {
+      const credits = account?.credits;
+      if (!credits || typeof credits !== "object") return "";
+      const known = typeof credits.balance === "number" && Number.isFinite(credits.balance);
+      const stale = Boolean(credits.stale) || account.status === "unavailable";
+      const value = credits.unlimited ? window.PortalI18n.t("不限")
+        : known ? credits.balance.toLocaleString(undefined, {maximumFractionDigits: 2}) : "—";
+      const observed = credits.observed_at;
+      const sampled = formatDateTime(typeof observed === "number" ? observed * 1000 : observed || "");
+      const title = [stale && window.PortalI18n.t("数据已过期，数值为上次采样"),
+        sampled && window.PortalI18n.text`采样于 ${sampled}`, account.error].filter(Boolean).join(" · ");
+      return window.PortalI18n.html`<dl class="account-details-metrics" data-account-credits title="${esc(title)}"><div><dt>Credits</dt><dd>${esc(value)}${stale && (known || credits.unlimited) ? "*" : ""}</dd></div></dl>`;
     }
 
     function accountRows(accounts) {
@@ -356,7 +371,7 @@
       const focusedElement = details.panel.contains(document.activeElement) ? document.activeElement : null;
       const focused = focusedElement?.dataset.accountAction;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
-    <div class="account-details-body">${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
+    <div class="account-details-body">${accountCreditsHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
       ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>
