@@ -76,7 +76,16 @@
         : routes.find(item => defaultAccount && String(item.account_id || "").toLowerCase() === defaultAccount)?.backend_route_id;
       if (preferred) route.value = preferred;
       const selected = routes.find(item => item.backend_route_id === route.value);
-      const catalog = window.PortalLineageCatalogs.routeRuntimeCatalog(selected, renderNodeProviderFields);
+      const selectedBackend = $id("nodeBackendSelect").value, selectedRoute = route.value;
+      const catalog = window.PortalLineageCatalogs.routeRuntimeCatalog(selected, renderNodeProviderFields, error => {
+        if ($id("nodeBackendSelect").value !== selectedBackend || route.value !== selectedRoute) return;
+        state.nodeCatalogPending = false;
+        $id("nodeForm").setAttribute("aria-busy", String(Boolean(state.nodeSubmitBusy)));
+        $id("nodeFormRuntimeStatus").hidden = true;
+        $id("nodeFormError").textContent = window.PortalI18n.text`运行设置读取失败：${error.message}`;
+        $id("nodeFormError").hidden = false;
+        $id("nodeSubmitBtn").disabled = true;
+      });
       const previousModel = model.value;
       const models = catalog?.models || [];
       model.replaceChildren(...models.map(item => new Option(item, item)));
@@ -92,6 +101,20 @@
         input.required = enabled && input !== effort;
       }
       $id("nodeServiceTierInput").closest("label").hidden = !fields.includes("service_tier");
+      state.nodeCatalogPending = Boolean(selected && fields.includes("model") && !Array.isArray(catalog?.models));
+      $id("nodeForm").setAttribute("aria-busy", String(Boolean(state.nodeCatalogPending || state.nodeSubmitBusy)));
+      const status = $id("nodeFormRuntimeStatus");
+      status.hidden = !state.nodeCatalogPending;
+      status.textContent = window.PortalI18n.t("正在加载…");
+      if (!state.nodeSubmitBusy) {
+        $id("nodeFormError").hidden = true;
+        if (fields.includes("model") && !state.nodeCatalogPending && !model.value) {
+          $id("nodeFormError").textContent = window.PortalI18n.t("没有可用模型");
+          $id("nodeFormError").hidden = false;
+        }
+      }
+      $id("nodeSubmitBtn").disabled = Boolean(state.nodeSubmitBusy || state.nodeCatalogPending
+        || (model.required && !model.value) || (route.required && !route.value));
     }
 
     function openNodeModal() {
@@ -121,11 +144,13 @@
 
     async function submitNodeForm(event) {
       event.preventDefault();
-      if (!state.lineage) return;
+      if (!state.lineage || state.nodeSubmitBusy || $id("nodeSubmitBtn").disabled) return;
       const button = $id("nodeSubmitBtn");
       $id("nodeFormError").hidden = true;
       $id("nodeFormError").textContent = "";
       setBusy(button, true, "创建中…");
+      state.nodeSubmitBusy = true;
+      $id("nodeForm").setAttribute("aria-busy", "true");
       try {
         if (state.layoutSaveInFlight) await state.layoutSaveInFlight;
         await flushLineageLayoutSave();
@@ -171,7 +196,12 @@
           toast(error.message || String(error), "error", 5200);
         }
       } finally {
+        state.nodeSubmitBusy = false;
         setBusy(button, false);
+        $id("nodeForm").setAttribute("aria-busy", String(Boolean(state.nodeCatalogPending)));
+        button.disabled = Boolean(state.nodeCatalogPending
+          || ($id("nodeModelSelect").required && !$id("nodeModelSelect").value)
+          || ($id("nodeRouteSelect").required && !$id("nodeRouteSelect").value));
       }
     }
 

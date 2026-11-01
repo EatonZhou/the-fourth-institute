@@ -139,7 +139,7 @@
   // The models and efforts of a route.  A Provider that lists its models live
   // (Codex) gives none on its routes: its account's catalog is read once and
   // ``onLoaded`` runs when it arrives.  No Provider borrows another's list.
-  function routeRuntimeCatalog(route, onLoaded) {
+  function routeRuntimeCatalog(route, onLoaded, onError) {
     if (!route || route.models) return route || {};
     const accountId = String(route.account_id || "");
     if (!accountId) return route;
@@ -149,7 +149,7 @@
         liveCatalogs.set(accountId, normalizeRuntimeCatalog(payload));
         if (typeof onLoaded === "function") onLoaded();
       })
-      .catch(() => {});
+      .catch(error => { if (typeof onError === "function") onError(error); });
     return route;
   }
 
