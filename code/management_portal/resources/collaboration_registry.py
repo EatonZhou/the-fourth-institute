@@ -28,8 +28,14 @@ STATUSES = frozenset({"active", "creating", "running", "deleted"})
 
 def descriptor_attributes(descriptor: Mapping[str, Any]) -> dict[str, Any]:
     """Project current domain fields without retaining removed index fields."""
+    attributes = dict(descriptor.get("attributes") or {})
+    if (stripped_text(descriptor.get("resource_id")).startswith("workspace_")
+            and descriptor.get("status") == "deleted"):
+        # Keep the lifecycle tombstone, without advertising its retired location.
+        # The authoritative Workspace row retains its history.
+        attributes.pop("path", None)
     return {
-        **dict(descriptor.get("attributes") or {}),
+        **attributes,
         "status": descriptor.get("status", ""),
         "project_ids": list(descriptor.get("project_ids") or []),
         "relations": list(descriptor.get("relations") or []),
@@ -47,7 +53,7 @@ def descriptor_resource_record(descriptor: Mapping[str, Any]) -> dict[str, Any]:
     attributes = normalize_resource_attributes(descriptor_attributes(descriptor))
     terms = [
         *attributes.get("project_ids", []),
-        *(descriptor.get("attributes") or {}).values(),
+        *attributes.values(),
         *(relation.get("target_id") for relation in attributes.get("relations", [])),
     ]
     record = {
