@@ -1,6 +1,15 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
-Workbench单标签栏会收起到面板上边缘，tab.boundingBox的上部可能已被裁剪，不能按该矩形的y+1悬停或直接点击其中隐藏的关闭按钮。先枚举本轮实际tab并取得唯一Locator，再用`tau_workbench_tabs.js`的`revealWorkbenchTabControls(tab,{record})`从实际面板内的上边缘正常移入鼠标，逐样本记录展开和命中情况，ready后再用返回的原生close.label定位关闭控件。助手不关闭面板、不强制点击、不改CSS、不自动解除布局锁；关闭后的目标消失仍由原action ready核验。可见/启用不等于能接收指针，不能用force消除遮挡。
+Workbench单标签栏会收起到面板上边缘，tab.boundingBox的上部可能已被裁剪，不能按该矩形的y+1悬停或直接点击其中隐藏的关闭按钮。先枚举本轮实际tab并取得唯一Locator，再用`tau_workbench_tabs.js`的`revealWorkbenchTabControls(tab,{record})`从实际面板内的上边缘正常移入鼠标，逐样本记录展开和命中情况。返回值是`{observed_at_ms,candidates,ready}`，关闭控件在唯一候选的`candidates[0].close`中；准备阶段用以下函数取得Locator，再放进原`portal.action`执行普通click，原ready等待该tab消失。助手不关闭面板、不强制点击、不改CSS、不自动解除布局锁。可见/启用不等于能接收指针，不能用force消除遮挡。
+
+```js
+// tau-native-tab-close
+function nativeTabCloseLocator(page, snapshot) {
+  const candidate = snapshot.candidates.length === 1 ? snapshot.candidates[0] : null;
+  if (!snapshot.ready || !candidate?.close?.label) throw new Error('Native tab close is not ready');
+  return page.getByRole('button', {name: candidate.close.label, exact: true});
+}
+```
 
 CreateLineage成功后原生页面会自动打开首个New node表单。原ready同时发现新Lineage身份和该表单后，直接填写首个Resident；不要再次点击被模态层挡住的New node工具条。只有在实际页面确认没有已打开的创建表单时，才通过发现的工具条/菜单打开下一张表单。这个自动打开动作不会提交CreateResident；首个Resident仍须选正确账号、核验并提交一次。
 

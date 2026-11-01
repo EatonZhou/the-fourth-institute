@@ -31,7 +31,12 @@ module.exports=async({page,requests,errors})=>{
   const ready=await revealWorkbenchTabControls(tab,{record:s=>samples.push(s)});
   assert.ok(ready.ready && samples.length>=2);
   assert.equal(ready.candidates[0].close.label,'Close Lineage navigation');
-  await close.click();
+  const documented=prompt.match(/```js\n(\/\/ tau-native-tab-close\n[\s\S]*?)\n```/);
+  assert.ok(documented, 'public tab preparation must show the executable snapshot-to-locator contract');
+  const documentedClose=new Function('page','snapshot',documented[1]+'\nreturn nativeTabCloseLocator(page,snapshot);');
+  assert.throws(()=>documentedClose(page,{...ready,ready:false}),/not ready/);
+  assert.throws(()=>documentedClose(page,{...ready,candidates:[...ready.candidates,...ready.candidates]}),/not ready/);
+  await documentedClose(page,ready).click();
   await tab.waitFor({state:'hidden'});
   assert.deepEqual(errors,[]);
 };
