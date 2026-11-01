@@ -18,8 +18,8 @@ const probes = {
   },
   late_error: {
     contract: 'inflight', source: 'projection_host.js',
-    before: 'if (isCurrent()) post(record, "change", { refs: [], error: error.message, code: error.code || "projection.request_failed" });',
-    after: 'post(record, "change", { refs: [], error: error.message, code: error.code || "projection.request_failed" });',
+    before: 'if (isCurrent()) post(record, "change", { refs: [], ...failure(error) });',
+    after: 'post(record, "change", { refs: [], ...failure(error) });',
     failure: /hidden panel receives no in-flight result/,
   },
   cancellation: {

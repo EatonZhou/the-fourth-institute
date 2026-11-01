@@ -56,7 +56,9 @@ def test_ensure_project_principal_serializes_concurrent_creation(future_creation
     original_project_root = lineage_state.resource_port.project_root
     monkeypatch.setattr(lineage_state.resource_port, "project_root", lambda identifier, *, actor:
                         project_root if identifier == project_id else original_project_root(identifier, actor=actor))
-    monkeypatch.setattr(resource_client, "_query_all", lambda *args, **kwargs: [{"resource_id": project_id}])
+    monkeypatch.setattr(resource_client, "_query_all", lambda *args, **kwargs: [
+        {"resource_id": project_id, "attributes": {"path": str(project_root)}},
+    ])
 
     def register(payload, actor, **kwargs):
         selected = payload.get("project_id") == project_id and kwargs.get("project_principal")

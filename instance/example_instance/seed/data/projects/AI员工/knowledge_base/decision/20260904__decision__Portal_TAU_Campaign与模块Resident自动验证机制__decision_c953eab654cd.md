@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-04'
 version:
-  number: 82
+  number: 83
   created_at: '2026-09-04'
   created_by:
     user: ''
@@ -189,7 +189,7 @@ Workspace 新分配的 ID 也归入本用例资源生命周期，不能因 Resid
 
 ## 报告
 
-报告与槽位文件的新写格式使用 `tfi.*`；严格格式读取入口的精确匹配规则见 `decision_8273271b67b1`。槽位映射当前读取只校验对象和 `assignments` 结构，并在内存中规范化标签；不能据此声称已经按 schema 拒绝坏版本。此实现边界不改变本文件声明的新写格式，也不授权批量改写历史。
+报告与槽位文件的新写格式使用 `tfi.*`；严格格式读取入口的精确匹配规则见 `decision_8273271b67b1`。槽位映射的读取校验对象和 `assignments` 结构，并在内存中规范化标签；该入口按结构读取，不按 schema 版本拒绝内容。写入使用本文件声明的格式，不批量改写历史文件。
 
 Campaign 结束后，运行记录中的 `report` 保存 `tfi.portal-tau-report.v1` 报告：Campaign 状态、模块数、用例数、各状态计数、执行策略、目标 `portal-test` 与 Dev，以及按模块组织的每个用例的结论、体验、诊断和证据。Test 工作区的 Run Console 显示报告摘要、各模块状态和每条结果，所有登录用户都可以从最近运行重新打开任意保留的 Campaign。
 

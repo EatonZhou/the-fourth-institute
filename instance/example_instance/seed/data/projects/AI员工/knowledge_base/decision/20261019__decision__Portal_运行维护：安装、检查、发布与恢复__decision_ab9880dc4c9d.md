@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 20
+  number: 21
   created_at: '2026-10-19'
   created_by:
     user: ''
@@ -114,4 +114,4 @@ WALL 的成果发布与工程级全量发布也调用同一发布器。Portal �
 
 ## 实例生命周期与代码更新
 
-使用 `scripts/tfi_release_install.py` 的 `create/start/stop/status/retire/first-admin/configure-ports/update-code/list`。通过 `--instance <名称>` 或 `PORTAL_INSTANCE_ROOT` 选择实例；清单是唯一的实例配置入口。代码更新替换代码并重启，数据库结构由所属服务启动时更新，需要退路时先由备份软件备份。Windows/macOS 沿用同一实例生命周期。旧的部署路径、格式名与消息来源一次性迁移已执行并删除；本 Plan 的旧实例转换命令保留给尚未转换的安装。
+使用 `scripts/tfi_release_install.py` 的 `create/start/stop/status/retire/first-admin/configure-ports/update-code/list`。通过 `--instance <名称>` 或 `PORTAL_INSTANCE_ROOT` 选择实例；清单是唯一的实例配置入口。代码更新替换代码并重启，数据库结构由所属服务启动时更新，需要退路时先由备份软件备份。Windows/macOS 沿用同一实例生命周期。部署路径、格式名与消息来源遵循实例协议。旧实例转换命令只用于尚未转换的安装，一次性迁移脚本在目标安装完成转换后删除。

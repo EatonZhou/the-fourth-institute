@@ -125,13 +125,14 @@ def test_backup_script_path_round_trips_through_real_effect_parser(configure, tm
     assert calls[0].arguments['argv'] == ['critical']
 
 
-def test_example_needs_no_live_binding_and_pulse_override_remains_available(configure, tmp_path, monkeypatch):
+def test_example_needs_no_live_binding_and_pulse_requires_registration(configure, tmp_path, monkeypatch):
     configure(development_projection={'repo_id': REPO})
     value = development.application_definition('1' * 40, example=True)
     assert value['bindings'] == {} and 'chat' not in value['manifest']
     assert value['project_ids'] == [] and value['navigation'] == 'hidden'
     monkeypatch.setenv('PORTAL_PULSE_ROOT', str(tmp_path))
-    assert pulse._pulse_root() == tmp_path
+    with pytest.raises(ValueError, match='deployment.pulse.lineage_id is not configured'):
+        pulse._pulse_root()
 
 
 def test_removed_managed_switch_binding_cannot_bypass_event_authority(configure, monkeypatch):
