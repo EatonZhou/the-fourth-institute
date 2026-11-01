@@ -52,6 +52,25 @@ def test_lifecycle_pending_execution_preserves_step_and_does_not_report_failure(
     assert calls == [operation_id + ":0"] * 2
 
 
+def test_permanent_lifecycle_failure_is_retained_without_retry(operations):
+    """A terminal lifecycle failure keeps its evidence without retrying effects."""
+    from management_common.json_columns import json_value
+    from management_portal.society_service.resident_lifecycle import LifecyclePermanentFailure
+    operation_id = operations.enqueue('resident_aaaaaaaaaaaa', [{'kind': 'release'}])
+
+    def fail(*_):
+        raise LifecyclePermanentFailure('invalid operation payload')
+
+    operations.run(operation_id, fail)
+    assert operation_id not in operations.ready()
+    operations.run(operation_id, lambda *_: pytest.fail('terminal operation retried'))
+    with operations.store.database.read() as connection:
+        row = connection.execute('SELECT payload_json,last_error FROM resident_lifecycle_operations WHERE operation_id=%s', (operation_id,)).fetchone()
+    assert json_value(row['payload_json'])['status'] == 'failed'
+    assert 'invalid operation payload' in row['last_error']
+    assert operations.health()['failed'] == 1
+
+
 def test_lifecycle_intent_rolls_back_with_identity_commit(operations):
     """身份事务回滚时同一事务中登记的生命周期操作一并撤销"""
     def fail():

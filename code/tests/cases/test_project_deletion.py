@@ -77,3 +77,35 @@ def test_unknown_projects_and_anonymous_callers_are_refused(monkeypatch, tmp_pat
         project_domain.delete_project("Missing", "alice")
     with pytest.raises(ValueError):
         project_domain.delete_project("Example", "")
+
+
+def test_created_project_deletion_cascades_external_bindings_before_file_cleanup(monkeypatch, tmp_path):
+    """A surviving reader cannot retain an owner's deleted directory or registration."""
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from management_portal.resources.workspace_store import get_workspace_store
+    from management_portal.society_service.state_store import LineageDataStore
+    root, _, _, _ = _configure_project(monkeypatch, tmp_path)
+    workspaces = get_workspace_store()
+    workspaces.ensure('workspace_cccccccccccc', str(root))
+    reader = tmp_path / 'reader'
+    reader.mkdir()
+    workspaces.ensure('workspace_bbbbbbbbbbbb', str(reader))
+    store = LineageDataStore()
+    with store.database.transaction() as connection:
+        connection.execute('INSERT INTO residents(resident_id,title,description,owned_workspace_id) VALUES (%s,%s,%s,%s)',
+                           ('resident_cccccccccccc', 'Reader', 'Reads the project', 'workspace_bbbbbbbbbbbb'))
+        connection.execute('INSERT INTO resident_workspace_bindings VALUES (%s,%s,%s)',
+                           ('resident_cccccccccccc', 'workspace_cccccccccccc', 'project files'))
+
+    project_domain.delete_project('Example', 'alice')
+
+    assert root.exists()
+    assert not workspaces.rows(['workspace_cccccccccccc'])
+    assert workspaces.rows(['workspace_bbbbbbbbbbbb'])
+    with store.database.read() as connection:
+        assert not connection.execute('SELECT 1 FROM resident_workspace_bindings').fetchone()
+        assert connection.execute('SELECT deleted_at FROM residents WHERE resident_id=%s',
+                                  ('resident_cccccccccccc',)).fetchone()['deleted_at'] is None
+    get_directory_cleanup_store().run_pending()
+    assert not root.exists()
+    assert reader.is_dir()
