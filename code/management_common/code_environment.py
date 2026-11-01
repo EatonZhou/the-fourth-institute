@@ -8,11 +8,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from .release_dependencies import STARTUP_PROFILES
 
 GENERATED_CODE_DIRECTORIES = frozenset({"node_modules", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
+DEPENDENCY_MANIFESTS = ('package.json', 'management_portal/test_framework/tau_runtime/package.json',
+                        'management_portal/dsh_runtime/package.json')
 
 
 def source_inventory(code: Path) -> dict:
@@ -42,21 +44,36 @@ def dependencies_directory(code: Path) -> Path:
     return Path(code).parent / "dependencies"
 
 
+def dependency_source_paths(names) -> list[str]:
+    """Fingerprint inputs, equally applicable to a checkout or a Git tree."""
+    names = set(names)
+    files = sorted(name for name in names if PurePosixPath(name).parent == PurePosixPath('.')
+                   and PurePosixPath(name).match('requirements*.txt'))
+    files.append('scripts/bootstrap_portal')
+    files += [name for name in DEPENDENCY_MANIFESTS if name in names]
+    return files
+
+
+def environment_key_from_sources(sources, *, wheel_lock=None, selected=STARTUP_PROFILES) -> str:
+    """Hash exact source bytes; a publisher need not checkout its future Release."""
+    digest = hashlib.sha256(json.dumps(sorted(selected)).encode())
+    for name in dependency_source_paths(sources):
+        digest.update(name.encode())
+        digest.update(sources[name])
+    if wheel_lock is not None:
+        digest.update(b"bundled-python-lock")
+        digest.update(wheel_lock)
+    return digest.hexdigest()
+
+
 def environment_key(code: Path, selected=STARTUP_PROFILES) -> str:
     code = Path(code)
-    files = sorted(code.glob("requirements*.txt")) + [code / "scripts/bootstrap_portal"]
-    files += [path for path in (code / "package.json",
-              code / "management_portal/test_framework/tau_runtime/package.json",
-              code / "management_portal/dsh_runtime/package.json") if path.is_file()]
-    digest = hashlib.sha256(json.dumps(sorted(selected)).encode())
-    for path in files:
-        digest.update(path.relative_to(code).as_posix().encode())
-        digest.update(path.read_bytes())
+    names = [path.name for path in code.glob('requirements*.txt')]
+    names += [name for name in DEPENDENCY_MANIFESTS if (code / name).is_file()]
+    sources = {name: (code / name).read_bytes() for name in dependency_source_paths(names)}
     wheel_lock = code.parent / "dependencies/python-wheels/requirements.lock"
-    if wheel_lock.is_file():
-        digest.update(b"bundled-python-lock")
-        digest.update(wheel_lock.read_bytes())
-    return digest.hexdigest()
+    return environment_key_from_sources(sources, wheel_lock=wheel_lock.read_bytes() if wheel_lock.is_file() else None,
+                                        selected=selected)
 
 
 def environment_directory(code: Path) -> Path:

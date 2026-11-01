@@ -32,10 +32,15 @@ class WorkflowTest(unittest.TestCase):
         dev.git(self.root, "config", "user.email", "test@local.invalid")
         dev.git(self.root, "config", "user.name", "Test")
         (self.root / "file").write_text("base\n")
-        dev.git(self.root, "add", "file")
+        (self.root / 'code/scripts').mkdir(parents=True)
+        (self.root / 'code/scripts/bootstrap_portal').write_text('# fixture dependency bootstrap\n')
+        (self.root / 'code/requirements.txt').write_text('')
+        dev.git(self.root, "add", "file", 'code')
         dev.git(self.root, "commit", "-m", "base")
         self.cfg = dev.init(self.root)
         self.work = Path(self.cfg["dev"])
+        for root in (self.root, self.work):
+            self.prepare_environment(root)
         # The worktrees are the code roots of the selected instance's deployments.
         instance = write_instance(Path(self.temp.name) / "site", code=self.root / "code")
         document = json.loads((instance / "instance.json").read_text())
@@ -49,6 +54,55 @@ class WorkflowTest(unittest.TestCase):
 
     def publish(self, *args, **options):
         return dev.publish(*args, **{"activate": False, **options})
+
+    def prepare_environment(self, root, *, key=None):
+        from management_common.code_environment import environment_key
+        environment = root / 'dependencies' / (key or environment_key(root / 'code')) / 'venv'
+        python = environment / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+        python.parent.mkdir(parents=True, exist_ok=True)
+        python.touch()
+        return environment.parent.name
+
+    def test_missing_future_release_environment_refuses_before_merge_or_activation(self):
+        """bootstrap 改动的依赖环境未准备时，推送及激活前拒绝，不改变 Release。"""
+        base = dev.git(self.root, 'rev-parse', 'HEAD')
+        (self.work / 'code/scripts/bootstrap_portal').write_text('# changed dependency bootstrap\n')
+        # Dev was prepared, but preparing old Release would select its old key.
+        key = self.prepare_environment(self.work)
+        with patch('scripts.tfi_development_runtime.request_activation') as activation:
+            with self.assertRaisesRegex(ValueError, 'Dependency environment missing'):
+                self.publish('new bootstrap', push=False, paths=('code/scripts/bootstrap_portal',), activate=True)
+            activation.assert_not_called()
+        self.assertEqual(dev.git(self.root, 'rev-parse', 'HEAD'), base)
+        self.assertEqual((self.root / 'code/scripts/bootstrap_portal').read_text(), '# fixture dependency bootstrap\n')
+        self.prepare_environment(self.root, key=key)
+        result = self.publish('prepared bootstrap', push=False)
+        self.assertEqual(result['dependency_environments']['release']['fingerprint'], key)
+        self.assertEqual(dev.git(self.root, 'rev-parse', 'HEAD'), result['commit'])
+
+    def test_dependency_guard_covers_unpublished_ancestors_with_no_activation(self):
+        """只发布业务文件且不激活，也必须检查随行祖先提交引入的依赖环境。"""
+        (self.work / 'code/scripts/bootstrap_portal').write_text('# unpublished ancestor\n')
+        dev.git(self.work, 'add', 'code/scripts/bootstrap_portal')
+        dev.git(self.work, 'commit', '-m', 'dependency ancestor')
+        (self.work / 'file').write_text('new business behavior')
+        base = dev.git(self.root, 'rev-parse', 'HEAD')
+        with self.assertRaisesRegex(ValueError, 'Dependency environment missing'):
+            self.publish('business file', push=False, paths=('file',))
+        self.assertEqual(dev.git(self.root, 'rev-parse', 'HEAD'), base)
+
+    def test_release_fingerprint_uses_committed_sources_not_unrelated_dev_edits(self):
+        """Release 按待发布提交选环境，Dev 按实际工作树选环境，未选中的编辑保持原样。"""
+        from management_common.code_environment import environment_key
+        released_key = environment_key(self.root / 'code')
+        (self.work / 'code/scripts/bootstrap_portal').write_text('# unrelated draft\n')
+        live_key = self.prepare_environment(self.work)
+        (self.work / 'file').write_text('selected fix')
+        result = self.publish('selected fix', push=False, paths=('file',))
+        self.assertEqual(result['dependency_environments']['release']['fingerprint'], released_key)
+        self.assertEqual(result['dependency_environments']['dev']['fingerprint'], live_key)
+        self.assertNotEqual(released_key, live_key)
+        self.assertEqual((self.work / 'code/scripts/bootstrap_portal').read_text(), '# unrelated draft\n')
 
     def change(self):
         (self.work / "file").write_text("changed\n")

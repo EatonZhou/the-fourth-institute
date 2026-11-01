@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
-from . import folder_files
+from . import folder_files, workspace
 from .common import canonical_record, canonical_resolution
 
 if TYPE_CHECKING:
@@ -141,6 +141,7 @@ def _read_content(resolved: dict[str, Any], **context: Any):
 
 
 def install_resolver(service: "ResourceService") -> None:
+    workspace.install_resolver(service)
     def resolve(address: object, **context: Any):
         return _resolution(service, address, **context)
 
@@ -157,7 +158,38 @@ def install_resolver(service: "ResourceService") -> None:
     )
 
 
+def _workspace_dependencies(folder, connection):
+    from pathlib import Path
+    from management_common.portal_database import _database_schema
+    from ..workspace_dependencies import directory_dependencies
+    from management_portal.society_service import lineage_storage
+    from management_portal.society_service.resident_workspace_retirement import WorkspaceRetirementRefused
+
+    table = f'"{_database_schema("lineage")}".lineages'
+    connection.execute(f'LOCK TABLE {table} IN SHARE MODE')
+    blocked = directory_dependencies(folder, connection)
+    root = Path(folder)
+    for row in connection.execute(f'SELECT lineage_id,project_id FROM {table} WHERE deleted_at IS NULL').fetchall():
+        target = lineage_storage.lineage_folder_for_project(row['lineage_id'], row['project_id'])
+        if target == root or root in target.parents:
+            blocked.add(row['lineage_id'])
+    if blocked:
+        raise WorkspaceRetirementRefused(
+            'workspace_nested_registration', 'Workspace contains active registered resources', 409,
+            details={'resource_ids': sorted(blocked)},
+        )
+
+
 def install_mutation_provider(service: "ResourceService") -> None:
+    def retire_workspace(resource_id, *, actor, authorize):
+        from management_portal.society_service.state_store import get_lineage_data_store
+        from management_portal.society_service.resident_workspace_retirement import unregister_workspace
+
+        with get_lineage_data_store().database.transaction() as connection:
+            return unregister_workspace(resource_id, connection=connection, actor=actor, authorize=authorize,
+                                        check_dependencies=_workspace_dependencies)
+
+    workspace.install_mutation_provider(service, retire=retire_workspace)
     from management_portal import isa_client
     from management_portal.hatg.contracts import InstructionError
 

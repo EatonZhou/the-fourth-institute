@@ -7,20 +7,16 @@ from pathlib import Path
 
 from management_common.instance_locations import current_instance, located_path
 from management_common.json_columns import json_value
-from management_common.portal_database import _database_schema
-from management_portal.society_service import lineage_storage
-from management_portal.society_service.resident_workspace_retirement import WorkspaceRetirementRefused
 
 
-def check_directory_dependencies(folder, connection):
+def directory_dependencies(folder, connection):
     from .registry_store import get_registry_store
     registry = get_registry_store()
     registry._ensure()
     table = f'"{registry.database.schema}".registry_documents'
-    lineages = f'"{_database_schema("lineage")}".lineages'
     # SHARE conflicts with registration/move writes, and remains held until
     # the enclosing retirement transaction commits or rolls back.
-    connection.execute(f'LOCK TABLE {table}, {lineages} IN SHARE MODE')
+    connection.execute(f'LOCK TABLE {table} IN SHARE MODE')
     root = Path(folder)
     blocked = set()
 
@@ -53,12 +49,4 @@ def check_directory_dependencies(folder, connection):
                 # Project IDs define their directory; old relative path hints
                 # are not a second authority for choosing a folder.
                 check(project['id'], str(current_instance().area('projects') / project['id']))
-    for row in connection.execute(
-        f'SELECT lineage_id,project_id FROM {lineages} WHERE deleted_at IS NULL',
-    ).fetchall():
-        check(row['lineage_id'], str(lineage_storage.lineage_folder_for_project(row['lineage_id'], row['project_id'])))
-    if blocked:
-        raise WorkspaceRetirementRefused(
-            'workspace_nested_registration', 'Workspace contains active registered resources', 409,
-            details={'resource_ids': sorted(blocked)},
-        )
+    return blocked

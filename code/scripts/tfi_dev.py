@@ -154,6 +154,7 @@ def publish(message, check=None, push=True, *, paths=(), all_files=False, activa
             # A caller that already committed its changes can publish that head.
             source = git(dev, "rev-parse", "HEAD")
         changed = git(dev, "diff", "--name-only", base, source).splitlines()
+        environments = require_dependency_environments(dev, main, source, cfg['code_directory'])
         # Git refuses only actual checkout collisions; unrelated uncommitted
         # files in either worktree are not a publication gate.
         git(main, "merge", "--ff-only", source)
@@ -164,11 +165,45 @@ def publish(message, check=None, push=True, *, paths=(), all_files=False, activa
                   "paths": changed, "push": {"ok": push, "remote": cfg["remote"]},
                   "changed_paths": changed, "activation_required": bool(changed),
                   "release_unit_paths": sorted(set(selected) - set(paths))}
+        result['dependency_environments'] = environments
     if activate:
         from scripts.tfi_development_runtime import request_activation
         result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit, parent_commit=base)
         result["health"] = {"status": "pending", "receipt": result["activation"]["receipt"]}
         result["activation_required"] = True
+    return result
+
+
+def require_dependency_environments(dev, main, source, code_directory):
+    """Refuse before Release advances, even when activation is deferred.
+
+    Shared services start from live Dev. Release starts from the committed tree,
+    including staged work and unpublished ancestors, not Dev's unrelated edits.
+    """
+    from management_common.code_environment import (
+        dependency_source_paths, environment_key, environment_key_from_sources,
+    )
+
+    prefix = code_directory + '/'
+    names = [name[len(prefix):] for name in git(dev, 'ls-tree', '-r', '--name-only', source, '--', code_directory).splitlines()]
+    sources = {}
+    for name in dependency_source_paths(names):
+        sources[name] = subprocess.run(['git', 'show', f'{source}:{prefix}{name}'], cwd=dev,
+                                       capture_output=True, check=True).stdout
+    lockfile = main / 'dependencies/python-wheels/requirements.lock'
+    keys = {'dev': environment_key(dev / code_directory),
+            'release': environment_key_from_sources(sources, wheel_lock=lockfile.read_bytes() if lockfile.is_file() else None)}
+    result, missing = {}, []
+    for name, root in (('dev', dev), ('release', main)):
+        environment = root / 'dependencies' / keys[name] / 'venv'
+        python = environment / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+        result[name] = {'fingerprint': keys[name], 'python': str(python)}
+        if not python.is_file():
+            missing.append(str(environment))
+    if missing:
+        raise ValueError('Dependency environment missing; Release has not advanced. '
+                         f'Prepare the environments for committed source {source} and live Dev before retrying: '
+                         + ', '.join(missing))
     return result
 
 

@@ -37,6 +37,11 @@ def _resolve(service: "ResourceService", address, *, actor="", **_context):
         "exists": bool(exists),
         "portal_url": record.get("url", ""),
     }
+    if not exists:
+        if separator:
+            raise KeyError(address)
+        result["directory_status"] = "missing"
+        return result
     if not separator:
         try:
             path = Path(str(attributes.get("path") or ""))
@@ -80,7 +85,7 @@ def install_resolver(service: "ResourceService") -> None:
     )
 
 
-def install_mutation_provider(service: "ResourceService") -> None:
+def install_mutation_provider(service: "ResourceService", *, retire) -> None:
     from management_portal import permission_system
     from management_portal.society_service.lineage_access_policy import hidden_private_ids
     from ..collaboration_registry import descriptor_resource_record
@@ -109,8 +114,6 @@ def install_mutation_provider(service: "ResourceService") -> None:
         return descriptor_resource_record(descriptor)
 
     def unregister(resource_id, *, actor=""):
-        from management_portal.society_service.resident_workspace_retirement import unregister_workspace
-        from ..workspace_dependencies import check_directory_dependencies
 
         def authorize(descriptor):
             record = descriptor_resource_record(descriptor)
@@ -119,8 +122,8 @@ def install_mutation_provider(service: "ResourceService") -> None:
             if resource_id not in permission_system.permitted_ids(actor, "UnregisterResource", "resource_id", [resource_id]):
                 raise PermissionError("Workspace unregistration requires @admin")
 
-        return descriptor_resource_record(unregister_workspace(
-            resource_id, actor=actor, authorize=authorize, check_dependencies=check_directory_dependencies,
+        return descriptor_resource_record(retire(
+            resource_id, actor=actor, authorize=authorize,
         ))
 
     service.register_mutation_provider("workspace", update=update, unregister=unregister)
