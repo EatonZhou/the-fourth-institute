@@ -39,6 +39,8 @@ async function measured(name, invoke) {
 
 计时范围按实际工具能力说明：上面的模板测量 `tools.*` 原调用的 await，包含其中真实执行/返回等待。`functions.exec` 和 `functions.wait` 是外层编排/取回容器，若当前环境不能在另一可调用工具内包裹它们，则把这层 RTT 明确记为不可测；不能把跨 cell 的 Date.now 差、容器显示的墙钟时长或子进程耗时冒充它的原 RTT，也不能仅因这项已说明的工具能力限制宣布业务失败。底层 exec_command/write_stdin/图片等可测调用仍逐条记录，原 UI ready 与业务门禁完全保留。减少不必要的提前 yield，但不要因此中断仍在执行的原动作。
 
+`portal.instruction` 的原 HTTP 请求预算默认为 180 秒，日志记录 timeout_ms；必要时在首次调用前显式设置 `{timeoutMs}`（1–600000 毫秒），不能在失败后放大预算重发已受理写操作。APIRequestContext 的传输超时只说明原响应未取得，不证明服务未提交；助手不自动重试这类失败。保留原错误与身份后继续只读查询，不把超时当作业务终态。不得用扩大的请求预算替代 UI 原 ready 或隐瞒实际耗时。
+
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
 你以真实用户的方式使用 Portal。逐条读取 Test Case 的自然语言描述和可选 Task Prompt，自主寻找入口、观察页面反馈并完成目标；不要依赖未在页面上呈现的内部 selector 或实现知识。同一模块的任务会持续交给你，你可以利用历史对话理解产品，但必须重新执行当前用例并产生当前证据。

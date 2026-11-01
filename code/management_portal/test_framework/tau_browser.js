@@ -123,6 +123,8 @@ function writeReceipt(evidenceDir, name, payload) {
 
 function instructionFailure(error) {
   return { ...safeError(error),
+    ...(error?.code === 'tau.transport_failed' && error.diagnostic
+      ? { transport_error_name: safeError(error.diagnostic).name } : {}),
     code: /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/.test(error?.code || '') ? error.code : null,
     http_status: Number.isInteger(error?.status) && error.status >= 100 && error.status <= 599 ? error.status : null };
 }
@@ -217,7 +219,10 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
 
   // One HATG ISA call as the browser's test-actor session; a pending projection
   // or a call still running completes by repeating it with the same key.
-  async function instruction(name, args = {}, { key = "", attempts = 30 } = {}) {
+  async function instruction(name, args = {}, { key = "", attempts = 30, timeoutMs = 180_000 } = {}) {
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 600_000) {
+      throw new TypeError('instruction timeoutMs must be between 1 and 600000');
+    }
     const callId = randomUUID();
     const started = performance.now();
     const identity = { call_id: callId, tool: /^[A-Z][A-Za-z0-9]{0,79}$/.test(name) ? name : "instruction", helper_pid: process.pid };
@@ -227,7 +232,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     let status = 'failed';
     let failure;
     try {
-      const result = await executeInstruction(name, args, { key, attempts, append });
+      const result = await executeInstruction(name, args, { key, attempts, timeoutMs, append });
       status = 'completed';
       return result;
     } catch (error) {
@@ -239,7 +244,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
   }
 
-  async function executeInstruction(name, args, { key, attempts, append }) {
+  async function executeInstruction(name, args, { key, attempts, timeoutMs, append }) {
     const call = { schema: "tfi.hatg-instruction.v2", instruction: name, arguments: args };
     if (key) call.idempotency_key = key;
     for (let attempt = 1; ; attempt += 1) {
@@ -248,14 +253,14 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
       const requestId = randomUUID();
       const started = performance.now();
       const request = { attempt, request_id: requestId, transport: 'api_request_context',
-        method: 'POST', path: '/api/instructions/execute' };
+        method: 'POST', path: '/api/instructions/execute', timeout_ms: timeoutMs };
       append({ ...request, kind: 'request_started', at: new Date().toISOString() });
       let response;
       let body = {};
       let failure;
       try {
         response = await safeTransport('instruction', () => context.request.post("/api/instructions/execute", {
-          data: call, headers: { Origin: origin, 'X-Portal-Request-ID': requestId } }));
+          data: call, timeout: timeoutMs, headers: { Origin: origin, 'X-Portal-Request-ID': requestId } }));
         try { body = await response.json(); } catch (_error) { body = {}; }
       } catch (error) {
         failure = instructionFailure(error);

@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -43,6 +44,16 @@ class _Portal(BaseHTTPRequestHandler):
             'instruction': call['instruction'], 'key': call.get('idempotency_key'),
             'request_id': self.headers.get('X-Portal-Request-ID'),
         })
+        if call['instruction'] == 'Delayed':
+            time.sleep(0.05)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            try:
+                self.wfile.write(json.dumps({'status': 'committed', 'result': {'accepted': True}}).encode())
+            except BrokenPipeError:
+                pass  # The deliberately short explicit request budget expired.
+            return
         if call['instruction'] == 'PendingOnce':
             attempt = sum(r['instruction'] == 'PendingOnce' for r in type(self).requests)
             body = {'instruction_id': 'inst_fixture_pending', 'replayed': attempt > 1,
@@ -124,6 +135,24 @@ def _open(tmp_path: Path, origin: str, user: str, body: str = "") -> subprocess.
         " finally { await p.close(); } })().catch(e => { console.error(e.message); process.exit(3); });"
     )
     return subprocess.run(["node", "-e", script], cwd=evidence, capture_output=True, text=True, timeout=120)
+
+
+def test_instruction_has_an_explicit_finite_budget_and_never_replays_transport_timeouts(tmp_path, portal):
+    result = _open(tmp_path, portal, 'test-actor',
+        "const post = p.context.request.post.bind(p.context.request);"
+        "p.context.request.post = (url, options) => post(url, {timeout:5, ...options});"
+        "const value = await p.instruction('Delayed');"
+        "if (!value.accepted) throw Error('missing original receipt');"
+        "let failed=false; try { await p.instruction('Delayed', {}, {key:'same-key', timeoutMs:5}); }"
+        "catch (_) { failed=true; } if (!failed) throw Error('explicit timeout ignored');")
+    assert result.returncode == 0, result.stderr
+    rows = [json.loads(line) for line in (tmp_path / 'evidence/tau-helper-calls.jsonl').read_text().splitlines()]
+    ends = [row for row in rows if row['kind'] == 'request_finished']
+    assert [row['timeout_ms'] for row in ends] == [180_000, 5]
+    assert ends[0]['http_status'] == 200
+    assert ends[1]['http_status'] is None
+    assert ends[1]['error']['transport_error_name'] == 'TimeoutError'
+    assert len(_Portal.requests) == 2
 
 
 def test_the_bootstrap_opens_the_portal_test_identity_and_records_its_lifecycle(tmp_path, portal):
