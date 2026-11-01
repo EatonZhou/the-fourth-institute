@@ -26,6 +26,7 @@ from scripts import instance_services
 from management_common import host_instances
 from management_common.configuration_files import atomic_json
 from management_common.code_environment import runtime_python
+from management_common.process_runtime import process_alive
 
 
 def read_json(path):
@@ -148,11 +149,7 @@ def job_alive(record):
         check = subprocess.run(["launchctl", "list", record["unit"]],
                                capture_output=True, text=True, timeout=15)
         return check.returncode == 0 and '"PID"' in check.stdout
-    try:
-        os.kill(int(record.get("pid", 0)), 0) if record.get("pid") else None
-        return bool(record.get("pid"))
-    except OSError:
-        return False
+    return process_alive(int(record.get("pid") or 0))
 
 
 def operation(root):

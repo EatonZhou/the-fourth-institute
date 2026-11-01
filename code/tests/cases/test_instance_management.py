@@ -71,6 +71,17 @@ class InstanceManagementTests(unittest.TestCase):
                 manager.enqueue("start", "one")
             launch.assert_not_called()
 
+    def test_windows_job_liveness_never_sends_a_signal(self):
+        """Windows 的 os.kill(pid, 0) 会终止进程；作业检查只能观察。"""
+        with patch.object(manager.sys, "platform", "win32"), \
+                patch.object(manager.os, "kill", side_effect=AssertionError("signal sent")), \
+                patch.object(manager, "process_alive", return_value=True) as alive:
+            self.assertTrue(manager.job_alive({"pid": 123}))
+            alive.assert_called_once_with(123)
+            alive.return_value = False
+            self.assertFalse(manager.job_alive({"pid": 123}))
+            self.assertFalse(manager.job_alive({}))
+
     def test_duplicate_request_and_failed_dispatch(self):
         """安装与实例回归：duplicate request and failed dispatch。"""
         with patch.object(manager, "launch"):
