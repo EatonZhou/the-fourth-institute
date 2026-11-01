@@ -42,7 +42,7 @@ class KimiCodeUnavailable(KimiCodeError, NativeAgentUnavailable):
 
 
 class KimiCodeDetached(KimiCodeError, NativeAgentDetached):
-    """A retiring Worker stopped following a prompt; the prompt keeps running."""
+    """A leaving Worker stopped following a prompt; the prompt keeps running."""
 
 
 class KimiCodeTurnFailed(KimiCodeError):

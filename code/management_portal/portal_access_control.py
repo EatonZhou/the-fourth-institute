@@ -244,7 +244,7 @@ class PortalAccessStore:
         with self._transaction():
             payload = self._read_uncached()
             if require_new and clean_username in payload["users"]:
-                raise FileExistsError("username already exists or has been retired")
+                raise FileExistsError("username already exists or has been deleted")
             current = _normalize_user(
                 clean_username,
                 payload["users"].get(clean_username),
@@ -320,7 +320,7 @@ class PortalAccessStore:
         return True
 
     def delete_user(self, username: str, *, actor: str) -> dict[str, Any]:
-        """Retire a login identity while retaining a non-reusable audit tombstone.
+        """Delete a login identity while retaining a non-reusable audit tombstone.
 
         The User leaves the permission trees in the same transaction (decision_b820faf42218 §5.7).
         """

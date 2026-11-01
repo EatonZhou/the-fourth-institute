@@ -585,7 +585,7 @@ class WorkerConnectionLost(ConnectionError):
 class TurnConnection:
     """The current Worker connection for a turn that may outlive its socket.
 
-    A Worker handover does not interrupt the turn: the retiring Worker closes
+    A Worker handover does not interrupt the turn: the leaving Worker closes
     its connection and the next Worker attaches to the same turn (``attach``).
     In between, the turn's events are kept and delivered to the next Worker
     first, and a Portal tool call waits for it, so the Chat and the tools see

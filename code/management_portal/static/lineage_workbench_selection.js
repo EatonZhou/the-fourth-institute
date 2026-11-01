@@ -5,7 +5,7 @@
 
   // Selecting a Resident: switching the chat panel to it, the empty chat
   // workspace, the Resident cards and member actions that select one, opening
-  // a conversation from the Inbox, and retiring the surfaces of a deleted Resident.
+  // a conversation from the Inbox, and removing the surfaces of a deleted Resident.
   const DEPENDENCIES = Object.freeze([
     "$id", "activeAgentPreviewDocument", "activeChatTargetId", "activeLineageId",
     "activePreviewPayload", "beginChatWorkspaceNavigation", "bindLineageChatWorkspace",
@@ -47,10 +47,10 @@
 
     let residentSelectionRequest = 0;
 
-    async function retireDeletedResidentSurfaces(residentIds) {
+    async function removeDeletedResidentSurfaces(residentIds) {
       const deleted = new Set(residentIds.map(id => String(id || "").trim()).filter(Boolean));
       if (!deleted.size) return;
-      window.PortalResidentMenu?.retireResidents([...deleted]);
+      window.PortalResidentMenu?.removeDeletedResidents([...deleted]);
       for (const id of deleted) unavailableResidentBindings.add(id);
       if (deleted.has(selectedResidentId())) {
         const resident = currentResident();
@@ -393,7 +393,7 @@
     }
 
     return Object.freeze({
-      retireDeletedResidentSurfaces, openLineageConversationFromInbox, resetChatRenderState,
+      removeDeletedResidentSurfaces, openLineageConversationFromInbox, resetChatRenderState,
       handleResidentCardClick, selectDerivedResident, publishConversationSelection, selectResident,
       syncSelectedResidentSurface, activateLineageChatWorkspace, handleResidentMemberCardAction,
       refreshResidentSidebarIfDue,

@@ -80,7 +80,7 @@ class ClaudeCodeClient(NativeAgentClient):
     ) -> ClaudeCodeTurnResult:
         """Run a turn, or attach to the running turn with this ``turn_id``.
 
-        ``detach_requested`` lets a retiring Worker leave the turn running
+        ``detach_requested`` lets a leaving Worker leave the turn running
         (``NativeAgentDetached``); the next Worker's call with the same
         session key and turn id attaches to it.  ``continue_prompt`` marks a
         turn an earlier attempt started: a daemon that no longer has it

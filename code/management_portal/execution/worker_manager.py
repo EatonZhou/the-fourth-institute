@@ -20,7 +20,7 @@ from management_common import loaded_modules, process_runtime
 from management_portal.shared_state import atomic_replace_json
 
 
-RETIREMENT_RPC_TIMEOUT_SECONDS = 2.0
+HANDOVER_RPC_TIMEOUT_SECONDS = 2.0
 
 
 @dataclass
@@ -35,7 +35,7 @@ class WorkerProcess:
     terminate_sent_at: float = 0.0
     kill_sent_at: float = 0.0
     handover: dict[str, Any] | None = None
-    retirement_noted: bool = False
+    handover_noted: bool = False
     tree_stopped: bool = False
     cleanup_error: str = ""
 
@@ -236,35 +236,35 @@ class ExecutionWorkerManager:
         self._replace()
         return True
 
-    def _note_retired_current(self) -> None:
-        """Start this pool's newest generation once its Worker was retired.
+    def _note_stopped_current(self) -> None:
+        """Start this pool's newest generation once its Worker was stopped.
 
-        A Worker that another pool's newer generation retired hands over and
+        A Worker that another pool's newer generation stopped hands over and
         exits by itself.  The shared generation file then already names that
         newer build, so the replacement starts at once.  If it still names
-        the retired build, the pools disagree about the generation and an
+        the stopped build, the pools disagree about the generation and an
         immediate restart would take the work straight back, so back off.
         """
         current = self._current
         if (
             current is None
-            or current.retirement_noted
+            or current.handover_noted
             or current.process.poll() is None
-            or not self._health(current).get("retired")
+            or not self._health(current).get("stopped")
         ):
             return
-        current.retirement_noted = True
+        current.handover_noted = True
         build_id = self._build_id()
         if build_id == current.build_id:
             self._record_replacement_failure(
                 RuntimeError(
-                    f"ExecutionWorker {current.worker_id} was retired while "
+                    f"ExecutionWorker {current.worker_id} was stopped while "
                     f"this pool's generation is still {build_id}"
                 )
             )
             return
         print(
-            f"ExecutionWorker {current.worker_id} was retired; starting this "
+            f"ExecutionWorker {current.worker_id} was stopped; starting this "
             f"pool's generation {build_id}",
             flush=True,
         )
@@ -473,11 +473,11 @@ class ExecutionWorkerManager:
             worker.draining_started_at = time.time()
         self._request_worker_stop(worker)
 
-    def _retirement_request(self, method: str, params: dict[str, Any]) -> Any:
+    def _handover_request(self, method: str, params: dict[str, Any]) -> Any:
         # Lifecycle cleanup is not a business request waiting for a restart.
         # A stopped service must fail immediately, and a stuck response must
         # not move the Manager's shutdown deadline forward.
-        timeout = RETIREMENT_RPC_TIMEOUT_SECONDS
+        timeout = HANDOVER_RPC_TIMEOUT_SECONDS
         if self._shutdown_deadline is not None:
             remaining = self._shutdown_deadline - time.monotonic()
             if remaining < 0.1:
@@ -496,7 +496,7 @@ class ExecutionWorkerManager:
         if worker.terminate_sent_at:
             return
         try:
-            self._retirement_request(
+            self._handover_request(
                 "scheduler.worker.state",
                 {"worker_id": worker.worker_id, "state": "draining"},
             )
@@ -524,7 +524,7 @@ class ExecutionWorkerManager:
 
     def _handover(self, worker: WorkerProcess) -> dict[str, Any] | None:
         try:
-            result = self._retirement_request(
+            result = self._handover_request(
                 "scheduler.worker.handover",
                 {"worker_id": worker.worker_id},
             )
@@ -574,7 +574,7 @@ class ExecutionWorkerManager:
 
     def _unregister(self, worker_id: str) -> bool:
         try:
-            self._retirement_request(
+            self._handover_request(
                 "scheduler.worker.unregister",
                 {"worker_id": worker_id},
             )
@@ -819,7 +819,7 @@ class ExecutionWorkerManager:
         try:
             while not self._stopping.is_set():
                 if self._current is not None and self._current.process.poll() is not None:
-                    self._note_retired_current()
+                    self._note_stopped_current()
                     # A crashed generation's descendants need reaping even
                     # while replacement startup is backing off or unavailable.
                     self._mark_draining(self._current)

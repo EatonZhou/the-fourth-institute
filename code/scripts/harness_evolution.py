@@ -193,7 +193,7 @@ def main() -> int:
         if args.command == "promote":
             updated = store.promote(args.provider, args.family, actor=_actor(args), evidence=evidence)
         elif args.command == "withdraw":
-            updated = store.retire(args.provider, args.family, "withdrawn", actor=_actor(args), evidence=evidence)
+            updated = store.delete(args.provider, args.family, "withdrawn", actor=_actor(args), evidence=evidence)
         else:
             updated = store.freeze(
                 args.provider, args.family, actor=_actor(args),

@@ -76,7 +76,7 @@ class UserEnrollment:
                     if item.get("first_admin") and item["status"] == "pending":
                         item["status"] = "revoked"
             if self.access.user(username)["configured"] or username in self.credentials.load():
-                raise FileExistsError("Username already exists or has been retired")
+                raise FileExistsError("Username already exists or has been deleted")
             if any(item["username"] == username and item["status"] == "pending" and item["expires_at"] > time.time() for item in state["invitations"].values()):
                 raise FileExistsError("A pending invitation already exists for this username")
             if any(item["secret_sha256"] == digest for item in state["invitations"].values()):

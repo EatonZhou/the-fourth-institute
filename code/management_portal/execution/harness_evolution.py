@@ -6,7 +6,7 @@ as overrides of the Backend's parameters (``harness_policy_table``); an empty
 champion is the Backend's parameters themselves.  A cell may run one
 challenger, which differs from the champion in one tunable, on a share of the
 sessions.  The daily evaluation (``harness_evolution_evaluation``) compares the
-two arms on the turns of daily use and promotes, keeps or retires the
+two arms on the turns of daily use and promotes, keeps or deletes the
 challenger.
 
 Each cell is one row; every change of a cell is also appended to the event
@@ -328,7 +328,7 @@ class HarnessEvolutionStore:
 
         return self._change(provider, workload_family, change, actor=actor, evidence=evidence)
 
-    def retire(
+    def delete(
         self,
         provider: str,
         workload_family: str,
@@ -340,7 +340,7 @@ class HarnessEvolutionStore:
         """End the challenger without promoting it (``kind`` says why)."""
 
         if kind not in {"rolled_back", "rejected", "inconclusive", "withdrawn"}:
-            raise ValueError(f"not a way to retire a challenger: {kind}")
+            raise ValueError(f"not a way to delete a challenger: {kind}")
 
         def change(cell: PolicyCell) -> tuple[PolicyCell, str]:
             if cell.challenger is None:
@@ -403,7 +403,7 @@ class HarnessEvolutionStore:
             updated, kind = change(current)
             updated = _replace(updated, updated_at=time.time())
             # The event names the challenger it is about: the new one, or the
-            # one a promotion or retirement ended.
+            # one a promotion or deletion ended.
             involved = updated.challenger if updated.challenger is not None else current.challenger
             connection.execute(
                 """

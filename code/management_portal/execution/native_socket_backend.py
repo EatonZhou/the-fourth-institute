@@ -253,7 +253,7 @@ class NativeSocketBackend:
         return {}
 
     def handover_options(self, context: BackendContext) -> dict[str, Any]:
-        """Let a retiring Worker leave the turn running (``handover_keeps_turn``)."""
+        """Let a leaving Worker leave the turn running (``handover_keeps_turn``)."""
 
         if AGENT_PROVIDERS[self.provider_id].handover_keeps_turn:
             return {"detach_requested": context.is_handover}

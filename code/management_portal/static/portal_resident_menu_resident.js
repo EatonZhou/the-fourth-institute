@@ -118,7 +118,7 @@
 
     }
 
-    function retireResidents(deleted) {
+    function removeDeletedResidents(deleted) {
       if (deleted.has(menuState.nodeMenuContext?.residentId)) dialog.close({force: true});
     }
 
@@ -219,7 +219,7 @@
 
     return {
       disposeNodeMenu, leaveNodeMenu, nodeMenuNotice, nodeSettingsNode, openNodeSettingsModal, removeResident,
-      retireResidents, submitNodeSettings, updateIntake,
+      removeDeletedResidents, submitNodeSettings, updateIntake,
     };
   }
 

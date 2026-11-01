@@ -37,7 +37,7 @@ from management_portal.execution.worker import ExecutionWorker
 
 
 def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp_path, subtests, isolated_portal_case):
-    """新一代 worker 激活时旧代原子转为 draining，退役 worker 不能自行恢复
+    """新一代 worker 激活时旧代原子转为 draining，停止接单的 worker 不能自行恢复
 
     :module: resident.fork-handoff
     :importance: P1
@@ -99,7 +99,7 @@ def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp
             "previous_state": "",
         }
         assert scheduler.health()["workers"][0]["state"] == "active"
-    with subtests.test(contract='test_worker_activation_retires_other_generations_but_keeps_its_own'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_worker_activation_stops_other_generations_but_keeps_its_own'), isolated_portal_case() as case_path:
         tmp_path = case_path
         scheduler = Scheduler()
         release_worker_id = "release:execution-worker:old"
@@ -131,7 +131,7 @@ def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp
         ) == {"claimed": False, "reason": "worker_not_active", "worker_state": "draining"}
 
         # The Release pool then starts the same generation; it does not
-        # retire the Dev Worker, so executions the Dev Worker took over in
+        # stop the Dev Worker, so executions the Dev Worker took over in
         # this publish are not handed over a second time.
         release_new_id = "release:execution-worker:new"
         scheduler.register_worker(
@@ -158,7 +158,7 @@ def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp
                 capabilities=capabilities,
             ).get("reason") != "worker_not_active"
 
-        # A retired Worker leaves by itself; its successor still names it.
+        # A stopped Worker leaves by itself; its successor still names it.
         scheduler.handover_worker(release_worker_id)
         release_next_id = "release:execution-worker:next"
         scheduler.register_worker(
@@ -341,28 +341,28 @@ def test_worker_registration_atomically_fences_replaced_generation_contracts(tmp
             assert not waiting.is_alive()
             assert claim_call.call_count == 2
             assert wait_result["claimed"] is False
-    with subtests.test(contract='test_retired_worker_cannot_promote_itself'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_stopped_worker_cannot_promote_itself'), isolated_portal_case() as case_path:
         tmp_path = case_path
         scheduler = Scheduler()
-        worker_id = "dev:execution-worker:retired"
+        worker_id = "dev:execution-worker:stopped"
         scheduler.register_worker(
             worker_id=worker_id,
-            build_id="retired-build",
+            build_id="stopped-build",
             capabilities=["chat_completion"],
         )
         scheduler.set_worker_state(worker_id, "draining")
 
         with pytest.raises(
             RuntimeError,
-            match="retired worker cannot reactivate",
+            match="stopped worker cannot reactivate",
         ):
             scheduler.register_worker(
                 worker_id=worker_id,
-                build_id="retired-build",
+                build_id="stopped-build",
                 capabilities=["chat_completion"],
                 state="active",
             )
-        with pytest.raises(ValueError, match="can only retire"):
+        with pytest.raises(ValueError, match="can only stop"):
             scheduler.set_worker_state(worker_id, "active")
 
         worker = next(

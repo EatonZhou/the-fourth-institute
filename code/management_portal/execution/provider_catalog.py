@@ -71,7 +71,7 @@ class AgentProvider:
     # first turn, so a Fork may start from a compacted copy of its source.
     seeded_compaction: bool = False
     # A Worker handover leaves the running turn to the Provider's own process:
-    # the retiring Worker detaches without interrupting it, and the next
+    # the leaving Worker detaches without interrupting it, and the next
     # Worker attaches to the same turn (same session and turn id).  A turn
     # that is no longer running (its Provider process restarted) is continued
     # in the same session with "continue"; every Backend recovers that way,

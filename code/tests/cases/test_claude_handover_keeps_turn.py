@@ -1,6 +1,6 @@
 """A Worker handover leaves a running Claude turn running.
 
-The retiring Worker detaches from the Claude daemon without interrupting the
+The leaving Worker detaches from the Claude daemon without interrupting the
 turn; the next Worker attaches to the same turn (same session key and turn
 id).  The turn is neither interrupted nor asked again.
 
@@ -116,7 +116,7 @@ def _serve_once(path: Path, received: list):
     return thread
 
 
-def test_a_retiring_worker_answers_taken_tool_calls_then_leaves(tmp_path):
+def test_a_leaving_worker_answers_taken_tool_calls_then_leaves(tmp_path):
     """退役 Worker 先答完已收到的工具调用再离开
 
     Native Agent 客户端在交接时只在两条消息之间断开：已收到的事件照常处理，已收到的工具调用执行完并回传结果后才离开。

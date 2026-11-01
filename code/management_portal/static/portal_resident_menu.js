@@ -111,13 +111,13 @@
   let openSequence = 0;
   let openingResidentId = "";
 
-  function retireResidents(residentIds) {
+  function removeDeletedResidents(residentIds) {
     const deleted = new Set(residentIds.map(id => String(id || "").trim()).filter(Boolean));
     if (deleted.has(openingResidentId)) {
       openSequence += 1;
       openingResidentId = "";
     }
-    instance?.retireResidents(deleted);
+    instance?.removeDeletedResidents(deleted);
   }
 
   async function removeFamily({family, lineageId, action, execute = (name, args) => window.PortalInstructionClient.execute(name, args)}) {
@@ -250,7 +250,7 @@
 
     const {
       disposeNodeMenu, leaveNodeMenu, nodeMenuNotice, nodeSettingsNode, openNodeSettingsModal, removeResident,
-      retireResidents, submitNodeSettings, updateIntake,
+      removeDeletedResidents, submitNodeSettings, updateIntake,
     } = menuPart("PortalResidentMenuResident").createResident({
       $id, changed, dialog, disposeFamilySettings: (...args) => disposeFamilySettings(...args), disposeNodeDetails,
       disposeNodeHarness, disposeNodeMailbox, leaveNodeDetails,
@@ -324,7 +324,7 @@
         await openNodeSettingsModal(next.node, next.tab || "display");
         return true;
       },
-      retireResidents,
+      removeDeletedResidents,
       destroy() { dialog.close({force: true}); dialog.destroy(); surface?.destroy(); modal.remove(); },
     };
   }
@@ -355,5 +355,5 @@
     await instance.open({...options, node: {...node, id: residentId, backend: node.provider || node.backend, intake_state: runtime?.state?.intake_state || node.intake_state}, lineage});
     return instance;
   }
-  window.PortalResidentMenu = Object.freeze({open, removeFamily, retireResidents, mountMigrationPriority});
+  window.PortalResidentMenu = Object.freeze({open, removeFamily, removeDeletedResidents, mountMigrationPriority});
 })();

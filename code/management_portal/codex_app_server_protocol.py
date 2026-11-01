@@ -23,7 +23,7 @@ class CodexAppServerError(RuntimeError):
 
 
 class CodexTurnDetached(CodexAppServerError):
-    """A retiring follower leaves the accepted native turn running."""
+    """A leaving follower leaves the accepted native turn running."""
 
     def __init__(self, thread_id: str, turn_id: str) -> None:
         self.thread_id, self.turn_id = thread_id, turn_id

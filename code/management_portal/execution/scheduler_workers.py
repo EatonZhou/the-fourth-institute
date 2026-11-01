@@ -96,7 +96,7 @@ class WorkerRegistry:
                 ):
                     connection.rollback()
                     raise RuntimeError(
-                        "retired worker cannot reactivate by registration"
+                        "stopped worker cannot reactivate by registration"
                     )
             connection.execute(
                 '\n                INSERT INTO execution_workers (\n                    worker_id, build_id, state, capabilities_json,\n                    pid, heartbeat_at, updated_at\n                ) VALUES (%s, %s, %s, %s, %s, %s, %s)\n                ON CONFLICT(worker_id) DO UPDATE SET\n                    build_id=excluded.build_id,\n                    state=excluded.state,\n                    capabilities_json=excluded.capabilities_json,\n                    pid=excluded.pid,\n                    heartbeat_at=excluded.heartbeat_at,\n                    updated_at=excluded.updated_at\n                ',
@@ -133,7 +133,7 @@ class WorkerRegistry:
             raise ValueError("worker cannot replace itself")
         now = execution_timestamp()
         with self.changes.connect() as connection:
-            # A generation switch retires every other build; locking the few
+            # A generation switch stops every other build; locking the few
             # Worker rows (in one order) keeps two switches from both winning.
             connection.execute(
                 'SELECT worker_id FROM execution_workers ORDER BY worker_id FOR UPDATE'
@@ -163,11 +163,11 @@ class WorkerRegistry:
                 }:
                     connection.rollback()
                     raise RuntimeError(
-                        f"cannot retire worker in state {previous['state']}"
+                        f"cannot stop worker in state {previous['state']}"
                     )
                 if previous is not None and str(previous["state"]) == "offline":
-                    # It already left (a Worker another generation retired
-                    # exits by itself); there is nothing left to retire.
+                    # It already left (a Worker another generation stopped
+                    # exits by itself); there is nothing left to stop.
                     previous_state = "offline"
                 elif previous is not None:
                     previous_state = "draining"
@@ -199,7 +199,7 @@ class WorkerRegistry:
     def set_worker_state(self, worker_id: str, state: str) -> None:
         if state not in {"draining", "offline"}:
             raise ValueError(
-                "worker state can only retire through this endpoint"
+                "worker state can only stop through this endpoint"
             )
         with self.changes.connect() as connection:
             cursor = connection.execute(
@@ -269,7 +269,7 @@ class WorkerRegistry:
                 }
             if str(worker["state"]) not in {"draining", "offline"}:
                 connection.rollback()
-                raise RuntimeError("only a retiring worker can hand over claims")
+                raise RuntimeError("only a leaving worker can hand over claims")
             rows = connection.execute(
                 "\n                SELECT execution_id, status, checkpoint_json, cancel_requested,\n                       owner_worker_id, request_json\n                FROM executions\n                WHERE owner_worker_id = %s\n                  AND status IN ('claimed', 'running') FOR UPDATE\n                ",
                 (clean_worker_id,),
@@ -284,7 +284,7 @@ class WorkerRegistry:
                     blocked.append(execution_id)
                     continue
                 if bool(row["cancel_requested"]):
-                    # The retired Worker's Provider turn may still run.
+                    # The stopped Worker's Provider turn may still run.
                     if self.recovery.requeue_abandoned_provider_work(
                         connection, row, cancelled_error="execution cancelled during worker handover",
                     ):

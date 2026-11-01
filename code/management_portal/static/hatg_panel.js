@@ -36,7 +36,7 @@
   const societyService = window.PortalSocietyService.createClient({
     get: apiGet,
     getRevision: id => state.lineage?.lineage_id === id ? state.lineage.revision : undefined,
-    onResidentsDeleted: retireDeletedResidents,
+    onResidentsDeleted: removeDeletedResidents,
     onConflict: ({ lineageId, lineage, error }) => {
       if (state.lineage?.lineage_id !== lineageId) return;
       const roots = [panelHost.hatgComponentRoot, ...detachedRoots];
@@ -61,8 +61,8 @@
       setSyncStatus(error.message, "error");
     },
   });
-  function retireDeletedResidents(ids) {
-    window.PortalResidentMenu?.retireResidents(ids);
+  function removeDeletedResidents(ids) {
+    window.PortalResidentMenu?.removeDeletedResidents(ids);
     return panelHost.hatgComponentOptions.onResidentsDeleted?.(ids);
   }
   const residentDiscovery = window.PortalResidentDiscoveryService.createClient({ post: apiPost });

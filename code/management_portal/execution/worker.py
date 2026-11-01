@@ -572,7 +572,7 @@ class ExecutionWorkerDaemon:
         )
         self._draining_started_at = 0.0
         self._drain_timed_out = False
-        self._retired = False
+        self._stopped = False
 
     def request_stop(self, _signum: int, _frame: object) -> None:
         if not self._draining_started_at:
@@ -581,15 +581,15 @@ class ExecutionWorkerDaemon:
         with self._active_changed:
             self._active_changed.notify_all()
 
-    def _leave_retired(self) -> None:
-        """The scheduler retired this Worker (usually another generation took over).
+    def _leave_stopped(self) -> None:
+        """The scheduler stopped this Worker (usually another generation took over).
 
-        A retired Worker never claims again, so it hands over what it still
+        A stopped Worker never claims again, so it hands over what it still
         runs and exits; the WorkerManager then starts its pool's newest
         generation instead of keeping an idle process.
         """
-        if not self._retired:
-            self._retired = True
+        if not self._stopped:
+            self._stopped = True
             print(
                 f"ExecutionWorker {self.worker_id} no longer claims work; "
                 "leaving after handover",
@@ -625,7 +625,7 @@ class ExecutionWorkerDaemon:
                 "state": (
                     "draining" if self._stopping.is_set() else "active"
                 ),
-                "retired": self._retired,
+                "stopped": self._stopped,
                 "draining_started_at": self._draining_started_at,
                 "draining_seconds": (
                     max(0.0, time.time() - self._draining_started_at)
@@ -694,7 +694,7 @@ class ExecutionWorkerDaemon:
                     reason == "worker_not_active"
                     and claim.get("worker_state") in {"draining", "offline"}
                 ):
-                    self._leave_retired()
+                    self._leave_stopped()
                 elif reason == "worker_not_active":
                     self._stopping.wait(1.0)
                 break

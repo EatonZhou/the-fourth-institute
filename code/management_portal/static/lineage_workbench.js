@@ -155,7 +155,7 @@
       });
 
       const {
-        retireDeletedResidentSurfaces, openLineageConversationFromInbox, resetChatRenderState,
+        removeDeletedResidentSurfaces, openLineageConversationFromInbox, resetChatRenderState,
         handleResidentCardClick, selectDerivedResident, publishConversationSelection, selectResident,
         syncSelectedResidentSurface, activateLineageChatWorkspace, handleResidentMemberCardAction,
         refreshResidentSidebarIfDue,
@@ -457,7 +457,7 @@
         lineageIdForResident, loadDetail, loadFolder, openLineageAttachChoiceModal, openResidentEditModal,
         pendingResidentDeletions, refreshResidentSidebarIfDue, registeredLineageIdForResident,
         resetChatRenderState, residentChatTarget, residentExactId, residentService,
-        retireDeletedResidentSurfaces, selectDerivedResident, selectedResidentId, selectResident,
+        removeDeletedResidentSurfaces, selectDerivedResident, selectedResidentId, selectResident,
         societyService, state, syncChatTargetLocation, syncLineageHatgPanel, syncSelectedResidentSurface,
         unavailableResidentBindings, writeLastSelection, writeLineageUiState,
         // Resident sidebar is created after this part.
@@ -520,7 +520,7 @@
         openResourceChipPreview, openWorkspaceResource, recommendationConversationView,
         refreshLineageChatView, refreshPreviewIfChanged, registeredLineageIdForResident,
         rememberResidentShortcutSession, renderMarkdown, residentIdForSelection,
-        retireDeletedResidentSurfaces, runChatTargetEffect, selectedResidentId,
+        removeDeletedResidentSurfaces, runChatTargetEffect, selectedResidentId,
         showResidentEditorOpenMenu, state, syncHatgLocation, updateCurrentResidentWatchboard,
         waitForInitialLineageReady,
       });
@@ -1220,7 +1220,7 @@
       lineageStateController.listen("page", window, "portal:agent-conversation-open", openLineageConversationFromInbox);
       lineageStateController.listen("page", window, "portal:resident-menu-changed", event => {
         if (event.detail?.type !== "delete") return;
-        void retireDeletedResidentSurfaces([event.detail.residentId])
+        void removeDeletedResidentSurfaces([event.detail.residentId])
           .catch(error => window.PortalUI.toast(error.message || String(error), "error"));
       });
       lineageStateController.listen("page", window, "portal:user-navigation-changed", event => {

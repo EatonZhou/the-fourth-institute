@@ -26,7 +26,7 @@ function menuHarness() {
   ctx.dialog = {close: () => { closed.push(ctx.nodeMenuContext?.residentId); ctx.disposeNodeMenu(); }};
   // The parts read the Menu's shared state from menuState; the context stands for it.
   ctx.menuState = ctx;
-  vm.runInContext(['disposeNodeMenu', 'retireResidents', 'removeResident'].map(n => owner(menu, n, 4)).join('\n'), ctx);
+  vm.runInContext(['disposeNodeMenu', 'removeDeletedResidents', 'removeResident'].map(n => owner(menu, n, 4)).join('\n'), ctx);
   const show = id => {
     ctx.nodeMenuContext = {residentId: id, unobserveSession: () => released.push(id)};
     return ctx.nodeMenuContext;
@@ -40,14 +40,14 @@ test('committed deletion releases Session before a pending owner refresh and can
   let finish;
   const refresh = new Promise(resolve => { finish = resolve; });
   const graph = vm.createContext({
-    window: {PortalResidentMenu: {retireResidents: ids => h.ctx.retireResidents(new Set(ids))}},
+    window: {PortalResidentMenu: {removeDeletedResidents: ids => h.ctx.removeDeletedResidents(new Set(ids))}},
     panelHost: {hatgComponentOptions: {onResidentsDeleted: () => {
       assert.deepEqual(h.released, ['resident_deleted']);
       return refresh;
     }}},
   });
-  vm.runInContext(owner(hatg, 'retireDeletedResidents', 2), graph);
-  h.ctx.options.onDelete = async () => { await graph.retireDeletedResidents(['resident_deleted']); return true; };
+  vm.runInContext(owner(hatg, 'removeDeletedResidents', 2), graph);
+  h.ctx.options.onDelete = async () => { await graph.removeDeletedResidents(['resident_deleted']); return true; };
   const deletion = h.ctx.removeResident({id: 'resident_deleted'});
   assert.equal(original.busy, true);
   assert.equal(h.ctx.nodeMenuContext, null);
@@ -61,7 +61,7 @@ test('committed deletion releases Session before a pending owner refresh and can
 test('unrelated deletion leaves the current Session subscription active', () => {
   const h = menuHarness();
   const current = h.show('resident_kept');
-  h.ctx.retireResidents(new Set(['resident_deleted']));
+  h.ctx.removeDeletedResidents(new Set(['resident_deleted']));
   assert.equal(h.ctx.nodeMenuContext, current);
   assert.deepEqual(h.released, []);
 });
@@ -84,15 +84,15 @@ test('a deleted Resident cannot finish opening from an older asynchronous read',
   let resolveResident;
   const opened = [];
   const ctx = vm.createContext({
-    openSequence: 0, openingResidentId: '', instance: {retireResidents() {}, open: x => opened.push(x)},
+    openSequence: 0, openingResidentId: '', instance: {removeDeletedResidents() {}, open: x => opened.push(x)},
     nodeResidentId: node => node?.id || '',
     window: {PortalInstructionClient: {execute: name => name === 'GetResident'
       ? new Promise(resolve => { resolveResident = resolve; })
       : Promise.resolve(name === 'GetLineage' ? {lineage: {lineage_id: 'lineage_one'}} : {states: []})}},
   });
-  vm.runInContext(owner(menu, 'open', 2) + '\n' + owner(menu, 'retireResidents', 2), ctx);
+  vm.runInContext(owner(menu, 'open', 2) + '\n' + owner(menu, 'removeDeletedResidents', 2), ctx);
   const opening = ctx.open({residentId: 'resident_deleted'});
-  ctx.retireResidents(['resident_deleted']);
+  ctx.removeDeletedResidents(['resident_deleted']);
   resolveResident({resident: {id: 'resident_deleted', lineage_id: 'lineage_one'}});
   assert.equal(await opening, null);
   assert.deepEqual(opened, []);

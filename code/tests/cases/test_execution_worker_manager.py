@@ -39,7 +39,7 @@ class FakeProcess:
 @pytest.fixture(autouse=True)
 def process_boundaries(monkeypatch):
     # Synthetic PIDs must never reach the OS. Preserve the scheduling and
-    # retirement contracts while mocking only the process/RPC capabilities.
+    # handover contracts while mocking only the process/RPC capabilities.
     def stop_tree(process, **kwargs):
         assert isinstance(process, FakeProcess)
         process.tree_stopped = True
@@ -234,7 +234,7 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             manager = ExecutionWorkerManager()
-            worker = _worker(tmp_path, "retired", 3)
+            worker = _worker(tmp_path, "stopped", 3)
             worker.process.returncode = 0  # type: ignore[attr-defined]
             worker.health_path.write_text("{}\n", encoding="utf-8")
             manager._draining = [worker]
@@ -256,7 +256,7 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
 
             manager._reap()
 
-            assert unregistered == ["retired"]
+            assert unregistered == ["stopped"]
             assert manager._draining == []
             assert not worker.health_path.exists()
     with subtests.test(contract='test_worker_manager_reaps_timed_out_draining_generation_with_active_execution'), isolated_portal_case() as case_path:
@@ -395,42 +395,42 @@ def test_worker_manager_reaps_multiple_timed_out_draining_generations_contracts(
             generation["build"] = "build-b"
             assert manager._roll_out() is True
             assert rollouts == ["replace"]
-    with subtests.test(contract='test_worker_manager_starts_newest_generation_after_its_worker_was_retired'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_worker_manager_starts_newest_generation_after_its_worker_was_stopped'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             manager = ExecutionWorkerManager()
             manager.retry_jitter = 0.0
             monkeypatch.setattr(manager, "_build_id", lambda: "build-b")
 
-            retired = _worker(tmp_path, "build-a", 40)
-            retired.process.returncode = 0  # type: ignore[attr-defined]
-            retired.health_path.write_text(json.dumps({"retired": True}), encoding="utf-8")
-            manager._current = retired
-            manager._note_retired_current()
+            stopped = _worker(tmp_path, "build-a", 40)
+            stopped.process.returncode = 0  # type: ignore[attr-defined]
+            stopped.health_path.write_text(json.dumps({"stopped": True}), encoding="utf-8")
+            manager._current = stopped
+            manager._note_stopped_current()
 
-            # Another pool's newer generation retired it; start that one now.
-            assert retired.retirement_noted is True
+            # Another pool's newer generation stopped it; start that one now.
+            assert stopped.handover_noted is True
             assert manager._consecutive_failures == 0
             assert manager._next_retry_monotonic == 0.0
 
             stale = _worker(tmp_path, "build-b", 41)
             stale.process.returncode = 0  # type: ignore[attr-defined]
-            stale.health_path.write_text(json.dumps({"retired": True}), encoding="utf-8")
+            stale.health_path.write_text(json.dumps({"stopped": True}), encoding="utf-8")
             manager._current = stale
-            manager._note_retired_current()
+            manager._note_stopped_current()
 
-            # Retired although this pool already runs the file's generation:
+            # Stopped although this pool already runs the file's generation:
             # back off instead of taking the work straight back.
             assert manager._consecutive_failures == 1
             assert manager._next_retry_monotonic > time.monotonic()
 
             crashed = _worker(tmp_path, "build-c", 42)
             crashed.process.returncode = 1  # type: ignore[attr-defined]
-            crashed.health_path.write_text(json.dumps({"retired": False}), encoding="utf-8")
+            crashed.health_path.write_text(json.dumps({"stopped": False}), encoding="utf-8")
             manager._current = crashed
-            manager._note_retired_current()
+            manager._note_stopped_current()
 
-            assert crashed.retirement_noted is False
+            assert crashed.handover_noted is False
             assert manager._consecutive_failures == 1
 
 

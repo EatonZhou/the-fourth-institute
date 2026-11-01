@@ -322,7 +322,7 @@ def test_execution_service_query_contracts_preserve_wire_payloads_contracts(subt
         ):
             assert daemon._fill_slots_resilient() is True
         assert daemon._service_error == ""
-    with subtests.test(contract='test_execution_worker_leaves_when_retired_and_waits_while_standby'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_execution_worker_leaves_when_stopped_and_waits_while_standby'), isolated_portal_case() as case_path:
         def daemon_claiming(claim: dict) -> ExecutionWorkerDaemon:
             daemon = ExecutionWorkerDaemon.__new__(ExecutionWorkerDaemon)
             daemon.worker_id = "dev:execution-worker:test"
@@ -332,7 +332,7 @@ def test_execution_service_query_contracts_preserve_wire_payloads_contracts(subt
             daemon._active_changed = threading.Condition(daemon._active_lock)
             daemon._stopping = threading.Event()
             daemon._draining_started_at = 0.0
-            daemon._retired = False
+            daemon._stopped = False
             daemon.worker = mock.Mock()
             daemon.worker.claim.return_value = claim
             return daemon
@@ -344,18 +344,18 @@ def test_execution_service_query_contracts_preserve_wire_payloads_contracts(subt
             assert standby._fill_slots() is False
         waited.assert_called_once_with(1.0)
         assert not standby._stopping.is_set()
-        assert standby._retired is False
+        assert standby._stopped is False
 
-        # Retired by another generation, or already removed from the
+        # Stopped by another generation, or already removed from the
         # registry: hand over and exit instead of asking again forever.
         for claim in (
             {"claimed": False, "reason": "worker_not_active", "worker_state": "draining"},
             {"claimed": False, "reason": "worker_not_registered"},
         ):
-            retired = daemon_claiming(claim)
-            assert retired._fill_slots() is False
-            assert retired._stopping.is_set()
-            assert retired._retired is True
+            stopped = daemon_claiming(claim)
+            assert stopped._fill_slots() is False
+            assert stopped._stopping.is_set()
+            assert stopped._stopped is True
     with subtests.test(contract='test_execution_worker_stale_claim_cannot_remove_replacement_activity'), isolated_portal_case() as case_path:
         daemon = ExecutionWorkerDaemon.__new__(ExecutionWorkerDaemon)
         daemon.worker = mock.Mock()

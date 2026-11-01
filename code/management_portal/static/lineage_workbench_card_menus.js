@@ -19,7 +19,7 @@
     "openResidentEditModal", "pendingResidentDeletions", "recentAgentSessionKey",
     "refreshResidentSidebarIfDue", "registeredLineageIdForResident", "renderAgentList",
     "renderFavoriteList", "resetChatRenderState", "residentChatTarget", "residentExactId",
-    "residentService", "retireDeletedResidentSurfaces", "selectDerivedResident",
+    "residentService", "removeDeletedResidentSurfaces", "selectDerivedResident",
     "selectedResidentId", "selectResident", "societyService", "state", "syncChatTargetLocation",
     "syncLineageHatgPanel", "syncSelectedResidentSurface", "unavailableResidentBindings",
     "writeLastSelection", "writeLineageUiState",
@@ -83,7 +83,7 @@
       openLineageAttachChoiceModal, openResidentEditModal, pendingResidentDeletions,
       recentAgentSessionKey, refreshResidentSidebarIfDue, registeredLineageIdForResident,
       renderAgentList, renderFavoriteList, resetChatRenderState, residentChatTarget,
-      residentExactId, residentService, retireDeletedResidentSurfaces, selectDerivedResident,
+      residentExactId, residentService, removeDeletedResidentSurfaces, selectDerivedResident,
       selectedResidentId, selectResident, societyService, state, syncChatTargetLocation,
       syncLineageHatgPanel, syncSelectedResidentSurface, unavailableResidentBindings,
       writeLastSelection, writeLineageUiState,
@@ -499,7 +499,7 @@
         const deletedResidentId = String(result?.resident_id || "").trim();
         if (deletedResidentId) deletedIds.add(deletedResidentId);
         deletion = { result, deletedIds };
-        await retireDeletedResidentSurfaces([...deletedIds]);
+        await removeDeletedResidentSurfaces([...deletedIds]);
 
         state.residents = state.residents.filter(item => (
           !deletedIds.has(String(item?.resident_id || "").trim())
@@ -638,7 +638,7 @@
           const id = String(residentId || "").trim();
           if (id) memberIds.add(id);
         }
-        await retireDeletedResidentSurfaces([...memberIds]);
+        await removeDeletedResidentSurfaces([...memberIds]);
 
         state.agentMenuId = "";
         state.lineages = state.lineages.filter(item => item.lineage_id !== lineageId);

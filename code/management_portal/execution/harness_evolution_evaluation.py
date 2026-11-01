@@ -584,10 +584,10 @@ def evaluate_cells(
         applied = ""
         if apply:
             if decision == "rollback":
-                store.retire(cell.provider, cell.workload_family, "rolled_back", actor=actor, evidence=evaluation)
+                store.delete(cell.provider, cell.workload_family, "rolled_back", actor=actor, evidence=evaluation)
                 applied = "rolled_back"
             elif decision in {"rejected", "inconclusive"}:
-                store.retire(cell.provider, cell.workload_family, decision, actor=actor, evidence=evaluation)
+                store.delete(cell.provider, cell.workload_family, decision, actor=actor, evidence=evaluation)
                 applied = decision
             elif decision == "promote" and criteria.auto_promote:
                 store.promote(cell.provider, cell.workload_family, actor=actor, evidence=evaluation)

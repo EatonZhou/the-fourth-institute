@@ -630,7 +630,7 @@ def test_harness_records_read_and_write_both_column_types(legacy, monkeypatch):
         assert evolution.cell("claude", "repository_work").challenger is None
     started = evolution.start_challenger("claude", "repository_work", {"compaction_max_context_tokens": 300_000},
                                          actor="t")
-    assert evolution.retire("claude", "repository_work", "rolled_back", actor="t",
+    assert evolution.delete("claude", "repository_work", "rolled_back", actor="t",
                             evidence={"why": "a\x00"}).challenger is None
     evolution.freeze("claude", "repository_work", actor="t")
     assert evolution.cell("claude", "repository_work").challenger is None

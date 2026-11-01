@@ -316,10 +316,10 @@ class PARPermissions:
         from .requests import resource_type
 
         instance = self.current()[2]
-        retired = []
+        unregistered = []
         for resource_id in resource_ids:
-            retired += instance.retire(resource_type(resource_id), [resource_id], connection=connection)
-        return retired
+            unregistered += instance.unregister(resource_type(resource_id), [resource_id], connection=connection)
+        return unregistered
 
     def sync_user(self, username: str, *, deleted: bool = False, category: str = "", connection=None) -> None:
         """Place (or take out) a User; ``category`` defaults to the one its account record holds."""

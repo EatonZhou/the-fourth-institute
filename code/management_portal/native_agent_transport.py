@@ -24,7 +24,7 @@ class NativeAgentDetached(NativeAgentError):
 
 
 class ToolCallHandedOver(NativeAgentDetached):
-    """A retiring Worker leaves a tool call it has not started to the next Worker.
+    """A leaving Worker leaves a tool call it has not started to the next Worker.
 
     The client leaves without answering it; the Agent gives the call to the
     Worker that attaches next.

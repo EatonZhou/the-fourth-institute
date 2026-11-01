@@ -92,7 +92,7 @@ class Claims:
             if worker["state"] != "active":
                 connection.commit()
                 # A standby Worker waits for activation; a draining or offline
-                # one was retired and leaves.
+                # one was stopped and leaves.
                 return {
                     "claimed": False,
                     "reason": "worker_not_active",

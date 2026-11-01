@@ -306,7 +306,7 @@ def call_portal_tool(name: str, arguments: dict[str, object]) -> dict[str, objec
             answer = _ask(gateway_socket_path(session_id), {
                 "op": "call", "tool": name, "arguments": arguments, "call_id": str(note.get("tool_call_id") or ""),
             }, timeout=CALL_TIMEOUT_SECONDS, wait=max(0.0, deadline - time.monotonic()))
-            # A retiring Worker did not run the call; the next Worker will.
+            # A leaving Worker did not run the call; the next Worker will.
             if not answer.get("retry") or time.monotonic() >= deadline:
                 break
             time.sleep(0.5)

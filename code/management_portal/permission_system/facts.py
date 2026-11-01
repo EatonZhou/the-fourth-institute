@@ -296,7 +296,7 @@ class Instance:
 
     def _sync(self, connection, fact: Fact) -> bool:
         if not fact.active:
-            return self._retire(connection, fact)
+            return self._unregister(connection, fact)
         changed = False
         known = self.store.objects(connection, [fact.id], lock=True)
         for tree in ("R", "P"):
@@ -328,7 +328,7 @@ class Instance:
         placed = self.store.paths("P", creators, connection)
         return [creator for creator in creators if creator in placed]
 
-    def _retire(self, connection, fact: Fact) -> bool:
+    def _unregister(self, connection, fact: Fact) -> bool:
         removed = []
         for tree in ("R", "P"):
             removed += self.store.remove(connection, tree, fact.id)
@@ -338,16 +338,16 @@ class Instance:
             removed += self.store.delete_contents(connection, self.relation_rows(forgotten[fact.id]))
         changed = bool(removed or forgotten)
         for dependent in fact.dependents:
-            changed = self._retire(connection, Fact(dependent.kind, dependent.id, dependent.owners, False)) or changed
+            changed = self._unregister(connection, Fact(dependent.kind, dependent.id, dependent.owners, False)) or changed
         return changed
 
-    def retire(self, kind: str, resource_ids: Iterable[str], *, connection=None) -> list[str]:
-        retired = []
+    def unregister(self, kind: str, resource_ids: Iterable[str], *, connection=None) -> list[str]:
+        unregistered = []
         with self.store.transaction(connection) as connection:
             for resource_id in resource_ids:
-                if self._retire(connection, Fact(kind, resource_id, active=False)):
-                    retired.append(resource_id)
-        return retired
+                if self._unregister(connection, Fact(kind, resource_id, active=False)):
+                    unregistered.append(resource_id)
+        return unregistered
 
     # -- the whole instance -------------------------------------------------------------
 

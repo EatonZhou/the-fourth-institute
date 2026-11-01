@@ -233,7 +233,7 @@ class DshClient:
     def run_turn(self, *, event_callback=None, tool_callback=None, detach_requested=None, **params):
         """Run a turn, or attach to the running turn with this ``turn_id``.
 
-        ``detach_requested`` lets a retiring Worker leave the turn running;
+        ``detach_requested`` lets a leaving Worker leave the turn running;
         ``continue_prompt`` continues a turn an earlier attempt started that
         is no longer running (the bridge never sends its input twice).
         """

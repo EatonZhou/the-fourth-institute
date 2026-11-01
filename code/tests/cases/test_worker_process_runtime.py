@@ -51,7 +51,7 @@ def manager(monkeypatch, tmp_path):
     return instance
 
 
-def test_retiring_worker_uses_durable_drain_without_killing_provider(manager, tmp_path):
+def test_leaving_worker_uses_durable_drain_without_killing_provider(manager, tmp_path):
     """停止通过既有 draining 唤醒交接，不用 Windows 硬终止替代优雅退出。"""
     item = managed(tmp_path)
     manager._mark_draining(item)
@@ -160,16 +160,16 @@ def test_idle_manager_exits_when_execution_service_is_stopped(tmp_path):
             # No synthetic PID can reach the OS process-control boundary.
             wm.process_runtime.terminate_process_tree = lambda process, **kw: None
             manager = wm.ExecutionWorkerManager()
-            health = root / 'retired-worker.json'
+            health = root / 'stopped-worker.json'
             health.write_text('{"active_executions": []}')
             manager._current = wm.WorkerProcess(
                 process=SimpleNamespace(pid=12345678, poll=lambda: 0),
-                worker_id='test:retired', build_id='test', health_path=health,
+                worker_id='test:stopped', build_id='test', health_path=health,
                 started_at=1.0)
             manager._stopping.set()
             assert manager.run() == 0
             payload = json.loads(manager.health_path.read_text())
-            assert payload['shutdown_pending_recovery'] == ['test:retired']
+            assert payload['shutdown_pending_recovery'] == ['test:stopped']
             assert health.exists()  # Unacknowledged Scheduler cleanup remains durable.
             assert payload['draining'][0]['tree_stopped'] is True
     ''')
@@ -183,7 +183,7 @@ def test_manager_shutdown_rpc_cannot_start_after_its_deadline(manager, monkeypat
         raise AssertionError('No RPC may start after the shared deadline')
     monkeypatch.setattr(worker_manager, 'ExecutionServiceClient', unexpected_client)
     with pytest.raises(TimeoutError, match='shutdown deadline'):
-        manager._retirement_request('scheduler.worker.handover', {})
+        manager._handover_request('scheduler.worker.handover', {})
 
 
 def test_manager_shutdown_rpc_response_uses_remaining_budget(manager, monkeypatch):
@@ -210,7 +210,7 @@ def test_manager_shutdown_rpc_response_uses_remaining_budget(manager, monkeypatc
             started = time.monotonic()
             try:
                 with pytest.raises(ExecutionResponseUnknown):
-                    manager._retirement_request('scheduler.worker.handover', {})
+                    manager._handover_request('scheduler.worker.handover', {})
                 assert time.monotonic() - started < 1.5
             finally:
                 finished.set()

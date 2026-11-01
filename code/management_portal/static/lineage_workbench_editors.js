@@ -14,7 +14,7 @@
     "lineageLayoutStore", "lineageSidebarRoots", "lineageStateController", "openResourceChipPreview",
     "openWorkspaceResource", "recommendationConversationView", "refreshLineageChatView",
     "refreshPreviewIfChanged", "registeredLineageIdForResident", "rememberResidentShortcutSession",
-    "renderMarkdown", "residentIdForSelection", "retireDeletedResidentSurfaces", "runChatTargetEffect",
+    "renderMarkdown", "residentIdForSelection", "removeDeletedResidentSurfaces", "runChatTargetEffect",
     "selectedResidentId", "showResidentEditorOpenMenu", "state", "syncHatgLocation",
     "updateCurrentResidentWatchboard", "waitForInitialLineageReady",
   ]);
@@ -31,7 +31,7 @@
       lineageStateController, openResourceChipPreview, openWorkspaceResource,
       recommendationConversationView, refreshLineageChatView, refreshPreviewIfChanged,
       registeredLineageIdForResident, rememberResidentShortcutSession, renderMarkdown,
-      residentIdForSelection, retireDeletedResidentSurfaces, runChatTargetEffect, selectedResidentId,
+      residentIdForSelection, removeDeletedResidentSurfaces, runChatTargetEffect, selectedResidentId,
       showResidentEditorOpenMenu, state, syncHatgLocation, updateCurrentResidentWatchboard,
       waitForInitialLineageReady,
     } = dependencies;
@@ -212,7 +212,7 @@
             pageState: lineageStateController,
             waitForServiceReady: waitForInitialLineageReady,
             onLocationChange: syncHatgLocation,
-            onResidentsDeleted: retireDeletedResidentSurfaces,
+            onResidentsDeleted: removeDeletedResidentSurfaces,
             onDeleteLineage: request => deleteLineageFromConsole(
               lineageSidebarRoots("", { respectFilters: false })
                 .find(candidate => registeredLineageIdForResident(candidate) === request.lineage_id)
