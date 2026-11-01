@@ -18,6 +18,8 @@ await portal.action('first-refresh', async page => {
 ```
 预检失败还没有发生第一次刷新；只读修正后可以继续原定首次点击。operation 已提交且 ready 失败则保留原失败，不能重放或回填。其他业务步骤继续完成。前往资源地址会改变当前面板：之后先读新页面快照、显示相应面板，再定位其中的旧对象，不能假定导航前 HATG、Chat、菜单仍可见。
 
+不要把准备步骤的失败扩大成尚未发生的业务动作失败。每个阶段明确保留“尚未提交 / 已提交、观察中 / 终态”；只有已经实际发生的首次动作才存在不能重放的首次样本。尚未点过刷新就继续只读修正定位，完成原定首次刷新后再进入删除；已经接纳的输入或写操作始终沿原身份观察。点击前除 role/name 之外读取该实际控件的 aria-description、aria-haspopup 和可见提示，分清直接执行与打开菜单/对话框；不能仅因名字有 Fork 就假定第一次点击只打开表单。这样取得的实际界面证据属于第一阶段，不必读源码。
+
 原工具调用的可执行编排模板（functions.exec 环境；每个新 cell 先定义 measured，不记录命令内容）：
 ```javascript
 const shellQuote = s => "'" + String(s).replaceAll("'", "'\"'\"'") + "'";
@@ -34,6 +36,8 @@ async function measured(name, invoke) {
 }
 // 原调用示例：text(await measured('exec_command', () => tools.exec_command({cmd: 'pwd'})));
 ```
+
+计时范围按实际工具能力说明：上面的模板测量 `tools.*` 原调用的 await，包含其中真实执行/返回等待。`functions.exec` 和 `functions.wait` 是外层编排/取回容器，若当前环境不能在另一可调用工具内包裹它们，则把这层 RTT 明确记为不可测；不能把跨 cell 的 Date.now 差、容器显示的墙钟时长或子进程耗时冒充它的原 RTT，也不能仅因这项已说明的工具能力限制宣布业务失败。底层 exec_command/write_stdin/图片等可测调用仍逐条记录，原 UI ready 与业务门禁完全保留。减少不必要的提前 yield，但不要因此中断仍在执行的原动作。
 
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
