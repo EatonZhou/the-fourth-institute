@@ -47,9 +47,28 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await page.evaluate(() => { window.sampleCopied = []; PortalUI.copyText = async value => { sampleCopied.push(value); }; });
   await copy.click();
   assert.deepEqual(await page.evaluate(() => sampleCopied), [sessionId], 'native event copies the full opaque ID');
+  const {readResidentMenuTitle}=require('../../../management_portal/test_framework/tau_session_dom_evidence');
+  const {waitForEvidenceReady}=require('../../../management_portal/test_framework/tau_readiness_wait');
+  assert.ok((await readResidentMenuTitle(menu,{residentId,title:'Fixture Resident'})).ready);
+  assert.equal((await readResidentMenuTitle(menu,{residentId:childId,title:'Fixture Resident'})).ready,false);
+  await menu.getByRole('button',{name:'Rename',exact:true}).click();
+  const titleInput=menu.getByRole('textbox',{name:'Resident name',exact:true});
+  await titleInput.fill('Renamed native fixture');
+  assert.equal((await readResidentMenuTitle(menu,{residentId,title:'Renamed native fixture'})).ready,false,
+    'typing an unsaved name is not a committed display');
+  await menu.getByRole('button',{name:'Save name',exact:true}).click();
+  const titleSamples=[];
+  await waitForEvidenceReady(()=>readResidentMenuTitle(menu,{residentId,title:'Renamed native fixture'}),
+    {record:row=>titleSamples.push(row),timeoutMs:5000});
+  assert.ok(titleSamples.length);
+  assert.equal(await menu.locator('#nodeMenuName').evaluate(n=>n.tagName),'STRONG');
+  assert.ok(await menu.getByRole('strong').count(),
+    'the original failed predicate waited for every strong element to disappear');
+  assert.equal(requests.filter(r=>r.instruction==='UpdateResident').length,1);
   await menu.getByRole('button', {name: /^(关闭|Close)$/}).click();
   await menu.waitFor({state: 'hidden'});
   assert.equal((await readResidentMenuSession(menu, {residentId})).ready, false);
+  assert.equal((await readResidentMenuTitle(menu,{residentId,title:'Renamed native fixture'})).ready,false);
   assert.equal((await readResidentChatReady(root, {residentId})).ready, true);
   await root.getByRole('button', {name:'Clear Resident context',exact:true}).click();
   const resetConfirmation=page.getByRole('alertdialog',{name:'Clear Resident context?',exact:true});
@@ -160,7 +179,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await page.getByRole('dialog').getByRole('textbox', {name:/Title|标题/}).waitFor({state:'visible'});
   await page.keyboard.press('Escape');
   await page.getByRole('dialog').waitFor({state:'hidden'});
-  const fork = hatg.getByRole('button', {name:'从「Fixture Resident」完整上下文 Fork 新 Resident',exact:true});
+  const fork = hatg.getByRole('button', {name:'从「Renamed native fixture」完整上下文 Fork 新 Resident',exact:true});
   await fork.click();
   const children = visibleResidentChatRoots(page,{residentId:childId});
   await children.waitFor({state:'visible'});

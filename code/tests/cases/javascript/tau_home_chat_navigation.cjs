@@ -21,6 +21,7 @@ const catalogGate = lateCameraSamples ? new Promise(resolve => { releaseCatalog 
 const sessionId = 'opaque.full-session-id-for-native-menu';
 const childId = 'resident_333333333333';
 let forked = false;
+const residentTitles=new Map();
 const deletedResidents = new Set();
 const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSamples
   ? {state:'unknown',reason:'execution_unavailable'} : {state:'open',reason:''}});
@@ -43,7 +44,7 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return route.fulfill({ path: file });
       if (u.pathname === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: '' });
       const makeResident = id => ({id, resident_id:id, lineage_id:lineageId,
-        title:id === childId ? 'Fixture Child' : 'Fixture Resident', owner:'fixture', backend:'codex', kind:'agent', x:id === childId ? 400 : 0, y:0,
+        title:residentTitles.get(id) || (id === childId ? 'Fixture Child' : 'Fixture Resident'), owner:'fixture', backend:'codex', kind:'agent', x:id === childId ? 400 : 0, y:0,
         ...(graphReadinessSamples ? {resident_state:{execution_gate:{state:'unknown',reason:'execution_unavailable'}}} : {})});
       const targetId = body?.arguments?.resident_id || u.searchParams.get('id') || residentId;
       if (deletedResidents.has(targetId) && (u.pathname.endsWith('/projection') || body?.instruction === 'GetConversation'))
@@ -69,7 +70,7 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       if (u.pathname === '/api/workbenches') result = {workbenches:[]};
       if (u.pathname === '/api/instructions/execute') {
         if (!/^(Get|List|Search|Read)|^MarkMailboxItemRead$/.test(body.instruction)
-            && !(readinessSamples && body.instruction === 'ForkResident')
+            && !(readinessSamples && ['ForkResident','UpdateResident'].includes(body.instruction))
             && !(lineageCreationSamples && body.instruction === 'CreateLineage')) {
           errors.push(`Unexpected local instruction: ${body.instruction}`);
           return route.fulfill({ status: 400, json: { error: { code: 'fixture.unexpected_instruction' } } });
@@ -77,6 +78,10 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
         if (body.instruction === 'MarkMailboxItemRead') result = { item: { resident_id: residentId, unread: false, read_revision: 1 } };
         if (body.instruction === 'GetConversation') result = { resident, messages: [], queue: { items: [] }, controls: { can_send: true }, state: runtimeState() };
         if (body.instruction === 'GetResident') result = {resident};
+        if (body.instruction === 'UpdateResident') {
+          residentTitles.set(targetId,body.arguments.title);
+          result = {resident:makeResident(targetId)};
+        }
         if (body.instruction === 'CreateLineage') result = {lineage_id:'lineage_555555555555'};
         if (body.instruction === 'ListWorkbenches') result = {workbenches:[]};
         if (body.instruction === 'ForkResident') { forked = true; result = {resident_id:childId}; }

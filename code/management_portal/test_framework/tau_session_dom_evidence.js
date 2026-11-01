@@ -77,4 +77,25 @@ async function readResidentMenuSession(menu, {residentId}) {
   return {resident_id:residentId, candidates, ready, session_id:ready ? candidates[0].values[0].text : null};
 }
 
-module.exports = {readSessionDeleteDialog, readSessionGraphReady, readResidentMenuSession};
+// The displayed name is a persistent native <strong>, including after Save.
+// Match its exact identity and title, not the disappearance of that element.
+async function readResidentMenuTitle(menu, {residentId, title}) {
+  if (!/^resident_[a-z0-9]+$/.test(residentId || '') || typeof title !== 'string' || !title.trim())
+    throw new TypeError('Exact Resident identity and expected title are required');
+  const candidates=await menu.evaluateAll((roots, expected)=>roots.map(root=>{
+    const visible=n=>!!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')
+      && n.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
+    const fields=selector=>[...root.querySelectorAll(selector)].map(n=>({text:n.textContent.trim(),visible:visible(n)}));
+    const identities=fields('#nodeResidentIdentityReadout'), names=fields('#nodeMenuName');
+    const forms=[...root.querySelectorAll('#nodeMenuRenameFields')].map(n=>({hidden:n.hidden,visible:visible(n)}));
+    return {dom_id:root.id,identities,names,forms,
+      ready:root.matches('[role="dialog"].nodeSettingsSurface') && visible(root)
+        && identities.length===1 && identities[0].visible && identities[0].text===expected.residentId
+        && names.length===1 && names[0].visible && names[0].text===expected.title
+        && forms.length===1 && forms[0].hidden};
+  }),{residentId,title});
+  return {observed_at_ms:Date.now(),resident_id:residentId,expected_title:title,candidates,
+    ready:candidates.length===1 && candidates[0].ready};
+}
+
+module.exports = {readSessionDeleteDialog, readSessionGraphReady, readResidentMenuSession, readResidentMenuTitle};
