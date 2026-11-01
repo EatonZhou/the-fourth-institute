@@ -10,6 +10,14 @@ import pytest
 from management_portal import local_terminal_backend as terminal
 
 
+def test_terminal_navigation_preserves_session_and_explicit_close_releases_it():
+    import subprocess
+    from pathlib import Path
+
+    script = Path(__file__).with_name("javascript") / "terminal_navigation_lifecycle.cjs"
+    subprocess.run(["node", str(script)], check=True)
+
+
 @pytest.fixture
 def session():
     process = mock.Mock(pid=1234)

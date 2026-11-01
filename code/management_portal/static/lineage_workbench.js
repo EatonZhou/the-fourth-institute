@@ -1,4 +1,4 @@
-(() => {
+(async () => {
       "use strict";
 
       // What the opening URL asks for, read before any panel restores its own location.
@@ -1149,6 +1149,8 @@
         writeLineageUiState({ sideView: state.sideView || "agents", lastSideView: state.sideView || "agents" });
       }
 
+      // Permission-dependent panels must exist before the saved layout is read.
+      await window.PortalIdentity.load();
       const bootstrappedIdentity = window.PortalIdentity.peek();
       state.me = String(bootstrappedIdentity.username || "");
       ensureLineageWorkbench();

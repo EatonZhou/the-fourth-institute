@@ -70,6 +70,8 @@
     TerminalClass = window.Terminal,
     FitAddonClass = window.FitAddon?.FitAddon,
     messages = {},
+    onSessionChange = () => {},
+    initialSessionId = "",
   }) {
     if (!mount) throw new Error("terminal container missing");
     if (!TerminalClass || !FitAddonClass) throw new Error("xterm.js 静态资源未加载");
@@ -85,7 +87,7 @@
       ...messages,
     };
     const state = {
-      sessionId: "",
+      sessionId: String(initialSessionId || ""),
       cursor: 0,
       startPromise: null,
       inputPromise: null,
@@ -169,7 +171,10 @@
     }
 
     function render(payload = {}) {
-      if (payload.session_id !== undefined) state.sessionId = String(payload.session_id || "");
+      if (payload.session_id !== undefined && state.sessionId !== String(payload.session_id || "")) {
+        state.sessionId = String(payload.session_id || "");
+        onSessionChange(state.sessionId);
+      }
       let chunk = String(payload.chunk ?? "");
       if (payload.cursor !== undefined && Number.isFinite(Number(payload.cursor))) {
         const nextCursor = Number(payload.cursor);
@@ -184,6 +189,7 @@
     function endSession() {
       if (!state.sessionId) return;
       state.sessionId = "";
+      onSessionChange("");
       state.pendingInput = "";
       state.pasteRequest += 1;
       clearPoll();
@@ -376,6 +382,7 @@
       state.pendingInput = "";
       const sessionId = state.sessionId;
       state.sessionId = "";
+      onSessionChange("");
       state.cursor = 0;
       const pending = [state.startPromise, state.inputPromise, state.controlPromise];
       state.closePromise = Promise.allSettled(pending).then(async () => {
@@ -390,11 +397,12 @@
       if (restart) await start();
     }
 
-    async function destroy() {
+    async function destroy({ closeSession = true } = {}) {
       state.destroyed = true;
       mount.removeEventListener("keydown", clipboardKeyDown, true);
       mount.removeEventListener("contextmenu", clipboardContextMenu, true);
-      await close().catch(() => {});
+      if (closeSession) await close().catch(() => {});
+      else { clearPoll(); clearResize(); state.pendingInput = ""; }
       term.dispose();
     }
 
@@ -451,10 +459,10 @@
     return Object.freeze({
       close,
       control: action => String(action || "").trim() === "close" ? close() : invoke(value => value.control(action)),
-      destroy: async () => {
+      destroy: async options => {
         destroyed = true;
         generation += 1;
-        if (controller) await controller.destroy();
+        if (controller) await controller.destroy(options);
         controller = null;
       },
       fit: () => { invoke(value => value.fit()).catch(() => {}); },

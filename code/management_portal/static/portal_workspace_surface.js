@@ -458,6 +458,7 @@
     </div>
     <div class="terminalBox portalWorkbenchTerminalBody"><div class="terminalXterm" data-terminal-mount></div><div class="terminalToolbar"><button class="terminalBtn" type="button" data-terminal-interrupt>Ctrl-C</button><button class="terminalBtn" type="button" data-terminal-restart title="关闭当前 shell 并新建一个">New shell</button></div></div>`;
     let target = { ...(options.target || {}) };
+    let sessionId = "";
     let controller = null;
     let visible = false;
     const context = () => {
@@ -489,6 +490,11 @@
         TerminalClass: options.TerminalClass || window.Terminal,
         FitAddonClass: options.FitAddonClass || window.FitAddon?.FitAddon,
         messages: { starting: window.PortalI18n.t("正在启动本地终端…"), ...(options.messages || {}) },
+        initialSessionId: sessionId,
+        onSessionChange: value => {
+          sessionId = value;
+          options.emit?.("persistence-change");
+        },
       });
       return controller;
     };
@@ -514,7 +520,10 @@
       },
       openResource(resource) { return runtime.setTarget(resource); },
       setContext(nextContext = {}) {
-        return nextContext.workspace ? runtime.setTarget(nextContext.workspace) : context();
+        // Shared selection is a starting directory, never an instruction to
+        // replace a shell that the user already started or is reconnecting.
+        return nextContext.workspace && !controller && !sessionId
+          ? runtime.setTarget(nextContext.workspace) : context();
       },
       show() {
         visible = true;
@@ -527,9 +536,20 @@
       hide() { visible = false; controller?.pause?.(); },
       fit() { controller?.fit?.(); },
       control(action) { return ensureController().control(action); },
-      snapshot: () => ({ target }),
-      restore(snapshot = {}) { if (snapshot.target) runtime.setTarget(snapshot.target); },
-      async destroy() { visible = false; await controller?.destroy?.(); root.replaceChildren(); },
+      snapshot: () => ({ target, sessionId }),
+      restore(snapshot = {}) {
+        if (snapshot.target) runtime.setTarget(snapshot.target);
+        if (!controller) sessionId = String(snapshot.sessionId || "");
+      },
+      async canClose() {
+        if (!controller && sessionId) {
+          await options.apiPost(options.controlUrl || "/api/agent-workbench/local-terminal/control", { session_id: sessionId, action: "close" });
+          sessionId = "";
+          options.emit?.("persistence-change");
+        } else await controller?.close?.();
+        return true;
+      },
+      async destroy() { visible = false; await controller?.destroy?.({ closeSession: false }); root.replaceChildren(); },
     });
     return runtime;
   }
