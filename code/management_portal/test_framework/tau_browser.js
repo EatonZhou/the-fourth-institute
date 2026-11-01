@@ -333,6 +333,26 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
   }
 
+  async function waitForRegionReady(region, { timeoutMs = 60_000, intervalMs = 50 } = {}) {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      // Keep the Locator, not an ElementHandle from a view that may be replaced.
+      if (await region.count() === 1 && await region.isVisible()) {
+        try {
+          const state = await region.evaluate(element => ({
+            busy: element.getAttribute('aria-busy'), connected: element.isConnected,
+          }), undefined, { timeout: Math.max(1, deadline - Date.now()) });
+          if (state.connected && state.busy === 'false') return state;
+        } catch (error) {
+          if (region.page().isClosed()) throw error;
+          // Detachment/navigation can happen between the identity and state reads.
+        }
+      }
+      if (Date.now() >= deadline) throw new Error('Region did not expose a unique visible settled state');
+      await sleep(intervalMs);
+    }
+  }
+
   async function waitForRunningActivity({ scope = page, timeoutMs = 120_000 } = {}) {
     const deadline = Date.now() + timeoutMs;
     // Locators resolve again after navigation or a Chat remount. A caller with
@@ -402,7 +422,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
     action: (name, operation, { page: target = page, preflight, ready } = {}) => observer.action(target, name, operation, { preflight, ready }),
-    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForTriggerPath, waitForInput, waitForRunningActivity,
+    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForTriggerPath, waitForInput, waitForRegionReady, waitForRunningActivity,
     sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }
 

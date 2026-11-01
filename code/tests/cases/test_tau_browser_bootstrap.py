@@ -445,6 +445,25 @@ def test_the_bootstrap_waits_for_one_message_by_its_own_input_state(tmp_path, po
     assert 'resident_111111111111' not in text and 'msg_a' not in text
 
 
+def test_region_wait_follows_replaced_dom_and_requires_settled_attribute(tmp_path, portal):
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "const assert=require('node:assert/strict');"
+        "await p.page.setContent('<section role=region aria-label=Settings aria-busy=true>Loading</section>');"
+        "await p.page.evaluate(()=>{window.original=document.querySelector('section');"
+        "setTimeout(()=>{const next=original.cloneNode(true);original.replaceWith(next);"
+        "setTimeout(()=>{next.setAttribute('aria-busy','false');next.textContent='Loaded model';},100);},100);});"
+        "const region=p.page.getByRole('region',{name:'Settings',exact:true});"
+        "const state=await p.waitForRegionReady(region,{timeoutMs:2000,intervalMs:5});"
+        "assert.equal(state.busy,'false');"
+        "assert.equal(await region.innerText(),'Loaded model');"
+        "assert.equal(await p.page.evaluate(()=>original.getAttribute('aria-busy')),'true');"
+        "assert.equal(await p.page.evaluate(()=>original.isConnected),false);"
+        "await region.evaluate(e=>e.removeAttribute('aria-busy'));"
+        "await assert.rejects(p.waitForRegionReady(region,{timeoutMs:30,intervalMs:1}));"
+    ))
+    assert result.returncode == 0, result.stderr
+
+
 def test_trigger_path_wait_observes_original_path_after_input_completion(tmp_path, portal):
     """输入完成不能代替之后才完成的 Trigger Path；轮询原 ID，不重新触发。"""
     result = _open(tmp_path, portal, 'test-actor', body=(
