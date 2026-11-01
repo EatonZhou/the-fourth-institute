@@ -6,7 +6,12 @@ const path = require('node:path');
 // Invoked by the native lineage.html fixture. No fabricated Chat/Menu markup.
 module.exports = async ({page, root, residentId, childId, sessionId, errors, requests, deleteFixtureResident}) => {
   page.setDefaultTimeout(5000);
-  const {readResidentChatReady} = require('../../../management_portal/test_framework/tau_chat_ready_evidence');
+  const {readResidentChatReady,visibleResidentChatRoots} = require('../../../management_portal/test_framework/tau_chat_ready_evidence');
+  const discoveredRoot=visibleResidentChatRoots(page,{residentId});
+  assert.equal(await discoveredRoot.count(),1);
+  assert.equal(await discoveredRoot.getAttribute('id'),await root.getAttribute('id'));
+  assert.equal(await root.getAttribute('aria-label'),null, 'the native accessible name does not require a literal aria-label');
+  assert.equal(await visibleResidentChatRoots(page,{residentId:'resident_absent'}).count(),0);
   const sample = await readResidentChatReady(root, {residentId});
   assert.equal(sample.ready, true);
   assert.equal(sample.session_identity_ready, false,
@@ -84,7 +89,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await page.getByRole('dialog').waitFor({state:'hidden'});
   const fork = hatg.getByRole('button', {name:'从「Fixture Resident」完整上下文 Fork 新 Resident',exact:true});
   await fork.click();
-  const children = page.locator('.portalChatWorkspaceRoot').filter({has:page.locator(`.chatHead [data-workspace-resident-id="${childId}"]`)});
+  const children = visibleResidentChatRoots(page,{residentId:childId});
   await children.waitFor({state:'visible'});
   assert.equal(await children.count(), 1, 'native Fork has already opened the child; discovery adds no Editor');
   assert.equal((await readResidentChatReady(children,{residentId:childId})).ready,true);

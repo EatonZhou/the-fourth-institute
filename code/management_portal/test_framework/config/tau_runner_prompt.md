@@ -1,5 +1,16 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+发现目标Chat使用`tau_chat_ready_evidence.js`的`visibleResidentChatRoots(page,{residentId})`，返回当前可见、原生头部精确绑定该Resident的全部Editor Locator。先count/evaluateAll记录候选，再按本轮实际面板选择唯一Editor并传给readResidentChatReady；零候选继续原有界等待，多个候选不取first掩盖歧义。可访问名称可能由aria-labelledby计算，不能要求DOM存在aria-label，也不能把getAttribute('aria-label').includes('Chat')作为发现门禁。
+
+图几何稳定和普通成员执行可用是两个检查。executionResidentIds应来自原基线中本轮需要执行的普通成员；如果当前图只有Family门面，则列表为空、requireExecutionOpen=false，仍检查门面身份、可见错误、完整集合和稳定几何。空列表配true会被助手拒绝。参数组合可使用以下示例；它不替代成员账号预检或消息路由验收：
+
+```js
+// tau-hatg-execution-scope
+function hatgExecutionScope(executionResidentIds) {
+  return {requireExecutionOpen: executionResidentIds.length > 0, executionResidentIds};
+}
+```
+
 Workbench单标签栏会收起到面板上边缘，tab.boundingBox的上部可能已被裁剪，不能按该矩形的y+1悬停或直接点击其中隐藏的关闭按钮。先枚举本轮实际tab并取得唯一Locator，再用`tau_workbench_tabs.js`的`revealWorkbenchTabControls(tab,{record})`从实际面板内的上边缘正常移入鼠标，逐样本记录展开和命中情况。返回值是`{observed_at_ms,candidates,ready}`，关闭控件在唯一候选的`candidates[0].close`中；准备阶段用以下函数取得Locator，再放进原`portal.action`执行普通click，原ready等待该tab消失。助手不关闭面板、不强制点击、不改CSS、不自动解除布局锁。可见/启用不等于能接收指针，不能用force消除遮挡。
 
 ```js

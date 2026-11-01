@@ -1,5 +1,14 @@
 'use strict';
 
+// Return all visible native Editors for this exact header identity. The caller
+// must keep multiple Editors distinct; this never chooses one or opens a Chat.
+function visibleResidentChatRoots(page, {residentId}) {
+  if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new Error('Expected exact Resident identity');
+  return page.locator('.portalChatWorkspaceRoot:visible').filter({
+    has: page.locator(`.chatHead [data-workspace-identity="resident"][data-workspace-resident-id="${residentId}"]`),
+  });
+}
+
 // Read the current full native Chat root in one DOM snapshot. The original
 // action owns bounded waits and must persist each snapshot before asserting it.
 // No text search through messages, requests, clicks, timers or implicit retries.
@@ -46,4 +55,4 @@ async function readResidentChatReady(region, { residentId }) {
     ready, session_id: sessionId, session_identity_ready: sessionId !== null };
 }
 
-module.exports = { readResidentChatReady };
+module.exports = { readResidentChatReady, visibleResidentChatRoots };

@@ -1,5 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
 module.exports=async({page,residentId,lineageId,errors})=>{
   const {readHatgViewSnapshot,waitForHatgView}=require('../../../management_portal/test_framework/tau_hatg_view_evidence');
   await page.getByRole('button',{name:'Show HATG',exact:true}).click();
@@ -24,6 +25,15 @@ module.exports=async({page,residentId,lineageId,errors})=>{
   const settled=await waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],
     timeoutMs:1500,stableMs:120,intervalMs:30,record:s=>samples.push(s)});
   assert.ok(settled.ready && settled.stable_for_ms>=120 && samples.length>=3);
+  const prompt=fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
+  const documented=prompt.match(/```js\n(\/\/ tau-hatg-execution-scope\n[\s\S]*?)\n```/);
+  assert.ok(documented,'public graph preparation must define geometry-only and ordinary-member execution scopes');
+  const options=new Function('ids',documented[1]+'\nreturn hatgExecutionScope(ids);');
+  assert.deepEqual(options([residentId]),{requireExecutionOpen:true,executionResidentIds:[residentId]});
+  const geometryOnly=options([]);
+  assert.deepEqual(geometryOnly,{requireExecutionOpen:false,executionResidentIds:[]});
+  assert.ok((await waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],...geometryOnly,
+    timeoutMs:1500,stableMs:120,intervalMs:30,record:()=>{}})).ready);
   const mismatch=[];
   await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds:[],edgeIds:[],
     timeoutMs:250,stableMs:100,intervalMs:30,record:s=>mismatch.push(s)}),e=>e.code==='tau.hatg_view_timeout');
