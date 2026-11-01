@@ -82,6 +82,20 @@ python3 code/scripts/tfi_release_install.py update-code --instance my_portal
 
 它为实例各部署的代码准备依赖（已有则复用），按当前代码刷新服务单元，再重启服务。服务启动时自己把数据库结构更新到新代码需要的样子；示例实例的发布内容不会重新导入。需要退路时，更新前用备份软件做一次备份。
 
+## 搬迁实例根目录
+
+同一文件系统内搬迁须先停止实例。目标为尚不存在的规范绝对路径：
+
+```bash
+python3 code/scripts/tfi_release_install.py stop --instance my_portal
+python3 code/scripts/tfi_release_install.py relocate --instance my_portal --target /new/location/my_portal
+python3 code/scripts/tfi_release_install.py start --instance my_portal
+```
+
+安装器保留实例身份、端口、服务前缀和数据库；随根目录移动内部区域，外置区域和主机账号目录保持原位。它更新本机登记、服务单元、数据库连接位置和当前数据库路径引用（包括 Model API 的密钥文件），复用 Provider 会话搬迁逻辑，清理旧运行文件与缓存。迁移期间只临时启动 PostgreSQL，完成后仍保持整个实例停止。
+
+迁移引用或会话时失败，实例留在新位置，`runtime/instance-relocation.json` 记录未完成状态并阻止启动；修复原因后对同一新位置再次执行 `relocate`。开始改动前的验证失败不会移动数据；主机登记提交失败会恢复原根目录。跨文件系统或换主机用数据库备份恢复，不能直接复制正在运行的 PostgreSQL 数据目录。备份顺序为先 `pg_dump`，再复制各区域、`secrets/`、清单和站点设置；不复制 `runtime/`、`cache/` 或主机账号目录。
+
 ## 退役
 
 ```bash

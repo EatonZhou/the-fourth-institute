@@ -159,6 +159,23 @@ def unregister(instance: InstanceManifest) -> None:
         _write(source, registry)
 
 
+def relocate_registration(previous: InstanceManifest, updated: InstanceManifest) -> None:
+    """Replace one root after a stopped instance has moved, preserving identity."""
+    if (previous.name, previous.instance_id, previous.service_prefix) != (
+            updated.name, updated.instance_id, updated.service_prefix):
+        raise ValueError("Relocation must preserve the instance identity and service prefix")
+    if load(updated.root).document != updated.document:
+        raise ValueError("Relocated manifest changed before registration")
+    with _locked_registry() as source:
+        registry = read_registry()
+        if registry.get(previous.name) != str(previous.root):
+            raise ValueError("Instance registration changed before relocation")
+        other = {name: root for name, root in registry.items() if name != previous.name}
+        validate_allocation(updated, other)
+        registry[updated.name] = str(updated.root)
+        _write(source, registry)
+
+
 def replace_manifest(instance: InstanceManifest, *, expected: dict) -> None:
     """Commit an edited manifest while holding the host's allocation lock."""
     from .configuration_files import atomic_json

@@ -534,6 +534,14 @@ def prepare_code(code, *, base_python=None, offline=False, postgres=False):
     return native.prepare(code, ("postgres", "nats", "node") if postgres else ("nats", "node"), offline=offline)
 
 
+def validate_runtime_paths(instance):
+    if not windows():
+        limit = 104 if sys.platform == "darwin" else 108
+        port = instance.document['network']['postgres_port']
+        if len(os.fsencode(instance.directory("runtime") / "s" / f".s.PGSQL.{port}")) >= limit:
+            raise ValueError("Instance root is too long for the PostgreSQL socket; choose a shorter location")
+
+
 def plan(engineering, *, name, root=None, bind="127.0.0.1", ports=None, postgres=None,
          skip_file_verification=False):
     """Validate a creation and return its manifest, without changing the host."""
@@ -553,10 +561,7 @@ def plan(engineering, *, name, root=None, bind="127.0.0.1", ports=None, postgres
                                  seed_version=manifest["run_id"])
     instance = validate(root, document)
     host_instances.validate_allocation(instance)
-    if not windows():
-        limit = 104 if sys.platform == "darwin" else 108
-        if len(os.fsencode(instance.directory("runtime") / "s" / f".s.PGSQL.{document['network']['postgres_port']}")) >= limit:
-            raise ValueError("Instance root is too long for the PostgreSQL socket; choose a shorter location")
+    validate_runtime_paths(instance)
     return {"status": "planned", "instance": instance, "manifest": manifest, "bundle": bundle,
             "manifest_path": manifest_path, "platform_preflight": preflight}
 
@@ -766,7 +771,7 @@ def main(argv=None):
             sub.add_argument("--offline", action="store_true", help="Use only dependencies bundled with the code")
             sub.add_argument("--no-start", action="store_true")
             sub.add_argument("--freeze-evidence", type=Path)
-    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code"):
+    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code", "relocate"):
         sub = commands.add_parser(command)
         sub.add_argument("--instance", required=command == "retire",
                          help="Registered instance name; otherwise PORTAL_INSTANCE_ROOT")
@@ -782,6 +787,9 @@ def main(argv=None):
         if command == "update-code":
             sub.add_argument("--python", type=Path)
             sub.add_argument("--offline", action="store_true")
+        if command == "relocate":
+            sub.add_argument("--target", type=Path, required=True,
+                             help="New root on the same filesystem; stop the instance first")
     commands.add_parser("list")
     args = parser.parse_args(argv)
     try:
@@ -809,6 +817,9 @@ def main(argv=None):
                                                     if (value := getattr(args, key + "_port")) is not None})
             elif args.command == "update-code":
                 result = update_code(instance, base_python=args.python, offline=args.offline)
+            elif args.command == "relocate":
+                from scripts.tfi_relocate_instance import relocate
+                result = relocate(instance, args.target)
             else:
                 result = lifecycle(args.command, instance)
         print(json.dumps(result, ensure_ascii=False, indent=2))

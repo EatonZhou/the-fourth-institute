@@ -364,3 +364,80 @@ def test_health_failure_names_unready_layers_and_failed_component_logs(tmp_path,
     error = installer.health_failure(instance, result)
     assert "RuntimeError: fixture startup failure" in error and "ValueError: web failure" in error
     assert "old-start-marker" not in error
+
+
+@pytest.fixture
+def relocation(creation, monkeypatch):
+    from scripts import tfi_relocate_instance
+    installer.create(creation.engineering, name='accept_tmp', postgres=creation.postgres,
+                     skip_file_verification=True, start=False)
+    instance = host_instances.find('accept_tmp')
+    monkeypatch.setattr(instance_services, 'verify_definitions', lambda *a, **kw: None)
+    monkeypatch.setattr(instance_services, 'remove_definitions', lambda *a: ['owned.service'])
+    monkeypatch.setattr(installer, 'validate_runtime_paths', lambda instance: None)
+    monkeypatch.setattr(installer, 'code_child', lambda *a: json.dumps({'database': {'rows': 1}, 'provider_sessions': {}}))
+    return tfi_relocate_instance, instance, creation.control
+
+
+def test_relocation_preserves_identity_and_external_areas_and_stops_database(relocation, tmp_path):
+    module, instance, control = relocation
+    old = instance.root
+    document = dict(instance.document)
+    external = tmp_path / 'external'
+    external.mkdir()
+    document['areas'] = {'papers': str(external), 'uploads': str(old / 'data/uploads')}
+    (old / 'instance.json').write_text(json.dumps(document))
+    instance = load(old)
+    (old / 'runtime/stale').write_text('stale')
+    (old / 'cache/stale').write_text('stale')
+    target = tmp_path / 'relocated'
+    result = module.relocate(instance, target)
+    updated = host_instances.find(instance.name)
+    assert result['status'] == 'relocated' and not result['services_started']
+    assert updated.instance_id == instance.instance_id and updated.root == target and not old.exists()
+    assert updated.area('papers') == external and updated.area('uploads') == target / 'data/uploads'
+    assert not (target / 'runtime/stale').exists() and not (target / 'cache/stale').exists()
+    endpoint = (target / 'secrets/postgres.env').read_text().split('=', 1)[1].strip()
+    assert parse_qs(urlsplit(endpoint).query)['host'] == [str(target / 'runtime/s')]
+    assert control.calls[-1] == ('stop', instance_services.unit_name(updated, 'postgres'))
+    assert instance_services.start_blocker(updated) == ''
+
+
+def test_relocation_refuses_live_services_before_mutation(relocation, tmp_path, monkeypatch):
+    module, instance, control = relocation
+    monkeypatch.setattr(control, 'status', lambda name: {'active': 'active', 'pid': 123, 'load': 'loaded'})
+    target = tmp_path / 'relocated'
+    with pytest.raises(RuntimeError, match='Stop all'):
+        module.relocate(instance, target)
+    assert host_instances.find(instance.name).root == instance.root and not target.exists()
+
+
+def test_relocation_migration_failure_blocks_startup_and_is_resumable(relocation, tmp_path, monkeypatch):
+    module, instance, control = relocation
+    target = tmp_path / 'relocated'
+    def broken(*args):
+        raise RuntimeError('session conflict')
+    monkeypatch.setattr(installer, 'code_child', broken)
+    with pytest.raises(RuntimeError, match='session conflict'):
+        module.relocate(instance, target)
+    updated = host_instances.find(instance.name)
+    assert updated.root == target and not instance.root.exists()
+    assert 'relocation has not completed' in instance_services.start_blocker(updated)
+    assert control.calls[-1][0] == 'stop'
+    monkeypatch.setattr(installer, 'code_child', lambda *a: json.dumps({'database': {'rows': 0}, 'provider_sessions': {}}))
+    assert module.relocate(updated, target)['status'] == 'relocated'
+    assert instance_services.start_blocker(updated) == ''
+
+
+def test_relocation_registration_failure_restores_original_root(relocation, tmp_path, monkeypatch):
+    module, instance, _control = relocation
+    target = tmp_path / 'relocated'
+    def broken(*args):
+        raise ValueError('allocation changed')
+    monkeypatch.setattr(host_instances, 'relocate_registration', broken)
+    with pytest.raises(ValueError, match='allocation changed'):
+        module.relocate(instance, target)
+    assert instance.root.is_dir() and not target.exists()
+    assert load(instance.root).document == instance.document
+    assert host_instances.find(instance.name).root == instance.root
+    assert instance_services.start_blocker(instance) == ''

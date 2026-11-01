@@ -243,6 +243,11 @@ def creation_record(instance):
 
 
 def start_blocker(instance):
+    relocation = instance.root / 'runtime/instance-relocation.json'
+    if relocation.is_symlink():
+        raise ValueError('Instance relocation record cannot be redirected')
+    if relocation.is_file() and json.loads(relocation.read_text()).get('status') != 'completed':
+        return 'Instance relocation has not completed; repeat relocate with its target root'
     record = creation_record(instance)
     if record is not None:
         return 'Instance creation has not completed: ' + str(record.get('error') or record.get('phase'))

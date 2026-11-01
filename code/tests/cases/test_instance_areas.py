@@ -112,6 +112,33 @@ def test_registered_directories_store_area_references_and_reject_other_instances
     assert instance_locations.located_path("/srv/elsewhere") == "/srv/elsewhere"
 
 
+def test_cross_filesystem_move_refuses_insufficient_space_without_mutation(monkeypatch, tmp_path):
+    from pathlib import Path
+    import os
+    instance = select_instance(monkeypatch, tmp_path / 'instance')
+    source = instance.area('uploads')
+    source.mkdir(parents=True)
+    (source / 'payload').write_bytes(b'12345')
+    disk = tmp_path / 'small-disk'
+    disk.mkdir()
+    original_stat = Path.stat
+    def device(path, *args, **kwargs):
+        stat = original_stat(path, *args, **kwargs)
+        if path == disk:
+            values = list(stat)
+            values[2] += 1
+            return os.stat_result(values)
+        return stat
+    usage = instance_areas.shutil.disk_usage(disk)
+    monkeypatch.setattr(Path, 'stat', device)
+    monkeypatch.setattr(instance_areas.shutil, 'disk_usage', lambda path: usage._replace(free=4))
+    with pytest.raises(ValueError, match='Not enough free space'):
+        instance_areas.move_area(instance.root, 'uploads', disk / 'uploads')
+    assert not (disk / 'uploads').exists()
+    assert (source / 'payload').read_bytes() == b'12345'
+    assert load(instance.root).document == instance.document
+
+
 def test_workspace_rows_keep_area_references(monkeypatch, tmp_path):
     """Workspace 登记在数据库中保存区域写法，读出时是当前位置的绝对路径"""
     from management_portal.resources.workspace_store import get_workspace_store
