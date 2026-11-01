@@ -26,6 +26,7 @@ RPC_ACTOR_METHODS = frozenset(
         "resource.execution_content_changes",
         "resource.unregister",
         "resource.action",
+        "resource.collaboration.workspace_id_for_path",
         "instruction.execute",
     }
 ) | PERMISSION_RPC_METHODS | DOMAIN_PROJECTION_METHODS

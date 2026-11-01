@@ -259,3 +259,45 @@ def test_page_search_creation_is_automatically_cleaned_via_resource_service(tmp_
     assert searches.search_by_id('paper', created)['deleted']
     assert not searches.search_by_id('paper', existing).get('deleted')
     assert cancelled == [created]
+
+
+def test_workspace_allocation_rpc_preserves_authenticated_lifecycle(tmp_path, monkeypatch):
+    """真实跨线程 RPC 分配 Workspace 归入用例，复用已有路径不抢占归属"""
+    from threading import Thread
+    from management_portal.resources.server import ResourceServiceServer
+    from management_portal.resources.transport import ResourceServiceClient
+    from management_portal.resources.workspace_store import get_workspace_store
+    from tests.cases.test_resource_service_process import FakePublisher, FakeResourceService
+
+    scope = open_scope(tmp_path / 'case')
+    owner = 'resident_abcdef123456'
+    LifecycleStore().bind(scope, owner)
+    registry = get_resource_type_registry()
+    existing_path = tmp_path / 'existing'; existing_path.mkdir()
+    existing = get_workspace_store().for_path(str(existing_path), new_id=lambda: registry.new_id('workspace'))
+    class AllocatingService(FakeResourceService):
+        def workspace_id_for_path(self, path, *, preferred_id=''):
+            assert current_lifecycle() == scope
+            return get_workspace_store().for_path(path, preferred_id=preferred_id,
+                                                  new_id=lambda: registry.new_id('workspace'))
+    monkeypatch.setenv('PORTAL_RESOURCE_SERVICE_PROCESS', '1')
+    key = tmp_path / 'rpc-key'; key.write_bytes(b'workspace-lifecycle-signing-key-32'); key.chmod(0o600)
+    monkeypatch.setenv('PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE', str(key))
+    socket = tmp_path / 'resources.sock'
+    server = ResourceServiceServer(socket, service=AllocatingService(), publisher=FakePublisher())
+    thread = Thread(target=server.serve_forever, daemon=True); thread.start()
+    assert server.started.wait(2)
+    try:
+        client = ResourceServiceClient(socket, timeout=3)
+        with lifecycle_scope(scope, actor='test-actor'):
+            with pytest.raises(PermissionError, match='authenticated actor'):
+                client.workspace_id_for_path(tmp_path / 'unattributed')
+        context = InstructionContext(caller=owner, entry='web')
+        with InstructionKernel._identity_scope(context):
+            created = client.workspace_id_for_path(tmp_path / 'new')
+            assert client.workspace_id_for_path(tmp_path / 'new') == created
+            assert client.workspace_id_for_path(existing_path) == existing
+        assert LifecycleStore().pending(scope) == [created]
+        assert get_workspace_store().paths([created])[created] == str(tmp_path / 'new')
+    finally:
+        server.shutdown(); server.server_close(); thread.join(timeout=2)

@@ -410,9 +410,15 @@ class ResourceServiceClient:
         *,
         preferred_id: str = "",
     ) -> str:
+        from management_common.operation_identity import current_operation_identity
+        from management_common.resource_lifecycle import current_lifecycle
+        identity = current_operation_identity()
+        if current_lifecycle() and identity is None:
+            raise PermissionError("Workspace allocation lifecycle requires the operation's authenticated actor")
         result = self._exchange(
             "resource.collaboration.workspace_id_for_path",
-            {"path": str(path), "preferred_id": preferred_id},
+            {"path": str(path), "preferred_id": preferred_id,
+             "actor": identity.principal.id if identity else ""},
         )
         return str(result or "")
 
