@@ -9,6 +9,10 @@ const routes = python('from management_portal.resources.portal import portal_rou
 const residentId = 'resident_111111111111', lineageId = 'lineage_222222222222';
 const origin = 'http://home-navigation.fixture.invalid';
 const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}&open_chat=1`;
+const readinessSamples = process.argv.includes('--readiness-samples');
+const sessionId = 'opaque.full-session-id-for-native-menu';
+const childId = 'resident_333333333333';
+let forked = false;
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -27,27 +31,39 @@ const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}
       const file = path.join(portal, u.pathname);
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return route.fulfill({ path: file });
       if (u.pathname === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: '' });
-      const resident = { resident_id: residentId, lineage_id: lineageId, title: 'Fixture Resident', owner: 'fixture' };
+      const makeResident = id => ({id, resident_id:id, lineage_id:lineageId,
+        title:id === childId ? 'Fixture Child' : 'Fixture Resident', owner:'fixture', backend:'codex', kind:'agent', x:id === childId ? 400 : 0, y:0});
+      const targetId = body?.arguments?.resident_id || u.searchParams.get('id') || residentId;
+      const resident = makeResident(targetId);
+      const nodes = [makeResident(residentId), ...(forked ? [makeResident(childId)] : [])];
       let result = {};
       if (u.pathname === '/api/me') result = { username: 'fixture' };
-      if (u.pathname === '/api/agent-workbench/residents') result = { ready: true, residents: [resident], lineages: [{ lineage_id: lineageId, title: 'Fixture Lineage' }], principal_hierarchy: { projects: [], user_residents: [] } };
+      if (u.pathname === '/api/agent-workbench/residents') result = { ready: true, residents: nodes,
+        lineages: [{lineage_id:lineageId, title:'Fixture Lineage', leader_resident_id:residentId, project_id:'sample-project', allows:{CreateResident:true}}],
+        principal_hierarchy: { projects: readinessSamples ? [{project_id:'sample-project', title:'Sample Project',
+          lineages:[{lineage_id:lineageId,title:'Fixture Lineage',resident_id:residentId}]}] : [], user_residents: [] } };
       if (u.pathname.endsWith('/navigation-target')) result = resident;
-      if (u.pathname.endsWith('/projection')) result = { resident_id: residentId, lineage_id: lineageId, resident, chat_workspace: {
-        schema: 'portal.chat_workspace.v3', target: { kind: 'resident', id: residentId, lineage_id: lineageId },
-        title: 'Fixture Resident', header: { title: 'Fixture Resident', subtitle_parts: [
-          { identity: 'resident', text: residentId, copy_value: residentId, copy_label: 'resident_id' },
+      if (u.pathname.endsWith('/projection')) result = { resident_id: targetId, lineage_id: lineageId, resident, provider_session: {id: sessionId},
+        family_facade: targetId === 'resident_444444444444' ? {family_id:'fbi_sample',title:'Sample Family',nodes:[makeResident(residentId)]} : {}, chat_workspace: {
+        schema: 'portal.chat_workspace.v3', target: { kind: 'resident', id: targetId, lineage_id: lineageId },
+        title: resident.title, header: { title: resident.title, subtitle_parts: [
+          { identity: 'resident', text: targetId, copy_value: targetId, copy_label: 'resident_id' },
         ] }, messages: [], composer: { can_send: true, can_edit: true },
       } };
       if (u.pathname === '/api/agent-conversations') result = { ready: true, entries: [] };
       if (u.pathname === '/api/instructions/execute') {
-        if (!/^(Get|List|Search|Read)|^MarkMailboxItemRead$/.test(body.instruction)) {
+        if (!/^(Get|List|Search|Read)|^MarkMailboxItemRead$/.test(body.instruction)
+            && !(readinessSamples && body.instruction === 'ForkResident')) {
           errors.push(`Unexpected local instruction: ${body.instruction}`);
           return route.fulfill({ status: 400, json: { error: { code: 'fixture.unexpected_instruction' } } });
         }
         if (body.instruction === 'MarkMailboxItemRead') result = { item: { resident_id: residentId, unread: false, read_revision: 1 } };
         if (body.instruction === 'GetConversation') result = { resident, messages: [], queue: { items: [] }, controls: { can_send: true }, state: 'idle' };
+        if (body.instruction === 'GetResident') result = {resident};
+        if (body.instruction === 'ListWorkbenches') result = {workbenches:[]};
+        if (body.instruction === 'ForkResident') { forked = true; result = {resident_id:childId}; }
         if (body.instruction === 'ListResidentStates') result = { states: [{ resident_id: residentId, state: 'idle', cursor: 1, viewer_state: { unread: false } }] };
-        if (body.instruction === 'GetLineage') result = { lineage: { lineage_id: lineageId, title: 'Fixture Lineage', residents: [resident], components: [], wires: [] } };
+        if (body.instruction === 'GetLineage') result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges: [], seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
         result = { status: 'committed', result };
       }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(result) });
@@ -63,6 +79,10 @@ const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}
     });
     const chat = await readResidentChatReady(root, { residentId });
     assert.equal(chat.ready, true, JSON.stringify({ chat, errors, requests }));
+    if (readinessSamples) {
+      await require('./tau_native_readiness_samples.cjs')({page, root, residentId, childId, sessionId, errors, requests});
+      return;
+    }
     if (process.argv.includes('--probe')) {
       await assert.rejects(page.waitForURL(entryHref, { timeout: 150 }), /Timeout/);
     } else {

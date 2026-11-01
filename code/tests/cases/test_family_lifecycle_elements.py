@@ -113,6 +113,30 @@ def test_family_changes_roster_and_preserves_nested_block(lineage, charters):
     assert [b["id"] for b in graph(lineage)["function_blocks"]] == [inner["family_id"]]
 
 
+def test_tau_fixture_isolation_preserves_existing_family_policy_and_members(lineage, charters):
+    """仅移出本次临时成员，完整保留既有 Family 名册、策略和 Resident。"""
+    from copy import deepcopy
+
+    kept = resident(lineage, "Existing member")
+    fixture = resident(lineage, "Current TAU fixture")
+    family = ok("Familize", {"lineage_id": lineage, "resident_ids": [kept, fixture]})
+    ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"],
+                        "auto_migrate": True, "route_threshold": 73})
+    before = graph(lineage)
+    original = deepcopy(next(b for b in before["function_blocks"] if b["id"] == family["family_id"]))
+    ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"],
+                        "remove_member_ids": [fixture]})
+    after = graph(lineage)
+    remaining = next(b for b in after["function_blocks"] if b["id"] == family["family_id"])
+    expected = deepcopy(original["family"])
+    expected["members"] = [rid for rid in expected["members"] if rid != fixture]
+    assert remaining["family"] == expected
+    assert remaining["family"]["auto_migrate"] is True
+    assert {n["id"] for n in after["nodes"]} == {n["id"] for n in before["nodes"]}
+    assert not any(fixture in b.get("family", {}).get("members", []) for b in after["function_blocks"])
+    assert ok("GetResident", {"resident_id": fixture})["resident"]["resident_id"] == fixture
+
+
 def test_external_wire_in_another_block_rewires_and_new_member_joins(lineage, charters):
     """Family 重接外部连线并为新成员补齐监听连线"""
     first, second = resident(lineage, "First"), resident(lineage, "Second")
