@@ -6,6 +6,8 @@
 
 Playwright `filter({has: childLocator})` 的 childLocator 从候选节点内部开始解析；不要传入包含其外层dialog/region祖先路径的Locator。例如已发现Menu内的成员状态区域时，可按实际区域可访问名称定位；若确需按内部table筛选，使用不带外层路径的 `page.getByRole('table')` 作为has，而不是 `dialog.getByRole('table')`。点击New node之类入口前读取aria-haspopup和当前菜单，菜单项才打开创建表单时，先完成实际菜单选择，不直接等待不存在的dialog。图连线的原ready也须考虑真实分屏布局与语义缩放：适配全部可能隐藏Watch/Target/Route标签，不能把path存在与标签可见混为一谈；在创建前准备可读布局，在同一原ready内用正常UI缩放/平移核验新边与标签，不用事后截图回填，也不重复CreateWire。
 
+Campaign限制执行账号时，普通CreateResident/Fork也要立即检查正式Family归属：所在Lineage的范围Family可能自动接纳新成员，其储备策略可在尚有额度时自动迁移账号。一次账号读回不保证下一turn仍用该账号。不要关闭既有团队的全组策略；仅在本轮要求明确允许时，对本轮新建夹具通过正式UpdateFamily移除临时成员关系，前后保存完整名册并核验原有成员/设置不变、夹具已无Family；未获这种隔离范围或无法核验时报告前置阻塞，不先在低额度例外账号发消息。自行创建的临时Family仍在任何模型执行前关闭auto_migrate。迁移完成后和发送前都核实际绑定，禁止将发生其他账号自动迁移的输入算作指定账号验收成功。
+
 首次刷新必须先演练完整 ready，不能只确认刷新按钮可用。共享 `portal.action` 支持 `preflight`：它只读核验，返回 true 后才开始原动作；失败不会提交 operation，也不会产生 action_started。对于刷新后应保持的 ID、完整正文、URL、目录树等，把同一个核验函数同时用于 preflight 与 ready。先演练时定位器命中两处就收窄到页面实际呈现的区域，或明确比较全部可见副本的值；不得用 `.first()` 掩盖歧义。ready 中不要临时增加未经预检的 Settings 点击、全页 ID 文本断言或整页重载。示意（先从本轮真实页面发现作用域和控件，代码中的变量不是固定 selector）：
 ```javascript
 const checkPersistedView = async page => {
