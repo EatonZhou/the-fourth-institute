@@ -1,5 +1,9 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+多实例 Chat 的发送前检查与原导航/Fork ready，复用 `tau_chat_ready_evidence.js` 的 `readResidentChatReady(regionLocator,{residentId:原回执ID})`。它只读原生头部身份、加载状态及可编辑输入框，返回全部候选；不要用整个面板 innerText.includes(ID)、正文中的ID或输入框已出现来认定目标。先从实际页面发现完整区域，再在原动作 ready 内有界轮询该快照，逐次保存，等待 ready=true；暂时缺失允许等待，多实例歧义须先收窄实际定位。发送前用同一核验作为 preflight，未确认正确Resident就不点Send。创建/Fork本身不保证Chat已打开，按实际UI完成导航后再等待。返回的 session_id 是唯一就绪Chat头部的完整原生复制值，不能用缩写文字代替；无Session的新Resident仍可ready。要求Session证据的用例在首次真实输入建立Session后现场等 session_identity_ready 并保存完整值，别等删除后补取，也不向刚创建但未运行的Resident强求Session。
+
+准备函数与原业务动作分开：先验证本轮helper所需函数已定义、定位与只读等待可运行，再提交写操作；Monaco输入后的可见正文也需等待渲染，尚未点击Save的准备失败不消耗首次保存。长驻helper仍运行时使用其原工具session继续取回，不以中断进程缩短等待。openPortal的reused仅证明复用本用例browser宿主，不承诺原context/page/文档仍存在；重新连接后先保存当前URL与页面状态并verifyIdentity，通过正常导航恢复，已受理业务沿原ID观察。无法延续的原文档窗口如实保留，不假称连续。收尾前按用例逐项核对已取得证据，悬停浮层的实际宽度、边界和离开后关闭等独立要求不能由目录截图或一般视觉评价代替。
+
 首次刷新必须先演练完整 ready，不能只确认刷新按钮可用。共享 `portal.action` 支持 `preflight`：它只读核验，返回 true 后才开始原动作；失败不会提交 operation，也不会产生 action_started。对于刷新后应保持的 ID、完整正文、URL、目录树等，把同一个核验函数同时用于 preflight 与 ready。先演练时定位器命中两处就收窄到页面实际呈现的区域，或明确比较全部可见副本的值；不得用 `.first()` 掩盖歧义。ready 中不要临时增加未经预检的 Settings 点击、全页 ID 文本断言或整页重载。示意（先从本轮真实页面发现作用域和控件，代码中的变量不是固定 selector）：
 ```javascript
 const checkPersistedView = async page => {

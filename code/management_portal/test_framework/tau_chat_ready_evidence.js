@@ -15,6 +15,9 @@ async function readResidentChatReady(region, { residentId }) {
     const headers = heads.flatMap(head => [...head.querySelectorAll('[data-workspace-status] [data-workspace-identity="resident"]')])
       .map(e => ({ resident_id: e.getAttribute('data-workspace-resident-id'), copy_value: e.getAttribute('data-workspace-copy-value'),
         text: e.textContent, visible: visible(e) }));
+    const sessions = heads.flatMap(head => [...head.querySelectorAll('[data-workspace-status] [data-workspace-identity="session"]')])
+      .map(e => ({ session_id: e.getAttribute('data-workspace-session-id'), copy_value: e.getAttribute('data-workspace-copy-value'),
+        text: e.textContent, visible: visible(e) }));
     const inputs = composers.flatMap(composer => [...composer.querySelectorAll('.composerInput[role="textbox"]')])
       .map(e => ({ id: e.id, label: e.getAttribute('aria-label'), visible: visible(e),
         editable: e.isContentEditable && e.getAttribute('aria-disabled') !== 'true' && e.getAttribute('aria-readonly') !== 'true' }));
@@ -29,11 +32,18 @@ async function readResidentChatReady(region, { residentId }) {
       loading_ended: loading.node_count === 1 && !loading.active,
       composer: inputs.length === 1 && inputs[0].visible && inputs[0].editable,
     };
-    return { dom_id: root.id, role, connected: root.isConnected, visible: visible(root), headers, inputs, loading, checks,
+    return { dom_id: root.id, role, connected: root.isConnected, visible: visible(root), headers, sessions, inputs, loading, checks,
       ready: Object.values(checks).every(Boolean) };
   }), residentId);
+  const ready = candidates.length === 1 && candidates[0].ready;
+  const sessions = ready ? candidates[0].sessions : [];
+  // Session IDs are opaque and may be abbreviated in visible text. Keep the
+  // native full copy identity only when it belongs to this unique ready Chat.
+  // A new Resident legitimately has no Session yet; that does not fail ready.
+  const sessionId = sessions.length === 1 && sessions[0].visible && sessions[0].session_id
+    && sessions[0].session_id === sessions[0].copy_value ? sessions[0].session_id : null;
   return { resident_id: residentId, region_count: candidates.length, candidates,
-    ready: candidates.length === 1 && candidates[0].ready };
+    ready, session_id: sessionId, session_identity_ready: sessionId !== null };
 }
 
 module.exports = { readResidentChatReady };

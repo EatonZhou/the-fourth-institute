@@ -74,6 +74,25 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
     const sample = () => readResidentChatReady(a, { residentId });
     const first = await sample();
     assert.equal(first.ready, true);
+    assert.equal(first.session_id, null, 'a new ready Chat need not have a Session');
+    assert.equal(first.session_identity_ready, false);
+    const sessionId = 'opaque-provider-session-with-full-identity';
+    await page.evaluate(({residentId, sessionId}) => panels.a.workspace.setSubtitle('', [
+      {identity: 'resident', text: residentId, copy_value: residentId},
+      {identity: 'session', text: 'Session: opaque…identity', copy_value: sessionId},
+    ]), {residentId, sessionId});
+    const withSession = await sample();
+    assert.equal(withSession.session_id, sessionId, 'full copy identity, never abbreviated text');
+    assert.equal(withSession.session_identity_ready, true);
+    assert.equal(first.session_id, null, 'later Session cannot rewrite the original sample');
+    assert.equal((await readResidentChatReady(a, {residentId: otherId})).session_id, null);
+    const sessionHeader = a.locator('[data-workspace-identity="session"]');
+    await sessionHeader.evaluate(e => e.after(e.cloneNode(true)));
+    assert.equal((await sample()).session_id, null, 'duplicate headers remain ambiguous');
+    await sessionHeader.last().evaluate(e => e.remove());
+    await sessionHeader.evaluate(e => e.dataset.workspaceCopyValue = 'different');
+    assert.equal((await sample()).session_id, null, 'inconsistent native identities are not accepted');
+    await sessionHeader.evaluate((e, id) => e.dataset.workspaceCopyValue = id, sessionId);
     assert.equal(first.candidates[0].headers[0].resident_id, residentId);
     assert.equal((await readResidentChatReady(oldRoot, { residentId })).ready, false, 'ambiguous roots are never silently narrowed');
     assert.equal((await readResidentChatReady(b, { residentId })).ready, false, 'message ID text cannot prove host identity');
