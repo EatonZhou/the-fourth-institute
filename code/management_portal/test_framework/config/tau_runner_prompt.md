@@ -1,5 +1,29 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+准备阶段的动态控件使用当下快照。关闭一个面板可能同时移除其他标签，每次关闭后重新枚举；旧候选已消失时跳过，多个同名候选才是歧义。HATG 的 `New node: …` 主按钮直接打开表单（aria-haspopup 为空），带 menu 声明的入口才等待菜单。搜索中的 role=status 会随结果出现而移除，不能对它调用会等待元素出现的 innerText；用 evaluateAll 取得零或多个当前值。账号 option 的可见 label 和内部 value 分别保存，按实际 label 选择并核对其 value，不假定 value 等于 codex_two。以下函数只读取原生控件，需在本轮原有界等待中记录返回值；它们不自动提交、重试或代替目标身份核验。
+
+```js
+// tau-current-controls
+async function currentNativeTab(page, name) {
+  const tabs = page.getByRole('tab', {name, exact: true});
+  const count = await tabs.count();
+  if (count > 1) throw new Error('Ambiguous current native tab');
+  return count === 1 ? tabs : null;
+}
+async function nativeEntryDestination(button) {
+  const popup = await button.getAttribute('aria-haspopup');
+  return popup === 'menu' || popup === 'true' ? 'menu' : 'dialog';
+}
+async function currentStatusTexts(scope) {
+  return scope.getByRole('status').evaluateAll(nodes => nodes.map(node => node.textContent.trim()));
+}
+async function currentSelectOptions(select) {
+  return select.locator('option').evaluateAll(nodes => nodes.map(node => ({
+    label: node.label, value: node.value, disabled: node.disabled || !!node.closest('optgroup')?.disabled,
+  })));
+}
+```
+
 `portal.waitForRunningActivity({scope:本轮目标Chat的Locator,timeoutMs})`自动把原等待逐次观察写入`tau-running-activity.jsonl`，包含wait_id、原起止/elapsed、scope_count、原生Chat/Resident身份、document timeOrigin、活动卡/工具标签匹配与running状态计数，含found/timeout/retry/failed结尾；不记录工具命令正文。超时先保留并核对该原日志，区分目标面板已换、无活动卡、工具标签不匹配或只有已结束条目，不能用后来重新导航的运行截图回填。若页面恢复改变Editor，重新发现并核验目标后只读观察原输入，不重发原任务。
 
 Family成员增删、解除、其他结构改动及刷新可能把节点移到画布边界外。若原ready要求完整图适配，使用`tau_hatg_view_evidence.js`的`fitAndWaitForHatgView(panel, options)`：参数同waitForHatgView，先核验本轮精确Lineage/完整节点边集合已加载，再普通点击一次原生Fit，随后等待全部节点在画布内且几何稳定。它把before-fit/after-fit样本交给同一个record，original_elapsed_ms覆盖两个阶段并共用一个timeoutMs预算；放在原portal.action的ready中调用。单纯waitForHatgView不会移动画布，不能让裁切节点在原等待中自行消失。Fit不会保证文字可读，必要的面板调整及全景/可读局部截图仍由原步骤完成；助手不导航、不重放业务、不调整账号。

@@ -20,6 +20,9 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   // Negative control for the archived 300bee4 readiness condition.
   assert.equal(sample.ready && sample.session_identity_ready, false);
   const prompt = fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
+  const controlsExample=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
+  assert.ok(controlsExample, 'public dynamic-control contract must be executable');
+  const controls=new Function(controlsExample[1]+'; return {nativeEntryDestination,currentStatusTexts,currentSelectOptions};')();
   const discoveryExample=prompt.match(/```js\n(\/\/ tau-native-chat-locator\n[\s\S]*?)\n```/);
   assert.ok(discoveryExample, 'the public Chat discovery example must specify its Locator contract');
   const uniqueResidentChat=new Function('visibleResidentChatRoots',discoveryExample[1]+'; return uniqueResidentChat;')(visibleResidentChatRoots);
@@ -77,11 +80,41 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     assert.equal((await readWatchboardNodePrerequisites(panel, {residentId})).first.bound_to_canvas, true);
   }
   await assert.rejects(readSessionGraphSnapshot(hatg.locator('#hatgCanvas'), {residentId}), /native HATG/);
+  assert.equal(await controls.nativeEntryDestination(newNode),'dialog');
   await newNode.click();
   const form = page.getByRole('dialog', {name:'New node', exact:true});
   await form.getByRole('textbox', {name:'Agent name', exact:true}).waitFor({state:'visible'});
+  assert.equal(await page.getByRole('menu').count(),0,'the New node primary button did not open a menu');
   await form.getByRole('button', {name:'Cancel', exact:true}).click();
   await form.waitFor({state:'hidden'});
+  // Use the actual command palette. Its empty status disappears on results.
+  await page.route('**/api/resources/reference?*', route=>route.fulfill({json:{
+    resource_id:residentId,resource_type:'resident',title:'Fixture Resident',address:residentId,url:'/r/'+residentId}}));
+  await page.keyboard.press('Control+k');
+  const search=page.getByRole('dialog',{name:'Portal search',exact:true});
+  await search.waitFor({state:'visible'});
+  assert.ok((await controls.currentStatusTexts(search)).length>0);
+  await search.getByRole('searchbox').fill(residentId);
+  await search.getByRole('button').filter({hasText:residentId}).waitFor({state:'visible'});
+  assert.deepEqual(await controls.currentStatusTexts(search),[]);
+  await assert.rejects(search.getByRole('status').innerText({timeout:150}),/Timeout/);
+  await page.keyboard.press('Escape');
+  // Mount the production runtime dialog without invoking a restart or model.
+  await page.evaluate(()=>{
+    const api=PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml:PortalUIPrimitives.escapeHtml});
+    window.sampleRuntime=api.createSessionRestartDialog('sample-runtime');
+    sampleRuntime.open({source:{provider:'codex',account_id:'one'},providers:[{id:'codex'}],
+      accounts:{codex:[{id:'one',label:'codex_one'},{id:'two',label:'codex_two'}]}});
+  });
+  const select=page.locator('[data-session-target]');
+  await select.waitFor({state:'visible'});
+  const options=await controls.currentSelectOptions(select);
+  const two=options.find(option=>option.label==='codex_two');
+  assert.ok(two && !two.disabled);
+  assert.notEqual(two.value,two.label);
+  await select.selectOption({label:two.label});
+  assert.equal(await select.inputValue(),two.value);
+  await page.evaluate(()=>sampleRuntime.destroy());
   const catalog = page.getByRole('region', {name:'Lineage navigation', exact:true});
   await catalog.getByRole('button', {name:'Lineage menu',exact:true}).click();
   assert.equal(await page.getByRole('dialog', {name:'New node',exact:true}).count(), 0,

@@ -1,4 +1,4 @@
-"""TAU regressions for retiring a visible Resident and the last Preview document."""
+"""TAU regressions for deleting a visible Resident and closing its last Preview."""
 from pathlib import Path
 import subprocess
 

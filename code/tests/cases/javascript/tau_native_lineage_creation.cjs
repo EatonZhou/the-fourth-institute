@@ -17,11 +17,15 @@ module.exports=async({page,requests,errors})=>{
   await assert.rejects(hatg.getByRole('button',{name:/^New node:/}).click({timeout:200}),/Timeout/);
   assert.equal(await node.isVisible(),true);
   const prompt=fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
+  const controls=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
+  assert.ok(controls,'the dynamic tab contract must distinguish gone from ambiguous');
+  const currentNativeTab=new Function(controls[1]+'; return currentNativeTab;')();
   assert.ok(prompt.includes('CreateLineage成功后原生页面会自动打开首个New node表单'),
     'public preparation must account for the native automatically opened form');
   await node.getByRole('button',{name:'Cancel',exact:true}).click();
   await node.waitFor({state:'hidden'});
   const tab=page.locator('[data-portal-workbench-tab="navigation"]');
+  assert.equal(await (await currentNativeTab(page,'Lineage navigation')).getAttribute('data-portal-workbench-tab'),'navigation');
   const oldBox=await tab.boundingBox();
   await page.mouse.move(oldBox.x+oldBox.width/2,oldBox.y+1);
   const close=page.getByRole('button',{name:'Close Lineage navigation',exact:true});
@@ -38,5 +42,6 @@ module.exports=async({page,requests,errors})=>{
   assert.throws(()=>documentedClose(page,{...ready,candidates:[...ready.candidates,...ready.candidates]}),/not ready/);
   await documentedClose(page,ready).click();
   await tab.waitFor({state:'hidden'});
+  assert.equal(await currentNativeTab(page,'Lineage navigation'),null,'an indirectly removed cached tab is already absent');
   assert.deepEqual(errors,[]);
 };
