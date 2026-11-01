@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // Invoked by the native lineage.html fixture. No fabricated Chat/Menu markup.
-module.exports = async ({page, root, residentId, childId, sessionId, errors, requests}) => {
+module.exports = async ({page, root, residentId, childId, sessionId, errors, requests, deleteFixtureResident}) => {
   page.setDefaultTimeout(5000);
   const {readResidentChatReady} = require('../../../management_portal/test_framework/tau_chat_ready_evidence');
   const sample = await readResidentChatReady(root, {residentId});
@@ -92,6 +92,17 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     'the archived strict wait fails before it can enumerate Editors');
   assert.equal((await readResidentChatReady(page.locator('#'+originalEditor),{residentId:childId})).ready,true,
     'the original Fork-opened Editor is selected by its discovered DOM identity');
+  const stableRoot = page.locator('#sample-second-editor');
+  const oldName = stableRoot.and(page.getByRole('region',{name:'Fixture Child',exact:true}));
+  assert.equal(await oldName.count(),1);
+  deleteFixtureResident(childId);
+  await assert.rejects(page.evaluate(() => sampleSecondEditor.reload()), /Error/);
+  await stableRoot.getByText(/该 Resident 已删除或不存在|This Resident has been deleted|Resident has been deleted/).waitFor({state:'visible'});
+  assert.equal(await oldName.count(),0,'deleted Chat no longer has its previous accessible name');
+  assert.equal(await stableRoot.count(),1,'discovered native root survives its title change');
+  const deleted = await readResidentChatReady(stableRoot,{residentId:childId});
+  assert.equal(deleted.candidates[0].checks.identity,true);
+  assert.equal(deleted.ready,false,'deletion feedback is not a send-ready Chat');
   await page.evaluate(()=>{sampleSecondEditor.destroy();document.getElementById('sample-second-editor').remove();});
 
   // A test host contains the actual Family status renderer, not a hand-written table.

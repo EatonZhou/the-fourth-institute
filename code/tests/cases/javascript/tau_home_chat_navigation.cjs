@@ -13,6 +13,7 @@ const readinessSamples = process.argv.includes('--readiness-samples');
 const sessionId = 'opaque.full-session-id-for-native-menu';
 const childId = 'resident_333333333333';
 let forked = false;
+const deletedResidents = new Set();
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -34,6 +35,8 @@ let forked = false;
       const makeResident = id => ({id, resident_id:id, lineage_id:lineageId,
         title:id === childId ? 'Fixture Child' : 'Fixture Resident', owner:'fixture', backend:'codex', kind:'agent', x:id === childId ? 400 : 0, y:0});
       const targetId = body?.arguments?.resident_id || u.searchParams.get('id') || residentId;
+      if (deletedResidents.has(targetId) && (u.pathname.endsWith('/projection') || body?.instruction === 'GetConversation'))
+        return route.fulfill({status:404,json:{code:'resident.deleted',error:'Resident deleted'}});
       const resident = makeResident(targetId);
       const nodes = [makeResident(residentId), ...(forked ? [makeResident(childId)] : [])];
       let result = {};
@@ -80,7 +83,8 @@ let forked = false;
     const chat = await readResidentChatReady(root, { residentId });
     assert.equal(chat.ready, true, JSON.stringify({ chat, errors, requests }));
     if (readinessSamples) {
-      await require('./tau_native_readiness_samples.cjs')({page, root, residentId, childId, sessionId, errors, requests});
+      await require('./tau_native_readiness_samples.cjs')({page, root, residentId, childId, sessionId, errors, requests,
+        deleteFixtureResident:id=>deletedResidents.add(id)});
       return;
     }
     if (process.argv.includes('--probe')) {
