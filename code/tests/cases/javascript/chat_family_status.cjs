@@ -93,6 +93,9 @@ w.PortalResidentRuntimeController = {
       load: async () => ({
         detail: {
           resident: { backend: 'codex', description: `${node.title} duties` },
+          // The real detail endpoint returns an empty presentation for every
+          // ordinary member, including Router and Steward.
+          family_facade: {},
           execution_account: node.accountId ? { account_id: node.accountId } : {},
           ...(residentId === 'res_queue' ? { provider_session: { provider: 'claude', account_id: 'route_x' } } : {}),
           allows: { OpenIntake: true },
@@ -368,7 +371,7 @@ async function pendingMemberSettings() {
   }
 }
 
-async function nestedFacadeHasNoExecutionAccount() {
+async function nestedFacadeHasNoExecutionAccount(projectionOnly = false) {
   const previousFamily = family, originalBind = w.PortalResidentRuntimeController.bind;
   family = {title: 'Outer Family', lineage_id: 'lineage_sample', nodes: [nodes.find(n => n.resident_id === 'res_idle')]};
   const container = w.document.createElement('section'); w.document.body.append(container);
@@ -378,8 +381,9 @@ async function nestedFacadeHasNoExecutionAccount() {
     runtime.load = async () => {
       const view = await load();
       return {...view, detail: {...view.detail,
-        resident: {...view.detail.resident, family: {role: 'facade'}},
-        family_facade: {title: 'Inner Family'}, execution_account: {account_id: 'acct_low'}},
+        resident: {...view.detail.resident, ...(projectionOnly ? {} : {family: {role: 'facade'}})},
+        family_facade: projectionOnly ? {family_id: 'family_inner', title: 'Inner Family'} : {},
+        execution_account: {account_id: 'acct_low'}},
         settings: {model: 'unused-default-model'}};
     };
     return runtime;
@@ -441,6 +445,7 @@ const watchdog = setTimeout(() => { console.error('Family status test did not co
     await openedAndMounted();
     await pendingMemberSettings();
     await nestedFacadeHasNoExecutionAccount();
+    await nestedFacadeHasNoExecutionAccount(true);
     await absentAccountIdentityDoesNotBorrowQuota();
     console.log('PASS: Family status, quota, intake, details and lifecycle');
   } finally {

@@ -225,7 +225,8 @@
         return ws.length && ws.every(w => typeof w.remaining_percent === "number" && Number.isFinite(w.remaining_percent) && w.remaining_percent >= 0 && w.remaining_percent <= 100)
           ? Math.min(...ws.map(w => w.remaining_percent)) : null;
       };
-      const isFacade = row => row.detail?.resident?.family?.role === 'facade' || !!row.detail?.family_facade;
+      const isFacade = row => row.detail?.resident?.family?.role === 'facade'
+        || (typeof row.detail?.family_facade?.family_id === 'string' && !!row.detail.family_facade.family_id.trim());
       const accountOf = row => {
         if (isFacade(row)) return {};
         const d = row.detail || {}, bound = d.execution_account || {};
