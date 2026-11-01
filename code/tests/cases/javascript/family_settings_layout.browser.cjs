@@ -32,6 +32,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       await page.addScriptTag({ url: '/static/' + name + '.js' });
     }
     await page.evaluate(async () => {
+      PortalI18n.apply('en');
       // Open the production menu shell through its local group adapter, then
       // populate its existing Family slot without requesting business objects.
       window.menu = await PortalResidentMenu.open({ lineage: { lineage_id: 'fixture', nodes: [] },
@@ -58,7 +59,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         window.refreshMember = () => handlers.onState({});
         return ({
         state: () => ({ canEdit: true }), destroy() {},
-        load: async () => ({ detail: { resident: { backend: 'codex' } }, settings: { model: 'gpt-model-long-name', reasoning_effort: 'high' } }),
+        load: async () => ({ detail: { resident: { backend: 'codex' }, backend_capabilities: {runtime_capabilities: {settings: ['service_tier']}} }, settings: { model: 'gpt-model-long-name', reasoning_effort: '' } }),
       }); } };
       window.PortalResidentProtocol = { ...PortalResidentProtocol, loadSnapshot: async () => ({}), acquire: () => ({
         destroy() {}, load: async () => ({ state: { work_state: 'idle', execution_gate: { state: 'open' } }, messages: [] }),
@@ -71,6 +72,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       familyView.open();
     });
     await page.waitForFunction(() => document.querySelectorAll('[data-family-status-row]').length === 12);
+    await page.waitForFunction(() => document.querySelector('.familyStatusRuntime')?.textContent.includes('gpt-model-long-name'));
     const mute = page.locator('[data-family-status-row="fixture_0"] [data-family-mix="mute"]');
     await mute.click();
     await page.waitForFunction(() => document.querySelector('[data-member="fixture_0"][data-family-mix="mute"]').getAttribute('aria-pressed') === 'true');
@@ -96,7 +98,14 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         const hit = document.elementFromPoint(n.left + n.width / 2, n.top + 10);
         body.scrollTop = 10000;
         const action = document.getElementById('after-members').getBoundingClientRect();
+        const runtimeFits = [...document.querySelectorAll('.familyStatusRuntime')].every(label => {
+          const cell = label.closest('td').getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(label);
+          return [...range.getClientRects()].every(rect => rect.left >= cell.left && rect.right <= cell.right);
+        });
         return { outerScroll: body.scrollLeft, tableScroll: scroller.scrollLeft,
+          runtimeFits,
           scrollPreserved: scroller.scrollLeft === tableScrollBefore,
           navStable: Math.abs(n.left - navLeft) < 1, navUncovered: nav.contains(hit),
           inContent: r.left >= n.right && r.right <= body.getBoundingClientRect().right,
@@ -105,6 +114,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       });
       console.log(JSON.stringify({ width, ...metrics }));
       assert.equal(metrics.outerScroll, 0, 'horizontal scrolling must not move the menu rail');
+      assert.ok(metrics.runtimeFits, 'complete runtime labels must wrap within their backend cells, without overlapping quota');
       assert.ok(metrics.scrollPreserved, 'live updates must preserve the table reading position');
       assert.ok(metrics.tableScroll > 0 && metrics.navStable && metrics.navUncovered && metrics.inContent,
         'the wide member table must scroll only to the right of the divider');
