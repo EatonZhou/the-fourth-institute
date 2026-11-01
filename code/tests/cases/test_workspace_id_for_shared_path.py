@@ -11,6 +11,7 @@ def test_repeated_registration_uses_one_canonical_workspace(tmp_path):
     service=ResourceService.__new__(ResourceService)
     service.new_id=lambda _: 'workspace_aaaaaaaaaaaa'
     path=str(tmp_path/'shared')
+    (tmp_path/'shared').mkdir()
     assert service.workspace_id_for_path(path)=='workspace_aaaaaaaaaaaa'
     assert service.workspace_id_for_path(path)=='workspace_aaaaaaaaaaaa'
     with pytest.raises(ValueError,match='different identity'):
@@ -21,4 +22,5 @@ def test_a_new_path_accepts_a_preferred_identity(tmp_path):
     """新路径登记 Workspace 时采用调用方指定的 ID"""
     service=ResourceService.__new__(ResourceService)
     service.new_id=lambda _: 'workspace_aaaaaaaaaaaa'
+    (tmp_path/'new').mkdir()
     assert service.workspace_id_for_path(str(tmp_path/'new'),preferred_id='workspace_bbbbbbbbbbbb')=='workspace_bbbbbbbbbbbb'
