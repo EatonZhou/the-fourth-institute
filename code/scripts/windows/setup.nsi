@@ -72,7 +72,7 @@ FunctionEnd
 Function un.InstanceOptionsLeave
   ${NSD_GetState} $RemoveInstancesCheckbox $RemoveInstances
   ${If} $RemoveInstances == ${BST_CHECKED}
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久退役运行本程序的全部实例，并删除依赖缓存和日志？$\r$\n$INSTDIR$\r$\n数据库、对话与文件无法恢复。$\r$\nPermanently retire ALL instances running this program and delete dependencies, caches and logs? This cannot be undone." IDYES confirmed
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久退役运行本程序的全部实例，并删除依赖缓存和日志？$\r$\n$INSTDIR$\r$\n数据库、对话与文件无法恢复。$\r$\nPermanently retire ALL instances running this program and delete dependencies, caches and logs? This cannot be undone." /SD IDNO IDYES confirmed
     Abort
     confirmed:
   ${EndIf}
@@ -122,11 +122,11 @@ Function .onInit
     StrCpy $IncludeExamples ${BST_UNCHECKED}
   ${EndIf}
   ${IfNot} ${RunningX64}
-    MessageBox MB_ICONSTOP "This package requires 64-bit Windows."
+    MessageBox MB_ICONSTOP "This package requires 64-bit Windows." /SD IDOK
     Abort
   ${EndIf}
   ${IfNot} ${AtLeastWin10}
-    MessageBox MB_ICONSTOP "This preview targets Windows 11 x64."
+    MessageBox MB_ICONSTOP "This preview targets Windows 11 x64." /SD IDOK
     Abort
   ${EndIf}
   SetRegView 64
@@ -179,7 +179,7 @@ Section "Platform"
     nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --stop-all'
     Pop $0
     StrCmp $0 "0" update_stopped
-      MessageBox MB_ICONSTOP "无法停止正在运行的实例，未更新程序。请关闭 Portal 后重试。$\r$\nCould not stop the running instances; the program was not updated."
+      MessageBox MB_ICONSTOP "无法停止正在运行的实例，未更新程序。请关闭 Portal 后重试。$\r$\nCould not stop the running instances; the program was not updated." /SD IDOK
       Abort
     update_stopped:
     RMDir /r "$INSTDIR\code"
@@ -234,7 +234,7 @@ Section "Uninstall"
   ${EndIf}
   Pop $0
   StrCmp $0 "0" stopped
-    MessageBox MB_ICONSTOP "卸载未完成，平台文件已保留。若已选择删除实例，部分实例可能已清理。请查看日志后重试。$\r$\nUninstall incomplete; platform files retained. Some selected instances may already have been removed. See .build\windows\launcher-error.log."
+    MessageBox MB_ICONSTOP "卸载未完成，平台文件已保留。若已选择删除实例，部分实例可能已清理。请查看日志后重试。$\r$\nUninstall incomplete; platform files retained. Some selected instances may already have been removed. See .build\windows\launcher-error.log." /SD IDOK
     Abort
   stopped:
   ; ExecToLog has waited for Python to release its runtime and launcher lock.
@@ -276,11 +276,11 @@ Section "Uninstall"
     ${If} ${Errors}
       SetErrorLevel 1
       Call un.ListResiduals
-      MessageBox MB_ICONEXCLAMATION "卸载未能清空目录：$\r$\n$INSTDIR$\r$\n剩余项目 / Remaining:$ResidualItems$\r$\n$\r$\n请关闭相关程序后检查；完整列表见卸载详情。未知文件会保留。$\r$\nClose related programs and check uninstall details. Unknown files are preserved."
+      MessageBox MB_ICONEXCLAMATION "卸载未能清空目录：$\r$\n$INSTDIR$\r$\n剩余项目 / Remaining:$ResidualItems$\r$\n$\r$\n请关闭相关程序后检查；完整列表见卸载详情。未知文件会保留。$\r$\nClose related programs and check uninstall details. Unknown files are preserved." /SD IDOK
     ${Else}
-      MessageBox MB_ICONINFORMATION "平台、实例、依赖缓存和日志已删除。$\r$\nPlatform, instances, dependencies, caches and logs removed."
+      MessageBox MB_ICONINFORMATION "平台、实例、依赖缓存和日志已删除。$\r$\nPlatform, instances, dependencies, caches and logs removed." /SD IDOK
     ${EndIf}
   ${Else}
-    MessageBox MB_ICONINFORMATION "平台已卸载，实例数据保留于：$\r$\nPlatform removed. Instance data retained:$\r$\n$LOCALAPPDATA\TFI\instances"
+    MessageBox MB_ICONINFORMATION "平台已卸载，实例数据保留于：$\r$\nPlatform removed. Instance data retained:$\r$\n$LOCALAPPDATA\TFI\instances" /SD IDOK
   ${EndIf}
 SectionEnd

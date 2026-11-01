@@ -16,6 +16,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -300,7 +301,7 @@ def exercise(exe, root, included, evidence):
                 'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed',
                 'chinese_index_worker': 'passed', 'background_error_check': 'passed',
                 'api_only_chat_restart': 'passed', 'api_default_model': api.model,
-                'healthy_reopen': 'passed', 'startup_timings': startup}
+                'healthy_reopen': 'passed', 'silent_uninstall': 'passed', 'startup_timings': startup}
     except Exception:
         # Distinguish loader failure from initdb's restricted-token re-execution;
         # only public version output and exit codes from this disposable fixture.
@@ -334,6 +335,19 @@ def exercise(exe, root, included, evidence):
                 print('Native retire also failed; see the component log', file=sys.stderr)
         if api is not None:
             api.close()
+        if succeeded:
+            # Run the uninstaller outside its target directory and wait for that
+            # exact process. NSIS's usual self-copy would detach the actual work.
+            # A /S notification without /SD used to wait forever in Session 0.
+            uninstaller = evidence / ('full-uninstall.exe' if included else 'base-uninstall.exe')
+            shutil.copyfile(root / 'Uninstall.exe', uninstaller)
+            command = subprocess.list2cmdline([str(uninstaller), '/S']) + ' _?=' + str(root)
+            try:
+                subprocess.run(command, executable=str(uninstaller), check=True, timeout=180)
+                check(not (root / 'code').exists(), 'Silent uninstall left program code behind')
+                check(not (root / 'Uninstall.exe').exists(), 'Silent uninstall left its original executable')
+            finally:
+                uninstaller.unlink(missing_ok=True)
 
 
 def main():
