@@ -10,6 +10,7 @@ from tests.cases.test_resident_context import context, A, B, C, _record, _turn, 
 from tests.cases.test_family_familize import lineage, charters, future_creation_store
 from management_portal.society_service.resident_context import work_summary as work
 from management_portal.society_service import (
+    family_facade,
     resident_conversation_stream,
     resident_held_infos,
     resident_intake_domain,
@@ -31,7 +32,9 @@ def setup_work(context, monkeypatch):
     monkeypatch.setattr(work, "_record", lambda rid: records[rid])
     monkeypatch.setattr(work, "_visible", lambda actor, rid: records[rid])
     monkeypatch.setattr(work, "_family", lambda record: ({"title": "登录组", "goal": "维护登录"}, roles))
-    states = {"one": "completed", "two": "completed", "running": "running", "failed": "failed"}
+    # These Families' facades kept no notices (their relay state lives in no Lineage here).
+    monkeypatch.setattr(family_facade, "kept_notices", lambda facade: [])
+    states ={"one": "completed", "two": "completed", "running": "running", "failed": "failed"}
     refs = {}
     pending, sent = [], []
     repo = SimpleNamespace(input_state=lambda rid, mid: {"state": states[mid]} if mid in states else None,

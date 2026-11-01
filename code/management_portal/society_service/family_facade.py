@@ -389,6 +389,76 @@ def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: 
         resident_protocol.cancel_resident_input(member_id, str(message["author_id"]), member_message_id)
 
 
+# The latest notices a facade kept; the steward's facade summary reads them.
+KEPT_NOTICE_LIMIT = 20
+
+
+def keep_notice(facade_id: str, message_id: str, actor: str, reason: str = "") -> dict[str, Any]:
+    """Keep a facade message that asks nobody to act: a result report or a plain notice.
+
+    The Router judges that the sender only tells the Family something, such
+    as a delivery with its own reply path, so no member gets it: the facade
+    closes it like a relayed request, without any member's input, quota
+    review or turn.  The facade Conversation shows it and the latest
+    notices are a source of the facade summary, so members find it there
+    when they need it.  Keeping it again changes nothing.
+    """
+
+    from . import family_recovery, resident_record_domain
+
+    facade = resident_record_domain.find_resident(facade_id)
+    if not is_facade(facade):
+        raise ValueError("目标必须是 Family 门面")
+    validate_relay(relay_mark(facade_id, message_id), actor)
+    repository = resident_conversation_stream.get_repository()
+    message = repository.message(facade_id, message_id)
+    if not message:
+        raise KeyError("门面消息不存在")
+    store = get_lineage_data_store()
+    lineage_id = resident_lineage.lineage_id(facade)
+    with store.family_quota_reviews.transaction(lineage_id, facade_id):
+        current = repository.input_state(facade_id, message_id).get("state")
+        if current == "cancelled":
+            return {"status": "withdrawn", "message_id": message_id}
+        if message_id in relay_links(facade):
+            raise ValueError("该门面请求已经转交成员")
+        with store.family_relays.transaction(lineage_id, facade_id) as state:
+            notices = state.setdefault("notices", {})
+            if current != "queued" and message_id not in notices:
+                raise ValueError("门面请求已结束或正在执行，不能作为告知收下")
+            if message_id not in notices:
+                notices[message_id] = {"author_id": str(message.get("author_id") or ""),
+                                       "kept_at": utc_now_iso(), "reason": str(reason or "").strip()[:300]}
+                for stale in sorted(notices, key=lambda key: str(notices[key].get("kept_at") or ""))[:-KEPT_NOTICE_LIMIT]:
+                    notices.pop(stale)
+        if current == "queued":
+            show_request(facade_id, message_id)
+            repository.set_input_state(facade_id, message_id, "completed")
+    if current == "queued":
+        family_recovery.relay_completed(facade, message_id)
+    return {"status": "kept", "message_id": message_id}
+
+
+def kept_notice(facade: Mapping[str, Any], message_id: str) -> bool:
+    state = get_lineage_data_store().family_relays.get(resident_lineage.lineage_id(facade), resident_lineage.resident_id(facade))
+    return message_id in (state.get("notices") or {})
+
+
+def kept_notices(facade: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The notices the facade kept, oldest first, each with its text."""
+
+    state = get_lineage_data_store().family_relays.get(resident_lineage.lineage_id(facade), resident_lineage.resident_id(facade))
+    facade_id = resident_lineage.resident_id(facade)
+    repository = resident_conversation_stream.get_repository()
+    kept = []
+    for message_id, entry in sorted((state.get("notices") or {}).items(), key=lambda item: str(item[1].get("kept_at") or "")):
+        message = repository.message(facade_id, message_id) or {}
+        text = "\n".join(str(part.get("text") or "") for part in message.get("content_parts") or []
+                         if isinstance(part, Mapping) and part.get("type") == "text").strip()
+        kept.append({"message_id": message_id, **dict(entry), "text": text})
+    return kept
+
+
 def show_request(facade_id: str, message_id: str) -> None:
     """Put a facade request in the facade Conversation; repeatable.
 

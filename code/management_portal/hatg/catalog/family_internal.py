@@ -36,20 +36,22 @@ DECLARATIONS = (
     ), (R("message_id", description="发给内部角色的任务消息"),), target="resident_id"),
     _d("RelayFamilyMessage", ON_RESIDENT, "按 Router 的选择转交门面原请求；成员周额度低于 5% 时先交 steward 复核；"
        "带 scope_gap 时请求不在现有成员职责内，先交 steward 决定是否新建成员，steward 安排后以 scope_reviewed=true 转交给所选成员。"
-       "reassign=true 时把已交给其他成员的请求改派给所选成员，并记下这次纠正。", (
+       "reassign=true 时把已交给其他成员的请求改派给所选成员，并记下这次纠正。"
+       "notice=true 时门面直接收下不需要成员行动的结果报告或纯告知：不选成员、不转交、不做额度复核，门面摘要可读到它。", (
         R("resident_id", description="Family 门面"), R("message_id", description="门面中的原请求"),
-        R("member_id", description="Router 选中的成员；带 scope_gap 时为最接近的成员；steward 安排时为它选定的成员（可以是刚新建的）；改派时为新成员；"
-          "组织请求或引用 Steward 消息的回复可选择本 Family Steward，不能选择其他 Family 的角色"),
+        P("member_id", description="Router 选中的成员；带 scope_gap 时为最接近的成员；steward 安排时为它选定的成员（可以是刚新建的）；改派时为新成员；"
+          "组织请求或引用 Steward 消息的回复可选择本 Family Steward，不能选择其他 Family 的角色；notice=true 时不填，其余情况必填"),
+        P("notice", "boolean", "Router 判断原消息只是告知、无需成员行动时设 true，由门面收下"),
         P("quota_reviewed", "boolean", "仅本 Family steward 可设 true，表示已判断任务强度或完成迁移"),
         P("scope_gap", description="Router 判断没有成员的职责覆盖这条请求时写明缺少的职责；请求留在门面等 steward 安排"),
         P("scope_reviewed", "boolean", "本 Family steward 安排好成员（新建或最接近的成员）后设 true，转交等它安排的请求"),
         P("reassign", "boolean", "改派：撤回原成员尚未开始的副本，交给所选成员重新处理；原成员正在处理时先停止本轮。"
           "限原发送者、能管理门面的身份与本 Family steward"),
         P("reason", description="steward 放行或安排成员时必填，说明判断；改派时说明为什么原成员不合适；Router 转交时为它的理由"),
-    ), (R("status", description="relayed、waiting_for_quota_review、waiting_for_steward、arranged、reassigned，"
-          "或 withdrawn（请求已撤回，不再转交）"),
-        P("message_id", description="已转交时为成员收到的消息；等待复核或安排时为门面原请求；withdrawn 时没有"),
-        R("member_id", description="承接的成员；等待 steward 安排时为 Router 建议的成员"),
+    ), (R("status", description="relayed、waiting_for_quota_review、waiting_for_steward、arranged、reassigned、"
+          "kept（门面已作为告知收下），或 withdrawn（请求已撤回，不再转交）"),
+        P("message_id", description="已转交时为成员收到的消息；等待复核或安排时以及 kept 时为门面原请求；withdrawn 时没有"),
+        P("member_id", description="承接的成员；等待 steward 安排时为 Router 建议的成员；kept 时没有"),
         P("steward_message_id", description="等待复核或安排时发给 steward 的消息"),
         P("previous_member_id", description="改派前承接的成员")),
        target="resident_id"),
@@ -91,7 +93,8 @@ DECLARATIONS = (
         P("overview_only", "boolean", "只返回是否变化及待归纳 Resident/版本/层级，不返回摘要正文"),
     ), (R("resident_id", description="Family 门面"), R("title", description="Family 名称"), R("goal", description="Family 共同目标"),
         R("members", "array", "每个成员 {resident_id, title, summary, summary_stale}"),
-        R("source_versions", "object", "来源版本：名册 roster 与各成员摘要的指纹；提交时原样交回"),
+        P("notices", "array", "门面作为告知收下的最近结果报告 {message_id, author_id, kept_at, reason, text}；按需写入门面摘要，供成员查阅"),
+        R("source_versions", "object", "来源版本：名册 roster、各成员摘要与门面收下的告知 notices 的指纹；提交时原样交回"),
         R("previous_summary", "object", "门面当前的工作摘要"),
         R("expected_revision", "integer", "门面工作摘要的内容版本；提交时作 expected_revision"),
         R("consolidation_due", "array", "达到时间、轮次或容量条件的成员及内部角色；按需读取其维护视图"),

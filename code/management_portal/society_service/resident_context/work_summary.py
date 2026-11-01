@@ -156,6 +156,11 @@ def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
                                      "missing": bool(work["missing_message_ids"])})
         members.append({"resident_id": rid, "title": record.get("title", rid), "summary": summary,
                         "summary_stale": bool(work["missing_message_ids"]) or not bool(summary)})
+    # Result reports and notices the facade kept reach members through the facade summary.
+    from .. import family_facade as facade_records
+    notices = [{**notice, "text": notice["text"][:1500]} for notice in facade_records.kept_notices(facade)]
+    if notices:
+        versions["notices"] = fingerprint([[notice["message_id"], notice.get("kept_at")] for notice in notices])
     previous = context.store.work_summary(resident_id)
     pending = []
     for rid in dict.fromkeys(roles["member"]):
@@ -180,6 +185,6 @@ def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
                         "用 UpdateResidentWorkSummary 的 consolidation 归纳阶段/长期层，保留未决事项和项目记录入口。"
                         "随后按需读取 Family 材料并更新门面；遵守返回的总预算，不读取成员历史。"}]}}
     return {"resident_id": resident_id, "title": family["title"], "goal": family["goal"],
-            "members": members, "source_versions": versions, "previous_summary": previous["summary"],
+            "members": members, "notices": notices, "source_versions": versions, "previous_summary": previous["summary"],
             "expected_revision": previous["revision"], "needs_update": changed or bool(pending),
             "facade_needs_update": changed, "consolidation_due": pending}

@@ -660,3 +660,65 @@ def test_organization_request_reaches_steward_once_without_business_quota_review
     delivered = repo.message(f.steward, done["message_id"])
     assert delivered["content_parts"] == original["content_parts"]
     assert delivered["author_id"] == original["author_id"]
+
+
+def _relay_call(call):
+    """RelayFamilyMessage as the ISA handler runs it, for the relay Effect script."""
+    from management_portal.society_service.isa.conversation import relay_family_message
+
+    arguments = dict(call.arguments)
+    return relay_family_message(SimpleNamespace(argument=arguments.get, caller=ACTOR))
+
+
+def test_a_result_report_stays_at_the_facade_without_member_input_or_quota_review(quota_family):
+    """门面收下结果报告：额度不足的成员也不收到输入，不生成额度复核，门面摘要可读到它"""
+    from management_portal.society_service import family_definition, lineage_effect_script
+    from management_portal.society_service.resident_context import work_summary
+
+    f = quota_family
+    repo = resident_conversation_stream.get_repository()
+    calls = []
+
+    def execute(call):
+        calls.append(dict(call.arguments))
+        return lineage_effect_script.CallResult(True, _relay_call(call))
+
+    inputs = {"arguments": {"members": [f.member], "steward": f.steward, "threshold": 60},
+              "event": {"payload": {"input_business_ref": f"family-route/{f.facade}/message/{f.message}"}},
+              "packet": {"message": {"text": "修复完成报告，无需成员行动", "data": {"disposition": "notice"}}}}
+    script = lineage_effect_script.parse(family_definition.FAMILY_ROUTE_RELAY_SCRIPT)
+    outcome = lineage_effect_script.Interpreter(script, inputs, execute).run()
+    replay = lineage_effect_script.Interpreter(script, inputs, execute).run()
+
+    assert outcome.status == replay.status == "succeeded"
+    assert outcome.outputs == replay.outputs and outcome.outputs["state"] == "kept"
+    assert [call.get("notice") for call in calls] == [True, True]
+    assert repo.input_state(f.facade, f.message)["state"] == "completed"
+    # The member (4% weekly) got nothing, and nobody asked the steward about quota.
+    assert resident_execution_work.read(_record(f.member)) == {}
+    assert resident_execution_work.read(_record(f.steward)) == {}
+    reviews = family_quota.get_lineage_data_store().family_quota_reviews.get(
+        _record(f.facade)["lineage_id"], f.facade)
+    assert f.message not in (reviews.get("requests") or {})
+    assert f.message not in family_facade.relay_links(_record(f.facade))
+    # A kept notice is not relayed afterwards either.
+    with pytest.raises(ValueError, match="告知"):
+        family_quota.relay_message(f.facade, f.message, f.member, ACTOR)
+    # The steward's facade summary reads it, so members can find it.
+    inputs = work_summary.get_family_summary_inputs(f.steward, f.facade)
+    assert [notice["message_id"] for notice in inputs["notices"]] == [f.message]
+    assert inputs["notices"][0]["text"] == "持续检查权限并修复所有缺陷"
+    assert "notices" in inputs["source_versions"]
+
+
+def test_a_notice_names_no_member_and_a_relay_still_needs_one(quota_family):
+    """告知不能同时指定成员或复核参数；普通转交仍必须选成员"""
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.society_service.isa.conversation import relay_family_message
+
+    f = quota_family
+    for arguments in ({"notice": True, "member_id": f.member}, {"notice": True, "quota_reviewed": True}, {}):
+        inv = SimpleNamespace(argument={"resident_id": f.facade, "message_id": f.message, **arguments}.get, caller=ACTOR)
+        with pytest.raises(InstructionError):
+            relay_family_message(inv)
+    assert resident_conversation_stream.get_repository().input_state(f.facade, f.message)["state"] == "queued"

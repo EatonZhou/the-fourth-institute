@@ -62,6 +62,12 @@ if [ "${ref:34:9}" != "/message/" ]; then
 fi
 facade="${ref:13:21}"
 mid="${ref:43}"
+if [ "${packet.message.data.disposition}" = "notice" ]; then
+  # A result report or plain notice: the facade keeps it and no member works on it.
+  kept=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" notice:=true reason="${packet.message.text}")
+  output state="${kept.status}" disposition="notice" reason="${packet.message.text}"
+  exit
+fi
 target="${packet.message.data.target}"
 if [ -z "$target" ]; then
   DispatchFamilyTask resident_id="$facade" trigger="route_review" source_message_id="$mid" facts:={"reason":"Router 缺少 target"}

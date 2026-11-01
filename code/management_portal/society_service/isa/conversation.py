@@ -180,6 +180,16 @@ def _check_lendable(inv: Invocation, credentials: list[dict[str, str]]) -> None:
 def relay_family_message(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service.family_quota import relay_message
 
+    if inv.argument("notice") is True:
+        from management_portal.society_service.family_facade import keep_notice
+
+        if inv.argument("member_id") or any(inv.argument(name) for name in
+                                            ("reassign", "quota_reviewed", "scope_gap", "scope_reviewed")):
+            raise invalid("notice=true 时由门面收下告知，不能同时指定成员、改派或复核参数")
+        return keep_notice(inv.argument("resident_id"), inv.argument("message_id"), inv.caller,
+                           reason=inv.argument("reason") or "")
+    if not inv.argument("member_id"):
+        raise invalid("转交门面请求需要 member_id；只是告知时设 notice=true")
     if inv.argument("reassign") is True:
         from management_portal.society_service.family_reassign import reassign_request
 

@@ -127,6 +127,8 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         if link["resident_id"] != member_id:
             raise ValueError("该门面请求已经投给其他成员")
         return {"status": "relayed", "member_id": member_id, "message_id": link["message_id"]}
+    if family_facade.kept_notice(facade, message_id):
+        raise ValueError("门面已把这条消息作为告知收下，不再转交成员")
     from . import family_chat_preferences
     family_chat_preferences.validate_target(facade, message, member_id)
     # The platform validates the original delegation before restoring its

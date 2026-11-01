@@ -33,7 +33,7 @@ Family 内部机制指令是一个 Family 自己运转时使用的步骤：Route
 | --- | --- | --- | --- |
 | `DispatchFamilyTask` | 是 | 按 Family 当前场景模板派发精简任务 | 对 `resident_id` 有 @contributor |
 | `ResolveFamilyRequest` | 是 | 将 Steward 已完成的路由复核成果归档到原请求，保留原失败回执且不重新执行 | 对 `resident_id` 有 @contributor |
-| `RelayFamilyMessage` | 是 | 转交门面原请求，成员周额度低于 10% 时先等待 steward 复核 | 对 `resident_id` 有 @contributor |
+| `RelayFamilyMessage` | 是 | 转交门面原请求，成员周额度低于 10% 时先等待 steward 复核；纯告知由门面收下 | 对 `resident_id` 有 @contributor |
 | `CheckFamilyProgress` | 是 | 登记门面收到的工作轮次，达到配置间隔后请 Steward 撰写简报；同一输入只计一次 | 对 `lineage_id` 有 @contributor |
 | `PublishFamilyProgress` | 是 | Steward 保存最多 500 字的简报并更新门面摘要，不向成员群发；按相关性另行定向通知 | 免检 |
 | `CheckFamilyRoleAvailability` | 是 | 维护 Router／Steward 接单并返回已有迁移状态；不查额度、不发起迁移；门面关闭暂停 | 对 `lineage_id` 有 @contributor |
@@ -76,7 +76,8 @@ Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场
 
 按 Family Router 的选择转交门面原请求；当前成员和本 Family Steward 都是合法承接者，组织工作归 Steward，并在成员周额度低于 10% 时进行执行前复核（decision_a64b3ea2c3c5）。
 
-- 参数：`resident_id`（门面）、`message_id`（原请求）、`member_id`（所选成员）；可选 `quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`reason`。
+- 参数：`resident_id`（门面）、`message_id`（原请求）、`member_id`（所选成员，`notice=true` 时不填）；可选 `notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`reason`。
+- 不要求成员行动的消息由门面收下：对方完成工作后的结果报告、已发布或已交付的通知、无问题无待办的进展说明。Router 输出 `disposition="notice"`，转交 Effect 以 `notice=true` 调用，门面记下这条告知、在门面 Conversation 中显示并结束它，返回 status=kept。它不选成员、不建成员输入、不做额度复核，之后也不能再转交；`notice` 不能与 `member_id` 或复核、改派参数同用。门面保留最近 20 条告知，`GetFamilySummaryInputs` 把它们作为门面摘要的来源，成员从门面摘要和门面 Conversation 查到它们。含提问、待确认事项或要求复核、接手、修改的消息仍按请求转交。
 - `scope_gap` 使请求等待 steward 安排职责；只有本 Family steward 可以用 `scope_reviewed=true` 或 `quota_reviewed=true` 并填写理由放行。`reassign=true` 显式改派，原成员正在执行时须先停止；改派记录保留来源。
 - 默认先检查成员实际绑定账号的周额度；低于 10% 时保留门面请求，并以门面身份向 steward 发出一次判断请求。返回 status=waiting_for_quota_review 和 steward_message_id，成员尚未收到原请求。
 - 只有本 Family steward 能以 quota_reviewed=true 并填写判断理由放行已经登记的复核。它先评估工作强度，必要时等待成员迁移完成；放行只转交原请求，不新造任务。
@@ -95,7 +96,7 @@ Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场
 
 `CheckResidentWorkSummary` 接收 resident_id、message_id，仅允许本 Family 门面、Steward 或本人执行。Effect 在成功完成后比较覆盖记录；失败、取消、纯维护轮次及 Router／Steward 全部跳过。漏写时合并一条 attach_to_next 提醒。已覆盖时另返回 consolidation_due，完成事件 Effect 仅在其为真时尝试短通知 Steward。status 为 covered、skipped、facade、reminder_pending 或 reminder_attached。
 
-`GetFamilySummaryInputs` 接收门面 resident_id 和可选 overview_only，仅本 Family 门面和 Steward 可读。默认返回 title、goal、members、previous_summary、source_versions、expected_revision、needs_update、facade_needs_update、consolidation_due。后者仅列到期业务成员的 resident_id、revision、level、reason；排除 Router／Steward，不带成员各层全文；Steward 按需读 GetResidentSummaries include_maintenance=true。内层门面不进入外层归纳待办。
+`GetFamilySummaryInputs` 接收门面 resident_id 和可选 overview_only，仅本 Family 门面和 Steward 可读。默认返回 title、goal、members、notices（门面作为告知收下的最近结果报告，含正文，其指纹计入 source_versions）、previous_summary、source_versions、expected_revision、needs_update、facade_needs_update、consolidation_due。后者仅列到期业务成员的 resident_id、revision、level、reason；排除 Router／Steward，不带成员各层全文；Steward 按需读 GetResidentSummaries include_maintenance=true。内层门面不进入外层归纳待办。
 
 overview_only=true 仅返回门面 ID、是否需要更新、归纳待办和 notification，不返回成员全文、门面旧摘要或来源列表。notification 是可交给 DeliverMessage 的短入口，同小时同材料复用消息 ID；忙碌/排队时不投递，下一小时继续检查。needs_update 为门面来源变化或存在到期待办；私人 Family 不因门面变化触发小时汇总，成员归纳仍有效。成员来源版本考虑内容、缺失、标题、名单和目标。
 
@@ -109,7 +110,7 @@ Steward 先归纳到期成员，再读取所需 Family 材料汇总门面；材�
 | --- | --- |
 | `DispatchFamilyTask` | `resident_id`、`trigger`、`facts`、`source_message_id`、`message_id`、`event` |
 | `ResolveFamilyRequest` | `resident_id`、`message_id`、`steward_message_id`、`reason` |
-| `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`reason` |
+| `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`reason` |
 | `CheckFamilyProgress` | `lineage_id`、`family_id`、`event`、`every_turns` |
 | `PublishFamilyProgress` | `lineage_id`、`family_id`、`batch_id`、`report`、`summary`、`expected_revision`、`source_versions` |
 | `CheckFamilyRoleAvailability` | `lineage_id`、`family_id` |
