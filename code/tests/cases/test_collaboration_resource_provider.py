@@ -27,6 +27,22 @@ def _register_workspace(resource_id, path, *, title="", deleted_at=""):
             workspaces.mark_deleted(resource_id, deleted_at=deleted_at, deleted_by="test", connection=connection)
 
 
+def test_deleted_workspace_projection_drops_location_without_changing_history():
+    from management_portal.resources.collaboration_registry import descriptor_resource_record
+
+    descriptor = {
+        "resource_id": "workspace_0123456789ab", "status": "active",
+        "attributes": {"path": "/retired/workspace"},
+    }
+    assert descriptor_resource_record(descriptor)["attributes"]["path"] == "/retired/workspace"
+    descriptor["status"] = "deleted"
+    record = descriptor_resource_record(descriptor)
+    assert record["attributes"]["status"] == "deleted"
+    assert "path" not in record["attributes"]
+    assert "/retired/workspace" not in record["search_terms"]
+    assert descriptor["attributes"]["path"] == "/retired/workspace"
+
+
 def _resource_service(tmp_path, records, *, descriptors=None):
     by_id = {record["resource_id"]: record for record in records}
     resource_types = frozenset(record["resource_type"] for record in records)
