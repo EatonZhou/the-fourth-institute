@@ -407,12 +407,24 @@ def _family_resource_projection(family: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def sync_families(resource_ids: Iterable[str]) -> list[dict[str, Any]]:
-    """Publish the current canonical descriptors of these Families."""
+    """Publish current live Families, rereading after concurrent domain edits.
+
+    Deleted Families belong to the deletion's publication, never this repair.
+    Keep retries bounded; the periodic reconciler owns eventual repair when a
+    Family remains busy. No state lock is held over the ResourceService call.
+    """
+    from .errors import ResourceProjectionConflict
     from .state_store import get_lineage_data_store
     from . import family_storage
-    with get_lineage_data_store().database.snapshot() as connection:
-        families = family_storage.resource_records(connection, resource_ids=list(resource_ids))
-    return _sync_many(_family_resource_projection(family) for family in families)
+    ids = list(resource_ids)
+    for attempt in range(3):
+        with get_lineage_data_store().database.snapshot() as connection:
+            families = family_storage.resource_records(connection, resource_ids=ids)
+        try:
+            return _sync_many(_family_resource_projection(family) for family in families if not family['deleted_at'])
+        except Exception as exc:
+            if not ResourceProjectionConflict.matches(exc) or attempt == 2:
+                raise
 
 
 def sync_lineage(lineage: Mapping[str, Any], *, updated_by: object = "") -> dict[str, Any]:

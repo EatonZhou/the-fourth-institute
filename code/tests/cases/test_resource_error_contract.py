@@ -110,6 +110,20 @@ def test_public_failures_survive_real_socket(
         assert "retryable" not in body
 
 
+def test_canonical_projection_conflict_survives_real_rpc_as_domain_error(resource_connection, monkeypatch):
+    from management_portal.society_service.errors import ResourceProjectionConflict
+    local, remote = resource_connection
+    original = ResourceProjectionConflict('stale canonical facts')
+    monkeypatch.setattr(local, 'sync_collaboration_resources', mock.Mock(side_effect=original))
+    with pytest.raises(ResourceOperationError) as caught:
+        remote.sync_collaboration_resources([])
+    assert type(caught.value) is ResourceOperationError
+    assert ResourceProjectionConflict.matches(caught.value)
+    assert resource_error_payload(caught.value) == resource_error_payload(original)
+    status, body = resource_error_http_response(caught.value)
+    assert status == 409 and body['code'] == ResourceProjectionConflict.CODE
+
+
 def test_unknown_codes_do_not_become_business_errors(subtests, isolated_portal_case):
     """未知远端错误码统一映射为内部错误"""
     for code in ["unknown_remote_class", "RuntimeError", ""]:

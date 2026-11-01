@@ -1,6 +1,7 @@
 """Read copies of canonical domain facts, from the domain owner; the permission system answers who may act on them."""
 from __future__ import annotations
 import copy
+from .errors import ResourceProjectionConflict
 from . import identity_contract
 
 
@@ -67,6 +68,15 @@ from contextlib import contextmanager
 
 
 @contextmanager
+def _projection_conflicts():
+    from psycopg.errors import LockNotAvailable
+    try:
+        yield
+    except LockNotAvailable as exc:
+        raise ResourceProjectionConflict('Canonical domain projection is busy') from exc
+
+
+@contextmanager
 def projection_transaction(prepared, registry):
     """Canonical lifecycle and descriptor commit share one physical transaction."""
     from .state_store import get_lineage_data_store
@@ -80,7 +90,7 @@ def projection_transaction(prepared, registry):
     if state.database.dsn != registry.database.dsn:
         raise ValueError('Domain projection requires the same physical Portal database')
     registry._ensure()
-    with state.database.transaction() as connection:
+    with _projection_conflicts(), state.database.transaction() as connection:
         resident_ids = sorted({item['resource_id'] for item in active
                                if item['resource_id'].startswith('resident_')})
         lineage_ids = {item['resource_id'] for item in active
@@ -91,7 +101,7 @@ def projection_transaction(prepared, registry):
             'AND deleted_at IS NULL ORDER BY resource_id FOR SHARE NOWAIT', (family_ids,),
         ).fetchall() if family_ids else []
         if len(families) != len(family_ids):
-            raise ValueError('Stale canonical domain projection: missing Family')
+            raise ResourceProjectionConflict('Stale canonical domain projection: missing Family')
         lineage_ids.update(row['lineage_id'] for row in families)
         # Canonical writers fence identity/configuration at the Resident row
         # and graph membership at the Lineage row. Lock just these identities,
@@ -104,7 +114,7 @@ def projection_transaction(prepared, registry):
             (resident_ids,),
         ).fetchall()
         if len(residents) != len(resident_ids):
-            raise ValueError('Stale canonical domain projection: missing Resident')
+            raise ResourceProjectionConflict('Stale canonical domain projection: missing Resident')
         homes = connection.execute(
             'SELECT lineage_id FROM lineage_nodes WHERE node_id=ANY(%s) '
             'ORDER BY node_id FOR SHARE NOWAIT', (resident_ids,),
@@ -116,7 +126,7 @@ def projection_transaction(prepared, registry):
             (sorted(lineage_ids),),
         ).fetchall()
         if len(lineages) != len(lineage_ids):
-            raise ValueError('Stale canonical domain projection: missing Lineage')
+            raise ResourceProjectionConflict('Stale canonical domain projection: missing Lineage')
         # Workspace retirement removes bindings directly in its own domain
         # transaction. Fence those existing relationships too; new bindings
         # are created through the locked Resident identity owner.
@@ -143,7 +153,7 @@ def live_projection(descriptor, writer, store):
     rid = descriptor['resource_id']
     canonical = read_records([rid]).get(rid)
     if canonical is None or canonical.get('deleted_at'):
-        raise ValueError('Stale canonical domain projection: ' + rid)
+        raise ResourceProjectionConflict('Stale canonical domain projection: ' + rid)
     projector = (resource_client._resident_resource_projection if rid.startswith('resident_')
                  else resource_client._family_resource_projection if rid.startswith('family_')
                  else resource_client._lineage_resource_projection)
@@ -162,9 +172,9 @@ def live_projection(descriptor, writer, store):
     # clear them. Every other generated field must still identify this event.
     for field in ('title', 'summary', 'status', 'project_ids', 'relations', 'created_at', 'updated_at', 'deleted_at'):
         if descriptor[field] != expected[field]:
-            raise ValueError('Stale canonical domain projection: ' + rid)
+            raise ResourceProjectionConflict('Stale canonical domain projection: ' + rid)
     if any(descriptor['attributes'].get(key) != value for key, value in expected['attributes'].items()):
-        raise ValueError('Stale canonical domain projection: ' + rid)
+        raise ResourceProjectionConflict('Stale canonical domain projection: ' + rid)
     current = writer.get(rid.split('_', 1)[0], rid)
     if current is None:
         return descriptor
@@ -180,7 +190,7 @@ def live_projection(descriptor, writer, store):
                        instant(current['deleted_at']) if current['deleted_at'] else instant(current['updated_at']))
     incoming_time = instant(descriptor['updated_at'])
     if current_time > incoming_time or (current['status'] == 'deleted' and current_time >= incoming_time):
-        raise ValueError('Stale canonical domain projection: ' + rid)
+        raise ResourceProjectionConflict('Stale canonical domain projection: ' + rid)
     # A later canonical Restore/update can publish its live descriptor. The
     # locked canonical record proves lifecycle.
     return {**descriptor, 'attributes': {**current['attributes'], **descriptor['attributes']},

@@ -275,12 +275,16 @@ def _publish_family_retitle(resource_ids: list[str]) -> None:
         return
 
     def publish() -> None:
+        from .errors import ResourceProjectionConflict
         from .resource_client import sync_families
 
         try:
             sync_families(resource_ids)
-        except Exception:  # The reconciliation worker republishes from the domain.
-            logging.getLogger(__name__).exception("Family descriptor publication for %s failed", resource_ids)
+        except Exception as exc:  # The reconciliation worker republishes from the domain.
+            if ResourceProjectionConflict.matches(exc):
+                logging.getLogger(__name__).warning("Family descriptor publication deferred for %s", resource_ids)
+            else:
+                logging.getLogger(__name__).exception("Family descriptor publication for %s failed", resource_ids)
 
     invariant_locks.defer_until_state_unlock(publish)
 

@@ -107,6 +107,74 @@ def test_family_projection_reconciles_missing_descriptors_from_domain(lineage, c
     assert get_resource_service().reference(made['resource_id'], actor='sample_admin')['resource_id'] == made['resource_id']
 
 
+@pytest.mark.parametrize('deleted', [False, True])
+def test_family_reconciliation_rereads_after_concurrent_edit_or_deletion(
+    lineage, charters, monkeypatch, caplog, deleted,
+):
+    from management_portal.society_service.family_resource_projection import FamilyResourceProjectionWorker
+    from management_portal.resources.registry_store import get_registry_store
+    made = ok('Familize', {'lineage_id': lineage, 'scope': 'lineage'})
+    sync = resource_client._sync_many
+    pending = True
+
+    def race(projections):
+        nonlocal pending
+        # Freeze the read snapshot, then commit a genuine competing edit before
+        # ResourceService validates it, as startup template refresh does.
+        projections = list(projections)
+        if pending:
+            pending = False
+            if deleted:
+                ok('Unfamilize', {'lineage_id': lineage, 'family_id': made['resource_id']})
+            else:
+                ok('UpdateFamily', {'lineage_id': lineage, 'family_id': made['resource_id'],
+                                    'goal': 'new canonical goal'})
+        return sync(projections)
+
+    monkeypatch.setattr(resource_client, '_sync_many', race)
+    assert FamilyResourceProjectionWorker().reconcile() == (0 if deleted else 1)
+    record = get_registry_store().get('family', made['resource_id'])
+    if deleted:
+        assert record['status'] == 'deleted'
+    else:
+        assert record['summary'] == 'new canonical goal'
+    assert 'Family resource reconciliation failed' not in caplog.text
+
+
+def test_family_publication_retries_locked_canonical_facts_without_blocking(lineage, charters):
+    import psycopg
+    from management_portal.society_service.errors import ResourceProjectionConflict
+    made = ok('Familize', {'lineage_id': lineage, 'scope': 'lineage'})
+    with psycopg.connect(get_lineage_data_store().database.dsn) as other:
+        other.execute("SELECT set_config('search_path', %s, true)", (get_lineage_data_store().database.schema,))
+        other.execute('SELECT resource_id FROM families WHERE resource_id=%s FOR UPDATE',
+                      (made['resource_id'],)).fetchone()
+        with pytest.raises(ResourceProjectionConflict, match='busy'):
+            resource_client.sync_families([made['resource_id']])
+    assert len(resource_client.sync_families([made['resource_id']])) == 1
+
+
+@pytest.mark.parametrize('conflict', [True, False])
+def test_family_reconciliation_bounds_conflicts_but_reports_other_errors(
+    lineage, charters, monkeypatch, caplog, conflict,
+):
+    from unittest.mock import Mock
+    from management_portal.resources.errors import resource_error_from_payload, resource_error_payload
+    from management_portal.society_service.errors import ResourceProjectionConflict
+    from management_portal.society_service.family_resource_projection import FamilyResourceProjectionWorker
+    ok('Familize', {'lineage_id': lineage, 'scope': 'lineage'})
+    failure = (resource_error_from_payload(resource_error_payload(ResourceProjectionConflict('changed again')))
+               if conflict else ValueError('invalid descriptor'))
+    publish = Mock(side_effect=failure)
+    monkeypatch.setattr(resource_client, '_sync_many', publish)
+    assert FamilyResourceProjectionWorker().reconcile() == 0
+    assert publish.call_count == (3 if conflict else 1)
+    if conflict:
+        assert 'deferred' in caplog.text and 'Traceback' not in caplog.text
+    else:
+        assert 'invalid descriptor' in caplog.text and 'Traceback' in caplog.text
+
+
 def test_family_reconciliation_does_not_replay_published_deletions(lineage, charters, caplog):
     """Family 巡检只补齐现存 Family，不重放已发布的删除
 

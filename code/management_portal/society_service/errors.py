@@ -4,6 +4,21 @@ from __future__ import annotations
 from typing import Any
 
 from management_common.operation_errors import OperationError
+from management_portal.resources.errors import ResourceOperationError
+
+
+class ResourceProjectionConflict(ResourceOperationError):
+    """Canonical facts changed or are locked; reread them before publishing."""
+
+    CODE = "resource.canonical_projection_conflict"
+
+    def __init__(self, message: str):
+        super().__init__(self.CODE, message, 409)
+
+    @classmethod
+    def matches(cls, error: Exception) -> bool:
+        # Resource RPC preserves the domain code, not the local subclass.
+        return isinstance(error, ResourceOperationError) and error.code == cls.CODE
 
 
 class SocietyServiceUnavailable(OperationError):

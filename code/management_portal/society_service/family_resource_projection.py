@@ -13,6 +13,7 @@ class FamilyResourceProjectionWorker:
         self._thread = None
 
     def reconcile(self) -> int:
+        from .errors import ResourceProjectionConflict
         from . import family_storage, resource_client
         from .state_store import get_lineage_data_store
         with get_lineage_data_store().database.snapshot() as connection:
@@ -29,10 +30,13 @@ class FamilyResourceProjectionWorker:
         count = 0
         for records in groups.values():
             try:
-                resource_client._sync_many([resource_client._family_resource_projection(record) for record in records])
-                count += len(records)
-            except Exception:
-                logging.getLogger(__name__).exception('Family resource reconciliation failed for %s', records[0]['lineage_id'])
+                count += len(resource_client.sync_families(record['resource_id'] for record in records))
+            except Exception as exc:
+                if ResourceProjectionConflict.matches(exc):
+                    logging.getLogger(__name__).warning(
+                        'Family resource reconciliation deferred while %s changes', records[0]['lineage_id'])
+                else:
+                    logging.getLogger(__name__).exception('Family resource reconciliation failed for %s', records[0]['lineage_id'])
         return count
 
     def start(self):
