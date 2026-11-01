@@ -14,6 +14,7 @@
     let residentId = "";
     let residentItems = [];
     let residentNote = "";
+    let residentPending = false;
     let loaded = false;
     let busy = false;
     let destroyed = false;
@@ -74,8 +75,12 @@
 
     function render() {
       if (destroyed) return;
+      const visible = visibleItems();
+      const directoriesPending = visible.some(item => !closed.has(item.key)
+        && [...membership(item.key)].some(path => !directories.get(path) || directories.get(path).loading));
+      root.dataset.workspaceResidentId = residentId;
+      root.setAttribute("aria-busy", String(busy || (!loaded && !error) || residentPending || directoriesPending));
       window.PortalFileTree.preserveViewport(list, () => {
-        const visible = visibleItems();
         list.querySelectorAll("[data-workspace-tree]").forEach(window.PortalFileTree.dispose);
         list.innerHTML = (error ? note(error) : "") + (residentNote ? note(residentNote) : "") + (!loaded ? note("正在读取工作区…") : visible.length ? visible.map(item => {
           const open = !closed.has(item.key);
@@ -236,6 +241,7 @@
         }
         residentId = id;
         residentItems = nextItems;
+        residentPending = Boolean(residentId && roots === null && !failure);
         residentNote = !residentId ? "" : failure ? `工作区读取失败：${failure}`
           : roots === null ? "正在读取当前 Resident 的工作区…"
           : !nextItems.length ? "当前 Resident 没有绑定工作区。" : "";
@@ -267,6 +273,8 @@
         destroyed = true;
         revision++;
         events.abort();
+        root.removeAttribute("aria-busy");
+        delete root.dataset.workspaceResidentId;
         list.querySelectorAll("[data-workspace-tree]").forEach(window.PortalFileTree.dispose);
         root.replaceChildren();
       },

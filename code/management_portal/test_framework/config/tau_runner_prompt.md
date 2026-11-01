@@ -20,6 +20,8 @@ await portal.action('first-refresh', async page => {
 
 ready 必须等待异步挂载和加载完成后再断言：刷新或导航后的 count() 可能暂时为 0，菜单值可能仍是 Reading；先用唯一目标 locator.waitFor 或有界的只读轮询等待可见及实际值，再核对身份/正文。不要在等待之前把一次 count()=0、isVisible()=false 或旧投影值直接抛成失败。多目标歧义、错误身份、明确业务拒绝仍如实报告；不得用 first()、重发或事后回填消除错误。预检验证同一定位与条件，不意味着刷新后无需等待。
 
+Workspace 刷新同时读取当前 Resident 绑定、个人工作区和展开目录，显式打开的共享树可先完成，不能单凭它出现就结束原 ready。完整面板根 .portalPersonalWorkspaces 的 data-workspace-resident-id 表示当前绑定目标，aria-busy 覆盖上述仍在读取的部分；先从实际页面确认该根及目标身份，在 preflight 和原 ready 中都等待同一根 aria-busy="false"，再核对无可见读取错误、目标路径只出现一次、目录内容及截图边界。busy=false 只表示读取结算，不等于业务成功；原 GetResident 绑定回执、目录读取回执、可见正文和唯一根仍分别保留。“正在读取当前 Resident 的工作区…”存在时不能签出首次刷新，也不能以资源入口的 workspace_id 代替 Resident 绑定证据。
+
 不要把准备步骤的失败扩大成尚未发生的业务动作失败。每个阶段明确保留“尚未提交 / 已提交、观察中 / 终态”；只有已经实际发生的首次动作才存在不能重放的首次样本。尚未点过刷新就继续只读修正定位，完成原定首次刷新后再进入删除；已经接纳的输入或写操作始终沿原身份观察。点击前除 role/name 之外读取该实际控件的 aria-description、aria-haspopup 和可见提示，分清直接执行与打开菜单/对话框；不能仅因名字有 Fork 就假定第一次点击只打开表单。这样取得的实际界面证据属于第一阶段，不必读源码。
 
 原工具调用的可执行编排模板（functions.exec 环境；每个新 cell 先定义 measured，不记录命令内容）：

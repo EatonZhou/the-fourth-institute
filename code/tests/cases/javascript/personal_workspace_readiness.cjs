@@ -1,0 +1,52 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {JSDOM} = require('jsdom');
+const dom = new JSDOM('<main id="workspace"></main>', {runScripts:'outside-only'});
+const w = dom.window, root = w.document.getElementById('workspace');
+const tick = () => new Promise(resolve => setImmediate(resolve));
+const html = (parts,...values) => parts.reduce((s,p,i) => s+p+(values[i]??''),'');
+w.PortalI18n = {html, t:String};
+w.PortalUIPrimitives = {escapeHtml:String, iconHtml:()=>'', randomUUID:()=> 'fixture'};
+w.PortalIdentity = {listUIAssociations:async()=>({items:[]})};
+w.PortalFileTree = {
+  preserveViewport:(_root,render)=>render(), dispose(){}, bindRows(){},
+  rowHtml:entry=>'<div role="treeitem">'+entry.name+'</div>',
+};
+let completeDirectory;
+w.PortalFileLinks = {load:async target => ({kind:'directory',path:target,children:[]})};
+w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static/portal_personal_workspaces.js'),'utf8'));
+(async()=>{
+ const panel = w.PortalPersonalWorkspaces.mount({root,onOpen(){}});
+ await panel.load();
+ assert.equal(root.getAttribute('aria-busy'),'false');
+ panel.setResident({id:'resident_fixture'});
+ await panel.openResource({workspaceId:'workspace_shared',title:'Shared',path:'/fixture/shared'});
+ assert.equal(root.querySelectorAll('[data-workspace-tree]').length,1,'explicit shared root is already present');
+ assert.equal(root.getAttribute('aria-busy'),'true','the Resident binding read is still pending');
+ assert.equal(root.dataset.workspaceResidentId,'resident_fixture');
+ panel.setResident({id:'resident_fixture',roots:[{workspace_id:'workspace_shared',path:'/fixture/shared'}]});
+ assert.equal(root.getAttribute('aria-busy'),'false');
+ assert.equal(root.querySelectorAll('[data-workspace-tree]').length,1,'deduplicated root is retained');
+ w.PortalFileLinks.load = target => new Promise(resolve=>{completeDirectory=()=>resolve({kind:'directory',path:target,children:[]});});
+ const refreshing = panel.load(true);
+ await tick();
+ assert.equal(root.getAttribute('aria-busy'),'true','directory read outlives the metadata request');
+ completeDirectory(); await refreshing; await tick();
+ assert.equal(root.getAttribute('aria-busy'),'false');
+ panel.setResident({id:'resident_next'});
+ assert.equal(root.dataset.workspaceResidentId,'resident_next');
+ assert.equal(root.getAttribute('aria-busy'),'true');
+ panel.setResident({id:'resident_next',roots:[],error:'fixture denied'});
+ assert.equal(root.getAttribute('aria-busy'),'false','a failed read has settled, not succeeded');
+ assert.match(root.textContent,/fixture denied/,'error remains visible for readiness checks');
+ panel.destroy();
+ w.PortalIdentity.listUIAssociations=async()=>{throw Error('fixture unavailable');};
+ const failedPanel=w.PortalPersonalWorkspaces.mount({root,onOpen(){}});
+ await failedPanel.load();
+ assert.equal(root.getAttribute('aria-busy'),'false','initial metadata failure is settled too');
+ assert.match(root.textContent,/fixture unavailable/);
+ failedPanel.destroy(); dom.window.close();
+ console.log('Workspace readiness includes Resident bindings and expanded directories');
+})().catch(error=>{console.error(error);process.exitCode=1;});
