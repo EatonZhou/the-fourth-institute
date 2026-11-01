@@ -255,7 +255,7 @@ def test_the_first_account_of_a_portal_is_its_first_administrator(enrollment, pe
     enrollment.create_account("first", "second", password="A-secure-password-123")
     assert permission_system.user_categories() == {"first": "portal_admin"}
     assert permission_system.allows("first", "CreateUser") and not permission_system.allows("second", "CreateUser")
-    enrollment.access.retire_user("second", actor="first")
+    enrollment.access.delete_user("second", actor="first")
     enrollment.create_account("first", "third", password="A-secure-password-123")
     assert permission_system.user_categories() == {"first": "portal_admin"}
 

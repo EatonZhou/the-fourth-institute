@@ -185,5 +185,5 @@ def test_a_users_category_is_its_account_record_and_moves_it_in_the_same_transac
     assert get_portal_access_store().user("bob")["category"] == "intern"
     assert store.paths("P", ["bob"])["bob"][-2] == "@interns"
 
-    get_portal_access_store().retire_user("bob", actor="test-actor")
+    get_portal_access_store().delete_user("bob", actor="test-actor")
     assert store.paths("P", ["bob"]) == {} and Categories().all() == {}

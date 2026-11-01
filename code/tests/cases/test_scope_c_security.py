@@ -85,7 +85,7 @@ def test_script_token_rechecks_user_state(account_boundary, monkeypatch, status)
         "expires_at": time.time() + 60, "lease_path": str(lease),
     })
     if status == "deleted":
-        account_boundary.access.retire_user("fixture-user", actor="CASE-A")
+        account_boundary.access.delete_user("fixture-user", actor="CASE-A")
     else:
         account_boundary.access.upsert_user("fixture-user", actor="CASE-A", status=status)
     request = Request({"type": "http", "headers": [(b"authorization", ("Bearer " + token).encode())]})

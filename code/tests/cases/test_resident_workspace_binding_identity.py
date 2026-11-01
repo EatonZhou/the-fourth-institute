@@ -59,7 +59,8 @@ def test_catalog_rejects_symlinked_default_workspace_path(
     damaged = resident_record_domain.find_resident(resident_id)
     damaged["owned_workspace"]["path"] = str(alias_workspace)
     damaged["default_cwd"] = str(alias_workspace)
-    assert resident_record_domain.resident_default_cwd_path(damaged) == ""
+    with pytest.raises(ValueError, match="Workspace path must be canonical"):
+        resident_record_domain.resident_default_cwd_path(damaged)
     with pytest.raises(ValueError, match="Workspace"):
         resident_record_domain.save_resident_record(damaged)
 

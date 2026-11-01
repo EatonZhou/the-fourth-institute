@@ -1,13 +1,11 @@
 from __future__ import annotations
 from management_common.instance_manifest import AREAS
 from management_common.portal_paths import path as portal_path
-from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
 from management_common.clock import utc_now_iso
 
 import hashlib
 import json
-import os
 import re
 from pathlib import Path
 from typing import Any
@@ -56,8 +54,6 @@ def _pulse_root() -> Path:
     # The one-time migration copies summaries and index before publishing its
     # receipt. Shared-code reloads before that point keep the complete old view.
     # After cutover a missing/corrupt target index never resurrects stale data.
-    if os.getenv("PORTAL_PULSE_ROOT"):
-        return resolve_directory(os.environ["PORTAL_PULSE_ROOT"])
     deployment = read_site_config().get("deployment", {})
     if not isinstance(deployment, dict) or not isinstance(deployment.get("pulse", {}), dict):
         raise ValueError("deployment.pulse must be an object")

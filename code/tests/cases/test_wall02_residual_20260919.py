@@ -82,7 +82,7 @@ def test_named_accounts_follow_the_same_lifecycle(account_boundary):
     access.upsert_user("CASE-A", actor="fixture-user", status="disabled")
     assert access.user("CASE-A")["status"] == "disabled"
     access.upsert_user("CASE-A", actor="fixture-user", status="active")
-    assert access.retire_user("CASE-A", actor="fixture-user")["status"] == "deleted"
+    assert access.delete_user("CASE-A", actor="fixture-user")["status"] == "deleted"
 
 
 def test_internal_password_reset_is_targeted(account_boundary):
@@ -104,7 +104,7 @@ def test_internal_password_reset_is_targeted(account_boundary):
 
 def test_deleted_user_absent_from_admin_list(account_boundary):
     """已删除用户不出现在管理列表且列表不含密码"""
-    account_boundary.access.retire_user("fixture-peer", actor="CASE-A")
+    account_boundary.access.delete_user("fixture-peer", actor="CASE-A")
     users = web_accounts._admin_access_payload("CASE-A")["users"]
     assert {user["username"] for user in users} == {"CASE-A", "fixture-user"}
     assert all("password" not in user for user in users)
@@ -180,7 +180,7 @@ def test_setup_password_only_and_ephemeral_pending(account_boundary, monkeypatch
 def test_passkey_login_checks_current_account_status(account_boundary, monkeypatch, status):
     """Passkey 登录在账号已停用或删除时拒绝认证"""
     if status == "deleted":
-        account_boundary.access.retire_user("fixture-user", actor="CASE-A")
+        account_boundary.access.delete_user("fixture-user", actor="CASE-A")
     else:
         account_boundary.access.upsert_user("fixture-user", actor="CASE-A", status=status)
     monkeypatch.setattr(web_accounts._PORTAL_PASSKEYS, "finish_authentication", lambda **kwargs: "fixture-user")

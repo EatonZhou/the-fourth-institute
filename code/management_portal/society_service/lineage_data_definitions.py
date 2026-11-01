@@ -105,7 +105,7 @@ def write_definition(
     lineage_metadata_storage.put(connection, lineage_id, dict(value))
     family_storage.store_program(connection, lineage_id, value, now)
     graph_storage.put(connection, lineage_id, value)
-    graph_storage.retire_missing(connection, lineage_id, set(current), set(desired), now)
+    graph_storage.delete_missing(connection, lineage_id, set(current), set(desired), now)
     definition_collections.put(connection, lineage_id, value)
     connection.execute('DELETE FROM lineage_layout_positions WHERE lineage_id=%s AND NOT (object_id=ANY(%s))', (lineage_id,list(desired)))
     connection.execute("DELETE FROM workspace_handoff_work WHERE lineage_id=%s AND NOT (edge_id=ANY(%s))", (lineage_id,list(desired)))

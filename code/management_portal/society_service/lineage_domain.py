@@ -47,7 +47,7 @@ from . import lineage_state
 # lineage_program_services reads these Program host callbacks from this module.
 from .lineage_state import _lineage_scopes, _now_iso, _persist_lineage_runtime_state, _scheduled_time_reached
 from .lineage_reads import _lineage_node_session_key, _lineage_snapshot_for_read, get_lineage
-from .lineage_program_edits import _retire_exhausted_event_sources
+from .lineage_program_edits import _delete_exhausted_event_sources
 from .lineage_resident_controls import _send_node_message
 
 

@@ -312,7 +312,7 @@ class PARPermissions:
     def sync_resource(self, record: Mapping[str, Any], *, resource_type: str, connection=None) -> bool:
         return self.current()[2].sync([fact_from_record(record, resource_type)], connection=connection)
 
-    def retire_resources(self, resource_ids: Iterable[str], *, connection=None) -> list[str]:
+    def unregister_resources(self, resource_ids: Iterable[str], *, connection=None) -> list[str]:
         from .requests import resource_type
 
         instance = self.current()[2]

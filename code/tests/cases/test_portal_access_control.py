@@ -207,7 +207,7 @@ def test_user_disable_and_retirement_are_distinct_lifecycle_states_contracts(tmp
         assert disabled['status'] == 'disabled'
         assert not store.is_active('engineer')
         assert store.list_users(['engineer'])[0]['username'] == 'engineer'
-        retired = store.retire_user('engineer', actor='CASE-A')
+        retired = store.delete_user('engineer', actor='CASE-A')
         assert retired['status'] == 'deleted'
         assert 'memberships' not in retired
         assert store.list_users(['engineer']) == []
@@ -231,7 +231,7 @@ def test_user_disable_and_retirement_are_distinct_lifecycle_states_contracts(tmp
                 assert not permission_system.allows(name, "CreateUser")
                 store.upsert_user(name, actor='ordinary', status='disabled')
                 assert store.user(name)['status'] == 'disabled'
-                assert store.retire_user(name, actor='ordinary')['status'] == 'deleted'
+                assert store.delete_user(name, actor='ordinary')['status'] == 'deleted'
         finally:
             permission_system.forget_implementation()
     with subtests.test(contract='test_portal_service_actor_is_unscoped'), isolated_portal_case() as case_path:

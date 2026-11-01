@@ -83,9 +83,9 @@ class _CountingAuthority:
         self.reads += 1
         return self.inner.read_lineage(*args, **kwargs)
 
-    def retire_exhausted_sources(self, *args):
+    def delete_exhausted_sources(self, *args):
         self.retired += 1
-        return self.inner.retire_exhausted_sources(*args)
+        return self.inner.delete_exhausted_sources(*args)
 
 
 def test_a_drain_reads_the_lineage_again_only_after_a_delivery_attempt(runtime_store, monkeypatch):

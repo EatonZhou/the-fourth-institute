@@ -271,7 +271,7 @@ def assert_writable_ids(connection: Any, value: Mapping[str, Any]) -> None:
         raise ValueError('Deleted graph IDs cannot be reused: ' + ', '.join(r['id'] for r in deleted))
 
 
-def retire_missing(connection: Any, lineage_id: str, current: set[str], desired: set[str], now: str) -> None:
+def delete_missing(connection: Any, lineage_id: str, current: set[str], desired: set[str], now: str) -> None:
     removed = sorted(current - desired)
     if not removed:
         return

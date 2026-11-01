@@ -141,7 +141,7 @@ class ProgramControlAuthority(Protocol):
     def program_execution_ports(self) -> lineage_program_execution.ProgramExecutionPorts: ...
     def dispatch_lineage_program_event(self, lineage_id: str, event_source_id: str, event: lineage_primitives.LineageEvent, actor: str, **options: Any) -> dict[str, Any]: ...
     def has_registered_invocation(self, lineage_id: str, wire_id: str, target_id: str, occurrence: dict[str, Any]) -> bool: ...
-    def retire_exhausted_sources(self, lineage_id: str, actor: str) -> list[str]: ...
+    def delete_exhausted_sources(self, lineage_id: str, actor: str) -> list[str]: ...
     def observe_trigger_path(self, lineage_id: str, payload: dict[str, Any], actor: str) -> dict[str, Any]: ...
     def get_lineage(self, lineage_id: str, actor: str) -> dict[str, Any]: ...
 
@@ -213,7 +213,7 @@ def drain_event_backlog(
     _program_execution_ports = authority.program_execution_ports
     dispatch_lineage_program_event = authority.dispatch_lineage_program_event
     _pending_event_has_registered_invocation = authority.has_registered_invocation
-    _retire_exhausted_event_sources = authority.retire_exhausted_sources
+    _delete_exhausted_event_sources = authority.delete_exhausted_sources
 
     actor_id = _safe_actor(actor)
     expired_events = dispatch_expired_deliveries(
@@ -324,7 +324,7 @@ def drain_event_backlog(
         for component in (lineage.get("program") or {}).get("components") or []
         if isinstance(component, dict)
     )
-    deleted_event_source_ids = _retire_exhausted_event_sources(lineage_id, actor_id) if retires else []
+    deleted_event_source_ids = _delete_exhausted_event_sources(lineage_id, actor_id) if retires else []
     return {
         "deleted_event_source_ids": deleted_event_source_ids,
         "attempted_count": attempted_count,

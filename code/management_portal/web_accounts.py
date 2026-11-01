@@ -324,7 +324,7 @@ def _admin_access_action(actor: str, payload: dict) -> dict:
         deleted_data["two_factor"] = _PORTAL_TWO_FACTOR.delete_user(username)
         deleted_data["passkeys"] = _PORTAL_PASSKEYS.delete_user(username)
         # Retiring the account also takes the User out of the permission trees, in the same transaction.
-        _PORTAL_ACCESS.retire_user(username, actor=actor)
+        _PORTAL_ACCESS.delete_user(username, actor=actor)
         # The account's Ask Me Anything only its owner could open goes with it.
         try:
             from management_portal.society_service import get_society_service

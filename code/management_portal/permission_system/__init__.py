@@ -323,11 +323,11 @@ def on_behalf_of(actor: str) -> str:
         return ""
 
 
-def retire_resources(resource_ids: Iterable[str], *, connection: Any = None) -> list[str]:
+def unregister_resources(resource_ids: Iterable[str], *, connection: Any = None) -> list[str]:
     """Deleted objects leave the trees with every entry that names them (turning the switch on catches up)."""
     if _off():
         return []
-    return active().retire_resources(list(resource_ids), connection=connection)
+    return active().unregister_resources(list(resource_ids), connection=connection)
 
 
 def sync_user(username: str, *, deleted: bool = False, connection: Any = None) -> None:

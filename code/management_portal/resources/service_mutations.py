@@ -85,7 +85,7 @@ def complete_mutation(
         # their own transaction; the file-backed ones (knowledge, papers, repos …) have no transaction to share
         # and are placed here, after their files are written.
         if kind == "delete":
-            permission_system.retire_resources([resource_id])
+            permission_system.unregister_resources([resource_id])
         else:
             permission_system.sync_resource({**record, "resource_id": resource_id}, resource_type=resource_type)
         if kind == "create":

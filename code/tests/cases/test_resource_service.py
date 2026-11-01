@@ -889,7 +889,7 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
         target.register_mutation_provider("repo", register=mutate, update=mutate, unregister=mutate)
         args = ("repo", {}) if operation == "register" else (repo_id, {}) if operation == "update" else (repo_id,)
         index.reset_mock()
-        hook = "retire_resources" if operation == "unregister" else "sync_resource"
+        hook = "unregister_resources" if operation == "unregister" else "sync_resource"
         with mock.patch.object(permission_system, hook, failing), pytest.raises(ResourceOperationError) as raised:
             getattr(target, operation)(*args, actor="alice")
         assert committed.read_text(encoding="utf-8") == operation

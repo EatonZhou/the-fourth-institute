@@ -70,7 +70,8 @@ def test_other_workspace_is_still_rejected(windows_record, monkeypatch, wrong):
         record["owned_workspace"]["path"] += "-other"
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
         ensure=lambda *args, **kwargs: pytest.fail("invalid workspace was stored")))
-    assert resident_catalog.default_cwd_path(record) == ""
+    assert resident_catalog.default_cwd_path(record) == (
+        "" if wrong == "identity" else record["owned_workspace"]["path"])
     with pytest.raises(ValueError, match="identity or location mismatch"):
         resource_client.ensure_workspaces(record, connection=object())
 
@@ -103,9 +104,8 @@ def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monke
 
     roots, cwd = resident_record_domain.resident_workspace_roots_with_usage(record)
 
-    assert cwd == ("" if invalid_owned_path else expected)
-    assert [root["workspace_id"] for root in roots if root["is_primary"]] == (
-        [] if invalid_owned_path else [OWN])
+    assert cwd == record["owned_workspace"]["path"]
+    assert [root["workspace_id"] for root in roots if root["is_primary"]] == [OWN]
     assert roots[1]["path"] == extra_path
     assert roots[1]["purpose"] == "reference"
 

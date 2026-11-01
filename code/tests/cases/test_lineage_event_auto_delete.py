@@ -81,7 +81,7 @@ def test_final_occurrence_fans_out_before_source_and_wires_are_removed(runtime_s
     assert result["lineage"]["program"]["components"] == []
     assert result["lineage"]["program"]["wires"] == []
     revision = result["lineage"]["revision"]
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == []
     assert lineage_reads.get_lineage(lineage_id, ACTOR)["revision"] == revision
 
 
@@ -104,7 +104,7 @@ def test_queued_final_invocation_survives_until_delivery_then_retires(runtime_st
     assert sent == []
     persisted = lineage_program_runtime.read_runtime(lineage_id)
     assert persisted["event_sources"][SOURCE]["fanout_settled_generation"] == 0
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == []
     if disable_before_delivery:
         current = lineage_reads.get_lineage(lineage_id, ACTOR)
         lineage_program_edits.save_lineage_program_component(lineage_id, {
@@ -128,10 +128,10 @@ def test_reset_fences_old_auto_delete_readiness(runtime_store):
     component_runtime.reset(lineage_id, SOURCE, ACTOR)
     lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
     lineage_program_occurrences.claim_event_occurrence(lineage_id, SOURCE, "new", max_fires=1)
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == []
     assert source_exists(lineage_id)
     lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=1, occurrence_count=1)
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
 def test_older_fanout_cannot_mark_a_newer_occurrence_as_settled(runtime_store):
@@ -142,9 +142,9 @@ def test_older_fanout_cannot_mark_a_newer_occurrence_as_settled(runtime_store):
     lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
     lineage_program_occurrences.claim_event_occurrence(lineage_id, SOURCE, "second", max_fires=2)
     lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=1)
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == []
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == []
     lineage_program_occurrences.mark_event_fanout_complete(lineage_id, SOURCE, generation=0, occurrence_count=2)
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
 @pytest.mark.parametrize("enabled,maximum", [(False, 1), (True, 2)])
@@ -159,7 +159,7 @@ def test_enabling_auto_delete_or_lowering_limit_keeps_existing_fire_count(runtim
                                   "auto_delete_on_exhaustion": True}},
     }, ACTOR)
     assert lineage_program_runtime.read_runtime(lineage_id)["event_sources"][SOURCE]["fire_count"] == 1
-    assert lineage_program_edits._retire_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
+    assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
 def test_zero_budget_retires_during_reconcile_without_firing(runtime_store):

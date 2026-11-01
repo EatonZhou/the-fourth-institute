@@ -53,13 +53,13 @@ def default_cwd_path(record: Mapping[str, Any]) -> str:
         return ""
     if own.get("workspace_id") != record["owned_workspace_id"]:
         return ""
-    try:
-        # Stored paths must already be canonical. Resolving the supplied path
-        # here would accept a symlink alias as the Resident's owned directory.
-        path = str(own.get("path") or "")
-        return path if path == canonical_path(owned_workspace_path(record)) else ""
-    except (OSError, ValueError):
-        return ""
+    # WorkspaceStore materializes the registered location. Layout determines
+    # the initial location at creation, not where an existing Workspace lives.
+    # Invalid registration is an error, rather than a missing default directory.
+    path = str(own.get("path") or "")
+    if path != canonical_path(path):
+        raise ValueError("Registered Workspace path must be canonical")
+    return path
 
 
 @dataclass(frozen=True)

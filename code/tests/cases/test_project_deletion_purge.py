@@ -146,7 +146,7 @@ def test_project_resources_are_unregistered_before_the_project_content_is_delete
         workspaces.database.write(lambda connection, workspace_id=workspace_id: workspaces.mark_deleted(
             workspace_id, deleted_at="2026-10-17T00:00:00Z", deleted_by="alice", connection=connection))
     retired = []
-    monkeypatch.setattr(permission_system, "retire_resources", lambda ids, **_: retired.append(list(ids)) or [])
+    monkeypatch.setattr(permission_system, "unregister_resources", lambda ids, **_: retired.append(list(ids)) or [])
     service = _ResourceService(RESOURCES)
     result, domain_calls = _delete_with(monkeypatch, service)
 

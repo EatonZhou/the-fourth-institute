@@ -53,7 +53,7 @@ class ProgramServiceHost(Protocol):
     _program_event_authority: Callable[..., Any]
     _lineage_snapshot_for_read: Callable[..., Any]
     _pending_event_has_registered_invocation: Callable[..., Any]
-    _retire_exhausted_event_sources: Callable[..., Any]
+    _delete_exhausted_event_sources: Callable[..., Any]
     observe_trigger_path: Callable[..., Any]
     _node_resident_id: Callable[..., Any]
     handle_resident_message_completion: Callable[..., Any]
@@ -215,8 +215,8 @@ class _ProgramControlAuthority(_ProgramEventAuthority):
     def has_registered_invocation(self, lineage_id: str, wire_id: str, target_id: str, occurrence: dict[str, Any]) -> bool:
         return self._host._pending_event_has_registered_invocation(lineage_id, wire_id, target_id, occurrence)
 
-    def retire_exhausted_sources(self, lineage_id: str, actor: str) -> list[str]:
-        return self._host._retire_exhausted_event_sources(lineage_id, actor)
+    def delete_exhausted_sources(self, lineage_id: str, actor: str) -> list[str]:
+        return self._host._delete_exhausted_event_sources(lineage_id, actor)
 
     def observe_trigger_path(self, lineage_id: str, payload: dict[str, Any], actor: str) -> dict[str, Any]:
         return self._host.observe_trigger_path(lineage_id, payload, actor)

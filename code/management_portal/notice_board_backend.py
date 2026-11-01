@@ -907,7 +907,7 @@ class NoticeBoardBackend:
         from management_portal import permission_system
 
         if deleted:
-            return permission_system.retire_resources([post_id], connection=connection)
+            return permission_system.unregister_resources([post_id], connection=connection)
         return permission_system.sync_resource({"resource_id": post_id, "author": author},
                                                resource_type="notice", connection=connection)
 

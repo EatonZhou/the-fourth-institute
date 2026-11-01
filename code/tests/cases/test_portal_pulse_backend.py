@@ -12,7 +12,7 @@ def test_publications_are_rows_of_the_pulse_publications_table(tmp_path, monkeyp
     """
     # Summaries stay the Pulse Resident's files; what users publish from them
     # is a table row, and a publications.json left in the folder is ignored.
-    monkeypatch.setenv("PORTAL_PULSE_ROOT", str(tmp_path))
+    monkeypatch.setattr(pulse, '_pulse_root', lambda: tmp_path)
     evidence_path = str(pulse.portal_path("projects") / "demo" / "notes.md")
     summary = tmp_path / "summaries" / "daily" / "2026-10-12.json"
     summary.parent.mkdir(parents=True)
@@ -55,7 +55,7 @@ def test_every_caller_reads_the_public_pulse_and_only_their_own_items(monkeypatc
     monkeypatch.setattr(pulse, '_private_summary', lambda summary, actor, publications: {'summary': f'private for {actor}', 'items': []})
     monkeypatch.setattr(pulse, '_published_items', lambda publications: [{'publication_id': 'public-1'}])
     monkeypatch.setattr(pulse, '_read_json', lambda path, default: default)
-    monkeypatch.setenv('PORTAL_PULSE_ROOT', str(tmp_path))
+    monkeypatch.setattr(pulse, '_pulse_root', lambda: tmp_path)
     for actor in ('sample_reader', 'CASE-A'):
         payload = pulse.get_home_payload(actor)
         assert payload['enabled'] is True

@@ -319,7 +319,7 @@ class PortalAccessStore:
                 before_commit(connection)
         return True
 
-    def retire_user(self, username: str, *, actor: str) -> dict[str, Any]:
+    def delete_user(self, username: str, *, actor: str) -> dict[str, Any]:
         """Retire a login identity while retaining a non-reusable audit tombstone.
 
         The User leaves the permission trees in the same transaction (decision_b820faf42218 §5.7).
@@ -352,7 +352,7 @@ class PortalAccessStore:
             payload["users"][clean_username] = current
             self._write(payload)
             permission_system.sync_user(clean_username, deleted=True, connection=connection)
-        self.audit(actor, "user_identity_retired", target=clean_username)
+        self.audit(actor, "user_identity_deleted", target=clean_username)
         return self.user(clean_username)
 
     def audit(

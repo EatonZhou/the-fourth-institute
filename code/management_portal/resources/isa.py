@@ -984,7 +984,7 @@ def delete_project(inv: Invocation) -> dict[str, Any]:
     from management_portal import permission_system
     from .workspace_store import get_workspace_store
 
-    permission_system.retire_resources(get_workspace_store().deleted_under([str(contents.get("project_path") or "")]))
+    permission_system.unregister_resources(get_workspace_store().deleted_under([str(contents.get("project_path") or "")]))
     # Nor does a later Project with the same ID wear this one's avatar.
     from management_portal.avatar_store import scope_avatar_store, scope_subject
 

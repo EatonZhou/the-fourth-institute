@@ -281,7 +281,7 @@ def delete_lineage_program_component(
     return response
 
 
-def _retire_exhausted_event_sources(lineage_id: str, actor: str) -> list[str]:
+def _delete_exhausted_event_sources(lineage_id: str, actor: str) -> list[str]:
     """Retire opted-in sources once graph cleanup can preserve all accepted work."""
 
     deleted: list[str] = []

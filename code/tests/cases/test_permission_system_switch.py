@@ -59,7 +59,7 @@ assert lineage_access_policy.changeable_ids("bob", {lineage: "bob"}, "GetLineage
 assert not personal_ama.reaches("alice", "bob") and personal_ama.hidden("alice", {lineage: "bob"}) == {lineage}
 assert ps.users_permitted("UpdateLineage", "lineage_id", lineage) is None
 assert ps.sync_resource({"resource_id": lineage}, resource_type="lineage") is False
-assert ps.retire_resources([lineage]) == [] and ps.sync_user("alice") is None
+assert ps.unregister_resources([lineage]) == [] and ps.sync_user("alice") is None
 assert ps.rename_element(None, "a", "b", apply=True) == 0
 assert ps.allows("alice", "OpenTerminal") and ps.allows("alice", "UpdateUser")
 assert ps.instruction_requirement("OpenTerminal") == {"required": False, "requirements": []}

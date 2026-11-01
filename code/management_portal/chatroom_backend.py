@@ -662,7 +662,7 @@ def _sync_permissions(room, *, deleted, connection):
 
     chatroom_id = room["chatroom_id"]
     if deleted:
-        return permission_system.retire_resources([chatroom_id], connection=connection)
+        return permission_system.unregister_resources([chatroom_id], connection=connection)
     return permission_system.sync_resource(_permission_record(room), resource_type="chatroom", connection=connection)
 
 
