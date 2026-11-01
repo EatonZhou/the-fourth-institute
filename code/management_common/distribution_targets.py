@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import platform
 import re
+import sys
 
 TARGETS = ('linux', 'windows', 'macos')
 _BASE = ('service_registration', 'postgresql_dependencies', 'local_ipc', 'filesystem_paths',
@@ -10,6 +11,17 @@ _BASE = ('service_registration', 'postgresql_dependencies', 'local_ipc', 'filesy
 
 
 def identify_host():
+    if sys.platform == 'win32':
+        # WMI can time out or crash in ordinary-user SSH/control sessions.
+        # Native system information requires neither COM nor WMI permissions.
+        import ctypes
+        info = ctypes.create_string_buffer(64)
+        ctypes.windll.kernel32.GetNativeSystemInfo(ctypes.byref(info))
+        machine = ctypes.c_ushort.from_buffer(info).value
+        architecture = {9: 'x86_64', 12: 'aarch64', 0: 'x86'}.get(machine, 'unknown')
+        version = sys.getwindowsversion()
+        return {'platform': 'windows', 'os_version': f'Windows-{version.major}.{version.minor}.{version.build}',
+                'architecture': architecture}
     system = platform.system().lower()
     name = {'linux': 'linux', 'windows': 'windows', 'darwin': 'macos'}.get(system, system)
     architecture = platform.machine().lower()

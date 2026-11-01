@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import stat
 import sys
 import tempfile
@@ -15,6 +14,7 @@ import zipfile
 from packaging.version import Version
 
 from management_portal.execution import provider_updates as updates
+from management_common.distribution_targets import identify_host
 
 REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/antigravity-acp/agent.json"
 
@@ -22,8 +22,8 @@ REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/
 def platform_key():
     # macOS's global Google keychain entry is not yet verified to isolate accounts.
     os_name = {"linux": "linux", "win32": "windows"}.get(sys.platform)
-    arch = {"x86_64": "x86_64", "amd64": "x86_64", "aarch64": "aarch64", "arm64": "aarch64"}.get(platform.machine().lower())
-    if not os_name or not arch:
+    arch = identify_host()["architecture"]
+    if not os_name or arch not in {"x86_64", "aarch64"}:
         raise RuntimeError("Antigravity account isolation is supported on Linux and Windows only")
     return f"{os_name}-{arch}"
 
