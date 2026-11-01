@@ -9,7 +9,7 @@ async function readWatchboardNodePrerequisites(panel, {residentId, frameTimeoutM
     throw new TypeError('Frame sampling deadline must be in (0, 10000] ms');
   if (await panel.count() !== 1) throw new Error('One current HATG panel required');
   return panel.evaluate(async (root, {residentId, frameTimeoutMs}) => {
-    if (root.id !== 'lineage-hatg-panel' || root.getAttribute('role') !== 'region')
+    if (!root.matches('.portalHatgPanelComponent[role="region"], #lineage-hatg-panel[role="region"], section#hatgPane[data-lineage-pane="hatg"][aria-label]'))
       throw new Error('Full native HATG region required');
     const doc = root.ownerDocument, win = doc.defaultView;
     const visible = n => !!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')

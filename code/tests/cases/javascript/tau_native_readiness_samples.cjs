@@ -38,6 +38,23 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const newNode = hatg.getByRole('button', {name:/^New node:/});
   await newNode.waitFor({state:'visible'});
   await page.waitForFunction(() => !document.getElementById('addNodeBtn')?.disabled);
+  // Both the Workbench host and its named SECTION are real region roots.
+  // The latter has an implicit accessibility role and no literal role attribute.
+  const {readSessionLineageIdentity, readSessionGraphSnapshot} = require('../../../management_portal/test_framework/tau_session_prerequisites');
+  const {readHatgForkPrerequisites} = require('../../../management_portal/test_framework/tau_hatg_fork_evidence');
+  const {readWatchboardNodePrerequisites} = require('../../../management_portal/test_framework/tau_watchboard_node_prerequisites');
+  const nativePane = hatg.locator('section#hatgPane[data-lineage-pane="hatg"]');
+  assert.equal(await nativePane.getAttribute('role'), null);
+  for (const panel of [nativePane, hatg]) {
+    assert.equal((await readSessionLineageIdentity(panel, {lineageId:'lineage_222222222222'})).identity_ready, true);
+    assert.equal((await readSessionLineageIdentity(panel, {lineageId:'lineage_other'})).identity_ready, false);
+    const graph = await readSessionGraphSnapshot(panel, {residentId});
+    assert.equal(graph.visible_node_count, 1);
+    assert.equal(graph.work_state, 'idle');
+    assert.equal((await readHatgForkPrerequisites(panel, {residentId})).checks.source_bound, true);
+    assert.equal((await readWatchboardNodePrerequisites(panel, {residentId})).first.bound_to_canvas, true);
+  }
+  await assert.rejects(readSessionGraphSnapshot(hatg.locator('#hatgCanvas'), {residentId}), /native HATG/);
   await newNode.click();
   const form = page.getByRole('dialog', {name:'New node', exact:true});
   await form.getByRole('textbox', {name:'Agent name', exact:true}).waitFor({state:'visible'});

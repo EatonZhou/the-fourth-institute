@@ -8,7 +8,7 @@ async function readSessionLineageIdentity(panel, {lineageId}) {
   if (count === 0) return {panel_present:false, identity_ready:false};
   if (count !== 1) throw new Error('Expected one active HATG panel');
   return panel.evaluate((root, lineageId) => {
-    if (root.id !== 'lineage-hatg-panel' || root.getAttribute('role') !== 'region')
+    if (!root.matches('.portalHatgPanelComponent[role="region"], #lineage-hatg-panel[role="region"], section#hatgPane[data-lineage-pane="hatg"][aria-label]'))
       throw new Error('Expected the full native HATG region');
     const visible = n => !!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')
       && n.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
@@ -53,7 +53,7 @@ async function readSessionGraphSnapshot(panel, {residentId, minWidth = 160, minH
   if (count === 0) return {panel_present: false, search_ready: false, capture_candidate: false};
   if (count !== 1) throw new Error('Expected one active HATG panel');
   return panel.evaluate((root, {residentId, minWidth, minHeight}) => {
-    if (root.id !== 'lineage-hatg-panel' || root.getAttribute('role') !== 'region')
+    if (!root.matches('.portalHatgPanelComponent[role="region"], #lineage-hatg-panel[role="region"], section#hatgPane[data-lineage-pane="hatg"][aria-label]'))
       throw new Error('Expected the full native HATG region');
     const doc = root.ownerDocument;
     const visible = n => !!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')

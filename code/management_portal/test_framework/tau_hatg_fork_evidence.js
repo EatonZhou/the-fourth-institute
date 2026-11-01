@@ -7,7 +7,7 @@ async function readHatgForkPrerequisites(panel, {residentId} = {}) {
   if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new TypeError('Exact source Resident ID required');
   if (await panel.count() !== 1) throw new Error('One original HATG region required');
   return panel.evaluate((root, residentId) => {
-    if (root.id !== 'lineage-hatg-panel' || root.getAttribute('role') !== 'region')
+    if (!root.matches('.portalHatgPanelComponent[role="region"], #lineage-hatg-panel[role="region"], section#hatgPane[data-lineage-pane="hatg"][aria-label]'))
       throw new Error('Full native HATG region required');
     const doc=root.ownerDocument, view=doc.defaultView;
     const visible=n=>!!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')
