@@ -503,6 +503,7 @@ class _ContinuationJob:
 
     record: dict[str, Any] = field(default_factory=dict)
     job: dict[str, Any] = field(default_factory=dict)
+    completed_record: dict[str, Any] = field(default_factory=dict)
 
 
 def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> None:
@@ -528,6 +529,8 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     continue
                 return
             except Exception as exc:
+                if _recover_completed_turn(resident_id, continuation_id, claimed):
+                    return
                 terminal_applied_job = _settle_failed_job(resident_id, continuation_id, claimed, exc)
                 return
     finally:
@@ -561,6 +564,8 @@ def _run_claimed_job(resident_id: str, continuation_id: str, claimed: _Continuat
     """Run the claimed Job as what it is; True when the queue advanced to a next Job of this continuation."""
 
     record_snapshot, current_job = claimed.record, claimed.job
+    if _recover_completed_turn(resident_id, continuation_id, claimed):
+        return False
     resident_catalog.ensure_resident_agent(record_snapshot, actor=str(current_job.get("actor") or ""))
     if resident_domain_port.ensure_role_reserve(record_snapshot):
         return False
@@ -884,6 +889,14 @@ def _run_turn(resident_id: str, continuation_id: str, claimed: _ContinuationJob)
         record_snapshot,
         claimed.job,
     )
+    claimed.completed_record = dict(updated_record)
+    return _apply_completed_turn(resident_id, continuation_id, claimed, updated_record,
+                                 str(assistant_item.get("created_at") or resident_domain_common.now_iso()))
+
+
+def _apply_completed_turn(resident_id: str, continuation_id: str, claimed: _ContinuationJob,
+                          updated_record: dict[str, Any], completed_at: str) -> bool:
+    """Apply one committed delivery; retries do not call the Provider again."""
     with resident_record_domain.state_lock(resident_id):
         record = resident_record_domain.find_resident(resident_id) or {}
         if not record:
@@ -891,23 +904,28 @@ def _run_turn(resident_id: str, continuation_id: str, claimed: _ContinuationJob)
         job = resident_execution_work.read(record)
         if not resident_execution_work.matches_continuation(job, continuation_id):
             return False
-        for key in (
-            "session_state",
-            "last_token_usage",
-            "last_token_usage_at",
-            "last_turn_usage",
-            "last_turn_usage_at",
-            "last_model_context_window",
-            "last_error",
+        if (job.get("execution_id"), job.get("user_message_id")) != (
+            claimed.job.get("execution_id"), claimed.job.get("user_message_id"),
         ):
-            if key in updated_record:
-                record[key] = updated_record[key]
-        now = resident_domain_common.now_iso()
-        record["session_state"] = "active"
-        record["updated_at"] = now
-        resident_record_domain.save_resident_record(record)
-        _mark_completion_applied(job, now)
-        resident_execution_work.write(record, job)
+            return False
+        if not _completion_applied(job):
+            for key in (
+                "session_state",
+                "last_token_usage",
+                "last_token_usage_at",
+                "last_turn_usage",
+                "last_turn_usage_at",
+                "last_model_context_window",
+                "last_error",
+            ):
+                if key in updated_record:
+                    record[key] = updated_record[key]
+            now = resident_domain_common.now_iso()
+            record["session_state"] = "active"
+            record["updated_at"] = now
+            resident_record_domain.save_resident_record(record)
+            _mark_completion_applied(job, now)
+            resident_execution_work.write(record, job)
         # Delivery may have submitted a new Execution through its
         # own job copy. Finalize the persisted binding, not the
         # pre-delivery snapshot which can still lack its ID.
@@ -922,16 +940,35 @@ def _run_turn(resident_id: str, continuation_id: str, claimed: _ContinuationJob)
         resident_id,
         str(
             current_job.get("actor")
-            or record_snapshot.get("created_by")
+            or claimed.record.get("created_by")
             or ""
         ),
         str(current_job.get("user_message_id") or ""),
-        completed_at=str(
-            assistant_item.get("created_at") or now
-        ),
+        completed_at=completed_at,
         **_lineage_terminal_fact_fields(current_job),
     )
     return queue_advanced
+
+
+def _recover_completed_turn(resident_id: str, continuation_id: str, claimed: _ContinuationJob) -> bool:
+    """A committed input is authoritative even if Resident finalization failed."""
+    message_id = str(claimed.job.get("user_message_id") or "")
+    if not message_id or str(claimed.job.get("operation") or ""):
+        return False
+    state = resident_conversation_stream.get_repository().input_state(resident_id, message_id)
+    if state.get("state") != "completed":
+        return False
+    try:
+        _apply_completed_turn(
+            resident_id, continuation_id, claimed, claimed.completed_record or claimed.record,
+            str(state.get("updated_at") or resident_domain_common.now_iso()),
+        )
+    except Exception:
+        # The durable Job stays pending. Continuation shutdown wakes it again;
+        # its next claim consults the same committed input before any delivery.
+        logging.getLogger(__name__).exception("Completed Resident input finalization deferred: %s/%s",
+                                              resident_id, message_id)
+    return True
 
 
 def _settle_failed_job(

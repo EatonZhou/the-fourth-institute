@@ -312,6 +312,63 @@ def test_resident_success_uses_shared_applied_completion_finalizer(
     assert finalize.call_args.args[:2] == (resident_id, continuation_id)
 
 
+@pytest.mark.parametrize("failed_saves", [1, 2])
+def test_completed_input_survives_resident_finalization_lock_timeout(resident_record, monkeypatch, failed_saves):
+    """业务输入已完成后，Resident收尾写入超时不能发布失败或丢失完成事件。"""
+    from psycopg.errors import LockNotAvailable
+
+    resident_id = str(resident_record["resident_id"])
+    message_id = "msg_" + "a" * 32
+    repository = resident_conversation_stream.get_repository()
+    repository.append_message(resident_id, {
+        "message_id": message_id, "role": "user", "author_id": "CASE-A",
+        "content_parts": [{"type": "text", "text": "Complete once"}],
+        "created_at": "2026-08-17T00:00:00Z",
+    })
+    job = {"execution_id": "execution-" + "8" * 24, "actor": "CASE-A",
+           "user_message_id": message_id, "queue": [],
+           "lineage_id": resident_record["lineage_id"],
+           **resident_execution_work.continuation_fields(resident_record)}
+    bind_execution(job, execution_id=job["execution_id"], now="2026-08-17T00:00:00Z")
+    resident_execution_work.write(resident_record, job)
+    delivered = []
+    facts = []
+    save = resident_record_domain.save_resident_record
+    failures = []
+
+    def deliver(record, current_job):
+        delivered.append(current_job["execution_id"])
+        repository.set_input_state(resident_id, message_id, "completed",
+                                   updated_at="2026-08-17T00:01:00Z")
+        return {"created_at": "2026-08-17T00:01:00Z"}, {**record, "session_state": "active"}
+
+    def save_after_delivery(record, **options):
+        if delivered and len(failures) < failed_saves:
+            failures.append("lock_timeout")
+            raise LockNotAvailable("canceling statement due to lock timeout")
+        return save(record, **options)
+
+    monkeypatch.setattr(resident_execution_domain, "send_to_resident_backend", deliver)
+    monkeypatch.setattr(resident_input_queue_domain, "acknowledge_execution", lambda job: True)
+    monkeypatch.setattr(resident_record_domain, "save_resident_record", save_after_delivery)
+    monkeypatch.setattr(resident_execution_domain, "_notify_lineage_message_completed",
+                        lambda rid, actor, mid, **kw: facts.append((rid, mid, "completed")))
+    monkeypatch.setattr(resident_execution_domain, "_notify_lineage_message_terminal",
+                        lambda rid, actor, mid, **kw: facts.append((rid, mid, kw["terminal_status"])))
+    resident_execution_domain.run_resident_execution(resident_id, job["continuation_id"])
+    if failed_saves == 2:
+        pending = resident_execution_work.read(resident_record)
+        assert resident_execution_work.is_active(pending)
+        assert not resident_execution_work.completion_applied(pending)
+        assert facts == [], "failed reconciliation retains work without publishing a false terminal"
+        resident_execution_domain.run_resident_execution(resident_id, pending["continuation_id"])
+    assert delivered == [job["execution_id"]], "finalization must not resubmit the provider turn"
+    assert repository.input_state(resident_id, message_id)["state"] == "completed"
+    assert facts == [(resident_id, message_id, "completed")]
+    assert resident_execution_work.outcome(resident_execution_work.read(resident_record)) != "failed"
+    assert resident_execution_work.read(resident_record) == {}
+
+
 def test_exiting_continuation_rewakes_job_persisted_during_shutdown(
     resident_record: dict[str, object],
     monkeypatch: pytest.MonkeyPatch,
