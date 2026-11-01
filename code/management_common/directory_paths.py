@@ -281,6 +281,14 @@ def assert_missing_location(path: Path) -> None:
 
 
 def contains(root: Path, path: Path) -> bool:
+    root, path = lexical_path(root), lexical_path(path)
+    # Unrelated names cannot become ancestors under either native case rule.
+    # Reject them before probing every parent directory. Potential matches
+    # still use fresh filesystem evidence; this is not a case-policy cache.
+    if len(root.parts) > len(path.parts) or any(
+            parent.casefold() != child.casefold()
+            for parent, child in zip(root.parts, path.parts)):
+        return False
     parent, child = location_key(root), location_key(path)
     return child[:len(parent)] == parent
 

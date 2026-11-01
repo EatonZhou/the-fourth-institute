@@ -40,6 +40,39 @@ def test_absent_case_distinct_directory_keys(sensitive_root):
     assert not paths.overlaps(upper, lower / 'child')
 
 
+def test_disjoint_directory_closure_does_not_probe_unrelated_filesystems(tmp_path, monkeypatch):
+    probes = []
+    original = paths._directory_case_sensitive
+
+    def probe(path):
+        probes.append(path)
+        return original(path)
+
+    monkeypatch.setattr(paths, '_directory_case_sensitive', probe)
+    root = tmp_path / 'owner-one'
+    for index in range(100):
+        assert not paths.contains(root, tmp_path / f'owner-two-{index}' / 'workspace')
+    assert not paths.contains(root, tmp_path)
+    assert probes == [], 'deletion closure must not probe every unrelated resource ancestor'
+    assert paths.contains(root, root / 'child')
+    assert probes, 'potential descendants must still check the native case policy'
+
+
+def test_case_candidate_rechecks_policy_and_keeps_unknown_policy_errors(tmp_path, monkeypatch):
+    root, child = tmp_path / 'Folder', tmp_path / 'folder' / 'child'
+    monkeypatch.setattr(paths, '_directory_case_sensitive', lambda _: False)
+    assert paths.contains(root, child)
+    monkeypatch.setattr(paths, '_directory_case_sensitive', lambda _: True)
+    assert not paths.contains(root, child)
+
+    def unknown(_):
+        raise OSError('case policy unavailable')
+
+    monkeypatch.setattr(paths, '_directory_case_sensitive', unknown)
+    with pytest.raises(OSError, match='case policy unavailable'):
+        paths.contains(root, child)
+
+
 @pytest.mark.parametrize('nested', [False, True])
 def test_creation_accepts_case_distinct_location(sensitive_root, nested):
     target = sensitive_root / 'foo'

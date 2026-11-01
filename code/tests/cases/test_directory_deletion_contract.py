@@ -57,6 +57,30 @@ def test_unregistration_retention_uses_the_owning_transaction(workspace, monkeyp
     assert artifact.is_dir()
 
 
+def test_first_retention_use_initializes_in_the_enlisted_schema(workspace, monkeypatch):
+    from contextlib import contextmanager
+    from management_common.directory_retention import RetentionStore
+    from management_common.postgres_database import PostgresDatabase
+
+    retention = RetentionStore()
+
+    @contextmanager
+    def no_borrow(database):
+        raise AssertionError('first enlisted use borrowed another connection')
+        yield  # pragma: no cover
+
+    with workspace.store.database.transaction() as connection:
+        connection.execute(f'DROP TABLE {retention.table}')
+        assert connection.execute('SELECT current_schema()').fetchone()[0] != retention.database.schema
+        with monkeypatch.context() as patch:
+            patch.setattr(PostgresDatabase, 'read', no_borrow)
+            patch.setattr(PostgresDatabase, 'write', no_borrow)
+            first = RetentionStore(connection=connection)
+            assert first.release_owner(WID, connection=connection) == 0
+        assert connection.execute('SELECT to_regclass(%s)', (retention.table,)).fetchone()[0]
+        assert connection.execute("SELECT to_regclass(current_schema() || '.artifacts')").fetchone()[0] is None
+
+
 def test_nested_unregistration_returns_workspace_and_enlists_permissions(workspace, monkeypatch):
     from management_portal.resources.directory_registrations import unregister_tree
     from management_portal import permission_system

@@ -74,16 +74,21 @@ class RetentionStore:
             from .directory_cleanup_store import DirectoryCleanupStore
             self.queue = DirectoryCleanupStore(connection=connection)
             if connection.execute('SELECT to_regclass(%s)', (self.table,)).fetchone()[0] is None:
-                raise RuntimeError('Initialize the retention schema before enlisted use')
+                self._initialize(connection)
             return
         self.queue = get_directory_cleanup_store()
         with self.database.read() as connection:
             exists = connection.execute('SELECT to_regclass(%s)', (self.table,)).fetchone()[0]
         if not exists:
-            def initialize(connection):
-                connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', (self.table,))
-                connection.executescript(DDL)
-            self.database.write(initialize)
+            self.database.write(self._initialize)
+
+    def _initialize(self, connection):
+        connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', (self.table,))
+        connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.database.schema}"')
+        # An enlisted connection has the caller's search_path. Initialization
+        # belongs to this same transaction and to retention's own schema.
+        connection.executescript(DDL.replace('CREATE TABLE IF NOT EXISTS artifacts',
+                                            f'CREATE TABLE IF NOT EXISTS {self.table}'))
 
     def declare(self, path, *, category, owner_id, origin='created', created_at=None,
                 finished_at=None, bytes=0, cache_group='', connection=None):
