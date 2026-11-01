@@ -76,7 +76,7 @@ def test_provider_doctor_reports_missing_runtime_dependencies(tmp_path, monkeypa
     assert "MISSING provider runtime integration: ImportError: runtime dependencies missing" in capsys.readouterr().out
 
 
-def test_tau_profile_is_optional_and_uses_its_own_packages(tmp_path):
+def test_tau_profile_is_optional_and_uses_its_own_packages(tmp_path, monkeypatch):
     """TAU's browser can be installed without restoring the removed UI suite."""
     environment = tmp_path / "portal-venv"
     result = subprocess.run(
@@ -85,10 +85,19 @@ def test_tau_profile_is_optional_and_uses_its_own_packages(tmp_path):
         cwd=ROOT, text=True, capture_output=True, check=True,
     )
     assert "tau_runtime" in result.stdout
-    assert "npm install --package-lock=false --no-audit --no-fund" in result.stdout
+    assert "npm ci --ignore-scripts --no-audit --no-fund" in result.stdout
     assert "cli.js install chromium" in result.stdout
     assert "setup:js" not in result.stdout
     assert not environment.exists()
+    # Installing a TAU browser must not collect another application's cache,
+    # even if the caller explicitly inherited GC enabled in its environment.
+    script = runpy.run_path(str(BOOTSTRAP))
+    calls = []
+    monkeypatch.setenv("PLAYWRIGHT_SKIP_BROWSER_GC", "0")
+    monkeypatch.setitem(script["install"].__globals__, "run", lambda command, **options: calls.append((command, options)))
+    script["main"](["install", "tau", "--venv", str(environment), "--dry-run"])
+    browser, = [options for command, options in calls if command[-2:] == ["install", "chromium"]]
+    assert browser["env"]["PLAYWRIGHT_SKIP_BROWSER_GC"] == "1"
 
 
 def test_tau_runtime_reports_missing_optional_browser(tmp_path, monkeypatch):
