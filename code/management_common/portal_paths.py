@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from .instance_manifest import AREAS, FIXED_DIRECTORIES, load
+from .instance_manifest import AREAS, FIXED_DIRECTORIES, current_instance
 
 KEYS = (*AREAS, *FIXED_DIRECTORIES)
 
 
 def resolve_directory(value: str) -> Path:
-    instance = load()
+    instance = current_instance()
     if isinstance(value, str) and value.partition(':')[0] in AREAS:
         return instance.resolve(value)
     if not isinstance(value, str) or not Path(value).is_absolute():
@@ -17,7 +17,7 @@ def resolve_directory(value: str) -> Path:
 
 
 def path(key: str) -> Path:
-    instance = load()
+    instance = current_instance()
     if key in AREAS:
         return instance.area(key)
     if key in FIXED_DIRECTORIES:
@@ -26,7 +26,7 @@ def path(key: str) -> Path:
 
 
 def paths() -> dict[str, Path]:
-    instance = load()
+    instance = current_instance()
     return {**{key: instance.area(key) for key in AREAS},
             **{key: instance.directory(key) for key in FIXED_DIRECTORIES}}
 

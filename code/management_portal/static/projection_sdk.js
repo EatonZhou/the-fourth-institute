@@ -122,8 +122,13 @@
     if (message.type !== "portal-projection-result") return;
     pending.delete(message.requestId);
     clearTimeout(entry.timeout);
-    if (message.error) entry.reject(Object.assign(new Error(message.error), { code: message.code }));
-    else entry.resolve(message.result);
+    if (message.error) {
+      const error = Object.assign(new Error(message.error), { code: message.code });
+      for (const key of ["status", "http_status", "retryable", "commit_state", "details", "data"]) {
+        if (message[key] !== undefined) error[key] = message[key];
+      }
+      entry.reject(error);
+    } else entry.resolve(message.result);
   });
   const hatg = (instruction, argumentsValue = {}, options = {}) => call("hatg", { ...options, instruction, arguments: argumentsValue });
   async function inputResult(messageId, options = {}) {

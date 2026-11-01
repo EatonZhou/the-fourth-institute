@@ -7,11 +7,13 @@ HOME, service environment overrides or historical configuration files.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import ipaddress
 import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+from stat import S_ISREG
 from typing import Any
 
 SCHEMA = "tfi.instance.v1"
@@ -285,9 +287,33 @@ def load(root: str | Path | None = None) -> InstanceManifest:
     return validate(path, json.loads(source.read_text(encoding="utf-8")))
 
 
+@lru_cache(maxsize=4)
+def _current_manifest(root: str, signature: tuple[int, ...]) -> InstanceManifest:
+    # The signature identifies the manifest revision, including atomic replace.
+    # Only validated configuration is reused, never resource/permission facts.
+    return load(root)
+
+
+def current_instance() -> InstanceManifest:
+    """Reuse the selected manifest until its file revision changes.
+
+    Runtime path projections share this cache. Administrative validation still
+    uses load(); live file traversal and authorization retain their own checks.
+    """
+    root = os.environ.get("PORTAL_INSTANCE_ROOT") or ""
+    if not root:
+        return load()
+    source = Path(root) / "instance.json"
+    info = source.lstat()
+    if not S_ISREG(info.st_mode):
+        raise ValueError("Instance manifest must be a regular file, not a symbolic link")
+    signature = (info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns, info.st_size)
+    return _current_manifest(root, signature)
+
+
 def instance_runtime_root() -> Path:
-    return load().directory("runtime")
+    return current_instance().directory("runtime")
 
 
 def instance_secrets_root() -> Path:
-    return load().directory("secrets")
+    return current_instance().directory("secrets")

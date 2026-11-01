@@ -25,7 +25,7 @@ async function until(predicate, label) {
 // execution and MessageEvent.source for postMessage; the fixture transports
 // structured-cloned packets asynchronously between real Window instances.
 // It makes no assertions about browser sandbox, layout, focus or fullscreen.
-async function createHarness({ sourceTransform = (_name, source) => source, context = [], objectResponse } = {}) {
+async function createHarness({ sourceTransform = (_name, source) => source, context = [], objectResponse, apiResponse } = {}) {
   const errors = [], cleanupErrors = [], messages = [], observers = new Set();
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(String(error.stack || error)));
@@ -64,6 +64,10 @@ async function createHarness({ sourceTransform = (_name, source) => source, cont
     assert.equal(options.credentials, 'same-origin');
     assert.equal(options.headers['Content-Type'], 'application/json');
     const payload = JSON.parse(options.body);
+    if (apiResponse) {
+      const response = apiResponse(url, payload);
+      if (response !== undefined) return response;
+    }
     if (objectResponse && url === '/api/workbenches/object') return objectResponse(payload);
     assert.equal(url, '/api/workbenches/observe');
     state.calls.push(payload);

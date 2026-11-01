@@ -8,24 +8,9 @@ changes no stored value.
 """
 from __future__ import annotations
 
-from functools import lru_cache
-import os
 from pathlib import Path
 
-from .instance_manifest import AREAS, InstanceManifest, load
-
-
-@lru_cache(maxsize=4)
-def _manifest(root: str, modified_ns: int) -> InstanceManifest:
-    del modified_ns  # Part of the cache key: an edited manifest is reread.
-    return load(root)
-
-
-def current_instance() -> InstanceManifest:
-    root = os.environ.get("PORTAL_INSTANCE_ROOT") or ""
-    if not root:
-        return load()
-    return _manifest(root, (Path(root) / "instance.json").stat().st_mtime_ns)
+from .instance_manifest import AREAS, current_instance
 
 
 def is_area_reference(value: object) -> bool:

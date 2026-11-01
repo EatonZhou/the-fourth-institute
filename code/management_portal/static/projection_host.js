@@ -19,6 +19,13 @@
   });
   let sdkPromise, statePromise;
   const request = (...args) => window.PortalProjections.request(...args);
+  function failure(error) {
+    const value = { error: error.message, code: error.code || "projection.request_failed" };
+    for (const key of ["status", "http_status", "retryable", "commit_state", "details", "data"]) {
+      if (error[key] !== undefined) value[key] = error[key];
+    }
+    return value;
+  }
   function confirmOperation(payload, signal, presentation) {
     if (signal?.aborted) return Promise.resolve(false);
     return new Promise(resolve => {
@@ -160,7 +167,7 @@
       const result = await observeReferences(record, record.refs, isCurrent);
       if (isCurrent()) post(record, "change", { refs: result.references.map(item => item.ref), observed_at: result.observed_at });
     } catch (error) {
-      if (isCurrent()) post(record, "change", { refs: [], error: error.message, code: error.code || "projection.request_failed" });
+      if (isCurrent()) post(record, "change", { refs: [], ...failure(error) });
     } finally {
       if (record.observation === observation) {
         record.observation = null;
@@ -865,7 +872,7 @@
         window.open(`/lineage?lineage=${encodeURIComponent(binding.lineage_id)}`, "_blank", "noopener");
         reply.result = true;
       } else throw new Error("未知工作台能力");
-    } catch (error) { reply.error = error.message; reply.code = error.code || "projection.request_failed"; }
+    } catch (error) { Object.assign(reply, failure(error)); }
     if (!record.destroyed) frame.contentWindow.postMessage(reply, "*");
   });
   window.PortalProjectionHost = Object.freeze({ open, mount, createPanel: createContentPanel });

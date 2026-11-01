@@ -7,9 +7,22 @@
   const isEditorType = type => /^projection:workbench_[0-9a-f]{12}$/.test(String(type));
   async function request(path, payload) {
     const response = await fetch(`/api/workbenches${path ? (path.startsWith("?") ? path : `/${path}`) : ""}`, { credentials: "same-origin", ...(payload === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }) });
-    const result = await response.json();
-    if (!response.ok) throw Object.assign(new Error(result.error || `HTTP ${response.status}`), { code: result.code });
-    return result;
+    if (response.ok) return response.json();
+    // Gateways may return HTML, an empty body or an interrupted error body.
+    // None of those may replace the HTTP failure with a JSON parsing error.
+    const result = await response.json().catch(() => null);
+    const data = result && typeof result === "object" && !Array.isArray(result) ? result : {};
+    const message = [data.error, data.message].find(value => typeof value === "string" && value.trim());
+    throw Object.assign(new Error(message || `HTTP ${response.status}`), {
+      status: response.status, http_status: response.status,
+      code: typeof data.code === "string" && data.code.trim() ? data.code : "projection.http_error",
+      // Only the domain can authorize retrying an operation. A timeout does
+      // not prove a mutation was uncommitted; this helper never replays it.
+      retryable: data.retryable === true,
+      commit_state: ["unknown", "not_committed", "committed"].includes(data.commit_state) ? data.commit_state : "unknown",
+      details: data.details && typeof data.details === "object" && !Array.isArray(data.details) ? data.details : {},
+      data,
+    });
   }
   async function initializeNative(names) {
     const results = await Promise.allSettled(names.map(name => request("initialize", { name })));

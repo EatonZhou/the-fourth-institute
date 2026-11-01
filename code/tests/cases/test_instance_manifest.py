@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from management_common import host_instances
+from management_common import host_instances, instance_manifest, instance_locations, portal_paths
 from management_common.instance_manifest import AREAS, SCHEMA, load, validate
 
 
@@ -49,6 +49,52 @@ class InstanceManifestTests(unittest.TestCase):
         self.assertEqual(load(self.root).resolve(record), self.base / "large-disk/projects/p/agents/lineage_a/file.txt")
         self.assertEqual(first.reference(first.area("projects")), "projects:")
         self.assertEqual(first.resolve("projects:"), first.area("projects"))
+
+    def test_runtime_path_readers_share_one_validated_manifest_revision(self):
+        with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(self.root)}), \
+                patch.object(instance_manifest, "validate", wraps=validate) as validating:
+            for _ in range(100):
+                self.assertEqual(portal_paths.path("projects"), self.root / "data/projects")
+                self.assertEqual(instance_locations.located_path("projects:demo"),
+                                 str(self.root / "data/projects/demo"))
+            self.assertEqual(validating.call_count, 1)
+            self.document["areas"] = {"projects": str(self.base / "relocated")}
+            self.write()
+            self.assertEqual(portal_paths.path("projects"), self.base / "relocated")
+            self.assertEqual(instance_locations.located_path("projects:demo"),
+                             str(self.base / "relocated/demo"))
+            self.assertEqual(validating.call_count, 2)
+
+    def test_runtime_manifest_detects_replace_switch_and_invalid_revision(self):
+        source = self.root / "instance.json"
+        with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(self.root)}):
+            original = instance_manifest.current_instance()
+            before = source.stat()
+            replacement = self.root / "replacement.json"
+            replacement.write_text(source.read_text().replace('instance_one', 'instance_two'))
+            os.utime(replacement, ns=(before.st_atime_ns, before.st_mtime_ns))
+            replacement.replace(source)
+            self.assertEqual(instance_manifest.current_instance().instance_id, "instance_two")
+            self.assertEqual(original.instance_id, "instance_one")
+            with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(self.base / "missing")}):
+                with self.assertRaises(FileNotFoundError):
+                    instance_manifest.current_instance()
+            source.write_text('{}')
+            with self.assertRaises(ValueError):
+                instance_manifest.current_instance()
+            source.unlink()
+            with self.assertRaises(FileNotFoundError):
+                instance_manifest.current_instance()
+
+    def test_runtime_manifest_rejects_symlink_after_cache_is_warm(self):
+        source = self.root / "instance.json"
+        with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(self.root)}):
+            instance_manifest.current_instance()
+            target = self.root / "actual.json"
+            source.rename(target)
+            source.symlink_to(target)
+            with self.assertRaisesRegex(ValueError, "symbolic link"):
+                instance_manifest.current_instance()
 
     def test_host_paths_and_fixed_state_have_different_registration_rules(self):
         instance = load(self.root)

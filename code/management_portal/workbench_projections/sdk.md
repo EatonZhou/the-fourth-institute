@@ -103,6 +103,8 @@ Portal 开发投影模板在 `management_portal/workbench_projections/developmen
 
 批量入口复用相同 SDK 和 HTTP 通道，一批对应一次 HTTP，不要求升级应用宿主或另开网络能力：
 
+HTTP 失败在宿主、SDK 请求拒绝和变化通知中保留实际 `status`、`http_status`，以及服务返回的 `code`、`retryable`、`commit_state`、`details` 和原始错误对象 `data`。网关返回 HTML、空正文或无效 JSON 时使用 `HTTP <status>` 与 `projection.http_error`，不会被 JSON 解析异常覆盖；此时 `retryable=false`、`commit_state=unknown`，宿主不自动重发请求。变化观察失败的 `refs` 仍为空，失败不发布部分观察结果。
+
 ```js
 await sdk.resource('resolve_many', { addresses });
 await sdk.resource('read_many', { addresses, format: 'text' }); // 或 yaml
