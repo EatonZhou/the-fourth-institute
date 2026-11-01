@@ -28,9 +28,12 @@ async function readHatgViewSnapshot(panel, {lineageId}) {
     const edges = [...new Set(edgeGeometry.map(n=>n.id))].sort();
     const errors = [...root.querySelectorAll('[role="alert"],#lineageLoadError,#graphSyncStatus[data-state="error"]')]
       .filter(visible).map(n=>({id:n.id, text:n.textContent.trim()}));
-    const gates = [...root.querySelectorAll('[data-node-id] [data-execution-gate]')].filter(visible)
+    // Overview LOD hides this label while its native state remains attached to
+    // the visible node. Hidden text must not turn unknown/closed into open.
+    const gates = [...root.querySelectorAll('[data-node-id] [data-execution-gate]')]
+      .filter(n=>visible(n.closest('[data-node-id]')))
       .map(n=>({resident_id:n.closest('[data-node-id]').getAttribute('data-node-id'),
-        state:n.getAttribute('data-execution-gate'), text:n.textContent.trim(), title:n.getAttribute('title')}));
+        state:n.getAttribute('data-execution-gate'), visible:visible(n), text:n.textContent.trim(), title:n.getAttribute('title')}));
     return {native:root.matches('.portalHatgPanelComponent[role="region"],#lineage-hatg-panel[role="region"],section#hatgPane[data-lineage-pane="hatg"][aria-label]'),
       visible:visible(root), lineage_ids:[...root.querySelectorAll('#activeLineageIdentity [data-portal-resource-id]')]
         .filter(visible).map(n=>n.getAttribute('data-portal-resource-id')),

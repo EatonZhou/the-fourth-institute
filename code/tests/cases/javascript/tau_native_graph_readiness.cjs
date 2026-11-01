@@ -30,5 +30,14 @@ module.exports=async({page,residentId,lineageId,errors})=>{
   assert.ok(mismatch.length>=2 && mismatch.every(s=>!s.ready));
   assert.equal((await readHatgViewSnapshot(panel,{lineageId:'lineage_wrong'})).identity_ready,false);
   assert.equal((await readHatgViewSnapshot(panel.locator('#hatgCanvas'),{lineageId})).identity_ready,false);
+  await panel.locator('button[data-semantic-zoom="overview"]').click();
+  await page.waitForFunction(()=>document.getElementById('hatgCanvas')?.dataset.semanticZoom==='overview');
+  assert.equal(await panel.locator('[data-execution-gate]').isVisible(),false);
+  const overview=await readHatgViewSnapshot(panel,{lineageId});
+  assert.ok(overview.candidates[0].execution_gates.some(g=>g.state==='unknown' && g.visible===false),
+    'semantic zoom hides a label, not its execution state');
+  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],
+    requireExecutionOpen:true,timeoutMs:300,stableMs:100,intervalMs:30,record:()=>{}}),
+    e=>e.code==='tau.hatg_view_timeout');
   assert.deepEqual(errors,[]);
 };
