@@ -7,6 +7,25 @@ from pathlib import Path
 import pytest
 
 
+def test_article_search_omits_retired_root_aliases(tmp_path, monkeypatch):
+    from management_portal.article_resource_index import ArticleRegistryProjection
+    from tests.cases.instance_test_support import select_instance
+
+    instance = select_instance(monkeypatch, tmp_path / "instance")
+    current = instance.area("projects") / "article"
+    current.mkdir(parents=True)
+    missing = str(tmp_path / "retired" / "article")
+    item = {
+        "id": "article_0123456789ab", "canonical_root": "projects:article",
+        "roots": [{"path": missing}, {"path": "projects:article"}],
+    }
+    record = ArticleRegistryProjection().project(item, adapter="resource_registry")
+    assert record["attributes"]["canonical_root"] == "projects:article"
+    assert "projects:article" in record["search_terms"]
+    assert missing not in record["search_terms"]
+    assert item["roots"][0]["path"] == missing
+
+
 PROBE = r'''
 import fnmatch, importlib.abc, json, sys
 from management_portal.portal_features import FEATURES
