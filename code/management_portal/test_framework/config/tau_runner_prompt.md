@@ -1,5 +1,16 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+`readHatgViewSnapshot`的唯一候选中，`nodes`是含id/geometry的对象数组，`edges`已经是去重字符串ID数组，`edge_geometry`另存路径和标签几何。原基线采样须先与正式原对象核对完整性；不要把刷新后残缺图当新基线。保存基线后可按下例提取等待参数；不要对edges再次map(x=>x.id)。视觉可见的原生SVG连线可以带读屏用途的aria-hidden=true，边集合与可读标签是独立证据，标签仍须按用例实际查看。
+
+```js
+// tau-hatg-original-sets
+function originalHatgSets(snapshot) {
+  if (!snapshot.identity_ready || snapshot.candidates.length !== 1) throw new Error('Original graph is not ready');
+  const view = snapshot.candidates[0];
+  return {nodeIds: view.nodes.map(node => node.id), edgeIds: [...view.edges]};
+}
+```
+
 发现目标Chat使用`tau_chat_ready_evidence.js`的`visibleResidentChatRoots(page,{residentId})`，返回当前可见、原生头部精确绑定该Resident的全部Editor Locator。先count/evaluateAll记录候选，再按本轮实际面板选择唯一Editor并传给readResidentChatReady；零候选继续原有界等待，多个候选不取first掩盖歧义。可访问名称可能由aria-labelledby计算，不能要求DOM存在aria-label，也不能把getAttribute('aria-label').includes('Chat')作为发现门禁。
 
 图几何稳定和普通成员执行可用是两个检查。executionResidentIds应来自原基线中本轮需要执行的普通成员；如果当前图只有Family门面，则列表为空、requireExecutionOpen=false，仍检查门面身份、可见错误、完整集合和稳定几何。空列表配true会被助手拒绝。参数组合可使用以下示例；它不替代成员账号预检或消息路由验收：

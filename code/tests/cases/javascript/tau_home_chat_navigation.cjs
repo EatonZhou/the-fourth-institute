@@ -49,7 +49,7 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       if (deletedResidents.has(targetId) && (u.pathname.endsWith('/projection') || body?.instruction === 'GetConversation'))
         return route.fulfill({status:404,json:{code:'resident.deleted',error:'Resident deleted'}});
       const resident = makeResident(targetId);
-      const nodes = [makeResident(residentId), ...(forked ? [makeResident(childId)] : [])];
+      const nodes = [makeResident(residentId), ...(forked || graphReadinessSamples ? [makeResident(childId)] : [])];
       let result = {};
       if (u.pathname === '/api/agent-workbench/favorites') await catalogGate;
       if (u.pathname === '/api/me') result = { username: 'fixture' };
@@ -66,6 +66,7 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
         ] }, messages: [], composer: { can_send: true, can_edit: true },
       } };
       if (u.pathname === '/api/agent-conversations') result = { ready: true, entries: [] };
+      if (u.pathname === '/api/workbenches') result = {workbenches:[]};
       if (u.pathname === '/api/instructions/execute') {
         if (!/^(Get|List|Search|Read)|^MarkMailboxItemRead$/.test(body.instruction)
             && !(readinessSamples && body.instruction === 'ForkResident')
@@ -82,7 +83,8 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
         if (body.instruction === 'ListResidentStates') result = { states: [{ resident_id: residentId, state: runtimeState(), cursor: 1, viewer_state: { unread: false } }] };
         if (body.instruction === 'GetLineage') {
           await graphGate;
-          result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges: [], seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
+          const edges=graphReadinessSamples ? [{id:'edge_sample_inheritance',type:'inheritance',source:residentId,target:childId,truth:{verified:true}}] : [];
+          result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges, seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
           if (body.arguments?.lineage_id === 'lineage_555555555555') result = {lineage:{...result.lineage,
             lineage_id:'lineage_555555555555',title:'New Sample Lineage',project_id:'sample-project',nodes:[],residents:[]}};
         }
@@ -106,7 +108,7 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       return;
     }
     if (graphReadinessSamples) {
-      await require('./tau_native_graph_readiness.cjs')({page,residentId,lineageId,errors});
+      await require('./tau_native_graph_readiness.cjs')({page,residentId,childId,lineageId,errors});
       return;
     }
     if (lateCameraSamples) {

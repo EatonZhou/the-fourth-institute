@@ -8,6 +8,12 @@ async function readHatgViewSnapshot(panel, {lineageId}) {
   const candidates = await panel.evaluateAll(roots => roots.map(root => {
     const visible = n => !!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')
       && n.checkVisibility({checkOpacity:true, checkVisibilityCSS:true});
+    // The native edges SVG is aria-hidden because accessible labels describe
+    // it. That accessibility choice does not hide its painted graph paths.
+    const edgeVisible = n => n instanceof SVGGraphicsElement
+      ? !!n.isConnected && !n.closest('[hidden],[inert]')
+        && n.checkVisibility({checkOpacity:true, checkVisibilityCSS:true})
+      : visible(n);
     const box = n => {
       const b = n.getBoundingClientRect();
       return Object.fromEntries(['x','y','width','height'].map(k => [k,Math.round(b[k]*10)/10]));
@@ -22,7 +28,7 @@ async function readHatgViewSnapshot(panel, {lineageId}) {
           && geometry.x+geometry.width <= bounds.x+bounds.width+1
           && geometry.y+geometry.height <= bounds.y+bounds.height+1};
     }).sort((a,b)=>a.id.localeCompare(b.id));
-    const edgeGeometry = [...root.querySelectorAll('[data-edge-id]')].filter(visible)
+    const edgeGeometry = [...(canvas?.querySelectorAll('path.hatgEdge[data-edge-id],.edgeLabelBtn[data-edge-id]') || [])].filter(edgeVisible)
       .map(n=>({id:n.getAttribute('data-edge-id'),tag:n.tagName,geometry:box(n),path:n.getAttribute('d')}))
       .sort((a,b)=>`${a.id}:${a.tag}`.localeCompare(`${b.id}:${b.tag}`));
     const edges = [...new Set(edgeGeometry.map(n=>n.id))].sort();

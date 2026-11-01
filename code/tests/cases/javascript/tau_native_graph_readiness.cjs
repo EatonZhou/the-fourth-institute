@@ -1,28 +1,30 @@
 'use strict';
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-module.exports=async({page,residentId,lineageId,errors})=>{
+module.exports=async({page,residentId,childId,lineageId,errors})=>{
   const {readHatgViewSnapshot,waitForHatgView}=require('../../../management_portal/test_framework/tau_hatg_view_evidence');
   await page.getByRole('button',{name:'Show HATG',exact:true}).click();
   const panel=page.getByRole('region',{name:'HATG',exact:true});
-  await panel.locator('[data-node-id]').waitFor({state:'visible'});
+  await panel.locator(`[data-node-id="${residentId}"]`).waitFor({state:'visible'});
   await page.waitForFunction(()=>!document.querySelector('.portalHatgPanelComponent[aria-busy="true"]'));
   const first=await readHatgViewSnapshot(panel,{lineageId});
   assert.equal(first.identity_ready,true);
-  assert.deepEqual(first.candidates[0].nodes.map(n=>n.id),[residentId]);
+  const nodeIds=[residentId,childId],edgeIds=['edge_sample_inheritance'];
+  assert.deepEqual(first.candidates[0].nodes.map(n=>n.id),nodeIds);
+  assert.deepEqual(first.candidates[0].edges,edgeIds);
   assert.ok(first.candidates[0].execution_gates.some(g=>g.state==='unknown'
     && /执行服务暂不可达|Execution service is unavailable/.test(g.title)),JSON.stringify(first));
   const rejected=[];
-  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],
+  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds,edgeIds,
     requireExecutionOpen:true,timeoutMs:300,stableMs:100,intervalMs:30,record:s=>rejected.push(s)}),
     e=>e.code==='tau.hatg_view_timeout');
   assert.ok(rejected.length>=2 && rejected.every(s=>!s.ready));
-  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],
+  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds,edgeIds,
     requireExecutionOpen:true,executionResidentIds:[],record:()=>{}}),/Exact node/);
   // Geometry can settle even though execution is unavailable; these are
   // distinct observations. The explicit option prevents calling this send-ready.
   const samples=[];
-  const settled=await waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],
+  const settled=await waitForHatgView(panel,{lineageId,nodeIds,edgeIds,
     timeoutMs:1500,stableMs:120,intervalMs:30,record:s=>samples.push(s)});
   assert.ok(settled.ready && settled.stable_for_ms>=120 && samples.length>=3);
   const prompt=fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
@@ -32,7 +34,7 @@ module.exports=async({page,residentId,lineageId,errors})=>{
   assert.deepEqual(options([residentId]),{requireExecutionOpen:true,executionResidentIds:[residentId]});
   const geometryOnly=options([]);
   assert.deepEqual(geometryOnly,{requireExecutionOpen:false,executionResidentIds:[]});
-  assert.ok((await waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],...geometryOnly,
+  assert.ok((await waitForHatgView(panel,{lineageId,nodeIds,edgeIds,...geometryOnly,
     timeoutMs:1500,stableMs:120,intervalMs:30,record:()=>{}})).ready);
   const mismatch=[];
   await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds:[],edgeIds:[],
@@ -42,11 +44,31 @@ module.exports=async({page,residentId,lineageId,errors})=>{
   assert.equal((await readHatgViewSnapshot(panel.locator('#hatgCanvas'),{lineageId})).identity_ready,false);
   await panel.locator('button[data-semantic-zoom="overview"]').click();
   await page.waitForFunction(()=>document.getElementById('hatgCanvas')?.dataset.semanticZoom==='overview');
-  assert.equal(await panel.locator('[data-execution-gate]').isVisible(),false);
+  assert.ok(await panel.locator('[data-execution-gate]').evaluateAll(nodes=>nodes.length>0 && nodes.every(n=>!n.checkVisibility())));
   const overview=await readHatgViewSnapshot(panel,{lineageId});
   assert.ok(overview.candidates[0].execution_gates.some(g=>g.state==='unknown' && g.visible===false),
     'semantic zoom hides a label, not its execution state');
-  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds:[residentId],edgeIds:[],
+  const nativeEdge=panel.locator('path.hatgEdge[data-edge-id="edge_sample_inheritance"]');
+  const paint=await nativeEdge.evaluate(n=>({length:n.getTotalLength(),stroke:getComputedStyle(n).stroke,
+    strokeWidth:parseFloat(getComputedStyle(n).strokeWidth),cssBoxVisible:n.checkVisibility(),
+    decorative:n.ownerSVGElement.getAttribute('aria-hidden')}));
+  assert.ok(paint.length>0 && paint.stroke!=='none' && paint.strokeWidth>0);
+  assert.equal(paint.cssBoxVisible,true);
+  assert.equal(paint.decorative,'true','native accessibility hides the SVG from readers, not from sight');
+  assert.deepEqual(overview.candidates[0].edges,edgeIds,'overview hides HTML labels but the native SVG edge remains rendered');
+  assert.ok(overview.candidates[0].edge_geometry.some(e=>e.tag.toLowerCase()==='path' && e.path));
+  const setsExample=prompt.match(/```js\n(\/\/ tau-hatg-original-sets\n[\s\S]*?)\n```/);
+  assert.ok(setsExample);
+  const originalSets=new Function('snapshot',setsExample[1]+'\nreturn originalHatgSets(snapshot);');
+  assert.deepEqual(originalSets(first),{nodeIds,edgeIds});
+  assert.deepEqual(originalSets(overview),{nodeIds,edgeIds});
+  assert.ok((await waitForHatgView(panel,{lineageId,nodeIds,edgeIds,
+    timeoutMs:1500,stableMs:120,intervalMs:30,record:()=>{}})).ready);
+  // Negative visibility control on the same native path, without replacing it.
+  await nativeEdge.evaluate(n=>n.style.opacity='0');
+  assert.deepEqual((await readHatgViewSnapshot(panel,{lineageId})).candidates[0].edges,[]);
+  await nativeEdge.evaluate(n=>n.style.opacity='1');
+  await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds,edgeIds,
     requireExecutionOpen:true,timeoutMs:300,stableMs:100,intervalMs:30,record:()=>{}}),
     e=>e.code==='tau.hatg_view_timeout');
   assert.deepEqual(errors,[]);
