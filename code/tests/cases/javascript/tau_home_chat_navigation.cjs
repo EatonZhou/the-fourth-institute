@@ -9,7 +9,8 @@ const routes = python('from management_portal.resources.portal import portal_rou
 const residentId = 'resident_111111111111', lineageId = 'lineage_222222222222';
 const origin = 'http://home-navigation.fixture.invalid';
 const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}&open_chat=1`;
-const readinessSamples = process.argv.includes('--readiness-samples');
+const lineageCreationSamples = process.argv.includes('--lineage-creation-samples');
+const readinessSamples = process.argv.includes('--readiness-samples') || lineageCreationSamples;
 const cameraSamples = process.argv.includes('--camera-samples');
 const lateCameraSamples = process.argv.includes('--late-camera-samples');
 const graphReadinessSamples = process.argv.includes('--graph-readiness-samples');
@@ -67,19 +68,23 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       if (u.pathname === '/api/agent-conversations') result = { ready: true, entries: [] };
       if (u.pathname === '/api/instructions/execute') {
         if (!/^(Get|List|Search|Read)|^MarkMailboxItemRead$/.test(body.instruction)
-            && !(readinessSamples && body.instruction === 'ForkResident')) {
+            && !(readinessSamples && body.instruction === 'ForkResident')
+            && !(lineageCreationSamples && body.instruction === 'CreateLineage')) {
           errors.push(`Unexpected local instruction: ${body.instruction}`);
           return route.fulfill({ status: 400, json: { error: { code: 'fixture.unexpected_instruction' } } });
         }
         if (body.instruction === 'MarkMailboxItemRead') result = { item: { resident_id: residentId, unread: false, read_revision: 1 } };
         if (body.instruction === 'GetConversation') result = { resident, messages: [], queue: { items: [] }, controls: { can_send: true }, state: runtimeState() };
         if (body.instruction === 'GetResident') result = {resident};
+        if (body.instruction === 'CreateLineage') result = {lineage_id:'lineage_555555555555'};
         if (body.instruction === 'ListWorkbenches') result = {workbenches:[]};
         if (body.instruction === 'ForkResident') { forked = true; result = {resident_id:childId}; }
         if (body.instruction === 'ListResidentStates') result = { states: [{ resident_id: residentId, state: runtimeState(), cursor: 1, viewer_state: { unread: false } }] };
         if (body.instruction === 'GetLineage') {
           await graphGate;
           result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges: [], seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
+          if (body.arguments?.lineage_id === 'lineage_555555555555') result = {lineage:{...result.lineage,
+            lineage_id:'lineage_555555555555',title:'New Sample Lineage',project_id:'sample-project',nodes:[],residents:[]}};
         }
         result = { status: 'committed', result };
       }
@@ -96,6 +101,10 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
     });
     const chat = await readResidentChatReady(root, { residentId });
     assert.equal(chat.ready, true, JSON.stringify({ chat, errors, requests }));
+    if (lineageCreationSamples) {
+      await require('./tau_native_lineage_creation.cjs')({page,requests,errors});
+      return;
+    }
     if (graphReadinessSamples) {
       await require('./tau_native_graph_readiness.cjs')({page,residentId,lineageId,errors});
       return;

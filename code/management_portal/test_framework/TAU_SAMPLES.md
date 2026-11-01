@@ -15,6 +15,7 @@ python3 code/scripts/check_tau_samples.py
 | 相对定位 | 原生 Family 状态表渲染在测试宿主中；`has` 的正确相对子定位匹配一处，携带外层 dialog 的旧定位匹配零处 |
 | Fork 与 Editor 发现 | 实际快捷 Fork 点击只提交一次夹具指令并自动打开子 Chat；额外原生同身份 Chat 存在时先枚举候选，严格等待旧写法失败，按已发现的原 Editor ID 核验成功 |
 | 菜单到表单 | HATG New node 直接打开表单；目录 Lineage 菜单还需 Attach、New Resident 两步才出现注册标题输入框；打开菜单不算表单 ready |
+| 新Lineage首个成员 | 真实CreateLineage只提交一次并自动打开首个New node表单；未提交CreateResident；旧的再次点击背景工具条超时，直接使用已打开表单可继续 |
 | Family 夹具隔离 | 真实 ISA 的隔离数据库测试仅移出临时成员，完整比较其余名册和策略，Resident 保留；角色账号 preflight 拒绝错误 Steward 且 Apply 尚未执行 |
 | 终态读取 | 原 Trigger Path 在输入完成后仍 running 时继续只读同一 ID；页面快照区分 running/idle、错误节点与隐藏节点，旧采样不被后续状态改写 |
 | 终态读取断线 | 原ID只读等待跨越临时断线及502/503，原失败和等待耗时保留；总截止时间不重置，403和身份错误立即失败，写指令不自动重发 |

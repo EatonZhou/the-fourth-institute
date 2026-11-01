@@ -1,5 +1,7 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+CreateLineage成功后原生页面会自动打开首个New node表单。原ready同时发现新Lineage身份和该表单后，直接填写首个Resident；不要再次点击被模态层挡住的New node工具条。只有在实际页面确认没有已打开的创建表单时，才通过发现的工具条/菜单打开下一张表单。这个自动打开动作不会提交CreateResident；首个Resident仍须选正确账号、核验并提交一次。
+
 原图恢复、首次刷新和解除Family的连续几何取证复用`tau_hatg_view_evidence.js`。`readHatgViewSnapshot(panel,{lineageId})`读取真实宿主身份/busy、完整可见节点/边、节点和边几何、相机、错误及执行状态提示；`waitForHatgView(panel,{lineageId,nodeIds,edgeIds,record,requireWithinCanvas,requireExecutionOpen})`在一个截止时间内逐次调用并等待至少350ms稳定，record必须将每个原样本立即追加落盘。nodeIds/edgeIds来自已核对的完整原基线/原变更回执，不能取刷新后的残缺集合当期望。要求适配全部时在原ready完成挂载/Chat恢复后真实Fit，再以requireWithinCanvas:true核验；预期执行可用的临时成员同时requireExecutionOpen:true，并用executionResidentIds列明本轮应可执行的普通成员，unknown/closed提示不能当发送ready；Family门面没有独立账号，不列入该成员集合，但其可见错误仍需单独判断。默认不把既有图中正常关闭接单的成员判错，按用例选择该条件。集合/几何稳定不替代原截图、标签可读、业务终态、账号和网络分类；原等待失败保留，不重复写操作。首次刷新前先用同一检查预检；解除后用原回执定义的新集合在同一ready检查，不能收尾补图。
 
 完整Session取证复用`tau_session_dom_evidence.js`的`readResidentMenuSession(menuLocator,{residentId})`。准备阶段发现正确Chat的Resident Menu与关闭控件；原输入完成后的同一个action ready内打开Menu，有界轮询并逐次落盘该快照至ready=true，保存完整session_id，然后关闭Menu返回原Chat。此助手只读真实Menu身份、完整值和复制按钮启用状态，不要求Chat头部字段、不猜ID格式、不点击或代写原证据。用例要求复用/隔离/Reset/跨route比较时，每一轮完成后、下一次写操作前就保存并比较对应ID；不能等删除收尾才核对缺项。Family门面没有独立Session，不调用这个门禁。

@@ -48,3 +48,13 @@ def test_native_graph_readiness_preserves_geometry_and_execution_errors():
         capture_output=True, text=True, timeout=90,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_create_lineage_opens_first_resident_form():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'tau_home_chat_navigation.cjs'),
+         '--lineage-creation-samples'],
+        env={**os.environ, 'TFI_TEST_PYTHON': sys.executable},
+        capture_output=True, text=True, timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
