@@ -64,6 +64,29 @@ def test_start_selects_manifest_services_in_dependency_order(instance):
     assert calls[1] == ('ready', 'postgres')
 
 
+@pytest.mark.parametrize('platform', ['macos', 'windows'])
+@pytest.mark.parametrize('failure', [False, True])
+def test_full_stop_closes_detached_agents_after_admission_stops(instance, monkeypatch, platform, failure):
+    selected, directory, states, calls = instance
+    monkeypatch.setattr(services, 'platform_name', lambda: platform)
+    monkeypatch.setattr(services, 'verify_definitions', lambda *a, **kw: directory)
+    for component in services.components(selected):
+        states[services.unit_name(selected, component)] = 'active'
+    def close(instance):
+        assert instance.instance_id == selected.instance_id
+        assert all(not row['pid'] for row in services.status(instance).values())
+        calls.append(('native', 'closed'))
+        if failure:
+            raise RuntimeError('Native process remains')
+    monkeypatch.setattr(services, 'stop_native_agents', close)
+    if failure:
+        with pytest.raises(RuntimeError, match='Native process remains'):
+            services.lifecycle('stop', selected.root)
+    else:
+        assert services.lifecycle('stop', selected.root)['status'] == 'stopped'
+    assert calls[-1] == ('native', 'closed')
+
+
 def test_foreign_root_prevents_all_process_operations(instance):
     selected, directory, states, calls = instance
     path = directory / 'tfi-fixture-worker.service'

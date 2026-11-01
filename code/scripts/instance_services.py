@@ -278,7 +278,22 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
         states = status(instance)
         if action == 'stop' and any(row['active'] not in {'inactive', 'failed'} or row['pid'] for row in states.values()):
             raise RuntimeError('Instance services still have running processes')
+        if action == 'stop':
+            stop_native_agents(instance)
         if action == 'start' and any(states[c]['active'] != 'active' for c in ordered):
             raise RuntimeError('Not all instance services started successfully')
         return {'status': 'started' if action == 'start' else 'stopped',
                 'instance_id': instance.instance_id, 'services': states, 'skipped': sorted(skipped)}
+
+
+def stop_native_agents(instance):
+    """Close detached provider hosts only after all admitting services are down."""
+    state = instance.area('provider-state')
+    if not state.is_dir() or not any(state.iterdir()):
+        return
+    from management_common.code_environment import runtime_python
+    from management_portal.service_runtime import clean_environment
+    code = instance.code_root()
+    subprocess.run([str(runtime_python(code)), '-m', 'management_portal.native_agent_lifecycle'],
+                   env=clean_environment(instance), cwd=code, check=True,
+                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)

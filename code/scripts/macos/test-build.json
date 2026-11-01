@@ -1,5 +1,5 @@
 {
-  "request": "20261102.1-lifecycle-codex-one-r5",
-  "purpose": "Build arm64 and Intel from fresh source; validate native one-shot launchd control jobs, area migration and session continuation, installer lifecycle and cleanup. No real model credentials are used in CI.",
+  "request": "20261102.1-lifecycle-codex-one-r6",
+  "purpose": "Fresh arm64 and Intel packages with full instance shutdown of detached native agents; area relocation, native installation, one-shot controls and lifecycle checks. No GitHub Release.",
   "delivery": "Actions artifacts only; no GitHub Release"
 }
