@@ -44,7 +44,7 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 
 打开“Portal 管理”→“AI Backend”，依次配置 Provider、执行账号、模型 API 和 Backend 角色。页面和 HATG ISA 使用同一份站点登记：
 
-- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 的服务从实例 runtime 下生成的启动记录取得 `CODEX_HOME`，各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
+- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 服务通过账号 ID 从正式登记读取并校验 `CODEX_HOME`，实例 runtime 清理重建后仍从登记取得账号目录。各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
 - **模型 API**：先用 `CreateModelApi` 登记接口地址、默认模型及认证方式，再登记引用已有 `config.api_id` 的 `api_profile` 执行账号。一次性 `secret` 经受控写入保存到密钥文件；`UpdateModelApi` 可通过 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。接口提供多个模型或支持推理强度时，在“高级设置”的模型列表（`models`）中声明，如 `[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]`；直连该接口的 Resident 即可在对话设置中选择模型和推理强度。
 - **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。之后可以把这个接口登记为 Codex、Claude Code 或 OpenCode（使用 Chat Completions）的 `api_profile` 账号，Resident 就能用这个 API Key 执行命令、编辑文件和使用工具；新增模型 API 时也可以在“Agent 运行器”中直接选择。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
   - 不确定接口支持哪些协议时，点“高级设置”中的“检测接口协议”（`ProbeModelApi`）：Portal 用表单中的地址、模型和密钥向 Chat Completions、Responses 和 Anthropic Messages 各发一次很短的请求，按结果勾选协议并选好 Anthropic 的认证方式，仍可手动修改。返回 2xx 且内容符合协议格式才算支持；检测会调用模型，可能产生少量费用，不修改登记。
@@ -230,3 +230,8 @@ Portal 不是单个程序。下表列出各部分的用途，以及仓库中描�
 Python 依赖见仓库根目录的 `requirements*.txt`；按档安装和检查入口见 `decision_ab9880dc4c9d`。所有服务从同一个环境文件读取 `PORTAL_DATABASE_URL`。Portal 有 Dev 和 Release 两个部署：Dev 直接运行工作目录中的代码，用于开发和验证；Release 是发布后的稳定版本，供日常使用。两者共用数据库和后台服务，见 `decision_ab9880dc4c9d`。
 
 对外提供服务时，在 Portal 前面放一个终止 HTTPS 的反向代理，并把 `PORTAL_PUBLIC_ORIGIN` 设为 `<Portal 地址>`，密码重置邮件中的链接使用这个地址。
+
+
+桌面上有多个使用同一程序的实例时，Windows/macOS 启动器先显示实例选择；只剩一个时直接打开它，不重新创建已退役的默认实例。也可以给启动器传 `--instance <名称>` 打开已有实例；名称必须属于这份程序。启动、停止和更新仍由同一安装器按选定名称执行。
+
+开机或登录自启属于主机用户的配置。Windows 当前用户服务不会自动添加全局启动项；需要自启时，主机用户可为每个实例单独配置登录任务，调用 `tfi_release_install.py start --instance <名称>`。macOS 的实例组件使用独立 launchd 标签，主机用户可分别启用或禁用。更改一个实例的自启策略不应改动其他实例；退役前移除为该实例自行添加的登录任务。
