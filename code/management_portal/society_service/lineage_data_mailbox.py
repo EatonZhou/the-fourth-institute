@@ -183,11 +183,14 @@ class ResidentMailboxes:
     def __init__(self, database: Any) -> None:
         self.database = database
 
-    def mailbox_accept(self, resident_id: str, message: Mapping[str, Any]) -> tuple[dict[str, Any], bool]:
+    def mailbox_accept(
+        self, resident_id: str, message: Mapping[str, Any], *, group_id: str = "", position: int = 0,
+    ) -> tuple[dict[str, Any], bool]:
         """Keep one accepted message in the Mailbox, ``pending`` until it is queued or delivered.
 
-        Returns the message the Mailbox holds and whether it was new; one
-        already there is returned as it is.
+        ``group_id`` and ``position`` place a returning member under the
+        delivered group it still follows. Returns the message the Mailbox holds
+        and whether it was new; one already there is returned as it is.
         """
 
         stored = deepcopy(dict(message))
@@ -200,9 +203,9 @@ class ResidentMailboxes:
             lock_active_resident(connection, resident_id)
             inserted = connection.execute(
                 "INSERT INTO resident_mailbox(resident_id, message_id, place, position, group_id, author_id, "
-                "accepted_at, updated_at, message_json, item_json) VALUES (%s, %s, 'pending', 0, '', %s, %s, %s, %s, '{}') "
+                "accepted_at, updated_at, message_json, item_json) VALUES (%s, %s, 'pending', %s, %s, %s, %s, %s, %s, '{}') "
                 "ON CONFLICT (resident_id, message_id) DO NOTHING RETURNING message_id",
-                (resident_id, message_id, str(stored.get("author_id") or ""),
+                (resident_id, message_id, int(position), str(group_id or ""), str(stored.get("author_id") or ""),
                  str(stored.get("created_at") or now), now, json_column(_encode_mailbox_message(stored))),
             ).fetchone()
             if inserted is not None:

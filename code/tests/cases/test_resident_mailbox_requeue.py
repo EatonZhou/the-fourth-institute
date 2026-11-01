@@ -275,6 +275,50 @@ def test_a_stopped_group_goes_back_with_its_members(team):
     assert member.error["code"] == "instruction.conflict"
 
 
+def test_a_group_requeued_onto_an_idle_resident_finishes_its_members(team):
+    """空闲时放回的群体，结束时带上成员
+
+    已送达又停止的群体在 Resident 空闲、接单开着时放回，直接成为当前工作：成员按原顺序在 Mailbox 中跟随所属群体，仍报告所属群体；群体再次送达并完成后，成员一起完成并离开 Mailbox。
+
+    :design: decision_15f7df737ed5, decision_2a3ff353165c
+    """
+    resident_id, (head, a, b) = _queue(team, 3)
+    group_id = instruction(team, "MergeMailboxItems", {"resident_id": resident_id, "message_ids": [a, b]}).result["group_message_id"]
+    record = _record(resident_id)
+    group_item = resident_execution_work.read(record)["queue"][0]
+    repository = resident_conversation_stream.get_repository()
+    repository.commit_user_message(resident_id, group_item["input_message"])
+    store = get_agent_data_store()
+    store.begin_execution(execution_id="execution-g", agent_id=resident_id, actor_ref=ACTOR, provider=resident_backend.execution_provider(record), started_at=resident_domain_common.now_iso())
+    accepted = resident_domain_common.now_iso()
+    execution_inputs.attach(store, "execution-g", [{"message_id": group_id, "role": "primary", "accepted_at": accepted},
+                                                   *({"message_id": member, "role": "member", "accepted_at": accepted} for member in (a, b))])
+    resident_execution_work.retain_input_checkpoint(record, {**group_item, "execution_id": "execution-g"}, [])
+    store.finish_execution("execution-g", status="failed")
+    # Nothing else runs or waits: the requeued group becomes the current work.
+    resident_execution_work.write(record, {"queue": []})
+    repository.set_input_state(resident_id, head, "completed")
+    repository.set_input_state(resident_id, group_id, "failed")
+    resident_mailbox.finish_group(record, group_id, "failed")
+    record = _record(resident_id)
+    record["intake_open"] = True
+    resident_record_domain.save_resident_record(record, commit_intake=True)
+
+    result = instruction(team, "RequeueMessage", {"resident_id": resident_id, "message_id": group_id})
+    assert result.status == "committed", result.error
+
+    assert resident_execution_work.read(_record(resident_id))["user_message_id"] == group_id
+    assert resident_mailbox.members_of(_record(resident_id), group_id) == [a, b]
+    state = instruction(team, "GetInputState", {"resident_id": resident_id, "message_id": a}).result["input_state"]
+    assert state["grouped_into_message_id"] == group_id
+    # The group is delivered again and completes.
+    repository.commit_user_message(resident_id, group_item["input_message"])
+    repository.set_input_state(resident_id, group_id, "completed")
+    assert resident_mailbox.finish_group(_record(resident_id), group_id, "completed") == [a, b]
+    assert [repository.input_state(resident_id, member)["state"] for member in (a, b)] == ["completed", "completed"]
+    assert get_lineage_data_store().mailbox_entries([resident_id], message_ids=[group_id, a, b]) == []
+
+
 def test_a_waiting_info_is_withdrawn_with_cancel_queue_item(team):
     """CancelInput 撤回等待中的 info
 

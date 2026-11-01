@@ -24,6 +24,20 @@ from . import resident_message_contract
 from .state_store import LineageDataStore
 
 
+def _group_member_ids(message: Mapping[str, Any]) -> list[str]:
+    """The members a Mailbox group message carries, in order; none for any other message."""
+
+    if message.get("role") != "user":
+        return []
+    return [
+        str(member.get("message_id") or "")
+        for part in message.get("content_parts") or []
+        if isinstance(part, Mapping) and part.get("type") == "mailbox"
+        for member in part.get("members") or []
+        if isinstance(member, Mapping) and member.get("message_id")
+    ]
+
+
 class ConversationMessages:
     """The messages of each Resident Conversation: accepted into its Mailbox, delivered into its trace."""
 
@@ -65,12 +79,21 @@ class ConversationMessages:
             raise ValueError("Only user messages use the intake acceptance protocol")
         public_input.pop("activated_at", None)
         payload = message_for_storage(public_input, private_fields=message)
-        shown = self.agent_data.chat_message(stream_id, str(public_input["message_id"]))
+        message_id = str(public_input["message_id"])
+        shown = self.agent_data.chat_message(stream_id, message_id)
         if shown is not None:
             stored = shown
         else:
+            # A member a delivered group consumed comes back only with that
+            # group (a requeued group) and waits under it, in its place, following
+            # the group until it ends, like the members of any delivered group.
+            group_id = self.agent_data.message_groups(stream_id, [message_id]).get(message_id, "")
+            members = _group_member_ids(self.agent_data.chat_message(stream_id, group_id) or {}) if group_id else []
+            position = members.index(message_id) if message_id in members else 0
             with self.events.protocol_scope(stream_id):
-                stored, _inserted = self.state_store.mailbox_accept(stream_id, payload)
+                stored, _inserted = self.state_store.mailbox_accept(
+                    stream_id, payload, group_id=group_id, position=position,
+                )
         return self._validate_stored_message_identity(stored, public_input)
 
     def validate_message_identity(
@@ -243,14 +266,8 @@ class ConversationMessages:
         """The members a Mailbox group message delivers, each marked with its group."""
 
         group_id = str(message.get("message_id") or "")
-        member_ids = [
-            str(member.get("message_id") or "")
-            for part in message.get("content_parts") or []
-            if isinstance(part, Mapping) and part.get("type") == "mailbox"
-            for member in part.get("members") or []
-            if isinstance(member, Mapping) and member.get("message_id")
-        ]
-        if not member_ids or message.get("role") != "user":
+        member_ids = _group_member_ids(message)
+        if not member_ids:
             return []
         waiting = {
             entry["message_id"]: entry["message"]

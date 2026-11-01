@@ -608,8 +608,8 @@ class LineageDataStore:
     def resident_execution_record(self, resident_id: str) -> dict[str, Any]:
         return self.resident_execution_record_with_revision(resident_id)["state"]
 
-    def mailbox_accept(self, resident_id: str, message: Mapping[str, Any]) -> tuple[dict[str, Any], bool]:
-        return self.mailboxes.mailbox_accept(resident_id, message)
+    def mailbox_accept(self, resident_id: str, message: Mapping[str, Any], *, group_id: str = "", position: int = 0) -> tuple[dict[str, Any], bool]:
+        return self.mailboxes.mailbox_accept(resident_id, message, group_id=group_id, position=position)
 
     def mailbox_entries(self, resident_ids: Iterable[str], *, message_ids: Iterable[str] | None = None, places: Iterable[str] | None = None, author: str = "") -> list[dict[str, Any]]:
         return self.mailboxes.mailbox_entries(resident_ids, message_ids=message_ids, places=places, author=author)
