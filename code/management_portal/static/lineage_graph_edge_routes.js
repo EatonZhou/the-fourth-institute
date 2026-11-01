@@ -238,6 +238,7 @@
       return {
         ...baseGeometry,
         d: routePath(best.segments),
+        labelPathPoints: routePoints,
         labelX: labelPoint.x,
         labelY: labelPoint.y,
         routing: "obstacle",
@@ -316,6 +317,7 @@
         return {
           x1, y1, x2, y2,
           c1x, c1y, c2x, c2y,
+          labelPathPoints: sampledRoute([{x1, y1, x2, y2, c1x, c1y, c2x, c2y}], 48),
           labelX: position.x + half.x + loopWidth * 0.62,
           labelY: position.y - half.y - loopHeight * 0.72,
           d: `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`,
@@ -328,6 +330,7 @@
         labelX: (number(source.x, 50) + number(target.x, 50)) / 2 + parallelOffset.x,
         labelY: (number(source.y, 50) + number(target.y, 50)) / 2 + parallelOffset.labelY,
       };
+      geometry.labelPathPoints = sampledRoute([geometry], 48);
       return options.avoidObstacles === false ? geometry : routeAroundNodes(edge, geometry);
     }
 
@@ -342,8 +345,6 @@
     function resolveEdgeLabelCollisions(edges = []) {
       edgeGeometryMap.clear();
       const placed = [];
-      const labelWidth = 112;
-      const labelHeight = 52;
       // Node placement does not reserve space for edge labels. Include endpoint
       // cards as obstacles here too: path detours intentionally exclude them.
       const cards = state.model.nodes.map(node => {
@@ -361,9 +362,35 @@
             edgeGeometryMap.set(String(edge?.id || ""), geometry);
             return;
           }
-          const x = geometry.labelX / 100 * worldSize.width;
+          const element = edgeLabelElement(String(edge.id));
+          const labelWidth = (element?.offsetWidth || 92) + 16;
+          const labelHeight = (element?.offsetHeight || 24) + 16;
+          const preferredX = geometry.labelX / 100 * worldSize.width;
           const baseY = geometry.labelY / 100 * worldSize.height;
-          const obstacles = [...cards, ...placed].filter(box =>
+          const allObstacles = [...cards, ...placed];
+          // Follow the routed curve before displacing a label away from it.
+          // Moving only vertically can put a Route label beside a different
+          // edge, especially after a detour around a card or a geometry refresh.
+          const onPath = geometry.labelPathPoints.map(point => ({
+            x: point.x / 100 * worldSize.width, y: point.y / 100 * worldSize.height,
+          })).sort((left, right) => (
+            Math.hypot(left.x - preferredX, left.y - baseY)
+            - Math.hypot(right.x - preferredX, right.y - baseY)
+          )).find(point => allObstacles.every(box => (
+            Math.abs(point.x - box.x) >= labelWidth / 2 + box.halfWidth
+            || Math.abs(point.y - box.y) >= labelHeight / 2 + box.halfHeight
+          )));
+          if (onPath) {
+            geometry.labelX = onPath.x / worldSize.width * 100;
+            geometry.labelY = onPath.y / worldSize.height * 100;
+            placed.push({...onPath, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2});
+            edgeGeometryMap.set(String(edge.id || ""), geometry);
+            return;
+          }
+          // A short gap between endpoint cards may have no room on its path.
+          // Keep the existing unobscured placement in that case.
+          const x = preferredX;
+          const obstacles = allObstacles.filter(box =>
             Math.abs(x - box.x) < labelWidth / 2 + box.halfWidth);
           // Nearest free vertical position lies at the desired point or at an
           // obstacle boundary. Unlike a fixed list of offsets, this also works
