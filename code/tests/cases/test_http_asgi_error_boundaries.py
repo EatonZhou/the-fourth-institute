@@ -3,10 +3,67 @@
 import asyncio
 import contextlib
 import json
+import threading
+from types import SimpleNamespace
 from unittest import mock
+
+import pytest
 
 from management_portal import asgi
 from management_portal import http_auth
+
+
+@pytest.mark.parametrize("mutates,key,retryable", [(True, "original-key", True), (True, "", False), (False, "", True)])
+def test_cancelled_instruction_wait_preserves_unknown_owner_outcome(monkeypatch, mutates, key, retryable):
+    """Web 交接取消等待时，owner 仍可提交；回执只能声明未知，重试须有幂等保障。"""
+    from management_portal.hatg import routing
+    from management_portal.hatg.contracts import InstructionResult
+    from tests.cases.test_portal_asgi import _request
+
+    entered, finish = threading.Event(), threading.Event()
+    effects = []
+    calls = []
+
+    def execute(call, context):
+        calls.append(call)
+        entered.set()
+        assert finish.wait(5)
+        effects.append("committed")
+        return InstructionResult("inst_lin_original", call.instruction, "committed", result={})
+
+    monkeypatch.setattr(asgi, "_instruction_principal", lambda request: ("alice", "web"))
+    monkeypatch.setattr(asgi, "_same_origin", lambda request: True)
+    monkeypatch.setattr(routing, "declaration_for", lambda name: SimpleNamespace(streaming=False, mutates=mutates))
+    monkeypatch.setattr(routing, "execute", execute)
+
+    async def run():
+        request = _request(
+            "/api/instructions/execute", method="POST", app=SimpleNamespace(state=SimpleNamespace()),
+            body=json.dumps({"instruction": "ForkResident", "arguments": {}, "idempotency_key": key}).encode(),
+        )
+        task = asyncio.create_task(asgi._independent_api_error_boundary(asgi.instruction_execute)(request))
+        try:
+            assert await asyncio.to_thread(entered.wait, 5)
+            task.cancel("private shutdown diagnostics")
+            response = await task
+            payload = json.loads(response.body)
+            assert response.status_code == 503
+            assert response.headers["content-type"] == "application/json"
+            assert response.headers["cache-control"] == "no-store"
+            assert payload["instruction"] == "ForkResident"
+            assert payload["status"] == "failed"
+            assert payload["error"]["code"] == "instruction.owner_unavailable"
+            assert payload["error"]["commit_state"] == "unknown"
+            assert payload["error"]["retryable"] is retryable
+            assert payload["error"]["details"] == {"reason": "web_request_interrupted"}
+            assert "private shutdown diagnostics" not in response.body.decode()
+            assert len(calls) == 1
+            assert effects == []
+        finally:
+            finish.set()
+
+    asyncio.run(run())
+    assert effects == ["committed"]
 
 
 def _response(path: str, method: str = "GET"):

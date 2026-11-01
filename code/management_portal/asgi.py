@@ -460,7 +460,23 @@ async def instruction_execute(request: Request):
         def execute():
             return routing.execute(call, context)
 
-        result = await loop.run_in_executor(executor, execute)
+        try:
+            result = await loop.run_in_executor(executor, execute)
+        except asyncio.CancelledError:
+            # Stopping the HTTP wait cannot cancel the owner's instruction (or
+            # even its executor thread).  A shutdown must not turn that unknown
+            # outcome into a plain-text 500 or an assertion of rollback.
+            error = InstructionError(
+                "instruction.owner_unavailable",
+                "指令回执等待已中断，提交结果尚未确认。请核对原调用结果。",
+                commit_state="unknown",
+                retryable=not declaration.mutates or bool(call.idempotency_key),
+                details={"reason": "web_request_interrupted"},
+            )
+            return JSONResponse(
+                failed_result(new_instruction_id("entry"), call.instruction, error).to_payload(),
+                status_code=503,
+            )
         body = result.to_payload()
         status = 200 if result.status == "committed" else ERROR_STATUS.get(str((result.error or {}).get("code")), 500)
         return JSONResponse(body, status_code=status)
