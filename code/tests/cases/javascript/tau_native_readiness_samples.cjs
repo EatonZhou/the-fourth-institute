@@ -182,6 +182,10 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.equal((await readResidentChatReady(page.locator('#'+originalEditor),{residentId:childId})).ready,true,
     'the original Fork-opened Editor is selected by its discovered DOM identity');
   const stableRoot = page.locator('#sample-second-editor');
+  assert.equal(await stableRoot.getAttribute('role'),null,'native named SECTION uses an implicit accessibility role');
+  const implicitChat=await readResidentChatReady(stableRoot,{residentId:childId});
+  assert.equal(implicitChat.ready,true,'native Editor identity and structure do not require a literal role attribute');
+  assert.equal(implicitChat.deletion_feedback_ready,false);
   // Render real Resident message menus in both supported UI languages. The
   // open popover is portalled outside its article, but keeps its message key.
   const currentMessageQuoteAction=new Function(controlsExample[1]+'; return currentMessageQuoteAction;')();
@@ -216,6 +220,13 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const deleted = await readResidentChatReady(stableRoot,{residentId:childId});
   assert.equal(deleted.candidates[0].checks.identity,true);
   assert.equal(deleted.ready,false,'deletion feedback is not a send-ready Chat');
+  assert.equal(await stableRoot.getByRole('alert').count(),0,'native deletion feedback is a Portal message, not an alert');
+  assert.equal(deleted.deletion_feedback_ready,true,JSON.stringify({deleted,dom:await stableRoot.evaluate(root=>({
+    messages:[...root.querySelectorAll('.messageItem')].map(n=>({class:n.className,text:n.innerText})),
+    send:[...root.querySelectorAll('button[aria-keyshortcuts]')].map(n=>({keys:n.getAttribute('aria-keyshortcuts'),disabled:n.disabled})),
+  }))}));
+  assert.equal((await readResidentChatReady(stableRoot,{residentId})).deletion_feedback_ready,false,
+    'a deleted Chat does not establish feedback for another Resident');
   await page.evaluate(()=>{sampleSecondEditor.destroy();document.getElementById('sample-second-editor').remove();});
 
   // A test host contains the actual Family status renderer, not a hand-written table.

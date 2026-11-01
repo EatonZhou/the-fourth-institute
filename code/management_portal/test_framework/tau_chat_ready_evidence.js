@@ -11,7 +11,8 @@ function visibleResidentChatRoots(page, {residentId}) {
 
 // Read the current full native Chat root in one DOM snapshot. The original
 // action owns bounded waits and must persist each snapshot before asserting it.
-// No text search through messages, requests, clicks, timers or implicit retries.
+// Only native Portal deletion feedback is inspected; no message text is returned.
+// No requests, clicks, timers or implicit retries.
 async function readResidentChatReady(region, { residentId }) {
   if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new Error('Expected exact Resident identity');
   const candidates = await region.evaluateAll((roots, residentId) => roots.map(root => {
@@ -30,18 +31,27 @@ async function readResidentChatReady(region, { residentId }) {
     const inputs = composers.flatMap(composer => [...composer.querySelectorAll('.composerInput[role="textbox"]')])
       .map(e => ({ id: e.id, label: e.getAttribute('aria-label'), visible: visible(e),
         editable: e.isContentEditable && e.getAttribute('aria-disabled') !== 'true' && e.getAttribute('aria-readonly') !== 'true' }));
+    const sendButtons = composers.flatMap(composer => [...composer.querySelectorAll('button[aria-keyshortcuts="Control+Enter Meta+Enter"]')]);
+    const deletedMessageVisible = bodies.some(body => [...body.querySelectorAll('.messageItem.portal .messageContent')]
+      .some(node => visible(node) && /该 Resident 已删除或不存在|This Resident has been deleted/i.test(node.textContent || '')));
     const loading = { node_count: loadingNodes.length, aria_busy: root.getAttribute('aria-busy'),
       class_active: root.classList.contains('is-workspace-loading'), visible: loadingNodes.some(visible) };
     loading.active = loading.aria_busy === 'true' || loading.class_active || loading.visible;
     const role = root.getAttribute('role');
     const checks = {
-      root: visible(root) && ['region', 'tabpanel'].includes(role) && heads.length === 1 && bodies.length === 1 && composers.length === 1,
+      root: visible(root) && root.classList.contains('portalChatWorkspaceRoot')
+        && heads.length === 1 && bodies.length === 1 && composers.length === 1,
       identity: headers.length === 1 && headers[0].visible && headers[0].resident_id === residentId
         && headers[0].copy_value === residentId && headers[0].text === residentId,
       loading_ended: loading.node_count === 1 && !loading.active,
       composer: inputs.length === 1 && inputs[0].visible && inputs[0].editable,
     };
+    const deletionFeedbackReady = checks.root && checks.identity && checks.loading_ended
+      && inputs.length === 1 && inputs[0].visible && !inputs[0].editable
+      && sendButtons.length === 1 && visible(sendButtons[0]) && sendButtons[0].disabled
+      && deletedMessageVisible;
     return { dom_id: root.id, role, connected: root.isConnected, visible: visible(root), headers, sessions, inputs, loading, checks,
+      deletion_feedback_ready: deletionFeedbackReady,
       ready: Object.values(checks).every(Boolean) };
   }), residentId);
   const ready = candidates.length === 1 && candidates[0].ready;
@@ -52,7 +62,8 @@ async function readResidentChatReady(region, { residentId }) {
   const sessionId = sessions.length === 1 && sessions[0].visible && sessions[0].session_id
     && sessions[0].session_id === sessions[0].copy_value ? sessions[0].session_id : null;
   return { resident_id: residentId, region_count: candidates.length, candidates,
-    ready, session_id: sessionId, session_identity_ready: sessionId !== null };
+    ready, session_id: sessionId, session_identity_ready: sessionId !== null,
+    deletion_feedback_ready: candidates.length === 1 && candidates[0].deletion_feedback_ready };
 }
 
 module.exports = { readResidentChatReady, visibleResidentChatRoots };

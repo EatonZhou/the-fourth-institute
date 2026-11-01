@@ -89,6 +89,8 @@ async function currentMessageQuoteAction(page, {messageId}) {
 
 消息引用先在精确原message_id对应的可见正文上正常右键，再在同一原ready中用currentMessageQuoteAction核对菜单所属消息及可用引用按钮。原生菜单移到document.body，不能限定在原article内部；按钮文案随语言显示“引用回复”或“Quote reply”，不要固定英语名称。保存当下实际名称，引用后核对composer的原消息预览和随后真实提交的message.quote.message_id。该发现函数只读，不点击、不发送、不代替引用提交或业务终态。
 
+删除后的原Chat反馈使用`readResidentChatReady(root,{residentId}).deletion_feedback_ready`：同一可见原生根的完整Resident身份正确、加载结束、输入不可编辑、发送禁用，并显示原生Portal删除系统消息。此时ready仍为false；不把它当可发送状态，不要求role=alert或错误文本包含ID。原目标标题可能改变，按已发现根与完整身份核验；整页导航后重新发现当前根，不假定旧DOM ID跨文档不变。该字段只证明当场页面反馈，正式删除回执、历史保留与后台目录/Session释放仍分别核对。
+
 运行设置中的账号替换返回completed时，原生dialog会自动关闭。原ready核验同一原回执、目标账号/设置及对话框关闭，截图当前可见页面；不要给已经关闭的dialog截图并等待超时，也不要为补原截图重新打开。currentNativeDialog只发现当前可见原生dialog，null可表示已关闭，不等于替换失败。Route/Watch/Target连线属于编程对象Inspector，不是Resident关系详情。打开后用currentProgrammingInspectors记录当前真实面板ID、kind及wire_id，再按精确本轮wire_id选唯一面板，核验其中实际Label/保存/删除控件；不猜另一个complementary名称。组件面板同理按component_id；这些快照不代替保存回执和原ready。
 
 nativeEntryDestination只返回aria-haspopup明确声明的menu或dialog；null表示没有声明，不是“无操作”，也不能推断成dialog。按钮名字含Menu不保证弹出role=menu，成员Add members可以在当前Menu中展开内联选择区。先记录当前可见dialog/menu/alertdialog及按钮aria-expanded，再正常点击一次，在同一原ready中观察实际新增表面或展开内容，核验本步骤真正下一控件；不要等待臆测的第二个对话框。已有弹窗/展开区不重复打开。需要异步渲染的表单值、节点选中状态及启用状态使用原有界等待，不把点击后的第一个false当终态。
