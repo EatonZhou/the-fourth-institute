@@ -99,6 +99,8 @@ TAU 是无人值守运行，禁止向用户提问、输出 `portal-question` 或
 
 `safeError(error).stack_frames` 保留本地 Node 辅助脚本的源码路径 SHA-256 与实际行列号，原路径和错误正文不输出。定位失败断言时，用本轮已知 helper 的绝对路径计算同一散列，匹配后只读对应行列；不要把静态安全错误码或原脚本行列已经可定位的失败笼统记为“throw 点未知”。这些位置只定位执行点，不证明业务已提交或失败；原回执与动作记录仍需分别核对。
 
+对于 `portal.instruction` 抛出的原ISA错误，使用同模块导出的 `safeInstructionError(error)` 取得规范 `code` 和 `http_status`，与自动调用日志保持一致，不输出 message/details。通用 `safeError` 不承诺保留业务错误码，不能先用它脱敏再据缺失code判定删除失败。清理时正式删除回执、精确目标的not_found/404与目录/登记核对分别留证；网络错误、权限错误不能当作删除成功。其他任意脚本或页面异常继续使用通用 `safeError`。
+
 启动截图辅助脚本时设置 `PW_TEST_SCREENSHOT_NO_FONTS_READY=1`，并在截图前依据页面自己的可见就绪状态判断内容是否可复核；不要让 Playwright 对 `document.fonts.ready` 的隐式等待把字体资源异常变成截图工具超时。若字体确实影响可读性，应在视觉结论中记录页面事实，而不是反复重启浏览器规避。
 
 并行用例各自用 Playwright 启动独立 browser/context，不连接默认或固定 CDP 调试端口，不扫描、接管其他 helper 的浏览器。确需跨进程复用自己启动的浏览器时，由操作系统分配空闲端口，使用本用例独有的 profile；将 Run ID、case ID、PID、profile 路径和实际 endpoint 记录在本用例证据目录。连接前核对本轮启动回执与进程仍匹配，再验证页面身份。缺少归属证据时停止，不尝试其他端口；结束只关闭自己启动的进程。

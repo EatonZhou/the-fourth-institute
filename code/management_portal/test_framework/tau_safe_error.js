@@ -67,4 +67,13 @@ async function safeTransport(operation, invoke) {
   }
 }
 
-module.exports = { safeError, safeTransport, errorSourcePaths: [...sources] };
+// For errors returned by the instruction helper, not arbitrary page errors.
+function safeInstructionError(error) {
+  return { ...safeError(error),
+    ...(error?.code === 'tau.transport_failed' && error.diagnostic
+      ? { transport_error_name: safeError(error.diagnostic).name } : {}),
+    code: /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/.test(error?.code || '') ? error.code : null,
+    http_status: Number.isInteger(error?.status) && error.status >= 100 && error.status <= 599 ? error.status : null };
+}
+
+module.exports = { safeError, safeInstructionError, safeTransport, errorSourcePaths: [...sources] };

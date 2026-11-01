@@ -51,7 +51,7 @@ const { execFile } = require("child_process");
 const { randomUUID } = require("crypto");
 const { performance } = require("perf_hooks");
 const { observeBrowser } = require("./tau_browser_observer");
-const { safeError, safeTransport } = require("./tau_safe_error");
+const { safeError, safeInstructionError, safeTransport } = require("./tau_safe_error");
 const { sendThenStop } = require('./tau_send_stop');
 const { writeNetworkReview } = require('./tau_network_review');
 
@@ -121,14 +121,6 @@ function writeReceipt(evidenceDir, name, payload) {
   return target;
 }
 
-function instructionFailure(error) {
-  return { ...safeError(error),
-    ...(error?.code === 'tau.transport_failed' && error.diagnostic
-      ? { transport_error_name: safeError(error.diagnostic).name } : {}),
-    code: /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/.test(error?.code || '') ? error.code : null,
-    http_status: Number.isInteger(error?.status) && error.status >= 100 && error.status <= 599 ? error.status : null };
-}
-
 const repoPython = path.join(__dirname, "..", "..", ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
 const defaultPython = fs.existsSync(repoPython) ? repoPython : (process.platform === "win32" ? "python" : "python3");
 
@@ -186,7 +178,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
       receipt.ok = true;
       return receipt;
     } catch (error) {
-      receipt.error = instructionFailure(error);
+      receipt.error = safeInstructionError(error);
       throw error;
     } finally {
       fs.appendFileSync(path.join(evidence, 'tau-browser-identity.jsonl'), JSON.stringify({ ...receipt,
@@ -236,7 +228,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
       status = 'completed';
       return result;
     } catch (error) {
-      failure = instructionFailure(error);
+      failure = safeInstructionError(error);
       throw error;
     } finally {
       append({ kind: 'call_finished', at: new Date().toISOString(), duration_ms: performance.now() - started, status,
@@ -263,7 +255,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
           data: call, timeout: timeoutMs, headers: { Origin: origin, 'X-Portal-Request-ID': requestId } }));
         try { body = await response.json(); } catch (_error) { body = {}; }
       } catch (error) {
-        failure = instructionFailure(error);
+        failure = safeInstructionError(error);
         throw error;
       } finally {
         append({ ...request, kind: 'request_finished', at: new Date().toISOString(),
@@ -451,4 +443,4 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }
 
-module.exports = { EXPECTED_ACTOR, openPortal, safeError };
+module.exports = { EXPECTED_ACTOR, openPortal, safeError, safeInstructionError };

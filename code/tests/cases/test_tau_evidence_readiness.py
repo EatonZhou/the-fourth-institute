@@ -34,6 +34,26 @@ def test_local_helper_errors_keep_hashed_source_locations(tmp_path):
                ['DO-NOT-LOG', 'privateFunction', 'private account', str(helper), 'helper.js'])
 
 
+def test_instruction_diagnostics_preserve_not_found_without_raw_error():
+    module = Path(__file__).resolve().parents[2] / 'management_portal/test_framework/tau_safe_error.js'
+    script = r'''
+const assert = require('node:assert/strict');
+const {safeError, safeInstructionError} = require(process.argv[1]);
+const error = Object.assign(new Error('DO-NOT-LOG response'), {
+  code:'instruction.not_found', status:404, details:{token:'DO-NOT-LOG token'}});
+const result = safeInstructionError(error);
+assert.equal(result.code,'instruction.not_found');
+assert.equal(result.http_status,404);
+assert.equal(result.details,undefined);
+assert.equal(safeError(error).code,undefined,'generic errors keep their narrower contract');
+assert.equal(safeInstructionError({code:'DO-NOT-LOG token',status:999}).code,null);
+assert.equal(safeInstructionError({status:999}).http_status,null);
+assert(!JSON.stringify(result).includes('DO-NOT-LOG'));
+'''
+    result = subprocess.run(['node', '-e', script, str(module)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_original_tool_measurement_is_persisted_without_including_the_write(tmp_path):
     (tmp_path / 'run-context.json').write_text(json.dumps({
         'run_id': 'run', 'case_id': 'case', 'evidence_dir': str(tmp_path)}))

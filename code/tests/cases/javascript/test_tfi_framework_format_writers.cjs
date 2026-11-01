@@ -36,7 +36,7 @@ function instructionWriter(context) {
   // Execute the original private request writer, without openPortal's host,
   // login or browser launch. Transport, retry clock and request IDs are explicit fakes.
   let next = 0;
-  return new Function('context', 'origin', 'safeTransport', 'setTimeout', 'randomUUID', 'instructionFailure',
+  return new Function('context', 'origin', 'safeTransport', 'setTimeout', 'randomUUID', 'safeInstructionError',
     source.slice(start, end) + '\nreturn executeInstruction;')(
       context, 'http://fixture.invalid', async (_, operation) => operation(), callback => callback(),
       () => `request-${++next}`, error => ({ message: String(error?.message || error) }));
@@ -53,13 +53,13 @@ test('ISA producer preserves request payload and one idempotency key across retr
     return { ok: () => true, json: async () => body, status: () => 200 };
   } } });
   const args = { resident_id: 'resident_0123456789ab', message_id: 'msg_original' };
-  assert.deepEqual(await writer('GetInputState', args, { key: 'original-key', attempts: 2, append: entry => log.push(entry) }), { message_id: 'msg_original' });
+  assert.deepEqual(await writer('GetInputState', args, { key: 'original-key', attempts: 2, timeoutMs: 180000, append: entry => log.push(entry) }), { message_id: 'msg_original' });
   assert.equal(calls.length, 2);
   // Each HTTP attempt has its own request ID; the ISA call and its idempotency key stay the same.
   calls.forEach((call, index) => {
     assert.equal(call.url, '/api/instructions/execute');
     assert.deepEqual(call.options, { data: { schema: 'tfi.hatg-instruction.v2', instruction: 'GetInputState',
-      arguments: args, idempotency_key: 'original-key' }, headers: { Origin: 'http://fixture.invalid', 'X-Portal-Request-ID': `request-${index + 1}` } });
+      arguments: args, idempotency_key: 'original-key' }, timeout: 180000, headers: { Origin: 'http://fixture.invalid', 'X-Portal-Request-ID': `request-${index + 1}` } });
   });
   assert.equal(calls[0].options.data, calls[1].options.data);
   assert.deepEqual(args, { resident_id: 'resident_0123456789ab', message_id: 'msg_original' });
