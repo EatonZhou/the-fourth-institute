@@ -16,9 +16,12 @@ async function readSessionLineageIdentity(panel, {lineageId}) {
       .map(n => n.getAttribute('data-portal-resource-id'));
     const buttons = [...root.querySelectorAll('button[id="addNodeBtn"]')].filter(visible);
     const createEnabled = buttons.length === 1 && !buttons[0].disabled && buttons[0].getAttribute('aria-disabled') !== 'true';
+    const mount = root.closest('.portalHatgPanelComponent') || root;
+    const mountLoading = mount.getAttribute('aria-busy') === 'true' || mount.inert;
+    const mountError = mount.getAttribute('data-hatg-error') || null;
     return {panel_present:true, panel_visible:visible(root), lineage_id:lineageId,
-      displayed_lineage_ids:ids, create_enabled:createEnabled,
-      identity_ready:visible(root) && ids.length === 1 && ids[0] === lineageId && createEnabled};
+      displayed_lineage_ids:ids, create_enabled:createEnabled, mount_loading:mountLoading, mount_error:mountError,
+      identity_ready:visible(root) && !mountLoading && !mountError && ids.length === 1 && ids[0] === lineageId && createEnabled};
   }, lineageId);
 }
 

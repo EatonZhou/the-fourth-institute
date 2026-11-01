@@ -1,0 +1,33 @@
+'use strict';
+const assert = require('node:assert/strict');
+
+module.exports = async ({page, residentId, releaseGraph, errors}) => {
+  page.setDefaultTimeout(5000);
+  await page.getByRole('button',{name:'Show HATG',exact:true}).click();
+  const panel=page.getByRole('region',{name:'HATG',exact:true});
+  const fit=panel.locator('#graphFitBtn');
+  await fit.waitFor({state:'visible'});
+  const before={busy:await panel.getAttribute('aria-busy'),nodes:await panel.locator('[data-node-id]').count()};
+  assert.deepEqual(before,{busy:'true',nodes:0});
+  const {readSessionLineageIdentity}=require('../../../management_portal/test_framework/tau_session_prerequisites');
+  const mounting=await readSessionLineageIdentity(panel,{lineageId:'lineage_222222222222'});
+  assert.equal(mounting.mount_loading,true);
+  assert.equal(mounting.identity_ready,false);
+  await fit.click();
+  releaseGraph();
+  await panel.locator(`[data-node-id="${residentId}"]`).waitFor({state:'visible'});
+  await page.waitForFunction(()=>!document.querySelector('.portalHatgPanelComponent[aria-busy="true"]'));
+  await page.waitForFunction(()=>document.getElementById('hatgCanvas')?.dataset.zoom==='1.250');
+  const afterEarlyFit=await panel.locator('#hatgCanvas').getAttribute('data-zoom');
+  assert.notEqual(afterEarlyFit,'1.000','Fit before the graph is loaded is overwritten by target restoration');
+  assert.equal(await panel.getAttribute('aria-busy'),null,'native mount removes busy instead of setting false');
+  const settled=await readSessionLineageIdentity(panel,{lineageId:'lineage_222222222222'});
+  assert.equal(settled.mount_loading,false);
+  assert.equal(settled.identity_ready,true);
+  await fit.click();
+  await page.waitForFunction(()=>document.getElementById('hatgCanvas')?.dataset.zoom==='1.000');
+  const afterLoadedFit=await panel.locator('#hatgCanvas').getAttribute('data-zoom');
+  assert.equal(afterLoadedFit,'1.000');
+  console.log(JSON.stringify({before,afterEarlyFit,afterLoadedFit,errors}));
+  assert.deepEqual(errors,[]);
+};

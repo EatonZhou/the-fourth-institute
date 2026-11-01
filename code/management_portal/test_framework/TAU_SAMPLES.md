@@ -18,6 +18,7 @@ python3 code/scripts/check_tau_samples.py
 | Family 夹具隔离 | 真实 ISA 的隔离数据库测试仅移出临时成员，完整比较其余名册和策略，Resident 保留；角色账号 preflight 拒绝错误 Steward 且 Apply 尚未执行 |
 | 终态读取 | 原 Trigger Path 在输入完成后仍 running 时继续只读同一 ID；页面快照区分 running/idle、错误节点与隐藏节点，旧采样不被后续状态改写 |
 | 原生 HATG 宿主 | 实际 Workbench HATG 宿主与有隐式 region 语义的 `section#hatgPane` 均可读取身份、节点状态、Fork 与观察板前提；单独画布不能冒充完整区域 |
+| HATG 加载后适配 | 延迟实际图读取，证明工具条已出现时宿主仍busy、节点为空；过早Fit被目标恢复变成125%，挂载结算后解除busy属性、正确身份就绪，再Fit达到100% |
 | 原刷新窗口 | 提示中的实际刷新示例在区域重建后等待新的完整内容；旧 ElementHandle 不能替代当前 Locator 的 busy 状态 |
 
 维护规则由 `decision_c953eab654cd` 定义。每次修改公共提示或测试辅助函数，在发布和下一次正式 Run 使用前运行整个固定组，并保留原输出。新问题先补能复现失败的检查；修复检查在修复前源码上失败、修复后通过。测试夹具应加载原生模板、组件和事件，不为使新条件通过而手造产品没有的字段。

@@ -10,6 +10,9 @@ const residentId = 'resident_111111111111', lineageId = 'lineage_222222222222';
 const origin = 'http://home-navigation.fixture.invalid';
 const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}&open_chat=1`;
 const readinessSamples = process.argv.includes('--readiness-samples');
+const cameraSamples = process.argv.includes('--camera-samples');
+let releaseGraph;
+const graphGate = cameraSamples ? new Promise(resolve => { releaseGraph = resolve; }) : Promise.resolve();
 const sessionId = 'opaque.full-session-id-for-native-menu';
 const childId = 'resident_333333333333';
 let forked = false;
@@ -66,7 +69,10 @@ const deletedResidents = new Set();
         if (body.instruction === 'ListWorkbenches') result = {workbenches:[]};
         if (body.instruction === 'ForkResident') { forked = true; result = {resident_id:childId}; }
         if (body.instruction === 'ListResidentStates') result = { states: [{ resident_id: residentId, state: 'idle', cursor: 1, viewer_state: { unread: false } }] };
-        if (body.instruction === 'GetLineage') result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges: [], seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
+        if (body.instruction === 'GetLineage') {
+          await graphGate;
+          result = { lineage: { lineage_id: lineageId, revision:forked ? 2 : 1, title: 'Fixture Lineage', nodes, residents:nodes, edges: [], seeds: [], function_blocks: [], program: {components: [], wires: []}, components: [], wires: [] } };
+        }
         result = { status: 'committed', result };
       }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(result) });
@@ -82,6 +88,10 @@ const deletedResidents = new Set();
     });
     const chat = await readResidentChatReady(root, { residentId });
     assert.equal(chat.ready, true, JSON.stringify({ chat, errors, requests }));
+    if (cameraSamples) {
+      await require('./tau_native_camera_samples.cjs')({page, residentId, releaseGraph, errors});
+      return;
+    }
     if (readinessSamples) {
       await require('./tau_native_readiness_samples.cjs')({page, root, residentId, childId, sessionId, errors, requests,
         deleteFixtureResident:id=>deletedResidents.add(id)});

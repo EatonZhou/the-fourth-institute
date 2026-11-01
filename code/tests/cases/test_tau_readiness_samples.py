@@ -18,3 +18,13 @@ def test_native_prompt_readiness_examples():
         capture_output=True, text=True, timeout=90,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_hatg_fit_waits_for_mount_and_target_restoration():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'tau_home_chat_navigation.cjs'),
+         '--camera-samples'],
+        env={**os.environ, 'TFI_TEST_PYTHON': sys.executable},
+        capture_output=True, text=True, timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
