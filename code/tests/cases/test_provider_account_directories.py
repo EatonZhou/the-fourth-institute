@@ -1,4 +1,4 @@
-"""Host account ownership, registration and daemon exclusivity."""
+"""Host account registration and independent daemons sharing credentials."""
 from pathlib import Path
 import subprocess
 import sys
@@ -61,22 +61,6 @@ def test_paths_require_canonical_absolute_non_symlink_directory(tmp_path):
         hosting.registered_home({"kind": "subscription_login", "config": {}})
 
 
-def test_daemon_lock_conflicts_across_processes_and_releases(tmp_path, isolated_registry):
-    directory = tmp_path / "native"
-    directory.mkdir()
-    script = "from pathlib import Path; import sys; from management_common import host_instances; " \
-             "host_instances.registry_path=lambda:Path(sys.argv[2]); " \
-             "from management_common.provider_account_paths import daemon_lock; " \
-             "lease=daemon_lock(Path(sys.argv[1])); lease.__enter__()"
-    command = [sys.executable, "-c", script, str(directory), str(isolated_registry)]
-    with paths.daemon_lock(directory):
-        blocked = subprocess.run(command, capture_output=True, text=True)
-        assert blocked.returncode != 0
-        assert "already in use" in blocked.stderr
-    assert subprocess.run(command, capture_output=True).returncode == 0
-    assert list(directory.iterdir()) == []
-
-
 def test_launch_record_uses_registered_directory_and_control_stays_in_runtime(tmp_path):
     directory = tmp_path / "host-account"
     directory.mkdir()
@@ -89,42 +73,25 @@ def test_launch_record_uses_registered_directory_and_control_stays_in_runtime(tm
     assert list(directory.iterdir()) == []
 
 
-def test_daemon_lock_rejects_redirected_lock_file(tmp_path):
-    directory = tmp_path / "native"
-    directory.mkdir()
-    target = tmp_path / "unrelated"
-    target.write_bytes(b"keep")
-    lock = paths.daemon_lock_path(directory)
-    lock.parent.mkdir(parents=True)
-    lock.symlink_to(target)
-    with pytest.raises(ValueError, match="symbolic link"):
-        with paths.daemon_lock(directory):
-            pass
-    assert target.read_bytes() == b"keep"
-
-
-def test_native_daemon_host_imports_from_account_cwd_and_keeps_lease(tmp_path, isolated_registry):
+def test_native_daemon_hosts_share_account_cwd(tmp_path):
     from management_portal import provider_daemon_host
-    script = "import runpy, sys; from pathlib import Path; " \
-             "sys.path.insert(0, sys.argv.pop(1)); from management_common import host_instances; " \
-             "registry=Path(sys.argv.pop(1)); host_instances.registry_path=lambda:registry; " \
-             "sys.argv=sys.argv[1:]; runpy.run_path(sys.argv[0], run_name='__main__')"
-    command = [sys.executable, "-c", script, str(Path(provider_daemon_host.__file__).parent.parent),
-               str(isolated_registry), provider_daemon_host.__file__, "--account-dir", str(tmp_path), "--",
-               sys.executable, "-c", "import time; print('ready', flush=True); time.sleep(30)"]
-    process = subprocess.Popen(command, cwd=tmp_path, env={"PATH": "/usr/bin:/bin"},
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    command = [sys.executable, provider_daemon_host.__file__, "--", sys.executable,
+               "-c", "import time; print('ready', flush=True); time.sleep(30)"]
+    processes = []
     try:
-        assert process.stdout.readline().strip() == "ready"
-        with pytest.raises(RuntimeError, match="already in use"):
-            with paths.daemon_lock(tmp_path):
-                pass
+        for _ in range(2):
+            process = subprocess.Popen(command, cwd=tmp_path, stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE, text=True)
+            processes.append(process)
+            assert process.stdout.readline().strip() == 'ready'
+        assert all(p.poll() is None for p in processes)
+        processes[0].terminate(); processes[0].communicate(timeout=10)
+        assert processes[0].returncode == 0 and processes[1].poll() is None
     finally:
-        process.terminate()
-        process.communicate(timeout=10)
-    assert process.returncode == 0
-    with paths.daemon_lock(tmp_path):
-        pass
+        for process in processes:
+            if process.poll() is None:process.terminate()
+            process.communicate(timeout=10)
+    assert all(p.returncode == 0 for p in processes)
 
 
 def test_failed_registration_removes_only_new_empty_directory(monkeypatch, tmp_path):
@@ -142,3 +109,13 @@ def test_failed_registration_removes_only_new_empty_directory(monkeypatch, tmp_p
         store.create_registration({"account_id": "codex_rollback", "provider": "codex", "kind": "subscription_login", "config": {"account_dir": str(directory)}}, "test")
     assert not directory.exists()
     assert store.registration("codex_rollback") is None
+
+def test_kimi_process_tree_identity_is_instance_scoped(tmp_path, monkeypatch):
+    from management_portal import kimi_account_runtime as kimi
+    account = {'account_id': 'shared'}
+    control = tmp_path / 'instance-a/runtime/provider-accounts/kimi/shared'
+    monkeypatch.setattr(kimi, 'control', lambda row: control)
+    first = kimi.process_tree_id(account)
+    assert kimi.process_tree_id(account) == first
+    control = tmp_path / 'instance-b/runtime/provider-accounts/kimi/shared'
+    assert kimi.process_tree_id(account) != first

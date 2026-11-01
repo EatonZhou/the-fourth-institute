@@ -1,13 +1,11 @@
 """Host-owned subscription directories and instance-owned Provider control state."""
 from __future__ import annotations
 
-from contextlib import contextmanager
 import hashlib
 import os
 from pathlib import Path
 import re
 
-from .file_lock import try_lock_descriptor
 from .file_permissions import ensure_private_directory
 
 def canonical_directory(value: str | Path) -> Path:
@@ -68,26 +66,3 @@ def prepare_registration_directory(data: dict) -> Path | None:
 def directory_runtime(directory: Path) -> Path:
     """Control state for a directory when no registration ID is in scope."""
     return runtime_root() / "directories" / hashlib.sha256(os.fsencode(canonical_directory(directory))).hexdigest()
-
-
-def daemon_lock_path(directory: Path) -> Path:
-    from .host_instances import registry_path
-    digest = hashlib.sha256(os.fsencode(canonical_directory(directory))).hexdigest()
-    return registry_path().parent / "provider-locks" / (digest + ".lock")
-
-
-@contextmanager
-def daemon_lock(directory: Path):
-    """One Portal-managed daemon per canonical directory, across instances."""
-    directory = canonical_directory(directory)
-    if not directory.is_dir():
-        raise FileNotFoundError(directory)
-    lock = daemon_lock_path(directory)
-    lock.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if lock.is_symlink():
-        raise ValueError("Provider daemon lock must not be a symbolic link")
-    descriptor = os.open(lock, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
-    with os.fdopen(descriptor, "a+b") as stream:
-        if not try_lock_descriptor(stream.fileno()):
-            raise RuntimeError(f"Provider account directory is already in use by a Portal daemon: {directory}")
-        yield

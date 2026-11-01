@@ -53,13 +53,13 @@ while True:
     return script, processes
 
 
-def start_host(tmp_path):
+def start_host(tmp_path, account_home=None):
     endpoint = tmp_path / "endpoint.json"
     stop = threading.Event()
     failures = []
     def run():
         try:
-            host.run_host(endpoint, Path(sys.executable), tmp_path, stop,
+            host.run_host(endpoint, Path(sys.executable), account_home or tmp_path, stop,
                           platform="win32", startup_timeout=2)
         except BaseException as error:
             failures.append(error)
@@ -156,3 +156,25 @@ def test_posix_startup_does_not_adopt_or_remove_old_socket(tmp_path, fake_codex,
                           platform='linux', startup_timeout=.1)
         assert endpoint.exists()
     assert fake_codex[1][0].poll() is not None
+
+
+def test_two_instance_hosts_share_home_and_stop_independently(tmp_path, fake_codex):
+    home = tmp_path / 'shared-account'
+    hosts = []
+    try:
+        for name in ('instance-a', 'instance-b'):
+            folder = tmp_path / name
+            folder.mkdir()
+            hosts.append(start_host(folder, account_home=home))
+        for endpoint, stop, thread, failures in hosts:
+            assert endpoint.exists() and not failures
+            host.connect_transport(endpoint, platform='win32').close()
+        assert len(fake_codex[1]) == 2 and all(p.poll() is None for p in fake_codex[1])
+        hosts[0][1].set(); hosts[0][2].join(5)
+        assert not hosts[0][0].exists()
+        host.connect_transport(hosts[1][0], platform='win32').close()
+        assert fake_codex[1][1].poll() is None
+    finally:
+        for endpoint, stop, thread, failures in hosts:
+            stop.set(); thread.join(5)
+    assert all(not thread.is_alive() and not errors for _, _, thread, errors in hosts)

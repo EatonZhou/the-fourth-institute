@@ -128,7 +128,7 @@ def _stop_server(account, target, state):
     if _server_busy(_client(target, state["port"])):
         raise RuntimeError("Kimi account has an active turn; activation deferred")
     descendants = process.children(recursive=True)
-    terminate_process_tree(state["pid"], tree_id=f"kimi-account-{account['account_id']}")
+    terminate_process_tree(state["pid"], tree_id=process_tree_id(account))
     # A detached Windows Job may cease to be reopenable after its original
     # owner exits. Use the verified psutil handles (PID + creation time), never
     # an unverified process ID or a blanket taskkill by executable name.
@@ -167,6 +167,12 @@ def runtime_busy():
     return False
 
 
+def process_tree_id(account):
+    # A Windows Job belongs to this instance's control state, not to the
+    # shared Provider directory or an account ID reused by another instance.
+    return "kimi-account-" + hashlib.sha256(os.fsencode(control(account))).hexdigest()
+
+
 def restart_account(account_id):
     account = account_for_route(account_id)
     target = home(account)
@@ -184,7 +190,7 @@ def client_for_route(route, *, for_control=False):
     if account["kind"] == "subscription_login" and not target.is_dir():
         raise FileNotFoundError("Registered Kimi account directory is missing")
     ensure_private_directory(target)
-    tree_id = f"kimi-account-{account['account_id']}"
+    tree_id = process_tree_id(account)
     with (control(account) / "launch.lock").open("a+") as stream, lock_stream(stream):
         marker = control(account) / "server.json"
         state = _read(marker)
@@ -216,7 +222,7 @@ def client_for_route(route, *, for_control=False):
         env.update(kimi_windows_runtime.environment())
         with (control(account) / "server.log").open("ab") as log:
             process = spawn_process([os.sys.executable, str(Path(__file__).with_name("provider_daemon_host.py")),
-                                     "--account-dir", str(target), "--", str(binary), "web", "--no-open",
+                                     "--", str(binary), "web", "--no-open",
                                      "--host", "127.0.0.1", "--port", str(port), "--dangerous-bypass-auth"], cwd=target, env=env, stdout=log, stderr=log,
                                     tree_id=tree_id, kill_on_owner_exit=False)
         client = _client(target, port)

@@ -85,12 +85,6 @@ def connect_transport(path, *, timeout=15.0, platform=None):
 
 
 def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
-    from management_common.provider_account_paths import daemon_lock
-    with daemon_lock(Path(account_home)):
-        return _run_host(path, binary, account_home, stop_event, platform=platform, startup_timeout=startup_timeout)
-
-
-def _run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
     windows = _platform(platform) == "win32"
     path, binary, account_home = Path(path), Path(binary), Path(account_home)
     if not windows:

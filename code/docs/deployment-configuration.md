@@ -42,4 +42,4 @@ Codex 各账号的主机目录保存凭据和会话，共用 `codex_binary`；so
 
 指定目录不存在时创建空目录后登录；接入现有账号直接登记其路径。Portal 不复制凭据，不移动或改名目录，删除登记保留 Provider 数据。运行时必须使用登记路径，缺失目录或登记路径时直接报错。更改目录需要账号无绑定会话、执行或登录，随后按新登记重建常驻进程。
 
-每个 Codex 服务使用实例 `runtime/provider-accounts/codex/<account_id>/launch.json` 中的生成记录启动；生成记录来自账号登记。Kimi 按账号使用同一 runtime 下的控制目录。常驻宿主在操作系统用户的 `~/.config/tfi/provider-locks/` 中按规范账号目录的 SHA-256 持有主机锁，锁占用时报冲突；终端直接调用 CLI 不受此锁约束。索引备份、启动锁、作业状态与日志保存在实例 runtime。
+每个 Codex 服务使用实例 `runtime/provider-accounts/codex/<account_id>/launch.json` 中的生成记录启动；生成记录来自账号登记。Kimi 按账号使用同一 runtime 下的控制目录。每个实例运行自己的常驻进程，多个实例与终端 CLI 共享同一目录里的登录与会话，由 Provider 自己协调登录刷新。进程控制记录、socket 和 Windows Job 身份归各实例所有。索引备份、启动锁、作业状态与日志保存在实例 runtime。
