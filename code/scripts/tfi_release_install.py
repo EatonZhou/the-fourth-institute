@@ -623,6 +623,12 @@ def create(engineering, *, name, root=None, bind="127.0.0.1", ports=None, postgr
             if observed["status"] != "running":
                 raise RuntimeError(health_failure(instance, observed))
             result.update(status="running", url=observed["url"])
+        else:
+            # Import and feature initialization need PostgreSQL even when the
+            # caller requested a stopped instance. Release those services too.
+            phase = "stop"
+            atomic_json(record, {**json.loads(record.read_text()), "phase": phase})
+            instance_services.lifecycle("stop", root)
         record.unlink()
         return result
     except Exception as exc:

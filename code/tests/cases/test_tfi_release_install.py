@@ -198,6 +198,26 @@ def test_create_writes_manifest_site_secrets_and_areas_then_registers(creation):
     assert instance_services.start_blocker(instance) == ""
 
 
+def test_create_without_start_stops_initialization_services(creation):
+    result = installer.create(creation.engineering, name="accept_tmp", postgres=creation.postgres,
+                              skip_file_verification=True, start=False)
+    assert result["status"] == "created"
+    assert ("lifecycle", "stop", {}) in creation.calls
+    assert not any(call[:2] == ("lifecycle", "start") for call in creation.calls)
+    assert instance_services.creation_record(host_instances.find("accept_tmp")) is None
+
+
+def test_create_without_start_records_shutdown_failure(creation, monkeypatch):
+    def broken(action, root, **kwargs):
+        raise RuntimeError("initialization service did not stop")
+    monkeypatch.setattr(instance_services, "lifecycle", broken)
+    with pytest.raises(RuntimeError, match="did not stop"):
+        installer.create(creation.engineering, name="accept_tmp", postgres=creation.postgres,
+                         skip_file_verification=True, start=False)
+    record = instance_services.creation_record(host_instances.find("accept_tmp"))
+    assert record["status"] == "failed" and record["phase"] == "stop"
+
+
 def test_failed_creation_keeps_a_blocking_record_until_retired(creation, monkeypatch):
     def broken(instance, sql):
         raise RuntimeError("psql exited 3")
