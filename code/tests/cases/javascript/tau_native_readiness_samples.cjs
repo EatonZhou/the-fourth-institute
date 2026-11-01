@@ -43,6 +43,11 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const menuSession = await readResidentMenuSession(menu, {residentId});
   assert.equal(menuSession.ready, true, JSON.stringify(menuSession));
   assert.equal(menuSession.session_id, sessionId);
+  const deletionExplanation=await menu.getByRole('button',{name:'Delete node',exact:true})
+    .getAttribute('data-portal-tooltip');
+  assert.match(deletionExplanation,/Portal-created directories and their nested objects are permanently deleted/);
+  assert.match(deletionExplanation,/adopted directories are unregistered and their files preserved/);
+  assert.doesNotMatch(deletionExplanation,/referenced Workspaces are retained/);
   assert.equal((await readResidentMenuSession(menu, {residentId:childId})).ready, false);
   await page.evaluate(() => { window.sampleCopied = []; PortalUI.copyText = async value => { sampleCopied.push(value); }; });
   await copy.click();

@@ -282,7 +282,7 @@
       $id("nodeAbsorptionKeepBtn").textContent = window.PortalI18n.text`保留 ${source.title}`;
       const retentionHint = $id("nodeAbsorptionRetentionHint");
       if (sourceCanBeDeletedAfterAbsorption(source)) {
-        retentionHint.textContent = window.PortalI18n.t("保留后可继续独立讨论；删除会将 Resident 标记为已删除，并移除 Session 和图引用；关联 Workspace 仅在没有其他存活 Resident 引用时回收，仍被引用的 Workspace 保留。对话与运行轨迹保留。");
+        retentionHint.textContent = window.PortalI18n.t("保留后可继续独立讨论；删除会将 Resident 标记为已删除，并移除 Session 和图引用；所属目录按来源处理：Portal 创建的连同嵌套对象永久删除，接入的现成目录只注销、保留文件；绑定同步解除。对话与运行轨迹保留。");
       } else {
         retentionHint.textContent = window.PortalI18n.t("来源节点是当前 Leader，不能单独删除；请先变更 Leader。");
       }
