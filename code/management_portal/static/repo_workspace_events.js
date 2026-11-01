@@ -336,7 +336,7 @@
 
     elements.query.addEventListener("input", () => {
       window.clearTimeout(state.queryTimer);
-      cancelRepoQuery();
+      cancelRepoQuery('repo_query_replaced');
       updateAutomationControls();
       const value = elements.query.value.trim();
       state.mode = "board";

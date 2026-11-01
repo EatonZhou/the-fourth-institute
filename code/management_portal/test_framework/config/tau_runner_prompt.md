@@ -1,5 +1,23 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+首次刷新必须先演练完整 ready，不能只确认刷新按钮可用。共享 `portal.action` 支持 `preflight`：它只读核验，返回 true 后才开始原动作；失败不会提交 operation，也不会产生 action_started。对于刷新后应保持的 ID、完整正文、URL、目录树等，把同一个核验函数同时用于 preflight 与 ready。先演练时定位器命中两处就收窄到页面实际呈现的区域，或明确比较全部可见副本的值；不得用 `.first()` 掩盖歧义。ready 中不要临时增加未经预检的 Settings 点击、全页 ID 文本断言或整页重载。示意（先从本轮真实页面发现作用域和控件，代码中的变量不是固定 selector）：
+```javascript
+const checkPersistedView = async page => {
+  // expectedRegion/expectedText/refreshButton 来自本轮页面实际枚举。
+  const matches = expectedRegion.getByText(expectedText, {exact:true});
+  if (await matches.count() !== 1) throw new Error('Ready locator is not unique');
+  await matches.waitFor({state:'visible'});
+  return true;
+};
+await portal.action('first-refresh', async page => {
+  // 先挂本轮原响应监听，再且仅点击一次。
+  const response = waitForOriginalResponse();
+  await refreshButton.click();
+  return await response;
+}, {preflight: checkPersistedView, ready: checkPersistedView});
+```
+预检失败还没有发生第一次刷新；只读修正后可以继续原定首次点击。operation 已提交且 ready 失败则保留原失败，不能重放或回填。其他业务步骤继续完成。前往资源地址会改变当前面板：之后先读新页面快照、显示相应面板，再定位其中的旧对象，不能假定导航前 HATG、Chat、菜单仍可见。
+
 原工具调用的可执行编排模板（functions.exec 环境；每个新 cell 先定义 measured，不记录命令内容）：
 ```javascript
 const shellQuote = s => "'" + String(s).replaceAll("'", "'\"'\"'") + "'";

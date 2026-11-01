@@ -373,7 +373,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   }
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
-    action: (name, operation, { page: target = page, ready } = {}) => observer.action(target, name, operation, { ready }),
+    action: (name, operation, { page: target = page, preflight, ready } = {}) => observer.action(target, name, operation, { preflight, ready }),
     requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForInput, waitForRunningActivity,
     sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }

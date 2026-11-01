@@ -720,13 +720,26 @@ async function observeBrowser(context, { evidenceDir }) {
   return {
     file,
     requestId(request) { return requests.get(request)?.id || null; },
-    async action(page, name, operation, { ready } = {}) {
+    async action(page, name, operation, { preflight, ready } = {}) {
       if (stopped) throw new Error('Browser observation has ended');
       if (typeof name !== 'string' || !/^[a-zA-Z0-9_.:-]{1,80}$/.test(name) || typeof operation !== 'function') {
         throw new TypeError('Use a static action label and a callback containing the operation and its ready check');
       }
       if (actions.has(page)) throw new Error('An action already owns this page; include its ready check in the same callback');
       if (ready !== undefined && typeof ready !== 'function') throw new TypeError('ready must be a read-only callback');
+      if (preflight !== undefined && typeof preflight !== 'function') throw new TypeError('preflight must be a read-only callback');
+      if (preflight) {
+        // Validate the very same locators before an irreversible first sample.
+        // A failed rehearsal has not clicked or started the measured action.
+        write({ kind: 'action_preflight_started', name, ...location(frameState(page.mainFrame())) });
+        try {
+          if (await preflight(page) !== true) throw new Error('Action preflight must be explicitly confirmed');
+          write({ kind: 'action_preflight_confirmed', name });
+        } catch (error) {
+          write({ kind: 'action_preflight_failed', name, error: safeError(error) });
+          throw error;
+        }
+      }
       const action = { id: id('action'), request_ids: [] };
       const started = performance.now();
       actions.set(page, action);

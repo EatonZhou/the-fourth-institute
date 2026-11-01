@@ -9,6 +9,19 @@ const api = fs.readFileSync(path.join(__dirname, '../../../management_portal/sta
 (async () => {
   if (!process.argv.includes('--abort-only')) {
   await capture('explicit_ready', async ({page, observer, rows}) => {
+    let clicked = 0;
+    await assert.rejects(observer.action(page, 'first-refresh', async () => { clicked++; }, {
+      preflight: async () => { throw new Error('Ambiguous ID locator'); }, ready: async () => true,
+    }));
+    assert.equal(clicked, 0, 'invalid ready locators must be discovered before the first refresh');
+    assert(!rows().some(row => row.kind === 'action_started'));
+    let checks = 0;
+    const checkedReady = async () => { checks++; return true; };
+    await observer.action(page, 'first-refresh', async () => { clicked++; }, {
+      preflight: checkedReady, ready: checkedReady,
+    });
+    assert.equal(clicked, 1);
+    assert.equal(checks, 2);
     let mutations = 0, resolve;
     const barrier = new Promise(done => resolve = done);
     const running = observer.action(page, 'save', async () => { mutations++; return 'original'; }, {
@@ -16,7 +29,7 @@ const api = fs.readFileSync(path.join(__dirname, '../../../management_portal/sta
     });
     await new Promise(done => setImmediate(done));
     assert.ok(rows().some(row => row.kind === 'action_ready_started'));
-    assert.ok(!rows().some(row => row.kind === 'action_finished'));
+    assert.ok(!rows().some(row => row.kind === 'action_finished' && row.name === 'save'));
     resolve();
     assert.equal(await running, 'original');
     assert.equal(mutations, 1);
@@ -77,6 +90,29 @@ const api = fs.readFileSync(path.join(__dirname, '../../../management_portal/sta
     await new Promise(done => setImmediate(done));
     review = reviewRequests(rows());
     assert.equal(review[2].proofs[0].reason, 'repo_query_replaced');
+    // Exercise the real input event wiring, not just a direct Catalog call.
+    const typing = new w.AbortController();
+    deps.state.requestController = typing;
+    const typingPending = w.PortalAPI.request('/api/example', {signal: typing.signal});
+    w.eval(fs.readFileSync(path.join(__dirname, '../../../management_portal/static/repo_workspace_events.js'), 'utf8'));
+    const eventDeps = Object.fromEntries(w.PortalRepoWorkspaceEvents.dependencies.map(name => [name, () => {}]));
+    const elements = new Proxy({modeTabs:[], editorTabs:[]}, {get(target, name) {
+      if (!target[name]) {
+        target[name] = w.document.createElement('div');
+        target[name].innerHTML = '<input name="placement">';
+      }
+      return target[name];
+    }});
+    Object.assign(eventDeps, {elements, state:deps.state, queryState:()=>({}),
+      cancelRepoQuery:w.PortalRepoWorkspaceCatalog.createCatalog(deps).cancelRepoQuery});
+    w.PortalRepoWorkspaceEvents.createEvents(eventDeps);
+    elements.query.value = 'replacement';
+    elements.query.dispatchEvent(new w.Event('input'));
+    w.clearTimeout(deps.state.queryTimer);
+    await assert.rejects(typingPending, {name:'AbortError'});
+    await new Promise(done => setImmediate(done));
+    review = reviewRequests(rows());
+    assert.equal(review[3].proofs[0].reason, 'repo_query_replaced');
     assert(!output().includes('DO-NOT-LOG'));
     const wrong = {...review[0].proofs[0], document_id: 'other-document'};
     assert.equal(reviewRequests([...rows().filter(r => ['request_started', 'request_failed'].includes(r.kind)), wrong])[0].proofs.length, 0);
