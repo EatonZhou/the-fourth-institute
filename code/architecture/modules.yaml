@@ -329,7 +329,7 @@ modules:
     runtime: "PostgreSQL 服务；多个领域 schema"
     level: "runtime"
     schemas:
-      - name: "resource_dev / resource_release / permission"
+      - name: "configured shared resource index / permission"
         owner: "resources"
       - name: "lineage / service_invocations / templates / script_runs / resident_context"
         owner: "lineage"
