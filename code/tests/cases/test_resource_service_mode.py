@@ -38,8 +38,30 @@ def test_local_index_schema_must_be_named_outside_test_namespaces(monkeypatch):
         resource_database_schema()
     monkeypatch.setenv("PORTAL_DATABASE_NAMESPACE", "pytest_probe")
     assert resource_database_schema() == "resources"
-    monkeypatch.setenv("PORTAL_RESOURCE_DATABASE_SCHEMA", "resource_dev")
-    assert resource_database_schema() == "resource_dev"
+    monkeypatch.setenv("PORTAL_RESOURCE_DATABASE_SCHEMA", "site_resources")
+    assert resource_database_schema() == "site_resources"
+
+
+def test_export_reads_the_configured_shared_index(monkeypatch):
+    from management_portal.distribution.database import DatabaseSnapshot
+
+    class Connection:
+        def execute(self, statement, values):
+            self.values = values
+            return self
+
+        def fetchone(self):
+            return {"name": None}
+
+    source = object.__new__(DatabaseSnapshot)
+    source.connection = Connection()
+    monkeypatch.delenv("PORTAL_DATABASE_NAMESPACE", raising=False)
+    monkeypatch.delenv("PORTAL_RESOURCE_DATABASE_SCHEMA", raising=False)
+    with pytest.raises(RuntimeError, match="PORTAL_RESOURCE_DATABASE_SCHEMA"):
+        source.read_index()
+    monkeypatch.setenv("PORTAL_RESOURCE_DATABASE_SCHEMA", "site_resources")
+    assert source.read_index() == {}
+    assert source.connection.values == ("site_resources.resource_index_records",)
 
 
 def test_only_the_installed_resource_component_runs_the_index_locally(monkeypatch, tmp_path):
