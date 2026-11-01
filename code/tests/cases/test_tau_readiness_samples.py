@@ -9,6 +9,14 @@ import subprocess
 import sys
 
 
+def test_readiness_wait_requires_the_complete_original_predicate():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'tau_readiness_wait.cjs')],
+        capture_output=True, text=True, timeout=15,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_original_component_identity_and_native_watch_preflight():
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'tau_component_preflight.cjs')],

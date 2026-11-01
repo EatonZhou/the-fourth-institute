@@ -136,6 +136,8 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const two=options.find(option=>option.label==='codex_two');
   assert.ok(two && !two.disabled);
   assert.notEqual(two.value,two.label);
+  assert.equal(await select.locator('option').filter({hasText:'codex_two'}).isVisible(),false,
+    'an available native select option does not require a visible popup');
   await select.selectOption({label:two.label});
   assert.equal(await select.inputValue(),two.value);
   const runtimeDialog=await controls.currentNativeDialog(page,'运行设置');

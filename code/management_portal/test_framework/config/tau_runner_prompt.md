@@ -36,7 +36,7 @@ async function currentResidentWatchFields(scope) {
 
 HTTP非成功响应按request_id关联原request_started及response_received/request_finished。观察器为ReadResource/ResolveResource、Family聊天偏好、Lineage读取/删除、Family修改/解除保留公开instruction和resource_scope.target_sha256；资源字符串地址可与原地址SHA256及HTTP reference关联，结构化文件引用另标address_representation=file_reference，不与字符串摘要混同。read_mode区分metadata/preview/content，观察器不保存正文或原地址。由本轮原提交、精确目标及页面行为判定404是否符合删除边界，摘要相同或时间接近本身不是因果证明；缺少旧样本不能事后补造。未知指令和无法确定的目标仍明确保留未知。
 
-准备阶段的动态控件使用当下快照。关闭一个面板可能同时移除其他标签，每次关闭后重新枚举；旧候选已消失时跳过，多个同名候选才是歧义。HATG 的 `New node: …` 主按钮直接打开表单（aria-haspopup 为空），带 menu 声明的入口才等待菜单。搜索中的 role=status 会随结果出现而移除，不能对它调用会等待元素出现的 innerText；用 evaluateAll 取得零或多个当前值。账号 option 的可见 label 和内部 value 分别保存，按实际 label 选择并核对其 value，不假定 value 等于 codex_two。以下函数只读取原生控件，需在本轮原有界等待中记录返回值；它们不自动提交、重试或代替目标身份核验。
+准备阶段的动态控件使用当下快照。关闭一个面板可能同时移除其他标签，每次关闭后重新枚举；旧候选已消失时跳过，多个同名候选才是歧义。HATG 的 `New node: …` 主按钮直接打开表单（aria-haspopup 为空），带 menu 声明的入口才等待菜单。搜索中的 role=status 会随结果出现而移除，不能对它调用会等待元素出现的 innerText；用 evaluateAll 取得零或多个当前值。账号 option 的显示 label 和内部 value 分别保存，按实际 label 选择并核对其 value，不假定 value 等于 codex_two。原生select可见且启用时，用currentSelectOptions等待目标选项存在且未禁用；关闭下拉列表时option本身可以不可见，不对它等待visible。以下函数只读取原生控件，需在本轮原有界等待中记录返回值；它们不自动提交、重试或代替目标身份核验。
 
 ```js
 // tau-current-controls
@@ -102,6 +102,8 @@ currentNativeDialog同时发现原生dialog与alertdialog，并按本次实际�
 Family成员增删、解除、其他结构改动及刷新可能把节点移到画布边界外。若原ready要求完整图适配，使用`tau_hatg_view_evidence.js`的`fitAndWaitForHatgView(panel, options)`：参数同waitForHatgView，先核验本轮精确Lineage/完整节点边集合已加载，再普通点击一次原生Fit，随后等待全部节点在画布内且几何稳定。它把before-fit/after-fit样本交给同一个record，original_elapsed_ms覆盖两个阶段并共用一个timeoutMs预算；放在原portal.action的ready中调用。单纯waitForHatgView不会移动画布，不能让裁切节点在原等待中自行消失。Fit不会保证文字可读，必要的面板调整及全景/可读局部截图仍由原步骤完成；助手不导航、不重放业务、不调整账号。
 
 Effect保存原ready用`tau_effect_diagnostics_evidence.js`的`await readEffectDiagnosticsReady(inspector,{componentId})`，返回`{observed_at_ms,expected_component_id,candidates,ready}`。传当前唯一原生Inspector Locator，原有界等待逐样本保存返回值，只有目标ID匹配、诊断槽可见且状态明确为ok/warning时ready=true。null、loading、unavailable、error均不通过；不要用`state !== 'loading'`把重建中的缺失状态放行，也不要跨两次DOM读取分别判断和保存状态。该快照只证明当前诊断就绪，原提交回执、脚本内容、完整图与视觉仍独立核验。
+
+通用原ready轮询使用`tau_readiness_wait.js`的`waitForEvidenceReady(read,{record,timeoutMs,intervalMs})`。read接收同一个原deadlineMs及剩余timeoutMs，返回包含完整业务条件的boolean ready快照；record逐次立即落盘`{observed_at_ms,elapsed_ms,snapshot}`。只有snapshot.ready===true才能结束，不能把identity_ready等部分条件与ready作OR；例如Family隔离必须同时确认身份与原托管边已移除。只等身份时也显式返回`{...snapshot,ready:snapshot.identity_ready===true}`。缺失ready、读取或落盘失败立即抛出，原超时不重置、不并发读取、不重发业务；read须将剩余预算用于其实际API调用，迟到的true仍记录但不通过。专用完整图、终态等待继续使用其对应助手。
 
 `readHatgViewSnapshot`的唯一候选中，`nodes`是含id/geometry的对象数组，`edges`已经是去重字符串ID数组，`edge_geometry`另存路径和标签几何。原基线采样须先与正式原对象核对完整性；不要把刷新后残缺图当新基线。保存基线后可按下例提取等待参数；不要对edges再次map(x=>x.id)。视觉可见的原生SVG连线可以带读屏用途的aria-hidden=true，边集合与可读标签是独立证据，标签仍须按用例实际查看。
 
