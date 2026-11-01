@@ -12,6 +12,8 @@ QUESTION_PART = "async_questions"
 ANSWER_PART = "async_question_answer"
 # The error code on a set's answer slot when a person closed the set unanswered.
 QUESTION_SET_CLOSED = "question_set_closed"
+# DeliverMessage lends at most this many credentials with one message.
+MAX_LENT_CREDENTIALS = 20
 QUESTION_CONTENT_INSTRUCTIONS = """需要用户做选择或补充信息时，在回复末尾输出提问卡片：使用一个独立的 portal-question 代码围栏，
 围栏内填写一个问题对象，或多个问题对象组成的数组；每个问题必填 title（问题文字），可选 options（字符串数组）。例如：
 ```portal-question
@@ -21,14 +23,13 @@ QUESTION_CONTENT_INSTRUCTIONS = """需要用户做选择或补充信息时，在
 需要用户把其持有的权限交给你时（你的身份在某资源上缺少权限），在问题对象中加 credentials，逐项写出 A 树节点 a 与资源 resource_id，title 说明用途，例如
 {"title":"同意把这个工作台的协作权限交给我来发布吗？","credentials":[{"a":"@contributor","resource_id":"workbench_0123456789ab"}]}。
 这类问题的选项固定为“同意交出这些权限”和“不交出”。用户同意时凭证随这条回答签发，只在你处理这条回答期间有效，在这一轮内用完；不要让用户另行签发。
-提问后结束本轮，等待回答，不要继续做依赖这些答案的工作。用户可能先发其他消息；每组问题在回答前一直有效，回答到达时再按回答继续。
+""" + f"""一组问题合计最多借出 {MAX_LENT_CREDENTIALS} 项权限，超过时整张卡片无效、只显示为代码；需要更多时分几轮提问，每轮不超过这个数。
+""" + """提问后结束本轮，等待回答，不要继续做依赖这些答案的工作。用户可能先发其他消息；每组问题在回答前一直有效，回答到达时再按回答继续。
 只在真正需要用户回答时使用；展示语法示例时使用外层代码围栏。无需调用接口或工具写消息。"""
 # A question with credentials asks the user to lend those permissions with the
 # answer; its options are fixed and the first one approves (decision_1e2eb869bc10).
 CREDENTIAL_APPROVE = "同意交出这些权限"
 CREDENTIAL_DECLINE = "不交出"
-# DeliverMessage lends at most this many credentials with one message.
-MAX_LENT_CREDENTIALS = 20
 
 
 def _credentials(value: object) -> list[dict[str, str]] | None:
