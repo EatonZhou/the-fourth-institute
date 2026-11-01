@@ -159,7 +159,14 @@ def test_the_bootstrap_opens_the_portal_test_identity_and_records_its_lifecycle(
     """TAU 浏览器以 test-actor 身份启动，记录启动与关闭并删除临时配置目录
 
     :module: spec.design-governance"""
-    result = _open(tmp_path, portal, "test-actor")
+    close_path = tmp_path / 'evidence/tau-browser-close.json'
+    result = _open(tmp_path, portal, "test-actor", body=(
+        "const closeContext = p.context.close.bind(p.context);"
+        "p.context.close = async () => {"
+        f" const started = JSON.parse(require('fs').readFileSync({json.dumps(str(close_path))},'utf8'));"
+        " if (started.status !== 'closing' || !started.started_at || started.ready) throw Error('missing original close start');"
+        " await closeContext(); };"
+    ))
 
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout.strip().splitlines()[-1])["actor"] == "test-actor"
@@ -167,6 +174,9 @@ def test_the_bootstrap_opens_the_portal_test_identity_and_records_its_lifecycle(
     closed = json.loads((tmp_path / "evidence/tau-browser-close.json").read_text())
     assert launch["ok"] is True and launch["build_id"] == "dev-fixture"
     assert closed["ok"] is True and not Path(launch["profile_root"]).exists()
+    assert closed['status'] == 'completed' and closed['ready'] is True
+    assert closed['started_at'] <= closed['finished_at']
+    assert closed['duration_ms'] >= 0
 
 
 def test_framework_browser_runtime_survives_a_helpers_different_home(tmp_path, portal, monkeypatch):

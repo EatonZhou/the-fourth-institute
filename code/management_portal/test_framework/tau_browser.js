@@ -353,6 +353,10 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   async function close() {
     if (closed) return;
     closed = true;
+    const started = performance.now();
+    const startedAt = new Date().toISOString();
+    writeReceipt(evidence, "tau-browser-close.json", { helper_pid: process.pid, host_pid: host.host_pid,
+      status: 'closing', started_at: startedAt, ok: false, ready: false });
     let error = "";
     try { await observer.flush(); }
     catch (exc) { error = String(exc.name || "ObservationError"); }
@@ -374,7 +378,9 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     catch (exc) { error ||= String(exc.name || 'NetworkReviewError'); }
     const stopped = await stopHost(host);
     if (!stopped && !error) error = `browser host ${host.host_pid} did not stop`;
-    writeReceipt(evidence, "tau-browser-close.json", { helper_pid: process.pid, host_pid: host.host_pid, ok: !error, error });
+    writeReceipt(evidence, "tau-browser-close.json", { helper_pid: process.pid, host_pid: host.host_pid,
+      status: error ? 'failed' : 'completed', started_at: startedAt, finished_at: new Date().toISOString(),
+      duration_ms: performance.now() - started, clock: 'node_performance_now', ready: !error, ok: !error, error });
   }
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),

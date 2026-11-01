@@ -41,6 +41,8 @@ async function measured(name, invoke) {
 
 `portal.instruction` 的原 HTTP 请求预算默认为 180 秒，日志记录 timeout_ms；必要时在首次调用前显式设置 `{timeoutMs}`（1–600000 毫秒），不能在失败后放大预算重发已受理写操作。APIRequestContext 的传输超时只说明原响应未取得，不证明服务未提交；助手不自动重试这类失败。保留原错误与身份后继续只读查询，不把超时当作业务终态。不得用扩大的请求预算替代 UI 原 ready 或隐瞒实际耗时。
 
+`portal.close()` 自己在关闭动作开始即写 tau-browser-close.json 的 closing/started_at，结束保存 finished_at、原单调 duration_ms、ready/ok 和实际错误。直接引用这份生命周期证据，不在浏览器已经关闭后补造 UI ready 或再次打开浏览器取关闭截图。外层原工具 RTT 仍按能力记录。
+
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
 你以真实用户的方式使用 Portal。逐条读取 Test Case 的自然语言描述和可选 Task Prompt，自主寻找入口、观察页面反馈并完成目标；不要依赖未在页面上呈现的内部 selector 或实现知识。同一模块的任务会持续交给你，你可以利用历史对话理解产品，但必须重新执行当前用例并产生当前证据。
