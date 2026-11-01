@@ -44,7 +44,22 @@ async function currentSelectOptions(select) {
     label: node.label, value: node.value, disabled: node.disabled || !!node.closest('optgroup')?.disabled,
   })));
 }
+async function currentNativeDialog(page, name) {
+  const dialog = page.getByRole('dialog', {name, exact: true});
+  const count = await dialog.count();
+  if (count > 1) throw new Error('Ambiguous current native dialog');
+  return count === 1 ? dialog : null;
+}
+async function currentProgrammingInspectors(page) {
+  return page.locator('[data-inspector-kind]:visible').evaluateAll(nodes => nodes.map(node => ({
+    id: node.id, kind: node.dataset.inspectorKind,
+    component_id: node.dataset.componentId || null, wire_id: node.dataset.wireId || null,
+    label: node.getAttribute('aria-label'),
+  })));
+}
 ```
+
+运行设置中的账号替换返回completed时，原生dialog会自动关闭。原ready核验同一原回执、目标账号/设置及对话框关闭，截图当前可见页面；不要给已经关闭的dialog截图并等待超时，也不要为补原截图重新打开。currentNativeDialog只发现当前可见原生dialog，null可表示已关闭，不等于替换失败。Route/Watch/Target连线属于编程对象Inspector，不是Resident关系详情。打开后用currentProgrammingInspectors记录当前真实面板ID、kind及wire_id，再按精确本轮wire_id选唯一面板，核验其中实际Label/保存/删除控件；不猜另一个complementary名称。组件面板同理按component_id；这些快照不代替保存回执和原ready。
 
 `portal.waitForRunningActivity({scope:本轮目标Chat的Locator,timeoutMs})`自动把原等待逐次观察写入`tau-running-activity.jsonl`，包含wait_id、原起止/elapsed、scope_count、原生Chat/Resident身份、document timeOrigin、活动卡/工具标签匹配与running状态计数，含found/timeout/retry/failed结尾；不记录工具命令正文。超时先保留并核对该原日志，区分目标面板已换、无活动卡、工具标签不匹配或只有已结束条目，不能用后来重新导航的运行截图回填。若页面恢复改变Editor，重新发现并核验目标后只读观察原输入，不重发原任务。
 

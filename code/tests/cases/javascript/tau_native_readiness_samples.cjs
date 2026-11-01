@@ -22,7 +22,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const prompt = fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
   const controlsExample=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
   assert.ok(controlsExample, 'public dynamic-control contract must be executable');
-  const controls=new Function(controlsExample[1]+'; return {nativeEntryDestination,currentStatusTexts,currentSelectOptions};')();
+  const controls=new Function(controlsExample[1]+'; return {nativeEntryDestination,currentStatusTexts,currentSelectOptions,currentNativeDialog};')();
   const discoveryExample=prompt.match(/```js\n(\/\/ tau-native-chat-locator\n[\s\S]*?)\n```/);
   assert.ok(discoveryExample, 'the public Chat discovery example must specify its Locator contract');
   const uniqueResidentChat=new Function('visibleResidentChatRoots',discoveryExample[1]+'; return uniqueResidentChat;')(visibleResidentChatRoots);
@@ -104,7 +104,9 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     const api=PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml:PortalUIPrimitives.escapeHtml});
     window.sampleRuntime=api.createSessionRestartDialog('sample-runtime');
     sampleRuntime.open({source:{provider:'codex',account_id:'one'},providers:[{id:'codex'}],
-      accounts:{codex:[{id:'one',label:'codex_one'},{id:'two',label:'codex_two'}]}});
+      accounts:{codex:[{id:'one',label:'codex_one'},{id:'two',label:'codex_two',
+        context_options:[{id:'preserve',enabled:true,description:'Preserve current context'}]}]}},
+      async args=>{window.sampleRestartArguments=args;return {status:'completed',restart_id:'restart_fixture'};});
   });
   const select=page.locator('[data-session-target]');
   await select.waitFor({state:'visible'});
@@ -114,6 +116,13 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.notEqual(two.value,two.label);
   await select.selectOption({label:two.label});
   assert.equal(await select.inputValue(),two.value);
+  const runtimeDialog=await controls.currentNativeDialog(page,'运行设置');
+  assert.ok(runtimeDialog);
+  await runtimeDialog.locator('[data-session-restart-submit]').click();
+  await runtimeDialog.waitFor({state:'hidden'});
+  assert.equal(await controls.currentNativeDialog(page,'运行设置'),null,'completed switch closes its native dialog');
+  assert.equal((await page.evaluate(()=>sampleRestartArguments)).target_account,'two');
+  await assert.rejects(runtimeDialog.screenshot({timeout:150}),/Timeout/,'a closed dialog cannot supply the original screenshot');
   await page.evaluate(()=>sampleRuntime.destroy());
   const catalog = page.getByRole('region', {name:'Lineage navigation', exact:true});
   await catalog.getByRole('button', {name:'Lineage menu',exact:true}).click();

@@ -5,6 +5,10 @@ const portal = path.resolve(__dirname, '../../../management_portal');
 const {HATG_PROGRAM_INSPECTOR_SCRIPTS} = require('./hatg_program_inspector_scripts.cjs');
 const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
 const {readEffectDiagnosticsReady} = require('../../../management_portal/test_framework/tau_effect_diagnostics_evidence');
+const prompt=fs.readFileSync(path.join(portal,'test_framework/config/tau_runner_prompt.md'),'utf8');
+const controls=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
+assert.ok(controls);
+const currentProgrammingInspectors=new Function(controls[1]+'; return currentProgrammingInspectors;')();
 // The production program inspector draws a saved Effect and reads its
 // diagnostics; only the inspector's listed dependencies are provided.
 (async () => {
@@ -28,15 +32,19 @@ const {readEffectDiagnosticsReady} = require('../../../management_portal/test_fr
       const panel = document.getElementById('programInspectorPanel');
       const component = {id: 'effect', kind: 'effect', title: 'Saved Effect',
         config: {script: 'DeliverMessage resident_id="${endpoint.target}" text="' + 'long-script-value'.repeat(45) + '"'}};
+      const wire={id:'wire_fixture',type:'route',source:'event_fixture',target:'effect',label:'Original Route'};
       const state = {lineage: {lineage_id: 'fixture', program: {components: [component], wires: []}},
         selectedProgramObjectId: component.id, programMutationInFlight: false};
       let diagnosticsRead = Promise.resolve();
       const provided = {
         state, esc: PortalUIPrimitives.escapeHtml, toast: () => {}, definitionRevisions: new WeakMap(),
         displayProgramComponentById: id => (id === component.id ? component : null),
-        displayProgramWireById: () => null, refreshFunctionBlockMenu: () => {},
+        displayProgramWireById: id => id===wire.id?wire:null, refreshFunctionBlockMenu: () => {},
         programComponentSwitchHtml: () => '', programResourceAddressHtml: () => '',
         programExecutionExplanationHtml: () => '', programEffectRuntime: () => ({}),
+        programWireTargetLabel:()=> 'Target',programWireTargetPlaceholder:()=> '',programWireTargetHint:()=> '',
+        programWireTargetOptions:()=> '',programDeliveryWireFieldsHtml:()=> '',bindProgramInvokeEditor:()=> {},
+        isPacketOperatorComponent:()=>false,bindProgramReferenceControls:()=>{},
         executeHatgInstruction: () => (diagnosticsRead = window.deferDiagnostics
           ? new Promise((resolve,reject)=>{window.finishDiagnostics=()=>resolve({diagnostics:window.diagnosticItems||[]});window.failDiagnostics=reject;})
           : Promise.resolve({diagnostics: window.diagnosticItems || []})),
@@ -49,6 +57,10 @@ const {readEffectDiagnosticsReady} = require('../../../management_portal/test_fr
         await diagnosticsRead.catch(() => {}); // The native renderer presents transport failure as unavailable.
         await new Promise(resolve => setTimeout(resolve));
       };
+      const renderModule=window.PortalHatgProgramInspectorRender;
+      const wireRenderer=renderModule.createRender(Object.fromEntries(renderModule.dependencies.map(name=>[
+        name,Object.hasOwn(provided,name)?provided[name]:()=>{throw new Error(`Unexpected wire dependency ${name}`);}])));
+      window.inspectOriginalWire=()=>wireRenderer.renderProgramInspector({panel,objectId:wire.id});
     });
     for (const width of [1440, 600, 420]) {
       await page.setViewportSize({width, height: 900});
@@ -87,6 +99,19 @@ const {readEffectDiagnosticsReady} = require('../../../management_portal/test_fr
     await page.evaluate(async()=>{failDiagnostics(new Error('Fixture service unavailable'));await pendingInspection;});
     const unavailable=await readEffectDiagnosticsReady(panel,{componentId:'effect'});
     assert.equal(unavailable.candidates[0].state,'unavailable');assert.equal(unavailable.ready,false);
+    const effectIdentity=await currentProgrammingInspectors(page);
+    assert.equal(effectIdentity.length,1);assert.equal(effectIdentity[0].component_id,'effect');
+    await page.evaluate(()=>inspectOriginalWire());
+    const wireIdentity=await currentProgrammingInspectors(page);
+    assert.equal(wireIdentity.length,1);
+    assert.equal(wireIdentity[0].id,'programInspectorPanel');
+    assert.equal(wireIdentity[0].kind,'wire');assert.equal(wireIdentity[0].wire_id,'wire_fixture');
+    assert.equal(wireIdentity[0].component_id,null);
+    const wirePanel=page.locator('#'+wireIdentity[0].id);
+    assert.equal(await wirePanel.locator('input[name="label"]').inputValue(),'Original Route');
+    assert.equal(await wirePanel.locator('[data-program-delete]').isVisible(),true);
+    assert.equal(await page.locator('#relationInspectorPanel').count(),1);
+    assert.equal(await page.locator('#relationInspectorPanel').isVisible(),false,'program wires do not use the Resident relationship Inspector');
     assert.deepEqual(errors, []);
     console.log('Effect diagnostics stay visible while scrolling at wide/narrow widths; long script wraps without changing its value');
   } finally {await browser.close();}
