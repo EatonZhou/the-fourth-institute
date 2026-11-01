@@ -155,11 +155,8 @@ def _execute_locked(root, record):
         moved = True
         _stage(root, record, "starting")
         _start_database(root)
-        from management_portal.project_rename import relocate_provider_sessions
-        sessions = relocate_provider_sessions(result["source"], result["target"])
-        record['provider_sessions'] = sessions
-        if sessions['errors'] or sessions['conflicts']:
-            raise RuntimeError('Provider session relocation is incomplete; retry this area and target')
+        from management_portal.directory_move_owner import reconcile_dependencies
+        record['provider_sessions'] = reconcile_dependencies(Path(result["source"]), Path(result["target"]))
         atomic_json(root / RECOVERY_RECORD, {**recovery, 'status': 'completed'})
         instance_services.lifecycle("start", root)
         if result["old_copy_retained"]:

@@ -29,13 +29,13 @@ def area_move(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize('failure', ['postgres', 'sessions'])
 def test_area_move_failure_blocks_start_and_same_target_finishes_original_sessions(area_move, monkeypatch, failure):
-    from management_portal import project_rename
+    from management_portal import provider_session_relocation
     instance, source, target, calls = area_move
     def database(root):
         if failure == 'postgres':
             raise RuntimeError('database unavailable')
     monkeypatch.setattr(moves, '_start_database', database)
-    monkeypatch.setattr(project_rename, 'relocate_provider_sessions', lambda a,b: {'errors':['failed'], 'conflicts':[]})
+    monkeypatch.setattr(provider_session_relocation, 'relocate_provider_sessions', lambda a,b: {'errors':['failed'], 'conflicts':[]})
     job = moves.submit(instance.name, 'projects', str(target))['operation']
     failed = moves.execute(instance.name, job['id'])
     assert failed['status'] == 'failed' and failed['area_moved']
@@ -49,11 +49,11 @@ def test_area_move_failure_blocks_start_and_same_target_finishes_original_sessio
     def sessions(a,b):
         received.append((a,b))
         return {'errors':[], 'conflicts':[]}
-    monkeypatch.setattr(project_rename, 'relocate_provider_sessions', sessions)
+    monkeypatch.setattr(provider_session_relocation, 'relocate_provider_sessions', sessions)
     retry = moves.submit(instance.name, 'projects', str(target))['operation']
     assert retry['source'] == str(source)
     assert moves.execute(instance.name, retry['id'])['status'] == 'completed'
-    assert received == [(str(source),str(target))] and calls[-1] == 'start'
+    assert received == [(source,target)] and calls[-1] == 'start'
     assert not (instance.root / moves.RECOVERY_RECORD).exists()
     assert (target / 'marker').read_text() == 'keep'
 
@@ -68,3 +68,23 @@ def test_failure_before_manifest_change_can_restart_original_location(area_move,
     assert load(instance.root).area('projects') == source
     assert not (instance.root / moves.RECOVERY_RECORD).exists()
     assert calls == ['stop','start']
+
+
+def test_area_move_uses_shared_dependency_repair_for_git_backlinks(area_move, monkeypatch):
+    from management_portal import provider_session_relocation
+    instance, source, target, calls = area_move
+    repo = source / 'checkout'
+    repo.mkdir()
+    admin = target.parent / 'external-git-admin'
+    admin.mkdir()
+    (repo / '.git').write_text('gitdir: ' + str(admin) + '\n')
+    (admin / 'gitdir').write_text(str(repo / '.git') + '\n')
+    monkeypatch.setattr(moves, '_start_database', lambda _: None)
+    monkeypatch.setattr(provider_session_relocation, 'relocate_provider_sessions',
+                        lambda *_: {'errors': [], 'conflicts': []})
+    job = moves.submit(instance.name, 'projects', str(target))['operation']
+    result = moves.execute(instance.name, job['id'])
+    assert result['status'] == 'completed'
+    assert (admin / 'gitdir').read_text().strip() == str(target / 'checkout/.git')
+    assert (target / 'checkout/.git').read_text() == 'gitdir: ' + str(admin) + '\n'
+    assert calls == ['stop', 'start']

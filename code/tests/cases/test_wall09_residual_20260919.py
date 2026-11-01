@@ -38,19 +38,19 @@ def test_project_deletion_rejects_registered_symlink_without_touching_neighbor(m
     assert deleted == []
 
 
-@pytest.mark.parametrize("variant", ["root", "outside"])
-def test_project_deletion_rejects_unsafe_targets_before_side_effects(monkeypatch, tmp_path, variant):
-    """Project 路径指向 Projects 根目录或其外部时，删除在任何改动前被拒绝"""
+def test_project_deletion_rejects_instance_area_root_before_side_effects(monkeypatch, tmp_path):
+    """Project 路径指向实例实际区域根目录时，删除在任何改动前被拒绝。"""
+    from management_common.instance_manifest import current_instance
     project_root, registry, archive, deleted = _configure_project(
         monkeypatch, tmp_path, lineages=(["lineage_aaaaaaaaaaaa"], []),
     )
-    target = project_root.parent if variant == "root" else tmp_path / "outside"
-    target.mkdir(exist_ok=True)
+    target = current_instance().area('projects')
+    target.mkdir(parents=True, exist_ok=True)
     document = yaml.safe_load(registry.read_text())
     document["projects"][0]["path"] = str(target)
     registry.write_text(yaml.safe_dump(document))
     before = registry.read_bytes()
-    with pytest.raises(PermissionError, match="之外"):
+    with pytest.raises(ValueError, match="instance root, area root"):
         project_domain.delete_project("Example", "alice")
     assert project_root.is_dir() and target.is_dir()
     assert registry.read_bytes() == before
@@ -58,9 +58,43 @@ def test_project_deletion_rejects_unsafe_targets_before_side_effects(monkeypatch
     assert deleted == []
 
 
+@pytest.mark.parametrize('origin', ['created', 'adopted'])
+@pytest.mark.parametrize('internal', [False, True])
+def test_project_deletion_follows_origin_inside_and_outside_areas(monkeypatch, tmp_path, origin, internal):
+    """项目按目录来源删除；区域内外均只清理 created，adopted 文件保留。"""
+    from management_common.instance_manifest import current_instance
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    _, registry, _, _ = _configure_project(monkeypatch, tmp_path)
+    root = (current_instance().area('projects') if internal else tmp_path) / 'target'
+    root.mkdir(parents=True)
+    (root / 'content.md').write_text('owned or adopted content')
+    neighbor = root.with_name('neighbor')
+    neighbor.mkdir()
+    (neighbor / 'keep.md').write_text('neighbor')
+    document = yaml.safe_load(registry.read_text())
+    document['projects'][0].update(path=str(root), directory={'origin': origin, 'owner_id': 'Example'})
+    registry.write_text(yaml.safe_dump(document))
+
+    project_domain.delete_project('Example', 'alice')
+
+    assert yaml.safe_load(registry.read_text())['projects'] == []
+    assert (root / 'content.md').read_text() == 'owned or adopted content'
+    cleanup = get_directory_cleanup_store()
+    jobs = cleanup.status(owner_id='Example')
+    assert bool(jobs) == (origin == 'created')
+    assert all(job['status'] == 'pending' for job in jobs)
+    cleanup.run_pending()
+    assert root.exists() == (origin == 'adopted')
+    if origin == 'adopted':
+        assert (root / 'content.md').read_text() == 'owned or adopted content'
+    else:
+        assert all(job['status'] == 'completed' for job in cleanup.status(owner_id='Example'))
+    assert (neighbor / 'keep.md').read_text() == 'neighbor'
+
+
 @pytest.mark.parametrize("project_type", ["academic", "company", "personal", "other"])
-def test_project_seed_is_written_under_the_registry_lock(monkeypatch, tmp_path, project_type):
-    """创建 Project 时在注册表锁内写种子目录，academic 类型另建 article 与 references"""
+def test_project_seed_is_staged_before_atomic_registration(monkeypatch, tmp_path, project_type):
+    """种子在私有目录准备，完整目录发布后才登记，academic 另建 article 与 references。"""
     share = tmp_path / "share"
     projects = share / "Projects"
     projects.mkdir(parents=True)
@@ -79,21 +113,28 @@ def test_project_seed_is_written_under_the_registry_lock(monkeypatch, tmp_path, 
 
     @contextmanager
     def observe_lock(**options):
+        assert (projects / 'Fixture' / 'summary.md').is_file()
         with original_mutate(**options) as document:
             held.append(document)
             yield document
             held.clear()
 
-    def observe_seed(*args):
-        assert held
+    stages = []
+    def observe_seed(stage, *args):
+        assert not held
+        assert stage.is_dir() and stage != projects / 'Fixture'
+        assert stage.parent == projects and not (projects / 'Fixture').exists()
+        assert yaml.safe_load(registry.read_text())['projects'] == []
+        stages.append(stage)
         assert not (share / ".history").exists()
-        return original_seed(*args)
+        return original_seed(stage, *args)
 
     monkeypatch.setattr(project.project_registry, "mutate", observe_lock)
     monkeypatch.setattr(project, "_write_project_seed_files", observe_seed)
     result = project.create_project({"id": "Fixture", "project_type": project_type})
     assert result["resource_id"] == "Fixture"
     assert not held
+    assert len(stages) == 1 and not stages[0].exists()
     root = projects / "Fixture"
     for relative in ["agent_port/skills", "agent_port/tools", "agents", "knowledge_base/design", "src", "to_archive"]:
         assert (root / relative).is_dir()
@@ -103,8 +144,8 @@ def test_project_seed_is_written_under_the_registry_lock(monkeypatch, tmp_path, 
 
 
 @pytest.mark.parametrize("failure", ["seed", "registry"])
-def test_project_creation_compensates_partial_directory_and_registry(monkeypatch, tmp_path, failure):
-    """创建 Project 时种子文件或注册表写入失败会删除半成品目录并恢复注册表"""
+def test_project_creation_retries_staged_or_published_files_after_failure(monkeypatch, tmp_path, failure):
+    """种子或登记失败保留持久创建意图，同一操作重试复用身份并完成登记。"""
     share = tmp_path / "share"
     projects = share / "Projects"
     projects.mkdir(parents=True)
@@ -117,20 +158,37 @@ def test_project_creation_compensates_partial_directory_and_registry(monkeypatch
     registry.write_text(before)
     before = registry.read_text()
     monkeypatch.setattr(project, "PROJECTS_ROOT", projects)
-    if failure == "seed":
-        def fail_seed(root, *_args):
-            root.mkdir()
-            (root / "partial").write_text("fixture")
-            raise OSError("synthetic seed failure")
-        monkeypatch.setattr(project, "_write_project_seed_files", fail_seed)
-    else:
-        def fail_registry(*_args):
-            raise OSError("synthetic registry failure")
-        monkeypatch.setattr(RegistryWriter, "put", fail_registry)
-    with pytest.raises(OSError, match=f"synthetic {failure}"):
-        project.create_project({"id": "Fixture", "project_type": "company"})
-    assert not (projects / "Fixture").exists()
+    payload = {"id": "Fixture", "project_type": "company"}
+    stages = []
+    with monkeypatch.context() as patch:
+        if failure == "seed":
+            def fail_seed(root, *_args):
+                assert root.is_dir()
+                stages.append(root)
+                (root / "partial").write_text("fixture")
+                raise OSError("synthetic seed failure")
+            patch.setattr(project, "_write_project_seed_files", fail_seed)
+        else:
+            def fail_registry(*_args):
+                raise OSError("synthetic registry failure")
+            patch.setattr(RegistryWriter, "put", fail_registry)
+        with pytest.raises(OSError, match=f"synthetic {failure}"):
+            project.create_project(payload, operation_id='project-failure-retry')
+    root = projects / 'Fixture'
+    assert root.exists() == (failure == 'registry')
     assert registry.read_text() == before
+    if failure == 'registry':
+        (root / 'user.md').write_text('preserve published edits')
+    else:
+        assert (stages[0] / 'partial').read_text() == 'fixture'
+    result = project.create_project(payload, operation_id='project-failure-retry')
+    assert result['resource_id'] == 'Fixture'
+    assert (root / 'summary.md').is_file() and not (root / 'partial').exists()
+    assert all(not stage.exists() for stage in stages)
+    assert [item['id'] for item in yaml.safe_load(registry.read_text())['projects']] == ['Fixture']
+    if failure == 'registry':
+        assert (root / 'user.md').read_text() == 'preserve published edits'
+    assert project.create_project(payload, operation_id='project-failure-retry')['resource_id'] == 'Fixture'
 
 
 

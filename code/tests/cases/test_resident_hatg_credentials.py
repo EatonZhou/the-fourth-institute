@@ -131,3 +131,36 @@ def test_resident_deletion_confirmation_disables_the_bearer(
     )
     assert agent_token_auth.authenticate_bearer_token(token) is None
     assert len(deferred) == 1  # the tombstone publication is still scheduled
+
+
+@pytest.mark.parametrize("rollback", [False, True])
+def test_deletion_revokes_bearer_only_after_commit_before_deferred_projection(
+    credential_store: Path, monkeypatch: pytest.MonkeyPatch, rollback: bool,
+) -> None:
+    """提交即撤销 bearer；回滚保留凭据，投影解锁回调不控制认证失效。"""
+    from management_portal.society_service import invariant_locks, resident_workspace_domain
+    from management_portal.society_service.state_store import get_lineage_data_store
+
+    path = resident_hatg_credentials.ensure_resident_credential(RESIDENT_ID, LINEAGE_ID)
+    token = path.read_text(encoding="utf-8").strip()
+    deferred = []
+    monkeypatch.setattr(invariant_locks, "defer_until_state_unlock", deferred.append)
+
+    class Rollback(Exception):
+        pass
+
+    try:
+        with get_lineage_data_store().database.transaction():
+            resident_workspace_domain._confirm_deleted_resident_resources(
+                [{"resident_id": RESIDENT_ID, "lineage_id": LINEAGE_ID}], {RESIDENT_ID: 1},
+            )
+            assert agent_token_auth.authenticate_bearer_token(token) is not None
+            assert path.exists() and deferred == []
+            if rollback:
+                raise Rollback()
+    except Rollback:
+        pass
+
+    assert (agent_token_auth.authenticate_bearer_token(token) is not None) == rollback
+    assert path.exists() == rollback
+    assert len(deferred) == (0 if rollback else 1)

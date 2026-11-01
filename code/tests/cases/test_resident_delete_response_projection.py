@@ -69,7 +69,11 @@ def test_delete_resident_skips_unused_view_but_keeps_committed_effects(deletion_
         operation = connection.execute('SELECT payload_json FROM resident_lifecycle_operations WHERE resident_id=%s', (target,)).fetchone()
     assert operation is not None
     steps = json_value(operation['payload_json'])['steps']
-    assert {'release', 'forget_deleted', 'remove'} <= {step['kind'] for step in steps}
+    assert {'release', 'forget_deleted'} <= {step['kind'] for step in steps}
+    assert 'remove' not in {step['kind'] for step in steps}
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    cleanup = get_directory_cleanup_store().status(owner_id=target)
+    assert cleanup and all(job['status'] == 'pending' for job in cleanup)
 
 
 def test_graph_deletion_still_returns_verified_lineage(deletion_set, monkeypatch):

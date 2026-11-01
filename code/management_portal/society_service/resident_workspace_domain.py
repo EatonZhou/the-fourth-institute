@@ -333,7 +333,6 @@ def _confirm_deleted_resident_resources(
         worker = ResidentResourceProjectionWorker(store, resource_client)
         for record in records:
             resident_id = record["resident_id"]
-            resident_hatg_credentials.revoke_resident_credential(resident_id)
             project_committed(
                 {
                     "projection": "resident.resource_tombstone",
@@ -344,8 +343,14 @@ def _confirm_deleted_resident_resources(
                 lambda selected=resident_id: worker.confirm_tombstone(selected),
             )
 
-    resident_catalog.get_catalog().state_store.database.after_commit(
-        lambda: invariant_locks.defer_until_state_unlock(publish))
+    def committed() -> None:
+        # Revocation follows the durable deletion, but must not wait for
+        # resource projection or lock release. A rollback keeps the bearer.
+        for record in records:
+            resident_hatg_credentials.revoke_resident_credential(record["resident_id"])
+        invariant_locks.defer_until_state_unlock(publish)
+
+    resident_catalog.get_catalog().state_store.database.after_commit(committed)
 
 
 def confirm_resident_deletion_projection(resident_id: str) -> None:

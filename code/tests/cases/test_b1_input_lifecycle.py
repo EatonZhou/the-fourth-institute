@@ -57,6 +57,7 @@ def test_catalog_deletion_archives_turn_and_queues_ack_atomically(tmp_path, monk
         pending = c.execute('SELECT payload_json FROM resident_lifecycle_operations WHERE resident_id=%s', (rid,)).fetchone()
     assert json_value(pending['payload_json'])['steps'] == [
         {'kind': 'execution_ack', 'execution_id': 'execution-finished', 'actor': 'CASE-A'},
+        {'kind': 'workspace_document', 'resident_id': rid},
     ]
     assert get_agent_data_store().execution('execution-finished')['status'] == 'failed'
     catalog.remove([tombstone])

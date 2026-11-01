@@ -60,6 +60,7 @@ def reconcile_dependencies(source, target):
     if result['errors'] or result['conflicts']:
         raise RuntimeError('Provider working-directory relocation is pending: ' + str(result['errors'] + result['conflicts']))
     repair_git_worktrees(source, target)
+    return result
 
 
 def recover_pending_moves():

@@ -37,7 +37,7 @@ def sparse_history(tmp_path, monkeypatch):
     repository = ResidentConversationRepository(store, agents)
     monkeypatch.setattr(resident_catalog, "get_catalog", lambda: catalog)
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: repository)
-    def paths(ids, *, connection=None):
+    def paths(ids, *, connection=None, include_deleted=False):
         assert not list(ids), "Deleted identity must not hydrate Workspace paths"
         return {}
     def unexpected_folder(*args, **kwargs):

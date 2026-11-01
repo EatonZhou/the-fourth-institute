@@ -64,12 +64,14 @@ def test_deleted_notification_waits_for_owner_commit_and_state_unlock():
     def transaction(body):calls.append('begin');body();calls.append('commit')
     store.transaction=transaction
     catalog=SimpleNamespace(state_store=store,remove=Mock(return_value=[]))
+    lifecycle=SimpleNamespace(enqueue_cleanup=Mock(),cancel_transfers_for_deletion=Mock())
     publish=changes.resident_deleted
     def deleted(target):
         assert calls[-1]=='commit';calls.append('deletion_notification');publish(target)
-    with patch.object(owner.resident_catalog,'get_catalog',return_value=catalog),patch.object(resident_record_domain,'lifecycle_operations',return_value=SimpleNamespace(enqueue_cleanup=Mock())),patch.object(lineage_definition_scope,'check_before_membership_write'),patch.object(invariant_locks,'lock_held',return_value=False),patch.object(changes,'resident_deleted',side_effect=deleted),patch.object(changes,'lineage_changed'):
+    with patch.object(owner.resident_catalog,'get_catalog',return_value=catalog),patch.object(resident_record_domain,'lifecycle_operations',return_value=lifecycle),patch.object(lineage_definition_scope,'check_before_membership_write'),patch.object(invariant_locks,'lock_held',return_value=False),patch.object(changes,'resident_deleted',side_effect=deleted),patch.object(changes,'lineage_changed'):
         with changes.collect_changes() as batch:result=owner._commit_resident_deletions([plan])
         assert result[2]=={RID:7} and calls==['begin','commit','deletion_notification']
+        lifecycle.cancel_transfers_for_deletion.assert_called_once_with({RID})
         assert batch==[('resident',RID,'identity',{'kind':'deleted'})]
         catalog.remove.side_effect=RuntimeError('isolated transaction failure')
         with changes.collect_changes() as rolled_back:

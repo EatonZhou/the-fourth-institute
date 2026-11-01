@@ -136,18 +136,6 @@ def test_deletion_cancels_execution_before_identity_commit(future_creation_store
     assert events == ['cancel', 'wait']
 
 
-def test_move_execution_scope_restores_original_intake_on_failure(future_creation_store):
-    from management_portal.society_service.resident_lifecycle_domain import directory_move_execution_scope
-    from management_portal.society_service import resident_catalog
-    owner = resident_domain.register_resident(_new_session_payload('Move'), 'sample_admin')
-    rid = owner['resident_id']
-    with pytest.raises(RuntimeError, match='copy failed'):
-        with directory_move_execution_scope([owner]):
-            assert resident_catalog.get_catalog().get(rid)['intake_open'] is False
-            raise RuntimeError('copy failed')
-    assert resident_catalog.get_catalog().get(rid)['intake_open'] is True
-
-
 def test_project_queue_failure_rolls_back_children_without_publishing_tombstones(future_creation_store, monkeypatch):
     from management_portal.society_service import project_domain, project_folders, resident_catalog
     from management_portal.society_service.resident_resource_projection import ResidentResourceProjectionWorker

@@ -91,8 +91,8 @@ def test_fork_watchboard_survives_source_removal(tmp_path, monkeypatch):
     assert (watchboard._watchboard_root(child) / 'script.py').read_text() == 'fixture'
 
 
-def test_workspace_projection_isolates_an_inconsistent_resident(tmp_path):
-    """Workspace 投影隔离记录不一致的 Resident"""
+def test_workspace_projection_isolates_missing_owner_and_uses_registered_location(tmp_path):
+    """自有登记缺失不影响其他 Resident，默认目录来自有效 Workspace 登记"""
     from management_portal.society_service.resident_workspace_storage import project_records
 
     bad, good = 'resident_aaaaaaaaaaaa', 'resident_bbbbbbbbbbbb'
@@ -101,11 +101,12 @@ def test_workspace_projection_isolates_an_inconsistent_resident(tmp_path):
     rows = project_records(
         [{'resident_id': bad, 'lineage_id': lineage, 'owned_workspace_id': first},
          {'resident_id': good, 'lineage_id': lineage, 'owned_workspace_id': second}],
-        {}, {first: str(tmp_path / 'old'), second: str(tmp_path / 'residents' / good / 'workspace')},
+        {}, {first: '', second: str(tmp_path / 'relocated')},
         {lineage: str(tmp_path)},
     )
     assert rows[0]['default_cwd'] == ''
-    assert rows[1]['default_cwd'] == str(tmp_path / 'residents' / good / 'workspace')
+    assert rows[0]['owned_workspace']['status'] == 'deleted'
+    assert rows[1]['default_cwd'] == str(tmp_path / 'relocated')
 
 
 def test_project_root_requires_registration_even_when_named_folder_exists(tmp_path, monkeypatch):
@@ -115,7 +116,6 @@ def test_project_root_requires_registration_even_when_named_folder_exists(tmp_pa
     (tmp_path / 'Unregistered').mkdir()
     monkeypatch.setattr(project_domain, 'PROJECTS_ROOT', tmp_path)
     monkeypatch.setattr(project_domain.project_registry, 'load', lambda: {'projects': []})
-    monkeypatch.setattr(project_domain.resource_client, 'project_roots', lambda: {})
     with pytest.raises((ValueError, KeyError)):
         project_folders.project_root_for_id('Unregistered')
 

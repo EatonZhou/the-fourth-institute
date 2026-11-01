@@ -72,15 +72,17 @@ def test_deleted_lineage_rejects_late_definition_write(lineage):
 
 
 def test_deleting_workspace_owner_deletes_nested_bindings_and_keeps_external_workspace(lineage, tmp_path):
-    """删除所有者只删除无存活引用的工作区，共享嵌套及外部绑定保持不变"""
+    """删除 created 所有者注销嵌套工作区及引用，外部绑定与读者执行保持不变。"""
     from management_portal.resources.workspace_store import get_workspace_store
     state = get_lineage_data_store()
     owner, member = resident(lineage, 'Workspace owner'), resident(lineage, 'Workspace reader')
     record = state.resident_record(owner)
+    execution_before = state.resident_execution_record(member)
     ws = get_workspace_store()
     with state.database.read() as c:
         original = {r['workspace_id'] for r in c.execute('SELECT workspace_id FROM resident_workspace_bindings WHERE resident_id=%s', (member,)).fetchall()}
         operations_before = c.execute('SELECT * FROM resident_lifecycle_operations WHERE resident_id=%s ORDER BY operation_id', (member,)).fetchall()
+        assert operations_before == []
     nested, external, unused = 'workspace_0123456789ab', 'workspace_0123456789ac', 'workspace_0123456789ad'
     ws.ensure(nested, record['owned_workspace']['path'] + '/family_memory')
     ws.ensure(unused, record['owned_workspace']['path'] + '/unused')
@@ -90,13 +92,23 @@ def test_deleting_workspace_owner_deletes_nested_bindings_and_keeps_external_wor
                   (member, nested, 'Family memory', member, external, 'Shared work'))
     before = ws.rows([nested, external])
     tombstone = {'resident_id': owner, 'deleted_at': '2026-10-10T00:00:00Z', 'deleted_by': 'sample_admin'}
-    deleted = state.remove_residents([tombstone])
-    assert ws.rows([nested, external]) == before
-    assert ws.rows([unused, record['owned_workspace_id']]) == {}
-    assert set(deleted) == {record['owned_workspace']['path'], record['owned_workspace']['path'] + '/unused'}
-    history = ws.rows([unused, record['owned_workspace_id']], include_deleted=True)
+    state.remove_residents([tombstone])
+    assert ws.rows([external]) == {external: before[external]}
+    assert ws.rows([nested, unused, record['owned_workspace_id']]) == {}
+    history = ws.rows([nested, unused, record['owned_workspace_id']], include_deleted=True)
+    assert set(history) == {nested, unused, record['owned_workspace_id']}
     assert all(row['deleted_at'] and row['deleted_by'] == 'sample_admin' for row in history.values())
     assert state.remove_residents([tombstone]) == []
     with state.database.read() as c:
-        assert {r['workspace_id'] for r in c.execute('SELECT workspace_id FROM resident_workspace_bindings WHERE resident_id=%s', (member,)).fetchall()} == original | {nested, external}
-        assert c.execute('SELECT * FROM resident_lifecycle_operations WHERE resident_id=%s ORDER BY operation_id', (member,)).fetchall() == operations_before
+        assert {r['workspace_id'] for r in c.execute('SELECT workspace_id FROM resident_workspace_bindings WHERE resident_id=%s', (member,)).fetchall()} == original | {external}
+        operations = c.execute('SELECT * FROM resident_lifecycle_operations WHERE resident_id=%s ORDER BY operation_id', (member,)).fetchall()
+        assert len(operations) == 1
+        assert operations[0]['operation_id'] == 'workspace-document:' + member
+        from management_common.json_columns import json_value
+        assert json_value(operations[0]['payload_json']) == {
+            'steps': [{'kind': 'workspace_document', 'resident_id': member}], 'next_step': 0,
+        }
+    assert state.resident_record(member)['intake_open'] is True
+    assert state.resident_execution_record(member) == execution_before
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    assert get_directory_cleanup_store().status(owner_id=owner)
