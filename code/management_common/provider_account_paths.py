@@ -57,7 +57,10 @@ def prepare_registration_directory(data: dict) -> Path | None:
             canonical_directory(path)
         else:
             created = path
-            ensure_private_directory(path)
+    # Validate existing directories before committing their registration too.
+    # Hosting performs the same check; discovering an unsafe ACL only there
+    # would report not_committed after the database row had already been saved.
+    ensure_private_directory(path)
     config["account_dir"] = str(path)
     data["config"] = config
     return created

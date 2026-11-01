@@ -61,6 +61,40 @@ def test_paths_require_canonical_absolute_non_symlink_directory(tmp_path):
         hosting.registered_home({"kind": "subscription_login", "config": {}})
 
 
+def test_unsafe_existing_directory_does_not_leave_a_registration(tmp_path, monkeypatch):
+    from management_common.file_permissions import PrivateFileError
+    directory = tmp_path / 'unsafe-existing'
+    directory.mkdir()
+    marker = directory / 'provider-file'
+    marker.write_text('keep')
+    def reject(path):
+        assert path == directory
+        raise PrivateFileError('Unsafe account ACL')
+    monkeypatch.setattr(paths, 'ensure_private_directory', reject)
+    with pytest.raises(InstructionError, match='Unsafe account ACL'):
+        store.create_registration({'account_id': 'codex_acl_rejected', 'provider': 'codex',
+            'kind': 'subscription_login', 'config': {'account_dir': str(directory)}}, 'test')
+    assert store.registration('codex_acl_rejected') is None
+    assert marker.read_text() == 'keep'
+
+
+def test_unsafe_directory_update_preserves_registration(tmp_path, monkeypatch):
+    from management_common.file_permissions import PrivateFileError
+    original, unsafe = tmp_path / 'original-account', tmp_path / 'unsafe-update'
+    unsafe.mkdir()
+    row = store.create_registration({'account_id': 'codex_acl_update', 'provider': 'codex',
+        'kind': 'subscription_login', 'config': {'account_dir': str(original)}}, 'test')
+    def reject(path):
+        assert path == unsafe
+        raise PrivateFileError('Unsafe account ACL')
+    monkeypatch.setattr(paths, 'ensure_private_directory', reject)
+    with pytest.raises(InstructionError, match='Unsafe account ACL'):
+        store.update_registration('codex_acl_update', {'config': {'account_dir': str(unsafe)}},
+                                  row['version'], 'test')
+    assert store.registration('codex_acl_update') == row
+    assert original.is_dir() and unsafe.is_dir()
+
+
 def test_host_resolves_registration_after_runtime_is_removed(tmp_path, monkeypatch):
     from management_portal import codex_app_server_host as host
     import shutil

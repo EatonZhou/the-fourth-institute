@@ -175,9 +175,13 @@ def update_registration(account_id, changes, expected_version, actor):
         if row["kind"] == "subscription_login":
             if not row["config"].get("account_dir"):
                 raise invalid("订阅登记必须保留 config.account_dir")
-            from management_common.provider_account_paths import registered_home
+            from management_common.provider_account_paths import registered_home, prepare_registration_directory
             if not registered_home(row).is_dir():
                 raise invalid("账号目录不存在")
+            try:
+                prepare_registration_directory(row)
+            except (OSError, ValueError) as exc:
+                raise invalid(str(exc)) from None
         if row["config"].get("is_default"):
             # Marking an existing account moves the mark in one transaction, so
             # a Provider never has two defaults or, in between, none.
