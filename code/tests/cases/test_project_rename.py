@@ -30,6 +30,11 @@ CHANGE = ProjectRename("ACLink", "ACLinkNext", SHARE / "Projects/ACLink", SHARE 
     ("见 `/share/Projects/ACLink`。", "见 `/share/Projects/ACLinkNext`。"),
     ("目录 /share/Projects/ACLink.", "目录 /share/Projects/ACLinkNext."),
     ("/Projects/ACLink", "/Projects/ACLinkNext"),
+    ("projects:ACLink", "projects:ACLinkNext"),
+    ("projects:ACLink/agents/lineage_a/residents/resident_b/workspace", "projects:ACLinkNext/agents/lineage_a/residents/resident_b/workspace"),
+    ("projects:ACLink-Co-Kernel/x", "projects:ACLink-Co-Kernel/x"),
+    ("projects:ACLink.md", "projects:ACLink.md"),
+    ("features:projects:ACLink/x", "features:projects:ACLink/x"),
     ("file:///share/Projects/ACLink/a.pdf", "file:///share/Projects/ACLinkNext/a.pdf"),
     # Other directories that start the same way, or contain the path.
     ("/share/Projects/ACLink-Co-Kernel/x", "/share/Projects/ACLink-Co-Kernel/x"),
@@ -254,6 +259,21 @@ def _probe_rows(world, table):
     with portal_database(schema="rename_probe").snapshot() as connection:
         return [tuple(row) for row in connection.execute(
             f'SELECT * FROM "{world["probe"]}".{table} ORDER BY 1').fetchall()]
+
+
+def test_rename_updates_area_references_even_when_the_registered_file_is_missing(world):
+    database = portal_database(schema="rename_probe")
+    probe = world["probe"]
+    with database.transaction() as connection:
+        connection.execute(f'CREATE TABLE "{probe}".locations (id TEXT PRIMARY KEY, path TEXT, config JSONB)')
+        connection.execute(f'INSERT INTO "{probe}".locations VALUES (%s,%s,%s::jsonb)', (
+            "workspace_stable", "projects:Old/missing", json.dumps({"repo": "projects:Old/src"})))
+        connection.execute(f'INSERT INTO "{probe}".instruction_executions VALUES (%s,%s)',
+                           ("area-history", "projects:Old/missing"))
+    project_rename.rename_project("Old", "New", "alice", residents=_Residents())
+    assert _probe_rows(world, "locations") == [
+        ("workspace_stable", "projects:New/missing", {"repo": "projects:New/src"})]
+    assert ("area-history", "projects:Old/missing") in _probe_rows(world, "instruction_executions")
 
 
 def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeypatch):

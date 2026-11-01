@@ -169,7 +169,7 @@ DECLARATIONS = (
         R("account_id", description="执行账号 ID"),
         R("changes", "object", "要修改的登记字段：config、route_id、enabled、max_concurrency"),
     ), (R("registration", "object", "修改后的" + REGISTRATION),), mutates=True, target="account_id", owner="execution"),
-    _d("DeleteProviderAccount", FIXED, "删除空闲账号及其主机目录与服务实例。", (R("account_id", description="执行账号 ID"),),
+    _d("DeleteProviderAccount", FIXED, "删除空闲账号登记及其服务实例，保留主机账号目录。", (R("account_id", description="执行账号 ID"),),
        (R("account_id", description="被删除的执行账号"),), mutates=True, target="account_id", owner="execution"),
     _d("ListBackendRoles", FIXED, "读取 Backend 角色映射。", (),
        (R("roles", "array", "Backend 角色：role、account_id、model、reasoning_effort、version…"),), owner="execution"),

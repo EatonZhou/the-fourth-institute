@@ -116,7 +116,10 @@ class ProjectRename:
             new_relative = self.new_root.relative_to(self.projects_root).as_posix()
         except ValueError:
             return pairs
-        # The registry and older records write Project paths relative to /share.
+        # Current registrations use area references, including absent paths.
+        # Rewrite them alongside physical paths; IDs and bindings stay stable.
+        pairs.append(("projects:" + old_relative, "projects:" + new_relative))
+        # Older records may still use this spelling during conversion.
         pairs.append(("/Projects/" + old_relative, "/Projects/" + new_relative))
         return pairs
 
@@ -131,7 +134,9 @@ class Rewriter:
         # A path starts after a separator and ends where a path name could not continue;
         # "/x/share/Projects/A" and "/share/Projects/AB" are other paths.
         self._paths = re.compile(
-            r"(?<![\w.~-])(?:" + "|".join(re.escape(old) for old, _new in pairs) + r")(?![\w@+-]|\.\w)"
+            r"(?<![\w.~-])(?:" + "|".join(
+                (r"(?<!:)" if old.startswith("projects:") else "") + re.escape(old)
+                for old, _new in pairs) + r")(?![\w@+-]|\.\w)"
         ) if pairs else None
         self._segment = re.compile(
             r"(^|:)project:" + re.escape(change.old_id) + r"(?=$|:)"
