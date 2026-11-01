@@ -137,6 +137,38 @@ def test_tau_fixture_isolation_preserves_existing_family_policy_and_members(line
     assert ok("GetResident", {"resident_id": fixture})["resident"]["resident_id"] == fixture
 
 
+def test_tau_family_template_disables_migration_before_first_delivery(lineage, charters, monkeypatch):
+    """原生模板接受创建时关闭迁移，首次投递前生效，默认模板不变。"""
+    from management_portal.society_service import templates, resident_intake_domain
+    import json
+    from pathlib import Path
+    import subprocess
+
+    source = next(t for t in templates.list_templates() if t["builtin_key"] == "family")
+    parameter = next((p for p in source["parameters"] if p["name"] == "auto_migrate"), None)
+    assert parameter and parameter["type"] == "boolean" and parameter["default"] is True
+    script = Path(__file__).with_name('javascript') / 'tau_family_creation.cjs'
+    form = subprocess.run(['node', str(script)], input=json.dumps(source),
+                          capture_output=True, text=True, timeout=30)
+    assert form.returncode == 0, form.stderr
+    parameters = json.loads(form.stdout)
+    assert parameters == {"auto_migrate": False}
+    member = resident(lineage, "Fixture member")
+    deliveries = []
+    def delivery(resident_id, actor, content, **options):
+        families = [b["family"] for b in graph(lineage)["function_blocks"] if b.get("family")]
+        assert families and all(f["auto_migrate"] is False for f in families)
+        deliveries.append(resident_id)
+        return {}
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", delivery)
+    applied = ok("ApplyTemplate", {"lineage_id": lineage, "template_id": source["template_id"],
+                                  "parameters": parameters,
+                                  "target": {"kind": "selection", "resident_ids": [member]}})
+    assert applied["steward_resident_id"] in deliveries
+    assert templates.get(source["template_id"]) == source
+    ok("Unfamilize", {"lineage_id": lineage, "family_id": applied["family_id"]})
+
+
 def test_external_wire_in_another_block_rewires_and_new_member_joins(lineage, charters):
     """Family 重接外部连线并为新成员补齐监听连线"""
     first, second = resident(lineage, "First"), resident(lineage, "Second")

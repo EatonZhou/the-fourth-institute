@@ -22,6 +22,7 @@ SAMPLES = (
     "test_tau_browser_bootstrap.py::test_terminal_wait_retains_transient_reads_and_original_deadline",
     "test_tau_browser_bootstrap.py::test_prompt_first_refresh_waits_for_the_original_view_to_remount",
     "test_family_lifecycle_elements.py::test_tau_fixture_isolation_preserves_existing_family_policy_and_members",
+    "test_family_lifecycle_elements.py::test_tau_family_template_disables_migration_before_first_delivery",
 )
 
 

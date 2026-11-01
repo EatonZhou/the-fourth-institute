@@ -349,8 +349,15 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   }
 
   async function preflightResidentRoleAccounts(dialog, { provider, account,
-    providerLabel = 'Provider', accountLabel = 'Account' } = {}) {
+    providerLabel = 'Provider', accountLabel = 'Account', requireAutoMigrationOff = false } = {}) {
     if (!provider || !account) throw new TypeError('Explicit campaign Provider and account are required');
+    if (requireAutoMigrationOff) {
+      const migration = dialog.locator('input[type="checkbox"][data-apply-parameter="auto_migrate"]');
+      if (await migration.count() !== 1 || !await migration.isVisible() || await migration.isChecked()) {
+        throw Object.assign(new Error('Family automatic migration must be explicitly disabled before Apply'),
+          {code: 'tau.family_auto_migration_enabled'});
+      }
+    }
     const groups = dialog.getByRole('group'), observed = [];
     for (let i = 0; i < await groups.count(); i++) {
       const group = groups.nth(i), accountField = group.getByRole('combobox', {name: accountLabel, exact: true});

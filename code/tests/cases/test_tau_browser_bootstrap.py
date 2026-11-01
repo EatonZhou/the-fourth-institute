@@ -470,6 +470,13 @@ def test_template_account_preflight_checks_steward_before_apply(tmp_path, portal
         "e.querySelectorAll('option')[0].value='codex';e.querySelectorAll('option')[1].value='two';});"
         "await p.action('apply-template',async()=>{applied++;},{preflight,ready:async()=>true});"
         "assert.equal(applied,1);"
+        "await assert.rejects(p.preflightResidentRoleAccounts(dialog,{provider:'codex',account:'two',requireAutoMigrationOff:true}),"
+        "{code:'tau.family_auto_migration_enabled'});"
+        "await dialog.evaluate(e=>e.insertAdjacentHTML('beforeend','<input type=checkbox data-apply-parameter=auto_migrate checked>'));"
+        "await assert.rejects(p.preflightResidentRoleAccounts(dialog,{provider:'codex',account:'two',requireAutoMigrationOff:true}),"
+        "{code:'tau.family_auto_migration_enabled'});"
+        "await dialog.locator('[data-apply-parameter=auto_migrate]').uncheck();"
+        "await p.preflightResidentRoleAccounts(dialog,{provider:'codex',account:'two',requireAutoMigrationOff:true});"
     ))
     assert result.returncode == 0, result.stderr
 
