@@ -167,12 +167,30 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       await root.evaluate(n => n.hidden = false);
       assert.equal((await readResidentChatReady(root, { residentId: 'resident_other' })).ready, false);
       assert.equal((await readResidentChatReady(root, { residentId })).ready, true);
-      const before = { requests: requests.length, url: page.url(), html: await root.innerHTML() };
+      const sampledRootId = await root.getAttribute('id');
       const saved = JSON.stringify(first);
-      await read();
-      assert.equal(requests.length, before.requests, 'location sampling sends no request or readmark');
-      assert.equal(page.url(), before.url);
-      assert.equal(await root.innerHTML(), before.html);
+      // Background polling can finish between two Node-side observations.
+      // Guard only the helper's synchronous browser callback, in its own task.
+      const readOnlyPage = {evaluate: async callback => {
+        const observed = await page.evaluate(({source, rootId}) => {
+          const originalFetch = window.fetch, originalSend = XMLHttpRequest.prototype.send;
+          const calls = [];
+          const snapshot = () => ({url: location.href, html: document.getElementById(rootId).innerHTML});
+          const before = snapshot();
+          window.fetch = () => { calls.push('fetch'); throw new Error('unexpected helper fetch'); };
+          XMLHttpRequest.prototype.send = () => { calls.push('xhr'); throw new Error('unexpected helper xhr'); };
+          try { return {value: new Function('return (' + source + ')()')(), calls, before, after: snapshot()}; }
+          finally { window.fetch = originalFetch; XMLHttpRequest.prototype.send = originalSend; }
+        }, {source: callback.toString(), rootId: sampledRootId});
+        assert.deepEqual(observed.calls, [], 'location sampling sends no request or readmark');
+        assert.deepEqual(observed.after, observed.before, 'sampling preserves the native URL and Chat DOM');
+        return observed.value;
+      }};
+      // A real, unrelated request must not be attributed to the helper.
+      await page.evaluate(() => fetch('/api/me').then(response => response.json()));
+      const isolatedRead = await readHomeChatNavigation(readOnlyPage, options);
+      assert.equal(isolatedRead.error, null);
+      assert.equal(isolatedRead.location_matches, true);
       assert.equal(JSON.stringify(first), saved);
       await page.close();
       const failed = await read();

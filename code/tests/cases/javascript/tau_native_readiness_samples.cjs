@@ -51,6 +51,18 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await menu.waitFor({state: 'hidden'});
   assert.equal((await readResidentMenuSession(menu, {residentId})).ready, false);
   assert.equal((await readResidentChatReady(root, {residentId})).ready, true);
+  await root.getByRole('button', {name:'Clear Resident context',exact:true}).click();
+  const resetConfirmation=page.getByRole('alertdialog',{name:'Clear Resident context?',exact:true});
+  await resetConfirmation.waitFor({state:'visible'});
+  assert.equal(await page.getByRole('dialog',{name:'Clear Resident context?',exact:true}).count(),0);
+  assert.ok(await controls.currentNativeDialog(page,'Clear Resident context?'),
+    'the public modal finder must discover the native Reset alertdialog');
+  assert.equal(requests.filter(r=>r.instruction==='ClearContext').length,0,
+    'opening confirmation has not submitted Reset');
+  await resetConfirmation.getByRole('button',{name:'Cancel',exact:true}).click();
+  await resetConfirmation.waitFor({state:'hidden'});
+  assert.equal(await controls.currentNativeDialog(page,'Clear Resident context?'),null);
+  assert.equal(requests.filter(r=>r.instruction==='ClearContext').length,0);
   const openingExample=prompt.match(/```js\n(\/\/ tau-hatg-opening\n[\s\S]*?)\n```/);
   assert.ok(openingExample, 'ordinary navigation must not wait for a hidden HATG');
   const nativeHatgShowControl=new Function(openingExample[1]+'; return nativeHatgShowControl;')();
