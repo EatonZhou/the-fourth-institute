@@ -30,6 +30,18 @@ function safeError(error) {
       frames.push({ source: '[anonymous]', source_hash: null, line: Number(anonymous[1]), column: Number(anonymous[2]) });
       continue;
     }
+    // Node helpers have local V8 frames. Preserve their locations without
+    // exposing workspace paths, account names, or arbitrary helper filenames.
+    const local = line.match(/(?:\(|^\s*at\s+)((?:file:\/\/\/|\/|[A-Za-z]:[\\/])[^\r\n]*):(\d+):(\d+)\)?$/);
+    if (local) {
+      try {
+        const filename = local[1].startsWith('file:///')
+          ? decodeURIComponent(new URL(local[1]).pathname) : local[1];
+        frames.push({ source: '[source]', source_hash: createHash('sha256').update(filename).digest('hex'),
+          line: Number(local[2]), column: Number(local[3]) });
+      } catch { /* Malformed file location, not a verified source. */ }
+      continue;
+    }
     const match = line.match(/(https?:\/\/[^\s)]+):(\d+):(\d+)\)?$/);
     if (!match) continue;
     try {

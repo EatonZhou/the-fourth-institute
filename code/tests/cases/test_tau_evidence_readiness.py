@@ -1,10 +1,37 @@
 import json
+import hashlib
 from pathlib import Path
 import subprocess
 
 import pytest
 
 from management_portal.test_framework.tools.record_tool_rtt import record
+
+
+def test_local_helper_errors_keep_hashed_source_locations(tmp_path):
+    module = Path(__file__).resolve().parents[2] / 'management_portal/test_framework/tau_safe_error.js'
+    helper = tmp_path / 'private helper.js'
+    helper.write_text(
+        'const {safeError}=require(' + json.dumps(str(module)) + ');\n'
+        'const original = new Error("DO-NOT-LOG-body");\n'
+        'const synthetic = {stack:"Error: DO-NOT-LOG-body\\n"+'
+        '"    at privateFunction (/private account/helper script.js:12:34)\\n"+'
+        '"    at privateFunction (C:\\\\private account\\\\helper.js:56:78)\\n"+'
+        '"    at file:///private%20account/helper.js:90:12\\n"};\n'
+        'console.log(JSON.stringify([safeError(original),safeError(synthetic)]));\n'
+    )
+    result = subprocess.run(['node', str(helper)], capture_output=True, text=True, check=True)
+    actual, synthetic = json.loads(result.stdout)
+    frame = actual['stack_frames'][0]
+    assert frame == {'source': '[source]', 'source_hash': hashlib.sha256(str(helper).encode()).hexdigest(),
+                     'line': 2, 'column': 18}
+    expected = [('/private account/helper script.js', 12, 34),
+                ('C:\\private account\\helper.js', 56, 78), ('/private account/helper.js', 90, 12)]
+    assert synthetic['stack_frames'] == [
+        {'source': '[source]', 'source_hash': hashlib.sha256(location.encode()).hexdigest(),
+         'line': line, 'column': column} for location, line, column in expected]
+    assert all(value not in result.stdout for value in
+               ['DO-NOT-LOG', 'privateFunction', 'private account', str(helper), 'helper.js'])
 
 
 def test_original_tool_measurement_is_persisted_without_including_the_write(tmp_path):
