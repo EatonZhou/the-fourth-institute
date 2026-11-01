@@ -143,4 +143,9 @@ def verify_background(destination, instance_root, marker):
             content = path.read_text(encoding='utf-8', errors='replace')
             for error in ('resource index refresh failed:', 'SocietyService coordinator failed:',
                           'TooManyRemoved', 'UnicodeEncodeError', 'Traceback (most recent call last)'):
-                check(error not in content, path.name + ' background error: ' + error)
+                position = content.find(error)
+                if position >= 0:
+                    # The log tail can hide the actual failure behind later slow
+                    # query diagnostics. Preserve the offending traceback in CI.
+                    detail = content[max(0, position - 200):position + 8000]
+                    raise RuntimeError(path.name + ' background error: ' + error + '\n' + detail)

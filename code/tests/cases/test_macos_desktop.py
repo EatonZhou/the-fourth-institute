@@ -263,6 +263,22 @@ class MacDesktop(unittest.TestCase):
                 build.smoke(Path("/fake/app"), Path("/not-installed"), Path("/instance"), False)
             command.assert_not_called()
 
+    def test_native_background_failure_reports_traceback_before_log_tail(self):
+        from scripts.macos import native_smoke
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runtime = root / "runtime"
+            runtime.mkdir()
+            marker = root / "marker"
+            for component in ("resource", "society", "web"):
+                (runtime / (component + ".log")).touch()
+            (runtime / "society.error.log").write_text(
+                "Traceback (most recent call last):\nRuntimeError: original failure\n" + "later log\n" * 2000)
+            with patch.object(native_smoke.subprocess, "run", return_value=SimpleNamespace(
+                    stdout=json.dumps({"changed": [str(marker)]}))), \
+                    self.assertRaisesRegex(RuntimeError, "original failure"):
+                native_smoke.verify_background(root, root, marker)
+
     def test_long_address_instance_root_exceeds_web_rpc_but_fits_postgres(self):
         from scripts.macos import build
         with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
