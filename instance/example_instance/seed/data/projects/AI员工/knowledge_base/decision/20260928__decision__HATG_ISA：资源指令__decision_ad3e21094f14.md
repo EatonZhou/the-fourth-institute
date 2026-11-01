@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 35
+  number: 38
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
@@ -129,7 +129,7 @@ links:
 
 - 参数：`resource_type`、`fields`（该类型要求的字段对象）。例如 Markdown 知识条目在 `fields` 中提交 `project_id`、`title` 和 `body`，ResourceService 分配统一 ID、生成文件名和头部。
 - 结果：新资源的统一 ID 与资源记录。
-- **放在 Project 下的类型必须给出位置，没有隐含的默认 Project**（TFI portal 2026-10-18）。知识条目与实验写 `fields.project_id`；repo 与 Workbench 写 `fields.project_ids`（Project ID 数组），公共内容写 `["@public"]`，`@public` 不能与 Project 同时给出；文章由所在目录决定，目录必须在已登记的 Project 内；设备没有位置。Workbench 从页面设计流程创建时取所绑定 Lineage 的 Project，Lineage 不属于任何 Project 时为公共内容。自动登记（扫描 Project 目录发现的 repo 等）按路径确定位置，不受这条约束；通过 RegisterResource 登记 repo 或 Workbench 而不给 `project_ids` 时登记失败。
+- **放在 Project 下的类型必须给出位置，没有隐含的默认 Project**（weihao 2026-10-18）。知识条目与实验写 `fields.project_id`；repo 与 Workbench 写 `fields.project_ids`（Project ID 数组），公共内容写 `["@public"]`，`@public` 不能与 Project 同时给出；文章由所在目录决定，目录必须在已登记的 Project 内；设备没有位置。Workbench 从页面设计流程创建时取所绑定 Lineage 的 Project，Lineage 不属于任何 Project 时为公共内容。自动登记（扫描 Project 目录发现的 repo 等）按路径确定位置，不受这条约束；通过 RegisterResource 登记 repo 或 Workbench 而不给 `project_ids` 时登记失败。
 - `fields.project_id` 与 `fields.project_ids` 在指令 schema 中声明，该声明不限制各资源类型原有的其他 fields。新资源的创建者记录为认证调用者。
 - **登记权限以拟放置位置判定。** RegisterResource 的正式权限声明把 `resource_type` 与 `fields.project_id` / `fields.project_ids` 交给方案的 `place` 规则，要求 contributor；它与登记后入树使用同一放置契约。各类型的默认位置、公共内容和多 Project 的父节点选择，统一见 decision_600ae27b0538；领域仍校验 Project 是否存在和必填位置，权限通过不代替输入校验。
 
@@ -142,7 +142,7 @@ links:
 
 - 参数：`resource_id`、`changes`（要修改的字段）。
 - 结果：修改后的资源记录与 `version`。知识条目使用新版本号的字符串；其他类型返回其版本或修改时间，类型没有提供时返回空字符串。
-- 修改 Knowledge Provider 管理的知识条目主正文时，可以在调用中附带 `expected_version`（当前版本号）；版本不一致返回 `instruction.version_conflict`。Knowledge 正文的写入字段由提供器声明，版本恢复规则见 decision_3ece26686464。Skill 的文本保存仍沿 Skill 自身生命周期，不能把知识主文件的数字版本与恢复链规则套到 Skill。
+- 修改 Knowledge Provider 管理的知识条目主正文时，可以在调用中附带 `expected_version`（当前版本号）；版本不一致返回 `instruction.version_conflict`。Knowledge 的 `changes.text`（完整文本）与 `changes.body`（仅 Markdown 主文件正文）必须且只能提供一个。`body` 保留服务端锁内读取的元数据，仅由系统推进版本；允许空字符串清空正文，不接受 null，不用于伴随文件、Skill、Article 或版本恢复。版本恢复规则见 decision_3ece26686464。Skill 的文本保存仍沿 Skill 自身生命周期，不能把知识主文件的数字版本与恢复链规则套到 Skill。
 - Workspace 只允许非空 `title` 与必填 `expected_version`；版本原样取自 `ResolveResource.result.resource.version`，在同一行锁内鉴权、比较和写入（decision_8838269736d3）。Workbench 使用 `changes.expected_revision`。其他类型按自己的字段契约处理；ISA 对不支持信封 `expected_version` 的类型返回 `instruction.invalid_arguments`。
 
 ### `UnregisterResource`
@@ -152,6 +152,12 @@ links:
 - 参数：`resource_id`。
 - 结果：被撤销的统一 ID。
 - 撤销登记后正文是否保留，由该资源类型的 Design 规定。
+
+Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`；类型能力 `unregisterable=true`，不开放通用 RegisterResource。只有没有未删除 Resident 的 `owned_workspace_id` 指向它、没有未删除 Resident 的 `resident_workspace_bindings` 使用它，且没有活跃子 Workspace 或同目录/子目录中的 Repo、Article、Project、Lineage 登记时才允许注销。祖先登记不因此阻止独立子 Workspace 注销。拒绝返回 `instruction.conflict`，`details.reason` 分别为 `workspace_in_use`、`workspace_nested_registration`、`workspace_area_root`；使用关系或阻止注销的资源 ID 在 details 中给出，无权限返回 `instruction.forbidden`，个人 AMA 的私有边界仍先行适用。
+
+注销复用 `resident_workspace_deletion.delete_unreferenced`，写入 Workspace 的 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活。仅当目录位于本实例 manifest 定义的区域内时删除目录；区域外主机目录保持不动，目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。显式注销不级联注销有效的嵌套登记；Resident/Project 生命周期删除原有的引用保留规则不变。
+
+显式注销在同一事务中锁定 Workspace 表与目标行，重新鉴权并检查使用关系；其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断。锁持有至目录清理和删除提交，登记、移动、绑定不能插入检查与删除之间。文件清理失败回滚登记，修复文件系统问题后可以重试；已删除的部分文件不提供回收或恢复。提交后的索引确认继续使用通用 ResourceService 回执。
 
 ### `RunResourceAction`
 
@@ -206,7 +212,7 @@ links:
 
 - 参数：`address`（`<工作区ID>/file/<相对路径>`）、`content`。
 - 结果：写入后的内容摘要和修改时间。
-- 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（TFI portal 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
+- 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（weihao 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
 
 ## 参数名契约
 

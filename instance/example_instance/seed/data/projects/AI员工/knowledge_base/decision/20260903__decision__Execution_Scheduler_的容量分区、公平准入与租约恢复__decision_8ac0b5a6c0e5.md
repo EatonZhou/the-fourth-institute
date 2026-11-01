@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 21
+  number: 22
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -138,7 +138,7 @@ Scheduler 按执行类型选择容量分区：
 | `dispatch_interval` | 离这个分区上次成功派发太近 |
 | `session_binding` | 同一会话已有执行在领取或运行中 |
 
-Worker 调用领取时得到的是这一次尝试的结果，原因取值不同：`worker_not_registered`、`worker_not_active`、`quota_reserve`、`capacity`、`dispatch_interval`、`deferred` 或 `empty`（没有候选）。前一组说明某条执行为什么还在等，后一组说明这个 Worker 这次为什么没有领到。`worker_not_active` 同时给出 `worker_state`：`standby` 表示还在等激活，`draining` 或 `offline` 表示这个 Worker 已经退休，它会交接手里的执行后退出。
+Worker 调用领取时得到的是这一次尝试的结果，原因取值不同：`worker_not_registered`、`worker_not_active`、`quota_reserve`、`capacity`、`dispatch_interval`、`deferred` 或 `empty`（没有候选）。前一组说明某条执行为什么还在等，后一组说明这个 Worker 这次为什么没有领到。`worker_not_active` 同时给出 `worker_state`：`standby` 表示还在等激活，`draining` 或 `offline` 表示这个 Worker 已停止领取，它会交接手里的执行后退出。
 
 ## Worker 登记、领取与租约
 

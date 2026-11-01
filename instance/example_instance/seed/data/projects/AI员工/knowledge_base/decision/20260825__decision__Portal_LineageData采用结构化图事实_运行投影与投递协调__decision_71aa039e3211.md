@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 62
+  number: 64
   created_at: '2026-08-25'
   created_by:
     user: ''
@@ -99,7 +99,7 @@ LineageData 是 SocietyService（decision_1b2bdf5c33d6）的数据层：它把 L
 
 LineageData 通过 `PORTAL_DATABASE_URL` 连接 Portal 统一的 PostgreSQL 服务，使用其中的 `lineage` schema；这个 schema 只包含 LineageData 的表。测试环境设置 `PORTAL_DATABASE_NAMESPACE` 后，schema 名加上这个前缀，例如 `<namespace>_lineage`。连接池大小由 `PORTAL_POSTGRES_DOMAIN_POOL_SIZE` 决定，默认 8。Dev 与 Release 两个实例共用同一份 LineageData。
 
-`lineage_meta` 表中保存结构版本标识，当前为 `tfi.lineage-data.v60`。服务初始化时取得数据库咨询锁，然后：schema 为空时直接创建当前结构；已有结构时严格核对版本标识和表、列、索引、触发器与外键，任何不一致都使服务启动失败。结构升级由单独验证过的迁移脚本完成；运行中的服务不读取旧格式，也不在线修复结构。迁移脚本固定来源版本和目标版本，只随目标版本的代码运行，代码已是其他版本时拒绝执行；数据库越过该版本后，脚本在下一次结构升级时退役。
+`lineage_meta` 表中保存结构版本标识，当前为 `tfi.lineage-data.v60`。服务初始化时取得数据库咨询锁，然后：schema 为空时直接创建当前结构；已有结构时严格核对版本标识和表、列、索引、触发器与外键，任何不一致都使服务启动失败。结构升级由单独验证过的迁移脚本完成；运行中的服务不读取旧格式，也不在线修复结构。迁移脚本固定来源版本和目标版本，只随目标版本的代码运行，代码已是其他版本时拒绝执行；数据库越过该版本后，脚本在下一次结构升级时删除。
 
 这个 schema 只放核心表，严格核对的也就只是核心表。可选功能的表放在功能自己的 schema 里，由功能首次使用时自行建表（`DomainDatabase`，decision_15aab18c0ab3）；打包时去掉哪些功能，lineage schema 的表都相同。v60 把原先按应用分开、在 CHECK 中写死 Paper、WALL、公告板分类器和 TAU 的七张配置表合并为通用表 `application_targets`（decision_6591e7793116），并把不属于任何 Lineage 的人类通知从公告板的 schema 移入 `portal_human_notifications`。
 
@@ -182,7 +182,7 @@ Program 工作对象在写入时规范化，读取时直接使用已存内容。
 | `resident_workspace_transfers` | 每个 Resident 最近一次跨 Lineage 迁移的操作 ID、源与目标 Lineage 以及发起它的指令 ID；下一次迁移覆盖，Resident 删除时移除 |
 | `input_scopes` | 业务调用为某条 Resident 输入登记的发起者和授权描述，用于允许该发起者读取或取消这条输入；登记后不可修改 |
 
-Resident 的当前归属以 `lineage_nodes.lineage_id` 为唯一事实，通过 node_id=resident_id 关联；当前 Project 与 Workspace 投影从各自负责者读取。来源、配置、绑定与运行观察分别持久化，Fork 初始化上下文由 Agent trace 保存，API 返回的聚合 record 不能整份作为 JSON 回写。普通状态保存保留数据库中最新配置，配置 owner 才显式提交配置修改（decision_8b2fa224616b）。删除字段只能由删除领域更新，未知历史字段保留为空，不凭缺失内容虚构身份或权限；旧独立删除表已退休，不提供恢复入口（decision_0f57656a2acd）。
+Resident 的当前归属以 `lineage_nodes.lineage_id` 为唯一事实，通过 node_id=resident_id 关联；当前 Project 与 Workspace 投影从各自负责者读取。来源、配置、绑定与运行观察分别持久化，Fork 初始化上下文由 Agent trace 保存，API 返回的聚合 record 不能整份作为 JSON 回写。普通状态保存保留数据库中最新配置，配置 owner 才显式提交配置修改（decision_8b2fa224616b）。删除字段只能由删除领域更新，未知历史字段保留为空，不凭缺失内容虚构身份或权限；旧独立删除表已移除，不提供恢复入口（decision_0f57656a2acd）。
 
 批量状态与消息可见性读取使用当前身份、执行配置和 Family 角色，不组装 Workspace 路径、绑定投影或 Watchboard。Watchboard 安装由 Lineage 组件表达，清单、配置和状态属于自有工作区文件，页面由 Watchboard 读取入口投影，不进入持久 Resident 记录。完整 Resident 视图仍由相应读取入口组装；同一批成员共享的 Lineage 目录只解析一次。批量状态响应中的发送权限按当前用户在本次请求内判断一次，各 Resident 的删除状态仍单独检查；权限判断不跨请求缓存。
 
@@ -191,8 +191,8 @@ Resident 的当前归属以 `lineage_nodes.lineage_id` 为唯一事实，通过 
 | 表 | 内容 |
 | --- | --- |
 | `conversation_states` | 每个 Resident 已发布到界面的游标、状态快照、当前活动和运行设置（等待队列读取时从 Mailbox 组成，decision_15f7df737ed5）；当前活动只保存在这里，不进入 `conversation_events` |
-| `conversation_input_states` | 每条输入的状态（`queued`、`running`、`completed`、`failed`、`cancelled`）、错误和更新时间；`conversation_input_states_state_idx` 按状态读取。回复不在这里保存：读取时从 trace 的消息投影推出最终回复（AgentData `chat_message_positions` 按 `reply_to` 查找，decision_b1ab45c4b3ec、decision_c524c775e0be；LineageData v29 删除了 `reply_message_ids_json`，TFI portal 10-07） |
-| `conversation_events` | 以“Resident + 游标”唯一的对话事件：事件类型、所指对象 ID、发生时间和内容；`conversation_events_type_idx` 按 Resident、类型、对象和游标查询。消息事件只保存消息头（ID、`role`、`reply_to_message_id`），正文在读取时由聊天服务从当前 trace 或运行通知填入（TFI portal 10-07；10-07 一次性去掉了旧事件中的正文） |
+| `conversation_input_states` | 每条输入的状态（`queued`、`running`、`completed`、`failed`、`cancelled`）、错误和更新时间；`conversation_input_states_state_idx` 按状态读取。回复不在这里保存：读取时从 trace 的消息投影推出最终回复（AgentData `chat_message_positions` 按 `reply_to` 查找，decision_b1ab45c4b3ec、decision_c524c775e0be；LineageData v29 删除了 `reply_message_ids_json`，ET 10-07） |
+| `conversation_events` | 以“Resident + 游标”唯一的对话事件：事件类型、所指对象 ID、发生时间和内容；`conversation_events_type_idx` 按 Resident、类型、对象和游标查询。消息事件只保存消息头（ID、`role`、`reply_to_message_id`），正文在读取时由聊天服务从当前 trace 或运行通知填入（ET 10-07；10-07 一次性去掉了旧事件中的正文） |
 | `conversation_event_delivery` | 对话事件的全局发布顺序；`conversation_events` 每插入一行，触发器在这里追加一行。它是转发器的工作项：事件发生满 1 小时后由 SocietyService 例行维护删除，事件本身保留 |
 
 ### 指令记录
@@ -261,7 +261,7 @@ Resident 对话流在一个事务中提交状态、输入状态和新事件；�
 
 Resident 的当前活动（正在执行的命令、工具调用等）是观察数据，不是记录，不写入 `conversation_events`，也不推进游标。活动变化只更新 `conversation_states.activity_json`，并在同一事务中向 PostgreSQL 通道 `tfi_conversation_live` 发送 `<schema>:<Resident ID>`。每个实例的转发器监听这个通道，读取该 Resident 当前的活动列表，作为带 `live: true` 的 `resident.activity.changed` 通知发布，其中的游标是对话当前游标。页面收到后直接替换活动列表；快照加载期间收到的，在快照装入后应用；超过 64 KB 的通知省略内容，页面改为重新读取快照。游标补读和 `WatchConversationEvents` 不包含活动。
 
-LineageData 保存事件的外层结构（类型、所指对象、时间和内容）与对话状态。完整的消息正文和模型对话记录归 AgentData 保存：事件记录发生了什么和先后顺序，模型内容正文以当前 trace 为准，纯 UI 通知归运行记录。转发器和游标补读在送出事件前，按消息 ID 一次批量通过聊天服务取当前的内容消息或运行通知填进事件，结束的输入同时填上最终回复；trace 中已经没有的消息，事件不带内容、标 `payload_omitted`，读取方改读快照（TFI portal 10-07）。
+LineageData 保存事件的外层结构（类型、所指对象、时间和内容）与对话状态。完整的消息正文和模型对话记录归 AgentData 保存：事件记录发生了什么和先后顺序，模型内容正文以当前 trace 为准，纯 UI 通知归运行记录。转发器和游标补读在送出事件前，按消息 ID 一次批量通过聊天服务取当前的内容消息或运行通知填进事件，结束的输入同时填上最终回复；trace 中已经没有的消息，事件不带内容、标 `payload_omitted`，读取方改读快照（ET 10-07）。
 
 ## 待发件箱的领取、确认与重试
 
@@ -305,7 +305,7 @@ sequenceDiagram
 
 读取缓存仅在存取缓存条目时持有全局短锁。消息计数等需要访问存储的计算按读取种类、Lineage 和查看者分别合并；同一范围的并发读取复用结果，其他 Lineage 及定义缓存的读取不等待该计算。缓存有效性由当前 revision、Resident 游标和查看者范围的指纹决定；读进程池复用有效条目，不在每次 RPC 前清空。
 
-资源描述发布在同一物理事务中锁定本次涉及的 Resident 身份行、当前成员归属行、Lineage 身份行及已有 Workspace 绑定行，再核对当前事实并提交描述与来源收据。Resident 的父 Lineage 同时受保护，因为它决定 Project 与组织层级。成员集合的写入通过所属 Lineage 身份行串行提交；Workspace 退役直接解除的既有绑定也与投影互斥。不存在或已删除的身份在发布前拒绝，不能靠描述重建身份。锁以稳定 ID 排序，重叠领域写入造成冲突时立即结束本次尝试并保留原发布工作重试，避免跨领域锁顺序形成死锁。此过程不取得全表共享锁；无关 Lineage 的图修改、同一团队其他 Resident 的独立身份修改及运行进度可以继续。目标身份和生命周期写入仍与描述提交互斥，防止已删除或已变更的对象被旧描述覆盖。
+资源描述发布在同一物理事务中锁定本次涉及的 Resident 身份行、当前成员归属行、Lineage 身份行及已有 Workspace 绑定行，再核对当前事实并提交描述与来源收据。Resident 的父 Lineage 同时受保护，因为它决定 Project 与组织层级。成员集合的写入通过所属 Lineage 身份行串行提交；Workspace 删除直接解除的既有绑定也与投影互斥。不存在或已删除的身份在发布前拒绝，不能靠描述重建身份。锁以稳定 ID 排序，重叠领域写入造成冲突时立即结束本次尝试并保留原发布工作重试，避免跨领域锁顺序形成死锁。此过程不取得全表共享锁；无关 Lineage 的图修改、同一团队其他 Resident 的独立身份修改及运行进度可以继续。目标身份和生命周期写入仍与描述提交互斥，防止已删除或已变更的对象被旧描述覆盖。
 
 LineageData 通过显式事务、行锁和条件更新保护领域提交，外键、唯一约束和检查约束由数据库强制执行。公共连接池、嵌套事务和事务重试规则统一见 decision_86aed2f0e8c7；本域业务临界区与定义并发规则见 decision_d918ebebc062。
 

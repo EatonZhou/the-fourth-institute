@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 42
+  number: 43
   created_at: '2026-09-01'
   created_by:
     user: ''
@@ -238,7 +238,7 @@ Family 成员用 GetResidentSummaries（include_maintenance）读取版本与漏
 
 目录只收录能接收工作的 Resident：已删除 Resident 不出现在搜索和推荐候选中，也不再更新摘要；删除后不提供恢复入口。从目录消失的 Resident 立即标为不活跃，退出搜索和推荐。每次目录同步时，发现模块再向 SocietyService 查询这些不活跃 Resident 是否已有删除记录（内部服务方法 `list_removed_discovery_residents`）：Resident 本身已删除、所在 Lineage 已删除，或者已没有它的记录，就在这次同步中删除它的摘要和向量，Portal 不保留存档。没有删除记录的 Resident 只是因为所在 Lineage 这一次读取失败才没出现在目录里，它的摘要和向量一直保留，Lineage 恢复可读后它重新出现，摘要可以继续使用。
 
-`resident_context.residents` 只投影摘要检索需要的身份、标题、Lineage 名称/简介、项目、状态及调度字段；元数据指纹由这组明确字段计算。目录不保存重复的 `metadata_json`，也不保留已退役的 `goal`、`deliverable`、`origin_seed_id`。摘要、向量、证据与认领任务继续由各自的表保存，目录精简不清除已有摘要。
+`resident_context.residents` 只投影摘要检索需要的身份、标题、Lineage 名称/简介、项目、状态及调度字段；元数据指纹由这组明确字段计算。目录不保存重复的 `metadata_json`，也不保留已删除的 `goal`、`deliverable`、`origin_seed_id`。摘要、向量、证据与认领任务继续由各自的表保存，目录精简不清除已有摘要。
 
 每份全局认领有 30 分钟租约，到期未提交的退回队列。放弃或失败稍后重试，连续 6 次失败后搁置，直到该 Resident 的对话再次变化。认领记录其依据的摘要内容版本；提交时若该版本已变，拒绝旧结果并重新排队。写作运行的 Provider、模型、推理强度和账号等证据元数据保存在 snapshots，累计内容及实际作者保存在 work_summaries；换写作模型仍通过承担者运行设置或更换承担者完成。
 

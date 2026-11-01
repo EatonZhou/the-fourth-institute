@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 10
+  number: 12
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -39,7 +39,7 @@ links:
 
 Experiment Resource 把一次可持续维护的实验登记为稳定的 `experiment_*` 资源。用户由此可以按 Project 发现实验，阅读实验主文档和目录内产物，并让 Agent 或服务在不改变资源身份的前提下更新状态、重要性和正文。
 
-本篇负责实验目录的规范边界、Resource Catalog 中的 Experiment 工作台、登记和结构化更新、整目录退役及其恢复。实验内部文件使用 Knowledge 的通用详情能力读取，但实验身份和生命周期由 Experiment provider 独自拥有。
+本篇负责实验目录的规范边界、Resource Catalog 中的 Experiment 工作台、登记和结构化更新、整目录删除及其恢复。实验内部文件使用 Knowledge 的通用详情能力读取，但实验身份和生命周期由 Experiment provider 独自拥有。
 
 ## 先认识 Experiment 与工作台
 
@@ -69,7 +69,7 @@ knowledge_base/experiment/
 | Experiment 卡片 | 显示标题、摘要、修改时间、类型，并从状态、重要性、节点数中展示最多两个徽章 |
 | 嵌入详情 | 顶部身份与编辑控件，左侧文件树/关系图，中部预览或编辑器，右侧私有 Chat |
 
-卡片只承载发现所需的摘要；详情才读取主文档和伴随文件。页面允许在详情中编辑文本，但没有 Experiment 登记表单，也没有删除按钮。登记、结构化更新和退役通过 HATG 资源指令进行（见“接口与字段”），供 Agent 和服务使用。
+卡片只承载发现所需的摘要；详情才读取主文档和伴随文件。页面允许在详情中编辑文本，但没有 Experiment 登记表单，也没有删除按钮。登记、结构化更新和删除通过 HATG 资源指令进行（见“接口与字段”），供 Agent 和服务使用。
 
 ## 设计点
 
@@ -94,28 +94,28 @@ knowledge_base/experiment/
 
 - ResourceService 的结构化更新只接受 `status`、`importance`、`body` 和 `summary`，且至少提供一项。
 - `body` 与 `summary` 都表示新正文；更新时保留文档已有的第一个一级标题。正文仍受 2,000,000 字符限制。
-- 更新状态和重要性会改写主文档的规范文首。写入在 Project 级实验锁内执行，避免同一项目的登记、更新和退役互相穿插。
+- 更新状态和重要性会改写主文档的规范文首。写入在 Project 级实验锁内执行，避免同一项目的登记、更新和删除互相穿插。
 - Experiment provider 当前没有修订号或 `expected_version`。并发调用方不能假定服务会检测旧版本；成功的后一次写入成为当前内容。
 - 页面详情的文本保存是当前接入的另一条入口，它直接保存所选实验文本。结构化 provider 更新是 Agent/服务能力，页面尚未为四个字段提供专门表单。
 
-### 退役
+### 删除
 
-- ResourceService 的 `unregister` 退役整个实验资源，只接受资源根。
-- 更新和退役要求目标主文档位于该 Project 的独立实验目录中，且解析后的文件仍在该目录内。旧式平铺主文件、指向目录外的符号链接或其他越界布局在写入和移动前被拒绝，保留原文件与相邻实验；读取支持不扩大修改边界。
-- provider 把 `<slug>__<id>` 整个目录移入同一 `knowledge_base` 下的 `.trash`，保留主文档和全部伴随产物。
-- 回收目标重名时添加随机十六进制后缀，避免覆盖。成功结果返回 `deleted: true` 和 `trash_path`。
-- ResourceService 在 provider 完成移动后忘记登记身份。以后重新登记会取得新的 `experiment_*` ID；旧 ID 不指向新实验。
-- Experiment 页面没有退役按钮，退役只能通过指令进行。
+- ResourceService 的 `unregister` 删除整个实验资源，只接受资源根。
+- 更新和删除要求目标主文档位于该 Project 的独立实验目录中，且解析后的文件仍在该目录内。旧式平铺主文件、指向目录外的符号链接或其他越界布局在写入和删除前被拒绝，保留原文件与相邻实验；读取支持不扩大修改边界。
+- 实验删除的注销与后台文件清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍把 `<slug>__<id>` 整个目录移入同一 `knowledge_base` 下的 `.trash`（Experiment provider 删除流程）。
+- 删除的操作 ID、进度和失败原因按《目录与路径协议》（decision_4aa13bc21e8e）报告。现在的代码仍在回收目标重名时添加随机十六进制后缀，成功返回 `deleted: true` 和 `trash_path`（原删除回执）。
+- 登记注销与文件清理的顺序按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在 provider 完成移动后才忘记登记身份（ResourceService 删除流程）。以后重新登记会取得新的 `experiment_*` ID；旧 ID 不指向新实验。
+- Experiment 页面没有删除按钮，删除只能通过指令进行。
 
 ## 页面、服务与权限的边界
 
 | 层次 | 当前能力 |
 | --- | --- |
 | 页面 | 搜索、Project 筛选、语义搜索、卡片、详情、伴随文件预览、文本编辑、Chat |
-| HATG 资源指令 / ResourceService | 登记、统一解析、读取、结构化更新、退役 |
-| provider 内部 | Project 锁、目录命名、规范主文档生成、边界校验和移入 `.trash` |
+| HATG 资源指令 / ResourceService | 登记、统一解析、读取、结构化更新、删除 |
+| provider 内部 | Project 锁、目录命名、规范主文档生成、边界校验及按《目录与路径协议》（decision_4aa13bc21e8e）处理文件清理；现在的代码仍移入 `.trash` |
 
-页面读取需要查看权限（viewer）；详情文本保存、登记和结构化更新需要编辑权限（contributor）；退役需要管理权限（admin）。Experiment provider 进程能写 Project 文件，但只执行 ResourceService 已经授权的操作。
+页面读取需要查看权限（viewer）；详情文本保存、登记和结构化更新需要编辑权限（contributor）；删除需要管理权限（admin）。Experiment provider 进程能写 Project 文件，但只执行 ResourceService 已经授权的操作。
 
 ## 组件与一次工作流
 
@@ -124,7 +124,7 @@ knowledge_base/experiment/
 | Resource Catalog | 呈现实验卡片、筛选和详情入口 |
 | Resource Index | 汇总当前 actor 可见的 Experiment 摘要与属性 |
 | ResourceService | 保留统一 ID、授权并协调登记记录与 provider |
-| Experiment provider | 创建规范目录、验证字段、更新主文档、整目录退役 |
+| Experiment provider | 创建规范目录、验证字段、更新主文档、整目录删除 |
 | Knowledge detail backend | 解析实验主文档和目录内嵌套文件，提供通用预览 |
 
 一次登记按以下顺序流动：
@@ -141,7 +141,7 @@ Experiment provider 取得 Project 实验锁并复核目录
 ResourceService 提交登记，Resource Index 随后发现它
 ```
 
-先保留身份，再写入文档，使 `kb_id` 与最终登记一致。目录锁协调扫描、创建和退役，避免这些操作互相穿插；整目录回收让实验叙述与产物一起保留。
+先保留身份，再写入文档，使 `kb_id` 与最终登记一致。目录锁协调扫描、创建和删除，避免这些操作互相穿插；实验叙述与产物的删除和保留按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍通过整目录回收一起保留（原删除流程）。
 
 ## 精确接口与字段
 
@@ -163,10 +163,10 @@ Resource Catalog 语义检索使用 `/api/resource-semantic-searches` 系列接�
 | --- | --- | --- |
 | `RegisterResource` | `resource_type: "experiment"`，`fields` 中必填 `project_id`、`title`，可选 `slug`、`status`、`importance`、`body`、`summary` | 登记新实验，调用者记为它的创建者（`created_by`） |
 | `UpdateResource` | `resource_id`，`changes` 中只允许 `status`、`importance`、`body`、`summary` | 结构化更新；未知字段和空更新被拒绝 |
-| `UnregisterResource` | `resource_id`（必须是资源根） | 退役整个实验目录 |
+| `UnregisterResource` | `resource_id`（必须是资源根） | 删除整个实验目录 |
 
-指令的通用规则见 decision_ad3e21094f14。退役不删除 Project，也不修改其他知识目录。
+指令的通用规则见 decision_ad3e21094f14。删除不删除 Project，也不修改其他知识目录。
 
 ## 故障与恢复
 
-Project 缺失返回找不到目标；同一 ID 在多个目录出现时视为数据冲突，不任意选择一个。登记失败会回收本次空目录；更新使用原子文件替换，失败时保留旧主文档；退役只有在目录移动成功后才注销身份。已移入 `.trash` 的目录可由维护者恢复材料，但 Portal 没有把旧 ID 重新激活的一键控件。
+Project 缺失返回找不到目标；同一 ID 在多个目录出现时视为数据冲突，不任意选择一个。登记失败会回收本次空目录；更新使用原子文件替换，失败时保留旧主文档；删除、重试与恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在目录移动成功后才注销身份，允许维护者从 `.trash` 恢复材料，未提供旧 ID 重新激活控件（原删除流程）。

@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-04'
 version:
-  number: 9
+  number: 10
   created_at: '2026-09-04'
   created_by:
     user: ''
@@ -149,7 +149,7 @@ sequenceDiagram
 
 ## 知识归档
 
-知识归档的任务文件保存在 `KNOWLEDGE_ARCHIVE_ROOT`（默认为 features 区域的 `knowledge_archive_jobs/`；现在的代码默认旧 staging 根的 `shared/knowledge_archive_jobs`，按 `plan_4d1990717dc0` 第六步迁移）下，每个任务目录为 `<用户>/<归档 ID>/`。Portal Web 在第一次打开浏览器事件流 `/api/events` 时建立一个递归观察器；根目录不存在时不建立。
+知识归档的任务文件保存在 `KNOWLEDGE_ARCHIVE_ROOT`（默认为 features 区域的 `knowledge_archive_jobs/`）下，每个任务目录为 `<用户>/<归档 ID>/`。Portal Web 在第一次打开浏览器事件流 `/api/events` 时建立一个递归观察器；根目录不存在时不建立。
 
 - 变化路径位于根目录下且至少有两层时，前两层分别是任务所属用户和归档 ID，其余部分作为变化字段；变化的是任务目录本身时，字段为 `job`。
 - 字段以 `.tmp` 结尾或包含以点开头的路径段时忽略，避免把原子写入过程中的临时文件当成完成状态。

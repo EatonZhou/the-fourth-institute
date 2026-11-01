@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 9
+  number: 10
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -73,7 +73,7 @@ Daily News 区域由三部分组成：
 
 ## 读取接口
 
-`GET /api/daily-news` 不接受页面日期选择。服务以服务器本地“今天”构造目标文件名 `<日期>__daily_news.md`，在报告目录（默认为 Lineage `lineage_7e2464bbdb60` 的 Lineage Folder 下的 `memory/reports`，可由 `PORTAL_DAILY_NEWS_ROOT` 改变；现在的代码通过旧 share 根下的 Lineage 入口 `Agents/lineage_7e2464bbdb60` 定位，按 `plan_4d1990717dc0` 第六步改为按所属 Project 计算）中查找，并返回以下字段：
+`GET /api/daily-news` 不接受页面日期选择。服务以服务器本地“今天”构造目标文件名 `<日期>__daily_news.md`，在报告目录中查找；报告目录从负责日报的 Lineage 登记所属 Project 解析，位于其 Lineage Folder 的 `memory/reports`，并返回以下字段：
 
 | 字段 | 含义 |
 | --- | --- |

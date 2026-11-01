@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 40
+  number: 41
   created_at: '2026-09-28T12:30:00Z'
   created_by:
     user: tfi-exported-user
@@ -55,7 +55,7 @@ User 和 Resident 都是 AI 社会的参与者。User 是稳定协作账户，�
 本文中“管理员”指 Portal 管理员：默认模板中只有他们对“共享”节点有 admin。下文写“要求管理员”的指令，在默认模板的指令映射中都要求对“共享”有 admin。
 - **个人导航**：用户在 Portal 导航中固定显示的 Resident、Lineage 和资源列表。它只影响该用户自己的导航，不改变任何访问权限。
 
-Project 角色和系统能力及其 ISA 已退役；资源授权见 decision_22227d0ad075。
+Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_22227d0ad075。
 
 ## 指令一览
 
@@ -112,8 +112,8 @@ Project 角色和系统能力及其 ISA 已退役；资源授权见 decision_222
 - 参数：`user_id`、`changes`（可以包含 `display_name`、`recovery_email`、`avatar`、`status` 与 `category`；`avatar` 是已上传图片的引用，`status` 取 `active` 或 `disabled`，`category` 取 `portal_admin`、`member` 或 `intern`）。
 - 结果：修改后的用户资料（含 `category`），以及 `category_changed`（这次是否改变了分类）。
 - 默认模板要求对目标 User 账号有 admin；账号本人对自己的账号有 admin，管理员对全部账号有 admin。恢复邮箱须通过格式与唯一性校验。服务先保存分类和资料，再写入头像；权限或资料校验失败时头像保持不变。账号安全操作使用下列独立指令，UpdateUser 不接受 reset_password 或 revoke_sessions。
-- **管理员名单**（TFI portal 2026-10-19，decision_b820faf42218 §3.1“Portal 管理员保底”）：不论权限系统开关和启用哪套方案，只有 Portal 管理员能把其他 User 设为或取消 Portal 管理员，也只有 Portal 管理员能停用、启用管理员账号；不能对自己做。非管理员这样调用时返回 `instruction.forbidden`，管理员对自己这样做时返回 `instruction.invalid_arguments`。管理员只改名单的调用（`changes` 只含 `category`、`status`）不问方案。这推翻了 10-18“关闭时谁都能改分类、本人能改自己的分类”中涉及管理员的部分。管理员不能取消自己，但两位管理员可能同时互相停用，所以名单变更的检查和写入在同一个账号事务里依次进行，后一个看到前一个的写入；写入后没有启用中的 Portal 管理员时整次回滚，返回 `instruction.invalid_arguments`（5124a418）。管理员只能是 User，Resident 没有分类。
-- **一般用户与实习用户之间**的调整由 UpdateUser 自身的权限检查决定（TFI portal 2026-10-18）：权限系统关闭时已登录主体都能改，开启时按启用方案对 UpdateUser 的要求判定。修改其他账号状态问 DeleteUser。分类与当前相同时不算修改。User 在同一事务中移到新分类的 P 树节点下。修改写入访问审计 `user_category_updated`。页面按该用户行的 `allows.UpdateUser` 判断是否允许编辑。
+- **管理员名单**（weihao 2026-10-19，decision_b820faf42218 §3.1“Portal 管理员保底”）：不论权限系统开关和启用哪套方案，只有 Portal 管理员能把其他 User 设为或取消 Portal 管理员，也只有 Portal 管理员能停用、启用管理员账号；不能对自己做。非管理员这样调用时返回 `instruction.forbidden`，管理员对自己这样做时返回 `instruction.invalid_arguments`。管理员只改名单的调用（`changes` 只含 `category`、`status`）不问方案。这推翻了 10-18“关闭时谁都能改分类、本人能改自己的分类”中涉及管理员的部分。管理员不能取消自己，但两位管理员可能同时互相停用，所以名单变更的检查和写入在同一个账号事务里依次进行，后一个看到前一个的写入；写入后没有启用中的 Portal 管理员时整次回滚，返回 `instruction.invalid_arguments`（5124a418）。管理员只能是 User，Resident 没有分类。
+- **一般用户与实习用户之间**的调整由 UpdateUser 自身的权限检查决定（weihao 2026-10-18）：权限系统关闭时已登录主体都能改，开启时按启用方案对 UpdateUser 的要求判定。修改其他账号状态问 DeleteUser。分类与当前相同时不算修改。User 在同一事务中移到新分类的 P 树节点下。修改写入访问审计 `user_category_updated`。页面按该用户行的 `allows.UpdateUser` 判断是否允许编辑。
 - 分类是账号记录的 `category` 列，删除账号时随账号记录一起删除。新部署时第一个创建的账号在同一事务中成为 Portal 管理员，不论它来自初始化链接、普通邀请还是 CreateUser；初始化链接只在 Portal 还没有任何账号时可用（decision_3286d4167180）。
 
 ### `ResetUserPassword`

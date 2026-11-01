@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 25
+  number: 27
   created_at: '2026-07-26'
   created_by:
     user: ''
@@ -78,7 +78,7 @@ Workspace Handoff（工作区交接）让同一个 Lineage 中的一个 Resident
 - **同一对来源和目标只有一条交接。** 用 `CreateWorkspaceHandoff` 为已有交接的一对 Resident 再次创建时，返回已有交接的 ID，并标明 `created=false`。
 - **交接的来源必须是来源 Resident 已绑定的工作区。** 每个交接项用工作区 ID、root ID 或路径指明来源；Resident Folder、Lineage Folder 和知识库不能作为来源，报错“来源必须是该节点已经绑定的 Workspace；Resident Folder、Lineage Folder 和知识库不能直接交接”。
 - **交接关系和准备结果分开保存。** 交接项、说明和标签属于 Lineage 定义，修改它们是一次 Lineage 定义提交；准备状态、尝试记录和结果属于运行状态，由准备过程写入，编辑图不会改变它们。
-- **删除交接只删除这条关系。** 已经复制的目录和已经建立的绑定保留。副本是独立 Workspace；删除包含它的 Resident、Lineage 或 Project 目录前，系统列出仍活跃的独立 Workspace 并拒绝删除，调用者需先迁出或退役这些目录；页面删除前提示“这不会删除两端 Agent”。
+- **删除交接只删除这条关系。** 已经复制的目录和已经建立的绑定保留。交接副本作为独立 Workspace 的目录删除与保留按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍列出活跃副本并拒绝删除包含它的 Resident、Lineage 或 Project 目录，要求先迁出或删除（原删除检查）；页面删除前提示“这不会删除两端 Agent”。
 
 ### 交接只准备目录
 

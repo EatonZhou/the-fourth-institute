@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 35
+  number: 36
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -204,7 +204,7 @@ Claude Code 在上下文过长时会在自己的进程内压缩会话：transcri
 
 ## 部署与升级
 
-`scripts/install_claude_code_backend` 把守护进程代码安装到 Provider 运行时根下的 `claude-app-server-<版本>`（Provider 运行包属于代码层依赖，放在代码目录的 `dependencies/` 下；现在的代码由 `deployment.providers.runtime_root` 指定，默认旧 staging 根的 `provider-runtimes/`，按 `plan_4d1990717dc0` 第六步迁移；显式 Claude 安装参数可覆盖） 的不可变副本，并更新当前链接与服务配置。修改 Dev 源码后，需要安装新的 app-server 版本并在没有运行中轮次时重启服务。守护进程用 `claude-agent-sdk-current` 虚拟环境中的 Python 运行（`python -m management_portal.claude_code_daemon`），SDK 版本的安装、切换与回退见 decision_e587fe1c472e。切换只在没有进行中的 Claude 执行、且守护进程报告没有运行中的轮次时进行；切换后核对 `health` 中的版本、能力和实际账号状态。执行完成后的检查点与 PostgreSQL 提交遵循统一的执行恢复规则，守护进程不维护第二份 Portal 历史。
+`scripts/install_claude_code_backend` 把守护进程代码安装到 Provider 运行时根下的 `claude-app-server-<版本>`（Provider 运行包属于代码层依赖，放在代码目录的 `dependencies/` 下）的不可变副本，并更新当前链接与服务配置。修改 Dev 源码后，需要安装新的 app-server 版本并在没有运行中轮次时重启服务。守护进程用 `claude-agent-sdk-current` 虚拟环境中的 Python 运行（`python -m management_portal.claude_code_daemon`），SDK 版本的安装、切换与回退见 decision_e587fe1c472e。切换只在没有进行中的 Claude 执行、且守护进程报告没有运行中的轮次时进行；切换后核对 `health` 中的版本、能力和实际账号状态。执行完成后的检查点与 PostgreSQL 提交遵循统一的执行恢复规则，守护进程不维护第二份 Portal 历史。
 
 Model API 表结构或随包复制的 `model_api_store`、`ai_provider_registry`、数据库访问模块发生变化时，也必须递增 app-server 版本并重新安装不可变副本。Portal Web 和 ExecutionWorker 发布不会替换已安装的 Claude 包。切换前同时核对调度器没有运行中的 Claude Execution、daemon 的 `active=0`；切换后须确认 `provider_ready=true`、`provider_error` 为空及 app-server 版本，不能只以 systemd active 判断完成。
 

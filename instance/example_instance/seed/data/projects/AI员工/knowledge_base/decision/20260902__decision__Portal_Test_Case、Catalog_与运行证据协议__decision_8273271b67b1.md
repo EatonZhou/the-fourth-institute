@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 43
+  number: 46
   created_at: '2026-09-02'
   created_by:
     user: ''
@@ -65,8 +65,8 @@ Portal 的测试框架（Python 包 `management_portal/test_framework`）把仓�
 - **Test Case（测试条目）**：一项稳定的测试意图，说明验证什么、属于 Portal 哪个功能模块、有多重要、从哪个角度覆盖。它有一个永久 ID，Python 函数改名或移动文件不改变这个 ID。
 - **Implementation（实现入口）**：把测试意图连接到可运行的 pytest 函数，或保留的 TAU 任务声明。一个 Test Case 可以有零个或多个 Implementation；没有 Implementation 的条目只登记测试意图。
 - **Catalog（测试目录）**：全部 Test Case 的集合。pytest 函数从源码自动发现，标题、说明和分类写在 docstring；TAU、SPEC Design 和设计点 Live 用例保存在各自 JSON。仓库不保存生成目录。
-- **runner（执行方式）**：`pytest` 是当前可运行的本地执行方式；`tau` 执行 Resident 真实页面验收；运行前须安装独立 TAU 浏览器运行时并配置 TFI portal 状态。`browser-script` 不再注册。
-- **profile（运行配置）**：实现声明可以在哪种环境下运行。当前有 `local.fixture`（本地测试数据，风险 `isolated`）和 `live.portal-test`（在当前唯一的 Dev 上使用受控账号 `TFI portal`，风险 `live-account`）。
+- **runner（执行方式）**：`pytest` 是当前可运行的本地执行方式；`tau` 执行 Resident 真实页面验收；运行前须安装独立 TAU 浏览器运行时并配置 portal-test 状态。`browser-script` 不再注册。
+- **profile（运行配置）**：实现声明可以在哪种环境下运行。当前有 `local.fixture`（本地测试数据，风险 `isolated`）和 `live.portal-test`（在当前唯一的 Dev 上使用受控账号 `portal-test`，风险 `live-account`）。
 - **RunPlan（运行计划）**：一次请求选中的具体 Implementation 列表，固定每个实现的入口、配置和源码摘要。
 - **Run record（运行记录）**：一次执行的发起者、状态、输出、逐项结果、产物和报告。
 - **功能模块**：`module` 字段的取值来自测试分类表（`management_portal/test_framework/taxonomy.py`），它按 SPEC.md 的十一个顶层领域分组，每个模块列出相关的 Design ID。
@@ -88,7 +88,7 @@ Test Case 的字段：
 | `is_design_point` | 是否是当前关键设计点的测试 |
 | `design_refs` | 该测试直接验证的 Design ID 列表 |
 | `design_point_ref` | 可选；绑定的 WALL 设计点 |
-| `lifecycle` | `active`、`needs-review`、`obsolete`、`retired`（已退役） |
+| `lifecycle` | `active`、`needs-review`、`obsolete`、`deleted`（已删除） |
 | `implementations` | 实现入口列表 |
 | `live` | 可选；Live 演示定义 |
 
@@ -123,13 +123,13 @@ Implementation 的字段：
       """
   ```
 - **保留的用例 ID 稳定，新测试的 ID 由入口派生。** 仍存在的旧 pytest 入口在 `tests/cases/case_ids.json` 中保留 ID；已删除的浏览器入口从该映射中清除。其他测试 ID 由入口摘要派生。测试移动、改名和显式 JSON 入口的冲突仍由目录同步校验。
-- **`sync_catalog` 只做检查和清理。** `python -m management_portal.test_framework.tools.sync_catalog` 报告被拒绝的字段和无法解析的源码、测试已经不存在的 `case_ids.json` 条目、按移动规则沿用的 ID，以及测试已经不存在的 `live_cases.json` Live 定义；有错误时以状态 1 退出。它还报告两类需要人处理、但不影响退出状态的问题（TFI portal 2026-10-18 定）：标题不含中文的测试（没有 docstring 标题，目录显示函数名），以及设计点已不在设计文档中的绑定。WALL 用设计点标签文字的哈希作点 ID，改写标签就会让绑定失效，除非该点带有 `<!-- wall: {"key": ...} -->` 显式 key。工具按 `<Projects>/<项目>/knowledge_base/<类型>/*__<ID>.md` 读取设计文档，读不到的绑定只计入“未检查”。`--apply` 把沿用的 ID 写入新入口并删除失效条目（在各文件的 `.lock` 文件锁内原子替换）；`--export <路径>` 把完整目录写成一份 `tfi.portal-test-catalog.v2` 文档，供留存证据。`live_cases.json` 继续按入口为自动发现的测试提供 Live 定义。
+- **`sync_catalog` 只做检查和清理。** `python -m management_portal.test_framework.tools.sync_catalog` 报告被拒绝的字段和无法解析的源码、测试已经不存在的 `case_ids.json` 条目、按移动规则沿用的 ID，以及测试已经不存在的 `live_cases.json` Live 定义；有错误时以状态 1 退出。它还报告两类需要人处理、但不影响退出状态的问题（weihao 2026-10-18 定）：标题不含中文的测试（没有 docstring 标题，目录显示函数名），以及设计点已不在设计文档中的绑定。WALL 用设计点标签文字的哈希作点 ID，改写标签就会让绑定失效，除非该点带有 `<!-- wall: {"key": ...} -->` 显式 key。工具按 `<Projects>/<项目>/knowledge_base/<类型>/*__<ID>.md` 读取设计文档，读不到的绑定只计入“未检查”。`--apply` 把沿用的 ID 写入新入口并删除失效条目（在各文件的 `.lock` 文件锁内原子替换）；`--export <路径>` 把完整目录写成一份 `tfi.portal-test-catalog.v2` 文档，供留存证据。`live_cases.json` 继续按入口为自动发现的测试提供 Live 定义。
 - **SPEC.md 索引的每份 Design 都要出现在测试分类表中。** `tests/cases/test_test_framework.py` 检查分类表覆盖 SPEC.md 的全部顶层领域和当前索引的每个 Design ID，并检查每个条目的 `module` 都来自分类表；在 SPEC.md 新增或移动 Design 时，同时把它的 ID 加入对应模块，否则该检查失败。
 - **目录校验在读取时进行。** 每个条目必须有合法 ID、`key`、标题和能识别的模块，说明可以为空；`is_design_point` 为真或含 `architecture-conformance` 的条目必须有非空 `design_refs`（含 `architecture-conformance` 而没有声明时默认为 SPEC.md）；Test Case 的 `id`、`key` 以及 Implementation 的 `id`、`entrypoint` 在目录内唯一。模块 ID 必须来自当前分类表；旧模块名没有别名映射。`tests/cases/test_catalog_from_code.py` 检查仓库目录没有错误。
 - **单个条目有错误时，其余条目照常可用。** docstring 中被拒绝的字段（未知字段、未知模块、无效等级）记入 `catalog_errors`，这个测试仍按其余字段和推断值留在目录中；无法解析的源码文件记一条错误，它的测试暂时不出现；重复的 ID、入口或设计点绑定使相关条目进入 `catalog_errors`，其他条目正常返回。
 <!-- wall: {"key": "ae08985efa54f238"} -->
 - **目录按源码文件缓存。** 每个测试文件按修改时间和大小缓存解析结果，任一来源文件变化时重建目录；首次构建需要解析全部测试文件，之后的读取只检查文件状态。ResourceService 的 `test` 资源按同一组来源文件判断是否需要刷新。
-- **条目只在源码中修改（TFI portal 2026-10-16 定）。** Test 工作区和接口都不能修改条目：标题、说明、分类、WALL 设计点绑定和 `lifecycle` 写在测试的 docstring 或显式用例 JSON 中，随代码评审和提交生效。退役一个条目就是在 docstring 中写 `:lifecycle: retired`。
+- **条目只在源码中修改（weihao 2026-10-16 定）。** Test 工作区和接口都不能修改条目：标题、说明、分类、WALL 设计点绑定和 `lifecycle` 写在测试的 docstring 或显式用例 JSON 中，随代码评审和提交生效。删除一个条目就是在 docstring 中写 `:lifecycle: deleted`。
 - **一个 WALL 设计点最多绑定一个 Test Case。** docstring 字段 `:design-point: source#point` 设置绑定，同时把条目标记为设计点并把来源文档加入 `design_refs`；显式用例 JSON 设置 `design_point_ref` 时必须自己写 `is_design_point: true` 和来源文档。两个条目绑定同一个点时，两者都进入 `catalog_errors`。Test Case 面板通过 `/api/wall/test-binding` 显示绑定的点在当前用户可访问的 WALL 工程中是否仍然存在。
 - **Test Case 也是只读的标准资源。** 资源类型 `test` 的提供者把 Catalog 中的条目发布给 ResourceService，所有人可读；资源地址在 Portal 中打开为 `/wall?case=<id>`。`test` 类型没有修改提供者，`UpdateResource` 对它返回错误。
 
@@ -138,7 +138,7 @@ Implementation 的字段：
 - **筛选条件之间取交集，覆盖角度之内取并集。** 可以按条目 ID、模块、重要级别、覆盖角度、是否设计点、是否有 Live 演示、是否已绑定设计点、绑定的设计点、生命周期和搜索词筛选。搜索词不区分大小写，匹配 ID、标题、说明、模块、`key` 和实现入口。重要级别或覆盖角度取值不合法时返回错误；多选条件只有以列表形式传入才生效。
 - **预览计划只说明“现在会运行什么”，不执行任何测试。** 对每个命中的条目，计划选出与请求的执行方式、实现 ID 和运行配置都匹配、且执行方式当前可用的全部实现，并记录每个实现源码文件的 SHA-256 摘要；没有可运行实现的条目列入 `excluded`。
 - **声明式 TAU 的历史计划保持可读。** 目录保留其声明和源码摘要以解释既有记录；满足 TAU 运行前提时，新计划可以继续选择它执行。pytest 计划按源码文件摘要校验。
-- **未指定条目 ID 时，计划默认排除已退役的条目。** 明确指定条目 ID 时仍可运行已退役条目，用于诊断。
+- **未指定条目 ID 时，计划默认排除已删除的条目。** 明确指定条目 ID 时仍可运行已删除条目，用于诊断。
 - **启动运行时，服务重新生成计划。** 客户端提交的是选择条件而不是预览结果；预览和启动之间源码或目录如有变化，以运行记录中保存的计划为准。
 <!-- wall: {"key": "10a3f2f371ff82d7"} -->
 - **纯 TAU 计划形成 Campaign，本地计划只执行 pytest。** 当选中的可运行实现全部是 `tau` 时，计划按模块组织为 TAU Campaign，执行资格及恢复见 `decision_c953eab654cd`；本地与 TAU 混合选择时只保留本地实现，只有 TAU 实现的条目列入 `excluded`，原因为 `tau-campaign-only`。历史 TAU 计划与结果仍可读取。
@@ -156,7 +156,7 @@ Implementation 的字段：
 <!-- wall: {"key": "05144a9e88f5a7cc"} -->
 - **只有运行的发起者可以取消运行。** 服务端比较认证身份与 `created_by`；已结束的运行原样返回，未结束的运行进入取消流程。取消请求不等于被测输入已终止。
 <!-- wall: {"key": "a215e09fc162cad9"} -->
-- **服务保留全部未结束的运行和最近 100 条已结束报告。** 创建新运行时只淘汰超出上限的最早终止报告；已通过接口认证的调用者也可以批量删除已经结束的报告。
+- **服务保留全部未结束的运行和最近 100 条已结束报告。** 创建新运行时只淘汰超出上限的最早终止报告；已通过接口认证的调用者也可以批量删除已经结束的报告。证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍随运行记录删除证据，没有独立的到期清理（`management_portal/test_framework/records.py:569、640`）。
 - **一次运行属于执行它的进程。** 本地运行和 TAU Campaign 都由各自的测试执行进程执行，Web 重启不影响它们。执行进程在运行结束前退出时，Web 在启动时或下一次读取这条运行时重新启动执行单元：已经开始的本地运行记为 `error`，TAU Campaign 由新的执行进程从已记录的 Resident 消息继续。仍在运行的执行进程继续拥有自己的运行，其他进程不抢占。
 
 ## 接口协议
@@ -245,7 +245,7 @@ Implementation 的字段：
 
 未通过的每项结果带 `failure_class`，说明未通过的原因：`product`（产品缺陷）、`test`（测试问题）、`environment`（环境问题）、`precondition`（运行前提没有满足，用例没有执行）、`concurrent-change`（并行修改）或 `unknown`（尚未判定）。框架能判断的直接写入：`unsupported` 为 `precondition`，`error` 和被信号终止的进程为 `environment`，TAU Resident 没有交付可解析的结论为 `test`；其余失败记为 `unknown`，由处理失败的人或 Resident 判定。TAU 报告的摘要按分类计数（`failure_classes`），Test 工作区在结果状态旁显示分类。
 
-`POST /test/api/run/cancel` 接受 `run_id`：已结束的运行原样返回；否则记录进入 `cancelling`。本地运行的执行进程在下一次写入进度时（至多约 2 秒）看到这个状态，向各组进程发送 `SIGTERM`，10 秒后仍未退出时发送 `SIGKILL`；TAU Campaign 的执行进程在等待 Resident 时读到这个状态，通知正在执行的 Resident 输入停止。执行结束后写入最终状态。`POST /test/api/runs/delete` 接受 `run_ids` 列表：去重后，只要有一个 ID 不存在或运行尚未结束，整批拒绝；成功时删除记录并清理各运行的产物目录，返回 `tfi.portal-test-run-deletion.v1`、`deleted_run_ids`、`deleted_count` 和 `artifact_warnings`（产物清理失败的说明）。
+`POST /test/api/run/cancel` 接受 `run_id`：已结束的运行原样返回；否则记录进入 `cancelling`。本地运行的执行进程在下一次写入进度时（至多约 2 秒）看到这个状态，向各组进程发送 `SIGTERM`，10 秒后仍未退出时发送 `SIGKILL`；TAU Campaign 的执行进程在等待 Resident 时读到这个状态，通知正在执行的 Resident 输入停止。执行结束后写入最终状态。`POST /test/api/runs/delete` 接受 `run_ids` 列表：去重后，只要有一个 ID 不存在或运行尚未结束，整批拒绝；成功时删除记录；证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在删除记录时清理各运行的产物目录（该删除接口），返回 `tfi.portal-test-run-deletion.v1`、`deleted_run_ids`、`deleted_count` 和 `artifact_warnings`（产物清理失败的说明）。
 
 ## 实现说明
 
@@ -270,7 +270,7 @@ Windows 使用 `native_executor.py` 启动本站 Python 执行器：在运行前
 
 Web 进程创建运行记录（`queued`）后，用 `systemd-run --user` 启动一个临时单元 `portal-testrun-<16 位十六进制>`，在 Web 所在代码目录中运行 `python -m management_portal.test_framework.executor --state-root <状态目录> <run_id>`。单元位于 Web 的 cgroup 之外，CPU 与 IO 权重为 20（默认 100）、nice 为 10。单元名称按运行 ID 确定，同一运行在同一时间只能有一个执行单元。启动失败时运行直接记为 `error`。
 
-本地运行的单元最长运行 8 小时，只接收状态目录、实例名、`PATH`、TFI portal 存储状态路径和名额目录这几个环境变量，不接收数据库地址或其他密钥。TAU Campaign 的单元不设运行时长上限，接收发起进程中全部不含密钥的 `PORTAL_*` 变量：服务套接字、ISA 套接字路由、SocietyService 与 ResourceService 的客户端模式、NATS 地址、实例目录和 TAU 测试设置，使它与 Web 用同一方式调用 Resident；数据库地址由单元从 PostgreSQL 环境文件（`PORTAL_POSTGRES_ENV_FILE`，默认 `~/.config/tfi/portal-postgres.env`）读取，不出现在命令行中。
+本地运行的单元最长运行 8 小时，只接收状态目录、实例名、`PATH`、portal-test 存储状态路径和名额目录这几个环境变量，不接收数据库地址或其他密钥。TAU Campaign 的单元不设运行时长上限，接收发起进程中全部不含密钥的 `PORTAL_*` 变量：服务套接字、ISA 套接字路由、SocietyService 与 ResourceService 的客户端模式、NATS 地址、实例目录和 TAU 测试设置，使它与 Web 用同一方式调用 Resident；数据库地址由单元从 PostgreSQL 环境文件（`PORTAL_POSTGRES_ENV_FILE`，默认 `~/.config/tfi/portal-postgres.env`）读取，不出现在命令行中。
 
 执行进程先在运行记录的锁内认领运行并写入自己的进程身份：`queued` 改为 `running`；尚未开始就被取消的运行直接记为 `cancelled`；已有存活执行进程或已经结束的运行不执行。原执行进程已经退出时，TAU Campaign 由本进程接管，保持 `running` 或 `cancelling`；已经开始的本地运行无法继续，记为 `error`。TAU Campaign 随后按模块执行（见 `decision_c953eab654cd`）；本地运行为计划中的每组启动一个线程，各组并发执行。组内进程的输出、逐项结果和分组状态先在内存中累积，每 2 秒合并成一次记录写入；同一次写入读回的状态是 `cancelling` 时开始停止。全部组结束后，执行进程按各组状态写入最终状态。
 
@@ -289,9 +289,9 @@ pytest 和保留的 TAU 任务共用主机并发预算，默认 4 个名额，�
 
 `isolated` pytest 组在 bwrap 沙箱运行：独立 PID、IPC 和 UTS 命名空间，私有 `/tmp`，无网络，隐藏凭证和 Portal 状态。数据库与状态隔离由测试配置完成；Live 组不进沙箱。
 
-Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal` 和当前测试框架状态目录）在沙箱中被替换为组目录旁的空白目录，只有本组自己的产物目录重新挂回。组结束后，替换目录中出现的文件说明有测试写入了真实状态：这些路径记入分组的 `isolation_holes`，分组和运行至少记为 `failed`，替换目录保留供排查；没有写入时替换目录随即删除。
+Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal` 和当前测试框架状态目录）在沙箱中被替换为组目录旁的空白目录，只有本组自己的产物目录重新挂回。组结束后，替换目录中出现的文件说明有测试写入了真实状态：这些路径记入分组的 `isolation_holes`，分组和运行至少记为 `failed`，隔离失败产生的夹具与取出的排查证据按《目录与路径协议》（decision_4aa13bc21e8e）分别清理和保留。现在的代码仍在有写入时保留替换目录供排查，没有写入时随即删除（原隔离检查）。
 
-`live` 组不进沙箱，在当前唯一的 DEV 上以 TFI portal 身份运行，同一时间全主机只有一个 Live 组执行。执行进程本身也不进沙箱，它负责写运行记录。TAU Campaign 不进沙箱，它的用例由模块 Resident 在当前真实 DEV 上执行。
+`live` 组不进沙箱，在当前唯一的 DEV 上以 portal-test 身份运行，同一时间全主机只有一个 Live 组执行。执行进程本身也不进沙箱，它负责写运行记录。TAU Campaign 不进沙箱，它的用例由模块 Resident 在当前真实 DEV 上执行。
 
 ### 进程重启后的恢复
 
@@ -321,5 +321,5 @@ Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal`
 
 TAU 模块的跨进程占用、容量等待及失败清理恢复统一见 `decision_c953eab654cd`；本 Design 只定义通用运行记录与保留上限，未结束 Campaign 同其他未结束运行一样不会被创建新运行时的保留清理淘汰。
 
-原 Playwright 界面套件与固定浏览器 Campaign 检查已退役，不再作为当前覆盖证明。当前 TAU 样本、临时对象与证据生命周期以 `decision_c953eab654cd` 为准；是否执行及如何复用历史有效证据以 `decision_6febe7bb57f9` 为准。退役不改写原 Run、失败结论或稳定条目 ID，也不证明当前端到端能力已通过。
+原 Playwright 界面套件与固定浏览器 Campaign 检查已删除，不再作为当前覆盖证明。当前 TAU 样本、临时对象与证据生命周期以 `decision_c953eab654cd` 为准；是否执行及如何复用历史有效证据以 `decision_6febe7bb57f9` 为准。删除不改写原 Run、失败结论或稳定条目 ID，也不证明当前端到端能力已通过。
 

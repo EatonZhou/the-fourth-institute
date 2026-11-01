@@ -26,7 +26,7 @@ links:
   supersedes: []
   derived_from: []
 version:
-  number: 69
+  number: 70
   created_at: '2026-10-18T12:51:08Z'
   created_by:
     user: tfi-exported-user
@@ -301,7 +301,7 @@ SPEC.md、IMPROVE.md 分别作为独立区域选择是否带出，不再使用�
 
 站点名读取安装目录下的 `config/site.json`，可通过 `PORTAL_SITE_CONFIG` 指定其他文件，默认名称为 `TFI Portal`。修改后刷新页面生效，页面与认证展示使用同一名称；名称和语言设置不改变已有认证凭据。
 
-页面接收公开站点名、稳定安装命名空间 `storage_namespace`、各区域的位置和测试产物目录，用于原生文件链接与预览；账号目录、密钥目录和其他实例配置不进入页面（现在的代码传的是 `paths.share_root`、`paths.staging_root`、`paths.test_results_root` 三项，前两项按 `plan_4d1990717dc0` 第六步改为区域）。测试产物目录由 `deployment.native_ui.test_results_root` 指定，未指定时使用安装目录下的 `test-results`。非法目录明确报错。
+页面接收公开站点名、稳定安装命名空间 `storage_namespace`、各区域的位置和测试产物目录，用于原生文件链接与预览；账号目录、密钥目录和其他实例配置不进入页面。测试产物目录由 `deployment.native_ui.test_results_root` 指定，未指定时使用安装目录下的 `test-results`。非法目录明确报错。
 
 配置读取和站点名展示已实现，非法配置应明确报错。发行安装器按“发布模块与安装模块”要求建设；其实现和验证状态以实际交付为准。站点配置编辑页面另按对应任务推进。
 

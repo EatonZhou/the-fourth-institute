@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 21
+  number: 22
   created_at: '2026-07-29'
   created_by:
     user: ''
@@ -47,7 +47,7 @@ Codex 会话协议见 decision_3e8c2a7f91d4，Codex 账号选择见 decision_3dd
 ## 基本概念
 
 - **运行时（runtime）**：Provider 实际运行的程序包，例如 npm 包 `@openai/codex` 提供的 `codex` 命令。
-- **版本目录**：每个版本单独安装的目录，属于代码层依赖，放在代码目录的 `dependencies/` 下（《Portal 实例协议》；现在的代码由站点 `deployment.providers.runtime_root` 指定，未配置时使用旧 staging 根的 `provider-runtimes/`，按 `plan_4d1990717dc0` 第六步迁移），名称带版本号，例如 `codex-cli-0.159.2`。安装新版本只新增目录，不改动正在使用的版本。
+- **版本目录**：每个版本单独安装的目录，属于代码层依赖，放在代码目录的 `dependencies/` 下（《Portal 实例协议》），名称带版本号，例如 `codex-cli-0.159.2`。安装新版本只新增目录，不改动正在使用的版本。
 - **当前链接**：指向正在使用的版本目录的符号链接。服务只通过当前链接启动运行时，所以切换版本就是改变链接指向并重启服务。
 - **验证标记**：版本目录中的 `.portal-validated` 文件，表示这个目录已经装好并通过了启动检查。
 - **systemd 用户服务**：Linux 上以部署服务的操作系统账号运行的后台服务，异常退出后由 systemd 自动拉起；Windows 使用安装器的服务控制器，不依赖 systemd 或固定主机用户名。
@@ -86,7 +86,7 @@ Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍�
 - **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。静态安装器单独渲染共享模板，不把运行中的实例名当作仓库 unit 文件。
 - **切换失败时退回原版本。** 任一服务重启失败，检查程序把当前链接改回原来的目录并再次重启这些服务，然后报告错误；安装失败时当前版本保持不变。
 - **待切换的版本会在空闲后自动启用。** 出现待切换版本时，检查程序启动临时的 systemd 用户服务 `portal-provider-pending-activation`，每 30 秒尝试切换一次，最多等待 24 小时。该服务通过 `EnvironmentFile` 加载 Portal 的 PostgreSQL 环境文件，默认路径为 `~/.config/tfi/portal-postgres.env`，可由 `PORTAL_POSTGRES_ENV_FILE` 指定。数据库连接用于检查 Provider 的活动 Execution；连接不可用时报告错误并保留待切换状态。连接凭据不写入启动命令参数。
-- **同一时间只运行一次检查。** 检查程序持有文件锁 `provider-updates.lock`，位于 provider-state 区域的 `provider-update-state/`（现在的代码由站点 `deployment.providers.state_root` 指定，未配置时为旧 staging 根的 `provider-update-state/`，按 `plan_4d1990717dc0` 第六步迁移）；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
+- **同一时间只运行一次检查。** 检查程序持有文件锁 `provider-updates.lock`，位于 provider-state 区域的根目录；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
 
 更新检查由 `scripts/update_provider_runtimes.py` 执行一次（加 `--activate-pending` 时只尝试启用待切换的版本）。它输出 JSON 结果，列出每个 Provider 的已安装版本与可用版本、本次启用的 Provider、仍在等待的 Provider 和错误；有错误或检查正忙时以非零状态退出。
 
@@ -122,7 +122,7 @@ Codex 的每个执行账号由登记中的 `account_id` 标识，并关联供会
 | 对象 | 来源与职责 |
 | --- | --- |
 | 账号目录 `CODEX_HOME` | 账号登记中的 `config.account_dir`，保存该账号的凭据、配置与原生会话；放在哪里由主机用户决定（《Portal 实例协议》「执行账号目录」） |
-| Unix socket | 实例 `runtime/` 下的 `codex-<account_id>.sock`，供客户端连接该账号实例（现在的代码为旧部署数据目录下的 `sockets/codex-<account_id>.sock`，按 `plan_4d1990717dc0` 第六步迁移） |
+| Unix socket | 实例 `runtime/` 下的 `s/codex-<account_id>.sock`，供客户端连接该账号实例 |
 | 模板源 | `config/systemd/portal-codex-app-server@.service.in`，声明所有账号共用的进程设置 |
 | 已安装模板 | 用户 systemd 目录中的 `portal-codex-app-server@.service`，由服务控制面按站点路径、Codex 可执行文件和出口配置渲染 |
 

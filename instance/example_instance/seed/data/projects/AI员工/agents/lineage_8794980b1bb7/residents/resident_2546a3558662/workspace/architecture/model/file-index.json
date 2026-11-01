@@ -14350,7 +14350,7 @@
       }
     },
     {
-      "path": "management_portal/society_service/resident_workspace_retirement.py",
+      "path": "management_portal/society_service/resident_workspace_deletion.py",
       "module_matches": [
         {
           "module_id": "lineage",
@@ -14361,15 +14361,15 @@
         {
           "module_id": "lineage.conversation",
           "patterns": [
-            "management_portal/society_service/resident_workspace_retirement.py"
+            "management_portal/society_service/resident_workspace_deletion.py"
           ]
         }
       ],
       "mapping_status": "matched",
-      "content_address": "repo_5d287fed9c7e/file/management_portal/society_service/resident_workspace_retirement.py",
+      "content_address": "repo_5d287fed9c7e/file/management_portal/society_service/resident_workspace_deletion.py",
       "source_locator": {
         "repository": "repo_5d287fed9c7e",
-        "path": "management_portal/society_service/resident_workspace_retirement.py"
+        "path": "management_portal/society_service/resident_workspace_deletion.py"
       }
     },
     {
@@ -57615,7 +57615,7 @@
             "management_portal/society_service/resident_work_origin.py",
             "management_portal/society_service/resident_work_recovery.py",
             "management_portal/society_service/resident_workspace_domain.py",
-            "management_portal/society_service/resident_workspace_retirement.py",
+            "management_portal/society_service/resident_workspace_deletion.py",
             "management_portal/society_service/resident_workspace_storage.py",
             "management_portal/society_service/resident_workspace_transfer.py",
             "management_portal/society_service/resource_client.py",
@@ -59066,9 +59066,9 @@
           ]
         },
         {
-          "pattern": "management_portal/society_service/resident_workspace_retirement.py",
+          "pattern": "management_portal/society_service/resident_workspace_deletion.py",
           "files": [
-            "management_portal/society_service/resident_workspace_retirement.py"
+            "management_portal/society_service/resident_workspace_deletion.py"
           ]
         },
         {

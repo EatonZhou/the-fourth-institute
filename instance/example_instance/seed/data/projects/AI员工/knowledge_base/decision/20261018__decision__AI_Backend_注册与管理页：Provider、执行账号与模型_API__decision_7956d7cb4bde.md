@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 35
+  number: 37
   created_at: '2026-10-18T14:45:00Z'
   created_by:
     user: tfi-exported-user
@@ -69,7 +69,7 @@ Resident 的每一轮工作通过一个 AI Backend 执行：某个 Provider（Co
 
 - **执行账号的登记保存在 PostgreSQL schema `execution_accounts`。** 表 `registrations` 记录 `account_id`、`provider`、`kind`、`route_id`、Provider 专有配置（JSONB：Codex 的备用账号列表与是否默认；Claude 的模型目录；`api_profile` 的 `api_id`）、初始并发上限、`enabled`、版本和修改审计。账号适配器从登记读取配置。
 - **模型 API 条目只保存可直接调用的 HTTP 接口。** 订阅登录账号一律使用 `subscription_login` 执行账号登记，不在模型 API 表中保存订阅 profile。新建 API 执行账号以 config.api_id 显式绑定条目；DSH 与 OpenCode 的既有服务路线保留原有身份及显式绑定。
-- **账号目录记在登记里，放在哪里由主机用户决定。** 订阅账号的 Provider 目录（Codex 的 `CODEX_HOME`、Claude 原生订阅的配置目录、Kimi 订阅账号的本地服务与配置目录）保存在登记的 `config.account_dir` 中，是规范绝对路径，不能是软链接（《Portal 实例协议》「执行账号目录」）。登记时必须给出这个目录，目录不存在时 Portal 创建空目录；删除登记不删除目录。App Server 的 socket 放在实例 `runtime/` 下。现在的代码在登记未给出目录时仍按 `~/.<provider>-accounts/<名称>` 建立默认目录，socket 仍在旧部署数据目录的 `sockets/codex-<account_id>.sock`，分别按 `plan_4d1990717dc0` 第五、六步修改。
+- **账号目录记在登记里，放在哪里由主机用户决定。** 订阅账号的 Provider 目录（Codex 的 `CODEX_HOME`、Claude 原生订阅的配置目录、Kimi 订阅账号的本地服务与配置目录）保存在登记的 `config.account_dir` 中，是规范绝对路径，不能是软链接（《Portal 实例协议》「执行账号目录」）。登记时必须给出这个目录，目录不存在时 Portal 创建空目录；删除登记不删除目录。App Server 的 socket 放在实例 `runtime/` 下。
 - **Provider 的账号服务由登记驱动。** 需要常驻进程的账号（Codex App Server）使用 systemd 模板单元 `<服务前缀>-codex-app-server@.service`（服务前缀是实例的服务名前缀，现在记在 `config/target.json` 的 `service_prefix`；源码模板为 `config/systemd/portal-codex-app-server@.service.in`），实例名就是 `account_id`：登记启用的账号时准备并启动实例，启动受账号认证文件条件约束；停用只停止新工作派发，保留进程以承接既有运行；满足空闲条件后删除登记时移除实例。服务操作经服务控制面执行（decision_850e6248d680）。重新启用账号使用同一个模板实例控制入口。账号目录不接受软链接。
 - **登记存储与部署变更保留账号身份。** 账号 ID、路由 ID 和容量键保持稳定，已保存的调度设置、额度状态和会话归属继续有效。
 - **删除登记要求账号空闲。** 没有会话绑定到它（需要先用 `RestartSession` 迁移）、没有排队或运行中的执行时才能删除；否则只能停用。停用的账号不接收新工作，已绑定会话的 Resident 在会话设置中看到“账号已停用”。

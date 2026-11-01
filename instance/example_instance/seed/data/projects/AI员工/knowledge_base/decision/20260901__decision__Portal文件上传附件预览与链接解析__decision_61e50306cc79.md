@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 36
+  number: 37
   created_at: '2026-09-01'
   created_by:
     user: ''
@@ -174,7 +174,7 @@ PPT 和 PPTX 以只读的静态幻灯片显示。服务端在本机用 LibreOffi
 
 - **图片和 PDF 使用共享的缩放控制。** 图片的比例范围为 0.25–6，PDF 为 0.2–4。桌面上按住 Ctrl 滚动滚轮缩放，触屏双指缩放和 Safari 手势使用同一套逻辑，“Reset”回到 100%。缩放以指针位置为中心，缩放比例在停止操作 180 毫秒后保存。
 - **连续手势由共享的帧合并器处理。** `createFrameCoalescer(callback, onError)` 为一次交互保存最后一次待处理的值：`schedule` 合并到下一帧，`flush` 立即处理，`cancel` 丢弃，`dispose` 取消后不再接受新的调度。回调出错时交给 `onError`。预览缩放和 Article 的 PDF 手势共用它。
-- **文件定位支持 `#Lx-Ly` 和 `:行:列` 两种写法。** 统一资源地址优先于路径判断；历史 `/nas_ro/` 前缀表示旧 share 根：其后的 `Projects/`、`Skills/`、`Papers/` 分别转换到 projects、skills、papers 区域，页面未取得区域位置时保留原路径交由服务端解析（现在的代码在页面取得 `window.__PORTAL_SITE__.paths.share_root` 时整体转换到这个根）；相对路径可以使用调用方给出的 `basePath`；本地路径只按允许的根目录判断。上传图片、知识条目讨论图片和旧 `/resident_chat_images/` 图片由共享 `imagePreviewUrl` 按下文「消息中的图片用上传地址显示」生成受保护的地址；其他本地文件通过 `link-file` / `link-file-raw` 读取，路径和权限由服务端检查。
+- **文件定位支持 `#Lx-Ly` 和 `:行:列` 两种写法。** 统一资源地址优先于路径判断；绝对路径按其原值处理，不改写历史目录前缀；相对路径可以使用调用方给出的 `basePath`；本地路径只按允许的根目录判断。上传图片、知识条目讨论图片和旧 `/resident_chat_images/` 图片由共享 `imagePreviewUrl` 按下文「消息中的图片用上传地址显示」生成受保护的地址；其他本地文件通过 `link-file` / `link-file-raw` 读取，路径和权限由服务端检查。
 - **Resident 回复中的相对文件链接相对于这个 Resident 的工作目录。** 页面依次使用 Resident 文件夹的 `primary_root_id`、标为 `is_primary` 或 `default_cwd` 的根目录；只有一个根目录时才直接使用它。链接必须是具有文件形状的相对本地路径，页面把它拼成 `<根目录 ID>/<相对路径>`，交给 Resident 文件来源读取和检查权限。普通网页地址、本页锚点和不像文件的相对链接不会被当成本地文件，也不会用浏览器当前目录、Lineage 文件夹或 Resident 文件夹的路径去猜测。
 - **Markdown 中只有未修饰的左键点击由预览接管。** 已经在 `a`、`button`、`pre` 中或带有跳过标记的区域不重复处理；调用方没有提供 `onOpen` 时交给 `PortalPreview.request`。
 
@@ -194,7 +194,7 @@ PPT 和 PPTX 以只读的静态幻灯片显示。服务端在本机用 LibreOffi
 - **读取上传内容受权限限制。** 创建者和 Portal 管理员都能读取；帖子图片所有登录用户都能读取；目标是 Resident 的上传，能看到这个 Resident 的用户可以读取。其他人得到 404。
 - **Resident 通过工具调用上传时使用已有的工作区文件。** `CreateUpload` 提供 `source_address` 时，服务端直接复制这个文件，不需要数据通道。
 - **删除上传使用 `DeleteUpload`。** 删除授权与被引用上传的处理统一遵守 decision_ad3e21094f14 的 `DeleteUpload` 合同；能读取附件或具有管理员身份不构成删除权的额外来源。
-- **上传存放在 Dev 与 Release 共用的 uploads 区域。** 每个上传使用 `<uploads 区域>/<上传 ID>/`，保存文件和 `meta.json`；引用上传时按上传 ID 或“区域 + 相对路径”，不保存绝对路径。服务同一批会话的 Dev 与 Release 必须读取同一上传存储，重启切流不能使已上传附件失效。现在的代码由 `resources.isa.upload_root()` 读取 `PORTAL_UPLOAD_ROOT`，未设置时使用旧部署数据目录（`portal_paths` 的 `instances_root`）下的 `uploads/`；对话中的图片与附件另放在旧 staging 根的 `shared/portal_uploads/`。两处按 `plan_4d1990717dc0` 第六步并入 uploads 区域，移动时保留已引用的文件。
+- **上传存放在 Dev 与 Release 共用的 uploads 区域。** 每个上传使用 `<uploads 区域>/<上传 ID>/`，保存文件和 `meta.json`；引用上传时按上传 ID 或“区域 + 相对路径”，不保存绝对路径。服务同一批会话的 Dev 与 Release 必须读取同一上传存储，重启切流不能使已上传附件失效。
 - **对话附件**：Chat Workspace 把图片和普通文件都作为 `conversation_attachment` 上传，目标是当前 Resident；上传完成后，附件在消息中以上传 ID 引用。内容图片再由共享的图片组件插入正文。上传没有浏览器端的去重，同一文件选择两次会产生两个附件；发送按钮只在请求进行中锁定。还没发送的附件随输入框草稿保存上传 ID，页面自己生成的 `blob:` 预览不随草稿保存；刷新页面或 Portal 重启后恢复草稿时，图片缩略图改用 `/api/uploads/<上传 ID>` 显示，附件仍可直接发送。
 - **消息中的图片用上传地址显示。** Chat、Chatroom 和 Society 页面的消息与 Markdown 图片通过 `PortalFileLinks.imagePreviewUrl` 取得显示地址：`/api/uploads/<上传 ID>` 原样使用；位于上传存储目录 `uploads/upload_<…>/` 下的文件路径换成同一个上传地址；知识条目讨论的附件图片和旧的 Resident 聊天图片使用各自的读取接口。已发送消息中的上传图片因此在刷新或重开会话后仍能显示。
 

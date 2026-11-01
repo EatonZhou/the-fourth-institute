@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 28
+  number: 32
   created_at: '2026-07-26'
   created_by:
     user: ''
@@ -180,7 +180,7 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 
 Resident、Lineage 和工作区的关系由协作领域（SocietyService）保存。资源的读取权限由权限系统决定（decision_b820faf42218），ResourceService 的资源记录不保存 ACL 或可见范围；同步进来的协作描述同时更新对象在权限树上的位置。SocietyService 通过以下受信方法把协作对象同步到 ResourceService：
 
-- `sync_collaboration_resource(s)` / `resource.collaboration.sync` 成组提交协作描述记录，每组只含 `descriptor`。资源 ID 在一批中不能重复；任一组无效时，整批在写入之前拒绝。已删除的对象只合并生命周期字段。内容相同的组不改写记录，写入成功后才通知资源索引。只有 SocietyService 的内部身份可以调用。
+- `sync_collaboration_resource(s)` / `resource.collaboration.sync` 成组提交协作描述记录，每组只含 `descriptor`。资源 ID 在一批中不能重复；任一组无效时，整批在写入之前拒绝。已删除的对象只合并生命周期字段。内容相同的组不改写记录，写入成功后才通知资源索引。只有 SocietyService 的内部身份可以调用。活跃描述与当前领域事实不符，或当前领域写入者持有校验所需的行锁时，整批拒绝并返回 `ResourceOperationError`，领域码为 `resource.canonical_projection_conflict`、HTTP 409；调用方重读当前事实后才可有限重试，不能原样重放旧快照。该冲突使用现有 `resource_operation_error` RPC 封套，不另增传输异常类别。
 - `workspace_id_for_path(path, preferred_id)` / `resource.collaboration.workspace_id_for_path` 为规范路径返回工作区 ID：已绑定的路径返回现有 ID；尚未绑定时使用 `preferred_id` 或分配新 ID。两次绑定几乎同时发生时，同一路径可能登记出多个工作区 ID：`preferred_id` 是其中之一时返回它，否则返回按字典序最小的那个，此后的绑定都落到同一个 ID 上。
 
 ## 登记、修改与撤销登记
@@ -213,7 +213,7 @@ Workspace 名称更新只接受非空 `title` 与必填 `expected_version`，令
 
 - 权限：UnregisterResource 的正式声明要求目标资源的 admin；领域删除适配器仍履行自己的业务约束。
 - 领域决定对象是软删除、物理删除还是只取消登记。
-- 领域失败时，登记账本继续保留这个 ID；成功后才释放，并发送 `deleted` 变化通知。
+- 目录注销与后台清理的提交、失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理；登记释放后发送 `deleted` 变化通知。现在的代码仍在领域失败时保留登记 ID，领域成功后才释放（原注销流程）。
 
 ### 等待索引确认
 
@@ -347,3 +347,11 @@ Repo 登记遇到目录还不是 Git 仓库时，调用方可以提示用户选�
 | 登录 Session、Resident 令牌 | 各认证入口 | 接收认证入口确认的访问者 |
 
 新增一种资源类型时，领域登记类型、解析器或索引适配器、变更提供器和动作提供器；通用的读取和修改直接使用 ResourceService，不在每个处理函数中另写权限判断。要让指令对这种类型的资源要求等级，模板的 R 树要为它声明位置（所属对象类型由 `permission_system/scheme/vocabulary.py` 给出，未声明的类型挂在默认节点下），并在指令映射中写明哪个参数要求哪个等级（decision_b820faf42218、decision_600ae27b0538）。
+
+### Workspace 注销适配
+
+Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`；类型能力 `unregisterable=true`，不开放通用 RegisterResource。Workspace 注销的绑定与嵌套登记处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍以存活 Resident 的自有引用、使用绑定和有效嵌套登记拒绝注销，返回 `instruction.conflict` 及 `workspace_in_use`、`workspace_nested_registration` 或 `workspace_area_root`，details 给出相关资源 ID（`resources/providers/workspace.py`、`resources/workspace_dependencies.py`）。无权限返回 `instruction.forbidden`，个人 AMA 的私有边界仍先行适用。
+
+Workspace 注销的来源、区域内外目录与嵌套登记范围按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍复用 `resident_workspace_deletion.delete_unreferenced`，仅删除区域内目录、保留区域外目录，不级联有效嵌套登记，并在生命周期删除时保留被引用目录。注销写入 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活；目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。
+
+Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍持锁至目录清理和删除提交，文件清理失败回滚登记（`society_service/resident_workspace_deletion.py`）。提交前在事务中锁定 Workspace 表与目标行并重新鉴权，其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。

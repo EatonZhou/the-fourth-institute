@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 18
+  number: 20
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -96,7 +96,7 @@ Pulse 的三个定时 Event、一个手动 Event、原有 Pulse Resident 及四�
 
 暂停生成不删除已有摘要，也不隐藏 Home Pulse。读取、个人发布和撤回继续使用已有文件及 PostgreSQL `portal_pulse.publications`；公开权限仍由权限系统决定（decision_b820faf42218），个人所有权仍由来源条目决定。
 
-默认摘要根目录为 Portal System canonical Lineage Folder 的 `memory/pulse`，可用 `PORTAL_PULSE_ROOT` 为隔离环境指定根目录。后端和 Resident 的发布工具必须指向同一根目录。迁移已有流程时保留 Resident 身份、四个 Event 身份、运行游标及暂停状态；Lineage 子图迁移负责身份和工作区，摘要历史需要另行完整复制、校验并最后提交索引。索引中的历史路径与新根目录同步，摘要正文、条目 ID、公开记录和所有者保持不变。迁移工具在所有摘要和索引完整落盘后，原子写入目标目录的 `.portal-system-migration.json` 完成凭据。凭据出现前，有既有历史的部署继续从原根目录读取，提前重新加载共同源码不会造成空白；凭据出现后只读取 System 数据，目标数据损坏时不会恢复已经过时的旧摘要。全新部署没有原摘要时直接使用 System 数据目录，显式 `PORTAL_PULSE_ROOT` 始终优先。
+摘要根目录由实例登记的 Pulse Lineage 位置派生，为其 Lineage Folder 下的 `memory/pulse`。后端和 Resident 的发布工具必须指向同一根目录。迁移已有流程时保留 Resident 身份、四个 Event 身份、运行游标及暂停状态；Lineage 子图迁移负责身份和工作区，摘要历史需要另行完整复制、校验并最后提交索引。索引中的历史路径与新根目录同步，摘要正文、条目 ID、公开记录和所有者保持不变。迁移工具在所有摘要和索引完整落盘后，原子写入目标目录的 `.portal-system-migration.json` 完成凭据。凭据出现前，有既有历史的部署继续从原根目录读取，提前重新加载共同源码不会造成空白；凭据出现后只读取 System 数据，目标数据损坏时不会恢复已经过时的旧摘要。全新部署没有原摘要时直接使用 System 数据目录。
 
 ### 本站开关与可安装映射
 
@@ -125,7 +125,7 @@ Home 通过 HATG 指令 `GetPulse`（decision_cc96fce57ab6）读取 Pulse，传�
 | 个人条目 | — | 10 条 |
 | 每条的证据路径 | 8 个 | 2 个 |
 
-总览最多 900 个字符，每个项目摘要最多 420 个字符，每条个人或公开条目最多 260 个字符。证据路径只接受 projects 区域和 features 区域内的路径（现在的代码为旧 share 根的 `Projects/` 和旧 staging 根，按 `plan_4d1990717dc0` 第六步改为区域）；用户点开证据时，目标资源按自己的权限决定是否可读。
+总览最多 900 个字符，每个项目摘要最多 420 个字符，每条个人或公开条目最多 260 个字符。证据路径接受实例七个区域内的路径；用户点开证据时，目标资源按自己的权限决定是否可读。
 
 ### 公开与撤回
 

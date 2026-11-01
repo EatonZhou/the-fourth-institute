@@ -11,8 +11,8 @@
       "architecture/modules.yaml": {
         "status": "available",
         "address": "workspace_04ad72d24263/file/architecture/model/modules.yaml",
-        "sha256": "ee8c2a1e97773fe43693d083e8b88d7f7bdf3adefe4399ff60807264339dd2e7",
-        "size": 111522
+        "sha256": "d62c34d15d3ee4e710be26e1a14b255879fcc0c5098ac755f6e493385259d11d",
+        "size": 111520
       },
       "architecture/evolution.yaml": {
         "status": "available",
@@ -35,8 +35,8 @@
     },
     "file_index": {
       "address": "workspace_04ad72d24263/file/architecture/model/file-index.json",
-      "sha256": "79b840a37fa22ed997768e04ae34d643ab3937bfc953ef448599d407d0c740be",
-      "size": 2160309
+      "sha256": "ccf7678558aef9ec99a802a351803a5d1d55b16a497e452134259a1439555a47",
+      "size": 2160295
     },
     "protocols": {
       "address": "workspace_04ad72d24263/file/architecture/model/protocols.json",

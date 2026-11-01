@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 12
+  number: 13
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -159,7 +159,7 @@ SessionAuthority 是签发和验证浏览器会话的服务端组件。版本 1 
 
 密码摘要、账号资料、Passkey、TOTP 和重置摘要由 `portal_identity` 中对应的关系表保存，`identity_store.IdentityState` 提供各领域的事务入口；Session 校验按数据库修订刷新有效账号集合。
 
-会话签名密钥和 TOTP 加密密钥放在实例根目录的 `secrets/` 下，分别是 `session_signing.key` 和 `two_factor.key`（《Portal 实例协议》），路径由 `portal_session_auth` 统一解析。默认 SessionAuthority 与 Web 使用同一解析入口。现在的代码先读显式环境变量 `PORTAL_SESSION_SIGNING_KEY_PATH`、`PORTAL_TWO_FACTOR_KEY_PATH`，再读站点配置 `deployment.auth.session_signing_key_path`、`deployment.auth.two_factor_key_path`（环境变量存在但为空时也不回退站点配置），两级都未配置时才用 `portal_paths.path("secrets_dir")` 下的这两个文件；按 `plan_4d1990717dc0` 第五步删除这两级配置，并把已有密钥移到 `secrets/`。移动只改变文件位置，不改密钥内容或认证算法。
+会话签名密钥和 TOTP 加密密钥放在实例根目录的 `secrets/` 下，分别是 `session_signing.key` 和 `two_factor.key`（《Portal 实例协议》），路径由 `portal_session_auth` 统一解析。默认 SessionAuthority 与 Web 使用同一解析入口。
 
 ## 认证尝试窗口
 

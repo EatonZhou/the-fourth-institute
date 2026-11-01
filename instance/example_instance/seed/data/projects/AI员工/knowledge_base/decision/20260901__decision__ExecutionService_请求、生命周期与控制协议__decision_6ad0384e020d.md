@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 41
+  number: 42
   created_at: '2026-09-01'
   created_by:
     user: ''
@@ -264,7 +264,7 @@ Worker 得到 `ready=true` 后按 `interrupt_required` 解除跟随或中断，�
 ### 可恢复控制与运行中输入
 
 - **`scheduler.requeue`**：当前持有者把恢复点已标记可恢复的执行放回队列。它释放资格、保留恢复点，`retry_after_seconds` 限制在 0 到 3,600 秒。恢复点不可恢复时失败。
-- **`scheduler.control.wait`**：当前持有者长轮询控制信息，等待时间限制在 0.1 到 60 秒，默认 30。返回 `cancel_requested`、`handover_requested`，以及待投递的 `turn_controls`（追加输入和本轮设置更新）。处于 `draining` 的 Worker 即使没有待投递输入也会收到交接指示；待投递的控制不交给即将退休的 Worker，由新持有者恢复后按原来的轮次规则处理。
+- **`scheduler.control.wait`**：当前持有者长轮询控制信息，等待时间限制在 0.1 到 60 秒，默认 30。返回 `cancel_requested`、`handover_requested`，以及待投递的 `turn_controls`（追加输入和本轮设置更新）。处于 `draining` 的 Worker 即使没有待投递输入也会收到交接指示；待投递的控制不交给即将退出的 Worker，由新持有者恢复后按原来的轮次规则处理。
 - **`scheduler.input.complete`**：当前持有者把一条待投递控制标为 `delivered` 或 `failed`（默认错误为 `delivery_failed`）。重复完成保持已有状态。
 
 控制长轮询和输入完成等待同样监听数据库变化通知并每 5 秒复查，另一个部署提交的取消、交接和追加输入不会等到长轮询超时才被发现。复查不改变资格、租约、投递或终态的判断规则。

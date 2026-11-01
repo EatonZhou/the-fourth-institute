@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 20
+  number: 21
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -66,7 +66,7 @@ Portal 的业务状态主要保存在 PostgreSQL 中（decision_86aed2f0e8c7）�
 | `exclusive_file_lock(path)`（`management_portal/shared_state.py`） | 对调用方给出的锁文件取得跨进程独占锁 | 不附带进程内锁，也不推断要保护哪个文件 |
 | `atomic_replace_text(path, content)` | 在目标目录写完整的 UTF-8 文本，flush 并 fsync 临时文件后原子替换 | 不取锁，不做业务校验，不 fsync 父目录；不提供跨写者 CAS |
 | `atomic_replace_json(path, payload)` | 统一序列化 JSON，写临时文件并 `fsync`，原子替换后再 `fsync` 所在目录 | 不取锁，不检测版本冲突 |
-| `atomic_create_json(path, payload)` | 以“目标已存在就失败”的方式创建只写一次的 JSON，写完后 `fsync` 文件和目录 | 只用于创建后不可覆盖的文件；当前生产代码没有调用者 |
+| `atomic_create_json(path, payload)` | 以“目标已存在就失败”的方式创建只写一次的 JSON，写完后 `fsync` 文件和目录 | 只用于创建后不可覆盖的文件 |
 | 负责者自己的进程内锁 | 让同一进程中的线程依次执行 | 不能保护其他进程 |
 | SocietyService 的 `invariant_locks` | 按 Resident、Resident 对话或登记目录划分锁作用域，组合进程内锁与文件锁，并统计锁的等待与持有；为 Lineage 操作提供不取锁的延后回调作用域 | 不保护跨数据库或跨文件系统的原子性 |
 | 不加锁的读取者 | 直接读取完整的旧文件或新文件 | 可能读到旧内容；需要最新内容时按负责者的协议重试或查询 |

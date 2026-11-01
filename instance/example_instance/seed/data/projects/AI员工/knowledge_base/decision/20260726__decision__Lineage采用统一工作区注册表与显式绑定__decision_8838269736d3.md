@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 39
+  number: 42
   created_at: '2026-07-26'
   created_by:
     user: ''
@@ -64,7 +64,7 @@ Workspace ID 标识目录资源，路径是该资源当前的位置。自有归�
 
 ### 绑定关系与路径的来源
 
-`workspace.workspaces` 是 Workspace 身份、位置、生命周期的唯一真值，字段为 workspace_id、path、title、created_at、updated_at、deleted_at、deleted_by。活跃路径有唯一索引；同一真实目录重复登记返回同一个 ID。路径规范化后保存，拒绝相对路径及文件系统根目录。已删除身份不能复活；资源查询从表投影，搜索索引可以重建。
+`workspace.workspaces` 是 Workspace 身份、位置、生命周期的唯一真值，目录来源登记按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍只保存 workspace_id、path、title、created_at、updated_at、deleted_at、deleted_by，尚无来源字段。活跃路径有唯一索引；同一真实目录重复登记返回同一个 ID。路径规范化后保存，拒绝相对路径及文件系统根目录。已删除身份不能复活；资源查询从表投影，搜索索引可以重建。
 
 `resource_registry.registry_documents` 不再保存 Workspace 正文或来源副本。通用资源接口保留 workspace 类型与嵌套文件地址，直接适配专表。关系、权限及展示信息从各自的责任方读取。
 
@@ -72,7 +72,7 @@ Workspace ID 标识目录资源，路径是该资源当前的位置。自有归�
 
 Workspace 的名称通过 `UpdateResource(resource_id=workspace_id, changes={title, expected_version})` 更新。`title` 必须为字符串，去除首尾空白后非空且不含 NUL；只接受 `title` 与 `expected_version`。ID、path、自有归属和使用绑定不由此入口修改。已有 Workspace 的 `ensure` 保留当前名称，不用登记或绑定时的旧值覆盖改名。
 
-调用方先通过 `ResolveResource(address=workspace_id)` 取得 `result.resource.title` 与 `result.resource.version`。版本是当前 Workspace 行 `updated_at` 的不透明字符串，原样传入 `changes.expected_version` 或标准请求顶层 `expected_version`，不得由界面计算。两个位置同时提供时沿标准请求规则以顶层值为准。版本为必填非空字符串；成功结果的 `result.version` 与 `result.resource.version` 相同，资源记录直接由已提交行投影，不依赖搜索索引。`GetResourceType(resource_type="workspace")` 返回扁平 `result.updatable=true`；名称更新不开放正文、登记或删除能力。
+调用方先通过 `ResolveResource(address=workspace_id)` 取得 `result.resource.title` 与 `result.resource.version`。版本是当前 Workspace 行 `updated_at` 的不透明字符串，原样传入 `changes.expected_version` 或标准请求顶层 `expected_version`，不得由界面计算。两个位置同时提供时沿标准请求规则以顶层值为准。版本为必填非空字符串；成功结果的 `result.version` 与 `result.resource.version` 相同，资源记录直接由已提交行投影，不依赖搜索索引。`GetResourceType(resource_type="workspace")` 返回扁平 `result.updatable=true`；名称更新不开放正文或通用登记能力；闲置 Workspace 的注销由下述独立入口提供。
 
 WorkspaceStore 在同一事务内对当前行 `SELECT ... FOR UPDATE`，确认未删除、由资源提供器按真实 actor 检查权限，再比较版本并写入 title/updated_at。权限沿当前 permission_system 的 UpdateResource 端口；权限开关关闭仍用当前锁定行的真实路径保留个人 AMA 隐私，已有绑定和归属规则不变。移动、删除与改名竞争同一行；变更版本严格前进，避免时钟回拨或相同时间精度重用旧版本。名称未变且版本匹配时保持版本不变；已删除身份不能改名或复活。
 
@@ -98,15 +98,9 @@ UnbindWorkspace 通过 workspace_id 或明确路径选择额外绑定，只删�
 
 ### 删除 Resident、Lineage 与关联 Workspace
 
-**删除通过权限系统授权后，Workspace 的存在或被引用不会额外拒绝 Resident 或 Lineage 删除。** 删除集合中的所有 Resident 先在同一事务中标记删除，再移除它们的使用关系，按仍存活的 Resident 计算 Workspace 的去留。自有归属和额外绑定都计入引用；同批删除成员的相互引用不算存活引用。
+**删除通过权限系统授权后，Workspace 的存在或被引用不会额外拒绝 Resident 或 Lineage 删除。** Resident、Lineage 和 Project 删除涉及的执行终止、目录来源、整树删除、嵌套登记与绑定按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍按存活 Resident 的自有归属和额外绑定判断 Workspace 去留，并保留被引用的工作区及必要父目录（原删除规则）。UnbindWorkspace 只解除关系，不触发目录回收；授权始终由权限系统决定。
 
-**没有其他存活 Resident 引用的关联 Workspace 随删除清理。** 范围包含被删除 Resident 的自有 Workspace、额外绑定的 Workspace，以及待删除目录中的嵌套 Workspace。Workspace 注册标记删除，目录文件由持久清理任务删除。UnbindWorkspace 只解除关系，仍不触发这项回收。
-
-**仍被其他 Resident 引用的 Workspace 保持可用。** 它的稳定 ID、路径、内容和存活使用者的绑定保持原样，即使原自有 Resident 已删除也是如此。若目录位于被删除的 Resident、Lineage 或 Project 目录内部，文件清理保留该工作区及其必要父目录，只清理其余内容；不会要求用户先迁出或注销。剩余父目录不恢复已经删除的 Resident、Lineage 或 Project 身份。若被回收的外部 Workspace 包含其他存活 Resident 的系统目录，其所属 Lineage 的目录一并保留，避免只留下 workspace/ 而丢失身份说明和运行资料。
-
-**注册状态与文件清理分别提交并可恢复。** 关联 Workspace 的引用判断和退役跟随删除事务提交；文件删除作为持久生命周期步骤执行。清理步骤重新读取当前活跃 Workspace，保留删除提交后新登记的目录。Workspace 登记和位置修改与引用判断、文件清理串行化，避免检查结束后新增目录被旧任务误删。文件系统错误留下可重试任务，不复活已删除身份；系统不提供回收站。
-
-Project 删除复用相同的 Workspace 引用清理规则（decision_4648f7fa3295）。授权始终由权限系统决定；引用数量只决定工作区保留或回收，不构成第二套删除权限。
+注册注销、后台文件清理、持久重试与删除期间的新引用按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在清理时重新读取活跃 Workspace 并保留删除提交后新登记的目录（原清理步骤）。文件系统错误不复活已删除身份；系统不提供回收站。
 
 关闭原生会话的持久化任务保存该会话的自有 Workspace ID、路径及启动目录快照，删除身份后仍能继续关闭会话；历史 Agent 轨迹继续保存。
 
@@ -122,7 +116,7 @@ Resident 或 Lineage 移动保持 Workspace ID，在同一事务内更新位置�
 
 ## 绑定记录的内容
 
-例如 A 拥有 W1，同时使用共享目录 W2：Resident A 的 owned_workspace_id=W1，额外绑定只有 (A,W2,purpose)。B 可以拥有 W3 并使用同一个 W2。删除 A 后，A 的使用关系清除，W2 与 B 的关系继续存在。若 B 也使用 W1，W1 与该绑定一并保留；若 W1 没有其他使用者，则标记删除并清理文件。
+例如 A 拥有 W1，同时使用共享目录 W2：Resident A 的 owned_workspace_id=W1，额外绑定只有 (A,W2,purpose)。B 可以拥有 W3 并使用同一个 W2。删除 A 后，A 的使用关系清除，W2 与 B 的关系继续存在。W1 的目录删除及 B 的使用绑定处理按《目录与路径协议》（decision_4aa13bc21e8e）处理，B 的执行不因 Workspace 删除而终止，后续访问会得到文件缺失错误。现在的代码仍在 B 使用 W1 时保留 W1 及绑定（原示例）。
 
 ## 实现说明
 
@@ -153,3 +147,13 @@ Workspace 根地址统一导航到 `/lineage?workspace=<workspace_id>`。页面�
 ### 实现来源与入口定位
 
 Workspace 绑定由 `lineage_workspace_binding.py#mount_reference`、`resident_workspace_domain.py#add_resident_reference_workspace` 和 `resident_workspace_storage.py#replace_bindings` 实现。`resident_domain.py` 是重导出这些操作的聚合入口；`workspace_contracts.py` 定义聊天附件缓存、大小与图片校验条件，不实现绑定关系。入口与附件合同作为关联说明保留，绑定的实现来源只列实际负责的文件。
+
+### 无人使用的 Workspace 显式注销
+
+Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`；类型能力 `unregisterable=true`，不开放通用 RegisterResource。Workspace 注销的绑定与嵌套登记处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍以存活 Resident 的自有引用、使用绑定和有效嵌套登记拒绝注销，返回 `instruction.conflict` 及 `workspace_in_use`、`workspace_nested_registration` 或 `workspace_area_root`，details 给出相关资源 ID（`resources/providers/workspace.py`、`resources/workspace_dependencies.py`）。无权限返回 `instruction.forbidden`，个人 AMA 的私有边界仍先行适用。
+
+Workspace 注销的来源、区域内外目录与嵌套登记范围按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍复用 `resident_workspace_deletion.delete_unreferenced`，仅删除区域内目录、保留区域外目录，不级联有效嵌套登记，并在生命周期删除时保留被引用目录。注销写入 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活；目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。
+
+Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍持锁至目录清理和删除提交，文件清理失败回滚登记（`society_service/resident_workspace_deletion.py`）。提交前在事务中锁定 Workspace 表与目标行并重新鉴权，其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。
+
+实现与测试：`resources/providers/workspace.py`、`resources/workspace_dependencies.py`、`society_service/resident_workspace_deletion.py`、`tests/cases/test_workspace_unregistration.py`。

@@ -22,6 +22,15 @@ from prepare_install import inventory
 
 
 class ExamplePaths(unittest.TestCase):
+    def test_seed_designs_use_current_identity_and_path_contracts(self):
+        """A fresh installation must not teach removed runtime interfaces."""
+        decisions = self.seed / 'data/projects/AI员工/knowledge_base/decision'
+        text = '\n'.join(path.read_text() for path in decisions.glob('*.md'))
+        for obsolete in ('retired_identities', 'retired_identity_boundary',
+                         'resident_workspace_retirement', 'PORTAL_PULSE_ROOT',
+                         ':lifecycle: retired'):
+            self.assertFalse(obsolete in text, f'Seed Design still names removed interface: {obsolete}')
+
     def test_public_seed_bootstraps_current_lineage_schema(self):
         """Both installer choices must satisfy the domain startup contracts."""
         import psycopg

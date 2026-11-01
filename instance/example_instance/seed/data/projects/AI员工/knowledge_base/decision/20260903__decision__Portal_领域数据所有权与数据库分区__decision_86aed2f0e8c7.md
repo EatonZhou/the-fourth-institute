@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 48
+  number: 50
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -142,11 +142,11 @@ Portal 自己产生和修改的业务数据与运行数据，都以 PostgreSQL �
 
 `DomainDatabase` 复用公共连接层并提供领域 DDL 初始化与事务锁；`relational_rows` 只做已声明字段的差异写入，不定义业务字段、不接收任意扩展对象。小型聚合的兼容接口可以在内存中组装对象，但数据库按领域表保存，未知字段拒绝写入。JSON 用于有明确契约的配置、输入、报告或界面偏好，不重复保存已成为列和关系的数据。
 
-资源登记仅保留注册事实与当前同步所需来源信息。搜索任务/输入与文章构建设置/报告由各自领域保存；完成的一次性迁移计划、回执、旧 ACL 文档被清理。已退役 ID 保存为 `resource_registry.retired_identities` 的唯一 ID，继续阻止重用，不保留整份历史快照。
+资源登记仅保留注册事实与当前同步所需来源信息。搜索任务/输入与文章构建设置/报告由各自领域保存；完成的一次性迁移计划、回执、旧 ACL 文档被清理。已删除 ID 保存为 `resource_registry.deleted_identities` 的唯一 ID，继续阻止重用，不保留整份历史快照。
 
 权限系统在 schema `permission` 中分表保存树节点（含物化路径）、权限表项、修订号、实例状态、模板，以及创建者、管理员、Family steward 等事实（decision_b820faf42218）；Execution 的日常维护删除到期的临时凭证。Workbench 将页面元数据、拥有者、项目和绑定分开保存，当前与已发布版本指针继续指向明确源码版本。Resident 摘要目录不再复制整份元数据；Harness 质量标签只在 `harness_quality_labels` 保存一份，观察查询通过视图组合。
 
-旧 Portal State 数据已经迁入各自领域，通用表及 schema 已移除。结构化业务记录与时间字段同样已切换到当前结构。完成的一次性迁移脚本连同测试一起删除，运行代码只支持当前结构；仍在 `scripts/` 中的迁移脚本服务于尚未在所有站点完成的切换。
+结构化业务记录与时间字段由各自领域保存，运行代码只支持当前结构。一次性迁移脚本和对应测试在所有目标安装完成切换后删除。
 
 这些状态只从数据库读取，不保留旧 JSON 文件的回退、双写或启动导入；数据不可读时明确报错，不会把损坏的数据当成空状态覆盖。以下由 Portal 写入的状态同样只保存在 PostgreSQL：模型接口登记与 Relay 调用项（`model_apis`）、Paper 评审、笔记、后台任务记录与精选会议（`paper`）、Telepus 联系人（`telepus.telegram_contacts`，表位于 Telegram 程序的 schema，由 Portal 独占写入）、Pulse 公开记录（`portal_pulse.publications`）和访问审计（`portal_identity.access_audit`）。Portal 进程之外读取这些表的守护进程（Claude Code、Kimi Code、Telegram 程序、Breakglass Worker）从 `portal-postgres.env` 取得数据库地址，只读查询。两步验证的加密密钥和登录会话的签名密钥保存在单独的受限文件中，不写入数据库。
 
@@ -207,7 +207,7 @@ Article 编译出的 PDF 与 LaTeX 缓存可以随时重新编译，不属于登
 
 Resident 的删除状态由 `lineage.residents.deleted_at` 保存（decision_0f57656a2acd），已有 Agent 与 Trace 保留。
 
-2026-10-13 检查确认 Portal 代码与运行进程、共享 Skill、共享 Agent 和备份服务都不再读写 `/share/Meta` 后，整个目录已删除（TFI portal 2026-10-13）。删除时目录里只剩已迁移数据的旧副本、旧的 `agent_port` 包、`knowledge_board`、`project_board`、`todo_board` 等旧看板代码，以及 MindFlow 排版用的 `mindflow_tags.typ`；需要查看时从 2026-10-12 的 content 备份快照恢复。Host 属性文件中指向 `agent_port` 的入口同日删除，Agent 读取 Project 与标签登记使用 HATG ISA `GetProject`、`GetKnowledgeTags`。Project 登记中的 `tag_vocab` 是全部 Project 共用的知识标签，用 `GetKnowledgeTags` 与 `UpdateKnowledgeTags` 读取和修改（decision_6591e7793116），`add-mindflow-tag`、`rename-mindflow-tag`、`delete-mindflow-tag` 使用这两条指令；Project 改名使用 `RenameProject`，`rename-project` 调用这条指令。
+2026-10-13 检查确认 Portal 代码与运行进程、共享 Skill、共享 Agent 和备份服务都不再读写 `/share/Meta` 后，整个目录已删除（weihao 2026-10-13）。删除时目录里只剩已迁移数据的旧副本、旧的 `agent_port` 包、`knowledge_board`、`project_board`、`todo_board` 等旧看板代码，以及 MindFlow 排版用的 `mindflow_tags.typ`；需要查看时从 2026-10-12 的 content 备份快照恢复。Host 属性文件中指向 `agent_port` 的入口同日删除，Agent 读取 Project 与标签登记使用 HATG ISA `GetProject`、`GetKnowledgeTags`。Project 登记中的 `tag_vocab` 是全部 Project 共用的知识标签，用 `GetKnowledgeTags` 与 `UpdateKnowledgeTags` 读取和修改（decision_6591e7793116），`add-mindflow-tag`、`rename-mindflow-tag`、`delete-mindflow-tag` 使用这两条指令；Project 改名使用 `RenameProject`，`rename-project` 调用这条指令。
 
 ## 结构版本的权威来源
 

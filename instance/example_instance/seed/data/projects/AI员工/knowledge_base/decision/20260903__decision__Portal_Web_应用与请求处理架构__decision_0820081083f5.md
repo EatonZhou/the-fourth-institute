@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 16
+  number: 18
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -119,7 +119,7 @@ Portal Web 是 Portal 的浏览器应用层，位于浏览器与后台领域服�
 3. 其他请求要求有效登录会话：JSON 接口返回 401，页面重定向到 `/login`；
 4. 尝试 `protected` 路由；都不匹配时由兜底处理：JSON 接口返回 404，路径是资源 ID 时重定向到资源页面，其余交给静态文件处理。
 
-业务操作的授权由对应入口按当前指令、目标参数及领域约束执行（decision_b820faf42218）。终端等系统级功能也遵循当前权限声明，不再附加已退役的 Project 角色或 system_capabilities 门槛（decision_34158fdd4078）。
+业务操作的授权由对应入口按当前指令、目标参数及领域约束执行（decision_b820faf42218）。终端等系统级功能也遵循当前权限声明，不再附加已删除的 Project 角色或 system_capabilities 门槛（decision_34158fdd4078）。
 
 **POST 请求** 顺序相同，只是在 `dual-auth` 之前先做同源检查：带登录会话但来源不同的请求返回 403；认证失败一律返回 401。HEAD 与 GET 走同一逻辑；OPTIONS 返回 204 和允许的方法（GET、POST、HEAD、OPTIONS）。
 
@@ -205,6 +205,6 @@ Portal Web 把资源地址和已认证的当前用户交给 ResourceService 的 
 
 资源类接口按 ResourceService 的错误对照表返回（decision_96a887d83e8a），例如资源版本冲突返回 409 并附带期望版本和当前版本。GET 请求的页面路径（非 JSON 接口）出错时返回 500 纯文本；POST 请求出错一律返回 JSON 错误，其中正文过大为 413、正文格式无效为 400。错误响应不包含认证材料。
 
-ExecutionService 客户端的“不可用”异常目前不带错误码，按“其他异常”返回 500；这与“依赖服务不可用返回 503”的规则不一致，已登记为 WALL 不一致点 `execution-service-unavailable-http-status`。
+ExecutionService 连接不可用通过领域错误返回 HTTP 503，错误码为 `execution.unavailable`。提交状态保持 `unknown`，不据连接失败宣称整个上层操作未提交，也不自动重试写操作。请求已发出但响应丢失时，继续保留结果未知语义。
 
 Chat 的 Skill 与 Agent 上下文选项由 `GET /api/agent-context-options` 提供；`GET /api/users` 从用户身份模块读取登录账号与目录用户。它们是 Portal 公共入口。

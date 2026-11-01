@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 38
+  number: 42
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -51,7 +51,7 @@ Project 是 Portal 中最高一层的协作单元。一个 Project 把某项长�
 本 Design 说明 Project 由哪些部分组成、谁可以创建、创建时做了什么、怎样修改项目信息和维护摘要，以及怎样删除 Project。相邻主题由其他 Design 说明：
 - 项目列表、项目页与 Project Resident 对话见 decision_46c37026e8ea。
 - Project 在五层组织中的 Project 层 Lineage 见 decision_3e07c6d35cac。
-- Project 成员角色（viewer、contributor、admin）已退役，见 decision_34158fdd4078；资源授权由权限系统判定，见 decision_b820faf42218，默认模板见 decision_600ae27b0538。
+- Project 成员角色（viewer、contributor、admin）已删除，见 decision_34158fdd4078；资源授权由权限系统判定，见 decision_b820faf42218，默认模板见 decision_600ae27b0538。
 - `CreateProject`、`GetProject`、`UpdateProject`、`DeleteProject` 四条 HATG ISA 指令的参数和结果见 decision_6591e7793116。
 
 ## Project 由什么组成
@@ -64,7 +64,7 @@ Project 是 Portal 中最高一层的协作单元。一个 Project 把某项长�
 | 项目目录 | 已配置的 Projects 根目录下的 `<项目 ID>` | 知识库、源码、`summary.md` 和 Agent 入口文件 |
 | 项目主体 | SocietyService 中的 Project 层 Lineage 与 Leader | Project 在主体层级中的协作入口，见 decision_3e07c6d35cac |
 
-**项目 ID** 是人可读的名称，例如 `AI员工`，同时用作项目名称和目录名。它由 1 到 80 个字母（包括中文）、数字或 `_`、`.`、`@`、`+`、`-` 组成。项目 ID 是统一资源 ID 规则（`<类型>_<12 位十六进制>`）的例外。项目目录固定为 projects 区域的 `<项目 ID>/`，创建请求不能自选位置。现在的代码由 Project provider 的 `PROJECTS_ROOT` 决定，默认取旧 share 根的 `Projects/`，可由 `PORTAL_SHARE_ROOT`、`PORTAL_PROJECTS_ROOT` 配置（兼容读取对应旧环境键）；按 `plan_4d1990717dc0`，清单把 projects 区域直接指向这个目录（第一步），代码改为按区域取目录（第六步）。
+**项目 ID** 是人可读的名称，例如 `AI员工`，同时用作项目名称和目录名。它由 1 到 80 个字母（包括中文）、数字或 `_`、`.`、`@`、`+`、`-` 组成。项目 ID 是统一资源 ID 规则（`<类型>_<12 位十六进制>`）的例外。项目目录固定为 projects 区域的 `<项目 ID>/`，创建请求不能自选位置。项目路径按实例清单解析；登记保存区域引用，消费者使用同一解析入口。
 
 **项目 ID 是 Project 唯一的名称。** 项目登记没有单独的显示名或别名字段；资源标题、项目页、用量统计和 Agent 看到的项目名称都是项目 ID，查找 Project 也只按项目 ID 匹配。一条项目记录只有 Portal 读取的字段：`id`、`status`、`project_type`、`description`、`path`、`ddl` 和 `tags`；写入带其他字段（例如 `name`）的记录会被拒绝，因为没有人读、也没有人维护的字段迟早和真实情况不一致。要换名称时用 `RenameProject` 修改项目 ID，目录和 Portal 中的引用一起改。
 
@@ -140,17 +140,17 @@ Portal 的项目页“新建项目”与 Society 项目列表标题旁的“＋�
 
 ### 删除 Project
 
-**调用者用 `DeleteProject` 删除 Project 及其 Lineage、Resident；无存活 Resident 使用的工作区和其余项目内容一起清理，仍被使用的 Workspace 保留。**
+**调用者用 `DeleteProject` 删除 Project 及其 Lineage、Resident。** 项目所属对象、执行终止与目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍按存活 Resident 的引用保留 Workspace（原项目删除流程）。
 
 - 项目页的页头菜单提供删除：说明将删除的内容，用户输入项目 ID 后才调用 `DeleteProject`；Resident 也可直接调用这条指令。默认模板要求调用者对该 Project 有 admin：创建者、管理员，或经实例中增加的表项、临时凭证取得 admin 的主体（decision_600ae27b0538）。
-- 删除可以处理有内容的项目。项目中的 Resident 完成或停止排队任务、运行任务和 Fork 创建任务，相关迁移结束后，可以删除其 Lineage。服务按以下顺序删除：
-  1. 先读取项目登记中的原始路径，检查它必须指向 projects 区域内的真实目录，不能是符号链接、区域根本身或区域之外的路径；确认之后再使用解析后的路径。独立或共享 Workspace 的存在不拒绝删除；其清理由第 4 步按存活引用判断。ResourceService 注销资源前调用 SocietyService 的路径校验，防止定位到登记范围以外的目录。
-  2. ResourceService 分页列出项目下的全部资源登记，逐个注销（Lineage 和 Resident 的登记由第 3 步处理）。这一步在项目登记仍然存在时进行。任何一个资源注销失败时，指令返回错误并列出失败的资源，项目文件不删除。其他功能共享库中的对象不随项目注销，例如论文属于共享论文库：拥有这类对象的功能在功能登记中声明它们的资源类型和 `project.relations` 接入点（decision_15aab18c0ab3），这一步跳过这些类型；删除项目内容前，各功能经接入点去掉对象与项目的关联，对象本身保留。Paper 从论文 manifest 的 `relations.projects` 中去掉这个项目。结果的 `unlinked` 按功能键列出改动过的对象，例如 `unlinked.paper` 是论文 ID；没有安装的功能不出现。
-  3. 按 `DeleteLineage` 的规则删除属于该项目的全部 Lineage 及其中的 Resident：先删除普通 Lineage，最后删除 Project 层 Lineage。Lineage 与 Resident 的身份删除，目录由按引用清理任务处理，不移入归档。
-  4. 按 decision_8838269736d3 计算项目目录内 Workspace 的存活 Resident 引用。无人引用的注册退役并清理文件；其他 Resident 仍使用的 Workspace 保持 ID、路径、文件和绑定，包括登记在项目根目录的 Workspace。目录清理保留这些工作区及必要父目录，其余内容直接删除。
-  5. 从项目登记中移除这条记录，向 features 区域的 `deleted_projects/project_deletions.json` 追加一条审计记录（现在的代码写在旧 share 根的 `Agents/_archive/deleted_projects/`，按 `plan_4d1990717dc0` 第六步迁移），内容包括项目 ID、路径、说明、删除时间、删除者，以及被删除的 Lineage 和 Resident ID。
+- 删除可以处理有内容的项目；其下执行终止、登记注销和后台清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍等待排队任务、运行任务和 Fork 创建任务完成或停止及相关迁移结束后才删除 Lineage（原删除前提）。各服务职责如下：
+  1. 先读取项目登记中的原始路径，检查它必须指向 projects 区域内的真实目录，不能是符号链接、区域根本身或区域之外的路径；确认之后再使用解析后的路径。独立或共享 Workspace 的存在不拒绝删除；其清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍由第 4 步按存活引用判断（原目录检查）。ResourceService 注销资源前调用 SocietyService 的路径校验，防止定位到登记范围以外的目录。
+  2. ResourceService 分页列出项目下的全部资源登记，逐个注销（Lineage 和 Resident 的登记由第 3 步处理）。这一步在项目登记仍然存在时进行。注销与文件清理的失败及重试按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在任一资源注销失败时返回错误和失败资源列表，并阻止项目文件删除（原资源注销步骤）。其他功能共享库中的对象不随项目注销，例如论文属于共享论文库：拥有这类对象的功能在功能登记中声明它们的资源类型和 `project.relations` 接入点（decision_15aab18c0ab3），这一步跳过这些类型；删除项目内容前，各功能经接入点去掉对象与项目的关联，对象本身保留。Paper 从论文 manifest 的 `relations.projects` 中去掉这个项目。结果的 `unlinked` 按功能键列出改动过的对象，例如 `unlinked.paper` 是论文 ID；没有安装的功能不出现。
+  3. 按 `DeleteLineage` 的规则删除属于该项目的全部 Lineage 及其中的 Resident：先删除普通 Lineage，最后删除 Project 层 Lineage。Lineage 与 Resident 的身份删除，目录按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍由按引用清理任务处理目录，不移入归档（原身份删除步骤）。
+  4. 项目目录内的 Workspace、嵌套登记、手放文件及绑定按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍按 decision_8838269736d3 计算存活引用，保留被其他 Resident 使用的 Workspace 的 ID、路径、文件、绑定及必要父目录（原目录清理步骤）。
+  5. 从项目登记中移除这条记录，向 features 区域的 `deleted_projects/project_deletions.json` 追加一条审计记录，内容包括项目 ID、路径、说明、删除时间、删除者，以及被删除的 Lineage 和 Resident ID。
   6. 最后撤销项目本身的资源登记，并通知权限系统：项目和随目录删除的 Workspace 离开 P、R 两棵树，以它们为锚的规则表项、指向它们的表项和创建者记录一并删除（decision_b820faf42218）。项目 ID 就是项目名称，以后可以再次用来创建 Project；新建的 Project 是新的实例，按新建规则由新的创建者取得 admin。
-- 其他存活 Resident 仍使用的 Workspace 及文件引用保持可用，残留目录不恢复 Project 身份；未保留文件的引用失效。
+- 删除后的绑定及文件引用按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍保留其他存活 Resident 使用的 Workspace 及其文件引用，残留目录不恢复 Project 身份；未保留文件的引用失效（原引用保留规则）。
 - 中途失败时，指令返回错误，已经删除的内容不恢复；再次调用 `DeleteProject` 会从剩余部分继续：第 2 步失败后重试会注销剩余资源；项目登记已经移除后，发起这次删除的调用者重试会返回原来的删除记录，并完成第 6 步。资源索引已经不再列出该项目时，这次重试同样有效。
 
 ## 组件与流程
@@ -179,21 +179,21 @@ RegisterResource(project) 或 CreateProject  →  ResourceService
 建立 Project 层 Lineage 与 Leader（失败则登记待恢复回执）
 ```
 
-删除流程：
+删除流程的执行终止、注销与后台清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在资源注销失败时保留项目内容，并按存活引用保留 Workspace（原流程图）；审计和权限撤销职责如下：
 
 ```text
 DeleteProject(project_id)  →  ResourceService
         ↓
 SocietyService：只读检查登记目录路径
         ↓
-ResourceService：逐项注销项目资源；失败时保留项目内容供重试
+ResourceService：逐项注销项目资源，记录失败与重试进度
         ↓
 移除保留库对象的项目关联
         ↓
 SocietyService：删除普通 Lineage → 删除 Project 层 Lineage
-        → 按存活引用保留 Workspace 并清理其余目录 → 移除登记、写审计
+        → 按目录协议注销登记、写审计，并由后台清理目录
         ↓
-ResourceService：最后撤销项目本身，退役对应权限记录与头像
+ResourceService：最后撤销项目本身，注销对应权限记录与头像
 ```
 
 项目登记与项目目录分开保存：登记文档集中保存所有项目的身份和元数据，便于列表、搜索和调度读取；大量项目文件留在各自的目录中。

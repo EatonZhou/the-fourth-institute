@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 17
+  number: 21
   created_at: '2026-09-01'
   created_by:
     user: ''
@@ -98,7 +98,7 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
 ### 修改与版本
 
 - 页面编辑只改变当前打开的文本内容。保存成功后，详情重新展示服务端保存的版本；保存失败时，页面保留当前编辑稿并给出错误，用户可以修正或重试。
-- ResourceService 的受控更新要求调用方同时提供资源根 `address`、完整 `text` 和可选的 `expected_version`。`expected_version` 是调用方开始编辑时读到的版本记录。
+- ResourceService 的受控更新以资源根确定修改地址，调用方在 `text`（完整 Markdown）与 `body`（仅主文件正文）之间选择一种输入，并可提供开始编辑时读到的 `expected_version`。地址、输入范围和互斥约束见下文；两种输入复用同一根资源锁、版本比较和保存流程。
 - 提供 `expected_version` 时，服务只在它仍等于当前版本时写入。版本已经前进会返回版本冲突，并附带期望版本和当前版本；调用方应重新读取、合并自己的改动，再提交新期望版本。
 - 每次成功修改主文件或其伴随文本，资源根的版本号加一。版本属于主资源，伴随文件不维护独立版本号。
 - 同一根资源的受控登记、更新和删除必须串行提交；不同根资源可以同时写入，慢写入不会阻塞另一条资源。服务以规范根资源 ID 选择跨进程资源锁，主文件、伴随文件和版本记录共用该锁。
@@ -109,7 +109,7 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
 
 ### 已版本化正文与受损版本恢复
 
-已经具有版本记录的 Knowledge 主文件，受控更新必须提供带 YAML 元数据的完整 Markdown。只提交正文、空 YAML 或无法解析的 YAML 时，写入被拒绝，原文件和版本保持不变。提交文本中的版本号和创建审计不能替代服务端锁内读取的前一版本；只省略完整头中的 `version` 块时，服务仍按原版本递增并保留原创建审计。未版本化的普通文本、伴随文件和 Skill 继续遵守各自既有写入规则。
+Knowledge 主文件的受控更新支持两种互斥输入：`text` 是带 YAML 元数据的完整 Markdown；`body` 仅替换 YAML 结束分隔线之后的正文。`body` 可以是空字符串以清空正文，不能为 null 或其他非字符串值。服务在同一根资源锁内重新读取当前主文件，先检查 `expected_version`，再保留原 YAML 元数据并替换正文，随后沿原保存流程推进版本、记录作者与完整内容变更。除系统维护的版本块外，正文更新不重写标题字段、标签、链接、项目等元数据；正文中的标题是正文的一部分，可正常替换。当前主文件缺失有效 YAML 元数据时拒绝 `body`。`body` 只适用于 Knowledge Markdown 主文件（含指向该主文件的文件地址），不适用于伴随文件、Article、Skill 或版本恢复；这些对象的全文保存仍使用 `text`。已经具有版本记录的主文件若用 `text` 提交无元数据的正文、空 YAML 或无法解析的 YAML，仍拒绝写入。提交文本中的版本号和创建审计不能替代服务端锁内读取的前一版本；只省略完整头中的 `version` 块时，服务仍按原版本递增并保留原创建审计。未版本化的普通文本、伴随文件和 Skill 继续遵守各自既有写入规则。
 
 已有受损知识版本可以通过同一 `UpdateResource` 路径恢复，Knowledge 更新字段增加可选 `version_recovery_change_ids`：按发生顺序提供一至八个不同的服务端内容变更回执 ID，并且必须同时提供当前 `expected_version` 和逐字不变的当前完整 `text`。此字段只适用于 Knowledge Markdown 主文件，不接受客户端声明的历史版本下限或任意历史内容。正常资源写入身份与授权检查不变；回执 ID 本身不授予资源或他人执行回执的读取权限。
 
@@ -118,10 +118,10 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
 ### 删除
 
 - 删除只接受资源根 ID。嵌套文件不能作为独立资源删除。
-- 删除需要页面确认和服务端权限检查。普通知识条目被移入所属 Project 的 `knowledge_base/.trash`，以便运维恢复，而非立即物理清除。
-- 通用 Knowledge 页面保护 `article` 与 `experiment`，不显示其普通删除动作。Skill 的删除由 Skill provider 负责整个包；Experiment 的退役由 Experiment provider 负责整个实验目录。
-- 资源提供者在完成权限与业务检查后、移动文件前，按资源根 ID 调用统一投影生命周期服务，释放该资源所有用户的专属 Resident、Event、Effect、连线、角色绑定和创建关联。Skill 包也遵循此规则；共享团队与公共功能成员保留。清理失败时保留源资源，调用方可重试；已完成的部分无需重建。协议见 decision_f67ae5e70793。
-- 删除成功后，Portal 刷新列表和详情状态。删除失败时，原资源和登记仍保持可解析，页面显示错误。
+- 删除需要页面确认和服务端权限检查；知识条目及伴随文件的删除按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍移入所属 Project 的 `knowledge_base/.trash` 供运维恢复（Knowledge backend 删除流程）。
+- 通用 Knowledge 页面保护 `article` 与 `experiment`，不显示其普通删除动作。Skill 的删除由 Skill provider 负责整个包；Experiment 的删除由 Experiment provider 负责整个实验目录。
+- 资源提供者在完成权限与业务检查后、注销前，按资源根 ID 调用统一投影生命周期服务，释放该资源所有用户的专属 Resident、Event、Effect、连线、角色绑定和创建关联。Skill 包也遵循此规则；共享团队与公共功能成员保留。注销与清理失败的处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在清理失败时保留源资源供重试（原投影释放流程）；已完成的部分无需重建。协议见 decision_f67ae5e70793。
+- 删除成功后，Portal 刷新列表和详情状态；注销及文件清理的进度、操作 ID 与失败原因按《目录与路径协议》（decision_4aa13bc21e8e）分别报告。现在的代码仍在删除失败时保留原资源和登记可解析，并在页面显示错误（原错误回执）。
 
 ## 组件各自负责什么
 
@@ -131,7 +131,7 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
 | HTTP 路由层 | 取得当前登录用户、校验输入和角色、把异常转换为状态码 | 不直接扫描知识目录 |
 | ResourceService | 统一解析 ID、执行访问控制、保留登记身份并协调 provider | 不解释 Markdown 内部结构 |
 | Knowledge provider | 把统一的登记、读取、更新、删除调用转换成知识后端操作 | 不拥有私有聊天或共享留言状态 |
-| Knowledge backend | 扫描规范主文件、解析嵌套地址、按根资源隔离并发、维护版本、原子写入和移入回收目录 | 不把未归档输入自动写入项目 |
+| Knowledge backend | 扫描规范主文件、解析嵌套地址、按根资源隔离并发、维护版本、原子写入；目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理，现在的代码仍移入回收目录 | 不把未归档输入自动写入项目 |
 
 一次受控修改按下面的顺序流动：
 
@@ -140,7 +140,7 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
         ↓
 ResourceService 校验身份、权限和资源根
         ↓
-Knowledge provider 校验 address、text、expected_version 和可选恢复回执
+Knowledge provider 校验 address、互斥的 text/body、expected_version 和可选恢复回执
         ↓
 Knowledge backend 取得根资源锁，比较当前版本并原子写入
         ↓
@@ -158,11 +158,12 @@ Agent 和服务通过 HATG 资源指令读写 Knowledge（decision_ad3e21094f14�
 | 字段 | 含义 |
 | --- | --- |
 | `address` | 资源根或归属于该根的可修改地址；其根段必须等于本次 `resource_id` |
-| `text` | 要保存的完整 UTF-8 文本，必填 |
+| `text` | 完整 UTF-8 文本；与 `body` 必须且只能提供一个 |
+| `body` | 仅替换 Knowledge Markdown 主文件正文，保留现有元数据；允许空字符串 |
 | `expected_version` | 可选版本前提，可传版本号或包含 `number` 的版本对象；执行版本恢复时必填 |
 | `version_recovery_change_ids` | 可选的有序内容变更回执 ID 列表；只用于上文规定的受损版本恢复，必须同时提交当前版本和逐字不变的完整文本 |
 
-出现未知字段、缺少 `text`、地址根不匹配或版本冲突时，provider 拒绝更新。版本冲突被统一转换为 `ResourceVersionConflict`，其中保留 `expected_version` 与 `current_version`。
+出现未知字段、同时提供或同时缺少 `text`/`body`、非法正文类型或目标、地址根不匹配或版本冲突时，provider 拒绝更新。版本冲突被统一转换为 `ResourceVersionConflict`，其中保留 `expected_version` 与 `current_version`。
 
 ### 变更结果的规范项目归属
 
@@ -179,16 +180,16 @@ ResourceService 在 provider 完成写入后，用规范归属同步授权资源
 | `GET /knowledge/api/detail?kb_id=<地址>` | 返回详情、文件、预览描述，以及当前文件的 `download_url`；媒体另有不强制下载的 `raw_url` |
 | `GET /knowledge/api/graph` | 返回当前用户可见的知识关系图 |
 | `GET /knowledge/api/item-graph?kb_id=<地址>` | 返回一个资源周围的关系图 |
-| `POST /knowledge/api/detail/save` | 以 `kb_id` 和 `text` 保存页面编辑 |
+| `POST /knowledge/api/detail/save` | 以 `kb_id` 和互斥的 `text`/`body` 保存页面编辑，可附 `expected_version` |
 | `POST /knowledge/api/detail/delete` | 以资源根 `kb_id` 请求删除 |
 
-缺少参数或非法地址返回 `400`；资源不存在返回 `404`；无权读取或修改返回 `403`；后端不可用或未处理故障返回 `500`，由相应路由呈现错误。页面提供列表、详情、关系图、编辑和删除；登记和带版本前提的更新只通过资源指令进行。
+缺少参数或非法地址返回 `400`；资源不存在返回 `404`；无权读取或修改返回 `403`；后端不可用或未处理故障返回 `500`，由相应路由呈现错误。版本前提过期返回 `409`，携带 `expected_version` 与 `current_version`，不修改文件。页面提供列表、详情、关系图、编辑和删除；登记通过资源指令进行。
 
 ## 状态归属与恢复
 
 资源身份与访问控制由 ResourceService 拥有；主文件、伴随文件和规范版本记录由 Project 知识库拥有；页面筛选、当前详情和未保存编辑稿只属于浏览器会话。私有 Chat 状态由对应 Resident Workspace 拥有，遵循 decision_58db6282c244。
 
-服务重启后，Knowledge backend 会从规范主文件重新扫描资源；ResourceService 的登记用于维持统一发现。原子写入失败时旧文件仍可读。版本冲突不自动合并，调用方重读后只重放自己的修改。移入 `.trash` 的删除可由运维从原 Project 边界恢复，但 Portal 没有面向用户的一键恢复控件。
+服务重启后，Knowledge backend 会从规范主文件重新扫描资源；ResourceService 的登记用于维持统一发现。原子写入失败时旧文件仍可读。版本冲突不自动合并，调用方重读后只重放自己的修改。删除与恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍支持由运维从原 Project 的 `.trash` 恢复材料，Portal 没有面向用户的一键恢复控件（原恢复流程）。
 
 ## Knowledge 输入字段
 

@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 19
+  number: 20
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -56,7 +56,7 @@ Resident 在一轮工作中通过 Harness 工具调用 ISA 指令时不需要令
 
 **令牌登记表**是 Portal 保存的服务端记录，位于 PostgreSQL 表 `portal_identity.agent_tokens`，Resident 令牌以 Resident ID 登记，RunScript 运行另有独立记录。表中保存验证摘要、调用者、启用状态与托管来源；脚本记录还保存 caller_id、required_scope=instructions、expires_at 与运行期 lease_path。登记表不保存令牌原文。字段固定为 `agent_id` 主键，以及 `token_lookup`、`token_hash`、`enabled`、`managed_by`、`caller_id`、`required_scope`、`expires_at`、`lease_path`；不再使用 `config_json`。`token_lookup` 支持候选定位，`token_hash` 承担验证，两者职责不同，均保留。写入拒绝未定义字段。
 
-**令牌文件**是 Portal 为 Resident 写出的令牌原文，权限 0600。根目录优先取 `PORTAL_RESIDENT_HATG_TOKEN_ROOT`，默认是实例根目录的 `secrets/resident_hatg`，文件名为 `<resident_id>.token`。签发端与命令行客户端使用同一规则。现在的代码取 `portal_paths.path("secrets_dir") / "resident_hatg"`；按 `plan_4d1990717dc0` 第一步，secrets 目录整体移到实例根目录，令牌随之移动，不重签。
+**令牌文件**是 Portal 为 Resident 写出的令牌原文，权限 0600。根目录是实例根目录的 `secrets/resident_hatg`，文件名为 `<resident_id>.token`。签发端与命令行客户端使用同一规则。
 
 **托管记录与手工记录**：Portal 自动签发的记录标记为托管（`managed_by: portal_resident_hatg`），Portal 负责首次创建和删除身份时停用它；管理员用命令行工具创建的是手工记录，Portal 不会轮换它。
 

@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 23
+  number: 24
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -85,7 +85,7 @@ Codex 账号由 PostgreSQL 的 `execution_accounts.registrations` 保存，账�
 | `config.is_default` | 未显式指定路由时使用的默认账号标记 |
 | `config.fallback_account_ids` | 按顺序排列的备用账号 ID，路由投影将它们换算为路由 ID |
 
-账号目录记在账号登记的 `config.account_dir` 中，是规范绝对路径；放在哪里由主机用户决定（《Portal 实例协议》「执行账号目录」）。socket 由 `account_id` 推导，放在实例 `runtime/` 下的 `codex-<account_id>.sock`（现在的代码为旧部署数据目录下的 `sockets/codex-<account_id>.sock`，按 `plan_4d1990717dc0` 第六步迁移）。
+账号目录记在账号登记的 `config.account_dir` 中，是规范绝对路径；放在哪里由主机用户决定（《Portal 实例协议》「执行账号目录」）。socket 由 `account_id` 推导，放在实例 `runtime/` 下的 `s/codex-<account_id>.sock`。
 
 登记入口校验字段类型、标识格式、Provider 内路由唯一性及默认标记唯一性；备用列表不得重复或指向自身。缺少已启用的默认账号时，未显式指定路由的新会话报告错误；未知账号或路由同样报错，不从主机目录补找。候选路由只包含已启用的账号。路由投影按短缓存重新读取登记，已有会话仍以保存的路由归属为准。
 

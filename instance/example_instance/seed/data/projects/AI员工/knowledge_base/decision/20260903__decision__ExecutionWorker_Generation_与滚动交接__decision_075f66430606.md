@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 27
+  number: 28
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -52,7 +52,7 @@ ExecutionWorker 是实际领取并运行模型执行的进程；WorkerManager �
 - **领取资格与租约**：Scheduler 交给某个 Worker 的执行所有权及有效期限。每次重新领取都会生成新的领取令牌。
 - **计划内交接**：同一个执行从旧 Worker 转给新 Worker 的过程，包括持久准备、解除跟随、释放资格、重新领取和恢复，全程不产生终态。
 
-Scheduler 保存队列、Worker 状态、领取资格、租约、恢复点和取消意图。WorkerManager 负责启动、检查、激活和退休 Worker 进程，不决定队列顺序。Worker 在有效资格下调用执行编排器（Runtime），Runtime 与 Provider Adapter 负责 Provider 阶段的恢复和内容写入。
+Scheduler 保存队列、Worker 状态、领取资格、租约、恢复点和取消意图。WorkerManager 负责启动、检查、激活和退出 Worker 进程，不决定队列顺序。Worker 在有效资格下调用执行编排器（Runtime），Runtime 与 Provider Adapter 负责 Provider 阶段的恢复和内容写入。
 
 ## 设计点
 
@@ -60,7 +60,7 @@ Scheduler 保存队列、Worker 状态、领取资格、租约、恢复点和取
 - **激活在一个事务里完成领取权切换。** Scheduler 把新 Worker 设为 `active`，把它的前任和所有其他代的 `active` Worker 改为 `draining`，并唤醒领取和控制等待；旧 Worker 随即开始准备交接。
 - **重载只在有新一代时更换 Worker。** 收到重载信号时，当前 Worker 已经在运行代际文件里的构建版本，WorkerManager 就保留它；只有版本变了才启动新一代。WorkerManager 自身代码变了时，它排空 Worker 后以 75 退出，由 systemd 用新代码重启。
 - **显式重启更换当前 Worker，即使构建版本相同。** `RestartPortal(deployment, components=["execution-worker"])` 和管理命令 `portal_services restart <deployment> --component execution-worker` 明确请求新 Worker：配对运行时向 Worker 单元的主进程发送 `SIGUSR1`，再等健康文件出现新的当前 Worker。两个部署名对应同一个 Worker 单元。新 Worker 仍先以 `standby` 启动，核验就绪后经 Scheduler 激活，再让前任优雅交接；启动或激活失败时保留前任，不杀 Provider、不重发业务输入。发布激活、`portal_services restart --generation-only` 和程序调用 `restart(..., force_worker_restart=False)` 只发送 `HUP`，代际不变时不换 Worker，保留代际幂等。
-- **被退休的 Worker 自己离开。** 领取时 Scheduler 说明这个 Worker 已经是 `draining` 或 `offline`（`worker_not_active` 附带 `worker_state`），或者它已不在登记里（`worker_not_registered`），Worker 就停止领取，交接手里的执行后退出，健康文件记 `retired`。`standby` 的 Worker 收到 `worker_not_active` 时每秒再试一次。WorkerManager 看到当前 Worker 以 `retired` 退出，立即按代际文件启动最新一代；代际文件里仍是被退休的版本时，按启动失败的退避等待，不立即用同一版本再启动一个 Worker。
+- **被退出的 Worker 自己离开。** 领取时 Scheduler 说明这个 Worker 已经是 `draining` 或 `offline`（`worker_not_active` 附带 `worker_state`），或者它已不在登记里（`worker_not_registered`），Worker 就停止领取，交接手里的执行后退出，健康文件记 `stopped`。`standby` 的 Worker 收到 `worker_not_active` 时每秒再试一次。WorkerManager 看到当前 Worker 以 `stopped` 退出，立即按代际文件启动最新一代；代际文件里仍是被退出的版本时，按启动失败的退避等待，不立即用同一版本再启动一个 Worker。
 - **正在运行的执行先保存交接意图，再解除跟随。** 对恢复点可以恢复的执行，旧 Worker 先在 Scheduler 中保存交接标记，再停止跟随原轮次；Provider 继续运行。
 - **每项执行单独释放。** 一项执行的跟随和相关控制调用都返回后，旧 Worker 立即释放它的资格，新 Worker 马上可以领取，不等其他执行，也不等整个旧进程退出。
 - **交接不改变业务看到的任何东西。** 交接沿用原来的 `execution_id`、请求、会话、路由、会话地址和业务消息，执行始终处于非终态。Chat 不会因为这次计划交接出现失败消息，Resident 也不会因此另外生成一条 `continue` 输入。
@@ -92,7 +92,7 @@ Scheduler 保存队列、Worker 状态、领取资格、租约、恢复点和取
                  已经完成：补交结果         仍在运行：接回原轮次
 ```
 
-WorkerManager 是一个常驻循环，每 0.5 秒检查一次：有没有收到重新加载请求、激活中的 Worker 是否还活着、正在退休的 Worker 是否已经退出，并更新自己的健康文件。部署通过向它发送 SIGHUP 请求换代。收到请求时，如果 WorkerManager 自己的源码（`worker_manager.py`）已经改变，它让所有 Worker 进入退休流程后退出，由 systemd 用新代码重启；否则在当前进程内启动新一代 Worker 完成替换。换代失败时记录日志，当前一代继续服务。
+WorkerManager 是一个常驻循环，每 0.5 秒检查一次：有没有收到重新加载请求、激活中的 Worker 是否还活着、正在退出的 Worker 是否已经退出，并更新自己的健康文件。部署通过向它发送 SIGHUP 请求换代。收到请求时，如果 WorkerManager 自己的源码（`worker_manager.py`）已经改变，它让所有 Worker 进入退出流程后退出，由 systemd 用新代码重启；否则在当前进程内启动新一代 Worker 完成替换。换代失败时记录日志，当前一代继续服务。
 
 显式重启通过管理接口向 WorkerManager 主进程发送 `SIGUSR1`，普通 reload 仍发送 `SIGHUP`。管理入口先核对健康文件的 `manager_pid` 与 systemd 当前主进程一致，并确认 `explicit_restart_supported=true` 和原 Worker ID；旧 manager 尚未加载该处理器时拒绝请求，须先通过正常部署加载，不能直接给旧进程发送未支持的信号。管理入口在既有健康及构建版本检查之外，等待当前健康 Worker ID 与请求前的 ID 不同，才确认完成，并返回 `worker_restart` 中的 `previous_worker_id`、新 `worker_id`、`build_id` 和 `manager_pid`。受理请求、同代健康或浏览器刷新均不代表 Worker 已更换；超时保留验证失败，不能返回假成功。该回执证明新 Worker 激活，不保证旧 Worker 全部执行已交接完毕；验证某任务恢复还须沿原 `execution_id` 核验实际 owner 与接管事实。
 
@@ -143,7 +143,7 @@ Worker 在本地记录租约截止时间。与 Scheduler 的连接中断超过�
 
 ## 进程退出与故障兜底
 
-WorkerManager 让旧 Worker 进入退休流程时，先在 Scheduler 中把它标为 `draining`，由既有领取和控制等待唤醒 Worker，执行持久交接；不向 Provider 后代发送停止信号来代替交接。退出等待默认 180 秒（`PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS`，最少 1 秒），超时后再给 30 秒宽限（`PORTAL_EXECUTION_WORKER_KILL_GRACE_SECONDS`，最少 1 秒），仍未退出就强制结束所拥有的 Worker 进程树。这个期限只约束遗留任务和卡住的进程，正常的逐项交接不需要等到它。
+WorkerManager 让旧 Worker 进入退出流程时，先在 Scheduler 中把它标为 `draining`，由既有领取和控制等待唤醒 Worker，执行持久交接；不向 Provider 后代发送停止信号来代替交接。退出等待默认 180 秒（`PORTAL_EXECUTION_WORKER_DRAIN_TIMEOUT_SECONDS`，最少 1 秒），超时后再给 30 秒宽限（`PORTAL_EXECUTION_WORKER_KILL_GRACE_SECONDS`，最少 1 秒），仍未退出就强制结束所拥有的 Worker 进程树。这个期限只约束遗留任务和卡住的进程，正常的逐项交接不需要等到它。
 
 生命周期控制 RPC（draining、handover、unregister）不等待服务重启：连接不可用立即返回，单次响应等待最多 2 秒；Manager 整体退出时还受同一个剩余退出预算约束，不能在截止之后再发起请求。整站停服在同一 systemd 事务内提交所有停止任务，按依赖关系先退出 Worker，再停止 ExecutionService，避免退出清理依赖已经关闭的服务。
 
@@ -161,7 +161,7 @@ Manager 已确认所拥有的全部进程树退出后，不因 Scheduler 暂不�
 | 正常计划交接 | Worker、Scheduler、Runtime 与 Adapter | 持久准备、解除跟随、逐项重新领取同一 turn，执行保持非终态 |
 | 交接过程中用户停止 | Scheduler 与当前 Worker | 取消优先，不安排计划续接 |
 | 激活中的 Worker 意外退出 | WorkerManager | 按退避重新启动 Worker |
-| Worker 被其他代退休 | Worker 与 WorkerManager | Worker 交接后退出，WorkerManager 按代际文件启动最新一代 |
+| Worker 被其他代退出 | Worker 与 WorkerManager | Worker 交接后退出，WorkerManager 按代际文件启动最新一代 |
 | Worker 心跳中断或租约过期 | Scheduler | 按恢复点和执行阶段重新排队、取消或失败 |
 | 旧 Worker 退出超时 | WorkerManager | 先终止，再强制结束，然后处理遗留资格 |
 | 旧 Worker 失去领取资格 | Worker | 自行停止用旧令牌写入 |
@@ -169,9 +169,9 @@ Manager 已确认所拥有的全部进程树退出后，不因 Scheduler 暂不�
 
 ## 健康文件
 
-Worker 健康文件使用 `tfi.execution-worker-health.v1`，记录 Worker ID、构建版本、进程、能力、并发数、当前执行、是否正在退休、是否已被 Scheduler 退休（`retired`）以及退休开始时间和期限。WorkerManager 只接受与启动预期一致的健康文件。
+Worker 健康文件使用 `tfi.execution-worker-health.v1`，记录 Worker ID、构建版本、进程、能力、并发数、当前执行、是否正在退出、是否已被 Scheduler 退出（`stopped`）以及退出开始时间和期限。WorkerManager 只接受与启动预期一致的健康文件。
 
-WorkerManager 健康文件使用 `tfi.execution-worker-manager-health.v2`，记录 WorkerManager 自身的状态（`running`、`degraded` 或 `stopping`）、激活中和正在退休的 Worker 进程状态，以及启动失败的恢复情况（连续失败次数、最近错误、下次重试时间）；`explicit_restart_supported` 标明当前进程已安装显式重启处理器。子 Worker 成功注销后才删除它的健康文件；注销失败时保留现场以便排查。
+WorkerManager 健康文件使用 `tfi.execution-worker-manager-health.v2`，记录 WorkerManager 自身的状态（`running`、`degraded` 或 `stopping`）、激活中和正在退出的 Worker 进程状态，以及启动失败的恢复情况（连续失败次数、最近错误、下次重试时间）；`explicit_restart_supported` 标明当前进程已安装显式重启处理器。子 Worker 成功注销后才删除它的健康文件；注销失败时保留现场以便排查。
 
 健康文件只说明进程状态，不保存执行结果，也不是队列的依据。Scheduler 用 Worker ID、领取令牌和租约判断写入资格；只有当前合法持有者可以开始、续租、上报事件、保存恢复点、记录用量和提交终态。
 

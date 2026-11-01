@@ -4,7 +4,7 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 16
+  number: 17
   created_at: '2026-09-03'
   created_by:
     user: ''
@@ -116,7 +116,7 @@ GPU 采集通过设备后端解析 SSH 本机路径，与设备连接测试和�
 
 | 内部监控键 | 页面名称 | 连接方式 | 关注路径 |
 |---|---|---|---|
-| `nas_storage` | NAS | Portal 主机本地读取 | 实例各区域所在的磁盘（现在的代码读取站点 `portal_paths` 的 `share_root`、`staging_root`、`instances_root`） |
+| `nas_storage` | NAS | Portal 主机本地读取 | projects、skills、papers、lineages 区域与实例 runtime 目录所在的磁盘 |
 | `thor_storage` | Thor | 通过登记的 SSH 配置远程读取 | `/home`、`/srv`、`/tmp` |
 
 两套来源分工明确：GPU 设备身份和每台服务器最近一次观测保存在 Device Identity；磁盘监控目标、关注路径和容量缓存保存在 Agent Status 后端。页面直接使用各自来源给出的身份，磁盘监控键只用于本模块，设备身份只来自 Device Identity 登记。
