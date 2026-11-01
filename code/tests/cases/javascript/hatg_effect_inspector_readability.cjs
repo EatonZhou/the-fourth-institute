@@ -4,6 +4,7 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
 const portal = path.resolve(__dirname, '../../../management_portal');
 const {HATG_PROGRAM_INSPECTOR_SCRIPTS} = require('./hatg_program_inspector_scripts.cjs');
 const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
+const {readEffectDiagnosticsReady} = require('../../../management_portal/test_framework/tau_effect_diagnostics_evidence');
 // The production program inspector draws a saved Effect and reads its
 // diagnostics; only the inspector's listed dependencies are provided.
 (async () => {
@@ -36,14 +37,16 @@ const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
         displayProgramWireById: () => null, refreshFunctionBlockMenu: () => {},
         programComponentSwitchHtml: () => '', programResourceAddressHtml: () => '',
         programExecutionExplanationHtml: () => '', programEffectRuntime: () => ({}),
-        executeHatgInstruction: () => (diagnosticsRead = Promise.resolve({diagnostics: window.diagnosticItems || []})),
+        executeHatgInstruction: () => (diagnosticsRead = window.deferDiagnostics
+          ? new Promise((resolve,reject)=>{window.finishDiagnostics=()=>resolve({diagnostics:window.diagnosticItems||[]});window.failDiagnostics=reject;})
+          : Promise.resolve({diagnostics: window.diagnosticItems || []})),
       };
       const module = window.PortalHatgProgramInspector;
       const inspector = module.createProgramInspector(Object.fromEntries(module.dependencies.map(name => [
         name, Object.hasOwn(provided, name) ? provided[name] : () => { throw new Error(`Unexpected use of ${name}`); }])));
       window.inspectSavedScript = async () => {
         inspector.renderProgramInspector({panel, objectId: component.id});
-        await diagnosticsRead;
+        await diagnosticsRead.catch(() => {}); // The native renderer presents transport failure as unavailable.
         await new Promise(resolve => setTimeout(resolve));
       };
     });
@@ -62,11 +65,28 @@ const {HATG_PANEL_STYLES} = require('./hatg_panel_styles.cjs');
         return {state: d.dataset.effectDiagnosticsState, visible: dr.top >= pr.top && dr.bottom <= pr.bottom, outsideForm: !d.closest('form'), scriptFits: s.scrollWidth <= s.clientWidth + 1, scriptValue: s.value, formScrolled: p.querySelector('form').scrollTop > 0};
       });
       assert.equal(result.state, 'ok'); assert.ok(result.visible && result.outsideForm && result.scriptFits && result.formScrolled, JSON.stringify({width, ...result}));
+      assert.equal((await readEffectDiagnosticsReady(page.locator('#programInspectorPanel'),{componentId:'effect'})).ready,true);
       assert.ok(!result.scriptValue.includes('\n'), 'soft wrapping never changes the submitted script');
     }
     await page.evaluate(() => {window.diagnosticItems = [{item_id: 'effect', level: 'error', code: 'invalid-script', message: 'Saved script rejected'}]; return inspectSavedScript();});
     assert.equal(await page.locator('[data-effect-diagnostics]').getAttribute('data-effect-diagnostics-state'), 'error');
     assert.ok((await page.locator('[data-effect-diagnostics]').innerText()).includes('Saved script rejected'));
+    const panel=page.locator('#programInspectorPanel');
+    assert.equal((await readEffectDiagnosticsReady(panel,{componentId:'effect'})).ready,false);
+    assert.equal((await readEffectDiagnosticsReady(panel,{componentId:'other'})).ready,false);
+    await page.evaluate(()=>{window.deferDiagnostics=true;window.pendingInspection=inspectSavedScript();});
+    const loading=await readEffectDiagnosticsReady(panel,{componentId:'effect'});
+    assert.equal(loading.candidates[0].state,'loading');assert.equal(loading.ready,false);
+    // Exercise the absent attribute during replacement, which the old negative
+    // predicate accepted, then let the real renderer finish its original request.
+    await page.locator('[data-effect-diagnostics]').evaluate(node=>node.removeAttribute('data-effect-diagnostics-state'));
+    assert.equal((await readEffectDiagnosticsReady(panel,{componentId:'effect'})).ready,false);
+    await page.evaluate(async()=>{window.diagnosticItems=[{item_id:'effect',level:'warning',message:'Review'}];finishDiagnostics();await pendingInspection;});
+    assert.equal((await readEffectDiagnosticsReady(panel,{componentId:'effect'})).ready,true);
+    await page.evaluate(()=>{window.pendingInspection=inspectSavedScript();});
+    await page.evaluate(async()=>{failDiagnostics(new Error('Fixture service unavailable'));await pendingInspection;});
+    const unavailable=await readEffectDiagnosticsReady(panel,{componentId:'effect'});
+    assert.equal(unavailable.candidates[0].state,'unavailable');assert.equal(unavailable.ready,false);
     assert.deepEqual(errors, []);
     console.log('Effect diagnostics stay visible while scrolling at wide/narrow widths; long script wraps without changing its value');
   } finally {await browser.close();}
