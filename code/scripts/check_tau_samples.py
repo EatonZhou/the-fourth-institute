@@ -24,6 +24,9 @@ SAMPLES = (
     "test_family_lifecycle_elements.py::test_tau_fixture_isolation_preserves_existing_family_policy_and_members",
     "test_family_lifecycle_elements.py::test_tau_family_template_disables_migration_before_first_delivery",
     "test_hatg_arrange_viewport.py::test_hatg_effect_diagnostics_and_script_remain_readable",
+    "test_tau_browser_bootstrap.py::test_the_bootstrap_waits_for_a_running_tool_in_the_live_chat_card[summary]",
+    "test_tau_browser_bootstrap.py::test_the_bootstrap_waits_for_a_running_tool_in_the_live_chat_card[reloaded_detail]",
+    "test_tau_browser_bootstrap.py::test_the_bootstrap_waits_for_a_running_tool_in_the_live_chat_card[completed_only]",
 )
 
 

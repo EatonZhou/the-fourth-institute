@@ -1,5 +1,7 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+`portal.waitForRunningActivity({scope:本轮目标Chat的Locator,timeoutMs})`自动把原等待逐次观察写入`tau-running-activity.jsonl`，包含wait_id、原起止/elapsed、scope_count、原生Chat/Resident身份、document timeOrigin、活动卡/工具标签匹配与running状态计数，含found/timeout/retry/failed结尾；不记录工具命令正文。超时先保留并核对该原日志，区分目标面板已换、无活动卡、工具标签不匹配或只有已结束条目，不能用后来重新导航的运行截图回填。若页面恢复改变Editor，重新发现并核验目标后只读观察原输入，不重发原任务。
+
 Family成员增删、解除、其他结构改动及刷新可能把节点移到画布边界外。若原ready要求完整图适配，使用`tau_hatg_view_evidence.js`的`fitAndWaitForHatgView(panel, options)`：参数同waitForHatgView，先核验本轮精确Lineage/完整节点边集合已加载，再普通点击一次原生Fit，随后等待全部节点在画布内且几何稳定。它把before-fit/after-fit样本交给同一个record，original_elapsed_ms覆盖两个阶段并共用一个timeoutMs预算；放在原portal.action的ready中调用。单纯waitForHatgView不会移动画布，不能让裁切节点在原等待中自行消失。Fit不会保证文字可读，必要的面板调整及全景/可读局部截图仍由原步骤完成；助手不导航、不重放业务、不调整账号。
 
 Effect保存原ready用`tau_effect_diagnostics_evidence.js`的`await readEffectDiagnosticsReady(inspector,{componentId})`，返回`{observed_at_ms,expected_component_id,candidates,ready}`。传当前唯一原生Inspector Locator，原有界等待逐样本保存返回值，只有目标ID匹配、诊断槽可见且状态明确为ok/warning时ready=true。null、loading、unavailable、error均不通过；不要用`state !== 'loading'`把重建中的缺失状态放行，也不要跨两次DOM读取分别判断和保存状态。该快照只证明当前诊断就绪，原提交回执、脚本内容、完整图与视觉仍独立核验。

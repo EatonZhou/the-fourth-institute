@@ -401,14 +401,31 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   }
 
   async function waitForRunningActivity({ scope = page, timeoutMs = 120_000 } = {}) {
-    const deadline = Date.now() + timeoutMs;
+    if(!Number.isFinite(timeoutMs)||timeoutMs<=0||timeoutMs>600000)throw new TypeError('A bounded running-activity deadline is required');
+    const started=Date.now(), deadline=started+timeoutMs, waitId=randomUUID();
+    const record=(phase,data={})=>fs.appendFileSync(path.join(evidence,'tau-running-activity.jsonl'),
+      JSON.stringify({wait_id:waitId,phase,observed_at_ms:Date.now(),elapsed_ms:Date.now()-started,...data})+'\n');
+    record('started',{timeout_ms:timeoutMs});
     // Locators resolve again after navigation or a Chat remount. A caller with
     // multiple Chats must identify its own visible panel, including after reload.
     const runtime = scope.locator('[data-message-key="__runtime__"]:visible');
     const targetPage = runtime.page();
     while (Date.now() < deadline) {
-      if (targetPage.isClosed()) throw new Error("Chat page closed while waiting for a running tool");
+      if (targetPage.isClosed()) {record('failed',{reason:'page_closed'});throw new Error("Chat page closed while waiting for a running tool");}
       try {
+        const candidates=await runtime.evaluateAll(nodes=>nodes.map(node=>{
+          const visible=e=>!!e?.isConnected&&e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
+          const root=node.closest('.portalChatWorkspaceRoot');
+          return {chat_root_id:root?.id||null,
+            resident_id:root?.querySelector('.chatHead [data-workspace-resident-id]')?.getAttribute('data-workspace-resident-id')||null,
+            document_time_origin:performance.timeOrigin,
+            summaries:[...node.querySelectorAll('summary')].map(e=>({visible:visible(e),open:!!e.parentElement?.open,
+              tool_label:/(?:^| · )(?:Command (?:started|progress)(?:\s|$)|(?:Tool(?: progress)?|MCP):)/.test(e.textContent)})),
+            items:[...node.querySelectorAll('.runtimeDetailItem')].map(e=>({visible:visible(e),
+              tool_label:/^(?:Command (?:started|progress)(?:\s|$)|(?:Tool(?: progress)?|MCP):)/.test(e.querySelector('.runtimeDetailKind')?.textContent||''),
+              running:/^running(?:\s|$)/.test(e.querySelector('.runtimeDetailMeta')?.textContent||'')}))};
+        }));
+        record('sample',{scope_count:typeof scope.count==='function'?await scope.count():1,runtime_candidates:candidates});
         if (await runtime.count() > 1) throw new Error("Multiple live Chat cards; pass the target Chat as scope");
         const toolTitle = /^(?:Command (?:started|progress)(?:\s|$)|(?:Tool(?: progress)?|MCP):)/;
         const summary = runtime.locator('summary:visible')
@@ -419,17 +436,21 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
         const visibleTool = await summary.count() ? summary.first() : item.first();
         if (await visibleTool.isVisible()) {
           const seen = await visibleTool.evaluate(node => ({ text: node.innerText.trim(), seen_at_ms: Date.now() }));
-          return { ...seen, seen_at: new Date(seen.seen_at_ms).toISOString() };
+          record('found',{seen_at_ms:seen.seen_at_ms});
+          return { ...seen, wait_id:waitId, seen_at: new Date(seen.seen_at_ms).toISOString() };
         }
         const collapsed = runtime.locator('details:not([open]) > summary:visible').first();
         if (await collapsed.isVisible()) await collapsed.click({ timeout: Math.min(250, Math.max(1, deadline - Date.now())) });
       } catch (error) {
         // UI reads/clicks can race a document replacement; business instructions
         // are never retried here. Other failures remain visible to the caller.
-        if (error.name !== "TimeoutError" && !/Execution context was destroyed|Cannot find context|not attached to the DOM/.test(error.message)) throw error;
+        const retry=error.name === "TimeoutError" || /Execution context was destroyed|Cannot find context|not attached to the DOM/.test(error.message);
+        record(retry?'retry':'failed',{diagnostic:safeError(error)});
+        if(!retry)throw error;
       }
       await sleep(Math.min(100, Math.max(0, deadline - Date.now())));
     }
+    record('timeout');
     throw new Error(`No visible running tool in the target Chat within ${timeoutMs}ms`);
   }
 

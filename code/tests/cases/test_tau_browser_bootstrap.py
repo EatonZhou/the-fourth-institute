@@ -683,6 +683,17 @@ def test_the_bootstrap_waits_for_a_running_tool_in_the_live_chat_card(tmp_path, 
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout.strip().splitlines()[-1]) == expected
 
+    activity_log = tmp_path / 'evidence' / 'tau-running-activity.jsonl'
+    if scenario in {'summary', 'tool_summary', 'reloaded_detail', 'tool_detail', 'completed_only',
+                    'completed_tool', 'other_page', 'other_page_closed_default'}:
+        rows = [json.loads(line) for line in activity_log.read_text().splitlines()]
+        assert rows[0]['phase'] == 'started'
+        assert rows[-1]['phase'] == ('timeout' if scenario in {'completed_only', 'completed_tool'} else 'found')
+        assert len({row['wait_id'] for row in rows}) == 1
+        samples = [row for row in rows if row['phase'] == 'sample']
+        assert samples and all('runtime_candidates' in row for row in samples)
+        assert all(row['elapsed_ms'] >= 0 for row in rows)
+
 
 def test_a_restarted_helper_reconnects_to_the_same_browser(tmp_path, portal):
     """TAU 辅助脚本重启后重新连接同一个浏览器，用例始终只有一个浏览器进程
