@@ -2,7 +2,7 @@
   "version": "v0.9",
   "run_id": "62588fca6ab2401490015ee99b406915",
   "manifest": "instance/example_instance/seed/manifest.json",
-  "manifest_sha256": "4a88a352f105d018939f3955d1d13c130e32887227515bf814a9e10961a2fdd4",
+  "manifest_sha256": "6654fe5900ccbb951bbd6fde53f68bb4ce23bfeac9c5aa1e37178c44f41c58aa",
   "selection_sha256": "957d8e2b3c9e4ffde574ed133fef459057953858f4816001d4a89eae2bc75ec0",
   "lenia_workbench_revision": 166,
   "source": {
@@ -10,7 +10,7 @@
     "commit": "388bc16cc6f30f7ddf04dc3b6d855a95bfd1b2e2",
     "working_tree_modified": true
   },
-  "bytes": 299002835,
+  "bytes": 298085653,
   "checks": {
     "shared_instance_contracts": "passed",
     "installer_regression": "passed",
