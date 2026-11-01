@@ -93,6 +93,9 @@ async function readSessionGraphSnapshot(panel, {residentId, minWidth = 160, minH
       portalled_to_body:popover?.parentElement === doc.body, exact_hit_count:hits.length,
       unresolved_status_count:statuses.length, busy, visible_node_count:cards.length, search_ready:searchReady,
       geometry, layout_position:card ? {left:card.style.left, top:card.style.top} : null,
+      // This is the exact visible Resident card's work state. It says nothing
+      // about running tools, provider activity or business input completion.
+      work_state:card?.getAttribute('data-status') || null,
       within_viewport:withinViewport, minimum_capture_size:{width:minWidth,height:minHeight},
       // A size sanity check only. Caller still captures and actually views
       // the original image, checks clipping/overlap and keeps exact graph identity.

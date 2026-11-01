@@ -89,6 +89,10 @@ TAU 是无人值守运行，禁止向用户提问、输出 `portal-question` 或
 
 用例要求运行仓库内隔离 pytest 回归时，browser_runtime.python_executable 只保证浏览器身份辅助依赖，不保证安装 pytest。先检查可用的测试解释器；系统 python3 若已提供 pytest，可用 `env -u PORTAL_DEPLOYMENT PYTHONPATH=实际代码根 python3 -m pytest -q 精确测试节点` 运行隔离夹具。不要继承强制 dev 部署来运行单元夹具，不要临时安装依赖或建立第二套业务实例。已配置解释器都缺少必要依赖时才报告环境缺口；保存真实命令、退出码和输出。
 
+运行证据须区分 Resident 工作状态与工具状态：`portal.waitForRunningActivity` 只等待 Chat 中真实 running 的工具，纯文本回复不会产生这种状态。HATG 的 Resident 运行窗口可在 Trigger 前启动被动采样，用 `tau_session_prerequisites.js` 的 `readSessionGraphSnapshot(activeHatg,{residentId})` 记录精确可见节点的 `work_state`；`running` 与工具无关，隐藏/缺失/不唯一节点不提供状态。只有同一原窗口的节点身份、running 状态、可读布局与实际截图共同满足时才完成运行态取证，不能用后续 idle 或别的 Resident 代替。
+
+ready 不对整个区域正文搜索 Loading/加载：帮助说明、脚本示例也可包含这些词。使用原生加载属性及本次控件状态。HATG Inspector 已公开 `data-component-id`，原 ready 核对精确对象、唯一可见 `input[name=title]` 的本轮值和启用状态；Effect 诊断独立核对 `data-effect-diagnostics-state`，不要把说明文字当成异步状态。运行设置按正式账号ID、设置值和能力声明核验，显示标签可能本地化；Fast 不支持同样不在使用 Fast，不能硬断言所有标准速度角色必须显示某一种英文文案。等待不能省略或回填原窗口。
+
 测试结束前关闭自己启动的浏览器、交互脚本和辅助进程；只保留截图、日志等静态证据，避免长驻测试工具占用后续 TAU 用例的资源。
 
 默认复用固定功能 Lineage 和固定 TAU 模块执行器。Run 只隔离结果与证据，不自动获得建队理由。业务投影用例通过真实产品绑定执行；浏览、筛选与显示检查使用现有对象。同团队的临时对话、Stop、Reset、Fork 样本只增加必要的普通 Resident，不因此另建 Lineage。只有运行环境明确给出独立团队声明和必要性时，才允许为团队生命周期或独立图修改创建临时 Lineage；声明只是测试范围，不增加资源类型、Instruction 或业务权限。
