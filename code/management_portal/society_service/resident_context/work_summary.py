@@ -7,7 +7,6 @@ standalone Residents. No model runs here.
 from __future__ import annotations
 
 from typing import Any
-import time
 
 from management_common.message_identity import derived_message_identity
 
@@ -174,11 +173,13 @@ def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
                             "level": work["consolidation"]["level"], "reason": work["consolidation"]["reason"]})
     changed = not family.get("personal_ama_id") and previous["source_versions"] != versions
     if overview_only:
+        # The ID depends only on the material: a summary task that was
+        # completed, failed or stopped is not sent again until it changes.
         return {"resident_id": resident_id, "needs_update": changed or bool(pending),
                 "facade_needs_update": changed, "consolidation_due": pending,
                 "notification": {
                     "message_id": derived_message_identity(ROLLUP_REF, resident_id, fingerprint(
-                        {"versions": versions, "due": pending, "hour": int(time.time() // 3600)})),
+                        {"versions": versions, "due": pending})),
                     "content_parts": [{"type": "text", "text":
                         f"Family {resident_id} 有摘要维护待办。先用 GetFamilySummaryInputs overview_only=true 查看；"
                         "对 consolidation_due 按需读取 GetResidentSummaries include_maintenance=true，"

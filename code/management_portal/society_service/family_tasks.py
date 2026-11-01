@@ -49,7 +49,7 @@ TASKS = {
         "按需查看成员职责、近期活动和队列，判断组织是否需要调整。闲置或重叠是判断依据，"
         "不是自动删除指令。保留仍有效的任务与承诺；涉及交接时先完成交接。重要组织结论保存到 Family 或项目记录，"
         "需要人决定的事项向 Family 实际创建人汇报。", "回顾当前分工，处理有依据的组织问题。"),
-    "summary": ("request_summary", "steward", "摘要达到时间或工作量阈值",
+    "summary": ("request_summary", "steward", "成员摘要到期归纳或门面材料变化",
         "用 GetFamilySummaryInputs(resident_id=facade, overview_only=true) 找到待归纳成员，再按需读取"
         "GetResidentSummaries(include_maintenance=true)。仅业务成员记录近期事实；Router 和 Steward 不维护自身摘要。Steward 归纳业务成员阶段与长期层；"
         "用 UpdateResidentWorkSummary 的 consolidation 和 expected_revision 提交，覆盖已归纳片段。"

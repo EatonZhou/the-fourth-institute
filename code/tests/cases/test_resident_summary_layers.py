@@ -69,8 +69,10 @@ def test_unresolved_items_survive_even_when_agent_omits_them_and_close_explicitl
     assert second["layers"]["long_term"]["primary_ownership"] == ["登录"]
 
 
-def test_time_and_quantity_watermarks_and_maintenance_do_not_self_trigger(setup_work, monkeypatch):
+def test_quantity_watermarks_and_maintenance_do_not_self_trigger(setup_work, monkeypatch):
+    """归纳只按新覆盖轮次与容量到期，维护轮次和时间流逝都不触发"""
     monkeypatch.setenv("PORTAL_SUMMARY_PHASE_ROUNDS", "2")
+    monkeypatch.setenv("PORTAL_SUMMARY_LONG_TERM_ROUNDS", "3")
     context, roles, records, states, refs, *_ = setup_work
     first = work.update_resident_work_summary(A, A, 0, summary=SUMMARY, message_ids=["one"])
     assert not first["consolidation"]["due"]
@@ -84,9 +86,13 @@ def test_time_and_quantity_watermarks_and_maintenance_do_not_self_trigger(setup_
     merged = work.update_resident_work_summary(roles["steward"][0], A, 1, consolidation={"phase": SUMMARY})
     assert merged["maintenance"]["phase_rounds"] == 0
     assert merged["maintenance"]["long_term_rounds"] == 2
-    now = datetime.now(timezone.utc)
-    state = {**merged["maintenance"], "long_term_at": (now - timedelta(days=8)).isoformat()}
-    assert layers.due(merged["layers"], state, now=now)["level"] == "long_term"
+    # An idle member stays settled however long ago its layers were condensed.
+    long_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    idle = {**merged["maintenance"], "phase_at": long_ago, "long_term_at": long_ago}
+    assert not layers.due({**merged["layers"], "recent": SUMMARY}, idle)["due"]
+    state = {**merged["maintenance"], "long_term_rounds": 3}
+    assert layers.due(merged["layers"], state) == {**layers.due(merged["layers"], state), "due": True,
+                                                   "level": "long_term", "reason": "rounds"}
     with pytest.raises(ValueError, match="长期"):
         layers.consolidate(merged["layers"], state, {"phase": SUMMARY})
 
@@ -107,6 +113,11 @@ def test_overview_contains_only_actionable_ids_and_deduplicated_notification(set
     _, roles, *_ = setup_work
     work.update_resident_work_summary(A, A, 0, summary=SUMMARY, message_ids=["one"])
     first = work.get_family_summary_inputs(C, C, overview_only=True)
+    # Same material keeps one task ID across hours, so a stopped or finished
+    # summary task is not re-sent every hour.
+    import time
+    later = time.time() + 7200
+    monkeypatch.setattr(time, "time", lambda: later)
     second = work.get_family_summary_inputs(C, C, overview_only=True)
     assert "members" not in first and "previous_summary" not in first
     assert first["consolidation_due"][0]["resident_id"] == A

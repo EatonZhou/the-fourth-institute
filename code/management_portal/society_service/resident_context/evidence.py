@@ -113,8 +113,7 @@ def project_summary_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
 
 
 def policy() -> dict:
-    defaults = {"total_chars": 3000, "phase_rounds": 20, "phase_seconds": 86400,
-                "long_term_rounds": 100, "long_term_seconds": 604800}
+    defaults = {"total_chars": 3000, "phase_rounds": 20, "long_term_rounds": 100}
     result = {}
     for key, default in defaults.items():
         value = int(os.environ.get("PORTAL_SUMMARY_" + key.upper(), default))

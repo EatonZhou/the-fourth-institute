@@ -1,8 +1,6 @@
 """Bounded temporal memory. Policy is mechanical; agents choose the synthesis."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from .evidence import SUMMARY_FIELDS, character_count, check_budget, policy, utc_now, validate_summary
 
 
@@ -26,23 +24,18 @@ def initial(summary: dict, updated_at: str = "") -> tuple[dict, dict]:
             {"phase_at": timestamp, "long_term_at": timestamp, "phase_rounds": 0, "long_term_rounds": 0})
 
 
-def due(layers: dict, state: dict, *, now: datetime | None = None) -> dict:
+def due(layers: dict, state: dict) -> dict:
+    # Only new covered work or capacity makes a layer due. Elapsed time alone
+    # never does: an idle member has nothing new to condense.
     limits = policy()
-    now = now or datetime.now(timezone.utc)
-    def elapsed(key):
-        stamp = state.get(key)
-        return (now - datetime.fromisoformat(stamp.replace("Z", "+00:00"))).total_seconds() if stamp else 0
     has_recent = bool(character_count(layers.get("recent", {})))
     has_phase = bool(character_count(layers.get("phase", {})))
-    long_due = (has_recent or has_phase) and (
-        state.get("long_term_rounds", 0) >= limits["long_term_rounds"]
-        or elapsed("long_term_at") >= limits["long_term_seconds"])
-    phase_due = has_recent and (state.get("phase_rounds", 0) >= limits["phase_rounds"]
-                               or elapsed("phase_at") >= limits["phase_seconds"])
+    long_due = (has_recent or has_phase) and state.get("long_term_rounds", 0) >= limits["long_term_rounds"]
+    phase_due = has_recent and state.get("phase_rounds", 0) >= limits["phase_rounds"]
     pressure = character_count(layers) >= limits["total_chars"] * .8
     return {"due": bool(long_due or phase_due or pressure),
             "level": "long_term" if long_due else "phase",
-            "reason": "budget" if pressure else "interval" if long_due or phase_due else "",
+            "reason": "budget" if pressure else "rounds" if long_due or phase_due else "",
             "total_chars": character_count(layers), "policy": limits}
 
 
