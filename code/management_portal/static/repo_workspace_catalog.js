@@ -24,8 +24,8 @@
 
     const REPO_QUERY_LIMIT = 500;
 
-    function cancelRepoQuery() {
-      state.requestController?.abort();
+    function cancelRepoQuery(reason = 'owner_disposed') {
+      window.PortalAPI.abortRequest(state.requestController, reason);
       state.requestController = null;
       state.requestSequence += 1;
       state.descriptionPending.forEach(id => state.descriptionAttempted.delete(id));
@@ -235,7 +235,7 @@
       keepWorkspace = true,
       propagateServiceUnavailable = false,
     } = {}) {
-      cancelRepoQuery();
+      cancelRepoQuery('repo_query_replaced');
       const controller = new AbortController();
       state.requestController = controller;
       const sequence = state.requestSequence;

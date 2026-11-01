@@ -55,7 +55,13 @@ DOMAIN_OPERATIONS = {
             is_resident_input_open
         """),
         (Operation('read', 'resident', 'resident', 'resident_id', implementation='management_portal.society_service.resident_directory_domain'), """
-            get_resident_session_projection get_resident_resource_projection
+            get_resident_session_projection
+        """),
+        # Explicit resource history is authorized by ResourceService and may
+        # outlive both active membership and the Lineage itself. Its canonical
+        # reads own their snapshot; never require a live mutation aggregate.
+        (Operation('read', 'resident', implementation='management_portal.society_service.resident_directory_domain'), """
+            get_resident_resource_projection
         """),
         (Operation('read', 'resident', 'resident', 'resident_id', implementation='management_portal.society_service.resident_workspace_domain'), """
             resolve_resident_identity

@@ -455,7 +455,7 @@ async function observeBrowser(context, { evidenceDir }) {
           .filter(request => request.document === doc && request.frame === state);
         const match = doc && candidates.length === 1 ? candidates[0] : null;
         write({ kind: 'portal_request_aborted', ...associated, transport_id: transportId,
-          reason: ['caller_aborted', 'request_timeout'].includes(data.reason) ? data.reason : 'unknown',
+          reason: ['caller_aborted', 'request_timeout', 'repo_query_replaced', 'owner_disposed'].includes(data.reason) ? data.reason : 'unknown',
           aborted_at_ms: Number.isFinite(data.at) ? data.at : null,
           request_id: match?.id || null,
           request_association: match ? 'portal_request_identity' : 'unavailable_no_unique_transport_identity' });
@@ -610,7 +610,7 @@ async function observeBrowser(context, { evidenceDir }) {
       const item = event.detail;
       if (!item || typeof item !== 'object') return;
       emit({ kind: 'portal_request_aborted', transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
-        reason: ['caller_aborted', 'request_timeout'].includes(item.reason) ? item.reason : 'unknown', at: Date.parse(item.at) });
+        reason: ['caller_aborted', 'request_timeout', 'repo_query_replaced', 'owner_disposed'].includes(item.reason) ? item.reason : 'unknown', at: Date.parse(item.at) });
     });
     const conversationReadReasons = new Set('index_refresh pagination pin_menu resident_event resident_projection index_projection viewer_state chat_read cursor_reconciliation unknown'.split(' '));
     window.addEventListener('portal:conversation-read', event => {

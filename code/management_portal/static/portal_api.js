@@ -4,6 +4,14 @@
   if (window.PortalAPI) return;
 
   const DEFAULT_TIMEOUT_MS = 360_000;
+  const cancellationOwners = new WeakMap();
+  const cancellationReasons = new Set(['repo_query_replaced', 'owner_disposed']);
+
+  function abortRequest(controller, reason) {
+    if (!controller) return;
+    if (!controller.signal.aborted && cancellationReasons.has(reason)) cancellationOwners.set(controller.signal, reason);
+    controller.abort();
+  }
 
   async function parseJson(response) {
     const text = await response.text();
@@ -37,7 +45,10 @@
     let cause = 'caller_aborted';
     const observedAbort = () => { try { onAbort?.(cause); } catch (_) { /* Observation must not affect requests. */ } };
     controller.signal.addEventListener('abort', observedAbort, { once: true });
-    const abortFromCaller = () => controller.abort(callerSignal?.reason);
+    const abortFromCaller = () => {
+      cause = cancellationOwners.get(callerSignal) || 'caller_aborted';
+      controller.abort(callerSignal?.reason);
+    };
     if (callerSignal?.aborted) abortFromCaller();
     else callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
 
@@ -250,6 +261,7 @@
 
   window.PortalAPI = {
     DEFAULT_TIMEOUT_MS,
+    abortRequest,
     createClient,
     get,
     post,

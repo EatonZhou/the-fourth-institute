@@ -67,6 +67,16 @@ const api = fs.readFileSync(path.join(__dirname, '../../../management_portal/sta
     await new Promise(done => setImmediate(done));
     review = reviewRequests(rows());
     assert.equal(review[1].proofs[0].reason, 'request_timeout');
+    const owned = new w.AbortController();
+    const ownedPending = w.PortalAPI.request('/api/example', {signal: owned.signal});
+    w.eval(fs.readFileSync(path.join(__dirname, '../../../management_portal/static/repo_workspace_catalog.js'), 'utf8'));
+    const deps = Object.fromEntries(w.PortalRepoWorkspaceCatalog.dependencies.map(name => [name, () => {}]));
+    deps.state = {requestController:owned, requestSequence:0, descriptionPending:new Set(), descriptionAttempted:new Set()};
+    w.PortalRepoWorkspaceCatalog.createCatalog(deps).cancelRepoQuery('repo_query_replaced');
+    await assert.rejects(ownedPending, {name:'AbortError'});
+    await new Promise(done => setImmediate(done));
+    review = reviewRequests(rows());
+    assert.equal(review[2].proofs[0].reason, 'repo_query_replaced');
     assert(!output().includes('DO-NOT-LOG'));
     const wrong = {...review[0].proofs[0], document_id: 'other-document'};
     assert.equal(reviewRequests([...rows().filter(r => ['request_started', 'request_failed'].includes(r.kind)), wrong])[0].proofs.length, 0);

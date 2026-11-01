@@ -82,3 +82,25 @@ def test_sparse_deleted_resource_content_does_not_invent_backend(sparse_history)
     assert content["backend"] == ""
     assert fixture.agents.trace_sequence_id(RID) == fixture.trace
     assert fixture.agents.trace_length(RID) == fixture.trace_length
+
+
+def test_deleted_resource_history_survives_real_read_dispatch_without_membership(sparse_history):
+    """The real ResourceService RPC route can read history after its Lineage is gone."""
+    from management_portal.society_service import server
+
+    result = server._execute_read_domain_call({
+        'domain': 'resident', 'name': 'get_resident_resource_projection',
+        'args': [RID], 'kwargs': {},
+    })
+    assert result['resident_id'] == RID
+    assert result['user_message_count'] == 1
+    assert result['recent_activity'][0]['content'] == 'Stored historical evidence'
+    assert sparse_history.catalog.get_historical(RID)['deleted_at'] == DELETED
+    assert sparse_history.store.all_residents() == []
+    assert sparse_history.agents.trace_length(RID) == sparse_history.trace_length
+    # Running/session reads still reject the deleted identity.
+    with pytest.raises(KeyError):
+        server._execute_read_domain_call({
+            'domain': 'resident', 'name': 'get_resident_session_projection',
+            'args': [RID], 'kwargs': {'actor': 'sample_admin'},
+        })
