@@ -8,11 +8,47 @@ import pytest
 from management_portal import provider_session_relocation as relocation
 
 
-def test_dsh_moves_session_metadata_without_rewriting_messages(tmp_path, monkeypatch):
+@pytest.mark.parametrize('slashes', [False, True])
+def test_windows_session_prefix_keeps_native_and_json_path_spellings(slashes):
+    old, new = r'C:\旧项目', r'D:\新项目'
+    path = old + r'\work'
+    expected = new + r'\work'
+    if slashes:
+        path, expected = path.replace('\\', '/'), expected.replace('\\', '/')
+    prefix = relocation._Prefix(old, new)
+    assert prefix.under(path) and prefix.map(path) == expected
+    assert not prefix.under(old + '-other/work')
+    for ascii in (False, True):
+        assert json.loads(prefix.text(json.dumps({'cwd': path}, ensure_ascii=ascii))) == {'cwd': expected}
+
+
+def test_windows_opencode_native_and_forward_slash_directories_move(tmp_path, monkeypatch):
+    import sqlite3
+    from management_common import portal_paths
+    monkeypatch.setattr(portal_paths, 'path', lambda name: tmp_path)
+    folder = tmp_path / 'opencode/opencode-probe'
+    folder.mkdir(parents=True)
+    old, new = r'C:\旧项目', r'D:\新项目'
+    database = folder / 'opencode.db'
+    with sqlite3.connect(database) as c:
+        c.execute('CREATE TABLE session(id TEXT PRIMARY KEY,directory TEXT,path TEXT)')
+        c.execute('CREATE TABLE message(id TEXT PRIMARY KEY,data TEXT)')
+        c.execute('INSERT INTO session VALUES (?,?,?)', ('ses_original', old + r'\work', old.replace('\\','/') + '/work'))
+        c.execute('INSERT INTO message VALUES (?,?)', ('msg_original', old))
+    result = {'changed': [], 'errors': [], 'conflicts': []}
+    relocation._relocate_opencode(relocation._Prefix(old,new), True, result)
+    assert not result['errors'] and str(database) in result['changed']
+    with sqlite3.connect(database) as c:
+        assert c.execute('SELECT * FROM session').fetchone() == ('ses_original', new + r'\work', new.replace('\\','/') + '/work')
+        assert c.execute('SELECT * FROM message').fetchone() == ('msg_original', old)
+
+
+@pytest.mark.parametrize('old,new', [('/projects/项目/old', '/projects/项目/new'),
+                                    (r'C:\项目\old', r'D:\项目\new')])
+def test_dsh_moves_session_metadata_without_rewriting_messages(tmp_path, monkeypatch, old, new):
     """DSH 工作目录搬迁保持会话消息字节不变"""
     from management_common import portal_paths
     monkeypatch.setattr(portal_paths, 'path', lambda name: tmp_path)
-    old, new = '/projects/项目/old', '/projects/项目/new'
     session = tmp_path / 'dsh/dsh-123/sessions' / relocation.dsh_project_key(old) / 'session'
     session.mkdir(parents=True)
     body = json.dumps({'type': 'message', 'text': old}).encode() + b'\n'

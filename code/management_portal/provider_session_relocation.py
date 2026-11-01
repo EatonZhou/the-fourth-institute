@@ -21,7 +21,7 @@ import re
 import sqlite3
 import unicodedata
 from contextlib import closing
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Iterable
 
 LOGGER = logging.getLogger(__name__)
@@ -35,17 +35,36 @@ class _Prefix:
 
     def __init__(self, old: str, new: str) -> None:
         self.old, self.new = old, new
+        self.windows = PureWindowsPath(old).is_absolute()
+        pairs = [(old, new)]
+        if self.windows:
+            pairs += [(str(PureWindowsPath(old)), str(PureWindowsPath(new))),
+                      (PureWindowsPath(old).as_posix(), PureWindowsPath(new).as_posix())]
+        # JSON stores native Windows separators escaped, and may escape Unicode.
+        pairs += [(json.dumps(a, ensure_ascii=ascii)[1:-1], json.dumps(b, ensure_ascii=ascii)[1:-1])
+                  for a, b in list(pairs) for ascii in (False, True)]
+        self._replacement = dict(pairs)
+        if self.windows:
+            self._replacement = {a.casefold(): b for a, b in pairs}
         # A path starts after a separator and ends where a path name could not continue.
-        self._pattern = re.compile(r"(?<![\w.~-])" + re.escape(old) + r"(?![\w@+-]|\.\w)")
+        self._pattern = re.compile(r"(?<![\w.~-])(?:" + "|".join(
+            re.escape(p) for p in sorted(self._replacement, key=len, reverse=True)) + r")(?![\w@+-]|\.\w)",
+            re.IGNORECASE if self.windows else 0)
 
     def under(self, path: str) -> bool:
+        if self.windows:
+            return PureWindowsPath(path).is_relative_to(PureWindowsPath(self.old))
         return path == self.old or path.startswith(self.old + "/")
 
     def map(self, path: str) -> str:
+        if self.windows:
+            target = PureWindowsPath(self.new) / PureWindowsPath(path).relative_to(PureWindowsPath(self.old))
+            return str(target) if "\\" in path else target.as_posix()
         return self.new + path[len(self.old):]
 
     def text(self, text: str) -> str:
-        return self._pattern.sub(lambda _match: self.new, text)
+        return self._pattern.sub(lambda match: self._replacement[
+            match.group(0).casefold() if self.windows else match.group(0)], text)
 
 
 def _canonical(value: str | os.PathLike) -> str:
@@ -284,7 +303,7 @@ def _relocate_opencode(prefix: _Prefix, apply: bool, result: dict) -> None:
                                     raise ValueError('OpenCode project sandboxes must be a path list')
                                 mapped = [prefix.map(p) if isinstance(p, str) and prefix.under(p) else p for p in paths]
                                 after = json.dumps(mapped, ensure_ascii=False) if mapped != paths else value
-                            elif column == 'path' and not value.startswith('/'):
+                            elif column == 'path' and not value.startswith('/') and not PureWindowsPath(value).is_absolute():
                                 after = prefix.map('/' + value).lstrip('/') if prefix.under('/' + value) else value
                             else:
                                 after = prefix.map(value) if prefix.under(value) else value
@@ -336,8 +355,9 @@ def relocate_provider_sessions(old_prefix: str | os.PathLike, new_prefix: str | 
             if folder.is_symlink() or not folder.is_dir():
                 continue
             cwd = _claude_folder_cwd(folder)
-            if cwd and (cwd == new or cwd.startswith(new + '/')):
-                original = old + cwd[len(new):]
+            reverse = _Prefix(new, old)
+            if cwd and reverse.under(cwd):
+                original = reverse.map(cwd)
                 if folder.name == claude_project_key(original):
                     cwd = original
             if cwd is None and folder.name == old_key:
