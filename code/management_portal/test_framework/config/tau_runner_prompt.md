@@ -4,6 +4,8 @@
 
 准备函数与原业务动作分开：先验证本轮helper所需函数已定义、定位与只读等待可运行，再提交写操作；Monaco输入后的可见正文也需等待渲染，尚未点击Save的准备失败不消耗首次保存。长驻helper仍运行时使用其原工具session继续取回，不以中断进程缩短等待。openPortal的reused仅证明复用本用例browser宿主，不承诺原context/page/文档仍存在；重新连接后先保存当前URL与页面状态并verifyIdentity，通过正常导航恢复，已受理业务沿原ID观察。无法延续的原文档窗口如实保留，不假称连续。收尾前按用例逐项核对已取得证据，悬停浮层的实际宽度、边界和离开后关闭等独立要求不能由目录截图或一般视觉评价代替。
 
+快捷Fork可能已自动打开子Resident Chat。取得原回执后先枚举目标的可见Editor、标签和区域；若已打开就直接在原ready核验，不再无条件Open to the Side创建第二个同名Editor。枚举用count/evaluateAll，不能先对可能多个匹配的Locator调用严格waitFor再检查歧义。多个同Resident Editor是合法产品状态；依本轮实际点击产生的标签、活动分屏和区域ID明确选择目标，并保存选择依据，不用.first掩盖其他实例。确认当前选择后再交给唯一Chat ready助手。
+
 Playwright `filter({has: childLocator})` 的 childLocator 从候选节点内部开始解析；不要传入包含其外层dialog/region祖先路径的Locator。例如已发现Menu内的成员状态区域时，可按实际区域可访问名称定位；若确需按内部table筛选，使用不带外层路径的 `page.getByRole('table')` 作为has，而不是 `dialog.getByRole('table')`。点击New node之类入口前读取aria-haspopup和当前菜单，菜单项才打开创建表单时，先完成实际菜单选择，不直接等待不存在的dialog。图连线的原ready也须考虑真实分屏布局与语义缩放：适配全部可能隐藏Watch/Target/Route标签，不能把path存在与标签可见混为一谈；在创建前准备可读布局，在同一原ready内用正常UI缩放/平移核验新边与标签，不用事后截图回填，也不重复CreateWire。
 
 Campaign限制执行账号时，普通CreateResident/Fork也要立即检查正式Family归属：所在Lineage的范围Family可能自动接纳新成员，其储备策略可在尚有额度时自动迁移账号。一次账号读回不保证下一turn仍用该账号。不要关闭既有团队的全组策略；仅在本轮要求明确允许时，对本轮新建夹具通过正式UpdateFamily移除临时成员关系，前后保存完整名册并核验原有成员/设置不变、夹具已无Family；未获这种隔离范围或无法核验时报告前置阻塞，不先在低额度例外账号发消息。自行创建的临时Family仍在任何模型执行前关闭auto_migrate。迁移完成后和发送前都核实际绑定，禁止将发生其他账号自动迁移的输入算作指定账号验收成功。
