@@ -13,11 +13,13 @@ from pathlib import Path
 import shutil
 import stat
 
+from .filesystem_paths import filesystem_path
 from .instance_manifest import AREAS, FIXED_DIRECTORIES, InstanceManifest, absolute_path, load, validate
 
 
 def directory_size(path: Path) -> int:
     """Bytes of regular files below ``path``; links are not followed."""
+    path = filesystem_path(path)
     total = 0
     if not path.is_dir() or path.is_symlink():
         return 0
@@ -96,6 +98,7 @@ def validate_target(instance: InstanceManifest, area: str, target: str | Path) -
 
 
 def _fingerprint(root: Path) -> dict[str, tuple]:
+    root = filesystem_path(root)
     found = {}
     for item in sorted(root.rglob("*")):
         relative = item.relative_to(root).as_posix()
@@ -113,6 +116,7 @@ def _fingerprint(root: Path) -> dict[str, tuple]:
 
 
 def _copy_verified(source: Path, target: Path) -> None:
+    source, target = filesystem_path(source), filesystem_path(target)
     def special(directory: str, names: list[str]) -> set[str]:
         return {name for name in names if not (
             stat.S_ISREG(mode := os.lstat(Path(directory) / name).st_mode)

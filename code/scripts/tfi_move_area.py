@@ -27,6 +27,7 @@ sys.dont_write_bytecode = True
 from management_common import host_instances
 from management_common.code_environment import runtime_python
 from management_common.configuration_files import atomic_json
+from management_common.filesystem_paths import filesystem_path
 from management_common.instance_areas import move_area, validate_target
 from management_common.instance_manifest import absolute_path, load
 from scripts import instance_services
@@ -165,7 +166,7 @@ def _execute_locked(root, record):
         if result["old_copy_retained"]:
             _stage(root, record, "cleaning")
             import shutil
-            shutil.rmtree(result["source"])
+            shutil.rmtree(filesystem_path(result["source"]))
         (root / RECOVERY_RECORD).unlink()
         record.update(status="completed", stage="completed")
     except Exception as exc:

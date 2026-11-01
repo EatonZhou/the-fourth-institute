@@ -24,6 +24,8 @@ from contextlib import closing
 from pathlib import Path, PureWindowsPath
 from typing import Any, Iterable
 
+from management_common.filesystem_paths import filesystem_path
+
 LOGGER = logging.getLogger(__name__)
 MAX_REWRITE_BYTES = 16 * 1024 * 1024
 # Claude Code writes the session's working directory into its first records.
@@ -219,7 +221,7 @@ def dsh_project_key(cwd: str) -> str:
 
 def _relocate_dsh(prefix: _Prefix, apply: bool, result: dict) -> None:
     from management_common.portal_paths import path as portal_path
-    state = portal_path('provider-state') / 'dsh'
+    state = filesystem_path(portal_path('provider-state') / 'dsh')
     for sessions in sorted(state.glob('dsh-*/sessions')):
         for project in sorted(sessions.iterdir()):
             if not project.is_dir() or project.is_symlink():

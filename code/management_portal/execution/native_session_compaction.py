@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from management_common.filesystem_paths import filesystem_path
+
 _DSH_SURFACE_TYPES = frozenset({
     "system/message",
     "developer/message",
@@ -90,7 +92,7 @@ def kimi_wire_path(kimi_home: str | Path, session_id: str) -> Path | None:
     """Locate the main agent wire of one Kimi Code session."""
 
     name = _session_name(session_id)
-    sessions = Path(str(kimi_home or "")).expanduser() / "sessions"
+    sessions = filesystem_path(Path(str(kimi_home or "")).expanduser() / "sessions")
     if not name or not sessions.is_dir():
         return None
     candidates = [
@@ -140,7 +142,7 @@ def dsh_session_path(state_root: str | Path, session_id: str) -> Path | None:
     """Locate the newest-format session log of one DSH session."""
 
     name = _session_name(session_id)
-    sessions = Path(str(state_root or "")).expanduser() / name / "sessions"
+    sessions = filesystem_path(Path(str(state_root or "")).expanduser() / name / "sessions")
     if not name or not sessions.is_dir():
         return None
 
