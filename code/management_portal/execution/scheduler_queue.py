@@ -123,7 +123,7 @@ class ExecutionQueue:
         self, execution_id: str, *, actor: str, binding_id: str,
         operation_id: str, replacement_execution_id: str, performed_by: str,
     ) -> dict[str, Any]:
-        """Retire an unclaimed request for its owner's durable input handoff.
+        """Withdraw an unclaimed request for its owner's durable input handoff.
 
         This does not cancel the business input. A claim, a previous attempt,
         a checkpoint or a Stop wins over the handoff. The terminal receipt is

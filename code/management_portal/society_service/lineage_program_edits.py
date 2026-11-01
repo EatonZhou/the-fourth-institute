@@ -282,7 +282,7 @@ def delete_lineage_program_component(
 
 
 def _delete_exhausted_event_sources(lineage_id: str, actor: str) -> list[str]:
-    """Retire opted-in sources once graph cleanup can preserve all accepted work."""
+    """Delete opted-in sources once graph cleanup can preserve all accepted work."""
 
     deleted: list[str] = []
     with lineage_aggregate.execution_authority(lineage_id), lineage_aggregate.lineage_scope(lineage_id):

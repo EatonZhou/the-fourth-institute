@@ -55,7 +55,7 @@
       pendingTransactionId = transactionId;
       pendingPatch = { ...pendingPatch, ...(isPlainObject(patch) ? patch : {}) };
       window.clearTimeout(writeTimer);
-      writeTimer = window.setTimeout(() => flushPending(), Number(delay || options.delay || 160));
+      writeTimer = window.setTimeout(() => flushPending(), Number(delay ?? options.delay ?? 160));
     };
     const handlePageHide = () => flushPending();
     window.addEventListener("pagehide", handlePageHide);
@@ -96,10 +96,10 @@
           snapshot(),
         );
       },
-      debounceSnapshot(delay = options.delay || 160) {
+      debounceSnapshot(delay = options.delay ?? 160) {
         scheduleWrite(snapshot(), delay);
       },
-      debounceWrite(patch = {}, delay = options.delay || 160) {
+      debounceWrite(patch = {}, delay = options.delay ?? 160) {
         scheduleWrite(patch, delay);
       },
       flush() {

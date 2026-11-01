@@ -241,7 +241,7 @@ def guide(record: dict, body: dict | None = None, block: dict | None = None) -> 
 def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None = None) -> str:
     body, block = context(record)
     entries = configured(body, block)
-    # Retired automatic reports can still finish an already queued/manual batch.
+    # Removed automatic reports can still finish an already queued/manual batch.
     legacy_progress = trigger == "progress" and trigger not in entries
     entry = defaults("request_progress")[trigger] if legacy_progress else entries[trigger]
     path, version, _ = guide(record, body, block)

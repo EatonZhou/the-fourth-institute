@@ -30,7 +30,7 @@
       triggers_omitted: Number.isSafeInteger(value?.triggers_omitted) && value.triggers_omitted >= 0 ? value.triggers_omitted : 0,
     };
   }
-  // Retire a remotely deleted target before ordinary invalidation listeners
+  // Remove a remotely deleted target before ordinary invalidation listeners
   // dispatch refresh reads. Identity changes alone are not deletion evidence.
   window.addEventListener("portal:change", event => {
     for (const [id, scopes] of Object.entries(event?.detail?.resident_changes || {})) {

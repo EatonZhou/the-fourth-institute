@@ -299,7 +299,7 @@ def requeue(
         for info in infos:
             repository.reopen_input(target.resident_id, info["message_id"])
         resident_held_infos.restore(record, infos)
-        # Retire only the previous round's checkpoint. Reserving a new round
+        # Delete only the previous round's checkpoint. Reserving a new round
         # below captures its own original preparation in the same transaction.
         resident_input_checkpoints.forget(record, message_id)
         if active:

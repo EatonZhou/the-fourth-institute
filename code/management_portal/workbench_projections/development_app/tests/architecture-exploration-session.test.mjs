@@ -175,13 +175,13 @@ test('composition, mechanism and back use one stack; new roots do not inherit a 
   await r.session.back(); assert.deepEqual(r.mounts.at(-1).initialState.camera, { x: -500, y: -400, k: 2 });
 });
 
-test('history, concept and relation selection never publish a current object', async () => {
+test('concept and relation selection never publish a current object; history is rejected', async () => {
   const r = rig(); await r.session.load('one');
   await r.session.select({ objectId: 'runtime' }); await r.session.select({ relationId: 'call' });
   await r.session.navigate(route('protocol', 'protocol'));
   assert.equal(r.focuses.length, 0);
   await r.session.select({ objectId: 'session' }); assert.equal(r.focuses.length, 1);
-  await r.session.load('one', { mode: 'history' }); await r.session.select({ objectId: 'session' });
+  await assert.rejects(r.session.load('one', { mode: 'history' }), /missing_exploration_batch/);
   assert.equal(r.focuses.length, 1);
 });
 
@@ -294,11 +294,11 @@ test('authored defaults enter a protocol and multi-mechanism leaf on the same ex
   assert.deepEqual(r.mounts.at(-1).initialState.camera, camera);
 });
 
-test('authored defaults resolve initial historical entry without publishing a current identity', async () => {
+test('authored defaults resolve initial protocol entry with its own authorized identity', async () => {
   const r = rig({ resolveEntry: (bundle, requested) => resolveDomainEntry(bundle.model, requested, { protocol: 'other-flow' }) });
-  await r.session.load('one', { mode: 'history', route: route('protocol', 'protocol') });
+  await r.session.load('one', { route: route('protocol', 'protocol') });
   assert.deepEqual(r.visible(), route('protocol', 'protocol', 'other-flow'));
-  await r.session.select({ objectId: 'protocol' }); assert.equal(r.focuses.length, 0);
+  await r.session.select({ objectId: 'protocol' }); assert.deepEqual(r.focuses, [{ batch: 'one', id: 'protocol' }]);
 });
 
 test('authored defaults outside the authorized object reject before replacing the readable view', async () => {
@@ -308,17 +308,17 @@ test('authored defaults outside the authorized object reject before replacing th
   assert.equal(r.mounts.length, count); assert.deepEqual(r.visible(), route('execution'));
 });
 
-test('historical catalog owner navigation returns to the saved directory without current focus', async () => {
-  const r = rig(); await r.session.load('one', { mode: 'history', route: route('protocol', 'protocol') });
+test('catalog owner navigation returns to the saved directory and checks current focus permission', async () => {
+  const r = rig(); await r.session.load('one', { route: route('protocol', 'protocol') });
   const directory = { instruction: 'Example', query: 'owner', cursor: 2 }; r.setState(directory);
   await r.mounts.at(-1).ports.navigate(route('execution'));
   assert.deepEqual(r.visible(), route('execution'));
-  await r.session.select({ objectId: 'execution' }); assert.deepEqual(r.focuses, []);
+  await r.session.select({ objectId: 'execution' }); assert.deepEqual(r.focuses, [{ batch: 'one', id: 'execution' }]);
   await r.session.back(); assert.deepEqual(r.visible(), route('protocol', 'protocol'));
   assert.deepEqual(r.mounts.at(-1).initialState, directory);
   r.controls.deny = true;
   await assert.rejects(r.mounts.at(-1).ports.navigate(route('execution')), /denied/);
-  assert.deepEqual(r.focuses, []); assert.equal(r.visible(), null);
+  assert.equal(r.focuses.length, 1); assert.equal(r.visible(), null);
 });
 
 test('capability routes use one authorized stack and never publish a fabricated member focus', async () => {

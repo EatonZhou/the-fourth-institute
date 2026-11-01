@@ -211,7 +211,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
             if remaining is not None and remaining < MIGRATION_RESERVE_PERCENT:
                 review["status"] = "waiting"
         if to_facade and review.get("status") == "waiting":
-            # Retire an earlier review of a facade's unused account, retaining
+            # Close an earlier review of a facade's unused account, retaining
             # its original observation; the inner Family still checks its worker.
             review.update(status="delivering", quota_not_applicable="family_facade")
         if review.get("status") == "waiting" and not approved:

@@ -39,6 +39,8 @@ def stored_lookup_forms(paths) -> list[str]:
 def located_path(value: str) -> str:
     """Materialize an absolute path with the registration contract's separators."""
     text = str(value or "")
+    if not text:
+        return ""
     if is_area_reference(text):
         return current_instance().resolve(text).as_posix()
     return Path(text).as_posix()
