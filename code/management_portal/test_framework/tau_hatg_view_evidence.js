@@ -1,8 +1,8 @@
 'use strict';
 
-// Original-window evidence only. This module never navigates, fits, submits,
-// takes a screenshot or infers a business result. Callers supply exact sets
-// from their original receipts and persist every sample, including failures.
+// Original-window evidence. The read/wait functions only observe; the explicit
+// fitAndWait operation clicks the native Fit control once. Callers supply exact
+// sets from original receipts and persist every sample, including failures.
 async function readHatgViewSnapshot(panel, {lineageId}) {
   if (!/^lineage_[a-z0-9]+$/.test(lineageId || '')) throw new TypeError('Exact Lineage identity required');
   const candidates = await panel.evaluateAll(roots => roots.map(root => {
@@ -88,4 +88,25 @@ async function waitForHatgView(panel, {lineageId, nodeIds, edgeIds, record,
   error.code='tau.hatg_view_timeout'; error.snapshot=last; throw error;
 }
 
-module.exports={readHatgViewSnapshot,waitForHatgView};
+async function fitAndWaitForHatgView(panel, options) {
+  if(typeof options.record!=='function')throw new TypeError('Original sample persistence callback required');
+  const started=Date.now(), timeoutMs=options.timeoutMs ?? 10000, deadline=started+timeoutMs;
+  const persist=phase=>sample=>options.record({...sample,phase,original_elapsed_ms:Date.now()-started});
+  // Fit before the restored graph mounts can be overwritten by its camera.
+  await waitForHatgView(panel,{...options,timeoutMs,requireWithinCanvas:false,record:persist('before-fit')});
+  const fit=panel.locator('#graphFitBtn');
+  if(await fit.count()!==1)throw new Error('Expected one native HATG Fit control');
+  if(deadline-Date.now()<=(options.stableMs??350)) {
+    throw Object.assign(new Error('Original HATG Fit budget exhausted'),{code:'tau.hatg_view_timeout'});
+  }
+  await fit.click({timeout:Math.max(1,deadline-Date.now())});
+  const remaining=deadline-Date.now();
+  if(remaining<=(options.stableMs??350)) {
+    throw Object.assign(new Error('Original HATG Fit budget exhausted'),{code:'tau.hatg_view_timeout'});
+  }
+  const settled=await waitForHatgView(panel,{...options,timeoutMs:remaining,
+    requireWithinCanvas:true,record:persist('after-fit')});
+  return {...settled,original_elapsed_ms:Date.now()-started};
+}
+
+module.exports={readHatgViewSnapshot,waitForHatgView,fitAndWaitForHatgView};

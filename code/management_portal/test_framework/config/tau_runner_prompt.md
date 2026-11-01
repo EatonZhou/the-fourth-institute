@@ -1,5 +1,7 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+Family成员增删、解除、其他结构改动及刷新可能把节点移到画布边界外。若原ready要求完整图适配，使用`tau_hatg_view_evidence.js`的`fitAndWaitForHatgView(panel, options)`：参数同waitForHatgView，先核验本轮精确Lineage/完整节点边集合已加载，再普通点击一次原生Fit，随后等待全部节点在画布内且几何稳定。它把before-fit/after-fit样本交给同一个record，original_elapsed_ms覆盖两个阶段并共用一个timeoutMs预算；放在原portal.action的ready中调用。单纯waitForHatgView不会移动画布，不能让裁切节点在原等待中自行消失。Fit不会保证文字可读，必要的面板调整及全景/可读局部截图仍由原步骤完成；助手不导航、不重放业务、不调整账号。
+
 Effect保存原ready用`tau_effect_diagnostics_evidence.js`的`await readEffectDiagnosticsReady(inspector,{componentId})`，返回`{observed_at_ms,expected_component_id,candidates,ready}`。传当前唯一原生Inspector Locator，原有界等待逐样本保存返回值，只有目标ID匹配、诊断槽可见且状态明确为ok/warning时ready=true。null、loading、unavailable、error均不通过；不要用`state !== 'loading'`把重建中的缺失状态放行，也不要跨两次DOM读取分别判断和保存状态。该快照只证明当前诊断就绪，原提交回执、脚本内容、完整图与视觉仍独立核验。
 
 `readHatgViewSnapshot`的唯一候选中，`nodes`是含id/geometry的对象数组，`edges`已经是去重字符串ID数组，`edge_geometry`另存路径和标签几何。原基线采样须先与正式原对象核对完整性；不要把刷新后残缺图当新基线。保存基线后可按下例提取等待参数；不要对edges再次map(x=>x.id)。视觉可见的原生SVG连线可以带读屏用途的aria-hidden=true，边集合与可读标签是独立证据，标签仍须按用例实际查看。

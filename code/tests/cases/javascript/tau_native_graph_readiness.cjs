@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 module.exports=async({page,residentId,childId,lineageId,errors})=>{
-  const {readHatgViewSnapshot,waitForHatgView}=require('../../../management_portal/test_framework/tau_hatg_view_evidence');
+  const {readHatgViewSnapshot,waitForHatgView,fitAndWaitForHatgView}=require('../../../management_portal/test_framework/tau_hatg_view_evidence');
   await page.getByRole('button',{name:'Show HATG',exact:true}).click();
   const panel=page.getByRole('region',{name:'HATG',exact:true});
   await panel.locator(`[data-node-id="${residentId}"]`).waitFor({state:'visible'});
@@ -71,5 +71,17 @@ module.exports=async({page,residentId,childId,lineageId,errors})=>{
   await assert.rejects(waitForHatgView(panel,{lineageId,nodeIds,edgeIds,
     requireExecutionOpen:true,timeoutMs:300,stableMs:100,intervalMs:30,record:()=>{}}),
     e=>e.code==='tau.hatg_view_timeout');
+  for(let i=0;i<5;i++)await panel.locator('#graphZoomInBtn').click();
+  assert.ok((await readHatgViewSnapshot(panel,{lineageId})).candidates[0].nodes.some(n=>!n.within_canvas));
+  await panel.locator('#graphFitBtn').evaluate(button=>button.addEventListener('click',()=>{window.sampleFitClicks=(window.sampleFitClicks||0)+1;}));
+  const fittedSamples=[];
+  const fitted=await fitAndWaitForHatgView(panel,{lineageId,nodeIds,edgeIds,
+    timeoutMs:4000,stableMs:120,intervalMs:30,record:s=>fittedSamples.push(s)});
+  assert.ok(fitted.ready&&fitted.candidates[0].nodes.every(n=>n.within_canvas));
+  assert.equal(await page.evaluate(()=>sampleFitClicks),1);
+  assert.ok(fittedSamples.some(s=>s.phase==='before-fit')&&fittedSamples.some(s=>s.phase==='after-fit'));
+  await assert.rejects(fitAndWaitForHatgView(panel,{lineageId:'lineage_wrong',nodeIds,edgeIds,
+    timeoutMs:300,stableMs:100,intervalMs:30,record:()=>{}}),e=>e.code==='tau.hatg_view_timeout');
+  assert.equal(await page.evaluate(()=>sampleFitClicks),1,'identity mismatch must not click Fit');
   assert.deepEqual(errors,[]);
 };
