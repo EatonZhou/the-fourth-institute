@@ -135,6 +135,9 @@
 
     return {
       disposePermission, invalidate, openSection, showView,
+      // The initial user lookup may finish after a person has already chosen
+      // a tab. Startup defaults must not replace that newer navigation.
+      openInitialSection: options => navigationVersion === 0 ? openSection(options) : false,
     };
   }
 

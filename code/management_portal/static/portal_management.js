@@ -396,7 +396,7 @@
       $, enrollment, entries, notice: (...args) => notice(...args), panelState, root, state, userDrafts,
     });
     const {
-      disposePermission, invalidate, openSection, showView,
+      disposePermission, invalidate, openInitialSection, openSection, showView,
     } = managementPart("PortalManagementSections").createSections({
       $, accessUser: (...args) => accessUser(...args), entries, me, mountNetwork,
       notice: (...args) => notice(...args), options, panelState, permissionViews, portalAdmin, readExecutionSettings,
@@ -417,7 +417,7 @@
     panelState.currentPrincipalId = state.selectedUsername;
     showView();
     const initialView = allows.CreateUser === true ? "users" : allows.ListResourceTypes === true ? "resource-types" : (allows.ListProviders === true || allows.RegisterProviderAccount === true) ? "backend" : (allows.GetExecutionSettings === true || allows.UpdateExecutionSettings === true) ? "execution" : "network";
-    await openSection({view: options.view || initialView, principalId: options.principalId, accountId: options.accountId, createAccount: options.createAccount});
+    await openInitialSection({view: options.view || initialView, principalId: options.principalId, accountId: options.accountId, createAccount: options.createAccount});
     return { username: String(me.username || ""), openSection, invalidate, isBusy, hasUnsavedChanges,
       destroy() {
         panelState.destroyed = true; disposePermission();

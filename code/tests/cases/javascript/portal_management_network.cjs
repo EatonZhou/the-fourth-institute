@@ -19,13 +19,16 @@ const response = (body, status = 200) => ({ ok: status < 400, status, json: asyn
 const tick = () => new Promise(resolve => setImmediate(resolve));
 async function settle() { for (let index = 0; index < 6; index++) await tick(); }
 
-async function harness(t, { category = 'portal_admin', view = 'users' } = {}) {
+async function harness(t, { category = 'portal_admin', view = 'users', pendingAccess = false } = {}) {
   const dom = new JSDOM('<main id="host"></main>', { url: 'https://portal.example/', runScripts: 'outside-only' });
   const w = dom.window;
   const tag = (strings, ...values) => strings.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
   w.PortalI18n = { t: text => text, html: tag, text: tag };
   w.PortalIdentity = { passwordRequirements: 'Password requirements' };
   w.PortalUI = { createDialogController: () => ({ open() {}, close() {}, destroy() {} }) };
+  let finishAccess;
+  const access = new Promise(resolve => { finishAccess = () => resolve({users: [], audit: []}); });
+  w.PortalAPI = { get: async url => { assert.equal(url, '/api/admin/access-control'); return access; } };
   const requests = [], replies = [];
   w.fetch = async (url, options = {}) => {
     assert.equal(url, '/api/admin/network');
@@ -48,14 +51,27 @@ async function harness(t, { category = 'portal_admin', view = 'users' } = {}) {
   const root = w.document.getElementById('host');
   let panel;
   t.after(() => { panel?.destroy(); w.close(); });
-  panel = await w.PortalManagementPanel.mount(root, {
-    me: { username: 'admin', access: { user_category: category, permission_system: 'open', allows: { GetExecutionSettings: true } } },
+  const mounting = w.PortalManagementPanel.mount(root, {
+    me: { username: 'admin', access: { user_category: category, permission_system: 'open', allows: { GetExecutionSettings: true, CreateUser: pendingAccess } } },
     ...(view ? { view } : {}),
-  });
+  }).then(value => { panel = value; return value; });
+  if (pendingAccess) { await settle(); return { w, root, mounting, finishAccess }; }
+  panel = await mounting;
   const shown = key => root.querySelector(`[data-network-value="${key}"]`).textContent;
   const open = async () => { const opened = await panel.openSection({ view: 'network' }); await settle(); return opened; };
   return { w, root, panel, requests, replies, shown, open };
 }
+
+test('finishing the initial user load preserves a tab selected while it was pending', async t => {
+  const h = await harness(t, { pendingAccess: true });
+  h.root.querySelector('[data-management-tab="network"]').click();
+  await settle();
+  assert.equal(h.root.querySelector('[data-management-view="network"]').hidden, false);
+  h.finishAccess();
+  await h.mounting;
+  assert.equal(h.root.querySelector('[data-management-view="network"]').hidden, false);
+  assert.equal(h.root.querySelector('[data-management-tab="network"]').getAttribute('aria-selected'), 'true');
+});
 
 test('network settings load lazily and are shown without any way to change them', async t => {
   const h = await harness(t);
