@@ -37,8 +37,8 @@ w.PortalUI.toast = (message, tone) => toasts.push([String(message), tone]);
 const now = Math.floor(Date.now() / 1000);
 const fresh = windows => ({ fresh: true, valid_until: now + 600, windows });
 const accounts = [
-  { account_id: 'acct_lead', label: 'Lead account', quota_reserve: fresh([{ window: 'seven_day', remaining_percent: 5 }]) },
-  { account_id: 'acct_a', label: 'Account A', quota_reserve: fresh([
+  { account_id: 'acct_lead', provider: 'codex', label: 'Lead account', quota_reserve: fresh([{ window: 'seven_day', remaining_percent: 5 }]) },
+  { account_id: 'acct_a', provider: 'codex', label: 'Account A', quota_reserve: fresh([
     { window: 'seven_day', remaining_percent: 42, resets_at: '2026-11-01T00:00:00Z' }, { window_duration_mins: 10080, remaining_percent: 35 },
     { window: 'five_hour', remaining_percent: 1 }]) },
   { account_id: 'acct_route', provider: 'claude', backend_route_id: 'route_x', label: 'Routed account',
@@ -403,6 +403,36 @@ async function nestedFacadeHasNoExecutionAccount() {
   }
 }
 
+async function absentAccountIdentityDoesNotBorrowQuota() {
+  const previousFamily = family, originalBind = w.PortalResidentRuntimeController.bind;
+  family = {title: 'Identity check', lineage_id: 'lineage_sample', nodes: [nodes.find(n => n.resident_id === 'res_idle')]};
+  try {
+    for (const knownId of ['', 'not-in-summary']) {
+      w.PortalResidentRuntimeController.bind = (id, handlers) => {
+        const runtime = originalBind(id, handlers), load = runtime.load;
+        runtime.load = async () => {
+          const view = await load();
+          return {...view, detail: {...view.detail, execution_account: {account_id: knownId},
+            // Even a matching fallback route must not replace an explicit ID.
+            ...(knownId ? {provider_session: {provider: 'claude', account_id: 'route_x'}} : {})}};
+        };
+        return runtime;
+      };
+      const container = w.document.createElement('section'); w.document.body.append(container);
+      const summaries = [];
+      const view = familyStatus.createFamilyStatusView('res_facade', null, value => summaries.push(value), null, container);
+      try {
+        view.open(); await settle();
+        const root = container.querySelector('.familyStatusPanel');
+        assert.equal(text(cells(root, 'res_idle')[2]), '未知');
+        assert.ok(!text(cells(root, 'res_idle')[1]).includes('Lead account'));
+        assert.ok(!text(cells(root, 'res_idle')[1]).includes('Routed account'));
+        assert.equal(summaries.at(-1), '运行 0 · 排队 0 · 需关注 0');
+      } finally { view.destroy(); container.remove(); }
+    }
+  } finally { family = previousFamily; w.PortalResidentRuntimeController.bind = originalBind; }
+}
+
 const watchdog = setTimeout(() => { console.error('Family status test did not complete'); process.exit(1); }, 15000);
 (async () => {
   try {
@@ -411,6 +441,7 @@ const watchdog = setTimeout(() => { console.error('Family status test did not co
     await openedAndMounted();
     await pendingMemberSettings();
     await nestedFacadeHasNoExecutionAccount();
+    await absentAccountIdentityDoesNotBorrowQuota();
     console.log('PASS: Family status, quota, intake, details and lifecycle');
   } finally {
     observers.forEach(observer => observer.disconnect());

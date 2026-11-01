@@ -229,9 +229,12 @@
       const accountOf = row => {
         if (isFacade(row)) return {};
         const d = row.detail || {}, bound = d.execution_account || {};
-        return accounts.find(a => a.account_id === bound.account_id
-          || (a.provider === (d.provider_session?.provider || bound.provider || d.resident?.backend)
-            && a.backend_route_id === (bound.backend_route_id || d.provider_session?.account_id))) || {};
+        if (bound.account_id) return accounts.find(a => a.account_id === bound.account_id) || {};
+        const provider = d.provider_session?.provider || bound.provider || d.resident?.backend;
+        const route = bound.backend_route_id || d.provider_session?.account_id;
+        // An absent route is not an identity. In particular, a new Resident
+        // has no provider session yet; never borrow the first account's quota.
+        return provider && route ? accounts.find(a => a.provider === provider && a.backend_route_id === route) || {} : {};
       };
       const rowState = row => window.PortalResidentProtocol.stateView(row.snapshot?.state);
       const working = row => rowState(row).working;
