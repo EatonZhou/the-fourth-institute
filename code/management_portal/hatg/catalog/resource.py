@@ -97,7 +97,7 @@ DECLARATIONS = (
         RESOURCE_RECORD,
         R("version", description="类型提供的版本号或修改时间；未提供时为空字符串"),
     ), mutates=True, target="resource_id"),
-    _d("UnregisterResource", (On("resource_id"),), "撤销一个资源的登记。", (
+    _d("UnregisterResource", (On("resource_id"),), "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只退役登记。", (
         R("resource_id", description="资源统一 ID"),
     ), (
         R("resource_id", description="被撤销的统一 ID"),

@@ -40917,5 +40917,28 @@
   "固定展开 Watchboard": {
     "zh-CN": "固定展开 Watchboard",
     "en": "Dock Watchboard"
+  },
+  "A stable directory identity. Admins may unregister unused Workspaces without active nested registrations; instance-area directories are removed and external host directories are preserved.": {
+    "en": "A stable directory identity. Admins may unregister unused Workspaces without active nested registrations; instance-area directories are removed and external host directories are preserved.",
+    "zh-CN": "具有稳定身份的目录。管理员可注销没有有效嵌套登记的闲置 Workspace；实例区域内目录删除，区域外主机目录保留。"
+  },
+  "An instance area root cannot be removed as a Workspace": {
+    "en": "An instance area root cannot be removed as a Workspace",
+    "zh-CN": "不能通过注销 Workspace 删除实例区域根目录"
+  },
+  "Workspace contains active registered resources": {
+    "en": "Workspace contains active registered resources",
+    "zh-CN": "Workspace 包含仍有效的嵌套资源登记"
+  },
+  "Workspace is owned or bound by a live Resident": {
+    "en": "Workspace is owned or bound by a live Resident",
+    "zh-CN": "Workspace 仍由存活的 Resident 拥有或绑定"
+  },
+  "Workspace unregistration requires @admin": {
+    "en": "Workspace unregistration requires @admin",
+    "zh-CN": "注销 Workspace 需要 @admin 权限"
+  },
+  "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只退役登记。": {
+    "en": "Unregister a resource with @admin. A Workspace must have no live Resident owner or binding and no active nested registration. Remove its directory inside instance areas, preserve external host directories, and retire only the registration if the directory is missing."
   }
 }

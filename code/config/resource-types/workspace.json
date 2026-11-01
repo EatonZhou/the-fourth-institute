@@ -1,7 +1,7 @@
 {
   "type": "workspace",
   "category": "resource",
-  "description": "A logical workspace whose identity is independent of paths, mounts, and host machines.",
+  "description": "A stable directory identity. Admins may unregister unused Workspaces without active nested registrations; instance-area directories are removed and external host directories are preserved.",
   "title": {
     "zh": "工作区",
     "en": "Workspace"
