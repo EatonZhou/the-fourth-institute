@@ -207,3 +207,23 @@ class InstanceAuthorizationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_control_cli_json_handles_non_unicode_console(monkeypatch):
+    """已接收的中文路径作业不能因终端编码而返回失败。"""
+    import io
+    from scripts import tfi_move_area
+    result = {"name": "example", "operation": {"target": "C:/移动区域/lineages"}}
+    output = io.BytesIO()
+    stream = io.TextIOWrapper(output, encoding="cp1252")
+    monkeypatch.setattr(manager.sys, "stdout", stream)
+    monkeypatch.setattr(tfi_move_area, "submit", lambda *args: result)
+    assert tfi_move_area.main(["submit", "--name", "example", "--area", "lineages", "--target", "C:/移动区域/lineages"]) == 0
+    stream.flush()
+    assert json.loads(output.getvalue()) == result
+    output.seek(0); output.truncate()
+    monkeypatch.setattr(manager.sys, "argv", ["manager", "list"])
+    monkeypatch.setattr(manager, "catalog", lambda *args: result)
+    assert manager.main() == 0
+    stream.flush()
+    assert json.loads(output.getvalue()) == result

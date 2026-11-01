@@ -194,10 +194,10 @@ def main(argv=None) -> int:
     try:
         result = (execute(args.name, args.operation_id) if args.action == "_run"
                   else submit(args.name, args.area, args.target))
-        print(json.dumps(result, ensure_ascii=False))
+        print(json.dumps(result, ensure_ascii=True))
         return 1 if result.get('status') == 'failed' else 0
     except Exception as exc:
-        print(json.dumps({"error": str(exc)}, ensure_ascii=False))
+        print(json.dumps({"error": str(exc)}, ensure_ascii=True))
         return 1
 
 

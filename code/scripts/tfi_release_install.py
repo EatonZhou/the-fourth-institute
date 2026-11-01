@@ -822,7 +822,7 @@ def main(argv=None):
                 result = relocate(instance, args.target)
             else:
                 result = lifecycle(args.command, instance)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print(json.dumps(result, ensure_ascii=True, indent=2))
         return 0 if result.get("status") not in {"failed", "unhealthy"} else 1
     except Exception as exc:
         # Launchers keep stderr in their logs: call sites only, no locals or arguments.
@@ -832,7 +832,7 @@ def main(argv=None):
         result = {"status": "failed", "error": str(exc), "error_type": type(exc).__name__}
         if isinstance(exc, PlatformPreflightError):
             result["platform_preflight"] = exc.report
-        print(json.dumps(result, ensure_ascii=False))
+        print(json.dumps(result, ensure_ascii=True))
         return 1
 
 

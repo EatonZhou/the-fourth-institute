@@ -306,10 +306,10 @@ def main():
         result = (catalog(args.current) if args.action == "list" else
                   execute(args.name, args.operation_id) if args.action == "_run" else
                   enqueue(args.action, args.name))
-        print(json.dumps(result, ensure_ascii=False))
+        print(json.dumps(result, ensure_ascii=True))
         return 0
     except Exception as exc:
-        print(json.dumps({"error": str(exc)}, ensure_ascii=False))
+        print(json.dumps({"error": str(exc)}, ensure_ascii=True))
         return 1
 
 
