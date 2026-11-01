@@ -324,7 +324,7 @@ def _confirm_deleted_resident_resources(
     The deleted Residents' bearer tokens are disabled first, so a leftover
     token file can no longer call Portal (decision_fb910c43ab07).
     """
-    from management_common.projection_receipts import project_committed
+    from management_common.projection_receipts import CommittedProjectionError, project_committed
     from . import resident_hatg_credentials, resource_client
     from .resident_resource_projection import ResidentResourceProjectionWorker
 
@@ -345,10 +345,34 @@ def _confirm_deleted_resident_resources(
 
     def committed() -> None:
         # Revocation follows the durable deletion, but must not wait for
-        # resource projection or lock release. A rollback keeps the bearer.
+        # resource projection or lock release. A rollback keeps the bearer;
+        # the transactional outbox owns recovery if this callback is lost.
+        errors: list[CommittedProjectionError] = []
+        store = resident_catalog.get_catalog().state_store
+
+        def revoke(resident_id: str) -> None:
+            deleted = store.resident_deletion(resident_id)
+            if deleted and deleted.get("deleted_at"):
+                resident_hatg_credentials.revoke_resident_credential(resident_id)
+
         for record in records:
-            resident_hatg_credentials.revoke_resident_credential(record["resident_id"])
-        invariant_locks.defer_until_state_unlock(publish)
+            try:
+                resident_id = record["resident_id"]
+                project_committed({
+                    "projection": "resident.resource_tombstone",
+                    "resident_id": resident_id,
+                    "lineage_id": record["lineage_id"],
+                    "committed_revision": int(projection_revisions[resident_id]),
+                }, lambda selected=resident_id: revoke(selected))
+            except CommittedProjectionError as exc:
+                errors.append(exc)
+        try:
+            invariant_locks.defer_until_state_unlock(publish)
+        finally:
+            if errors:
+                raise CommittedProjectionError([
+                    failure for error in errors for failure in error.failures
+                ]) from ExceptionGroup("Resident credential revocation pending", errors)
 
     resident_catalog.get_catalog().state_store.database.after_commit(committed)
 
@@ -356,7 +380,7 @@ def _confirm_deleted_resident_resources(
 def confirm_resident_deletion_projection(resident_id: str) -> None:
     """Retry the committed deletion projection without recreating its identity."""
     from management_common.projection_receipts import project_committed
-    from . import resource_client, resident_hatg_credentials
+    from . import resource_client
     from .resident_resource_projection import ResidentResourceProjectionWorker
 
     store = resident_catalog.get_catalog().state_store
@@ -366,7 +390,6 @@ def confirm_resident_deletion_projection(resident_id: str) -> None:
         ).fetchone()
 
     def publish() -> None:
-        resident_hatg_credentials.revoke_resident_credential(resident_id)
         ResidentResourceProjectionWorker(store, resource_client).confirm_tombstone(resident_id)
 
     project_committed({

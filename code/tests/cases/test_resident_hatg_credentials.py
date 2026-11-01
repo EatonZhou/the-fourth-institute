@@ -19,6 +19,16 @@ RESIDENT_ID = "resident_aaaaaaaaaaaa"
 LINEAGE_ID = "lineage_bbbbbbbbbbbb"
 
 
+def _deleted_record(store, resident_id=RESIDENT_ID):
+    from tests.cases.canonical_domain_fixture import canonical_projection
+
+    canonical_projection(resident_id, lineage_id=LINEAGE_ID)
+    record = {**store.resident_record(resident_id), "deleted_at": "2026-11-01T00:00:00Z"}
+    store.remove_residents([record])
+    revision = store.enqueue_resident_resource_projection(resident_id, record)
+    return record, revision
+
+
 @pytest.fixture()
 def credential_store(
     tmp_path: Path,
@@ -121,13 +131,15 @@ def test_resident_deletion_confirmation_disables_the_bearer(
 ) -> None:
     """确认 Resident 删除时立即停用其 bearer，墓碑发布仍排期执行"""
     from management_portal.society_service import invariant_locks, resident_workspace_domain
+    from management_portal.society_service.state_store import get_lineage_data_store
 
+    record, revision = _deleted_record(get_lineage_data_store())
     path = resident_hatg_credentials.ensure_resident_credential(RESIDENT_ID, LINEAGE_ID)
     token = path.read_text(encoding="utf-8").strip()
     deferred = []
     monkeypatch.setattr(invariant_locks, "defer_until_state_unlock", deferred.append)
     resident_workspace_domain._confirm_deleted_resident_resources(
-        [{"resident_id": RESIDENT_ID, "lineage_id": LINEAGE_ID}], {RESIDENT_ID: 1},
+        [record], {RESIDENT_ID: revision},
     )
     assert agent_token_auth.authenticate_bearer_token(token) is None
     assert len(deferred) == 1  # the tombstone publication is still scheduled
@@ -151,8 +163,9 @@ def test_deletion_revokes_bearer_only_after_commit_before_deferred_projection(
 
     try:
         with get_lineage_data_store().database.transaction():
+            record, revision = _deleted_record(get_lineage_data_store())
             resident_workspace_domain._confirm_deleted_resident_resources(
-                [{"resident_id": RESIDENT_ID, "lineage_id": LINEAGE_ID}], {RESIDENT_ID: 1},
+                [record], {RESIDENT_ID: revision},
             )
             assert agent_token_auth.authenticate_bearer_token(token) is not None
             assert path.exists() and deferred == []
@@ -164,3 +177,103 @@ def test_deletion_revokes_bearer_only_after_commit_before_deferred_projection(
     assert (agent_token_auth.authenticate_bearer_token(token) is not None) == rollback
     assert path.exists() == rollback
     assert len(deferred) == (0 if rollback else 1)
+    assert get_lineage_data_store().resident_resource_projection_pending(RESIDENT_ID) == (not rollback)
+
+
+@pytest.mark.parametrize("failure", ["token_store", "unlink"])
+def test_post_commit_revocation_attempts_every_resident_and_reports_failure(
+    credential_store, monkeypatch, failure, caplog,
+):
+    """首项存储或 unlink 失败仍撤销整批其余凭据，失败不伪装为成功。"""
+    from management_portal.society_service import invariant_locks, resident_workspace_domain
+    from management_portal.society_service.state_store import get_lineage_data_store
+
+    ids = [RESIDENT_ID, "resident_cccccccccccc", "resident_dddddddddddd"]
+    paths = [resident_hatg_credentials.ensure_resident_credential(rid, LINEAGE_ID) for rid in ids]
+    tokens = [path.read_text().strip() for path in paths]
+    deferred = []
+    monkeypatch.setattr(invariant_locks, "defer_until_state_unlock", deferred.append)
+    original_put = agent_token_auth.AgentTokenStore.put
+    original_unlink = Path.unlink
+
+    def put(self, rid, record):
+        if rid == ids[0] and record.get("enabled") is False:
+            raise RuntimeError("injected token store failure")
+        return original_put(self, rid, record)
+
+    def unlink(path, *args, **kwargs):
+        if path == paths[0]:
+            raise PermissionError("injected unlink failure")
+        return original_unlink(path, *args, **kwargs)
+
+    if failure == "token_store":
+        monkeypatch.setattr(agent_token_auth.AgentTokenStore, "put", put)
+    else:
+        monkeypatch.setattr(Path, "unlink", unlink)
+    store = get_lineage_data_store()
+    with store.database.transaction():
+        deletions = [_deleted_record(store, rid) for rid in ids]
+        resident_workspace_domain._confirm_deleted_resident_resources(
+            [record for record, _ in deletions],
+            {record["resident_id"]: revision for record, revision in deletions},
+        )
+        assert all(agent_token_auth.authenticate_bearer_token(token) for token in tokens)
+    assert all(agent_token_auth.authenticate_bearer_token(token) is None for token in tokens[1:])
+    assert (agent_token_auth.authenticate_bearer_token(tokens[0]) is not None) == (failure == "token_store")
+    assert len(deferred) == 1
+    assert "injected" in caplog.text
+    assert all(store.resident_resource_projection_pending(rid) for rid in ids)
+
+
+@pytest.mark.parametrize("entry", ["batch", "explicit_retry"])
+def test_deletion_confirmation_never_revokes_a_live_resident(credential_store, monkeypatch, entry):
+    """确认入口不得将活对象或过时请求当作真实墓碑撤销。"""
+    from management_portal.society_service import invariant_locks, resident_workspace_domain
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from tests.cases.canonical_domain_fixture import canonical_projection
+
+    canonical_projection(RESIDENT_ID, lineage_id=LINEAGE_ID)
+    store = get_lineage_data_store()
+    path = resident_hatg_credentials.ensure_resident_credential(RESIDENT_ID, LINEAGE_ID)
+    token = path.read_text().strip()
+    monkeypatch.setattr(invariant_locks, "defer_until_state_unlock", lambda callback: None)
+    if entry == "batch":
+        resident_workspace_domain._confirm_deleted_resident_resources(
+            [{**store.resident_record(RESIDENT_ID), "deleted_at": "2026-11-01T00:00:00Z"}],
+            {RESIDENT_ID: 1},
+        )
+    else:
+        resident_workspace_domain.confirm_resident_deletion_projection(RESIDENT_ID)
+    assert agent_token_auth.authenticate_bearer_token(token) is not None
+    assert path.exists()
+
+
+@pytest.mark.parametrize("collect", [False, True])
+def test_failed_immediate_revocation_preserves_committed_receipt(credential_store, monkeypatch, collect):
+    """立即撤销失败仍给出已提交、投影待处理的回执，并安排后续投影。"""
+    from management_common.projection_receipts import CommittedProjectionError, collect_projection_failures
+    from management_portal.society_service import invariant_locks, resident_workspace_domain
+    from management_portal.society_service.state_store import get_lineage_data_store
+
+    record, revision = _deleted_record(get_lineage_data_store())
+    resident_hatg_credentials.ensure_resident_credential(RESIDENT_ID, LINEAGE_ID)
+    deferred = []
+    monkeypatch.setattr(invariant_locks, "defer_until_state_unlock", deferred.append)
+
+    def unavailable(*args):
+        raise OSError("credential store unavailable")
+
+    monkeypatch.setattr(resident_hatg_credentials, "revoke_resident_credential", unavailable)
+    if collect:
+        with collect_projection_failures() as failures:
+            resident_workspace_domain._confirm_deleted_resident_resources([record], {RESIDENT_ID: revision})
+    else:
+        with pytest.raises(CommittedProjectionError) as error:
+            resident_workspace_domain._confirm_deleted_resident_resources([record], {RESIDENT_ID: revision})
+        assert error.value.commit_state == "committed"
+        failures = error.value.failures
+    assert len(failures) == 1
+    assert failures[0]["resident_id"] == RESIDENT_ID
+    assert failures[0]["committed_revision"] == revision
+    assert failures[0]["error"] == "credential store unavailable"
+    assert len(deferred) == 1

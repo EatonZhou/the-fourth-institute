@@ -157,6 +157,8 @@ def test_tombstone_confirmation_publishes_only_the_selected_deletion() -> None:
     resident_id = "resident_111111111111"
     unrelated_id = "resident_444444444444"
     deleted = {**_record(), "deleted_at": "2026-09-28T00:00:00Z"}
+    from tests.cases.canonical_domain_fixture import canonical_projection
+    canonical_projection(resident_id, deleted_at=deleted["deleted_at"])
     store.enqueue_resident_resource_projection(resident_id, deleted)
     store.enqueue_resident_resource_projection(
         unrelated_id,
@@ -172,7 +174,9 @@ def test_tombstone_confirmation_publishes_only_the_selected_deletion() -> None:
     worker = ResidentResourceProjectionWorker(store, Projector())
     worker.confirm_tombstone(resident_id)
 
-    assert published == [deleted]
+    assert len(published) == 1
+    assert published[0]["resident_id"] == resident_id
+    assert published[0]["deleted_at"] == deleted["deleted_at"]
     assert not store.resident_resource_projection_pending(resident_id)
     assert store.resident_resource_projection_pending(unrelated_id)
 
@@ -213,3 +217,134 @@ def test_deleted_resident_bundle_only_projects_resident_tombstone(monkeypatch) -
     assert [item["resource_id"] for item in descriptors] == [deleted["resident_id"]]
     assert [item["status"] for item in descriptors] == ["deleted"]
     assert all(item["deleted_at"] == deleted["deleted_at"] for item in descriptors)
+
+
+@pytest.mark.parametrize("failure", ["none", "token_store", "unlink"])
+def test_committed_tombstones_recover_credentials_without_after_commit(
+    tmp_path, monkeypatch, failure,
+):
+    """提交后丢失回调仍可恢复；单项撤销失败保留持久重试且不阻断其他 claim。"""
+    import time
+    from types import SimpleNamespace
+    from management_portal import agent_token_auth
+    from management_portal.society_service import (
+        lineage_data_projection_outbox, resident_hatg_credentials, resident_workspace_domain,
+    )
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from tests.cases.canonical_domain_fixture import canonical_projection
+    from tests.cases.test_resident_hatg_credentials import _deleted_record, LINEAGE_ID
+
+    monkeypatch.setattr(resident_hatg_credentials, "TOKEN_ROOT", tmp_path / "tokens")
+    ids = ["resident_111111111111", "resident_444444444444", "resident_555555555555"]
+    live_id = "resident_666666666666"
+    paths = {rid: resident_hatg_credentials.ensure_resident_credential(rid, LINEAGE_ID) for rid in [*ids, live_id]}
+    tokens = {rid: path.read_text().strip() for rid, path in paths.items()}
+    store = get_lineage_data_store()
+    dropped_callbacks = []
+    # The real transaction commits, but none of its post-commit effects run:
+    # the same durable state left by process exit immediately after commit.
+    with monkeypatch.context() as crash:
+        crash.setattr(store.database, "after_commit", dropped_callbacks.append)
+        with store.database.transaction():
+            deletions = [_deleted_record(store, rid) for rid in ids]
+            resident_workspace_domain._confirm_deleted_resident_resources(
+                [record for record, _ in deletions],
+                {record["resident_id"]: revision for record, revision in deletions},
+            )
+    assert dropped_callbacks
+    assert all(agent_token_auth.authenticate_bearer_token(token) for token in tokens.values())
+    canonical_projection(live_id, lineage_id=LINEAGE_ID)
+    # A stale tombstone payload for a live identity must be rebuilt as live.
+    store.enqueue_resident_resource_projection(
+        live_id, {**store.resident_record(live_id), "deleted_at": "2026-11-01T00:00:00Z"},
+    )
+    original_put = agent_token_auth.AgentTokenStore.put
+    original_unlink = Path.unlink
+
+    def put(self, rid, record):
+        if rid == ids[0] and record.get("enabled") is False:
+            raise RuntimeError("injected token store failure")
+        return original_put(self, rid, record)
+
+    def unlink(path, *args, **kwargs):
+        if path == paths[ids[0]]:
+            raise PermissionError("injected unlink failure")
+        return original_unlink(path, *args, **kwargs)
+
+    published = []
+
+    class Projector:
+        @staticmethod
+        def sync_resident_resource_bundles(records, **kwargs):
+            published.extend(record["resident_id"] for record in records)
+            return resource_client.sync_resident_resource_bundles(records, **kwargs)
+
+    with monkeypatch.context() as fault:
+        if failure == "token_store":
+            fault.setattr(agent_token_auth.AgentTokenStore, "put", put)
+        elif failure == "unlink":
+            fault.setattr(Path, "unlink", unlink)
+        worker = ResidentResourceProjectionWorker(LineageDataStore(), Projector())
+        completed = worker.drain_once()
+        assert all(agent_token_auth.authenticate_bearer_token(tokens[rid]) is None for rid in ids[1:])
+        assert agent_token_auth.authenticate_bearer_token(tokens[live_id]) is not None
+        assert completed == (4 if failure == "none" else 3)
+        if failure != "none":
+            assert ids[0] not in published
+            assert "injected" in worker.health()["last_error"]
+            assert store.resident_resource_projection_pending(ids[0])
+            assert (agent_token_auth.authenticate_bearer_token(tokens[ids[0]]) is not None) == (failure == "token_store")
+            with store.database.read() as connection:
+                row = connection.execute(
+                    "SELECT attempt_count, last_error, lease_token FROM resident_resource_projection_outbox WHERE resident_id=%s",
+                    (ids[0],),
+                ).fetchone()
+            assert row["attempt_count"] == 1 and "injected" in row["last_error"]
+            assert row["lease_token"] == ""
+        assert all(not store.resident_resource_projection_pending(rid) for rid in [*ids[1:], live_id])
+
+    # Rebuild both stores and worker; advance only the outbox clock past backoff.
+    recovered_tokens = agent_token_auth.AgentTokenStore()
+    monkeypatch.setattr(agent_token_auth, "_STORE", recovered_tokens)
+    recovered_store = LineageDataStore()
+    monkeypatch.setattr(lineage_data_projection_outbox, "time", SimpleNamespace(time=lambda: time.time() + 120))
+    recovered = ResidentResourceProjectionWorker(recovered_store, resource_client)
+    assert recovered.drain_once() == (0 if failure == "none" else 1)
+    assert recovered_store.resident_resource_projection_health()["pending_count"] == 0
+    for rid in ids:
+        assert agent_token_auth.authenticate_bearer_token(tokens[rid]) is None
+        assert recovered_tokens.get(rid)["enabled"] is False
+        assert not paths[rid].exists()
+        assert resident_hatg_credentials.ensure_resident_credential(rid, LINEAGE_ID) is None
+        assert recovered_store.resident_record(rid, include_deleted=True)["deleted_at"]
+        with pytest.raises(KeyError):
+            recovered_store.resident_record(rid)
+    assert agent_token_auth.authenticate_bearer_token(tokens[live_id]) is not None
+    assert recovered.drain_once() == 0
+
+
+def test_tombstone_confirmation_retains_claim_when_revocation_fails(tmp_path, monkeypatch):
+    """显式确认撤销失败不能 ACK，重建 worker 后可以确认同一持久 claim。"""
+    from management_portal import agent_token_auth
+    from management_portal.society_service import resident_hatg_credentials
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from tests.cases.test_resident_hatg_credentials import _deleted_record, LINEAGE_ID, RESIDENT_ID
+
+    monkeypatch.setattr(resident_hatg_credentials, "TOKEN_ROOT", tmp_path / "tokens")
+    _deleted_record(get_lineage_data_store())
+    path = resident_hatg_credentials.ensure_resident_credential(RESIDENT_ID, LINEAGE_ID)
+    token = path.read_text().strip()
+    worker = ResidentResourceProjectionWorker(LineageDataStore(), resource_client)
+
+    def unavailable(*args):
+        raise OSError("credential store unavailable")
+
+    with monkeypatch.context() as fault:
+        fault.setattr(resident_hatg_credentials, "revoke_resident_credential", unavailable)
+        with pytest.raises(OSError, match="credential store unavailable"):
+            worker.confirm_tombstone(RESIDENT_ID)
+    assert worker.health()["pending_count"] == 1
+    assert agent_token_auth.authenticate_bearer_token(token) is not None
+    ResidentResourceProjectionWorker(LineageDataStore(), resource_client).confirm_tombstone(RESIDENT_ID)
+    assert agent_token_auth.authenticate_bearer_token(token) is None
+    assert worker.health()["pending_count"] == 0

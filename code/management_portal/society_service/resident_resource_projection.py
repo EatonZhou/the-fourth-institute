@@ -73,9 +73,17 @@ class ResidentResourceProjectionWorker:
     def _publish(self, claims: list[dict[str, Any]], *, origin: str = "worker") -> int:
         started = time.perf_counter()
         try:
-            from . import resident_catalog
+            from . import resident_catalog, resident_hatg_credentials
             for claim in claims:
-                resident_catalog.ensure_resident_agent(claim["payload"])
+                if claim["payload"].get("deleted_at"):
+                    # A payload alone is not deletion authority. Missing identities
+                    # and live Residents must never lose their bearer on this path.
+                    deleted = self._state_store.resident_deletion(claim["resident_id"])
+                    if not deleted or not deleted.get("deleted_at"):
+                        raise RuntimeError("Resident credential revocation requires a committed tombstone")
+                    resident_hatg_credentials.revoke_resident_credential(claim["resident_id"])
+                else:
+                    resident_catalog.ensure_resident_agent(claim["payload"])
             self._resource_client.sync_resident_resource_bundles(
                 [item["payload"] for item in claims],
                 updated_by="society-service",
@@ -117,7 +125,18 @@ class ResidentResourceProjectionWorker:
                 lease_seconds=self._lease_seconds,
             )
             if claims:
-                return self._publish(claims)
+                # Each claim owns its own acknowledgement and retry. A failed
+                # revocation cannot block other deletions or live registrations.
+                completed = 0
+                errors: list[str] = []
+                for claim in claims:
+                    try:
+                        completed += self._publish([claim])
+                    except Exception as exc:
+                        errors.append(f"{type(exc).__name__}: {exc}")
+                if errors:
+                    self._record_error("; ".join(errors))
+                return completed
             with self._lock:
                 self._last_error = ""
         except Exception as exc:
@@ -194,7 +213,7 @@ class ResidentResourceProjectionWorker:
                     raise RuntimeError(
                         "Resident Resource deletion points to a non-tombstone projection"
                     )
-                self._publish(claims)
+                self._publish(claims, origin="confirm")
             else:
                 # An existing publisher owns the lease; wait for its acknowledgement.
                 time.sleep(min(0.02, max(0.0, deadline - time.monotonic())))
