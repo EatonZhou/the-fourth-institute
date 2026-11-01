@@ -76,7 +76,8 @@ def unregister_workspace(workspace_id, *, actor, authorize, check_dependencies=N
     database = get_lineage_data_store().database
     with database.transaction() as connection:
         connection.execute(f"LOCK TABLE {store.table} IN SHARE ROW EXCLUSIVE MODE")
-        connection.execute(f"SELECT workspace_id FROM {store.table} WHERE workspace_id=%s FOR UPDATE", (workspace_id,))
+        locked = connection.execute(f"SELECT path FROM {store.table} WHERE workspace_id=%s FOR UPDATE",
+                                    (workspace_id,)).fetchone()
         row = store.rows([workspace_id], connection=connection).get(workspace_id)
         if row is None:
             raise KeyError(workspace_id)
@@ -92,8 +93,9 @@ def unregister_workspace(workspace_id, *, actor, authorize, check_dependencies=N
         if users:
             raise WorkspaceRetirementRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409,
                                          details={"users": [dict(user) for user in users]})
-        from management_portal.resources.workspace_store import stored_path
-        location = stored_path(row['path'])
+        # The stored form, also for an older registration of an instance
+        # directory outside the areas, which can no longer be encoded.
+        location = locked['path']
         below = location if location.endswith(':') else location.rstrip('/') + '/'
         children = connection.execute(
             f"SELECT workspace_id FROM {store.table} WHERE deleted_at IS NULL "

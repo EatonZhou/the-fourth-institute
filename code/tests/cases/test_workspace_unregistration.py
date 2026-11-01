@@ -104,6 +104,34 @@ def test_nested_registration_must_be_retired_first(workspace, deleted):
     assert path.exists()  # External host directories are never deleted here.
 
 
+def test_older_internal_registration_can_be_unbound_and_retired(future_creation_store, workspace):
+    """An instance directory outside the areas can no longer be registered;
+    older registrations of one still let their Residents save, unbind and retire."""
+    old = current_instance().root / 'maintenance' / 'old-gate'
+    other = 'workspace_bbbbbbbbbbbb'
+    stamp = now()
+    with workspace.store.database.transaction() as conn:
+        conn.execute(f'UPDATE {workspace.store.table} SET path=%s WHERE workspace_id=%s', (str(old / 'a'), WID))
+        conn.execute(f'INSERT INTO {workspace.store.table} (workspace_id,path,title,created_at,updated_at) '
+                     'VALUES (%s,%s,%s,%s,%s)', (other, str(old / 'b'), 'b', stamp, stamp))
+    with pytest.raises(ValueError, match='Only area files'):
+        workspace.store.ensure('workspace_cccccccccccc', str(old / 'c'))
+    with pytest.raises(ValueError, match='Only area files'):
+        workspace.store.ensure(other, str(old / 'moved'), move=True)
+    resident = resident_domain.register_resident(_new_session_payload('Gate user'), 'sample_admin')
+    with get_lineage_data_store().database.transaction() as conn:
+        for wid in (WID, other):
+            conn.execute('INSERT INTO resident_workspace_bindings(resident_id,workspace_id,purpose) VALUES (%s,%s,%s)',
+                         (resident['resident_id'], wid, ''))
+    conflict(call(workspace), 'workspace_in_use')
+    # Unbinding saves the Resident, which keeps its other older binding as stored.
+    resident_workspace_domain.remove_resident_reference_workspace(
+        resident['resident_id'], 'sample_admin', workspace_id=WID)
+    call(workspace).raise_for_error()
+    assert workspace.store.rows([WID]) == {}
+    assert workspace.store.rows([other])[other]['path'] == str(old / 'b')
+
+
 def test_nonadmin_denied_by_real_permission_scheme(workspace, monkeypatch):
     permissions = enable(monkeypatch)
     permissions.users('alice', 'bob', category='intern')

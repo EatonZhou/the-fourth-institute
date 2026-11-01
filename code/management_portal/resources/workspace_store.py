@@ -123,12 +123,20 @@ class WorkspaceStore:
     def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False):
         get_resource_type_registry().validate(workspace_id, "workspace")
         absolute = canonical_path(path)
-        path = stored_location(absolute)
+        try:
+            path, refused = stored_location(absolute), None
+        except ValueError as error:
+            # An instance directory outside the areas cannot be registered. An
+            # older registration may still hold one as an absolute path; saving
+            # its users keeps that row as stored, so it can be unbound and retired.
+            path, refused = absolute, error
         def write(conn):
             # The partial path index arbitrates concurrent registration, while
             # the row lock prevents a stale save from reviving a deletion.
             row = conn.execute(f"SELECT * FROM {self.table} WHERE workspace_id=%s FOR UPDATE",
                                (workspace_id,)).fetchone()
+            if refused is not None and (row is None or row["path"] != path):
+                raise refused
             if row:
                 if row["deleted_at"] is not None:
                     raise ValueError("Deleted Workspace cannot be restored")
