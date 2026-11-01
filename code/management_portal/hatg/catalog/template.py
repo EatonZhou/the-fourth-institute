@@ -31,7 +31,7 @@ CONTENT = (
       items={"type": "object"}),
     P("body", "object", "模块内容，按 kind 校验"),
 )
-TEMPLATE = (R("template", "object", "规范模板，含 behavior 与 editor"),)
+TEMPLATE = (R("template", "object", "规范模板，含 behavior、editor 与本次施加参数说明 application_parameters"),)
 DECLARATIONS = (
     _d(
         "ListTemplates",

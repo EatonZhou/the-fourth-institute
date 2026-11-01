@@ -765,6 +765,14 @@ class FamilizeKind:
         return {"steps": ["选区成员保留，新建门面、steward 与 Router", "外部连线改接门面，按成员名册生成内部结构"],
                 "persistent": True, "roles": [{**copy.deepcopy(role), **settings[role["key"]]} for role in RESIDENT_ROLES]}
 
+    def application_parameters(self, template: dict) -> list[dict]:
+        parameters = copy.deepcopy(template["parameters"])
+        if not any(parameter["name"] == "auto_migrate" for parameter in parameters):
+            parameters.append({"name": "auto_migrate", "type": "boolean",
+                               "default": template["body"].get("auto_migrate", True),
+                               "description": "自动迁移"})
+        return parameters
+
     def editor(self) -> dict:
         return {"resident_roles": copy.deepcopy(RESIDENT_ROLES), "fields": [{"name": "goal", "type": "text", "label": "共同目标"},
                            {"name": "route_threshold", "type": "integer", "label": "路由置信度阈值", "min": 0, "max": 100},

@@ -52,6 +52,13 @@ def available() -> list[dict]:
     ]
 
 
+def application_parameters(template: dict) -> list[dict]:
+    """The kind owns computed apply controls; stored recipe content stays intact."""
+    kind = get(template["kind"])
+    describe = getattr(kind, "application_parameters", None)
+    return values.normalize_parameters(describe(template) if describe else template["parameters"])
+
+
 def normalize(raw: dict) -> dict:
     if not isinstance(raw, dict):
         raise TemplateError("template 必须是对象")

@@ -86,8 +86,7 @@ def definitions():
             "title": "Family",
             "description": "把选中的 Resident 组合为 Family，新建门面、steward 与 Router。",
             "targets": ["selection", "resident"],
-            "parameters": [{"name": "auto_migrate", "type": "boolean", "default": True,
-                            "description": "自动迁移"}],
+            "parameters": [],
             "body": {
                 "goal": "",
                 "route_threshold": 60,

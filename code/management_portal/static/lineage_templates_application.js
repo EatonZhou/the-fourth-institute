@@ -31,7 +31,7 @@
       if (!context.lineage_id) throw new Error(t('请先选择 Lineage'));
       if (context.lineage_id !== getContext().lineage_id) throw new Error(t('目标 Lineage 已切换，请重新施加'));
       const roles = residentRoles(template);
-      const parameters = template.parameters || [];
+      const parameters = template.application_parameters || template.parameters || [];
       // A template that finds existing elements always shows what it would change first.
       const rewrites = template.kind === 'structure' && (template.body.match || []).length > 0;
       const choices = {};

@@ -137,7 +137,8 @@ def test_tau_fixture_isolation_preserves_existing_family_policy_and_members(line
     assert ok("GetResident", {"resident_id": fixture})["resident"]["resident_id"] == fixture
 
 
-def test_tau_family_template_disables_migration_before_first_delivery(lineage, charters, monkeypatch):
+@pytest.mark.parametrize('default_migration', [True, False])
+def test_tau_family_template_disables_migration_before_first_delivery(lineage, charters, monkeypatch, default_migration):
     """原生模板接受创建时关闭迁移，首次投递前生效，默认模板不变。"""
     from management_portal.society_service import templates, resident_intake_domain
     import json
@@ -145,8 +146,11 @@ def test_tau_family_template_disables_migration_before_first_delivery(lineage, c
     import subprocess
 
     source = next(t for t in templates.list_templates() if t["builtin_key"] == "family")
-    parameter = next((p for p in source["parameters"] if p["name"] == "auto_migrate"), None)
-    assert parameter and parameter["type"] == "boolean" and parameter["default"] is True
+    source = ok("UpdateTemplate", {"template_id": source["template_id"], "parameters": [],
+        "description": "Edited Family policy", "body": {**source["body"], "auto_migrate": default_migration}})["template"]
+    assert source["parameters"] == []
+    parameter = next((p for p in source.get("application_parameters", []) if p["name"] == "auto_migrate"), None)
+    assert parameter and parameter["type"] == "boolean" and parameter["default"] is default_migration
     script = Path(__file__).with_name('javascript') / 'tau_family_creation.cjs'
     form = subprocess.run(['node', str(script)], input=json.dumps(source),
                           capture_output=True, text=True, timeout=30)

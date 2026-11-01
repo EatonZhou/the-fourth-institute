@@ -12,7 +12,8 @@ from .. import lineage_aggregate
 
 def describe(template):
     kind = kinds.get(template["kind"])
-    return {**template, "behavior": kind.describe(template), "editor": kind.editor()}
+    return {**template, "behavior": kind.describe(template), "editor": kind.editor(),
+            "application_parameters": kinds.application_parameters(template)}
 
 
 def list_templates(target_kind=None):
@@ -180,7 +181,7 @@ def apply(
     ctx = ApplyContext(
         lineage_id,
         template,
-        values.parameters(template["parameters"], parameters),
+        values.parameters(kinds.application_parameters(template), parameters),
         target,
         actor,
         # A kind that names its result after the target gets no template title.

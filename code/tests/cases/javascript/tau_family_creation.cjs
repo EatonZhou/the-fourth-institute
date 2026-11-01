@@ -35,7 +35,7 @@ const template = JSON.parse(fs.readFileSync(0, 'utf8'));
     }, template);
     const checkbox = page.locator('[data-apply-parameter="auto_migrate"]');
     assert.equal(await checkbox.count(), 1);
-    assert.equal(await checkbox.isChecked(), true);
+    assert.equal(await checkbox.isChecked(), template.body.auto_migrate);
     await checkbox.uncheck();
     await page.locator('[data-template-dialog="apply"] button[type="submit"]').click();
     await page.waitForFunction(()=>applied.length===1);
