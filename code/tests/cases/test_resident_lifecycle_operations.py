@@ -326,27 +326,32 @@ def test_acknowledgement_replay_accepts_already_pruned_receipt(monkeypatch):
 
 
 
-def test_release_snapshot_keeps_owned_workspace_after_identity_deletion(tmp_path, monkeypatch):
-    """会话释放步骤保存自有 Workspace 路径快照，Resident 身份删除后仍在该目录释放"""
+@pytest.mark.parametrize('workspace_state', ['present', 'deleted', 'unbound'])
+def test_release_does_not_require_a_live_workspace(tmp_path, monkeypatch, workspace_state):
+    """释放只使用原会话绑定，目录删除或绑定解除不阻塞持久清理。"""
     from pathlib import Path
     from tests.cases.test_lineage_catalogs import _record
-    from management_portal.society_service.resident_runtime_domain import (
-        resident_working_directory as _resident_working_directory,
-    )
     record = _record('resident_111111111111')
     path = Path(record['default_cwd'])
     path.mkdir(parents=True, exist_ok=True)
+    if workspace_state == 'deleted':
+        path.rmdir()
+    elif workspace_state == 'unbound':
+        for key in ('default_cwd', 'owned_workspace_id', 'owned_workspace'):
+            record.pop(key, None)
     binding = {'provider_session_ref': 'session-test', 'backend_session_id': 'native-test'}
     monkeypatch.setattr(resident_backend, 'session_record', lambda *a, **k: binding)
     step = resident_lifecycle_domain.resident_release_step(record, 'CASE-A')
     record['deleted_at'] = '2026-10-10T00:00:00Z'
-    record.pop('owned_workspace')
-    assert _resident_working_directory(step['record']) == path
+    record.pop('owned_workspace', None)
     calls = []
     monkeypatch.setattr(resident_session_backend_domain, 'run_backend_session_operation', lambda **kw: calls.append(kw))
     monkeypatch.setattr(resident_backend, 'delete_session_identity', lambda *a, **kw: None)
     resident_lifecycle_steps_domain.apply_resident_lifecycle_step('op:0', step)
-    assert calls[0]['operation'] == 'release' and calls[0]['cwd'] == path
+    assert calls[0]['operation'] == 'release' and calls[0]['cwd'] == ''
+    assert calls[0]['operation_id'] == 'op:0'
+    assert calls[0]['binding_id'] == 'resident:resident_111111111111'
+    assert calls[0]['runtime_options']['delete_binding_on_release'] is True
     assert 'workspace_bindings' not in step['record']
 
 
@@ -361,6 +366,7 @@ def test_recovered_release_resumes_the_same_execution_request(tmp_path, monkeypa
             return {"status": "completed"}
         def submit(self, request):
             assert not invariant_locks.lock_held()
+            assert request.cwd == ''
             requests.append(request)
             return {"status": "queued"}
         def wait(self, execution_id, **kwargs):
@@ -370,7 +376,7 @@ def test_recovered_release_resumes_the_same_execution_request(tmp_path, monkeypa
     monkeypatch.setattr(execution_port, "service", lambda: Service())
     for _ in range(2):
         result = resident_session_backend_domain.run_backend_session_operation(
-            backend="codex", operation="release", actor="CASE-A", cwd=tmp_path,
+            backend="codex", operation="release", actor="CASE-A", cwd='',
             binding_id="resident:resident_111111111111", backend_route_id="zero",
             operation_id="durable-release:0",
         )

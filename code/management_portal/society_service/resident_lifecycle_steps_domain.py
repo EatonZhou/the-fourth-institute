@@ -14,7 +14,6 @@ from . import (
     resident_lineage,
     resident_record_domain,
     resident_restart_domain,
-    resident_runtime_domain,
     resident_session_backend_domain,
     resident_workspace_domain,
 )
@@ -74,7 +73,9 @@ def _release(operation_id: str, step: dict[str, Any]) -> None:
         resident_session_backend_domain.run_backend_session_operation(
             backend=resident_backend.execution_provider(record),
             operation="release", actor=step["actor"],
-            cwd=resident_runtime_domain.resident_working_directory(record),
+            # Release closes the captured binding without starting a turn.
+            # Its Workspace may already have been deleted by another step.
+            cwd="",
             backend_route_id=str(binding.get("backend_route_id") or ""),
             binding_id=resident_backend.execution_binding_id(record),
             runtime_options={"session_key": resident_execution_session_key(record), "delete_binding_on_release": True},

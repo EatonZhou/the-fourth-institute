@@ -23,7 +23,7 @@ from . import resident_domain_common
 
 
 def build_backend_session_operation_request(
-    *, backend: str, operation: str, actor: str, cwd: Path,
+    *, backend: str, operation: str, actor: str, cwd: Path | str,
     binding_id: str, correlation_id: str, prompt: str = "",
     source_binding_id: str = "", backend_route_id: str = "",
     runtime_options: dict[str, Any] | None = None,
@@ -87,7 +87,7 @@ def run_backend_session_operation(
     backend: str,
     operation: str,
     actor: str,
-    cwd: Path,
+    cwd: Path | str,
     prompt: str = "",
     source_binding_id: str = "",
     backend_route_id: str = "",
