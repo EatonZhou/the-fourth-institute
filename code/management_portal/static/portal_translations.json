@@ -40943,6 +40943,7 @@
     "zh-CN": "注销 Workspace 需要 @admin 权限"
   },
   "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只退役登记。": {
-    "en": "Unregister a resource with @admin. A Workspace must have no live Resident owner or binding and no active nested registration. Remove its directory inside instance areas, preserve external host directories, and retire only the registration if the directory is missing."
+    "en": "Unregister a resource with @admin. A Workspace must have no live Resident owner or binding and no active nested registration. Remove its directory inside instance areas, preserve external host directories, and retire only the registration if the directory is missing.",
+    "zh-CN": "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只退役登记。"
   }
 }
