@@ -22,6 +22,8 @@ ready 必须等待异步挂载和加载完成后再断言：刷新或导航后�
 
 用例明确允许公开指令修改或清理时，先保留原提交回执，再按用例要求核对当前登记和可见页面。API 调用不会执行页面按钮的本地回调，不能额外假设该回调已经关闭面板或刷新目录；可以在同一原 ready 内使用正常页面刷新重新读取已提交状态，刷新及可见就绪的实际耗时一起保留，不重发写入。若用例明确要求自动更新或首次刷新，仍遵守原条件，不以额外刷新替代它。只读准备时也要等待当前区域及其祖先实际挂载；子 table 出现不保证预期 region 已存在，不以一次 closest()/getAttribute() 的空值直接结束等待。
 
+正式 `GetMessage` 返回的消息位于结果的 `message`，正文采用 `content_parts`，不要猜测旧的 `message.content` 或 `message.text`。例如 `const message = (await portal.instruction('GetMessage', {resident_id, message_id})).message; const text = message.content_parts.filter(part => part.type === 'text').map(part => part.text).join('\n');`。先核实际分片类型；文本、附件、图片分别按各自内容核验，不把没有旧字段或没有文本分片判作“没有回复”。Family 的成员署名与路径读取同一消息的 `family_reply`，引用读取原输入的 `quote`，不从正文反推身份。
+
 Workspace 刷新同时读取当前 Resident 绑定、个人工作区和展开目录，显式打开的共享树可先完成，不能单凭它出现就结束原 ready。完整面板根 .portalPersonalWorkspaces 的 data-workspace-resident-id 表示当前绑定目标，aria-busy 覆盖上述仍在读取的部分；先从实际页面确认该根及目标身份，在 preflight 和原 ready 中都等待同一根 aria-busy="false"，再核对无可见读取错误、目标路径只出现一次、目录内容及截图边界。busy=false 只表示读取结算，不等于业务成功；原 GetResident 绑定回执、目录读取回执、可见正文和唯一根仍分别保留。“正在读取当前 Resident 的工作区…”存在时不能签出首次刷新，也不能以资源入口的 workspace_id 代替 Resident 绑定证据。
 
 不要把准备步骤的失败扩大成尚未发生的业务动作失败。每个阶段明确保留“尚未提交 / 已提交、观察中 / 终态”；只有已经实际发生的首次动作才存在不能重放的首次样本。尚未点过刷新就继续只读修正定位，完成原定首次刷新后再进入删除；已经接纳的输入或写操作始终沿原身份观察。点击前除 role/name 之外读取该实际控件的 aria-description、aria-haspopup 和可见提示，分清直接执行与打开菜单/对话框；不能仅因名字有 Fork 就假定第一次点击只打开表单。这样取得的实际界面证据属于第一阶段，不必读源码。
