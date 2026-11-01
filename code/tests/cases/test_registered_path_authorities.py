@@ -1,6 +1,6 @@
 """Registered identities and locations determine runtime paths.
 
-:module: society.resident
+:module: resident.workspace-memory
 """
 from pathlib import Path
 

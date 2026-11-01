@@ -599,8 +599,8 @@ def test_fresh_recovery_does_not_reassign_an_active_unbound_execution(monkeypatc
     assert operations == []
 
 
-def test_send_controls_depend_on_permissions_not_retired_initialization_fields(monkeypatch):
-    """发送控件按权限开放且忽略已退役初始化字段"""
+def test_send_controls_depend_on_permissions_not_deleted_initialization_fields(monkeypatch):
+    """发送控件按权限开放且忽略已删除初始化字段"""
     from management_portal.society_service import resident_protocol
     record = {"resident_id": "resident_aaaaaaaaaaaa", "backend": "codex"}
     target = SimpleNamespace(resident_id=record["resident_id"], record=record)

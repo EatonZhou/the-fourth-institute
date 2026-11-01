@@ -16,7 +16,7 @@ test('catalog needs no commit or timestamp to be read', () => {
   assert.equal(sourceForLesson('ReadResource').includes('/commit/'), false);
 });
 
-test('the published ISA has renamed instructions and no retired entry points', () => {
+test('the published ISA has renamed instructions and no deleted entry points', () => {
   for (const name of ['Functionalize','Unfunctionalize','GetKnowledgeTags','UpdateKnowledgeTags','UpdateProviderAccount'])
     assert.ok(catalog.schemas[name], name);
   for (const name of ['Functionlize','Unfunctionlize','GetProjectTags','UpdateProjectTags','UpdateSchedulerSettings',

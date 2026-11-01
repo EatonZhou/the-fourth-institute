@@ -179,7 +179,7 @@ def dispatch_generic_routes(
 
 
 def block_unrecoverable_events(database: Any, lineage_id: str) -> int:
-    """Retain original work and error evidence, but retire it from retry admission."""
+    """Retain original work and error evidence, but delete it from retry admission."""
     from . import program_work_storage
     from .lineage_recovery_policy import permanent_error
     from .lineage_primitives import now_iso

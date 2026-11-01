@@ -53,7 +53,7 @@ async function run(browser,patched){
   if(patched){
    await A.evaluate(other=>Promise.all([PortalResidentService.navigationTarget(other),PortalResidentService.navigationTarget(other)]),other);
    const navigation=reads.filter(x=>x.path.endsWith('/navigation-target'));assert.equal(navigation.length,2);assert(navigation.every(x=>x.transport_id));assert.notEqual(navigation[0].transport_id,navigation[1].transport_id);
-   // A response started before the tombstone must not repopulate a retired target.
+   // A response started before the tombstone must not repopulate a deleted target.
    hold=true;await A.evaluate(other=>{window.late=PortalResidentService.projection({residentId:other}).then(()=>({ok:true}),e=>({code:e.code}));},other);
    while(!held)await new Promise(r=>setTimeout(r,5));
    await A.evaluate(other=>window.dispatchEvent(new CustomEvent('portal:change',{detail:{resident_changes:{[other]:['deleted','identity']}}})),other);

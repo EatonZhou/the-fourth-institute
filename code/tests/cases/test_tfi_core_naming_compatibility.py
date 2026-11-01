@@ -1,4 +1,4 @@
-"""Canonical security readers reject retired tags and preserve all authority guards."""
+"""Canonical security readers reject deleted tags and preserve all authority guards."""
 import copy
 import hashlib
 import hmac
@@ -18,7 +18,7 @@ from management_portal.portal_two_factor import PortalTwoFactorStore
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
 def test_origin_identity_and_call_preserve_authority_and_payload(prefix):
-    """来源、操作身份和指令读取保持权限与载荷，退役标签被拒绝且输入不变"""
+    """来源、操作身份和指令读取保持权限与载荷，删除标签被拒绝且输入不变"""
     for origin in (principal.message_origin('alice'), principal.mailbox_origin('alice')):
         version = origin['schema'].rsplit('.', 1)[1]
         origin['schema'] = f'{prefix}.message-origin.{version}'
@@ -80,7 +80,7 @@ def _signed_wire(prefix, *, params=None):
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
 def test_rpc_uses_signed_schema_and_retains_tamper_expiry_replay_guards(prefix, monkeypatch):
-    """RPC拒绝签名正确的退役标签，规范签名仍防篡改、过期和重放"""
+    """RPC拒绝签名正确的删除标签，规范签名仍防篡改、过期和重放"""
     key, params, auth = _signed_wire(prefix)
     original = copy.deepcopy(auth)
     if prefix == 'archive':
@@ -110,7 +110,7 @@ def test_rpc_uses_signed_schema_and_retains_tamper_expiry_replay_guards(prefix, 
 @pytest.mark.parametrize('cls,tag,field', [(PortalPasskeyStore, 'portal-passkeys', 'users'),
     (PortalPasswordResetStore, 'portal-password-resets', 'tokens'), (PortalTwoFactorStore, 'portal-two-factor', 'users')])
 def test_identity_store_read_is_nonwriting_and_keeps_shape_validation(prefix, cls, tag, field):
-    """身份存储读取拒绝退役标签，规范记录仍校验版本和形状且不写回"""
+    """身份存储读取拒绝删除标签，规范记录仍校验版本和形状且不写回"""
     record = {'schema': f'{prefix}.{tag}.v1', field: {'existing': {'opaque': 'retained'}}}
     original = copy.deepcopy(record)
     store = object.__new__(cls)
@@ -132,7 +132,7 @@ def test_identity_store_read_is_nonwriting_and_keeps_shape_validation(prefix, cl
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
 def test_access_reader_preserves_payload_and_rejects_invalid_fields(prefix):
-    """访问记录读取保留载荷并拒绝退役标签、错误版本和未知字段"""
+    """访问记录读取保留载荷并拒绝删除标签、错误版本和未知字段"""
     store = object.__new__(PortalAccessStore)
     record = {'schema': f'{prefix}.portal-access.v1', 'users': {}, 'updated_at': 'fixed-token'}
     original = copy.deepcopy(record)
@@ -149,7 +149,7 @@ def test_access_reader_preserves_payload_and_rejects_invalid_fields(prefix):
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
 def test_resource_change_reader_keeps_execution_actor_and_frozen_text(prefix):
-    """资源变更读取保留冻结文本，拒绝退役格式及不匹配的执行者和执行ID"""
+    """资源变更读取保留冻结文本，拒绝删除格式及不匹配的执行者和执行ID"""
     change = {'schema': f'{prefix}.resource-content-change.v1', 'execution_id': 'execution-test', 'actor': 'alice',
               'change_id': 'change_test', 'resource_id': 'resource_test', 'address': 'resource_test',
               'path': 'test.txt', 'created_at': 'fixed',

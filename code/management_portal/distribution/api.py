@@ -16,7 +16,7 @@ def dispatch(operation, payload, actor):
     if operation == "configs.get":
         return {"config": store.get_config(payload["config_id"])}
     if operation == "configs.save":
-        # Old open pages may still send this retired field; it has no save semantics.
+        # Old open pages may still send this deleted field; it has no save semantics.
         payload = {key: value for key, value in payload.items() if key != "expected_revision"}
         return {"config": store.save_config(actor=actor, **payload)}
     if operation == "runs.list":

@@ -15,11 +15,11 @@ semantics:
     构想被另一个构想替代时分配新 ID。方向为 proposed，concept、future_experience、
     why_feasible、first_step 分别说明构想、未来体验、可行基础和第一步。
     description 只供画廊短说明，不代替四项叙事。方向独立于 Plan 存在。
-  retirement: >-
-    retired_directions 是旧方向的退役记录，不进入当前画廊、默认选择和方向计数。
-    旧书签或 focus 命中退役 ID 时显示其已退役及原因，不按标题猜测或自动改指向。
+  deletion: >-
+    deleted_directions 是旧方向的删除记录，不进入当前画廊、默认选择和方向计数。
+    旧书签或 focus 命中删除 ID 时显示其已删除及原因，不按标题猜测或自动改指向。
     replaced_by 仅登记明确承接同一构想的新方向；空数组表示没有语义继承者。
-    六个旧方向均因 v8 调整内容范围而退役，不把旧方向换名复用。
+    六个旧方向均因 v8 调整内容范围而删除，不把旧方向换名复用。
   plans: >-
     顶层 plans 保留 IMPROVE.md 中的正式 Plan 资料索引，正文与生命周期以 source.ref 为准；
     source.version 是本次读取的资源版本。status=proposed 表示候选方案，
@@ -281,30 +281,30 @@ directions:
           caption: 新需要带来新的能力和协作。
           module_focus: [lineage.family, lineage.automation, web.projections, interface.workbenches]
 
-retired_directions:
+deleted_directions:
   - id: reliable-changes
     title: 让确认准确约束实际变更
-    retired_reason: v8 将权限与变更约束归入日常工程工作，退出未来产品方向画廊。
+    deleted_reason: v8 将权限与变更约束归入日常工程工作，退出未来产品方向画廊。
     replaced_by: []
   - id: traceable-execution
     title: 让执行过程可追溯、可控制
-    retired_reason: v8 不再把运行记录与可追溯性作为演化方向。
+    deleted_reason: v8 不再把运行记录与可追溯性作为演化方向。
     replaced_by: []
   - id: focused-decisions
     title: 减少重复审阅，形成有依据的反馈
-    retired_reason: v8 不再把审阅与证据整理作为演化方向。
+    deleted_reason: v8 不再把审阅与证据整理作为演化方向。
     replaced_by: []
   - id: discover-and-resume
     title: 找全已有工作并连续推进
-    retired_reason: 原方向来自现有工程 Plan 的分类；新画廊直接表达未来产品构想，不继承这个分类。
+    deleted_reason: 原方向来自现有工程 Plan 的分类；新画廊直接表达未来产品构想，不继承这个分类。
     replaced_by: []
   - id: research-evidence
     title: 用可核查证据比较研究结果
-    retired_reason: 原方向侧重现有研究流程的证据核对，退出本次未来产品方向画廊。
+    deleted_reason: 原方向侧重现有研究流程的证据核对，退出本次未来产品方向画廊。
     replaced_by: []
   - id: reusable-collaboration
     title: 让协作和验证可以解释、审阅与复用
-    retired_reason: 原方向把验证与流程工程归为一类；新构想按产品体验组织，旧分类不作为继承身份。
+    deleted_reason: 原方向把验证与流程工程归为一类；新构想按产品体验组织，旧分类不作为继承身份。
     replaced_by: []
 
 plans:

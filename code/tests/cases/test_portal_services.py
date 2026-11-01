@@ -25,7 +25,7 @@ def test_operation_locks_are_isolated_by_deployment(tmp_path):
 
 
 @pytest.mark.parametrize("deployment", ["dev", "release"])
-def test_retired_source_pool_controls_refuse_without_service_actions(monkeypatch, deployment):
+def test_deleted_source_pool_controls_refuse_without_service_actions(monkeypatch, deployment):
     """独立实例禁止旧主机站 Dev/Release 控制，服务由当前安装器管理。"""
     from scripts import tfi_development_runtime as paired
     monkeypatch.setattr(paired, 'configured_root', lambda: None)

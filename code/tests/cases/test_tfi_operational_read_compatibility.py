@@ -1,4 +1,4 @@
-"""Read canonical observations and reject retired tags without rewriting inputs."""
+"""Read canonical observations and reject deleted tags without rewriting inputs."""
 import copy
 import json
 
@@ -33,7 +33,7 @@ def test_capacity_observation_and_previous_state_are_read_without_mutation(prefi
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
 def test_device_status_read_keeps_files_unchanged(prefix, tmp_path):
-    """设备缓存只读取规范版本，退役标签及错误版本均不写回"""
+    """设备缓存只读取规范版本，删除标签及错误版本均不写回"""
     device = tmp_path/'status.json'
     saved = {'schema': f'{prefix}.device_status.v1', 'updated_at': 'original', 'servers': {'device_0123456789ab': {'payload': {'status': 'ok'}}}}
     device.write_text(json.dumps(saved)); original, mtime = device.read_bytes(), device.stat().st_mtime_ns
@@ -48,7 +48,7 @@ def test_device_status_read_keeps_files_unchanged(prefix, tmp_path):
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
 def test_device_normalizer_keeps_identity_validation(prefix):
-    """设备规范格式保留身份校验，退役格式和错误数字版本被拒绝且输入不变"""
+    """设备规范格式保留身份校验，删除格式和错误数字版本被拒绝且输入不变"""
     record = {'schema': f'{prefix}.device.v1', 'device_id': 'device_0123456789ab', 'name': 'test device',
               'device_kind': 'gpu_server', 'lifecycle': 'active', 'hostname': 'example',
               'network': {'primary_ip': '192.0.2.10', 'mac_addresses': []},

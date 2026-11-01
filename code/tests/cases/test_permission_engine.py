@@ -584,16 +584,16 @@ def test_compiler_reports_each_error_with_its_path():
     no_node["instructions"]["DeliverMessage:resident_id"]["a"] = "@nowhere"
     assert "instructions.DeliverMessage:resident_id.a" in _errors(no_node)
 
-    retired = copy.deepcopy(base)
-    retired["levels"] = {"viewer": "@viewer", "contributor": "@contributor", "admin": "@admin"}
-    retired["instructions"]["DeliverMessage:resident_id"] = {"level": "contributor"}
+    deleted = copy.deepcopy(base)
+    deleted["levels"] = {"viewer": "@viewer", "contributor": "@contributor", "admin": "@admin"}
+    deleted["instructions"]["DeliverMessage:resident_id"] = {"level": "contributor"}
     # What a slot judges belongs to the declaration: the old per-instruction slot lists no longer compile.
-    retired["instructions"]["GetLineage"] = [{"argument": "lineage_id", "a": "@viewer", "types": ["lineage"]}]
-    retired["instructions"]["GetResident"] = {"a": "@viewer", "types": ["resident"]}
-    retired["instructions"]["UpdateLineage"] = {"a": "@contributor", "r": "@shared"}
-    retired["instructions"]["CreateUser"] = {"a": "@admin", "r": "@nowhere"}
+    deleted["instructions"]["GetLineage"] = [{"argument": "lineage_id", "a": "@viewer", "types": ["lineage"]}]
+    deleted["instructions"]["GetResident"] = {"a": "@viewer", "types": ["resident"]}
+    deleted["instructions"]["UpdateLineage"] = {"a": "@contributor", "r": "@shared"}
+    deleted["instructions"]["CreateUser"] = {"a": "@admin", "r": "@nowhere"}
     assert {"levels", "instructions.DeliverMessage:resident_id", "instructions.GetLineage", "instructions.GetResident",
-            "instructions.UpdateLineage.r", "instructions.CreateUser.r"} <= set(_errors(retired))
+            "instructions.UpdateLineage.r", "instructions.CreateUser.r"} <= set(_errors(deleted))
 
     under_rule = copy.deepcopy(base)
     under_rule["trees"]["R"]["nodes"].append({"id": "@group_in_lineage", "parent": "@lineage"})

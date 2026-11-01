@@ -158,7 +158,7 @@ def test_tfi_framework_javascript_deployment_reader():
 
 
 @pytest.fixture(autouse=True)
-def retired_reader_settings_do_not_enable_aliases(tmp_path, monkeypatch):
+def deleted_reader_settings_do_not_enable_aliases(tmp_path, monkeypatch):
     root = select_instance(monkeypatch, tmp_path / "instance", site={"deployment": {"compatibility": {
         "format_namespaces": ["archive."],
         "domain_values": {"test_framework.schema_aliases": {

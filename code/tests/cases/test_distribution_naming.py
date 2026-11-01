@@ -12,7 +12,7 @@ from scripts import check_distribution_naming as check
 
 def policy(**overrides):
     value = check.load_policy(check.ROOT)
-    value["rules"]["legacy-name"] = r"(?i)retired[-_]?product|formerproduct"
+    value["rules"]["legacy-name"] = r"(?i)deleted[-_]?product|formerproduct"
     value.update(exceptions=[], deferred=[], **overrides)
     return value
 
@@ -24,22 +24,22 @@ def tracked(tmp_path, files):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-    (tmp_path/"scope.json").write_text(json.dumps({"forbidden_brands":["retired-product","RetiredProduct","RETIRED_PRODUCT","FormerProduct"]}))
+    (tmp_path/"scope.json").write_text(json.dumps({"forbidden_brands":["deleted-product","DeletedProduct","RETIRED_PRODUCT","FormerProduct"]}))
 
 
 def test_cli_tracks_names_paths_environment_and_network_without_untracked_secrets(tmp_path, capsys):
-    tracked(tmp_path, {"old-retired-product.py": 'name="FormerProduct"\nenv="RETIRED_PRODUCT_RESIDENT_ID"\nroot="/share/Projects"\nhost="10.77.0.1"\n'})
-    (tmp_path / "secret.txt").write_text('RetiredProduct secret is untracked')
+    tracked(tmp_path, {"old-deleted-product.py": 'name="FormerProduct"\nenv="RETIRED_PRODUCT_RESIDENT_ID"\nroot="/share/Projects"\nhost="10.77.0.1"\n'})
+    (tmp_path / "secret.txt").write_text('DeletedProduct secret is untracked')
     assert check.main(["--identity-scope", str(tmp_path/"scope.json"), "--root", str(tmp_path)]) == 1
     output = capsys.readouterr().out
-    assert 'old-retired-product.py:0:' in output
+    assert 'old-deleted-product.py:0:' in output
     assert 'legacy-name' in output and 'laboratory-path' in output and 'private-address' in output
     assert 'secret' not in output
 
 
 def test_exact_compatibility_line_does_not_hide_old_writer(tmp_path):
-    source = 'accepted = {"tfi.input.v1", "retired-product.input.v1"}'
-    writer = 'write("retired-product.input.v1")'
+    source = 'accepted = {"tfi.input.v1", "deleted-product.input.v1"}'
+    writer = 'write("deleted-product.input.v1")'
     (tmp_path / "reader.py").write_text(source + '\n' + writer)
     p = policy()
     p['exceptions'] = [{"kind":"compat_read", "path":"reader.py", "rule":"legacy-name", "pattern":'^'+re.escape(source)+'$', "reason":"Retain old stored inputs during migration."}]
@@ -53,9 +53,9 @@ def test_vendor_exception_is_bounded_and_symlinks_are_not_followed(tmp_path):
     for path in [vendor + '/lib.js', vendor + '-app.js']:
         p = tmp_path / path
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text('RetiredProduct')
+        p.write_text('DeletedProduct')
     outside = tmp_path / 'untracked-private.txt'
-    outside.write_text('RetiredProduct content must not be read')
+    outside.write_text('DeletedProduct content must not be read')
     (tmp_path / 'link').symlink_to(outside.name)
     p = policy()
     p['exceptions'] = [{"kind":"vendor", "path":vendor, "reason":"Upstream library"}]
@@ -90,22 +90,22 @@ def test_clean_output_and_portable_network_constants(tmp_path, capsys):
 
 
 def test_deleted_tracked_file_is_not_a_false_io_failure(tmp_path, capsys):
-    tracked(tmp_path, {"old.py":"RetiredProduct"})
+    tracked(tmp_path, {"old.py":"DeletedProduct"})
     (tmp_path / 'old.py').unlink()
     assert check.main(["--identity-scope",str(tmp_path/"scope.json"),"--root",str(tmp_path)]) == 0
     assert capsys.readouterr().out == ''
 
 
 def test_deferred_is_visible_but_only_authorized_token_is_exempt(tmp_path, capsys):
-    source = 'After=retired-product-postgresql.service retired-product-other.service'
-    entry = {'kind':'deferred', 'path':'app.service', 'rule':'legacy-name', 'pattern':'^'+re.escape(source)+'$', 'match_pattern':r'retired-product-postgresql\.service', 'reason':'Wait for database window.', 'basis':'the operator deferred database rename.'}
+    source = 'After=deleted-product-postgresql.service deleted-product-other.service'
+    entry = {'kind':'deferred', 'path':'app.service', 'rule':'legacy-name', 'pattern':'^'+re.escape(source)+'$', 'match_pattern':r'deleted-product-postgresql\.service', 'reason':'Wait for database window.', 'basis':'the operator deferred database rename.'}
     p = policy()
     p['deferred'] = [entry]
     tracked(tmp_path, {'app.service':source, check.POLICY:yaml.safe_dump(p)})
     assert check.main(['--identity-scope',str(tmp_path/'scope.json'),'--root',str(tmp_path),'--json']) == 1
     report = json.loads(capsys.readouterr().out)
     assert len(report['findings']) == 1 and len(report['deferred']) == 1
-    source = 'After=retired-product-postgresql.service'
+    source = 'After=deleted-product-postgresql.service'
     (tmp_path/'app.service').write_text(source)
     entry['pattern'] = '^'+re.escape(source)+'$'
     (tmp_path/check.POLICY).write_text(yaml.safe_dump(p))

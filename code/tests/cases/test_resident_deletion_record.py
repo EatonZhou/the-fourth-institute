@@ -36,7 +36,7 @@ def _persisted_bindings(store, resident_id):
 
 
 def _assert_deletion_ends_workspace_use(store, before, bindings_before, deletion, *, extras_deleted=False):
-    """Unused Workspaces retire; extras still used by another Resident survive."""
+    """Unused Workspaces delete; extras still used by another Resident survive."""
     owned_id = before["owned_workspace_id"]
     extra_ids = [binding["workspace_id"] for binding in bindings_before]
     assert deletion["owned_workspace_id"] == owned_id

@@ -1,4 +1,4 @@
-"""Canonical observations preserve data; retired schemas are rejected without writes."""
+"""Canonical observations preserve data; deleted schemas are rejected without writes."""
 import copy
 import json
 import pytest

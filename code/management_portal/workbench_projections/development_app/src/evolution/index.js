@@ -6,11 +6,11 @@ import { thumbnail, renderScene } from './scenes.js';
 
 export async function mount(root, context) {
   const { sdk, resources } = context, app = el('section', null, 'evolutionApp'); root.replaceChildren(app);
-  let selected = '', search = '', linked = [], incoming = null, retired = null, feedbackOpen = false, feedbackBusy = false;
+  let selected = '', search = '', linked = [], incoming = null, deleted = null, feedbackOpen = false, feedbackBusy = false;
   let message = '', epoch = 0, destroyed = false, hidden = false, timer, playing = false, started = 0;
   let watchStop, watchKey = '', watchEpoch = 0, stateWrites = Promise.resolve(), focusRevision = -1;
   const session = new EvolutionSession(resources, event => {
-    if (event?.purge) { selected = ''; linked = []; retired = null; incoming = null; feedbackOpen = false; cancelPending(); persist(true); }
+    if (event?.purge) { selected = ''; linked = []; deleted = null; incoming = null; feedbackOpen = false; cancelPending(); persist(true); }
     if (['frozen', 'revoked'].includes(session.phase)) { pause(); cancelPending(); }
     render();
   });
@@ -53,7 +53,7 @@ export async function mount(root, context) {
   }
   function pick(id, publish = true) {
     if (!session.writable || !session.facts.directions.some(d => d.id === id)) return;
-    pause(); cancelPending(); selected = id; retired = null; feedbackOpen = false; message = ''; persist(); render();
+    pause(); cancelPending(); selected = id; deleted = null; feedbackOpen = false; message = ''; persist(); render();
     // A direction carries its independent module range into architecture; a
     // stale map binding must not publish a misleading current-map highlight.
     if (publish && session.facts.mapMatches) {
@@ -66,10 +66,10 @@ export async function mount(root, context) {
     if (!session.facts || !object) return;
     linked = linkedDirections(object, session.facts);
     if (object.source === REFS.evolution && object.kind?.startsWith('direction:')) {
-      const id = object.kind.slice(10), removed = session.facts.retired.find(d => d.id === id);
-      if (removed) { pause(); cancelPending(); retired = removed; feedbackOpen = false; }
+      const id = object.kind.slice(10), removed = session.facts.deleted.find(d => d.id === id);
+      if (removed) { pause(); cancelPending(); deleted = removed; feedbackOpen = false; }
       else if (id !== selected && session.facts.directions.some(d => d.id === id)) {
-        pause(); cancelPending(); selected = id; retired = null; feedbackOpen = false;
+        pause(); cancelPending(); selected = id; deleted = null; feedbackOpen = false;
       }
     }
   }
@@ -98,7 +98,7 @@ export async function mount(root, context) {
     if (ok) {
       if (!session.facts.directions.some(d => d.id === selected)) selected = session.facts.directions[0]?.id || '';
       if (saved?.selected && session.scenes[saved.selected]) selected = saved.selected;
-      if (saved?.selected && session.facts.retired.some(d => d.id === saved.selected)) retired = session.facts.retired.find(d => d.id === saved.selected);
+      if (saved?.selected && session.facts.deleted.some(d => d.id === saved.selected)) deleted = session.facts.deleted.find(d => d.id === saved.selected);
       applyFocus(incoming); persist(); render();
     }
     app.style.minHeight = '';
@@ -120,7 +120,7 @@ export async function mount(root, context) {
     const shown = facts.directions.filter(d => !search || `${d.title} ${d.description} ${d.future_experience}`.includes(search));
     for (const d of shown) {
       const b = btn('', () => pick(d.id), `direction:${d.id}`, !session.writable); b.dataset.direction = d.id;
-      b.setAttribute('aria-pressed', String(!retired && selected === d.id)); b.append(thumbnail(d.id), el('strong', d.title), el('span', d.description));
+      b.setAttribute('aria-pressed', String(!deleted && selected === d.id)); b.append(thumbnail(d.id), el('strong', d.title), el('span', d.description));
       if (linked.includes(d.id)) b.append(el('small', '与当前架构对象相关', 'evo-related')); nav.append(b);
     }
     if (!shown.length) nav.append(el('p', '没有匹配的方向。换一个词试试。'));
@@ -140,8 +140,8 @@ export async function mount(root, context) {
       const focusView = moduleFocusView(incoming, facts);
       if (focusView) app.append(focusView);
       app.append(gallery(facts));
-      if (retired) {
-        const retiredView = el('section', null, 'evo-retired'); retiredView.append(el('h2', `${retired.title} · 已退役`), el('p', retired.retired_reason), el('p', '此身份没有语义继承者。请从上方重新选择一个方向。')); app.append(retiredView); return;
+      if (deleted) {
+        const deletedView = el('section', null, 'evo-deleted'); deletedView.append(el('h2', `${deleted.title} · 已删除`), el('p', deleted.deleted_reason), el('p', '此身份没有语义继承者。请从上方重新选择一个方向。')); app.append(deletedView); return;
       }
       const direction = current(), state = local(); if (!direction || !state) return;
       const frame = direction.visual.storyboard[state.step], main = el('article', null, 'evo-direction');

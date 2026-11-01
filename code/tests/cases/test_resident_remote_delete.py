@@ -100,7 +100,7 @@ def test_mailbox_delete_ready_preserves_hidden_graph_evidence():
     assert result.returncode==0,result.stdout+result.stderr
 
 
-def test_deleted_index_tombstone_retires_native_readers_before_notification():
+def test_deleted_index_tombstone_deletes_native_readers_before_notification():
     script = Path(__file__).with_name("javascript") / "resident_index_deleted.cjs"
     result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr

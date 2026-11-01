@@ -212,7 +212,7 @@ export function createExplorationSession({ loader, host, resolveView, resolveEnt
   function revalidate() {
     if (!bundle || disposed || hidden) return Promise.resolve();
     // Observation verifies access to the existing frame. It never competes
-    // with navigation, retires the renderer, or turns a ready view into loading.
+    // with navigation, deletes the renderer, or turns a ready view into loading.
     if (validation?.token === generation && validation.view === view) {
       validation.again = true; return validation.promise;
     }

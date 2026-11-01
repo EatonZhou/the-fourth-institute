@@ -36,7 +36,7 @@ def test_environment_alias_settings_cannot_enable_old_variables(stale_site):
         resident_identity_environment({'ARCHIVE_RESIDENT_ID': 'resident_a9c0b75f1989'})
 
 
-def test_seed_and_plan_aliases_cannot_enable_retired_formats(stale_site):
+def test_seed_and_plan_aliases_cannot_enable_deleted_formats(stale_site):
     assert not re.fullmatch(marker_name_pattern(), 'archive-hatg-seed-state')
     assert re.fullmatch(marker_name_pattern(), 'tfi-hatg-seed-state')
     job = {'created_by': 'test', 'surface': 'test', 'search_id': '', 'run_generation': 1}
@@ -54,13 +54,13 @@ def test_test_state_root_uses_the_instance_runtime_directory(stale_site, monkeyp
     assert state_root() == tmp_path / 'instance/runtime/test-framework/dev'
 
 
-def test_resource_tool_bootstrap_ignores_retired_root_alias(tmp_path, monkeypatch):
+def test_resource_tool_bootstrap_ignores_deleted_root_alias(tmp_path, monkeypatch):
     root = Path(__file__).resolve().parents[2]
     select_instance(monkeypatch, tmp_path / 'instance', site={'deployment': {'compatibility': {
         'environment_aliases': {'PORTAL_ROOT': ['ARCHIVE_PORTAL_ROOT']},
     }}})
     monkeypatch.delenv('PORTAL_ROOT', raising=False)
-    monkeypatch.setenv('ARCHIVE_PORTAL_ROOT', str(tmp_path / 'retired-checkout'))
+    monkeypatch.setenv('ARCHIVE_PORTAL_ROOT', str(tmp_path / 'deleted-checkout'))
     spec = importlib.util.spec_from_file_location('canonical_resource_bootstrap', root / 'core_skills/tfi-unified-id/scripts/resource_id.py')
     tool = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tool)

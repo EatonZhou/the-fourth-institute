@@ -207,8 +207,8 @@ def test_cell_lifecycle_keeps_one_row_and_an_event_log(isolated_portal_case):
             store.start_challenger("claude", "repository_work", {}, actor="t")
         assert store.freeze("claude", "repository_work", actor="case-a", frozen=False).status == STABLE
         store.start_challenger("claude", "repository_work", {"compaction_max_context_tokens": 200_000}, actor="t")
-        retired = store.delete("claude", "repository_work", "rolled_back", actor="t", evidence={"why": "failures"})
-        assert retired.champion == {"compaction_max_context_tokens": 300_000}
+        deleted = store.delete("claude", "repository_work", "rolled_back", actor="t", evidence={"why": "failures"})
+        assert deleted.champion == {"compaction_max_context_tokens": 300_000}
         with pytest.raises(ValueError, match="not a way"):
             store.delete("claude", "repository_work", "dropped", actor="t")
 
@@ -366,7 +366,7 @@ def test_daily_evaluation_applies_decisions_and_waits_for_a_person_to_promote(is
 
 
 def test_proposals_start_the_step_the_replay_finds_saving_most(isolated_portal_case, monkeypatch):
-    """提议为 cell 启动离线回放节省最多的一步调整，已退役的 challenger 不再重试"""
+    """提议为 cell 启动离线回放节省最多的一步调整，已删除的 challenger 不再重试"""
     monkeypatch.setattr(evaluation, "estimate_step", _fake_replay)
     with isolated_portal_case():
         store = HarnessEvolutionStore()
@@ -385,7 +385,7 @@ def test_proposals_start_the_step_the_replay_finds_saving_most(isolated_portal_c
         # Codex has no bound to lower (0 is off); its threshold step saves 5%.
         assert proposals[1]["challenger"] == {"compaction_threshold_percent": 65}
 
-        # A retired challenger is not tried again, and the cell rests first.
+        # A deleted challenger is not tried again, and the cell rests first.
         store.delete("claude", "repository_work", "rejected", actor="t")
         assert propose_challengers(store, traffic={("claude", "repository_work"): 40.0}, calls=[]) == []
         later = time.time() + 3 * 86400

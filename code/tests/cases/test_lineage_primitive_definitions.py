@@ -258,7 +258,7 @@ def test_program_rejects_authoring_fields_beside_canonical_config_contracts(subt
                 },
                 lineage_nodes=[],
             )
-    with subtests.test(contract='test_program_rejects_the_retired_effect_type_field'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_program_rejects_the_deleted_effect_type_field'), isolated_portal_case() as case_path:
         with pytest.raises(ValueError, match="不接受：effect_type"):
             lineage_program.normalize_program(
                 {

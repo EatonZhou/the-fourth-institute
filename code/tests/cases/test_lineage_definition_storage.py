@@ -71,8 +71,8 @@ def test_deleted_lineage_rejects_late_definition_write(lineage):
 
 
 
-def test_deleting_workspace_owner_retires_nested_bindings_and_keeps_external_workspace(lineage, tmp_path):
-    """删除所有者只退役无存活引用的工作区，共享嵌套及外部绑定保持不变"""
+def test_deleting_workspace_owner_deletes_nested_bindings_and_keeps_external_workspace(lineage, tmp_path):
+    """删除所有者只删除无存活引用的工作区，共享嵌套及外部绑定保持不变"""
     from management_portal.resources.workspace_store import get_workspace_store
     state = get_lineage_data_store()
     owner, member = resident(lineage, 'Workspace owner'), resident(lineage, 'Workspace reader')
@@ -90,10 +90,10 @@ def test_deleting_workspace_owner_retires_nested_bindings_and_keeps_external_wor
                   (member, nested, 'Family memory', member, external, 'Shared work'))
     before = ws.rows([nested, external])
     tombstone = {'resident_id': owner, 'deleted_at': '2026-10-10T00:00:00Z', 'deleted_by': 'sample_admin'}
-    retired = state.remove_residents([tombstone])
+    deleted = state.remove_residents([tombstone])
     assert ws.rows([nested, external]) == before
     assert ws.rows([unused, record['owned_workspace_id']]) == {}
-    assert set(retired) == {record['owned_workspace']['path'], record['owned_workspace']['path'] + '/unused'}
+    assert set(deleted) == {record['owned_workspace']['path'], record['owned_workspace']['path'] + '/unused'}
     history = ws.rows([unused, record['owned_workspace_id']], include_deleted=True)
     assert all(row['deleted_at'] and row['deleted_by'] == 'sample_admin' for row in history.values())
     assert state.remove_residents([tombstone]) == []

@@ -21,12 +21,12 @@ def test_publications_are_rows_of_the_pulse_publications_table(tmp_path, monkeyp
                              "evidence_paths": [evidence_path]}]},
     }}}), encoding="utf-8")
     (tmp_path / "index.json").write_text(json.dumps({"latest": {"daily": "2026-10-12"}}), encoding="utf-8")
-    retired = tmp_path / "publications.json"
-    retired.write_text(json.dumps({"schema": "tfi.portal_pulse.publications.v1", "items": [
+    deleted = tmp_path / "publications.json"
+    deleted.write_text(json.dumps({"schema": "tfi.portal_pulse.publications.v1", "items": [
         {"publication_id": "pub_from_file", "owner": "alice", "source_period": "daily", "source_key": "2026-10-12",
          "source_item_id": "one", "text": "x", "project": "", "evidence_paths": [], "published_at": "2026-10-12T00:00:00Z"},
     ]}), encoding="utf-8")
-    before = retired.read_bytes()
+    before = deleted.read_bytes()
     assert pulse._read_publications() == {"items": []}
 
     result = pulse.update_publication("alice", {"source_period": "daily", "source_key": "2026-10-12", "item_id": "one"})
@@ -42,7 +42,7 @@ def test_publications_are_rows_of_the_pulse_publications_table(tmp_path, monkeyp
 
     pulse.update_publication("alice", {"action": "unpublish", "source_period": "daily", "source_key": "2026-10-12", "item_id": "one"})
     assert pulse._read_publications() == {"items": []}
-    assert retired.read_bytes() == before
+    assert deleted.read_bytes() == before
 
 
 def test_every_caller_reads_the_public_pulse_and_only_their_own_items(monkeypatch, tmp_path):

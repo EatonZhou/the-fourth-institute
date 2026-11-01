@@ -221,8 +221,8 @@ def test_first_turn_has_guide_and_later_turns_only_have_a_readable_reference(con
     assert not any(p["id"] == "family_work_guide" and p["sent"] for p in later["parts"])
 
 
-def test_roster_sync_retires_generated_quota_watch_and_keeps_task_templates(configured_family):
-    """旧实例的额度源、Watch 和 Route 一起退役，既有任务配置保留。"""
+def test_roster_sync_deletes_generated_quota_watch_and_keeps_task_templates(configured_family):
+    """旧实例的额度源、Watch 和 Route 一起删除，既有任务配置保留。"""
     body, block = configured_family
     catalog = lineage_aggregate.lineage_catalog_store()
     body = catalog.get(body["lineage_id"])
@@ -324,7 +324,7 @@ def test_both_roles_migrate_on_short_window_pressure_and_keep_context(configured
     assert family_quota.role_availability(record)["status"] == "migrating"
 
 
-def test_sync_retires_automatic_progress_and_steward_summary_watch(configured_family):
+def test_sync_deletes_automatic_progress_and_steward_summary_watch(configured_family):
     body, block = configured_family
     catalog = lineage_aggregate.lineage_catalog_store()
     body = catalog.get(body["lineage_id"])
@@ -357,7 +357,7 @@ def test_sync_retires_automatic_progress_and_steward_summary_watch(configured_fa
     assert "progress" not in family_tasks.configured(body, block)
     steward = _find_resident(block["family"]["steward"])
     assert "Steward 不维护自身工作摘要" in family_tasks.guide(steward)[2]
-    # Previously queued/manual batches remain publishable after retiring the automatic source.
+    # Previously queued/manual batches remain publishable after leaving the automatic source.
     assert "PublishFamilyProgress" in family_tasks.render(steward, "progress", {"batch_id": "old_batch"})
     assert familize.sync_generated_structure(body["lineage_id"])["status"] == "unchanged"
 

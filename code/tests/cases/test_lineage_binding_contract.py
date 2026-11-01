@@ -8,8 +8,8 @@ from management_portal.society_service import (
 from tests.cases.test_family_familize import lineage, future_creation_store, resident  # noqa: F401
 
 
-def test_binding_contract_rejects_retired_edges_and_reference_ports(lineage):
-    """程序连线拒绝已退役的 inspect 连线、反向 watch 和 reference 端口"""
+def test_binding_contract_rejects_deleted_edges_and_reference_ports(lineage):
+    """程序连线拒绝已删除的 inspect 连线、反向 watch 和 reference 端口"""
     a = resident(lineage, "Subject")
     nodes = [{"id": a}]
     event = {"id": "event_source_observer", "kind": "event_source", "config": {"event_type": "resident.work_finished"}}

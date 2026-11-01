@@ -156,7 +156,7 @@ def test_round4_rpc_errors_and_synthetic_actor_filter_do_not_mutate_execution(is
     assert isolated_rpc.scheduler.snapshot(request.execution_id) == original
 
 
-def test_round4_retiring_synthetic_worker_keeps_claim_and_cannot_claim_more(isolated_rpc):
+def test_round4_leaving_synthetic_worker_keeps_claim_and_cannot_claim_more(isolated_rpc):
     """draining 或 offline 的 Worker 保留已认领的执行，不能再认领排队执行"""
     request, owner = active_request(isolated_rpc)
     scheduler = isolated_rpc.scheduler

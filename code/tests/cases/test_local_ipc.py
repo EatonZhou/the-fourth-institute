@@ -80,7 +80,7 @@ def test_windows_rendezvous_uses_instance_runtime_without_touching_host_cache(tm
 
 
 @pytest.mark.skipif(sys.platform == 'win32', reason='POSIX generation ownership')
-def test_node_retiring_listener_preserves_successor(tmp_path):
+def test_node_leaving_listener_preserves_successor(tmp_path):
     if not shutil.which('node'):
         pytest.skip('Node required')
     # A directory of its own: the site fixture keeps account registration locks under tmp_path.
@@ -142,7 +142,7 @@ def test_invalid_client_never_reaches_application(tmp_path):
 
 
 @pytest.mark.parametrize("transport", ["unix", "tcp"])
-def test_retiring_listener_does_not_unlink_successor(tmp_path, transport):
+def test_leaving_listener_does_not_unlink_successor(tmp_path, transport):
     path = tmp_path / "endpoint"
     old = LocalListener(path, transport=transport)
     with LocalListener(path, transport=transport, replace=True):

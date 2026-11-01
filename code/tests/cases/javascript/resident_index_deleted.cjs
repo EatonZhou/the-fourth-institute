@@ -57,7 +57,7 @@ async function scenario(browser, patched) {
     await page.waitForFunction(()=>projectionUpdates.length===1);
     assert.equal(await page.evaluate(rid=>!!PortalConversationStore.entry(`resident:${rid}`),rid),true);
     const notify = async cursor => {eventCursor=cursor;return page.evaluate(({rid,cursor})=>window.dispatchEvent(new CustomEvent('portal:change',{detail:{resident_events:[{resident_id:rid,cursor,event_type:'resident.input.state.changed',payload:{input_state:{state:'cancelled',message_id:'fixture_original'}}}]}})),{rid,cursor});};
-    // A permission-filtered tombstone must not permanently retire the identity.
+    // A permission-filtered tombstone must not permanently delete the identity.
     targetState='forbidden';await notify(2);
     await page.waitForFunction(rid=>!PortalConversationStore.entry(`resident:${rid}`),rid);
     await page.waitForFunction(()=>projectionUpdates.length===2);

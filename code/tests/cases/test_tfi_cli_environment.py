@@ -84,7 +84,7 @@ def test_context_validation_and_conflicting_paths_are_not_weakened(modules, monk
         context.execution_context()
 
 
-def test_cli_endpoint_ignores_retired_environment(modules, monkeypatch):
+def test_cli_endpoint_ignores_deleted_environment(modules, monkeypatch):
     from management_common import instance_manifest
     _, cli, load = modules
     monkeypatch.setenv('ARCHIVE_PORTAL_URL', 'https://legacy.invalid/')

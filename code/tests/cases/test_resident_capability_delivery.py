@@ -171,7 +171,7 @@ def test_error_or_cancelled_turn_never_reports_sent(runtime, error):
 def test_turn_left_to_the_next_worker_reports_no_delivery(runtime):
     """交给下一个 Worker 的轮次不报告交付证据
 
-    Worker 交接时轮次仍在运行，接手的 Worker 在轮次结束后报告交付；退役 Worker 不写失败证据。
+    Worker 交接时轮次仍在运行，接手的 Worker 在轮次结束后报告交付；删除 Worker 不写失败证据。
     """
     runtime.state.error = NativeAgentDetached("left")
     with pytest.raises(ExecutionRecoveryDeferred):

@@ -18,7 +18,7 @@ const bindings = new Map([
 const relation = { id: 'handoff_ab', type: 'handoff', source: 'resident_a', target: 'resident_b', status: 'ready', items: [
   { item_id: 'copy', source: { workspace_id: 'workspace_a', path: '/old-a' }, target: {}, result: { target_workspace_id: 'workspace_b', target_path: '/b' } },
   { item_id: 'shared', source: { workspace_id: 'workspace_shared' }, target: {}, transfer: { mode: 'direct' } },
-  { item_id: 'retired', source: { workspace_id: 'workspace_old', path: '/shared' }, target: { workspace_id: 'workspace_b' } },
+  { item_id: 'deleted', source: { workspace_id: 'workspace_old', path: '/shared' }, target: { workspace_id: 'workspace_b' } },
   { item_id: 'unknown', source: { workspace_id: 'workspace_a' }, target: { path: '/not-registered' } },
 ] };
 const snapshot = JSON.stringify({ residents, relation, bindings: [...bindings] });

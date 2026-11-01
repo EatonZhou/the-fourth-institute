@@ -76,30 +76,30 @@ def _turn(tmp_path, prompt: str, *, description: str = "Look something up", **ex
     }
 
 
-def test_a_retiring_worker_leaves_the_turn_and_its_tool_call_to_the_next_worker(bridge, tmp_path) -> None:
+def test_a_leaving_worker_leaves_the_turn_and_its_tool_call_to_the_next_worker(bridge, tmp_path) -> None:
     """DSH 交接把轮次和工具调用留给下一个 Worker
 
     旧 Worker 断开时 bridge 不取消这一轮，未完成的工具调用交给按 turn_id 接回的新 Worker，输入只发送一次。
     """
     client = bridge()
-    call_reached_retiring_worker = threading.Event()
+    call_reached_leaving_worker = threading.Event()
     left: list[BaseException] = []
 
-    def retiring_worker_tool(_call: dict) -> dict:
-        call_reached_retiring_worker.set()
+    def leaving_worker_tool(_call: dict) -> dict:
+        call_reached_leaving_worker.set()
         raise ToolCallHandedOver("Worker handover: the next Worker runs this tool call")
 
-    def retiring_worker() -> None:
+    def leaving_worker() -> None:
         try:
-            client._request("turn/run", _turn(tmp_path, "use tool"), tool_callback=retiring_worker_tool,
-                            response_timeout=30, detach_requested=lambda: call_reached_retiring_worker.is_set())
+            client._request("turn/run", _turn(tmp_path, "use tool"), tool_callback=leaving_worker_tool,
+                            response_timeout=30, detach_requested=lambda: call_reached_leaving_worker.is_set())
         except BaseException as exc:  # noqa: BLE001 - the test inspects it
             left.append(exc)
 
-    thread = threading.Thread(target=retiring_worker)
+    thread = threading.Thread(target=leaving_worker)
     thread.start()
     thread.join(20)
-    assert call_reached_retiring_worker.is_set() and not thread.is_alive()
+    assert call_reached_leaving_worker.is_set() and not thread.is_alive()
     assert len(left) == 1 and isinstance(left[0], NativeAgentDetached)
 
     # The next Worker's tools differ (a newer Portal); it attaches by turn id.

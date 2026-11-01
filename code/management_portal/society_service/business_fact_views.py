@@ -163,7 +163,7 @@ def projection_transaction(prepared, registry):
         ).fetchall()
         if len(lineages) != len(lineage_ids):
             raise ResourceProjectionConflict('Stale canonical domain projection: missing Lineage')
-        # Workspace retirement removes bindings directly in its own domain
+        # Workspace deletion removes bindings directly in its own domain
         # transaction. Fence those existing relationships too; new bindings
         # are created through the locked Resident identity owner.
         connection.execute(

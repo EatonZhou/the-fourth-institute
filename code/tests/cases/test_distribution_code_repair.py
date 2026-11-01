@@ -127,7 +127,7 @@ def test_distribution_keeps_selected_test_catalog_and_fixtures(repair, include_t
         'tests/cases/test_sample.py': 'def test_sample(): assert True\n',
         'tests/cases/tau_cases.json': '{"cases": []}\n',
         'tests/cases/fixtures/sample.json': '{"synthetic": true}\n',
-        'tests/ui/retired.spec.js': '// retired\n',
+        'tests/ui/deleted.spec.js': '// deleted\n',
         '.wall/history.json': '{"private_history": true}\n',
     }
     for relative, content in contents.items():

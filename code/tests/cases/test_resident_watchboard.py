@@ -272,8 +272,8 @@ class ResidentWatchboardTest(unittest.TestCase):
         self.assertTrue(status["last_run_at"])
         self.assertEqual(sorted(path.name for path in (script_root / "state").iterdir()), ["status.json"])
 
-    def test_watchboard_manifest_rejects_retired_shape_aliases(self) -> None:
-        """agent.yaml 使用已退役的列表格式 commands 时报错，并在 Watchboard 中显示
+    def test_watchboard_manifest_rejects_deleted_shape_aliases(self) -> None:
+        """agent.yaml 使用已删除的列表格式 commands 时报错，并在 Watchboard 中显示
 
         :module: workbench.panels"""
         self.install()
@@ -285,7 +285,7 @@ class ResidentWatchboardTest(unittest.TestCase):
             "main: src/main.py\n"
             "commands:\n"
             "  - id: status\n"
-            "    description: retired shape\n",
+            "    description: deleted shape\n",
             encoding="utf-8",
         )
         resident_watchboard_domain._WATCHBOARD_YAML_CACHE.clear()

@@ -36,7 +36,7 @@ class ExecutionSettings:
             )''')
             # Retain the physical column through rolling upgrades: older
             # draining generations still read it. The public contract names
-            # the observation policy, not the retired transport mechanism.
+            # the observation policy, not the deleted transport mechanism.
             connection.execute('''INSERT INTO service_settings(singleton, provider_timing_proxy_enabled)
                 VALUES (1, TRUE) ON CONFLICT (singleton) DO NOTHING''')
             columns = {row['attname'] for row in connection.execute('''

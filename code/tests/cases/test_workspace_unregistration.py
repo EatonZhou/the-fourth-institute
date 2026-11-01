@@ -106,7 +106,7 @@ def test_nested_registration_must_be_deleted_first(workspace, deleted):
 
 def test_older_internal_registration_can_be_unbound_and_deleted(future_creation_store, workspace):
     """An instance directory outside the areas can no longer be registered;
-    older registrations of one still let their Residents save, unbind and retire."""
+    older registrations of one still let their Residents save, unbind and delete."""
     old = current_instance().root / 'maintenance' / 'old-gate'
     other = 'workspace_bbbbbbbbbbbb'
     stamp = now()

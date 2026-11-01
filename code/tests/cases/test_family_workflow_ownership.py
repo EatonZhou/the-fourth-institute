@@ -254,7 +254,7 @@ def test_auto_collection_respects_wire_owned_by_another_block(lineage, workflows
     assert not family_ids.intersection(steps.values())
 
 
-def test_member_reconciliation_keeps_business_ids_and_retires_only_generated_watch(lineage, workflows):
+def test_member_reconciliation_keeps_business_ids_and_deletes_only_generated_watch(lineage, workflows):
     """名册更新保留业务身份并仅清理生成监听"""
     bindings, _calls = workflows
     member, joining = resident(lineage, "Module"), resident(lineage, "Joining")

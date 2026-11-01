@@ -1,4 +1,4 @@
-"""Program edits of a Lineage: adding, changing and deleting components and wires, and retiring
+"""Program edits of a Lineage: adding, changing and deleting components and wires, and leaving
 exhausted Event sources.
 """
 

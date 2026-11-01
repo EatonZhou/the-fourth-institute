@@ -733,7 +733,7 @@ def test_execution_reconciles_a_stale_provider_tuple_before_submission(
     stale = resident_runtime_settings.merge_settings(
         resident_runtime_domain.read_resident_runtime_settings(resident_record),
         {
-            "model": "retired-model",
+            "model": "deleted-model",
             "reasoning_effort": "xhigh",
             "service_tier": "priority",
         },

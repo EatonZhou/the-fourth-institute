@@ -157,7 +157,7 @@ def test_external_unquoted_arrival_can_only_ask_its_own_router_to_choose(reply, 
 
 
 @pytest.mark.parametrize("old_review", [False, True])
-def test_nested_facade_does_not_spend_model_quota_and_retires_old_review(quota_family, old_review, monkeypatch):
+def test_nested_facade_does_not_spend_model_quota_and_deletes_old_review(quota_family, old_review, monkeypatch):
     from tests.cases.family_test_support import set_role
     from tests.cases.test_cross_owner_storage_integration import ACTOR
     from management_portal.society_service import family_quota

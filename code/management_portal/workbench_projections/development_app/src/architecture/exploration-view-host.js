@@ -3,7 +3,7 @@
 export function createExplorationViewHost(root) {
   let active = null, disposed = false;
   const clone = value => value == null ? null : structuredClone(value);
-  function retire() {
+  function releaseView() {
     const old = active;
     active = null; // Disable callbacks before calling renderer cleanup.
     root.replaceChildren(); // Remove protected content even if cleanup throws.
@@ -22,7 +22,7 @@ export function createExplorationViewHost(root) {
   async function mount({ factory, subject, content, ports = {}, initialState = null }) {
     if (disposed) throw new Error('exploration_view_host_destroyed');
     if (typeof factory !== 'function') throw new Error('exploration_renderer_unavailable');
-    retire();
+    releaseView();
     const stage = root.ownerDocument.createElement('div');
     stage.className = 'arch-exploration-surface';
     const entry = { controller: new AbortController(), stage, instance: null };
@@ -50,14 +50,14 @@ export function createExplorationViewHost(root) {
       return { status: 'mounted' };
     } catch (e) {
       if (active !== entry || entry.controller.signal.aborted) return { status: 'superseded' };
-      retire();
+      releaseView();
       throw e;
     }
   }
   return {
     mount, capture,
-    hide() { try { return capture(); } finally { retire(); } },
-    destroy() { if (disposed) return; disposed = true; retire(); },
+    hide() { try { return capture(); } finally { releaseView(); } },
+    destroy() { if (disposed) return; disposed = true; releaseView(); },
   };
 }
 

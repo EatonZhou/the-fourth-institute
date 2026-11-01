@@ -468,7 +468,7 @@ def program_without_resident_references(
 
     # Watchboard components belong to the exact Resident encoded by their
     # stable installation keys. They have no Resident wire endpoints, so
-    # endpoint cleanup alone cannot retire the installed command graph.
+    # endpoint cleanup alone cannot delete the installed command graph.
     from . import watchboard_lineage
 
     removed_component_ids = {

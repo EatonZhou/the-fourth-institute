@@ -32,17 +32,17 @@ def test_deleted_workspace_projection_drops_location_without_changing_history():
 
     descriptor = {
         "resource_id": "workspace_0123456789ab", "status": "active",
-        "attributes": {"path": "/retired/workspace"},
+        "attributes": {"path": "/deleted/workspace"},
     }
     active = descriptor_resource_record(descriptor)
-    assert active["attributes"]["path"] == "/retired/workspace"
+    assert active["attributes"]["path"] == "/deleted/workspace"
     assert "active" not in active["search_terms"]
     descriptor["status"] = "deleted"
     record = descriptor_resource_record(descriptor)
     assert record["attributes"]["status"] == "deleted"
     assert "path" not in record["attributes"]
-    assert "/retired/workspace" not in record["search_terms"]
-    assert descriptor["attributes"]["path"] == "/retired/workspace"
+    assert "/deleted/workspace" not in record["search_terms"]
+    assert descriptor["attributes"]["path"] == "/deleted/workspace"
 
 
 def _resource_service(tmp_path, records, *, descriptors=None):

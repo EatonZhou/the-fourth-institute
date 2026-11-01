@@ -52,8 +52,8 @@ def test_relationships_are_extra_only_and_unchanged_save_does_no_writes(relation
 
 
 @pytest.mark.parametrize('field',['role','managed','default_cwd','access','scope','root_id','binding_origin','unknown'])
-def test_rejects_retired_fields(field):
-    """Workspace 绑定中出现已退役或未知字段时被拒绝"""
+def test_rejects_deleted_fields(field):
+    """Workspace 绑定中出现已删除或未知字段时被拒绝"""
     with pytest.raises(ValueError):
         storage.normalize_bindings([dict(workspace_id=EXTRA,purpose='',**{field:True})])
 

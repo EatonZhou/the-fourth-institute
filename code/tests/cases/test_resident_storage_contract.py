@@ -16,7 +16,7 @@ from management_portal.society_service.state_store import LineageDataStore, line
 
 
 def test_schema_has_explicit_owners_and_no_document_catch_all():
-    """Resident 数据表每列有明确归属，不含通用 JSON 文档列和已退役的表
+    """Resident 数据表每列有明确归属，不含通用 JSON 文档列和已删除的表
 
     :design-point:"""
     store = LineageDataStore()
@@ -40,8 +40,8 @@ def test_schema_has_explicit_owners_and_no_document_catch_all():
 
 
 @pytest.mark.parametrize('field', ['watchboard', 'extensions', 'extra', 'metadata', 'profile_json', 'lineage_membership', 'native_codex_fork', 'runtime_settings', 'visibility', 'fork_context', 'fork_method', 'context_seed_applied_at'])
-def test_unknown_or_retired_fields_are_rejected(field):
-    """Resident 记录中的未知或已退役字段被拒绝
+def test_unknown_or_deleted_fields_are_rejected(field):
+    """Resident 记录中的未知或已删除字段被拒绝
 
     :design-point:"""
     with pytest.raises(ValueError, match='Unknown Resident fields'):

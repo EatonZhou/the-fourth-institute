@@ -1,4 +1,4 @@
-"""WALL source ownership across real Resident/Workspace retirement.
+"""WALL source ownership across real Resident/Workspace deletion.
 
 :design: decision_06defc47e960, decision_8838269736d3
 """
@@ -39,7 +39,7 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
     for resident in (first, second):
         resident_domain.add_resident_reference_workspace(resident['resident_id'], str(root), actor)
     if lost_reply == 'ancestor_binding':
-        # A broader extra binding must not let retirement collect the source
+        # A broader extra binding must not let deletion collect the source
         # again through its parent after the exact project binding is removed.
         resident_domain.add_resident_reference_workspace(first['resident_id'], str(tmp_path), actor)
     resident_domain.add_resident_reference_workspace(first['resident_id'], str(child), actor)

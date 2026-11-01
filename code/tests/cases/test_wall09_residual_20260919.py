@@ -263,7 +263,7 @@ def test_deep_read_real_analysis_persistence_and_error_terminal(monkeypatch, tmp
 
 
 @pytest.mark.parametrize("stale", [False, True])
-def test_exp_start_deduplicates_or_retires_stale_job(monkeypatch, tmp_path, stale):
+def test_exp_start_deduplicates_or_deletes_stale_job(monkeypatch, tmp_path, stale):
     """启动 Exp 时复用运行中的任务，旧任务已失效则标为错误并新建任务"""
     paper = {"id": "paper_0123456789ab", "title": "fixture"}
     old = {"job_id": "old", "paper_id": paper["id"], "status": "running", "created_at": 1}

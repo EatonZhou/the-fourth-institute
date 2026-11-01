@@ -226,8 +226,8 @@ def test_same_timestamp_unchanged_source_can_delete(projection):
     assert told(projection) == [(R, 'deleted')]
 
 
-def test_same_second_deletion_can_retire_domain_relations_without_losing_resource(projection):
-    """同秒删除允许退役领域关系且保留已有资源描述
+def test_same_second_deletion_can_delete_domain_relations_without_losing_resource(projection):
+    """同秒删除允许删除领域关系且保留已有资源描述
 
     :module: platform.core"""
     current = projection.descriptors.put({

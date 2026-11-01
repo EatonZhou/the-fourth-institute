@@ -151,7 +151,7 @@ def test_worker_manager_health_identity_and_failed_replacement_keep_old(tmp_path
         {"ok": False, "worker_id": "new", "build_id": "new"},
         {"ok": True, "worker_id": "new", "build_id": "new"},
     ])
-    # Afterwards the exited Worker reports nothing (it was not retired).
+    # Afterwards the exited Worker reports nothing (it was not deleted).
     health = Mock(side_effect=lambda _worker: next(states, {}))
     monkeypatch.setattr(manager, "_health", health)
     monkeypatch.setattr(worker_manager.time, "sleep", lambda _seconds: None)

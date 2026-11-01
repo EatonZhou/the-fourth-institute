@@ -1,4 +1,4 @@
-"""Canonical Paper/Repo readers reject retired tags and retain authentication and encryption.
+"""Canonical Paper/Repo readers reject deleted tags and retain authentication and encryption.
 
 :design: decision_15aab18c0ab3
 """

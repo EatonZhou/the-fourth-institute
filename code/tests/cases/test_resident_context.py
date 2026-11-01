@@ -119,7 +119,7 @@ def _summarize(context: ResidentContext, resident_id: str, focus: str) -> dict:
     )
 
 
-def test_catalog_sync_queues_new_residents_and_retires_missing_ones(context: ResidentContext) -> None:
+def test_catalog_sync_queues_new_residents_and_deletes_missing_ones(context: ResidentContext) -> None:
     """Resident 目录同步为新 Resident 排队摘要与向量，移除消失的 Resident
 
     首次同步为每个 Resident 排一份完整摘要和一份向量任务；目录不变时不再排队；目录中消失的 Resident 变为非活动并丢弃其任务。

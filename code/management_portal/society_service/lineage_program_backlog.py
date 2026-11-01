@@ -316,15 +316,15 @@ def drain_event_backlog(
         lineage_program_wire_queue.retry_delay_seconds(waiting_attempt_count) if waiting_attempt_count else 0,
     ]
     retry_after_seconds = min((delay for delay in delays if delay > 0), default=0)
-    # Retiring re-reads the Lineage under its admission lock; skip it when no
+    # Leaving re-reads the Lineage under its admission lock; skip it when no
     # Event Source asks to be deleted once exhausted.
-    retires = any(
+    deletes = any(
         component.get("kind") == "event_source"
         and (component.get("config") or {}).get("auto_delete_on_exhaustion")
         for component in (lineage.get("program") or {}).get("components") or []
         if isinstance(component, dict)
     )
-    deleted_event_source_ids = _delete_exhausted_event_sources(lineage_id, actor_id) if retires else []
+    deleted_event_source_ids = _delete_exhausted_event_sources(lineage_id, actor_id) if deletes else []
     return {
         "deleted_event_source_ids": deleted_event_source_ids,
         "attempted_count": attempted_count,

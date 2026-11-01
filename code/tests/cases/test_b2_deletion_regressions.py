@@ -10,7 +10,7 @@ from tests.cases.test_resident_folder_creation_contract import (
 )
 
 
-def test_deletion_retires_unused_independent_workspace(future_creation_store):
+def test_deletion_deletes_unused_independent_workspace(future_creation_store):
     """Lineage 内的独立 Workspace 无其他使用者时随删除清理"""
     record = resident_domain.register_resident(_new_session_payload('Deletion guard'), 'sample_admin')
     folder = Path(record['workspace_path']) / 'handoff-workspaces/copy'
@@ -25,7 +25,7 @@ def test_deletion_retires_unused_independent_workspace(future_creation_store):
     assert not folder.exists()
 
 
-def test_project_deletion_retires_unused_nested_workspace(monkeypatch, tmp_path):
+def test_project_deletion_deletes_unused_nested_workspace(monkeypatch, tmp_path):
     """项目内无其他使用者的 Workspace 不阻止删除"""
     from tests.cases.test_project_deletion import _configure_project
     from management_portal.society_service import project_domain
@@ -44,7 +44,7 @@ def test_project_deletion_preserves_workspace_used_by_surviving_resident(monkeyp
 
     :module: platform.core"""
     # Every Project registers its root as a Workspace; that alone refused to
-    # delete FastRobotDemo. The root is the folder being deleted, so it retires.
+    # delete FastRobotDemo. The root is the folder being deleted, so it deletes.
     from tests.cases.test_project_deletion import _configure_project
     from management_portal.society_service import project_domain
     from management_portal.society_service.state_store import LineageDataStore

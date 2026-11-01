@@ -1,4 +1,4 @@
-"""Runtime readers accept canonical formats and reject retired tags without writes."""
+"""Runtime readers accept canonical formats and reject deleted tags without writes."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -194,7 +194,7 @@ def test_experiment_readers_retain_authorization_guards(namespace, reader):
 
 @pytest.mark.parametrize('factory,table,old', [
     (AgentDataStore, 'agent_store_meta', 'archive.agent-data.v18'),
-    # The retired prefix on the current Lineage data version.
+    # The deleted prefix on the current Lineage data version.
     (LineageDataStore, 'lineage_meta', 'archive.' + LINEAGE_DATA_SCHEMA.split('.', 1)[1]),
 ])
 def test_existing_postgres_marker_is_read_only(factory, table, old, namespace):

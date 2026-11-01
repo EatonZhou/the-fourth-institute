@@ -145,8 +145,8 @@ def test_project_resources_are_unregistered_before_the_project_content_is_delete
         workspaces.ensure(workspace_id, path)
         workspaces.database.write(lambda connection, workspace_id=workspace_id: workspaces.mark_deleted(
             workspace_id, deleted_at="2026-10-17T00:00:00Z", deleted_by="alice", connection=connection))
-    retired = []
-    monkeypatch.setattr(permission_system, "unregister_resources", lambda ids, **_: retired.append(list(ids)) or [])
+    deleted = []
+    monkeypatch.setattr(permission_system, "unregister_resources", lambda ids, **_: deleted.append(list(ids)) or [])
     service = _ResourceService(RESOURCES)
     result, domain_calls = _delete_with(monkeypatch, service)
 
@@ -154,8 +154,8 @@ def test_project_resources_are_unregistered_before_the_project_content_is_delete
     assert domain_calls == [["knowledge_aaaaaaaaaaaa", "repo_aaaaaaaaaaaa"]]
     assert service.unregistered == ["knowledge_aaaaaaaaaaaa", "repo_aaaaaaaaaaaa", "Example"]
     assert result["resource_ids"] == ["knowledge_aaaaaaaaaaaa", "repo_aaaaaaaaaaaa", "Example"]
-    # The Workspaces retired with the directory leave the permission trees too.
-    assert retired == [["workspace_aaaaaaaaaaaa"]]
+    # The Workspaces deleted with the directory leave the permission trees too.
+    assert deleted == [["workspace_aaaaaaaaaaaa"]]
 
 
 def test_a_resource_that_cannot_be_unregistered_stops_before_any_content_is_deleted(monkeypatch):
@@ -171,7 +171,7 @@ def test_a_resource_that_cannot_be_unregistered_stops_before_any_content_is_dele
     assert error.value.details["unregistered_resource_ids"] == ["knowledge_aaaaaaaaaaaa"]
 
 
-def test_retiring_the_project_record_last_is_not_silently_skipped(monkeypatch):
+def test_leaving_the_project_record_last_is_not_silently_skipped(monkeypatch):
     """项目记录最终注销失败时向调用者报告错误"""
     # The last step had no project unregistration and its error was dropped,
     # so FastRobotDemo's authorization resource stayed active after deletion.
@@ -182,7 +182,7 @@ def test_retiring_the_project_record_last_is_not_silently_skipped(monkeypatch):
 
 def test_calling_again_after_the_index_dropped_the_project_finishes_the_deletion(monkeypatch):
     """项目已移出索引后重试仍能完成注销"""
-    # FastRobotDemo was deleted before its record could be retired; the index
+    # FastRobotDemo was deleted before its record could be deleted; the index
     # no longer listed it, so DeleteProject answered "not found" and could not finish.
     from management_portal.hatg.contracts import not_found
 

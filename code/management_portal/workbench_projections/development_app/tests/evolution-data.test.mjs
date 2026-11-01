@@ -7,7 +7,7 @@ function fixture(){
  const frames=[0,1,2,3].map(i=>({id:`scene-${i}`,status:'simulated',duration_ms:1000}));
  const direction={id:'agent-society-city',title:'City',status:'proposed',modules:['direct'],plans:[],visual:{storyboard:frames}};
  const attached={id:'goal-grown-studio',title:'Studio',status:'proposed',modules:['direct'],plans:['plan_x'],visual:{storyboard:frames}};
- const e={schema:'tfi.portal-evolution.v2',directions:[direction,attached],plans:[{id:'plan_x',title:'Partial Plan',modules:['plan-only']},{id:'unrelated',title:'Hidden'}],retired_directions:[{id:'retired',retired_reason:'No successor'}],module_map:{ref:REFS.modules,schema:'tfi.portal-architecture.v1',revision:'map-hash',snapshot_ref:'snapshot'}};
+ const e={schema:'tfi.portal-evolution.v2',directions:[direction,attached],plans:[{id:'plan_x',title:'Partial Plan',modules:['plan-only']},{id:'unrelated',title:'Hidden'}],deleted_directions:[{id:'deleted',deleted_reason:'No successor'}],module_map:{ref:REFS.modules,schema:'tfi.portal-architecture.v1',revision:'map-hash',snapshot_ref:'snapshot'}};
  const map={schema:'tfi.portal-architecture.v1',modules:[{id:'direct',title:'Direct module'},{id:'plan-only',title:'Plan module'}]};
  const sources={ [REFS.evolution]:{data:e,text:'directions:\n  - id: agent-society-city\n  - id: goal-grown-studio\n',version:'evo-hash'},[REFS.modules]:{data:map,text:'modules:\n  - id: direct\n  - id: plan-only\n',version:'map-hash'},snapshot:{data:map,text:'bound',version:'map-hash'},plan_x:{text:'## 问题\nProblem\n\n## 预期体验\nExperience\n\n## 成功检验\nCheck',version:'body-hash',recordVersion:'2'}};
  const calls=[];
@@ -19,7 +19,7 @@ test('no-Plan directions are legal; direct modules never union Plan modules; onl
  assert.deepEqual(linkedDirections({kind:'module:plan-only',source:REFS.modules},facts),[]);
  assert.deepEqual(linkedDirections({kind:'module:direct',source:REFS.modules},facts),['agent-society-city','goal-grown-studio']);
  const object=semanticObject({kind:'direction',id:'agent-society-city'},facts);
- assert.deepEqual(Object.keys(object).sort(),['kind','observed_at','ref','source','status']);assert.equal(object.status,'proposed');assert.equal(semanticObject({kind:'direction',id:'retired'},facts),null);
+ assert.deepEqual(Object.keys(object).sort(),['kind','observed_at','ref','source','status']);assert.equal(object.status,'proposed');assert.equal(semanticObject({kind:'direction',id:'deleted'},facts),null);
  const payload=feedbackPayload(facts,facts.directions[0],initialScene(facts.directions[0]),'idea'),scene=JSON.parse(payload.value.scene);
  assert.equal(scene.status,'simulated');assert.equal(scene.sources.modules.version,'map-hash');assert.equal(scene.storyboard.id,'scene-0');assert.equal(scene.local.city.actor,'research');
 });

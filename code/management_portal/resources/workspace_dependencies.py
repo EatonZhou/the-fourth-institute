@@ -15,7 +15,7 @@ def directory_dependencies(folder, connection):
     registry._ensure()
     table = f'"{registry.database.schema}".registry_documents'
     # SHARE conflicts with registration/move writes, and remains held until
-    # the enclosing retirement transaction commits or rolls back.
+    # the enclosing deletion transaction commits or rolls back.
     connection.execute(f'LOCK TABLE {table} IN SHARE MODE')
     root = Path(folder)
     blocked = set()

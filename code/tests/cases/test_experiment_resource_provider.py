@@ -105,12 +105,12 @@ def test_experiment_update_rejects_symlinked_document_outside_entry(
     assert outside.read_bytes() == before
 
 
-def test_experiment_retirement_uses_project_knowledge_trash(
+def test_experiment_deletion_uses_project_knowledge_trash(
     experiment_service: tuple[ResourceService, Path],
 ) -> None:
-    """实验退役移入项目知识库回收站"""
+    """实验删除移入项目知识库回收站"""
     service, project_root = experiment_service
-    created = service.register("experiment", {"project_id": "OSForAgent", "title": "Retirement path"}, actor="resident_aaaaaaaaaaaa")
+    created = service.register("experiment", {"project_id": "OSForAgent", "title": "Deletion path"}, actor="resident_aaaaaaaaaaaa")
     result = experiment.unregister_experiment(created["resource_id"])
     assert Path(result["trash_path"]).parent == project_root / "knowledge_base" / ".trash"
 
@@ -134,7 +134,7 @@ def test_experiment_index_preserves_registered_title_instead_of_folder_slug(expe
 def test_experiment_registration_is_idempotent_and_updatable(
     experiment_service: tuple[ResourceService, Path],
 ) -> None:
-    """实验注册保持幂等且支持更新与退役后重建"""
+    """实验注册保持幂等且支持更新与删除后重建"""
     service, project_root = experiment_service
     with pytest.raises(ValueError, match="slug must use lowercase"):
         service.register(
@@ -224,7 +224,7 @@ def test_experiment_registration_is_idempotent_and_updatable(
     assert recreated["created"] is True
 
 
-def test_experiment_unregister_retires_registration_without_prior_update(
+def test_experiment_unregister_deletes_registration_without_prior_update(
     experiment_service: tuple[ResourceService, Path],
 ) -> None:
     """实验未经更新直接注销后可用新标识重建"""

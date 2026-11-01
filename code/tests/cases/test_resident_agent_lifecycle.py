@@ -64,11 +64,11 @@ def test_registration_candidate_uses_only_declared_storage_fields(future_creatio
     captured = []
     def capture(record, payload, actor, now):
         validate_record_fields(record)
-        retired = {
+        deleted = {
             "mode", "protocol_version", "record_type", "provider_profile", "memory_path",
             "watchboard_scope", "resident_identity_injection_enabled", "lineage_membership",
         }
-        assert not set(record) & retired
+        assert not set(record) & deleted
         if entry == "personal":
             assert record["personal_owner_id"] == actor
         captured.append(record)

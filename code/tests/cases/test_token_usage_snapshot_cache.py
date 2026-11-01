@@ -78,7 +78,7 @@ class TokenUsageSnapshotCacheTest(unittest.TestCase):
 
 
 
-def test_status_cache_write_retires_obsolete_contracts(tmp_path):
+def test_status_cache_write_deletes_obsolete_contracts(tmp_path):
     """写入状态缓存时清除过时版本和已废弃的缓存条目
 
     :module: platform.core"""

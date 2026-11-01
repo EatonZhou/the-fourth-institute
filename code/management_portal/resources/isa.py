@@ -980,7 +980,7 @@ def delete_project(inv: Invocation) -> dict[str, Any]:
     # The Project leaves the permission trees with every entry naming it, so a
     # later Project with the same ID does not inherit them.
     _service().unregister(resource_id, actor=inv.caller, resource_type="project")
-    # The Workspaces retired with the project directory leave the trees too.
+    # The Workspaces deleted with the project directory leave the trees too.
     from management_portal import permission_system
     from .workspace_store import get_workspace_store
 

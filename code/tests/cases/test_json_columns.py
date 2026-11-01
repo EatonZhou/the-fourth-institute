@@ -634,10 +634,10 @@ def test_harness_records_read_and_write_both_column_types(legacy, monkeypatch):
                             evidence={"why": "a\x00"}).challenger is None
     evolution.freeze("claude", "repository_work", actor="t")
     assert evolution.cell("claude", "repository_work").challenger is None
-    frozen, retired, start = evolution.events(provider="claude")
-    assert (frozen["challenger"], retired["challenger"], start["challenger"]) == (
+    frozen, deleted, start = evolution.events(provider="claude")
+    assert (frozen["challenger"], deleted["challenger"], start["challenger"]) == (
         None, started.challenger, started.challenger)
-    assert retired["evidence"] == {"why": "a�"}
+    assert deleted["evidence"] == {"why": "a�"}
     turn = TurnCalls(execution_id="execution_t", agent_id=SENDER, provider="claude", cell="claude/repository_work",
                      arm="champion", version=1, recorded_at=1.0, compaction={"limit": 5}, calls=((1.0, 10, 5),),
                      compactions=(2.0,))

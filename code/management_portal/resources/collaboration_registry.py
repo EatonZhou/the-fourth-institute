@@ -31,7 +31,7 @@ def descriptor_attributes(descriptor: Mapping[str, Any]) -> dict[str, Any]:
     attributes = dict(descriptor.get("attributes") or {})
     if (stripped_text(descriptor.get("resource_id")).startswith("workspace_")
             and descriptor.get("status") == "deleted"):
-        # Keep the lifecycle tombstone, without advertising its retired location.
+        # Keep the lifecycle tombstone, without advertising its deleted location.
         # The authoritative Workspace row retains its history.
         attributes.pop("path", None)
     return {
@@ -374,7 +374,7 @@ class CollaborationDescriptorStore:
         lifecycle_fields = {"status", "updated_at", "deleted_at"}
         same_source = ({k: v for k, v in candidate.items() if k not in lifecycle_fields}
                        == {k: v for k, v in current.items() if k not in lifecycle_fields})
-        # A deletion can retire a Workspace binding in the same second as the
+        # A deletion can delete a Workspace binding in the same second as the
         # last live projection. Accept that domain event only while the public
         # descriptor still exactly matches the last accepted live source.
         from .domain_projection_evidence import same_descriptor

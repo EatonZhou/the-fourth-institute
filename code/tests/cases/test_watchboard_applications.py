@@ -208,10 +208,10 @@ def test_telepus_contacts_are_the_rows_the_telegram_router_reads(monkeypatch):
     # The router authorizes each message from telegram_contacts in its own
     # schema (TELEPUS_DATABASE_SCHEMA=telepus); the former contact file in the
     # Telepus Lineage Folder is neither read nor written.
-    retired = lineage_folder("lineage_c625a4bee56b") / "state" / "telegram" / "user_actors.json"
-    retired.parent.mkdir(parents=True, exist_ok=True)
-    retired.write_text(json.dumps({"999999": {"name": "mallory", "portal_actor": "mallory"}}), encoding="utf-8")
-    before = retired.read_bytes()
+    deleted = lineage_folder("lineage_c625a4bee56b") / "state" / "telegram" / "user_actors.json"
+    deleted.parent.mkdir(parents=True, exist_ok=True)
+    deleted.write_text(json.dumps({"999999": {"name": "mallory", "portal_actor": "mallory"}}), encoding="utf-8")
+    before = deleted.read_bytes()
     monkeypatch.setattr(telepus, "get_portal_access_store", lambda: SimpleNamespace(user=lambda name: {"username": name, "configured": True, "status": "active"}))
     telepus.bind_contact("alice", "123456")
     telepus.bind_contact("bob", "654321")
@@ -221,7 +221,7 @@ def test_telepus_contacts_are_the_rows_the_telegram_router_reads(monkeypatch):
     assert rows == [("123456", "alice", "alice")]
     assert telepus._read_telepus_telegram_user_contacts() == {
         "123456": {"telegram_user_id": "123456", "name": "alice", "portal_actor": "alice"}}
-    assert retired.read_bytes() == before
+    assert deleted.read_bytes() == before
 
 
 def test_actor_normalization_keeps_the_existing_contract(subtests, isolated_portal_case):

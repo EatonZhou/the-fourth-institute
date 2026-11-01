@@ -78,8 +78,8 @@ def test_asgi_instruction_carries_lifecycle_to_owner_thread(tmp_path, monkeypatc
     assert current_lifecycle() == ''
 
 
-def test_workspaces_are_tracked_and_retired_after_their_resident(tmp_path, monkeypatch):
-    """额外 Workspace 自动跟踪，Resident 先退役，已有 Workspace 不被接管"""
+def test_workspaces_are_tracked_and_deleted_after_their_resident(tmp_path, monkeypatch):
+    """额外 Workspace 自动跟踪，Resident 先删除，已有 Workspace 不被接管"""
     store = LifecycleStore()
     scope = open_scope(tmp_path)
     registry = get_resource_type_registry()

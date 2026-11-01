@@ -42,7 +42,7 @@ def test_no_provider_resends_a_turns_input() -> None:
     Provider 目录不再有 interrupted_turn_recovery，Claude Code、DSH 和 Kimi Code 都声明交接时保留这一轮；Antigravity 交付不确定时让这一轮失败（capability_contracts.WITHHELD）。
     """
     assert not any(hasattr(provider, "interrupted_turn_recovery") for provider in AGENT_PROVIDERS.values())
-    # A Provider's process keeps the turn its retiring Worker leaves (each Adapter's tests show how);
+    # A Provider's process keeps the turn its leaving Worker leaves (each Adapter's tests show how);
     # test_antigravity's test_disconnect_checkpoint_refuses_to_replay_input shows the exception.
     for name, provider in AGENT_PROVIDERS.items():
         assert provider.handover_keeps_turn != capability_contracts.withheld(name, "handover_keeps_turn"), name
@@ -167,7 +167,7 @@ def test_the_claude_client_never_lets_a_daemon_send_a_started_turns_input_again(
     assert (params["prompt"], params["continue_prompt"]) == ("the original task", "continue")
 
 
-# --- A tool call that reaches a retiring Worker goes to the next one ---------
+# --- A tool call that reaches a leaving Worker goes to the next one ---------
 
 
 def _tool_invocation(provider: str):
@@ -274,8 +274,8 @@ def _kimi_snapshot(*, busy: bool, approvals: list[dict] | None = None) -> dict:
     }
 
 
-def test_a_retiring_worker_stops_following_the_kimi_prompt_without_aborting_it(tmp_path) -> None:
-    """退役 Worker 停止跟随 Kimi prompt 而不中止
+def test_a_leaving_worker_stops_following_the_kimi_prompt_without_aborting_it(tmp_path) -> None:
+    """删除 Worker 停止跟随 Kimi prompt 而不中止
 
     交接时 Kimi 客户端停止轮询并报告离开，不向 Kimi Code 发送中止。
     """
@@ -369,19 +369,19 @@ def test_a_kimi_worker_that_stops_following_requeues_the_execution() -> None:
 def test_a_kimi_tool_call_waits_for_the_next_workers_gateway(tmp_path, monkeypatch) -> None:
     """Kimi 工具调用等待下一个 Worker 的网关
 
-    退役 Worker 交出的 Portal 工具调用重试到下一个 Worker 的网关，旧网关退出不删除新 Worker 的套接字。
+    删除 Worker 交出的 Portal 工具调用重试到下一个 Worker 的网关，旧网关退出不删除新 Worker 的套接字。
     """
     monkeypatch.setattr(kimi_portal_tools, "gateway_socket_path", lambda session_id: tmp_path / f"{session_id}.sock")
     monkeypatch.setattr(kimi_portal_tools, "_take_note", lambda _name, _arguments: {"session_id": "s1", "tool_call_id": "c1"})
-    retiring = KimiToolGateway("s1", mock.Mock(side_effect=ToolCallHandedOver("next Worker")))
-    retiring.__enter__()
+    leaving = KimiToolGateway("s1", mock.Mock(side_effect=ToolCallHandedOver("next Worker")))
+    leaving.__enter__()
     next_worker = KimiToolGateway("s1", lambda call: {"content": [{"type": "text", "text": "42"}]})
 
     def hand_over() -> None:
         time.sleep(0.3)
-        # The next Worker listens before the retiring one has closed its gateway.
+        # The next Worker listens before the leaving one has closed its gateway.
         next_worker.__enter__()
-        retiring.__exit__(None, None, None)
+        leaving.__exit__(None, None, None)
 
     thread = threading.Thread(target=hand_over)
     thread.start()
@@ -389,7 +389,7 @@ def test_a_kimi_tool_call_waits_for_the_next_workers_gateway(tmp_path, monkeypat
     thread.join(5)
     try:
         assert result == {"content": [{"type": "text", "text": "42"}]}
-        # The retiring gateway's exit left the next Worker's socket in place.
+        # The leaving gateway's exit left the next Worker's socket in place.
         assert next_worker.path.exists()
     finally:
         next_worker.__exit__(None, None, None)

@@ -315,7 +315,7 @@ def test_codex_backend_recovers_terminal_event_without_resuming_thread() -> None
         # Reproduce the production failure boundary: the Provider has emitted
         # its terminal event, but the transport call never gets to return a
         # BackendResult before this worker is handed over.
-        raise ExecutionRecoveryDeferred("worker retired after provider completion")
+        raise ExecutionRecoveryDeferred("worker deleted after provider completion")
 
     client.run_turn.side_effect = complete_before_transport_returns
     request = ExecutionRequest.new(

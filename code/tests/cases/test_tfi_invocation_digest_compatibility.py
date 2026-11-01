@@ -1,4 +1,4 @@
-"""Frozen search plans keep their canonical digest; retired plan tags are rejected without rewriting."""
+"""Frozen search plans keep their canonical digest; deleted plan tags are rejected without rewriting."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import hashlib
@@ -42,7 +42,7 @@ def test_canonical_reprepare_keeps_digest_and_message_identity(runtime):
                                       batches=contract.batch_manifest(identity, ["changed", "two"]))
 
 
-def test_retired_plan_digest_is_rejected(runtime, monkeypatch):
+def test_deleted_plan_digest_is_rejected(runtime, monkeypatch):
     identity = job()
     manifest = contract.batch_manifest(identity, ["one", "two"])
     monkeypatch.setattr(domain, "plan_fingerprint", lambda job, batches: wire_digest(job, batches, OLD))

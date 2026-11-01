@@ -410,7 +410,7 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
     def unregister(resource_id: str, *, actor: str = "") -> dict[str, Any]:
         # DeleteProject removes the registry entry, Lineages and folder first;
-        # this only retires the record and the authorization resource after it.
+        # this only deletes the record and the authorization resource after it.
         del actor
         try:
             _project_record(resource_id)

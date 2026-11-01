@@ -20,7 +20,7 @@ from tests.cases.test_lineage_program_runtime_integration import (
 )
 
 
-SOURCE = "event_source_retire"
+SOURCE = "event_source_delete"
 
 
 def create(*, maximum=1, enabled=True, nodes=None, wires=None, components=None):
@@ -54,7 +54,7 @@ def source_exists(lineage_id):
 @pytest.mark.parametrize("enabled,maximum,expected", [
     (False, 1, True), (True, None, True), (True, 2, True), (True, 1, False),
 ])
-def test_event_retirement_is_opt_in_and_budget_scoped(runtime_store, enabled, maximum, expected):
+def test_event_deletion_is_opt_in_and_budget_scoped(runtime_store, enabled, maximum, expected):
     """只有开启自动删除且触发次数用尽的事件源才会被删除"""
     created = create(enabled=enabled, maximum=maximum)
     result = emit(created["lineage_id"])
@@ -67,11 +67,11 @@ def test_final_occurrence_fans_out_before_source_and_wires_are_removed(runtime_s
     """最后一次触发先投递到全部下游，再删除事件源及其连线"""
     sent = []
     monkeypatch.setattr(support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: (
-        sent.append(node["id"]) or {"message_id": f"job_retire_{len(sent)}"}
+        sent.append(node["id"]) or {"message_id": f"job_delete_{len(sent)}"}
     ))
     created = create(maximum=2, wires=[
-        _wire("wire_retire_a", "route", SOURCE, WORK_A),
-        _wire("wire_retire_b", "route", SOURCE, WORK_B),
+        _wire("wire_delete_a", "route", SOURCE, WORK_A),
+        _wire("wire_delete_b", "route", SOURCE, WORK_B),
     ])
     lineage_id = created["lineage_id"]
     emit(lineage_id)
@@ -86,15 +86,15 @@ def test_final_occurrence_fans_out_before_source_and_wires_are_removed(runtime_s
 
 
 @pytest.mark.parametrize("disable_before_delivery", [False, True])
-def test_queued_final_invocation_survives_until_delivery_then_retires(runtime_store, monkeypatch, disable_before_delivery):
+def test_queued_final_invocation_survives_until_delivery_then_deletes(runtime_store, monkeypatch, disable_before_delivery):
     """最后一次调用排队时事件源保留到投递后再删除，投递前关闭自动删除则保留"""
     busy = {"value": True}
     sent = []
     monkeypatch.setattr(support, "NODE_ACTIVE_JOB_RESOLVER", lambda node, actor: busy["value"])
     monkeypatch.setattr(support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: (
-        sent.append(prompt) or {"message_id": "job_retire_queued"}
+        sent.append(prompt) or {"message_id": "job_delete_queued"}
     ))
-    created = create(wires=[_wire("wire_retire_a", "route", SOURCE, WORK_A, config={
+    created = create(wires=[_wire("wire_delete_a", "route", SOURCE, WORK_A, config={
         "unavailable_policy": "queue", "include_envelope": False,
         "invoke_profiles": {"agent": {"arguments": {"prompt": {"value": "LAST"}}}},
     })])
@@ -149,7 +149,7 @@ def test_older_fanout_cannot_mark_a_newer_occurrence_as_settled(runtime_store):
 
 @pytest.mark.parametrize("enabled,maximum", [(False, 1), (True, 2)])
 def test_enabling_auto_delete_or_lowering_limit_keeps_existing_fire_count(runtime_store, enabled, maximum):
-    """开启自动删除或调低次数上限时保留已触发次数，已达上限的事件源随即退役"""
+    """开启自动删除或调低次数上限时保留已触发次数，已达上限的事件源随即删除"""
     created = create(enabled=enabled, maximum=maximum)
     lineage_id = created["lineage_id"]
     result = emit(lineage_id)
@@ -162,7 +162,7 @@ def test_enabling_auto_delete_or_lowering_limit_keeps_existing_fire_count(runtim
     assert lineage_program_edits._delete_exhausted_event_sources(lineage_id, ACTOR) == [SOURCE]
 
 
-def test_zero_budget_retires_during_reconcile_without_firing(runtime_store):
+def test_zero_budget_deletes_during_reconcile_without_firing(runtime_store):
     """次数上限为 0 的事件源在对账时直接删除，不产生事件"""
     created = create(maximum=0)
     result = lineage_domain.reconcile_lineage_system_events(created["lineage_id"], ACTOR)
@@ -170,20 +170,20 @@ def test_zero_budget_retires_during_reconcile_without_firing(runtime_store):
     assert not source_exists(created["lineage_id"])
 
 
-def test_resident_output_is_delivered_after_its_source_retires(runtime_store, monkeypatch):
+def test_resident_output_is_delivered_after_its_source_deletes(runtime_store, monkeypatch):
     """事件源清理后，Resident Output 仍沿自己的 Route 投递
 
     事件源耗尽并清理自身连线后，已经激活的 Resident 完成本轮工作，其 Output 经独立的 Route 投递给下游。
     """
     sent = []
     monkeypatch.setattr(support, "NODE_MESSAGE_SENDER", lambda node, prompt, actor: (
-        sent.append((node["id"], prompt)) or {"message_id": f"job_retire_producer_{len(sent)}"}
+        sent.append((node["id"], prompt)) or {"message_id": f"job_delete_producer_{len(sent)}"}
     ))
     monkeypatch.setattr(support, "RESIDENT_MESSAGE_EVIDENCE_RESOLVER", lambda *args: {
-        "job_id": "job_retire_producer_1", "reply": _packet_reply("FINAL OUTPUT"),
+        "job_id": "job_delete_producer_1", "reply": _packet_reply("FINAL OUTPUT"),
     })
     created = create(nodes=[_worker(PRODUCER_A), _worker(WORK_A)], wires=[
-        _wire("wire_retire_producer", "route", SOURCE, PRODUCER_A),
+        _wire("wire_delete_producer", "route", SOURCE, PRODUCER_A),
         _wire("wire_output", "route", PRODUCER_A, WORK_A, config={"include_envelope": False}),
     ])
     lineage_id = created["lineage_id"]
@@ -191,9 +191,9 @@ def test_resident_output_is_delivered_after_its_source_retires(runtime_store, mo
     # Delivering to the Resident settles the final fanout; the Output it
     # sends later travels on its own wire.
     assert not source_exists(lineage_id)
-    support.record_terminal_execution(PRODUCER_A, "job_retire_producer_1", ACTOR)
+    support.record_terminal_execution(PRODUCER_A, "job_delete_producer_1", ACTOR)
     lineage_domain.handle_resident_message_completion(
-        PRODUCER_A, ACTOR, "job_retire_producer_1", lineage_id=lineage_id,
+        PRODUCER_A, ACTOR, "job_delete_producer_1", lineage_id=lineage_id,
     )
     lineage_program_backlog.drain_event_backlog(lineage_id, ACTOR, authority=lineage_domain._program_control_authority())
     assert sent[-1] == (WORK_A, "FINAL OUTPUT")
@@ -228,7 +228,7 @@ def test_recurring_timer_commits_final_tick_before_auto_delete(runtime_store, mo
     monkeypatch.setattr(lineage_program_runtime, "datetime", Clock)
     monkeypatch.setattr(lineage_state, "datetime", Clock)
     created = support.create_lineage_with_resident_members({
-        "title": "Recurring source retirement", "project_id": "project_test", "nodes": [_worker(WORK_A)],
+        "title": "Recurring source deletion", "project_id": "project_test", "nodes": [_worker(WORK_A)],
         "program": {"components": [_component(
             SOURCE, "event_source", event_type="time.reached", schedule_mode="recurring",
             recurrence_kind="interval", interval_seconds=60, misfire_policy="coalesce_latest",
@@ -249,7 +249,7 @@ def test_recurring_timer_commits_final_tick_before_auto_delete(runtime_store, mo
 def test_auto_delete_updates_collapsed_function_block_membership(runtime_store):
     """事件源自动删除后，也从折叠的功能块成员中移除"""
     created = support.create_lineage_with_resident_members({
-        "title": "Block source retirement", "project_id": "project_test", "nodes": [_worker(WORK_A)],
+        "title": "Block source deletion", "project_id": "project_test", "nodes": [_worker(WORK_A)],
         "program": {"components": [_component(SOURCE, "event_source", event_type="manual.triggered",
                      max_fires=1, auto_delete_on_exhaustion=True)], "wires": []},
         "function_blocks": [{"id": "fbi_aaaaaaaaaaaa", "title": "Self-cleaning Event",

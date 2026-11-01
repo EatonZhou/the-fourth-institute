@@ -96,7 +96,7 @@ def retry_reader(tag, *, receipt_patch=None):
 def test_historical_tombstone_retry_preserves_source_and_receipt(namespace):
     store, rows = retry_reader(f"{namespace}.domain-tombstone-source.v1")
     before = copy.deepcopy(rows.rows)
-    # A retired proof cannot authorize a retry, even for a canonical descriptor.
+    # A deleted proof cannot authorize a retry, even for a canonical descriptor.
     with pytest.raises(ValueError, match="Stale domain tombstone"):
         store.tombstone(descriptor("tfi.collaboration-descriptor.v2"), rows,
                         source={"schema": "tfi.domain-tombstone-source.v2"})

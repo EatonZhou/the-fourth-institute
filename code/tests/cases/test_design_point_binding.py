@@ -110,8 +110,8 @@ def test_point_query_never_includes_sibling_points_or_document_only_tests_contra
         assert [case.id for case in catalog.query({"has_design_point_ref": False})] == [ids["test_third"]]
         with pytest.raises(CatalogError):
             catalog.query({"design_point_ref": SOURCE.address})
-    with subtests.test(contract='test_duplicate_primary_tests_are_rejected_even_when_one_is_retired'), isolated_portal_case() as case_path:
-        ids = point_tests(case_path, ("test_first", POINTS[0]["id"], ""), ("test_second", POINTS[0]["id"], "retired"), ("test_third", None, ""))
+    with subtests.test(contract='test_duplicate_primary_tests_are_rejected_even_when_one_is_deleted'), isolated_portal_case() as case_path:
+        ids = point_tests(case_path, ("test_first", POINTS[0]["id"], ""), ("test_second", POINTS[0]["id"], "deleted"), ("test_third", None, ""))
         catalog = CatalogRepository(root=case_path)
         with pytest.raises(CatalogError, match="重复绑定"):
             catalog.all()

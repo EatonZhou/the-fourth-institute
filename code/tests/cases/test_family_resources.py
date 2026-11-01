@@ -93,7 +93,7 @@ def test_empty_lineage_family_has_stable_resource_id_and_follows_lineage_deletio
     assert payload["lineage_scope"] is True and payload["members"] == []
     ok("DeleteLineage", {"lineage_id": lineage})
     assert get_resource_service().resolve(made["resource_id"], actor="sample_admin")["exists"] is False
-    # The Family record itself is retired, not left live under a deleted Lineage.
+    # The Family record itself is deleted, not left live under a deleted Lineage.
     with get_lineage_data_store().database.read() as connection:
         row = connection.execute("SELECT deleted_at FROM families WHERE resource_id=%s", (made["resource_id"],)).fetchone()
         roster = connection.execute("SELECT count(*) AS n FROM family_residents WHERE family_id=%s", (made["family_id"],)).fetchone()
@@ -197,7 +197,7 @@ def test_family_reconciliation_does_not_replay_published_deletions(lineage, char
     """Family 巡检只补齐现存 Family，不重放已发布的删除
 
     A deleted Family's facts can change after its deletion was published, as
-    when old rosters were retired on 2026-10-17. ResourceService refuses that
+    when old rosters were deleted on 2026-10-17. ResourceService refuses that
     different tombstone, which used to fail the Lineage's whole batch every
     minute, so its live Families were never repaired.
     """
@@ -220,8 +220,8 @@ def test_family_reconciliation_does_not_replay_published_deletions(lineage, char
     assert "Family resource reconciliation failed" not in caplog.text
 
 
-def test_family_permission_follows_its_current_lineage_and_retires(lineage, charters, monkeypatch):
-    """Family 在权限树中跟随当前 Lineage，退役后离开权限树
+def test_family_permission_follows_its_current_lineage_and_deletes(lineage, charters, monkeypatch):
+    """Family 在权限树中跟随当前 Lineage，删除后离开权限树
 
     对 Lineage 的 contributor 覆盖它的 Family；Family 换到另一个 Lineage 后不再覆盖；Family 删除后不再有位置，steward 的表项随之撤除。
     """

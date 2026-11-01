@@ -47,7 +47,7 @@ def recent_executions(resident_id: str) -> list[dict[str, Any]]:
 
 
 def forget(record: Mapping[str, Any], message_id: str) -> None:
-    """Drop the checkpoint of one input; requeue retires the previous round's this way."""
+    """Drop the checkpoint of one input; requeue deletes the previous round's this way."""
     lineage_id, resident_id = address(record)
     with get_lineage_data_store().resident_mailbox_progress.transaction(lineage_id, resident_id) as state:
         state["checkpoints"] = [item for item in state.get("checkpoints") or []

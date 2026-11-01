@@ -423,7 +423,7 @@ def test_execution_preparation_uses_existing_binding_route_contracts(tmp_path, s
             dispatch_interval_min_seconds=0,
             dispatch_interval_max_seconds=0,
         )
-        worker_id = "dev:retired-worker"
+        worker_id = "dev:deleted-worker"
         scheduler.register_worker(
             worker_id=worker_id,
             build_id="test-build",

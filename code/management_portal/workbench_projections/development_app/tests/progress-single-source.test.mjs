@@ -17,7 +17,7 @@ test('the reader uses the owner index and original report identity directly', as
   assert.ok(f.calls.every(x=>!(/canonical|publication|origins|release-runtime/.test(x.ref))));
 });
 
-test('a retired publication wrapper is not followed as another data source', async()=>{
+test('a deleted publication wrapper is not followed as another data source', async()=>{
   const f=await fixture();
   f.db[stage]=JSON.stringify({schema:'tfi.portal-progress-index.v1',stage_index_ref:stage+'.copy'});
   const result=await loadProgress(f.resources);

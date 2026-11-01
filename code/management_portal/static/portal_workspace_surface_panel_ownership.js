@@ -54,7 +54,7 @@
       const tabs = createDocumentTabsController({
         ...(config || {}),
         onChange: (snapshot, reason, meta) => {
-          // Closing the last owned document also retires its navigation
+          // Closing the last owned document also deletes its navigation
           // binding, before persistence observers take their next snapshot.
           if (!snapshot.documents.length
             && [...tabControllers].every(controller => !controller.snapshot().documents.length)) {

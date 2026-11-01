@@ -72,7 +72,7 @@ async function readYaml(resources, ref) {
 }
 
 // Only direction-attached Plans are read; the gallery never waits for unrelated
-// Plans, and never invents membership from the retired Plan taxonomy.
+// Plans, and never invents membership from the deleted Plan taxonomy.
 export async function loadFacts(resources) {
   const [evolution, map] = await Promise.all([readYaml(resources, REFS.evolution), readYaml(resources, REFS.modules)]);
   if (!evolution) return { validity: 'revoked', deniedRefs: [REFS.evolution] };
@@ -100,7 +100,7 @@ export async function loadFacts(resources) {
     modules: { ref: REFS.modules, version: map?.version || null },
     plans: Object.fromEntries(plans.map(p => [p.id, { version: documents[p.id].version, hash: documents[p.id].hash }])),
   };
-  return { validity: 'ready', directions, retired: raw.retired_directions || [], plans, documents, deniedRefs,
+  return { validity: 'ready', directions, deleted: raw.deleted_directions || [], plans, documents, deniedRefs,
     modules: supportedMap ? map.data.modules || [] : [], mapMatches,
     texts: { evolution: evolution.text, modules: map?.text || '' }, sources,
     observedAt: new Date().toISOString() };

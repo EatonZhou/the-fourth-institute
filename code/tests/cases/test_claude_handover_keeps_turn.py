@@ -117,7 +117,7 @@ def _serve_once(path: Path, received: list):
 
 
 def test_a_leaving_worker_answers_taken_tool_calls_then_leaves(tmp_path):
-    """退役 Worker 先答完已收到的工具调用再离开
+    """删除 Worker 先答完已收到的工具调用再离开
 
     Native Agent 客户端在交接时只在两条消息之间断开：已收到的事件照常处理，已收到的工具调用执行完并回传结果后才离开。
     """
@@ -201,7 +201,7 @@ def test_a_stop_before_attaching_does_not_start_the_turn_anew():
 def test_a_detached_worker_requeues_the_execution():
     """离开 turn 的 Worker 让执行重新排队
 
-    退役 Worker 离开仍在运行的 Claude turn 后，Adapter 报告可恢复的延期，Worker 把执行交回队列而不记为失败。
+    删除 Worker 离开仍在运行的 Claude turn 后，Adapter 报告可恢复的延期，Worker 把执行交回队列而不记为失败。
     """
     client = mock.Mock()
     client.run_turn.side_effect = NativeAgentDetached("left")
@@ -268,7 +268,7 @@ def test_an_event_execution_service_did_not_take_leaves_the_turn_to_the_next_att
 def test_a_worker_that_lost_its_claim_mid_turn_leaves_the_records_to_the_next_worker():
     """轮次中途失去 claim 的 Worker 不再记录这一轮
 
-    交接时一次检查点写入先发现 claim 已交出，轮次以 ExecutionClaimOwnershipLost 结束；退役 Worker 不再尝试写入用量。
+    交接时一次检查点写入先发现 claim 已交出，轮次以 ExecutionClaimOwnershipLost 结束；删除 Worker 不再尝试写入用量。
     """
     client = mock.Mock()
     client.run_turn.side_effect = ExecutionClaimOwnershipLost("execution claim ownership changed")

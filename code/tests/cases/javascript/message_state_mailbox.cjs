@@ -162,7 +162,7 @@ const checks = {
       app.queue({ ...payload, paged: true, entries: [...payload.entries, currentNotice],
         read_revision: 11, mailbox_summary: { entries: [], unread_count: 0 }, next_page_token: 'older' });
       await app.advance(300);
-      assert.equal(app.store.snapshot().unreadCount, 0, 'fresh complete source list retires obsolete unread');
+      assert.equal(app.store.snapshot().unreadCount, 0, 'fresh complete source list deletes obsolete unread');
       assert.ok(!app.rows().some(row => [notice.key, room.key].includes(row.dataset.agentConversationKey)),
         'obsolete notification and Chatroom disappear from the actual Mailbox');
       const saved = JSON.parse(app.window.localStorage.getItem('tfi.portal.conversations.v7:playwright'));

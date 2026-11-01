@@ -91,7 +91,7 @@ def test_project_catalog_names_each_project_only_by_its_id_contracts(tmp_path, s
         store = PortalAccessStore()
         assert store.project_catalog() == [{'id': 'AI员工'}, {'id': 'RobotWorker'}]
         assert store.project_ids() == ['AI员工', 'RobotWorker']
-    with subtests.test(contract='test_accounts_omit_retired_role_fields'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_accounts_omit_deleted_role_fields'), isolated_portal_case() as case_path:
         tmp_path = case_path
         _projects()
         store = PortalAccessStore()
@@ -193,9 +193,9 @@ def test_every_user_may_operate_the_test_lab() -> None:
         assert http_auth._test_lab_access(actor) == {"actor": actor, "can_operate": True}
 
 
-def test_user_disable_and_retirement_are_distinct_lifecycle_states_contracts(tmp_path, subtests, isolated_portal_case):
+def test_user_disable_and_deletion_are_distinct_lifecycle_states_contracts(tmp_path, subtests, isolated_portal_case):
     """停用和删除是不同的账户状态，没有归档态，任何账户名都没有生命周期豁免"""
-    with subtests.test(contract='test_user_disable_and_retirement_are_distinct_lifecycle_states'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_user_disable_and_deletion_are_distinct_lifecycle_states'), isolated_portal_case() as case_path:
         tmp_path = case_path
         _projects()
         store = PortalAccessStore()
@@ -207,9 +207,9 @@ def test_user_disable_and_retirement_are_distinct_lifecycle_states_contracts(tmp
         assert disabled['status'] == 'disabled'
         assert not store.is_active('engineer')
         assert store.list_users(['engineer'])[0]['username'] == 'engineer'
-        retired = store.delete_user('engineer', actor='CASE-A')
-        assert retired['status'] == 'deleted'
-        assert 'memberships' not in retired
+        deleted = store.delete_user('engineer', actor='CASE-A')
+        assert deleted['status'] == 'deleted'
+        assert 'memberships' not in deleted
         assert store.list_users(['engineer']) == []
         assert store.user('engineer')['configured']
     with subtests.test(contract='test_credential_store_deletes_only_the_selected_user'), isolated_portal_case() as case_path:

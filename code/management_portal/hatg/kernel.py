@@ -221,9 +221,9 @@ class InstructionKernel:
         # Dev tree, so it can still carry a handler for an instruction the catalog
         # has since removed. Calls resolve through the catalog first, so such a
         # handler is never reached.
-        retired = sorted(name for name in registered if name not in catalog)
-        if retired:
-            LOGGER.warning("%s 登记了目录中已不存在的指令，忽略：%s", self.owner, "、".join(retired))
+        deleted = sorted(name for name in registered if name not in catalog)
+        if deleted:
+            LOGGER.warning("%s 登记了目录中已不存在的指令，忽略：%s", self.owner, "、".join(deleted))
 
     # -- helpers -------------------------------------------------------------
 

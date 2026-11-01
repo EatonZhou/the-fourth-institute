@@ -78,7 +78,7 @@ export function createEvidenceLoader({ resources, sdk, signal }) {
     const modules = map.modules.map(m => ({ ...m, designs: (m.designs || []).filter(ref => designMeta[ref]), code_paths: m.code_paths || [], instruction_owners: m.instruction_owners || [] }));
     const protocols = map.protocols.map(p => ({ ...p, modules: (p.modules || []).filter(id => modules.some(m => m.id === id)), designs: (p.designs || []).filter(ref => designMeta[ref]),
       ...(modelVersion === 2 ? { related_designs: (p.related_designs || []).filter(ref => designMeta[ref]) } : {}) }));
-    return { ...context, ...model, modules, protocols, plans, directions: evolution?.directions || [], retiredDirections: evolution?.retired_directions || [],
+    return { ...context, ...model, modules, protocols, plans, directions: evolution?.directions || [], deletedDirections: evolution?.deleted_directions || [],
       evolutionMappingValid: binding.valid, evolutionMappingReason: binding.reason,
       evolutionAnchors: sourceAnchors(evolutionResult?.text || ''), designMeta, anchors: sourceAnchors(mapResult.text), mapText: mapResult.text,
       mapHash: mapResult.hash, evolutionHash: evolutionResult?.hash || null, instructions: [], fileIndex: null, indexRef: context.currentSource?.file_index?.address || '',

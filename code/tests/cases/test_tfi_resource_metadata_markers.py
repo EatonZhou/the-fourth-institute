@@ -1,4 +1,4 @@
-"""Resource metadata reads and retired-marker rejection preserve existing rows.
+"""Resource metadata reads and deleted-marker rejection preserve existing rows.
 
 :design: decision_15aab18c0ab3
 """

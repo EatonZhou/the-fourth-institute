@@ -135,8 +135,8 @@ def test_reminder_retries_keep_the_same_identity_and_other_inputs_stay_distinct(
     assert sent[-1][3]["message_id"] != first
 
 
-def test_global_summary_jobs_retire_on_familize_but_internal_work_stays_readable(context):
-    """加入 Family 后全局摘要任务退役且内部摘要可读"""
+def test_global_summary_jobs_delete_on_familize_but_internal_work_stays_readable(context):
+    """加入 Family 后全局摘要任务删除且内部摘要可读"""
     context.source.converse(A, _turn(1, "登录", "修正登录"), 1)
     context.sync_catalog()
     context.reconcile()

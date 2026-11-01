@@ -98,7 +98,7 @@ def test_submission_record_survives_ack_reconstruction_and_scheduler_prune(stack
     with pytest.raises(ValueError):
         service(rebuilt).record(req.execution_id, actor="")
     with pytest.raises(ValueError, match="already submitted"):
-        Scheduler().submit(req, prepare=lambda _: pytest.fail("retired receipt replayed preparation"))
+        Scheduler().submit(req, prepare=lambda _: pytest.fail("deleted receipt replayed preparation"))
 
 
 def test_idempotent_submission_and_conflict_do_not_rewrite_facts_or_prepare(stack):

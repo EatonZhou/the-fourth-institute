@@ -54,7 +54,7 @@ def test_instruction_client_only_emits_canonical_execution_header(monkeypatch, e
     monkeypatch.setattr(client, "_token", lambda resident: "fixture-token")
     monkeypatch.setattr(client, "execution_context", lambda: {"execution_id": execution_id})
     monkeypatch.delenv("PORTAL_EXECUTION_ID", raising=False)
-    monkeypatch.setenv("ARCHIVE_EXECUTION_ID", "retired-value")
+    monkeypatch.setenv("ARCHIVE_EXECUTION_ID", "deleted-value")
     request = client._request("resident_0123456789ab", {"instruction": "GetMessage"}, accept="application/json")
     headers = {key.lower(): value for key, value in request.header_items()}
     assert headers.get("x-portal-execution-id", "") == execution_id
@@ -71,14 +71,14 @@ def test_instruction_client_keeps_canonical_environment_fallback(monkeypatch):
 
 
 def test_skill_name_is_canonical_and_keeps_root_and_stale_cache(tmp_path):
-    for name, text in (("tfi-agent-rule", "Canonical rule"), ("archive-rule", "Retired rule")):
+    for name, text in (("tfi-agent-rule", "Canonical rule"), ("archive-rule", "Deleted rule")):
         path = tmp_path / name
         path.mkdir()
         (path / "SKILL.md").write_text(text)
     importlib.reload(skills)
     assert skills.PORTAL_SYSTEM_SKILL == "tfi-agent-rule"
     result = skills.materialize_portal_skills("general", skill_root=str(tmp_path))
-    assert "Canonical rule" in result.content and "Retired rule" not in result.content
+    assert "Canonical rule" in result.content and "Deleted rule" not in result.content
     assert skills.materialize_portal_skills("general", skill_root=str(tmp_path),
                                            system_skill_name="tfi-agent-rule") == result
     with pytest.raises(ValueError, match="tfi-agent-rule"):
@@ -89,7 +89,7 @@ def test_skill_name_is_canonical_and_keeps_root_and_stale_cache(tmp_path):
     importlib.reload(skills)
 
 
-def test_architecture_uses_current_root_without_retired_source_prefixes(tmp_path):
+def test_architecture_uses_current_root_without_deleted_source_prefixes(tmp_path):
     assert architecture.source_path(str(tmp_path / "module.py") + ":12#symbol", tmp_path) == "module.py"
     assert architecture.source_path("module.py:12", tmp_path) == "module.py"
     assert architecture.source_reference("/archive/source/module.py:12", tmp_path) == (

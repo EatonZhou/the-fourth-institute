@@ -74,7 +74,7 @@ def test_a_failing_wire_waits_alone_and_is_not_retried_before_its_delay(runtime_
 
 class _CountingAuthority:
     def __init__(self, inner):
-        self.inner, self.reads, self.retired = inner, 0, 0
+        self.inner, self.reads, self.deleted = inner, 0, 0
 
     def __getattr__(self, name):
         return getattr(self.inner, name)
@@ -84,7 +84,7 @@ class _CountingAuthority:
         return self.inner.read_lineage(*args, **kwargs)
 
     def delete_exhausted_sources(self, *args):
-        self.retired += 1
+        self.deleted += 1
         return self.inner.delete_exhausted_sources(*args)
 
 
@@ -121,7 +121,7 @@ def test_a_drain_reads_the_lineage_again_only_after_a_delivery_attempt(runtime_s
     result = lineage_program_backlog.drain_event_backlog(lineage_id, ACTOR, authority=authority)
     assert sent == [WORK_B]
     assert result["complete"] is True
-    assert (authority.reads, authority.retired) == (3, 0)
+    assert (authority.reads, authority.deleted) == (3, 0)
 
 
 def test_events_queued_behind_a_closed_source_are_not_claimed_until_it_opens(runtime_store, monkeypatch):

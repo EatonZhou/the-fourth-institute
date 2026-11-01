@@ -21,7 +21,7 @@ class UploadRelocationTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.old = self.root / "retired" / "uploads"
+        self.old = self.root / "deleted" / "uploads"
         self.new = self.root / "instance" / "uploads"
         self.upload_id = "upload_0123456789abcdef"
         self.directory = self.old / self.upload_id

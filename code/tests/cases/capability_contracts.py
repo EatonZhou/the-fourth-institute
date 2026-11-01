@@ -36,7 +36,7 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
         "codex": f"{_CODEX_TURNS}::test_codex_backend_projects_current_context_usage_from_token_events",
         "claude": "tests/cases/test_claude_code_daemon.py::ClaudeCodeDaemonTest::test_context_usage_reports_current_window_and_rejects_stale_turn",
         "kimi": "tests/cases/test_live_provider_ingress.py::test_kimi_live_context_reports_latest_main_request_including_cached_input",
-        "dsh": "tests/cases/test_dsh_bridge_handover.py::test_a_retiring_worker_leaves_the_turn_and_its_tool_call_to_the_next_worker",
+        "dsh": "tests/cases/test_dsh_bridge_handover.py::test_a_leaving_worker_leaves_the_turn_and_its_tool_call_to_the_next_worker",
         "opencode": "tests/cases/test_opencode_adapter.py::test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls",
     },
     capabilities.PORTAL_TOOLS: {

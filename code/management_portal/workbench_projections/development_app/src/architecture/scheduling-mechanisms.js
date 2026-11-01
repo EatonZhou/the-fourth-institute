@@ -171,7 +171,7 @@ function workerSlots(scene) {
   const pool = box('Worker 本地并发槽', 'active_count < max_parallel', 'sched-slot-pool');
   pool.append(el('div', `sched-slot ${loaded && !s.slot_free ? 'is-occupied' : ''}`, !loaded ? '待检查' : s.slot_free ? '有空位' : '本地已满'));
   n.append(pool, arrow(has(scene, 'claim') ? '有空位 → 向 Scheduler 领取' : '先检查本地；尚未领取'));
-  const grant = result('Scheduler 共享准入', !has(scene, 'claim') ? '尚未收到领取请求' : has(scene, 'capacity') ? '账号容量不足；本地空位保留' : has(scene, 'standby') ? 'Worker standby，等待激活' : s.retired ? 'Worker 退休或登记消失，结束领取' : s.thread_started ? '成功授予本次 claim' : '等候领取结论', has(scene, 'capacity', 'retire') ? 'is-blocked' : s.thread_started ? 'is-clear' : '');
+  const grant = result('Scheduler 共享准入', !has(scene, 'claim') ? '尚未收到领取请求' : has(scene, 'capacity') ? '账号容量不足；本地空位保留' : has(scene, 'standby') ? 'Worker standby，等待激活' : s.stopped ? 'Worker 停止接单或登记消失，结束领取' : s.thread_started ? '成功授予本次 claim' : '等候领取结论', has(scene, 'capacity', 'stop') ? 'is-blocked' : s.thread_started ? 'is-clear' : '');
   n.append(grant, arrow(s.thread_started ? '成功领取 → 建立本地线程' : '没有领取资格 → 不创建线程'));
   const thread = box('本次执行线程', s.thread_started ? `已创建；本地 marker = ${s.slot_marker}` : '未创建', s.thread_started ? 'is-clear' : '');
   n.append(thread); return n;
@@ -188,10 +188,10 @@ function generation(scene) {
   for (const [name, status, note] of [
     ['候选进程', s.candidate, s.candidate === 'active' ? '已激活，可领取' : s.candidate === 'discarded' ? '候选丢弃，不替换旧进程' : '等待身份检查和原子激活'],
     ['被替换旧进程', s.previous, s.old_claims_handled ? '进程已退出；处理本例遗留资格，等待可注销' : s.previous === 'draining' ? '停止新领取，逐项交接；尚未完成遗留处理' : '仍保持 active'],
-    ['同 build 其他进程', s.same_build_peer, '未显式指定替换时，不因同 build 一并退休'],
+    ['同 build 其他进程', s.same_build_peer, '未显式指定替换时，不因同 build 一并停止接单'],
   ]) { const row = el('tr'); row.append(el('th', '', name), el('td', `sched-process ${status === 'active' ? 'is-clear' : status === 'discarded' ? 'is-blocked' : ''}`, status), el('td', '', note)); body.append(row); }
   table.append(head, body); n.append(table);
-  n.append(result(s.old_claims_handled ? '本例遗留资格已处理，注销仍须满足条件' : has(scene, 'wait') ? '旧进程仍在逐项退出' : has(scene, 'failed', 'reject') ? '候选失败，旧进程不退役' : '进程切换与资格收尾分别发生', 'Manager 管理进程生命周期；Scheduler 承担持久激活与领取资格。进程退出也不能直接当作 blocked_execution_ids 已处理。'));
+  n.append(result(s.old_claims_handled ? '本例遗留资格已处理，注销仍须满足条件' : has(scene, 'wait') ? '旧进程仍在逐项退出' : has(scene, 'failed', 'reject') ? '候选失败，旧进程继续接单' : '进程切换与资格收尾分别发生', 'Manager 管理进程生命周期；Scheduler 承担持久激活与领取资格。进程退出也不能直接当作 blocked_execution_ids 已处理。'));
   return n;
 }
 

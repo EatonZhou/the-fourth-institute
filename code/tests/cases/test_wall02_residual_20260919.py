@@ -297,14 +297,14 @@ def test_ssh_failure_projection_without_remote_process(monkeypatch, outcome):
 def test_router_unknown_preference_cannot_set_cookie():
     """Router 拒绝未知部署偏好且不设置偏好 Cookie"""
     calls = []
-    payload = json.dumps({"deployment": "retired"}).encode()
+    payload = json.dumps({"deployment": "deleted"}).encode()
     handler = SimpleNamespace(command="POST", headers={}, client_address=("127.0.0.1", 1234), rfile=io.BytesIO(payload),
         server=SimpleNamespace(policy=SimpleNamespace(verifier=SimpleNamespace(verify_cookie=lambda _: "fixture-user")), current_backends=lambda: {"dev": None, "release": None}),
         _content_length=lambda: len(payload), _json=lambda *args: calls.append(args))
     router.PortalRouterHandler._deployment_preference(handler)
     assert calls == [(400, {"error": "unknown or unavailable Portal deployment"})]
     policy = router.RouterPolicy(SimpleNamespace(verify_cookie=lambda cookie: "fixture-user" if cookie else ""), set())
-    cookie = router.DEPLOYMENT_PREFERENCE_COOKIE + "=" + router._encode_deployment_preference("fixture-user", "retired")
+    cookie = router.DEPLOYMENT_PREFERENCE_COOKIE + "=" + router._encode_deployment_preference("fixture-user", "deleted")
     assert policy.preference("fixture-user", cookie, {"dev", "release"}) == ""
     for path in ("/login", "/login/verify", "/api/auth/passkeys/options", "/api/auth/passkeys/verify", "/api/auth/password-reset/request", "/api/auth/password-reset/confirm", "/api/account/security", "/api/account/two-factor/setup", "/settings.html"):
         assert policy.select(path, "", {"dev", "release"}) == "dev"

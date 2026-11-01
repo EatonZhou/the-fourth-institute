@@ -204,7 +204,7 @@ def mark_event_fanout_complete(
     generation: int,
     occurrence_count: int,
 ) -> None:
-    """Mark completed fanout without allowing an old dispatch to retire a reset source."""
+    """Mark completed fanout without allowing an old dispatch to delete a reset source."""
 
     source_id = _item_id(event_source_id, field="event_source_id")
     with lineage_program_runtime._runtime_transaction(lineage_id) as runtime:

@@ -128,7 +128,7 @@ class WorkspaceStore:
         except ValueError as error:
             # An instance directory outside the areas cannot be registered. An
             # older registration may still hold one as an absolute path; saving
-            # its users keeps that row as stored, so it can be unbound and retired.
+            # its users keeps that row as stored, so it can be unbound and deleted.
             path, refused = absolute, error
         def write(conn):
             # The partial path index arbitrates concurrent registration, while

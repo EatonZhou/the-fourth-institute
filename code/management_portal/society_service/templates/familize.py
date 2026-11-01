@@ -242,7 +242,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
                 "trigger": {"value": trigger}}}}, "unavailable_policy": "latest"})
 
     for key, title, config in FAMILY_MEMBER_SIGNALS:
-        # An empty Family has no business-member subject. Reconciliation retires
+        # An empty Family has no business-member subject. Reconciliation deletes
         # these signals until a member joins, including graphs from older versions.
         if not members:
             continue
@@ -342,9 +342,9 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
     # Roster reconciliation owns only generated structure. Ordinary workflows
     # retain their objects, contracts and occurrence identities.
     owned = {e["id"] for e in elements if facts.is_generated(e)}
-    retired = owned - {e["id"] for e in generated}
-    program["components"] = [c for c in components if c["id"] not in retired]
-    program["wires"] = [w for w in wires if w["id"] not in retired and w["source"] not in retired and w["target"] not in retired]
+    deleted = owned - {e["id"] for e in generated}
+    program["components"] = [c for c in components if c["id"] not in deleted]
+    program["wires"] = [w for w in wires if w["id"] not in deleted and w["source"] not in deleted and w["target"] not in deleted]
     block["elements"] = [e for e in elements if not facts.is_generated(e)] + generated
 
 

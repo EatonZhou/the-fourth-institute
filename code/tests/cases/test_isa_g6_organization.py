@@ -175,7 +175,7 @@ def test_the_only_resident_of_a_project_lineage_is_its_leader_and_stays(future_c
 
 
 
-def test_retired_duty_instructions_are_not_in_the_catalog():
-    """已退役的 Duty 指令不在 ISA 目录中"""
+def test_deleted_duty_instructions_are_not_in_the_catalog():
+    """已删除的 Duty 指令不在 ISA 目录中"""
     from management_portal.hatg.catalog import instruction_catalog
     assert not {"GetDutyBindings", "UpdateDutyBindings", "ResolveDuty"} & set(instruction_catalog())
