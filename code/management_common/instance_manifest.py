@@ -163,7 +163,9 @@ class InstanceManifest:
                 return area + ":" + ("" if relative == "." else relative)
         if canonical.is_relative_to(self.root):
             raise ValueError("Only area files may be registered as instance content")
-        return str(canonical)
+        # Registered locations use the same separator on every platform, as do
+        # area references and the database's descendant-prefix comparisons.
+        return canonical.as_posix()
 
     def site_settings(self) -> dict:
         path = self.root / "site.json"

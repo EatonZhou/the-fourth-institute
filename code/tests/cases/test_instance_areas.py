@@ -99,7 +99,7 @@ def test_registered_directories_store_area_references_and_reject_other_instances
     folder = projects / "AI员工" / "agents" / "lineage_123456abcdef"
     stored = instance_locations.stored_location(folder)
     assert stored == "projects:AI员工/agents/lineage_123456abcdef"
-    assert instance_locations.stored_location(tmp_path / "host" / "repo") == str(tmp_path / "host" / "repo")
+    assert instance_locations.stored_location(tmp_path / "host" / "repo") == (tmp_path / "host" / "repo").as_posix()
     for foreign in (other / "data" / "projects" / "x", other / "secrets"):
         with pytest.raises(ValueError):
             instance_locations.stored_location(foreign)
@@ -110,6 +110,22 @@ def test_registered_directories_store_area_references_and_reject_other_instances
     write_instance(instance.root, areas={"projects": moved})
     assert instance_locations.located_path(stored) == (moved / "AI员工" / "agents" / "lineage_123456abcdef").as_posix()
     assert instance_locations.located_path("/srv/elsewhere") == "/srv/elsewhere"
+
+
+@pytest.mark.parametrize("path,expected", [
+    (r"D:\Research\workspace", "D:/Research/workspace"),
+    (r"\\server\share\workspace", "//server/share/workspace"),
+])
+def test_windows_host_locations_share_the_area_projection_path_contract(monkeypatch, path, expected):
+    """Windows host paths remain canonical when materialized for Resident bindings."""
+    from pathlib import PureWindowsPath
+    from management_common import instance_manifest
+    instance = instance_manifest.InstanceManifest(PureWindowsPath("C:/TFI/instance"), {})
+    monkeypatch.setattr(instance_manifest, "absolute_path", PureWindowsPath)
+    monkeypatch.setattr(instance_locations, "Path", PureWindowsPath)
+    assert instance.reference(path) == expected
+    assert instance_locations.located_path(instance.reference(path)) == expected
+    assert instance_locations.located_path(path) == expected
 
 
 def test_cross_filesystem_move_refuses_insufficient_space_without_mutation(monkeypatch, tmp_path):
