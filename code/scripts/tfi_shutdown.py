@@ -26,7 +26,7 @@ def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
     from management_common.instance_manifest import load
     started = time.monotonic()
     from scripts.tfi_instance_manager import supervisor_environment
-    from scripts.instance_services import ON_DEMAND_JOBS, RESTART_RECORD, job_unit, owned_units
+    from scripts.instance_services import ON_DEMAND_JOBS, job_unit, owned_units
     instance = load(root)
     prefix = instance.service_prefix
     if not isinstance(prefix, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", prefix):
@@ -38,8 +38,7 @@ def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
     if remaining <= 0:
         raise TimeoutError("Instance shutdown deadline elapsed during configuration")
     return stop_units(prefix, application_only=application_only,
-                      timeout=remaining, env=env, registered_units=owned_units(instance),
-                      restart_record=None if application_only else Path(root) / RESTART_RECORD)
+                      timeout=remaining, env=env, registered_units=owned_units(instance))
 
 
 def verify_job(unit, root, *, env=None, runner=subprocess.run):
@@ -57,7 +56,7 @@ def verify_job(unit, root, *, env=None, runner=subprocess.run):
 
 
 def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
-               env=None, runner=subprocess.run, restart_record=None, extra_units=(), registered_units=None):
+               env=None, runner=subprocess.run, extra_units=(), registered_units=None):
     if not sys.platform.startswith("linux"):
         raise NotImplementedError("Bounded instance shutdown currently requires systemd")
     if not 0 < timeout <= SHUTDOWN_SECONDS:
@@ -99,18 +98,6 @@ def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
     if not units:
         return {"ok": True, "services": [], "forced": [], "elapsed_seconds": time.monotonic() - started}
 
-    # Capture the running account set before stopping it. The normal instance
-    # start path restores this record; repeated stops must not erase it.
-    # Callers managing storage can preserve database/NATS while still stopping
-    # application and Provider consumers. Prefix selection includes paired Webs.
-    running_accounts = {row["unit"] for row in rows if row["unit"] in units
-                        and row["unit"].startswith(prefix + "-codex-app-server@")
-                        and row.get("active") in {"active", "activating", "reloading"}}
-    accounts = [unit for unit in units if unit.startswith(prefix + "-codex-app-server@")]
-    if restart_record is not None:
-        from scripts.instance_services import record_accounts
-        record_accounts(restart_record, running_accounts)
-
     control("stop", "--no-block", *units)
     forced = []
     while True:
@@ -126,8 +113,6 @@ def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
                    or states[unit].get("MainPID", "0") != "0"
                    or states[unit].get("ControlPID", "0") != "0"]
         if not pending:
-            if restart_record is not None and accounts:
-                control("disable", *accounts)
             return {"ok": True, "services": units, "forced": forced,
                     "elapsed_seconds": time.monotonic() - started}
         if not forced and time.monotonic() >= grace_deadline:

@@ -20,28 +20,11 @@ from management_common.instance_manifest import load
 from management_common import host_instances
 from scripts.instance_service_definitions import components, render
 
-RESTART_RECORD = 'runtime/codex-accounts-to-restart.json'
 # Transient jobs the code starts for an instance, under its service prefix.
 # They are owned like registered components: stop includes them after their
 # environment proves the same instance; startup never starts them.
 ON_DEMAND_JOBS = ('provider-activation',)
 CREATION_RECORD = 'runtime/creation.json'
-
-
-def recorded_accounts(path):
-    if path.is_symlink():
-        raise ValueError('Provider restart record cannot be redirected')
-    if not path.exists():
-        return None
-    value = json.loads(path.read_text())
-    if not isinstance(value, list) or any(not isinstance(name, str) for name in value):
-        raise ValueError('Invalid Provider restart record')
-    return set(value)
-
-
-def record_accounts(path, names):
-    from management_common.configuration_files import atomic_json
-    atomic_json(path, sorted(set(names) | (recorded_accounts(path) or set())))
 
 
 def wait_database(instance, timeout=60):
@@ -282,19 +265,9 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
             return stop_instance(instance.root, timeout=shutdown_timeout)
         ordered = components(instance)
         skipped = set(excluded_components)
-        record = instance.root / RESTART_RECORD
         if action == 'start':
-            accounts = recorded_accounts(record)
-            registered = {unit_name(instance, c) for c in ordered if c.startswith('codex-app-server@')}
-            if accounts is not None:
-                if accounts - registered:
-                    raise ValueError('Provider restart record includes unregistered services')
-                skipped.update(c for c in ordered if c.startswith('codex-app-server@') and unit_name(instance, c) not in accounts)
             ordered = tuple(c for c in ordered if c not in skipped)
         if action == 'stop':
-            running = {unit_name(instance, c) for c in ordered if c.startswith('codex-app-server@')
-                       and control.status(unit_name(instance, c))['active'] in {'active', 'activating', 'reloading'}}
-            record_accounts(record, running)
             ordered = tuple(reversed(ordered))
         for component in ordered:
             getattr(control, action)(unit_name(instance, component))
@@ -305,10 +278,5 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
             raise RuntimeError('Instance services still have running processes')
         if action == 'start' and any(states[c]['active'] != 'active' for c in ordered):
             raise RuntimeError('Not all instance services started successfully')
-        if action == 'start':
-            accounts = [unit_name(instance, c) for c in ordered if c.startswith('codex-app-server@')]
-            if accounts and platform_name() == 'linux':
-                control.run('systemctl', '--user', 'enable', *accounts, check=True)
-            record.unlink(missing_ok=True)
         return {'status': 'started' if action == 'start' else 'stopped',
                 'instance_id': instance.instance_id, 'services': states, 'skipped': sorted(skipped)}

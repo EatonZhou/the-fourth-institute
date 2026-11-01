@@ -90,7 +90,7 @@ def test_application_stop_preserves_database_and_nats():
     assert stop[-1] == units[0] and len(stop) == 5
 
 
-def test_running_accounts_recorded_before_stop_and_disabled_after_exit(tmp_path):
+def test_stopping_accounts_preserves_user_boot_policy():
     calls = []
     account = "tfi-test-codex-app-server@one.service"
 
@@ -99,15 +99,13 @@ def test_running_accounts_recorded_before_stop_and_disabled_after_exit(tmp_path)
         output = ""
         if "list-units" in argv:
             output = json.dumps([{"unit": account, "active": "active"}])
-        elif "stop" in argv:
-            assert json.loads(record.read_text()) == [account]
         elif "show" in argv:
             output = f"Id={account}\nActiveState=inactive\nMainPID=0\nControlPID=0"
         return subprocess.CompletedProcess(argv, 0, output, "")
 
-    record = tmp_path / "restart.json"
-    assert shutdown.stop_units("tfi-test", runner=run, restart_record=record)["ok"]
-    assert calls[-1] == ["systemctl", "--user", "disable", account]
+    assert shutdown.stop_units("tfi-test", runner=run)["ok"]
+    assert ["systemctl", "--user", "stop", "--no-block", account] in calls
+    assert all("enable" not in call and "disable" not in call for call in calls)
 
 
 def test_missing_unit_observation_cannot_report_success():

@@ -107,45 +107,8 @@ def test_database_readiness_failure_prevents_starting_consumers(instance, monkey
     assert calls == [('start', 'tfi-fixture-postgres.service')]
 
 
-def test_restart_record_does_not_accept_foreign_services(instance):
-    selected, directory, states, calls = instance
-    record = selected.root / services.RESTART_RECORD
-    record.parent.mkdir(exist_ok=True)
-    record.write_text('["foreign-codex.service"]')
-    with pytest.raises(ValueError, match='unregistered services'):
-        services.lifecycle('start', selected.root)
-    assert calls == []
-
-
-def test_only_recorded_accounts_restart_and_regain_boot_enable_state(instance, monkeypatch):
-    selected, directory, states, calls = instance
-    document = selected.document
-    document['services']['components'] += ['codex-app-server@one', 'codex-app-server@two']
-    (selected.root / 'instance.json').write_text(json.dumps(document))
-    selected = load(selected.root)
-    for name, content in render(selected, 'linux').items():
-        (directory / name).write_text(content)
-        states.setdefault(name, 'inactive')
-    record = selected.root / services.RESTART_RECORD
-    record.parent.mkdir(exist_ok=True)
-    record.write_text(json.dumps(['tfi-fixture-codex-app-server@one.service']))
-    control = services.controller(selected)
-    run = control.run
-    def observed(*args, **kwargs):
-        if 'enable' in args:
-            calls.append(('enable', args[3:]))
-        return run(*args, **kwargs)
-    control.run = observed
-    monkeypatch.setattr(services, 'controller', lambda instance: control)
-    services.lifecycle('start', selected.root)
-    assert ('start', 'tfi-fixture-codex-app-server@one.service') in calls
-    assert ('start', 'tfi-fixture-codex-app-server@two.service') not in calls
-    assert ('enable', ('tfi-fixture-codex-app-server@one.service',)) in calls
-    assert not record.exists()
-
-
-@pytest.mark.parametrize('platform', ['macos', 'windows'])
-def test_native_repeated_stop_retains_running_account_selection(instance, monkeypatch, platform):
+@pytest.mark.parametrize('platform', ['linux', 'macos', 'windows'])
+def test_start_includes_inactive_accounts_without_changing_boot_policy(instance, monkeypatch, platform):
     selected, directory, states, calls = instance
     document = selected.document
     document['services']['components'] += ['codex-app-server@one', 'codex-app-server@two']
@@ -153,17 +116,30 @@ def test_native_repeated_stop_retains_running_account_selection(instance, monkey
     selected = load(selected.root)
     monkeypatch.setattr(services, 'platform_name', lambda: platform)
     monkeypatch.setattr(services, 'verify_definitions', lambda *args, **kwargs: directory)
-    states.clear()
-    states.update({services.unit_name(selected, c): 'inactive' for c in document['services']['components']})
+    for name, content in render(selected, 'linux').items():
+        (directory / name).write_text(content)
+        states.setdefault(name, 'inactive')
+    control = services.controller(selected)
+    run = control.run
+    def observed(*args, **kwargs):
+        assert 'enable' not in args and 'disable' not in args
+        return run(*args, **kwargs)
+    control.run = observed
+    monkeypatch.setattr(services, 'controller', lambda instance: control)
     one = services.unit_name(selected, 'codex-app-server@one')
     states[one] = 'active'
-    services.lifecycle('stop', selected.root)
-    services.lifecycle('stop', selected.root)
-    assert services.recorded_accounts(selected.root / services.RESTART_RECORD) == {one}
+    # Leftover runtime metadata has no authority over the manifest inventory.
+    record = selected.root / 'runtime/codex-accounts-to-restart.json'
+    record.parent.mkdir(exist_ok=True)
+    record.write_text('[]')
+    if platform != 'linux':
+        services.lifecycle('stop', selected.root)
+        services.lifecycle('stop', selected.root)
     calls.clear()
-    services.lifecycle('start', selected.root)
+    result = services.lifecycle('start', selected.root)
     assert ('start', one) in calls
-    assert ('start', services.unit_name(selected, 'codex-app-server@two')) not in calls
+    assert ('start', services.unit_name(selected, 'codex-app-server@two')) in calls
+    assert not result['skipped']
 
 
 def test_definitions_are_refreshed_only_for_the_same_instance(instance, monkeypatch):
