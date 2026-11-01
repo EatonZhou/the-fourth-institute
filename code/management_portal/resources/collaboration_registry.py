@@ -53,7 +53,8 @@ def descriptor_resource_record(descriptor: Mapping[str, Any]) -> dict[str, Any]:
     attributes = normalize_resource_attributes(descriptor_attributes(descriptor))
     terms = [
         *attributes.get("project_ids", []),
-        *attributes.values(),
+        *(value for key, value in (descriptor.get("attributes") or {}).items()
+          if key in attributes),
         *(relation.get("target_id") for relation in attributes.get("relations", [])),
     ]
     record = {
