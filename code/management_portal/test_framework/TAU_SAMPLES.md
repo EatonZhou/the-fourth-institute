@@ -18,6 +18,7 @@ python3 code/scripts/check_tau_samples.py
 | 新Lineage首个成员 | 真实CreateLineage只提交一次并自动打开首个New node表单；未提交CreateResident；旧的再次点击背景工具条超时，直接使用已打开表单可继续 |
 | Workbench标签栏 | 原生单标签栏收起后，旧tab矩形上部悬停使关闭点击被顶栏拦截；从实际面板内上沿展开后，原生关闭可达并真正移除目标标签 |
 | 动态控件契约 | 直接执行公共提示示例：原生New node主按钮打开dialog，关闭后的标签返回无候选，搜索结果出现时status已移除仍可立即采样，原生账号选项按label选择并核对独立value |
+| 失败请求目标 | 实际Resident文件客户端产生ReadResource请求，经完整观察器及JSONL writer保留metadata/preview、目标摘要和404；关联资源reference、Lineage及Family指令，排除原路径/正文，不猜测结构化引用与字符串等价 |
 | Family 夹具隔离 | 真实 ISA 的隔离数据库测试仅移出临时成员，完整比较其余名册和策略，Resident 保留；角色账号 preflight 拒绝错误 Steward 且 Apply 尚未执行 |
 | 终态读取 | 原 Trigger Path 在输入完成后仍 running 时继续只读同一 ID；页面快照区分 running/idle、错误节点与隐藏节点，旧采样不被后续状态改写 |
 | 终态读取断线 | 原ID只读等待跨越临时断线及502/503，原失败和等待耗时保留；总截止时间不重置，403和身份错误立即失败，写指令不自动重发 |

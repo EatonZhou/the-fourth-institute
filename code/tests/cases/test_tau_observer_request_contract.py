@@ -40,6 +40,11 @@ def test_resident_lifecycle_failures_correlate_without_business_content():
     _run_contract("resident")
 
 
+def test_native_resource_instruction_failures_retain_safe_target_scope():
+    """原生文件读取及团队/Family失败请求保留指令与摘要，不保存路径正文。"""
+    _run_contract("resource_instructions")
+
+
 def test_injected_observer_preserves_routes_and_unique_transport_identity():
     """注入观察器在独立环境中保持路由脱敏与唯一传输关联
 

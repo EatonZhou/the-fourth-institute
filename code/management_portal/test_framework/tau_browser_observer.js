@@ -43,6 +43,10 @@ const residentReadRoutes = new Map([
   ['/api/agent-workbench/residents/forward-targets', ['resident_id', 'forward_targets']],
   ['/api/agent-workbench/agent-runtime-catalog', ['resident_id', 'runtime_catalog']],
 ]);
+const lineageReadRoutes = new Map([
+  ['/lineage/api/node-message-counts', ['id', 'node_message_counts']],
+  ['/lineage/api/node-metadata', ['lineage_id', 'node_metadata']],
+]);
 
 // Unknown path components may contain names or credentials. Keep only public
 // endpoint vocabulary; identity is carried by request/frame/document IDs.
@@ -68,7 +72,7 @@ function createPathSanitizer(residentPaths) {
     } catch { return '[unavailable]'; }
   };
 }
-const safePath = createPathSanitizer([...residentReadRoutes.keys()]);
+const safePath = createPathSanitizer([...residentReadRoutes.keys(), ...lineageReadRoutes.keys()]);
 
 // Identify repeated reads of the same resource without recording its address,
 // filename, query string or contents. A probe is not a user opening a file.
@@ -76,6 +80,15 @@ function resourceScope(request) {
   try {
     const url = new URL(request.url());
     if (request.method() !== 'GET') return undefined;
+    const lineageRoute = lineageReadRoutes.get(url.pathname);
+    if (lineageRoute) {
+      const targets = url.searchParams.getAll(lineageRoute[0]);
+      const target = targets.length === 1 ? targets[0].trim() : '';
+      return /^lineage_[0-9a-f]{12}$/.test(target) ? {
+        kind: 'lineage', mode: lineageRoute[1],
+        target_sha256: createHash('sha256').update(target).digest('hex'),
+      } : undefined;
+    }
     const route = residentReadRoutes.get(url.pathname);
     if (route) {
       const targets = url.searchParams.getAll(route[0]);
@@ -103,6 +116,33 @@ function instructionScope(request) {
   try {
     if (request.method() !== 'POST' || new URL(request.url()).pathname !== '/api/instructions/execute') return {};
     const body = request.postDataJSON();
+    if (['ReadResource', 'ResolveResource'].includes(body?.instruction)) {
+      const address = body.arguments?.address;
+      let target = typeof address === 'string' && address.length > 0 && address.length <= 8192 ? address : null;
+      let representation = 'string';
+      if (address && typeof address === 'object' && !Array.isArray(address)) {
+        const keys = ['workspace_id', 'repo_id', 'article_id'].filter(key => Object.hasOwn(address, key));
+        if (keys.length === 1 && typeof address[keys[0]] === 'string'
+            && typeof address.relative_path === 'string' && address.relative_path.length <= 8192) {
+          target = JSON.stringify([keys[0], address[keys[0]], address.relative_path]);
+          representation = 'file_reference';
+        }
+      }
+      return {instruction: body.instruction, resourceScope: target ? {
+        kind: 'resource', mode: body.instruction, address_representation: representation,
+        read_mode: body.arguments?.meta_only === true ? 'metadata' : body.arguments?.preview === true ? 'preview' : 'content',
+        target_sha256: createHash('sha256').update(target).digest('hex'),
+      } : undefined};
+    }
+    if (['GetLineage', 'DeleteLineage', 'UpdateFamily', 'Unfamilize'].includes(body?.instruction)) {
+      const family = ['UpdateFamily', 'Unfamilize'].includes(body.instruction);
+      const target = body.arguments?.[family ? 'family_id' : 'lineage_id'];
+      return {instruction: body.instruction, resourceScope: typeof target === 'string'
+        && (family ? /^fbi_[0-9a-f]{12}$/ : /^lineage_[0-9a-f]{12}$/).test(target) ? {
+          kind: family ? 'family' : 'lineage', mode: body.instruction,
+          target_sha256: createHash('sha256').update(target).digest('hex'),
+        } : undefined};
+    }
     if (body?.instruction === 'ListResidentStates') {
       const ids = body.arguments?.resident_ids;
       return { instruction: body.instruction,
@@ -113,6 +153,7 @@ function instructionScope(request) {
       'ListMessages', 'ListInputHistory', 'SearchMessages', 'GetMessage', 'GetSentPrompt',
       'PreviewPromptInjection', 'GetMailbox', 'WatchMailbox', 'ListMailboxTodos',
       'GetConversation', 'WatchConversationEvents', 'GetInputState', 'DeleteResident', 'ClearContext',
+      'GetFamilyChatPreferences', 'UpdateFamilyChatPreferences',
       'RestartSession', 'GetSessionRestart', 'CancelSessionRestart', 'CancelInput', 'DeliverMessage']);
     if (!operations.has(body?.instruction)) return {};
     if (body.instruction === 'ListMailboxTodos') {
@@ -713,7 +754,7 @@ async function observeBrowser(context, { evidenceDir }) {
   }
   // Serialize the factory with its explicit public configuration. Serializing
   // a closure alone loses Node-side dependencies inside the page's realm.
-  await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys()])}), (${createErrorLocationSanitizer.toString()})(${JSON.stringify(errorSourcePaths)}));` });
+  await context.addInitScript({ content: `(${documentObserver.toString()})((${createPathSanitizer.toString()})(${JSON.stringify([...residentReadRoutes.keys(), ...lineageReadRoutes.keys()])}), (${createErrorLocationSanitizer.toString()})(${JSON.stringify(errorSourcePaths)}));` });
   for (const page of context.pages()) pageState(page);
   write({ kind: 'capture_started', clocks: { observed_at_ms: 'node_epoch_ms', resource_values: 'browser_time_origin_plus_relative_ms' },
     limitations: ['No request bodies, arbitrary headers or query strings are persisted; only Portal EventSource and instruction transport identities are retained', 'Request/document association during navigation can be unconfirmed', 'Document destruction can prevent unload/Portal receipt delivery; absence does not prove no close occurred', 'An action ends only after documents still current at its end deliver their input receipts; a document replaced during the action may deliver late receipts outside it', 'Portal transport identity is matched only to a unique request in the same frame/document; native reconnects remain ambiguous, ResourceTiming lacks transport identity', 'Browser timing is not backend execution timing', 'server_timing_ms contains only allowlisted response-header durations: portal_queue is Web executor wait; portal_handler includes RPC/cache wait and excludes body upload/response streaming; portal_conv_* stages are request-local conversation read durations including RPC/cache waits, not database CPU time', 'Zero browser sizes/phases may reflect reuse, cache or restricted exposure; never infer zero server cost'] });

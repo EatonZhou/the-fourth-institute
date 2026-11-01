@@ -381,9 +381,57 @@ async function residentContract(observe) {
   }, observe);
 }
 
-module.exports = { resourceContract, residentContract, injectedContract };
+async function resourceInstructionContract(observe) {
+  const inputs=[];
+  const window={addEventListener(){}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,
+    '../../../management_portal/static/portal_resident_service.js'),'utf8'),{window,URLSearchParams});
+  const client=window.PortalResidentService.createClient({execute:async(instruction,args)=>{
+    inputs.push({url:'/api/instructions/execute',method:'POST',body:{instruction,arguments:args}});
+    throw Object.assign(new Error('private-response-body'),{status:404});
+  }});
+  for (const metadata of [true,false]) {
+    await assert.rejects(client.file({directoryId:'workspace_111111111111',path:'private-name.md',metadata}),/private-response-body/);
+  }
+  const address=inputs[0].body.arguments.address;
+  inputs.push({url:'/api/resources/reference?'+new URLSearchParams({address})});
+  const post=(instruction,args)=>({url:'/api/instructions/execute',method:'POST',body:{instruction,arguments:args}});
+  inputs.push(post('ResolveResource',{address}),post('ReadResource',{address:address+'-other'}),
+    post('ReadResource',{address:{workspace_id:'workspace_111111111111',relative_path:'private-name.md',ignored:'private-token'}}),
+    post('ReadResource',{address:{relative_path:'private-name.md',workspace_id:'workspace_111111111111'}}),
+    post('ReadResource',{address:{workspace_id:'workspace_111111111111',repo_id:'repo_222222222222',relative_path:'private-name.md'}}));
+  const lineage='lineage_333333333333',family='fbi_444444444444',resident='resident_555555555555';
+  inputs.push(post('GetLineage',{lineage_id:lineage}),post('DeleteLineage',{lineage_id:lineage}),
+    {url:'/lineage/api/node-message-counts?id='+lineage},
+    post('UpdateFamily',{lineage_id:lineage,family_id:family,goal:'private-goal'}),
+    post('Unfamilize',{lineage_id:lineage,family_id:family}),
+    post('GetFamilyChatPreferences',{resident_id:resident}),post('GetConversation',{resident_id:resident}));
+  await capture(inputs,({starts,output})=>{
+    const scope=starts.map(row=>row.resource_scope);
+    assert.equal(starts[0].instruction,'ReadResource','actual native file request must retain its instruction');
+    assert.deepEqual(scope.slice(0,2).map(s=>s.read_mode),['metadata','preview']);
+    assert.equal(new Set(scope.slice(0,4).map(s=>s.target_sha256)).size,1,'string addresses correlate across native reads and HTTP reference');
+    assert.notEqual(scope[4].target_sha256,scope[0].target_sha256);
+    assert.equal(scope[5].target_sha256,scope[6].target_sha256,'reference field order and unrelated fields are excluded');
+    assert.equal(scope[5].address_representation,'file_reference');
+    assert.notEqual(scope[5].target_sha256,scope[0].target_sha256,'different representations are not falsely claimed equivalent');
+    assert.equal(scope[7],undefined,'ambiguous resource references are not inferred');
+    assert.deepEqual(scope.slice(8,11).map(s=>s.kind),['lineage','lineage','lineage']);
+    assert.equal(new Set(scope.slice(8,11).map(s=>s.target_sha256)).size,1);
+    assert.equal(starts[10].path,'/lineage/api/node-message-counts');
+    assert.equal(scope[11].target_sha256,scope[12].target_sha256);
+    assert.equal(scope[11].kind,'family');
+    assert.equal(scope[13].target_sha256,scope[14].target_sha256);
+    assert.equal(starts[13].instruction,'GetFamilyChatPreferences');
+    excludes(output,['private-name','private-token','private-goal','private-response-body',
+      'workspace_111111111111',lineage,family,resident]);
+  },observe);
+}
+
+module.exports = { resourceContract, residentContract, injectedContract, resourceInstructionContract };
 if (require.main === module) {
-  const contracts = { resource: resourceContract, resident: residentContract, injected: injectedContract };
+  const contracts = { resource: resourceContract, resident: residentContract, injected: injectedContract,
+    resource_instructions: resourceInstructionContract };
   const name = process.argv[2];
   assert.ok(Object.hasOwn(contracts, name), 'choose an explicit contract');
   contracts[name]().then(() => console.log(`contract passed: ${name}`)).catch(error => {

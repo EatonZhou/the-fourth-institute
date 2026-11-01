@@ -11,6 +11,7 @@ from xml.etree import ElementTree
 
 
 SAMPLES = (
+    "test_tau_observer_request_contract.py::test_native_resource_instruction_failures_retain_safe_target_scope",
     "test_tau_chat_ready_evidence.py",
     "test_tau_readiness_samples.py",
     "test_tau_home_chat_navigation.py",
