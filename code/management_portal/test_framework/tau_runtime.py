@@ -7,6 +7,7 @@ import time
 from management_portal.society_service import get_society_service, SocietyServiceUnavailable
 from management_portal.resources.errors import ResourceServiceUnavailable
 from management_portal.hatg.contracts import InstructionError
+from management_common.projection_receipts import CommittedProjectionError
 from management_portal.application_bindings import resolve_application_lineage
 from management_portal.test_framework.tau import CaseNotSent
 from management_portal.test_framework.tau_residents import TAU_ACTOR
@@ -42,6 +43,7 @@ def ensure_module_resident(assignments, module_id: str, **options: Any) -> dict[
 
     cancelled = options.get("cancellation_requested") or (lambda: False)
     resident_scope, lineage_scope = assignments.scopes(assignment)
+    projection_deadline = time.monotonic() + 30.0
     while True:
         if cancelled():
             raise InterruptedError("TAU 已取消，未创建模块 Resident")
@@ -62,6 +64,13 @@ def ensure_module_resident(assignments, module_id: str, **options: Any) -> dict[
             break
         except (SocietyServiceUnavailable, ResourceServiceUnavailable):
             pass
+        except CommittedProjectionError:
+            # Invocation creation retains its request ID. Re-entering confirms
+            # that committed identity's projection; it never allocates a retry
+            # Resident. Parallel module creation can briefly contend on the
+            # shared Lineage's NOWAIT authorization snapshot locks.
+            if time.monotonic() >= projection_deadline:
+                raise
         except InstructionError as error:
             if error.code not in {"instruction.in_progress", "instruction.owner_unavailable"}:
                 raise
