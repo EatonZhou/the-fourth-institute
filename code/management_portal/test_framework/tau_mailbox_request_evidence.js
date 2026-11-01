@@ -1,5 +1,6 @@
 'use strict';
 const {randomUUID} = require('node:crypto');
+const {hatgShowControlLocator} = require('./tau_native_controls');
 
 // Passive evidence for a future original action. No business request, retry,
 // response replacement, Store write, or inferred event-to-request causality.
@@ -199,7 +200,7 @@ async function readMailboxSocietyPrerequisites(page) {
   });
   const graph = page.getByRole('region', {name: 'HATG', exact: true});
   const visible = await graph.count() === 1 && await graph.isVisible();
-  const show = page.getByRole('button', {name: 'Show HATG', exact: true});
+  const show = hatgShowControlLocator(page);
   return {navigation_ready: link.visible && link.hit && !link.disabled, link,
     pathname: new URL(page.url()).pathname, society_document: new URL(page.url()).pathname === '/lineage',
     hatg_visible: visible, show_hatg_ready: !visible && await show.count() === 1

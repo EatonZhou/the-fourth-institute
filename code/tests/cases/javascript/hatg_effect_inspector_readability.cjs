@@ -8,7 +8,7 @@ const {readEffectDiagnosticsReady} = require('../../../management_portal/test_fr
 const prompt=fs.readFileSync(path.join(portal,'test_framework/config/tau_runner_prompt.md'),'utf8');
 const controls=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
 assert.ok(controls);
-const currentProgrammingInspectors=new Function(controls[1]+'; return currentProgrammingInspectors;')();
+const currentProgrammingInspectors=new Function('require','frameworkRoot',controls[1]+'; return currentProgrammingInspectors;')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));
 // The production program inspector draws a saved Effect and reads its
 // diagnostics; only the inspector's listed dependencies are provided.
 (async () => {

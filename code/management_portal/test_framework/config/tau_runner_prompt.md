@@ -1,17 +1,12 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+以下发现函数统一从共享 `tau_native_controls.js` 导入；`frameworkRoot` 为本轮代码根下 `management_portal/test_framework` 的绝对路径，与共享浏览器启动器同目录。不要在每个 Run 重新实现这些函数。它们只读当前页面，仍须按本步骤实际身份与业务条件完成原 ready。
+
 Society 默认布局隐藏 HATG；普通 `/lineage?lineage=...` 只绑定目标并保留布局，不保证出现画布。导航原 ready 先核验页面与实际入口，不能等待仍隐藏的 HATG 身份。随后用独立原动作点击当前原生 Show HATG（或本轮发现的 Lineage 导航入口），在该动作 ready 内核验完整 Lineage 身份与图。页面已经显示 HATG 时不重复点击显示按钮。显式 `view=hatg` 是设计支持的画布入口，但仍遵守用例规定的导航方式。下面只发现控件，返回 Locator 或 null；不点击、不修改布局、不代替身份核验。
 
 ```js
 // tau-hatg-opening
-async function nativeHatgShowControl(page) {
-  const graph = page.getByRole('region', {name: 'HATG', exact: true});
-  if (await graph.count() === 1 && await graph.isVisible()) return null;
-  const show = page.getByRole('button', {name: 'Show HATG', exact: true});
-  if (await show.count() !== 1 || !await show.isVisible() || !await show.isEnabled())
-    throw new Error('Current native HATG opening control is unavailable');
-  return show;
-}
+const {nativeHatgShowControl} = require(require('node:path').join(frameworkRoot, 'tau_native_controls.js'));
 ```
 
 HATG新建组件的身份来自本次原始CreateComponent回执`result.component_id`，其`result.component.id`必须一致；GetLineage的`lineage.program.components`里字段是`id`，不是`component_id`。不要按标题扫描后取不存在的字段，也不接受undefined作为原ready的目标。以下函数接收完整ISA回执，不发送请求、不代替完整原图集合核验。
@@ -40,51 +35,7 @@ HTTP非成功响应按request_id关联原request_started及response_received/req
 
 ```js
 // tau-current-controls
-async function currentNativeTab(page, name) {
-  const tabs = page.getByRole('tab', {name, exact: true});
-  const count = await tabs.count();
-  if (count > 1) throw new Error('Ambiguous current native tab');
-  return count === 1 ? tabs : null;
-}
-async function nativeEntryDestination(button) {
-  const popup = await button.getAttribute('aria-haspopup');
-  if (popup === 'menu' || popup === 'true') return 'menu';
-  return popup === 'dialog' ? 'dialog' : null;
-}
-async function currentStatusTexts(scope) {
-  return scope.getByRole('status').evaluateAll(nodes => nodes.map(node => node.textContent.trim()));
-}
-async function currentSelectOptions(select) {
-  return select.locator('option').evaluateAll(nodes => nodes.map(node => ({
-    label: node.label, value: node.value, disabled: node.disabled || !!node.closest('optgroup')?.disabled,
-  })));
-}
-async function currentNativeDialog(page, name) {
-  const dialog = page.getByRole('dialog', {name, exact: true})
-    .or(page.getByRole('alertdialog', {name, exact: true}));
-  const count = await dialog.count();
-  if (count > 1) throw new Error('Ambiguous current native dialog');
-  return count === 1 ? dialog : null;
-}
-async function currentProgrammingInspectors(page) {
-  return page.locator('[data-inspector-kind]:visible').evaluateAll(nodes => nodes.map(node => ({
-    id: node.id, kind: node.dataset.inspectorKind,
-    component_id: node.dataset.componentId || null, wire_id: node.dataset.wireId || null,
-    label: node.getAttribute('aria-label'),
-  })));
-}
-async function currentMessageQuoteAction(page, {messageId}) {
-  if (typeof messageId !== 'string' || !messageId) throw new Error('Original message identity is required');
-  const menus = page.locator('[data-portal-message-menu]:visible');
-  const identities = await menus.evaluateAll(nodes => nodes.map(node => node.dataset.portalMessageKey));
-  const matches = identities.flatMap((key, index) => key === messageId ? [index] : []);
-  if (matches.length > 1) throw new Error('Ambiguous current message menu');
-  if (!matches.length) return null;
-  const quote = menus.nth(matches[0]).locator('[data-portal-message-action="quote"]:visible');
-  const count = await quote.count();
-  if (count > 1) throw new Error('Ambiguous current quote action');
-  return count === 1 && await quote.isEnabled() ? quote : null;
-}
+const {currentNativeTab, nativeEntryDestination, currentStatusTexts, currentSelectOptions, currentNativeDialog, currentProgrammingInspectors, currentMessageQuoteAction} = require(require('node:path').join(frameworkRoot, 'tau_native_controls.js'));
 ```
 
 消息引用先在精确原message_id对应的可见正文上正常右键，再在同一原ready中用currentMessageQuoteAction核对菜单所属消息及可用引用按钮。原生菜单移到document.body，不能限定在原article内部；按钮文案随语言显示“引用回复”或“Quote reply”，不要固定英语名称。保存当下实际名称，引用后核对composer的原消息预览和随后真实提交的message.quote.message_id。该发现函数只读，不点击、不发送、不代替引用提交或业务终态。

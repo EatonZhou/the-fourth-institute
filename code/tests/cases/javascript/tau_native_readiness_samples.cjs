@@ -22,7 +22,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const prompt = fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
   const controlsExample=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
   assert.ok(controlsExample, 'public dynamic-control contract must be executable');
-  const controls=new Function(controlsExample[1]+'; return {nativeEntryDestination,currentStatusTexts,currentSelectOptions,currentNativeDialog};')();
+  const controls=new Function('require','frameworkRoot',controlsExample[1]+'; return {nativeEntryDestination,currentStatusTexts,currentSelectOptions,currentNativeDialog};')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));
   const discoveryExample=prompt.match(/```js\n(\/\/ tau-native-chat-locator\n[\s\S]*?)\n```/);
   assert.ok(discoveryExample, 'the public Chat discovery example must specify its Locator contract');
   const uniqueResidentChat=new Function('visibleResidentChatRoots',discoveryExample[1]+'; return uniqueResidentChat;')(visibleResidentChatRoots);
@@ -89,11 +89,21 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.equal(requests.filter(r=>r.instruction==='ClearContext').length,0);
   const openingExample=prompt.match(/```js\n(\/\/ tau-hatg-opening\n[\s\S]*?)\n```/);
   assert.ok(openingExample, 'ordinary navigation must not wait for a hidden HATG');
-  const nativeHatgShowControl=new Function(openingExample[1]+'; return nativeHatgShowControl;')();
+  const nativeHatgShowControl=new Function('require','frameworkRoot',openingExample[1]+'; return nativeHatgShowControl;')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));
   const {readSessionLineageIdentity:readOpeningIdentity}=require('../../../management_portal/test_framework/tau_session_prerequisites');
   const hiddenGraph=page.getByRole('region',{name:'HATG',exact:true});
   assert.equal((await readOpeningIdentity(hiddenGraph,{lineageId:'lineage_222222222222'})).identity_ready,false);
+  await page.evaluate(() => PortalI18n.apply('zh-CN'));
+  await page.reload();
+  await page.getByRole('button',{name:'显示 HATG',exact:true}).waitFor({state:'visible'});
+  const localizedShow=await nativeHatgShowControl(page);
+  assert.equal(await localizedShow.getAttribute('aria-label'),'显示 HATG');
+  assert.equal(await hiddenGraph.isVisible(),false,'discovery must not change layout');
+  await page.evaluate(() => PortalI18n.apply('en'));
+  await page.reload();
+  await page.getByRole('button',{name:'Show HATG',exact:true}).waitFor({state:'visible'});
   const showGraph=await nativeHatgShowControl(page);
+  assert.equal(await showGraph.getAttribute('aria-label'),'Show HATG');
   assert.equal(await showGraph.isVisible(),true);
   await showGraph.click();
   const hatg = page.getByRole('region', {name:'HATG', exact:true});
@@ -214,7 +224,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.equal(implicitChat.deletion_feedback_ready,false);
   // Render real Resident message menus in both supported UI languages. The
   // open popover is portalled outside its article, but keeps its message key.
-  const currentMessageQuoteAction=new Function(controlsExample[1]+'; return currentMessageQuoteAction;')();
+  const currentMessageQuoteAction=new Function('require','frameworkRoot',controlsExample[1]+'; return currentMessageQuoteAction;')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));
   for (const language of ['zh-CN','en']) {
     await page.evaluate(language=>{
       PortalI18n.apply(language);

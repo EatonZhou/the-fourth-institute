@@ -19,7 +19,7 @@ module.exports=async({page,requests,errors})=>{
   const prompt=fs.readFileSync(path.join(__dirname,'../../../management_portal/test_framework/config/tau_runner_prompt.md'),'utf8');
   const controls=prompt.match(/```js\n(\/\/ tau-current-controls\n[\s\S]*?)\n```/);
   assert.ok(controls,'the dynamic tab contract must distinguish gone from ambiguous');
-  const currentNativeTab=new Function(controls[1]+'; return currentNativeTab;')();
+  const currentNativeTab=new Function('require','frameworkRoot',controls[1]+'; return currentNativeTab;')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));
   assert.ok(prompt.includes('CreateLineage成功后原生页面会自动打开首个New node表单'),
     'public preparation must account for the native automatically opened form');
   await node.getByRole('button',{name:'Cancel',exact:true}).click();
