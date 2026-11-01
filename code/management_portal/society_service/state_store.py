@@ -548,8 +548,8 @@ class LineageDataStore:
     def remove_residents(self, tombstones: Iterable[Mapping[str, Any]]) -> list[str]:
         return self.residents.remove_residents(tombstones)
 
-    def retire_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
-        return self.residents.retire_workspaces_under(paths, deleted_at=deleted_at, deleted_by=deleted_by)
+    def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
+        return self.residents.delete_workspaces_under(paths, deleted_at=deleted_at, deleted_by=deleted_by)
 
     def resident_deletion(self, resident_id: str) -> dict[str, Any] | None:
         return self.residents.resident_deletion(resident_id)

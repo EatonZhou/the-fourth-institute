@@ -322,16 +322,16 @@ class ResidentRecords:
                 connection.execute('DELETE FROM resident_workspace_transfers WHERE resident_id=%s', (rid,))
             if not workspace_ids:
                 return []
-            from .resident_workspace_retirement import retire_unreferenced
-            return retire_unreferenced(connection, workspace_ids=workspace_ids,
+            from .resident_workspace_deletion import delete_unreferenced
+            return delete_unreferenced(connection, workspace_ids=workspace_ids,
                                        deleted_at=values[0]['deleted_at'],
                                        deleted_by=values[0].get('deleted_by') or '')
         return self.database.write(write)
 
-    def retire_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
+    def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
         """Retire unused registrations within folders being deleted."""
-        from .resident_workspace_retirement import retire_unreferenced
-        return self.database.write(lambda connection: retire_unreferenced(
+        from .resident_workspace_deletion import delete_unreferenced
+        return self.database.write(lambda connection: delete_unreferenced(
             connection, paths=paths, deleted_at=deleted_at, deleted_by=deleted_by,
         ))
 

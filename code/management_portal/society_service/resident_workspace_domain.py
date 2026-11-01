@@ -412,9 +412,9 @@ def _commit_resident_deletions(
         from .lineage_definition_scope import check_before_membership_write
         for lineage_id in sorted({plan["result"]["lineage_id"] for plan in plans}):
             check_before_membership_write(catalog.state_store, lineage_id)
-        retired_paths = catalog.remove([record for plan in plans for record in plan["records"]])
+        deleted_paths = catalog.remove([record for plan in plans for record in plan["records"]])
         for plan in plans:
-            retired_paths.extend(catalog.state_store.retire_workspaces_under(
+            deleted_paths.extend(catalog.state_store.delete_workspaces_under(
                 [plan["result"]["workspace_original_path"]],
                 deleted_at=plan["result"]["deleted_at"], deleted_by=plan["result"]["deleted_by"],
             ))
@@ -422,7 +422,7 @@ def _commit_resident_deletions(
             # Include extra Workspaces outside the deleted Resident folders.
             # Every removal re-reads live registrations before touching files.
             plans[-1]["steps"].extend({"kind": "remove", "source": path}
-                                      for path in sorted(set(retired_paths)))
+                                      for path in sorted(set(deleted_paths)))
         for plan in plans:
             for record in plan["records"]:
                 projection_revisions[record["resident_id"]] = (
@@ -525,22 +525,22 @@ def retry_deleted_resident(resident_id: str, actor: str) -> dict[str, Any] | Non
     if not resident_access.is_active_actor(actor_id):
         raise PermissionError("需要有效的 Portal 登录身份")
     # Replays do not allocate cleanup work or replace the first deletion facts.
-    # Recheck retained folders: their last shared Workspace may have retired
+    # Recheck retained folders: their last shared Workspace may have been deleted
     # after the original deletion journal completed.
     def reconcile():
-        from .resident_workspace_retirement import remove_retired_folder
+        from .resident_workspace_deletion import remove_deleted_folder
         from management_portal.resources.workspace_store import get_workspace_store
         confirm_resident_deletion_projection(resident_id)
         # Deleted nodes no longer have a current Lineage path. The retained
         # owned Workspace row keeps the exact original location, even after
-        # that Workspace itself has retired.
+        # that Workspace itself has been deleted.
         workspace_id = record['owned_workspace_id']
         workspace = get_workspace_store().rows([workspace_id], include_deleted=True).get(workspace_id)
         if workspace:
             owned = Path(workspace['path'])
             if owned.name != 'workspace' or owned.parent.name != resident_id or owned.parent.parent.name != 'residents':
                 raise ValueError('Deleted Resident owned Workspace has an invalid folder boundary')
-            remove_retired_folder(owned.parent)
+            remove_deleted_folder(owned.parent)
 
     invariant_locks.defer_until_state_unlock(reconcile)
     return {

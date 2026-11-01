@@ -1778,8 +1778,8 @@ def test_deleted_resident_cleanup_failure_retries_without_resurrecting_identity(
     operations = resident_record_domain.lifecycle_operations()
     operation_id, = operations.ready()
     with monkeypatch.context() as failure:
-        from management_portal.society_service import resident_workspace_retirement
-        failure.setattr(resident_workspace_retirement, "remove_retired_folder",
+        from management_portal.society_service import resident_workspace_deletion
+        failure.setattr(resident_workspace_deletion, "remove_deleted_folder",
                         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("remove failed")))
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
     assert "remove failed" in operations.health()["last_error"]

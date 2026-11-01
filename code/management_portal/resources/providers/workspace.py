@@ -85,7 +85,7 @@ def install_resolver(service: "ResourceService") -> None:
     )
 
 
-def install_mutation_provider(service: "ResourceService", *, retire) -> None:
+def install_mutation_provider(service: "ResourceService", *, unregister_workspace) -> None:
     from management_portal import permission_system
     from management_portal.society_service.lineage_access_policy import hidden_private_ids
     from ..collaboration_registry import descriptor_resource_record
@@ -122,7 +122,7 @@ def install_mutation_provider(service: "ResourceService", *, retire) -> None:
             if resource_id not in permission_system.permitted_ids(actor, "UnregisterResource", "resource_id", [resource_id]):
                 raise PermissionError("Workspace unregistration requires @admin")
 
-        return descriptor_resource_record(retire(
+        return descriptor_resource_record(unregister_workspace(
             resource_id, actor=actor, authorize=authorize,
         ))
 

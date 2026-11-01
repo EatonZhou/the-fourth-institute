@@ -1,4 +1,4 @@
-"""Explicit orphan retirement through Resource ISA, with real references and PAR.
+"""Explicit orphan deletion through Resource ISA, with real references and PAR.
 
 :module: resource.service
 :design: decision_8838269736d3
@@ -40,7 +40,7 @@ def conflict(result, reason):
 
 
 @pytest.mark.parametrize('internal,exists', [(True, True), (False, True), (True, False), (False, False)])
-def test_orphan_retirement_and_directory_boundary(workspace, internal, exists):
+def test_orphan_deletion_and_directory_boundary(workspace, internal, exists):
     root = (current_instance().area('projects') if internal else workspace.root) / 'orphan'
     workspace.store.ensure(WID, str(root), move=True)
     if exists:
@@ -87,7 +87,7 @@ def test_deleted_resident_does_not_keep_binding_alive(future_creation_store, wor
 
 
 @pytest.mark.parametrize('deleted', [False, True])
-def test_nested_registration_must_be_retired_first(workspace, deleted):
+def test_nested_registration_must_be_deleted_first(workspace, deleted):
     child = 'workspace_aaaaaaaaaaaa'
     path = workspace.root / 'nested%_folder'
     path.mkdir()
@@ -104,7 +104,7 @@ def test_nested_registration_must_be_retired_first(workspace, deleted):
     assert path.exists()  # External host directories are never deleted here.
 
 
-def test_older_internal_registration_can_be_unbound_and_retired(future_creation_store, workspace):
+def test_older_internal_registration_can_be_unbound_and_deleted(future_creation_store, workspace):
     """An instance directory outside the areas can no longer be registered;
     older registrations of one still let their Residents save, unbind and retire."""
     old = current_instance().root / 'maintenance' / 'old-gate'
@@ -169,22 +169,22 @@ def test_internal_cleanup_never_follows_child_symlinks(workspace):
 
 
 def test_cleanup_failure_keeps_registration_retryable(workspace, monkeypatch):
-    from management_portal.society_service import resident_workspace_retirement as retirement
+    from management_portal.society_service import resident_workspace_deletion as deletion
     root = current_instance().area('projects') / 'orphan'
     root.mkdir(parents=True)
     workspace.store.ensure(WID, str(root), move=True)
-    original = retirement.remove_retired_folder
+    original = deletion.remove_deleted_folder
     def fail(*args, **kwargs):
         raise PermissionError('filesystem denied')
-    monkeypatch.setattr(retirement, 'remove_retired_folder', fail)
+    monkeypatch.setattr(deletion, 'remove_deleted_folder', fail)
     assert call(workspace).status == 'failed'
     assert workspace.store.rows([WID])
-    monkeypatch.setattr(retirement, 'remove_retired_folder', original)
+    monkeypatch.setattr(deletion, 'remove_deleted_folder', original)
     call(workspace).raise_for_error()
     assert not root.exists()
 
 
-def test_binding_committed_before_retirement_is_seen(future_creation_store, workspace):
+def test_binding_committed_before_deletion_is_seen(future_creation_store, workspace):
     resident = resident_domain.register_resident(_new_session_payload('Concurrent user'), 'sample_admin')
     started = Event()
     def unregister():

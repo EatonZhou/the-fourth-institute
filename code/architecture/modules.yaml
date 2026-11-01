@@ -663,7 +663,7 @@ modules:
       - "management_portal/society_service/resident_watchboard_domain.py"
       - "management_portal/society_service/resident_work_origin.py"
       - "management_portal/society_service/resident_work_recovery.py"
-      - "management_portal/society_service/resident_workspace_retirement.py"
+      - "management_portal/society_service/resident_workspace_deletion.py"
       - "management_portal/society_service/resident_workspace_transfer.py"
       - "management_portal/society_service/resident_delivery_work.py"
       - "management_portal/society_service/resident_delivery_storage.py"

@@ -652,7 +652,7 @@ def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """空 Lineage 原位清理失败时目录保留，删除意图可重试且不移动存活路径"""
-    from management_portal.society_service import resident_workspace_retirement
+    from management_portal.society_service import resident_workspace_deletion
 
     created = lineage_lifecycle.create_lineage(
         {"title": "Cleanup failure", "nodes": [], "edges": []},
@@ -671,8 +671,8 @@ def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
         capture_sync,
     )
     monkeypatch.setattr(
-        resident_workspace_retirement,
-        "remove_retired_folder",
+        resident_workspace_deletion,
+        "remove_deleted_folder",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("cleanup failed")),
     )
 

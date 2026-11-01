@@ -1,4 +1,4 @@
-"""Reference-aware Workspace retirement and resumable directory cleanup."""
+"""Reference-aware Workspace deletion and resumable directory cleanup."""
 from pathlib import Path
 from contextlib import nullcontext
 import errno
@@ -9,13 +9,13 @@ from .folder_removal import remove_tree, _owner_may_enter_and_change
 from management_portal.resources.errors import ResourceOperationError
 
 
-class WorkspaceRetirementRefused(ResourceOperationError):
-    """All eligibility checks run before retirement or filesystem effects."""
+class WorkspaceDeletionRefused(ResourceOperationError):
+    """All eligibility checks run before deletion or filesystem effects."""
     commit_state = "not_committed"
 
 
-def retire_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, deleted_by):
-    """Retire associated directories with no surviving Resident users.
+def delete_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, deleted_by):
+    """Delete associated directories with no surviving Resident users.
 
     Call after marking the entire deletion set, so members being deleted
     together do not keep one another's Workspaces alive. Nested registrations
@@ -50,8 +50,8 @@ def retire_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, d
         (candidates, candidates),
     ).fetchall()
     retained = {row['workspace_id'] for row in used}
-    retired = [row for row in rows if row['workspace_id'] not in retained]
-    ids = [row['workspace_id'] for row in retired]
+    deleted = [row for row in rows if row['workspace_id'] not in retained]
+    ids = [row['workspace_id'] for row in deleted]
     if ids:
         connection.execute(
             f"UPDATE {table} SET deleted_at=%s,deleted_by=%s,"
@@ -59,11 +59,11 @@ def retire_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, d
             "WHERE workspace_id=ANY(%s)", (deleted_at, deleted_by, deleted_at, ids),
         )
         connection.execute("DELETE FROM resident_workspace_bindings WHERE workspace_id=ANY(%s)", (ids,))
-    return [located_path(row['path']) for row in retired]
+    return [located_path(row['path']) for row in deleted]
 
 
 def unregister_workspace(workspace_id, *, connection, actor, authorize, check_dependencies=None):
-    """Explicit retirement refuses live users and independently registered children.
+    """Explicit deletion refuses live users and independently registered children.
 
     The Workspace lock also serializes binding writers, moves and registration.
     Keep it through cleanup: a newly registered directory must never be removed
@@ -89,7 +89,7 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize, check_de
         (workspace_id, workspace_id),
     ).fetchall()
     if users:
-        raise WorkspaceRetirementRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409,
+        raise WorkspaceDeletionRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409,
                                      details={"users": [dict(user) for user in users]})
     # The stored form, also for an older registration of an instance
     # directory outside the areas, which can no longer be encoded.
@@ -101,22 +101,22 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize, check_de
         (workspace_id, location, below),
     ).fetchall()
     if children:
-        raise WorkspaceRetirementRefused("workspace_nested_registration", "Workspace contains active registered resources", 409,
+        raise WorkspaceDeletionRefused("workspace_nested_registration", "Workspace contains active registered resources", 409,
                                      details={"resource_ids": [child['workspace_id'] for child in children]})
     if check_dependencies is not None:
         check_dependencies(row['path'], connection)
     internal = is_area_reference(location)
     if internal and Path(row['path']) == current_instance().area(location.partition(':')[0]):
-        raise WorkspaceRetirementRefused("workspace_area_root", "An instance area root cannot be removed as a Workspace", 409)
-    retired = retire_unreferenced(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
-    if not retired:
-        raise WorkspaceRetirementRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409)
+        raise WorkspaceDeletionRefused("workspace_area_root", "An instance area root cannot be removed as a Workspace", 409)
+    deleted = delete_unreferenced(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
+    if not deleted:
+        raise WorkspaceDeletionRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409)
     if internal:
-        remove_retired_folder(row['path'], connection=connection)
+        remove_deleted_folder(row['path'], connection=connection)
     return store.descriptor(store.rows([workspace_id], connection=connection, include_deleted=True)[workspace_id])
 
 
-def remove_retired_folder(folder, *, connection=None):
+def remove_deleted_folder(folder, *, connection=None):
     """Remove files outside live Workspaces; their presence never rejects deletion.
 
     Retain shared directories in place, including their ancestor directories.

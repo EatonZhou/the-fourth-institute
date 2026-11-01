@@ -364,8 +364,8 @@ def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     result = lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
     with monkeypatch.context() as failure:
-        from management_portal.society_service import resident_workspace_retirement
-        failure.setattr(resident_workspace_retirement, "remove_tree",
+        from management_portal.society_service import resident_workspace_deletion
+        failure.setattr(resident_workspace_deletion, "remove_tree",
                         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("remove failed")))
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
     assert folder.is_dir()

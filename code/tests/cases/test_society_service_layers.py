@@ -42,7 +42,7 @@ LAYERS = (
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers
     resident_default_backend resident_hatg_credentials resident_intake_admission resident_message_contract
     resident_project_domain resident_projection resident_resource_changes resident_runtime_payload
-    resident_settings_contract resident_state resident_turn_scope resident_workspace_retirement
+    resident_settings_contract resident_state resident_turn_scope resident_workspace_deletion
     resident_workspace_transfer runtime runtime.contracts runtime.ports script_runs
     script_runs.clients.portal_script script_runs.runner script_runs.runtime seed_state_marker
     workspace_contracts

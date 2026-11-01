@@ -10,7 +10,7 @@ import pytest
 from management_portal.resources.workspace_store import get_workspace_store
 from management_portal.society_service import lineage_graph_edits, lineage_lifecycle, lineage_resident_nodes, resident_catalog
 from management_portal.society_service import resident_workspace_domain as domain
-from management_portal.society_service.resident_workspace_retirement import remove_retired_folder
+from management_portal.society_service.resident_workspace_deletion import remove_deleted_folder
 from tests.cases.test_resident_folder_creation_contract import (
     _new_session_payload, future_creation_store, resident_domain,
 )
@@ -148,8 +148,8 @@ def test_cleanup_rechecks_new_registration_and_does_not_follow_symlinks(tmp_path
     (external / 'evidence.txt').write_text('outside')
     (root / 'alias').symlink_to(external, target_is_directory=True)
     get_workspace_store().ensure('workspace_aaaaaaaaaaaa', str(keep))
-    remove_retired_folder(root)
-    remove_retired_folder(root)
+    remove_deleted_folder(root)
+    remove_deleted_folder(root)
     assert (keep / 'keep.txt').read_text() == 'keep'
     assert not (root / 'discard.txt').exists()
     assert not (root / 'alias').is_symlink()

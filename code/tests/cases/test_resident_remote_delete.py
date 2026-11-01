@@ -60,7 +60,7 @@ def test_deleted_notification_waits_for_owner_commit_and_state_unlock():
         assert deferred==[('resident',RID,'identity',{'kind':'deleted'})]
     calls=[]
     plan={'result':{'resident_id':RID,'lineage_id':'lineage_test','workspace_original_path':'/isolated-fixture/one','deleted_at':'2026-10-25T00:00:00Z','deleted_by':'case_actor'},'records':[{'resident_id':RID}],'steps':[],'lineage_deletion_token':None}
-    store=SimpleNamespace(retire_workspaces_under=Mock(return_value=[]),enqueue_resident_resource_projection=Mock(return_value=7))
+    store=SimpleNamespace(delete_workspaces_under=Mock(return_value=[]),enqueue_resident_resource_projection=Mock(return_value=7))
     def transaction(body):calls.append('begin');body();calls.append('commit')
     store.transaction=transaction
     catalog=SimpleNamespace(state_store=store,remove=Mock(return_value=[]))

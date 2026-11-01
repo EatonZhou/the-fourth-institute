@@ -192,7 +192,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
     project_root = _registered_deletable_root(project_record)
     identities = _project_identities(project_id, project_record, project_root)
     ordinary, principals = _project_lineage_ids(identities)
-    from .resident_workspace_retirement import remove_retired_folder
+    from .resident_workspace_deletion import remove_deleted_folder
     from .state_store import get_lineage_data_store
     store = get_lineage_data_store()
     lineage_ids: list[str] = []
@@ -217,9 +217,9 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 "resident_ids": resident_ids,
             }
             document["projects"] = _registry_without_project(document, registry_id)["projects"]
-            store.retire_workspaces_under([project_root], deleted_at=entry["deleted_at"], deleted_by=actor_id)
+            store.delete_workspaces_under([project_root], deleted_at=entry["deleted_at"], deleted_by=actor_id)
             if project_root.exists():
-                remove_retired_folder(project_root)
+                remove_deleted_folder(project_root)
             _append_deletion_index(entry)
     except Exception as exc:
         from management_portal.hatg.contracts import InstructionError

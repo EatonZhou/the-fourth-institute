@@ -76,7 +76,7 @@ def _purge_deleted_lineage_folder(intent: Mapping[str, Any]) -> None:
     Previously staged, already moved journals are drained at their recorded
     target; new deletion intents never create a target or move the folder.
     """
-    from .resident_workspace_retirement import remove_retired_folder
+    from .resident_workspace_deletion import remove_deleted_folder
     source = Path(str(intent["source_path"]))
     if not source.is_absolute():
         raise ValueError("Invalid Lineage deletion path")
@@ -93,10 +93,10 @@ def _purge_deleted_lineage_folder(intent: Mapping[str, Any]) -> None:
                 or marker.read_text(encoding="utf-8") != proof):
             raise ValueError("Invalid staged Lineage deletion")
         source = target
-    lineage_aggregate.lineage_catalog_store().state_store.retire_workspaces_under(
+    lineage_aggregate.lineage_catalog_store().state_store.delete_workspaces_under(
         [source], deleted_at=intent["deleted_at"], deleted_by=intent["deleted_by"],
     )
-    remove_retired_folder(source)
+    remove_deleted_folder(source)
 
 
 def _record_lineage_deletion_error(

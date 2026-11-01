@@ -56,8 +56,8 @@ def _context_archive(operation_id: str, step: dict[str, Any]) -> None:
 
 
 def _remove(operation_id: str, step: dict[str, Any]) -> None:
-    from .resident_workspace_retirement import remove_retired_folder
-    remove_retired_folder(step["source"])
+    from .resident_workspace_deletion import remove_deleted_folder
+    remove_deleted_folder(step["source"])
 
 
 def _archive(operation_id: str, step: dict[str, Any]) -> None:
