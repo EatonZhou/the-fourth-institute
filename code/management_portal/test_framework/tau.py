@@ -190,6 +190,7 @@ def build_prompt(
             "结束通过正式入口注销本轮资源，再由框架回收该目录；不删除或移动其他目录。"
         )
     account_instruction = ""
+    case_instructions = str(planned.get("case_instructions") or "").strip()
     if assignment and assignment.get("backend_route_id"):
         account_instruction = (
             f"\n本模块使用 Codex 账号 {assignment['backend_route_id']}，"
@@ -204,7 +205,8 @@ def build_prompt(
     resident_runtime = planned.get("resident_runtime") or {}
     if resident_account:
         account_instruction = (
-            f"\n本次 Campaign 的全部 Codex Resident 必须使用账号 {resident_account}，"
+            ("\n除本轮补充要求明确限定的例外步骤外，" if case_instructions else "\n")
+            + f"本次 Campaign 的全部 Codex Resident 必须使用账号 {resident_account}，"
             "范围包括 TAU 执行器、被测业务成员、讨论成员以及本用例创建或 Fork 的临时成员。"
             "独立 API 模型保持原 Provider 与模型，不转换为 Codex。"
             "这是本次运行发起者明确授权的账号配置要求，优先于用例中的历史账号选择。"
@@ -212,7 +214,8 @@ def build_prompt(
             "需要切换时使用普通账号切换/Session 迁移入口，保留 Resident 身份，等待配置就绪后再发送。"
             "新建与 Fork 时，页面提供账号选择的就显式选择该账号；Fork 不提供选择而沿用来源成员设置，"
             "发送前照样核对，不一致再用上述入口调整，不因页面没有选择器判定失败。"
-            "禁止使用其他账号作为失败后的备用路线。"
+            + ("禁止使用未在本轮补充要求中明确授权的账号作为备用路线。" if case_instructions else
+               "禁止使用其他账号作为失败后的备用路线。")
             + (
                 "同一范围内的 Codex Resident 还必须使用"
                 + "、".join(f"{RUNTIME_LABELS[key]} {value}" for key, value in resident_runtime.items())
@@ -231,6 +234,12 @@ def build_prompt(
             "无权配置或账号不可用时如实报告阻塞，不在错误账号上执行；涉及跨账号行为的用例"
             "若与本次约束冲突，记录不能完成的验收条件，不伪报通过。\n"
         )
+    supplemental_instruction = (
+        "本次 Run 发起者对本用例的补充要求（仅作用于当前用例，不修改用例正文、站点默认或账号登记）：\n"
+        + case_instructions
+        + "\n仅明确列出的步骤使用例外授权，其余仍遵守本轮默认约束；完成后核验要求的恢复状态并留证。"
+        if case_instructions else ""
+    )
     visual_instruction = ""
     if "ui" in (planned.get("aspects") or []):
         visual_instruction = """
@@ -260,6 +269,7 @@ def build_prompt(
 - 仓库根目录：{ROOT}
 - 框架 Python 解释器：{sys.executable}（本次执行器实际运行环境；单元回归仍使用 tests/cases 的隔离数据库）
 {account_instruction}
+{supplemental_instruction}
 
 {fixture_instruction}
 

@@ -523,6 +523,7 @@ class _TauCaseRun:
         context = {
             "run_id": self.run_id,
             "case_id": str(self.planned["case_id"]),
+            **({"case_instructions": self.planned["case_instructions"]} if self.planned.get("case_instructions") else {}),
             "resource_lifecycle_id": self.lifecycle_id,
             "evidence_dir": str(run_dir.resolve()),
             "build_id": self.target.actual_build_id,

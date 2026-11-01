@@ -1879,6 +1879,7 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
             "case_id": "test_000000000009",
             "case_title": "真实使用 Test 页面",
             "description": "验证用户能够使用页面。",
+            "case_instructions": "Only this case may exercise its explicitly authorized route replacement.",
             "module": "operations.test-workbench",
             "implementation": {"task_prompt": "打开页面并检查筛选。",
                                **({'standalone_git_fixture': 'Verify uninitialized Git registration'} if standalone_fixture else {})},
@@ -1905,6 +1906,8 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
     context = json.loads((run_dir / "run-context.json").read_text(encoding="utf-8"))
     assert context["run_id"] == "testrun_0000000000000004"
     assert context["case_id"] == "test_000000000009"
+    assert context['case_instructions'] == "Only this case may exercise its explicitly authorized route replacement."
+    assert context['case_instructions'] in captured['prompt']
     assert context["browser_runtime"]["browsers_path"] == str(browsers)
     assert Path(context["browser_runtime"]["python_executable"]).is_absolute()
     assert context["evidence_dir"] == str(run_dir.resolve())

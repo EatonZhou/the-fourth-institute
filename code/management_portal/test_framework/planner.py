@@ -32,6 +32,13 @@ class RunPlanner:
             # An explicit case id remains runnable for diagnosis or recovery.
             selection["lifecycle"] = sorted(LIFECYCLES - {"retired"})
         implementation = request.get("implementation") if isinstance(request.get("implementation"), dict) else {}
+        case_instructions = implementation.get("case_instructions", {})
+        if not isinstance(case_instructions, dict) or any(
+            not isinstance(key, str) or not isinstance(value, str) or not value.strip()
+            for key, value in case_instructions.items()
+        ):
+            raise CatalogError("case_instructions 必须按用例 ID 提供非空补充要求")
+        case_instructions = {key: value.strip() for key, value in case_instructions.items()}
         resident_account = implementation.get("resident_account_id", "")
         parallel_modules = implementation.get("max_parallel_modules")
         if "resident_account_id" in implementation:
@@ -97,12 +104,17 @@ class RunPlanner:
                         **source_digests(case.id, item.public(), ROOT),
                         **({"resident_account_id": resident_account} if resident_account else {}),
                         **({"resident_runtime": resident_runtime} if resident_runtime else {}),
+                        **({"case_instructions": case_instructions[case.id]} if case.id in case_instructions else {}),
                     }
                 )
         groups: list[dict[str, Any]] = []
         is_tau_campaign = bool(selected) and all(
             item["runner"]["id"] == TAU_RUNNER_ID for item in selected
         )
+        if case_instructions and (
+            not is_tau_campaign or set(case_instructions) - {item['case_id'] for item in selected}
+        ):
+            raise CatalogError("case_instructions 仅用于本次选中的 TAU 用例")
         if (resident_account or parallel_modules is not None) and not is_tau_campaign:
             raise CatalogError("Resident 账号与模块并发设置仅用于 TAU Campaign")
         if fail_fast and is_tau_campaign:
@@ -132,6 +144,7 @@ class RunPlanner:
             groups = plan_groups(selected, continue_on_failure=not fail_fast)
         normalized_implementation = {
             **implementation,
+            **({"case_instructions": case_instructions} if case_instructions else {}),
             **({"runners": list(runner_ids(implementation.get("runners")))} if implementation.get("runners") else {}),
         }
         execution = {
