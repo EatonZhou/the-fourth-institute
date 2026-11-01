@@ -14,6 +14,7 @@ env/
 .vscode/
 node_modules/
 package-lock.json
+!management_portal/test_framework/tau_runtime/package-lock.json
 test-results/
 playwright-report/
 blob-report/
