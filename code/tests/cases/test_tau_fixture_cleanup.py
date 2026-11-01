@@ -75,7 +75,7 @@ def test_content_fixture_replacement_is_refused_before_product_cleanup(tmp_path,
 
 
 @pytest.mark.parametrize('directory_missing', [False, True])
-def test_async_wall_workspace_retired_without_allocation_context(tmp_path, monkeypatch, directory_missing):
+def test_async_wall_workspace_unregistered_without_allocation_context(tmp_path, monkeypatch, directory_missing):
     """后台 WALL 分配未继承请求上下文时仍注销夹具登记，不碰目录外已有资源"""
     from management_common.resource_identity import get_resource_type_registry
     from management_portal.resources.workspace_store import get_workspace_store, now

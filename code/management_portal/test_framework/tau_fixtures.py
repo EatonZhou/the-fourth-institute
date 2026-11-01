@@ -21,7 +21,7 @@ def _release_resource(resource_id: str, key: str) -> None:
         if resource_id.startswith('family_'):
             # Family is a domain-owned projection, not a registry mutation.
             # Unfamilize preserves members that may predate this test; the
-            # allocation scope independently retires only newly made members.
+            # allocation scope independently deletes only newly made members.
             resolved = isa_client.call(TAU_ACTOR, 'ResolveResource', {'address': resource_id})
             resource = resolved['resource']
             lineage_id = resource.get('attributes', {}).get('lineage_id', '')
@@ -73,7 +73,7 @@ def _fixture_workspaces(roots: list[Path]) -> list[str]:
 
     WALL jobs can create a Workspace after the HTTP request's allocation scope
     has ended. Read the authoritative store, not an eventually updated index.
-    Discovery grants no rights: retirement still runs the ordinary ISA checks.
+    Discovery grants no rights: unregistration still runs the ordinary ISA checks.
     """
     from management_portal.resources.workspace_store import get_workspace_store
     roots = [root.resolve() for root in roots if not root.is_symlink()

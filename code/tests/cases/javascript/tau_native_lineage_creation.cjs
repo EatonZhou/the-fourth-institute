@@ -21,5 +21,17 @@ module.exports=async({page,requests,errors})=>{
     'public preparation must account for the native automatically opened form');
   await node.getByRole('button',{name:'Cancel',exact:true}).click();
   await node.waitFor({state:'hidden'});
+  const tab=page.locator('[data-portal-workbench-tab="navigation"]');
+  const oldBox=await tab.boundingBox();
+  await page.mouse.move(oldBox.x+oldBox.width/2,oldBox.y+1);
+  const close=page.getByRole('button',{name:'Close Lineage navigation',exact:true});
+  await assert.rejects(close.click({timeout:200}),/Timeout/);
+  const {revealWorkbenchTabControls}=require('../../../management_portal/test_framework/tau_workbench_tabs');
+  const samples=[];
+  const ready=await revealWorkbenchTabControls(tab,{record:s=>samples.push(s)});
+  assert.ok(ready.ready && samples.length>=2);
+  assert.equal(ready.candidates[0].close.label,'Close Lineage navigation');
+  await close.click();
+  await tab.waitFor({state:'hidden'});
   assert.deepEqual(errors,[]);
 };
