@@ -98,6 +98,7 @@ class AntigravityBackend:
         env.update(accounts.environment(row["account_id"]))
         native = request.permission_profile == "owner" and options.get("native_tools_enabled", True)
         catalog, dispatch = prepare_tools(invocation, context)
+        offered_tools = {tool["name"] for tool in catalog}
         require_offered_tools(invocation, {tool["name"] for tool in catalog})
         sid = session.backend_session_id
         active_turn = False
@@ -187,7 +188,13 @@ class AntigravityBackend:
             if method == "session/request_permission":
                 if active_turn and params.get("sessionId") == sid:
                     accept()
-                if (not sid or params.get("sessionId") == sid) and native and not context.is_cancelled():
+                # ACP asks permission for MCP calls too. The private Portal
+                # endpoint still authorizes each dispatch as this Resident;
+                # native filesystem/command access is a separate capability.
+                call = params.get("toolCall") or {}
+                mcp = (call.get("_meta") or {}).get("mcp") or {}
+                portal_tool = mcp.get("server") == "portal" and mcp.get("tool") in offered_tools
+                if (not sid or params.get("sessionId") == sid) and (native or portal_tool) and not context.is_cancelled():
                     option = next((p for p in params.get("options", []) if p.get("kind") == "allow_once"), None)
                     if option:
                         return {"outcome": {"outcome": "selected", "optionId": option["optionId"]}}

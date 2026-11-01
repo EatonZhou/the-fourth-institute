@@ -47,11 +47,29 @@ def prompt(identifier, params):
         stop.wait(10)
         send({"id": identifier, "result": {"stopReason": "cancelled"}})
         return
-    if text == "permission":
+    if text == "permission" or text.startswith("permission-mcp"):
+        tool_call = {}
+        requested_sid = sid
+        if text.startswith("permission-mcp"):
+            tool_call = {"title": "portal:read_resource", "_meta": {
+                "mcp": {"server": "portal", "tool": "read_resource"}, "is_mcp_tool_call": True}}
+            if text == "permission-mcp-other":
+                tool_call["_meta"]["mcp"]["server"] = "other"
+            elif text == "permission-mcp-unoffered":
+                tool_call["_meta"]["mcp"]["tool"] = "unoffered"
+            elif text == "permission-mcp-title-only":
+                tool_call.pop("_meta")
+            elif text == "permission-mcp-wrong-session":
+                requested_sid = "another-session"
         send({"id": "permission-1", "method": "session/request_permission", "params": {
-            "sessionId": sid, "options": [{"kind": "allow_once", "optionId": "yes"}]}})
+            "sessionId": requested_sid, "toolCall": tool_call,
+            "options": [{"kind": "allow_once", "optionId": "yes"}]}})
         permission.wait(5)
         text = permission_result.get("outcome", {}).get("outcome", "missing")
+        if text == "cancelled":
+            update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": text})
+            send({"id": identifier, "result": {"stopReason": "end_turn"}})
+            return
     if text == "multi-step":
         update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "Checking a file."})
         text = "Final answer."

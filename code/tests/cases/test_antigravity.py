@@ -148,6 +148,23 @@ def test_permissions_are_enforced_in_protocol_not_prompt(agent, owner, outcome):
     assert ("enabledTools" not in meta) if owner else meta["enabledTools"] == []
 
 
+@pytest.mark.parametrize("sid", ["", "existing-session"])
+@pytest.mark.parametrize("prompt,allowed", [
+    ("permission-mcp", True),
+    ("permission-mcp-other", False),
+    ("permission-mcp-unoffered", False),
+    ("permission-mcp-title-only", False),
+    ("permission-mcp-wrong-session", False),
+])
+def test_portal_only_permissions_allow_offered_mcp_dispatch(agent, sid, prompt, allowed):
+    seen = []
+    tool = HarnessTool("read_resource", "Read resource", {"type": "object"},
+                       lambda args: seen.append(args) or "resource text")
+    result = AntigravityBackend().execute(invocation(agent, prompt, owner=False, sid=sid, tools=[tool]), context()[0])
+    assert result.output["message"] == ("selected:resource text" if allowed else "cancelled")
+    assert seen == ([{"id": "resource-one"}] if allowed else [])
+
+
 def test_cancel_delivers_native_cancel_and_suppresses_late_answer(agent):
     cancel = threading.Event()
     timer = threading.Timer(.5, cancel.set)
