@@ -1,5 +1,5 @@
-# Optional SocietyService additions to the Dev runtime (portal_instances/dev/runtime-venv),
-# which runs both instances' SocietyService. Resident discovery embeds search
+# Optional SocietyService additions to the instance's shared Dev runtime,
+# installed in the worktree's dependencies directory. Resident discovery embeds search
 # text locally with the paraphrase-multilingual-MiniLM-L12-v2 ONNX model
 # (management_portal/society_service/resident_context/embedder.py).
 # Resident embeddings are off by default. Install with the embeddings bootstrap
