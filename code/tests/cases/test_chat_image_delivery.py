@@ -9,7 +9,7 @@ from management_portal import (
 
 IMAGE = {
     "media_type": "image", "source_type": "local_path",
-    "source": "/srv/agent-staging/shared/portal_uploads/resident_chat_images/CASE-A/test.png",
+    "source": "/test-instance/data/uploads/resident_chat_images/CASE-A/test.png",
     "mime_type": "image/png", "name": "test.png",
 }
 
