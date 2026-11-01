@@ -91,3 +91,21 @@ def test_real_process_lock_release_and_exception(tmp_path):
         file_lock.unlock_descriptor(stream.fileno())
         assert contender() == "True"
     assert path.read_bytes() == b"unchanged"
+
+
+def test_instance_locks_remain_exclusive_after_root_relocation(tmp_path):
+    from scripts.instance_services import configuration_lock
+    from scripts.tfi_instance_manager import control_lock
+    source, target = tmp_path / "source", tmp_path / "target"
+    source.mkdir()
+    probe = ("from management_common.file_lock import open_lock_file,try_lock_descriptor; "
+             "import sys; f=open_lock_file(sys.argv[1]); print(try_lock_descriptor(f.fileno()))")
+    def contender(name):
+        return subprocess.check_output([sys.executable, "-c", probe, str(target / name)], text=True).strip()
+    with control_lock(source), configuration_lock(source):
+        source.rename(target)
+        for name in (".portal-control.lock", ".configuration.lock"):
+            assert contender(name) == "False"
+    for name in (".portal-control.lock", ".configuration.lock"):
+        assert contender(name) == "True"
+        assert (target / name).read_bytes() == b""

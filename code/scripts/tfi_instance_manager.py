@@ -22,7 +22,7 @@ CODE = Path(__file__).resolve().parents[1]
 PLATFORM = CODE.parent
 sys.path.insert(0, str(CODE))
 sys.dont_write_bytecode = True
-from management_common.file_lock import try_lock_descriptor
+from management_common.file_lock import open_lock_file, try_lock_descriptor
 from scripts import instance_services
 from management_common import host_instances
 from management_common.configuration_files import atomic_json
@@ -203,7 +203,7 @@ def control_lock(root):
     path = root / ".portal-control.lock"
     if path.is_symlink():
         raise ValueError("Invalid instance control lock")
-    with path.open("a") as stream:
+    with open_lock_file(path) as stream:
         if not try_lock_descriptor(stream.fileno()):
             raise ValueError("Another instance control request is in progress")
         yield

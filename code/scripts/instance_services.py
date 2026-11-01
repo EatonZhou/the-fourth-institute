@@ -164,9 +164,9 @@ def remove_definitions(instance, selected_components=None):
 
 @contextmanager
 def configuration_lock(root):
+    from management_common.file_lock import open_lock_file
     path = Path(root) / '.configuration.lock'
-    descriptor = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
-    with os.fdopen(descriptor, 'a+b') as stream:
+    with open_lock_file(path) as stream:
         if not try_lock_descriptor(stream.fileno()):
             raise BlockingIOError('Another configuration or lifecycle operation owns this instance')
         yield
