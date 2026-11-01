@@ -2403,6 +2403,14 @@
         {
           title,
           subtitle: window.PortalI18n.t("Resident 不可用"),
+          header: {
+            subtitle_parts: target.resident_id ? [{
+              identity: "resident",
+              text: target.resident_id,
+              copy_value: target.resident_id,
+              copy_label: "Resident ID",
+            }] : [],
+          },
           placeholder: window.PortalI18n.t("Resident 不可用"),
           meta: window.PortalI18n.t(deleted ? "请打开其他 Resident。" : "请打开其他 Resident，或刷新后重试。"),
           historyScope: residentSessionScope(target),
@@ -3061,6 +3069,7 @@
         schema: RESIDENT_CHAT_WORKSPACE_SCHEMA,
         title: options.title || this.options.title || window.PortalI18n.t("Chat Workspace"),
         subtitle: options.subtitle || window.PortalI18n.t("Resident Chat 加载失败"),
+        header: options.header || {},
         messages: [{
           id: newMessageIdentity(),
           role: "portal",

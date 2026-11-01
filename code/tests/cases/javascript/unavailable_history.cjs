@@ -82,6 +82,13 @@ for (const unavailable of [{status:404}, {status:403}, {code:'resident.deleted'}
     await drain(); await drain();
     assert.match(app.root.textContent,/Resident/);
     assert.equal(app.panel.target().resident_id,FACADE,'unavailable Chat keeps its identity');
+    const identity = app.w.document.querySelector('[data-workspace-resident-id]');
+    assert.ok(identity, 'unavailable Chat still identifies its current Resident in the header');
+    assert.equal(identity.dataset.workspaceResidentId, FACADE);
+    assert.equal(identity.dataset.workspaceCopyValue, FACADE);
+    assert.equal(identity.textContent, FACADE);
+    assert.equal(app.w.document.querySelector('[data-workspace-account-id]'), null,
+      'an unavailable target does not expose a stale execution account');
     assert.equal(app.panel.protocol,null);
     assert.equal(history().length,before,'rendering the unavailable state must not send a new history request');
     assert.equal(await app.panel.loadInputHistory(app.panel.workspace.inputHistoryScope()),null);
