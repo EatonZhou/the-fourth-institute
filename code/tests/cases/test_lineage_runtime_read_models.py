@@ -160,7 +160,7 @@ def test_control_queue_keeps_bounded_preview_without_loading_message_body(tmp_pa
             {
                 'type': 'image',
                 'source_type': 'local_path',
-                'source': '/srv/agent-staging/shared/portal_uploads/resident_chat_images/CASE-A/queue.png',
+                'source': '/test-instance/data/uploads/resident_chat_images/CASE-A/queue.png',
                 'name': 'queue.png',
             },
         ],
