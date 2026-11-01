@@ -45,9 +45,13 @@ def _failure(handler, **arguments) -> InstructionError:
     return error.value
 
 
-def _register(account_id: str, provider: str, api_id: str = "gateway", **config):
-    return _call(isa.register_provider_account, account_id=account_id, provider=provider, kind="api_profile",
-                 config={"api_id": api_id, **config}, max_concurrency=2)["registration"]
+def _account(account_id: str, provider: str, api_id: str = "gateway"):
+    """Use the compatible route created by CreateModelApi, without registering it twice."""
+    from management_portal.execution.account_registrations import registration
+    row = registration(account_id)
+    assert row is not None and row["provider"] == provider
+    assert row["kind"] == "api_profile" and row["config"]["api_id"] == api_id
+    return row
 
 
 @pytest.fixture
@@ -66,7 +70,7 @@ def gateway(tmp_path):
 
 
 @pytest.fixture
-def fake_codex(tmp_path, monkeypatch):
+def fake_codex(gateway, tmp_path, monkeypatch):
     """A Codex CLI whose API-key login records its call; hosting calls are recorded instead of run."""
     log = tmp_path / "codex-calls.jsonl"
     script = tmp_path / "bin" / "codex"
@@ -90,6 +94,11 @@ with open({str(log)!r}, "a") as stream:
     monkeypatch.setattr("management_portal.execution.provider_updates.runtime_available", lambda provider: True)
     monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 0, "execution_count": 0})
 
+    # Saving the API provisions routes only. Prepare its Codex account explicitly
+    # when testing the installed runtime's authentication and restart lifecycle.
+    codex_api_accounts.prepare(_account("gateway-codex", "codex"))
+    account_hosting.start_codex_instance("gateway-codex")
+
     def calls():
         return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
 
@@ -99,11 +108,11 @@ with open({str(log)!r}, "a") as stream:
 def test_a_codex_api_account_keeps_its_key_in_its_home_and_points_codex_at_the_model_api(gateway, fake_codex):
     """Codex API 账号的密钥只在账号目录里，整个 app-server 进程只访问模型 API 的 Responses 地址
 
-    登记 Codex 的 api_profile 账号时，Portal 用 codex login --with-api-key（密钥走 stdin、不带代理）把密钥写入账号目录的 auth.json，并在 config.toml 中把模型服务指向该模型 API、关闭联网搜索、应用连接器、插件和遥测，然后启动实例；Codex 自己写入的项目信任设置保留。登记和配置不变时不再登录或改写；地址或密钥改变时重新写入并重启实例。
+    模型 API 登记自动生成 Codex 的 api_profile 账号；准备其运行环境时，Portal 用 codex login --with-api-key（密钥走 stdin、不带代理）把密钥写入账号目录的 auth.json，并在 config.toml 中把模型服务指向该模型 API、关闭联网搜索、应用连接器、插件和遥测，然后启动实例；Codex 自己写入的项目信任设置保留。登记和配置不变时不再登录或改写；地址或密钥改变时重新写入并重启实例。
     """
-    registration = _register("gateway-codex", "codex")
+    registration = _account("gateway-codex", "codex")
     home = account_home("codex", "gateway-codex")
-    assert registration["home_path"] == str(home)
+    assert registration["config"]["api_id"] == "gateway"
     assert json.loads((home / "auth.json").read_text()) == {"auth_mode": "apikey", "OPENAI_API_KEY": KEY}
     (login,) = fake_codex.calls()
     assert login == {"argv": ["login", "--with-api-key"], "home": str(home), "proxies": []}
@@ -144,7 +153,7 @@ def test_a_codex_api_account_is_billed_by_its_model_api_and_lists_its_declared_m
 
     API 账号的额度策略为 none、计费账号是模型 API；模型、推理强度（只保留 Codex 支持的取值）来自登记；额度观测不读 rateLimits，用量统计不轮询；路线的上游服务是没有探测的 model_api，不接受原生图片输入；订阅账号保持原样。
     """
-    _register("gateway-codex", "codex")
+    _account("gateway-codex", "codex")
     adapter = CodexAccounts()
     accounts = {account.account_id: account for account in adapter.accounts()}
     api, subscription = accounts["gateway-codex"], accounts["codex_one"]
@@ -170,9 +179,11 @@ def test_a_sites_only_codex_account_is_its_default_without_being_marked(gateway,
     from management_portal.execution.account_adapters import CodexRoutes
     from tests.cases.account_registration_test_support import register_codex
     register_codex(monkeypatch, tmp_path, names=())
-    _register("gateway-codex", "codex")
+    _call(isa.update_model_api, api_id="gateway", changes={})
+    _account("gateway-codex", "codex")
     assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
-    _register("spare-codex", "codex")
+    _call(isa.register_provider_account, account_id="spare-codex", provider="codex",
+          kind="api_profile", config={"api_id": "gateway"})
     with pytest.raises(ValueError, match="No enabled default Codex account"):
         CodexRoutes().default_for_new_session()
     _call(isa.update_provider_account_registration, account_id="spare-codex", changes={"enabled": False})
@@ -189,8 +200,8 @@ def test_api_key_accounts_need_a_model_api_that_speaks_their_harness_protocol(ga
     for provider in ("codex", "claude"):
         assert _failure(isa.register_provider_account, account_id=f"chat-{provider}", provider=provider,
                         kind="api_profile", config={"api_id": "chat_only"}).code == "instruction.invalid_arguments"
-    assert _register("chat-opencode", "opencode", "chat_only")["provider"] == "opencode"
-    _register("gateway-codex", "codex")
+    assert _account("chat_only-opencode", "opencode", "chat_only")["provider"] == "opencode"
+    _account("gateway-codex", "codex")
     error = _failure(isa.update_model_api, api_id="gateway", changes={"protocols": {"anthropic_messages": {}}})
     assert error.details == {"reason": "account.api_in_use", "account_ids": ["gateway-codex"]}
     assert _failure(isa.register_provider_account, account_id="spare-codex", provider="codex", kind="api_profile",
@@ -204,7 +215,7 @@ def test_a_codex_api_account_holds_back_restarts_only_while_its_work_runs(gatewa
 
     修改地址、密钥等会改写配置并重启 app-server：账号有执行时返回 conflict（account.running）且不修改登记；只有已绑定的会话时照常保存并重启，会话在重启后继续。编辑表单连同未改动的字段一起提交、只改模型目录时不重启，执行中也能保存。删除空闲的 Codex API 账号会停用实例并删除账号目录（auth.json 存有密钥）。
     """
-    _register("gateway-codex", "codex")
+    _account("gateway-codex", "codex")
     monkeypatch.setattr(isa, "account_busy_counts", lambda row: {"session_count": 1, "execution_count": 1})
     error = _failure(isa.update_model_api, api_id="gateway", changes={"base_url": "https://moved.invalid/v1"})
     assert (error.code, error.details["reason"]) == ("instruction.conflict", "account.running")
@@ -248,7 +259,7 @@ def test_claude_code_runs_on_any_declared_anthropic_gateway(gateway, tmp_path):
 
     声明了协议的网关路线：模型来自模型 API（推理强度取 reasoning_efforts 中 Claude 支持的值），上游服务为 model_api；会话按声明的认证方式（x-api-key）带密钥，附加请求头，后台、标题和子代理请求都使用所选模型，而不是 Claude 的模型名。
     """
-    _register("gateway-claude", "claude")
+    _account("gateway-claude", "claude")
     catalog = claude_provider_catalog.catalog("gateway-claude")
     assert catalog["models"] == ["gpt-test", "gpt-mini"] and catalog["upstream_provider"] == "model_api"
     assert catalog["efforts_by_model"] == {"gpt-test": ["low", "high", "max"], "gpt-mini": []}
@@ -295,7 +306,7 @@ def test_an_opencode_api_account_becomes_a_provider_of_its_own(gateway):
 
     非内置服务的 api_profile 路线以 portal-<路线> 为 Provider 名，使用模型 API 的 Chat Completions 地址和附加请求头，模型及上下文窗口来自登记；Provider 定义不含密钥，密钥由 api_key 单独取得；路线出现在 OpenCode 的路线列表中。
     """
-    _register("gateway-opencode", "opencode")
+    _account("gateway-opencode", "opencode")
     route = "gateway-opencode"
     assert opencode_provider_catalog.service(route) == "portal-gateway-opencode"
     assert opencode_provider_catalog.api_key(route) == KEY

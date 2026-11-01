@@ -13,7 +13,7 @@ import uuid
 
 import pytest
 
-from tests.cases.test_api_key_harnesses import gateway, _call, _register
+from tests.cases.test_api_key_harnesses import gateway, _call, _account
 from management_portal.execution import isa
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.empty_execution_registrations
 
 @pytest.mark.parametrize("provider,protocol", [("kimi", "openai_chat"), ("dsh", "anthropic_messages")])
 def test_registered_api_catalog_and_protocol_guard(gateway, provider, protocol):
-    row = _register("gateway-" + provider, provider)
+    row = _account("gateway-" + provider, provider)
     assert row["route_id"] == row["account_id"]
     catalog = AGENT_PROVIDERS[provider].catalog(row["route_id"])
     assert catalog["models"] == ["gpt-test", "gpt-mini"]
@@ -39,7 +39,6 @@ def test_kimi_controls_and_new_session_use_the_bound_account(gateway, monkeypatc
     from management_portal.execution.kimi_backend import KimiBackend
     from management_portal.execution.session_manager import RuntimeSession
     from tests.cases.test_dsh_backend import invocation
-    monkeypatch.setattr(runtime, "root", lambda: tmp_path / "accounts")
     calls = []
     client = SimpleNamespace(home=tmp_path, create_session=lambda **kw: {"id": "new-session"},
         steer=lambda *a, **kw: calls.append("steer") or {"steered": True},
@@ -144,12 +143,11 @@ def test_native_kimi_accounts_isolate_config_sessions_and_credentials(model_serv
     if not binary.is_file():
         pytest.skip("installed Kimi runtime unavailable")
     monkeypatch.setenv("PORTAL_KIMI_CODE_BINARY", str(binary))
-    monkeypatch.setattr(runtime, "root", lambda: tmp_path / "accounts")
     accounts = []
     try:
         for name in ("first", "second"):
             _api(model_server, name)
-            row = _register(name + "-kimi", "kimi", name)
+            row = _account(name + "-kimi", "kimi", name)
             accounts.append(row)
             client = runtime.client_for_route(row["route_id"])
             target = tmp_path / (name + ".txt")
@@ -191,7 +189,7 @@ def test_native_dsh_custom_messages_api(model_server, installed_provider_paths, 
     monkeypatch.setattr(dsh_client, "STATE", tmp_path / "state")
     monkeypatch.setattr(dsh_client, "SOCKETS", tmp_path / "sockets")
     _api(model_server, "gateway", auth)
-    row = _register("gateway-dsh", "dsh")
+    row = _account("gateway-dsh", "dsh")
     client = dsh_client.DshClient()
     turn_id = uuid.uuid4().hex
     session_id = dsh_client.session_id_for(turn_id)
@@ -249,11 +247,10 @@ def test_native_dsh_custom_messages_api(model_server, installed_provider_paths, 
 def test_kimi_key_rotation_does_not_interrupt_busy_session_or_block_stop(gateway, tmp_path, monkeypatch):
     from management_portal import kimi_account_runtime as runtime
     from management_common.file_permissions import ensure_private_directory
-    row = _register("gateway-kimi", "kimi")
-    monkeypatch.setattr(runtime, "root", lambda: tmp_path / "accounts")
+    row = _account("gateway-kimi", "kimi")
     target = runtime.home(row)
     ensure_private_directory(target)
-    (target / "server.json").write_text(json.dumps({"pid": 1234, "port": 1234, "version": [0, 0]}))
+    (runtime.control(row) / "server.json").write_text(json.dumps({"pid": 1234, "port": 1234, "version": [0, 0]}))
     client = SimpleNamespace(_request=lambda *a, **kw: {"sessions": [{"id": "busy"}]}, get_status=lambda _: {"busy": True})
     # The account's own server is running (ownership is checked by PID, start time and home).
     monkeypatch.setattr(runtime, "_owned_process", lambda _target, _state: SimpleNamespace(pid=1234))
