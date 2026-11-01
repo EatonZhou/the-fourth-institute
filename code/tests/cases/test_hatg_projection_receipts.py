@@ -84,7 +84,13 @@ def test_projection_replay_reauthorizes_and_preserves_pending_receipt(projection
     instruction_id = initial.error["details"]["instruction_id"]
     pending = execution_record(instruction_id)
     assert pending["status"] == "committed" and pending["error"]["code"] == "instruction.projection_pending"
-    assert submit(request).error["code"] == "instruction.projection_pending"
+    replay = submit(request)
+    assert replay.error["code"] == "instruction.projection_pending"
+    for error in (initial.error, pending["error"], replay.error):
+        assert error["commit_state"] == "committed"
+        assert error["retryable"] is True
+        assert error["details"]["retry"] == "same_instruction_same_idempotency_key"
+        assert error["details"]["domain_committed"] is True
     changed_request = copy.deepcopy(request)
     changed_request["description"] = "must not overwrite"
     assert submit(changed_request).error["code"] == "instruction.idempotency_conflict"

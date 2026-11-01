@@ -380,6 +380,11 @@ class ExecutionStore:
             stored_error["message"] = str(stored_error.get("message") or "")[:1000]
             details = error.get("details") if isinstance(error.get("details"), Mapping) else {}
             stored_error["details"] = references(details) or {}
+            # This fixed protocol token authorizes projection-only replay of a
+            # committed instruction. Dropping it changes retryable=true into
+            # false when the persisted error is serialized on replay.
+            if details.get("retry") == "same_instruction_same_idempotency_key":
+                stored_error["details"]["retry"] = details["retry"]
             if isinstance(details.get("projection_failures"), list):
                 stored_error["details"]["projection_failures"] = [
                     references(item) for item in details["projection_failures"]

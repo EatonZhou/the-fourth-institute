@@ -557,12 +557,16 @@ def _establish_resident_completion_baselines(
     """Fence historical completions before releasing execution authority."""
 
     results: list[dict[str, Any]] = []
+    # A graph edit can rebaseline several subscriptions watching the same
+    # Resident. Read its completion once for this edit, then establish each
+    # subscription independently against that same observed completion.
+    completions: dict[str, dict[str, Any]] = {}
     for request in requests:
+        resident_id = str(request.get("resident_id") or "")
         try:
-            completion = resident_protocol.get_latest_completed_message_reference(
-                str(request.get("resident_id") or ""),
-                actor,
-            )
+            if resident_id not in completions:
+                completions[resident_id] = resident_protocol.get_latest_completed_message_reference(resident_id, actor)
+            completion = completions[resident_id]
         except (KeyError, PermissionError, ValueError) as exc:
             results.append(
                 {

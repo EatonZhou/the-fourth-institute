@@ -404,7 +404,7 @@ class InstructionKernel:
             if store is not None:
                 store.finish(
                     instruction_id, status="committed", now=now_iso(), result=None,
-                    error={**error.to_dict(), "details": {"projection_failures": error.details["projection_failures"]}},
+                    error=error.to_dict(),
                 )
             return failed_result(instruction_id, call.instruction, error)
         except Exception as exc:  # noqa: BLE001
@@ -423,7 +423,7 @@ class InstructionKernel:
             if store is not None:
                 store.finish(
                     instruction_id, status="committed", now=now_iso(), result=result,
-                    error={**error.to_dict(), "details": {"projection_failures": failures}},
+                    error=error.to_dict(),
                 )
             return failed_result(instruction_id, call.instruction, error)
         if store is not None:
