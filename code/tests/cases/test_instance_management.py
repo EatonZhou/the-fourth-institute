@@ -133,6 +133,16 @@ class InstanceManagementTests(unittest.TestCase):
         self.assertEqual(env["HOME"], pwd.getpwuid(os.getuid()).pw_dir)
         self.assertFalse({"PORTAL_DATABASE_URL", "PORTAL_INSTANCE_ROOT", "PGPASSWORD", "PYTHONPATH"} & env.keys())
 
+    def test_control_environment_preserves_uppercase_windows_runtime_keys(self):
+        values = {"SYSTEMROOT": "C:\\Windows", "COMSPEC": "C:\\Windows\\System32\\cmd.exe",
+                  "PATHEXT": ".EXE;.CMD", "PROCESSOR_ARCHITECTURE": "AMD64"}
+        with patch.dict(os.environ, {**values, "PGPASSWORD": "secret", "PORTAL_DATABASE_URL": "secret"}):
+            env = manager.supervisor_environment()
+        self.assertEqual({key: env.get(key) for key in values}, values)
+        self.assertEqual(env['PYTHONUTF8'], '1')
+        self.assertNotIn("PGPASSWORD", env)
+        self.assertNotIn("PORTAL_DATABASE_URL", env)
+
     def test_urls_use_bind_and_host_interfaces(self):
         """安装与实例回归：地址按监听地址与主机网卡给出，不把通配地址当网址。"""
         interfaces = '[{"addr_info":[{"family":"inet","local":"10.138.30.36"},' \

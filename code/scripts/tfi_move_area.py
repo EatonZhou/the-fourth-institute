@@ -28,8 +28,18 @@ from management_common import host_instances
 from management_common.code_environment import runtime_python
 from management_common.configuration_files import atomic_json
 from management_common.instance_areas import move_area, validate_target
+from management_common.instance_manifest import absolute_path, load
 from scripts import instance_services
 from scripts.tfi_instance_manager import control_lock, control_path, operation, read_json, supervisor_environment
+
+RECOVERY_RECORD = 'runtime/area-relocation.json'
+
+
+def recovery_record(root):
+    path = root / RECOVERY_RECORD
+    if path.is_symlink():
+        raise ValueError('Area relocation record cannot be redirected')
+    return read_json(path) if path.is_file() else None
 
 
 def _launch(root: Path, record: dict) -> None:
@@ -72,10 +82,19 @@ def submit(name: str, area: str, target: str) -> dict:
         prior = operation(root)
         if prior and prior["status"] in {"queued", "running"}:
             raise ValueError("An operation is already running for this instance")
-        resolved = validate_target(instance, area, target)
+        recovery = recovery_record(root)
+        if recovery:
+            resolved = absolute_path(target)
+            if (recovery['instance_id'] != instance.instance_id or recovery['area'] != area
+                    or Path(recovery['target']) != resolved):
+                raise ValueError('Finish the pending area move with its original area and target')
+            if instance.area(area) not in {Path(recovery['source']), resolved}:
+                raise ValueError('Area location changed since the pending move')
+        else:
+            resolved = validate_target(instance, area, target)
         identifier = uuid.uuid4().hex
         record = {"id": identifier, "unit": f"tfi-control-{identifier}", "action": "move-area",
-                  "area": area, "source": str(instance.area(area)), "target": str(resolved),
+                  "area": area, "source": recovery['source'] if recovery else str(instance.area(area)), "target": str(resolved),
                   "status": "queued", "stage": "queued", "created_at": time.time()}
         atomic_json(control_path(root), record)
         try:
@@ -110,29 +129,52 @@ def execute(name: str, identifier: str) -> dict:
             raise ValueError("Area move no longer matches")
         record.update(status="running", pid=os.getpid())
         atomic_json(control_path(root), record)
-    stopped = moved = False
+        return _execute_locked(root, record)
+
+
+def _execute_locked(root, record):
+    instance = load(root)
+    recovery = {key: record[key] for key in ('area', 'source', 'target')}
+    recovery.update(instance_id=instance.instance_id, status='pending')
+    current = instance.area(record['area'])
+    if current not in {Path(record['source']), Path(record['target'])}:
+        raise ValueError('Area location changed before the move')
+    stopped = False
+    moved = current == Path(record['target'])
+    # Persist the original prefix before moving files: a later retry must not
+    # mistake the manifest's new location for the sessions' old directory.
+    atomic_json(root / RECOVERY_RECORD, recovery)
     try:
         _stage(root, record, "stopping")
         instance_services.lifecycle("stop", root)
         stopped = True
         _stage(root, record, "moving")
-        result = move_area(root, record["area"], record["target"])
+        result = ({'source': record['source'], 'target': record['target'],
+                   'old_copy_retained': Path(record['source']).exists()} if moved
+                  else move_area(root, record["area"], record["target"]))
         moved = True
         _stage(root, record, "starting")
         _start_database(root)
         from management_portal.project_rename import relocate_provider_sessions
-        relocate_provider_sessions(result["source"], result["target"])
+        sessions = relocate_provider_sessions(result["source"], result["target"])
+        record['provider_sessions'] = sessions
+        if sessions['errors'] or sessions['conflicts']:
+            raise RuntimeError('Provider session relocation is incomplete; retry this area and target')
+        atomic_json(root / RECOVERY_RECORD, {**recovery, 'status': 'completed'})
         instance_services.lifecycle("start", root)
         if result["old_copy_retained"]:
             _stage(root, record, "cleaning")
             import shutil
             shutil.rmtree(result["source"])
+        (root / RECOVERY_RECORD).unlink()
         record.update(status="completed", stage="completed")
     except Exception as exc:
         record.update(status="failed", stage="failed", error=str(exc), area_moved=moved)
         if stopped:
             try:
-                instance_services.lifecycle("start", root)
+                if not moved:
+                    (root / RECOVERY_RECORD).unlink(missing_ok=True)
+                instance_services.lifecycle("stop" if moved else "start", root)
             except Exception as restart:
                 record["restart_error"] = str(restart)
     record["finished_at"] = time.time()
@@ -152,7 +194,7 @@ def main(argv=None) -> int:
         result = (execute(args.name, args.operation_id) if args.action == "_run"
                   else submit(args.name, args.area, args.target))
         print(json.dumps(result, ensure_ascii=False))
-        return 0
+        return 1 if result.get('status') == 'failed' else 0
     except Exception as exc:
         print(json.dumps({"error": str(exc)}, ensure_ascii=False))
         return 1

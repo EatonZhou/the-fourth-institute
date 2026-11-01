@@ -35,7 +35,8 @@ def read_json(path):
 def supervisor_environment():
     """Never carry another instance's DB, HOME, sockets or service registry."""
     env = {k: v for k, v in os.environ.items()
-           if k in {"PATH", "SystemRoot", "WINDIR", "LANG", "TMP", "TEMP"}}
+           if k.upper() in {"PATH", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT",
+                            "PROCESSOR_ARCHITECTURE", "PROCESSOR_ARCHITEW6432", "LANG", "TMP", "TEMP"}}
     if os.name == "nt":
         import ctypes
         def folder(identifier):
@@ -53,6 +54,7 @@ def supervisor_environment():
             env.update(XDG_RUNTIME_DIR=f"/run/user/{os.getuid()}",
                        DBUS_SESSION_BUS_ADDRESS=f"unix:path=/run/user/{os.getuid()}/bus")
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONUTF8"] = "1"
     return env
 
 

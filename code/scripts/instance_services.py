@@ -241,6 +241,11 @@ def creation_record(instance):
 
 
 def start_blocker(instance):
+    area = instance.root / 'runtime/area-relocation.json'
+    if area.is_symlink():
+        raise ValueError('Area relocation record cannot be redirected')
+    if area.is_file() and json.loads(area.read_text()).get('status') != 'completed':
+        return 'Area relocation has not completed; repeat its area move with the same target'
     relocation = instance.root / 'runtime/instance-relocation.json'
     if relocation.is_symlink():
         raise ValueError('Instance relocation record cannot be redirected')
