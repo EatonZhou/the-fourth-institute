@@ -109,4 +109,26 @@ async function fitAndWaitForHatgView(panel, options) {
   return {...settled,original_elapsed_ms:Date.now()-started};
 }
 
-module.exports={readHatgViewSnapshot,waitForHatgView,fitAndWaitForHatgView};
+// Read the formal graph from the original creation window. A range Family
+// creates a member Watch before the fixture can be isolated from that Family.
+function residentFamilyManagedWireIds(lineage, {residentId}) {
+  if (!residentId || !Array.isArray(lineage?.nodes) || !Array.isArray(lineage?.function_blocks)
+      || !Array.isArray(lineage?.program?.wires)
+      || !lineage.nodes.some(node=>node.id===residentId))
+    throw new TypeError('Complete formal Lineage containing the exact Resident required');
+  const wires = new Set(lineage.program.wires.map(wire=>wire.id));
+  const result = [];
+  for (const block of lineage.function_blocks) {
+    if (!block.family?.members?.includes(residentId)) continue;
+    if (!Array.isArray(block.elements)) throw new Error('Family element membership is missing');
+    for (const element of block.elements) {
+      if (element.kind!=='wire' || !element.key?.startsWith('watch_')
+          || !element.key.endsWith(`:${residentId}`)) continue;
+      if (!wires.has(element.id)) throw new Error('Managed Family wire missing from formal graph');
+      result.push(element.id);
+    }
+  }
+  return [...new Set(result)].sort();
+}
+
+module.exports={readHatgViewSnapshot,waitForHatgView,fitAndWaitForHatgView,residentFamilyManagedWireIds};

@@ -137,6 +137,46 @@ def test_tau_fixture_isolation_preserves_existing_family_policy_and_members(line
     assert ok("GetResident", {"resident_id": fixture})["resident"]["resident_id"] == fixture
 
 
+def test_tau_creation_records_family_wire_before_fixture_isolation(lineage, charters):
+    """Creation and isolation have different original edge sets, from formal ISA."""
+    import json
+    import subprocess
+    from pathlib import Path
+
+    resident(lineage, "Existing member")
+    family = ok("Familize", {"lineage_id": lineage, "scope": "lineage"})
+    before = graph(lineage)
+    fixture = resident(lineage, "New fixture")
+    created = graph(lineage)
+    block = next(b for b in created["function_blocks"] if b["id"] == family["family_id"])
+    owned = [e["id"] for e in block["elements"]
+             if e["kind"] == "wire" and e["key"].startswith("watch_")
+             and e["key"].endswith(f":{fixture}")]
+    owned.sort()
+    assert len(owned) == 5
+    old_edges = {e["id"] for e in before["program"]["wires"]}
+    assert {e["id"] for e in created["program"]["wires"]} == old_edges | set(owned)
+    ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"],
+                        "remove_member_ids": [fixture]})
+    isolated = graph(lineage)
+    assert {e["id"] for e in isolated["program"]["wires"]} == old_edges
+    helper = Path(__file__).parents[2] / "management_portal/test_framework/tau_hatg_view_evidence.js"
+    script = """
+const assert=require('node:assert/strict'), fs=require('node:fs');
+const {residentFamilyManagedWireIds:read}=require(process.argv[1]);
+const data=JSON.parse(fs.readFileSync(0,'utf8'));
+assert.deepEqual(read(data.created,{residentId:data.fixture}),data.owned);
+assert.deepEqual(read(data.isolated,{residentId:data.fixture}),[]);
+assert.throws(()=>read(data.created,{residentId:'resident_absent'}),/Complete formal/);
+data.created.program.wires=data.created.program.wires.filter(w=>!data.owned.includes(w.id));
+assert.throws(()=>read(data.created,{residentId:data.fixture}),/missing from formal graph/);
+"""
+    result = subprocess.run(["node", "-e", script, str(helper)],
+        input=json.dumps(dict(created=created, isolated=isolated, fixture=fixture, owned=owned)),
+        capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize('default_migration', [True, False])
 def test_tau_family_template_disables_migration_before_first_delivery(lineage, charters, monkeypatch, default_migration):
     """原生模板接受创建时关闭迁移，首次投递前生效，默认模板不变。"""

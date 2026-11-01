@@ -162,6 +162,8 @@ Playwright `filter({has: childLocator})` 的 childLocator 从候选节点内部�
 
 Campaign限制执行账号时，普通CreateResident/Fork也要立即检查正式Family归属：所在Lineage的范围Family可能自动接纳新成员，其储备策略可在尚有额度时自动迁移账号。一次账号读回不保证下一turn仍用该账号。不要关闭既有团队的全组策略；仅在本轮要求明确允许时，对本轮新建夹具通过正式UpdateFamily移除临时成员关系，前后保存完整名册并核验原有成员/设置不变、夹具已无Family；未获这种隔离范围或无法核验时报告前置阻塞，不先在低额度例外账号发消息。自行创建的临时Family仍在任何模型执行前关闭auto_migrate。迁移完成后和发送前都核实际绑定，禁止将发生其他账号自动迁移的输入算作指定账号验收成功。
 
+创建与Family隔离是两个原动作。范围Family接纳新成员时会同时生成该成员的Watch连线；创建原ready不能要求边集合仍等于创建前基线。保存原创建窗口的完整GetLineage，用`tau_hatg_view_evidence.js`的`residentFamilyManagedWireIds(lineage,{residentId})`读取正式Family.elements中该新成员的全部托管Watch连线ID，并与program.wires核对。正式图的多条Watch在Family折叠视图可能合并成一条可见边，不能把全部托管边直接当可见集合。创建原ready保留完整旧可见集合，对原窗口新增可见边逐一核对它属于这些正式托管边、端点符合该成员与Family，保存正式全集及原可见集合；不能跳过新增边检查。隔离原ready按原UpdateFamily回执和完整读回核验这些托管边已移除、其余集合与Family策略不变。助手只读正式图，不以超时后的DOM补造期望，不推断折叠层可见性，也不接受并发无关变化；其他图变化仍需逐项核对原事实。
+
 首次刷新必须先演练完整 ready，不能只确认刷新按钮可用。共享 `portal.action` 支持 `preflight`：它只读核验，返回 true 后才开始原动作；失败不会提交 operation，也不会产生 action_started。对于刷新后应保持的 ID、完整正文、URL、目录树等，把同一个核验函数同时用于 preflight 与 ready。先演练时定位器命中两处就收窄到页面实际呈现的区域，或明确比较全部可见副本的值；不得用 `.first()` 掩盖歧义。ready 中不要临时增加未经预检的 Settings 点击、全页 ID 文本断言或整页重载。示意（先从本轮真实页面发现作用域和控件，代码中的变量不是固定 selector）：
 ```javascript
 const checkPersistedView = async page => {
