@@ -10,6 +10,9 @@ function reviewRequests(rows) {
   return rows.filter(row => row.kind === 'request_failed').map(end => ({...starts.get(end.request_id), ...end})).map(row => ({
     request_id: row.request_id, frame_id: row.frame_id, document_id: row.document_id,
     path: row.path, failed_reason: row.failed_reason,
+    failure_kind: row.failed_reason === 'net::ERR_ABORTED' ? 'aborted'
+      : row.failed_reason === 'net::ERR_CONNECTION_REFUSED' ? 'connection_refused'
+      : row.failed_reason ? 'other_network_failure' : 'unknown',
     proofs: proofs.filter(proof => proof.request_id === row.request_id
       && proof.frame_id === row.frame_id && proof.document_id === row.document_id),
     verdict: null,
@@ -20,7 +23,12 @@ function writeNetworkReview(input, output) {
   const rows = fs.readFileSync(input, 'utf8').split('\n').filter(Boolean).map(JSON.parse);
   const requests = reviewRequests(rows);
   const result = { requests, failed_count: requests.length,
-    unknown_count: requests.filter(row => !row.proofs.length).length, verdict: null };
+    // Retain the original no-proof count for existing consumers. It is not a
+    // count of cancellations: connection refusal never establishes an abort.
+    unknown_count: requests.filter(row => !row.proofs.length).length,
+    unproven_abort_count: requests.filter(row => row.failure_kind === 'aborted' && !row.proofs.length).length,
+    connection_refused_count: requests.filter(row => row.failure_kind === 'connection_refused').length,
+    verdict: null };
   fs.writeFileSync(output, JSON.stringify(result, null, 2));
   return result;
 }

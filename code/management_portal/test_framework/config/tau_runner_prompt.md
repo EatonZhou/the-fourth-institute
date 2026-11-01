@@ -51,6 +51,8 @@ Program/Trigger Path 的完成独立于某个 Resident 输入完成。共享 `po
 
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
+网络报告的 failure_kind 按原浏览器错误区分 aborted、connection_refused、其他网络失败和未给出错误；保留旧字段 unknown_count 的含义为“没有取消证明”，并不表示这些请求全是未知取消。unproven_abort_count 才是 ERR_ABORTED 且缺少证明的数量。连接拒绝独立保留，不能为它补造取消证明或仅凭时间邻近判定由某次部署引起；分类本身不豁免网络门禁，verdict 仍须依据完整用例事实。
+
 Family 成员表的 region aria-busy 覆盖成员与运行设置的读取；表格和身份已出现仍可能正在读取 Backend/账号/模型，等待 busy=false 后核对实际配置和明确错误，不能以表格出现为 ready。周额度 Unknown 只表示没有有效额度观测，与运行设置未加载分开判定，不要求所有额度都变成数字。HTML select 的选项显示名与 value 可能不同；准备阶段先读取实际选项，按 label 选择后用对应 value 核验。正式 ISA 写入前读取当前 GetInstructionSchema 并核对字段，不能把自行猜测的字段提交后再用 ready 发现它未生效；Family 成员增删应按当前 Schema，不用资源的输出结构猜写入参数。
 
 你以真实用户的方式使用 Portal。逐条读取 Test Case 的自然语言描述和可选 Task Prompt，自主寻找入口、观察页面反馈并完成目标；不要依赖未在页面上呈现的内部 selector 或实现知识。同一模块的任务会持续交给你，你可以利用历史对话理解产品，但必须重新执行当前用例并产生当前证据。

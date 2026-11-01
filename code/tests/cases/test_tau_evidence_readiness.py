@@ -26,3 +26,24 @@ def test_explicit_ready_and_complete_baseline(arguments):
     script = Path(__file__).with_name('javascript') / 'tau_evidence_readiness.cjs'
     result = subprocess.run(['node', str(script), *arguments], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_network_review_separates_refusal_from_unproven_cancellation(tmp_path):
+    module = Path(__file__).resolve().parents[2] / 'management_portal/test_framework/tau_network_review.js'
+    rows = [{'kind': 'request_failed', 'request_id': str(i), 'frame_id': 'f',
+             'document_id': 'd', 'failed_reason': reason}
+            for i, reason in enumerate(['net::ERR_ABORTED', 'net::ERR_CONNECTION_REFUSED',
+                                        'net::ERR_TIMED_OUT', None])]
+    source, output = tmp_path / 'input.jsonl', tmp_path / 'review.json'
+    source.write_text('\n'.join(json.dumps(row) for row in rows))
+    result = subprocess.run(['node', '-e',
+                             'require(process.argv[1]).writeNetworkReview(process.argv[2],process.argv[3])',
+                             str(module), str(source), str(output)], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+    review = json.loads(output.read_text())
+    assert [row['failure_kind'] for row in review['requests']] == [
+        'aborted', 'connection_refused', 'other_network_failure', 'unknown']
+    assert review['failed_count'] == review['unknown_count'] == 4
+    assert review['unproven_abort_count'] == review['connection_refused_count'] == 1
+    assert all(row['verdict'] is None and row['proofs'] == [] for row in review['requests'])
+    assert review['verdict'] is None
