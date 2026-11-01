@@ -53,4 +53,28 @@ async function readSessionGraphReady(panel, searchResults, {residentId}) {
   } finally { await results?.dispose(); }
 }
 
-module.exports = {readSessionDeleteDialog, readSessionGraphReady};
+// The native Menu exposes the full opaque Session value even when Chat has no
+// Session header. The caller opens/closes the discovered menu in the original
+// action, persists this snapshot, and compares successive IDs before mutation.
+async function readResidentMenuSession(menu, {residentId}) {
+  if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new TypeError('Exact Resident identity is required');
+  const candidates = await menu.evaluateAll((roots, residentId) => roots.map(root => {
+    const visible = node => !!node?.isConnected && !node.closest('[hidden],[inert],[aria-hidden="true"]')
+      && node.checkVisibility({checkOpacity:true, checkVisibilityCSS:true});
+    const identities = [...root.querySelectorAll('#nodeResidentIdentityReadout')]
+      .map(n => ({text:n.textContent.trim(), visible:visible(n)}));
+    const values = [...root.querySelectorAll('#nodeMenuSessionId')]
+      .map(n => ({text:n.textContent.trim(), visible:visible(n)}));
+    const buttons = [...root.querySelectorAll('#nodeMenuCopySession')]
+      .map(n => ({visible:visible(n), enabled:!n.disabled && n.getAttribute('aria-disabled') !== 'true'}));
+    const ready = root.matches('[role="dialog"].nodeSettingsSurface') && visible(root)
+      && identities.length === 1 && identities[0].visible
+      && identities[0].text === residentId && values.length === 1 && values[0].visible && !!values[0].text
+      && buttons.length === 1 && buttons[0].visible && buttons[0].enabled;
+    return {dom_id:root.id, identities, values, buttons, ready};
+  }), residentId);
+  const ready = candidates.length === 1 && candidates[0].ready;
+  return {resident_id:residentId, candidates, ready, session_id:ready ? candidates[0].values[0].text : null};
+}
+
+module.exports = {readSessionDeleteDialog, readSessionGraphReady, readResidentMenuSession};

@@ -1,5 +1,7 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+完整Session取证复用`tau_session_dom_evidence.js`的`readResidentMenuSession(menuLocator,{residentId})`。准备阶段发现正确Chat的Resident Menu与关闭控件；原输入完成后的同一个action ready内打开Menu，有界轮询并逐次落盘该快照至ready=true，保存完整session_id，然后关闭Menu返回原Chat。此助手只读真实Menu身份、完整值和复制按钮启用状态，不要求Chat头部字段、不猜ID格式、不点击或代写原证据。用例要求复用/隔离/Reset/跨route比较时，每一轮完成后、下一次写操作前就保存并比较对应ID；不能等删除收尾才核对缺项。Family门面没有独立Session，不调用这个门禁。
+
 多实例 Chat 的发送前检查与原导航/Fork ready，复用 `tau_chat_ready_evidence.js` 的 `readResidentChatReady(regionLocator,{residentId:原回执ID})`。它只读原生头部身份、加载状态及可编辑输入框，返回全部候选；不要用整个面板 innerText.includes(ID)、正文中的ID或输入框已出现来认定目标。先从实际页面发现完整区域，再在原动作 ready 内有界轮询该快照，逐次保存，等待 ready=true；暂时缺失允许等待，多实例歧义须先收窄实际定位。发送前用同一核验作为 preflight，未确认正确Resident就不点Send。创建/Fork本身不保证Chat已打开，按实际UI完成导航后再等待。session_id/session_identity_ready只采样头部是否展示完整Session复制值，属于可选显示能力：现行Resident Chat可只显示Resident ID，已有Session也不保证头部出现Session，不能强等此字段。用例要求完整Session时，先在准备阶段发现并验证正确Resident Menu的原生Session ID和“复制 Session ID”路径；首次真实输入后在原动作窗口通过该已准备路径读/复制完整值并保存，核验菜单目标身份、加载结束和按钮启用，再返回原Chat。不猜ID格式、不用缩写代替，不等删除后补取，也不向刚创建但未运行的Resident强求Session。
 
 准备函数与原业务动作分开：先验证本轮helper所需函数已定义、定位与只读等待可运行，再提交写操作；Monaco输入后的可见正文也需等待渲染，尚未点击Save的准备失败不消耗首次保存。长驻helper仍运行时使用其原工具session继续取回，不以中断进程缩短等待。openPortal的reused仅证明复用本用例browser宿主，不承诺原context/page/文档仍存在；重新连接后先保存当前URL与页面状态并verifyIdentity，通过正常导航恢复，已受理业务沿原ID观察。无法延续的原文档窗口如实保留，不假称连续。收尾前按用例逐项核对已取得证据，悬停浮层的实际宽度、边界和离开后关闭等独立要求不能由目录截图或一般视觉评价代替。

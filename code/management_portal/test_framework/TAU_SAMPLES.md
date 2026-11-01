@@ -11,7 +11,7 @@ python3 code/scripts/check_tau_samples.py
 | 行为 | 固定验证 |
 |---|---|
 | Chat ready 与身份 | 原生 Chat 的头部、输入框、加载状态；正文中相同 ID 和 Loading 文本不参与身份判断；隐藏、错误目标、多匹配被拒绝 |
-| 完整 Session ID | 原生 lineage 页面已提供 Provider Session，Chat 仍无 Session 头部；真实 Resident Menu 显示完整值，真实复制事件取得同一值；保留旧头部硬等待的负样例 |
+| 完整 Session ID | 原生 lineage 页面已提供 Provider Session，Chat 仍无 Session 头部；共享Menu快照读出完整值，拒绝错误身份和已关闭Menu；真实复制事件取得同一值；保留旧头部硬等待的负样例 |
 | 相对定位 | 原生 Family 状态表渲染在测试宿主中；`has` 的正确相对子定位匹配一处，携带外层 dialog 的旧定位匹配零处 |
 | Fork 与 Editor 发现 | 实际快捷 Fork 点击只提交一次夹具指令并自动打开子 Chat；额外原生同身份 Chat 存在时先枚举候选，严格等待旧写法失败，按已发现的原 Editor ID 核验成功 |
 | 菜单到表单 | HATG New node 直接打开表单；目录 Lineage 菜单还需 Attach、New Resident 两步才出现注册标题输入框；打开菜单不算表单 ready |

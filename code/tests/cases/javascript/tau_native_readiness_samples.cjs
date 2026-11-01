@@ -26,11 +26,17 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await copy.waitFor({state: 'visible'});
   assert.equal(await copy.isEnabled(), true);
   assert.equal(await menu.locator('#nodeMenuSessionId').innerText(), sessionId);
+  const {readResidentMenuSession} = require('../../../management_portal/test_framework/tau_session_dom_evidence');
+  const menuSession = await readResidentMenuSession(menu, {residentId});
+  assert.equal(menuSession.ready, true, JSON.stringify(menuSession));
+  assert.equal(menuSession.session_id, sessionId);
+  assert.equal((await readResidentMenuSession(menu, {residentId:childId})).ready, false);
   await page.evaluate(() => { window.sampleCopied = []; PortalUI.copyText = async value => { sampleCopied.push(value); }; });
   await copy.click();
   assert.deepEqual(await page.evaluate(() => sampleCopied), [sessionId], 'native event copies the full opaque ID');
   await menu.getByRole('button', {name: /^(关闭|Close)$/}).click();
   await menu.waitFor({state: 'hidden'});
+  assert.equal((await readResidentMenuSession(menu, {residentId})).ready, false);
   assert.equal((await readResidentChatReady(root, {residentId})).ready, true);
   await page.getByRole('button', {name:'Show HATG', exact:true}).click();
   const hatg = page.getByRole('region', {name:'HATG', exact:true});
