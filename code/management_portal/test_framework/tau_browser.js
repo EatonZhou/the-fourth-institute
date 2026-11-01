@@ -316,6 +316,23 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
   }
 
+  async function waitForTriggerPath(lineageId, triggerPathId, {
+    states = ["completed", "failed", "cancelled"], timeoutMs = 600_000, intervalMs = 1000,
+  } = {}) {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      // A completed Resident input can precede its enclosing path settlement.
+      // Each read keeps the accepted path identity and its own original RTT.
+      const current = await triggerPath(lineageId, triggerPathId);
+      if (states.includes(String(current.path.status || ""))) return current;
+      if (Date.now() > deadline) {
+        throw Object.assign(new Error("Original Trigger Path observation has not reached the requested state"),
+          { triggerPath: current });
+      }
+      await sleep(intervalMs);
+    }
+  }
+
   async function waitForRunningActivity({ scope = page, timeoutMs = 120_000 } = {}) {
     const deadline = Date.now() + timeoutMs;
     // Locators resolve again after navigation or a Chat remount. A caller with
@@ -385,7 +402,7 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
     action: (name, operation, { page: target = page, preflight, ready } = {}) => observer.action(target, name, operation, { preflight, ready }),
-    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForInput, waitForRunningActivity,
+    requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForTriggerPath, waitForInput, waitForRunningActivity,
     sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }
 

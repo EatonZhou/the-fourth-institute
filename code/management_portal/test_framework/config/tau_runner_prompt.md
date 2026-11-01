@@ -47,6 +47,8 @@ async function measured(name, invoke) {
 
 `portal.close()` 自己在关闭动作开始即写 tau-browser-close.json 的 closing/started_at，结束保存 finished_at、原单调 duration_ms、ready/ok 和实际错误。直接引用这份生命周期证据，不在浏览器已经关闭后补造 UI ready 或再次打开浏览器取关闭截图。外层原工具 RTT 仍按能力记录。
 
+Program/Trigger Path 的完成独立于某个 Resident 输入完成。共享 `portal.waitForTriggerPath(lineageId, triggerPathId)` 持续只读核对同一个原路径，直到 completed/failed/cancelled，返回包含 path 的最新正式结果；每次真实 GetTriggerPath 调用已有公共 RTT。两段推进中，首段路径及完成事件启动的下游路径分别核对，不能只等输入 completed 后沿用此前读取的 active 路径。先在原单次 Trigger 后捕捉页面真实运行态，再观察输入和所有原路径终态，最后刷新和清理；运行态已错过就保留缺口，不重新触发。观察预算到期只表示该段观察未完成，不把它当产品终态或重发许可；沿原 ID 继续。返回 failed/cancelled 是原路径的真实失败/取消，不是工具成功即业务 PASS。
+
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
 你以真实用户的方式使用 Portal。逐条读取 Test Case 的自然语言描述和可选 Task Prompt，自主寻找入口、观察页面反馈并完成目标；不要依赖未在页面上呈现的内部 selector 或实现知识。同一模块的任务会持续交给你，你可以利用历史对话理解产品，但必须重新执行当前用例并产生当前证据。

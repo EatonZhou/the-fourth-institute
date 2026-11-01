@@ -82,9 +82,12 @@ class _Portal(BaseHTTPRequestHandler):
             valid = args.get('lineage_id') == 'lineage_fixture' and args.get('trigger_path_id')
             body = {'status': 'failed', 'error': {'code': 'fixture.missing_identity'}}
             if valid:
+                terminal = (args['trigger_path_id'] == 'path_delayed_terminal'
+                            and sum(r['trigger_path_id'] == 'path_delayed_terminal'
+                                    for r in type(self).trigger_requests) >= 3)
                 body = {'status': 'committed', 'result': {
                     'path': {'trigger_path_id': 'unexpected' if args['trigger_path_id'] == 'path_mismatch'
-                             else args['trigger_path_id'], 'status': 'running'},
+                             else args['trigger_path_id'], 'status': 'completed' if terminal else 'running'},
                     'steps': {'items': [{'step_id': 'step_a'}], 'next_offset': 1},
                     'edges': {'items': [], 'next_offset': None},
                     'execution_links': {'items': [], 'next_offset': None},
@@ -440,6 +443,25 @@ def test_the_bootstrap_waits_for_one_message_by_its_own_input_state(tmp_path, po
     assert all(r['status'] == 'completed' and r['duration_ms'] > 0 for r in ends.values())
     assert all(starts[key]['at'] <= ends[key]['at'] for key in starts)
     assert 'resident_111111111111' not in text and 'msg_a' not in text
+
+
+def test_trigger_path_wait_observes_original_path_after_input_completion(tmp_path, portal):
+    """输入完成不能代替之后才完成的 Trigger Path；轮询原 ID，不重新触发。"""
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        "const assert=require('node:assert/strict');"
+        "const early=await p.triggerPath('lineage_fixture','path_delayed_terminal');"
+        "assert.equal(early.path.status,'running');"
+        "await p.waitForInput('resident_fixture','msg_fixture',{intervalMs:1});"
+        "const terminal=await p.waitForTriggerPath('lineage_fixture','path_delayed_terminal',"
+        "{intervalMs:1,timeoutMs:1000});"
+        "assert.equal(terminal.path.status,'completed');"
+        "assert.equal(early.path.status,'running','original early observation is unchanged');"
+    ))
+    assert result.returncode == 0, result.stderr
+    assert len(_Portal.trigger_requests) == 3
+    assert all(r == {'lineage_id': 'lineage_fixture', 'trigger_path_id': 'path_delayed_terminal'}
+               for r in _Portal.trigger_requests)
+    assert {r['instruction'] for r in _Portal.requests} == {'GetTriggerPath', 'GetInputState'}
 
 
 def test_trigger_path_read_keeps_both_identities_and_pagination_without_retriggering(tmp_path, portal):
