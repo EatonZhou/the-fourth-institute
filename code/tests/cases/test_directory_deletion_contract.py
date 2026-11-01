@@ -18,6 +18,45 @@ from tests.cases.test_resident_folder_creation_contract import (
 from tests.cases.test_workspace_resource_rename import workspace as resource_workspace, WID
 
 
+@pytest.mark.parametrize('operation', ['identity', 'tree'])
+def test_unregistration_retention_uses_the_owning_transaction(workspace, monkeypatch, operation):
+    from contextlib import contextmanager
+    from management_common.directory_retention import RetentionStore
+    from management_common.postgres_database import PostgresDatabase
+    from management_portal.resources.directory_registrations import unregister_identity, unregister_tree
+    from management_portal.resources.registry_store import get_registry_store
+
+    retention = RetentionStore()
+    artifact = workspace.root / 'owned-artifact'
+    artifact.mkdir()
+    retention.declare(artifact, category='object_data', owner_id=WID)
+    get_registry_store()._ensure()
+    original_read = PostgresDatabase.read
+
+    @contextmanager
+    def no_additional_retention_connection(database):
+        assert database.schema != retention.database.schema, 'retention borrowed another connection inside deletion'
+        with original_read(database) as connection:
+            yield connection
+
+    with monkeypatch.context() as patch:
+        patch.setattr(PostgresDatabase, 'read', no_additional_retention_connection)
+        with pytest.raises(RuntimeError, match='rollback fixture'):
+            with workspace.store.database.transaction() as connection:
+                if operation == 'identity':
+                    unregister_identity(WID, connection=connection, actor='sample_admin')
+                else:
+                    unregister_tree(workspace_ids=[WID], connection=connection, actor='sample_admin')
+                assert connection.execute(f'SELECT count(*) FROM {retention.table} WHERE owner_id=%s', (WID,)).fetchone()[0] == 0
+                assert connection.execute(f'SELECT count(*) FROM {retention.queue.table} WHERE owner_id=%s', (WID,)).fetchone()[0] >= 1
+                raise RuntimeError('rollback fixture')
+    with retention.database.read() as connection:
+        assert connection.execute(f'SELECT count(*) FROM {retention.table} WHERE owner_id=%s', (WID,)).fetchone()[0] == 1
+    assert not retention.queue.status(owner_id=WID)
+    assert WID in workspace.store.rows([WID])
+    assert artifact.is_dir()
+
+
 def test_nested_unregistration_returns_workspace_and_enlists_permissions(workspace, monkeypatch):
     from management_portal.resources.directory_registrations import unregister_tree
     from management_portal import permission_system

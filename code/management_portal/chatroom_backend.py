@@ -450,7 +450,7 @@ def _Transaction(chatroom_id, *, viewer=None, delivery_ids=None, permissions=Fal
             store.save(chatroom_id, rooms.get(chatroom_id), previous)
             if previous and chatroom_id not in rooms:
                 from management_common.directory_retention import RetentionStore
-                RetentionStore().release_owner(chatroom_id, connection=connection)
+                RetentionStore(connection=connection).release_owner(chatroom_id, connection=connection)
             if permissions:
                 _sync_permissions(rooms.get(chatroom_id) or previous, deleted=chatroom_id not in rooms, connection=connection)
 

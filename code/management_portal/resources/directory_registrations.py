@@ -73,7 +73,7 @@ def unregister_identity(resource_id, *, connection, actor=''):
     if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0]:
         connection.execute(f'UPDATE {table} SET deleted=TRUE WHERE resource_id=%s', (resource_id,))
     from management_common.directory_retention import RetentionStore
-    RetentionStore().release_owner(resource_id, connection=connection)
+    RetentionStore(connection=connection).release_owner(resource_id, connection=connection)
     from management_portal import permission_system
     permission_system.unregister_resources([resource_id], connection=connection)
     request_projection_release(resource_id, actor=actor, connection=connection)
@@ -209,7 +209,7 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
                 break
         timestamp = deleted_at or now()
         deleted_paths = []
-        retention = RetentionStore()
+        retention = RetentionStore(connection=connection)
         for owner in owners:
             retention.release_owner(owner, connection=connection)
         for row in rows:

@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS binding_targets (
 def save_version(connection, app_id, revision, value):
     from .application_retention import reconcile
     from management_common.directory_retention import RetentionStore
-    retention = RetentionStore()
+    retention = RetentionStore(connection=connection)
     retention.queue.lock(connection)
     allowed = {'workbench_id','builtin','title','description','html','path','updated_at',
                'created_at','created_by','project_ids','navigation','bindings','manifest','panels',
