@@ -801,7 +801,7 @@ def _action(payload: dict[str, Any], actor: str) -> dict[str, Any]:
                 resident_handoff.cancel_resident_invocation(job["resident_id"], actor, job["message_id"])
         return {"accepted": True}
     allowed = {"implement": {"improvement"}, "reject": {"improvement", "inconsistency", "direction"},
-               "retire": {"design"}, "align-design": {"inconsistency"}, "align-code": {"inconsistency"},
+               "delete": {"design"}, "align-design": {"inconsistency"}, "align-code": {"inconsistency"},
                "approve-direction": {"direction"}, "publish": {"dev"}}
     if name not in {*allowed, *PROJECT_ACTIONS}:
         raise ValueError("未知 WALL 操作")
@@ -849,7 +849,7 @@ def _task_prompt(record: dict[str, Any], job: dict[str, Any], point: dict[str, A
         "implement": "整份Plan对应一个显著改进。先完整阅读背景、问题证据、目标体验、方案边界和验收，再实现并真实验证，按需更新相关Design。保留Plan来源供结果追溯；完成后WALL将整份Plan退出IMPROVE索引，不逐条删除正文或把细节拆成新改进。",
         "align-code": "修改当前实现使其符合这个不一致点所引用的设计，并真实验证。",
         "align-design": "以当前实现为依据更新对应设计，解释清楚当前行为；不修改无关功能。",
-        "retire": "用户决定抛弃这个设计点。删除相关功能实现，清理真正无用的路径，更新规范和定向测试。",
+        "delete": "用户决定抛弃这个设计点。删除相关功能实现，清理真正无用的路径，更新规范和定向测试。",
         "approve-direction": "用户认可这个演化方向。自主读取其关联内容、拆解、实现和真实验证；通过HATG创建或组织协作。仅在目标冲突、重大代价或超出授权时请求判断。",
         "analyse": "维护此工程的WALL。阅读SPEC.md、IMPROVE.md及实现，只保留值得独立审查、能显著改善用户任务或系统能力的改进，一份Plan只解释一个核心变化并链接IMPROVE.md。完整说明背景、现状后果、目标体验、方案与检验；细节归入该Plan正文。没有重要发现就不创建Plan，不按Design配额凑数。metaness表示文档的meta层次，与importance分开评价；未评价可省略。实现/规范不一致与演化方向按各自类型记录。已授权的显著日常bug可以直接修复并验证。分析的成果是WALL文档：发现的不一致或缺陷如实记录后即为完成（completed），未修复的问题写入summary，不因被分析的工程本身未通过验证而返回blocked；只有分析本身未能完成时才返回blocked。",
         "verify": "你是本工程固定的回归测试与修复 Resident。先读取工程测试规范与目录，通过现有测试运行入口组织全面回归，覆盖适用的后端、浏览器及TAU真实使用测试；如本次输入指定用例，只验证指定范围并明确记录范围。你负责调用测试、观察真实终态、分析失败、修复并复测。区分产品代码bug、错误或过时的测试断言、环境问题；以有效Design和真实业务语义为依据修正代码或测试，不能靠删掉用例、跳过失败或弱化正确断言制造通过。保存实际命令、测试报告、失败原因和修复证据；已通过且相关代码未变的测试不重复运行，修复优先重跑失败与受影响用例。全面回归独立于全量发布，不自动调用全量发布、不等待发布完成；本次实际修复通过定向验证后，依开发规则发布相关改动。结果附真实test_run_ids（如使用测试框架），未解决的问题如实返回blocked。",
@@ -970,7 +970,7 @@ def _finish_locked(record: dict[str, Any], job: dict[str, Any], result: dict[str
         _patch_job(job["id"], status="blocked", error="发布结果缺少完整 publication_commit；尚未确认实际发布，保留 Dev 成果。")
         invalidate(record["id"])
         return
-    creates_dev = name in {"implement", "align-code", "retire", "approve-direction"}
+    creates_dev = name in {"implement", "align-code", "delete", "approve-direction"}
     existing_dev = str(result.get("dev_block_id") or "").strip()
     if creates_dev and existing_dev:
         _, point, _, _ = _point(record["id"], existing_dev, job["actor"])
@@ -998,7 +998,7 @@ def _finish_locked(record: dict[str, Any], job: dict[str, Any], result: dict[str
                 _remove_point(record, job["block"], job["actor"])
             except KeyError:
                 pass  # Recovery after the removal committed is idempotent.
-    if (name in {"implement", "align-code", "align-design", "retire"}
+    if (name in {"implement", "align-code", "align-design", "delete"}
             or (name == "publish" and record["id"] != "portal")) and job["block"]:
         _remove_point(record, job["block"], job["actor"])
     _patch_job(job["id"], status="completed", summary=str(result.get("summary") or ""), error="",
@@ -1045,7 +1045,7 @@ def _run_job(job_id: str) -> None:
             )
             _patch_job(job_id, status="routing", resident_scope=scope)
             prompt = _task_prompt(record, job, point)
-            if job["action"] in {"implement", "align-code", "retire", "approve-direction"}:
+            if job["action"] in {"implement", "align-code", "delete", "approve-direction"}:
                 try:
                     from .resident_recommendation_backend import recommend_residents
                     recommendation = recommend_residents(
@@ -1284,7 +1284,7 @@ def _tick() -> None:
 def start_runtime() -> None:
     global _RUNTIME_STARTED, _RUNTIME_STOP, _RUNTIME_THREAD
     # Each installation owns its database and jobs. A release label no longer
-    # denotes the read-only half of the retired shared-database Dev/Release pair.
+    # denotes the read-only half of the deleted shared-database Dev/Release pair.
     with _RUNTIME_LOCK:
         if _RUNTIME_STARTED:
             return

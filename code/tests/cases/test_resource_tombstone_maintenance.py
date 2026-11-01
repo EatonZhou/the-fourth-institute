@@ -70,7 +70,7 @@ def test_quarantine_is_archived_atomic_idempotent_and_not_a_recovered_proof(reco
     assert store.revision(SOURCE_COLLECTION) == revision
     assert len(notifications) == 2
     with store.database.read() as c:
-        assert c.execute('SELECT resource_id FROM retired_identities WHERE resource_id=%s', (RID,)).fetchone()
+        assert c.execute('SELECT resource_id FROM deleted_identities WHERE resource_id=%s', (RID,)).fetchone()
 
 
 @pytest.mark.parametrize('field', ['source', 'public', 'typed'])
@@ -126,7 +126,7 @@ def test_rollback_keeps_memo_fence_revision_and_notifications_unchanged(records,
 def test_registry_writes_cannot_reuse_fenced_identity(records, collection):
     store = records[0]
     perform(records)
-    with pytest.raises(PermissionError, match='retired identity'):
+    with pytest.raises(PermissionError, match='deleted identity'):
         with store.writer(collection) as writer:
             writer.put(collection, RID, {'status': 'active'})
 
@@ -145,14 +145,14 @@ def test_same_time_retry_without_original_proof_is_rejected_before_and_after(rec
 
 
 @pytest.mark.parametrize('entry', ['resident', 'resident_parent', 'lineage', 'family', 'workbench', 'workbench_parent'])
-def test_typed_write_entrypoints_reject_retired_identity_and_inheritance(records, entry):
+def test_typed_write_entrypoints_reject_deleted_identity_and_inheritance(records, entry):
     store, state, _, _, _ = records
     perform(records)
     lid, fid, wid = 'lineage_123456789abc', 'family_123456789abc', 'workbench_123456789abc'
     with store.database.transaction() as c:
         for rid in (lid, fid, wid):
-            c.execute('INSERT INTO retired_identities VALUES (%s)', (rid,))
-    with pytest.raises(PermissionError, match='retired identity'):
+            c.execute('INSERT INTO deleted_identities VALUES (%s)', (rid,))
+    with pytest.raises(PermissionError, match='deleted identity'):
         if entry.startswith('resident'):
             state.put_resident_record(RID if entry == 'resident' else 'resident_abcdef123456',
                 {'resident_id': RID if entry == 'resident' else 'resident_abcdef123456',
@@ -189,10 +189,10 @@ def test_resource_service_rejects_live_projection_and_unauthenticated_retry(reco
     assert store.get(SOURCE_COLLECTION, RID) is None
 
 
-def test_concurrent_writer_prevents_retirement_until_whole_operation_can_retry(records):
+def test_concurrent_writer_prevents_deletion_until_whole_operation_can_retry(records):
     import psycopg
     from psycopg.rows import dict_row
-    from management_portal.resources.retired_identity_boundary import require_live_identity
+    from management_portal.resources.deleted_identity_boundary import require_live_identity
     store = records[0]
     expected = api().inspect_resident_memo(store, RID)
     with psycopg.connect(store.database.dsn, row_factory=dict_row) as other:
@@ -206,7 +206,7 @@ def test_concurrent_writer_prevents_retirement_until_whole_operation_can_retry(r
 def test_fence_serializes_future_writers_and_notification_waits_for_outer_commit(records):
     import psycopg
     from psycopg.rows import dict_row
-    from management_portal.resources.retired_identity_boundary import require_live_identity
+    from management_portal.resources.deleted_identity_boundary import require_live_identity
     store = records[0]
     expected = api().inspect_resident_memo(store, RID)
     with store.database.transaction():
@@ -218,7 +218,7 @@ def test_fence_serializes_future_writers_and_notification_waits_for_outer_commit
                 require_live_identity(other, RID)
             other.rollback()
     with psycopg.connect(store.database.dsn, row_factory=dict_row) as other:
-        with pytest.raises(PermissionError, match='retired identity'):
+        with pytest.raises(PermissionError, match='deleted identity'):
             require_live_identity(other, RID)
     assert len(records[4]) == 2
 

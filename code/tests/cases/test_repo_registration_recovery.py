@@ -76,7 +76,7 @@ def test_restore_repo_identity_preserves_metadata_and_content(tmp_path, monkeypa
     assert repos.register_repo_checkout(current)["id"] == old["id"]
 
 
-@pytest.mark.parametrize("failure", ["hash", "concurrent", "wrong_replacement", "denied", "existing", "retired", "suppressed", "extra_checkout", "replacement_denied"])
+@pytest.mark.parametrize("failure", ["hash", "concurrent", "wrong_replacement", "denied", "existing", "deleted", "suppressed", "extra_checkout", "replacement_denied"])
 def test_repo_recovery_conflicts_leave_all_records_intact(tmp_path, monkeypatch, failure):
     """证据、权限或目标CAS不符时，恢复不改任何登记。"""
     service, old, replacement, current, changes = setup_recovery(tmp_path, monkeypatch)
@@ -90,10 +90,10 @@ def test_repo_recovery_conflicts_leave_all_records_intact(tmp_path, monkeypatch,
         monkeypatch.setattr(permission_system, "allows", lambda *a, **kw: False)
     elif failure == "replacement_denied":
         monkeypatch.setattr(permission_system, "allows", lambda actor, instruction, args: instruction != "UnregisterResource")
-    elif failure == "retired":
+    elif failure == "deleted":
         store = get_registry_store()
         with store.writer("repo") as writer:
-            writer.connection.execute(f'INSERT INTO "{store.database.schema}".retired_identities(resource_id) VALUES (%s)', (old["id"],))
+            writer.connection.execute(f'INSERT INTO "{store.database.schema}".deleted_identities(resource_id) VALUES (%s)', (old["id"],))
     elif failure == "suppressed":
         from management_portal.resource_auto_registration import suppress_paths
         suppress_paths("repo", old["id"], [old["canonical_checkout"]])

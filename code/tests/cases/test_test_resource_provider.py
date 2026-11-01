@@ -75,4 +75,4 @@ def test_test_resources_have_no_update() -> None:
     service = ResourceService(index_provider=index, mutation_provider_loader=install_mutation_providers)
 
     with pytest.raises(ValueError, match="no mutation provider registered for test"):
-        service.update(TEST_ID, {"lifecycle": "retired"}, actor="operator", resource_type="test")
+        service.update(TEST_ID, {"lifecycle": "deleted"}, actor="operator", resource_type="test")

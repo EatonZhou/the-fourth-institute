@@ -128,7 +128,7 @@
   async function activeCases(signal) {
     const cases = await catalogCases();
     checkSignal(signal);
-    return cases.filter(item => item.lifecycle !== "retired");
+    return cases.filter(item => item.lifecycle !== "deleted");
   }
 
   // The requested case when it fits, else the first one that does; a preference falls back to any current case.
@@ -142,11 +142,11 @@
     return chosen;
   }
 
-  // The catalog page's filter semantics: dimensions combine with AND, aspects with OR, retired cases never show.
+  // The catalog page's filter semantics: dimensions combine with AND, aspects with OR, deleted cases never show.
   function matches(item, filters) {
     const modules = [].concat(filters.module || []);
     const runners = item.runners || [];
-    return item.lifecycle !== "retired"
+    return item.lifecycle !== "deleted"
       && (!filters.importance || item.importance === filters.importance)
       && (!modules.length || modules.includes(item.module))
       && (!filters.design || String(item.is_design_point) === filters.design)
@@ -166,7 +166,7 @@
     requireCondition(!snapshot.failure && !snapshot.loading, `Catalog 查询没有完成：${snapshot.failure || "仍在读取"}`);
     const expected = (await activeCases(signal)).filter(item => matches(item, filters)).map(item => item.id);
     const wanted = new Set(expected);
-    requireCondition(snapshot.count === expected.length, `服务端匹配 ${snapshot.count} 条，按分类交集/同维并集与退役排除应为 ${expected.length} 条`);
+    requireCondition(snapshot.count === expected.length, `服务端匹配 ${snapshot.count} 条，按分类交集/同维并集与删除排除应为 ${expected.length} 条`);
     requireCondition(new Set(snapshot.caseIds).size === snapshot.caseIds.length && snapshot.caseIds.every(id => wanted.has(id)), "Catalog 首页混入了不符合筛选的条目或重复条目");
     requireCondition(snapshot.caseIds.length === Math.min(100, expected.length), "Catalog 首批结果丢失");
     const rows = [...root.querySelectorAll("[data-case-id]")].map(row => row.dataset.caseId);
@@ -261,7 +261,7 @@
       requireCondition(element(root, "[data-catalog-module]").value === item.module && element(root, "[data-catalog-importance]").value === item.importance
         && element(root, "[data-catalog-design]").value === filters.design, "工具栏没有显示当前筛选");
       requireCondition(filters.aspect.every(aspect => element(root, `[data-catalog-aspect="${CSS.escape(aspect)}"]`).getAttribute("aria-pressed") === "true"), "测试方面的选择没有显示");
-      return { target: element(root, ".testCaseList"), caption: `重要等级、模块、设计点之间取交集，测试方面之间取并集，退役条目不出现；匹配 ${result.length} 条。` };
+      return { target: element(root, ".testCaseList"), caption: `重要等级、模块、设计点之间取交集，测试方面之间取并集，删除条目不出现；匹配 ${result.length} 条。` };
     },
 
     async "testlab.design-filter"(prepared, signal) {
@@ -332,7 +332,7 @@
         checkSignal(signal);
         requireCondition(same(sorted(result.case_ids || []), sorted(expected)), `${template.name} 的完整范围与模板规则不一致`);
       }
-      return { target: element(root, '[data-test-section="templates"]'), caption: "三个快捷组合的计数、完整范围和“查看用例”的筛选一致，都排除退役条目；没有生成计划或启动运行。" };
+      return { target: element(root, '[data-test-section="templates"]'), caption: "三个快捷组合的计数、完整范围和“查看用例”的筛选一致，都排除删除条目；没有生成计划或启动运行。" };
     },
 
     async "testlab.implementation-detail"(prepared) {

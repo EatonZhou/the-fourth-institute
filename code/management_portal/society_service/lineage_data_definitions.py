@@ -98,7 +98,7 @@ def write_definition(
     _appoint_missing_leader(connection, value)
     desired = _graph_objects(value)
     current = graph_storage.active_objects(connection, lineage_id)
-    from management_portal.resources.retired_identity_boundary import require_live_identity
+    from management_portal.resources.deleted_identity_boundary import require_live_identity
     require_live_identity(connection, lineage_id)
     previous_rows = lineage_metadata_storage.read_many(connection, [lineage_id], include_deleted=True)
     previous_row = previous_rows[0] if previous_rows else None

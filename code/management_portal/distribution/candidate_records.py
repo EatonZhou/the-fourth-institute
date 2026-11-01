@@ -13,7 +13,7 @@ def current_records(source, records):
     if not records:
         return {}
     ids = set(records)
-    retired = {r['resource_id'] for r in source.rows('resource_registry', 'retired_identities',
+    deleted = {r['resource_id'] for r in source.rows('resource_registry', 'deleted_identities',
                                                    predicates={'resource_id': ids})}
     descriptors, projects = {}, {}
     has_projects = any(r.get('resource_type') == 'project' for r in records.values())
@@ -37,7 +37,7 @@ def current_records(source, records):
     result = {}
     for rid, record in records.items():
         kind = record.get('resource_type')
-        if rid in retired or not live(record):
+        if rid in deleted or not live(record):
             continue
         descriptor = descriptors.get(rid)
         if descriptor is not None and not live(descriptor):

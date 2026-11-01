@@ -28,9 +28,9 @@ class RunPlanner:
             "lifecycle" not in selection
             and not clean_list(selection.get("case_ids"))
         ):
-            # Retirement removes a case from normal catalog and campaign flows.
+            # Deletion removes a case from normal catalog and campaign flows.
             # An explicit case id remains runnable for diagnosis or recovery.
-            selection["lifecycle"] = sorted(LIFECYCLES - {"retired"})
+            selection["lifecycle"] = sorted(LIFECYCLES - {"deleted"})
         implementation = request.get("implementation") if isinstance(request.get("implementation"), dict) else {}
         case_instructions = implementation.get("case_instructions", {})
         if not isinstance(case_instructions, dict) or any(

@@ -68,7 +68,7 @@ def store_program(connection: Any, lineage_id: str, definition: dict, now: str) 
         identity_contract.validate_id(resource_id, "family")
         if family.get("resource_id") and family["resource_id"] != resource_id:
             raise ValueError("Family resource_id is immutable")
-        from management_portal.resources.retired_identity_boundary import require_live_identity
+        from management_portal.resources.deleted_identity_boundary import require_live_identity
         require_live_identity(connection, resource_id)
         family["resource_id"] = resource_id
         connection.execute("""INSERT INTO families(family_id,lineage_id,title,goal,previous_leader_id,human_familizer_id,route_threshold,review_interval_seconds,lineage_scope,resource_id,created_at,updated_at)

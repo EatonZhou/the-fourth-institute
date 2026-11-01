@@ -134,7 +134,7 @@ def test_every_discovered_implementation_has_one_explicit_classified_case_contra
         assert all((case.module in MODULES for case in cases))
         assert all((any((case.module.startswith(f'{group.id}.') for case in cases)) for group in MODULE_GROUPS))
         # The taxonomy covers the Design index; a module without current cases
-        # remains visible as a coverage gap, including after a suite is retired.
+        # remains visible as a coverage gap, including after a suite is deleted.
         projection = FrameworkService(state_root=case_path / 'catalog').query_workspace()
         case_counts = Counter(case.module for case in cases)
         assert projection['module_counts'] == {
@@ -734,8 +734,8 @@ def test_run_coordinator_executes_a_fixed_plan_and_records_result(
     assert workspace["cases"][0]["runners"] == expected_runners
 
 
-def test_test_page_reads_an_overview_and_catalog_pages_without_retired_cases(tmp_path: Path) -> None:
-    """Test 页面的总览给出各模块的用例构成和最近运行的标题与模块，目录按模块分页并可按执行方式筛选，退役用例都不计入
+def test_test_page_reads_an_overview_and_catalog_pages_without_deleted_cases(tmp_path: Path) -> None:
+    """Test 页面的总览给出各模块的用例构成和最近运行的标题与模块，目录按模块分页并可按执行方式筛选，删除用例都不计入
 
     总览不带用例行；每个模块给出总数、P0–P3、设计点、TAU 与缺实现的数量，最近运行写明用例数、所在模块，只有一条用例时写出它的标题。
     目录一页最多 500 条，按模块的目录顺序、再按重要等级和 key 排列；runner=none 是没有实现的用例。
@@ -746,8 +746,8 @@ def test_test_page_reads_an_overview_and_catalog_pages_without_retired_cases(tmp
     """
     service = FrameworkService(state_root=tmp_path / "service")
     projected, errors = service.catalog.projection()
-    retired = projected[0]
-    projected = (dataclasses.replace(retired, lifecycle="retired"), *projected[1:])
+    deleted = projected[0]
+    projected = (dataclasses.replace(deleted, lifecycle="deleted"), *projected[1:])
     service.catalog.projection = lambda: (projected, errors)
     cases = list(projected[1:])
     runners = lambda case: {implementation.runner for implementation in case.implementations}
@@ -774,8 +774,8 @@ def test_test_page_reads_an_overview_and_catalog_pages_without_retired_cases(tmp
     page = service.query_page({}, offset=0, limit=50)
     assert page["schema"] == "tfi.test-catalog-page.v1"
     assert page["count"] == len(cases) and len(page["cases"]) == 50
-    assert retired.id not in {item["id"] for item in service.query_page({}, limit=500)["cases"]}
-    assert service.query_page({"lifecycle": ["retired"]})["count"] == 1
+    assert deleted.id not in {item["id"] for item in service.query_page({}, limit=500)["cases"]}
+    assert service.query_page({"lifecycle": ["deleted"]})["count"] == 1
     order = [module.id for group in MODULE_GROUPS for module in group.modules]
     listed = service.query_page({}, limit=500)["cases"]
     assert [(order.index(item["module"]), ("P0", "P1", "P2", "P3").index(item["importance"]), item["key"]) for item in listed] == sorted(
@@ -786,7 +786,7 @@ def test_test_page_reads_an_overview_and_catalog_pages_without_retired_cases(tmp
     assert tau["count"] == sum("tau" in runners(case) for case in cases) and all("tau" in item["runners"] for item in tau["cases"])
     missing = service.query_page({"runners": ["none"]}, limit=500)
     assert missing["count"] == overview["summary"]["without_implementation"] and all(item["runners"] == [] for item in missing["cases"])
-    assert retired.id not in service.query_case_ids({"current": True})["case_ids"]
+    assert deleted.id not in service.query_case_ids({"current": True})["case_ids"]
 
 
 def test_run_coordinator_observes_cancellation_persisted_by_another_process(

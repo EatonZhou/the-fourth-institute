@@ -211,7 +211,7 @@ class ResidentRecords:
             raise ValueError('Resident backend and execution configuration differ')
 
         def write(connection: Any) -> None:
-            from management_portal.resources.retired_identity_boundary import require_live_identity
+            from management_portal.resources.deleted_identity_boundary import require_live_identity
             require_live_identity(connection, resident_id, parents=[record.get('lineage_id')])
             prior = connection.execute('SELECT n.lineage_id,r.backend,r.deleted_at,r.intake_open,r.intake_transition_id,r.registration_state FROM residents r LEFT JOIN lineage_nodes n ON n.node_id=r.resident_id WHERE r.resident_id=%s FOR UPDATE OF r', (resident_id,)).fetchone()
             if record.get('deleted_at') or (prior and prior['deleted_at'] is not None):

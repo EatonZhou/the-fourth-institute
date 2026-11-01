@@ -120,13 +120,13 @@ def test_wall_document_metaness_edit_refreshes_siblings_without_changing_review(
     assert wall.block("portal", point["id"], "owner")["block"]["reviewed"]
 
 
-def test_wall_plan_retirement_removes_only_matching_index_rows_contracts(subtests, isolated_portal_case):
-    """WALL 方案退役仅移除匹配索引行并保留其他条目"""
-    with subtests.test(contract='test_wall_plan_retirement_removes_only_matching_index_rows'), isolated_portal_case() as case_path:
-        text = '# Improvements\n\n| Change | Plan |\n| --- | --- |\n| Retire | `plan_0123456789ab` |\n| Keep | `plan_aaaaaaaaaaaa` |\n\n- [Local](plans/change.md)\n  Details for local.\n- [Other](plans/other.md)\n'
+def test_wall_plan_deletion_removes_only_matching_index_rows_contracts(subtests, isolated_portal_case):
+    """WALL 方案删除仅移除匹配索引行并保留其他条目"""
+    with subtests.test(contract='test_wall_plan_deletion_removes_only_matching_index_rows'), isolated_portal_case() as case_path:
+        text = '# Improvements\n\n| Change | Plan |\n| --- | --- |\n| Delete | `plan_0123456789ab` |\n| Keep | `plan_aaaaaaaaaaaa` |\n\n- [Local](plans/change.md)\n  Details for local.\n- [Other](plans/other.md)\n'
         updated = remove_index_reference(text, 'plan_0123456789ab')
         updated = remove_index_reference(updated, 'plans/change.md')
-        assert 'Retire' not in updated and 'Details for local' not in updated
+        assert 'Delete' not in updated and 'Details for local' not in updated
         assert 'plan_aaaaaaaaaaaa' in updated and 'plans/other.md' in updated
     with subtests.test(contract='test_wall_points_keep_nested_evidence_and_exclude_code'), isolated_portal_case() as case_path:
         text = '---\nimportance: 8\n---\n# Example\n## 概念\n- Not a point.\n## 设计点\n- **First**. Explanation.\n  - Evidence belongs to First.\n  - More evidence.\n\n- **Second**. Another point.\n\n```md\n- **Not a point**.\n```\n## 使用记录\n- Not a design.\n'
@@ -1009,8 +1009,8 @@ def test_wall_board_and_detail_share_resident_scores_without_overwriting_manual_
     assert wall.block("portal", point["id"], "owner")["block"]["importance_source"] == "point"
 
 
-def test_wall_reject_retires_whole_plan_and_keeps_other_plans(wall_project):
-    """WALL 拒绝方案将整篇退役并保留其他方案文件"""
+def test_wall_reject_deletes_whole_plan_and_keeps_other_plans(wall_project):
+    """WALL 拒绝方案将整篇删除并保留其他方案文件"""
     wall._scan(wall.project("portal", "owner"), "owner")
     point = next(p for p in wall.board("portal", "owner")["blocks"] if p["title"] == "Improve")
     wall.action({"action": "reject", "block": point["id"]}, "owner")
@@ -1121,7 +1121,7 @@ def test_wall_create_edit_direction_roundtrip(wall_project, monkeypatch):
 
 
 def test_wall_success_removes_plan_and_creates_blue_markdown(wall_project):
-    """WALL 实现成功退役原方案并生成关联的待发布结果"""
+    """WALL 实现成功删除原方案并生成关联的待发布结果"""
     wall._scan(wall.project("portal", "owner"), "owner")
     point = next(p for p in wall.board("portal", "owner")["blocks"] if p["title"] == "Improve")
     job = wall.action({"action": "implement", "block": point["id"]}, "owner")["job"]
@@ -1610,7 +1610,7 @@ def test_wall_publication_validates_commit_and_keeps_other_cards(wall_project, m
     assert '--path' in prompt and 'tfi_dev.py publish' in prompt and job['id'] in prompt and '全量测试' in prompt
 
 
-def test_wall_full_publish_is_independent_and_does_not_retire_cards(wall_project, monkeypatch):
+def test_wall_full_publish_is_independent_and_does_not_delete_cards(wall_project, monkeypatch):
     """WALL 发布与 Resident 回归工作流验证
 
     :design: decision_06defc47e960, decision_08bb2d9141f9

@@ -739,9 +739,9 @@
     "en": "Create discussion Resident on first send",
     "zh-CN": "首次发送时创建讨论 Resident"
   },
-  "（已退役）": {
-    "en": "(retired)",
-    "zh-CN": "（已退役）"
+  "（已删除）": {
+    "en": "(deleted)",
+    "zh-CN": "（已删除）"
   },
   "（未填写，显示默认 1）": {
     "en": "(not filled in, showing default 1)",

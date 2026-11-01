@@ -12,27 +12,27 @@ from psycopg import sql
 
 
 @pytest.mark.parametrize('collection', ['resident', 'lineage', 'workbench'])
-def test_retired_identity_guard_rejects_reuse_and_inheritance(collection):
-    """退役身份拒绝复用及被继承且允许保留删除记录"""
+def test_deleted_identity_guard_rejects_reuse_and_inheritance(collection):
+    """删除身份拒绝复用及被继承且允许保留删除记录"""
     from management_portal.resources.registry_store import RegistryStore
-    from management_portal.resources.retired_identity_boundary import require_live_identity
+    from management_portal.resources.deleted_identity_boundary import require_live_identity
 
     registry = RegistryStore()
     registry.snapshot(collection)
-    retired_id = collection + '_111111111111'
+    deleted_id = collection + '_111111111111'
     live_id = collection + '_222222222222'
     registry.database.write(lambda connection: connection.execute(
-        'INSERT INTO retired_identities VALUES (%s)', (retired_id,)))
-    with pytest.raises(PermissionError, match='retired identity'):
+        'INSERT INTO deleted_identities VALUES (%s)', (deleted_id,)))
+    with pytest.raises(PermissionError, match='deleted identity'):
         with registry.writer(collection) as writer:
-            writer.put(collection, retired_id, {'status': 'active'})
-    with pytest.raises(PermissionError, match='retired identity'):
+            writer.put(collection, deleted_id, {'status': 'active'})
+    with pytest.raises(PermissionError, match='deleted identity'):
         registry.database.write(lambda connection: require_live_identity(
-            connection, live_id, parents=[retired_id]))
+            connection, live_id, parents=[deleted_id]))
     with registry.writer(collection) as writer:
-        writer.put(collection, retired_id, {'status': 'deleted'})
+        writer.put(collection, deleted_id, {'status': 'deleted'})
         writer.put(collection, live_id, {'status': 'active'})
-    assert registry.get(collection, retired_id) == {'status': 'deleted'}
+    assert registry.get(collection, deleted_id) == {'status': 'deleted'}
     assert registry.get(collection, live_id) == {'status': 'active'}
 
 

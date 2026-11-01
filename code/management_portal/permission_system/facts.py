@@ -75,10 +75,10 @@ def principal_id(value: Any) -> str:
 
 
 def live(record: Mapping[str, Any]) -> bool:
-    """Whether the record describes an object that exists (not deleted or retired)."""
+    """Whether the record describes an object that has not been deleted."""
     attributes = record.get("attributes") if isinstance(record.get("attributes"), Mapping) else {}
     status = _text(record.get("status") or attributes.get("status") or attributes.get("lifecycle"))
-    return status not in {"deleted", "retired"} and not _text(record.get("deleted_at") or attributes.get("deleted_at"))
+    return status != "deleted" and not _text(record.get("deleted_at") or attributes.get("deleted_at"))
 
 
 @dataclass(frozen=True)

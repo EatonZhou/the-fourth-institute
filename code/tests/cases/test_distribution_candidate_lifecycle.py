@@ -29,13 +29,13 @@ class Source:
 
 
 @pytest.mark.parametrize('json_text', [False, True])
-def test_deleted_missing_and_retired_are_consistent_before_pagination(monkeypatch, json_text):
+def test_deleted_missing_and_deleted_are_consistent_before_pagination(monkeypatch, json_text):
     ids = ['lineage_'+c*12 for c in 'abcdef']
     records = {rid: {'resource_id':rid, 'resource_type':'lineage', 'title':rid} for rid in ids}
     source = Source(records, {
         ('lineage','lineages'):[{'lineage_id':rid, 'deleted_at':'2026-01-01' if n==1 else None}
                               for n,rid in enumerate(ids) if n!=2],
-        ('resource_registry','retired_identities'):[{'resource_id':ids[3]}],
+        ('resource_registry','deleted_identities'):[{'resource_id':ids[3]}],
         ('resource_registry','registry_documents'):[{'collection':'lineage','document_id':ids[4],
                                                     'document_json':json.dumps({'status':'deleted'}) if json_text else {'status':'deleted'}}]})
     monkeypatch.setattr(candidates, 'read_snapshot', lambda: nullcontext(source))

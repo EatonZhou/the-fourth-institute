@@ -11,7 +11,7 @@ IMPORTANCE = ("P0", "P1", "P2", "P3")
 ASPECTS = frozenset(
     {"functional", "ui", "behavior", "performance", "architecture-conformance"}
 )
-LIFECYCLES = frozenset({"active", "needs-review", "obsolete", "retired"})
+LIFECYCLES = frozenset({"active", "needs-review", "obsolete", "deleted"})
 IMPLEMENTATION_RISKS = frozenset({
     "unspecified",
     "no-external-side-effects",

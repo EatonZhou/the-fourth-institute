@@ -91,7 +91,7 @@ body:has(.portalAgentInbox:not([hidden])) .wallWorkspaceView { padding-right: 50
 .wallActions button, .wallRelated button, .wallJobs button { min-height: 28px; padding: 4px 7px; color: var(--text); border: 1px solid color-mix(in srgb, var(--wall-category, var(--accent)) 35%, var(--border)); border-radius: 4px; background: color-mix(in srgb, var(--panel) 75%, transparent); font: inherit; font-size: 11px; cursor: pointer; }
 .wallActions button:hover, .wallRelated button:hover, .wallJobs button:hover { background: var(--panel-2); }
 .wallActions button[data-primary="true"] { font-weight: 650; }
-.wallActions button[data-action="retire"], .wallActions button[data-action="reject"] { color: var(--muted); }
+.wallActions button[data-action="delete"], .wallActions button[data-action="reject"] { color: var(--muted); }
 .wallJobStatus { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
 .wallJobStatus[data-error="true"], .wallFormError { color: var(--danger); }
 .wallRelated { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }

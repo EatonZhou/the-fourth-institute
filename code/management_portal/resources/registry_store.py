@@ -36,9 +36,9 @@ _DDL = (
     )
     """,
     "CREATE INDEX registry_documents_revision_idx ON registry_documents(collection, revision)",
-    "CREATE TABLE retired_identities (resource_id TEXT PRIMARY KEY)",
+    "CREATE TABLE deleted_identities (resource_id TEXT PRIMARY KEY)",
 )
-_TABLES = frozenset({"registry_meta", "registry_collections", "registry_documents", "retired_identities"})
+_TABLES = frozenset({"registry_meta", "registry_collections", "registry_documents", "deleted_identities"})
 
 
 def _encode(document: Mapping[str, Any]) -> str:
@@ -113,7 +113,7 @@ class RegistryWriter:
 
     def put(self, collection: str, document_id: str, document: Mapping[str, Any]) -> None:
         self._check(collection)
-        from .retired_identity_boundary import check_registry_write
+        from .deleted_identity_boundary import check_registry_write
         check_registry_write(self._connection, self._schema_name, collection, str(document_id), document)
         revision = self._next_revision(collection)
         self._connection.execute(

@@ -126,7 +126,7 @@
 
   const element = name => document.getElementById(`wall${name}`);
   const labels = { design: window.PortalI18n.t("设计"), improvement: window.PortalI18n.t("改进"), dev: window.PortalI18n.t("Dev 已完成"), inconsistency: window.PortalI18n.t("不一致"), direction: window.PortalI18n.t("方向") };
-  const actionLabels = { implement: window.PortalI18n.t("请实现"), publish: window.PortalI18n.t("发布"), "publish-all": window.PortalI18n.t("全量发布"), reject: window.PortalI18n.t("拒绝"), retire: window.PortalI18n.t("抛弃"), "align-design": window.PortalI18n.t("改规范"), "align-code": window.PortalI18n.t("改实现"), "approve-direction": window.PortalI18n.t("开始推进"), discuss: window.PortalI18n.t("讨论"), analyse: window.PortalI18n.t("分析"), verify: window.PortalI18n.t("全面回归"), stop: window.PortalI18n.t("停止") };
+  const actionLabels = { implement: window.PortalI18n.t("请实现"), publish: window.PortalI18n.t("发布"), "publish-all": window.PortalI18n.t("全量发布"), reject: window.PortalI18n.t("拒绝"), delete: window.PortalI18n.t("抛弃"), "align-design": window.PortalI18n.t("改规范"), "align-code": window.PortalI18n.t("改实现"), "approve-direction": window.PortalI18n.t("开始推进"), discuss: window.PortalI18n.t("讨论"), analyse: window.PortalI18n.t("分析"), verify: window.PortalI18n.t("全面回归"), stop: window.PortalI18n.t("停止") };
   const jobLabels = { queued: window.PortalI18n.t("已排队"), routing: window.PortalI18n.t("分配 Resident 中"), preparing: window.PortalI18n.t("准备工作区与任务中"), running: window.PortalI18n.t("进行中"), completed: window.PortalI18n.t("已完成"), blocked: window.PortalI18n.t("需要处理"), failed: window.PortalI18n.t("失败"), cancelled: window.PortalI18n.t("已停止"), stopping: window.PortalI18n.t("停止中") };
   const activeStatuses = new Set(["queued", "routing", "preparing", "running", "stopping"]);
   const stageOrder = ["improvement", "dev", "design", "inconsistency"];
@@ -536,7 +536,7 @@
     if (kind === "improvement") return ["implement", "reject"];
     if (kind === "inconsistency") return ["align-design", "align-code", "reject"];
     if (kind === "direction") return ["approve-direction", "reject"];
-    return ["retire"];
+    return ["delete"];
   }
 
   function renderActions(host, block, detail = false) {
@@ -1184,7 +1184,7 @@
     if (binding?.status === "bound") {
       const link = document.createElement("a");
       link.href = binding.url;
-      link.textContent = window.PortalI18n.text`主测试 · ${binding.title || binding.case_id}${binding.lifecycle === "retired" ? window.PortalI18n.t("（已退役）") : ""}`;
+      link.textContent = window.PortalI18n.text`主测试 · ${binding.title || binding.case_id}${binding.lifecycle === "deleted" ? window.PortalI18n.t("（已删除）") : ""}`;
       link.dataset.boundTest = binding.case_id;
       bindingHost.append(link);
     } else {
@@ -1259,7 +1259,7 @@
     const project = state.project;
     const key = actionKey(project, id || jobId || name);
     if (state.pending.has(key)) return;
-    if (["retire", "reject"].includes(name)) {
+    if (["delete", "reject"].includes(name)) {
       const block = state.blocks.get(id);
       const descriptions = {
         improvement: window.PortalI18n.t("从 Plan 中移除这项建议，保留现有代码。"),
@@ -1268,7 +1268,7 @@
       };
       const approved = await window.PortalUI.confirm({
         title: window.PortalI18n.text`${actionLabels[name]}这个点？`, message: block?.title || id,
-        description: name === "retire" ? window.PortalI18n.t("移除对应功能实现并更新规范。") : descriptions[block?.kind],
+        description: name === "delete" ? window.PortalI18n.t("移除对应功能实现并更新规范。") : descriptions[block?.kind],
         confirmLabel: actionLabels[name], tone: "danger",
       });
       if (!approved || project !== state.project || state.pending.has(key)) return;

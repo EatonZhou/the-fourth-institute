@@ -15,7 +15,7 @@ from typing import Any
 from management_portal import permission_system, portal_features, resource_identity_backend as repos
 from .providers.common import canonical_record
 from .registry_store import announce_registry_changes, get_registry_store
-from .retired_identity_boundary import reject_retired
+from .deleted_identity_boundary import reject_deleted
 
 RECOVERIES = "repo_registration_recoveries"
 
@@ -187,9 +187,9 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
                 "restored_sha256": record_digest(result),
                 "revision_evidence": revision, "unavailable_historical_heads": unavailable_heads,
             }
-            # Explicit retirement is stronger than a historical registration.
+            # Explicit deletion is stronger than a historical registration.
             # Any error rolls back all replacements and the recovery receipt.
-            reject_retired(writer.connection, store.database.schema, [resource_id])
+            reject_deleted(writer.connection, store.database.schema, [resource_id])
             repos._put_repo(writer, result)
             for rid in expected:
                 writer.delete(repos.REPO_COLLECTION, rid)

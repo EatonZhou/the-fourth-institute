@@ -200,7 +200,7 @@ class Store:
 
     @staticmethod
     def _require_live_manifest(connection, resource_id, data):
-        from management_portal.resources.retired_identity_boundary import require_live_identity
+        from management_portal.resources.deleted_identity_boundary import require_live_identity
         parents = [rid for binding in data.get('bindings', {}).values()
                    for rid in [binding['lineage_id'], *binding.get('residents', {}).values()]]
         require_live_identity(connection, resource_id, parents=parents)

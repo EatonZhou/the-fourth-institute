@@ -60,8 +60,8 @@ def _inspect(store, connection, resource_id, *, locked=False):
     result['typed'] = _row(connection.execute(
         f'SELECT xmin::text AS xmin,to_jsonb(r)::text AS raw FROM "{authority.schema}".residents r '
         'WHERE resident_id=%s' + suffix, (resource_id,)).fetchone())
-    result['retired'] = bool(connection.execute(
-        f'SELECT resource_id FROM "{schema}".retired_identities WHERE resource_id=%s', (resource_id,)).fetchone())
+    result['deleted'] = bool(connection.execute(
+        f'SELECT resource_id FROM "{schema}".deleted_identities WHERE resource_id=%s', (resource_id,)).fetchone())
     return result
 
 
@@ -107,7 +107,7 @@ def quarantine_resident_memo(store, resource_id, *, expected, archive_path, acto
         if connection.execute('SHOW transaction_isolation').fetchone()['transaction_isolation'] != 'read committed':
             raise ValueError('Maintenance requires a fresh read-committed transaction')
         acquired = connection.execute('SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0)) AS acquired',
-            (store.database.schema + ':retired-identity:' + resource_id,)).fetchone()['acquired']
+            (store.database.schema + ':deleted-identity:' + resource_id,)).fetchone()['acquired']
         if not acquired:
             raise ValueError('Concurrent identity writer; repeat the complete preflight')
         current = _inspect(store, connection, resource_id, locked=True)
@@ -115,7 +115,7 @@ def quarantine_resident_memo(store, resource_id, *, expected, archive_path, acto
         if prior:
             receipt = json.loads(prior['raw'])
             if (receipt.get('request_sha256') == request_sha and current['source'] is None
-                    and current['retired'] and current['evidence'] == expected['evidence']
+                    and current['deleted'] and current['evidence'] == expected['evidence']
                     and all(current[k] == expected[k] for k in ('public', 'typed'))):
                 return {**receipt, 'changed': False}
             raise ValueError('CAS conflict with existing maintenance receipt')
@@ -141,7 +141,7 @@ def quarantine_resident_memo(store, resource_id, *, expected, archive_path, acto
                        request_sha256=request_sha, proof_recovered=False)
         archive_sha = _archive(archive_path, {'maintenance': receipt, 'before': current})
         receipt['archive_sha256'] = archive_sha
-        connection.execute(f'INSERT INTO "{store.database.schema}".retired_identities(resource_id) '
+        connection.execute(f'INSERT INTO "{store.database.schema}".deleted_identities(resource_id) '
                            'VALUES (%s) ON CONFLICT DO NOTHING', (resource_id,))
         writer.put(QUARANTINE_COLLECTION, resource_id, receipt)
         if not writer.delete(SOURCE_COLLECTION, resource_id):

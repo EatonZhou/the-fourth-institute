@@ -265,7 +265,7 @@ class CatalogRepository:
                 continue
             if lifecycle and case.lifecycle not in lifecycle:
                 continue
-            if current and case.lifecycle == "retired":
+            if current and case.lifecycle == "deleted":
                 continue
             if runners and not runners.intersection({item.runner for item in case.implementations} or {"none"}):
                 continue

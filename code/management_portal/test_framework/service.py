@@ -88,13 +88,13 @@ class TestFrameworkService:
     def query_overview(self, *, actor: str = "") -> dict[str, Any]:
         """The Test page's overview: catalog figures per module, recent runs and TAU slots, without case rows.
 
-        Retired cases are left out of every figure.  The catalog page reads its
+        Deleted cases are left out of every figure.  The catalog page reads its
         cases a page at a time (``query_page``), so the overview stays small
         however large the catalog grows.  Each recent run also names how many
         cases it selected, their modules and, for a single case, its title.
         """
         all_cases, catalog_errors = self.catalog.projection()
-        cases = [case for case in all_cases if case.lifecycle != "retired"]
+        cases = [case for case in all_cases if case.lifecycle != "deleted"]
         members: dict[str, list[Any]] = {}
         for case in cases:
             members.setdefault(case.module, []).append(case)
@@ -138,7 +138,7 @@ class TestFrameworkService:
     def query_page(self, request: dict[str, Any] | None = None, *, offset: int = 0, limit: int = 100) -> dict[str, Any]:
         """One page of the catalog list: the browse fields of the matching cases.
 
-        Retired cases are left out unless the request names lifecycles.  The
+        Deleted cases are left out unless the request names lifecycles.  The
         list runs module by module in taxonomy order, most important first, so
         a page shows each module's cases together.  ``count`` is the number of
         matches; ``limit`` is at most 500.
