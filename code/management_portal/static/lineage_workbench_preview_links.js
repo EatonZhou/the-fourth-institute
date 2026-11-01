@@ -154,11 +154,20 @@
     }
 
     async function openWorkspaceResource(workspaceId, { isCurrent = () => true } = {}) {
-      const resolved = await apiGet(`/api/resources/resolve?address=${encodeURIComponent(workspaceId)}`);
+      let resolved;
+      try {
+        resolved = await apiGet(`/api/resources/resolve?address=${encodeURIComponent(workspaceId)}`);
+      } catch (error) {
+        if (!isCurrent()) return false;
+        if (error?.status === 404 || error?.status === 403) {
+          throw new Error(window.PortalI18n.t("Workspace 已删除或不可用"));
+        }
+        throw error;
+      }
       if (!isCurrent()) return false;
       const path = String(resolved?.record?.attributes?.path || "");
       if (resolved?.resource_type !== "workspace" || !resolved.exists || !path) {
-        throw new Error("Workspace 已删除或不可用");
+        throw new Error(window.PortalI18n.t("Workspace 已删除或不可用"));
       }
       setSideView("workspaces", { userInitiated: true, openingResource: true });
       currentLineageWorkbench()?.focusPanel("navigation");

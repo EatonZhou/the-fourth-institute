@@ -10,7 +10,7 @@ const deferred = () => {
   return {promise, resolve, reject};
 };
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function page({identity, resolveResource, readRoot} = {}) {
+function page({identity, resolveResource, readRoot, language = 'zh-CN'} = {}) {
   const opened = [], urls = [], errors = [], focus = [], reads = [];
   const state = {loadAllSeq: 0, sideViewInteractionSeq: 0, chatTarget: null, residents: [], sideView: 'agents'};
   const nodes = new Map();
@@ -28,7 +28,8 @@ function page({identity, resolveResource, readRoot} = {}) {
       location: {search: '?workspace=workspace_sample'},
       PortalIdentity: {load: identity || (async () => ({username: 'viewer'})), listUIAssociations: async () => ({items: []})},
       PortalLineageCatalogs: {projectCatalog: async () => ({}), users: async () => [], agentBackends: async () => ({}), populateBackends() {}},
-      PortalI18n: {t: text => text, text: (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] || ''), '')},
+      PortalI18n: {t: text => require('../../../management_portal/static/portal_translations.json')[text]?.[language] || text,
+        text: (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] || ''), '')},
       PortalUI: {toast: message => errors.push(message)},
       PortalNavigation: {normalizeLineageView: value => value},
     },
@@ -134,4 +135,42 @@ test('an unavailable resource reports failure without fabricating a directory', 
   assert.equal(p.errors.length, 1);
   assert.match(p.errors[0], /Workspace 已删除或不可用/);
   assert.equal(p.urls.length, 0);
+});
+
+for (const status of [403, 404]) {
+  for (const language of ['zh-CN', 'en']) {
+  test(`Workspace resolution HTTP ${status} gives ${language} unavailable feedback and never opens a stale path`, async () => {
+    const p = page({language, resolveResource: async () => {
+      throw Object.assign(new Error("'workspace_sample'"), {status});
+    }});
+    await p.load();
+    assert.equal(p.opened.length, 0);
+    assert.equal(p.errors.length, 1);
+    assert.match(p.errors[0], language === 'en' ? /Workspace has been deleted or is unavailable/ : /Workspace 已删除或不可用/);
+    assert.equal(p.urls.length, 0);
+  });
+  }
+}
+
+test('a late Workspace 404 does not report against the newly selected view', async () => {
+  const response = deferred();
+  const p = page({resolveResource: () => response.promise});
+  const loading = p.load(); await tick();
+  p.navigate('chatrooms');
+  response.reject(Object.assign(new Error("'workspace_sample'"), {status: 404}));
+  await loading;
+  assert.deepEqual(p.errors, []);
+  assert.equal(p.state.sideView, 'chatrooms');
+  assert.equal(p.opened.length, 0);
+});
+
+test('Workspace service failures keep their actual error classification', async () => {
+  const p = page({resolveResource: async () => {
+    throw Object.assign(new Error('service temporarily unavailable'), {status: 503});
+  }});
+  await p.load();
+  assert.equal(p.opened.length, 0);
+  assert.equal(p.errors.length, 1);
+  assert.match(p.errors[0], /service temporarily unavailable/);
+  assert.doesNotMatch(p.errors[0], /Workspace 已删除或不可用/);
 });

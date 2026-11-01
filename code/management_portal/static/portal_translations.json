@@ -1,4 +1,5 @@
 {
+  "Workspace 已删除或不可用": {"zh-CN": "Workspace 已删除或不可用", "en": "Workspace has been deleted or is unavailable"},
   "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。": {"zh-CN": "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。", "en": "Create a Portal-managed Workspace at an empty location; delete it with its owning object."},
   "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。": {"zh-CN": "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。", "en": "Register an existing directory as a new Workspace; unregistering removes the record and preserves the directory."},
   "区域内或区域外的绝对目录路径": {"zh-CN": "区域内或区域外的绝对目录路径", "en": "Absolute directory path inside or outside instance areas"},
