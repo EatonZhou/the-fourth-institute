@@ -19,7 +19,7 @@ const currentProgrammingInspectors=new Function('require','frameworkRoot',contro
     await page.route('**/*', route => {
       const name = new URL(route.request().url()).pathname;
       if (name.startsWith('/static/')) return route.fulfill({body: fs.readFileSync(path.join(portal, name)), contentType: name.endsWith('.css') ? 'text/css' : 'text/javascript'});
-      return route.fulfill({contentType: 'text/html', body: '<!doctype html><div class="portalHatgPanelComponent">' + fs.readFileSync(path.join(portal, 'hatg-panel.html'), 'utf8') + '</div>'});
+      return route.fulfill({contentType: 'text/html; charset=utf-8', body: '<!doctype html><meta charset="utf-8"><div class="portalHatgPanelComponent">' + fs.readFileSync(path.join(portal, 'hatg-panel.html'), 'utf8') + '</div>'});
     });
     await page.goto('http://effect-inspector.fixture.invalid');
     for (const name of ['portal_design_system', 'portal_themes', ...HATG_PANEL_STYLES]) await page.addStyleTag({url: '/static/' + name + '.css'});
@@ -112,6 +112,37 @@ const currentProgrammingInspectors=new Function('require','frameworkRoot',contro
     assert.equal(await wirePanel.locator('[data-program-delete]').isVisible(),true);
     assert.equal(await page.locator('#relationInspectorPanel').count(),1);
     assert.equal(await page.locator('#relationInspectorPanel').isVisible(),false,'program wires do not use the Resident relationship Inspector');
+    // Render a real Trigger Path association. The service data are fixtures;
+    // its DETAILS, SUMMARY and paragraphs come from the production renderer.
+    await page.evaluate(() => {
+      window.PortalScriptRuns={mount:()=>({destroy(){}})};
+      const module=window.PortalHatgProgramInspectorObservation;
+      const provided={state:{lineage:{lineage_id:'fixture'}},esc:PortalUIPrimitives.escapeHtml,
+        displayNodeById:id=>({title:id}),programComponentById:()=>null,formatDate:x=>x,
+        executeHatgInstruction:async()=>({}),programEffectRuntime:()=>({}),
+        societyService:{getTriggerPath:async()=>({path:{status:'completed',root_kind:'event',root_node_id:'event',cause_kind:'execution',cause_id:'execution-original',occurred_at:'now'},
+          steps:{items:[]},execution_links:{items:[{step_id:'step-original',execution_id:'execution-original'}]},
+          executions:{items:[{execution_id:'execution-original',agent_id:'resident_original',status:'completed'}]}})}};
+      const view=module.createObservation(provided),panel=document.getElementById('programInspectorPanel');
+      panel.innerHTML=view.programTriggerPathObservationHtml('trigger-original');
+      view.bindProgramTriggerPathObservation(panel,'trigger-original');
+    });
+    assert.ok(!prompt.includes('再核对其真实链接与可见内容'),
+      'the public contract must not require links absent from the native association');
+    const {readTriggerPathExecution}=require('../../../management_portal/test_framework/tau_trigger_path_evidence');
+    const expected={triggerPathId:'trigger-original',stepId:'step-original',executionId:'execution-original',residentId:'resident_original',status:'completed'};
+    await panel.locator('[data-trigger-path-executions]').waitFor({state:'attached'});
+    assert.equal((await readTriggerPathExecution(panel,expected)).ready,false,'collapsed text is not visible evidence');
+    await panel.locator('details > summary').click();
+    const original=await readTriggerPathExecution(panel,expected);
+    assert.equal(original.ready,true,JSON.stringify(original));
+    assert.equal(await panel.getByRole('link').count(),0,'the native association is text, not a link');
+    for (const key of Object.keys(expected))
+      assert.equal((await readTriggerPathExecution(panel,{...expected,[key]:'wrong'})).ready,false,key);
+    await panel.locator('details > summary').click();
+    assert.equal((await readTriggerPathExecution(panel,expected)).ready,false);
+    assert.ok(prompt.includes('这里的关联是普通文本，不是可点击链接'));
+    assert.ok(!prompt.includes('再核对其真实链接与可见内容'));
     assert.deepEqual(errors, []);
     console.log('Effect diagnostics stay visible while scrolling at wide/narrow widths; long script wraps without changing its value');
   } finally {await browser.close();}
