@@ -10,7 +10,7 @@ def repo(tmp_path):
         development.git(root, *args)
     for name in ('a.txt', 'b.txt', 'removed.txt'):
         (root / name).write_text('original')
-    (root / '.gitignore').write_text('*.secret\nportal_instances/\n__pycache__/\n')
+    (root / '.gitignore').write_text('*.secret\n__pycache__/\n')
     development.git(root, 'add', '.')
     development.git(root, 'commit', '-qm', 'base')
     return root
