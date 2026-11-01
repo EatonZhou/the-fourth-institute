@@ -153,7 +153,8 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
             "lineage_membership": "formal",
             "title": "私人会话",
             "revision": 1,
-            "nodes": [{"id": "resident_bbbbbbbbbbbb"}],
+            "nodes": [{"id": "resident_bbbbbbbbbbbb"},
+                      {"id": "resident_ce3e24fc60e0", "title": "project canvas reference"}],
         },
     }
 
@@ -170,7 +171,9 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
         @staticmethod
         def get_many(resident_ids):
             return [
-                {"resident_id": resident_id, "registration_state": "ready"}
+                {"resident_id": resident_id, "registration_state": "ready",
+                 "lineage_id": ("lineage_bbbbbbbbbbbb" if resident_id == "resident_bbbbbbbbbbbb"
+                                else "lineage_aaaaaaaaaaaa")}
                 for resident_id in resident_ids if resident_id not in deleted_ids
             ]
 
@@ -179,6 +182,10 @@ def test_internal_discovery_catalog_contains_all_formal_lineage_residents(
     result = lineage_reads.list_resident_discovery_catalog("portal")
 
     assert result["schema"] == "tfi.resident-discovery-catalog.v1"
+    home = next(r for r in result['residents'] if r['resident_id'] == 'resident_ce3e24fc60e0')
+    assert home['lineage_id'] == 'lineage_aaaaaaaaaaaa'
+    assert home['lineage_title'] == '小白皮书'
+    assert home['title'] == '小白皮书'
     assert [item["resident_id"] for item in result["residents"]] == [
         "resident_940bafd3df55",
         "resident_bbbbbbbbbbbb",

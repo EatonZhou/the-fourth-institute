@@ -241,7 +241,7 @@ def list_resident_discovery_catalog(actor: str) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
     if not get_portal_access_store().is_service_actor(actor_id):
         raise PermissionError("Resident Discovery catalog requires a service actor")
-    records: dict[str, dict[str, Any]] = {}
+    records: dict[str, dict[str, dict[str, Any]]] = {}
     for catalog_item in lineage_aggregate.lineage_catalog_store().snapshot():
         lineage_id = str(catalog_item.get("lineage_id") or "").strip()
         if not lineage_id:
@@ -257,7 +257,7 @@ def list_resident_discovery_catalog(actor: str) -> dict[str, Any]:
             resident_id = _node_resident_id(node)
             if not resident_id:
                 continue
-            records[resident_id] = {
+            records.setdefault(resident_id, {})[lineage_id] = {
                 "resident_id": resident_id,
                 "lineage_id": lineage_id,
                 "lineage_title": lineage_title,
@@ -272,14 +272,19 @@ def list_resident_discovery_catalog(actor: str) -> dict[str, Any]:
                 "lineage_revision": int(lineage.get("revision") or 0),
                 "lineage_refresh_signature": str(lineage.get("updated_at") or ""),
             }
-    active_ids = {
-        record["resident_id"]
-        for record in resident_catalog.get_catalog().get_many(records)
-        if resident_catalog.registration_ready(record)
-    }
+    # Project canvases also contain references to other Lineages' Leaders.
+    # A discovery projection must select the member's canonical home, never
+    # whichever canvas happened to be traversed last.
+    active = []
+    for record in resident_catalog.get_catalog().get_many(records):
+        if not resident_catalog.registration_ready(record):
+            continue
+        projected = records[record["resident_id"]].get(record["lineage_id"])
+        if projected is not None:
+            active.append(projected)
     return {
         "schema": "tfi.resident-discovery-catalog.v1",
-        "residents": [records[key] for key in sorted(records) if key in active_ids],
+        "residents": sorted(active, key=lambda item: item["resident_id"]),
     }
 
 

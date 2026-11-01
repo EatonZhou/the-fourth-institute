@@ -110,6 +110,8 @@ def main(argv=None):
     parse_common(parser)
     parser.add_argument('--program-root', type=Path, default=Path('/opt/tfi'))
     parser.add_argument('--resume', action='store_true', help='resume a report whose directory moves completed')
+    parser.add_argument('--resident-contract', action='store_true',
+                        help='reconcile Resident folders after an earlier Lineage migration')
     args = parser.parse_args(argv)
     instance, document, _ = read_instance(args.root)
     os.environ['PORTAL_INSTANCE_ROOT'] = str(instance.root)
@@ -121,12 +123,34 @@ def main(argv=None):
             require_offline(instance, running=('postgres',))
             require_database_alone(conn)
         projects = dict(conn.execute('SELECT lineage_id,project_id FROM lineage.lineages').fetchall())
+        from scripts import instance_resident_relocation
+        residents = instance_resident_relocation.resident_rows(conn)
     result = json.loads(args.report.read_text()) if args.resume else plan(instance, projects, args.program_root)
+    if args.resident_contract:
+        result = instance_resident_relocation.plan(instance, residents)
+    elif not args.resume:
+        result['resident_folders'] = instance_resident_relocation.plan(
+            instance, residents, [Move(**m) for m in result['moves']])
     report = Report('migrate_instance_lineages', str(instance.root), args.apply)
     report.sections = result
     write_report(args.report, report)
+    if args.resident_contract:
+        if args.apply:
+            result['outcome'] = instance_resident_relocation.apply(instance, result)
+            write_report(args.report, report)
+            remainder = instance_resident_relocation.plan_remainders(instance, result, projects)
+            result['lineage_remainders'] = remainder
+            write_report(args.report, report)
+            result['remainder_outcome'] = instance_resident_relocation.apply(instance, remainder)
+            write_report(args.report, report)
+            outcome = result['outcome']
+            if any(o['files'].get('errors') or any(s['errors'] or s['conflicts'] for s in o['sessions'])
+                   for o in (outcome, result['remainder_outcome'])):
+                raise RuntimeError('Resident relocation has file/session issues; inspect report')
+        print(json.dumps({'residents': len(result['residents']), 'conflicts': len(result['conflicts'])}))
+        return 0
     if args.apply:
-        if result['conflicts']:
+        if result['conflicts'] or result.get('resident_folders', {}).get('conflicts'):
             raise RuntimeError('Lineage relocation conflicts; see report')
         moves = [Move(**m) for m in result['moves']]
         if args.resume:
@@ -149,6 +173,21 @@ def main(argv=None):
         write_report(args.report, report)
         from management_portal.provider_session_relocation import relocate_provider_sessions
         result['sessions'] = [relocate_provider_sessions(old, new) for old, new in mapping.pairs]
+        # Sources are now at their moved names. Read the same registrations
+        # through those prefix moves so already completed moves are resumable.
+        relocated_rows = [(rid, lid, project, mapping.map(str(instance.resolve(path))) or path)
+                          for rid, lid, project, path in residents]
+        resident_plan = instance_resident_relocation.plan(instance, relocated_rows)
+        result['resident_folders'] = resident_plan
+        write_report(args.report, report)
+        result['resident_outcome'] = instance_resident_relocation.apply(instance, resident_plan)
+        remainder = instance_resident_relocation.plan_remainders(instance, resident_plan, projects)
+        result['lineage_remainders'] = remainder
+        write_report(args.report, report)
+        result['remainder_outcome'] = instance_resident_relocation.apply(instance, remainder)
+        # The database path converter reads this report's top-level aliases.
+        result['aliases'].extend([*resident_plan['moves'], *resident_plan['aliases'],
+                                  *remainder['moves'], *remainder['aliases']])
         result['removed_empty'] = remove_empty_directories(Path(p) for p in result['empty'])
         def relocate(value):
             if isinstance(value, dict):
@@ -165,7 +204,11 @@ def main(argv=None):
         document['services']['programs'] = relocate(document['services'].get('programs', {}))
         atomic_json(instance.root / 'instance.json', document)
         write_report(args.report, report)
-        if result['text_rewrites'].get('errors') or any(r['errors'] or r['conflicts'] for r in result['sessions']):
+        if (result['text_rewrites'].get('errors') or any(r['errors'] or r['conflicts'] for r in result['sessions'])
+                or result['resident_outcome']['files'].get('errors')
+                or any(r['errors'] or r['conflicts'] for r in result['resident_outcome']['sessions'])
+                or result['remainder_outcome']['files'].get('errors')
+                or any(r['errors'] or r['conflicts'] for r in result['remainder_outcome']['sessions'])):
             raise RuntimeError('Relocation completed with text/session issues; see report before starting')
     print(json.dumps({'moves': len(result['moves']), 'links': len(result['links']), 'conflicts': len(result['conflicts'])}))
     return 0
