@@ -11,7 +11,7 @@
 - 新建 Resident 可使用 `backend_role` 或明确的 provider/account/settings；具体继承、默认角色及回退以当前创建结果和设置回读为准。修改角色不代表已经改写所有既有 Resident。
 - 订阅账号的 `config.account_dir` 是 Provider 目录的规范绝对路径，不允许软链接。登记时必须明确提供目录，不设默认位置。已有目录直接登记；不存在时在指定位置创建空目录。
 - 新建订阅账号必须填写目录字段；接入已有登录时直接登记现有目录，不复制凭据。删除登记保留目录，Portal 不移动或改名目录。
-- 启动 Provider 只用登记路径设置 `CODEX_HOME`、`CLAUDE_CONFIG_DIR` 等变量。每个主机目录最多有一个 Portal 管理的常驻进程，父目录中的主机锁被占用时报冲突。终端直接运行 CLI 不受此锁约束。
+- 启动 Provider 只用登记路径设置 `CODEX_HOME`、`CLAUDE_CONFIG_DIR` 等变量。每个实例运行自己的常驻进程；多个实例与终端 CLI 可以共享同一账号目录里的登录和会话，由 Provider 自己协调登录刷新。进程控制记录、socket 和 Windows Job 身份归各实例所有，启停只作用于本实例的进程。
 - Portal 的 socket、索引备份、启动记录和锁放在实例 runtime，不写进 Provider 目录。不要硬编码源站路径或 service 名称。
 - 使用现有程序或账号需按该 Provider 的实际接入方式验证。只在缺失时按支持的安装流程补依赖；失败时保留诊断，不用伪造 ready 状态绕过。
 
