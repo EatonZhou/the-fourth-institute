@@ -210,18 +210,18 @@ def unpack_engineering(platform, *, included=True, progress=None, archive=None, 
     return destination / 'manifest.json'
 
 
-def required_long_path(platform, *, root=None):
+def required_long_path(platform, *, root=None, name=INSTANCE):
     """Check the extracted bundle and the new instance's area copies, in UTF-16 units.
 
     The default instance root is the installer's (host_instances.default_root).
     """
     from management_common import host_instances
-    if INSTANCE in host_instances.read_registry():
+    if name in host_instances.read_registry():
         return None  # Already created; a retry extracts no new bundle.
     archive = selected_engineering(platform, include_examples(platform))
     if not archive.is_file():
         return None
-    root = Path(root) if root is not None else host_instances.default_root(INSTANCE)
+    root = Path(root) if root is not None else host_instances.default_root(name)
     with zipfile.ZipFile(archive) as zipped:
         spec = json.loads(zipped.read('manifest.json'))
     rows = [row['path'] for row in spec['inventory']]
@@ -275,11 +275,26 @@ class DefaultStartup:
     name = INSTANCE
     engineering_parent = ".build/w"
 
-    def __init__(self, platform, progress=lambda message: None):
+    def __init__(self, platform, progress=lambda message: None, *, instance=None):
         self.platform = Path(platform)
+        self.selected_name = instance
+        if instance is not None:
+            self.name = instance
         self.progress = progress
         self.log_path = self.platform / ".build/windows/logs/example_instance.log"
         self.timings = []
+
+    def choices(self):
+        return [instance.name for instance in platform_instances(self.platform)]
+
+    def select(self, name):
+        if name not in self.choices():
+            raise ValueError("所选实例不属于此程序，或已被退役。")
+        self.selected_name = self.name = name
+
+    def validate_selection(self):
+        if self.selected_name is not None:
+            self.select(self.selected_name)
 
     def timed(self, stage, action):
         started = time.monotonic()
@@ -411,6 +426,7 @@ class DefaultStartup:
         if is_elevated_process():
             raise RuntimeError("请关闭此窗口，直接双击桌面图标启动 Portal；不要选择“以管理员身份运行”。"
                                "当前用户模式的数据库不能在提升的管理员进程中启动。")
+        self.validate_selection()
         initialized = not self.registered() or bool(start_blocker(self.instance()))
         if initialized:
             self.timed("initialize", self.initialize)
@@ -499,7 +515,27 @@ class Launcher:
         ttk.Button(self.failure, text="查看日志", command=self.open_log).pack(side="left", padx=5)
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(100, self.poll)
-        root.after_idle(self.begin)
+        choices = self.flow.choices()
+        if self.flow.selected_name is None and len(choices) > 1:
+            self.status.set("选择要打开的实例")
+            self.selection = ttk.Frame(frame)
+            self.selection.pack(fill="x", pady=12)
+            selected = tk.StringVar(value=self.flow.name if self.flow.name in choices else choices[0])
+            ttk.Combobox(self.selection, textvariable=selected, values=choices,
+                         state="readonly").pack(side="left", fill="x", expand=True)
+            def open_selected():
+                try:
+                    self.flow.select(selected.get())
+                except ValueError as error:
+                    self.fail(str(error))
+                    return
+                self.selection.destroy()
+                self.begin()
+            ttk.Button(self.selection, text="打开实例", command=open_selected).pack(side="right", padx=8)
+        else:
+            if self.flow.selected_name is None and len(choices) == 1:
+                self.flow.select(choices[0])
+            root.after_idle(self.begin)
 
     def begin(self):
         if self.busy:
@@ -572,6 +608,7 @@ class Launcher:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--instance", help="Open an existing instance registered to this program")
     parser.add_argument("--stop-all", action="store_true")
     parser.add_argument("--uninstall-platform", action="store_true")
     parser.add_argument("--remove-instances", action="store_true")
@@ -599,22 +636,24 @@ def main():
         stop_all(PLATFORM)
         return
     with launcher_lock(PLATFORM):
-        restart = launch_desktop()
+        restart = launch_desktop(instance=args.instance)
     if restart:
         # Windows caches long-path support per process. Start a fresh ordinary
         # user process, only after releasing this launcher's exclusive lock.
-        subprocess.Popen([sys.executable, str(Path(__file__))], cwd=PLATFORM,
+        subprocess.Popen([sys.executable, str(Path(__file__)), *(["--instance", args.instance] if args.instance else [])], cwd=PLATFORM,
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, close_fds=True,
                          creationflags=subprocess.CREATE_NO_WINDOW)
 
 
-def launch_desktop():
+def launch_desktop(*, instance=None):
     import tkinter as tk
     from tkinter import messagebox
     root = tk.Tk()
     brand_window(root)
-    long_path = required_long_path(PLATFORM) if not long_paths_enabled() else None
+    flow = DefaultStartup(PLATFORM, instance=instance)
+    flow.validate_selection()
+    long_path = required_long_path(PLATFORM, name=flow.name) if not long_paths_enabled() else None
     if long_path:
         root.withdraw()
         if not messagebox.askyesno("启用 Windows 长路径",
@@ -626,7 +665,7 @@ def launch_desktop():
             root.destroy()
             return False
         return wait_for_long_path_setup(root)
-    Launcher(root)
+    Launcher(root, flow=flow)
     root.mainloop()
     return False
 

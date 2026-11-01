@@ -373,3 +373,16 @@ class MacDesktopGUI(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_named_instance_is_validated_before_platform_update(tmp_path, monkeypatch):
+    import pytest
+    flow = launcher.MacStartup(tmp_path / "installed", bundle=tmp_path / "bundle",
+                               update=True, instance="foreign")
+    monkeypatch.setattr(flow, "choices", lambda: ["owned"])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Invalid selection must not replace code or stop instances")
+    monkeypatch.setattr(launcher, "replace_code", forbidden)
+    monkeypatch.setattr(launcher, "materialize", forbidden)
+    with pytest.raises(ValueError, match="退役"):
+        flow.run()

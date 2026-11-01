@@ -1,7 +1,7 @@
 """macOS desktop setup using the shared installer and startup controller.
 
 The immutable app copies its platform (code and dependencies) to a user-owned
-directory, by default ~/Library/TFI. The single desktop instance, ``desktop``,
+directory, by default ~/Library/TFI. The initial desktop instance, ``desktop``,
 is created by the shared installer at its default location outside that
 directory and registered on this host. A newer app updates the platform's code
 in place (the protocol's code update); the instance and its data stay.
@@ -169,8 +169,8 @@ class MacStartup(DefaultStartup):
     engineering_parent = ".build/m"
 
     def __init__(self, platform, progress=lambda message: None, *, included=True, bundle=None,
-                 update=False, instance_root=None):
-        super().__init__(platform, progress)
+                 update=False, instance_root=None, instance=None):
+        super().__init__(platform, progress, instance=instance)
         self.include = included
         self.bundle = bundle
         self.update = update
@@ -182,6 +182,7 @@ class MacStartup(DefaultStartup):
             self.log_path = self.platform.parent / ("." + self.platform.name + "-launcher") / "startup.log"
 
     def run(self):
+        self.validate_selection()
         if self.bundle is not None:
             if changed(self.bundle, self.platform):
                 if not self.update:
@@ -231,6 +232,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--platform", type=Path, default=default_platform())
+    parser.add_argument("--instance", help="Open an existing instance registered to this program")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--without-examples", action="store_true")
     parser.add_argument("--update", action="store_true", help="Replace the platform's code with this app's, keeping the instance")
@@ -250,7 +252,7 @@ def main():
     with launcher_lock(lock_root, system="macos"):
         if args.headless:
             flow = MacStartup(args.platform, print, included=not args.without_examples,
-                              bundle=args.bundle, update=args.update, instance_root=args.instance_root)
+                              bundle=args.bundle, update=args.update, instance_root=args.instance_root, instance=args.instance)
             flow.run()  # Never print the first-user invitation secret.
             print(json.dumps({"status": "ready", "instance": flow.name}))
             return
@@ -280,7 +282,8 @@ def main():
                 # Launcher runs flow.run in its worker thread; never copy a
                 # multi-hundred-MB payload on Tk's event loop.
                 Launcher(root, flow=MacStartup(args.platform, included=included.get(),
-                                              bundle=args.bundle, update=updating or args.update))
+                                              bundle=args.bundle, update=updating or args.update,
+                                              instance_root=args.instance_root, instance=args.instance))
                 frame.destroy()
             except Exception as exc:
                 messagebox.showerror("启动未完成", str(exc), parent=root)

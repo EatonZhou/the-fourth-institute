@@ -212,3 +212,57 @@ class PlatformInstances(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_explicit_selection_never_creates_missing_or_foreign_instance(tmp_path, monkeypatch):
+    flow = launcher.DefaultStartup(tmp_path, instance="second")
+    monkeypatch.setattr(flow, "choices", lambda: ["first", "second"])
+    flow.validate_selection()
+    assert flow.name == "second"
+    monkeypatch.setattr(flow, "choices", lambda: ["first"])
+    import pytest
+    with pytest.raises(ValueError, match="退役"):
+        flow.run()
+    assert not (tmp_path / ".build").exists()
+
+
+def test_desktop_multiple_instances_waits_for_choice(tmp_path, monkeypatch):
+    import pytest
+    tk = pytest.importorskip("tkinter")
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Desktop display unavailable")
+    flow = launcher.DefaultStartup(tmp_path)
+    monkeypatch.setattr(flow, "choices", lambda: ["first", "second"])
+    calls = []
+    monkeypatch.setattr(launcher.Launcher, "begin", lambda self: calls.append(self.flow.name))
+    try:
+        window = launcher.Launcher(root, flow=flow)
+        root.update()
+        assert calls == []
+        combo, button = window.selection.winfo_children()
+        combo.set("second")
+        button.invoke()
+        assert calls == ["second"] and flow.selected_name == "second"
+    finally:
+        root.destroy()
+
+
+def test_only_nondefault_instance_is_opened_without_recreating_default(tmp_path, monkeypatch):
+    import pytest
+    tk = pytest.importorskip("tkinter")
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("Desktop display unavailable")
+    flow = launcher.DefaultStartup(tmp_path)
+    monkeypatch.setattr(flow, "choices", lambda: ["remaining"])
+    calls = []
+    monkeypatch.setattr(launcher.Launcher, "begin", lambda self: calls.append(self.flow.name))
+    try:
+        launcher.Launcher(root, flow=flow)
+        root.update()
+        assert calls == ["remaining"]
+    finally:
+        root.destroy()
