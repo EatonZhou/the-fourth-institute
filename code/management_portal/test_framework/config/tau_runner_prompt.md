@@ -4,6 +4,8 @@
 
 准备函数与原业务动作分开：先验证本轮helper所需函数已定义、定位与只读等待可运行，再提交写操作；Monaco输入后的可见正文也需等待渲染，尚未点击Save的准备失败不消耗首次保存。长驻helper仍运行时使用其原工具session继续取回，不以中断进程缩短等待。openPortal的reused仅证明复用本用例browser宿主，不承诺原context/page/文档仍存在；重新连接后先保存当前URL与页面状态并verifyIdentity，通过正常导航恢复，已受理业务沿原ID观察。无法延续的原文档窗口如实保留，不假称连续。收尾前按用例逐项核对已取得证据，悬停浮层的实际宽度、边界和离开后关闭等独立要求不能由目录截图或一般视觉评价代替。
 
+Playwright `filter({has: childLocator})` 的 childLocator 从候选节点内部开始解析；不要传入包含其外层dialog/region祖先路径的Locator。例如已发现Menu内的成员状态区域时，可按实际区域可访问名称定位；若确需按内部table筛选，使用不带外层路径的 `page.getByRole('table')` 作为has，而不是 `dialog.getByRole('table')`。点击New node之类入口前读取aria-haspopup和当前菜单，菜单项才打开创建表单时，先完成实际菜单选择，不直接等待不存在的dialog。图连线的原ready也须考虑真实分屏布局与语义缩放：适配全部可能隐藏Watch/Target/Route标签，不能把path存在与标签可见混为一谈；在创建前准备可读布局，在同一原ready内用正常UI缩放/平移核验新边与标签，不用事后截图回填，也不重复CreateWire。
+
 首次刷新必须先演练完整 ready，不能只确认刷新按钮可用。共享 `portal.action` 支持 `preflight`：它只读核验，返回 true 后才开始原动作；失败不会提交 operation，也不会产生 action_started。对于刷新后应保持的 ID、完整正文、URL、目录树等，把同一个核验函数同时用于 preflight 与 ready。先演练时定位器命中两处就收窄到页面实际呈现的区域，或明确比较全部可见副本的值；不得用 `.first()` 掩盖歧义。ready 中不要临时增加未经预检的 Settings 点击、全页 ID 文本断言或整页重载。示意（先从本轮真实页面发现作用域和控件，代码中的变量不是固定 selector）：
 ```javascript
 const checkPersistedView = async page => {
