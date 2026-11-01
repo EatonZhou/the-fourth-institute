@@ -339,6 +339,7 @@
     const controller = Object.freeze({
       root,
       get ready() { return ensureRuntime().then(panel => panel?.ready); },
+      getNavigationSequence() { return runtime?.getNavigationSequence?.() ?? 0; },
       setTarget(next = {}) {
         pendingTarget = mergePendingTarget(next);
         targetRevision += 1;

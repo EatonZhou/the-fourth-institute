@@ -225,6 +225,7 @@
       const controller = Object.freeze({
         root,
         get ready() { return loadPromise; },
+        getNavigationSequence() { return state.graphController?.getNavigationSequence?.() ?? 0; },
         retry() { return startTemplateLoad(); },
         suspendLineage(lineageId) {
           const suspendedId = String(lineageId || "");

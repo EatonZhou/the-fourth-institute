@@ -11,8 +11,11 @@ const origin = 'http://home-navigation.fixture.invalid';
 const entryHref = `${origin}/lineage?resident=${residentId}&lineage=${lineageId}&open_chat=1`;
 const readinessSamples = process.argv.includes('--readiness-samples');
 const cameraSamples = process.argv.includes('--camera-samples');
+const lateCameraSamples = process.argv.includes('--late-camera-samples');
 let releaseGraph;
 const graphGate = cameraSamples ? new Promise(resolve => { releaseGraph = resolve; }) : Promise.resolve();
+let releaseCatalog;
+const catalogGate = lateCameraSamples ? new Promise(resolve => { releaseCatalog = resolve; }) : Promise.resolve();
 const sessionId = 'opaque.full-session-id-for-native-menu';
 const childId = 'resident_333333333333';
 let forked = false;
@@ -43,6 +46,7 @@ const deletedResidents = new Set();
       const resident = makeResident(targetId);
       const nodes = [makeResident(residentId), ...(forked ? [makeResident(childId)] : [])];
       let result = {};
+      if (u.pathname === '/api/agent-workbench/favorites') await catalogGate;
       if (u.pathname === '/api/me') result = { username: 'fixture' };
       if (u.pathname === '/api/agent-workbench/residents') result = { ready: true, residents: nodes,
         lineages: [{lineage_id:lineageId, title:'Fixture Lineage', leader_resident_id:residentId, project_id:'sample-project', allows:{CreateResident:true}}],
@@ -88,6 +92,10 @@ const deletedResidents = new Set();
     });
     const chat = await readResidentChatReady(root, { residentId });
     assert.equal(chat.ready, true, JSON.stringify({ chat, errors, requests }));
+    if (lateCameraSamples) {
+      await require('./tau_native_late_camera.cjs')({page, releaseCatalog, errors});
+      return;
+    }
     if (cameraSamples) {
       await require('./tau_native_camera_samples.cjs')({page, residentId, releaseGraph, errors});
       return;

@@ -549,6 +549,7 @@
         const initialChatTarget = state.chatTarget;
         state.loadAllComplete = false;
         const sideViewInteractionSeq = state.sideViewInteractionSeq;
+        const graphNavigationSequence = lineageWorkbench?.getPanel("hatg")?.getNavigationSequence?.() ?? 0;
         $id("agentList").innerHTML = consoleStateHtml("加载 Residents…", { state: "loading" });
         if (!state.residents.length) {
           $id("favoriteAgentList").innerHTML = consoleStateHtml("加载收藏…", { state: "loading" });
@@ -732,8 +733,11 @@
           if (state.chatTarget) writeLastSelection();
           syncLineageHatgPanel({
             revealInGraph: Boolean(
-              targetResidentId && targetResidentSelection
+              loadSeq === 1 && targetResidentId && targetResidentSelection
               && activeChatTargetId() === targetResidentSelection.key
+              // Secondary catalogs can finish after the graph and Chat are
+              // usable. Their completion must not undo a user's Fit/pan/zoom.
+              && (lineageWorkbench.getPanel("hatg")?.getNavigationSequence?.() ?? 0) === graphNavigationSequence
             ),
           });
           $id("searchInput").value = state.query || "";
