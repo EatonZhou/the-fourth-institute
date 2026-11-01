@@ -46,13 +46,26 @@ def _target_of(lineage_id: str, wire_id: str) -> str:
     return next(item for item in graph(lineage_id)["program"]["wires"] if item["id"] == wire_id)["target"]
 
 
-def test_facade_rename_updates_family_title_and_survives_parameter_changes(lineage, charters):
+def test_facade_rename_updates_family_title_and_survives_parameter_changes(lineage, charters, monkeypatch):
     """门面改名同步 Family 标题且后续参数更新保留名称"""
     member = resident(lineage, "Member")
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [member], "title": "Original"})
     facade = family["facade_resident_id"]
-    ok("UpdateResident", {"lineage_id": lineage, "resident_id": facade, "title": "Renamed"})
-    block = next(item for item in graph(lineage)["function_blocks"]
+    from management_portal.society_service import lineage_state, lineage_read_cache
+    monkeypatch.setattr(lineage_state, "_LINEAGE_READ_CACHE",
+                        lineage_read_cache.LineageReadCache(ttl_seconds=3600))
+    before_graph = graph(lineage)
+    before = next(item for item in before_graph["function_blocks"]
+                  if item["id"] == family["family_id"])
+    assert before["title"] == "Original"
+    # Another service process cannot invalidate this process's warm read cache.
+    with monkeypatch.context() as other_process:
+        other_process.setattr(lineage_state, "_LINEAGE_READ_CACHE", lineage_read_cache.LineageReadCache())
+        ok("UpdateResident", {"lineage_id": lineage, "resident_id": facade, "title": "Renamed"})
+    renamed_graph = graph(lineage)
+    assert renamed_graph["revision"] == before_graph["revision"], "identity rename preserves the graph authoring clock"
+    assert next(node for node in renamed_graph["nodes"] if node["id"] == facade)["title"] == "Renamed"
+    block = next(item for item in renamed_graph["function_blocks"]
                     if item["id"] == family["family_id"])
     assert block["title"] == "Renamed"
     ok("UpdateFamily", {"lineage_id": lineage, "family_id": family["family_id"],

@@ -109,7 +109,11 @@ def definition_fingerprint(
         for field in ("revision", "layout_revision", "runtime_revision")
     )
     fingerprint: list[tuple[str, int, int]] = [
-        (f"lineage:{lineage_id}:{canonical_version}", 0, 0)
+        (f"lineage:{lineage_id}:{canonical_version}", 0, 0),
+        # Identity writes may update Resident/Family titles without authoring
+        # the graph. Check the canonical definition already read here; a
+        # writer's local invalidation cannot reach another reader process.
+        (f"definition:{definition_refresh_signature(lineage)}", 0, 0),
     ]
     # Invocation history changes independently of relation-work revisions.
     observations = [(node.get("id"), node.get("status"), node.get("last_execution"))
