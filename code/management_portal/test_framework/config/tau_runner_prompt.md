@@ -48,7 +48,8 @@ async function currentNativeTab(page, name) {
 }
 async function nativeEntryDestination(button) {
   const popup = await button.getAttribute('aria-haspopup');
-  return popup === 'menu' || popup === 'true' ? 'menu' : 'dialog';
+  if (popup === 'menu' || popup === 'true') return 'menu';
+  return popup === 'dialog' ? 'dialog' : null;
 }
 async function currentStatusTexts(scope) {
   return scope.getByRole('status').evaluateAll(nodes => nodes.map(node => node.textContent.trim()));
@@ -74,6 +75,8 @@ async function currentProgrammingInspectors(page) {
 ```
 
 运行设置中的账号替换返回completed时，原生dialog会自动关闭。原ready核验同一原回执、目标账号/设置及对话框关闭，截图当前可见页面；不要给已经关闭的dialog截图并等待超时，也不要为补原截图重新打开。currentNativeDialog只发现当前可见原生dialog，null可表示已关闭，不等于替换失败。Route/Watch/Target连线属于编程对象Inspector，不是Resident关系详情。打开后用currentProgrammingInspectors记录当前真实面板ID、kind及wire_id，再按精确本轮wire_id选唯一面板，核验其中实际Label/保存/删除控件；不猜另一个complementary名称。组件面板同理按component_id；这些快照不代替保存回执和原ready。
+
+nativeEntryDestination只返回aria-haspopup明确声明的menu或dialog；null表示没有声明，不是“无操作”，也不能推断成dialog。按钮名字含Menu不保证弹出role=menu，成员Add members可以在当前Menu中展开内联选择区。先记录当前可见dialog/menu/alertdialog及按钮aria-expanded，再正常点击一次，在同一原ready中观察实际新增表面或展开内容，核验本步骤真正下一控件；不要等待臆测的第二个对话框。已有弹窗/展开区不重复打开。需要异步渲染的表单值、节点选中状态及启用状态使用原有界等待，不把点击后的第一个false当终态。
 
 `portal.waitForRunningActivity({scope:本轮目标Chat的Locator,timeoutMs})`自动把原等待逐次观察写入`tau-running-activity.jsonl`，包含wait_id、原起止/elapsed、scope_count、原生Chat/Resident身份、document timeOrigin、活动卡/工具标签匹配与running状态计数，含found/timeout/retry/failed结尾；不记录工具命令正文。超时先保留并核对该原日志，区分目标面板已换、无活动卡、工具标签不匹配或只有已结束条目，不能用后来重新导航的运行截图回填。若页面恢复改变Editor，重新发现并核验目标后只读观察原输入，不重发原任务。
 

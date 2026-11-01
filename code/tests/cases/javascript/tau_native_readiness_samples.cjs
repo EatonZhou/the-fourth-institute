@@ -89,7 +89,8 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     assert.equal((await readWatchboardNodePrerequisites(panel, {residentId})).first.bound_to_canvas, true);
   }
   await assert.rejects(readSessionGraphSnapshot(hatg.locator('#hatgCanvas'), {residentId}), /native HATG/);
-  assert.equal(await controls.nativeEntryDestination(newNode),'dialog');
+  assert.equal(await controls.nativeEntryDestination(newNode),null,
+    'an undeclared popup cannot be inferred from the button label');
   await newNode.click();
   const form = page.getByRole('dialog', {name:'New node', exact:true});
   await form.getByRole('textbox', {name:'Agent name', exact:true}).waitFor({state:'visible'});
@@ -127,6 +128,8 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.equal(await select.inputValue(),two.value);
   const runtimeDialog=await controls.currentNativeDialog(page,'运行设置');
   assert.ok(runtimeDialog);
+  assert.equal(await controls.nativeEntryDestination(runtimeDialog.locator('[data-session-restart-submit]')),null,
+    'a submit button does not declare a new dialog');
   await runtimeDialog.locator('[data-session-restart-submit]').click();
   await runtimeDialog.waitFor({state:'hidden'});
   assert.equal(await controls.currentNativeDialog(page,'运行设置'),null,'completed switch closes its native dialog');
