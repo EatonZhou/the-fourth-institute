@@ -12,7 +12,7 @@
     "edgeGeometry", "fitUnsavedContext", "hasNodeElement", "invalidateEdgeGeometry", "isActiveStatus",
     "isWorkspaceNode", "layers", "minimapNodeElement", "nodeContent", "nodeContextHeat", "nodeElement",
     "nodePosition", "nodeStatus", "normalizeWireDraft", "portIdentity", "portsForNode", "primitiveNodeKind",
-    "refreshInteractionIndexes", "refreshNodeExtentCache", "refreshParallelEdgeLanes", "renderEdges",
+    "refreshInteractionIndexes", "refreshNodeExtentCache", "refreshParallelEdgeLanes", "renderEdges", "renderEdgeLabelLeaders",
     "renderFunctionBlockBoundaries", "renderLabels", "renderMinimap", "renderNodeHoverActions",
     "renderNodeOpenMenus", "renderNodes", "renderPorts", "resetPortCache", "resolveEdgeLabelCollisions", "root",
     "state", "syncNodeHoverActionOffsets", "syncPortOwnerVisibility", "syncQuickForkMenu", "updateMinimapGeometry",
@@ -26,13 +26,20 @@
       edgeGeometry, fitUnsavedContext, hasNodeElement, invalidateEdgeGeometry, isActiveStatus, isWorkspaceNode,
       layers, minimapNodeElement, nodeContent, nodeContextHeat, nodeElement, nodePosition, nodeStatus,
       normalizeWireDraft, portIdentity, portsForNode, primitiveNodeKind, refreshInteractionIndexes,
-      refreshNodeExtentCache, refreshParallelEdgeLanes, renderEdges, renderFunctionBlockBoundaries, renderLabels,
+      refreshNodeExtentCache, refreshParallelEdgeLanes, renderEdges, renderEdgeLabelLeaders, renderFunctionBlockBoundaries, renderLabels,
       renderMinimap, renderNodeHoverActions, renderNodeOpenMenus, renderNodes, renderPorts, resetPortCache,
       resolveEdgeLabelCollisions, root, state, syncNodeHoverActionOffsets, syncPortOwnerVisibility,
       syncQuickForkMenu, updateMinimapGeometry, updatePortGeometry, validEdges,
     } = dependencies;
 
     let geometryInputSignature = "";
+
+    function updateEdgeLabelGeometry(edges) {
+      layers.labels.selectAll("button.edgeLabelBtn")
+        .style("left", edge => `${edgeGeometry(edge)?.labelX ?? 50}%`)
+        .style("top", edge => `${edgeGeometry(edge)?.labelY ?? 50}%`);
+      renderEdgeLabelLeaders(edges);
+    }
 
     function updateGeometry(options = {}) {
       if (options.measureNodes) {
@@ -46,9 +53,7 @@
         .attr("data-routing", edge => edgeGeometry(edge)?.routing || "direct")
         .attr("data-route-axis", edge => edgeGeometry(edge)?.routeAxis || null)
         .attr("d", edge => edgeGeometry(edge)?.d || "");
-      layers.labels.selectAll("button.edgeLabelBtn")
-        .style("left", edge => `${edgeGeometry(edge)?.labelX ?? 50}%`)
-        .style("top", edge => `${edgeGeometry(edge)?.labelY ?? 50}%`);
+      updateEdgeLabelGeometry(validEdges());
       updatePortGeometry();
       updateMinimapGeometry();
     }
@@ -149,6 +154,7 @@
       }
       renderEdges(edges, { geometryChanged });
       renderLabels(edges);
+      updateEdgeLabelGeometry(edges);
       renderPorts(state.model.nodes, { geometryChanged });
       renderMinimap({ geometryChanged });
       refreshInteractionIndexes(edges);
@@ -261,6 +267,7 @@
       renderEdges(validEdges(), { geometryChanged: false });
       if (edgesChanged) {
         renderLabels(validEdges());
+        updateEdgeLabelGeometry(validEdges());
         renderMinimap({ geometryChanged: false });
       }
       return true;

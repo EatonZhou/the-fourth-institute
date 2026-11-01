@@ -8,6 +8,19 @@
   stroke-width: 2;
 }
 
+.hatgEdgeLabelLeader {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: .7;
+}
+
+.hatgCanvas:is([data-lod="compact"], [data-semantic-zoom="overview"]) .hatgEdgeLabelLeader {
+  display: none;
+}
+
 /* A candidate fork: the Fork that adopting the Seed would make (decision_4adcc1ff2f2c). */
 .hatgEdge.candidate_fork {
   stroke: color-mix(in srgb, #8067d8 52%, var(--muted));

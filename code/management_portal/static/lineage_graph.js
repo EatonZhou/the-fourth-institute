@@ -203,7 +203,7 @@
     });
 
     const {
-      edgeIsActive, edgeIsSelected, edgeSelectionId, renderEdges, renderLabels,
+      edgeIsActive, edgeIsSelected, edgeSelectionId, renderEdges, renderLabels, renderEdgeLabelLeaders,
     } = graphPart("PortalHatgGraphEdges").createEdges({
       connectToItem, edgeGeometry, endpointById, isActiveStatus, isProgramWire, layers, nodeStatus, options,
       parallelEdgeLane, state,
@@ -260,7 +260,7 @@
       applyTransformImmediately, cancelPendingNodeClick: (...args) => cancelPendingNodeClick(...args), clamp,
       computeEdgeGeometry, d3, edgeGeometry, edgeLabelElement, edgePathElement, forgetEdgeGeometry,
       incidentEdgeIds, layers, nodeElement, nodePosition, number, options, persistTransform, portElements,
-      portPosition, positionedElements, rememberEdgeGeometry, renderFunctionBlockBoundaries,
+      portPosition, positionedElements, rememberEdgeGeometry, renderFunctionBlockBoundaries, renderEdgeLabelLeaders,
       resolveEdgeLabelCollisions, root, screenToWorld, state, updateDraggedMinimapGeometry, validEdges,
     });
 
@@ -286,7 +286,7 @@
       edgeGeometry, fitUnsavedContext, hasNodeElement, invalidateEdgeGeometry, isActiveStatus, isWorkspaceNode,
       layers, minimapNodeElement, nodeContent, nodeContextHeat, nodeElement, nodePosition, nodeStatus,
       normalizeWireDraft, portIdentity, portsForNode, primitiveNodeKind, refreshInteractionIndexes,
-      refreshNodeExtentCache, refreshParallelEdgeLanes, renderEdges, renderFunctionBlockBoundaries, renderLabels,
+      refreshNodeExtentCache, refreshParallelEdgeLanes, renderEdges, renderEdgeLabelLeaders, renderFunctionBlockBoundaries, renderLabels,
       renderMinimap, renderNodeHoverActions, renderNodeOpenMenus, renderNodes, renderPorts, resetPortCache,
       resolveEdgeLabelCollisions, root, state, syncNodeHoverActionOffsets, syncPortOwnerVisibility,
       syncQuickForkMenu, updateMinimapGeometry, updatePortGeometry, validEdges,

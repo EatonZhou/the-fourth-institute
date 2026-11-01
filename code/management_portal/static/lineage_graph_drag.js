@@ -15,7 +15,7 @@
     "applyTransformImmediately", "cancelPendingNodeClick", "clamp", "computeEdgeGeometry", "d3", "edgeGeometry",
     "edgeLabelElement", "edgePathElement", "forgetEdgeGeometry", "incidentEdgeIds", "layers", "nodeElement",
     "nodePosition", "number", "options", "persistTransform", "portElements", "portPosition", "positionedElements",
-    "rememberEdgeGeometry", "renderFunctionBlockBoundaries", "resolveEdgeLabelCollisions", "root", "screenToWorld",
+    "rememberEdgeGeometry", "renderFunctionBlockBoundaries", "renderEdgeLabelLeaders", "resolveEdgeLabelCollisions", "root", "screenToWorld",
     "state", "updateDraggedMinimapGeometry", "validEdges",
   ]);
 
@@ -26,7 +26,7 @@
       applyTransformImmediately, cancelPendingNodeClick, clamp, computeEdgeGeometry, d3, edgeGeometry,
       edgeLabelElement, edgePathElement, forgetEdgeGeometry, incidentEdgeIds, layers, nodeElement, nodePosition,
       number, options, persistTransform, portElements, portPosition, positionedElements, rememberEdgeGeometry,
-      renderFunctionBlockBoundaries, resolveEdgeLabelCollisions, root, screenToWorld, state,
+      renderFunctionBlockBoundaries, renderEdgeLabelLeaders, resolveEdgeLabelCollisions, root, screenToWorld, state,
       updateDraggedMinimapGeometry, validEdges,
     } = dependencies;
 
@@ -62,6 +62,8 @@
           label.style.top = `${geometry?.labelY ?? 50}%`;
         }
       });
+      layers.edges.selectAll("line.hatgEdgeLabelLeader")
+        .filter(edge => affectedEdgeIds.has(edge.id)).remove();
       movedNodeIds.forEach(nodeId => {
         portElements(nodeId).forEach(portElement => {
           const position = portPosition(portElement.__data__);
@@ -85,6 +87,7 @@
       layers.labels.selectAll("button.edgeLabelBtn")
         .style("left", edge => `${edgeGeometry(edge)?.labelX ?? 50}%`)
         .style("top", edge => `${edgeGeometry(edge)?.labelY ?? 50}%`);
+      renderEdgeLabelLeaders(validEdges());
     }
 
     function dragMembersFor(node) {

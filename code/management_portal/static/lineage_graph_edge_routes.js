@@ -402,6 +402,14 @@
           const y = candidates.find(candidate => obstacles.every(box =>
             Math.abs(candidate - box.y) >= labelHeight / 2 + box.halfHeight));
           geometry.labelY = y / worldSize.height * 100;
+          // When the gap cannot hold the label, preserve its association with
+          // this precise curve instead of leaving an unanchored floating label.
+          const anchor = geometry.labelPathPoints.reduce((nearest, point) => {
+            const distance = Math.hypot(point.x / 100 * worldSize.width - x,
+              point.y / 100 * worldSize.height - y);
+            return !nearest || distance < nearest.distance ? { ...point, distance } : nearest;
+          }, null);
+          geometry.labelAnchor = { x: anchor.x, y: anchor.y };
           placed.push({ x, y, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2 });
           edgeGeometryMap.set(String(edge.id || ""), geometry);
         });

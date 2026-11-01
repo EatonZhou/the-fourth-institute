@@ -37,11 +37,23 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
      const point=edge.getPointAtLength(length*i/800).matrixTransform(matrix);
      nearest=Math.min(nearest,Math.hypot(center.x-point.x,center.y-point.y));
     }
-    return {id:label.dataset.edgeId,distance:nearest};
+    const leader=[...document.querySelectorAll('line.hatgEdgeLabelLeader')].find(line=>line.dataset.edgeId===label.dataset.edgeId);
+    let anchorDistance=Infinity,labelDistance=Infinity;
+    if(leader&&getComputedStyle(leader).stroke!=='none'){
+     const transform=leader.getScreenCTM();
+     const start=new DOMPoint(leader.x1.baseVal.value,leader.y1.baseVal.value).matrixTransform(transform);
+     const end=new DOMPoint(leader.x2.baseVal.value,leader.y2.baseVal.value).matrixTransform(transform);
+     labelDistance=Math.hypot(center.x-end.x,center.y-end.y);
+     for(let i=0;i<=800;i++){
+      const point=edge.getPointAtLength(length*i/800).matrixTransform(matrix);
+      anchorDistance=Math.min(anchorDistance,Math.hypot(start.x-point.x,start.y-point.y));
+     }
+    }
+    return {id:label.dataset.edgeId,distance:nearest,linked:anchorDistance<3&&labelDistance<3};
    }));
-   if(!distances.every(row=>row.distance<3)&&process.env.TAU_EDGE_LABEL_SCREENSHOT)
+   if(!distances.every(row=>row.distance<3||row.linked)&&process.env.TAU_EDGE_LABEL_SCREENSHOT)
     await page.screenshot({path:process.env.TAU_EDGE_LABEL_SCREENSHOT});
-   assert.ok(distances.every(row=>row.distance<3),stage+': labels follow their own actual curves '+JSON.stringify(distances));
+   assert.ok(distances.every(row=>row.distance<3||row.linked),stage+': labels follow or explicitly link to their own actual curves '+JSON.stringify(distances));
   };
   const verify=async stage=>{
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
@@ -100,10 +112,24 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
     }).map(node=>node.dataset.nodeId);
    });
    assert.deepEqual(overlaps,[],stage+': Route label must not be covered by endpoint cards');
+   await verifyPathAttachment(stage);
   };
   await verifyCards('close endpoints');
   await page.evaluate(()=>graph.refresh());await verifyCards('close endpoints refreshed');
+  const nearCard=await page.locator('.hatgNode[data-node-id="near-a"]').boundingBox();
+  const nearX=nearCard.x+nearCard.width/2,nearY=nearCard.y+nearCard.height/2;
+  await page.mouse.move(nearX,nearY);await page.mouse.down();
+  await page.mouse.move(nearX-8,nearY+8,{steps:3});
+  assert.equal(await page.locator('line.hatgEdgeLabelLeader').count(),0,'a moving curve does not retain a stale leader');
+  await page.mouse.move(nearX,nearY,{steps:3});await page.mouse.up();
+  await verifyCards('close endpoints dragged');
+  if(process.env.TAU_EDGE_LABEL_SCREENSHOT)await page.screenshot({path:process.env.TAU_EDGE_LABEL_SCREENSHOT});
   await page.evaluate(()=>graph.fit({duration:0}));await verifyCards('close endpoints fit');
+  await page.evaluate(()=>graph.render({nodes:[{id:'near-a',kind:'agent',title:'a',x:15,y:20},
+    {id:'near-b',kind:'agent',title:'b',x:85,y:80}],edges:[{id:'near-route',source:'near-a',target:'near-b',type:'route',label:'Route'}]}));
+  await page.evaluate(()=>graph.refresh());
+  await verifyPathAttachment('separated endpoints');
+  assert.equal(await page.locator('line.hatgEdgeLabelLeader').count(),0,'obsolete leaders disappear when the curve can hold its label');
   assert.deepEqual(errors,[]);console.log('Route labels avoid labels and cards through geometry changes');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

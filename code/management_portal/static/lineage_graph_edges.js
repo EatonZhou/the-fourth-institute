@@ -80,6 +80,19 @@
         .attr("d", edge => edgeGeometry(edge)?.d || "");
     }
 
+    function renderEdgeLabelLeaders(edges) {
+      layers.edges.selectAll("line.hatgEdgeLabelLeader")
+        .data(edges.filter(edge => edgeGeometry(edge)?.labelAnchor), edge => edge.id)
+        .join("line")
+        .attr("class", "hatgEdgeLabelLeader")
+        .attr("data-edge-id", edge => edge.id)
+        .attr("aria-hidden", "true")
+        .attr("x1", edge => edgeGeometry(edge).labelAnchor.x)
+        .attr("y1", edge => edgeGeometry(edge).labelAnchor.y)
+        .attr("x2", edge => edgeGeometry(edge).labelX)
+        .attr("y2", edge => edgeGeometry(edge).labelY);
+    }
+
     function edgeTooltip(edge) {
       if (edge.execution_summary) {
         return [edge.execution_summary, edge.execution_next_action]
@@ -162,7 +175,7 @@
     }
 
     return {
-      edgeIsActive, edgeIsSelected, edgeSelectionId, renderEdges, renderLabels,
+      edgeIsActive, edgeIsSelected, edgeSelectionId, renderEdges, renderLabels, renderEdgeLabelLeaders,
     };
   }
 
