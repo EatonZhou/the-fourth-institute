@@ -8,6 +8,7 @@ kinds (``git_file``, ``article_section``) on top
 from __future__ import annotations
 
 import mimetypes
+import os
 from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import unquote
@@ -96,12 +97,16 @@ def read_resolved_resource_content(
         path = Path(resolved_path)
         if not path.is_file():
             raise FileNotFoundError(path)
-        size = path.stat().st_size
-        if size > max_bytes:
-            raise ValueError(f"resource exceeds {max_bytes} byte content limit")
-        data = path.read_bytes()
+        with path.open('rb') as stream:
+            metadata = os.fstat(stream.fileno())
+            if metadata.st_size > max_bytes:
+                raise ValueError(f"resource exceeds {max_bytes} byte content limit")
+            data = stream.read(max_bytes + 1)
+            if len(data) > max_bytes:
+                raise ValueError(f"resource exceeds {max_bytes} byte content limit")
         content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
         if content_type == "application/x-tex":
             content_type = "text/x-tex"
-        return data, content_type, resolved
+        return data, content_type, {**resolved, 'filename': path.name,
+                                    'content_size': len(data), 'content_mtime_ns': metadata.st_mtime_ns}
     raise ValueError(f"{resolved.get('resource_type') or 'resource'} root has no byte content")
