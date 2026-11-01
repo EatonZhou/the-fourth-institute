@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 
 from management_common.principal import actor_principal
-from management_common.site_registry import rewrite_shared_path
+from management_common.instance_locations import current_instance
 from management_portal.portal_access_control import get_portal_access_store
 from management_portal import project_registry
 
@@ -48,21 +48,11 @@ def _load_registry() -> dict[str, Any]:
 
 
 def load_projects_payload() -> dict[str, Any]:
-    payload = _load_registry()
-    projects = payload.get("projects")
-    rewritten: list[dict[str, Any]] = []
-    for project in projects if isinstance(projects, list) else []:
-        if not isinstance(project, dict):
-            continue
-        item = dict(project)
-        item["path"] = rewrite_shared_path(str(item.get("path") or ""))
-        rewritten.append(item)
-    payload["projects"] = rewritten
-    return payload
+    return _load_registry()
 
 
 def _registry_value_for_path(path: Path) -> str:
-    return str(path.resolve(strict=False))
+    return current_instance().reference(path.resolve(strict=False))
 
 
 def _project_root_for_id(project_id: str) -> Path:
@@ -76,10 +66,7 @@ def _path_payload_matches_project_root(
     clean_path = str(raw_path or "").strip()
     if not clean_path:
         return True
-    candidate = Path(rewrite_shared_path(clean_path)).expanduser()
-    if not candidate.is_absolute():
-        candidate = PROJECTS_ROOT / candidate
-    return candidate.resolve(strict=False) == project_root
+    return project_registry.runtime_path(clean_path) == project_root
 
 
 def _clean_project_id(value: object) -> str:
@@ -196,16 +183,10 @@ def _project_record(project_id: str) -> dict[str, Any]:
 
 
 def _resolved_project_root(project: dict[str, Any]) -> Path:
-    display_id = str(project.get("id") or "").strip()
-    raw_path = str(project.get("path") or "").strip()
-    if not raw_path:
-        raw_path = str(PROJECTS_ROOT / display_id)
-
-    project_root = Path(raw_path).expanduser()
-    if not project_root.is_absolute():
-        project_root = PROJECTS_ROOT / project_root
+    resolved_root = project_registry.runtime_path(project.get("path"))
+    if resolved_root is None:
+        raise ValueError(f"project path missing: {project.get('id')}")
     projects_root = PROJECTS_ROOT.resolve(strict=False)
-    resolved_root = project_root.resolve(strict=False)
     if not resolved_root.is_relative_to(projects_root):
         raise PermissionError("Project path is outside the projects root.")
     return resolved_root
@@ -298,7 +279,6 @@ def create_project(
         raise
 
     public_record = dict(record)
-    public_record["path"] = rewrite_shared_path(public_record["path"])
     return canonical_record(
         project_id,
         {
@@ -350,9 +330,6 @@ def update_project(
             raise KeyError("Project not found.")
         project[field] = value
         public_record = dict(project)
-        public_record["path"] = rewrite_shared_path(
-            str(public_record.get("path") or "")
-        )
     return canonical_record(project_id, public_record)
 
 

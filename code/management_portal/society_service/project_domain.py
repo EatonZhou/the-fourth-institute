@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
-from management_common.site_registry import rewrite_shared_path
+from management_common.instance_locations import current_instance
 from management_common.clock import utc_now_iso
 from management_portal import project_registry
 
@@ -14,7 +14,7 @@ from . import lineage_aggregate
 
 
 PROJECTS_ROOT = (portal_path('projects'))
-PROJECT_DELETION_AUDIT = (portal_path('lineages')) / "_archive" / "deleted_projects" / "project_deletions.json"
+PROJECT_DELETION_AUDIT = portal_path('features') / "deleted_projects" / "project_deletions.json"
 
 
 def _actor_id(value: object) -> str:
@@ -150,7 +150,7 @@ def validate_project_deletion(project_id: str, actor: str) -> dict[str, Any]:
 
 
 def _project_identities(project_id: str, record: dict[str, Any], project_root: Path) -> set[str]:
-    identities = {str(project_id or "").strip(), str(record.get("id") or "").strip(), project_root.name}
+    identities = {str(project_id or "").strip(), str(record.get("id") or "").strip()}
     identities.discard("")
     return identities
 
@@ -158,7 +158,7 @@ def _project_identities(project_id: str, record: dict[str, Any], project_root: P
 def _registered_deletable_root(record: dict[str, Any]) -> Path:
     # Identity reads return a resolved path; deletion must inspect the path
     # from the registry before following symlinks.
-    return _deletable_root(Path(rewrite_shared_path(record["path"])).expanduser())
+    return _deletable_root(current_instance().resolve(record["path"]))
 
 
 def delete_project(project_id: str, actor: str) -> dict[str, Any]:

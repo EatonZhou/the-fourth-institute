@@ -84,7 +84,7 @@ class ProjectRegistryAdapter(_PathsAdapter):
                    if change is not None and change[0] == project_registry.COLLECTION}
         if (project_registry.COLLECTION, project_registry.DOCUMENT_ID) in changes:
             current = {
-                stripped_text(item.get("id") or item.get("name")): self.project_record("project", item)
+                stripped_text(item.get("id")): self.project_record("project", item)
                 for item in project_provider.load_projects_payload().get("projects") or []
                 if isinstance(item, dict)
             }

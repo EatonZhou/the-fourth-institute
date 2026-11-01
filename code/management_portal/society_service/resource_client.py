@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from management_portal.resources import get_resource_service
-from management_common.site_registry import rewrite_shared_path
+from management_common.instance_locations import current_instance
 from management_common.text_values import stripped_text
 
 from . import identity_contract
@@ -131,7 +131,7 @@ def project_roots(*, actor: str = "") -> dict[str, Path]:
         raw_path = stripped_text(attributes.get("path"))
         if not project_id or not raw_path:
             continue
-        path = Path(rewrite_shared_path(raw_path)).expanduser().resolve(strict=False)
+        path = current_instance().resolve(raw_path)
         roots[project_id] = path
     return roots
 
@@ -159,7 +159,7 @@ def project_root(project_id: str, *, actor: str = "") -> Path | None:
     raw_path = stripped_text(attributes.get("path"))
     if not raw_path:
         return None
-    return Path(rewrite_shared_path(raw_path)).expanduser().resolve(strict=False)
+    return current_instance().resolve(raw_path)
 
 
 def project_ids_for_path(path: str | Path, *, actor: str = "") -> list[str]:

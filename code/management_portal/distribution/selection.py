@@ -482,7 +482,7 @@ class _ExportScope:
     def _project_registry_row(self, row, document):
         document = {**document, "projects": [p for p in document.get("projects", []) if p["id"] in self.projects]}
         for project in document["projects"]:
-            project["path"] = "/Projects/" + project["id"]
+            project["path"] = "projects:" + project["id"]
             self.generated[layout.target("projects", f"{project['id']}/.tfi-project")] = project["id"] + "\n"
         return {**row, "document_json": document}
 

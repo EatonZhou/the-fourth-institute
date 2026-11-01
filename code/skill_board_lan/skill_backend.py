@@ -251,13 +251,10 @@ def _parse_projects(active_only: bool = False) -> list[dict[str, Any]]:
         status = str(p.get("status") or "")
         if active_only and status != "active":
             continue
-        raw_path = str(p.get("path") or "").strip()
-        if raw_path.startswith("/Projects/"):
-            path = str(PROJECTS_ROOT / raw_path[len("/Projects/"):])
-        elif raw_path == "/Projects":
-            path = str(PROJECTS_ROOT)
-        else:
-            path = raw_path or str(PROJECTS_ROOT / pid)
+        root = project_registry.runtime_path(p.get("path"))
+        if root is None:
+            raise ValueError(f"project path missing: {pid}")
+        path = str(root)
         projects.append({
             "id": pid,
             "status": status,

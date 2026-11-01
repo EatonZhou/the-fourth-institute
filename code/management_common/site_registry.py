@@ -8,19 +8,6 @@ from management_common.portal_network import DEFAULT_PORT, router_port
 
 PORTAL_PORT = DEFAULT_PORT
 
-PATH_PREFIXES = {"projects": {"from": "/Projects", "to": str(portal_path("projects"))}}
-
-
-def _rewrite_path_prefix(raw: str, prefix: dict[str, str]) -> str | None:
-    source = prefix["from"]
-    target = prefix["to"]
-    if raw == source:
-        return target
-    if raw.startswith(f"{source}/"):
-        return f"{target}{raw[len(source):]}"
-    return None
-
-
 SHARED_PATHS = {area: str(portal_path(area)) for area in ('projects', 'lineages', 'skills', 'papers', 'uploads', 'features', 'provider-state')}
 
 
@@ -105,17 +92,6 @@ MODULES = [
 ]
 
 
-def rewrite_shared_path(path: str, *, include_codes: bool = True) -> str:
-    raw = str(path or "").strip()
-    prefix_keys = ("projects",)
-    for key in prefix_keys:
-        rewritten = _rewrite_path_prefix(raw, PATH_PREFIXES[key])
-        if rewritten is not None:
-            return rewritten
-
-    return raw
-
-
 def get_module_registry() -> list[dict]:
     modules = deepcopy(MODULES)
     port = router_port()
@@ -132,7 +108,6 @@ def get_runtime_config() -> dict:
             "port": router_port(),
         },
         "paths": deepcopy(SHARED_PATHS),
-        "path_prefixes": deepcopy(PATH_PREFIXES),
         "modules": modules,
         "routes": {
             module["id"]: module["route"]

@@ -320,7 +320,7 @@ def test_admin_delete_user_removes_only_account_private_data(
     assert all((root / "colleague").is_dir() for root in upload_roots)
     assert avatar_store.get("engineer") == avatars.sprite(0)
     assert avatar_store.get("colleague") == colleague_avatar
-    with pytest.raises(FileExistsError, match="retired"):
+    with pytest.raises(FileExistsError, match="deleted"):
         web_accounts._admin_access_action(
             "CASE-A",
             {

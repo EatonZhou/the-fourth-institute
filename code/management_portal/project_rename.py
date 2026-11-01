@@ -266,7 +266,9 @@ def plan(project_id: str, new_project_id: str, *, projects_root: Path | None = N
             vocabulary |= {str(tag.get("id") or ""), str(tag.get("folder") or "")}
     if old_id != new_id and old_id in vocabulary:
         raise RenameBlocked(f"Project ID {old_id} 同时是 Project 状态或知识标签，不能按 ID 改名", project_id=old_id)
-    old_root = project_registry.runtime_path(record.get("path")) or (root / old_id).resolve(strict=False)
+    old_root = project_registry.runtime_path(record.get("path"))
+    if old_root is None:
+        raise RenameBlocked(f"Project 登记缺少路径：{old_id}")
     if root not in old_root.parents:
         raise RenameBlocked(f"Project 目录不在 {root} 中：{old_root}", path=str(old_root))
     new_root = (root / new_id).resolve(strict=False)

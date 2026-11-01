@@ -183,22 +183,14 @@ def tag_folder_map() -> dict[str, str]:
 
 
 def runtime_path(raw_path: object) -> Path | None:
-    """The filesystem directory of a registry ``path`` such as ``/Projects/X``."""
-    text = str(raw_path or "").strip().replace("\\", "/")
+    """Resolve the registered area reference or canonical absolute location."""
+    text = str(raw_path or "").strip()
     if not text:
         return None
     if text.startswith(("{$", "${")):
-        raise ValueError("项目注册路径不能使用变量占位符；请填写实际目录或共享根相对路径")
-    if len(text) >= 2 and text[1] == ":":
-        text = text[2:]
-    if text.startswith("/Projects/"):
-        text = str(PROJECTS_ROOT / text.removeprefix("/Projects/"))
-    elif text.startswith("projects:"):
-        from management_common.instance_manifest import load as instance_manifest
-        return instance_manifest().resolve(text)
-    elif not text.startswith(("/", "~")):
-        text = str(PROJECTS_ROOT / text.removeprefix("Projects/"))
-    return Path(text).expanduser().resolve(strict=False)
+        raise ValueError("项目注册路径不能使用变量占位符；请填写区域引用或规范绝对路径")
+    from management_common.instance_locations import current_instance
+    return current_instance().resolve(text)
 
 
 def project_roots() -> list[tuple[str, Path]]:

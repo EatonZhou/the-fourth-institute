@@ -32,10 +32,12 @@ def ensure_project(project_id: str, actor: str) -> dict[str, Any]:
         project = next((row for row in resource_client._query_all("project", actor=actor) if row["resource_id"] == project_id), None)
         if project is None:
             raise KeyError("Project not found")
+        from management_common.instance_locations import current_instance
+        project_path = current_instance().resolve(str((project.get("attributes") or {}).get("path") or ""))
         record, graph = resident_registration_domain.register_resident_and_lineage({
             "lineage_id": resident_domain_common.new_lineage_id(), "project_id": project_id,
             "title": str(project.get("title") or project_id),
-            "workspace_paths": [str((project.get("attributes") or {}).get("path") or "")],
+            "workspace_paths": [str(project_path)],
             "mode": "new_session",
         }, actor, project_principal=True)
         return {"resident_id": record["resident_id"], "lineage_id": record["lineage_id"], "created": True}

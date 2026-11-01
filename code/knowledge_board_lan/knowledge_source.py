@@ -37,11 +37,6 @@ _PORTAL_REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_PORTAL_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_PORTAL_REPO_ROOT))
 
-from management_common.site_registry import rewrite_shared_path  # noqa: E402
-
-def _rewrite_project_path(path: str) -> str:
-    return rewrite_shared_path(path, include_codes=False)
-
 # ── module-level state ─────────────────────────────────────────────────────────
 _MD_CACHE: dict[str, dict] = {}
 _FILE_ID_TO_PATH: dict[str, str] = {}
@@ -144,7 +139,7 @@ def _parse_projects_yaml() -> list[dict]:
             {
                 "id": pid,
                 "status": str(p.get("status") or ""),
-                "path": _rewrite_project_path(str(p.get("path") or "")),
+                "path": str(project_registry.runtime_path(p.get("path")) or ""),
                 "description": str(p.get("description") or ""),
                 "ddl": str(p.get("ddl") or ""),
                 "tags": [str(x) for x in tags if str(x).strip()],

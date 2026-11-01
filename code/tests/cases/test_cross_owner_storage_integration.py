@@ -18,7 +18,6 @@ import yaml
 import knowledge_board_lan.knowledge_backend as knowledge_backend
 import knowledge_board_lan.knowledge_details as knowledge_details
 import knowledge_board_lan.knowledge_source as knowledge_source
-from management_common import site_registry
 from management_portal import portal_access_control, resource_index_backend
 from management_portal import resource_index_knowledge, resource_index_records, resource_index_registries
 from management_portal.execution import agent_data_store, service as execution_service
@@ -125,7 +124,6 @@ def owners(tmp_path, monkeypatch):
         "status_vocab": ["active"],
     })
     project_root = tmp_path / "Projects"
-    monkeypatch.setitem(site_registry.PATH_PREFIXES, "projects", {"from": "/Projects", "to": str(project_root)})
     monkeypatch.setattr(project, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage")

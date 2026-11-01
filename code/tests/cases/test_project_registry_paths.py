@@ -16,13 +16,17 @@ class ProjectRegistryPathsTest(unittest.TestCase):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "变量占位符"):
                 project_registry.runtime_path(value)
 
-    def test_concrete_and_share_relative_paths_keep_their_meaning(self):
-        with patch.object(project_registry, "PROJECTS_ROOT", Path("/tmp/registry-projects")):
-            for value in ("/Projects/Example", "Projects/Example", "Example"):
-                with self.subTest(value=value):
-                    self.assertEqual(
-                        project_registry.runtime_path(value),
-                        (Path("/tmp/registry-projects") / "Example").resolve(),
-                    )
-            self.assertEqual(project_registry.runtime_path("/tmp/external"), Path("/tmp/external").resolve())
-            self.assertIsNone(project_registry.runtime_path(""))
+    def test_relative_paths_are_not_guessed(self):
+        for value in ("Projects/Example", "Example", "~/Example"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                project_registry.runtime_path(value)
+
+    def test_absolute_paths_are_not_rewritten(self):
+        self.assertEqual(project_registry.runtime_path("/Projects/Example"), Path("/Projects/Example"))
+        self.assertEqual(project_registry.runtime_path("/tmp/external"), Path("/tmp/external"))
+        self.assertIsNone(project_registry.runtime_path(""))
+
+    def test_provider_requires_registered_location(self):
+        from management_portal.resources.providers import project
+        with self.assertRaisesRegex(ValueError, "path missing"):
+            project._resolved_project_root({"id": "Example"})

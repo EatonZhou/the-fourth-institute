@@ -3,13 +3,11 @@ summary, the daily news and the user and context option lists.
 """
 from __future__ import annotations
 
-import os
 import time
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 
-from management_common.portal_paths import path as portal_path
 from management_common.site_registry import get_portal_summary, get_runtime_config
 from management_portal import agent_context_selection, http_auth, http_instance, http_responses, web_clients
 from management_portal.portal_access_control import list_users
@@ -18,20 +16,23 @@ from management_portal.society_service import SocietyServiceBusy, SocietyService
 from management_portal.http_routes import RouteDefinition
 
 
-DAILY_NEWS_ROOT = Path(os.getenv(
-    "PORTAL_DAILY_NEWS_ROOT",
-    str(portal_path('lineages') / "lineage_7e2464bbdb60" / "memory" / "reports"),
-)).expanduser()
+def _daily_news_root() -> Path:
+    from management_portal.society_service.lineage_locations import lineage_folder
+    return lineage_folder("lineage_7e2464bbdb60") / "memory" / "reports"
 
 
 def _daily_news_payload() -> dict:
     requested_date = datetime.now().astimezone().date().isoformat()
-    requested_path = DAILY_NEWS_ROOT / f"{requested_date}__daily_news.md"
+    try:
+        root = _daily_news_root()
+    except (KeyError, ValueError, OSError) as exc:
+        return {"status": "error", "date": requested_date, "path": "", "content": "", "error": str(exc)}
+    requested_path = root / f"{requested_date}__daily_news.md"
     report_path = requested_path
     if not report_path.is_file():
         try:
             candidates = sorted(
-                DAILY_NEWS_ROOT.glob("????-??-??__daily_news.md"),
+                root.glob("????-??-??__daily_news.md"),
                 reverse=True,
             )
         except OSError as exc:
