@@ -305,11 +305,15 @@
 
 .hatgPort {
   --hatg-port-tone: var(--hatg-program-event-color);
+  --hatg-port-anchor-x: 0%;
   position: absolute;
   z-index: 3;
   min-width: 34px;
   height: 20px;
-  transform: translate(-50%, -50%);
+  /* The port position is the card edge. Labels extend away from its content,
+     including long translated Watch/Target labels and the hover scale. */
+  transform: translate(var(--hatg-port-anchor-x), -50%);
+  transform-origin: left center;
   pointer-events: none;
   display: inline-flex;
   align-items: center;
@@ -363,7 +367,11 @@
 .hatgPort.invoke { --hatg-port-tone: var(--hatg-program-target-color); }
 .hatgPort.target { --hatg-port-tone: var(--hatg-program-target-color); }
 .hatgPort.watch { --hatg-port-tone: var(--hatg-program-watch-color); }
-.hatgPort.in { border-style: dashed; }
+.hatgPort.in {
+  --hatg-port-anchor-x: -100%;
+  transform-origin: right center;
+  border-style: dashed;
+}
 .hatgPort.out::after {
   content: "›";
   margin-left: 3px;
@@ -379,7 +387,7 @@
 .hatgPort:hover:not(:disabled),
 .hatgPort:focus-visible,
 .hatgPort[data-port-compatible="true"] {
-  transform: translate(-50%, -50%) scale(1.08);
+  transform: translate(var(--hatg-port-anchor-x), -50%) scale(1.08);
   border-color: var(--hatg-port-tone);
   background: color-mix(in srgb, var(--hatg-port-tone) 16%, var(--panel));
   box-shadow:

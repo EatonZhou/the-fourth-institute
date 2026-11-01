@@ -15,3 +15,10 @@ def test_crossing_route_labels_survive_geometry_changes():
     script = Path(__file__).with_name('javascript') / 'hatg_edge_label_layout.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_port_labels_expand_outside_card_content():
+    """长端口标签在缩放、hover及真实点击时不覆盖所属卡片内容。"""
+    script = Path(__file__).with_name('javascript') / 'hatg_port_label_layout.cjs'
+    result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr

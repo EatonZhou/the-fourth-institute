@@ -237,7 +237,7 @@
         ))
         .property("disabled", state.model.readOnly)
         .style("position", "absolute")
-        .style("transform", "translate(-50%, -50%)")
+        .style("transform", null)
         .style("pointer-events", state.model.readOnly ? "none" : null)
         .text(port => port.label);
       if (geometryChanged) updatePortGeometry();
