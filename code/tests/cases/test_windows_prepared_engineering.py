@@ -131,7 +131,7 @@ def test_area_copy_reports_progress_and_maps_only_the_code_root(tmp_path, capsys
     copied = instance.area('projects') / 'platform.txt'
     assert copied.read_text() == 'platform ' + str(code)
     messages = [json.loads(line.removeprefix('@TFI_PROGRESS '))['message']
-                for line in capsys.readouterr().out.splitlines() if line.startswith('@TFI_PROGRESS ')]
+                for line in capsys.readouterr().err.splitlines() if line.startswith('@TFI_PROGRESS ')]
     assert any(message and '正在复制实例文件' in message and '100%' in message for message in messages)
 
 
@@ -246,3 +246,18 @@ def test_mac_archive_extracts_modes_and_rejects_redirected_parent(tmp_path):
     with pytest.raises(ValueError, match='Redirected'):
         launcher.unpack_engineering(target, archive=zipped, parent=target / '.build/link/deeper')
     assert not list(outside.iterdir())
+
+
+def test_file_progress_and_shared_progress_roundtrip_on_legacy_console(monkeypatch):
+    import io
+    import sys
+    from management_common.installation_progress import report, progress_message
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stderr", console)
+    report("正在准备 C:\\中文 目录")
+    FileProgress("复制中文区域", 1, 8).advance(8)
+    console.flush()
+    messages = [progress_message(line) for line in raw.getvalue().decode("cp1252").splitlines()]
+    assert messages[0] == "正在准备 C:\\中文 目录"
+    assert messages[-1].startswith("复制中文区域：1/1 个文件（100%")

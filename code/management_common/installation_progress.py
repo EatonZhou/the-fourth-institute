@@ -8,7 +8,7 @@ PREFIX = "@TFI_PROGRESS "
 
 
 def report(message):
-    print(PREFIX + json.dumps({"message": message}, ensure_ascii=False),
+    print(PREFIX + json.dumps({"message": message}, ensure_ascii=True),
           file=sys.stderr, flush=True)
 
 

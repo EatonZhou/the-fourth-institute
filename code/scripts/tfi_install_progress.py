@@ -1,10 +1,8 @@
 """Bounded progress output for installation file operations."""
-import json
 import time
 
 
-def emit(message):
-    print('@TFI_PROGRESS ' + json.dumps({'message': message}, ensure_ascii=False), flush=True)
+from management_common.installation_progress import report as report_progress
 
 
 class FileProgress:
@@ -12,7 +10,7 @@ class FileProgress:
         self.label = label
         self.total_files, self.total_bytes = total_files, total_bytes
         self.files = self.bytes = 0
-        self.callback = callback or emit
+        self.callback = callback or report_progress
         self.last = 0
         self.report()
 
