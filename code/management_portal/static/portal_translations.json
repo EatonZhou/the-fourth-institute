@@ -3986,6 +3986,10 @@
     "en": "Family facade",
     "zh-CN": "Family 门面"
   },
+  "门面无独立模型 Session": {
+    "en": "A facade has no independent model session",
+    "zh-CN": "门面无独立模型 Session"
+  },
   "Family 门面中没有这条消息": {
     "en": "This message is not in the Family facade",
     "zh-CN": "Family 门面中没有这条消息"

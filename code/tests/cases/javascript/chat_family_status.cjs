@@ -368,6 +368,41 @@ async function pendingMemberSettings() {
   }
 }
 
+async function nestedFacadeHasNoExecutionAccount() {
+  const previousFamily = family, originalBind = w.PortalResidentRuntimeController.bind;
+  family = {title: 'Outer Family', lineage_id: 'lineage_sample', nodes: [nodes.find(n => n.resident_id === 'res_idle')]};
+  const container = w.document.createElement('section'); w.document.body.append(container);
+  const summaries = [];
+  w.PortalResidentRuntimeController.bind = (id, handlers) => {
+    const runtime = originalBind(id, handlers), load = runtime.load;
+    runtime.load = async () => {
+      const view = await load();
+      return {...view, detail: {...view.detail,
+        resident: {...view.detail.resident, family: {role: 'facade'}},
+        family_facade: {title: 'Inner Family'}, execution_account: {account_id: 'acct_low'}},
+        settings: {model: 'unused-default-model'}};
+    };
+    return runtime;
+  };
+  const view = familyStatus.createFamilyStatusView('res_facade', null, value => summaries.push(value), null, container);
+  try {
+    view.open(); await settle();
+    const root = container.querySelector('.familyStatusPanel');
+    assert.equal(text(cells(root, 'res_idle')[1]), 'Family 门面');
+    assert.equal(row(root, 'res_idle').querySelector('[data-family-status-settings]'), null);
+    assert.equal(text(cells(root, 'res_idle')[2]), '—');
+    assert.equal(cells(root, 'res_idle')[2].title, '门面无独立模型 Session');
+    assert.equal(summaries.at(-1), '运行 0 · 排队 0 · 需关注 0');
+    row(root, 'res_idle').querySelector('[data-family-status-detail]').click();
+    assert.ok(text(root.querySelector('.familyStatusDetails')).includes('门面无独立模型 Session'));
+    assert.ok(!text(root).includes('unused-default-model'));
+    assert.ok(row(root, 'res_idle').querySelector('[data-family-mix]'), 'nested facade still participates as an outer Family member');
+  } finally {
+    view.destroy(); container.remove(); family = previousFamily;
+    w.PortalResidentRuntimeController.bind = originalBind;
+  }
+}
+
 const watchdog = setTimeout(() => { console.error('Family status test did not complete'); process.exit(1); }, 15000);
 (async () => {
   try {
@@ -375,6 +410,7 @@ const watchdog = setTimeout(() => { console.error('Family status test did not co
     await membersQuotaAndSummary();
     await openedAndMounted();
     await pendingMemberSettings();
+    await nestedFacadeHasNoExecutionAccount();
     console.log('PASS: Family status, quota, intake, details and lifecycle');
   } finally {
     observers.forEach(observer => observer.disconnect());
