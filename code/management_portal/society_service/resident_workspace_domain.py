@@ -510,7 +510,7 @@ def confirm_resident_deletion_projection(resident_id: str) -> None:
 
 
 def retry_deleted_resident(resident_id: str, actor: str) -> dict[str, Any] | None:
-    """Authorize a deletion replay and finish its existing tombstone publication."""
+    """Authorize a deletion replay and reconcile its original idempotent effects."""
     from . import resident_access
 
     try:
@@ -525,9 +525,24 @@ def retry_deleted_resident(resident_id: str, actor: str) -> dict[str, Any] | Non
     if not resident_access.is_active_actor(actor_id):
         raise PermissionError("需要有效的 Portal 登录身份")
     # Replays do not allocate cleanup work or replace the first deletion facts.
-    invariant_locks.defer_until_state_unlock(
-        lambda: confirm_resident_deletion_projection(resident_id),
-    )
+    # Recheck retained folders: their last shared Workspace may have retired
+    # after the original deletion journal completed.
+    def reconcile():
+        from .resident_workspace_retirement import remove_retired_folder
+        from management_portal.resources.workspace_store import get_workspace_store
+        confirm_resident_deletion_projection(resident_id)
+        # Deleted nodes no longer have a current Lineage path. The retained
+        # owned Workspace row keeps the exact original location, even after
+        # that Workspace itself has retired.
+        workspace_id = record['owned_workspace_id']
+        workspace = get_workspace_store().rows([workspace_id], include_deleted=True).get(workspace_id)
+        if workspace:
+            owned = Path(workspace['path'])
+            if owned.name != 'workspace' or owned.parent.name != resident_id or owned.parent.parent.name != 'residents':
+                raise ValueError('Deleted Resident owned Workspace has an invalid folder boundary')
+            remove_retired_folder(owned.parent)
+
+    invariant_locks.defer_until_state_unlock(reconcile)
     return {
         "resident_id": resident_id,
         "lineage_id": str(record.get("lineage_id") or ""),

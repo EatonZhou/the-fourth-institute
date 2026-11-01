@@ -1,6 +1,7 @@
 """Reference-aware Workspace retirement and resumable directory cleanup."""
 from pathlib import Path
 from contextlib import nullcontext
+import errno
 
 from management_common.portal_database import _database_schema
 
@@ -123,7 +124,7 @@ def remove_retired_folder(folder, *, connection=None):
     table lock prevents registration/moves racing the filesystem effect.
     """
     from management_common.instance_locations import located_path
-    from management_portal.resources.workspace_store import get_workspace_store, stored_path
+    from management_portal.resources.workspace_store import get_workspace_store, stored_path, LOCATION_PREFIX_SQL
     root = Path(folder).absolute()
     stored = stored_path(root)
     # An area root (``projects:``) already ends with its separator.
@@ -169,3 +170,36 @@ def remove_retired_folder(folder, *, connection=None):
                 path.unlink()
 
         remove(root)
+        # A deleted owner's Workspace can outlive its Resident while another
+        # Resident uses it. The later last-user deletion must also collect the
+        # empty owner container retained by that earlier cleanup. Derive the
+        # boundary from tombstoned ownership, never from arbitrary parent names.
+        owners = connection.execute(
+            f"SELECT r.resident_id,w.path FROM {lineage}.residents r JOIN {store.table} w "
+            "ON w.workspace_id=r.owned_workspace_id WHERE r.deleted_at IS NOT NULL "
+            "AND w.deleted_at IS NOT NULL AND "
+            f"(w.path=%s OR starts_with(%s,{LOCATION_PREFIX_SQL.format(column='w.path')}))",
+            (stored, stored),
+        ).fetchall()
+        for owner in owners:
+            owned = Path(located_path(owner['path']))
+            boundary = owned.parent
+            if owned.name != 'workspace' or boundary.name != owner['resident_id'] or boundary.parent.name != 'residents':
+                continue
+            parent = root.parent
+            while parent == boundary or boundary in parent.parents:
+                location = stored_path(parent)
+                if parent.is_symlink() or connection.execute(
+                    f"SELECT 1 FROM {store.table} WHERE deleted_at IS NULL "
+                    "AND (path=%s OR starts_with(path,%s)) LIMIT 1",
+                    (location, location.rstrip('/') + '/'),
+                ).fetchone():
+                    break
+                try:
+                    parent.rmdir()
+                except OSError as exc:
+                    if exc.errno not in {errno.ENOENT, errno.ENOTEMPTY, errno.EEXIST}:
+                        raise
+                    if exc.errno != errno.ENOENT:
+                        break
+                parent = parent.parent

@@ -92,6 +92,50 @@ def test_last_reference_collects_external_workspace_and_nested_shared_child_surv
     assert not shared.exists()
 
 
+@pytest.mark.parametrize('retained', ['none', 'file', 'registration'])
+def test_last_user_collects_only_empty_deleted_owner_container(future_creation_store, retained):
+    owner = resident_domain.register_resident(_new_session_payload('Owner'), 'sample_admin')
+    reader = lineage_resident_nodes.create_lineage_resident(
+        owner['lineage_id'], _new_session_payload('Reader'), 'sample_admin',
+    )['resident']
+    folder = Path(owner['owned_workspace']['path'])
+    container = folder.parent
+    domain.add_resident_reference_workspace(
+        reader['resident_id'], str(folder), 'sample_admin', workspace_id=owner['owned_workspace_id'],
+    )
+    lineage_graph_edits.delete_lineage_graph_objects(
+        owner['lineage_id'], {'resident_ids': [owner['resident_id']]}, 'sample_admin', include_lineage=False,
+    )
+    drain()
+    assert container.exists() and folder.exists()
+    if retained == 'file':
+        (container / 'later.txt').write_text('retain nonempty container')
+    elif retained == 'registration':
+        get_workspace_store().ensure('workspace_aaaaaaaaaaaa', str(container))
+    lineage_graph_edits.delete_lineage_graph_objects(
+        owner['lineage_id'], {'resident_ids': [reader['resident_id']]}, 'sample_admin', include_lineage=False,
+    )
+    drain()
+    assert not folder.exists()
+    assert container.exists() is (retained != 'none')
+    assert container.parent.exists()  # Never prune the shared residents/ or Lineage.
+
+
+def test_deleted_resident_replay_reconciles_retained_folder(future_creation_store):
+    owner = resident_domain.register_resident(_new_session_payload('Owner'), 'sample_admin')
+    folder = Path(owner['owned_workspace']['path']).parent
+    lineage_graph_edits.delete_lineage_graph_objects(
+        owner['lineage_id'], {'resident_ids': [owner['resident_id']]}, 'sample_admin', include_lineage=False,
+    )
+    drain()
+    before = resident_catalog.get_catalog().get_historical(owner['resident_id'])
+    folder.mkdir(parents=True)  # Container retained by an earlier cleanup version.
+    domain.retry_deleted_resident(owner['resident_id'], 'sample_admin')
+    assert not folder.exists()
+    after = resident_catalog.get_catalog().get_historical(owner['resident_id'])
+    assert (after['deleted_at'], after['deleted_by']) == (before['deleted_at'], before['deleted_by'])
+
+
 def test_cleanup_rechecks_new_registration_and_does_not_follow_symlinks(tmp_path):
     """延迟清理保留新登记的目录，符号链接不会导致删除外部内容"""
     root = tmp_path / 'deleted'
