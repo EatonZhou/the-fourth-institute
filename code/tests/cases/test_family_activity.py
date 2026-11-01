@@ -38,6 +38,7 @@ def family(facade, monkeypatch):
         record.update(resident_id=rid, family={})
         owned = record['owned_workspace']
         owned['path'] = str(Path(record['workspace_path']) / 'residents' / rid / 'workspace')
+        Path(owned['path']).mkdir(parents=True)
         from management_portal.society_service.resource_client import workspace_id_for_path
         owned['workspace_id'] = workspace_id_for_path(owned['path'])
         record['owned_workspace_id'] = owned['workspace_id']

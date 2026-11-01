@@ -6,6 +6,8 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.resources.providers import workspace
+from management_portal.resources import ResourceService
+from management_portal.resources.providers import folder_files
 from management_portal.society_service import lineage_access_policy as policy
 
 
@@ -16,15 +18,33 @@ class WindowsPath(PureWindowsPath):
 
 
 @pytest.mark.parametrize("root", [r"C:\Portal Data\personal", r"\\server\share\personal"])
-def test_windows_workspace_checks_full_native_path_before_read(monkeypatch, root):
+@pytest.mark.parametrize("structured", [False, True])
+def test_windows_workspace_checks_full_native_path_before_read(monkeypatch, root, structured):
     monkeypatch.setattr(workspace, "Path", WindowsPath)
-    record = {"attributes": {"path": root}}
-    service = SimpleNamespace(get=lambda *_a, **_k: record)
+    workspace_id = 'workspace_0123456789ab'
+    record = {"resource_id": workspace_id, "attributes": {"path": root}}
     checked = []
-    monkeypatch.setattr(policy, "workspace_reaches", lambda *a, **kw: checked.append(kw) or False)
-    monkeypatch.setattr(workspace.folder_files, "describe", lambda *_a, **_k: pytest.fail("denied file touched"))
-    with pytest.raises(KeyError):
-        workspace._resolve(service, "workspace_demo/file/private.txt", actor="alice")
+    def authorize(value, *, actor):
+        assert actor == 'alice' and value['root_id'] == workspace_id
+        checked.append('object authorized')
+    def resolve(address, **kwargs):
+        assert address == workspace_id
+        return dict(record=record, root_id=workspace_id, resource_type='workspace',
+                    target_kind='workspace', exists=True)
+    def reaches(actor, resource_id, **kwargs):
+        assert actor == 'alice' and resource_id == workspace_id
+        assert checked.pop() == 'object authorized'
+        checked.append(kwargs)
+        return False
+    service = ResourceService(access_policy=SimpleNamespace(authorize_read=authorize))
+    service.register_resolver('workspace', resolve)
+    monkeypatch.setattr(policy, "workspace_reaches", reaches)
+    monkeypatch.setattr(folder_files, "describe", lambda *_a, **_k: pytest.fail("denied file touched"))
+    monkeypatch.setattr(folder_files, "open_target", lambda *_a, **_k: pytest.fail("denied file opened"))
+    address = ({'workspace_id': workspace_id, 'relative_path': 'private.txt'} if structured
+               else workspace_id + '/file/private.txt')
+    with pytest.raises(PermissionError, match='File access denied'):
+        service.read_content(address, actor="alice")
     assert checked == [{"write": False, "path": str(WindowsPath(root) / "private.txt")}]
 
 

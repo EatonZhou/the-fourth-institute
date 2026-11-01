@@ -45,7 +45,8 @@ def test_new_resident_workspace_commits_and_reloads(windows_record, monkeypatch)
         ensure=lambda *args, **kwargs: calls.append((args, kwargs))))
     connection = object()
     resource_client.ensure_workspaces(record, connection=connection)
-    assert calls == [((OWN, expected), dict(connection=connection, move=True))]
+    assert calls == [((OWN, expected), dict(connection=connection, move=True,
+                                          origin="created", owner_id=RID, operation_id=None))]
     assert record["owned_workspace"]["path"] == record["default_cwd"] == expected
     loaded = storage.project_records([record], {RID: []}, {OWN: expected},
                                      {LID: record["workspace_path"]})[0]
@@ -60,19 +61,25 @@ def test_imported_workspace_path_is_a_valid_execution_directory(windows_record):
     assert resident_catalog.default_cwd_path(record) == path.as_posix()
 
 
-@pytest.mark.parametrize("wrong", ["identity", "location"])
-def test_other_workspace_is_still_rejected(windows_record, monkeypatch, wrong):
+def test_other_workspace_is_still_rejected(windows_record, monkeypatch):
     record = windows_record
     resident_record_domain.set_resident_owned_workspace_binding(record)
-    if wrong == "identity":
-        record["owned_workspace"]["workspace_id"] = EXTRA
-    else:
-        record["owned_workspace"]["path"] += "-other"
+    record["owned_workspace"]["workspace_id"] = EXTRA
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
         ensure=lambda *args, **kwargs: pytest.fail("invalid workspace was stored")))
-    assert resident_catalog.default_cwd_path(record) == (
-        "" if wrong == "identity" else record["owned_workspace"]["path"])
-    with pytest.raises(ValueError, match="identity or location mismatch"):
+    assert resident_catalog.default_cwd_path(record) == ""
+    with pytest.raises(ValueError, match="owned Workspace identity mismatch"):
+        resource_client.ensure_workspaces(record, connection=object())
+
+
+@pytest.mark.parametrize("path", ["C:relative", r"\root-relative", "relative", "C:/", "//server/share/"])
+def test_owned_workspace_rejects_nonabsolute_or_root_location(windows_record, monkeypatch, path):
+    record = windows_record
+    resident_record_domain.set_resident_owned_workspace_binding(record)
+    record["owned_workspace"]["path"] = path
+    monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
+        ensure=lambda *args, **kwargs: pytest.fail("invalid workspace was stored")))
+    with pytest.raises(ValueError, match="absolute|filesystem root"):
         resource_client.ensure_workspaces(record, connection=object())
 
 
@@ -90,15 +97,19 @@ def test_reference_binding_roundtrip_keeps_identity_and_purpose(windows_record, 
     assert record["workspace_bindings"] == [dict(workspace_id=EXTRA, path=path.as_posix(), purpose="keep")]
 
 
-@pytest.mark.parametrize("invalid_owned_path", [False, True])
-def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monkeypatch, invalid_owned_path):
+@pytest.mark.parametrize("relocated", [False, True])
+def test_workspace_roots_keep_valid_owned_identity_primary(windows_record, monkeypatch, relocated):
     record = windows_record
     resident_record_domain.set_resident_owned_workspace_binding(record)
-    expected = record["owned_workspace"]["path"]
     extra_path = (WindowsPath(record["workspace_path"]) / "extra").as_posix()
     record["workspace_bindings"] = [dict(workspace_id=EXTRA, path=extra_path, purpose="reference")]
-    if invalid_owned_path:
-        record["owned_workspace"]["path"] += "-other"
+    if relocated:
+        # WorkspaceStore's registered location is authoritative, not a path
+        # reconstructed from the Lineage's default creation layout.
+        current_path = (WindowsPath(record["workspace_path"]).parent / "relocated" / RID).as_posix()
+        record = storage.project_records([record], {RID: record["workspace_bindings"]},
+                                        {OWN: current_path, EXTRA: extra_path},
+                                        {LID: record["workspace_path"]})[0]
     monkeypatch.setattr(workspace_store, "get_workspace_store", lambda: SimpleNamespace(
         rows=lambda ids: {OWN: {"title": "Owned"}, EXTRA: {"title": "Reference"}}))
 

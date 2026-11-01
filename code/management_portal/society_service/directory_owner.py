@@ -17,7 +17,7 @@ def directory_metadata(value, owner_id, *, creating=False):
     return value
 
 
-def delete_folder(connection, *, table, identity, folder, actor):
+def delete_folder(connection, *, table, identity, folder, actor, deleted_at=None):
     """Delete a directory according to the owning identity, in its transaction."""
     if table not in {'residents', 'lineages'}:
         raise ValueError('Unknown Society directory owner')
@@ -31,12 +31,13 @@ def delete_folder(connection, *, table, identity, folder, actor):
     cancel_owner_moves(connection, identity)
     from .resident_workspace_deletion import remove_deleted_folder, delete_workspaces
     from .lineage_data_columns import now_iso_millis
+    timestamp = deleted_at or now_iso_millis()
     # An adopted folder stays, but objects explicitly owned by this identity
     # still follow their own origins, including created directories elsewhere.
-    delete_workspaces(connection, owner_ids=[identity], deleted_at=now_iso_millis(), deleted_by=actor)
+    delete_workspaces(connection, owner_ids=[identity], deleted_at=timestamp, deleted_by=actor)
     from management_portal.resources.directory_registrations import unregister_identity
     unregister_identity(identity, connection=connection, actor=actor)
     return remove_deleted_folder(folder, connection=connection, owner_id=identity,
-                                 origin=metadata['origin'], actor=actor)
+                                 origin=metadata['origin'], actor=actor, deleted_at=timestamp)
 
 

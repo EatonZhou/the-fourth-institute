@@ -32,7 +32,7 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize):
     return descriptor
 
 
-def remove_deleted_folder(folder, *, connection, owner_id, actor='', origin='created'):
+def remove_deleted_folder(folder, *, connection, owner_id, actor='', origin='created', deleted_at=None):
     """Enlist the owner's entire created tree in its identity transaction."""
     if origin not in {'created', 'adopted'}:
         raise ValueError('Invalid directory origin')
@@ -45,6 +45,6 @@ def remove_deleted_folder(folder, *, connection, owner_id, actor='', origin='cre
     queue = get_directory_cleanup_store()
     queue.lock(connection)
     delete_workspaces(connection, paths=[folder], owner_ids=[owner_id],
-                      deleted_at=now(), deleted_by=actor)
+                      deleted_at=deleted_at or now(), deleted_by=actor)
     return queue.enqueue(folder, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
                          actor=actor, connection=connection)

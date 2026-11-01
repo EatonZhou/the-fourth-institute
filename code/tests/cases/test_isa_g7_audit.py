@@ -13,6 +13,12 @@ from management_portal.hatg import catalog
 from management_portal.hatg.contracts import InstructionCall, InstructionContext, InstructionError
 from management_portal.hatg.kernel import Invocation
 from management_portal.resources import isa
+from management_portal.resources.address import AddressParser
+from management_common.resource_identity import get_resource_type_registry
+
+
+def parse_address(address):
+    return AddressParser(get_resource_type_registry()).parse(address)
 
 
 def invoke(name, arguments, *, expected_version=None, caller="alice"):
@@ -62,13 +68,17 @@ def test_search_pages_with_cursor_until_the_last_page(monkeypatch):
 
 
 @pytest.mark.parametrize("denied", [False, True])
-def test_resolve_missing_or_unreadable_internal_target_is_not_found(monkeypatch, denied):
-    """ResolveResource 解析不存在或无权读取的内部文件时都报告不存在"""
+def test_resolve_missing_target_and_denied_target_keep_distinct_failures(monkeypatch, denied):
+    """不存在转换为 not_found；无权限交给 Kernel 的权限错误边界处理"""
     def resolve(*args, **kwargs):
         if denied:
             raise PermissionError("private")
         return {"exists": False, "root_id": "workspace_aaaaaaaaaaaa", "record": {}}
     monkeypatch.setattr(isa, "_service", lambda: SimpleNamespace(resolve=resolve))
+    if denied:
+        with pytest.raises(PermissionError, match="private"):
+            isa.resolve_resource(invoke("ResolveResource", {"address": "workspace_aaaaaaaaaaaa/file/missing.md"}))
+        return
     with pytest.raises(InstructionError) as error:
         isa.resolve_resource(invoke("ResolveResource", {"address": "workspace_aaaaaaaaaaaa/file/missing.md"}))
     assert error.value.code == "instruction.not_found"
@@ -83,6 +93,7 @@ def test_read_version_can_be_reused_for_knowledge_updates(monkeypatch):
         assert changes["expected_version"] == "4"
         return {"resource_id": identifier, "version": {"number": 5}}
     monkeypatch.setattr(isa, "_service", lambda: SimpleNamespace(
+        parse_address=parse_address,
         read_content=lambda *a, **k: (b"Design", "text/markdown", {
             "record": {"version": {"number": 4}}}), update=update,
     ))
@@ -109,7 +120,7 @@ def test_real_knowledge_provider_reuses_read_token_and_rejects_stale_writes(tmp_
         return primary.read_bytes(), "text/markdown", {"record": {
             "version": knowledge_source.knowledge_version_record(primary.read_text(encoding="utf-8")),
         }}
-    monkeypatch.setattr(isa, "_service", lambda: SimpleNamespace(read_content=read,
+    monkeypatch.setattr(isa, "_service", lambda: SimpleNamespace(read_content=read, parse_address=parse_address,
         update=lambda identifier, changes, **k: _update_knowledge(identifier, changes, actor=k["actor"])))
     token = isa.read_resource(invoke("ReadResource", {"address": KNOWLEDGE_ID}))["version"]
     assert token == "3"
@@ -128,6 +139,7 @@ def test_internal_files_keep_content_digest_even_when_root_has_a_version(monkeyp
     """读取 Workspace 内部文件时 version 为内容摘要，不采用根资源的版本号"""
     import hashlib
     monkeypatch.setattr(isa, "_service", lambda: SimpleNamespace(
+        parse_address=parse_address,
         read_content=lambda *a, **k: (b"file", "text/plain", {"record": {"version": {"number": 7}}}),
     ))
     result = isa.read_resource(invoke("ReadResource", {"address": "workspace_aaaaaaaaaaaa/file/report.md"}))

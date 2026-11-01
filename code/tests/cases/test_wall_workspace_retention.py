@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from management_common.directory_cleanup_store import DirectoryCleanupStore
 from management_portal import isa_client, wall_residents
+from management_portal.resources.workspace_store import get_workspace_store
 from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import (
     lineage_graph_edits,
@@ -106,9 +108,21 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
         resident_domain.resume_resident_lifecycle_operation(operation)
     assert (root / 'SPEC.md').read_text() == '# Keep engineering source'
     assert (child / 'hello.py').read_bytes() == b'print("hello")\n'
+    cleanup = DirectoryCleanupStore()
     for resident in (first, second):
         assert resident_catalog.get_catalog().get_historical(resident['resident_id'])['deleted_at']
+        assert not get_workspace_store().rows([resident['owned_workspace_id']])
+        assert Path(resident['owned_workspace']['path']).exists()
+        jobs = cleanup.status(owner_id=resident['resident_id'])
+        assert jobs and all(job['status'] == 'pending' for job in jobs)
+    # A fresh cleanup owner resumes the durable queue independently of the
+    # Resident lifecycle operation or a lost WALL reply.
+    outcomes = DirectoryCleanupStore().run_pending()
+    assert outcomes and all(job['status'] == 'completed' for job in outcomes)
+    for resident in (first, second):
         assert not Path(resident['owned_workspace']['path']).exists()
+    assert (root / 'SPEC.md').read_text() == '# Keep engineering source'
+    assert (child / 'hello.py').read_bytes() == b'print("hello")\n'
     assert resident_catalog.get_catalog().get(survivor['resident_id'])
     assert store.get(APP, actor)['bindings']['main']['residents'] == {'wall-work:other:keep': survivor['resident_id']}
     if lost_reply == 'before_unbind':

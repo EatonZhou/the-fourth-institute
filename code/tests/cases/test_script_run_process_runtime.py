@@ -18,9 +18,19 @@ import pytest
 
 from management_common import process_runtime
 from management_portal.society_service.script_runs import runner, runtime, service, store
+from tests.cases.test_resident_folder_creation_contract import (
+    future_creation_store, resident_domain, _new_session_payload,  # noqa: F401
+)
 
 
 LINEAGE = 'lineage_aaaaaaaaaaaa'
+
+
+@pytest.fixture
+def script_lineage(future_creation_store):
+    return resident_domain.register_resident(
+        _new_session_payload('Native script process'), 'sample_admin',
+    )['lineage_id']
 
 
 def script_fixture(tmp_path, source, **config):
@@ -235,21 +245,22 @@ def test_linux_launch_uses_restored_user_manager_environment(tmp_path, monkeypat
     assert calls[0][1]['env'] == expected
 
 
-def test_linux_launch_cancel_race_stops_original_unit_after_admission(tmp_path, monkeypatch, records):
+def test_linux_launch_cancel_race_stops_original_unit_after_admission(tmp_path, monkeypatch, records, script_lineage):
     script = tmp_path / 'test.py'; script.write_text('pass')
     monkeypatch.setattr(service, 'sys', SimpleNamespace(platform='linux'))
     seen, stopped = [], []
     def launch(record, config):
         seen.append(record['script_run_id'])
-        assert service.cancel(record['script_run_id'], 'sample_admin', lineage_id=LINEAGE)['status'] == 'running'
+        assert service.cancel(record['script_run_id'], 'sample_admin', lineage_id=script_lineage)['status'] == 'running'
         assert not stopped
         return None  # systemd owns the PID
     monkeypatch.setattr(service, 'launch', launch)
     monkeypatch.setattr(process_runtime, 'run_process', lambda *args, **kwargs: stopped.append(args) or SimpleNamespace(returncode=0))
-    first = service.start({'path': str(script), 'lineage_id': LINEAGE}, 'sample_admin', idempotency_key='original')
-    again = service.start({'path': str(script), 'lineage_id': LINEAGE}, 'sample_admin', idempotency_key='original')
+    first = service.start({'path': str(script), 'lineage_id': script_lineage}, 'sample_admin', idempotency_key='original')
+    again = service.start({'path': str(script), 'lineage_id': script_lineage}, 'sample_admin', idempotency_key='original')
     assert len(seen) == len(stopped) == 1
     assert first['script_run_id'] == again['script_run_id'] == seen[0]
+    assert first['status'] == again['status'] == 'cancelled'
     assert store.get(seen[0])['status'] == 'cancelled'
     assert stopped[0][0] == ['systemctl', '--user', 'stop', 'portal-script-' + seen[0]]
 
@@ -294,7 +305,7 @@ def test_mac_restart_uses_original_runner_receipt_and_requires_payload_result(re
     assert store.get(row['script_run_id'])['status'] == 'running'
 
 
-def test_mac_start_persists_pid_outside_database_without_relaunch(tmp_path, monkeypatch, records):
+def test_mac_start_persists_pid_outside_database_without_relaunch(tmp_path, monkeypatch, records, script_lineage):
     script = tmp_path / 'test.py'; script.write_text('pass')
     monkeypatch.setattr(service, 'sys', SimpleNamespace(platform='darwin'))
     launched = []
@@ -303,7 +314,7 @@ def test_mac_start_persists_pid_outside_database_without_relaunch(tmp_path, monk
         (runtime.RUN_ROOT / record['script_run_id']).mkdir(parents=True)
         return 451
     monkeypatch.setattr(service, 'launch', launch)
-    arguments = {'path': str(script), 'lineage_id': LINEAGE}
+    arguments = {'path': str(script), 'lineage_id': script_lineage}
     first = service.start(arguments, 'sample_admin', idempotency_key='same-native-launch')
     again = service.start(arguments, 'sample_admin', idempotency_key='same-native-launch')
     assert first == again and launched == [first['script_run_id']]

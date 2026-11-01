@@ -27,10 +27,11 @@ def test_list_hydrates_bindings_and_descriptor_paths_in_one_batch(future_creatio
         binding_calls.append(ids)
         return read_bindings(connection, ids)
 
-    def paths(workspace_ids, *, connection=None):
+    def paths(workspace_ids, *, connection=None, include_deleted=False):
         ids = list(workspace_ids)
         path_calls.append(ids)
-        return read_paths(ids, connection=connection)
+        assert connection is not None and include_deleted is True
+        return read_paths(ids, connection=connection, include_deleted=include_deleted)
 
     monkeypatch.setattr(resident_workspace_storage, "bindings_for_residents", bindings)
     monkeypatch.setattr(resource_client, "workspace_paths_many", paths)
@@ -80,14 +81,15 @@ def test_list_keeps_resident_and_workspace_paths_in_one_snapshot(future_creation
         except BaseException as error:
             updated.append(error)
 
-    def paths_after_concurrent_commit(workspace_ids, *, connection=None):
+    def paths_after_concurrent_commit(workspace_ids, *, connection=None, include_deleted=False):
         if not updated:
             worker = threading.Thread(target=commit_new_facts)
             worker.start()
             worker.join(timeout=5)
             assert not worker.is_alive(), "Concurrent test writer did not finish"
             assert updated == [True], updated
-        return original_read_paths(workspace_ids, connection=connection)
+        assert connection is not None and include_deleted is True
+        return original_read_paths(workspace_ids, connection=connection, include_deleted=include_deleted)
 
     monkeypatch.setattr(resource_client, "workspace_paths_many", paths_after_concurrent_commit)
     loaded = catalog.get_many([resident_id])[0]
@@ -96,14 +98,6 @@ def test_list_keeps_resident_and_workspace_paths_in_one_snapshot(future_creation
     later = catalog.get_many([resident_id])[0]
     assert later["title"] == "Workspace snapshot after"
     assert str(new_code) in later["workspace_paths"]
-
-
-def test_member_move_preserves_workspace_bindings_v30(future_creation_store, monkeypatch):
-    """v30 布局下成员迁往另一 Lineage 时先提交图，文件迁移失败后可重试完成"""
-    from tests.cases.test_resident_folder_creation_contract import (
-        test_member_move_commits_graphs_then_recovers_unlocked_file_transfer,
-    )
-    test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_creation_store, monkeypatch)
 
 
 def test_workspace_handoff_uses_same_workspace_identity_v30(future_creation_store):

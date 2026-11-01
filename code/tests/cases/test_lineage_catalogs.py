@@ -286,7 +286,8 @@ def test_lineage_catalog_persists_and_validates_definitions_contracts(tmp_path, 
         definition = _lineage_definition()
         catalog.upsert(definition)
 
-        expected = {**definition, "program": {**definition["program"], "schema": "tfi.hatg-program.v2"}}
+        expected = {**definition, "program": {**definition["program"], "schema": "tfi.hatg-program.v2"},
+                    "directory": {"origin": "created", "owner_id": LINEAGE_ID}}
         assert catalog.get(LINEAGE_ID) == expected
         assert LineageCatalog(
             LineageDataStore(),
@@ -377,7 +378,10 @@ def test_lineage_catalog_persists_and_validates_definitions_contracts(tmp_path, 
 
         snapshot_definition, snapshot_runtime = catalog.get_state(LINEAGE_ID)
 
-        assert snapshot_definition == {**definition, "program": {**definition["program"], "schema": "tfi.hatg-program.v2"}}
+        assert snapshot_definition == {
+            **definition, "program": {**definition["program"], "schema": "tfi.hatg-program.v2"},
+            "directory": {"origin": "created", "owner_id": LINEAGE_ID},
+        }
         assert snapshot_runtime == {**runtime, "schema": "tfi.lineage-runtime-state.v1"}
     with subtests.test(contract='test_resident_catalog_persists_validated_records'), isolated_portal_case() as case_path:
         tmp_path = case_path

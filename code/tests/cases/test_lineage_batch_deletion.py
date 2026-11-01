@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -47,11 +48,31 @@ def _execute(lineage_id, args, key="batch-delete", actor="sample_admin"):
                actor=actor, key=key)
 
 
-def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set, monkeypatch):
+@pytest.mark.parametrize("running", [False, True])
+def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set, monkeypatch, running):
     """批量删除 Resident 和组件一次提交身份、图和后续清理，重放返回同一结果"""
     lineage_id, leader_id, ids, component_id, store = deletion_set
     before = store.lineage_definition(lineage_id)
     catalog_store = resident_catalog.get_catalog()
+    stopped = []
+    if running:
+        from management_portal.society_service.domain_ports import execution_port
+        execution_record = store.resident_execution_record
+        monkeypatch.setattr(store, "resident_execution_record", lambda resident_id: {
+            "execution_id": "execution-batch-delete", "submitted_at": "2026-11-02T00:00:00Z",
+            "actor": "sample_admin",
+        } if resident_id == ids[1] else execution_record(resident_id))
+        def cancel(execution_id, **kwargs):
+            assert execution_id == "execution-batch-delete"
+            assert catalog_store.get(ids[1])["resident_id"] == ids[1]
+            stopped.append("cancel")
+        def wait(execution_id, **kwargs):
+            assert execution_id == "execution-batch-delete"
+            assert stopped == ["cancel"]
+            assert catalog_store.get(ids[1])["resident_id"] == ids[1]
+            stopped.append("wait")
+            return {"status": "cancelled"}
+        monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(cancel=cancel, wait=wait))
     remove = Mock(wraps=catalog_store.remove)
     persist = Mock(wraps=lineage_state._persist_lineage_state)
     monkeypatch.setattr(catalog_store, "remove", remove)
@@ -59,6 +80,7 @@ def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set
     args = {"resident_ids": ids, "component_ids": [component_id]}
     result = _execute(lineage_id, args)
     assert result.status == "committed", result
+    assert stopped == (["cancel", "wait"] if running else [])
     replay = _execute(lineage_id, args)
     assert replay.replayed and replay.result["deleted_ids"] == result.result["deleted_ids"]
     remove.assert_called_once()
@@ -74,15 +96,13 @@ def test_batch_deletion_commits_identity_set_graph_and_effects_once(deletion_set
     assert not any(item["id"] == component_id for item in after["program"]["components"])
 
 
-@pytest.mark.parametrize("failure", ["running", "missing", "foreign", "duplicate", "component"])
+@pytest.mark.parametrize("failure", ["missing", "foreign", "duplicate", "component"])
 def test_batch_validation_failure_keeps_every_identity_and_graph(deletion_set, monkeypatch, failure):
-    """批次含运行中、不存在、外部或重复的 Resident 或缺失组件时整体拒绝，什么都不删"""
+    """批次含不存在、外部或重复的 Resident 或缺失组件时整体拒绝，什么都不删"""
     lineage_id, leader_id, ids, component_id, store = deletion_set
     before = store.lineage_definition(lineage_id)
     args = {"resident_ids": list(ids), "component_ids": [component_id]}
-    if failure == "running":
-        monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda resident_id: resident_id == ids[1])
-    elif failure == "missing":
+    if failure == "missing":
         args["resident_ids"].append("resident_123456789abc")
     elif failure == "foreign":
         _, other_leader, _ = _family()

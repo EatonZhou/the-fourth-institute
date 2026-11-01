@@ -89,7 +89,11 @@ def test_deleted_collaboration_reference_is_not_an_existing_resource(tmp_path, s
                                      "resource_id": resource_id, "title": "Deleted fixture",
                                      "status": "deleted", "deleted_at": deleted_at})
                 service = _resource_service(tmp_path, [record], descriptors=descriptors)
-                assert service.resolve(resource_id, actor="collaboration-reader")["exists"] is False
+                if resource_type == "workspace":
+                    with pytest.raises(KeyError):
+                        service.resolve(resource_id, actor="collaboration-reader")
+                else:
+                    assert service.resolve(resource_id, actor="collaboration-reader")["exists"] is False
                 with pytest.raises(KeyError):
                     service.reference(resource_id, actor="collaboration-reader")
                 with pytest.raises(KeyError):
@@ -129,7 +133,11 @@ def test_deleted_collaboration_reference_uses_current_lifecycle_before_index_ref
                 descriptors.put_with_change({**descriptor, "status": "deleted", "deleted_at": "2026-09-07T00:00:00Z"})
             assert stale_record["attributes"]["status"] == "active"
             assert service.query(q=resource_id, actor="collaboration-reader")["total"] == 0
-            assert service.resolve(resource_id, actor="collaboration-reader")["exists"] is False
+            if resource_type == "workspace":
+                with pytest.raises(KeyError):
+                    service.resolve(resource_id, actor="collaboration-reader")
+            else:
+                assert service.resolve(resource_id, actor="collaboration-reader")["exists"] is False
             with pytest.raises(KeyError):
                 service.reference(resource_id, actor="collaboration-reader")
             with pytest.raises(KeyError):
@@ -166,13 +174,14 @@ def test_registered_collaboration_reference_does_not_wait_for_discovery_index(tm
     assert "owner_ids" not in reference["attributes"]
     assert service.get(resource_id, actor="collaboration-reader")["capabilities"]["read"] is True
     assert "search_terms" not in service.get(resource_id, actor="collaboration-reader")
-    with pytest.raises(KeyError):
+    with pytest.raises(PermissionError if resource_type == "workspace" else KeyError):
         service.reference(resource_id, actor="")
 
     if resource_type == "workspace":
-        # Workspaces have no rename and cannot be restored: only the deletion step applies.
+        # A Workspace tombstone cannot be restored.
         _register_workspace(resource_id, tmp_path / "workspace", deleted_at="2026-10-06T00:00:00Z")
-        assert service.resolve(resource_id, actor="collaboration-reader")["exists"] is False
+        with pytest.raises(KeyError):
+            service.resolve(resource_id, actor="collaboration-reader")
         with pytest.raises(KeyError):
             service.reference(resource_id, actor="collaboration-reader")
         return

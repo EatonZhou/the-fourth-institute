@@ -36,7 +36,9 @@ def test_operation_catalog_is_complete_and_binds_real_domain_signatures():
 DOMAIN_RPC_WRITES = {
     "resident": {"cancel_resident_service_input", "request_resident_summary_rebuild", "submit_routing_eval_correction"},
     "workspace": {"save_workspace_attachment", "save_workspace_pasted_image"},
-    "project": {"delete_project"},
+    # ResourceService's RenameProject instruction delegates Society-owned
+    # membership and execution coordination to this domain operation.
+    "project": {"delete_project", "rename_project"},
     "lineage": {"create_lineage_resident", "ensure_personal_ama", "delete_personal_ama", "ensure_personal_assistant",
                 "provision_project_principal", "retry_lineage_projections"},
     "service_invocation": {

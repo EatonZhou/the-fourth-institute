@@ -324,7 +324,8 @@ class ResidentRecords:
                 if membership:
                     folder = lineage_folders([membership['lineage_id']], connection=connection)[membership['lineage_id']]
                     delete_folder(connection, table='residents', identity=rid,
-                                  folder=Path(folder) / 'residents' / rid, actor=record.get('deleted_by') or '')
+                                  folder=Path(folder) / 'residents' / rid, actor=record.get('deleted_by') or '',
+                                  deleted_at=record['deleted_at'])
                 if prior['owned_workspace_id']:
                     workspace_ids.add(prior['owned_workspace_id'])
                 connection.execute(

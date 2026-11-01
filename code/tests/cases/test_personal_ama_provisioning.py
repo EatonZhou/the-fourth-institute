@@ -234,19 +234,19 @@ def test_a_deleted_users_personal_ama_goes_with_the_account(future_creation_stor
     assert graphs.delete_personal_ama("newcomer", "sample_admin")["deleted_lineage_ids"] == []
 
 
-def test_an_ama_left_by_a_busy_deletion_stops_running_and_is_deleted_later(future_creation_store, monkeypatch):
-    """账号删除时没删成的 AMA 停止自动运行，工作结束后由定期清理删除
+def test_orphaned_running_ama_is_terminated_then_unregistered_with_durable_cleanup(future_creation_store, monkeypatch):
+    """失效账号的 AMA 禁止自动运行；清理先确认执行终止，再注销并持久排队删除文件。
 
-    删除账号时 AMA 的 Resident 还有排队工作，AMA 删除失败而账号照样删除；此后它的 Leader 代表的用户已不存在，
-    自动运行报配置错误而不再反复重试；定期清理在工作结束前记下失败，结束后删除该 AMA，不动其他用户的 AMA。
-
-    :design: decision_bd5217d08c09
+    :design: decision_bd5217d08c09, decision_4aa13bc21e8e
     """
     from management_portal import portal_access_control
     from management_portal.permission_system import personal_ama
     from management_portal.society_service import (
-        lineage_automation_identity, resident_lifecycle_domain, resource_client,
+        lineage_automation_identity, resident_execution_work, resource_client,
     )
+    from management_portal.society_service.domain_ports import execution_port
+    from management_common.directory_cleanup_store import DirectoryCleanupStore
+    from pathlib import Path
 
     mine = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
     theirs = principal_hierarchy_domain.ensure_personal_ama("neighbour", "neighbour")
@@ -260,17 +260,51 @@ def test_an_ama_left_by_a_busy_deletion_stops_running_and_is_deleted_later(futur
     store = portal_access_control.get_portal_access_store()
     monkeypatch.setattr(store, "user", lambda username: {"status": status.get(str(username), "active")})
     monkeypatch.setattr(store, "is_active", lambda username: status.get(str(username), "active") == "active")
-    busy = {mine["resident_id"]}
-    monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda resident_id: resident_id in busy)
+    record = resident_catalog.get_catalog().get(mine["resident_id"])
+    root = Path(record["workspace_path"])
+    neighbour_root = Path(resident_catalog.get_catalog().get(theirs["resident_id"])["workspace_path"])
+    execution_id = "execution-orphaned-ama"
+    resident_execution_work.write(record, {
+        "execution_id": execution_id, "actor": "newcomer", "submitted_at": "2026-11-02T00:00:00Z",
+    })
+    events = []
+
+    def cancel(identifier, *, actor, **kwargs):
+        assert (identifier, actor) == (execution_id, "newcomer")
+        assert resident_catalog.get_catalog().get(mine["resident_id"])["intake_open"] is False
+        events.append("cancel")
+
+    def wait(identifier, *, actor, timeout_seconds):
+        assert (identifier, actor, timeout_seconds) == (execution_id, "newcomer", 30)
+        assert events == ["cancel"]
+        # Identity and files still exist until termination is confirmed.
+        assert lineage_aggregate.lineage_catalog_store().get(mine["lineage_id"])
+        assert resident_catalog.get_catalog().get(mine["resident_id"])
+        assert root.is_dir()
+        events.append("terminated")
+        return {"status": "cancelled"}
+
+    monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(cancel=cancel, wait=wait))
 
     with pytest.raises(lineage_automation_identity.AutomationConfigurationError):
         lineage_automation_identity.runtime_actor(graph)
     assert lineage_automation_identity.readiness_error(graph)
-    first = principal_hierarchy_domain.delete_orphaned_personal_amas()
-    assert first["deleted_lineage_ids"] == [] and set(first["failed"]) == {"newcomer"}
-    busy.clear()
     assert principal_hierarchy_domain.delete_orphaned_personal_amas() == {
         "deleted_lineage_ids": [mine["lineage_id"]], "failed": {}}
+    assert events == ["cancel", "terminated"]
+    with pytest.raises(KeyError):
+        resident_catalog.get_catalog().get(mine["resident_id"])
+    with pytest.raises(KeyError):
+        lineage_aggregate.lineage_catalog_store().get(mine["lineage_id"])
+    assert root.is_dir()
+    # Reopening the store observes the cleanup committed with unregistration.
+    cleanup = DirectoryCleanupStore()
+    pending = cleanup.status(owner_id=mine["lineage_id"])
+    assert pending and all(job["status"] == "pending" for job in pending)
+    cleanup.run_pending()
+    assert not root.exists()
+    assert neighbour_root.is_dir()
+    assert all(job["status"] == "completed" for job in cleanup.status(owner_id=mine["lineage_id"]))
     personal = {row["lineage_id"] for row in lineage_aggregate.lineage_catalog_store().listing_records() if row.get("lineage_membership") == "personal"}
     assert personal == {theirs["lineage_id"]}
     assert principal_hierarchy_domain.delete_orphaned_personal_amas() == {"deleted_lineage_ids": [], "failed": {}}

@@ -40,6 +40,8 @@ class ExamplePaths(unittest.TestCase):
             LINEAGE_DATA_SCHEMA, lineage_data_schema_matches,
         )
         from management_portal.resources.registry_store import _TABLES as registry_tables
+        from management_portal.society_service.directory_owner import directory_metadata
+        from management_common.json_columns import json_value
         from scripts.tfi_seed_selection import plan
         from scripts.tfi_release_install import map_directories
 
@@ -52,10 +54,11 @@ class ExamplePaths(unittest.TestCase):
                 _, selected, _ = plan(self.seed, original, include_examples=included)
                 sql = selected if selected is not None else (
                     self.seed / original['database']['path']).read_text(encoding='utf-8')
-                sql = map_directories(sql, {
+                replacements = {
                     entry['placeholder']: '/isolated-seed/' + entry['root']
                     for entry in original['directory_mappings']
-                })
+                }
+                sql = map_directories(sql, replacements)
                 with psycopg.connect(dsn, row_factory=dict_row) as connection:
                     connection.execute(sql, prepare=False)
                     connection.execute('SET search_path TO lineage')
@@ -63,6 +66,44 @@ class ExamplePaths(unittest.TestCase):
                         "SELECT value FROM lineage_meta WHERE key='schema'"
                     ).fetchone()['value'], LINEAGE_DATA_SCHEMA)
                     self.assertTrue(lineage_data_schema_matches(connection))
+                    # Imported identities must be usable without an offline
+                    # migration, including their directory ownership facts.
+                    for table, identity in (("lineages", "lineage_id"), ("residents", "resident_id")):
+                        records = connection.execute(
+                            f'SELECT {identity}, directory_json FROM {table}'
+                        ).fetchall()
+                        self.assertTrue(records)
+                        for row in records:
+                            self.assertEqual(directory_metadata(row['directory_json'], row[identity]),
+                                             {'origin': 'created', 'owner_id': row[identity]})
+                    workspaces = connection.execute(
+                        'SELECT w.origin,w.owner_id,w.operation_id,r.resident_id '
+                        'FROM workspace.workspaces w '
+                        'LEFT JOIN residents r ON r.owned_workspace_id=w.workspace_id'
+                    ).fetchall()
+                    self.assertTrue(workspaces)
+                    for row in workspaces:
+                        self.assertIsNotNone(row['resident_id'])
+                        self.assertEqual(row['origin'], 'created')
+                        self.assertEqual(row['owner_id'], row['resident_id'])
+                        self.assertIsNone(row['operation_id'])
+                    for row in connection.execute(
+                        "SELECT collection,document_json FROM resource_registry.registry_documents "
+                        "WHERE collection IN ('project_registry','repo','article')"
+                    ).fetchall():
+                        document = json_value(row['document_json'])
+                        if row['collection'] == 'project_registry':
+                            for project in document['projects']:
+                                self.assertEqual(project['directory'],
+                                                 {'origin': 'created', 'owner_id': project['id']})
+                        else:
+                            locations = document['checkouts' if row['collection'] == 'repo' else 'roots']
+                            for location in locations:
+                                # The shared installed code is adopted; example
+                                # content is created by copying the seed areas.
+                                expected_origin = 'adopted' if location['path'] == replacements['${code_root}'] else 'created'
+                                self.assertEqual(location['origin'], expected_origin)
+                                self.assertEqual(location['owner_id'], document['id'])
                     actual_registry_tables = {row['table_name'] for row in connection.execute(
                         "SELECT table_name FROM information_schema.tables "
                         "WHERE table_schema='resource_registry'"

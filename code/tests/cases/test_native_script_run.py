@@ -11,6 +11,7 @@ from unittest.mock import patch
 import pytest
 
 from management_portal.society_service.script_runs import service
+from tests.cases.test_script_run_process_runtime import script_lineage, future_creation_store  # noqa: F401
 
 
 def test_macos_launch_uses_detached_runner_and_returns_pid(tmp_path, monkeypatch):
@@ -86,30 +87,20 @@ def test_macos_cancel_refuses_reused_pid(tmp_path, monkeypatch):
         service.cancel("script_run_test", "user", lineage_id=row["lineage_id"])
 
 
-def test_macos_cancel_during_launch_waits_for_child_pid(tmp_path, monkeypatch):
+def test_macos_cancel_during_launch_waits_for_child_pid(tmp_path, monkeypatch, script_lineage):
     script = tmp_path / "task.py"
     script.write_text("pass\n", encoding="utf-8")
-    lineage_id = "lineage_aaaaaaaaaaaa"
+    lineage_id = script_lineage
     row = {}
 
-    @contextmanager
-    def edit(_identifier):
-        yield row
-
-    def admit(record):
-        row.update(record)
-        return row, "created"
-
     def launch(record, _args):
+        row.update(record)
         pending = service.cancel(record["script_run_id"], "user", lineage_id=lineage_id)
         assert pending["status"] == "running"
-        assert row["cancel_requested"] is True
+        assert service.store.get(record["script_run_id"])["cancel_requested"] is True
         return 4321
 
     monkeypatch.setattr(service, "sys", SimpleNamespace(platform="darwin"))
-    monkeypatch.setattr(service, "_validate", lambda _args: {"path": str(script)})
-    monkeypatch.setattr(service.store, "admit", admit)
-    monkeypatch.setattr(service.store, "edit", edit)
     monkeypatch.setattr(service, "launch", launch)
     monkeypatch.setattr(service.runtime, "RUN_ROOT", tmp_path / "runs")
     monkeypatch.setattr(service, "revoke", lambda _row: None)
@@ -123,6 +114,7 @@ def test_macos_cancel_during_launch_waits_for_child_pid(tmp_path, monkeypatch):
         result.write_text(json.dumps({"status": "cancelled"}))
     monkeypatch.setattr(service.process_runtime, "terminate_process_tree", terminate)
 
-    receipt = service.start({"lineage_id": lineage_id}, "user")
+    receipt = service.start({"lineage_id": lineage_id, "path": str(script)}, "user")
     assert receipt["status"] == "cancelled"
+    assert service.store.get(receipt["script_run_id"])["status"] == "cancelled"
     assert signalled == [(4321, {"timeout": 15})]

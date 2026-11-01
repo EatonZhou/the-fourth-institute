@@ -462,7 +462,7 @@ def test_deleted_identity_is_terminal_and_preserves_known_business_fields():
         'title': 'Known Historical Title'}, deleted_at=T1)
     assert not state.all_residents()
     assert before['title'] == 'Known Historical Title'
-    with pytest.raises(ValueError, match='cannot be updated or restored'):
+    with pytest.raises(PermissionError, match='Cannot write or inherit from deleted identity'):
         state.put_resident_record(R, {**before, 'deleted_at': '', 'title': 'revived'})
     assert state.resident_record(R, include_deleted=True) == before
     assert state.resident_deletion(R) == before

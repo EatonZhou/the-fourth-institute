@@ -6,8 +6,11 @@
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from management_common.directory_cleanup_store import get_directory_cleanup_store
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import (
     lineage_graph_edits,
@@ -35,8 +38,8 @@ def _persisted_bindings(store, resident_id):
         ).fetchall()]
 
 
-def _assert_deletion_ends_workspace_use(store, before, bindings_before, deletion, *, extras_deleted=False):
-    """Unused Workspaces delete; extras still used by another Resident survive."""
+def _assert_deletion_ends_workspace_use(store, before, bindings_before, deletion):
+    """Owned Workspaces share the deletion event; references do not own extras."""
     owned_id = before["owned_workspace_id"]
     extra_ids = [binding["workspace_id"] for binding in bindings_before]
     assert deletion["owned_workspace_id"] == owned_id
@@ -47,7 +50,9 @@ def _assert_deletion_ends_workspace_use(store, before, bindings_before, deletion
     assert (workspaces[owned_id]["deleted_at"], workspaces[owned_id]["deleted_by"]) == (
         deletion["deleted_at"], deletion["deleted_by"],
     )
-    assert all(bool(workspaces[workspace_id]["deleted_at"]) == extras_deleted for workspace_id in extra_ids)
+    for workspace_id in extra_ids:
+        assert workspaces[workspace_id]["owner_id"] != deletion["resident_id"]
+        assert workspaces[workspace_id]["deleted_at"] is None
 
 
 @pytest.mark.parametrize("entry", ["ordinary", "fork"])
@@ -165,13 +170,13 @@ def test_store_deletion_retains_domain_facts_without_workspace_hydration(future_
         "registration_state", "principal_hierarchy",
     ):
         assert historical.get(field) == before.get(field)
-    _assert_deletion_ends_workspace_use(store, before, bindings_before, historical, extras_deleted=True)
+    _assert_deletion_ends_workspace_use(store, before, bindings_before, historical)
     assert "workspace_path" not in historical
     assert "default_cwd" not in historical
     assert get_agent_data_store().agent(resident_id) == agent_before
     with pytest.raises(KeyError):
         store.resident_record(resident_id)
-    with pytest.raises(ValueError, match="Deleted Resident"):
+    with pytest.raises(PermissionError, match="Cannot write or inherit from deleted identity"):
         store.put_resident_record(resident_id, before)
     assert store.resident_record(resident_id, include_deleted=True) == historical
 
@@ -197,3 +202,40 @@ def test_store_deletion_rejects_unknown_identity_and_rolls_back_the_batch(future
     assert store.resident_deletion(resident_id) is None
     with pytest.raises(KeyError):
         store.resident_record(missing_id, include_deleted=True)
+    assert get_workspace_store().rows([before["owned_workspace_id"]])
+    assert not get_directory_cleanup_store().status(owner_id=resident_id)
+    assert not get_directory_cleanup_store().status(owner_id=before["owned_workspace_id"])
+
+
+@pytest.mark.parametrize("origin", ["created", "adopted"])
+def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
+    future_creation_store, tmp_path, origin,
+):
+    """同一注销事件时间传到外部 owned 与嵌套 Workspace，文件按来源异步清理。"""
+    owner = resident_domain.register_resident(_new_session_payload("Deletion time owner"), "sample_admin")
+    store = resident_catalog.get_catalog().state_store
+    workspaces = get_workspace_store()
+    owned = Path(owner["owned_workspace"]["path"])
+    nested = owned.parent / "nested"
+    external = tmp_path / "external"
+    nested.mkdir()
+    external.mkdir()
+    nested_id, external_id = "workspace_aabbccddeeff", "workspace_112233445566"
+    # The nested registration belongs to itself; the outer created Resident
+    # folder still owns its removal. The external one follows its owner ID.
+    workspaces.ensure(nested_id, str(nested), origin=origin)
+    workspaces.ensure(external_id, str(external), origin=origin, owner_id=owner["resident_id"])
+    deleted_at = "2026-10-08T01:02:03.456789Z"
+    store.remove_residents([{
+        "resident_id": owner["resident_id"], "deleted_at": deleted_at, "deleted_by": "sample_admin",
+    }])
+    ids = [owner["owned_workspace_id"], nested_id, external_id]
+    assert not workspaces.rows(ids)
+    assert store.resident_deletion(owner["resident_id"])["deleted_at"] == deleted_at
+    assert all((row["deleted_at"], row["deleted_by"]) == (deleted_at, "sample_admin")
+               for row in workspaces.rows(ids, include_deleted=True).values())
+    assert owned.exists() and nested.exists() and external.exists()
+    outcomes = get_directory_cleanup_store().run_pending()
+    assert outcomes and all(job["status"] == "completed" for job in outcomes)
+    assert not owned.exists() and not nested.exists()
+    assert external.exists() == (origin == "adopted")

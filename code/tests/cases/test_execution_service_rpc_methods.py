@@ -10,6 +10,7 @@ fails only when a client sends it, with "unsupported ExecutionService method".
 """
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -28,9 +29,14 @@ WIRE_METHOD = re.compile(
 def _client_methods() -> set[str]:
     root = Path(service.__file__).parent
     return {
-        method
+        node.args[0].value
         for name in CLIENT_MODULES
-        for method in WIRE_METHOD.findall((root / name).read_text(encoding="utf-8"))
+        for node in ast.walk(ast.parse((root / name).read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        and node.func.attr in {"request", "_handover_request"}
+        and node.args and isinstance(node.args[0], ast.Constant)
+        and isinstance(node.args[0].value, str)
+        and WIRE_METHOD.fullmatch(repr(node.args[0].value))
     }
 
 

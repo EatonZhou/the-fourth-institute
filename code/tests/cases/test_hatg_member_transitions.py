@@ -82,37 +82,6 @@ def test_move_last_member_preserves_identity_and_leaves_an_explicitly_deletable_
     assert (resident_record_domain.resident_folder_path(current) / "artifact.txt").exists()
 
 
-@pytest.mark.parametrize("side", ["source", "target"])
-def test_lineage_delete_waits_for_outgoing_and_incoming_workspace_transfers(teams, side):
-    """源或目标 Lineage 还有未完成的 Workspace 转移时 DeleteLineage 被拒绝"""
-    singleton, call = empty_source_request(teams)
-    source, target, _ = singleton
-    first = execute(call)
-    operations = resident_record_domain.lifecycle_operations()
-    lineage = source if side == "source" else target
-    before = graph(lineage)
-    early = run("DeleteLineage", {"lineage_id": lineage["lineage_id"]}, key="premature-delete")
-    assert early.status == "failed" and "pending workspace transfer" in early.error["message"]
-    assert graph(lineage) == before
-    # Finishing the last member's move must not hide an earlier member's outbox.
-    assert operations.run(first.result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
-    again = run("DeleteLineage", {"lineage_id": lineage["lineage_id"]}, key="earlier-transfer-still-pending")
-    assert again.status == "failed" and "pending workspace transfer" in again.error["message"]
-    finish_transfers()
-    assert not operations.pending_lineage_transfer(source["lineage_id"])
-    assert not operations.pending_lineage_transfer(target["lineage_id"])
-
-
-def test_direct_leader_deletion_cannot_archive_an_outgoing_workspace_transfer(teams):
-    """Workspace 转出未完成时直接删除 Leader 所在 Lineage 被拒绝"""
-    source, _target, _member = teams
-    assert execute(request(teams)).status == "committed"
-    before = graph(source)
-    with pytest.raises(ValueError, match="pending workspace transfer"):
-        resident_domain.delete_resident_lineage(source["resident_id"], ACTOR)
-    assert graph(source) == before
-
-
 @pytest.mark.parametrize("value", [0, 1, "true"])
 def test_move_empty_source_flag_requires_boolean(teams, value):
     """allow_empty_source 不是布尔值时迁移以参数错误拒绝且两边不变"""

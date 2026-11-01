@@ -3,6 +3,7 @@
 :module: spec.design-governance
 """
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from threading import Barrier, Event
 from types import SimpleNamespace
 
@@ -23,24 +24,36 @@ from tests.cases.test_resident_folder_creation_contract import (
 )
 
 
-@pytest.mark.parametrize("failure", [ValueError("busy"), PermissionError("disk permission")])
-def test_partial_project_deletion_has_failed_code_and_progress(monkeypatch, tmp_path, failure):
-    """删除 Project 中途失败时返回失败错误码并列出已删除的 Lineage"""
+@pytest.mark.parametrize("failure", [RuntimeError("termination unconfirmed"), PermissionError("deletion denied")])
+def test_project_deletion_prepares_all_lineages_before_unregistering(monkeypatch, tmp_path, failure):
+    """任一 Lineage 的删除准备失败时，Project 尚未注销，也没有部分删除进度。"""
     first, second = "lineage_aaaaaaaaaaaa", "lineage_bbbbbbbbbbbb"
     root, _, _, deleted = _configure_project(monkeypatch, tmp_path, lineages=([first, second], []))
-    original = lineage_lifecycle.delete_lineage
+    original = lineage_lifecycle.prepare_lineage_deletion
+    prepared = []
 
-    def delete(identifier, actor, **options):
+    @contextmanager
+    def prepare(identifier, actor):
+        prepared.append(identifier)
         if identifier == second:
             raise failure
-        return original(identifier, actor, **options)
+        with original(identifier, actor) as commit:
+            yield commit
 
-    monkeypatch.setattr(lineage_lifecycle, "delete_lineage", delete)
+    monkeypatch.setattr(lineage_lifecycle, "prepare_lineage_deletion", prepare)
     with pytest.raises(InstructionError) as error:
         project_domain.delete_project("Example", "alice")
     assert error.value.code == "instruction.failed"
-    assert error.value.details["deleted_lineage_ids"] == [first]
-    assert deleted == [first] and root.exists()
+    assert error.value.commit_state == "not_committed"
+    assert error.value.details["deleted_lineage_ids"] == []
+    assert error.value.details["deleted_resident_ids"] == []
+    assert prepared == [first, second]
+    assert deleted == [] and root.exists()
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from management_portal.resources.registry_store import get_registry_store
+    assert get_directory_cleanup_store().status(owner_id="Example") == []
+    assert get_registry_store().get('project_deletions', 'Example') is None
+    assert project_domain.project_registry.load()["projects"][0]["id"] == "Example"
 
 
 def test_ensure_project_principal_serializes_concurrent_creation(future_creation_store, monkeypatch):

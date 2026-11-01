@@ -58,23 +58,39 @@ def batch_reader(workspace, resource_http, monkeypatch):
 
 
 def test_batch_http_reads_each_full_address_once_with_individual_failures(workspace, batch_reader, monkeypatch):
-    """批量读取按完整地址逐项授权并分别返回错误"""
+    """批量读取逐项先鉴权对象、再检查文件路径，分别返回拒绝和缺失"""
+    from management_portal.resources.providers import folder_files
+    from management_portal.society_service import lineage_access_policy
+
     denied = WORKSPACE + '/file/denied.txt'
     (workspace.root / 'denied.txt').write_text('not public')
     missing = WORKSPACE + '/file/missing.txt'
     authorize = workspace.service._access.authorize_read
-    checked = []
+    reaches = lineage_access_policy.workspace_reaches
+    describe = folder_files.describe
+    checked, paths = [], []
     def check(resolved, *, actor):
-        checked.append((resolved['address'], actor))
-        if resolved['address'] == denied:
-            raise PermissionError('child path denied')
+        # Object records and root resolutions both participate in the gate.
+        checked.append((resolved.get('resource_id') or resolved['root_id'], actor))
         return authorize(resolved, actor=actor)
+    def check_path(actor, resource_id, *, write=False, path=''):
+        assert checked[-1] == (WORKSPACE, actor)
+        paths.append((path, actor))
+        if path == str(workspace.root / 'denied.txt'):
+            return False
+        return reaches(actor, resource_id, write=write, path=path)
+    def inspect_file(result, root, parts, **kwargs):
+        assert parts != ('denied.txt',), 'denied file inspected'
+        assert paths[-1] == (str(root.joinpath(*parts)), 'alice')
+        return describe(result, root, parts, **kwargs)
     monkeypatch.setattr(workspace.service._access, 'authorize_read', check)
+    monkeypatch.setattr(lineage_access_policy, 'workspace_reaches', check_path)
+    monkeypatch.setattr(folder_files, 'describe', inspect_file)
     addresses = [ADDRESS, denied, missing, ADDRESS]
     result = batch_reader.request('read_many', addresses=addresses)
     assert [item['address'] for item in result['results']] == addresses
     first, blocked, absent, duplicate = result['results']
-    assert first['ok'] and duplicate['result'] == first['result']
+    assert first['ok'] and duplicate['result'] == first['result'], result
     assert first['result']['metadata']['content_sha256'] == hashlib.sha256(workspace.file.read_bytes()).hexdigest()
     assert not blocked['ok'] and blocked['status'] == 403 and blocked['error']['code'] == 'permission_denied'
     assert not absent['ok'] and absent['status'] == 404
@@ -83,8 +99,9 @@ def test_batch_http_reads_each_full_address_once_with_individual_failures(worksp
     assert [method for method, _ in batch_reader.rpc_calls] == ['resource.read_content'] * 4
     assert [params['address'] for _, params in batch_reader.rpc_calls] == addresses
     assert all(params['actor'] == 'alice' for _, params in batch_reader.rpc_calls)
-    assert (denied, 'alice') in checked and checked.count((ADDRESS, 'alice')) == 2
-    assert not any(ref == WORKSPACE for ref, _ in checked)
+    assert checked and all(item == (WORKSPACE, 'alice') for item in checked)
+    assert paths == [(str(path), 'alice') for path in (
+        workspace.file, workspace.root / 'denied.txt', workspace.root / 'missing.txt', workspace.file)]
 
 
 def test_resolve_many_is_metadata_only_and_does_not_hide_item_errors(workspace, batch_reader):

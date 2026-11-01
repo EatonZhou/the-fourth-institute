@@ -41,7 +41,10 @@ def test_tfi_framework_format_writers_run_index_keeps_history(tmp_path):
 def test_tfi_framework_format_writers_deletion_receipt(tmp_path):
     """删除结果标签切换但运行 ID、数量和警告语义保持。"""
     coordinator = RunCoordinator.__new__(RunCoordinator)
-    coordinator.records = SimpleNamespace(delete_many=lambda ids: [{"run_id": item} for item in ids])
+    def delete_many(ids, *, run_root):
+        assert run_root == tmp_path
+        return [{"run_id": item} for item in ids]
+    coordinator.records = SimpleNamespace(delete_many=delete_many)
     coordinator.run_root = tmp_path
     with pytest.raises(PermissionError):
         coordinator.delete_reports([RUN_ID], "")

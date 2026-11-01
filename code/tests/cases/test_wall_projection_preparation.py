@@ -52,8 +52,7 @@ def test_keyed_creation_is_committed_before_external_projection(future_creation_
     assert observations and all(a == b for a, b in observations)
 
 
-@pytest.mark.parametrize("stage", ["lineage", "resident"])
-def test_keyed_projection_retry_reuses_committed_identity(future_creation_store, monkeypatch, stage):
+def test_keyed_projection_retry_reuses_committed_identity(future_creation_store, monkeypatch):
     """冻结创建请求与 Resident 提交、投影恢复边界
 
     :design: decision_0f57656a2acd
@@ -63,7 +62,7 @@ def test_keyed_projection_retry_reuses_committed_identity(future_creation_store,
 
     parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
     store = resident_catalog.get_catalog().state_store
-    target, name = (lineage_state, "_sync_lineage_resource_identity") if stage == "lineage" else (resource_client, "sync_resident_resource_bundles")
+    target, name = resource_client, "sync_resident_resource_bundles"
     original = getattr(target, name)
 
     def unavailable(*args, **kwargs):

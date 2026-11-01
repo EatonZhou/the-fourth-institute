@@ -231,8 +231,8 @@ def _start(arguments, caller, *, idempotency_key='', trigger_path_id=''):
             row['unit'] = launch_record['unit']
             cancellation_pending = bool(row.get('cancel_requested'))
     if cancellation_pending:
-        cancel(identifier, caller, lineage_id=lineage_id)
-    return _receipt(record)
+        row = cancel(identifier, caller, lineage_id=lineage_id)
+    return _receipt(row)
 
 
 def _receipt(record):
