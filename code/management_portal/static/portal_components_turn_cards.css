@@ -208,7 +208,7 @@
 .nativeTurnCard .resourceTurnChanges { margin: 0; padding-inline-start: 18px; overflow-wrap: anywhere; font-size: 12px; }
 .resourceTurnChanges small { color: var(--muted); white-space: nowrap; }
 .nativeTurnCard li > span { color: var(--muted); margin-inline-end: 8px; }
-.nativeTurnCard [data-step-status="inProgress"] > span { color: var(--accent); font-weight: 600; }
+.nativeTurnCard:not([data-turn-ended="true"]) [data-step-status="inProgress"] > span { color: var(--accent); font-weight: 600; }
 .nativeTurnCard details { min-width: 0; margin: 0; }
 .nativeTurnCard summary { cursor: pointer; color: var(--accent); font-weight: 600; }
 .nativeTurnEmpty { color: var(--muted); }

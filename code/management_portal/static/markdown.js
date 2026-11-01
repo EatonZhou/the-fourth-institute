@@ -54,6 +54,8 @@
   function markdownNavigationUrl(value) {
     const url = cleanMarkdownUrl(value);
     if (!url) return "";
+    // Drive-absolute paths are files, not arbitrary one-letter URL schemes.
+    if (/^[a-z]:[\\/]/i.test(url)) return "file:///" + url.replaceAll("\\", "/");
     const scheme = url.match(/^([a-z][a-z0-9+.-]*):/i);
     if (!scheme) return url;
     return MARKDOWN_NAVIGATION_SCHEMES.has(scheme[1].toLowerCase()) ? url : "";
@@ -122,15 +124,15 @@
     try { decodedPath = decodeURIComponent(localPath); } catch { return ""; }
     if (/[\\\u0000-\u001f\u007f]/.test(decodedPath)
         || decodedPath.split("/").some(part => part === "." || part === "..")) return "";
-    const configuredRoot = [paths.share_root, paths.staging_root, paths.test_results_root].some(root => {
+    const configuredRoot = Object.values(paths).some(root => {
       if (typeof root !== "string" || !/^\/(?!\/)/.test(root) || root === "/"
           || /[\\\u0000-\u001f\u007f]/.test(root)
           || root.split("/").some(part => part === "." || part === "..")) return false;
       return localPath.startsWith(root.replace(/\/+$/, "") + "/");
     });
-    // Retain the historical server locator alias, and keep ordinary URL paths
-    // (including /share when it is a route) on the ordinary image path below.
-    if (configuredRoot || localPath.startsWith("/nas_ro/")) {
+    // Keep ordinary URL paths (including /share when it is a route) on the
+    // ordinary image path below.
+    if (configuredRoot) {
       return "/api/agent-workbench/link-file-raw?path=" + encodeURIComponent(localPath);
     }
     if (/^\/(?:home|root|srv|tmp|var|etc|usr|opt|data|mnt|media|proc|sys|dev|run)(?:\/|$)/.test(localPath)) return "";

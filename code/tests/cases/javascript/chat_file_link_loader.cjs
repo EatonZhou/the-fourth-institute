@@ -84,3 +84,63 @@ test('file links and Workspace preview share encoded local-file metadata and con
   assert.equal(result.source, 'workspace_link');
   assert.equal(preview.canEdit(result), false, 'shared URL ownership must not grant write access');
 });
+
+test('Windows markdown paths reach permission-checked Preview without allowing arbitrary schemes', async () => {
+  const root = path.resolve(__dirname, '../../../management_portal/static');
+  const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[ch]));
+  const requests = [];
+  const window = {
+    location: new URL('https://portal.invalid/'),
+    PortalUIPrimitives: { escapeHtml },
+    PortalAPI: { get: async url => { requests.push(url); throw new Error('Permission denied'); } },
+  };
+  const context = vm.createContext({ window, URL, URLSearchParams, console });
+  for (const file of ['portal_preview_contract.js', 'portal_file_links.js', 'markdown.js']) {
+    vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
+  }
+  const links = window.PortalFileLinks;
+  for (const [raw, expected, locator] of [
+    ['C:/Users/example/workspace/draft.md', 'C:/Users/example/workspace/draft.md', ''],
+    [String.raw`C:\Users\example\workspace\draft.md:12:3`, 'C:/Users/example/workspace/draft.md', ':12:3'],
+    ['d:/Users/用户/共用 规则.md#L12-L14', 'd:/Users/用户/共用 规则.md', '#L12-L14'],
+    [String.raw`D:\Users\用户\共用 规则.md#L8`, 'D:/Users/用户/共用 规则.md', '#L8'],
+    ['C:/Users/a%20b/plan.md', 'C:/Users/a b/plan.md', ''],
+    ['file:///C:/Users/a%20b/plan.md#L3', 'C:/Users/a b/plan.md', '#L3'],
+  ]) {
+    const html = window.MD.render(`[draft](<${raw}>)`);
+    assert.match(html, /<a /);
+    const href = html.match(/data-portal-preview-link="([^"]+)"/)[1];
+    assert.match(href, /^file:\/\/\/[a-z]:\//i);
+    for (const value of [raw, href]) {
+      assert.equal(links.classifyLocator(value).kind, 'local');
+      const descriptor = links.describe(value, {basePath: '/different/base.md'});
+      assert.equal(descriptor.path, expected);
+      assert.equal(descriptor.locator, locator);
+    }
+    // Exercise the real shared click handler, not just the URL classifier.
+    const listeners = {};
+    const node = {
+      dataset: {portalPreviewLink: href}, tagName: 'A', textContent: 'draft',
+      matches: () => true, querySelectorAll: () => [], closest: () => null,
+      classList: { add() {} }, addEventListener: (name, callback) => { listeners[name] = callback; },
+    };
+    let prevented = false, opened;
+    links.bind(node, {target: {}, onOpen: request => { opened = request; }});
+    await listeners.click({button: 0, preventDefault: () => { prevented = true; }, stopPropagation() {}});
+    assert.equal(prevented, true);
+    assert.equal(opened.path, expected);
+    assert.equal(opened.locator, locator);
+    await assert.rejects(links.load(opened.path), /Permission denied/);
+    const request = new URL(requests.at(-1), window.location);
+    assert.equal(request.pathname, '/api/agent-workbench/link-file');
+    assert.equal(request.searchParams.get('path'), expected);
+  }
+  assert.equal(links.normalizePath('C:/../../draft.md'), 'C:/draft.md');
+  assert.equal(links.normalizePath('../draft.md', {basePath: 'C:/work/sub/file.md'}), 'C:/work/draft.md');
+  assert.equal(links.describe('/share/workspace/draft.md').path, '/share/workspace/draft.md');
+  for (const raw of ['javascript:alert(1)', 'javascript:/evil', 'data:text/html,evil', 'vbscript:evil', 'shell:evil', 'C:relative.md', 'https://example.com/draft.md']) {
+    assert.equal(links.describe(raw), null);
+    if (!raw.startsWith('https:')) assert.doesNotMatch(window.MD.render(`[bad](<${raw}>)`), /<a /);
+  }
+  assert.doesNotMatch(window.MD.render('[bad](<C:/bad\u0001.md>)'), /<a /);
+});

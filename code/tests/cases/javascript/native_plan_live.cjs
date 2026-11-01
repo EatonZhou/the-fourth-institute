@@ -60,12 +60,26 @@ const routeScript = input.routeScript;
   assert.equal(await finalCard.getAttribute('data-native-turn'),ids[0]);
   assert.equal(await finalCard.locator('[data-turn-review]').count(),1,'final Diff keeps its review affordance');
   assert.equal(await finalCard.locator('[data-turn-diff]').textContent(),'+actual change');
+  assert.equal(await finalCard.locator('.messageSystemBadge').textContent(),'本轮已结束');
   await page.evaluate(details=>fixtureWorkspace.setRuntime(details,true),snapshots[0].runtime_details);
   assert.equal(await page.locator('.nativePlanLive').count(),0,'a final message wins over a stale live snapshot');
   await page.evaluate(({message, details})=>fixtureWorkspace.setMessages([message], {runtimeDetails:details,runtimeLive:true,force:true}),{message:input.finalMessage,details:snapshots[0].runtime_details});
   assert.equal(await page.locator('.nativePlanLive').count(),0,'a fresh draw also prefers the final message');
   await page.evaluate(details=>fixtureWorkspace.setRuntime(details,false),snapshots[0].runtime_details);
   assert.equal(await page.locator('.nativePlanLive').count(),0,'inactive runtime cannot resurrect a live plan');
+  for (const [status, label] of [['completed','本轮已结束'], ['failed','本轮失败'], ['interrupted','本轮已中断'], ['cancelled','本轮已取消']]) {
+   const steps = ['completed','inProgress','pending'].map(status => ({step:'Step '+status, status}));
+   const ended = {...part, status, plan:steps, explanation:'Draft ready; registration blocked; import awaits approval.'};
+   await page.evaluate(part=>fixtureWorkspace.setMessages([{id:part.message_id,role:'agent',content_parts:[part]}],{
+    runtimeLive:true, runtimeDetails:[], force:true,
+    renderMessageBody:(item,context)=>PortalChatWorkspace.residentMessageBody(item,context),
+   }),ended);
+   assert.equal(await finalCard.locator('.messageSystemBadge').textContent(),label);
+   assert.deepEqual(await finalCard.locator('li > span').allTextContents(),['已完成','未完成','未执行']);
+   assert.deepEqual(await finalCard.locator('li').evaluateAll(nodes=>nodes.map(node=>node.dataset.stepStatus)),['completed','inProgress','pending']);
+   assert.match(await finalCard.textContent(),/registration blocked; import awaits approval/);
+   assert.equal(await finalCard.getAttribute('data-turn-ended'),'true','other live work cannot reactivate a historical plan');
+  }
   await page.evaluate(()=>fixtureWorkspace.destroy());
   assert.deepEqual(errors,[]);
   console.log('Real Chromium: projected plan snapshots remain visible, update in place, restore before new events, end without duplicates and retain final Diff/Review identity. No service actions.');

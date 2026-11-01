@@ -99,9 +99,11 @@
       if (turn && messageRole(item) !== "human") {
         const display = turnArtifactDisplay(turn);
         if (!display.hasContent) return window.PortalI18n.html`<small class="nativeTurnEmpty">${escapeHtml(display.title)}</small>`;
-        const labels = { pending: window.PortalI18n.t("待处理"), inProgress: window.PortalI18n.t("进行中"), completed: window.PortalI18n.t("已完成") };
-        return window.PortalI18n.html`<section class="residentQuestionCard nativeTurnCard chatSystemCard" data-native-turn="${escapeHtml(item.id)}">
-        <header class="nativeTurnHeader"><div class="nativeTurnIdentity"><div class="residentQuestionTitle">${escapeHtml(display.title)}</div><span class="messageSystemBadge">${context.livePlan ? window.PortalI18n.t("当前计划") : window.PortalI18n.t("执行记录")}</span></div>${turn.diff ? window.PortalI18n.html`<button type="button" class="portalButton" data-turn-review title="审查本轮全部修改">审查这些修改</button>` : ""}</header>
+        const endLabel = { completed: "本轮已结束", failed: "本轮失败", interrupted: "本轮已中断", cancelled: "本轮已取消" }[turn.status];
+        const ended = !context.livePlan && !!endLabel;
+        const labels = { pending: window.PortalI18n.t(ended ? "未执行" : "待处理"), inProgress: window.PortalI18n.t(ended ? "未完成" : "进行中"), completed: window.PortalI18n.t("已完成") };
+        return window.PortalI18n.html`<section class="residentQuestionCard nativeTurnCard chatSystemCard" data-native-turn="${escapeHtml(item.id)}" data-turn-ended="${ended}">
+        <header class="nativeTurnHeader"><div class="nativeTurnIdentity"><div class="residentQuestionTitle">${escapeHtml(display.title)}</div><span class="messageSystemBadge">${window.PortalI18n.t(context.livePlan ? "当前计划" : endLabel || "执行记录")}</span></div>${turn.diff ? window.PortalI18n.html`<button type="button" class="portalButton" data-turn-review title="审查本轮全部修改">审查这些修改</button>` : ""}</header>
         ${turn.type === "resource_changes" ? window.PortalI18n.html`<ul class="resourceTurnChanges">${(turn.changes || []).map(change => {
           const version = snapshot => snapshot?.number ? `v${snapshot.number}` : "";
           const before = version(change.before_version) || String(change.before_sha256 || "").slice(0, 8);

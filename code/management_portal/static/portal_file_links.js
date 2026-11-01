@@ -29,6 +29,10 @@
     return String(value ?? "").trim();
   }
 
+  function isDrivePath(value) {
+    return /^[a-z]:[\\/]/i.test(value);
+  }
+
   function decode(value) {
     try {
       return decodeURIComponent(value);
@@ -71,8 +75,10 @@
   }
 
   function normalizeSegments(value) {
-    const source = String(value || "").replaceAll("\\", "/");
-    const absolute = source.startsWith("/");
+    let source = String(value || "").replaceAll("\\", "/");
+    const drive = isDrivePath(source) ? source.slice(0, 3) : "";
+    if (drive) source = source.slice(3);
+    const absolute = !!drive || source.startsWith("/");
     const homeRelative = source.startsWith("~/");
     const parts = [];
     for (const part of source.split("/")) {
@@ -89,7 +95,7 @@
       parts.push(part);
     }
     if (homeRelative) return `~/${parts.slice(parts[0] === "~" ? 1 : 0).join("/")}`;
-    return `${absolute ? "/" : ""}${parts.join("/")}` || (absolute ? "/" : "");
+    return `${drive || (absolute ? "/" : "")}${parts.join("/")}` || (absolute ? "/" : "");
   }
 
   function dirname(value) {
@@ -116,7 +122,10 @@
       ) {
         return clean(url.searchParams.get("path"));
       }
-      if (url.protocol === "file:") return decode(url.pathname);
+      if (url.protocol === "file:") {
+        const path = decode(url.pathname);
+        return /^\/[a-z]:\//i.test(path) ? path.slice(1) : path;
+      }
       if (/^https?:$/i.test(url.protocol)) return "";
     } catch {
       return "";
@@ -132,7 +141,10 @@
 
   function classifyLocator(rawValue, options = {}) {
     const raw = stripWrapping(rawValue);
-    if (!raw) return Object.freeze({ kind: "invalid", raw, path: "", requiresProbe: false });
+    if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return Object.freeze({ kind: "invalid", raw, path: "", requiresProbe: false });
+    if (isDrivePath(raw)) {
+      return Object.freeze({ kind: "local", raw, path: normalizePath(raw, options), requiresProbe: false });
+    }
     if (global.PortalResourceChips?.portalReferenceFromPortalHref?.(raw)) {
       return Object.freeze({ kind: "resource", raw, path: "", requiresProbe: false });
     }
@@ -157,10 +169,10 @@
       }
     }
     const path = normalizePath(raw, options);
-    if (!path || (!path.startsWith("/") && !path.startsWith("~/"))) {
+    if (!path || (!path.startsWith("/") && !path.startsWith("~/") && !isDrivePath(path))) {
       return Object.freeze({ kind: "relative", raw, path, requiresProbe: false });
     }
-    const knownLocalRoot = /^(?:~\/|\/(?:share|nas_ro|home|root|srv|tmp|var|etc|usr|opt|data|mnt|media|proc|sys|dev|run)(?:\/|$))/.test(path);
+    const knownLocalRoot = /^(?:~\/|\/(?:share|home|root|srv|tmp|var|etc|usr|opt|data|mnt|media|proc|sys|dev|run)(?:\/|$))/.test(path);
     return Object.freeze({
       kind: "local",
       raw,
@@ -174,7 +186,7 @@
     if (!raw) return "";
     const apiPath = localPathFromApiUrl(raw);
     if (apiPath) raw = apiPath;
-    else {
+    else if (!isDrivePath(raw)) {
       try {
         const url = new URL(raw, global.location?.href || "http://localhost/");
         if (url.protocol === "file:") raw = decode(url.pathname);
@@ -186,20 +198,12 @@
     raw = decode(raw).replaceAll("\\", "/");
     const split = splitLocator(raw);
     let path = split.path.split("?", 1)[0];
-    // /nas_ro is a legacy locator alias, not a filesystem default. Without
-    // bootstrap metadata leave it intact for the authoritative server resolver.
-    const shareRoot = global.__PORTAL_SITE__?.paths?.share_root;
-    if (path.startsWith("/nas_ro/") && typeof shareRoot === "string"
-        && /^\/(?!\/)/.test(shareRoot) && shareRoot !== "/"
-        && !/[\\\u0000-\u001f\u007f]/.test(shareRoot)
-        && !shareRoot.split("/").some(part => part === "." || part === "..")) {
-      path = `${shareRoot.replace(/\/+$/, "")}/${path.slice("/nas_ro/".length)}`;
-    }
     const basePath = clean(options.basePath)
       .replaceAll("\\", "/");
     if (
       !path.startsWith("/")
       && !path.startsWith("~/")
+      && !isDrivePath(path)
       && basePath
     ) {
       path = `${dirname(basePath)}/${path}`;
@@ -256,7 +260,7 @@
     if (
       !path
       || (options.allowAnyLocalPath !== true && !pathHasFileShape(path, options))
-      || (!path.startsWith("/") && !path.startsWith("~/"))
+      || (!path.startsWith("/") && !path.startsWith("~/") && !isDrivePath(path))
     ) return null;
     const { locator: lineLocator } = splitLocator(raw);
     return Object.freeze({

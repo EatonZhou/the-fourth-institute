@@ -1,6 +1,40 @@
 {
-  "已有账号目录（可选）": {"zh-CN": "已有账号目录（可选）", "en": "Existing account directory (optional)"},
-  "填写主机上已有账号目录的绝对路径，直接使用其中的登录。留空会在主机用户目录中新建空账号目录，然后登录。": {"zh-CN": "填写主机上已有账号目录的绝对路径，直接使用其中的登录。留空会在主机用户目录中新建空账号目录，然后登录。", "en": "Enter the absolute path of an existing host account directory to use its login. Leave empty to create a new account directory under the OS user's home, then sign in."},
+  "本轮已结束": {"zh-CN": "本轮已结束", "en": "Turn ended"},
+  "本轮失败": {"zh-CN": "本轮失败", "en": "Turn failed"},
+  "本轮已中断": {"zh-CN": "本轮已中断", "en": "Turn interrupted"},
+  "本轮已取消": {"zh-CN": "本轮已取消", "en": "Turn cancelled"},
+  "未完成": {"zh-CN": "未完成", "en": "Incomplete"},
+  "未执行": {"zh-CN": "未执行", "en": "Not executed"},
+  "当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。": {"zh-CN": "当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。", "en": "This instance's root directory, its areas and its fixed directories. An area can move as a whole to another absolute path: Portal stops its services during the move and restarts them afterwards; database records do not change. Secrets, the database, the cache and runtime files stay fixed under the instance root."},
+  "共享 Skill": {"zh-CN": "共享 Skill", "en": "Shared Skills"},
+  "功能数据": {"zh-CN": "功能数据", "en": "Feature data"},
+  "Provider 状态": {"zh-CN": "Provider 状态", "en": "Provider state"},
+  "密钥": {"zh-CN": "密钥", "en": "Secrets"},
+  "数据库": {"zh-CN": "数据库", "en": "Database"},
+  "缓存": {"zh-CN": "缓存", "en": "Cache"},
+  "运行文件": {"zh-CN": "运行文件", "en": "Runtime files"},
+  "正在移动文件": {"zh-CN": "正在移动文件", "en": "Moving files"},
+  "正在启动服务": {"zh-CN": "正在启动服务", "en": "Starting services"},
+  "正在删除原目录": {"zh-CN": "正在删除原目录", "en": "Deleting the original directory"},
+  "移动完成": {"zh-CN": "移动完成", "en": "Move completed"},
+  "移动失败": {"zh-CN": "移动失败", "en": "Move failed"},
+  "无法计算占用大小": {"zh-CN": "无法计算占用大小", "en": "Unable to measure the size"},
+  "占用": {"zh-CN": "占用", "en": "Size"},
+  "占用：计算中…": {"zh-CN": "占用：计算中…", "en": "Size: measuring…"},
+  "剩余空间": {"zh-CN": "剩余空间", "en": "Free space"},
+  "目录尚未创建": {"zh-CN": "目录尚未创建", "en": "Directory not created yet"},
+  "新的绝对路径": {"zh-CN": "新的绝对路径", "en": "New absolute path"},
+  "移动区域": {"zh-CN": "移动区域", "en": "Move area"},
+  "固定位置，不可修改": {"zh-CN": "固定位置，不可修改", "en": "Fixed location; cannot be changed"},
+  "无法读取数据目录": {"zh-CN": "无法读取数据目录", "en": "Unable to read the data directories"},
+  "实例根目录": {"zh-CN": "实例根目录", "en": "Instance root"},
+  "Portal 服务暂不可用，移动状态将在服务恢复后刷新。": {"zh-CN": "Portal 服务暂不可用，移动状态将在服务恢复后刷新。", "en": "Portal is temporarily unavailable; the move status refreshes when the service is back."},
+  "请填写新的绝对路径。": {"zh-CN": "请填写新的绝对路径。", "en": "Enter the new absolute path."},
+  "要把区域「{p0}」从 {p1} 移到 {p2} 吗？\n\n移动期间 Portal 停止服务，完成后自动重启，连接会暂时断开。": {"zh-CN": "要把区域「{p0}」从 {p1} 移到 {p2} 吗？\n\n移动期间 Portal 停止服务，完成后自动重启，连接会暂时断开。", "en": "Move the area “{p0}” from {p1} to {p2}?\n\nPortal stops its services during the move and restarts them afterwards; the connection drops for a while."},
+  "正在启动独立的移动任务…": {"zh-CN": "正在启动独立的移动任务…", "en": "Starting the independent move job…"},
+  "无法启动区域移动": {"zh-CN": "无法启动区域移动", "en": "Unable to start the area move"},
+  "账号目录": {"zh-CN": "账号目录", "en": "Account directory"},
+  "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。": {"zh-CN": "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。", "en": "Enter the canonical absolute path of the account directory on this host. An existing directory uses its current login; a missing directory is created before sign-in."},
   "约每 ¥10 一枚金币，四舍五入": {"zh-CN": "约每 ¥10 一枚金币，四舍五入", "en": "About one coin per ¥10, rounded to the nearest coin"},
   "约 {p0} CNY · 汇率 {p1}": {"zh-CN": "约 {p0} CNY · 汇率 {p1}", "en": "About {p0} CNY · Exchange rate dated {p1}"},
   "充值 / 账单": {"zh-CN": "充值 / 账单", "en": "Top up / billing"},
@@ -6436,9 +6470,9 @@
     "en": "A Lineage must belong to a Project.",
     "zh-CN": "Lineage 必须属于一个 Project。"
   },
-  "Lineage 必须属于一个 Project。修改后会同步资源注册并迁移整个 Lineage Folder；有任务运行时不能迁移。": {
-    "en": "A Lineage must belong to a Project. After modification, resource registration is synced and the entire Lineage Folder is migrated; migration is not allowed while tasks are running.",
-    "zh-CN": "Lineage 必须属于一个 Project。修改后会同步资源注册并迁移整个 Lineage Folder；有任务运行时不能迁移。"
+  "Lineage 必须属于一个 Project。修改后会同步资源注册，并把整个 Lineage 目录移到目标项目的 agents/ 下；有任务运行时不能迁移。": {
+    "en": "A Lineage must belong to a Project. After a change, resource registration is synced and the whole Lineage folder moves to the target project's agents/; it cannot move while tasks are running.",
+    "zh-CN": "Lineage 必须属于一个 Project。修改后会同步资源注册，并把整个 Lineage 目录移到目标项目的 agents/ 下；有任务运行时不能迁移。"
   },
   "Lineage 所有者": {
     "en": "Lineage owner",
@@ -7803,10 +7837,6 @@
   "Portal 会删除整条 Lineage，将其 Resident 标记为已删除并移除模型会话与工作区；对话与运行轨迹保留。": {
     "en": "Portal will delete the entire Lineage, mark its Resident as deleted, and remove the model session and workspace; conversations and run traces are retained.",
     "zh-CN": "Portal 会删除整条 Lineage，将其 Resident 标记为已删除并移除模型会话与工作区；对话与运行轨迹保留。"
-  },
-  "Portal 会更新 Project 从属关系，并把该 Lineage folder 移到目标 project 的 knowledge_base/agents 下。": {
-    "en": "Portal will update the Project affiliation and move the Lineage folder to the target project's knowledge_base/agents.",
-    "zh-CN": "Portal 会更新 Project 从属关系，并把该 Lineage folder 移到目标 project 的 knowledge_base/agents 下。"
   },
   "Portal 全局的全部 Resident": {
     "en": "All Residents globally in Portal",
@@ -17276,9 +17306,9 @@
     "en": "unknown instruction owner: {p0}",
     "zh-CN": "未知的 instruction 所有者：{p0}"
   },
-  "unknown or unavailable Portal instance": {
-    "en": "unknown or unavailable Portal instance",
-    "zh-CN": "未知或不可用的 Portal 实例"
+  "unknown or unavailable Portal deployment": {
+    "en": "unknown or unavailable Portal deployment",
+    "zh-CN": "未知或不可用的 Portal 部署"
   },
   "unknown primitive kind: {p0}": {
     "en": "unknown primitive kind: {p0}",
@@ -27144,9 +27174,9 @@
     "en": "Connect the Resident or primitive to listen to here; the event is emitted only when the object meets the event conditions.",
     "zh-CN": "把要监听的 Resident 或原语连到这里；对象满足事件条件时，事件才会发出。"
   },
-  "把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 实例执行。": {
-    "en": "Sync the caller-specified Dev code to Release and return the release commit; can only be executed on a Dev instance.",
-    "zh-CN": "把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 实例执行。"
+  "把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 部署执行。": {
+    "en": "Sync the caller-specified Dev code to Release and return the release commit; can only be executed on the Dev deployment.",
+    "zh-CN": "把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 部署执行。"
   },
   "把这里的参数和各 Resident 的设置保存为你的模板，之后放入这个模块时默认使用": {
     "en": "Save these parameters and Resident settings as your template; the next time you place this block it starts from them",
@@ -35356,10 +35386,6 @@
     "en": "Migrating",
     "zh-CN": "迁移中"
   },
-  "迁移失败": {
-    "en": "Migration failed",
-    "zh-CN": "迁移失败"
-  },
   "迁移已取消": {
     "en": "Migration canceled",
     "zh-CN": "迁移已取消"
@@ -39088,10 +39114,6 @@
     "en": "Portal data directories",
     "zh-CN": "Portal 数据目录"
   },
-  "Portal 服务暂不可用，迁移状态将在服务恢复后刷新。": {
-    "en": "Portal is temporarily unavailable. Migration status will refresh when the service returns.",
-    "zh-CN": "Portal 服务暂不可用，迁移状态将在服务恢复后刷新。"
-  },
   "Resident 已创建，请刷新查看，勿重复创建：{p0}": {
     "en": "Resident created. Refresh to view it; do not create it again: {p0}",
     "zh-CN": "Resident 已创建，请刷新查看，勿重复创建：{p0}"
@@ -39180,10 +39202,6 @@
     "en": ". Reload to confirm the current name before saving.",
     "zh-CN": "。请重新读取确认当前名称后再保存。"
   },
-  "临时运行数据": {
-    "en": "Temporary runtime data",
-    "zh-CN": "临时运行数据"
-  },
   "从这里输出消息或事件，沿 Route 交给下游输入。": {
     "en": "Sends messages or events through a Route to a downstream input.",
     "zh-CN": "从这里输出消息或事件，沿 Route 交给下游输入。"
@@ -39219,10 +39237,6 @@
   "全员": {
     "en": "Everyone",
     "zh-CN": "全员"
-  },
-  "共享资料": {
-    "en": "Shared files",
-    "zh-CN": "共享资料"
   },
   "关": {
     "en": "Off",
@@ -39508,25 +39522,13 @@
     "en": "Unable to load {p0}",
     "zh-CN": "无法加载 {p0}"
   },
-  "无法启动迁移": {
-    "en": "Unable to start migration",
-    "zh-CN": "无法启动迁移"
-  },
   "无法打开 Article：{p0}": {
     "en": "Unable to open Article: {p0}",
     "zh-CN": "无法打开 Article：{p0}"
   },
-  "无法读取目录配置": {
-    "en": "Unable to read directory settings",
-    "zh-CN": "无法读取目录配置"
-  },
   "无法读取目标模型，请重新选择账号后重试：{p0}": {
     "en": "Unable to read target models. Select the account again and retry: {p0}",
     "zh-CN": "无法读取目标模型，请重新选择账号后重试：{p0}"
-  },
-  "无法读取迁移进度": {
-    "en": "Unable to read migration progress",
-    "zh-CN": "无法读取迁移进度"
   },
   "暂无匹配角色": {
     "en": "No matching principals",
@@ -39547,10 +39549,6 @@
   "有未读回复": {
     "en": "Unread replies",
     "zh-CN": "有未读回复"
-  },
-  "未保存新路径。修改目录必须同时迁移数据。": {
-    "en": "The new paths were not saved. Changing directories requires migrating the data.",
-    "zh-CN": "未保存新路径。修改目录必须同时迁移数据。"
   },
   "未完成：{p0}": {
     "en": "Not ready: {p0}",
@@ -39612,10 +39610,6 @@
     "en": "Stopping services",
     "zh-CN": "正在停止服务"
   },
-  "正在切换目录": {
-    "en": "Switching directories",
-    "zh-CN": "正在切换目录"
-  },
   "正在加载目标 Lineage…": {
     "en": "Loading target Lineage…",
     "zh-CN": "正在加载目标 Lineage…"
@@ -39623,14 +39617,6 @@
   "正在后台安装语义搜索包和模型；安装完成后会自动开启。": {
     "en": "Installing semantic search packages and models in the background; semantic search will be enabled when installation completes.",
     "zh-CN": "正在后台安装语义搜索包和模型；安装完成后会自动开启。"
-  },
-  "正在启动独立迁移任务…": {
-    "en": "Starting a separate migration task…",
-    "zh-CN": "正在启动独立迁移任务…"
-  },
-  "正在复制并校验数据": {
-    "en": "Copying and verifying data",
-    "zh-CN": "正在复制并校验数据"
   },
   "正在自动重新加载（{p0}/{p1}）…": {
     "en": "Automatically reloading ({p0}/{p1})…",
@@ -39651,10 +39637,6 @@
   "正在读取触发流程…": {
     "en": "Loading trigger path…",
     "zh-CN": "正在读取触发流程…"
-  },
-  "正在重启服务": {
-    "en": "Restarting services",
-    "zh-CN": "正在重启服务"
   },
   "正文和附件会从聊天中隐藏，保留撤回提示。已交给 Resident 的任务仍会继续。": {
     "en": "The body and attachments will be hidden, leaving a retraction notice. Tasks already sent to a Resident will continue.",
@@ -39680,10 +39662,6 @@
     "en": "Message body",
     "zh-CN": "消息正文"
   },
-  "目录没有变化。": {
-    "en": "The directories have not changed.",
-    "zh-CN": "目录没有变化。"
-  },
   "目标 Provider 不支持压缩继承。": {
     "en": "The target Provider does not support compacted inheritance.",
     "zh-CN": "目标 Provider 不支持压缩继承。"
@@ -39691,10 +39669,6 @@
   "目标列表加载失败：{p0}。请点击“刷新预览”重试。": {
     "en": "Unable to load targets: {p0}. Click Refresh preview to retry.",
     "zh-CN": "目标列表加载失败：{p0}。请点击“刷新预览”重试。"
-  },
-  "相对路径以 Portal 安装目录为基准。修改目录需要复制数据并重启 Portal 服务；原目录会保留，以便故障时恢复。": {
-    "en": "Relative paths use the Portal installation directory as their base. Changing directories copies the data and restarts Portal services. Original directories are retained for recovery.",
-    "zh-CN": "相对路径以 Portal 安装目录为基准。修改目录需要复制数据并重启 Portal 服务；原目录会保留，以便故障时恢复。"
   },
   "确认发送": {
     "en": "Confirm and send",
@@ -39756,10 +39730,6 @@
     "en": "The draft is not saved. Review it and click Save before continuing to connect nodes.",
     "zh-CN": "草稿尚未保存，请核对后点击保存，再继续连线。"
   },
-  "要迁移现有数据并重启 Portal 服务吗？\n\n{p0}\n\n迁移期间 Portal 将暂时不可用。": {
-    "en": "Migrate existing data and restart Portal services?\n\n{p0}\n\nPortal will be temporarily unavailable during migration.",
-    "zh-CN": "要迁移现有数据并重启 Portal 服务吗？\n\n{p0}\n\n迁移期间 Portal 将暂时不可用。"
-  },
   "观察关系": {
     "en": "Watch relationship",
     "zh-CN": "观察关系"
@@ -39819,14 +39789,6 @@
   "迁移 Backend": {
     "en": "Migrate Backend",
     "zh-CN": "迁移 Backend"
-  },
-  "迁移完成": {
-    "en": "Migration complete",
-    "zh-CN": "迁移完成"
-  },
-  "迁移并保存": {
-    "en": "Migrate and save",
-    "zh-CN": "迁移并保存"
   },
   "返回上一个界面": {
     "en": "Return to the previous view",
@@ -40376,9 +40338,9 @@
     "en": "Language of the new project's seed documents; defaults to zh-CN. Used only for initialization; existing content is preserved.",
     "zh-CN": "新项目种子文档的语言，默认 zh-CN；仅用于初始化，不改写既有正文"
   },
-  "管理此平台上已安装的实例。关闭实例会停止它的服务，保留数据和账号。": {
-    "zh-CN": "管理此平台上已安装的实例。关闭实例会停止它的服务，保留数据和账号。",
-    "en": "Manage instances installed on this platform. Stopping an instance stops its services and preserves its data and accounts."
+  "管理本机登记的实例。关闭实例会停止它的服务，保留数据和账号。": {
+    "zh-CN": "管理本机登记的实例。关闭实例会停止它的服务，保留数据和账号。",
+    "en": "Manage the instances registered on this host. Stopping an instance stops its services and preserves its data and accounts."
   },
   "刷新实例": {
     "zh-CN": "刷新实例",
@@ -40396,9 +40358,13 @@
     "zh-CN": "实例操作失败",
     "en": "Instance operation failed"
   },
-  "此平台尚无已安装的实例。": {
-    "zh-CN": "此平台尚无已安装的实例。",
-    "en": "No instances are installed on this platform yet."
+  "本机尚无登记的实例。": {
+    "zh-CN": "本机尚无登记的实例。",
+    "en": "No instances are registered on this host yet."
+  },
+  "未运行的服务：": {
+    "zh-CN": "未运行的服务：",
+    "en": "Services not running: "
   },
   "当前实例": {
     "zh-CN": "当前实例",
