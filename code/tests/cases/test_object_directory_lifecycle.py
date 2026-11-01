@@ -136,24 +136,6 @@ def test_deletion_cancels_execution_before_identity_commit(future_creation_store
     assert events == ['cancel', 'wait']
 
 
-def test_lifecycle_migration_uses_caller_transaction_and_is_idempotent(future_creation_store):
-    from management_portal.society_service.state_store import get_lineage_data_store
-    from scripts.directory_protocol_lifecycle_migration import migrate
-    owner = resident_domain.register_resident(_new_session_payload('Migration'), 'sample_admin')
-    store = get_lineage_data_store()
-    store.database.write(lambda connection: connection.execute('UPDATE residents SET directory_json=NULL'))
-    with pytest.raises(RuntimeError, match='abort migration'):
-        with store.database.transaction() as connection:
-            assert migrate(connection)['residents'] == 1
-            raise RuntimeError('abort migration')
-    with store.database.read() as connection:
-        assert connection.execute('SELECT directory_json FROM residents WHERE resident_id=%s',
-                                  (owner['resident_id'],)).fetchone()[0] is None
-    with store.database.transaction() as connection:
-        assert migrate(connection)['residents'] == 1
-        assert migrate(connection)['residents'] == 0
-
-
 def test_move_execution_scope_restores_original_intake_on_failure(future_creation_store):
     from management_portal.society_service.resident_lifecycle_domain import directory_move_execution_scope
     from management_portal.society_service import resident_catalog

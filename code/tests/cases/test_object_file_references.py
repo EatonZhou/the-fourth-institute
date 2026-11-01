@@ -293,19 +293,12 @@ def test_read_and_resolve_instructions_accept_file_reference(files, resource_isa
     assert isa.resolve_resource(inv)["target"]["file_reference"] == files.reference
 
 
-def test_persistent_context_reference_and_offline_migration(files, tmp_path):
-    from management_portal.resource_refs import normalize_stored_resource_references, migrate_context_file_references
+def test_persistent_context_reference_follows_move_and_rejects_deleted_owner(files, tmp_path):
+    from management_portal.resource_refs import normalize_stored_resource_references
 
     address = files.identifier + "/file/report.txt"
     saved = normalize_stored_resource_references([{"address": address, "title": "Delivery report"}])[0]
     assert saved["file_reference"] == files.reference
-    context = {"resources": [{"address": address, "custom": "keep"}], "text": "old /absolute/report.txt"}
-    migrated = migrate_context_file_references(context)
-    assert migrated["resources"][0]["file_reference"] == files.reference
-    assert migrated["resources"][0]["custom"] == "keep"
-    assert migrated["text"] == context["text"]
-    assert "file_reference" not in context["resources"][0]
-    assert migrate_context_file_references(migrated) == migrated
     moved = tmp_path / "delivery-moved"
     files.state["root"].rename(moved)
     files.state["root"] = moved

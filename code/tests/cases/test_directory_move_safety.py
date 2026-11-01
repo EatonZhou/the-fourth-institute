@@ -279,25 +279,6 @@ def test_retirement_drains_old_copy_when_dependencies_were_pending(workspace, mo
     assert mover.get(operation)['phase'] == 'cancelled'
 
 
-def test_move_schema_upgrade_is_offline_and_refuses_ambiguous_legacy_operations(workspace):
-    from management_common.directory_move_store import initialize_move_schema, migrate_move_safety_schema
-    mover = DirectoryMoveStore()
-    with mover.database.transaction() as connection:
-        connection.execute(f'ALTER TABLE {mover.table} DROP COLUMN staging, DROP COLUMN file_identity')
-    with pytest.raises(RuntimeError, match='offline maintenance'):
-        mover.database.write(lambda c: initialize_move_schema(c, mover.database.schema))
-    with mover.database.transaction() as connection:
-        connection.execute(f'INSERT INTO {mover.table}(operation_id,owner_id,actor,source,target,mode,phase) '
-                           "VALUES ('legacy','owner','actor','/source','/target','copy','prepared')")
-    with pytest.raises(RuntimeError, match='legacy'):
-        mover.database.write(lambda c: migrate_move_safety_schema(c, mover.database.schema))
-    with mover.database.transaction() as connection:
-        connection.execute(f"UPDATE {mover.table} SET phase='aborted'")
-        migrate_move_safety_schema(connection, mover.database.schema)
-        migrate_move_safety_schema(connection, mover.database.schema)
-    assert DirectoryMoveStore().get('legacy')['file_identity'] == ''
-
-
 def test_recovery_preserves_unowned_staging_entry(workspace, monkeypatch):
     cross_device(monkeypatch, workspace.root)
     mover = DirectoryMoveStore()

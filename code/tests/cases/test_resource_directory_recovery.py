@@ -166,19 +166,6 @@ def test_projection_request_rolls_back_with_formal_unregistration(tmp_path):
     assert not ResourceProjectionCleanup().pending()
 
 
-def test_migration_requires_evidence_not_directory_names(tmp_path):
-    from scripts.directory_protocol_resource_migration import migrate
-    store = get_registry_store()
-    # Both names look generated; only one has caller-supplied evidence.
-    unknown = tmp_path / 'handoff-workspaces' / 'paper_111111111111'
-    proven = tmp_path / 'ordinary'
-    with store.writer('repo') as writer:
-        writer.put('repo', 'repo_111111111111', {'checkouts': [{'path': str(unknown)}, {'path': str(proven)}]})
-    with store.database.transaction() as connection:
-        migrate(connection, registry_schema=store.database.schema, created_paths=[proven])
-    assert [item['origin'] for item in store.get('repo', 'repo_111111111111')['checkouts']] == ['adopted', 'created']
-
-
 def test_repo_initialization_checks_pending_before_git_writes(tmp_path, monkeypatch):
     from management_common import directory_paths
     monkeypatch.setattr(directory_paths, '_directory_case_sensitive', lambda _: False)

@@ -12,12 +12,7 @@ from management_common.portal_database import portal_database
 
 
 def initialize_registration_schema(connection, schema=None):
-    """DDL for explicit request identities; usable by the offline migration.
-
-    Legacy payload fingerprints cannot be converted into request identities.
-    Their object registrations remain authoritative; no guessed replay keys
-    are imported from that old ledger.
-    """
+    """Initialize the current schema for explicit registration request identities."""
     table = f'"{schema}".resource_registration_operations' if schema else 'resource_registration_operations'
     connection.execute(f'''CREATE TABLE IF NOT EXISTS {table} (
         operation_id TEXT PRIMARY KEY,

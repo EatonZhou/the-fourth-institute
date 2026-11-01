@@ -1,5 +1,4 @@
 """Feature writes, clocks and capacity eviction against isolated PostgreSQL."""
-from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 import json
 
@@ -19,23 +18,6 @@ def test_run_finish_removes_background_artifact_owned_by_this_run(tmp_path):
     result = finish_run(run_id)
     assert result['status'] == 'complete'
     assert not path.exists()
-
-
-def test_run_column_migration_is_explicit_idempotent_and_preserves_rows(tmp_path):
-    from scripts.directory_protocol_retention_migration import migrate, migrate_run_ownership
-    retention = RetentionStore()
-    path = tmp_path / 'artifact'
-    retention.declare(path, owner_id='job', category='background')
-    with retention.database.transaction() as connection:
-        connection.execute(f'ALTER TABLE {retention.table} DROP COLUMN test_run_id')
-    # Runtime construction never alters an existing schema.
-    RetentionStore()
-    with retention.database.transaction() as connection:
-        assert 'test_run_id' not in dict(connection.execute(f'SELECT * FROM {retention.table}').fetchone())
-        migrate(connection)
-        migrate_run_ownership(connection)
-        row = connection.execute(f'SELECT * FROM {retention.table}').fetchone()
-        assert row['owner_id'] == 'job' and row['test_run_id'] == ''
 
 
 def test_article_compile_cache_and_pdf_keep_article_owner(tmp_path, monkeypatch):
@@ -113,33 +95,3 @@ def test_ccf_interrupted_runtime_requests_require_process_evidence(tmp_path, mon
     retention.queue.run_pending()
     assert not (tmp_path / 'dead.request.json').exists()
     assert (tmp_path / 'live.request.json').exists()
-
-
-def test_migration_imports_owner_cache_clocks_and_paper_creation_only(tmp_path):
-    from management_portal import article_build_store
-    from scripts.directory_protocol_retention_migration import backfill_known_artifacts, backfill_paper_drafts
-    now = datetime.now(timezone.utc)
-    old = now - timedelta(days=8)
-    article_id = 'article_222222222222'
-    article_build_store.save_report(article_id, {'status': 'success', 'compiled_at': old.isoformat()})
-    (tmp_path / (article_id + '.pdf')).write_bytes(b'pdf')
-    ccf = tmp_path / 'ccf'
-    ccf.mkdir()
-    (ccf / 'known.json').write_text(json.dumps({'fetched_at': old.timestamp()}))
-    (ccf / 'unknown.json').write_text('{}')
-    draft_root = tmp_path / 'drafts'
-    draft = draft_root / 'paper-upload-123456123456'
-    draft.mkdir(parents=True)
-    (draft / 'draft.json').write_text(json.dumps({'upload_id': draft.name, 'created_at': old.timestamp(),
-        'updated_at': now.timestamp(), 'status': 'running'}))
-    retention = RetentionStore()
-    with retention.database.transaction() as connection:
-        report = backfill_known_artifacts(connection, article_build_root=tmp_path, ccf_root=ccf)
-        drafts = backfill_paper_drafts(connection, draft_root=draft_root)
-    assert len(report['registered']) == 2 and len(report['unresolved']) == 1
-    assert drafts['registered'] == [str(draft)]
-    assert artifact(draft)['eligible_at'] == old + timedelta(days=7)
-    assert retention.sweep(now=now)['queued'] == 1
-    retention.queue.run_pending()
-    assert not draft.exists() and (ccf / 'unknown.json').exists()
-    assert retention.sweep(cache_capacities={'article': 0, 'paper_ccf': 0})['queued'] == 2

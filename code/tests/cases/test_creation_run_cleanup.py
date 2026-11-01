@@ -226,39 +226,6 @@ def test_failed_adoption_does_not_delete_foreign_directory(tmp_path, monkeypatch
     assert (target / 'keep').read_text() == 'foreign'
 
 
-def test_offline_workspace_ledger_retirement_preserves_unknown_rows():
-    from management_common.portal_database import portal_database
-    from management_portal.resources.workspace_creation_store import retire_workspace_creation_schema
-    db = portal_database(schema='directory_lifecycle')
-    with db.transaction() as conn:
-        retire_workspace_creation_schema(conn, db.schema)
-        conn.execute('CREATE TABLE workspace_creations (operation_id TEXT)')
-        conn.execute("INSERT INTO workspace_creations VALUES ('unknown-unfinished')")
-    with pytest.raises(RuntimeError, match='ownership reconciliation'):
-        db.write(lambda conn: retire_workspace_creation_schema(conn, db.schema))
-    with db.transaction() as conn:
-        assert conn.execute('SELECT operation_id FROM workspace_creations').fetchone()[0] == 'unknown-unfinished'
-        conn.execute('DELETE FROM workspace_creations')
-        retire_workspace_creation_schema(conn, db.schema)
-        assert conn.execute("SELECT to_regclass('workspace_creations')").fetchone()[0] is None
-
-
-def test_creation_schema_upgrade_is_offline_and_preserves_original_scope():
-    from management_common.portal_database import portal_database
-    db = portal_database(schema='creation_migration_test')
-    with db.transaction() as conn:
-        conn.execute('CREATE TABLE resource_creations (operation_id TEXT, resource_id TEXT, actor TEXT, '
-                     'payload JSONB, scope_id TEXT, artifacts JSONB, completed BOOLEAN)')
-        conn.execute("INSERT INTO resource_creations VALUES ('op','paper_121212121212','alice','{}','original','[]',FALSE)")
-    with pytest.raises(RuntimeError, match='offline'):
-        db.write(lambda conn: module.initialize_creation_schema(conn, db.schema))
-    db.write(lambda conn: module.migrate_creation_schema(conn, db.schema))
-    with db.read() as conn:
-        row = conn.execute('SELECT * FROM resource_creations').fetchone()
-        assert row['scope_id'] == 'original'
-        assert not row['aborted'] and not row['cleanup_complete']
-
-
 def test_completed_creation_with_unknown_stage_cannot_complete_run(workspace, monkeypatch):
     from management_portal.test_framework import tau_fixtures
     lifecycle, scope = open_scope()

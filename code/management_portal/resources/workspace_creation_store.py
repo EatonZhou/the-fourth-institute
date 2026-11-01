@@ -8,17 +8,6 @@ from .creation import Creation
 from .workspace_store import get_workspace_store
 
 
-def retire_workspace_creation_schema(connection, schema):
-    """Offline only. Unknown legacy operations must be reviewed, never guessed."""
-    table = f'"{schema}".workspace_creations'
-    if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
-        return
-    connection.execute(f'LOCK TABLE {table} IN ACCESS EXCLUSIVE MODE')
-    if connection.execute(f'SELECT 1 FROM {table} LIMIT 1').fetchone():
-        raise RuntimeError('Nonempty legacy workspace_creations requires explicit ownership reconciliation')
-    connection.execute(f'DROP TABLE {table}')
-
-
 class WorkspaceCreationStore:
     def __init__(self):
         self.workspaces = get_workspace_store()

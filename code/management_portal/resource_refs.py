@@ -255,27 +255,6 @@ def normalize_stored_resource_references(raw: object) -> list[dict[str, Any]]:
     return out
 
 
-def migrate_context_file_references(context_refs: Mapping) -> dict[str, Any]:
-    """Offline migration of the durable context_refs.resources field only.
-
-    The caller owns the database transaction. No message body, log, or unrelated
-    context field is inspected, and no old host path is used as a fallback.
-    """
-    result = dict(context_refs)
-    resources = result.get("resources")
-    if not isinstance(resources, list):
-        return result
-    migrated = []
-    for item in resources:
-        address = _address_from_item(item)
-        reference = file_reference_from_address(address)
-        if reference is not None:
-            item = {**item, "file_reference": reference} if isinstance(item, Mapping) else {"address": address, "file_reference": reference}
-        migrated.append(item)
-    result["resources"] = migrated
-    return result
-
-
 def resolve_resource_references(
     raw: object = None,
     *,

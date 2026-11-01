@@ -89,29 +89,6 @@ def test_repo_each_checkout_keeps_its_origin(tmp_path):
     assert first.exists() and not second.exists()
 
 
-def test_offline_migration_is_conservative_idempotent_and_transactional(tmp_path):
-    from scripts.directory_protocol_resource_migration import migrate
-    store = get_registry_store()
-    old = {'id': 'repo_111111111111', 'checkouts': [{'path': str(tmp_path / 'legacy')}],
-           'canonical_checkout': str(tmp_path / 'legacy')}
-    with store.writer('repo') as writer:
-        writer.put('repo', old['id'], old)
-    kwargs = {'registry_schema': store.database.schema,
-              'inventory': [{'collection': 'knowledge', 'resource_id': 'skill_111111111111',
-                             'paths': [str(tmp_path / 'skill')]}]}
-    with pytest.raises(RuntimeError):
-        with store.database.transaction() as connection:
-            migrate(connection, **kwargs)
-            raise RuntimeError('rollback migration')
-    assert store.get('repo', old['id']) == old
-    with store.database.transaction() as connection:
-        changed = migrate(connection, **kwargs)
-        assert set(changed) == {old['id'], 'skill_111111111111'}
-    assert store.get('repo', old['id'])['checkouts'][0]['origin'] == 'adopted'
-    with store.database.transaction() as connection:
-        assert migrate(connection, **kwargs) == []
-
-
 def test_paper_created_delete_and_adopted_survival(tmp_path):
     from management_portal.paper_store import PaperStore
     from management_portal.resources.directory_registrations import register_owned
@@ -169,22 +146,6 @@ def test_file_owner_cleanup_failure_does_not_restore_registration(tmp_path, monk
     assert register_owned('knowledge', 'skill_111111111111', [root], scanning=True) is None
     with pytest.raises(cleanup.DirectoryPendingCleanup):
         register_owned('knowledge', 'skill_222222222222', [root], origin='adopted')
-
-
-def test_legacy_inventory_reports_bytes_without_deleting_or_following_links(tmp_path):
-    from scripts.directory_protocol_resource_migration import inventory_legacy_cleanup_paths
-    root = tmp_path / 'papers'
-    legacy = root / '_trash'
-    legacy.mkdir(parents=True)
-    (legacy / 'data').write_bytes(b'abc')
-    outside = tmp_path / 'outside'
-    outside.mkdir()
-    (outside / 'keep').write_bytes(b'never read or delete')
-    (legacy / 'link').symlink_to(outside, target_is_directory=True)
-    report, = inventory_legacy_cleanup_paths(paper_roots=[root])
-    assert report['bytes'] == 3 + (legacy / 'link').lstat().st_size
-    assert report['entries'] == 2 and not report['errors']
-    assert (legacy / 'data').exists() and (outside / 'keep').exists()
 
 
 @pytest.mark.parametrize('kind', ['skill', 'paper'])

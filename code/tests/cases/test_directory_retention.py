@@ -225,18 +225,6 @@ def test_run_cleanup_retries_domain_failure_keeps_framework_resident(tmp_path, m
     assert fixed not in released and store.scope(scope)['state'] == 'complete'
 
 
-def test_offline_migration_preserves_caller_search_path():
-    from management_common.portal_database import portal_database, _database_schema
-    from scripts.directory_protocol_retention_migration import migrate
-    database = portal_database(schema='migration_test')
-    with database.transaction() as connection:
-        before = connection.execute('SHOW search_path').fetchone()[0]
-        migrate(connection)
-        migrate(connection)
-        assert connection.execute('SHOW search_path').fetchone()[0] == before
-        assert connection.execute('SELECT to_regclass(%s)', (_database_schema('directory_retention') + '.artifacts',)).fetchone()[0]
-
-
 def test_maintenance_uses_existing_time_effect_runscript():
     from management_portal.directory_maintenance import workflow_operations
     from management_portal.society_service.lineage_effect_script import parse
@@ -321,30 +309,6 @@ def test_runtime_temporary_directory_is_owned_and_cleanup_retry_is_durable(monke
         connection.execute(f'UPDATE {queue.table} SET available_at=clock_timestamp()')
     queue.run_pending()
     assert not path.exists()
-
-
-def test_migration_build_expiry_uses_replacement_date_and_shared_protection(tmp_path):
-    import json
-    from management_common.portal_database import portal_database
-    from management_common.directory_retention import RetentionStore
-    from management_portal.workbench_projections import tables
-    from scripts.directory_protocol_retention_migration import backfill_workbench_builds
-    now = datetime.now(timezone.utc)
-    store = RetentionStore()
-    workbenches = portal_database(schema='workbenches')
-    with workbenches.transaction() as connection:
-        connection.executescript(tables.DDL)
-        connection.execute("INSERT INTO apps VALUES ('app','alice','app',4,1,%s,%s,'menu')", (now, now))
-        for revision in range(1, 5):
-            stamp = now - timedelta(days=10-revision)
-            connection.execute("INSERT INTO versions VALUES ('app',%s,'test','','',%s,%s)", (revision, '', stamp))
-            connection.execute("INSERT INTO application_packages VALUES ('app',%s,'{}',%s)",
-                               (revision, json.dumps({'status': 'ready', 'artifact_hash': str(revision)*64})))
-        assert backfill_workbench_builds(connection, artifact_root=tmp_path, now=now) == 4
-        rows = connection.execute(f'SELECT owner_id,eligible_at FROM {store.table} ORDER BY owner_id').fetchall()
-    assert rows[0]['eligible_at'] is None  # published
-    assert rows[1]['eligible_at'] == now + timedelta(days=1)  # replaced 6 days ago
-    assert rows[2]['eligible_at'] is None and rows[3]['eligible_at'] is None
 
 
 def test_effect_recovery_is_immediate_and_output_seven_days(tmp_path):
@@ -490,17 +454,3 @@ def test_active_cache_builder_is_not_evicted_and_does_not_block_other_cleanup(tm
     assert retention.sweep(cache_capacities={'article': 0})['queued'] == 1
     retention.queue.run_pending()
     assert not active.exists()
-
-
-def test_upload_backfill_reports_missing_consumption_history(tmp_path):
-    import json
-    from management_common.directory_retention import RetentionStore
-    from scripts.directory_protocol_retention_migration import backfill_uploads
-    directory = tmp_path / ('upload_'+'f'*24)
-    directory.mkdir()
-    (directory / 'meta.json').write_text(json.dumps({'upload_id': directory.name,
-        'created_at': (datetime.now(timezone.utc)-timedelta(days=100)).isoformat()}))
-    retention = RetentionStore()
-    with retention.database.transaction() as connection:
-        assert backfill_uploads(connection, upload_root=tmp_path) == {'registered': 0, 'skipped': [directory.name]}
-    assert retention.sweep()['queued'] == 0 and directory.exists()

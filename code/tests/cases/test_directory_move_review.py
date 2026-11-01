@@ -246,29 +246,3 @@ def test_move_does_not_rewrite_completed_cleanup_receipts(workspace):
     mover.cleanup.run_pending()
     assert mover.cleanup.status(cleanup_id=cleanup_id) == [before]
     assert (target / path.name).read_text() == 'new'
-
-
-def test_staging_identity_migration_does_not_adopt_legacy_marker(workspace, monkeypatch):
-    from management_common.directory_move_store import migrate_move_safety_schema
-    cross_device(monkeypatch, workspace.root)
-    mover = DirectoryMoveStore()
-    target = workspace.root.with_name('moved')
-    with monkeypatch.context() as patch:
-        patch.setattr('shutil.copytree', lambda *_args, **_kwargs: (_ for _ in ()).throw(SystemExit('crash')))
-        patch.setattr(mover, 'abort', lambda *_: None)
-        with pytest.raises(SystemExit):
-            mover.prepare(workspace.root, target, owner_id=WID, origin='created',
-                          actor='alice', terminate=lambda _: None, operation_id='legacy-stage')
-    with mover.database.transaction() as c:
-        c.execute(f'ALTER TABLE {mover.table} DROP COLUMN staging_identity')
-    with pytest.raises(RuntimeError, match='offline maintenance'):
-        DirectoryMoveStore()
-    with mover.database.transaction() as c:
-        migrate_move_safety_schema(c, mover.database.schema)
-        migrate_move_safety_schema(c, mover.database.schema)
-    result, = DirectoryMoveStore().recover(dependencies=lambda *_: None)
-    assert result['phase'] == 'aborted' and not result['staging_identity']
-    stage = cleanup_path(result['staging'])
-    assert (stage / 'operation').read_text() == 'legacy-stage'
-    with pytest.raises(FileExistsError, match='reserved'):
-        mover.database.write(lambda c: mover.cleanup.assert_available(stage, connection=c))

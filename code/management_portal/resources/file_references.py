@@ -8,8 +8,6 @@ the current registered directory. This module only validates/encodes references;
 it neither owns directory placement nor queries Society.
 
 Persist file_reference in context_refs.resources for report/deliverable links.
-resource_refs.migrate_context_file_references converts that field offline without
-rewriting historical message bodies or interpreting arbitrary host paths.
 """
 from collections.abc import Mapping
 from pathlib import PureWindowsPath

@@ -39,28 +39,6 @@ def initialize_move_schema(connection, schema):
         raise RuntimeError('Directory move safety requires the offline maintenance migration')
 
 
-def migrate_move_safety_schema(connection, schema):
-    """Offline only; never infer ownership of a legacy move's current paths."""
-    table = f'"{schema}".moves'
-    if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
-        initialize_move_schema(connection, schema)
-        return
-    columns = {row[0] for row in connection.execute(
-        'SELECT column_name FROM information_schema.columns WHERE table_schema=%s AND table_name=%s',
-        (schema, 'moves')).fetchall()}
-    if {'staging', 'file_identity', 'staging_identity'} <= columns:
-        return
-    if not {'staging', 'file_identity'} <= columns:
-        pending = connection.execute(f"SELECT operation_id FROM {table} "
-            "WHERE phase NOT IN ('completed','aborted','cancelled')").fetchall()
-        if pending:
-            raise RuntimeError('Resolve legacy directory moves before safety migration: ' +
-                               ', '.join(row['operation_id'] for row in pending))
-    connection.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS staging TEXT NOT NULL DEFAULT ''")
-    connection.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS file_identity TEXT NOT NULL DEFAULT ''")
-    connection.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS staging_identity TEXT NOT NULL DEFAULT ''")
-
-
 def _directory_identity(path):
     """The published entry must be the very directory captured before rename."""
     if path.is_symlink() or not path.is_dir():

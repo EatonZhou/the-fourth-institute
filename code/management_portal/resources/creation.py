@@ -34,7 +34,7 @@ def creation_operation(operation_id):
 
 
 def initialize_creation_schema(connection, schema):
-    """Fresh schema DDL; also callable by the offline directory migration."""
+    """Initialize the current resource creation schema for a fresh database."""
     table = f'"{schema}".resource_creations'
     connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', (table + ':init',))
     if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is not None:
@@ -50,15 +50,6 @@ def initialize_creation_schema(connection, schema):
         aborted BOOLEAN NOT NULL DEFAULT FALSE,
         cleanup_complete BOOLEAN NOT NULL DEFAULT FALSE
     )''')
-
-
-def migrate_creation_schema(connection, schema):
-    """Offline upgrade of the creation owner's termination state."""
-    table = f'"{schema}".resource_creations'
-    if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is not None:
-        connection.execute(f'ALTER TABLE {table} ADD COLUMN IF NOT EXISTS aborted BOOLEAN NOT NULL DEFAULT FALSE')
-        connection.execute(f'ALTER TABLE {table} ADD COLUMN IF NOT EXISTS cleanup_complete BOOLEAN NOT NULL DEFAULT FALSE')
-    initialize_creation_schema(connection, schema)
 
 
 def _identity(path):
