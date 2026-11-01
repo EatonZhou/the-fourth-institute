@@ -314,7 +314,7 @@ Portal 中的文档、知识条目、Resident、Lineage 等大多数对象用统
 
 只看得到你有权读取的资源；无权读取与不存在一样返回 `instruction.not_found`。
 
-有目标 Workspace 的 `@admin` 权限时，可以用 `UnregisterResource(resource_id=workspace_id)` 注销无人使用的工作区。存活 Resident 的自有或绑定关系、有效子 Workspace 或其他嵌套目录资源登记会阻止注销，返回 `instruction.conflict` 和具体原因。实例区域内目录一并删除，区域外主机目录保留；目录已不存在时只退役登记。区域根目录不能用此指令删除。
+有目标 Workspace 的 `@admin` 权限时，可以用 `UnregisterResource(resource_id=workspace_id)` 注销无人使用的工作区。存活 Resident 的自有或绑定关系、有效子 Workspace 或其他嵌套目录资源登记会阻止注销，返回 `instruction.conflict` 和具体原因。实例区域内目录一并删除，区域外主机目录保留；目录已不存在时只注销登记。区域根目录不能用此指令删除。
 
 ### 7.3 聊天室
 

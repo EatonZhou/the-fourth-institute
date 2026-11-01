@@ -5,7 +5,7 @@
       "id": "test_51e61ac11f28",
       "key": "design-live.testlab.filter-intersection",
       "title": "Test Live 用例目录的分类交集与方面并集",
-      "description": "在生产用例目录中按重要等级、模块、设计点与测试方面筛选，核对服务端结果：不同维度取交集，测试方面取并集，退役条目不出现。",
+      "description": "在生产用例目录中按重要等级、模块、设计点与测试方面筛选，核对服务端结果：不同维度取交集，测试方面取并集，删除条目不出现。",
       "importance": "P1",
       "module": "operations.test-framework",
       "aspects": [
@@ -31,7 +31,7 @@
         "direct_steps": [
           {
             "capability": "testlab.filter-intersection",
-            "caption": "在生产用例目录中按重要等级、模块、设计点与测试方面筛选，核对服务端结果：不同维度取交集，测试方面取并集，退役条目不出现。"
+            "caption": "在生产用例目录中按重要等级、模块、设计点与测试方面筛选，核对服务端结果：不同维度取交集，测试方面取并集，删除条目不出现。"
           }
         ]
       }
@@ -145,7 +145,7 @@
       "id": "test_d01b10eee3d9",
       "key": "design-live.testlab.gate-scope",
       "title": "Test Live 快捷组合的计数与完整范围",
-      "description": "在总览的三个快捷组合上核对计数、完整范围、“查看用例”携带的筛选、退役排除与空范围禁用；不生成计划或启动运行。",
+      "description": "在总览的三个快捷组合上核对计数、完整范围、“查看用例”携带的筛选、删除排除与空范围禁用；不生成计划或启动运行。",
       "importance": "P1",
       "module": "operations.test-workbench",
       "aspects": [
@@ -171,7 +171,7 @@
         "direct_steps": [
           {
             "capability": "testlab.gate-scope",
-            "caption": "在总览的三个快捷组合上核对计数、完整范围、“查看用例”携带的筛选、退役排除与空范围禁用；不生成计划或启动运行。"
+            "caption": "在总览的三个快捷组合上核对计数、完整范围、“查看用例”携带的筛选、删除排除与空范围禁用；不生成计划或启动运行。"
           }
         ]
       }

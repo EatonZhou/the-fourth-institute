@@ -144,8 +144,8 @@ def replace_code(bundle, platform, *, progress=lambda message: None):
     from scripts.tfi_install_progress import FileProgress
     for name in CODE_ENTRIES:
         source, target = bundle / name, platform / name
-        staging, retired = target.with_name("." + target.name + ".new"), target.with_name("." + target.name + ".old")
-        for path in (staging, retired):
+        staging, previous = target.with_name("." + target.name + ".new"), target.with_name("." + target.name + ".old")
+        for path in (staging, previous):
             if path.is_symlink() or path.is_file():
                 path.unlink()
             elif path.exists():
@@ -157,10 +157,10 @@ def replace_code(bundle, platform, *, progress=lambda message: None):
         _copy(source, staging, entries, FileProgress("正在复制新版程序", len(entries[1]) + len(entries[2]),
                                                      sum(size for _, size in entries[1]), progress))
         if target.exists():
-            target.rename(retired)
+            target.rename(previous)
         staging.rename(target)
-        if retired.exists():
-            shutil.rmtree(retired)
+        if previous.exists():
+            shutil.rmtree(previous)
     (platform / RECEIPT).write_text(json.dumps(new, indent=2) + "\n", encoding="utf-8")
 
 

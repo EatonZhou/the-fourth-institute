@@ -54,7 +54,7 @@ def test_windows_execution_waits_for_restart_and_sends_once(
         try:
             with LocalListener(path, transport="tcp", replace=True) as listener:
                 if old is not None:
-                    old.close()  # Retiring generation cannot delete the new descriptor.
+                    old.close()  # Stopping generation cannot delete the new descriptor.
                 assert rendezvous_path(path).is_file()
                 listener.settimeout(7)
                 connection, _ = listener.accept()

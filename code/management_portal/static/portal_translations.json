@@ -2110,8 +2110,8 @@
     "en": "Cannot replace a provider session that accepted input",
     "zh-CN": "无法替换已接受输入的提供方会话"
   },
-  "Cannot retire a Workspace owned by a live Resident": {
-    "en": "Cannot retire a Workspace owned by a live Resident",
+  "Cannot delete a Workspace owned by a live Resident": {
+    "en": "Cannot delete a Workspace owned by a live Resident",
     "zh-CN": "无法停用由活跃 Resident 拥有的 Workspace"
   },
   "Cannot upsert and remove the same instruction": {
@@ -3802,9 +3802,9 @@
     "en": "ExecutionService returned an invalid submission receipt",
     "zh-CN": "ExecutionService 返回了无效的提交回执"
   },
-  "ExecutionWorker {p0} was retired while this pool's generation is still {p1}": {
-    "en": "ExecutionWorker {p0} was retired while this pool's generation is still {p1}",
-    "zh-CN": "ExecutionWorker {p0} 已退役，而此池的 generation 仍为 {p1}"
+  "ExecutionWorker {p0} was stopped while this pool's generation is still {p1}": {
+    "en": "ExecutionWorker {p0} was stopped while this pool's generation is still {p1}",
+    "zh-CN": "ExecutionWorker {p0} 已停止，而此池的 generation 仍为 {p1}"
   },
   "ExecutionWorkerManager is stopping": {
     "en": "ExecutionWorkerManager is stopping",
@@ -5022,9 +5022,9 @@
     "en": "History preservation requires the complete Portal scope",
     "zh-CN": "History preservation 需要完整的 Portal scope"
   },
-  "History retirement receipt range changed": {
-    "en": "History retirement receipt range changed",
-    "zh-CN": "History retirement receipt range 已变更"
+  "History deletion receipt range changed": {
+    "en": "History deletion receipt range changed",
+    "zh-CN": "History deletion receipt range 已变更"
   },
   "History source/target range, versions or executable contracts changed": {
     "en": "History source/target range, versions or executable contracts changed",
@@ -7994,8 +7994,8 @@
     "en": "Principal/resource lifecycle status must be a string",
     "zh-CN": "Principal/resource 生命周期状态必须是字符串"
   },
-  "Principals have independent credentials; permission_source/mode is retired": {
-    "en": "Principals have independent credentials; permission_source/mode is retired",
+  "Principals have independent credentials; permission_source/mode is deleted": {
+    "en": "Principals have independent credentials; permission_source/mode is deleted",
     "zh-CN": "Principal 拥有独立凭据；permission_source/mode 已弃用"
   },
   "Profile · {p6}": {
@@ -11166,8 +11166,8 @@
     "en": "Unsupported passkeys schema",
     "zh-CN": "不支持的 passkeys schema"
   },
-  "Unsupported policy record; legacy bindings/groups are retired": {
-    "en": "Unsupported policy record; legacy bindings/groups are retired",
+  "Unsupported policy record; legacy bindings/groups are deleted": {
+    "en": "Unsupported policy record; legacy bindings/groups are deleted",
     "zh-CN": "不支持的策略记录；旧版 bindings/groups 已停用"
   },
   "Unsupported registration fields": {
@@ -11186,8 +11186,8 @@
     "en": "Untitled",
     "zh-CN": "无标题"
   },
-  "Unverifiable inheritance with retired historical identity": {
-    "en": "Unverifiable inheritance with retired historical identity",
+  "Unverifiable inheritance with deleted historical identity": {
+    "en": "Unverifiable inheritance with deleted historical identity",
     "zh-CN": "无法验证的继承，历史身份已停用"
   },
   "UpdatePost": {
@@ -11306,8 +11306,8 @@
     "en": "Username already exists",
     "zh-CN": "用户名已存在"
   },
-  "Username already exists or has been retired": {
-    "en": "Username already exists or has been retired",
+  "Username already exists or has been deleted": {
+    "en": "Username already exists or has been deleted",
     "zh-CN": "用户名已存在或已停用"
   },
   "Users": {
@@ -12422,8 +12422,8 @@
     "en": "cannot record token usage in state {p0}",
     "zh-CN": "无法在状态 {p0} 下记录 token 用量"
   },
-  "cannot retire worker in state {p0}": {
-    "en": "cannot retire worker in state {p0}",
+  "cannot stop worker in state {p0}": {
+    "en": "cannot stop worker in state {p0}",
     "zh-CN": "无法在状态 {p0} 下停用 worker"
   },
   "cannot start execution in state {p0}": {
@@ -15110,8 +15110,8 @@
     "en": "not a tunable Harness parameter: {p0}",
     "zh-CN": "不是可调 Harness 参数：{p0}"
   },
-  "not a way to retire a challenger: {p0}": {
-    "en": "not a way to retire a challenger: {p0}",
+  "not a way to delete a challenger: {p0}": {
+    "en": "not a way to delete a challenger: {p0}",
     "zh-CN": "不是淘汰挑战者的方式：{p0}"
   },
   "not checked": {
@@ -15146,8 +15146,8 @@
     "en": "one authorized candidate exceeds the isolated prompt budget; no candidates were silently omitted",
     "zh-CN": "一个已授权候选超出隔离提示预算；没有候选被静默省略"
   },
-  "only a retiring worker can hand over claims": {
-    "en": "only a retiring worker can hand over claims",
+  "only a leaving worker can hand over claims": {
+    "en": "only a leaving worker can hand over claims",
     "zh-CN": "只有正在退出的 worker 可以移交认领"
   },
   "only queued executions can change account": {
@@ -16610,9 +16610,9 @@
     "en": "resume_failed_input must be boolean",
     "zh-CN": "resume_failed_input 必须是 boolean"
   },
-  "retired worker cannot reactivate by registration": {
-    "en": "retired worker cannot reactivate by registration",
-    "zh-CN": "已退役的 worker 无法通过注册重新激活"
+  "stopped worker cannot reactivate by registration": {
+    "en": "stopped worker cannot reactivate by registration",
+    "zh-CN": "已停止的 worker 无法通过注册重新激活"
   },
   "retried:0": {
     "en": "retried:0",
@@ -17674,8 +17674,8 @@
     "en": "user_id is not a valid user ID: {p0}",
     "zh-CN": "user_id 不是有效的用户 ID：{p0}"
   },
-  "username already exists or has been retired": {
-    "en": "username already exists or has been retired",
+  "username already exists or has been deleted": {
+    "en": "username already exists or has been deleted",
     "zh-CN": "用户名已存在或已停用"
   },
   "username is required": {
@@ -17758,8 +17758,8 @@
     "en": "worker registration is incomplete",
     "zh-CN": "worker 注册不完整"
   },
-  "worker state can only retire through this endpoint": {
-    "en": "worker state can only retire through this endpoint",
+  "worker state can only stop through this endpoint": {
+    "en": "worker state can only stop through this endpoint",
     "zh-CN": "worker 状态只能通过此端点停用"
   },
   "worker_id is required": {
@@ -40942,8 +40942,8 @@
     "en": "Workspace unregistration requires @admin",
     "zh-CN": "注销 Workspace 需要 @admin 权限"
   },
-  "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只退役登记。": {
-    "en": "Unregister a resource with @admin. A Workspace must have no live Resident owner or binding and no active nested registration. Remove its directory inside instance areas, preserve external host directories, and retire only the registration if the directory is missing.",
-    "zh-CN": "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只退役登记。"
+  "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只注销登记。": {
+    "en": "Unregister a resource with @admin. A Workspace must have no live Resident owner or binding and no active nested registration. Remove its directory inside instance areas, preserve external host directories, and unregister only the registration if the directory is missing.",
+    "zh-CN": "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只注销登记。"
   }
 }

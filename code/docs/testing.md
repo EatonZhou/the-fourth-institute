@@ -31,7 +31,7 @@ Follow [the browser setup and target contract](../management_portal/test_framewo
 Select the instance explicitly, provision that instance's configured test user,
 and verify the running instance, expected build, authenticated user and Test
 component before starting a campaign. Neither a Git branch named `dev` nor a
-retired deployment registry selects the target automatically.
+obsolete deployment registry selects the target automatically.
 
 TAU runs through the configured application Lineage and module Resident slots.
 Cases may mutate only their declared test fixtures; they must retain cleanup

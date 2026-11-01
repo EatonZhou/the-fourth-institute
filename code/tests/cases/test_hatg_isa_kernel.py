@@ -175,10 +175,10 @@ def test_a_handler_for_an_instruction_the_catalog_removed_is_ignored(fake, caplo
     """目录已删除的指令的处理函数只记警告，不阻止内核构建"""
     # Release Web can be older than the shared catalog (OpenDirectChatroom, 2026-10-03).
     binding = fake.binding()
-    binding.handlers["RetiredInstruction"] = lambda invocation: {}
+    binding.handlers["DeletedInstruction"] = lambda invocation: {}
     with caplog.at_level("WARNING", logger=kernel_module.__name__):
         InstructionKernel(binding, store=None)
-    assert "RetiredInstruction" in caplog.text
+    assert "DeletedInstruction" in caplog.text
 
 
 def test_release_web_starts_without_a_handler_the_shared_catalog_already_declares(kernel, fake, caplog, monkeypatch):

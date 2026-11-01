@@ -124,7 +124,7 @@ def test_read_worker_reuses_one_bounded_pool_across_domains(monkeypatch):
                 break
             time.sleep(.05)
         assert all(db._pool.get_stats()["pool_size"] == 0 for db in databases)
-        # Reuse after retirement still resolves the correct domain.
+        # Reuse after pool closure still resolves the correct domain.
         for database in databases:
             with database.read() as connection:
                 assert connection.execute("SELECT current_schema()").fetchone()[0] == database.schema

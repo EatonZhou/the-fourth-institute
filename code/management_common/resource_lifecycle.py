@@ -139,7 +139,7 @@ def lifecycle_scope(scope_id='', *, actor='', discover=False):
 
 def record_allocation(resource_id):
     scope_id = current_lifecycle()
-    # Additional Workspaces survive unbinding and need explicit retirement.
+    # Additional Workspaces survive unbinding and need explicit deletion.
     # Notices are durable operational history, not disposable test fixtures.
     if not scope_id or resource_id.partition('_')[0] == 'notice':
         return

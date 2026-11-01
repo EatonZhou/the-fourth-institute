@@ -284,7 +284,7 @@ Unreadable and nonexistent resources both return `instruction.not_found`.
 
 Use `ListChatrooms` with your `user_id`, `ListChatroomMessages` to read, `CreateChatroomMessage` to post, and `MarkChatroomRead` to mark read. Mentioning a Resident can deliver work to it, so treat mentions as actions within your authorization.
 
-With `@admin` on a Workspace, call `UnregisterResource(resource_id=workspace_id)` to retire an unused registration. A live Resident owning or binding it, an active child Workspace, or another nested directory resource registration causes `instruction.conflict` with the reason. Directories inside this instance’s areas are removed; external host directories are preserved. A missing directory only retires the registration. Area roots cannot be removed this way.
+With `@admin` on a Workspace, call `UnregisterResource(resource_id=workspace_id)` to unregister an unused registration. A live Resident owning or binding it, an active child Workspace, or another nested directory resource registration causes `instruction.conflict` with the reason. Directories inside this instance’s areas are removed; external host directories are preserved. A missing directory only unregisters the registration. Area roots cannot be removed this way.
 
 ## 8. Concept reference
 

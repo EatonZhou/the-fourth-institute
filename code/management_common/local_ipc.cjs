@@ -27,7 +27,7 @@ function defaultTCP(logical) {
 function listenLocal(server, logical, {python, tcp = defaultTCP(logical)} = {}) {
   if (!tcp) {
     // libuv unlinks the path passed to listen() when closing. Give each
-    // generation its own socket so retiring one cannot unlink its successor.
+    // generation its own socket so stopping one cannot unlink its successor.
     const owned = path.join(path.dirname(logical), '.' + crypto.randomBytes(8).toString('hex'));
     try {
       const existing = fs.lstatSync(logical);

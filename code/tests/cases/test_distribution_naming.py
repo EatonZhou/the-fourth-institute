@@ -24,11 +24,11 @@ def tracked(tmp_path, files):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
-    (tmp_path/"scope.json").write_text(json.dumps({"forbidden_brands":["deleted-product","DeletedProduct","RETIRED_PRODUCT","FormerProduct"]}))
+    (tmp_path/"scope.json").write_text(json.dumps({"forbidden_brands":["deleted-product","DeletedProduct","DELETED_PRODUCT","FormerProduct"]}))
 
 
 def test_cli_tracks_names_paths_environment_and_network_without_untracked_secrets(tmp_path, capsys):
-    tracked(tmp_path, {"old-deleted-product.py": 'name="FormerProduct"\nenv="RETIRED_PRODUCT_RESIDENT_ID"\nroot="/share/Projects"\nhost="10.77.0.1"\n'})
+    tracked(tmp_path, {"old-deleted-product.py": 'name="FormerProduct"\nenv="DELETED_PRODUCT_RESIDENT_ID"\nroot="/share/Projects"\nhost="10.77.0.1"\n'})
     (tmp_path / "secret.txt").write_text('DeletedProduct secret is untracked')
     assert check.main(["--identity-scope", str(tmp_path/"scope.json"), "--root", str(tmp_path)]) == 1
     output = capsys.readouterr().out

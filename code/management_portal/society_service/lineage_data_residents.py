@@ -329,7 +329,7 @@ class ResidentRecords:
         return self.database.write(write)
 
     def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
-        """Retire unused registrations within folders being deleted."""
+        """Unregister unused registrations within folders being deleted."""
         from .resident_workspace_deletion import delete_unreferenced
         return self.database.write(lambda connection: delete_unreferenced(
             connection, paths=paths, deleted_at=deleted_at, deleted_by=deleted_by,
