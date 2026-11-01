@@ -721,19 +721,19 @@ async function observeBrowser(context, { evidenceDir }) {
     file,
     requestId(request) { return requests.get(request)?.id || null; },
     async action(page, name, operation, { preflight, ready } = {}) {
-      if (stopped) throw new Error('Browser observation has ended');
+      if (stopped) throw Object.assign(new Error('Browser observation has ended'), {code: 'tau.observation_ended'});
       if (typeof name !== 'string' || !/^[a-zA-Z0-9_.:-]{1,80}$/.test(name) || typeof operation !== 'function') {
-        throw new TypeError('Use a static action label and a callback containing the operation and its ready check');
+        throw Object.assign(new TypeError('Use a static action label and a callback containing the operation and its ready check'), {code: 'tau.action_invalid_arguments'});
       }
-      if (actions.has(page)) throw new Error('An action already owns this page; include its ready check in the same callback');
-      if (ready !== undefined && typeof ready !== 'function') throw new TypeError('ready must be a read-only callback');
-      if (preflight !== undefined && typeof preflight !== 'function') throw new TypeError('preflight must be a read-only callback');
+      if (actions.has(page)) throw Object.assign(new Error('An action already owns this page; include its ready check in the same callback'), {code: 'tau.action_nested'});
+      if (ready !== undefined && typeof ready !== 'function') throw Object.assign(new TypeError('ready must be a read-only callback'), {code: 'tau.action_invalid_arguments'});
+      if (preflight !== undefined && typeof preflight !== 'function') throw Object.assign(new TypeError('preflight must be a read-only callback'), {code: 'tau.action_invalid_arguments'});
       if (preflight) {
         // Validate the very same locators before an irreversible first sample.
         // A failed rehearsal has not clicked or started the measured action.
         write({ kind: 'action_preflight_started', name, ...location(frameState(page.mainFrame())) });
         try {
-          if (await preflight(page) !== true) throw new Error('Action preflight must be explicitly confirmed');
+          if (await preflight(page) !== true) throw Object.assign(new Error('Action preflight must be explicitly confirmed'), {code: 'tau.action_preflight_unconfirmed'});
           write({ kind: 'action_preflight_confirmed', name });
         } catch (error) {
           write({ kind: 'action_preflight_failed', name, error: safeError(error) });
@@ -752,7 +752,7 @@ async function observeBrowser(context, { evidenceDir }) {
           // The mutation is never repeated. Discovery/recovery of a ready
           // locator belongs in this awaited read-only callback, while the
           // original action window and its request identities remain open.
-          if (await ready(page, result) !== true) throw new Error('Action readiness must be explicitly confirmed');
+          if (await ready(page, result) !== true) throw Object.assign(new Error('Action readiness must be explicitly confirmed'), {code: 'tau.action_ready_unconfirmed'});
           write({ kind: 'action_ready_confirmed', action_id: action.id, name });
         }
         status = 'completed';

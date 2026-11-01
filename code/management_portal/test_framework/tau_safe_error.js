@@ -5,6 +5,8 @@ const { createHash } = require('crypto');
 
 const names = new Set(['Error', 'TypeError', 'ReferenceError', 'SyntaxError', 'RangeError', 'URIError', 'EvalError', 'AggregateError', 'TimeoutError', 'AbortError']);
 const networkCodes = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EPIPE'];
+const diagnosticCodes = new Set(['tau.action_nested', 'tau.action_invalid_arguments',
+  'tau.action_preflight_unconfirmed', 'tau.action_ready_unconfirmed', 'tau.observation_ended']);
 const staticRoot = path.resolve(__dirname, '../../management_portal/static');
 const sources = new Set();
 function indexSources(dir, prefix = '/static/') {
@@ -37,6 +39,7 @@ function safeError(error) {
     } catch { /* No verifiable URL location. */ }
   }
   return { name: names.has(error?.name) ? error.name : 'Error',
+    ...(diagnosticCodes.has(error?.code) ? { code: error.code } : {}),
     network_code: networkCodes.find(code => new RegExp(`\\b${code}\\b`).test(message)) || null,
     stack_frames: frames, details_omitted: true };
 }

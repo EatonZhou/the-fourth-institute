@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {capture} = require('./tau_observation_state.cjs');
 const {collectResourceBaseline} = require('../../../management_portal/test_framework/tau_resource_baseline');
 const {reviewRequests} = require('../../../management_portal/test_framework/tau_network_review');
+const {safeError} = require('../../../management_portal/test_framework/tau_safe_error');
 const fs = require('node:fs'), path = require('node:path');
 const api = fs.readFileSync(path.join(__dirname, '../../../management_portal/static/portal_api.js'), 'utf8');
 
@@ -37,6 +38,17 @@ const api = fs.readFileSync(path.join(__dirname, '../../../management_portal/sta
     await assert.rejects(observer.action(page, 'refresh', async () => { mutations++; }, {ready: async () => false}));
     assert.equal(mutations, 2);
     assert.equal(rows().filter(row => row.kind === 'action_finished').at(-1).status, 'failed');
+    let parentMutations = 0, childMutations = 0;
+    await assert.rejects(observer.action(page, 'parent', async () => { parentMutations++; }, {
+      ready: async () => observer.action(page, 'child', async () => { childMutations++; }),
+    }), error => {
+      assert.equal(safeError(error).code, 'tau.action_nested');
+      return true;
+    });
+    assert.equal(parentMutations, 1);
+    assert.equal(childMutations, 0, 'diagnostic must not imply that the nested write ran');
+    assert.equal(rows().filter(row => row.kind === 'action_finished').at(-1).error.code, 'tau.action_nested');
+    assert.equal(safeError({code:'secret-token', message:'secret-token'}).code, undefined);
   });
   const ids = ['repo_aaaaaaaaaaaa', 'repo_bbbbbbbbbbbb'];
   const calls = [];

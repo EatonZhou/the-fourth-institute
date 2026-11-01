@@ -51,6 +51,8 @@ Program/Trigger Path 的完成独立于某个 Resident 输入完成。共享 `po
 
 结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
 
+同一 page 的 portal.action 不能嵌套；共享 safeError 会保留静态诊断码 tau.action_nested，表示子动作尚未执行，但不撤销已完成的父操作。写 helper 时将原始点击/提交函数与 action 包装分开复用。若用例明确要求 Reset 返回后立即发送新输入，放在同一个 operation 中依次执行两次原始操作并保存各自回执，再由只读 ready 等待新输入结果；不能从父 ready 调用内部又包装 action 的 sendInput，也不能因嵌套报错重做已提交 Reset。其他静态诊断码区分无效参数、preflight 未确认、ready 未确认及观察已结束；不输出原错误消息或堆栈。
+
 网络报告的 failure_kind 按原浏览器错误区分 aborted、connection_refused、其他网络失败和未给出错误；保留旧字段 unknown_count 的含义为“没有取消证明”，并不表示这些请求全是未知取消。unproven_abort_count 才是 ERR_ABORTED 且缺少证明的数量。连接拒绝独立保留，不能为它补造取消证明或仅凭时间邻近判定由某次部署引起；分类本身不豁免网络门禁，verdict 仍须依据完整用例事实。
 
 Family 成员表的 region aria-busy 覆盖成员与运行设置的读取；表格和身份已出现仍可能正在读取 Backend/账号/模型，等待 busy=false 后核对实际配置和明确错误，不能以表格出现为 ready。周额度 Unknown 只表示没有有效额度观测，与运行设置未加载分开判定，不要求所有额度都变成数字。HTML select 的选项显示名与 value 可能不同；准备阶段先读取实际选项，按 label 选择后用对应 value 核验。正式 ISA 写入前读取当前 GetInstructionSchema 并核对字段，不能把自行猜测的字段提交后再用 ready 发现它未生效；Family 成员增删应按当前 Schema，不用资源的输出结构猜写入参数。
