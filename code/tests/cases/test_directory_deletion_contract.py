@@ -44,6 +44,10 @@ def test_unregister_bound_workspace_commits_without_waiting_for_users(
         assert not connection.execute(
             'SELECT 1 FROM resident_workspace_bindings WHERE workspace_id=%s', (WID,),
         ).fetchall()
+    from management_portal.hatg.catalog import instruction_catalog
+    description = instruction_catalog()['UnregisterResource'].description
+    assert '没有存活 Resident' not in description
+    assert '嵌套登记和绑定' in description
 
 
 @pytest.mark.parametrize('origin', ['created', 'adopted'])
@@ -63,6 +67,11 @@ def test_origin_decides_cleanup_regardless_of_area(workspace, origin, internal):
     assert bool(jobs) == (origin == 'created')
     cleanup.run_pending()
     assert root.exists() == (origin == 'adopted')
+    from management_portal.hatg.catalog import instruction_catalog
+    description = instruction_catalog()['UnregisterResource'].description
+    assert '按登记来源' in description
+    assert '接入的现成目录只注销' in description
+    assert '实例区域内目录一并删除' not in description
 
 
 @pytest.mark.parametrize('outer_origin', ['created', 'adopted'])
