@@ -71,12 +71,12 @@ function deletionFixture() {
     activeChatTargetId: () => state.chatTarget?.key, activeLineageId: () => 'lineage_one',
     writeLastSelection: noop, syncChatTargetLocation: noop, stopPreviewRefresh: noop,
   });
-  vm.runInContext(declarations(['lineage_workbench.js', ...workbenchModuleFiles()], ['deleteResidentFromWorkbench', 'retireDeletedResidentSurfaces',
+  vm.runInContext(declarations(['lineage_workbench.js', ...workbenchModuleFiles()], ['deleteResidentFromWorkbench', 'removeDeletedResidentSurfaces',
     'clearDeletedResidentLocation', 'loadDetail', 'loadFolder']), ctx);
   return {ctx, target, state, removal, historyRead, calls, notices, primary, secondary, other, location};
 }
 
-test('a locally retired Resident detaches Chat and does not suggest waiting for service recovery', () => {
+test('a locally deleted Resident detaches Chat and does not suggest waiting for service recovery', () => {
   const f = deletionFixture();
   const panel = f.primary;
   const error = Object.assign(new Error('Resident has been deleted'), {code:'resident.deleted'});
