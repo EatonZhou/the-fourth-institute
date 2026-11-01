@@ -1,5 +1,25 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+HATG新建组件的身份来自本次原始CreateComponent回执`result.component_id`，其`result.component.id`必须一致；GetLineage的`lineage.program.components`里字段是`id`，不是`component_id`。不要按标题扫描后取不存在的字段，也不接受undefined作为原ready的目标。以下函数接收完整ISA回执，不发送请求、不代替完整原图集合核验。
+
+```js
+// tau-created-component
+function createdHatgComponent(receipt) {
+  const result = receipt?.result;
+  if (receipt?.status !== 'committed' || typeof result?.component_id !== 'string'
+      || !result.component_id || result.component?.id !== result.component_id) {
+    throw new Error('Original committed component identity is missing or inconsistent');
+  }
+  return {id: result.component_id, component: result.component};
+}
+async function currentResidentWatchFields(scope) {
+  return scope.locator('input[name="subject_resident_id"]:visible').evaluateAll(nodes =>
+    nodes.map(node => ({value: node.value, disabled: node.disabled})));
+}
+```
+
+对监听单个Resident的Event（如resident.work_finished），保存前必须在真实Inspector准备好Watch对象：通过原生Watch连线或实际监听Resident输入框填入目标完整ID，并用currentResidentWatchFields核验唯一、启用且值匹配。新Event默认类型可能需要Watch，空输入时保存会被本地校验拒绝，根本没有UpdateComponent请求；不能点击后盲等180秒网络回执。多个Watch或Lineage/全站监听范围按实际表单契约处理，不强求单输入框。任何原动作被校验拒绝都保留原反馈与失败，补齐后是新的动作，不回填原保存成功。该只读字段快照不证明提交、监听生效或业务ready。
+
 HTTP非成功响应按request_id关联原request_started及response_received/request_finished。观察器为ReadResource/ResolveResource、Family聊天偏好、Lineage读取/删除、Family修改/解除保留公开instruction和resource_scope.target_sha256；资源字符串地址可与原地址SHA256及HTTP reference关联，结构化文件引用另标address_representation=file_reference，不与字符串摘要混同。read_mode区分metadata/preview/content，观察器不保存正文或原地址。由本轮原提交、精确目标及页面行为判定404是否符合删除边界，摘要相同或时间接近本身不是因果证明；缺少旧样本不能事后补造。未知指令和无法确定的目标仍明确保留未知。
 
 准备阶段的动态控件使用当下快照。关闭一个面板可能同时移除其他标签，每次关闭后重新枚举；旧候选已消失时跳过，多个同名候选才是歧义。HATG 的 `New node: …` 主按钮直接打开表单（aria-haspopup 为空），带 menu 声明的入口才等待菜单。搜索中的 role=status 会随结果出现而移除，不能对它调用会等待元素出现的 innerText；用 evaluateAll 取得零或多个当前值。账号 option 的可见 label 和内部 value 分别保存，按实际 label 选择并核对其 value，不假定 value 等于 codex_two。以下函数只读取原生控件，需在本轮原有界等待中记录返回值；它们不自动提交、重试或代替目标身份核验。
