@@ -14,6 +14,24 @@ from tests.cases import permission_test_support
 REAL_SYNC_LINEAGE = resource_client.sync_lineage
 
 
+@pytest.mark.parametrize('already_removed', [False, True])
+def test_tau_family_cleanup_uses_domain_owner_and_preserves_existing_member(lineage, charters, monkeypatch, already_removed):
+    """TAU 清理活跃或已解除的 Family，不依赖不存在的注销 provider，也不删除原有成员。"""
+    from management_portal.test_framework import tau_fixtures
+
+    member = resident(lineage, 'Existing member')
+    made = ok('Familize', {'lineage_id': lineage, 'resident_ids': [member], 'title': 'TAU family'})
+    monkeypatch.setattr(tau_fixtures, 'TAU_ACTOR', 'sample_admin')
+    if already_removed:
+        ok('Unfamilize', {'lineage_id': lineage, 'family_id': made['resource_id']})
+    tau_fixtures._release_resource(made['resource_id'], 'tau-family-cleanup')
+    tau_fixtures._release_resource(made['resource_id'], 'tau-family-cleanup-recheck')
+    assert get_resource_service().resolve(made['resource_id'], actor='sample_admin')['exists'] is False
+    nodes = {node['id'] for node in graph(lineage)['nodes']}
+    assert member in nodes
+    assert made['facade_resident_id'] not in nodes
+
+
 @pytest.fixture(autouse=True)
 def family_publication(lineage, monkeypatch):
     # Creation fixtures stub resource publication; exercise the real owner here.

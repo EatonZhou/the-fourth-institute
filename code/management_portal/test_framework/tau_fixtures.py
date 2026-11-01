@@ -18,6 +18,18 @@ def _release_resource(resource_id: str, key: str) -> None:
     from management_portal import isa_client
 
     try:
+        if resource_id.startswith('family_'):
+            # Family is a domain-owned projection, not a registry mutation.
+            # Unfamilize preserves members that may predate this test; the
+            # allocation scope independently retires only newly made members.
+            resolved = isa_client.call(TAU_ACTOR, 'ResolveResource', {'address': resource_id})
+            resource = resolved['resource']
+            lineage_id = resource.get('attributes', {}).get('lineage_id', '')
+            if resource.get('resource_id') != resource_id or not re.fullmatch(r'lineage_[0-9a-f]{12}', lineage_id):
+                raise ValueError('Family cleanup requires its authoritative Lineage')
+            isa_client.call(TAU_ACTOR, 'Unfamilize',
+                            {'lineage_id': lineage_id, 'family_id': resource_id}, key=key)
+            return
         isa_client.call(TAU_ACTOR, 'UnregisterResource', {'resource_id': resource_id}, key=key)
     except InstructionError as exc:
         if exc.code != 'instruction.not_found':
