@@ -5,17 +5,16 @@ import ast
 import gzip
 import hashlib
 import json
-import re
 import shutil
 import subprocess
 from pathlib import Path
 
+from .layout import EXPORT_AREAS, split_target
 from .sanitize import knowledge_links, private_path, scrub
 from .store import canonical, digest
 from management_common.release_dependencies import declaration as runtime_dependencies
 
 SCHEMA = "tfi.release-engineering.v1"
-ROOTS = ("share_root", "staging_root", "instances_root", "secrets_dir")
 
 
 def relative(value):
@@ -38,6 +37,15 @@ def inventory(root):
             for path in sorted(root.rglob("*")) if path.is_file() and path != root / "manifest.json"]
 
 
+def data_areas(destination):
+    """The areas the bundle supplies, each as data/<area>/; nothing else may sit in data/."""
+    data = Path(destination) / "data"
+    entries = sorted(data.iterdir()) if data.is_dir() else []
+    if any(not entry.is_dir() or entry.name not in EXPORT_AREAS for entry in entries):
+        raise ValueError("Bundle data must consist of area directories only")
+    return [entry.name for entry in entries]
+
+
 def tree_digest(files):
     return hashlib.sha256(canonical(files).encode()).hexdigest()
 
@@ -53,58 +61,6 @@ def dependency_materials(code):
             'package_source': 'Installer-selected package index; no source account or index credentials exported',
             'external_executables': ['installer-selected Python', 'installer-selected PostgreSQL', 'installer-selected NATS'],
             'network_policy': 'Online resolution may be required by bootstrap; available local dependencies may be reused'}
-
-
-def validate_upgrade(declaration, files):
-    """An upgrade is an explicit compatibility claim tied to immutable SQL bytes."""
-    if not isinstance(declaration, dict):
-        raise ValueError("Upgrade declaration must be an object")
-    starts = declaration.get('from_manifest_sha256')
-    migrations = declaration.get('migrations')
-    if not isinstance(starts, list) or not starts or any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value) for value in starts) or len(set(starts)) != len(starts):
-        raise ValueError("Upgrade requires unique exact starting manifest hashes")
-    if not isinstance(migrations, list):
-        raise ValueError("Upgrade migrations must be an ordered list")
-    indexed = {item['path']: item['sha256'] for item in files}
-    seen = set()
-    clean = []
-    for migration in migrations:
-        if not isinstance(migration, dict):
-            raise ValueError("Invalid upgrade migration")
-        identity, path, sha = (migration.get(key) for key in ('id', 'path', 'sha256'))
-        if not isinstance(identity, str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,120}', identity) or identity in seen:
-            raise ValueError("Upgrade migration IDs must be unique stable identifiers")
-        if not isinstance(path, str) or relative(path).as_posix() != path or not path.endswith('.sql') or path == 'database/distribution.sql':
-            raise ValueError("Upgrade must use dedicated relative migration SQL, never the fresh-install database")
-        if not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha) or indexed.get(path) != sha:
-            raise ValueError("Upgrade migration digest must match engineering inventory")
-        seen.add(identity)
-        clean.append({'id': identity, 'path': path, 'sha256': sha})
-    return {'from_manifest_sha256': list(starts), 'migrations': clean}
-
-
-def validate_repair_upgrade(declaration, source_root, origin_sha256):
-    """Preflight an explicit repair claim; generation rechecks shipped bytes."""
-    migrations = declaration.get('migrations') if isinstance(declaration, dict) else None
-    # First validate structure without touching any declaration-selected path.
-    declared_files = [item for item in migrations if isinstance(item, dict)
-                      and 'path' in item and 'sha256' in item] if isinstance(migrations, list) else []
-    # Invalid paths can be unhashable; do not use them as inventory keys.
-    declared_files = [item for item in declared_files if isinstance(item['path'], str)]
-    clean = validate_upgrade(declaration, declared_files)
-    if clean['from_manifest_sha256'] != [origin_sha256]:
-        raise ValueError('Code repair upgrade must declare only the exact reused manifest origin')
-    root = Path(source_root).resolve(strict=True)
-    actual_files = []
-    for item in clean['migrations']:
-        path = relative(item['path'])
-        if path.parts[0] != 'code':
-            raise ValueError('Code repair migrations must be dedicated code/ SQL files')
-        source = root.joinpath(*path.parts[1:])
-        if source.is_symlink() or not source.resolve(strict=True).is_relative_to(root) or not source.is_file():
-            raise ValueError('Code repair migration must be a source file within the code root')
-        actual_files.append({'path': item['path'], 'sha256': checksum(source)})
-    return validate_upgrade(clean, actual_files)
 
 
 def copy_content(source, target, *, selected, mappings=(), knowledge=False, anonymize=True, source_usernames=(), skill_scope=None):
@@ -278,7 +234,7 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             if (path.parts[0] in {"tests", ".wall"} and not test_source
                     and str(path) not in resolved.get("code_extras", [])):
                 continue
-            if str(path) in {"SPEC.md", "IMPROVE.md", "config/site.json", "config/portal_instances.json"}:
+            if str(path) in {"SPEC.md", "IMPROVE.md"}:
                 continue
             copy_content(source_root / path, code / path, selected=selected, anonymize=False, source_usernames=source_usernames, skill_scope=skill_scope)
         for name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"):
@@ -305,16 +261,13 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             ResourceTypeRegistry(resource_types).declarations
         from .permissions import adapt_builtin_schemes
         permission_validation = adapt_builtin_schemes(code)
-        for root in ROOTS:
-            (destination / "data" / root).mkdir(parents=True)
         from .file_scope import FileScope
         file_scope = FileScope(resolved.get('files', []), resolved.get('file_scope_policy'))
         copied = set()
         copy_scopes = []
         for item in resolved.get("files", []):
             target = relative(item["target"])
-            if len(target.parts) < 3 or target.parts[0] != "data" or target.parts[1] not in ROOTS[:3]:
-                raise ValueError("Resolved resource files must target a declared data root")
+            split_target(target)
             identity = (str(Path(item["source"]).resolve()), str(target))
             if identity in copied:
                 continue
@@ -348,20 +301,13 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             copied.add(identity)
             copy_scopes.append({'source': str(Path(item['source']).absolute()), 'target': str(target)})
         for name, text in resolved.get("generated_files", {}).items():
+            if relative(name).parts[0] == "data":
+                split_target(name)
             path = destination / relative(name)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(scrub(text, mappings=mappings, source_usernames=source_usernames), encoding="utf-8")
         from .core_skills import export_core_skills
-        if 'core_skills' in resolved:
-            # A code repair already copied the immutable data, including its
-            # core rules. Never overwrite those bytes with live source rules.
-            core_skills = resolved['core_skills']
-            for item in core_skills.get('files', []):
-                path = relative(item['path'])
-                if not path.is_relative_to('data/share_root/Skills') or checksum(destination / path) != item['sha256']:
-                    raise ValueError('Reused core Skill does not match the prior engineering')
-        else:
-            core_skills = export_core_skills(destination, source_usernames=source_usernames)
+        core_skills = export_core_skills(destination, source_usernames=source_usernames)
         db = destination / "database/distribution.sql"
         db.parent.mkdir()
         db.write_text(database_sql, encoding="utf-8")
@@ -369,8 +315,10 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
         if not (destination / entrypoint).is_file():
             raise ValueError("Fixed release installer is not present in selected code")
         (destination / "INSTALL.md").write_text(
-            "# TFI Portal\n\nRun `python3 code/scripts/tfi_release_install.py --help` for installation parameters.\n"
-            "Use a new installation directory, independent PostgreSQL database, five data roots, service prefix and ports.\n"
+            "# TFI Portal\n\nCreate an instance with "
+            "`python3 code/scripts/tfi_release_install.py create --engineering manifest.json --name <name>`.\n"
+            "The installer places the instance root outside the code directory, gives it its own database, "
+            "service prefix and ports, and registers it on this host.\n"
             "Register the first administrator in the new instance. Configure your own backend accounts; source authentication is never supplied.\n",
             encoding="utf-8")
         if (source_root / 'INSTALL.md').is_file():
@@ -384,8 +332,9 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
             "resolved_objects": sorted(selected), "dependency_reasons": resolved.get("dependency_reasons", {}),
             "unresolved": [], "code": {"path": "code", "sha256": tree_digest(code_files)},
             "database": {"path": "database/distribution.sql", "format": "postgresql-sql", "sha256": checksum(db)},
-            "files": {name: f"data/{name}" for name in ROOTS},
-            "directory_mappings": [{"placeholder": "${" + name + "}", "root": name, "path": "."} for name in (*ROOTS, "code_root")],
+            "files": {area: f"data/{area}" for area in data_areas(destination)},
+            # Records name exported files as <area>:<path>; only the code directory is a placeholder.
+            "directory_mappings": [{"placeholder": "${code_root}", "root": "code_root", "path": "."}],
             "installer": {"entrypoint": entrypoint}, "inventory": files,
             "external_requirements": resolved.get("external_requirements", ["PostgreSQL", "Python dependencies", "new backend account mapping"]),
             "features": resolved.get("features", []), "checks": {"no_git_history": True, "source_authentication_excluded": True},
@@ -406,8 +355,6 @@ def generate(*, source_root, destination, snapshot, resolved, database_sql, sour
         }
         from management_common.distribution_targets import resolve_targets
         manifest.update(resolved.get('targets') or resolve_targets(snapshot, resolved.get('features', [])))
-        if 'upgrade' in resolved:
-            manifest['upgrade'] = validate_upgrade(resolved['upgrade'], files)
         (destination / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         return manifest
     except Exception:

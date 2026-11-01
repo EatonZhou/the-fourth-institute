@@ -54,7 +54,7 @@ def _static_cache_control(handler: SimpleHTTPRequestHandler) -> str:
     ).strip()
     # Dev serves a mutable working tree even while its Web build ID is unchanged.
     if (
-        http_instance._PORTAL_INSTANCE == "release"
+        http_instance._PORTAL_DEPLOYMENT == "release"
         and requested
         and requested == str(http_instance._PORTAL_BUILD_ID or "").strip()
     ):

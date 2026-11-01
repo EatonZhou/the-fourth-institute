@@ -12,11 +12,12 @@ from types import SimpleNamespace
 import pytest
 from starlette.datastructures import Headers
 
+from tests.cases.instance_test_support import select_instance
+
 
 @pytest.fixture
 def obsolete_settings(tmp_path, monkeypatch):
-    site = tmp_path / "site.json"
-    site.write_text(json.dumps({"deployment": {"compatibility": {
+    site = select_instance(monkeypatch, tmp_path / "instance", site={"deployment": {"compatibility": {
         "format_namespaces": ["archive."],
         "domain_values": {
             "runtime_identity_header_aliases": {
@@ -28,8 +29,7 @@ def obsolete_settings(tmp_path, monkeypatch):
             "paper_curated_source": "Archive curated venues",
             "paper_catalog_source_version": "Archive catalog",
         },
-    }}}))
-    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(site))
+    }}}).root / "site.json"
     return site
 
 

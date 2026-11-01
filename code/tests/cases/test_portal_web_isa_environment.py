@@ -30,34 +30,34 @@ def test_paired_restart_queues_the_selected_web_without_legacy_services(monkeypa
     from scripts import tfi_development_runtime as paired
     monkeypatch.setattr(paired, "configured_root", lambda: tmp_path)
     requests = []
-    monkeypatch.setattr(paired, "request_restart", lambda root, instance, components:
-                        requests.append((root, instance, components)) or
+    monkeypatch.setattr(paired, "request_restart", lambda root, deployment, components:
+                        requests.append((root, deployment, components)) or
                         {"request": {"request_id": "paired-job", "components": components}})
-    assert web_isa.restart_portal(invocation({"instance": "release", "components": ["web"]}))["request_id"] == "paired-job"
+    assert web_isa.restart_portal(invocation({"deployment": "release", "components": ["web"]}))["request_id"] == "paired-job"
     assert requests == [(tmp_path, "release", ["web"])]
 
 
 def test_standalone_restart_is_refused_without_running_commands(monkeypatch):
     """没有 Dev/Release 配对时 RestartPortal 报告不支持，不执行任何命令"""
     monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("standalone restart ran a command"))
-    for instance in ("dev", "release"):
+    for deployment in ("dev", "release"):
         with pytest.raises(InstructionError, match="install_tfi_release"):
-            web_isa.restart_portal(invocation({"instance": instance}))
+            web_isa.restart_portal(invocation({"deployment": deployment}))
 
 
 def test_paired_publish_from_release_preserves_pending_activation_receipt(monkeypatch, tmp_path):
-    """PublishRelease 从仓库根目录调用 tfi_dev 发布，路径带 code/ 前缀，并返回待确认的激活回执"""
+    """PublishRelease 调用 tfi_dev 发布所选实例的 Release，路径带 code/ 前缀，并返回待确认的激活回执"""
     from scripts import tfi_development_runtime as paired, tfi_dev
     monkeypatch.setattr(paired, "configured_root", lambda: tmp_path)
-    monkeypatch.setattr(web_isa, "_instance", lambda: "release")
+    monkeypatch.setattr(web_isa, "_deployment", lambda: "release")
     health = {"status": "pending", "receipt": str(tmp_path / "result.json")}
     calls = []
-    monkeypatch.setattr(tfi_dev, "publish", lambda root, message, **options: calls.append((root, message, options)) or
+    monkeypatch.setattr(tfi_dev, "publish", lambda message, **options: calls.append((message, options)) or
                         {"ok": True, "commit": "abc", "paths": list(options["paths"]), "health": health})
     result = web_isa.publish_release(invocation({"message": "fix", "paths": ["SPEC.md"]}))
     assert result["health"] == health
     assert result["paths"] == ["code/SPEC.md"]
-    assert calls == [(web_isa.REPO_ROOT.parent, "fix", {"paths": ("code/SPEC.md",), "all_files": False})]
+    assert calls == [("fix", {"paths": ("code/SPEC.md",), "all_files": False})]
 
 
 def test_clear_unread_updates_read_boundary_without_listing_inbox(monkeypatch):
@@ -338,7 +338,7 @@ def test_publish_release_reports_the_push_to_the_remote(monkeypatch):
 
     push = {"ok": True, "remote": "origin"}
     health = {"status": "pending", "receipt": "/runtime/receipt.json"}
-    monkeypatch.setattr(web_isa, "_instance", lambda: "dev", raising=False)
+    monkeypatch.setattr(web_isa, "_deployment", lambda: "dev", raising=False)
     monkeypatch.setattr(tfi_dev, "publish", lambda *args, **options: {
         "ok": True, "commit": "abc123", "paths": ["code/SPEC.md"], "health": health, "push": push})
     result = web_isa.publish_release(invocation({"message": "m", "paths": ["SPEC.md"]}))

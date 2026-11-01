@@ -236,6 +236,3 @@ def test_terminal_publication_retry_keeps_one_notice_and_does_not_clear_early(ru
     assert len(notices) == 1
     assert repo.input_state(rid, MID)['state'] == 'cancelled'
     assert not resident_execution_work.read(record)
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

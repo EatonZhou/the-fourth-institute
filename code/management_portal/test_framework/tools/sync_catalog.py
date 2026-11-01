@@ -35,13 +35,12 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from management_common.product_environment import read_product_env
-from management_common.portal_paths import path as portal_path, resolve_directory
+from management_common.portal_paths import path as portal_path
 from management_portal.test_framework.catalog import CatalogRepository, atomic_catalog_write, catalog_write_lock
 from management_portal.test_framework.catalog_source import (build_catalog, case_ids_path, effective_case_ids, live_cases_path,
                                             read_case_ids)
 
-PROJECTS_ROOT = resolve_directory(read_product_env("PORTAL_PROJECTS_ROOT", str(portal_path("share_root") / "Projects")))
+PROJECTS_ROOT = portal_path('projects')
 CHINESE = re.compile(r"[一-鿿]")
 
 

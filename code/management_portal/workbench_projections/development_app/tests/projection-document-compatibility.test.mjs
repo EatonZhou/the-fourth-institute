@@ -23,12 +23,12 @@ function bootstrap(site) {
 }
 
 test('opaque documents receive empty compatibility before synchronous state and SDK execution', () => {
-  const scripts = bootstrap({site_name: 'example', paths: {share_root: 'private-root'}, secret: 'private-token',
+  const scripts = bootstrap({site_name: 'example', paths: {projects: 'private-root'}, secret: 'private-token',
     compatibility: {browser_identifiers: {theme: 'archive.theme', demo_frame_scope: 'archive.frame', secret: 'private-value'},
       format_namespaces: ['archive.'], environment_aliases: {PORTAL_TEST: ['ARCHIVE_PRIVATE']}, domain_values: {token: 'private-token'}}});
   assert.equal(scripts.length, 2);
   assert.equal(scripts[1].textContent, state);
-  assert.doesNotMatch(scripts[0].textContent, /archive|private-|ARCHIVE_PRIVATE|environment_aliases|domain_values|site_name|share_root/);
+  assert.doesNotMatch(scripts[0].textContent, /archive|private-|ARCHIVE_PRIVATE|environment_aliases|domain_values|site_name|projects/);
   const child = context();
   scripts.forEach(script => vm.runInContext(script.textContent, child));
   assert.equal(child.PortalCompatibility.identifier('theme'), 'tfi.portal.theme');

@@ -171,3 +171,34 @@ def test_real_ordered_services_with_270_second_timeouts_stop_with_one_budget(tmp
         control("systemctl", "--user", "kill", "--kill-whom=all", "--signal=SIGKILL", *units, check=False)
         control("systemctl", "--user", "stop", "--no-block", *units, check=False)
         control("systemctl", "--user", "reset-failed", *units, check=False)
+
+
+@pytest.mark.parametrize("output, owned", [
+    ("LoadState=not-found\nTransient=no\nEnvironment=\n", True),
+    ("LoadState=loaded\nTransient=yes\nEnvironment=PORTAL_INSTANCE_ROOT=/srv/one PATH=/bin\n", True),
+    ("LoadState=loaded\nTransient=yes\nEnvironment=PORTAL_INSTANCE_ROOT=/srv/two\n", False),
+    ("LoadState=loaded\nTransient=no\nEnvironment=PORTAL_INSTANCE_ROOT=/srv/one\n", False),
+])
+def test_instance_job_is_stopped_only_when_it_selects_the_same_instance(output, owned):
+    def runner(command, **kwargs):
+        assert command[:4] == ["systemctl", "--user", "show", "tfi-one-provider-activation.service"]
+        return subprocess.CompletedProcess(command, 0, output, "")
+    if owned:
+        shutdown.verify_job("tfi-one-provider-activation.service", Path("/srv/one"), runner=runner)
+    else:
+        with pytest.raises(ValueError, match="another instance"):
+            shutdown.verify_job("tfi-one-provider-activation.service", Path("/srv/one"), runner=runner)
+
+
+def test_registered_units_include_the_instance_job(tmp_path, monkeypatch):
+    from management_common.instance_manifest import load
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / "instance")
+    seen = {}
+    monkeypatch.setattr(shutdown, "verify_job", lambda unit, root, env=None: seen.setdefault("job", unit))
+    monkeypatch.setattr(shutdown, "stop_units", lambda prefix, **kw: seen.update(kw) or {"ok": True})
+    monkeypatch.setattr("scripts.instance_services.platform_name", lambda: "linux")
+    shutdown.stop_instance(root)
+    assert seen["job"] == "tfi-fixture-provider-activation.service"
+    assert seen["registered_units"] == {load(root).service_name(c) + ".service" for c in
+                                        load(root).document["services"]["components"]} | {seen["job"]}

@@ -51,7 +51,7 @@ from management_common.portal_paths import path as portal_path
 
 MCP_SERVER_NAME = "portal"
 TOOL_NAME_PREFIX = f"mcp__{MCP_SERVER_NAME}__"
-GATEWAY_ROOT = Path(os.environ.get("PORTAL_KIMI_TOOLS_ROOT", str(portal_path("staging_root") / "portal_locks" / "kimi-tools")))
+GATEWAY_ROOT = portal_path("runtime") / "kimi-tools"
 CATALOG_ENVIRONMENT = "PORTAL_KIMI_TOOLS_CATALOG"
 CALL_TIMEOUT_SECONDS = 990.0
 # A Worker handover leaves the session's prompt running without a Worker for

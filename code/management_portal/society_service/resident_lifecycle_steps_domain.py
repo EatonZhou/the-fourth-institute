@@ -102,10 +102,6 @@ def _lineage_tombstone(operation_id: str, step: dict[str, Any]) -> None:
     resident_lineage_host_port.project_lineage_deletion(step)
 
 
-def _lineage_folder_unbind(operation_id: str, step: dict[str, Any]) -> None:
-    resident_lineage_host_port.unbind_deleted_lineage_folder(step)
-
-
 def _resident_detach(operation_id: str, step: dict[str, Any]) -> None:
     resident_lineage_host_port.finalize_deleted_resident_detach(step["lineage_id"])
 
@@ -196,7 +192,6 @@ STEPS: dict[str, Callable[[str, dict[str, Any]], None]] = {
     "release": _release,
     "forget_deleted": _forget_deleted,
     "lineage_tombstone": _lineage_tombstone,
-    "lineage_folder_unbind": _lineage_folder_unbind,
     "resident_detach": _resident_detach,
     "workspace_document": _workspace_document,
     "workspace_move": _workspace_move,

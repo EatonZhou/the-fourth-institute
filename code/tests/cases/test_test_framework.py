@@ -35,6 +35,7 @@ from management_portal.test_framework.tools.provision_portal_test_profile import
 from management_portal.test_framework.taxonomy import MODULE_GROUPS, MODULES
 from management_portal.test_framework.tau_residents import TauResidentAssignments
 from management_portal.test_framework.models import CatalogError, Implementation, TestCase as FrameworkTestCase
+from tests.cases.instance_test_support import select_instance, write_instance
 
 
 @pytest.fixture(autouse=True)
@@ -47,13 +48,8 @@ def available_tau_runtime(monkeypatch):
 
 
 def _tau_config(storage: Path) -> TauConfig:
-    registry = storage.parent / "deployments.json"
-    registry.write_text(json.dumps({
-        "schema": "tfi.portal-deployments.v1",
-        "instances": [{"enabled": True, "id": "dev", "kind": "dev",
-                       "label": "Dev", "origin": "http://127.0.0.1:18086"}],
-    }), encoding="utf-8")
-    return TauConfig(storage, deployment_registry=registry)
+    instance = write_instance(storage.parent / "tau-instance", dev=True, dev_port=18086)
+    return TauConfig(storage, deployment_registry=instance / "instance.json")
 
 
 class RecordingContext:
@@ -226,40 +222,28 @@ def test_catalog_search_matches_full_implementation_entrypoint(monkeypatch, subt
     assert repository.query({"search": "unrelated nonexistent entrypoint"}) == ()
 
 
-def test_pytest_process_removes_its_database_temp_root_contracts(tmp_path, subtests, isolated_portal_case):
+def test_pytest_process_removes_its_database_temp_root_contracts(tmp_path, subtests, isolated_portal_case, session_instance_root):
     """pytest 进程删除自己的数据库临时目录，损坏的运行历史不被清空，TAU Resident 分配在轮换前不变
 
     :risk: no-external-side-effects"""
     with subtests.test(contract='test_pytest_process_removes_its_database_temp_root'), isolated_portal_case() as case_path:
         tmp_path = case_path
-        isolated_keys = (
-            'PORTAL_SITE_CONFIG',
-            'PORTAL_CODEX_APP_SERVER_THREAD_LOCK_ROOT',
-            'PORTAL_LINEAGE_ROOT',
-            'PORTAL_TWO_FACTOR_KEY_PATH', 'PORTAL_EXECUTION_STATE_ROOT',
-            'PORTAL_ARTICLE_BUILD_ROOT',
-        )
-        isolated_roots = {Path(os.environ[key]).parent for key in isolated_keys}
-        assert len(isolated_roots) == 1
-        process_root = isolated_roots.pop()
+        from tests.cases.instance_test_support import write_instance
+        process_root = session_instance_root
         assert process_root.is_dir() and process_root.name.startswith('tfi-portal-pytest-')
         temp_root = tmp_path / 'process-temp'
         temp_root.mkdir()
-        inherited_site = tmp_path / 'deployment-site.json'
-        deployment_database = tmp_path / 'deployment-postgres.env'
+        deployment = write_instance(tmp_path / 'deployment-instance', site={'deployment': {
+            'test_framework': {'actor': 'deployment-only-actor'}}})
+        deployment_database = deployment / 'secrets/postgres.env'
+        deployment_database.parent.mkdir()
         deployment_database.write_text('PORTAL_DATABASE_URL=postgresql://fixture@127.0.0.1:65431/deployed\n')
-        native_root = tmp_path / 'installed-native-programs'
-        inherited_site.write_text(json.dumps({'deployment': {'postgres_env_file': str(deployment_database),
-            'providers': {'runtime_root': str(native_root)}, 'compatibility': {
-            'domain_values': {'test_framework.actor': 'deployment-only-actor'},
-        }}}), encoding='utf-8')
         inherited_before = {
             path: (path.read_bytes(), path.stat().st_mtime_ns)
-            for path in (inherited_site, deployment_database)
+            for path in (deployment / 'site.json', deployment / 'instance.json', deployment_database)
         }
         environment = {**os.environ, 'TMPDIR': str(temp_root), 'PYTHONDONTWRITEBYTECODE': '1',
-                       'PORTAL_SITE_CONFIG': str(inherited_site)}
-        environment.pop('PORTAL_POSTGRES_ENV_FILE', None)
+                       'PORTAL_INSTANCE_ROOT': str(deployment)}
         rejected = subprocess.run(
             [sys.executable, '-c', 'import tests.cases.conftest'], cwd=ROOT,
             env={**environment, 'PORTAL_POSTGRES_TEST_DSN': 'postgresql://fixture@localhost:65431/other'},
@@ -274,24 +258,19 @@ from pathlib import Path
 import pytest
 class CheckIsolatedSite:
     def pytest_sessionstart(self, session):
-        from tests.cases import postgres_test_database
+        from management_common.instance_manifest import load
         from management_portal.test_framework.compatibility import test_actor
-        from management_portal.execution import provider_updates
-        from management_common.portal_paths import path as portal_path
-        assert postgres_test_database.PRODUCTION_ENVIRONMENT_FILE == Path(os.environ['TEST_EXPECTED_DATABASE_CONFIG'])
-        assert provider_updates.RUNTIMES == portal_path('staging_root') / 'provider-runtimes'
-        site = Path(os.environ['PORTAL_SITE_CONFIG'])
-        assert site.parent.name.startswith('tfi-portal-pytest-')
-        config = json.loads(site.read_text())
-        assert set(config) == {'deployment'}
-        assert set(config['deployment']) == {'postgres'}
-        assert set(config['deployment']['postgres']) == {'bin', 'lib'}
-        assert Path(config['deployment']['postgres']['bin']).is_dir()
+        instance = load()
+        assert instance.root != Path(os.environ['TEST_DEPLOYMENT_ROOT'])
+        assert instance.root.name.startswith('tfi-portal-pytest-')
+        assert instance.site_settings() == {}
+        assert set(instance.document['dependencies']['postgres']) == {'bin', 'lib', 'share'}
+        assert Path(instance.document['dependencies']['postgres']['bin']).is_dir()
         assert test_actor() == 'test-actor'
 sys.exit(pytest.main(['-q', 'tests/cases/test_permission_engine.py::test_default_scheme_places_objects_by_owner'], plugins=[CheckIsolatedSite()]))
 '''
         completed = subprocess.run([sys.executable, '-c', bootstrap], cwd=ROOT,
-                                   env={**environment, 'TEST_EXPECTED_DATABASE_CONFIG': str(deployment_database)},
+                                   env={**environment, 'TEST_DEPLOYMENT_ROOT': str(deployment)},
                                    text=True, capture_output=True, check=False)
         assert completed.returncode == 0, completed.stdout + completed.stderr
         for path, before in inherited_before.items():
@@ -551,7 +530,7 @@ def test_runner_filter_is_an_implementation_constraint_not_a_case_dimension_cont
         else:
             raise AssertionError('UI 的 AI 真实使用不能在缺少截图证据时通过')
     with subtests.test(contract='test_portal_test_profile_uses_the_selected_instance_and_contains_no_password'), isolated_portal_case():
-        deployment = PortalDeployment(instance_id='dev', label='Dev', kind='dev', origin='http://127.0.0.1:18086', order=1)
+        deployment = PortalDeployment(deployment_id='dev', label='Dev', kind='dev', origin='http://127.0.0.1:18086', order=1)
         payload = storage_state_payload(deployment, 'signed-token')
         assert payload['cookies'][0]['value'] == 'signed-token'
         assert payload['origins'][0]['origin'] == deployment.origin
@@ -560,13 +539,13 @@ def test_runner_filter_is_an_implementation_constraint_not_a_case_dimension_cont
         assert storage_state_payload(release, 'signed-token')['origins'][0]['origin'] == release.origin
 
 
-def test_selected_implementation_identity_is_fixed_in_the_run_plan() -> None:
+def test_selected_implementation_identity_is_fixed_in_the_run_plan(tmp_path) -> None:
     """运行计划固定所选实现，并校验 TAU 并行数、Resident 账号和运行设置参数"""
     from management_portal.execution.account_registrations import create_registration
 
     create_registration({"account_id": "codex_registered_extra", "provider": "codex",
                          "kind": "subscription_login", "route_id": "registered_extra",
-                         "max_concurrency": 2, "config": {}}, "test")
+                         "max_concurrency": 2, "config": {"account_dir": str(tmp_path / "accounts" / "codex_registered_extra")}}, "test")
     implementations = tuple(
         Implementation(
             id=f"impl-{index}", runner="pytest", entrypoint=f"synthetic::{index}",
@@ -984,7 +963,7 @@ def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypat
 
     :importance: P1
     """
-    monkeypatch.setenv("PORTAL_TEST_SLOT_ROOT", str(tmp_path / "slots"))
+    select_instance(monkeypatch, tmp_path / "slots")
     monkeypatch.setitem(slots.CAPACITY, "browser", 3)
     first = slots.acquire("browser", 2, stop=lambda: False)
     second = slots.acquire("browser", 5, stop=lambda: False)
@@ -999,7 +978,7 @@ def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypat
     holder = subprocess.Popen([sys.executable, "-c", (
         "import sys, time; from management_portal.test_framework import slots; "
         "lease = slots.acquire('live', 1, stop=lambda: False); print('held', flush=True); time.sleep(30)"
-    )], cwd=ROOT, stdout=subprocess.PIPE, text=True, env={**os.environ, "PORTAL_TEST_SLOT_ROOT": str(tmp_path / "slots")})
+    )], cwd=ROOT, stdout=subprocess.PIPE, text=True, env=os.environ.copy())
     try:
         assert holder.stdout.readline().strip() == "held"
         assert slots.acquire("live", 1, stop=lambda: True, poll_seconds=0.01) is None
@@ -1010,7 +989,7 @@ def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypat
     assert lease.count == 1
     lease.release()
 
-    monkeypatch.setenv("PORTAL_TEST_SLOT_ROOT", str(tmp_path / "global-slots"))
+    select_instance(monkeypatch, tmp_path / "global-slots")
     monkeypatch.delenv("PORTAL_TEST_MAX_CONCURRENCY", raising=False)
     assert slots.max_concurrency() == 4
     monkeypatch.setenv("PORTAL_TEST_MAX_CONCURRENCY", "2")
@@ -1030,7 +1009,7 @@ def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypat
         with pytest.raises(ValueError, match="PORTAL_TEST_MAX_CONCURRENCY"):
             slots.max_concurrency()
 
-    monkeypatch.setenv("PORTAL_TEST_SLOT_ROOT", str(tmp_path / "process-global-slots"))
+    select_instance(monkeypatch, tmp_path / "process-global-slots")
     monkeypatch.setenv("PORTAL_TEST_MAX_CONCURRENCY", "1")
     holder = subprocess.Popen(
         [sys.executable, "-c", (
@@ -1208,7 +1187,6 @@ def test_executor_unit_gets_the_service_environment_only_for_a_campaign(tmp_path
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_SOCKET", "/run/fixture/society-service.sock")
     monkeypatch.setenv("PORTAL_TEST_TAU_MODEL", "fixture-model")
     monkeypatch.delenv("PORTAL_ISA_ROUTING", raising=False)
-    monkeypatch.setenv("PORTAL_POSTGRES_ENV_FILE", str(tmp_path / "portal-postgres.env"))
     launch_unit("testrun_0123456789abcdef", tmp_path, tau=True)
     launch_unit("testrun_fedcba9876543210", tmp_path)
     campaign, local = commands
@@ -1216,7 +1194,8 @@ def test_executor_unit_gets_the_service_environment_only_for_a_campaign(tmp_path
     # Secrets never reach a command line; the unit reads the database URL itself.
     assert "fixture-database-secret" not in " ".join(campaign + local)
     assert "fixture-token-secret" not in " ".join(campaign + local)
-    assert f"--property=EnvironmentFile={tmp_path / 'portal-postgres.env'}" in campaign
+    from management_common.postgres_configuration import postgres_env_file
+    assert f"--property=EnvironmentFile={postgres_env_file()}" in campaign
     assert {
         "--setenv=PORTAL_SOCIETY_SERVICE_SOCKET=/run/fixture/society-service.sock",
         "--setenv=PORTAL_ISA_ROUTING=socket",
@@ -1263,12 +1242,12 @@ def test_tau_cleanup_never_terminates_the_caller_chain_contracts(monkeypatch, tm
             tmp_path = case_path
             from types import SimpleNamespace
             from urllib.error import HTTPError
-            monkeypatch.setattr('management_portal.test_framework.dev_target.resolve_unique_dev', lambda _path: SimpleNamespace(instance_id='dev', origin='http://127.0.0.1:18086'))
+            monkeypatch.setattr('management_portal.test_framework.dev_target.resolve_unique_dev', lambda _path: SimpleNamespace(deployment_id='dev', origin='http://127.0.0.1:18086'))
 
             storage = tmp_path / 'state.json'
             storage.write_text(json.dumps({'cookies': [{'name': 'session', 'value': 'secret', 'domain': '127.0.0.1'}]}))
             responses = {
-                'health': b'{"instance":"dev","build_id":"dev-current"}',
+                'health': b'{"deployment":"dev","build_id":"dev-current"}',
                 'page': b'<body data-test-workbench-version="component-v2"></body>',
                 'identity': b'{"username":"test-actor"}',
             }
@@ -1464,7 +1443,7 @@ def test_run_records_recover_runs_interrupted_by_framework_restart_contracts(tmp
 
 def test_shared_tau_identity_is_exclusive_without_consuming_test_capacity(tmp_path, monkeypatch):
     """同一 TAU 模块身份互斥使用，不同模块互不阻塞，且不占用测试并发容量"""
-    monkeypatch.setenv("PORTAL_TEST_SLOT_ROOT", str(tmp_path))
+    select_instance(monkeypatch, tmp_path / "slot-instance")
     monkeypatch.setenv("PORTAL_TEST_MAX_CONCURRENCY", "1")
     entered = threading.Event()
     def another_campaign():
@@ -1734,7 +1713,7 @@ def test_agent_use_profile_requires_a_private_storage_state_contracts(tmp_path, 
 
 def _verified_dev_target() -> VerifiedDevTarget:
     return VerifiedDevTarget(
-        instance_id="dev",
+        deployment_id="dev",
         origin="http://127.0.0.1:18086",
         expected_build_id="dev-current",
         actual_build_id="dev-current",
@@ -1776,39 +1755,23 @@ def test_tau_prompt_identity_does_not_change_with_normal_dev_build_restart(tmp_p
     assert "由 TAU preflight 核对，已写入证据目录的 run-context.json" in before
 
 
-@pytest.mark.parametrize("registered_build", [False, True])
-def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, registered_build) -> None:
+def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path) -> None:
     """DEV 预检核对构建版本、页面组件指纹、实例和登录身份，构建不符单独归类
 
     :design: decision_c953eab654cd
     :design-point:
     """
-    registry = tmp_path / "deployments.json"
-    registry.write_text(
-        json.dumps({
-            "schema": "tfi.portal-deployments.v1",
-            "instances": [{
-                "enabled": True,
-                "id": "dev",
-                "kind": "dev",
-                "label": "Dev",
-                "order": 1,
-                "origin": "http://127.0.0.1:18086",
-                **({"build_id": "dev-current"} if registered_build else {}),
-            }],
-        }),
-        encoding="utf-8",
-    )
+    registry = write_instance(tmp_path / "instance", dev=True, dev_port=18086) / "instance.json"
     storage = tmp_path / "test-actor.json"
     storage.write_text(
         json.dumps({"cookies": [{"name": "db_session", "value": "secret", "domain": "127.0.0.1"}]}),
         encoding="utf-8",
     )
     responses = {
-        "/api/health": {"instance": "dev", "build_id": "dev-current"},
+        "/api/health": {"deployment": "dev", "build_id": "dev-current"},
         "/development?view=test": '<main id="projectionMain"></main>',
         "/development/native-views?view=test": {"html": '<section data-test-workbench-version="component-v2"></section>'},
-        "/api/me": {"username": "test-actor", "portal_instance": "dev", "build_id": "dev-current"},
+        "/api/me": {"username": "test-actor", "portal_deployment": "dev", "build_id": "dev-current"},
     }
 
     def http_get(url: str, headers: dict[str, str]) -> bytes:
@@ -1817,18 +1780,17 @@ def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, r
         value = responses[path]
         return value.encode() if isinstance(value, str) else json.dumps(value).encode()
 
-    options = {} if registered_build else {"build_id": lambda _root: "dev-current"}
     verifier = DevTargetVerifier(
         registry_path=registry,
         source_root=tmp_path,
         http_get=http_get,
-        **options,
+        build_id=lambda _root: "dev-current",
     )
     target = verifier.verify(storage)
 
     assert target.result_details() == {
-        "instance": "dev",
-        "browser_origin": "http://127.0.0.1:18086",
+        "deployment": "dev",
+        "browser_origin": "http://localhost:18086",
         "expected_build_id": "dev-current",
         "actual_build_id": "dev-current",
         "page_fingerprint": "component-v2",
@@ -1848,11 +1810,11 @@ def test_agent_use_dev_preflight_verifies_build_page_and_actor(tmp_path: Path, r
     responses["/api/me"]["build_id"] = "dev-next"
     with pytest.raises(DevBuildMismatch):
         verifier.verify(storage)
-    responses["/api/me"]["portal_instance"] = "release"
-    with pytest.raises(DevTargetError) as wrong_instance:
+    responses["/api/me"]["portal_deployment"] = "release"
+    with pytest.raises(DevTargetError) as wrong_deployment:
         verifier.verify(storage)
-    assert not isinstance(wrong_instance.value, DevBuildMismatch)
-    responses["/api/me"]["portal_instance"] = "dev"
+    assert not isinstance(wrong_deployment.value, DevBuildMismatch)
+    responses["/api/me"]["portal_deployment"] = "dev"
     responses["/api/me"]["username"] = "another-user"
     with pytest.raises(DevTargetError) as wrong_actor:
         verifier.verify(storage)
@@ -2066,7 +2028,7 @@ def test_tau_accepts_mixed_evidence_when_a_ui_screenshot_is_present(tmp_path: Pa
 
 @pytest.mark.parametrize("changed,expected_status", [
     ({"actual_build_id": "dev-next", "expected_build_id": "dev-next"}, "passed"),
-    ({"instance_id": "release"}, "failed"),
+    ({"deployment_id": "release"}, "failed"),
     ({"origin": "http://127.0.0.1:18085"}, "failed"),
     ({"actor": "another-actor"}, "failed"),
 ])

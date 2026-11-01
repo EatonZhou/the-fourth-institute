@@ -11,9 +11,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from management_common import instance_paths
 from management_portal.execution import account_login as login
 from management_portal.execution import account_hosting
+from tests.cases.instance_test_support import select_instance
 
 
 @pytest.mark.parametrize("configured", [True, False])
@@ -33,18 +33,17 @@ def test_windows_codex_login_uses_npm_command_in_runtime_directory(tmp_path, mon
 
 @pytest.fixture
 def isolated_login(tmp_path, tmp_path_factory, monkeypatch):
-    monkeypatch.setattr(instance_paths.portal_paths, "CONFIG_PATH", tmp_path / "no-site-config")
     # Real Unix sockets must fit sun_path even with the runner's UUID basetemp.
-    # Keep account data under the case path; only the IPC root needs a short name.
-    monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(tmp_path_factory.mktemp("login")))
-    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
+    # Keep account data under the case path; only the instance holding the
+    # login sockets needs a short name.
+    select_instance(monkeypatch, tmp_path_factory.mktemp("login") / "instance")
     monkeypatch.delenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", raising=False)
     store = login.LoginSessionStore()
     monkeypatch.setattr(login, "login_store", lambda: store)
     from management_portal.execution.account_registrations import create_registration
     for account_id, provider in [("login_claude", "claude"), ("login_codex_reload", "codex"), ("login_codex", "codex"),
                                  *(('login_' + action, 'codex') for action in ('cancel', 'expire', 'reject_status'))]:
-        create_registration({"account_id": account_id, "provider": provider, "kind": "subscription_login"}, "test")
+        create_registration({"config": {"account_dir": str(tmp_path / "accounts" / account_id)}, "account_id": account_id, "provider": provider, "kind": "subscription_login"}, "test")
     return store
 
 
@@ -75,24 +74,26 @@ def test_login_output_only_keeps_authorization_prompt():
     assert claude.feed("If the browser didn't open, visit: https://claude.com/cai/oauth/authorize?code=true&state=example\n")[1].startswith("https://claude.com/")
 
 
-def test_login_environment_excludes_other_credentials_and_requires_configured_proxy(isolated_login, tmp_path, monkeypatch):
-    """登录环境隔离其他账号和 API 凭据，配置的出口丢失时停止登录
+def test_login_environment_excludes_other_credentials_and_uses_the_saved_proxy(isolated_login, tmp_path, monkeypatch):
+    """登录环境隔离其他账号和 API 凭据，只采用实例 secrets 中保存的出口设置
 
     :design: decision_7956d7cb4bde
     :importance: P1
     """
+    from management_common.instance_manifest import load
     monkeypatch.setenv("ANTHROPIC_API_KEY", "synthetic-other-account")
     monkeypatch.setenv("CODEX_HOME", "/other/account")
-    proxy = tmp_path / "egress.env"
+    for key in login.PROXY_KEYS:
+        monkeypatch.delenv(key, raising=False)
+    proxy = load().directory("secrets") / "network.env"
+    proxy.parent.mkdir(parents=True, exist_ok=True)
     proxy.write_text('HTTPS_PROXY="http://127.0.0.1:3128"\nANTHROPIC_API_KEY=synthetic-ignored\n')
-    monkeypatch.setenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", str(proxy))
     env = login.login_environment("claude", "login_claude")
     assert env["CLAUDE_CONFIG_DIR"] == str(account_hosting.account_home("claude", "login_claude"))
     assert "ANTHROPIC_API_KEY" not in env and "CODEX_HOME" not in env
     assert env["HTTPS_PROXY"] == "http://127.0.0.1:3128"
     proxy.unlink()
-    with pytest.raises(FileNotFoundError):
-        login.login_environment("codex", "login_codex")
+    assert "HTTPS_PROXY" not in login.login_environment("codex", "login_codex")
 
 
 def test_login_store_expiration_and_late_observations(isolated_login, monkeypatch):
@@ -125,7 +126,7 @@ def test_first_login_state_reads_native_status_from_registered_directory(isolate
     :design: decision_7956d7cb4bde
     :importance: P1
     """
-    registration = {"account_id": "login_migrated", "provider": provider, "kind": "subscription_login"}
+    registration = {"config": {"account_dir": str(tmp_path / "accounts" / "login_migrated")}, "account_id": "login_migrated", "provider": provider, "kind": "subscription_login"}
     legacy = tmp_path / "legacy"
     legacy.mkdir()
     from management_portal.execution.account_registrations import create_registration
@@ -152,13 +153,13 @@ def test_first_login_state_reads_native_status_from_registered_directory(isolate
 
 
 @pytest.mark.parametrize("probe_fails", [False, True])
-def test_initial_login_probe_preserves_newer_authentication_observation(isolated_login, monkeypatch, probe_fails):
+def test_initial_login_probe_preserves_newer_authentication_observation(tmp_path, isolated_login, monkeypatch, probe_fails):
     """首次查询期间出现更新的认证观察时，迟到的结果或查询失败均不覆盖它
 
     :design: decision_7956d7cb4bde
     :importance: P1
     """
-    registration = {"account_id": "login_probe_race", "provider": "codex", "kind": "subscription_login"}
+    registration = {"config": {"account_dir": str(tmp_path / "accounts" / "login_probe_race")}, "account_id": "login_probe_race", "provider": "codex", "kind": "subscription_login"}
     stamp = login.now()
     monkeypatch.setattr(login, "now", lambda: stamp)
 
@@ -173,13 +174,13 @@ def test_initial_login_probe_preserves_newer_authentication_observation(isolated
     assert isolated_login.login_state(registration["account_id"]) == "logged_in"
 
 
-def test_initial_login_probe_failure_is_safe_and_does_not_cache_logged_out(isolated_login, monkeypatch):
+def test_initial_login_probe_failure_is_safe_and_does_not_cache_logged_out(tmp_path, isolated_login, monkeypatch):
     """无法执行原生状态查询时只返回固定错误，不把未知状态缓存为退出登录
 
     :design: decision_7956d7cb4bde
     :importance: P1
     """
-    registration = {"account_id": "login_probe_failure", "provider": "claude", "kind": "subscription_login"}
+    registration = {"config": {"account_dir": str(tmp_path / "accounts" / "login_probe_failure")}, "account_id": "login_probe_failure", "provider": "claude", "kind": "subscription_login"}
     monkeypatch.setattr(login, "provider_logged_in", Mock(side_effect=OSError("synthetic private diagnostic")))
     with pytest.raises(login.InstructionError) as exc:
         login.get_login_state(registration)
@@ -191,14 +192,14 @@ def test_initial_login_probe_failure_is_safe_and_does_not_cache_logged_out(isola
     assert login.get_login_state(registration) == "logged_in"
 
 
-def test_kimi_missing_runtime_keeps_registration_and_onboarding_readable(isolated_login, monkeypatch):
+def test_kimi_missing_runtime_keeps_registration_and_onboarding_readable(tmp_path, isolated_login, monkeypatch):
     """A fresh Kimi account must reach preparation before its server exists."""
     from management_portal import permission_system
     from management_portal.kimi_code_client import KimiCodeUnavailable
     from management_portal.execution import isa, account_setup
 
     registration = {"account_id": "fresh_kimi", "route_id": "fresh_kimi", "provider": "kimi",
-                    "kind": "subscription_login", "enabled": True, "config": {}}
+                    "kind": "subscription_login", "enabled": True, "config": {"account_dir": str(tmp_path / "accounts" / "fresh_kimi")}}
     monkeypatch.setattr(login, "provider_logged_in", Mock(side_effect=KimiCodeUnavailable("runtime missing")))
     monkeypatch.setattr(permission_system, "allows", lambda *_: False)
     assert isa._registration_public(registration, "alice")["login_state"] == "unavailable"
@@ -232,9 +233,9 @@ def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, 
 
 def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, provider):
     if transport == "unix":
-        monkeypatch.setenv("PORTAL_INSTANCES_ROOT", ipc_root)
+        select_instance(monkeypatch, Path(ipc_root) / "instance")
     elif transport is None:
-        monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(Path(ipc_root) / ("用户资料" * 12)))
+        select_instance(monkeypatch, Path(ipc_root) / ("用户资料" * 12) / "instance")
     from management_common import local_ipc
     monkeypatch.setattr(login, "LocalListener", lambda path, **kwargs: local_ipc.LocalListener(path, transport=transport, **kwargs))
     monkeypatch.setattr(login, "connect_local", lambda path, **kwargs: local_ipc.connect_local(path, transport=transport, **kwargs))
@@ -242,10 +243,10 @@ def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, pro
     script = f"import sys; print({url!r},flush=True); code=input(); sys.exit(0 if code=='synthetic-authorization' else 1)"
     monkeypatch.setattr(login, "login_command", lambda *args, **kwargs: [sys.executable, "-c", script])
     monkeypatch.setattr(login, "provider_logged_in", lambda *_: True)
-    from management_common.provider_account_paths import default_directory
-    default_directory(provider, "login_claude").mkdir(parents=True, exist_ok=True)
+    directory = Path(ipc_root) / "selected-account"
+    directory.mkdir()
     registration = {"account_id": "login_claude", "provider": provider, "kind": "subscription_login", "enabled": True,
-                    "config": {"account_dir": str(default_directory(provider, "login_claude"))}}
+                    "config": {"account_dir": str(directory)}}
     from management_portal.execution import account_registrations
     monkeypatch.setattr(account_registrations, "registration", lambda _: registration)
     second = login.LoginManager(store)
@@ -266,7 +267,7 @@ def _claude_code_submission(store, monkeypatch, capsys, transport, ipc_root, pro
 
 
 @pytest.mark.parametrize("action", ["cancel", "expire", "reject_status"])
-def test_login_terminal_states_stop_process_and_do_not_claim_success(isolated_login, monkeypatch, action):
+def test_login_terminal_states_stop_process_and_do_not_claim_success(tmp_path, isolated_login, monkeypatch, action):
     """取消和过期结束登录子进程，Provider 状态未确认时登录失败
 
     :design: decision_7956d7cb4bde
@@ -279,7 +280,7 @@ def test_login_terminal_states_stop_process_and_do_not_claim_success(isolated_lo
         script = "print('https://auth.openai.com/deviceauth',flush=True)"
     monkeypatch.setattr(login, "login_command", lambda *args, **kwargs: [sys.executable, "-c", script])
     monkeypatch.setattr(login, "provider_logged_in", lambda *_: False)
-    registration = {"account_id": account_id, "provider": "codex", "kind": "subscription_login"}
+    registration = {"config": {"account_dir": str(tmp_path / "accounts" / account_id)}, "account_id": account_id, "provider": "codex", "kind": "subscription_login"}
     manager = login.LoginManager(store)
     manager.start(registration)
     if action != "reject_status":
@@ -322,7 +323,7 @@ def test_monitor_authentication_failure_and_recovery(isolated_login):
 
 
 @pytest.mark.parametrize("reload_fails", [False, True])
-def test_codex_device_login_reloads_running_server_without_restarting(isolated_login, monkeypatch, reload_fails):
+def test_codex_device_login_reloads_running_server_without_restarting(tmp_path, isolated_login, monkeypatch, reload_fails):
     """CLI login refreshes native auth; a backend failure never erases the completed login."""
     account_id = "login_codex_reload"
     monkeypatch.setattr(login, "login_command", lambda *args, **kwargs: [sys.executable, "-c", "pass"])
@@ -340,7 +341,7 @@ def test_codex_device_login_reloads_running_server_without_restarting(isolated_l
     client.request.side_effect = request
     monkeypatch.setattr("management_portal.codex_app_server_client.client_for_socket", lambda _: client)
     manager = login.LoginManager(isolated_login)
-    manager.start({"account_id": account_id, "provider": "codex", "kind": "subscription_login", "enabled": True})
+    manager.start({"config": {"account_dir": str(tmp_path / "accounts" / account_id)}, "account_id": account_id, "provider": "codex", "kind": "subscription_login", "enabled": True})
     wait_for(lambda: client.request.called)
     wait_for(lambda: isolated_login.login_state(account_id) == "logged_in")
     assert events == [("start", account_id), ("account/read", {"refreshToken": True})]
@@ -349,14 +350,14 @@ def test_codex_device_login_reloads_running_server_without_restarting(isolated_l
 
 
 @pytest.mark.parametrize("provider,state", [("claude", None), ("claude", "pending"), ("claude", "succeeded"), ("codex", "awaiting_user")])
-def test_update_login_requires_existing_awaiting_claude_session(isolated_login, monkeypatch, provider, state):
+def test_update_login_requires_existing_awaiting_claude_session(tmp_path, isolated_login, monkeypatch, provider, state):
     """提交返回码只更新等待中的 Claude 会话，不隐式打开登录
 
     :design: decision_7956d7cb4bde
     :importance: P1
     """
     from management_portal.execution import account_registrations
-    registration = {"account_id": "login_update", "provider": provider, "kind": "subscription_login"}
+    registration = {"config": {"account_dir": str(tmp_path / "accounts" / "login_update")}, "account_id": "login_update", "provider": provider, "kind": "subscription_login"}
     monkeypatch.setattr(account_registrations, "registration", lambda _: registration)
     monkeypatch.setattr(login.LoginManager, "start", Mock(side_effect=AssertionError("Update must not open login")))
     if state:

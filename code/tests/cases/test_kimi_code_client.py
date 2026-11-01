@@ -272,7 +272,7 @@ class KimiCodeClientTest(unittest.TestCase):
 
     def test_create_session_uses_requested_model(self) -> None:
         """kimi 创建会话采用指定模型"""
-        client = KimiCodeClient(events_root=self.events_root)
+        client = KimiCodeClient("http://127.0.0.1:1/api/v1", events_root=self.events_root)
         with mock.patch.object(client, "_request", return_value={"id": "session-created"}) as request:
             result = client.create_session(cwd="/tmp", title="test", tools=[], model="kimi-k2.7-code")
 

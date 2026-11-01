@@ -75,9 +75,9 @@ def provision(
         "test-actor-profile-provisioner",
         "test_browser_session_provisioned",
         target=ACCOUNT,
-        details={"instance": deployment.instance_id, "storage_state": str(output)},
+        details={"deployment": deployment.deployment_id, "storage_state": str(output)},
     )
-    return {"account": ACCOUNT, "instance": deployment.instance_id, "storage_state": str(output)}
+    return {"account": ACCOUNT, "deployment": deployment.deployment_id, "storage_state": str(output)}
 
 
 def main() -> int:

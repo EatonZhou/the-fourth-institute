@@ -1,8 +1,10 @@
-"""Windows SCM definitions for isolated TFI services.
+"""Windows definitions for one instance's registered components.
 
-Registration requires an explicit service account and its password in the
-installer process environment. The password is passed to CreateServiceW, never
-put in a command line, installation state, or a service definition.
+Current-user supervision (tfi_windows_user_services) is the default. An SCM
+registration requires an explicit service account and its password in the
+registering process environment. The password is passed to CreateServiceW,
+never put in a command line, the instance or a service definition. Definitions
+live in the instance's runtime/service-units (instance_services owns that).
 """
 from __future__ import annotations
 
@@ -12,58 +14,35 @@ import os
 from pathlib import Path, PureWindowsPath
 import subprocess
 
-from scripts.tfi_instance_layout import code_root, installer_path
+from management_common.code_environment import runtime_python
 
 
-def safe_path(value):
-    if not isinstance(value, str) or not Path(value).is_absolute() or any(c in value for c in "\0\n\r'\""):
-        raise ValueError("Target paths must be absolute and contain no control characters")
-    return Path(value).resolve()
-
-
-def service_controller():
+def service_controller(instance=None):
+    from management_common.instance_manifest import load
+    from scripts.instance_services import definition_directory
     from scripts.tfi_windows_user_services import WindowsServiceControl
-    return WindowsServiceControl(unit_directory())
-
-
-def validate_service_mode(target):
-    mode = target.get("windows_service_mode", "scm")
-    if mode not in {"user", "scm"}:
-        raise ValueError("Unknown Windows service mode")
-    if mode == "scm":
-        account = target.get("windows_service_account", "")
-        if not isinstance(account, str) or not account or account.lower() in {"localsystem", "localservice", "networkservice"}:
-            raise ValueError("An explicit non-system windows_service_account is required")
-
-
-def unit_name(target, component):
-    return f"{target['service_prefix']}-{component}"
-
-
-def unit_directory():
-    configured = os.environ.get("TFI_WINDOWS_SERVICE_DIRECTORY")
-    if configured:
-        return safe_path(configured)
-    return Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "TFI" / "services"
+    return WindowsServiceControl(definition_directory(instance or load()))
 
 
 def unit_path(directory, name):
     return directory / f"{name}.json"
 
 
-def unit_text(target, component, components):
-    del components
-    if target.get("windows_service_mode") == "user":
-        return json.dumps({"mode": "user", "name": unit_name(target, component),
-                           "root": target["install_root"], "python": target["python"],
-                           "code": str(code_root(target)), "component": component},
+def manifest_unit_text(instance, component, *, mode='user', account=''):
+    code = instance.service_code(component)
+    python = str(runtime_python(code))
+    if mode == "user":
+        return json.dumps({"mode": "user", "name": instance.service_name(component),
+                           "root": str(instance.root), "python": python,
+                           "code": str(code), "component": component,
+                           "environment": instance.service_environment(component)},
                           sort_keys=True, ensure_ascii=False) + "\n"
-    root = PureWindowsPath(target["install_root"])
-    command = [target["python"], str(PureWindowsPath(installer_path(target))), "_service",
+    root = PureWindowsPath(instance.root)
+    command = [python, str(PureWindowsPath(code / 'scripts/tfi_release_windows_service.py')), "_component",
                "--root", str(root), "--component", component]
-    return json.dumps({"name": unit_name(target, component),
+    return json.dumps({"name": instance.service_name(component),
                        "binary": subprocess.list2cmdline(command),
-                       "account": target.get("windows_service_account", "")},
+                       "account": account},
                       sort_keys=True, ensure_ascii=False) + "\n"
 
 
@@ -120,22 +99,15 @@ def _service_binary(name):
 
 
 def verify_service(name, content):
+    """Ownership of an installed definition; startup separately requires the current text."""
     definition = json.loads(content)
     if definition.get("mode") == "user":
-        from scripts.tfi_windows_user_services import validate_definition
-        validate_definition(definition, name)
+        from scripts.tfi_windows_user_services import owned_definition
+        owned_definition(definition, name)
         return
     actual = _service_binary(name)
     if actual != definition["binary"]:
         raise ValueError(f"Windows service registration ownership mismatch: {name}")
-
-
-def dependency_preflight(target):
-    validate_service_mode(target)
-    if target.get("windows_service_mode") == "user":
-        return
-    if not target.get("windows_service_account") or not os.environ.get("TFI_WINDOWS_SERVICE_PASSWORD"):
-        raise ValueError("Dependency preflight failed: Windows service account and TFI_WINDOWS_SERVICE_PASSWORD are required")
 
 
 def _create_service(definition, password):
@@ -188,6 +160,8 @@ def command_unit_text(name, command, *, account, cwd, log_path, directory, pytho
 
 
 def register_services(directory, units, *, password_env="TFI_WINDOWS_SERVICE_PASSWORD"):
+    """User definitions of the same instance are replaced (instance_services has
+    verified their ownership); an SCM registration is never silently replaced."""
     if units and all(json.loads(value).get("mode") == "user" for value in units.values()):
         from scripts.tfi_windows_user_services import register
         return register(directory, units)

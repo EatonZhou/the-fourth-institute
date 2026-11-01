@@ -43,3 +43,24 @@ def test_startup_failure_keeps_category_and_reaps_a_started_bridge(tmp_path, mon
         cleanup.assert_called_once_with(process, force=True)
     else:
         cleanup.assert_not_called()
+
+
+def test_resident_identity_survives_transport_key_reordering():
+    """JSON object order must not reject the same Resident after transport."""
+    import hashlib
+    import json
+    from management_portal.opencode_bridge import Bridge, BridgeError
+
+    identity = {'PORTAL_RESIDENT_ID': 'resident_123456789abc',
+                'PORTAL_LINEAGE_ID': 'lineage_123456789abc'}
+    bridge = object.__new__(Bridge)
+    bridge.session_id = 'opencode-' + 'a' * 32
+    bridge.config = {'cwd': '/workspace', 'route': 'fixture',
+                     'identity_fingerprint': hashlib.sha256(json.dumps(
+                         identity, sort_keys=True, separators=(',', ':')).encode()).hexdigest()}
+    params = {'cwd': '/workspace', 'provider_profile': 'fixture',
+              'resident_environment': dict(reversed(list(identity.items())))}
+    bridge.check(params)
+    params['resident_environment']['PORTAL_RESIDENT_ID'] = 'resident_abcdef123456'
+    with pytest.raises(BridgeError, match='Resident identity mismatch'):
+        bridge.check(params)

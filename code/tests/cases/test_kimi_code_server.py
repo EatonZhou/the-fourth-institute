@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import os
+import json
+from contextlib import contextmanager
 import tempfile
 import tomllib
 import unittest
@@ -16,6 +18,22 @@ from unittest import mock
 
 from management_portal.kimi_code_server import _write_runtime_config
 from tests.cases.model_api_test_support import register_apis
+
+
+@contextmanager
+def selected_kimi(root, profile, binary):
+    from tests.cases.instance_test_support import write_instance
+    from management_portal import kimi_code_server as server
+    instance = write_instance(root / 'instance', site={'deployment': {'kimi': {'provider_profile': profile}}})
+    path = instance / 'instance.json'
+    document = json.loads(path.read_text())
+    document['services']['components'].append('kimi-code')
+    document['network']['listeners'] = {'kimi-code': {'bind': '127.0.0.1', 'port': 29561}}
+    path.write_text(json.dumps(document))
+    with mock.patch.dict(os.environ, {'PORTAL_INSTANCE_ROOT': str(instance)}), \
+            mock.patch.object(server, 'DEFAULT_BINARY', binary), \
+            mock.patch.object(server, 'DEFAULT_HOME', root / 'home'):
+        yield
 
 
 class KimiCodeServerTest(unittest.TestCase):
@@ -61,10 +79,7 @@ class KimiCodeServerTest(unittest.TestCase):
             secret.write_text("test-secret\n")
             register_apis({"id": "kimi_fixture", "kind": "openai_compatible_chat",
                            "base_url": "https://kimi.invalid/v1", "api_key_file": str(secret)})
-            with mock.patch.dict(os.environ, {
-                "PORTAL_KIMI_CODE_PROVIDER_PROFILE": "kimi_fixture",
-                "PORTAL_KIMI_CODE_BINARY": str(binary), "PORTAL_KIMI_CODE_HOME": str(root / "home"),
-            }), mock.patch.object(kimi_code_server.kimi_portal_tools, "install"), \
+            with selected_kimi(root, 'kimi_fixture', binary), mock.patch.object(kimi_code_server.kimi_portal_tools, "install"), \
                     mock.patch.object(kimi_code_server.os, "execvpe") as execvpe:
                 self.assertTrue(os.environ["PORTAL_DATABASE_URL"])
                 kimi_code_server.main()
@@ -82,8 +97,7 @@ class KimiCodeServerTest(unittest.TestCase):
             secret.write_text('fixture-key')
             register_apis({'id': 'windows_kimi', 'kind': 'openai_compatible_chat',
                            'base_url': 'https://kimi.invalid/v1', 'api_key_file': str(secret)})
-            with mock.patch.dict(os.environ, {'PORTAL_KIMI_CODE_PROVIDER_PROFILE': 'windows_kimi',
-                    'PORTAL_KIMI_CODE_BINARY': str(binary), 'PORTAL_KIMI_CODE_HOME': str(root / 'home')}), \
+            with selected_kimi(root, 'windows_kimi', binary), \
                     mock.patch.object(server, 'sys', SimpleNamespace(platform='win32')), \
                     mock.patch.object(server.kimi_portal_tools, 'install'), \
                     mock.patch.object(server, 'run_process', return_value=SimpleNamespace(returncode=7)) as run, \

@@ -6,7 +6,7 @@
     site_name: site.site_name,
     storage_namespace: site.storage_namespace,
     paths: Object.freeze(Object.fromEntries(
-      ["share_root", "staging_root", "test_results_root"]
+      ["projects", "lineages", "skills", "papers", "uploads", "features", "provider-state", "test_results_root"]
         .filter(key => Object.hasOwn(site.paths || {}, key))
         .map(key => [key, site.paths[key]])
     )),

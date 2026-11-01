@@ -12,19 +12,19 @@ def instance_name() -> str:
     return re.sub(
         r"[^A-Za-z0-9_.-]+",
         "-",
-        os.getenv("PORTAL_INSTANCE", "dev"),
+        os.getenv("PORTAL_DEPLOYMENT", "dev"),
     ) or "dev"
 
 
-def user_state_root() -> Path:
-    """Return the canonical per-user runtime state directory."""
-    return Path.home() / ".local" / "state" / "tfi-portal"
-
-
 def state_root() -> Path:
-    return Path(
-        os.getenv(
-            "PORTAL_TEST_FRAMEWORK_STATE_ROOT",
-            str(user_state_root() / "test-framework" / instance_name()),
-        )
-    ).expanduser()
+    """Run records, targets and artifacts of the selected instance's test framework."""
+    from management_common.instance_manifest import instance_runtime_root
+
+    return instance_runtime_root() / "test-framework" / instance_name()
+
+
+def slot_root() -> Path:
+    """Concurrency slots of the selected instance's test executors."""
+    from management_common.instance_manifest import instance_runtime_root
+
+    return instance_runtime_root() / "test-slots"

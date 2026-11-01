@@ -19,7 +19,7 @@
 显式 `source_root` 只改变读取根，目录名仍必须为这四个 canonical 名称；不读取旧 Skill
 名称、域值或格式前缀别名。必需规则、统一 ID CLI 或这两个 Skill 缺失时生成失败，
 不回退到本站共享目录。
-导出保持 canonical 目录，安装时按目标五根展开路径。
+四个核心 Skill 导出到 `code/core_skills/`，属于代码版本；示例实例数据不包含这些目录。代码修复随新代码更新规则。
 
 `candidates/release_features` 的 `resolution.resource_dependencies` 是类型到页面、
 发布投影、普通 Lineage 和所属 Project 的唯一依赖解析结果（schema
@@ -74,28 +74,45 @@ run ID；已有成功工程不会被重写，也不修改源库、源文件或�
 失败重试用 `--attempt 2` 等生成兄弟目录，保留旧工程及失败证据。阶段记录包含
 新 manifest SHA256；同一已生成 attempt 的回执重试不重写产物，也不覆盖后续安装失败。
 
-manifest 使用 `tfi.release-engineering.v1`。代码、PostgreSQL SQL、四数据根
+manifest 使用 `tfi.release-engineering.v1`。代码、PostgreSQL SQL、数据区域目录
 和安装入口均为工程相对路径；`inventory` 只排除工程根 manifest 本身，
-包含嵌套同名文件。结构化路径用 `${share_root}` 等四根及 `${code_root}`
-映射。记录 Git 基线和代码树摘要，具体文件内容由 inventory 固定。
-密钥目录为空，订阅账号在目标主机登记，源认证 schema 不导出；Backend 角色保留并等待新站映射。
+包含嵌套同名文件。
+
+实例文件按区域存放：工程里的 `data/<区域>/<相对路径>` 安装时复制到新实例同名区域
+（`manifest.files` 列出本工程提供的区域，值固定为 `data/<区域>`，区域名取自实例协议的
+区域，不含 `provider-state`；没有内容的区域不出现）。记录和生成文本用同一个位置的区域写法
+`<区域>:<相对路径>`，复制前后指向同一个文件；只有 `${code_root}` 仍是安装器替换的占位符
+（`directory_mappings`）。各类内容的位置：
+
+- Project：`projects:<项目>/…`；Project 的知识条目 `projects:<项目>/knowledge_base/<类型>/<文件>`。
+- Repo、Article：放进所属项目文件夹，`projects:<项目>/codes/<repo_id>`、
+  `projects:<项目>/articles/<article_id>`；没有所属项目时导出报“未解析”，由导出者在
+  resolution 的 `file_locations`（`{资源ID: "区域:相对路径"}`）中指定位置。额外绑定的
+  Workspace 同样用 `file_locations` 指定。
+- Lineage 目录：属于项目的放在 `projects:<项目>/agents/<lineage_id>`，其余放在
+  `lineages:<lineage_id>`；Resident 自己的 Workspace 在其下的 `residents/<resident_id>/workspace`。
+- Skill：`skills:<skill_id>`；Paper：`papers:items/selected/<paper_id>`。
+- 工作台冻结的 Workspace 文件（只导出声明过的文件）：`features:projection_evidence/<workspace_id>/…`。
+- 工作台应用构建产物：`features:projection_applications/<内容哈希>/`。
+
+记录 Git 基线和代码树摘要，具体文件内容由 inventory 固定。
+工程不含密钥目录，订阅账号在目标主机登记，源认证 schema 不导出；Backend 角色保留并等待新站映射。
 Repo 从注册的 canonical_checkout 复制代码，Paper 从注册 manifest 所在目录
 复制 PDF 与附件；找不到这些实际内容时进入未解析状态，不静默省略。
 发行 Repo 保留原 ID/schema，以 `source_kind=exported_tree` 声明不带 `.git` 的源码树。
-投影代码 Repo 绑定 `${code_root}`，其他复制的 Repo 绑定 `${share_root}/Codes/<id>`；
+投影代码 Repo 绑定 `${code_root}`，其他复制的 Repo 绑定 `projects:<项目>/codes/<id>`；
 checkouts 只保留该根，清空远端和 SSH 路径并关闭 push。运行时按显式根判断存活，
 允许原生文件读取，拒绝 Git 历史及写操作；不从源站 checkout 或远端回退。
 
-升级兼容性以工程摘要确定，不根据展示版本推断。绑定快照的 resolution 可显式提供
-`upgrade={from_manifest_sha256:[精确起点摘要],migrations:[{id,path,sha256}]}`。
-迁移按声明顺序执行，ID 唯一；相对 SQL 路径与摘要必须匹配 inventory，不能使用
-新装的 `database/distribution.sql`。无 upgrade 声明仍可新装，升级须无副作用拒绝。
-本次首轮没有成功旧实例或已验证迁移，真实升级为 not_run。
+工程只用于创建新实例，不声明升级。已有实例按《Portal 实例协议》「代码更新」
+换代码、重启服务，数据库由服务启动时自己更新，不重新导入工程内容。
+代码修复（`rebuild_code_run`）为未完成的运行用新代码重建工程，复用同一次导出的
+已冻结数据与数据库，数据字节变化即拒绝。
 
 历史导出保留聊天、执行、序列及载荷。消费队列、旧 session 绑定、恢复工作
 在副本清空，活动输入和触发路径取消，事件源暂停。原控制行匿名化归档到
-`distribution_history.records`；`history_freeze` 记录处理范围。安装监督先用
-`prepare-only` 导入，只读核查无活动输入/队列/触发路径，再启动服务。新实例
+`distribution_history.records`；`history_freeze` 记录处理范围。安装器导入后、
+启动服务前只读核查无活动输入/队列/触发路径（有监督 Resident 的工程用其核查证据）。新实例
 默认不运行 Lineage 定时源，须单独配置。
 生成前按实际 PostgreSQL 约束扫描全部外键。只有领域明确允许且实际可空的
 源 Provider Session 控制引用被分离；执行和消息历史保留，原引用归档。
@@ -131,24 +148,19 @@ states 分别记录手动带出、代码依赖带出、默认意图、解析来�
 保留意图，标 needs_configuration。普通事件流程默认值未设置时须明确选择。
 
 安装器在冻结只读核查之后、服务启动之前调用
-`distribution.initialization.initialize(manifest, target_connection, roots,
-mode='fresh'|'upgrade', existing_feature_ids=(), site_config_path=target_site_json)`。
-connection 必须是安装器已验证的独立 psycopg 连接，roots 为五根实际绝对路径；
+`distribution.initialization.initialize(manifest, target_connection, instance,
+site_config_path=<实例根>/site.json)`。
+connection 必须是安装器连接新实例数据库的 psycopg 连接，instance 为新实例的清单；
 有 System 设置绑定时必须传目标 site_config_path。helper 使用原生执行设置、
 WALL 设置、语义搜索文件、应用接单开关和事件源暂停状态，不启动服务或业务工作。
 组件恢复调用原生 resume 基线逻辑，不恢复旧队列、租约、session 或历史 checkpoint。
-初始化 ledger 保证重试和升级保留本站已有选择；升级还应传入旧工程功能 ID。
-文件与数据库的一致性回滚由安装器的私有全根备份/恢复承担。
+初始化 ledger 保证同一数据库上的重试保留已应用的选择。创建失败的实例由安装器
+保留失败记录，退役后重新创建，不做半完成初始化的重放或回滚。
 
 初始化结果的 `lineage_timer_required` 缺省 false；仅有效开启、依赖就绪、
 初始化成功且目标 checkpoint 未暂停的原生 `time.reached` 事件源可使其为 true。
 `lineage_timer_sources` 给出 feature_id/lineage_id/source_id 证据；重试重新读取
-目标暂停状态，不把缺失 progress 当作已开启。安装器落盘结果后才为本站
-service_prefix 开启 timer owner，保存/打包/helper 都不调度工作。升级分支改以
-目标库现有原生 time.reached 定义和未暂停 checkpoint 为准，覆盖新 actions
-未列出的本站流程，不受新包默认 false/未就绪意图影响；证据标记
-origin=existing_target_state，能匹配当前动作时才带 feature_id。旧包无功能声明
-的升级也走同一目标状态读取；不改写旧进度或恢复任何旧队列。
+目标暂停状态，不把缺失 progress 当作已开启。保存、打包和 helper 都不调度工作。
 
 计时/Harness 与核心执行代码共用模块，生成器在副本中单独关闭未带出功能的
 原生初始值及读写入口，不能由核心默认 TRUE 或残留设置行重新启用。已带出功能

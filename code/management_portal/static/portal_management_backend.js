@@ -565,8 +565,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const renderFields = () => {
       extra.replaceChildren();
       if (kind.value === "subscription_login") {
-        const directory = field(extra, "已有账号目录（可选）", "account_dir", "", {autocomplete: "off"});
-        hint(directory, "填写主机上已有账号目录的绝对路径，直接使用其中的登录。留空会在主机用户目录中新建空账号目录，然后登录。");
+        const directory = field(extra, "账号目录", "account_dir", "", {required: true, autocomplete: "off"});
+        hint(directory, "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。");
       }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;
@@ -603,7 +603,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       event.preventDefault(); if (busy) return;
       const value = name => form.elements.namedItem(name)?.value || "";
       const config = {};
-      if (kind.value === "subscription_login" && value("account_dir").trim()) {
+      if (kind.value === "subscription_login") {
         config.account_dir = value("account_dir").trim();
       }
       if (kind.value === "subscription_login" && provider.value === "claude") {

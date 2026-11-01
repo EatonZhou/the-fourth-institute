@@ -48,8 +48,6 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: |
-          npm install --ignore-scripts --prefix "$RUNNER_TEMP/tfi-codex-check" @openai/codex@0.163.0
-          export TFI_TEST_CODEX_BINARY="$RUNNER_TEMP/tfi-codex-check/node_modules/.bin/codex"
           python code/scripts/macos/build.py
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

@@ -19,7 +19,7 @@ from management_portal.shared_state import atomic_replace_json
 from management_common.portal_paths import path as portal_path
 
 
-DEFAULT_OUTPUT_ROOT = portal_path("staging_root") / "shared/codex_limit_usage/daily"
+DEFAULT_OUTPUT_ROOT = portal_path("features") / "codex_limit_usage/daily"
 DEFAULT_TIMEZONE = "Asia/Hong_Kong"
 
 

@@ -31,7 +31,7 @@ held against an arm.
 """
 
 from __future__ import annotations
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 
 import json
 import logging
@@ -73,7 +73,7 @@ POLICY_FAILURE_KINDS = frozenset({
     "execution_failure", "timeout", "provider_bad_request", "context_overflow",
 })
 FINISHED_EXECUTION_STATUSES = frozenset({"completed", "failed", "cancelled"})
-TEST_ACTORS = frozenset(compatibility_value("harness_test_actors", []))
+TEST_ACTORS = frozenset([])
 HIGH_EFFORTS = frozenset({"high", "xhigh", "max", "ultra"})
 _USER_MESSAGE_RE = re.compile(r"<user-message>\s*(.*?)\s*</user-message>", re.DOTALL)
 

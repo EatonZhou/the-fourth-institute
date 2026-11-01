@@ -1,6 +1,5 @@
 from __future__ import annotations
-from management_common.portal_paths import path as portal_path, resolve_directory
-from management_common.site_config import read_site_config
+from management_common.portal_paths import path as portal_path
 from management_common.clock import utc_now_iso
 
 import base64
@@ -22,39 +21,22 @@ from .workspace_contracts import (
     CHAT_ATTACHMENT_MAX_BYTES,
     CHAT_IMAGE_CACHE_ROOT,
     CHAT_IMAGE_MAX_BYTES,
-    STAGING_ROOT,
     image_type,
     validate_image_upload,
 )
 
 
 def _link_preview_roots() -> tuple[Path, ...]:
-    deployment = read_site_config().get("deployment", {})
-    if not isinstance(deployment, dict):
-        raise ValueError("deployment must be an object")
-    workspace = deployment.get("workspace", {})
-    if not isinstance(workspace, dict):
-        raise ValueError("deployment.workspace must be an object")
-    configured = workspace.get("additional_preview_roots", [])
-    if not isinstance(configured, list):
-        raise ValueError("additional_preview_roots must be a list of paths")
-    roots = [portal_path("share_root"), portal_path("staging_root")]
-    for value in configured:
-        if not isinstance(value, str) or ".." in Path(value).parts or any(ord(c) < 32 or ord(c) == 127 for c in value):
-            raise ValueError("additional_preview_roots contains an invalid path")
-        resolved = resolve_directory(value)
-        if resolved == Path(resolved.anchor):
-            raise ValueError("additional_preview_roots cannot include a filesystem root")
-        roots.append(resolved)
-    return tuple(dict.fromkeys(roots))
+    # Authorization comes from registered Workspaces. Areas only determine the
+    # presentation root; an authorized external file uses its own parent.
+    return tuple(portal_path(area) for area in ("projects", "lineages", "skills", "papers", "uploads", "features"))
 
+# decision_8838269736d3: the skills and lineages areas are shared
+# collaboration folders, open to authenticated Users and Residents.
 SHARED_COLLABORATION_ROOTS = (
-    (portal_path("share_root") / "Skills"),
-    (portal_path("share_root") / "Agents"),
+    (portal_path('skills')),
+    (portal_path('lineages')),
 )
-# Personal AMA folders, earlier personal agents and Personal Chat workspaces:
-# reached only through a Resident's Workspace, never as shared files.
-PERSONAL_ROOTS = ((portal_path("share_root") / "Agents" / "PersonalAgents"),)
 FILE_PREVIEW_MAX_BYTES = 120_000
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".mkv"}
@@ -243,8 +225,6 @@ def _normalize_link_path(raw_path: str) -> Path:
     value = str(raw_path or "").strip()
     if value.startswith("file://"):
         value = value.removeprefix("file://")
-    if value.startswith("/nas_ro/"):
-        value = str(portal_path("share_root")) + "/" + value.removeprefix("/nas_ro/")
     value = re.sub(r":\d+(?::\d+)?$", "", value)
     path = Path(value).expanduser()
     if not path.is_absolute():

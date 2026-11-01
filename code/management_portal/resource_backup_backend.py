@@ -1,6 +1,5 @@
 from __future__ import annotations
-from management_common.product_environment import read_product_env
-from management_common.portal_paths import path as portal_path
+from management_common.instance_manifest import load
 
 
 import json
@@ -28,8 +27,6 @@ from management_portal.resource_backup_values import (
 
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_SERVICE_ROOT = (portal_path("share_root") / "Services" / "resource-backup")
-SERVICE_ROOT_ENV = "PORTAL_RESOURCE_BACKUP_ROOT"
 
 _MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
 
@@ -76,18 +73,31 @@ class ResourceBackupBackend:
         disk_usage: DiskUsage | None = None,
         clock: Clock | None = None,
     ):
-        configured_root = (
-            Path(service_root)
-            if service_root is not None
-            else Path(read_product_env(SERVICE_ROOT_ENV, str(DEFAULT_SERVICE_ROOT)))
-        )
-        self.service_root = configured_root.expanduser().resolve(strict=False)
-        self.config_path = self.service_root / "config" / "config.yaml"
-        self.status_path = self.service_root / "state" / "status.json"
-        self.runs_root = self.service_root / "state" / "runs"
+        self._service_root = Path(service_root).resolve() if service_root is not None else None
         self._workflow = workflow or BackupLineage()
         self._disk_usage = disk_usage or shutil.disk_usage
         self._clock = clock or _default_clock
+
+    @property
+    def service_root(self) -> Path:
+        if self._service_root is not None:
+            return self._service_root
+        program = load().document['dependencies'].get('backup')
+        if not program:
+            raise ResourceBackupUnavailable('此实例未配置备份程序')
+        return Path(program).parent.parent
+
+    @property
+    def config_path(self) -> Path:
+        return self.service_root / 'config/config.yaml'
+
+    @property
+    def status_path(self) -> Path:
+        return self.service_root / 'state/status.json'
+
+    @property
+    def runs_root(self) -> Path:
+        return self.service_root / 'state/runs'
 
     def get_overview(self, actor: str) -> dict[str, Any]:
         runtime_config, config_state = self._load_yaml(self.config_path)

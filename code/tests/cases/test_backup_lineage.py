@@ -107,12 +107,14 @@ def test_executor_fixed_commands_preserve_lock_outcome_without_secret_output(mon
     assert invoked[0][1]["umask"] == 0o077
 
 
-def test_executor_rejects_arbitrary_operation_and_failed_output(monkeypatch):
-    """备份执行拒绝任意操作并标记命令失败"""
+def test_executor_rejects_arbitrary_operation_and_failed_output(monkeypatch, tmp_path):
+    """备份执行拒绝任意操作并标记命令失败；清单未登记备份程序时明确拒绝"""
     monkeypatch.setattr(runner.subprocess, "run", lambda *a, **k: SimpleNamespace(returncode=1, stdout="secret", stderr="private"))
     with pytest.raises(ValueError):
         runner.run_operation("content; reboot")
-    result = runner.run_operation("content")
+    with pytest.raises(ValueError, match="backup program"):
+        runner.run_operation("content")
+    result = runner.run_operation("content", service_root=tmp_path)
     assert result["status"] == "failed" and not result["succeeded"]
 
 

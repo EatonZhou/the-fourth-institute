@@ -3,21 +3,16 @@ from __future__ import annotations
 import os
 
 
-def portal_instance() -> str:
-    return str(os.getenv("PORTAL_INSTANCE", "dev") or "dev").strip()
-
-
 def nats_url() -> str:
+    from management_common.instance_manifest import load
     configured = str(os.getenv("PORTAL_NATS_URL", "") or "").strip()
-    if configured:
-        return configured
-    port = 4223 if portal_instance() == "dev" else 4224
-    return f"nats://127.0.0.1:{port}"
+    return configured or f"nats://127.0.0.1:{load().document['network']['nats_port']}"
 
 
 def nats_client_name(component: str) -> str:
+    from management_common.instance_manifest import load
     clean = str(component or "portal").strip().replace(" ", "-")
-    return f"tfi-{portal_instance()}-{clean}"
+    return f"tfi-{load().instance_id}-{clean}"
 
 
 def nats_enabled() -> bool:

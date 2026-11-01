@@ -13,8 +13,11 @@ def retire_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, d
     together do not keep one another's Workspaces alive. Nested registrations
     participate independently: a shared child keeps its files and stable path.
     """
+    from management_common.instance_locations import located_path
+    from management_portal.resources.workspace_store import LOCATION_PREFIX_SQL, stored_path
+
     table = f'"{_database_schema("workspace")}".workspaces'
-    roots = sorted({str(Path(path).resolve(strict=False)) for path in paths})
+    roots = sorted({stored_path(path) for path in paths})
     ids = sorted(set(workspace_ids))
     if not ids and not roots:
         return []
@@ -24,9 +27,9 @@ def retire_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, d
     rows = connection.execute(
         f"SELECT w.workspace_id,w.path FROM {table} w WHERE w.deleted_at IS NULL AND ("
         "w.workspace_id=ANY(%s) OR EXISTS (SELECT 1 FROM unnest(%s::text[]) p(path) "
-        "WHERE w.path=p.path OR starts_with(w.path,p.path || '/')) OR EXISTS ("
+        f"WHERE w.path=p.path OR starts_with(w.path,{LOCATION_PREFIX_SQL.format(column='p.path')})) OR EXISTS ("
         f"SELECT 1 FROM {table} seed WHERE seed.workspace_id=ANY(%s) "
-        "AND (w.path=seed.path OR starts_with(w.path,seed.path || '/')))) "
+        f"AND (w.path=seed.path OR starts_with(w.path,{LOCATION_PREFIX_SQL.format(column='seed.path')})))) "
         "ORDER BY w.workspace_id FOR UPDATE OF w", (ids, roots, ids),
     ).fetchall()
     candidates = [row['workspace_id'] for row in rows]
@@ -48,7 +51,7 @@ def retire_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, d
             "WHERE workspace_id=ANY(%s)", (deleted_at, deleted_by, deleted_at, ids),
         )
         connection.execute("DELETE FROM resident_workspace_bindings WHERE workspace_id=ANY(%s)", (ids,))
-    return [row['path'] for row in retired]
+    return [located_path(row['path']) for row in retired]
 
 
 def remove_retired_folder(folder):
@@ -58,17 +61,21 @@ def remove_retired_folder(folder):
     A registration created after the identity commit is also retained. The
     table lock prevents registration/moves racing the filesystem effect.
     """
-    from management_portal.resources.workspace_store import get_workspace_store
+    from management_common.instance_locations import located_path
+    from management_portal.resources.workspace_store import get_workspace_store, stored_path
     root = Path(folder).absolute()
+    stored = stored_path(root)
+    # An area root (``projects:``) already ends with its separator.
+    below = stored if stored.endswith(":") else stored.rstrip("/") + "/"
     store = get_workspace_store()
     with store.database.transaction() as connection:
         connection.execute(f"LOCK TABLE {store.table} IN SHARE ROW EXCLUSIVE MODE")
         rows = connection.execute(
             f"SELECT path FROM {store.table} WHERE deleted_at IS NULL AND "
             "(path=%s OR starts_with(path,%s))",
-            (str(root), str(root).rstrip('/') + '/'),
+            (stored, below),
         ).fetchall()
-        retained = [Path(row['path']) for row in rows]
+        retained = [Path(located_path(row['path'])) for row in rows]
         # An extra Workspace can contain another live Resident's system
         # directory. Keep that Lineage's files too, not just its workspace/.
         lineage = f'"{_database_schema("lineage")}"'
@@ -76,10 +83,10 @@ def remove_retired_folder(folder):
             f"SELECT w.path FROM {lineage}.residents r JOIN {store.table} w "
             "ON w.workspace_id=r.owned_workspace_id WHERE r.deleted_at IS NULL "
             "AND w.deleted_at IS NULL AND starts_with(w.path,%s)",
-            (str(root).rstrip('/') + '/',),
+            (below,),
         ).fetchall()
         for row in owned:
-            path = Path(row['path'])
+            path = Path(located_path(row['path']))
             if len(path.parents) >= 3 and path.parent.parent.name == 'residents':
                 system_folder = path.parents[2]
                 if system_folder == root or root in system_folder.parents:

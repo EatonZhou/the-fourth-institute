@@ -20,7 +20,7 @@ from management_portal.execution import get_execution_service
 
 
 SCHEMA = "tfi.runtime-capacity.v1"
-DISK_PATHS = ("/", str(portal_path("share_root")), "/data")
+DISK_PATHS = ("/", str(portal_path("projects")), "/data")
 
 
 def _count(value: Any) -> int:

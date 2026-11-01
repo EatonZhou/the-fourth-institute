@@ -309,11 +309,14 @@ class RelayHandler(socketserver.BaseRequestHandler):
 
 def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="TFI Portal LAN TCP AI relay")
-    parser.add_argument("--host", default=read_product_env("PORTAL_AI_RELAY_HOST", DEFAULT_HOST))
-    parser.add_argument("--port", type=int, default=int(read_product_env("PORTAL_AI_RELAY_PORT", str(DEFAULT_PORT))))
-    parser.add_argument("--allowed-ips", default=read_product_env("PORTAL_AI_RELAY_ALLOWED_IPS", DEFAULT_ALLOWED_IPS))
-    parser.add_argument("--max-bytes", type=int, default=int(read_product_env("PORTAL_AI_RELAY_MAX_BYTES", str(DEFAULT_MAX_BYTES))))
-    parser.add_argument("--max-concurrent", type=int, default=int(read_product_env("PORTAL_AI_RELAY_MAX_CONCURRENT", str(DEFAULT_MAX_CONCURRENT))))
+    from management_common.instance_manifest import load
+    instance = load()
+    listener = instance.listener('ai-socket-relay')
+    settings = instance.site_settings().get('deployment', {}).get('ai_relay', {})
+    parser.set_defaults(host=listener['bind'], port=listener['port'])
+    parser.add_argument('--allowed-ips', default=settings.get('allowed_ips', DEFAULT_ALLOWED_IPS))
+    parser.add_argument('--max-bytes', type=int, default=int(settings.get('max_bytes', DEFAULT_MAX_BYTES)))
+    parser.add_argument('--max-concurrent', type=int, default=int(settings.get('max_concurrent', DEFAULT_MAX_CONCURRENT)))
     return parser
 
 

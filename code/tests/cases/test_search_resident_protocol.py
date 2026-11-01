@@ -15,7 +15,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import resident_record_domain
-from management_portal.society_service.lineage_storage import canonical_lineage_folder
+from management_portal.society_service.lineage_locations import lineage_folder
 from management_portal.society_service.principal_hierarchy import classify_existing
 from management_portal.society_service.resident_conversation_stream import ResidentConversationRepository
 from management_portal.society_service.state_store import LineageDataStore
@@ -38,7 +38,7 @@ def runtime(tmp_path, monkeypatch):
     repo = ResidentConversationRepository(store, AgentDataStore())
     lineage = {"lineage_id": LID, "nodes": [], "edges": []}
     record = dict(resident_id=RID, lineage_id=LID, title='Search fixture', backend='provider_api', folder_schema='lineage-folder-v3',
-                  workspace_path=str(canonical_lineage_folder(LID)),
+                  workspace_path=str(lineage_folder(LID)),
                   backend_route_id='test', execution_settings={'model':'ranker', 'prompt_context':{'system_prompt':'Rank candidates'}})
     store.put_lineage_definition(LID, lineage, {})
     record['principal_hierarchy'] = classify_existing(record, lineage, evidence={'scope_ids': [LID]})

@@ -691,9 +691,15 @@ def test_session_account_uses_the_active_execution_route(
 def test_new_resident_session_account_is_independent_of_project(
     resident_record: dict[str, object],
     project_id: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """新 Resident 会话账号不随所属项目变化"""
+    from management_portal.society_service import lineage_storage
+    from management_portal.society_service.lineage_locations import lineage_folder
     lineage_id = str(resident_record["lineage_id"])
+    # Only the recorded Project changes here; the Lineage folder stays put.
+    folder = lineage_folder(lineage_id)
+    monkeypatch.setattr(lineage_storage, "lineage_folder_for_project", lambda _lineage, _project: folder)
     store = resident_catalog.get_catalog().state_store
     definition = store.lineage_definition(lineage_id)
     store.put_lineage_definition(lineage_id, {**definition, "project_id": project_id}, {})

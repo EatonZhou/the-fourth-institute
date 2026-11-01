@@ -6,9 +6,5 @@
 *.py[cod]
 .env
 .env.*
-/instance/*
-!/instance/example_instance/
-/instance/example_instance/*
-!/instance/example_instance/seed/
 /dependencies/
 /.build/

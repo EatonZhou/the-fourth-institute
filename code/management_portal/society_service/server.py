@@ -14,6 +14,7 @@ import secrets
 import socket
 import socketserver
 from management_common import loaded_modules
+from management_common.instance_manifest import load as load_instance
 from management_common.service_shutdown import DrainingStreamServer, serve_until_stopped, stop_workers
 from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 import threading
@@ -37,7 +38,7 @@ from management_portal.society_service.runtime.contracts import (
     ResidentWakeRequest,
 )
 
-from .config import society_service_socket, runs_lineage_timers, syncs_template_structure
+from .config import society_service_socket
 from .state_store import get_lineage_data_store
 from .resident_conversation_stream import get_repository as get_resident_conversation_stream
 from .changes import (
@@ -270,7 +271,7 @@ def _terminate_executor(executor: concurrent.futures.ProcessPoolExecutor) -> Non
 
 # Identifies this process as the holder of the Lineage timer lease.
 _TIMER_LEASE_HOLDER = (
-    f"{os.getenv('PORTAL_INSTANCE', 'dev') or 'dev'}:{socket.gethostname()}:{os.getpid()}:{secrets.token_hex(4)}"
+    f"{load_instance().name}:{socket.gethostname()}:{os.getpid()}:{secrets.token_hex(4)}"
 )
 
 
@@ -604,14 +605,14 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             dispatch_arrival=lambda lineage_id, resident_id, message_id: _domain_module(
                 "lineage"
             ).dispatch_message_arrival(lineage_id, resident_id, message_id),
-            wake_for_due_sources=runs_lineage_timers(),
+            wake_for_due_sources=True,
             timer_lease=lambda: get_lineage_data_store().hold_lineage_timer_lease(
                 _TIMER_LEASE_HOLDER, ttl_seconds=270,
             ),
-            sync_templates=_sync_template_structure if syncs_template_structure() else None,
+            sync_templates=_sync_template_structure,
             # The instance that syncs published templates also migrates stored
             # runtime: Dev may run an unpublished normalization rule.
-            migrate_runtime=_migrate_stored_runtime if syncs_template_structure() else None,
+            migrate_runtime=_migrate_stored_runtime,
         )
         set_execution_cancellation_handler(self.coordinator.notify_execution_cancellation)
         set_execution_wake_handler(self.coordinator.notify_resident)
@@ -816,7 +817,7 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 ),
                 "schema": SOCIETY_SERVICE_SCHEMA,
 
-                "instance": str(os.getenv("PORTAL_INSTANCE", "") or ""),
+                "instance": load_instance().name,
                 "build_id": str(os.getenv("PORTAL_BUILD_ID", "") or ""),
                 "pid": os.getpid(),
                 "started_at": self.started_at,

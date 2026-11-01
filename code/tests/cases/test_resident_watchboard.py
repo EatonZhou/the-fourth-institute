@@ -66,9 +66,9 @@ class ResidentWatchboardTest(unittest.TestCase):
         self.graph = {"revision": 1, "program": {"components": [], "wires": []}}
         self.save_patch = mock.patch.object(watchboard_lineage, "definition", side_effect=lambda record: self.graph)
         self.lineages_root_patch = mock.patch.object(
-            lineage_state,
-            "_lineages_root",
-            return_value=self.root / "canonical-lineages",
+            lineage_state.lineage_storage,
+            "lineages_root",
+            return_value=self.root / "lineages",
         )
         self.lineage_access_patch = mock.patch.object(
             lineage_state,

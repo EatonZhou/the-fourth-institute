@@ -6,6 +6,7 @@ Attempts and outcomes are supplied by the runtime owner, never stored here.
 from __future__ import annotations
 
 from typing import Any
+from management_common.location_records import located_record, stored_record
 
 from .definition_collections import column, declarations, decode, typed_values, upsert, validate_fields
 
@@ -48,7 +49,7 @@ def put(connection: Any, edge: dict) -> None:
             obj = item.get(prefix) or {}
             validate_fields(obj, set(keys), 'handoff ' + prefix)
             flat.update({prefix+'_'+k: obj[k] for k in keys if k in obj})
-        upsert(connection, 'lineage_handoff_items', {'edge_id':eid,'item_id':item['item_id']}, {'position':position, **typed_values(flat,ITEM_FIELDS)})
+        upsert(connection, 'lineage_handoff_items', {'edge_id':eid,'item_id':item['item_id']}, {'position':position, **typed_values(stored_record(flat),ITEM_FIELDS)})
 
 
 def read_many(connection: Any, edges: list) -> dict:
@@ -57,7 +58,7 @@ def read_many(connection: Any, edges: list) -> dict:
         return result
     ids = list(result)
     for row in connection.execute('SELECT * FROM lineage_handoff_items WHERE edge_id=ANY(%s) ORDER BY edge_id,position', (ids,)).fetchall():
-        flat = decode(row,ITEM_FIELDS)
+        flat = located_record(decode(row,ITEM_FIELDS))
         item = {'item_id':row['item_id'], **({'label':flat['label']} if 'label' in flat else {})}
         for prefix in ('source','transfer','target'):
             item[prefix] = {k.removeprefix(prefix+'_'):v for k,v in flat.items() if k.startswith(prefix+'_')}

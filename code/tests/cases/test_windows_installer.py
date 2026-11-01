@@ -1,4 +1,4 @@
-"""发行安装与实例隔离回归。
+"""Windows installer boundaries: native output encodings, user services, launcher and package.
 
 :module: operations.deployment
 :design: decision_d88306d0bd17
@@ -16,7 +16,6 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch, Mock
-import zipfile
 import hashlib
 from contextlib import contextmanager, redirect_stdout, redirect_stderr
 from types import SimpleNamespace
@@ -24,14 +23,25 @@ from types import SimpleNamespace
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "code"))
 sys.path.insert(0, str(REPO))
+from management_common.instance_manifest import load
 from scripts import tfi_windows_launcher as launcher
 from scripts import tfi_windows_user_services as services
 from scripts import tfi_release_platform_windows as windows
-from scripts import tfi_release_initialization as initialization
 from scripts import tfi_release_install as installer
 from management_common import native_output
 from scripts import portal_service_control
+from tests.cases.instance_test_support import write_instance
 import prepare_install
+
+PYTHON = Path("C:/TFI/dependencies/0123/venv/Scripts/python.exe")
+
+
+@contextmanager
+def code_environment(python=PYTHON):
+    """Definitions name the code environment; tests do not need a real one."""
+    with patch.object(windows, "runtime_python", return_value=python), \
+            patch("management_common.code_environment.runtime_python", return_value=python):
+        yield
 
 
 class WindowsInstallerTests(unittest.TestCase):
@@ -63,24 +73,16 @@ class WindowsInstallerTests(unittest.TestCase):
                 patch.object(tooling, "run_process", side_effect=execute):
             yield calls
 
-    def test_fresh_install_checks_real_scm_output_before_creating_state(self):
-        """首次安装穿过用户服务与 SCM 检查，接受中文输出和不存在服务的 1060。"""
+    def instance(self, base, name="instance"):
+        return load(write_instance(Path(base) / name))
+
+    def test_absent_scm_service_is_read_from_localized_output(self):
+        """SCM 查询接受中文输出和不存在服务的 1060。"""
         diagnostic = (" " * 43 + "安装检查：指定服务不存在。\r\n").encode("cp936")
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            target = self.target(base)
-            target["ports"] = {key: 0 for key in target["ports"]}
-            root = Path(target["install_root"])
-            with self.native_probe(diagnostic, exitcode=1060) as calls, \
-                    patch.object(installer, "platform_adapter", return_value=windows), \
-                    patch.object(windows, "unit_directory", return_value=base / "registry"):
-                installer.check_available(target)
-                installer.check_available(target, existing=True)
-            names = [windows.unit_name(target, part) for part in installer.COMPONENTS]
-            self.assertEqual([list(args) for args in calls],
-                             [["sc.exe", "queryex", name] for name in names] * 2)
-            self.assertFalse(root.exists())
-            self.assertFalse((base / "registry").exists())
+        with self.native_probe(diagnostic, exitcode=1060) as calls:
+            status = portal_service_control.ServiceControl(platform="windows").status("tfi-example-web")
+        self.assertEqual(status["load"], "not-found")
+        self.assertEqual([list(args) for args in calls], [["sc.exe", "queryex", "tfi-example-web"]])
 
     def test_scm_permission_error_is_not_mistaken_for_absent_service(self):
         """查询被拒绝时保留实际退出码，诊断里偶然含有 1060 也不能放行。"""
@@ -89,36 +91,45 @@ class WindowsInstallerTests(unittest.TestCase):
                 portal_service_control.ServiceControl(platform="windows").status("tfi-example-web")
 
     def test_scm_running_service_keeps_localized_diagnostics(self):
-        """原生诊断解码后仍保留服务状态与 PID，已有服务继续阻止重复安装。"""
+        """原生诊断解码后仍保留服务状态与 PID。"""
         output = "服务说明：知识平台\r\nSTATE : 4 RUNNING\r\nPID : 1234\r\n".encode("cp936")
         with self.native_probe(output):
             status = portal_service_control.ServiceControl(platform="windows").status("tfi-example-web")
         self.assertEqual((status["load"], status["active"], status["pid"]), ("loaded", "active", 1234))
-        with tempfile.TemporaryDirectory() as tmp:
-            with self.native_probe(output), \
-                    patch.object(installer, "platform_adapter", return_value=windows), \
-                    patch.object(windows, "unit_directory", return_value=Path(tmp) / "registry"):
-                with self.assertRaisesRegex(ValueError, "Service identity already exists"):
-                    installer.check_available(self.target(Path(tmp)))
 
-    def test_control_json_and_localized_stderr_are_separate(self):
-        """成功 JSON 保持 UTF-8，原生子程序的中文 stderr 不混入 JSON。"""
-        response = json.dumps({"name": "示例", "ok": True}, ensure_ascii=False)
-        with self.native_probe(response.encode("utf-8"), "安装提示".encode("cp936")), \
-                patch.object(installer, "clean_environment", return_value=dict(os.environ)):
-            output = installer.run_checked(["fixture-python"], target={}, timeout=10)
+    def test_helper_json_and_localized_stderr_are_separate(self):
+        """安装器子程序的 JSON 保持 UTF-8，中文 stderr 不混入 JSON。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            instance = self.instance(tmp)
+            response = json.dumps({"name": "示例", "ok": True}, ensure_ascii=False)
+            with self.native_probe(response.encode("utf-8"), "安装提示".encode("cp936")), \
+                    patch.object(installer, "runtime_python", return_value=Path(sys.executable)), \
+                    patch("management_portal.service_runtime.clean_environment", return_value=dict(os.environ)):
+                output = installer.code_child(instance, "tfi_release_initialization.py", "verify-frozen", timeout=10)
         self.assertEqual(json.loads(output), {"name": "示例", "ok": True})
 
-    def test_control_failure_preserves_code_and_both_diagnostic_streams(self):
-        """失败控制进程输出本地编码时，日志保留两路诊断及真正的退出码。"""
+    def test_helper_failure_preserves_code_and_both_diagnostic_streams(self):
+        """失败子程序的日志保留两路诊断及真正的退出码。"""
         with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp) / "runtime").mkdir()
+            instance = self.instance(tmp)
+            (instance.root / "runtime").mkdir()
             with self.native_probe("准备失败\n".encode("cp936"), "拒绝访问".encode("cp936"), 7), \
-                    patch.object(installer, "clean_environment", return_value=dict(os.environ)):
+                    patch.object(installer, "runtime_python", return_value=Path(sys.executable)), \
+                    patch("management_portal.service_runtime.clean_environment", return_value=dict(os.environ)):
                 with self.assertRaisesRegex(RuntimeError, "exited 7"):
-                    installer.run_checked(["fixture-python"], target={"install_root": tmp}, timeout=10)
-            self.assertEqual((Path(tmp) / "runtime/command-error.log").read_text(encoding="utf-8"),
+                    installer.code_child(instance, "tfi_release_initialization.py", "verify-frozen", timeout=10)
+            self.assertEqual((instance.root / "runtime/command-error.log").read_text(encoding="utf-8"),
                              "准备失败\n拒绝访问")
+
+    def test_helper_control_output_remains_strict_utf8(self):
+        """Python 控制输出不采用本地编码容错。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            instance = self.instance(tmp)
+            with self.native_probe(b"\xb0\xb2"), \
+                    patch.object(installer, "runtime_python", return_value=Path(sys.executable)), \
+                    patch("management_portal.service_runtime.clean_environment", return_value=dict(os.environ)):
+                with self.assertRaises(UnicodeDecodeError):
+                    installer.code_child(instance, "tfi_release_initialization.py", "verify-frozen", timeout=10)
 
     def test_bootstrap_probes_keep_json_and_localized_diagnostics_separate(self):
         """依赖引导的 pip、Python 与 Node 探测经过真实管道编码边界。"""
@@ -137,24 +148,21 @@ class WindowsInstallerTests(unittest.TestCase):
     def test_dependency_doctor_accepts_localized_stderr_without_reinstalling(self):
         """已满足依赖的 doctor 带中文 stderr 时仍完成检查，不误触发重新安装。"""
         from scripts import tfi_release_dependencies as dependencies
+        from management_common.code_environment import environment_directory
 
         with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            (base / "code").mkdir()
-            target = self.target(base)
-            state = {"target": target, "manifest_sha256": "fixture"}
+            code = Path(tmp) / "program/code"
+            (code / "scripts").mkdir(parents=True)
+            (code / "scripts/bootstrap_portal").write_text("# fixture\n")
+            python = environment_directory(code) / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+            python.parent.mkdir(parents=True)
+            python.write_text("")
             checks = [{"name": "core: example", "ok": True}]
             with self.native_probe(json.dumps(checks).encode("utf-8"), "检查提示".encode("cp936")), \
-                    patch.object(dependencies, "profiles", return_value=["core"]), \
-                    patch.object(dependencies, "environment_key", return_value="fixture"), \
-                    patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                    patch.object(installer, "save_stage") as saved, \
-                    patch.object(installer, "run_process", side_effect=AssertionError("Unexpected reinstall")):
-                dependencies._prepare(installer, state, {})
-            self.assertEqual(state["dependencies"]["inventory"], checks)
-            self.assertEqual(state["dependencies"]["source"], "verified-existing-installation")
-            saved.assert_called_once_with(state, "dependencies", "prepared")
-            self.assertFalse(Path(target["install_root"]).exists())
+                    patch.object(dependencies, "run_process", side_effect=AssertionError("Unexpected reinstall")):
+                result = dependencies.prepare(code)
+            self.assertEqual(result["inventory"], checks)
+            self.assertEqual(result["source"], "verified-existing")
 
     def test_installer_error_includes_stack_without_local_values(self):
         """失败日志包含调用位置与异常类型，标准输出仍是 JSON，不泄露局部值。"""
@@ -163,9 +171,9 @@ class WindowsInstallerTests(unittest.TestCase):
             raise UnicodeDecodeError("utf-8", b" " * 43 + b"\xb0", 43, 44, "invalid start byte")
 
         output, diagnostic = io.StringIO(), io.StringIO()
-        with patch.object(installer, "lifecycle", side_effect=fail), \
+        with patch.object(installer, "select", side_effect=fail), \
                 redirect_stdout(output), redirect_stderr(diagnostic):
-            self.assertEqual(installer.main(["status", "--root", "/fixture"]), 1)
+            self.assertEqual(installer.main(["status", "--instance", "example_instance"]), 1)
         result = json.loads(output.getvalue())
         self.assertEqual(result["error_type"], "UnicodeDecodeError")
         self.assertIn("position 43", result["error"])
@@ -208,9 +216,8 @@ class WindowsInstallerTests(unittest.TestCase):
             raw.decode("utf-8")
         command = [sys.executable, "-c",
                    f"import os; os.write(1, {raw!r}); os.write(2, {'警告'.encode('cp936')!r})"]
-        with patch.object(installer, "clean_environment", return_value={**os.environ, "PYTHONUTF8": "1"}), \
-                patch.object(locale, "getencoding", return_value="cp936"):
-            result = installer.run_native(command, target={}, timeout=10)
+        with patch.object(locale, "getencoding", return_value="cp936"):
+            result = native_output.run_native_capture(command, env={**os.environ, "PYTHONUTF8": "1"}, timeout=10)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stdout, text.replace("\r\n", "\n"))
         self.assertEqual(result.stderr, "警告")
@@ -218,101 +225,60 @@ class WindowsInstallerTests(unittest.TestCase):
     def test_native_output_keeps_utf8_and_unknown_bytes(self):
         """原生输出优先识别 UTF-8，未知字节作为转义诊断保留。"""
         with patch.object(locale, "getencoding", return_value="cp936"):
-            self.assertEqual(installer.decode_native_output("安装 ✓".encode()), "安装 ✓")
-            self.assertEqual(installer.decode_native_output(b"\xff"), r"\xff")
+            self.assertEqual(native_output.decode_native_output("安装 ✓".encode()), "安装 ✓")
+            self.assertEqual(native_output.decode_native_output(b"\xff"), r"\xff")
 
     def test_native_failure_keeps_real_exit_code_and_chinese_diagnostic(self):
         """原生命令失败保留退出码和中文日志，不被解码异常遮蔽。"""
         with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp) / "runtime").mkdir()
+            instance = self.instance(tmp)
+            (instance.root / "runtime").mkdir()
             command = [sys.executable, "-c",
                        f"import os; os.write(2, {'安装失败'.encode('cp936')!r}); raise SystemExit(7)"]
-            with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                    patch.object(locale, "getencoding", return_value="cp936"):
+            with patch.object(locale, "getencoding", return_value="cp936"):
                 with self.assertRaisesRegex(RuntimeError, "exited 7"):
-                    installer.run_checked(command, target={"install_root": tmp}, native_output=True, timeout=10)
-            self.assertEqual((Path(tmp) / "runtime/command-error.log").read_text(encoding="utf-8"), "安装失败")
+                    installer.run_checked(command, instance=instance, env=dict(os.environ), timeout=10)
+            self.assertEqual((instance.root / "runtime/command-error.log").read_text(encoding="utf-8"), "安装失败")
 
-    def test_python_control_output_remains_strict_utf8(self):
-        """Python 控制输出和实例 JSON 不采用本地编码容错。"""
-        command = [sys.executable, "-c", "import os; os.write(1, b'\\xb0\\xb2')"]
-        with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                patch.object(locale, "getencoding", return_value="cp936"):
-            with self.assertRaises(UnicodeDecodeError):
-                installer.run_checked(command, target={}, timeout=10)
+    def test_database_tools_use_native_output_boundary_and_manifest_postgres(self):
+        """数据库初始化及导入统一经过原生命令边界，使用清单记录的 PostgreSQL。"""
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "target.json"
-            path.write_bytes('{"name":"安装"}'.encode("cp936"))
-            with self.assertRaises(UnicodeDecodeError):
-                installer.read_json(path)
-
-    def test_database_tools_use_native_output_boundary(self):
-        """数据库初始化及导入统一使用原生命令编码边界。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            target = self.target(Path(tmp))
-            target.update(pg_bin=str(Path(tmp) / "bin"), pg_share=str(Path(tmp) / "share"))
-            with patch.object(installer, "platform_adapter", return_value=windows), \
-                    patch.object(installer, "service_controller"), \
-                    patch.object(installer, "wait_database"), \
+            instance = self.instance(tmp)
+            with patch.object(installer, "postgres_environment", return_value={}), \
                     patch.object(installer, "run_checked", return_value="") as run:
-                installer.initialize_database({"target": target})
-                installer.import_database({"target": target})
-            self.assertEqual(len(run.call_args_list), 3)
-            self.assertTrue(all(call.kwargs["native_output"] for call in run.call_args_list))
+                installer.initialize_database(instance)
+                installer.import_database(instance, Path(tmp) / "distribution.sql")
+            programs = [Path(call.args[0][0]) for call in run.call_args_list]
+            self.assertEqual([p.stem for p in programs], ["initdb", "createdb", "psql"])
+            self.assertTrue(all(p.parent == Path(instance.document["dependencies"]["postgres"]["bin"])
+                                for p in programs))
 
     def test_native_dependency_probe_handles_localized_stderr(self):
         """原生依赖版本探测接受本地编码的诊断输出。"""
         from scripts import tfi_release_native_dependencies as native
-
-        command = [sys.executable, "-c",
-                   f"import os; os.write(1, b'postgres (PostgreSQL) 16.15\\n'); "
-                   f"os.write(2, {'安装检查'.encode('cp936')!r})"]
-        api = SimpleNamespace(run_native=lambda args, **options: installer.run_native(command, **options))
-        with patch.object(installer, "clean_environment", return_value=dict(os.environ)), \
-                patch.object(locale, "getencoding", return_value="cp936"):
-            result = native.verify(api, {}, {"directory": "/fixture/pg", "platform": "windows/x86_64",
-                                            "name": "postgres", "version": "16.15"})
+        with self.native_probe(b"postgres (PostgreSQL) 16.15\n", "安装检查".encode("cp936")):
+            result = native.verify({"directory": "/fixture/pg", "platform": "windows/x86_64",
+                                    "name": "postgres", "version": "16.15"})
         self.assertEqual(result, {"postgres": "postgres (PostgreSQL) 16.15"})
 
-    def target(self, root):
-        return launcher.make_target(root, "sample_one", {"run_id": "fixture"},
-                                    ports={"web": 28199, "postgres": 56432, "nats": 14223})
+    def definition(self, base, name="instance"):
+        instance = self.instance(base, name)
+        (instance.root / "runtime").mkdir(exist_ok=True)
+        with code_environment():
+            content = windows.manifest_unit_text(instance, "web")
+        return instance, json.loads(content), instance.service_name("web")
 
-    def definition(self, base):
-        target = self.target(base)
-        root = Path(target["install_root"])
-        root.mkdir(parents=True)
-        (root / "runtime").mkdir()
-        (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": target}))
-        value = json.loads(windows.unit_text(target, "web", []))
-        return value, windows.unit_name(target, "web")
-
-    def test_instances_share_programs_but_not_state_or_identity(self):
-        """安装与实例回归：instances share programs but not state or identity。"""
+    def test_instances_share_the_code_environment_but_not_root_or_identity(self):
+        """两个实例共用代码与运行环境，定义中的实例根和服务名不同。"""
         with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            one = self.target(base)
-            two = launcher.make_target(base, "sample_two", {"run_id": "fixture"})
-            self.assertEqual(one["shared_code_root"], two["shared_code_root"])
-            self.assertEqual(one["python"], two["python"])
-            self.assertNotEqual(one["service_prefix"], two["service_prefix"])
-            self.assertNotEqual(one["data_roots"], two["data_roots"])
-            self.assertNotEqual(one["database_name"], two["database_name"])
-            self.assertFalse(one.get("windows_service_account"))
-            windows.dependency_preflight(one)
-
-    def test_invalid_mode_and_instance_traversal_rejected(self):
-        """安装与实例回归：invalid mode and instance traversal rejected。"""
-        for value in ("../host", "C:\\host", "sample/one", "", "example-instance"):
-            with self.assertRaises(ValueError):
-                launcher.instance_name(value)
-        with self.assertRaises(ValueError):
-            windows.validate_service_mode({"windows_service_mode": "anything"})
-        with self.assertRaises(ValueError):
-            windows.dependency_preflight({"windows_service_mode": "scm"})
+            one, first, _ = self.definition(tmp, "one")
+            two, second, _ = self.definition(tmp, "two")
+            self.assertEqual((first["python"], first["code"]), (second["python"], second["code"]))
+            self.assertNotEqual(first["root"], second["root"])
+            self.assertEqual(first["environment"], {"PORTAL_INSTANCE_ROOT": str(one.root),
+                                                    "PORTAL_DEPLOYMENT": "release"})
 
     def test_running_launcher_blocks_duplicate_window_and_uninstall_until_closed(self):
-        """安装与实例回归：running launcher blocks duplicate window and uninstall until closed。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             with launcher.launcher_lock(base):
@@ -324,7 +290,6 @@ class WindowsInstallerTests(unittest.TestCase):
                 pass
 
     def test_long_path_success_restarts_unelevated_after_releasing_launcher_lock(self):
-        """安装与实例回归：long path success restarts unelevated after releasing launcher lock。"""
         events = []
 
         @contextmanager
@@ -348,7 +313,6 @@ class WindowsInstallerTests(unittest.TestCase):
             process.assert_called_once()
 
     def test_long_path_setup_shows_failures_and_only_restarts_after_success(self):
-        """安装与实例回归：long path setup shows failures and only restarts after success。"""
         for failure in (None, RuntimeError("authorization cancelled")):
             with self.subTest(failure=failure):
                 root = Mock()
@@ -369,76 +333,7 @@ class WindowsInstallerTests(unittest.TestCase):
                 else:
                     messagebox.showerror.assert_not_called()
 
-    def test_child_environment_keeps_service_registry_and_instance_unicode_paths(self):
-        """安装与实例回归：child environment keeps service registry and instance unicode paths。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp) / "中文 platform"
-            target = self.target(base)
-            target.update(pg_bin=str(base / "postgres/bin"))
-            registry = Path(tmp) / "operator-local/TFI/services"
-            with patch.object(installer, "platform_adapter", return_value=windows), \
-                    patch.dict(os.environ, {"LOCALAPPDATA": str(registry.parents[1]),
-                                            "HOME": str(base / 'operator'),
-                                            "USERPROFILE": str(base / 'operator'),
-                                            "PROCESSOR_ARCHITECTURE": "AMD64",
-                                            "PORTAL_USER_AVATAR_ROOT": str(base / 'foreign-avatars')}, clear=True):
-                env = installer.clean_environment(target)
-                self.assertEqual(env["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
-                self.assertEqual(env["PYTHONUTF8"], "1")
-                self.assertEqual(env["PROCESSOR_ARCHITECTURE"], "AMD64")
-                self.assertEqual(env["HOME"], str(Path(target["install_root"]) / 'home'))
-                self.assertEqual(env["USERPROFILE"], env["HOME"])
-                self.assertNotIn("PORTAL_USER_AVATAR_ROOT", env)
-                # ntpath is the Windows expanduser implementation, even on a
-                # POSIX test host. It must use the service's instance profile.
-                import ntpath
-                with patch.dict(os.environ, env, clear=True):
-                    self.assertEqual(ntpath.expanduser('~'), env['USERPROFILE'])
-                self.assertTrue(Path(env["LOCALAPPDATA"]).is_relative_to(Path(target["install_root"])))
-                self.assertTrue(Path(env["APPDATA"]).is_relative_to(Path(target["install_root"])))
-                # Repeated boundaries must keep the original registry, rather
-                # than moving it under the new per-instance LOCALAPPDATA.
-                with patch.dict(os.environ, env, clear=True):
-                    self.assertEqual(windows.unit_directory(), registry)
-                    nested = installer.clean_environment(target)
-                    self.assertEqual(nested["TFI_WINDOWS_SERVICE_DIRECTORY"], str(registry))
-
-    def test_failed_native_download_can_be_stopped_without_deleting_data(self):
-        """安装与实例回归：failed native download can be stopped without deleting data。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            target = self.target(base)
-            (base / "code/scripts").mkdir(parents=True)
-            (base / "code/scripts/tfi_release_install.py").write_text("# fixture")
-            target.update(python=sys.executable, pg_bin=str(base / "missing-pg/bin"),
-                          pg_share=str(base / "missing-pg/share"), nats_server=str(base / "missing-nats.exe"),
-                          managed_dependencies=["postgres", "nats"])
-            root = Path(target["install_root"])
-            root.mkdir(parents=True)
-            preserved = root / "data/keep.txt"
-            preserved.parent.mkdir()
-            preserved.write_text("instance data")
-            registry = base / "service-definitions"
-            absent = {"load": "not-found", "active": "inactive", "sub": "dead", "pid": 0}
-            scm = Mock()
-            scm.status.return_value = absent
-            with patch.object(installer, "platform_adapter", return_value=windows), \
-                    patch.object(windows, "unit_directory", return_value=registry), \
-                    patch.object(services.WindowsServiceControl, "scm", return_value=scm), \
-                    patch("scripts.tfi_release_provider_services.owned_services", return_value=None):
-                normalized = installer.target_plan(target, protected_roots=[], allow_missing_native=True)
-                installer.write_json(root / "installation.json", {
-                    "schema": installer.SCHEMA, "target": normalized, "status": "failed",
-                    "completed": [], "stages": [], "protected_roots": []})
-                result = installer.lifecycle("stop", root)
-                self.assertEqual(result["status"], "stopped")
-                self.assertEqual(preserved.read_text(), "instance data")
-                # Starting still requires the actual programs and initialization.
-                with self.assertRaisesRegex(ValueError, "Required executable"):
-                    installer.lifecycle("start", root)
-
     def test_first_admin_opens_only_invitation_not_full_console_text(self):
-        """安装与实例回归：first admin opens only invitation not full console text。"""
         text = ("Setup link for the first administrator:\n"
                 "  http://127.0.0.1:28199/join#invite=test-token\n"
                 "Open in browser. Next steps: http://127.0.0.1:28199/guide#admin")
@@ -446,56 +341,79 @@ class WindowsInstallerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             launcher.invitation_url("no invitation")
 
-    def test_user_service_registration_is_idempotent_and_owned(self):
-        """安装与实例回归：user service registration is idempotent and owned。"""
+    def test_user_service_registration_replaces_only_its_own_component(self):
+        """同一组件的旧定义（代码更新后环境不同）被替换；其他实例的定义被拒绝。"""
         with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            value, name = self.definition(base)
-            directory = base / "definitions"
+            instance, value, name = self.definition(tmp)
+            directory = instance.root / "runtime/service-units"
             content = json.dumps(value)
-            self.assertEqual(services.register(directory, {name: content}), [name])
-            self.assertEqual(services.register(directory, {name: content}), [])
-            with self.assertRaises(ValueError):
-                services.register(directory, {name: json.dumps({**value, "python": str(base / "other.exe")})})
-            self.assertEqual((directory / (name + ".json")).read_text(), content)
+            with code_environment():
+                self.assertEqual(services.register(directory, {name: content}), [name])
+                self.assertEqual(services.register(directory, {name: content}), [])
+                stale = {**value, "python": "C:/TFI/dependencies/old/venv/Scripts/python.exe"}
+                (directory / (name + ".json")).write_text(json.dumps(stale))
+                self.assertEqual(services.register(directory, {name: content}), [])
+                self.assertEqual(json.loads((directory / (name + ".json")).read_text()), value)
+                other, foreign, _ = self.definition(tmp, "other")
+                (directory / (name + ".json")).write_text(json.dumps(foreign))
+                with self.assertRaisesRegex(ValueError, "another instance"):
+                    services.register(directory, {name: content})
+
+    def test_stale_definition_is_stoppable_and_removable_but_not_startable(self):
+        """代码更新后旧定义仍可停止和删除，但启动要求当前定义。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            instance, value, name = self.definition(tmp)
+            directory = instance.root / "runtime/service-units"
+            directory.mkdir(parents=True)
+            stale = {**value, "python": "C:/TFI/dependencies/old/venv/Scripts/python.exe"}
+            (directory / (name + ".json")).write_text(json.dumps(stale))
+            control = services.WindowsServiceControl(directory)
+            with code_environment():
+                self.assertEqual(control.status(name)["active"], "inactive")
+                control.stop(name)
+                with self.assertRaisesRegex(ValueError, "does not match"):
+                    control.start(name)
+                windows.remove_services(directory, [name])
+            self.assertFalse((directory / (name + ".json")).exists())
 
     def test_uninstall_unregisters_owned_definitions_and_preserves_instance_data(self):
-        """安装与实例回归：uninstall unregisters owned definitions and preserves instance data。"""
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
-            value, name = self.definition(base)
-            directory = base / "definitions"
-            target = json.loads((Path(value["root"]) / "installation.json").read_text())["target"]
-            content = windows.unit_text(target, "web", [])
-            services.register(directory, {name: content})
-            unrelated = directory / "other-installation.json"
-            unrelated.write_text("leave me")
-            with patch.object(launcher.subprocess, "run") as run, patch.object(windows, "unit_directory", return_value=directory):
-                launcher.stop_all(base, unregister=True)
-                run.assert_called_once()
-            self.assertTrue((Path(value["root"]) / "installation.json").is_file())
-            self.assertFalse((directory / (name + ".json")).exists())
+            platform = base / "program"
+            (platform / "code").mkdir(parents=True)
+            instance = load(write_instance(base / "instance", code=platform / "code"))
+            directory = instance.root / "runtime/service-units"
+            with code_environment(), patch("scripts.instance_services.platform_name", return_value="windows"):
+                windows.register_services(directory, {instance.service_name("web"):
+                                                      windows.manifest_unit_text(instance, "web")})
+                unrelated = directory / "other-installation.json"
+                unrelated.write_text("leave me")
+                with patch("management_common.host_instances.read_registry",
+                           return_value={instance.name: str(instance.root)}), \
+                        patch.object(launcher.subprocess, "run") as run:
+                    launcher.stop_all(platform, unregister=True)
+            run.assert_called_once()
+            self.assertTrue((instance.root / "instance.json").is_file())
+            self.assertFalse((directory / (instance.service_name("web") + ".json")).exists())
             self.assertEqual(unrelated.read_text(), "leave me")
 
     def test_recycled_pid_never_reports_active_or_gets_stopped(self):
-        """安装与实例回归：recycled pid never reports active or gets stopped。"""
         with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            value, name = self.definition(base)
-            directory = base / "definitions"
-            services.register(directory, {name: json.dumps(value)})
-            services.state_path(value).write_text(json.dumps(
-                {"pid": 15, "created": 10, "child_pid": 16, "child_created": 11}))
-            controller = services.WindowsServiceControl(directory)
-            with patch.object(services, "process_stamp", return_value=999):
-                self.assertEqual(controller.status(name)["pid"], 0)
-                controller.stop(name)
+            instance, value, name = self.definition(tmp)
+            directory = instance.root / "runtime/service-units"
+            with code_environment():
+                services.register(directory, {name: json.dumps(value)})
+                services.state_path(value).write_text(json.dumps(
+                    {"pid": 15, "created": 10, "child_pid": 16, "child_created": 11}))
+                controller = services.WindowsServiceControl(directory)
+                with patch.object(services, "process_stamp", return_value=999):
+                    self.assertEqual(controller.status(name)["pid"], 0)
+                    controller.stop(name)
             self.assertFalse(services.state_path(value).with_suffix(".stop").exists())
 
     def test_exited_process_with_exit_code_259_is_not_alive(self):
         # STILL_ACTIVE is also a legal application exit code. Only the process
         # handle's signalled state proves whether it has actually terminated.
-        """安装与实例回归：exited process with exit code 259 is not alive。"""
         api = SimpleNamespace(**{name: Mock() for name in (
             "OpenProcess", "CloseHandle", "WaitForSingleObject",
             "GetProcessTimes", "GetExitCodeProcess")})
@@ -512,93 +430,40 @@ class WindowsInstallerTests(unittest.TestCase):
         api.CloseHandle.assert_called_once_with(123)
 
     def test_active_owned_child_and_supervisor_are_both_required(self):
-        """安装与实例回归：active owned child and supervisor are both required。"""
         with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp)
-            value, name = self.definition(base)
-            directory = base / "definitions"
-            services.register(directory, {name: json.dumps(value)})
-            services.state_path(value).write_text(json.dumps(
-                {"pid": 15, "created": 10, "child_pid": 16, "child_created": 11}))
-            controller = services.WindowsServiceControl(directory)
-            with patch.object(services, "process_stamp", side_effect=lambda pid: {15: 10, 16: 11}[pid]):
-                self.assertEqual(controller.status(name)["active"], "active")
-            with patch.object(services, "process_stamp", side_effect=lambda pid: {15: 10, 16: None}[pid]):
-                self.assertEqual(controller.status(name)["active"], "inactive")
-                self.assertEqual(controller.status(name)["pid"], 15)
+            instance, value, name = self.definition(tmp)
+            directory = instance.root / "runtime/service-units"
+            with code_environment():
+                services.register(directory, {name: json.dumps(value)})
+                services.state_path(value).write_text(json.dumps(
+                    {"pid": 15, "created": 10, "child_pid": 16, "child_created": 11}))
+                controller = services.WindowsServiceControl(directory)
+                with patch.object(services, "process_stamp", side_effect=lambda pid: {15: 10, 16: 11}[pid]):
+                    self.assertEqual(controller.status(name)["active"], "active")
+                # A living supervisor restarting its child stays visible, never "inactive".
+                with patch.object(services, "process_stamp", side_effect=lambda pid: {15: 10, 16: None}[pid]):
+                    self.assertEqual(controller.status(name)["active"], "activating")
+                    self.assertEqual(controller.status(name)["pid"], 15)
 
-    def test_public_seed_checksum_and_traversal(self):
-        """安装与实例回归：public seed checksum and traversal。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            archive = root / "example-seed.zip"
-            with zipfile.ZipFile(archive, "w") as z:
-                z.writestr("../escape", "x")
-            receipt = {"seed_sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}
-            (root / "windows-package.json").write_text(json.dumps(receipt))
-            with self.assertRaises(ValueError):
-                launcher.unpack_seed(root)
-            self.assertFalse((root / "instance/example_instance/escape").exists())
-            archive.write_bytes(b"tampered")
-            with self.assertRaisesRegex(ValueError, "校验失败"):
-                launcher.unpack_seed(root)
-
-    def test_interrupted_seed_manifest_is_replaced_before_retry(self):
-        """安装与实例回归：interrupted seed manifest is replaced before retry。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            archive = root / "example-seed.zip"
-            manifest = '{"schema":"fixture","inventory":[]}'
-            with zipfile.ZipFile(archive, "w") as zipped:
-                zipped.writestr("manifest.json", manifest)
-                zipped.writestr("data/share_root/example.txt", "complete")
-            (root / "windows-package.json").write_text(json.dumps({
-                "seed_sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}))
-            seed = root / "instance/example_instance/seed"
-            seed.mkdir(parents=True)
-            (seed / "manifest.json").write_text('{"schema":')
-            launcher.unpack_seed(root)
-            self.assertEqual((seed / "manifest.json").read_text(), manifest)
-            self.assertEqual((seed / "data/share_root/example.txt").read_text(), "complete")
-            # A completed extraction must not rewrite instance-owned materials.
-            (seed / "data/share_root/example.txt").write_text("do not overwrite")
-            launcher.unpack_seed(root)
-            self.assertEqual((seed / "data/share_root/example.txt").read_text(), "do not overwrite")
-
-    def test_installer_requires_x64_payload_and_keeps_data_on_uninstall(self):
-        """安装与实例回归：installer requires x64 payload and keeps data on uninstall。"""
+    def test_installer_requires_x64_keeps_instances_outside_and_updates_program_in_place(self):
         script = (REPO / "code/scripts/windows/setup.nsi").read_text()
         self.assertIn("RunningX64", script)
         self.assertIn("RequestExecutionLevel user", script)
-        self.assertNotIn('RMDir /r "$INSTDIR\\instance"', script)
         self.assertNotIn('RMDir /r "$INSTDIR"', script)
-
-    def test_auto_freeze_verification_does_not_override_supervision_or_failed_evidence(self):
-        """安装与实例回归：auto freeze verification does not override supervision or failed evidence。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            target = self.target(Path(tmp))
-            state = {"target": target, "manifest_sha256": "abc", "completed": ["database"]}
-            api = Mock()
-            evidence = {"passed": False, "violations": {"pending": 1}, "run_id": "fixture",
-                        "supervisor_resident_id": "", "manifest_sha256": "abc"}
-            api.run_checked.return_value = json.dumps(evidence)
-            with self.assertRaisesRegex(ValueError, "Freeze evidence"):
-                initialization.apply(api, state, {"feature_resolution": {"states": {}}})
-            api.service_controller.assert_not_called()
-            target["supervisor_resident_id"] = "resident_123456789abc"
-            api.reset_mock()
-            with self.assertRaisesRegex(ValueError, "Supervised"):
-                initialization.apply(api, state, {"feature_resolution": {"states": {}}})
-            api.run_checked.assert_not_called()
+        self.assertNotIn('$INSTDIR\\instance', script)
+        # A code update stops the instances running this program before replacing it.
+        update = script.index('IfFileExists "$INSTDIR\\windows-package.json"')
+        self.assertLess(script.index("--stop-all"), script.index('File /r /x example-engineering.zip'))
+        self.assertGreater(update, 0)
 
     def test_windows_derived_bundle_does_not_mutate_seed_or_linux_bundle(self):
-        """安装与实例回归：windows derived bundle does not mutate seed or linux bundle。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             seed = root / "instance/example_instance/seed"
-            files = {key: "data/" + key for key in installer.KEYS}
+            files = {area: "data/" + area for area in ("projects", "features")}
             for folder in ("database", *files.values()):
                 (seed / folder).mkdir(parents=True, exist_ok=True)
+            (seed / "data/projects/readme.txt").write_text("project\n")
             (seed / "database/distribution.sql").write_text("-- fixture\n")
             (root / "code/scripts").mkdir(parents=True)
             (root / "code/app.py").write_text("pass\n")
@@ -612,23 +477,20 @@ class WindowsInstallerTests(unittest.TestCase):
             marker = seed / "manifest.json"
             marker.write_text(json.dumps(spec))
             original = marker.read_bytes()
-            bundle = prepare_install.prepare(root, target_platforms=["windows"])
+            with patch("management_portal.distribution.core_skills.export_core_skills", return_value={}):
+                bundle = prepare_install.prepare(root, target_platforms=["windows"])
             built = json.loads((bundle / "manifest.json").read_text())
             self.assertEqual(built["selected_targets"], ["windows"])
             self.assertEqual(built["support_matrix"][0]["verification"], "not_run")
             self.assertEqual(marker.read_bytes(), original)
             self.assertFalse((root / ".build/example_instance").exists())
             # Exercise the actual consumer, not just the producer's output shape.
-            validated, _ = installer.validate_engineering(bundle / "manifest.json",
-                                                          self.target(root))
+            validated, _ = installer.validate_engineering(bundle / "manifest.json")
             self.assertEqual(validated["installer"]["entrypoint"], "code/scripts/tfi_release_install.py")
             validated["installer"] = {"path": validated["installer"]["entrypoint"]}
+            (bundle / "manifest.json").write_text(json.dumps(validated))
             with self.assertRaisesRegex(ValueError, "installer.entrypoint"):
-                installer.validate_engineering_layout(validated, bundle)
-
-
-if __name__ == "__main__":
-    unittest.main()
+                installer.validate_engineering(bundle / "manifest.json", skip_file_verification=True)
 
 
 class WindowsPreviewPublishing(unittest.TestCase):
@@ -669,3 +531,7 @@ class WindowsPreviewPublishing(unittest.TestCase):
                 with self.assertRaises(subprocess.CalledProcessError):
                     publish.main()
                 self.assertEqual(upload.call_count, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

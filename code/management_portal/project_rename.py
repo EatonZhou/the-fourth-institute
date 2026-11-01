@@ -38,19 +38,18 @@ from typing import Any
 
 from management_common.portal_database import _database_schema, portal_database
 from management_portal import permission_system, project_registry
+from management_portal.provider_session_relocation import relocate_provider_sessions
 
 LOGGER = logging.getLogger(__name__)
 
-SHARE_ROOT = portal_path("share_root")
-PROJECTS_ROOT = SHARE_ROOT / "Projects"
+PROJECTS_ROOT = portal_path("projects")
 HOME = Path.home()
 # Places outside Portal whose configuration may run code in a Project.
 SYSTEMD_UNIT_DIRS = (HOME / ".config/systemd/user", Path("/etc/systemd/system"))
-SERVICE_SCRIPT_ROOTS = (SHARE_ROOT / "Services",)
+SERVICE_SCRIPT_ROOTS = (Path(__file__).resolve().parents[1] / "scripts",)
 MOUNTINFO = Path("/proc/self/mountinfo")
 # Symlinks into a Project usually live in other Projects and Resident workspaces.
-SYMLINK_ROOTS = (PROJECTS_ROOT, SHARE_ROOT / "Agents")
-KIMI_HOME = (portal_path("staging_root") / "shared" / "kimi-code-portal")
+SYMLINK_ROOTS = (PROJECTS_ROOT, portal_path("lineages"))
 MAX_REWRITE_BYTES = 16 * 1024 * 1024
 SCAN_TIMEOUT_SECONDS = 1800
 BUSY_WORK_STATES = frozenset({"running", "stopping"})
@@ -96,7 +95,7 @@ class ProjectRename:
     new_id: str
     old_root: Path
     new_root: Path
-    share_root: Path = SHARE_ROOT
+    projects_root: Path = PROJECTS_ROOT
 
     @property
     def renames_id(self) -> bool:
@@ -113,12 +112,12 @@ class ProjectRename:
         pairs = list(dict.fromkeys([(str(self.old_root), str(self.new_root)),
                                    (self.old_root.as_posix(), self.new_root.as_posix())]))
         try:
-            old_relative = self.old_root.relative_to(self.share_root).as_posix()
-            new_relative = self.new_root.relative_to(self.share_root).as_posix()
+            old_relative = self.old_root.relative_to(self.projects_root).as_posix()
+            new_relative = self.new_root.relative_to(self.projects_root).as_posix()
         except ValueError:
             return pairs
         # The registry and older records write Project paths relative to /share.
-        pairs.append(("/" + old_relative, "/" + new_relative))
+        pairs.append(("/Projects/" + old_relative, "/Projects/" + new_relative))
         return pairs
 
 
@@ -266,7 +265,7 @@ def plan(project_id: str, new_project_id: str, *, projects_root: Path | None = N
     if root not in old_root.parents:
         raise RenameBlocked(f"Project 目录不在 {root} 中：{old_root}", path=str(old_root))
     new_root = (root / new_id).resolve(strict=False)
-    change = ProjectRename(old_id, new_id, old_root, new_root, share_root=root.parent)
+    change = ProjectRename(old_id, new_id, old_root, new_root, projects_root=root)
     if not change.renames_id and not change.moves:
         raise ValueError("新的 Project ID 与目录都和现在相同")
     if not old_root.is_dir():
@@ -664,7 +663,7 @@ def _rewrite_file(path: Path, rewrite: Callable[[str], str], result: FileChanges
         return False
 
 
-def fix_files(change: ProjectRename, rewriter: Rewriter, residents_paths: list[tuple[str, str]]) -> FileChanges:
+def fix_files(change: ProjectRename, rewriter: Rewriter) -> FileChanges:
     """Make what refers to the moved directory follow it; errors are reported, not raised."""
     result = FileChanges()
     root = change.new_root
@@ -684,7 +683,7 @@ def fix_files(change: ProjectRename, rewriter: Rewriter, residents_paths: list[t
     if change.moves:
         _fix_git_links(root, rewriter, result)
         _fix_symlinks(change, rewriter, result)
-        _fix_provider_state(change, rewriter, residents_paths, result)
+        _fix_provider_state(change, result)
     return result
 
 
@@ -758,79 +757,13 @@ def _fix_symlinks(change: ProjectRename, rewriter: Rewriter, result: FileChanges
                 temporary.unlink(missing_ok=True)
 
 
-def _claude_project_key(path: str) -> str:
-    try:
-        from claude_agent_sdk import project_key_for_directory
-
-        return project_key_for_directory(path)
-    except ImportError:  # no Claude SDK in this process: the CLI's own rule for short paths
-        return re.sub(r"[^a-zA-Z0-9]", "-", path)
-    except Exception:  # noqa: BLE001 - the same rule when the SDK cannot tell
-        LOGGER.warning("Claude SDK project key unavailable; the short-path rule is used", exc_info=True)
-        return re.sub(r"[^a-zA-Z0-9]", "-", path)
-
-
-def _fix_provider_state(
-    change: ProjectRename, rewriter: Rewriter, residents_paths: list[tuple[str, str]], result: FileChanges,
-) -> None:
-    from .execution.account_registrations import registrations
-    from .execution.account_hosting import registered_home
-    for config in sorted({registered_home(row) / "config.toml" for row in registrations("codex")}):
-        _rewrite_file(config, rewriter.path, result, result.provider_state)
-    # Claude Code keeps each working directory's sessions and memory in a folder named after it.
-    directories = [*residents_paths, (str(change.old_root), str(change.new_root))]
-    for projects in sorted({registered_home(row) / "projects" for row in registrations("claude")
-                            if row["kind"] == "subscription_login"}):
-        for old, new in directories:
-            source = projects / _claude_project_key(old)
-            target = projects / _claude_project_key(new)
-            if source == target or not source.is_dir():
-                continue
-            if target.exists():
-                result.errors.append({"path": str(source), "error": f"{target} 已存在，未合并"})
-                continue
-            try:
-                source.rename(target)
-                result.provider_state.append(str(target))
-            except OSError as exc:
-                result.fail(source, exc)
-    # Kimi sessions keep the directory they started in.
-    if KIMI_HOME.is_dir():
-        for path in sorted({
-            KIMI_HOME / "workspaces.json", KIMI_HOME / "session_index.jsonl", *KIMI_HOME.glob("sessions/*/*/state.json"),
-        }):
-            if path.is_file():
-                _rewrite_file(path, rewriter.path, result, result.provider_state)
-
-
-def _resident_paths(change: ProjectRename, resident_ids: list[str]) -> list[tuple[str, str]]:
-    """Old and new working directories of the Residents under the moved directory."""
-    if not resident_ids or not change.moves:
-        return []
-    root_spellings = ((str(change.old_root), str(change.new_root)),
-                      (change.old_root.as_posix(), change.new_root.as_posix()))
-    separators = ("/", "\\") if change.new_root.drive else ("/",)
-    pairs: set[tuple[str, str]] = set()
-
-    def collect(value: Any) -> None:
-        if isinstance(value, dict):
-            for item in value.values():
-                collect(item)
-        elif isinstance(value, list):
-            for item in value:
-                collect(item)
-        elif isinstance(value, str):
-            for old_root, new_root in root_spellings:
-                if value == new_root or value.startswith(tuple(new_root + separator for separator in separators)):
-                    pairs.add((old_root + value[len(new_root):], value))
-                    break
-
-    with portal_database(schema="lineage").snapshot() as connection:
-        from management_portal.society_service.resource_client import workspace_paths_many
-        rows = _current_resident_workspaces(connection, resident_ids)
-        for path in workspace_paths_many([row[1] for row in rows], connection=connection).values():
-            collect(path)
-    return sorted(pairs)
+def _fix_provider_state(change: ProjectRename, result: FileChanges) -> None:
+    """Sessions of Residents working under the moved directory follow it."""
+    moved = relocate_provider_sessions(change.old_root, change.new_root)
+    result.provider_state.extend(moved["changed"])
+    result.errors.extend(moved["errors"])
+    result.errors.extend({"path": item["source"], "error": f"{item['target']} 已存在，未合并"}
+                         for item in moved["conflicts"])
 
 
 # -- the rename -------------------------------------------------------------------
@@ -912,7 +845,7 @@ def rename_project(
                 if change.moves:
                     os.rename(change.new_root, change.old_root)
                 raise
-            files = fix_files(change, rewriter, _resident_paths(change, resident_ids))
+            files = fix_files(change, rewriter)
             relations = relate(write=True)
             from management_portal.avatar_store import scope_avatar_store, scope_subject
 

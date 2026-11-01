@@ -19,8 +19,7 @@ def _script_env() -> dict[str, str]:
     # Persist the same open-mode policy in this test's isolated database namespace.
     from management_portal.execution.service_settings import ExecutionSettings
     ExecutionSettings().update_permission_system(False)
-    env = {**os.environ, "PORTAL_ROOT": str(PORTAL_ROOT), "PORTAL_PYTHON": sys.executable,
-           "PORTAL_RESOURCE_ID_ACTOR": "test-actor"}
+    env = {**os.environ, "PORTAL_RESOURCE_ID_ACTOR": "test-actor"}
     # These scans exercise the human path in the isolated test namespace.
     # An explicitly empty Resident identity is invalid, not an absent identity.
     env.pop("PORTAL_RESIDENT_ID", None)
@@ -227,6 +226,3 @@ def test_review_scan_replaces_active_and_archived_legacy_ids(tmp_path: Path) -> 
         check=False,
     )
     assert json.loads(repeated.stdout)["changed_count"] == 0
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

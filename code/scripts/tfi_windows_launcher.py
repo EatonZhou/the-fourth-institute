@@ -8,10 +8,8 @@ import os
 from pathlib import Path
 import queue
 import re
-import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import webbrowser
@@ -28,81 +26,43 @@ def is_elevated_process():
     return bool(ctypes.windll.shell32.IsUserAnAdmin())
 
 
-def instance_name(value):
-    if not re.fullmatch(r"[a-z][a-z0-9_]{2,31}", value):
-        raise ValueError("实例名称使用 3–32 位小写字母、数字、下划线，以字母开头。")
-    return value
+INSTANCE = "example_instance"
 
 
-def choose_ports(existing=()):
-    reserved = set(existing)
-    result = {}
-    for key, first in (("web", 28199), ("postgres", 56432), ("nats", 14223)):
-        for port in range(first, first + 1000):
-            if port in reserved:
-                continue
-            with socket.socket() as probe:
-                try:
-                    probe.bind(("0.0.0.0", port))
-                except OSError:
-                    continue
-            result[key] = port
-            reserved.add(port)
-            break
-        else:
-            raise RuntimeError("没有找到空闲端口：" + key)
-    return result
+def python_executable(platform):
+    return platform / "dependencies/python/python.exe"
 
 
-def make_target(platform, name, manifest, *, lan=False, ports=None):
-    name = instance_name(name)
-    root = platform / "instance" / name
-    token = __import__("hashlib").sha256(str(root).casefold().encode()).hexdigest()[:12]
-    target = {
-        "install_root": str(root), "shared_code_root": str(platform / "code"),
-        "run_id": manifest["run_id"], "supervisor_resident_id": manifest.get("supervisor_resident_id", ""),
-        "service_prefix": "tfi-" + token, "database_name": "tfi_" + token,
-        "python": str(platform / "dependencies/python/python.exe"),
-        "windows_service_mode": "user", "bind": "0.0.0.0" if lan else "127.0.0.1",
-        "ports": ports or choose_ports(),
-        "data_roots": {key: str(root / "data" / folder) for key, folder in (
-            ("share_root", "share"), ("staging_root", "staging"),
-            ("instances_root", "instances"), ("secrets_dir", "secrets"))},
-    }
-    receipt_path = platform / 'windows-package.json'
-    if receipt_path.is_file():
-        receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
-        if receipt.get('initialization_requires_network') is False:
-            target.update(offline_dependencies=True, bundled_python_dependencies=True)
-    return target
-
-
-def instances(platform):
-    base = platform / "instance"
-    return sorted(path.name for path in base.iterdir()
-                  if path.is_dir() and not path.is_symlink() and (path / "installation.json").is_file()) if base.exists() else []
-
-
-def command(platform, *arguments):
-    return [str(platform / "dependencies/python/python.exe"),
+def command(platform, *arguments, python=None):
+    """The shared installer of this platform's code, run with its bundled Python."""
+    return [str(python or python_executable(platform)),
             str(platform / "code/scripts/tfi_release_install.py"), *map(str, arguments)]
 
 
-def stop_all(platform, *, unregister=False):
-    from management_common.instance_config import read_installation
-    for name in instances(platform):
-        root = platform / "instance" / name
-        subprocess.run(command(platform, "stop", "--root", root), check=True)
+def platform_instances(platform):
+    """Registered instances whose deployments run this platform's code.
+
+    An unreadable registration fails closed: it could belong to this platform.
+    """
+    from management_common import host_instances
+    from management_common.instance_manifest import load
+    code = (Path(platform) / "code").resolve()
+    result = []
+    for root in host_instances.read_registry().values():
+        instance = load(root)
+        if any(Path(row["code_root"]) == code for row in instance.deployments.values()):
+            result.append(instance)
+    return sorted(result, key=lambda instance: instance.name)
+
+
+def stop_all(platform, *, unregister=False, python=None):
+    """Stop this platform's instances; unregistering also deletes their service
+    definitions. Data, accounts and registrations stay."""
+    from scripts import instance_services
+    for instance in platform_instances(platform):
+        subprocess.run(command(platform, "stop", "--instance", instance.name, python=python), check=True)
         if unregister:
-            from scripts import tfi_release_platform_windows as adapter
-            from scripts.tfi_release_install import COMPONENTS
-            target = read_installation(root)["target"]
-            for component in COMPONENTS:
-                service = adapter.unit_name(target, component)
-                marker = adapter.unit_path(adapter.unit_directory(), service)
-                if marker.exists() and marker.read_text(encoding="utf-8") != adapter.unit_text(target, component, COMPONENTS):
-                    raise ValueError("Service ownership changed: " + service)
-            adapter.remove_services(adapter.unit_directory(), [adapter.unit_name(target, c) for c in COMPONENTS])
+            instance_services.remove_definitions(instance)
 
 
 def long_paths_enabled():
@@ -183,10 +143,6 @@ def include_examples(platform):
     return options.getboolean('installation', 'include_examples', fallback=True)
 
 
-def selected_seed(platform, included):
-    return platform / ('example-seed.zip' if included else 'base-seed.zip')
-
-
 def selected_engineering(platform, included):
     return platform / ('example-engineering.zip' if included else 'base-engineering.zip')
 
@@ -243,10 +199,10 @@ def unpack_engineering(platform, *, included=True, progress=None, archive=None, 
                     copy_stream(source, output, meter)
                 if os.name != 'nt' and entry.create_system == 3:
                     target.chmod(stat.S_IMODE(entry.external_attr >> 16) & 0o777)
-        # Empty data roots are not entries in the file inventory.
-        for relative in manifest['files'].values():
-            if Path(relative).parts[:1] != ('data',) or '..' in Path(relative).parts or '\\' in relative or ':' in relative:
-                raise ValueError('Invalid engineering data root')
+        # Empty area directories are not entries in the file inventory.
+        for area, relative in manifest['files'].items():
+            if relative != 'data/' + area or '\\' in area or ':' in area or '/' in area or area in {'.', '..'}:
+                raise ValueError('Invalid engineering area directory')
             (temporary / relative).mkdir(parents=True, exist_ok=True)
         if destination.exists():
             shutil.rmtree(destination)
@@ -254,80 +210,29 @@ def unpack_engineering(platform, *, included=True, progress=None, archive=None, 
     return destination / 'manifest.json'
 
 
-def seed_destination_paths(platform, spec):
-    for entry in spec['inventory']:
-        relative = entry['path']
-        for prefix in ('instance/example_instance/seed', '.build/w/engineering.pending'):
-            yield platform / prefix / relative
-        for key, folder in spec['engineering']['files'].items():
-            if relative.startswith(folder + '/'):
-                installed = {'share_root': 'share', 'staging_root': 'staging',
-                             'instances_root': 'instances',
-                             'secrets_dir': 'secrets'}[key]
-                yield platform / 'instance/example_instance/data' / installed / relative[len(folder) + 1:]
+def required_long_path(platform, *, root=None):
+    """Check the extracted bundle and the new instance's area copies, in UTF-16 units.
 
+    The default instance root is the installer's (host_instances.default_root).
+    """
+    from management_common import host_instances
+    if INSTANCE in host_instances.read_registry():
+        return None  # Already created; a retry extracts no new bundle.
+    archive = selected_engineering(platform, include_examples(platform))
+    if not archive.is_file():
+        return None
+    root = Path(root) if root is not None else host_instances.default_root(INSTANCE)
+    with zipfile.ZipFile(archive) as zipped:
+        spec = json.loads(zipped.read('manifest.json'))
+    rows = [row['path'] for row in spec['inventory']]
+    candidates = [platform / '.build/w/engineering.pending' / path for path in rows]
+    # data/<area>/... becomes <instance root>/data/<area>/... (areas at their default location).
+    candidates += [root / path for path in rows if path.startswith('data/')]
 
-def required_long_path(platform):
-    """Check the selected data and transient copies, in Windows UTF-16 units."""
-    if (platform / 'instance/example_instance/installation.json').exists():
-        return None  # Already prepared; a service retry extracts no new seed.
-    prepared = selected_engineering(platform, include_examples(platform))
-    archive = prepared if prepared.is_file() else selected_seed(platform, include_examples(platform))
-    candidates = []
-    if archive.is_file():
-        with zipfile.ZipFile(archive) as zipped:
-            spec = json.loads(zipped.read('manifest.json'))
-            if archive == prepared:
-                candidates.extend(platform / '.build/w/engineering.pending' / row['path'] for row in spec['inventory'])
-                candidates.extend(p for p in seed_destination_paths(platform, {'inventory': spec['inventory'], 'engineering': spec})
-                                  if p.is_relative_to(platform / 'instance/example_instance/data'))
-            else:
-                candidates.extend(seed_destination_paths(platform, spec))
-    if archive != prepared:
-        candidates.extend(platform / '.build/w/engineering.pending/code' / p.relative_to(platform / 'code')
-                          for p in (platform / 'code').rglob('*') if p.is_file())
     def units(path):
         return len(str(path).encode('utf-16-le')) // 2
     return next((str(p) for p in sorted(candidates, key=units, reverse=True)
                  if units(p) >= 260 or units(p.parent) >= 248), None)
-
-
-def unpack_seed(platform, *, included=True, receipt_name="windows-package.json"):
-    """Only extract the public seed; never overwrite an initialized instance."""
-    import hashlib
-    archive = selected_seed(platform, included)
-    receipt = json.loads((platform / receipt_name).read_text(encoding="utf-8"))
-    with archive.open("rb") as stream:
-        if hashlib.file_digest(stream, "sha256").hexdigest() != receipt["seed_sha256" if included else "base_seed_sha256"]:
-            raise ValueError("示例资料压缩包校验失败，请重新下载安装包。")
-    destination = platform / "instance/example_instance/seed"
-    marker = destination / "manifest.json"
-    with zipfile.ZipFile(archive) as zipped:
-        if marker.is_symlink():
-            raise ValueError("Redirected seed destination")
-        # A crash while writing the old completion marker must not prevent a
-        # retry. Data integrity remains checked by prepare_install afterwards.
-        if marker.is_file() and marker.read_bytes() == zipped.read("manifest.json"):
-            return
-        # Write the completion marker last, so interrupted extraction is resumable.
-        for entry in sorted(zipped.infolist(), key=lambda e: e.filename == "manifest.json"):
-            relative = Path(entry.filename)
-            if relative.is_absolute() or ".." in relative.parts or "\\" in entry.filename or ":" in entry.filename:
-                raise ValueError("Invalid seed archive entry")
-            target = destination / relative
-            if target.is_symlink() or any(p.is_symlink() for p in target.parents):
-                raise ValueError("Redirected seed destination")
-            if entry.is_dir():
-                target.mkdir(parents=True, exist_ok=True)
-            else:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                descriptor, temporary = tempfile.mkstemp(prefix=".seed-", dir=target.parent)
-                try:
-                    with os.fdopen(descriptor, "wb") as output, zipped.open(entry) as source:
-                        __import__("shutil").copyfileobj(source, output)
-                    os.replace(temporary, target)
-                finally:
-                    Path(temporary).unlink(missing_ok=True)
 
 
 def invitation_url(text):
@@ -352,11 +257,26 @@ def launcher_lock(platform, *, system="windows"):
             unlock_descriptor(stream.fileno())
 
 
+def last_result(output):
+    """The installer's JSON result follows its progress lines in merged output."""
+    start = 0 if output.startswith("{") else output.rfind("\n{") + 1
+    if start == 0 and not output.startswith("{"):
+        raise ValueError("安装器没有返回结果，请查看日志。")
+    return json.loads(output[start:])
+
+
 class DefaultStartup:
-    """One desktop action: prepare the default instance, then return its URL."""
+    """One desktop action: prepare the default instance, then return its URL.
+
+    The platform directory holds code and dependencies only. The instance is
+    created by the shared installer at its default location and found through
+    the host registry; every lifecycle action is an installer command.
+    """
+    name = INSTANCE
+    engineering_parent = ".build/w"
+
     def __init__(self, platform, progress=lambda message: None):
         self.platform = Path(platform)
-        self.root = self.platform / "instance/example_instance"
         self.progress = progress
         self.log_path = self.platform / ".build/windows/logs/example_instance.log"
         self.timings = []
@@ -372,20 +292,39 @@ class DefaultStartup:
             with self.log_path.open("a", encoding="utf-8") as stream:
                 stream.write("[startup] " + json.dumps(entry) + "\n")
 
-    def running_url(self):
-        from scripts.tfi_release_install import owned_state, observed_status
-        # Validate ownership just as the lifecycle CLI does. Never trust a saved
-        # health result, a listening port alone, or another instance's response.
-        state = owned_state(self.root)
-        result = observed_status(state, request_timeout=0.5)
-        if result["status"] == "installed":
-            return result["url"]
-        return None
+    def registered(self):
+        from management_common import host_instances
+        return self.name in host_instances.read_registry()
+
+    def instance(self):
+        from management_common import host_instances
+        if not self.registered():
+            raise RuntimeError("默认实例尚未完成初始化，请重试准备过程。")
+        return host_instances.find(self.name)
+
+    def running_url(self, instance):
+        from scripts.tfi_release_install import observed_status
+        # Never trust a saved health result, a listening port alone, or another
+        # instance's response: the health payload must name this instance.
+        result = observed_status(instance, request_timeout=0.5)
+        return result["url"] if result["status"] == "running" else None
+
+    def entry_url(self, instance):
+        return f"http://127.0.0.1:{instance.document['network']['entry_port']}"
 
     def command(self, *arguments):
         return command(self.platform, *arguments)
 
-    def account_configured(self, url, state):
+    def definitions_current(self, instance):
+        """False after a code update: the definitions still name the old code environment."""
+        from scripts.instance_services import verify_definitions
+        try:
+            verify_definitions(instance)
+        except (ValueError, FileNotFoundError):
+            return False
+        return True
+
+    def account_configured(self, url, instance):
         from scripts.tfi_release_install import _LOCAL_HTTP
         try:
             # A fresh read from UserEnrollment avoids two setup subprocesses on
@@ -393,18 +332,10 @@ class DefaultStartup:
             # existing setup owner; no persistent "already registered" cache.
             with _LOCAL_HTTP.open(url + "/api/auth/setup-status", timeout=2) as response:
                 result = json.loads(response.read(4096))
-                expected = state["target"].get("runtime_instance", state["target"]["service_prefix"])
                 return (response.status == 200 and isinstance(result, dict)
-                        and result.get("instance") == expected and result.get("configured") is True)
+                        and result.get("instance") == instance.name and result.get("configured") is True)
         except (OSError, ValueError):
             return False
-
-    def state(self):
-        from management_common.instance_config import read_installation
-        path = self.root / "installation.json"
-        if not path.is_file():
-            raise RuntimeError("默认实例尚未完成初始化，请重试准备过程。")
-        return read_installation(self.root)
 
     def execute(self, argv):
         from management_common.installation_progress import progress_message
@@ -412,7 +343,7 @@ class DefaultStartup:
         env = os.environ.copy()
         env.update(PYTHONUTF8="1", PYTHONDONTWRITEBYTECODE="1", PYTHONUNBUFFERED="1")
         for key in list(env):
-            if key.startswith("PORTAL_") or key.startswith("TFI_WINDOWS_SERVICE_"):
+            if key.startswith("PORTAL_"):  # The installer selects the instance by name.
                 env.pop(key)
         output = []
         with self.log_path.open("a", encoding="utf-8") as stream:
@@ -443,85 +374,77 @@ class DefaultStartup:
                 raise RuntimeError(f"准备未完成。\n{detail}\n\n可打开日志查看原因，处理后点击重试。")
         return "".join(output)
 
-    def initialize(self):
-        from management_common.instance_config import read_installation
-        bundle = self.platform / ".build/w/engineering/manifest.json"
-        target_path = self.platform / ".build/windows/targets/example_instance.json"
-        state_exists = (self.root / "installation.json").exists()
-        if state_exists and not bundle.exists():
-            bundle = self.platform / '.build/example_instance-windows/engineering/manifest.json'
-        if not state_exists:
-            # New packages reuse a complete prepared candidate. Legacy packages
-            # still assemble their seed locally before installation begins.
-            included = include_examples(self.platform)
-            if selected_engineering(self.platform, included).is_file():
-                bundle = unpack_engineering(self.platform, included=included, progress=self.progress)
-            else:
-                self.progress("正在准备 Lenia 预置案例" if included else "正在准备基础平台（不含 Lenia 案例）")
-                if selected_seed(self.platform, included).is_file():
-                    unpack_seed(self.platform, included=included)
-                self.execute([str(self.platform / "dependencies/python/python.exe"),
-                              str(self.platform / "prepare_install.py"), "--platform", "windows",
-                              *([] if included else ["--without-examples"])])
-        if not target_path.exists():
-            if state_exists:
-                raise ValueError("已有未完成的初始化记录，但缺少原安装参数。请查看日志，勿覆盖实例资料。")
-            manifest = json.loads(bundle.read_text(encoding="utf-8"))
-            ports = []
-            for name in instances(self.platform):
-                state = read_installation(self.platform / "instance" / name)
-                ports.extend(state["target"]["ports"].values())
-            target = make_target(self.platform, "example_instance", manifest, ports=choose_ports(ports))
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-            target_path.write_text(json.dumps(target, ensure_ascii=False, indent=2), encoding="utf-8")
-        self.progress("正在安装环境并初始化 Portal")
-        self.execute(command(self.platform, "install", "--manifest", bundle, "--target", target_path,
-                             '--skip-file-verification'))
+    def included(self):
+        return include_examples(self.platform)
 
-    def wait_ready(self, state, timeout=120):
-        from scripts.tfi_release_install import wait_for_ready, health_failure
-        result = wait_for_ready(state, timeout=timeout, progress=self.progress)
-        if result['status'] != 'installed':
-            raise RuntimeError(health_failure(state, result))
-        return result['url']
+    def offline(self):
+        receipt = self.platform / "windows-package.json"
+        return receipt.is_file() and json.loads(receipt.read_text(encoding="utf-8")).get(
+            "initialization_requires_network") is False
+
+    def engineering(self):
+        included = self.included()
+        archive = selected_engineering(self.platform, included)
+        if not archive.is_file():
+            raise ValueError("缺少安装工程压缩包，请重新运行安装程序。")
+        return unpack_engineering(self.platform, included=included, progress=self.progress,
+                                  archive=archive, parent=self.platform / self.engineering_parent)
+
+    def initialize(self):
+        if self.registered():
+            # A creation that did not complete is retired, then created afresh;
+            # the installer never resumes half an instance.
+            self.progress("正在清理上次未完成的初始化")
+            self.execute(self.command("retire", "--instance", self.name))
+        bundle = self.engineering()
+        self.progress("正在安装环境并初始化 Portal")
+        self.execute(self.command("create", "--engineering", bundle, "--name", self.name,
+                                  "--skip-file-verification", *(["--offline"] if self.offline() else []),
+                                  *self.create_arguments()))
+
+    def create_arguments(self):
+        """Further installer create options; the default root and ports are the installer's."""
+        return []
 
     def run(self):
-        from scripts.tfi_release_install import start_blocker
+        from scripts.instance_services import start_blocker
         if is_elevated_process():
             raise RuntimeError("请关闭此窗口，直接双击桌面图标启动 Portal；不要选择“以管理员身份运行”。"
                                "当前用户模式的数据库不能在提升的管理员进程中启动。")
-        if self.root.is_symlink():
-            raise ValueError("实例目录不能是符号链接")
-        initialized = not (self.root / "installation.json").is_file() or bool(start_blocker(self.state()))
+        initialized = not self.registered() or bool(start_blocker(self.instance()))
         if initialized:
             self.timed("initialize", self.initialize)
-        state = self.state()
-        if start_blocker(state):
+        instance = self.instance()
+        if start_blocker(instance):
             raise RuntimeError("初始化没有完成，尚不能启动 Portal。请查看日志后重试。")
+        url = self.entry_url(instance)
         if initialized:
-            # install already started and checked every component in this run.
-            # Never reuse a persisted health result from an earlier launch.
-            url = f"http://127.0.0.1:{state['target']['ports']['web']}"
+            pass  # create already started and checked every component in this run.
+        elif not self.definitions_current(instance):
+            # The package replaced the code: prepare its dependencies, refresh
+            # the service definitions and restart (the protocol's code update).
+            self.progress("正在更新 Portal 程序")
+            self.timed("update_code", lambda: self.execute(self.command(
+                "update-code", "--instance", self.name, *(["--offline"] if self.offline() else []))))
         else:
             self.progress("正在检查已运行的 Portal")
-            url = self.timed("running_check", self.running_url)
-            if url is None:
+            if self.timed("running_check", lambda: self.running_url(instance)) is None:
                 self.progress("正在启动 Portal")
-                self.timed("start_services", lambda: self.execute(self.command("start", "--root", self.root)))
-                url = self.timed("wait_ready", lambda: self.wait_ready(state))
+                # The installer's start waits until every health check passes.
+                self.timed("start_services", lambda: self.execute(self.command("start", "--instance", self.name)))
         self.progress("正在打开你的研究空间")
-        if self.timed("account_check", lambda: self.account_configured(url, state)):
+        if self.timed("account_check", lambda: self.account_configured(url, instance)):
             return url + "/"
         # This idempotent setup command uses the instance's own account service.
         # Invitation secrets stay in its private file, never in log output.
-        result = json.loads(self.timed("first_admin", lambda: self.execute(self.command(
-            "first-admin", "--root", self.root, "--username", "admin", "--if-needed"))))
+        result = last_result(self.timed("first_admin", lambda: self.execute(self.command(
+            "first-admin", "--instance", self.name, "--username", "admin", "--if-needed"))))
         if result.get("status") == "already_configured":
             return url + "/"
         if result.get("status") != "setup_link_created":
             raise RuntimeError("未能准备首次注册页面，请查看日志。")
-        path = Path(state["target"]["data_roots"]["secrets_dir"]) / "first-admin-link.txt"
-        return invitation_url(path.read_text(encoding="utf-8"))
+        from scripts.tfi_release_install import FIRST_ADMIN_FILE
+        return invitation_url((instance.directory("secrets") / FIRST_ADMIN_FILE).read_text(encoding="utf-8"))
 
 
 def brand_window(root):

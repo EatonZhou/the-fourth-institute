@@ -134,24 +134,27 @@ def selection(sql, manifest):
                 document = row['document_json']
                 if isinstance(document, dict):
                     paths.update(v for k, v in document.items()
-                                 if k in {'path', 'root', 'folder', 'workspace_path'} and isinstance(v, str))
+                                 if k in {'path', 'root', 'folder', 'workspace_path', 'canonical_checkout', 'canonical_root'}
+                                 and isinstance(v, str))
             if table == ('workbenches', 'application_packages'):
                 build = row.get('build')
                 if isinstance(build, dict) and build.get('artifact_hash'):
-                    paths.add('${staging_root}/shared/projection_applications/' + build['artifact_hash'])
-    paths.add('${share_root}/Projects/' + LENIA_PROJECT)
-    paths.update('${share_root}/Agents/' + x for x in removed if x.startswith('lineage_'))
-    paths.update('${share_root}/Codes/' + x for x in removed if x.startswith('repo_'))
-    paths.update('${share_root}/Articles/' + x for x in removed if x.startswith('article_'))
+                    paths.add('features:projection_applications/' + build['artifact_hash'])
+    paths.add('projects:' + LENIA_PROJECT)
+    # Each Lineage folder sits in its project's agents folder, or in the lineages area.
+    for _, _, table, row in rows:
+        if table == ('lineage', 'lineages') and row['lineage_id'] in removed:
+            paths.add('projects:' + row['project_id'] + '/agents/' + row['lineage_id'] if row.get('project_id')
+                      else 'lineages:' + row['lineage_id'])
     relative = set()
     for path in paths:
-        for root, folder in manifest['files'].items():
-            prefix = '${' + root + '}/'
-            if path.startswith(prefix):
-                candidate = Path(folder) / path[len(prefix):]
-                if '..' in candidate.parts or candidate.is_absolute():
-                    raise ValueError('Unsafe case file path')
-                relative.add(candidate.as_posix())
+        area, separator, rest = path.partition(':')
+        folder = manifest['files'].get(area) if separator else None
+        if folder is not None:
+            candidate = Path(folder) / rest
+            if '..' in candidate.parts or candidate.is_absolute():
+                raise ValueError('Unsafe case file path')
+            relative.add(candidate.as_posix())
     fragments, previous = [], 0
     for start, end, replacement in edits:
         fragments.append(sql[previous:start])

@@ -76,6 +76,3 @@ def test_direct_cli_import_uses_canonical_environment(tmp_path):
                             cwd=tmp_path, env=env, capture_output=True, text=True, timeout=20)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == 'canonical'
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

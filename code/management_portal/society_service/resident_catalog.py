@@ -263,9 +263,7 @@ def close_mailbox(resident_id: str, deleted_at: str) -> list[str]:
 
 
 def get_catalog() -> ResidentCatalog:
-    root = lineage_storage.configured_lineage_folder_root().expanduser().resolve(
-        strict=False,
-    )
+    root = lineage_storage.lineages_root().resolve(strict=False)
     state_store = get_lineage_data_store()
     database = state_store.database_identity
     key = f"{root}\0{database}"

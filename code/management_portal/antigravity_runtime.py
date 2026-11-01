@@ -50,8 +50,7 @@ class AntigravityRuntime(updates.ProviderRuntime):
         return True
 
     def link(self):
-        return updates.runtime_entry(updates._PROVIDER_DEPLOYMENT, "antigravity_runtime_current",
-                                     updates.RUNTIMES / "antigravity-current")
+        return updates.provider_entry("antigravity_runtime_current")
 
     def stage(self, versions):
         value = manifest()

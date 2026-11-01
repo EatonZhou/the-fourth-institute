@@ -17,8 +17,6 @@ from management_portal.society_service import (
     domain_ports,
     execution_client,
     invariant_locks,
-    lineage_state,
-    lineage_storage,
     resident_backend,
     resident_lifecycle_steps_domain,
     resource_client,
@@ -46,6 +44,7 @@ DELETED_AT = "2026-09-12T12:30:00Z"
 
 from management_portal.society_service import resident_session_backend_domain
 from tests.cases.registry_support import write_projects
+from tests.cases.instance_test_support import lineage_folders
 
 @pytest.fixture
 def integration(tmp_path, monkeypatch):
@@ -71,19 +70,16 @@ def integration(tmp_path, monkeypatch):
     monkeypatch.setattr(domain_ports.resident_lineage_host_port, "_implementation", ResidentLineageHost())
     session_manager = SessionManager(agent_data=AgentDataStore())
     monkeypatch.setattr(execution_client, "sessions", lambda: session_manager)
-    canonical_root = tmp_path / "registered-folders"
-    folder = tmp_path / "actual-folder"
+    lineages = tmp_path / "lineages"
+    folder = lineages / LINEAGE
     owned = folder / "residents" / RESIDENT / "workspace"
     owned.mkdir(parents=True)
     marker = folder / "retained.txt"
     marker.write_text("original bytes survive release failure")
-    canonical = lineage_storage.bind_lineage_folder(LINEAGE, folder, folder_root=canonical_root)
-    neighbor_folder = tmp_path / "neighbor"
+    neighbor_folder = lineages / NEIGHBOR
     neighbor_folder.mkdir()
     (neighbor_folder / "untouched.txt").write_text("neighbor original")
-    neighbor_link = lineage_storage.bind_lineage_folder(NEIGHBOR, neighbor_folder, folder_root=canonical_root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", canonical_root)
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(canonical_root))
+    lineage_folders(monkeypatch, lineages)
     definition = {"lineage_id": LINEAGE, "title": "Tombstone integration target", "nodes": [], "project_id": "FixtureLifecycle", "created_at": "2026-09-11T00:00:00Z", "updated_at": "2026-09-11T00:00:00Z"}
     neighbor_definition = {"lineage_id": NEIGHBOR, "title": "Neighbor retained", "nodes": [], "project_id": "FixtureLifecycle", "created_at": "2026-09-11T00:00:00Z", "updated_at": "2026-09-11T00:00:00Z"}
     state = LineageDataStore()
@@ -96,7 +92,7 @@ def integration(tmp_path, monkeypatch):
     assert resident_runtime_domain.resident_working_directory(record) == owned
     register_session(record, "synthetic-release-session", backend_route_id="synthetic-route")
     operations = ResidentLifecycleOperations(LineageDataStore())
-    target = SimpleNamespace(root=tmp_path, resource=resource, descriptors=descriptors, index=index, record=record, definition=definition, operations=operations, folder=folder, owned=owned, marker=marker, canonical=canonical, neighbor_folder=neighbor_folder, neighbor_link=neighbor_link, archive=tmp_path / "archived-folder")
+    target = SimpleNamespace(root=tmp_path, resource=resource, descriptors=descriptors, index=index, record=record, definition=definition, operations=operations, folder=folder, owned=owned, marker=marker, neighbor_folder=neighbor_folder, archive=tmp_path / "archived-folder")
     assert LINEAGE in query_ids(target)
     assert resource.reference(LINEAGE, actor=ACTOR)["resource_id"] == LINEAGE
     assert LINEAGE in query_ids(target, actor="fixture-stranger")
@@ -135,10 +131,8 @@ def recover_operations(target, operation_id):
 
 
 def assert_archived_without_neighbor_damage(target):
-    assert not target.folder.exists()
-    assert not target.canonical.exists() and not target.canonical.is_symlink()
+    assert not target.folder.exists() and not target.folder.is_symlink()
     assert (target.archive / "retained.txt").read_text() == "original bytes survive release failure"
-    assert target.neighbor_link.is_symlink()
     assert (target.neighbor_folder / "untouched.txt").read_text() == "neighbor original"
     assert target.resource.reference(NEIGHBOR, actor=ACTOR)["resource_id"] == NEIGHBOR
     assert_deleted_reference(target)
@@ -157,7 +151,7 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
         assert Path(request["cwd"]) == target.owned
         assert_deleted_reference(target)
         assert target.marker.read_text() == "original bytes survive release failure"
-        assert target.canonical.is_symlink()
+        assert target.folder.is_dir()
         releases.append({"operation_id": request["operation_id"], "ordinary_query_ids": query_ids(target)})
         if len(releases) == 1:
             if failure_kind == "confirmed":
@@ -166,7 +160,7 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
         return {"status": "completed"}
 
     monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", safe_release)
-    steps = [deletion_step(target, "lineage_tombstone"), resident_lifecycle_domain.resident_release_step(target.record, ACTOR), deletion_step(target, "lineage_folder_unbind"), {"kind": "archive", "source": str(target.folder), "target": str(target.archive)}]
+    steps = [deletion_step(target, "lineage_tombstone"), resident_lifecycle_domain.resident_release_step(target.record, ACTOR), {"kind": "archive", "source": str(target.folder), "target": str(target.archive)}]
     operation_id = target.operations.enqueue(RESIDENT, steps)
     assert not target.operations.run(operation_id, resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
     cursor, error = pending_cursor(target, operation_id)

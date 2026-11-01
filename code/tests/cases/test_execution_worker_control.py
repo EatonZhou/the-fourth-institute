@@ -917,6 +917,3 @@ def test_worker_transports_structured_provider_interruption(
         "turn_id": "turn-1",
     }
     assert "unknown error" not in scheduler.finished.error
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

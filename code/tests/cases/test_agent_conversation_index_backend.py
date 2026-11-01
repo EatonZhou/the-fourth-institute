@@ -11,7 +11,6 @@ from management_portal import conversation_index_projection as lineage_projectio
 from management_portal.conversation_completion import READ_SIGNATURE_PREFIX, completion_signature, marker_order
 from management_portal.society_service import (
     lineage_human_notifications,
-    lineage_state,
     resident_domain,
     resource_client,
     state_store,
@@ -21,6 +20,7 @@ from tests.cases.society_service_test_support import install_resource_boundary, 
 
 from management_portal.society_service import resident_conversation_projection_domain, resident_directory_domain
 from management_portal.society_service import lineage_aggregate
+from tests.cases.instance_test_support import lineage_folders
 
 def _marker(completion_id: str, completed_at: str) -> str:
     return completion_signature(
@@ -812,8 +812,7 @@ def test_human_notifications_are_visible_in_the_conversation_index_only_to_reque
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
             lineage_id = "lineage_333333333333"
-            monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "Agents")
-            monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "Agents"))
+            lineage_folders(monkeypatch, tmp_path / "Agents")
             lineage_aggregate.lineage_catalog_store().upsert(
                 _lineage_definition(lineage_id, [])
             )

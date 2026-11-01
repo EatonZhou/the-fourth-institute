@@ -9,7 +9,19 @@ metadata:
 
 ## 路径约定
 
-本文的 `${code_root}`、`${share_root}` 表示当前实例的源码根与共享根目录。它们是文档占位符，不保证同名环境变量存在；从运行上下文或实例配置取得实际值。项目位置用 `GetProject` 查询，Resident 的 cwd 与 Workspace 以注入上下文和正式绑定为准，不按名称拼接另一实例的路径。
+`${code_root}` 表示后台服务所运行的代码目录（含 `core_skills/`、`scripts/`）。它是文档占位符，不保证同名环境变量存在；从运行上下文取得实际值。
+
+实例文件写成“区域 + 相对路径”，形如 `区域:相对路径`，例如 `skills:create-skill/SKILL.md`、`projects:<项目>/knowledge_base/`。区域与内容：
+
+- `projects`：项目文件夹，每个项目一个；`<项目>/knowledge_base/` 是知识库，`<项目>/agents/<lineage_id>/` 是属于该项目的 Lineage 目录。
+- `lineages`：不属于任何项目的 Lineage 目录 `<lineage_id>/`。
+- `skills`：共享 Skill；核心 Skill 属于代码层，在 `${code_root}/core_skills/`。
+- `papers`：论文库。
+- `uploads`：用户上传的文件，例如对话中的图片和附件。
+- `features`：各功能自己的持久数据，例如 Paper 工作区、对话工作区、归档任务、工作台应用的构建产物。
+- `provider-state`：Portal 为 Provider 保存的本实例状态。
+
+`secrets/`、`database/`、`cache/`、`runtime/` 是实例根目录下的固定目录，不属于任何区域。各区域在本实例的实际位置列在系统规则中；在终端里用 `python3 "${code_root:?}/scripts/resolve_instance_path.py" skills:create-skill/SKILL.md` 把区域写法解析为实际路径，不带参数时列出全部区域（实例由环境中的 `PORTAL_INSTANCE_ROOT` 选择，或加 `--instance <名称>`）。文档和 Skill 中不写某个实例的绝对路径。项目位置用 `GetProject` 查询，Resident 的 cwd 与 Workspace 以注入上下文和正式绑定为准，不按名称拼接另一实例的路径。
 
 ## 使用入口
 
@@ -27,7 +39,7 @@ metadata:
 
 节点身份文件固定为 Resident Folder 内的小写 `resident.md`，由 Portal 显式读取并注入。它与本 Skill 的共用规则、角色规则是不同部分。仓库 `AGENTS.md` 是开发入口说明；Portal 托管的 Codex 已关闭自动项目文档加载，不依赖它传递规则。`/guide/agent.md` 则是以 User 身份连接 Portal 的外部客户端指南。
 
-核心 Skill 以 `code/core_skills/` 为源码：本 Skill、`tfi-unified-id`，以及下文要求必读的 `create-skill`、`manage-knowledge-base`。发行 seed 与本站 `${share_root}/Skills/` 下的同名目录保持同步；修改时改源码再同步，不只改共享副本。服务端读取本站共用目录，再按 Resident 的 `prompt_injection` 设置发送；文件更新不会改写已送达的会话内容。用 `PreviewPromptInjection` 核对下一次注入，不把仓库文件已更新等同于所有运行中会话已收到。
+核心 Skill 以 `code/core_skills/` 为源码：本 Skill、`tfi-unified-id`，以及下文要求必读的 `create-skill`、`manage-knowledge-base`。这些目录随代码发布，实例数据区不保存副本。服务端读取自身代码目录，再按 Resident 的 `prompt_injection` 设置发送；文件更新不会改写已送达的会话内容。用 `PreviewPromptInjection` 核对下一次注入，不把仓库文件已更新等同于所有运行中会话已收到。
 
 任务涉及 Portal 的执行账号登记、Backend 角色、Codex 账号、`CODEX_HOME`、账号路由、登录身份或故障切换时，还必须读取 `./portal-codex-accounts.md`；通过 HATG ISA 查询和修改当前站点登记。
 
@@ -35,7 +47,7 @@ metadata:
 
 TFI Portal 是共享知识与 Agent 协作系统。项目、资源、Lineage、Resident、Workspace 及执行配置通过各自正式服务管理，人类与 Agent 围绕这些对象协作。
 
-`${share_root}/Skills` 保存共用操作规则；项目知识放在项目实际目录的 `knowledge_base/`。任务文件写入实际 Workspace 或用户指定且可写的目录。Resident 身份、会话与运行状态由 Portal 管理，工作目录不充当账号、身份或权限注册表。
+skills 区域保存共用操作规则；项目知识放在项目实际目录的 `knowledge_base/`。任务文件写入实际 Workspace 或用户指定且可写的目录。Resident 身份、会话与运行状态由 Portal 管理，工作目录不充当账号、身份或权限注册表。
 
 可见资源类型、可用指令和执行能力以当前实例返回的声明与状态为准。
 
@@ -70,12 +82,12 @@ TFI Portal 中除 User 和 Project 外的正式资源使用 `<type>_<12位小写
 
 在自然语言、Markdown、参数或工具结果中看到 Resource ID 或其嵌套地址时，直接解析该地址，不要求用户补充路径或重新粘贴内容。解析、创建、登记或扫描资源前，读取并遵循：
 
-- `${share_root}/Skills/tfi-unified-id/SKILL.md`
+- `${code_root}/core_skills/tfi-unified-id/SKILL.md`
 
-Host Python 代码统一通过 `management_portal.resources.get_resource_service()` 获取 `ResourceService`，并按需要调用 `query()`、`get()`、`resolve()` 或 `read_content()`。使用 Portal 人类身份的普通脚本，须先按上述 `tfi-unified-id` Skill 设置当前实例实际源码根 `PORTAL_ROOT` 和共享目录变量 `share_root`；将地址与用户占位符替换为实际值后运行：
+Host Python 代码统一通过 `management_portal.resources.get_resource_service()` 获取 `ResourceService`，并按需要调用 `query()`、`get()`、`resolve()` 或 `read_content()`。使用 Portal 人类身份的普通脚本，须先按上述 `tfi-unified-id` Skill 设置当前实例实际源码根 `PORTAL_ROOT`；将地址与用户占位符替换为实际值后运行：
 
 ```bash
-python3 "${share_root:?}/Skills/tfi-unified-id/scripts/resource_id.py" resolve '<resource-address>' --actor '<portal-user>'
+python3 "${code_root:?}/core_skills/tfi-unified-id/scripts/resource_id.py" resolve '<resource-address>' --actor '<portal-user>'
 ```
 
 Lineage Resident 不得自报 Portal 用户身份，也不得直接导入 ResourceService。资源访问使用
@@ -115,19 +127,19 @@ python3 "${code_root:?}/scripts/resident_hatg_instruction.py" --resident-id '<�
 - 类型与能力：`ListResourceTypes`、`GetResourceType`。知识目录配置与资源类型声明有不同职责。
 - Resident 与执行设置：`GetResident`、`GetResidentSettings`；团队关系用 `GetLineage`，Workspace 通过资源接口与绑定读取。
 - Provider、账号、Backend 和模型 API：`ListProviders`、`ListProviderAccounts`、`ListBackendRoles`、`ListModelApis`；具体流程见 `./portal-codex-accounts.md`。
-- Skill：当前环境提供的 Skill 清单与入口，或按 `skill` 类型搜索；共用源在 `${share_root}/Skills`，项目级源在实际项目知识库的 `skill/`。
+- Skill：当前环境提供的 Skill 清单与入口，或按 `skill` 类型搜索；共用源在 skills 区域（`skills:<名称>/`），核心 Skill 在 `${code_root}/core_skills/`，项目级源在实际项目知识库的 `skill/`。
 
 工具能力以当前可调用工具和指令 schema 为准。查不到或无权读取时说明具体缺口，不把文件名或目录存在视为登记、授权或可用状态。
 
 ## Skill 创建和使用
 
-Shared skills 位于 `${share_root}/Skills`。Project-local skills 位于实际项目目录的 `knowledge_base/skill/`。
+Shared skills 位于 skills 区域（`skills:<skill-name>/SKILL.md`），核心 Skill 位于 `${code_root}/core_skills/`。Project-local skills 位于实际项目目录的 `knowledge_base/skill/`。
 
 查找可复用能力或操作指令时，应覆盖所有相关根目录。不要只检查当前项目就停止。任务点名某个 skill 时，行动前先读取该 skill。
 
 创建、整理、迁移、拆分或更新 skill 时，必须先读取并遵循：
 
-- `${share_root}/Skills/create-skill/SKILL.md`
+- `${code_root}/core_skills/create-skill/SKILL.md`
 
 Skill 规则保存在其源文件；任务 Skill 由当前消息或运行环境提供，注入时机按 Resident 的 `prompt_injection.turn_skills` 设置控制。更改前读取当前 schema，不给 `UpdateResidentSettings` 添加不存在的 Skill 清单字段。不要把编写 Skill 等同于为所有 Resident 启用它。
 
@@ -135,7 +147,7 @@ Skill 规则保存在其源文件；任务 Skill 由当前消息或运行环境�
 
 搜索、读取、创建、修改、审计、凝练、统一口径或整理项目知识库 material 文件时，读取：
 
-- `${share_root}/Skills/manage-knowledge-base/SKILL.md`
+- `${code_root}/core_skills/manage-knowledge-base/SKILL.md`
 
 该 Skill 是项目知识库的统一入口，根据操作路由到创建、修改、审计、凝练和 material 规则。知识资源通过正式资源接口写入，保留稳定 ID，并由服务维护版本审计。
 

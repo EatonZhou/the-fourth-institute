@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 from management_common.text_values import stripped_text
 from management_portal import resource_identity_backend
 from management_portal.repo_workspace_checkout import RepoWorkspaceConflict, _checkout, _repo_lock
@@ -52,13 +52,13 @@ def commit_repo_changes(
         )
         if not staged:
             raise RepoWorkspaceConflict("当前工作区没有可提交的变更。")
-        author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or compatibility_value("repo_git_author_name", "TFI Portal")
+        author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or "TFI Portal"
         email_local = re.sub(r"[^A-Za-z0-9._-]+", "-", author).strip("-") or "portal"
         args = [
             "-c",
             f"user.name={author}",
             "-c",
-            f"user.email={email_local}@{compatibility_value('repo_git_email_domain', 'tfi.local')}",
+            f"user.email={email_local}@{'tfi.local'}",
             "commit",
             "-m",
             clean_message,

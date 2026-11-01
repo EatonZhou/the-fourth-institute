@@ -139,35 +139,35 @@ def workspace_file_address(path: str) -> str:
     return f"{found[1]}/file/{relative}" if relative != "." else ""
 
 
-def path_resource(path: str, *, shared_roots=(), private_roots=()) -> tuple[str, str, str] | None:
+def path_resource(path: str, *, shared_roots=()) -> tuple[str, str, str] | None:
     """``(root, resource_id, personal owner)`` of the object an absolute path belongs to, or None.
 
     The deepest live Workspace or personal AMA Lineage folder holding the
-    path; failing both, a folder of ``shared_roots`` (not inside
-    ``private_roots``) stands for itself.  Links are followed first.
+    path; failing both, a folder of ``shared_roots`` stands for itself.
+    Links are followed first.
     """
     from pathlib import Path
 
+    from management_common.instance_locations import located_path, stored_lookup_forms
     from management_portal.resources.workspace_store import get_workspace_store
 
     from .state_store import get_lineage_data_store
 
     target = Path(str(path)).resolve(strict=False)
-    ancestors = [str(target), *(str(parent) for parent in target.parents)]
+    ancestors = stored_lookup_forms([target, *target.parents])
     with get_lineage_data_store().database.read() as connection:
         rows = connection.execute(
             f"SELECT workspace_id, path FROM {get_workspace_store().table} WHERE path = ANY(%s) AND deleted_at IS NULL",
             (ancestors,)).fetchall()
     area = personal_area(str(target), personal_folders())
-    found = [(len(row["path"]), row["path"], row["workspace_id"]) for row in rows]
+    located = [(located_path(row["path"]), row["workspace_id"]) for row in rows]
+    found = [(len(root), root, workspace_id) for root, workspace_id in located]
     if area is not None:
         found.append((len(area[0]), area[0], area[1]))
     if found:
         _, root, resource_id = max(found)
         inside = area is not None and Path(root).is_relative_to(Path(area[0]))
         return root, resource_id, area[2] if inside else ""
-    if any(target.is_relative_to(Path(item).resolve(strict=False)) for item in private_roots):
-        return None
     for item in shared_roots:
         root = Path(item).resolve(strict=False)
         if target.is_relative_to(root):
@@ -177,14 +177,16 @@ def path_resource(path: str, *, shared_roots=(), private_roots=()) -> tuple[str,
 
 def personal_folders() -> list[tuple[str, str, str]]:
     """``(folder, lineage_id, owner)`` of each live personal Lineage, folder fully resolved."""
-    from .lineage_storage import canonical_lineage_folder
+    from .lineage_storage import lineage_folder_for_project
     from .state_store import get_lineage_data_store
 
     with get_lineage_data_store().database.read() as connection:
         rows = connection.execute(
-            "SELECT lineage_id, created_by FROM lineages WHERE lineage_membership='personal' AND deleted_at IS NULL",
+            "SELECT lineage_id, project_id, created_by FROM lineages "
+            "WHERE lineage_membership='personal' AND deleted_at IS NULL",
         ).fetchall()
-    return [(str(canonical_lineage_folder(row["lineage_id"]).resolve(strict=False)), row["lineage_id"], _text(row["created_by"], 120))
+    return [(str(lineage_folder_for_project(row["lineage_id"], row["project_id"] or "").resolve(strict=False)),
+             row["lineage_id"], _text(row["created_by"], 120))
             for row in rows]
 
 

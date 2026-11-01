@@ -74,8 +74,8 @@ def test_artifact_selector_is_scoped_and_authorized(monkeypatch, tmp_path):
     :design-point:"""
     from management_portal.society_service import effect_artifacts, lineage_domain, lineage_state
     lid = lineage()
-    monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", str(tmp_path))
-    reference = effect_artifacts.ArtifactStore().put(lid, "activation", {"text": "artifact body"}, purpose="output")
+    monkeypatch.setattr(effect_artifacts, "portal_path", lambda area: tmp_path / area)
+    reference =effect_artifacts.ArtifactStore().put(lid, "activation", {"text": "artifact body"}, purpose="output")
     identity, step = effect(lid)
     paths.effect_settled(lid, "activation", {"status": "succeeded", "finished_at": AT, "outputs": {"artifact": reference}})
     assert "artifact body" not in str(observation.observe(lid, {"trigger_path_id": identity}))

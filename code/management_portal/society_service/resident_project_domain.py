@@ -1,13 +1,7 @@
 """Resident domain responsibilities: project."""
 from __future__ import annotations
-from management_common.portal_paths import path as portal_path
 
 from pathlib import Path
-
-
-
-
-CODES_ROOT = (portal_path("share_root") / "Codes")
 
 
 def optional_absolute_path(raw: str) -> str:

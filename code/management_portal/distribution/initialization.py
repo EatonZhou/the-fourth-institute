@@ -31,32 +31,9 @@ class _TargetDatabase:
                     cursor.execute('SELECT set_config(%s,%s,true)', ('search_path', old))
 
 
-def _lineage_timer_sources(cursor, results, *, mode='fresh'):
+def _lineage_timer_sources(cursor, results):
     """Only ready, effectively open native time sources need the timer owner."""
     sources = []
-    if mode == 'upgrade':
-        # Upgrade preserves the running site's choices, including flows no
-        # longer mentioned by the incoming defaults. Never reapply that
-        # package's readiness/default intent to existing native control state.
-        tables = cursor.execute("SELECT to_regclass('lineage.lineage_components') AS components, "
-                                "to_regclass('lineage.event_source_progress') AS progress").fetchone()
-        if not tables['components'] or not tables['progress']:
-            return sources
-        owners = {(event['lineage_id'], event['source_id']): action['id']
-                  for action in results for event in action.get('event_sources', [])}
-        rows = cursor.execute('SELECT p.lineage_id,p.source_id,c.config_json,p.checkpoint_json '
-                              'FROM lineage.event_source_progress p JOIN lineage.lineage_components c '
-                              'ON c.node_id=p.source_id ORDER BY p.lineage_id,p.source_id').fetchall()
-        for row in rows:
-            config = json.loads(row['config_json']) if isinstance(row['config_json'], str) else row['config_json']
-            checkpoint = json.loads(row['checkpoint_json']) if isinstance(row['checkpoint_json'], str) else row['checkpoint_json']
-            if config.get('event_type') == 'time.reached' and not checkpoint.get('paused', False):
-                item = {'lineage_id': row['lineage_id'], 'source_id': row['source_id'], 'origin': 'existing_target_state'}
-                owner = owners.get((row['lineage_id'], row['source_id']))
-                if owner:
-                    item['feature_id'] = owner
-                sources.append(item)
-        return sources
     for action in results:
         if (not action.get('effective_enabled') or action.get('missing_requirements')
                 or action['status'] not in {'applied', 'preserved_existing'}):
@@ -77,21 +54,19 @@ def _lineage_timer_sources(cursor, results, *, mode='fresh'):
     return sources
 
 
-def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_ids=(), site_config_path=None):
-    """Return per-feature application evidence; upgrades preserve existing values.
+def initialize(manifest, connection, instance, *, site_config_path=None):
+    """Apply a bundle's feature defaults to a newly created instance; return evidence.
 
-    ``connection`` must be the installer-owned target psycopg connection, and
-    ``roots`` its validated five absolute data roots. Call after history freeze
-    verification and before services. Do not use this to enable a running site.
+    ``connection`` must be the installer-owned connection to the new database
+    and ``instance`` its validated manifest. Call after history freeze
+    verification and before services. The example instance's content is used
+    only at creation; code updates never re-run this. A repeated call on the
+    same database keeps defaults already recorded in its ledger.
     """
-    if mode not in {'fresh', 'upgrade'}:
-        raise ValueError('Initialization mode must be fresh or upgrade')
     resolution = manifest.get('feature_resolution') or {}
     if not resolution:
-        with connection.cursor(row_factory=dict_row) as cursor:
-            timer_sources = _lineage_timer_sources(cursor, [], mode=mode) if mode == 'upgrade' else []
-        return {'status': 'legacy_not_declared', 'features': [], 'lineage_timer_required': bool(timer_sources),
-                'lineage_timer_sources': timer_sources, 'work_dispatched': False}
+        return {'status': 'not_declared', 'features': [], 'lineage_timer_required': False,
+                'lineage_timer_sources': [], 'work_dispatched': False}
     if resolution.get('valid') is not True or resolution.get('conflicts'):
         raise ValueError('Feature initialization contains unresolved conflicts')
     actions = resolution.get('initialization', {}).get('actions', [])
@@ -99,9 +74,6 @@ def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_id
                  'native_component_switch'}
     if any(a.get('adapter') not in supported or type(a.get('effective_enabled')) is not bool for a in actions):
         raise ValueError('Unknown or unresolved feature initialization adapter')
-    root = Path(roots['instances_root'])
-    if not root.is_absolute():
-        raise ValueError('Installer must provide absolute instance data root')
     if any(a.get('workflow_binding') or a['adapter'] == 'native_component_switch' for a in actions) and site_config_path is None:
         raise ValueError('Installed workflow switches require the explicit target site_config_path')
     site_path = Path(site_config_path) if site_config_path is not None else None
@@ -117,14 +89,12 @@ def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_id
             for action in actions:
                 if action['adapter'] == 'native_component_switch':
                     from . import target_switches
-                    native_plans[action['id']] = target_switches.plan(action, c, site, mode=mode,
-                        preserve=action['id'] in applied or (mode == 'upgrade' and action['id'] in existing_feature_ids))
+                    native_plans[action['id']] = target_switches.plan(action, c, site, preserve=action['id'] in applied)
             c.execute('CREATE SCHEMA IF NOT EXISTS distribution_installation')
             c.execute('CREATE TABLE IF NOT EXISTS distribution_installation.feature_initializations(id TEXT PRIMARY KEY,evidence JSONB NOT NULL)')
-            settings_exist = c.execute("SELECT to_regclass('execution_runtime.service_settings') AS present").fetchone()['present'] is not None
             for action in actions:
                 identity, adapter = action['id'], action['adapter']
-                evidence = {**action, 'status': 'applied', 'mode': mode}
+                evidence = {**action, 'status': 'applied'}
                 if adapter == 'native_component_switch':
                     native, changed = target_switches.apply(action, native_plans[identity], c, site)
                     evidence.update(native)
@@ -136,24 +106,23 @@ def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_id
                                   'ON CONFLICT(id) DO NOTHING', (identity, Jsonb(evidence)))
                     results.append(evidence)
                     continue
-                if identity in applied or (mode == 'upgrade' and identity in existing_feature_ids):
+                if identity in applied:
                     results.append({**evidence, 'status': 'preserved_existing'})
                     continue
                 enabled = action['effective_enabled']
-                if action.get('application_binding') and mode == 'fresh':
+                if action.get('application_binding'):
                     from .application_flows import validate_target
                     validate_target(c, action['application_binding'])
                 if adapter in {'execution_setting', 'permission_setting'}:
                     from management_portal.execution.service_settings import ExecutionSettings
                     owner = ExecutionSettings(_TargetDatabase(connection, 'execution_runtime'))
-                    if mode == 'upgrade' and settings_exist:
-                        evidence['status'] = 'preserved_existing'
-                    elif adapter == 'permission_setting':
+                    if adapter == 'permission_setting':
                         owner.update_permission_system(enabled)
                     else:
                         owner.update_unmanaged({action['field']: enabled})
                 elif adapter == 'embedding_setting':
-                    path = root / 'settings/resident_embeddings.json'
+                    # The location management_common.embedding_feature reads.
+                    path = instance.directory('runtime') / 'settings/resident_embeddings.json'
                     if path.exists():
                         evidence['status'] = 'preserved_existing'
                     else:
@@ -173,9 +142,7 @@ def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_id
                     with _TargetDatabase(connection, 'lineage').transaction() as target:
                         exists = target.execute("SELECT to_regclass('lineage.application_targets') AS present").fetchone()['present']
                         old = target.execute('SELECT application FROM application_targets WHERE application=%s', (action['application'],)).fetchone() if exists else None
-                        if old and mode == 'upgrade':
-                            evidence['status'] = 'preserved_existing'
-                        elif old:
+                        if old:
                             target.execute('UPDATE application_targets SET admission_paused=%s WHERE application=%s', (not enabled, action['application']))
                         else:
                             # A target row requires a real Resident/Lineage FK.
@@ -188,11 +155,6 @@ def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_id
                     evidence['status'] = 'needs_configuration' if action['desired_enabled'] else 'disabled'
                 if action.get('event_sources') and evidence['status'] != 'preserved_existing':
                     for event in action['event_sources']:
-                        old = c.execute('SELECT checkpoint_json FROM lineage.event_source_progress WHERE lineage_id=%s AND source_id=%s',
-                                        (event['lineage_id'], event['source_id'])).fetchone()
-                        if mode == 'upgrade' and old:
-                            evidence['status'] = 'preserved_existing'
-                            continue
                         definition = c.execute('SELECT config_json FROM lineage.lineage_components WHERE node_id=%s', (event['source_id'],)).fetchone()
                         if not definition:
                             raise ValueError('Initialization references an absent event source')
@@ -216,7 +178,7 @@ def initialize(manifest, connection, roots, *, mode='fresh', existing_feature_id
                             site_changed = True
                 c.execute('INSERT INTO distribution_installation.feature_initializations(id,evidence) VALUES(%s,%s)', (identity, Jsonb(evidence)))
                 results.append(evidence)
-            timer_sources = _lineage_timer_sources(c, results, mode=mode)
+            timer_sources = _lineage_timer_sources(c, results)
             if site_changed:
                 site_path.parent.mkdir(parents=True, exist_ok=True)
                 site_path.write_text(json.dumps(site, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')

@@ -31,6 +31,22 @@ from management_portal.portal_access_control import PortalAccessStore
 from management_portal.portal_deployment_registry import PortalDeploymentRegistry
 
 
+def _manifest(tmp_path: Path, *, dev_port=18086, release_port=18085) -> Path:
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / 'selected-instance')
+    path = root / 'instance.json'
+    value = json.loads(path.read_text())
+    code = value['deployments']['release']['code_root']
+    value['deployments'] = {
+        'release': {'kind': 'release', 'code_root': code, 'web_port': release_port},
+        'dev': {'kind': 'dev', 'code_root': code, 'web_port': dev_port},
+    }
+    value['services']['components'] += ['dev-web', 'gateway']
+    value['network']['entry_port'] = 18084
+    path.write_text(json.dumps(value))
+    return path
+
+
 def _credentials() -> bytes:
     raw = json.dumps({"CASE-A": "hash", "yijun": "hash"}, sort_keys=True).encode("utf-8")
     IdentityState("credentials").replace(json.loads(raw))
@@ -125,7 +141,7 @@ def test_session_verifier_and_user_policy_contracts(tmp_path, subtests, isolated
             with urllib.request.urlopen(request, timeout=5) as response:
                 payload = json.loads(response.read())
             assert runtime_reads == [True]
-            assert 'instance' not in payload
+            assert 'instance' not in payload and 'deployment' not in payload
             assert payload['code'] == 'runtime_policy_blocked'
             assert payload['terminal'] is True
         finally:
@@ -134,18 +150,19 @@ def test_session_verifier_and_user_policy_contracts(tmp_path, subtests, isolated
             router_thread.join(timeout=2)
     with subtests.test(contract='test_registry_keeps_last_good_snapshot_when_a_hot_reload_is_invalid'), isolated_portal_case() as case_path:
         tmp_path = case_path
-        registry_path = tmp_path / 'deployments.json'
-        registry_path.write_text(json.dumps({'schema': 'tfi.portal-deployments.v1', 'instances': [{'id': 'dev', 'label': 'Dev', 'kind': 'dev', 'origin': 'http://127.0.0.1:18086', 'browser_origin': 'http://localhost:18086', 'order': 100}]}), encoding='utf-8')
+        registry_path = _manifest(tmp_path)
         registry = PortalDeploymentRegistry(registry_path)
-        assert [item.instance_id for item in registry.deployments()] == ['dev']
-        assert registry.deployments()[0].browser_origin == 'http://localhost:18086'
+        assert [item.deployment_id for item in registry.deployments()] == ['release', 'dev']
+        assert registry.deployments()[1].browser_origin == 'http://localhost:18086'
         time.sleep(0.002)
-        registry_path.write_text(json.dumps({'schema': 'tfi.portal-deployments.v1', 'instances': [{'id': 'dev', 'label': 'Dev', 'kind': 'dev', 'origin': 'http://127.0.0.1:18086', 'browser_origin': 'http://audit.invalid:18086', 'order': 100}]}), encoding='utf-8')
-        assert registry.deployments()[0].browser_origin == 'http://localhost:18086'
-        assert 'browser origin' in registry.error()
+        invalid = json.loads(registry_path.read_text())
+        invalid['deployments']['dev']['web_port'] = 18085
+        registry_path.write_text(json.dumps(invalid))
+        assert registry.deployments()[1].browser_origin == 'http://localhost:18086'
+        assert 'ports' in registry.error()
         time.sleep(0.002)
         registry_path.write_text('{', encoding='utf-8')
-        assert [item.instance_id for item in registry.deployments()] == ['dev']
+        assert [item.deployment_id for item in registry.deployments()] == ['release', 'dev']
         assert registry.error()
 
 
@@ -253,7 +270,7 @@ def test_router_proxies_to_selected_backend(tmp_path: Path) -> None:
         session_cookie = f"db_session={_token(signing_key, 'CASE-A')}"
         request = urllib.request.Request(
             base + "/__portal_router/preference",
-            data=json.dumps({"instance": "release"}).encode("utf-8"),
+            data=json.dumps({"deployment": "release"}).encode("utf-8"),
             method="POST",
             headers={
                 "Content-Type": "application/json",
@@ -263,8 +280,8 @@ def test_router_proxies_to_selected_backend(tmp_path: Path) -> None:
         )
         with urllib.request.urlopen(request, timeout=5) as response:
             payload = json.loads(response.read())
-            assert payload["effective_instance"] == "release"
-            assert payload["default_instance"] == "dev"
+            assert payload["effective_deployment"] == "release"
+            assert payload["default_deployment"] == "dev"
             set_cookie = response.headers["Set-Cookie"]
 
         preference_cookie = SimpleCookie()
@@ -295,66 +312,24 @@ def test_router_proxies_to_selected_backend(tmp_path: Path) -> None:
         release_thread.join(timeout=2)
 
 
-def test_registry_hot_loads_an_exploration_for_every_authenticated_user(
+def test_registry_rejects_unregistered_deployment_kind(tmp_path):
+    """Only Release and optional Dev are deployments in the instance protocol.
+
+    :importance: P2
+    """
+    import pytest
+    registry_path = _manifest(tmp_path)
+    value = json.loads(registry_path.read_text())
+    value['deployments']['explore-1'] = dict(value['deployments']['dev'], kind='exploration')
+    registry_path.write_text(json.dumps(value))
+    with pytest.raises(ValueError, match='optionally Dev'):
+        PortalDeploymentRegistry(registry_path)
+
+
+def test_router_switches_a_release_default_user_to_registered_dev(
     tmp_path: Path,
 ) -> None:
-    """部署注册表热加载探索实例，并向所有登录用户公开
-
-    :importance: P2"""
-    registry_path = tmp_path / "deployments.json"
-    registry_path.write_text(
-        json.dumps({
-            "schema": "tfi.portal-deployments.v1",
-            "instances": [
-                {
-                    "id": "explore-1",
-                    "label": "探索 1",
-                    "kind": "exploration",
-                    "origin": "http://127.0.0.1:18087",
-                    "order": 1,
-                    "build_id": "example",
-                    "enabled": True,
-                },
-                {
-                    "id": "dev",
-                    "label": "Dev",
-                    "kind": "dev",
-                    "origin": "http://127.0.0.1:18086",
-                    "order": 100,
-                    "enabled": True,
-                },
-                {
-                    "id": "release",
-                    "label": "Release",
-                    "kind": "release",
-                    "origin": "http://127.0.0.1:18085",
-                    "order": 110,
-                    "enabled": True,
-                },
-            ],
-        }),
-        encoding="utf-8",
-    )
-    registry = PortalDeploymentRegistry(registry_path)
-
-    assert [item.instance_id for item in registry.deployments()] == [
-        "explore-1",
-        "dev",
-        "release",
-    ]
-    assert registry.public_instances()[0] == {
-        "id": "explore-1",
-        "label": "探索 1",
-        "kind": "exploration",
-        "build_id": "example",
-    }
-    assert registry.error() == ""
-
-
-def test_router_switches_a_release_default_user_to_a_registered_exploration(
-    tmp_path: Path,
-) -> None:
-    """默认使用 Release 的用户可经 Router 切换到已注册的探索实例
+    """默认使用 Release 的用户可经 Router 切换到已注册的Dev 部署
 
     :importance: P2"""
     _credentials()
@@ -362,40 +337,7 @@ def test_router_switches_a_release_default_user_to_a_registered_exploration(
     signing_key = _signing_key(signing_key_path)
     dev, dev_thread = _backend("dev")
     release, release_thread = _backend("release")
-    exploration, exploration_thread = _backend("explore-1")
-    registry_path = tmp_path / "deployments.json"
-    registry_path.write_text(
-        json.dumps({
-            "schema": "tfi.portal-deployments.v1",
-            "instances": [
-                {
-                    "id": "explore-1",
-                    "label": "探索 1",
-                    "kind": "exploration",
-                    "origin": f"http://127.0.0.1:{exploration.server_address[1]}",
-                    "order": 1,
-                    "enabled": True,
-                },
-                {
-                    "id": "dev",
-                    "label": "Dev",
-                    "kind": "dev",
-                    "origin": f"http://127.0.0.1:{dev.server_address[1]}",
-                    "order": 100,
-                    "enabled": True,
-                },
-                {
-                    "id": "release",
-                    "label": "Release",
-                    "kind": "release",
-                    "origin": f"http://127.0.0.1:{release.server_address[1]}",
-                    "order": 110,
-                    "enabled": True,
-                },
-            ],
-        }),
-        encoding="utf-8",
-    )
+    registry_path = _manifest(tmp_path, dev_port=dev.server_address[1], release_port=release.server_address[1])
     registry = PortalDeploymentRegistry(registry_path)
     router = PortalRouterServer(
         ("127.0.0.1", 0),
@@ -418,17 +360,16 @@ def test_router_switches_a_release_default_user_to_a_registered_exploration(
         session_cookie = f"db_session={_token(signing_key, 'yijun')}"
         request = urllib.request.Request(
             base + "/__portal_router/preference",
-            data=json.dumps({"instance": "explore-1"}).encode("utf-8"),
+            data=json.dumps({"deployment": "dev"}).encode("utf-8"),
             method="POST",
             headers={"Content-Type": "application/json", "Cookie": session_cookie},
         )
         with urllib.request.urlopen(request, timeout=5) as response:
             payload = json.loads(response.read())
-            assert payload["effective_instance"] == "explore-1"
-            assert [item["id"] for item in payload["instances"]] == [
-                "explore-1",
-                "dev",
+            assert payload["effective_deployment"] == "dev"
+            assert [item["id"] for item in payload["deployments"]] == [
                 "release",
+                "dev",
             ]
             set_cookie = response.headers["Set-Cookie"]
         preference_cookie = SimpleCookie()
@@ -444,9 +385,9 @@ def test_router_switches_a_release_default_user_to_a_registered_exploration(
             },
         )
         with urllib.request.urlopen(request, timeout=5) as response:
-            assert response.headers.get("X-Portal-Backend") == "explore-1"
+            assert response.headers.get("X-Portal-Backend") == "dev"
             assert json.loads(response.read()) == {
-                "label": "explore-1",
+                "label": "dev",
                 "path": "/",
                 "body": "",
             }
@@ -457,12 +398,9 @@ def test_router_switches_a_release_default_user_to_a_registered_exploration(
         dev.server_close()
         release.shutdown()
         release.server_close()
-        exploration.shutdown()
-        exploration.server_close()
         router_thread.join(timeout=2)
         dev_thread.join(timeout=2)
         release_thread.join(timeout=2)
-        exploration_thread.join(timeout=2)
 
 
 def test_only_failed_requests_are_logged():

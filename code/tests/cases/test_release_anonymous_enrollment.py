@@ -16,7 +16,8 @@ def test_desktop_setup_status_reads_current_authority_without_session(monkeypatc
 
     configured = False
     monkeypatch.setattr(web_accounts, '_USER_ENROLLMENT', SimpleNamespace(has_accounts=lambda: configured))
-    monkeypatch.setattr(http_instance, '_PORTAL_INSTANCE', 'setup-fixture')
+    monkeypatch.setattr(http_instance, '_PORTAL_INSTANCE_NAME', 'setup-fixture')
+    monkeypatch.setattr(http_instance, '_PORTAL_DEPLOYMENT', 'release')
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -32,12 +33,13 @@ def test_desktop_setup_status_reads_current_authority_without_session(monkeypatc
     try:
         base = f'http://127.0.0.1:{server.server_port}'
         flow = DefaultStartup('/unused')
-        state = {'target': {'service_prefix': 'setup-fixture'}}
+        instance = SimpleNamespace(name='setup-fixture')
         for configured in (False, True, False):
             with build_opener(ProxyHandler({})).open(base + '/api/auth/setup-status') as response:
                 assert 'no-store' in response.headers['Cache-Control']
-                assert json.load(response) == {'instance': 'setup-fixture', 'configured': configured}
-            assert flow.account_configured(base, state) is configured
+                assert json.load(response) == {
+                    'instance': 'setup-fixture', 'deployment': 'release', 'configured': configured}
+            assert flow.account_configured(base, instance) is configured
     finally:
         server.shutdown()
         server.server_close()

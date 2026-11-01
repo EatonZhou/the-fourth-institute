@@ -308,7 +308,7 @@ def test_kimi_compact_without_wire_replacement_records_no_checkpoint():
     :importance: P2
     """
     from management_portal.kimi_code_client import KimiCodeClient
-    client = KimiCodeClient(poll_seconds=0.2)
+    client = KimiCodeClient(base_url="http://kimi.invalid/api/v1", poll_seconds=0.2)
     with mock.patch.object(client, "_request", return_value={"as_of_seq": 42}), \
             mock.patch.object(client, "get_status", return_value={"busy": False}), \
             mock.patch("management_portal.execution.native_session_compaction.kimi_wire_path", return_value=None), \
@@ -328,7 +328,7 @@ def test_unavailable_kimi_compaction_obeys_worker_control(control):
     :importance: P2
     """
     from management_portal.kimi_code_client import KimiCodeClient, KimiCodeUnavailable, KimiCodeDetached
-    client = KimiCodeClient(poll_seconds=0.2)
+    client = KimiCodeClient(base_url="http://kimi.invalid/api/v1", poll_seconds=0.2)
     check = mock.Mock(side_effect=[False, False, True])
     with mock.patch.object(client, "_request", return_value={}), \
             mock.patch.object(client, "get_status", side_effect=KimiCodeUnavailable("offline")), \

@@ -49,6 +49,8 @@ def install_mutation_provider(service: "ResourceService") -> None:
         "device",
         register=register,
         unregister=unregister,
+        update=lambda resource_id, payload, **context: canonical_record(
+            resource_id, device_identity_backend.update_device(resource_id, payload)),
     )
 
 

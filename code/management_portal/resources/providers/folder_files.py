@@ -36,10 +36,9 @@ def file_parts(suffix: str) -> tuple[str, ...] | None:
 
 
 def lineage_folder(lineage_id: str) -> Path:
-    from management_portal.society_service.lineage_storage import canonical_lineage_folder
+    from management_portal.society_service.lineage_locations import lineage_folder
 
-    # The Lineage entry may link to its Project folder; files are read under the real directory.
-    return Path(canonical_lineage_folder(lineage_id)).resolve(strict=False)
+    return lineage_folder(lineage_id).resolve(strict=False)
 
 
 def resident_folder(resident_id: str, record: dict[str, Any]) -> Path:

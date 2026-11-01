@@ -5,13 +5,13 @@
 Portal role rule 是统一 `tfi-agent-rule` Skill 的按需分支，放在：
 
 ```text
-${share_root}/Skills/tfi-agent-rule/portal-<role>.md
+${code_root}/core_skills/tfi-agent-rule/portal-<role>.md
 ```
 
 当前物化器 `management_portal.agent_skill_context.PORTAL_ROLE_FILES` 注册的角色文件为：
 
-- `${share_root}/Skills/tfi-agent-rule/portal-development.md`
-- `${share_root}/Skills/tfi-agent-rule/portal-resident.md`
+- `${code_root}/core_skills/tfi-agent-rule/portal-development.md`
+- `${code_root}/core_skills/tfi-agent-rule/portal-resident.md`
 
 `general` 只使用主文件。Portal 上游调用 `portal_system_instructions`，在服务端读取主文件与已注册角色文件，按 SHA 去重后注入正文；模型无需重复读取已注入文件。个人 AMA 与资源讨论沿用 Resident 入口。不要为页面名称另建系统角色、独立 Skill、独立 `metadata.id` 或兼容目录。
 
@@ -34,7 +34,7 @@ Portal role skill 定义某类 Portal 运行入口的身份、上下文、权限
 
 新增角色时同时更新：
 
-- `${share_root}/Skills/tfi-agent-rule/SKILL.md` 的角色映射。
+- `${code_root}/core_skills/tfi-agent-rule/SKILL.md` 的角色映射。
 - Portal 统一 system prompt 后端允许的角色集合。
 - 对应 agent 调用点的显式角色参数。
 - 使用真实物化器核对角色正文及导出内容；仅检查文件存在不足以证明接入生效。

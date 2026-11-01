@@ -4,14 +4,11 @@
 """
 from __future__ import annotations
 
-import base64
 import copy
 import hashlib
-import io
 import json
 
 import pytest
-from PIL import Image
 
 from tests.cases.test_domain_tombstone_and_restore import (
     projection, descriptor, live_lineage_projection, R, L, T1, T2,
@@ -123,37 +120,6 @@ def test_writer_live_retry_keeps_later_independent_edit_and_original_source(proj
     with pytest.raises(ValueError, match='Stale canonical'):
         projection.service.sync_collaboration_resources([{'descriptor':{**item,'title':'forged'}}])
     assert _writer_registry_snapshot(projection.registry) == before
-
-
-@pytest.mark.parametrize('namespace', ['archive','tfi'])
-def test_writer_avatar_new_record_and_legacy_image_hash_are_stable(tmp_path, namespace):
-    from management_portal.avatar_store import ScopeAvatarStore
-    store = ScopeAvatarStore(tmp_path)
-    subject = 'lineage:' + L
-    image = io.BytesIO(); Image.new('RGB',(16,16),'blue').save(image,format='PNG')
-    avatar = store.update(subject, {'kind':'upload','data_base64':base64.b64encode(image.getvalue()).decode()})
-    path = store._path(subject)
-    assert json.loads(path.read_text())['schema'] == 'tfi.scope-avatar.v1'
-    image_bytes = store.image(subject, avatar['version'])
-    assert hashlib.sha256(image_bytes).hexdigest() == avatar['version']
-    image_files = {str(p.relative_to(tmp_path)): p.read_bytes() for p in tmp_path.rglob('*') if p.is_file() and p != path}
-    record = json.loads(path.read_text()); record['schema'] = f'{namespace}.scope-avatar.v1'
-    path.write_text(json.dumps(record))
-    original = path.read_bytes(),path.stat().st_mtime_ns
-    if namespace == 'archive':
-        with pytest.raises(ValueError, match='Invalid avatar record'):
-            ScopeAvatarStore(tmp_path).read(subject)
-        with pytest.raises(ValueError, match='Invalid avatar record'):
-            store.image(subject,avatar['version'])
-    else:
-        assert ScopeAvatarStore(tmp_path).read(subject) == avatar
-        contents = store.image(subject,avatar['version'])
-        assert hashlib.sha256(contents).hexdigest() == avatar['version']
-    assert (path.read_bytes(),path.stat().st_mtime_ns) == original
-    assert {str(p.relative_to(tmp_path)): p.read_bytes() for p in tmp_path.rglob('*') if p.is_file() and p != path} == image_files
-    for bad in ('tfi.scope-avatar.v2','archive.unrelated.v1',None,{},7):
-        path.write_text(json.dumps({**record,'schema':bad}))
-        with pytest.raises(ValueError): ScopeAvatarStore(tmp_path).read(subject)
 
 
 def test_writer_content_snapshot_keeps_historical_bytes_and_hash():
@@ -557,6 +523,3 @@ def test_repo_writer_responses_and_clean_retry(tmp_path, monkeypatch):
     settings = prw_network.list_repo_credentials(repo_id, actor="writer-fixture",
                                                   credential_root=tmp_path / "empty", credential_key_path=tmp_path / "missing.key")
     assert settings == {"schema": "tfi.repo-git-credential-settings.v1", "repo_id": repo_id, "remotes": [], "credentials": []}
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

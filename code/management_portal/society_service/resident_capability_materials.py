@@ -11,7 +11,7 @@ from management_common.portal_paths import path as portal_path
 def _identity(ref: str) -> str:
     if ref.startswith("skill_"):
         return ref
-    path = Path(ref).expanduser() if ref.endswith("/SKILL.md") else portal_path("share_root") / "Skills" / ref / "SKILL.md"
+    path = Path(ref).expanduser() if ref.endswith("/SKILL.md") else portal_path('skills') / ref / "SKILL.md"
     return str(path.resolve(strict=False))
 
 

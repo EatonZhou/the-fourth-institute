@@ -161,6 +161,3 @@ def test_git_credential_helper_reads_only_private_matching_material(
         env=environment,
     )
     assert insecure.stdout.strip() == "quit=true"
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 import threading
 import time
@@ -19,14 +18,19 @@ from .kimi_live_events import KimiLiveItems, KimiLiveStream
 from .native_agent_transport import NativeAgentDetached, NativeAgentUnavailable
 
 
-DEFAULT_BASE_URL = "http://127.0.0.1:58561/api/v1"
+def default_base_url() -> str:
+    from management_common.instance_manifest import load
+    instance = load()
+    component = 'kimi-code' if 'kimi-code' in instance.document['services']['components'] else 'kimi'
+    return instance.service_origin(component) + '/api/v1'
+
 DEFAULT_POLL_SECONDS = 0.75
-from .kimi_code_server import DEFAULT_MODEL, DEFAULT_HOME
+from .kimi_code_server import DEFAULT_MODEL, DEFAULT_HOME, settings
 
 
 def credential_paths() -> tuple[Path, ...]:
     from .kimi_account_runtime import root
-    return (Path(os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser(), root())
+    return (DEFAULT_HOME, root())
 
 
 class KimiCodeError(RuntimeError):
@@ -119,14 +123,14 @@ class KimiCodeClient:
 
     def __init__(
         self,
-        base_url: str = DEFAULT_BASE_URL,
+        base_url: str | None = None,
         poll_seconds: float = DEFAULT_POLL_SECONDS,
         events_root: str | Path | None = None,
         home: str | Path | None = None,
     ) -> None:
-        self.base_url = str(base_url or DEFAULT_BASE_URL).rstrip("/")
+        self.base_url = str(base_url or default_base_url()).rstrip("/")
         self.poll_seconds = max(0.2, float(poll_seconds or DEFAULT_POLL_SECONDS))
-        self.home = Path(home or os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser()
+        self.home = Path(home or DEFAULT_HOME).expanduser()
         self.events_root = Path(events_root).expanduser() if events_root is not None else self.home / "server" / "events"
 
     def _request(
@@ -817,8 +821,8 @@ def shared_client() -> KimiCodeClient:
     with _CLIENT_LOCK:
         if _CLIENT is None:
             _CLIENT = KimiCodeClient(
-                os.getenv("PORTAL_KIMI_CODE_BASE_URL", DEFAULT_BASE_URL),
-                float(os.getenv("PORTAL_KIMI_CODE_POLL_SECONDS", str(DEFAULT_POLL_SECONDS))),
-                Path(os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))) / "server" / "events",
+                default_base_url(),
+                float(settings().get("poll_seconds", DEFAULT_POLL_SECONDS)),
+                DEFAULT_HOME / "server" / "events",
             )
         return _CLIENT

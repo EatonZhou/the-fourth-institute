@@ -23,24 +23,13 @@ from scripts.macos.publish import validate
 
 
 class MacDesktop(unittest.TestCase):
-    def test_launch_agents_stay_with_os_user_when_application_home_is_isolated(self):
+    def test_launch_agents_belong_to_the_os_user_record(self):
+        import pwd
         from scripts import tfi_release_platform_macos as adapter
-        from scripts.portal_service_control import ServiceControl
-        with tempfile.TemporaryDirectory() as tmp:
-            platform = Path(tmp).resolve()
-            registry = platform / "operator/Library/LaunchAgents"
-            registry.mkdir(parents=True)
-            target = launcher.make_target(platform, "desktop", {"run_id": "test"})
-            target.update(pg_bin=str(platform / "pg/bin"))
-            with patch.dict(os.environ, {"HOME": str(platform / "instance/home"),
-                                        "TFI_MACOS_SERVICE_DIRECTORY": str(registry)}), \
-                    patch.object(installer, "platform_adapter", return_value=adapter):
-                self.assertEqual(adapter.unit_directory(), registry)
-                self.assertEqual(adapter.service_controller().agent_root, registry)
-                self.assertEqual(ServiceControl(platform="macos").agent_root, registry)
-                env = installer.clean_environment(target)
-                self.assertEqual(env["TFI_MACOS_SERVICE_DIRECTORY"], str(registry))
-                self.assertEqual(env["HOME"], str(Path(target["install_root"]) / "home"))
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, {"HOME": tmp}):
+            expected = Path(pwd.getpwuid(os.getuid()).pw_dir) / "Library/LaunchAgents"
+            self.assertEqual(adapter.unit_directory(), expected)
+            self.assertEqual(adapter.service_controller().agent_root, expected)
 
     def test_payload_copy_is_relocatable_and_refuses_other_versions(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -68,42 +57,95 @@ class MacDesktop(unittest.TestCase):
                 launcher.materialize(bundle, installed)
             self.assertFalse(installed.exists())
 
-    def test_retry_preserves_case_choice_and_uses_bundled_python(self):
+    def test_retry_preserves_case_choice_and_uses_bundled_python_offline(self):
         with tempfile.TemporaryDirectory() as tmp:
             platform = Path(tmp)
-            manifest = platform / ".build/example_instance-macos/engineering/manifest.json"
-            manifest.parent.mkdir(parents=True)
-            manifest.write_text('{"run_id":"fixture"}')
             flow = launcher.MacStartup(platform, included=False)
-            with patch.object(launcher, "unpack_seed") as unpack, patch.object(flow, "execute") as execute:
-                flow.initialize()
-                self.assertFalse(unpack.call_args.kwargs["included"])
-                self.assertIn("--without-examples", execute.call_args_list[0].args[0])
-                target = json.loads((platform / ".build/macos/target.json").read_text())
-                self.assertEqual(target["python"], str(platform / "dependencies/python/bin/python3"))
-                self.assertNotIn("windows_service_mode", target)
-                self.assertTrue(target["offline_dependencies"])
-                # Even a pre-database retry cannot silently change the selection.
-                flow.included = True
-                flow.initialize()
-                self.assertFalse(unpack.call_args.kwargs["included"])
-                flow.root.mkdir(parents=True)
-                (flow.root / "installation.json").write_text('{}')
-                unpack.reset_mock()
-                flow.initialize()
-                unpack.assert_not_called()
+            self.assertFalse(flow.included())
+            # Even a pre-database retry cannot silently change the selection.
+            self.assertFalse(launcher.MacStartup(platform, included=True).included())
+            self.assertTrue(flow.offline())
+            command = flow.command("start", "--instance", "desktop")
+            self.assertEqual(command[0], str(platform / "dependencies/python/bin/python3"))
+            self.assertEqual(Path(command[1]), platform / "code/scripts/tfi_release_install.py")
+            instance_root = Path(tmp) / "elsewhere/desktop"
+            self.assertEqual(launcher.MacStartup(platform, instance_root=instance_root).create_arguments(),
+                             ["--root", instance_root])
+            self.assertEqual(flow.create_arguments(), [])
 
     def test_macos_database_uses_portable_locale_with_utf8_encoding(self):
+        from tests.cases.instance_test_support import write_instance
+        from management_common.instance_manifest import load
         with tempfile.TemporaryDirectory() as tmp:
-            target = {"install_root": tmp, "pg_bin": "/native/bin", "pg_share": "/native/share",
-                      "service_prefix": "tfi-fixture", "ports": {"postgres": 54444}}
-            from scripts import tfi_release_platform_macos as adapter
-            with patch.object(installer, "platform_adapter", return_value=adapter), \
-                    patch.object(installer, "run_checked") as run, \
-                    patch.object(installer, "service_controller"), patch.object(installer, "wait_database"):
-                installer.initialize_database({"target": target})
+            instance = load(write_instance(Path(tmp) / "instance"))
+            with patch.object(installer, "windows", return_value=False), \
+                    patch.object(installer.sys, "platform", "darwin"), \
+                    patch.object(installer, "postgres_environment", return_value={}), \
+                    patch.object(installer, "run_checked") as run:
+                installer.initialize_database(instance)
             self.assertIn("--locale=C", run.call_args.args[0])
             self.assertIn("--encoding=UTF8", run.call_args.args[0])
+
+    def test_code_update_stops_instances_then_swaps_code_and_writes_receipt_last(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle, platform = Path(tmp) / "app", Path(tmp) / "Library/TFI"
+            receipt = {"schema": "tfi.macos-package.v1", "target": "macos/aarch64", "python": {"v": 1},
+                       "bundled_native_dependencies": [{"name": "postgres"}], "source_dirty": False,
+                       "prepared_engineering_validation": "passed", "source_commit": "new"}
+            for root, commit, text in ((bundle, "new", "new code"), (platform, "old", "old code")):
+                (root / "code").mkdir(parents=True)
+                (root / "code/module.py").write_text(text)
+                (root / "branding").mkdir()
+                (root / "macos-package.json").write_text(json.dumps({**receipt, "source_commit": commit}))
+            (platform / "dependencies/python/bin").mkdir(parents=True)
+            (platform / "user-data").write_text("keep")
+            order = []
+            with patch.object(launcher, "stop_all", side_effect=lambda *a, **k: order.append(
+                    (platform / "code/module.py").read_text())) as stop:
+                self.assertTrue(launcher.changed(bundle, platform))
+                launcher.replace_code(bundle, platform)
+            stop.assert_called_once_with(platform, python=platform / "dependencies/python/bin/python3")
+            self.assertEqual(order, ["old code"])
+            self.assertEqual((platform / "code/module.py").read_text(), "new code")
+            self.assertEqual((platform / "user-data").read_text(), "keep")
+            self.assertFalse(launcher.changed(bundle, platform))
+            self.assertFalse(list(platform.glob(".*.old")) or list(platform.glob(".*.new")))
+
+    def test_code_update_refuses_a_different_bundled_runtime_before_stopping(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle, platform = Path(tmp) / "app", Path(tmp) / "Library/TFI"
+            for root, arch in ((bundle, "macos/x86_64"), (platform, "macos/aarch64")):
+                root.mkdir(parents=True)
+                (root / "macos-package.json").write_text(json.dumps({
+                    "schema": "tfi.macos-package.v1", "target": arch, "python": {"v": 1},
+                    "bundled_native_dependencies": [1], "source_dirty": False,
+                    "prepared_engineering_validation": "passed"}))
+            with patch.object(launcher, "stop_all") as stop, self.assertRaisesRegex(ValueError, "芯片"):
+                launcher.replace_code(bundle, platform)
+            stop.assert_not_called()
+
+    def test_changed_package_requires_explicit_update(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle, platform = Path(tmp) / "app", Path(tmp) / "Library/TFI"
+            for root, commit in ((bundle, "new"), (platform, "old")):
+                root.mkdir(parents=True)
+                (root / "macos-package.json").write_text(json.dumps({"source_commit": commit}))
+            flow = launcher.MacStartup(platform, bundle=bundle)
+            with patch.object(launcher, "replace_code") as replace, self.assertRaisesRegex(ValueError, "--update"):
+                flow.run()
+            replace.assert_not_called()
+            with patch.object(launcher, "replace_code") as replace, \
+                    patch.object(launcher.DefaultStartup, "run", return_value="http://127.0.0.1:1/"):
+                launcher.MacStartup(platform, bundle=bundle, update=True).run()
+            replace.assert_called_once()
+
+    def test_stop_and_unregister_use_the_platform_python_and_shared_lifecycle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            platform = Path(tmp)
+            with patch.object(launcher, "stop_all") as stop:
+                launcher.stop(platform, unregister=True)
+            stop.assert_called_once_with(platform, unregister=True,
+                                         python=platform / "dependencies/python/bin/python3")
 
     def test_publish_requires_both_architectures_and_actual_digest(self):
         import hashlib
@@ -177,96 +219,39 @@ class MacDesktop(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][:3], ["gh", "release", "create"])
 
 
-    def test_interrupted_settings_write_can_retry_without_partial_json(self):
-        for name in ("options.json", "target.json"):
-            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
-                platform = Path(tmp)
-                manifest = platform / ".build/example_instance-macos/engineering/manifest.json"
-                manifest.parent.mkdir(parents=True)
-                manifest.write_text('{"run_id":"fixture"}')
-                flow = launcher.MacStartup(platform, included=False)
-                replace = Path.replace
-                def interrupted(path, target):
-                    if Path(target).name == name:
-                        raise OSError("interrupted before publication")
-                    return replace(path, target)
-                with patch.object(launcher, "unpack_seed") as unpack, patch.object(flow, "execute"):
-                    with patch.object(Path, "replace", interrupted), self.assertRaises(OSError):
-                        flow.initialize()
-                    self.assertFalse((platform / ".build/macos" / name).exists())
-                    flow.initialize()
-                    self.assertFalse(unpack.call_args.kwargs["included"])
-                    target = json.loads((platform / ".build/macos/target.json").read_text())
-                    self.assertTrue(target["offline_dependencies"])
+    def test_interrupted_options_write_can_retry_without_partial_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            platform = Path(tmp)
+            flow = launcher.MacStartup(platform, included=False)
+            replace = os.replace
 
-    def test_native_smoke_keeps_original_failure_if_cleanup_also_fails(self):
+            def interrupted(source, target):
+                if Path(target).name == "options.json":
+                    raise OSError("interrupted before publication")
+                return replace(source, target)
+            with patch.object(os, "replace", interrupted), self.assertRaises(OSError):
+                flow.included()
+            self.assertFalse((platform / ".build/macos/options.json").exists())
+            self.assertFalse(flow.included())
+            self.assertEqual(json.loads((platform / ".build/macos/options.json").read_text()),
+                             {"include_examples": False})
+
+    def test_native_smoke_keeps_original_failure_if_retire_also_fails(self):
         from scripts.macos import build
         with tempfile.TemporaryDirectory() as tmp, \
-                patch.object(build, "command", side_effect=[ValueError("install failed"), RuntimeError("cleanup failed")]):
+                patch.object(build, "registered_instance", side_effect=[None, {"root": tmp}]), \
+                patch.object(build, "command", side_effect=[ValueError("install failed"), RuntimeError("retire failed")]):
             with self.assertRaises(ExceptionGroup) as caught:
-                build.smoke(Path("/fake/app"), Path(tmp), False)
-        self.assertEqual([str(exc) for exc in caught.exception.exceptions], ["install failed", "cleanup failed"])
+                build.smoke(Path("/fake/app"), Path(tmp), Path(tmp) / "instance", False)
+        self.assertEqual([str(exc) for exc in caught.exception.exceptions], ["install failed", "retire failed"])
 
-    def test_stop_and_unregister_include_only_owned_macos_accounts(self):
-        import hashlib
-        from scripts import tfi_release_provider_services as providers
-        from scripts import tfi_release_platform_macos as adapter
-        from scripts.tfi_instance_layout import code_root
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp).resolve()
-            registry = base / "LaunchAgents"
-            def account_job(platform):
-                target = launcher.make_target(platform, "desktop", {"run_id": "fixture"})
-                root = Path(target["data_roots"]["instances_root"]).resolve()
-                scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:10]
-                name = f"portal-codex-app-server@fixture-{scope}.service"
-                home = Path(target["install_root"]) / "runtime/provider-accounts/codex/fixture"
-                home.mkdir(parents=True)
-                marker = home / "user-data"
-                marker.write_text("preserve")
-                argv = [target["python"], "-m", "management_portal.codex_app_server_host",
-                        "--socket", str(root / "sockets/codex-fixture.sock"),
-                        "--binary", "/fixture/codex", "--account-config", str(home / "launch.json")]
-                content = adapter.command_unit_text(name, argv, cwd=code_root(target), log_root=root / "logs", log_name=name)
-                adapter.register_services(registry, {name: content})
-                return target, name, marker
-            target, name, marker = account_job(base / "ours")
-            _, foreign, _ = account_job(base / "other")
-            controller = Mock()
-            controller.status.return_value = {"pid": 0, "active": "inactive"}
-            # launchd has our job loaded from our own definition path.
-            controller.run.return_value = SimpleNamespace(
-                returncode=0, stdout=f"\tpath = {adapter.unit_path(registry, name)}\n")
-            with patch.object(providers.sys, "platform", "darwin"), patch.object(providers, "_run") as systemctl, \
-                    patch.object(adapter, "service_controller", return_value=controller):
-                plan = providers.owned_services(target, registry)
-                self.assertEqual(plan["names"], [name])
-                providers.stop_services(plan, controller)
-                controller.stop.assert_called_once_with(name)
-                providers.remove_template(target, registry)
-                systemctl.assert_not_called()
-            self.assertFalse(adapter.unit_path(registry, name).exists())
-            self.assertTrue(adapter.unit_path(registry, foreign).is_file())
-            self.assertEqual(marker.read_text(), "preserve")
+    def test_long_address_instance_root_exceeds_web_rpc_but_fits_postgres(self):
+        from scripts.macos import build
+        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+            root = build.long_rpc_root(Path(tmp).resolve())
+        self.assertGreaterEqual(len(os.fsencode(root / build.WEB_SOCKET)), 104)
+        self.assertLess(len(os.fsencode(root / build.POSTGRES_SOCKET)), 104)
 
-    def test_macos_account_cleanup_rejects_foreign_definition(self):
-        import hashlib
-        from scripts import tfi_release_provider_services as providers
-        from scripts import tfi_release_platform_macos as adapter
-        with tempfile.TemporaryDirectory() as tmp:
-            base = Path(tmp).resolve()
-            target = launcher.make_target(base, "desktop", {"run_id": "fixture"})
-            root = Path(target["data_roots"]["instances_root"]).resolve()
-            scope = hashlib.sha256(os.fsencode(root)).hexdigest()[:10]
-            name = f"portal-codex-app-server@fixture-{scope}.service"
-            registry = base / "LaunchAgents"
-            content = adapter.command_unit_text(name, ["/other/python", "-m", "management_portal.codex_app_server_host",
-                "--socket", "/other/s.sock", "--binary", "/fixture/codex", "--account-config", "/other/launch.json"],
-                cwd="/other/code", log_root="/other/logs", log_name=name)
-            adapter.register_services(registry, {name: content})
-            with patch.object(providers.sys, "platform", "darwin"), self.assertRaisesRegex(ValueError, "another instance"):
-                providers.remove_template(target, registry)
-            self.assertEqual(adapter.unit_path(registry, name).read_text(), content)
 
 
 @unittest.skipUnless(sys.platform == "darwin", "Requires native codesign")
@@ -384,67 +369,6 @@ class MacDesktopGUI(unittest.TestCase):
                     root.destroy()
                 except tk.TclError:
                     pass
-
-
-@unittest.skipUnless(sys.platform == "darwin", "Requires native launchd and Codex")
-class MacCodexNative(unittest.TestCase):
-    def test_launchd_starts_codex_with_short_and_long_socket_paths(self):
-        from contextlib import ExitStack
-        from management_common import site_config
-        from management_portal.execution import account_hosting
-        from management_portal import codex_app_server_host as host
-        from management_portal.codex_app_server_client import CodexAppServerClient
-        from scripts import portal_service_units as units, portal_instance_storage as storage
-        from scripts import tfi_release_platform_macos as adapter
-        binary = os.environ.get("TFI_TEST_CODEX_BINARY")
-        self.assertTrue(binary and Path(binary).is_file(), "Set TFI_TEST_CODEX_BINARY to the validation-only Codex CLI")
-        with tempfile.TemporaryDirectory(prefix="tfi-codex-check-", dir="/tmp") as tmp:
-            base = Path(tmp).resolve()
-            account_home = base / "empty-account"
-            account_home.mkdir(mode=0o700)
-            registry = base / "LaunchAgents"
-            clean = {"PATH": os.environ.get("PATH", os.defpath), "HOME": str(base / "home"),
-                     "TFI_MACOS_SERVICE_DIRECTORY": str(registry), "LANG": "en_US.UTF-8"}
-            site_env = {"PORTAL_NETWORK_CONFIG": str(base / "network.env"),
-                        "PYTHONPATH": str(Path(launcher.__file__).parents[1])}
-            for variant in ("short", "实例" * 40):
-                with self.subTest(variant="short" if variant == "short" else "long"), ExitStack() as stack:
-                    logical = base / variant / "codex.sock"
-                    physical = host.unix_socket_path(logical)
-                    name = base.name + ("-short" if variant == "short" else "-long") + ".service"
-                    stack.enter_context(patch.dict(os.environ, clean, clear=True))
-                    stack.enter_context(patch.object(units, "instance_root", return_value=base))
-                    stack.enter_context(patch.object(units, "_codex_unit", return_value=name))
-                    stack.enter_context(patch.object(site_config, "read_site_config", return_value={
-                        "deployment": {"providers": {"codex_binary": binary}}}))
-                    stack.enter_context(patch.object(storage, "site_environment", return_value=site_env))
-                    stack.enter_context(patch.object(account_hosting, "account_home", return_value=account_home))
-                    stack.enter_context(patch.object(account_hosting, "account_runtime",
-                        side_effect=lambda provider, account: base / "runtime" / provider / account))
-                    stack.enter_context(patch.object(account_hosting, "codex_socket_path", return_value=logical))
-                    _, directory, job, content, controller = units._native_codex_service("fixture")
-                    adapter.register_services(directory, {job: content})
-                    client = CodexAppServerClient(logical, request_timeout_seconds=10)
-                    try:
-                        controller.start(job)
-                        deadline = time.monotonic() + 30
-                        while not physical.exists() and time.monotonic() < deadline:
-                            time.sleep(.05)
-                        if not physical.exists():
-                            logs = "\n".join(p.read_text(errors="replace")[-3000:] for p in (base / "logs").glob("*"))
-                            self.fail("launchd did not publish the Codex endpoint: " + logs)
-                        self.assertTrue(client.request("model/list", {})["data"])
-                        self.assertIsNone(client.request("account/read", {}).get("account"))
-                    finally:
-                        client.close()
-                        controller.stop(job)
-                        adapter.unit_path(directory, job).unlink(missing_ok=True)
-                    deadline = time.monotonic() + 10
-                    while physical.exists() and time.monotonic() < deadline:
-                        time.sleep(.05)
-                    self.assertFalse(physical.exists(), "Stopped host left its socket behind")
-                    if physical != logical:
-                        physical.parent.rmdir()
 
 
 if __name__ == "__main__":

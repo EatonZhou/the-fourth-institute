@@ -43,7 +43,7 @@ Provider session) and the replay starts again from the real size.
 """
 
 from __future__ import annotations
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 
 import json
 import random
@@ -80,7 +80,7 @@ DROP_RATIO = 0.6
 # How far a compaction segment may lie outside the calls around its drop.
 COMPACTION_TIME_SLACK_SECONDS = 2.0
 DEFAULT_TRIGGER_RATIO = 0.93
-TEST_ACTORS = frozenset(compatibility_value("harness_test_actors", []))
+TEST_ACTORS = frozenset([])
 
 
 @dataclass(frozen=True)

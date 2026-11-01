@@ -1,613 +1,346 @@
+"""Instance lifecycle: create from the example instance, configure, retire."""
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
-import os
-import shutil
 from pathlib import Path
+import shutil
 import tempfile
-import subprocess
-import sys
-import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
-from scripts import tfi_release_install as installer
+import pytest
 
-
-class InstallationIsolationTests(unittest.TestCase):
-    def test_postgres_socket_limit_uses_encoded_address_for_each_platform(self):
-        for platform, limit in (("macos", 104), ("linux", 108)):
-            native = installer.importlib.import_module('scripts.tfi_release_platform_' + platform)
-            with self.subTest(platform=platform), patch.object(installer, 'platform_adapter', return_value=native):
-                base = Path('/tmp/tfi-socket-boundary')
-                suffix = '/runtime/s/.s.PGSQL.56432'
-                root = base / ('x' * (limit - 1 - len(os.fsencode(base)) - 1 - len(suffix)))
-                target = copy.deepcopy(self.target)
-                target.update(install_root=str(root), data_roots={key: str(root / 'data' / key) for key in installer.KEYS})
-                self.assertEqual(len(os.fsencode(root)) + len(suffix), limit - 1)
-                # A long core RPC path is now supported, even while PG fits.
-                self.assertGreaterEqual(len(os.fsencode(root / 'runtime/s/society-service.sock')), limit)
-                self.assertEqual(installer.target_plan(target, protected_roots=[])['install_root'], str(root))
-                for extra in ('x', '测'):
-                    longer = Path(str(root) + extra)
-                    target.update(install_root=str(longer), data_roots={key: str(longer / 'data' / key) for key in installer.KEYS})
-                    with self.assertRaisesRegex(ValueError, 'PostgreSQL socket'):
-                        installer.target_plan(target, protected_roots=[])
-
-    def test_initialization_helper_keeps_service_transport_but_not_source_home(self):
-        from scripts import tfi_release_platform_linux
-        target = installer.target_plan(self.target)
-        helper = Path(target['install_root']) / 'code/scripts/tfi_release_initialization.py'
-        transport = {'XDG_RUNTIME_DIR': '/run/user/1000',
-                     'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus'}
-        with patch.dict(os.environ, {**transport, 'UNRELATED_SECRET': 'private'}, clear=True), \
-                patch.object(installer, 'platform_adapter', return_value=tfi_release_platform_linux):
-            environment = installer.command_environment(target, [target['python'], str(helper), '--verify-frozen'])
-            for key, value in transport.items():
-                self.assertEqual(environment[key], value)
-            self.assertEqual(environment['HOME'], str(Path(target['install_root']) / 'home'))
-            self.assertNotIn('UNRELATED_SECRET', environment)
-            unrelated = installer.command_environment(target, [target['python'], '-c', 'pass'])
-            for key in transport:
-                self.assertNotIn(key, unrelated)
-
-    def test_internal_script_callbacks_use_the_selected_instance_port(self):
-        target = installer.target_plan(self.target)
-        with patch.dict(os.environ, {"PORTAL_URL": "http://old-site:18086"}):
-            for port in (28399, 28499):
-                target["ports"]["web"] = port
-                _, environment = installer.component_command(target, "society")
-                self.assertEqual(environment["PORTAL_URL"], f"http://127.0.0.1:{port}")
-
-    def test_published_generation_identifies_every_application_component(self):
-        target = installer.target_plan(self.target)
-        generation = Path(target["install_root"]) / "config/generation.env"
-        generation.parent.mkdir(parents=True)
-        self.assertEqual(installer.clean_environment(target)["PORTAL_BUILD_ID"], target["run_id"])
-        generation.write_text("PORTAL_BUILD_ID=published-commit\nUNRELATED_SECRET=ignored\n", encoding="utf-8")
-        for component in installer.COMPONENTS:
-            _, environment = installer.component_command(target, component)
-            self.assertEqual(environment["PORTAL_BUILD_ID"], "published-commit")
-            self.assertNotIn("UNRELATED_SECRET", environment)
-
-    def test_linux_components_preserve_user_manager_transport_only(self):
-        from scripts import tfi_release_platform_linux
-
-        target = installer.target_plan(self.target)
-        operator = {"XDG_RUNTIME_DIR": "/run/user/1000",
-                    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
-                    "HOME": "/operator-home", "UNRELATED_SECRET": "not-inherited"}
-        with patch.dict(os.environ, operator, clear=True), \
-             patch.object(installer, "platform_adapter", return_value=tfi_release_platform_linux):
-            for component in installer.COMPONENTS:
-                with self.subTest(component=component):
-                    _, environment = installer.component_command(target, component)
-                    for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
-                        self.assertEqual(environment[key], operator[key])
-                    self.assertEqual(environment["HOME"], str(Path(target["install_root"]) / "home"))
-                    self.assertNotIn("UNRELATED_SECRET", environment)
-
-    def test_maintenance_reexec_preserves_operator_service_context_only(self):
-        target = installer.target_plan(self.target)
-        operator = {"HOME": str(self.base / "operator"),
-                    "XDG_RUNTIME_DIR": str(self.base / "user-runtime"),
-                    "DBUS_SESSION_BUS_ADDRESS": "unix:path=/test-user-bus",
-                    "PORTAL_DATABASE_URL": "postgresql://source-must-not-be-used",
-                    "UNRELATED_SECRET": "must-not-be-carried"}
-        for command in ("upgrade", "recover"):
-            with self.subTest(command=command), patch.dict(os.environ, operator, clear=True), \
-                 patch.object(installer, "owned_state", return_value={"target": target}), \
-                 patch.object(installer, "runtime_python", return_value="/test-instance/venv/bin/python"), \
-                 patch.object(installer.os, "execve", side_effect=SystemExit) as execute:
-                args = [command, "--root", target["install_root"]]
-                with self.assertRaises(SystemExit):
-                    installer.main(args)
-                program, argv, environment = execute.call_args.args
-                self.assertEqual(program, "/test-instance/venv/bin/python")
-                # -B: maintenance writes no bytecode into the installed tree.
-                self.assertEqual(argv[:2], [program, "-B"])
-                self.assertEqual(argv[3:], args)
-                for key in ("HOME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
-                    self.assertEqual(environment[key], operator[key])
-                self.assertNotIn("XDG_CONFIG_HOME", environment)
-                self.assertNotIn("UNRELATED_SECRET", environment)
-                clean = installer.clean_environment(target)
-                self.assertEqual(environment["PORTAL_DATABASE_URL"], clean["PORTAL_DATABASE_URL"])
-                self.assertNotEqual(environment["PORTAL_DATABASE_URL"], operator["PORTAL_DATABASE_URL"])
-                self.assertEqual(clean["HOME"], str(Path(target["install_root"]) / "home"))
-                self.assertNotIn("DBUS_SESSION_BUS_ADDRESS", clean)
-
-    def test_skipped_verification_rejects_code_links_without_reading_target(self):
-        bundle = self.bundle()
-        outside = self.base / 'outside.txt'
-        outside.write_text('outside-copy-boundary')
-        (bundle / 'code/nested').mkdir()
-        (bundle / 'code/nested/link').symlink_to(outside)
-        manifest, _ = installer.validate_engineering(bundle / 'manifest.json', self.target,
-                                                     skip_file_verification=True)
-        root = Path(self.target['install_root'])
-        (root / 'runtime').mkdir(parents=True)
-        with patch.object(installer, 'digest', side_effect=AssertionError('unexpected hash')):
-            with self.assertRaisesRegex((ValueError, shutil.Error), 'unsafe entry'):
-                installer.copy_engineering(manifest, bundle, self.target)
-        self.assertFalse((root / 'code/nested/link').exists())
-        self.assertEqual(outside.read_text(), 'outside-copy-boundary')
-
-    def test_new_install_uses_own_browser_cookie_namespace(self):
-        target = installer.target_plan(self.target)
-        installer.prepare_configuration(target)
-        site = installer.read_json(Path(target['install_root']) / 'config/site.json')
-        self.assertEqual(site['deployment']['auth']['session_cookie_name'],
-                         'db_session_' + target['service_prefix'])
-
-    def test_skip_file_verification_avoids_walk_and_hash_but_retains_identity(self):
-        bundle = self.bundle()
-        target = installer.target_plan(self.target)
-        (bundle / "code/scripts/install_tfi_release").write_text("updated code")
-        with patch.object(installer.os, "walk", side_effect=AssertionError("scan")), \
-             patch.object(installer, "digest", side_effect=AssertionError("hash")):
-            installer.validate_engineering(bundle / "manifest.json", target, skip_file_verification=True)
-            with self.assertRaisesRegex(ValueError, "run_id"):
-                installer.validate_engineering(bundle / "manifest.json", {**target, "run_id": "other"}, skip_file_verification=True)
-
-    def test_deferred_data_checks_do_not_hash_or_walk_data_but_still_check_code(self):
-        bundle = self.bundle()
-        data = bundle / "data/share_root/unverified.txt"
-        data.write_text("retained workspace")
-        target = installer.target_plan(self.target)
-        with self.assertRaisesRegex(ValueError, "inventory"):
-            installer.validate_engineering(bundle / "manifest.json", target)
-        original_digest = installer.digest
-        def core_digest(path):
-            self.assertFalse(Path(path).is_relative_to(bundle / "data"))
-            return original_digest(path)
-        with patch.object(installer, "digest", side_effect=core_digest):
-            installer.validate_engineering(bundle / "manifest.json", target, defer_data_verification=True)
-        (bundle / "code/scripts/install_tfi_release").write_text("changed code")
-        with self.assertRaisesRegex(ValueError, "checksum"):
-            installer.validate_engineering(bundle / "manifest.json", target, defer_data_verification=True)
-
-    def test_deferred_data_still_rejects_credentials_and_copy_links(self):
-        bundle = self.bundle()
-        target = installer.target_plan(self.target)
-        credential = bundle / "data/secrets_dir/credential"
-        credential.write_text("test")
-        with self.assertRaisesRegex(ValueError, "secret"):
-            installer.validate_engineering(bundle / "manifest.json", target, defer_data_verification=True)
-        credential.unlink()
-        (bundle / "data/share_root/link").symlink_to(bundle / "database/distribution.sql")
-        manifest, _ = installer.validate_engineering(bundle / "manifest.json", target, defer_data_verification=True)
-        with self.assertRaisesRegex((ValueError, shutil.Error), "unsafe entry"):
-            installer.copy_engineering(manifest, bundle, target)
-
-    def test_timer_activation_requires_completed_matching_initialization(self):
-        target = installer.target_plan(self.target)
-        path = Path(target["install_root"]) / installer.STATE_FILE
-        state = {"target": target, "manifest_sha256": "a" * 64,
-                 "feature_initialization": {"status": "applying", "manifest_sha256": "a" * 64,
-                                            "result": {"lineage_timer_required": True}}}
-        installer.write_json(path, state)
-        self.assertEqual(installer.clean_environment(target)["PORTAL_LINEAGE_TIMER_INSTANCE"], "disabled-until-configured")
-        state["feature_initialization"]["status"] = "applied"
-        installer.write_json(path, state)
-        self.assertEqual(installer.clean_environment(target)["PORTAL_LINEAGE_TIMER_INSTANCE"], target["service_prefix"])
-        state["manifest_sha256"] = "b" * 64
-        installer.write_json(path, state)
-        self.assertEqual(installer.clean_environment(target)["PORTAL_LINEAGE_TIMER_INSTANCE"], "disabled-until-configured")
-
-    def test_adapter_selection_uses_actual_host_without_legacy_manifest(self):
-        with patch("management_common.distribution_targets.identify_host", return_value={"platform": "macos"}), \
-             patch.object(installer, "platform_preflight", side_effect=AssertionError("fabricated manifest")), \
-             patch.object(installer.importlib, "import_module") as native_import:
-            installer.platform_adapter()
-        native_import.assert_called_once_with("scripts.tfi_release_platform_macos")
-
-    def test_legacy_preflight_preserves_snapshot_and_records_actual_host(self):
-        manifest = {"selection_snapshot": {"history": True}}
-        original = copy.deepcopy(manifest)
-        report = installer.platform_preflight(manifest)
-        self.assertEqual(manifest, original)
-        self.assertEqual(report["target_resolution"], "legacy-effective-linux")
-        self.assertEqual(report["selected_targets"], ["linux"])
-        self.assertTrue(report["host"]["architecture"])
-        self.assertTrue(report["host"]["os_version"])
-
-    def test_unknown_architecture_has_structured_preflight_failure(self):
-        host = {"platform": "linux", "architecture": "unclaimed-arch", "os_version": "test"}
-        with patch("management_common.distribution_targets.identify_host", return_value=host), \
-             self.assertRaises(installer.PlatformPreflightError) as failure:
-            installer.platform_preflight({})
-        self.assertEqual(failure.exception.report["host"], host)
-        self.assertFalse(failure.exception.report["ok"])
-
-    def test_platform_rejection_precedes_native_import_and_filesystem_effects(self):
-        bundle = self.bundle()
-        host = {"platform": "windows", "architecture": "x86_64", "os_version": "test"}
-        with patch("management_common.distribution_targets.identify_host", return_value=host), \
-             patch.object(installer, "platform_adapter", side_effect=AssertionError("native import before preflight")), \
-             self.assertRaisesRegex(ValueError, "平台"):
-            installer.install(bundle / "manifest.json", self.target)
-        self.assertFalse(Path(self.target["install_root"]).exists())
-
-    def test_declared_capability_gap_prevents_installation(self):
-        bundle = self.bundle()
-        manifest = installer.read_json(bundle / "manifest.json")
-        manifest["selected_targets"] = ["linux"]
-        manifest["support_matrix"] = [{"platform": "linux", "capability": "local_ipc",
-                                       "implementation": "incomplete"}]
-        installer.write_json(bundle / "manifest.json", manifest)
-        with patch.object(installer, "platform_adapter", side_effect=AssertionError("native import before preflight")), \
-             self.assertRaises(ValueError):
-            installer.install(bundle / "manifest.json", self.target)
-        self.assertFalse(Path(self.target["install_root"]).exists())
-
-    def test_broken_dependency_prevents_installation_root_creation(self):
-        bundle = self.bundle()
-        with patch.object(installer, "check_available"), self.assertRaisesRegex(ValueError, "Dependency preflight"):
-            installer.install(bundle / "manifest.json", self.target)
-        self.assertFalse(Path(self.target["install_root"]).exists())
-
-    def test_help_import_does_not_require_posix_lock_or_service_modules(self):
-        child = """
-import builtins, runpy, sys
-original = builtins.__import__
-def guarded(name, *args, **kwargs):
-    if name in {'fcntl', 'scripts.portal_service_control'}:
-        raise ImportError('platform module must remain lazy: ' + name)
-    return original(name, *args, **kwargs)
-builtins.__import__ = guarded
-sys.argv = ['install_tfi_release', '--help']
-runpy.run_module('scripts.tfi_release_install', run_name='__main__')
-"""
-        result = subprocess.run([sys.executable, "-c", child], cwd=installer.SOURCE_ROOT,
-                                capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("--prepare-only", result.stdout)
-
-    def test_installation_lock_excludes_another_process_and_releases(self):
-        root = self.base / "locked"
-        child = (
-            "import sys; from pathlib import Path; "
-            "from management_common.file_lock import try_lock_descriptor; "
-            "f=(Path(sys.argv[1])/'.install.lock').open('a'); "
-            "sys.exit(0 if try_lock_descriptor(f.fileno()) else 3)"
-        )
-        command = [sys.executable, "-c", child, str(root)]
-        with installer.installation_lock(root):
-            self.assertEqual(subprocess.run(command, cwd=installer.SOURCE_ROOT).returncode, 3)
-        self.assertEqual(subprocess.run(command, cwd=installer.SOURCE_ROOT).returncode, 0)
-
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(prefix="tfi-install-test-")
-        self.addCleanup(self.temporary.cleanup)
-        self.base = Path(self.temporary.name)
-        tools = self.base / "tools"
-        tools.mkdir()
-        for name in ("python", "nats-server", "initdb", "postgres", "pg_isready", "psql", "createdb", "pg_restore"):
-            executable = tools / name
-            executable.touch(mode=0o700)
-        (tools / "postgres.bki").touch()
-        root = self.base / "instance"
-        self.target = {"install_root": str(root), "run_id": "release-run-001",
-                       "service_prefix": "tfi-release-001", "database_name": "tfi_release_001",
-                       "supervisor_resident_id": "resident_e4f55ad12dae",
-                       "data_roots": {key: str(root / "data" / key) for key in installer.KEYS},
-                       "ports": {"web": 28086, "postgres": 56432, "nats": 14223},
-                       "python": str(tools / "python"), "pg_bin": str(tools),
-                       "pg_share": str(tools), "nats_server": str(tools / "nats-server")}
-
-    def test_plan_is_read_only_and_environment_drops_source_credentials(self):
-        with patch.dict(os.environ, {"PORTAL_DATABASE_URL": "source-private-db", "OPENAI_API_KEY": "source-secret", "CODEX_HOME": "/source/accounts"}):
-            plan = installer.target_plan(self.target)
-            env = installer.clean_environment(plan)
-        self.assertFalse(Path(plan["install_root"]).exists())
-        self.assertNotIn("OPENAI_API_KEY", env)
-        self.assertNotIn("CODEX_HOME", env)
-        self.assertNotIn("source-private-db", env.values())
-        self.assertEqual(env["PORTAL_PATHS_CONFIG"], str(Path(plan["install_root"]) / "config/target.json"))
-        for key, path in plan["data_roots"].items():
-            self.assertEqual(env[installer.ENV_KEYS[key]], path)
-        self.assertNotEqual(env["PORTAL_LINEAGE_TIMER_INSTANCE"], env["PORTAL_INSTANCE"])
-
-    def test_postgres_libraries_do_not_leak_into_application_or_system_tools(self):
-        target = installer.target_plan(self.target)
-        target['pg_lib'] = str(self.base / 'postgres-private-libraries')
-        for platform in ('linux', 'macos', 'windows'):
-            with self.subTest(platform=platform), patch.object(installer, 'platform_adapter') as adapter:
-                adapter.return_value.__name__ = 'test_' + platform
-                library_key = 'DYLD_LIBRARY_PATH' if platform == 'macos' else 'LD_LIBRARY_PATH'
-                for component in ('web', 'resource', 'society', 'execution', 'worker', 'nats'):
-                    _, environment = installer.component_command(target, component)
-                    self.assertNotIn(library_key, environment)
-                    self.assertNotIn(target['pg_lib'], environment['PATH'])
-                _, environment = installer.component_command(target, 'postgres')
-                if platform == 'windows':
-                    self.assertIn(target['pg_lib'], environment['PATH'])
-                else:
-                    self.assertEqual(environment[library_key], target['pg_lib'])
-                for tool in ('initdb', 'pg_isready', 'pg_dump', 'psql'):
-                    command = [str(Path(target['pg_bin']) / installer.native_tool(tool))]
-                    native = installer.command_environment(target, command)
-                    self.assertEqual(native.get(library_key), environment.get(library_key))
-                    self.assertEqual(native['PATH'], environment['PATH'])
-                for command in ([target['python'], '--version'], ['/usr/bin/pdftotext', '-v']):
-                    environment = installer.command_environment(target, command)
-                    self.assertNotIn(library_key, environment)
-                    self.assertNotIn(target['pg_lib'], environment['PATH'])
-
-    def test_external_staging_root_requires_explicit_declaration(self):
-        external = self.base / "ssd" / "accounts"
-        self.target["data_roots"]["staging_root"] = str(external)
-        with self.assertRaisesRegex(ValueError, "inside install_root"):
-            installer.target_plan(self.target)
-        self.target["external_data_roots"] = ["staging_root"]
-        target = installer.target_plan(self.target)
-        self.assertEqual(target["data_roots"]["staging_root"], str(external))
-        self.assertEqual(installer.clean_environment(target)["PORTAL_AGENT_STAGING_ROOT"], str(external))
-        self.assertEqual(installer.target_plan(target), target)
-
-    def test_external_data_roots_reject_invalid_declarations(self):
-        for value in (True, "staging_root", ["unknown"], ["staging_root", "staging_root"], [None]):
-            with self.subTest(value=value):
-                self.target["external_data_roots"] = value
-                with self.assertRaisesRegex(ValueError, "external_data_roots"):
-                    installer.target_plan(self.target)
-
-    def test_external_data_roots_still_reject_source_and_data_overlap(self):
-        self.target["external_data_roots"] = ["staging_root", "secrets_dir"]
-        self.target["data_roots"]["staging_root"] = str(installer.SOURCE_ROOT / "accounts")
-        with self.assertRaisesRegex(ValueError, "overlap"):
-            installer.target_plan(self.target)
-        external = self.base / "ssd" / "accounts"
-        self.target["data_roots"]["staging_root"] = str(external)
-        self.target["data_roots"]["secrets_dir"] = str(external / "secrets")
-        with self.assertRaisesRegex(ValueError, "overlap"):
-            installer.target_plan(self.target)
-
-    def test_source_root_and_nested_data_roots_are_rejected(self):
-        self.target["install_root"] = str(installer.SOURCE_ROOT)
-        with self.assertRaisesRegex(ValueError, "overlaps"):
-            installer.target_plan(self.target)
-        self.target["install_root"] = str(self.base / "instance")
-        self.target["data_roots"]["secrets_dir"] = self.target["data_roots"]["staging_root"] + "/secrets"
-        with self.assertRaisesRegex(ValueError, "overlap"):
-            installer.target_plan(self.target)
-
-    def test_symlink_to_source_data_is_rejected(self):
-        root = Path(self.target["install_root"])
-        root.mkdir()
-        (root / "data").symlink_to(installer.SOURCE_ROOT, target_is_directory=True)
-        with self.assertRaisesRegex(ValueError, "inside install_root"):
-            installer.target_plan(self.target)
-
-    def test_duplicate_ports_and_source_service_names_rejected(self):
-        target = copy.deepcopy(self.target)
-        target["ports"]["nats"] = target["ports"]["web"]
-        with self.assertRaisesRegex(ValueError, "different"):
-            installer.target_plan(target)
-        self.target["service_prefix"] = "portal-dev"
-        with self.assertRaisesRegex(ValueError, "unique tfi-"):
-            installer.target_plan(self.target)
-
-    def test_units_and_commands_only_reference_target(self):
-        plan = installer.target_plan(self.target)
-        for component in installer.COMPONENTS:
-            unit = installer.unit_text(plan, component)
-            self.assertNotIn("management-portal.service", unit)
-            self.assertNotIn("portal-dev", unit)
-            self.assertIn(plan["install_root"], unit)
-            self.assertIn("WorkingDirectory=" + plan["install_root"] + "/code\n", unit)
-            self.assertEqual("KillSignal=SIGINT\n" in unit, component == "nats")
-            command, env = installer.component_command(plan, component)
-            self.assertEqual(env["PORTAL_INSTANCE"], plan["service_prefix"])
-            self.assertNotIn("archive_lineage", env["PORTAL_DATABASE_URL"])
-        command, _ = installer.component_command(plan, "postgres")
-        self.assertIn("listen_addresses=", command)
-        command, _ = installer.component_command(plan, "web")
-        self.assertEqual(command[1:3], ["-m", "management_portal.web_server"])
-
-    def bundle(self):
-        bundle = self.base / "bundle"
-        (bundle / "code/scripts").mkdir(parents=True)
-        (bundle / "code/scripts/install_tfi_release").write_text("# fixed installer\n")
-        (bundle / "database").mkdir()
-        (bundle / "database/distribution.sql").write_text("SELECT '${share_root}';\n")
-        for key in installer.KEYS:
-            (bundle / "data" / key).mkdir(parents=True)
-        inventory = [{"path": p.relative_to(bundle).as_posix(), "sha256": installer.digest(p), "size": p.stat().st_size}
-                     for p in sorted(bundle.rglob("*")) if p.is_file()]
-        code_files = [{**i, "path": i["path"][5:]} for i in inventory if i["path"].startswith("code/")]
-        manifest = {"schema": "tfi.release-engineering.v1", "run_id": self.target["run_id"],
-                    "supervisor_resident_id": self.target["supervisor_resident_id"], "unresolved": [],
-                    "code": {"path": "code", "sha256": hashlib.sha256(json.dumps(code_files, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()},
-                    "database": {"path": "database/distribution.sql", "format": "postgresql-sql", "sha256": installer.digest(bundle / "database/distribution.sql")},
-                    "files": {k: f"data/{k}" for k in installer.KEYS}, "inventory": inventory,
-                    "directory_mappings": [{"root": k, "placeholder": "${" + k + "}", "path": "."} for k in (*installer.KEYS, "code_root")],
-                    "installer": {"entrypoint": "code/scripts/install_tfi_release"}}
-        installer.write_json(bundle / "manifest.json", manifest)
-        return bundle
-
-    def test_engineering_tamper_and_unlisted_file_are_rejected_before_install(self):
-        bundle = self.bundle()
-        installer.validate_engineering(bundle / "manifest.json", self.target)
-        (bundle / "extra").write_text("unlisted")
-        with self.assertRaisesRegex(ValueError, "inventory"):
-            installer.validate_engineering(bundle / "manifest.json", self.target)
-        (bundle / "extra").unlink()
-        (bundle / "database/distribution.sql").write_text("changed")
-        with self.assertRaisesRegex(ValueError, "checksum"):
-            installer.validate_engineering(bundle / "manifest.json", self.target)
-        self.assertFalse(Path(self.target["install_root"]).exists())
-
-    def test_supervisor_and_traversal_cannot_be_silently_reinterpreted(self):
-        bundle = self.bundle()
-        self.target["supervisor_resident_id"] = "resident_667111522609"
-        with self.assertRaisesRegex(ValueError, "supervisor_resident_id"):
-            installer.validate_engineering(bundle / "manifest.json", self.target)
-        with self.assertRaisesRegex(ValueError, "relative"):
-            installer.engineering_path(bundle, "../source.sql")
-
-    def test_materialization_maps_declared_paths_without_changing_source(self):
-        bundle = self.bundle()
-        manifest, _ = installer.validate_engineering(bundle / "manifest.json", self.target)
-        root = Path(self.target["install_root"])
-        installer.prepare_configuration(self.target)
-        installer.copy_engineering(manifest, bundle, self.target)
-        self.assertIn(self.target["data_roots"]["share_root"], (root / "runtime/distribution.sql").read_text())
-        self.assertIn("${share_root}", (bundle / "database/distribution.sql").read_text())
-        self.assertFalse((root / 'config/paths.json').exists())
-        self.assertEqual(installer.read_json(root / "config/site.json")["site_name"], "TFI Portal")
-        from management_common.portal_network import router_access
-        self.assertEqual(router_access(root / "config/network.env")["mode"], "local")
-
-    def test_read_only_templates_materialize_and_retry_with_source_modes(self):
-        bundle = self.bundle()
-        template = bundle / 'data/share_root/readonly.json'
-        original = b'{"root":"${share_root}/Articles/example"}\r\n'
-        template.write_bytes(original)
-        template.chmod(0o444)
-        binary = bundle / 'data/share_root/image.bin'
-        binary.write_bytes(b'\xff\x00${share_root}')
-        binary.chmod(0o444)
-        code = bundle / 'code/scripts/install_tfi_release'
-        code.chmod(0o555)
-        installer.prepare_configuration(self.target)
-        manifest = installer.read_json(bundle / 'manifest.json')
-        for _ in range(2):
-            installer.copy_engineering(manifest, bundle, self.target)
-        copied = Path(self.target['data_roots']['share_root']) / template.name
-        self.assertEqual(copied.read_bytes(), original.replace(b'${share_root}', self.target['data_roots']['share_root'].encode()))
-        self.assertEqual(copied.stat().st_mode & 0o777, 0o444)
-        self.assertEqual(template.read_bytes(), original)
-        self.assertEqual(template.stat().st_mode & 0o777, 0o444)
-        self.assertEqual((copied.parent / binary.name).read_bytes(), binary.read_bytes())
-        self.assertEqual((Path(self.target['install_root']) / 'code/scripts/install_tfi_release').stat().st_mode & 0o777, 0o555)
-        self.assertFalse(list(copied.parent.glob('.tfi-install-*')))
-
-    def test_failed_materialization_replace_preserves_old_bytes_and_mode(self):
-        source = self.base / 'template'
-        destination = self.base / 'installed'
-        source.write_text('${share_root}/new')
-        source.chmod(0o444)
-        destination.write_text('old complete content')
-        destination.chmod(0o444)
-        with patch.object(installer.os, 'replace', side_effect=PermissionError('replace denied')):
-            with self.assertRaises(PermissionError):
-                installer.copy_materialized_file(source, destination, {'${share_root}': '/target'})
-        self.assertEqual(destination.read_text(), 'old complete content')
-        self.assertEqual(destination.stat().st_mode & 0o777, 0o444)
-        self.assertFalse(list(self.base.glob('.tfi-install-*')))
-
-    def test_changed_bundle_cannot_overwrite_an_existing_instance(self):
-        bundle = self.bundle()
-        target = installer.target_plan(self.target)
-        state = {"schema": installer.SCHEMA, "target": target, "manifest_sha256": "different",
-                 "protected_roots": [str(installer.SOURCE_ROOT)]}
-        installer.write_json(Path(target["install_root"]) / installer.STATE_FILE, state)
-        with patch.object(installer, "check_available"), self.assertRaisesRegex(ValueError, "different immutable"):
-            installer.install(bundle / "manifest.json", self.target)
-
-    def test_native_download_failure_can_retry_before_any_service_registration(self):
-        from scripts import tfi_release_native_dependencies as native
-        bundle = self.bundle()
-        self.target.pop('nats_server')
-        root = Path(self.target['install_root'])
-        def prepare(api, target, entries):
-            executable = Path(target['nats_server'])
-            executable.parent.mkdir(parents=True)
-            executable.touch(mode=0o700)
-            return [{'status': 'verified'}]
-        with patch.object(installer, 'check_available'), \
-             patch.object(installer, 'run_utf8_capture', return_value=subprocess.CompletedProcess([], 0, 'Python 3.12.8\n', '')), \
-             patch.object(installer, 'dependency_preflight', return_value={}), \
-             patch.object(installer, 'register_services') as register, \
-             patch.object(installer, 'prepare_configuration', side_effect=RuntimeError('stop before copy')), \
-             patch.object(native, 'prepare', side_effect=OSError('offline')) as download:
-            with self.assertRaisesRegex(OSError, 'offline'):
-                installer.install(bundle / 'manifest.json', self.target)
-            state = installer.read_json(root / installer.STATE_FILE)
-            self.assertEqual(state['stages'][-1]['phase'], 'native_dependencies')
-            self.assertEqual(state['status'], 'failed')
-            download.side_effect = prepare
-            with self.assertRaisesRegex(RuntimeError, 'stop before copy'):
-                installer.install(bundle / 'manifest.json', self.target)
-            self.assertEqual(download.call_count, 2)
-            register.assert_not_called()
-            state = installer.read_json(root / installer.STATE_FILE)
-            self.assertEqual(state['native_dependencies'][0]['status'], 'verified')
-
-    def test_foreign_service_definition_blocks_stop_and_cleanup(self):
-        directory = self.base / "units"
-        directory.mkdir()
-        (directory / installer.unit_name(self.target, "web")).write_text("foreign unit")
-        with patch.object(installer, "unit_directory", return_value=directory), self.assertRaisesRegex(ValueError, "ownership mismatch"):
-            installer.check_available(self.target, existing=True)
-
-    def test_stop_checks_only_owned_units_and_does_not_delete_data(self):
-        from unittest.mock import Mock
-        target = installer.target_plan(self.target)
-        root = Path(target["install_root"])
-        state = {"schema": installer.SCHEMA, "target": target,
-                 "protected_roots": [str(installer.SOURCE_ROOT)], "stages": []}
-        installer.write_json(root / installer.STATE_FILE, state)
-        (root / "retained").write_text("instance data")
-        controller = Mock()
-        controller.status.side_effect = lambda name: {"service": name, "load": "loaded", "active": "inactive", "pid": 0}
-        with patch.object(installer, "service_controller", return_value=controller), patch.object(installer, "check_available"), \
-             patch('scripts.tfi_release_provider_services.owned_services', return_value=None), \
-             patch('scripts.tfi_shutdown.stop_instance', return_value={"ok": True}) as bounded_stop:
-            result = installer.lifecycle("stop", root)
-        self.assertEqual(result["status"], "stopped")
-        if installer.sys.platform.startswith("linux"):
-            bounded_stop.assert_called_once()
-            self.assertEqual(bounded_stop.call_args.args, (root,))
-            self.assertLessEqual(bounded_stop.call_args.kwargs["timeout"], 20)
-            controller.stop.assert_not_called()
-        else:
-            self.assertEqual([c.args[0] for c in controller.stop.call_args_list],
-                             [installer.unit_name(target, c) for c in reversed(installer.COMPONENTS)])
-        self.assertEqual((root / "retained").read_text(), "instance data")
-
-    def test_cleanup_refuses_when_one_owned_process_is_still_running(self):
-        from unittest.mock import Mock
-        target = installer.target_plan(self.target)
-        root = Path(target["install_root"])
-        state = {"schema": installer.SCHEMA, "target": target,
-                 "protected_roots": [str(installer.SOURCE_ROOT)], "stages": []}
-        installer.write_json(root / installer.STATE_FILE, state)
-        controller = Mock()
-        controller.status.return_value = {"load": "loaded", "active": "active", "pid": 1234}
-        with patch.object(installer, "service_controller", return_value=controller), patch.object(installer, "check_available"), \
-             patch.object(installer, "unit_directory", return_value=self.base / 'units'), \
-             patch('scripts.tfi_release_provider_services.owned_services', return_value=None), self.assertRaisesRegex(RuntimeError, "cleanup refused"):
-            installer.lifecycle("cleanup", root)
-        self.assertTrue((root / installer.STATE_FILE).is_file())
-
-    def test_first_admin_uses_target_setup_owner_and_does_not_return_secret(self):
-        target = installer.target_plan(self.target)
-        root = Path(target["install_root"])
-        installer.prepare_configuration(target)
-        state = {"schema": installer.SCHEMA, "target": target, "status": "installed",
-                 "protected_roots": [str(installer.SOURCE_ROOT)], "stages": []}
-        installer.write_json(root / installer.STATE_FILE, state)
-        with patch.object(installer, "check_available"), patch.object(installer, "run_checked", return_value="one-time-test-secret") as run:
-            result = installer.first_admin(root, "tfi-verifier")
-        self.assertNotIn("one-time-test-secret", json.dumps(result))
-        self.assertEqual(Path(result["setup_file"]).stat().st_mode & 0o777, 0o600)
-        self.assertEqual(run.call_args.kwargs["target"], target)
-        self.assertEqual(run.call_args.args[0][1], str(root / "code/scripts/portal_setup.py"))
-
-    def test_fresh_process_reads_only_target_paths_and_disables_timers(self):
-        target = installer.target_plan(self.target)
-        installer.prepare_configuration(target)
-        command = [sys.executable, "-c", "import json; from management_common.portal_paths import paths; from management_portal.society_service.config import runs_lineage_timers; print(json.dumps({'paths': {k:str(v) for k,v in paths().items()}, 'timers': runs_lineage_timers()}))"]
-        result = subprocess.run(command, cwd=installer.SOURCE_ROOT, env=installer.clean_environment(target),
-                                text=True, capture_output=True, check=True)
-        observed = json.loads(result.stdout)
-        self.assertEqual(observed["paths"], target["data_roots"])
-        self.assertFalse(observed["timers"])
+from management_common import host_instances
+from management_common.instance_manifest import load
+from scripts import instance_services, tfi_release_install as installer
+from scripts import tfi_release_native_dependencies as native
+from tests.cases.instance_test_support import write_instance
 
 
-if __name__ == "__main__":
-    unittest.main()
+def _digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def engineering(tmp_path, *, files=None, mappings=()):
+    """A minimal prepare_install bundle: code, SQL and data/<area>/ content."""
+    bundle = tmp_path / "bundle"
+    contents = {
+        "code/scripts/tfi_release_install.py": b"# installer\n",
+        "database/distribution.sql": b"SELECT '${code_root}';\n",
+        "data/projects/Demo/knowledge_base/plan/a.md": b"plan in ${code_root}\n",
+        "data/features/workbench/app.js": b"console.log(1)\n",
+        **(files or {}),
+    }
+    for relative, data in contents.items():
+        path = bundle / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    inventory = sorted(({"path": p, "sha256": _digest(d), "size": len(d)} for p, d in contents.items()),
+                       key=lambda row: row["path"])
+    code_rows = [{**row, "path": row["path"][5:]} for row in inventory if row["path"].startswith("code/")]
+    canonical = json.dumps(code_rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    manifest = {"schema": "tfi.release-engineering.v1", "run_id": "seed-run", "supervisor_resident_id": "",
+                "unresolved": [], "inventory": inventory,
+                "database": {"path": "database/distribution.sql", "format": "postgresql-sql",
+                             "sha256": _digest(contents["database/distribution.sql"])},
+                "files": {"projects": "data/projects", "features": "data/features"},
+                "directory_mappings": list(mappings),
+                "code": {"path": "code", "sha256": hashlib.sha256(canonical.encode()).hexdigest()},
+                "installer": {"entrypoint": "code/scripts/tfi_release_install.py"}}
+    (bundle / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return bundle / "manifest.json"
+
+
+CODE_MAPPING = {"placeholder": "${code_root}", "root": "code_root", "path": "."}
+
+
+@pytest.fixture
+def host(monkeypatch):
+    # A short home keeps the default root's PostgreSQL socket path valid.
+    home = Path(tempfile.mkdtemp(prefix="h")).resolve()
+    monkeypatch.setattr(host_instances, "user_home", lambda: home)
+    monkeypatch.setattr(installer, "platform_preflight", lambda manifest: {"ok": True})
+    monkeypatch.setattr(installer, "port_free", lambda port, bind: True)
+    yield home
+    shutil.rmtree(home)
+
+
+def test_engineering_inventory_and_area_layout_are_enforced(tmp_path):
+    path = engineering(tmp_path, mappings=[CODE_MAPPING])
+    manifest, bundle = installer.validate_engineering(path)
+    assert manifest["files"] == {"projects": "data/projects", "features": "data/features"}
+    (bundle / "data/projects/unlisted.txt").write_text("x")
+    with pytest.raises(ValueError, match="inventory"):
+        installer.validate_engineering(path)
+    (bundle / "data/projects/unlisted.txt").unlink()
+    (bundle / "data/features/workbench/app.js").write_text("tampered")
+    with pytest.raises(ValueError, match="checksum"):
+        installer.validate_engineering(path)
+    # Skipping verification avoids reading content but still checks the layout.
+    assert installer.validate_engineering(path, skip_file_verification=True)[0]["run_id"] == "seed-run"
+    for index, (change, error) in enumerate((
+            ({"files": {"share_root": "data/share_root"}}, "area"),
+            ({"files": {"projects": "data/elsewhere"}}, "data/<area>"),
+            ({"directory_mappings": [{"placeholder": "${share_root}", "root": "share_root", "path": "."}]},
+             "placeholder"))):
+        candidate = engineering(tmp_path / str(index))
+        value = json.loads(candidate.read_text())
+        value.update(change)
+        candidate.write_text(json.dumps(value))
+        with pytest.raises(ValueError, match=error):
+            installer.validate_engineering(candidate, skip_file_verification=True)
+
+
+def test_default_root_is_outside_code_and_registered_ports_are_avoided(host, tmp_path):
+    root = installer.instance_root("accept_tmp")
+    assert root == host / ".local/share/tfi/instances/accept_tmp"
+    with pytest.raises(ValueError, match="code directory"):
+        installer.instance_root("x", installer.SOURCE_ROOT.parent / "instance/x")
+    occupied = tmp_path / "occupied"
+    occupied.mkdir()
+    (occupied / "file").write_text("x")
+    with pytest.raises(ValueError, match="empty"):
+        installer.instance_root("x", occupied)
+    other = write_instance(tmp_path / "other")
+    host_instances.register(load(other))
+    ports = installer.allocate_ports({}, "127.0.0.1")
+    assert not set(ports.values()) & host_instances.ports(load(other))
+    with pytest.raises(ValueError, match="another registered instance"):
+        installer.allocate_ports({"web": 28086}, "127.0.0.1")
+    assert installer.service_prefix("Accept_Tmp-01") == "tfi-accept-tmp-01"
+    with pytest.raises(ValueError, match="three"):
+        installer.service_prefix("ab")
+
+
+def test_plan_writes_nothing_and_manifest_has_no_python(host, tmp_path):
+    path = engineering(tmp_path)
+    planned = installer.plan(path, name="accept_tmp", postgres=tmp_path / "pg", skip_file_verification=True)
+    instance = planned["instance"]
+    assert not instance.root.exists() and not host_instances.registry_path().exists()
+    document = instance.document
+    assert document["deployments"] == {"release": {"kind": "release", "code_root": str(installer.SOURCE_ROOT),
+                                                   "web_port": document["network"]["entry_port"]}}
+    assert document["services"] == {"prefix": "tfi-accept-tmp", "components": list(installer.CORE_COMPONENTS)}
+    assert document["dependencies"] == {"postgres": {k: str(tmp_path / "pg" / k) for k in ("bin", "lib", "share")}}
+    assert "python" not in json.dumps(document).lower() and document["seed_version"] == "seed-run"
+    clash = write_instance(tmp_path / "clash")
+    value = json.loads((clash / "instance.json").read_text())
+    value["services"]["prefix"] = "tfi-accept-tmp"
+    (clash / "instance.json").write_text(json.dumps(value))
+    host_instances.register(load(clash))
+    with pytest.raises(ValueError, match="prefix"):
+        installer.plan(path, name="accept_tmp", postgres=tmp_path / "pg", skip_file_verification=True)
+
+
+class FakeControl:
+    def __init__(self):
+        self.calls = []
+
+    def start(self, name):
+        self.calls.append(("start", name))
+
+    def stop(self, name):
+        self.calls.append(("stop", name))
+
+    def status(self, name):
+        return {"active": "inactive", "pid": 0, "load": "not-found"}
+
+
+@pytest.fixture
+def creation(host, tmp_path, monkeypatch):
+    calls = []
+    control = FakeControl()
+    monkeypatch.setattr(installer, "prepare_code", lambda code, **kw: calls.append(("prepare", code, kw)))
+    monkeypatch.setattr(native, "postgres_dependency", lambda directory: None)
+    monkeypatch.setattr(installer, "binary_architectures", lambda path: {"x86_64", "aarch64"})
+    monkeypatch.setattr(installer, "initialize_database", lambda instance: calls.append(("initdb",)))
+    monkeypatch.setattr(installer, "import_database",
+                        lambda instance, sql: calls.append(("import", sql.read_text())))
+    monkeypatch.setattr(installer, "initialize_features",
+                        lambda instance, path, manifest, evidence=None: {"work_dispatched": False})
+    monkeypatch.setattr(instance_services, "install_definitions", lambda instance: calls.append(("define",)))
+    monkeypatch.setattr(instance_services, "controller", lambda instance: control)
+    monkeypatch.setattr(instance_services, "wait_database", lambda instance: None)
+    monkeypatch.setattr(instance_services, "lifecycle",
+                        lambda action, root, **kw: calls.append(("lifecycle", action, kw)) or {"status": action})
+    monkeypatch.setattr(installer, "wait_for_ready",
+                        lambda instance, **kw: {"status": "running", "url": "http://127.0.0.1:1"})
+    return SimpleNamespace(calls=calls, control=control, engineering=engineering(tmp_path, mappings=[CODE_MAPPING]),
+                           postgres=tmp_path / "pg")
+
+
+def test_create_writes_manifest_site_secrets_and_areas_then_registers(creation):
+    result = installer.create(creation.engineering, name="accept_tmp", postgres=creation.postgres,
+                              skip_file_verification=True)
+    instance = host_instances.find("accept_tmp")
+    root = instance.root
+    assert result["status"] == "running" and result["root"] == str(root)
+    assert sorted(p.name for p in root.iterdir()) == ["cache", "data", "database", "instance.json",
+                                                       "runtime", "secrets", "site.json"]
+    assert json.loads((root / "site.json").read_text())["deployment"]["auth"] == {
+        "session_cookie_name": "db_session_tfi-accept-tmp"}
+    url = (root / "secrets/postgres.env").read_text().strip().partition("=")[2]
+    parsed = urlsplit(url)
+    assert parsed.username == installer.DATABASE_ROLE and parsed.path == "/" + installer.DATABASE_NAME
+    assert parse_qs(parsed.query) == {"host": [str(root / "runtime/s")],
+                                      "port": [str(instance.document["network"]["postgres_port"])]}
+    # data/<area>/ content is copied with the code placeholder materialized.
+    assert (instance.area("projects") / "Demo/knowledge_base/plan/a.md").read_text() == \
+        f"plan in {installer.SOURCE_ROOT}\n"
+    assert (instance.area("features") / "workbench/app.js").is_file()
+    assert ("import", f"SELECT '{installer.SOURCE_ROOT}';\n") in creation.calls
+    assert not (root / "runtime/distribution.sql").exists()
+    assert ("start", "tfi-accept-tmp-postgres.service" if installer.os.name != "nt" else "tfi-accept-tmp-postgres") \
+        in creation.control.calls
+    assert ("lifecycle", "start", {"creating": True}) in creation.calls
+    assert instance_services.creation_record(instance) is None
+    assert instance_services.start_blocker(instance) == ""
+
+
+def test_failed_creation_keeps_a_blocking_record_until_retired(creation, monkeypatch):
+    def broken(instance, sql):
+        raise RuntimeError("psql exited 3")
+    monkeypatch.setattr(installer, "import_database", broken)
+    with pytest.raises(RuntimeError, match="psql"):
+        installer.create(creation.engineering, name="accept_tmp", postgres=creation.postgres,
+                         skip_file_verification=True)
+    instance = host_instances.find("accept_tmp")
+    record = instance_services.creation_record(instance)
+    assert record["phase"] == "database" and record["status"] == "failed" and "psql" in record["error"]
+    assert "creation has not completed" in instance_services.start_blocker(instance)
+    assert ("lifecycle", "stop", {}) in creation.calls
+
+
+def test_retire_stops_removes_unregisters_and_keeps_external_areas(creation, tmp_path, monkeypatch):
+    installer.create(creation.engineering, name="accept_tmp", postgres=creation.postgres,
+                     skip_file_verification=True)
+    instance = host_instances.find("accept_tmp")
+    external = tmp_path / "big-disk/papers"
+    external.mkdir(parents=True)
+    document = json.loads((instance.root / "instance.json").read_text())
+    document["areas"] = {"papers": str(external)}
+    (instance.root / "instance.json").write_text(json.dumps(document))
+    removed = []
+    monkeypatch.setattr(instance_services, "remove_definitions", lambda inst: removed.append(inst.name) or ["x"])
+    result = installer.retire(host_instances.find("accept_tmp"))
+    assert result["external_areas"] == [str(external)] and result["external_areas_deleted"] is False
+    assert removed == ["accept_tmp"] and ("lifecycle", "stop", {}) in creation.calls
+    assert not instance.root.exists() and external.is_dir()
+    assert "accept_tmp" not in host_instances.read_registry()
+    with pytest.raises(ValueError, match="registered"):
+        installer.retire(load(write_instance(tmp_path / "unregistered")))
+
+
+def test_ports_change_only_while_stopped_and_follow_into_database_url(host, tmp_path, monkeypatch):
+    root = write_instance(tmp_path / "site")
+    instance = load(root)
+    host_instances.register(instance)
+    installer.write_secret(root / "secrets/postgres.env",
+                           "PORTAL_DATABASE_URL=" + installer.database_url(instance, "tfi", "portal_db") + "\n")
+    running = {"active": "active", "pid": 7}
+    monkeypatch.setattr(instance_services, "status", lambda inst: {"postgres": running})
+    with pytest.raises(RuntimeError, match="Stop the instance"):
+        installer.configure_ports(instance, {"postgres": 25999})
+    monkeypatch.setattr(instance_services, "status", lambda inst: {"postgres": {"active": "inactive", "pid": 0}})
+    result = installer.configure_ports(instance, {"postgres": 25999, "release": 28999})
+    assert result["network"]["postgres_port"] == 25999
+    # A single Release Web is also the entry.
+    assert load(root).document["network"]["entry_port"] == 28999
+    url = urlsplit((root / "secrets/postgres.env").read_text().strip().partition("=")[2])
+    assert parse_qs(url.query)["port"] == ["25999"] and url.path == "/portal_db"
+    other = write_instance(tmp_path / "other")
+    value = json.loads((other / "instance.json").read_text())
+    value.update(name="other", instance_id="other-id")
+    value["services"]["prefix"] = "tfi-other"
+    value["network"].update(postgres_port=26111, nats_port=26112, entry_port=26113)
+    value["deployments"]["release"]["web_port"] = 26113
+    (other / "instance.json").write_text(json.dumps(value))
+    host_instances.register(load(other))
+    with pytest.raises(ValueError, match="port"):
+        installer.configure_ports(load(root), {"nats": 26112})
+
+
+def test_first_admin_keeps_invitation_in_secrets(host, tmp_path, monkeypatch):
+    root = write_instance(tmp_path / "site")
+    commands = []
+
+    def run(command, **kwargs):
+        commands.append((command, kwargs["env"]))
+        return SimpleNamespace(returncode=0, stdout="https://portal/join#invite=secret\n", stderr="")
+    monkeypatch.setattr(installer, "run_utf8_capture", run)
+    monkeypatch.setattr(installer, "runtime_python", lambda code: Path("/venv/bin/python"))
+    monkeypatch.setattr("management_portal.service_runtime.clean_environment",
+                        lambda instance, **kw: {"PORTAL_INSTANCE_ROOT": str(instance.root)})
+    result = installer.first_admin(load(root), "admin")
+    assert "invite=" not in json.dumps(result)
+    assert Path(result["setup_file"]) == root / "secrets" / installer.FIRST_ADMIN_FILE
+    assert "invite=secret" in Path(result["setup_file"]).read_text()
+    assert commands[0][1] == {"PORTAL_INSTANCE_ROOT": str(root)}
+    assert commands[0][0][-2:] == ["--url", "http://127.0.0.1:28086"]
+
+
+def test_health_requires_this_instance_and_release_deployment(tmp_path, monkeypatch):
+    root = write_instance(tmp_path / "site")
+    instance = load(root)
+    monkeypatch.setattr(instance_services, "status",
+                        lambda inst: {c: {"active": "active", "pid": 1} for c in instance_services.components(inst)})
+    payloads = {"/api/health": {"ok": True, "instance": "someone-else", "deployment": "release",
+                                "execution_layer": {"ok": True}, "society_service": {"ok": True}}}
+
+    class Response:
+        def __init__(self, route):
+            self.status, self.route = 200, route
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(payloads.get(self.route, {})).encode()
+    monkeypatch.setattr(installer._LOCAL_HTTP, "open", lambda url, timeout: Response(urlsplit(url).path))
+    (root / "runtime").mkdir(exist_ok=True)
+    (root / "runtime/worker-health.json").write_text(json.dumps(
+        {"ok": True, "instance": "fixture", "updated_at": installer.time.time()}))
+    assert installer.observed_status(instance)["status"] == "unhealthy"
+    payloads["/api/health"]["instance"] = "fixture"
+    assert installer.observed_status(instance)["status"] == "running"
+
+
+def test_cli_reports_failures_as_json_without_traceback_detail(host, capsys):
+    assert installer.main(["list"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"status": "listed", "instances": {}}
+    assert installer.main(["start", "--instance", "missing"]) == 1
+    output = capsys.readouterr()
+    assert json.loads(output.out.splitlines()[-1])["error"] == "Instance is not registered on this host"
+
+
+def test_health_failure_names_unready_layers_and_failed_component_logs(tmp_path, monkeypatch):
+    """A 503 health body and a stopped Worker are reported with the Worker's log tail."""
+    import io
+    from urllib.error import HTTPError
+    root = write_instance(tmp_path / "site")
+    instance = load(root)
+    (root / "runtime").mkdir(exist_ok=True)
+    monkeypatch.setattr(instance_services, "status", lambda inst: {
+        c: {"active": "inactive" if c == "worker" else "active", "pid": 0} for c in instance_services.components(inst)})
+    payload = {"ok": False, "instance": "fixture", "deployment": "release",
+               "execution_layer": {"ok": False}, "society_service": {"ok": True}}
+    responses = [HTTPError("http://x/api/health", 503, "Unavailable", {}, io.BytesIO(json.dumps(payload).encode())),
+                 OSError("not ready")]
+
+    def open_url(url, timeout):
+        raise responses.pop(0)
+    monkeypatch.setattr(installer._LOCAL_HTTP, "open", open_url)
+    (root / "runtime/worker.log").write_text("earlier\n" * 100 + "RuntimeError: fixture startup failure\n")
+    (root / "runtime/web.log").write_text("old-start-marker\n" + "old output\n" * 2000 + "ValueError: web failure\n")
+    result = installer.observed_status(instance)
+    assert result["checks"][0]["payload"] == payload and result["checks"][0]["http_status"] == 503
+    failures = installer.health_failures(result)
+    assert "worker: inactive" in failures
+    assert "/api/health: HTTP 503; 未就绪: execution_layer" in failures
+    error = installer.health_failure(instance, result)
+    assert "RuntimeError: fixture startup failure" in error and "ValueError: web failure" in error
+    assert "old-start-marker" not in error

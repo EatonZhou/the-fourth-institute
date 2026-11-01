@@ -1,4 +1,11 @@
-"""macOS desktop setup using the shared installer and startup controller."""
+"""macOS desktop setup using the shared installer and startup controller.
+
+The immutable app copies its platform (code and dependencies) to a user-owned
+directory, by default ~/Library/TFI. The single desktop instance, ``desktop``,
+is created by the shared installer at its default location outside that
+directory and registered on this host. A newer app updates the platform's code
+in place (the protocol's code update); the instance and its data stay.
+"""
 from __future__ import annotations
 
 import argparse
@@ -11,15 +18,16 @@ import sys
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.tfi_windows_launcher import (
-    DefaultStartup, Launcher, choose_ports, launcher_lock, make_target, unpack_seed,
-    selected_engineering, unpack_engineering,
-)
+from scripts.tfi_windows_launcher import DefaultStartup, Launcher, launcher_lock, stop_all  # noqa: E402
+
+RECEIPT = "macos-package.json"
+# Replaced by a code update; the bundled Python runtime and native archives of a
+# compatible package are identical (checked before anything changes).
+CODE_ENTRIES = ("code", "branding", "dependencies/python-wheels")
 
 
 def default_platform():
-    # Keep the database and application Unix socket paths under sockaddr_un's
-    # limit. Everything is owned by the logged-in user, outside the .app/DMG.
+    # Everything is owned by the logged-in user, outside the .app/DMG.
     return (Path.home() / "Library/TFI").resolve()
 
 
@@ -36,72 +44,137 @@ def welcome_logo(root, frame, bundle):
     return label
 
 
+def read_receipt(root):
+    return json.loads((Path(root) / RECEIPT).read_text(encoding="utf-8"))
+
+
+def changed(bundle, platform):
+    marker = Path(platform) / RECEIPT
+    return marker.is_file() and read_receipt(platform) != read_receipt(bundle)
+
+
+def _collect(source, *, skip=()):
+    directories, files, links = [], [], []
+    for directory, dirs, names in os.walk(source, followlinks=False):
+        for name in [*dirs, *names]:
+            path = Path(directory) / name
+            relative = path.relative_to(source)
+            if relative.as_posix() in skip:
+                continue
+            details = path.lstat()
+            if stat.S_ISLNK(details.st_mode):
+                link = os.readlink(path)
+                if Path(link).is_absolute() or not path.resolve().is_relative_to(source):
+                    raise ValueError("安装包包含越界链接")
+                links.append((relative, link))
+            elif stat.S_ISDIR(details.st_mode):
+                directories.append(relative)
+            elif stat.S_ISREG(details.st_mode):
+                files.append((relative, details.st_size))
+            else:
+                raise ValueError("安装包包含非普通文件")
+    return directories, files, links
+
+
+def _copy(source, staging, entries, meter):
+    directories, files, links = entries
+    for relative in directories:
+        (staging / relative).mkdir()
+    from scripts.tfi_install_progress import copy_stream
+    for relative, _ in files:
+        with (source / relative).open('rb') as stream, (staging / relative).open('wb') as output:
+            copy_stream(stream, output, meter)
+        shutil.copystat(source / relative, staging / relative)
+    for relative, link in links:
+        (staging / relative).symlink_to(link)
+        meter.advance(0)
+    for relative in reversed(directories):
+        shutil.copystat(source / relative, staging / relative)
+
+
 def materialize(bundle, destination, *, progress=None):
-    """An immutable app supplies one recoverable, user-owned platform copy."""
+    """An immutable app supplies one user-owned platform copy."""
     bundle, destination = Path(bundle).resolve(), Path(destination).absolute()
     if destination != destination.resolve():
         raise ValueError("安装目录不能是符号链接")
-    receipt = json.loads((bundle / "macos-package.json").read_text())
-    marker = destination / "macos-package.json"
+    marker = destination / RECEIPT
     if marker.exists():
-        if json.loads(marker.read_text()) != receipt:
-            raise ValueError("此目录已有其他版本，请使用桌面启动器的“升级并保留资料”入口。")
+        if json.loads(marker.read_text()) != read_receipt(bundle):
+            raise ValueError("此目录已有其他版本，请使用桌面启动器的“更新程序”入口。")
         if progress:
             progress("复用已准备的本地运行环境")
         return
     if destination.exists() and any(destination.iterdir()):
         raise ValueError("安装目录包含其他文件；请使用空目录。")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    # Traverse metadata once. Case archives remain in the read-only app and are
-    # consumed directly; neither the unselected case nor its archive is copied.
-    directories, files, links = [], [], []
-    for directory, dirs, names in os.walk(bundle, followlinks=False):
-        for name in [*dirs, *names]:
-            source = Path(directory) / name
-            relative = source.relative_to(bundle)
-            if relative.as_posix() in {"base-engineering.zip", "example-engineering.zip"}:
-                continue
-            details = source.lstat()
-            mode = details.st_mode
-            if stat.S_ISLNK(mode):
-                link = os.readlink(source)
-                if Path(link).is_absolute() or not source.resolve().is_relative_to(bundle):
-                    raise ValueError("安装包包含越界链接")
-                links.append((relative, link))
-            elif stat.S_ISDIR(mode):
-                directories.append(relative)
-            elif stat.S_ISREG(mode):
-                files.append((relative, details.st_size))
-            else:
-                raise ValueError("安装包包含非普通文件")
-    from scripts.tfi_install_progress import FileProgress, copy_stream
-    meter = FileProgress("正在复制本地运行环境", len(files) + len(links), sum(size for _, size in files), progress)
+    # Case archives remain in the read-only app and are consumed directly.
+    entries = _collect(bundle, skip={"base-engineering.zip", "example-engineering.zip"})
+    from scripts.tfi_install_progress import FileProgress
+    meter = FileProgress("正在复制本地运行环境", len(entries[1]) + len(entries[2]),
+                         sum(size for _, size in entries[1]), progress)
     with tempfile.TemporaryDirectory(prefix=".tfi-prepare-", dir=destination.parent) as tmp:
         staging = Path(tmp) / "platform"
         staging.mkdir()
-        for relative in directories:
-            (staging / relative).mkdir()
-        for relative, _ in files:
-            with (bundle / relative).open('rb') as source, (staging / relative).open('wb') as output:
-                copy_stream(source, output, meter)
-            shutil.copystat(bundle / relative, staging / relative)
-        for relative, link in links:
-            (staging / relative).symlink_to(link)
-            meter.advance(0)
-        for relative in reversed(directories):
-            shutil.copystat(bundle / relative, staging / relative)
+        _copy(bundle, staging, entries, meter)
         if destination.exists():
             destination.rmdir()
         staging.rename(destination)
 
 
+def replace_code(bundle, platform, *, progress=lambda message: None):
+    """Code update: stop this platform's instances, then swap in the new code.
+
+    Nothing is snapshotted. The receipt is written last, so an interrupted
+    replacement is simply repeated by the next start; the instance is untouched.
+    Services restart through the installer's update-code on the next start.
+    """
+    bundle, platform = Path(bundle).resolve(), Path(platform).absolute()
+    if platform != platform.resolve() or not platform.is_dir():
+        raise ValueError("更新目录必须是原有的实际目录，不能是符号链接。")
+    old, new = read_receipt(platform), read_receipt(bundle)
+    if any(r.get("schema") != "tfi.macos-package.v1" for r in (old, new)):
+        raise ValueError("安装记录不完整，请使用新的平台目录。")
+    for key in ("target", "python", "bundled_native_dependencies"):
+        if not old.get(key) or old[key] != new.get(key):
+            raise ValueError("此版本的芯片或内置运行环境不同，不能在原目录更新程序；请使用新的平台目录。")
+    if new.get("source_dirty") is not False or new.get("prepared_engineering_validation") != "passed":
+        raise ValueError("新安装包缺少构建验证记录。")
+    progress("正在停止 Portal 以更新程序")
+    stop_all(platform, python=platform / "dependencies/python/bin/python3")
+    from scripts.tfi_install_progress import FileProgress
+    for name in CODE_ENTRIES:
+        source, target = bundle / name, platform / name
+        staging, retired = target.with_name("." + target.name + ".new"), target.with_name("." + target.name + ".old")
+        for path in (staging, retired):
+            if path.is_symlink() or path.is_file():
+                path.unlink()
+            elif path.exists():
+                shutil.rmtree(path)
+        if not source.exists():
+            continue
+        entries = _collect(source)
+        staging.mkdir()
+        _copy(source, staging, entries, FileProgress("正在复制新版程序", len(entries[1]) + len(entries[2]),
+                                                     sum(size for _, size in entries[1]), progress))
+        if target.exists():
+            target.rename(retired)
+        staging.rename(target)
+        if retired.exists():
+            shutil.rmtree(retired)
+    (platform / RECEIPT).write_text(json.dumps(new, indent=2) + "\n", encoding="utf-8")
+
+
 class MacStartup(DefaultStartup):
-    def __init__(self, platform, progress=lambda message: None, *, included=True, bundle=None, upgrade=False):
+    name = "desktop"
+    engineering_parent = ".build/m"
+
+    def __init__(self, platform, progress=lambda message: None, *, included=True, bundle=None,
+                 update=False, instance_root=None):
         super().__init__(platform, progress)
-        self.included = included
+        self.include = included
         self.bundle = bundle
-        self.upgrade = upgrade
-        self.root = self.platform / "instance/desktop"
+        self.update = update
+        self.instance_root = instance_root
         self.log_path = self.platform / ".build/macos/logs/desktop.log"
         if bundle is not None:
             # A failed copy must not create log files in the still-empty target:
@@ -110,87 +183,48 @@ class MacStartup(DefaultStartup):
 
     def run(self):
         if self.bundle is not None:
-            from scripts.tfi_macos_upgrade import DesktopUpgrade, changed, pending
-            if pending(self.platform):
-                DesktopUpgrade(self).recover()
-                raise RuntimeError("已恢复上次升级前的资料。点击重试可重新升级，或使用原版本打开。")
             if changed(self.bundle, self.platform):
-                if not self.upgrade:
-                    raise ValueError("此目录已有旧版本。请在欢迎页选择“升级并保留资料”；命令行启动请加 --upgrade。")
-                return DesktopUpgrade(self).apply(lambda: super(MacStartup, self).run())
-            self.progress("正在准备本地运行环境，首次复制可能需要一些时间")
-            materialize(self.bundle, self.platform, progress=self.progress)
+                if not self.update:
+                    raise ValueError("此目录已有旧版本。请在欢迎页选择“更新程序”；命令行启动请加 --update。")
+                replace_code(self.bundle, self.platform, progress=self.progress)
+            else:
+                self.progress("正在准备本地运行环境，首次复制可能需要一些时间")
+                materialize(self.bundle, self.platform, progress=self.progress)
             self.log_path = self.platform / ".build/macos/logs/desktop.log"
         return super().run()
 
     def command(self, *arguments):
-        return [str(self.platform / "dependencies/python/bin/python3"),
-                str(self.platform / "code/scripts/tfi_release_install.py"), *map(str, arguments)]
+        from scripts.tfi_windows_launcher import command
+        return command(self.platform, *arguments, python=self.platform / "dependencies/python/bin/python3")
 
-    def initialize(self):
-        from scripts.tfi_release_install import write_json
-        bundle = self.platform / ".build/m/engineering/manifest.json"
-        legacy_bundle = self.platform / ".build/example_instance-macos/engineering/manifest.json"
-        target_path = self.platform / ".build/macos/target.json"
+    def included(self):
         options = self.platform / ".build/macos/options.json"
-        state_exists = (self.root / "installation.json").exists()
-        if not bundle.exists() and legacy_bundle.exists():
-            bundle = legacy_bundle
         if options.exists():
-            included = json.loads(options.read_text())["include_examples"]
-        else:
-            if state_exists:
-                raise ValueError("已有实例缺少安装选项，不能重新导入资料。")
-            included = self.included
-            write_json(options, {"include_examples": included})
-        if not state_exists:
-            archive = selected_engineering(Path(self.bundle or self.platform), included)
-            if archive.is_file():
-                bundle = unpack_engineering(self.platform, included=included, progress=self.progress,
-                                            archive=archive, parent=self.platform / '.build/m')
-            elif bundle == legacy_bundle or (self.platform / 'example-seed.zip').is_file():
-                # Original preview packages retain their existing seed contract.
-                bundle = legacy_bundle
-                unpack_seed(self.platform, included=included, receipt_name="macos-package.json")
-                self.execute([self.command()[0], str(self.platform / "prepare_install.py"),
-                              "--platform", "macos", *([] if included else ["--without-examples"])])
-            elif not bundle.is_file():
-                raise ValueError("缺少安装工程压缩包，请从下载的 macOS 应用重新打开。")
-        if not target_path.exists():
-            if state_exists:
-                raise ValueError("已有实例缺少原安装参数，不能覆盖资料。")
-            manifest = json.loads(bundle.read_text())
-            target = make_target(self.platform, "desktop", manifest, ports=choose_ports())
-            target.pop("windows_service_mode")
-            target["python"] = self.command()[0]
-            target["offline_dependencies"] = True
-            receipt_path = self.platform / 'macos-package.json'
-            receipt = json.loads(receipt_path.read_text()) if receipt_path.is_file() else {}
-            if receipt.get('bundled_python_dependencies'):
-                target['bundled_python_dependencies'] = True
-            write_json(target_path, target)
-        self.progress("正在初始化 Portal；使用安装包内置的运行环境")
-        self.execute(self.command("install", "--manifest", bundle, "--target", target_path,
-                                  "--skip-file-verification"))
+            return json.loads(options.read_text())["include_examples"]
+        from management_common.configuration_files import atomic_json
+        atomic_json(options, {"include_examples": self.include})  # Never a partial choice.
+        return self.include
+
+    def offline(self):
+        return True  # The app bundles Python packages and native programs.
+
+    def engineering(self):
+        # Case archives stay in the read-only app; a copied platform has none.
+        from scripts.tfi_windows_launcher import selected_engineering, unpack_engineering
+        included = self.included()
+        archive = selected_engineering(Path(self.bundle or self.platform), included)
+        if not archive.is_file():
+            raise ValueError("缺少安装工程压缩包，请从下载的 macOS 应用重新打开。")
+        return unpack_engineering(self.platform, included=included, progress=self.progress,
+                                  archive=archive, parent=self.platform / self.engineering_parent)
+
+    def create_arguments(self):
+        return ["--root", self.instance_root] if self.instance_root else []
 
 
 def stop(platform, *, unregister=False):
-    from scripts import tfi_release_install as api
-    flow = MacStartup(platform)
-    if not (flow.root / "installation.json").is_file():
-        return
-    flow.execute(flow.command("stop", "--root", flow.root))
-    if unregister:
-        from scripts import tfi_release_platform_macos as adapter
-        target = flow.state()["target"]
-        names = [adapter.unit_name(target, c) for c in api.COMPONENTS]
-        for component, name in zip(api.COMPONENTS, names):
-            path = adapter.unit_path(adapter.unit_directory(), name)
-            if path.exists() and path.read_text() != adapter.unit_text(target, component, api.COMPONENTS):
-                raise ValueError("拒绝删除不属于此实例的启动项")
-        from scripts.tfi_release_provider_services import remove_template
-        remove_template(target, adapter.unit_directory())
-        adapter.remove_services(adapter.unit_directory(), names)
+    """Stop this platform's instances; unregistering also removes their launch agents."""
+    stop_all(platform, unregister=unregister, python=Path(platform) / "dependencies/python/bin/python3")
 
 
 def main():
@@ -199,25 +233,26 @@ def main():
     parser.add_argument("--platform", type=Path, default=default_platform())
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--without-examples", action="store_true")
-    parser.add_argument("--upgrade", action="store_true", help="Update compatible desktop code, retaining local data and a rollback copy")
+    parser.add_argument("--update", action="store_true", help="Replace the platform's code with this app's, keeping the instance")
+    parser.add_argument("--instance-root", type=Path, help="Create the desktop instance here instead of the default location")
     parser.add_argument("--stop", action="store_true")
     parser.add_argument("--unregister", action="store_true", help="Stop services and remove launch agents; keep data")
     args = parser.parse_args()
     if sys.platform != "darwin":
         parser.error("This launcher requires macOS")
-    if args.stop or args.unregister:
-        lock_root = args.platform.parent / ("." + args.platform.name + "-launcher")
-        with launcher_lock(lock_root, system="macos"):
-            stop(args.platform, unregister=args.unregister)
-        return
     # The lock is outside the payload directory, including first-copy time.
     lock_root = args.platform.parent / ("." + args.platform.name + "-launcher")
+    if args.stop or args.unregister:
+        with launcher_lock(lock_root, system="macos"):
+            if (args.platform / RECEIPT).is_file():
+                stop(args.platform, unregister=args.unregister)
+        return
     with launcher_lock(lock_root, system="macos"):
         if args.headless:
             flow = MacStartup(args.platform, print, included=not args.without_examples,
-                              bundle=args.bundle, upgrade=args.upgrade)
+                              bundle=args.bundle, update=args.update, instance_root=args.instance_root)
             flow.run()  # Never print the first-user invitation secret.
-            print(json.dumps({"status": "ready", "root": str(flow.root)}))
+            print(json.dumps({"status": "ready", "instance": flow.name}))
             return
         import tkinter as tk
         from tkinter import ttk, messagebox
@@ -230,26 +265,26 @@ def main():
         ttk.Label(frame, text="与 AI 一起探索、协作、创造知识。", wraplength=450).pack(pady=10)
         ttk.Label(frame, text="macOS 15+ 试用版，基础安装无需联网。", wraplength=450).pack(pady=10)
         included = tk.BooleanVar(value=not args.without_examples)
-        from scripts.tfi_macos_upgrade import changed, pending
-        upgrading = changed(args.bundle, args.platform) or pending(args.platform)
+        updating = changed(args.bundle, args.platform)
         choice = ttk.Checkbutton(frame, text="安装 Lenia 预置案例", variable=included)
         choice.pack(pady=15)
         if (args.platform / ".build/macos/options.json").exists():
             choice.pack_forget()
-        if upgrading:
+        if updating:
             choice.pack_forget()
-            ttk.Label(frame, text="发现已有版本。升级将保留账号和资料，并保留旧目录备份；失败时恢复旧版。",
+            ttk.Label(frame, text="发现已有版本。更新只替换程序，账号和资料保留在原实例中。",
                       wraplength=450).pack(pady=10)
+
         def begin():
             try:
                 # Launcher runs flow.run in its worker thread; never copy a
                 # multi-hundred-MB payload on Tk's event loop.
                 Launcher(root, flow=MacStartup(args.platform, included=included.get(),
-                                              bundle=args.bundle, upgrade=upgrading or args.upgrade))
+                                              bundle=args.bundle, update=updating or args.update))
                 frame.destroy()
             except Exception as exc:
                 messagebox.showerror("启动未完成", str(exc), parent=root)
-        ttk.Button(frame, text="升级并保留资料" if upgrading else "打开研究空间", command=begin).pack(pady=10)
+        ttk.Button(frame, text="更新程序" if updating else "打开研究空间", command=begin).pack(pady=10)
         root.mainloop()
 
 

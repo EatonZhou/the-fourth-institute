@@ -1,19 +1,15 @@
 """Avatars of Users, Residents, Lineages and Projects.
 
 An avatar is one of the 42 ocean sprites or an uploaded PNG of at most 256 px.
-Runtime factories use PostgreSQL for both records and bytes. The file store
-below remains the legacy importer. Image URLs retain their content hashes.
+Records and image bytes are in PostgreSQL (``avatar_database``). Image URLs
+carry their content hashes.
 """
 from __future__ import annotations
 
 import base64
-import hashlib
 import io
-import json
 import logging
-import os
 import re
-import tempfile
 import warnings
 from pathlib import Path
 from typing import Any
@@ -22,7 +18,6 @@ from urllib.parse import urlencode
 from PIL import Image, UnidentifiedImageError
 
 from management_common.format_tags import schema_matches
-from management_portal.shared_state import exclusive_file_lock
 
 SPRITE_RARITIES = (
     "R", "SR", "SR", "SSR", "R", "R", "R", "R", "R",
@@ -78,29 +73,19 @@ def normalized_image(encoded: Any) -> bytes:
         raise ValueError("Invalid avatar image") from exc
 
 
-def avatar_root(kind: str) -> Path:
-    """Use the explicit deployment path or canonical root, without moving data."""
-    configured = os.environ.get(f"PORTAL_{kind.upper()}_AVATAR_ROOT")
-    if configured is not None:
-        return Path(configured)
-    return Path.home() / ".tfi" / "portal" / f"{kind}_avatars"
+class AvatarSubjects:
+    """How one subject kind is named: its validation, identity and image address.
 
-
-class AvatarStore:
-    """One subject kind's avatar records.
-
-    Subclasses say how a subject names its files (``stem``), the value its
-    record is bound to (``identity``) and its image address (``address``).
+    Records and image bytes live in PostgreSQL (``avatar_database``); this class
+    only knows the subjects. ``schema`` and ``identity_field`` name the record
+    format a database row is presented in.
     """
 
     schema = ""
     identity_field = ""
 
-    def __init__(self, root: Path | str):
-        self.root = Path(root)
-        self._cache: dict[str, tuple[tuple[int, int, int], dict[str, Any]]] = {}
-
-    def stem(self, subject: str) -> str:
+    def check(self, subject: str) -> str:
+        """Validate the subject, raising ValueError (or PermissionError for Users)."""
         raise NotImplementedError
 
     def identity(self, subject: str) -> str:
@@ -109,33 +94,8 @@ class AvatarStore:
     def address(self, subject: str) -> dict[str, str]:
         raise NotImplementedError
 
-    def _path(self, subject: str) -> Path:
-        return self.root / (self.stem(subject) + ".json")
-
-    def _image_path(self, subject: str, version: str) -> Path:
-        return self.root / f"{self.stem(subject)}-{version}.png"
-
-    def read(self, subject: str) -> dict[str, Any] | None:
-        """The subject's saved avatar, or None when it has none."""
-
-        path = self._path(subject)
-        try:
-            status = path.stat()
-        except FileNotFoundError:
-            return None
-        # Records are replaced, never edited in place, so this tells a change
-        # made by any Portal process apart without reading the file again.
-        signature = (status.st_ino, status.st_mtime_ns, status.st_size)
-        cached = self._cache.get(path.name)
-        if cached is not None and cached[0] == signature:
-            return dict(cached[1])
-        avatar = self._avatar(subject, json.loads(path.read_text(encoding="utf-8")))
-        if len(self._cache) >= 4096:
-            self._cache.clear()
-        self._cache[path.name] = (signature, avatar)
-        return dict(avatar)
-
-    def _avatar(self, subject: str, record: Any) -> dict[str, Any]:
+    def avatar(self, subject: str, record: Any) -> dict[str, Any]:
+        """The avatar a stored record stands for, with its image URL."""
         if not isinstance(record, dict) or not schema_matches(record.get("schema"), self.schema) \
                 or record.get(self.identity_field) != self.identity(subject):
             raise ValueError("Invalid avatar record")
@@ -147,85 +107,6 @@ class AvatarStore:
             raise ValueError("Invalid avatar version")
         query = urlencode({**self.address(subject), "v": version})
         return {"kind": "upload", "version": version, "url": "/api/account/avatar/image?" + query}
-
-    def _write(self, path: Path, content: bytes) -> None:
-        descriptor, temporary = tempfile.mkstemp(dir=self.root, prefix=".avatar-")
-        try:
-            with os.fdopen(descriptor, "wb") as stream:
-                stream.write(content)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary, path)
-        finally:
-            if os.path.exists(temporary):
-                os.unlink(temporary)
-
-    def _prepare_root(self) -> None:
-        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        os.chmod(self.root, 0o700)
-
-    def _save(self, subject: str, avatar: dict[str, Any], content: bytes | None = None) -> None:
-        """Write a record under the subject's lock; images of other versions go."""
-
-        path = self._path(subject)
-        record = {"schema": self.schema, self.identity_field: self.identity(subject), **avatar}
-        if content is not None:
-            self._write(self._image_path(subject, avatar["version"]), content)
-        self._write(path, json.dumps(record, ensure_ascii=False).encode("utf-8"))
-        for image in self.root.glob(self.stem(subject) + "-*.png"):
-            if image.name != f"{self.stem(subject)}-{avatar.get('version')}.png":
-                image.unlink(missing_ok=True)
-
-    def update(self, subject: str, payload: Any) -> dict[str, Any]:
-        path = self._path(subject)
-        if not isinstance(payload, dict):
-            raise ValueError("Avatar payload must be an object")
-        if payload.get("kind") == "sprite" and set(payload) == {"kind", "sprite_index"}:
-            avatar = sprite(payload["sprite_index"])
-            content = None
-        elif payload.get("kind") == "upload" and set(payload) == {"kind", "data_base64"}:
-            content = normalized_image(payload["data_base64"])
-            avatar = {"kind": "upload", "version": hashlib.sha256(content).hexdigest()}
-        else:
-            raise ValueError("Specify only a sprite index or an uploaded image")
-        self._prepare_root()
-        with exclusive_file_lock(path.with_suffix(".lock")):
-            self._save(subject, avatar, content)
-        return self.read(subject)
-
-    def delete(self, subject: str) -> bool:
-        path = self._path(subject)
-        if not self.root.exists():
-            return False
-        removed = False
-        with exclusive_file_lock(path.with_suffix(".lock")):
-            for candidate in [path, *self.root.glob(self.stem(subject) + "-*.png")]:
-                try:
-                    candidate.unlink()
-                    removed = True
-                except FileNotFoundError:
-                    continue
-        return removed
-
-    def move(self, subject: str, target: str) -> bool:
-        """Give the subject's avatar to ``target`` (a renamed subject)."""
-
-        avatar = self.read(subject)
-        if avatar is None:
-            return False
-        content = self._image_path(subject, avatar["version"]).read_bytes() if avatar["kind"] == "upload" else None
-        saved = {key: avatar[key] for key in ("kind", "sprite_index", "sprite_rarity", "version") if key in avatar}
-        self._prepare_root()
-        with exclusive_file_lock(self._path(target).with_suffix(".lock")):
-            self._save(target, saved, content)
-        self.delete(subject)
-        return True
-
-    def image(self, subject: str, version: str) -> bytes:
-        avatar = self.read(subject)
-        if not avatar or avatar["kind"] != "upload" or avatar["version"] != version:
-            raise FileNotFoundError("Avatar version is not current")
-        return self._image_path(subject, version).read_bytes()
 
 
 SCOPE_SCHEMA = "tfi.scope-avatar.v1"
@@ -247,7 +128,7 @@ def scope_subject(kind: str, object_id: str) -> str:
     return f"{kind}:{object_id}"
 
 
-class ScopeAvatarStore(AvatarStore):
+class ScopeAvatarSubjects(AvatarSubjects):
     """Lineage and Project avatars; without one the Menu shows the title's first letter."""
 
     schema = SCOPE_SCHEMA
@@ -257,8 +138,8 @@ class ScopeAvatarStore(AvatarStore):
         kind, _, object_id = str(subject).partition(":")
         return scope_subject(kind, object_id)
 
-    def stem(self, subject: str) -> str:
-        return hashlib.sha256(self.identity(subject).encode("utf-8")).hexdigest()
+    def check(self, subject: str) -> str:
+        return self.identity(subject)
 
     def address(self, subject: str) -> dict[str, str]:
         kind, _, object_id = self.identity(subject).partition(":")
@@ -267,7 +148,7 @@ class ScopeAvatarStore(AvatarStore):
 
 def scope_avatar_store():
     from management_portal.avatar_database import DatabaseAvatarStore
-    return DatabaseAvatarStore(ScopeAvatarStore(avatar_root("scope")), "scope")
+    return DatabaseAvatarStore(ScopeAvatarSubjects(), "scope")
 
 
 def get_scope_avatar(kind: str, object_id: str) -> dict[str, Any] | None:
@@ -278,7 +159,7 @@ def get_scope_avatar(kind: str, object_id: str) -> dict[str, Any] | None:
         return None
 
 
-def change_avatar(store: AvatarStore, subject: str, value: Any, caller: str) -> dict[str, Any] | None:
+def change_avatar(store, subject: str, value: Any, caller: str) -> dict[str, Any] | None:
     """Apply an ISA ``avatar`` change and return the saved avatar.
 
     ``value`` is ``{"sprite_index": n}``, ``{"upload_id": id}`` of a finished

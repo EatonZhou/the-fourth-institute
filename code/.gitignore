@@ -22,7 +22,6 @@ blob-report/
 /scripts/.tmp_*.py
 
 # Portal instance data is never a source or publication input
-/portal_instances/
 /portal_data/
 /release-manifest.json
 
@@ -33,4 +32,3 @@ management_portal/dsh_runtime/node_modules/
 /tests/cases/case_ids.json.lock
 /tests/cases/live_cases.json.lock
 /tests/cases/tau_cases.json.lock
-/config/site.json

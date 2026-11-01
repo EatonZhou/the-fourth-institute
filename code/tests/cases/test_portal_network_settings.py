@@ -3,6 +3,7 @@
 Portal access and proxy settings use isolated configuration files.
 """
 import importlib
+import json
 from pathlib import Path
 import socket
 import subprocess
@@ -16,10 +17,16 @@ def network(tmp_path, monkeypatch):
     module = importlib.import_module("management_common.portal_network")
     for key in module.PROXY_KEYS:
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setenv("PORTAL_NETWORK_CONFIG", str(tmp_path / "network.env"))
-    legacy = tmp_path / "legacy.env"
-    legacy.write_text('HTTPS_PROXY="http://legacy.invalid:3128"\nNO_PROXY="example.invalid"\n')
-    monkeypatch.setenv("PORTAL_PROVIDER_EGRESS_ENV_FILE", str(legacy))
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / 'instance')
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
+    private = root / 'secrets/host'
+    private.mkdir(parents=True)
+    (private / 'provider-egress.env').write_text('HTTPS_PROXY="http://host-egress.invalid:3128"\nNO_PROXY="example.invalid"\n')
+    document = json.loads((root / 'instance.json').read_text())
+    document['network']['entry_port'] = 18084
+    document['deployments']['release']['web_port'] = 18084
+    (root / 'instance.json').write_text(json.dumps(document))
     return module
 
 
@@ -36,36 +43,25 @@ def configure_proxy(network, *, http="", https="", all="", no_proxy=""):
               **{"PORTAL_NETWORK_" + key: value for key, value in fields.items()})
 
 
-def test_new_install_is_local_and_legacy_networks_are_kept_until_a_mode_is_set(network):
-    path = network.config_path()
+def configure_listener(network, *, bind='127.0.0.1', port=18084):
+    path = network.load().root / 'instance.json'
+    document = json.loads(path.read_text())
+    document['network'].update(bind=bind, entry_port=port)
+    document['deployments']['release']['web_port'] = port
+    path.write_text(json.dumps(document))
+
+
+def test_selected_instance_is_local_and_host_egress_is_used(network):
+    assert not network.config_path().exists()
     state = network.read_settings()
-    assert not path.exists()
-    assert state["access"]["mode"] == "local"
-    assert state["access"]["port"] == 18084
-    assert state["access"]["urls"] == ["http://127.0.0.1:18084"]
-    assert state["proxy"]["https"] == "http://legacy.invalid:3128"
-    assert state["proxy_source"] == "environment"
-    network.initialize_allowed_networks(["10.12.3.4/24", "2001:db8::/32"])
-    original = path.read_bytes()
-    assert path.stat().st_mode & 0o777 == 0o600
-    assert b"PROXY" not in original
-    assert network.read_settings()["access"]["mode"] == "remote"
-    assert network.read_settings()["access"]["legacy_restriction"]
-    assert network.allowed_networks() == ["10.12.3.0/24", "2001:db8::/32", "127.0.0.0/8", "::1/128"]
-    network.initialize_allowed_networks(["0.0.0.0/0"])
-    assert path.read_bytes() == original
-    configure(network, PORTAL_ACCESS_MODE="local", PORTAL_PORT="18084")
-    local = network.read_settings()
-    assert local["access"]["mode"] == "local" and not local["access"]["legacy_restriction"]
-    assert network.allowed_networks() == list(network.LOOPBACK_NETWORKS)
-    configure(network, PORTAL_ACCESS_MODE="remote", PORTAL_PORT="18084")
-    assert network.read_settings()["access"]["mode"] == "remote"
-    assert set(network.allowed_networks()) == {"0.0.0.0/0", "::/0"}
+    assert state['access'] == {'mode': 'local', 'port': 18084, 'urls': ['http://127.0.0.1:18084']}
+    assert network.inherited_proxy_environment()['HTTPS_PROXY'] == 'http://host-egress.invalid:3128'
+    assert set(network.allowed_networks()) == set(network.LOOPBACK_NETWORKS)
 
 
-@pytest.mark.parametrize("entries", [{"PORTAL_ACCESS_MODE": "other"}, {"PORTAL_PORT": "80"}, {"PORTAL_PORT": "65536"}])
-def test_invalid_saved_access_is_an_error(network, entries):
-    configure(network, **entries)
+@pytest.mark.parametrize('entries', [{'bind': 'invalid'}, {'port': 1}, {'port': 70000}])
+def test_invalid_manifest_network_is_an_error(network, entries):
+    configure_listener(network, **entries)
     with pytest.raises(ValueError):
         network.read_settings()
 
@@ -84,39 +80,34 @@ def test_saved_proxy_is_read_back_with_its_source(network):
     assert env["HTTP_PROXY"] == env["ALL_PROXY"] == ""
 
 
-def test_router_applies_access_mode_and_invalid_policy_fails_closed(network):
+def test_router_applies_manifest_policy_and_invalid_policy_fails_closed(network):
     from management_portal.portal_deployment_router import PortalRouterServer
-    network.initialize_allowed_networks(["10.0.0.0/8"])
-    server = PortalRouterServer(("127.0.0.1", 0), None, {}, [], 1, network_settings_path=network.config_path())
+    configure_listener(network, bind='0.0.0.0')
+    network.initialize_allowed_networks(['10.0.0.0/8'])
+    server = PortalRouterServer(('127.0.0.1', 0), None, {}, [], 1, instance_root=network.load().root)
     try:
-        assert server.verify_request(None, ("10.1.2.3", 123))
-        assert not server.verify_request(None, ("192.168.1.1", 123))
-        configure(network, PORTAL_ACCESS_MODE="remote", PORTAL_PORT="18084")
-        assert server.verify_request(None, ("192.168.1.1", 123))
-        configure(network, PORTAL_ACCESS_MODE="local", PORTAL_PORT="18084")
-        assert not server.verify_request(None, ("192.168.1.1", 123))
-        assert server.verify_request(None, ("127.0.0.1", 123))
-        network.config_path().write_text('PORTAL_ACCESS_MODE="bad"\n')
-        assert not server.verify_request(None, ("192.168.1.1", 123))
-        assert server.verify_request(None, ("127.0.0.1", 123))
+        assert server.verify_request(None, ('10.1.2.3', 123))
+        assert not server.verify_request(None, ('192.168.1.1', 123))
+        network.initialize_allowed_networks(['0.0.0.0/0'])
+        assert server.verify_request(None, ('192.168.1.1', 123))
+        configure_listener(network, bind='127.0.0.1')
+        assert not server.verify_request(None, ('192.168.1.1', 123))
+        assert server.verify_request(None, ('127.0.0.1', 123))
+        (network.load().root / 'instance.json').write_text('{')
+        assert not server.verify_request(None, ('192.168.1.1', 123))
+        assert server.verify_request(None, ('127.0.0.1', 123))
     finally:
         server.server_close()
 
 
-def test_router_listener_uses_saved_mode_and_port_over_old_unit_arguments(network):
+def test_router_listener_uses_manifest_port_and_bind(network):
     from management_portal.portal_deployment_router import _listener_settings
-    old_unit = SimpleNamespace(bind=["0.0.0.0"], port=18084, allow_network=["10.0.0.0/8"])
-    binds, port, networks = _listener_settings(old_unit)
-    assert binds == ["0.0.0.0"] and port == 18084
-    assert any(str(item) == "10.0.0.0/8" for item in networks)
-    configure(network, PORTAL_ACCESS_MODE="local", PORTAL_PORT="19084")
-    binds, port, networks = _listener_settings(old_unit)
-    assert binds == ["127.0.0.1"] and port == 19084
-    assert {str(item) for item in networks} == set(network.LOOPBACK_NETWORKS)
-    configure(network, PORTAL_ACCESS_MODE="remote", PORTAL_PORT="19084")
-    binds, port, networks = _listener_settings(old_unit)
-    assert binds == ["0.0.0.0"] and port == 19084
-    assert {str(item) for item in networks} == {"0.0.0.0/0", "::/0"}
+    binds, port, networks = _listener_settings()
+    assert binds == ['127.0.0.1'] and port == 18084
+    configure_listener(network, bind='0.0.0.0', port=19084)
+    binds, port, networks = _listener_settings()
+    assert binds == ['0.0.0.0'] and port == 19084
+    assert {'0.0.0.0/0', '::/0'} <= {str(item) for item in networks}
 
 
 def test_admin_http_shows_network_settings_to_administrators_only(network):
@@ -139,27 +130,17 @@ def test_changed_port_is_used_by_runtime_registry(network, monkeypatch):
     with socket.socket() as free:
         free.bind(("127.0.0.1", 0))
         port = free.getsockname()[1]
-    configure(network, PORTAL_ACCESS_MODE="local", PORTAL_PORT=str(port))
+    configure_listener(network, port=port)
     assert site_registry.get_runtime_config()["portal"]["port"] == port
     assert all(item["entry_port"] == port for item in site_registry.get_module_registry())
 
-
-def test_unit_environment_file_is_last_and_optional(network, tmp_path, monkeypatch):
-    from scripts import portal_instance_storage as storage
-    monkeypatch.setattr(storage, "site_environment", lambda deployment=None: {"PORTAL_NETWORK_CONFIG": str(network.config_path())})
-    source = tmp_path / "source.service"
-    source.write_text('[Service]\nEnvironmentFile=/legacy.env\nExecStart=/bin/true\n[Install]\nWantedBy=default.target\n')
-    rendered = storage.render_unit(source)
-    directive = "EnvironmentFile=-" + str(network.config_path())
-    assert rendered.index("EnvironmentFile=/legacy.env") < rendered.index(directive) < rendered.index("[Install]")
-    assert not network.config_path().exists()
 
 
 def test_native_and_login_use_explicit_proxy_or_direct_without_leaking_credentials(network, monkeypatch, tmp_path):
     from management_portal.execution import account_login
     monkeypatch.setattr(account_login, "account_home", lambda *a: tmp_path / "account")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "do-not-inherit")
-    assert account_login.login_environment("codex", "test")["HTTPS_PROXY"] == "http://legacy.invalid:3128"
+    assert account_login.login_environment("codex", "test")["HTTPS_PROXY"] == "http://host-egress.invalid:3128"
     configure_proxy(network, all="http://new.invalid:8080")
     env = account_login.login_environment("codex", "test")
     assert env["ALL_PROXY"] == "http://new.invalid:8080"
@@ -197,6 +178,3 @@ def test_management_page_shows_network_settings_read_only():
         capture_output=True, text=True, timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

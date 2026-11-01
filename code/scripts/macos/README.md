@@ -15,13 +15,11 @@
 "/Applications/The Fourth Institute.app/Contents/MacOS/TheFourthInstitute" --platform "$HOME/Library/TFI-trial-20261022"
 ```
 
-兼容升级实现已经接入源码，经过后续原生构建验证的包会在发现旧目录时显示
-“升级并保留资料”。相同芯片、内置运行环境与 Python 依赖的应用更新保留原账号、
-项目、数据库和案例选择；无需重新授权，也不导入新包的 Lenia 案例。
-升级前关闭任务并等待队列完成。启动器停止本实例服务、显示复制进度、保留旧目录备份，
-然后切换新版；失败时恢复旧版，失败现场另存。运行环境不兼容时继续使用独立测试目录。
-命令行的对应操作为 `--upgrade`，旧包不支持此参数。私有备份和升级记录在
-`~/Library/.TFI-launcher/`；它们包含账号及资料，勿上传或作为普通缓存清理。
+之后的新版应用在发现旧版本时显示“更新程序”：只替换 `~/Library/TFI/` 中的程序，
+实例的账号、项目、数据库和案例选择保留；无需重新授权，也不导入新包的 Lenia 案例。
+更新先停止实例服务，换入新代码，下次启动时准备依赖、刷新启动项并重启，数据库由服务
+启动时自己更新。芯片或内置运行环境不同时需要新的平台目录。命令行的对应操作为 `--update`。
+需要退路时，更新前用备份软件备份实例。
 
 完整基础安装包内置 Python 3.12、核心 Python 包及全部间接依赖、PostgreSQL、NATS、Node.js，
 准备基础平台无需联网，也不依赖电脑已有的 Python 或 Homebrew。两种芯片各有固定版本和
@@ -30,9 +28,9 @@
 连接 AI Provider、下载其运行工具及使用在线模型
 需要网络。TeX、浏览器自动化和测试工具由用户按需安装；缺失不阻止基础平台启动。
 
-应用将运行代码与数据放在 `~/Library/TFI/`，不会写入只读 DMG 或应用包。
-实例位于 `instance/desktop/`，数据库与账号保存在该实例；日志位于
-`instance/desktop/runtime/`，首次启动日志位于 `.build/macos/logs/desktop.log`。
+应用将运行代码与依赖放在 `~/Library/TFI/`，不会写入只读 DMG 或应用包。
+实例 `desktop` 位于 `~/Library/Application Support/TFI/instances/desktop/`，数据库与账号登记
+保存在该实例；日志位于实例的 `runtime/`，首次启动日志位于 `~/Library/TFI/.build/macos/logs/desktop.log`。
 launchd 用户任务由本机登录用户管理，无需管理员授权。浏览器打开后退出启动窗口，
 后台服务继续运行；以后打开应用会复用原实例，不重新导入数据。
 
@@ -43,8 +41,14 @@ launchd 用户任务由本机登录用户管理，无需管理员授权。浏览
   "$HOME/Library/TFI/code/scripts/tfi_macos_launcher.py" --unregister
 ```
 
-然后可移除 Applications 中的应用。`~/Library/TFI/` 中的资料仍保留，需删除时先自行备份。
-不要在运行时移动该目录。过长的用户主目录会触发 Unix Socket 路径限制，安装器会明确报告。
+然后可移除 Applications 中的应用。实例资料仍保留，需删除时先自行备份，再用安装器退役：
+
+```sh
+"$HOME/Library/TFI/dependencies/python/bin/python3" \
+  "$HOME/Library/TFI/code/scripts/tfi_release_install.py" retire --instance desktop
+```
+
+不要在运行时移动这些目录。过长的用户主目录会触发 Unix Socket 路径限制，安装器会明确报告。
 
 试用包使用 ad-hoc 完整性签名，尚无 Developer ID 签名和 Apple 公证。
 macOS 可能阻止首次打开；核对下载来源与
@@ -71,8 +75,6 @@ ad-hoc 试用包的 `spctl` 评估可能拒绝执行；不将完整性校验通�
 ```sh
 # Apple Silicon 用 arm64，Intel 用 x86_64。
 python3 -m pip install --require-hashes --only-binary=:all: -r code/scripts/macos/requirements-core-arm64.lock
-npm install --ignore-scripts --prefix /tmp/tfi-codex-check @openai/codex@0.163.0
-export TFI_TEST_CODEX_BINARY=/tmp/tfi-codex-check/node_modules/.bin/codex
 python3 code/scripts/macos/build.py
 ```
 

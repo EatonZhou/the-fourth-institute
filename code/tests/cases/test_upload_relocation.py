@@ -26,7 +26,7 @@ class UploadRelocationTests(unittest.TestCase):
         self.upload_id = "upload_0123456789abcdef"
         self.directory = self.old / self.upload_id
         self.directory.mkdir(parents=True)
-        self.environment = patch.dict(os.environ, PORTAL_UPLOAD_ROOT=str(self.new))
+        self.environment = patch("management_portal.resources.isa.upload_root", return_value=self.new)
         self.environment.start()
         self.addCleanup(self.environment.stop)
 

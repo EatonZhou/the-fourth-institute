@@ -8,13 +8,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 from management_common import portal_network
-from management_common.portal_paths import resolve_directory
-from management_common.site_config import read_site_config
 from management_common.product_environment import mirror_product_env, read_product_env
 
 # What a Resident's local agent process takes from the Worker's environment.
 PROCESS_ENVIRONMENT_KEYS = frozenset({
-    "PATH", "HOME", "LANG", "LC_ALL", "USER", "LOGNAME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
+    "PORTAL_INSTANCE_ROOT", "PATH", "HOME", "LANG", "LC_ALL", "USER", "LOGNAME", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
     # Windows native bridges need the same user profile as the parent for
     # authenticated local IPC. These are directories, not provider credentials.
     "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "LOCALAPPDATA", "APPDATA",
@@ -34,37 +32,7 @@ def may_inherit_portal_database(request: Any) -> bool:
     )
 
 
-def portal_database_url() -> str:
-    url = str(os.getenv("PORTAL_DATABASE_URL") or "").strip()
-    if not url:
-        if "PORTAL_POSTGRES_ENV_FILE" in os.environ:
-            env_file = resolve_directory(os.environ["PORTAL_POSTGRES_ENV_FILE"])
-        else:
-            deployment = read_site_config().get("deployment", {})
-            if not isinstance(deployment, dict):
-                raise ValueError("deployment must be an object")
-            settings = deployment.get("native_shell", {})
-            if not isinstance(settings, dict):
-                raise ValueError("deployment.native_shell must be an object")
-            if "database_env_file" in settings:
-                env_file = resolve_directory(settings["database_env_file"])
-            else:
-                env_file = Path.home() / ".config" / "tfi" / "portal-postgres.env"
-        try:
-            lines = env_file.read_text(encoding="utf-8").splitlines()
-        except OSError as exc:
-            raise RuntimeError("Portal PostgreSQL environment is unavailable") from exc
-        for raw in lines:
-            line = raw.strip()
-            if line.startswith("#") or not line:
-                continue
-            key, separator, value = line.partition("=")
-            if separator and key.strip() == "PORTAL_DATABASE_URL":
-                url = value.strip().strip('"\'')
-                break
-    if not url:
-        raise RuntimeError("PORTAL_DATABASE_URL is required")
-    return url
+from management_common.portal_database import portal_database_url
 
 
 def portal_database_environment(enabled: bool) -> dict[str, str]:

@@ -55,6 +55,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import lineage_aggregate
 from management_portal.society_service import project_folders
+from tests.cases.instance_test_support import lineage_folders
 
 @pytest.fixture()
 def future_creation_store(
@@ -64,12 +65,10 @@ def future_creation_store(
     lineage_root = tmp_path / "portal_lineages"
     lineage_root.mkdir()
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", lineage_root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", lineage_root / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(lineage_root / "lineages"))
+    lineage_folders(monkeypatch, lineage_root / "lineages", projects=lineage_root / "projects")
     # Deleted Residents' quota overrides are forgotten in the Execution store.
     monkeypatch.setattr(execution_port, "forget_binding_quota_overrides", lambda binding_ids: {"removed": 0})
     install_resource_boundary(monkeypatch, synthetic_residents=False)
-    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     # A Resident created in a Project defaults to the Project directory as its workspace.
     project_root = tmp_path / "project_test"
     project_root.mkdir(exist_ok=True)
@@ -784,19 +783,17 @@ def test_lineage_project_move_reprojects_resident_and_workspace_resources(
         },
         "sample_admin",
     )
-    project_folder = (
-        project_root / "knowledge_base" / "agents" / lineage_id
-    )
+    project_folder = project_root / "agents" / lineage_id
     projected = resident_catalog.get_catalog().get(resident_id)
-    owned_workspace = canonical / "residents" / resident_id / "workspace"
+    owned_workspace = project_folder / "residents" / resident_id / "workspace"
 
     assert moved["project_id"] == "OSForAgent"
-    assert canonical.is_symlink()
-    assert canonical.resolve() == project_folder.resolve()
+    assert not canonical.exists() and not canonical.is_symlink()
+    assert lineage_state._lineage_dir(lineage_id) == project_folder
     assert "kind" not in projected and "lineage_kind" not in projected
     assert projected["project_id"] == "OSForAgent"
     assert projected["lineage_project_id"] == "OSForAgent"
-    assert Path(projected["workspace_path"]) == canonical.resolve()
+    assert Path(projected["workspace_path"]) == project_folder
     assert Path(projected["default_cwd"]) == owned_workspace.resolve()
     assert Path(projected["owned_workspace"]["path"]) == owned_workspace.resolve()
     assert projected["owned_workspace_id"] == stored["owned_workspace_id"]
@@ -822,13 +819,13 @@ def test_lineage_project_move_reprojects_resident_and_workspace_resources(
         "sample_admin",
     )
     remapped_record = resident_catalog.get_catalog().get(resident_id)
-    second_project_folder = (
-        second_project_root / "knowledge_base" / "agents" / lineage_id
-    )
+    second_project_folder = second_project_root / "agents" / lineage_id
+    owned_workspace = second_project_folder / "residents" / resident_id / "workspace"
 
     assert remapped["project_id"] == "RoboLab"
-    assert canonical.resolve() == second_project_folder.resolve()
-    assert Path(remapped_record["workspace_path"]) == canonical.resolve()
+    assert not project_folder.exists() and not project_folder.is_symlink()
+    assert lineage_state._lineage_dir(lineage_id) == second_project_folder
+    assert Path(remapped_record["workspace_path"]) == second_project_folder
     assert Path(remapped_record["default_cwd"]) == owned_workspace.resolve()
     assert Path(remapped_record["owned_workspace"]["path"]) == owned_workspace.resolve()
     assert remapped_record["owned_workspace_id"] == stored["owned_workspace_id"]

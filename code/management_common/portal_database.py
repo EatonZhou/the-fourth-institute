@@ -14,7 +14,14 @@ def portal_database_url() -> str:
 
     dsn = str(os.getenv("PORTAL_DATABASE_URL") or "").strip()
     if not dsn:
-        raise RuntimeError("Portal storage requires PORTAL_DATABASE_URL")
+        from .instance_manifest import load
+        from .secret_environment import secret_environment
+        try:
+            dsn = secret_environment(load(), "postgres.env").get("PORTAL_DATABASE_URL", "")
+        except FileNotFoundError:
+            raise RuntimeError("Instance secrets/postgres.env requires its database endpoint") from None
+        if not dsn:
+            raise RuntimeError("Instance secrets/postgres.env requires its database endpoint")
     return dsn
 
 

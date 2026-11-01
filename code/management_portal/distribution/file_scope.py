@@ -2,6 +2,7 @@
 from pathlib import Path
 import stat
 
+from .layout import target_reference
 from .sanitize import private_path
 from .skill_scope import SkillScope
 
@@ -126,10 +127,7 @@ def external_path_mappings(files, policy=None):
             source = Path(item['source']).absolute()
             if link != source and not link.is_relative_to(source):
                 continue
-            target = Path(item['target']) / link.relative_to(source)
-            if len(target.parts) < 3 or target.parts[0] != 'data' or '..' in target.parts:
-                raise ValueError('External file mapping must stay inside a declared data root')
-            replacement = '${' + target.parts[1] + '}/' + Path(*target.parts[2:]).as_posix()
+            replacement = target_reference((Path(item['target']) / link.relative_to(source)).as_posix())
             candidates.append((-len(source.parts), replacement))
         if not candidates:
             raise ValueError('External link has no selected destination')

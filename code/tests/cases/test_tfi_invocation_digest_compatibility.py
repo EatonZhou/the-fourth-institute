@@ -81,6 +81,3 @@ def test_diagnostics_rejects_changed_identity_manifest_or_digest(runtime, monkey
     with pytest.raises(ValueError, match="batch identity"):
         diagnostics._validate_plan(changed, identity)
     assert saved_rows() == before
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

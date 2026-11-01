@@ -203,12 +203,12 @@ def test_telepus_contacts_are_the_rows_the_telegram_router_reads(monkeypatch):
     :importance: P1
     """
     from management_common.portal_database import portal_database
-    from management_portal.society_service.lineage_storage import canonical_lineage_folder
+    from management_portal.society_service.lineage_locations import lineage_folder
 
     # The router authorizes each message from telegram_contacts in its own
     # schema (TELEPUS_DATABASE_SCHEMA=telepus); the former contact file in the
     # Telepus Lineage Folder is neither read nor written.
-    retired = canonical_lineage_folder("lineage_c625a4bee56b") / "state" / "telegram" / "user_actors.json"
+    retired = lineage_folder("lineage_c625a4bee56b") / "state" / "telegram" / "user_actors.json"
     retired.parent.mkdir(parents=True, exist_ok=True)
     retired.write_text(json.dumps({"999999": {"name": "mallory", "portal_actor": "mallory"}}), encoding="utf-8")
     before = retired.read_bytes()

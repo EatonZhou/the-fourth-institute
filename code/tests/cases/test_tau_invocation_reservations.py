@@ -5,6 +5,7 @@ import pytest
 
 from management_portal.test_framework.records import RunRecords
 from management_portal.test_framework.tau_campaign import TauCampaignExecutor
+from tests.cases.instance_test_support import select_instance
 
 
 def campaign(records, module):
@@ -18,7 +19,7 @@ def campaign(records, module):
 @pytest.mark.parametrize("same_module", [True, False])
 def test_saved_invocation_resumes_before_fresh_campaigns(tmp_path, monkeypatch, same_module):
     """保存了调用的 TAU 运行先于新运行恢复，同模块的新运行等它结束"""
-    monkeypatch.setenv("PORTAL_TEST_SLOT_ROOT", str(tmp_path / "slots"))
+    select_instance(monkeypatch, tmp_path / "slot-instance")
     records = RunRecords(tmp_path / "runs.json")
     original, group = campaign(records, "resident.chat")
     fresh, fresh_group = campaign(records, "resident.chat" if same_module else "paper")
@@ -70,7 +71,7 @@ def test_saved_invocation_resumes_before_fresh_campaigns(tmp_path, monkeypatch, 
 
 def test_cancelled_saved_invocation_still_reaches_the_withdrawal_path(tmp_path, monkeypatch):
     """已取消但保存了调用的 TAU 运行仍进入撤回调用的流程"""
-    monkeypatch.setenv("PORTAL_TEST_SLOT_ROOT", str(tmp_path / "slots"))
+    select_instance(monkeypatch, tmp_path / "slot-instance")
     records = RunRecords(tmp_path / "runs.json")
     run_id, group = campaign(records, "resident.chat")
     records.update_group(run_id, group["group_id"], {

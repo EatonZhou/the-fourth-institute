@@ -133,25 +133,15 @@ def test_invalid_read_limits_fail_before_any_request(monkeypatch, clock, capsys,
     assert json.loads(capsys.readouterr().out)["status"] == "failed"
 
 
-def test_installed_endpoint_uses_applied_target_and_explicit_override(monkeypatch, tmp_path):
-    from management_common.instance_config import configuration_digest
+def test_installed_endpoint_comes_from_the_manifest_or_explicit_override(monkeypatch, tmp_path):
+    from tests.cases.instance_test_support import write_instance
 
-    root = tmp_path / "instance"
-    (root / "config").mkdir(parents=True)
-    target = {"install_root": str(root), "ports": {"web": 28399}}
-    (root / "config/target.json").write_text(json.dumps(target))
-    (root / "installation.json").write_text(json.dumps({
-        "schema": "tfi.release-installation.v2", "configuration_sha256": configuration_digest(target)}))
-    monkeypatch.setattr(cli.portal_paths, "CONFIG_PATH", root / "config/paths.json")
+    root = write_instance(tmp_path / "instance")
+    monkeypatch.setenv("PORTAL_INSTANCE_ROOT", str(root))
     monkeypatch.delenv("PORTAL_URL", raising=False)
-    assert cli._portal_url() == "http://127.0.0.1:28399"
+    assert cli._portal_url() == "http://127.0.0.1:28086"
     monkeypatch.setenv("PORTAL_URL", "https://explicit.invalid/")
     assert cli._portal_url() == "https://explicit.invalid"
-    monkeypatch.delenv("PORTAL_URL")
-    target["ports"]["web"] = 28398
-    (root / "config/target.json").write_text(json.dumps(target))
-    with pytest.raises(ValueError, match="Unapplied"):
-        cli._portal_url()
 
 
 def test_list_and_schema_use_the_self_description_instructions(monkeypatch, clock):
@@ -207,6 +197,3 @@ def test_watch_prints_items_and_resumes_after_the_last_cursor(monkeypatch, clock
     assert [item["cursor"] for item in lines] == [1, 2]
     assert "after_cursor" not in bodies[0]["arguments"]
     assert bodies[1]["arguments"]["after_cursor"] == 1
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

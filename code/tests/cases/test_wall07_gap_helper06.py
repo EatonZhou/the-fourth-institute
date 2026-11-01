@@ -22,6 +22,7 @@ from management_portal.society_service import (
 from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.effect_script_support import effect_config, lower_effect_call
+from tests.cases.instance_test_support import lineage_folders
 
 
 ACTOR = "wall07-fixture"
@@ -46,8 +47,7 @@ def component(kind, index=1, **fields):
 @pytest.fixture()
 def isolated_owner(tmp_path, monkeypatch):
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineages")
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "folders")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "folders"))
+    lineage_folders(monkeypatch, tmp_path / "folders")
     install_resource_boundary(monkeypatch)
     monkeypatch.setattr(lineage_state, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)
     monkeypatch.setattr(lineage_reads, "_actor_can_manage_lineage", lambda lineage, actor, **kwargs: actor == ACTOR and lineage["lineage_id"] == LINEAGE)

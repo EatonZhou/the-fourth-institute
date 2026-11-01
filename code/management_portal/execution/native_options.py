@@ -135,7 +135,7 @@ def native_config_dir(provider: str, runtime_root: str, session_key: str) -> Pat
 
     if runtime_root:
         return Path(runtime_root) / provider / "config"
-    root = Path(os.getenv("PORTAL_AGENT_CONFIG_ROOT", str(portal_path("staging_root") / "shared" / "agent-config")))
+    root = portal_path("provider-state") / "agent-config"
     return root / hashlib.sha256(session_key.encode()).hexdigest() / provider / "config"
 
 

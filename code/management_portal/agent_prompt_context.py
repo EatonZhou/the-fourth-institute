@@ -5,7 +5,7 @@ from collections.abc import Iterable
 import re
 from pathlib import Path
 
-from management_common.skill_paths import normalize_additional_skills
+from management_common.skill_paths import CORE_SKILLS_ROOT, normalize_additional_skills
 from management_portal.agent_skill_context import PORTAL_SYSTEM_SKILL, materialize_portal_skills
 from management_portal.execution.contracts import InjectionPart, SystemInstructions
 
@@ -38,8 +38,26 @@ def _additional_skill_paths(skills: Iterable[object], *, skill_root: str, actor:
     normalized = normalize_additional_skills(references, skill_root=skill_root)
     paths = [str(Path(skill) if skill.endswith("/SKILL.md") else (root / skill / "SKILL.md").resolve())
              for skill in normalized]
-    entry_path = str(root / PORTAL_SYSTEM_SKILL / "SKILL.md")
+    entry_path = str(CORE_SKILLS_ROOT / PORTAL_SYSTEM_SKILL / "SKILL.md")
     return list(dict.fromkeys(path for path in paths if path != entry_path))
+
+
+def instance_location_lines() -> list[str]:
+    """Where this instance's areas are, so documents can use area references."""
+    from management_common.instance_manifest import AREAS, load
+
+    instance = load()
+    code_root = CORE_SKILLS_ROOT.parent
+    return [
+        "<portal-instance-locations>",
+        "Skill 和文档中的实例文件写成“区域:相对路径”（例如 skills:create-skill/SKILL.md）。"
+        "本实例各区域的实际位置：",
+        *(f"- {area}: {instance.area(area)}" for area in AREAS),
+        f"- 代码目录（${{code_root}}）: {code_root}；核心 Skill 在 {CORE_SKILLS_ROOT}",
+        f"终端中解析区域写法：python3 {code_root / 'scripts' / 'resolve_instance_path.py'} "
+        "skills:create-skill/SKILL.md；不带参数时列出全部区域。",
+        "</portal-instance-locations>",
+    ]
 
 
 def portal_system_instructions(
@@ -48,7 +66,7 @@ def portal_system_instructions(
     additional_skills: Iterable[object] = (),
     injection_policy: str = "session_start",
     allow_subagents: bool = False,
-    skill_root: str = str(portal_path("share_root") / "Skills"),
+    skill_root: str = str(portal_path('skills')),
     actor: str = "",
 ) -> SystemInstructions:
     """Build the Portal-owned lifecycle envelope for agent-loaded Skills.
@@ -61,7 +79,6 @@ def portal_system_instructions(
     requested_role = str(role or "").strip()
     materialized = materialize_portal_skills(
         requested_role,
-        skill_root=skill_root,
     )
     clean_role = materialized.role
     clean_injection_policy = str(
@@ -95,6 +112,7 @@ def portal_system_instructions(
         *lifecycle_lines,
     ]
     lines.append(materialized.content)
+    lines.extend(instance_location_lines())
     if clean_role == "resident":
         from management_common.async_questions import QUESTION_CONTENT_INSTRUCTIONS
 
@@ -125,7 +143,7 @@ def portal_system_instructions(
 def portal_turn_instructions(
     *,
     additional_skills: Iterable[object] = (),
-    skill_root: str = str(portal_path("share_root") / "Skills"),
+    skill_root: str = str(portal_path('skills')),
     actor: str = "",
 ) -> SystemInstructions | None:
     """Build task Skill references for this turn; startup is planned separately."""

@@ -1,16 +1,11 @@
-"""Linux installation assets; shared orchestration owns the instance topology."""
+"""Linux systemd user units for one instance's registered components."""
 from pathlib import Path
 import json
 import shlex
 import subprocess
+import tempfile
 
-from scripts.tfi_instance_layout import code_root, installer_path
-
-
-def safe_path(value):
-    if not isinstance(value, str) or not Path(value).is_absolute() or any(c in value for c in "\0\n\r%$'\"\\"):
-        raise ValueError("Target paths must be absolute and contain no control/systemd expansion characters")
-    return Path(value).resolve()
+from management_common.code_environment import runtime_python
 
 
 def service_controller():
@@ -18,14 +13,9 @@ def service_controller():
     return ServiceControl(platform="linux")
 
 
-def unit_name(target, component):
-    return f"{target['service_prefix']}-{component}.service"
-
-
 def unit_directory():
-    # Residents and installed applications intentionally have an isolated HOME.
-    # The existing user manager has its own search path; registering beneath
-    # the caller's HOME can succeed on disk while every service remains unknown.
+    # Register where the existing user manager actually searches; a unit file
+    # beneath another directory can exist on disk while the service is unknown.
     result = subprocess.run(
         ['systemctl', '--user', 'show', '--property=UnitPath', '--value'],
         check=True, capture_output=True, text=True, timeout=15)
@@ -45,71 +35,78 @@ def unit_path(directory, name):
 REQUEST_PATH_CPU_WEIGHT = "CPUWeight=1000\n"
 
 
-def _without_cpu_weight(text):
-    return "".join(line for line in text.splitlines(keepends=True) if not line.startswith("CPUWeight="))
-
-
-def owns_definition(installed, expected):
-    """A definition from an older installer may differ from the current one only in its CPU weight."""
-    return _without_cpu_weight(installed) == _without_cpu_weight(expected)
-
-
-def unit_text(target, component, components):
-    root = Path(target["install_root"])
-    arguments = [target["python"], str(installer_path(target)), "_component",
-                 "--root", str(root), "--component", component]
-    exec_start = " ".join(json.dumps(x) for x in arguments)
-    after = " ".join(unit_name(target, c) for c in components[:components.index(component)])
-    working_directory = str(code_root(target))
-    if ' ' in working_directory:
-        working_directory = json.dumps(working_directory)
+def manifest_unit_text(instance, component):
+    code = instance.service_code(component)
+    arguments = [str(runtime_python(code)), '-m', 'management_portal.service_runtime',
+                 '--component', component]
+    exec_start = " ".join(json.dumps(x, ensure_ascii=False).replace('%', '%%').replace('$', '$$') for x in arguments)
+    from scripts.instance_service_definitions import dependencies
+    after = " ".join(instance.service_name(c) + '.service' for c in dependencies(instance, component))
+    working_directory = str(code).replace('%', '%%')
     # NATS 2.10 treats SIGTERM as failure; SIGINT is its clean shutdown path.
     stop_signal = "KillSignal=SIGINT\n" if component == "nats" else ""
     # The Worker Manager runs Provider adapters, which keep the default weight.
     weight = "" if component == "worker" else REQUEST_PATH_CPU_WEIGHT
-    return (f"[Unit]\nDescription=TFI isolated {component} ({target['run_id']})\nAfter={after}\n"
+    restart = 'always' if component.startswith('codex-app-server@') else 'on-failure'
+    limits = 'MemoryHigh=32G\nMemoryMax=36G\nMemorySwapMax=1G\n' if component.startswith('codex-app-server@') else ''
+    environment = ''.join('Environment=' + json.dumps(key + '=' + value, ensure_ascii=False).replace('%', '%%') + '\n'
+                          for key, value in instance.service_environment(component).items())
+    return (f"[Unit]\nDescription=TFI {component} ({instance.name})\nAfter={after}\n"
             f"[Service]\nType=simple\nUMask=0077\nWorkingDirectory={working_directory}\n"
-            f"ExecStart={exec_start}\nRestart=on-failure\nRestartSec=3\nKillMode=control-group\n"
-            f"{stop_signal}{weight}TimeoutStopSec=270\n[Install]\nWantedBy=default.target\n")
+            f"{environment}"
+            f"ExecStart={exec_start}\nRestart={restart}\nRestartSec=3\nKillMode=control-group\n"
+            f"{stop_signal}{weight}{limits}TimeoutStopSec=270\n[Install]\nWantedBy=default.target\n")
+
+
+def _publish(path, content):
+    with tempfile.NamedTemporaryFile('w', encoding='utf-8', dir=path.parent, prefix='.' + path.name + '.',
+                                     delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(content)
+    try:
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def register_services(directory, units):
-    """Create missing definitions and bring owned ones to the current text.
+    """Write the given definitions; the caller has verified their ownership.
 
-    systemd applies a changed CPU weight to running services at daemon-reload.
+    systemd applies changed definitions at daemon-reload; running services keep
+    their process until restarted. A failure restores every previous file.
     """
     directory.mkdir(parents=True, exist_ok=True)
-    created, replaced = [], {}
+    previous = {}
     try:
         for name, content in units.items():
-            path = directory / name
-            if path.exists() or path.is_symlink():
-                installed = "" if path.is_symlink() else path.read_text()
-                if path.is_symlink() or not owns_definition(installed, content):
-                    raise ValueError(f"Refusing to replace another service: {path.name}")
-                if installed != content:
-                    replaced[name] = installed
-                    path.write_text(content)
-            else:
-                with path.open("x") as stream:
-                    stream.write(content)
-                created.append(name)
+            path = unit_path(directory, name)
+            if path.is_symlink():
+                raise ValueError(f"Refusing a linked service definition: {name}")
+            previous[name] = path.read_text(encoding='utf-8') if path.exists() else None
+            if previous[name] != content:
+                _publish(path, content)
         subprocess.run(["systemctl", "--user", "daemon-reload"], check=True, capture_output=True)
     except Exception:
-        for name in created:
-            (directory / name).unlink(missing_ok=True)
-        for name, installed in replaced.items():
-            (directory / name).write_text(installed)
-        if created or replaced:
-            subprocess.run(["systemctl", "--user", "daemon-reload"], check=False, capture_output=True)
+        for name, content in previous.items():
+            path = unit_path(directory, name)
+            if content is None:
+                path.unlink(missing_ok=True)
+            else:
+                _publish(path, content)
+        subprocess.run(["systemctl", "--user", "daemon-reload"], check=False, capture_output=True)
         raise
-    return created
+    return [name for name, content in previous.items() if content is None]
 
 
 def remove_services(directory, names):
     for name in names:
-        path = directory / name
+        path = unit_path(directory, name)
+        if path.is_symlink():
+            raise ValueError(f"Refusing a linked service definition: {name}")
         if path.exists():
             subprocess.run(["systemctl", "--user", "disable", name], capture_output=True, check=True)
             path.unlink()
     subprocess.run(["systemctl", "--user", "daemon-reload"], capture_output=True, check=True)
+    if names:
+        # A unit stopped by force stays listed as failed until its state is reset.
+        subprocess.run(["systemctl", "--user", "reset-failed", *names], capture_output=True, check=False)

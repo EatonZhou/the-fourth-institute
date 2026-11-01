@@ -20,6 +20,7 @@ from management_portal.society_service import (
 )
 from management_portal.society_service import lineage_definition_normalization
 from management_portal.society_service import lineage_aggregate
+from tests.cases.instance_test_support import lineage_folders
 
 
 ACTOR = "sample_admin"
@@ -34,8 +35,7 @@ def lineage_store(
 ) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
+    lineage_folders(monkeypatch, root / "lineages")
     install_resource_boundary(monkeypatch)
     return root
 

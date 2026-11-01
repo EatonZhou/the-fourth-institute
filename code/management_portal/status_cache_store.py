@@ -4,7 +4,6 @@ from management_common.portal_paths import path as portal_path
 
 from management_common.file_lock import lock_stream
 import json
-import os
 import re
 from contextlib import contextmanager
 from pathlib import Path
@@ -13,7 +12,7 @@ from .shared_state import atomic_replace_json
 
 
 def default_path() -> Path:
-    return Path(os.getenv("AGENT_STATUS_CACHE_PATH", str(portal_path("staging_root") / "shared" / "portal_cache" / "agent_status" / "status_cache.json")))
+    return portal_path("cache") / "agent_status" / "status_cache.json"
 
 
 def identity(key: str) -> tuple[str, int]:

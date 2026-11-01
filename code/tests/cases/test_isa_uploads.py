@@ -15,6 +15,9 @@ from management_portal.hatg import catalog
 from management_portal.hatg.contracts import InstructionCall, InstructionContext, InstructionError
 from management_portal.hatg.kernel import Invocation
 from management_portal.resources import isa as resource_isa
+
+# Cases isolate uploads below; this keeps the instance's own store to check it.
+_INSTANCE_UPLOAD_ROOT = resource_isa.upload_root
 from tests.cases.permission_test_support import permissions  # noqa: F401
 
 
@@ -28,7 +31,7 @@ def png_bytes() -> bytes:
 
 @pytest.fixture(autouse=True)
 def upload_root(tmp_path, monkeypatch):
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr(resource_isa, "upload_root", lambda: tmp_path / "uploads")
     return tmp_path / "uploads"
 
 
@@ -250,7 +253,7 @@ def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypat
         reads.append((actor, start, end))
         return blob[start:end + 1], "application/octet-stream", {}
 
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path))
+    monkeypatch.setattr(resource_isa, "upload_root", lambda: tmp_path)
     monkeypatch.setattr(resource_isa, "DOWNLOAD_CHUNK_BYTES", 4096)
     monkeypatch.setattr(resource_isa, "_service", lambda: SimpleNamespace(
         read_content=read_content, read_content_range=read_content_range,
@@ -287,24 +290,18 @@ def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypat
     assert get("alice")[0].status_code == 404
 
 
-def test_code_generations_of_one_instance_share_configured_upload_store(tmp_path, monkeypatch):
-    """同一实例的代码代次使用同一实例上传目录
+def test_code_generations_of_one_instance_share_configured_upload_store(monkeypatch, session_instance_root):
+    """同一实例的各部署使用该实例 uploads 区域中的同一上传目录
 
     :module: platform.core
     :importance: P1
     """
-    # Source generations share storage only when they use the same configured
-    # instance. Separate installed instances supply distinct instances_root.
-    monkeypatch.delenv("PORTAL_UPLOAD_ROOT")
-    from management_common import portal_paths
-    saved = portal_paths.path_values()
-    saved["instances_root"] = str(tmp_path)
-    monkeypatch.setattr(portal_paths, "path_values", lambda: saved)
+    from management_common.instance_manifest import load
     roots = set()
-    for instance in ("dev", "release"):
-        monkeypatch.setenv("PORTAL_INSTANCE", instance)
-        roots.add(resource_isa.upload_root())
-    assert roots == {tmp_path / "uploads"}
+    for deployment in ("dev", "release"):
+        monkeypatch.setenv("PORTAL_DEPLOYMENT", deployment)
+        roots.add(_INSTANCE_UPLOAD_ROOT())
+    assert roots == {load().root / "data" / "uploads"}
 
 
 def test_unregister_preserves_post_commit_projection_receipt(monkeypatch):

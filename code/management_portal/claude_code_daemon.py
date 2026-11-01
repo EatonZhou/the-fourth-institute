@@ -49,7 +49,7 @@ from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRu
 
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_SOCKET_PATH = (portal_path("staging_root") / "portal_locks" / "claude-code-daemon.sock")
+DEFAULT_SOCKET_PATH = (portal_path("runtime") / "s" / "claude-code-daemon.sock")
 APP_SERVER_PROTOCOL_VERSION = 1
 
 
@@ -2083,7 +2083,7 @@ async def _serve(socket_path: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="TFI Portal Claude Code backend daemon")
-    parser.add_argument("--socket", default=os.getenv("PORTAL_CLAUDE_CODE_SOCKET", str(DEFAULT_SOCKET_PATH)))
+    parser.add_argument("--socket", default=str(DEFAULT_SOCKET_PATH))
     args = parser.parse_args()
     asyncio.run(_serve(Path(args.socket)))
     return 0

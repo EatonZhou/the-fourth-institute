@@ -43,11 +43,15 @@ def _tool(name: str, description: str = "A tool.") -> dict:
 @pytest.fixture
 def root(monkeypatch):
     # A Unix socket path holds about a hundred bytes; pytest's tmp_path is longer.
-    directory = Path(tempfile.mkdtemp(prefix="kpt", dir="/tmp"))
-    monkeypatch.setattr(kimi_portal_tools, "GATEWAY_ROOT", directory / "gw")
+    from tests.cases.instance_test_support import write_instance
+    directory = Path(tempfile.mkdtemp(prefix="kpt", dir="/tmp")).resolve()
+    # The tool program finds its gateway in the selected instance's runtime.
+    instance = write_instance(directory / "i")
+    gateway = instance / "runtime" / "kimi-tools"
+    monkeypatch.setattr(kimi_portal_tools, "GATEWAY_ROOT", gateway)
     home = directory / "home"
     home.mkdir()
-    yield SimpleNamespace(home=home, gateway=directory / "gw")
+    yield SimpleNamespace(home=home, gateway=gateway, instance=instance)
     shutil.rmtree(directory, ignore_errors=True)
 
 
@@ -196,7 +200,7 @@ def test_the_program_speaks_mcp_and_announces_as_a_hook(root) -> None:
     """
     kimi_portal_tools.install(root.home)
     publish_catalog([_tool("whoami", "Who runs this turn.")], root.home)
-    environment = {"PORTAL_KIMI_TOOLS_ROOT": str(root.gateway), "PATH": "/usr/bin:/bin"}
+    environment = {"PORTAL_INSTANCE_ROOT": str(root.instance), "PATH": "/usr/bin:/bin"}
     script = str(Path(kimi_portal_tools.__file__).resolve())
 
     hook = subprocess.run(

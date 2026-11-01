@@ -12,6 +12,7 @@ import pytest
 from management_portal.workbench_projections.development_projection import application_definition
 from management_portal.workbench_projections.research_apps import definition as research
 from management_portal.workbench_projections.store import ProjectionError, validate_manifest
+from tests.cases.instance_test_support import select_instance
 from tests.cases.test_tfi_projection_format_compatibility import _read_only
 
 
@@ -21,17 +22,12 @@ COMMIT = "421e133b5ab4ba64a39f1da530fd149405b3bf53"
 @pytest.mark.parametrize("example", [False, True])
 def test_new_page_output_and_legacy_validation_preserve_payload(example, monkeypatch, tmp_path):
     """新投影输出使用规范格式，旧格式验证被拒绝且载荷与生成器模板不变"""
-    from management_common.site_config import read_site_config
-    config = read_site_config()
-    config.setdefault('deployment', {})['development_projection'] = {
+    select_instance(monkeypatch, tmp_path / 'instance', site={'deployment': {'development_projection': {
         'repo_id': 'repo_123456789abc', 'lineage_id': 'lineage_123456789abc',
         'facade_resident_id': 'resident_123456789abc',
         'packaging_lineage_id': 'lineage_abcdef123456',
         'packaging_facade_resident_id': 'resident_abcdef123456',
-    }
-    site = tmp_path / 'site.json'
-    site.write_text(json.dumps(config))
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(site))
+    }}})
     with _read_only():
         value = application_definition(COMMIT, example=example)
         assert value["manifest"]["schema"] == "tfi.projection.v2"
@@ -54,9 +50,8 @@ def test_new_page_output_and_legacy_validation_preserve_payload(example, monkeyp
 
 
 def test_research_outputs_preserve_historical_source_and_revision(monkeypatch, tmp_path):
-    site = tmp_path / 'site.json'
-    site.write_text(json.dumps({'deployment': {'development_projection': {'repo_id': 'repo_123456789abc'}}}))
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(site))
+    select_instance(monkeypatch, tmp_path / 'instance', site={'deployment': {
+        'development_projection': {'repo_id': 'repo_123456789abc'}}})
     source = research.ROOT / "data/legacy-definitions.json"
     before = (source.read_bytes(), source.stat().st_mtime_ns)
     old = json.loads(before[0])["applications"]
@@ -80,6 +75,3 @@ def test_research_outputs_preserve_historical_source_and_revision(monkeypatch, t
         with pytest.raises(ValueError):
             research.definitions("short")
     assert (source.read_bytes(), source.stat().st_mtime_ns) == before
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

@@ -26,8 +26,8 @@ from management_portal import opencode_provider_catalog
 from management_portal.resident_shell_environment import resident_process_environment
 
 PROVIDER = "opencode"
-STATE = Path(os.environ.get("PORTAL_OPENCODE_STATE", str(portal_path("staging_root") / "shared" / "opencode")))
-SOCKETS = Path(os.environ.get("PORTAL_OPENCODE_SOCKETS", str(portal_path("staging_root") / "portal_locks" / "opencode")))
+STATE = portal_path("provider-state") / "opencode"
+SOCKETS = portal_path("runtime") / "opencode"
 BRIDGE = Path(__file__).with_name("opencode_bridge.py")
 SESSION_ID = re.compile(r"opencode-[0-9a-f]{32}")
 # An on-demand compaction writes one summary with the session's model.
@@ -188,7 +188,7 @@ class OpenCodeClient:
                 "config_home": str(opencode_provider_catalog.config_home()),
                 "version": opencode_provider_catalog.version(),
                 "identity_fingerprint": hashlib.sha256(
-                    json.dumps(identity, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
+                    json.dumps(identity, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
             }
             launch = root / "launch.json"
             temporary = root / f".launch.{os.getpid()}.tmp"

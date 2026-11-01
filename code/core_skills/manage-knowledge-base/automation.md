@@ -5,7 +5,7 @@
 ## 查找与运行
 
 - 通过 `SearchResidents`、`SearchResources` 和当前项目配置定位维护者，再读其职责说明、Lineage 事件源和连线。已有同类工作时优先调整，不重复创建。
-- 需要判断与写作的工作由 Resident 承担；确定性脚本按 Lineage 的 Effect / RunScript 流程执行，参考 `${share_root}/Skills/scheduled-work/SKILL.md`。
+- 需要判断与写作的工作由 Resident 承担；确定性脚本按 Lineage 的 Effect / RunScript 流程执行，参考 `skills:scheduled-work/SKILL.md`。
 - 按需用 `ListResidentStates`、`GetComponentRuntime`、`GetScriptRun` 检查状态和结果，不能把事件源启用或历史日志存在当作本轮已完成。
 - 知识登记、修改、读取由当前 HATG 资源指令完成；无需寻找某个固定命名的归档 Agent 目录。
 

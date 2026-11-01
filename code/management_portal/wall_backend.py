@@ -1,6 +1,8 @@
 """WALL application workflows, backed by Markdown and existing Resident jobs."""
 from __future__ import annotations
-from management_common.portal_paths import PORTAL_ROOT as SOURCE_ROOT, path as portal_path
+from pathlib import Path
+from management_common.portal_paths import path as portal_path
+SOURCE_ROOT = Path(__file__).resolve().parents[1]
 
 import copy
 import json
@@ -31,7 +33,7 @@ from management_common.operation_errors import OperationError, failure_payload
 
 LOG = logging.getLogger(__name__)
 PORTAL_ROOT = Path(os.getenv("WALL_PORTAL_ROOT", str(SOURCE_ROOT)))
-WALL_LOCK_ROOT = (portal_path("staging_root") / "shared" / "portal_data" / "wall-locks")
+WALL_LOCK_ROOT = portal_path("runtime") / "locks" / "wall"
 SCAN_TTL = 60
 ACTIVE = frozenset({"queued", "routing", "preparing", "running"})
 PROJECT_ACTIONS = {"analyse": "分析", "verify": "全面回归与修复", "publish-all": "全量发布"}

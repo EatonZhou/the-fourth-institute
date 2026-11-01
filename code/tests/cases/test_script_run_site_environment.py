@@ -1,4 +1,4 @@
-"""Detached RunScript must retain explicit site paths without service secrets."""
+"""Detached RunScript retains its explicit instance without service secrets."""
 import json
 import os
 from pathlib import Path
@@ -8,34 +8,29 @@ import sys
 import pytest
 
 from management_portal.society_service.script_runs import runtime, service
+from tests.cases.instance_test_support import write_instance
 
 
 @pytest.fixture
 def launch_case(tmp_path, monkeypatch):
-    paths = {key: str(tmp_path / ('data ' + key)) for key in service.portal_paths.KEYS}
-    paths_file = tmp_path / 'paths with spaces.json'
-    paths_file.write_text(json.dumps(paths))
-    site_file = tmp_path / 'site with spaces.json'
-    site_file.write_text(json.dumps({'deployment': {'compatibility': {'domain_values': {
-        'script_run_private_root': str(tmp_path / 'private'),
-    }}}}))
-    names = {'PORTAL_SITE_CONFIG': str(site_file), 'PORTAL_PATHS_CONFIG': str(paths_file),
-             'PORTAL_RELEASE_ROOT': str(tmp_path / 'release'),
-             **{value: paths[key] for key, value in service.portal_paths.ENV_KEYS.items()}}
+    instance = tmp_path / 'instance with spaces'
+    write_instance(instance)
+    paths = {'root': str(instance), 'runtime': str(instance / 'runtime')}
+    names = {'PORTAL_INSTANCE_ROOT': str(instance)}
     for key, value in names.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'postgresql://fixture-secret')
     monkeypatch.setenv('PORTAL_AGENT_TOKEN', 'fixture-secret')
     monkeypatch.setenv('OPENAI_API_KEY', 'fixture-secret')
     monkeypatch.setattr(runtime, 'RUN_ROOT', tmp_path / 'runs')
-    monkeypatch.setattr(runtime, 'PRIVATE_ROOT', tmp_path / 'private')
+    monkeypatch.setattr(runtime, 'PRIVATE_ROOT', instance / 'runtime/script_run_leases')
     monkeypatch.setattr(service, '_issue_token', lambda *args: 'fixture-lease')
     payload = tmp_path / 'probe.py'
     payload.write_text("""import json, os
 from pathlib import Path
-from management_common import portal_paths
+from management_common.instance_manifest import load
 from management_portal.society_service.script_runs import runtime
-out = {'paths': {k: str(v) for k, v in portal_paths.paths().items()},
+out = {'paths': {'root': str(load().root), 'runtime': str(load().directory('runtime'))},
        'private_root': str(runtime.PRIVATE_ROOT),
        'secret_keys': [k for k in ('PORTAL_DATABASE_URL', 'PORTAL_AGENT_TOKEN', 'OPENAI_API_KEY') if k in os.environ]}
 Path(os.environ['PORTAL_SCRIPT_OUTPUT']).write_text(json.dumps(out))
@@ -80,7 +75,7 @@ def test_detached_relay_uses_the_explicit_instance_callback_origin(launch_case, 
                         lambda command, **kwargs: subprocess.CompletedProcess(command, 0, '', ''))
     service.launch(record, config)
     private = json.loads((runtime.PRIVATE_ROOT / (record['script_run_id'] + '.json')).read_text())
-    assert private['portal_url'] == 'http://127.0.0.1:28399'
+    assert private['portal_url'] == 'http://127.0.0.1:28086'
 
 
 @pytest.mark.skipif(sys.platform != 'linux', reason='isolated Linux runner')
@@ -107,11 +102,11 @@ def test_runner_and_payload_read_the_launching_site(launch_case, monkeypatch, tm
     result = json.loads((run_dir / 'result.json').read_text())
     assert result['status'] == 'succeeded', result
     output = json.loads((run_dir / 'io/output.json').read_text())
-    assert output == {'paths': paths, 'private_root': str(tmp_path / 'private'), 'secret_keys': []}
+    assert output == {'paths': paths, 'private_root': str(Path(names['PORTAL_INSTANCE_ROOT']) / 'runtime/script_run_leases'), 'secret_keys': []}
     assert not (runtime.PRIVATE_ROOT / (record['script_run_id'] + '.json')).exists()
 
 
-def test_absent_optional_configuration_is_not_invented(launch_case, monkeypatch):
+def test_missing_instance_selection_rejects_before_launch(launch_case, monkeypatch):
     record, config, names, _ = launch_case
     monkeypatch.setattr(service.sys, 'platform', 'linux')
     for name in names:
@@ -121,5 +116,6 @@ def test_absent_optional_configuration_is_not_invented(launch_case, monkeypatch)
         captured['command'] = command
         return subprocess.CompletedProcess(command, 0, '', '')
     monkeypatch.setattr(service.process_runtime, 'run_process', capture)
-    service.launch(record, config)
-    assert not any(arg.startswith('--setenv=') for arg in captured['command'])
+    with pytest.raises(ValueError, match='Select an instance'):
+        service.launch(record, config)
+    assert captured == {}

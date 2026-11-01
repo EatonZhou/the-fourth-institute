@@ -58,18 +58,19 @@ def test_tcp_directory_creation_with_windows_acl_policy(tmp_path, monkeypatch):
         assert endpoint.exists()
 
 
-def test_windows_default_uses_new_private_cache_without_touching_legacy(tmp_path, monkeypatch):
+def test_windows_rendezvous_uses_instance_runtime_without_touching_host_cache(tmp_path, monkeypatch):
     from management_common import local_ipc as ipc
+    from tests.cases.instance_test_support import select_instance
+    instance = select_instance(monkeypatch, tmp_path / 'instance')
     legacy = tmp_path / 'TFI/Portal/ipc'
     legacy.mkdir(parents=True)
     marker = legacy / 'old.json'
     marker.write_text('legacy permissions and contents must remain unchanged')
     monkeypatch.setattr(ipc, 'os', SimpleNamespace(**{**vars(os), 'name': 'nt',
                                                    'environ': {'LOCALAPPDATA': str(tmp_path)}}))
-    monkeypatch.setattr(ipc, 'compatibility_value', lambda key, default: default)
     logical = tmp_path / 'resource-service.sock'
     endpoint = ipc.rendezvous_path(logical)
-    assert endpoint.parent == tmp_path / 'TFI/Portal/ipc-v2'
+    assert endpoint.parent == instance.directory('runtime') / 'ipc'
     assert ipc.rendezvous_path(logical) == endpoint
     assert ipc.rendezvous_path(tmp_path / 'execution-service.sock') != endpoint
     with LocalListener(logical, transport='tcp'):

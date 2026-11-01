@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from .config import execution_state_root, portal_instance
+from .config import execution_state_root, instance_name
 from .contracts import (
     ExecutionRecoveryDeferred,
     ExecutionRequest,
@@ -26,7 +26,7 @@ from .transport import (
     ExecutionServiceUnavailable,
 )
 
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import instance_runtime_root
 from management_common import loaded_modules, process_runtime
 from management_portal.shared_state import atomic_replace_json
 
@@ -522,8 +522,7 @@ def _failed_result(execution_id: str, exc: BaseException) -> ExecutionResult:
 class ExecutionWorkerDaemon:
     def __init__(self) -> None:
         self.instance = (
-            os.getenv("PORTAL_INSTANCE", portal_instance()).strip()
-            or portal_instance()
+            instance_name()
         )
         self.build_id = (
             os.getenv("PORTAL_BUILD_ID", "development").strip()
@@ -552,7 +551,7 @@ class ExecutionWorkerDaemon:
             os.getenv(
                 "PORTAL_EXECUTION_WORKER_HEALTH_PATH",
                 (
-                    f'{instance_root()}/{self.instance}/execution-worker-health.json'
+                    f'{instance_runtime_root()}/{self.instance}/execution-worker-health.json'
                 ),
             )
         )

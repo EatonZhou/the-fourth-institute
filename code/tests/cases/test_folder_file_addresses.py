@@ -17,6 +17,7 @@ from management_portal.resources import isa as resource_isa
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
 from management_portal.resources.providers import install_resolvers
 from management_portal.resources.registration import ResourceRegistrationStore
+from tests.cases.instance_test_support import lineage_folders
 
 LINEAGE = "lineage_0123456789ab"
 RESIDENT = "resident_0123456789ab"
@@ -40,7 +41,7 @@ def folders(tmp_path, monkeypatch):
     agents = tmp_path / "agents"
     agents.mkdir()
     (agents / LINEAGE).symlink_to(real, target_is_directory=True)
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(agents))
+    lineage_folders(monkeypatch, agents)
     records = {
         RESIDENT: {"resource_id": RESIDENT, "resource_type": "resident", "title": "Resident", "source": {},
                    "facets": ["resident", "collaboration"], "url": "/lineage?resident=" + RESIDENT,

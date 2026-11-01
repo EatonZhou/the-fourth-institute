@@ -11,7 +11,7 @@ from management_common.database_time import iso_time, instant
 from management_common.format_tags import schema_matches
 from management_common.json_columns import json_text, json_value
 from management_common.principal import message_attribution, message_quote, message_recipients
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 
 from management_portal.execution.agent_data_store import utc_now
 
@@ -49,7 +49,7 @@ RUNTIME_SETTINGS_CHANGED = "resident.runtime_settings.changed"
 LIVE_EVENT_TYPES = frozenset({ACTIVITY_CHANGED})
 
 
-LIVE_CHANNEL = compatibility_value("conversation_live_channel", "tfi_conversation_live")
+LIVE_CHANNEL = "tfi_conversation_live"
 
 
 INPUT_STATES = frozenset({"queued", "running", "completed", "failed", "cancelled"})

@@ -207,31 +207,6 @@ def test_a_past_due_time_does_not_spin_the_coordinator() -> None:
     assert snapshot["wake_lineage_ids"] == ["lineage_bbbbbbbbbbbb"]
 
 
-def test_only_an_eligible_instance_wakes_lineages_for_due_sources(monkeypatch) -> None:
-    """Dev 与 Release 共享数据时，只有被指定运行定时器的实例为到期事件源唤醒 Lineage
-
-    Dev and Release share Lineage data; one coordinator runs the timers."""
-    from management_portal.society_service.config import runs_lineage_timers
-
-    monkeypatch.delenv("PORTAL_LINEAGE_TIMER_INSTANCE", raising=False)
-    assert runs_lineage_timers("release") and runs_lineage_timers("dev")  # the lease decides
-    monkeypatch.setenv("PORTAL_LINEAGE_TIMER_INSTANCE", "dev")
-    assert runs_lineage_timers("dev") and not runs_lineage_timers("release")
-
-    soon = (datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat().replace("+00:00", "Z")
-    coordinator = LineageCoordinator(
-        resume_residents=lambda: {}, resume_resident=lambda _resident_id: {},
-        reconcile_all=lambda: {"wake_lineages": {"lineage_cccccccccccc": soon}},
-        reconcile_lineage=lambda _lineage_id: {}, housekeeping_seconds=60, wake_for_due_sources=False,
-    )
-    coordinator.start()
-    try:
-        time.sleep(0.3)
-        snapshot = coordinator.snapshot()
-    finally:
-        coordinator.stop()
-    assert snapshot["wake_lineage_ids"] == []
-
 
 def test_only_the_timer_lease_holder_wakes_lineages_and_a_new_holder_looks_again() -> None:
     """只有定时器租约持有者唤醒 Lineage，新取得租约时重新扫描到期事件源"""

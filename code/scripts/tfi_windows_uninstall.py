@@ -1,4 +1,9 @@
-"""Optional instance removal for the Windows platform uninstaller."""
+"""Optional instance removal for the Windows platform uninstaller.
+
+Instances running this platform's code are retired by the shared installer:
+services stopped, definitions deleted, registration removed, instance root
+deleted. Areas the user placed outside an instance root are kept and reported.
+"""
 from __future__ import annotations
 
 import ntpath
@@ -61,67 +66,32 @@ def _remove_prepared_cache(platform: Path) -> None:
             entry.unlink()
 
 
-def removal_plan(platform: Path) -> list[tuple[Path, bool]]:
-    """Validate all selected roots before stopping or removing the first one."""
-    from scripts.tfi_release_install import owned_state
-
-    platform = platform.resolve(strict=True)
-    base = platform / "instance"
-    if not base.exists() and not base.is_symlink():
-        return []
-    plain_tree(base)
-    result = []
-    for root in sorted(base.iterdir()):
-        if not root.is_dir():
-            raise ValueError(f"Unrecognized instance entry: {root}")
-        state_file = root / "installation.json"
-        if state_file.is_file():
-            state = owned_state(root, allow_missing_native=True)
-            target = state["target"]
-            if Path(target["install_root"]).resolve() != root:
-                raise ValueError(f"Installation belongs to another directory: {root}")
-            if Path(target.get("shared_code_root", "")).resolve() != platform / "code":
-                raise ValueError(f"Instance belongs to another platform: {root}")
-            for value in target["data_roots"].values():
-                if not Path(value).resolve().is_relative_to(root):
-                    raise ValueError(f"Instance uses external data; automatic removal refused: {root}")
-            result.append((root, True))
-        elif root.name == "example_instance" and all(p.name == "seed" for p in root.iterdir()):
-            # Seed extraction can finish before the installer creates its state.
-            result.append((root, False))
-        else:
-            raise ValueError(f"Instance has no ownership record; automatic removal refused: {root}")
-    return result
+def removal_plan(platform: Path):
+    """Validate every selected instance before stopping or removing the first one."""
+    from scripts.tfi_windows_launcher import platform_instances
+    plan = platform_instances(platform.resolve(strict=True))
+    for instance in plan:
+        plain_tree(instance.root)
+    return plan
 
 
-def remove_instances(platform: Path) -> None:
+def remove_instances(platform: Path) -> list[str]:
     from scripts.tfi_windows_launcher import command
 
     plan = removal_plan(platform)
     # Runtime and launcher lock are in use. Validate both trees before deletion;
     # leave only their cleanup to NSIS after this helper exits.
     validate_platform_caches(platform)
-    # Stop every initialized instance first. A failed stop preserves all data.
-    for root, initialized in plan:
-        if initialized:
-            subprocess.run(command(platform, "stop", "--root", root), check=True)
+    # Stop every instance first. A failed stop preserves all data.
+    for instance in plan:
+        subprocess.run(command(platform, "stop", "--instance", instance.name), check=True)
     # Prepared bundles can exceed MAX_PATH. Remove them through the same Python
     # filesystem APIs that prepared them; failures preserve the installed tools
     # and instance data for diagnosis/retry instead of stranding a deep tree.
     _remove_prepared_cache(platform)
-    # Lifecycle cleanup owns service registrations and provider cleanup.
-    # It rechecks ownership and releases the Windows installation lock itself.
-    for root, initialized in plan:
-        plain_tree(root)
-        if initialized:
-            subprocess.run(command(platform, "cleanup", "--root", root), check=True)
-        if root.exists():
-            # Shared-platform cleanup preserves the seed; explicit uninstall
-            # consent includes that seed and its containing instance directory.
-            if any(p.name != "seed" for p in root.iterdir()):
-                raise ValueError(f"Unexpected files remain after instance cleanup: {root}")
-            plain_tree(root)
-            shutil.rmtree(_native_path(root))
-    base = platform / "instance"
-    if base.exists():
-        base.rmdir()
+    kept = []
+    for instance in plan:
+        kept += [str(instance.area(area)) for area in instance.document.get("areas", {})
+                 if not instance.area(area).is_relative_to(instance.root)]
+        subprocess.run(command(platform, "retire", "--instance", instance.name), check=True)
+    return kept

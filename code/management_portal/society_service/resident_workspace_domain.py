@@ -228,11 +228,6 @@ def ensure_resident_workspace(record: dict) -> None:
         raise KeyError("resident not found")
     resident_backend.validate_resident_session_identity(record)
     workspace = resident_record_domain.resident_workspace_path(record)
-
-    resident_lineage_host_port.bind_lineage_folder(
-        resident_lineage.lineage_id(record),
-        workspace,
-    )
     workspace.mkdir(parents=True, exist_ok=True)
     (workspace / "residents").mkdir(parents=True, exist_ok=True)
     lineage_md = workspace / LINEAGE_INSTRUCTIONS_FILE
@@ -259,10 +254,10 @@ def ensure_resident_workspace(record: dict) -> None:
 
 def _safe_workspace_location_for_delete(record: dict) -> Path:
     path = resident_record_domain.resident_workspace_path(record)
+    # Lineage folders live only in the lineages and projects areas.
     allowed = [
         resident_domain_common.AGENTS_ROOT.resolve(strict=False),
         resident_domain_common.PROJECTS_ROOT.resolve(strict=False),
-        resident_domain_common.STAGING_ROOT.resolve(strict=False),
     ]
     if not any(path == root or root in path.parents for root in allowed):
         raise ValueError("workspace_path 不在允许删除的根目录内")
@@ -277,7 +272,7 @@ def _safe_lineage_workspace_for_delete(record: dict) -> Path:
     if not resident_id or not lineage_id:
         raise ValueError("删除 Lineage 需要已登记的成员及 Lineage 身份")
     path = _safe_workspace_location_for_delete(record)
-    expected = resident_lineage_host_port.canonical_lineage_folder(lineage_id).resolve(strict=False)
+    expected = resident_lineage_host_port.lineage_folder(lineage_id).resolve(strict=False)
     if path != expected:
         raise ValueError("Resident 注册的 Lineage 路径与 Lineage Folder 不匹配")
     return path
@@ -370,18 +365,15 @@ def _prepare_resident_deletion(
         } for item in deletion_records]
         steps = []
         if lineage_deletion_token is not None:
-            tombstone, unbind = resident_lineage_host_port.lineage_deletion_effects(
+            steps.append(resident_lineage_host_port.lineage_deletion_effect(
                 lineage_deletion_token,
-            )
-            steps.append(tombstone)
+            ))
         steps.extend(resident_lifecycle_domain.resident_release_step(member, actor_id) for member in deletion_records)
         steps.append({
             "kind": "forget_deleted",
             "binding_ids": [resident_backend.execution_binding_id(member) for member in deletion_records],
             "resident_ids": [resident_domain_common.record_resident_id(member) for member in deletion_records],
         })
-        if lineage_deletion_token is not None:
-            steps.append(unbind)
         if workspace_path.exists():
             # Deletion removes the folder; Portal keeps no archive to restore from.
             steps.append({"kind": "remove", "source": str(workspace_path),
@@ -595,7 +587,7 @@ def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str
     # Existing member data supplies workspace defaults only. Identity,
     # placement and authority come from the target Lineage, including empty ones.
     source_folder = resident_record_domain.resident_folder_path(record)
-    target_lineage_folder = resident_lineage_host_port.canonical_lineage_folder(target_lineage_id).resolve(strict=False)
+    target_lineage_folder = resident_lineage_host_port.lineage_folder(target_lineage_id).resolve(strict=False)
     destination = target_lineage_folder / "residents" / resident_domain_common.record_resident_id(record)
     if destination.exists():
         raise FileExistsError(f"目标 Lineage 已存在 Resident folder: {destination}")

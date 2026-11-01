@@ -285,7 +285,7 @@ class _KimiServer:
 
 def _kimi_steer(server: _KimiServer, prompt_id: str = "prompt-1") -> dict:
     kimi_code_client._STEERED.clear()
-    client = kimi_code_client.KimiCodeClient()
+    client = kimi_code_client.KimiCodeClient(base_url="http://kimi.invalid/api/v1")
     with mock.patch.object(client, "_request", side_effect=server):
         return client.steer("session-1", prompt_id=prompt_id, text="also check the tests", control_id="control-9")
 

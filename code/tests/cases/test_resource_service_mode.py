@@ -45,14 +45,16 @@ def test_local_index_schema_must_be_named_outside_test_namespaces(monkeypatch):
 def test_only_the_installed_resource_component_runs_the_index_locally(monkeypatch, tmp_path):
     """只有资源服务组件在本地运行索引
 
-    安装器生成的组件命令中，只有 resource 组件以 local 模式运行 ResourceService，其余进程都是它的客户端。
+    实例服务的启动命令中，只有 resource 组件以 local 模式运行 ResourceService，其余进程都是它的客户端。
     """
-    from scripts import tfi_release_install as installer
+    from management_portal import service_runtime as instance_runtime
+    from management_common.instance_manifest import load
+    from tests.cases.instance_test_support import write_instance
 
-    monkeypatch.setattr(installer, "clean_environment", lambda target, **_kwargs: {
-        "PORTAL_RESOURCE_SERVICE_MODE": "client", "PORTAL_SOCIETY_SERVICE_MODE": "client"})
-    monkeypatch.setattr(installer, "runtime_python", lambda target: "python")
-    target = {"install_root": str(tmp_path), "bind": "127.0.0.1", "ports": {"web": 18001}}
-    local = [component for component in installer.COMPONENTS if component not in {"postgres", "nats"}
-             and installer.component_command(target, component)[1]["PORTAL_RESOURCE_SERVICE_MODE"] == "local"]
+    instance = load(write_instance(tmp_path / "instance"))
+    monkeypatch.setattr(instance_runtime.code_environment, "runtime_python", lambda code: "python")
+    monkeypatch.setattr(instance_runtime.code_environment, "native_binary", lambda code, name: tmp_path / name)
+    local = [component for component in instance.document["services"]["components"]
+             if component not in {"postgres", "nats"}
+             and instance_runtime.component_command(instance, component)[1]["PORTAL_RESOURCE_SERVICE_MODE"] == "local"]
     assert local == ["resource"]

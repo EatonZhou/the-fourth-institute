@@ -30,6 +30,7 @@ Resident inputs and other business operations retain their authorization.
         "执行TFI完整发行运行 " + run["run_id"] + "。本次配置快照已固定在distribution运行记录，后续配置变更不影响它。\n"
         "读取命令：python scripts/generate_tfi_distribution.py show --run-id " + run["run_id"] + "\n"
         "先解析自然语言和未知依赖，再用同一脚本generate命令生成工程；以--resolution传入绑定snapshot_sha256的明确解析。"
+        "没有所属项目的仓库、文章和额外绑定的Workspace，在解析的file_locations（资源ID到“区域:相对路径”）中指定导出位置。"
         "不能把任务受理或文字回复当成发布完成。只在隔离工程副本处理，不公开推送、不改源数据。"
         "沿本Family分工由发行成员生成，安装成员监督安装/检查，667总验收；原整项门面不改派。\n"
         "mode=" + run["mode"] + "; supervisor_resident_id=" + run["supervisor_resident_id"]
@@ -126,17 +127,14 @@ def generate_run(run_id, *, resolution=None, attempt=1):
         return finish(manifest)
 
 
-_UPGRADE_UNSET = object()
-
-
-def rebuild_code_run(run_id, *, data_manifest, expected_manifest_sha256, attempt,
-                     upgrade_declaration=_UPGRADE_UNSET):
+def rebuild_code_run(run_id, *, data_manifest, expected_manifest_sha256, attempt):
     """Repair code using an explicitly identified immutable export of this run.
 
     A changing live source must not silently change the already reviewed data
     selection during an installation repair. Both source identities are kept.
     """
-    from .engineering import generate, inventory, checksum, ROOTS, validate_repair_upgrade
+    from .engineering import generate, inventory, checksum
+    from .layout import EXPORT_AREAS
     from .store import digest
     store = ReleaseStore()
     with store_database_run_lock(run_id):
@@ -153,17 +151,16 @@ def rebuild_code_run(run_id, *, data_manifest, expected_manifest_sha256, attempt
         if previous['inventory'] != inventory(previous_root):
             raise ValueError('Prior engineering inventory changed')
         root = source_root(run['snapshot']['source'])
-        explicit_upgrade = upgrade_declaration is not _UPGRADE_UNSET
-        if explicit_upgrade:
-            upgrade_declaration = validate_repair_upgrade(upgrade_declaration, root, expected_manifest_sha256)
         destination = Path(run['snapshot']['destination']) / f'{run_id}.attempt-{attempt}'
         if destination.exists():
             raise FileExistsError('Code repair never overwrites an artifact attempt')
         files = []
-        for name in ROOTS:
-            data_root = previous_root / previous['files'][name]
+        for name, folder in previous['files'].items():
+            if name not in EXPORT_AREAS or folder != f'data/{name}':
+                raise ValueError('Reusable data must be exported area directories')
+            data_root = previous_root / folder
             for child in sorted(data_root.iterdir()):
-                if name not in ROOTS[:3] or not child.is_dir() or child.is_symlink():
+                if not child.is_dir() or child.is_symlink():
                     raise ValueError('Reusable data must be credential-free exported directories')
                 files.append({'source': str(child), 'target': child.relative_to(previous_root).as_posix(),
                               'immutable_artifact': True})
@@ -171,16 +168,11 @@ def rebuild_code_run(run_id, *, data_manifest, expected_manifest_sha256, attempt
         resolved['resource_dependencies'] = previous.get('resource_dependencies', {})
         resolved['lineage_options'] = previous.get('lineage_options', {})
         resolved['anonymization'] = previous.get('anonymization', {})
-        resolved['core_skills'] = previous['core_skills']
         resolved.update(selected_ids=previous['resolved_objects'], files=files, unresolved=[], path_mappings=[],
                         resource_types=[p.stem for p in (previous_root / 'code/config/resource-types').glob('*.json') if not p.name.startswith('_')])
         target_fields = ('selected_targets', 'target_resolution', 'support_matrix', 'capability_gaps', 'installable', 'architecture_constraints', 'dependency_requirements')
         resolved['targets'] = {key: previous[key] for key in target_fields}
-        if explicit_upgrade:
-            resolved['upgrade'] = upgrade_declaration
-        elif 'upgrade' in previous:
-            resolved['upgrade'] = previous['upgrade']
-        source = {'selection': run['snapshot']['source'],
+        source ={'selection': run['snapshot']['source'],
                   'commit': subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip(),
                   'working_tree_modified': bool(subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'], text=True)),
                   'data_origin': {'manifest': str(previous_path), 'manifest_sha256': expected_manifest_sha256,

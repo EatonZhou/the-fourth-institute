@@ -231,7 +231,7 @@ def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, t
     # DeleteResident keeps the Lineage and re-picks its Leader).
     prepared = resident_workspace_domain._prepare_resident_deletion(record['resident_id'], 'sample_admin', whole_lineage=True)
     steps = prepared['steps']
-    assert [step['kind'] for step in steps] == ['lineage_tombstone', 'release', 'forget_deleted', 'lineage_folder_unbind', 'remove']
+    assert [step['kind'] for step in steps] == ['lineage_tombstone', 'release', 'forget_deleted', 'remove']
     operation_id = operations.enqueue(record['resident_id'], steps)
     calls = []
 
@@ -244,7 +244,7 @@ def test_lifecycle_tombstone_precedes_release_and_recovery_cleanup(operations, t
     assert [kind for _, kind in calls] == ['lineage_tombstone', 'release']
     operations.store.database.write(lambda connection: connection.execute('UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (operation_id,)))
     assert operations.run(operation_id, lambda effect_id, step: calls.append((effect_id, step['kind']))) == record['resident_id']
-    assert [kind for _, kind in calls] == ['lineage_tombstone', 'release', 'release', 'forget_deleted', 'lineage_folder_unbind', 'remove']
+    assert [kind for _, kind in calls] == ['lineage_tombstone', 'release', 'release', 'forget_deleted', 'remove']
     assert calls[1][0] == calls[2][0]
 
 

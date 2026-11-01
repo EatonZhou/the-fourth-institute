@@ -15,7 +15,6 @@ from management_portal.society_service import (
     invariant_locks,
     lineage_lifecycle,
     lineage_state,
-    resident_domain_common,
     resident_intake_domain,
     resource_client,
 )
@@ -23,6 +22,7 @@ from management_portal.society_service import lineage_aggregate
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
 from management_portal.resources.service import ResourceService
 from tests.cases.society_service_test_support import install_resource_boundary
+from tests.cases.instance_test_support import lineage_folders
 
 
 RESOURCE_METHODS = {
@@ -37,9 +37,7 @@ ACTOR = "alice"
 def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     monkeypatch.setenv("PORTAL_SOCIETY_SERVICE_PROCESS", "0")
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "data")
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
-    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
+    lineage_folders(monkeypatch, tmp_path / "lineages")
     monkeypatch.setattr(invariant_locks, "_ROOT_PROVIDER", lambda: tmp_path / "locks")
 
     def forbidden(*args, **kwargs):

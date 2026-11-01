@@ -13,8 +13,8 @@ from . import project_folders, resident_store, resource_client
 from . import lineage_aggregate
 
 
-PROJECTS_ROOT = (portal_path("share_root") / "Projects")
-PROJECT_DELETION_AUDIT = (portal_path("share_root") / "Agents") / "_archive" / "deleted_projects" / "project_deletions.json"
+PROJECTS_ROOT = (portal_path('projects'))
+PROJECT_DELETION_AUDIT = (portal_path('lineages')) / "_archive" / "deleted_projects" / "project_deletions.json"
 
 
 def _actor_id(value: object) -> str:

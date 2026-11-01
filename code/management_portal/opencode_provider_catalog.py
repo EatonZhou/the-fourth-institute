@@ -25,16 +25,12 @@ import sys
 from typing import NamedTuple
 from management_common.portal_paths import path as portal_path, resolve_directory
 from management_common.site_config import read_site_config
-from management_common.provider_runtime_paths import runtime_entry
+from management_common.code_environment import provider_entry
 
 from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
 
 _PROVIDERS = read_site_config().get("deployment", {}).get("providers", {})
-RUNTIME = Path(os.environ.get(
-    "PORTAL_OPENCODE_RUNTIME_ROOT",
-    str(runtime_entry(_PROVIDERS, "opencode_runtime_current", resolve_directory(_PROVIDERS.get(
-        "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / "opencode-current")),
-))
+RUNTIME = provider_entry("opencode_runtime_current")
 ROUTE = "zen_free"
 # OpenCode Zen, the service of the free route.
 ZEN = "opencode"

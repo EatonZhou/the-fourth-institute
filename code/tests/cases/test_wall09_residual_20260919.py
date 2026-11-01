@@ -72,7 +72,6 @@ def test_project_seed_is_written_under_the_registry_lock(monkeypatch, tmp_path, 
         "tag_vocab": [{"folder": "design"}],
     })
     registry.write_text(before)
-    monkeypatch.setattr(project, "SHARE_ROOT", share)
     monkeypatch.setattr(project, "PROJECTS_ROOT", projects)
     held = []
     original_seed = project._write_project_seed_files
@@ -117,7 +116,6 @@ def test_project_creation_compensates_partial_directory_and_registry(monkeypatch
     })
     registry.write_text(before)
     before = registry.read_text()
-    monkeypatch.setattr(project, "SHARE_ROOT", share)
     monkeypatch.setattr(project, "PROJECTS_ROOT", projects)
     if failure == "seed":
         def fail_seed(root, *_args):

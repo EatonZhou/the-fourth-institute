@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from management_common.principal import is_user_or_resident
-from management_common import portal_paths
+from management_common.instance_manifest import load
 from management_common import process_runtime
 from management_common.product_environment import read_product_env
 
@@ -25,10 +25,6 @@ from scripts import portal_background_jobs
 
 ACTIVATION = ContextVar('script_run_activation', default={})
 TERMINAL = frozenset({'succeeded', 'failed', 'timed_out', 'cancelled', 'lost'})
-RUNNER_PATH_KEYS = frozenset({
-    'PORTAL_SITE_CONFIG', 'PORTAL_PATHS_CONFIG', 'PORTAL_RELEASE_ROOT',
-    *portal_paths.ENV_KEYS.values(),
-})
 
 
 def now():
@@ -111,6 +107,7 @@ def _user_manager_environment(environment=None):
 
 def launch(record, config):
     _check_platform()
+    instance = load()
     run_dir = runtime.RUN_ROOT / record['script_run_id']
     io = run_dir / 'io'
     (io / 'artifacts').mkdir(parents=True, mode=0o700)
@@ -119,14 +116,13 @@ def launch(record, config):
     private = runtime.PRIVATE_ROOT / (record['script_run_id'] + '.json')
     config = {**config, 'run_dir': str(run_dir), 'script_run_id': record['script_run_id'],
               'process_tree_id': _payload_tree(record['script_run_id']),
-              'portal_url': read_product_env('PORTAL_URL', 'http://127.0.0.1:18086').rstrip('/')}
+              'portal_url': load().internal_web_origin()}
     config['token'] = _issue_token(record['caller_id'], record['script_run_id'], private, config.get('timeout_seconds'))
     atomic_json(private, config)
     private.chmod(0o600)
     # Detached runners do not inherit the launching service's environment.
-    # Carry its explicit site paths, never database URLs or service credentials.
-    path_environment = {key: os.environ[key] for key in sorted(RUNNER_PATH_KEYS)
-                        if key in os.environ}
+    # Carry the selected instance, never database URLs or service credentials.
+    path_environment = {'PORTAL_INSTANCE_ROOT': str(instance.root)}
     if sys.platform in {'darwin', 'win32'}:
         allowed = {"HOME", "USER", "LOGNAME", "PATH", "TMPDIR", "LANG",
                    "SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT",

@@ -98,7 +98,7 @@ def test_production_generate_obeys_skill_scope_and_rejects_immutable_bypass(tmp_
     monkeypatch.setattr(engineering, 'source_files', lambda root: [p.relative_to(root) for p in root.rglob('*') if p.is_file()])
     local = skill(tmp_path / 'skills/local', True)
     skill(tmp_path / 'skills/general')
-    item = {'source': str(local.parent), 'target': 'data/share_root/Skills'}
+    item = {'source': str(local.parent), 'target': 'data/skills'}
     if mode == 'immutable_file':
         file = local / 'scripts/helper.py'
         item.update(source=str(file), immutable_file={'sha256': engineering.checksum(file), 'size': file.stat().st_size})
@@ -109,8 +109,8 @@ def test_production_generate_obeys_skill_scope_and_rejects_immutable_bypass(tmp_
                   resolved={'files': [item]}, database_sql='-- fixture\n')
     if mode == 'tree':
         result = engineering.generate(**kwargs)
-        assert (destination / 'data/share_root/Skills/general/SKILL.md').is_file()
-        assert not (destination / 'data/share_root/Skills/local').exists()
+        assert (destination / 'data/skills/general/SKILL.md').is_file()
+        assert not (destination / 'data/skills/local').exists()
         assert any(row['reason'] == 'Skill metadata.distribution is site_only' for row in result['file_scope']['decisions'])
     else:
         with pytest.raises(ValueError, match='(site-only Skill|private paths)'):
@@ -128,16 +128,16 @@ def test_fixed_project_artifact_can_be_reused_without_allowing_private_files(tmp
         file.write_text('test content\n')
     shutil.copytree(Path(__file__).resolve().parents[2] / 'config/resource-types', source / 'config/resource-types')
     monkeypatch.setattr(engineering, 'source_files', lambda root: [p.relative_to(root) for p in root.rglob('*') if p.is_file()])
-    project = tmp_path / 'fixed/data/share_root/Projects/example'
+    project = tmp_path / 'fixed/data/projects/example'
     project.mkdir(parents=True)
     (project / marker).write_text('example\n')
-    item = {'source': str(project.parent), 'target': 'data/share_root/Projects', 'immutable_artifact': True}
+    item = {'source': str(project.parent), 'target': 'data/projects', 'immutable_artifact': True}
     destination = tmp_path / 'rebuild'
     kwargs = dict(source_root=source, destination=destination, snapshot={},
                   resolved={'files': [item]}, database_sql='-- unchanged\n')
     if marker == '.tfi-project':
         result = engineering.generate(**kwargs)
-        output = destination / 'data/share_root/Projects/example/.tfi-project'
+        output = destination / 'data/projects/example/.tfi-project'
         assert output.read_bytes() == (project / marker).read_bytes()
         assert any(row['path'] == output.relative_to(destination).as_posix() for row in result['inventory'])
     else:

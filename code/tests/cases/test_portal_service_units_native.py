@@ -1,160 +1,114 @@
-"""Native Codex service definitions share the release SCM/launchd adapters."""
+"""Native Codex account hosts are registered components defined through the instance."""
 from __future__ import annotations
 
 import json
 import plistlib
-import shutil
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 
-@pytest.mark.parametrize("platform,user_mode", [("darwin", False), ("win32", False), ("win32", True)])
-def test_native_codex_lifecycle_uses_registered_service(tmp_path, monkeypatch, platform, user_mode):
-    from scripts import portal_service_units as units
-    from scripts import portal_service_control
-    from scripts import tfi_release_platform_windows, tfi_release_platform_macos
-    from management_common import site_config
-
-    binary = tmp_path / "Codex Binary.exe"
-    binary.write_bytes(b"test")
-    monkeypatch.setattr(units, "sys", SimpleNamespace(platform=platform, executable=str(tmp_path / "Python.exe")))
-    monkeypatch.setattr(units, "instance_root", lambda: tmp_path / "Portal Instance")
+@pytest.fixture(params=["darwin", "win32"])
+def native(request, tmp_path, monkeypatch):
+    from scripts import instance_services, portal_service_units as units
+    from scripts import tfi_release_platform_macos, tfi_release_platform_windows
     from management_portal.execution import account_hosting
-    monkeypatch.setattr(account_hosting, "instance_root", units.instance_root)
-    monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {"providers": {"codex_binary": str(binary)}}})
-    monkeypatch.setattr(shutil, "which", lambda name: str(binary))
-    if platform == "win32":
-        from management_portal.execution import provider_updates
-        monkeypatch.setattr(provider_updates, "sys", units.sys)
-        monkeypatch.setattr(provider_updates, "_PROVIDER_DEPLOYMENT", {})
-        monkeypatch.setattr(provider_updates, "RUNTIMES", tmp_path / "runtimes")
-        binary = provider_updates.CodexRuntime().link() / "codex.cmd"
-        binary.parent.mkdir(parents=True)
-        binary.write_bytes(b"test")
-    from management_common import portal_paths
-    original_path = portal_paths.path_values
-    monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "instances_root": str(tmp_path / "instance")})
-    monkeypatch.setenv("PORTAL_WINDOWS_SERVICE_ACCOUNT", "local\\portal")
-    monkeypatch.setenv("PORTAL_WINDOWS_SERVICE_PASSWORD", "mock-secret")
-    if user_mode:
-        root = tmp_path / "installed"
-        root.mkdir()
-        (root / "runtime").mkdir()
-        (root / "installation.json").write_text(json.dumps({"schema": "tfi.release-installation.v1", "target": {
-            "install_root": str(root), "shared_code_root": str(units.SOURCE_ROOT),
-            "python": units.sys.executable, "windows_service_mode": "user",
-            "data_roots": {"instances_root": str(units.instance_root())}}}))
-        monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(root / "config/target.json"))
-        monkeypatch.setattr(portal_paths, "CONFIG_PATH", root / "config/target.json")
-        monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_ACCOUNT")
-        monkeypatch.delenv("PORTAL_WINDOWS_SERVICE_PASSWORD")
-    monkeypatch.setattr(tfi_release_platform_macos, "unit_directory", lambda: tmp_path / "agents")
-    from management_portal.execution.account_registrations import create_registration
-    create_registration({"account_id": "sample", "provider": "codex", "kind": "subscription_login"}, "test")
-    events = []
-    definitions = {}
-
-    class Controller:
-        def start(self, name):
-            events.append(("start", name))
-
-        def stop(self, name):
-            events.append(("stop", name))
-
-        def status(self, name):
-            return {"load": "loaded", "active": "active", "sub": "running", "pid": 123}
-
-    def controller(*args, **kwargs):
-        return Controller()
-
-    controller.label = lambda service: "com.tfi.portal." + service.removesuffix(".service")
-    monkeypatch.setattr(portal_service_control, "ServiceControl", controller)
-    if user_mode:
-        from scripts import tfi_windows_user_services as user_services
-        class UserController(Controller):
-            def __init__(self, directory):
-                assert directory == units.instance_root() / "service-units"
-        monkeypatch.setattr(user_services, "WindowsServiceControl", UserController)
-        monkeypatch.setattr(portal_service_control, "ServiceControl", lambda: pytest.fail("user mode reached SCM"))
+    from tests.cases.provider_service_test_support import FakeControl, provider_instance, real_provider_links
+    links = real_provider_links()
+    root, _ = provider_instance(monkeypatch, tmp_path)
+    platform = request.param
     adapter = tfi_release_platform_windows if platform == "win32" else tfi_release_platform_macos
+    directory = tmp_path / "definitions"
+    monkeypatch.setattr(units, "sys", SimpleNamespace(platform=platform))
+    monkeypatch.setattr(instance_services, "platform_name", lambda: "windows" if platform == "win32" else "macos")
+    monkeypatch.setattr(instance_services, "definition_directory", lambda instance: directory)
+    control = FakeControl(directory, adapter.unit_path)
+    monkeypatch.setattr(instance_services, "controller", lambda instance: control)
+    events = []
 
-    def register(directory, units_to_register, **kwargs):
-        definitions.update(units_to_register)
-        events.append(("register", next(iter(units_to_register))))
-        return list(units_to_register)
+    def register(target, definitions, **_):
+        target.mkdir(parents=True, exist_ok=True)
+        created = [name for name in definitions if not adapter.unit_path(target, name).exists()]
+        for name, text in definitions.items():
+            adapter.unit_path(target, name).write_text(text, encoding="utf-8")
+            events.append(("register", name))
+        return created
+
+    def remove(target, names):
+        for name in names:
+            adapter.unit_path(target, name).unlink()
+            events.append(("remove", name))
 
     monkeypatch.setattr(adapter, "register_services", register)
-    monkeypatch.setattr(adapter, "remove_services", lambda directory, names: events.append(("remove", names[0])))
+    monkeypatch.setattr(adapter, "remove_services", remove)
+    monkeypatch.setattr(account_hosting, "ensure_account_home", lambda *args: tmp_path / "account")
+    monkeypatch.setattr(account_hosting, "write_codex_launch", lambda account: None)
+    yield SimpleNamespace(root=root, platform=platform, adapter=adapter, directory=directory,
+                          control=control, events=events, units=units)
+    assert real_provider_links() == links
 
+
+def test_native_codex_lifecycle_uses_registered_service(native):
+    from management_common.instance_manifest import load
+    units = native.units
     state = units.start_codex_instance("sample")
-    assert state["active"] == "active" and state["pid"] == 123
-    name, definition = next(iter(definitions.items()))
-    assert name.startswith("portal-codex-app-server@sample-")
-    if platform == "darwin":
-        command = plistlib.loads(definition.encode())["ProgramArguments"]
+    instance = load(native.root)
+    component = "codex-app-server@sample"
+    assert component in instance.document["services"]["components"]
+    name = instance.service_name(component) + ("" if native.platform == "win32" else ".service")
+    assert state["active"] == "active" and state["unit"] == name
+    assert native.events == [("register", name)] and ("start", name) in native.control.calls
+    text = native.adapter.unit_path(native.directory, name).read_text(encoding="utf-8")
+    if native.platform == "darwin":
+        definition = plistlib.loads(text.encode())
+        command, environment = definition["ProgramArguments"], definition["EnvironmentVariables"]
     else:
-        data = json.loads(definition)
-        command = data["command"]
-        if user_mode:
-            from scripts.tfi_windows_user_services import validate_definition, state_path
-            validate_definition(data, name)
-            other = dict(data, name=name.replace("sample-", "other-"))
-            with pytest.raises(ValueError, match="account ownership"):
-                validate_definition(other, other["name"])
-            with pytest.raises(ValueError, match="ownership"):
-                validate_definition(dict(data, code=str(tmp_path / "foreign")), name)
-            assert state_path(data).name == name + ".process.json"
-        else:
-            assert data["account"] == "local\\portal"
-            assert "tfi_release_windows_service.py" in data["binary"]
-        assert "mock-secret" not in definition
-    assert command[:3] == [str(tmp_path / "Python.exe"), "-m", "management_portal.codex_app_server_host"]
-    assert command[command.index("--binary") + 1] == str(binary)
-    assert command[command.index("--account-config") + 1].endswith("provider-accounts/codex/sample/launch.json")
-    assert events[:2] == [("register", name), ("start", name)]
+        definition = json.loads(text)
+        assert definition["mode"] == "user" and definition["component"] == component
+        command = [definition["python"], "-m", "management_portal.service_runtime", "--component", component]
+        environment = definition["environment"]
+    # Only the instance selection travels; programs and accounts come from its manifest.
+    assert command[1:] == ["-m", "management_portal.service_runtime", "--component", component]
+    assert environment == {"PORTAL_INSTANCE_ROOT": str(native.root)}
+    units.verify_native_codex_services([name])
+    with pytest.raises(ValueError, match="not a registered account host"):
+        units.verify_native_codex_services([name.replace("sample", "other")])
     units.stop_codex_instance("sample")
+    assert native.control.status(name)["active"] == "inactive"
     units.remove_codex_instance("sample")
-    assert events[-2:] == [("stop", name), ("remove", name)]
+    assert native.events[-1] == ("remove", name)
+    assert component not in load(native.root).document["services"]["components"]
 
 
-def test_native_start_failure_rolls_back_new_registration(tmp_path, monkeypatch):
-    from scripts import portal_service_units as units
-    from scripts import portal_service_control, tfi_release_platform_macos as adapter
-    from management_common import site_config
+def test_native_start_failure_rolls_back_new_registration(native, monkeypatch):
+    from management_common.instance_manifest import load
 
-    binary = tmp_path / "codex"
-    binary.write_bytes(b"test")
-    monkeypatch.setattr(units, "sys", SimpleNamespace(platform="darwin", executable=str(binary)))
-    monkeypatch.setattr(units, "instance_root", lambda: tmp_path / "instance")
-    monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {}})
-    monkeypatch.setattr(shutil, "which", lambda name: str(binary))
-    from management_common import portal_paths
-    original_path = portal_paths.path_values
-    monkeypatch.setattr(portal_paths, "path_values", lambda: {**original_path(), "instances_root": str(tmp_path / "instance")})
-    monkeypatch.setattr(adapter, "unit_directory", lambda: tmp_path / "agents")
-    from management_portal.execution.account_registrations import create_registration
-    create_registration({"account_id": "sample", "provider": "codex", "kind": "subscription_login"}, "test")
-    events = []
-    monkeypatch.setattr(adapter, "register_services", lambda d, u: list(u))
-    monkeypatch.setattr(adapter, "remove_services", lambda d, n: events.append("removed"))
+    def fail(*names):
+        raise RuntimeError("mock launch failed")
 
-    class Controller:
-        def start(self, name):
-            raise RuntimeError("mock launch failed")
-
-        def stop(self, name):
-            events.append("stopped")
-
-    def controller(*args, **kwargs):
-        return Controller()
-
-    controller.label = lambda service: "com.tfi.portal." + service.removesuffix(".service")
-    monkeypatch.setattr(portal_service_control, "ServiceControl", controller)
+    monkeypatch.setattr(native.control, "start", fail)
     with pytest.raises(RuntimeError, match="mock launch failed"):
-        units.start_codex_instance("sample")
-    assert events == ["stopped", "removed"]
+        native.units.start_codex_instance("sample")
+    assert [event for event, _ in native.events] == ["register", "remove"]
+    assert "codex-app-server@sample" not in load(native.root).document["services"]["components"]
+
+
+def test_foreign_definition_is_never_replaced(native):
+    from management_common.host_instances import add_service_component
+    from scripts.instance_services import unit_name
+    instance = add_service_component(native.root, "codex-app-server@sample")
+    name = unit_name(instance, "codex-app-server@sample")
+    path = native.adapter.unit_path(native.directory, name)
+    path.parent.mkdir(parents=True)
+    if native.platform == "darwin":
+        path.write_bytes(plistlib.dumps({"EnvironmentVariables": {"PORTAL_INSTANCE_ROOT": "/another"}}))
+    else:
+        path.write_text(json.dumps({"mode": "user", "environment": {"PORTAL_INSTANCE_ROOT": "/another"}}))
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="another instance"):
+        native.units.start_codex_instance("sample")
+    assert path.read_bytes() == before and native.events == []
+    assert not any(call[0] == "start" for call in native.control.calls)
 
 
 def test_windows_scm_host_reads_registered_codex_command(tmp_path, monkeypatch):

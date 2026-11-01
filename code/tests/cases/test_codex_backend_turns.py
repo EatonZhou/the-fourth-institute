@@ -1046,6 +1046,3 @@ def test_codex_backend_maps_goal_to_native_protocol() -> None:
     assert result.output["message"] == "goal finished"
     assert result.output["goal"]["status"] == "complete"
     assert result.usage["last"]["totalTokens"] == 21
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

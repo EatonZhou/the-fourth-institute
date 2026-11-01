@@ -107,7 +107,7 @@ def watchboard_readme_text(record: dict[str, Any]) -> str:
         f"# {resident_id} Watchboard",
         "",
         "本目录保存该 Resident 的 Watchboard 展示定义、配置、状态和可运行脚本。",
-        f"修改前读取 `{portal_path('share_root') / 'Skills/create-resident-watchboard/SKILL.md'}`。",
+        f"修改前读取 `{portal_path('skills') / 'create-resident-watchboard/SKILL.md'}`。",
         "",
         "- `watchboard.yaml` 定义通用展示信息。",
         "- `agent.yaml` 声明配置、状态、命令和运行方式。",

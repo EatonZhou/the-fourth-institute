@@ -312,7 +312,7 @@ def test_lineage_fixture_contract_defaults_to_reuse_and_survives_planning(tmp_pa
     with pytest.raises(CatalogError, match="目录不一致"):
         planner.preview({"implementation": {"runners": ["tau"]}})
     assert selected["implementation"]["lineage_fixture"]
-    target = SimpleNamespace(instance_id="dev", origin="http://dev", page_fingerprint="fp", actor="test-actor")
+    target = SimpleNamespace(deployment_id="dev", origin="http://dev", page_fingerprint="fp", actor="test-actor")
     prompt = build_prompt(selected, TauConfig(tmp_path / "state.json"), tmp_path, target, RUN)
     assert "本用例允许独立临时 Lineage" in prompt
     assert selected["implementation"]["lineage_fixture"] in prompt

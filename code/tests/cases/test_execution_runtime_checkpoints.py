@@ -482,6 +482,3 @@ def test_execution_runtime_recovers_completed_provider_after_handover(
         response="durable final response",
         usage={"total_tokens": 42},
     )
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

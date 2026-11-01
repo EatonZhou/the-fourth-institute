@@ -134,7 +134,7 @@ def test_database_error_cannot_become_empty_registry(monkeypatch):
 
 
 def test_registry_requires_postgres_configuration(monkeypatch):
-    """未配置 PORTAL_DATABASE_URL 时无法创建 Agent token 注册表"""
+    """实例没有数据库端点时无法创建 Agent token 注册表"""
     monkeypatch.delenv("PORTAL_DATABASE_URL", raising=False)
-    with pytest.raises(RuntimeError, match="requires PORTAL_DATABASE_URL"):
+    with pytest.raises(RuntimeError, match="requires its database endpoint"):
         agent_token_auth.AgentTokenStore()

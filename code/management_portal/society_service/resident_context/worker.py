@@ -24,8 +24,10 @@ _LOG = logging.getLogger(__name__)
 class ResidentContextWorker:
     def __init__(self, context: ResidentContext | None = None, *, holder: str = "") -> None:
         self._context = context
-        instance = str(os.getenv("PORTAL_INSTANCE", "dev") or "dev")
-        self.holder = holder or f"{instance}:{socket.gethostname()}:{os.getpid()}"
+        if not holder:
+            from management_common.instance_manifest import load
+            holder = f"{load().name}:{socket.gethostname()}:{os.getpid()}"
+        self.holder = holder
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 

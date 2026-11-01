@@ -26,16 +26,16 @@ def test_new_runtime_profiles_are_excluded_without_a_numbered_allowlist(tmp_path
 
 def test_checksum_path_keys_relocate_without_changing_schema_keys_or_colliding():
     from management_portal.distribution.sanitize import scrub
-    mappings = [('/data/research/run', '${share_root}/outputs/run')]
+    mappings = [('/data/research/run', 'projects:demo/outputs/run')]
     value = {'sha256': {'/data/research/run/a.npz': 'digest'},
              'description /data/research/run': 'schema label',
              'path': '/data/research/run/a.npz'}
     assert scrub(value, mappings=mappings) == {
-        'sha256': {'${share_root}/outputs/run/a.npz': 'digest'},
+        'sha256': {'projects:demo/outputs/run/a.npz': 'digest'},
         'description /data/research/run': 'schema label',
-        'path': '${share_root}/outputs/run/a.npz'}
+        'path': 'projects:demo/outputs/run/a.npz'}
     with pytest.raises(ValueError, match='collide'):
-        scrub({'/data/research/run/a.npz': 'one', '${share_root}/outputs/run/a.npz': 'two'}, mappings=mappings)
+        scrub({'/data/research/run/a.npz': 'one', 'projects:demo/outputs/run/a.npz': 'two'}, mappings=mappings)
 
 
 def test_internal_artifacts_materialize_with_same_copy_sanitization(tmp_path):
@@ -149,18 +149,18 @@ def test_external_metadata_references_use_most_specific_included_copy(tmp_path):
     outside.mkdir()
     link = nested / 'result'
     link.symlink_to(outside, target_is_directory=True)
-    files = [{'source': str(root), 'target': 'data/share_root/Workspaces/root'},
-             {'source': str(nested), 'target': 'data/share_root/Workspaces/src'}]
+    files = [{'source': str(root), 'target': 'data/projects/demo/root'},
+             {'source': str(nested), 'target': 'data/projects/demo/src'}]
     policy = {'external_links': [{'path': str(link), 'target': str(outside), 'reason': 'selected research'}]}
     mappings = external_path_mappings(files, policy)
-    assert mappings == [(str(outside), '${share_root}/Workspaces/src/result')]
+    assert mappings == [(str(outside), 'projects:demo/src/result')]
     assert external_path_mappings(list(reversed(files)), policy) == mappings
     assert scrub({'result': str(outside / 'data.npz')}, mappings=mappings) == {
-        'result': '${share_root}/Workspaces/src/result/data.npz'}
+        'result': 'projects:demo/src/result/data.npz'}
 
 
 def test_mapping_order_and_recursive_semantics_are_preserved():
     from management_portal.distribution.sanitize import scrub
-    mappings = [('/data', '${share_root}/base'), ('/data/results', '${share_root}/specific')]
+    mappings = [('/data', 'projects:demo/base'), ('/data/results', 'projects:demo/specific')]
     assert scrub({'paths': ['/data/results/x', '/data/y']}, mappings=mappings) == {
-        'paths': ['${share_root}/specific/x', '${share_root}/base/y']}
+        'paths': ['projects:demo/specific/x', 'projects:demo/base/y']}

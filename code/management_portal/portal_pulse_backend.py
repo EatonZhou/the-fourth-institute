@@ -1,4 +1,5 @@
 from __future__ import annotations
+from management_common.instance_manifest import AREAS
 from management_common.portal_paths import path as portal_path
 from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
@@ -12,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from . import pulse_publication_store
-from .society_service.lineage_storage import canonical_lineage_folder
+from .society_service.lineage_locations import lineage_folder
 
 
 # The Pulse workflow in Portal System publishes into its Lineage Folder;
@@ -39,9 +40,10 @@ def _safe_paths(value: Any, limit: int = 8) -> list[str]:
     if not isinstance(value, list):
         return []
     out: list[str] = []
+    roots = tuple(str(portal_path(area)) + "/" for area in AREAS)
     for item in value:
         text = str(item or "").strip()
-        if not text.startswith((str(portal_path("share_root") / "Projects") + "/", str(portal_path("staging_root")) + "/")):
+        if not text.startswith(roots):
             continue
         if text not in out:
             out.append(text)
@@ -66,10 +68,10 @@ def _pulse_root() -> Path:
             raise ValueError(f"deployment.pulse.{key} must be a Lineage ID")
     if not config.get("lineage_id"):
         raise ValueError("deployment.pulse.lineage_id is not configured")
-    root = canonical_lineage_folder(config["lineage_id"]) / "memory" / "pulse"
+    root = lineage_folder(config["lineage_id"]) / "memory" / "pulse"
     if not config.get("legacy_lineage_id") or (root / PULSE_MIGRATION_RECEIPT).exists():
         return root
-    legacy = canonical_lineage_folder(config["legacy_lineage_id"]) / "memory" / "pulse"
+    legacy = lineage_folder(config["legacy_lineage_id"]) / "memory" / "pulse"
     return legacy if (legacy / "index.json").exists() else root
 
 

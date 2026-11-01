@@ -7,7 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'code'))
-from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES
+from management_common.code_environment import GENERATED_CODE_DIRECTORIES
 
 
 def digest(path):
@@ -41,9 +41,9 @@ def prepare(repo, *, target_platforms=None, include_examples=True):
     actual = [row for row in inventory(seed) if row['path'] != 'manifest.json']
     if actual != sorted(specification['inventory'], key=lambda row: row['path']):
         raise ValueError('Example seed differs from its recorded inventory')
-    for name in ('secrets_dir',):
-        if any((seed / manifest['files'][name]).iterdir()):
-            raise ValueError('Example seed must not contain live accounts or secrets')
+    # Instance content is only area files; secrets and accounts never ship.
+    if {path.name for path in (seed / 'data').iterdir()} != set(manifest['files']):
+        raise ValueError('Example seed data must consist of its declared areas')
     from scripts.tfi_seed_selection import plan
     manifest, selected_sql, excluded = plan(seed, manifest, include_examples=include_examples)
     manifest['include_examples'] = include_examples
@@ -81,11 +81,7 @@ def prepare(repo, *, target_platforms=None, include_examples=True):
     # Use the installer's own read-only contract before publishing a candidate.
     # This does not prepare dependencies, create services, or import a database.
     from scripts.tfi_release_install import validate_engineering
-    validate_engineering(manifest_path, {
-        'run_id': manifest['run_id'],
-        'supervisor_resident_id': manifest['supervisor_resident_id'],
-        'install_root': str(repo / 'instance/example_instance'),
-    })
+    validate_engineering(manifest_path)
     if destination.exists():
         shutil.rmtree(destination)
     temporary.rename(destination)

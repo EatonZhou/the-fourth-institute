@@ -16,7 +16,6 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
-from management_common.instance_paths import instance_root
 from management_common.service_socket import connect_service
 
 from .contracts import InstructionCall, InstructionContext, InstructionError, InstructionResult, failed_result
@@ -67,15 +66,16 @@ class StreamCancellation:
             pass
 
 
-def _instance() -> str:
-    return str(os.getenv("PORTAL_INSTANCE") or "dev").strip() or "dev"
-
-
 def web_service_socket() -> Path:
-    configured = str(os.getenv("PORTAL_WEB_SERVICE_SOCKET") or "").strip()
-    if configured:
-        return Path(configured).expanduser()
-    return instance_root() / _instance() / "web-service.sock"
+    """The Web deployment's instruction socket; its RPC signing key lies beside it.
+
+    A Web process serves its own deployment. The shared services have none and
+    use the Web whose code they run: Dev when the instance has one.
+    """
+    from management_common.instance_manifest import load
+    manifest = load()
+    deployment = str(os.getenv("PORTAL_DEPLOYMENT") or "").strip() or ("dev" if "dev" in manifest.deployments else "release")
+    return manifest.deployment_runtime(deployment) / "web-service.sock"
 
 
 def owner_socket(owner: str) -> Path:

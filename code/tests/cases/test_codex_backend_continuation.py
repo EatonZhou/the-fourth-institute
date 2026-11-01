@@ -941,6 +941,3 @@ def test_codex_backend_recovery_uses_the_same_continuation_limit() -> None:
 
     assert client.resume_turn.call_count == 1
     assert client.run_turn.call_count == 2
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

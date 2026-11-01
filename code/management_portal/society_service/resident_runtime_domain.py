@@ -16,7 +16,8 @@ from .resident_access import can_manage_resident as _can_manage_resident
 from .resident_runtime_payload import runtime_settings_updates_from_payload as _runtime_settings_updates_from_payload
 from .resident_settings_contract import runtime_settings_from_parts, stage_runtime_settings
 from management_common.actor_identity import canonical_actor_id
-from management_common.portal_paths import PORTAL_ROOT
+from pathlib import Path
+PORTAL_ROOT = Path(__file__).resolve().parents[2]
 from management_common.product_environment import mirror_product_env
 from management_portal.execution.accounts import default_execution_accounts
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS

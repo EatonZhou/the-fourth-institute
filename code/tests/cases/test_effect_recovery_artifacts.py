@@ -23,7 +23,8 @@ from tests.cases.test_lineage_generic_primitives import primitive_store
 
 @pytest.fixture(autouse=True)
 def artifacts(monkeypatch, tmp_path):
-    monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", str(tmp_path / "artifacts"))
+    from management_portal.society_service import effect_artifacts
+    monkeypatch.setattr(effect_artifacts, "portal_path", lambda area: tmp_path / area)
     get_portal_access_store().upsert_user("CASE-A", actor="portal", status="active")
 
 
@@ -470,22 +471,16 @@ def test_removing_effect_node_settles_only_confirmed_activation(primitive_store,
         assert not any(node["id"] == effect_id for node in get_lineage_data_store().lineage_definition(lid)["program"]["components"])
 
 
-def test_registered_artifact_root_is_explicit_and_can_be_overridden_without_writing(monkeypatch, tmp_path):
-    """Effect 产物存储根目录属于本安装且支持绝对路径覆盖
+def test_registered_artifact_root_is_in_the_features_area_without_writing():
+    """Effect 产物存储根目录在本实例的 features 区域
 
-    默认位于本安装 staging_root 的 shared/effect_artifacts，环境覆盖须为绝对路径，确定根目录不写产物。
+    默认位于 features 区域的 effect_artifacts，确定根目录不写产物。
 
     :design-point:
     """
-    from management_common.portal_paths import path as portal_path
-    monkeypatch.delenv("PORTAL_EFFECT_ARTIFACT_ROOT")
-    default = portal_path("staging_root") / "shared" / "effect_artifacts"
+    from management_portal.society_service import effect_artifacts
+    default = effect_artifacts.portal_path("features") / "effect_artifacts"
     assert ArtifactStore().root == default and not default.exists()
-    monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", str(tmp_path))
-    assert ArtifactStore().root == tmp_path
-    monkeypatch.setenv("PORTAL_EFFECT_ARTIFACT_ROOT", "relative")
-    with pytest.raises(ValueError, match="absolute"):
-        ArtifactStore()
 
 
 def test_cleanup_worker_rotates_past_failed_first_batch(monkeypatch):

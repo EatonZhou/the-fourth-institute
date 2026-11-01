@@ -391,9 +391,9 @@ def test_project_move_updates_canonical_member_paths_and_keeps_single_root(team)
     lineage_lifecycle.update_lineage_metadata(team.lineage_id, {
         "project_id": next_project, "expected_revision": current["revision"],
     }, ACTOR)
-    destination = team.owners.root / "Projects" / next_project / "knowledge_base" / "agents" / team.lineage_id
-    assert root.resolve() == destination
-    assert original == root and root.is_symlink() or not original.exists()
+    destination = team.owners.root / "Projects" / next_project / "agents" / team.lineage_id
+    assert lineage_state._lineage_dir(team.lineage_id) == destination
+    assert not original.exists() and not root.is_symlink()
     assert (destination / "preserve.txt").read_text() == "user content"
     for resident_id in (team.source["resident_id"], team.target["resident_id"]):
         record = resident_record_domain.find_resident(resident_id)

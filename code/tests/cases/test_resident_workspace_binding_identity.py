@@ -12,12 +12,13 @@ from tests.cases.test_resident_folder_creation_contract import (
 
 
 from management_portal.society_service import resident_workspace_domain
+from tests.cases.instance_test_support import lineage_folders
 
 
 @pytest.fixture
 def future_creation_store(resident_creation_store, monkeypatch):
     # Storage and the Lineage host resolve the same canonical layout in v30.
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(resident_creation_store / "lineages"))
+    lineage_folders(monkeypatch, resident_creation_store / "lineages")
     return resident_creation_store
 
 def test_update_workspace_inputs_persists_replacement_and_removal(future_creation_store, tmp_path):

@@ -1,14 +1,15 @@
 """Windows user units report a terminated supervisor as failed and get revived.
 
-:purpose: parity with systemd Restart= and launchd KeepAlive for desktop installs.
+This provides parity with systemd Restart= and launchd KeepAlive for desktop installs.
 """
 import json
-from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
 
-from scripts import tfi_release_install as api, tfi_windows_user_services as services
+from management_common.instance_manifest import load
+from scripts import instance_services, tfi_windows_user_services as services
+from tests.cases.instance_test_support import write_instance
 
 
 @pytest.fixture
@@ -19,6 +20,7 @@ def unit(tmp_path, monkeypatch):
     value = {"mode": "user", "name": "tfi-one-codex", "component": "web", "root": str(tmp_path),
              "code": str(tmp_path), "python": "python"}
     (directory / "tfi-one-codex.json").write_text(json.dumps(value))
+    monkeypatch.setattr(services, "owned_definition", lambda value, name: value)
     monkeypatch.setattr(services, "validate_definition", lambda value, name: value)
     alive = {}
     monkeypatch.setattr(services, "process_stamp", lambda pid: alive.get(pid))
@@ -67,6 +69,7 @@ def test_start_breaks_away_from_the_callers_job(unit, monkeypatch, outer_job_all
     monkeypatch.setattr(services.subprocess, "CREATE_NO_WINDOW", 0x08000000, raising=False)
     monkeypatch.setattr(services.subprocess, "CREATE_NEW_PROCESS_GROUP", 0x200, raising=False)
     calls = []
+
     def popen(arguments, **kwargs):
         calls.append(kwargs["creationflags"])
         if kwargs["creationflags"] & services.CREATE_BREAKAWAY_FROM_JOB and not outer_job_allows_breakaway:
@@ -83,26 +86,16 @@ def test_start_breaks_away_from_the_callers_job(unit, monkeypatch, outer_job_all
 
 @pytest.fixture
 def installation(tmp_path, monkeypatch):
-    directory = tmp_path / "units"
-    directory.mkdir()
-    definition = directory / "tfi-one-execution.json"
-    definition.write_text(json.dumps({"name": "tfi-one-execution", "root": str(tmp_path)}))
+    root = write_instance(tmp_path / "instance")
+    directory = root / "runtime/service-units"
+    directory.mkdir(parents=True)
+    definition = directory / "tfi-fixture-execution.json"
+    definition.write_text(json.dumps({"name": "tfi-fixture-execution", "root": str(root)}))
     monkeypatch.setattr(services, "validate_definition", lambda value, name: value)
-    state = {"target": {"shared_code_root": str(tmp_path / "app/code")}}
-    monkeypatch.setattr(api, "owned_state", lambda root: state)
-    from scripts import tfi_application_upgrade
-    monkeypatch.setattr(tfi_application_upgrade, "pending", lambda application: False)
     units = {}
-    monkeypatch.setattr(services, "failed_units", lambda target, directory: {
+    monkeypatch.setattr(services, "failed_units", lambda instance, directory: {
         name: control for name, control in units.items() if control.failed})
-    locked = []
-    @contextmanager
-    def lock(root):
-        if locked:
-            raise BlockingIOError
-        yield
-    monkeypatch.setattr(api, "installation_lock", lock)
-    return definition, units, state, locked
+    return definition, units, root
 
 
 class Unit:
@@ -117,7 +110,7 @@ class Unit:
 
 
 def test_revival_starts_failed_units_and_backs_off_failed_starts(installation):
-    definition, units, _, _ = installation
+    definition, units, _ = installation
     units.update({"codex": Unit(), "kimi": Unit(RuntimeError("no runtime"))})
     attempts, clock = {}, [0.0]
     assert services.revive_failed(definition, attempts, now=lambda: clock[0]) == [
@@ -134,35 +127,31 @@ def test_revival_starts_failed_units_and_backs_off_failed_starts(installation):
     assert attempts == {}
 
 
-def test_revival_waits_while_an_installer_or_upgrade_owns_the_instance(installation, monkeypatch):
-    definition, units, state, locked = installation
+def test_revival_waits_while_a_lifecycle_operation_owns_the_instance(installation):
+    definition, units, root = installation
     units["codex"] = Unit()
-    locked.append(True)
-    assert services.revive_failed(definition, {}) == []
-    locked.clear()
-    from scripts import tfi_application_upgrade
-    monkeypatch.setattr(tfi_application_upgrade, "pending", lambda application: True)
-    assert services.revive_failed(definition, {}) == []
-    monkeypatch.setattr(tfi_application_upgrade, "pending", lambda application: False)
-    state["migration"] = {"business_execution_allowed": False}
-    assert services.revive_failed(definition, {}) == []
+    with instance_services.configuration_lock(root):
+        assert services.revive_failed(definition, {}) == []
     assert units["codex"].starts == 0
-    del state["migration"]
     assert services.revive_failed(definition, {}) == [{"service": "codex", "result": "started"}]
 
 
-def test_failed_units_cover_core_and_provider_units(tmp_path, monkeypatch):
-    monkeypatch.setattr(api, "COMPONENTS", ("postgres", "web"))
-    monkeypatch.setattr(api, "unit_name", lambda target, component: "tfi-one-" + component)
-    statuses = {"tfi-one-postgres": "active", "tfi-one-web": "failed", "codex-a": "failed", "codex-b": "inactive"}
+def test_failed_units_cover_registered_core_and_provider_components(tmp_path, monkeypatch):
+    root = write_instance(tmp_path / "instance")
+    document = json.loads((root / "instance.json").read_text())
+    document["services"]["components"] += ["codex-app-server@a", "codex-app-server@b"]
+    (root / "instance.json").write_text(json.dumps(document))
+    instance = load(root)
+    statuses = {instance.service_name("postgres"): "active", instance.service_name("web"): "failed",
+                instance.service_name("codex-app-server@a"): "failed",
+                instance.service_name("codex-app-server@b"): "inactive", "tfi-other-web": "failed"}
+
     class Control:
         def definition(self, name):
             return {} if name in statuses else None
+
         def status(self, name):
             return {"active": statuses[name]}
-    provider = Control()
     monkeypatch.setattr(services, "WindowsServiceControl", lambda directory: Control())
-    from scripts import tfi_release_provider_services
-    monkeypatch.setattr(tfi_release_provider_services, "owned_services",
-                        lambda target, directory: {"controllers": {"codex-a": provider, "codex-b": provider}})
-    assert sorted(services.failed_units({}, tmp_path)) == ["codex-a", "tfi-one-web"]
+    assert sorted(services.failed_units(instance, tmp_path)) == sorted([
+        instance.service_name("web"), instance.service_name("codex-app-server@a")])

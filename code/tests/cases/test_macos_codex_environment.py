@@ -1,9 +1,13 @@
 """Codex survives the clean launchd environment, without exposing credentials.
 
+A launch agent carries only the instance selection; the launcher derives the
+code-owned Codex entry, its Node runtime and the account launch record.
+
 :module: execution.providers
 :profiles: local.fixture
 :risk: no-external-side-effects
 """
+import json
 import os
 from pathlib import Path
 import plistlib
@@ -11,83 +15,88 @@ import subprocess
 import sys
 import tempfile
 import time
-from types import SimpleNamespace
 
 import pytest
 
-from scripts import portal_service_units as units, tfi_release_platform_macos as adapter
+from scripts import tfi_release_platform_macos as adapter
+
+COMPONENT = "codex-app-server@one"
 
 
 @pytest.fixture
-def definition(tmp_path, monkeypatch):
-    from management_common import site_config
-    from management_portal.execution import account_hosting
-    root = tmp_path
-    binary = root / "codex"
-    # npm's CLI launcher likewise finds its interpreter through /usr/bin/env.
-    binary.write_text("#!/usr/bin/env tfi-fixture-python\n" +
-                      (Path(__file__).parent / "fixtures/codex_env_server.py").read_text())
-    binary.chmod(0o755)
-    tools = root / "bundled tools"
+def account(tmp_path, monkeypatch):
+    from management_common import code_environment
+    from management_common.file_permissions import atomic_write_private_bytes
+    from management_common.instance_manifest import load
+    from tests.cases.provider_service_test_support import provider_instance, real_provider_links
+    links = real_provider_links()
+    root, runtimes = provider_instance(monkeypatch, tmp_path, components=(COMPONENT,))
+    # npm's CLI launcher finds its interpreter through /usr/bin/env node; the
+    # stand-in "node" is this Python, provided as the code's native Node.
+    tools = tmp_path / "native node"
     tools.mkdir()
-    (tools / "tfi-fixture-python").symlink_to(sys.executable)
-    # The registered account directory exists; the host locks it before starting Codex.
-    (root / "account").mkdir()
-    monkeypatch.setattr(units, "sys", SimpleNamespace(platform="darwin", executable=sys.executable))
-    monkeypatch.setattr(units, "instance_root", lambda: root)
-    monkeypatch.setattr(site_config, "read_site_config", lambda: {"deployment": {"providers": {"codex_binary": str(binary)}}})
-    monkeypatch.setattr(account_hosting, "account_home", lambda *args: root / "account")
-    monkeypatch.setattr(account_hosting, "codex_socket_path", lambda *args: root / "codex.sock")
-    monkeypatch.setattr(adapter, "unit_directory", lambda: root / "LaunchAgents")
-    monkeypatch.setenv("PATH", str(tools) + os.pathsep + os.defpath)
-    monkeypatch.setenv("HOME", str(root / "home"))
+    (tools / "node").symlink_to(sys.executable)
+    real_native = code_environment.native_binary
+    monkeypatch.setattr(code_environment, "native_binary",
+                        lambda code, package: tools / "node" if package == "node" else real_native(code, package))
+    binary = runtimes / "codex"
+    binary.write_text("#!/usr/bin/env node\n" + (Path(__file__).parent / "fixtures/codex_env_server.py").read_text())
+    binary.chmod(0o755)
+    home = tmp_path / "account"
+    home.mkdir()
+    launch = root / "runtime/provider-accounts/codex/one/launch.json"
+    launch.parent.mkdir(parents=True)
+    atomic_write_private_bytes(launch, json.dumps({"account_id": "one", "account_dir": str(home)}).encode())
+    monkeypatch.setenv("PATH", os.defpath)
     monkeypatch.setenv("CODEX_HOME", "/another/account/must-not-inherit")
-    monkeypatch.setenv("OPENAI_API_KEY", "fixture-key-must-not-be-in-plist")
-    monkeypatch.setenv("HTTPS_PROXY", "http://fixture-user:fixture-password@127.0.0.1:1")
-    return units._native_codex_service("one")
+    monkeypatch.setenv("OPENAI_API_KEY", "fixture-key-must-not-be-in-definitions")
+    yield load(root)
+    assert real_provider_links() == links
 
 
-def test_launchd_definition_carries_paths_not_credentials(definition):
-    _, _, _, content, _ = definition
-    env = plistlib.loads(content.encode())["EnvironmentVariables"]
-    assert env["PATH"] == os.environ["PATH"]
-    assert env["HOME"] == os.environ["HOME"]
-    assert env["PORTAL_PATHS_CONFIG"] == os.environ["PORTAL_PATHS_CONFIG"]
-    assert env["PORTAL_NETWORK_CONFIG"]
-    assert not {"OPENAI_API_KEY", "CODEX_HOME", "HTTPS_PROXY", "PORTAL_DATABASE_URL"} & env.keys()
-    assert "fixture-password" not in content
+def test_launchd_definition_carries_only_the_instance(account):
+    content = adapter.manifest_unit_text(account, COMPONENT)
+    job = plistlib.loads(content.encode())
+    assert job["EnvironmentVariables"] == {"PORTAL_INSTANCE_ROOT": str(account.root)}
+    assert job["ProgramArguments"][1:] == ["-m", "management_portal.service_runtime", "--component", COMPONENT]
+    assert "fixture-key" not in content and "must-not-inherit" not in content
+
+
+def test_launcher_uses_code_owned_entry_and_account_record(account):
+    from management_common.code_environment import provider_entry
+    from management_portal.service_runtime import component_command
+    command, environment = component_command(account, COMPONENT)
+    entry = provider_entry("codex_binary", account)
+    assert command[command.index("--binary") + 1] == str(entry) and entry.is_relative_to(account.root.parent)
+    assert command[command.index("--account-config") + 1] == str(
+        account.root / "runtime/provider-accounts/codex/one/launch.json")
+    assert not {"CODEX_HOME", "OPENAI_API_KEY"} & environment.keys()
+    assert environment["PATH"].split(os.pathsep)[0].endswith("native node")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX executable and socket")
-def test_clean_launchd_environment_can_start_npm_entry_and_connect(definition):
+def test_clean_launchd_environment_can_start_npm_entry_and_connect(account):
+    from management_portal.service_runtime import component_command, working_directory
     from management_portal.codex_app_server_host import connect_transport
-    _, _, _, content, _ = definition
-    job = plistlib.loads(content.encode())
+    command, environment = component_command(account, COMPONENT)
     with tempfile.TemporaryDirectory(prefix="tfi-codex-", dir="/tmp") as short:
         # macOS has a short AF_UNIX path limit, independent of the test root.
-        command = job["ProgramArguments"]
         endpoint = Path(short) / "one.sock"
         command[command.index("--socket") + 1] = str(endpoint)
-        old_env = {"PATH": os.defpath, "HOME": str(Path(short) / "home")}
-        broken = subprocess.run(command, cwd=job["WorkingDirectory"], env=old_env,
-                                capture_output=True, text=True, timeout=10)
-        assert broken.returncode != 0
-        assert "tfi-fixture-python" in broken.stderr
-        assert not endpoint.exists()
-        # Execute the actual plist command with only launchd + declared values.
-        process = subprocess.Popen(command, cwd=job["WorkingDirectory"],
-            env={**old_env, **job["EnvironmentVariables"]}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cwd = working_directory(account, COMPONENT)
+        broken = subprocess.run(command, cwd=cwd, env={**environment, "PATH": os.defpath},
+                                capture_output=True, text=True, timeout=20)
+        assert broken.returncode != 0 and not endpoint.exists()
+        process = subprocess.Popen(command, cwd=cwd, env=environment,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
-            deadline = time.monotonic() + 10
+            deadline = time.monotonic() + 20
             while not endpoint.exists() and process.poll() is None and time.monotonic() < deadline:
                 time.sleep(.02)
             assert endpoint.exists(), process.communicate(timeout=1)[1].decode() if process.poll() is not None else "socket never appeared"
-            connection = connect_transport(endpoint, platform="darwin")
-            connection.close()
-            # Both our connection and the host's own readiness probe completed
-            # before testing stop cleanup (not merely a path appearing on disk).
+            connect_transport(endpoint, platform="darwin").close()
             # The host binds Codex to a hidden startup name and renames it to the
-            # endpoint once ready (4e5b38e); the stand-in marks the name it bound.
+            # endpoint once ready; the stand-in marks the name it bound.
             ready = lambda: [path for path in Path(short).iterdir() if path.suffix == ".ready"]
             while not ready() and time.monotonic() < deadline:
                 time.sleep(.02)
@@ -97,73 +106,3 @@ def test_clean_launchd_environment_can_start_npm_entry_and_connect(definition):
             process.communicate(timeout=10)
         assert process.returncode == 0
         assert not endpoint.exists()
-
-
-def test_upgrade_exact_legacy_job_then_retry_without_restart(definition):
-    platform, directory, name, content, _ = definition
-    current = plistlib.loads(content.encode())
-    current.pop("EnvironmentVariables")
-    legacy = plistlib.dumps(current, sort_keys=True).decode()
-    platform.register_services(directory, {name: legacy})
-    stopped = []
-    controller = SimpleNamespace(stop=lambda job: stopped.append(job))
-    assert units._register_native_codex(platform, directory, name, content, controller) == []
-    assert platform.unit_path(directory, name).read_text() == content
-    assert stopped == [name]
-    units._register_native_codex(platform, directory, name, content, controller)
-    assert stopped == [name]
-    foreign = current | {"WorkingDirectory": "/other/installation"}
-    path = platform.unit_path(directory, name)
-    path.write_bytes(plistlib.dumps(foreign, sort_keys=True))
-    with pytest.raises(ValueError, match="another launchd job"):
-        units._register_native_codex(platform, directory, name, content, controller)
-    assert plistlib.loads(path.read_bytes()) == foreign
-    assert stopped == [name]
-
-
-def test_failed_stop_preserves_legacy_definition(definition):
-    platform, directory, name, content, _ = definition
-    legacy = plistlib.loads(content.encode())
-    legacy.pop("EnvironmentVariables")
-    before = plistlib.dumps(legacy, sort_keys=True).decode()
-    platform.register_services(directory, {name: before})
-    def fail_stop(_):
-        raise TimeoutError("still running")
-    with pytest.raises(TimeoutError):
-        units._register_native_codex(platform, directory, name, content, SimpleNamespace(stop=fail_stop))
-    assert platform.unit_path(directory, name).read_text() == before
-
-
-def test_managed_binary_link_survives_version_switch(definition):
-    platform, directory, name, content, _ = definition
-    job = plistlib.loads(content.encode())
-    binary = Path(job["ProgramArguments"][job["ProgramArguments"].index("--binary") + 1])
-    version_one, version_two = binary.with_name("codex-v1"), binary.with_name("codex-v2")
-    binary.rename(version_one)
-    binary.symlink_to(version_one)
-    generated = units._native_codex_service("one")[3]
-    assert generated == content  # The symlink itself remains in the plist.
-    old = plistlib.loads(generated.encode())
-    old["ProgramArguments"][old["ProgramArguments"].index("--binary") + 1] = str(version_one)
-    platform.register_services(directory, {name: plistlib.dumps(old, sort_keys=True).decode()})
-    stopped = []
-    controller = SimpleNamespace(stop=stopped.append)
-    units._register_native_codex(platform, directory, name, generated, controller)
-    assert stopped == [name]
-    version_two.write_bytes(version_one.read_bytes())
-    version_two.chmod(0o755)
-    binary.unlink()
-    binary.symlink_to(version_two)
-    updated = units._native_codex_service("one")[3]
-    assert updated == generated
-    units._register_native_codex(platform, directory, name, updated, controller)
-    assert stopped == [name]  # Repeated checks do not restart an active account.
-    # A different executable must never be accepted as a legacy entry.
-    old["ProgramArguments"][old["ProgramArguments"].index("--binary") + 1] = str(version_one)
-    path = platform.unit_path(directory, name)
-    before = plistlib.dumps(old, sort_keys=True)
-    path.write_bytes(before)
-    with pytest.raises(ValueError, match="another launchd job"):
-        units._register_native_codex(platform, directory, name, updated, controller)
-    assert path.read_bytes() == before
-    assert stopped == [name]

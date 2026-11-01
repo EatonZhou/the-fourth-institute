@@ -13,18 +13,18 @@ import pytest
 
 from scripts import tfi_windows_launcher as launcher
 from scripts import tfi_release_install as installer
-from scripts import tfi_instance_layout as layout
 from scripts.tfi_install_progress import FileProgress
 from scripts.windows.build import bundle_engineering
+from tests.cases.instance_test_support import write_instance
 
 
 def archive(platform, included=True, extra=None):
     source = platform / ('source-example' if included else 'source-base')
     files = {'code/scripts/tfi_release_install.py': b'# installer',
              'database/distribution.sql': b'SELECT 1;',
-             'data/share_root/platform.txt': b'platform ${share_root}'}
+             'data/projects/platform.txt': b'platform ${code_root}'}
     if included:
-        files['data/share_root/Lenia/example.txt'] = b'example'
+        files['data/projects/Lenia/example.txt'] = b'example'
     rows = []
     for name, content in files.items():
         path = source / name
@@ -33,9 +33,9 @@ def archive(platform, included=True, extra=None):
         rows.append({'path': name, 'size': len(content), 'sha256': hashlib.sha256(content).hexdigest()})
     manifest = {'schema': 'tfi.release-engineering.v1', 'include_examples': included,
                 'run_id': 'fixture', 'supervisor_resident_id': '', 'inventory': rows,
-                'files': {key: 'data/' + key for key in installer.KEYS},
+                'files': {area: 'data/' + area for area in ('projects', 'features')},
                 'code': {'path': 'code'}, 'database': {'path': 'database/distribution.sql'},
-                'directory_mappings': [{'root': 'share_root', 'path': '', 'placeholder': '${share_root}'}]}
+                'directory_mappings': [{'placeholder': '${code_root}', 'root': 'code_root', 'path': '.'}]}
     (source / 'manifest.json').write_text(json.dumps(manifest))
     result = launcher.selected_engineering(platform, included)
     bundle_engineering(source, result)
@@ -50,9 +50,8 @@ def test_prepared_case_extracts_once_without_seed_or_hashing_and_reports_progres
     messages = []
     with patch.object(hashlib, 'file_digest', side_effect=AssertionError('file hash')):
         path = launcher.unpack_engineering(tmp_path, progress=messages.append)
-    assert not (tmp_path / 'instance/example_instance/seed').exists()
-    assert (path.parent / 'data/share_root/Lenia/example.txt').read_text() == 'example'
-    assert (path.parent / 'data/secrets_dir').is_dir()
+    assert (path.parent / 'data/projects/Lenia/example.txt').read_text() == 'example'
+    assert (path.parent / 'data/features').is_dir()  # Empty areas have no inventory rows.
     assert '0/' in messages[0] and '100%' in messages[-1]
     assert 'MiB' in messages[-1]
     with patch.object(zipfile.ZipFile, 'open', autospec=True, wraps=None) as opened:
@@ -73,7 +72,7 @@ def test_selection_change_removes_case_and_interrupted_copy_is_replaced(tmp_path
     pending.mkdir()
     (pending / 'incomplete.txt').write_text('old interruption')
     path = launcher.unpack_engineering(tmp_path, included=False)
-    assert not (path.parent / 'data/share_root/Lenia').exists()
+    assert not (path.parent / 'data/projects/Lenia').exists()
     assert not (path.parent / 'incomplete.txt').exists()
     assert json.loads(path.read_text())['include_examples'] is False
 
@@ -90,7 +89,7 @@ def test_failed_extraction_never_exposes_completed_candidate_and_can_retry(tmp_p
     archive(tmp_path)
     original = zipfile.ZipFile.open
     def broken(zipped, name, *args, **kwargs):
-        if getattr(name, 'filename', name) == 'data/share_root/Lenia/example.txt':
+        if getattr(name, 'filename', name) == 'data/projects/Lenia/example.txt':
             raise OSError('interrupted')
         return original(zipped, name, *args, **kwargs)
     with patch.object(zipfile.ZipFile, 'open', broken), pytest.raises(OSError, match='interrupted'):
@@ -99,29 +98,49 @@ def test_failed_extraction_never_exposes_completed_candidate_and_can_retry(tmp_p
     assert launcher.unpack_engineering(tmp_path).is_file()
 
 
-def test_desktop_uses_prepared_engineering_and_disables_install_hash_pass(tmp_path):
+def test_desktop_creates_the_instance_from_prepared_engineering_without_hash_pass(tmp_path):
     archive(tmp_path)
     flow = launcher.DefaultStartup(tmp_path)
     with patch.object(flow, 'execute') as execute:
         flow.initialize()
     command = execute.call_args.args[0]
     assert execute.call_count == 1
-    assert command[2] == 'install'
+    assert command[1].endswith('tfi_release_install.py') and command[2] == 'create'
+    assert command[command.index('--name') + 1] == 'example_instance'
+    assert Path(command[command.index('--engineering') + 1]) == tmp_path / '.build/w/engineering/manifest.json'
     assert '--skip-file-verification' in command
+    assert '--root' not in command  # The installer's default location, outside the program.
 
 
-def test_copy_progress_and_skipped_shared_code_hash_keep_mapping(tmp_path, capsys):
+def test_incomplete_registered_instance_is_retired_before_creating_again(tmp_path):
+    archive(tmp_path)
+    flow = launcher.DefaultStartup(tmp_path)
+    with patch.object(flow, 'registered', return_value=True), patch.object(flow, 'execute') as execute:
+        flow.initialize()
+    assert [call.args[0][2:5] for call in execute.call_args_list][0] == ['retire', '--instance', 'example_instance']
+    assert execute.call_args_list[1].args[0][2] == 'create'
+
+
+def test_area_copy_reports_progress_and_maps_only_the_code_root(tmp_path, capsys):
     _, manifest = archive(tmp_path)
     bundle = launcher.unpack_engineering(tmp_path).parent
-    target = launcher.make_target(tmp_path, 'example_instance', manifest)
-    (Path(target['install_root']) / 'runtime').mkdir(parents=True)
-    with patch.object(layout, 'source_inventory', side_effect=AssertionError('duplicate code hash')):
-        installer.copy_engineering(manifest, bundle, target, skip_file_verification=True)
-    copied = Path(target['data_roots']['share_root']) / 'platform.txt'
-    assert copied.read_text() == 'platform ' + Path(target['data_roots']['share_root']).as_posix()
+    from management_common.instance_manifest import load
+    instance = load(write_instance(tmp_path / 'instance'))
+    code = tmp_path / '代码 目录/code'
+    installer.copy_area_content(manifest, bundle, instance, installer.directory_replacements(manifest, code))
+    copied = instance.area('projects') / 'platform.txt'
+    assert copied.read_text() == 'platform ' + str(code)
     messages = [json.loads(line.removeprefix('@TFI_PROGRESS '))['message']
                 for line in capsys.readouterr().out.splitlines() if line.startswith('@TFI_PROGRESS ')]
     assert any(message and '正在复制实例文件' in message and '100%' in message for message in messages)
+
+
+def test_long_path_check_covers_the_default_instance_root(tmp_path):
+    archive(tmp_path)
+    deep = 'x' * 230
+    root = tmp_path / 'instances' / deep
+    assert launcher.required_long_path(tmp_path, root=root).startswith(str(root / 'data/projects'))
+    assert launcher.required_long_path(tmp_path, root=tmp_path / 'short') is None
 
 
 def test_progress_throttles_updates_and_always_reports_completion():
@@ -187,17 +206,17 @@ def test_macos_uses_selected_app_archive_directly_and_retains_choice(tmp_path):
     app.mkdir()
     archive(app, False)
     flow = mac.MacStartup(target, included=False, bundle=app)
-    with patch.object(flow, 'execute') as execute, patch.object(mac, 'unpack_seed', side_effect=AssertionError('seed copy')):
+    with patch.object(flow, 'execute') as execute:
         flow.initialize()
         assert execute.call_count == 1
         command = execute.call_args.args[0]
-        assert '--skip-file-verification' in command
-        assert command[2] == 'install'
-        manifest_path = Path(command[command.index('--manifest') + 1])
+        assert command[0] == str(target / 'dependencies/python/bin/python3')
+        assert '--skip-file-verification' in command and '--offline' in command
+        assert command[2] == 'create' and command[command.index('--name') + 1] == 'desktop'
+        manifest_path = Path(command[command.index('--engineering') + 1])
         assert manifest_path == target / '.build/m/engineering/manifest.json'
-        assert not (manifest_path.parent / 'data/share_root/Lenia').exists()
+        assert not (manifest_path.parent / 'data/projects/Lenia').exists()
         assert not list(target.glob('*-engineering.zip'))
-        assert not (target / 'instance/example_instance/seed').exists()
         # A new launch with the default checked choice must keep the saved base selection.
         retried = mac.MacStartup(target, bundle=app)
         with patch.object(retried, 'execute'), patch.object(zipfile.ZipFile, 'open', side_effect=AssertionError('repeat content read')):

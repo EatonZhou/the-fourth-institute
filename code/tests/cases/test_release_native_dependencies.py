@@ -1,4 +1,4 @@
-"""Private native dependency preparation, with no service or live database access."""
+"""Native programs prepared beside the code, with no service or live database access."""
 import hashlib
 import io
 import json
@@ -9,16 +9,16 @@ import shutil
 import sys
 import tarfile
 import tempfile
-from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import zipfile
 import xml.etree.ElementTree as ET
 
-from management_common.release_dependencies import declaration
 from scripts import tfi_release_native_dependencies as native
 from scripts import tfi_release_install as installer
 from scripts.windows import utf8_manifest as manifests
+
+CATALOG = Path(__file__).resolve().parents[2] / 'config/release-native-dependencies.json'
 
 
 class WindowsManifestTests(unittest.TestCase):
@@ -68,51 +68,57 @@ class WindowsManifestTests(unittest.TestCase):
             self.assertEqual(resources.read(copy), updated)
 
 
-
 class NativeDependenciesTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='native-test-')
         self.addCleanup(temporary.cleanup)
-        self.base = Path(temporary.name)
-        self.target = {'install_root': str(self.base / 'instance')}
-        self.manifest = {'runtime_dependencies': declaration(['tau'])}
+        self.base = Path(temporary.name).resolve()
+        self.code = self.base / 'checkout/code'
+        (self.code / 'config').mkdir(parents=True)
+        shutil.copyfile(CATALOG, self.code / 'config/release-native-dependencies.json')
 
-    def test_all_catalog_targets_plan_without_creating_installation(self):
+    def test_every_catalog_target_resolves_beside_the_code(self):
         for platform in ('linux', 'windows', 'macos'):
             for architecture in ('x86_64', 'aarch64'):
-                with self.subTest(platform=platform, architecture=architecture):
-                    target, entries = native.plan(self.target, self.manifest,
-                        host={'platform': platform, 'architecture': architecture})
-                    self.assertEqual(target['managed_dependencies'], ['nats', 'node', 'postgres'])
-                    self.assertEqual(len(entries), 3)
-                    for entry in entries:
+                host = {'platform': platform, 'architecture': architecture}
+                for name in native.PACKAGES:
+                    with self.subTest(platform=platform, architecture=architecture, name=name):
+                        entry = native.catalog_entry(self.code, name, host=host)
                         self.assertTrue(entry['url'].startswith('https://'))
                         self.assertRegex(entry['sha256'], r'^[a-f0-9]{64}$')
-                    self.assertFalse(Path(target['install_root']).exists())
+                        self.assertEqual(Path(entry['directory']).name,
+                                         f"{name}-{entry['version']}-{entry['sha256'][:12]}")
+                        self.assertEqual(Path(entry['directory']).parent, self.base / 'checkout/dependencies/native')
+        self.assertFalse((self.base / 'checkout/dependencies').exists())
+        with self.assertRaisesRegex(ValueError, 'Unknown'):
+            native.catalog_entry(self.code, 'python')
 
-    def test_core_does_not_require_node_and_explicit_tools_are_preserved(self):
-        _, entries = native.plan(self.target, {'runtime_dependencies': declaration([])})
-        self.assertEqual({e['name'] for e in entries}, {'nats', 'postgres'})
-        explicit = {**self.target, 'pg_bin': '/operator/pg/bin', 'pg_share': '/operator/pg/share',
-                    'nats_server': '/operator/nats', 'node_bin': '/operator/node'}
-        target, entries = native.plan(explicit, self.manifest)
-        self.assertEqual(entries, [])
-        self.assertEqual(target['pg_bin'], explicit['pg_bin'])
-        self.assertEqual(target['node_bin'], explicit['node_bin'])
-
-    def test_partial_pg_configuration_and_redirected_native_directory_rejected(self):
-        with self.assertRaisesRegex(ValueError, 'both pg_bin'):
-            native.plan({**self.target, 'pg_bin': '/operator/pg'}, self.manifest)
-        root = Path(self.target['install_root'])
-        (root / 'runtime').mkdir(parents=True)
-        (root / 'runtime/native').symlink_to(self.base)
+    def test_redirected_dependency_directory_is_rejected(self):
+        (self.base / 'elsewhere').mkdir()
+        (self.base / 'checkout/dependencies').symlink_to(self.base / 'elsewhere')
         with self.assertRaisesRegex(ValueError, 'redirected'):
-            native.plan(self.target, self.manifest)
+            native.catalog_entry(self.code, 'nats')
+
+    def test_postgres_dependency_requires_a_complete_program_directory(self):
+        root = self.base / 'pg'
+        suffix = '.exe' if os.name == 'nt' else ''
+        for program in ('initdb', 'postgres', 'pg_isready', 'psql'):
+            (root / 'bin').mkdir(parents=True, exist_ok=True)
+            (root / 'bin' / (program + suffix)).write_text('')
+        with self.assertRaisesRegex(ValueError, 'createdb'):
+            native.postgres_dependency(root)
+        (root / 'bin' / ('createdb' + suffix)).write_text('')
+        with self.assertRaisesRegex(ValueError, 'initialization files'):
+            native.postgres_dependency(root)
+        (root / 'share').mkdir()
+        (root / 'share/postgres.bki').write_text('')
+        self.assertEqual(native.postgres_dependency(root), {k: str(root / k) for k in ('bin', 'lib', 'share')})
 
     def test_download_hash_and_https_are_checked(self):
         payload = b'pinned tool bytes'
         entry = {'name': 'nats', 'version': 'test', 'url': 'https://example.invalid/tool',
                  'sha256': hashlib.sha256(payload).hexdigest()}
+
         def response(url):
             stream = io.BytesIO(payload)
             stream.geturl = lambda: url
@@ -127,6 +133,8 @@ class NativeDependenciesTests(unittest.TestCase):
         with patch.object(native, 'urlopen', return_value=response('http://example.invalid/tool')):
             with self.assertRaisesRegex(ValueError, 'HTTPS'):
                 native.download(entry, self.base / 'redirect')
+        with self.assertRaisesRegex(RuntimeError, '安装包缺少'):
+            native.download(entry, self.base / 'offline', offline=True)
 
     def test_archives_cannot_write_outside_destination(self):
         archive = self.base / 'unsafe.zip'
@@ -143,50 +151,53 @@ class NativeDependenciesTests(unittest.TestCase):
             native.unpack(archive, self.base / 'tar')
         self.assertFalse((self.base / 'escaped').exists())
 
-    def test_failed_download_retries_without_adopting_unowned_tools(self):
-        _, entries = native.plan(self.target, {})
-        entry = next(e for e in entries if e['name'] == 'nats')
-        api = SimpleNamespace(write_json=installer.write_json)
-        destination = Path(entry['directory'])
+    def test_failed_download_retries_without_adopting_unowned_programs(self):
+        destination = Path(native.catalog_entry(self.code, 'nats')['directory'])
         with patch.object(native, 'download', side_effect=OSError('offline')):
             with self.assertRaises(OSError):
-                native.prepare(api, self.target, [entry])
+                native.prepare(self.code, ('nats',))
         self.assertFalse(destination.exists())
         archive = self.base / 'tool.tar'
         with tarfile.open(archive, 'w') as out:
-            item = tarfile.TarInfo('package/nats-server')
+            item = tarfile.TarInfo('package/' + ('nats-server.exe' if os.name == 'nt' else 'nats-server'))
             item.size, item.mode = 4, 0o755
             out.addfile(item, io.BytesIO(b'tool'))
-        def fetch(entry, path):
+
+        def fetch(entry, path, offline=False):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(archive.read_bytes())
+            return path
         with patch.object(native, 'download', side_effect=fetch) as download, \
-             patch.object(native, 'verify', return_value={'nats': entry['version']}):
-            native.prepare(api, self.target, [entry])
-            native.prepare(api, self.target, [entry])
+                patch.object(native, 'verify', return_value={'nats': 'fixture'}):
+            native.prepare(self.code, ('nats',))
+            native.prepare(self.code, ('nats',))
             download.assert_called_once()
         receipt = destination / 'tfi-native-dependency.json'
         self.assertEqual(json.loads(receipt.read_text())['status'], 'verified')
         receipt.unlink()
         with self.assertRaisesRegex(ValueError, 'unowned'):
-            native.prepare(api, self.target, [entry])
+            native.prepare(self.code, ('nats',))
 
     def test_host_mismatch_fails_before_native_download_or_root_creation(self):
-        manifest = self.base / 'manifest.json'
-        manifest.write_text('{}')
-        with patch.object(installer, 'platform_preflight', side_effect=ValueError('wrong OS')), \
-             patch.object(native, 'download') as download:
+        root = self.base / 'instance'
+        (self.base / 'manifest.json').write_text('{}')
+        with patch.object(installer, 'validate_engineering', return_value=({}, self.base)), \
+                patch.object(installer, 'platform_preflight', side_effect=ValueError('wrong OS')), \
+                patch.object(native, 'download') as download:
             with self.assertRaisesRegex(ValueError, 'wrong OS'):
-                installer.install(manifest, self.target)
+                installer.create(self.base / 'manifest.json', name='fixture', root=root)
             download.assert_not_called()
-        self.assertFalse(Path(self.target['install_root']).exists())
+        self.assertFalse(root.exists())
 
     def test_probe_failure_does_not_report_verified(self):
-        target, entries = native.plan(self.target, self.manifest)
-        api = SimpleNamespace(clean_environment=lambda _: {}, run_native=Mock(
-            return_value=subprocess.CompletedProcess([], 1, '', 'missing library')))
-        with self.assertRaisesRegex(RuntimeError, 'cannot run'):
-            native.verify(api, target, entries[0])
+        entry = native.catalog_entry(self.code, 'postgres')
+        failed = subprocess.CompletedProcess([], 1, '', 'missing library')
+        with patch.object(native, 'run_native_capture', return_value=failed) as run:
+            with self.assertRaisesRegex(RuntimeError, 'cannot run'):
+                native.verify(entry)
+        environment = run.call_args.kwargs['env']
+        if os.name != 'nt':
+            self.assertIn(str(Path(entry['directory']) / 'lib'), environment.values())
 
 
 if __name__ == '__main__':

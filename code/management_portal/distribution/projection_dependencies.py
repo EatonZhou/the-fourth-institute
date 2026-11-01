@@ -6,8 +6,12 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 
+from . import layout
+
 SCHEMA = 'tfi.projection-release-dependencies.v1'
 DECLARATION = 'release-dependencies.json'
+# Frozen Workspace files a projection reads live in the features area.
+EVIDENCE = 'projection_evidence'
 
 
 def json_root_files(source, roots):
@@ -67,7 +71,7 @@ def regular_file(root, relative):
         raise ValueError('Projection dependency path must be a canonical relative file')
     if any(private_path(part) for part in path.parts):
         raise ValueError('Projection dependency cannot include private files')
-    candidate = Path(root)
+    candidate = layout.physical(root)
     if candidate.is_symlink() or not candidate.is_dir():
         raise ValueError('Projection dependency root is unavailable or linked')
     for part in path.parts:
@@ -128,7 +132,7 @@ def resolve_files(source, dependencies):
     """Return minimal copy scopes and bindings; never crawl evidence links."""
     from .content import registered_content_path
     files, mappings, workspaces, repositories = [], [], {}, {}
-    generated, resets = {}, set()
+    generated, resets, stored_checkouts = {}, set(), set()
     seen = {}
     for declaration in dependencies:
         repo_id = declaration['code_repository']
@@ -136,13 +140,14 @@ def resolve_files(source, dependencies):
         if not record:
             raise ValueError('Declared projection repository is unavailable')
         repositories[repo_id] = str(registered_content_path(record).resolve())
+        stored_checkouts.update(value for value in (record.get('attributes', {}).get('canonical_checkout'),) if value)
         if declaration.get('stage_progress'):
             from .stage_progress import initialize
             row, seeds = initialize(source, declaration['stage_progress'])
             if any(key in generated and generated[key] != text for key, text in seeds.items()):
                 raise ValueError('Conflicting stage progress initializations')
             generated.update(seeds)
-            resets.add(row['path'])
+            resets.add(str(layout.physical(row['path'])))
             workspaces[row['workspace_id']] = row
         for descriptor in declaration['files']:
             address = descriptor['address']
@@ -164,13 +169,14 @@ def resolve_files(source, dependencies):
                     raise ValueError('Projection evidence has conflicting declarations')
                 continue
             seen[address] = descriptor
-            files.append({'source': str(path), 'target': f'data/share_root/ProjectionEvidence/{workspace_id}/{relative}',
+            files.append({'source': str(path), 'target': layout.target('features', f'{EVIDENCE}/{workspace_id}/{relative}'),
                           'immutable_file': dict(descriptor)})
     for identity, row in workspaces.items():
-        target = '${share_root}/ProjectionEvidence/' + identity
-        mappings.append((row['path'], target))
+        target = layout.reference('features', f'{EVIDENCE}/{identity}')
+        mappings.extend((spelling, target) for spelling in layout.aliases(row['path']))
         row['path'] = target
-    mappings.extend((root, '${code_root}') for root in repositories.values())
+    mappings.extend((spelling, '${code_root}') for spelling in
+                    {*repositories.values(), *stored_checkouts})
     if any(Path(item['source']).is_relative_to(root) for item in files for root in resets):
         raise ValueError('Stage progress source history conflicts with projection evidence')
     return {'files': files, 'path_mappings': mappings, 'workspaces': workspaces, 'repositories': repositories,

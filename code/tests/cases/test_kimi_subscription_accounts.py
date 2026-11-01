@@ -14,7 +14,7 @@ from management_portal.execution import account_registrations, kimi_account_logi
 
 
 def test_subscription_registration_and_config_preserve_managed_credentials(tmp_path, monkeypatch):
-    row = {"account_id": "kimi_sub", "provider": "kimi", "kind": "subscription_login", "config": {}}
+    row = {"account_id": "kimi_sub", "provider": "kimi", "kind": "subscription_login", "config": {"account_dir": str(tmp_path / "accounts" / "kimi_sub")}}
     account_registrations._validate(row)
     config = tmp_path / "config.toml"
     content = b'[providers."managed:kimi-code"]\ntype="kimi"\n'
@@ -25,10 +25,10 @@ def test_subscription_registration_and_config_preserve_managed_credentials(tmp_p
     assert config.read_bytes() == content
 
 
-def test_subscription_catalog_only_exposes_authenticated_managed_models(monkeypatch):
+def test_subscription_catalog_only_exposes_authenticated_managed_models(tmp_path, monkeypatch):
     from management_portal.execution.account_adapters import KimiAccounts
     row = {"account_id": "kimi_sub", "provider": "kimi", "kind": "subscription_login", "route_id": "subscription",
-           "max_concurrency": 2, "config": {}}
+           "max_concurrency": 2, "config": {"account_dir": str(tmp_path / "accounts" / "kimi_sub")}}
     auth = {"managed_provider": {"status": "authenticated"}}
     config = {"default_model": "subscription-model", "models": {
         "subscription-model": {"provider": "managed:kimi-code", "max_context_size": 200000},

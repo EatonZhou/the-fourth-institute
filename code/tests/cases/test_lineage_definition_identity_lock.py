@@ -14,6 +14,7 @@ from management_portal.society_service.resident_catalog import ResidentCatalog
 from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store
+from tests.cases.instance_test_support import lineage_folders
 
 
 TARGETS = lineage_state._resident_targets
@@ -27,7 +28,7 @@ class PreparationReached(Exception):
 
 @pytest.fixture
 def identity_store(monkeypatch, tmp_path):
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
+    lineage_folders(monkeypatch, tmp_path / "lineages")
     install_resource_boundary(monkeypatch)
     store = _store(tmp_path)
     catalog = ResidentCatalog(tmp_path, store)

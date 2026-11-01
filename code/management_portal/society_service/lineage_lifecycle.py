@@ -17,7 +17,6 @@ from .lineage_program_fields import _position
 from . import identity_contract, lineage_state_domains, lineage_storage, resident_catalog, resident_protocol
 from . import lineage_aggregate
 from .domain_ports import resident_domain_port as resident_domain
-from . import project_folders
 from . import lineage_state, lineage_resident_nodes
 
 
@@ -51,11 +50,7 @@ def _stage_empty_lineage_deletion(
             raise LineageConflictError("Lineage changed after deletion was prepared")
         return existing
 
-    canonical = lineage_storage.canonical_lineage_folder(
-        lineage_id,
-        folder_root=lineage_state._lineages_root(),
-    )
-    source = canonical.resolve(strict=True)
+    source = lineage_state._lineage_dir(lineage_id).resolve(strict=True)
     operation_id = f"lineage-delete_{secrets.token_hex(12)}"
     deleted_at = lineage_state._now_iso()
     intent = {
@@ -63,7 +58,6 @@ def _stage_empty_lineage_deletion(
         "lineage_id": lineage_id,
         "definition_revision": int(lineage.get("revision") or 0),
         "source_path": str(source),
-        "canonical_path": str(canonical),
         "deleted_at": deleted_at,
         "deleted_by": actor,
         "phase": "prepared",
@@ -120,18 +114,8 @@ def _record_lineage_deletion_error(
                 state["phase"] = "retryable"
 
 
-def _lineage_project_folder(
-    lineage_id: str,
-    project_id: str,
-    actor: str,
-) -> Path:
-    if not project_id:
-        return lineage_storage.canonical_lineage_folder(
-            lineage_id,
-            folder_root=lineage_state._lineages_root(),
-        )
-    project_root = project_folders.project_root_for_id(project_id)
-    return project_root / "knowledge_base" / "agents" / lineage_id
+def _lineage_project_folder(lineage_id: str, project_id: str) -> Path:
+    return lineage_storage.lineage_folder_for_project(lineage_id, project_id)
 
 
 def _lineage_relocation_blockers(lineage_id: str) -> list[str]:
@@ -154,8 +138,8 @@ def _lineage_relocation_blockers(lineage_id: str) -> list[str]:
 
 def _relocate_lineage_for_project(
     lineage_id: str,
-    project_id: str,
-    actor: str,
+    source: Path,
+    target: Path,
 ) -> Path:
     blockers = _lineage_relocation_blockers(lineage_id)
     if blockers:
@@ -163,13 +147,13 @@ def _relocate_lineage_for_project(
             "Lineage 仍有任务正在排队或处理，停止或完成后再修改所属项目: "
             + ", ".join(blockers)
         )
-    target = _lineage_project_folder(lineage_id, project_id, actor)
-    lineage_storage.relocate_lineage_folder(
-        lineage_id,
-        target,
-        folder_root=lineage_state._lineages_root(),
-    )
-    return target
+    return lineage_storage.relocate_lineage_folder(source, target)
+
+
+def _relocate_lineage_sessions(source: Path, target: Path) -> None:
+    """Provider sessions keyed by working directory follow the moved folder."""
+    from management_portal.project_rename import relocate_provider_sessions
+    relocate_provider_sessions(str(source), str(target))
 
 
 def _sync_deleted_lineage_resource_identity(
@@ -209,7 +193,6 @@ def _create_lineage_in_scope(
     if not identity_contract.is_valid_id(lineage_id, "lineage"):
         raise ValueError("invalid Lineage id")
     title = _text(payload.get("title"), 140) or "未命名 Lineage"
-    lineage_dir = lineage_state._lineage_dir(lineage_id)
     base = _new_lineage_base(
         lineage_id,
         title,
@@ -220,29 +203,12 @@ def _create_lineage_in_scope(
     project_id = _text(lineage.get("project_id"), 120)
     if lineage_state._lineage_membership(lineage) == "formal" and not project_id:
         raise ValueError("Lineage 必须属于 Project")
-    pass
-    physical_dir = _lineage_project_folder(
-        lineage_id,
-        project_id,
-        actor_id,
-    )
-    physical_dir.mkdir(parents=True, exist_ok=False)
+    lineage_dir = _lineage_project_folder(lineage_id, project_id)
+    lineage_dir.mkdir(parents=True, exist_ok=False)
     try:
-        if physical_dir != lineage_dir:
-            lineage_storage.bind_lineage_folder(
-                lineage_id,
-                physical_dir,
-                folder_root=lineage_state._lineages_root(),
-            )
         lineage_state._persist_lineage_state(None, lineage, "创建 Lineage")
     except Exception:
-        if physical_dir != lineage_dir:
-            lineage_storage.unbind_lineage_folder(
-                lineage_id,
-                folder_root=lineage_state._lineages_root(),
-                expected_target=physical_dir,
-            )
-        shutil.rmtree(physical_dir, ignore_errors=True)
+        shutil.rmtree(lineage_dir, ignore_errors=True)
         raise
     return lineage
 
@@ -409,6 +375,7 @@ def update_lineage_metadata(
         lineage_aggregate.ensure_manager(current, actor_id)
         lineage, previous_project_id, project_id = _lineage_with_metadata(current, payload, actor_id)
         original_folder: Path | None = None
+        target_folder: Path | None = None
         folder_relocated = False
         previous_resident_records: list[dict[str, Any]] = []
         next_resident_records: list[dict[str, Any]] = []
@@ -417,25 +384,21 @@ def update_lineage_metadata(
                 project_id != previous_project_id
                 or "project_id" in payload
             ):
-                original_folder = lineage_state._lineage_dir(lineage_id).resolve(strict=True)
-
-                canonical_folder = lineage_storage.canonical_lineage_folder(
-                    lineage_id,
-                    folder_root=lineage_state._lineages_root(),
-                )
+                original_folder = _lineage_project_folder(lineage_id, previous_project_id)
+                target_folder = _lineage_project_folder(lineage_id, project_id)
                 previous_resident_records, next_resident_records = (
                     resident_domain.prepare_lineage_project_member_updates(
                         lineage_id,
                         project_id,
-                        canonical_folder=canonical_folder,
+                        canonical_folder=target_folder,
                         source_folder=original_folder,
                     )
                 )
                 if project_id != previous_project_id:
                     _relocate_lineage_for_project(
                         lineage_id,
-                        project_id,
-                        actor_id,
+                        original_folder,
+                        target_folder,
                     )
                     folder_relocated = True
             lineage_state._persist_lineage_state(
@@ -447,13 +410,11 @@ def update_lineage_metadata(
                 resident_domain.persist_lineage_project_member_updates(
                     next_resident_records
                 )
+            if folder_relocated:
+                _relocate_lineage_sessions(original_folder, target_folder)
         except BaseException:
             if folder_relocated and original_folder is not None:
-                lineage_storage.relocate_lineage_folder(
-                    lineage_id,
-                    original_folder,
-                    folder_root=lineage_state._lineages_root(),
-                )
+                lineage_storage.relocate_lineage_folder(target_folder, original_folder)
                 # Revert this update's own change; concurrent writes stay.
                 lineage_state._persist_lineage_state(lineage, current, "撤回 Lineage 元数据更新")
                 if previous_resident_records:
@@ -575,11 +536,6 @@ def delete_lineage(lineage_id: str, actor: str) -> dict[str, Any]:
             str(intent["deleted_at"]),
         )
         _purge_deleted_lineage_folder(intent)
-        lineage_storage.unbind_lineage_folder(
-            lineage_id,
-            folder_root=lineage_state._lineages_root(),
-            expected_target=str(intent["source_path"]),
-        )
     except BaseException as exc:
         _record_lineage_deletion_error(lineage_id, operation_id, exc)
         raise

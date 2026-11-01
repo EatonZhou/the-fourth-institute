@@ -28,15 +28,16 @@ Resident Folder 的小写 `resident.md` 保存节点身份，通过 `resident_md
 `project_doc_max_bytes = 0` 关闭自动项目文档加载。公开 `/guide/agent.md` 面向以 User
 身份接入的外部客户端。三者名称和用途不同，不能相互替换。
 
-共用规则正文来自本站 `${share_root}/Skills/tfi-agent-rule/` 的主文件和所选角色文件。
+共用规则正文来自后台服务自身代码目录 `${code_root}/core_skills/tfi-agent-rule/` 的主文件和所选角色文件。
 `resident` 角色不会自动包含 `development` 角色全文；其共用规则要求遇到 Portal 开发任务时
 读取 `portal-development.md` 与 SPEC 中的快速发布规范。
 
 ## 附加 Skill 的路径
 
 任务 Skill 使用 Resident 的路径规则：名称仅允许小写字母、数字和短横线，长度为
-2–79，首字符为字母或数字。名称解析为 `${share_root}/Skills/<名称>/SKILL.md`；显式路径
-与按当前调用者解析的 Skill 资源 ID 最终也必须指向该目录内存在的 `SKILL.md`。
+2–79，首字符为字母或数字。名称解析为 `skills:<名称>/SKILL.md`，四个核心 Skill 解析为
+`${code_root}/core_skills/<名称>/SKILL.md`；显式路径与按当前调用者解析的 Skill 资源 ID
+最终也必须指向这两处之一存在的 `SKILL.md`。
 检查真实路径，符号链接不能绕过目录范围；无效名称、越界和文件缺失在调用模型前拒绝。
 最多处理前 12 项，按首次出现顺序去重。
 
@@ -62,7 +63,7 @@ Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入�
 decision_ccbb1cac24aa 与 decision_c47a13e8b962。
 恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分；切换账号不自动重试失败输入。
 
-修改规则时同步源码 `code/core_skills/` 下的对应核心 Skill、发行 seed 和本站共用目录，
+修改规则时更新源码 `code/core_skills/` 下的对应核心 Skill，随代码一起发行，
 再用 `PreviewPromptInjection` 检查物化正文与发送时机。文件更新不改写已有 Provider
 session 中已送达的内容；后续是否发送按各部分设置与 Provider 保留策略决定。不得仅因
 预览读到新正文就宣称所有运行中 Resident 已更新，也不为文档同步重启正在执行的任务。
@@ -83,7 +84,7 @@ AI Execution 持久运行。Portal 业务 job 只保存全局唯一的 `executio
 ## 系统层服务与模型调用
 
 需要判断与写作的定时工作由 Resident 亲自完成，确定性维护通过 Lineage 事件与 `RunScript`
-组织，具体见 `${share_root}/Skills/scheduled-work/SKILL.md`。业务代码确需模型能力时，使用
+组织，具体见 `skills:scheduled-work/SKILL.md`。业务代码确需模型能力时，使用
 当前 Portal 上游构造器准备上下文，再按 `ExecutionRequest` 合同提交 `ExecutionService`。
 Resident 自动化使用公开 HATG 能力；不依赖旧共享 Agent 目录中的私有客户端。
 

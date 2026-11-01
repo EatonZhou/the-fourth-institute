@@ -14,7 +14,6 @@ import threading
 from pathlib import Path
 from typing import Any, Callable
 
-from management_common.portal_paths import path as portal_path
 from management_common.provider_turn_artifacts import TurnArtifacts
 
 from .codex_app_server_compaction import CodexCompactionRunner
@@ -44,7 +43,6 @@ from .codex_app_server_turns import CodexTurnRunner
 from .codex_user_input import CodexUserInputRequests
 
 
-DEFAULT_SOCKET_PATH = (portal_path("staging_root") / "portal_locks" / "codex-app-server.sock")
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 90.0
 DEFAULT_LIFECYCLE_REQUEST_TIMEOUT_SECONDS = 180.0
 DEFAULT_TURN_START_REQUEST_TIMEOUT_SECONDS = 360.0
@@ -69,7 +67,7 @@ def codex_token_usage_delta(value: object) -> tuple[str, dict[str, Any]]:
 class CodexAppServerClient:
     def __init__(
         self,
-        socket_path: Path | str = DEFAULT_SOCKET_PATH,
+        socket_path: Path | str,
         *,
         idle_unsubscribe_seconds: int = DEFAULT_IDLE_UNSUBSCRIBE_SECONDS,
         max_loaded_threads: int = DEFAULT_MAX_LOADED_THREADS,

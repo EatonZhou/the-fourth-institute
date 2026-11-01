@@ -42,7 +42,7 @@ def catalog(monkeypatch, tmp_path):
             {"id": "batch_disabled", "kind": "openai_compatible_chat", "provider": "openai", "enabled": False},
         ):
             if entry["kind"] == "claude_code_subscription":
-                account_registrations.create_registration({"account_id": entry["id"], "provider": "claude", "kind": "subscription_login", "route_id": entry["id"]}, ACTOR)
+                account_registrations.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / entry["id"])}, "account_id": entry["id"], "provider": "claude", "kind": "subscription_login", "route_id": entry["id"]}, ACTOR)
             else:
                 assert model_api_store.create_api(entry, ACTOR)
                 account_registrations.create_registration({"account_id": entry["id"], "provider": "claude" if entry["provider"] == "deepseek" else "provider_api", "kind": "api_profile", "route_id": entry["id"] if entry["provider"] == "deepseek" else "", "config": {"api_id": entry["id"]}, "enabled": entry.get("enabled", True)}, ACTOR)
@@ -139,21 +139,22 @@ def test_next_request_refreshes_default_and_disabled_configuration(catalog, monk
     counts = count_reads(monkeypatch)
     first = activity(resident_ids=ids)["residents"]
     assert [r["account_id"] for r in first] == ["codex_one", "batch_api"]
-    account_registrations.update_registration("codex_one", {"config": {"is_default": False}}, 1, ACTOR)
-    account_registrations.update_registration("codex_two", {"config": {"is_default": True}}, 1, ACTOR)
+    for account_id, marked in (("codex_one", False), ("codex_two", True)):
+        config = account_registrations.registration(account_id)["config"]
+        account_registrations.update_registration(account_id, {"config": {**config, "is_default": marked}}, 1, ACTOR)
     model_api_store.update_api("batch_api", {"enabled": False}, ACTOR)
     second = activity(resident_ids=ids)["residents"]
     assert [r["account_id"] for r in second] == ["codex_two", "batch_api"]
     assert counts == {"builds": 2, "model_api_reads": 2}
 
 
-def test_bad_route_preserves_error_and_does_not_leave_cached_configuration(catalog, monkeypatch):
+def test_bad_route_preserves_error_and_does_not_leave_cached_configuration(tmp_path, catalog, monkeypatch):
     """无效账号路由报错且修复后下次请求重新读取配置"""
     ids = populate(1, routes=[("claude", "batch_missing")])
     counts = count_reads(monkeypatch)
     with pytest.raises(ValueError, match="unknown Execution account route"):
         activity(resident_ids=ids)
-    account_registrations.create_registration({"account_id": "batch_missing", "kind": "subscription_login",
+    account_registrations.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "batch_missing")}, "account_id": "batch_missing", "kind": "subscription_login",
                                                "provider": "claude", "route_id": "batch_missing"}, ACTOR)
     assert activity(resident_ids=ids)["residents"][0]["account_id"] == "batch_missing"
     assert counts == {"builds": 2, "model_api_reads": 2}

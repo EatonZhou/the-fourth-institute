@@ -5,8 +5,9 @@ const path = require('node:path');
 const { test, after } = require('node:test');
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tfi-framework-reader-'));
-process.env.PORTAL_SITE_CONFIG = path.join(root, 'site.json');
-fs.writeFileSync(process.env.PORTAL_SITE_CONFIG, JSON.stringify({ deployment: { compatibility: { format_namespaces: ['archive.'] } } }));
+process.env.PORTAL_INSTANCE_ROOT = root;
+const siteSettings = path.join(root, 'site.json');
+fs.writeFileSync(siteSettings, JSON.stringify({ deployment: { compatibility: { format_namespaces: ['archive.'] } } }));
 process.env.PORTAL_TEST_TARGET_FILE = path.join(root, 'target.json');
 const reader = require('../../../management_portal/test_framework/dev_target.js');
 after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -21,7 +22,7 @@ function observe(document, expectedError) {
   try {
     if (expectedError) assert.throws(reader.resolveTestTarget,expectedError);
     else assert.deepEqual(reader.resolveTestTarget(), {
-      instance:'release', origin:'http://127.0.0.1:28399', browserOrigin:'http://localhost:28399', expectedBuildId:'fixture-build',
+      deployment:'release', origin:'http://127.0.0.1:28399', browserOrigin:'http://localhost:28399', expectedBuildId:'fixture-build',
     });
   } finally { assert.equal(fs.readFileSync(reader.targetFile(),'utf8'),original); }
 }
@@ -38,13 +39,13 @@ for (const schema of ['archive.portal-test-target.v1','tfi.portal-deployments.v1
 
 test('only explicit deployment identity remains configurable', () => {
   const { testActor, schemaMatches } = require('../../../management_portal/test_framework/site_compatibility.js');
-  fs.writeFileSync(process.env.PORTAL_SITE_CONFIG, JSON.stringify({ deployment: { compatibility: {
-    format_namespaces: ['archive.'], domain_values: { 'test_framework.actor': 'site-operator' },
-  } } }));
-  const original = fs.readFileSync(process.env.PORTAL_SITE_CONFIG, 'utf8');
+  fs.writeFileSync(siteSettings, JSON.stringify({ deployment: {
+    compatibility: { format_namespaces: ['archive.'] }, test_framework: { actor: 'site-operator' },
+  } }));
+  const original = fs.readFileSync(siteSettings, 'utf8');
   assert.equal(testActor(), 'site-operator');
   assert.equal(schemaMatches('archive.portal-deployments.v1', 'tfi.portal-deployments.v1'), false);
   assert.equal(schemaMatches('tfi.portal-deployments.v1', 'tfi.portal-deployments.v1'), true);
   assert.throws(() => schemaMatches('tfi.x.v1', 'archive.x.v1'), /canonical schema/);
-  assert.equal(fs.readFileSync(process.env.PORTAL_SITE_CONFIG, 'utf8'), original);
+  assert.equal(fs.readFileSync(siteSettings, 'utf8'), original);
 });

@@ -24,45 +24,10 @@ class _SiteAttributes(HTMLParser):
 
 def _public_paths() -> dict[str, str]:
     """Project only the native file-preview roots from deployment owners."""
-    from management_common import portal_paths
-    from management_common.site_config import read_site_config
-
-    def directory(key, value):
-        # Validate traversal before resolution. Windows accepts either native
-        # separator; the browser receives the resolved path with forward slashes.
-        def invalid(text):
-            return (not isinstance(text, str) or not text.strip()
-                    or re.search(r"[\\\x00-\x1f\x7f-\x9f]", text)
-                    or ".." in text.split("/"))
-
-        authored = (value.replace("\\", "/") if isinstance(value, str)
-                    and isinstance(portal_paths.PORTAL_ROOT, PureWindowsPath) else value)
-        if invalid(authored):
-            raise ValueError(f"Invalid public directory: {key}")
-        try:
-            resolved = portal_paths.resolve_directory(value)
-        except (OSError, RuntimeError, ValueError):
-            raise ValueError(f"Invalid public directory: {key}") from None
-        text = resolved.as_posix()
-        if invalid(text) or not resolved.is_absolute() or resolved.parent == resolved:
-            raise ValueError(f"Invalid public directory: {key}")
-        return text
-
-    deployment = read_site_config().get("deployment", {})
-    if not isinstance(deployment, dict):
-        raise ValueError("deployment must be an object")
-    native_ui = deployment.get("native_ui", {})
-    if not isinstance(native_ui, dict):
-        raise ValueError("deployment.native_ui must be an object")
-    # Read the owner's current raw values once; resolving them here preserves
-    # installation-root anchoring while permitting validation before normalization.
-    values = portal_paths.path_values()
-    return {
-        "share_root": directory("share_root", values["share_root"]),
-        "staging_root": directory("staging_root", values["staging_root"]),
-        "test_results_root": directory("test_results_root", native_ui.get(
-            "test_results_root", str(portal_paths.PORTAL_ROOT / "test-results"))),
-    }
+    from management_common.instance_manifest import AREAS, load
+    instance = load()
+    return {**{area: instance.area(area).as_posix() for area in AREAS},
+            "test_results_root": (instance.directory("cache") / "test-results").as_posix()}
 
 
 def _public_compatibility() -> dict:

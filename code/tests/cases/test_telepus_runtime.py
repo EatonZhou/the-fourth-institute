@@ -53,11 +53,16 @@ def test_missing_unit_blocks_enable_but_does_not_block_disabling_installed_units
     assert systemd.calls[-2] == ["systemctl", "--user", "disable", "--now", UNITS[0], UNITS[2]]
 
 
-def test_isolated_installation_reads_and_switches_its_prefixed_units(monkeypatch):
+def test_isolated_installation_reads_and_switches_its_prefixed_units(monkeypatch, tmp_path):
     """隔离安装的实例按自己的服务前缀读取和切换 Telepus 单元，不碰无前缀的同名单元"""
-    from scripts import portal_service_units
-    monkeypatch.setattr(portal_service_units, "_isolated_provider_context",
-                        lambda: {"service_prefix": "tfi-sample"})
+    import json
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / 'instance')
+    document = json.loads((root / 'instance.json').read_text())
+    document['services']['prefix'] = 'tfi-sample'
+    document['services']['components'] += [unit.removesuffix('.service') for unit in UNITS]
+    (root / 'instance.json').write_text(json.dumps(document))
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
     prefixed = tuple("tfi-sample-" + unit for unit in UNITS)
     systemd = Systemd()
     runtime = TelepusRuntime(systemd)

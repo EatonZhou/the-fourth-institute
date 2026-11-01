@@ -843,15 +843,15 @@ class _TauCaseRun:
                 if self.original_target else None
             )
             if (
-                completed_target.instance_id != baseline.instance_id
+                completed_target.deployment_id != baseline.deployment_id
                 or completed_target.origin != baseline.origin
                 or completed_target.actor != baseline.actor
             ):
                 parsed["status"] = "failed"
                 parsed["issues"].append(
                     "TAU 执行期间 DEV 目标发生变化："
-                    f"{baseline.instance_id}@{baseline.origin} ({baseline.actor}) → "
-                    f"{completed_target.instance_id}@{completed_target.origin} ({completed_target.actor})。"
+                    f"{baseline.deployment_id}@{baseline.origin} ({baseline.actor}) → "
+                    f"{completed_target.deployment_id}@{completed_target.origin} ({completed_target.actor})。"
                 )
             elif target_postflight["build_changed"]:
                 self.emit(

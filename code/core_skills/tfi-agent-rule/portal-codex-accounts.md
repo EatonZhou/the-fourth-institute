@@ -9,8 +9,8 @@
 - CLI Provider 可复用当前机器已有的可执行程序和已授权账号；Portal 管理的独立运行时也是可用选择，不强制用户重装或重新登录。
 - Model API 路线按模型 API 登记和探测流程处理，不套用 CLI 安装、CODEX_HOME 或 systemd 要求。
 - 新建 Resident 可使用 `backend_role` 或明确的 provider/account/settings；具体继承、默认角色及回退以当前创建结果和设置回读为准。修改角色不代表已经改写所有既有 Resident。
-- 订阅账号的 `config.account_dir` 是 Provider 目录的规范绝对路径，不允许软链接。默认目录属于操作系统用户：`~/.codex-accounts/<名称>`、`~/.claude-accounts/<名称>`、`~/.kimi-accounts/<名称>`、`~/.antigravity-accounts/<名称>`；名称去掉账号 ID 的 `<provider>_` 前缀，主目录取操作系统用户记录，不取服务的 `HOME`。
-- 新建订阅账号留空目录字段，在默认位置建空目录后登录；接入已有登录时直接登记现有目录，不复制凭据。删除登记保留目录，Portal 不移动或改名目录。
+- 订阅账号的 `config.account_dir` 是 Provider 目录的规范绝对路径，不允许软链接。登记时必须明确提供目录，不设默认位置。已有目录直接登记；不存在时在指定位置创建空目录。
+- 新建订阅账号必须填写目录字段；接入已有登录时直接登记现有目录，不复制凭据。删除登记保留目录，Portal 不移动或改名目录。
 - 启动 Provider 只用登记路径设置 `CODEX_HOME`、`CLAUDE_CONFIG_DIR` 等变量。每个主机目录最多有一个 Portal 管理的常驻进程，父目录中的主机锁被占用时报冲突。终端直接运行 CLI 不受此锁约束。
 - Portal 的 socket、索引备份、启动记录和锁放在实例 runtime，不写进 Provider 目录。不要硬编码源站路径或 service 名称。
 - 使用现有程序或账号需按该 Provider 的实际接入方式验证。只在缺失时按支持的安装流程补依赖；失败时保留诊断，不用伪造 ready 状态绕过。

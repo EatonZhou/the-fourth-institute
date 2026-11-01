@@ -1,4 +1,4 @@
-"""Real Windows SCM host for one isolated TFI component."""
+"""Real Windows SCM host for one registered instance component."""
 from __future__ import annotations
 
 import ctypes
@@ -14,14 +14,16 @@ import threading
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
-from scripts.tfi_instance_layout import code_root
+from management_common.instance_manifest import load
 
-def run_service(target, component):
-    from scripts.tfi_release_install import component_command
-    root = Path(target["install_root"])
-    command, environment = component_command(target, component)
-    return run_command_service(f"{target['service_prefix']}-{component}", command,
-                               cwd=code_root(target), log=root / "runtime" / f"{component}.log",
+def run_service(root, component):
+    from management_portal.service_runtime import component_command, prepare_runtime, working_directory
+    instance = load(root)
+    prepare_runtime(instance)
+    command, environment = component_command(instance, component)
+    cwd = working_directory(instance, component)
+    return run_command_service(instance.service_name(component), command,
+                               cwd=cwd, log=instance.directory('runtime') / f"{component}.log",
                                environment=environment)
 
 
@@ -131,9 +133,17 @@ def run_command_service(name, command, *, cwd, log, environment=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("_registered",))
-    parser.add_argument("--definition", required=True)
+    parser.add_argument('mode', choices=('_registered', '_component'))
+    parser.add_argument('--definition')
+    parser.add_argument('--root', type=Path)
+    parser.add_argument('--component')
     args = parser.parse_args()
+    if args.mode == '_component':
+        if not args.root or not args.component or args.definition:
+            parser.error('_component requires --root and --component')
+        return run_service(args.root, args.component)
+    if not args.definition or args.root or args.component:
+        parser.error('_registered requires --definition')
     return run_registered_service(args.definition)
 
 

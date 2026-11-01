@@ -336,7 +336,7 @@ def test_wall_mutually_linked_indexes_are_not_executable_points(tmp_path, subtes
 @pytest.mark.parametrize("instance", ["dev", "release", "standalone"])
 def test_wall_instance_dispatches_its_own_jobs(monkeypatch, instance):
     """独立实例按稳定业务键派发自己的 WALL 工作，不依赖旧站标签。"""
-    monkeypatch.setenv("PORTAL_INSTANCE", instance)
+    monkeypatch.setenv("PORTAL_DEPLOYMENT", instance)
     calls = []
     monkeypatch.setattr(wall.business_tasks, "start", lambda *args: calls.append(args))
     wall._start_job("wall-existing")
@@ -1368,7 +1368,7 @@ def test_wall_runtime_stops_and_can_restart_without_leaving_a_timer(wall_project
     """WALL 运行线程可停止并重新启动且不遗留定时线程"""
     import threading
     ticked = threading.Event()
-    monkeypatch.setenv("PORTAL_INSTANCE", "dev")
+    monkeypatch.setenv("PORTAL_DEPLOYMENT", "dev")
     monkeypatch.setattr(wall, "_tick", ticked.set)
     for _ in range(2):
         wall.start_runtime()

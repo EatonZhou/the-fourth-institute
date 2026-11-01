@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "code"))
 from prepare_install import digest, inventory
-from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
+from management_common.code_environment import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.tfi_release_native_dependencies import artifact_name, download, unpack, package_root
 from scripts.tfi_seed_selection import plan
 from scripts.windows.python_dependencies import bundle as bundle_python_dependencies
@@ -30,10 +30,9 @@ def public_seed(repo):
     rows = [row for row in inventory(seed) if row["path"] != "manifest.json"]
     if rows != sorted(specification["inventory"], key=lambda row: row["path"]):
         raise ValueError("Public seed differs from its inventory")
-    for name in ("secrets_dir",):
-        directory = seed / specification["engineering"]["files"][name]
-        if directory.exists() and any(directory.iterdir()):
-            raise ValueError("Public seed contains account or secret files")
+    # Instance content ships only as area files; secrets and accounts never do.
+    if {path.name for path in (seed / "data").iterdir()} != set(specification["engineering"]["files"]):
+        raise ValueError("Public seed data must consist of its declared areas")
     return seed
 
 

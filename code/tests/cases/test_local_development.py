@@ -7,10 +7,14 @@
 """
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
+
+from tests.cases.instance_test_support import write_instance
 
 spec = importlib.util.spec_from_file_location(
     "tfi_dev", Path(__file__).resolve().parents[2] / "scripts/tfi_dev.py")
@@ -32,6 +36,19 @@ class WorkflowTest(unittest.TestCase):
         dev.git(self.root, "commit", "-m", "base")
         self.cfg = dev.init(self.root)
         self.work = Path(self.cfg["dev"])
+        # The worktrees are the code roots of the selected instance's deployments.
+        instance = write_instance(Path(self.temp.name) / "site", code=self.root / "code")
+        document = json.loads((instance / "instance.json").read_text())
+        document["deployments"]["dev"] = {"kind": "dev", "code_root": str(self.work / "code"), "web_port": 19001}
+        document["network"]["entry_port"] = 19000
+        document["services"]["components"] += ["dev-web", "gateway"]
+        (instance / "instance.json").write_text(json.dumps(document))
+        environment = patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(instance)})
+        environment.start()
+        self.addCleanup(environment.stop)
+
+    def publish(self, *args, **options):
+        return dev.publish(*args, **{"activate": False, **options})
 
     def change(self):
         (self.work / "file").write_text("changed\n")
@@ -41,14 +58,14 @@ class WorkflowTest(unittest.TestCase):
     def test_publish_and_second_round(self):
         """Release 快进到 Dev 的普通提交，并可继续发布下一轮。"""
         self.change()
-        first = dev.publish(self.root, "public fix", ["python3", "-c", "pass"], push=False)
+        first = self.publish("public fix", ["python3", "-c", "pass"], push=False)
         self.assertEqual((self.root / "file").read_text(), "changed\n")
         self.assertFalse(first["pushed"])
         self.assertIn("private experiment", dev.git(self.root, "log", "--format=%s"))
         (self.work / "second").write_text("next\n")
         dev.git(self.work, "add", "second")
         dev.git(self.work, "commit", "-m", "another private change")
-        dev.publish(self.root, "next fix", ["python3", "-c", "pass"], push=False)
+        self.publish("next fix", ["python3", "-c", "pass"], push=False)
         self.assertEqual(dev.git(self.root, "rev-parse", "HEAD^{tree}"),
                          dev.git(self.work, "rev-parse", "HEAD^{tree}"))
 
@@ -57,7 +74,7 @@ class WorkflowTest(unittest.TestCase):
         self.change()
         (self.root / "file").write_text("someone else's work\n")
         with self.assertRaises(subprocess.CalledProcessError):
-            dev.publish(self.root, "fix", ["python3", "-c", "pass"], push=False)
+            self.publish("fix", ["python3", "-c", "pass"], push=False)
         self.assertEqual((self.root / "file").read_text(), "someone else's work\n")
 
     def test_failed_check_never_changes_main(self):
@@ -65,7 +82,7 @@ class WorkflowTest(unittest.TestCase):
         self.change()
         head = dev.git(self.root, "rev-parse", "HEAD")
         with self.assertRaises(subprocess.CalledProcessError):
-            dev.publish(self.root, "fix", ["python3", "-c", "raise SystemExit(2)"])
+            self.publish("fix", ["python3", "-c", "raise SystemExit(2)"])
         self.assertEqual(dev.git(self.root, "rev-parse", "HEAD"), head)
 
     def test_selected_file_can_include_other_work_and_leave_unrelated_dirty(self):
@@ -74,7 +91,7 @@ class WorkflowTest(unittest.TestCase):
         (self.work / "unrelated").write_text("still editing\n")
         (self.work / "staged").write_text("already staged\n")
         dev.git(self.work, "add", "staged")
-        result = dev.publish(self.root, "selected fix", push=False, paths=("file",))
+        result = self.publish("selected fix", push=False, paths=("file",))
         self.assertEqual((self.root / "file").read_text(), "my fix\nother resident draft\n")
         self.assertTrue((self.root / "staged").exists())
         self.assertFalse((self.root / "unrelated").exists())
@@ -98,14 +115,14 @@ class WorkflowTest(unittest.TestCase):
         (static.parent / "index.html").write_text(page)
         dev.git(self.work, "add", "code")
         dev.git(self.work, "commit", "-m", "chat")
-        dev.publish(self.root, "chat", push=False)
+        self.publish("chat", push=False)
         (static / "chat_workspace_a.js").write_text("calls b\n")
         (static / "portal_chat_workspace.js").write_text("creates b\n")
         (static / "chat_workspace_b.js").write_text("new module\n")
         list_group("a", "b")
         (static.parent / "index.html").write_text(page + "<!-- unrelated -->\n")
         (self.work / "file").write_text("still editing\n")
-        result = dev.publish(self.root, "chat module", push=False,
+        result = self.publish("chat module", push=False,
                              paths=("code/management_portal/static/chat_workspace_a.js",))
         released = self.root / "code/management_portal"
         self.assertEqual((released / "static/portal_chat_workspace.js").read_text(), "creates b\n")
@@ -122,7 +139,7 @@ class WorkflowTest(unittest.TestCase):
     def test_unrelated_release_work_is_not_a_clean_tree_gate(self):
         self.change()
         (self.root / "local-note").write_text("keep me")
-        dev.publish(self.root, "fix", push=False)
+        self.publish("fix", push=False)
         self.assertEqual((self.root / "local-note").read_text(), "keep me")
 
     def test_release_divergence_does_not_overwrite_either_tree(self):
@@ -132,9 +149,30 @@ class WorkflowTest(unittest.TestCase):
         dev.git(self.root, "commit", "-m", "unexpected release edit")
         old = dev.git(self.root, "rev-parse", "HEAD")
         with self.assertRaises(subprocess.CalledProcessError):
-            dev.publish(self.root, "fix", push=False)
+            self.publish("fix", push=False)
         self.assertEqual(dev.git(self.root, "rev-parse", "HEAD"), old)
         self.assertEqual((self.work / "file").read_text(), "changed\n")
+
+    def test_worktrees_come_from_the_instance_manifest_only(self):
+        """Release 与 Dev 的位置只取自实例清单；Git 公共目录不保存配置，没有 Dev 部署时拒绝。"""
+        configured = dev.configuration()
+        self.assertEqual((configured["main"], configured["dev"]), (str(self.root), str(self.work)))
+        common = Path(dev.git(self.root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+        self.assertFalse((common / "tfi-development.json").exists())
+        with tempfile.TemporaryDirectory() as directory:
+            solo = write_instance(Path(directory) / "solo")
+            with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(solo)}):
+                with self.assertRaisesRegex(ValueError, "no Dev deployment"):
+                    dev.configuration()
+
+    def test_publication_queues_activation_in_the_selected_instance(self):
+        """发布完成后向所选实例排队激活，并返回回执位置。"""
+        self.change()
+        with patch("scripts.tfi_development_runtime.request_activation",
+                   return_value={"receipt": "/receipt.json"}) as request:
+            result = dev.publish("fix", push=False)
+        self.assertEqual(request.call_args.args[0], Path(os.environ["PORTAL_INSTANCE_ROOT"]))
+        self.assertEqual(result["health"], {"status": "pending", "receipt": "/receipt.json"})
 
     def test_dev_push_blocked_main_allowed(self):
         """本地远端只接收 main，拒绝推送 dev。"""

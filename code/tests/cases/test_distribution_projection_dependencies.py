@@ -35,7 +35,7 @@ class Source:
         (self.directory / 'release-dependencies.json').write_text(json.dumps(self.declaration))
 
     def read_index(self, **_):
-        return {REPO: {'resource_type': 'repo', 'attributes': {'canonical_checkout': str(self.checkout)}}}
+        return {REPO: {'resource_type': 'repo', 'attributes': {'canonical_checkout': str(self.checkout), 'project_ids': ['demo']}}}
 
     def rows(self, schema, table, **_):
         if (schema, table) == ('workbenches', 'application_packages'):
@@ -52,7 +52,8 @@ def test_exact_declared_scope_binds_repo_to_code_without_copying_workspace(tmp_p
     assert scope['repositories'] == {REPO: str(source.checkout)}
     assert (str(source.checkout), '${code_root}') in scope['path_mappings']
     assert [item['source'] for item in scope['files']] == [str(source.file)]
-    assert scope['workspaces'][WORKSPACE]['path'] == '${share_root}/ProjectionEvidence/' + WORKSPACE
+    assert scope['workspaces'][WORKSPACE]['path'] == 'features:projection_evidence/' + WORKSPACE
+    assert [item['target'] for item in scope['files']] == ['data/features/projection_evidence/' + WORKSPACE + '/evidence.json']
     assert not declarations(source, [{'id': APP, 'revision': 1}])
     source.file.write_text('changed')
     with pytest.raises(ValueError, match='changed'):
@@ -137,6 +138,7 @@ def test_exported_repo_registration_has_only_its_materialized_source_root(tmp_pa
     from management_portal.resources.registry_store import get_registry_store
     from management_portal.distribution.selection import resolve, SYSTEM
     from scripts.tfi_release_install import map_directories
+    from management_portal.distribution import layout
     from tests.cases.registry_support import write_projects
     from tests.cases.test_distribution_lineage_options import ExportSource
     from tests.cases.test_distribution_resource_dependencies import selected
@@ -178,8 +180,9 @@ def test_exported_repo_registration_has_only_its_materialized_source_root(tmp_pa
     exported = row['document_json']
     target = tmp_path / 'target'
     installed = json.loads(map_directories(exported if isinstance(exported, str) else json.dumps(exported),
-        {'${code_root}': str(target / 'code'), '${share_root}': str(target / 'share')}))
-    root = str(target / ('code' if projection else 'share/Codes/' + REPO))
+        {'${code_root}': str(target / 'code')}))
+    # A copied Repo is registered by area: the projects area of the installing instance.
+    root = str(target / 'code') if projection else 'projects:demo/codes/' + REPO
     assert installed['source_kind'] == 'exported_tree'
     assert installed['schema'] == 'tfi.repo.v1' and installed['id'] == REPO
     assert installed['canonical_checkout'] == root
@@ -189,7 +192,7 @@ def test_exported_repo_registration_has_only_its_materialized_source_root(tmp_pa
     assert source.data == before
     # Exercise the consumer on the actual exported record, not a handcrafted
     # exported_tree fixture: reconciliation must keep its file address alive.
-    content = target / ('code' if projection else 'share/Codes/' + REPO) / 'architecture/modules.yaml'
+    content = (target / 'code' if projection else layout.physical(root)) / 'architecture/modules.yaml'
     content.parent.mkdir(parents=True)
     content.write_text('modules: []\n')
     write_projects({'projects': []})
@@ -203,7 +206,8 @@ def test_exported_repo_registration_has_only_its_materialized_source_root(tmp_pa
     for _ in range(2):
         reconciled = ResourceAutoRegistrar(service=service).reconcile()
         assert not reconciled['removed'] and not reconciled['resource_errors']
-        assert get_registry_store().get('repo', REPO) == installed
+        from management_common.location_records import located_record
+        assert get_registry_store().get('repo', REPO) == located_record(installed)
         body, _mime, _resolved = service.read_content(REPO + '/file/architecture/modules.yaml',
                                                      actor='resident_0123456789ab')
         assert body == b'modules: []\n'
@@ -310,12 +314,12 @@ def test_fresh_engineering_preserves_evidence_hash_and_installed_bindings(tmp_pa
     scope = resolve_files(source, frozen)
     if empty_progress:
         scope['file_scope_policy'] = {'reset_roots': scope['reset_roots']}
-        scope['files'].append({'source': str(source.workspace), 'target': 'data/share_root/ProjectionEvidence/' + WORKSPACE})
+        scope['files'].append({'source': str(source.workspace), 'target': 'data/features/projection_evidence/' + WORKSPACE})
         # Another selected tree and its symlink must not reintroduce reports.
         alias = tmp_path / 'alias'
         alias.mkdir()
         (alias / 'old-reports').symlink_to(source.workspace / 'reports', target_is_directory=True)
-        scope['files'].append({'source': str(alias), 'target': 'data/share_root/alias'})
+        scope['files'].append({'source': str(alias), 'target': 'data/projects/demo/alias'})
     bindings = scrub({'canonical_checkout': str(source.checkout), 'path': str(source.workspace)}, mappings=scope['path_mappings'])
     output = tmp_path / 'engineering'
     resolved = {**scope, 'projection_code_repositories': scope['repositories'],
@@ -323,10 +327,10 @@ def test_fresh_engineering_preserves_evidence_hash_and_installed_bindings(tmp_pa
     manifest = generate(source_root=source.checkout, destination=output, snapshot={'source': 'Dev'},
                         resolved=resolved, database_sql=json.dumps(bindings), run_id='local-projection-generation')
     if empty_progress:
-        copied = output / 'data/share_root/ProjectionEvidence' / WORKSPACE
+        copied = output / 'data/features/projection_evidence' / WORKSPACE
         assert sorted(str(p.relative_to(copied)) for p in copied.rglob('*') if p.is_file()) == [
             'reports/stage-content.json', 'reports/stage-index.json', 'reports/stage-report-schema.json']
-        assert not (output / 'data/share_root/alias/old-reports').exists()
+        assert not (output / 'data/projects/demo/alias/old-reports').exists()
         assert json.loads((copied / 'reports/stage-index.json').read_text())['report_refs'] == []
         assert all(Path(name).read_bytes() == raw for name, raw in original_files.items())
     else:
@@ -335,6 +339,7 @@ def test_fresh_engineering_preserves_evidence_hash_and_installed_bindings(tmp_pa
         assert hashlib.sha256(copied.read_bytes()).hexdigest() == descriptor['sha256']
         assert not (copied.parent / 'unselected.bin').exists()
     assert manifest['resolved_objects'] == [REPO, WORKSPACE]
-    installed = json.loads(map_directories((output / 'database/distribution.sql').read_text(),
-                                          {'${code_root}': '/target/code', '${share_root}': '/target/share'}))
-    assert installed == {'canonical_checkout': '/target/code', 'path': '/target/share/ProjectionEvidence/' + WORKSPACE}
+    installed = json.loads(map_directories((output / 'database/distribution.sql').read_text(), {'${code_root}': '/target/code'}))
+    assert installed == {'canonical_checkout': '/target/code', 'path': 'features:projection_evidence/' + WORKSPACE}
+    assert manifest['files'] == ({'features': 'data/features', 'projects': 'data/projects'} if empty_progress
+                                 else {'features': 'data/features'})

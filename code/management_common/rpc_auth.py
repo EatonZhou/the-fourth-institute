@@ -1,7 +1,6 @@
 """Shared message authentication for Portal's local service sockets."""
 from __future__ import annotations
 from management_common.format_tags import schema_matches
-from management_common.site_compatibility import compatibility_value
 
 import hashlib
 import hmac
@@ -15,7 +14,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Mapping
 
-from .instance_paths import instance_root
+from .instance_manifest import instance_runtime_root
 from .file_permissions import create_private_file, ensure_private_directory, read_private_bytes
 
 # Readers authenticate the received tag; new requests use the current namespace.
@@ -23,30 +22,16 @@ RPC_AUTH_SCHEMA = "tfi.resource-rpc-auth.v1"
 RPC_AUTH_MAX_AGE_SECONDS = 30
 
 def rpc_signing_key_file(
-    instance: str = "",
     *,
     socket_path: Path | str | None = None,
     platform: str | None = None,
 ) -> Path:
-    clean_instance = str(
-        instance or os.getenv("PORTAL_INSTANCE", "dev") or "dev"
-    ).strip()
-    configured = str(
-        os.getenv("PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE", "") or ""
-    ).strip()
+    configured = str(os.getenv("PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE", "") or "").strip()
     if configured:
-        return Path(configured).expanduser()
-    if (platform or sys.platform) == "win32":
-        logical_parent = Path(socket_path).parent if socket_path is not None else instance_root() / clean_instance
-        namespace = hashlib.sha256(str(logical_parent.resolve()).encode("utf-8")).hexdigest()[:20]
-        local_data = Path(os.getenv("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
-        root = Path(compatibility_value('rpc_keys_root', str(local_data / "TFI" / "Portal" / "rpc-keys"))).expanduser()
-        return root / namespace / "resource-rpc-signing.key"
+        return Path(configured)
     if socket_path is not None:
         return Path(socket_path).with_name("resource-rpc-signing.key")
-    return Path(
-        f'{instance_root()}/{clean_instance}/resource-rpc-signing.key'
-    )
+    return instance_runtime_root() / "s/resource-rpc-signing.key"
 
 
 def load_rpc_signing_key(

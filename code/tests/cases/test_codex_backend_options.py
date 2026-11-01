@@ -948,6 +948,3 @@ def test_new_codex_session_moves_capacity_when_backend_falls_back(
         assert scheduler.health()["active_count"] == 0
     finally:
         _close(server, thread)
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

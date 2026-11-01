@@ -18,7 +18,6 @@ from management_portal.society_service import (
     lineage_state,
     resident_conversation_stream,
     resident_domain,
-    resident_domain_common,
     resident_lifecycle_steps_domain,
     resident_lineage,
     resident_record_domain,
@@ -33,6 +32,7 @@ PEER_ID = "resident_222222222222"
 
 from management_portal.society_service import resident_lifecycle_domain, resident_runtime_domain, resident_session_backend_domain
 from management_portal.society_service import lineage_aggregate
+from tests.cases.instance_test_support import lineage_folders
 
 @pytest.fixture()
 def deletion_store(
@@ -41,14 +41,12 @@ def deletion_store(
 ) -> tuple[Path, dict[str, dict]]:
     data_root = tmp_path / "portal_lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", data_root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", data_root / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(data_root / "lineages"))
+    lineage_folders(monkeypatch, data_root / "lineages")
     resource_records = install_resource_boundary(monkeypatch)
     from management_portal.society_service import resident_workspace_domain
     from management_portal.society_service.domain_ports import execution_port
     # Deleted Residents' quota overrides are forgotten in the Execution store.
     monkeypatch.setattr(execution_port, "forget_binding_quota_overrides", lambda binding_ids: {"removed": 0})
-    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
         resident_workspace_domain,
         "project_info_for_workspace",
@@ -234,22 +232,13 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
     deletion_store: tuple[Path, dict[str, dict]],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Provider 释放受阻时 Lineage 仍先标记为已删除，文件夹绑定保留到释放完成"""
+    """Provider 释放受阻时 Lineage 仍先标记为已删除，文件夹保留到释放完成"""
     data_root, resource_records = deletion_store
     folder = data_root / "lineages" / LINEAGE_ID
     _write_lineage(folder)
     _write_resident_facts([_resident_record(ROOT_ID, folder)])
     apply_step = resident_lifecycle_steps_domain.apply_resident_lifecycle_step
     applied = []
-    from management_portal.society_service.resident_lineage_host import ResidentLineageHost
-    unbound = []
-    original_unbind = ResidentLineageHost.unbind_deleted_lineage_folder
-
-    def record_unbind(step: dict) -> None:
-        unbound.append(step["lineage_id"])
-        original_unbind(step)
-
-    monkeypatch.setattr(ResidentLineageHost, "unbind_deleted_lineage_folder", record_unbind)
 
     def blocked_release(operation_id: str, step: dict) -> None:
         applied.append(step["kind"])
@@ -263,7 +252,6 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
 
     assert resource_records[LINEAGE_ID]["status"] == "deleted"
-    assert unbound == [], "Provider release must retain its original folder binding"
     assert applied[:2] == ["lineage_tombstone", "release"]
     assert folder.exists()
     assert lineage_reads.list_lineages("sample_admin")["lineages"] == []

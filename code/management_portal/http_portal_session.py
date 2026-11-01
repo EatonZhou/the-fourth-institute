@@ -23,7 +23,7 @@ PAGE_ARGUMENTS = {"UpdateExecutionSettings": {"permission_system_enabled": True}
 
 class PortalSessionHttp:
     def __init__(
-        self, *, respond, exception_response, read_json, session_actor, access, avatar, instance, build_id,
+        self, *, respond, exception_response, read_json, session_actor, access, avatar, deployment, build_id,
         preferences, set_preferences,
         conversation_payload, workspace_adapter, session_opened=None,
     ):
@@ -33,7 +33,7 @@ class PortalSessionHttp:
         self.session_actor = session_actor
         self.access = access
         self.avatar = avatar
-        self.instance = instance
+        self.deployment = deployment
         self.build_id = build_id
         self.preferences = preferences
         self.set_preferences = set_preferences
@@ -64,7 +64,7 @@ class PortalSessionHttp:
             "username": actor,
             "principal": {"kind": principal.kind, "id": actor},
             "avatar": avatar,
-            "portal_instance": self.instance,
+            "portal_deployment": self.deployment,
             "build_id": self.build_id,
             "preferences": self.preferences(actor),
             "access": {
@@ -82,11 +82,11 @@ class PortalSessionHttp:
         actor = self.session_actor(request) or ""
         return self.respond(request, 200, {
             "ok": True, "username": actor,
-            "default_instance": self.instance, "preference": self.instance,
-            "effective_instance": self.instance,
-            "instances": [{
-                "id": self.instance, "label": self.instance.title(),
-                "kind": self.instance, "build_id": self.build_id,
+            "default_deployment": self.deployment, "preference": self.deployment,
+            "effective_deployment": self.deployment,
+            "deployments": [{
+                "id": self.deployment, "label": self.deployment.title(),
+                "kind": self.deployment, "build_id": self.build_id,
             }],
         })
 

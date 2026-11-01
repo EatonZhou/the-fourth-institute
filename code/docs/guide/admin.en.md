@@ -76,10 +76,10 @@ Use `ListUserInvitations` and `RevokeUserInvitation` to inspect or revoke invita
 | Resident model and reasoning | Conversation settings or `UpdateResidentSettings` | Per Resident. |
 | Prompt injection | Standard, full every turn, compact, or pure TUI presets; `GetResidentSettings` / `UpdateResidentSettings` | Per Resident. |
 | Route's default model | Execution account `default_model` | New Residents on that route. |
-| Shared rules and Skills | Skills directory under the configured shared root | Residents using those rules. |
+| Shared rules and Skills | The four core Skills, including the shared rules, live in the code directory's `core_skills/` and update with the code; other shared Skills live in the instance's skills area (`skills:<name>/`) | Residents using those rules. |
 | Scheduled and automatic work | HATG time/event sources; use Residents for AI judgment and `RunScript` effects for mechanical work | Per Lineage; inspect and pause from Home. |
 
-Set `site_name` in the installation's `config/site.json`, or select that file with `PORTAL_SITE_CONFIG`. The default is TFI Portal. Use nonempty text without control characters. New or refreshed pages read the new name; existing pages need a refresh. Keep this configuration free of secrets.
+Set `site_name` in `site.json` at the instance root. The default is TFI Portal. Use nonempty text without control characters. New or refreshed pages read the new name; existing pages need a refresh. Keep this configuration free of secrets.
 
 Processes use canonical `PORTAL_*` environment variables. Historical variable aliases are no longer read; an explicitly empty canonical value stays empty. Existing deployment identities, database bindings, and paths must be preserved in site configuration rather than inferred from new defaults. For example, a deployment may configure its own PostgreSQL unit:
 
@@ -91,7 +91,7 @@ Resident identities and runtime formats require current canonical fields and exa
 
 Historical Seed markers, plan summaries, and state directories require a deliberate one-time migration: verify backup and prior results, convert supported items while preserving state and valid locks, and clean only explicitly listed unconvertible items. Record outcomes and reread them before retrying. Business text, database IDs, format versions, whole data roots, and credentials remain outside that cleanup.
 
-Before an upgrade, verify the existing environment file, service identities, and database binding. `deployment.postgres_env_file` retains the connection file; `deployment.postgres` can configure prefix, base, bin, lib, share, socket, data, unit, port, role, and database. Preparing an existing cluster requires its actual role and database. Generating configuration or passing isolated tests does not activate a service change; arrange that separately.
+The PostgreSQL programs are located by `dependencies.postgres` in the manifest `instance.json`; the cluster is always `database/` in the instance root and the connection string is in `secrets/postgres.env`. Site settings hold no database configuration.
 
 ## 4. Permissions
 
@@ -163,19 +163,18 @@ Users revoke individual personal tokens with `RevokeUserAccessToken`. To invalid
 
 ### Backups
 
-Back up PostgreSQL plus instance data (including uploads), Projects, knowledge, and Resident workspaces. Configure the deployment's backup service, for example Restic with database exports. Resource → Backup reports recovery points and schedules and provides authorized backup and verification controls. Protect backup keys separately and verify that recovery works. See the Portal Resource Backup design and installation procedures for the deployed configuration.
+Back up PostgreSQL plus the instance's areas (projects, lineages, skills, papers, uploads, features, provider-state; their locations are listed under Portal Management → Data directories), `secrets/`, the manifest `instance.json` and the site settings `site.json`. `cache/` and `runtime/` need no backup. Export the database first, then copy the areas. Configure the deployment's backup service, for example Restic with database exports. Resource → Backup reports recovery points and schedules and provides authorized backup and verification controls. Protect backup keys separately and verify that recovery works. See the Portal Resource Backup design and installation procedures for the deployed configuration.
 
-### Upgrades and releases
+### Code updates and releases
 
-After an authorized Dev code update, `./scripts/portal_services request-restart dev` requests component activation. After validation, run `python3 code/scripts/tfi_dev.py publish --message '<description>' --path code/<file>…` from the repository root to publish selected paths; `--all` selects everything. The command prints `activation.receipt`, a file that records the result and service health once activation finishes. Services may briefly become unavailable during activation; execution workers use their configured handover process. `GetPortalStatus` reads service health; `PublishRelease` and `RestartPortal` are the instruction interfaces. Use the installation's current operating design (`decision_ab9880dc4c9d`) for exact steps.
+After an authorized Dev code update, `./scripts/portal_services request-restart dev` requests component activation. After validation, run `python3 code/scripts/tfi_dev.py publish --message '<description>' --path code/<file>…` from the repository root to publish selected paths; `--all` selects everything. The command prints `activation.receipt`, a file that records the result and service health once activation finishes. Services may briefly become unavailable during activation; execution workers use their configured handover process. `GetPortalStatus` reads deployment and service health; `PublishRelease` and `RestartPortal` (parameter `deployment`, `dev` or `release`) are the instruction interfaces. Use the installation's current operating design (`decision_ab9880dc4c9d`) for exact steps.
 
 Special migrations are separate maintenance operations:
 
-- Deployment registry naming: `scripts/migrate_tfi_runtime_names.py --names-file <private plan> --deployment-registry <actual file>` checks the declared source schema and file digest first. Apply only after review with a private backup; only the approved top-level format marker changes, with identities and routes preserved.
 - Historical message origins: `scripts/migrate_message_origins.py --plan <private plan> --backup <new private backup>` validates actual database/schema bindings and source-marker mappings. Apply requires the returned plan digest. It backs up and updates format markers transactionally, preserving message bodies, authors, initiators, order, IDs, and payload digests. Reread actual conversations afterwards.
 - Deployment paths: `scripts/migrate_deployment_paths.py` requires an external maintenance window, complete backups, stopped writers, process visibility, and a sealed private plan. Independently verify the plan digest before apply. Active references, changed sources, or existing targets block changes. Rebuild virtual environments at the new location with the same interpreter and exact dependencies. Configuration, credentials, service restart, and live validation need their own authorization. Rollback accepts only a completed, unchanged target; interrupted migrations require individual review.
 
-The installer `scripts/tfi_release_install.py` registers Portal's native services during installation: systemd on Linux, launchd on macOS, SCM on Windows. Windows needs its configured service account and registration password. Every service name starts with the instance's `service_prefix`, for example `<service_prefix>-web.service`, so each instance has its own service chain. An instance with a configured Dev also gets Dev Web and the Router from `scripts/tfi_development_runtime.py`, which restarts the affected components when a publication changes their files.
+The installer `scripts/tfi_release_install.py` runs the instance lifecycle (`create`, `start`, `stop`, `update-code`, `retire`; see `INSTALL.md` in the code directory). On creation it registers the manifest's services: systemd user services on Linux, launchd on macOS, a current-user supervisor on Windows. Every service name starts with the manifest's service prefix, for example `<prefix>-web.service`; start and stop act only on the services the manifest lists. After replacing the code with a new version, run `update-code`: it prepares the dependencies the new code needs, refreshes the service definitions and restarts; services update the database themselves. Portal administration → Portal instances lists the instances in the host registry (`~/.config/tfi/instances.json`) with their real service state, and administrators can start or stop them through an independent control job. An instance with a Dev deployment also gets Dev Web and the entry gateway from `scripts/tfi_development_runtime.py`, which restarts the affected components when a publication changes their files.
 
 ### Usage and quota
 
@@ -191,7 +190,7 @@ Home → Usage Attribution reports tokens; AI Activity & Accounts reports accoun
 | ResourceService | Resources and permission-related operations | The installer's `resource` component. |
 | SocietyService | Lineages and Residents | The installer's `society` component. |
 | ExecutionService and ExecutionWorker | Model request scheduling and execution | The installer's `execution` and `worker` components. |
-| Portal Router | User routing to Dev or Release | The development runtime's `router` and the deployment registry. |
+| Portal Router | User routing to the Dev or Release deployment | The `gateway` component (`management_portal/portal_deployment_router.py`) and the deployment registry. |
 | Provider backends | AI tools such as Codex App Server, Claude Code, and Kimi Code | Provider service templates and the operating design. |
 
 Python dependencies are in `requirements*.txt`. Services read the configured `PORTAL_DATABASE_URL`. Dev runs working source for development; Release runs published source for everyday use. They share the configured database and background services. Adapt paths, system accounts, and ports to your installation.

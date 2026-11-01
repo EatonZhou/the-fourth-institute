@@ -57,17 +57,10 @@
 
       <section class="settingsSection" data-management-paths aria-label="Portal 数据目录">
         <h2>数据目录</h2>
-        <p>相对路径以 Portal 安装目录为基准。修改目录需要复制数据并重启 Portal 服务；原目录会保留，以便故障时恢复。</p>
-        <form data-management-paths-form>
-          <div class="accessFieldGrid">
-            <label class="portalField"><span>共享资料</span><input data-path-key="share_root" required /></label>
-            <label class="portalField"><span>临时运行数据</span><input data-path-key="staging_root" required /></label>
-            <label class="portalField"><span>Portal 实例</span><input data-path-key="instances_root" required /></label>
-            <label class="portalField"><span>密钥目录</span><input data-path-key="secrets_dir" required /></label>
-          </div>
-          <button class="portalButton is-primary" type="submit">迁移并保存</button>
-        </form>
-        <p data-management-paths-status role="status"></p>
+        <p>当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。</p>
+        <p data-management-paths-root></p>
+        <div class="managementPathsList" data-management-paths-list></div>
+        <p data-management-paths-status role="status" aria-live="polite"></p>
       </section>
       <section class="settingsSection" data-management-execution aria-label="执行设置">
         <h2>执行设置</h2>
@@ -313,8 +306,8 @@
   // registers:
   //   portal_management_layout.js  the tabs, the stage with one pane per
   //     view and the sections in the panes
-  //   portal_management_paths.js  the data directories form and path
-  //     migrations
+  //   portal_management_paths.js  the data directories: locations, sizes,
+  //     free space and moving an area
   //   portal_management_execution.js  the execution settings: reading them
   //     when the tab opens and saving an input when it changes
   //   portal_management_services.js  Telepus, WALL scheduling and the

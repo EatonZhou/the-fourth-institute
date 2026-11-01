@@ -49,7 +49,6 @@ from .domain_ports import resident_domain_port as resident_domain, resource_port
 from .lineage_data_runtime import RuntimeCASConflict
 
 
-LINEAGE_FOLDER_ROOT = lineage_storage.configured_lineage_folder_root()
 SCHEMA_VERSION = 1
 
 
@@ -63,18 +62,13 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _lineages_root() -> Path:
-    return LINEAGE_FOLDER_ROOT
-
-
 def _lineage_dir(lineage_id: str) -> Path:
+    """The folder of a registered Lineage, computed from its Project."""
     value = _text(lineage_id, 80).lower()
     if not identity_contract.is_valid_id(value, "lineage"):
         raise ValueError("invalid Lineage id")
-    return lineage_storage.canonical_lineage_folder(
-        value,
-        folder_root=_lineages_root(),
-    )
+    from .lineage_locations import lineage_folder
+    return lineage_folder(value)
 
 
 def _node_workspace_path(lineage_id: str, node: dict[str, Any]) -> Path:
@@ -109,7 +103,6 @@ def _seed_folder(lineage_id: str) -> Path:
 
     A Seed is a Lineage object, so its Markdown stays when the Resident that
     wrote it, or its candidate fork source, is deleted.  Resolved, because
-    the configured folder is usually a link to the Lineage's real folder and
     callers check that a resolved artifact stays inside it.
     """
 
@@ -188,9 +181,11 @@ def _lineage_readme_text(lineage: dict[str, Any]) -> str:
 
 def _ensure_lineage_folder_files(lineage: dict[str, Any]) -> None:
     lineage_id = str(lineage.get("lineage_id") or "")
-    # Resolve the owned canonical alias before private writes. The security
-    # primitive deliberately rejects reparse points in its parent chain.
-    lineage_dir = _lineage_dir(lineage_id).resolve(strict=False)
+    # The record being written decides the folder: before its first write, or
+    # while its Project changes, the stored row still names the old Project.
+    lineage_dir = lineage_storage.lineage_folder_for_project(
+        lineage_id, _text(lineage.get("project_id"), 120),
+    ).resolve(strict=False)
     lineage_dir.mkdir(parents=True, exist_ok=True)
     (lineage_dir / "residents").mkdir(parents=True, exist_ok=True)
     (lineage_dir / "runtime").mkdir(parents=True, exist_ok=True)

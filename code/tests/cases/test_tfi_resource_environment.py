@@ -10,77 +10,21 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.cases.instance_test_support import select_instance
+
 
 ROOT = Path(__file__).resolve().parents[2]
-SETTINGS = [
-    ('resource_auto_registration', 'DEFAULT_RUN_STATE_PATH', 'RESOURCE_AUTO_REGISTER_STATE_PATH'),
-    ('resource_identity_backend', 'DEFAULT_SSH_KEY_ROOT', 'SSH_KEY_ROOT'),
-    ('article_build_results', 'DEFAULT_BUILD_ROOT', 'ARTICLE_BUILD_ROOT'),
-    ('device_identity_backend', 'DEFAULT_STATUS_PATH', 'DEVICE_STATUS_PATH'),
-    ('device_identity_backend', 'DEFAULT_DEVICE_SECRET_ROOT', 'DEVICE_SECRET_ROOT'),
-    ('repo_credentials_backend', 'DEFAULT_CREDENTIAL_ROOT', 'REPO_CREDENTIAL_ROOT'),
-    ('repo_credentials_backend', 'DEFAULT_KEY_PATH', 'REPO_CREDENTIAL_KEY_PATH'),
-    ('repo_workspace_network', '_SSH_KEY_ROOT', 'SSH_KEY_ROOT'),
-    ('resources.providers.project', 'SHARE_ROOT', 'SHARE_ROOT'),
-    ('resources.providers.project', 'PROJECTS_ROOT', 'PROJECTS_ROOT'),
-]
 
 
 @pytest.fixture(autouse=True)
 def isolated_paths(tmp_path, monkeypatch):
-    paths = tmp_path / 'paths.json'
-    paths.write_text(json.dumps({key: str(tmp_path / key) for key in
-        ('share_root', 'staging_root', 'instances_root', 'secrets_dir')}))
-    monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(paths))
-    from management_common import portal_paths
-    monkeypatch.setattr(portal_paths, 'CONFIG_PATH', paths)
-
-
-@pytest.mark.parametrize('mode', ['new', 'both', 'empty', 'alias-only'])
-def test_resource_environment_paths(mode, tmp_path):
-    env = os.environ.copy()
-    expected = {}
-    for _, _, suffix in SETTINGS:
-        old, new = 'ARCHIVE_' + suffix, 'PORTAL_' + suffix
-        env.pop(old, None)
-        env.pop(new, None)
-        if mode in ('alias-only', 'both', 'empty'):
-            env[old] = str(tmp_path / 'old' / suffix)
-        if mode in ('new', 'both', 'empty'):
-            env[new] = '' if mode == 'empty' else str(tmp_path / 'new' / suffix)
-        if new in env:
-            expected[suffix] = str(Path(env[new]))
-    code = '''
-import importlib, json, os, sys
-from pathlib import Path
-settings, expected = json.loads(sys.argv[1])
-controlled = {name: value for name, value in os.environ.items() if name.startswith(('PORTAL_', 'ARCHIVE_'))}
-found_paths = {}
-for module, attribute, suffix in settings:
-    found = str(getattr(importlib.import_module('management_portal.' + module), attribute))
-    if suffix in expected:
-        assert found == expected[suffix], (module, attribute, found, expected[suffix])
-    found_paths[module + '.' + attribute] = found
-for name, value in controlled.items(): assert os.environ[name] == value
-print(json.dumps(found_paths))
-'''
-    result = subprocess.run([sys.executable, '-c', code, json.dumps([SETTINGS, expected])],
-                            cwd=ROOT, env=env, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-    if mode == 'alias-only':
-        # Compare against the same site configuration with no alias inputs.
-        baseline = subprocess.run([sys.executable, '-c', code, json.dumps([SETTINGS, {}])],
-                                  cwd=ROOT, env={k: v for k, v in env.items() if not k.startswith('ARCHIVE_')},
-                                  capture_output=True, text=True)
-        assert baseline.returncode == 0, baseline.stderr
-        assert json.loads(result.stdout) == json.loads(baseline.stdout)
+    select_instance(monkeypatch, tmp_path / 'instance')
 
 
 @pytest.mark.parametrize('mode', ['new', 'both'])
 def test_resource_backup_and_registration_environment(mode, tmp_path, monkeypatch):
     from management_portal import resource_auto_registration as registration
-    from management_portal.resource_backup_backend import ResourceBackupBackend
-    values = {'RESOURCE_BACKUP_ROOT': str(tmp_path), 'RESOURCE_AUTO_REGISTER': '0',
+    values = {'RESOURCE_AUTO_REGISTER': '0',
               'RESOURCE_AUTO_REGISTER_INTERVAL_SECONDS': '123',
               'RESOURCE_AUTO_REGISTER_INITIAL_DELAY_SECONDS': '7'}
     for suffix, value in values.items():
@@ -90,7 +34,6 @@ def test_resource_backup_and_registration_environment(mode, tmp_path, monkeypatc
             monkeypatch.setenv('ARCHIVE_' + suffix, 'wrong')
         monkeypatch.setenv('PORTAL_' + suffix, value)
     before = dict(os.environ)
-    assert ResourceBackupBackend(workflow=object()).service_root == tmp_path
     assert registration.start_auto_registration_worker() is None
     monkeypatch.setenv('PORTAL_RESOURCE_AUTO_REGISTER', '1')
     delays, intervals = [], []
@@ -220,6 +163,3 @@ def test_shell_askpass_private_file_and_interpreter_paths_with_spaces(tmp_path, 
     assert result.stdout == (b'isolated-secret' if unsafe is None else b'')
     assert (result.returncode == 0) == (unsafe is None)
     assert secret.read_bytes() == b'isolated-secret'
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

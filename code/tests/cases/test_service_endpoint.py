@@ -152,12 +152,12 @@ def test_draining_server_binds_tcp_when_owner_selects_windows_endpoint(tmp_path)
     assert not rendezvous_path(path).exists()
 
 
-def test_windows_rpc_key_is_private_to_installation_in_local_app_data(tmp_path, monkeypatch):
-    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "local-data"))
+def test_windows_rpc_key_is_private_to_each_deployment_runtime(tmp_path):
     first = rpc_signing_key_file(socket_path=tmp_path / "dev" / "resource-service.sock", platform="win32")
     second = rpc_signing_key_file(socket_path=tmp_path / "release" / "resource-service.sock", platform="win32")
     assert first != second
-    assert first.is_relative_to(tmp_path / "local-data")
+    assert first == tmp_path / "dev/resource-rpc-signing.key"
+    assert second == tmp_path / "release/resource-rpc-signing.key"
     key = load_rpc_signing_key(required=True, create=True, path=first, platform="win32")
     assert len(key) == 32
     assert load_rpc_signing_key(required=True, path=first, platform="win32") == key

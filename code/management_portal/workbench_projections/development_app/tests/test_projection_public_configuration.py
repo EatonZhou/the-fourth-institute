@@ -4,16 +4,15 @@ import json
 import pytest
 
 from management_portal.workbench_projections.resource_access import dispatch
+from tests.cases.instance_test_support import select_instance
 
 
 def test_projection_configuration_ignores_site_mapping_and_keeps_authorization(tmp_path, monkeypatch):
-    path = tmp_path / 'site.json'
-    path.write_text(json.dumps({'deployment': {'compatibility': {
+    select_instance(monkeypatch, tmp_path / 'instance', site={'deployment': {'compatibility': {
         'format_namespaces': ['archive.'],
         'environment_aliases': {'PORTAL_TEST_ONLY': ['ARCHIVE_TEST_ONLY']},
         'domain_values': {'private_test_value': 'not-public'},
-    }}}))
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(path))
+    }}})
     calls = []
     assert dispatch(None, 'configuration', {}, 'fixture-user', check_workbench=lambda: calls.append(True)) == {
         'format_namespaces': [],
@@ -30,10 +29,8 @@ def test_projection_configuration_ignores_site_mapping_and_keeps_authorization(t
 
 
 def test_projection_configuration_is_empty_even_with_malformed_site_mapping(tmp_path, monkeypatch):
-    path = tmp_path / 'site.json'
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(path))
-    path.write_text('{}')
+    root = select_instance(monkeypatch, tmp_path / 'instance', site={}).root
     assert dispatch(None, 'configuration', {}, 'fixture-user', check_workbench=lambda: None) == {'format_namespaces': []}
     for value in [['archive.'], ['tfi.'], 'archive.', None, {'private': 'not-public'}]:
-        path.write_text(json.dumps({'deployment': {'compatibility': {'format_namespaces': value}}}))
+        (root / 'site.json').write_text(json.dumps({'deployment': {'compatibility': {'format_namespaces': value}}}))
         assert dispatch(None, 'configuration', {}, 'fixture-user', check_workbench=lambda: None) == {'format_namespaces': []}

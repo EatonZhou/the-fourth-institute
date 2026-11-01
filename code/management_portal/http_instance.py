@@ -1,13 +1,18 @@
-"""This Portal Web process: its instance name, build ID, service name and start time."""
+"""This Portal Web process: its deployment name, build ID, service name and start time."""
 from __future__ import annotations
 
 import os
 import time
 
 
-_PORTAL_INSTANCE = os.getenv("PORTAL_INSTANCE", "dev").strip() or "dev"
+_PORTAL_DEPLOYMENT = os.getenv("PORTAL_DEPLOYMENT", "release").strip() or "release"
 _PORTAL_BUILD_ID = os.getenv("PORTAL_BUILD_ID", "").strip() or "development"
 
-_PORTAL_SERVICE_NAME = os.getenv("PORTAL_SERVICE_NAME", "management-portal.service").strip() or "management-portal.service"
+from management_common.instance_manifest import load
+_manifest = load()
+if _PORTAL_DEPLOYMENT not in _manifest.deployments:
+    raise ValueError('Web deployment is not registered in the selected instance')
+_PORTAL_INSTANCE_NAME = _manifest.name
+_PORTAL_SERVICE_NAME = _manifest.service_name('dev-web' if _PORTAL_DEPLOYMENT == 'dev' else 'web') + '.service'
 
 _SERVER_STARTED_AT = time.time()

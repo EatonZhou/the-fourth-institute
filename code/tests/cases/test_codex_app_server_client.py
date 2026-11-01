@@ -34,6 +34,7 @@ from management_portal.codex_app_server_protocol import (
     codex_final_agent_response,
     terminal_turn_error,
 )
+from management_portal import codex_app_server_threads
 from management_portal.codex_app_server_threads import codex_thread_execution_lock
 from management_portal.codex_app_server_turn_follow import CodexTurnFollower
 
@@ -3243,7 +3244,7 @@ class CodexAppServerClientTest(unittest.TestCase):
             with codex_thread_execution_lock("thread-shared"):
                 second_entered.set()
 
-        with mock.patch.dict("os.environ", {"PORTAL_CODEX_APP_SERVER_THREAD_LOCK_ROOT": self.temp_dir.name}):
+        with mock.patch.object(codex_app_server_threads, "THREAD_LOCK_ROOT", Path(self.temp_dir.name)):
             first_thread = threading.Thread(target=first)
             second_thread = threading.Thread(target=second)
             first_thread.start()
@@ -3283,14 +3284,7 @@ class CodexAppServerClientTest(unittest.TestCase):
             finally:
                 second_finished.set()
 
-        with mock.patch.dict(
-            "os.environ",
-            {
-                "PORTAL_CODEX_APP_SERVER_THREAD_LOCK_ROOT": (
-                    self.temp_dir.name
-                )
-            },
-        ):
+        with mock.patch.object(codex_app_server_threads, "THREAD_LOCK_ROOT", Path(self.temp_dir.name)):
             first_thread = threading.Thread(target=first)
             second_thread = threading.Thread(target=second)
             first_thread.start()

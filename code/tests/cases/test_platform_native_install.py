@@ -1,6 +1,7 @@
 """Native-asset selection and failed replacement preserve installed tools."""
 import hashlib
 import io
+from pathlib import Path
 import tarfile
 from types import SimpleNamespace
 import zipfile
@@ -60,28 +61,19 @@ def test_archive_links_are_rejected_and_zip_extracts_only_named_executable(tmp_p
     assert not (tmp_path.parent/'outside').exists()
 
 
-def test_windows_dsh_profile_updates_atomically_without_symlinks(tmp_path, monkeypatch):
+def test_dsh_profile_imports_code_dependencies_without_copying_or_linking(tmp_path, monkeypatch):
     source, profile = tmp_path/'runtime', tmp_path/'profile'
-    (source/'node_modules').mkdir(parents=True); profile.mkdir()
-    (source/'node_modules/module.js').write_text('old')
-    lock = source/'package-lock.json'; lock.write_text('v1')
+    source.mkdir(); profile.mkdir()
     monkeypatch.setattr(dsh_client, 'RUNTIME', source)
-    monkeypatch.setattr(dsh_client, 'os', SimpleNamespace(name='nt'))
-    dsh_client._profile_modules(profile)
-    assert (profile/'node_modules/module.js').read_text() == 'old'
-    assert not (profile/'node_modules').is_symlink()
-    lock.write_text('v2'); (source/'node_modules/module.js').write_text('new')
-    original = dsh_client.shutil.copytree
-    def fail(*args, **kwargs):
-        raise OSError('copy interrupted')
-    monkeypatch.setattr(dsh_client.shutil, 'copytree', fail)
-    with pytest.raises(OSError, match='interrupted'):
-        dsh_client._profile_modules(profile)
-    assert (profile/'node_modules/module.js').read_text() == 'old'
-    monkeypatch.setattr(dsh_client.shutil, 'copytree', original)
-    dsh_client._profile_modules(profile)
-    assert (profile/'node_modules/module.js').read_text() == 'new'
-    assert not list(profile.glob('.modules-*'))
+    modules = {name: str(source / (name.rsplit('/', 1)[-1] + '.mjs'))
+               for name in ('@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-llm-deepseek')}
+    dsh_client._profile_code(profile, modules)
+    for filename in ('bridge.mjs', 'api_provider.mjs'):
+        text = (profile / filename).read_text()
+        assert "from '@deepseek-ai/" not in text
+        assert Path(modules['@deepseek-ai/dsh-llm']).as_uri() in text
+    assert not (profile / 'node_modules').exists()
+    assert (profile / 'request_timing.mjs').is_file()
 
 
 def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypatch):

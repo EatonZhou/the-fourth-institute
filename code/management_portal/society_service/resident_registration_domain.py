@@ -13,7 +13,6 @@ from . import (
     resident_store,
     resource_client,
     resident_record_domain,
-    resident_project_domain,
     resident_runtime_domain,
     resident_session_backend_domain,
     resident_workspace_domain,
@@ -260,8 +259,9 @@ def _new_resident_record(
     if lineage_folder_raw:
         workspace_path = safe_absolute_path(lineage_folder_raw)
     else:
-        workspace_path = resident_lineage_host_port.canonical_lineage_folder(
-            lineage_id
+        # A new Lineage's folder follows the Project it is created in.
+        workspace_path = resident_lineage_host_port.lineage_folder_for_project(
+            lineage_id, str(payload.get("lineage_project_id") or project_id).strip(),
         ).resolve(strict=False)
     workspace_root = workspace_path.parent
     requested_workspace_bindings = [
@@ -423,12 +423,11 @@ def safe_absolute_path(raw: str) -> Path:
     if not path.is_absolute():
         raise ValueError("workspace_root 必须是绝对路径")
     resolved = path.resolve(strict=False)
+    # Lineage folders live only in the lineages and projects areas.
     allowed = [
         resident_domain_common.AGENTS_ROOT.resolve(strict=False),
         resident_domain_common.PROJECTS_ROOT.resolve(strict=False),
-        resident_project_domain.CODES_ROOT.resolve(strict=False),
-        resident_domain_common.STAGING_ROOT.resolve(strict=False),
     ]
     if not any(resolved == root or root in resolved.parents for root in allowed):
-        raise ValueError("workspace_root 只能位于当前实例的目录：" + "、".join(map(str, allowed)))
+        raise ValueError("Lineage 目录只能位于当前实例的 lineages 或 projects 区域：" + "、".join(map(str, allowed)))
     return resolved

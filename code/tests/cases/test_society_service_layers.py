@@ -54,7 +54,7 @@ LAYERS = (
     lineage_data_effect_cleanup lineage_data_executions lineage_data_mailbox lineage_data_notifications
     lineage_data_project_graphs lineage_data_projection_outbox lineage_data_residents lineage_data_runtime
     lineage_definition_contract lineage_definition_versions lineage_metadata_storage lineage_state_domains
-    lineage_storage program_work_storage relation_work_storage resident_context.store
+    lineage_locations lineage_storage program_work_storage relation_work_storage resident_context.store
     resident_delivery_storage resident_execution_storage resident_storage resident_store
     resident_workspace_storage runtime_read_models script_runs.store service_invocation_storage
     service_invocation_store state_store trigger_path_storage wire_delivery_storage

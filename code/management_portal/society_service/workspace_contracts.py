@@ -8,13 +8,8 @@ from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
 
-STAGING_ROOT = portal_path("staging_root")
-CHAT_IMAGE_CACHE_ROOT = (
-    STAGING_ROOT / "shared" / "portal_uploads" / "resident_chat_images"
-)
-CHAT_ATTACHMENT_CACHE_ROOT = (
-    STAGING_ROOT / "shared" / "portal_uploads" / "resident_chat_attachments"
-)
+CHAT_IMAGE_CACHE_ROOT = portal_path("uploads") / "resident_chat_images"
+CHAT_ATTACHMENT_CACHE_ROOT = portal_path("uploads") / "resident_chat_attachments"
 CHAT_IMAGE_MAX_BYTES = int(
     os.getenv("RESIDENT_CHAT_IMAGE_MAX_BYTES", "209715200")
 )

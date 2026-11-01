@@ -57,7 +57,7 @@ TIERS = (
     portal_features service_invocation_contract execution.config resources.config society_service.config
     """),
     ("stores", """
-    hatg.store execution.service_settings notifications notifications.*
+    hatg.store execution.service_settings execution.account_registrations notifications notifications.*
     resources.collaboration_registry resources.domain_projection_evidence resources.errors resources.portal
     resources.registry_store resources.retired_identity_boundary resources.schema resources.timing
     resources.workspace_store
@@ -68,7 +68,7 @@ TIERS = (
     ("policy", "permission_system permission_system.* portal_access_control user_enrollment"),
     ("resources", """
     resources resources.* hatg.kernel hatg.maintenance hatg.routing hatg.slow_call_profile hatg.socket_rpc
-    avatar_database avatar_store device_identity_backend isa_client project_rename project_seeds resident_avatar
+    avatar_database avatar_store device_identity_backend isa_client project_rename project_seeds resident_avatar provider_session_relocation
     """),
     ("execution", """
     execution execution.* agent_prompt_context agent_skill_context ai_provider_registry antigravity_* business_tasks
@@ -114,8 +114,8 @@ ALLOWED: dict[tuple[str, str], str] = {
         "content changes are captured only for the running execution of the writing Resident (ExecutionService status)",
     ("resources.isa", "society_service"): "DeleteProject checks and deletes the Project's Lineages in SocietyService",
     ("resources.isa", "society_service.lineage_access_policy"): AMA_AREAS,
-    ("resources.providers.folder_files", "society_service.lineage_storage"):
-        "a Lineage Folder's files are read under the Lineage's canonical folder",
+    ("resources.providers.folder_files", "society_service.lineage_locations"):
+        "a Lineage Folder's files are read under the folder computed from the Lineage's Project",
     ("resources.providers.workspace", "society_service.lineage_access_policy"): AMA_AREAS,
     ("resources.runtime", "resource_index_backend"): "ResourceService's index is resource_index_backend, whose resource_index_* modules are still top-level",
     ("resources.server", "resource_auto_registration"): "ResourceService runs the automatic registration of Repos and Articles",

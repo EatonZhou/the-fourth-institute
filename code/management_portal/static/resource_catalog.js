@@ -356,6 +356,7 @@
   function projectFor(record) {
     const attrs = objectOf(record?.attributes);
     if (record?.resource_type === "skill" && attrs.read_scope === "global") {
+      if (attrs.source === "core") return "Core Skills";
       if (attrs.source === "shared") return "Shared Skills";
       if (attrs.source === "third_party") return "Third-party Skills";
     }
@@ -379,7 +380,7 @@
     }));
     return [...groups.entries()].sort((left, right) => {
       if (state.category === "skill") {
-        const sourceRank = group => ({ shared: 0, project: 1, third_party: 2 })[
+        const sourceRank = group => ({ core: -1, shared: 0, project: 1, third_party: 2 })[
           String(objectOf(group[1][0]?.attributes).source || "project")
         ] ?? 1;
         const rankDifference = sourceRank(left) - sourceRank(right);

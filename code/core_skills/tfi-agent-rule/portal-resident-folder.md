@@ -12,6 +12,8 @@ Resident Folder 是一个 Lineage 节点的身份与记录目录，属于 System
 └── runtime/
 ```
 
+`<lineage_folder>` 由 Lineage 的所属项目决定：属于项目的是 `projects:<项目>/agents/<lineage_id>/`，与项目知识库 `knowledge_base/` 并列；不属于项目的是 `lineages:<lineage_id>/`。修改所属项目时目录随之移动，不设入口软链接。
+
 这些名称是基础接口，不限制增加职责明确的 Markdown 或结构化文件。
 
 ## 文件职责

@@ -4,6 +4,8 @@
 :design: decision_d88306d0bd17
 :profiles: local.fixture
 :risk: no-external-side-effects"""
+import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -28,14 +30,30 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         runtimes = patch.object(updates, "RUNTIMES", self.root / "runtimes")
         runtimes.start()
         self.addCleanup(runtimes.stop)
-        deployment = patch.object(updates, "_PROVIDER_DEPLOYMENT", {})
-        deployment.start()
-        self.addCleanup(deployment.stop)
-        self.context = {"root": self.root / "instance", "directory": self.root,
-                        "service_prefix": "tfi-one"}
-        self.context_patch = patch.object(units, "_isolated_provider_context", return_value=self.context)
-        self.context_patch.start()
-        self.addCleanup(self.context_patch.stop)
+        from tests.cases.instance_test_support import write_instance
+        from scripts import tfi_release_platform_linux as linux
+        code = self.root / 'checkout/code'
+        root = write_instance(self.root / 'instance', code=code)
+        source = patch.object(units, 'SOURCE_ROOT', code)
+        source.start()
+        self.addCleanup(source.stop)
+        document = json.loads((root / 'instance.json').read_text())
+        document['services']['components'] += ['claude-code', 'kimi-code']
+        (root / 'instance.json').write_text(json.dumps(document))
+        environment = patch.dict(os.environ, {'PORTAL_INSTANCE_ROOT': str(root)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        directory = patch.object(linux, 'unit_directory', return_value=self.root)
+        directory.start()
+        self.addCleanup(directory.stop)
+        self.context = {'root': root}
+        # Definition checks query the service manager through the same guarded runner.
+        from scripts import instance_services
+        from scripts.portal_service_control import ServiceControl
+        control = patch.object(instance_services, 'controller', return_value=ServiceControl(
+            platform='linux', runner=lambda *arguments, check=True: units._run(*arguments, check=check)))
+        control.start()
+        self.addCleanup(control.stop)
         self.active = True
         self.commands = []
         self.runner = patch.object(units.subprocess, "run", side_effect=self.run_systemctl)
@@ -43,11 +61,10 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         self.addCleanup(self.runner.stop)
 
     def unit(self, provider):
-        name = f"tfi-one-{provider}-code.service"
+        name = f"tfi-fixture-{provider}-code.service"
         path = self.root / name
         path.write_text(
-            f"Environment=HOME={self.context['root']}/home\n"
-            f"Environment=PORTAL_PATHS_CONFIG={self.context['root']}/config/paths.json\n")
+            f"Environment=PORTAL_INSTANCE_ROOT={self.context['root']}\n")
         return name, path
 
     def run_systemctl(self, arguments, **kwargs):
@@ -56,7 +73,8 @@ class InstanceProviderUpdateTests(unittest.TestCase):
         self.assertFalse(any(a.startswith("portal-") for a in arguments))
         if "show" in arguments:
             name = arguments[3]
-            output = (f"FragmentPath={self.root / name}\nDropInPaths=\nLoadState=loaded\n"
+            loaded = 'loaded' if (self.root / name).exists() else 'not-found'
+            output = (f"FragmentPath={self.root / name}\nDropInPaths=\nLoadState={loaded}\n"
                       f"ActiveState={'active' if self.active else 'inactive'}\nSubState=running\nMainPID=1\n")
         else:
             output = ""
@@ -86,33 +104,28 @@ class InstanceProviderUpdateTests(unittest.TestCase):
             with self.subTest(provider=type(runtime).__name__):
                 self.assertTrue(runtime.activation_link().is_relative_to(self.root))
 
-    def test_codex_activation_replaces_private_link_without_changing_shared_binary(self):
-        """安装与实例回归：codex activation replaces private link without changing shared binary。"""
-        shared = self.root / "shared-install/bin/codex"
-        shared.parent.mkdir(parents=True)
-        shared.write_text("original shared executable\n")
-        staged = self.root / "new-runtime"
-        binary = updates.CodexRuntime().link_target(staged)
+    def test_codex_activation_switches_code_link_and_preserves_previous_version(self):
+        old = self.root / 'codex-old/bin/codex'
+        old.parent.mkdir(parents=True)
+        old.write_text('previous version')
+        staged = self.root / 'codex-new'
+        runtime = updates.CodexRuntime()
+        binary = runtime.link_target(staged)
         binary.parent.mkdir(parents=True)
-        binary.write_text("new executable\n")
-        link = self.context["root"] / "home/.local/bin/codex"
+        binary.write_text('new version')
+        link = runtime.activation_link()
         link.parent.mkdir(parents=True)
-        link.symlink_to(shared)
-        with patch.dict(updates._PROVIDER_DEPLOYMENT, {"codex_binary": str(link)}), \
-                patch.object(updates, "_active_executions", return_value=0), \
-                patch.object(updates.CodexRuntime, "services", new_callable=PropertyMock,
-                             return_value=()):
-            runtime = updates.CodexRuntime()
-            self.assertEqual(runtime.link(), link)
-            self.assertTrue(updates._activate("codex", runtime, staged))
-        self.assertTrue(link.is_symlink())
+        link.symlink_to(old)
+        with patch.object(updates, '_active_executions', return_value=0), \
+                patch.object(updates.CodexRuntime, 'services', new_callable=PropertyMock, return_value=()):
+            self.assertTrue(updates._activate('codex', runtime, staged))
         self.assertEqual(link.resolve(), binary)
-        self.assertEqual(shared.read_text(), "original shared executable\n")
+        self.assertEqual(old.read_text(), 'previous version')
 
     def test_stopped_or_absent_daemon_is_not_started_by_update(self):
         """安装与实例回归：stopped or absent daemon is not started by update。"""
         self.assertEqual(updates.KimiRuntime().services, ())
-        self.assertEqual(self.commands, [])
+        self.assertTrue(all("show" in cmd for cmd in self.commands))
         self.unit("kimi")
         self.active = False
         self.assertEqual(updates.KimiRuntime().services, ())
@@ -121,27 +134,20 @@ class InstanceProviderUpdateTests(unittest.TestCase):
     def test_foreign_definition_is_rejected_before_service_control(self):
         """安装与实例回归：foreign definition is rejected before service control。"""
         _, path = self.unit("claude")
-        path.write_text("Environment=HOME=/another-instance/home\n")
+        path.write_text("Environment=PORTAL_INSTANCE_ROOT=/another-instance\n")
         with self.assertRaisesRegex(ValueError, "another instance"):
             _ = updates.ClaudeRuntime().services
         self.assertEqual(self.commands, [])
 
     def test_foreign_unit_cannot_be_controlled_directly(self):
         """安装与实例回归：foreign unit cannot be controlled directly。"""
-        with self.assertRaisesRegex(ValueError, "Refusing source service"):
+        with self.assertRaisesRegex(ValueError, "unregistered instance"):
             updates._service_control().restart("portal-claude-code.service")
         self.assertEqual(self.commands, [])
 
-    def test_source_deployment_keeps_its_existing_names(self):
-        """安装与实例回归：source deployment keeps its existing names。"""
-        with patch.object(units, "_isolated_provider_context", return_value=None):
-            self.assertEqual(updates.ClaudeRuntime().services, ("portal-claude-code.service",))
-            self.assertEqual(updates.KimiRuntime().services, ("portal-kimi-code.service",))
-        self.assertEqual(updates.ClaudeRuntime().unit_files, ("portal-claude-code.service",))
-
     def test_ownership_error_is_not_a_fallback_to_host(self):
         """安装与实例回归：ownership error is not a fallback to host。"""
-        with patch.object(units, "_isolated_provider_context", side_effect=ValueError("ownership")):
+        with patch.object(units, "_instance", side_effect=ValueError("ownership")):
             with self.assertRaisesRegex(ValueError, "ownership"):
                 _ = updates.KimiRuntime().services
         self.assertEqual(self.commands, [])

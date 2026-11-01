@@ -6,18 +6,19 @@ import pytest
 
 
 def test_installer_commands_have_finite_timeout_and_owned_tree(monkeypatch, tmp_path):
+    from management_common.instance_manifest import load
     from scripts import tfi_release_install as installer
+    from tests.cases.instance_test_support import write_instance
 
     calls = []
-    monkeypatch.setattr(installer, "clean_environment", lambda target, **kwargs: {})
 
     def fake_run(command, **kwargs):
         calls.append(kwargs)
         raise subprocess.TimeoutExpired(command, kwargs["timeout"])
 
-    monkeypatch.setattr(installer, "run_utf8_capture", fake_run)
+    monkeypatch.setattr(installer, "run_native_capture", fake_run)
     with pytest.raises(TimeoutError, match="process tree was stopped"):
-        installer.run_checked(["tool"], target={"install_root": str(tmp_path)})
+        installer.run_checked(["tool"], instance=load(write_instance(tmp_path / "instance")), env={})
     assert calls[0]["timeout"] == 1800
 
 

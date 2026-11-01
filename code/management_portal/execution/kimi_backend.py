@@ -8,7 +8,6 @@ and reading compactions and usage from the session's wire file.
 from __future__ import annotations
 
 import logging
-import os
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -31,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 def _kimi_home() -> str:
     from management_portal import kimi_code_server
 
-    return os.getenv("PORTAL_KIMI_CODE_HOME") or str(kimi_code_server.DEFAULT_HOME)
+    return str(kimi_code_server.DEFAULT_HOME)
 
 
 def _kimi_wire(session_id: str) -> Path | None:

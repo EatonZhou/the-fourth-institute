@@ -9,7 +9,6 @@ from typing import Any
 
 from .resource_refs import resolve_resource_references
 
-AGENT_URL = os.getenv("KNOWLEDGE_ARCHIVE_AGENT_URL", "http://127.0.0.1:8767").rstrip("/")
 
 
 class KnowledgeArchiveServiceUnavailable(RuntimeError):
@@ -17,8 +16,18 @@ class KnowledgeArchiveServiceUnavailable(RuntimeError):
 
 
 class KnowledgeArchiveBackendClient:
-    def __init__(self, base_url: str = AGENT_URL):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url: str | None = None):
+        self._base_url = base_url
+
+    @property
+    def base_url(self):
+        if self._base_url is not None:
+            return self._base_url.rstrip('/')
+        from management_common.instance_manifest import load
+        try:
+            return load().service_origin('knowledge-archive-agent')
+        except ValueError:
+            raise KnowledgeArchiveServiceUnavailable('Knowledge archive service is not configured') from None
 
     def list_jobs(self, actor: str, limit: int = 20) -> dict[str, Any]:
         query = urllib.parse.urlencode({"actor": actor or "anonymous", "limit": int(limit or 20)})

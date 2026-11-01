@@ -13,6 +13,7 @@ import sys
 from types import ModuleType
 
 from management_portal.page_bootstrap import inject_page_bootstrap
+from tests.cases.instance_test_support import select_instance
 
 
 def test_site_name_on_public_page_is_safe_and_read_per_response(monkeypatch):
@@ -52,8 +53,7 @@ def test_real_reader_default_and_configured_name_reach_public_and_signed_in_shel
     from management_portal import serve_management_portal as portal
     from management_portal import http_auth, http_documents, http_responses, user_preferences
 
-    config = tmp_path / "site.json"
-    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(config))
+    config = select_instance(monkeypatch, tmp_path / "instance", site={}).root / "site.json"
     monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: handler)
     monkeypatch.setattr(user_preferences, "_portal_user_preferences", lambda username: {"appearance": {"language": "en"}})
     monkeypatch.setattr(http_responses, "_serve_payload", lambda *args, **kwargs: args[2])
@@ -71,7 +71,7 @@ def test_real_reader_default_and_configured_name_reach_public_and_signed_in_shel
         assert "TFI Portal" not in configured
         if actor:
             assert "__PORTAL_LANGUAGE__" in configured
-        config.unlink()
+        config.write_text('{}')
 
 
 def test_guide_site_name_is_literal_markdown_text(tmp_path, monkeypatch):

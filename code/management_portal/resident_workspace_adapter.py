@@ -9,7 +9,7 @@ from . import discussion_residents
 
 
 PORTAL_ROOT = Path(__file__).resolve().parents[1]
-PROJECTS_ROOT = (portal_path("share_root") / "Projects")
+PROJECTS_ROOT = (portal_path('projects'))
 
 
 def _workspace_identity(

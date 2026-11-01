@@ -1,9 +1,10 @@
-"""Prepare pinned native tools in the installation's private runtime directory.
+"""Prepare the pinned native programs selected by a code checkout's catalog.
 
-No package manager, elevation, global PATH change or service activation. Planning
-is read-only; the installer owns the lock and validates the target before prepare.
+They are installed beside the code in dependencies/native, shared by every
+instance running that code. No package manager, elevation, global PATH change or
+service activation. PostgreSQL is located from here when an instance is created;
+the manifest then records it because its version is bound to the database.
 """
-from copy import deepcopy
 import hashlib
 import json
 import os
@@ -18,12 +19,13 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 import zipfile
 
+from management_common.code_environment import dependencies_directory, native_directory
 from management_common.distribution_targets import identify_host
-from management_common.release_dependencies import profiles
+from management_common.file_lock import lock_stream
 from management_common.installation_progress import report
-from scripts.tfi_instance_layout import native_dependencies_root
+from management_common.native_output import run_native_capture
 
-CATALOG = Path(__file__).resolve().parents[1] / 'config/release-native-dependencies.json'
+PACKAGES = ('postgres', 'nats', 'node')
 MAX_DOWNLOAD = 256 * 1024 * 1024
 MAX_EXPANDED = 2 * 1024 * 1024 * 1024
 DISPLAY_NAMES = {'postgres': 'PostgreSQL 数据库', 'nats': 'NATS 消息服务', 'node': 'Node.js 运行环境'}
@@ -41,51 +43,36 @@ def checksum(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def plan(raw_target, manifest, *, host=None):
-    """Fill omitted tool paths deterministically; explicit tools remain explicit."""
-    target = deepcopy(raw_target)
+def catalog_entry(code, name, *, host=None):
+    """The pinned artifact of one native program for this host and checkout."""
+    if name not in PACKAGES:
+        raise ValueError('Unknown native dependency: ' + str(name))
     host = host or identify_host()
-    root = Path(target['install_root']).resolve()
-    target.setdefault('python', os.path.abspath(__import__('sys').executable))
-    managed = set(target.get('managed_dependencies', []))
-    if not managed <= {'postgres', 'nats', 'node'}:
-        raise ValueError('Unknown managed native dependency')
-    if bool(target.get('pg_bin')) != bool(target.get('pg_share')):
-        raise ValueError('Provide both pg_bin and pg_share, or omit both for automatic preparation')
-    if not target.get('pg_bin'):
-        managed.add('postgres')
-    if not target.get('nats_server'):
-        managed.add('nats')
-    if set(profiles(manifest)) & {'test', 'tau', 'provider'} and not target.get('node_bin'):
-        managed.add('node')
-    if not managed:
-        return target, []
-    catalog = json.loads(CATALOG.read_text(encoding='utf-8'))['packages']
     platform_key = host['platform'] + '/' + host['architecture']
+    catalog = json.loads((Path(code) / 'config/release-native-dependencies.json').read_text(encoding='utf-8'))['packages']
     if platform_key not in catalog:
         raise ValueError('No native dependency artifacts for ' + platform_key)
     if host['platform'] == 'linux':
         import platform
         libc, _ = platform.libc_ver()
         if libc and libc != 'glibc':
-            raise ValueError('Automatic native tools require glibc Linux; supply compatible explicit tools')
-    suffix = '.exe' if host['platform'] == 'windows' else ''
-    entries = []
-    for name in sorted(managed):
-        entry = dict(catalog[platform_key][name], name=name, platform=platform_key)
-        base = native_dependencies_root(target) / (name + '-' + entry['version'] + '-' + entry['sha256'][:12])
-        values = ({'pg_bin': base / 'bin', 'pg_share': base / 'share', 'pg_lib': base / 'lib'} if name == 'postgres'
-                  else {'nats_server': base / ('nats-server' + suffix)} if name == 'nats'
-                  else {'node_bin': base if suffix else base / 'bin'})
-        for key, value in values.items():
-            if value.resolve() != value:
-                raise ValueError('Managed dependency path contains a redirected directory')
-            if target.get(key) and Path(target[key]).absolute() != value:
-                raise ValueError('Managed dependency path differs from its pinned installation location: ' + key)
-            target[key] = str(value)
-        entries.append(dict(entry, directory=str(base)))
-    target['managed_dependencies'] = sorted(managed)
-    return target, entries
+            raise ValueError('Pinned native programs require glibc Linux')
+    directory = native_directory(code, name, host)
+    if directory.resolve() != directory.absolute():
+        raise ValueError('Native dependency directory is redirected')
+    return dict(catalog[platform_key][name], name=name, platform=platform_key, directory=str(directory))
+
+
+def postgres_dependency(directory):
+    """The manifest's data-bound PostgreSQL location, from a prepared program directory."""
+    directory = Path(directory)
+    suffix = '.exe' if os.name == 'nt' else ''
+    for program in ('initdb', 'postgres', 'pg_isready', 'psql', 'createdb'):
+        if not (directory / 'bin' / (program + suffix)).is_file():
+            raise ValueError('PostgreSQL directory lacks ' + program)
+    if not (directory / 'share/postgres.bki').is_file():
+        raise ValueError('PostgreSQL directory lacks its initialization files')
+    return {key: str(directory / key) for key in ('bin', 'lib', 'share')}
 
 
 def download(entry, destination, *, attempts=3, offline=False):
@@ -210,7 +197,7 @@ def package_root(tree, entry):
     return matches[0]
 
 
-def verify(api, target, entry):
+def verify(entry):
     root = Path(entry['directory'])
     suffix = '.exe' if entry['platform'].startswith('windows/') else ''
     if entry['name'] == 'postgres':
@@ -221,9 +208,10 @@ def verify(api, target, entry):
         node = root / 'node.exe' if suffix else root / 'bin/node'
         npm = root / 'node_modules/npm/bin/npm-cli.js' if suffix else root / 'lib/node_modules/npm/bin/npm-cli.js'
         commands = {'node': [str(node), '--version'], 'npm': [str(node), str(npm), '--version']}
+    environment = native_environment(entry)
     versions = {}
     for name, command in commands.items():
-        result = api.run_native(command, target=target, timeout=90)
+        result = run_native_capture(command, env=environment, timeout=90)
         version = result.stdout.strip()
         if result.returncode or not version:
             status = f'0x{result.returncode & 0xffffffff:08X}'
@@ -235,45 +223,69 @@ def verify(api, target, entry):
     return versions
 
 
-def prepare(api, target, entries):
-    if target.get('shared_code_root'):
-        with api.installation_lock(native_dependencies_root(target) / '.locks'):
-            return _prepare(api, target, entries)
-    return _prepare(api, target, entries)
-
-
-def _prepare(api, target, entries):
-    receipts = []
-    for entry in entries:
-        destination = Path(entry['directory'])
-        receipt = destination / 'tfi-native-dependency.json'
-        if destination.exists():
-            if not receipt.is_file() or json.loads(receipt.read_text(encoding='utf-8'))['artifact'] != entry:
-                raise ValueError('Refusing to replace unowned or mismatched native tools')
+def native_environment(entry):
+    """PostgreSQL's private libraries stay with its own executables."""
+    environment = {key: value for key, value in os.environ.items()
+                   if key in {'PATH', 'SystemRoot', 'SYSTEMROOT', 'WINDIR', 'LANG', 'TMP', 'TEMP', 'TMPDIR'}
+                   or key.startswith('LC_')}
+    if entry['name'] == 'postgres':
+        library = str(Path(entry['directory']) / 'lib')
+        if os.name == 'nt':
+            environment['PATH'] = library + os.pathsep + environment.get('PATH', '')
         else:
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.TemporaryDirectory(prefix='.prepare-', dir=destination.parent) as temporary:
-                temporary = Path(temporary)
-                archive = native_dependencies_root(target) / 'archives' / artifact_name(entry)
-                download(entry, archive, **({'offline': True} if target.get('offline_dependencies') else {}))
-                report('正在解压并校验 ' + DISPLAY_NAMES.get(entry['name'], entry['name']))
-                tree = temporary / 'contents'
-                unpack(archive, tree, zipped=entry['url'].endswith('.zip'))
-                source = package_root(tree, entry)
-                (source / receipt.name).write_text(json.dumps({'artifact': entry}, indent=2) + '\n', encoding='utf-8')
-                source.rename(destination)
-        compatibility = {}
-        if entry['name'] == 'postgres' and entry['platform'].startswith('windows/'):
-            from scripts.windows.utf8_manifest import prepare_postgres
-            from scripts.windows.msvc_runtime import prepare as prepare_crt
-            compatibility = prepare_postgres(destination)
-            compatibility['msvc_runtime'] = prepare_crt(api, target, entry)
-        # Probe before any service registration. A failed probe leaves its
-        # receipt for diagnosis/retry and never activates an incomplete install.
-        versions = verify(api, target, entry)
-        value = {'artifact': entry, 'resolved_versions': versions, 'status': 'verified'}
-        if compatibility:
-            value['windows_compatibility'] = compatibility
-        api.write_json(receipt, value)
-        receipts.append(value)
-    return receipts
+            environment['DYLD_LIBRARY_PATH' if entry['platform'].startswith('macos/') else 'LD_LIBRARY_PATH'] = library
+    return environment
+
+
+def prepare(code, names=PACKAGES, *, offline=False):
+    """Download, unpack and probe pinned programs; reuse verified ones."""
+    base = dependencies_directory(code) / 'native'
+    base.mkdir(parents=True, exist_ok=True)
+    if base.resolve() != base.absolute():
+        raise ValueError('Code dependencies cannot be redirected')
+    with (base / '.prepare.lock').open('a+b') as stream, lock_stream(stream):
+        return [_prepare(base, catalog_entry(code, name), offline=offline) for name in names]
+
+
+def _prepare(base, entry, *, offline):
+    destination = Path(entry['directory'])
+    receipt = destination / 'tfi-native-dependency.json'
+    if destination.is_symlink():
+        raise ValueError('Native dependency directory is redirected')
+    if destination.exists():
+        if not receipt.is_file() or json.loads(receipt.read_text(encoding='utf-8'))['artifact'] != entry:
+            raise ValueError('Refusing to replace unowned or mismatched native programs')
+    else:
+        with tempfile.TemporaryDirectory(prefix='.prepare-', dir=base) as temporary:
+            archive = download(entry, base / 'archives' / artifact_name(entry), offline=offline)
+            report('正在解压并校验 ' + DISPLAY_NAMES.get(entry['name'], entry['name']))
+            tree = Path(temporary) / 'contents'
+            unpack(archive, tree, zipped=entry['url'].endswith('.zip'))
+            source = package_root(tree, entry)
+            (source / receipt.name).write_text(json.dumps({'artifact': entry}, indent=2) + '\n', encoding='utf-8')
+            source.rename(destination)
+    compatibility = {}
+    if entry['name'] == 'postgres' and entry['platform'].startswith('windows/'):
+        from scripts.windows.utf8_manifest import prepare_postgres
+        from scripts.windows.msvc_runtime import prepare as prepare_crt
+        compatibility = prepare_postgres(destination)
+        compatibility['msvc_runtime'] = prepare_crt(base, entry, offline=offline)
+    # Probe before any service registration. A failed probe leaves its
+    # receipt for diagnosis/retry and never activates an incomplete program.
+    value = {'artifact': entry, 'resolved_versions': verify(entry), 'status': 'verified'}
+    if compatibility:
+        value['windows_compatibility'] = compatibility
+    receipt.write_text(json.dumps(value, indent=2) + '\n', encoding='utf-8')
+    return value
+
+
+if __name__ == '__main__':
+    import argparse
+    import sys
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--code', type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument('--package', action='append', choices=PACKAGES)
+    parser.add_argument('--offline', action='store_true')
+    args = parser.parse_args()
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    print(json.dumps(prepare(args.code.resolve(), args.package or PACKAGES, offline=args.offline), ensure_ascii=False))

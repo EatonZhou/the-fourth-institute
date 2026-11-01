@@ -31,7 +31,7 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "The Fourth Institute contributors"
 !define MUI_WELCOMEPAGE_TITLE "$(WelcomeTitle)"
 !define MUI_WELCOMEPAGE_TEXT "$(WelcomeText)"
 !insertmacro MUI_PAGE_WELCOME
-!define MUI_DIRECTORYPAGE_TEXT_TOP "Choose a new or empty folder. Existing files and instances will not be overwritten."
+!define MUI_DIRECTORYPAGE_TEXT_TOP "Choose an empty folder, or the folder of an installed version to update its program. Instance data lives outside this folder and is kept."
 !insertmacro MUI_PAGE_DIRECTORY
 Page custom ExampleOptions ExampleOptionsLeave
 !insertmacro MUI_PAGE_INSTFILES
@@ -59,7 +59,7 @@ Function un.InstanceOptions
   ${If} $UninstallDialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 58u "默认保留实例和缓存。勾选后永久删除本目录下所有实例的数据库、文件、账号、对话，以及依赖缓存和日志。$\r$\nKeep data by default. Selecting below permanently deletes ALL local instances, dependencies, caches and logs."
+  ${NSD_CreateLabel} 0 0 100% 58u "默认保留实例和缓存。勾选后退役运行本程序的全部实例（删除其数据库、文件、账号登记、对话），并删除依赖缓存和日志。$\r$\nKeep data by default. Selecting below retires ALL instances running this program and deletes dependencies, caches and logs."
   Pop $0
   ${NSD_CreateLabel} 0 64u 100% 24u "$INSTDIR"
   Pop $0
@@ -72,7 +72,7 @@ FunctionEnd
 Function un.InstanceOptionsLeave
   ${NSD_GetState} $RemoveInstancesCheckbox $RemoveInstances
   ${If} $RemoveInstances == ${BST_CHECKED}
-    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久删除此目录内的全部实例、依赖缓存和日志？$\r$\n$INSTDIR$\r$\n数据库、账号、对话与文件无法恢复。$\r$\nPermanently delete ALL local instances, dependencies, caches and logs? This cannot be undone." IDYES confirmed
+    MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "永久退役运行本程序的全部实例，并删除依赖缓存和日志？$\r$\n$INSTDIR$\r$\n数据库、对话与文件无法恢复。$\r$\nPermanently retire ALL instances running this program and delete dependencies, caches and logs? This cannot be undone." IDYES confirmed
     Abort
     confirmed:
   ${EndIf}
@@ -152,7 +152,10 @@ Function ExampleOptionsLeave
 FunctionEnd
 
 Function .onVerifyInstDir
-  ; Never install into a populated directory whose files we do not own.
+  ; An installed platform is updated in place (its program is replaced).
+  IfFileExists "$INSTDIR\windows-package.json" 0 +2
+    Return
+  ; Never install into another populated directory whose files we do not own.
   FindFirst $0 $1 "$INSTDIR\*"
   check_entry:
     StrCmp $1 "" directory_empty
@@ -169,6 +172,24 @@ FunctionEnd
 
 Section "Platform"
   SetShellVarContext current
+  ${If} ${FileExists} "$INSTDIR\windows-package.json"
+    ; Code update: stop the instances running this program with its own launcher,
+    ; then replace the program. The launcher's next start runs the installer's
+    ; update-code (dependencies, service definitions, restart); data stays.
+    nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --stop-all'
+    Pop $0
+    StrCmp $0 "0" update_stopped
+      MessageBox MB_ICONSTOP "无法停止正在运行的实例，未更新程序。请关闭 Portal 后重试。$\r$\nCould not stop the running instances; the program was not updated."
+      Abort
+    update_stopped:
+    RMDir /r "$INSTDIR\code"
+    RMDir /r "$INSTDIR\branding"
+    RMDir /r "$INSTDIR\dependencies\python"
+    RMDir /r "$INSTDIR\dependencies\python-wheels"
+    RMDir /r "$INSTDIR\.build\w"
+    Delete "$INSTDIR\example-engineering.zip"
+    Delete "$INSTDIR\base-engineering.zip"
+  ${EndIf}
   SetOutPath "$INSTDIR"
   File /r /x example-engineering.zip /x base-engineering.zip "${PAYLOAD}/*"
   ${If} $IncludeExamples == ${BST_CHECKED}
@@ -229,8 +250,6 @@ Section "Uninstall"
   RMDir /r "$INSTDIR\packaging"
   RMDir /r "$INSTDIR\branding"
   Delete "$INSTDIR\prepare_install.py"
-  Delete "$INSTDIR\example-seed.zip"
-  Delete "$INSTDIR\base-seed.zip"
   Delete "$INSTDIR\example-engineering.zip"
   Delete "$INSTDIR\base-engineering.zip"
   Delete "$INSTDIR\windows-package.json"
@@ -262,6 +281,6 @@ Section "Uninstall"
       MessageBox MB_ICONINFORMATION "平台、实例、依赖缓存和日志已删除。$\r$\nPlatform, instances, dependencies, caches and logs removed."
     ${EndIf}
   ${Else}
-    MessageBox MB_ICONINFORMATION "平台已卸载，实例数据保留于：$\r$\nPlatform removed. Instance data retained:$\r$\n$INSTDIR\instance"
+    MessageBox MB_ICONINFORMATION "平台已卸载，实例数据保留于：$\r$\nPlatform removed. Instance data retained:$\r$\n$LOCALAPPDATA\TFI\instances"
   ${EndIf}
 SectionEnd

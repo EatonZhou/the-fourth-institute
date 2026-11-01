@@ -64,6 +64,3 @@ def test_default_plan_digest_uses_new_tag_and_accepts_frozen_old_preimage():
     assert not contract.plan_fingerprint_matches(identity, batches, wire('archive.service-invocation-plan.v1'))
     assert not contract.plan_fingerprint_matches(identity, contract.batch_manifest(identity, ['changed', 'two']),
                                                  wire('archive.service-invocation-plan.v1'))
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

@@ -21,7 +21,7 @@
 4. 先用文件名、YAML 头部和全文搜索缩小范围，再完整读取最相关的条目。
 5. 回答前复查核心定义、当前 Design 和更新的替代条目，避免把历史记录当成现行口径。
 
-本地文件可见时优先使用 `rg` 定位。Portal 已附加资源引用时，使用 ResourceService 读取正文；只给出资源 ID 时，按 `${share_root}/Skills/tfi-unified-id/SKILL.md` 解析，不根据标题或路径猜测。
+本地文件可见时优先使用 `rg` 定位。Portal 已附加资源引用时，使用 ResourceService 读取正文；只给出资源 ID 时，按 `${code_root}/core_skills/tfi-unified-id/SKILL.md` 解析，不根据标题或路径猜测。
 
 ## 回答
 

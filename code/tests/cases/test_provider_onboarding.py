@@ -58,15 +58,11 @@ def test_login_reuses_path_or_prepared_runtime(monkeypatch, tmp_path, provider):
     assert account_login.login_command(provider)[0] == (str(binary) if provider == "codex" else existing)
 
 
-def test_codex_link_reuses_configured_or_path_binary(monkeypatch, tmp_path):
-    monkeypatch.setattr(updates.sys, "platform", "linux")
-    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {})
-    existing = tmp_path / "existing-codex"
-    monkeypatch.setattr(updates.shutil, "which", lambda _: str(existing))
-    assert updates.CodexRuntime().link() == existing
-    configured = tmp_path / "configured-codex"
-    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {"codex_binary": str(configured)})
-    assert updates.CodexRuntime().link() == configured
+def test_codex_link_is_owned_by_the_selected_code(monkeypatch, tmp_path):
+    managed = tmp_path / 'code/dependencies/providers/codex'
+    monkeypatch.setattr(updates, 'provider_entry', lambda key: managed)
+    monkeypatch.setattr(updates.shutil, 'which', lambda _: str(tmp_path / 'foreign-codex'))
+    assert updates.CodexRuntime().link() == managed
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX executables and directory permissions")
@@ -78,9 +74,9 @@ def test_a_broken_codex_on_path_is_left_alone_while_portal_prepares_its_own(monk
     from management_common import site_config
     from management_portal import business_tasks
     from management_portal.execution import account_login
-    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {})
     monkeypatch.setattr(site_config, "read_site_config", lambda: {})
     monkeypatch.setattr(updates, "RUNTIMES", tmp_path / "runtimes")
+    monkeypatch.setattr(updates, "provider_entry", lambda key: updates.RUNTIMES / "codex")
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path / "state")
     system = tmp_path / "system-bin"
     system.mkdir()
@@ -103,7 +99,7 @@ def test_a_broken_codex_on_path_is_left_alone_while_portal_prepares_its_own(monk
     monkeypatch.setattr(updates, "runtimes", lambda: {"codex": updates.CodexRuntime()})
     monkeypatch.setattr(updates, "_active_executions", lambda provider: 0)
     monkeypatch.setattr(business_tasks, "start", lambda task_id, work: work())
-    assert updates.CodexRuntime().link() == broken
+    assert updates.CodexRuntime().link() == updates.RUNTIMES / "codex"
     assert not updates.runtime_available("codex")
     system.chmod(0o555)  # like a system directory the service user cannot write
     try:
@@ -189,7 +185,6 @@ def test_preparation_does_not_claim_a_removed_runtime_is_ready(monkeypatch, tmp_
 def test_check_uses_normal_execution_owner(monkeypatch, tmp_path, provider):
     from management_portal.execution import resident_configuration, account_hosting
     hosting = []
-    monkeypatch.setattr(account_hosting, "install_codex_unit_template", lambda: hosting.append("install"))
     monkeypatch.setattr(account_hosting, "start_codex_instance", lambda account_id: hosting.append(account_id))
     account = row(provider)
     monkeypatch.setattr(setup, "catalog", lambda _row: {"models": ["model"]})
@@ -427,9 +422,9 @@ def test_existing_bindings_keep_their_account(monkeypatch):
     assert defaults.configuration({"backend": "codex"}, {}) == configured
 
 
-def test_new_resident_uses_default_without_explicit_role(monkeypatch):
+def test_new_resident_uses_default_without_explicit_role(tmp_path, monkeypatch):
     from management_portal.society_service.isa import residents
-    registrations.create_registration({"account_id": "claude_first", "provider": "claude", "kind": "subscription_login"}, "alice")
+    registrations.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "claude_first")}, "account_id": "claude_first", "provider": "claude", "kind": "subscription_login"}, "alice")
     registrations.update_role("default", "claude_first", "model", "", None, "alice")
     created = []
     monkeypatch.setattr(residents, "_family_to_join", lambda *a: "")

@@ -1,5 +1,6 @@
 from dataclasses import replace
 import json
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -9,6 +10,7 @@ from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.codex_app_server_protocol import CodexThreadWriterBusy
 from management_portal.execution.codex_backend import CodexBackend
 from management_portal.execution.contracts import ExecutionRequest, SessionOptions
+from tests.cases.instance_test_support import select_instance
 
 
 def test_native_plan_is_enabled_without_changing_other_tools_or_the_input_config():
@@ -49,7 +51,7 @@ def test_native_plan_rejects_malformed_config_without_overwriting_it(overrides):
 
 def test_thread_configuration_stays_stable_while_the_execution_changes(tmp_path, monkeypatch):
     """执行变化时 codex 线程配置保持不变，执行上下文文件按每次执行写入且只含执行 ID"""
-    monkeypatch.setenv('PORTAL_EXECUTION_STATE_ROOT', str(tmp_path))
+    select_instance(monkeypatch, tmp_path / "instance")
     first = ExecutionRequest.new(service_type='agent_session', provider='codex', operation='turn',
                                  actor='sample_admin', agent_id='fixture', cwd=str(tmp_path), prompt='one',
                                  session=SessionOptions(mode='persistent', binding_id='fixture-thread'),
@@ -70,7 +72,7 @@ def test_thread_configuration_stays_stable_while_the_execution_changes(tmp_path,
 
 def test_new_input_cannot_adopt_another_active_turn():
     """新输入不能接管其他输入的进行中轮次，报 CodexThreadWriterBusy"""
-    client = CodexAppServerClient()
+    client = CodexAppServerClient(Path("/unused.sock"))
     active = {'id': 'other-turn', 'status': 'inProgress', 'items': [
         {'type': 'userMessage', 'clientId': 'other-input'}]}
     with mock.patch.object(client.rpc, 'request', return_value={}) as rpc, \
@@ -83,7 +85,7 @@ def test_new_input_cannot_adopt_another_active_turn():
 
 def test_cancel_during_start_interrupts_the_turn_from_buffered_notification():
     """turn/start 期间取消时，按已收到的 turn/started 通知中断该轮"""
-    client = CodexAppServerClient()
+    client = CodexAppServerClient(Path("/unused.sock"))
     def request(method, params, **kwargs):
         if method == 'turn/start':
             client.events.dispatch_notification('turn/started', {'threadId': 'thread', 'turn': {'id': 'accepted'}})
@@ -102,7 +104,7 @@ def test_snapshot_rejoins_children_and_restores_cards_after_disconnect():
     from management_portal.codex_app_server_protocol import TurnWaiter
     from management_portal.codex_subagent_cards import CodexSubagentCards
 
-    client = CodexAppServerClient()
+    client = CodexAppServerClient(Path("/unused.sock"))
     client.subagents._followed_children.add('child')
     client.subagents._child_threads['child'] = ('parent', 'activity')
     client.disconnect(RuntimeError('connection lost'))
@@ -130,7 +132,7 @@ def test_completed_notification_preserves_real_final_items_for_checkpoint():
     """turn/completed 通知条目为空时补回已完成的 final_answer 条目供检查点读取"""
     from management_portal.codex_app_server_protocol import TurnWaiter, codex_final_agent_response
 
-    client = CodexAppServerClient()
+    client = CodexAppServerClient(Path("/unused.sock"))
     events = []
     client.work.turns['thread'] = TurnWaiter('thread', turn_id='turn', event_callback=events.append)
     for item_id, phase, text in [('comment', 'commentary', 'working'), ('final', 'final_answer', 'answer')]:
@@ -147,7 +149,7 @@ def test_goal_limit_status_is_terminal(status):
     """goal 状态为 usageLimited 或 budgetLimited 时视为结束"""
     from management_portal.codex_app_server_protocol import GoalWaiter
 
-    client = CodexAppServerClient()
+    client = CodexAppServerClient(Path("/unused.sock"))
     waiter = GoalWaiter('thread')
     client.work.goals['thread'] = waiter
     client.events.dispatch_notification('thread/goal/updated', {'threadId': 'thread', 'goal': {'status': status}})
@@ -178,6 +180,3 @@ def test_slow_account_catalog_does_not_block_another_account(monkeypatch):
         finally:
             release.set()
         assert slow.result(timeout=1)['models'] == ['slow']
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

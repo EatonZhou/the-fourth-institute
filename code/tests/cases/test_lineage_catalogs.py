@@ -49,8 +49,8 @@ def _lineage_definition(**overrides: object) -> dict[str, object]:
 
 
 def _record(resident_id: str, *, lineage_id: str = LINEAGE_ID) -> dict[str, object]:
-    from management_portal.society_service.lineage_storage import canonical_lineage_folder
-    lineage_path = canonical_lineage_folder(lineage_id)
+    from management_portal.society_service.lineage_locations import lineage_folder
+    lineage_path = lineage_folder(lineage_id)
     workspace_path = lineage_path / "residents" / resident_id / "workspace"
     workspace_id = "workspace_" + resident_id.removeprefix("resident_")
     return {

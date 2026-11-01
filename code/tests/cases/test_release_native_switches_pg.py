@@ -1,41 +1,41 @@
 """Explicit disposable PostgreSQL integration; never attaches to a Portal DB.
 
-Run with TFI_UPGRADE_TEST_PG_BIN (and optional PG_LIB/PG_SHARE) set. Runtime
+Run with TFI_NATIVE_SWITCH_TEST_PG_BIN (and optional PG_LIB/PG_SHARE) set. Runtime
 authority/projection are test boundaries; native checkpoint storage, reducers,
 admission and compensation execute against the real independent database.
 """
 from contextlib import contextmanager, ExitStack, nullcontext
-from copy import deepcopy
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import psycopg
 from psycopg.rows import dict_row
 
+from management_common.instance_manifest import load
 from management_portal.distribution.initialization import initialize, _TargetDatabase
+from tests.cases.instance_test_support import write_instance
 
 
-@unittest.skipUnless(os.environ.get('TFI_UPGRADE_TEST_PG_BIN'), 'explicit independent PG binaries required')
+@unittest.skipUnless(os.environ.get('TFI_NATIVE_SWITCH_TEST_PG_BIN'), 'explicit independent PG binaries required')
 class NativeTargetTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory(prefix='tfi-native-switch-')
-        cls.root = Path(cls.temp.name)
-        cls.pg = Path(os.environ['TFI_UPGRADE_TEST_PG_BIN'])
+        cls.root = Path(cls.temp.name).resolve()
+        cls.pg = Path(os.environ['TFI_NATIVE_SWITCH_TEST_PG_BIN'])
         cls.env = {'PATH': '/usr/bin:/bin', 'HOME': str(cls.root), 'LANG': 'C.UTF-8',
-                   'LD_LIBRARY_PATH': os.environ.get('TFI_UPGRADE_TEST_PG_LIB', '')}
+                   'LD_LIBRARY_PATH': os.environ.get('TFI_NATIVE_SWITCH_TEST_PG_LIB', '')}
         cls.socket = cls.root / 's'
         cls.socket.mkdir()
         init = [str(cls.pg / 'initdb'), '-D', str(cls.root / 'pg'), '-U', 'tfi', '-A', 'trust', '--no-locale', '--encoding=UTF8']
-        if os.environ.get('TFI_UPGRADE_TEST_PG_SHARE'):
-            init += ['-L', os.environ['TFI_UPGRADE_TEST_PG_SHARE']]
+        if os.environ.get('TFI_NATIVE_SWITCH_TEST_PG_SHARE'):
+            init += ['-L', os.environ['TFI_NATIVE_SWITCH_TEST_PG_SHARE']]
         subprocess.run(init, env=cls.env, check=True, capture_output=True)
         subprocess.run([str(cls.pg / 'pg_ctl'), '-D', str(cls.root / 'pg'), '-l', str(cls.root / 'pg.log'),
                         '-o', f"-k {cls.socket} -p 56439 -c listen_addresses=''", '-w', 'start'],
@@ -49,10 +49,8 @@ class NativeTargetTests(unittest.TestCase):
                         'listen_addresses': cls.c.execute('SHOW listen_addresses').fetchone()['listen_addresses'],
                         'postgres_version': cls.c.execute('SELECT version() AS version').fetchone()['version'],
                         'source_services_called': False, 'checks': {}}
-        cls.roots = {k: str(cls.root / 'data' / k) for k in ('share_root','staging_root','instances_root','secrets_dir')}
-        cls.paths = cls.root / 'paths.json'
-        cls.paths.write_text(json.dumps(cls.roots))
-        cls.environment = patch.dict(os.environ, {'PORTAL_PATHS_CONFIG': str(cls.paths),
+        cls.instance = load(write_instance(cls.root / 'instance'))
+        cls.environment = patch.dict(os.environ, {'PORTAL_INSTANCE_ROOT': str(cls.instance.root),
                                                   'PORTAL_DATABASE_URL': cls.c.info.dsn,
                                                   'PYTHONDONTWRITEBYTECODE': '1'})
         cls.environment.start()
@@ -85,7 +83,7 @@ class NativeTargetTests(unittest.TestCase):
             self.c.execute('INSERT INTO lineage.lineage_nodes VALUES(%s,%s,%s,NULL)',
                            (cid, 'local_lineage', 'effect' if cid.startswith('effect') else 'event_source'))
             self.c.execute('INSERT INTO lineage.lineage_components VALUES(%s,%s)', (cid, json.dumps(cfg)))
-        self.site = self.root / 'site.json'
+        self.site = self.instance.root / 'site.json'
         self.site.write_text(json.dumps({'keep': {'value': 1}, 'deployment': {'pulse': {'other': 'retained'},
                               'development_projection': {'other': 'retained'}}}))
 
@@ -103,10 +101,10 @@ class NativeTargetTests(unittest.TestCase):
                            'site_config': m['site_config'], 'effective_enabled': enabled, 'missing_requirements': []})
         return result
 
-    def initialize(self, enabled, **kwargs):
-        actions = kwargs.pop('actions') if 'actions' in kwargs else self.actions(enabled)
+    def initialize(self, enabled, actions=None):
+        actions = actions if actions is not None else self.actions(enabled)
         return initialize({'feature_resolution': {'valid': True, 'initialization': {'actions': actions}}},
-                          self.c, self.roots, site_config_path=self.site, **kwargs)
+                          self.c, self.instance, site_config_path=self.site)
 
     def checkpoints(self):
         return {t: self.c.execute(f'SELECT * FROM lineage.{t} ORDER BY 1,2').fetchall()
@@ -179,28 +177,6 @@ class NativeTargetTests(unittest.TestCase):
         self.evidence['checks']['fresh_and_retry'] = {'fresh_states': result['features'],
             'local_repause_preserved': True, 'retry_timer_required': again['lineage_timer_required']}
 
-    def test_upgrade_preserves_mapping_and_exact_checkpoints_and_partial_config(self):
-        self.initialize(False)
-        with self.native_runtime() as (switches, cr, rt): cr.set_paused('local_lineage','event_a',False,'test-admin')
-        before, site = self.checkpoints(), self.site.read_bytes()
-        incoming = self.actions(True)
-        incoming[0]['binding']['components'].reverse()
-        incoming[0]['site_config']['deployment']['pulse']['event_source_ids'].reverse()
-        result = self.initialize(True, mode='upgrade', existing_feature_ids=['pulse','architecture_audit'], actions=incoming)
-        self.assertEqual(self.checkpoints(), before)
-
-        self.assertEqual(self.site.read_bytes(), site)
-        self.assertTrue(result['features'][0]['partial'])
-        self.assertEqual(result['features'][0]['diagnostics'][0]['code'], 'preserved_target_binding')
-        doc = json.loads(site); del doc['deployment']['pulse']['event_source_ids']
-        self.site.write_text(json.dumps(doc)); partial = self.site.read_bytes()
-        result = self.initialize(True, mode='upgrade', existing_feature_ids=['pulse','architecture_audit'])
-        self.assertEqual(result['features'][0]['status'], 'needs_configuration')
-        self.assertEqual(self.site.read_bytes(), partial)
-        self.assertEqual(self.checkpoints(), before)
-        self.evidence['checks']['upgrade'] = {'exact_checkpoints_preserved': True, 'target_mapping_preserved': True,
-            'partial_target_mapping_status': result['features'][0]['status'], 'site_unrelated_fields_preserved': True}
-
     def test_unready_enabled_default_is_rejected_before_state_writes(self):
         actions = self.actions(True)
         actions[0]['missing_requirements'] = ['local_runtime_requirement']
@@ -227,22 +203,6 @@ class NativeTargetTests(unittest.TestCase):
         self.assertEqual(self.checkpoints(), {'event_source_progress': [], 'operator_work': []})
         self.assertEqual(self.site.read_bytes(), before)
         self.assertIsNone(self.c.execute("SELECT to_regclass('distribution_installation.feature_initializations') AS table").fetchone()['table'])
-
-    def test_upgrade_quiescence_distinguishes_pause_settings_from_pending_work(self):
-        from scripts.tfi_release_upgrade import check_quiescent
-        self.initialize(False)
-        self.c.execute('CREATE TABLE lineage.conversation_input_states(state text)')
-        self.c.execute('CREATE TABLE lineage.resident_execution_work(id text)')
-        self.c.execute('CREATE SCHEMA IF NOT EXISTS agent')
-        self.c.execute('CREATE TABLE IF NOT EXISTS agent.executions(status text)')
-        api = SimpleNamespace(clean_environment=lambda target: {'PORTAL_DATABASE_URL': self.c.info.dsn})
-        check_quiescent(api, {})
-        self.c.execute("UPDATE lineage.operator_work SET checkpoint_json=checkpoint_json || %s::jsonb",
-                       (json.dumps({'pending_deliveries': {'unfinished': {}}}),))
-        with self.assertRaisesRegex(RuntimeError, 'active/queued'): check_quiescent(api, {})
-        self.c.execute("UPDATE lineage.operator_work SET checkpoint_json=checkpoint_json-'pending_deliveries'")
-        self.c.execute("INSERT INTO lineage.pending_event_deliveries VALUES('local_lineage','wire','claim',0,'{}')")
-        with self.assertRaisesRegex(RuntimeError, 'active/queued'): check_quiescent(api, {})
 
     def test_multi_component_commit_then_failure_compensates_and_failed_recovery_is_visible(self):
         from management_portal.society_service import system_workflow_switches
@@ -272,33 +232,21 @@ class NativeTargetTests(unittest.TestCase):
                 'group_atomicity': False, 'runtime_permissions_and_projection': 'test boundary; real native checkpoint storage/reducers'}
 
     def test_installer_child_uses_explicit_target_and_returns_readback(self):
-        from scripts import tfi_release_install as api, tfi_release_initialization as boundary
-        (self.root / 'code').symlink_to(Path(__file__).resolve().parents[2], target_is_directory=True)
-        self.addCleanup((self.root / 'code').unlink)
-        target = {'install_root': str(self.root), 'run_id': 'isolated-component-validation',
-                  'supervisor_resident_id': 'resident_e4f55ad12dae', 'service_prefix': 'tfi-native-switch-test',
-                  'ports': {'postgres':56439,'nats':14229}, 'database_name':'postgres', 'python':sys.executable,
-                  'pg_bin':str(self.pg), 'data_roots':self.roots}
-        # Installer's connection uses runtime/s; point it at this private socket.
-        (self.root / 'runtime').mkdir(exist_ok=True)
-        (self.root / 'runtime/s').symlink_to(self.socket, target_is_directory=True)
-        self.addCleanup((self.root / 'runtime/s').unlink)
-        manifest={'feature_resolution':{'valid':True,'initialization':{'actions':self.actions(False)}}}
-        path=self.root/'runtime/engineering-manifest.json';api.write_json(path,manifest)
-        api.write_json(self.root/'config/paths.json', self.roots)
-        api.write_json(self.root/'config/site.json', json.loads(self.site.read_text()))
-        state={'target':target,'manifest_sha256':api.digest(path),'completed':['database']}
-        evidence=self.root/'freeze.json';api.write_json(evidence,{**{k:target[k] for k in ('run_id','supervisor_resident_id')},
-            'manifest_sha256':state['manifest_sha256'],'passed':True,'violations':{'old_work':0}})
-        controller=Mock();controller.status.return_value={'active':'inactive','pid':0}
-        with patch.object(api,'service_controller',return_value=controller):
-            result=boundary.apply(api,state,manifest,freeze_evidence=evidence)
+        code = Path(__file__).resolve().parents[2]
+        manifest = self.root / 'engineering-manifest.json'
+        manifest.write_text(json.dumps({'feature_resolution': {'valid': True,
+                                        'initialization': {'actions': self.actions(False)}}}))
+        child = subprocess.run(
+            [sys.executable, str(code / 'scripts/tfi_release_initialization.py'), 'initialize', str(manifest)],
+            env={'PATH': '/usr/bin:/bin', 'LANG': 'C.UTF-8', 'PYTHONDONTWRITEBYTECODE': '1',
+                 'PORTAL_INSTANCE_ROOT': str(self.instance.root), 'PORTAL_DATABASE_URL': self.c.info.dsn},
+            cwd=code, capture_output=True, text=True, timeout=120)
+        self.assertEqual(child.returncode, 0, child.stderr)
+        result = json.loads(child.stdout)
         self.assertFalse(result['work_dispatched'])
         self.assertTrue(all(not f['actual_enabled'] for f in result['features']))
-        self.assertEqual(state['feature_initialization']['status'],'applied')
         self.evidence['checks']['installer_child'] = {'work_dispatched': result['work_dispatched'],
-            'status': state['feature_initialization']['status'], 'features': result['features'],
-            'services': 'inactive test controller; real isolated child process and target PG'}
+            'features': result['features'], 'services': 'none started; real isolated child process and target PG'}
 
 
 if __name__ == '__main__':

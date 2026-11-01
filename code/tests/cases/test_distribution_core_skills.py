@@ -36,8 +36,8 @@ def test_core_rules_transitive_dependency_and_native_materialization(tmp_path):
     destination = tmp_path/'package'
     report = export_core_skills(destination, source_root=source, source_usernames=('source-person',))
     assert len(report['files']) == 11
-    assert (destination/'data/share_root/Skills/tfi-unified-id/scripts/resource_id.py').is_file()
-    output = destination/'data/share_root/Skills'
+    assert (destination/'code/core_skills/tfi-unified-id/scripts/resource_id.py').is_file()
+    output = destination/'code/core_skills'
     assert not (output/'tfi-agent-rule/unselected.md').exists()
     assert (output/'create-skill/scripts/quick_validate.py').is_file()
     assert not (output/'create-skill/scripts/__pycache__').exists()
@@ -86,9 +86,9 @@ def test_default_rules_use_repository_canonical_source(tmp_path, monkeypatch):
     destination = tmp_path/'package'
     report = export_core_skills(destination)
     for role in report['roles']:
-        assert materialize_portal_skills(role, skill_root=str(destination/'data/share_root/Skills'),
+        assert materialize_portal_skills(role, skill_root=str(destination/'code/core_skills'),
                                         system_skill_name='tfi-agent-rule').status == 'fresh'
-    assert (destination/'data/share_root/Skills/tfi-unified-id/scripts/resource_id.py').is_file()
+    assert (destination/'code/core_skills/tfi-unified-id/scripts/resource_id.py').is_file()
 
 
 def test_explicit_source_maps_canonical_rule_paths(tmp_path):
@@ -96,10 +96,10 @@ def test_explicit_source_maps_canonical_rule_paths(tmp_path):
     (source/'tfi-agent-rule/SKILL.md').write_text(f'Core ./common.md {source}/tfi-unified-id\n')
     destination = tmp_path/'package'
     export_core_skills(destination, source_root=source)
-    output = destination/'data/share_root/Skills'
+    output = destination/'code/core_skills'
     assert {path.name for path in output.iterdir()} == {
         'tfi-agent-rule', 'tfi-unified-id', 'manage-knowledge-base', 'create-skill'}
-    assert '${share_root}/Skills/tfi-unified-id' in (output/'tfi-agent-rule/SKILL.md').read_text()
+    assert '${code_root}/core_skills/tfi-unified-id' in (output/'tfi-agent-rule/SKILL.md').read_text()
 
 
 @pytest.mark.parametrize('name', ['tfi-agent-rule', 'tfi-unified-id', 'manage-knowledge-base', 'create-skill'])

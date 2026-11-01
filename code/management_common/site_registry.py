@@ -8,19 +8,7 @@ from management_common.portal_network import DEFAULT_PORT, router_port
 
 PORTAL_PORT = DEFAULT_PORT
 
-_SHARE = portal_path("share_root")
-_STAGING = portal_path("staging_root")
-
-PATH_PREFIXES = {
-    "projects": {
-        "from": "/Projects",
-        "to": str(_SHARE / "Projects"),
-    },
-    "codes": {
-        "from": "/Codes",
-        "to": str(_SHARE / "Codes"),
-    },
-}
+PATH_PREFIXES = {"projects": {"from": "/Projects", "to": str(portal_path("projects"))}}
 
 
 def _rewrite_path_prefix(raw: str, prefix: dict[str, str]) -> str | None:
@@ -33,12 +21,8 @@ def _rewrite_path_prefix(raw: str, prefix: dict[str, str]) -> str | None:
     return None
 
 
-SHARED_PATHS = {
-    "share_root": str(_SHARE),
-    "projects_root": str(_SHARE / "Projects"),
-    "codes_root": str(_SHARE / "Codes"),
-    "agent_staging_root": str(_STAGING),
-}
+SHARED_PATHS = {area: str(portal_path(area)) for area in ('projects', 'lineages', 'skills', 'papers', 'uploads', 'features', 'provider-state')}
+
 
 MODULES = [
     {
@@ -123,7 +107,7 @@ MODULES = [
 
 def rewrite_shared_path(path: str, *, include_codes: bool = True) -> str:
     raw = str(path or "").strip()
-    prefix_keys = ("projects", "codes") if include_codes else ("projects",)
+    prefix_keys = ("projects",)
     for key in prefix_keys:
         rewritten = _rewrite_path_prefix(raw, PATH_PREFIXES[key])
         if rewritten is not None:

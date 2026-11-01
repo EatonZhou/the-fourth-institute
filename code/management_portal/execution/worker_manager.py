@@ -15,7 +15,7 @@ from typing import Any
 
 from .transport import ExecutionServiceClient
 
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import load
 from management_common import loaded_modules, process_runtime
 from management_portal.shared_state import atomic_replace_json
 
@@ -44,7 +44,8 @@ class ExecutionWorkerManager:
     """Keep one accepting worker while older generations drain within a deadline."""
 
     def __init__(self) -> None:
-        self.instance = str(os.getenv("PORTAL_INSTANCE", "dev") or "dev")
+        manifest = load()
+        self.instance = manifest.name
         self.worker_id_prefix = str(
             os.getenv(
                 "PORTAL_EXECUTION_WORKER_ID",
@@ -52,9 +53,7 @@ class ExecutionWorkerManager:
             )
             or f"{self.instance}:execution-worker"
         )
-        self.source_root = Path(
-            os.getenv("PORTAL_EXECUTION_WORKER_SOURCE_ROOT", os.getcwd())
-        )
+        self.source_root = manifest.code_root()
         self.manager_source_path = (
             self.source_root
             / "management_portal"
@@ -75,19 +74,8 @@ class ExecutionWorkerManager:
         self.loaded_rpc_source_digests = {
             path: self._source_digest(path) for path in self.rpc_source_paths
         }
-        instance_directory = instance_root() / self.instance
-        self.generation_env = Path(
-            os.getenv(
-                "PORTAL_EXECUTION_WORKER_GENERATION_ENV",
-                str(instance_directory / "source-generation.env"),
-            )
-        )
-        self.health_path = Path(
-            os.getenv(
-                "PORTAL_EXECUTION_WORKER_HEALTH_PATH",
-                str(instance_directory / "execution-worker-health.json"),
-            )
-        )
+        self.generation_env = manifest.deployment_runtime('release') / 'generation.env'
+        self.health_path = manifest.directory('runtime') / 'worker-health.json'
         self.child_health_root = self.health_path.parent / "execution-workers"
         self.ready_timeout = max(
             2.0,

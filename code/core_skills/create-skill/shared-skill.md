@@ -5,8 +5,10 @@
 TFI Portal shared skill 放在：
 
 ```text
-${share_root}/Skills/<skill-name>/SKILL.md
+skills:<skill-name>/SKILL.md
 ```
+
+这是区域写法：skills 区域在本实例的实际位置见系统规则，或用 `${code_root}/scripts/resolve_instance_path.py skills:<skill-name>/SKILL.md` 解析。
 
 ## 适用场景
 
@@ -14,10 +16,10 @@ ${share_root}/Skills/<skill-name>/SKILL.md
 
 ## 创建要求
 
-- 默认选择 `${share_root}/Skills/<skill-name>`。
+- 默认选择 `skills:<skill-name>`。
 - 使用中文写 `SKILL.md`，除非用户明确要求英文或目标 skill 是第三方原文迁移。
 - `description` 写清楚 skill 做什么，以及什么时候触发。
-- 与 `${share_root}/Skills/tfi-agent-rule/SKILL.md` 的路径语义保持一致。
+- 与 `${code_root}/core_skills/tfi-agent-rule/SKILL.md` 的路径语义保持一致。
 - 供 agent 或人类按需阅读的文档直接放在 shared skill 根目录，与 `SKILL.md` 并列；不要创建 `reference/`、`references/` 或 `docs/` 文档目录。
 - 正文中不要使用 Markdown 超链接写法；称呼同一 shared skill 目录内的内部文件时，统一写成行内代码形式的相对路径，例如 `./project-local-skill.md`。
 - 不要把平台私有 prompt、AGENTS 适配文本或 Codex 私有规则当成 canonical shared skill。

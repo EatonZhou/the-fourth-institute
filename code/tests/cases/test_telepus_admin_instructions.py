@@ -34,8 +34,14 @@ def call(runtime, name, actor="alice", key="", **args):
     return runtime.execute(InstructionCall(name, args, idempotency_key=key), InstructionContext(caller=actor, entry="web"))
 
 
-def test_telepus_switch_requires_admin_and_uses_feature_runtime(enabled_runtime, permissions, monkeypatch):
+def test_telepus_switch_requires_admin_and_uses_feature_runtime(enabled_runtime, permissions, monkeypatch, tmp_path):
     from management_portal.telepus_runtime import TelepusRuntime
+    import json
+    from tests.cases.instance_test_support import select_instance
+    instance = select_instance(monkeypatch, tmp_path / 'instance')
+    document = instance.document
+    document['services']['components'] += ['telepus-breakglass-worker', 'telepus-portal-refresh', 'telepus-telegram-router']
+    (instance.root / 'instance.json').write_text(json.dumps(document))
 
     observed = []
     status = {"available": True, "enabled": False, "running": False, "complete": False,

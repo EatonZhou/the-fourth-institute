@@ -1,4 +1,4 @@
-"""测试框架按运行用户与安装配置解析路径，保持历史数据和稳定编号。
+"""测试框架的目录来自所选实例的清单，保持稳定编号。
 
 :module: operations.test-framework
 :profiles: local.fixture
@@ -6,69 +6,43 @@
 """
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from management_common import portal_paths
 from management_portal.test_framework import catalog_source, executor, isolation, local_runs, paths
 from scripts import portal_release
+from tests.cases.instance_test_support import select_instance
 
 
 @pytest.fixture
-def installation(tmp_path, monkeypatch):
-    root = tmp_path / 'installed-portal'
-    root.mkdir()
-    home = tmp_path / 'operator'
-    home.mkdir()
-    monkeypatch.setattr(Path, 'home', classmethod(lambda cls: home))
-    monkeypatch.setenv('HOME', str(home))
-    monkeypatch.setattr(portal_paths, 'PORTAL_ROOT', root)
-    monkeypatch.setattr(portal_paths, 'CONFIG_PATH', tmp_path / 'portal_paths.json')
-    for key in [*portal_paths.ENV_KEYS.values(), 'PORTAL_SHARE_ROOT',
-                'PORTAL_TEST_FRAMEWORK_STATE_ROOT', 'PORTAL_POSTGRES_ENV_FILE', 'PORTAL_INSTANCE',
-                'PORTAL_RESOURCE_SERVICE_SOCKET', 'PORTAL_SOCIETY_SERVICE_SOCKET',
-                'PORTAL_EXECUTION_SERVICE_SOCKET', 'PORTAL_RESOURCE_RPC_SIGNING_KEY_FILE']:
-        monkeypatch.delenv(key, raising=False)
+def instance(tmp_path, monkeypatch):
+    monkeypatch.delenv('PORTAL_DEPLOYMENT', raising=False)
     monkeypatch.chdir(tmp_path)
-    return root, home
+    return select_instance(monkeypatch, tmp_path / 'selected').root
 
 
-def test_framework_state_uses_running_user_and_keeps_explicit_history(installation, tmp_path, monkeypatch):
-    """默认状态跟随运行用户，显式历史目录优先且不搬迁或改写。"""
-    root, home = installation
-    expected = home / '.local/state/tfi-portal/test-framework/dev'
+def test_framework_state_belongs_to_the_selected_instance_and_deployment(instance, tmp_path, monkeypatch):
+    """运行记录与并发槽位在所选实例的 runtime 目录下，随部署分开，读取时不创建目录。"""
+    expected = instance / 'runtime/test-framework/dev'
     assert paths.state_root() == expected
-    assert not expected.exists()
-    monkeypatch.setenv('PORTAL_INSTANCE', 'release/site')
+    assert paths.slot_root() == instance / 'runtime/test-slots'
+    assert not (instance / 'runtime').exists()
+    monkeypatch.setenv('PORTAL_DEPLOYMENT', 'release/site')
     assert paths.state_root() == expected.parent / 'release-site'
-    history = tmp_path / 'historical-configured-state'
-    history.mkdir()
-    marker = history / 'runs.json'
-    original = b'{"schema":"tfi.test-run-index.v1","runs":[]}\n'
-    marker.write_bytes(original)
-    monkeypatch.setenv('PORTAL_TEST_FRAMEWORK_STATE_ROOT', str(history))
-    monkeypatch.setenv('PORTAL_AGENT_STAGING_ROOT', str(tmp_path / 'other-staging'))
-    assert paths.state_root() == history
-    assert marker.read_bytes() == original
-    assert not expected.exists()
-    monkeypatch.setenv('PORTAL_TEST_FRAMEWORK_STATE_ROOT', '~/existing-framework')
-    assert paths.state_root() == home / 'existing-framework'
-    monkeypatch.setenv('PORTAL_TEST_FRAMEWORK_STATE_ROOT', 'relative-existing')
-    assert paths.state_root() == Path('relative-existing')
+    other = select_instance(monkeypatch, tmp_path / 'other').root
+    assert paths.state_root() == other / 'runtime/test-framework/release-site'
+    assert paths.slot_root() == other / 'runtime/test-slots'
 
 
-def test_executor_default_and_explicit_postgres_file_are_only_command_paths(installation, tmp_path, monkeypatch):
-    """环境文件默认跟随用户，旧配置逐字保留，构造单元不读取数据库凭据。"""
-    _, home = installation
-    assert executor.postgres_environment_file() == str(home / '.config/tfi/portal-postgres.env')
-    configured = tmp_path / 'existing-config/postgres.env'
+def test_executor_database_file_is_the_instance_secret_and_only_a_command_path(instance, tmp_path, monkeypatch):
+    """环境文件取自实例的 secrets 目录；构造单元只写文件位置，不读取数据库凭据。"""
+    configured = instance / 'secrets/postgres.env'
+    assert executor.postgres_environment_file() == str(configured)
     configured.parent.mkdir()
     original = b'PORTAL_DATABASE_URL=fixture-not-a-database\n'
     configured.write_bytes(original)
-    monkeypatch.setenv('PORTAL_POSTGRES_ENV_FILE', str(configured))
     commands = []
     monkeypatch.setattr(executor.subprocess, 'run', lambda command, **kw:
                         commands.append(command) or subprocess.CompletedProcess(command, 0, '', ''))
@@ -81,10 +55,11 @@ def test_executor_default_and_explicit_postgres_file_are_only_command_paths(inst
     assert configured.read_bytes() == original
 
 
-def test_isolation_uses_data_configuration_and_release_owner(installation, tmp_path, monkeypatch):
-    """隔离掩码跟随安装数据目录与 Release 权威路径，保留通用系统目录。"""
+def test_isolation_masks_the_instance_secrets_runtime_and_release_files(instance, tmp_path, monkeypatch):
+    """隔离掩码覆盖所选实例的 secrets 与 runtime 目录和 Release 的环境文件，保留通用系统目录。"""
     from management_portal.execution import provider_catalog
-    root, home = installation
+    home = tmp_path / 'operator'
+    home.mkdir()
     monkeypatch.setattr(provider_catalog, 'AGENT_PROVIDERS', {})
     repository = tmp_path / 'dev-source'
     release = tmp_path / 'configured-release'
@@ -92,86 +67,49 @@ def test_isolation_uses_data_configuration_and_release_owner(installation, tmp_p
     release.mkdir()
     monkeypatch.setattr(isolation, 'REPOSITORY', repository)
     monkeypatch.setattr(portal_release, 'RELEASE_ROOT', release)
-    # Environment is used only without the explicit data-directory config.
-    env_staging = tmp_path / 'env-staging'
-    monkeypatch.setenv('PORTAL_AGENT_STAGING_ROOT', str(env_staging))
-    assert isolation.run_root() == env_staging / 'shared/script_runs'
-    configured = {key: str(tmp_path / ('saved-' + key)) for key in portal_paths.KEYS}
-    portal_paths.CONFIG_PATH.write_text(json.dumps(configured))
-    saved_config = portal_paths.CONFIG_PATH.read_bytes()
-    staging = Path(configured['staging_root'])
-    instances = Path(configured['instances_root'])
-    assert isolation.run_root() == staging / 'shared/script_runs'
-    expected_dirs = [staging / 'portal_locks', staging / 'shared/portal_locks',
-                     staging / 'shared/portal_runtime',
-                     Path(configured['secrets_dir'])]
+    assert isolation.run_root() == instance / 'runtime/script_runs'
+    expected_dirs = [instance / 'secrets', instance / 'runtime']
     for p in expected_dirs:
         p.mkdir(parents=True)
-    expected_files = [release / '.env', repository / '.env',
-                      instances / 'dev/private.env', staging / 'portal_instances/dev/old.key']
+    expected_files = [release / '.env', repository / '.env']
     for p in expected_files:
-        p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(b'never-read-credential-content')
     actual = isolation.credential_paths(home)
     assert set(expected_dirs + expected_files) <= set(actual)
-    assert not any(p.is_relative_to(env_staging) for p in actual)
-    assert portal_paths.CONFIG_PATH.read_bytes() == saved_config
     assert all(p.read_bytes() == b'never-read-credential-content' for p in expected_files)
     generic = isolation.isolation_args(network=False)
     assert ['--proc', '/proc'] == generic[generic.index('--proc'):generic.index('--proc') + 2]
     assert '--unshare-net' in generic
 
 
-def test_local_executor_inherits_only_explicit_directory_configuration(installation, tmp_path, monkeypatch):
-    """独立本地执行器获得数据目录配置，不因脱离 Web 丢失隔离路径，也不带数据库密钥。"""
-    monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(portal_paths.CONFIG_PATH))
-    expected = {'PORTAL_PATHS_CONFIG': str(portal_paths.CONFIG_PATH)}
-    for key, name in portal_paths.ENV_KEYS.items():
-        expected[name] = str(tmp_path / key)
-        monkeypatch.setenv(name, expected[name])
+def test_local_executor_inherits_only_the_instance_selection(instance, tmp_path, monkeypatch):
+    """独立本地执行器只获得实例与部署的选择，不带数据库密钥，目录由清单给出。"""
+    monkeypatch.setenv('PORTAL_DEPLOYMENT', 'release')
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'fixture-secret-url')
     monkeypatch.setenv('PORTAL_FIXTURE_TOKEN', 'fixture-secret-token')
-    environment = executor.unit_environment(tmp_path / 'old-framework', tau=False)
-    assert expected.items() <= environment.items()
+    environment = executor.unit_environment(tau=False)
+    assert environment['PORTAL_INSTANCE_ROOT'] == str(instance)
+    assert environment['PORTAL_DEPLOYMENT'] == 'release'
     assert 'PORTAL_DATABASE_URL' not in environment
     assert 'PORTAL_FIXTURE_TOKEN' not in environment
-    assert environment['PORTAL_TEST_FRAMEWORK_STATE_ROOT'] == str(tmp_path / 'old-framework')
+    assert not any(key.endswith(('_ROOT', '_DIR')) and key != 'PORTAL_INSTANCE_ROOT' for key in environment)
 
 
-def test_isolation_fresh_install_relative_data_and_dynamic_configuration(installation, tmp_path, monkeypatch):
-    """新安装默认和相对配置以安装根为基准，配置变化在下次读取生效。"""
-    root, _ = installation
-    assert isolation.run_root() == root / 'portal_data/staging/shared/script_runs'
-    monkeypatch.setenv('PORTAL_AGENT_STAGING_ROOT', 'relative-staging')
-    assert isolation.run_root() == root / 'relative-staging/shared/script_runs'
-    configured = {key: 'saved/' + key for key in portal_paths.KEYS}
-    portal_paths.CONFIG_PATH.write_text(json.dumps(configured))
-    assert isolation.run_root() == root / 'saved/staging_root/shared/script_runs'
-    configured['staging_root'] = 'second/staging'
-    portal_paths.CONFIG_PATH.write_text(json.dumps(configured))
-    assert isolation.run_root() == root / 'second/staging/shared/script_runs'
-    assert not (root / 'portal_data').exists()
-
-
-def test_local_sandbox_protects_current_user_state_and_configured_runs(installation, tmp_path, monkeypatch):
-    """本地沙盒保护当前用户状态、显式框架目录与配置中的脚本产物。"""
-    _, home = installation
-    framework = tmp_path / 'old-framework'
-    framework.mkdir()
+def test_local_sandbox_protects_instance_state_and_runs(instance, tmp_path, monkeypatch):
+    """本地沙盒保护所选实例的框架状态、并发槽位与脚本产物。"""
+    framework = paths.state_root()
+    framework.mkdir(parents=True)
     original = b'historical-run-artifacts'
     (framework / 'evidence').write_bytes(original)
-    monkeypatch.setenv('PORTAL_TEST_FRAMEWORK_STATE_ROOT', str(framework))
-    staging = tmp_path / 'custom-staging'
-    monkeypatch.setenv('PORTAL_AGENT_STAGING_ROOT', str(staging))
     runner = local_runs.PytestGroup({}, [], root=tmp_path / 'source')
-    assert runner.protected_roots() == [home / '.local/state/tfi-portal', framework]
+    assert runner.protected_roots() == [framework, paths.slot_root()]
     seen = []
     monkeypatch.setattr(isolation, 'credential_paths', lambda: [])
     monkeypatch.setattr(isolation, 'mask_args', lambda targets: seen.extend(targets) or [])
     group_dir = tmp_path / 'new-artifacts/group'
     group_dir.mkdir(parents=True)
     command, scratch = runner.sandbox(group_dir)
-    assert staging / 'shared/script_runs' in seen
+    assert instance / 'runtime/script_runs' in seen
     assert (framework / 'evidence').read_bytes() == original
     assert any(protected == framework for protected, _ in scratch)
     assert '--unshare-net' in command

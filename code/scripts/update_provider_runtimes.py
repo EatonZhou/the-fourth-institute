@@ -11,9 +11,8 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from management_portal.execution.provider_updates import activate_pending_once, run_update_pass
-from management_common.portal_paths import resolve_directory
-from management_common.site_config import read_site_config
-from scripts.portal_service_units import _isolated_provider_context
+from management_common.instance_manifest import load
+from management_common.code_environment import runtime_python
 
 
 def _watch_pending() -> int:
@@ -29,27 +28,19 @@ def _watch_pending() -> int:
 
 
 def _start_activation_watch() -> None:
-    isolated = _isolated_provider_context()
-    prefix = isolated["service_prefix"] if isolated else "portal"
-    unit = f"{prefix}-provider-pending-activation"
-    active = subprocess.run(
-        ("systemctl", "--user", "is-active", "--quiet", f"{unit}.service"),
-        check=False,
-    )
+    """Run the watcher as the instance's own job; stopping the instance stops it."""
+    from scripts.instance_services import job_unit
+    from scripts.tfi_shutdown import verify_job
+    instance = load()
+    unit = job_unit(instance, "provider-activation")
+    verify_job(unit, instance.root)
+    active = subprocess.run(("systemctl", "--user", "is-active", "--quiet", unit), check=False)
     if active.returncode == 0:
         return
-    configuration_environment = tuple(
-        f"--setenv={name}={resolve_directory(os.environ[name])}"
-        for name in ("PORTAL_SITE_CONFIG", "PORTAL_PATHS_CONFIG") if name in os.environ
-    )
     subprocess.run(
         ("systemd-run", "--user", "--collect", f"--unit={unit}",
-         "--property=EnvironmentFile=" + str(resolve_directory(os.getenv(
-             "PORTAL_POSTGRES_ENV_FILE",
-             read_site_config().get("deployment", {}).get("postgres_env_file", "~/.config/tfi/portal-postgres.env"),
-         ))),
-         *configuration_environment,
-         sys.executable, str(Path(__file__).resolve()), "--activate-pending"),
+         '--setenv=PORTAL_INSTANCE_ROOT=' + str(instance.root),
+         str(runtime_python(instance.code_root())), str(instance.code_root() / 'scripts/update_provider_runtimes.py'), '--activate-pending'),
         check=True, capture_output=True, text=True,
     )
 

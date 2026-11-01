@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Any
 
 
-SERVICE_ROOT = Path("/share/Services/resource-backup")
 OPERATIONS = {
     "critical": ("run-once", "--profile", "critical", "--apply"),
     "content": ("run-once", "--profile", "content", "--apply"),
@@ -24,12 +23,21 @@ OPERATIONS = {
 }
 
 
-def run_operation(operation: str, *, service_root: Path = SERVICE_ROOT) -> dict[str, Any]:
+def run_operation(operation: str, *, service_root: Path | None = None) -> dict[str, Any]:
     if operation not in OPERATIONS:
         raise ValueError("Unsupported backup operation")
+    if service_root is None:
+        from management_common.instance_manifest import load
+        configured = load().document['dependencies'].get('backup')
+        if not configured:
+            raise ValueError("This instance has no backup program in its manifest dependencies")
+        program = Path(configured)
+        service_root = program.parent.parent
+    else:
+        program = service_root / 'src/main.py'
     completed = subprocess.run(
         ["/usr/bin/nice", "-n", "10", "/usr/bin/ionice", "-c", "2", "-n", "7",
-         "/usr/bin/python3", str(service_root / "src" / "main.py"), *OPERATIONS[operation]],
+         "/usr/bin/python3", str(program), *OPERATIONS[operation]],
         cwd=service_root, capture_output=True, text=True, check=False, umask=0o077,
     )
     # Never relay raw command output: it may contain repository or credential

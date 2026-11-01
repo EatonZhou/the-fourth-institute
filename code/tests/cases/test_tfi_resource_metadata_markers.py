@@ -105,6 +105,3 @@ def test_wrong_name_version_or_prefix_is_rejected_without_rewrite(marker_store, 
     with pytest.raises(RuntimeError, match="schema"):
         reopen()
     assert marker(database, table) == before
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

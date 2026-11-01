@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from management_portal.resources.providers import test as test_provider
 from management_portal.test_framework.resource_index import TestCatalogAdapter as CatalogAdapter
+from tests.cases.instance_test_support import select_instance
 
 
 def test_test_resource_projects_exact_point_without_inferring_from_document(subtests, isolated_portal_case):
@@ -40,10 +41,9 @@ def test_test_resources_belong_to_the_configured_portal_projects(monkeypatch, tm
     case = projected_case("")
     repository = SimpleNamespace(projection=lambda: ([case], []))
     monkeypatch.setattr(test_provider, "catalog_repository", lambda: repository)
-    site = tmp_path / "site.json"
     for projects in (["portal-project"], None):
-        site.write_text(json.dumps({"deployment": {"development_projection": {"project_ids": projects}} if projects else {}}))
-        monkeypatch.setenv("PORTAL_SITE_CONFIG", str(site))
+        select_instance(monkeypatch, tmp_path / "instance", site=(
+            {"deployment": {"development_projection": {"project_ids": projects}}} if projects else {}))
         records, _details = CatalogAdapter().scan()
         assert test_provider.test_record(case)["project_ids"] == records[0]["attributes"]["project_ids"] == (projects or [])
 

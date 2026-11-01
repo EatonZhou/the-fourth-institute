@@ -1,7 +1,9 @@
 from __future__ import annotations
-from management_common.product_environment import read_product_env
-from management_common.portal_paths import PORTAL_ROOT, path as portal_path
+from pathlib import Path
+from management_common.portal_paths import path as portal_path
+PORTAL_ROOT = Path(__file__).resolve().parents[1]
 from management_common.clock import utc_now_iso
+from management_common.instance_locations import is_area_reference, located_path
 from management_common.text_values import stripped_text
 
 import functools
@@ -29,11 +31,9 @@ FULL_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _RESOURCE_SERVICE = get_resource_service()
 REGISTRY_SCHEMA = "tfi.repo.v1"
 REPO_COLLECTION = "repo"
-DEFAULT_SSH_KEY_ROOT = Path(
-    read_product_env("PORTAL_SSH_KEY_ROOT", str(Path.home() / ".ssh"))
-).expanduser()
+DEFAULT_SSH_KEY_ROOT = Path.home() / ".ssh"
 DEFAULT_SCAN_ROOTS = (
-    portal_path("share_root"),
+    portal_path("projects"), portal_path("lineages"), portal_path("skills"), portal_path("papers"),
     PORTAL_ROOT,
 )
 
@@ -210,8 +210,10 @@ def repo_source_kind(record: dict[str, Any]) -> str:
 
 def _exported_tree_root(record: dict[str, Any]) -> Path:
     raw = record.get("canonical_checkout")
+    if isinstance(raw, str) and is_area_reference(raw):
+        raw = located_path(raw)
     if not isinstance(raw, str) or not raw.strip() or not Path(raw).is_absolute():
-        raise ValueError("exported_tree requires an absolute canonical_checkout")
+        raise ValueError("exported_tree requires an area or absolute canonical_checkout")
     return Path(raw).resolve(strict=False)
 
 
@@ -379,6 +381,9 @@ REPO_REGISTRY = registry_sync.RegistrySync(
     location="checkout",
     record_keys=_record_match_keys,
     location_keys=_checkout_match_keys,
+    path_fields=("canonical_checkout",),
+    locations_field="checkouts",
+    location_path_fields=("path", "git_common_dir"),
 )
 
 
@@ -600,7 +605,7 @@ def _put_repo(writer: Any, record: dict[str, Any]) -> None:
     repo_id = stripped_text(record.get("id"))
     if not _is_repo_id(repo_id):
         raise ValueError(f"invalid repo id: {repo_id}")
-    writer.put(REPO_COLLECTION, repo_id, record)
+    writer.put(REPO_COLLECTION, repo_id, REPO_REGISTRY.stored(record))
 
 
 def _locked_repo(writer: Any, repo_id: str) -> dict[str, Any]:

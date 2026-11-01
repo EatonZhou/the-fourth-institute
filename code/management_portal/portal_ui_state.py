@@ -17,7 +17,7 @@ from management_common.clock import utc_now_iso
 
 
 SCHEMA = "tfi.portal-ui-state.v1"
-DEFAULT_LOCK_ROOT = (portal_path("staging_root") / "shared" / "portal_data" / "ui-association-locks")
+DEFAULT_LOCK_ROOT = portal_path("runtime") / "locks" / "ui-association"
 _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$")
 _MAX_KEY_CHARS = 600
 _MAX_VALUE_BYTES = 1024 * 1024

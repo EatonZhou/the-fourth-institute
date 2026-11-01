@@ -138,9 +138,9 @@ class ResidentDomainHost:
         asks ReadResource and writing UpdateWorkspaceFile on that object.
         """
         from .lineage_access_policy import file_reaches, path_resource
-        from .workspace_domain import PERSONAL_ROOTS, SHARED_COLLABORATION_ROOTS
+        from .workspace_domain import SHARED_COLLABORATION_ROOTS
 
-        found = path_resource(str(path), shared_roots=SHARED_COLLABORATION_ROOTS, private_roots=PERSONAL_ROOTS)
+        found = path_resource(str(path), shared_roots=SHARED_COLLABORATION_ROOTS)
         if found is None:
             raise PermissionError("actor has no accessible Workspace for link path")
         root, resource_id, owner = found

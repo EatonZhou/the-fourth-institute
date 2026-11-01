@@ -651,7 +651,7 @@ def test_tau_adapter_preserves_live_speed_when_sending_existing_resident(configu
     monkeypatch.setattr(tau.TauConfig, "unavailable_reason", lambda _self: "")
     prompt = mock.Mock(return_value="test prompt")
     monkeypatch.setattr(runner_adapters, "build_prompt", prompt)
-    target = mock.Mock(instance_id="dev", actual_build_id="dev-test", actor=TAU_ACTOR)
+    target = mock.Mock(deployment_id="dev", actual_build_id="dev-test", actor=TAU_ACTOR)
     target.result_details.return_value = {}
     invoke = mock.Mock(return_value={
         "resident_id": configured.assignment["resident_id"], "lineage_id": configured.assignment["lineage_id"],

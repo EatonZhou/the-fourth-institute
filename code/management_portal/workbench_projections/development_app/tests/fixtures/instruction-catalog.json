@@ -1893,7 +1893,7 @@
         "category_title": "组织与分工",
         "owner": "resource",
         "owner_title": "ResourceService",
-        "description": "修改 Project 的 ID，并把项目目录移到 ${share_root}/Projects/<新 ID>；Portal 中的引用一起改：登记、权限、Lineage、Resident、资源索引，目录内文件、git worktree、符号链接与执行环境里的旧路径。期间项目中的 Resident 暂停接单，有 Resident 正在执行、或目录被 Portal 之外的挂载与服务使用时拒绝。历史消息与执行记录保留原文。",
+        "description": "修改 Project 的 ID，并把项目目录移到 projects:<新 ID>；Portal 中的引用一起改：登记、权限、Lineage、Resident、资源索引，目录内文件、git worktree、符号链接与执行环境里的旧路径。期间项目中的 Resident 暂停接单，有 Resident 正在执行、或目录被 Portal 之外的挂载与服务使用时拒绝。历史消息与执行记录保留原文。",
         "mutates": true,
         "streaming": false
       },
@@ -12121,7 +12121,7 @@
         "category_title": "组织与分工",
         "owner": "resource",
         "owner_title": "ResourceService",
-        "description": "修改 Project 的 ID，并把项目目录移到 ${share_root}/Projects/<新 ID>；Portal 中的引用一起改：登记、权限、Lineage、Resident、资源索引，目录内文件、git worktree、符号链接与执行环境里的旧路径。期间项目中的 Resident 暂停接单，有 Resident 正在执行、或目录被 Portal 之外的挂载与服务使用时拒绝。历史消息与执行记录保留原文。",
+        "description": "修改 Project 的 ID，并把项目目录移到 projects:<新 ID>；Portal 中的引用一起改：登记、权限、Lineage、Resident、资源索引，目录内文件、git worktree、符号链接与执行环境里的旧路径。期间项目中的 Resident 暂停接单，有 Resident 正在执行、或目录被 Portal 之外的挂载与服务使用时拒绝。历史消息与执行记录保留原文。",
         "mutates": true,
         "streaming": false,
         "parameters": [

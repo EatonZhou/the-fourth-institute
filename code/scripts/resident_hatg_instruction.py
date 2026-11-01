@@ -21,7 +21,6 @@ import argparse
 import http.client
 import json
 import math
-import os
 import re
 import sys
 import time
@@ -35,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_common.execution_context_file import execution_context  # noqa: E402
 from management_common.portal_agent_http import urlopen  # noqa: E402
 from management_common import portal_paths  # noqa: E402
-from management_common.instance_config import installed_root, read_installation  # noqa: E402
+from management_common.instance_manifest import load  # noqa: E402
 from management_common.portal_paths import path as portal_path  # noqa: E402
 from management_common.product_environment import read_product_env  # noqa: E402
 
@@ -50,15 +49,12 @@ def _portal_url() -> str:
     explicit = read_product_env("PORTAL_URL")
     if explicit is not None:
         return explicit.rstrip("/")
-    root = installed_root(portal_paths.CONFIG_PATH)
-    if root is not None:
-        target = read_installation(root)["target"]
-        return f"http://127.0.0.1:{target['ports']['web']}"
-    return "http://127.0.0.1:18086"
+    return load().internal_web_origin()
+
 
 
 DEFAULT_PORTAL_URL = _portal_url()
-TOKEN_ROOT = Path(os.getenv("PORTAL_RESIDENT_HATG_TOKEN_ROOT", str(portal_path("secrets_dir") / "resident_hatg")))
+TOKEN_ROOT = portal_path('secrets') / "resident_hatg"
 RETRY_SECONDS = 90.0
 TRANSIENT_CODES = frozenset({"instruction.in_progress", "instruction.owner_unavailable", "instruction.projection_pending"})
 

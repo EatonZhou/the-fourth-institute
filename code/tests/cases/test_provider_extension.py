@@ -32,29 +32,27 @@ def test_framework_isolation_hides_provider_absolute_paths(monkeypatch, tmp_path
     dsh.mkdir()
     alias = tmp_path / "kimi-alias"
     alias.symlink_to(kimi, target_is_directory=True)
-    monkeypatch.setenv("PORTAL_KIMI_CODE_HOME", str(alias))
+    from management_portal import kimi_code_client
+    monkeypatch.setattr(kimi_code_client, "DEFAULT_HOME", alias)
     monkeypatch.setattr(dsh_client, "STATE", dsh)
     paths = credential_paths(tmp_path / "home")
     assert kimi in paths
     assert dsh in paths
 
 def test_framework_isolation_hides_site_account_and_secret_roots(monkeypatch, tmp_path):
-    """站点目录不在 HOME 下或通过别名配置时，也遮蔽全部认证与密钥。"""
+    """账号目录不在 HOME 下或通过别名登记时，也遮蔽全部认证与密钥。"""
     from management_portal.test_framework.isolation import credential_paths
 
+    from tests.cases.instance_test_support import select_instance
     accounts = tmp_path / "account-store"
-    secrets = tmp_path / "secret-store"
     accounts.mkdir()
+    secrets = select_instance(monkeypatch, tmp_path / "instance").directory("secrets")
     secrets.mkdir()
     alias = tmp_path / "account-alias"
     alias.symlink_to(accounts, target_is_directory=True)
     from management_portal.execution.account_registrations import create_registration
     create_registration({"account_id": "claude_external", "provider": "claude", "kind": "subscription_login",
                          "config": {"account_dir": str(accounts)}}, "test")
-    monkeypatch.setenv("PORTAL_SECRETS_DIR", str(secrets))
-    from management_common import portal_paths
-    values = portal_paths.path_values()
-    monkeypatch.setattr(portal_paths, "path_values", lambda: {**values, "secrets_dir": str(secrets)})
     paths = credential_paths(tmp_path / "empty-home")
     assert accounts in paths
     assert secrets in paths

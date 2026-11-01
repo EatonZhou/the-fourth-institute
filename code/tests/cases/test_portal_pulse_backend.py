@@ -13,7 +13,7 @@ def test_publications_are_rows_of_the_pulse_publications_table(tmp_path, monkeyp
     # Summaries stay the Pulse Resident's files; what users publish from them
     # is a table row, and a publications.json left in the folder is ignored.
     monkeypatch.setenv("PORTAL_PULSE_ROOT", str(tmp_path))
-    evidence_path = str(pulse.portal_path("share_root") / "Projects" / "demo" / "notes.md")
+    evidence_path = str(pulse.portal_path("projects") / "demo" / "notes.md")
     summary = tmp_path / "summaries" / "daily" / "2026-10-12.json"
     summary.parent.mkdir(parents=True)
     summary.write_text(json.dumps({"period": "daily", "key": "2026-10-12", "content": {"user_private_updates": {

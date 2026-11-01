@@ -139,11 +139,11 @@ def compact(seed, output):
         if path != output / "manifest.json":
             original = path.read_text(encoding="utf-8")
             path.write_text(replace(original, mappings), encoding="utf-8")
-    architecture = list(output.glob("data/share_root/Agents/**/workspace/architecture/manifest.json"))
+    architecture = list(output.glob("data/projects/*/agents/*/residents/*/workspace/architecture/manifest.json"))
     if len(architecture) != 1:
         raise ValueError("Expected one current architecture root")
     roots = {"workspace_04ad72d24263": architecture[0].parent.parent}
-    lenia = list(output.glob("data/share_root/Agents/**/workspace/lenia-core"))
+    lenia = list(output.glob("data/projects/*/agents/*/residents/*/workspace/lenia"))
     if len(lenia) != 1:
         raise ValueError("Expected one Lenia source root")
     # Descriptor graphs point to bytes that may themselves contain descriptors.
@@ -162,7 +162,7 @@ def compact(seed, output):
     else:
         raise ValueError("File descriptor hashes did not converge")
     builds = {}
-    artifact_root = output / "data/staging_root/shared/projection_applications"
+    artifact_root = output / "data/features/projection_applications"
     for directory in sorted(artifact_root.iterdir()):
         index_path = directory / "artifact.json"
         index = json.loads(index_path.read_text(encoding="utf-8"))

@@ -19,8 +19,9 @@ def test_selected_repo_and_paper_copy_actual_content(tmp_path):
     (repo / 'program.py').write_text('print("ready")\n')
     (repo / '.git').mkdir()
     (repo / '.git/config').write_text('private remote')
-    record = {'resource_type': 'repo', 'source': {'path': ''}, 'attributes': {'canonical_checkout': str(repo)}}
+    record = {'resource_type': 'repo', 'source': {'path': ''}, 'attributes': {'canonical_checkout': str(repo), 'project_ids': ['demo']}}
     item = resource_file_scope('repo_0123456789ab', record)
+    assert item['target'] == 'data/projects/demo/codes/repo_0123456789ab'
     target = tmp_path / 'export' / item['target']
     copy_content(item['source'], target, selected=set())
     assert (target / 'program.py').read_text() == 'print("ready")\n'
@@ -33,21 +34,11 @@ def test_selected_repo_and_paper_copy_actual_content(tmp_path):
     (paper / 'manifest.json').write_text('{"id":"paper_0123456789ab"}')
     (paper / 'paper.pdf').write_bytes(b'%PDF-1.7\n\xff')
     item = resource_file_scope('paper_0123456789ab', {'resource_type': 'paper', 'source': {'path': str(paper / 'manifest.json')}})
+    assert item['target'] == 'data/papers/items/selected/paper_0123456789ab'
     target = tmp_path / 'export' / item['target']
     copy_content(item['source'], target, selected=set(), knowledge=True)
     assert (target / 'paper.pdf').read_bytes() == (paper / 'paper.pdf').read_bytes()
     assert (target / 'manifest.json').is_file()
-
-
-def test_upgrade_contract_requires_exact_inventory_and_dedicated_sql():
-    from management_portal.distribution.engineering import validate_upgrade
-    migration = {'id': 'schema-v2', 'path': 'code/migrations/v2.sql', 'sha256': 'a' * 64}
-    declaration = {'from_manifest_sha256': ['b' * 64], 'migrations': [migration]}
-    files = [{'path': migration['path'], 'sha256': migration['sha256']}]
-    assert validate_upgrade(declaration, files) == declaration
-    for invalid in [dict(declaration, from_manifest_sha256=['latest']), dict(declaration, migrations=[migration, migration]), dict(declaration, migrations=[dict(migration, path='database/distribution.sql')]), dict(declaration, migrations=[dict(migration, sha256='c' * 64)])]:
-        with pytest.raises(ValueError):
-            validate_upgrade(invalid, files)
 
 
 def test_configs_snapshots_and_request_identity():
@@ -250,11 +241,11 @@ def test_engineering_real_content_no_history_or_auth(tmp_path):
     target = tmp_path / "package"
     resolved = {"selected_ids": ["repo_111111111111"], "unresolved": [], "features": [],
                 "lineage_options": {"lineage_111111111111": {"history": True, "workspace": {"own_outputs": False, "extra_bindings": "exclude"}}},
-                "files": [{"source": str(repo), "target": "data/share_root/Codes/repo_111111111111"}],
-                "generated_files": {"data/share_root/Lineages/a/workspace/.tfi-workspace": "owned"}}
+                "files": [{"source": str(repo), "target": "data/projects/example/codes/repo_111111111111"}],
+                "generated_files": {"data/lineages/lineage_111111111111/residents/resident_111111111111/workspace/.tfi-workspace": "owned"}}
     manifest = generate(source_root=source, destination=target, snapshot={"source": "Dev"}, resolved=resolved,
                         database_sql="-- selected database\n", run_id="run-local", supervisor_resident_id="resident_e4f55ad12dae")
-    assert (target / "data/share_root/Codes/repo_111111111111/hello.py").read_text() == "print('selected code')\n"
+    assert (target / "data/projects/example/codes/repo_111111111111/hello.py").read_text() == "print('selected code')\n"
     assert not list(target.rglob(".git")) and not list(target.rglob(".env"))
     assert any(item["path"] == "code/nested/manifest.json" for item in manifest["inventory"])
     from management_common.resource_identity import ResourceTypeRegistry
@@ -267,7 +258,13 @@ def test_engineering_real_content_no_history_or_auth(tmp_path):
     assert manifest['runtime_dependencies']['profiles'] == ['core']
     assert json.loads((target / 'code/config/principal-labels.json').read_text()) == {
         'user': {'tfi-exported-user': 'TFI portal'}}
-    assert set(manifest["files"]) >= {"share_root", "staging_root", "instances_root", "secrets_dir"}
+    # The bundle supplies exactly the areas it has files in, as data/<area>; records use <area>:<path>.
+    assert manifest["files"] == {"lineages": "data/lineages", "projects": "data/projects"}
+    assert manifest["directory_mappings"] == [{"placeholder": "${code_root}", "root": "code_root", "path": "."}]
+    with pytest.raises(ValueError, match="declared data area"):
+        generate(source_root=source, destination=tmp_path / "bad-root",
+                 snapshot={}, resolved={**resolved, "files": [{"source": str(repo), "target": "data/codes/x"}]},
+                 database_sql="")
     with pytest.raises(FileExistsError):
         generate(source_root=source, destination=target, snapshot={}, resolved=resolved, database_sql="")
     with pytest.raises(ValueError, match="isolated"):

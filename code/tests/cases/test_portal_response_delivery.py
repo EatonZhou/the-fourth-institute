@@ -112,14 +112,14 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
                 assert error.read() == b''
             else:
                 raise AssertionError('static revalidation should return 304')
-            for instance in ('dev', 'release'):
+            for deployment in ('dev', 'release'):
                 with monkeypatch.context() as patch:
-                    patch.setattr(http_instance, '_PORTAL_INSTANCE', instance)
+                    patch.setattr(http_instance, '_PORTAL_DEPLOYMENT', deployment)
                     for version in ('', 'previous-build', http_instance._PORTAL_BUILD_ID):
                         versioned_url = f'{url}?portal_v={quote(str(version), safe="")}'
                         expected_cache = (
                             'public, max-age=31536000, immutable'
-                            if instance == 'release' and version == http_instance._PORTAL_BUILD_ID
+                            if deployment == 'release' and version == http_instance._PORTAL_BUILD_ID
                             else 'public, max-age=0, must-revalidate'
                         )
                         versioned = urllib.request.Request(versioned_url, headers={'Accept-Encoding': 'gzip'})

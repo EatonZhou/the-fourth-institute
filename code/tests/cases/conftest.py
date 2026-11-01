@@ -1,5 +1,4 @@
 import os
-import json
 import secrets
 import shutil
 import tempfile
@@ -13,34 +12,66 @@ import pytest
 # pytest never uses the Portal database server, even when the shell loaded the
 # Portal environment: it takes an explicit separate test server, or starts a
 # disposable one for this session. Child processes inherit the same choice.
+# The choice is made before the shell's instance selection is replaced below,
+# so the selected instance's own database is known and refused.
 from tests.cases.postgres_test_database import (
     TEMP_PREFIX,
     choose_test_database,
     mark_owner,
+    production_addresses,
     sweep_abandoned_roots,
 )
 
+_PRODUCTION_DATABASE_ADDRESSES = production_addresses(dict(os.environ))
+from management_common import host_instances
+
+_DEPLOYED_INSTANCE_ROOTS = tuple(sorted({
+    Path(root) for root in (*host_instances.read_registry().values(), os.environ.get("PORTAL_INSTANCE_ROOT", ""))
+    if root}))
 _PYTEST_DATABASE_URL = choose_test_database(dict(os.environ))
 os.environ["PORTAL_DATABASE_URL"] = _PYTEST_DATABASE_URL
 os.environ["PORTAL_POSTGRES_TEST_DSN"] = _PYTEST_DATABASE_URL
 
-# Native-client tests use installed programs against a local fake server.
-# Capture only program paths before the disposable site replaces deployment
-# settings; accounts, credentials and all other site values stay isolated.
-from management_common.portal_paths import path as _portal_path, resolve_directory
-from management_common.site_config import read_site_config
+# Every directory a case works in comes from this disposable instance's
+# manifest. The fixture contains no credentials and installs no services; a
+# case that needs other locations selects an instance of its own.
+from tests.cases.instance_test_support import write_instance
 
-_PROVIDER_PATH_SETTINGS = read_site_config().get("deployment", {}).get("providers", {})
-_INSTALLED_PROVIDER_RUNTIME_ROOT = resolve_directory(_PROVIDER_PATH_SETTINGS.get(
-    "runtime_root", str(_portal_path("staging_root") / "provider-runtimes")))
-_INSTALLED_CODEX_BINARY = (_PROVIDER_PATH_SETTINGS.get("codex_binary") or shutil.which("codex"))
-_INSTALLED_CODEX_BINARY = resolve_directory(_INSTALLED_CODEX_BINARY) if _INSTALLED_CODEX_BINARY else None
-del _PROVIDER_PATH_SETTINGS
+_PYTEST_DATABASE_TEMP_DIR = tempfile.TemporaryDirectory(prefix="tfi-portal-pytest-")
+_PYTEST_DATABASE_ROOT = Path(_PYTEST_DATABASE_TEMP_DIR.name).resolve()
+write_instance(_PYTEST_DATABASE_ROOT)
+os.environ["PORTAL_INSTANCE_ROOT"] = str(_PYTEST_DATABASE_ROOT)
+
+# Native-client tests use the programs the code tree's dependencies installed.
+from management_common.code_environment import provider_directory, provider_entry
+
+_INSTALLED_PROVIDER_RUNTIME_ROOT = provider_directory()
+_INSTALLED_CODEX_BINARY = provider_entry("codex_binary")
+if not _INSTALLED_CODEX_BINARY.is_file():
+    _INSTALLED_CODEX_BINARY = Path(shutil.which("codex")).resolve() if shutil.which("codex") else None
 
 
 @pytest.fixture(scope="session")
 def installed_provider_paths():
     return {"runtime_root": _INSTALLED_PROVIDER_RUNTIME_ROOT, "codex_binary": _INSTALLED_CODEX_BINARY}
+
+
+@pytest.fixture(scope="session")
+def session_instance_root():
+    """The disposable instance every case starts in."""
+    return _PYTEST_DATABASE_ROOT
+
+
+@pytest.fixture(scope="session")
+def deployed_instance_roots():
+    """Root directories of every instance this user runs, which no case may write."""
+    return _DEPLOYED_INSTANCE_ROOTS
+
+
+@pytest.fixture(scope="session")
+def production_database_addresses():
+    """The (host, port) of every Portal database server this user runs."""
+    return _PRODUCTION_DATABASE_ADDRESSES
 
 _PYTEST_DATABASE_NAMESPACE = (
     f"pytest_{os.getpid()}_{secrets.token_hex(4)}"
@@ -55,69 +86,17 @@ for environment_key in ("PORTAL_EXECUTION_CONTEXT_FILE", "PORTAL_AUTHORIZATION_C
 # use the code defaults, and cases that size a pool set it themselves.
 for environment_key in ("PORTAL_POSTGRES_DOMAIN_POOL_SIZE", "PORTAL_POSTGRES_POOL_SIZE"):
     os.environ.pop(environment_key, None)
+# A case never reaches a deployed service: an owner socket inherited from a
+# Worker's environment is dropped, so every socket comes from the case's
+# instance runtime directory.
+for environment_key in ("PORTAL_SOCIETY_SERVICE_SOCKET", "PORTAL_RESOURCE_SERVICE_SOCKET",
+                        "PORTAL_EXECUTION_SERVICE_SOCKET"):
+    os.environ.pop(environment_key, None)
 
 
 # Directories left by sessions that were killed are removed first.
-sweep_abandoned_roots(Path(tempfile.gettempdir()))
-_PYTEST_DATABASE_TEMP_DIR = tempfile.TemporaryDirectory(prefix=TEMP_PREFIX)
-_PYTEST_DATABASE_ROOT = Path(_PYTEST_DATABASE_TEMP_DIR.name)
 mark_owner(_PYTEST_DATABASE_ROOT)
-os.environ["PORTAL_ACCOUNT_HOST_HOME"] = str(_PYTEST_DATABASE_ROOT / "host-home")
-# Database selection above checks the real deployment before isolation. All
-# subsequent domain configuration belongs to this disposable test site.
-_PYTEST_SITE_CONFIG = _PYTEST_DATABASE_ROOT / "site.json"
-from tests.cases.postgres_test_database import _binary, _postgres_environment
-_PYTEST_SITE_CONFIG.write_text(json.dumps({"deployment": {"postgres": {
-    "bin": str(_binary("pg_dump").parent),
-    "lib": _postgres_environment()["LD_LIBRARY_PATH"].split(os.pathsep)[0],
-}}}), encoding="utf-8")
-os.environ["PORTAL_SITE_CONFIG"] = str(_PYTEST_SITE_CONFIG)
-# Bootstrap this disposable site's rule files from the source distribution.
-# Prompt materialization exercises real Skills without reading deployed data.
-os.environ["PORTAL_PATHS_CONFIG"] = str(_PYTEST_DATABASE_ROOT / "paths.json")
-# Set every directory, including paths that providers and subprocesses read.
-# portal_paths was imported above to capture installed binaries; update its
-# cached config path as well as the environment before any domain imports.
-from management_common import portal_paths as _isolated_paths
-_isolated_paths.CONFIG_PATH = Path(os.environ["PORTAL_PATHS_CONFIG"])
-_isolated_values = {key: str(_PYTEST_DATABASE_ROOT / key) for key in _isolated_paths.KEYS}
-_isolated_values['share_root'] = str(_PYTEST_DATABASE_ROOT / 'share')
-for _key, _variable in _isolated_paths.ENV_KEYS.items():
-    os.environ[_variable] = _isolated_values[_key]
-_isolated_paths.write_config(_isolated_values)
-shutil.copytree(
-    Path(__file__).resolve().parents[2] / "core_skills",
-    _PYTEST_DATABASE_ROOT / "share" / "Skills",
-)
-for environment_key, relative_path in {
-    # Index workers created by unrelated cases must not walk the live Paper
-    # archive, including after a case restores its local PaperStore patch.
-    "PAPER_STORE_ROOT": "papers",
-    "PAPER_WORKSPACE_ROOT": "paper-workspace",
-    "PORTAL_CODEX_APP_SERVER_THREAD_LOCK_ROOT": "codex-thread-locks",
-    "PORTAL_LINEAGE_ROOT": "lineages",
-    "PORTAL_TWO_FACTOR_KEY_PATH": "two-factor.key",
-    "PORTAL_EXECUTION_STATE_ROOT": "execution-state",
-    "PORTAL_EFFECT_ARTIFACT_ROOT": "effect-artifacts",
-    "PORTAL_TEST_FRAMEWORK_STATE_ROOT": "test-framework",
-    # Test executors started by cases never take the host's test slots.
-    "PORTAL_TEST_SLOT_ROOT": "test-slots",
-    "PORTAL_ARTICLE_BUILD_ROOT": "article-builds",
-    # Lineage folders, Resident bearer files and avatars of test users,
-    # Residents, Lineages and Projects stay out of /share/Agents and ~/.archive.
-    "PORTAL_LINEAGE_FOLDER_ROOT": "lineage-folders",
-    "PORTAL_RESIDENT_HATG_TOKEN_ROOT": "resident-hatg-tokens",
-    "PORTAL_RESIDENT_AVATAR_ROOT": "resident-avatars",
-    "PORTAL_USER_AVATAR_ROOT": "user-avatars",
-    "PORTAL_SCOPE_AVATAR_ROOT": "scope-avatars",
-    # A case never reaches a deployed service: every owner socket it could
-    # inherit from a Worker's environment points into the case root instead.
-    "PORTAL_SOCIETY_SERVICE_SOCKET": "sockets/lineage.sock",
-    "PORTAL_RESOURCE_SERVICE_SOCKET": "sockets/resource.sock",
-    "PORTAL_EXECUTION_SERVICE_SOCKET": "sockets/execution.sock",
-    "PORTAL_WEB_SERVICE_SOCKET": "sockets/web.sock",
-}.items():
-    os.environ[environment_key] = str(_PYTEST_DATABASE_ROOT / relative_path)
+sweep_abandoned_roots(Path(tempfile.gettempdir()))
 # File-watcher cases create their own bounded temporary watches.
 os.environ["PORTAL_RESOURCE_INDEX_WATCH"] = "0"
 # Domain tests use the in-process notification hub, not a deployed NATS
@@ -145,13 +124,6 @@ from management_portal.society_service.resident_conversation_stream import (
 
 
 configure_default_domain_ports()
-
-# An ExecutionService client also tries its peer instance's socket (Dev falls
-# back to Release).  Cases resolve every instance's ExecutionService socket in
-# the case root, so that fallback never reaches a deployed service.
-from management_portal.execution import config as _execution_config  # noqa: E402
-
-_execution_config.DEFAULT_INSTANCE_ROOT = _PYTEST_DATABASE_ROOT / "instances"
 
 
 def _reset_process_stores() -> None:
@@ -350,7 +322,8 @@ def _register_test_site(request, monkeypatch, root):
 
 @pytest.fixture(autouse=True)
 def isolate_portal_databases(request, monkeypatch, tmp_path):
-    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "host-home"))
+    from management_common import host_instances
+    monkeypatch.setattr(host_instances, "user_home", lambda: tmp_path / "host-home")
     _truncate_test_schemas()
     try:
         yield _register_test_site(request, monkeypatch, tmp_path)

@@ -511,7 +511,7 @@ def test_the_egress_probe_tells_a_refused_location_from_a_served_one() -> None:
         assert provider_egress.egress_state("deepseek") == "allowed"
 
 
-def test_kimi_probe_uses_the_server_registry_and_profile(monkeypatch) -> None:
+def test_kimi_probe_uses_the_server_registry_and_profile(monkeypatch, tmp_path) -> None:
     """kimi 网络探测使用 Kimi 服务端 profile 对应的已登记模型 API 地址
 
     :module: platform.core
@@ -521,7 +521,8 @@ def test_kimi_probe_uses_the_server_registry_and_profile(monkeypatch) -> None:
     from management_portal import model_api_store
     from management_portal.execution import provider_egress
 
-    monkeypatch.setenv("PORTAL_KIMI_CODE_PROVIDER_PROFILE", "fixture")
+    from tests.cases.instance_test_support import select_instance
+    select_instance(monkeypatch, tmp_path / "instance", site={"deployment": {"kimi": {"provider_profile": "fixture"}}})
     # The profile the Kimi server would use is the registered model API row.
     assert model_api_store.create_api({"id": "fixture", "kind": "openai_compatible_chat", "enabled": True,
                                        "base_url": "https://fixture.example/v1/"}, "test")

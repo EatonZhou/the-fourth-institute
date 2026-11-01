@@ -79,10 +79,10 @@ def test_workspace_link_requires_actor_bound_workspace_contracts(monkeypatch, tm
 
 
 def test_an_absolute_path_belongs_to_the_deepest_workspace_or_shared_folder_holding_it(isolated_portal_case, monkeypatch):
-    """绝对路径归属于包含它的最深一层已登记 Workspace；不在任何 Workspace 内时归属共享协作目录，个人目录除外
+    """绝对路径归属于包含它的最深一层已登记 Workspace；不在任何 Workspace 内时归属共享协作目录
 
     权限按这个对象判定（decision_b820faf42218 §5.5）：Workspace 嵌套时取最深的一层，已删除的 Workspace 不算；
-    个人 AMA 的目录本身也是一个对象，归属其所有者；个人根下既不在 Workspace 也不在 AMA 目录里的路径没有归属。
+    个人 AMA 的目录本身也是一个对象，归属其所有者；既不在 Workspace、AMA 目录也不在共享协作目录里的路径没有归属。
     """
     with isolated_portal_case() as case_path:
         def seed(connection):
@@ -98,9 +98,8 @@ def test_an_absolute_path_belongs_to_the_deepest_workspace_or_shared_folder_hold
         assert place(str(case_path / 'outer' / 'a.md')) == (str(case_path / 'outer'), 'workspace_5ec000000002', '')
         assert place(str(case_path / 'outer' / 'inner' / 'gone' / 'b.md'))[1] == 'workspace_5ec000000003'
         assert place(str(ama / 'resident.md')) == (str(ama), 'lineage_5ec000000009', 'alice')
-        shared, private = (case_path / 'skills', case_path / 'skills' / 'personal')
-        assert place(str(shared / 'x' / 'SKILL.md'), shared_roots=(shared,), private_roots=(private,)) == (str(shared), str(shared), '')
-        assert place(str(private / 'y.md'), shared_roots=(shared,), private_roots=(private,)) is None
+        shared = case_path / 'skills'
+        assert place(str(shared / 'x' / 'SKILL.md'), shared_roots=(shared,)) == (str(shared), str(shared), '')
         assert place(str(case_path / 'elsewhere.md')) is None
 
 

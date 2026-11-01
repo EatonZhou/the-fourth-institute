@@ -39,7 +39,8 @@ class PlatformContracts(unittest.TestCase):
     def test_windows_environment_and_utf8_contract(self):
         group = local_runs.PytestGroup({'group_id': 'case', 'lane': 'live'}, [])
         seed = {'SystemRoot': 'C:\\Windows', 'COMSPEC': 'C:\\Windows\\System32\\cmd.exe',
-                'PATHEXT': '.COM;.EXE;.BAT;.CMD', 'TEMP': 'C:\\Temp', 'SECRET_TOKEN': 'excluded'}
+                'PATHEXT': '.COM;.EXE;.BAT;.CMD', 'TEMP': 'C:\\Temp', 'SECRET_TOKEN': 'excluded',
+                'PORTAL_INSTANCE_ROOT': os.environ['PORTAL_INSTANCE_ROOT']}
         with patch.dict(os.environ, seed, clear=True):
             env = group.environment({})
         for name in ('SystemRoot', 'COMSPEC', 'PATHEXT', 'TEMP'):

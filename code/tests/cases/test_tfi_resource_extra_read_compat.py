@@ -340,6 +340,3 @@ def test_schema_alias_never_bypasses_crypto_or_private_file_checks(tmp_path, no_
     with pytest.raises(credentials.RepoCredentialStoreError, match=error):
         credentials._read_record(path, cipher)
     assert file_state(path) == before
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

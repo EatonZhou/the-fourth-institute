@@ -86,12 +86,17 @@ def _human_text(text, users):
 
 @lru_cache(maxsize=1)
 def source_environment():
-    """Observed source directories, not one developer machine's path literals."""
-    from management_common.portal_paths import paths
-    configured = paths()
+    """Observed source directories, not one developer machine's path literals.
+
+    Each area of the source instance becomes the area form ``<area>:``; the
+    instance root and code directory become placeholders.
+    """
+    from management_common import instance_manifest
+    instance = instance_manifest.load()
     roots = [(str(Path(__file__).resolve().parents[2]), '${code_root}'),
-             (str(Path.home()), '${user_home}')]
-    roots.extend((str(configured[key]), '${'+key+'}') for key in ('share_root','staging_root','instances_root'))
+             (str(Path.home()), '${user_home}'),
+             (str(instance.root), '${instance_root}')]
+    roots.extend((str(instance.area(area)), area + ':') for area in instance_manifest.AREAS)
     return tuple(sorted(roots, key=lambda pair:len(pair[0]), reverse=True))
 
 
@@ -99,7 +104,9 @@ def portable_text(text, users=(), *, environment=True):
     """Replace source examples; callers keep runtime target configuration out."""
     if environment:
         for original, replacement in source_environment():
-            text = re.sub(r'(?<![A-Za-z0-9_./-])' + re.escape(original) + r'(?=/|\b)', lambda _m: replacement, text)
+            # An area root and its slash become one area reference: <root>/a -> area:a.
+            end = r'(?:/|\b)' if replacement.endswith(':') else r'(?=/|\b)'
+            text = re.sub(r'(?<![A-Za-z0-9_./-])' + re.escape(original) + end, lambda _m: replacement, text)
         text = _LAN.sub('${lan_host}', text)
     return _human_text(text, users)
 

@@ -693,8 +693,8 @@
     }
   }
 
-  function instanceLabel(instance) {
-    const normalized = String(instance || "").toLowerCase();
+  function deploymentLabel(deployment) {
+    const normalized = String(deployment || "").toLowerCase();
     const registered = currentPortalDeployments.find(item => item.id === normalized);
     if (registered) return registered.label;
     if (normalized === "dev") return "Dev";
@@ -703,8 +703,8 @@
   }
 
   function normalizePortalDeployments(route = null) {
-    const source = Array.isArray(route?.instances) && route.instances.length
-      ? route.instances
+    const source = Array.isArray(route?.deployments) && route.deployments.length
+      ? route.deployments
       : [];
     const seen = new Set();
     return source.map(item => ({
@@ -739,20 +739,20 @@
     return userMenuQueryAll(menu, selector)[0] || null;
   }
 
-  function renderPortalDeploymentButtons(menu, route, selectedInstance) {
+  function renderPortalDeploymentButtons(menu, route, selectedDeployment) {
     const selector = userMenuQuery(menu, "[data-portal-version-selector]");
     if (!selector) return;
     currentPortalDeployments = normalizePortalDeployments(route);
     selector.innerHTML = currentPortalDeployments.map(item => window.PortalI18n.html`
       <button
         type="button"
-        data-portal-instance="${esc(item.id)}"
-        data-portal-instance-kind="${esc(item.kind)}"
-        aria-pressed="${item.id === selectedInstance ? "true" : "false"}"
+        data-portal-deployment="${esc(item.id)}"
+        data-portal-deployment-kind="${esc(item.kind)}"
+        aria-pressed="${item.id === selectedDeployment ? "true" : "false"}"
       >${esc(item.label)}</button>`).join("");
-    selector.querySelectorAll("[data-portal-instance]").forEach(button => {
+    selector.querySelectorAll("[data-portal-deployment]").forEach(button => {
       button.addEventListener("click", () => {
-        switchPortalInstance(menu, button.dataset.portalInstance || "");
+        switchPortalDeployment(menu, button.dataset.portalDeployment || "");
       });
     });
   }
@@ -1157,24 +1157,24 @@
 
   function setUserMenuData(menu, data = {}, route = null) {
     const username = String(data.username || route?.username || "User").trim() || "User";
-    const instance = String(data.portal_instance || route?.effective_instance || "").toLowerCase();
+    const deployment = String(data.portal_deployment || route?.effective_deployment || "").toLowerCase();
     const buildId = String(data.build_id || "").trim();
     // The management page holds accounts and execution settings; show it to whoever may use either.
     const allows = data.access?.allows || {};
     const canManage = ["CreateUser", "GetExecutionSettings", "UpdateExecutionSettings", "ListResourceTypes", "ListProviders", "RegisterProviderAccount"].some(name => allows[name] === true);
     if (data.preferences) currentUserPreferences = normalizeUserPreferences(data.preferences);
-    menu.dataset.portalInstance = instance;
-    renderPortalDeploymentButtons(menu, route, instance);
+    menu.dataset.portalDeployment = deployment;
+    renderPortalDeploymentButtons(menu, route, deployment);
     userMenuQueryAll(menu, "[data-portal-user-name]").forEach(node => { node.textContent = username; });
     renderUserAvatar(menu, username, data.avatar);
-    userMenuQueryAll(menu, "[data-portal-instance-label]").forEach(node => { node.textContent = instanceLabel(instance); });
+    userMenuQueryAll(menu, "[data-portal-deployment-label]").forEach(node => { node.textContent = deploymentLabel(deployment); });
     const build = userMenuQuery(menu, "[data-portal-build-id]");
     if (build) {
-      build.textContent = buildId && buildId !== "development" ? buildId : instanceLabel(instance);
-      build.title = buildId || instanceLabel(instance);
+      build.textContent = buildId && buildId !== "development" ? buildId : deploymentLabel(deployment);
+      build.title = buildId || deploymentLabel(deployment);
     }
-    userMenuQueryAll(menu, "[data-portal-instance]").forEach(button => {
-      const selected = button.dataset.portalInstance === instance;
+    userMenuQueryAll(menu, "[data-portal-deployment]").forEach(button => {
+      const selected = button.dataset.portalDeployment === deployment;
       button.classList.toggle("selected", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
@@ -1182,7 +1182,7 @@
       link.hidden = !canManage;
     });
     renderWelcomeCallout(data);
-    userMenuQueryAll(menu, "[data-portal-instance]").forEach(button => {
+    userMenuQueryAll(menu, "[data-portal-deployment]").forEach(button => {
       button.disabled = false;
     });
     const note = userMenuQuery(menu, "[data-portal-version-note]");
@@ -1217,28 +1217,28 @@
     setUserMenuData(menu, data, route);
   }
 
-  async function switchPortalInstance(menu, instance) {
+  async function switchPortalDeployment(menu, deployment) {
     const available = new Set(
-      userMenuQueryAll(menu, "[data-portal-instance]")
-        .map(button => String(button.dataset.portalInstance || "")),
+      userMenuQueryAll(menu, "[data-portal-deployment]")
+        .map(button => String(button.dataset.portalDeployment || "")),
     );
-    if (!menu || !available.has(instance)) return;
-    if (menu.dataset.portalInstance === instance) {
+    if (!menu || !available.has(deployment)) return;
+    if (menu.dataset.portalDeployment === deployment) {
       closeUserMenu(menu);
       return;
     }
-    const buttons = userMenuQueryAll(menu, "[data-portal-instance]");
+    const buttons = userMenuQueryAll(menu, "[data-portal-deployment]");
     const note = userMenuQuery(menu, "[data-portal-version-note]");
     buttons.forEach(button => { button.disabled = true; });
     menu.classList.add("switching");
     if (note) {
       note.hidden = false;
-      note.textContent = window.PortalI18n.text`Switching to ${instanceLabel(instance)}...`;
+      note.textContent = window.PortalI18n.text`Switching to ${deploymentLabel(deployment)}...`;
     }
     try {
       await window.PortalAPI.post(
         DEPLOYMENT_PREFERENCE_PATH,
-        { instance },
+        { deployment },
         { detectLoginRedirect: false },
       );
       window.location.reload();
@@ -1262,7 +1262,7 @@
           <span class="portalUserAvatar" aria-hidden="true" data-portal-user-initial>?</span>
           <span class="portalUserMenuTriggerText">
             <span class="portalUsername" id="portalUsername" data-portal-user-name>User</span>
-            <span class="portalUserMenuInstance" data-portal-instance-label>Portal</span>
+            <span class="portalUserMenuDeployment" data-portal-deployment-label>Portal</span>
           </span>
           <span class="portalUserMenuChevron" aria-hidden="true"></span>
         </button>
@@ -1277,8 +1277,8 @@
           <div class="portalUserMenuSection">
             <div class="portalUserMenuSectionTitle">Portal version</div>
             <div class="portalVersionSelector" aria-label="Portal version" data-portal-version-selector>
-              <button type="button" data-portal-instance="dev" aria-pressed="false" disabled>Dev</button>
-              <button type="button" data-portal-instance="release" aria-pressed="false" disabled>Release</button>
+              <button type="button" data-portal-deployment="dev" aria-pressed="false" disabled>Dev</button>
+              <button type="button" data-portal-deployment="release" aria-pressed="false" disabled>Release</button>
             </div>
             <div class="portalUserMenuNote" role="status" data-portal-version-note hidden></div>
           </div>
@@ -1347,8 +1347,8 @@
       if (trigger.getAttribute("aria-expanded") === "true" && !wasHoverOpened) closeUserMenu(menu);
       else openUserMenu(menu);
     });
-    menu?.querySelectorAll("[data-portal-instance]").forEach(button => {
-      button.addEventListener("click", () => switchPortalInstance(menu, button.dataset.portalInstance || ""));
+    menu?.querySelectorAll("[data-portal-deployment]").forEach(button => {
+      button.addEventListener("click", () => switchPortalDeployment(menu, button.dataset.portalDeployment || ""));
     });
     menu?.querySelectorAll("[data-portal-account-panel]").forEach(button => {
       button.addEventListener("click", () => openAccountPanel(button.dataset.portalAccountPanel || "settings", menu));

@@ -154,7 +154,6 @@ def test_idle_manager_exits_when_execution_service_is_stopped(tmp_path):
         from management_portal.execution.transport import ExecutionServiceClient
 
         root = Path(sys.argv[1])
-        os.environ['PORTAL_EXECUTION_WORKER_HEALTH_PATH'] = str(root / 'manager.json')
         with tempfile.TemporaryDirectory(prefix='worker-stop-') as sockets:
             wm.ExecutionServiceClient = lambda **kw: ExecutionServiceClient(
                 socket_path=Path(sockets) / 'missing.sock', **kw)
@@ -169,7 +168,7 @@ def test_idle_manager_exits_when_execution_service_is_stopped(tmp_path):
                 started_at=1.0)
             manager._stopping.set()
             assert manager.run() == 0
-            payload = json.loads((root / 'manager.json').read_text())
+            payload = json.loads(manager.health_path.read_text())
             assert payload['shutdown_pending_recovery'] == ['test:retired']
             assert health.exists()  # Unacknowledged Scheduler cleanup remains durable.
             assert payload['draining'][0]['tree_stopped'] is True

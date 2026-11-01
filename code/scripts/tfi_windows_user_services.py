@@ -116,50 +116,36 @@ def remove_record(path):
     _record_operation(path, lambda: path.unlink(missing_ok=True))
 
 
+def owned_definition(value, name):
+    """The definition names a registered component of the instance it selects.
+
+    Stopping, status and removal need only this ownership: after a code update
+    an older definition must still be stoppable and removable.
+    """
+    from management_common.instance_manifest import load
+    if not isinstance(value, dict) or value.get('mode') != 'user':
+        raise ValueError('Invalid user service definition')
+    instance = load(value['root'])
+    if (name != value.get('name') or name != instance.service_name(value.get('component'))
+            or value.get('environment', {}).get('PORTAL_INSTANCE_ROOT') != str(instance.root)):
+        raise ValueError('User service definition belongs to another instance')
+    return value
+
+
 def validate_definition(value, name):
-    from management_common.instance_config import read_installation
-    codex = value.get("component") == "codex"
-    pattern = r"portal-codex-app-server@[A-Za-z0-9_-]+-[a-f0-9]{10}\.service" if codex else r"tfi-[a-z0-9-]+"
-    if value.get("name") != name or not re.fullmatch(pattern, name):
-        raise ValueError("Invalid user service identity")
-    if value.get("mode") != "user" or value.get("component") not in (
-            "postgres", "nats", "resource", "execution", "society", "worker", "web", "codex", "claude", "kimi"):
-        raise ValueError("Invalid user service component")
-    for key in ("root", "code", "python"):
-        path = Path(value[key])
-        if not path.is_absolute() or path.is_symlink():
-            raise ValueError("User service paths must be absolute and not symlinks")
-    root = Path(value["root"]).resolve()
-    target = read_installation(root)["target"]
-    if codex:
-        from scripts.tfi_instance_layout import code_root
-        from scripts.tfi_release_dependencies import runtime_python
-        command = value.get("command", [])
-        if (target.get("windows_service_mode") != "user"
-                or Path(target["install_root"]).resolve() != root
-                or Path(value["code"]).resolve() != code_root(target).resolve()
-                or Path(value["python"]).resolve() != Path(runtime_python(target)).resolve()
-                or not isinstance(command, list) or len(command) != 9
-                or not all(isinstance(arg, str) and not any(c in arg for c in "\0\r\n") for arg in command)
-                or command[:3] != [value["python"], "-m", "management_portal.codex_app_server_host"]
-                or command[3::2] != ["--socket", "--binary", "--account-config"]
-                or not all(Path(arg).is_absolute() for arg in command[4::2])):
-            raise ValueError("Codex user service ownership mismatch")
-        launch = Path(command[-1])
-        account_id = launch.parent.name
-        scope = hashlib.sha256(os.fsencode(Path(target["data_roots"]["instances_root"]).resolve())).hexdigest()[:10]
-        if (launch != root / "runtime/provider-accounts/codex" / account_id / "launch.json"
-                or Path(command[4]).resolve() != (Path(target["data_roots"]["instances_root"]) / "sockets" / f"codex-{account_id}.sock").resolve()
-                or name != f"portal-codex-app-server@{account_id}-{scope}.service"):
-            raise ValueError("Codex user service account ownership mismatch")
-    else:
-        from scripts.tfi_instance_layout import code_root
-        if (name != target["service_prefix"] + "-" + value["component"]
-                or target.get("windows_service_mode") != "user"
-                or Path(target["install_root"]).resolve() != root
-                or Path(value["code"]).resolve() != code_root(target).resolve()
-                or Path(value["python"]).resolve() != Path(target["python"]).resolve()):
-            raise ValueError("User service does not belong to this installation")
+    """Startup requires the definition the current manifest and code render."""
+    from management_common.instance_manifest import load
+    from management_common.code_environment import runtime_python
+    owned_definition(value, name)
+    instance = load(value['root'])
+    component = value['component']
+    code = instance.service_code(component)
+    expected = {'mode': 'user', 'name': instance.service_name(component),
+                'root': str(instance.root), 'code': str(code),
+                'python': str(runtime_python(code)), 'component': component,
+                'environment': instance.service_environment(component)}
+    if value != expected or name != expected['name']:
+        raise ValueError('User service definition does not match its instance manifest')
     return value
 
 
@@ -194,30 +180,33 @@ def process_stamp(pid):
 
 
 def state_path(value):
-    identity = value["name"] if value["component"] == "codex" else value["component"]
-    return Path(value["root"]) / "runtime" / (identity + ".process.json")
+    return Path(value["root"]) / "runtime" / (value["component"] + ".process.json")
 
 
 def register(directory, units):
+    """Write current definitions; a replaced one must belong to the same component."""
     directory.mkdir(parents=True, exist_ok=True)
-    created = []
+    previous = {}
     try:
         for name, content in units.items():
             validate_definition(json.loads(content), name)
             path = directory / (name + ".json")
             if path.is_symlink():
                 raise ValueError("Symlinked service definition")
-            if path.exists():
-                if path.read_text(encoding="utf-8") != content:
-                    raise ValueError("Service definition ownership mismatch: " + name)
-                continue
-            with path.open("x", encoding="utf-8") as stream:
-                stream.write(content)
-            created.append(name)
-        return created
+            previous[name] = read_record(path) if path.exists() else None
+            if (previous[name] is not None and owned_definition(json.loads(previous[name]), name)['root']
+                    != json.loads(content)['root']):
+                raise ValueError("Service definition belongs to another instance: " + name)
+            if previous[name] != content:
+                write_record(path, content)
+        return [name for name, content in previous.items() if content is None]
     except Exception:
-        for name in created:
-            (directory / (name + ".json")).unlink()
+        for name, content in previous.items():
+            path = directory / (name + ".json")
+            if content is None:
+                remove_record(path)
+            else:
+                write_record(path, content)
         raise
 
 
@@ -239,7 +228,7 @@ class WindowsServiceControl:
         if path.exists():
             value = json.loads(path.read_text(encoding="utf-8"))
             if value.get("mode") == "user":
-                return validate_definition(value, name)
+                return owned_definition(value, name)
             from scripts.tfi_release_platform_windows import verify_service
             verify_service(name, path.read_text(encoding="utf-8"))
         return None
@@ -283,6 +272,7 @@ class WindowsServiceControl:
             if value is None:
                 self.scm().start(name)
                 continue
+            validate_definition(value, name)
             status = self.status(name)
             if status["active"] in {"active", "activating"}:
                 continue  # A supervisor waiting to restart its child owns the start.
@@ -295,7 +285,7 @@ class WindowsServiceControl:
                     continue
                 if status["pid"]:
                     raise RuntimeError("Wait for the component to stop: " + name)
-                log = Path(value["root"]) / "runtime" / ((value["name"] if value["component"] == "codex" else value["component"]) + ".log")
+                log = Path(value["root"]) / "runtime" / (value["component"] + ".log")
                 with log.open("ab") as output:
                     arguments = [value["python"], str(Path(value["code"]) / "scripts/tfi_windows_user_services.py"),
                                  "--definition", str(self.directory / (name + ".json"))]
@@ -347,90 +337,65 @@ class WindowsServiceControl:
         self.start(name)
 
 
-def failed_units(target, directory):
-    """Name every user unit of this installation whose supervisor was terminated."""
-    from scripts import tfi_release_install as api
-    from scripts.tfi_release_provider_services import owned_services
+def failed_units(instance, directory):
+    """Only manifest-registered services belong to this instance."""
     control = WindowsServiceControl(directory)
-    units = {api.unit_name(target, c): control for c in api.COMPONENTS}
-    units.update((owned_services(target, directory) or {}).get("controllers", {}))
-    return {name: unit for name, unit in units.items()
-            if unit.definition(name) is not None and unit.status(name)["active"] == "failed"}
+    names = [instance.service_name(component) for component in instance.document['services']['components']]
+    return {name: control for name in names
+            if control.definition(name) is not None and control.status(name)['active'] == 'failed'}
 
 
 def revive_failed(definition, attempts, now=time.monotonic):
-    """Start this installation's failed user units once; the caller repeats.
-
-    A unit is failed only when its supervisor died without removing its
-    record, so explicit stops and normal exits are never revived. The pass
-    skips while an installer, upgrade or recovery owns the instance, and backs
-    off per unit after a failed start. ``attempts`` carries that backoff.
-    """
-    from scripts import tfi_release_install as api
+    from management_common.instance_manifest import load
+    from management_common.file_lock import try_lock_descriptor
     definition = Path(definition)
-    value = validate_definition(json.loads(definition.read_text(encoding="utf-8")), definition.stem)
-    root = Path(value["root"])
-    state = api.owned_state(root)
-    if state.get("migration", {}).get("business_execution_allowed") is False:
-        return []
-    target = state["target"]
-    if target.get("shared_code_root"):
-        from scripts.tfi_application_upgrade import pending
-        if pending(Path(target["shared_code_root"]).parent):
+    value = validate_definition(json.loads(definition.read_text(encoding='utf-8')), definition.stem)
+    instance = load(value['root'])
+    descriptor = os.open(instance.root / '.configuration.lock', os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(descriptor, 'a+b') as stream:
+        if not try_lock_descriptor(stream.fileno()):
             return []
-    failed = failed_units(target, definition.parent)
-    for name in set(attempts) - set(failed):
-        attempts.pop(name)
-    due = [name for name in sorted(failed) if attempts.get(name, (0, 0))[1] <= now()]
-    if not due:
-        return []
-    results = []
-    try:
-        with api.installation_lock(root):
-            failed = failed_units(target, definition.parent)
-            for name in due:
-                if name not in failed:
-                    continue
-                try:
-                    failed[name].start(name)
-                except Exception as exc:
-                    count = attempts.get(name, (0, 0))[0] + 1
-                    attempts[name] = (count, now() + min(REVIVE_DELAY_MAX_SECONDS, REVIVE_INTERVAL_SECONDS * 2 ** count))
-                    results.append({"service": name, "result": "failed", "error_type": type(exc).__name__})
-                else:
-                    attempts.pop(name, None)
-                    results.append({"service": name, "result": "started"})
-    except BlockingIOError:
-        return []  # An installer command owns the instance; try next pass.
-    return results
+        failed = failed_units(instance, definition.parent)
+        for name in set(attempts) - set(failed):
+            attempts.pop(name, None)
+        results = []
+        for name in sorted(failed):
+            if attempts.get(name, (0, 0))[1] > now():
+                continue
+            try:
+                failed[name].start(name)
+            except Exception as exc:
+                count = attempts.get(name, (0, 0))[0] + 1
+                attempts[name] = (count, now() + min(REVIVE_DELAY_MAX_SECONDS, REVIVE_INTERVAL_SECONDS * 2 ** count))
+                results.append({'service': name, 'result': 'failed', 'error_type': type(exc).__name__})
+            else:
+                attempts.pop(name, None)
+                results.append({'service': name, 'result': 'started'})
+        return results
 
 
 def supervise(path):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from scripts import tfi_release_install as api
     from management_common.process_runtime import spawn_process, terminate_process_tree
-    from scripts.tfi_instance_layout import database_root
     value = validate_definition(json.loads(path.read_text(encoding="utf-8")), path.stem)
 
     def launch():
-        state = api.owned_state(Path(value["root"]))
-        if state.get("migration", {}).get("business_execution_allowed") is False and value["component"] != "postgres":
-            raise ValueError("Migration cutover has not been approved")
-        target = state["target"]
-        if value["component"] == "codex":
-            command, env = value["command"], api.clean_environment(target)
-        else:
-            command, env = api.component_command(target, value["component"])
+        from management_common.instance_manifest import load
+        from management_portal.service_runtime import component_command, prepare_runtime, working_directory
+        instance = load(value['root'])
+        prepare_runtime(instance)
+        command, env = component_command(instance, value['component'])
         # A native Python crash otherwise leaves no traceback in the component
         # log. The definition lets a core service revive this installation's
         # failed units (revive_failed) without guessing its service directory.
         env = {**env, "PYTHONFAULTHANDLER": "1", DEFINITION_ENV: str(path.resolve())}
-        child = spawn_process(command, cwd=value["code"], env=env,
+        cwd = working_directory(instance, value['component'])
+        child = spawn_process(command, cwd=cwd, env=env,
                               stdin=subprocess.DEVNULL, stdout=sys.stdout, stderr=sys.stderr,
                               creationflags=subprocess.CREATE_NO_WINDOW)
-        return child, target, env
+        return child, instance, env
 
-    process, target, env = launch()
+    process, instance, env = launch()
     record_path = state_path(value)
     created = process_stamp(os.getpid())
     reason = "child_exit"
@@ -460,8 +425,8 @@ def supervise(path):
                     reason = "stop_requested"
                     event("stop_requested")
                     if value["component"] == "postgres":
-                        subprocess.run([str(Path(target["pg_bin"]) / "pg_ctl.exe"), "stop", "-D",
-                                        str(database_root(target)), "-m", "fast", "-w", "-t", "60"],
+                        subprocess.run([str(Path(instance.document["dependencies"]["postgres"]["bin"]) / "pg_ctl.exe"), "stop", "-D",
+                                        str(instance.directory("database")), "-m", "fast", "-w", "-t", "60"],
                                        env=env, check=True, timeout=210)
                     break
                 time.sleep(0.2)
@@ -481,7 +446,7 @@ def supervise(path):
                 reason = "stop_requested"
                 event("stop_requested")
                 break
-            process, target, env = launch()
+            process, instance, env = launch()
             publish()
             event("restarted")
     except BaseException as exc:

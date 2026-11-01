@@ -13,10 +13,10 @@ from .resource_refs import append_resource_references, resolve_resource_referenc
 
 
 HOST_SKILLS_ROOT = Path(
-    os.getenv("PORTAL_AGENT_CONTEXT_SKILLS_ROOT", str(portal_path("share_root") / "Skills"))
+    os.getenv("PORTAL_AGENT_CONTEXT_SKILLS_ROOT", str(portal_path('skills')))
 ).expanduser()
 HOST_AGENTS_ROOT = Path(
-    os.getenv("PORTAL_AGENT_CONTEXT_AGENTS_ROOT", str(portal_path("share_root") / "Agents"))
+    os.getenv("PORTAL_AGENT_CONTEXT_AGENTS_ROOT", str(portal_path('lineages')))
 ).expanduser()
 THIRD_PARTY_SKILLS_ROOT = HOST_SKILLS_ROOT / "third-party"
 

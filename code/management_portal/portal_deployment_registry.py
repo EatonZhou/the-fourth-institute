@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from management_common.format_tags import schema_matches
-
-import json
 import ipaddress
 import re
 import threading
@@ -10,17 +7,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import load
 
 
-DEFAULT_DEPLOYMENT_REGISTRY_PATH = instance_root() / 'deployments.json'
-INSTANCE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-INSTANCE_KINDS = frozenset({"dev", "release", "exploration"})
+INSTANCE_MANIFEST_PATH = load().root / "instance.json"
+DEPLOYMENT_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+DEPLOYMENT_KINDS = frozenset({"dev", "release", "exploration"})
 
 
 @dataclass(frozen=True)
 class PortalDeployment:
-    instance_id: str
+    deployment_id: str
     label: str
     kind: str
     origin: str
@@ -31,16 +28,16 @@ class PortalDeployment:
     @classmethod
     def from_payload(cls, payload: object) -> "PortalDeployment":
         if not isinstance(payload, dict):
-            raise ValueError("deployment instance must be an object")
-        instance_id = str(payload.get("id") or "").strip().lower()
-        if not INSTANCE_ID_RE.fullmatch(instance_id):
-            raise ValueError(f"invalid deployment instance id: {instance_id or '(empty)'}")
+            raise ValueError("deployment must be an object")
+        deployment_id = str(payload.get("id") or "").strip().lower()
+        if not DEPLOYMENT_ID_RE.fullmatch(deployment_id):
+            raise ValueError(f"invalid deployment id: {deployment_id or '(empty)'}")
         label = str(payload.get("label") or "").strip()
         if not label or len(label) > 80:
-            raise ValueError(f"invalid deployment label for {instance_id}")
+            raise ValueError(f"invalid deployment label for {deployment_id}")
         kind = str(payload.get("kind") or "").strip().lower()
-        if kind not in INSTANCE_KINDS:
-            raise ValueError(f"invalid deployment kind for {instance_id}: {kind or '(empty)'}")
+        if kind not in DEPLOYMENT_KINDS:
+            raise ValueError(f"invalid deployment kind for {deployment_id}: {kind or '(empty)'}")
         origin = str(payload.get("origin") or "").strip()
         parsed = urlsplit(origin)
         if (
@@ -52,16 +49,16 @@ class PortalDeployment:
             or parsed.query
             or parsed.fragment
         ):
-            raise ValueError(f"invalid deployment origin for {instance_id}")
+            raise ValueError(f"invalid deployment origin for {deployment_id}")
         try:
             origin_ip = ipaddress.ip_address(parsed.hostname)
         except ValueError as exc:
             raise ValueError(
-                f"deployment origin for {instance_id} must use a loopback IP literal"
+                f"deployment origin for {deployment_id} must use a loopback IP literal"
             ) from exc
         if not origin_ip.is_loopback:
             raise ValueError(
-                f"deployment origin for {instance_id} must use a loopback IP literal"
+                f"deployment origin for {deployment_id} must use a loopback IP literal"
             )
         browser_origin = str(payload.get("browser_origin") or origin).strip()
         browser_parsed = urlsplit(browser_origin)
@@ -76,19 +73,19 @@ class PortalDeployment:
         ):
             if browser_origin != origin:
                 raise ValueError(
-                    f"deployment browser origin for {instance_id} must use localhost"
+                    f"deployment browser origin for {deployment_id} must use localhost"
                 )
         elif browser_parsed.port != parsed.port:
             raise ValueError(
-                f"deployment browser origin for {instance_id} must use the backend port"
+                f"deployment browser origin for {deployment_id} must use the backend port"
             )
         try:
             order = int(payload.get("order") or 0)
         except (TypeError, ValueError) as exc:
-            raise ValueError(f"invalid deployment order for {instance_id}") from exc
+            raise ValueError(f"invalid deployment order for {deployment_id}") from exc
         build_id = str(payload.get("build_id") or "").strip()[:240]
         return cls(
-            instance_id=instance_id,
+            deployment_id=deployment_id,
             label=label,
             kind=kind,
             origin=origin,
@@ -99,7 +96,7 @@ class PortalDeployment:
 
     def public_payload(self) -> dict:
         return {
-            "id": self.instance_id,
+            "id": self.deployment_id,
             "label": self.label,
             "kind": self.kind,
             "build_id": self.build_id,
@@ -107,23 +104,21 @@ class PortalDeployment:
 
 
 def load_portal_deployments(
-    path: Path = DEFAULT_DEPLOYMENT_REGISTRY_PATH,
+    path: Path = INSTANCE_MANIFEST_PATH,
 ) -> tuple[PortalDeployment, ...]:
-    """Load the enabled Portal instances from the canonical registry."""
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("deployment registry must be an object")
-    if not schema_matches(payload.get("schema"), "tfi.portal-deployments.v1"):
-        raise ValueError("unsupported deployment registry schema")
-    raw_instances = payload.get("instances")
-    if not isinstance(raw_instances, list):
-        raise ValueError("deployment registry instances must be a list")
-    items = tuple(
-        PortalDeployment.from_payload(item)
-        for item in raw_instances
-        if isinstance(item, dict) and bool(item.get("enabled", True))
-    )
+    """Project enabled Web deployments from the one instance manifest."""
+    path = Path(path)
+    if path.name != 'instance.json':
+        raise ValueError('Deployment discovery requires the instance manifest')
+    manifest = load(path.parent)
+    items = tuple(PortalDeployment.from_payload({
+        'id': name, 'kind': row['kind'], 'label': name.title(),
+        'origin': f"http://127.0.0.1:{row['web_port']}",
+        'browser_origin': f"http://localhost:{row['web_port']}",
+        'order': 0 if name == 'release' else 1,
+    }) for name, row in manifest.deployments.items())
     return PortalDeploymentRegistry._validate(items)
+
 
 
 class PortalDeploymentRegistry:
@@ -131,7 +126,7 @@ class PortalDeploymentRegistry:
 
     def __init__(
         self,
-        path: Path = DEFAULT_DEPLOYMENT_REGISTRY_PATH,
+        path: Path = INSTANCE_MANIFEST_PATH,
     ):
         self.path = Path(path)
         self._lock = threading.RLock()
@@ -147,12 +142,12 @@ class PortalDeploymentRegistry:
     def _validate(items: tuple[PortalDeployment, ...]) -> tuple[PortalDeployment, ...]:
         by_id: dict[str, PortalDeployment] = {}
         for item in items:
-            if item.instance_id in by_id:
-                raise ValueError(f"duplicate deployment instance: {item.instance_id}")
-            by_id[item.instance_id] = item
+            if item.deployment_id in by_id:
+                raise ValueError(f"duplicate deployment: {item.deployment_id}")
+            by_id[item.deployment_id] = item
         if not by_id:
-            raise ValueError("deployment registry must contain at least one enabled instance")
-        return tuple(sorted(by_id.values(), key=lambda item: (item.order, item.label, item.instance_id)))
+            raise ValueError("deployment registry must contain at least one enabled deployment")
+        return tuple(sorted(by_id.values(), key=lambda item: (item.order, item.label, item.deployment_id)))
 
     def _read(self) -> tuple[PortalDeployment, ...]:
         return load_portal_deployments(self.path)
@@ -179,7 +174,7 @@ class PortalDeploymentRegistry:
             self._last_error = ""
             return deployments
 
-    def public_instances(self) -> list[dict]:
+    def public_deployments(self) -> list[dict]:
         return [item.public_payload() for item in self.deployments()]
 
     def error(self) -> str:

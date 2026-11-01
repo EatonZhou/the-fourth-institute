@@ -664,7 +664,6 @@ def test_workspace_rejects_paths_outside_the_checkout(tmp_path, subtests, isolat
                 )
 
 
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ
 
 
 def test_repo_overview_without_ssh_directory(tmp_path, monkeypatch):

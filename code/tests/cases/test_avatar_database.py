@@ -1,4 +1,4 @@
-"""Avatar ownership, byte integrity, legacy import and instance isolation.
+"""Avatar ownership, byte integrity and instance isolation.
 
 :module: security.identity-access
 :profiles: local.fixture
@@ -16,9 +16,9 @@ import uuid
 
 from PIL import Image
 from management_portal.avatar_database import DatabaseAvatarStore, database
-from management_portal.avatar_store import ScopeAvatarStore
-from management_portal.resident_avatar import ResidentAvatarStore
-from management_portal.user_avatar import UserAvatarStore
+from management_portal.avatar_store import ScopeAvatarSubjects
+from management_portal.resident_avatar import ResidentAvatarSubjects
+from management_portal.user_avatar import UserAvatarSubjects
 
 
 def image_payload(color="red"):
@@ -34,8 +34,7 @@ class AvatarDatabaseTests(unittest.TestCase):
         self.environment = patch.dict(os.environ, PORTAL_DATABASE_NAMESPACE=self.namespace)
         self.environment.start()
         self.temporary = tempfile.TemporaryDirectory()
-        self.legacy = UserAvatarStore(Path(self.temporary.name) / "users")
-        self.store = DatabaseAvatarStore(self.legacy, "user", default_sprite=lambda: 0)
+        self.store = DatabaseAvatarStore(UserAvatarSubjects(), "user", default_sprite=lambda: 0)
         self.databases = []
         self.track_database()
 
@@ -52,17 +51,30 @@ class AvatarDatabaseTests(unittest.TestCase):
         self.environment.stop()
         self.temporary.cleanup()
 
-    def test_import_bytes_survive_removing_legacy_files_and_new_store(self):
-        original = self.legacy.update("alice", image_payload())
-        content = self.legacy.image("alice", original["version"])
-        self.assertEqual(self.store.get("alice"), original)
-        self.legacy.delete("alice")
-        reopened = DatabaseAvatarStore(UserAvatarStore(self.legacy.root), "user")
+    def test_bytes_survive_a_new_store_object(self):
+        original = self.store.update("alice", image_payload())
+        content = self.store.image("alice", original["version"])
+        reopened = DatabaseAvatarStore(UserAvatarSubjects(), "user")
         self.assertEqual(reopened.read("alice"), original)
         self.assertEqual(reopened.image("alice", original["version"]), content)
 
-    def test_delete_and_move_do_not_resurrect_files(self):
-        self.legacy.update("alice", image_payload())
+    def test_avatar_files_in_the_home_directory_are_never_read(self):
+        """The former ~/.tfi/portal/<kind>_avatars directories are not an import source."""
+        import hashlib
+        home = Path(self.temporary.name)
+        directory = home / ".tfi/portal/user_avatars"
+        directory.mkdir(parents=True)
+        stem = hashlib.sha256(b"alice").hexdigest()
+        (directory / (stem + ".json")).write_text(
+            '{"schema":"tfi.user-avatar.v1","username":"alice","kind":"sprite","sprite_index":9}')
+        with patch.dict(os.environ, HOME=str(home)):
+            self.assertIsNone(self.store.read("alice"))
+            self.assertEqual(self.store.get("alice")["sprite_index"], 0)
+            with database().read() as conn:
+                self.assertEqual(conn.execute("SELECT count(*) FROM avatars").fetchone()[0], 0)
+
+    def test_delete_and_move_leave_no_avatar_behind(self):
+        self.store.update("alice", image_payload())
         avatar = self.store.get("alice")
         self.assertTrue(self.store.move("alice", "bob"))
         self.assertIsNone(self.store.read("alice"))
@@ -72,7 +84,7 @@ class AvatarDatabaseTests(unittest.TestCase):
         self.assertFalse(self.store.delete("bob"))
         self.assertIsNone(self.store.read("bob"))
         self.assertEqual(self.store.get("bob")["sprite_index"], 0)
-        self.assertIsNotNone(self.legacy.read("alice"))
+        self.assertFalse(self.store.move("alice", "carol"))
 
     def test_updates_replace_image_atomically_and_reject_bad_input(self):
         old = self.store.update("alice", image_payload())
@@ -89,38 +101,14 @@ class AvatarDatabaseTests(unittest.TestCase):
             self.assertIsNone(row["image"])
             self.assertIsNone(row["version"])
 
-    def test_import_refuses_corruption_and_does_not_overwrite_new_choice(self):
-        old = self.legacy.update("alice", image_payload())
-        image = self.legacy._image_path("alice", old["version"])
-        image.write_bytes(b"corrupt")
-        with self.assertRaises(ValueError):
-            self.store.import_legacy("alice")
-        self.assertEqual(self.store.update("alice", {"kind": "sprite", "sprite_index": 9})["sprite_index"], 9)
-        self.assertEqual(self.store.import_legacy("alice")["sprite_index"], 9)
-
-    def test_corrupt_legacy_avatar_can_be_removed(self):
-        self.legacy.update("alice", image_payload())
-        self.legacy._path("alice").write_text("invalid JSON")
-        self.assertTrue(self.store.delete("alice"))
-        self.assertIsNone(self.store.read("alice"))
-
-    def test_bulk_migration_validates_and_repeats_without_reverting_choices(self):
-        from scripts.migrate_avatar_database import migrate
-        self.legacy.update("alice", image_payload())
-        roots = {f"PORTAL_{kind.upper()}_AVATAR_ROOT": str(Path(self.temporary.name) / root)
-                 for kind, root in (("user", "users"), ("resident", "residents"), ("scope", "scopes"))}
-        with patch.dict(os.environ, roots):
-            dry = migrate()
-            self.assertEqual(dry["errors"], [])
-            with database().read() as conn:
-                self.assertEqual(conn.execute("SELECT count(*) FROM avatars").fetchone()[0], 0)
-            first = migrate(apply=True)
-            self.assertEqual(first["stores"]["user"]["verified"], 1)
-            self.store.delete("alice")
-            repeated = migrate(apply=True)
-            self.assertEqual(repeated["errors"], [])
-            self.assertEqual(repeated["stores"]["user"]["preserved"], 1)
-            self.assertIsNone(self.store.read("alice"))
+    def test_records_must_match_their_subject_and_format(self):
+        subjects = UserAvatarSubjects()
+        record = {"schema": subjects.schema, "username": "alice", "kind": "sprite", "sprite_index": 8}
+        self.assertEqual(subjects.avatar("alice", record)["sprite_index"], 8)
+        for changes in ({"schema": "archive.user-avatar.v1"}, {"schema": "tfi.user-avatar.v2"}, {"schema": None},
+                        {"username": "bob"}):
+            with self.assertRaisesRegex(ValueError, "Invalid avatar record"):
+                subjects.avatar("alice", {**record, **changes})
 
     def test_concurrent_resident_first_draw_is_persisted_once(self):
         resident = "resident_123456789abc"
@@ -128,18 +116,16 @@ class AvatarDatabaseTests(unittest.TestCase):
         def draw():
             draws.append(1)
             return 7
-        store = DatabaseAvatarStore(ResidentAvatarStore(Path(self.temporary.name) / "residents"),
-                                    "resident", default_sprite=draw, persist_default=True)
+        store = DatabaseAvatarStore(ResidentAvatarSubjects(), "resident", default_sprite=draw, persist_default=True)
         self.assertIsNone(store.get_existing(resident))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             results = list(pool.map(store.get, [resident] * 8))
         self.assertEqual(len(draws), 1)
         self.assertTrue(all(r["sprite_index"] == 7 for r in results))
-        self.assertFalse(store.legacy.root.exists())
 
     def test_namespaces_and_subject_kinds_are_isolated(self):
         self.store.update("alice", {"kind": "sprite", "sprite_index": 3})
-        scope = DatabaseAvatarStore(ScopeAvatarStore(Path(self.temporary.name) / "scopes"), "scope")
+        scope = DatabaseAvatarStore(ScopeAvatarSubjects(), "scope")
         scope.update("project:alice", image_payload())
         self.assertEqual(self.store.read("alice")["sprite_index"], 3)
         with patch.dict(os.environ, PORTAL_DATABASE_NAMESPACE=self.namespace + "_other"):

@@ -4,20 +4,24 @@ from types import SimpleNamespace
 
 import pytest
 
-from scripts import tfi_release_install as api, tfi_windows_user_services as services
+from scripts import tfi_windows_user_services as services
 from management_common import process_runtime
+from management_portal import service_runtime as instance_runtime
+from tests.cases.instance_test_support import write_instance
 
 
 def supervised(tmp_path, monkeypatch, component, returncodes):
     """Run supervise() over scripted child generations; returns the parsed events."""
-    value = dict(root=str(tmp_path), code=str(tmp_path), component=component, name="account-one", command=["python", "secret-argument"])
-    (tmp_path / "runtime").mkdir()
+    root = write_instance(tmp_path / "instance")
+    value = dict(root=str(root), code=str(tmp_path), component=component, name="account-one")
+    (root / "runtime").mkdir()
     definition = tmp_path / "web.json"
     definition.write_text(json.dumps(value))
     monkeypatch.setattr(services, "validate_definition", lambda value, name: value)
-    monkeypatch.setattr(api, "owned_state", lambda root: {"target": {}})
-    monkeypatch.setattr(api, "clean_environment", lambda target: {"TOKEN": "secret-value"})
-    monkeypatch.setattr(api, "component_command", lambda *args: (["python", "secret-argument"], {"TOKEN": "secret-value"}))
+    monkeypatch.setattr(instance_runtime, "prepare_runtime", lambda instance: None)
+    monkeypatch.setattr(instance_runtime, "working_directory", lambda instance, component: tmp_path)
+    monkeypatch.setattr(instance_runtime, "component_command",
+                        lambda *args: (["python", "secret-argument"], {"TOKEN": "secret-value"}))
     monkeypatch.setattr(services, "process_stamp", lambda pid: 42)
     monkeypatch.setattr(services.subprocess, "CREATE_NO_WINDOW", 0, raising=False)
     clock = [0.0]
@@ -67,7 +71,7 @@ def test_supervision_records_exit_without_command_or_environment(tmp_path, monke
 def test_failed_child_restarts_with_backoff_until_stopped(tmp_path, monkeypatch, capsys):
     """A crashed component restarts like systemd Restart=on-failure, with growing delays.
 
-    :purpose: Windows user services had no restart after a child crash.
+    Windows user services must restart after a child crash.
     """
     value, definition, spawned = supervised(tmp_path, monkeypatch, "codex", [0xc0000005, 1, None])
     stop = services.state_path(value).with_suffix(".stop")

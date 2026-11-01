@@ -44,6 +44,9 @@ ARTICLE_REGISTRY = registry_sync.RegistrySync(
     location="article root",
     record_keys=_record_match_keys,
     location_keys=_root_match_keys,
+    path_fields=("canonical_root",),
+    locations_field="roots",
+    location_path_fields=("path",),
 )
 _validated_article = ARTICLE_REGISTRY.validated
 

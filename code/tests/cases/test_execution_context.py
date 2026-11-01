@@ -31,6 +31,9 @@ def skill_root(tmp_path, monkeypatch):
     for name in ("portal_system_instructions", "portal_turn_instructions"):
         monkeypatch.setattr(sys.modules[__name__], name,
                             partial(getattr(agent_prompt_context, name), skill_root=str(root)))
+    monkeypatch.setattr("management_portal.agent_skill_context.CORE_SKILLS_ROOT", root)
+    monkeypatch.setattr("management_portal.agent_prompt_context.CORE_SKILLS_ROOT", root)
+    monkeypatch.setattr("management_common.skill_paths.CORE_SKILLS_ROOT", root)
     return root
 
 

@@ -50,7 +50,7 @@ def members(tmp_path, monkeypatch):
     monkeypatch.setattr(record, 'resident_folder_path', lambda row: folder / 'residents' / row['resident_id'])
     monkeypatch.setattr(workspace, 'project_info_for_workspace', lambda *a: {})
     monkeypatch.setattr(lifecycle, 'resident_release_step', lambda row, actor: {'kind': 'release', 'resident_id': row['resident_id']})
-    monkeypatch.setattr(workspace.resident_lineage_host_port, 'canonical_lineage_folder', lambda _: folder)
+    monkeypatch.setattr(workspace.resident_lineage_host_port, 'lineage_folder', lambda _: folder)
 
     def ensure_manager(definition, actor):
         assert definition['lineage_id'] == lineage and actor == 'sample_admin'
@@ -102,7 +102,7 @@ def test_leaderless_lineage_delete_includes_all_members_and_durable_effects(memb
     assert ids in members.locks
     assert result['workspace_original_path'] == str(members.folder)
     assert [step['kind'] for step in members.plans[0]['steps']] == [
-        'lineage_tombstone', 'release', 'release', 'release', 'forget_deleted', 'lineage_folder_unbind', 'remove']
+        'lineage_tombstone', 'release', 'release', 'release', 'forget_deleted', 'remove']
     assert [step['resident_id'] for step in members.plans[0]['steps'] if step['kind'] == 'release'] == ids
     assert members.plans[0]['steps'][-1]['workspace_ids'] == [row['owned_workspace_id'] for row in members.rows]
     assert members.confirmed == ids

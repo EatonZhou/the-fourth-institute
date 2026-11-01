@@ -5,7 +5,6 @@ Only ISA transport is replaced; the CLI's identity validator remains real.
 """
 from __future__ import annotations
 
-import builtins
 import importlib.util
 import json
 import os
@@ -23,11 +22,8 @@ SCRIPT = REPO / 'core_skills/tfi-unified-id/scripts/resource_id.py'
 RESIDENT = 'resident_123456789abc'
 OTHER = 'resident_abcdef123456'
 ENV_NAMES = (
-    'PORTAL_ROOT', 'ARCHIVE_PORTAL_ROOT',
-    'PORTAL_PYTHON', 'ARCHIVE_PORTAL_PYTHON',
     'PORTAL_RESIDENT_ID', 'ARCHIVE_RESIDENT_ID',
     'PORTAL_RESOURCE_ID_ACTOR', 'ARCHIVE_RESOURCE_ID_ACTOR',
-    'PORTAL_RESOURCE_ID_REEXEC', 'ARCHIVE_RESOURCE_ID_REEXEC',
 )
 
 
@@ -35,13 +31,8 @@ ENV_NAMES = (
 def cli(monkeypatch, tmp_path):
     for key in ENV_NAMES:
         monkeypatch.delenv(key, raising=False)
-    monkeypatch.setenv('PORTAL_ROOT', str(REPO))
-    paths = tmp_path / 'paths.json'
-    paths.write_text(json.dumps({key: str(tmp_path / key) for key in
-        ('share_root', 'staging_root', 'instances_root', 'secrets_dir')}))
-    monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(paths))
-    from management_common import portal_paths
-    monkeypatch.setattr(portal_paths, 'CONFIG_PATH', paths)
+    from tests.cases.instance_test_support import write_instance
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(write_instance(tmp_path / 'instance')))
     monkeypatch.syspath_prepend(str(REPO))
     spec = importlib.util.spec_from_file_location('resource_id_env_case', SCRIPT)
     module = importlib.util.module_from_spec(spec)
@@ -153,88 +144,43 @@ def test_resource_id_human_path_requires_absent_resident_identity(cli, calls, mo
     assert env_snapshot() == before
 
 
-@pytest.mark.parametrize('mode', ['new', 'both', 'empty-new', 'alias-only'])
-def test_resource_id_bootstraps_helper_from_selected_root_without_env_write(tmp_path, mode):
-    root = tmp_path / 'portal source'
-    common = root / 'management_common'
-    common.mkdir(parents=True)
-    (common / '__init__.py').write_text('')
-    # site_config/portal_paths read installed deployment roots through
-    # instance_config (which locks with file_lock) since 6d5ec31.
-    for name in ('product_environment.py', 'site_compatibility.py', 'site_config.py', 'portal_paths.py',
-                 'instance_config.py', 'file_lock.py'):
-        shutil.copyfile(REPO / 'management_common' / name, common / name)
-    env = site_environ({'PATH': os.defpath, 'PYTHONDONTWRITEBYTECODE': '1',
-                        'PORTAL_PATHS_CONFIG': str(tmp_path / 'uninstalled-paths.json')})
-    if mode in ('new', 'both'):
-        env['PORTAL_ROOT'] = str(root)
-        env['PORTAL_PYTHON'] = str(root / 'new-python')
-    if mode in ('alias-only', 'both', 'empty-new'):
-        env['ARCHIVE_PORTAL_ROOT'] = str(root if mode == 'alias-only' else tmp_path / 'wrong-root')
-        env['ARCHIVE_PORTAL_PYTHON'] = str(root / 'old-python')
-    if mode == 'empty-new':
-        env['PORTAL_ROOT'] = ''
-        env['PORTAL_PYTHON'] = ''
-    probe = '''import json, os, runpy, sys
-before = dict(os.environ)
-tool = runpy.run_path(sys.argv[1], run_name="resource_id_probe")
-tool["_configure_portal"]()
-tool = tool["_configure_portal"].__globals__
-helper = sys.modules.get("management_common.product_environment")
-print(json.dumps({"root": str(tool["DEFAULT_PORTAL_ROOT"]), "python": str(tool["PORTAL_PYTHON"]),
-                  "helper": getattr(helper, "__file__", None), "unchanged": before == dict(os.environ)}))
-'''
+def test_resource_id_needs_the_code_directory_it_is_installed_in(tmp_path):
+    """工具只从自己所在的代码目录取得 Portal 模块；脱离代码目录的副本拒绝运行，且不改动环境。"""
     detached = tmp_path / 'detached' / 'resource_id.py'
     detached.parent.mkdir()
     shutil.copyfile(SCRIPT, detached)
-    completed = subprocess.run([sys.executable, '-c', probe, str(detached)],
-                               cwd=detached.parent if mode == 'alias-only' else root, env=env,
+    probe = '''import os, runpy, sys
+before = dict(os.environ)
+tool = runpy.run_path(sys.argv[1], run_name="resource_id_probe")
+try:
+    tool["_configure_portal"]()
+except RuntimeError as error:
+    print(error)
+assert before == dict(os.environ)
+'''
+    env = {'PATH': os.defpath, 'PYTHONDONTWRITEBYTECODE': '1', 'PORTAL_INSTANCE_ROOT': os.environ['PORTAL_INSTANCE_ROOT']}
+    completed = subprocess.run([sys.executable, '-c', probe, str(detached)], cwd=tmp_path, env=env,
                                capture_output=True, text=True)
-    if mode == 'alias-only':
-        assert completed.returncode != 0
-        assert 'set PORTAL_ROOT explicitly' in completed.stderr
-        return
     assert completed.returncode == 0, completed.stderr
-    found = json.loads(completed.stdout)
-    assert Path(found['helper']).resolve() == (common / 'product_environment.py').resolve()
-    assert found['root'] == str(root)
-    assert found['python'] == ('.' if mode == 'empty-new' else str(root / 'new-python'))
-    assert found['unchanged']
+    assert 'installed with its Portal code directory' in completed.stdout
 
 
-@pytest.mark.parametrize('env,reexec', [
-    ({}, True),
-    ({'ARCHIVE_RESOURCE_ID_REEXEC': '1'}, True),
-    ({'PORTAL_RESOURCE_ID_REEXEC': '1'}, False),
-    ({'PORTAL_RESOURCE_ID_REEXEC': '', 'ARCHIVE_RESOURCE_ID_REEXEC': '1'}, True),
-    ({'PORTAL_RESOURCE_ID_REEXEC': '1', 'ARCHIVE_RESOURCE_ID_REEXEC': ''}, False),
-])
-def test_resource_id_reexec_reads_and_emits_canonical_flag(cli, monkeypatch, tmp_path, env, reexec):
-    python = tmp_path / 'python'
+def test_resource_id_reexecs_into_the_code_environment_only_when_needed(cli, monkeypatch, tmp_path):
+    python = tmp_path / 'venv/bin/python'
+    python.parent.mkdir(parents=True)
     python.touch()
     monkeypatch.setattr(cli, 'PORTAL_PYTHON', python)
-    for key, value in env.items():
-        monkeypatch.setenv(key, value)
-    original_import = builtins.__import__
-
-    def without_psycopg(name, *args, **kwargs):
-        if name == 'psycopg':
-            raise ModuleNotFoundError(name)
-        return original_import(name, *args, **kwargs)
-
     exec_calls = []
     monkeypatch.setattr(cli.os, 'execv', lambda file, argv: exec_calls.append((file, argv)))
     monkeypatch.setattr(cli.sys, 'argv', [str(SCRIPT), '--actor', 'user', 'list-types'])
     before = env_snapshot()
-    with monkeypatch.context() as imports:
-        imports.setattr(builtins, '__import__', without_psycopg)
-        cli._use_portal_python()
-    if reexec:
-        assert exec_calls == [(str(python), [str(python), str(SCRIPT), '--actor', 'user', 'list-types'])]
-        assert env_snapshot() == {**before, 'PORTAL_RESOURCE_ID_REEXEC': '1'}
-    else:
-        assert exec_calls == []
-        assert env_snapshot() == before
+    cli._use_portal_python()
+    assert exec_calls == [(str(python), [str(python), str(SCRIPT), '--actor', 'user', 'list-types'])]
+    exec_calls.clear()
+    monkeypatch.setattr(cli.sys, 'prefix', str(python.parent.parent))
+    cli._use_portal_python()
+    assert exec_calls == []
+    assert env_snapshot() == before
 
 
 @pytest.mark.parametrize('resident_arguments,expected', [([], 0), (['--resident-id', ''], 2)])
@@ -264,21 +210,12 @@ def test_standalone_help_without_checkout_or_dependencies(tmp_path):
     assert str(REPO) not in completed.stdout + completed.stderr
 
 
-def test_site_paths_remain_available_without_alias_validation(cli, monkeypatch, tmp_path):
-    site = tmp_path / 'site.json'
-    site.write_text(json.dumps({'site_name': 'Isolated site', 'deployment': {'compatibility': {
-        'environment_aliases': {'PORTAL_ROOT': 'obsolete-invalid-alias-list'},
-        'domain_values': {'fixture_value': 'retained'},
-    }}}))
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(site))
-    monkeypatch.setenv('ARCHIVE_PORTAL_ROOT', str(tmp_path / 'ignored-root'))
-    cli._configure_portal()
-    from management_common.site_config import site_name
-    from management_common.site_compatibility import compatibility_value
-    assert site_name() == 'Isolated site'
-    assert compatibility_value('fixture_value') == 'retained'
+def test_default_roots_come_from_instance_areas_and_code(cli, tmp_path):
+    instance = tmp_path / 'instance'
     assert cli.DEFAULT_PORTAL_ROOT == REPO
-    assert cli.DEFAULT_PROJECTS_ROOT == tmp_path / 'share_root' / 'Projects'
+    assert cli.DEFAULT_PROJECTS_ROOT == instance / 'data' / 'projects'
+    assert cli.DEFAULT_PAPER_ROOT == instance / 'data' / 'papers'
+    assert cli.DEFAULT_SKILL_ROOTS == (REPO / 'core_skills', instance / 'data' / 'skills')
 
 
 def test_scan_fixture_clears_only_canonical_resident(monkeypatch):
@@ -291,8 +228,3 @@ def test_scan_fixture_clears_only_canonical_resident(monkeypatch):
     env = _script_env()
     assert 'PORTAL_RESIDENT_ID' not in env
     assert env['ARCHIVE_RESIDENT_ID'] == OTHER
-    assert env['PORTAL_ROOT'] == str(REPO)
-    assert env['PORTAL_PYTHON'] == sys.executable
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

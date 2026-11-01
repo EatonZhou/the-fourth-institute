@@ -28,8 +28,11 @@ def _isolated(monkeypatch, tmp_path):
         "codex": updates.CodexRuntime(), "claude": updates.ClaudeRuntime(),
         "kimi": updates.KimiRuntime(), "dsh": updates.DshRuntime(),
     })
+    # Programs and their current links belong to the selected code; redirect
+    # that one owner, not only the updater's copy of its directory.
+    from tests.cases.provider_service_test_support import provider_instance
+    provider_instance(monkeypatch, tmp_path)
     monkeypatch.setattr(updates, "STATE_ROOT", tmp_path / "state")
-    monkeypatch.setattr(updates, "RUNTIMES", tmp_path / "runtimes")
     monkeypatch.setattr(updates, "npm_version", lambda package, tag: {
         "@openai/codex": "0.159.2",
         "@moonshot-ai/kimi-code": "2.2.0",
@@ -230,11 +233,10 @@ def test_check_refreshes_pending_version_before_activation(monkeypatch, tmp_path
     assert result["errors"] == {}
 
 
-def test_update_pass_leaves_a_reused_codex_to_its_installer(monkeypatch, tmp_path):
-    """复用 PATH 上的 Codex 时，更新检查只记录新版本，不准备也不替换它"""
+def test_update_pass_prepares_managed_codex_independently_of_host_path(monkeypatch, tmp_path):
+    """主机 PATH 不改变所选代码拥有的 Provider 程序更新。"""
     _isolated(monkeypatch, tmp_path)
-    monkeypatch.setattr(updates, "_PROVIDER_DEPLOYMENT", {})
-    monkeypatch.setattr(updates.CodexRuntime, "link", lambda self: tmp_path / "system-bin/codex")
+    monkeypatch.setenv('PATH', str(tmp_path / 'system-bin'))
     original = updates.npm_version
     monkeypatch.setattr(updates, "npm_version", lambda package, tag: (
         "0.160.0" if package == "@openai/codex" else original(package, tag)
@@ -244,7 +246,7 @@ def test_update_pass_leaves_a_reused_codex_to_its_installer(monkeypatch, tmp_pat
     monkeypatch.setattr(updates, "_activate", lambda provider, runtime, root: attempts.append(provider) or True)
     result = updates.run_update_pass()
     assert result["checked"]["codex"] == {"installed": "0.159.2", "available": "0.160.0"}
-    assert "codex" not in [name for name, _ in staged] and "codex" not in attempts
+    assert "codex" in [name for name, _ in staged] and "codex" in attempts
     assert result["errors"] == {} and "codex" not in result["pending"]
 
 
@@ -271,35 +273,33 @@ def test_failed_refresh_preserves_pending_runtime(monkeypatch, tmp_path):
     assert json.loads(state_path.read_text())["pending"]["codex"] == old
 
 
-def test_activation_watch_loads_database_environment_file(monkeypatch, tmp_path):
-    """运行时激活监视单元加载 PostgreSQL 环境文件"""
-    path = Path(__file__).resolve().parents[2] / "scripts/update_provider_runtimes.py"
-    spec = importlib.util.spec_from_file_location("update_provider_runtimes", path)
-    script = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(script)
-    monkeypatch.setattr(script, "_isolated_provider_context", lambda: None)
-    env_file = tmp_path / "portal-postgres.env"
-    monkeypatch.setenv("PORTAL_POSTGRES_ENV_FILE", str(env_file))
-    commands = []
-    monkeypatch.setattr(script.subprocess, "run", lambda command, **kwargs: (
-        commands.append(command) or SimpleNamespace(returncode=1 if command[0] == "systemctl" else 0)
-    ))
-    script._start_activation_watch()
-    assert f"--property=EnvironmentFile={env_file}" in commands[1]
-    assert commands[1][-1] == "--activate-pending"
-
-
-def test_activation_watch_uses_installation_namespace(monkeypatch):
+def test_activation_watch_uses_manifest_code_and_only_instance_root(monkeypatch, tmp_path):
     from scripts import update_provider_runtimes as script
-
-    monkeypatch.setattr(script, "_isolated_provider_context", lambda: {"service_prefix": "tfi-test"})
-    commands = []
-    monkeypatch.setattr(script.subprocess, "run", lambda command, **kwargs: (
-        commands.append(command) or SimpleNamespace(returncode=1 if command[0] == "systemctl" else 0)
-    ))
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / 'instance')
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
+    monkeypatch.setenv('PORTAL_DATABASE_URL', 'foreign-endpoint-must-not-enter-unit')
+    from scripts import tfi_shutdown
+    commands, verified = [], []
+    # The watcher is the instance's own job: an existing one must select this instance.
+    monkeypatch.setattr(tfi_shutdown, 'verify_job', lambda unit, selected: verified.append((unit, selected)))
+    monkeypatch.setattr(script.subprocess, 'run', lambda command, **kwargs: (
+        commands.append(command) or SimpleNamespace(returncode=1 if command[0] == 'systemctl' else 0)))
     script._start_activation_watch()
-    assert commands[0][-1] == "tfi-test-provider-pending-activation.service"
-    assert "--unit=tfi-test-provider-pending-activation" in commands[1]
+    assert verified == [('tfi-fixture-provider-activation.service', root)]
+    assert commands[0][-1] == 'tfi-fixture-provider-activation.service'
+    assert '--unit=tfi-fixture-provider-activation.service' in commands[1]
+    assert [arg for arg in commands[1] if arg.startswith('--setenv=')] == ['--setenv=PORTAL_INSTANCE_ROOT=' + str(root)]
+    assert not any('EnvironmentFile' in arg or 'foreign-endpoint' in arg for arg in commands[1])
+    assert commands[1][-1] == '--activate-pending'
+
+
+def test_activation_watch_requires_explicit_instance(monkeypatch):
+    from scripts import update_provider_runtimes as script
+    monkeypatch.delenv('PORTAL_INSTANCE_ROOT', raising=False)
+    monkeypatch.setattr(script.subprocess, 'run', lambda *args, **kwargs: pytest.fail('No service manager without an instance'))
+    with pytest.raises(ValueError, match='Select an instance'):
+        script._start_activation_watch()
 
 
 def test_dsh_llm_prerelease_alone_triggers_upgrade(monkeypatch, tmp_path):

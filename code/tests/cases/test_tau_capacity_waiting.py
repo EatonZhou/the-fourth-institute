@@ -27,7 +27,9 @@ class Records:
 class TestTauCapacityWaiting(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.env = patch.dict(os.environ, {'PORTAL_TEST_SLOT_ROOT': self.tmp.name, 'PORTAL_TEST_MAX_CONCURRENCY': '4'})
+        from tests.cases.instance_test_support import write_instance
+        instance = write_instance(Path(self.tmp.name) / 'instance')
+        self.env = patch.dict(os.environ, {'PORTAL_INSTANCE_ROOT': str(instance), 'PORTAL_TEST_MAX_CONCURRENCY': '4'})
         self.env.start()
         self.records = Records()
         self.executor = module.TauCampaignExecutor(self.records, Path(self.tmp.name), None)

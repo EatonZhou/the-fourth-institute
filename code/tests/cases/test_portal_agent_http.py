@@ -94,12 +94,21 @@ def stalled_server(mode):
             thread.join(timeout=3)
 
 
+def instance_with_token(tmp_path, resident):
+    """An instance whose secrets hold the Resident's bearer token."""
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / "instance")
+    tokens = root / "secrets" / "resident_hatg"
+    tokens.mkdir(parents=True)
+    (tokens / f"{resident}.token").write_text("test-only-token", encoding="utf-8")
+    return root
+
+
 def bounded_cli_command(tmp_path, url):
     resident = "resident_aaaaaaaaaaaa"
-    (tmp_path / (resident + ".token")).write_text("test-only-token")
+    root = instance_with_token(tmp_path, resident)
     script = Path(__file__).resolve().parents[2] / "scripts/resident_hatg_instruction.py"
-    env = dict(os.environ, PORTAL_URL=url, PORTAL_RESIDENT_HATG_TOKEN_ROOT=str(tmp_path),
-               PORTAL_RESIDENT_ID=resident)
+    env = dict(os.environ, PORTAL_URL=url, PORTAL_INSTANCE_ROOT=str(root), PORTAL_RESIDENT_ID=resident)
     command = [sys.executable, str(script), "--resident-id", resident, "call", "GetConversation",
                "--arguments-json", json.dumps({"resident_id": resident, "history_limit": 1}),
                "--request-timeout", ".15", "--max-attempts", "1"]
@@ -206,10 +215,10 @@ def test_cli_works_with_a_broken_proxy_and_preserves_identity(monkeypatch, rejec
 def test_cli_from_arbitrary_cwd_with_proxy(tmp_path, rejecting_proxy, injected_identity):
     """ISA CLI 在任意工作目录和坏代理下直连 Portal，身份可来自参数或注入的环境变量"""
     resident = "resident_aaaaaaaaaaaa"
-    (tmp_path / f"{resident}.token").write_text("test-only-token", encoding="utf-8")
+    root = instance_with_token(tmp_path, resident)
     script = Path(__file__).resolve().parents[2] / "scripts" / "resident_hatg_instruction.py"
     with http_server(body=COMMITTED) as (url, calls):
-        env = dict(os.environ, PORTAL_URL=url, PORTAL_RESIDENT_HATG_TOKEN_ROOT=str(tmp_path))
+        env = dict(os.environ, PORTAL_URL=url, PORTAL_INSTANCE_ROOT=str(root))
         for name in ("PORTAL_RESIDENT_ID", "PORTAL_LINEAGE_ID", "PORTAL_EXECUTION_CONTEXT_FILE"):
             env.pop(name, None)
         identity = ["--resident-id", resident]
@@ -259,6 +268,3 @@ def test_actual_portal_denial_is_not_bypassed(monkeypatch, rejecting_proxy, caps
     assert json.loads(capsys.readouterr().out)["http_status"] == 403
     assert len(calls) == 1
     assert rejecting_proxy == []
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

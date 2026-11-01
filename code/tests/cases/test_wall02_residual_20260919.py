@@ -244,7 +244,7 @@ def test_failed_reset_delivery_invalidates_issued_token(tmp_path, failure):
 
 def test_router_direct_peer_and_backend_proxy_trust():
     """Router 校验直连来源且后端仅信任本机代理头"""
-    server = SimpleNamespace(allowed_networks=[ipaddress.ip_network("127.0.0.0/8")], network_settings_path=None)
+    server = SimpleNamespace(allowed_networks=[ipaddress.ip_network("127.0.0.0/8")], instance_root=None)
     assert router.PortalRouterServer.verify_request(server, None, ("127.0.0.1", 1234))
     assert not router.PortalRouterServer.verify_request(server, None, ("192.0.2.9", 1234))
     import asyncio
@@ -297,12 +297,12 @@ def test_ssh_failure_projection_without_remote_process(monkeypatch, outcome):
 def test_router_unknown_preference_cannot_set_cookie():
     """Router 拒绝未知部署偏好且不设置偏好 Cookie"""
     calls = []
-    payload = json.dumps({"instance": "retired"}).encode()
+    payload = json.dumps({"deployment": "retired"}).encode()
     handler = SimpleNamespace(command="POST", headers={}, client_address=("127.0.0.1", 1234), rfile=io.BytesIO(payload),
         server=SimpleNamespace(policy=SimpleNamespace(verifier=SimpleNamespace(verify_cookie=lambda _: "fixture-user")), current_backends=lambda: {"dev": None, "release": None}),
         _content_length=lambda: len(payload), _json=lambda *args: calls.append(args))
     router.PortalRouterHandler._deployment_preference(handler)
-    assert calls == [(400, {"error": "unknown or unavailable Portal instance"})]
+    assert calls == [(400, {"error": "unknown or unavailable Portal deployment"})]
     policy = router.RouterPolicy(SimpleNamespace(verify_cookie=lambda cookie: "fixture-user" if cookie else ""), set())
     cookie = router.DEPLOYMENT_PREFERENCE_COOKIE + "=" + router._encode_deployment_preference("fixture-user", "retired")
     assert policy.preference("fixture-user", cookie, {"dev", "release"}) == ""

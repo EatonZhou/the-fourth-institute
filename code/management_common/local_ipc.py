@@ -22,7 +22,7 @@ import sys
 if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory, read_private_bytes
-from management_common.site_compatibility import compatibility_value
+from management_common.instance_manifest import load as load_instance
 
 _SCHEMA = "portal.local-ipc.v1"
 _HANDSHAKE_TIMEOUT = 15.0
@@ -36,8 +36,7 @@ def rendezvous_path(path: str | Path) -> Path:
     # path limit. This directory's ACL is established before any secret exists.
     # Older listeners created ipc/ with inherited ACLs. Leave that cache alone;
     # all Python and Node endpoints switch together to a privately created leaf.
-    default = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "TFI/Portal/ipc-v2"
-    root = Path(compatibility_value('local_ipc_root', str(default))).expanduser()
+    root = Path(str(load_instance().directory("runtime") / "ipc")).expanduser()
     identity = os.path.normcase(str(logical.absolute())).encode("utf-8")
     return root / (hashlib.sha256(identity).hexdigest() + ".json")
 

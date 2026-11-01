@@ -125,7 +125,7 @@ def test_a_facade_request_carries_its_images_and_files_to_the_member(facade, mon
         save_resident_record as _save_resident_record,
     )
 
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr("management_portal.resources.isa.upload_root", lambda: tmp_path / "uploads")
     resident_id = facade["resident_id"]
     image = _upload("shot.png", "image/png", PNG)
     notes = _upload("notes.txt", "text/plain", b"steps to reproduce")

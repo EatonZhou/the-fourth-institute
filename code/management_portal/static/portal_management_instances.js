@@ -5,7 +5,7 @@ export async function mount(container) {
   container.innerHTML = window.PortalI18n.html`
     <section class="settingsSection">
       <header><div><h2>Portal 实例</h2>
-        <p>管理此平台上已安装的实例。关闭实例会停止它的服务，保留数据和账号。</p></div>
+        <p>管理本机登记的实例。关闭实例会停止它的服务，保留数据和账号。</p></div>
         <button class="portalButton" type="button" data-instance-refresh>刷新实例</button>
       </header>
       <p data-instance-message role="status" aria-live="polite"></p>
@@ -34,7 +34,7 @@ export async function mount(container) {
   };
   function render(items) {
     list.replaceChildren();
-    if (!items.length) element("p", t("此平台尚无已安装的实例。"), list);
+    if (!items.length) element("p", t("本机尚无登记的实例。"), list);
     for (const item of items) {
       const card = document.createElement("section");
       card.className = "managementInstanceCard";
@@ -42,6 +42,7 @@ export async function mount(container) {
       element("h3", item.name, card);
       element("p", [t(labels[item.status] || item.status), item.current ? t("当前实例") : ""].filter(Boolean).join(" · "), card);
       if (item.error) element("p", item.error, card);
+      if (item.stopped_services?.length) element("p", `${t("未运行的服务：")}${item.stopped_services.join(", ")}`, card);
       if (item.start_blocker) element("p", t(item.start_blocker), card);
       if (item.operation?.status === "failed") element("p", item.operation.error || t("实例操作失败"), card);
       if (busy(item.operation)) element("p", t(item.operation.action === "start" ? "正在启动…" : "正在关闭…"), card);

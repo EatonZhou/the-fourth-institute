@@ -5,7 +5,6 @@
 :profiles: local.fixture
 :risk: no-external-side-effects
 """
-import io
 import hashlib
 import json
 import os
@@ -16,14 +15,12 @@ import sys
 import tempfile
 import unittest
 import zipfile
-from unittest.mock import Mock, patch
-from urllib.error import HTTPError
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 from prepare_install import prepare
 from scripts import tfi_seed_selection as selection
-from scripts import tfi_release_install as installer
 from scripts import tfi_windows_launcher as launcher
 from scripts.windows.build import bundle_seed
 
@@ -53,20 +50,21 @@ class SeedSelection(unittest.TestCase):
                     contents = zipped.read(row['path'])
                     self.assertEqual(len(contents), row['size'])
                     self.assertEqual(hashlib.sha256(contents).hexdigest(), row['sha256'])
-            target = PureWindowsPath(r'C:\Users\weihaozhang\AppData\Local\TheFourthInstitute')
-            for path in launcher.seed_destination_paths(target, spec):
+            # The program's extraction and the default instance root's area copies.
+            program = PureWindowsPath(r'C:\Users\weihaozhang\AppData\Local\TheFourthInstitute')
+            instance = PureWindowsPath(r'C:\Users\weihaozhang\AppData\Local\TFI\instances\example_instance')
+            paths = [program / '.build/w/engineering.pending' / row['path'] for row in spec['inventory']]
+            paths += [instance / row['path'] for row in spec['inventory'] if row['path'].startswith('data/')]
+            for path in paths:
                 self.assertLess(len(str(path).encode('utf-16-le')) // 2, 260, str(path))
                 self.assertLess(len(str(path.parent).encode('utf-16-le')) // 2, 248, str(path))
-            launcher.unpack_seed(root, included=False)
-            extracted = root / 'instance/example_instance/seed'
-            self.assertFalse(any((extracted / p).exists() for p in excluded))
+            # The launcher's check reads the selected engineering archive's inventory.
+            with zipfile.ZipFile(launcher.selected_engineering(root, False), 'w') as zipped:
+                zipped.writestr('manifest.json', json.dumps({'inventory': spec['inventory']}))
             if os.name != 'nt':
-                self.assertIsNone(launcher.required_long_path(root))
+                self.assertIsNone(launcher.required_long_path(root, root=root / 'instances/example_instance'))
             deep = root / ('long-directory-' * 4)
-            deep.mkdir()
-            (deep / 'installation-options.ini').write_text('[installation]\ninclude_examples=false\n')
-            with patch.object(launcher, 'selected_seed', return_value=archive):
-                self.assertIsNotNone(launcher.required_long_path(deep))
+            self.assertIsNotNone(launcher.required_long_path(root, root=deep / ('instance-' * 12)))
 
     def test_literal_parser_preserves_quotes_newlines_and_backslashes(self):
         """种子解析区分 SQL 转义和 JSON 转义，忽略正文中的语句。"""
@@ -88,95 +86,33 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
         self.assertTrue(lineages)
         self.assertFalse(any(row['project_id'] == selection.LENIA_PROJECT for row in lineages))
         self.assertTrue(any(row['project_id'] == 'AI员工' for row in lineages))
-        self.assertIn('data/share_root/Codes/repo_bd47ffeac5c8', paths)
-        self.assertTrue(any(p.startswith('data/staging_root/shared/projection_applications/') for p in paths))
+        # The optional case is one project folder (with its Lineages, repo and articles) plus its built application.
+        self.assertIn('data/projects/' + selection.LENIA_PROJECT, paths)
+        self.assertTrue(any(p.startswith('data/features/projection_applications/') for p in paths))
+        self.assertTrue(all(p.split('/')[1] in {'projects', 'features'} for p in paths if p.startswith('data/')))
         self.assertNotIn(selection.LENIA_PROJECT, list(selection.strings(planned['selection_snapshot'])))
         self.assertIn('article', [r['type'] for r in planned['selection_snapshot']['resource_types']])
         self.assertEqual(selection.plan(seed, manifest, include_examples=True), (manifest, None, set()))
 
-    def test_desktop_selection_and_retry_keep_initial_choice(self):
-        """桌面准备读取安装选择，已有安装记录重试不重新选择或导入。"""
+    def test_desktop_creates_from_the_engineering_selected_at_installation(self):
+        """桌面创建实例时读取安装时的案例选择，使用对应的已准备工程。"""
         for included in (True, False):
             with self.subTest(included=included), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / 'installation-options.ini').write_text('[installation]\ninclude_examples=' + str(included).lower())
+                launcher.selected_engineering(root, included).write_bytes(b'archive')
                 bundle = root / '.build/w/engineering/manifest.json'
-                bundle.parent.mkdir(parents=True)
-                bundle.write_text(json.dumps({'run_id': 'fixture'}))
                 flow = launcher.DefaultStartup(root)
-                with patch.object(flow, 'execute') as execute:
+                with patch.object(flow, 'registered', return_value=False), \
+                        patch.object(launcher, 'unpack_engineering', return_value=bundle) as unpack, \
+                        patch.object(flow, 'execute') as execute:
                     flow.initialize()
-                    prepare_command = execute.call_args_list[0].args[0]
-                    self.assertEqual('--without-examples' in prepare_command, not included)
-                    flow.root.mkdir(parents=True)
-                    (flow.root / 'installation.json').write_text('{}')
-                    execute.reset_mock()
-                    flow.initialize()
-                    self.assertEqual(execute.call_count, 1)
-                    self.assertIn('install', execute.call_args.args[0])
+                self.assertEqual(unpack.call_args.kwargs['included'], included)
+                self.assertEqual(unpack.call_args.kwargs['archive'], launcher.selected_engineering(root, included))
+                command = execute.call_args.args[0]
+                self.assertEqual(command[2], 'create')
+                self.assertEqual(Path(command[command.index('--engineering') + 1]), bundle)
 
-    def test_health_error_body_survives_and_diagnostics_precede_rollback(self):
-        """503 中的组件错误进入持久诊断，而非只报告 HTTP 状态。"""
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            (root / 'runtime').mkdir()
-            target = {'install_root': str(root), 'service_prefix': 'tfi-fixture', 'run_id': 'fixture',
-                      'supervisor_resident_id': '', 'ports': {'web': 28000}, 'bind': '127.0.0.1', 'python': sys.executable}
-            state = {'target': target}
-            payload = {'ok': False, 'execution_layer': {'ok': False}, 'society_service': {'ok': True}}
-            http = HTTPError('http://localhost/api/health', 503, 'Unavailable', {}, io.BytesIO(json.dumps(payload).encode()))
-            controller = Mock()
-            # Web answers with a 503 while the Worker it reports on is stopped.
-            controller.status.side_effect = lambda unit: (
-                {'service': 'tfi-fixture-worker', 'active': 'inactive'} if 'worker' in unit
-                else {'service': unit, 'active': 'active'})
-            (root / 'runtime/worker.log').write_text('earlier output\nTraceback (most recent call last):\nRuntimeError: fixture startup failure\n')
-            with patch.object(installer, 'service_controller', return_value=controller), \
-                    patch.object(installer._LOCAL_HTTP, 'open', side_effect=[http, OSError('not ready')]):
-                result = installer.observed_status(state)
-            self.assertEqual(result['checks'][0]['payload'], payload)
-            with patch.object(installer, 'unit_name', side_effect=lambda target, component: 'tfi-fixture-' + component):
-                error = installer.health_failure(state, result)
-            self.assertIn('execution_layer', error)
-            self.assertIn('tfi-fixture-worker: inactive', error)
-            self.assertIn('RuntimeError: fixture startup failure', error)
-            saved = json.loads((root / 'runtime/startup-diagnostics.json').read_text())
-            self.assertEqual(saved['observed'], result)
-            self.assertIn('fixture startup failure', saved['component_log_tails']['worker'])
-
-    def test_login_http_failure_keeps_status_and_running_web_log(self):
-        """进程仍运行时，登录页 500 也保留 HTTP 状态及有界 web 日志。"""
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            (root / 'runtime').mkdir()
-            target = {'install_root': str(root), 'service_prefix': 'tfi-fixture', 'run_id': 'fixture',
-                      'supervisor_resident_id': '', 'ports': {'web': 28000}, 'bind': '127.0.0.1', 'python': sys.executable}
-            state = {'target': target}
-            (root / 'runtime/worker-health.json').write_text(json.dumps({
-                'ok': True, 'instance': 'tfi-fixture', 'updated_at': installer.time.time()}))
-            (root / 'runtime/web.log').write_text('old-start-marker\n' + 'old output\n' * 2000
-                + 'Traceback (most recent call last):\nValueError: Invalid public directory: share_root\n')
-            health = Mock(status=200)
-            health.__enter__ = Mock(return_value=health)
-            health.__exit__ = Mock(return_value=False)
-            health.read.return_value = json.dumps({'ok': True, 'instance': 'tfi-fixture',
-                'execution_layer': {'ok': True}, 'society_service': {'ok': True}}).encode()
-            login = HTTPError('http://localhost/login', 500, 'Internal Server Error', {}, io.BytesIO(b'Internal Server Error'))
-            controller = Mock()
-            controller.status.side_effect = lambda name: {'service': name, 'active': 'active'}
-            with patch.object(installer, 'service_controller', return_value=controller), \
-                    patch.object(installer._LOCAL_HTTP, 'open', side_effect=[health, login]):
-                result = installer.observed_status(state)
-            self.assertEqual(result['status'], 'unhealthy')
-            self.assertEqual(result['checks'][1]['http_status'], 500)
-            self.assertEqual(installer.health_failures(result), ['/login: HTTP 500'])
-            error = installer.health_failure(state, result)
-            self.assertIn('/login: HTTP 500', error)
-            self.assertIn('ValueError: Invalid public directory: share_root', error)
-            self.assertNotIn('old-start-marker', error)
-            saved = json.loads((root / 'runtime/startup-diagnostics.json').read_text())
-            self.assertEqual(set(saved['component_log_tails']), {'web'})
-            self.assertEqual(saved['observed'], result)
 
 
 @unittest.skipUnless(os.getenv('TFI_TEST_POSTGRES_ROOT'), 'Requires an explicit disposable PostgreSQL binary directory')

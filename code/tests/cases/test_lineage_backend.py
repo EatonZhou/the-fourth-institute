@@ -30,7 +30,6 @@ from management_portal.society_service import (
     resident_catalog,
     resident_conversation_stream,
     resident_directory_domain,
-    resident_domain_common,
     resident_execution_domain,
     resident_fork_domain,
     resident_protocol,
@@ -44,15 +43,14 @@ from management_portal.resource_refs import extract_resource_addresses
 
 from management_portal.society_service import resident_workspace_domain
 from management_portal.society_service import lineage_aggregate
+from tests.cases.instance_test_support import lineage_folders
 
 @pytest.fixture()
 def lineage_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
+    lineage_folders(monkeypatch, root / "lineages")
     install_resource_boundary(monkeypatch)
-    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
         lineage_test_support,
         "RESIDENT_TARGET_RESOLVER",
@@ -227,14 +225,13 @@ def test_owner_cannot_move_lineage_back_to_no_project(
         },
         "sample_admin",
     )
-    project_folder = (
-        project_root / "knowledge_base" / "agents" / lineage_id
-    )
+    from management_common.instance_manifest import load
+    project_folder = load().area('projects') / "project_robotcompany" / "agents" / lineage_id
 
     assert moved["project_id"] == "project_robotcompany"
-    assert canonical.is_symlink()
-    assert canonical.resolve() == project_folder.resolve()
-    assert marker.read_text(encoding="utf-8") == "keep me\n"
+    assert not canonical.exists() and not canonical.is_symlink()
+    assert lineage_state._lineage_dir(lineage_id) == project_folder
+    assert (project_folder / "LINEAGE.md").read_text(encoding="utf-8") == "keep me\n"
     assert lineage_reads.list_lineages("sample_admin")["lineages"][0][
         "project_id"
     ] == "project_robotcompany"
@@ -250,10 +247,10 @@ def test_owner_cannot_move_lineage_back_to_no_project(
             "sample_admin",
         )
 
-    assert canonical.is_symlink()
-    assert canonical.resolve() == project_folder.resolve()
+    assert not canonical.exists() and not canonical.is_symlink()
+    assert lineage_state._lineage_dir(lineage_id) == project_folder
     assert project_folder.exists()
-    assert marker.read_text(encoding="utf-8") == "keep me\n"
+    assert (project_folder / "LINEAGE.md").read_text(encoding="utf-8") == "keep me\n"
     assert projected_projects[-1] == "project_robotcompany"
 
 
@@ -302,8 +299,9 @@ def test_create_lineage_in_project_binds_canonical_entry(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """在 Project 中创建的 Lineage，其目录链接到该 Project 的 agents 目录下"""
-    project_root = lineage_store / "projects" / "RobotCompany"
+    """在 Project 中创建的 Lineage，目录就在该 Project 的 agents/ 下，没有入口链接"""
+    from management_common.portal_paths import path as portal_path
+    project_root = portal_path("projects") / "project_robotcompany"
     project_root.mkdir(parents=True)
     monkeypatch.setattr(
         project_domain.project_registry,
@@ -325,17 +323,13 @@ def test_create_lineage_in_project_binds_canonical_entry(
         },
         "sample_admin",
     )
-    canonical = lineage_state._lineage_dir(created["lineage_id"])
-    expected = (
-        project_root
-        / "knowledge_base"
-        / "agents"
-        / created["lineage_id"]
-    )
+    folder = lineage_state._lineage_dir(created["lineage_id"])
+    expected = project_root / "agents" / created["lineage_id"]
 
     assert created["project_id"] == "project_robotcompany"
-    assert canonical.is_symlink()
-    assert canonical.resolve() == expected.resolve()
+    assert folder == expected and folder.is_dir() and not folder.is_symlink()
+    assert not (lineage_store / "lineages" / created["lineage_id"]).exists()
+    assert not (project_root / "knowledge_base").exists()
     assert lineage_aggregate.lineage_catalog_store().get(created["lineage_id"])
 
 
@@ -2447,7 +2441,8 @@ def test_completed_references_read_a_bounded_window_of_newest_inputs(
             "content_parts": [{"type": "text", "text": f"output {index}"}],
             "created_at": f"2026-01-01T00:{index:02d}:30Z",
         })
-        repository.set_input_state(resident_id, f"user_{index:02d}", "completed")
+        repository.set_input_state(resident_id, f"user_{index:02d}", "completed",
+                                   updated_at=f"2026-01-01T00:{index:02d}:40Z")
     limits: list[int] = []
     read_states = repository.input_states
 

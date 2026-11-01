@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from management_common.portal_paths import path as portal_path
 
@@ -12,12 +11,7 @@ from .identity_contract import is_valid_id
 # The bearer token only authenticates the Resident for the command-line client
 # of the HATG ISA; what it may do is decided by the permission system.
 MANAGED_BY = "portal_resident_hatg"
-TOKEN_ROOT = Path(
-    os.getenv(
-        "PORTAL_RESIDENT_HATG_TOKEN_ROOT",
-        str(portal_path("secrets_dir") / "resident_hatg"),
-    )
-)
+TOKEN_ROOT = portal_path('secrets') / "resident_hatg"
 def credential_path(resident_id: str) -> Path:
     normalized = str(resident_id or "").strip().lower()
     if not is_valid_id(normalized, "resident"):

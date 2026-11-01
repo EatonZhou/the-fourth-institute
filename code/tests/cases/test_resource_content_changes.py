@@ -272,6 +272,3 @@ def test_skill_and_experiment_writers_capture_exact_content(receipt_store, tmp_p
     assert changes[0]["after"]["text"] == path.read_text(encoding="utf-8")
     assert changes[1]["before"]["text"] == "# Old experiment\n"
     assert changes[1]["after"]["text"] == document.read_text(encoding="utf-8")
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

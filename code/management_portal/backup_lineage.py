@@ -4,7 +4,9 @@ Bindings use the graph's existing client_key. Event/Effect runtime and Event
 definitions remain the sole authority for switches and schedules.
 """
 from __future__ import annotations
-from management_common.portal_paths import PORTAL_ROOT, resolve_directory
+from pathlib import Path
+from management_common.portal_paths import resolve_directory
+PORTAL_ROOT = Path(__file__).resolve().parents[1]
 from management_common.site_config import read_site_config
 import re
 
@@ -49,8 +51,7 @@ def lineage_id(*, required: bool = True) -> str:
 
 
 def script_path() -> str:
-    value = _configuration().get("script_path", str(PORTAL_ROOT / "scripts" / "resource_backup_lineage.py"))
-    return str(resolve_directory(value))
+    return str(PORTAL_ROOT / "scripts/resource_backup_lineage.py")
 
 
 def restore_guide() -> dict[str, str]:

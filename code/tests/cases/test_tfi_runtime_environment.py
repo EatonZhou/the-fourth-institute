@@ -17,6 +17,7 @@ from management_portal.execution.codex_backend import CodexBackend
 from management_portal.society_service import resident_execution_work, resident_runtime_domain
 from management_portal.society_service.script_runs import service as scripts
 from scripts import verify_dsh_backend
+from tests.cases.instance_test_support import select_instance
 
 
 RID = 'resident_111111111111'
@@ -75,7 +76,7 @@ def test_runtime_identity_is_record_owned_and_request_local(monkeypatch):
 @pytest.mark.parametrize('owner', [False, True])
 def test_codex_turn_mirrors_context_and_drops_both_stale_execution_ids(monkeypatch, tmp_path, owner):
     """Codex 回合清除继承的执行 ID，写入权威的执行上下文路径，数据库授权规则不变。"""
-    monkeypatch.setenv('PORTAL_EXECUTION_STATE_ROOT', str(tmp_path/'execution'))
+    select_instance(monkeypatch, tmp_path / "instance")
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'postgresql://fixture-only/not-a-real-endpoint')
     environment = {
         'PORTAL_EXECUTION_ID': 'stale',
@@ -98,16 +99,17 @@ def test_codex_turn_mirrors_context_and_drops_both_stale_execution_ids(monkeypat
     assert request.runtime_options == original
 
 
-@pytest.mark.parametrize('values,expected', [
-    ({}, 'http://127.0.0.1:18086'),
-    ({'ARCHIVE_PORTAL_URL': 'http://legacy.invalid/'}, 'http://127.0.0.1:18086'),
-    ({'PORTAL_URL': 'http://canonical.invalid/'}, 'http://canonical.invalid'),
-    ({'PORTAL_URL': 'http://canonical.invalid/', 'ARCHIVE_PORTAL_URL': 'http://legacy.invalid/'}, 'http://canonical.invalid'),
-    ({'PORTAL_URL': '', 'ARCHIVE_PORTAL_URL': 'http://legacy.invalid/'}, ''),
+@pytest.mark.parametrize('values', [
+    {},
+    {'ARCHIVE_PORTAL_URL': 'http://legacy.invalid/'},
+    {'PORTAL_URL': 'http://canonical.invalid/'},
+    {'PORTAL_URL': '', 'ARCHIVE_PORTAL_URL': 'http://legacy.invalid/'},
 ])
 @pytest.mark.parametrize('platform', ['linux', 'darwin'])
-def test_script_run_persists_selected_url_without_starting_a_process(monkeypatch, tmp_path, values, expected, platform):
-    """脚本运行的启动配置只采用 PORTAL_URL，旧名被忽略、显式空值保留；平台启动与凭据签发使用隔离替身。"""
+def test_script_run_persists_the_instance_url_without_starting_a_process(monkeypatch, tmp_path, values, platform):
+    """脚本运行的启动配置使用所选实例的内部入口，环境中的 PORTAL_URL 与旧名被忽略；平台启动与凭据签发使用隔离替身。"""
+    from management_common.instance_manifest import load
+    expected = load().internal_web_origin()
     for key in ('PORTAL_URL', 'ARCHIVE_PORTAL_URL'):
         monkeypatch.delenv(key, raising=False)
     for key, value in values.items():
@@ -168,6 +170,3 @@ def test_dsh_verification_help_imports_from_outside_repository(tmp_path):
                             cwd=tmp_path, env=env, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
     assert '--resident-id' in result.stdout and '--lineage-id' in result.stdout
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

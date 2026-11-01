@@ -20,7 +20,7 @@ from management_portal.http_routes import RouteDefinition
 
 DAILY_NEWS_ROOT = Path(os.getenv(
     "PORTAL_DAILY_NEWS_ROOT",
-    str(portal_path("share_root") / "Agents" / "lineage_7e2464bbdb60" / "memory" / "reports"),
+    str(portal_path('lineages') / "lineage_7e2464bbdb60" / "memory" / "reports"),
 )).expanduser()
 
 
@@ -92,7 +92,8 @@ def _portal_health_payload(handler: SimpleHTTPRequestHandler | None = None) -> d
             port = 0
     payload = {
         "ok": True,
-        "instance": http_instance._PORTAL_INSTANCE,
+        "instance": http_instance._PORTAL_INSTANCE_NAME,
+        "deployment": http_instance._PORTAL_DEPLOYMENT,
         "build_id": http_instance._PORTAL_BUILD_ID,
         "port": port,
         "started_at": http_instance._SERVER_STARTED_AT,
@@ -179,7 +180,7 @@ def _runtime_config_payload(handler: SimpleHTTPRequestHandler) -> dict:
     portal = payload.get("portal") if isinstance(payload.get("portal"), dict) else {}
     portal.update({
         "port": int(handler.server.server_address[1]),
-        "instance": http_instance._PORTAL_INSTANCE,
+        "deployment": http_instance._PORTAL_DEPLOYMENT,
         "build_id": http_instance._PORTAL_BUILD_ID,
     })
     payload["portal"] = portal

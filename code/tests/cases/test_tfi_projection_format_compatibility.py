@@ -224,6 +224,3 @@ def test_tfi_projection_format_compatibility_library_keeps_integrity_checks(tmp_
     with _read_only(), pytest.raises(ResourceOperationError) as raised:
         libraries.read_library(path)
     assert raised.value.code == "projection.library_" + code
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

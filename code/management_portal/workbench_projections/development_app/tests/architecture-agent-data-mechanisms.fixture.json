@@ -1,7 +1,7 @@
 {
   "scope": "Exact AgentData subset of the frozen development model; local authorization assumed by isolated test only.",
   "provenance": {
-    "capture": "${share_root}/Projects/AI员工/knowledge_base/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/discovery-candidate-lessons.json",
+    "capture": "projects:AI员工/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/discovery-candidate-lessons.json",
     "captureSha256": "d5140814a30b47fa3f920fb75ccfae8325fa9b502b9efd18cb56f4187ef53b62",
     "model": {
       "address": "workspace_13209cb6666b/file/deep-architecture/objects/model-9105515ec8785625eec38571299947d6a877504af9ac3f17721d12a48a0103b8.json",

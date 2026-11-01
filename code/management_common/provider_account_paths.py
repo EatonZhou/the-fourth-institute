@@ -8,33 +8,7 @@ from pathlib import Path
 import re
 
 from .file_lock import try_lock_descriptor
-
-PROVIDERS = ("codex", "claude", "kimi", "antigravity")
-
-
-def host_user_home() -> Path:
-    """OS identity, independent of the service HOME.
-
-    Tests and installers may explicitly inject PORTAL_ACCOUNT_HOST_HOME. It is
-    never persisted as an instance data root or inherited by Provider children.
-    """
-    override = os.environ.get("PORTAL_ACCOUNT_HOST_HOME")
-    if override:
-        return canonical_directory(override)
-    if os.name == "nt":
-        import ctypes
-        from ctypes import wintypes
-        # CSIDL_PROFILE; unlike HOME this is owned by the Windows user profile.
-        buffer = ctypes.create_unicode_buffer(32768)
-        shell = ctypes.WinDLL("shell32", use_last_error=True)
-        shell.SHGetFolderPathW.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.HANDLE,
-                                         wintypes.DWORD, wintypes.LPWSTR]
-        if shell.SHGetFolderPathW(None, 0x28, None, 0, buffer):
-            raise OSError("Cannot resolve the Windows user profile")
-        return Path(buffer.value).resolve()
-    import pwd
-    return Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
-
+from .file_permissions import ensure_private_directory
 
 def canonical_directory(value: str | Path) -> Path:
     if not isinstance(value, (str, Path)) or not str(value) or any(c in str(value) for c in "\0\r\n"):
@@ -53,31 +27,53 @@ def validate_identity(value: str) -> str:
     return value
 
 
-def provider_root(provider: str) -> Path:
-    if provider not in PROVIDERS:
-        raise ValueError("Provider has no subscription directory")
-    return host_user_home() / f".{provider}-accounts"
-
-
-def default_directory(provider: str, account_id: str) -> Path:
-    name = validate_identity(account_id).removeprefix(provider + "_")
-    return provider_root(provider) / validate_identity(name)
-
-
 def runtime_root() -> Path:
     from . import portal_paths
-    from .instance_config import installed_root
-    root = installed_root(portal_paths.CONFIG_PATH)
-    return (root / "runtime" if root else portal_paths.path("instances_root") / "runtime") / "provider-accounts"
+    return portal_paths.path('runtime') / 'provider-accounts'
 
 
 def account_runtime(provider: str, account_id: str) -> Path:
     return runtime_root() / validate_identity(provider) / validate_identity(account_id)
 
 
+def registered_home(row: dict) -> Path:
+    if row["kind"] == "subscription_login":
+        return canonical_directory(row["config"].get("account_dir", ""))
+    if row["kind"] == "api_profile" and row["provider"] in {"codex", "kimi"}:
+        return account_runtime(row["provider"], row["account_id"]) / "home"
+    raise ValueError("Account has no Provider directory")
+
+
+def prepare_registration_directory(data: dict) -> Path | None:
+    """Use the host directory explicitly selected by the registering user."""
+    if data["kind"] != "subscription_login":
+        return
+    config = dict(data.get("config", {}))
+    path = canonical_directory(config.get("account_dir", ""))
+    created = None
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            path.mkdir(mode=0o700)
+        except FileExistsError:
+            canonical_directory(path)
+        else:
+            created = path
+            ensure_private_directory(path)
+    config["account_dir"] = str(path)
+    data["config"] = config
+    return created
+
+
 def directory_runtime(directory: Path) -> Path:
     """Control state for a directory when no registration ID is in scope."""
     return runtime_root() / "directories" / hashlib.sha256(os.fsencode(canonical_directory(directory))).hexdigest()
+
+
+def daemon_lock_path(directory: Path) -> Path:
+    from .host_instances import registry_path
+    digest = hashlib.sha256(os.fsencode(canonical_directory(directory))).hexdigest()
+    return registry_path().parent / "provider-locks" / (digest + ".lock")
 
 
 @contextmanager
@@ -86,7 +82,8 @@ def daemon_lock(directory: Path):
     directory = canonical_directory(directory)
     if not directory.is_dir():
         raise FileNotFoundError(directory)
-    lock = directory.parent / ("." + directory.name + ".portal-daemon.lock")
+    lock = daemon_lock_path(directory)
+    lock.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     if lock.is_symlink():
         raise ValueError("Provider daemon lock must not be a symbolic link")
     descriptor = os.open(lock, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)

@@ -44,7 +44,7 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 
 打开“Portal 管理”→“AI Backend”，依次配置 Provider、执行账号、模型 API 和 Backend 角色。页面和 HATG ISA 使用同一份站点登记：
 
-- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号留空时，在操作系统用户的 `~/.<provider>-accounts/<名称>` 建空目录；接入已有目录时填写路径，直接使用其中的登录。删除登记保留目录。Codex 的服务从实例 runtime 下生成的启动记录取得 `CODEX_HOME`，账号目录的主机锁避免多个 Portal 实例同时启动常驻进程。
+- **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 的服务从实例 runtime 下生成的启动记录取得 `CODEX_HOME`，主机实例登记目录旁的 `provider-locks/` 按规范账号目录生成锁，避免多个 Portal 实例同时启动常驻进程。
 - **模型 API**：先用 `CreateModelApi` 登记接口地址、默认模型及认证方式，再登记引用已有 `config.api_id` 的 `api_profile` 执行账号。一次性 `secret` 经受控写入保存到密钥文件；`UpdateModelApi` 可通过 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。接口提供多个模型或支持推理强度时，在“高级设置”的模型列表（`models`）中声明，如 `[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]`；直连该接口的 Resident 即可在对话设置中选择模型和推理强度。
 - **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。之后可以把这个接口登记为 Codex、Claude Code 或 OpenCode（使用 Chat Completions）的 `api_profile` 账号，Resident 就能用这个 API Key 执行命令、编辑文件和使用工具；新增模型 API 时也可以在“Agent 运行器”中直接选择。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
   - 不确定接口支持哪些协议时，点“高级设置”中的“检测接口协议”（`ProbeModelApi`）：Portal 用表单中的地址、模型和密钥向 Chat Completions、Responses 和 Anthropic Messages 各发一次很短的请求，按结果勾选协议并选好 Anthropic 的认证方式，仍可手动修改。返回 2xx 且内容符合协议格式才算支持；检测会调用模型，可能产生少量费用，不修改登记。
@@ -98,10 +98,10 @@ Project 名称就是它的 ID，创建后会出现在顶栏“项目”的列表
 | Resident 的模型与推理强度 | 打开 Resident 对话，在对话设置中选择 Provider 路线、模型、推理强度和权限预设；也可用 `UpdateResidentSettings` | 每个 Resident |
 | Prompt 注入 | 对话设置中的“Prompt 注入”：标准、每轮完整、精简、纯 TUI 四个预设，或逐类调整；也可用 `GetResidentSettings` 读取、`UpdateResidentSettings` 的 `changes.prompt_injection` 修改 | 每个 Resident |
 | 路线的默认模型 | 执行账号配置中的 `default_model` | 新建在这条路线上的 Resident |
-| 共用规则和 Skill | 部署的共享根目录下的 Skills 目录。Portal 在 Resident 每次开始会话时注入其中的通用规则，Resident 需要时读取其他 Skill | 所有 Resident |
+| 共用规则和 Skill | 共用规则等四个核心 Skill 在代码目录的 `core_skills/`，随代码更新；其他共享 Skill 在实例的 skills 区域（`skills:<名称>/`）。Portal 在 Resident 开始会话时注入通用规则，Resident 需要时读取其他 Skill | 所有 Resident |
 | 定时与自动触发 | 在 Lineage 中给 Resident 连接时间或事件触发源；需要 AI 判断的工作交给 Resident，纯机械步骤用 Effect 调 `RunScript`。在 Home 的“定时与自动触发”面板查看和暂停 | 每个 Lineage |
 
-站点名称由安装目录的 `config/site.json` 中的 `site_name` 设置，默认是 **TFI Portal**。也可以用 `PORTAL_SITE_CONFIG` 指定配置文件；名称须为非空文字，不能包含控制字符。保存配置后，新打开或刷新的页面会读取新名称，已有页面需刷新。页面名称和界面语言保持各自设置。这个文件只保存非密配置，不应写入密码或密钥。
+站点名称由实例根目录的 `site.json` 中的 `site_name` 设置，默认是 **TFI Portal**。名称须为非空文字，不能包含控制字符。保存配置后，新打开或刷新的页面会读取新名称，已有页面需刷新。页面名称和界面语言保持各自设置。这个文件只保存非密配置，不应写入密码或密钥。
 
 进程仅使用 `PORTAL_*` 规范环境变量。旧环境变量不再读取，旧 `environment_aliases` 配置也不会恢复旧读。规范变量的显式空值保持为空，不回退到旧变量。已有服务、数据库和目录的本站配置仍有效，不因取消环境变量兼容而改换数据身份。以下服务名只是虚构的本站部署参数示例，须按实际值配置：
 
@@ -119,7 +119,7 @@ Resident 身份注入仅接受规范字段；提交的身份必须完整且合�
 
 旧 Seed 标记、调用计划摘要和相关状态目录属于一次性迁移范围：先核实备份和已完成的迁移，可转换的标记及摘要迁移到当前格式，可迁移的状态目录保留内容和有效锁；无法迁移的旧项仅按明确清单清理。业务正文、数据库 ID、格式版本、整个数据根和账号凭据不在清理范围内。迁移后的运行时只接受当前 Seed 标记和计划摘要，不用兼容配置重新启用旧格式；每项处理保留结果、原因及残留引用，重试前回读既有结果。
 
-升级前须把历史安装使用的配置文件位置、服务标识及数据身份核实并写入本站配置。`deployment.postgres_env_file` 保留现有连接文件；`deployment.postgres` 可设置 `prefix`、`base`、`bin`、`lib`、`share`、`socket`、`data`、`unit`、`port`、`role`、`database`。已有 PostgreSQL 集群运行准备脚本时必须显式指定原 `role` 与 `database`，不能以新默认身份初始化旧集群。只准备配置片段或通过隔离测试不代表它已应用；服务切换必须另有明确授权。
+PostgreSQL 程序的位置写在清单 `instance.json` 的 `dependencies.postgres`，集群固定在实例根目录的 `database/`，连接串在 `secrets/postgres.env`；站点设置中没有数据库配置。
 
 ## 4. 权限
 
@@ -196,19 +196,19 @@ Portal 管理员永远可以开关权限系统（“执行设置”中的权限�
 
 ### 备份
 
-几乎所有数据都在 PostgreSQL 中；另外还要备份 Portal 实例目录（包括上传的文件）以及共享根目录中的项目、知识库和 Resident 工作区。Portal 本身不执行备份，需要部署者另配备份程序（例如用 restic 定期备份数据库导出和上述目录）。配好备份服务后，“资源 → 备份”页面显示最近恢复点和自动计划，管理员可以在这里手动发起备份或校验，见设计条目 `decision_b06ae321a668`。
+几乎所有数据都在 PostgreSQL 中；另外还要备份实例的各区域（projects、lineages、skills、papers、uploads、features、provider-state，位置见“Portal 管理 → 数据目录”）、`secrets/`、清单 `instance.json` 和站点设置 `site.json`；`cache/`、`runtime/` 不需要备份。先导出数据库，再复制各区域。Portal 本身不执行备份，需要部署者另配备份程序（例如用 restic 定期备份数据库导出和上述目录）。配好备份服务后，“资源 → 备份”页面显示最近恢复点和自动计划，管理员可以在这里手动发起备份或校验，见设计条目 `decision_b06ae321a668`。
 
-### 升级与发布
+### 代码更新与发布
 
-修改或更新 Dev 的代码后，运行 `./scripts/portal_services request-restart dev` 让受影响的服务重新加载。验证通过后，在仓库根目录用 `python3 code/scripts/tfi_dev.py publish --message '<说明>' --path code/<文件>…`（或 `--all`）把改动发布到 Release；命令输出 `activation.receipt`，激活完成后该文件记录结果和各服务健康状态。发布会重启受影响的服务，正在运行的 Resident 工作会被中断，尽量在空闲时发布。完整流程见 `decision_ab9880dc4c9d`。对应指令为 `PublishRelease`、`RestartPortal`；`GetPortalStatus` 查看各服务状态。
-
-部署注册表更换产品名称时，使用 `scripts/migrate_tfi_runtime_names.py --names-file <私有计划> --deployment-registry <实际文件>` 单独检查。私有计划的 `deployment_registry` 对象须含实际旧 `source_schema` 和原文件 `sha256`。工具只接受同一 v1 格式，调用正式读取器校验实例与路由；默认不写入。确认检查结果后，加 `--apply --backup-dir <私有备份目录>` 保存原字节并替换顶层标记为 `tfi.portal-deployments.v1`，其余字节保持不变。文件摘要变化时拒绝覆盖，重新核对实际状态；此模式不连接数据库，也不启动或发布服务。运行时读取器始终只接受当前标记。
+修改或更新 Dev 的代码后，运行 `./scripts/portal_services request-restart dev` 让受影响的服务重新加载。验证通过后，在仓库根目录用 `python3 code/scripts/tfi_dev.py publish --message '<说明>' --path code/<文件>…`（或 `--all`）把改动发布到 Release；命令输出 `activation.receipt`，激活完成后该文件记录结果和各服务健康状态。发布会重启受影响的服务，正在运行的 Resident 工作会被中断，尽量在空闲时发布。完整流程见 `decision_ab9880dc4c9d`。对应指令为 `PublishRelease`、`RestartPortal`（参数 `deployment`，取值 `dev` 或 `release`）；`GetPortalStatus` 查看各部署和服务的状态。
 
 若 Resident 对话因历史消息的来源格式标记报 `invalid message origin schema`，先确认实际数据库绑定，再用 `scripts/migrate_message_origins.py --plan <私有计划> --backup <新的私有备份文件>` 检查。计划必须指定 `database`、`db_user`、`agent_schema`、`lineage_schema`，以及实际旧标记到同版 `tfi.message-origin.v1` 或 `tfi.message-origin.v2` 的 `sources` 映射。工具校验 Agent 消息元数据、展示记录及 Mailbox 消息的作者和来源身份，输出 `plan_sha256`；加 `--apply --expected-plan <该摘要>` 才执行。全部校验后先保存私有备份，再在一个事务内按原字节和行版本更新；并发变化或错误将回滚。仅来源的 schema 字符串变化，正文、作者、发起人、ID、顺序和载荷摘要保持不变。完成后重新读取真实对话；无需放宽运行时校验或重启服务。
 
 源码、Provider 状态、密钥或部署配置的路径更名使用 `scripts/migrate_deployment_paths.py`，须在外部维护窗口执行。准备列出目录移动、文件前后摘要、既有链接及所有共享服务的私有清单，验证完整备份并停止相关写入者；使用源运行用户的 systemd bus 和完整 Linux 进程可见性检查占用。先运行 `seal <清单> <计划> --lock-file <私有锁>`，独立核对计划摘要，再运行 `apply <计划> --expected-sha256 <摘要> --backup <新备份目录> --lock-file <同一私有锁>`。工具遇到活动引用、权限不足、已有目标或源文件变化会拒绝；不停止服务、不创建旧路径别名、不修改账号或数据库内容。Python 虚拟环境须在新位置使用相同解释器与精确包版本重建，并保留原系统包继承设置。跨服务配置、域名和证书齐备后，由维护者按原依赖启动并验证真实路径、账号、凭据及会话。工具的文件备份不能替代完整数据备份；`rollback <备份目录> --lock-file <同一私有锁>` 只接受完整执行且目标未再改变的状态，中断或恢复写入后须逐项核对，不能盲重放。详细合同见 `decision_ab9880dc4c9d`。
 
-Portal 的原生服务由安装器 `scripts/tfi_release_install.py` 在安装阶段注册：Linux 使用 systemd，macOS 使用 launchd，Windows 使用 SCM（需配置 `deployment.windows_service_account` 或 `PORTAL_WINDOWS_SERVICE_ACCOUNT`，并在注册时提供 `TFI_WINDOWS_SERVICE_PASSWORD`）。每个实例的服务名以自己的 `service_prefix` 开头，例如 `<service_prefix>-web.service`，不同实例的服务链互相隔离。配置了 Dev 的实例另由 `scripts/tfi_development_runtime.py` 注册 Dev Web 与 Router，发布时按改动的文件重启受影响的组件。
+实例的生命周期由安装器 `scripts/tfi_release_install.py` 执行（`create`、`start`、`stop`、`update-code`、`retire`，见代码目录的 `INSTALL.md`）。创建时安装器按清单注册服务：Linux 使用 systemd 用户服务，macOS 使用 launchd，Windows 使用当前用户的监督进程。每个实例的服务名以清单中的服务名前缀开头，例如 `<前缀>-web.service`，启停只处理清单列出的服务，不同实例的服务互相隔离。配置了 Dev 部署的实例另由 `scripts/tfi_development_runtime.py` 注册 Dev Web 与入口网关（`gateway`），发布时按改动的文件重启受影响的组件。安装包或代码目录换成新版本后运行 `update-code`：准备新代码需要的依赖、刷新服务单元并重启，数据库由服务启动时自己更新。
+
+“Portal 管理 → Portal 实例”列出本机实例登记（`~/.config/tfi/instances.json`）中清单可读的实例，按清单服务显示运行、部分服务运行（列出未运行的服务）、关闭或无法读取；管理员可以提交启动或关闭，由独立的控制作业调用同一套生命周期操作。创建未完成的实例不能启动。
 
 ### 用量与额度
 
@@ -224,9 +224,9 @@ Portal 不是单个程序。下表列出各部分的用途，以及仓库中描�
 | NATS | 服务之间的变化通知，页面据此实时刷新 | `scripts/tfi_release_install.py`（`nats` 组件） |
 | Portal Web | 网页与 HTTP 接口，包括 `/api/instructions/execute` | `scripts/tfi_release_install.py`（`web` 组件）、`scripts/tfi_development_runtime.py`（`dev-web`） |
 | ResourceService、SocietyService、ExecutionService、ExecutionWorker | 资源与权限、Lineage 与 Resident、模型调用的排队与执行 | `scripts/tfi_release_install.py`（`resource`、`society`、`execution`、`worker` 组件） |
-| Portal Router | 按用户把请求转给 Dev 或 Release 实例 | `scripts/tfi_development_runtime.py`（`router`）、`management_portal/portal_deployment_registry.py` |
-| Provider 后端 | 实际运行 Resident 的 AI 编程工具，例如 Codex App Server、Claude Code、Kimi Code | `config/systemd/portal-codex-app-server@.service.in`、`systemd/portal-claude-code.*`、`systemd/portal-kimi-code-config.toml`、`decision_ab9880dc4c9d` |
+| Portal Router | 按用户把请求转给 Dev 或 Release 部署 | `management_portal/portal_deployment_router.py`（`gateway` 组件）、`management_portal/portal_deployment_registry.py` |
+| Provider 后端 | 实际运行 Resident 的 AI 编程工具，例如 Codex App Server、Claude Code、Kimi Code | `scripts/portal_service_units.py`、`systemd/portal-claude-code.*`、`systemd/portal-kimi-code-config.toml`、`decision_ab9880dc4c9d` |
 
-Python 依赖见仓库根目录的 `requirements*.txt`；按档安装和检查入口见 `decision_ab9880dc4c9d`。所有服务从同一个环境文件读取 `PORTAL_DATABASE_URL`。Portal 有 Dev 和 Release 两个实例：Dev 直接运行工作目录中的代码，用于开发和验证；Release 是发布后的稳定版本，供日常使用。两者共用数据库和后台服务，见 `decision_ab9880dc4c9d`。
+Python 依赖见仓库根目录的 `requirements*.txt`；按档安装和检查入口见 `decision_ab9880dc4c9d`。所有服务从同一个环境文件读取 `PORTAL_DATABASE_URL`。Portal 有 Dev 和 Release 两个部署：Dev 直接运行工作目录中的代码，用于开发和验证；Release 是发布后的稳定版本，供日常使用。两者共用数据库和后台服务，见 `decision_ab9880dc4c9d`。
 
 对外提供服务时，在 Portal 前面放一个终止 HTTPS 的反向代理，并把 `PORTAL_PUBLIC_ORIGIN` 设为 `<Portal 地址>`，密码重置邮件中的链接使用这个地址。

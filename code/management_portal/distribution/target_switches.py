@@ -41,7 +41,7 @@ def _read(cursor, binding, component):
     return checkpoint
 
 
-def plan(action, cursor, site, *, mode, preserve=False):
+def plan(action, cursor, site, *, preserve=False):
     """Validate the entire binding and read all states before any writes."""
     if action['effective_enabled'] and action.get('missing_requirements'):
         raise ValueError('Unready native switch cannot initialize enabled')
@@ -56,7 +56,7 @@ def plan(action, cursor, site, *, mode, preserve=False):
         raise ValueError('Target switch configuration must be an object')
     fields = ('lineage_id', contract['components_field'])
     has_local_binding = any(key in existing for key in fields)
-    keep = preserve or (mode == 'upgrade' and has_local_binding)
+    keep = preserve
     config = site if keep else action.get('site_config')
     if not isinstance(config, dict):
         raise ValueError('Native switch action requires its minimal site_config')
@@ -95,9 +95,6 @@ def plan(action, cursor, site, *, mode, preserve=False):
         checkpoint = _read(cursor, binding, component)
         config = _object(components[component['id']]['config_json'])
         result['states'].append({**component, 'checkpoint': checkpoint, 'config': config})
-    if mode == 'upgrade' and any(s['checkpoint'] is not None for s in result['states']):
-        keep = True
-        result['status'] = 'preserved_existing'
     if keep and any(s['checkpoint'] is None for s in result['states']):
         result.update(status='needs_configuration', site_fragment=None)
         result['diagnostics'].append({'code': 'missing_target_runtime_state', 'message': 'Existing mapping has incomplete native state'})

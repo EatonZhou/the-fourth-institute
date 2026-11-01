@@ -1353,6 +1353,3 @@ def test_scheduler_snapshot_does_not_count_binding_blocked_work_as_capacity(
         assert worker.claim()["execution"]["execution_id"] == ready.execution_id
     finally:
         _close(server, thread)
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

@@ -7,11 +7,12 @@ import pytest
 
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.test_lineage_object_state import LINEAGE_ID, _store
+from tests.cases.instance_test_support import lineage_folders
 
 
 @pytest.fixture
 def layout_store(monkeypatch, tmp_path):
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
+    lineage_folders(monkeypatch, tmp_path / "lineages")
     install_resource_boundary(monkeypatch)
     return _store(tmp_path)
 

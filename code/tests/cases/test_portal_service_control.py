@@ -105,8 +105,8 @@ def test_service_stop_timeout_never_claims_a_live_pid_has_exited(monkeypatch):
         control._wait_stopped("fixture.service", timeout=0)
 
 
-def test_portal_services_exposes_health_for_each_instance():
-    args = portal_services._parser().parse_args(["health", "--instance", "release"])
+def test_portal_services_exposes_health_for_each_deployment():
+    args = portal_services._parser().parse_args(["health", "--deployment", "release"])
     assert args.command == "health"
-    assert args.instance == "release"
+    assert args.deployment == "release"
 

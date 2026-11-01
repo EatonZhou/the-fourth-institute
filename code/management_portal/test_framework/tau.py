@@ -15,11 +15,11 @@ from management_portal.test_framework.catalog import ROOT
 from management_portal.test_framework.dev_target import VerifiedDevTarget, resolve_unique_dev
 
 
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 from management_portal.test_framework.paths import state_root
 from management_portal.test_framework.compatibility import test_actor
 
-DEFAULT_STORAGE_STATE = Path(compatibility_value("test_framework.storage_state", str(state_root() / "test-actor-storage-state.json"))).expanduser()
+DEFAULT_STORAGE_STATE = Path(str(state_root() / "test-actor-storage-state.json")).expanduser()
 RESULT_MARKER = "PORTAL_TAU_RESULT:"
 TAU_PLAYWRIGHT = ROOT / "management_portal" / "test_framework" / "tau_runtime" / "node_modules" / "playwright"
 
@@ -240,7 +240,7 @@ def build_prompt(
 运行环境：
 - 本次独立运行：{run_id}
 - 本模块临时资源标记：{marker}
-- Portal 实例：{target.instance_id}（由本次显式测试目标配置解析并核验）
+- Portal 部署：{target.deployment_id}（由本次显式测试目标配置解析并核验）
 - 当前受测实例入口：{target.origin}
 - 初始 build：由 TAU preflight 核对，已写入证据目录的 run-context.json
 - Test 页面能力指纹：{target.page_fingerprint}

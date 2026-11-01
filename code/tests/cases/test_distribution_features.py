@@ -1,4 +1,4 @@
-"""Release defaults preserve intent, native switches, and local upgrade choices."""
+"""Release defaults preserve intent, native switches, and local choices on retry."""
 import json
 import os
 from types import SimpleNamespace
@@ -10,6 +10,8 @@ from psycopg.rows import dict_row
 from management_portal.distribution.features import normalize_snapshot, resolve_features, selection_snapshot
 from management_portal.distribution.initialization import initialize
 from management_portal.distribution.store import ReleaseStore
+from management_common.instance_manifest import load
+from tests.cases.instance_test_support import write_instance
 
 
 @pytest.mark.parametrize('included', [set(), {'model_request_timing'}, {'harness_recording'}, {'model_request_timing', 'harness_recording'}])
@@ -162,7 +164,7 @@ def test_initialization_reports_only_ready_open_native_timer_sources(tmp_path, e
               'desired_enabled': True, 'effective_enabled': enabled, 'missing_requirements': missing,
               'event_sources': [{'lineage_id': 'lineage_222222222222', 'source_id': 'event_source_222222222222'}]}
     manifest = {'feature_resolution': {'valid': True, 'initialization': {'actions': [action]}}}
-    roots = {'instances_root': str(tmp_path)}
+    instance = load(write_instance(tmp_path / 'instance'))
     with psycopg.connect(os.environ['PORTAL_DATABASE_URL'], autocommit=True, row_factory=dict_row) as c:
         c.execute('CREATE SCHEMA lineage')
         c.execute('CREATE TABLE lineage.lineage_components(node_id TEXT PRIMARY KEY,config_json TEXT)')
@@ -170,37 +172,22 @@ def test_initialization_reports_only_ready_open_native_timer_sources(tmp_path, e
         c.execute('INSERT INTO lineage.lineage_components VALUES(%s,%s)', ('event_source_222222222222', json.dumps({'event_type': event_type, 'schedule_mode': 'at', 'scheduled_at': '2099-01-01T00:00:00Z'})))
         c.execute('INSERT INTO lineage.event_source_progress VALUES(%s,%s,%s)', ('lineage_222222222222', 'event_source_222222222222', '{"paused":true,"old_work":"must-not-replay"}'))
         try:
-            first = initialize(manifest, c, roots)
+            first = initialize(manifest, c, instance)
             assert first['lineage_timer_required'] is required
             assert bool(first['lineage_timer_sources']) is required
             assert first['work_dispatched'] is False
             assert 'old_work' not in c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json']
-            assert initialize(manifest, c, roots)['lineage_timer_required'] is required
-            if required:
-                # Incoming default-off/not-ready cannot turn off a site's
-                # already enabled timer, even if its action disappears.
-                incoming = {'feature_resolution': {'valid': True, 'initialization': {'actions': [
-                    {**action, 'desired_enabled': False, 'effective_enabled': False, 'missing_requirements': ['new_package_requirement']} ]}}}
-                before = c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json']
-                upgraded = initialize(incoming, c, roots, mode='upgrade', existing_feature_ids=[action['id']])
-                assert upgraded['lineage_timer_required'] is True
-                assert upgraded['lineage_timer_sources'][0]['origin'] == 'existing_target_state'
-                absent = {'feature_resolution': {'valid': True, 'initialization': {'actions': []}}}
-                omitted = initialize(absent, c, roots, mode='upgrade', existing_feature_ids=[action['id']])
-                assert omitted['lineage_timer_required'] is True
-                assert 'feature_id' not in omitted['lineage_timer_sources'][0]
-                assert initialize({}, c, roots, mode='upgrade')['lineage_timer_required'] is True
-                assert c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json'] == before
+            assert initialize(manifest, c, instance)['lineage_timer_required'] is required
             c.execute('UPDATE lineage.event_source_progress SET checkpoint_json=%s', ('{"paused":true}',))
-            assert initialize(manifest, c, roots)['lineage_timer_required'] is False
-            assert initialize({}, c, roots)['lineage_timer_required'] is False
-            assert initialize({}, c, roots, mode='upgrade')['lineage_timer_required'] is False
+            assert initialize(manifest, c, instance)['lineage_timer_required'] is False
+            assert initialize({}, c, instance) == {'status': 'not_declared', 'features': [], 'lineage_timer_required': False,
+                                                   'lineage_timer_sources': [], 'work_dispatched': False}
         finally:
             c.execute('DROP SCHEMA lineage CASCADE')
             c.execute('DROP SCHEMA distribution_installation CASCADE')
 
 
-def test_target_initialization_and_upgrade_preserve_local_values(tmp_path):
+def test_target_initialization_and_retry_preserve_local_values(tmp_path):
     snapshot = {'feature_states': {'model_request_timing': {'included':True,'default_enabled':False},
                                   'wall_scheduling': {'included':True,'default_enabled':False},
                                   'resident_semantic_search': {'included':True,'default_enabled':False},
@@ -208,8 +195,8 @@ def test_target_initialization_and_upgrade_preserve_local_values(tmp_path):
     resolution = resolve_features(snapshot, source=system_source())
     assert resolution['valid']
     manifest = {'feature_resolution': resolution}
-    roots = {'instances_root': str(tmp_path / 'instances')}
-    site = tmp_path / 'site.json'
+    instance = load(write_instance(tmp_path / 'instance'))
+    site = instance.root / 'site.json'
     with psycopg.connect(os.environ['PORTAL_DATABASE_URL'], autocommit=True, row_factory=dict_row) as c:
         c.execute('CREATE SCHEMA lineage')
         c.execute('CREATE TABLE lineage.lineage_components(node_id TEXT PRIMARY KEY,config_json TEXT)')
@@ -217,17 +204,17 @@ def test_target_initialization_and_upgrade_preserve_local_values(tmp_path):
         c.execute("INSERT INTO lineage.lineage_components VALUES('event_source_111111111111',%s)", (json.dumps({'event_type':'manual.triggered'}),))
         c.execute("INSERT INTO lineage.event_source_progress VALUES('lineage_ed619225d417','event_source_111111111111','{\"paused\":true}')")
         try:
-            result = initialize(manifest, c, roots, site_config_path=site)
+            result = initialize(manifest, c, instance, site_config_path=site)
             assert not result['work_dispatched']
             assert c.execute('SELECT provider_timing_proxy_enabled FROM execution_runtime.service_settings').fetchone()['provider_timing_proxy_enabled'] is False
             assert c.execute("SELECT enabled FROM wall.wall_settings WHERE name='scheduled_jobs'").fetchone()['enabled'] is False
-            assert json.loads((tmp_path / 'instances/settings/resident_embeddings.json').read_text()) == {'enabled':False}
+            assert json.loads((instance.directory('runtime') / 'settings/resident_embeddings.json').read_text()) == {'enabled':False}
             assert json.loads(c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json']) == {'paused':True}
             assert json.loads(site.read_text())['deployment']['system_workflow']['request_timing_lineage_id'] == 'lineage_ed619225d417'
-            # Local administrator chooses enabled; retries/upgrades must keep it.
+            # Local administrator chooses enabled; a retry on the same database keeps it.
             c.execute('UPDATE execution_runtime.service_settings SET provider_timing_proxy_enabled=TRUE')
             c.execute('UPDATE wall.wall_settings SET enabled=TRUE')
-            second = initialize(manifest, c, roots, mode='upgrade', existing_feature_ids=resolution['included_features'], site_config_path=site)
+            second = initialize(manifest, c, instance, site_config_path=site)
             assert all(s['status'] == 'preserved_existing' for s in second['features'])
             assert c.execute('SELECT provider_timing_proxy_enabled FROM execution_runtime.service_settings').fetchone()['provider_timing_proxy_enabled'] is True
             assert c.execute('SELECT enabled FROM wall.wall_settings').fetchone()['enabled'] is True

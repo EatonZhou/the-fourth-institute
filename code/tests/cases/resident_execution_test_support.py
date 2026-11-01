@@ -15,7 +15,6 @@ from unittest import mock
 import pytest
 
 from management_portal.society_service import (
-    lineage_state,
     lineage_lifecycle,
     lineage_graph_edits,
     resident_execution_provider,
@@ -33,6 +32,7 @@ from management_portal.execution.session_manager import SessionManager
 from management_portal.society_service import execution_client
 from management_portal.society_service import lineage_aggregate
 from tests.cases.society_service_test_support import install_resource_boundary
+from tests.cases.instance_test_support import lineage_folders
 
 
 VALID_PNG_BYTES = base64.b64decode(
@@ -130,8 +130,7 @@ def resident_record(
     workspace = lineage_root / "lineage_000000000001"
     default_cwd = workspace / "residents" / "resident_aaaaaaaaaaaa" / "workspace"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage-state")
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", lineage_root)
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(lineage_root))
+    lineage_folders(monkeypatch, lineage_root)
     session_store = AgentDataStore()
     monkeypatch.setattr(
         execution_client,

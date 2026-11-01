@@ -50,38 +50,47 @@ def test_article_doctor_rejects_missing_float_barrier_package(monkeypatch):
     assert all(item['ok'] for item in article.inventory())
 
 
-def test_missing_packages_prepare_private_python_and_failed_doctor_blocks_activation(tmp_path):
-    from scripts import tfi_release_install as installer
-    target = {'install_root': str(tmp_path), 'python': '/operator/shared/bin/python'}
-    state = {'target': target, 'manifest_sha256': 'a' * 64}
-    manifest = {'runtime_dependencies': declaration(['article']), 'features': ['article']}
-    (tmp_path / 'runtime').mkdir()
+def test_code_dependencies_are_required_and_failed_doctor_blocks_activation(tmp_path, monkeypatch):
+    from management_common.code_environment import runtime_python
+    code = tmp_path / 'checkout/code'
+    (code / 'scripts').mkdir(parents=True)
+    (code / 'scripts/bootstrap_portal').write_text('# bootstrap')
+    (code / 'requirements.txt').write_text('fixture==1')
     commands = []
     healthy = False
 
     def process(command, **kwargs):
         commands.append(command)
         if 'install' in command:
-            assert command[0] == target['python']
-            assert str(tmp_path / 'runtime/dependencies') in command[-1]
+            assert command[0] == '/operator/base/bin/python'
+            assert '--wheelhouse' not in command
+            environment = Path(command[command.index('--venv') + 1])
+            assert environment.is_relative_to(code.parent / 'dependencies')
+            python = environment / ('Scripts/python.exe' if dependencies.os.name == 'nt' else 'bin/python')
+            python.parent.mkdir(parents=True, exist_ok=True)
+            python.touch()
             return SimpleNamespace(returncode=0)
-        ok = healthy and '/runtime/dependencies/' in command[0]
-        return SimpleNamespace(returncode=0 if ok else 1, stdout=json.dumps([{'name': 'checked', 'ok': ok}]))
+        return SimpleNamespace(returncode=0 if healthy else 1, stdout=json.dumps([{'name': 'checked', 'ok': healthy}]))
 
-    api = SimpleNamespace(run_process=process, run_utf8_capture=process, clean_environment=lambda _: {}, native_tool=lambda name: name,
-        save_stage=lambda value, *_: installer.write_json(tmp_path / 'installation.json', value))
-    with pytest.raises(RuntimeError, match='services were not started'):
-        dependencies.prepare(api, state, manifest)
-    assert 'dependencies' not in state
-    assert dependencies.runtime_python(target) == target['python']
+    monkeypatch.setattr(dependencies, 'run_process', process)
+    monkeypatch.setattr(dependencies, 'run_utf8_capture', process)
+    with pytest.raises(FileNotFoundError, match='Prepare the code dependency environment'):
+        runtime_python(code)
+    with pytest.raises(RuntimeError, match='failed verification'):
+        dependencies.prepare(code, base_python='/operator/base/bin/python')
     healthy = True
-    dependencies.prepare(api, state, manifest)
-    assert state['dependencies']['source'] == 'instance-owned-bootstrap'
-    assert dependencies.runtime_python(target).startswith(str(tmp_path / 'runtime/dependencies'))
-    # A different engineering generation cannot activate a previous dependency receipt.
-    state['manifest_sha256'] = 'b' * 64
-    installer.write_json(tmp_path / 'installation.json', state)
-    assert dependencies.runtime_python(target) == target['python']
+    result = dependencies.prepare(code, base_python='/operator/base/bin/python')
+    python = runtime_python(code)
+    assert result['python'] == str(python) and python.is_relative_to(code.parent / 'dependencies')
+    installs = sum('install' in command for command in commands)
+    assert dependencies.prepare(code)['source'] == 'verified-existing'
+    assert sum('install' in command for command in commands) == installs
+    # Only the code's dependency inputs select the environment.
+    (code / 'requirements.txt').write_text('fixture==2')
+    with pytest.raises(FileNotFoundError, match='Prepare the code dependency environment'):
+        runtime_python(code)
+    with pytest.raises(RuntimeError, match='离线'):
+        dependencies.prepare(code, offline=True)
 
 
 def test_selected_skill_copies_whole_registered_package_and_relocates_primary(tmp_path):
@@ -102,24 +111,14 @@ def test_selected_skill_copies_whole_registered_package_and_relocates_primary(tm
     assert (Path(relocated['attributes']['content_root']) / 'scripts/tool.py').is_file()
 
 
-def test_core_manifest_uses_target_skill_directory_in_a_fresh_interpreter(tmp_path):
-    import os
-    import subprocess
-    import sys
+def test_core_manifest_ships_code_rules_without_instance_copies(tmp_path):
     from management_portal.distribution.core_skills import canonical_resources, export_core_skills
-    from management_common.portal_paths import KEYS
     destination = tmp_path / 'package'
-    export_core_skills(destination)
-    share = destination / 'data/share_root'
-    config = tmp_path / 'paths.json'
-    config.write_text(json.dumps({key: str(share if key == 'share_root' else tmp_path / key) for key in KEYS}))
-    result = subprocess.run([sys.executable, '-B', '-c',
-        'from skill_board_lan import skill_backend as s; print(s.SHARED_SKILLS_ROOT); print(len(s._iter_shared_skill_roots()))'],
-        env={**os.environ, 'PORTAL_PATHS_CONFIG': str(config)}, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.splitlines() == [str(share / 'Skills'), str(len(canonical_resources()))]
+    report = export_core_skills(destination)
+    assert all(item['path'].startswith('code/core_skills/') for item in report['files'])
+    assert not (destination / 'data').exists()
     for identity, source in canonical_resources().items():
-        assert identity in (share / 'Skills' / source.name / 'SKILL.md').read_text()
+        assert identity in (destination / 'code/core_skills' / source.name / 'SKILL.md').read_text()
 
 
 def test_selected_article_preserves_compiler_configuration_without_other_articles_or_reports(tmp_path):
@@ -166,7 +165,7 @@ def test_selected_core_index_relocates_to_the_naturally_exported_rules(tmp_path)
     package = tmp_path / 'generated'
     export_core_skills(package)
     portable = json.dumps(scrub(record, mappings=resolved['path_mappings']))
-    installed = json.loads(map_directories(portable, {'${share_root}': str(package / 'data/share_root')}))
+    installed = json.loads(map_directories(portable, {'${code_root}': str(package / 'code')}))
     assert Path(installed['source']['path']).is_file()
     assert Path(installed['attributes']['content_root']).name == canonical.name
     assert identity in Path(installed['source']['path']).read_text()

@@ -114,7 +114,8 @@ def test_portal_system_prompt_uses_one_skill_entry_and_explicit_role() -> None:
     """Portal 系统提示词只引用一次 tfi-agent-rule Skill 并写明 Resident 角色"""
     prompt = portal_system_instructions("resident").parts[0].content
 
-    assert prompt.count("/share/Skills/tfi-agent-rule/SKILL.md") == 1
+    from management_common.skill_paths import CORE_SKILLS_ROOT
+    assert prompt.count(str(CORE_SKILLS_ROOT / "tfi-agent-rule/SKILL.md")) == 1
     assert 'role="resident"' in prompt
     assert "tfi-agent-portal-review-solver" not in prompt
 

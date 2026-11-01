@@ -1418,6 +1418,3 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

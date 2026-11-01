@@ -9,7 +9,7 @@ from management_portal.distribution import database, resource_dependencies as de
 from management_portal.distribution.features import normalize_snapshot, resolve_features, selection_snapshot
 from management_portal.distribution.lineage_options import effective_lineages
 from management_portal.distribution.selection import SYSTEM, resolve
-from management_portal.distribution.store import ReleaseStore
+from management_portal.distribution.store import ReleaseStore, digest
 from tests.cases.test_distribution_resource_dependencies import KNOWLEDGE, OTHER, Source, selected
 
 RESIDENT = 'resident_aaaaaaaaaaaa'
@@ -69,10 +69,19 @@ def test_preferences_activate_only_with_dependency_and_explicit_options_win():
     normalized = normalize_snapshot(snapshot)
     assert selection_snapshot(normalized, resolve_features(normalized))['resource_lineage_options'] == prefs
     source = ExportSource()
-    exported = resolve(normalized, source)
+    # An extra Workspace has no owning folder of its own: the exporter names where its copy goes.
+    blocked = resolve(normalized, source)['unresolved']
+    assert [item['id'] for item in blocked] == [EXTRA] and 'file_locations' in blocked[0]['reason']
+    exported = resolve(normalized, source, resolution={
+        'snapshot_sha256': digest(normalized), 'file_locations': {EXTRA: 'projects:demo/extra'}})
     assert not exported['unresolved']
     assert source.history == ({RESIDENT}, {KNOWLEDGE})
-    assert {item['source'] for item in exported['files']} == {'/owned', '/extra'}
+    assert {item['source']: item['target'] for item in exported['files']} == {
+        '/owned': f'data/projects/AI员工/agents/{KNOWLEDGE}/residents/{RESIDENT}/workspace',
+        '/extra': 'data/projects/demo/extra'}
+    assert ('/extra', 'projects:demo/extra') in exported['path_mappings']
+    notes = exported['generated_files'][f'data/projects/AI员工/agents/{KNOWLEDGE}/residents/{RESIDENT}/workspaces.md']
+    assert f'{EXTRA} → projects:demo/extra' in notes
     assert exported['lineage_options'][KNOWLEDGE]['workspace'] == prefs[KNOWLEDGE]['workspace']
     snapshot['lineages'] = [{'id': KNOWLEDGE, 'history': False, 'workspace': {'own_outputs': False, 'extra_bindings': 'exclude'}}]
     explicit = resolve(snapshot, source)
@@ -100,19 +109,38 @@ def test_fresh_progress_uses_owned_workspace_binding_even_when_outputs_selected(
     frozen['projection_resources'] = []
     monkeypatch.setattr(dependencies, 'frozen_or_resolve', lambda *a, **kw: frozen)
     monkeypatch.setattr(projection_dependencies, 'declarations', lambda *a: [])
-    prefix = 'data/share_root/ProjectionEvidence/' + OWN
-    scope = {'files': [], 'path_mappings': [('/owned', '${share_root}/ProjectionEvidence/' + OWN)],
-             'workspaces': {OWN: {'workspace_id': OWN, 'path': '${share_root}/ProjectionEvidence/' + OWN}},
+    prefix = 'data/features/projection_evidence/' + OWN
+    scope = {'files': [], 'path_mappings': [('/owned', 'features:projection_evidence/' + OWN)],
+             'workspaces': {OWN: {'workspace_id': OWN, 'path': 'features:projection_evidence/' + OWN}},
              'repositories': {}, 'reset_roots': ['/owned'],
              'generated_files': {prefix + '/reports/stage-index.json': '{"report_refs": []}'}}
     monkeypatch.setattr(projection_dependencies, 'resolve_files', lambda *a: deepcopy(scope))
     result = resolve(snapshot, source)
     assert not result['unresolved']
-    actual = f'data/share_root/Agents/{KNOWLEDGE}/residents/{RESIDENT}/workspace/reports/stage-index.json'
+    actual = f'data/projects/AI员工/agents/{KNOWLEDGE}/residents/{RESIDENT}/workspace/reports/stage-index.json'
     assert result['generated_files'][actual] == '{"report_refs": []}'
     assert not any(key.startswith(prefix) for key in result['generated_files'])
     assert result['file_scope_policy']['reset_roots'] == ['/owned']
     assert len(result['tables']['workspace', 'workspaces']) == 1
+
+
+def test_lineage_folder_follows_its_project_or_the_lineages_area():
+    snapshot = selected('decision')
+    snapshot['resource_lineage_options'] = {KNOWLEDGE: {'history': False, 'workspace': {'own_outputs': True, 'extra_bindings': 'exclude'}}}
+    owned = f'residents/{RESIDENT}/workspace'
+    source = ExportSource()
+    result = resolve(snapshot, source)
+    assert not result['unresolved']
+    assert [item['target'] for item in result['files']] == [f'data/projects/AI员工/agents/{KNOWLEDGE}/{owned}']
+    assert (f'data/projects/AI员工/agents/{KNOWLEDGE}/{owned}/.tfi-workspace') in result['generated_files']
+    # A Lineage that belongs to no project is a folder of the lineages area.
+    for row in source.data['lineage', 'lineages']:
+        row['project_id'] = ''
+    result = resolve(snapshot, source)
+    assert [item['target'] for item in result['files']] == [f'data/lineages/{KNOWLEDGE}/{owned}']
+    assert f'data/lineages/{KNOWLEDGE}/residents/{RESIDENT}/resident.md' in result['generated_files']
+    notes = result['generated_files'][f'data/lineages/{KNOWLEDGE}/residents/{RESIDENT}/workspaces.md']
+    assert f'Owned: {OWN} → lineages:{KNOWLEDGE}/{owned}' in notes
 
 
 def test_unused_scope_text_does_not_block_but_active_scope_requires_resolution():

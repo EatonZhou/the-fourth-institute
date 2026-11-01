@@ -6,7 +6,6 @@
 :risk: no-external-side-effects
 """
 import argparse
-from copy import deepcopy
 import contextlib
 import importlib.machinery
 import importlib.util
@@ -16,11 +15,9 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from management_common.release_dependencies import declaration
 from scripts import tfi_release_dependencies as dependencies
 
 
@@ -29,67 +26,59 @@ class OptionalDependencies(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         root = Path(self.directory.name)
-        (root / "instance/runtime").mkdir(parents=True)
-        (root / "code").mkdir()
-        self.target = {"install_root": str(root / "instance"),
-                       "shared_code_root": str(root / "code"), "python": sys.executable}
-        self.state = {"target": self.target, "manifest_sha256": "fixture"}
-        self.manifest = {"features": ["article", "tau", "test_framework"],
-                         "runtime_dependencies": declaration(["article", "tau", "test_framework"])}
+        self.code = root / "checkout/code"
+        (self.code / "scripts").mkdir(parents=True)
+        self.environment = root / "checkout/dependencies/fixture/venv"
+        self.python = self.environment / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+        self.python.parent.mkdir(parents=True)
+        self.python.touch()
         self.checks = [{"name": "core: fixture", "ok": True}]
-        self.api = SimpleNamespace(
-            native_tool=lambda name: "python",
-            clean_environment=lambda target: {},
-            run_utf8_capture=Mock(return_value=subprocess.CompletedProcess([], 0, json.dumps(self.checks))),
-            run_process=Mock(return_value=subprocess.CompletedProcess([], 0)),
-            save_stage=Mock())
-        self.enterContext(patch.object(dependencies, "environment_key", return_value="fixture"))
+        self.doctor = self.enterContext(patch.object(
+            dependencies, "run_utf8_capture",
+            return_value=subprocess.CompletedProcess([], 0, json.dumps(self.checks))))
+        self.install = self.enterContext(patch.object(
+            dependencies, "run_process", return_value=subprocess.CompletedProcess([], 0)))
+        self.enterContext(patch.object(dependencies, "environment_directory", return_value=self.environment))
 
-    def prepare(self):
+    def prepare(self, **options):
         with contextlib.redirect_stderr(io.StringIO()):
-            dependencies._prepare(self.api, self.state, self.manifest)
+            return dependencies.prepare(self.code, **options)
 
     def test_optional_profiles_do_not_block_or_trigger_downloads(self):
-        """已具备核心环境时不探测或下载 TeX、浏览器与测试工具，也不删除功能声明。"""
-        original = deepcopy(self.manifest)
-        self.prepare()
-        self.api.run_process.assert_not_called()
-        doctor = self.api.run_utf8_capture.call_args.args[0]
+        """已具备核心环境时不探测或下载 TeX、浏览器与测试工具。"""
+        result = self.prepare()
+        self.install.assert_not_called()
+        doctor = self.doctor.call_args.args[0]
         self.assertEqual(doctor[doctor.index("doctor") + 1:doctor.index("--venv")], ["core"])
-        self.assertEqual(self.state["dependencies"]["profiles"], ["core"])
-        self.assertEqual(self.state["dependencies"]["optional_profiles"], ["article", "tau", "test"])
-        self.assertEqual(self.state["dependencies"]["status"], "verified")
-        self.assertEqual(self.manifest, original)
-        self.api.save_stage.assert_called_once_with(self.state, "dependencies", "prepared")
+        self.assertEqual(result["source"], "verified-existing")
+        self.assertEqual(result["python"], str(self.python))
 
     def test_missing_core_installs_only_core_and_verifies_before_proceeding(self):
         """首次缺少核心包时只安装 core，再通过核心核验，不启动可选工具安装。"""
-        self.api.run_utf8_capture.side_effect = [
+        self.doctor.side_effect = [
             subprocess.CompletedProcess([], 1, "[]"),
             subprocess.CompletedProcess([], 0, json.dumps(self.checks))]
-        self.prepare()
-        command = self.api.run_process.call_args.args[0]
+        result = self.prepare(base_python=sys.executable)
+        command = self.install.call_args.args[0]
+        self.assertEqual(command[0], sys.executable)
         self.assertEqual(command[command.index("install") + 1:command.index("--venv")], ["core"])
-        self.assertEqual(self.api.run_utf8_capture.call_count, 2)
-        self.assertEqual(self.state["dependencies"]["source"], "shared-platform-bootstrap")
+        self.assertEqual(self.doctor.call_count, 2)
+        self.assertEqual(result["source"], "code-dependency-bootstrap")
 
     def test_core_failure_remains_blocking(self):
         """核心依赖安装失败仍阻止后续服务，不能被当成可选缺失忽略。"""
-        self.api.run_utf8_capture.return_value = subprocess.CompletedProcess([], 1, "[]")
-        self.api.run_process.return_value = subprocess.CompletedProcess([], 1)
+        self.doctor.return_value = subprocess.CompletedProcess([], 1, "[]")
+        self.install.return_value = subprocess.CompletedProcess([], 1)
         with self.assertRaisesRegex(RuntimeError, "Dependency preparation failed"):
             self.prepare()
-        self.api.save_stage.assert_not_called()
-        self.assertNotIn("dependencies", self.state)
 
     def test_invalid_core_evidence_is_not_accepted_as_optional(self):
         """核心核验进程虽返回成功，失败或损坏的清单仍必须拒绝。"""
         for output in ('[{"name":"core: missing","ok":false}]', "not JSON", "[]"):
             with self.subTest(output=output):
-                self.api.run_utf8_capture.return_value = subprocess.CompletedProcess([], 0, output)
+                self.doctor.return_value = subprocess.CompletedProcess([], 0, output)
                 with self.assertRaises(ValueError):
                     self.prepare()
-        self.api.save_stage.assert_not_called()
 
     def test_article_bootstrap_never_installs_tex_implicitly(self):
         """即使请求 article profile，通用 bootstrap 也不下载或运行 TeX 安装器。"""

@@ -32,16 +32,14 @@ from packaging.version import Version
 from management_common.portal_database import portal_database
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
-from management_common.portal_paths import path as portal_path, resolve_directory
-from management_common.site_config import read_site_config
-from management_common.provider_runtime_paths import runtime_entry
+from management_common.portal_paths import path as portal_path
+from management_common.code_environment import provider_entry, provider_directory
 from .provider_preparation import phase, diagnosed, PreparationError
 
 LOGGER = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
-_PROVIDER_DEPLOYMENT = read_site_config().get("deployment", {}).get("providers", {})
-RUNTIMES = resolve_directory(_PROVIDER_DEPLOYMENT.get("runtime_root", str(portal_path("staging_root") / "provider-runtimes")))
-STATE_ROOT = resolve_directory(_PROVIDER_DEPLOYMENT.get("state_root", str(portal_path("staging_root") / "provider-update-state")))
+RUNTIMES = provider_directory()
+STATE_ROOT = portal_path("provider-state")
 
 
 def npm_binary(root: Path, name: str) -> Path:
@@ -66,9 +64,10 @@ def run_command(*command: str, timeout: int = 1800, env: dict[str, str] | None =
 
 
 def _service_control():
-    if sys.platform == "win32":
-        from scripts.tfi_release_platform_windows import service_controller
-        return service_controller()
+    if sys.platform in {"win32", "darwin"}:
+        from management_common.instance_manifest import load
+        from scripts.instance_services import controller
+        return controller(load())
     from scripts.portal_service_control import ServiceControl
     from scripts.portal_service_units import _run as run_unit_command
     def run(*command, check=True):
@@ -103,32 +102,6 @@ def linked_version(link: Path, prefix: str) -> str:
     return match.group(1) if match else "0"
 
 
-def _user_programs(name: str):
-    """Find an installed program without changing a service's PATH or HOME.
-
-    A fresh instance deliberately isolates HOME and starts with a small PATH.
-    The OS account, not that instance HOME, owns the user's local executables.
-    Only this account's standard executable directories are considered.
-    """
-    existing = shutil.which(name)
-    if existing:
-        yield Path(existing)
-    if os.name == "posix":
-        import pwd
-        try:
-            home = Path(pwd.getpwuid(os.getuid()).pw_dir)
-        except KeyError:
-            return
-        for directory in (home / ".local/bin", home / "bin"):
-            candidate = directory / name
-            if candidate.is_file() and os.access(candidate, os.X_OK):
-                yield candidate
-
-
-def _user_program(name: str) -> Path | None:
-    return next(_user_programs(name), None)
-
-
 def _claude_sdk(interpreter: Path) -> tuple[Path, str] | None:
     """Verify a reusable environment, including the daemon's dependencies.
 
@@ -161,33 +134,6 @@ def _claude_sdk(interpreter: Path) -> tuple[Path, str] | None:
         return None
 
 
-def _claude_service_python() -> Path | None:
-    """An existing user service is an authoritative runtime location on Linux.
-
-    Read only its command, never its Environment (which may contain secrets).
-    Do not guess a previous installation's directory or scan other users.
-    """
-    if not sys.platform.startswith("linux"):
-        return None
-    try:
-        from scripts.portal_service_units import provider_runtime_services
-        services = provider_runtime_services("portal-claude-code.service")
-        if not services:
-            return None
-        command = run_command("systemctl", "--user", "show", services[0],
-                              "--property=ExecStart", "--value", timeout=5)
-        match = re.search(r"\bpath=(.*?)\s*;\s*argv\[\]=(.*?)\s*;", command)
-        if match:
-            binary, argv = match.group(1).strip(), shlex.split(match.group(2))
-            path = Path(binary)
-            if (path.is_absolute() and re.fullmatch(r"python(?:\d+(?:\.\d+)?)?", path.name)
-                    and argv == [binary, "-m", "management_portal.claude_code_daemon"]):
-                return path
-    except (OSError, ValueError, subprocess.SubprocessError):
-        pass
-    return None
-
-
 class ProviderRuntime:
     """How Portal checks, stages and switches one Provider's shared local runtime.
 
@@ -196,8 +142,8 @@ class ProviderRuntime:
     runtime is built from, in the same order; a newer release of any of them
     stages a new runtime.  Portal's clients run the current runtime through
     ``link``; activation points ``activation_link`` at the staged one
-    (``link_target``) and restarts ``services``.  When the two differ, ``link``
-    is a program Portal did not install: it is reused but never replaced.
+    (``link_target``) and restarts ``services``. Programs belong to the selected
+    code's dependency directory.
     """
 
     services: tuple[str, ...] = ()
@@ -253,15 +199,9 @@ class ProviderRuntime:
 
 
 class CodexRuntime(ProviderRuntime):
-    # The deployment owner renders the shared template separately. Account
-    # instances are runtime state, not source files or an installation input.
+    # Each account host is its own registered component, defined when the
+    # account starts; there is no static definition to install beforehand.
     unit_files = ()
-
-    def service_control(self):
-        if sys.platform in {"win32", "darwin"}:
-            from scripts.portal_service_units import _native_codex_controller
-            return _native_codex_controller()
-        return super().service_control()
 
     @property
     def services(self) -> tuple[str, ...]:
@@ -303,12 +243,10 @@ class CodexRuntime(ProviderRuntime):
 
     @staticmethod
     def _write_launcher(root: Path, entry: Path) -> Path:
-        """npm's entry finds node through PATH. systemd account services do not
-        share Portal's PATH (launchd jobs carry it), so run the entry with the
-        node that installed this runtime."""
-        node = shutil.which("node")
-        if not node:
-            raise RuntimeError("Codex requires node on PATH")
+        """Use the Node version selected by the backend code's dependency catalog."""
+        from management_common.code_environment import native_binary
+        from management_common.instance_manifest import load
+        node = str(native_binary(load().code_root(), 'node'))
         launcher = root / "portal-codex"
         content = f'#!/bin/sh\nexec {shlex.quote(node)} {shlex.quote(str(entry.resolve()))} "$@"\n'
         if not launcher.is_file() or launcher.read_text() != content:
@@ -319,16 +257,10 @@ class CodexRuntime(ProviderRuntime):
         return launcher
 
     def link(self) -> Path:
-        managed = self.activation_link()
-        if sys.platform == "win32" or _PROVIDER_DEPLOYMENT.get("codex_binary") or managed.is_symlink():
-            return managed
-        # Until Portal activates its own runtime, reuse a Codex found on PATH.
-        # Once activated, the managed link stays the program services run.
-        return _user_program("codex") or managed
+        return self.activation_link()
 
     def activation_link(self) -> Path:
-        default = RUNTIMES / ("codex-cli-current" if sys.platform == "win32" else "codex")
-        return runtime_entry(_PROVIDER_DEPLOYMENT, "codex_binary", default)
+        return provider_entry("codex_binary")
 
     def link_target(self, root: Path) -> Path:
         if sys.platform == "win32":
@@ -352,10 +284,6 @@ class ClaudeRuntime(ProviderRuntime):
         from scripts.portal_service_units import start_claude_service
         if self.ready():
             return
-        # Reused SDKs stay in place; the native component runner uses the
-        # instance-owned entry rather than an arbitrary PATH interpreter.
-        if sys.platform in {"win32", "darwin"} and not self.activation_link().exists():
-            _link(self.activation_link(), self.link())
         def wait_ready():
             deadline = time.monotonic() + 45
             while not self.ready():
@@ -374,9 +302,7 @@ class ClaudeRuntime(ProviderRuntime):
 
     def installed(self) -> tuple[str, ...]:
         root = self.link()
-        found = self.__dict__.get("_existing_sdk")
-        if not found or found[0] != root:
-            found = _claude_sdk(venv_python(root))
+        found = _claude_sdk(venv_python(root))
         return (found[1] if found else "0",)
 
     @diagnosed("dependency_install")
@@ -405,37 +331,10 @@ class ClaudeRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
-        # Preserve the installer's explicit override and an activated runtime.
-        configured = os.environ.get("PORTAL_CLAUDE_RUNTIME_ROOT", "").strip()
-        if configured:
-            return resolve_directory(configured)
-        managed = self.activation_link()
-        if (_PROVIDER_DEPLOYMENT.get("claude_runtime_current")
-                or managed.exists() or managed.is_symlink()):
-            return managed
-        found = self._existing_sdk
-        return found[0] if found else managed
-
-    @cached_property
-    def _existing_sdk(self) -> tuple[Path, str] | None:
-        # One observation per runtime object/pass, shared by link/installed.
-        # No cross-request cache can hide a newly installed runtime.
-        seen: set[Path] = set()
-        for interpreter in (Path(sys.executable), *_user_programs("python3"), *_user_programs("python")):
-            if interpreter not in seen:
-                seen.add(interpreter)
-                found = _claude_sdk(interpreter)
-                if found:
-                    return found
-        interpreter = _claude_service_python()
-        if interpreter is not None and interpreter not in seen:
-            found = _claude_sdk(interpreter)
-            if found:
-                return found
-        return None
+        return self.activation_link()
 
     def activation_link(self) -> Path:
-        return runtime_entry(_PROVIDER_DEPLOYMENT, "claude_runtime_current", RUNTIMES / "claude-agent-sdk-current")
+        return provider_entry("claude_runtime_current")
 
     def busy(self) -> bool:
         # The daemon also runs turns Claude Code starts by itself.
@@ -499,7 +398,7 @@ class KimiRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
-        return runtime_entry(_PROVIDER_DEPLOYMENT, "kimi_runtime_current", RUNTIMES / "kimi-code-current")
+        return provider_entry("kimi_runtime_current")
 
 
 class DshRuntime(ProviderRuntime):
@@ -553,7 +452,7 @@ class DshRuntime(ProviderRuntime):
         return root
 
     def link(self) -> Path:
-        return runtime_entry(_PROVIDER_DEPLOYMENT, "dsh_runtime_current", RUNTIMES / "dsh-runtime-current")
+        return provider_entry("dsh_runtime_current")
 
 
 def runtimes() -> dict[str, ProviderRuntime]:
@@ -902,9 +801,6 @@ def run_update_pass() -> dict[str, object]:
                 if not _newer(available, installed):
                     if pending.pop(provider, None) is not None:
                         save()
-                    continue
-                if runtime.link() != runtime.activation_link():
-                    # A reused program is updated by whoever installed it.
                     continue
                 RUNTIMES.mkdir(parents=True, exist_ok=True)
                 with phase("dependency_install"):

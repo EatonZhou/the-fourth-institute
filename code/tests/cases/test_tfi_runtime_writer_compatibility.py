@@ -172,6 +172,3 @@ def test_transformation_reentry_keeps_historical_positions_and_receipt():
     assert transform() == 'segment_result'
     assert operation_rows(store, 'trace_transformation') == before
     assert store.sequence_segment_ids(store.trace_sequence_id('resident_fixture')) == positions
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

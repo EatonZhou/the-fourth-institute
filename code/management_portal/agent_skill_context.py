@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from management_common.portal_paths import path as portal_path
 
 import hashlib
 import threading
@@ -8,6 +7,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 
+from management_common.skill_paths import CORE_SKILLS_ROOT
 PORTAL_SYSTEM_SKILL = "tfi-agent-rule"
 PORTAL_ROLE_FILES = {
     "development": "portal-development.md",
@@ -135,7 +135,7 @@ def _cached_materialization(
 def materialize_portal_skills(
     role: str,
     *,
-    skill_root: str = str(portal_path("share_root") / "Skills"),
+    skill_root: str | None = None,
     char_budget: int = DEFAULT_MATERIALIZED_SKILL_CHAR_BUDGET,
     system_skill_name: str | None = None,
 ) -> MaterializedPortalSkills:
@@ -144,8 +144,8 @@ def materialize_portal_skills(
     The cache is content-addressed for prompt provenance and metadata-addressed
     for cheap reuse.  If the source is temporarily unavailable, the last known
     materialization is used and labelled stale.
-    Distribution may explicitly name the canonical directory; only skill_root
-    selects an installation-specific location.
+    Services read their own code rules. Distribution validation may explicitly
+    supply the exported code directory.
     """
 
     role = str(role or "").strip()
@@ -154,7 +154,7 @@ def materialize_portal_skills(
     name = PORTAL_SYSTEM_SKILL if system_skill_name is None else system_skill_name
     if name != PORTAL_SYSTEM_SKILL:
         raise ValueError("Portal system Skill directory must be tfi-agent-rule")
-    root = Path(skill_root) / name
+    root = (Path(skill_root) if skill_root is not None else CORE_SKILLS_ROOT) / name
     cache_key = (str(root), role)
     paths = [root / "SKILL.md"]
     role_filename = PORTAL_ROLE_FILES.get(role)

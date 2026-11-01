@@ -5,7 +5,7 @@ import json
 from typing import Any
 
 from management_common.database_time import epoch_seconds, iso_time
-from management_common.json_columns import json_text
+from management_common.json_columns import json_text, json_value
 
 from .provider_catalog import AGENT_PROVIDERS
 
@@ -19,11 +19,11 @@ def compact_json(value: object) -> str:
 
 def json_object(value: object) -> dict[str, Any]:
     if isinstance(value, dict):
-        return value
+        return json_value(value)
     if not isinstance(value, str) or not value:
         return {}
     try:
-        payload = json.loads(value)
+        payload = json_value(value)
     except json.JSONDecodeError:
         return {}
     return payload if isinstance(payload, dict) else {}

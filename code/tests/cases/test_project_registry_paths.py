@@ -17,12 +17,12 @@ class ProjectRegistryPathsTest(unittest.TestCase):
                 project_registry.runtime_path(value)
 
     def test_concrete_and_share_relative_paths_keep_their_meaning(self):
-        with patch.object(project_registry, "SHARE_ROOT", Path("/tmp/registry-share")):
-            for value in ("/Projects/Example", "Projects/Example", "/Codes/Example"):
+        with patch.object(project_registry, "PROJECTS_ROOT", Path("/tmp/registry-projects")):
+            for value in ("/Projects/Example", "Projects/Example", "Example"):
                 with self.subTest(value=value):
                     self.assertEqual(
                         project_registry.runtime_path(value),
-                        (Path("/tmp/registry-share") / value.lstrip("/")).resolve(),
+                        (Path("/tmp/registry-projects") / "Example").resolve(),
                     )
             self.assertEqual(project_registry.runtime_path("/tmp/external"), Path("/tmp/external").resolve())
             self.assertIsNone(project_registry.runtime_path(""))

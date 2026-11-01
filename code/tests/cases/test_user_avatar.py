@@ -1,6 +1,5 @@
 import base64
 import io
-import stat
 from types import SimpleNamespace
 from urllib.parse import urlparse
 from unittest.mock import Mock
@@ -18,22 +17,18 @@ def image_payload(fmt='PNG', size=(64, 48)):
 
 
 @pytest.mark.parametrize('fmt', ['PNG', 'JPEG', 'WEBP'])
-def test_user_avatar_validates_and_normalizes_images_in_protected_store(tmp_path, fmt):
-    """验证 Menu / Package 的授权来源、身份隔离、交互与生命周期：test_user_avatar_validates_and_normalizes_images_in_protected_store。
+def test_user_avatar_validates_and_normalizes_images_in_database_store(fmt):
+    """验证 Menu / Package 的授权来源、身份隔离、交互与生命周期：test_user_avatar_validates_and_normalizes_images_in_database_store。
 
     :importance: P1
     :design: decision_b820faf42218, decision_5bc3fdfc7eec
     """
-    store = avatars.UserAvatarStore(tmp_path / 'avatars')
+    store = avatars.user_avatar_store()
     result = store.update('alice', image_payload(fmt, (512, 256)))
     assert result['url'].startswith('/api/account/avatar/image?user=alice&v=')
     content = store.image('alice', result['version'])
     with Image.open(io.BytesIO(content)) as image:
         assert image.format == 'PNG' and image.size == (256, 128) and not image.info
-    assert stat.S_IMODE(store.root.stat().st_mode) == 0o700
-    for path in store.root.iterdir():
-        if path.suffix in {'.json', '.png'}:
-            assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert store.get('bob') == avatars.sprite(0)
     with pytest.raises(FileNotFoundError):
         store.image('bob', result['version'])
@@ -50,25 +45,25 @@ def test_user_avatar_validates_and_normalizes_images_in_protected_store(tmp_path
     {'kind': 'upload', 'data_base64': base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"/>').decode()},
     image_payload('GIF'), image_payload(size=(15, 16)), image_payload(size=(2049, 16)),
 ])
-def test_user_avatar_rejects_spoofed_targets_and_invalid_images_without_writes(tmp_path, payload):
+def test_user_avatar_rejects_spoofed_targets_and_invalid_images_without_writes(payload):
     """验证 Menu / Package 的授权来源、身份隔离、交互与生命周期：test_user_avatar_rejects_spoofed_targets_and_invalid_images_without_writes。
 
     :importance: P1
     :design: decision_b820faf42218, decision_5bc3fdfc7eec
     """
-    store = avatars.UserAvatarStore(tmp_path / 'avatars')
+    store = avatars.user_avatar_store()
     with pytest.raises(ValueError):
         store.update('alice', payload)
-    assert not store.root.exists()
+    assert store.read('alice') is None
 
 
-def test_user_avatar_rejects_oversize_truncated_images_and_non_user_identity(tmp_path):
+def test_user_avatar_rejects_oversize_truncated_images_and_non_user_identity():
     """验证 Menu / Package 的授权来源、身份隔离、交互与生命周期：test_user_avatar_rejects_oversize_truncated_images_and_non_user_identity。
 
     :importance: P1
     :design: decision_b820faf42218, decision_5bc3fdfc7eec
     """
-    store = avatars.UserAvatarStore(tmp_path / 'avatars')
+    store = avatars.user_avatar_store()
     with pytest.raises(ValueError):
         store.update('alice', {'kind': 'upload', 'data_base64': 'A' * (avatars.MAX_JSON_BYTES + 1)})
     payload = image_payload()
@@ -77,29 +72,29 @@ def test_user_avatar_rejects_oversize_truncated_images_and_non_user_identity(tmp
         store.update('alice', payload)
     with pytest.raises(PermissionError):
         store.update('resident_123456789abc', {'kind': 'sprite', 'sprite_index': 1})
-    assert not store.root.exists()
+    assert store.read('alice') is None
 
 
-def test_user_avatar_delete_removes_only_the_selected_users_records_and_images(tmp_path):
+def test_user_avatar_delete_removes_only_the_selected_users_records_and_images():
     """删除用户头像只移除该用户的记录和图片，再次删除返回 False"""
-    store = avatars.UserAvatarStore(tmp_path / 'avatars')
-    store.update('alice', image_payload())
+    store = avatars.user_avatar_store()
+    alice = store.update('alice', image_payload())
     bob = store.update('bob', image_payload('JPEG'))
 
     assert store.delete('alice') is True
     assert store.get('alice') == avatars.sprite(0)
-    assert not list(store.root.glob(avatars._user('alice') + '-*.png'))
+    with pytest.raises(FileNotFoundError):
+        store.image('alice', alice['version'])
     assert store.image('bob', bob['version'])
     assert store.get('bob') == bob
     assert store.delete('alice') is False
 
 
-def test_user_avatar_image_read_needs_no_viewer_permission(tmp_path, monkeypatch):
+def test_user_avatar_image_read_needs_no_viewer_permission(monkeypatch):
     """读取用户头像图片无需查看者身份或权限，响应可长期缓存"""
     from management_portal import serve_management_portal as server
     from management_portal import web_accounts
-    store = avatars.UserAvatarStore(tmp_path / 'avatars')
-    monkeypatch.setattr(avatars, 'user_avatar_store', lambda: store)
+    store = avatars.user_avatar_store()
     principal = {'admin': False}
     monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True, has_portal_authority=lambda user: principal['admin']))
     monkeypatch.setattr(server._ACCOUNT_HTTP, 'respond', lambda handler, status, payload: (status, payload))
@@ -120,12 +115,11 @@ def test_user_avatar_image_read_needs_no_viewer_permission(tmp_path, monkeypatch
     assert server._ACCOUNT_HTTP.avatar_get(Mock(), address, 'bob')[0] == 200
 
 
-def test_message_avatar_metadata_exposes_only_avatar(tmp_path, monkeypatch):
+def test_message_avatar_metadata_exposes_only_avatar(monkeypatch):
     """按 principal 查询用户头像只返回头像，查自己的头像设置需登录，参数非法返回 400"""
     from management_portal import serve_management_portal as server
     from management_portal import web_accounts
-    store = avatars.UserAvatarStore(tmp_path / 'avatars')
-    monkeypatch.setattr(avatars, 'user_avatar_store', lambda: store)
+    store = avatars.user_avatar_store()
     monkeypatch.setattr(web_accounts, '_PORTAL_ACCESS', SimpleNamespace(is_active=lambda user: True))
     monkeypatch.setattr(server._ACCOUNT_HTTP, 'respond', lambda handler, status, payload: (status, payload))
     store.update('alice', {'kind': 'sprite', 'sprite_index': 3})

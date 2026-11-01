@@ -53,7 +53,6 @@ def test_resident_project_creation_preserves_accounts(
     write_projects("schema_version: 1\nprojects: []\n")
     access = PortalAccessStore()
     access.upsert_user("alice", actor="test", status="active")
-    monkeypatch.setattr(project, "SHARE_ROOT", tmp_path)
     monkeypatch.setattr(project, "PROJECTS_ROOT", tmp_path / "Projects")
 
     result = project.register_project(
@@ -118,7 +117,6 @@ def test_a_project_id_may_use_chinese_letters(monkeypatch, tmp_path):
     from management_portal import project_rename
 
     write_projects("schema_version: 1\nprojects: []\n")
-    monkeypatch.setattr(project, "SHARE_ROOT", tmp_path)
     monkeypatch.setattr(project, "PROJECTS_ROOT", tmp_path / "Projects")
     assert project.create_project({"id": "AI员工", "project_type": "company"})["resource_id"] == "AI员工"
     assert (tmp_path / "Projects" / "AI员工" / "summary.md").is_file()
@@ -140,7 +138,6 @@ def test_a_project_commits_with_its_creator_and_its_place_in_the_permission_tree
     from tests.cases.permission_test_support import enable, user_fact
 
     write_projects("schema_version: 1\nprojects: []\n")
-    monkeypatch.setattr(project, "SHARE_ROOT", tmp_path)
     monkeypatch.setattr(project, "PROJECTS_ROOT", tmp_path / "Projects")
     permissions = enable(monkeypatch)
     permissions.users("alice", category="intern")

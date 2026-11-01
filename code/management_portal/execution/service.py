@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, cast
 
 from management_common import loaded_modules
+from management_common.instance_manifest import load as load_instance
 
 from ..ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
 from .config import (
@@ -1022,7 +1023,7 @@ def main() -> int:
     server = ExecutionServiceServer(
         args.socket,
         scheduler,
-        instance=os.getenv("PORTAL_INSTANCE", ""),
+        instance=load_instance().name,
         build_id=os.getenv("PORTAL_BUILD_ID", ""),
         agent_data=get_agent_data_store(),
     )

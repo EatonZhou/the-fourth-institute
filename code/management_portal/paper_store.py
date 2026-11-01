@@ -5,7 +5,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 from pathlib import Path
 import re
 import shutil
@@ -16,6 +15,7 @@ from urllib.parse import urlparse
 import urllib.request
 
 from management_common import process_runtime
+from management_common.instance_manifest import AREAS
 from management_common.portal_paths import path as portal_path
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_portal import paper_state_store
@@ -33,8 +33,8 @@ from management_portal.shared_state import atomic_replace_json, exclusive_file_l
 
 LOGGER = logging.getLogger(__name__)
 WORKSPACE_ROOT = Path(__file__).resolve().parents[1]
-DATA_ROOT = Path(os.getenv("PAPER_WORKSPACE_ROOT", str(portal_path("staging_root") / "shared" / "portal_paper_workspace")))
-PAPER_STORE_ROOT = Path(os.getenv("PAPER_STORE_ROOT", str(portal_path("share_root") / "Papers")))
+DATA_ROOT = portal_path("features") / "paper_workspace"
+PAPER_STORE_ROOT = portal_path('papers')
 # Reviews, notes, job records and curated venues live in paper_state_store.
 
 
@@ -69,10 +69,7 @@ def _notify_paper_projection(
 
 
 ALLOWED_FILE_ROOTS = [
-    portal_path("share_root"),
-    portal_path("staging_root"),
-    DATA_ROOT,
-    PAPER_STORE_ROOT,
+    *(portal_path(area) for area in AREAS),
     WORKSPACE_ROOT,
 ]
 

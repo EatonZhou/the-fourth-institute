@@ -8,10 +8,12 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
-from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
@@ -97,6 +99,46 @@ class ExamplePaths(unittest.TestCase):
         cls.seed = Path(os.environ.get("TFI_EXAMPLE_SEED", REPO / "instance/example_instance/seed"))
         cls.manifest = json.loads((cls.seed / "manifest.json").read_text(encoding="utf-8"))
 
+    def test_data_is_laid_out_by_area_and_records_name_files_by_area(self):
+        """Seed files sit in data/<area>/ and every record names its file as <area>:<path>."""
+        from management_portal.distribution.layout import EXPORT_AREAS, reference_target, split_reference
+        from scripts.tfi_seed_selection import inserts
+        engineering = self.manifest["engineering"]
+        areas = sorted(path.name for path in (self.seed / "data").iterdir())
+        self.assertTrue(set(areas) <= set(EXPORT_AREAS), areas)
+        self.assertEqual(engineering["files"], {area: "data/" + area for area in areas})
+        self.assertEqual(engineering["directory_mappings"],
+                         [{"placeholder": "${code_root}", "root": "code_root", "path": "."}])
+        sql = (self.seed / engineering["database"]["path"]).read_text(encoding="utf-8")
+        # The only directory placeholder left is the code directory.
+        placeholders = set(re.findall(r"\$\{(\w+_root)\}", sql + json.dumps(self.manifest)))
+        self.assertEqual(placeholders, {"code_root"})
+        lineage_project, located = {}, []
+        for _, _, table, row in inserts(sql):
+            if table == ("lineage", "lineages"):
+                lineage_project[row["lineage_id"]] = row.get("project_id") or ""
+            elif table == ("workspace", "workspaces"):
+                located.append(row["path"])
+            elif table == ("resource_registry", "registry_documents") and row["collection"] in {"repo", "article"}:
+                document = row["document_json"]
+                located.append(document.get("canonical_checkout") or document["canonical_root"])
+        self.assertTrue(located)
+        for reference in located:
+            if reference == "${code_root}":
+                continue
+            split_reference(reference)
+            self.assertTrue((self.seed / reference_target(reference)).is_dir(), reference)
+        # Repos and articles sit in their project's folder; a Lineage folder in its project's agents folder.
+        for reference in located:
+            if "/articles/" in reference or "/codes/" in reference:
+                self.assertRegex(reference, r"^projects:[^/]+/(articles/article|codes/repo)_[0-9a-f]{12}$")
+        data = self.seed / "data"
+        for folder in data.glob("projects/*/agents/lineage_*"):
+            self.assertEqual(lineage_project[folder.name], folder.parent.parent.name, folder)
+        for folder in data.glob("lineages/lineage_*"):
+            self.assertEqual(lineage_project[folder.name], "", folder)
+        self.assertTrue(list(data.glob("projects/*/agents/lineage_*")))
+
     def test_inventory_and_path_budget(self):
         """安装与实例回归：inventory and path budget。"""
         rows = [r for r in inventory(self.seed) if r["path"] != "manifest.json"]
@@ -106,7 +148,7 @@ class ExamplePaths(unittest.TestCase):
 
     def test_architecture_descriptors(self):
         """安装与实例回归：architecture descriptors。"""
-        roots = list(self.seed.glob("data/share_root/Agents/**/workspace/architecture/manifest.json"))
+        roots = list(self.seed.glob("data/projects/*/agents/*/residents/*/workspace/architecture/manifest.json"))
         self.assertEqual(len(roots), 1)
         workspace = roots[0].parent.parent
         checked = set()
@@ -134,7 +176,7 @@ class ExamplePaths(unittest.TestCase):
 
     def test_architecture_model_loads_in_current_consumer(self):
         """An inventoried model must also satisfy the installed UI contract."""
-        model = next(self.seed.glob('data/share_root/Agents/**/architecture/explore/exploration-model.json'))
+        model = next(self.seed.glob('data/projects/*/agents/*/residents/*/workspace/architecture/explore/exploration-model.json'))
         consumer = REPO / 'code/management_portal/workbench_projections/development_app/src/architecture/exploration-model.js'
         program = """
 import fs from 'node:fs';
@@ -147,18 +189,24 @@ if (!result.valid) { console.error(JSON.stringify(result.errors)); process.exit(
     def test_published_artifacts_through_real_reader(self):
         """安装与实例回归：published artifacts through real reader。"""
         from management_portal.workbench_projections.application_build import read_artifact
-        root = self.seed / "data/staging_root/shared/projection_applications"
-        with patch.dict(os.environ, {"PORTAL_PROJECTION_ARTIFACT_ROOT": str(root.resolve())}):
-            for directory in root.iterdir():
-                index = json.loads((directory / "artifact.json").read_text(encoding="utf-8"))
-                build = {"status": "ready", "artifact_hash": directory.name, **index}
-                for name in index["files"]:
-                    content, _ = read_artifact(build, name)
-                    self.assertEqual(len(content), index["files"][name]["size"])
+        from tests.cases.instance_test_support import selected_instance
+        # The reader finds artifacts in the features area; install the seed's features/ there, as the installer does.
+        with tempfile.TemporaryDirectory() as temporary:
+            area = Path(temporary) / "features"
+            shutil.copytree(self.seed / "data/features", area)
+            root = area / "projection_applications"
+            self.assertTrue(list(root.iterdir()))
+            with selected_instance(Path(temporary) / "instance", areas={"features": area}):
+                for directory in root.iterdir():
+                    index = json.loads((directory / "artifact.json").read_text(encoding="utf-8"))
+                    build = {"status": "ready", "artifact_hash": directory.name, **index}
+                    for name in index["files"]:
+                        content, _ = read_artifact(build, name)
+                        self.assertEqual(len(content), index["files"][name]["size"])
 
     def test_lenia_workers_preserve_clip_and_frame_references(self):
         """安装与实例回归：lenia workers preserve clip and frame references。"""
-        roots = list(self.seed.glob("data/staging_root/shared/projection_applications/*/files/catalog.js"))
+        roots = list(self.seed.glob("data/features/projection_applications/*/files/catalog.js"))
         self.assertEqual(len(roots), 1)
         program = r"""
 const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto');

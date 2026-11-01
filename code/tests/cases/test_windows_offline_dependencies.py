@@ -77,10 +77,16 @@ class OfflineDependencies(unittest.TestCase):
     def test_launcher_enforces_offline_receipt_for_both_case_choices(self):
         (self.root / 'windows-package.json').write_text(json.dumps({'initialization_requires_network': False}))
         for included in (True, False):
-            target = launcher.make_target(self.root, 'example_instance', {'run_id': 'test', 'include_examples': included},
-                                          ports={'web': 28199})
-            self.assertTrue(target['offline_dependencies'])
-            self.assertTrue(target['bundled_python_dependencies'])
+            flow = launcher.DefaultStartup(self.root)
+            bundle = self.root / 'manifest.json'
+            with patch.object(flow, 'registered', return_value=False), \
+                    patch.object(flow, 'included', return_value=included), \
+                    patch.object(flow, 'engineering', return_value=bundle), \
+                    patch.object(flow, 'execute') as execute:
+                flow.initialize()
+            self.assertIn('--offline', execute.call_args.args[0])
+        (self.root / 'windows-package.json').write_text(json.dumps({'initialization_requires_network': True}))
+        self.assertFalse(launcher.DefaultStartup(self.root).offline())
 
     def test_bootstrap_ignores_operator_pip_targets_and_uses_local_lock(self):
         script = runpy.run_path(str(CODE / 'scripts/bootstrap_portal'))
@@ -114,39 +120,33 @@ class OfflineDependencies(unittest.TestCase):
                                             '--wheelhouse', str(self.cache)]), 2)
         self.assertEqual(len(calls), 1)  # No online retry and no successful follow-up.
 
-    def test_initialization_consumes_local_wheels_and_retries_reuse_environment(self):
-        root = self.root / 'instance/example_instance'
-        (root / 'runtime').mkdir(parents=True)
-        target = {'install_root': str(root), 'shared_code_root': str(self.source), 'python': 'bundled-python.exe',
-                  'offline_dependencies': True, 'bundled_python_dependencies': True}
-        state = {'target': target, 'manifest_sha256': 'fixture'}
+    def test_code_environment_consumes_local_wheels_and_retries_reuse_it(self):
         wheelhouse = self.root / 'dependencies/python-wheels'
         wheelhouse.mkdir(parents=True)
         (wheelhouse / 'requirements.lock').write_text('')
-        python = self.root / 'dependencies/fixture/venv/Scripts/python.exe'
+        environment = self.root / 'dependencies/fixture/venv'
+        python = environment / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
         calls = []
+
         def doctor(*args, **kw):
-            return SimpleNamespace(returncode=0 if python.exists() else 1,
-                                   stdout=json.dumps([{'ok': True}]))
+            return SimpleNamespace(returncode=0 if python.exists() else 1, stdout=json.dumps([{'ok': True}]))
+
         def install(command, **kwargs):
             calls.append(command)
             self.assertEqual(command[-2:], ['--wheelhouse', str(wheelhouse)])
             python.parent.mkdir(parents=True)
             python.touch()
             return SimpleNamespace(returncode=0)
-        api = SimpleNamespace(run_utf8_capture=doctor, run_process=install, clean_environment=lambda _: {},
-                              native_tool=lambda _: 'python.exe', save_stage=lambda *args: None)
-        with patch.object(dependencies, 'profiles', return_value=['core']), \
-                patch.object(dependencies, 'environment_key', return_value='fixture'):
-            dependencies._prepare(api, state, {})
-            self.assertEqual(state['dependencies']['source'], 'bundled-offline-wheels')
-            dependencies._prepare(api, state, {})
-            self.assertEqual(state['dependencies']['source'], 'verified-existing-installation')
+        with patch.object(dependencies, 'environment_directory', return_value=environment), \
+                patch.object(dependencies, 'run_utf8_capture', side_effect=doctor), \
+                patch.object(dependencies, 'run_process', side_effect=install):
+            self.assertEqual(dependencies.prepare(self.source, offline=True)['source'], 'bundled-offline-wheels')
+            self.assertEqual(dependencies.prepare(self.source, offline=True)['source'], 'verified-existing')
             self.assertEqual(len(calls), 1)
             python.unlink()
             (wheelhouse / 'requirements.lock').unlink()
             with self.assertRaisesRegex(RuntimeError, '缺少离线'):
-                dependencies._prepare(api, state, {})
+                dependencies.prepare(self.source, offline=True)
             self.assertEqual(len(calls), 1)
 
     def test_missing_native_archive_never_downloads_in_offline_mode(self):

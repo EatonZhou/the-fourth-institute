@@ -44,7 +44,8 @@ def sample_pptx():
 
 @pytest.fixture
 def converter(tmp_path, monkeypatch):
-    monkeypatch.setattr(preview, 'instance_root', lambda: tmp_path)
+    from tests.cases.instance_test_support import select_instance
+    select_instance(monkeypatch, tmp_path / 'instance')
     monkeypatch.setattr(preview, 'libreoffice', lambda: 'fixture-soffice')
     def convert(command, **options):
         Path(options['cwd'], 'slides.pdf').write_bytes(b'%PDF-1.4\nfixture')

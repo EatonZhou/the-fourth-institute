@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from management_common.database_time import decode_times
-from management_common.json_columns import json_text
+from management_common.json_columns import json_text, json_value
 
 TABLES = {"handoff": "workspace_handoff_work", "absorption": "context_absorption_work"}
 COLUMNS = {table: ("lineage_id", "edge_id", "progress_json") for table in TABLES.values()}
@@ -35,7 +35,7 @@ def read(connection, lineage_id):
         for kind, table in TABLES.items()), (lineage_id,) * len(TABLES)).fetchall()
     result = {}
     for row in rows:
-        result.setdefault(row['edge_id'], {})[row['kind']] = row['progress_json']
+        result.setdefault(row['edge_id'], {})[row['kind']] = json_value(row['progress_json'])
     return result
 
 

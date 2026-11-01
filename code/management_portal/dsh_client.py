@@ -1,20 +1,18 @@
 """DSH process lifecycle at the Provider boundary. No Portal database access."""
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
-from management_common.portal_paths import resolve_directory
-from management_common.site_config import read_site_config
-from management_common.provider_runtime_paths import runtime_entry
+from management_common.code_environment import provider_entry
 
 from management_common.file_lock import lock_stream
 from management_common.process_runtime import spawn_process, terminate_process_tree
 import hashlib
 import json
 import os
+import re
 import shutil
 from pathlib import Path
 import subprocess
 import sys
-import tempfile
 import time
 from types import SimpleNamespace
 
@@ -27,45 +25,33 @@ from management_common.provider_subagent_runs import STOPPING_METHOD
 from management_portal.resident_shell_environment import resident_identity_fingerprint, resident_process_environment
 from management_portal.ai_provider_registry import shared_ai_provider_registry
 
-_PROVIDERS = read_site_config().get("deployment", {}).get("providers", {})
-RUNTIME = Path(os.environ.get(
-    "PORTAL_DSH_RUNTIME_ROOT",
-    str(runtime_entry(_PROVIDERS, "dsh_runtime_current", resolve_directory(_PROVIDERS.get(
-        "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / "dsh-runtime-current")),
-))
-STATE = Path(os.environ.get("PORTAL_DSH_STATE", str(portal_path("staging_root") / "shared" / "dsh")))
-SOCKETS = Path(os.environ.get("PORTAL_DSH_SOCKETS", str(portal_path("staging_root") / "portal_locks" / "dsh")))
+RUNTIME = provider_entry("dsh_runtime_current")
+STATE = portal_path("provider-state") / "dsh"
+SOCKETS = portal_path("runtime") / "dsh"
 
 
-def _profile_modules(profile):
-    """Install dependencies before selecting them, without Windows symlink rights."""
-    modules = profile / "node_modules"
-    if os.name != "nt":
-        if not modules.exists():
-            modules.symlink_to(RUNTIME / "node_modules", target_is_directory=True)
-        return
-    source = RUNTIME.resolve()
-    lock = source / "package-lock.json"
-    identity = hashlib.sha256(str(source).encode() + (lock.read_bytes() if lock.exists() else b"")).hexdigest()
-    marker = profile / ".portal-runtime"
-    if modules.is_dir() and marker.is_file() and marker.read_text() == identity:
-        return
-    temporary = Path(tempfile.mkdtemp(prefix=".modules-", dir=profile))
-    old = temporary / "previous"
-    candidate = temporary / "candidate"
-    try:
-        shutil.copytree(source / "node_modules", candidate)
-        if modules.exists():
-            modules.rename(old)
-        try:
-            candidate.rename(modules)
-        except BaseException:
-            if old.exists():
-                old.rename(modules)
-            raise
-        marker.write_text(identity)
-    finally:
-        shutil.rmtree(temporary, ignore_errors=True)
+def _runtime_modules(names):
+    """Resolve npm exports in the installed program, without links from state."""
+    result = subprocess.run([
+        "node", "-e",
+        "const fs=require('node:fs'); const r=require('node:module').createRequire(process.argv[1]);"
+        "const names=JSON.parse(fs.readFileSync(0,'utf8'));"
+        "process.stdout.write(JSON.stringify(Object.fromEntries(names.map(n=>[n,r.resolve(n)]))));",
+        str(RUNTIME.resolve() / "package.json"),
+    ], input=json.dumps(sorted(set(names))), capture_output=True, text=True, timeout=30, check=True)
+    return json.loads(result.stdout)
+
+
+def _profile_code(profile, modules):
+    """Generated bridge files import the code owner's dependencies explicitly."""
+    for name in ("bridge.mjs", "api_provider.mjs"):
+        source = (Path(__file__).parent / "dsh_runtime" / name).read_text(encoding="utf-8")
+        source = re.sub(r"from (['\"])(@deepseek-ai/[^'\"]+)\1",
+                        lambda match: "from " + json.dumps(Path(modules[match[2]]).as_uri()), source)
+        source = source.replace("'./node_modules/@deepseek-ai/dsh/package.json'",
+                                json.dumps((RUNTIME.resolve() / "node_modules/@deepseek-ai/dsh/package.json").as_uri()))
+        (profile / name).write_text(source, encoding="utf-8")
+    shutil.copyfile(Path(__file__).parent / "dsh_runtime/request_timing.mjs", profile / "request_timing.mjs")
 
 
 def credential_paths() -> tuple[Path, ...]:
@@ -151,12 +137,8 @@ class DshClient:
             profile.mkdir(parents=True, exist_ok=True)
             (profile / "package.json").write_text(json.dumps({"name": "portal-resident", "private": True,
                 "dsh": {"profile": {"bundles": [], "patchReload": "startup"}}}))
-            _profile_modules(profile)
             # Portal owns the bridge; the installed runtime owns only npm dependencies.
             bridge = profile / "bridge.mjs"
-            shutil.copyfile(Path(__file__).parent / "dsh_runtime/bridge.mjs", bridge)
-            shutil.copyfile(Path(__file__).parent / "dsh_runtime/request_timing.mjs", profile / "request_timing.mjs")
-            shutil.copyfile(Path(__file__).parent / "dsh_runtime/api_provider.mjs", profile / "api_provider.mjs")
             ipc_module = Path(__file__).resolve().parents[1] / "management_common/local_ipc.cjs"
             (profile / "local_ipc.cjs").write_text("module.exports = require(" + json.dumps(str(ipc_module)) + ");\n", encoding="utf-8")
             rows = []
@@ -217,6 +199,12 @@ class DshClient:
                 "pythonExecutable": sys.executable,
                 "route": params["provider_profile"],
                 "identityFingerprint": hashlib.sha256(json.dumps(identity, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()}})
+            modules = _runtime_modules([row["name"] for row in rows if row["name"].startswith("@deepseek-ai/")]
+                                       + ["@deepseek-ai/dsh-llm", "@deepseek-ai/dsh-llm-deepseek"])
+            _profile_code(profile, modules)
+            for plugin_row in rows:
+                if plugin_row["name"] in modules:
+                    plugin_row["name"] = modules[plugin_row["name"]]
             (profile / "cordis.patch.yml").write_text(yaml.safe_dump([{"insert": rows}], sort_keys=False))
             launcher = RUNTIME / "node_modules/@deepseek-ai/dsh/lib/bin.js"
             if not launcher.is_file():

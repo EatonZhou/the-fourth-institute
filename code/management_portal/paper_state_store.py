@@ -10,6 +10,7 @@ from functools import lru_cache
 from psycopg.types.json import Jsonb
 from management_common.database_time import epoch_seconds, instant
 from management_common.domain_database import DomainDatabase
+from management_common.location_records import located_record, stored_record
 
 SCHEMA = "paper"
 OWNER = "state"
@@ -108,10 +109,11 @@ def decode(kind, row):
               for key, value in dict(row).items() if value is not None and (key in fields or key == identity)}
     if kind == "review_jobs" and record.get("review_id"):
         record["result"] = get("reviews", record.get("review_id")) or {}
-    return record
+    return located_record(record)
 
 
 def encode(kind, record):
+    record = stored_record(record)
     identity, fields = _kind(kind)
     unknown = set(record) - {identity, *fields}
     if unknown:

@@ -86,12 +86,7 @@ if (`$code -eq 0) {
     & '$quotedPython' native_cli_smoke.py --code `$installedCode --work 'CLI 中文 空格' --evidence evidence 2>&1 | Out-File evidence/native-cli.log -Encoding utf8
     `$code = `$LASTEXITCODE
 }
-Get-ChildItem installations -Filter *.log -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { `$_.Directory.Name -eq 'runtime' } | ForEach-Object {
-        `$case = if (`$_.FullName -match 'Lenia') { 'full' } else { 'base' }
-        Get-Content `$_.FullName -Tail 80 -Encoding utf8 |
-            Set-Content (Join-Path 'evidence' (`$case + '-component-' + `$_.Name)) -Encoding utf8
-    }
+# native_smoke.py saves component log tails into evidence before it retires each instance.
 exit `$code
 } catch {
     `$_.ToString() | Set-Content (Join-Path `$PSScriptRoot 'bootstrap-error.log') -Encoding utf8

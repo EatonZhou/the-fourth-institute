@@ -4,7 +4,6 @@ from management_portal import permission_system
 from management_portal.society_service import resident_catalog
 
 import json
-import os
 import tempfile
 import threading
 import time
@@ -26,14 +25,6 @@ from management_portal.society_service import (
 
 
 class ActiveAgentStatusTest(unittest.TestCase):
-    def setUp(self):
-        directory = tempfile.TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        patcher = mock.patch.dict(os.environ, {"PORTAL_RESIDENT_AVATAR_ROOT": directory.name})
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-
     def test_usage_snapshot_is_independent_of_blocked_agent_status(self) -> None:
         """用量快照独立刷新，不等待阻塞中的 Agent 状态汇总"""
         release_status = threading.Event()
@@ -866,7 +857,7 @@ class ActiveAgentStatusTest(unittest.TestCase):
         self.assertNotIn("lineage_id", anonymous)
         self.assertNotIn("session_title", anonymous)
         self.assertNotIn("_sprite_actor", anonymous)
-        self.assertFalse((Path(os.environ["PORTAL_RESIDENT_AVATAR_ROOT"]) / (private_id + ".json")).exists())
+        self.assertIsNone(resident_avatar.get_existing_avatar(private_id))
         self.assertEqual(payload["queued_display_count"], 0)
         self.assertEqual(payload["queued_runs"], [])
         self.assertNotIn(private_id, json.dumps(payload, ensure_ascii=False))

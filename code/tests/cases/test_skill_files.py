@@ -8,6 +8,23 @@ import pytest
 from skill_board_lan import skill_backend
 
 
+def test_core_skill_is_code_owned_and_shared_copy_is_not_indexed(tmp_path, monkeypatch):
+    core = tmp_path / "code/core_skills"
+    shared = tmp_path / "data/skills"
+    for directory in (core / "tfi-agent-rule", shared / "tfi-agent-rule", shared / "ordinary"):
+        directory.mkdir(parents=True)
+        (directory / "SKILL.md").write_text("fixture")
+    monkeypatch.setattr(skill_backend, "CORE_SKILLS_ROOT", core)
+    monkeypatch.setattr(skill_backend, "SHARED_SKILLS_ROOT", shared)
+    monkeypatch.setattr(skill_backend, "THIRD_PARTY_SKILLS_ROOT", shared / "third-party")
+    monkeypatch.setattr(skill_backend, "PROJECTS_ROOT", tmp_path / "projects")
+    monkeypatch.setattr(skill_backend, "_parse_projects", lambda **kwargs: [])
+    assert skill_backend._iter_shared_skill_roots() == [shared / "ordinary"]
+    assert not skill_backend._path_is_allowed(core / "tfi-agent-rule/SKILL.md", text_only=True)
+    with pytest.raises(PermissionError, match="not deletable"):
+        skill_backend._skill_trash_root(core / "tfi-agent-rule")
+
+
 class _SkillService:
     def __init__(self, primary: Path, root: Path) -> None:
         self.actors: list[str] = []
@@ -85,7 +102,7 @@ def test_skill_package_primary_file_and_catalog_order_contracts(tmp_path, subtes
             skill_backend._choose_primary_file(package, files)
     with subtests.test(contract='test_skill_catalog_preserves_source_group_precedence'), isolated_portal_case() as case_path:
         controller = (Path(__file__).resolve().parents[2] / 'management_portal/static/resource_catalog.js').read_text(encoding='utf-8')
-        assert '({ shared: 0, project: 1, third_party: 2 })' in controller
+        assert '({ core: -1, shared: 0, project: 1, third_party: 2 })' in controller
         assert 'const rankDifference = sourceRank(left) - sourceRank(right);' in controller
 
 

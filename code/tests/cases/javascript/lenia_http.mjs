@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 const seed=path.resolve(process.argv[2]);
-const projection=path.join(seed,'data/share_root/Codes/repo_bd47ffeac5c8/projection');
+const projection=path.join(seed,'data/projects/元胞自动机研究/codes/repo_bd47ffeac5c8/projection');
 // Simulate the LAN HTTP environment in which WebCrypto is unavailable.
 const descriptor=Object.getOwnPropertyDescriptor(globalThis,'crypto');
 Object.defineProperty(globalThis,'crypto',{configurable:true,value:undefined});
@@ -29,7 +29,7 @@ try {
  const line=sql.split('\n').find(l=>l.startsWith('INSERT INTO "workbenches"."application_packages"')&&l.includes('workbench_a8735d84f9af'));
  const values=[...line.matchAll(/'((?:[^']|'')*)'/g)].map(m=>m[1].replaceAll("''","'"));
  const build=JSON.parse(values.at(-1));
- const artifact=path.join(seed,'data/staging_root/shared/projection_applications',build.artifact_hash);
+ const artifact=path.join(seed,'data/features/projection_applications',build.artifact_hash);
  assert.equal(digest(fs.readFileSync(path.join(artifact,'artifact.json'))),build.artifact_hash);
  for(const [name,meta] of Object.entries(build.files)){
   const bytes=fs.readFileSync(path.join(artifact,'files',name));

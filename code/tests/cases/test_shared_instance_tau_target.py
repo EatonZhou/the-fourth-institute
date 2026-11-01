@@ -16,14 +16,14 @@ def test_explicit_release_target_verifies_identity_build_and_actor(tmp_path, mon
     }}
     target_file.write_text(json.dumps(target))
     monkeypatch.setenv('PORTAL_TEST_TARGET_FILE', str(target_file))
-    assert resolve_test_target().instance_id == 'release'
+    assert resolve_test_target().deployment_id == 'release'
     storage = tmp_path / 'storage.json'
     storage.write_text(json.dumps({'cookies': [{'name': 'session', 'value': 'test-only', 'domain': '127.0.0.1'}]}))
     replies = {
-        '/api/health': {'instance': 'release', 'build_id': 'candidate-123'},
+        '/api/health': {'deployment': 'release', 'build_id': 'candidate-123'},
         '/development?view=test': {},
         '/development/native-views?view=test': {'html': '<section data-test-workbench-version="component-v2"></section>'},
-        '/api/me': {'username': 'test-actor', 'portal_instance': 'release', 'build_id': 'candidate-123'},
+        '/api/me': {'username': 'test-actor', 'portal_deployment': 'release', 'build_id': 'candidate-123'},
     }
     def get(url, headers):
         path = '/' + url.split('/', 3)[-1]
@@ -32,10 +32,10 @@ def test_explicit_release_target_verifies_identity_build_and_actor(tmp_path, mon
         return json.dumps(replies[path]).encode()
     verifier = DevTargetVerifier(http_get=get)
     assert verifier.verify(storage).actual_build_id == 'candidate-123'
-    replies['/api/health']['instance'] = 'other'
+    replies['/api/health']['deployment'] = 'other'
     with pytest.raises(DevTargetError):
         verifier.verify(storage)
-    replies['/api/health']['instance'] = 'release'
+    replies['/api/health']['deployment'] = 'release'
     replies['/api/me']['username'] = 'unrelated-user'
     with pytest.raises(DevTargetError):
         verifier.verify(storage)
@@ -65,11 +65,11 @@ def test_tau_executor_retains_instance_browser_installation(monkeypatch, tmp_pat
     monkeypatch.setenv('HOME', str(tmp_path / 'instance-home'))
     monkeypatch.setenv('PLAYWRIGHT_BROWSERS_PATH', str(tmp_path / 'browsers'))
     monkeypatch.setenv('SECRET_TOKEN', 'never-forward')
-    tau = unit_environment(tmp_path, tau=True)
+    tau = unit_environment(tau=True)
     assert tau['HOME'] == str(tmp_path / 'instance-home')
     assert tau['PLAYWRIGHT_BROWSERS_PATH'] == str(tmp_path / 'browsers')
     assert 'SECRET_TOKEN' not in tau
-    local = unit_environment(tmp_path, tau=False)
+    local = unit_environment(tau=False)
     assert 'HOME' not in local
     assert local['PLAYWRIGHT_BROWSERS_PATH'] == str(tmp_path / 'browsers')
 
@@ -88,7 +88,7 @@ def test_python_and_browser_target_reject_nonlocal_or_credential_urls(tmp_path, 
     path.write_text(json.dumps({'schema': 'tfi.portal-test-target.v1', 'deployment': {
         'id':'release', 'kind':'release', 'label':'Target', 'origin':origin, 'build_id':'candidate'}}))
     if valid:
-        assert resolve_test_target(path).instance_id == 'release'
+        assert resolve_test_target(path).deployment_id == 'release'
     else:
         with pytest.raises(DevTargetError):
             resolve_test_target(path)

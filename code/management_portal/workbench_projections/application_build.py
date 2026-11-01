@@ -5,8 +5,10 @@ Windows/macOS use a local Docker Linux engine for both, with a deployment-pinned
 preloaded toolchain image. Missing isolation always fails closed. Script-free npm resolution and
 installation may fetch registry packages into a private per-build cache. The
 source build runs without network or host npm configuration and credentials.
-PORTAL_PROJECTION_ARTIFACT_ROOT is shared by Dev/Release and must be on one
-filesystem for atomic publication. Neither setting is accepted from an app.
+Artifacts live in the features area's projection_applications/, shared by Dev
+and Release; each is staged in a temporary directory inside it and renamed into
+place, so publication is atomic wherever the area is. No setting is accepted
+from an app.
 
 The build script must produce dist/. Dependency licenses must use the reviewed
 SPDX identifiers below (AND requires all terms, OR permits a reviewed choice). Local,
@@ -900,10 +902,7 @@ def _output(project: Path, application: dict) -> tuple[dict, dict[str, bytes]]:
 
 
 def _artifact_root() -> Path:
-    root = Path(os.environ.get("PORTAL_PROJECTION_ARTIFACT_ROOT", str(portal_path("staging_root") / "shared" / "projection_applications")))
-    if not root.is_absolute():
-        _fail("artifact", "产物存储必须配置为绝对路径")
-    return root
+    return portal_path("features") / "projection_applications"
 
 
 def _store(index: dict, contents: dict[str, bytes]) -> str:

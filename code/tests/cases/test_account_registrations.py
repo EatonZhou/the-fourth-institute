@@ -10,20 +10,12 @@ from types import SimpleNamespace
 from management_portal.hatg.contracts import InstructionError
 
 
-@pytest.fixture(autouse=True)
-def local_account_paths(monkeypatch, tmp_path):
-    # These path-contract tests explicitly configure temporary accounts and
-    # secrets. An installed site's config must not redirect their writes.
-    from management_common import instance_paths
-    monkeypatch.setattr(instance_paths.portal_paths, "CONFIG_PATH", tmp_path / "site.json")
-
-
-def test_registration_versions_and_roles():
+def test_registration_versions_and_roles(tmp_path):
     """账号登记保持审计、版本冲突和角色默认回退。"""
     from management_portal.execution import account_registrations as store
     row = store.create_registration({"account_id": "codex_test", "provider": "codex",
                                      "kind": "subscription_login", "route_id": "test",
-                                     "config": {"is_default": True}}, "alice")
+                                     "config": {"account_dir": str(tmp_path / "accounts" / "codex_test"), "is_default": True}}, "alice")
     assert row["version"] == 1
     assert store.registration("codex_test")["created_by"] == "alice"
     assert store.create_registration(row, "bob") is None
@@ -41,7 +33,7 @@ def test_registration_versions_and_roles():
         store.update_role("default", "codex_test", "model", "low", 0, "bob")
 
 
-def test_marking_another_default_route_moves_the_mark_in_one_update(monkeypatch):
+def test_marking_another_default_route_moves_the_mark_in_one_update(tmp_path, monkeypatch):
     """把另一个 Codex 账号设为默认路线时在同一事务中取消原标记；ListProviders 报告实际使用的默认路线
 
     新登记一个默认账号时已有默认仍被拒绝；被取消标记的账号版本递增。只剩一个启用账号时，它就是报告的默认路线。
@@ -57,10 +49,10 @@ def test_marking_another_default_route_moves_the_mark_in_one_update(monkeypatch)
 
     for name, default in (("one", True), ("two", False)):
         store.create_registration({"account_id": f"codex_{name}", "provider": "codex", "kind": "subscription_login",
-                                   "route_id": name, "config": {"is_default": default}}, "alice")
+                                   "route_id": name, "config": {"account_dir": str(tmp_path / "accounts" / f"codex_{name}"), "is_default": default}}, "alice")
     with pytest.raises(InstructionError) as error:
         store.create_registration({"account_id": "codex_three", "provider": "codex", "kind": "subscription_login",
-                                   "route_id": "three", "config": {"is_default": True}}, "alice")
+                                   "route_id": "three", "config": {"account_dir": str(tmp_path / "accounts" / "codex_three"), "is_default": True}}, "alice")
     assert error.value.code == "instruction.conflict"
     assert reported() == "one"
     moved = store.update_registration("codex_two", {"config": {**store.registration("codex_two")["config"], "is_default": True}}, 1, "bob")
@@ -72,10 +64,10 @@ def test_marking_another_default_route_moves_the_mark_in_one_update(monkeypatch)
     assert reported() == "one"
 
 
-def test_registration_rejects_invalid_identity_and_sensitive_config():
+def test_registration_rejects_invalid_identity_and_sensitive_config(tmp_path):
     """登记拒绝越界目录 ID、无效 Provider 和任意敏感配置。"""
     from management_portal.execution import account_registrations as store
-    base = {"account_id": "codex_test", "provider": "codex", "kind": "subscription_login"}
+    base = {"config": {"account_dir": str(tmp_path / "accounts" / "codex_test")}, "account_id": "codex_test", "provider": "codex", "kind": "subscription_login"}
     for changes in ({"account_id": "../escape"}, {"provider": "missing"},
                     {"config": {"secret": "rejected-placeholder"}}, {"max_concurrency": 0}):
         with pytest.raises(InstructionError):
@@ -83,10 +75,10 @@ def test_registration_rejects_invalid_identity_and_sensitive_config():
     assert store.registrations() == []
 
 
-def test_role_blocks_account_deletion(monkeypatch):
+def test_role_blocks_account_deletion(tmp_path, monkeypatch):
     """仍被 Backend 角色使用的账号不能删除。"""
     from management_portal.execution import account_registrations as store
-    store.create_registration({"account_id": "claude_test", "provider": "claude", "kind": "subscription_login"}, "alice")
+    store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "claude_test")}, "account_id": "claude_test", "provider": "claude", "kind": "subscription_login"}, "alice")
     store.update_role("default", "claude_test", "model", "", 0, "alice")
     store.update_role("router_fast", "claude_test", "model", "", 0, "alice")
     with pytest.raises(InstructionError) as error:
@@ -106,7 +98,7 @@ def test_role_blocks_account_deletion(monkeypatch):
     assert [row["role"] for row in store.roles()] == ["default", "router_fast"]
 
 
-def test_delete_checks_real_session_bindings_and_scheduler_work():
+def test_delete_checks_real_session_bindings_and_scheduler_work(tmp_path):
     """删除检查 Provider 会话绑定和 Scheduler 中尚未结束的执行。"""
     from management_common.portal_database import portal_database
     from management_portal.execution import isa
@@ -117,7 +109,7 @@ def test_delete_checks_real_session_bindings_and_scheduler_work():
     from management_portal.execution.accounts import ExecutionAccounts
     from management_portal.execution import account_registrations as store
     store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
-                               "route_id": "one", "config": {"is_default": True}}, "alice")
+                               "route_id": "one", "config": {"account_dir": str(tmp_path / "accounts" / "codex_one"), "is_default": True}}, "alice")
     agent = AgentDataStore()
     session = agent.ensure_provider_session(provider="codex", backend_route_id="one", backend_session_id="session",
                                             agent_id="resident_000000000001", actor_ref="alice")
@@ -142,12 +134,13 @@ def test_model_api_secret_is_private_file_only(tmp_path, monkeypatch):
     """一次性密钥只进入权限 600 的文件，登记和返回值只保留路径。"""
     from management_portal.execution import isa
     from management_portal import model_api_store
-    monkeypatch.setenv("PORTAL_SECRETS_DIR", str(tmp_path))
+    from tests.cases.instance_test_support import select_instance
+    secrets = select_instance(monkeypatch, tmp_path / "instance").directory("secrets")
     arguments = {"api_id": "sample", "base_url": "https://invalid.example", "default_model": "sample",
                  "secret": "test-only-placeholder"}
     inv = SimpleNamespace(caller="alice", argument=lambda name, default=None: arguments.get(name, default))
     result = isa.create_model_api(inv)
-    path = tmp_path / "sample.key"
+    path = secrets / "sample.key"
     assert result["api"]["secret_file"] == str(path)
     assert path.stat().st_mode & 0o777 == 0o600
     assert "test-only-placeholder" not in str(model_api_store.apis()) + str(result)
@@ -162,32 +155,32 @@ def test_adapters_derive_routes_homes_and_fallback_order(tmp_path, monkeypatch):
     """Codex 路由从登记推导路径、保留容量键与备用顺序。"""
     from management_portal.execution import account_registrations as store
     from management_portal.execution.account_adapters import CodexAccounts, CodexRoutes, ClaudeAccounts
-    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
-    monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(tmp_path / "instances"))
+    from tests.cases.instance_test_support import select_instance
+    instance = select_instance(monkeypatch, tmp_path / "instance")
     for name, config in (("one", {"is_default": True, "fallback_account_ids": ["codex_two", "codex_zero"]}),
                          ("two", {}), ("zero", {})):
         store.create_registration({"account_id": f"codex_{name}", "provider": "codex", "kind": "subscription_login",
-                                   "route_id": name, "config": config, "max_concurrency": 12}, "alice")
+                                   "route_id": name, "config": {"account_dir": str(tmp_path / "accounts" / f"codex_{name}"), **config}, "max_concurrency": 12}, "alice")
     routes = CodexRoutes()
     assert [r.account_id for r in routes.candidates(allow_fallback=True)] == ["one", "two", "zero"]
-    assert routes.get("codex_one").codex_home == tmp_path / "accounts/.codex-accounts/one"
-    assert routes.get("one").socket_path == tmp_path / "instances/sockets/codex-codex_one.sock"
+    assert routes.get("codex_one").codex_home == tmp_path / "accounts/codex_one"
+    assert routes.get("one").socket_path == instance.directory("runtime") / "s/codex-codex_one.sock"
     account = CodexAccounts().resolve("", {})
     assert (account.account_id, account.route_id, account.capacity_key, account.max_concurrency) == ("codex_one", "one", "codex:one", 12)
     store.create_registration({"account_id": "claude_test", "provider": "claude", "kind": "subscription_login",
-                               "route_id": "claude_test", "config": {"models": [{"id": "example"}], "default_model": "example"}}, "alice")
+                               "route_id": "claude_test", "config": {"account_dir": str(tmp_path / "accounts" / "claude_test"), "models": [{"id": "example"}], "default_model": "example"}}, "alice")
     assert ClaudeAccounts().accounts()[0].account_id == "claude_test"
     from management_portal.claude_provider_catalog import profile, config_directory, catalog
-    assert config_directory(profile("claude_test")) == tmp_path / "accounts/.claude-accounts/test"
+    assert config_directory(profile("claude_test")) == tmp_path / "accounts/claude_test"
     assert catalog("claude_test")["models"] == ["example"]
 
 
-def test_create_resident_resolves_role_and_keeps_explicit_settings(monkeypatch):
+def test_create_resident_resolves_role_and_keeps_explicit_settings(tmp_path, monkeypatch):
     """创建时解析角色并保存回退标记，显式账号和模型优先。"""
     from management_portal.execution import account_registrations as store
     from management_portal.society_service.isa import residents
     from management_portal.execution.resident_runtime_settings import normalize_settings
-    store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login", "route_id": "one"}, "alice")
+    store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_one")}, "account_id": "codex_one", "provider": "codex", "kind": "subscription_login", "route_id": "one"}, "alice")
     store.update_role("default", "codex_one", "role-model", "high", 0, "alice")
     created = []
     def create(lineage, payload, actor):
@@ -211,7 +204,7 @@ def test_create_resident_resolves_role_and_keeps_explicit_settings(monkeypatch):
     assert result["backend_role_fallback"] == settings["backend_role_fallback"] == {"requested": "missing", "used": "default"}
 
 
-def test_disabling_account_prevents_queued_work_dispatch():
+def test_disabling_account_prevents_queued_work_dispatch(tmp_path):
     """停用立即阻止该账号的排队工作，重新启用后可继续派发。"""
     from management_portal.execution import account_registrations as store
     from management_portal.execution.account_adapters import CodexAccounts
@@ -219,7 +212,7 @@ def test_disabling_account_prevents_queued_work_dispatch():
     from management_portal.execution.scheduler import Scheduler
     from management_portal.execution.contracts import ExecutionRequest, SessionOptions
     store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
-                               "route_id": "one", "config": {"is_default": True}}, "alice")
+                               "route_id": "one", "config": {"account_dir": str(tmp_path / "accounts" / "codex_one"), "is_default": True}}, "alice")
     accounts = ExecutionAccounts((CodexAccounts(),))
     scheduler = Scheduler(accounts=accounts, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
     scheduler.register_worker(worker_id="test:disable", build_id="test", capabilities=["agent_session:codex"])
@@ -234,17 +227,17 @@ def test_disabling_account_prevents_queued_work_dispatch():
 
 
 
-def test_new_registration_refreshes_scheduler_defaults_without_overwriting_settings():
+def test_new_registration_refreshes_scheduler_defaults_without_overwriting_settings(tmp_path):
     """长驻 Scheduler 发现新账号的初始容量与配额，并保留已保存的调度设置。"""
     from management_portal.execution import account_registrations as store
     from management_portal.execution.accounts import default_execution_accounts
     from management_portal.execution.scheduler import Scheduler
     store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
-                               "route_id": "one", "config": {"is_default": True}, "max_concurrency": 2}, "alice")
+                               "route_id": "one", "config": {"account_dir": str(tmp_path / "accounts" / "codex_one"), "is_default": True}, "max_concurrency": 2}, "alice")
     accounts = default_execution_accounts()
     scheduler = Scheduler(accounts=accounts)
     scheduler.configure_capacity("codex:one", 4, 0, 0, actor="alice")
-    store.create_registration({"account_id": "codex_two", "provider": "codex", "kind": "subscription_login",
+    store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_two")}, "account_id": "codex_two", "provider": "codex", "kind": "subscription_login",
                                "route_id": "two", "max_concurrency": 3}, "alice")
     store.update_registration("codex_one", {"max_concurrency": 1}, 1, "alice")
     accounts._refreshed_at = 0
@@ -254,10 +247,10 @@ def test_new_registration_refreshes_scheduler_defaults_without_overwriting_setti
     assert "codex:two" in scheduler.quota_capacity_keys
 
 
-def test_disabling_registration_keeps_running_provider_process(monkeypatch):
+def test_disabling_registration_keeps_running_provider_process(tmp_path, monkeypatch):
     """停用阻止派发但不停止正在为既有执行服务的 Provider 进程。"""
     from management_portal.execution import account_registrations as store, account_hosting as host, isa
-    store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
+    store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_one")}, "account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
                                "route_id": "one"}, "alice")
     stopped = []
     monkeypatch.setattr(host, "stop_codex_instance", stopped.append)
@@ -270,7 +263,7 @@ def test_disabling_registration_keeps_running_provider_process(monkeypatch):
 
 
 
-def test_runtime_catalog_handles_empty_or_disabled_accounts():
+def test_runtime_catalog_handles_empty_or_disabled_accounts(tmp_path):
     """空站点和停用账号不破坏 Backend 目录，既有会话仍可读取停用账号能力。"""
     from management_portal.execution import account_registrations as store
     from management_portal.execution.accounts import default_execution_accounts
@@ -278,10 +271,10 @@ def test_runtime_catalog_handles_empty_or_disabled_accounts():
     catalog = default_execution_accounts().runtime_catalog(include_backends=True)
     assert all(not row["routes"] for row in catalog["backends"])
     store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
-                               "route_id": "one", "enabled": False, "config": {"is_default": True}}, "alice")
+                               "route_id": "one", "enabled": False, "config": {"account_dir": str(tmp_path / "accounts" / "codex_one"), "is_default": True}}, "alice")
     store.create_registration({"account_id": "claude_one", "provider": "claude", "kind": "subscription_login",
                                "route_id": "claude_one", "enabled": False,
-                               "config": {"models": [{"id": "sample"}], "default_model": "sample"}}, "alice")
+                               "config": {"account_dir": str(tmp_path / "accounts" / "claude_one"), "models": [{"id": "sample"}], "default_model": "sample"}}, "alice")
     accounts = default_execution_accounts()
     assert all(not row["routes"] for row in accounts.runtime_catalog(include_backends=True)["backends"])
     assert accounts.runtime_catalog("claude_one")["models"] == ["sample"]
@@ -304,7 +297,7 @@ def test_runtime_catalog_handles_empty_or_disabled_accounts():
 
 
 
-def test_registration_and_role_updates_read_version_from_call_envelope(monkeypatch):
+def test_registration_and_role_updates_read_version_from_call_envelope(tmp_path, monkeypatch):
     """登记与角色更新从信封读取标量或对象版本：省略时直接更新，过期时返回版本冲突。"""
     from management_portal.execution import account_registrations as store, isa
     from management_portal.hatg.catalog import instruction_catalog
@@ -315,7 +308,7 @@ def test_registration_and_role_updates_read_version_from_call_envelope(monkeypat
         assert "expected_version" not in catalog[name].parameter_map
     assert "backend_role" in catalog["UpdateBackendRole"].parameter_map
     assert "role" not in catalog["UpdateBackendRole"].parameter_map
-    store.create_registration({"account_id": "codex_test", "provider": "codex", "kind": "subscription_login",
+    store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_test")}, "account_id": "codex_test", "provider": "codex", "kind": "subscription_login",
                                "route_id": "test"}, "alice")
     monkeypatch.setattr(isa, "_registration_public", lambda row, actor: row)
     def invoke(name, arguments, expected):
@@ -365,8 +358,7 @@ def test_only_model_api_instructions_compare_model_api_versions(monkeypatch):
 def test_reenable_starts_registered_codex_instance(tmp_path, monkeypatch):
     """恢复登记时启动该账号的模板实例。"""
     from management_portal.execution import account_registrations as store, account_hosting as host, isa
-    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
-    store.create_registration({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
+    store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_one")}, "account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
                                "route_id": "one", "enabled": False}, "alice")
     started = []
     monkeypatch.setattr(host, "start_codex_instance", started.append)

@@ -78,7 +78,7 @@ class ClaudeProviderCatalogTest(unittest.TestCase):
             {"account_id": "deepseek_primary", "provider": "claude", "kind": "api_profile",
              "config": {"api_id": "deepseek_primary"}},
             {"account_id": "claude_personal", "provider": "claude", "kind": "subscription_login",
-             "config": MODELS},
+             "config": {"account_dir": str(self.root / "accounts" / "claude_personal"), **MODELS}},
         )
         self.native = catalog.profile("claude_personal")
 
@@ -109,7 +109,7 @@ class ClaudeProviderCatalogTest(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 account_registrations.create_registration(
                     {"account_id": "claude_other", "provider": "claude", "kind": "subscription_login",
-                     "config": {**MODELS, key: value}}, "test")
+                     "config": {"account_dir": str(self.root / "accounts" / "claude_other"), **MODELS, key: value}}, "test")
         for value in ("relative", "/", "/account/../other"):
             entry = {**self.native, "config_dir": value}
             with self.subTest(config_dir=value), self.assertRaises(ValueError):

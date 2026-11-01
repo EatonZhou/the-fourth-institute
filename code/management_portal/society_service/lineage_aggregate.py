@@ -6,9 +6,7 @@ modules (``lineage_state`` and those built on it) edit the aggregate, and
 """
 from __future__ import annotations
 
-import os
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, Iterator
 
 from management_common.portal_paths import path as portal_path
@@ -26,11 +24,7 @@ from .lineage_access_policy import actor_can_manage_lineage as _actor_can_manage
 from .lineage_values import _text
 
 
-DEFAULT_DATA_ROOT = (portal_path("staging_root") / "shared" / "portal_lineages")
-DATA_ROOT = Path(os.getenv(
-    "PORTAL_LINEAGE_ROOT",
-    str(DEFAULT_DATA_ROOT),
-)).expanduser()
+DATA_ROOT = portal_path("features") / "lineage_data"
 invariant_locks.configure_root_provider(lambda: DATA_ROOT)
 
 

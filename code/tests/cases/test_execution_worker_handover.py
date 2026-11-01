@@ -993,6 +993,3 @@ def test_worker_self_fences_when_control_plane_outage_exceeds_lease(
     assert result["status"] == "claim_lost"
     assert backend.interrupt_count == 1
     assert scheduler.finish_called is False
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

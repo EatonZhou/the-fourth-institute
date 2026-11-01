@@ -47,6 +47,7 @@ from management_portal.execution.provider_turn_usage import (
 )
 from management_portal.execution.session_manager import RuntimeSession
 from tests.cases.claude_sdk_support import load_claude_module
+from tests.cases.instance_test_support import select_instance
 
 EVERY_CAPABILITY = capabilities.HARNESS_CAPABILITIES
 REQUIREMENTS = capabilities.default_feature_requirements()
@@ -54,7 +55,7 @@ REQUIREMENTS = capabilities.default_feature_requirements()
 
 @pytest.fixture(autouse=True)
 def isolate_harness_runtime_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("PORTAL_EXECUTION_STATE_ROOT", str(tmp_path / "harness-state"))
+    select_instance(monkeypatch, tmp_path / "instance")
 
 
 class _Adapter:

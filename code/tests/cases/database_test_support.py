@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any
@@ -77,7 +76,9 @@ def register_owned_workspace(connection: Any, resident_id: str) -> str:
     from management_portal.resources.workspace_store import get_workspace_store
 
     workspace_id = "workspace_" + hashlib.sha256(resident_id.encode()).hexdigest()[:12]
-    path = Path(os.environ["PORTAL_LINEAGE_FOLDER_ROOT"]) / "owned" / resident_id / "workspace"
+    from management_common.portal_paths import path as portal_path
+
+    path = portal_path("lineages") / "owned" / resident_id / "workspace"
     return get_workspace_store().ensure(workspace_id, str(path), connection=connection)
 
 

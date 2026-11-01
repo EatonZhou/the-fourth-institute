@@ -8,7 +8,7 @@ from typing import Any
 
 from management_common.service_socket import SERVICE_RESTART_WAIT_SECONDS, connect_service
 
-from .config import execution_service_socket, portal_instance
+from .config import execution_service_socket
 
 
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 90.0
@@ -39,12 +39,7 @@ class ExecutionServiceClient:
         if socket_path is not None:
             self.socket_paths = (Path(socket_path),)
         else:
-            current = portal_instance()
-            candidates = [execution_service_socket(current)]
-            if current in {"dev", "release"}:
-                peer = "release" if current == "dev" else "dev"
-                candidates.append(execution_service_socket(peer))
-            self.socket_paths = tuple(dict.fromkeys(candidates))
+            self.socket_paths = (execution_service_socket(),)
         self.socket_path = self.socket_paths[0]
         self.timeout = max(0.1, float(timeout))
 
@@ -57,9 +52,7 @@ class ExecutionServiceClient:
         retry_on_unavailable: bool = True,
         restart_wait: float | None = None,
     ) -> Any:
-        # This instance's service first, then its peer's; while neither
-        # accepts, the request waits for one to come back.  Without
-        # ``retry_on_unavailable`` it stays on this instance's service.
+        # The instance has one ExecutionService shared by its Web deployments.
         socket_paths = self.socket_paths if retry_on_unavailable else self.socket_paths[:1]
         if not socket_paths:
             raise ExecutionServiceUnavailable("ExecutionService has no endpoint")

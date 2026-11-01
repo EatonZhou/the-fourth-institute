@@ -76,11 +76,11 @@ test('refresh channels and locks use canonical identifiers even with external ol
   assert.deepEqual(locks,['tfi-refresh:["tfi-portal-refresh","operator","value"]']);
 });
 test('public site object filters private fields and fixes immutable empty compatibility', t => {
-  const w=fixture(t),paths={share_root:'/current/share',staging_root:'/current/staging',test_results_root:'/current/results',private_path:'/private'};
+  const w=fixture(t),paths={projects:'/current/projects',lineages:'/current/lineages',test_results_root:'/current/results',private_path:'/private'};
   const input={site_name:'Current site',paths,compatibility:{browser_identifiers:aliases,format_namespaces:['archive.']},deployment:{secret:'PRIVATE'}};
   w.eval(source('portal_site.js')+'('+JSON.stringify(input)+');');
   const site=w.__PORTAL_SITE__;
-  assert.deepEqual(json(site),{site_name:'Current site',paths:{share_root:'/current/share',staging_root:'/current/staging',test_results_root:'/current/results'},compatibility:{browser_identifiers:{},format_namespaces:[]}});
+  assert.deepEqual(json(site),{site_name:'Current site',paths:{projects:'/current/projects',lineages:'/current/lineages',test_results_root:'/current/results'},compatibility:{browser_identifiers:{},format_namespaces:[]}});
   for(const value of [site,site.paths,site.compatibility,site.compatibility.browser_identifiers,site.compatibility.format_namespaces,w.PortalSite]) assert(Object.isFrozen(value));
   assert.equal(w.PortalSite.name(),'Current site');
   assert.throws(()=>w.eval('"use strict";__PORTAL_SITE__.compatibility.browser_identifiers.theme="archive.theme";'));

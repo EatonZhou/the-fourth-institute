@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from management_common.portal_database import _database_schema, portal_database
-from management_portal import project_registry, project_rename
+from management_portal import project_registry, project_rename, provider_session_relocation
 from management_portal.hatg import catalog
 from management_portal.project_rename import ProjectRename, RenameBlocked, Rewriter
 from management_portal.resources import isa as resource_isa
@@ -21,7 +21,7 @@ from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 from tests.cases.registry_support import write_projects
 
 SHARE = Path("/share")
-CHANGE = ProjectRename("ACLink", "ACLinkNext", SHARE / "Projects/ACLink", SHARE / "Projects/ACLinkNext", share_root=SHARE)
+CHANGE = ProjectRename("ACLink", "ACLinkNext", SHARE / "Projects/ACLink", SHARE / "Projects/ACLinkNext", projects_root=SHARE / "Projects")
 
 
 @pytest.mark.parametrize(("before", "after"), [
@@ -173,7 +173,7 @@ def world(monkeypatch, tmp_path, permissions):
     codex_account.mkdir(parents=True)
     (codex_account / "config.toml").write_text(f'[projects."{old_root}/wt"]\ntrust_level = "trusted"\n')
     claude = accounts / "claude/claude_one/projects"
-    (claude / project_rename._claude_project_key(str(old_root)) / "memory").mkdir(parents=True)
+    (claude / provider_session_relocation.claude_project_key(str(old_root)) / "memory").mkdir(parents=True)
     from management_portal.execution.account_registrations import update_registration, registration
     for account_id, path in (("codex_one", codex_account), ("claude_one", claude.parent)):
         row = registration(account_id)
@@ -197,11 +197,12 @@ def world(monkeypatch, tmp_path, permissions):
     mountinfo = tmp_path / "mountinfo"
     mountinfo.write_text("")
     for name, value in {
-        "PROJECTS_ROOT": projects, "SHARE_ROOT": tmp_path, "HOME": home, "KIMI_HOME": kimi,
+        "PROJECTS_ROOT": projects, "HOME": home,
         "SYMLINK_ROOTS": (projects, agents), "SERVICE_SCRIPT_ROOTS": (services,),
         "SYSTEMD_UNIT_DIRS": (units,), "MOUNTINFO": mountinfo,
     }.items():
         monkeypatch.setattr(project_rename, name, value)
+    monkeypatch.setattr(provider_session_relocation, "kimi_home", lambda: kimi)
 
     write_projects({"schema_version": 1, "status_vocab": ["active"], "tag_vocab": [], "projects": [
         {"id": "Old", "path": str(old_root), "status": "active", "description": "d"},
@@ -319,7 +320,7 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
     assert f'[projects."{world["old_root"]}/src"]' in (world["home"] / ".codex/config.toml").read_text()
     assert (world["accounts"] / "codex/codex_one/config.toml").read_text().count(f'[projects."{new_root}/wt"]') == 1
     claude = world["accounts"] / "claude/claude_one/projects"
-    assert (claude / project_rename._claude_project_key(str(new_root)) / "memory").is_dir()
+    assert (claude / provider_session_relocation.claude_project_key(str(new_root)) / "memory").is_dir()
     assert json.loads((world["kimi"] / "workspaces.json").read_text())["workspaces"]["w"]["root"] == str(new_root)
     assert result["files"].get("errors") is None
     # Papers outside the Project follow the new ID (DRAM Stacking's kept the old one).

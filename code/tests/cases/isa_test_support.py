@@ -10,8 +10,9 @@ import pytest
 
 from management_portal.hatg import kernel as kernel_module, routing
 from management_portal.hatg.contracts import InstructionContext, InstructionResult
-from management_portal.society_service import resident_domain_common, resident_intake_domain
+from management_portal.society_service import resident_intake_domain
 from management_portal.society_service import lineage_aggregate
+from tests.cases.instance_test_support import lineage_folders
 
 
 ACTOR = "sample_admin"
@@ -51,7 +52,6 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     """Lineage folders, Resident staging and resource boundary under ``tmp_path``, with fresh kernels."""
 
     from management_portal.society_service import (
-        lineage_state,
         resident_project_domain,
         resident_workspace_domain,
     )
@@ -59,10 +59,8 @@ def isolated_instruction_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
+    lineage_folders(monkeypatch, root / "lineages")
     install_resource_boundary(monkeypatch, synthetic_residents=False)
-    monkeypatch.setattr(resident_domain_common, "STAGING_ROOT", tmp_path)
     monkeypatch.setattr(
         resident_intake_domain,
         "queue_bootstrap_resident_session",

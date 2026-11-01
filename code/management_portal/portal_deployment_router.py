@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 
 import argparse
 import base64
@@ -20,7 +20,7 @@ from typing import Callable
 from urllib.parse import urlsplit
 
 from .portal_deployment_registry import (
-    DEFAULT_DEPLOYMENT_REGISTRY_PATH,
+    INSTANCE_MANIFEST_PATH,
     PortalDeploymentRegistry,
 )
 from management_common.service_socket import retry_delays
@@ -30,7 +30,7 @@ from .portal_session_auth import (
 )
 from .runtime_status import portal_runtime_status
 
-DEPLOYMENT_PREFERENCE_COOKIE = "db_portal_instance"
+DEPLOYMENT_PREFERENCE_COOKIE = "db_portal_deployment"
 DEPLOYMENT_PREFERENCE_VERSION = 1
 DEPLOYMENT_PREFERENCE_MAX_AGE = 180 * 24 * 60 * 60
 DEPLOYMENT_PREFERENCE_PATH = "/__portal_router/preference"
@@ -226,7 +226,7 @@ class PortalRouterServer(ThreadingHTTPServer):
         deployment_registry: PortalDeploymentRegistry | None = None,
         runtime_status_reader: Callable[[], dict] = portal_runtime_status,
         restart_wait: float = BACKEND_RESTART_WAIT_SECONDS,
-        network_settings_path: Path | None = None,
+        instance_root: Path | None = None,
     ):
         self.policy = policy
         self.restart_wait = restart_wait
@@ -234,7 +234,7 @@ class PortalRouterServer(ThreadingHTTPServer):
         self.deployment_registry = deployment_registry
         self.runtime_status_reader = runtime_status_reader
         self.allowed_networks = allowed_networks
-        self.network_settings_path = network_settings_path
+        self.instance_root = instance_root
         self.backend_timeout = timeout
         super().__init__(address, PortalRouterHandler)
 
@@ -242,13 +242,13 @@ class PortalRouterServer(ThreadingHTTPServer):
         if self.deployment_registry is None:
             return dict(self.backends)
         return {
-            item.instance_id: Backend.parse(item.instance_id, item.origin)
+            item.deployment_id: Backend.parse(item.deployment_id, item.origin)
             for item in self.deployment_registry.deployments()
         }
 
-    def public_instances(self) -> list[dict]:
+    def public_deployments(self) -> list[dict]:
         if self.deployment_registry is not None:
-            return self.deployment_registry.public_instances()
+            return self.deployment_registry.public_deployments()
         return [
             {
                 "id": name,
@@ -271,9 +271,10 @@ class PortalRouterServer(ThreadingHTTPServer):
         except ValueError:
             return False
         networks = self.allowed_networks
-        if self.network_settings_path is not None:
+        if self.instance_root is not None:
             try:
-                networks = _parse_networks(portal_network.allowed_networks(self.network_settings_path))
+                from management_common.instance_manifest import load
+                networks = _parse_networks(portal_network.allowed_networks(load(self.instance_root)))
             except (OSError, ValueError):
                 # Keep local administration available without widening failed policy.
                 networks = _parse_networks(list(portal_network.LOOPBACK_NETWORKS))
@@ -472,10 +473,10 @@ class PortalRouterHandler(BaseHTTPRequestHandler):
         return {
             "ok": True,
             "username": actor,
-            "default_instance": default_backend,
+            "default_deployment": default_backend,
             "preference": preference or None,
-            "effective_instance": preference or default_backend,
-            "instances": self.server.public_instances(),  # type: ignore[attr-defined]
+            "effective_deployment": preference or default_backend,
+            "deployments": self.server.public_deployments(),  # type: ignore[attr-defined]
         }
 
     def _deployment_preference(self) -> None:
@@ -512,9 +513,9 @@ class PortalRouterHandler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(body_length).decode("utf-8")) if body_length else {}
         except (UnicodeDecodeError, json.JSONDecodeError):
             return self._json(400, {"error": "request body must be valid JSON"})
-        backend = str(payload.get("instance") or "").strip().lower() if isinstance(payload, dict) else ""
+        backend = str(payload.get("deployment") or "").strip().lower() if isinstance(payload, dict) else ""
         if backend not in self.server.current_backends():  # type: ignore[attr-defined]
-            return self._json(400, {"error": "unknown or unavailable Portal instance"})
+            return self._json(400, {"error": "unknown or unavailable Portal deployment"})
         return self._json(
             200,
             self._preference_payload(actor, backend),
@@ -565,46 +566,27 @@ def _parse_networks(values: list[str]) -> list[ipaddress.IPv4Network | ipaddress
     return [ipaddress.ip_network(value, strict=False) for value in values]
 
 
-def _listener_settings(args) -> tuple[list[str], int, list[ipaddress.IPv4Network | ipaddress.IPv6Network]]:
-    access = portal_network.router_access()
-    if args.allow_network and not access["explicit_mode"]:
-        portal_network.initialize_allowed_networks(args.allow_network)
-        access = portal_network.router_access()
-    binds = (["127.0.0.1"] if access["mode"] == "local" else ["0.0.0.0"]) if access["explicit_mode"] else (
-        args.bind or (["0.0.0.0"] if access["mode"] == "remote" else ["127.0.0.1"])
-    )
-    port = access["port"] if access["explicit_port"] else (args.port or access["port"])
-    return binds, port, _parse_networks(portal_network.allowed_networks())
+def _listener_settings() -> tuple[list[str], int, list[ipaddress.IPv4Network | ipaddress.IPv6Network]]:
+    from management_common.instance_manifest import load
+    network = load().document['network']
+    return [network['bind']], network['entry_port'], _parse_networks(portal_network.allowed_networks())
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Route Portal users between registered Portal instances.")
-    parser.add_argument("--bind", action="append", default=[], help="Bind address. Can be repeated.")
-    parser.add_argument("--port", type=int, default=None)
-    parser.add_argument(
-        "--registry-path",
-        type=Path,
-        default=Path(os.getenv("PORTAL_DEPLOYMENT_REGISTRY_PATH", str(DEFAULT_DEPLOYMENT_REGISTRY_PATH))),
-    )
+    parser = argparse.ArgumentParser(description="Route Portal users between registered Portal deployments.")
     parser.add_argument("--dev-users", default=os.getenv(
-        "PORTAL_ROUTER_DEV_USERS", ",".join(compatibility_value("router_dev_users", []))))
-    parser.add_argument(
-        "--session-signing-key-path",
-        type=Path,
-        default=None,
-    )
-    parser.add_argument("--allow-network", action="append", default=[])
+        "PORTAL_ROUTER_DEV_USERS", ",".join(read_site_config().get("deployment", {}).get("router", {}).get("dev_users", []))))
     parser.add_argument("--timeout", type=float, default=float(os.getenv("PORTAL_ROUTER_BACKEND_TIMEOUT", "10800")))
     args = parser.parse_args()
 
-    binds, port, networks = _listener_settings(args)
+    binds, port, networks = _listener_settings()
     policy = RouterPolicy(
-        PortalSessionAuthority(args.session_signing_key_path),
+        PortalSessionAuthority(),
         set(args.dev_users.split(",")),
     )
-    registry = PortalDeploymentRegistry(args.registry_path)
+    registry = PortalDeploymentRegistry(INSTANCE_MANIFEST_PATH)
     backends = {
-        item.instance_id: Backend.parse(item.instance_id, item.origin)
+        item.deployment_id: Backend.parse(item.deployment_id, item.origin)
         for item in registry.deployments()
     }
     servers = [
@@ -615,7 +597,7 @@ def main() -> int:
             networks,
             max(1.0, args.timeout),
             registry,
-            network_settings_path=portal_network.config_path(),
+            instance_root=INSTANCE_MANIFEST_PATH.parent,
         )
         for host in binds
     ]

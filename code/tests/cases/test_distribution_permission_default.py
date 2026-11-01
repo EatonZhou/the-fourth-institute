@@ -7,6 +7,8 @@ from psycopg.rows import dict_row
 
 from management_portal.distribution.features import catalog, normalize_snapshot, resolve_features, selection_snapshot
 from management_portal.distribution.initialization import initialize, _TargetDatabase
+from management_common.instance_manifest import load
+from tests.cases.instance_test_support import write_instance
 from management_portal.execution.service_settings import ExecutionSettings
 from management_portal.distribution.store import ReleaseStore
 
@@ -44,22 +46,18 @@ def test_permission_intent_save_copy_and_frozen_run():
 def test_permission_default_applies_on_fresh_target_and_preserves_local_choice(tmp_path, intent):
     resolution = resolve_features({'feature_states': {'permission_system': {'included': True, 'default_enabled': intent}}})
     manifest = {'feature_resolution': resolution}
+    instance = load(write_instance(tmp_path / 'instance'))
     with psycopg.connect(os.environ['PORTAL_DATABASE_URL'], autocommit=True, row_factory=dict_row) as c:
         try:
-            result = initialize(manifest, c, {'instances_root': str(tmp_path)})
+            result = initialize(manifest, c, instance)
             owner = ExecutionSettings(_TargetDatabase(c, 'execution_runtime'))
             assert owner.permission_system_enabled() is intent
             assert not result['work_dispatched']
             owner.update_permission_system(not intent)
-            for mode in ['fresh', 'upgrade']:
-                retried = initialize(manifest, c, {'instances_root': str(tmp_path)}, mode=mode)
-                assert owner.permission_system_enabled() is not intent
-                assert next(r for r in retried['features'] if r['id'] == 'permission_system')['status'] == 'preserved_existing'
-            # An existing installation without this feature's ledger also owns its switch.
-            c.execute('DROP SCHEMA distribution_installation CASCADE')
-            upgraded = initialize(manifest, c, {'instances_root': str(tmp_path)}, mode='upgrade')
+            # A retry on the same database keeps the choice its ledger recorded.
+            retried = initialize(manifest, c, instance)
             assert owner.permission_system_enabled() is not intent
-            assert next(r for r in upgraded['features'] if r['id'] == 'permission_system')['status'] == 'preserved_existing'
+            assert next(r for r in retried['features'] if r['id'] == 'permission_system')['status'] == 'preserved_existing'
         finally:
             c.execute('DROP SCHEMA IF EXISTS execution_runtime CASCADE')
             c.execute('DROP SCHEMA IF EXISTS distribution_installation CASCADE')

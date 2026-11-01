@@ -34,54 +34,28 @@ Our goal is to make research more continuous, broaden exploration, and make the 
 
 **Linux is currently the only supported platform. Windows support is planned.**
 
-See [INSTALL.md](INSTALL.md) for the full installation procedure, configuration examples, service management, upgrades, and recovery. The main steps are outlined below.
+See [INSTALL.md](INSTALL.md) for the full installer reference: creating, starting and stopping instances, code updates, and retiring an instance. The main steps are outlined below.
 
-### Prerequisites and Release Bundle
+### Create an Instance
 
-The current installation uses systemd user services on Linux and requires Python 3.12, PostgreSQL, and NATS. The installer checks the operating system, architecture, and dependencies required by each release bundle. Optional features, such as model backends and document tooling, require their respective runtimes and tools.
-
-Installation requires a generated release bundle containing `manifest.json`, `code/`, `database/`, and data directories. The source repository is used for development and bundle generation; cloning it alone does not produce an installable bundle. See the [release engineering documentation](management_portal/distribution/README.md) for the generation entry points.
-
-The examples below use `python3`. Run `python3 --version` first: the dependency bootstrap script currently accepts only Python 3.12.x. If your default interpreter is a different version, use a Python 3.12 interpreter to prepare the environment.
-
-From the release bundle's root directory, install and check the core Python dependencies:
+On Linux the installer uses systemd user services and needs Python 3.12. From the repository root, assemble the installation bundle from the example instance and create an instance:
 
 ```bash
-python3 code/scripts/bootstrap_portal install core --venv "$HOME/tfi-runtime"
-python3 code/scripts/bootstrap_portal doctor core --venv "$HOME/tfi-runtime"
+python3 prepare_install.py
+python3 code/scripts/install_tfi_release create \
+  --engineering .build/example_instance/engineering/manifest.json --name my_portal
 ```
 
-These commands prepare Python dependencies only. Install PostgreSQL and NATS separately. Prepare the runtime required by your chosen model backend; the `provider` dependency profile also requires Node.js 20 or later and npm.
-
-### Configure and Install an Instance
-
-Create `target.json` using the [JSON example in INSTALL.md](INSTALL.md). Set an installation directory writable by your current user, separate data directories, a service name prefix, ports, and dependency paths. Set `python` to the interpreter in the virtual environment created above. The `run_id` and `supervisor_resident_id` must match the bundle manifest. See INSTALL.md for the supervision requirements for regular installations and full test bundles.
-
-Check the configuration, then prepare the instance:
-
-```bash
-python3 code/scripts/install_tfi_release plan --target target.json --manifest manifest.json
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --prepare-only
-```
-
-The preparation step imports the separate database and leaves application services stopped. Complete the history-freeze checks described in INSTALL.md before starting the application. For bundles that require verification evidence, pass the evidence file produced by those checks:
-
-```bash
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --freeze-evidence freeze-evidence.json
-```
-
-See INSTALL.md for the required contents of `freeze-evidence.json` and when it is needed. The installer uses the files and directory mappings declared in the manifest. Configure your own model accounts and credentials in the new instance.
+The instance root is created outside the code directory, by default in `~/.local/share/tfi/instances/<name>`, and registered in `~/.config/tfi/instances.json`. The installer chooses free ports and a unique service name prefix, prepares the Python environment, PostgreSQL, NATS and Node.js beside the code in `dependencies/`, imports the example instance and starts the services. Configure your own model accounts and credentials in the new instance.
 
 ### Getting Started
 
-After installation, replace `/path/to/tfi-instance` below with the `install_root` from `target.json`:
-
 ```bash
-python3 code/scripts/install_tfi_release status --root /path/to/tfi-instance
-python3 code/scripts/install_tfi_release first-admin --root /path/to/tfi-instance --username yourname
+python3 code/scripts/install_tfi_release status --instance my_portal
+python3 code/scripts/install_tfi_release first-admin --instance my_portal --username yourname
 ```
 
-The `first-admin` command prints the path to a local file containing the setup link. Open that link locally, set the first administrator's password, and sign in. The site listens on localhost by default. To access it from another device, configure the listening address as described in INSTALL.md.
+The `first-admin` command prints the path to a local file containing the setup link. Open that link locally, set the first administrator's password, and sign in. The site listens on localhost by default; create the instance with `--bind 0.0.0.0` to allow access from other devices.
 
 Once signed in:
 
@@ -90,9 +64,9 @@ Once signed in:
 3. Add the necessary materials and workspaces. Start with a small task whose output you can check, such as reviewing a paper and identifying open questions, or running baseline experiments.
 4. Review the results in discussions and workspaces. Add collaborators, connect event workflows, or form a Family as needed.
 
-The manifest defines which features, example teams, and materials are included in each bundle. See [INSTALL.md](INSTALL.md) for service status, logs, stopping an instance, upgrades, and recovery. Upgrades require an explicitly supported starting version and migration plan; do not overwrite an existing site's database with the database from a new release bundle.
+The manifest defines which features, example teams, and materials are included in each bundle. See [INSTALL.md](INSTALL.md) for service status, stopping an instance, code updates and retiring. A code update replaces the code and restarts the services, which update the database themselves; the example instance's content is only used when an instance is created.
 
-Existing Linux instances have been tested for sign-in, team collaboration, model execution, and some resource access. Newly generated bundles still require installation and functional validation for that specific release. Full upgrades and other operating system and architecture combinations have not yet been fully validated.
+Existing Linux instances have been tested for sign-in, team collaboration, model execution, and some resource access. Newly generated bundles still require installation and functional validation for that specific release. Other operating system and architecture combinations have not yet been fully validated.
 
 ## 3. Future: An Open Research Network for Everyone's Agents
 

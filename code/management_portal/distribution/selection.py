@@ -5,6 +5,7 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
+from . import layout
 from .content import registered_content_path
 from .features import SYSTEM
 from .sanitize import RESOURCE_ID, ANONYMIZATION
@@ -21,7 +22,25 @@ SYSTEM_MEMBER_FIELDS = ("resident_id", "node_id", "source_node_id", "target_node
 METADATA_TABLES = {"lineage_meta", "agent_store_meta", "registry_meta"}
 
 
-def resource_file_scope(identity, record):
+def explicit_location(identity, locations):
+    """The exporter's chosen area location for a resource, if one was given."""
+    value = (locations or {}).get(identity)
+    return layout.split_reference(value) if value is not None else None
+
+
+def owned_location(identity, record, folder, locations):
+    """Repos, articles and extra Workspaces live in their project's folder."""
+    explicit = explicit_location(identity, locations)
+    if explicit:
+        return explicit
+    owners = record.get("attributes", {}).get("project_ids", [])
+    if not owners:
+        raise ValueError(f"{record.get('resource_type', 'Resource')} has no owning project; "
+                         f"give its export location in the resolution's file_locations")
+    return "projects", f"{owners[0]}/{folder}/{identity}"
+
+
+def resource_file_scope(identity, record, locations=None):
     """Use each resource owner's registered content root, without link traversal."""
     kind = record.get("resource_type")
     attributes = record.get("attributes", {})
@@ -30,24 +49,24 @@ def resource_file_scope(identity, record):
     content_path = registered_content_path(record)
     path = str(content_path) if content_path is not None else None
     if kind == "repo":
-        relative = f"Codes/{identity}"
+        area, relative = owned_location(identity, record, "codes", locations)
     elif kind == "article":
-        relative = f"Articles/{identity}"
+        area, relative = owned_location(identity, record, "articles", locations)
     elif kind == "paper":
         if not path or Path(path).name != "manifest.json" or not Path(path).is_file():
             raise ValueError("Selected paper has no available registered manifest")
         path = str(Path(path).parent)
-        relative = f"Papers/items/selected/{identity}"
+        area, relative = "papers", f"items/selected/{identity}"
     elif kind == "skill" and path and Path(path).is_dir():
-        relative = f"Skills/{identity}"
+        area, relative = "skills", identity
     elif path:
         owners = attributes.get("project_ids", [])
         if not owners:
             raise ValueError("File resource needs explicit target location")
-        relative = f"Projects/{owners[0]}/knowledge_base/{kind}/{Path(path).name}"
+        area, relative = "projects", f"{owners[0]}/knowledge_base/{kind}/{Path(path).name}"
     else:
         return None
-    return {"source": path, "target": "data/share_root/" + relative, 'anonymize': kind != 'repo',
+    return {"source": path, "target": layout.target(area, relative), 'anonymize': kind != 'repo',
             "knowledge": kind not in {"repo", "skill"}}
 
 
@@ -350,16 +369,34 @@ class _ExportScope:
         workspace_ids = set(own) | {row["workspace_id"] for row in kept_bindings}
         for row in self.source.rows("workspace", "workspaces", predicates={"workspace_id": workspace_ids}):
             identity = row["workspace_id"]
-            if identity in own:
-                relative, include = self._owned_workspace(identity, own[identity], kept_bindings)
-            else:
-                relative, include = f"Workspaces/{identity}", True
-            self.mappings.append((row["path"], "${share_root}/" + relative))
+            try:
+                if identity in own:
+                    (area, relative), include = self._owned_workspace(identity, own[identity], kept_bindings)
+                else:
+                    explicit = explicit_location(identity, self.resolution.get("file_locations"))
+                    if explicit is None:
+                        raise ValueError("Workspace has no owning folder; give its export location in the resolution's file_locations")
+                    (area, relative), include = explicit, True
+            except ValueError as error:
+                self.unresolved.append({"id": identity, "reason": str(error)})
+                self.workspaces[identity] = row
+                continue
+            self._relocate(row["path"], layout.reference(area, relative))
             if include:
-                self.files.append({"source": row["path"], "target": "data/share_root/" + relative})
+                self.files.append({"source": str(layout.physical(row["path"])), "target": layout.target(area, relative)})
             self.workspaces[identity] = row
         if set(self.workspaces) != workspace_ids:
             self.unresolved.append({"ids": sorted(workspace_ids - set(self.workspaces)), "reason": "Workspace identity or path missing"})
+
+    def _relocate(self, source, reference):
+        """Text and rows naming ``source`` in any of its spellings name ``reference`` in the export."""
+        self.mappings.extend((spelling, reference) for spelling in layout.aliases(source))
+
+    def _lineage_location(self, lid):
+        """A project's Lineage folders sit in its agents folder; the others in the lineages area."""
+        project = next((row.get("project_id") for row in self.rows.get(("lineage", "lineages"), [])
+                        if row["lineage_id"] == lid), "")
+        return ("projects", f"{project}/agents/{lid}") if project else ("lineages", lid)
 
     def _kept_workspace_bindings(self):
         """The Resident Workspace bindings each Lineage's ``extra_bindings`` keeps."""
@@ -383,21 +420,28 @@ class _ExportScope:
         return kept_bindings
 
     def _owned_workspace(self, identity, rid, kept_bindings):
-        """The share-root folder of a Resident's own Workspace, and whether its outputs are copied."""
+        """The area location of a Resident's own Workspace, and whether its outputs are copied."""
         lid = self.resident_lineages[rid]
         # Native reads and default-cwd validation derive the Resident
-        # folder from share_root/Agents; the Workspace row must agree.
-        relative = f"Agents/{lid}/residents/{rid}/workspace"
-        folder = f"data/share_root/Agents/{lid}/residents/{rid}"
+        # folder from its Lineage folder; the Workspace row must agree.
+        area, lineage = self._lineage_location(lid)
+        relative = f"{lineage}/residents/{rid}/workspace"
+        folder = layout.target(area, f"{lineage}/residents/{rid}")
         self.generated[folder + "/resident.md"] = f"# {self.residents[rid]['title']}\n\nResident: {rid}\nLineage: {lid}\n"
         self.generated[folder + "/diary.md"] = "# Continuity\n\n" + ("Selected history is in the distribution database.\n" if lid in self.history_lineages else "Initial configuration; no source history included.\n")
         options = self.lineages[lid].get("workspace", {})
         include = options.get("own_outputs") is True
         if options.get("own_outputs") is None:
             self.unresolved.append({"id": lid, "reason": "Own Workspace output selection is unset"})
-        self.generated[folder + "/workspaces.md"] = f"# Workspaces\n\nOwned: {identity} → ${{share_root}}/{relative}\n" + "".join(f"\n{binding['workspace_id']} → ${{share_root}}/Workspaces/{binding['workspace_id']}\n" for binding in kept_bindings if binding["resident_id"] == rid)
-        self.generated[f"data/share_root/{relative}/.tfi-workspace"] = identity + "\n"
-        return relative, include
+        extra = "".join(f"\n{binding['workspace_id']} → {self._extra_workspace_reference(binding['workspace_id'])}\n"
+                        for binding in kept_bindings if binding["resident_id"] == rid)
+        self.generated[folder + "/workspaces.md"] = f"# Workspaces\n\nOwned: {identity} → {layout.reference(area, relative)}\n" + extra
+        self.generated[layout.target(area, relative + "/.tfi-workspace")] = identity + "\n"
+        return (area, relative), include
+
+    def _extra_workspace_reference(self, identity):
+        explicit = explicit_location(identity, self.resolution.get("file_locations"))
+        return layout.reference(*explicit) if explicit else "(no export location)"
 
     def _relocate_projection_workspaces(self):
         # Required evidence reuses an existing canonical Workspace binding.
@@ -406,13 +450,13 @@ class _ExportScope:
             actual = self.workspaces.get(identity, row)
             expected = row['path']
             actual_target = dict(self.mappings).get(actual['path'], actual['path'])
-            prefix = expected.replace('${share_root}', 'data/share_root') + '/'
+            prefix = layout.reference_target(expected) + '/'
+            actual_data = layout.reference_target(actual_target)
             for item in scope['files']:
                 if item['target'].startswith(prefix):
-                    item['target'] = actual_target.replace('${share_root}', 'data/share_root') + '/' + item['target'][len(prefix):]
+                    item['target'] = actual_data + '/' + item['target'][len(prefix):]
             scope['generated_files'] = {
-                (actual_target.replace('${share_root}', 'data/share_root') + '/' + key[len(prefix):]
-                 if key.startswith(prefix) else key): text
+                (actual_data + '/' + key[len(prefix):] if key.startswith(prefix) else key): text
                 for key, text in scope.get('generated_files', {}).items()}
             scope['path_mappings'] = [(old, actual_target if new == expected else new)
                                       for old, new in scope['path_mappings']]
@@ -439,7 +483,7 @@ class _ExportScope:
         document = {**document, "projects": [p for p in document.get("projects", []) if p["id"] in self.projects]}
         for project in document["projects"]:
             project["path"] = "/Projects/" + project["id"]
-            self.generated[f"data/share_root/Projects/{project['id']}/.tfi-project"] = project["id"] + "\n"
+            self.generated[layout.target("projects", f"{project['id']}/.tfi-project")] = project["id"] + "\n"
         return {**row, "document_json": document}
 
     def _repo_registry_row(self, row, identity, document):
@@ -451,8 +495,8 @@ class _ExportScope:
         if identity in self.projection_scope['repositories']:
             root = '${code_root}'
         else:
-            scope = resource_file_scope(identity, self.index[identity])
-            root = '${share_root}/' + scope['target'].removeprefix('data/share_root/')
+            scope = resource_file_scope(identity, self.index[identity], self.resolution.get('file_locations'))
+            root = layout.target_reference(scope['target'])
         document = {**document, 'source_kind': 'exported_tree',
                     'canonical_checkout': root, 'checkouts': [{'path': root}],
                     'remotes': [], 'push_enabled': False, 'ssh_key': ''}
@@ -482,23 +526,34 @@ class _ExportScope:
                 self._relocate_core_skill(record, core)
                 continue
             try:
-                item = resource_file_scope(identity, record)
+                item = resource_file_scope(identity, record, self.resolution.get('file_locations'))
             except ValueError as error:
                 self.unresolved.append({"id": identity, "reason": str(error)})
                 continue
             if item:
-                self.mappings.append((item['source'], '${share_root}/' + item['target'].removeprefix('data/share_root/')))
+                reference = layout.target_reference(item['target'])
+                for stored in (item['source'], *self._stored_locations(record)):
+                    self._relocate(stored, reference)
                 self.files.append(item)
         # Folder truth and source paths in selected registry definitions relocate too.
         for lid in self.lineages:
             path = self.index.get(lid, {}).get("source", {}).get("path")
             if path:
-                self.mappings.append((path, "${share_root}/Agents/" + lid))
+                self._relocate(path, layout.reference(*self._lineage_location(lid)))
+
+    @staticmethod
+    def _stored_locations(record):
+        """The content-folder spellings an owner's registration records, as stored."""
+        if record.get('resource_type') not in {'repo', 'article', 'skill'}:
+            return []
+        attributes = record.get('attributes', {})
+        return [value for value in (attributes.get('canonical_checkout'), attributes.get('canonical_root'),
+                                    attributes.get('content_root')) if value]
 
     def _relocate_core_skill(self, record, core):
         # Core files are supplied once by export_core_skills. Relocate the
         # indexed primary file AND its folder, including historical names.
-        destination = '${share_root}/Skills/' + core.name
+        destination = '${code_root}/core_skills/' + core.name
         old_file = record.get('source', {}).get('path')
         old_root = record.get('attributes', {}).get('content_root')
         if old_file:
@@ -531,7 +586,7 @@ class _ExportScope:
             for asset in build.get('files', {}):
                 read_artifact(build, asset)
             artifact = _artifact_root() / build['artifact_hash']
-            self.files.append({'source': str(artifact), 'target': 'data/staging_root/shared/projection_applications/' + build['artifact_hash'], 'immutable_artifact': True})
+            self.files.append({'source': str(artifact), 'target': layout.target('features', 'projection_applications/' + build['artifact_hash']), 'immutable_artifact': True})
 
     def _keep_schema_metadata(self):
         for key in self.source.tables:
@@ -570,5 +625,4 @@ class _ExportScope:
                 "anonymization": deepcopy(ANONYMIZATION),
                 "file_scope_policy": {**deepcopy(resolution.get('file_scope_policy', {})),
                                       'reset_roots': self.projection_scope.get('reset_roots', [])},
-                "code_extras": resolution.get("code_extras", []), "external_requirements": external,
-                **({'upgrade': deepcopy(resolution['upgrade'])} if 'upgrade' in resolution else {})}
+                "code_extras": resolution.get("code_extras", []), "external_requirements": external}

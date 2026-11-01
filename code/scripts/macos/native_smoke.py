@@ -1,9 +1,10 @@
-"""Authenticated acceptance against a disposable, installed macOS instance."""
+"""Authenticated acceptance against a temporary instance of an installed macOS app."""
 import http.cookiejar
 import json
 from pathlib import Path
 import secrets
 import subprocess
+import sys
 import time
 from urllib.parse import urlencode
 from urllib.error import HTTPError
@@ -12,16 +13,29 @@ from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_ope
 from scripts.windows.native_smoke import LocalModelApi
 
 
+INSTANCE = 'desktop'
+
+
 def check(condition, message):
     if not condition:
         raise RuntimeError(message)
 
 
+def registered_instance(platform):
+    """The desktop instance as the installed code's host registry records it, or None."""
+    probe = ("import sys,json;sys.path.insert(0,sys.argv[1]);from management_common import host_instances;"
+             "r=host_instances.read_registry();i=host_instances.find(sys.argv[2]) if sys.argv[2] in r else None;"
+             "print(json.dumps(i and {'root':str(i.root),'manifest':i.document}))")
+    result = subprocess.run([sys.executable, '-c', probe, str(Path(platform) / 'code'), INSTANCE],
+                            capture_output=True, text=True, check=True, timeout=30)
+    return json.loads(result.stdout)
+
+
 class InstalledSession:
-    def __init__(self, target, included):
-        self.target = target
+    def __init__(self, instance, included):
+        self.root = Path(instance['root'])
         self.included = included
-        self.base = f"http://127.0.0.1:{target['ports']['web']}"
+        self.base = f"http://127.0.0.1:{instance['manifest']['network']['entry_port']}"
         self.client = build_opener(ProxyHandler({}), HTTPCookieProcessor(http.cookiejar.CookieJar()))
         self.model_api = None
         self.private_values = set()
@@ -62,7 +76,7 @@ class InstalledSession:
             self.request('/api/health')
             check(b'<html' in self.request('/login').lower(), 'Login page is not HTML')
             time.sleep(2)
-        link = (Path(self.target['data_roots']['secrets_dir']) / 'first-admin-link.txt').read_text(encoding='utf-8')
+        link = (self.root / 'secrets/first-admin-link.txt').read_text(encoding='utf-8')
         invitation = link.split('#invite=', 1)[1].split()[0]
         self.password = secrets.token_urlsafe(18) + 'aA9!'
         registered = self.request('/api/auth/invitations/accept',
@@ -110,7 +124,7 @@ class InstalledSession:
             self.model_api.close()
 
 
-def verify_background(destination, marker):
+def verify_background(destination, instance_root, marker):
     result = subprocess.run(
         [str(destination / 'dependencies/python/bin/python3'), '-I',
          str(destination / 'code/management_portal/resource_source_changes.py')],
@@ -119,7 +133,7 @@ def verify_background(destination, marker):
         capture_output=True, timeout=30, check=True,
     )
     check(json.loads(result.stdout)['changed'] == [str(marker)], 'Index worker corrupted the Unicode path')
-    runtime = destination / 'instance/desktop/runtime'
+    runtime = Path(instance_root) / 'runtime'
     for component in ('resource', 'society', 'web'):
         check((runtime / (component + '.log')).is_file(), component + ' did not write a runtime log')
         for suffix in ('.log', '.error.log'):

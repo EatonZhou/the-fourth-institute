@@ -20,7 +20,7 @@ import sys
 from urllib.parse import unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import instance_runtime_root
 
 
 def configure_runtime(root: Path) -> Path:
@@ -65,7 +65,7 @@ def configure_runtime(root: Path) -> Path:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--destination", type=Path, default=instance_root() / "tools/libreoffice")
+    parser.add_argument("--destination", type=Path, default=instance_runtime_root() / "tools/libreoffice")
     parser.add_argument("--repair", action="store_true", help="Reconfigure an existing private runtime without downloading")
     options = parser.parse_args()
     root = options.destination.resolve()

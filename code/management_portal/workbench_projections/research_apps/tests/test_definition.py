@@ -4,12 +4,12 @@ import json
 from pathlib import Path
 
 from management_portal.workbench_projections.service import DEFINITION_FIELDS
+from tests.cases.instance_test_support import select_instance
 
 
 def test_migration_patch_uses_workbench_fields_and_preserves_metadata(tmp_path, monkeypatch):
-    site = tmp_path / 'site.json'
-    site.write_text(json.dumps({'deployment': {'development_projection': {'repo_id': 'repo_123456789abc', 'code_directory': 'code'}}}))
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(site))
+    select_instance(monkeypatch, tmp_path / 'instance', site={'deployment': {
+        'development_projection': {'repo_id': 'repo_123456789abc', 'code_directory': 'code'}}})
     path = Path(__file__).resolve().parents[1] / 'definition.py'
     spec = importlib.util.spec_from_file_location('migration_definition', path)
     module = importlib.util.module_from_spec(spec)

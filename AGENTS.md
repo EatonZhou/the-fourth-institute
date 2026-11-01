@@ -11,8 +11,11 @@ Read the current Design indexed by `code/SPEC.md`: **Portal 共享运行基础�
 Release 的快速发布流程** (`decision_08bb2d9141f9`). The development rules in
 `code/core_skills/tfi-agent-rule/portal-development.md` explain the same workflow.
 
-Read `tfi-development.json` in `git rev-parse --path-format=absolute --git-common-dir`.
-All Residents edit its one shared **dev worktree**. Its **main worktree is Release**.
+The worktrees are the code roots of the selected instance's deployments in
+`instance.json` (`deployments.dev.code_root`, `deployments.release.code_root`; each is
+the `code/` directory of its worktree). A Resident's terminal inherits
+`PORTAL_INSTANCE_ROOT`; elsewhere pass `--instance <name>` to `tfi_dev.py`.
+All Residents edit the one shared **dev worktree**. The **main worktree is Release**.
 Both directories exist simultaneously; switching the Web entry does not checkout
 a branch. Do not create task branches or worktrees. Only Release pushes `main`.
 

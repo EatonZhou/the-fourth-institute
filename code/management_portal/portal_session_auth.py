@@ -12,7 +12,7 @@ import threading
 import time
 from pathlib import Path
 
-from management_common.portal_paths import path as portal_path, resolve_directory
+from management_common.portal_paths import path as portal_path
 from management_common.site_config import read_site_config
 
 from .portal_access_control import PortalAccessStore, PortalCredentialStore, get_portal_access_store
@@ -21,8 +21,6 @@ SESSION_COOKIE = "db_session"
 SESSION_TOKEN_VERSION = 1
 _AUTH_ENV = {
     "session_cookie_name": "PORTAL_SESSION_COOKIE_NAME",
-    "session_signing_key_path": "PORTAL_SESSION_SIGNING_KEY_PATH",
-    "two_factor_key_path": "PORTAL_TWO_FACTOR_KEY_PATH",
     "public_origin": "PORTAL_PUBLIC_ORIGIN",
 }
 
@@ -62,13 +60,11 @@ def login_challenge_cookie_name() -> str:
 
 
 def session_signing_key_path() -> Path:
-    value = authentication_setting("session_signing_key_path")
-    return portal_path("secrets_dir") / "session_signing.key" if value is None else resolve_directory(value)
+    return portal_path("secrets") / "session_signing.key"
 
 
 def two_factor_key_path() -> Path:
-    value = authentication_setting("two_factor_key_path")
-    return portal_path("secrets_dir") / "two_factor.key" if value is None else resolve_directory(value)
+    return portal_path("secrets") / "two_factor.key"
 
 
 def cookie_value(cookie_header: str, name: str) -> str:

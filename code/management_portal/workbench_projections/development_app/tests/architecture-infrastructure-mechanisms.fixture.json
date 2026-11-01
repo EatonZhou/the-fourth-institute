@@ -3,7 +3,7 @@
   "stage": "development_frozen",
   "provenance": {
     "fixture": {
-      "path": "${share_root}/Projects/AI员工/knowledge_base/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/domains-development.json",
+      "path": "projects:AI员工/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/domains-development.json",
       "sha256": "053a04e22722a72244bb8262e586425ea1580b7fd17a8a98a13c336764e31ea6"
     },
     "delivery": {

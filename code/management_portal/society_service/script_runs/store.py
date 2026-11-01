@@ -7,6 +7,7 @@ import os
 from management_common.domain_database import DomainDatabase
 from psycopg.types.json import Jsonb
 from management_common.database_time import encode_times, decode_times
+from management_common.location_records import located_record, stored_record
 
 LEASE_SECONDS = 90
 
@@ -41,15 +42,15 @@ def domain():
 def _record(row):
     if row is None:
         return None
-    return {k: v for k, v in decode_times(row, ('started_at', 'finished_at')).items()
-            if v is not None or k == 'exit_code'}
+    return located_record({k: v for k, v in decode_times(row, ('started_at', 'finished_at')).items()
+            if v is not None or k == 'exit_code'})
 
 
 def _values(row):
     unknown = set(row) - {'script_run_id', *COLUMNS}
     if unknown:
         raise ValueError(f'Unknown script run fields: {sorted(unknown)}')
-    encoded = encode_times(row, ('started_at', 'finished_at'))
+    encoded = encode_times(stored_record(row), ('started_at', 'finished_at'))
     return tuple(Jsonb(encoded.get(k)) if k in JSON_FIELDS else encoded.get(k) for k in COLUMNS)
 
 

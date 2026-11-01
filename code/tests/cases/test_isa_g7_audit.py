@@ -177,7 +177,7 @@ def test_resource_type_only_lists_executable_declared_actions(monkeypatch):
 
 def test_avatar_size_is_rejected_before_upload_is_created(tmp_path, monkeypatch):
     """头像超过大小上限时 CreateUpload 在创建上传前拒绝"""
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr(isa, "upload_root", lambda: tmp_path / "uploads")
     with pytest.raises(InstructionError) as error:
         isa.create_upload(invoke("CreateUpload", {"purpose": "avatar", "file_name": "avatar.png",
             "media_type": "image/png", "size": 3 * 1024 * 1024}))
@@ -187,7 +187,7 @@ def test_avatar_size_is_rejected_before_upload_is_created(tmp_path, monkeypatch)
 
 def test_avatar_rejects_gif_in_both_data_and_source_channels(tmp_path, monkeypatch):
     """头像上传和从资源地址取图两种方式都拒绝 GIF"""
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr(isa, "upload_root", lambda: tmp_path / "uploads")
     buffer = io.BytesIO()
     Image.new("RGB", (16, 16)).save(buffer, format="GIF")
     data = buffer.getvalue()
@@ -257,9 +257,8 @@ def test_admitted_avatar_update_targets_only_the_requested_user(tmp_path, monkey
     """UpdateUser 修改头像只作用于请求中的用户
 
     :module: platform.core"""
-    from management_portal.user_avatar import UserAvatarStore
-    store = UserAvatarStore(tmp_path / "avatars")
-    monkeypatch.setattr("management_portal.user_avatar.user_avatar_store", lambda: store)
+    from management_portal.user_avatar import user_avatar_store
+    store = user_avatar_store()
     monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_require_authenticated_actor=lambda actor: actor))
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(user=lambda name: {"username": name}))
     result = web_isa.update_user(invoke("UpdateUser", {"user_id":"alice", "changes": {"avatar": {"sprite_index": 3}}}))
@@ -297,7 +296,7 @@ def test_failed_publish_preserves_remote_push_result(monkeypatch):
     """PublishRelease 失败时错误详情保留各远端的推送结果"""
     from scripts import tfi_dev
     push = {"ok": False, "remotes": {"github": {"ok": False, "error": "offline"}}}
-    monkeypatch.setattr(web_isa, "_instance", lambda: "dev")
+    monkeypatch.setattr(web_isa, "_deployment", lambda: "dev")
     monkeypatch.setattr(tfi_dev, "publish", lambda *args, **options: {"ok": False, "error": "failed", "push": push})
     with pytest.raises(InstructionError) as error:
         web_isa.publish_release(invoke("PublishRelease", {"message": "test", "paths": ["SPEC.md"]}))

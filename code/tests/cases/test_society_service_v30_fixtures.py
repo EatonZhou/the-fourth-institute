@@ -3,7 +3,7 @@ import copy
 
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.society_service import lineage_lifecycle, lineage_reads, resident_catalog
-from management_portal.society_service.lineage_storage import canonical_lineage_folder
+from management_portal.society_service.lineage_locations import lineage_folder
 from tests.cases.society_service_test_support import (
     create_lineage_with_resident_members, install_resource_boundary,
     install_registered_lineage_members, publish_registered_lineage_members,
@@ -21,7 +21,7 @@ def test_graph_publisher_keeps_nodes_existing_residents_and_main_agent(monkeypat
     for record in before:
         assert record["lineage_id"] == lineage["lineage_id"]
         assert record["principal_hierarchy"]["scope_ids"] == [lineage["lineage_id"]]
-        assert record["default_cwd"] == str(canonical_lineage_folder(lineage["lineage_id"])
+        assert record["default_cwd"] == str(lineage_folder(lineage["lineage_id"])
             / "residents" / record["resident_id"] / "workspace")
         assert record["owned_workspace"]["workspace_id"] == record["owned_workspace_id"]
         assert record["workspace_bindings"] == []

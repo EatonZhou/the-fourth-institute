@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Hashable, Iterable
 
+from management_common.instance_locations import located_path, stored_location
 from management_portal.resources import get_resource_service
 from management_portal.resources.registry_store import announce_registry_changes, get_registry_store
 
@@ -57,6 +58,32 @@ class RegistrySync:
     location: str
     record_keys: Callable[[Record], Iterable[Hashable]]
     location_keys: Callable[[Record], Iterable[Hashable]]
+    # Directory fields: stored as area references inside an area, else as
+    # canonical absolute paths; callers always see absolute paths.
+    path_fields: tuple[str, ...] = ()
+    locations_field: str = ""
+    location_path_fields: tuple[str, ...] = ()
+
+    def _convert(self, record: Record, convert: Callable[[str], str]) -> Record:
+        result = dict(record)
+        for field in self.path_fields:
+            if isinstance(result.get(field), str) and result[field]:
+                result[field] = convert(result[field])
+        if self.locations_field and isinstance(result.get(self.locations_field), list):
+            locations = []
+            for item in result[self.locations_field]:
+                if isinstance(item, dict):
+                    item = dict(item)
+                    for field in self.location_path_fields:
+                        if isinstance(item.get(field), str) and item[field]:
+                            item[field] = convert(item[field])
+                locations.append(item)
+            result[self.locations_field] = locations
+        return result
+
+    def stored(self, record: Record) -> Record:
+        """The storage form of a record about to be written."""
+        return self._convert(record, stored_location)
 
     def validated(self, document_id: str, record: object) -> Record:
         if not isinstance(record, dict):
@@ -66,7 +93,7 @@ class RegistrySync:
             raise ValueError(f"invalid {self.resource_type} id in registry: {record_id!r}")
         if record_id != document_id:
             raise ValueError(f"registry id mismatch: {document_id}")
-        return record
+        return self._convert(record, located_path)
 
     def records(self, source: Any = None) -> dict[str, Record]:
         """Every stored record by ID, read from ``source`` (a registry writer) or the store."""
@@ -138,7 +165,7 @@ class RegistrySync:
                 # A later group of the same scan merges into this result.
                 stored[record_id] = merged
                 if writer is not None:
-                    writer.put(self.collection, record_id, merged)
+                    writer.put(self.collection, record_id, self.stored(merged))
                     changes.setdefault(record_id, change)
         announce_registry_changes(self.collection, changes, resource_type=kind)
         return {

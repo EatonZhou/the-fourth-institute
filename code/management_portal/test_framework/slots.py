@@ -1,4 +1,4 @@
-"""Host-wide concurrency budget shared by every Test executor (Dev and Release).
+"""Concurrency budget shared by every Test executor of the instance (Dev and Release).
 
 Each slot is one lock file; a holder keeps an exclusive ``flock`` on it for as
 long as its test process runs. The kernel releases the lock when the holder
@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Callable
 
 from management_common.file_lock import try_lock_descriptor
-from management_portal.test_framework.paths import user_state_root
+from management_portal.test_framework.paths import slot_root
 
 CAPACITY = {
     # One pytest shard runs one pytest process with its own PostgreSQL.
@@ -31,7 +31,7 @@ MAX_CONCURRENCY_CEILING = 32
 
 
 def max_concurrency() -> int:
-    """Host-wide budget for framework-managed work across all test kinds."""
+    """The instance's budget for framework-managed work across all test kinds."""
     raw = os.getenv("PORTAL_TEST_MAX_CONCURRENCY", str(DEFAULT_MAX_CONCURRENCY))
     try:
         value = int(raw)
@@ -40,13 +40,6 @@ def max_concurrency() -> int:
     if not 1 <= value <= MAX_CONCURRENCY_CEILING:
         raise ValueError("PORTAL_TEST_MAX_CONCURRENCY must be an integer from 1 to 32")
     return value
-
-
-def slot_root() -> Path:
-    return Path(os.getenv(
-        "PORTAL_TEST_SLOT_ROOT",
-        str(user_state_root() / "test-slots"),
-    )).expanduser()
 
 
 def _open_lock(path: Path) -> int:

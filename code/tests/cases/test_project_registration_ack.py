@@ -26,7 +26,6 @@ def project_registration(tmp_path, monkeypatch):
         'projects': [],
         'status_vocab': ['active'],
     })
-    monkeypatch.setattr(project, 'SHARE_ROOT', tmp_path)
     monkeypatch.setattr(project, 'PROJECTS_ROOT', tmp_path / 'Projects')
     access = FakeAccessStore()
     monkeypatch.setattr(project, 'get_portal_access_store', lambda: access)

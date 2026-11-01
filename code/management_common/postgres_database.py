@@ -286,7 +286,7 @@ class PostgresDatabase:
         instance = re.sub(
             r"[^a-zA-Z0-9_.-]+",
             "-",
-            str(os.getenv("PORTAL_INSTANCE") or "portal"),
+            str(os.getenv("PORTAL_DEPLOYMENT") or "portal"),
         ).strip("-") or "portal"
         self._application_name = (
             f"tfi:{instance}:{'read' if read_worker else self.schema}:{os.getpid()}"

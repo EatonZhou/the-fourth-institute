@@ -34,19 +34,19 @@ DECLARATIONS = (
           minimum=RETENTION_DAYS["harness_retention_days"][0], maximum=RETENTION_DAYS["harness_retention_days"][1]),
     ), (R("settings", "object", "修改后的" + SETTINGS), P("reconciled", "object", "开启权限系统时的补齐结果：scheme_id、regenerate、added_nodes、moved_nodes、removed_nodes、added_entries、removed_entries")),
        mutates=True, owner="lineage"),
-    _d("GetPortalStatus", FIXED, "读取 Portal 实例与各组件的运行状态。", (
-        P("instance", description="只读取这个实例；省略时读取 dev 和 release", enum=("dev", "release")),
-    ), (R("instances", "array", "每个实例的 Web 健康检查、源码目录与共享服务单元"),)),
+    _d("GetPortalStatus", FIXED, "读取 Portal 各部署与各组件的运行状态。", (
+        P("deployment", description="只读取这个部署；省略时读取 dev 和 release", enum=("dev", "release")),
+    ), (R("deployments", "array", "每个部署的 Web 健康检查、源码目录与共享服务单元"),)),
     _d("GetRuntimeCapacity", FIXED, "只读观察共享数据库连接、本机磁盘与 Execution 队列容量；排队总数包含配额等等待。", (),
        (R("capacity", "object", "tfi.runtime-capacity.v1；各来源独立返回 ok 或 unavailable"),)),
-    _d("RestartPortal", FIXED, "请求重启一个 Portal 实例，或实例中的指定组件。", (
-        R("instance", description="要重启的实例", enum=("dev", "release")),
+    _d("RestartPortal", FIXED, "请求重启一个 Portal 部署，或部署中的指定组件。", (
+        R("deployment", description="要重启的部署", enum=("dev", "release")),
         P("components", "array", "省略时重启 web、resource、execution-service、lineage，不含 execution-worker",
           items={"type": "string", "enum": list(COMPONENTS)}),
     ), (R("request_id", description="执行这次重启的临时单元 tfi-pair-restart-<id>"),
         R("components", "array", "请求的组件；空列表表示默认组件")), mutates=True),
     D(name="PublishRelease", category="environment", owner="web", decides=FIXED,
-      description="把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 实例执行。",
+      description="把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 部署执行。",
       parameters=(
           R("message", description="本次发布的提交说明"),
           P("paths", "array", "要发布的文件或目录", items={"type": "string"}),
@@ -161,7 +161,7 @@ DECLARATIONS = (
         R("kind", description="账号种类，须是该 Provider 支持的种类", enum=("subscription_login", "api_profile", "service")),
         P("route_id", description="执行路由 ID；省略时由账号 ID 得出（codex 去掉 codex_ 前缀），provider_api 与 kimi 留空"),
         P("config", "object", "Provider 专属设置：api_profile 为 api_id；codex 为 fallback_account_ids、is_default；"
-          "claude 为 models、default_model"),
+          "claude 为 models、default_model；subscription_login 必须提供 account_dir（主机目录的规范绝对路径，允许尚未创建的目录）"),
         P("max_concurrency", "integer", "并发上限，默认 8", minimum=1, maximum=256),
         P("enabled", "boolean", "是否启用，默认 true"), P("secret", description="api_profile 的一次性密钥"),
     ), (R("registration", "object", REGISTRATION),), mutates=True, owner="execution"),

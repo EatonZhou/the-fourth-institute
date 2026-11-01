@@ -2,7 +2,6 @@ import os
 import subprocess
 import sys
 import time
-import importlib.util
 import json
 from pathlib import Path
 
@@ -14,26 +13,35 @@ from tests.cases import postgres_test_database as database
 PORTAL_URL = "postgresql://tfi@/tfi_lineage?host=%2Fsrv%2Fportal-pg%2Fsocket&port=55432"
 
 
-def test_deployed_environment_file_is_resolved_before_refusing_production(tmp_path, monkeypatch):
-    env_file = tmp_path / "existing-deployment.env"
+def test_selected_instance_database_file_is_resolved_before_refusing_production(tmp_path, monkeypatch):
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / "deployed-instance")
+    env_file = root / "secrets" / "postgres.env"
+    env_file.parent.mkdir()
     env_file.write_text(f"PORTAL_DATABASE_URL={PORTAL_URL}\n")
-    site = tmp_path / "site.json"
-    site.write_text(json.dumps({"deployment": {"postgres_env_file": str(env_file)}}))
-    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(site))
-    monkeypatch.delenv("PORTAL_POSTGRES_ENV_FILE", raising=False)
-    spec = importlib.util.spec_from_file_location("test_database_configuration_probe", database.__file__)
-    probe = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(probe)
-    assert probe.PRODUCTION_ENVIRONMENT_FILE == env_file
+    environment = {"PORTAL_INSTANCE_ROOT": str(root)}
+    assert database.production_environment_files(environment) == [env_file]
     with pytest.raises(RuntimeError, match="Portal database server"):
-        probe.refuse_production(PORTAL_URL, probe.production_addresses({}))
-    assert probe.POSTGRES_ROOT == Path(os.environ.get("PORTAL_TEST_POSTGRES_ROOT", Path.home() / ".local/postgresql-16"))
+        database.refuse_production(PORTAL_URL, database.production_addresses(environment))
+    assert database.POSTGRES_ROOT == Path(os.environ.get("PORTAL_TEST_POSTGRES_ROOT", Path.home() / ".local/postgresql-16"))
 
 
-def test_this_session_does_not_use_the_portal_database_server():
+def test_every_registered_instance_database_is_refused(tmp_path, monkeypatch):
+    """本机登记的每个实例的数据库服务器都被视为 Portal 服务器"""
+    from management_common import host_instances
+    from tests.cases.instance_test_support import write_instance
+    monkeypatch.setattr(host_instances, "registry_path", lambda: tmp_path / "instances.json")
+    root = write_instance(tmp_path / "registered")
+    env_file = root / "secrets" / "postgres.env"
+    env_file.parent.mkdir()
+    env_file.write_text(f"PORTAL_DATABASE_URL={PORTAL_URL}\n")
+    (tmp_path / "instances.json").write_text(json.dumps({"fixture": str(root)}))
+    assert ("/srv/portal-pg/socket", "55432") in database.production_addresses({})
+
+
+def test_this_session_does_not_use_the_portal_database_server(production_database_addresses):
     """当前测试会话使用的数据库不在 Portal 生产服务器上"""
-    production = database.production_addresses({})
-    assert database.server_address(os.environ["PORTAL_DATABASE_URL"]) not in production
+    assert database.server_address(os.environ["PORTAL_DATABASE_URL"]) not in production_database_addresses
     assert os.environ["PORTAL_POSTGRES_TEST_DSN"] == os.environ["PORTAL_DATABASE_URL"]
 
 
@@ -41,7 +49,7 @@ def test_explicit_dsn_on_the_portal_server_is_refused(tmp_path, monkeypatch):
     """测试数据库 DSN 指向 Portal 数据库服务器时被拒绝，不论库名和写法"""
     env_file = tmp_path / "portal-postgres.env"
     env_file.write_text(f"PORTAL_DATABASE_URL={PORTAL_URL}\nPORTAL_POSTGRES_POOL_SIZE=8\n")
-    monkeypatch.setattr(database, "PRODUCTION_ENVIRONMENT_FILE", env_file)
+    monkeypatch.setattr(database, "production_environment_files", lambda _environ: [env_file])
     production = database.production_addresses({})
     # Another database name or spelling on the same server is still that server.
     for dsn in (

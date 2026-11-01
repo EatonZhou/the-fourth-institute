@@ -1,5 +1,4 @@
 from __future__ import annotations
-from management_common.product_environment import read_product_env
 from management_common.portal_paths import path as portal_path
 
 import re
@@ -19,10 +18,7 @@ if TYPE_CHECKING:
     from ..service import ResourceService
 
 
-SHARE_ROOT = Path(read_product_env("PORTAL_SHARE_ROOT", str(portal_path("share_root")))).expanduser()
-PROJECTS_ROOT = Path(
-    read_product_env("PORTAL_PROJECTS_ROOT", str(portal_path("share_root") / "Projects"))
-).expanduser()
+PROJECTS_ROOT = portal_path('projects')
 PROJECT_TYPE_ALIASES = {
     "company": "company",
     "company_project": "company",
@@ -66,12 +62,7 @@ def load_projects_payload() -> dict[str, Any]:
 
 
 def _registry_value_for_path(path: Path) -> str:
-    resolved = path.resolve(strict=False)
-    share_root = SHARE_ROOT.resolve(strict=False)
-    try:
-        return f"/{resolved.relative_to(share_root).as_posix()}"
-    except ValueError:
-        return str(resolved)
+    return str(path.resolve(strict=False))
 
 
 def _project_root_for_id(project_id: str) -> Path:
@@ -239,8 +230,8 @@ def create_project(
     project_root = _project_root_for_id(project_id)
     if not _path_payload_matches_project_root(payload.get("path"), project_root):
         raise ValueError(f"Project path is fixed: {PROJECTS_ROOT / project_id}")
-    if not project_root.is_relative_to(SHARE_ROOT.resolve(strict=False)):
-        raise PermissionError(f"Project path must be under {SHARE_ROOT}.")
+    if not project_root.is_relative_to(PROJECTS_ROOT.resolve(strict=False)):
+        raise PermissionError(f"Project path must be under {PROJECTS_ROOT}.")
 
     def place(document: dict[str, Any], connection: Any) -> None:
         # The Project and its place in the permission trees commit together (decision_b820faf42218 §5.7).

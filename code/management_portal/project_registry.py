@@ -29,7 +29,7 @@ COLLECTION = "project_registry"
 DOCUMENT_ID = "projects"
 SCHEMA_VERSION = 1
 CHANGE_PATH = registry_change_key(COLLECTION, DOCUMENT_ID)
-SHARE_ROOT = portal_path("share_root")
+PROJECTS_ROOT = portal_path("projects")
 # A Project's ID is its only name (decision_4648f7fa3295): 1-80 letters (Chinese
 # included), digits and ``_ . @ + -``.  A record has no separate display name.
 PROJECT_ID = re.compile(r"[\w.@+-]{1,80}")
@@ -191,8 +191,13 @@ def runtime_path(raw_path: object) -> Path | None:
         raise ValueError("项目注册路径不能使用变量占位符；请填写实际目录或共享根相对路径")
     if len(text) >= 2 and text[1] == ":":
         text = text[2:]
-    if text.startswith(("/Projects/", "/Codes/")) or not text.startswith(("/", "~")):
-        text = str(SHARE_ROOT) + "/" + text.lstrip("/")
+    if text.startswith("/Projects/"):
+        text = str(PROJECTS_ROOT / text.removeprefix("/Projects/"))
+    elif text.startswith("projects:"):
+        from management_common.instance_manifest import load as instance_manifest
+        return instance_manifest().resolve(text)
+    elif not text.startswith(("/", "~")):
+        text = str(PROJECTS_ROOT / text.removeprefix("Projects/"))
     return Path(text).expanduser().resolve(strict=False)
 
 

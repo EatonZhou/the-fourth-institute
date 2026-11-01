@@ -17,9 +17,7 @@ import tempfile
 import time
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
-from management_common.postgres_configuration import postgres_env_file
 
-PRODUCTION_ENVIRONMENT_FILE = postgres_env_file()
 POSTGRES_ROOT = Path(os.getenv("PORTAL_TEST_POSTGRES_ROOT", str(Path.home() / ".local/postgresql-16")))
 CLUSTER_PARENT = Path("/tmp")  # short enough for the Unix socket path limit
 TEMP_PREFIX = "tfi-portal-pytest-"
@@ -54,13 +52,23 @@ def _environment_file_url(path: Path) -> str:
     return ""
 
 
+def production_environment_files(environ: dict[str, str]) -> list[Path]:
+    """Database credential files of the instance the shell selects and of every instance this user registered."""
+    from management_common import host_instances
+
+    roots = set(host_instances.read_registry().values())
+    if environ.get("PORTAL_INSTANCE_ROOT"):
+        roots.add(environ["PORTAL_INSTANCE_ROOT"])
+    return [Path(root) / "secrets" / "postgres.env" for root in sorted(roots)]
+
+
 def production_addresses(environ: dict[str, str]) -> set[tuple[str, str]]:
     inherited = str(environ.get("PORTAL_DATABASE_URL") or "").strip()
     # A pytest session hands its chosen test database to child processes in
     # both variables; that inherited URL is the test database, not Portal's.
     if inherited == str(environ.get("PORTAL_POSTGRES_TEST_DSN") or "").strip():
         inherited = ""
-    urls = (inherited, _environment_file_url(PRODUCTION_ENVIRONMENT_FILE))
+    urls = (inherited, *(_environment_file_url(path) for path in production_environment_files(environ)))
     return {server_address(url) for url in urls if url}
 
 

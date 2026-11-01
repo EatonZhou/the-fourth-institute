@@ -42,3 +42,10 @@
 .managementInstanceCard h3 { margin: 0 0 .5rem; }
 .managementInstanceLinks { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-bottom: 1rem; }
 .managementInstanceLinks a { overflow-wrap: anywhere; }
+.managementPathsList { display:grid; gap:0; }
+.managementPathsItem { border-top:1px solid #ccd5df; padding:12px 0; display:grid; gap:6px; }
+.managementPathsItem h3 { margin:0; font-size:16px; }
+.managementPathsItem code, [data-management-paths-root] code { overflow-wrap:anywhere; }
+.managementPathsItem small { color:var(--muted); }
+.managementPathsMove { display:flex; gap:8px; align-items:center; }
+.managementPathsMove input { flex:1; min-width:0; }

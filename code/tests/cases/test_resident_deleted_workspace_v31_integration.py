@@ -43,7 +43,7 @@ def sparse_history(tmp_path, monkeypatch):
     def unexpected_folder(*args, **kwargs):
         raise AssertionError("Deleted identity must not derive a Lineage folder")
     monkeypatch.setattr(resource_client, "workspace_paths_many", paths)
-    monkeypatch.setattr(lineage_storage, "canonical_lineage_folder", unexpected_folder)
+    monkeypatch.setattr(lineage_storage, "lineage_folder_for_project", unexpected_folder)
     return SimpleNamespace(store=store, catalog=catalog, agents=agents,
                            trace=agents.trace_sequence_id(RID), trace_length=agents.trace_length(RID))
 

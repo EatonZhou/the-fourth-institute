@@ -20,41 +20,28 @@ yaml = None
 
 
 def _source_root() -> Path:
-    checkout = next(
-        (parent for parent in (*Path(__file__).resolve().parents, Path.cwd())
-         if (parent / "management_common" / "site_config.py").is_file()), None
-    )
-    explicit_root = os.environ.get("PORTAL_ROOT")
-    anchor = Path(explicit_root).expanduser().resolve() if explicit_root is not None else (checkout or Path.cwd())
-    config_name = os.environ.get("PORTAL_SITE_CONFIG", "").strip()
-    if config_name:
-        config_path = Path(config_name).expanduser()
-        if not config_path.is_absolute():
-            config_path = anchor / config_path
-        # The common helper must read exactly the same explicit configuration.
-        os.environ["PORTAL_SITE_CONFIG"] = str(config_path)
-    selected = explicit_root
-    root = Path(selected).expanduser().resolve() if selected is not None else checkout
-    if root is None or not (root / "management_common" / "product_environment.py").is_file():
-        raise RuntimeError("TFI Portal checkout not found; set PORTAL_ROOT explicitly")
+    root = Path(__file__).resolve().parents[3]
+    if not (root / "management_common" / "product_environment.py").is_file():
+        raise RuntimeError("Core Skill must be installed with its Portal code directory")
     return root
 
 
 def _configure_portal() -> None:
     global DEFAULT_PORTAL_ROOT, PORTAL_PYTHON, DEFAULT_PROJECTS_ROOT
     global DEFAULT_SKILL_ROOTS, DEFAULT_PAPER_ROOT
-    global read_product_env, mirror_product_env
+    global read_product_env
     DEFAULT_PORTAL_ROOT = _source_root()
     sys.path.insert(0, str(DEFAULT_PORTAL_ROOT))
-    from management_common.product_environment import read_product_env, mirror_product_env
+    from management_common.product_environment import read_product_env
     from management_common.portal_paths import path as portal_path
+    from management_common.code_environment import runtime_python
 
-    native_python = DEFAULT_PORTAL_ROOT / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    PORTAL_PYTHON = Path(read_product_env("PORTAL_PYTHON", str(native_python if native_python.is_file() else sys.executable))).expanduser()
-    share = portal_path("share_root")
-    DEFAULT_PROJECTS_ROOT = Path(read_product_env("PORTAL_PROJECTS_ROOT", str(share / "Projects"))).expanduser()
-    DEFAULT_SKILL_ROOTS = (share / "Skills",)
-    DEFAULT_PAPER_ROOT = share / "Papers"
+    PORTAL_PYTHON = runtime_python(DEFAULT_PORTAL_ROOT)
+    # Core Skills belong to the code directory; shared Skills, Projects and
+    # Papers are instance areas named by the manifest.
+    DEFAULT_PROJECTS_ROOT = portal_path("projects")
+    DEFAULT_SKILL_ROOTS = (DEFAULT_PORTAL_ROOT / "core_skills", portal_path("skills"))
+    DEFAULT_PAPER_ROOT = portal_path("papers")
 
 
 TYPE_PATTERN = r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*"
@@ -1205,13 +1192,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _use_portal_python() -> None:
-    """Re-run under the Portal interpreter when this one lacks the database driver."""
-    try:
-        import psycopg  # noqa: F401
-    except ModuleNotFoundError:
-        if PORTAL_PYTHON.is_file() and not read_product_env("PORTAL_RESOURCE_ID_REEXEC"):
-            mirror_product_env(os.environ, "PORTAL_RESOURCE_ID_REEXEC", "1")
-            os.execv(str(PORTAL_PYTHON), [str(PORTAL_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
+    """Run with this code version's dependencies, including from a user shell."""
+    if Path(sys.prefix) != PORTAL_PYTHON.parent.parent:
+        os.execv(str(PORTAL_PYTHON), [str(PORTAL_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 
 def main() -> int:

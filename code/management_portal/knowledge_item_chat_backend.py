@@ -15,9 +15,7 @@ from . import discussion_residents
 from .resources import get_resource_service
 
 
-RESIDENT_IMAGE_ROOT = Path(
-    str(portal_path("staging_root") / "shared" / "portal_uploads" / "resident_chat_images")
-)
+RESIDENT_IMAGE_ROOT = portal_path("uploads") / "resident_chat_images"
 def _public_item(
     record: dict[str, Any],
     path: Path,

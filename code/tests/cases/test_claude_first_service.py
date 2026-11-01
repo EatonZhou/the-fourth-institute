@@ -34,8 +34,10 @@ def test_generated_claude_unit_is_accepted_by_systemd(control, directory):
     interpreter = control.sdk / "bin/python"
     interpreter.unlink()
     interpreter.symlink_to(sys.executable)
-    package = control.root / directory
-    package.mkdir()
+    package = updates.RUNTIMES / 'claude-app-server-current'
+    selected = control.root / directory
+    selected.mkdir()
+    package.symlink_to(selected, target_is_directory=True)
     target = units.install_claude_unit(control.sdk, package)
     result = REAL_RUN([analyzer, "--user", "verify", "--man=no", str(target)],
                       text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -45,32 +47,30 @@ def test_generated_claude_unit_is_accepted_by_systemd(control, directory):
 
 @pytest.fixture
 def control(monkeypatch, tmp_path):
-    root = tmp_path / "instance"
-    root.mkdir()
-    stage = tmp_path / "staging"
-    stage.mkdir()
-    context = {"root": root, "directory": tmp_path / "units", "service_prefix": "tfi-new"}
-    target = {"install_root": str(root), "service_prefix": "tfi-new", "run_id": "fixture",
-              "data_roots": {"staging_root": str(stage)}, "database_name": "new_database",
-              "ports": {"web": 7000, "postgres": 7001, "nats": 7002}}
-    (root / "installation.json").write_text(json.dumps({
-        "schema": "tfi.release-installation.v1", "target": target}))
-    monkeypatch.setattr(units, "_isolated_provider_context", lambda: context)
-    monkeypatch.setattr(portal_paths, "path", lambda key: stage if key == "staging_root" else root / key)
-    monkeypatch.setattr(updates, "RUNTIMES", tmp_path / "runtimes")
-    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path / "state")
-    sdk = tmp_path / "external-sdk"
-    (sdk / "bin").mkdir(parents=True)
-    (sdk / "bin/python").write_text("external SDK remains unmodified")
-    monkeypatch.setattr(updates.ClaudeRuntime, "link", lambda self: sdk)
-    monkeypatch.setattr(updates.ClaudeRuntime, "installed", lambda self: ("0.2.174",))
+    from scripts import instance_services, tfi_release_platform_linux as linux
+    from tests.cases.provider_service_test_support import FakeControl, provider_instance, real_provider_links
+    links = real_provider_links()
+    # First onboarding: claude-code is not yet a registered component.
+    root, runtimes = provider_instance(monkeypatch, tmp_path)
+    directory = tmp_path / 'units'
+    monkeypatch.setattr(instance_services, 'platform_name', lambda: 'linux')
+    monkeypatch.setattr(linux, 'unit_directory', lambda: directory)
+    service = FakeControl(directory)
+    monkeypatch.setattr(instance_services, 'controller', lambda instance: service)
+    context = {'directory': directory}
+    stage = root / 'runtime'
+    installed_sdk = runtimes / 'claude-agent-sdk-0.2.174'
+    (installed_sdk / 'bin').mkdir(parents=True)
+    (installed_sdk / 'bin/python').write_text('SDK remains unmodified')
+    sdk = runtimes / 'claude-agent-sdk-current'
+    sdk.symlink_to(installed_sdk, target_is_directory=True)
+    monkeypatch.setattr(updates.ClaudeRuntime, 'installed', lambda self: ('0.2.174',))
     install = Mock(side_effect=AssertionError("must reuse SDK without downloading"))
     monkeypatch.setattr(updates.ClaudeRuntime, "stage", install)
     monkeypatch.setattr(updates.ClaudeRuntime, "available", install)
     commands = []
-    active = []
     state = SimpleNamespace(root=root, stage=stage, context=context, sdk=sdk, commands=commands,
-                            active=active, dropins="", install=install, on_start=lambda: None)
+                            service=service, install=install, on_start=lambda: None)
 
     def run(args, **kwargs):
         if args[0] == "uname":
@@ -78,25 +78,20 @@ def control(monkeypatch, tmp_path):
         commands.append(args)
         if args[0] == "systemctl":
             assert not any(a.startswith("portal-") for a in args)
-            assert "DBUS_SESSION_BUS_ADDRESS" in kwargs["env"]
-            if "show" in args:
-                name = args[3]
-                out = f"FragmentPath={context['directory'] / name}\nDropInPaths={state.dropins}\n"
-                out += f"ActiveState={'active' if active else 'inactive'}\n"
-            else:
-                out = ""
-                if "--now" in args or "start" in args:
-                    active.append(True)
-                    state.on_start()
+            if "--now" in args:
+                # Service control goes through the instance's registered-unit guard.
+                assert "DBUS_SESSION_BUS_ADDRESS" in kwargs["env"]
+                service.active.add(args[-1])
+                state.on_start()
         else:
             # Only the SDK's package import probe is external to this fixture.
-            assert args[0] == str(sdk / "bin/python")
+            assert Path(args[0]).resolve() == (sdk / "bin/python").resolve()
             assert "claude_code_daemon" in " ".join(args)
-            out = ""
-        return subprocess.CompletedProcess(args, 0, stdout=out, stderr="")
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
     monkeypatch.setattr(units.subprocess, "run", run)
-    return state
+    yield state
+    assert real_provider_links() == links
 
 
 @pytest.fixture
@@ -125,21 +120,21 @@ def test_check_installs_only_own_daemon_before_execution(control, check, monkeyp
 
     def health(client):
         observed.append(client.socket_path)
-        assert control.active, "SDK presence did not start the daemon"
+        assert control.service.active, "SDK presence did not start the daemon"
         return {"backend": "claude", "protocol_version": 1, "status": "degraded"}
 
     monkeypatch.setattr(ClaudeCodeClient, "health", health)
     result = setup.check(inv)
-    assert observed == [control.stage / "portal_locks/claude-code-daemon.sock"]
+    assert observed == [control.stage / "s/claude-code-daemon.sock"]
     assert result["execution_id"] == "existing-durable-owner"
     execution.submit.assert_called_once()
-    unit = control.context["directory"] / "tfi-new-claude-code.service"
+    unit = control.context["directory"] / "tfi-fixture-claude-code.service"
     content = unit.read_text()
-    assert str(control.sdk / "bin/python") in content
-    assert str(control.root / "config/target.json") in content
-    assert "new_database" in content
-    assert str(observed[0]) in content
-    assert not (updates.RUNTIMES / "claude-agent-sdk-current").exists()
+    assert 'management_portal.service_runtime' in content
+    assert 'PORTAL_INSTANCE_ROOT=' + str(control.root) in content
+    assert [line for line in content.splitlines() if line.startswith('Environment=')] == [
+        'Environment=' + json.dumps('PORTAL_INSTANCE_ROOT=' + str(control.root))]
+    assert (control.sdk / 'bin/python').read_text() == 'SDK remains unmodified'
     setup.check(inv)
     assert len([cmd for cmd in control.commands if cmd[0] != "systemctl"]) == 1
     assert len([cmd for cmd in control.commands if "--now" in cmd]) == 1
@@ -157,7 +152,7 @@ def test_check_never_queues_on_wrong_socket_protocol(control, check, monkeypatch
     with pytest.raises(InstructionError) as error:
         setup.check(inv)
     assert error.value.details["reason"] == "account.service_not_ready"
-    assert seen == [control.stage / "portal_locks/claude-code-daemon.sock"]
+    assert seen == [control.stage / "s/claude-code-daemon.sock"]
     execution.submit.assert_not_called()
 
 
@@ -167,8 +162,9 @@ def test_real_socket_is_awaited_before_durable_submit(control, check, monkeypatc
     # Unix sockets have a short path limit; pytest's Portal workspace is long.
     with tempfile.TemporaryDirectory(prefix="claude-ready-", dir="/tmp") as directory:
         stage = Path(directory)
-        monkeypatch.setattr(portal_paths, "path", lambda key: stage)
-        address = stage / "portal_locks/claude-code-daemon.sock"
+        from management_portal import claude_code_client
+        monkeypatch.setattr(claude_code_client, 'portal_path', lambda key: stage)
+        address = stage / "s/claude-code-daemon.sock"
         address.parent.mkdir()
 
         def serve():
@@ -211,15 +207,15 @@ def test_concurrent_first_start_installs_and_starts_once(control):
         list(pool.map(lambda _: units.start_claude_service(), range(2)))
     assert len([cmd for cmd in control.commands if cmd[0] != "systemctl"]) == 1
     assert len([cmd for cmd in control.commands if "--now" in cmd]) == 1
-    assert (control.sdk / "bin/python").read_text() == "external SDK remains unmodified"
+    assert (control.sdk / "bin/python").read_text() == "SDK remains unmodified"
 
 
 def test_foreign_dropin_rejected_before_new_start(control):
     target = units.install_claude_backend(app_server_only=True)
     before = target.read_bytes()
-    control.dropins = "/another/override.conf"
+    control.service.dropins = "/another/override.conf"
     control.commands.clear()
-    with pytest.raises(ValueError, match="foreign definition"):
+    with pytest.raises(ValueError, match="different definition or overrides"):
         units.start_claude_service()
     assert not any("--now" in command for command in control.commands)
     assert target.read_bytes() == before
@@ -248,13 +244,14 @@ def test_missing_sdk_only_mode_does_not_download(control, monkeypatch):
 def test_standard_install_stages_only_missing_sdk(control, monkeypatch):
     monkeypatch.setattr(updates.ClaudeRuntime, "installed", lambda self: ("0",))
     monkeypatch.setattr(updates.ClaudeRuntime, "available", lambda self: ("0.2.174",))
-    staged = Mock(return_value=control.sdk)
+    staged_sdk = control.sdk.resolve()
+    staged = Mock(return_value=staged_sdk)
     monkeypatch.setattr(updates.ClaudeRuntime, "stage", staged)
     target = units.install_claude_backend()
-    staged.assert_called_once_with(("0.2.174",), root=None)
+    staged.assert_called_once_with(("0.2.174",))
     link = updates.RUNTIMES / "claude-agent-sdk-current"
-    assert link.resolve() == control.sdk
-    assert str(link / "bin/python") in target.read_text()
+    assert link.resolve() == staged_sdk
+    assert "management_portal.service_runtime" in target.read_text()
 
 
 def test_start_failure_is_retryable_and_does_not_queue(control, check, monkeypatch):
@@ -313,12 +310,15 @@ def test_real_import_package_is_repeatable_after_install_failure(control, monkey
 
 def test_foreign_unit_rejected_without_start_or_submission(control, check):
     inv, execution = check
+    document = json.loads((control.root / 'instance.json').read_text())
+    document['services']['components'].append('claude-code')
+    (control.root / 'instance.json').write_text(json.dumps(document))
     control.context["directory"].mkdir()
-    unit = control.context["directory"] / "tfi-new-claude-code.service"
-    unit.write_text("Environment=HOME=/another/home\n")
+    unit = control.context["directory"] / "tfi-fixture-claude-code.service"
+    unit.write_text("Environment=PORTAL_INSTANCE_ROOT=/another/instance\n")
     with pytest.raises(InstructionError) as error:
         setup.check(inv)
     assert error.value.details["reason"] == "account.service_start_failed"
-    assert unit.read_text() == "Environment=HOME=/another/home\n"
+    assert unit.read_text() == "Environment=PORTAL_INSTANCE_ROOT=/another/instance\n"
     assert control.commands == []
     execution.submit.assert_not_called()

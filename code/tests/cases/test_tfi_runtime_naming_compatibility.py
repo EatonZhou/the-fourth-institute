@@ -344,6 +344,3 @@ def test_service_invocation_projection_tag_read_without_fingerprint_or_row_chang
         assert contract.PLAN_SCHEMA == 'tfi.service-invocation-plan.v1'
         assert contract.plan_fingerprint(job, batches) == fingerprint
     assert facts() == before
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

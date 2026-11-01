@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from management_portal.society_service import config, lineage_domain, resident_intake_domain
+from management_portal.society_service import lineage_domain, resident_intake_domain
 from management_portal.society_service.coordinator import LineageCoordinator
 from management_portal.society_service.templates import familize
 from management_portal.society_service import lineage_aggregate
@@ -90,16 +90,6 @@ def test_a_lineage_deleted_during_the_pass_is_not_a_failure(lineage, charters, m
     ok("DeleteLineage", {"lineage_id": lineage})
     monkeypatch.setattr(store, "listing_records", lambda: listed)
     assert lineage not in familize.sync_all_generated_structure()["failed"]
-
-
-def test_only_the_release_instance_syncs_template_structure(monkeypatch):
-    """只有 Release 实例启动时同步模板结构；可以用环境变量改为其他实例"""
-    monkeypatch.delenv("PORTAL_TEMPLATE_SYNC_INSTANCE", raising=False)
-    assert config.syncs_template_structure("release")
-    assert not config.syncs_template_structure("dev")
-    monkeypatch.setenv("PORTAL_TEMPLATE_SYNC_INSTANCE", "dev")
-    assert config.syncs_template_structure("dev")
-    assert not config.syncs_template_structure("release")
 
 
 def test_the_coordinator_syncs_once_when_it_starts():

@@ -19,7 +19,7 @@ import threading
 import time
 from urllib.parse import urlsplit
 
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import instance_runtime_root
 from management_common import portal_network
 from management_common.file_lock import try_lock_descriptor
 from management_common.local_ipc import LocalListener, connect_local
@@ -180,19 +180,7 @@ def login_environment(provider, account_id):
     if managed_proxy is not None:
         env.update(managed_proxy)
         return env
-    configured = os.environ.get("PORTAL_PROVIDER_EGRESS_ENV_FILE", "")
-    if configured:
-        # A configured proxy source must exist and supply a route. Never silently
-        # fall back to the host's physical egress when the site file is broken.
-        for line in Path(configured).read_text(encoding="utf-8").splitlines():
-            for item in shlex.split(line, comments=True):
-                key, equal, value = item.partition("=")
-                if equal and key in PROXY_KEYS:
-                    env[key] = value
-        if not any(env.get(key) for key in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy")):
-            raise ValueError("Configured Provider egress has no HTTPS proxy")
-    else:
-        env.update({key: os.environ[key] for key in PROXY_KEYS if key in os.environ})
+    env.update(portal_network.inherited_proxy_environment())
     return env
 
 
@@ -302,7 +290,7 @@ class LoginOutputParser:
 
 def _session_paths(account_id):
     validate_account_id(account_id)
-    root = instance_root() / "login"
+    root = instance_runtime_root() / "login"
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     digest = hashlib.sha256(account_id.encode()).hexdigest()[:16]
     return root / f"{digest}.lock", root / f"{digest}.sock"

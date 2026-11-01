@@ -14,7 +14,6 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-from types import SimpleNamespace
 import zipfile
 
 from management_common.installation_progress import PREFIX, relay_log_progress
@@ -176,46 +175,47 @@ class NativeDownloads(unittest.TestCase):
                          "sha256": hashlib.sha256(archive.read_bytes()).hexdigest()}
                 packages[name] = entry
                 archive.rename(cache / native.artifact_name(entry))
-            catalog = root / "source/code/config/release-native-dependencies.json"
-            catalog.parent.mkdir(parents=True)
-            catalog.write_text(json.dumps({"packages": {"windows/x86_64": packages}}), encoding="utf-8")
+            catalog = {"packages": {"windows/x86_64": packages}}
             platform = root / "platform"
-            target = {"shared_code_root": str(platform / "code"),
-                      "install_root": str(platform / "instance/example_instance")}
-            api = SimpleNamespace(
-                installation_lock=lambda path: contextlib.nullcontext(),
-                write_json=lambda path, value: path.write_text(json.dumps(value), encoding="utf-8"))
+            for repository in (root / "source", platform):
+                path = repository / "code/config/release-native-dependencies.json"
+                path.parent.mkdir(parents=True)
+                path.write_text(json.dumps(catalog), encoding="utf-8")
             # Windows-only PostgreSQL steps (UTF-8 manifests, C++ runtime) have
             # their own cases; here they only have to run for PostgreSQL.
             from scripts.windows import msvc_runtime, utf8_manifest
             windows_steps = []
             def prepare_postgres(directory):
-                windows_steps.append(("utf8_manifest", Path(directory).name))
+                windows_steps.append(("utf8_manifest", Path(directory).name.split("-")[0]))
                 return {"utf8_manifest": "fixture"}
-            def prepare_crt(api, target, entry):
+            def prepare_crt(base, entry, *, offline=False):
+                self.assertTrue(offline)
+                self.assertEqual(base, platform / "dependencies/native")
                 windows_steps.append(("msvc_runtime", entry["name"]))
                 return {"version": "fixture"}
+            host = {"platform": "windows", "architecture": "x86_64"}
             with patch.object(native, "urlopen", side_effect=AssertionError("Unexpected network")), \
+                    patch.object(native, "identify_host", return_value=host), \
+                    patch("management_common.distribution_targets.identify_host", return_value=host), \
                     patch.object(native, "verify", return_value={"fixture": "1"}), \
                     patch.object(utf8_manifest, "prepare_postgres", side_effect=prepare_postgres), \
                     patch.object(msvc_runtime, "prepare", side_effect=prepare_crt), \
                     contextlib.redirect_stderr(io.StringIO()):
-                bundled = bundle_native_dependencies(root / "source", platform, cache)
-                entries = [{key: value for key, value in row.items() if key not in {"path", "size"}}
-                           | {"directory": str(platform / "dependencies/native" / row["name"])}
-                           for row in bundled]
-                installed = native.prepare(api, target, entries)
+                bundle_native_dependencies(root / "source", platform, cache)
+                # The installer prepares them beside the platform's code, offline.
+                installed = native.prepare(platform / "code", offline=True)
                 self.assertEqual(len(installed), 3)
                 self.assertEqual(windows_steps, [("utf8_manifest", "postgres"), ("msvc_runtime", "postgres")])
                 self.assertEqual({row["artifact"]["name"]: row.get("windows_compatibility") for row in installed},
                                  {"postgres": {"utf8_manifest": "fixture", "msvc_runtime": {"version": "fixture"}},
                                   "nats": None, "node": None})
-                for entry in entries:
-                    receipt = Path(entry["directory"]) / "tfi-native-dependency.json"
+                for row in installed:
+                    receipt = Path(row["artifact"]["directory"]) / "tfi-native-dependency.json"
+                    self.assertTrue(Path(row["artifact"]["directory"]).is_relative_to(platform / "dependencies/native"))
                     self.assertEqual(json.loads(receipt.read_text())["status"], "verified")
                 with patch.object(native, "download", side_effect=AssertionError("Unexpected download")), \
                         patch.object(native, "unpack", side_effect=AssertionError("Unexpected unpack")):
-                    self.assertEqual(native.prepare(api, target, entries), installed)
+                    self.assertEqual(native.prepare(platform / "code", offline=True), installed)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ metadata:
   id: skill_d004894307e7
 ---
 
-路径从当前实例运行上下文与配置解析：`${code_root}` 是源码根，`${share_root}` 是共享目录；项目目录使用 `GetProject` 返回值。这些名称是文档占位符，执行前取得实际值。
+`${code_root}` 是后台服务的代码目录，是文档占位符，执行前从运行上下文取得实际值。实例文件写成区域写法，例如 `skills:<skill-name>/SKILL.md`，用 `${code_root}/scripts/resolve_instance_path.py` 解析为本实例的实际路径；项目目录使用 `GetProject` 返回值。
 
 # 创建与维护 Skill
 
@@ -70,7 +70,7 @@ metadata:
 ---
 ```
 
-先读取 `${share_root}/Skills/tfi-unified-id/SKILL.md`，按其中的源码根、脚本路径和调用身份设置执行 `new skill` 生成 ID。新 Skill 必须写入唯一且永久不变的 `metadata.id`；移动或改名 Skill 时保留原 ID。
+先读取 `${code_root}/core_skills/tfi-unified-id/SKILL.md`，按其中的源码根、脚本路径和调用身份设置执行 `new skill` 生成 ID。新 Skill 必须写入唯一且永久不变的 `metadata.id`；移动或改名 Skill 时保留原 ID。
 
 `name` 使用小写字母、数字和连字符，并与目录名一致。
 
@@ -85,7 +85,7 @@ metadata:
 - 文档类额外文件直接放在 skill 根目录；不要创建 `reference/`、`references/` 或 `docs/`。
 - 不要使用 Markdown 超链接写法，即方括号文本后接圆括号路径的形式。
 - 称呼同一 skill 目录内的内部文件时，统一写成行内代码形式的相对路径，例如 `./shared-skill.md`。
-- 跨 Skill 引用使用 `${share_root}/Skills/...`，执行前解析当前实例根目录；同包文件使用 `./...`，不要写死源站路径。
+- 跨 Skill 引用共享 Skill 写 `skills:<名称>/...`，引用核心 Skill 写 `${code_root}/core_skills/<名称>/...`；同包文件使用 `./...`，不要写死某个实例的绝对路径。
 - 不要复制密钥、token、认证文件或 secret 内容到 skill。
 - 不要让 `AGENTS.md`、Portal prompt 适配文本或 Codex 私有 skill 成为 TFI Portal 规则的唯一来源。
 - 不要生成或保留 `agents/openai.yaml`，即使系统 Codex `skill-creator` 把它标为 recommended。
@@ -103,9 +103,9 @@ metadata:
 - 每个 skill 占用一个独立文件夹。
 - `SKILL.md` 只保留使用方法和读取路线，细节已拆到额外文件。
 - 所有供 agent 或人类按需阅读的文档与 `SKILL.md` 位于同一目录，skill 内不存在 `reference/`、`references/` 或 `docs/` 文档目录。
-- 类型、位置和职责不与 `${share_root}/Skills/tfi-agent-rule/SKILL.md` 冲突。
+- 类型、位置和职责不与 `${code_root}/core_skills/tfi-agent-rule/SKILL.md` 冲突。
 - 操作步骤有当前代码、指令 schema 或正式规范依据；文件存在、链接有效不等于机制仍然生效。角色列表与实际物化器一致，声明的读取和写入入口在当前实例可用。
-- Portal shared skill 位于 `${share_root}/Skills/<skill-name>/SKILL.md`。
+- Portal shared skill 位于 `skills:<skill-name>/SKILL.md`。
 - Project-local skill 位于对应项目的 `knowledge_base/skill/<skill-name>/SKILL.md`。
 - skill 目录内不存在 `agents/` 或 `agents/openai.yaml`。
 - 没有无关 README、安装说明、变更日志或临时记录。
@@ -113,14 +113,14 @@ metadata:
 运行：
 
 ```bash
-python3 ${share_root}/Skills/create-skill/scripts/quick_validate.py <skill-folder>
+python3 ${code_root}/core_skills/create-skill/scripts/quick_validate.py <skill-folder>
 ```
 
 ## 默认判断
 
-用户说“Portal 的 shared skill”“TFI Portal shared skill”，或希望 Portal Skills 页面和任务技能选择器可见时，默认创建在 `${share_root}/Skills/<skill-name>/SKILL.md`。
+用户说“Portal 的 shared skill”“TFI Portal shared skill”，或希望 Portal Skills 页面和任务技能选择器可见时，默认创建在 `skills:<skill-name>/SKILL.md`。
 
-维护已有 Skill 时保留 ID，核对入口、所有附文和脚本中的实际操作。逐项检查指令参数、数据真值、路径来源、触发方式、权限和部署范围；不能只替换术语或检查文件存在。删除失效分支及其独占附件，并同步有效引用。核心 Skill 是 `tfi-agent-rule`、`tfi-unified-id`、`create-skill`（本 Skill）和 `manage-knowledge-base`，以 `${code_root}/core_skills/` 为源码，通过该工程的发布与共享同步流程生效；不要只修共享副本。
+维护已有 Skill 时保留 ID，核对入口、所有附文和脚本中的实际操作。逐项检查指令参数、数据真值、路径来源、触发方式、权限和部署范围；不能只替换术语或检查文件存在。删除失效分支及其独占附件，并同步有效引用。核心 Skill 是 `tfi-agent-rule`、`tfi-unified-id`、`create-skill`（本 Skill）和 `manage-knowledge-base`，以 `${code_root}/core_skills/` 为源码，随代码发布生效，运行服务直接读取代码目录。
 
 不要创建 `agents/` 或 `agents/openai.yaml`。
 

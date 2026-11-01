@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 from management_common.file_permissions import prepare_atomic_permissions
-from scripts.tfi_instance_layout import native_dependencies_root
+from management_common.native_output import run_native_capture
 from scripts.tfi_release_native_dependencies import artifact_name, checksum, download
 
 
@@ -28,7 +28,8 @@ def bundle(destination, cache):
     return {**entry, 'path': target.relative_to(destination).as_posix(), 'size': target.stat().st_size}
 
 
-def prepare(api, target, postgres):
+def prepare(base, postgres, *, offline=False):
+    """Place the CRT beside PostgreSQL in the code's dependencies/native (``base``)."""
     entry = specification()
     architecture = postgres['platform'].split('/')[1]
     selected = entry['architectures'][architecture]
@@ -39,8 +40,7 @@ def prepare(api, target, postgres):
     if all((directory / n).is_file() and not (directory / n).is_symlink()
            and checksum(directory / n) == f['sha256'] for n, f in files.items()):
         return receipt
-    archive = download(entry, native_dependencies_root(target) / 'archives' / artifact_name(entry),
-                       offline=bool(target.get('offline_dependencies')))
+    archive = download(entry, Path(base) / 'archives' / artifact_name(entry), offline=offline)
     payload = archive.read_bytes()  # download verifies the complete pinned digest.
     with tempfile.TemporaryDirectory(prefix='.crt-', dir=directory) as temp:
         temp = Path(temp)
@@ -48,8 +48,7 @@ def prepare(api, target, postgres):
 
         def extract(cabinet, member, output):
             output.mkdir(exist_ok=True)
-            result = api.run_native([expand, str(cabinet), '-F:' + member, str(output)],
-                                    target=target, timeout=90)
+            result = run_native_capture([expand, str(cabinet), '-F:' + member, str(output)], timeout=90)
             if result.returncode or not (output / member).is_file():
                 raise RuntimeError(f'Cannot extract Microsoft C++ runtime: {member} (exit {result.returncode})')
             return output / member

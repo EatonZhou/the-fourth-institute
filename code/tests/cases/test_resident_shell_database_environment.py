@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.cases.instance_test_support import select_instance
 from management_portal.resident_shell_environment import (
     may_inherit_portal_database,
     portal_database_environment,
@@ -10,10 +11,11 @@ from management_portal.resident_shell_environment import (
 
 def test_service_database_environment_is_loaded_only_for_authorized_resident(monkeypatch, tmp_path):
     """只有 owner 权限、A 模式且身份一致的 Resident shell 继承 Portal 数据库环境变量"""
-    env_file = tmp_path / "portal-postgres.env"
+    instance = select_instance(monkeypatch, tmp_path / "instance")
+    env_file = instance.directory("secrets") / "postgres.env"
+    env_file.parent.mkdir()
     env_file.write_text('# service settings\nPORTAL_DATABASE_URL="postgresql://test-database"\n')
     monkeypatch.delenv("PORTAL_DATABASE_URL", raising=False)
-    monkeypatch.setenv("PORTAL_POSTGRES_ENV_FILE", str(env_file))
 
     request = SimpleNamespace(
         agent_id="resident_123456789abc",
@@ -41,7 +43,8 @@ def test_service_database_environment_is_loaded_only_for_authorized_resident(mon
 
 def test_missing_service_database_configuration_fails_without_secret_in_error(monkeypatch, tmp_path):
     """缺少数据库环境文件时报错，错误信息不含密钥"""
+    select_instance(monkeypatch, tmp_path / "instance")
     monkeypatch.delenv("PORTAL_DATABASE_URL", raising=False)
-    monkeypatch.setenv("PORTAL_POSTGRES_ENV_FILE", str(tmp_path / "missing.env"))
-    with pytest.raises(RuntimeError, match="PostgreSQL environment is unavailable"):
+    with pytest.raises(RuntimeError, match="secrets/postgres.env") as error:
         portal_database_environment(True)
+    assert "postgresql://" not in str(error.value)

@@ -113,4 +113,4 @@ def ensure(project_id: str, actor: str) -> str:
 def skill_path() -> Path:
     from management_common.portal_paths import path as portal_path
 
-    return portal_path("share_root") / "Skills" / "write-research-map" / "daily-tidy.md"
+    return portal_path('skills') / "write-research-map" / "daily-tidy.md"

@@ -86,8 +86,8 @@ def test_release_fixture_readers_require_portable_input():
 def test_exact_content_mapping_precedes_portable_prose(monkeypatch):
     monkeypatch.setattr("management_portal.distribution.privacy.source_environment", lambda: (("/source/home", "${user_home}"),))
     value={'canonical_root':'/share/Projects/source/article', 'goal':'/source/home/example'}
-    result=scrub(value,mappings=[('/share/Projects/source/article','${share_root}/Articles/article_0123456789ab')],source_usernames=['source-person'])
-    assert result['canonical_root']=='${share_root}/Articles/article_0123456789ab'
+    result=scrub(value,mappings=[('/share/Projects/source/article','projects:demo/articles/article_0123456789ab')],source_usernames=['source-person'])
+    assert result['canonical_root']=='projects:demo/articles/article_0123456789ab'
     assert result['goal']=='${user_home}/example'
     target='/data/tfi-instances/v07-live/data/share/Projects/local/article'
     assert portable_text(target)==target
@@ -96,9 +96,9 @@ def test_exact_content_mapping_precedes_portable_prose(monkeypatch):
 def test_article_export_uses_owner_canonical_root(tmp_path):
     from management_portal.distribution.selection import resource_file_scope
     root=tmp_path/'article';root.mkdir();(root/'main.tex').write_text('Article')
-    item=resource_file_scope('article_0123456789ab',{'resource_type':'article','source':{},'attributes':{'canonical_root':str(root)}})
+    item=resource_file_scope('article_0123456789ab',{'resource_type':'article','source':{},'attributes':{'canonical_root':str(root),'project_ids':['demo']}})
     assert item['source']==str(root)
-    assert item['target']=='data/share_root/Articles/article_0123456789ab'
+    assert item['target']=='data/projects/demo/articles/article_0123456789ab'
 
 
 def test_short_identity_code_and_product_are_preserved():
@@ -147,7 +147,6 @@ def test_fresh_engineering_article_content_after_install_expansion(tmp_path):
     from pathlib import Path
     from management_portal.distribution.selection import resource_file_scope
     from management_portal.distribution.engineering import generate
-    from scripts.tfi_release_install import map_directories
     source=tmp_path/'source';source.mkdir()
     subprocess.run(['git','init','-q',str(source)],check=True)
     for name in ('LICENSE','NOTICE','THIRD_PARTY_NOTICES.md','scripts/install_tfi_release','scripts/tfi_release_install.py'):
@@ -156,23 +155,24 @@ def test_fresh_engineering_article_content_after_install_expansion(tmp_path):
     (source/'service.py').write_text(original)
     article=tmp_path/'article';article.mkdir();(article/'main.tex').write_text('Readable article正文')
     identity='article_0123456789ab'
-    record={'resource_type':'article','attributes':{'canonical_root':str(article)}}
+    record={'resource_type':'article','attributes':{'canonical_root':str(article),'project_ids':['demo']}}
     files=[resource_file_scope(identity,record)]
-    mapping=[(str(article),'${share_root}/Articles/'+identity)]
+    mapping=[(str(article),'projects:demo/articles/'+identity)]
     document={'canonical_root':str(article),'roots':[{'path':str(article)}],'primary_file':'main.tex','scope_ids':['AB','example-user']}
     clean=scrub(document,mappings=mapping,source_usernames=['AB','example-user'])
     resolved={'selected_ids':[identity],'features':[],'unresolved':[],'files':files,'source_usernames':['AB','example-user'],'path_mappings':mapping}
     output=tmp_path/'engineering'
     manifest=generate(source_root=source,destination=output,snapshot={'source':'Dev'},resolved=resolved,database_sql=json.dumps(clean),run_id='local-generator-regression')
     assert manifest['resolved_objects']==[identity]
-    assert (output/'data/share_root/Articles'/identity/'main.tex').read_text()=='Readable article正文'
+    assert (output/'data/projects/demo/articles'/identity/'main.tex').read_text()=='Readable article正文'
+    assert manifest['files']=={'projects':'data/projects'}
     assert ast.dump(ast.parse((output/'code/service.py').read_text()))==ast.dump(ast.parse(original))
-    target=tmp_path/'installed-share'
-    # Installer expands portable SQL only at installation, using actual target roots.
-    expanded=map_directories((output/'database/distribution.sql').read_text(),{'${share_root}':str(target)})
-    installed=json.loads(expanded)
-    assert installed['canonical_root']==str(target/'Articles'/identity)
+    # Records already name the file by area; copying data/<area>/ into the same area keeps them valid.
+    installed=json.loads((output/'database/distribution.sql').read_text())
+    assert installed['canonical_root']=='projects:demo/articles/'+identity
     assert installed['roots'][0]['path']==installed['canonical_root']
+    from management_portal.distribution.layout import reference_target
+    assert (output/reference_target(installed['canonical_root'])/'main.tex').is_file()
     assert installed['scope_ids']==['tfi-exported-user']
 
 

@@ -10,7 +10,7 @@ import tempfile
 import threading
 import time
 
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import instance_runtime_root
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
 
@@ -30,7 +30,7 @@ def libreoffice() -> str:
     executable = (os.environ.get("PORTAL_LIBREOFFICE") or shutil.which("libreoffice")
                   or shutil.which("soffice"))
     if not executable:
-        local = instance_root() / "tools/libreoffice/soffice"
+        local = instance_runtime_root() / "tools/libreoffice/soffice"
         executable = str(local) if local.is_file() else ""
     if not executable:
         raise PresentationPreviewError("服务器尚未安装 LibreOffice，请下载原文件查看。")
@@ -69,7 +69,7 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
     if not data:
         raise PresentationPreviewError("演示文稿为空，请下载原文件检查。")
     executable = libreoffice()
-    root = instance_root() / "cache/presentation-preview"
+    root = instance_runtime_root() / "cache/presentation-preview"
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     key = hashlib.sha256(b"ppt-pdf-v1\0" + suffix.encode() + data).hexdigest()
     cached = root / (key + ".pdf")

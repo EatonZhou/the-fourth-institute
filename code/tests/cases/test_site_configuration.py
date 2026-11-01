@@ -8,12 +8,14 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 
 from management_common import site_config
+from tests.cases.instance_test_support import write_instance
 
 
 @pytest.fixture
 def configured_site(tmp_path, monkeypatch):
     path = tmp_path / 'site.json'
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(path))
+    write_instance(tmp_path)
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(tmp_path))
     def write(name, **values):
         path.write_text(json.dumps({'site_name': name, **values}))
     return path, write
@@ -28,7 +30,8 @@ def test_default_fresh_read_and_deployment_keys(configured_site):
     write('Institute Two')
     assert site_config.site_name() == 'Institute Two'
     path.unlink()
-    assert site_config.site_name() == 'TFI Portal'
+    with pytest.raises(FileNotFoundError):
+        site_config.site_name()
 
 
 @pytest.mark.parametrize('value', ['', '  ', None, 23, [], 'Lab\nBcc: unwanted', 'Lab\x00'])
@@ -39,16 +42,32 @@ def test_invalid_display_identity_is_rejected(configured_site, value):
         site_config.site_name()
 
 
-def test_relative_config_uses_installation_not_cwd(tmp_path, monkeypatch):
-    root = tmp_path/'installation'; (root/'config').mkdir(parents=True)
-    (root/'config'/'site.json').write_text('{"site_name":"Portable Institute"}')
-    elsewhere = tmp_path/'elsewhere'; elsewhere.mkdir()
+def test_explicit_manifest_selection_ignores_cwd_and_previous_locators(tmp_path, monkeypatch):
+    root = write_instance(tmp_path / 'installation', site={'site_name': 'Portable Institute'})
+    elsewhere = tmp_path / 'elsewhere'; elsewhere.mkdir()
+    (elsewhere / 'site.json').write_text('{"site_name":"Unselected"}')
     monkeypatch.chdir(elsewhere)
-    monkeypatch.setattr(site_config, 'PORTAL_ROOT', root)
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', 'config/site.json')
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
     assert site_config.site_name() == 'Portable Institute'
-    monkeypatch.delenv('PORTAL_SITE_CONFIG')
-    assert site_config.site_name() == 'Portable Institute'
+    monkeypatch.delenv('PORTAL_INSTANCE_ROOT')
+    with pytest.raises(ValueError, match='Select an instance'):
+        site_config.site_name()
+
+
+def test_browser_namespace_comes_from_manifest_and_survives_move(tmp_path, monkeypatch):
+    import shutil
+    root = write_instance(tmp_path / 'original')
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
+    before = site_config.browser_storage_namespace()
+    target = tmp_path / 'moved'
+    shutil.move(root, target)
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(target))
+    (target / 'site.json').write_text('{"site_name":"Renamed"}')
+    assert site_config.browser_storage_namespace() == before
+    doc = json.loads((target / 'instance.json').read_text())
+    doc['instance_id'] = 'another-instance'
+    (target / 'instance.json').write_text(json.dumps(doc))
+    assert site_config.browser_storage_namespace() != before
 
 
 def test_anonymous_web_response_uses_reader_and_escapes_display_name(configured_site, monkeypatch):

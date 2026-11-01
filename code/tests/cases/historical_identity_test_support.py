@@ -31,8 +31,8 @@ def _record(resident_id, *, lineage_id=None):
     record = legacy_fixture_record(resident_id, **kwargs)
     record.pop("lineage_membership", None)
     record["backend"] = "codex"
-    from management_portal.society_service.lineage_storage import canonical_lineage_folder
-    root = canonical_lineage_folder(record["lineage_id"])
+    from management_portal.society_service.lineage_locations import lineage_folder
+    root = lineage_folder(record["lineage_id"])
     own_path = str(root / "residents" / resident_id / "workspace")
     record["workspace_path"] = str(root)
     record["default_cwd"] = own_path

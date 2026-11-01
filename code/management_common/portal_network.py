@@ -1,9 +1,7 @@
-"""Site network policy shared by the management page, Router and process launchers.
+"""Manifest-owned listener policy and private Provider proxy settings.
 
-The installation's target configuration writes the private environment file,
-which is also systemd's final EnvironmentFile; the management page only shows
-it. Absence of proxy keys preserves inherited egress; explicit empty keys
-select direct access.
+Absent proxy keys preserve the host egress; explicit empty values select direct
+access. Listener ports and bind addresses belong only to instance.json.
 """
 from __future__ import annotations
 
@@ -16,7 +14,7 @@ import tempfile
 
 from management_common.file_lock import lock_stream
 from management_common import file_permissions
-from management_common.portal_paths import resolve_directory
+from management_common.instance_manifest import load
 from management_common.site_config import read_site_config
 
 LOOPBACK_NETWORKS = ("127.0.0.0/8", "::1/128")
@@ -25,27 +23,8 @@ PROXY_FIELDS = {"http": "HTTP_PROXY", "https": "HTTPS_PROXY", "all": "ALL_PROXY"
 PROXY_KEYS = frozenset((*PROXY_FIELDS.values(), *(k.lower() for k in PROXY_FIELDS.values())))
 
 
-def _deployment_file(key: str) -> Path | None:
-    deployment = read_site_config().get("deployment", {})
-    if not isinstance(deployment, dict):
-        raise ValueError("deployment must be an object")
-    if key not in deployment:
-        return None
-    return resolve_directory(deployment[key])
-
-
-def _default_config_file(name: str) -> Path:
-    return Path.home() / ".config" / "tfi" / name
-
-
 def config_path() -> Path:
-    if "PORTAL_NETWORK_CONFIG" in os.environ:
-        path = Path(os.environ["PORTAL_NETWORK_CONFIG"])
-    else:
-        path = _deployment_file("network_config") or _default_config_file("portal-network.env")
-    if not path.is_absolute():
-        raise ValueError("PORTAL_NETWORK_CONFIG must be an absolute path")
-    return path
+    return load().directory('secrets') / 'network.env'
 
 
 def _read(path: Path) -> bytes:
@@ -89,40 +68,18 @@ def _networks(values) -> list[str]:
     return result
 
 
-def allowed_networks(path: Path | None = None) -> list[str]:
-    entries = _parse(_read(path or config_path()))
-    mode = entries.get("PORTAL_ACCESS_MODE")
-    if mode == "local":
+def allowed_networks(instance=None) -> list[str]:
+    instance = instance or load()
+    if ipaddress.ip_address(instance.document['network']['bind']).is_loopback:
         return list(LOOPBACK_NETWORKS)
-    if mode == "remote":
-        return ["0.0.0.0/0", "::/0"]
-    if mode is not None:
-        raise ValueError("无效的 Portal 访问范围")
-    value = entries.get("PORTAL_ALLOWED_NETWORKS", "")
-    return _networks(value.split(",") if value else [])
+    settings = instance.site_settings().get('deployment', {}).get('router', {})
+    return _networks(settings.get('allowed_networks', ['0.0.0.0/0', '::/0']))
 
 
-def _access(entries: dict[str, str]) -> tuple[str, int, bool]:
-    mode = entries.get("PORTAL_ACCESS_MODE")
-    legacy = mode is None and "PORTAL_ALLOWED_NETWORKS" in entries
-    if mode is None:
-        value = entries.get("PORTAL_ALLOWED_NETWORKS", "")
-        networks = _networks(value.split(",") if value else [])
-        mode = "remote" if any(not ipaddress.ip_network(value).is_loopback for value in networks) else "local"
-    if mode not in {"local", "remote"}:
-        raise ValueError("访问范围必须是 local 或 remote")
-    raw_port = entries.get("PORTAL_PORT", str(DEFAULT_PORT))
-    if not raw_port.isascii() or not raw_port.isdecimal() or not 1024 <= int(raw_port) <= 65535:
-        raise ValueError("Portal 端口必须是 1024 到 65535 的整数")
-    return mode, int(raw_port), legacy
-
-
-def router_access(path: Path | None = None) -> dict:
-    entries = _parse(_read(path or config_path()))
-    mode, port, legacy = _access(entries)
-    return {"mode": mode, "port": port, "legacy_restriction": legacy,
-            "explicit_mode": "PORTAL_ACCESS_MODE" in entries,
-            "explicit_port": "PORTAL_PORT" in entries}
+def router_access() -> dict:
+    network = load().document['network']
+    mode = 'local' if ipaddress.ip_address(network['bind']).is_loopback else 'remote'
+    return {'mode': mode, 'port': network['entry_port']}
 
 
 def router_port() -> int:
@@ -166,23 +123,16 @@ def _proxy_values(entries: dict[str, str]) -> dict[str, str]:
             for field, key in PROXY_FIELDS.items()}
 
 
-def inherited_proxy_environment() -> dict[str, str]:
+def inherited_proxy_environment(instance=None) -> dict[str, str]:
     """Keep the existing Provider egress file ahead of inherited process values."""
-    configured = os.environ.get("PORTAL_PROVIDER_EGRESS_ENV_FILE")
-    site_path = None if configured else _deployment_file("provider_egress_env_file")
-    path = Path(configured) if configured else site_path or _default_config_file("provider-egress.env")
     entries = {k: v for k, v in os.environ.items() if k in PROXY_KEYS}
-    if configured or site_path is not None:
-        # An explicitly configured missing file is an error, not a direct fallback.
-        raw = path.read_bytes()
-    else:
-        raw = _read(path)
-    entries.update({k: v for k, v in _parse(raw).items() if k in PROXY_KEYS})
+    path = (instance or load()).directory('secrets') / 'host/provider-egress.env'
+    entries.update({k: v for k, v in _parse(_read(path)).items() if k in PROXY_KEYS})
     return entries
 
 
-def saved_proxy_environment() -> dict[str, str] | None:
-    entries = _parse(_read(config_path()))
+def saved_proxy_environment(instance=None) -> dict[str, str] | None:
+    entries = _parse(_read((instance or load()).directory('secrets') / 'network.env'))
     if not any(key in entries for key in PROXY_KEYS):
         return None
     return _proxy_env(_proxy_values(entries))
@@ -193,10 +143,10 @@ def read_settings() -> dict:
     entries = _parse(_read(config_path()))
     saved = any(key in entries for key in PROXY_KEYS)
     source = entries if saved else inherited_proxy_environment()
-    mode, port, legacy = _access(entries)
+    access = router_access()
+    mode, port = access["mode"], access["port"]
     return {
-        "access": {"mode": mode, "port": port, "urls": _access_urls(port, mode),
-                   "legacy_restriction": legacy},
+        "access": {"mode": mode, "port": port, "urls": _access_urls(port, mode)},
         "proxy": _proxy_values(source),
         "proxy_source": "saved" if saved else "environment",
     }
@@ -205,7 +155,7 @@ def read_settings() -> dict:
 def _serialize(entries: dict[str, str]) -> bytes:
     def quote(value):
         return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
-    data = ("# Portal network settings; owned by the installation's target configuration.\n" +
+    data = ("# Private Portal proxy settings.\n" +
             "".join(f"{key}={quote(value)}\n" for key, value in sorted(entries.items()))).encode("utf-8")
     if len(data) > 65536:
         raise ValueError("网络配置内容过长，请缩短地址列表")
@@ -235,10 +185,11 @@ def _lock(path: Path):
 
 
 def initialize_allowed_networks(values: list[str]) -> None:
+    from management_common.configuration_files import atomic_json
     networks = _networks(values)
-    path = config_path()
+    instance = load()
+    path = instance.root / 'site.json'
     with _lock(path) as stream, lock_stream(stream):
-        entries = _parse(_read(path))
-        if "PORTAL_ALLOWED_NETWORKS" not in entries:
-            entries["PORTAL_ALLOWED_NETWORKS"] = ",".join(networks)
-            _write(path, _serialize(entries))
+        site = instance.site_settings()
+        site.setdefault('deployment', {}).setdefault('router', {})['allowed_networks'] = networks
+        atomic_json(path, site)

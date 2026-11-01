@@ -225,7 +225,8 @@ def test_execution_owner_capacity_preserves_independent_running_workers(tmp_path
 
     # The account monitor probes the fixture account's (absent) app-server socket for quota; nothing else leaves the test.
     fixture_socket = accounts.get("fixture").socket_path
-    assert fixture_socket.is_relative_to(tmp_path) and not fixture_socket.exists()
+    from management_common.instance_manifest import load
+    assert fixture_socket.is_relative_to(load().directory('runtime')) and not fixture_socket.exists()
     with local_connections_only(unix_paths=[socket_path, fixture_socket]) as rejected:
         thread.start()
         assert server.started.wait(2)

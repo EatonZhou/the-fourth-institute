@@ -65,8 +65,8 @@ def residents_from_rows(connection: Any, rows: Iterable[Any]) -> list[dict[str, 
         [record['owned_workspace_id'] for record in active] +
         [binding['workspace_id'] for rid in ids for binding in bindings.get(rid, [])], connection=connection,
     )
-    folders = {lineage_id: str(lineage_storage.canonical_lineage_folder(lineage_id).resolve(strict=False))
-               for lineage_id in dict.fromkeys(record['lineage_id'] for record in active)}
+    folders = {lineage_id: str(folder.resolve(strict=False)) for lineage_id, folder in lineage_storage.lineage_folders(
+        (record['lineage_id'] for record in active), connection=connection).items()}
     projected = {record['resident_id']: record for record in workspaces.project_records(active, bindings, paths, folders)}
     records = [projected.get(record['resident_id'], record) for record in records]
     roles = family_storage.resident_roles(connection, all_ids)

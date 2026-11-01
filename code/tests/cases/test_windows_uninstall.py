@@ -1,5 +1,8 @@
 """Windows 卸载时的实例选择与删除边界。
 
+Instances belong to the uninstalled program when their deployments run its code;
+removal retires them through the shared installer.
+
 :module: operations.deployment
 :design: decision_d88306d0bd17
 :importance: P0
@@ -15,46 +18,53 @@ from unittest.mock import patch
 
 import pytest
 
-from scripts import tfi_release_install as installer
 from scripts import tfi_windows_launcher as launcher
 from scripts import tfi_windows_uninstall as uninstall
+from tests.cases.instance_test_support import write_instance
 
 
 @pytest.fixture
 def platform(tmp_path):
-    (tmp_path / "code").mkdir()
-    return tmp_path
-
-
-def instance(platform, name="example_instance"):
-    root = platform / "instance" / name
-    (root / "seed").mkdir(parents=True)
-    (root / "data").mkdir()
-    (root / "data/keep.txt").write_text("private instance data")
-    (root / "installation.json").write_text(json.dumps({"target": {
-        "install_root": str(root), "shared_code_root": str(platform / "code"),
-        "data_roots": {"share_root": str(root / "data")},
-    }}))
-    return root
+    (tmp_path / "program/code").mkdir(parents=True)
+    return tmp_path / "program"
 
 
 @pytest.fixture
-def owned_state():
-    # Ownership/service validation itself remains in the formal installer.
-    with patch.object(installer, "owned_state", side_effect=lambda root, **_: json.loads(
-            (root / "installation.json").read_text())):
-        yield
+def registry():
+    entries = {}
+    with patch("management_common.host_instances.read_registry", side_effect=lambda: dict(entries)):
+        yield entries
 
 
-def test_default_uninstall_retains_instance_data(platform, monkeypatch):
+def instance(platform, registry, name="example_instance", **options):
+    root = write_instance(platform.parent / "instances" / name, code=platform / "code", **options)
+    manifest = json.loads((root / "instance.json").read_text())
+    (root / "instance.json").write_text(json.dumps({**manifest, "name": name}))  # Registered by name.
+    (root / "data/projects").mkdir(parents=True)
+    (root / "data/projects/keep.txt").write_text("private instance data")
+    registry[name] = str(root)
+    return root
+
+
+def installer_run(registry, calls):
+    def run(command, **kwargs):
+        action, name = command[2], command[-1]
+        calls.append((action, name))
+        assert kwargs["check"]
+        if action == "retire":
+            shutil.rmtree(registry.pop(name))
+    return run
+
+
+def test_default_uninstall_retains_instance_data(platform, registry, monkeypatch):
     """默认卸载只注销服务，保留实例与缓存数据。"""
-    root = instance(platform)
+    root = instance(platform, registry)
     cache = platform / "dependencies/download"
     cache.mkdir(parents=True)
     (cache / "keep").write_bytes(b"cached dependency")
-    prepared = platform / ".build/example_instance-windows/engineering/keep"
+    prepared = platform / ".build/w/engineering/keep"
     prepared.parent.mkdir(parents=True)
-    prepared.write_bytes(b"prepared seed")
+    prepared.write_bytes(b"prepared bundle")
     monkeypatch.setattr(launcher, "PLATFORM", platform)
     monkeypatch.setattr(launcher, "os", SimpleNamespace(name="nt"))
     monkeypatch.setattr(launcher.sys, "argv", ["launcher", "--uninstall-platform"])
@@ -62,9 +72,9 @@ def test_default_uninstall_retains_instance_data(platform, monkeypatch):
         launcher.main()
         stop.assert_called_once_with(platform, unregister=True)
         remove.assert_not_called()
-    assert (root / "data/keep.txt").read_text() == "private instance data"
+    assert (root / "data/projects/keep.txt").read_text() == "private instance data"
     assert (cache / "keep").read_bytes() == b"cached dependency"
-    assert prepared.read_bytes() == b"prepared seed"
+    assert prepared.read_bytes() == b"prepared bundle"
 
 
 def test_remove_requires_uninstall_mode(monkeypatch):
@@ -75,62 +85,60 @@ def test_remove_requires_uninstall_mode(monkeypatch):
     remove.assert_not_called()
 
 
-def test_explicit_removal_stops_all_then_uses_owned_cleanup(platform, owned_state):
-    """明确删除时先停止全部实例，再沿正式清理入口删除。"""
-    roots = [instance(platform, "first"), instance(platform, "second")]
+def test_explicit_removal_stops_all_then_retires_through_the_installer(platform, registry):
+    """明确删除时先停止全部实例，再由安装器逐个退役。"""
+    roots = [instance(platform, registry, "first"), instance(platform, registry, "second")]
     calls = []
-
-    def run(command, **kwargs):
-        action, root = command[2], Path(command[-1])
-        calls.append((action, root))
-        assert kwargs["check"]
-        if action == "cleanup":
-            # Model lifecycle's documented preservation of the public seed.
-            shutil.rmtree(root / "data")
-            (root / "installation.json").unlink()
-
-    with patch.object(uninstall.subprocess, "run", side_effect=run):
-        uninstall.remove_instances(platform)
-    assert calls == [("stop", r) for r in roots] + [("cleanup", r) for r in roots]
-    assert not (platform / "instance").exists()
+    with patch.object(uninstall.subprocess, "run", side_effect=installer_run(registry, calls)):
+        assert uninstall.remove_instances(platform) == []
+    assert calls == [("stop", "first"), ("stop", "second"), ("retire", "first"), ("retire", "second")]
+    assert not any(root.exists() for root in roots)
     assert (platform / "code").is_dir()
 
 
-def test_failed_stop_preserves_all_data(platform, owned_state):
-    """任一实例停止失败时不开始删除其他实例。"""
-    roots = [instance(platform, "first"), instance(platform, "second")]
+def test_areas_outside_the_instance_root_are_kept_and_reported(platform, registry, tmp_path):
+    external = tmp_path / "large-disk/papers"
+    external.mkdir(parents=True)
+    instance(platform, registry, areas={"papers": external})
+    calls = []
+    with patch.object(uninstall.subprocess, "run", side_effect=installer_run(registry, calls)):
+        assert uninstall.remove_instances(platform) == [str(external.resolve())]
+    assert external.is_dir()
+
+
+def test_failed_stop_preserves_all_data(platform, registry):
+    """任一实例停止失败时不开始退役。"""
+    roots = [instance(platform, registry, "first"), instance(platform, registry, "second")]
     with patch.object(uninstall.subprocess, "run", side_effect=[
         None, subprocess.CalledProcessError(1, ["stop"])
     ]), pytest.raises(subprocess.CalledProcessError):
         uninstall.remove_instances(platform)
-    assert all((r / "data/keep.txt").is_file() for r in roots)
+    assert all((r / "data/projects/keep.txt").is_file() for r in roots)
 
 
-def test_invalid_second_instance_prevents_any_cleanup(platform, owned_state):
-    """先核对所有实例；外部数据根阻止整次自动删除。"""
-    first = instance(platform, "first")
-    second = instance(platform, "second")
-    state = json.loads((second / "installation.json").read_text())
-    state["target"]["data_roots"]["share_root"] = str(platform / "external")
-    (second / "installation.json").write_text(json.dumps(state))
-    with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError, match="external data"):
+def test_unreadable_registration_prevents_any_removal(platform, registry):
+    """先读取全部登记；无法读取的登记可能属于本程序，阻止整次自动删除。"""
+    first = instance(platform, registry, "first")
+    broken = platform.parent / "instances/broken"
+    broken.mkdir(parents=True)
+    (broken / "instance.json").write_text("{")
+    registry["broken"] = str(broken)
+    with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError):
         uninstall.remove_instances(platform)
     run.assert_not_called()
-    assert (first / "data/keep.txt").is_file()
+    assert (first / "data/projects/keep.txt").is_file()
 
 
-def test_symlink_and_foreign_platform_refuse_removal(platform, owned_state):
-    """链接与其他平台所属实例不会被自动删除。"""
-    root = instance(platform)
+def test_symlink_refuses_removal_and_other_programs_instances_are_untouched(platform, registry, tmp_path):
+    """链接阻止删除；运行其他代码的实例不在卸载范围。"""
+    root = instance(platform, registry)
     (root / "data/link").symlink_to(platform / "code", target_is_directory=True)
     with pytest.raises(ValueError, match="link or reparse"):
         uninstall.removal_plan(platform)
     (root / "data/link").unlink()
-    state = json.loads((root / "installation.json").read_text())
-    state["target"]["shared_code_root"] = str(platform / "other-code")
-    (root / "installation.json").write_text(json.dumps(state))
-    with pytest.raises(ValueError, match="another platform"):
-        uninstall.removal_plan(platform)
+    foreign = write_instance(tmp_path / "foreign-instance")
+    registry["foreign"] = str(foreign)
+    assert [i.root for i in uninstall.removal_plan(platform)] == [root]
 
 
 def test_windows_junction_is_rejected(platform):
@@ -140,38 +148,22 @@ def test_windows_junction_is_rejected(platform):
             uninstall.plain_tree(platform)
 
 
-def test_seed_only_install_can_be_removed_but_unknown_files_cannot(platform):
-    """尚未初始化的示例可清理；无归属记录的其他数据保留。"""
-    seed = platform / "instance/example_instance/seed"
-    seed.mkdir(parents=True)
-    (seed / "manifest.json").write_text("{}")
-    with patch.object(uninstall.subprocess, "run") as run:
-        uninstall.remove_instances(platform)
-    run.assert_not_called()
-    unknown = platform / "instance/custom"
-    unknown.mkdir(parents=True)
-    (unknown / "keep").write_text("unknown")
-    with pytest.raises(ValueError, match="no ownership record"):
-        uninstall.remove_instances(platform)
-    assert (unknown / "keep").is_file()
-
-
-def test_failed_cleanup_does_not_remove_remaining_files(platform, owned_state):
-    """正式清理入口失败时保留实例剩余文件和平台代码。"""
-    root = instance(platform)
+def test_failed_retire_does_not_remove_remaining_files(platform, registry):
+    """退役失败时保留实例剩余文件和平台代码。"""
+    root = instance(platform, registry)
     with patch.object(uninstall.subprocess, "run", side_effect=[
-        None, subprocess.CalledProcessError(1, ["cleanup"])
+        None, subprocess.CalledProcessError(1, ["retire"])
     ]), pytest.raises(subprocess.CalledProcessError):
         uninstall.remove_instances(platform)
-    assert (root / "data/keep.txt").is_file()
+    assert (root / "data/projects/keep.txt").is_file()
     assert (platform / "code").is_dir()
 
 
 @pytest.mark.parametrize("name", [".build", "dependencies"])
 @pytest.mark.parametrize("nested", [False, True])
-def test_redirected_cache_prevents_any_instance_removal(platform, owned_state, tmp_path_factory, name, nested):
+def test_redirected_cache_prevents_any_instance_removal(platform, registry, tmp_path_factory, name, nested):
     """缓存根或子目录指向外部时，删除实例前即拒绝卸载。"""
-    root = instance(platform)
+    root = instance(platform, registry)
     external = tmp_path_factory.mktemp("external-cache-target")
     (external / "keep").write_text("not platform data")
     link = platform / name
@@ -182,22 +174,22 @@ def test_redirected_cache_prevents_any_instance_removal(platform, owned_state, t
     with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError, match="link or reparse"):
         uninstall.remove_instances(platform)
     run.assert_not_called()
-    assert (root / "data/keep.txt").is_file()
+    assert (root / "data/projects/keep.txt").is_file()
     assert (external / "keep").read_text() == "not platform data"
 
 
 @pytest.mark.parametrize("name", [".build", "dependencies"])
-def test_non_directory_cache_prevents_any_instance_removal(platform, owned_state, name):
+def test_non_directory_cache_prevents_any_instance_removal(platform, registry, name):
     """未知类型的缓存入口阻止删除，不留下部分清理的实例。"""
-    root = instance(platform)
+    root = instance(platform, registry)
     (platform / name).write_text("unexpected file")
     with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError, match="cache directory"):
         uninstall.remove_instances(platform)
     run.assert_not_called()
-    assert (root / "data/keep.txt").is_file()
+    assert (root / "data/projects/keep.txt").is_file()
 
 
-def test_valid_caches_wait_for_native_uninstaller_even_without_instances(platform):
+def test_valid_caches_wait_for_native_uninstaller_even_without_instances(platform, registry):
     """Python 返回前保留运行时和日志，由原生卸载器在进程退出后删除。"""
     files = [platform / "dependencies/python/python.exe", platform / ".build/windows/launcher.lock"]
     for path in files:
@@ -207,7 +199,7 @@ def test_valid_caches_wait_for_native_uninstaller_even_without_instances(platfor
         uninstall.remove_instances(platform)
     run.assert_not_called()
     assert all(path.is_file() for path in files)
-    # A cached junction still blocks deletion when no instance directory exists.
+    # A cached junction still blocks deletion when no instance exists.
     with patch.object(Path, "lstat", return_value=SimpleNamespace(st_mode=0o40755, st_file_attributes=0x400)):
         with pytest.raises(ValueError, match="reparse"):
             uninstall.validate_platform_caches(platform)
@@ -224,15 +216,11 @@ def test_windows_removal_uses_extended_paths(original, expected):
         assert uninstall._native_path(PureWindowsPath(original)) == expected
 
 
-def test_deep_preparation_cache_is_removed_while_launcher_is_locked(platform):
-    """清理用户报告的超长准备路径，同时保留正在使用的启动锁和运行时。"""
-    workspace = (
-        ".build/example_instance-windows/engineering/data/share_root/Agents/"
-        "lineage_75e3399f4877/residents/resident_2461a452e3f7/workspace/"
-    )
+def test_deep_preparation_cache_is_removed_while_launcher_is_locked(platform, registry):
+    """清理超长准备路径，同时保留正在使用的启动锁和运行时。"""
+    workspace = ".build/w/engineering/data/projects/元胞自动机研究/agents/lineage_75e3399f4877/residents/resident_2461a452e3f7/workspace/"
     project = "lenia-core/code/src/local_learning/method_renewal_local_plasticity/anticipatory_io.py"
-    # The reported path passed 260 characters under the user's install root;
-    # pad it so a short temporary root still crosses that limit.
+    # Pad so a short temporary root still crosses the 260-character limit.
     padding = "p" * max(1, 262 - len(str(platform / workspace / project)))
     target = Path(uninstall._native_path(platform / workspace / padding / project))
     target.parent.mkdir(parents=True)
@@ -246,15 +234,15 @@ def test_deep_preparation_cache_is_removed_while_launcher_is_locked(platform):
         assert (platform / ".build/windows/launcher.lock").is_file()
     run.assert_not_called()
     assert not target.exists()
-    assert not (platform / ".build/example_instance-windows").exists()
+    assert not (platform / ".build/w").exists()
     assert python.is_file()
     assert (platform / "code").is_dir()
 
 
-def test_preparation_cache_failure_preserves_instance_and_platform(platform, owned_state):
+def test_preparation_cache_failure_preserves_instance_and_platform(platform, registry):
     """准备缓存无法删除时明确失败，保留实例及卸载所需程序供重试。"""
-    root = instance(platform)
-    cached = platform / ".build/example_instance-windows"
+    root = instance(platform, registry)
+    cached = platform / ".build/w"
     cached.mkdir(parents=True)
     (cached / "locked").write_bytes(b"locked cache")
     with patch.object(uninstall.subprocess, "run") as run, \
@@ -263,7 +251,7 @@ def test_preparation_cache_failure_preserves_instance_and_platform(platform, own
         uninstall.remove_instances(platform)
     assert len(run.call_args_list) == 1
     assert run.call_args.args[0][2] == "stop"
-    assert (root / "data/keep.txt").is_file()
+    assert (root / "data/projects/keep.txt").is_file()
     assert (cached / "locked").is_file()
     assert (platform / "code").is_dir()
 
@@ -280,8 +268,8 @@ def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
     assert 'RMDir /r "$INSTDIR\\.build"' in deletion
     assert 'RMDir /r "$INSTDIR\\dependencies"' in deletion
     assert 'RMDir /r "$INSTDIR"' not in section
-    assert 'RMDir /r "$INSTDIR\\instance"' not in section
     assert 'ClearErrors\n    RMDir "$INSTDIR"\n    ${If} ${Errors}' in section
     assert section.index("SetErrorLevel 1") < section.index("Platform, instances, dependencies, caches and logs removed.")
     assert "Call un.ListResiduals" in section
     assert "Remaining:$ResidualItems" in section
+    assert "$LOCALAPPDATA\\TFI\\instances" in section

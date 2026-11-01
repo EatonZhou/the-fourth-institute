@@ -20,7 +20,6 @@ from management_portal.society_service import resident_runtime_domain
 def native_routes(monkeypatch, tmp_path):
     from management_portal.execution import account_registrations as registrations
     from management_portal.execution.account_hosting import account_home
-    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(tmp_path / "accounts"))
     profiles = {name: {
         "id": name, "kind": "subscription_login", "provider": "claude", "enabled": True,
         "default_model": "sonnet",
@@ -34,7 +33,7 @@ def native_routes(monkeypatch, tmp_path):
         else:
             registrations.create_registration({"account_id": name, "provider": "claude",
                                                "kind": "subscription_login", "route_id": name,
-                                               "config": config}, "test")
+                                               "config": {"account_dir": str(tmp_path / "accounts" / name), **config}}, "test")
         profile["config_dir"] = str(account_home("claude", name))
     monkeypatch.setattr(claude_provider_catalog, "profile", lambda key, **_: profiles[key])
     return profiles

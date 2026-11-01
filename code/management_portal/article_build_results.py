@@ -8,15 +8,12 @@ from pathlib import Path
 from typing import Any
 
 from management_common.portal_paths import path as portal_path
-from management_common.product_environment import read_product_env
 from management_portal import article_build_store
 from management_portal.resources import get_resource_service
 
 
 # Compiled PDFs and LaTeX intermediates are a cache: compiling again rebuilds them.
-DEFAULT_BUILD_ROOT = Path(
-    read_product_env("PORTAL_ARTICLE_BUILD_ROOT", str(portal_path("staging_root") / "shared" / "portal_cache" / "article_builds"))
-).expanduser()
+DEFAULT_BUILD_ROOT = portal_path("cache") / "article_builds"
 
 
 def article_build_pdf_path(

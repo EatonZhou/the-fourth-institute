@@ -8,11 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from management_portal.society_service import lineage_lifecycle, lineage_program_edits, lineage_reads, lineage_state
+from management_portal.society_service import lineage_lifecycle, lineage_program_edits, lineage_reads
 from management_portal.society_service import lineage_program, lineage_program_compilation
 from management_portal.society_service import lineage_recurring_schedule
 from management_portal.society_service import lineage_aggregate
 from tests.cases.effect_script_support import effect_config, lower_effect_call
+from tests.cases.instance_test_support import lineage_folders
 
 
 ACTOR = "sample_admin"
@@ -204,8 +205,7 @@ def backend_store(
 ) -> Path:
     root = tmp_path / "lineages"
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", root)
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", root / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(root / "lineages"))
+    lineage_folders(monkeypatch, root / "lineages")
     install_resource_boundary(monkeypatch)
     return root
 

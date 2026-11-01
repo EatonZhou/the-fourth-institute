@@ -17,19 +17,27 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(REPO), str(REPO / "code")]
 from prepare_install import digest
 from management_common.distribution_targets import identify_host
-from scripts.tfi_instance_layout import GENERATED_CODE_DIRECTORIES, source_inventory
+from management_common.code_environment import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.windows.build import public_seed, bundle_seed, bundle_native_dependencies, verify_prepared_payload
 from scripts.macos.python_dependencies import bundle as bundle_python_dependencies, cache_directory
-from scripts.macos.native_smoke import InstalledSession, verify_background
+from scripts.macos.native_smoke import INSTANCE, InstalledSession, registered_instance, verify_background
+
+WEB_SOCKET = "runtime/deployments/release/web-service.sock"
+POSTGRES_SOCKET = "runtime/s/.s.PGSQL.65535"
 
 
-def read_installed_state(root):
-    # The subprocess interpreter belongs to the installed build under test.
-    code = Path(root).parent.parent / "code"
-    probe = "import sys,json;sys.path.insert(0,sys.argv[1]);from management_common.instance_config import read_installation;print(json.dumps(read_installation(sys.argv[2])))"
-    result = subprocess.run([sys.executable, '-c', probe, str(code), str(root)],
-                            capture_output=True, text=True, check=True, timeout=30)
-    return json.loads(result.stdout)
+def long_rpc_root(base):
+    """An instance root whose Web RPC address exceeds sun_path (104 bytes) while
+    PostgreSQL's Unix socket still fits, so startup exercises the TCP fallback."""
+    low, high = 104 - len(WEB_SOCKET) - 1, 104 - len(POSTGRES_SOCKET) - 2
+    prefix = Path(base) / "实例"
+    padding = high - len(os.fsencode(prefix)) - 1
+    if padding < 1:
+        raise ValueError("Temporary directory is too long for the long-address instance root")
+    root = prefix / ("i" * padding)
+    if not low <= len(os.fsencode(root)) <= high:
+        raise ValueError("Could not size the long-address instance root")
+    return root
 
 
 def command(argv, **kwargs):
@@ -82,12 +90,20 @@ def verify_dmg_app(dmg):
             command(["hdiutil", "detach", mount])
 
 
-def smoke(executable, destination, included, *, require_long_rpc_path=False):
-    """Exercise the shipped native entry, including stop/unregister and restart."""
-    argv = [executable, "--platform", destination, "--headless"]
+def smoke(executable, destination, instance_root, included, *, require_long_rpc_path=False):
+    """Create a temporary instance through the shipped native entry, test it, retire it.
+
+    Covers stop/unregister and restart, a code update with a database row, and
+    retire (definitions, registration and root removed).
+    """
+    argv = [executable, "--platform", destination, "--headless", "--instance-root", instance_root]
     cleanup = [executable, "--platform", destination, "--unregister"]
+    retire = [destination / "dependencies/python/bin/python3",
+              destination / "code/scripts/tfi_release_install.py", "retire", "--instance", INSTANCE]
     if not included:
         argv.append("--without-examples")
+    if registered_instance(destination) is not None:
+        raise ValueError("The runner already has a registered desktop instance")
     failure = None
     session = None
     offline_env = {**os.environ, 'HTTP_PROXY': 'http://127.0.0.1:9', 'HTTPS_PROXY': 'http://127.0.0.1:9',
@@ -96,50 +112,44 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
                    'all_proxy': 'http://127.0.0.1:9', 'no_proxy': '127.0.0.1,localhost'}
     try:
         command(argv, timeout=900, env=offline_env)
-        state_path = destination / "instance/desktop/installation.json"
-        before = read_installed_state(state_path.parent)
-        if require_long_rpc_path:
-            target = before["target"]
-            web_socket = (Path(target["data_roots"]["instances_root"])
-                          / target.get("runtime_instance", target["service_prefix"]) / "web-service.sock")
-            if len(os.fsencode(web_socket)) < 104:
-                raise ValueError("Native smoke did not exercise an overlength Web RPC address")
+        before = registered_instance(destination)
+        if before is None or Path(before["root"]) != instance_root:
+            raise ValueError("The desktop instance was not created at the requested root")
+        if (instance_root / "runtime/creation.json").exists():
+            raise ValueError("Desktop instance creation did not complete")
+        if require_long_rpc_path and len(os.fsencode(instance_root / WEB_SOCKET)) < 104:
+            raise ValueError("Native smoke did not exercise an overlength Web RPC address")
         manifest = json.loads((destination / ".build/m/engineering/manifest.json").read_text())
         if manifest["include_examples"] != included:
-            raise ValueError("Selected seed was not used")
-        if (destination / 'instance/example_instance/seed').exists() or any(destination.glob('*-engineering.zip')):
-            raise ValueError("Desktop retained a redundant seed or engineering archive copy")
-        if before['platform_preflight']['file_verification'] != 'skipped_by_operator':
-            raise ValueError("Desktop performed duplicate file verification")
-        # Second launch must preserve DB identity and data, not reimport seed.
+            raise ValueError("Selected example content was not used")
+        if any(destination.glob('*-engineering.zip')):
+            raise ValueError("Desktop retained a redundant engineering archive copy")
+        # Second launch must preserve DB identity and data, not reimport content.
         command(argv, timeout=240, env=offline_env)
-        after = read_installed_state(state_path.parent)
-        if before["target"] != after["target"] or before["manifest_sha256"] != after["manifest_sha256"]:
+        if registered_instance(destination) != before:
             raise ValueError("Repeated launch changed instance identity")
-        # Upgrade before registration: new personal Family work legitimately
+        # Update before registration: new personal Family work legitimately
         # waits for an AI account and must not be discarded to enable an update.
         if not included:
-            upgrade_smoke(argv, destination)
-        session = InstalledSession(before['target'], included)
+            update_smoke(argv, destination, instance_root)
+        session = InstalledSession(before, included)
         session.register()
         session.connect_and_chat()
-        marker = destination / "instance/desktop/data/restart-check.txt"
+        marker = instance_root / "data/features/restart-check.txt"
         marker.write_text("user data survives unregister and restart")
         command(cleanup, timeout=120)
         command(argv, timeout=240, env=offline_env)
-        restarted = read_installed_state(state_path.parent)
-        if (before["target"] != restarted["target"]
-                or before["manifest_sha256"] != restarted["manifest_sha256"]
+        if (registered_instance(destination) != before
                 or marker.read_text() != "user data survives unregister and restart"):
             raise ValueError("Restart after unregister changed instance identity or user data")
         session.login_and_check()
         session.chat()
-        verify_background(destination, marker)
+        verify_background(destination, instance_root, marker)
     except Exception as exc:
         failure = exc
-        runtime = destination / "instance/desktop/runtime"
+        runtime = instance_root / "runtime"
         for name in ("command-error.log", "resource.log", "resource.error.log", "execution.error.log",
-                     "society.log", "society.error.log", "worker.error.log", "web.error.log", "dependency-install.log"):
+                     "society.log", "society.error.log", "worker.error.log", "web.error.log"):
             path = runtime / name
             if path.is_file():
                 detail = name + "\n" + path.read_text(errors="replace")[-6000:]
@@ -150,45 +160,47 @@ def smoke(executable, destination, included, *, require_long_rpc_path=False):
     finally:
         if session is not None:
             session.close()
-        if destination.exists():
-            # Logs have instance-local paths but never contain invitation tokens.
+        if registered_instance(destination) is not None:
+            # Retire the temporary instance: services, definitions, registration, root.
             try:
-                command(cleanup, timeout=120)
+                command(retire, timeout=300)
+                if registered_instance(destination) is not None or instance_root.exists():
+                    raise RuntimeError("Retire left the instance registered or its root on disk")
             except Exception as exc:
                 if failure is not None:
-                    raise ExceptionGroup("Native smoke and cleanup both failed", [failure, exc]) from None
-                raise RuntimeError(f"Native smoke cleanup failed; no release will be produced: {exc}") from exc
+                    raise ExceptionGroup("Native smoke and retire both failed", [failure, exc]) from None
+                raise RuntimeError(f"Native smoke retire failed; no release will be produced: {exc}") from exc
 
 
-def upgrade_smoke(argv, destination):
-    """Exercise compatible updates with a real local PostgreSQL row.
+def update_smoke(argv, destination, instance_root):
+    """Exercise a code update with a real local PostgreSQL row.
 
-    A distinct receipt simulates an older compatible generation. Historical
-    schema migrations still require their own release-to-release validation.
+    A distinct receipt simulates an older compatible package; the update only
+    replaces code and restarts, so the database row must survive unchanged.
     """
     probe = '''
-import json, pathlib, sys
-platform = pathlib.Path(sys.argv[1])
+import os, pathlib, sys
+platform, root = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 sys.path.insert(0, str(platform / "code"))
-from scripts import tfi_release_install as api
+from management_common.instance_manifest import load
+from management_portal.service_runtime import clean_environment
 import psycopg
-state = api.read_json(platform / "instance/desktop/installation.json")
-with psycopg.connect(api.clean_environment(state["target"])["PORTAL_DATABASE_URL"]) as db:
-    if sys.argv[2] == "create":
+with psycopg.connect(clean_environment(load(root))["PORTAL_DATABASE_URL"]) as db:
+    if sys.argv[3] == "create":
         db.execute("CREATE TABLE public.tfi_desktop_update_probe (value text)")
         db.execute("INSERT INTO public.tfi_desktop_update_probe VALUES ('local data survives')")
     else:
         assert db.execute("SELECT value FROM public.tfi_desktop_update_probe").fetchall() == [("local data survives",)]
 '''
     python = destination / "dependencies/python/bin/python3"
-    command([python, "-c", probe, destination, "create"])
+    command([python, "-c", probe, destination, instance_root, "create"])
     marker = destination / "macos-package.json"
     original = json.loads(marker.read_text())
     marker.write_text(json.dumps({**original, "source_commit": "0" * 40}))
-    command([*argv, "--upgrade"], timeout=600)
+    command([*argv, "--update"], timeout=600)
     if json.loads(marker.read_text()) != original:
         raise ValueError("Desktop update did not switch the application receipt")
-    command([python, "-c", probe, destination, "check"])
+    command([python, "-c", probe, destination, instance_root, "check"])
 
 
 def build(repo, output):
@@ -344,16 +356,17 @@ with tempfile.TemporaryDirectory() as tmp:
     command([executables / "TheFourthInstitute", "--help"])
     # Drive a real Tk loop through a failed copy and retry before real installs.
     command([python, repo / "code/tests/cases/test_macos_desktop.py",
-             "MacDesktopGUI", "MacAppSignature", "MacCodexNative"],
+             "MacDesktopGUI", "MacAppSignature"],
             cwd=payload / "code", env={**env, "PYTHONPATH": str(payload / "code")}, timeout=180)
-    receipt["codex_native_smoke"] = "passed: launchd, real Codex initialize/model-list/account-read, short/long socket, cleanup; no authorization or inference"
     # Exercise real user paths, including Unicode and addresses exceeding
     # Darwin's sun_path limit. A short /tmp-only install hid this startup bug.
     with tempfile.TemporaryDirectory(prefix="tfi-mac-", dir="/tmp") as tmp:
         for included in (False, True):
             destination = (Path(tmp) / "独立测试" / ("full" if included else "base")).resolve()
-            smoke(executables / "TheFourthInstitute", destination, included, require_long_rpc_path=True)
-    receipt["native_installation_smoke"] = "passed: native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, compatible update with database row, GUI copy/retry"
+            instance_root = long_rpc_root(Path(tmp).resolve() / ("f" if included else "b"))
+            smoke(executables / "TheFourthInstitute", destination, instance_root, included,
+                  require_long_rpc_path=True)
+    receipt["native_installation_smoke"] = "passed: temporary instance create/test/retire, native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, code update with database row, GUI copy/retry"
     receipt["api_only_chat_smoke"] = "passed: loopback fixture only, no Codex account, Harness-only settings, default-model API chat, model catalog/save, persisted chat after service restart; no real model or key"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"

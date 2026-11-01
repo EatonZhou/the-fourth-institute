@@ -47,6 +47,7 @@ from management_portal.resources.registration import ResourceRegistrationStore
 import management_portal.resources as resources
 from tests.cases.registry_support import ProjectRegistryYaml, write_projects
 from management_portal.execution import codex_runtime_settings
+from tests.cases.instance_test_support import lineage_folders
 
 
 ACTOR = "storage-fixture"
@@ -125,14 +126,10 @@ def owners(tmp_path, monkeypatch):
     })
     project_root = tmp_path / "Projects"
     monkeypatch.setitem(site_registry.PATH_PREFIXES, "projects", {"from": "/Projects", "to": str(project_root)})
-    monkeypatch.setattr(project, "SHARE_ROOT", tmp_path)
     monkeypatch.setattr(project, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", project_root)
     monkeypatch.setattr(lineage_aggregate, "DATA_ROOT", tmp_path / "lineage")
-    monkeypatch.setattr(lineage_state, "LINEAGE_FOLDER_ROOT", tmp_path / "lineages")
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
-    for name, value in {"STAGING_ROOT": tmp_path, "AGENTS_ROOT": tmp_path / "agents", "PROJECTS_ROOT": project_root}.items():
-        monkeypatch.setattr(resident_domain_common, name, value)
+    lineage_folders(monkeypatch, tmp_path / "lineages", projects=project_root)
     monkeypatch.setattr(resident_hatg_credentials, "TOKEN_ROOT", tmp_path / "credentials")
     monkeypatch.setattr(
         codex_runtime_settings,

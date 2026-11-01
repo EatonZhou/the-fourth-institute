@@ -397,12 +397,9 @@ def upload_root() -> Path:
     image uploaded through Release while Dev restarted was 404 on Dev.
     """
 
-    configured = str(os.getenv("PORTAL_UPLOAD_ROOT") or "").strip()
-    if configured:
-        return Path(configured).expanduser()
-    from management_common.instance_paths import instance_root
+    from management_common.portal_paths import path as portal_path
 
-    return instance_root() / "uploads"
+    return portal_path("uploads")
 
 
 def _upload_dir(upload_id: str) -> Path:

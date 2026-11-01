@@ -90,6 +90,8 @@ def _launch(monkeypatch, tmp_path, params: dict) -> tuple[dict, dict, dict]:
     key = tmp_path / "key"
     key.write_text("test-key")
     monkeypatch.setattr(dsh_client, "RUNTIME", runtime)
+    monkeypatch.setattr(dsh_client, "_runtime_modules", lambda names: {
+        name: str(runtime / "node_modules" / name / "lib/index.js") for name in names})
     monkeypatch.setattr(dsh_client, "STATE", tmp_path / "state")
     monkeypatch.setattr(dsh_client, "SOCKETS", tmp_path / "sockets")
     monkeypatch.setattr(dsh_client.dsh_provider_catalog, "profile", lambda route: {
@@ -108,10 +110,11 @@ def _launch(monkeypatch, tmp_path, params: dict) -> tuple[dict, dict, dict]:
     with pytest.raises(dsh_client.NativeAgentUnavailable):
         dsh_client.DshClient()._start(session, {"provider_profile": "deepseek", "cwd": str(tmp_path), **params})
     [patch] = yaml.safe_load((tmp_path / "state" / session / "profiles/portal-resident/cordis.patch.yml").read_text())
-    plugins = {row["name"].removeprefix("@deepseek-ai/"): row for row in patch["insert"]}
+    plugins = {row["id"]: row for row in patch["insert"]}
     bridge = next(row["name"] for row in patch["insert"] if row["id"] == "portal-control")
     from pathlib import Path
-    assert Path(bridge).read_bytes() == (Path(dsh_client.__file__).parent / "dsh_runtime/bridge.mjs").read_bytes()
+    assert "from '@deepseek-ai/" not in Path(bridge).read_text()
+    assert not (Path(bridge).parent / "node_modules").exists()
     assert Path(bridge).is_relative_to(tmp_path / "state")
     return plugins, launched, json.loads((tmp_path / "state" / session / "launch.json").read_text())
 
@@ -299,6 +302,3 @@ def test_live_dsh_postgres_result_recovery_and_followup(tmp_path):
             database.close()
         with psycopg.connect(dsn, autocommit=True) as connection:
             connection.execute(sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(sql.Identifier(schema)))
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

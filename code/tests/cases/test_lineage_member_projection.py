@@ -13,7 +13,7 @@ from management_portal.society_service import (
     resident_domain,
 )
 from management_portal.society_service.state_store import LineageDataStore
-from management_portal.society_service.lineage_storage import canonical_lineage_folder
+from management_portal.society_service.lineage_locations import lineage_folder
 from tests.cases.test_resident_folder_creation_contract import future_creation_store, _new_session_payload
 
 
@@ -36,7 +36,7 @@ def test_identity_and_graph_membership_roll_back_together(future_creation_store)
     owned = new["owned_workspace"]
     owned["workspace_id"] = "workspace_123456789abc"
     new["owned_workspace_id"] = owned["workspace_id"]
-    owned["path"] = str(canonical_lineage_folder(lineage_id) / "residents" / new["resident_id"] / "workspace")
+    owned["path"] = str(lineage_folder(lineage_id) / "residents" / new["resident_id"] / "workspace")
     def failed_commit():
         catalog.state_store.put_resident_record(new["resident_id"], new)
         assert catalog.state_store.database.write(lambda connection: connection.execute(

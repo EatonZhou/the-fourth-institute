@@ -23,10 +23,8 @@ from management_common.portal_paths import path as portal_path
 from management_portal.shared_state import atomic_replace_json  # noqa: E402
 
 
-from management_common.provider_account_paths import provider_root
-DEFAULT_CODEX_DIRECTORY = provider_root("codex")
-DEFAULT_OUTPUT_ROOT = portal_path("staging_root") / "shared/codex_weekly_usage"
-DEFAULT_DAILY_SNAPSHOT_ROOT = portal_path("staging_root") / "shared/codex_limit_usage/daily"
+DEFAULT_OUTPUT_ROOT = portal_path("features") / "codex_weekly_usage"
+DEFAULT_DAILY_SNAPSHOT_ROOT = portal_path("features") / "codex_limit_usage/daily"
 DEFAULT_TIMEZONE = "Asia/Hong_Kong"
 DEFAULT_DISPLAY_YEAR = 2026
 PIPELINE_SCHEMA = "tfi.codex-usage-pipeline.v1"
@@ -2565,7 +2563,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Summarize Codex token usage between adjacent weekly quota reset buckets.")
     parser.add_argument("--isa", action="store_true", help="Read sanitized usage observations through the RunScript ISA socket.")
     parser.add_argument("--sessions-root", type=Path, default=None, help="Scan one explicit Codex sessions directory. If omitted, scan account sessions under --account-directory separately.")
-    parser.add_argument("--account-directory", type=Path, default=DEFAULT_CODEX_DIRECTORY, help="Root containing registered Codex account directories.")
+    parser.add_argument("--account-directory", type=Path, default=None, help="Explicit root containing Codex account directories.")
     parser.add_argument("--account", action="append", default=[], help="Account directory name under --account-directory to scan. Can be repeated. Defaults to every account with a sessions directory.")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--snapshot-root", type=Path, default=DEFAULT_DAILY_SNAPSHOT_ROOT, help="Root containing YYYY-MM-DD direct 05:00 limit snapshots.")
@@ -2591,6 +2589,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-stages", action="store_true", help="Write only the final JSON/Markdown report, without auditable intermediate artifacts.")
     parser.add_argument("--strict", action="store_true", help="Exit non-zero when a pipeline validation has status=error.")
     args = parser.parse_args(argv)
+    if not args.isa and args.sessions_root is None and args.account_directory is None:
+        parser.error("Specify --isa, --sessions-root or --account-directory")
 
     tz = ZoneInfo(args.timezone)
     until_day = args.until or (datetime.now(tz).date() + timedelta(days=1))
@@ -2610,7 +2610,7 @@ def main(argv: list[str] | None = None) -> int:
     # The temporary export is private to this script run and is always removed.
     with tempfile.TemporaryDirectory(prefix="codex-usage-") as export_directory:
         if args.isa:
-            if args.sessions_root is not None or args.account_directory != DEFAULT_CODEX_DIRECTORY:
+            if args.sessions_root is not None or args.account_directory is not None:
                 parser.error("--isa 不接受本机账号目录")
             sources = export_isa_sessions(Path(export_directory), account_ids=args.account,
                                           since=_iso_utc(since_utc), until=_iso_utc(until_utc))
@@ -2621,7 +2621,7 @@ def main(argv: list[str] | None = None) -> int:
                 accounts=[item.strip() for item in args.account if item.strip()],
             )
         if not sources:
-            raise SystemExit(f"no Codex session sources found under {args.account_directory.expanduser()}")
+            raise SystemExit("no Codex session sources found in the selected source")
 
         payloads = []
         pipeline_failed = False

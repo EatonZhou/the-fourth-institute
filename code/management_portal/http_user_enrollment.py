@@ -10,7 +10,8 @@ from management_portal.http_routes import RouteDefinition
 def setup_status(request, parsed, actor):
     """Read the enrollment authority; never create or return an invitation."""
     return http_responses._serve_json(request, 200, {
-        "instance": http_instance._PORTAL_INSTANCE,
+        "instance": http_instance._PORTAL_INSTANCE_NAME,
+        "deployment": http_instance._PORTAL_DEPLOYMENT,
         "configured": web_accounts._USER_ENROLLMENT.has_accounts(),
     })
 

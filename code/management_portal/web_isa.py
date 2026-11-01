@@ -552,8 +552,8 @@ def update_user_navigation(inv: Invocation) -> dict[str, Any]:
 # -- Portal services -----------------------------------------------------------------
 
 
-def _instance() -> str:
-    return str(os.getenv("PORTAL_INSTANCE") or "dev").strip() or "dev"
+def _deployment() -> str:
+    return str(os.getenv("PORTAL_DEPLOYMENT") or "dev").strip() or "dev"
 
 
 def get_runtime_capacity(inv: Invocation) -> dict[str, Any]:
@@ -566,37 +566,37 @@ def get_portal_status(inv: Invocation) -> dict[str, Any]:
     sys.path.insert(0, str(REPO_ROOT)) if str(REPO_ROOT) not in sys.path else None
     from scripts import portal_services
 
-    requested = inv.argument("instance")
-    instances = [requested] if requested else ["dev", "release"]
+    requested = inv.argument("deployment")
+    deployments = [requested] if requested else ["dev", "release"]
     result = []
-    for instance in instances:
+    for deployment in deployments:
         try:
-            status = portal_services.status(instance)
-        except Exception as exc:  # noqa: BLE001 - one instance's status failure is reported, not raised
+            status = portal_services.status(deployment)
+        except Exception as exc:  # noqa: BLE001 - one deployment's status failure is reported, not raised
             status = {"ok": False, "error": str(exc)}
-        result.append({"instance": instance, **(status if isinstance(status, dict) else {"status": status})})
-    return {"instances": result}
+        result.append({"deployment": deployment, **(status if isinstance(status, dict) else {"status": status})})
+    return {"deployments": result}
 
 
 def restart_portal(inv: Invocation) -> dict[str, Any]:
-    instance = inv.argument("instance")
+    deployment = inv.argument("deployment")
     components = [str(item) for item in inv.argument("components") or []]
     from scripts import tfi_development_runtime as paired
     root = paired.configured_root()
     if not root:
         raise InstructionError("instruction.failed", "独立 TFI 实例的服务由 install_tfi_release 管理，不能在这里重启")
-    return paired.request_restart(root, instance, components)["request"]
+    return paired.request_restart(root, deployment, components)["request"]
 
 
 def publish_release(inv: Invocation) -> dict[str, Any]:
     from scripts.tfi_development_runtime import configured_root
-    if _instance() != "dev" and not configured_root():
-        raise InstructionError("instruction.forbidden", "PublishRelease 只能在 Dev 实例执行")
+    if _deployment() != "dev" and not configured_root():
+        raise InstructionError("instruction.forbidden", "PublishRelease 只能在 Dev 部署执行")
     sys.path.insert(0, str(REPO_ROOT)) if str(REPO_ROOT) not in sys.path else None
     from scripts import tfi_dev
 
     report = tfi_dev.publish(
-        REPO_ROOT.parent, str(inv.argument("message") or ""),
+        str(inv.argument("message") or ""),
         paths=tuple(f"code/{item}" for item in inv.argument("paths") or ()),
         all_files=bool(inv.argument("all")),
     )

@@ -9,10 +9,10 @@ from pathlib import Path
 import shutil
 import json
 
-from management_common.instance_paths import instance_root, secrets_dir
+from management_common.instance_manifest import instance_runtime_root, instance_secrets_root
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
 from management_common.provider_account_paths import (
-    account_runtime, canonical_directory, default_directory, validate_identity,
+    account_runtime, canonical_directory, validate_identity, registered_home,
 )
 
 
@@ -28,35 +28,6 @@ def account_home(provider: str, account_id: str) -> Path:
     return registered_home(row)
 
 
-def registered_home(row: dict) -> Path:
-    if row["kind"] == "subscription_login":
-        return canonical_directory(row["config"].get("account_dir", ""))
-    if row["kind"] == "api_profile" and row["provider"] in {"codex", "kimi"}:
-        return account_runtime(row["provider"], row["account_id"]) / "home"
-    raise ValueError("Account has no Provider directory")
-
-
-def prepare_registration_directory(data: dict) -> Path | None:
-    """Resolve a default only at creation; existing directories are registered in place."""
-    if data["kind"] != "subscription_login":
-        return
-    config = dict(data.get("config", {}))
-    created = None
-    if "account_dir" in config:
-        path = canonical_directory(config["account_dir"])
-        if not path.is_dir():
-            raise ValueError("Existing account directory does not exist")
-    else:
-        path = canonical_directory(default_directory(data["provider"], data["account_id"]))
-        ensure_private_directory(path.parent)
-        # An existing host directory must be selected explicitly, never adopted
-        # because an unrelated instance chose the same registration ID.
-        path.mkdir(mode=0o700)
-        created = path
-        ensure_private_directory(path)
-    config["account_dir"] = str(path)
-    data["config"] = config
-    return created
 
 
 def codex_launch_path(account_id: str) -> Path:
@@ -71,7 +42,7 @@ def write_codex_launch(account_id: str) -> Path:
 
 
 def codex_socket_path(account_id: str) -> Path:
-    return instance_root() / "sockets" / f"codex-{validate_account_id(account_id)}.sock"
+    return instance_runtime_root() / "s" / f"codex-{validate_account_id(account_id)}.sock"
 
 
 def ensure_account_home(provider: str, account_id: str) -> Path:
@@ -94,7 +65,7 @@ def remove_account_runtime(provider: str, account_id: str) -> None:
 
 
 def write_secret_file(id: str, secret: str) -> Path:
-    path = secrets_dir() / f"{validate_account_id(id)}.key"
+    path = instance_secrets_root() / f"{validate_account_id(id)}.key"
     if not isinstance(secret, str) or not secret.strip() or "\0" in secret:
         raise ValueError("Secret must be non-empty text")
     atomic_write_private_bytes(path, secret.encode("utf-8"))
@@ -102,11 +73,6 @@ def write_secret_file(id: str, secret: str) -> Path:
 
 
 # The service control plane owns unit installation and systemctl operations.
-def install_codex_unit_template() -> Path:
-    from scripts.portal_service_units import install_codex_unit_template as install
-    return install()
-
-
 def start_codex_instance(account_id: str) -> dict:
     from scripts.portal_service_units import start_codex_instance as start
     return start(account_id)

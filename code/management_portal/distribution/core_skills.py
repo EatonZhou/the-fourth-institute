@@ -28,8 +28,8 @@ def export_core_skills(destination, *, source_root=None, source_usernames=()):
     repository = Path(__file__).resolve().parents[2]
     source_root = Path(source_root) if source_root is not None else repository / "core_skills"
     source = source_root / SYSTEM_SKILL
-    target = Path(destination) / "data/share_root/Skills" / SYSTEM_SKILL
-    mappings = tuple((str(source_root / name), "${share_root}/Skills/" + name)
+    target = Path(destination) / "code/core_skills" / SYSTEM_SKILL
+    mappings = tuple((str(source_root / name), "${code_root}/core_skills/" + name)
                      for name in (SYSTEM_SKILL, IDENTITY_SKILL, *REQUIRED_SKILLS)) + (
                 (str(repository), "${code_root}"),)
     pending = {"SKILL.md", *PORTAL_ROLE_FILES.values()}

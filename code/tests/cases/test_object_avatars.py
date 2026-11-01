@@ -48,20 +48,18 @@ def uploaded(purpose="avatar"):
 
 @pytest.fixture(autouse=True)
 def roots(tmp_path, monkeypatch):
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
-    monkeypatch.setenv("PORTAL_RESIDENT_AVATAR_ROOT", str(tmp_path / "residents"))
-    monkeypatch.setenv("PORTAL_SCOPE_AVATAR_ROOT", str(tmp_path / "scopes"))
+    monkeypatch.setattr(resource_isa, "upload_root", lambda: tmp_path / "uploads")
 
 
-def test_a_change_made_by_another_process_is_read_without_restart(tmp_path):
+def test_a_change_made_by_another_process_is_read_without_restart():
     """另一进程修改 Resident 头像后，本进程下一次读取即得到新头像
 
     :design: decision_5bc3fdfc7eec
     """
-    reader = resident_avatar.ResidentAvatarStore(tmp_path / "shared")
+    reader = resident_avatar.resident_avatar_store()
     drawn = reader.get(RESIDENT)
     assert drawn["kind"] == "sprite"
-    writer = resident_avatar.ResidentAvatarStore(tmp_path / "shared")
+    writer = resident_avatar.resident_avatar_store()
     chosen = (drawn["sprite_index"] + 1) % 42
     assert writer.update(RESIDENT, {"kind": "sprite", "sprite_index": chosen})["sprite_index"] == chosen
     assert reader.get(RESIDENT)["sprite_index"] == chosen
@@ -69,9 +67,11 @@ def test_a_change_made_by_another_process_is_read_without_restart(tmp_path):
     assert reader.get(RESIDENT) == image
     assert image["url"] == f"/api/account/avatar/image?resident={RESIDENT}&v={image['version']}"
     assert reader.image(RESIDENT, image["version"]).startswith(b"\x89PNG")
-    # Another upload replaces the image; the old version's file goes with it.
+    # Another upload replaces the image; the old version is gone with it.
     second = writer.update(RESIDENT, {"kind": "upload", "data_base64": base64.b64encode(png((32, 32))).decode()})
-    assert [path.name for path in (tmp_path / "shared").glob("*.png")] == [f"{RESIDENT}-{second['version']}.png"]
+    with pytest.raises(FileNotFoundError):
+        reader.image(RESIDENT, image["version"])
+    assert reader.image(RESIDENT, second["version"]).startswith(b"\x89PNG")
     assert resident_avatar.projection_fields(second) == {"avatar_url": second["url"]}
     assert resident_avatar.projection_fields(drawn) == {"sprite_index": drawn["sprite_index"], "sprite_rarity": drawn["sprite_rarity"]}
 

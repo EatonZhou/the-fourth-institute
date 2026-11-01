@@ -216,7 +216,7 @@ body.portalBoardShell .portalLogoutLink:hover {
   opacity: 1;
 }
 
-.portalUserMenuInstance {
+.portalUserMenuDeployment {
   margin-top: 3px;
   color: var(--muted, #64748b);
   font-size: 9px;

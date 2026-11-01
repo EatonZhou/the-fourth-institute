@@ -16,7 +16,7 @@ import time
 from management_common.file_lock import lock_stream
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
 from management_common.provider_account_paths import account_runtime, runtime_root
-from management_portal.execution.account_hosting import registered_home
+from management_common.provider_account_paths import registered_home
 from management_common.process_runtime import spawn_process, terminate_process_tree
 from management_portal import kimi_provider_catalog, kimi_code_server, kimi_portal_tools, model_api_store, kimi_windows_runtime
 from management_portal.ai_provider_registry import AIProviderRegistry

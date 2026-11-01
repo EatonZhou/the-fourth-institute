@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import threading
 import time
 from contextlib import contextmanager
@@ -35,7 +34,7 @@ if TYPE_CHECKING:
     from .codex_app_server_rpc import CodexRpcConnection
 
 
-DEFAULT_THREAD_LOCK_ROOT = (portal_path("staging_root") / "portal_locks" / "codex-app-server-threads")
+THREAD_LOCK_ROOT = portal_path("runtime") / "codex-app-server-threads"
 DEFAULT_IDLE_UNSUBSCRIBE_SECONDS = 5 * 60 * 60
 DEFAULT_MAX_LOADED_THREADS = 30
 THREAD_LOCK_POLL_INTERVAL_SECONDS = 0.25
@@ -52,7 +51,7 @@ def codex_thread_execution_lock(
     safe_thread_id = str(thread_id or "").strip()
     if not safe_thread_id:
         raise ValueError("thread_id required")
-    root = Path(os.getenv("PORTAL_CODEX_APP_SERVER_THREAD_LOCK_ROOT", str(DEFAULT_THREAD_LOCK_ROOT)))
+    root = THREAD_LOCK_ROOT
     root.mkdir(parents=True, exist_ok=True)
     lock_name = hashlib.sha256(safe_thread_id.encode("utf-8")).hexdigest() + ".lock"
     with (root / lock_name).open("a+", encoding="utf-8") as stream:

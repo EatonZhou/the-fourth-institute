@@ -1,7 +1,6 @@
 """Instance-owned avatar records and PNG bytes in PostgreSQL.
 
-The file store is an import source only. A deleted row remains as a tombstone
-so that a legacy file cannot resurrect a user's removed or renamed avatar.
+A deleted or moved-away avatar leaves a tombstone row; readers treat it as no avatar.
 """
 from __future__ import annotations
 
@@ -10,7 +9,7 @@ import os
 from functools import lru_cache
 
 from management_common.domain_database import DomainDatabase
-from management_portal.avatar_store import MAX_IMAGE_BYTES, normalized_image, sprite
+from management_portal.avatar_store import normalized_image, sprite
 
 DDL = """
 CREATE TABLE IF NOT EXISTS avatars (
@@ -44,19 +43,19 @@ def database():
 
 
 class DatabaseAvatarStore:
-    """Use existing subject validation and URLs with a transactional owner."""
+    """One subject kind's avatars: validation and URLs from its subjects, records here."""
 
-    def __init__(self, legacy, kind, *, default_sprite=None, persist_default=False):
+    def __init__(self, subjects, kind, *, default_sprite=None, persist_default=False):
         if kind not in ("user", "resident", "scope"):
             raise ValueError("Invalid avatar subject kind")
-        self.legacy = legacy
+        self.subjects = subjects
         self.kind = kind
         self.default_sprite = default_sprite
         self.persist_default = persist_default
 
     def _key(self, subject):
-        self.legacy.stem(subject)  # Validate even reads, deletes and moves.
-        return self.kind, self.legacy.identity(subject)
+        self.subjects.check(subject)  # Validate even reads, deletes and moves.
+        return self.kind, self.subjects.identity(subject)
 
     def _row(self, connection, subject, *, image=False):
         fields = "kind, sprite_index, version" + (", image" if image else "")
@@ -69,45 +68,26 @@ class DatabaseAvatarStore:
     def _avatar(self, subject, row):
         if row is None or row["kind"] == "deleted":
             return None
-        return self.legacy._avatar(subject, {
-            "schema": self.legacy.schema,
-            self.legacy.identity_field: self.legacy.identity(subject), **row,
+        return self.subjects.avatar(subject, {
+            "schema": self.subjects.schema,
+            self.subjects.identity_field: self.subjects.identity(subject), **row,
         })
 
-    def _write(self, connection, subject, avatar, content=None, *, only_missing=False):
-        conflict = "DO NOTHING" if only_missing else """DO UPDATE SET
-            kind=EXCLUDED.kind, sprite_index=EXCLUDED.sprite_index,
-            version=EXCLUDED.version, image=EXCLUDED.image, updated_at=now()"""
+    def _write(self, connection, subject, avatar, content=None):
         connection.execute(
             """INSERT INTO avatars (subject_kind, subject, kind, sprite_index, version, image)
-               VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (subject_kind, subject) """ + conflict,
+               VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT (subject_kind, subject) DO UPDATE SET
+               kind=EXCLUDED.kind, sprite_index=EXCLUDED.sprite_index,
+               version=EXCLUDED.version, image=EXCLUDED.image, updated_at=now()""",
             (*self._key(subject), avatar["kind"], avatar.get("sprite_index"),
              avatar.get("version"), content),
         )
-
-    def import_legacy(self, subject):
-        """Import one complete legacy record, never replacing database choices."""
-        key = self._key(subject)
-        with database().transaction(":".join(key)) as connection:
-            existing = self._row(connection, subject)
-            if existing is not None:
-                return self._avatar(subject, existing)
-            avatar = self.legacy.read(subject)
-            if avatar is None:
-                return None
-            content = None
-            if avatar["kind"] == "upload":
-                content = self.legacy.image(subject, avatar["version"])
-                if not 0 < len(content) <= MAX_IMAGE_BYTES or hashlib.sha256(content).hexdigest() != avatar["version"]:
-                    raise ValueError("Legacy avatar image does not match its recorded hash")
-            self._write(connection, subject, avatar, content, only_missing=True)
-            return self._avatar(subject, self._row(connection, subject))
 
     def read(self, subject):
         self._key(subject)
         with database().read() as connection:
             row = self._row(connection, subject)
-        return self._avatar(subject, row) if row is not None else self.import_legacy(subject)
+        return self._avatar(subject, row) if row is not None else None
 
     def get_existing(self, subject):
         return self.read(subject)
@@ -144,16 +124,13 @@ class DatabaseAvatarStore:
     def delete(self, subject):
         with database().transaction(":".join(self._key(subject))) as connection:
             row = self._row(connection, subject)
-            existed = (row is not None and row["kind"] != "deleted") or (
-                row is None and self.legacy._path(subject).exists()
-            )
+            existed = row is not None and row["kind"] != "deleted"
             self._write(connection, subject, {"kind": "deleted"})
         return existed
 
     def move(self, subject, target):
         self._key(subject)
         self._key(target)
-        self.import_legacy(subject)
         if subject == target:
             return self.read(subject) is not None
         # Sorted locks avoid inversion when two subjects are renamed concurrently.
@@ -171,7 +148,7 @@ class DatabaseAvatarStore:
         return True
 
     def image(self, subject, version):
-        self.read(subject)  # Import legacy bytes if this is the first request.
+        self._key(subject)
         with database().read() as connection:
             row = self._row(connection, subject, image=True)
         if not row or row["kind"] != "upload" or row["version"] != version:

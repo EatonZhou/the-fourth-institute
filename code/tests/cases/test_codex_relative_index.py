@@ -85,31 +85,6 @@ def test_malformed_source_metadata_is_reported_without_mutation(tmp_path, metada
     assert result["updated"] == 0 and result["unresolved"] == [THREAD]
 
 
-def test_service_template_uses_configured_home_and_explicit_owned_refresh(tmp_path, monkeypatch):
-    from scripts import portal_instance_storage as storage, portal_service_units as units
-    instance = tmp_path / "instance"
-    directory = tmp_path / "units"
-    deployment = {"source_root": str(tmp_path / "source"), "providers": {"codex_binary": "/usr/bin/true"}}
-    monkeypatch.setattr(storage, "read_site_config", lambda: {"deployment": deployment})
-    monkeypatch.setattr(units, "_isolated_codex_context", lambda: {"root": instance, "directory": directory, "prefix": "tfi-example-codex-app-server@"})
-    target = units.install_codex_unit_template(reload=False)
-    original = target.read_text()
-    assert "-m management_portal.codex_app_server_host --socket " in original
-    assert "Environment=PYTHONPATH=" + deployment["source_root"] in original
-    assert "--account-config " in original and "/provider-accounts/codex/%i/launch.json" in original
-    deployment["source_root"] = str(tmp_path / "moved-source")
-    with pytest.raises(ValueError, match="different Provider"):
-        units.install_codex_unit_template(reload=False)
-    old_locator = next(line for line in target.read_text().splitlines() if line.startswith("Environment=PORTAL_PATHS_CONFIG="))
-    target.write_text(target.read_text().replace(old_locator, f"Environment=PORTAL_PATHS_CONFIG={instance / 'config/target.json'}"))
-    units.install_codex_unit_template(reload=False, refresh=True)
-    assert "Environment=PYTHONPATH=" + deployment["source_root"] in target.read_text()
-    target.write_text(target.read_text().replace("Environment=HOME=", "Environment=FOREIGN_HOME="))
-    deployment["source_root"] = str(tmp_path / "another-source")
-    with pytest.raises(ValueError, match="another instance"):
-        units.install_codex_unit_template(reload=False, refresh=True)
-
-
 def test_native_history_resume_and_fork_survive_configured_account_move(tmp_path, installed_provider_paths):
     from management_portal.codex_app_server_client import CodexAppServerClient
     from management_portal.codex_app_server_host import run_host

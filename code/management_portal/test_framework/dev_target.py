@@ -16,7 +16,7 @@ from management_portal.portal_deployment_registry import (
 from management_portal.test_framework.catalog import ROOT
 
 
-EXPECTED_INSTANCE = "dev"
+EXPECTED_DEPLOYMENT = "dev"
 EXPECTED_PAGE_FINGERPRINT = "component-v2"
 from management_portal.test_framework.compatibility import test_actor
 
@@ -58,7 +58,7 @@ class DevBuildMismatch(DevTargetError):
 
 @dataclass(frozen=True)
 class VerifiedDevTarget:
-    instance_id: str
+    deployment_id: str
     origin: str
     expected_build_id: str
     actual_build_id: str
@@ -68,7 +68,7 @@ class VerifiedDevTarget:
 
     def result_details(self) -> dict[str, str]:
         return {
-            "instance": self.instance_id,
+            "deployment": self.deployment_id,
             "browser_origin": self.browser_origin or self.origin,
             "expected_build_id": self.expected_build_id,
             "actual_build_id": self.actual_build_id,
@@ -100,19 +100,20 @@ def resolve_test_target(target_file: Path | None = None) -> PortalDeployment:
 def resolve_unique_dev(
     registry_path: Path | None = None,
 ) -> PortalDeployment:
-    # Explicit legacy registries remain readable for callers managing old deployments.
-    # A shared-code installation never discovers an old dev site implicitly.
+    # A manifest path names the instance whose Dev deployment is under test.
+    # Without one, only the explicit test target file selects it; a shared-code
+    # installation never discovers a Dev site implicitly.
     if registry_path is None:
         return resolve_test_target()
     matches = [
         item
         for item in load_portal_deployments(Path(registry_path))
-        if item.instance_id == EXPECTED_INSTANCE and item.kind == EXPECTED_INSTANCE
+        if item.deployment_id == EXPECTED_DEPLOYMENT and item.kind == EXPECTED_DEPLOYMENT
     ]
     if len(matches) != 1:
         raise DevTargetError(
-            "Portal 部署注册表必须且只能包含一个已启用的 DEV 实例。",
-            details={"expected_instance": EXPECTED_INSTANCE, "matches": str(len(matches))},
+            "Portal 部署注册表必须且只能包含一个已启用的 DEV 部署。",
+            details={"expected_deployment": EXPECTED_DEPLOYMENT, "matches": str(len(matches))},
         )
     return matches[0]
 
@@ -179,7 +180,7 @@ class DevTargetVerifier:
         deployment = resolve_unique_dev(self.registry_path)
         expected_build = self.build_id(self.source_root) if self.build_id else deployment.build_id
         observed: dict[str, str] = {
-            "instance": deployment.instance_id,
+            "deployment": deployment.deployment_id,
             "expected_build_id": expected_build,
         }
 
@@ -194,12 +195,12 @@ class DevTargetVerifier:
             raise _transport_error(
                 "AI 真实使用开始前，所选测试实例 的健康检查失败。", "health", exc, observed
             ) from exc
-        actual_instance = str(health.get("instance") or "")
+        actual_deployment = str(health.get("deployment") or "")
         actual_build = str(health.get("build_id") or "")
-        observed.update({"actual_instance": actual_instance, "actual_build_id": actual_build})
-        if actual_instance != deployment.instance_id:
+        observed.update({"actual_deployment": actual_deployment, "actual_build_id": actual_build})
+        if actual_deployment != deployment.deployment_id:
             raise DevTargetError(
-                "所选测试实例 的实例身份与部署注册表不一致。",
+                "所选测试实例 的部署身份与部署注册表不一致。",
                 details=observed,
             )
         if not actual_build or not expected_build:
@@ -249,19 +250,19 @@ class DevTargetVerifier:
             raise DevTargetError(
                 "所选测试实例 的会话用户不是 test-actor。", details=observed
             )
-        identity_instance = str(identity.get("portal_instance") or deployment.instance_id)
+        identity_deployment = str(identity.get("portal_deployment") or deployment.deployment_id)
         identity_build = str(identity.get("build_id") or actual_build)
-        if identity_instance != deployment.instance_id or identity_build != actual_build:
+        if identity_deployment != deployment.deployment_id or identity_build != actual_build:
             observed.update(
-                {"identity_instance": identity_instance, "identity_build_id": identity_build}
+                {"identity_deployment": identity_deployment, "identity_build_id": identity_build}
             )
-            error_type = DevTargetError if identity_instance != deployment.instance_id else DevBuildMismatch
+            error_type = DevTargetError if identity_deployment != deployment.deployment_id else DevBuildMismatch
             raise error_type(
                 "test-actor 身份来自另一个 Portal 构建。", details=observed
             )
 
         return VerifiedDevTarget(
-            instance_id=deployment.instance_id,
+            deployment_id=deployment.deployment_id,
             origin=deployment.origin,
             browser_origin=deployment.browser_origin or deployment.origin,
             expected_build_id=expected_build,

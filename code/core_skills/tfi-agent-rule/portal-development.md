@@ -6,9 +6,9 @@
 
 先确认当前部署形态。下述双检出、分支与发布命令只适用于已配置 Dev/Release 的 Portal 开发站。独立发行实例可以只有当前导出代码、没有 Git；按该实例实际工程规则维护，不为套用本文创建 Git 历史、远端或开发机目录。
 
-先通过当前代码仓库的 `git rev-parse --path-format=absolute --git-common-dir` 找到
-`tfi-development.json`。其中 `dev` 是所有开发者共用的 Dev worktree，`main` 是
-Release worktree；不要根据 `${code_root}` 或当前进程所在目录猜测开发位置。两个
+开发位置记在本实例的清单 `instance.json` 中：`deployments.dev.code_root` 的上一级目录是所有开发者共用的
+Dev worktree，`deployments.release.code_root` 的上一级目录是 Release worktree（`main`）；终端里的
+`PORTAL_INSTANCE_ROOT` 指向本实例，不要根据 `${code_root}` 或当前进程所在目录猜测开发位置。两个
 目录同时存在，各自绑定一个分支；本站分支名为 `dev` 和 `main`（Release），只从
 Release 推送远端 `main`。不为功能、修复或审计创建额外分支或工作树。
 

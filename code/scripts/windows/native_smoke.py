@@ -1,7 +1,10 @@
-"""Exercise a real Windows EXE in disposable, independent installation directories.
+"""Exercise a real Windows EXE: install, create a temporary instance, test, retire.
 
-Run only on a disposable Windows runner. No external AI account is registered and
-no inference is requested. The receipt never contains passwords or invitations.
+Each case installs the program into a disposable directory; the launcher creates
+the default instance at the installer's default location and registers it; the
+case retires it at the end. Run only on a disposable Windows runner. No external
+AI account is registered and no inference is requested. The receipt never
+contains passwords or invitations.
 """
 from __future__ import annotations
 
@@ -21,11 +24,15 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
 
 
-def read_installed_state(root):
-    # Read with the configuration owner shipped in the installation under test.
-    code = Path(root).parent.parent / 'code'
-    probe = "import sys,json;sys.path.insert(0,sys.argv[1]);from management_common.instance_config import read_installation;print(json.dumps(read_installation(sys.argv[2])))"
-    result = subprocess.run([sys.executable, '-c', probe, str(code), str(root)],
+INSTANCE = 'example_instance'
+
+
+def registered_instance(platform):
+    """The default instance as the installed code's host registry records it, or None."""
+    probe = ("import sys,json;sys.path.insert(0,sys.argv[1]);from management_common import host_instances;"
+             "r=host_instances.read_registry();i=host_instances.find(sys.argv[2]) if sys.argv[2] in r else None;"
+             "print(json.dumps(i and {'root':str(i.root),'manifest':i.document}))")
+    result = subprocess.run([sys.executable, '-c', probe, str(Path(platform) / 'code'), INSTANCE],
                             capture_output=True, text=True, check=True, timeout=30)
     return json.loads(result.stdout)
 
@@ -134,13 +141,17 @@ def worker(platform, phase):
         launcher.main()
         check(len(flows) == 1 and len(opened) == 1, 'Desktop did not hand off to the browser')
         flow = flows[0]
-        port = flow.state()['target']['ports']['web']
-        check(opened == [f'http://127.0.0.1:{port}/'], 'Configured desktop opened an unexpected page')
+        check(opened == [flow.entry_url(flow.instance()) + '/'], 'Configured desktop opened an unexpected page')
         report = {'phase': phase, 'flow_seconds': round(time.monotonic() - started, 3),
                   'stages': flow.timings, 'tk_browser_handoff': 'passed'}
         (flow.log_path.parent / 'startup-last.json').write_text(json.dumps(report), encoding='utf-8')
-    else:
+    elif phase == 'cleanup':
+        # Stop and delete service definitions; the instance and its data stay.
         stop_all(platform, unregister=True)
+    else:
+        # Retire the disposable instance: definitions, registration and root go.
+        from scripts.tfi_windows_launcher import command
+        subprocess.run(command(platform, 'retire', '--instance', INSTANCE), check=True, timeout=300)
 
 
 def run_worker(platform, phase, log):
@@ -151,7 +162,7 @@ def run_worker(platform, phase, log):
     with log.open('a', encoding='utf-8') as output:
         subprocess.run(list(map(str, argv)), stdout=output, stderr=subprocess.STDOUT,
                        timeout=900 if phase == 'initialize' else 180, check=True)
-    if phase != 'cleanup':
+    if phase not in {'cleanup', 'retire'}:
         report = json.loads((platform / '.build/windows/logs/startup-last.json').read_text(encoding='utf-8'))
         report['process_seconds'] = round(time.monotonic() - started, 3)
         return report
@@ -165,17 +176,23 @@ def exercise(exe, root, included, evidence):
     command = subprocess.list2cmdline(argv) + ' /D=' + str(root)
     subprocess.run(command, executable=str(exe), check=True, timeout=300)
     check((root / 'windows-package.json').is_file(), 'NSIS did not install the payload')
-    state_path = root / 'instance/example_instance/installation.json'
+    check(registered_instance(root) is None, 'The disposable runner already has a registered default instance')
     succeeded = False
     api = None
+    instance_root = None
     try:
         initial_startup = run_worker(root, 'initialize', log)
-        state = read_installed_state(state_path.parent)
+        created = registered_instance(root)
+        check(created is not None, 'The launcher did not register the default instance')
+        instance_root = Path(created['root'])
+        manifest_path = instance_root / 'instance.json'
+        check(not instance_root.is_relative_to(root), 'The instance root is inside the program directory')
+        check(created['manifest']['deployments']['release']['code_root'] == str((root / 'code').resolve()),
+              'The instance does not run the installed code')
         manifest = json.loads((root / '.build/w/engineering/manifest.json').read_text(encoding='utf-8'))
         check(manifest['include_examples'] is included, 'NSIS selected the wrong example')
-        check(state['status'] == 'installed', 'Instance did not become healthy')
-        target = state['target']
-        base = f"http://127.0.0.1:{target['ports']['web']}"
+        check(not (instance_root / 'runtime/creation.json').exists(), 'Instance creation did not complete')
+        base = f"http://127.0.0.1:{created['manifest']['network']['entry_port']}"
         client = build_opener(ProxyHandler({}), HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
         def request(path, payload=None, form=False):
@@ -192,7 +209,7 @@ def exercise(exe, root, included, evidence):
             request('/api/health')
             check(b'<html' in request('/login').lower(), 'Login page is not HTML')
             time.sleep(2)
-        private_link = Path(target['data_roots']['secrets_dir']) / 'first-admin-link.txt'
+        private_link = instance_root / 'secrets/first-admin-link.txt'
         link = private_link.read_text(encoding='utf-8')
         invitation = link.split('#invite=', 1)[1].split()[0]
         password = secrets.token_urlsafe(18) + 'aA9!'
@@ -205,11 +222,11 @@ def exercise(exe, root, included, evidence):
         me = request('/api/me')
         check(me.get('username') == registered['username'], 'Password login did not persist a session')
         legacy_startup = run_worker(root, 'legacy-reopen', log)
-        before_reopen = state_path.read_bytes()
+        before_reopen = manifest_path.read_bytes()
         def process_identity():
             return {p.name: {k: v for k, v in json.loads(p.read_text(encoding='utf-8')).items()
                              if k in ('pid', 'created', 'child_pid', 'child_created')}
-                    for p in state_path.parent.glob('runtime/*.process.json')}
+                    for p in instance_root.glob('runtime/*.process.json')}
         before_processes = process_identity()
         warm_startups = [run_worker(root, 'reopen', log) for _ in range(3)]
         check(all([s['stage'] for s in r['stages']] == ['running_check', 'account_check']
@@ -217,7 +234,7 @@ def exercise(exe, root, included, evidence):
         desktop_startups = [run_worker(root, 'desktop', log) for _ in range(3)]
         check(all([s['stage'] for s in r['stages']] == ['running_check', 'account_check']
                   for r in desktop_startups), 'Desktop did not use the healthy reopen path')
-        check(state_path.read_bytes() == before_reopen, 'Healthy reopen rewrote installation state')
+        check(manifest_path.read_bytes() == before_reopen, 'Healthy reopen rewrote the instance manifest')
         check(process_identity() == before_processes, 'Healthy reopen replaced a service process')
         def instruction(name, arguments):
             response = request('/api/instructions/execute', {'instruction': name, 'arguments': arguments})
@@ -245,7 +262,7 @@ def exercise(exe, root, included, evidence):
         check(catalog['backend'] == 'provider_api' and catalog['models'] == [api.model],
               'Default-only API catalog differs from the executing account')
         instruction('UpdateResidentSettings', {'resident_id': ama['resident_id'], 'changes': {'model': api.model}})
-        marker = root / 'instance/example_instance/data/native-restart-marker.txt'
+        marker = instance_root / 'data/features/native-restart-marker.txt'
         marker.write_text('Preserve this installation and its registered user', encoding='utf-8')
         run_worker(root, 'cleanup', log)
         cold_startup = run_worker(root, 'desktop', log)
@@ -254,8 +271,7 @@ def exercise(exe, root, included, evidence):
                    'cold_restart': cold_startup}
         (evidence / ('full-startup.json' if included else 'base-startup.json')).write_text(
             json.dumps(startup, indent=2), encoding='utf-8')
-        restarted = read_installed_state(state_path.parent)
-        check(restarted['target'] == target, 'Restart changed instance identity')
+        check(registered_instance(root) == created, 'Restart changed instance identity')
         check(marker.is_file(), 'Restart lost user data')
         request('/login', {'username': registered['username'], 'password': password}, form=True)
         check(request('/api/me').get('username') == registered['username'], 'Restart lost the account')
@@ -272,7 +288,7 @@ def exercise(exe, root, included, evidence):
         check(json.loads(changed.stdout)['changed'] == [str(marker)],
               'Installed index worker did not preserve a Chinese path')
         for component in ('resource', 'society', 'web'):
-            component_log = state_path.parent / 'runtime' / (component + '.log')
+            component_log = instance_root / 'runtime' / (component + '.log')
             check(component_log.is_file(), component + ' did not write a runtime log')
             content = component_log.read_text(encoding='utf-8', errors='replace')
             for error in ('resource index refresh failed:', 'SocietyService coordinator failed:',
@@ -280,6 +296,7 @@ def exercise(exe, root, included, evidence):
                 check(error not in content, component + ' background error: ' + error)
         succeeded = True
         return {'include_examples': included, 'status': 'passed', 'registration_ama_chat': 'passed',
+                'instance_outside_program_directory': 'passed', 'retired': 'passed',
                 'launcher_exit_service_survival': 'passed', 'unregister_restart_preserves_data': 'passed',
                 'chinese_index_worker': 'passed', 'background_error_check': 'passed',
                 'api_only_chat_restart': 'passed', 'api_default_model': api.model,
@@ -287,25 +304,34 @@ def exercise(exe, root, included, evidence):
     except Exception:
         # Distinguish loader failure from initdb's restricted-token re-execution;
         # only public version output and exit codes from this disposable fixture.
-        if state_path.exists():
-            failed = read_installed_state(state_path.parent)
-            pg_bin = failed.get('target', {}).get('pg_bin')
-            if pg_bin:
-                for name in ('postgres', 'initdb', 'pg_ctl', 'psql'):
-                    result = subprocess.run([str(Path(pg_bin) / (name + '.exe')), '--version'],
-                                            capture_output=True, timeout=30)
-                    print(name, 'version probe:', result.returncode,
-                          (result.stdout + result.stderr).decode('utf-8', errors='replace'), flush=True)
+        failed = registered_instance(root)
+        if failed is not None:
+            pg_bin = failed['manifest']['dependencies']['postgres']['bin']
+            for name in ('postgres', 'initdb', 'pg_ctl', 'psql'):
+                result = subprocess.run([str(Path(pg_bin) / (name + '.exe')), '--version'],
+                                        capture_output=True, timeout=30)
+                print(name, 'version probe:', result.returncode,
+                      (result.stdout + result.stderr).decode('utf-8', errors='replace'), flush=True)
         raise
     finally:
-        # Never leave the test processes running, including failed installations.
-        if state_path.exists():
+        # Never leave the disposable instance behind, including failed creations:
+        # retire stops its processes, deletes definitions, registration and root.
+        current = registered_instance(root)
+        if current is not None:
+            instance_root = Path(current['root'])
+            if instance_root.is_dir():
+                case = 'full' if included else 'base'
+                for component_log in instance_root.glob('runtime/*.log'):
+                    tail = component_log.read_text(encoding='utf-8', errors='replace').splitlines()[-80:]
+                    (evidence / f'{case}-component-{component_log.name}').write_text('\n'.join(tail), encoding='utf-8')
             try:
-                run_worker(root, 'cleanup', log)
+                run_worker(root, 'retire', log)
+                check(registered_instance(root) is None and not (instance_root and instance_root.exists()),
+                      'Retire left the instance registered or its root on disk')
             except Exception:
                 if succeeded:
                     raise
-                print('Native cleanup also failed; see the component log', file=sys.stderr)
+                print('Native retire also failed; see the component log', file=sys.stderr)
         if api is not None:
             api.close()
 
@@ -316,7 +342,7 @@ def main():
     parser.add_argument('--work', type=Path)
     parser.add_argument('--evidence', type=Path)
     parser.add_argument('--platform', type=Path)
-    parser.add_argument('--phase', choices=('initialize', 'cleanup', 'reopen', 'legacy-reopen', 'desktop'))
+    parser.add_argument('--phase', choices=('initialize', 'cleanup', 'retire', 'reopen', 'legacy-reopen', 'desktop'))
     args = parser.parse_args()
     check(sys.platform == 'win32', 'Native smoke must run on Windows')
     if args.phase:

@@ -21,7 +21,8 @@ for name in (
     'management_common.file_permissions',
     'management_common.format_tags',
     'management_common.product_environment',
-    'management_common.site_compatibility',
+    'management_common.instance_manifest',
+    'management_common.secret_environment',
     'management_common.site_config',
     'management_common.portal_network',
     'management_common.file_lock',
@@ -47,7 +48,7 @@ def test_packaged_claude_catalog_reads_registration_without_model_api(tmp_path):
     from scripts.claude_app_server_package import build_package
 
     registration = create_registration({"account_id": "claude_packaged", "provider": "claude",
-                         "kind": "subscription_login", "config": {
+                         "kind": "subscription_login", "config": {"account_dir": str(tmp_path / "accounts" / "claude_packaged"),
                              "default_model": "sonnet", "models": [{"id": "sonnet"}]}}, "test")
     package = tmp_path / "runtime"
     build_package(Path(__file__).resolve().parents[2], package)
@@ -59,9 +60,7 @@ assert all(row['id'] != 'claude_packaged' for row, _ in model_api_store.apis())
 entry = profile('claude_packaged')
 print(json.dumps({key: entry[key] for key in ('id', 'kind', 'config_dir', 'default_model')}))
 """
-    env = {**os.environ, "PYTHONPATH": str(package),
-           "PORTAL_PATHS_CONFIG": str(tmp_path / "no-site-config.json"),
-           "PORTAL_ACCOUNT_HOST_HOME": str(tmp_path / "accounts")}
+    env = {**os.environ, "PYTHONPATH": str(package)}
     result = subprocess.run([sys.executable, "-c", code], cwd=tmp_path,
                             env=env, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr

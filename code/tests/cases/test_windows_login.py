@@ -1,4 +1,4 @@
-"""Windows directory projection must not prevent anonymous HTML rendering.
+"""The instance directory projection must not prevent anonymous HTML rendering.
 
 :module: operations.deployment
 :design: decision_d88306d0bd17
@@ -7,12 +7,12 @@
 """
 import asyncio
 import json
-from pathlib import PureWindowsPath
 
 import pytest
 
-from management_common import portal_paths, site_config
+from management_common.instance_manifest import AREAS, load
 from management_portal import asgi, page_bootstrap
+from tests.cases.instance_test_support import select_instance
 
 
 async def get_page(route):
@@ -44,45 +44,18 @@ async def get_page(route):
     return start['status'], body.decode()
 
 
-@pytest.fixture
-def windows_paths(monkeypatch):
-    root = PureWindowsPath('C:/Users/测试 User/AppData/Local/TheFourthInstitute/instance/example_instance')
-    values = {key: str(root / 'data' / key) for key in portal_paths.KEYS}
-    monkeypatch.setattr(portal_paths, 'PORTAL_ROOT', root)
-    monkeypatch.setattr(portal_paths, 'path_values', lambda: values)
-    # Exercise the native Windows path flavour and the production anchoring
-    # policy without requiring a Windows filesystem on the test host.
-    monkeypatch.setattr(portal_paths, 'resolve_directory',
-                        lambda value: portal_paths._anchor_directory(PureWindowsPath(value), root))
-    monkeypatch.setattr(site_config, 'read_site_config', lambda: {})
-    return root, values
-
-
-@pytest.mark.parametrize('style', ['backslash', 'forward-slash', 'unc'])
-def test_login_and_enrollment_render_with_windows_roots(windows_paths, style):
-    root, values = windows_paths
-    if style == 'forward-slash':
-        values.update({key: PureWindowsPath(value).as_posix() for key, value in values.items()})
-    elif style == 'unc':
-        values.update({key: str(PureWindowsPath('//server/share/测试 User') / key) for key in values})
+@pytest.mark.parametrize('name', ['plain', '测试 User with spaces'])
+def test_login_and_enrollment_render_with_the_instance_areas(tmp_path, monkeypatch, name):
+    select_instance(monkeypatch, tmp_path / name / 'instance')
+    instance = load()
 
     async def exercise():
         for route in ('/login', '/join'):
             status, text = await get_page(route)
             assert status == 200, (route, text)
             assert 'id="portalSiteScript"' in text
-            expected = json.dumps(PureWindowsPath(values['share_root']).as_posix())
-            assert expected in text
-            assert '"secrets_dir"' not in text
+            for area in AREAS:
+                assert json.dumps(instance.area(area).as_posix(), ensure_ascii=True) in text
+            assert '"secrets"' not in text and '"database"' not in text
     asyncio.run(exercise())
-    assert page_bootstrap._public_paths()['test_results_root'] == (root / 'test-results').as_posix()
-
-
-@pytest.mark.parametrize('value', [r'C:\data\..\private', 'C:/data/../private',
-                                 'C:/', '//server/share/', r'C:relative', r'\rooted',
-                                 'C:/data/secret\x00', 'C:/data/secret\n'])
-def test_windows_projection_still_rejects_unsafe_roots(windows_paths, value):
-    _, values = windows_paths
-    values['share_root'] = value
-    with pytest.raises(ValueError, match='Invalid public directory: share_root'):
-        page_bootstrap._public_paths()
+    assert page_bootstrap._public_paths()['test_results_root'] == (instance.root / 'cache/test-results').as_posix()

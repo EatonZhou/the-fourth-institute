@@ -14,13 +14,26 @@ from typing import Iterable
 from management_common.portal_database import portal_database, _database_schema, portal_database_url
 from management_common.resource_identity import get_resource_type_registry
 from management_common.database_time import decode_times
+from management_common.instance_locations import located_path, stored_location
+from management_common.instance_manifest import AREAS
 
 from .errors import ResourceVersionConflict
 
 
-# Accept native Windows separators as well as the forward slashes used by
-# installation exports. A drive or UNC share root is not a workspace.
-ABSOLUTE_PATH_CHECK = "replace(path, chr(92), '/') ~ '^(/[^/].*|[A-Za-z]:/.+|//[^/]+/[^/]+/.+)$'"
+# A location is an area reference (``projects:AI/agents/...``) or a host
+# directory's absolute path. Accept native Windows separators as well as the
+# forward slashes used by installation exports. A drive or UNC share root is
+# not a workspace.
+LOCATION_CHECK = (
+    "replace(path, chr(92), '/') ~ '^(/[^/].*|[A-Za-z]:/.+|//[^/]+/[^/]+/.+|("
+    + "|".join(AREAS) + "):([^/].*)?)$'"
+)
+
+
+# The prefix of locations below a stored location; an area root
+# (``projects:``) already ends with its separator. For statements with
+# parameters, so the LIKE wildcard is escaped.
+LOCATION_PREFIX_SQL = "CASE WHEN {column} LIKE '%%:' THEN {column} ELSE rtrim({column},'/') || '/' END"
 
 
 def canonical_path(value: object) -> str:
@@ -32,6 +45,15 @@ def canonical_path(value: object) -> str:
         raise ValueError("Workspace cannot use the filesystem root")
     # Match paths materialized from release SQL and the '/' prefix queries.
     return resolved.as_posix()
+
+
+def stored_path(value: object) -> str:
+    """The stored location of an absolute Workspace path."""
+    return stored_location(canonical_path(value))
+
+
+def _located(row):
+    return {**row, "path": located_path(row["path"])}
 
 
 def now() -> str:
@@ -49,7 +71,7 @@ class WorkspaceStore:
                            (self.table + ":init",))
         connection.execute(f"""CREATE TABLE IF NOT EXISTS {self.table} (
             workspace_id TEXT PRIMARY KEY CHECK (workspace_id ~ '^workspace_[0-9a-f]{{12}}$'),
-            path TEXT NOT NULL CONSTRAINT workspaces_absolute_path_check CHECK ({ABSOLUTE_PATH_CHECK}),
+            path TEXT NOT NULL CONSTRAINT workspaces_location_check CHECK ({LOCATION_CHECK}),
             title TEXT NOT NULL,
             summary TEXT NOT NULL DEFAULT '',
             created_at TIMESTAMPTZ NOT NULL,
@@ -59,14 +81,15 @@ class WorkspaceStore:
         )""")
         constraints = {row[0] for row in connection.execute(
             "SELECT conname FROM pg_constraint WHERE conrelid=%s::regclass "
-            "AND conname IN ('workspaces_path_check','workspaces_absolute_path_check')",
+            "AND conname IN ('workspaces_absolute_path_check','workspaces_location_check')",
             (self.table,),
         ).fetchall()}
-        if "workspaces_absolute_path_check" not in constraints:
+        # Area references replace absolute paths of instance directories.
+        if "workspaces_absolute_path_check" in constraints:
+            connection.execute(f"ALTER TABLE {self.table} DROP CONSTRAINT workspaces_absolute_path_check")
+        if "workspaces_location_check" not in constraints:
             connection.execute(f"ALTER TABLE {self.table} ADD CONSTRAINT "
-                               f"workspaces_absolute_path_check CHECK ({ABSOLUTE_PATH_CHECK})")
-        if "workspaces_path_check" in constraints:
-            connection.execute(f"ALTER TABLE {self.table} DROP CONSTRAINT workspaces_path_check")
+                               f"workspaces_location_check CHECK ({LOCATION_CHECK})")
         # Avoid an ACCESS EXCLUSIVE ALTER lock on every service startup.
         if connection.execute(
             "SELECT 1 FROM pg_attribute WHERE attrelid=%s::regclass AND attname=%s AND NOT attisdropped",
@@ -86,7 +109,8 @@ class WorkspaceStore:
         with nullcontext(connection) if connection is not None else self.database.read() as conn:
             rows = conn.execute(f"SELECT * FROM {self.table} WHERE workspace_id=ANY(%s)"
                                 + ("" if include_deleted else " AND deleted_at IS NULL"), (ids,)).fetchall()
-        return {row["workspace_id"]: decode_times(row, ('created_at', 'updated_at', 'deleted_at')) for row in rows}
+        return {row["workspace_id"]: _located(decode_times(row, ('created_at', 'updated_at', 'deleted_at')))
+                for row in rows}
 
     def paths(self, ids, *, connection=None):
         ids = list(dict.fromkeys(ids))
@@ -98,7 +122,8 @@ class WorkspaceStore:
 
     def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False):
         get_resource_type_registry().validate(workspace_id, "workspace")
-        path = canonical_path(path)
+        absolute = canonical_path(path)
+        path = stored_location(absolute)
         def write(conn):
             # The partial path index arbitrates concurrent registration, while
             # the row lock prevents a stale save from reviving a deletion.
@@ -118,7 +143,7 @@ class WorkspaceStore:
             timestamp = now()
             conn.execute(f"INSERT INTO {self.table} "
                          "(workspace_id,path,title,created_at,updated_at) VALUES (%s,%s,%s,%s,%s)",
-                         (workspace_id, path, title or Path(path).name, timestamp, timestamp))
+                         (workspace_id, path, title or Path(absolute).name, timestamp, timestamp))
             return workspace_id
         return write(connection) if connection is not None else self.database.write(write)
 
@@ -168,27 +193,28 @@ class WorkspaceStore:
         return self.update_metadata(workspace_id, title=title, expected_version=expected_version, authorize=authorize)
 
     def for_path(self, path: str, *, new_id, preferred_id="") -> str:
-        path = canonical_path(path)
+        absolute = canonical_path(path)
+        stored = stored_location(absolute)
         def write(conn):
-            conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (self.table + path,))
+            conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (self.table + stored,))
             row = conn.execute(f"SELECT workspace_id FROM {self.table} WHERE path=%s AND deleted_at IS NULL",
-                               (path,)).fetchone()
+                               (stored,)).fetchone()
             if row:
                 if preferred_id and row["workspace_id"] != preferred_id:
                     raise ValueError("Workspace path already has a different identity")
                 return row["workspace_id"]
-            return self.ensure(preferred_id or new_id(), path, connection=conn)
+            return self.ensure(preferred_id or new_id(), absolute, connection=conn)
         return self.database.write(write)
 
     def deleted_under(self, paths, *, connection=None) -> list[str]:
         """Deleted Workspaces registered at or below these directories."""
-        roots = sorted({canonical_path(path) for path in paths if path})
+        roots = sorted({stored_path(path) for path in paths if path})
         if not roots:
             return []
         with nullcontext(connection) if connection is not None else self.database.read() as conn:
             rows = conn.execute(
                 f"SELECT w.workspace_id FROM {self.table} w JOIN unnest(%s::text[]) AS r(path) "
-                "ON w.path=r.path OR starts_with(w.path, rtrim(r.path,'/') || '/') "
+                f"ON w.path=r.path OR starts_with(w.path, {LOCATION_PREFIX_SQL.format(column='r.path')}) "
                 "WHERE w.deleted_at IS NOT NULL ORDER BY w.workspace_id", (roots,)).fetchall()
         return list(dict.fromkeys(row["workspace_id"] for row in rows))
 
@@ -204,7 +230,7 @@ class WorkspaceStore:
             "schema": "tfi.collaboration-descriptor.v2",
             "resource_id": row["workspace_id"], "title": row["title"], "summary": row["summary"],
             "status": "deleted" if row["deleted_at"] is not None else "active",
-            "attributes": {"path": row["path"]}, "relations": [], "project_ids": [],
+            "attributes": {"path": located_path(row["path"])}, "relations": [], "project_ids": [],
             "created_at": row["created_at"], "updated_at": row["updated_at"],
             "deleted_at": row["deleted_at"] or "",
         }

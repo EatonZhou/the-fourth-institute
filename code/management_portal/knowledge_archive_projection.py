@@ -1,7 +1,6 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
-import os
 import threading
 from pathlib import Path
 
@@ -9,12 +8,7 @@ from .notifications import publish_local_projection_change
 from .notifications.file_watch import RecursiveFileChangeWatcher
 
 
-ARCHIVE_ROOT = Path(
-    os.getenv(
-        "KNOWLEDGE_ARCHIVE_ROOT",
-        str(portal_path("staging_root") / "shared" / "knowledge_archive_jobs"),
-    )
-).expanduser()
+ARCHIVE_ROOT = portal_path("features") / "knowledge_archive_jobs"
 
 _WATCHER_LOCK = threading.Lock()
 _WATCHER: RecursiveFileChangeWatcher | None = None

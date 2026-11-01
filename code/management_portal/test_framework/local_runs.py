@@ -203,8 +203,6 @@ class PytestGroup:
         results_file.write_text("", encoding="utf-8")
         command, environment = self.command(items, group_dir)
         environment["PORTAL_TEST_RESULTS_FILE"] = str(results_file)
-        if self.lane == "isolated":
-            environment["PORTAL_ACCOUNT_HOST_HOME"] = str(group_dir.resolve() / "host-home")
         scratch: list[tuple[Path, Path]] = []
         container = None
         if self.lane == "isolated":
@@ -317,9 +315,9 @@ class PytestGroup:
     def protected_roots(self) -> list[Path]:
         if self.state_roots is not None:
             return list(self.state_roots)
-        from management_portal.test_framework.paths import state_root, user_state_root
+        from management_portal.test_framework.paths import slot_root, state_root
 
-        return [user_state_root(), state_root()]
+        return [state_root(), slot_root()]
 
     def sandbox(self, group_dir: Path) -> tuple[list[str], list[tuple[Path, Path]]]:
         if sys.platform != "linux" or not shutil.which("bwrap"):
@@ -382,7 +380,8 @@ class PytestGroup:
             environment["PORTAL_TEST_POSTGRES_BIN"] = postgres["bin"]
             environment["PORTAL_TEST_POSTGRES_LIB"] = postgres["lib"]
         if self.lane == "live":
-            for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
+            # Live cases act on the instance that launched the run.
+            for key in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "PORTAL_INSTANCE_ROOT", "PORTAL_DEPLOYMENT"):
                 if os.environ.get(key):
                     environment[key] = os.environ[key]
         environment.update({
@@ -571,9 +570,10 @@ class ContainerPytest:
             entries = args_file.read_text(encoding="utf-8").splitlines()
             paths.update(entry.split("::", 1)[0] for entry in entries)
             protected = [p.resolve() for p in protected]
-            from management_common.instance_paths import secrets_dir
-            from management_common.provider_account_paths import provider_root, PROVIDERS
-            protected += [secrets_dir().resolve(), *(provider_root(p).resolve() for p in PROVIDERS)]
+            from management_common.instance_manifest import instance_secrets_root
+            from management_portal.execution.account_registrations import registrations
+            protected += [instance_secrets_root().resolve(), *(Path(row["config"]["account_dir"]).resolve()
+                for row in registrations() if row["kind"] == "subscription_login")]
             for name in sorted(paths):
                 relative = Path(name)
                 if relative.is_absolute() or ".." in relative.parts:
@@ -581,7 +581,7 @@ class ContainerPytest:
                 original = root / relative
                 if not original.exists():
                     continue
-                if (any(part.startswith('.env') or part in {'.git', '.ssh', '.gnupg', 'portal_instances', '.codex-accounts', '.claude-accounts', '.kimi-accounts', '.antigravity-accounts'} for part in relative.parts)
+                if (any(part.startswith('.env') or part in {'.git', '.ssh', '.gnupg', '.codex-accounts', '.claude-accounts', '.kimi-accounts', '.antigravity-accounts'} for part in relative.parts)
                         or original.suffix.lower() in {'.env', '.key', '.pem', '.p12'}
                         or any(original.resolve().is_relative_to(p) for p in protected)):
                     continue
@@ -694,7 +694,7 @@ def _container_worker(plan_file: Path) -> int:
                 '--mount', f"type=bind,src={plan['source']},dst=/app,readonly",
                 '--mount', f"type=bind,src={plan['artifacts']},dst=/artifacts",
                 '--entrypoint', '/usr/bin/env', info['Id'], '-i', 'PATH=/usr/local/bin:/usr/bin:/bin',
-                'HOME=/tmp', 'PORTAL_ACCOUNT_HOST_HOME=/tmp/host-home', 'LANG=C.UTF-8', 'PYTHONUNBUFFERED=1', 'PYTHONIOENCODING=utf-8', 'PYTHONDONTWRITEBYTECODE=1',
+                'HOME=/tmp', 'LANG=C.UTF-8', 'PYTHONUNBUFFERED=1', 'PYTHONIOENCODING=utf-8', 'PYTHONDONTWRITEBYTECODE=1',
                 'PORTAL_TEST_RESULTS_FILE=/artifacts/results.jsonl', *plan['argv']]
         create_attempted = True
         created = _docker_control(plan, argv)

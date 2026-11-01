@@ -3,7 +3,7 @@ import copy
 import json
 
 import pytest
-from management_portal import capacity_alerts, device_identity_backend, portal_deployment_registry
+from management_portal import capacity_alerts, device_identity_backend
 
 
 @pytest.mark.parametrize('prefix', ['archive', 'tfi'])
@@ -66,25 +66,3 @@ def test_device_normalizer_keeps_identity_validation(prefix):
         with pytest.raises(ValueError):
             device_identity_backend._normalize_record({**record, **changes}, document)
     assert record == original
-
-
-@pytest.mark.parametrize('prefix', ['archive', 'tfi'])
-def test_deployment_reader_keeps_loopback_validation_and_file(prefix, tmp_path):
-    """部署读取拒绝退役标签及错误版本，规范格式仍校验回环地址且不改文件"""
-    path = tmp_path/'deployments.json'
-    instance = {'id': 'test', 'label': 'test', 'kind': 'exploration', 'origin': 'http://127.0.0.1:12345'}
-    payload = {'schema': f'{prefix}.portal-deployments.v1', 'instances': [instance]}
-    path.write_text(json.dumps(payload)); original, mtime = path.read_bytes(), path.stat().st_mtime_ns
-    if prefix == 'archive':
-        with pytest.raises(ValueError, match='unsupported deployment registry schema'):
-            portal_deployment_registry.load_portal_deployments(path)
-        assert (path.read_bytes(), path.stat().st_mtime_ns) == (original, mtime)
-        return
-    assert portal_deployment_registry.load_portal_deployments(path)[0].origin == instance['origin']
-    assert (path.read_bytes(), path.stat().st_mtime_ns) == (original, mtime)
-    for changes in [{'schema': f'{prefix}.portal-deployments.v2'}, {'instances': [{**instance, 'origin': 'http://192.0.2.1:12345'}]}]:
-        path.write_text(json.dumps({**payload, **changes}))
-        original, mtime = path.read_bytes(), path.stat().st_mtime_ns
-        with pytest.raises(ValueError):
-            portal_deployment_registry.load_portal_deployments(path)
-        assert (path.read_bytes(), path.stat().st_mtime_ns) == (original, mtime)

@@ -21,13 +21,7 @@ from typing import Any
 
 class ArtifactStore:
     def __init__(self, root: Path | None = None):
-        # Each installation keeps its Lineages' artifacts in its own staging root.
-        configured = os.environ.get("PORTAL_EFFECT_ARTIFACT_ROOT")
-        if root is None and configured is None:
-            configured = str(portal_path("staging_root") / "shared" / "effect_artifacts")
-        self.root = root if root is not None else Path(str(configured or ""))
-        if not self.root.is_absolute():
-            raise ValueError("Effect artifact root must be an absolute configured directory")
+        self.root = root if root is not None else portal_path("features") / "effect_artifacts"
 
     def _scope(self, lineage_id: str, activation_key: str) -> Path:
         return self.root / hashlib.sha256(lineage_id.encode()).hexdigest() / hashlib.sha256(activation_key.encode()).hexdigest()

@@ -37,6 +37,7 @@ class RecordRetries(unittest.TestCase):
     def test_persistent_denial_is_bounded_and_never_starts_a_duplicate(self):
         controller = services.WindowsServiceControl(Path("unused"))
         with patch.object(controller, "definition", return_value={"root": "fixture", "component": "nats"}), \
+                patch.object(services, "validate_definition", side_effect=lambda value, name: value), \
                 patch.object(services, "_open_record", side_effect=self.error(5)), \
                 patch.object(services.time, "monotonic", side_effect=[0, 0.1, 2.1]), \
                 patch.object(services.time, "sleep"), patch.object(services.subprocess, "Popen") as spawn:

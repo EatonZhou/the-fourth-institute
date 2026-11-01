@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from contextlib import contextmanager
 from typing import Any, Callable, Iterator
 
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 
 from .contracts import execution_timestamp
 from .scheduler_rows import compact_json, json_object
@@ -17,7 +17,7 @@ from .scheduler_rows import compact_json, json_object
 
 TRANSIENT_EVENTS_PER_EXECUTION = 256
 SHARED_SCHEDULER_POLL_SECONDS = 5.0
-SCHEDULER_CHANGE_CHANNEL = compatibility_value("execution_scheduler_change_channel", "tfi_execution_scheduler_changed")
+SCHEDULER_CHANGE_CHANNEL = "tfi_execution_scheduler_changed"
 # pg_trigger.tgtype of a FOR EACH ROW AFTER INSERT OR UPDATE OR DELETE trigger.
 SCHEDULER_TRIGGER_TYPE = 1 | 4 | 8 | 16
 

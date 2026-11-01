@@ -163,11 +163,13 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
             assert manager._stopping.is_set() and manager._restart_requested
             assert rollouts == []
 
-            source = tmp_path / 'source'
+            source = tmp_path / 'source/code'
             installer = source / 'scripts/tfi_release_install.py'
             installer.parent.mkdir(parents=True)
             installer.write_text('old startup environment', encoding='utf-8')
-            monkeypatch.setenv('PORTAL_EXECUTION_WORKER_SOURCE_ROOT', str(source))
+            from tests.cases.instance_test_support import write_instance
+            selected = write_instance(tmp_path / 'instance', code=source)
+            monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(selected))
             manager = ExecutionWorkerManager()
             installer.write_text('corrected startup environment', encoding='utf-8')
             monkeypatch.setattr(manager, '_roll_out', lambda: rollouts.append('rollout'))
@@ -193,20 +195,14 @@ def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monke
     with subtests.test(contract='test_worker_manager_uses_installed_generation_for_new_child'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             tmp_path = case_path
-            instance_root = tmp_path / "dev"
-            instance_root.mkdir()
-            generation_env = instance_root / "generation.env"
-            generation_env.write_text("PORTAL_BUILD_ID=worker-current\n", encoding="utf-8")
-            monkeypatch.setenv("PORTAL_INSTANCE", "dev")
-            monkeypatch.setenv("PORTAL_BUILD_ID", "started-build")
-            monkeypatch.setenv(
-                "PORTAL_EXECUTION_WORKER_GENERATION_ENV",
-                str(generation_env),
-            )
-            monkeypatch.setenv(
-                "PORTAL_EXECUTION_WORKER_HEALTH_PATH",
-                str(instance_root / "health.json"),
-            )
+            from tests.cases.instance_test_support import write_instance
+            selected = write_instance(tmp_path / 'instance')
+            monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(selected))
+            instance_root = selected / 'runtime'
+            generation_env = instance_root / 'deployments/release/generation.env'
+            generation_env.parent.mkdir(parents=True)
+            generation_env.write_text('PORTAL_BUILD_ID=worker-current\n')
+            monkeypatch.setenv('PORTAL_BUILD_ID', 'started-build')
 
             manager = ExecutionWorkerManager()
 

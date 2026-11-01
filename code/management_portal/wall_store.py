@@ -4,6 +4,7 @@ from functools import lru_cache
 from management_common.domain_database import DomainDatabase
 from management_common.relational_rows import identifier, read_rows, sync_rows
 from management_common.database_time import encode_times, decode_times
+from management_common.location_records import located_record, stored_record
 
 TIME_FIELDS = {'wall_jobs': ('created_at', 'completed_at', 'updated_at'),
                'wall_resident_cleanup': ('retry_at',)}
@@ -60,7 +61,7 @@ def write(c,value):
         for identity,item in value.get(name,{}).items():
             if key in item and item[key]!=identity:
                 raise ValueError('WALL identity mismatch')
-            rows.append(encode_times({key:identity,**item}, TIME_FIELDS.get(table, ())))
+            rows.append(encode_times(stored_record({key:identity,**item}), TIME_FIELDS.get(table, ())))
         sync_rows(c,table,(key,),tuple(k for k in fields if k!=key),rows,json_columns=tuple(k for k,v in fields.items() if v=='JSONB'))
     sync_rows(c,'wall_readers',('actor','project'),(),[{'actor':a,'project':p} for a,projects in value.get('reads',{}).items() for p in projects])
     for name in ('reads','reviews'):
@@ -78,7 +79,7 @@ class WallState:
 
     def read_projects(self):
         with database().read() as c:
-            return {row['id']: {key: value for key, value in row.items() if value is not None}
+            return {row['id']: located_record({key: value for key, value in row.items() if value is not None})
                     for row in read_rows(c, 'wall_projects')}
 
     def read(self,default=None):
@@ -96,7 +97,7 @@ class WallState:
             for name in ('reads','reviews'):
                 for r in read_rows(c,'wall_'+name):
                     value[name].setdefault(r['actor'],{}).setdefault(r['project'],{})[r['block']]=r['revision']
-            return value
+            return located_record(value)
 
     def replace(self,value):
         with self.transaction() as c:

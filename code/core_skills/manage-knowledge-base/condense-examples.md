@@ -10,7 +10,7 @@
 
 ## 凝练单个条目
 
-> “凝练 `${share_root}/Projects/FlowTango/knowledge_base/decision/xxx.md`，先展示改动。”
+> “凝练 `projects:FlowTango/knowledge_base/decision/xxx.md`，先展示改动。”
 
 > “这个 Markdown 条目太冗长了，在不改变原意的情况下压缩正文。”
 

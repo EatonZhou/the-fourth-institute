@@ -15,6 +15,7 @@ from management_portal.society_service.state_store import LineageDataStore
 from tests.cases.society_service_test_support import (
     install_resource_boundary, publish_registered_lineage_members,
 )
+from tests.cases.instance_test_support import lineage_folders
 
 
 LINEAGE_ID = "lineage_303030303030"
@@ -22,7 +23,7 @@ LINEAGE_ID = "lineage_303030303030"
 
 @pytest.fixture(autouse=True)
 def object_resources(monkeypatch, tmp_path):
-    monkeypatch.setenv("PORTAL_LINEAGE_FOLDER_ROOT", str(tmp_path / "lineages"))
+    lineage_folders(monkeypatch, tmp_path / "lineages")
     install_resource_boundary(monkeypatch)
 
 

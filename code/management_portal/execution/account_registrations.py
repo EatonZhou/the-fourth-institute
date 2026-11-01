@@ -13,7 +13,11 @@ from psycopg.types.json import Jsonb
 
 from management_common.domain_database import DomainDatabase
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
-from management_portal.model_api_store import now
+from datetime import datetime, timezone
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 PROVIDER_KINDS = {
     "antigravity": ("subscription_login",),
@@ -107,6 +111,8 @@ def _validate(data):
         raise invalid("备用账号不能重复或指向自身")
     if "is_default" in config and type(config["is_default"]) is not bool:
         raise invalid("is_default 必须是 boolean")
+    if kind == "subscription_login" and "account_dir" not in config:
+        raise invalid("订阅账号必须指定 config.account_dir")
     if "account_dir" in config:
         from management_common.provider_account_paths import canonical_directory
         try:
@@ -134,7 +140,7 @@ def create_registration(data, actor):
             if c.execute("SELECT 1 FROM registrations WHERE account_id=%s", (data["account_id"],)).fetchone():
                 return None
             _check_relationships(c, data)
-            from .account_hosting import prepare_registration_directory
+            from management_common.provider_account_paths import prepare_registration_directory
             try:
                 created = prepare_registration_directory(data)
             except (OSError, ValueError) as exc:
@@ -169,7 +175,7 @@ def update_registration(account_id, changes, expected_version, actor):
         if row["kind"] == "subscription_login":
             if not row["config"].get("account_dir"):
                 raise invalid("订阅登记必须保留 config.account_dir")
-            from .account_hosting import registered_home
+            from management_common.provider_account_paths import registered_home
             if not registered_home(row).is_dir():
                 raise invalid("账号目录不存在")
         if row["config"].get("is_default"):

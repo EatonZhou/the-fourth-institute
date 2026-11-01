@@ -15,6 +15,7 @@ from management_portal.test_framework.catalog import source_digests, planned_sou
 from management_portal.test_framework.catalog_source import explicit_cases, read_case_ids
 from management_portal.test_framework.models import CatalogError, Implementation
 from management_portal.test_framework.records import RunRecords
+from tests.cases.instance_test_support import select_instance
 
 
 READERS = (
@@ -158,13 +159,12 @@ def test_tfi_framework_javascript_deployment_reader():
 
 @pytest.fixture(autouse=True)
 def retired_reader_settings_do_not_enable_aliases(tmp_path, monkeypatch):
-    site = tmp_path / "site.json"
-    site.write_text(json.dumps({"deployment": {"compatibility": {
+    root = select_instance(monkeypatch, tmp_path / "instance", site={"deployment": {"compatibility": {
         "format_namespaces": ["archive."],
         "domain_values": {"test_framework.schema_aliases": {
             f"tfi.{tag}.v1": [f"archive.{tag}.v1"] for tag in READERS}},
-    }}}))
-    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(site))
+    }}}).root
+    site = root / "site.json"
     before = site.read_bytes()
     yield
     assert site.read_bytes() == before

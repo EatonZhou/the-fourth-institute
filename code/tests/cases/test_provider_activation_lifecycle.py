@@ -1,7 +1,6 @@
 """Activation owns service coordinates; package availability is not readiness."""
 import json
 import plistlib
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -14,77 +13,88 @@ from management_portal.execution.provider_preparation import PreparationError
 
 @pytest.fixture(params=['win32', 'darwin'])
 def native(request, monkeypatch, tmp_path):
-    from scripts import tfi_release_platform_windows as win, tfi_release_platform_macos as mac
-    from management_common import instance_config
+    """Native daemons are registered components defined through the instance."""
+    from scripts import instance_services, tfi_release_platform_windows as win, tfi_release_platform_macos as mac
+    from tests.cases.provider_service_test_support import FakeControl, provider_instance, real_provider_links
+    links = real_provider_links()
+    root, _ = provider_instance(monkeypatch, tmp_path, components=('claude-code', 'kimi-code'))
     adapter = win if request.param == 'win32' else mac
-    target = dict(service_prefix='tfi-owned', install_root=str(tmp_path),
-                  shared_code_root=str(units.SOURCE_ROOT), data_roots={}, python='/python', windows_service_mode='user')
+    directory = tmp_path / 'definitions'
+    directory.mkdir()
     monkeypatch.setattr(units, 'sys', SimpleNamespace(platform=request.param))
-    monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(tmp_path/'config/target.json'))
-    # An installed instance: its state file exists and records this source tree.
-    (tmp_path/instance_config.STATE_FILE).write_text('{}')
-    monkeypatch.setattr(instance_config, 'read_installation',
-                        lambda _: {'schema': instance_config.STATE_SCHEMA, 'target': target})
-    monkeypatch.setattr(adapter, 'unit_directory', lambda: tmp_path)
-    controller = Mock()
-    controller.status.return_value = {'active': 'inactive'}
-    controller.run.return_value = SimpleNamespace(returncode=1)
-    monkeypatch.setattr(adapter, 'service_controller', lambda: controller)
-    if request.param == 'win32':
-        monkeypatch.setattr(adapter, 'verify_service', lambda *a: None)
-    return adapter, target, controller, tmp_path
+    monkeypatch.setattr(instance_services, 'platform_name', lambda: 'windows' if request.param == 'win32' else 'macos')
+    monkeypatch.setattr(instance_services, 'definition_directory', lambda instance: directory)
+    controller = FakeControl(directory, adapter.unit_path)
+    monkeypatch.setattr(instance_services, 'controller', lambda instance: controller)
+    monkeypatch.setattr(updates, 'STATE_ROOT', tmp_path / 'state')
+    yield adapter, root, controller, directory
+    assert real_provider_links() == links
+
+
+def _definition(adapter, root, directory, component):
+    from management_common.instance_manifest import load
+    instance = load(root)
+    name = instance.service_name(component) + ('' if adapter.__name__.endswith('_windows') else '.service')
+    return name, adapter.unit_path(directory, name), adapter.manifest_unit_text(instance, component)
 
 
 def test_native_absent_stopped_and_running_daemons(native):
-    adapter, target, controller, directory = native
-    for component in ['claude', 'kimi']:
-        unit = f'portal-{component}-code.service'
-        name = adapter.unit_name(target, component)
+    adapter, root, controller, directory = native
+    for component in ['claude-code', 'kimi-code']:
+        unit = f'portal-{component}.service'
+        name, path, text = _definition(adapter, root, directory, component)
         assert units.provider_runtime_services(unit) == ()
-        path = adapter.unit_path(directory, name)
-        path.write_text(adapter.unit_text(target, component, (component,)))
-        controller.status.return_value = {'active': 'inactive'}
+        path.write_text(text)
         assert units.provider_runtime_services(unit) == ()
-        controller.status.return_value = {'active': 'active'}
+        controller.active.add(name)
         assert units.provider_runtime_services(unit) == (name,)
-        path.write_text('{}')
-        with pytest.raises(ValueError):
+        if adapter.__name__.endswith('_windows'):
+            foreign = json.loads(text); foreign['environment']['PORTAL_INSTANCE_ROOT'] = '/another'
+            path.write_text(json.dumps(foreign))
+        else:
+            foreign = plistlib.loads(text.encode()); foreign['EnvironmentVariables']['PORTAL_INSTANCE_ROOT'] = '/another'
+            path.write_bytes(plistlib.dumps(foreign))
+        with pytest.raises(ValueError, match='another instance'):
             units.provider_runtime_services(unit)
-        controller.restart.assert_not_called()
+        assert not [call for call in controller.calls if call[0] in {'start', 'restart'}]
 
 
 def test_native_first_start_rolls_back_failed_health(native, monkeypatch):
-    adapter, target, controller, directory = native
-    monkeypatch.setattr(updates, 'STATE_ROOT', directory)
-    name = adapter.unit_name(target, 'claude')
-    monkeypatch.setattr(adapter, 'register_services', Mock(return_value=[name]))
-    remove = Mock()
+    from management_common.instance_manifest import load
+    adapter, root, controller, directory = native
+    document = json.loads((root / 'instance.json').read_text())
+    document['services']['components'].remove('claude-code')
+    (root / 'instance.json').write_text(json.dumps(document))
+    removed = []
+
+    def register(target, definitions, **_):
+        for name, text in definitions.items():
+            adapter.unit_path(target, name).write_text(text)
+        return list(definitions)
+
+    def remove(target, names):
+        removed.extend(names)
+        for name in names:
+            adapter.unit_path(target, name).unlink()
+    monkeypatch.setattr(adapter, 'register_services', register)
     monkeypatch.setattr(adapter, 'remove_services', remove)
+
     def fail():
         raise TimeoutError('not ready')
     with pytest.raises(TimeoutError):
         units.start_claude_service(wait_ready=fail)
-    controller.start.assert_called_once_with(name)
-    controller.stop.assert_called_once_with(name)
-    remove.assert_called_once_with(directory, [name])
+    name = removed[0]
+    assert [call for call in controller.calls if call[0] in {'start', 'stop'}] == [('start', name), ('stop', name)]
+    assert 'claude-code' not in load(root).document['services']['components']
 
 
-def test_macos_foreign_loaded_job_rejected(native):
-    adapter, target, controller, directory = native
-    if units.sys.platform != 'darwin':
-        return
-    name = adapter.unit_name(target, 'claude')
-    adapter.unit_path(directory, name).write_text(adapter.unit_text(target, 'claude', ('claude',)))
-    controller.run.return_value = SimpleNamespace(returncode=0, stdout='path = /foreign/job.plist\n')
-    with pytest.raises(ValueError, match='foreign loaded'):
-        units.provider_runtime_services('portal-claude-code.service')
-
-
-def test_codex_update_uses_account_controller_not_daemon_directory(monkeypatch, tmp_path):
+def test_codex_update_restarts_account_hosts_through_instance_controller(monkeypatch, tmp_path):
+    from scripts import instance_services
+    from tests.cases.provider_service_test_support import provider_instance
+    provider_instance(monkeypatch, tmp_path)
     monkeypatch.setattr(updates, 'sys', SimpleNamespace(platform='win32'))
     own = Mock(); own.status.return_value = {'active': 'active'}
-    monkeypatch.setattr(units, '_native_codex_controller', lambda: own)
-    monkeypatch.setattr(updates, '_service_control', lambda: pytest.fail('daemon controller used for account host'))
+    monkeypatch.setattr(instance_services, 'controller', lambda instance: own)
     monkeypatch.setattr(updates, '_active_executions', lambda _: 0)
     runtime = updates.CodexRuntime()
     monkeypatch.setattr(updates.CodexRuntime, 'services', property(lambda _: ('account-host',)))
@@ -101,18 +111,6 @@ def test_windows_user_restart_uses_same_directory():
     controller.restart('owned-account')
     controller.stop.assert_called_once_with('owned-account')
     controller.start.assert_called_once_with('owned-account')
-
-
-def test_scm_installer_registers_optional_daemons_without_starting(monkeypatch):
-    from scripts import tfi_release_install as install
-    seen = []
-    monkeypatch.setattr(install, 'unit_directory', lambda: Path('/units'))
-    monkeypatch.setattr(install, 'unit_text', lambda _, c: c)
-    monkeypatch.setattr(install, 'unit_name', lambda _, c: c)
-    monkeypatch.setattr(install, 'platform_adapter', lambda: SimpleNamespace(register_services=lambda d,u: seen.append(u)))
-    install.register_services({'windows_service_mode': 'scm'})
-    assert set(seen[0]) == set(install.COMPONENTS) | {'claude','kimi'}
-    assert install.registered_components({'windows_service_mode':'user'}) == install.COMPONENTS
 
 
 @pytest.mark.parametrize('where', ['download', 'dependency_install', 'executable_validation', 'service_activation'])
@@ -215,42 +213,15 @@ def test_kimi_account_restart_rolls_back_previous_runtime(monkeypatch,tmp_path):
     assert not error.value.rollback_failed
 
 
-def test_native_lifecycle_stops_and_restores_only_previously_running_services(tmp_path):
-    from scripts import tfi_release_provider_services as services
-    controller=Mock()
-    state={'running':True, 'unused':False}
-    controller.status.side_effect=lambda n: {'active':'active' if state[n] else 'inactive','pid':1 if state[n] else 0}
-    controller.stop.side_effect=lambda n: state.update({n:False})
-    plan=services._native_plan({'install_root':str(tmp_path)},'windows',['running','unused'],{})
-    services.stop_services(plan,controller)
-    services.start_services(plan,controller)
-    controller.start.assert_called_once_with('running')
-
-
-def test_codex_update_rejects_active_service_without_owned_definition(monkeypatch, tmp_path):
-    from management_common import instance_config
-    from scripts import tfi_release_provider_services as owners, tfi_release_platform_windows as win
-    monkeypatch.setattr(units, 'sys', SimpleNamespace(platform='win32'))
-    monkeypatch.setenv('PORTAL_PATHS_CONFIG', str(tmp_path/'config/target.json'))
-    monkeypatch.setattr(instance_config,'read_installation',lambda _: {'target':{}})
-    monkeypatch.setattr(win,'unit_directory',lambda:tmp_path)
-    monkeypatch.setattr(owners,'owned_services',lambda *a:{'names':['owned']})
-    units.verify_native_codex_services(['owned'])
-    with pytest.raises(ValueError,match='owned service'):
-        units.verify_native_codex_services(['foreign'])
-
-
-def test_windows_owned_daemon_discovery_rejects_other_instance(native, monkeypatch):
-    if units.sys.platform != 'win32':
-        return
-    from scripts import tfi_release_provider_services as owners
-    adapter,target,_,directory=native
-    monkeypatch.setattr(owners,'sys',units.sys)
-    name=adapter.unit_name(target,'kimi')
-    path=adapter.unit_path(directory,name)
-    path.write_text(adapter.unit_text(target,'kimi',()))
-    assert owners._native_daemons(target,directory,adapter)==[name]
-    definition=json.loads(path.read_text());definition['root']=str(directory/'foreign')
-    path.write_text(json.dumps(definition))
-    with pytest.raises(ValueError,match='another instance'):
-        owners._native_daemons(target,directory,adapter)
+def test_codex_update_rejects_service_that_is_not_a_registered_account(native):
+    from management_common.host_instances import add_service_component
+    adapter, root, controller, directory = native
+    instance = add_service_component(root, 'codex-app-server@owned')
+    name, path, text = _definition(adapter, root, directory, 'codex-app-server@owned')
+    path.write_text(text)
+    units.verify_native_codex_services([name])
+    with pytest.raises(ValueError, match='not a registered account host'):
+        units.verify_native_codex_services([name.replace('owned', 'foreign')])
+    path.write_text(text.replace(str(instance.root), '/another'))
+    with pytest.raises(ValueError, match='another instance'):
+        units.verify_native_codex_services([name])

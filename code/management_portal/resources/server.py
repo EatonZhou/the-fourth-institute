@@ -7,6 +7,7 @@ import os
 import socket
 import socketserver
 from management_common import loaded_modules
+from management_common.instance_manifest import load as load_instance
 from management_common.service_shutdown import DrainingStreamServer, serve_until_stopped, stop_workers
 from management_common.service_endpoint import LocalServiceSocketMixin, service_endpoint
 import sys
@@ -363,7 +364,7 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 "build_id": str(os.getenv("PORTAL_BUILD_ID", "") or ""),
                 "service": {
                     "schema": RESOURCE_SERVICE_SCHEMA,
-                    "instance": str(os.getenv("PORTAL_INSTANCE", "") or ""),
+                    "instance": load_instance().name,
                     "notifications": self.publisher.health(),
                 },
             }

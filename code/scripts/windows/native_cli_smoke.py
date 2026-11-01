@@ -102,9 +102,7 @@ def agent_branches(provider, python, binary, root, code, evidence):
                'LOCALAPPDATA', 'APPDATA', 'USERPROFILE', 'PROGRAMFILES', 'PROGRAMFILES(X86)',
                'PROGRAMDATA', 'LANG', 'LD_LIBRARY_PATH'}
     env = {key: value for key, value in os.environ.items() if key.upper() in allowed}
-    env.update(PYTHONUTF8='1', PORTAL_NO_SITE_ENV='1', PORTAL_NO_PATHS_ENV='1',
-               PORTAL_PROVIDER_STAGING_DIR=str(root / 'staging'),
-               PORTAL_SHARE_ROOT=str(root / 'share'))
+    env.update(PYTHONUTF8='1', PORTAL_INSTANCE_ROOT=os.environ['PORTAL_INSTANCE_ROOT'])
     try:
         with (evidence / f'{provider}-branches.log').open('w', encoding='utf-8') as log:
             result = run_process(command, env=env, cwd=root, stdout=log, stderr=subprocess.STDOUT,
@@ -211,6 +209,29 @@ def kimi_probe(binary, root):
         fixture.close()
 
 
+def disposable_instance(root, code):
+    """A manifest-only instance for in-process adapters; no services or database.
+
+    Its state stays under the work directory, which the runner deletes.
+    """
+    from management_common.instance_manifest import SCHEMA, validate
+    root = root.resolve()
+    document = {
+        'schema': SCHEMA, 'instance_id': 'native-cli-' + os.urandom(6).hex(), 'name': 'native-cli',
+        'created_at': '2026-11-01T00:00:00Z', 'seed_version': 'native-cli',
+        'deployments': {'release': {'kind': 'release', 'code_root': str(code.resolve()), 'web_port': 28986}},
+        'network': {'bind': '127.0.0.1', 'entry_port': 28986, 'postgres_port': 28987, 'nats_port': 28988},
+        'services': {'prefix': 'tfi-native-cli', 'components': ['postgres', 'nats', 'resource', 'execution',
+                                                                'society', 'worker', 'web']},
+        'dependencies': {'postgres': {key: str(root / 'postgres' / key) for key in ('bin', 'lib', 'share')}},
+    }
+    validate(root, document)
+    root.mkdir(parents=True)
+    (root / 'instance.json').write_text(json.dumps(document), encoding='utf-8')
+    (root / 'site.json').write_text('{}', encoding='utf-8')
+    return root
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--code', type=Path, required=True)
@@ -226,10 +247,16 @@ def main():
     root = args.work.resolve()
     root.mkdir(parents=True)
     sys.path.insert(0, str(args.code.resolve()))
+    os.environ['PORTAL_INSTANCE_ROOT'] = str(disposable_instance(root / 'instance', args.code))
+    # Provider programs are code-owned (dependencies/providers beside the code).
+    # Keep this probe's downloads and current links in the disposable work tree.
+    from management_common import code_environment
+    runtimes = root / 'runtimes'
+    runtimes.mkdir()
+    code_environment.provider_directory = lambda instance=None: runtimes
     from management_portal.execution import provider_updates as updates
     from management_portal.opencode_runtime import OpenCodeRuntime
-    updates.RUNTIMES = root / 'runtimes'
-    updates.RUNTIMES.mkdir()
+    updates.RUNTIMES = runtimes
     receipt = {'schema': 'tfi.windows-native-cli.v1', 'source_commit': os.environ.get('TFI_PACKAGE_SHA', ''),
                'process_elevated': False, 'inherited_host_job': False,
                'real_credentials': False, 'external_inference': False, 'providers': {}}

@@ -21,12 +21,7 @@ IGNORE_COLLECTION = "auto_registration_ignore"
 IGNORE_SCHEMA = "tfi.resource-auto-ignores.v1"
 DEFAULT_INTERVAL_SECONDS = 24 * 60 * 60
 DEFAULT_INITIAL_DELAY_SECONDS = 60
-DEFAULT_RUN_STATE_PATH = Path(
-    read_product_env(
-        "PORTAL_RESOURCE_AUTO_REGISTER_STATE_PATH",
-        str(portal_path("staging_root") / "shared" / "portal_runtime" / "resource-auto-registration.last-run"),
-    )
-).expanduser()
+DEFAULT_RUN_STATE_PATH = portal_path("runtime") / "resource-auto-registration.last-run"
 
 
 def _normalized_path(value: str | Path) -> str:

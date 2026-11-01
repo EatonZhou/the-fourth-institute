@@ -1,4 +1,4 @@
-"""发行安装与实例隔离回归。
+"""Desktop startup drives the shared installer for the registered default instance.
 
 :module: operations.deployment
 :design: decision_d88306d0bd17
@@ -8,211 +8,177 @@ import contextlib
 import io
 import json
 from pathlib import Path
-import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "code"))
+from management_common.instance_manifest import load
 from scripts import tfi_windows_launcher as launcher
 from scripts import portal_setup
 from scripts import tfi_release_install as installer
+from tests.cases.instance_test_support import write_instance
 
 
 class DesktopStartup(unittest.TestCase):
     def setUp(self):
-        # Startup workflows use simulated services and should not probe the
-        # machine running the test for available TCP ports.
-        ports = patch.object(launcher, 'choose_ports', side_effect=lambda *_: {
-            'web': 28199, 'postgres': 56432, 'nats': 14223})
-        ports.start()
-        self.addCleanup(ports.stop)
-
-    def test_elevated_launch_stops_before_initializing_or_touching_existing_state(self):
-        flow = launcher.DefaultStartup(Path('/unused'))
-        with patch.object(launcher, 'is_elevated_process', return_value=True), \
-                patch.object(flow, 'initialize') as initialize, \
-                patch.object(flow, 'state') as state, patch.object(flow, 'execute') as execute:
-            with self.assertRaisesRegex(RuntimeError, '不要选择“以管理员身份运行”'):
-                flow.run()
-        initialize.assert_not_called()
-        state.assert_not_called()
-        execute.assert_not_called()
-
-    def setup_flow(self, platform):
-        flow = launcher.DefaultStartup(platform)
-        # Tests of initialization exercise the authoritative setup fallback.
-        check = patch.object(flow, 'account_configured', return_value=False)
-        check.start()
-        self.addCleanup(check.stop)
-        bundle = platform / ".build/w/engineering/manifest.json"
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.platform = Path(temporary.name) / "program"
+        self.root = Path(temporary.name) / "instances/example_instance"
+        bundle = self.platform / ".build/w/engineering/manifest.json"
         bundle.parent.mkdir(parents=True)
         bundle.write_text(json.dumps({"run_id": "fixture"}))
-        return flow
+        self.flow = launcher.DefaultStartup(self.platform)
+        self.exists = False
+        for name, value in (("registered", lambda: self.exists),
+                            ("instance", lambda: load(self.root)),
+                            ("engineering", lambda: bundle)):
+            patcher = patch.object(self.flow, name, side_effect=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
-    def installed(self, flow):
-        target = json.loads((flow.platform / ".build/windows/targets/example_instance.json").read_text())
-        flow.root.mkdir(parents=True, exist_ok=True)
-        state = {"target": target, "completed": ["database"], "stages": [{"status": "installed"}]}
-        from management_common.instance_config import write_installation
-        write_installation(flow.root, state)
-        return state
+    def created(self):
+        write_instance(self.root)
+        self.exists = True
 
-    def test_first_launch_initializes_then_opens_registration_and_next_launch_keeps_accounts(self):
-        """安装与实例回归：first launch initializes then opens registration and next launch keeps accounts。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            flow = self.setup_flow(Path(tmp))
-            actions = []
-            accounts_exist = False
-            def execute(argv):
-                nonlocal accounts_exist
-                action = "prepare" if Path(argv[1]).name == "prepare_install.py" else argv[2]
-                actions.append(action)
-                if action == "install":
-                    self.installed(flow)
-                elif action == "first-admin":
-                    self.assertIn("--if-needed", argv)
-                    if accounts_exist:
-                        return '{"status":"already_configured"}'
-                    secrets = Path(flow.state()["target"]["data_roots"]["secrets_dir"])
-                    secrets.mkdir(parents=True)
-                    (secrets / "first-admin-link.txt").write_text("http://127.0.0.1:28199/join#invite=test-token")
-                    return '{"status":"setup_link_created"}'
-                return "{}"
-            with patch.object(flow, "execute", side_effect=execute), \
-                    patch.object(flow, "running_url", return_value=None), \
-                    patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199") as ready:
-                self.assertEqual(flow.run(), "http://127.0.0.1:28199/join#invite=test-token")
-                self.assertEqual(actions, ["prepare", "install", "first-admin"])
-                ready.assert_not_called()
-                before = (flow.root / "installation.json").read_bytes()
-                accounts_exist = True
-                actions.clear()
-                self.assertEqual(flow.run(), "http://127.0.0.1:28199/")
-                self.assertEqual(actions, ["start", "first-admin"])
-                ready.assert_called_once()
-                self.assertEqual(before, (flow.root / "installation.json").read_bytes())
+    def test_elevated_launch_stops_before_initializing_or_touching_existing_state(self):
+        with patch.object(launcher, 'is_elevated_process', return_value=True), \
+                patch.object(self.flow, 'initialize') as initialize, \
+                patch.object(self.flow, 'execute') as execute:
+            with self.assertRaisesRegex(RuntimeError, '不要选择“以管理员身份运行”'):
+                self.flow.run()
+        initialize.assert_not_called()
+        execute.assert_not_called()
+        self.flow.instance.assert_not_called()
 
-    def test_healthy_reopen_does_not_start_services_or_rewrite_installation(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            flow = self.setup_flow(Path(tmp))
-            with patch.object(flow, 'execute'):
-                flow.initialize()
-            self.installed(flow)
-            before = (flow.root / 'installation.json').read_bytes()
-            with patch.object(flow, 'running_url', return_value='http://127.0.0.1:28199'), \
-                    patch.object(flow, 'account_configured', return_value=True), \
-                    patch.object(flow, 'execute', return_value='{"status":"already_configured"}') as execute, \
-                    patch.object(flow, 'wait_ready') as wait:
-                self.assertEqual(flow.run(), 'http://127.0.0.1:28199/')
-            execute.assert_not_called()
-            wait.assert_not_called()
-            self.assertEqual(before, (flow.root / 'installation.json').read_bytes())
-            self.assertEqual([t['stage'] for t in flow.timings], ['running_check', 'account_check'])
+    def test_first_launch_creates_then_opens_registration_and_next_launch_keeps_accounts(self):
+        actions = []
+        accounts_exist = False
+
+        def execute(argv):
+            action = argv[2]
+            actions.append(action)
+            if action == "create":
+                self.assertEqual(argv[argv.index("--name") + 1], "example_instance")
+                self.created()
+            elif action == "first-admin":
+                self.assertEqual(argv[3:5], ["--instance", "example_instance"])
+                self.assertIn("--if-needed", argv)
+                if accounts_exist:
+                    return '@TFI_PROGRESS {"message": "x"}\n{\n  "status": "already_configured"\n}\n'
+                secrets = self.root / "secrets"
+                secrets.mkdir(parents=True, exist_ok=True)
+                (secrets / installer.FIRST_ADMIN_FILE).write_text("http://127.0.0.1:28086/join#invite=test-token")
+                return '{\n  "status": "setup_link_created"\n}\n'
+            return "{}"
+        with patch.object(self.flow, "execute", side_effect=execute), \
+                patch.object(self.flow, "account_configured", return_value=False), \
+                patch.object(self.flow, "definitions_current", return_value=True), \
+                patch.object(self.flow, "running_url", return_value=None):
+            self.assertEqual(self.flow.run(), "http://127.0.0.1:28086/join#invite=test-token")
+            self.assertEqual(actions, ["create", "first-admin"])
+            before = (self.root / "instance.json").read_bytes()
+            accounts_exist = True
+            actions.clear()
+            self.assertEqual(self.flow.run(), "http://127.0.0.1:28086/")
+            self.assertEqual(actions, ["start", "first-admin"])
+            self.assertEqual(before, (self.root / "instance.json").read_bytes())
+
+    def test_healthy_reopen_does_not_start_services(self):
+        self.created()
+        with patch.object(self.flow, 'running_url', return_value='http://127.0.0.1:28086'), \
+                patch.object(self.flow, 'definitions_current', return_value=True), \
+                patch.object(self.flow, 'account_configured', return_value=True), \
+                patch.object(self.flow, 'execute') as execute:
+            self.assertEqual(self.flow.run(), 'http://127.0.0.1:28086/')
+        execute.assert_not_called()
+        self.assertEqual([t['stage'] for t in self.flow.timings], ['running_check', 'account_check'])
+
+    def test_replaced_code_runs_the_installers_code_update_instead_of_start(self):
+        self.created()
+        with patch.object(self.flow, 'definitions_current', return_value=False), \
+                patch.object(self.flow, 'running_url') as running, \
+                patch.object(self.flow, 'account_configured', return_value=True), \
+                patch.object(self.flow, 'execute') as execute:
+            self.flow.run()
+        self.assertEqual(execute.call_args.args[0][2:5], ['update-code', '--instance', 'example_instance'])
+        running.assert_not_called()
+
+    def test_definition_check_reports_a_previous_code_environment(self):
+        self.created()
+        instance = load(self.root)
+        with patch('scripts.instance_services.verify_definitions', return_value=None):
+            self.assertTrue(self.flow.definitions_current(instance))
+        with patch('scripts.instance_services.verify_definitions',
+                   side_effect=ValueError('Instance service definition differs from its manifest')):
+            self.assertFalse(self.flow.definitions_current(instance))
 
     def test_account_status_requires_positive_current_instance_response(self):
-        flow = launcher.DefaultStartup(Path('/unused'))
-        state = {'target': {'service_prefix': 'expected'}}
+        self.created()
+        instance = load(self.root)
+        expected = json.dumps({"instance": instance.name, "configured": True}).encode()
         for payload in [b'not json', b'[]', b'{}',
                         b'{"instance":"other","configured":true}',
-                        b'{"instance":"expected","configured":"true"}',
-                        b'{"instance":"expected","configured":false}',
-                        b'{"instance":"expected","configured":true}']:
+                        json.dumps({"instance": instance.name, "configured": "true"}).encode(),
+                        json.dumps({"instance": instance.name, "configured": False}).encode(),
+                        expected]:
             with self.subTest(payload=payload):
                 response = Mock(status=200)
                 response.read.return_value = payload
-                context = contextlib.nullcontext(response)
-                with patch.object(installer._LOCAL_HTTP, 'open', return_value=context):
-                    self.assertEqual(flow.account_configured('http://127.0.0.1:28199', state),
-                                     payload == b'{"instance":"expected","configured":true}')
+                with patch.object(installer._LOCAL_HTTP, 'open', return_value=contextlib.nullcontext(response)):
+                    self.assertEqual(self.flow.account_configured('http://127.0.0.1:28086', instance),
+                                     payload == expected)
         with patch.object(installer._LOCAL_HTTP, 'open', side_effect=OSError('offline')):
-            self.assertFalse(flow.account_configured('http://127.0.0.1:28199', state))
+            self.assertFalse(self.flow.account_configured('http://127.0.0.1:28086', instance))
 
-    def test_reopen_checks_owned_state_and_fresh_complete_health(self):
-        flow = launcher.DefaultStartup(Path('/unused'))
-        state = {'target': {}}
-        with patch.object(installer, 'owned_state', return_value=state) as owned, \
-                patch.object(installer, 'observed_status') as observe:
-            for status in ['unhealthy', 'installed']:
-                observe.return_value = {'status': status, 'url': 'http://127.0.0.1:28199'}
-                self.assertEqual(flow.running_url(),
-                                 'http://127.0.0.1:28199' if status == 'installed' else None)
-            owned.assert_called_with(flow.root)
-            observe.assert_called_with(state, request_timeout=0.5)
-        with patch.object(installer, 'owned_state', side_effect=ValueError('ownership mismatch')), \
-                patch.object(installer, 'observed_status') as observe:
-            with self.assertRaisesRegex(ValueError, 'ownership mismatch'):
-                flow.running_url()
-            observe.assert_not_called()
+    def test_reopen_trusts_only_fresh_complete_health_of_this_instance(self):
+        self.created()
+        instance = load(self.root)
+        with patch.object(installer, 'observed_status') as observe:
+            for status in ['unhealthy', 'running']:
+                observe.return_value = {'status': status, 'url': 'http://127.0.0.1:28086'}
+                self.assertEqual(self.flow.running_url(instance),
+                                 'http://127.0.0.1:28086' if status == 'running' else None)
+            observe.assert_called_with(instance, request_timeout=0.5)
 
-    def test_failed_install_never_attempts_start_or_opens_missing_state(self):
-        """安装与实例回归：failed install never attempts start or opens missing state。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            flow = self.setup_flow(Path(tmp))
-            def execute_command(argv):
-                if argv[2] == "install":
-                    raise RuntimeError("download failed")
-                return "{}"
-            with patch.object(flow, "execute", side_effect=execute_command) as execute, \
-                    patch.object(flow, "wait_ready") as ready:
-                with self.assertRaisesRegex(RuntimeError, "download failed"):
-                    flow.run()
-                self.assertEqual(execute.call_count, 2)
-                self.assertEqual(execute.call_args.args[0][2], "install")
-                ready.assert_not_called()
+    def test_failed_creation_never_attempts_start(self):
+        def execute(argv):
+            if argv[2] == "create":
+                raise RuntimeError("download failed")
+            return "{}"
+        with patch.object(self.flow, "execute", side_effect=execute) as execute:
+            with self.assertRaisesRegex(RuntimeError, "download failed"):
+                self.flow.run()
+        self.assertEqual([call.args[0][2] for call in execute.call_args_list], ["create"])
 
-    def test_preinstall_retry_rebuilds_bundle_and_keeps_target_parameters(self):
-        """安装与实例回归：preinstall retry rebuilds bundle and keeps target parameters。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            flow = self.setup_flow(Path(tmp))
-            target_path = flow.platform / ".build/windows/targets/example_instance.json"
-            target_path.parent.mkdir(parents=True)
-            original = json.dumps(launcher.make_target(flow.platform, "example_instance", {"run_id": "fixture"}))
-            target_path.write_text(original)
-            commands = []
-            with patch.object(flow, "execute", side_effect=lambda argv: commands.append(argv)):
-                flow.initialize()
-            self.assertEqual(Path(commands[0][1]).name, "prepare_install.py")
-            self.assertEqual(commands[1][2], "install")
-            self.assertEqual(target_path.read_text(), original)
-            self.assertFalse((flow.root / "installation.json").exists())
+    def test_incomplete_creation_is_retired_and_created_again_before_start(self):
+        self.created()
+        (self.root / "runtime").mkdir()
+        (self.root / "runtime/creation.json").write_text(json.dumps({"phase": "database", "status": "failed"}))
+        actions = []
 
-    def test_interrupted_initialization_resumes_before_start(self):
-        """安装与实例回归：interrupted initialization resumes before start。"""
-        with tempfile.TemporaryDirectory() as tmp:
-            flow = self.setup_flow(Path(tmp))
-            with patch.object(flow, "execute"):
-                flow.initialize()
-            flow.root.mkdir(parents=True, exist_ok=True)
-            state = self.installed(flow)
-            state.update(completed=[], stages=[])
-            from management_common.instance_config import write_installation
-            write_installation(flow.root, state)
-            actions = []
-            def execute(argv):
-                action = argv[2]
-                actions.append(action)
-                if action == "install":
-                    self.installed(flow)
-                return '{"status":"already_configured"}'
-            with patch.object(flow, "execute", side_effect=execute), \
-                    patch.object(flow, "wait_ready", return_value="http://127.0.0.1:28199") as ready:
-                flow.run()
-            self.assertEqual(actions, ["install", "first-admin"])
-            ready.assert_not_called()
+        def execute(argv):
+            actions.append(argv[2])
+            if argv[2] == "retire":
+                (self.root / "runtime/creation.json").unlink()
+                self.exists = False
+            elif argv[2] == "create":
+                self.created()
+            return '{"status":"already_configured"}'
+        with patch.object(self.flow, "execute", side_effect=execute), \
+                patch.object(self.flow, "account_configured", return_value=False):
+            self.flow.run()
+        self.assertEqual(actions, ["retire", "create", "first-admin"])
 
-    def test_other_instances_health_cannot_open_browser(self):
-        flow = launcher.DefaultStartup(Path("/unused"))
-        failed = {"status": "unhealthy"}
-        with patch.object(installer, "wait_for_ready", return_value=failed) as wait, \
-                patch.object(installer, "health_failure", return_value="/login: HTTP 500; web.log"):
-            with self.assertRaisesRegex(RuntimeError, "/login: HTTP 500; web.log"):
-                flow.wait_ready({"target": {}}, timeout=12)
-        wait.assert_called_once_with({"target": {}}, timeout=12, progress=flow.progress)
+    def test_installer_result_follows_progress_lines(self):
+        output = '@TFI_PROGRESS {"message": "正在启动"}\n{\n  "status": "setup_link_created"\n}\n'
+        self.assertEqual(launcher.last_result(output), {"status": "setup_link_created"})
+        self.assertEqual(launcher.last_result('{"status": "ok"}'), {"status": "ok"})
+        with self.assertRaisesRegex(ValueError, '没有返回结果'):
+            launcher.last_result('no json')
 
     def test_existing_account_does_not_create_or_replace_an_invitation(self):
-        """安装与实例回归：existing account does not create or replace an invitation。"""
         enrollment = Mock()
         enrollment.has_accounts.return_value = True
         with patch("management_portal.user_enrollment.UserEnrollment", return_value=enrollment), \
@@ -223,73 +189,25 @@ class DesktopStartup(unittest.TestCase):
         self.assertEqual(json.loads(output.getvalue()), {"status": "already_configured"})
         enrollment.create_invitation.assert_not_called()
 
-    def test_installer_existing_account_keeps_private_file_untouched(self):
-        """安装与实例回归：installer existing account keeps private file untouched。"""
+
+class PlatformInstances(unittest.TestCase):
+    def test_only_instances_running_this_platform_code_are_stopped_and_unregistered(self):
+        from management_common import host_instances
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            private = root / "secrets"
-            private.mkdir()
-            invitation = private / "first-admin-link.txt"
-            invitation.write_text("prior private material")
-            target = {"install_root": str(root), "ports": {"web": 28199},
-                      "data_roots": {"secrets_dir": str(private)}}
-            with patch.object(installer, "owned_state", return_value={"target": target}), \
-                    patch.object(installer, "runtime_python", return_value=sys.executable), \
-                    patch.object(installer, "code_root", return_value=root), \
-                    patch.object(installer, "run_checked", return_value='{"status":"already_configured"}') as run:
-                result = installer.first_admin(root, "admin", if_needed=True)
-            self.assertEqual(result["status"], "already_configured")
-            self.assertIn("--if-needed", run.call_args.args[0])
-            self.assertEqual(invitation.read_text(), "prior private material")
-
-class ReadinessWait(unittest.TestCase):
-    state = {'target': {'service_prefix': 'expected', 'windows_service_mode': 'user'}}
-
-    def snapshot(self, *, code=200, instance='expected', active=True):
-        return {'status': 'installed' if code == 200 and instance == 'expected' and active else 'unhealthy',
-                'url': 'http://127.0.0.1:28199',
-                'services': [{'service': 'web', 'active': 'active' if active else 'inactive',
-                              'pid': 123 if active else None}],
-                'checks': [{'route': '/api/health', 'ok': instance == 'expected',
-                            'payload': {'instance': instance}},
-                           {'route': '/login', 'ok': code == 200, 'http_status': code}]}
-
-    def run_wait(self, snapshots, timeout=120):
-        clock = [0.0]
-        def sleep(seconds):
-            clock[0] += seconds
-        progress = []
-        with patch.object(installer, 'observed_status', side_effect=snapshots) as observed, \
-                patch.object(installer.time, 'monotonic', side_effect=lambda: clock[0]), \
-                patch.object(installer.time, 'sleep', side_effect=sleep):
-            result = installer.wait_for_ready(self.state, timeout=timeout, progress=progress.append)
-        self.assertTrue(all(0 < call.kwargs['request_timeout'] <= 3 for call in observed.call_args_list))
-        return result, observed.call_count, clock[0], progress
-
-    def test_ready_services_return_without_sleep(self):
-        result, calls, elapsed, _ = self.run_wait([self.snapshot()])
-        self.assertEqual((result['status'], calls, elapsed), ('installed', 1, 0))
-
-    def test_persistent_login_error_stops_after_three_observations(self):
-        result, calls, elapsed, progress = self.run_wait([self.snapshot(code=500)] * 3)
-        self.assertEqual((result['status'], calls, elapsed), ('unhealthy', 3, 2))
-        self.assertTrue(any('/login' in message for message in progress))
-
-    def test_temporary_errors_and_service_unavailable_can_recover(self):
-        for codes in ([500, 200], [500, 503, 500, 200], [503] * 5 + [200]):
-            with self.subTest(codes=codes):
-                result, calls, _, _ = self.run_wait([self.snapshot(code=c) for c in codes])
-                self.assertEqual(result['status'], 'installed')
-                self.assertEqual(calls, len(codes))
-
-    def test_exited_services_and_other_instances_fail_immediately(self):
-        for snapshot in (self.snapshot(active=False), self.snapshot(instance='other')):
-            result, calls, elapsed, _ = self.run_wait([snapshot])
-            self.assertEqual((result['status'], calls, elapsed), ('unhealthy', 1, 0))
-
-    def test_retry_deadline_remains_bounded(self):
-        result, calls, elapsed, _ = self.run_wait([self.snapshot(code=503)] * 121)
-        self.assertEqual((result['status'], calls, elapsed), ('unhealthy', 121, 120))
+            base = Path(tmp)
+            platform = base / "program"
+            (platform / "code").mkdir(parents=True)
+            ours = load(write_instance(base / "ours", code=platform / "code"))
+            other = load(write_instance(base / "other"))
+            registry = {"ours": str(ours.root), "other": str(other.root)}
+            with patch.object(host_instances, "read_registry", return_value=registry):
+                self.assertEqual([i.root for i in launcher.platform_instances(platform)], [ours.root])
+                with patch.object(launcher.subprocess, "run") as run, \
+                        patch("scripts.instance_services.remove_definitions") as remove:
+                    launcher.stop_all(platform, unregister=True)
+            self.assertEqual(run.call_args.args[0][2:5], ["stop", "--instance", ours.name])
+            remove.assert_called_once()
+            self.assertEqual(remove.call_args.args[0].root, ours.root)
 
 
 if __name__ == "__main__":

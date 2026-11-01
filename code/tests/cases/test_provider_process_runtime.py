@@ -21,20 +21,16 @@ def test_provider_control_uses_platform_service_owner(monkeypatch, tmp_path, pla
     monkeypatch.setattr(portal_service_control.sys, "platform", platform)
     monkeypatch.setattr(updates, "run_process", run)
     monkeypatch.setattr(portal_service_units, "_run", lambda *command, **kwargs: run(command, **kwargs))
-    if platform == "win32":
-        # Windows Provider services belong to the installed Windows service
-        # controller: a service without a TFI user-service definition is
-        # queried through the SCM with the shared service-control runner.
-        monkeypatch.setenv("TFI_WINDOWS_SERVICE_DIRECTORY", str(tmp_path))
+    if platform != "linux":
+        # Native Provider services belong to the selected instance's service
+        # controller (Windows: its definition directory, else the SCM).
         monkeypatch.setattr(portal_service_control, "_run", lambda *command, **kwargs: run(command, **kwargs))
     result = updates._service_control().status("example.service")
     assert result["active"] == "active" and result["pid"] == 42
     assert calls[0][0][0] == executable
-    if platform == "darwin":
-        assert calls[0][1]["timeout"] == 180
-    elif platform == "win32":
+    if platform == "win32":
         assert calls[0][0][:3] == ("sc.exe", "queryex", "example.service")
-    else:
+    elif platform == "linux":
         assert calls[0][0][:3] == ("systemctl", "--user", "show")
 
 

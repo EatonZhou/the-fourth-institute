@@ -228,7 +228,6 @@ def test_withdrawn_admission_preserves_handoff_before_and_after_retention():
 @pytest.mark.parametrize("stored", [False, True])
 def test_namespace_changes_do_not_match_historical_digests(top, seed, stored):
     from management_portal.execution.submission_identity import SubmissionIdentity, submission_digest
-    from tests.cases.compatibility_test_support import synthetic_site
 
     original = request()
     payload = original.to_payload()
@@ -236,28 +235,25 @@ def test_namespace_changes_do_not_match_historical_digests(top, seed, stored):
     old["schema"] = f"{top}.execution-request.v8"
     old["metadata"]["fork_context_input"]["schema"] = f"{seed}.provider-context-seed.v1"
     digest = submission_digest(old)
-    with synthetic_site():
-        identity = SubmissionIdentity.from_request(original)
-        assert identity.matches(submission_digest(payload))
-        assert not identity.matches(digest)
-        assert original.to_payload() == payload
-        if stored:
-            store, queue = get_agent_data_store(), scheduler()
-            queue.submit(original)
-            # Model an existing digest without changing or rehashing its payload.
-            queue.database.write(lambda connection: connection.execute(
-                "UPDATE execution_store_meta SET value=%s WHERE key=%s",
-                (digest, "request_digest:" + original.execution_id),
-            ))
-            before = durable_rows(queue, store, original.execution_id)
-            with pytest.raises(ValueError, match="different request"):
-                queue.submit(original, prepare=forbid_prepare)
-            assert durable_rows(queue, store, original.execution_id) == before
+    identity = SubmissionIdentity.from_request(original)
+    assert identity.matches(submission_digest(payload))
+    assert not identity.matches(digest)
+    assert original.to_payload() == payload
+    if stored:
+        store, queue = get_agent_data_store(), scheduler()
+        queue.submit(original)
+        # Model an existing digest without changing or rehashing its payload.
+        queue.database.write(lambda connection: connection.execute(
+            "UPDATE execution_store_meta SET value=%s WHERE key=%s",
+            (digest, "request_digest:" + original.execution_id),
+        ))
+        before = durable_rows(queue, store, original.execution_id)
+        with pytest.raises(ValueError, match="different request"):
+            queue.submit(original, prepare=forbid_prepare)
+        assert durable_rows(queue, store, original.execution_id) == before
 
 
 def test_rpc_rejects_old_request_schema_before_admission():
-    from tests.cases.compatibility_test_support import synthetic_site
-
     original = request()
     payload = original.to_payload()
     payload["schema"] = "archive.execution-request.v8"
@@ -265,7 +261,7 @@ def test_rpc_rejects_old_request_schema_before_admission():
     server = object.__new__(ExecutionServiceServer)
     server.scheduler = scheduler()
     server.preparation = SimpleNamespace(prepare=forbid_prepare)
-    with synthetic_site(), pytest.raises(ValueError, match="schema"):
+    with pytest.raises(ValueError, match="schema"):
         server.dispatch("execution.submit", payload)
     assert payload == before
     assert durable_rows(server.scheduler, get_agent_data_store(), original.execution_id) == (None, None, None)

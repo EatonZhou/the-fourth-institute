@@ -62,7 +62,6 @@ def test_guide_markdown_caches_keep_language_variants_separate(monkeypatch):
 
 def test_english_project_initialization_preserves_user_description_and_existing_files(tmp_path, monkeypatch):
     write_projects("schema_version: 1\nprojects: []\n")
-    monkeypatch.setattr(project, "SHARE_ROOT", tmp_path)
     monkeypatch.setattr(project, "PROJECTS_ROOT", tmp_path / "Projects")
     description = "User text: 中文说明 / {p0}"
     record = project.create_project({"id": "EnglishSeed", "language": "en", "description": description})

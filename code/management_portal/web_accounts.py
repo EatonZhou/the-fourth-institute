@@ -11,7 +11,6 @@ import os
 import shutil
 import sys
 import threading
-from pathlib import Path
 
 from management_common.portal_paths import path as portal_path
 from management_portal import conversation_read_state, presentation_store
@@ -37,10 +36,6 @@ from management_portal.shared_state import exclusive_file_lock
 from management_portal.user_enrollment import UserEnrollment
 
 
-def _env_path(name: str, default: Path) -> Path:
-    return Path(os.getenv(name, str(default))).expanduser()
-
-
 _PORTAL_ALLOWED_USERS = {
     item.strip()
     for item in os.getenv("PORTAL_ALLOWED_USERS", "").split(",")
@@ -50,10 +45,7 @@ _PORTAL_ALLOWED_USERS = {
 _SESSION_SIGNING_KEY_PATH = session_signing_key_path()
 _TWO_FACTOR_KEY_PATH = two_factor_key_path()
 
-_PORTAL_UPLOADS_ROOT = _env_path(
-    "PORTAL_UPLOADS_ROOT",
-    (portal_path("staging_root") / "shared" / "portal_uploads"),
-)
+_PORTAL_UPLOADS_ROOT = portal_path("uploads")
 
 _SESSION_MAX_AGE = int(os.getenv("MANAGEMENT_PORTAL_SESSION_MAX_AGE", str(30 * 24 * 3600)))
 

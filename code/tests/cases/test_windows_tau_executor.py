@@ -18,6 +18,7 @@ from management_common import process_runtime
 from management_portal.business_tasks import process_is_alive
 from management_portal.test_framework import native_executor as native
 from management_portal.test_framework.records import RunRecords
+from tests.cases.instance_test_support import write_instance
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -57,9 +58,12 @@ raise SystemExit(native_executor.main())
 class NativeEnvironment(unittest.TestCase):
     def test_private_environment_and_required_database_file(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp); envfile = root / 'postgres.env'
+            root = Path(tmp)
+            instance = write_instance(root / 'instance')
+            envfile = instance / 'secrets' / 'postgres.env'
+            envfile.parent.mkdir()
             envfile.write_text('PORTAL_DATABASE_URL="postgresql://fixture-only"\n', encoding='utf-8')
-            with patch.dict(os.environ, {'PORTAL_POSTGRES_ENV_FILE':str(envfile),
+            with patch.dict(os.environ, {'PORTAL_INSTANCE_ROOT':str(instance),
                     'ANTHROPIC_API_KEY':'must-not-leak', 'PORTAL_FIXTURE_TOKEN':'must-not-leak',
                     'PORTAL_DATABASE_URL':'must-not-leak', 'PORTAL_TEST_TAU_MODEL':'fixture-model'}):
                 local = native.executor_environment(root, tau=False)

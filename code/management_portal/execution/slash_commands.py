@@ -33,7 +33,7 @@ SLASH_COMMAND_DESCRIPTIONS = {
 
 
 SLASH_PATH_ROOTS = (
-    str(portal_path("share_root")),
+    str(portal_path("projects")),
     "/home",
     "/srv",
     "/tmp",

@@ -84,29 +84,11 @@ def test_context_validation_and_conflicting_paths_are_not_weakened(modules, monk
         context.execution_context()
 
 
-def test_cli_endpoint_ignores_retired_environment(modules, monkeypatch, tmp_path):
+def test_cli_endpoint_ignores_retired_environment(modules, monkeypatch):
+    from management_common import instance_manifest
     _, cli, load = modules
-    monkeypatch.setattr(cli.portal_paths, 'CONFIG_PATH', tmp_path / 'uninstalled.json')
     monkeypatch.setenv('ARCHIVE_PORTAL_URL', 'https://legacy.invalid/')
-    assert load('scripts/resident_hatg_instruction.py', 'old_endpoint').DEFAULT_PORTAL_URL == 'http://127.0.0.1:18086'
+    assert load('scripts/resident_hatg_instruction.py', 'old_endpoint').DEFAULT_PORTAL_URL == (
+        instance_manifest.load().internal_web_origin())
     monkeypatch.setenv('PORTAL_URL', 'https://new.invalid/')
     assert load('scripts/resident_hatg_instruction.py', 'new_endpoint').DEFAULT_PORTAL_URL == 'https://new.invalid'
-
-
-def test_share_path_aliases_refresh_and_saved_config_precedence(modules, monkeypatch, tmp_path):
-    """共享根目录每次读取都反映 PORTAL_SHARE_ROOT 的当前值；保存了路径配置后按配置返回，读取不改写配置文件"""
-    _, _, load = modules
-    paths = load('management_common/portal_paths.py', 'tfi_paths_under_test')
-    monkeypatch.setattr(paths, 'CONFIG_PATH', tmp_path / 'paths.json')
-    monkeypatch.setenv('PORTAL_SHARE_ROOT', str(tmp_path / 'first'))
-    assert paths.path('share_root') == tmp_path / 'first'
-    monkeypatch.setenv('PORTAL_SHARE_ROOT', str(tmp_path / 'second'))
-    assert paths.path('share_root') == tmp_path / 'second'
-    saved = {key: str(tmp_path / key) for key in paths.KEYS}
-    paths.CONFIG_PATH.write_text(json.dumps(saved))
-    before = (paths.CONFIG_PATH.read_bytes(), paths.CONFIG_PATH.stat().st_mtime_ns)
-    assert paths.path_values() == saved
-    assert (paths.CONFIG_PATH.read_bytes(), paths.CONFIG_PATH.stat().st_mtime_ns) == before
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

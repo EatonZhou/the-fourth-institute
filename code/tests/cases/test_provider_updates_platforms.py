@@ -1,58 +1,77 @@
 """Platform specific staging and activation decisions, without package installs."""
 from __future__ import annotations
 
-from pathlib import Path
+import json
 from types import SimpleNamespace
+
 import pytest
 
 
-def test_windows_activation_uses_installed_user_service_controller(monkeypatch):
+@pytest.fixture
+def isolated(tmp_path, monkeypatch):
+    """A selected instance whose Provider programs live in the case's directory."""
+    from tests.cases.provider_service_test_support import provider_instance, real_provider_links
+    links = real_provider_links()
+    root, runtimes = provider_instance(monkeypatch, tmp_path, components=("claude-code", "kimi-code"))
+    yield SimpleNamespace(root=root, runtimes=runtimes)
+    assert real_provider_links() == links
+
+
+@pytest.fixture
+def windows(isolated, tmp_path, monkeypatch):
+    """Simulate Windows service ownership over a private definition directory."""
+    from scripts import instance_services, portal_service_units as units, tfi_release_platform_windows as adapter
+    from tests.cases.provider_service_test_support import FakeControl
+    directory = tmp_path / "service-units"
+    directory.mkdir()
+    monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(instance_services, "platform_name", lambda: "windows")
+    monkeypatch.setattr(instance_services, "definition_directory", lambda instance: directory)
+    control = FakeControl(directory, adapter.unit_path)
+    monkeypatch.setattr(instance_services, "controller", lambda instance: control)
+    return SimpleNamespace(directory=directory, control=control, adapter=adapter, units=units, **vars(isolated))
+
+
+def test_windows_activation_uses_the_instance_service_controller(isolated, monkeypatch):
     from management_portal.execution import provider_updates as updates
-    from scripts import tfi_release_platform_windows as platform
+    from scripts import instance_services
     controller = object()
     monkeypatch.setattr(updates, "sys", SimpleNamespace(platform="win32"))
-    monkeypatch.setattr(platform, "service_controller", lambda: controller)
+    monkeypatch.setattr(instance_services, "controller", lambda instance: controller
+                        if instance.root == isolated.root else pytest.fail("another instance"))
     assert updates._service_control() is controller
 
 
-def test_windows_provider_services_are_instance_scoped(tmp_path, monkeypatch):
-    import json
-    import pytest
-    from scripts import portal_service_units as units, tfi_release_platform_windows as platform
-    from management_common import instance_config
-    monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
-    monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "config/paths.json"))
-    target = {"service_prefix": "tfi-fixture", "install_root": str(tmp_path), "shared_code_root": str(units.SOURCE_ROOT), "data_roots": {}}
-    # An installed instance: its state file exists and records this source tree.
-    (tmp_path / instance_config.STATE_FILE).write_text("{}")
-    monkeypatch.setattr(instance_config, "read_installation",
-                        lambda root: {"schema": instance_config.STATE_SCHEMA, "target": target})
-    monkeypatch.setattr(platform, "unit_directory", lambda: tmp_path)
-    monkeypatch.setattr(platform, "unit_text", lambda target, component, components:
-                        json.dumps({"name": "tfi-fixture-"+component, "root": str(tmp_path)}))
-    monkeypatch.setattr(platform, "service_controller", lambda: SimpleNamespace(status=lambda _: {"active": "active"}))
-    checked = []
-    monkeypatch.setattr(platform, "verify_service", lambda name, content: checked.append(name))
-    for component in ("claude", "kimi"):
-        file = tmp_path / ("tfi-fixture-"+component+".json")
-        assert units.provider_runtime_services("portal-"+component+"-code.service") == ()
-        file.write_text(platform.unit_text(target, component, (component,)))
-        assert units.provider_runtime_services("portal-"+component+"-code.service") == ("tfi-fixture-"+component,)
-        file.write_text(json.dumps({"name": "tfi-fixture-"+component, "root": "foreign"}))
+def test_windows_provider_services_are_instance_scoped(windows):
+    from management_common.instance_manifest import load
+    instance = load(windows.root)
+    for component in ("claude-code", "kimi-code"):
+        unit = "portal-" + component + ".service"
+        name = instance.service_name(component)
+        path = windows.adapter.unit_path(windows.directory, name)
+        assert windows.units.provider_runtime_services(unit) == ()
+        path.write_text(windows.adapter.manifest_unit_text(instance, component), encoding="utf-8")
+        assert windows.units.provider_runtime_services(unit) == ()
+        windows.control.active.add(name)
+        assert windows.units.provider_runtime_services(unit) == (name,)
+        definition = json.loads(path.read_text(encoding="utf-8"))
+        definition["environment"]["PORTAL_INSTANCE_ROOT"] = "C:/another/instance"
+        path.write_text(json.dumps(definition), encoding="utf-8")
         with pytest.raises(ValueError, match="another instance"):
-            units.provider_runtime_services("portal-"+component+"-code.service")
-    assert checked == ["tfi-fixture-claude", "tfi-fixture-kimi"]
+            windows.units.provider_runtime_services(unit)
 
 
-def test_windows_npm_and_venv_paths(tmp_path, monkeypatch):
+def test_windows_npm_and_venv_paths(isolated, monkeypatch):
+    from management_common import code_environment
     from management_portal.execution import provider_updates as updates
 
     monkeypatch.setattr(updates, "sys", SimpleNamespace(platform="win32", executable="C:\\Python\\python.exe"))
-    monkeypatch.setattr(updates, "RUNTIMES", tmp_path)
-    assert updates.npm_binary(tmp_path / "codex-cli-1.2.3", "codex") == tmp_path / "codex-cli-1.2.3/codex.cmd"
-    assert updates.venv_python(tmp_path / "claude-1.2.3") == tmp_path / "claude-1.2.3/Scripts/python.exe"
-    assert updates.CodexRuntime().link() == tmp_path / "codex-cli-current"
-    assert updates.CodexRuntime().link_target(tmp_path / "codex-cli-1.2.3") == tmp_path / "codex-cli-1.2.3"
+    monkeypatch.setattr(code_environment, "os", SimpleNamespace(name="nt"))
+    runtimes = isolated.runtimes
+    assert updates.npm_binary(runtimes / "codex-cli-1.2.3", "codex") == runtimes / "codex-cli-1.2.3/codex.cmd"
+    assert updates.venv_python(runtimes / "claude-1.2.3") == runtimes / "claude-1.2.3/Scripts/python.exe"
+    assert updates.CodexRuntime().link() == runtimes / "codex-cli-current"
+    assert updates.CodexRuntime().link_target(runtimes / "codex-cli-1.2.3") == runtimes / "codex-cli-1.2.3"
 
 
 def test_windows_junction_switch_and_rollback(tmp_path, monkeypatch):
@@ -79,23 +98,22 @@ def test_windows_junction_switch_and_rollback(tmp_path, monkeypatch):
 
     monkeypatch.setattr(updates, "_service_control", lambda: SimpleNamespace(
         restart=restart, status=lambda service: {"active": "active"}))
-    import pytest
     with pytest.raises(RuntimeError, match="服务启用失败"):
         updates._activate("kimi", updates.KimiRuntime(), new)
     assert link.resolve() == old
     assert len(calls) == 2
 
 
-def test_dsh_stage_includes_commonjs_transport(tmp_path, monkeypatch):
+def test_dsh_stage_includes_commonjs_transport(isolated, monkeypatch):
     from management_portal.execution import provider_updates as updates
 
-    monkeypatch.setattr(updates, "RUNTIMES", tmp_path)
     monkeypatch.setattr(updates, "run_command", lambda *args, **kwargs: (
         '"~4.0.5"' if args[:2] == ("npm", "view") else ""))
     root = updates.DshRuntime().stage(("0.2.1-rc.2", "0.2.1-rc.2"))
+    assert root.is_relative_to(isolated.runtimes)
     source = updates.ROOT / "management_common/local_ipc.cjs"
     assert (root / "local_ipc.cjs").read_text().strip() == (
-        "module.exports = require(" + __import__("json").dumps(str(source)) + ");"
+        "module.exports = require(" + json.dumps(str(source)) + ");"
     )
 
 
@@ -109,38 +127,41 @@ def test_engineering_package_includes_dsh_wrapper_and_common_transport():
     assert "management_portal/dsh_runtime/bridge.mjs" in names
 
 
-def test_windows_claude_cold_start_registers_native_service_without_restart(tmp_path, monkeypatch):
-    from types import SimpleNamespace
-    from scripts import portal_service_units as units, tfi_release_platform_windows as adapter
-    from management_common import instance_config
-    from management_portal.execution import provider_updates as updates
-    target = {"service_prefix": "tfi-test", "install_root": str(tmp_path), "shared_code_root": str(units.SOURCE_ROOT), "data_roots": {}}
-    monkeypatch.setattr(units, "sys", SimpleNamespace(platform="win32"))
-    monkeypatch.setattr(updates, "STATE_ROOT", tmp_path)
-    monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(tmp_path / "config/target.json"))
-    (tmp_path / instance_config.STATE_FILE).write_text("{}")
-    monkeypatch.setattr(instance_config, "read_installation",
-                        lambda root: {"schema": instance_config.STATE_SCHEMA, "target": target})
-    monkeypatch.setattr(adapter, "unit_directory", lambda: tmp_path)
-    monkeypatch.setattr(adapter, "unit_text", lambda *args: "owned")
-    calls = []
-    monkeypatch.setattr(adapter, "register_services", lambda directory, definitions: calls.append(definitions))
-    monkeypatch.setattr(adapter, "service_controller", lambda: SimpleNamespace(start=lambda name: calls.append(name), status=lambda name: {"active": "inactive"}))
-    monkeypatch.setattr(units, "_run", lambda *args: pytest.fail("Windows tried systemctl"))
-    units.start_claude_service()
-    assert calls == [{"tfi-test-claude": "owned"}, "tfi-test-claude"]
+def test_windows_claude_cold_start_defines_native_service_without_restart(windows, monkeypatch):
+    from management_common.instance_manifest import load
+    document = json.loads((windows.root / "instance.json").read_text())
+    document["services"]["components"].remove("claude-code")
+    (windows.root / "instance.json").write_text(json.dumps(document))
+    registered = []
 
-def test_windows_claude_command_uses_instance_sdk_and_clean_environment(tmp_path, monkeypatch):
-    from types import SimpleNamespace
-    from scripts import tfi_release_install as installer
-    sdk = tmp_path / "managed sdk"
+    def register(directory, definitions, **_):
+        for name, text in definitions.items():
+            windows.adapter.unit_path(directory, name).write_text(text, encoding="utf-8")
+        registered.append(sorted(definitions))
+        return list(definitions)
+
+    monkeypatch.setattr(windows.adapter, "register_services", register)
+    monkeypatch.setattr(windows.units, "_run", lambda *args, **kwargs: pytest.fail("Windows tried systemctl"))
+    windows.units.start_claude_service()
+    name = load(windows.root).service_name("claude-code")
+    assert registered == [[name]]
+    assert [call for call in windows.control.calls if call[0] in {"start", "stop", "restart"}] == [("start", name)]
+    # Repeating the cold start finds the running daemon and leaves it alone.
+    windows.units.start_claude_service()
+    assert registered == [[name]]
+
+
+def test_windows_claude_command_uses_instance_sdk(isolated, monkeypatch):
+    from management_portal import service_runtime as instance_runtime
+    from management_common.instance_manifest import load
+    sdk = isolated.runtimes / "claude-agent-sdk-current"
     (sdk / "Scripts").mkdir(parents=True)
     (sdk / "Scripts/python.exe").touch()
-    target = {"install_root": str(tmp_path), "data_roots": {"staging_root": str(tmp_path / "staging")}}
-    monkeypatch.setattr(installer, "platform_adapter", lambda: SimpleNamespace(__name__="platform_windows"))
-    monkeypatch.setattr(installer, "clean_environment", lambda *args, **kwargs: {"HOME": "isolated"})
-    monkeypatch.setattr(installer, "runtime_python", lambda target: "unused-shared-python")
-    monkeypatch.setattr(installer, "read_json", lambda path: {"deployment": {"providers": {"claude_runtime_current": str(sdk)}}})
-    command, env = installer.component_command(target, "claude")
+    package = isolated.runtimes / "claude-app-server-current/management_portal"
+    package.mkdir(parents=True)
+    (package / "claude_code_daemon.py").touch()
+    monkeypatch.setattr(instance_runtime, "os", SimpleNamespace(name="nt"))
+    monkeypatch.setattr(instance_runtime, "clean_environment", lambda *args, **kwargs: {"PORTAL_INSTANCE_ROOT": "selected"})
+    command, env = instance_runtime.component_command(load(isolated.root), "claude-code")
     assert command == [str(sdk / "Scripts/python.exe"), "-m", "management_portal.claude_code_daemon"]
-    assert env == {"HOME": "isolated"}
+    assert env == {"PORTAL_INSTANCE_ROOT": "selected"}

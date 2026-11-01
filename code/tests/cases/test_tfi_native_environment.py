@@ -24,9 +24,10 @@ DUAL = {**OLD, **NEW}
 @pytest.fixture(autouse=True)
 def isolated_environment(monkeypatch):
     # Never let this suite read real credentials or saved network settings.
+    instance = os.environ["PORTAL_INSTANCE_ROOT"]
     for name in tuple(os.environ):
         monkeypatch.delenv(name)
-    monkeypatch.setenv("PORTAL_SITE_CONFIG", site_environ({})["PORTAL_SITE_CONFIG"])
+    monkeypatch.setenv("PORTAL_INSTANCE_ROOT", instance)
     monkeypatch.setattr(shell.portal_network, 'saved_proxy_environment', lambda: None)
 
 
@@ -43,7 +44,8 @@ def test_shell_mirrors_identity_and_keeps_allowlist_proxy_boundary(monkeypatch):
                         lambda: {'HTTP_PROXY': 'http://managed.invalid'})
     env, actual = shell.resident_process_environment({'resident_environment': identity})
     assert actual == NEW
-    assert env == {'PATH': '/test/bin', 'HTTP_PROXY': 'http://managed.invalid', **NEW}
+    assert env == {'PORTAL_INSTANCE_ROOT': os.environ['PORTAL_INSTANCE_ROOT'], 'PATH': '/test/bin',
+                   'HTTP_PROXY': 'http://managed.invalid', **NEW}
 
 
 INVALID = [
@@ -72,7 +74,7 @@ def test_shell_human_does_not_inherit_identity_or_database(monkeypatch):
     for key, value in DUAL.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'postgresql://fixture-only')
-    assert shell.resident_process_environment({}) == ({}, {})
+    assert shell.resident_process_environment({}) == ({'PORTAL_INSTANCE_ROOT': os.environ['PORTAL_INSTANCE_ROOT']}, {})
     with pytest.raises(ValueError, match='requires Resident identity'):
         shell.resident_process_environment({'inherit_portal_database': True})
 
@@ -111,18 +113,20 @@ def test_database_permission_gate_and_file_fallback_are_unchanged(monkeypatch, t
         request.metadata[field] = old
     request.permission_profile = 'restricted'
     assert not shell.may_inherit_portal_database(request)
-    config = tmp_path / 'postgres.env'
+    from management_common.instance_manifest import load
+    config = load().directory('secrets') / 'postgres.env'
+    config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text('PORTAL_DATABASE_URL="postgresql://fixture-only"\n')
-    monkeypatch.setenv('PORTAL_POSTGRES_ENV_FILE', str(config))
     assert shell.portal_database_environment(False) == {}
     env, _ = shell.resident_process_environment({
         'resident_environment': NEW, 'inherit_portal_database': True})
-    assert env == {**NEW, 'PORTAL_DATABASE_URL': 'postgresql://fixture-only'}
+    assert env == {'PORTAL_INSTANCE_ROOT': os.environ['PORTAL_INSTANCE_ROOT'], **NEW,
+                   'PORTAL_DATABASE_URL': 'postgresql://fixture-only'}
     monkeypatch.setenv('PORTAL_DATABASE_URL', 'postgresql://direct-fixture')
     assert shell.portal_database_environment(True) == {'PORTAL_DATABASE_URL': 'postgresql://direct-fixture'}
     monkeypatch.delenv('PORTAL_DATABASE_URL')
     config.unlink()
-    with pytest.raises(RuntimeError, match='unavailable'):
+    with pytest.raises(RuntimeError, match="secrets/postgres.env"):
         shell.portal_database_environment(True)
 
 
@@ -217,36 +221,7 @@ def test_fork_still_excludes_database_from_process_environment(monkeypatch, tmp_
     assert env['PATH'] == '/test/bin'
 
 
-def test_relay_reads_both_name_generations_with_same_numeric_constraints(monkeypatch):
-    """AI Relay 从 PORTAL_AI_RELAY_* 读取地址、端口、来源网段与上限，非数字端口被拒绝"""
-    values = {'HOST': '127.0.0.2', 'PORT': '19001', 'ALLOWED_IPS': '127.0.0.0/8',
-              'MAX_BYTES': '2048', 'MAX_CONCURRENT': '3'}
-    for suffix, value in values.items():
-        monkeypatch.setenv('PORTAL_AI_RELAY_' + suffix, value)
-    args = relay._build_arg_parser().parse_args([])
-    assert (args.host, args.port, args.allowed_ips, args.max_bytes, args.max_concurrent) == (
-        '127.0.0.2', 19001, '127.0.0.0/8', 2048, 3)
-    monkeypatch.setenv('PORTAL_AI_RELAY_PORT', 'invalid')
-    with pytest.raises(ValueError):
-        relay._build_arg_parser()
-
-
-def test_relay_new_name_presence_wins_and_cli_overrides_environment(monkeypatch):
-    monkeypatch.setenv('ARCHIVE_AI_RELAY_HOST', '127.0.0.2')
-    monkeypatch.setenv('PORTAL_AI_RELAY_HOST', '')
-    monkeypatch.setenv('ARCHIVE_AI_RELAY_PORT', '19001')
-    monkeypatch.setenv('PORTAL_AI_RELAY_PORT', '19002')
-    assert relay._build_arg_parser().parse_args([]).host == ''
-    assert relay._build_arg_parser().parse_args([]).port == 19002
-    assert relay._build_arg_parser().parse_args(['--port', '19003']).port == 19003
-
-
-def test_relay_default_and_peer_filter_are_preserved():
-    args = relay._build_arg_parser().parse_args([])
-    assert args.host == relay.DEFAULT_HOST
-    assert args.port == relay.DEFAULT_PORT
-    assert args.max_bytes == relay.DEFAULT_MAX_BYTES
-    assert args.max_concurrent == relay.DEFAULT_MAX_CONCURRENT
+def test_relay_peer_filter_is_preserved():
     networks = relay._parse_allowed_networks('127.0.0.0/8')
     assert relay._peer_allowed('127.0.0.1', networks)
     assert not relay._peer_allowed('192.0.2.1', networks)
@@ -257,6 +232,3 @@ def test_relay_default_and_peer_filter_are_preserved():
 def test_shell_identity_fingerprint_uses_canonical_fields(identity):
     _, fingerprint_input = shell.resident_process_environment({'resident_environment': identity})
     assert fingerprint_input == shell.resident_identity_environment(identity)
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

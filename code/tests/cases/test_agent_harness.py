@@ -47,6 +47,7 @@ from management_portal.execution.harness_tool_granularity import (
 )
 from management_portal.execution.harness_tool_output_offloading import READ_HARNESS_ARTIFACT_TOOL_NAME, ToolOutputOffloadingFeature
 from management_portal.execution.session_manager import RuntimeSession
+from tests.cases.instance_test_support import select_instance
 
 # A test double of an Adapter declares what it can do, as a real Adapter does
 # in the Provider catalog.  No real Adapter rewrites history today.
@@ -56,7 +57,7 @@ from management_portal.execution.session_manager import RuntimeSession
 @pytest.fixture(autouse=True)
 def isolate_harness_runtime_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Default-construction tests must not append synthetic evidence to production.
-    monkeypatch.setenv("PORTAL_EXECUTION_STATE_ROOT", str(tmp_path / "harness-state"))
+    select_instance(monkeypatch, tmp_path / "instance")
 
 
 class _RecordingProvider:

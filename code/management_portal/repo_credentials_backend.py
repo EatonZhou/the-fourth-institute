@@ -1,5 +1,4 @@
 from __future__ import annotations
-from management_common.product_environment import read_product_env
 
 import hashlib
 import json
@@ -16,18 +15,8 @@ from management_common import file_permissions
 from management_common.clock import utc_now_iso
 
 
-DEFAULT_CREDENTIAL_ROOT = Path(
-    read_product_env(
-        "PORTAL_REPO_CREDENTIAL_ROOT",
-        str(portal_path("secrets_dir") / "repo-git-credentials"),
-    )
-).expanduser()
-DEFAULT_KEY_PATH = Path(
-    read_product_env(
-        "PORTAL_REPO_CREDENTIAL_KEY_PATH",
-        str(portal_path("secrets_dir") / "repo-git-credentials.master-key"),
-    )
-).expanduser()
+DEFAULT_CREDENTIAL_ROOT = portal_path('secrets') / "repo-git-credentials"
+DEFAULT_KEY_PATH = portal_path('secrets') / "repo-git-credentials.master-key"
 
 _LOCK = threading.RLock()
 _SCHEMA = "tfi.repo-git-credential.v1"

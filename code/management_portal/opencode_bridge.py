@@ -657,7 +657,8 @@ class Bridge:
             raise BridgeError("Session identity mismatch")
         if params.get("cwd") != self.config["cwd"] or params.get("provider_profile") != self.config["route"]:
             raise BridgeError("Session route/cwd changes require migration")
-        if fingerprint(params.get("resident_environment") or {}) != self.config["identity_fingerprint"]:
+        identity = dict(sorted((params.get("resident_environment") or {}).items()))
+        if fingerprint(identity) != self.config["identity_fingerprint"]:
             raise BridgeError("Resident identity mismatch")
 
     def model(self, params: dict) -> dict:

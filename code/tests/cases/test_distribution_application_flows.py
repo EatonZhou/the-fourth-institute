@@ -12,6 +12,8 @@ import pytest
 
 from management_portal.distribution.features import resolve_features, SYSTEM
 from management_portal.distribution.initialization import initialize
+from management_common.instance_manifest import load
+from tests.cases.instance_test_support import write_instance
 
 EVENT = 'event_source_111111111111'
 EFFECT = 'effect_222222222222'
@@ -96,19 +98,21 @@ def test_serialized_manifest_initializes_only_new_request_entry(tmp_path, enable
                 columns = list(row)
                 c.execute(f'INSERT INTO lineage.{table} ({",".join(columns)}) VALUES ({",".join(["%s"] * len(columns))})', list(row.values()))
         c.execute('INSERT INTO lineage.event_source_progress VALUES(%s,%s,%s)', (SYSTEM, EVENT, '{"paused":true}'))
+        instance = load(write_instance(tmp_path / 'instance'))
         try:
             c.execute('UPDATE lineage.application_targets SET resident_id=%s', ('resident_other',))
             with pytest.raises(ValueError, match='target differs'):
-                initialize(manifest, c, {'instances_root': str(tmp_path)})
+                initialize(manifest, c, instance)
             assert c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json'] == '{"paused":true}'
             c.execute('UPDATE lineage.application_targets SET resident_id=%s', (RESIDENT,))
-            result = initialize(manifest, c, {'instances_root': str(tmp_path)})
+            result = initialize(manifest, c, instance)
             assert result['work_dispatched'] is False
             assert result['lineage_timer_required'] is False
             checkpoint = json.loads(c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json'])
             assert checkpoint.get('paused', False) is (not enabled)
+            # A retry on the same database keeps what its ledger already applied.
             c.execute('UPDATE lineage.event_source_progress SET checkpoint_json=%s', ('{"paused":true,"local_marker":"unchanged"}',))
-            initialize(manifest, c, {'instances_root': str(tmp_path)}, mode='upgrade')
+            initialize(manifest, c, instance)
             assert json.loads(c.execute('SELECT checkpoint_json FROM lineage.event_source_progress').fetchone()['checkpoint_json']) == {'paused': True, 'local_marker': 'unchanged'}
         finally:
             c.execute('DROP SCHEMA lineage CASCADE')

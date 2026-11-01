@@ -32,28 +32,33 @@ class SharedSourceFinder(importlib.abc.MetaPathFinder):
         return spec
 
 
-def activate_shared_imports(worktree: Path) -> Path | None:
-    """Route shared packages to ``PORTAL_SHARED_SOURCE_ROOT`` when the pair sets it."""
-    configured = os.environ.get('PORTAL_SHARED_SOURCE_ROOT', '').strip()
-    if not configured:
-        return None
-    root = Path(configured)
+def activate_shared_imports(worktree: Path) -> Path:
+    """Select shared packages from the explicitly selected instance manifest.
+
+    A process that runs outside any instance, such as assembling release
+    content from a fresh checkout, imports this checkout's own packages.
+    """
+    if not os.environ.get('PORTAL_INSTANCE_ROOT'):
+        return worktree
+    from management_common.instance_manifest import load
+    root = load().code_root()
     for finder in sys.meta_path:
         if isinstance(finder, SharedSourceFinder):
+            if finder.packages['management_common'] != root / 'management_common':
+                raise ValueError('Cannot change instance source ownership in a running process')
             return root
+    if root.resolve() == worktree.resolve():
+        return root
+    # The small manifest reader is imported before this finder can be installed.
+    # Route subsequent common imports through the same shared package owner.
+    common = sys.modules.get('management_common')
+    if common is not None:
+        common.__path__ = [str(root / 'management_common')]
     sys.meta_path.insert(0, SharedSourceFinder(root, SHARED_PATHS))
     return root
 
 
-# Select the owner using only stdlib before even configuration/path helpers are
-# imported. Otherwise importing this module caches Release's management_common
-# before management_portal.__init__ can install the shared package finder.
-_CONFIGURED_SHARED_ROOT = activate_shared_imports(_INSTALLATION_ROOT)
-from management_common.portal_paths import resolve_directory
-from management_common.site_config import read_site_config
-
-SHARED_ROOT = _CONFIGURED_SHARED_ROOT or resolve_directory(
-    read_site_config().get('deployment', {}).get('source_root', str(_INSTALLATION_ROOT)))
+SHARED_ROOT = activate_shared_imports(_INSTALLATION_ROOT)
 # Restartable components; the shared ones carry their service unit suffix.
 COMPONENTS = {'web': None, 'resource': 'resource-service', 'execution-service': 'execution-service',
               'execution-worker': 'execution-worker', 'lineage': 'society-service'}

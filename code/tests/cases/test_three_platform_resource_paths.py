@@ -7,7 +7,6 @@ import sys
 import hashlib
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import nullcontext
 from pathlib import Path, PureWindowsPath
 from types import SimpleNamespace
 
@@ -515,19 +514,6 @@ def test_workspace_cas_refuses_symlink_substituted_after_stat(workspace_writer, 
     with pytest.raises(OSError):
         workspace_writer.write("write attempt")
     assert outside.read_text() == "outside" and workspace_writer.notifications == []
-
-
-def test_project_resident_bindings_keep_native_and_portable_path_spellings(monkeypatch):
-    from management_portal.society_service import resource_client
-    change = project_rename.ProjectRename("Old", "New", PureWindowsPath("C:/share/Old"), PureWindowsPath("C:/share/New"), PureWindowsPath("C:/share"))
-    monkeypatch.setattr(project_rename, "portal_database", lambda **kw: SimpleNamespace(snapshot=lambda: nullcontext(None)))
-    monkeypatch.setattr(project_rename, "_current_resident_workspaces", lambda *a: [("resident", "workspace")])
-    monkeypatch.setattr(resource_client, "workspace_paths_many", lambda *a, **kw: {
-        "a": "C:/share/New/child", "b": r"C:\share\New\child", "c": "C:/share/Newer/child",
-    })
-    assert project_rename._resident_paths(change, ["resident"]) == [
-        ("C:/share/Old/child", "C:/share/New/child"), (r"C:\share\Old\child", r"C:\share\New\child"),
-    ]
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX native names")

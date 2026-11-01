@@ -34,54 +34,28 @@ TFI Portal 通过 HATG ISA（Human-Agent Trajectory Graph 指令集）提供共�
 
 **目前仅支持 Linux。Windows 版本计划后续上线。**
 
-完整安装步骤、目标配置样例、服务管理及升级恢复说明见 [INSTALL.md](INSTALL.md)。以下是开始使用的主要路径。
+创建、启停、代码更新与退役实例的完整说明见 [INSTALL.md](INSTALL.md)。以下是开始使用的主要路径。
 
-### 准备环境与发行工程
+### 创建实例
 
-当前安装路径使用 Linux 的 systemd 用户服务，需要 Python 3.12、PostgreSQL 和 NATS。安装器会检查具体发行工程的系统、架构及依赖要求；使用模型后端、文章工具等可选功能时，还需准备相应运行时和工具。
-
-安装需要一份生成完成的发行工程，其中包含 `manifest.json`、`code/`、`database/` 和数据目录。源码仓库用于开发与生成工程，克隆源码后仍需完成发行生成步骤；相关开发入口见 [发行工程说明](management_portal/distribution/README.md)。
-
-下面统一使用 `python3`。可先运行 `python3 --version` 检查版本：当前依赖准备脚本仅接受 Python 3.12.x；若系统默认版本不同，请使用对应的 Python 3.12 解释器执行环境准备。
-
-取得发行工程后，在工程根目录准备并检查基础 Python 环境：
+Linux 上安装器使用 systemd 用户服务，需要 Python 3.12。在仓库根目录从示例实例组装安装工程并创建实例：
 
 ```bash
-python3 code/scripts/bootstrap_portal install core --venv "$HOME/tfi-runtime"
-python3 code/scripts/bootstrap_portal doctor core --venv "$HOME/tfi-runtime"
+python3 prepare_install.py
+python3 code/scripts/install_tfi_release create \
+  --engineering .build/example_instance/engineering/manifest.json --name my_portal
 ```
 
-上述命令仅准备 Python 依赖，PostgreSQL 和 NATS 需另外安装。模型后端按所选后端准备；需要 `provider` 依赖配置时，还需 Node.js 20 或以上版本及 npm。
-
-### 配置并安装独立实例
-
-按 [INSTALL 中的 JSON 样例](INSTALL.md) 创建 `target.json`，填写当前用户可写的安装目录、独立数据目录、服务名前缀、端口及依赖路径。`python` 应指向上一步虚拟环境中的 Python；`run_id` 和 `supervisor_resident_id` 应与工程清单一致。普通安装与完整测试工程对监督身份的要求见 INSTALL。
-
-先检查配置，再准备独立实例：
-
-```bash
-python3 code/scripts/install_tfi_release plan --target target.json --manifest manifest.json
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --prepare-only
-```
-
-准备阶段导入独立数据库，应用服务保持停止。按 INSTALL 完成历史冻结核查后，再启动应用服务；需要核查证据的工程使用本次核查产生的文件：
-
-```bash
-python3 code/scripts/install_tfi_release install --target target.json --manifest manifest.json --freeze-evidence freeze-evidence.json
-```
-
-`freeze-evidence.json` 的内容及适用条件以 INSTALL 为准。安装器使用工程清单中的文件和目录映射，模型账号与凭据由部署者在新实例中配置。
+实例根目录建在代码目录之外，默认为 `~/.local/share/tfi/instances/<名称>`，并登记在 `~/.config/tfi/instances.json`。安装器选择空闲端口和唯一的服务名前缀，在代码旁的 `dependencies/` 准备 Python 环境、PostgreSQL、NATS 与 Node.js，导入示例实例并启动服务。模型账号与凭据由部署者在新实例中配置。
 
 ### 第一次使用
 
-安装完成后，将下面命令中的 `/path/to/tfi-instance` 换成 `target.json` 中的 `install_root`：
-
 ```bash
-python3 code/scripts/install_tfi_release status --root /path/to/tfi-instance
-python3 code/scripts/install_tfi_release first-admin --root /path/to/tfi-instance --username yourname
+python3 code/scripts/install_tfi_release status --instance my_portal
+python3 code/scripts/install_tfi_release first-admin --instance my_portal --username yourname
 ```
 
-`first-admin` 会输出初始化链接的本地文件位置。在本机打开该文件中的链接，设置首位管理员的密码，然后登录。站点默认仅监听本机；需要从其他设备访问时，按 INSTALL 配置监听地址。
+`first-admin` 会输出初始化链接的本地文件位置。在本机打开该文件中的链接，设置首位管理员的密码，然后登录。站点默认仅监听本机；需要从其他设备访问时，创建实例时加 `--bind 0.0.0.0`。
 
 登录后的基本使用顺序是：
 
@@ -90,9 +64,9 @@ python3 code/scripts/install_tfi_release first-admin --root /path/to/tfi-instanc
 3. 添加所需资料与工作区，从一个可检查结果的小任务开始，例如阅读论文并整理问题，或运行一组基线实验。
 4. 在讨论和工作区中检查结果，再按需要增加协作者、连接事件流程或组成 Family。
 
-具体发行工程包含的功能、示例团队和资料以其清单为准。服务状态及日志、停止实例、升级和恢复操作统一见 [INSTALL.md](INSTALL.md)。升级需要工程声明兼容的起点与迁移，不能直接用新发行数据库覆盖已有站点。
+具体发行工程包含的功能、示例团队和资料以其清单为准。服务状态、停止实例、代码更新与退役见 [INSTALL.md](INSTALL.md)。代码更新只换代码、重启服务，数据库由服务启动时自己更新；示例实例的发布内容只在创建实例时使用。
 
-当前 Linux 独立实例已有登录、团队协作、模型执行和部分资源访问的验证记录；重新生成的发行工程仍需对应版本的安装与功能验收。完整升级流程及其他系统、架构组合尚未完成验证。
+当前 Linux 独立实例已有登录、团队协作、模型执行和部分资源访问的验证记录；重新生成的发行工程仍需对应版本的安装与功能验收。其他系统、架构组合尚未完成验证。
 
 ## 3. Future: 共建人人都能带着自己的 Agent 参与的科研网络
 

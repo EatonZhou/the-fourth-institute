@@ -1,4 +1,4 @@
-"""Discover installed instances and dispatch their existing installer lifecycle.
+"""List the host registry and dispatch manifest-owned service operations.
 
 The HTTP process may itself be stopped. Control jobs therefore run outside its
 service, using the service owner's environment rather than an instance's HOME.
@@ -23,7 +23,14 @@ PLATFORM = CODE.parent
 sys.path.insert(0, str(CODE))
 sys.dont_write_bytecode = True
 from management_common.file_lock import try_lock_descriptor
-from scripts import tfi_release_install as installer
+from scripts import instance_services
+from management_common import host_instances
+from management_common.configuration_files import atomic_json
+from management_common.code_environment import runtime_python
+
+
+def read_json(path):
+    return json.loads(Path(path).read_text(encoding='utf-8'))
 
 
 def supervisor_environment():
@@ -68,31 +75,19 @@ def command(action, *, name=None, current=""):
 
 
 def instance_root(name):
-    if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}", name):
-        raise ValueError("Invalid instance name")
-    base = PLATFORM / "instance"
-    root = base / name
-    if base.is_symlink() or root.is_symlink() or root.resolve().parent != base.resolve():
-        raise ValueError("Instance must be a direct directory under instance/")
-    if not root.is_dir() or (root / installer.STATE_FILE).is_symlink():
-        raise ValueError("Instance is not installed here")
-    return root
+    return host_instances.find(name).root
 
 
 def state_for(name):
-    root = instance_root(name)
-    state = installer.owned_state(root)
-    if Path(state["target"].get("shared_code_root", "")).resolve() != CODE:
-        raise ValueError("Instance uses a different code directory")
-    return root, state
+    instance = host_instances.find(name)
+    return instance.root, instance
 
 
-def start_blocker(state):
-    return installer.start_blocker(state)
+start_blocker = instance_services.start_blocker
 
 
-def access_urls(target):
-    bind, port = target["bind"], int(target["ports"]["web"])
+def access_urls(instance):
+    bind, port = instance.document["network"]["bind"], instance.document["network"]["entry_port"]
     address = ipaddress.ip_address(bind)
     addresses = {bind}
     if address.is_unspecified:
@@ -163,7 +158,7 @@ def operation(root):
     path = control_path(root)
     if not path.exists():
         return None
-    record = installer.read_json(path)
+    record = read_json(path)
     if record["status"] in {"queued", "running"}:
         if not job_alive(record) and time.time() - record["created_at"] > 30:
             return {**record, "status": "failed", "error": "Instance control job was interrupted"}
@@ -172,9 +167,7 @@ def operation(root):
 
 def inspect_instance(name, current=""):
     root, state = state_for(name)
-    controller = installer.service_controller()
-    services = {c: controller.status(installer.unit_name(state["target"], c))
-                for c in installer.COMPONENTS}
+    services = instance_services.status(state)
     live = [s["active"] in {"active", "activating", "deactivating"} or s["pid"]
             for s in services.values()]
     running = all(s["active"] == "active" for s in services.values())
@@ -182,26 +175,27 @@ def inspect_instance(name, current=""):
     job = operation(root)
     busy = job and job["status"] in {"queued", "running"}
     blocker = start_blocker(state)
+    # The entry is the gateway of paired deployments, otherwise the Release Web.
+    entry = "gateway" if "gateway" in services else "web"
     return {"name": name, "status": status, "current": str(root) == current,
             "can_start": not busy and not blocker and not running,
             "can_stop": not busy and any(live), "start_blocker": blocker,
-            "urls": access_urls(state["target"]) if services["web"]["active"] == "active" else [],
-            "local_only": ipaddress.ip_address(state["target"]["bind"]).is_loopback,
+            "stopped_services": sorted(component for component, s in services.items() if s["active"] != "active")
+                                if status == "partial" else [],
+            "urls": access_urls(state) if services[entry]["active"] == "active" else [],
+            "local_only": ipaddress.ip_address(state.document["network"]["bind"]).is_loopback,
             "operation": job}
 
 
 def catalog(current=""):
-    base = PLATFORM / "instance"
     items = []
-    if base.is_dir() and not base.is_symlink():
-        for root in sorted(base.iterdir()):
-            if root.is_dir() and not root.is_symlink() and (root / installer.STATE_FILE).is_file():
-                try:
-                    items.append(inspect_instance(root.name, current))
-                except Exception as exc:
-                    items.append({"name": root.name, "status": "unavailable",
-                                  "error": str(exc), "can_start": False, "can_stop": False, "urls": []})
-    return {"instances": items}
+    for name in sorted(host_instances.read_registry()):
+        try:
+            items.append(inspect_instance(name, current))
+        except Exception as exc:
+            items.append({'name': name, 'status': 'unavailable', 'error': str(exc),
+                          'can_start': False, 'can_stop': False, 'urls': []})
+    return {'instances': items}
 
 
 @contextlib.contextmanager
@@ -216,9 +210,11 @@ def control_lock(root):
 
 
 def launch(root, record):
-    args = [sys.executable, str(Path(__file__).resolve()), "_run",
-            "--name", root.name, "--operation-id", record["id"]]
-    env = supervisor_environment()
+    from management_common.instance_manifest import load
+    instance = load(root)
+    args = [str(runtime_python(instance.code_root())), str(Path(__file__).resolve()), "_run",
+            "--name", instance.name, "--operation-id", record["id"]]
+    env = {**supervisor_environment(), "PORTAL_INSTANCE_ROOT": str(instance.root)}
     log = root / "runtime/portal-control.log"
     if log.is_symlink():
         raise ValueError("Invalid instance control log")
@@ -228,7 +224,8 @@ def launch(root, record):
                         "--property=UMask=0077", "--property=RuntimeMaxSec=1200",
                         f"--property=WorkingDirectory={CODE}",
                         f"--property=StandardOutput=append:{log}",
-                        f"--property=StandardError=append:{log}", *args],
+                        f"--property=StandardError=append:{log}",
+                        "--setenv=PORTAL_INSTANCE_ROOT=" + str(instance.root), *args],
                        env=env, check=True, capture_output=True, timeout=45)
     elif sys.platform == "win32":
         with log.open("ab") as output:
@@ -254,22 +251,21 @@ def enqueue(action, name):
         prior = operation(root)
         if prior and prior["status"] in {"queued", "running"}:
             raise ValueError("An operation is already running for this instance")
-        # Serialize acceptance with CLI install/upgrade. The worker acquires
-        # this same installer lock again before changing services.
-        with installer.installation_lock(root):
+        # Serialize acceptance with configuration and lifecycle operations.
+        with instance_services.configuration_lock(root):
             pass
         if action == "start" and start_blocker(state):
             raise ValueError(start_blocker(state))
         identifier = uuid.uuid4().hex
         record = {"id": identifier, "unit": f"tfi-control-{identifier}",
                   "action": action, "status": "queued", "created_at": time.time()}
-        installer.write_json(control_path(root), record)
+        atomic_json(control_path(root), record)
         try:
             launch(root, record)
-            installer.write_json(control_path(root), record)
+            atomic_json(control_path(root), record)
         except Exception:
             record.update(status="failed", error="Unable to launch the independent instance controller")
-            installer.write_json(control_path(root), record)
+            atomic_json(control_path(root), record)
             raise
     return {"name": name, "operation": record}
 
@@ -280,11 +276,11 @@ def execute(name, identifier):
     time.sleep(2)
     root, _ = state_for(name)
     with control_lock(root):
-        record = installer.read_json(control_path(root))
+        record = read_json(control_path(root))
         if record["id"] != identifier or record["status"] != "queued":
             raise ValueError("Instance operation no longer matches")
         record.update(status="running", pid=os.getpid())
-        installer.write_json(control_path(root), record)
+        atomic_json(control_path(root), record)
     try:
         if record["action"] == "stop" and sys.platform.startswith("linux"):
             # The response-delivery delay above is part of the same 20 s
@@ -293,14 +289,14 @@ def execute(name, identifier):
             remaining = SHUTDOWN_SECONDS - (time.monotonic() - started)
             if remaining <= 0:
                 raise TimeoutError("Instance shutdown deadline elapsed before dispatch")
-            installer.lifecycle("stop", root, shutdown_timeout=remaining)
+            instance_services.lifecycle("stop", root, shutdown_timeout=remaining)
         else:
-            installer.lifecycle(record["action"], root)
+            instance_services.lifecycle(record["action"], root)
         record.update(status="completed")
     except Exception as exc:
         record.update(status="failed", error=str(exc))
     record["finished_at"] = time.time()
-    installer.write_json(control_path(root), record)
+    atomic_json(control_path(root), record)
     return record
 
 

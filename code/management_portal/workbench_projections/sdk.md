@@ -77,7 +77,7 @@ python3 -m management_portal.workbench_projections.development_projection --comm
 
 构建器每次从 package.json 重新解析依赖，并在临时目录生成仅供本次构建校验的完整性记录；源码里的旧锁文件会被忽略。依赖只接受 `registry.npmjs.org` 的 HTTPS 包及 SHA-512 完整性，不支持 workspaces、本地或 Git 依赖。解析和安装使用构建专用缓存，不能读取宿主 npm 配置或凭据；源码构建只能只读访问该缓存且不能联网。依赖缓存合计上限 256 MiB；安装和构建各限时 120 秒。
 
-每个功能区默认 8 MiB（`max_bytes` 可调整，最高 64 MiB），按入口 HTML 引用资产去重计量；独立 Worker 等未直接引用资产保守计入每个入口。应用全部产物最多 64 MiB，源码最多 32 MiB、4096 个文件。不可变产物默认保存在 `${staging_root}/shared/projection_applications`，可由 `PORTAL_PROJECTION_ARTIFACT_ROOT` 配置；每次读取复核内容哈希、尺寸和路径。
+每个功能区默认 8 MiB（`max_bytes` 可调整，最高 64 MiB），按入口 HTML 引用资产去重计量；独立 Worker 等未直接引用资产保守计入每个入口。应用全部产物最多 64 MiB，源码最多 32 MiB、4096 个文件。不可变产物保存在 `features:projection_applications/<内容哈希>/`，先写入该目录内的临时目录再改名发布；每次读取复核内容哈希、尺寸和路径。
 
 宿主从同源、当前用户鉴权的修订资产接口读取 HTML/JS/CSS，然后把产物交给无同源权限的 sandbox iframe 执行。宿主不执行应用代码。应用 iframe 外只有一个可信空白容器，以父层 `frame-src 'none'` 阻止应用自行导航发出网络请求；代码只进入内层 sandbox，SDK 连接真正的 Portal 宿主。首版脚本及 Worker 必须自包含；多文件源码可任意组织，构建时 bundle，运行时分块 import 暂不支持。内层 CSP 禁止 URL 脚本、eval、网络请求、表单提交与嵌套文档；样式和主题由宿主注入。Web Worker 只运行经本修订资产校验取得的脚本，Canvas/WebGL 可以正常使用。
 

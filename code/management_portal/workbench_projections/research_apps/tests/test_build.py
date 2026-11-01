@@ -8,9 +8,9 @@ import shutil
 import subprocess
 from types import SimpleNamespace
 
-from management_common.site_config import read_site_config
 from management_portal.workbench_projections import application_build as builder
 from management_portal.workbench_projections.page import validate_application, validate_page
+from tests.cases.instance_test_support import select_instance
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -58,9 +58,7 @@ const cacache = require('/usr/lib/node_modules/npm/node_modules/cacache');
             command = [command[0], '--offline', *command[1:]]
         return sandbox_command(project, command, network=False, **kwargs)
     monkeypatch.setattr(builder, '_sandbox_command', cached_network)
-    monkeypatch.setenv('PORTAL_PROJECTION_ARTIFACT_ROOT',str(tmp_path/'artifacts'))
-    config=read_site_config();config.setdefault('deployment',{})['development_projection']={'repo_id':'repo_123456789abc'}
-    site=tmp_path/'site.json';site.write_text(json.dumps(config));monkeypatch.setenv('PORTAL_SITE_CONFIG',str(site))
+    select_instance(monkeypatch,tmp_path/'instance',site={'deployment':{'development_projection':{'repo_id':'repo_123456789abc'}}})
     spec=importlib.util.spec_from_file_location('research_definition',ROOT/'definition.py');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     definitions=module.definitions(commit)
     for item in definitions:

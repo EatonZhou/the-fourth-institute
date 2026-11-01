@@ -42,7 +42,7 @@ def project(tmp_path, monkeypatch):
                "scripts": {"build": "node build.mjs", "prebuild": "exit 91", "postbuild": "exit 92", "postinstall": "exit 93"}}
     (source / "package.json").write_text(json.dumps(package))
     (source / "build.mjs").write_text("import fs from 'node:fs'; fs.mkdirSync('dist'); fs.writeFileSync('dist/architecture.html', '<p>committed</p>');")
-    monkeypatch.setenv("PORTAL_PROJECTION_ARTIFACT_ROOT", str(tmp_path / "artifacts"))
+    monkeypatch.setattr(builder, "_artifact_root", lambda: tmp_path / "artifacts")
     monkeypatch.setenv("PORTAL_PROJECTION_NPM_CACHE", str(tmp_path / "cache"))
     calls = []
 

@@ -46,7 +46,6 @@ class HistoryFreezeIntegration(unittest.TestCase):
         """完整公开 SQL 在 Windows 中文路径及 POSIX 路径下均可事务导入。"""
         import psycopg
         from scripts import tfi_release_install as installer
-        from scripts import tfi_release_platform_windows as windows
 
         seed = Path(os.environ.get("TFI_EXAMPLE_SEED", REPO / "instance/example_instance/seed"))
         manifest = json.loads((seed / "manifest.json").read_text(encoding="utf-8"))["engineering"]
@@ -55,16 +54,10 @@ class HistoryFreezeIntegration(unittest.TestCase):
                              ("seed_posix", "/opt/tfi")):
             with self.subTest(platform=name):
                 self.connection.execute(f"CREATE DATABASE {name}")
-                if name == "seed_windows":
-                    root = PureWindowsPath(prefix)
-                    roots = {key: str(root / "instance/example_instance/data" / key) for key in installer.KEYS}
-                    with patch.object(installer, "Path", PureWindowsPath), \
-                            patch.object(installer, "code_root", return_value=root / "code"), \
-                            patch.object(installer, "platform_adapter", return_value=windows):
-                        mappings = installer.directory_replacements(manifest, {"data_roots": roots})
-                else:
-                    mappings = {"${" + key + "}": prefix + "/data/" + key for key in installer.KEYS}
-                    mappings["${code_root}"] = prefix + "/code"
+                # Instance files are area references; only the code directory is mapped.
+                with patch.object(installer, "windows", return_value=name == "seed_windows"):
+                    code = (PureWindowsPath if name == "seed_windows" else Path)(prefix) / "code"
+                    mappings = installer.directory_replacements(manifest, code)
                 sql = self.root / (name + ".sql")
                 sql.write_text(installer.map_directories(original, mappings), encoding="utf-8",
                                newline="\r\n" if name == "seed_windows" else "\n")
@@ -76,11 +69,11 @@ class HistoryFreezeIntegration(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", errors="replace"))
                 with psycopg.connect(host=str(self.root), port=self.port, dbname=name,
                                       user=self.connection.info.user) as connection:
-                    total, mapped = connection.execute(
-                        "SELECT count(*), count(*) FILTER (WHERE starts_with(path,%s)) "
-                        "FROM workspace.workspaces", (prefix,)).fetchone()
+                    total, unmapped = connection.execute(
+                        "SELECT count(*), count(*) FILTER (WHERE strpos(path, '${') > 0) "
+                        "FROM workspace.workspaces").fetchone()
                     self.assertGreater(total, 0)
-                    self.assertEqual(total, mapped)
+                    self.assertEqual(unmapped, 0)
                     self.assertTrue(verify_frozen(connection)["passed"])
 
     def test_workspace_schema_migrates_and_checks_absolute_paths(self):
@@ -121,20 +114,15 @@ class HistoryFreezeIntegration(unittest.TestCase):
         self.assertEqual(connection.execute("SELECT count(*) FROM workspace_path_test.workspaces").fetchone()[0],
                          len(valid) + 1)
 
-    def test_windows_unicode_directory_mappings_roundtrip_through_postgres(self):
-        """Windows 中文及空格路径在 SQL、JSON 数据导入中保持原值。"""
+    def test_windows_unicode_code_directory_mapping_roundtrips_through_postgres(self):
+        """Windows 中文及空格的代码目录在 SQL、JSON 数据导入中保持原值。"""
         from scripts import tfi_release_install as installer
-        from scripts import tfi_release_platform_windows as windows
 
         root = PureWindowsPath("C:/Users/安装 用户/TheFourthInstitute")
-        roots = {key: str(root / "instance/example_instance/data" / key) for key in installer.KEYS}
-        tokens = {**roots, "code_root": str(root / "code")}
-        manifest = {"directory_mappings": [
-            {"root": key, "placeholder": "${" + key + "}", "path": "."} for key in tokens]}
-        with patch.object(installer, "Path", PureWindowsPath), \
-                patch.object(installer, "code_root", return_value=root / "code"), \
-                patch.object(installer, "platform_adapter", return_value=windows):
-            mapped = installer.directory_replacements(manifest, {"data_roots": roots})
+        tokens = {"code_root": str(root / "code")}
+        manifest = {"directory_mappings": [{"placeholder": "${code_root}", "root": "code_root", "path": "."}]}
+        with patch.object(installer, "windows", return_value=True):
+            mapped = installer.directory_replacements(manifest, root / "code")
         document = {key: "${" + key + "}/项目资料" for key in tokens}
         sql = installer.map_directories(
             "SELECT '" + json.dumps(document, ensure_ascii=False) + "'::jsonb", mapped)

@@ -1,6 +1,7 @@
 """Resource index adapters for Project knowledge items and Skill packages."""
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
+from management_common.skill_paths import CORE_SKILLS_ROOT, CORE_SKILL_NAMES
 
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -48,7 +49,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         }
     )
     roots = (
-        Path(str(portal_path("share_root") / "Projects")),
+        Path(str(portal_path('projects'))),
     )
     registry_collections = frozenset({project_registry.COLLECTION})
     protect_existing_sources = True
@@ -85,7 +86,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 "max_depth": 2,
                 "files": ["*" + extension for extension in extensions],
             }
-            for root in sorted(Path(str(portal_path("share_root") / "Projects")).glob("*/knowledge_base"))
+            for root in sorted(Path(str(portal_path('projects'))).glob("*/knowledge_base"))
         ]
         return {"trees": trees, "files": []}
 
@@ -141,7 +142,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
 
     def watch_directories(self) -> list[Path]:
         directories: set[Path] = set()
-        for root in Path(str(portal_path("share_root") / "Projects")).glob("*/knowledge_base"):
+        for root in Path(str(portal_path('projects'))).glob("*/knowledge_base"):
             directories.update(_watch_tree(root, max_depth=2))
         return sorted(directories, key=str)
 
@@ -458,17 +459,19 @@ class SkillPackageAdapter(_PathsAdapter):
     name = "skill"
     resource_types = frozenset({"skill"})
     roots = (
-        Path(str(portal_path("share_root") / "Skills")),
-        Path(str(portal_path("share_root") / "Projects")),
+        CORE_SKILLS_ROOT,
+        Path(str(portal_path('skills'))),
+        Path(str(portal_path('projects'))),
     )
     registry_collections = frozenset({project_registry.COLLECTION})
     recursive_fingerprint = True
     protect_existing_sources = True
 
     def source_paths(self) -> list[Path]:
-        project_roots = sorted(Path(str(portal_path("share_root") / "Projects")).glob("*/knowledge_base/skill"))
+        project_roots = sorted(Path(str(portal_path('projects'))).glob("*/knowledge_base/skill"))
         roots = [
-            Path(str(portal_path("share_root") / "Skills")),
+            CORE_SKILLS_ROOT,
+            Path(str(portal_path('skills'))),
             *project_roots,
         ]
         return _tree_paths(roots)
@@ -477,14 +480,17 @@ class SkillPackageAdapter(_PathsAdapter):
         return self._fingerprint_paths(self.source_paths())
 
     def watch_directories(self) -> list[Path]:
-        directories = set(_watch_tree(Path(str(portal_path("share_root") / "Skills")), max_depth=1))
-        for root in Path(str(portal_path("share_root") / "Projects")).glob("*/knowledge_base/skill"):
+        directories = set(_watch_tree(Path(str(portal_path('skills'))), max_depth=1))
+        directories.update(_watch_tree(CORE_SKILLS_ROOT, max_depth=1))
+        for root in Path(str(portal_path('projects'))).glob("*/knowledge_base/skill"):
             directories.update(_watch_tree(root, max_depth=1))
         return sorted(directories, key=str)
 
     def owns_path(self, path: Path) -> bool:
         resolved = _resolved_path(path)
-        shared_root = _resolved_root(str(portal_path("share_root") / "Skills"))
+        if resolved.is_relative_to(CORE_SKILLS_ROOT.resolve()):
+            return True
+        shared_root = _resolved_root(str(portal_path('skills')))
         if resolved == shared_root or shared_root in resolved.parents:
             return True
         parts = resolved.parts
@@ -525,14 +531,14 @@ class SkillPackageAdapter(_PathsAdapter):
                 }
             )
         source_kind = stripped_text(raw.get("source"))
-        project = "" if source_kind in {"shared", "third_party"} else stripped_text(raw.get("project"))
+        project = "" if source_kind in {"core", "shared", "third_party"} else stripped_text(raw.get("project"))
         project_status = statuses.get(project, "")
         attributes = {
             "type": "skill",
             "project_ids": [project] if project else [],
             "read_scope": (
                 "global"
-                if source_kind in {"shared", "third_party"}
+                if source_kind in {"core", "shared", "third_party"}
                 else "project"
             ),
             "project_status": project_status,
@@ -628,6 +634,12 @@ class SkillPackageAdapter(_PathsAdapter):
         path: Path,
         projects: Iterable[dict[str, Any]],
     ) -> tuple[Path, str, str, str] | None:
+        core = CORE_SKILLS_ROOT.resolve()
+        if path.is_relative_to(core):
+            relative = path.relative_to(core)
+            if relative.parts and relative.parts[0] in CORE_SKILL_NAMES:
+                return core / relative.parts[0], "", "core", "Core"
+            return None
         shared_root = skill_backend.SHARED_SKILLS_ROOT.resolve(strict=False)
         third_party_root = skill_backend.THIRD_PARTY_SKILLS_ROOT.resolve(strict=False)
         try:
@@ -646,6 +658,7 @@ class SkillPackageAdapter(_PathsAdapter):
             and relative.parts
             and not relative.parts[0].startswith(".")
             and relative.parts[0] != third_party_root.name
+            and relative.parts[0] not in CORE_SKILL_NAMES
         ):
             root = shared_root / relative.parts[0]
             return root, "", "shared", "Shared"

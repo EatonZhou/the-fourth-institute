@@ -545,7 +545,7 @@ def test_a_familys_message_out_carries_the_members_own_uploads_and_no_one_elses(
     from management_portal.society_service import resident_execution_work
     from management_portal.society_service.resident_record_domain import find_resident as _find_resident
 
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr("management_portal.resources.isa.upload_root", lambda: tmp_path / "uploads")
     member = delivery_resident["resident_id"]
     facade = _register("Family 门面")["resident_id"]
     outsider = _register("外部协作者")["resident_id"]
@@ -594,7 +594,7 @@ def test_only_a_familys_message_out_has_its_facade_send_a_members_uploads(delive
     from management_common.principal import OperationIdentity
     from management_portal.society_service import resident_protocol
 
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr("management_portal.resources.isa.upload_root", lambda: tmp_path / "uploads")
     member = delivery_resident["resident_id"]
     facade = _register("Family 门面")["resident_id"]
     outsider = _register("外部协作者")["resident_id"]
@@ -637,7 +637,7 @@ def test_another_familys_router_relays_the_members_uploads_its_facade_received(d
         save_resident_record as _save_resident_record,
     )
 
-    monkeypatch.setenv("PORTAL_UPLOAD_ROOT", str(tmp_path / "uploads"))
+    monkeypatch.setattr("management_portal.resources.isa.upload_root", lambda: tmp_path / "uploads")
     member = delivery_resident["resident_id"]
     facade = _register("Family 门面")["resident_id"]
     other = _register("另一个 Family 的门面")["resident_id"]

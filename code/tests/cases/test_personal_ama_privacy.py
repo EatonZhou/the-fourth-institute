@@ -18,6 +18,7 @@ from management_portal.permission_system import personal_ama
 from tests.cases import permission_test_support
 from tests.cases.test_resident_delivery_receipts import delivery_resident  # noqa: F401 - fixture
 from tests.cases.test_resident_folder_creation_contract import future_creation_store  # noqa: F401 - fixture
+from tests.cases.instance_test_support import lineage_folders
 
 AMA_LINEAGE = 'lineage_aaaaaaaaaaaa'
 AMA = 'resident_aaaaaaaaaaaa'
@@ -352,9 +353,8 @@ def test_a_personal_ama_folder_answers_only_to_that_ama(monkeypatch, isolated_po
             path.write_text('# Text\n', encoding='utf-8')
         # The canonical entry links to the folder, as under /share/Agents.
         (agents / AMA_LINEAGE).symlink_to(folder)
-        monkeypatch.setenv('PORTAL_LINEAGE_FOLDER_ROOT', str(agents))
+        lineage_folders(monkeypatch, agents)
         monkeypatch.setattr(workspace_domain, 'SHARED_COLLABORATION_ROOTS', (agents,))
-        monkeypatch.setattr(workspace_domain, 'PERSONAL_ROOTS', (agents / 'PersonalAgents',), raising=False)
         paths = {home: agents / AMA_LINEAGE, node: out.parent, team: agents / 'team-agent', above: readme.parent}
 
         def seed(connection):

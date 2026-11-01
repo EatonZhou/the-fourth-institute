@@ -15,10 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
 
-_DEFAULT_ROOT = (portal_path("staging_root") / "shared" / "portal_lineages")
-_ROOT_PROVIDER: Callable[[], Path] = lambda: Path(
-    os.getenv("PORTAL_LINEAGE_ROOT", str(_DEFAULT_ROOT))
-).expanduser()
+_ROOT_PROVIDER: Callable[[], Path] = lambda: portal_path("features") / "lineage_data"
 _SCOPE_LOCAL = threading.local()
 _LOCKS_GUARD = threading.Lock()
 _METRICS_GUARD = threading.Lock()

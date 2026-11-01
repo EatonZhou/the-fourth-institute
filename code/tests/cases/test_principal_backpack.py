@@ -53,8 +53,7 @@ class Resources:
 
 
 @pytest.fixture
-def backpack(tmp_path, monkeypatch):
-    monkeypatch.setenv("PORTAL_RESIDENT_AVATAR_ROOT", str(tmp_path / "avatars"))
+def backpack():
     backend = PrincipalBackpack(access=Access(), resources=Resources())
     return backend
 

@@ -7,7 +7,7 @@ import pytest
 from scripts import tfi_seed_selection as selection
 
 
-SEED = Path(__file__).resolve().parents[3] / 'instance/example_instance/seed'
+SEED = (Path(__file__).resolve().parents[3] / 'instance/example_instance/seed').resolve()
 
 
 @pytest.mark.parametrize('include_examples', [False, True])
@@ -59,7 +59,7 @@ def test_base_seed_index_and_permission_completion_keep_retained_knowledge(monke
                  and row['collection'] == 'project_registry' and row['document_id'] == 'projects']
     # Map the exported project root to this test's immutable seed fixture.
     document = {**document, 'projects': [
-        {**project, 'path': str(SEED / 'data/share_root/Projects' / project['id'])}
+        {**project, 'path': str(SEED / 'data/projects' / project['id'])}
         for project in document['projects']]}
     put_registry_document('project_registry', 'projects', document)
     project_registry.reset_cache_for_tests()

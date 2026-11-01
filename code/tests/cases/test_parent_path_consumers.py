@@ -19,48 +19,18 @@ def load(relative, name):
     return module
 
 
-def preview_functions(tmp_path, deployment):
-    source = ROOT / "management_portal/society_service/workspace_domain.py"
-    tree = ast.parse(source.read_text())
-    names = {"_link_preview_roots", "_preview_root"}
-    selected = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
-    assert {node.name for node in selected} == names
-    from management_common.portal_paths import resolve_directory
-    namespace = {"Path": Path, "resolve_directory": resolve_directory,
-                 "portal_path": lambda key: tmp_path / key,
-                 "read_site_config": lambda: {"deployment": deployment}}
-    exec(compile(ast.Module(body=selected, type_ignores=[]), str(source), "exec"), namespace)
-    return namespace
+def test_preview_presentation_roots_are_instance_areas(tmp_path, monkeypatch):
+    from management_portal.society_service import workspace_domain
+    monkeypatch.setattr(workspace_domain, 'portal_path', lambda key: tmp_path / key)
+    assert workspace_domain._preview_root(tmp_path / 'projects/file') == tmp_path / 'projects'
+    assert workspace_domain._preview_root(tmp_path / 'outside/file') is None
 
 
-def test_preview_roots_follow_configuration_without_implicit_home_access(tmp_path):
-    deployment = {"workspace": {"additional_preview_roots": [str(tmp_path / "configured")]}}
-    functions = preview_functions(tmp_path, deployment)
-    root = functions["_preview_root"]
-    assert root(tmp_path / "share_root/file") == tmp_path / "share_root"
-    assert root(tmp_path / "configured/file") == tmp_path / "configured"
-    assert root(tmp_path / "outside/file") is None
-    deployment["workspace"]["additional_preview_roots"] = []
-    assert root(tmp_path / "configured/file") is None
-
-
-@pytest.mark.parametrize("value", ["/", "", "../outside", "x/../outside", "a\npath", None, 7])
-def test_preview_configuration_rejects_broad_or_invalid_roots(tmp_path, value):
-    functions = preview_functions(tmp_path, {"workspace": {"additional_preview_roots": [value]}})
-    with pytest.raises(ValueError):
-        functions["_link_preview_roots"]()
-
-
-def test_catalog_projects_follow_share_and_explicit_relative_override(tmp_path, monkeypatch):
+def test_catalog_projects_follow_the_projects_area(tmp_path, monkeypatch):
     from management_common import portal_paths
-    monkeypatch.setattr(portal_paths, "path", lambda key: tmp_path / "share")
-    monkeypatch.setattr(portal_paths, "PORTAL_ROOT", tmp_path / "install")
-    monkeypatch.delenv("PORTAL_PROJECTS_ROOT", raising=False)
-    relative = "management_portal/test_framework/tools/sync_catalog.py"
-    assert load(relative, "tfi_catalog_default").PROJECTS_ROOT == tmp_path / "share/Projects"
-    monkeypatch.setenv("PORTAL_PROJECTS_ROOT", "configured/projects")
-    monkeypatch.chdir(tmp_path)
-    assert load(relative, "tfi_catalog_override").PROJECTS_ROOT == tmp_path / "install/configured/projects"
+    monkeypatch.setattr(portal_paths, 'path', lambda key: tmp_path / key)
+    relative = 'management_portal/test_framework/tools/sync_catalog.py'
+    assert load(relative, 'tfi_catalog_default').PROJECTS_ROOT == tmp_path / 'projects'
 
 
 def test_packaging_and_main_bindings_are_separate_configured_targets(tmp_path, monkeypatch):
@@ -68,21 +38,20 @@ def test_packaging_and_main_bindings_are_separate_configured_targets(tmp_path, m
               "facade_resident_id": "resident_333333333333", "project_ids": ["demo"],
               "packaging_lineage_id": "lineage_444444444444", "packaging_facade_resident_id": "resident_555555555555",
               "system_lineage_id": "lineage_666666666666"}
-    path = tmp_path / "site.json"
-    path.write_text(json.dumps({"deployment": {"development_projection": config}}))
-    monkeypatch.setenv("PORTAL_SITE_CONFIG", str(path))
+    from tests.cases.instance_test_support import write_instance
+    root = write_instance(tmp_path / 'instance', site={'deployment': {'project_ids': ['demo'], 'development_projection': config}})
+    path = root / 'site.json'
+    monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
     module = load("management_portal/workbench_projections/development_projection.py", "management_portal.workbench_projections.tfi_development_projection")
     result = module.application_definition("1" * 40)
     assert result["bindings"]["main"]["lineage_id"] == config["lineage_id"]
     assert result["bindings"]["packaging"] == {"lineage_id": config["packaging_lineage_id"],
         "residents": {"facade": config["packaging_facade_resident_id"]}, "events": {}}
     assert result["project_ids"] == ["demo"]
+    assert result["application"]["directory"].startswith("code/management_portal/")
     assert result["bindings"]["packaging_system"] == {"lineage_id": config["system_lineage_id"], "residents": {}, "events": {}}
     assert result["manifest"]["sidebar"][-1]["chat"] == {"binding": "packaging", "role": "facade"}
     config.pop("packaging_facade_resident_id")
     path.write_text(json.dumps({"deployment": {"development_projection": config}}))
     with pytest.raises(ValueError, match="packaging_facade_resident_id"):
         module.application_definition("1" * 40)
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

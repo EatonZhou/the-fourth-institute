@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from scripts import harness_lineage as flow
+from tests.cases.instance_test_support import select_instance
 
 LID = 'lineage_111111111111'
 BATCH = 'script_run_' + 'a' * 24
@@ -16,8 +17,7 @@ BATCH = 'script_run_' + 'a' * 24
 
 @pytest.fixture
 def configure(tmp_path, monkeypatch):
-    path = tmp_path / 'site.json'
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(path))
+    path = select_instance(monkeypatch, tmp_path / 'instance').root / 'site.json'
     monkeypatch.setattr(sys, 'path', list(sys.path))
     def write(**settings):
         path.write_text(json.dumps({'deployment': {'system_workflow': settings}}))

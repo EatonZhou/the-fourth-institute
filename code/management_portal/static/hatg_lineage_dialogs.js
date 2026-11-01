@@ -213,7 +213,7 @@
       $id("lineageNameInput").value = state.lineage.title || "";
       $id("lineageDescriptionInput").value = state.lineage.description || "";
       renderLineageProjectOptions(state.lineage.project_id || "");
-      $id("lineageProjectHint").textContent = window.PortalI18n.t("Lineage 必须属于一个 Project。修改后会同步资源注册并迁移整个 Lineage Folder；有任务运行时不能迁移。");
+      $id("lineageProjectHint").textContent = window.PortalI18n.t("Lineage 必须属于一个 Project。修改后会同步资源注册，并把整个 Lineage 目录移到目标项目的 agents/ 下；有任务运行时不能迁移。");
       $id("lineageLeaderField").hidden = false;
       $id("lineageFamilizeField").hidden = true;
       // A Lineage with a Resident always has a Leader; only an empty one shows the unset choice.

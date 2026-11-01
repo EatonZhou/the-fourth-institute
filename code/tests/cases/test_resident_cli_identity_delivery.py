@@ -335,6 +335,3 @@ def test_resident_md_reaches_every_provider_once(resident_record, monkeypatch, b
     assert (plan.system_context + plan.user_prompt).count("我负责网络管理。") == 1
     assert ("我负责网络管理。" in plan.system_context) is (placement == "system")
     assert "检查出口" in plan.user_prompt
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

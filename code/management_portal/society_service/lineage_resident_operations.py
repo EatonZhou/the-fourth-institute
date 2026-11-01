@@ -18,8 +18,13 @@ class LineageDeletionToken:
     definition: dict[str, Any]
 
 
-def canonical_lineage_folder(lineage_id: str) -> Path:
+def lineage_folder(lineage_id: str) -> Path:
     return lineage_state._lineage_dir(lineage_id)
+
+
+def lineage_folder_for_project(lineage_id: str, project_id: str) -> Path:
+    """The folder of a Lineage that may not be registered yet."""
+    return lineage_storage.lineage_folder_for_project(lineage_id, project_id)
 
 
 def managed_lineage_definition(lineage_id: str, actor: str) -> dict[str, Any]:
@@ -28,36 +33,22 @@ def managed_lineage_definition(lineage_id: str, actor: str) -> dict[str, Any]:
     return definition
 
 
-
-
-def bind_lineage_folder(lineage_id: str, target: Path) -> Path:
-    return lineage_storage.bind_lineage_folder(
-        lineage_id, target, folder_root=lineage_state._lineages_root(),
-    )
-
-
 def prepare_lineage_deletion(
     lineage_id: str, actor: str, deleted_at: str, expected_folder: Path,
 ) -> LineageDeletionToken:
     definition = managed_lineage_definition(lineage_id, actor)
-    folder = canonical_lineage_folder(lineage_id)
+    folder = lineage_folder(lineage_id)
     if folder.resolve(strict=False) != expected_folder.resolve(strict=False):
         raise ValueError("Lineage Folder 与待删除工作区不一致")
     return LineageDeletionToken(lineage_id, actor, deleted_at, expected_folder, definition)
 
 
-def lineage_deletion_effects(token: LineageDeletionToken) -> tuple[dict[str, Any], dict[str, Any]]:
-    return (
-        {
-            "kind": "lineage_tombstone", "lineage_id": token.lineage_id,
-            "definition": token.definition, "folder": str(token.folder),
-            "actor": token.actor, "deleted_at": token.deleted_at,
-        },
-        {
-            "kind": "lineage_folder_unbind", "lineage_id": token.lineage_id,
-            "folder": str(token.folder),
-        },
-    )
+def lineage_deletion_effect(token: LineageDeletionToken) -> dict[str, Any]:
+    return {
+        "kind": "lineage_tombstone", "lineage_id": token.lineage_id,
+        "definition": token.definition, "folder": str(token.folder),
+        "actor": token.actor, "deleted_at": token.deleted_at,
+    }
 
 
 def commit_lineage_deletion(token: LineageDeletionToken) -> None:
@@ -67,13 +58,6 @@ def commit_lineage_deletion(token: LineageDeletionToken) -> None:
 def project_lineage_deletion(step: dict[str, Any]) -> None:
     lineage_lifecycle._sync_deleted_lineage_resource_identity(
         step["definition"], step["actor"], step["deleted_at"],
-    )
-
-
-def unbind_deleted_lineage_folder(step: dict[str, Any]) -> None:
-    lineage_storage.unbind_lineage_folder(
-        step["lineage_id"], folder_root=lineage_state._lineages_root(),
-        expected_target=Path(step["folder"]),
     )
 
 

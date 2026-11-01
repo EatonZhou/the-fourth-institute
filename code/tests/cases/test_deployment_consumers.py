@@ -13,6 +13,7 @@ from management_portal.society_service import system_workflow_switches as switch
 from management_portal.society_service import component_runtime
 from management_portal.watchboards import telepus
 from management_portal.workbench_projections import development_projection as development
+from tests.cases.instance_test_support import select_instance
 
 LID = 'lineage_111111111111'
 RID = 'resident_222222222222'
@@ -21,8 +22,7 @@ REPO = 'repo_333333333333'
 
 @pytest.fixture
 def configure(tmp_path, monkeypatch):
-    path = tmp_path / 'site.json'
-    monkeypatch.setenv('PORTAL_SITE_CONFIG', str(path))
+    path = select_instance(monkeypatch, tmp_path / 'instance').root / 'site.json'
     monkeypatch.delenv('PORTAL_PULSE_ROOT', raising=False)
     def write(**deployment):
         path.write_text(json.dumps({'deployment': deployment}))
@@ -75,7 +75,7 @@ def test_pulse_configuration_resolves_current_lineage_folder(configure, monkeypa
     def folder(lid):
         roots.append(lid)
         return tmp_path / lid
-    monkeypatch.setattr(pulse, 'canonical_lineage_folder', folder)
+    monkeypatch.setattr(pulse, 'lineage_folder', folder)
     assert pulse._pulse_root() == tmp_path / LID / 'memory' / 'pulse'
     assert roots == [LID]
 
@@ -109,10 +109,10 @@ def test_malformed_targets_are_not_silently_disabled(configure, value):
             operation()
 
 
-def test_backup_script_path_round_trips_through_real_effect_parser(configure, tmp_path):
+def test_backup_script_path_round_trips_through_real_effect_parser(configure, tmp_path, monkeypatch):
     from management_portal.society_service import lineage_effect_script as script
     path = tmp_path / 'space "quote" ${literal} and \\backslash.py'
-    configure(backup={'script_path': str(path)})
+    monkeypatch.setattr(backup_lineage, 'script_path', lambda: str(path))
     operations = backup_lineage.migration_operations()
     effect = next(op['value'] for op in operations if op['kind'] == 'component' and op['value']['kind'] == 'effect')
     calls = []

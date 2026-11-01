@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Skill board backend for the management portal."""
 from __future__ import annotations
+from management_common.skill_paths import CORE_SKILLS_ROOT, CORE_SKILL_NAMES
 
 import hashlib
 import shutil
@@ -16,8 +17,8 @@ from management_common.text_values import strip_quotes
 
 from management_portal import project_registry
 
-PROJECTS_ROOT = portal_path("share_root") / "Projects"
-SHARED_SKILLS_ROOT = portal_path("share_root") / "Skills"
+PROJECTS_ROOT = portal_path('projects')
+SHARED_SKILLS_ROOT = portal_path('skills')
 THIRD_PARTY_SKILLS_ROOT = SHARED_SKILLS_ROOT / "third-party"
 
 _MD_CACHE: dict[str, dict[str, Any]] = {}
@@ -393,7 +394,7 @@ def _iter_shared_skill_roots() -> list[Path]:
         return []
     roots = [
         p for p in SHARED_SKILLS_ROOT.iterdir()
-        if p.is_dir() and not p.name.startswith(".") and p != THIRD_PARTY_SKILLS_ROOT
+        if p.is_dir() and not p.name.startswith(".") and p != THIRD_PARTY_SKILLS_ROOT and p.name not in CORE_SKILL_NAMES
     ]
     roots.extend(p for p in SHARED_SKILLS_ROOT.iterdir() if p.is_file() and p.suffix.lower() == ".md" and not p.name.startswith("."))
     return sorted(roots, key=lambda p: p.name.lower())
@@ -467,6 +468,9 @@ def scan_index_source(active_only: bool = False) -> dict[str, Any]:
         item.pop("path", None)
         items.append(item)
 
+    for name in sorted(CORE_SKILL_NAMES):
+        append_root(CORE_SKILLS_ROOT / name, project="", source="core", source_label="Core")
+
     for root in _iter_shared_skill_roots():
         append_root(
             root,
@@ -495,7 +499,7 @@ def scan_index_source(active_only: bool = False) -> dict[str, Any]:
                 source_label="Project",
             )
 
-    source_rank = {"shared": 0, "project": 1, "third_party": 2}
+    source_rank = {"core": -1, "shared": 0, "project": 1, "third_party": 2}
     items.sort(
         key=lambda x: (
             source_rank.get(str(x.get("source") or ""), 1),
@@ -506,7 +510,7 @@ def scan_index_source(active_only: bool = False) -> dict[str, Any]:
     return {
         "generated_at": int(time.time()),
         "projects": projects,
-        "sources": ["shared", "project", "third_party"],
+        "sources": ["core", "shared", "project", "third_party"],
         "items": items,
         "resource_errors": resource_errors,
     }

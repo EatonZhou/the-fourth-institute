@@ -26,47 +26,11 @@ BATCH_SCHEMA = "tfi.harness-review-batch.v1"
 RESULT_SCHEMA = "tfi.harness-review-results.v1"
 RECORDING_SWITCH = "system:harness-recording:enabled"
 TIMING_SWITCH = "system:request-timing:enabled"
-_BOOTSTRAP_INSTALLATION: Path | None = None
 
 
 def read_site_config() -> dict:
-    global _BOOTSTRAP_INSTALLATION
+    from management_common.site_config import read_site_config as read
 
-    try:
-        from management_common.site_config import read_site_config as read
-    except ModuleNotFoundError as exc:
-        if exc.name != "management_common":
-            raise
-        # A captured RunScript has no source package on sys.path. Bootstrap only
-        # the import location with stdlib; the selected Release owns all helpers
-        # and revalidates the site configuration below.
-        installation = Path(__file__).resolve().parents[1]
-        configured = os.environ.get("PORTAL_SITE_CONFIG", "").strip()
-        site = Path(configured).expanduser() if configured else installation / "config/site.json"
-        if not site.is_absolute():
-            site = installation / site
-        data = json.loads(site.read_text(encoding="utf-8"))
-        deployment = data.get("deployment", {}) if isinstance(data, dict) else None
-        settings = deployment.get("system_workflow", {}) if isinstance(deployment, dict) else None
-        if not isinstance(settings, dict):
-            raise ValueError("deployment.system_workflow must be an object")
-        value = settings.get("harness_release_tree")
-        if not isinstance(value, str) or not value.strip() or any(c in value for c in "\0\n\r"):
-            raise ValueError("deployment.system_workflow.harness_release_tree must be a directory")
-        release = Path(value).expanduser()
-        if release.anchor and not release.is_absolute():
-            raise ValueError("Release directory must be fully qualified or relative to the installation")
-        if not release.is_absolute():
-            release = installation / release
-        release = release.resolve()
-        if not (release / "management_common/site_config.py").is_file():
-            raise ValueError("Configured Release does not contain the site configuration reader")
-        sys.path.insert(0, str(release))
-        _BOOTSTRAP_INSTALLATION = installation
-        # Keep a relative site-file setting anchored to the captured script's
-        # installation when the Release reader takes over; never rewrite it.
-        os.environ["PORTAL_SITE_CONFIG"] = str(site.resolve())
-        from management_common.site_config import read_site_config as read
     return read()
 
 
@@ -83,15 +47,7 @@ def _deployment_path(key: str) -> Path:
         raise ValueError(f"deployment.system_workflow.{key} is not configured")
     from management_common.portal_paths import resolve_directory
 
-    resolved = resolve_directory(value)
-    # The import location is relative to the installation that selected it,
-    # not to the resulting Release directory a second time. Other runtime
-    # paths retain the selected Release's portal_paths semantics.
-    if key == "harness_release_tree" and _BOOTSTRAP_INSTALLATION is not None:
-        path = Path(value).expanduser()
-        if not path.is_absolute():
-            return (_BOOTSTRAP_INSTALLATION / path).resolve()
-    return resolved
+    return resolve_directory(value)
 
 
 def _lineage_id() -> str:

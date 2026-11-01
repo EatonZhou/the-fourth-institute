@@ -158,7 +158,8 @@ def test_kimi_backend_records_its_session_compaction(tmp_path, monkeypatch) -> N
     """Kimi Code 与 DSH 的会话压缩记入 AgentData"""
     _kimi_wire(tmp_path, [{"type": "context.apply_compaction", "agentId": "main",
                            "contextSummary": "summary", "compactedCount": 3, "time": "1790776430000"}])
-    monkeypatch.setenv("PORTAL_KIMI_CODE_HOME", str(tmp_path))
+    from management_portal import kimi_code_server
+    monkeypatch.setattr(kimi_code_server, "DEFAULT_HOME", tmp_path)
     context = _Recording()
 
     kimi_backend.KimiBackend().record_provider_compaction(context=context, backend_session_id=KIMI_SESSION)  # type: ignore[arg-type]

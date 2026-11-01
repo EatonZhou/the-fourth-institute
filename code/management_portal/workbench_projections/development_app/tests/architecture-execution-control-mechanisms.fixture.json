@@ -1,6 +1,6 @@
 {
   "capture": {
-    "path": "${share_root}/Projects/AI员工/knowledge_base/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/discovery-candidate-lessons.json",
+    "path": "projects:AI员工/agents/lineage_8794980b1bb7/residents/resident_2546a3558662/workspace/architecture-deep-exploration/fixtures/discovery-candidate-lessons.json",
     "sha256": "d5140814a30b47fa3f920fb75ccfae8325fa9b502b9efd18cb56f4187ef53b62",
     "entry": {
       "address": "workspace_13209cb6666b/file/deep-architecture/objects/discovery-candidate-5f405e01cd34df70f358726542a30f6ad11ca9359df4161979a0fc814a465f71.json",

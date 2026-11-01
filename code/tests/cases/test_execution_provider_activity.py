@@ -292,6 +292,3 @@ def test_provider_activity_recursively_redacts_sensitive_values() -> None:
     assert "public status" in serialized
     assert "mode=safe" in serialized
     assert "safe-output" in serialized
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

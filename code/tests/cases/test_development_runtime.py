@@ -13,44 +13,42 @@ import unittest
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-from scripts.tfi_development_runtime import adapt_component, affected, restart_components
+from scripts.tfi_development_runtime import affected, restart_components
 from scripts import tfi_development_runtime as paired
 
 
+def write_pair(root):
+    from tests.cases.instance_test_support import write_instance
+    write_instance(root)
+    path = root / 'instance.json'
+    document = json.loads(path.read_text())
+    document['deployments']['dev'] = dict(document['deployments']['release'], kind='dev', web_port=19001)
+    document['network']['entry_port'] = 19000
+    document['services']['components'] += ['dev-web', 'gateway']
+    path.write_text(json.dumps(document))
+    return root
+
+
 class PairedRuntimeTest(unittest.TestCase):
-    def test_explicit_site_without_pair_never_uses_checkout_runtime(self):
+    def test_explicit_instance_without_pair_never_uses_checkout_runtime(self):
+        from tests.cases.instance_test_support import write_instance
         with tempfile.TemporaryDirectory() as directory:
-            site = Path(directory) / "config/site.json"
-            site.parent.mkdir()
-            site.write_text('{}')
-            with patch.dict('os.environ', {'PORTAL_SITE_CONFIG': str(site)}), \
+            root = write_instance(Path(directory))
+            with patch.dict(os.environ, {'PORTAL_INSTANCE_ROOT': str(root)}), \
                     patch('scripts.tfi_dev.configuration', side_effect=AssertionError('another instance discovered')):
                 self.assertIsNone(paired.configured_root())
-                (site.parent / 'development.json').write_text('{}')
-                # A locator alone is not an installed pair. Legacy installations
-                # retain their bounded import contract until adopted.
-                self.assertIsNone(paired.configured_root())
-                (Path(directory) / 'installation.json').write_text(json.dumps({
-                    'schema': 'tfi.release-installation.v1',
-                    'target': {'install_root': directory}}))
-                self.assertEqual(paired.configured_root(), Path(directory))
+                write_pair(root)
+                self.assertEqual(paired.configured_root(), root)
 
-    def test_web_changes_code_and_port_without_changing_shared_state(self):
-        env = {"PORTAL_DATABASE_URL": "same-database", "PORTAL_INSTANCE": "release",
-               "PORTAL_RESOURCE_SERVICE_SOCKET": "same-resource.sock",
-               "PORTAL_EXECUTION_SERVICE_SOCKET": "same-execution.sock",
-               "PORTAL_SOCIETY_SERVICE_SOCKET": "same-society.sock"}
-        config = {"dev_code": "/dev/code", "release_code": "/release/code",
-                  "web_ports": {"dev": 19001, "release": 19002}}
-        command, result = adapt_component({}, "web", ["python", "--port", "19000"], env, config)
-        self.assertEqual(command[command.index("--port") + 1], "19002")
-        self.assertEqual(result["PYTHONPATH"], "/release/code")
-        self.assertEqual(result["PORTAL_SHARED_SOURCE_ROOT"], "/dev/code")
-        self.assertTrue(all(result[k] == v for k, v in env.items()))
-        _worker_command, worker = adapt_component({}, "worker", ["python"], env, config)
-        self.assertEqual(worker["PYTHONPATH"], "/dev/code")
-        self.assertEqual(worker["PORTAL_EXECUTION_WORKER_SOURCE_ROOT"], "/dev/code")
-        self.assertEqual(worker["PORTAL_INSTANCE"], "release")
+    def test_web_changes_code_and_port_without_changing_shared_identity(self):
+        from management_common.instance_manifest import load
+        with tempfile.TemporaryDirectory() as directory:
+            instance = load(write_pair(Path(directory)))
+            self.assertEqual(instance.service_environment('web')['PORTAL_DEPLOYMENT'], 'release')
+            self.assertEqual(instance.service_environment('dev-web')['PORTAL_DEPLOYMENT'], 'dev')
+            self.assertEqual(instance.service_environment('worker'), {'PORTAL_INSTANCE_ROOT': str(instance.root)})
+            self.assertEqual(instance.service_code('worker'), instance.code_root('dev'))
+            self.assertEqual(instance.deployments['dev']['web_port'], 19001)
 
     def test_activation_targets_only_affected_application_components(self):
         loaded = {"resource": {"management_portal.resources.server", "management_portal.resource_index_backend",
@@ -122,12 +120,8 @@ class PairedRuntimeTest(unittest.TestCase):
     def test_explicit_restart_waits_for_a_fresh_replacement_worker(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "config").mkdir()
             (root / "runtime").mkdir()
-            from management_common.instance_config import write_installation
-            write_installation(root, {"target": {"install_root": str(root), "service_prefix": "test",
-                                                "development": {"web_ports": {"dev": 19001}}}})
-            (root / "config/development.json").write_text('{"web_ports":{"dev":19001}}')
+            write_pair(root)
             health_path = root / "runtime/worker-health.json"
             old = {"ok": True, "updated_at": 100, "current": {"worker_id": "old", "build_id": "same"}}
             new = {"ok": True, "updated_at": 102, "current": {"worker_id": "new", "build_id": "same"}}
@@ -144,7 +138,7 @@ class PairedRuntimeTest(unittest.TestCase):
                     patch.object(paired.time, "time", return_value=101), \
                     patch.object(paired.time, "sleep", side_effect=advance) as sleep:
                 result = paired.restart(root, "dev", ["execution-worker"])
-            control.assert_called_once_with("kill", "--kill-whom=main", "--signal=USR1", "test-worker.service")
+            control.assert_called_once_with("kill", "--kill-whom=main", "--signal=USR1", "tfi-fixture-worker.service")
             self.assertEqual(sleep.call_count, 3)
             self.assertEqual(result["execution_worker"]["current"]["worker_id"], "new")
             web.assert_called_once_with(19001, "dev")
@@ -163,15 +157,11 @@ class PairedRuntimeTest(unittest.TestCase):
     def test_generation_only_restart_keeps_reload_semantics(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "config").mkdir()
-            from management_common.instance_config import write_installation
-            write_installation(root, {"target": {"install_root": str(root), "service_prefix": "test",
-                                                "development": {"web_ports": {"dev": 19001}}}})
-            (root / "config/development.json").write_text('{"web_ports":{"dev":19001}}')
+            write_pair(root)
             with patch.object(paired, "control") as control, \
                     patch.object(paired, "health", return_value={"ok": True}):
                 result = paired.restart(root, "dev", ["execution-worker"], force_worker_restart=False)
-            control.assert_called_once_with("kill", "--kill-whom=main", "--signal=HUP", "test-worker.service")
+            control.assert_called_once_with("kill", "--kill-whom=main", "--signal=HUP", "tfi-fixture-worker.service")
             self.assertTrue(result["ok"])
 
     def test_publication_records_a_release_event_only_for_a_new_healthy_commit(self):
@@ -186,8 +176,8 @@ class PairedRuntimeTest(unittest.TestCase):
                 receipt = root / "runtime/request-result.json"
                 request.write_text(json.dumps({"commit": new, "paths": ["code/scripts/a.py"],
                                                "receipt": str(receipt), "parent_commit": old}))
-                with patch("management_common.instance_config.read_development",
-                           return_value={"release_code": directory}), \
+                write_pair(root)
+                with \
                         patch.object(paired.subprocess, "check_output", return_value=new + "\n"), \
                         patch.object(paired, "activate", return_value={"ok": ok, "commit": new}), \
                         patch.object(paired, "record_release",

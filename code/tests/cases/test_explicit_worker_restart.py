@@ -110,13 +110,15 @@ def test_manager_dispatches_explicit_signal_without_forcing_reload(monkeypatch, 
 
 
 @pytest.mark.parametrize("generation_only", [False, True])
-def test_explicit_cli_and_automatic_deployment_keep_distinct_worker_intent(monkeypatch, generation_only):
+def test_explicit_cli_and_automatic_deployment_keep_distinct_worker_intent(monkeypatch, tmp_path, generation_only):
     """管理命令保留显式重启与自动部署的区别
 
     验证显式组件重启传递强制意图，generation-only 不强制替换同版本 Worker。
 
     :design-point:
     """
+    from tests.cases.instance_test_support import select_instance
+    select_instance(monkeypatch, tmp_path / "instance", dev=True)
     captured = []
     monkeypatch.setattr(portal_services, "operation_lock", lambda *args: nullcontext())
     monkeypatch.setattr(portal_services, "restart", lambda *args, **kwargs: captured.append(kwargs) or {"ok": True})

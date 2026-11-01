@@ -10,6 +10,7 @@ import argparse
 import json
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -22,25 +23,41 @@ GRACE_SECONDS = 15.0
 
 
 def stop_instance(root, *, application_only=False, timeout=SHUTDOWN_SECONDS):
-    from management_common.instance_config import read_installation
+    from management_common.instance_manifest import load
     started = time.monotonic()
     from scripts.tfi_instance_manager import supervisor_environment
-    from scripts.tfi_release_provider_services import RESTART_RECORD
-    target = read_installation(root)["target"]
-    prefix = target["service_prefix"]
+    from scripts.instance_services import ON_DEMAND_JOBS, RESTART_RECORD, job_unit, owned_units
+    instance = load(root)
+    prefix = instance.service_prefix
     if not isinstance(prefix, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", prefix):
         raise ValueError("Invalid instance service prefix")
     env = supervisor_environment()
+    for job in ON_DEMAND_JOBS:
+        verify_job(job_unit(instance, job), instance.root, env=env)
     remaining = timeout - (time.monotonic() - started)
     if remaining <= 0:
         raise TimeoutError("Instance shutdown deadline elapsed during configuration")
     return stop_units(prefix, application_only=application_only,
-                      timeout=remaining, env=env,
+                      timeout=remaining, env=env, registered_units=owned_units(instance),
                       restart_record=None if application_only else Path(root) / RESTART_RECORD)
 
 
+def verify_job(unit, root, *, env=None, runner=subprocess.run):
+    """A loaded instance job must be transient and select this same instance."""
+    result = runner(["systemctl", "--user", "show", unit, "--property=LoadState,Transient,Environment"],
+                    env=env, capture_output=True, text=True, timeout=15)
+    if result.returncode:
+        raise RuntimeError("Cannot inspect instance job: " + unit)
+    values = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+    if values.get("LoadState") == "not-found":
+        return
+    environment = dict(item.partition("=")[::2] for item in shlex.split(values.get("Environment", "")))
+    if values.get("Transient") != "yes" or environment.get("PORTAL_INSTANCE_ROOT") != str(root):
+        raise ValueError("Instance job belongs to another instance or is not transient: " + unit)
+
+
 def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
-               env=None, runner=subprocess.run, restart_record=None, extra_units=()):
+               env=None, runner=subprocess.run, restart_record=None, extra_units=(), registered_units=None):
     if not sys.platform.startswith("linux"):
         raise NotImplementedError("Bounded instance shutdown currently requires systemd")
     if not 0 < timeout <= SHUTDOWN_SECONDS:
@@ -72,6 +89,10 @@ def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
     units = sorted({row["unit"] for row in rows
                     if (row["unit"].startswith(prefix + "-") and row["unit"].endswith(".service"))
                     or row["unit"] in extra_units})
+    if registered_units is not None:
+        if set(units) - set(registered_units):
+            raise ValueError('Unregistered instance services require reconciliation before shutdown')
+        units = sorted(set(units) & set(registered_units))
     if application_only:
         units = [unit for unit in units if unit not in
                  {prefix + "-postgres.service", prefix + "-nats.service"}]
@@ -87,8 +108,8 @@ def stop_units(prefix, *, application_only=False, timeout=SHUTDOWN_SECONDS,
                         and row.get("active") in {"active", "activating", "reloading"}}
     accounts = [unit for unit in units if unit.startswith(prefix + "-codex-app-server@")]
     if restart_record is not None:
-        from scripts.tfi_release_provider_services import _record, _recorded
-        _record(restart_record, running_accounts | set(_recorded(restart_record)))
+        from scripts.instance_services import record_accounts
+        record_accounts(restart_record, running_accounts)
 
     control("stop", "--no-block", *units)
     forced = []

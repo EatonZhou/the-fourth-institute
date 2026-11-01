@@ -39,9 +39,8 @@ def new_lineage_id(existing_ids: set[str] | None = None) -> str:
     return identity_contract.new_id("lineage", occupied)
 
 
-AGENTS_ROOT = (portal_path("share_root") / "Agents")
-PROJECTS_ROOT = (portal_path("share_root") / "Projects")
-STAGING_ROOT = portal_path("staging_root")
+AGENTS_ROOT = (portal_path('lineages'))
+PROJECTS_ROOT = (portal_path('projects'))
 MAX_TIMELINE_ITEMS = 120
 
 

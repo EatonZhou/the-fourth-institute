@@ -343,12 +343,12 @@ def test_default_accounts_add_api_profiles_without_duplicating_native_accounts(m
 
 
 @pytest.mark.parametrize("enabled", [True, False])
-def test_configuration_preserves_native_routes_and_does_not_invent_missing_profiles(monkeypatch, enabled):
+def test_configuration_preserves_native_routes_and_does_not_invent_missing_profiles(tmp_path, monkeypatch, enabled):
     """原生路线的账号配置不查模型 API 注册表，不存在的配置返回空"""
     from management_portal.ai_provider_registry import shared_ai_provider_registry
     lookup = Mock(side_effect=ValueError("unavailable or disabled profile"))
     monkeypatch.setattr(shared_ai_provider_registry, "get", lookup)
-    register_accounts({"account_id": "test_alpha", "provider": "claude", "kind": "subscription_login",
+    register_accounts({"config": {"account_dir": str(tmp_path / "accounts" / "test_alpha")}, "account_id": "test_alpha", "provider": "claude", "kind": "subscription_login",
                        "route_id": "test_alpha", "enabled": enabled, "max_concurrency": 1})
     accounts = ExecutionAccounts((Adapter(),))
     assert accounts.configuration("claude", "test_alpha") == {
@@ -514,8 +514,8 @@ def test_account_refresh_tracks_inflight_reads_and_throttles_requests(monkeypatc
 
 
 @pytest.mark.parametrize("value", [True, 1.9, "2", 0])
-def test_account_registration_rejects_non_positive_integer_concurrency(value):
+def test_account_registration_rejects_non_positive_integer_concurrency(tmp_path, value):
     """账号登记拒绝非正整数的初始 max_concurrency"""
     with pytest.raises(ValueError, match="max_concurrency"):
-        register_accounts({"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
+        register_accounts({"config": {"account_dir": str(tmp_path / "accounts" / "codex_one")}, "account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
                            "max_concurrency": value})

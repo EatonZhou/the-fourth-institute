@@ -5,36 +5,29 @@ import os
 from importlib import import_module
 from pathlib import Path
 
-from management_common.portal_paths import path as portal_path
+from management_common.instance_manifest import instance_runtime_root, instance_secrets_root
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 
 
 def run_root() -> Path:
-    """Script artifacts share the staging root owned by the installation config."""
-    return portal_path('staging_root') / 'shared' / 'script_runs'
+    """Script artifacts live in the selected instance's runtime directory."""
+    return instance_runtime_root() / 'script_runs'
 
 
 def credential_paths(home: Path | None = None) -> list[Path]:
     """Only paths, never credential contents; include real targets of symlinks."""
-    from management_common.instance_paths import secrets_dir
-    from management_common.provider_account_paths import provider_root, host_user_home, PROVIDERS
+    from management_common.host_instances import user_home
 
     from scripts import portal_release
 
     home = home or Path.home()
-    staging = portal_path("staging_root")
     paths = [home / p for p in (
         '.config/tfi', '.tfi/secrets', '.ssh', '.gnupg', '.git-credentials',
         '.netrc', '.pgpass', '.config/gh', '.config/restic', '.config/git/credentials',
         '.config/systemd/user', '.tfi/portal/authorization-principals',
     )]
-    from management_common.site_compatibility import compatibility_value
-    configured = compatibility_value("test_framework.credential_paths", [])
-    if not isinstance(configured, list) or any(not isinstance(p, str) for p in configured):
-        raise ValueError("Configured credential paths must be a string list")
-    paths.extend((home / p).expanduser() for p in configured)
-    paths.extend([secrets_dir(), *(provider_root(p) for p in PROVIDERS)])
+    paths.append(instance_secrets_root())
     from management_portal.execution.account_registrations import registrations
     paths.extend(Path(row["config"]["account_dir"]) for row in registrations()
                  if row["kind"] == "subscription_login")
@@ -43,31 +36,15 @@ def credential_paths(home: Path | None = None) -> list[Path]:
     for definition in AGENT_PROVIDERS.values():
         for pattern in definition.credential_globs:
             paths.extend(home.glob(pattern))
-            paths.extend(host_user_home().glob(pattern))
+            paths.extend(user_home().glob(pattern))
         if definition.credential_paths_provider:
             module, name = definition.credential_paths_provider.rsplit('.', 1)
             paths.extend(getattr(import_module(module), name)())
     for repo in (REPOSITORY, portal_release.RELEASE_ROOT):
-        instances = repo / 'portal_instances'
-        if instances.exists():
-            paths.extend(instances.glob('*/*.env'))
-            paths.extend(instances.glob('*/*/*.env'))
         paths.extend(repo.glob('.env*'))
-    # Prevent access to trusted local RPC, database and provider sockets.
-    paths.extend((Path('/run/user') / str(os.getuid()), Path('/run/postgresql'),
-                  staging / 'portal_locks', staging / 'shared' / 'portal_runtime'))
-    from management_common.instance_paths import instance_root
-    from management_portal.resources.config import resource_rpc_signing_key_file, resource_service_socket
-    from management_portal.society_service.config import society_service_socket
-    from management_portal.execution.config import execution_service_socket
-    for instance in ('dev', 'release'):
-        paths.extend((resource_rpc_signing_key_file(instance), resource_service_socket(instance),
-                      society_service_socket(instance), execution_service_socket(instance)))
-    for root in {instance_root(), staging / 'portal_instances', REPOSITORY / 'portal_instances'}:
-        for path in root.glob('*/*'):
-            if path.is_socket() or path.suffix in {'.env', '.key'}:
-                paths.append(path)
-    paths.append(staging / 'shared' / 'portal_locks')
+    # Prevent access to trusted local RPC, database and provider sockets, the
+    # signing keys and the locks: all of them live in the instance runtime.
+    paths.extend((Path('/run/user') / str(os.getuid()), Path('/run/postgresql'), instance_runtime_root()))
     # Mount canonical targets once; every symlink alias then sees that mask.
     existing = {p.resolve() for p in paths if p.exists()}
     return sorted((p for p in existing if not any(p != parent and p.is_relative_to(parent) for parent in existing)), key=str)

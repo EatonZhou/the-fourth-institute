@@ -110,7 +110,7 @@ def test_save_freezes_minimal_site_and_config_run_does_not_follow_source_changes
     assert native_actions(changed) == []
 
 
-@pytest.mark.skipif(not os.environ.get('TFI_UPGRADE_TEST_PG_BIN'), reason='explicit independent PG binaries required')
+@pytest.mark.skipif(not os.environ.get('TFI_NATIVE_SWITCH_TEST_PG_BIN'), reason='explicit independent PG binaries required')
 def test_resolved_manifest_actions_initialize_target_checkpoints():
     from tests.cases.test_release_native_switches_pg import NativeTargetTests
     from management_portal.distribution.initialization import initialize
@@ -135,7 +135,7 @@ def test_resolved_manifest_actions_initialize_target_checkpoints():
             assert resolution['valid']
             # Exercise the serialized manifest boundary used by engineering.generate.
             manifest = json.loads(json.dumps({'selection_snapshot': selected, 'feature_resolution': resolution}))
-            result = initialize(manifest, target.c, target.roots, site_config_path=target.site)
+            result = initialize(manifest, target.c, target.instance, site_config_path=target.site)
             assert {item['id'] for item in result['features']} == {'pulse', 'architecture_audit'}
             assert all(item['actual_enabled'] is enabled for item in result['features'])
             assert result['lineage_timer_required'] is enabled

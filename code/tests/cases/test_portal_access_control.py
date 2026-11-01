@@ -279,7 +279,7 @@ def test_admin_delete_user_removes_only_account_private_data(
         (root / "engineer").mkdir(parents=True)
         (root / "engineer" / "private.txt").write_text("private", encoding="utf-8")
         (root / "colleague").mkdir(parents=True)
-    avatar_store = avatars.UserAvatarStore(tmp_path / "avatars")
+    avatar_store = avatars.user_avatar_store()
     avatar_store.update("engineer", {"kind": "sprite", "sprite_index": 1})
     colleague_avatar = avatar_store.update("colleague", {"kind": "sprite", "sprite_index": 2})
     from management_portal import telepus_contacts_store as telegram

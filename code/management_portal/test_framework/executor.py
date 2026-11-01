@@ -22,7 +22,6 @@ import traceback
 from pathlib import Path
 from typing import Any, Callable
 
-from management_common import portal_paths
 from management_portal.business_tasks import process_identity
 from management_portal.test_framework.catalog import ROOT
 from management_portal.test_framework.local_runs import PytestGroup, group_runner
@@ -31,9 +30,9 @@ from management_portal.test_framework.records import TERMINAL, RunRecords, aggre
 
 
 FLUSH_SECONDS = 2.0
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 
-UNIT_PREFIX = compatibility_value("test_framework.unit_prefix", "tfi-testrun-")
+UNIT_PREFIX = "tfi-testrun-"
 if not isinstance(UNIT_PREFIX, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+-", UNIT_PREFIX):
     raise ValueError("test_framework.unit_prefix must be a unit-name prefix")
 FAILED_STATUSES = {"failed", "error"}
@@ -57,7 +56,7 @@ def postgres_environment_file() -> str:
     return str(postgres_env_file())
 
 
-def unit_environment(state_root: Path, *, tau: bool) -> dict[str, str]:
+def unit_environment(*, tau: bool) -> dict[str, str]:
     """The environment of an executor unit; it never carries a secret.
 
     A TAU Campaign gets the Portal service routing and test settings of the
@@ -65,12 +64,11 @@ def unit_environment(state_root: Path, *, tau: bool) -> dict[str, str]:
     environment file, so the URL never appears in a command line.
     """
     environment = {
-        "PORTAL_TEST_FRAMEWORK_STATE_ROOT": str(state_root),
-        "PORTAL_INSTANCE": instance_name(),
+        "PORTAL_DEPLOYMENT": instance_name(),
         **{
             key: os.environ[key]
-            for key in ("PATH", "PLAYWRIGHT_BROWSERS_PATH", "PORTAL_TEST_STORAGE_STATE", "PORTAL_TEST_SLOT_ROOT", "PORTAL_TEST_MAX_CONCURRENCY",
-                        "PORTAL_SITE_CONFIG", "PORTAL_PATHS_CONFIG", *portal_paths.ENV_KEYS.values())
+            for key in ("PATH", "PLAYWRIGHT_BROWSERS_PATH", "PORTAL_TEST_STORAGE_STATE", "PORTAL_TEST_MAX_CONCURRENCY",
+                        "PORTAL_INSTANCE_ROOT")
             if os.environ.get(key)
         },
     }
@@ -105,7 +103,7 @@ def launch_unit(run_id: str, state_root: Path, *, tau: bool = False) -> None:
         "--property=RuntimeMaxSec=" + ("infinity" if tau else "28800"),
         *(["--property=EnvironmentFile=" + postgres_environment_file()] if tau else []),
         f"--working-directory={ROOT}",
-        *(f"--setenv={key}={value}" for key, value in unit_environment(state_root, tau=tau).items()),
+        *(f"--setenv={key}={value}" for key, value in unit_environment(tau=tau).items()),
         sys.executable, "-m", "management_portal.test_framework.executor", "--state-root", str(state_root), run_id,
     ]
     result = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)

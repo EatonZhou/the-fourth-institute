@@ -80,60 +80,53 @@ class MacOfflineDependencies(unittest.TestCase):
         self.assertEqual(receipt['lock_sha256'], hashlib.sha256(lock.read_bytes()).hexdigest())
         self.assertEqual((self.root / 'payload' / receipt['path'] / 'requirements.lock').read_bytes(), lock.read_bytes())
 
-    def test_target_uses_packaged_dependencies_for_either_case_choice(self):
+    def test_creation_uses_packaged_dependencies_for_either_case_choice(self):
         for included in (False, True):
             platform = self.root / str(included)
-            manifest = platform / '.build/example_instance-macos/engineering/manifest.json'
-            manifest.parent.mkdir(parents=True)
-            manifest.write_text('{"run_id":"fixture"}')
-            (platform / 'macos-package.json').write_text(json.dumps({
-                'bundled_python_dependencies': {'lock_sha256': 'fixture'}}))
+            bundle = platform / '.build/m/engineering/manifest.json'
             flow = launcher.MacStartup(platform, included=included)
-            with patch.object(launcher, 'unpack_seed'), patch.object(flow, 'execute'):
+            with patch.object(flow, 'registered', return_value=False), \
+                    patch.object(flow, 'engineering', return_value=bundle), \
+                    patch.object(flow, 'execute') as execute:
                 flow.initialize()
-            target = json.loads((platform / '.build/macos/target.json').read_text())
-            self.assertTrue(target['offline_dependencies'])
-            self.assertTrue(target['bundled_python_dependencies'])
+            command = execute.call_args.args[0]
+            self.assertIn('--offline', command)
+            self.assertEqual(command[0], str(platform / 'dependencies/python/bin/python3'))
 
     def test_local_repair_reuses_environment_and_missing_payload_has_no_fallback(self):
-        root = self.root / 'instance/desktop'
-        (root / 'runtime').mkdir(parents=True)
-        target = {'install_root': str(root), 'shared_code_root': str(self.source),
-                  'python': str(self.root / 'dependencies/python/bin/python3'),
-                  'offline_dependencies': True, 'bundled_python_dependencies': True}
-        state = {'target': target, 'manifest_sha256': 'fixture'}
+        base_python = self.root / 'dependencies/python/bin/python3'
         wheelhouse = self.root / 'dependencies/python-wheels'
         wheelhouse.mkdir(parents=True)
         lock = wheelhouse / 'requirements.lock'
         lock.write_text('fixture generation')
-        key = dependencies.environment_key(target, ['core'])
+        from management_common.code_environment import environment_directory, environment_key
+        key = environment_key(self.source)
         lock.write_text('different generation')
-        self.assertNotEqual(key, dependencies.environment_key(target, ['core']))
+        self.assertNotEqual(key, environment_key(self.source))  # The wheel lock selects the environment.
         lock.write_text('fixture generation')
-        python = self.root / 'dependencies' / key / 'venv/bin/python'
+        python = environment_directory(self.source) / 'bin/python'
         calls = []
+
         def doctor(*args, **kwargs):
-            return SimpleNamespace(returncode=0 if python.exists() else 1,
-                                   stdout=json.dumps([{'ok': True}]))
+            return SimpleNamespace(returncode=0 if python.exists() else 1, stdout=json.dumps([{'ok': True}]))
+
         def install(command, **kwargs):
             calls.append(command)
-            self.assertEqual(command[0], target['python'])
+            self.assertEqual(command[0], str(base_python))
             self.assertEqual(command[-2:], ['--wheelhouse', str(wheelhouse)])
             python.parent.mkdir(parents=True)
             python.touch()
             return SimpleNamespace(returncode=0)
-        api = SimpleNamespace(run_utf8_capture=doctor, run_process=install, clean_environment=lambda _: {},
-                              native_tool=lambda _: 'python', save_stage=lambda *args: None)
-        with patch.object(dependencies, 'profiles', return_value=['core']):
-            dependencies._prepare(api, state, {})
-            self.assertEqual(state['dependencies']['source'], 'bundled-offline-wheels')
-            dependencies._prepare(api, state, {})
+        with patch.object(dependencies, 'run_utf8_capture', side_effect=doctor), \
+                patch.object(dependencies, 'run_process', side_effect=install):
+            options = {'base_python': base_python, 'offline': True}
+            self.assertEqual(dependencies.prepare(self.source, **options)['source'], 'bundled-offline-wheels')
+            self.assertEqual(dependencies.prepare(self.source, **options)['source'], 'verified-existing')
             self.assertEqual(len(calls), 1)
-            self.assertEqual(state['dependencies']['source'], 'verified-existing-installation')
             python.unlink()
             lock.unlink()
             with self.assertRaisesRegex(RuntimeError, '缺少离线'):
-                dependencies._prepare(api, state, {})
+                dependencies.prepare(self.source, **options)
             self.assertEqual(len(calls), 1)
 
 

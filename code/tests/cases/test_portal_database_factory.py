@@ -10,10 +10,16 @@ from management_common.portal_database import (
 from management_common.postgres_database import PostgresDatabase
 
 
-def test_portal_database_url_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
-    """缺少 PORTAL_DATABASE_URL 时解析数据库地址报错"""
+def test_portal_database_url_is_required(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """环境没有 PORTAL_DATABASE_URL 时，数据库地址取自实例 secrets 中的 postgres.env；两者都缺少时报错"""
+    from tests.cases.instance_test_support import select_instance
+    secrets = select_instance(monkeypatch, tmp_path / "instance").directory("secrets")
     monkeypatch.delenv("PORTAL_DATABASE_URL", raising=False)
-    with pytest.raises(RuntimeError, match="PORTAL_DATABASE_URL"):
+    with pytest.raises(RuntimeError, match="secrets/postgres.env"):
+        portal_database_url()
+    secrets.mkdir()
+    (secrets / "postgres.env").write_text("PORTAL_POSTGRES_POOL_SIZE=4\n")
+    with pytest.raises(RuntimeError, match="postgres.env"):
         portal_database_url()
 
 
@@ -44,7 +50,7 @@ def test_domain_pool_is_demand_driven_and_attributable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """领域连接池按需建连，最小 0、最大 8，连接以实例名作 application_name"""
-    monkeypatch.setenv("PORTAL_INSTANCE", "dev")
+    monkeypatch.setenv("PORTAL_DEPLOYMENT", "dev")
     monkeypatch.delenv("PORTAL_POSTGRES_DOMAIN_POOL_SIZE", raising=False)
     monkeypatch.delenv("PORTAL_POSTGRES_POOL_MAX_IDLE_SECONDS", raising=False)
     database = portal_database(schema="agent")

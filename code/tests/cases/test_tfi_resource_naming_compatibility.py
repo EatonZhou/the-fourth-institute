@@ -205,7 +205,6 @@ def test_recovery_rejects_bad_schema_without_changing_evidence(tmp_path, tag):
     assert path.read_text() == current
 
 
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ
 
 
 @pytest.mark.parametrize("namespace", ["archive", "tfi"])

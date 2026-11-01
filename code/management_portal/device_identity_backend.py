@@ -1,9 +1,8 @@
 from __future__ import annotations
-from management_common.product_environment import read_product_env, mirror_product_env
+from management_common.product_environment import mirror_product_env
 
 from management_common.format_tags import schema_matches
 from management_common.portal_paths import path as portal_path
-from management_common.site_config import read_site_config
 from management_common.clock import utc_now_iso
 from management_common.text_values import stripped_text
 
@@ -28,18 +27,8 @@ from management_portal.shared_state import atomic_replace_json
 REGISTRY_SCHEMA = "tfi.device.v1"
 STATUS_SCHEMA = "tfi.device_status.v1"
 DEVICE_COLLECTION = "device"
-DEFAULT_STATUS_PATH = Path(
-    read_product_env(
-        "PORTAL_DEVICE_STATUS_PATH",
-        str(portal_path("staging_root") / "shared" / "portal_cache" / "devices" / "status.json"),
-    )
-).expanduser()
-DEFAULT_DEVICE_SECRET_ROOT = Path(
-    read_product_env(
-        "PORTAL_DEVICE_SECRET_ROOT",
-        str(portal_path("secrets_dir") / "devices"),
-    )
-).expanduser()
+DEFAULT_STATUS_PATH = portal_path("cache") / "devices" / "status.json"
+DEFAULT_DEVICE_SECRET_ROOT = portal_path('secrets') / "devices"
 
 _RESOURCE_SERVICE = get_resource_service()
 _STATUS_LOCK = threading.RLock()
@@ -241,6 +230,11 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
         "port": ssh_port,
         "identity_file": stripped_text(ssh.get("identity_file")),
     }
+    for field in ('config_path', 'identity_file'):
+        value = normalized_ssh[field]
+        if value and (not Path(value).is_absolute() or '..' in Path(value).parts
+                      or any(ord(c) < 32 for c in value)):
+            raise ValueError('Device SSH paths must be absolute host file paths')
     if any(value not in ("", None) for value in normalized_ssh.values()) and not ssh_host:
         raise ValueError(
             f"device registry {document_id} configures SSH without a host"
@@ -501,25 +495,29 @@ def unregister_device(
     return {"id": clean_id, "unregistered": True, "name": record["name"]}
 
 
+def update_device(device_id: str, changes: dict[str, Any]) -> dict[str, Any]:
+    """Change a device's SSH registration through UpdateResource."""
+    _RESOURCE_SERVICE.validate_id(device_id, 'device')
+    if not isinstance(changes, dict) or set(changes) != {'access_methods'}:
+        raise ValueError('Device update requires access_methods')
+    with get_registry_store().writer(DEVICE_COLLECTION) as writer:
+        documents = writer.documents(DEVICE_COLLECTION)
+        if device_id not in documents:
+            raise KeyError(device_id)
+        record = {**documents[device_id], 'access_methods': copy.deepcopy(changes['access_methods']),
+                  'updated_at': utc_now_iso()}
+        normalized = _normalize_record(record, device_id)
+        _, errors = _validate_registry({**documents, device_id: record})
+        if errors:
+            raise ValueError(errors[0]['error'])
+        writer.put(DEVICE_COLLECTION, device_id, record)
+    announce_registry_changes(DEVICE_COLLECTION, {device_id: 'updated'}, resource_type='device')
+    return {'id': device_id, **normalized}
+
+
 def ssh_access_for_record(record: dict[str, Any]) -> dict[str, Any]:
-    """Apply installation-local SSH paths to a device's connection metadata."""
-    access_methods = record.get("access_methods") or {}
-    ssh = copy.deepcopy(access_methods.get("ssh") or {})
-    paths_by_device = read_site_config().get("deployment", {}).get("device_ssh_paths", {})
-    if not isinstance(paths_by_device, dict):
-        raise ValueError("deployment.device_ssh_paths must be an object")
-    device_id = record["device_id"]
-    if device_id in paths_by_device:
-        paths = paths_by_device[device_id]
-        fields = {"config_path", "identity_file"}
-        if not isinstance(paths, dict) or set(paths) - fields:
-            raise ValueError(f"deployment.device_ssh_paths.{device_id} must contain only SSH paths")
-        for field in fields:
-            value = paths.get(field, "")
-            if not isinstance(value, str) or (value and not Path(value).is_absolute()):
-                raise ValueError(f"deployment.device_ssh_paths.{device_id}.{field} must be an absolute path or empty")
-            ssh[field] = value
-    return ssh
+    """SSH configuration belongs to its device registration."""
+    return copy.deepcopy((record.get('access_methods') or {}).get('ssh') or {})
 
 
 def effective_ssh_access(

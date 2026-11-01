@@ -41,7 +41,7 @@ def executor_environment(state_root: Path, *, tau: bool) -> dict[str, str]:
     names = {"PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP",
              "USERPROFILE", "LOCALAPPDATA", "APPDATA", "PROGRAMDATA", "HOME"}
     environment = {key: value for key, value in os.environ.items() if key.upper() in names}
-    environment.update(unit_environment(state_root, tau=tau))
+    environment.update(unit_environment(tau=tau))
     environment.update(PYTHONUTF8="1", PYTHONUNBUFFERED="1")
     if tau:
         from scripts.portal_native_service_child import load_environment_files

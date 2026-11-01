@@ -193,8 +193,13 @@ def test_knowledge_attachment_image_uses_authenticated_actor(tmp_path):
         thread.join(timeout=2)
 
 
-def test_knowledge_archive_unavailable_keeps_service_error_response():
+def test_knowledge_archive_unavailable_keeps_service_error_response(tmp_path, monkeypatch):
     """知识归档服务不可用时，创建归档请求返回 503 并带出服务名"""
+    from tests.cases.instance_test_support import select_instance
+    instance = select_instance(monkeypatch, tmp_path / 'instance')
+    document = instance.document
+    document['services']['components'].append('knowledge-archive-agent')
+    (instance.root / 'instance.json').write_text(json.dumps(document))
     server = ThreadingHTTPServer(("127.0.0.1", 0), _QuietHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -218,7 +223,7 @@ def test_knowledge_archive_unavailable_keeps_service_error_response():
             urllib.request.urlopen(request)
         assert caught.value.code == 503
         response = json.loads(caught.value.read())
-        assert response["service"] == "knowledge-archive-agent.service"
+        assert response["service"] == instance.service_name('knowledge-archive-agent') + '.service'
     finally:
         server.shutdown()
         server.server_close()

@@ -1,14 +1,13 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
-import os
 import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 
-DEFAULT_SOCKET_PATH = (portal_path("staging_root") / "portal_locks" / "claude-code-daemon.sock")
+DEFAULT_SOCKET_PATH = (portal_path("runtime") / "s" / "claude-code-daemon.sock")
 # A compaction writes its summary with the session's model: 2-5 minutes on a
 # long history in the 2026-10-03 measurements.  Portal waits 30 minutes for an
 # explicit compaction (RESIDENT_AGENT_CODEX_COMPACT_TIMEOUT_SECONDS).
@@ -41,8 +40,8 @@ class ClaudeCodeClient(NativeAgentClient):
     error_type = ClaudeCodeError
     unavailable_type = ClaudeCodeUnavailable
 
-    def __init__(self, socket_path: Path | str = DEFAULT_SOCKET_PATH) -> None:
-        self.socket_path = Path(socket_path)
+    def __init__(self, socket_path: Path | str | None = None) -> None:
+        self.socket_path = Path(socket_path) if socket_path is not None else portal_path("runtime") / "s/claude-code-daemon.sock"
 
     def health(self) -> dict[str, Any]:
         return self._request("health", response_timeout=9.0)
@@ -242,6 +241,5 @@ def shared_client() -> ClaudeCodeClient:
     global _CLIENT
     with _CLIENT_LOCK:
         if _CLIENT is None:
-            socket_path = os.getenv("PORTAL_CLAUDE_CODE_SOCKET", str(DEFAULT_SOCKET_PATH))
-            _CLIENT = ClaudeCodeClient(socket_path)
+            _CLIENT = ClaudeCodeClient()
         return _CLIENT

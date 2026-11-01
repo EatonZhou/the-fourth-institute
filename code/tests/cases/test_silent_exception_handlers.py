@@ -77,8 +77,6 @@ ALLOWED: dict[str, tuple[int, str]] = {
     "management_portal/resources/isa.py::reads_only": (
         1, "classification only: an unreadable target or undeclared action is recorded as a change, and "
            "RunResourceAction then rejects it with the real error"),
-    "scripts/tfi_application_clients.py::plan_disconnected": (
-        1, "the failed re-read is recorded as fresh_observation='read_error' in the raised proof"),
     "scripts/tfi_release_windows_service.py::run_command_service.service_main": (
         1, "forced stop of the child after the error was written to the .error.log"),
 }

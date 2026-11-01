@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from management_common.instance_paths import instance_root
+from management_common.instance_manifest import instance_runtime_root
 
 
 def resource_service_mode() -> str:
@@ -16,16 +16,9 @@ def resource_service_mode() -> str:
     return str(os.getenv("PORTAL_RESOURCE_SERVICE_MODE") or "client").strip()
 
 
-def resource_service_socket(instance: str = "") -> Path:
-    clean_instance = str(
-        instance or os.getenv("PORTAL_INSTANCE", "dev") or "dev"
-    ).strip()
+def resource_service_socket() -> Path:
     configured = str(os.getenv("PORTAL_RESOURCE_SERVICE_SOCKET", "") or "").strip()
-    if configured:
-        return Path(configured).expanduser()
-    return Path(
-        f'{instance_root()}/{clean_instance}/resource-service.sock'
-    )
+    return Path(configured) if configured else instance_runtime_root() / "s/resource-service.sock"
 
 
 def resource_database_schema() -> str:

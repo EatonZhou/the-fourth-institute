@@ -1036,6 +1036,3 @@ def test_execution_service_preserves_structured_provider_interruption(
         assert "unknown error" not in snapshot["result"]["error"]
     finally:
         _close(server, thread)
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

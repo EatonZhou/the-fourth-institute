@@ -41,10 +41,12 @@ def _application_shell(sidebar, config, *, example):
 
 
 def _source_directory(config: dict, relative: str) -> str:
-    prefix = str(config.get("code_directory") or "").strip("/")
-    if prefix and (prefix.startswith(".") or ".." in prefix.split("/")):
-        raise ValueError("development_projection.code_directory must be a repository-relative directory")
-    return "/".join(filter(None, (prefix, relative)))
+    # Portal's source layout is code-owned, independent of an instance's site settings.
+    from pathlib import PurePosixPath
+    path = PurePosixPath(relative)
+    if path.is_absolute() or '..' in path.parts or path.as_posix() != relative:
+        raise ValueError('Expected a code-relative source path')
+    return 'code/' + relative
 
 
 def portal_source(relative: str) -> tuple[str, str]:

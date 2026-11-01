@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any, Iterable
 
-from management_common.site_compatibility import compatibility_value
+from management_common.site_config import read_site_config
 from management_common.text_values import stripped_text
 from management_portal.repo_workspace_checkout import (
     RepoWorkspaceConflict, _repo_lock, _safe_relative_path, _target,
@@ -262,13 +262,13 @@ def commit_scoped_git_changes(
             raise RepoWorkspaceConflict(
                 "仓库暂存区还包含 Article 目录之外的文件；请先提交或取消暂存这些文件，Portal 不会混合提交。"
             )
-        author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or compatibility_value("repo_git_author_name", "TFI Portal")
+        author = re.sub(r"[\x00\r\n]+", " ", stripped_text(actor)).strip() or "TFI Portal"
         email_local = re.sub(r"[^A-Za-z0-9._-]+", "-", author).strip("-") or "portal"
         args = [
             "-c",
             f"user.name={author}",
             "-c",
-            f"user.email={email_local}@{compatibility_value('repo_git_email_domain', 'tfi.local')}",
+            f"user.email={email_local}@{'tfi.local'}",
             "commit",
             "-m",
             clean_message,

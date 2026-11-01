@@ -145,7 +145,14 @@ def test_live_execution_lock_protects_long_call_across_owner_instances(store):
             with pytest.raises(InstructionError, match="仍在执行"):
                 pool.submit(begin, other, "long-call", now=AFTER).result()
         assert store.get(active["instruction_id"])["status"] == "executing"
-    assert other.settle_interrupted(now=AFTER) == 1
+    # The dedicated lock connection closes on exit; PostgreSQL observes EOF
+    # asynchronously, so wait for that release rather than relying on timing.
+    import time
+    deadline = time.monotonic() + 5
+    while not other.settle_interrupted(now=AFTER):
+        assert time.monotonic() < deadline, "closed owner connection kept its lock"
+        time.sleep(0.01)
+    assert store.get(active["instruction_id"])["status"] == "failed"
 
 
 def test_unknown_effect_result_stays_pinned_until_ack(store):

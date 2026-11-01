@@ -620,7 +620,8 @@ def test_turns_claude_code_takes_on_its_own_count_for_the_resident_once(tmp_path
     from management_portal.execution.provider_catalog import AGENT_PROVIDERS
     from management_portal.execution.unattributed_usage import record_self_started_claude_usage
 
-    monkeypatch.setenv("PORTAL_AGENT_CONFIG_ROOT", str(tmp_path / "agent-config"))
+    from management_portal.execution import native_options
+    monkeypatch.setattr(native_options, "portal_path", lambda area: tmp_path / area)
     resident_id, session_id, binding_id = "resident_0123456789ab", "5d0c7a52-0000-4000-8000-000000000001", "resident:binding"
     # The Resident's requests name its runtime directory, which holds the transcripts.
     runtime_root = tmp_path / "runtime" / "backend"

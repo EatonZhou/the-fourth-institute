@@ -11,23 +11,14 @@ def register_codex(monkeypatch, root, *, names=("zero", "one"), default="one", l
     with database().transaction("fixture") as c:
         c.execute("DELETE FROM backend_roles WHERE account_id IN (SELECT account_id FROM registrations WHERE provider='codex')")
         c.execute("DELETE FROM registrations WHERE provider='codex'")
-    monkeypatch.setenv("PORTAL_ACCOUNT_HOST_HOME", str(Path(root) / "host-home"))
-    monkeypatch.setenv("PORTAL_INSTANCES_ROOT", str(Path(root) / "instances"))
-    from management_common import portal_paths
-    values = {**portal_paths.path_values(),
-        "instances_root": str(Path(root) / "instances")}
-    # Installation configuration is outside the directory under test, just as
-    # it is in an installed instance. Atomic-write tests can then inspect that
-    # directory for leaked temporary files without seeing our fixture itself.
-    config = Path(root).with_name(Path(root).name + "-fixture-paths.json")
-    config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(json.dumps(values))
-    monkeypatch.setenv("PORTAL_PATHS_CONFIG", str(config))
-    monkeypatch.setattr(portal_paths, "CONFIG_PATH", config)
+    from tests.cases.instance_test_support import write_instance
+    instance = Path(root).with_name(Path(root).name + "-fixture-instance")
+    write_instance(instance)
+    monkeypatch.setenv("PORTAL_INSTANCE_ROOT", str(instance))
     for name in names:
         create_registration({"account_id": f"codex_{name}", "provider": "codex", "kind": "subscription_login",
                              "route_id": name, "max_concurrency": limit,
-                             "config": {"is_default": name == default,
+                             "config": {"account_dir": str(Path(root) / "accounts" / f"codex_{name}"), "is_default": name == default,
                                         **({"fallback_account_ids": list(fallbacks)} if name == default and fallbacks else {})}}, "test")
     return CodexRoutes()
 
@@ -47,7 +38,7 @@ def register_site_defaults(monkeypatch, root, *, legacy_codex_sockets=False):
         fallbacks=("codex_zero",),
     )
     create_registration({"account_id": "claude_one", "provider": "claude", "kind": "subscription_login",
-                         "route_id": "claude_one", "config": {"models": [{"id": "sonnet"}],
+                         "route_id": "claude_one", "config": {"account_dir": str(Path(root) / "accounts" / "claude_one"), "models": [{"id": "sonnet"}],
                                                                  "default_model": "sonnet"}}, "test")
     for account_id, provider, route_id in (("deepseek_primary", "claude", "deepseek_primary"),
                                            ("dsh_deepseek", "dsh", "deepseek")):

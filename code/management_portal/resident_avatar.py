@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 import secrets
 
-from management_portal.avatar_store import SPRITE_RARITIES, AvatarStore, avatar_root
-from management_portal.shared_state import exclusive_file_lock
+from management_portal.avatar_store import SPRITE_RARITIES, AvatarSubjects
 
-__all__ = ["SPRITE_RARITIES", "ResidentAvatarStore", "get_avatar", "get_existing_avatar", "resident_avatar_store"]
+__all__ = ["SPRITE_RARITIES", "ResidentAvatarSubjects", "get_avatar", "get_existing_avatar", "resident_avatar_store"]
 
 SCHEMA = "tfi.resident-avatar.v1"
 
@@ -22,13 +20,13 @@ def _draw_sprite() -> int:
     return secrets.choice([i for i, value in enumerate(SPRITE_RARITIES) if value == rarity])
 
 
-class ResidentAvatarStore(AvatarStore):
+class ResidentAvatarSubjects(AvatarSubjects):
     """A Resident draws a random sprite on its first read; UpdateResident may change it."""
 
     schema = SCHEMA
     identity_field = "resident_id"
 
-    def stem(self, resident_id: str) -> str:
+    def check(self, resident_id: str) -> str:
         if not isinstance(resident_id, str) or not re.fullmatch(r"resident_[0-9a-f]{12}", resident_id):
             raise ValueError("Invalid Resident avatar identity")
         return resident_id
@@ -36,25 +34,10 @@ class ResidentAvatarStore(AvatarStore):
     def address(self, resident_id: str) -> dict[str, str]:
         return {"resident": resident_id}
 
-    def get_existing(self, resident_id: str) -> dict[str, object] | None:
-        return self.read(resident_id)
-
-    def get(self, resident_id: str) -> dict[str, object]:
-        avatar = self.read(resident_id)
-        if avatar is not None:
-            return avatar
-        path = self._path(resident_id)
-        self.root.mkdir(parents=True, exist_ok=True)
-        with exclusive_file_lock(path.with_suffix(".lock")):
-            if not path.exists():
-                record = {"schema": SCHEMA, "resident_id": resident_id, "sprite_index": _draw_sprite()}
-                self._write(path, json.dumps(record).encode("utf-8"))
-        return self.read(resident_id)
-
 
 def resident_avatar_store():
     from management_portal.avatar_database import DatabaseAvatarStore
-    return DatabaseAvatarStore(ResidentAvatarStore(avatar_root("resident")), "resident",
+    return DatabaseAvatarStore(ResidentAvatarSubjects(), "resident",
                                default_sprite=_draw_sprite, persist_default=True)
 
 

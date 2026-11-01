@@ -259,7 +259,7 @@ class KnowledgeHttp:
         for path in paths:
             if path:
                 self.notify_resource_index(path=path, kind='created')
-        self.notify_resource_index(path=str(portal_path("share_root") / "Projects"), kind='created', wait=True)
+        self.notify_resource_index(path=str(portal_path('projects')), kind='created', wait=True)
         return self.respond(request, 200, result)
 
     def post_archive_draft_save(self, request, payload, actor):

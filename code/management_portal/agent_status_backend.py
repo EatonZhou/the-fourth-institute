@@ -11,8 +11,10 @@ from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from management_common.portal_paths import PORTAL_ROOT, path as portal_path
-from management_common.site_compatibility import compatibility_value
+from pathlib import Path
+from management_common.portal_paths import path as portal_path
+PORTAL_ROOT = Path(__file__).resolve().parents[1]
+from management_common.site_config import read_site_config
 from management_common.clock import utc_now_iso
 
 
@@ -45,10 +47,10 @@ DISK_TRIAGE_LARGE_FILE_BYTES = int(os.getenv("AGENT_STATUS_DISK_TRIAGE_LARGE_FIL
 DISK_TRIAGE_MAX_LARGE_FILES = int(os.getenv("AGENT_STATUS_DISK_TRIAGE_MAX_LARGE_FILES", "10"))
 AGENT_STATUS_SUMMARY_WAIT_SECONDS = 1.0
 RESIDENT_USAGE_REFRESH_SECONDS = int(os.getenv("AGENT_STATUS_RESIDENT_USAGE_REFRESH_SECONDS", "600"))
-PORTAL_INSTANCE = re.sub(
+PORTAL_DEPLOYMENT = re.sub(
     r"[^a-zA-Z0-9_.-]+",
     "-",
-    str(os.getenv("PORTAL_INSTANCE", "local") or "local").strip(),
+    str(os.getenv("PORTAL_DEPLOYMENT", "local") or "local").strip(),
 )
 MAX_PROVIDER_ERROR_CHARS = 180
 CHART_TOP_RESIDENT_LIMIT = 20
@@ -62,16 +64,16 @@ DISK_RESOURCE_POOL: tuple[dict[str, Any], ...] = (
     {
         "resource_id": "nas_storage",
         "display_name": "NAS",
-        "host_label": compatibility_value("status_local_host_label", "local"),
+        "host_label": "local",
         "kind": "local",
-        "paths": [str(portal_path(key)) for key in ("share_root", "staging_root", "instances_root")],
+        "paths": [str(portal_path(key)) for key in ("projects", "skills", "papers", "lineages", "runtime")],
     },
     {
         "resource_id": "thor_storage",
         "display_name": "Thor",
         "host_label": "dirtythor0",
         "kind": "ssh",
-        "ssh_config": str(compatibility_value("status_remote_ssh_config", str(Path.home() / ".ssh/config"))),
+        "ssh_config": str(str(Path.home() / ".ssh/config")),
         "ssh_host": "thor",
         "paths": ["/home", "/srv", "/tmp"],
     },
@@ -1569,11 +1571,11 @@ def _token_usage_payload(
 
 
 def _agent_status_summary_cache_key(actor: str) -> str:
-    return f"agent_status_summary:v10:{PORTAL_INSTANCE}"
+    return f"agent_status_summary:v10:{PORTAL_DEPLOYMENT}"
 
 
 def _token_usage_cache_key(actor: str) -> str:
-    return f"token_usage:v13:{PORTAL_INSTANCE}:{actor or 'anonymous'}"
+    return f"token_usage:v13:{PORTAL_DEPLOYMENT}:{actor or 'anonymous'}"
 
 
 def _build_token_usage_summary(actor: str) -> dict[str, Any]:

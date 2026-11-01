@@ -82,28 +82,6 @@ def test_rename_affected_identities_exclude_deleted_graph_and_bindings(identitie
         assert connection.execute("SELECT count(*) FROM resident_workspace_bindings").fetchone()[0] == 3
 
 
-def test_rename_provider_paths_recheck_deleted_identity_at_read_time(identities):
-    """重命名读取路径时重新排除已删除的身份
-
-    :design: decision_6591e7793116
-    :design-point:
-    """
-    world, store, calls = identities
-    change = project_rename.plan("Old", "New")
-    workspaces = WorkspaceStore()
-    workspaces.ensure(WORKSPACE, str(world["new_root"] / "src"), move=True)
-    workspaces.ensure(OWNED, str(world["new_root"] / "resident/workspace"), move=True)
-    assert project_rename._resident_paths(change, [ACTIVE, DELETED, ORPHAN]) == [
-        (str(world["old_root"] / "resident/workspace"), str(world["new_root"] / "resident/workspace")),
-        (str(world["old_root"] / "src"), str(world["new_root"] / "src")),
-    ]
-    store.database.write(lambda connection: connection.execute(
-        "UPDATE residents SET deleted_at=%s WHERE resident_id=%s", ("2026-10-08T01:00:00Z", ACTIVE),
-    ))
-    assert project_rename._resident_paths(change, [ACTIVE, DELETED, ORPHAN]) == []
-    assert calls == [[WORKSPACE, OWNED], []]
-
-
 def test_rename_preserves_deletion_project_facts_and_never_hydrates_history(identities):
     """项目重命名保留已删除身份的历史项目和路径
 
@@ -141,7 +119,7 @@ def test_rename_preserves_deletion_project_facts_and_never_hydrates_history(iden
             ).fetchone()) == ("Old", f"Work in {world['old_root']}/src", "Old")
         assert connection.execute("SELECT project_id FROM lineages WHERE lineage_id=%s", (LINEAGE,)).fetchone()[0] == "New"
         assert connection.execute("SELECT count(*) FROM resident_workspace_bindings").fetchone()[0] == 3
-    assert calls == [[WORKSPACE, OWNED], [WORKSPACE, OWNED]]
+    assert calls == [[WORKSPACE, OWNED]]
     after = workspaces.rows(original_workspaces, include_deleted=True)
     assert after["workspace_222222222222"] == original_workspaces["workspace_222222222222"]
     for wid in (WORKSPACE, OWNED):

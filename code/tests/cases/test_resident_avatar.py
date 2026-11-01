@@ -5,95 +5,86 @@
 """
 from concurrent.futures import ProcessPoolExecutor
 import json
-from pathlib import Path
-import subprocess
-import sys
 from unittest.mock import Mock
 
 import pytest
 
 from management_portal import resident_avatar
+from management_portal.avatar_database import database
 from management_portal.society_service import active_agent_projection
 from management_portal.principal_backpack import PrincipalBackpack
 from tests.cases.test_principal_backpack import Access, Resources, RESIDENT
 
 
-def _allocate(arguments):
-    root, resident_id = arguments
-    return resident_avatar.ResidentAvatarStore(Path(root)).get(resident_id)
+def _allocate(resident_id):
+    return resident_avatar.get_avatar(resident_id)
 
 
-def test_avatar_first_allocation_is_atomic_across_processes_and_restarts(tmp_path):
+def test_avatar_first_allocation_is_atomic_across_processes_and_restarts():
     """Resident 头像并发初始化与重启保持一致
 
     :design: decision_e30897dd3dc3, decision_5bc3fdfc7eec
     """
     with ProcessPoolExecutor(max_workers=4) as pool:
-        avatars = list(pool.map(_allocate, [(str(tmp_path), RESIDENT)] * 16))
+        avatars = list(pool.map(_allocate, [RESIDENT] * 16))
     assert all(avatar == avatars[0] for avatar in avatars)
-    saved = json.loads((tmp_path / (RESIDENT + ".json")).read_text())
-    assert saved["resident_id"] == RESIDENT and saved["sprite_index"] == avatars[0]["sprite_index"]
-    result = subprocess.run([sys.executable, "-c", "from pathlib import Path; import json,sys; from management_portal.resident_avatar import ResidentAvatarStore; print(json.dumps(ResidentAvatarStore(Path(sys.argv[1])).get(sys.argv[2])))", str(tmp_path), RESIDENT], capture_output=True, text=True, check=True)
-    assert json.loads(result.stdout) == avatars[0]
+    # A new store object, as after a restart, reads the same binding.
+    assert resident_avatar.resident_avatar_store().get(RESIDENT) == avatars[0]
+    assert resident_avatar.get_existing_avatar(RESIDENT) == avatars[0]
 
 
-def test_avatar_duplicates_are_allowed_and_existing_binding_is_not_redrawn(tmp_path, monkeypatch):
+def test_avatar_duplicates_are_allowed_and_existing_binding_is_not_redrawn(monkeypatch):
     """Resident 头像允许重复且不重新抽取
 
     :design: decision_e30897dd3dc3, decision_5bc3fdfc7eec
     """
     draw = Mock(return_value=3)
     monkeypatch.setattr(resident_avatar, "_draw_sprite", draw)
-    store = resident_avatar.ResidentAvatarStore(tmp_path)
+    store = resident_avatar.resident_avatar_store()
     first = store.get(RESIDENT)
     assert store.get("resident_000000000002") == first
     assert draw.call_count == 2
     draw.side_effect = AssertionError("existing binding must not be rerolled")
-    assert resident_avatar.ResidentAvatarStore(tmp_path).get(RESIDENT) == first
+    assert resident_avatar.resident_avatar_store().get(RESIDENT) == first
     first["sprite_index"] = 0
     assert store.get(RESIDENT)["sprite_index"] == 3
 
 
-def test_avatar_bad_binding_and_identity_fail_without_overwrite(tmp_path, monkeypatch):
-    """无效头像绑定与非法身份不被覆盖
+def test_avatar_bad_identity_fails_without_writing():
+    """非法身份不产生头像绑定
 
     :design: decision_e30897dd3dc3, decision_5bc3fdfc7eec
     """
-    monkeypatch.setenv("PORTAL_RESIDENT_AVATAR_ROOT", str(tmp_path))
-    path = tmp_path / (RESIDENT + ".json")
-    path.write_text('{"schema":"broken"}')
-    assert resident_avatar.get_avatar(RESIDENT) is None
-    assert path.read_text() == '{"schema":"broken"}'
+    store = resident_avatar.resident_avatar_store()
     with pytest.raises(ValueError):
-        resident_avatar.ResidentAvatarStore(tmp_path).get("../escape")
-    assert not (tmp_path.parent / "escape.json").exists()
-    path.write_text(json.dumps({"schema": resident_avatar.SCHEMA, "resident_id": RESIDENT, "sprite_index": 2}))
-    assert resident_avatar.get_avatar(RESIDENT) == {"kind": "sprite", "sprite_index": 2, "sprite_rarity": "SR"}
+        store.get("../escape")
+    assert resident_avatar.get_avatar("../escape") is None
+    with database().read() as connection:
+        assert connection.execute("SELECT count(*) FROM avatars").fetchone()[0] == 0
 
 
-def test_existing_avatar_read_returns_binding_without_allocating(tmp_path, monkeypatch):
+def test_existing_avatar_read_returns_binding_without_allocating():
     """只读已有头像时返回已绑定的头像，没有绑定也不新分配
 
     :importance: P2"""
-    monkeypatch.setenv("PORTAL_RESIDENT_AVATAR_ROOT", str(tmp_path / "avatars"))
-    store = resident_avatar.ResidentAvatarStore(tmp_path / "avatars")
+    store = resident_avatar.resident_avatar_store()
     assert resident_avatar.get_existing_avatar(RESIDENT) is None
-    assert not store.root.exists()
+    with database().read() as connection:
+        assert connection.execute("SELECT count(*) FROM avatars").fetchone()[0] == 0
     binding = store.get(RESIDENT)
-    before = {path.name: path.read_bytes() for path in store.root.iterdir()}
     assert resident_avatar.get_existing_avatar(RESIDENT) == binding
     assert store.get_existing("resident_000000000099") is None
     with pytest.raises(ValueError):
         store.get_existing("../escape")
-    assert {path.name: path.read_bytes() for path in store.root.iterdir()} == before
+    with database().read() as connection:
+        assert connection.execute("SELECT count(*) FROM avatars").fetchone()[0] == 1
 
 
-def test_home_and_backpack_share_avatar_after_authorization_across_viewers(tmp_path, monkeypatch):
+def test_home_and_backpack_share_avatar_after_authorization_across_viewers(monkeypatch):
     """Home 与背包在读取鉴权后使用同一头像
 
     :design: decision_e30897dd3dc3, decision_5bc3fdfc7eec
     """
-    monkeypatch.setenv("PORTAL_RESIDENT_AVATAR_ROOT", str(tmp_path))
     resources = Resources()
     backpack = PrincipalBackpack(access=Access(), resources=resources)
     catalog = Mock()
@@ -124,10 +115,10 @@ def test_home_and_backpack_share_avatar_after_authorization_across_viewers(tmp_p
     resources.get = Mock(side_effect=PermissionError("denied"))
     with pytest.raises(PermissionError):
         backpack.detail("alice", "resident_000000000099")
-    assert not (tmp_path / "resident_000000000099.json").exists()
+    assert resident_avatar.get_existing_avatar("resident_000000000099") is None
 
 
-def test_unread_conversation_entries_keep_canonical_avatar_and_refresh_signature(tmp_path, monkeypatch):
+def test_unread_conversation_entries_keep_canonical_avatar_and_refresh_signature(monkeypatch):
     """未读对话条目带 Resident 绑定的头像，头像变化只改内容签名不改活动签名
 
     :module: resident.identity
@@ -136,7 +127,6 @@ def test_unread_conversation_entries_keep_canonical_avatar_and_refresh_signature
     from management_portal import agent_conversation_index_backend as conversations
     from management_portal import conversation_index_projection as projection
 
-    monkeypatch.setenv("PORTAL_RESIDENT_AVATAR_ROOT", str(tmp_path))
     monkeypatch.setattr(projection, "resident_state_snapshots", lambda actor, ids: {})
     child_id = "resident_000000000098"
     hidden_id = "resident_000000000099"
@@ -154,7 +144,7 @@ def test_unread_conversation_entries_keep_canonical_avatar_and_refresh_signature
     }, {"resident_id": hidden_id}]}
     entries = projection.resident_entries("alice", payload)
     assert {entry["resident_id"] for entry in entries} == {RESIDENT, child_id}
-    assert not (tmp_path / f"{hidden_id}.json").exists()
+    assert resident_avatar.get_existing_avatar(hidden_id) is None
     for entry in entries:
         fields = resident_avatar.projection_fields(resident_avatar.get_avatar(entry["resident_id"]))
         assert {key: entry[key] for key in fields} == fields

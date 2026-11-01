@@ -10,12 +10,12 @@ from management_common.portal_paths import path as portal_path
 
 
 def settings_file() -> Path:
-    return portal_path("instances_root") / "settings" / "resident_embeddings.json"
+    return portal_path('runtime') / "settings" / "resident_embeddings.json"
 
 
 def model_directory() -> Path:
     configured = os.getenv("PORTAL_RESIDENT_EMBEDDING_MODEL_DIR")
-    return Path(configured).expanduser() if configured else portal_path("instances_root") / "models" / "resident-embeddings"
+    return Path(configured).expanduser() if configured else portal_path('runtime') / "models" / "resident-embeddings"
 
 
 def platform_issue() -> str | None:

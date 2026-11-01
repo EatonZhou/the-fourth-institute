@@ -1,7 +1,6 @@
 """Host interpreters and per-run client paths, without an isolation boundary."""
 from __future__ import annotations
-from management_common.portal_paths import path as portal_path
-from management_common.site_compatibility import compatibility_value
+from management_common.instance_manifest import load
 
 import os
 import shutil
@@ -9,8 +8,8 @@ import sys
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parents[3]
-RUN_ROOT = (portal_path("staging_root") / "shared" / "script_runs")
-PRIVATE_ROOT = Path(compatibility_value("script_run_private_root", str(Path.home() / '.tfi/secrets/script_runs'))).expanduser()
+RUN_ROOT = load().directory('runtime') / 'script_runs'
+PRIVATE_ROOT = load().directory('runtime') / 'script_run_leases'
 CLIENTS = Path(__file__).parent / 'clients'
 
 

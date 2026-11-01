@@ -27,7 +27,7 @@ def personal(future_creation_store, charters):
 
 @pytest.mark.empty_execution_registrations
 @pytest.mark.parametrize("first_default", ["claude", "provider_api"])
-def test_personal_family_can_precede_first_ai_account(future_creation_store, monkeypatch, capsys, first_default):
+def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_store, monkeypatch, capsys, first_default):
     """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
     from management_portal.execution import account_registrations
     from management_portal.society_service import resident_runtime_domain
@@ -88,7 +88,7 @@ def test_personal_family_can_precede_first_ai_account(future_creation_store, mon
     # registrations and account observations, with no credentials or model IO.
     account_registrations.create_registration({"account_id": "claude_fixture", "provider": "claude",
         "kind": "subscription_login", "route_id": "claude_fixture",
-        "config": {"models": [{"id": "sonnet"}], "default_model": "sonnet"}}, "newcomer")
+        "config": {"account_dir": str(tmp_path / "accounts" / "claude_fixture"), "models": [{"id": "sonnet"}], "default_model": "sonnet"}}, "newcomer")
     accounts.append({"account_id": "claude_fixture", "provider": "claude", "backend_route_id": "claude_fixture"})
     other = resident_domain.register_resident({"title": "Independent work", "project_id": "project_test", "backend": "claude",
         "backend_route_id": "claude_fixture", "mode": "new_session"}, "newcomer")

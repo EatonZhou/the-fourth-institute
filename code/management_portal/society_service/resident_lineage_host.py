@@ -21,17 +21,17 @@ class ResidentLineageHost:
         return lineage_state.authorize_lineage_resident_access(lineage_id, resident_id)
 
     @staticmethod
-    def canonical_lineage_folder(lineage_id: str) -> Path:
-        return lineage_resident_operations.canonical_lineage_folder(lineage_id)
+    def lineage_folder(lineage_id: str) -> Path:
+        return lineage_resident_operations.lineage_folder(lineage_id)
+
+    @staticmethod
+    def lineage_folder_for_project(lineage_id: str, project_id: str) -> Path:
+        return lineage_resident_operations.lineage_folder_for_project(lineage_id, project_id)
 
     @staticmethod
     def managed_lineage_definition(lineage_id: str, actor: str) -> dict[str, Any]:
         return lineage_resident_operations.managed_lineage_definition(lineage_id, actor)
 
-
-    @staticmethod
-    def bind_lineage_folder(lineage_id: str, target: Path) -> Path:
-        return lineage_resident_operations.bind_lineage_folder(lineage_id, target)
 
     @staticmethod
     def prepare_lineage_deletion(
@@ -45,10 +45,10 @@ class ResidentLineageHost:
         )
 
     @staticmethod
-    def lineage_deletion_effects(
+    def lineage_deletion_effect(
         token: lineage_resident_operations.LineageDeletionToken,
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        return lineage_resident_operations.lineage_deletion_effects(token)
+    ) -> dict[str, Any]:
+        return lineage_resident_operations.lineage_deletion_effect(token)
 
     @staticmethod
     def commit_lineage_deletion(token: lineage_resident_operations.LineageDeletionToken) -> None:
@@ -57,10 +57,6 @@ class ResidentLineageHost:
     @staticmethod
     def project_lineage_deletion(step: dict[str, Any]) -> None:
         lineage_resident_operations.project_lineage_deletion(step)
-
-    @staticmethod
-    def unbind_deleted_lineage_folder(step: dict[str, Any]) -> None:
-        lineage_resident_operations.unbind_deleted_lineage_folder(step)
 
     @staticmethod
     def lineage_access_projection(lineage_id: str) -> dict[str, Any]:

@@ -96,12 +96,10 @@ def _started_codex_catalog(row, *, timeout=30.0):
 
 
 def _started_claude_catalog(row, *, timeout=30.0):
-    from management_common.portal_paths import path
     from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable
 
     # A reusable SDK says nothing about the new instance's listening daemon.
-    # Do not inherit a shell's CLAUDE_CODE_SOCKET from another installation.
-    client = ClaudeCodeClient(path("staging_root") / "portal_locks/claude-code-daemon.sock")
+    client = ClaudeCodeClient()
     deadline = time.monotonic() + timeout
     while True:
         try:

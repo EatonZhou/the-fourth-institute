@@ -482,6 +482,3 @@ esac
         assert config == str(root / "config") and not data.startswith(str(Path.home()))
     OpenCodeRuntime().stage(("9.9.9",))
     assert len(installs) == 1
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule, site_environ

@@ -5,7 +5,7 @@
 Third-party skill 放在：
 
 ```text
-${share_root}/Skills/third-party/<skill-name>/SKILL.md
+skills:third-party/<skill-name>/SKILL.md
 ```
 
 ## 适用场景

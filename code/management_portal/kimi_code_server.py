@@ -10,23 +10,22 @@ from pathlib import Path
 
 from management_common.postgres_database import close_all_database_pools
 from management_common.process_runtime import run_process
-from management_common.portal_paths import resolve_directory
 from management_common.site_config import read_site_config
-from management_common.provider_runtime_paths import runtime_entry
+from management_common.code_environment import provider_entry
 from management_portal import kimi_portal_tools, kimi_windows_runtime
 from management_portal.ai_provider_registry import AIProviderRegistry
 
 
-_PROVIDERS = read_site_config().get("deployment", {}).get("providers", {})
-DEFAULT_BINARY = runtime_entry(_PROVIDERS, "kimi_runtime_current", resolve_directory(_PROVIDERS.get(
-    "runtime_root", str(portal_path("staging_root") / "provider-runtimes"))) / "kimi-code-current") / (
+def settings() -> dict:
+    return read_site_config().get('deployment', {}).get('kimi', {})
+DEFAULT_BINARY = provider_entry("kimi_runtime_current") / (
         "kimi.cmd" if sys.platform == "win32" else "bin/kimi")
-DEFAULT_HOME = (portal_path("staging_root") / "shared" / "kimi-code-portal")
+DEFAULT_HOME = portal_path("provider-state") / "kimi-code"
 DEFAULT_CONFIG_TEMPLATE = Path(__file__).resolve().parents[1] / "systemd" / "portal-kimi-code-config.toml"
 
 
 def model_catalog() -> dict:
-    template = Path(os.getenv("PORTAL_KIMI_CODE_CONFIG_TEMPLATE", str(DEFAULT_CONFIG_TEMPLATE))).expanduser()
+    template = DEFAULT_CONFIG_TEMPLATE
     text = template.read_text(encoding="utf-8")
     for placeholder in ("__PORTAL_KIMI_DEFAULT_MODEL__", "__PORTAL_KIMI_BASE_URL__", "__PORTAL_KIMI_API_KEY__"):
         text = text.replace(placeholder, '""')
@@ -34,7 +33,7 @@ def model_catalog() -> dict:
     models = list(entries)
     if not models:
         raise ValueError("Kimi Code config template has no models")
-    default = os.getenv("PORTAL_KIMI_CODE_DEFAULT_MODEL", "").strip() or models[0]
+    default = str(settings().get("default_model", "")).strip() or models[0]
     if default not in models:
         raise ValueError("Kimi Code default model is not in the config template")
     return {"models": models, "default_model": default, "efforts_by_model": {}, "service_tiers_by_model": {},
@@ -45,7 +44,7 @@ DEFAULT_MODEL = model_catalog()["default_model"]
 
 
 def provider_profile_id() -> str:
-    return os.getenv("PORTAL_KIMI_CODE_PROVIDER_PROFILE", "kimi_primary").strip() or "kimi_primary"
+    return str(settings().get("provider_profile", "kimi_primary")).strip() or "kimi_primary"
 
 
 def provider_profile() -> dict:
@@ -133,22 +132,24 @@ def _write_runtime_config(
 
 
 def main() -> int:
-    host = os.getenv("PORTAL_KIMI_CODE_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    from management_common.instance_manifest import load
+    instance = load()
+    component = 'kimi-code' if 'kimi-code' in instance.document['services']['components'] else 'kimi'
+    listener = instance.listener(component)
+    host = listener['bind']
     if host not in {"127.0.0.1", "::1", "localhost"}:
         raise RuntimeError("Portal Kimi Code server must listen on a loopback address")
-    port = int(os.getenv("PORTAL_KIMI_CODE_PORT", "58561"))
+    port = listener['port']
     profile_id = provider_profile_id()
     profile = provider_profile()
-    binary = Path(os.getenv("PORTAL_KIMI_CODE_BINARY", str(DEFAULT_BINARY))).expanduser()
+    binary = DEFAULT_BINARY
     if not binary.is_file():
         raise RuntimeError(f"Kimi Code runtime is missing: {binary}")
-    kimi_home = Path(os.getenv("PORTAL_KIMI_CODE_HOME", str(DEFAULT_HOME))).expanduser()
+    kimi_home = DEFAULT_HOME
     kimi_home.mkdir(parents=True, exist_ok=True)
     os.chmod(kimi_home, 0o700)
-    template_path = Path(
-        os.getenv("PORTAL_KIMI_CODE_CONFIG_TEMPLATE", str(DEFAULT_CONFIG_TEMPLATE))
-    ).expanduser()
-    default_model = os.getenv("PORTAL_KIMI_CODE_DEFAULT_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    template_path = DEFAULT_CONFIG_TEMPLATE
+    default_model = str(settings().get("default_model", DEFAULT_MODEL)).strip() or DEFAULT_MODEL
     api_key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(profile))
     _write_runtime_config(kimi_home, template_path, profile, api_key, default_model)
     # Portal tools reach Kimi Code through one user-level MCP server.
@@ -175,8 +176,8 @@ def main() -> int:
         env.pop(key, None)
     env.update({
         "KIMI_CODE_HOME": str(kimi_home),
-        "KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY": os.getenv("PORTAL_KIMI_CODE_SWARM_MAX_CONCURRENCY", "3"),
-        "KIMI_SUBAGENT_TIMEOUT_MS": os.getenv("PORTAL_KIMI_CODE_SUBAGENT_TIMEOUT_MS", "2147000000"),
+        "KIMI_CODE_AGENT_SWARM_MAX_CONCURRENCY": str(settings().get("swarm_max_concurrency", 3)),
+        "KIMI_SUBAGENT_TIMEOUT_MS": str(settings().get("subagent_timeout_ms", 2147000000)),
     })
     env.update(kimi_windows_runtime.environment())
     command = [

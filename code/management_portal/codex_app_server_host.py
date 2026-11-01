@@ -119,7 +119,6 @@ def _run_host(path, binary, account_home, stop_event, *, platform=None, startup_
     if windows:
         command += ["--ws-auth", "capability-token", "--ws-token-sha256", hashlib.sha256(token.encode()).hexdigest()]
     env = dict(os.environ, CODEX_HOME=str(account_home))
-    env.pop("PORTAL_ACCOUNT_HOST_HOME", None)
     # Native service definitions contain configuration paths, never proxy
     # credentials. Resolve the same saved egress as login at process startup.
     from management_common import portal_network

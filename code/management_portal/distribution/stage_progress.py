@@ -5,6 +5,9 @@ import json
 from pathlib import PurePosixPath
 import re
 
+from . import layout
+from .projection_dependencies import EVIDENCE
+
 
 def workspace(source, identity):
     rows = source.rows('workspace', 'workspaces', predicates={'workspace_id': {identity}})
@@ -87,7 +90,7 @@ def initialize(source, declaration):
             'item_links': [], 'improvement_details': [], 'experience_targets': [], 'module_attributions': []},
         declaration['schema']: _empty_contract(json.loads(raw)),
     }
-    prefix = 'data/share_root/ProjectionEvidence/' + row['workspace_id'] + '/'
+    prefix = layout.target('features', f'{EVIDENCE}/{row["workspace_id"]}') + '/'
     files = {prefix + address.split('/file/', 1)[1]: json.dumps(value, ensure_ascii=False, indent=2) + '\n'
              for address, value in documents.items()}
     return row, files

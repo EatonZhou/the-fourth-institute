@@ -10,14 +10,24 @@ from management_portal.execution import account_hosting as hosting, account_regi
 from management_portal.hatg.contracts import InstructionError
 
 
-def test_default_uses_os_identity_not_process_home(tmp_path, monkeypatch):
-    import pwd
-    from types import SimpleNamespace
-    monkeypatch.delenv("PORTAL_ACCOUNT_HOST_HOME")
-    monkeypatch.setenv("HOME", str(tmp_path / "instance-home"))
-    monkeypatch.setattr(pwd, "getpwuid", lambda _: SimpleNamespace(pw_dir=str(tmp_path / "host-home")))
-    assert paths.default_directory("codex", "codex_five") == tmp_path / "host-home/.codex-accounts/five"
-    assert paths.default_directory("kimi", "kimi-code") == tmp_path / "host-home/.kimi-accounts/kimi-code"
+@pytest.fixture(autouse=True)
+def isolated_registry(tmp_path, monkeypatch):
+    from management_common import host_instances
+    source = tmp_path / 'host-config/instances.json'
+    monkeypatch.setattr(host_instances, 'registry_path', lambda: source)
+    return source
+
+
+def test_subscription_requires_explicit_directory_and_creates_selected_path(tmp_path):
+    with pytest.raises(InstructionError, match='account_dir'):
+        store.create_registration({'account_id': 'codex_missing', 'provider': 'codex',
+            'kind': 'subscription_login'}, 'test')
+    directory = tmp_path / 'chosen/nested/account'
+    row = store.create_registration({'account_id': 'codex_selected', 'provider': 'codex',
+        'kind': 'subscription_login', 'config': {'account_dir': str(directory)}}, 'test')
+    assert directory.is_dir()
+    assert row['config']['account_dir'] == str(directory)
+    assert hosting.account_home('codex', 'codex_selected') == directory
 
 
 def test_existing_directory_registered_in_place_and_retained_on_delete(tmp_path):
@@ -51,12 +61,14 @@ def test_paths_require_canonical_absolute_non_symlink_directory(tmp_path):
         hosting.registered_home({"kind": "subscription_login", "config": {}})
 
 
-def test_daemon_lock_conflicts_across_processes_and_releases(tmp_path):
+def test_daemon_lock_conflicts_across_processes_and_releases(tmp_path, isolated_registry):
     directory = tmp_path / "native"
     directory.mkdir()
-    script = "from pathlib import Path; from management_common.provider_account_paths import daemon_lock; " \
-             "lease=daemon_lock(Path(__import__('sys').argv[1])); lease.__enter__()"
-    command = [sys.executable, "-c", script, str(directory)]
+    script = "from pathlib import Path; import sys; from management_common import host_instances; " \
+             "host_instances.registry_path=lambda:Path(sys.argv[2]); " \
+             "from management_common.provider_account_paths import daemon_lock; " \
+             "lease=daemon_lock(Path(sys.argv[1])); lease.__enter__()"
+    command = [sys.executable, "-c", script, str(directory), str(isolated_registry)]
     with paths.daemon_lock(directory):
         blocked = subprocess.run(command, capture_output=True, text=True)
         assert blocked.returncode != 0
@@ -82,16 +94,23 @@ def test_daemon_lock_rejects_redirected_lock_file(tmp_path):
     directory.mkdir()
     target = tmp_path / "unrelated"
     target.write_bytes(b"keep")
-    (tmp_path / ".native.portal-daemon.lock").symlink_to(target)
+    lock = paths.daemon_lock_path(directory)
+    lock.parent.mkdir(parents=True)
+    lock.symlink_to(target)
     with pytest.raises(ValueError, match="symbolic link"):
         with paths.daemon_lock(directory):
             pass
     assert target.read_bytes() == b"keep"
 
 
-def test_native_daemon_host_imports_from_account_cwd_and_keeps_lease(tmp_path):
+def test_native_daemon_host_imports_from_account_cwd_and_keeps_lease(tmp_path, isolated_registry):
     from management_portal import provider_daemon_host
-    command = [sys.executable, provider_daemon_host.__file__, "--account-dir", str(tmp_path), "--",
+    script = "import runpy, sys; from pathlib import Path; " \
+             "sys.path.insert(0, sys.argv.pop(1)); from management_common import host_instances; " \
+             "registry=Path(sys.argv.pop(1)); host_instances.registry_path=lambda:registry; " \
+             "sys.argv=sys.argv[1:]; runpy.run_path(sys.argv[0], run_name='__main__')"
+    command = [sys.executable, "-c", script, str(Path(provider_daemon_host.__file__).parent.parent),
+               str(isolated_registry), provider_daemon_host.__file__, "--account-dir", str(tmp_path), "--",
                sys.executable, "-c", "import time; print('ready', flush=True); time.sleep(30)"]
     process = subprocess.Popen(command, cwd=tmp_path, env={"PATH": "/usr/bin:/bin"},
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -108,7 +127,7 @@ def test_native_daemon_host_imports_from_account_cwd_and_keeps_lease(tmp_path):
         pass
 
 
-def test_failed_registration_removes_only_new_empty_directory(monkeypatch):
+def test_failed_registration_removes_only_new_empty_directory(monkeypatch, tmp_path):
     original = store._check_relationships
     calls = 0
     def reject_second(connection, row):
@@ -118,8 +137,8 @@ def test_failed_registration_removes_only_new_empty_directory(monkeypatch):
         if calls == 2:
             raise InstructionError("instruction.conflict", "synthetic concurrent conflict")
     monkeypatch.setattr(store, "_check_relationships", reject_second)
-    directory = paths.default_directory("codex", "codex_rollback")
+    directory = tmp_path / "selected-account"
     with pytest.raises(InstructionError):
-        store.create_registration({"account_id": "codex_rollback", "provider": "codex", "kind": "subscription_login"}, "test")
+        store.create_registration({"account_id": "codex_rollback", "provider": "codex", "kind": "subscription_login", "config": {"account_dir": str(directory)}}, "test")
     assert not directory.exists()
     assert store.registration("codex_rollback") is None

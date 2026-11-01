@@ -22,7 +22,7 @@ from management_portal.hatg.declarations import OWNER_MARKS
 
 DECISIONS = Path(os.environ.get(
     "TFI_SPEC_DECISIONS",
-    str(Path(__file__).resolve().parents[3] / "instance/example_instance/seed/data/share_root/Projects/AI员工/knowledge_base/decision"),
+    str(Path(__file__).resolve().parents[3] / "instance/example_instance/seed/data/projects/AI员工/knowledge_base/decision"),
 ))
 CATEGORY_DECISIONS = {
     "resource": "ad3e21094f14",

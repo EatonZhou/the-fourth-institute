@@ -1,17 +1,12 @@
-"""macOS launchd assets for an isolated TFI installation."""
+"""macOS launchd agents for one instance's registered components."""
 from __future__ import annotations
 
 import plistlib
 import os
 from pathlib import Path
+import tempfile
 
-from scripts.tfi_instance_layout import code_root, installer_path
-
-
-def safe_path(value):
-    if not isinstance(value, str) or not Path(value).is_absolute() or any(c in value for c in "\0\n\r"):
-        raise ValueError("Target paths must be absolute and contain no control characters")
-    return Path(value).resolve()
+from management_common.code_environment import runtime_python
 
 
 def service_controller():
@@ -19,15 +14,8 @@ def service_controller():
     return ServiceControl(platform="macos", agent_root=unit_directory())
 
 
-def unit_name(target, component):
-    return f"{target['service_prefix']}-{component}.service"
-
-
 def unit_directory():
-    configured = os.environ.get("TFI_MACOS_SERVICE_DIRECTORY")
-    if configured:
-        return safe_path(configured)
-    # Application HOME is instance-private; launchd belongs to the login user.
+    # launchd belongs to the logged-in OS user, read from its passwd entry.
     import pwd
     return Path(pwd.getpwuid(os.getuid()).pw_dir) / "Library" / "LaunchAgents"
 
@@ -37,13 +25,13 @@ def unit_path(directory, name):
     return directory / f"{ServiceControl.label(name)}.plist"
 
 
-def unit_text(target, component, components):
-    del components
-    root = Path(target["install_root"])
-    name = unit_name(target, component)
-    return command_unit_text(name, [target["python"], str(installer_path(target)), "_component",
-                                    "--root", str(root), "--component", component],
-                             cwd=code_root(target), log_root=root / "runtime", log_name=component)
+def manifest_unit_text(instance, component):
+    code = instance.service_code(component)
+    name = instance.service_name(component) + '.service'
+    return command_unit_text(name, [str(runtime_python(code)), '-m', 'management_portal.service_runtime',
+                                    '--component', component],
+                             cwd=code, log_root=instance.directory('runtime'), log_name=component,
+                             environment=instance.service_environment(component))
 
 
 def command_unit_text(name, command, *, cwd, log_root, log_name, environment=None):
@@ -63,23 +51,39 @@ def command_unit_text(name, command, *, cwd, log_root, log_name, environment=Non
 
 
 def register_services(directory, units):
+    """Write the given agents; the caller has verified their ownership.
+
+    A loaded agent keeps its old definition until it is restarted.
+    """
     directory.mkdir(parents=True, exist_ok=True)
-    created = []
+    previous = {}
     try:
         for name, content in units.items():
             path = unit_path(directory, name)
-            if path.exists() or path.is_symlink():
-                if path.is_symlink() or path.read_text(encoding="utf-8") != content:
-                    raise ValueError(f"Refusing to replace another launchd job: {name}")
-                continue
-            with path.open("x", encoding="utf-8") as stream:
-                stream.write(content)
-            created.append(name)
+            if path.is_symlink():
+                raise ValueError(f"Refusing a linked launchd job: {name}")
+            previous[name] = path.read_text(encoding="utf-8") if path.exists() else None
+            if previous[name] != content:
+                _publish(path, content)
     except Exception:
-        for name in created:
-            unit_path(directory, name).unlink(missing_ok=True)
+        for name, content in previous.items():
+            if content is None:
+                unit_path(directory, name).unlink(missing_ok=True)
+            else:
+                _publish(unit_path(directory, name), content)
         raise
-    return created
+    return [name for name, content in previous.items() if content is None]
+
+
+def _publish(path, content):
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, prefix="." + path.name + ".",
+                                     delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(content)
+    try:
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def remove_services(directory, names):

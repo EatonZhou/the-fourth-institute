@@ -597,6 +597,3 @@ def test_resident_queue_promotion_clears_previous_execution_binding_contracts(su
         )
 
         assert job["input_message"]["message_id"] == "message_next"
-
-
-from tests.cases.compatibility_test_support import setUpModule, tearDownModule

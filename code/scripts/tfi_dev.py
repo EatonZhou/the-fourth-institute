@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from contextlib import contextmanager
 import json
+import os
 import shlex
 from pathlib import Path, PurePosixPath
 import subprocess
@@ -12,6 +13,11 @@ import sys
 
 if str(Path(__file__).resolve().parents[1]) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from management_common.instance_manifest import load
+
+REMOTE = "origin"
+CODE_DIRECTORY = "code"
 
 
 def run(root, *args):
@@ -22,12 +28,20 @@ def git(root, *args):
     return run(root, "git", *args)
 
 
-def configuration(root):
-    common = Path(git(root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
-    path = common / "tfi-development.json"
-    if not path.exists():
-        raise ValueError("Run tfi_dev.py init from the main checkout first")
-    return json.loads(path.read_text())
+def configuration():
+    """The worktrees of the selected instance: Release is main, Dev is dev.
+
+    Each deployment's code root in instance.json is the code directory of its
+    worktree; nothing is recorded in the Git directory.
+    """
+    instance = load()
+    if "dev" not in instance.deployments:
+        raise ValueError("The selected instance has no Dev deployment")
+    roots = {name: instance.code_root(name) for name in ("release", "dev")}
+    if any(root.name != CODE_DIRECTORY for root in roots.values()):
+        raise ValueError("Each deployment's code root must be the code directory of its worktree")
+    return {"main": str(roots["release"].parent), "dev": str(roots["dev"].parent),
+            "remote": REMOTE, "code_directory": CODE_DIRECTORY, "runtime_root": str(instance.root)}
 
 
 def branch(root, expected):
@@ -48,12 +62,11 @@ def lock(root):
 
 
 def init(root, dev=None):
+    """Create the Dev worktree beside the main checkout; register it with
+    ``tfi_development_runtime.py configure``."""
     root = Path(git(root, "rev-parse", "--show-toplevel")).resolve()
     branch(root, "main")
     common = Path(git(root, "rev-parse", "--path-format=absolute", "--git-common-dir"))
-    path = common / "tfi-development.json"
-    if path.exists():
-        return configuration(root)
     dev = Path(dev or root.with_name(root.name + "-dev")).resolve()
     if dev.exists() or dev == root or root in dev.parents:
         raise ValueError("Dev must be a new sibling directory outside the main checkout")
@@ -66,10 +79,7 @@ def init(root, dev=None):
     install_push_hook(root)
     git(root, "config", "push.default", "simple")
     git(root, "config", "remote.origin.push", "refs/heads/main:refs/heads/main")
-    config = {"schema": "tfi.local-development.v1", "main": str(root), "dev": str(dev),
-              "remote": "origin", "code_directory": "code"}
-    path.write_text(json.dumps(config, indent=2) + "\n")
-    return config
+    return {"main": str(root), "dev": str(dev)}
 
 
 def install_push_hook(root):
@@ -95,8 +105,8 @@ done
     hook.chmod(0o755)
 
 
-def sync(root):
-    cfg = configuration(root)
+def sync():
+    cfg = configuration()
     main, dev = Path(cfg["main"]), Path(cfg["dev"])
     with lock(main):
         branch(main, "main")
@@ -109,7 +119,7 @@ def sync(root):
 
 def release_unit_paths(dev, cfg, paths):
     """Add the rest of each browser compatibility unit a selected path belongs to."""
-    prefix = cfg.get("code_directory", "code")
+    prefix = cfg["code_directory"]
     code = dev / prefix
     if not paths or not code.is_dir():
         return tuple(paths)
@@ -123,9 +133,9 @@ def release_unit_paths(dev, cfg, paths):
     return (*paths, *(path for path in added if path not in requested))
 
 
-def publish(root, message, check=None, push=True, *, paths=(), all_files=False, activate=True):
+def publish(message, check=None, push=True, *, paths=(), all_files=False, activate=True):
     """Commit selected live Dev paths and fast-forward the Release worktree."""
-    cfg = configuration(root)
+    cfg = configuration()
     main, dev = Path(cfg["main"]), Path(cfg["dev"])
     if not message.strip():
         raise ValueError("A publication message is required")
@@ -154,7 +164,7 @@ def publish(root, message, check=None, push=True, *, paths=(), all_files=False, 
                   "paths": changed, "push": {"ok": push, "remote": cfg["remote"]},
                   "changed_paths": changed, "activation_required": bool(changed),
                   "release_unit_paths": sorted(set(selected) - set(paths))}
-    if activate and cfg.get("runtime_root"):
+    if activate:
         from scripts.tfi_development_runtime import request_activation
         result["activation"] = request_activation(Path(cfg["runtime_root"]), changed, commit, parent_commit=base)
         result["health"] = {"status": "pending", "receipt": result["activation"]["receipt"]}
@@ -164,7 +174,9 @@ def publish(root, message, check=None, push=True, *, paths=(), all_files=False, 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2])
+    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2],
+                        help="The main checkout; used by init")
+    parser.add_argument("--instance", help="Instance name in the OS user's registry; otherwise use PORTAL_INSTANCE_ROOT")
     sub = parser.add_subparsers(dest="action", required=True)
     p = sub.add_parser("init")
     p.add_argument("--dev", type=Path)
@@ -181,16 +193,19 @@ def main(argv=None):
                    help="Optional relevant verification command; must be last")
     a = parser.parse_args(argv)
     try:
+        if a.instance:
+            from management_common import host_instances
+            os.environ["PORTAL_INSTANCE_ROOT"] = str(host_instances.find(a.instance).root)
         if a.action == "init":
             result = init(a.repo, a.dev)
         elif a.action == "sync":
-            result = sync(a.repo)
+            result = sync()
         elif a.action == "publish":
-            result = publish(a.repo, a.message, a.check, a.push, paths=a.path,
+            result = publish(a.message, a.check, a.push, paths=a.path,
                              all_files=a.all_files, activate=not a.no_activate)
         else:
-            result = configuration(a.repo)
-            result["worktrees"] = git(a.repo, "worktree", "list", "--porcelain")
+            result = configuration()
+            result["worktrees"] = git(result["main"], "worktree", "list", "--porcelain")
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (ValueError, FileExistsError, subprocess.CalledProcessError) as exc:
         print(str(exc), file=sys.stderr)

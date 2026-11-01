@@ -13,7 +13,7 @@ from typing import Any, Callable
 from . import lineage_handoff_backend
 from .lineage_values import _text
 
-EXPLORATIONS_ROOT = (portal_path("staging_root") / "shared" / "portal_explorations")
+EXPLORATIONS_ROOT = portal_path("features") / "explorations"
 
 def draft_items(
     *,

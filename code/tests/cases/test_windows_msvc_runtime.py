@@ -38,18 +38,19 @@ class WindowsCrtTests(unittest.TestCase):
                 return SimpleNamespace(returncode=0)
             entry = {'directory': str(pg), 'platform': 'windows/x86_64'}
             with patch.object(crt, 'specification', return_value=spec), \
+                    patch.object(crt, 'run_native_capture', side_effect=expand), \
                     patch.object(crt, 'download', return_value=archive) as download:
-                target = {'install_root': str(root), 'offline_dependencies': True}
                 content['u4'] = b'corrupted'
                 with self.assertRaisesRegex(ValueError, 'checksum'):
-                    crt.prepare(SimpleNamespace(run_native=expand), target, entry)
+                    crt.prepare(root, entry, offline=True)
                 self.assertFalse((pg / 'bin/vcruntime140.dll').exists())
                 content['u4'] = b'license'
-                receipt = crt.prepare(SimpleNamespace(run_native=expand), target, entry)
+                receipt = crt.prepare(root, entry, offline=True)
                 self.assertTrue(download.call_args.kwargs['offline'])
+                self.assertEqual(download.call_args.args[1].parent, root / 'archives')
                 self.assertEqual((pg / 'bin/vcruntime140.dll').read_bytes(), b'CRT')
                 download.side_effect = AssertionError('retry must reuse verified files')
-                self.assertEqual(crt.prepare(None, target, entry), receipt)
+                self.assertEqual(crt.prepare(root, entry, offline=True), receipt)
 
     def test_missing_archive_stays_offline(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -57,13 +58,13 @@ class WindowsCrtTests(unittest.TestCase):
             (pg / 'bin').mkdir(parents=True)
             with patch.object(native, 'urlopen', side_effect=AssertionError('network')):
                 with self.assertRaisesRegex(RuntimeError, '缺少内置依赖'):
-                    crt.prepare(None, {'install_root': tmp, 'offline_dependencies': True},
-                                {'directory': str(pg), 'platform': 'windows/x86_64'})
+                    crt.prepare(Path(tmp), {'directory': str(pg), 'platform': 'windows/x86_64'}, offline=True)
 
     def test_native_failure_keeps_windows_status(self):
-        api = SimpleNamespace(run_native=lambda *a, **kw: SimpleNamespace(returncode=0xc0000135, stdout=''))
-        with self.assertRaisesRegex(RuntimeError, '0xC0000135.*DLL missing'):
-            native.verify(api, {}, {'directory': '.', 'name': 'postgres', 'platform': 'windows/x86_64'})
+        failed = SimpleNamespace(returncode=0xc0000135, stdout='')
+        with patch.object(native, 'run_native_capture', return_value=failed), \
+                self.assertRaisesRegex(RuntimeError, '0xC0000135.*DLL missing'):
+            native.verify({'directory': '.', 'name': 'postgres', 'platform': 'windows/x86_64', 'version': '16'})
 
 
 if __name__ == '__main__':

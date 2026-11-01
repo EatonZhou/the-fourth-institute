@@ -135,7 +135,7 @@ def publish_registered_lineage_members(
 ) -> None:
     """Publish missing graph identities without rewriting nodes or existing Residents."""
     from management_portal.society_service import identity_contract
-    from management_portal.society_service.lineage_storage import canonical_lineage_folder
+    from management_portal.society_service.lineage_locations import lineage_folder
     from management_portal.society_service.principal_hierarchy import classify_existing
     from management_portal.society_service.resident_catalog import ensure_resident_agent
 
@@ -158,14 +158,14 @@ def publish_registered_lineage_members(
         resident_id = str(node["id"])
         if resident_id in existing:
             continue
-        owned_path = canonical_lineage_folder(lineage_id) / "residents" / resident_id / "workspace"
+        owned_path = lineage_folder(lineage_id) / "residents" / resident_id / "workspace"
         owned_id = identity_contract.new_id("workspace")
         record = {
             "schema": "tfi.resident.v6",
             "folder_schema": "lineage-folder-v3",
             "resident_id": resident_id,
             "lineage_id": lineage_id,
-            "workspace_path": str(canonical_lineage_folder(lineage_id)),
+            "workspace_path": str(lineage_folder(lineage_id)),
             "backend": "codex",
             "title": str(node.get("title") or resident_id),
             "created_by": actor,
@@ -423,7 +423,8 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         deliver_test_resident_input,
     )
     original_requested_project_id = lineage_state._requested_lineage_project_id
-    original_project_folder = lineage_lifecycle._lineage_project_folder
+    from management_portal.society_service import lineage_storage
+    original_project_folder = lineage_storage.lineage_folder_for_project
     test_project_id = "project_test"
 
     def requested_project_id(payload, previous, actor):
@@ -434,10 +435,12 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
             return project_id
         return test_project_id
 
-    def project_folder(lineage_id, project_id, actor):
+    def project_folder(lineage_id, project_id):
+        # The fixture Project has no registered folder; its Lineages use
+        # the lineages area.
         if project_id == test_project_id:
-            return lineage_state._lineages_root() / lineage_id
-        return original_project_folder(lineage_id, project_id, actor)
+            return lineage_storage.lineages_root() / lineage_id
+        return original_project_folder(lineage_id, project_id)
 
     monkeypatch.setattr(
         lineage_state,
@@ -445,8 +448,8 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
         requested_project_id,
     )
     monkeypatch.setattr(
-        lineage_lifecycle,
-        "_lineage_project_folder",
+        lineage_storage,
+        "lineage_folder_for_project",
         project_folder,
     )
 

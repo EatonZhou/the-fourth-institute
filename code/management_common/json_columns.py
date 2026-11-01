@@ -8,15 +8,20 @@ No column stores a JSON string, so a Python string is always JSON text.
 Writers pass JSON text from ``json_text``, which PostgreSQL stores in either
 column type.  PostgreSQL text cannot hold U+0000 and JSONB rejects its escape,
 so the character is stored as U+FFFD.
+
+Typed location fields pass through the shared location codec at this storage
+boundary. Prose and messages retain their original text.
 """
 import json
+from .location_records import located_record, stored_record
 
 
 def json_value(value):
-    return json.loads(value) if isinstance(value, str) else value
+    return located_record(json.loads(value) if isinstance(value, str) else value)
 
 
 def json_text(value, **options):
+    value = stored_record(value)
     text = json.dumps(value, **options)
     if "\\u0000" not in text:
         return text

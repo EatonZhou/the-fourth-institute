@@ -33,13 +33,34 @@ def test_repo_preview_and_export_use_canonical_checkout(tmp_path, preview, sourc
         (checkout / name).write_text("## 规范\n", encoding="utf-8")
     identity = "repo_0123456789ab"
     records[identity] = {"resource_type": "repo", "source": {"path": str(other) if source_path else ""},
-                         "attributes": {"canonical_checkout": str(checkout)}}
-    assert resource_file_scope(identity, records[identity])["source"] == str(checkout)
+                         "attributes": {"canonical_checkout": str(checkout), "project_ids": ["demo"]}}
+    scope = resource_file_scope(identity, records[identity])
+    assert (scope["source"], scope["target"]) == (str(checkout), f"data/projects/demo/codes/{identity}")
     for name in ("SPEC.md", "IMPROVE.md"):
         assert read(f"{identity}/file/{name}") == {"encoding": "utf-8", "content": "## 规范\n"}
     records[identity]["attributes"]["canonical_checkout"] = str(tmp_path / "missing")
     with pytest.raises(ValueError, match="canonical checkout"):
         read(f"{identity}/file/SPEC.md")
+
+
+@pytest.mark.parametrize("kind, field, folder", [("repo", "canonical_checkout", "codes"), ("article", "canonical_root", "articles")])
+def test_repo_and_article_copies_need_an_owning_project_or_an_explicit_location(tmp_path, kind, field, folder):
+    root = tmp_path / "content"
+    root.mkdir()
+    identity = f"{kind}_0123456789ab"
+    record = {"resource_type": kind, "source": {}, "attributes": {field: str(root)}}
+    with pytest.raises(ValueError, match="no owning project.*file_locations"):
+        resource_file_scope(identity, record)
+    # The exporter names a location in any exportable area; it must be a canonical reference.
+    chosen = resource_file_scope(identity, record, {identity: f"lineages:team/{folder}/{identity}"})
+    assert chosen["target"] == f"data/lineages/team/{folder}/{identity}"
+    for bad in ("projects:../outside", "projects:/absolute", "provider-state:x", "no-area", "/host/path"):
+        with pytest.raises(ValueError):
+            resource_file_scope(identity, record, {identity: bad})
+    # An owning project places the copy in its own folder; an explicit location still wins.
+    record["attributes"]["project_ids"] = ["demo"]
+    assert resource_file_scope(identity, record)["target"] == f"data/projects/demo/{folder}/{identity}"
+    assert resource_file_scope(identity, record, {identity: f"projects:other/{identity}"})["target"] == f"data/projects/other/{identity}"
 
 
 def test_registered_source_paths_and_knowledge_body_still_read(tmp_path, preview):
