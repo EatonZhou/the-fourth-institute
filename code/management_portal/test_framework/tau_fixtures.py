@@ -56,6 +56,23 @@ def _release_workspace(resource_id: str, key: str, actors: set[str]) -> None:
     _release_resource(resource_id, key + ':unbound')
 
 
+def _fixture_workspaces(roots: list[Path]) -> list[str]:
+    """Find asynchronous product allocations in the case's owned directories.
+
+    WALL jobs can create a Workspace after the HTTP request's allocation scope
+    has ended. Read the authoritative store, not an eventually updated index.
+    Discovery grants no rights: retirement still runs the ordinary ISA checks.
+    """
+    from management_portal.resources.workspace_store import get_workspace_store
+    roots = [root.resolve() for root in roots if not root.is_symlink()
+             and (not root.exists() or root.is_dir())]
+    if not roots:
+        return []
+    return [wid for wid, record in get_workspace_store().descriptors().items()
+            if record['status'] == 'active' and any(
+                Path(record['attributes']['path']).is_relative_to(root) for root in roots)]
+
+
 def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     from management_portal import portal_features
 
@@ -75,7 +92,7 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     if not isinstance(manifest, dict):
         raise ValueError('测试清理清单必须是对象')
     from management_portal.test_framework import tau_fixture_paths
-    tau_fixture_paths.inspect(root)
+    standalone = tau_fixture_paths.inspect(root)
     content = tau_fixture_paths.inspect_content(root)
     resources = manifest.get('resources', [])
     if not isinstance(resources, list) or any(
@@ -93,11 +110,12 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     # Source/script folders are an execution contract, independent of whether
     # the report parsed or its author cited one of the files as evidence.
     scratch = [root / name for name in ('fixtures', 'helpers')]
+    owned_content = [*([content] if content else []), *([standalone[0]] if standalone else [])]
     errors, released = [], {}
-    if manifest or any(p.exists() for p in scratch) or (content and content.exists()):
+    if manifest or any(p.exists() for p in [*scratch, *owned_content]):
         # Each feature releases what the run made in it (WALL: projects under
         # the run, recorded cards); its owner, not the test, does the work.
-        for source in [root, *([content] if content and content.exists() else [])]:
+        for source in [root, *(path for path in owned_content if path.exists())]:
             for _feature, release in portal_features.contributions('test.fixtures'):
                 report, failed = release(source, manifest, TAU_ACTOR, timeout=timeout)
                 for name, value in report.items():
@@ -108,9 +126,10 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
                 errors.extend(failed)
     # New allocations and legacy manifests use the same domain deletion entry.
     automatic = lifecycle.pending(scope_id)
+    fixture_workspaces = _fixture_workspaces([root / 'fixtures', *owned_content])
     # Business objects own their projection members; release those objects
     # before any directly allocated members or temporary teams.
-    targets = sorted(dict.fromkeys([*automatic, *resources]),
+    targets = sorted(dict.fromkeys([*automatic, *resources, *fixture_workspaces]),
                      key=lambda rid: {'resident': 1, 'lineage': 2, 'workspace': 3}.get(rid.partition('_')[0], 0))
     actors = lifecycle.actors(scope_id)
     released_resources = []

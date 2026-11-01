@@ -74,6 +74,39 @@ def test_content_fixture_replacement_is_refused_before_product_cleanup(tmp_path,
     content.unlink()
 
 
+@pytest.mark.parametrize('directory_missing', [False, True])
+def test_async_wall_workspace_retired_without_allocation_context(tmp_path, monkeypatch, directory_missing):
+    """后台 WALL 分配未继承请求上下文时仍注销夹具登记，不碰目录外已有资源"""
+    from management_common.resource_identity import get_resource_type_registry
+    from management_portal.resources.workspace_store import get_workspace_store, now
+    from management_portal.test_framework import tau_fixture_paths
+    from management_portal import portal_features
+    root = tmp_path / 'case'; root.mkdir()
+    content = tau_fixture_paths.prepare_content(root)
+    repo = content / 'repo'; repo.mkdir()
+    outside = tmp_path / 'outside'; outside.mkdir()
+    store = get_workspace_store()
+    new_id = lambda: get_resource_type_registry().new_id('workspace')
+    wid = store.for_path(str(repo), new_id=new_id)
+    keep = store.for_path(str(outside), new_id=new_id)
+    if directory_missing:
+        repo.rmdir()
+        content.rmdir()
+    # No lifecycle_scope: this mirrors a WALL background job. Its own release
+    # hook has detached its workers before the framework handles the directory.
+    calls = []
+    monkeypatch.setattr(portal_features, 'contributions', lambda name: [])
+    def release(rid, key):
+        assert rid == wid and repo.is_dir() is (not directory_missing)
+        calls.append(rid)
+        store.database.write(lambda conn: store.mark_deleted(rid, deleted_at=now(), deleted_by='test-actor', connection=conn))
+    monkeypatch.setattr(tau_fixtures, '_release_resource', release)
+    result = tau_fixtures.cleanup(root)
+    assert calls == [wid] and wid in result['resources']
+    assert not store.rows([wid]) and store.rows([keep]) and outside.is_dir()
+    assert not content.exists()
+
+
 @pytest.mark.parametrize('resources', [
     [{'resource_id': 'resident_123456789abc', 'deleted': True}],
     'resident_123456789abc', ['not-a-resource'], [None],
