@@ -939,13 +939,11 @@ class IndexStore:
         self,
         records: Iterable[dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        """Every query uses fresh Family facts, including with a custom projector.
+        """Every query uses fresh lifecycle and Family facts, even with a custom projector.
 
-        Only Family rows change; every other candidate passes through as the
-        indexed record, which nothing downstream modifies (query_records copies
-        what it returns), and gets its current URL once it is returned.  A copy
-        and a URL for each candidate here cost up to 0.6 s per query over the
-        ~14,000 candidates a Project-scoped query projects.
+        Unrelated candidates remain readonly views; only the returned page is
+        deeply copied. Lifecycle reads are batched and never assemble graphs,
+        execution settings or Resident workspaces for discovery.
         """
         from management_portal.society_service.business_fact_views import project_resources as domain_facts
         return domain_facts(list(records))
@@ -984,7 +982,7 @@ class IndexStore:
         actor: str,
     ) -> dict[str, Any] | None:
         item = self._record_for_read(record)
-        if item.get("resource_type") == "family":
+        if item.get("resource_type") in {"resident", "lineage", "workspace", "family"}:
             from management_portal.society_service.business_fact_views import project_resources
             return project_resources([item])[0]
         return item

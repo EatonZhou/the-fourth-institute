@@ -41,12 +41,48 @@ def read_records(resource_ids, *, state=None):
     return result
 
 
+def _lifecycle_facts(records):
+    """Read only canonical lifecycle columns, including retained tombstones."""
+    from .state_store import get_lineage_data_store
+    grouped = {kind: [item['resource_id'] for item in records if item.get('resource_type') == kind]
+               for kind in ('resident', 'lineage', 'workspace')}
+    facts = {}
+    if grouped['resident'] or grouped['lineage']:
+        with get_lineage_data_store().database.snapshot() as connection:
+            for kind in ('resident', 'lineage'):
+                if grouped[kind]:
+                    # Table and column identifiers are fixed domain names.
+                    rows = connection.execute(
+                        f'SELECT {kind}_id AS resource_id,deleted_at FROM {kind}s WHERE {kind}_id=ANY(%s)',
+                        (grouped[kind],),
+                    ).fetchall()
+                    facts.update({row['resource_id']: dict(row) for row in rows})
+    if grouped['workspace']:
+        from management_portal.resources.workspace_store import get_workspace_store
+        facts.update(get_workspace_store().rows(grouped['workspace'], include_deleted=True))
+    return facts
+
+
 def project_resources(records):
-    """Family records take their fields from the canonical Family."""
+    """Apply current lifecycle and Family facts before discovery filters."""
     # Other resource types are readonly pass-through values. The query owner
     # detaches the returned page; copying unrelated bodies here multiplies the
     # cost of every subsequent domain projection.
-    items = [dict(item) if item.get('resource_type') == 'family' else item for item in records]
+    items = list(records)
+    lifecycle = _lifecycle_facts(items)
+    items = [dict(item) if item.get('resource_type') == 'family' or item['resource_id'] in lifecycle
+             else item for item in items]
+    for item in items:
+        current = lifecycle.get(item['resource_id'])
+        if current is not None:
+            deleted_at = current.get('deleted_at') or ''
+            if hasattr(deleted_at, 'isoformat'):
+                deleted_at = deleted_at.isoformat().replace('+00:00', 'Z')
+            item['attributes'] = {**item.get('attributes', {}),
+                                  'status': 'deleted' if deleted_at else 'active',
+                                  'deleted_at': deleted_at}
+            if item.get('resource_type') == 'workspace' and deleted_at:
+                item['attributes'].pop('path', None)
     family_ids = [item['resource_id'] for item in items if item.get('resource_type') == 'family']
     if not family_ids:
         return items

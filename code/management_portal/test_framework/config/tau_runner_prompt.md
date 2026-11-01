@@ -20,6 +20,8 @@ await portal.action('first-refresh', async page => {
 
 ready 必须等待异步挂载和加载完成后再断言：刷新或导航后的 count() 可能暂时为 0，菜单值可能仍是 Reading；先用唯一目标 locator.waitFor 或有界的只读轮询等待可见及实际值，再核对身份/正文。不要在等待之前把一次 count()=0、isVisible()=false 或旧投影值直接抛成失败。多目标歧义、错误身份、明确业务拒绝仍如实报告；不得用 first()、重发或事后回填消除错误。预检验证同一定位与条件，不意味着刷新后无需等待。
 
+Lineage navigation 区域外壳出现不表示目录已加载。共享 `tau_lineage_catalog_evidence.js` 导出 `readLineageCatalogSurface(regionLocator)`，只读当前原生目录并返回 `surface_ready`、全部候选及加载/错误状态；在原导航ready内有界等待surface_ready，再等待或确认本轮目标的实际按钮/行。不要用一次按钮枚举为空就断言项目入口不存在，也不要以延迟挂载的HATG编辑器或无关Preview的Loading正文代替目录就绪。该辅助只证区域状态，目标身份和完整基线仍由本轮正式回执核对。
+
 用例明确允许公开指令修改或清理时，先保留原提交回执，再按用例要求核对当前登记和可见页面。API 调用不会执行页面按钮的本地回调，不能额外假设该回调已经关闭面板或刷新目录；可以在同一原 ready 内使用正常页面刷新重新读取已提交状态，刷新及可见就绪的实际耗时一起保留，不重发写入。若用例明确要求自动更新或首次刷新，仍遵守原条件，不以额外刷新替代它。只读准备时也要等待当前区域及其祖先实际挂载；子 table 出现不保证预期 region 已存在，不以一次 closest()/getAttribute() 的空值直接结束等待。
 
 正式 `GetMessage` 返回的消息位于结果的 `message`，正文采用 `content_parts`，不要猜测旧的 `message.content` 或 `message.text`。例如 `const message = (await portal.instruction('GetMessage', {resident_id, message_id})).message; const text = message.content_parts.filter(part => part.type === 'text').map(part => part.text).join('\n');`。先核实际分片类型；文本、附件、图片分别按各自内容核验，不把没有旧字段或没有文本分片判作“没有回复”。Family 的成员署名与路径读取同一消息的 `family_reply`，引用读取原输入的 `quote`，不从正文反推身份。

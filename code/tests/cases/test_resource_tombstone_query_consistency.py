@@ -79,6 +79,13 @@ def set_status(target, resource_id, status):
         with workspaces.database.transaction() as connection:
             workspaces.mark_deleted(resource_id, deleted_at=DELETED_AT, deleted_by=ACTOR, connection=connection)
         return
+    from management_portal.society_service.state_store import get_lineage_data_store
+    kind = resource_id.split('_', 1)[0]
+    # The domain owns lifecycle. A descriptor is an independently lagging
+    # projection, not another lifecycle authority.
+    with get_lineage_data_store().database.transaction() as connection:
+        connection.execute(f'UPDATE {kind}s SET deleted_at=%s WHERE {kind}_id=%s',
+                           (DELETED_AT if status == 'deleted' else None, resource_id))
     descriptor = target.descriptors.get(resource_id)
     descriptor.update(status=status, deleted_at=DELETED_AT if status == "deleted" else "")
     target.descriptors.put(descriptor)
@@ -86,6 +93,32 @@ def set_status(target, resource_id, status):
 
 def ids(result):
     return [record["resource_id"] for record in result["resources"]]
+
+
+@pytest.mark.parametrize('kind', ['resident', 'lineage'])
+def test_domain_tombstone_precedes_descriptor_publication(query_owner, kind, monkeypatch):
+    """领域提交而描述/索引均滞后时，搜索、建议和分页立即排除已删除对象。"""
+    from management_portal.society_service.state_store import get_lineage_data_store
+    target = query_owner
+    deleted, live = [f'{kind}_03031850000{i}' for i in [1, 2]]
+    publish(target, deleted, 'Lifecycle A')
+    publish(target, live, 'Lifecycle B')
+    target.index.adapter_layer.refresh_now('collaboration', force=True)
+    descriptor = target.descriptors.get(deleted)
+    snapshot = target.store.internal_get(deleted)
+    state = get_lineage_data_store()
+    with state.database.transaction() as connection:
+        connection.execute(f'UPDATE {kind}s SET deleted_at=%s WHERE {kind}_id=%s', (DELETED_AT, deleted))
+    # Current facts must not assemble full Resident/Lineage payloads.
+    monkeypatch.setattr(state, 'residents_by_id', lambda *_a, **_k: pytest.fail('full Resident read'))
+    monkeypatch.setattr(state, 'lineage_definition', lambda *_a, **_k: pytest.fail('full graph read'))
+    result = target.resource.query(q='Lifecycle', actor=ACTOR, resource_types=[kind], limit=1)
+    assert result['total'] == 1 and ids(result) == [live]
+    assert ids(target.resource.suggest(q='Lifecycle', actor=ACTOR, resource_type=kind)) == [live]
+    assert ids(target.resource.query(q='Lifecycle', actor=ACTOR, statuses=['deleted'])) == [deleted]
+    assert target.resource.get(deleted, actor=ACTOR)['attributes']['status'] == 'deleted'
+    assert target.descriptors.get(deleted) == descriptor
+    assert target.store.internal_get(deleted) == snapshot
 
 
 @pytest.mark.parametrize("resource_type", ["lineage", "resident", "workspace"])
