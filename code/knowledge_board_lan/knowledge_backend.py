@@ -53,7 +53,7 @@ from knowledge_board_lan.knowledge_source import (
     knowledge_version_record,
     public_item_record,
 )
-from knowledge_board_lan.knowledge_versions import _knowledge_version_recovery_source, stamp_knowledge_version
+from knowledge_board_lan.knowledge_versions import _knowledge_version_recovery_source, replace_knowledge_body, stamp_knowledge_version
 from skill_board_lan import skill_backend
 
 _ITEM_GRAPH_CACHE: dict[str, dict] = {}
@@ -1197,12 +1197,19 @@ class KnowledgeVersionConflict(RuntimeError):
 
 def update_item_text(
     address: str,
-    text: str,
+    text: str | None = None,
     *,
+    body: str | None = None,
     actor: str = "",
     expected_version: object = None,
     version_recovery_change_ids: object = None,
 ) -> dict:
+    if (text is None) == (body is None):
+        raise ValueError("Knowledge update requires exactly one of text or body")
+    if body is not None and not isinstance(body, str):
+        raise ValueError("Knowledge body must be a string")
+    if body is not None and version_recovery_change_ids is not None:
+        raise ValueError("Knowledge version recovery requires complete text, not body")
     clean_address = str(address or "").strip()
     if not clean_address:
         raise ValueError("knowledge address required")
@@ -1219,6 +1226,8 @@ def update_item_text(
     if version_recovery_change_ids is not None and expected_version is None:
         raise ValueError("Knowledge version recovery requires expected_version")
     if str(record.get("type") or "") == _UNIFIED_SKILL_TYPE:
+        if body is not None:
+            raise ValueError("Knowledge body update requires a Knowledge Markdown primary")
         if version_recovery_change_ids is not None:
             raise ValueError("Knowledge version recovery requires a Knowledge Markdown primary")
         status, result = skill_backend.save_address_text(
@@ -1294,7 +1303,11 @@ def update_item_text(
                     current_version,
                 )
         if version_path is not None and path.resolve() == version_path.resolve():
+            if body is not None:
+                content = replace_knowledge_body(previous_primary, body)
             document_metaness(_yaml_front_matter(content))
+        elif body is not None:
+            raise ValueError("Knowledge body update requires a Knowledge Markdown primary")
         version_source = previous_primary
         if version_recovery_change_ids is not None:
             if version_path is None or path.resolve() != version_path.resolve():

@@ -54,6 +54,9 @@ class KnowledgeHttp:
                 return self.respond(request, 404, {"error": str(exc) or "not found"})
             except PermissionError as exc:
                 return self.respond(request, 403, {"error": str(exc)})
+            except self.knowledge_backend().KnowledgeVersionConflict as exc:
+                return self.respond(request, 409, {"error": str(exc),
+                    "expected_version": exc.expected_version, "current_version": exc.current_version})
             except ValueError as exc:
                 return self.respond(request, 400, {"error": str(exc)})
             except Exception as exc:
@@ -209,7 +212,16 @@ class KnowledgeHttp:
 
     def post_detail_save(self, request, payload, actor):
         address = str(payload.get('kb_id') or '').strip()
-        result = self.knowledge_backend().update_item_text(address, str(payload.get('text') or ''), actor=actor)
+        if ('text' in payload) == ('body' in payload):
+            raise ValueError('Knowledge update requires exactly one of text or body')
+        options = {'body': payload['body']} if 'body' in payload else {}
+        if 'body' in payload and not isinstance(payload['body'], str):
+            raise ValueError('Knowledge body must be a string')
+        if 'expected_version' in payload:
+            options['expected_version'] = payload['expected_version']
+        result = self.knowledge_backend().update_item_text(
+            address, str(payload.get('text') or '') if 'text' in payload else None,
+            actor=actor, **options)
         self.notify_resource_index(path=str(result.get('path') or ''), resource_id=address.partition('/')[0], kind='updated', wait=True)
         return self.respond(request, 200, result)
 

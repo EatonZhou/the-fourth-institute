@@ -47,18 +47,22 @@ def _update_knowledge(
 ) -> dict[str, Any]:
     import knowledge_board_lan.knowledge_backend as knowledge_backend
 
-    unknown = set(payload) - {"address", "text", "expected_version", "version_recovery_change_ids"}
+    unknown = set(payload) - {"address", "text", "body", "expected_version", "version_recovery_change_ids"}
     if unknown:
         raise ValueError(
             "unsupported Knowledge update fields: "
             + ", ".join(sorted(unknown))
         )
-    if "text" not in payload:
-        raise ValueError("Knowledge update requires text")
+    if ("text" in payload) == ("body" in payload):
+        raise ValueError("Knowledge update requires exactly one of text or body")
     address = str(payload.get("address") or resource_id).strip().strip("/")
     if address.partition("/")[0] != resource_id:
         raise ValueError("Knowledge update address must belong to resource_id")
     update_options: dict[str, Any] = {}
+    if "body" in payload:
+        if not isinstance(payload["body"], str):
+            raise ValueError("Knowledge body must be a string")
+        update_options["body"] = payload["body"]
     if "expected_version" in payload:
         update_options["expected_version"] = payload.get("expected_version")
     if "version_recovery_change_ids" in payload:
@@ -68,7 +72,7 @@ def _update_knowledge(
     try:
         result = knowledge_backend.update_item_text(
             address,
-            str(payload.get("text") or ""),
+            str(payload.get("text") or "") if "text" in payload else None,
             actor=actor,
             **update_options,
         )

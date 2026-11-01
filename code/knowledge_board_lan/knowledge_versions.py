@@ -16,11 +16,22 @@ from pathlib import Path
 from management_common.format_tags import schema_matches
 
 from knowledge_board_lan.knowledge_source import (
+    _FRONT_MATTER_PATTERN,
     _version_principal,
     _version_timestamp,
     _yaml_front_matter,
     knowledge_version_record,
 )
+
+def replace_knowledge_body(previous_text: str, body: str) -> str:
+    """Keep the current metadata verbatim; only version stamping may change it."""
+    match = _FRONT_MATTER_PATTERN.match(previous_text)
+    if not match or not _yaml_front_matter(previous_text):
+        raise ValueError("Knowledge body update requires valid YAML metadata")
+    prefix = previous_text[:match.end()]
+    if not prefix.endswith("\n"):
+        prefix += "\r\n" if "\r\n" in prefix else "\n"
+    return prefix + body
 
 def _principal_from_actor(actor: str) -> dict[str, str]:
     clean_actor = str(actor or "").strip()
