@@ -8,7 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-from .file_lock import lock_stream
+from .file_lock import lock_stream, try_lock_descriptor, try_named_lock
 from .instance_manifest import AREAS, InstanceManifest, absolute_path, load, overlaps
 
 
@@ -25,6 +25,22 @@ def user_home() -> Path:
 
 def registry_path() -> Path:
     return user_home() / ".config/tfi/instances.json"
+
+
+@contextmanager
+def operation_lock(root: Path, name: str):
+    """Hold an instance operation across a root move, without leaving host files."""
+    if name not in {".configuration.lock", ".portal-control.lock"}:
+        raise ValueError("Unknown instance operation lock")
+    if os.name == "nt":
+        identity = str(user_home()) + ":" + load(root).instance_id + ":" + name
+        with try_named_lock(identity) as acquired:
+            yield acquired
+    else:
+        path = Path(root) / name
+        descriptor = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        with os.fdopen(descriptor, "r+b") as stream:
+            yield try_lock_descriptor(stream.fileno())
 
 
 def default_root(name: str) -> Path:

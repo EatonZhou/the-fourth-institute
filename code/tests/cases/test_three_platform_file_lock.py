@@ -97,15 +97,17 @@ def test_instance_locks_remain_exclusive_after_root_relocation(tmp_path):
     from scripts.instance_services import configuration_lock
     from scripts.tfi_instance_manager import control_lock
     source, target = tmp_path / "source", tmp_path / "target"
-    source.mkdir()
-    probe = ("from management_common.file_lock import open_lock_file,try_lock_descriptor; "
-             "import sys; f=open_lock_file(sys.argv[1]); print(try_lock_descriptor(f.fileno()))")
+    from tests.cases.instance_test_support import write_instance
+    write_instance(source)
+    probe = ("from management_common.host_instances import operation_lock; from pathlib import Path; import sys; "
+             "scope=operation_lock(Path(sys.argv[1]),sys.argv[2]); print(scope.__enter__()); scope.__exit__(None,None,None)")
     def contender(name):
-        return subprocess.check_output([sys.executable, "-c", probe, str(target / name)], text=True).strip()
+        return subprocess.check_output([sys.executable, "-c", probe, str(target), name], text=True).strip()
     with control_lock(source), configuration_lock(source):
         source.rename(target)
         for name in (".portal-control.lock", ".configuration.lock"):
             assert contender(name) == "False"
     for name in (".portal-control.lock", ".configuration.lock"):
         assert contender(name) == "True"
-        assert (target / name).read_bytes() == b""
+        if os.name != 'nt':
+            assert (target / name).read_bytes() == b""

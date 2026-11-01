@@ -17,7 +17,7 @@ import subprocess
 import time
 
 from management_common.instance_manifest import load
-from management_common.file_lock import try_lock_descriptor
+from management_common import host_instances
 from scripts.instance_service_definitions import components, render
 
 RESTART_RECORD = 'runtime/codex-accounts-to-restart.json'
@@ -164,10 +164,8 @@ def remove_definitions(instance, selected_components=None):
 
 @contextmanager
 def configuration_lock(root):
-    from management_common.file_lock import open_lock_file
-    path = Path(root) / '.configuration.lock'
-    with open_lock_file(path) as stream:
-        if not try_lock_descriptor(stream.fileno()):
+    with host_instances.operation_lock(root, '.configuration.lock') as acquired:
+        if not acquired:
             raise BlockingIOError('Another configuration or lifecycle operation owns this instance')
         yield
 
