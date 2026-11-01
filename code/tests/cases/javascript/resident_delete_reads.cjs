@@ -101,3 +101,33 @@ test('graph deletion gates projection invalidation before the committed callback
   await assert.rejects(f.service.inputHistory('resident_one'), {code: 'resident.deleted'});
   assert.equal(f.calls.filter(c => c.name === 'GET').length, 1);
 });
+
+test('HATG deletion distinguishes committed, uncommitted and unknown write outcomes', async () => {
+  for (const commitState of ['committed', 'not_committed', 'unknown', undefined]) {
+    const f = fixture(), notices = [];
+    f.context.PortalI18n.text = (parts, ...values) => parts.reduce((s, p, i) => s + p + (values[i] ?? ''), '');
+    f.context.PortalUI = {confirm: async () => true};
+    vm.runInContext(fs.readFileSync(path.join(root, 'hatg_resident_dialogs.js'), 'utf8'), f.context);
+    const owner = f.context.PortalHatgResidentDialogs;
+    const node = {id:'resident_one', title:'Temporary resident'};
+    const state = {lineage:{lineage_id:'lineage_test', edges:[]}, residents:[node]};
+    let writes = 0;
+    const dependencies = Object.fromEntries(owner.dependencies.map(name => [name, () => {}]));
+    Object.assign(dependencies, {state, currentNode:() => node, nodeResidentId:n => n.id,
+      societyService:{deleteNode:async () => {
+        writes++;
+        throw Object.assign(new Error('owner result'), {body:{error:{commit_state:commitState}}});
+      }}, toast:(message,tone) => notices.push({message,tone})});
+    const result = await owner.createResidentDialogs(dependencies).removeSelectedNode();
+    assert.equal(writes, 1, 'the dialog must not resubmit an uncertain deletion');
+    assert.equal(result, commitState === 'committed');
+    assert.equal(notices.length, 1);
+    assert.equal(notices[0].tone, commitState === 'not_committed' ? 'error' : 'warning');
+    if (commitState !== 'not_committed') assert.ok(!notices[0].message.includes('HATG 未改变'));
+    if (commitState === 'unknown' || commitState === undefined) {
+      assert.ok(notices[0].message.includes('待确认'));
+      assert.ok(notices[0].message.includes('勿重复提交'));
+    }
+    assert.equal(state.residents.length, 1, 'unknown projections are not optimistically rewritten');
+  }
+});

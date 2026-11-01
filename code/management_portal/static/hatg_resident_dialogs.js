@@ -385,9 +385,16 @@
           }
         return true;
       } catch (error) {
-        if (error.committedMutation?.instruction === "DeleteResident") {
+        const commitState = error.body?.error?.commit_state;
+        if (error.committedMutation?.instruction === "DeleteResident" || commitState === "committed") {
           toast(window.PortalI18n.text`Resident 已删除，图刷新失败，请刷新查看，勿重复删除：${error.message || error}`, "warning", 9000);
           return true;
+        }
+        if (commitState !== "not_committed") {
+          // A lost owner/transport receipt cannot prove that deletion failed.
+          // Keep the current projection and let the user verify the same target.
+          toast(`${window.PortalI18n.t("受理结果待确认，请勿重复提交")}：${error.message || error}`, "warning", 9000);
+          return false;
         }
         toast(window.PortalI18n.text`删除失败，HATG 未改变：${error.message || error}`, "error", 7000);
         return false;
