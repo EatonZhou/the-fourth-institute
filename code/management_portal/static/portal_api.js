@@ -32,8 +32,11 @@
     };
   }
 
-  function requestSignal(callerSignal, timeoutMs) {
+  function requestSignal(callerSignal, timeoutMs, onAbort) {
     const controller = new AbortController();
+    let cause = 'caller_aborted';
+    const observedAbort = () => { try { onAbort?.(cause); } catch (_) { /* Observation must not affect requests. */ } };
+    controller.signal.addEventListener('abort', observedAbort, { once: true });
     const abortFromCaller = () => controller.abort(callerSignal?.reason);
     if (callerSignal?.aborted) abortFromCaller();
     else callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
@@ -43,6 +46,7 @@
       : Number(timeoutMs);
     const timer = Number.isFinite(parsedTimeout) && parsedTimeout > 0
       ? window.setTimeout(() => {
+          cause = 'request_timeout';
           controller.abort(new DOMException("Request timed out", "TimeoutError"));
         }, parsedTimeout)
       : 0;
@@ -51,6 +55,7 @@
       cleanup() {
         if (timer) window.clearTimeout(timer);
         callerSignal?.removeEventListener("abort", abortFromCaller);
+        controller.signal.removeEventListener('abort', observedAbort);
       },
     };
   }
@@ -58,6 +63,21 @@
   async function requestResult(path, options = {}) {
     const method = options.method || (options.body === undefined ? "GET" : "POST");
     const headers = new Headers(options.headers);
+    let transportId = null;
+    // Identify same-origin Portal attempts at their transport owner. Never
+    // add tracing headers to foreign requests or publish paths/parameters.
+    try {
+      const target = new URL(path, window.location.href);
+      if (target.origin === window.location.origin && /^\/(?:api|test\/api)\//.test(target.pathname)) {
+        if (!headers.has('X-Portal-Request-ID')) {
+          const bytes = new Uint8Array(16);
+          window.crypto.getRandomValues(bytes);
+          headers.set('X-Portal-Request-ID', Array.from(bytes, value => value.toString(16).padStart(2, '0')).join(''));
+        }
+        const value = headers.get('X-Portal-Request-ID');
+        if (/^[a-z0-9-]{1,96}$/.test(value)) transportId = value;
+      }
+    } catch (_) { /* Observation is optional when no browser identity exists. */ }
     if (window.PortalI18n && !headers.has("X-Portal-Language")) {
       headers.set("X-Portal-Language", window.PortalI18n.requestLanguage());
     }
@@ -71,7 +91,11 @@
     delete init.parseJson;
     delete init.timeoutMs;
     Object.assign(init, bodyOptions(options.body, headers));
-    const composedSignal = requestSignal(options.signal, options.timeoutMs);
+    const composedSignal = requestSignal(options.signal, options.timeoutMs, reason => {
+      if (transportId) window.dispatchEvent(new CustomEvent('portal:request-aborted', { detail: {
+        transport_id: transportId, reason, at: new Date().toISOString(),
+      } }));
+    });
     init.signal = composedSignal.signal;
     let streaming = false;
     try {

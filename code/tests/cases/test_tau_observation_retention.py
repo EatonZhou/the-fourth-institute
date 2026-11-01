@@ -9,7 +9,7 @@ import pytest
 
 from management_portal.test_framework.runner_adapters import TauAdapter
 
-@pytest.mark.parametrize('filename', ['tau-browser-observations.jsonl', 'tau-helper-calls.jsonl', 'tau-browser-identity.jsonl'])
+@pytest.mark.parametrize('filename', ['tau-browser-observations.jsonl', 'tau-helper-calls.jsonl', 'tau-browser-identity.jsonl', 'harness-tool-rtt.jsonl', 'tau-network-review.json'])
 def test_standard_browser_observations_are_cited_before_pruning_and_remain_original(tmp_path, filename):
     """TAU 标准观测证据在清理前引用并保留
 
@@ -32,7 +32,7 @@ def test_standard_browser_observations_are_cited_before_pruning_and_remain_origi
     assert details["evidence"] == [evidence.name]
     assert evidence.read_bytes() == original
 
-@pytest.mark.parametrize('filename', ['tau-browser-observations.jsonl', 'tau-helper-calls.jsonl', 'tau-browser-identity.jsonl'])
+@pytest.mark.parametrize('filename', ['tau-browser-observations.jsonl', 'tau-helper-calls.jsonl', 'tau-browser-identity.jsonl', 'harness-tool-rtt.jsonl', 'tau-network-review.json'])
 def test_standard_browser_observations_do_not_cite_files_outside_the_case(tmp_path, filename):
     """TAU 观测证据禁止引用用例目录外文件
 

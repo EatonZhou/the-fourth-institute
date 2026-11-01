@@ -243,7 +243,7 @@ class TauAdapter(RunnerAdapter):
         # executor omitted them. Retain them before pruning and result storage.
         if run_dir.is_dir():
             root = run_dir.resolve()
-            for name in ("tau-browser-observations.jsonl", "tau-helper-calls.jsonl", "tau-browser-identity.jsonl"):
+            for name in ("tau-browser-observations.jsonl", "tau-helper-calls.jsonl", "tau-browser-identity.jsonl", "harness-tool-rtt.jsonl", "tau-network-review.json"):
                 candidate = run_dir / name
                 if candidate.is_file() and candidate.resolve().parent == root:
                     evidence = details.setdefault("evidence", [])

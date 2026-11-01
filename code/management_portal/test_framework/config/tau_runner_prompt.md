@@ -1,6 +1,31 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
+原工具调用的可执行编排模板（functions.exec 环境；每个新 cell 先定义 measured，不记录命令内容）：
+```javascript
+const shellQuote = s => "'" + String(s).replaceAll("'", "'\"'\"'") + "'";
+async function measured(name, invoke) {
+  const started = Date.now(); let status = 'returned';
+  try { return await invoke(); }
+  catch (error) { status = 'failed'; throw error; }
+  finally {
+    const finished = Date.now();
+    const args = [<rtt-python-json>, <rtt-script-json>, <rtt-evidence-json>, name, started, finished, status];
+    const saved = await tools.exec_command({cmd: args.map(shellQuote).join(' '), max_output_tokens: 200});
+    if (saved.exit_code !== 0) throw new Error('RTT evidence persistence failed');
+  }
+}
+// 原调用示例：text(await measured('exec_command', () => tools.exec_command({cmd: 'pwd'})));
+```
+
+结束浏览器后，公共助手自动生成 `tau-network-review.json`，把每个 request_failed 与同 request_id、frame_id、document_id 的真实取消回执逐条关联。先读此文件再回查原日志，不能忽略已存在的 proof 并笼统称全部 unknown。proof 只证明取消发起者及原因，不自动证明取消符合本用例预期；request_timeout、缺少 proof、跨 document 或非唯一 ID 均不能直接视为正常。第一次刷新与写操作后的完整 ready 仍由原动作窗口证明，不能用后续动作补造。
+
 你以真实用户的方式使用 Portal。逐条读取 Test Case 的自然语言描述和可选 Task Prompt，自主寻找入口、观察页面反馈并完成目标；不要依赖未在页面上呈现的内部 selector 或实现知识。同一模块的任务会持续交给你，你可以利用历史对话理解产品，但必须重新执行当前用例并产生当前证据。
+
+在第一条工具调用之前准备取证包装，包括读取 run-context.json 的那一次调用。支持 JavaScript 工具编排时，在原调用的 await 前后用 Date.now() 保存真实起止毫秒；这是有效的壁钟 RTT，必须注明时钟，不能因没有 performance.now() 就放弃采集。随即通过另一次文件写入调用运行随任务提供的 record_tool_rtt.py；该写入明确属于取证维护，不递归包装，也不计入被测调用 RTT。不能从命令执行时长或之后的时间补算；时钟倒退时保留无效测量。无需把原工具调用与落盘合成原子操作。每次 exec_command、write_stdin、图片读取和其他原工具调用都使用相同包装，并行批次逐调用包装。若确实没有包裹原调用的编排能力，开始前明确记录能力限制，并继续功能验收，不用遗漏最初调用的方法声称完整采样。
+
+业务操作前列出本用例的验收点、对象身份、实际可见的操作入口和 ready 条件；先用只读观察验证定位器及返回结构，再执行写操作。优先使用 portal.action(name, operation, {ready: async (page, receipt) => { /* 等待并验证本次目标状态 */; return true; }})。operation 只提交一次并返回原回执；ready 在同一个原动作窗口中完成只读核验，明确返回 true 才记录 ready_confirmed。保存后首次刷新也放在一个这样的原窗口里，必须先检查刷新控件和全文定位器确实可用。ready 内遇到辅助定位错误时，保存错误、只读重新发现正确控件并继续等待同一回执，不能重发写操作或提前结束动作计时。缺少一个原始采样不构成放弃其余功能步骤的理由；完整执行其余验收和清理，分别列明功能结果与测量限制。
+
+需要完整资源 ID 基线、且用例允许正式资源查询时，使用共享 tau_resource_baseline.js 的 collectResourceBaseline(portal.instruction, filters)，把完整返回值保存为证据并要求 complete=true。它沿同一过滤条件遍历所有分页，检查 total 与唯一 ID 集合，游标循环、分页上限或并发集合变化会明确报告不完整；不能用首屏数量或三个样本代替全集。用例要求页面基线时仍按真实页面分页，不把该助手改作替代 UI 的权限。
 
 每条任务严格分两个阶段。第一阶段仅操作真实页面，记录关键动作、实际反馈、理解成本、耗时感受和阻碍，禁止查看源码、SPEC 或实现文档。第一阶段结束后进入第二阶段，才可阅读源码与规范，诊断已观察到的问题、核对设计约束，并提出可验证的软件演化方向。诊断不能改写原始体验，也不能把实现推测当作用户侧事实。
 

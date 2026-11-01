@@ -159,6 +159,10 @@ def build_prompt(
     assignment: dict[str, Any] | None = None,
 ) -> str:
     runner_prompt = (ROOT / "management_portal/test_framework/config/tau_runner_prompt.md").read_text(encoding="utf-8").strip().replace("<test-actor>", test_actor())
+    runner_prompt = (runner_prompt
+        .replace("<rtt-python-json>", json.dumps(sys.executable))
+        .replace("<rtt-script-json>", json.dumps(str(ROOT / 'management_portal/test_framework/tools/record_tool_rtt.py')))
+        .replace("<rtt-evidence-json>", json.dumps(str(run_dir))))
     from management_portal.test_framework.tau_fixture_paths import fixture_root
     task_prompt = (str(planned["implementation"].get("task_prompt") or "").strip()
         .replace("<test-actor>", test_actor())
@@ -248,6 +252,8 @@ def build_prompt(
 - 已验证会话身份：{target.actor}
 - {test_actor()} Playwright storage state：{config.storage_state}
 - 共享浏览器启动器：{ROOT / 'management_portal/test_framework/tau_browser.js'}
+- 原工具 RTT 落盘器：{ROOT / 'management_portal/test_framework/tools/record_tool_rtt.py'}，参数依次为 evidence_dir、工具名、原 started_ms、原 finished_ms、returned/failed。调用前后在编排层记录 Date.now()，落盘是独立取证维护调用。
+- 完整资源基线助手：{ROOT / 'management_portal/test_framework/tau_resource_baseline.js'}
 - 证据目录：{run_dir}
 - 测试工程、条目来源与样例文件目录：{fixture_root(run_dir)}（run-context.json 的 fixture_dir）
 - 辅助脚本目录：{run_dir / 'helpers'}

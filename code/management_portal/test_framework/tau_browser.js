@@ -53,6 +53,7 @@ const { performance } = require("perf_hooks");
 const { observeBrowser } = require("./tau_browser_observer");
 const { safeError, safeTransport } = require("./tau_safe_error");
 const { sendThenStop } = require('./tau_send_stop');
+const { writeNetworkReview } = require('./tau_network_review');
 
 const { chromium } = require(path.join(__dirname, "tau_runtime", "node_modules", "playwright"));
 
@@ -364,13 +365,15 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
     try { await browser.close(); }
     catch (exc) { error ||= String(exc.name || "BrowserCloseError"); }
+    try { writeNetworkReview(observer.file, path.join(evidence, 'tau-network-review.json')); }
+    catch (exc) { error ||= String(exc.name || 'NetworkReviewError'); }
     const stopped = await stopHost(host);
     if (!stopped && !error) error = `browser host ${host.host_pid} did not stop`;
     writeReceipt(evidence, "tau-browser-close.json", { helper_pid: process.pid, host_pid: host.host_pid, ok: !error, error });
   }
   return { browser, context, page, actor: launch.actor, buildId: launch.build_id,
     verifyIdentity: () => checkIdentity('explicit_recovery'),
-    action: (name, operation, { page: target = page } = {}) => observer.action(target, name, operation),
+    action: (name, operation, { page: target = page, ready } = {}) => observer.action(target, name, operation, { ready }),
     requestId: request => observer.requestId(request), instruction, inputState, triggerPath, waitForInput, waitForRunningActivity,
     sendThenStop: options => sendThenStop({ ...options, evidenceDir: evidence }), close };
 }

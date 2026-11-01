@@ -216,11 +216,8 @@ async function observeBrowser(context, { evidenceDir }) {
     const streamValue = request.resourceType() === 'eventsource' && safePath(request.url()) === '/api/events'
       ? new URL(request.url()).searchParams.get('portal_stream_id') : null;
     const streamId = /^[a-z0-9-]{1,96}$/.test(streamValue || '') ? streamValue : null;
-    const pdfRequest = request.method() === 'GET'
-      && /^\/api\/articles\/[^/]+\/pdf$/.test(new URL(request.url()).pathname);
-    const conversationRequest = request.method() === 'GET'
-      && new URL(request.url()).pathname === '/api/agent-conversations';
-    const transportValue = (safePath(request.url()) === '/api/instructions/execute' && request.method() === 'POST') || pdfRequest || conversationRequest
+    const portalApiRequest = /^\/(?:api|test\/api)\//.test(new URL(request.url()).pathname);
+    const transportValue = portalApiRequest
       ? request.headers()['x-portal-request-id'] : null;
     const transportId = /^[a-z0-9-]{1,96}$/.test(transportValue || '') ? transportValue : null;
     const transportKey = streamId ? `stream:${streamId}` : (transportId ? `request:${transportId}` : null);
@@ -315,7 +312,7 @@ async function observeBrowser(context, { evidenceDir }) {
         state.document.confirmed = true;
       }
       write({ kind: data.kind, ...location(state), browser_observed_at_ms: Number.isFinite(data.at) ? data.at : null, time_origin_ms: Number.isFinite(data.time_origin) ? data.time_origin : null });
-    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_stream_ready', 'portal_state_read', 'portal_conversation_read', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
+    } else if (['beforeunload', 'pagehide', 'focus', 'blur', 'visibilitychange', 'click_observed', 'pointer_observed', 'document_error', 'portal_connections', 'portal_request_aborted', 'portal_stream_ready', 'portal_state_read', 'portal_conversation_read', 'pdf_reader_cancelled', 'resource_timing', 'resource_timing_buffer_full', 'observer_unavailable'].includes(data.kind)) {
       const doc = tokens.get(data.token);
       const associated = { ...location(state), document_id: doc?.id || null, document_confirmed: !!doc };
       if (['click_observed', 'pointer_observed'].includes(data.kind)) {
@@ -452,6 +449,16 @@ async function observeBrowser(context, { evidenceDir }) {
           cancelled_at_ms: Number.isFinite(data.cancelled_at_ms) ? data.cancelled_at_ms : null,
           request_id: match?.id || null,
           request_association: match ? 'pdf_fetch_identity' : 'unavailable_no_unique_transport_identity' });
+      } else if (data.kind === 'portal_request_aborted') {
+        const transportId = /^[a-z0-9-]{1,96}$/.test(data.transport_id || '') ? data.transport_id : null;
+        const candidates = (transportRequests.get(transportId ? `request:${transportId}` : null) || [])
+          .filter(request => request.document === doc && request.frame === state);
+        const match = doc && candidates.length === 1 ? candidates[0] : null;
+        write({ kind: 'portal_request_aborted', ...associated, transport_id: transportId,
+          reason: ['caller_aborted', 'request_timeout'].includes(data.reason) ? data.reason : 'unknown',
+          aborted_at_ms: Number.isFinite(data.at) ? data.at : null,
+          request_id: match?.id || null,
+          request_association: match ? 'portal_request_identity' : 'unavailable_no_unique_transport_identity' });
       } else if (data.kind === 'portal_connections') {
         for (const entry of data.entries || []) {
           const reason = /^(subscription_unchanged|subscription_changed|handover_complete|next_stream_closed|closed|stream_error|stale_stream|handover_timeout|next_stream_error|restart|leadership_released|page_closed|retry|caller_aborted|stream_batch_read|first_batch_read|backlog_read|watch_closed|AbortError)$/.test(entry.reason || '') ? entry.reason : 'unknown';
@@ -599,6 +606,12 @@ async function observeBrowser(context, { evidenceDir }) {
     window.addEventListener('portal:connection-closed', event => {
       if (event.detail && typeof event.detail === 'object') connections([event.detail]);
     });
+    window.addEventListener('portal:request-aborted', event => {
+      const item = event.detail;
+      if (!item || typeof item !== 'object') return;
+      emit({ kind: 'portal_request_aborted', transport_id: /^[a-z0-9-]{1,96}$/.test(item.transport_id || '') ? item.transport_id : null,
+        reason: ['caller_aborted', 'request_timeout'].includes(item.reason) ? item.reason : 'unknown', at: Date.parse(item.at) });
+    });
     const conversationReadReasons = new Set('index_refresh pagination pin_menu resident_event resident_projection index_projection viewer_state chat_read cursor_reconciliation unknown'.split(' '));
     window.addEventListener('portal:conversation-read', event => {
       const item = event.detail;
@@ -707,12 +720,13 @@ async function observeBrowser(context, { evidenceDir }) {
   return {
     file,
     requestId(request) { return requests.get(request)?.id || null; },
-    async action(page, name, operation) {
+    async action(page, name, operation, { ready } = {}) {
       if (stopped) throw new Error('Browser observation has ended');
       if (typeof name !== 'string' || !/^[a-zA-Z0-9_.:-]{1,80}$/.test(name) || typeof operation !== 'function') {
         throw new TypeError('Use a static action label and a callback containing the operation and its ready check');
       }
       if (actions.has(page)) throw new Error('An action already owns this page; include its ready check in the same callback');
+      if (ready !== undefined && typeof ready !== 'function') throw new TypeError('ready must be a read-only callback');
       const action = { id: id('action'), request_ids: [] };
       const started = performance.now();
       actions.set(page, action);
@@ -720,6 +734,14 @@ async function observeBrowser(context, { evidenceDir }) {
       let status = 'failed', error;
       try {
         const result = await operation(page);
+        if (ready) {
+          write({ kind: 'action_ready_started', action_id: action.id, name });
+          // The mutation is never repeated. Discovery/recovery of a ready
+          // locator belongs in this awaited read-only callback, while the
+          // original action window and its request identities remain open.
+          if (await ready(page, result) !== true) throw new Error('Action readiness must be explicitly confirmed');
+          write({ kind: 'action_ready_confirmed', action_id: action.id, name });
+        }
         status = 'completed';
         return result;
       } catch (caught) {
