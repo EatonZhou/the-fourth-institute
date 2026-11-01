@@ -171,6 +171,23 @@ class DesktopStartup(unittest.TestCase):
             self.flow.run()
         self.assertEqual(actions, ["retire", "create", "first-admin"])
 
+    def test_incomplete_moves_never_retire_an_existing_instance(self):
+        self.created()
+        runtime = self.root / "runtime"
+        runtime.mkdir()
+        for name in ("area-relocation.json", "instance-relocation.json"):
+            with self.subTest(record=name):
+                record = runtime / name
+                record.write_text('{"status":"failed"}')
+                before = (self.root / "instance.json").read_bytes()
+                with patch.object(self.flow, "execute") as execute:
+                    with self.assertRaisesRegex(RuntimeError, "relocation has not completed"):
+                        self.flow.run()
+                execute.assert_not_called()
+                self.assertEqual((self.root / "instance.json").read_bytes(), before)
+                self.assertTrue(record.is_file())
+                record.unlink()
+
     def test_installer_result_follows_progress_lines(self):
         output = '@TFI_PROGRESS {"message": "正在启动"}\n{\n  "status": "setup_link_created"\n}\n'
         self.assertEqual(launcher.last_result(output), {"status": "setup_link_created"})

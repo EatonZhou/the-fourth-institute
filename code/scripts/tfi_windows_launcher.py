@@ -422,12 +422,18 @@ class DefaultStartup:
         return []
 
     def run(self):
-        from scripts.instance_services import start_blocker
+        from scripts.instance_services import start_blocker, creation_record
         if is_elevated_process():
             raise RuntimeError("请关闭此窗口，直接双击桌面图标启动 Portal；不要选择“以管理员身份运行”。"
                                "当前用户模式的数据库不能在提升的管理员进程中启动。")
         self.validate_selection()
-        initialized = not self.registered() or bool(start_blocker(self.instance()))
+        initialized = not self.registered()
+        if not initialized:
+            current = self.instance()
+            blocker = start_blocker(current)
+            initialized = creation_record(current) is not None
+            if blocker and not initialized:
+                raise RuntimeError(blocker)
         if initialized:
             self.timed("initialize", self.initialize)
         instance = self.instance()
