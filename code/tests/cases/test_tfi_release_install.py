@@ -1,4 +1,5 @@
 """Instance lifecycle: create from the example instance, configure, retire."""
+
 from __future__ import annotations
 
 import hashlib
@@ -441,3 +442,21 @@ def test_relocation_registration_failure_restores_original_root(relocation, tmp_
     assert load(instance.root).document == instance.document
     assert host_instances.find(instance.name).root == instance.root
     assert instance_services.start_blocker(instance) == ''
+
+
+def test_remove_tree_deep_readonly_provider_session(tmp_path):
+    """A real long Provider session path must not leave a retired instance behind."""
+    import stat
+    from management_common.filesystem_paths import filesystem_path
+    from scripts.tfi_release_install import remove_tree
+
+    root = tmp_path / "retiring-instance"
+    session = root / "provider-state" / ("project-" + "x" * 170) / ("session-" + "y" * 80)
+    native = filesystem_path(session)
+    native.mkdir(parents=True)
+    transcript = native / "session.jsonl"
+    transcript.write_text("test session", encoding="utf-8")
+    transcript.chmod(stat.S_IREAD)
+    assert len(str(session)) > 260
+    remove_tree(root)
+    assert not root.exists()

@@ -43,6 +43,7 @@ sys.dont_write_bytecode = True
 from management_common import host_instances  # noqa: E402
 from management_common.code_environment import runtime_python, source_inventory  # noqa: E402
 from management_common.configuration_files import atomic_json  # noqa: E402
+from management_common.filesystem_paths import filesystem_path  # noqa: E402
 from management_common.installation_progress import report  # noqa: E402
 from management_common.instance_manifest import AREAS, FIXED_DIRECTORIES, SCHEMA, load, validate  # noqa: E402
 from management_common.native_output import run_native_capture, run_utf8_capture  # noqa: E402
@@ -666,7 +667,7 @@ def remove_tree(path):
     def writable(function, target, _info):
         os.chmod(target, stat.S_IWRITE | stat.S_IREAD | (stat.S_IEXEC if Path(target).is_dir() else 0))
         function(target)
-    shutil.rmtree(path, onexc=writable)
+    shutil.rmtree(filesystem_path(path), onexc=writable)
 
 
 def retire(instance, *, delete_external_areas=False):
