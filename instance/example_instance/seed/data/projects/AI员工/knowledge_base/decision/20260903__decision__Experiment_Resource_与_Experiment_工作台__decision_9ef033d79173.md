@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 12
+  number: 13
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T02:03:36Z'
+  updated_at: '2026-11-01T18:52:42Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_24014e2b9bf6
 importance: 8
 metaness: 2
 ai_generated: false
@@ -30,6 +30,7 @@ links:
   - decision_ad3e21094f14
   - decision_8dc6b3d03ca7
   - decision_3ece26686464
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -102,9 +103,9 @@ knowledge_base/experiment/
 
 - ResourceService 的 `unregister` 删除整个实验资源，只接受资源根。
 - 更新和删除要求目标主文档位于该 Project 的独立实验目录中，且解析后的文件仍在该目录内。旧式平铺主文件、指向目录外的符号链接或其他越界布局在写入和删除前被拒绝，保留原文件与相邻实验；读取支持不扩大修改边界。
-- 实验删除的注销与后台文件清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍把 `<slug>__<id>` 整个目录移入同一 `knowledge_base` 下的 `.trash`（Experiment provider 删除流程）。
-- 删除的操作 ID、进度和失败原因按《目录与路径协议》（decision_4aa13bc21e8e）报告。现在的代码仍在回收目标重名时添加随机十六进制后缀，成功返回 `deleted: true` 和 `trash_path`（原删除回执）。
-- 登记注销与文件清理的顺序按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在 provider 完成移动后才忘记登记身份（ResourceService 删除流程）。以后重新登记会取得新的 `experiment_*` ID；旧 ID 不指向新实验。
+- 实验删除的注销与后台文件清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。
+- 删除的操作 ID、进度和失败原因按《目录与路径协议》（decision_4aa13bc21e8e）报告。
+- 登记注销与文件清理的顺序按《目录与路径协议》（decision_4aa13bc21e8e）处理。以后重新登记会取得新的 `experiment_*` ID；旧 ID 不指向新实验。
 - Experiment 页面没有删除按钮，删除只能通过指令进行。
 
 ## 页面、服务与权限的边界
@@ -113,7 +114,7 @@ knowledge_base/experiment/
 | --- | --- |
 | 页面 | 搜索、Project 筛选、语义搜索、卡片、详情、伴随文件预览、文本编辑、Chat |
 | HATG 资源指令 / ResourceService | 登记、统一解析、读取、结构化更新、删除 |
-| provider 内部 | Project 锁、目录命名、规范主文档生成、边界校验及按《目录与路径协议》（decision_4aa13bc21e8e）处理文件清理；现在的代码仍移入 `.trash` |
+| provider 内部 | Project 锁、目录命名、规范主文档生成、边界校验及按《目录与路径协议》（decision_4aa13bc21e8e）处理文件清理 |
 
 页面读取需要查看权限（viewer）；详情文本保存、登记和结构化更新需要编辑权限（contributor）；删除需要管理权限（admin）。Experiment provider 进程能写 Project 文件，但只执行 ResourceService 已经授权的操作。
 
@@ -141,7 +142,7 @@ Experiment provider 取得 Project 实验锁并复核目录
 ResourceService 提交登记，Resource Index 随后发现它
 ```
 
-先保留身份，再写入文档，使 `kb_id` 与最终登记一致。目录锁协调扫描、创建和删除，避免这些操作互相穿插；实验叙述与产物的删除和保留按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍通过整目录回收一起保留（原删除流程）。
+先保留身份，再写入文档，使 `kb_id` 与最终登记一致。目录锁协调扫描、创建和删除，避免这些操作互相穿插；实验叙述与产物的删除和保留按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 
 ## 精确接口与字段
 
@@ -169,4 +170,4 @@ Resource Catalog 语义检索使用 `/api/resource-semantic-searches` 系列接�
 
 ## 故障与恢复
 
-Project 缺失返回找不到目标；同一 ID 在多个目录出现时视为数据冲突，不任意选择一个。登记失败会回收本次空目录；更新使用原子文件替换，失败时保留旧主文档；删除、重试与恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在目录移动成功后才注销身份，允许维护者从 `.trash` 恢复材料，未提供旧 ID 重新激活控件（原删除流程）。
+Project 缺失返回找不到目标；同一 ID 在多个目录出现时视为数据冲突，不任意选择一个。登记失败会回收本次空目录；更新使用原子文件替换，失败时保留旧主文档；删除、重试与恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。

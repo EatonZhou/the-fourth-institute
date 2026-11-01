@@ -17,6 +17,11 @@ def _release_resource(resource_id: str, key: str) -> None:
     """Use the lifecycle owner, including when the UI already removed it."""
     from management_portal import isa_client
 
+    if resource_id.startswith('script_run_'):
+        from .run_cleanup import delete_script_run
+        delete_script_run(resource_id)
+        return
+
     try:
         if resource_id.startswith('family_'):
             # Family is a domain-owned projection, not a registry mutation.
@@ -44,28 +49,6 @@ def _delete_upload(upload_id: str, key: str) -> None:
     except InstructionError as exc:
         if exc.code != 'instruction.not_found':
             raise
-
-
-def _release_workspace(resource_id: str, key: str, actors: set[str]) -> None:
-    """Only detach this operation's users of a Workspace it allocated."""
-    from management_portal import isa_client
-
-    try:
-        _release_resource(resource_id, key)
-        return
-    except InstructionError as exc:
-        users = exc.details.get('users') or []
-        if (exc.code != 'instruction.conflict' or exc.details.get('reason') != 'workspace_in_use'
-                or not users or any(user.get('usage') != 'binding' or user.get('resident_id') not in actors
-                                    for user in users)):
-            raise
-    for user in users:
-        resident_id = user['resident_id']
-        isa_client.call(TAU_ACTOR, 'UnbindWorkspace',
-                        {'resident_id': resident_id, 'workspace_id': resource_id},
-                        key=f'{key}:unbind:{resident_id}')
-    # A new key is needed after the not_committed refusal has been repaired.
-    _release_resource(resource_id, key + ':unbound')
 
 
 def _fixture_workspaces(roots: list[Path]) -> list[str]:
@@ -143,15 +126,11 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     # before any directly allocated members or temporary teams.
     targets = sorted(dict.fromkeys([*automatic, *resources, *fixture_workspaces]),
                      key=lambda rid: {'resident': 1, 'lineage': 2, 'workspace': 3}.get(rid.partition('_')[0], 0))
-    actors = lifecycle.actors(scope_id)
     released_resources = []
     for resource_id in targets:
         try:
             key = f'tau-fixture:{root.name}:{resource_id}:{attempt_id}'
-            if resource_id.startswith('workspace_') and resource_id in automatic:
-                _release_workspace(resource_id, key, actors)
-            else:
-                _release_resource(resource_id, key)
+            _release_resource(resource_id, key)
             lifecycle.released(scope_id, resource_id)
             released_resources.append(resource_id)
             if resource_id in resources:
@@ -171,6 +150,10 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     if errors:
         # A registered/running project must keep its files for the next attempt.
         raise RuntimeError('；'.join(errors))
+    from management_portal.resources.creation import finish_scope_creations
+    creation_errors = finish_scope_creations(scope_id) if lifecycle.scope(scope_id) else []
+    if creation_errors:
+        raise RuntimeError('；'.join(creation_errors))
     standalone_paths = tau_fixture_paths.cleanup(root)
     if content and content.exists():
         # Recheck the receipt after the product owners have finished.

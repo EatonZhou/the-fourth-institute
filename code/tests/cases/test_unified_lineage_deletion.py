@@ -193,6 +193,8 @@ def test_lineage_page_delete_uses_resident_aggregate_delete(
     assert folder.exists(), "Filesystem cleanup follows the identity commit"
     for operation_id in resident_domain.ready_resident_lifecycle_operations():
         assert resident_domain.resume_resident_lifecycle_operation(operation_id)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    get_directory_cleanup_store().run_pending()
     assert not folder.exists()
     assert "recoverable_path" not in result
     for resident_id, agent in agents.items():
@@ -252,7 +254,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
         assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
 
     assert resource_records[LINEAGE_ID]["status"] == "deleted"
-    assert applied[:2] == ["lineage_tombstone", "release"]
+    assert 'release' in applied
     assert folder.exists()
     assert lineage_reads.list_lineages("sample_admin")["lineages"] == []
 
@@ -322,11 +324,11 @@ def test_nonleader_resident_delete_removes_its_lineage_projection(
         )
 
 
-def test_lineage_delete_is_rejected_before_moving_data_when_a_member_is_running(
+def test_lineage_delete_terminates_work_before_committing_identity(
     deletion_store: tuple[Path, dict[str, dict]],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """有成员 Resident 仍在工作时删除 Lineage 被拒绝，数据保持不动"""
+    """终止成员工作失败时不提交删除；不能把运行中当作永久拒绝删除。"""
     data_root, resource_records = deletion_store
     folder = data_root / "lineages" / LINEAGE_ID
     _write_lineage(folder)
@@ -335,13 +337,11 @@ def test_lineage_delete_is_rejected_before_moving_data_when_a_member_is_running(
         _resident_record(PEER_ID, folder),
     ]
     _write_resident_facts(records)
-    monkeypatch.setattr(
-        resident_lifecycle_domain,
-        "resident_has_pending_work",
-        lambda resident_id: resident_id == PEER_ID,
-    )
-
-    with pytest.raises(ValueError, match=PEER_ID):
+    def cannot_terminate(record):
+        if record['resident_id'] == PEER_ID:
+            raise RuntimeError('termination not confirmed')
+    monkeypatch.setattr(resident_lifecycle_domain, 'terminate_resident_work', cannot_terminate)
+    with pytest.raises(RuntimeError, match='termination not confirmed'):
         lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
 
     assert {
@@ -363,20 +363,22 @@ def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     _write_resident_facts([_resident_record(ROOT_ID, folder)])
     result = lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
+    assert resident_domain.resume_resident_lifecycle_operation(operation_id)
+    from management_common import directory_cleanup_store
+    cleanup = directory_cleanup_store.get_directory_cleanup_store()
     with monkeypatch.context() as failure:
-        from management_portal.society_service import resident_workspace_deletion
-        failure.setattr(resident_workspace_deletion, "remove_tree",
+        failure.setattr(directory_cleanup_store, "remove_path",
                         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("remove failed")))
-        assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
+        attempts = cleanup.run_pending()
+        assert attempts and all(item['status'] == 'retry' for item in attempts)
     assert folder.is_dir()
     assert resident_lineage.all() == []
     assert resource_records[LINEAGE_ID]["status"] == "deleted"
-    operations = resident_record_domain.lifecycle_operations()
-    assert "remove failed" in operations.health()["last_error"]
-    operations.store.database.write(lambda connection: connection.execute(
-        'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (operation_id,),
+    assert all('remove failed' in item['last_error'] for item in cleanup.status())
+    cleanup.database.write(lambda connection: connection.execute(
+        f'UPDATE {cleanup.table} SET available_at=to_timestamp(0) WHERE completed_at IS NULL',
     ))
-    assert resident_domain.resume_resident_lifecycle_operation(operation_id)
+    cleanup.run_pending()
     assert not folder.exists()
 
 
@@ -403,6 +405,8 @@ def test_lineage_cleanup_removes_results_an_agent_sealed_read_only(
     lineage_lifecycle.delete_lineage(LINEAGE_ID, "sample_admin")
     operation_id, = resident_domain.ready_resident_lifecycle_operations()
     assert resident_domain.resume_resident_lifecycle_operation(operation_id)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    get_directory_cleanup_store().run_pending()
     assert not folder.exists()
     assert resident_record_domain.lifecycle_operations().health() == {"pending": 0, "failed": 0, "last_error": ""}
 

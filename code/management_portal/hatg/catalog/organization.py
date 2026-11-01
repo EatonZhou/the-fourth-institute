@@ -111,7 +111,7 @@ DECLARATIONS = (
     _d("GetMoveOperation", FIXED, "读取一次迁移操作的阶段和终态。", (
         R("operation_id", description="MoveResident 或 MoveLineageObjects 返回的操作 ID"),
     ), (
-        R("phase", description="当前步骤，如 workspace_move、finalizing；结束后为 completed"),
+        R("phase", description="当前步骤，如 directory_dependencies、finalizing；结束后为 completed"),
         P("status", description="pending 进行中、retrying 出错重试中、completed 已完成"),
         P("error", "object", "最近一次出错 {message, retryable}；没有出错时为 null"),
     ), target="operation_id"),

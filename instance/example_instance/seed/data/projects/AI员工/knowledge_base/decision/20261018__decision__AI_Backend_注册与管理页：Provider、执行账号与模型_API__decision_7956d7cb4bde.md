@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 37
+  number: 38
   created_at: '2026-10-18T14:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_667111522609
-  updated_at: '2026-10-31T18:16:20Z'
+  updated_at: '2026-11-01T18:53:52Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -43,6 +43,7 @@ links:
   - decision_8b2fa224616b
   - decision_850e6248d680
   - decision_b820faf42218
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -126,7 +127,7 @@ CheckProviderAccount 使用普通 ExecutionService 提交最小消息，禁止�
 | `ListProviders` | 声明的 Provider、能力摘要、运行时安装状态与可用版本；可选 `refresh:true` 检查可用版本并保存观察，不安装或激活运行时 |
 | `RegisterProviderAccount` | 新建执行账号登记：`account_id`、`provider`、`kind`、可选 `route_id`、`config`、初始并发和启停状态；`api_profile` 用 `config.api_id` 引用已有接口，可附带一次性 `secret` 更新凭据 |
 | `UpdateProviderAccountRegistration` | 业务参数为 `account_id`、`changes`，修改配置、`enabled` 与初始并发；版本前提通过调用信封 `expected_version` 传入 |
-| `DeleteProviderAccount` | 删除空闲账号的登记、目录与服务实例 |
+| `DeleteProviderAccount` | 删除空闲账号的登记与服务实例，保留账号目录 |
 | `OpenProviderAccountLogin`、`UpdateProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin` | Open 打开订阅登录会话；Update 向现有 Claude 会话提交 `authorization_code`；会话带 `requires_code_input`；Get 同时返回 `login_state`，无会话时 `session:null`；Cancel 取消登录 |
 | `ListBackendRoles`、`UpdateBackendRole` | 角色映射的读取与修改；更新参数使用 `backend_role`、`account_id` 及可选的 `model`、`reasoning_effort`，结果行仍使用 `role` |
 | `ListProviderAccounts`、`UpdateProviderAccount` | 现有指令：账号目录与额度读数、调度设置；列表附带 `registration`、`registration_version`、`kind`、`enabled`、`login_state`，登记对象提供配置、初始并发及 admin 可见的主机路径 |

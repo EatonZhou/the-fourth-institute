@@ -8,16 +8,15 @@ import shutil
 import subprocess
 import tempfile
 import threading
-import time
 
 from management_common.instance_manifest import instance_runtime_root
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
+from management_common.file_retention import cache_file
 
 # Video-bearing decks can be much larger than the static PDF they produce.
 MAX_SOURCE_BYTES = 256 * 1024 * 1024
 MAX_PDF_BYTES = 128 * 1024 * 1024
-CACHE_BYTES = 512 * 1024 * 1024
 CONVERSION_SECONDS = 60
 _conversion_slot = threading.Lock()
 
@@ -51,15 +50,6 @@ def read_presentation(path: Path) -> bytes:
     return data
 
 
-def _prune_cache(root: Path, keep: Path) -> None:
-    files = sorted(root.glob("*.pdf"), key=lambda path: path.stat().st_mtime, reverse=True)
-    total = 0
-    for path in files:
-        total += path.stat().st_size
-        if path != keep and (total > CACHE_BYTES or time.time() - path.stat().st_mtime > 7 * 86400):
-            path.unlink(missing_ok=True)
-
-
 def presentation_pdf(data: bytes, filename: str) -> Path:
     """Never accept a URL or authorize via a cache hit. Inputs are authorized bytes."""
     suffix = Path(filename).suffix.lower()
@@ -74,7 +64,8 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
     key = hashlib.sha256(b"ppt-pdf-v1\0" + suffix.encode() + data).hexdigest()
     cached = root / (key + ".pdf")
     if cached.is_file():
-        return cached
+        with cache_file(cached, group='presentation'):
+            return cached
     # One process at a time per Web worker; fail fast instead of tying up HTTP threads.
     if not _conversion_slot.acquire(timeout=2):
         raise PresentationPreviewError("演示文稿预览繁忙，请稍后刷新重试。")
@@ -84,7 +75,8 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
         if not try_lock_descriptor(lock.fileno()):
             raise PresentationPreviewError("演示文稿预览繁忙，请稍后刷新重试。")
         if cached.is_file():
-            return cached
+            with cache_file(cached, group='presentation'):
+                return cached
         with tempfile.TemporaryDirectory(prefix="convert-", dir=root) as directory:
             work = Path(directory)
             source = work / ("slides" + suffix)
@@ -119,8 +111,8 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
                 if stream.read(5) != b"%PDF-":
                     raise PresentationPreviewError("演示文稿转换失败，请下载原文件查看。")
             output.chmod(0o600)
-            output.replace(cached)
-        _prune_cache(root, cached)
+            with cache_file(cached, group='presentation'):
+                output.replace(cached)
         return cached
     finally:
         if lock is not None:

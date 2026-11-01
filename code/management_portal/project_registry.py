@@ -37,7 +37,7 @@ PROJECT_ID = re.compile(r"[\w.@+-]{1,80}")
 # ``db_name`` -- is a copy nothing keeps current, so the registry refuses it.
 # ``created_by``/``created_for`` say who created the Project (and for which
 # User); the permission system reads them (decision_b820faf42218 §5.7).
-PROJECT_FIELDS = frozenset({"id", "status", "project_type", "description", "path", "ddl", "tags", "created_by", "created_for"})
+PROJECT_FIELDS = frozenset({"id", "status", "project_type", "description", "path", "ddl", "tags", "created_by", "created_for", "directory"})
 
 _cache_lock = threading.Lock()
 _cache: tuple[int, dict[str, Any]] | None = None
@@ -60,6 +60,13 @@ def _normalized(document: Any) -> dict[str, Any]:
 
 
 def _only_known_fields(payload: dict[str, Any]) -> dict[str, Any]:
+    for item in payload['projects']:
+        if not isinstance(item, dict) or 'directory' not in item:
+            continue
+        directory = item['directory']
+        if (not isinstance(directory, dict) or set(directory) != {'origin', 'owner_id'}
+                or directory['origin'] not in {'created', 'adopted'} or directory['owner_id'] != item.get('id')):
+            raise ValueError('Project directory requires its origin and Project owner ID')
     extra = [
         f"{item.get('id') or '?'}.{key}"
         for item in payload["projects"] if isinstance(item, dict)

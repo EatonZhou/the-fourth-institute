@@ -107,6 +107,7 @@ class RegistrySync:
         merge: Callable[[Record | None, str, list[Record]], Record],
         apply: bool,
         forced_id: str = "",
+        scanning: bool = False,
     ) -> dict[str, Any]:
         """Match, merge and (with ``apply``) write every group.
 
@@ -123,7 +124,10 @@ class RegistrySync:
             raise ValueError(f"an explicit {kind} id can only register one {self.location}")
         changes: dict[str, str] = {}
         store = get_registry_store()
-        with (store.writer(self.collection) if apply else nullcontext()) as writer:
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        from management_portal.resources.directory_registrations import directory_writer
+        queue = get_directory_cleanup_store()
+        with (directory_writer(self.collection, 'auto_registration_ignore') if apply else nullcontext()) as writer:
             stored = self.records(writer)
             if forced_id and forced_id not in stored:
                 raise KeyError(f"{kind} id is not registered: {forced_id}")
@@ -135,7 +139,16 @@ class RegistrySync:
             created: list[Record] = []
             updated: list[Record] = []
             unchanged: list[str] = []
+            ignores = (writer if writer else store).documents('auto_registration_ignore') if scanning else {}
             for group in groups:
+                if scanning:
+                    group = [item for item in group if self.collection + ':' + resolved_path(item['path']) not in ignores
+                             and not queue.pending_at(item['path'], connection=writer.connection if writer else None)]
+                    if not group:
+                        continue
+                if writer is not None:
+                    for item in group:
+                        queue.assert_available(item['path'], connection=writer.connection)
                 matches = {
                     record_id
                     for item in group

@@ -1,5 +1,6 @@
 """Resident domain responsibilities: workspace."""
 from __future__ import annotations
+from contextlib import contextmanager
 from . import business_fact_views
 
 from . import (
@@ -44,153 +45,6 @@ def resolve_resident_identity(
         "lineage_id": resident_lineage.lineage_id(target.record),
     }
 
-
-def _rebase_lineage_managed_path(
-    value: object,
-    *,
-    source_folder: Path,
-    canonical_folder: Path,
-) -> str:
-    raw = str(value or "").strip()
-    if not raw:
-        return ""
-    path = Path(raw).expanduser()
-    if not path.is_absolute():
-        return raw
-    try:
-        relative = path.resolve(strict=False).relative_to(
-            source_folder.resolve(strict=False)
-        )
-    except ValueError:
-        return raw
-    return str(canonical_folder / relative)
-
-
-def prepare_lineage_project_member_updates(
-    lineage_id: str,
-    project_id: str,
-    *,
-    canonical_folder: Path,
-    source_folder: Path,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Project one Lineage project change into every canonical Resident fact."""
-
-    clean_lineage_id = str(lineage_id or "").strip()
-    identity_contract.validate_id(clean_lineage_id, "lineage")
-    canonical = Path(os.path.abspath(canonical_folder.expanduser()))
-    source = source_folder.expanduser().resolve(strict=False)
-    previous_records: list[dict[str, Any]] = []
-    next_records: list[dict[str, Any]] = []
-    now = resident_domain_common.now_iso()
-    for current in resident_catalog.get_catalog().snapshot():
-        if (
-            str(current.get("lineage_id") or "").strip() != clean_lineage_id
-            or str(current.get("deleted_at") or "").strip()
-        ):
-            continue
-        previous_records.append(copy.deepcopy(current))
-        projected = copy.deepcopy(current)
-        projected.update({
-            "project_id": str(project_id or "").strip(),
-            "lineage_project_id": str(project_id or "").strip(),
-            "workspace_root": str(canonical.parent),
-            "workspace_path": str(canonical),
-            "updated_at": now,
-        })
-        pre_normalized_bindings = []
-        for binding in projected.get("workspace_bindings") or []:
-            if not isinstance(binding, dict):
-                continue
-            item = copy.deepcopy(binding)
-            item["path"] = _rebase_lineage_managed_path(
-                item.get("path"), source_folder=source, canonical_folder=canonical,
-            )
-            pre_normalized_bindings.append(item)
-        projected["workspace_bindings"] = pre_normalized_bindings
-        resident_record_domain.apply_resident_resource_identity(projected)
-        for field in (
-            "default_cwd",
-        ):
-            if field in projected:
-                projected[field] = _rebase_lineage_managed_path(
-                    projected.get(field),
-                    source_folder=source,
-                    canonical_folder=canonical,
-                )
-        for field in (
-            "workspace_paths",
-        ):
-            if isinstance(projected.get(field), list):
-                projected[field] = [
-                    _rebase_lineage_managed_path(
-                        item,
-                        source_folder=source,
-                        canonical_folder=canonical,
-                    )
-                    for item in projected[field]
-                ]
-        roots = []
-        for root in projected.get("workspace_roots") or []:
-            if not isinstance(root, dict):
-                continue
-            item = copy.deepcopy(root)
-            item["path"] = _rebase_lineage_managed_path(
-                item.get("path"),
-                source_folder=source,
-                canonical_folder=canonical,
-            )
-            roots.append(item)
-        projected["workspace_roots"] = roots
-        bindings = []
-        for binding in projected.get("workspace_bindings") or []:
-            if not isinstance(binding, dict):
-                continue
-            item = copy.deepcopy(binding)
-            item["path"] = _rebase_lineage_managed_path(
-                item.get("path"),
-                source_folder=source,
-                canonical_folder=canonical,
-            )
-            bindings.append(item)
-        projected["workspace_bindings"] = bindings
-        resident_record_domain.set_resident_owned_workspace_binding(projected)
-        resident_record_domain.validated_resident_record_payload(projected)
-        next_records.append(projected)
-    return previous_records, next_records
-
-
-def persist_lineage_project_member_updates(
-    records: Iterable[dict[str, Any]],
-) -> None:
-    from .resident_workspace_storage import canonical_path
-    catalog = resident_catalog.get_catalog()
-
-    def commit() -> None:
-        for record in records:
-            # The canonical Lineage entry may now point to its new Project folder.
-            # Keep the Workspace identity while resolving its new physical path.
-            owned = record["owned_workspace"]
-            owned["path"] = canonical_path(resident_record_domain.resident_owned_workspace_path(record))
-            record["default_cwd"] = owned["path"]
-            resident_record_domain.require_resident_owned_workspace_binding(record)
-            refresh_resident_workspace_document(record)
-
-            from management_portal.resources.workspace_store import get_workspace_store
-            store = get_workspace_store()
-            for workspace in [record["owned_workspace"], *record["workspace_bindings"]]:
-                catalog.state_store.database.write(lambda connection, workspace=workspace:
-                    store.ensure(workspace["workspace_id"], workspace["path"], move=True, connection=connection))
-            resident_record_domain.save_resident_record(record)
-            # Lineage and descriptor changes are already visible to _save's
-            # old record read. Publish even when hydrated signatures are equal.
-            catalog.state_store.enqueue_resident_resource_projection(
-                record["resident_id"], catalog.get(record["resident_id"]),
-            )
-
-
-    catalog.state_store.transaction(commit)
-
-
 def resident_workspaces_text(record: dict[str, Any]) -> str:
     lines = ["# Workspaces", "", "自有 Workspace 是默认启动目录；其他目录用于任务协作。", ""]
     for root in resident_record_domain.resident_workspace_roots(record):
@@ -209,24 +63,55 @@ def ensure_resident_file(
     initial_content: str = "",
 ) -> Path:
     path = resident_folder / filename
-    if not path.exists():
-        path.write_text(initial_content, encoding="utf-8")
+    try:
+        with path.open('x', encoding='utf-8') as stream:
+            stream.write(initial_content)
+    except FileExistsError:
+        pass
     return path
 
 
 def refresh_resident_workspace_document(record: dict[str, Any]) -> None:
+    import tempfile
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
     resident_folder = resident_record_domain.resident_folder_path(record)
-    resident_folder.mkdir(parents=True, exist_ok=True)
-    resident_store.replace_file_text(
-        resident_folder / resident_domain_common.RESIDENT_WORKSPACES_FILE,
-        resident_workspaces_text(record),
-    )
+    queue = get_directory_cleanup_store()
+    with resident_catalog.get_catalog().state_store.database.transaction() as connection:
+        queue.lock(connection)
+        if record.get('deleted_at') or not resident_folder.is_dir() or queue.pending_at(resident_folder, connection=connection):
+            return
+        # This projection may replace a generated file, but never creates its
+        # parent. In particular a user removal racing the write stays removed.
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=resident_folder, delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(resident_workspaces_text(record))
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, resident_folder / resident_domain_common.RESIDENT_WORKSPACES_FILE)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
 
-def ensure_resident_workspace(record: dict) -> None:
+def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> None:
     if record.get("deleted_at"):
         raise KeyError("resident not found")
     resident_backend.validate_resident_session_identity(record)
+    if folder is not None:
+        # Creation supplies a private staging directory. Documents describe
+        # the final paths; preparation never writes into the published tree.
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / 'workspace').mkdir()
+        (folder / 'runtime').mkdir()
+        for filename in (resident_domain_common.RESIDENT_INSTRUCTIONS_FILE,
+                         resident_domain_common.RESIDENT_DIARY_FILE,
+                         resident_domain_common.RESIDENT_MAILBOX_FILE):
+            ensure_resident_file(folder, filename)
+        ensure_resident_file(folder, resident_domain_common.RESIDENT_WORKSPACES_FILE,
+                             initial_content=resident_workspaces_text(record))
+        return
     workspace = resident_record_domain.resident_workspace_path(record)
     workspace.mkdir(parents=True, exist_ok=True)
     (workspace / "residents").mkdir(parents=True, exist_ok=True)
@@ -309,7 +194,6 @@ def _prepare_resident_deletion(
         lineage_id = resident_lineage.lineage_id(record)
         delete_aggregate = whole_lineage
         if delete_aggregate:
-            resident_record_domain.lifecycle_operations().require_lineage_transfer_settled(lineage_id)
             deletion_records = [
                 item
                 for item in lineage_registry_records_locked(lineage_id)
@@ -317,13 +201,6 @@ def _prepare_resident_deletion(
             ]
         else:
             deletion_records = [record]
-
-        for member in deletion_records:
-            member_id = resident_domain_common.record_resident_id(member)
-            if resident_lifecycle_domain.resident_has_pending_work(member_id):
-                raise ValueError(
-                    f"Resident {member_id} 仍有消息任务或 Fork 创建任务正在排队/处理，完成或停止后再删除"
-                )
 
         if delete_aggregate:
             workspace_path = _safe_lineage_workspace_for_delete(record)
@@ -346,12 +223,18 @@ def _prepare_resident_deletion(
                 raise ValueError("resident folder 与 resident_id 不匹配，拒绝移动工作区")
 
         archive_project_info = project_info_for_workspace(record, workspace_path)
+        from management_common.directory_paths import validate_removal
+        validate_removal(workspace_path)
         lineage_deletion_token: Any | None = None
 
         if delete_aggregate:
             lineage_deletion_token = resident_lineage_host_port.prepare_lineage_deletion(
                 lineage_id, actor_id, deleted_at, workspace_path,
             )
+            resident_lifecycle_domain.terminate_lineage_scripts(lineage_id, actor_id)
+
+        for member in deletion_records:
+            resident_lifecycle_domain.terminate_resident_work(member)
 
         deleted_ids = {resident_domain_common.record_resident_id(item) for item in deletion_records}
         deleted_records = [{
@@ -374,10 +257,6 @@ def _prepare_resident_deletion(
             "binding_ids": [resident_backend.execution_binding_id(member) for member in deletion_records],
             "resident_ids": [resident_domain_common.record_resident_id(member) for member in deletion_records],
         })
-        if workspace_path.exists():
-            # Deletion removes the folder; Portal keeps no archive to restore from.
-            steps.append({"kind": "remove", "source": str(workspace_path),
-                          "workspace_ids": [item["owned_workspace_id"] for item in deletion_records]})
         result = {
             "resident_id": target_id,
             "lineage_id": lineage_id,
@@ -412,17 +291,8 @@ def _commit_resident_deletions(
         from .lineage_definition_scope import check_before_membership_write
         for lineage_id in sorted({plan["result"]["lineage_id"] for plan in plans}):
             check_before_membership_write(catalog.state_store, lineage_id)
-        deleted_paths = catalog.remove([record for plan in plans for record in plan["records"]])
-        for plan in plans:
-            deleted_paths.extend(catalog.state_store.delete_workspaces_under(
-                [plan["result"]["workspace_original_path"]],
-                deleted_at=plan["result"]["deleted_at"], deleted_by=plan["result"]["deleted_by"],
-            ))
-        if plans:
-            # Include extra Workspaces outside the deleted Resident folders.
-            # Every removal re-reads live registrations before touching files.
-            plans[-1]["steps"].extend({"kind": "remove", "source": path}
-                                      for path in sorted(set(deleted_paths)))
+        resident_record_domain.lifecycle_operations().cancel_transfers_for_deletion(deleted_ids)
+        catalog.remove([record for plan in plans for record in plan["records"]])
         for plan in plans:
             for record in plan["records"]:
                 projection_revisions[record["resident_id"]] = (
@@ -458,22 +328,12 @@ def _confirm_deleted_resident_resources(
     from . import resident_hatg_credentials, resource_client
     from .resident_resource_projection import ResidentResourceProjectionWorker
 
-    for record in records:
-        try:
-            resident_hatg_credentials.revoke_resident_credential(record["resident_id"])
-        except Exception as exc:  # noqa: BLE001 - the deletion itself is already committed
-            import logging
-
-            logging.getLogger(__name__).warning(
-                "Bearer token of deleted Resident %s was not disabled: %s",
-                record.get("resident_id"), type(exc).__name__,
-            )
-
     def publish() -> None:
         store = resident_catalog.get_catalog().state_store
         worker = ResidentResourceProjectionWorker(store, resource_client)
         for record in records:
             resident_id = record["resident_id"]
+            resident_hatg_credentials.revoke_resident_credential(resident_id)
             project_committed(
                 {
                     "projection": "resident.resource_tombstone",
@@ -484,7 +344,8 @@ def _confirm_deleted_resident_resources(
                 lambda selected=resident_id: worker.confirm_tombstone(selected),
             )
 
-    invariant_locks.defer_until_state_unlock(publish)
+    resident_catalog.get_catalog().state_store.database.after_commit(
+        lambda: invariant_locks.defer_until_state_unlock(publish))
 
 
 def confirm_resident_deletion_projection(resident_id: str) -> None:
@@ -524,25 +385,9 @@ def retry_deleted_resident(resident_id: str, actor: str) -> dict[str, Any] | Non
         raise ValueError("需要登录后删除")
     if not resident_access.is_active_actor(actor_id):
         raise PermissionError("需要有效的 Portal 登录身份")
-    # Replays do not allocate cleanup work or replace the first deletion facts.
-    # Recheck retained folders: their last shared Workspace may have been deleted
-    # after the original deletion journal completed.
-    def reconcile():
-        from .resident_workspace_deletion import remove_deleted_folder
-        from management_portal.resources.workspace_store import get_workspace_store
-        confirm_resident_deletion_projection(resident_id)
-        # Deleted nodes no longer have a current Lineage path. The retained
-        # owned Workspace row keeps the exact original location, even after
-        # that Workspace itself has been deleted.
-        workspace_id = record['owned_workspace_id']
-        workspace = get_workspace_store().rows([workspace_id], include_deleted=True).get(workspace_id)
-        if workspace:
-            owned = Path(workspace['path'])
-            if owned.name != 'workspace' or owned.parent.name != resident_id or owned.parent.parent.name != 'residents':
-                raise ValueError('Deleted Resident owned Workspace has an invalid folder boundary')
-            remove_deleted_folder(owned.parent)
-
-    invariant_locks.defer_until_state_unlock(reconcile)
+    # Cleanup was committed with the tombstone; replay never infers another
+    # directory from a historical Workspace or allocates a second removal.
+    invariant_locks.defer_until_state_unlock(lambda: confirm_resident_deletion_projection(resident_id))
     return {
         "resident_id": resident_id,
         "lineage_id": str(record.get("lineage_id") or ""),
@@ -573,9 +418,17 @@ def delete_resident_identities(
 
 def delete_resident_lineage(resident_id: str, actor: str) -> dict:
     """Delete the complete Lineage identified by an existing member."""
+    with prepare_resident_lineage_deletion(resident_id, actor) as commit:
+        return commit()
+
+
+@contextmanager
+def prepare_resident_lineage_deletion(resident_id: str, actor: str):
+    """Stop work before the caller's transaction, retaining lifecycle exclusion."""
     previous = retry_deleted_resident(resident_id, actor)
     if previous is not None:
-        return previous
+        yield lambda: previous
+        return
     record = resident_record_domain.find_resident(resident_id)
     if not record:
         raise KeyError("resident not found")
@@ -588,15 +441,17 @@ def delete_resident_lineage(resident_id: str, actor: str) -> dict:
         with invariant_locks.resident_locks(participants, operation="resident.delete"):
             previous = retry_deleted_resident(resident_id, actor)
             if previous is not None:
-                return previous
-            results, records, revisions = _commit_resident_deletions(
-                [_prepare_resident_deletion(resident_id, actor, whole_lineage=True)],
-            )
-    _confirm_deleted_resident_resources(records, revisions)
-    return results[0]
+                yield lambda: previous
+                return
+            plan = _prepare_resident_deletion(resident_id, actor, whole_lineage=True)
+            def commit():
+                results, records, revisions = _commit_resident_deletions([plan])
+                _confirm_deleted_resident_resources(records, revisions)
+                return results[0]
+            yield commit
 
 
-def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str, actor_id: str) -> dict[str, Any]:
+def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str, actor_id: str, *, directory_operation=None) -> dict[str, Any]:
     """Compute identity and durable transfer intent; never move files in this scope."""
     definition = resident_lineage_host_port.managed_lineage_definition(target_lineage_id, actor_id)
     # Existing member data supplies workspace defaults only. Identity,
@@ -604,7 +459,7 @@ def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str
     source_folder = resident_record_domain.resident_folder_path(record)
     target_lineage_folder = resident_lineage_host_port.lineage_folder(target_lineage_id).resolve(strict=False)
     destination = target_lineage_folder / "residents" / resident_domain_common.record_resident_id(record)
-    if destination.exists():
+    if destination.exists() and directory_operation is None:
         raise FileExistsError(f"目标 Lineage 已存在 Resident folder: {destination}")
     owned_path = resident_record_domain.resident_owned_workspace_path(record).resolve(strict=False)
     for binding in record.get("workspace_bindings") or []:
@@ -620,7 +475,8 @@ def prepare_resident_lineage_move(record: dict[str, Any], target_lineage_id: str
     })
     record["default_cwd"] = resident_record_domain.resident_default_cwd_path(record)
     record["updated_at"] = resident_domain_common.now_iso()
-    return {"kind": "workspace_move", "source": str(source_folder), "target": str(destination)}
+    return {"kind": "directory_dependencies", "source": str(source_folder), "target": str(destination),
+            "directory_operation": directory_operation}
 
 
 def enqueue_resident_lineage_move(record: dict[str, Any], transfer: dict[str, Any], source_id: str, previous_path: str) -> str:
@@ -635,7 +491,7 @@ def enqueue_resident_lineage_move(record: dict[str, Any], transfer: dict[str, An
     ], source_id, target_id)
 
 
-def update_resident_record(resident_id: str, payload: dict, actor: str) -> dict:
+def update_resident_record(resident_id: str, payload: dict, actor: str, *, directory_operation=None) -> dict:
     from . import resident_access
     from .resident_projection import _optional_absolute_paths, _resident_lineage_node_projection
     from .resident_workspace_storage import canonical_path
@@ -664,7 +520,10 @@ def update_resident_record(resident_id: str, payload: dict, actor: str) -> dict:
         if target_lineage_id:
             identity_contract.validate_id(target_lineage_id, "lineage")
             if target_lineage_id != resident_lineage.lineage_id(record):
-                transfer = prepare_resident_lineage_move(record, target_lineage_id, actor_id)
+                if directory_operation is None:
+                    raise RuntimeError('Resident files must move before membership commits')
+                transfer = prepare_resident_lineage_move(record, target_lineage_id, actor_id,
+                                                        directory_operation=directory_operation)
                 moved_lineage = True
 
         if "project_id" in payload and not moved_lineage:

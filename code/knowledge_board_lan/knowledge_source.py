@@ -829,6 +829,9 @@ def scan_index_source(active_only: bool = False) -> dict:
                 continue
             for entry_root, primary_path, entry_files, files_truncated in _index_entry_specs(root):
                 check_scan_cancelled()
+                from management_common.directory_cleanup_store import get_directory_cleanup_store
+                if get_directory_cleanup_store().pending_at(primary_path):
+                    continue
                 try:
                     item = _get_md_item_cached(
                         primary_path,
@@ -849,6 +852,12 @@ def scan_index_source(active_only: bool = False) -> dict:
                     continue
                 if not item:
                     continue
+                from management_portal.resources.directory_registrations import register_owned
+                paths = [entry_root] if entry_root != root else [primary_path, root / item['kb_id']]
+                registration = register_owned('knowledge', item['kb_id'], paths, scanning=True)
+                if registration is None:
+                    continue
+                item['directory'] = registration['directory']
                 item.pop("files", None)
                 item["file_count"] = len(entry_files)
                 item["file_count_truncated"] = files_truncated

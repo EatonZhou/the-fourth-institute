@@ -61,6 +61,44 @@ class LifecycleStore:
             row = db.execute("SELECT scope_id FROM members WHERE actor=%s", (actor,)).fetchone()
         return row[0] if row else ''
 
+    def scope(self, scope_id):
+        with self.db.read() as db:
+            row = db.execute('SELECT * FROM scopes WHERE id=%s', (scope_id,)).fetchone()
+        return dict(row) if row else None
+
+    def assert_open(self, scope_id, *, connection):
+        """Fence an owner's commit against request_close in the same transaction."""
+        if not scope_id:
+            return
+        row = connection.execute(f'SELECT state FROM "{self.db.schema}".scopes WHERE id=%s FOR SHARE',
+                                 (scope_id,)).fetchone()
+        if not row or row['state'] != 'open':
+            raise ValueError('Resource lifecycle is closed')
+
+    @contextmanager
+    def owner_lease(self, scope_id):
+        """Keep pre-registration effects visible to seal, including nested calls."""
+        if not scope_id:
+            yield
+            return
+        with self.db.advisory_lock(self.lock_key(scope_id), shared=True):
+            with self.db.transaction() as connection:
+                self.assert_open(scope_id, connection=connection)
+            yield
+
+    def for_run(self, run_id):
+        with self.db.read() as db:
+            return [dict(row) for row in db.execute('SELECT * FROM scopes WHERE run_id=%s AND state<>%s',
+                                                   (run_id, 'complete')).fetchall()]
+
+    def request_close(self, scope_id):
+        """Reject new requests while existing holders finish or are terminated."""
+        self.db.write(lambda db: db.execute("UPDATE scopes SET state='closing' WHERE id=%s AND state='open'", (scope_id,)))
+
+    def closing_runs(self):
+        with self.db.read() as db:
+            return [row[0] for row in db.execute("SELECT DISTINCT run_id FROM scopes WHERE state='closing'").fetchall()]
+
     def lock_key(self, scope_id):
         with self.db.read() as db:
             return db.execute("SELECT hashtextextended(%s,0)", (scope_id,)).fetchone()[0]

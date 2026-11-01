@@ -190,10 +190,10 @@ def test_preparation_is_recovered_after_real_process_exit(operations):
 
 @pytest.mark.parametrize("accepted", [False, True])
 @pytest.mark.parametrize("backend", ["codex", "kimi"])
-def test_session_creation_preparation_recovers_exact_request_before_archiving(
+def test_session_creation_preparation_recovers_exact_request_without_unproven_file_cleanup(
     operations, tmp_path, monkeypatch, accepted, backend,
 ):
-    """codex 与 kimi 会话创建的回复丢失后，恢复时沿用同一请求，确认终态后才释放绑定并归档文件夹"""
+    """会话创建回复丢失后恢复同一请求；确认终态后释放绑定，但不移动无 inode 证明的目录。"""
     source, target = tmp_path / "new-resident", tmp_path / "aborted-resident"
     source.mkdir()
     (source / "keep.txt").write_text("recoverable", encoding="utf-8")
@@ -219,7 +219,7 @@ def test_session_creation_preparation_recovers_exact_request_before_archiving(
             assert execution_id in requests
             return outcome
         def acknowledge(self, execution_id, **kwargs):
-            assert not source.exists() and (target / "keep.txt").is_file()
+            assert source.exists() and not target.exists()
             events.append("ack")
 
     monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: operations)
@@ -249,7 +249,8 @@ def test_session_creation_preparation_recovers_exact_request_before_archiving(
     assert events == ["release", "ack"]
     assert len(submitted) == (1 if accepted else 2)
     assert all(payload == submitted[0] for payload in submitted)
-    assert (target / "keep.txt").read_text(encoding="utf-8") == "recoverable"
+    assert (source / "keep.txt").read_text(encoding="utf-8") == "recoverable"
+    assert not target.exists()
 
 
 def test_published_preparation_only_acknowledges_execution(operations):

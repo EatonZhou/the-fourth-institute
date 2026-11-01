@@ -165,6 +165,9 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         record: dict[str, Any],
         source_path: Path,
     ) -> bool:
+        from .resources.directory_registrations import excluded_from_scan
+        if excluded_from_scan(record.get('resource_id'), source_path):
+            return False
         parts = source_path.parts
         if "knowledge_base" not in parts:
             return False
@@ -201,6 +204,11 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         root_path = Path(stripped_text(raw.get("root_path")))
         relative_path = stripped_text(raw.get("relative_path") or raw.get("filename"))
         source_path = root_path / relative_path if relative_path else root_path
+        from .resources.directory_registrations import register_owned
+        paths = [source_path, root_path / resource_id] if root_path.parent.name == 'knowledge_base' else [root_path]
+        registration = register_owned('knowledge', resource_id, paths, scanning=True)
+        if registration is None:
+            return None
         facets = ["knowledge"]
         if resource_type == "experiment":
             facets.append("explore")
@@ -237,6 +245,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 "project_status": statuses.get(project, ""),
                 "preview": stripped_text(item.get("preview")),
                 "content_root": str(root_path),
+                "directory": registration['directory'],
                 "sort_order": order,
             }
         )
@@ -422,6 +431,8 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 upserts.append(record)
                 if record["resource_id"] != resource_id:
                     deletes.append(resource_id)
+            else:
+                deletes.append(resource_id)
 
         next_order = 1 + max(
             [
@@ -501,7 +512,8 @@ class SkillPackageAdapter(_PathsAdapter):
         _record: dict[str, Any],
         source_path: Path,
     ) -> bool:
-        return self.owns_path(source_path)
+        from .resources.directory_registrations import excluded_from_scan
+        return not excluded_from_scan(_record.get('resource_id'), source_path) and self.owns_path(source_path)
 
     def _record_for_item(
         self,
@@ -515,6 +527,10 @@ class SkillPackageAdapter(_PathsAdapter):
         relative_path = stripped_text(raw.get("relative_path") or raw.get("filename") or "SKILL.md")
         source_path = raw_root_path if raw_root_path.is_file() else raw_root_path / relative_path
         root_path = raw_root_path.parent if raw_root_path.is_file() else raw_root_path
+        from .resources.directory_registrations import register_owned
+        registration = register_owned('knowledge', skill_id, [raw_root_path], scanning=True)
+        if registration is None:
+            return None
         files: list[dict[str, Any]] = []
         for file in raw.get("files") or []:
             if not isinstance(file, dict):
@@ -550,6 +566,7 @@ class SkillPackageAdapter(_PathsAdapter):
             "relative_path": relative_path,
             "content_root": str(root_path),
             "single_file": raw_root_path.is_file(),
+            "directory": registration['directory'],
             "file_count": int(raw.get("file_count") or len(files)),
             "name": stripped_text(raw.get("name")),
             "source": source_kind,
@@ -592,6 +609,7 @@ class SkillPackageAdapter(_PathsAdapter):
             for order, raw in enumerate(payload.get("items") or [])
             if isinstance(raw, dict)
         ]
+        records = [record for record in records if record is not None]
         return records, {
             "projects": list(payload.get("projects") or []),
             "sources": list(payload.get("sources") or []),
@@ -727,6 +745,9 @@ class SkillPackageAdapter(_PathsAdapter):
                 continue
             order = int(attrs.get("sort_order") or 0)
             record = self._record_for_item(raw, statuses=statuses, order=order)
+            if record is None:
+                deletes.append(resource_id)
+                continue
             upserts.append(record)
             if record["resource_id"] != resource_id:
                 deletes.append(resource_id)
@@ -753,7 +774,7 @@ class SkillPackageAdapter(_PathsAdapter):
             if not raw:
                 continue
             record = self._record_for_item(raw, statuses=statuses, order=next_order)
-            if record["resource_id"] in seen_new_ids:
+            if record is None or record["resource_id"] in seen_new_ids:
                 continue
             upserts.append(record)
             seen_new_ids.add(record["resource_id"])

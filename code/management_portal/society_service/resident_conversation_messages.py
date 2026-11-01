@@ -90,10 +90,14 @@ class ConversationMessages:
             group_id = self.agent_data.message_groups(stream_id, [message_id]).get(message_id, "")
             members = _group_member_ids(self.agent_data.chat_message(stream_id, group_id) or {}) if group_id else []
             position = members.index(message_id) if message_id in members else 0
-            with self.events.protocol_scope(stream_id):
+            with self.events.protocol_scope(stream_id), self.state_store.database.transaction() as connection:
                 stored, _inserted = self.state_store.mailbox_accept(
                     stream_id, payload, group_id=group_id, position=position,
                 )
+                # Identity conflicts roll back both the acceptance and consumption.
+                self._validate_stored_message_identity(stored, public_input)
+                from management_portal.resources.upload_consumption import consume_message
+                consume_message(message, owner_id=stream_id, connection=connection)
         return self._validate_stored_message_identity(stored, public_input)
 
     def validate_message_identity(
@@ -254,6 +258,8 @@ class ConversationMessages:
                     subject_id=message_id,
                     once=True,
                 )
+                from management_portal.resources.upload_consumption import consume_message
+                consume_message(message, owner_id=stream_id, connection=connection)
                 self.state_store.mailbox_forget(
                     stream_id, [message_id, *(str(item["message_id"]) for item in members)],
                     connection=connection,

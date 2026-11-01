@@ -278,13 +278,25 @@ Most resources use `<type>_<12 hexadecimal digits>`. Users use usernames; Projec
 | Read content or files | `ReadResource` with an ID or `<ID>/file/<relative path>`. |
 | Browse a Workspace, Resident Folder, or Lineage Folder | `ReadResource` at `<ID>/file/<directory>` lists direct children. Files support `preview` or `meta_only`. |
 
-Unreadable and nonexistent resources both return `instruction.not_found`.
+For durable deliverable and report references, pass a structured `address` to `ReadResource` or `ResolveResource`:
+
+```json
+{"workspace_id": "workspace_0123456789ab", "relative_path": "reports/result.md"}
+```
+
+For a Repo or Article, replace `workspace_id` with `repo_id` or `article_id`. Supply exactly one object ID; an empty `relative_path` names its directory root. The separator is always `/`. Absolute paths, drive prefixes, empty path segments, `.`, `..`, symlinks escaping the object directory, and filename characters forbidden by the current filesystem are rejected. Structured references allow literal backslashes and newlines in POSIX filenames; a backslash is not a separator.
+
+Resolution checks the object and read permission before accessing the referenced file. `ReadResource` (including preview and metadata-only reads) and `ResolveResource` retain the ISA contract that conceals inaccessible resources: PAR refuses a read with `instruction.not_found`, with `details.reason=denied` for a matching deny or `no_permit` when no permit matches. Permission error `details` also contains `target_id` (the object ID), `action` (the permission action), and `a` (the mapped permission node when present, `@viewer` in the default scheme); a matching deny adds `deny_entry_id`. Permission checks can end the request before object lookup, so a refusal does not establish that the object exists. After permission checks pass, an object lookup that finds a missing or deleted object returns `instruction.not_found` with `details={"reason":"object_not_found"}`; a missing file returns `instruction.not_found` with `details={"reason":"file_not_found"}`.
+
+After a move, the same reference uses the object's current registered directory, without falling back to an old absolute path. String resource addresses remain valid. Persist the returned `file_reference`, rather than a resolved host path as a fallback.
+
+`CreateWorkspace` creates a directory at an empty location. `RegisterWorkspace` registers an existing directory as a new Workspace. Both require `path` (an absolute directory path) and a stable `operation_id`, with optional `title` and `owner_id`. The same caller retrying the same operation ID and arguments gets the same object. `owner_id` identifies the Resident, Lineage or Project the directory belongs to; omitting it makes the Workspace own its directory. This association controls lifecycle and grants no permissions. Creation may be outside instance areas and records `origin=created`. Registration requires an existing directory, records `origin=adopted`, and rejects another instance's root or areas. The resource returns origin and ownership in `attributes.directory`.
+
+With `@admin` on a Workspace, call `UnregisterResource(resource_id=workspace_id)` to unregister it. A `created` directory tree is queued for deletion; an `adopted` directory's files remain. Location inside or outside instance areas does not determine deletion. Nested registrations and bindings are removed under the directory protocol without reference protection. Registration removal and file cleanup are reported separately; use `GetDirectoryCleanup(resource_id=workspace_id)` for cleanup progress and retry errors. Area roots, instance roots and their ancestors cannot be deleted.
 
 ### Chatrooms
 
 Use `ListChatrooms` with your `user_id`, `ListChatroomMessages` to read, `CreateChatroomMessage` to post, and `MarkChatroomRead` to mark read. Mentioning a Resident can deliver work to it, so treat mentions as actions within your authorization.
-
-With `@admin` on a Workspace, call `UnregisterResource(resource_id=workspace_id)` to unregister an unused registration. A live Resident owning or binding it, an active child Workspace, or another nested directory resource registration causes `instruction.conflict` with the reason. Directories inside this instance’s areas are removed; external host directories are preserved. A missing directory only unregisters the registration. Area roots cannot be removed this way.
 
 ## 8. Concept reference
 

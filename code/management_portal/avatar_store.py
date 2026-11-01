@@ -189,4 +189,5 @@ def change_avatar(store, subject: str, value: Any, caller: str) -> dict[str, Any
     if not upload.get("ready"):
         raise ValueError("头像上传尚未完成")
     data = Path(str(upload["path"])).read_bytes()
-    return store.update(subject, {"kind": "upload", "data_base64": base64.b64encode(data).decode("ascii")})
+    return store.update(subject, {"kind": "upload", "data_base64": base64.b64encode(data).decode("ascii")},
+                        upload_id=str(value['upload_id']))

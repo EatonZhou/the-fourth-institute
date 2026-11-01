@@ -263,7 +263,7 @@ def api_docs() -> dict:
             {"method": "GET", "path": "/paper/api/papers/detail?id=...", "purpose": "Load one paper, analysis markdown, PDF URL, and reviews."},
             {"method": "POST", "path": "/paper/api/papers/registration-draft", "purpose": "Upload a PDF and start extracting editable registration metadata."},
             {"method": "GET", "path": "/paper/api/papers/registration-draft?upload_id=...", "purpose": "Read PDF registration metadata extraction status."},
-            {"method": "POST", "path": "/paper/api/papers/register", "purpose": "Register metadata plus a PDF registration upload, PDF/analysis paths, or URLs."},
+            {"method": "POST", "path": "/paper/api/papers/register", "purpose": "Register metadata plus a PDF registration upload, PDF/analysis paths, or URLs. Send an Idempotency-Key header (1–200 printable ASCII characters without spaces) and reuse it with unchanged arguments after failure. Use a new key for a new operation or changed arguments. Without a key, each creation attempt is a new operation. Existing literature matches still merge Project associations."},
             {"method": "POST", "path": "/paper/api/papers/delete-pdf", "purpose": "Delete the current local PDF file and derived PDF text cache without deleting the paper record."},
             {"method": "POST", "path": "/paper/api/reviews/create", "purpose": "Create a three-lens review draft for a paper."},
             {"method": "POST", "path": "/paper/api/reviews/start", "purpose": "Start or reuse the current actor's background review without waiting for the model."},

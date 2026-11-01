@@ -42,5 +42,9 @@ def located_path(value: str) -> str:
     if not text:
         return ""
     if is_area_reference(text):
-        return current_instance().resolve(text).as_posix()
+        # A registration names an entry, not whichever target a replacement
+        # link points at today. Reads pin their own filesystem boundary;
+        # deletion must retain the registered entry to unlink links safely.
+        from .directory_paths import cleanup_path
+        return cleanup_path(text).as_posix()
     return Path(text).as_posix()

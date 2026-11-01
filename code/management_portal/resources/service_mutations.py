@@ -73,6 +73,9 @@ def complete_mutation(
             result, resource_type=resource_type, expected_id=expected_id,
         )
         service._identity.validate(resource_id, resource_type)
+        if kind == 'create' and expected_id:
+            stage = 'registration_completion'
+            service._registrations.complete(resource_id)
         if change_recording:
             record["change_recording"] = change_recording
         if kind == "delete":
@@ -186,6 +189,7 @@ def register(
     payload: Mapping[str, Any],
     *,
     actor: str = "",
+    operation_id: str = "",
     automatic: bool = False,
     wait_for_index: bool = False,
     index_timeout: float = 45.0,
@@ -212,16 +216,26 @@ def register(
         "actor": clean_actor,
         "automatic": bool(automatic),
     }
+    from uuid import uuid4
+    from .creation import creation_operation
+    operation_id = operation_id or uuid4().hex
     if provider.service_managed_registration:
-        expected_id, created_reservation = service._registrations.reserve(
+        def reserve_identity():
+            # new_id() allocates to the ambient run immediately. Creation only
+            # reserves a name here; its owner records allocation at commit.
+            candidate = clean_type + '_' + uuid4().hex[:12]
+            service._identity.validate(candidate, clean_type)
+            return candidate
+        expected_id, _created_reservation = service._registrations.reserve(
             clean_type,
             clean_payload,
             actor=clean_actor,
-            allocate=lambda: service.new_id(clean_type),
+            allocate=reserve_identity,
+            operation_id=operation_id,
         )
         provider_context["resource_id"] = expected_id
-        provider_context["reservation_created"] = created_reservation
-    result = provider.register(clean_payload, **provider_context)
+    with creation_operation(operation_id):
+        result = provider.register(clean_payload, **provider_context)
     return service._complete_mutation(
         result, resource_type=clean_type, expected_id=expected_id,
         actor=clean_actor, kind="create", wait_for_index=wait_for_index,

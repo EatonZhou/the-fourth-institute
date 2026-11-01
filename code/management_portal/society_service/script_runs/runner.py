@@ -70,6 +70,8 @@ class RelayHandler(socketserver.StreamRequestHandler):
 def http_forward(config):
     def forward(payload):
         headers = {'Authorization': 'Bearer ' + config['token'], 'Content-Type': 'application/json'}
+        if config.get('resource_lifecycle_id'):
+            headers['X-Portal-Resource-Lifecycle'] = config['resource_lifecycle_id']
         request = urllib.request.Request(config['portal_url'] + '/api/instructions/execute',
                                          data=json.dumps(payload).encode(), headers=headers)
         deadline = time.monotonic() + RESTART_GRACE_SECONDS

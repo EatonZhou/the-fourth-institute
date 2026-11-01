@@ -33,7 +33,7 @@ from .resident_lifecycle import ResidentLifecycleOperations
 
 def _new_workspace_id(existing_ids: set[str] | None = None) -> str:
     occupied = {str(value or "").strip() for value in existing_ids or set()}
-    return identity_contract.new_id("workspace", occupied)
+    return identity_contract.creation_candidate_id("workspace", occupied)
 
 REF_ITEM_CHAR_LIMIT = int(os.getenv("RESIDENT_AGENT_REF_ITEM_CHAR_LIMIT", "30000"))
 

@@ -63,7 +63,7 @@ class ResidentLifecycleOperations:
         return self.store.database.write(append)
 
     @contextmanager
-    def prepare(self, resident_id: str, rollback_steps: Callable[[str], list[dict[str, Any]]]):
+    def prepare(self, resident_id: str, rollback_steps: Callable[[str], list[dict[str, Any]]], *, operation_id: str = ''):
         """Reserve compensation before effects, without publishing an identity.
 
         The caller commits the reservation in its final identity transaction.
@@ -71,11 +71,17 @@ class ResidentLifecycleOperations:
         """
         if invariant_locks.lock_held():
             raise RuntimeError("Preparation must run outside state scopes")
-        operation_id = f"resident-operation_{secrets.token_hex(12)}"
+        operation_id = operation_id or f"resident-operation_{secrets.token_hex(12)}"
         with invariant_locks.resident_lifecycle_lock(operation_id) as owned:
             if not owned:
                 raise RuntimeError("Preparation operation is already owned")
-            self._insert(operation_id, resident_id, rollback_steps(operation_id))
+            with self.store.database.read() as connection:
+                existing = connection.execute('SELECT resident_id FROM resident_lifecycle_operations WHERE operation_id=%s',
+                                              (operation_id,)).fetchone()
+            if existing and existing['resident_id'] != resident_id:
+                raise ValueError('Preparation belongs to another Resident')
+            if not existing:
+                self._insert(operation_id, resident_id, rollback_steps(operation_id))
             yield operation_id
 
     def stage_preparation_execution(self, operation_id: str, request: dict[str, Any]) -> None:
@@ -136,6 +142,21 @@ class ResidentLifecycleOperations:
                 'SELECT 1 FROM resident_lifecycle_operations WHERE resident_id=%s', (resident_id,),
             ).fetchone() is not None
 
+    def cancel_transfers_for_deletion(self, resident_ids):
+        def write(connection):
+            rows = connection.execute('SELECT operation_id,payload_json FROM resident_lifecycle_operations '
+                                      'WHERE resident_id=ANY(%s) FOR UPDATE', (sorted(resident_ids),)).fetchall()
+            for row in rows:
+                payload = json_value(row['payload_json'])
+                remaining = payload['steps'][int(payload['next_step']):]
+                payload.update(steps=[step for step in remaining if step['kind'] not in {
+                    'directory_dependencies', 'workspace_finish', 'resident_detach', 'workspace_document',
+                }], next_step=0)
+                connection.execute('UPDATE resident_lifecycle_operations SET payload_json=%s,last_error=\'\','
+                                   'available_at=clock_timestamp() WHERE operation_id=%s',
+                                   (json_text(payload), row['operation_id']))
+        self.store.database.write(write)
+
     def enqueue_transfer(self, resident_id: str, steps: list[dict[str, Any]], source_id: str, target_id: str) -> str:
         from management_portal.hatg.kernel import current_instruction_id
 
@@ -179,7 +200,7 @@ class ResidentLifecycleOperations:
             return result
         payload = json_value(row["payload_json"])
         steps = payload["steps"]
-        if row["resident_id"] != resident_id or not any(step.get("kind") == "workspace_move" for step in steps):
+        if row["resident_id"] != resident_id or not any(step.get("kind") == "directory_dependencies" for step in steps):
             raise ValueError("Resident operation does not match its workspace transfer")
         index = int(payload["next_step"])
         error = str(row["last_error"] or "")
@@ -193,28 +214,6 @@ class ResidentLifecycleOperations:
             "retry_at": epoch_seconds(row["available_at"]) or None,
         })
         return result
-
-    def pending_lineage_transfer(self, lineage_id: str) -> bool:
-        """Both Lineage folders must survive until their transfer outbox settles."""
-        with self.store.database.read() as connection:
-            query = (
-                "SELECT 1 FROM resident_lifecycle_operations AS operation "
-                "WHERE EXISTS (SELECT 1 FROM jsonb_array_elements("
-                "COALESCE(operation.payload_json::jsonb -> 'steps', '[]'::jsonb)) AS step(value) "
-                "WHERE step.value ->> 'kind'='workspace_move') "
-                "AND EXISTS (SELECT 1 FROM jsonb_array_elements("
-                "COALESCE(operation.payload_json::jsonb -> 'steps', '[]'::jsonb)) AS step(value) "
-                "WHERE step.value ->> 'kind'='resident_detach' "
-                "AND step.value ->> 'lineage_id'=%s) LIMIT 1"
-            )
-            return connection.execute(
-                query,
-                (lineage_id,),
-            ).fetchone() is not None
-
-    def require_lineage_transfer_settled(self, lineage_id: str) -> None:
-        if self.pending_lineage_transfer(lineage_id):
-            raise ValueError("Lineage has a pending workspace transfer; wait for completion before deleting")
 
     def ready(self) -> list[str]:
         with self.store.database.read() as connection:

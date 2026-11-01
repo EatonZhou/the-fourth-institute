@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 import urllib.request
 
 from management_common.file_lock import lock_stream
+from management_common.file_retention import cache_file, cache_operation
 from management_portal.paper_records import _now, _slugify
 from management_portal.paper_resident import (
     _clean_summary_paragraph, _parse_json_object_from_text, _resident_reply,
@@ -51,6 +52,7 @@ def _ccf_enrichment_cache_path(paper: dict) -> Path:
     return CCF_ENRICHMENT_CACHE_ROOT / f"{_slugify(title)[:70]}-{digest}.json"
 
 
+@cache_operation(group='paper_ccf')
 def _write_ccf_enrichment_state(
     cache_path: Path,
     payload: dict,
@@ -66,7 +68,12 @@ def _write_ccf_enrichment_state(
 
 def _read_ccf_enrichment(paper: dict) -> dict | None:
     path = _ccf_enrichment_cache_path(paper)
-    data = _load_json(path, {})
+    from management_common.directory_cleanup_store import DirectoryPendingCleanup
+    try:
+        with cache_file(path, group='paper_ccf'):
+            data = _load_json(path, {})
+    except DirectoryPendingCleanup:
+        return None
     return data if isinstance(data, dict) and data else None
 
 
@@ -285,6 +292,7 @@ Online metadata:
     }
 
 
+@cache_operation(group='paper_ccf')
 def _run_ccf_enrichment_job(cache_path: Path, paper: dict, actor: str = "", *, include_web: bool = False) -> None:
     try:
         current = _load_json(cache_path, {})
@@ -360,6 +368,7 @@ def _run_ccf_enrichment_job(cache_path: Path, paper: dict, actor: str = "", *, i
         _write_ccf_enrichment_state(cache_path, current, actor=actor)
 
 
+@cache_operation(group='paper_ccf')
 def _run_ccf_web_enrichment_job(cache_path: Path, paper: dict, actor: str = "") -> None:
     current = _load_json(cache_path, {})
     if not (
@@ -428,15 +437,20 @@ def _run_ccf_web_enrichment_job(cache_path: Path, paper: dict, actor: str = "") 
         _write_ccf_enrichment_state(cache_path, error_payload, actor=actor)
 
 
-def _ccf_enrichment_request_path(cache_path: Path) -> Path:
-    return cache_path.with_suffix(".request.json")
-
-
 def _run_ccf_enrichment_request(request_path: Path) -> None:
+    from management_common.directory_retention import RetentionStore
     request_path = Path(request_path).resolve(strict=False)
-    root = CCF_ENRICHMENT_CACHE_ROOT.resolve(strict=False)
-    if root not in request_path.parents:
-        raise ValueError("CCF enrichment request is outside its work root")
+    if CCF_ENRICHMENT_CACHE_ROOT.resolve(strict=False) not in request_path.parents:
+        raise ValueError('CCF enrichment request is outside its work root')
+    try:
+        _execute_ccf_enrichment_request(request_path)
+    finally:
+        retention = RetentionStore()
+        retention.release_path(request_path)
+        retention.queue.run_pending()
+
+
+def _execute_ccf_enrichment_request(request_path: Path) -> None:
     request = _load_json(request_path, {})
     paper = (
         dict(request.get("paper"))
@@ -473,7 +487,12 @@ def _start_ccf_enrichment_task(
 ) -> dict:
     from management_portal import business_tasks
 
-    request_path = _ccf_enrichment_request_path(cache_path)
+    import secrets
+    from management_common.directory_retention import RetentionStore
+    task_id = f"paper-ccf:{_ccf_paper_identity(paper)[:160]}"
+    request_path = cache_path.with_suffix('.request-' + secrets.token_hex(8) + '.json')
+    retention = RetentionStore()
+    retention.declare(request_path, category='runtime_tmp', owner_id=task_id)
     _write_json(request_path, {
         "cache_path": str(cache_path),
         "paper": dict(paper),
@@ -481,14 +500,44 @@ def _start_ccf_enrichment_task(
         "include_web": bool(include_web),
         "web_only": bool(web_only),
         "created_at": _now(),
+        "process_owner": business_tasks.process_identity(),
     })
-    task_id = f"paper-ccf:{_ccf_paper_identity(paper)[:160]}"
-    business_tasks.start(
-        task_id,
-        _run_ccf_enrichment_request,
-        request_path,
-    )
+    try:
+        started = business_tasks.start(task_id, _run_ccf_enrichment_request, request_path)
+    except BaseException:
+        retention.release_path(request_path)
+        raise
+    if not started:
+        retention.release_path(request_path)
     return {"business_task_id": task_id}
+
+
+def cleanup_interrupted_requests():
+    """RunScript maintenance removes runtime requests whose writer is gone.
+
+    Missing receipts and unobservable/remote processes are never assumed dead.
+    """
+    from management_portal import business_tasks
+    from management_common.directory_retention import RetentionStore
+    from management_common.directory_paths import cleanup_path
+    retention = RetentionStore()
+    root = CCF_ENRICHMENT_CACHE_ROOT.resolve(strict=False)
+    report = {'queued': [], 'unresolved': []}
+    with retention.database.read() as connection:
+        rows = connection.execute(f'''SELECT location FROM {retention.table}
+            WHERE category='runtime_tmp' AND owner_id LIKE 'paper-ccf:%%' ''').fetchall()
+    for row in rows:
+        path = cleanup_path(row['location'])
+        if path.parent.resolve(strict=False) != root or path.is_symlink():
+            continue
+        request = _load_json(path, {})
+        owner = request.get('process_owner') if isinstance(request, dict) else None
+        if not isinstance(owner, dict) or not owner:
+            report['unresolved'].append(str(path))
+        elif not business_tasks.process_is_alive(owner):
+            if retention.release_path(path):
+                report['queued'].append(str(path))
+    return report
 
 
 def _ccf_enrichment_task_active(cached: dict) -> bool:
@@ -507,7 +556,7 @@ def ccf_paper_enrichment(payload: dict, actor: str = "") -> dict:
     cache_path = _ccf_enrichment_cache_path(paper)
     lock_path = cache_path.with_suffix(".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as lock_file, lock_stream(lock_file):
+    with cache_file(cache_path, group='paper_ccf'), lock_path.open("a+b") as lock_file, lock_stream(lock_file):
         cached = _load_json(cache_path, {})
         status = str(cached.get("status") or "").strip()
         web_status = str(cached.get("web_status") or "").strip()

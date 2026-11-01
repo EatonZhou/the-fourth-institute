@@ -37,14 +37,15 @@ def members(tmp_path, monkeypatch):
         (folder / 'residents' / row['resident_id']).mkdir(parents=True)
     state = SimpleNamespace(rows=rows, folder=folder, lineage=lineage, plans=[], locks=[],
                             confirmed=[],
-                            pending=set(), transfer=False, authorized=True, graph_authorized=True)
+                            terminated=[], authorized=True, graph_authorized=True)
     monkeypatch.setattr(host.resident_lineage, 'for_lineage', lambda _: rows)
     monkeypatch.setattr(host.resident_lineage, 'is_lineage_leader', lambda _: False)
     monkeypatch.setattr(record, 'find_resident', lambda rid: next((r for r in rows if r['resident_id'] == rid), None))
     monkeypatch.setattr(resident_access, 'can_manage', lambda *a: state.authorized)
     monkeypatch.setattr(resident_access, 'is_active_actor', lambda *a: state.authorized)
     monkeypatch.setattr(workspace, 'lineage_registry_records_locked', lambda _: rows)
-    monkeypatch.setattr(lifecycle, 'resident_has_pending_work', lambda rid: rid in state.pending)
+    monkeypatch.setattr(lifecycle, 'terminate_resident_work', lambda row: state.terminated.append(row['resident_id']))
+    monkeypatch.setattr(lifecycle, 'terminate_lineage_scripts', lambda *_: None)
     monkeypatch.setattr(workspace, '_safe_lineage_workspace_for_delete', lambda _: folder)
     monkeypatch.setattr(record, 'resident_workspace_path', lambda row: row.get('mismatched_folder', folder))
     monkeypatch.setattr(record, 'resident_folder_path', lambda row: folder / 'residents' / row['resident_id'])
@@ -61,12 +62,6 @@ def members(tmp_path, monkeypatch):
     monkeypatch.setattr(lineage_aggregate, 'ensure_manager', ensure_manager)
     monkeypatch.setattr(graph_host.lineage_state, '_lineage_dir', lambda _: folder)
     monkeypatch.setattr(workspace.resident_lineage_host_port, 'prepare_lineage_deletion', graph_host.ResidentLineageHost.prepare_lineage_deletion)
-
-    def settled(_):
-        if state.transfer:
-            raise ValueError('transfer pending')
-
-    monkeypatch.setattr(record, 'lifecycle_operations', lambda: SimpleNamespace(require_lineage_transfer_settled=settled))
 
     @contextmanager
     def lock(ids, **kwargs):
@@ -102,25 +97,22 @@ def test_leaderless_lineage_delete_includes_all_members_and_durable_effects(memb
     assert ids in members.locks
     assert result['workspace_original_path'] == str(members.folder)
     assert [step['kind'] for step in members.plans[0]['steps']] == [
-        'lineage_tombstone', 'release', 'release', 'release', 'forget_deleted', 'remove']
+        'lineage_tombstone', 'release', 'release', 'release', 'forget_deleted']
     assert [step['resident_id'] for step in members.plans[0]['steps'] if step['kind'] == 'release'] == ids
-    assert members.plans[0]['steps'][-1]['workspace_ids'] == [row['owned_workspace_id'] for row in members.rows]
+    assert members.terminated == ids
     assert members.confirmed == ids
 
 
-@pytest.mark.parametrize('blocker', ['owner', 'lineage_owner', 'pending_member', 'transfer', 'folder'])
+@pytest.mark.parametrize('blocker', ['owner', 'lineage_owner', 'folder'])
 def test_leaderless_delete_checks_whole_aggregate_before_commit(members, blocker):
     """无 Leader 团队删除的整组授权与安全检查"""
     if blocker == 'owner':
         members.authorized = False
     elif blocker == 'lineage_owner':
         members.graph_authorized = False
-    elif blocker == 'pending_member':
-        members.pending.add(members.rows[-1]['resident_id'])
-    elif blocker == 'transfer':
-        members.transfer = True
     elif blocker == 'folder':
         members.rows[-1]['mismatched_folder'] = members.folder / 'wrong'
     with pytest.raises((ValueError, PermissionError)):
         host.ResidentDomainHost.delete_registered_lineage(members.lineage, '', 'sample_admin')
     assert members.plans == []
+    assert not members.terminated

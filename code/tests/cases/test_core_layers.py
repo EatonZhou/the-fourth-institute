@@ -68,7 +68,7 @@ TIERS = (
     ("policy", "permission_system permission_system.* portal_access_control user_enrollment"),
     ("resources", """
     resources resources.* hatg.kernel hatg.maintenance hatg.routing hatg.slow_call_profile hatg.socket_rpc
-    avatar_database avatar_store device_identity_backend isa_client project_rename project_seeds resident_avatar provider_session_relocation
+    avatar_database avatar_store device_identity_backend isa_client project_rename project_seeds resident_avatar provider_session_relocation directory_move_owner
     """),
     ("execution", """
     execution execution.* agent_prompt_context agent_skill_context ai_provider_registry antigravity_* business_tasks
@@ -108,8 +108,6 @@ ALLOWED: dict[tuple[str, str], str] = {
     ("hatg.routing", "resources.isa"): LOCAL_KERNELS,
     ("hatg.routing", "society_service.isa"): LOCAL_KERNELS,
     ("hatg.routing", "web_isa"): LOCAL_KERNELS,
-    ("project_rename", "society_service.resource_client"):
-        "renaming a Project reads Workspace paths through resource_client.workspace_paths_many, which tests replace",
     ("resources.content_changes", "execution.service"):
         "content changes are captured only for the running execution of the writing Resident (ExecutionService status)",
     ("resources.isa", "society_service"): "DeleteProject checks and deletes the Project's Lineages in SocietyService",

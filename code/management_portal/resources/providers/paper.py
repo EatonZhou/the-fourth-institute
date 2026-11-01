@@ -43,14 +43,19 @@ def install_mutation_provider(service: "ResourceService") -> None:
     from management_portal import paper_resources, paper_store
 
     def unregister(resource_id, *, actor="", **_context):
+        receipt = {}
         if paper_store._paper_by_id(resource_id) is not None:
             try:
-                paper_resources.delete_paper({"paper_id": resource_id}, actor)
+                receipt = paper_resources.delete_paper({"paper_id": resource_id}, actor)
             except KeyError:
                 if paper_store._paper_by_id(resource_id) is not None:
                     raise
         if paper_store._paper_by_id(resource_id) is not None:
             raise RuntimeError(f"{resource_id}: 删除尚未完成")
-        return canonical_record(resource_id, {"deleted": True})
+        return canonical_record(resource_id, {
+            "deleted": True,
+            "cleanup_ids": (receipt.get('store') or {}).get('cleanup_ids', []),
+            "projection_cleanup_errors": receipt.get('projection_cleanup_errors', []),
+        })
 
     service.register_mutation_provider("paper", unregister=unregister)

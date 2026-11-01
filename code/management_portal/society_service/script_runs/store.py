@@ -56,6 +56,9 @@ def _values(row):
 
 def admit(record):
     """Serialize only competing admissions; no historical records are loaded."""
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from . import runtime
+    queue = get_directory_cleanup_store()
     admission, exclusive = record.get('admission'), record.get('exclusive_key')
     keys = []
     if admission:
@@ -63,6 +66,7 @@ def admit(record):
     if exclusive:
         keys.append('exclusive:' + record['lineage_id'] + ':' + exclusive)
     with domain().transaction() as c:
+        queue.assert_available(runtime.RUN_ROOT / record['script_run_id'], connection=c)
         for key in sorted(keys):
             c.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || ':' || %s, 0))", (key,))
         if admission:
@@ -116,14 +120,27 @@ def pending(after='', limit=100):
 
 
 def expired(limit=100):
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    queue = get_directory_cleanup_store()
     with domain().read() as c:
         return [row['script_run_id'] for row in c.execute(
-            "SELECT script_run_id FROM runs WHERE notified IS TRUE AND status<>'running' AND finished_at < CURRENT_TIMESTAMP-INTERVAL '60 days' ORDER BY finished_at LIMIT %s", (limit,))]
+            f"SELECT script_run_id FROM runs WHERE status<>'running' AND finished_at <= CURRENT_TIMESTAMP-INTERVAL '7 days' "
+            f"AND (notified IS TRUE OR NOT EXISTS (SELECT 1 FROM {queue.table} q WHERE q.operation_id='expire:' || runs.script_run_id)) "
+            "ORDER BY finished_at,script_run_id LIMIT %s", (limit,))]
 
 
 def delete_expired(identifier):
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from . import runtime
+    queue = get_directory_cleanup_store()
     with domain().transaction() as c:
-        c.execute("DELETE FROM runs WHERE script_run_id=%s AND notified IS TRUE AND status<>'running' AND finished_at < CURRENT_TIMESTAMP-INTERVAL '60 days'", (identifier,))
+        queue.lock(c)
+        row = c.execute("SELECT notified FROM runs WHERE script_run_id=%s AND status<>'running' AND finished_at <= CURRENT_TIMESTAMP-INTERVAL '7 days' FOR UPDATE", (identifier,)).fetchone()
+        if row:
+            queue.enqueue(runtime.RUN_ROOT / identifier, owner_id=identifier,
+                          operation_id='expire:' + identifier, actor='directory-retention', connection=c)
+            if row['notified']:
+                c.execute('DELETE FROM runs WHERE script_run_id=%s', (identifier,))
 
 
 def acquire_lease(holder):

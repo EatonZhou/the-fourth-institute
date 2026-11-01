@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -283,7 +284,8 @@ class PytestGroup:
             self.finish(items, ctx, group_dir, returncode, stop_reason)
         holes = self.isolation_holes(scratch, group_dir)
         if scratch and not holes:
-            shutil.rmtree(scratch[0][1].parent, ignore_errors=True)
+            from management_common.file_retention import remove_generated
+            remove_generated(scratch[0][1].parent, owner_id=ctx.run_dir.name)
         if holes:
             return {
                 "isolation_holes": holes,
@@ -554,6 +556,8 @@ class ContainerPytest:
         from management_portal.workbench_projections.application_build import _container_settings
         settings = _container_settings()  # Same pinned-image/local-engine contract as application builds.
         self.directory = Path(tempfile.gettempdir()).resolve() / ("portal-pytest-" + uuid.uuid4().hex)
+        self.directory_owner = next((p.name for p in (group_dir, *group_dir.parents)
+                                     if re.fullmatch(r'testrun_[0-9a-f]{16}', p.name)), self.directory.name)
         self.closed = False
         try:
             from management_common.file_permissions import ensure_private_directory
@@ -614,7 +618,8 @@ class ContainerPytest:
             self.command = [sys.executable, '-m', __name__, '--container-worker', str(plan_file)]
         except BaseException:
             if self.directory.exists():
-                shutil.rmtree(self.directory)
+                from management_common.file_retention import remove_generated
+                remove_generated(self.directory, owner_id=self.directory_owner)
             raise
 
     def close(self, process) -> None:
@@ -643,7 +648,8 @@ class ContainerPytest:
             self.closed = True
         finally:
             if self.closed:
-                shutil.rmtree(self.directory, ignore_errors=True)
+                from management_common.file_retention import remove_generated
+                remove_generated(self.directory, owner_id=self.directory_owner)
 
 
 def _container_executor_alive(plan: dict) -> bool:

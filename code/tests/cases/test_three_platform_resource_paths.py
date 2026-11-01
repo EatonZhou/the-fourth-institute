@@ -256,18 +256,6 @@ def test_host_listing_rechecks_pinned_directory_after_rename(tmp_path, monkeypat
             host_directories.browse({"path": str(path)}, "alice")
 
 
-def test_project_large_text_reference_still_reports_unrewritten_file(tmp_path, monkeypatch):
-    path = tmp_path / "large.txt"
-    path.write_text("x" * (128 * 1024 - 3) + "/old/project" + "y" * 30)
-    monkeypatch.setattr(project_rename, "MAX_REWRITE_BYTES", 8)
-    found = project_rename._grep_files(["/old/project"], [str(tmp_path)])
-    assert found == [str(path)]
-    result = project_rename.FileChanges()
-    assert not project_rename._rewrite_file(path, lambda value: value.replace("/old", "/new"), result)
-    assert result.errors[0]["path"] == str(path)
-    assert "/old/project" in path.read_text()
-
-
 def test_project_native_mount_blocks_rename_without_proc(tmp_path, monkeypatch):
     old = tmp_path / "Old"
     mount = old / "volume"
@@ -324,8 +312,10 @@ def test_knowledge_atomic_writes_set_permissions_before_payload_and_never_overwr
     monkeypatch.setattr(file_permissions, "prepare_atomic_permissions", permissions)
     knowledge_backend._write_text_atomic(target, "updated")
     assert target.read_text() == "updated" and calls
+    from management_portal.resources.creation import Creation
     with pytest.raises(FileExistsError):
-        knowledge_backend._write_new_text_atomic(target, "replacement")
+        with Creation('decision_0123456789ab', actor='alice', payload={}, operation_id='existing-file').prepare([(target, 'file')]) as creation:
+            creation.publish(lambda index, stage: stage.write_text('replacement'))
     assert target.read_text() == "updated" and sorted(directory.iterdir()) == [target]
 
 

@@ -12,12 +12,11 @@ from types import SimpleNamespace
 import pytest
 
 from management_common.file_lock import lock_stream, try_lock_descriptor, unlock_descriptor
-from management_portal.society_service import invariant_locks as locks, lineage_storage
+from management_portal.society_service import invariant_locks as locks
 from scripts import harness_lineage
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = [
-    "management_portal/society_service/lineage_storage.py",
     "management_portal/society_service/lineage_state.py",
     "management_portal/society_service/invariant_locks.py",
     "scripts/harness_lineage.py",
@@ -47,7 +46,6 @@ def available(path):
 
 
 @pytest.mark.parametrize("factory,name", [
-    (lineage_storage._folder_lock, ".lineage-folders.lock"),
     (lambda root: harness_lineage.locked(root / "harness.lock"), "harness.lock"),
 ])
 def test_blocking_consumers_preserve_content_and_release_after_failure(tmp_path, factory, name):

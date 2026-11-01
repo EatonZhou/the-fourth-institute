@@ -2,19 +2,78 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
 from pathlib import Path
+from contextlib import ExitStack
 from typing import Any
 
 
-from management_common.instance_locations import current_instance
+from management_common.instance_locations import located_path
+from management_common.directory_paths import validate_removal
 from management_common.clock import utc_now_iso
-from management_portal import project_registry
+from management_portal import project_registry, project_rename
 
-from . import project_folders, resident_store, resource_client
+from . import project_folders
 from . import lineage_aggregate
 
 
 PROJECTS_ROOT = (portal_path('projects'))
-PROJECT_DELETION_AUDIT = portal_path('features') / "deleted_projects" / "project_deletions.json"
+
+
+class ProjectExecutionControl:
+    """Society owns Project membership and the directory execution contract.
+
+    Constructed in the RPC handler process, never passed over RPC or installed
+    in a caller-local ContextVar. Directory users and stop/restore semantics
+    remain owned by resident_lifecycle_domain.
+    """
+
+    def __init__(self, actor: str, entry: str = 'system'):
+        self.actor, self.entry = actor, entry
+
+    def _call(self, instruction, arguments):
+        from management_portal import isa_client
+        return isa_client.call(self.actor, instruction, arguments, entry=self.entry)
+
+    def busy(self, resident_ids):
+        busy = []
+        for start in range(0, len(resident_ids), 200):
+            states = self._call('ListResidentStates', {
+                'resident_ids': resident_ids[start:start + 200], 'include_viewer_state': False})
+            for item in states.get('states') or []:
+                state = item.get('state') if isinstance(item.get('state'), dict) else item
+                if state.get('work_state') in {'running', 'stopping'}:
+                    busy.append(str(item.get('resident_id') or ''))
+        return busy
+
+    def affected_residents(self, change):
+        from .state_store import get_lineage_data_store
+        from . import resident_lifecycle_domain
+
+        with get_lineage_data_store().database.snapshot() as connection:
+            found = {row['resident_id'] for row in connection.execute(
+                'SELECT DISTINCT r.resident_id FROM lineage_nodes n '
+                'JOIN lineages l ON l.lineage_id=n.lineage_id '
+                'JOIN residents r ON r.resident_id=n.node_id '
+                'WHERE l.project_id=%s AND r.deleted_at IS NULL', (change.old_id,),
+            ).fetchall()}
+        if change.moves:
+            records, _runs = resident_lifecycle_domain.directory_execution_users(change.old_root)
+            found.update(record['resident_id'] for record in records)
+        return sorted(found)
+
+    def move_scope(self, resident_ids):
+        from . import resident_lifecycle_domain
+        return resident_lifecycle_domain.directory_move_execution_scope(
+            resident_ids=resident_ids, actor=self.actor)
+
+
+def rename_project(project_id: str, new_project_id: str, actor: str, *,
+                   dry_run: bool = False, entry: str = 'system') -> dict[str, Any]:
+    from management_portal.hatg.contracts import InstructionError
+    try:
+        return project_rename.rename_project(project_id, new_project_id, actor,
+            dry_run=dry_run, execution_control=ProjectExecutionControl(actor, entry))
+    except project_rename.RenameBlocked as exc:
+        raise InstructionError('instruction.conflict', str(exc), details=exc.details) from exc
 
 
 def _actor_id(value: object) -> str:
@@ -50,26 +109,6 @@ def _registry_without_project(
     updated = dict(document)
     updated["projects"] = remaining
     return updated
-
-
-def _append_deletion_index(entry: dict[str, Any]) -> None:
-    index_path = PROJECT_DELETION_AUDIT
-    payload = resident_store.read_json(
-        index_path, {"schema_version": 1, "projects": []}
-    )
-    if not isinstance(payload, dict):
-        payload = {"schema_version": 1, "projects": []}
-    projects = payload.get("projects")
-    if not isinstance(projects, list):
-        projects = []
-    projects.append(entry)
-    payload.update({
-        "schema_version": 1,
-        "projects": projects,
-        "updated_at": entry.get("deleted_at", utc_now_iso()),
-    })
-    resident_store.write_json(index_path, payload)
-
 
 def _project_lineage_ids(identities: set[str]) -> tuple[list[str], list[str]]:
     """Lineages of a project: (ordinary, project-level principal)."""
@@ -135,7 +174,7 @@ def project_teams(project_ids: list[str], actor: str) -> dict[str, dict[str, Any
 
 
 def validate_project_deletion(project_id: str, actor: str) -> dict[str, Any]:
-    """Check the registered directory before ResourceService unregisters content."""
+    """Validate the owner directory or authorize replay of its deletion receipt."""
     actor_id = _actor_id(actor)
     if not actor_id:
         raise ValueError("需要登录后删除 project")
@@ -158,19 +197,15 @@ def _project_identities(project_id: str, record: dict[str, Any], project_root: P
 def _registered_deletable_root(record: dict[str, Any]) -> Path:
     # Identity reads return a resolved path; deletion must inspect the path
     # from the registry before following symlinks.
-    return _deletable_root(current_instance().resolve(record["path"]))
+    return _deletable_root(Path(located_path(record["path"])).expanduser())
 
 
 def delete_project(project_id: str, actor: str) -> dict[str, Any]:
     """Delete a project and everything in it (decision_4648f7fa3295).
 
-    The project does not need to be empty: its Lineages and Residents are
-    deleted without archives, the project directory and all its files are
-    removed, the registry entry is removed and an audit record appended.
-    ResourceService unregisters the project's resources before calling this.
-    A call that fails midway leaves what it already deleted; calling again
-    deletes the rest, and a project whose registry entry is already gone
-    returns its deletion record.
+    Terminate child execution, then commit identities, nested registrations,
+    bindings, the deletion receipt and directory cleanup together. Filesystem
+    failures remain queue retries after this transaction has committed.
     """
 
     from . import lineage_lifecycle
@@ -198,39 +233,77 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
     lineage_ids: list[str] = []
     resident_ids: list[str] = []
     try:
-        for lineage_id in [*ordinary, *principals]:
-            result = lineage_lifecycle.delete_lineage(lineage_id, actor_id)
-            lineage_ids.append(lineage_id)
-            resident_ids.extend(str(item) for item in result.get("deleted_resident_ids") or [])
-        with project_registry.mutate() as document:
-            project_record, project_root = project_folders.project_record_from_document(document, project_id)
-            project_root = _registered_deletable_root(project_record)
-            entry = {
-                "schema_version": 1,
-                "project_id": registry_id,
-                "project_name": project_root.name,
-                "project_path": str(project_root),
-                "deleted_at": utc_now_iso(),
-                "deleted_by": actor_id,
-                "description": str(project_record.get("description") or ""),
-                "lineage_ids": lineage_ids,
-                "resident_ids": resident_ids,
-            }
-            document["projects"] = _registry_without_project(document, registry_id)["projects"]
-            store.delete_workspaces_under([project_root], deleted_at=entry["deleted_at"], deleted_by=actor_id)
-            if project_root.exists():
-                remove_deleted_folder(project_root)
-            _append_deletion_index(entry)
+        from management_portal.resources.registry_store import get_registry_store
+        registry = get_registry_store()
+        registry._ensure()
+        with ExitStack() as preparation:
+            from . import invariant_locks
+            preparation.enter_context(lineage_aggregate.execution_authorities([*ordinary, *principals]))
+            preparation.enter_context(invariant_locks.lineage_scopes([*ordinary, *principals], operation='project.delete'))
+            commits = [(lineage_id, preparation.enter_context(
+                lineage_lifecycle.prepare_lineage_deletion(lineage_id, actor_id)))
+                for lineage_id in [*ordinary, *principals]]
+            from . import resident_catalog
+            member_ids = [record['resident_id'] for lineage_id in [*ordinary, *principals]
+                          for record in resident_catalog.get_catalog().for_lineage(lineage_id)]
+            connection = preparation.enter_context(store.database.transaction())
+            from management_common.directory_cleanup_store import get_directory_cleanup_store
+            get_directory_cleanup_store().lock(connection)
+            with registry.writer(
+                project_registry.COLLECTION, 'project_deletions', connection=connection,
+            ) as writer:
+                document = writer.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID)
+                project_record, project_root = project_folders.project_record_from_document(document, project_id)
+                project_root = _registered_deletable_root(project_record)
+                if _project_lineage_ids(identities) != (ordinary, principals):
+                    raise ValueError('Project membership changed during deletion; retry')
+                from .directory_owner import directory_metadata
+                directory = directory_metadata(project_record.get('directory'), registry_id)
+                from management_common.directory_move_store import cancel_owner_moves
+                cancel_owner_moves(connection, registry_id)
+                from management_portal.resources.directory_registrations import unregister_tree
+                nested = unregister_tree(
+                    [project_root] if directory['origin'] == 'created' else [],
+                    owner_ids=[registry_id, *ordinary, *principals, *member_ids], connection=connection, actor=actor_id)
+                for lineage_id, commit in commits:
+                    result = commit()
+                    lineage_ids.append(lineage_id)
+                    resident_ids.extend(str(item) for item in result.get("deleted_resident_ids") or [])
+                entry = {
+                    "schema_version": 1,
+                    "project_id": registry_id,
+                    "project_name": project_root.name,
+                    "project_path": str(project_root),
+                    "deleted_at": utc_now_iso(),
+                    "deleted_by": actor_id,
+                    "description": str(project_record.get("description") or ""),
+                    "lineage_ids": lineage_ids,
+                    "resident_ids": resident_ids,
+                    "resource_ids": sorted(set([registry_id, *lineage_ids, *resident_ids, *nested['resource_ids']])),
+                    "effects": {"status": "pending", "completed": {}, "errors": {}, "attempts": 0},
+                }
+                document["projects"] = _registry_without_project(document, registry_id)["projects"]
+                from .resident_workspace_deletion import delete_workspaces
+                delete_workspaces(connection, owner_ids=[registry_id], deleted_at=entry['deleted_at'], deleted_by=actor_id)
+                remove_deleted_folder(project_root, connection=connection, owner_id=registry_id,
+                                      origin=directory['origin'], actor=actor_id)
+                from management_portal.resources.directory_registrations import unregister_identity
+                unregister_identity(registry_id, connection=connection, actor=actor_id)
+                writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, document)
+                writer.put('project_deletions', registry_id, entry)
     except Exception as exc:
         from management_portal.hatg.contracts import InstructionError
-
+        committed = _finish_deleted_project(registry_id, actor_id)
+        if committed is not None:
+            return {**committed, 'projection_error': str(exc)}
         raise InstructionError(
             "instruction.failed", f"Project 删除未完成：{exc}",
-            details={"project_id": registry_id, "deleted_lineage_ids": lineage_ids,
-                     "deleted_resident_ids": resident_ids},
-            commit_state="unknown",
+            details={"project_id": registry_id, "deleted_lineage_ids": [],
+                     "deleted_resident_ids": []},
+            commit_state="not_committed",
         ) from exc
-    return {**entry, "project_id": registry_id}
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    return {**entry, "project_id": registry_id, 'directory_cleanup': get_directory_cleanup_store().status(owner_id=registry_id)}
 
 
 def _finish_deleted_project(project_id: str, actor_id: str) -> dict[str, Any] | None:
@@ -240,27 +313,19 @@ def _finish_deleted_project(project_id: str, actor_id: str) -> dict[str, Any] | 
     delete once the registry entry is gone.
     """
 
-    payload = resident_store.read_json(PROJECT_DELETION_AUDIT, {"projects": []})
-    entries = payload.get("projects") if isinstance(payload, dict) else []
+    from management_portal.resources.registry_store import get_registry_store
     target = str(project_id or "").strip()
-    entry = next((
-        item for item in reversed(entries if isinstance(entries, list) else [])
-        if isinstance(item, dict)
-        and target in {str(item.get("project_id") or ""), str(item.get("project_name") or "")}
-    ), None)
+    entry = get_registry_store().get('project_deletions', target)
     if entry is None or str(entry.get("deleted_by") or "") != actor_id:
         return None
     registry_id = str(entry.get("project_id") or target)
-    return {**entry, "project_id": registry_id}
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    return {**entry, "project_id": registry_id,
+            'directory_cleanup': get_directory_cleanup_store().status(owner_id=registry_id)}
 
 
 def _deletable_root(project_root: Path) -> Path:
     """The resolved project directory, refused before any side effect when it is unsafe to remove."""
 
-    if project_root.is_symlink():
-        raise ValueError("project path must be a directory, not a symbolic link")
-    resolved = project_root.resolve(strict=False)
-    projects_root = PROJECTS_ROOT.resolve(strict=False)
-    if resolved == projects_root or projects_root not in resolved.parents:
-        raise PermissionError(f"拒绝删除当前实例项目目录 {projects_root} 之外的 project")
-    return resolved
+    validate_removal(project_root)
+    return project_root

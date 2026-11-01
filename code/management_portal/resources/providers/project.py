@@ -2,7 +2,6 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
 import re
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -196,6 +195,7 @@ def create_project(
     payload: dict[str, Any],
     *,
     actor: str = "",
+    operation_id: str = "",
 ) -> dict[str, Any]:
     from management_portal import permission_system
 
@@ -214,18 +214,30 @@ def create_project(
     if not project_root.is_relative_to(PROJECTS_ROOT.resolve(strict=False)):
         raise PermissionError(f"Project path must be under {PROJECTS_ROOT}.")
 
+    from ..creation import Creation
+    from ..directory_registrations import directory_writer
+    creation = Creation(project_id, actor=actor, payload=payload, operation_id=operation_id)
+
     def place(document: dict[str, Any], connection: Any) -> None:
         # The Project and its place in the permission trees commit together (decision_b820faf42218 §5.7).
         saved = next(item for item in document["projects"] if item.get("id") == project_id)
-        permission_system.sync_resource({**saved, "resource_id": project_id}, resource_type="project", connection=connection)
+        with creation.registration(connection):
+            permission_system.sync_resource({**saved, "resource_id": project_id}, resource_type="project", connection=connection)
 
-    seeded = False
-    try:
-        with project_registry.mutate(before_commit=place) as doc:
-            if project_root.exists():
-                raise FileExistsError(
-                    f"Project path already exists: {project_root}"
-                )
+    with creation.prepare([(PROJECTS_ROOT / project_id, 'directory')]):
+        if creation.completed:
+            record = _project_record(project_id)
+            return canonical_record(project_id, {'project': record, 'project_root': str(current_instance().resolve(record['path']))})
+        document = _load_registry()
+        if any(item.get('id') == project_id for item in document['projects']):
+            raise FileExistsError('Project identity is already registered: ' + project_id)
+        status_vocab = document['status_vocab']
+        if status_vocab and status not in {str(item) for item in status_vocab}:
+            raise ValueError(f"Unknown project status: {status}")
+        creation.publish(lambda index, stage: _write_project_seed_files(
+            stage, project_id, description, project_type, _tag_folders_from_doc(document), language))
+        project_root, = creation.paths
+        with directory_writer(project_registry.COLLECTION), project_registry.mutate(before_commit=place) as doc:
             projects = doc["projects"]
             if any(
                 isinstance(item, dict)
@@ -245,19 +257,9 @@ def create_project(
             status_vocab = doc["status_vocab"]
             if status_vocab and status not in {str(item) for item in status_vocab}:
                 raise ValueError(f"Unknown project status: {status}")
-            # The registry change commits only after the seed files exist; a
-            # failure removes the directory and leaves the registry unchanged.
-            seeded = True
-            _write_project_seed_files(
-                project_root,
-                project_id,
-                description,
-                project_type,
-                _tag_folders_from_doc(doc),
-                language,
-            )
             record = {
                 "id": project_id,
+                "directory": {"origin": "created", "owner_id": project_id},
                 "status": status,
                 "project_type": project_type,
                 "description": description,
@@ -267,16 +269,6 @@ def create_project(
                 **permission_system.creation_fields(actor),
             }
             projects.append(record)
-    except Exception as exc:
-        if seeded and project_root.exists():
-            try:
-                shutil.rmtree(project_root)
-            except Exception as rollback_exc:
-                raise RuntimeError(
-                    "Project creation failed and rollback was incomplete: "
-                    f"directory: {rollback_exc}"
-                ) from exc
-        raise
 
     public_record = dict(record)
     return canonical_record(

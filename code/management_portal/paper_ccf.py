@@ -16,6 +16,24 @@ from management_portal.paper_records import _normalize_list, _now, _slugify
 from management_portal.paper_registration import register_paper
 from management_portal.paper_search import resource_index_papers
 from management_portal.paper_store import PAPER_STORE_ROOT, _load_json, _write_json
+from management_common.file_retention import cache_file
+from management_common.directory_cleanup_store import DirectoryPendingCleanup
+
+
+def _read_cache(path, default):
+    try:
+        with cache_file(path, group='paper_ccf'):
+            return _load_json(path, default)
+    except DirectoryPendingCleanup:
+        return default
+
+
+def _write_cache(path, value):
+    try:
+        with cache_file(path, group='paper_ccf'):
+            _write_json(path, value)
+    except DirectoryPendingCleanup:
+        return
 
 
 CCF_CATALOG_CACHE_PATH = PAPER_STORE_ROOT / "_index" / "ccf_catalog_v7.json"
@@ -73,7 +91,7 @@ def _parse_ccf_catalog_html(html: str) -> list[dict]:
 
 
 def _load_ccf_catalog_cache() -> list[dict]:
-    cached = _load_json(CCF_CATALOG_CACHE_PATH, {})
+    cached = _read_cache(CCF_CATALOG_CACHE_PATH, {})
     venues = cached.get("venues") if isinstance(cached, dict) else []
     return [item for item in venues if isinstance(item, dict)] if isinstance(venues, list) else []
 
@@ -125,7 +143,7 @@ def _merge_curated_venues(venues: list[dict]) -> list[dict]:
 
 def _ccf_catalog(force: bool = False, *, allow_network: bool = True) -> list[dict]:
     if not force and _ccf_cache_fresh(CCF_CATALOG_CACHE_PATH):
-        cached = _load_json(CCF_CATALOG_CACHE_PATH, {})
+        cached = _read_cache(CCF_CATALOG_CACHE_PATH, {})
         venues = cached.get("venues") if isinstance(cached, dict) else []
         if (
             isinstance(venues, list)
@@ -138,7 +156,7 @@ def _ccf_catalog(force: bool = False, *, allow_network: bool = True) -> list[dic
     html = _http_get_text(CCF_CATALOG_URL, timeout=135)
     venues = _parse_ccf_catalog_html(html)
     CCF_CATALOG_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _write_json(CCF_CATALOG_CACHE_PATH, {
+    _write_cache(CCF_CATALOG_CACHE_PATH, {
         "schema": "tfi.paper.ccf_catalog.v1",
         "source_url": CCF_CATALOG_URL,
         "source_version": "CCF recommended list v7 / 2026",
@@ -216,7 +234,7 @@ def _dblp_entries_for_venue(venue: dict, *, force: bool = False, allow_network: 
     conf_key = str(venue.get("dblp_conf_key") or "").strip()
     cache_path = _ccf_cache_path("years", conf_key)
     if not force and cache_path.is_file():
-        cached = _load_json(cache_path, {})
+        cached = _read_cache(cache_path, {})
         years = cached.get("years") if isinstance(cached, dict) else []
         if isinstance(years, list) and years:
             return [item for item in years if isinstance(item, dict)]
@@ -224,7 +242,7 @@ def _dblp_entries_for_venue(venue: dict, *, force: bool = False, allow_network: 
         return []
     years = paper_dblp_metadata.catalog_entries(venue)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    _write_json(cache_path, {"fetched_at": _now(), "conf_key": conf_key, "section": venue.get("dblp_section") or "conf", "years": years})
+    _write_cache(cache_path, {"fetched_at": _now(), "conf_key": conf_key, "section": venue.get("dblp_section") or "conf", "years": years})
     return years
 
 
@@ -325,7 +343,7 @@ def ccf_papers_cache(params: dict | None = None) -> dict:
     papers = None
     entry = None
     if not force and _ccf_cache_fresh(cache_path):
-        cached = _load_json(cache_path, {})
+        cached = _read_cache(cache_path, {})
         papers = cached.get("papers") if isinstance(cached, dict) else None
         entry = cached.get("entry") if isinstance(cached, dict) and isinstance(cached.get("entry"), dict) else None
     if isinstance(papers, list) and entry is None:
@@ -372,7 +390,7 @@ def ccf_papers_cache(params: dict | None = None) -> dict:
 
         papers = paper_dblp_metadata.papers_for_entry(venue, entry)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        _write_json(cache_path, {"fetched_at": _now(), "venue": venue, "entry": entry, "year": year, "metadata_source": "dblp-sparql", "papers": papers})
+        _write_cache(cache_path, {"fetched_at": _now(), "venue": venue, "entry": entry, "year": year, "metadata_source": "dblp-sparql", "papers": papers})
     return {
         "venue": venue,
         "year": int((entry or {}).get("year") or 0),
@@ -484,7 +502,7 @@ def refresh_ccf_cache(
         "errors": [],
     }
     CCF_REFRESH_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _write_json(CCF_REFRESH_REPORT_PATH, report)
+    _write_cache(CCF_REFRESH_REPORT_PATH, report)
     for venue in venues:
         conf_key = str(venue.get("dblp_conf_key") or "").strip()
         if not conf_key:
@@ -502,7 +520,7 @@ def refresh_ccf_cache(
         if auto_paper_ranks and venue_rank not in auto_paper_ranks:
             report["skipped_by_rank"] += len(selected_entries)
             CCF_REFRESH_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            _write_json(CCF_REFRESH_REPORT_PATH, report)
+            _write_cache(CCF_REFRESH_REPORT_PATH, report)
             continue
         for year_entry in selected_entries:
             entry_id = str(year_entry.get("entry_id") or year_entry.get("year") or year_entry.get("issue") or "").strip()
@@ -528,10 +546,10 @@ def refresh_ccf_cache(
             if delay_seconds:
                 time.sleep(delay_seconds)
             CCF_REFRESH_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            _write_json(CCF_REFRESH_REPORT_PATH, report)
+            _write_cache(CCF_REFRESH_REPORT_PATH, report)
         CCF_REFRESH_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _write_json(CCF_REFRESH_REPORT_PATH, report)
+        _write_cache(CCF_REFRESH_REPORT_PATH, report)
     report["finished_at"] = _now()
     CCF_REFRESH_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _write_json(CCF_REFRESH_REPORT_PATH, report)
+    _write_cache(CCF_REFRESH_REPORT_PATH, report)
     return report

@@ -1,205 +1,50 @@
-"""Reference-aware Workspace deletion and resumable directory cleanup."""
-from pathlib import Path
-from contextlib import nullcontext
-import errno
-
-from management_common.portal_database import _database_schema
-
-from .folder_removal import remove_tree, _owner_may_enter_and_change
-from management_portal.resources.errors import ResourceOperationError
+"""Unregister Workspaces and bindings atomically with durable file cleanup."""
+from management_common.directory_cleanup_store import get_directory_cleanup_store
+from management_common.directory_paths import lexical_path, validate_removal
+from management_common.instance_locations import located_path
+from management_portal.resources.workspace_store import get_workspace_store, now
 
 
-class WorkspaceDeletionRefused(ResourceOperationError):
-    """All eligibility checks run before deletion or filesystem effects."""
-    commit_state = "not_committed"
+def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), deleted_at, deleted_by):
+    """An owned outer tree includes every nested registration, regardless of users.
 
-
-def delete_unreferenced(connection, *, workspace_ids=(), paths=(), deleted_at, deleted_by):
-    """Delete associated directories with no surviving Resident users.
-
-    Call after marking the entire deletion set, so members being deleted
-    together do not keep one another's Workspaces alive. Nested registrations
-    participate independently: a shared child keeps its files and stable path.
+    Direct adoption removal only unregisters that identity. Its descendants
+    remain independently owned, unless a created outer directory is removed.
     """
-    from management_common.instance_locations import located_path
-    from management_portal.resources.workspace_store import LOCATION_PREFIX_SQL, stored_path
-
-    table = f'"{_database_schema("workspace")}".workspaces'
-    roots = sorted({stored_path(path) for path in paths})
-    ids = sorted(set(workspace_ids))
-    if not ids and not roots:
-        return []
-    # Serialize registration/moves with selecting the descendant set. Binding
-    # writers lock their Workspace rows through ensure_workspaces as well.
-    connection.execute(f"LOCK TABLE {table} IN SHARE ROW EXCLUSIVE MODE")
-    rows = connection.execute(
-        f"SELECT w.workspace_id,w.path FROM {table} w WHERE w.deleted_at IS NULL AND ("
-        "w.workspace_id=ANY(%s) OR EXISTS (SELECT 1 FROM unnest(%s::text[]) p(path) "
-        f"WHERE w.path=p.path OR starts_with(w.path,{LOCATION_PREFIX_SQL.format(column='p.path')})) OR EXISTS ("
-        f"SELECT 1 FROM {table} seed WHERE seed.workspace_id=ANY(%s) "
-        f"AND (w.path=seed.path OR starts_with(w.path,{LOCATION_PREFIX_SQL.format(column='seed.path')})))) "
-        "ORDER BY w.workspace_id FOR UPDATE OF w", (ids, roots, ids),
-    ).fetchall()
-    candidates = [row['workspace_id'] for row in rows]
-    used = connection.execute(
-        "SELECT owned_workspace_id AS workspace_id FROM residents "
-        "WHERE deleted_at IS NULL AND owned_workspace_id=ANY(%s) UNION "
-        "SELECT b.workspace_id FROM resident_workspace_bindings b "
-        "JOIN residents r ON r.resident_id=b.resident_id "
-        "WHERE r.deleted_at IS NULL AND b.workspace_id=ANY(%s)",
-        (candidates, candidates),
-    ).fetchall()
-    retained = {row['workspace_id'] for row in used}
-    deleted = [row for row in rows if row['workspace_id'] not in retained]
-    ids = [row['workspace_id'] for row in deleted]
-    if ids:
-        connection.execute(
-            f"UPDATE {table} SET deleted_at=%s,deleted_by=%s,"
-            "updated_at=GREATEST(%s::timestamptz,updated_at + interval '1 microsecond') "
-            "WHERE workspace_id=ANY(%s)", (deleted_at, deleted_by, deleted_at, ids),
-        )
-        connection.execute("DELETE FROM resident_workspace_bindings WHERE workspace_id=ANY(%s)", (ids,))
-    return [located_path(row['path']) for row in deleted]
+    from management_portal.resources.directory_registrations import unregister_tree
+    result = unregister_tree([lexical_path(located_path(str(path))) for path in paths],
+        connection=connection, actor=deleted_by, workspace_ids=workspace_ids,
+        owner_ids=owner_ids, deleted_at=deleted_at)
+    return result['workspace_paths']
 
 
-def unregister_workspace(workspace_id, *, connection, actor, authorize, check_dependencies=None):
-    """Explicit deletion refuses live users and independently registered children.
-
-    The Workspace lock also serializes binding writers, moves and registration.
-    Keep it through cleanup: a newly registered directory must never be removed
-    by an earlier administrator request. Host directories are registration-only.
-    """
-    from management_common.instance_locations import current_instance, is_area_reference
-    from management_portal.resources.workspace_store import get_workspace_store, now
-
+def unregister_workspace(workspace_id, *, connection, actor, authorize):
     store = get_workspace_store()
-    connection.execute(f"LOCK TABLE {store.table} IN SHARE ROW EXCLUSIVE MODE")
-    locked = connection.execute(f"SELECT path FROM {store.table} WHERE workspace_id=%s FOR UPDATE",
-                                (workspace_id,)).fetchone()
+    store.cleanup.lock(connection)
+    connection.execute(f'LOCK TABLE {store.table} IN SHARE ROW EXCLUSIVE MODE')
     row = store.rows([workspace_id], connection=connection).get(workspace_id)
     if row is None:
         raise KeyError(workspace_id)
     authorize(store.descriptor(row))
-    users = connection.execute(
-        "SELECT resident_id,'owner' AS usage FROM residents "
-        "WHERE deleted_at IS NULL AND owned_workspace_id=%s UNION "
-        "SELECT r.resident_id,'binding' AS usage FROM resident_workspace_bindings b "
-        "JOIN residents r ON r.resident_id=b.resident_id "
-        "WHERE r.deleted_at IS NULL AND b.workspace_id=%s ORDER BY resident_id,usage",
-        (workspace_id, workspace_id),
-    ).fetchall()
-    if users:
-        raise WorkspaceDeletionRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409,
-                                     details={"users": [dict(user) for user in users]})
-    # The stored form, also for an older registration of an instance
-    # directory outside the areas, which can no longer be encoded.
-    location = locked['path']
-    below = location if location.endswith(':') else location.rstrip('/') + '/'
-    children = connection.execute(
-        f"SELECT workspace_id FROM {store.table} WHERE deleted_at IS NULL "
-        "AND workspace_id<>%s AND (path=%s OR starts_with(path,%s)) ORDER BY workspace_id",
-        (workspace_id, location, below),
-    ).fetchall()
-    if children:
-        raise WorkspaceDeletionRefused("workspace_nested_registration", "Workspace contains active registered resources", 409,
-                                     details={"resource_ids": [child['workspace_id'] for child in children]})
-    if check_dependencies is not None:
-        check_dependencies(row['path'], connection)
-    internal = is_area_reference(location)
-    if internal and Path(row['path']) == current_instance().area(location.partition(':')[0]):
-        raise WorkspaceDeletionRefused("workspace_area_root", "An instance area root cannot be removed as a Workspace", 409)
-    deleted = delete_unreferenced(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
-    if not deleted:
-        raise WorkspaceDeletionRefused("workspace_in_use", "Workspace is owned or bound by a live Resident", 409)
-    if internal:
-        remove_deleted_folder(row['path'], connection=connection)
-    return store.descriptor(store.rows([workspace_id], connection=connection, include_deleted=True)[workspace_id])
+    delete_workspaces(connection, workspace_ids=[workspace_id], deleted_at=now(), deleted_by=actor)
+    descriptor = store.descriptor(store.rows([workspace_id], connection=connection, include_deleted=True)[workspace_id])
+    descriptor['attributes']['directory_cleanup'] = store.cleanup.status(owner_id=workspace_id, connection=connection)
+    return descriptor
 
 
-def remove_deleted_folder(folder, *, connection=None):
-    """Remove files outside live Workspaces; their presence never rejects deletion.
-
-    Retain shared directories in place, including their ancestor directories.
-    A registration created after the identity commit is also retained. The
-    table lock prevents registration/moves racing the filesystem effect.
-    """
-    from management_common.instance_locations import located_path
-    from management_portal.resources.workspace_store import get_workspace_store, stored_path, LOCATION_PREFIX_SQL
-    root = Path(folder).absolute()
-    stored = stored_path(root)
-    # An area root (``projects:``) already ends with its separator.
-    below = stored if stored.endswith(":") else stored.rstrip("/") + "/"
-    store = get_workspace_store()
-    with nullcontext(connection) if connection is not None else store.database.transaction() as connection:
-        connection.execute(f"LOCK TABLE {store.table} IN SHARE ROW EXCLUSIVE MODE")
-        rows = connection.execute(
-            f"SELECT path FROM {store.table} WHERE deleted_at IS NULL AND "
-            "(path=%s OR starts_with(path,%s))",
-            (stored, below),
-        ).fetchall()
-        retained = [Path(located_path(row['path'])) for row in rows]
-        # An extra Workspace can contain another live Resident's system
-        # directory. Keep that Lineage's files too, not just its workspace/.
-        lineage = f'"{_database_schema("lineage")}"'
-        owned = connection.execute(
-            f"SELECT w.path FROM {lineage}.residents r JOIN {store.table} w "
-            "ON w.workspace_id=r.owned_workspace_id WHERE r.deleted_at IS NULL "
-            "AND w.deleted_at IS NULL AND starts_with(w.path,%s)",
-            (below,),
-        ).fetchall()
-        for row in owned:
-            path = Path(located_path(row['path']))
-            if len(path.parents) >= 3 and path.parent.parent.name == 'residents':
-                system_folder = path.parents[2]
-                if system_folder == root or root in system_folder.parents:
-                    retained.append(system_folder)
-
-        def remove(path):
-            if any(path == keep or keep in path.parents for keep in retained):
-                return
-            if path.is_symlink():
-                path.unlink()
-            elif path.is_dir():
-                if not any(path in keep.parents for keep in retained):
-                    remove_tree(path)
-                    return
-                _owner_may_enter_and_change(str(path))
-                for child in path.iterdir():
-                    remove(child)
-            elif path.exists():
-                path.unlink()
-
-        remove(root)
-        # A deleted owner's Workspace can outlive its Resident while another
-        # Resident uses it. The later last-user deletion must also collect the
-        # empty owner container retained by that earlier cleanup. Derive the
-        # boundary from tombstoned ownership, never from arbitrary parent names.
-        owners = connection.execute(
-            f"SELECT r.resident_id,w.path FROM {lineage}.residents r JOIN {store.table} w "
-            "ON w.workspace_id=r.owned_workspace_id WHERE r.deleted_at IS NOT NULL "
-            "AND w.deleted_at IS NOT NULL AND "
-            f"(w.path=%s OR starts_with(%s,{LOCATION_PREFIX_SQL.format(column='w.path')}))",
-            (stored, stored),
-        ).fetchall()
-        for owner in owners:
-            owned = Path(located_path(owner['path']))
-            boundary = owned.parent
-            if owned.name != 'workspace' or boundary.name != owner['resident_id'] or boundary.parent.name != 'residents':
-                continue
-            parent = root.parent
-            while parent == boundary or boundary in parent.parents:
-                location = stored_path(parent)
-                if parent.is_symlink() or connection.execute(
-                    f"SELECT 1 FROM {store.table} WHERE deleted_at IS NULL "
-                    "AND (path=%s OR starts_with(path,%s)) LIMIT 1",
-                    (location, location.rstrip('/') + '/'),
-                ).fetchone():
-                    break
-                try:
-                    parent.rmdir()
-                except OSError as exc:
-                    if exc.errno not in {errno.ENOENT, errno.ENOTEMPTY, errno.EEXIST}:
-                        raise
-                    if exc.errno != errno.ENOENT:
-                        break
-                parent = parent.parent
+def remove_deleted_folder(folder, *, connection, owner_id, actor='', origin='created'):
+    """Enlist the owner's entire created tree in its identity transaction."""
+    if origin not in {'created', 'adopted'}:
+        raise ValueError('Invalid directory origin')
+    if not owner_id or connection is None:
+        raise ValueError('Directory cleanup requires its owner transaction')
+    if origin == 'adopted':
+        return None
+    folder = lexical_path(located_path(str(folder)))
+    validate_removal(folder)
+    queue = get_directory_cleanup_store()
+    queue.lock(connection)
+    delete_workspaces(connection, paths=[folder], owner_ids=[owner_id],
+                      deleted_at=now(), deleted_by=actor)
+    return queue.enqueue(folder, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
+                         actor=actor, connection=connection)

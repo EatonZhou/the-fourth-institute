@@ -220,8 +220,10 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
                         if connection.execute(f"SELECT 1 FROM {workspaces.table} WHERE path=%s AND deleted_at IS NULL", (owned['path'],)).fetchone():
                             continue
                         wid = workspaces.ensure(owned["workspace_id"], owned["path"], connection=connection)
-                        connection.execute("INSERT INTO residents(resident_id,title,backend,owned_workspace_id) VALUES(%s,%s,%s,%s)",
-                                           (rid, node.get("title") or rid, node.get("backend") or "codex", wid))
+                        from management_common.json_columns import json_text
+                        connection.execute("INSERT INTO residents(resident_id,title,backend,owned_workspace_id,directory_json) VALUES(%s,%s,%s,%s,%s)",
+                                           (rid, node.get("title") or rid, node.get("backend") or "codex", wid,
+                                            json_text({'origin': 'created', 'owner_id': rid})))
             return result
     if synthetic_residents:
         monkeypatch.setattr(LineageCatalog, "upsert", upsert_with_synthetic_residents)

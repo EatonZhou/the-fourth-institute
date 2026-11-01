@@ -130,10 +130,15 @@ class ResidentInput:
         return self.protocol_input.get("quote") if isinstance(self.protocol_input, Mapping) else None
 
     def user_message(self, resident_id: str) -> dict[str, Any]:
-        return resident_input_queue_domain.resident_user_message(
+        item = resident_input_queue_domain.resident_user_message(
             resident_id, self.message, self.actor_id,
             message_id=self.message_id, protocol_input=self.protocol_input,
         )
+        # Legacy callers supply media beside the envelope. Pass it to the same
+        # acceptance boundary; validation/preparation must never consume it.
+        if self.input_media:
+            item['input_media'] = self.input_media
+        return item
 
     def with_business_ref(self, item: dict[str, Any]) -> dict[str, Any]:
         if self.business_ref:

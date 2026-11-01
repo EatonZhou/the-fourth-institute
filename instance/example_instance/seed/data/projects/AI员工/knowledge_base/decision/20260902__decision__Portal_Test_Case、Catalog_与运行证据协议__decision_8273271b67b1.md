@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 46
+  number: 47
   created_at: '2026-09-02'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T03:39:38Z'
+  updated_at: '2026-11-01T18:52:46Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -51,6 +51,7 @@ links:
   - decision_c953eab654cd
   - decision_ef80c6d3b5ee
   - decision_06defc47e960
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -123,13 +124,13 @@ Implementation 的字段：
       """
   ```
 - **保留的用例 ID 稳定，新测试的 ID 由入口派生。** 仍存在的旧 pytest 入口在 `tests/cases/case_ids.json` 中保留 ID；已删除的浏览器入口从该映射中清除。其他测试 ID 由入口摘要派生。测试移动、改名和显式 JSON 入口的冲突仍由目录同步校验。
-- **`sync_catalog` 只做检查和清理。** `python -m management_portal.test_framework.tools.sync_catalog` 报告被拒绝的字段和无法解析的源码、测试已经不存在的 `case_ids.json` 条目、按移动规则沿用的 ID，以及测试已经不存在的 `live_cases.json` Live 定义；有错误时以状态 1 退出。它还报告两类需要人处理、但不影响退出状态的问题（weihao 2026-10-18 定）：标题不含中文的测试（没有 docstring 标题，目录显示函数名），以及设计点已不在设计文档中的绑定。WALL 用设计点标签文字的哈希作点 ID，改写标签就会让绑定失效，除非该点带有 `<!-- wall: {"key": ...} -->` 显式 key。工具按 `<Projects>/<项目>/knowledge_base/<类型>/*__<ID>.md` 读取设计文档，读不到的绑定只计入“未检查”。`--apply` 把沿用的 ID 写入新入口并删除失效条目（在各文件的 `.lock` 文件锁内原子替换）；`--export <路径>` 把完整目录写成一份 `tfi.portal-test-catalog.v2` 文档，供留存证据。`live_cases.json` 继续按入口为自动发现的测试提供 Live 定义。
+- **`sync_catalog` 只做检查和清理。** `python -m management_portal.test_framework.tools.sync_catalog` 报告被拒绝的字段和无法解析的源码、测试已经不存在的 `case_ids.json` 条目、按移动规则沿用的 ID，以及测试已经不存在的 `live_cases.json` Live 定义；有错误时以状态 1 退出。它还报告两类需要人处理、但不影响退出状态的问题（TFI portal 2026-10-18 定）：标题不含中文的测试（没有 docstring 标题，目录显示函数名），以及设计点已不在设计文档中的绑定。WALL 用设计点标签文字的哈希作点 ID，改写标签就会让绑定失效，除非该点带有 `<!-- wall: {"key": ...} -->` 显式 key。工具按 `<Projects>/<项目>/knowledge_base/<类型>/*__<ID>.md` 读取设计文档，读不到的绑定只计入“未检查”。`--apply` 把沿用的 ID 写入新入口并删除失效条目（在各文件的 `.lock` 文件锁内原子替换）；`--export <路径>` 把完整目录写成一份 `tfi.portal-test-catalog.v2` 文档，供留存证据。`live_cases.json` 继续按入口为自动发现的测试提供 Live 定义。
 - **SPEC.md 索引的每份 Design 都要出现在测试分类表中。** `tests/cases/test_test_framework.py` 检查分类表覆盖 SPEC.md 的全部顶层领域和当前索引的每个 Design ID，并检查每个条目的 `module` 都来自分类表；在 SPEC.md 新增或移动 Design 时，同时把它的 ID 加入对应模块，否则该检查失败。
 - **目录校验在读取时进行。** 每个条目必须有合法 ID、`key`、标题和能识别的模块，说明可以为空；`is_design_point` 为真或含 `architecture-conformance` 的条目必须有非空 `design_refs`（含 `architecture-conformance` 而没有声明时默认为 SPEC.md）；Test Case 的 `id`、`key` 以及 Implementation 的 `id`、`entrypoint` 在目录内唯一。模块 ID 必须来自当前分类表；旧模块名没有别名映射。`tests/cases/test_catalog_from_code.py` 检查仓库目录没有错误。
 - **单个条目有错误时，其余条目照常可用。** docstring 中被拒绝的字段（未知字段、未知模块、无效等级）记入 `catalog_errors`，这个测试仍按其余字段和推断值留在目录中；无法解析的源码文件记一条错误，它的测试暂时不出现；重复的 ID、入口或设计点绑定使相关条目进入 `catalog_errors`，其他条目正常返回。
 <!-- wall: {"key": "ae08985efa54f238"} -->
 - **目录按源码文件缓存。** 每个测试文件按修改时间和大小缓存解析结果，任一来源文件变化时重建目录；首次构建需要解析全部测试文件，之后的读取只检查文件状态。ResourceService 的 `test` 资源按同一组来源文件判断是否需要刷新。
-- **条目只在源码中修改（weihao 2026-10-16 定）。** Test 工作区和接口都不能修改条目：标题、说明、分类、WALL 设计点绑定和 `lifecycle` 写在测试的 docstring 或显式用例 JSON 中，随代码评审和提交生效。删除一个条目就是在 docstring 中写 `:lifecycle: deleted`。
+- **条目只在源码中修改（TFI portal 2026-10-16 定）。** Test 工作区和接口都不能修改条目：标题、说明、分类、WALL 设计点绑定和 `lifecycle` 写在测试的 docstring 或显式用例 JSON 中，随代码评审和提交生效。删除一个条目就是在 docstring 中写 `:lifecycle: deleted`。
 - **一个 WALL 设计点最多绑定一个 Test Case。** docstring 字段 `:design-point: source#point` 设置绑定，同时把条目标记为设计点并把来源文档加入 `design_refs`；显式用例 JSON 设置 `design_point_ref` 时必须自己写 `is_design_point: true` 和来源文档。两个条目绑定同一个点时，两者都进入 `catalog_errors`。Test Case 面板通过 `/api/wall/test-binding` 显示绑定的点在当前用户可访问的 WALL 工程中是否仍然存在。
 - **Test Case 也是只读的标准资源。** 资源类型 `test` 的提供者把 Catalog 中的条目发布给 ResourceService，所有人可读；资源地址在 Portal 中打开为 `/wall?case=<id>`。`test` 类型没有修改提供者，`UpdateResource` 对它返回错误。
 
@@ -156,7 +157,7 @@ Implementation 的字段：
 <!-- wall: {"key": "05144a9e88f5a7cc"} -->
 - **只有运行的发起者可以取消运行。** 服务端比较认证身份与 `created_by`；已结束的运行原样返回，未结束的运行进入取消流程。取消请求不等于被测输入已终止。
 <!-- wall: {"key": "a215e09fc162cad9"} -->
-- **服务保留全部未结束的运行和最近 100 条已结束报告。** 创建新运行时只淘汰超出上限的最早终止报告；已通过接口认证的调用者也可以批量删除已经结束的报告。证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍随运行记录删除证据，没有独立的到期清理（`management_portal/test_framework/records.py:569、640`）。
+- **服务保留全部未结束的运行和最近 100 条已结束报告。** 创建新运行时只淘汰超出上限的最早终止报告；已通过接口认证的调用者也可以批量删除已经结束的报告。证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 - **一次运行属于执行它的进程。** 本地运行和 TAU Campaign 都由各自的测试执行进程执行，Web 重启不影响它们。执行进程在运行结束前退出时，Web 在启动时或下一次读取这条运行时重新启动执行单元：已经开始的本地运行记为 `error`，TAU Campaign 由新的执行进程从已记录的 Resident 消息继续。仍在运行的执行进程继续拥有自己的运行，其他进程不抢占。
 
 ## 接口协议
@@ -245,7 +246,7 @@ Implementation 的字段：
 
 未通过的每项结果带 `failure_class`，说明未通过的原因：`product`（产品缺陷）、`test`（测试问题）、`environment`（环境问题）、`precondition`（运行前提没有满足，用例没有执行）、`concurrent-change`（并行修改）或 `unknown`（尚未判定）。框架能判断的直接写入：`unsupported` 为 `precondition`，`error` 和被信号终止的进程为 `environment`，TAU Resident 没有交付可解析的结论为 `test`；其余失败记为 `unknown`，由处理失败的人或 Resident 判定。TAU 报告的摘要按分类计数（`failure_classes`），Test 工作区在结果状态旁显示分类。
 
-`POST /test/api/run/cancel` 接受 `run_id`：已结束的运行原样返回；否则记录进入 `cancelling`。本地运行的执行进程在下一次写入进度时（至多约 2 秒）看到这个状态，向各组进程发送 `SIGTERM`，10 秒后仍未退出时发送 `SIGKILL`；TAU Campaign 的执行进程在等待 Resident 时读到这个状态，通知正在执行的 Resident 输入停止。执行结束后写入最终状态。`POST /test/api/runs/delete` 接受 `run_ids` 列表：去重后，只要有一个 ID 不存在或运行尚未结束，整批拒绝；成功时删除记录；证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在删除记录时清理各运行的产物目录（该删除接口），返回 `tfi.portal-test-run-deletion.v1`、`deleted_run_ids`、`deleted_count` 和 `artifact_warnings`（产物清理失败的说明）。
+`POST /test/api/run/cancel` 接受 `run_id`：已结束的运行原样返回；否则记录进入 `cancelling`。本地运行的执行进程在下一次写入进度时（至多约 2 秒）看到这个状态，向各组进程发送 `SIGTERM`，10 秒后仍未退出时发送 `SIGKILL`；TAU Campaign 的执行进程在等待 Resident 时读到这个状态，通知正在执行的 Resident 输入停止。执行结束后写入最终状态。`POST /test/api/runs/delete` 接受 `run_ids` 列表：去重后，只要有一个 ID 不存在或运行尚未结束，整批拒绝；成功时删除记录；证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。接口返回 `tfi.portal-test-run-deletion.v1`、`deleted_run_ids`、`deleted_count` 和 `artifact_warnings`（产物清理失败的说明）。
 
 ## 实现说明
 
@@ -289,7 +290,7 @@ pytest 和保留的 TAU 任务共用主机并发预算，默认 4 个名额，�
 
 `isolated` pytest 组在 bwrap 沙箱运行：独立 PID、IPC 和 UTS 命名空间，私有 `/tmp`，无网络，隐藏凭证和 Portal 状态。数据库与状态隔离由测试配置完成；Live 组不进沙箱。
 
-Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal` 和当前测试框架状态目录）在沙箱中被替换为组目录旁的空白目录，只有本组自己的产物目录重新挂回。组结束后，替换目录中出现的文件说明有测试写入了真实状态：这些路径记入分组的 `isolation_holes`，分组和运行至少记为 `failed`，隔离失败产生的夹具与取出的排查证据按《目录与路径协议》（decision_4aa13bc21e8e）分别清理和保留。现在的代码仍在有写入时保留替换目录供排查，没有写入时随即删除（原隔离检查）。
+Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal` 和当前测试框架状态目录）在沙箱中被替换为组目录旁的空白目录，只有本组自己的产物目录重新挂回。组结束后，替换目录中出现的文件说明有测试写入了真实状态：这些路径记入分组的 `isolation_holes`，分组和运行至少记为 `failed`，隔离失败产生的夹具与取出的排查证据按《目录与路径协议》（decision_4aa13bc21e8e）分别清理和保留。
 
 `live` 组不进沙箱，在当前唯一的 DEV 上以 portal-test 身份运行，同一时间全主机只有一个 Live 组执行。执行进程本身也不进沙箱，它负责写运行记录。TAU Campaign 不进沙箱，它的用例由模块 Resident 在当前真实 DEV 上执行。
 

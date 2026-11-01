@@ -11,7 +11,7 @@ from functools import lru_cache
 import ipaddress
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 from stat import S_ISREG
 from typing import Any
@@ -24,11 +24,14 @@ _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,79}\Z")
 
 def absolute_path(value: str | Path) -> Path:
     """Require a canonical absolute location, including for not-yet-created files."""
-    if not isinstance(value, (str, Path)) or not str(value) or any(c in str(value) for c in "\0\r\n"):
+    if not isinstance(value, (str, Path)) or not str(value) or '\0' in str(value):
         raise ValueError("Expected a canonical absolute path")
     path = Path(value)
     if not path.is_absolute() or str(path) != str(value) or path.resolve() != path:
         raise ValueError("Path must be absolute and canonical, without symbolic links")
+    if os.name == 'nt' and path.parts[1:]:
+        from .secure_paths import relative_parts
+        relative_parts('/'.join(path.parts[1:]))
     return path
 
 
@@ -143,13 +146,10 @@ class InstanceManifest:
             raise ValueError("File reference must be text")
         area, separator, relative = reference.partition(":")
         if separator and area in AREAS:
-            parts = PurePosixPath(relative)
-            if (relative == "." or "\\" in relative or any(c in relative for c in "\0\r\n")
-                    or parts.is_absolute() or ".." in parts.parts
-                    or (relative and parts.as_posix() != relative)):
-                raise ValueError("Area reference must contain a canonical relative path")
+            from .secure_paths import relative_parts
+            parts = relative_parts(relative) if relative else ()
             root = self.area(area)
-            result = root.joinpath(*parts.parts).resolve()
+            result = root.joinpath(*parts).resolve()
             if not result.is_relative_to(root):
                 raise ValueError("Area reference escapes through a symbolic link")
             return result

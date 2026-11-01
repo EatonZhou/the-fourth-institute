@@ -6,6 +6,10 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 from urllib.parse import quote
 
+from .resources.file_references import (
+    FILE_REFERENCE_KEYS, file_reference_address, file_reference_from_address,
+)
+
 
 RESOURCE_ADDRESS_PATTERN = re.compile(
     r"(?<![A-Za-z0-9_./\\])"
@@ -190,6 +194,10 @@ def extract_resource_addresses(content: object) -> list[str]:
 
 def _address_from_item(item: object) -> str:
     if isinstance(item, Mapping):
+        if "file_reference" in item:
+            return file_reference_address(item["file_reference"])
+        if set(item) & FILE_REFERENCE_KEYS.keys():
+            return file_reference_address(item)
         return str(
             item.get("address")
             or item.get("resource_id")
@@ -238,7 +246,34 @@ def normalize_stored_resource_references(raw: object) -> list[dict[str, Any]]:
                     "url": f"/r/{quote(address, safe='')}",
                 }
             )
+    for item in out:
+        reference = file_reference_from_address(item["address"])
+        if reference is not None:
+            item["file_reference"] = reference
+            item["resource_id"] = item["address"].partition("/")[0]
+            item["resource_type"] = item["resource_id"].rpartition("_")[0]
     return out
+
+
+def migrate_context_file_references(context_refs: Mapping) -> dict[str, Any]:
+    """Offline migration of the durable context_refs.resources field only.
+
+    The caller owns the database transaction. No message body, log, or unrelated
+    context field is inspected, and no old host path is used as a fallback.
+    """
+    result = dict(context_refs)
+    resources = result.get("resources")
+    if not isinstance(resources, list):
+        return result
+    migrated = []
+    for item in resources:
+        address = _address_from_item(item)
+        reference = file_reference_from_address(address)
+        if reference is not None:
+            item = {**item, "file_reference": reference} if isinstance(item, Mapping) else {"address": address, "file_reference": reference}
+        migrated.append(item)
+    result["resources"] = migrated
+    return result
 
 
 def resolve_resource_references(
@@ -277,12 +312,14 @@ def resolve_resource_references(
     out: list[dict[str, Any]] = []
     for address in addresses:
         try:
-            parsed = service.parse_address(address)
-            reference = service.reference(parsed.value, actor=str(actor or ""))
+            service.parse_address(address)
+            reference = service.reference(address, actor=str(actor or ""))
             out.append(normalize_stored_resource_references([reference])[0])
         except PermissionError as exc:
             out.append(_failed_reference(address, "forbidden", exc))
-        except (KeyError, FileNotFoundError) as exc:
+        except FileNotFoundError as exc:
+            out.append(_failed_reference(address, "file_not_found", exc))
+        except KeyError as exc:
             out.append(_failed_reference(address, "not_found", exc))
         except ValueError as exc:
             out.append(_failed_reference(address, "invalid", exc))
@@ -293,8 +330,13 @@ def resolve_resource_references(
 
 def _failed_reference(address: str, status: str, error: BaseException) -> dict[str, Any]:
     root_id = address.strip("/").partition("/")[0]
+    try:
+        reference = file_reference_from_address(address)
+    except ValueError:
+        reference = None
     return {
         "address": address,
+        **({"file_reference": reference} if reference else {}),
         "resource_id": root_id,
         "resource_type": root_id.rpartition("_")[0],
         "title": address or root_id,

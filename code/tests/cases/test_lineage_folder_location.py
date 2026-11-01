@@ -26,27 +26,3 @@ def test_project_lineage_lives_in_project_agents_and_others_in_lineages_area(mon
             storage.lineage_folder_for_project(LINEAGE, project_id)
     with pytest.raises(ValueError):
         storage.lineage_folder_for_project("not-a-lineage", "")
-
-
-def test_relocation_moves_the_folder_without_leaving_a_link(monkeypatch, tmp_path):
-    """修改所属项目时整个 Lineage 目录移到新位置，原位置不留入口
-
-    目标已存在、目录名不是同一个 Lineage ID 时拒绝，不移动任何文件。
-    """
-    monkeypatch.setattr(storage, "lineages_root", lambda: tmp_path / "lineages")
-    source = tmp_path / "lineages" / LINEAGE
-    (source / "residents").mkdir(parents=True)
-    (source / "LINEAGE.md").write_text("retained", encoding="utf-8")
-    target = tmp_path / "projects" / "Project 中文" / "agents" / LINEAGE
-    assert storage.relocate_lineage_folder(source, target) == target
-    assert not source.exists() and not source.is_symlink()
-    assert (target / "LINEAGE.md").read_text(encoding="utf-8") == "retained"
-    with pytest.raises(storage.LineageStorageConflictError):
-        storage.relocate_lineage_folder(target, target.with_name("lineage_000000000000"))
-    occupied = tmp_path / "lineages" / LINEAGE
-    occupied.mkdir()
-    with pytest.raises(storage.LineageStorageConflictError):
-        storage.relocate_lineage_folder(target, occupied)
-    assert (target / "LINEAGE.md").exists()
-    storage.relocate_lineage_folder(target, target)
-    assert target.is_dir()

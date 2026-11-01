@@ -16,6 +16,8 @@ from management_common.resource_identity import get_resource_type_registry
 from management_common.database_time import decode_times
 from management_common.instance_locations import located_path, stored_location
 from management_common.instance_manifest import AREAS
+from management_common.directory_cleanup_store import get_directory_cleanup_store
+from management_common.directory_paths import location_key
 
 from .errors import ResourceVersionConflict
 
@@ -64,43 +66,35 @@ class WorkspaceStore:
     def __init__(self):
         self.database = portal_database(schema="workspace")
         self.table = f'"{self.database.schema}".workspaces'
+        self.cleanup = get_directory_cleanup_store()
         self.database.write(self._initialize)
 
     def _initialize(self, connection):
         connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                            (self.table + ":init",))
-        connection.execute(f"""CREATE TABLE IF NOT EXISTS {self.table} (
+        if connection.execute("SELECT to_regclass(%s)", (self.table,)).fetchone()[0] is not None:
+            columns = {row[0] for row in connection.execute(
+                "SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped",
+                (self.table,),
+            ).fetchall()}
+            if not {'origin', 'owner_id', 'operation_id'} <= columns:
+                raise RuntimeError('Workspace directory protocol migration requires the offline maintenance window')
+            return
+        connection.execute(f"""CREATE TABLE {self.table} (
             workspace_id TEXT PRIMARY KEY CHECK (workspace_id ~ '^workspace_[0-9a-f]{{12}}$'),
             path TEXT NOT NULL CONSTRAINT workspaces_location_check CHECK ({LOCATION_CHECK}),
             title TEXT NOT NULL,
             summary TEXT NOT NULL DEFAULT '',
+            origin TEXT NOT NULL CHECK (origin IN ('created','adopted')),
+            owner_id TEXT NOT NULL CHECK (owner_id <> ''),
+            operation_id TEXT UNIQUE,
             created_at TIMESTAMPTZ NOT NULL,
             updated_at TIMESTAMPTZ NOT NULL,
             deleted_at TIMESTAMPTZ,
             deleted_by TEXT
         )""")
-        constraints = {row[0] for row in connection.execute(
-            "SELECT conname FROM pg_constraint WHERE conrelid=%s::regclass "
-            "AND conname IN ('workspaces_absolute_path_check','workspaces_location_check')",
-            (self.table,),
-        ).fetchall()}
-        # Area references replace absolute paths of instance directories.
-        if "workspaces_absolute_path_check" in constraints:
-            connection.execute(f"ALTER TABLE {self.table} DROP CONSTRAINT workspaces_absolute_path_check")
-        if "workspaces_location_check" not in constraints:
-            connection.execute(f"ALTER TABLE {self.table} ADD CONSTRAINT "
-                               f"workspaces_location_check CHECK ({LOCATION_CHECK})")
-        # Avoid an ACCESS EXCLUSIVE ALTER lock on every service startup.
-        if connection.execute(
-            "SELECT 1 FROM pg_attribute WHERE attrelid=%s::regclass AND attname=%s AND NOT attisdropped",
-            (self.table, "summary"),
-        ).fetchone() is None:
-            connection.execute(f"ALTER TABLE {self.table} ADD COLUMN summary TEXT NOT NULL DEFAULT ''")
-        # CREATE INDEX IF NOT EXISTS takes a ShareLock on the table even when
-        # the index exists, so starts queued writers behind open transactions.
-        if connection.execute("SELECT to_regclass(%s)", (f'"{self.database.schema}".workspaces_live_path_idx',)).fetchone()[0] is None:
-            connection.execute(f"CREATE UNIQUE INDEX IF NOT EXISTS workspaces_live_path_idx "
-                               f"ON {self.table}(path) WHERE deleted_at IS NULL")
+        connection.execute(f"CREATE UNIQUE INDEX workspaces_live_path_idx "
+                           f"ON {self.table}(path) WHERE deleted_at IS NULL")
 
     def rows(self, ids: Iterable[str], *, connection=None, include_deleted=False):
         ids = list(dict.fromkeys(ids))
@@ -120,27 +114,25 @@ class WorkspaceStore:
             raise KeyError("Missing or deleted Workspace: " + ", ".join(sorted(missing)))
         return {wid: row["path"] for wid, row in rows.items()}
 
-    def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False):
+    def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False,
+               origin='created', owner_id=None, operation_id=None):
         get_resource_type_registry().validate(workspace_id, "workspace")
         absolute = canonical_path(path)
-        try:
-            path, refused = stored_location(absolute), None
-        except ValueError as error:
-            # An instance directory outside the areas cannot be registered. An
-            # older registration may still hold one as an absolute path; saving
-            # its users keeps that row as stored, so it can be unbound and deleted.
-            path, refused = absolute, error
+        if origin not in {'created', 'adopted'}:
+            raise ValueError('Workspace origin must be created or adopted')
+        path = stored_location(absolute)
         def write(conn):
+            self.cleanup.lock(conn)
             # The partial path index arbitrates concurrent registration, while
             # the row lock prevents a stale save from reviving a deletion.
             row = conn.execute(f"SELECT * FROM {self.table} WHERE workspace_id=%s FOR UPDATE",
                                (workspace_id,)).fetchone()
-            if refused is not None and (row is None or row["path"] != path):
-                raise refused
             if row:
                 if row["deleted_at"] is not None:
                     raise ValueError("Deleted Workspace cannot be restored")
                 if row["path"] != path:
+                    self._require_distinct_location(conn, absolute, workspace_id)
+                    self.cleanup.assert_available(absolute, connection=conn, operation_id=operation_id)
                     if not move:
                         raise ValueError("Workspace path differs from its registered location")
                     conn.execute(f"UPDATE {self.table} SET path=%s,"
@@ -149,11 +141,21 @@ class WorkspaceStore:
                                  (path, now(), workspace_id))
                 return workspace_id
             timestamp = now()
+            self.cleanup.assert_available(absolute, connection=conn, operation_id=operation_id)
+            self._require_distinct_location(conn, absolute, workspace_id)
             conn.execute(f"INSERT INTO {self.table} "
-                         "(workspace_id,path,title,created_at,updated_at) VALUES (%s,%s,%s,%s,%s)",
-                         (workspace_id, path, title or Path(absolute).name, timestamp, timestamp))
+                         "(workspace_id,path,title,origin,owner_id,operation_id,created_at,updated_at) "
+                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                         (workspace_id, path, title or Path(absolute).name, origin,
+                          owner_id or workspace_id, operation_id, timestamp, timestamp))
             return workspace_id
         return write(connection) if connection is not None else self.database.write(write)
+
+    def _require_distinct_location(self, connection, path, workspace_id):
+        key = location_key(Path(path))
+        for row in connection.execute(f'SELECT workspace_id,path FROM {self.table} WHERE deleted_at IS NULL').fetchall():
+            if row['workspace_id'] != workspace_id and location_key(Path(located_path(row['path']))) == key:
+                raise ValueError('Workspace location already has a different identity: ' + row['workspace_id'])
 
     def update_metadata(self, workspace_id: str, *, title=None, summary=None, expected_version: str, authorize):
         """Compare and change metadata while holding the lifecycle row lock.
@@ -204,14 +206,17 @@ class WorkspaceStore:
         absolute = canonical_path(path)
         stored = stored_location(absolute)
         def write(conn):
+            self.cleanup.lock(conn)
             conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (self.table + stored,))
-            row = conn.execute(f"SELECT workspace_id FROM {self.table} WHERE path=%s AND deleted_at IS NULL",
-                               (stored,)).fetchone()
+            rows = conn.execute(f"SELECT workspace_id,path FROM {self.table} WHERE deleted_at IS NULL").fetchall()
+            row = next((item for item in rows if location_key(Path(located_path(item['path']))) == location_key(Path(absolute))), None)
             if row:
                 if preferred_id and row["workspace_id"] != preferred_id:
                     raise ValueError("Workspace path already has a different identity")
                 return row["workspace_id"]
-            return self.ensure(preferred_id or new_id(), absolute, connection=conn)
+            if not Path(absolute).is_dir():
+                raise ValueError('An adopted Workspace directory must already exist')
+            return self.ensure(preferred_id or new_id(), absolute, connection=conn, origin='adopted')
         return self.database.write(write)
 
     def deleted_under(self, paths, *, connection=None) -> list[str]:
@@ -238,7 +243,9 @@ class WorkspaceStore:
             "schema": "tfi.collaboration-descriptor.v2",
             "resource_id": row["workspace_id"], "title": row["title"], "summary": row["summary"],
             "status": "deleted" if row["deleted_at"] is not None else "active",
-            "attributes": {"path": located_path(row["path"])}, "relations": [], "project_ids": [],
+            "attributes": {"path": located_path(row["path"]),
+                           "directory": {"origin": row['origin'], "owner_id": row['owner_id']}},
+            "relations": [], "project_ids": [],
             "created_at": row["created_at"], "updated_at": row["updated_at"],
             "deleted_at": row["deleted_at"] or "",
         }

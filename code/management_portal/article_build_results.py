@@ -46,7 +46,13 @@ def compiled_article_pdf(
     path = article_build_pdf_path(article_id, build_root=build_root)
     if not path.is_file():
         raise FileNotFoundError(article_id)
-    return path
+    from management_common.file_retention import cache_file
+    from management_common.directory_cleanup_store import DirectoryPendingCleanup
+    try:
+        with cache_file(path, group='article', owner_id=article_id):
+            return path
+    except DirectoryPendingCleanup:
+        raise FileNotFoundError(article_id) from None
 
 
 def _diagnostic_severity(message: str) -> str:

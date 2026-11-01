@@ -316,7 +316,9 @@ class ResourceServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             self.socket_path.unlink(missing_ok=True)
 
     @staticmethod
-    def _required(params: dict[str, Any], key: str) -> str:
+    def _required(params: dict[str, Any], key: str) -> str | dict[str, Any]:
+        if key == "address" and isinstance(params.get(key), dict):
+            return params[key]
         value = str(params.get(key) or "").strip()
         if not value:
             raise ValueError(f"{key} is required")

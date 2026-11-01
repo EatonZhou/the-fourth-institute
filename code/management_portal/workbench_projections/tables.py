@@ -51,6 +51,10 @@ CREATE TABLE IF NOT EXISTS binding_targets (
 
 
 def save_version(connection, app_id, revision, value):
+    from .application_retention import reconcile
+    from management_common.directory_retention import RetentionStore
+    retention = RetentionStore()
+    retention.queue.lock(connection)
     allowed = {'workbench_id','builtin','title','description','html','path','updated_at',
                'created_at','created_by','project_ids','navigation','bindings','manifest','panels',
                'application','application_build'}
@@ -76,6 +80,7 @@ def save_version(connection, app_id, revision, value):
         for kind in ('residents','events'):
             for name, target in binding.get(kind, {}).items():
                 connection.execute('INSERT INTO binding_targets VALUES (%s,%s,%s,%s,%s,%s)', (app_id,revision,alias,kind,name,target))
+    reconcile(connection)
 
 
 def manifest(connection, row, revision=None):

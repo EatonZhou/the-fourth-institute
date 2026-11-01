@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 from unittest import mock
 
 import pytest
@@ -167,6 +168,9 @@ def test_register_consumes_uploaded_pdf_and_draft_metadata(tmp_path, subtests, i
             upload_id = "paper-upload-fedcba654321"
             draft_dir = store.root / "_incoming" / "registration-drafts" / upload_id
             draft_dir.mkdir(parents=True)
+            from management_common.directory_retention import RetentionStore
+            retention = RetentionStore()
+            retention.declare(draft_dir, category='unused_upload', owner_id=upload_id)
             (draft_dir / "paper.pdf").write_bytes(b"%PDF-1.7\nfixture paper")
             (draft_dir / "draft.json").write_text(
                 json.dumps({
@@ -188,9 +192,6 @@ def test_register_consumes_uploaded_pdf_and_draft_metadata(tmp_path, subtests, i
                 }),
                 encoding="utf-8",
             )
-            resource_service = mock.Mock()
-            resource_service.new_id.return_value = "paper_012345abcdef"
-            resource_service.validate_id.return_value = None
             with (
                 mock.patch.object(paper_store, "PAPER_STORE", store),
                 mock.patch.object(paper_registration, "PAPER_STORE", paper_store.PAPER_STORE),
@@ -198,11 +199,6 @@ def test_register_consumes_uploaded_pdf_and_draft_metadata(tmp_path, subtests, i
                     paper_store,
                     "ALLOWED_FILE_ROOTS",
                     [tmp_path, store.root],
-                ),
-                mock.patch.object(
-                    paper_store,
-                    "get_resource_service",
-                    return_value=resource_service,
                 ),
                 mock.patch.object(paper_registration, "_start_summary_task") as summary,
                 mock.patch.object(paper_registration, "_start_assets_task") as assets,
@@ -213,12 +209,20 @@ def test_register_consumes_uploaded_pdf_and_draft_metadata(tmp_path, subtests, i
                 detail = paper_registration.register_paper(payload, "alice")
 
             paper = detail["paper"]
-            assert paper["id"] == "paper_012345abcdef"
+            assert re.fullmatch(r"paper_[0-9a-f]{12}", paper["id"])
             assert paper["title"] == "Uploaded Paper"
             assert paper["authors"] == ("A. Author" if author_value == "omitted" else "")
             assert paper["abstract"] == ("A paper uploaded directly." if author_value == "omitted" else "")
             assert paper["tags"] == (["architecture"] if author_value == "omitted" else [])
             assert paper["has_pdf"] is True
+            from management_common.directory_paths import cleanup_location
+            with retention.database.read() as connection:
+                ownership = connection.execute(f'SELECT owner_id,category FROM {retention.table} WHERE location=%s',
+                                               (cleanup_location(draft_dir),)).fetchone()
+            assert ownership['owner_id'] == paper['id']
+            assert ownership['category'] == 'object_data'
+            retention.release_owner(paper['id'])
+            retention.queue.run_pending()
             assert not draft_dir.exists()
             manifest_path, manifest = store.manifest_for_paper_id(paper["id"])
             assert (manifest_path.parent / manifest["files"]["pdf"]).read_bytes().startswith(

@@ -4,11 +4,10 @@ import json
 import logging
 import os
 import re
-import shutil
 import threading
 import time
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -253,19 +252,8 @@ class RunRecords:
         with self._locked():
             index = self._read_index()
             index.append(self._index_entry(record))
-            # A long-running campaign must survive new reports. Only completed
-            # runs count towards the history limit.
-            terminal = [item for item in index if item.get("status") in TERMINAL]
-            dropped = terminal[:-100]
-            dropped_ids = {item["run_id"] for item in dropped}
-            index = [item for item in index if item["run_id"] not in dropped_ids]
             self._write_record(record)
             self._write_index(index)
-            for item in dropped:
-                try:
-                    self._record_path(item.get("run_id")).unlink(missing_ok=True)
-                except ValueError:
-                    continue
         return dict(record)
 
     def run_ids(self) -> set[str]:
@@ -291,7 +279,7 @@ class RunRecords:
                 return dict(self._read_record(run_id))
         raise KeyError(f"未知测试运行：{run_id}")
 
-    def delete_many(self, run_ids: list[str]) -> list[dict[str, Any]]:
+    def delete_many(self, run_ids: list[str], *, run_root: Path | None = None) -> list[dict[str, Any]]:
         """Atomically delete terminal Run Result records."""
         normalized = list(dict.fromkeys(str(run_id or "").strip() for run_id in run_ids))
         if not normalized or any(not run_id for run_id in normalized):
@@ -308,14 +296,67 @@ class RunRecords:
                 raise ValueError(f"运行尚未结束，不能删除报告：{active[0]}")
             deleted = [dict(records[run_id]) for run_id in normalized]
             deleting = set(normalized)
+            from management_common.directory_cleanup_store import get_directory_cleanup_store
+            queue = get_directory_cleanup_store()
+            with queue.database.transaction() as connection:
+                for run_id in normalized:
+                    paths = [self._record_path(run_id)]
+                    if run_root is not None:
+                        paths.append(run_root / run_id)
+                    for path in paths:
+                        queue.enqueue(path.absolute(), owner_id=run_id, operation_id='report-delete:' + run_id,
+                                      actor='directory-retention', connection=connection)
             self._write_index([item for item in index if item.get("run_id") not in deleting])
-            for run_id in normalized:
-                self._record_path(run_id).unlink(missing_ok=True)
             return deleted
 
     def update(self, run_id: str, patch: dict[str, Any]) -> dict[str, Any]:
         patch = _redact_run_data(patch)
-        return self._mutate(run_id, lambda item: item.update(patch))
+        record = self._mutate(run_id, lambda item: item.update(patch))
+        if patch.get('status') in TERMINAL:
+            return self.finish_cleanup(run_id)
+        return record
+
+    def finish_cleanup(self, run_id):
+        from .run_cleanup import finish_run
+        try:
+            receipt = finish_run(run_id)
+        except Exception as error:
+            receipt = {'status': 'error', 'errors': [str(error)]}
+        def save(item):
+            item['resource_cleanup'] = receipt
+            if receipt['status'] == 'error':
+                item['status'] = 'error'
+                item['error'] = '；'.join(filter(None, [item.get('error', ''), *receipt.get('errors', [])]))
+        return self._mutate(run_id, save)
+
+    def expire(self, run_root: Path, *, now=None):
+        """Delete terminal evidence and records seven days after completion.
+
+        Cleanup intent is durable before removing the index entry. A failed file
+        deletion keeps its queue reservation, independently of the Run index.
+        """
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        now = now or datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=7)
+        queue = get_directory_cleanup_store()
+        removed = []
+        with self._locked():
+            index = self._read_index()
+            with queue.database.transaction() as connection:
+                for item in index:
+                    if item.get('status') not in TERMINAL or not item.get('finished_at'):
+                        continue
+                    if datetime.fromisoformat(item['finished_at'].replace('Z', '+00:00')) > cutoff:
+                        continue
+                    run_id = self._run_id(item['run_id'])
+                    for path in (run_root / run_id, self._record_path(run_id)):
+                        queue.enqueue(path.absolute(), owner_id=run_id, operation_id='expire:' + run_id,
+                                      actor='directory-retention', connection=connection)
+                    removed.append(run_id)
+            # This file index cannot share the SQL commit. Keep the durable
+            # deletion intent first so a failed commit never orphans evidence.
+            self._write_index([item for item in index if item['run_id'] not in removed])
+        return removed
 
     def append_output(self, run_id: str, text: str, *, group_id: str = "") -> dict[str, Any]:
         text = redact_sensitive_text(text)
@@ -568,16 +609,21 @@ class RunCoordinator:
 
     def remove_orphan_artifacts(self) -> list[str]:
         """Remove evidence whose record is gone; active runs are always retained."""
-        known = self.records.run_ids()
-        try:
-            entries = list(self.run_root.iterdir())
-        except FileNotFoundError:
-            return []
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        queue = get_directory_cleanup_store()
         removed = []
-        for path in entries:
-            if path.name.startswith("testrun_") and path.name not in known and path.is_dir() and not path.is_symlink():
-                shutil.rmtree(path, ignore_errors=True)
-                removed.append(path.name)
+        with self.records._locked(), queue.database.transaction() as connection:
+            known = {item['run_id'] for item in self.records._read_index()}
+            for root in (self.run_root, self.records.records_root):
+                if not root.exists():
+                    continue
+                for path in root.iterdir():
+                    name = path.stem if root == self.records.records_root else path.name
+                    if re.fullmatch(r'testrun_[0-9a-f]{16}', name) and name not in known:
+                        queue.enqueue(path.absolute(), owner_id=name, operation_id='orphan:' + name,
+                                      actor='directory-retention', connection=connection)
+                        removed.append(name)
+        queue.run_pending()
         return removed
 
     def recover(self, run_ids: set[str] | None = None) -> list[str]:
@@ -626,20 +672,11 @@ class RunCoordinator:
     def delete_reports(self, run_ids: list[str], actor: str) -> dict[str, Any]:
         if not actor:
             raise PermissionError("需要已认证用户")
-        deleted = self.records.delete_many(run_ids)
-        artifact_warnings: list[str] = []
-        artifact_root = self.run_root.resolve(strict=False)
-        for record in deleted:
-            run_id = str(record["run_id"])
-            run_dir = (self.run_root / run_id).resolve(strict=False)
-            if run_dir.parent != artifact_root:
-                artifact_warnings.append(f"忽略了不安全的运行产物路径：{run_id}")
-                continue
-            try:
-                if run_dir.is_dir():
-                    shutil.rmtree(run_dir)
-            except OSError as exc:
-                artifact_warnings.append(f"运行产物清理失败：{run_id}（{exc}）")
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        deleted = self.records.delete_many(run_ids, run_root=self.run_root)
+        outcomes = get_directory_cleanup_store().run_pending()
+        artifact_warnings = [f"运行产物清理失败：{row['owner_id']}（{row['last_error']}）"
+                             for row in outcomes if row['status'] != 'completed' and row['owner_id'] in run_ids]
         return {
             "schema": "tfi.test-run-deletion.v1",
             "deleted_run_ids": [str(item["run_id"]) for item in deleted],

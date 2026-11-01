@@ -9,10 +9,10 @@ version:
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-27T11:45:49Z'
+  updated_at: '2026-11-01T17:27:06Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_24014e2b9bf6
 importance: 9
 metaness: 4
 ai_generated: false
@@ -36,6 +36,7 @@ links:
   - decision_f2a6a5dd4646
   - decision_c953eab654cd
   - decision_06defc47e960
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -114,7 +115,7 @@ Playwright 浏览器测试和 TAU 实时用例负载高；整套界面测试与 
 
 ```bash
 cd ${code_root} && \
-  /opt/tfi/the-fourth-institute/dependencies/<依赖哈希>/venv/bin/python -m pytest -q tests/cases/test_x.py -p no:cacheprovider
+  ${code_root}/../dependencies/<依赖哈希>/venv/bin/python -m pytest -q tests/cases/test_x.py -p no:cacheprovider
 ```
 
 不需要另外准备测试数据库，也不需要清除 Shell 继承的 `PORTAL_DATABASE_URL`。

@@ -220,6 +220,9 @@ def discover_article_roots(
     articles: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = []
     for path in sorted(candidates, key=lambda item: str(item).casefold()):
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        if get_directory_cleanup_store().pending_at(path):
+            continue
         try:
             articles.append(
                 inspect_article_root(path)

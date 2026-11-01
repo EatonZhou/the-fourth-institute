@@ -118,10 +118,10 @@ def test_watch_lineage_checks_access_before_reading_revisions(monkeypatch):
 
 def test_project_rename_busy_omits_viewer_state(monkeypatch):
     """Project 改名查询 Resident 忙碌状态时调用 ListResidentStates 不带查看者状态"""
-    from management_portal import project_rename
+    from management_portal.society_service.project_domain import ProjectExecutionControl
 
     calls = []
-    monkeypatch.setattr(project_rename.Residents, "_call", lambda _self, name, args:
+    monkeypatch.setattr(ProjectExecutionControl, "_call", lambda _self, name, args:
                         calls.append((name, args)) or {"states": [{"resident_id": "resident_123456789abc", "work_state": "running"}]})
-    project_rename.Residents("system").busy(["resident_123456789abc"])
+    ProjectExecutionControl("system").busy(["resident_123456789abc"])
     assert calls == [("ListResidentStates", {"resident_ids": ["resident_123456789abc"], "include_viewer_state": False})]

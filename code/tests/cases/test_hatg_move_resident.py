@@ -115,7 +115,7 @@ def test_move_preserves_member_conversation_files_and_replays(teams, empty_targe
     assert replay.result["operation_id"] == first.result["operation_id"]
     assert [graph(source), graph(target)] == after
     assert agent_data.read_chat_messages(resident_id) == conversation
-    assert original.exists()
+    assert not original.exists()
     operation = ok("GetMoveOperation", {"operation_id": first.result["operation_id"]})
     assert operation["source_lineage_id"] == source["lineage_id"]
     assert operation["target_lineage_id"] == target["lineage_id"]
@@ -177,8 +177,8 @@ def test_move_rejects_invalid_membership(teams, reason):
     unchanged(teams, before)
 
 
-def test_a_busy_resident_moves_and_its_folder_follows_when_the_running_turn_ends(teams, monkeypatch):
-    """忙碌的 Resident 先迁入目标 Lineage，文件夹等运行中的 turn 结束后再移动"""
+def test_same_filesystem_move_does_not_wait_for_running_turn(teams, monkeypatch):
+    """同文件系统先移动目录再提交登记，不等待运行中的 turn 自然结束。"""
     source, target, member = teams
     resident_id = member["resident_id"]
     monkeypatch.setattr(resident_lifecycle_domain, "resident_has_pending_work", lambda identity: identity == resident_id)
@@ -188,14 +188,10 @@ def test_a_busy_resident_moves_and_its_folder_follows_when_the_running_turn_ends
     result = execute(request(teams)).raise_for_error()
     assert resident_id in {node["id"] for node in graph(target)["nodes"]}
     operations = resident_record_domain.lifecycle_operations()
-    # While the turn runs, the folder stays where the turn is working and queued work waits.
-    assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == ""
-    assert original.exists() and operations.pending(resident_id)
-    assert ok("GetMoveOperation", {"operation_id": result["operation_id"]})["terminal"] is False
-    running["value"] = False
-    operations.store.database.write(lambda connection: connection.execute(
-        "UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s", (result["operation_id"],)))
+    assert not original.exists()
     assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id
+    assert running['value'] is True
+    assert ok('GetMoveOperation', {'operation_id': result['operation_id']})['terminal'] is True
     assert not original.exists()
     moved = resident_record_domain.find_resident(resident_id)
     assert resident_record_domain.resident_folder_path(moved).exists()

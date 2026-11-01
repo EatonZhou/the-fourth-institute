@@ -12,6 +12,7 @@ import json
 import os
 import secrets
 import stat
+from functools import wraps
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -81,11 +82,21 @@ def search_resources(inv: Invocation) -> dict[str, Any]:
     return page
 
 
+def _file_read_errors(handler):
+    @wraps(handler)
+    def wrapped(inv):
+        try:
+            return handler(inv)
+        except FileNotFoundError as exc:
+            raise not_found(str(exc), reason="file_not_found") from exc
+        except KeyError as exc:
+            raise not_found(str(exc), reason="object_not_found") from exc
+    return wrapped
+
+
+@_file_read_errors
 def resolve_resource(inv: Invocation) -> dict[str, Any]:
-    try:
-        resolved = _service().resolve(inv.argument("address"), actor=inv.caller)
-    except PermissionError as exc:
-        raise not_found(f"资源地址不存在或不可读：{inv.argument('address')}") from exc
+    resolved = _service().resolve(inv.argument("address"), actor=inv.caller)
     if resolved.get("exists") is False:
         raise not_found(f"资源地址不存在：{inv.argument('address')}")
     record = resolved.get("record") if isinstance(resolved.get("record"), dict) else {}
@@ -102,12 +113,14 @@ def _resource_version(record: dict[str, Any]) -> str:
     return str(value if value is not None else record.get("updated_at") or "")
 
 
+@_file_read_errors
 def read_resource(inv: Invocation) -> dict[str, Any]:
     import base64
 
     address = inv.argument("address")
     limit = int(inv.argument("max_bytes") or 4 * 1024 * 1024)
-    file_address = address.partition("/")[2].partition("/")[0] == "file"
+    parsed = _service().parse_address(address)
+    file_address = bool(parsed.suffix) and parsed.suffix[0] == "file"
     if not file_address and (inv.argument("meta_only") or inv.argument("preview")):
         raise invalid("meta_only 与 preview 只用于 <资源ID>/file/<相对路径> 地址")
     if file_address and (inv.argument("meta_only") or inv.argument("preview")):
@@ -120,7 +133,7 @@ def read_resource(inv: Invocation) -> dict[str, Any]:
         return _oversized_read(address, inv.caller)
     if resolved.get("target_kind") == "directory":
         return _directory_result(data, resolved)
-    version = _resource_version(resolved.get("record") or {}) if "/" not in address else ""
+    version = _resource_version(resolved.get("record") or {}) if not parsed.suffix else ""
     result: dict[str, Any] = {
         "content_type": str(content_type or "application/octet-stream"),
         "version": version or hashlib.sha256(data).hexdigest(),
@@ -148,6 +161,7 @@ def _file_metadata(resolved: dict[str, Any]) -> dict[str, Any]:
     name = str(resolved.get("filename") or "")
     return {
         "name": name, "kind": workspace_file_kind(name),
+        **({"file_reference": resolved["file_reference"]} if resolved.get("file_reference") else {}),
         "modified_at": _iso(datetime.fromtimestamp(mtime_ns / 1e9, timezone.utc)),
         # Nanosecond timestamps exceed JavaScript's exact integer range.
         "mtime_ns": str(mtime_ns),
@@ -175,6 +189,7 @@ def _directory_result(data: bytes, resolved: dict[str, Any]) -> dict[str, Any]:
     mtime_ns = int(resolved.get("content_mtime_ns") or 0)
     return {
         "content_type": DIRECTORY_MEDIA_TYPE, "version": hashlib.sha256(data).hexdigest(), "size": len(data),
+        **({"file_reference": resolved["file_reference"]} if resolved.get("file_reference") else {}),
         "name": str(resolved.get("filename") or ""), "kind": "directory",
         "modified_at": _iso(datetime.fromtimestamp(mtime_ns / 1e9, timezone.utc)),
         "entries": listing["entries"], "truncated": listing["truncated"], "hidden_count": listing["hidden_count"],
@@ -297,9 +312,9 @@ def _registry_errors() -> Iterator[None]:
         }) from exc
 
 
-def _register_resource(resource_type: str, fields: dict[str, Any], actor: str) -> dict[str, Any]:
+def _register_resource(resource_type: str, fields: dict[str, Any], actor: str, *, operation_id: str = '') -> dict[str, Any]:
     with _registry_errors():
-        record = _service().register(resource_type, fields, actor=actor)
+        record = _service().register(resource_type, fields, actor=actor, operation_id=operation_id)
     if resource_type == "project":
         from management_common.projection_receipts import project_committed
         from management_portal import project_registry
@@ -316,6 +331,7 @@ def _register_resource(resource_type: str, fields: dict[str, Any], actor: str) -
 def register_resource(inv: Invocation) -> dict[str, Any]:
     record = _register_resource(
         inv.argument("resource_type"), dict(inv.argument("fields") or {}), inv.caller,
+        operation_id=('RegisterResource:' + inv.idempotency_key) if getattr(inv, 'idempotency_key', '') else getattr(inv, 'instruction_id', ''),
     )
     return {"resource_id": str(record.get("resource_id") or ""), "resource": record}
 
@@ -410,6 +426,9 @@ def _upload_dir(upload_id: str) -> Path:
 
 def read_upload(upload_id: str) -> dict[str, Any]:
     directory = _upload_dir(upload_id)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    if get_directory_cleanup_store().pending_at(directory):
+        raise not_found(f"上传已注销：{upload_id}")
     try:
         meta = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -571,6 +590,7 @@ def _check_target(target: str, caller: str) -> None:
 
 
 def create_upload(inv: Invocation) -> dict[str, Any]:
+    from management_common.upload_retention import created
     upload_id = f"upload_{secrets.token_hex(12)}"
     purpose = inv.argument("purpose")
     target = inv.argument("target") or ""
@@ -589,6 +609,7 @@ def create_upload(inv: Invocation) -> dict[str, Any]:
         media_type = _checked_media_type(purpose, bytes(data), str(content_type or ""))
         name = _safe_name(str(resolved.get("filename") or source.rsplit("/", 1)[-1]))
         directory = _upload_dir(upload_id)
+        created(directory, upload_id=upload_id, created_at=meta['created_at'])
         directory.mkdir(parents=True, exist_ok=True)
         (directory / name).write_bytes(data)
         meta.update({
@@ -606,6 +627,7 @@ def create_upload(inv: Invocation) -> dict[str, Any]:
         "file_name": name, "media_type": inv.argument("media_type"), "size": size,
         "path": str(_upload_dir(upload_id) / name), "ready": False, "expires_at": _iso(expires),
     })
+    created(_upload_dir(upload_id), upload_id=upload_id, created_at=meta['created_at'])
     _write_meta(meta)
     return {"upload_id": upload_id, "ready": False, "upload_url": f"/api/uploads/{upload_id}", "expires_at": meta["expires_at"]}
 
@@ -655,7 +677,7 @@ def complete_upload(upload_id: str, data: bytes, *, actor: str) -> dict[str, Any
 
 
 def delete_upload(inv: Invocation) -> dict[str, Any]:
-    import shutil
+    from management_common.upload_retention import deleted
 
     upload_id = inv.argument("upload_id")
     meta = read_upload(upload_id)  # an unknown upload is not_found
@@ -664,7 +686,7 @@ def delete_upload(inv: Invocation) -> dict[str, Any]:
 
     if permission_system.owners_only() and not same_actor(meta.get("created_by"), inv.caller):
         raise InstructionError("instruction.forbidden", "只有上传者本人可以删除上传")
-    shutil.rmtree(_upload_dir(upload_id), ignore_errors=True)
+    deleted(_upload_dir(upload_id))
     return {"upload_id": upload_id}
 
 
@@ -790,21 +812,6 @@ def _resources(actor: str, **query: Any) -> Iterator[dict[str, Any]]:
             return
 
 
-def _project_resource_ids(actor: str, projects: list[str], *, exclude: set[str]) -> list[str]:
-    """Every resource a project owns.
-
-    Lineages and Residents go with their Lineage.  Papers and the other objects
-    of a feature's shared library are only related to the project; they lose the
-    relation instead (``project.relations``).
-    """
-    from management_portal import portal_features
-
-    kept = {"lineage", "resident", *portal_features.related_types()}
-    ids = [str(item.get("resource_id") or "") for item in _resources(actor, projects=projects)
-           if str(item.get("resource_type") or "") not in kept]
-    return list(dict.fromkeys(item_id for item_id in ids if item_id and item_id not in exclude))
-
-
 def _project_record(project_id: str, actor: str) -> dict[str, Any]:
     result = _service().query(actor=actor, resource_types=["project"], q=project_id, limit=20,
                               include_attributes=True)
@@ -873,7 +880,8 @@ def create_project(inv: Invocation) -> dict[str, Any]:
     for name in ("description", "status", "ddl", "tags", "language"):
         if inv.argument(name) is not None:
             fields[name] = inv.argument(name)
-    record = _register_resource("project", fields, inv.caller)
+    record = _register_resource("project", fields, inv.caller,
+                                operation_id=('CreateProject:' + inv.idempotency_key) if getattr(inv, 'idempotency_key', '') else getattr(inv, 'instruction_id', ''))
     return {"project": record}
 
 
@@ -940,75 +948,25 @@ def update_project(inv: Invocation) -> dict[str, Any]:
 
 def delete_project(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service import get_society_service
+    from .project_deletion_effects import finish
 
     project_id = inv.argument("project_id")
     try:
-        record = _project_record(project_id, inv.caller)
-    except InstructionError as exc:
-        # A deletion this caller already ran leaves the index first; calling
-        # again finishes what is left, as the deletion audit allows.
-        if exc.code != "instruction.not_found":
-            raise
-        record = {}
-    resource_id = str(record.get("resource_id") or project_id)
-    try:
-        get_society_service().project.validate_project_deletion(project_id, inv.caller)
+        contents = get_society_service().project.delete_project(project_id, inv.caller)
     except KeyError as exc:
         raise not_found(f"Project 不存在：{project_id}") from exc
-    # The project's resources go first, while the project and its member roles still
-    # exist; Lineage deletion handles its own Lineage and Resident records.
-    removed: list[str] = []
-    failed: list[dict[str, str]] = []
-    for item_id in _project_resource_ids(inv.caller, [project_id, resource_id], exclude={resource_id}):
-        try:
-            _service().unregister(item_id, actor=inv.caller)
-            removed.append(item_id)
-        except Exception as exc:  # noqa: BLE001 - reported below; files stay until every record is gone
-            failed.append({"resource_id": item_id, "error": str(exc) or type(exc).__name__})
-    if failed:
-        raise InstructionError(
-            "instruction.failed", "Project 资源注销未完成；再次调用会继续注销剩余资源，之后才删除项目内容",
-            details={"project_id": project_id, "unregistered_resource_ids": removed, "failed": failed},
-            commit_state="unknown" if removed else "not_committed",
-        )
-    from management_portal import portal_features
-
-    # Objects in other features' libraries (papers) stay and only leave the Project.
-    relations = {feature: relate(resource_id)
-                 for feature, relate in portal_features.contributions("project.relations")}
-    contents = get_society_service().project.delete_project(project_id, inv.caller)
-    # The Project leaves the permission trees with every entry naming it, so a
-    # later Project with the same ID does not inherit them.
-    _service().unregister(resource_id, actor=inv.caller, resource_type="project")
-    # The Workspaces deleted with the project directory leave the trees too.
-    from management_portal import permission_system
-    from .workspace_store import get_workspace_store
-
-    permission_system.unregister_resources(get_workspace_store().deleted_under([str(contents.get("project_path") or "")]))
-    # Nor does a later Project with the same ID wear this one's avatar.
-    from management_portal.avatar_store import scope_avatar_store, scope_subject
-
-    scope_avatar_store().delete(scope_subject("project", resource_id))
-    return {
-        "project_id": project_id,
-        "resource_ids": [*removed, resource_id],
-        "lineage_ids": list(contents.get("lineage_ids") or []),
-        "resident_ids": list(contents.get("resident_ids") or []),
-        "unlinked": relations,
-    }
+    return finish(contents)
 
 
 def rename_project(inv: Invocation) -> dict[str, Any]:
-    from management_portal import project_rename
+    from management_portal.society_service import get_society_service
 
     record = _project_record(inv.argument("project_id"), inv.caller)
     try:
-        return project_rename.rename_project(
+        return get_society_service().project.rename_project(
             str(record.get("resource_id") or inv.argument("project_id")), inv.argument("new_project_id"),
             inv.caller, dry_run=bool(inv.argument("dry_run")), entry=inv.context.entry,
         )
-    except project_rename.RenameBlocked as exc:
-        raise InstructionError("instruction.conflict", str(exc), details=exc.details) from exc
     except KeyError as exc:
         raise not_found(str(exc.args[0] if exc.args else exc)) from exc
 
@@ -1040,7 +998,13 @@ PERMISSION_INSTRUCTIONS = (
 )
 
 
+from . import directory_isa
+
+
 HANDLERS = {
+    "CreateWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
+    "RegisterWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
+    "GetDirectoryCleanup": lambda inv: directory_isa.cleanup_status(inv, _service()),
     **dict.fromkeys(PERMISSION_INSTRUCTIONS, permission_instruction),
     "SearchResources": search_resources,
     "ResolveResource": resolve_resource,
@@ -1065,7 +1029,14 @@ HANDLERS = {
 
 
 def binding() -> OwnerBinding:
-    return OwnerBinding(owner="resource", handlers=HANDLERS, streams={}, reads_only=_reads_only, version_of=version_of, recover_projections=recover_projections)
+    return OwnerBinding(owner="resource", handlers=HANDLERS, streams={}, reads_only=_reads_only, version_of=version_of, recover_projections=recover_projections,
+                        authorization_arguments=_authorization_arguments)
+
+
+def _authorization_arguments(declaration, arguments, context):
+    if declaration.name in {"ReadResource", "ResolveResource"}:
+        return {**arguments, "address": _service().parse_address(arguments.get("address")).root_id}
+    return arguments
 
 
 def _reads_only(inv: Invocation) -> bool:

@@ -53,6 +53,8 @@ def default_cwd_path(record: Mapping[str, Any]) -> str:
         return ""
     if own.get("workspace_id") != record["owned_workspace_id"]:
         return ""
+    if own.get('status') == 'deleted' and not own.get('path'):
+        return ''
     # WorkspaceStore materializes the registered location. Layout determines
     # the initial location at creation, not where an existing Workspace lives.
     # Invalid registration is an error, rather than a missing default directory.
@@ -122,7 +124,7 @@ class ResidentCatalog:
             resident_backend.validate_resident_session_identity(record)
         except ValueError as exc:
             raise ValueError(str(exc)) from exc
-        if not default_cwd_path(record):
+        if not default_cwd_path(record) and (record.get('owned_workspace') or {}).get('status') != 'deleted':
             raise ValueError(
                 "Resident default Workspace Binding does not match current contract"
             )

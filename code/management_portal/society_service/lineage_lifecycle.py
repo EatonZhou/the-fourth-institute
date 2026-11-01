@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import secrets
-import shutil
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -18,13 +17,6 @@ from . import identity_contract, lineage_state_domains, lineage_storage, residen
 from . import lineage_aggregate
 from .domain_ports import resident_domain_port as resident_domain
 from . import lineage_state, lineage_resident_nodes
-
-
-LINEAGE_DELETION_MARKER = ".portal-lineage-delete.json"
-
-
-def _deleted_root() -> Path:
-    return lineage_aggregate.DATA_ROOT / "deleted"
 
 
 def _read_lineage_for_deletion(lineage_id: str, actor: str) -> dict[str, Any]:
@@ -50,7 +42,9 @@ def _stage_empty_lineage_deletion(
             raise LineageConflictError("Lineage changed after deletion was prepared")
         return existing
 
-    source = lineage_state._lineage_dir(lineage_id).resolve(strict=True)
+    source = lineage_state._lineage_dir(lineage_id)
+    from management_common.directory_paths import validate_removal
+    validate_removal(source)
     operation_id = f"lineage-delete_{secrets.token_hex(12)}"
     deleted_at = lineage_state._now_iso()
     intent = {
@@ -62,6 +56,7 @@ def _stage_empty_lineage_deletion(
         "deleted_by": actor,
         "phase": "prepared",
         "last_error": "",
+        "definition": _clone_json(lineage),
     }
     with store.lineage_deletion_operations.transaction(lineage_id) as state:
         if state:
@@ -70,91 +65,8 @@ def _stage_empty_lineage_deletion(
     return intent
 
 
-def _purge_deleted_lineage_folder(intent: Mapping[str, Any]) -> None:
-    """Clean in place so surviving Workspace paths never change.
-
-    Previously staged, already moved journals are drained at their recorded
-    target; new deletion intents never create a target or move the folder.
-    """
-    from .resident_workspace_deletion import remove_deleted_folder
-    source = Path(str(intent["source_path"]))
-    if not source.is_absolute():
-        raise ValueError("Invalid Lineage deletion path")
-    target_path = intent.get("target_path")
-    if target_path and Path(target_path).exists():
-        target = Path(target_path)
-        proof = json.dumps({key: str(intent.get(key) or "") for key in (
-            "operation_id", "lineage_id", "source_path", "target_path",
-        )}, sort_keys=True, separators=(",", ":"))
-        marker = target / LINEAGE_DELETION_MARKER
-        if (target.parent.resolve() != _deleted_root().resolve()
-                or not target.name.startswith(f"{intent['lineage_id']}_lineage-delete_")
-                or not marker.is_file() or marker.is_symlink()
-                or marker.read_text(encoding="utf-8") != proof):
-            raise ValueError("Invalid staged Lineage deletion")
-        source = target
-    lineage_aggregate.lineage_catalog_store().state_store.delete_workspaces_under(
-        [source], deleted_at=intent["deleted_at"], deleted_by=intent["deleted_by"],
-    )
-    remove_deleted_folder(source)
-
-
-def _record_lineage_deletion_error(
-    lineage_id: str,
-    operation_id: str,
-    error: BaseException,
-) -> None:
-    with lineage_aggregate.lineage_scope(lineage_id):
-        current = lineage_aggregate.lineage_deletion_intent(lineage_id)
-        if str(current.get("operation_id") or "") != operation_id:
-            return
-        with lineage_aggregate.lineage_catalog_store().state_store.lineage_deletion_operations.transaction(lineage_id) as state:
-            if str(state.get("operation_id") or "") == operation_id:
-                state["last_error"] = f"{type(error).__name__}: {error}"[:2000]
-                state["phase"] = "retryable"
-
-
 def _lineage_project_folder(lineage_id: str, project_id: str) -> Path:
     return lineage_storage.lineage_folder_for_project(lineage_id, project_id)
-
-
-def _lineage_relocation_blockers(lineage_id: str) -> list[str]:
-    records = resident_catalog.get_catalog().for_lineage(
-        lineage_id
-    )
-    resident_ids = [
-        str(record.get("resident_id") or "")
-        for record in records
-        if str(record.get("resident_id") or "")
-    ]
-    states = resident_protocol.read_resident_states(resident_ids)
-    return [
-        resident_id
-        for resident_id in resident_ids
-        if str((states.get(resident_id) or {}).get("work_state") or "idle")
-        in {"queued", "running", "stopping"}
-    ]
-
-
-def _relocate_lineage_for_project(
-    lineage_id: str,
-    source: Path,
-    target: Path,
-) -> Path:
-    blockers = _lineage_relocation_blockers(lineage_id)
-    if blockers:
-        raise ValueError(
-            "Lineage 仍有任务正在排队或处理，停止或完成后再修改所属项目: "
-            + ", ".join(blockers)
-        )
-    return lineage_storage.relocate_lineage_folder(source, target)
-
-
-def _relocate_lineage_sessions(source: Path, target: Path) -> None:
-    """Provider sessions keyed by working directory follow the moved folder."""
-    from management_portal.project_rename import relocate_provider_sessions
-    relocate_provider_sessions(str(source), str(target))
-
 
 def _sync_deleted_lineage_resource_identity(
     lineage: dict[str, Any],
@@ -189,6 +101,7 @@ def _create_lineage_in_scope(
     payload: dict[str, Any],
     actor_id: str,
     lineage_id: str,
+    *, intent=None,
 ) -> dict[str, Any]:
     if not identity_contract.is_valid_id(lineage_id, "lineage"):
         raise ValueError("invalid Lineage id")
@@ -199,32 +112,54 @@ def _create_lineage_in_scope(
         _text(payload.get("description"), 3000),
         actor_id,
     )
-    lineage = lineage_state._normalize_lineage_payload(payload, base, actor_id)
+    if intent and intent.snapshot.get('lineage'):
+        base = _clone_json(intent.snapshot['lineage'])
+        lineage = lineage_state._normalize_lineage_payload(base, base, actor_id)
+    else:
+        lineage = lineage_state._normalize_lineage_payload(payload, base, actor_id)
     project_id = _text(lineage.get("project_id"), 120)
     if lineage_state._lineage_membership(lineage) == "formal" and not project_id:
         raise ValueError("Lineage 必须属于 Project")
+    if intent and not intent.snapshot.get('lineage'):
+        intent.snapshot['lineage'] = _clone_json(lineage)
+        intent.save()
     lineage_dir = _lineage_project_folder(lineage_id, project_id)
-    lineage_dir.mkdir(parents=True, exist_ok=False)
-    try:
-        lineage_state._persist_lineage_state(None, lineage, "创建 Lineage")
-    except Exception:
-        shutil.rmtree(lineage_dir, ignore_errors=True)
-        raise
+    from management_portal.resources.creation import Creation
+    store = lineage_aggregate.lineage_catalog_store().state_store
+    creation = Creation(lineage_id, actor=actor_id, payload=payload,
+                        operation_id=intent.key if intent else lineage_id)
+    with creation.prepare([(lineage_dir, 'directory')]):
+        if creation.completed:
+            return lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+        def initialize(_index, folder):
+            (folder / 'residents').mkdir()
+            (folder / 'runtime').mkdir()
+            (folder / 'LINEAGE.md').touch()
+            (folder / 'README.md').write_text(lineage_state._lineage_readme_text(lineage), encoding='utf-8')
+        creation.publish(initialize)
+        with store.database.transaction() as connection:
+            with creation.registration(connection):
+                lineage_state._persist_lineage_state(None, lineage, "创建 Lineage")
+                if intent:
+                    intent.complete(connection)
     return lineage
 
 
-def create_lineage(payload: dict[str, Any], actor: str) -> dict[str, Any]:
+def create_lineage(payload: dict[str, Any], actor: str, *, operation_id: str = '') -> dict[str, Any]:
+    from .creation_intents import CreationIntent
     actor_id = _safe_actor(actor)
-    for _ in range(20):
-        lineage_id = identity_contract.new_id("lineage")
+    intent = CreationIntent('lineage', actor_id, payload, operation_id)
+    with intent.open(lambda: {'lineage_id': identity_contract.creation_candidate_id('lineage')}):
+        lineage_id = intent.snapshot['lineage_id']
+        if intent.snapshot.get('completed'):
+            return lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
         with lineage_aggregate.execution_authority(lineage_id):
             with lineage_aggregate.lineage_scope(lineage_id):
-                if lineage_state._lineage_dir(lineage_id).exists():
-                    continue
                 lineage = _create_lineage_in_scope(
                     payload,
                     actor_id,
                     lineage_id,
+                    intent=intent,
                 )
                 plan = _compiled_program(lineage)
                 completion_baselines = (
@@ -248,7 +183,6 @@ def create_lineage(payload: dict[str, Any], actor: str) -> dict[str, Any]:
                 completion_baselines,
             )
             return lineage
-    raise RuntimeError("无法生成 Lineage id")
 
 
 def initialize_resident_lineage(
@@ -374,54 +308,28 @@ def update_lineage_metadata(
         current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         lineage_aggregate.ensure_manager(current, actor_id)
         lineage, previous_project_id, project_id = _lineage_with_metadata(current, payload, actor_id)
-        original_folder: Path | None = None
-        target_folder: Path | None = None
-        folder_relocated = False
-        previous_resident_records: list[dict[str, Any]] = []
-        next_resident_records: list[dict[str, Any]] = []
-        try:
-            if (
-                project_id != previous_project_id
-                or "project_id" in payload
-            ):
-                original_folder = _lineage_project_folder(lineage_id, previous_project_id)
-                target_folder = _lineage_project_folder(lineage_id, project_id)
-                previous_resident_records, next_resident_records = (
-                    resident_domain.prepare_lineage_project_member_updates(
-                        lineage_id,
-                        project_id,
-                        canonical_folder=target_folder,
-                        source_folder=original_folder,
-                    )
-                )
-                if project_id != previous_project_id:
-                    _relocate_lineage_for_project(
-                        lineage_id,
-                        original_folder,
-                        target_folder,
-                    )
-                    folder_relocated = True
-            lineage_state._persist_lineage_state(
-                current,
-                lineage,
-                "更新 Lineage 元数据",
-                    )
-            if next_resident_records:
-                resident_domain.persist_lineage_project_member_updates(
-                    next_resident_records
-                )
-            if folder_relocated:
-                _relocate_lineage_sessions(original_folder, target_folder)
-        except BaseException:
-            if folder_relocated and original_folder is not None:
-                lineage_storage.relocate_lineage_folder(target_folder, original_folder)
-                # Revert this update's own change; concurrent writes stay.
-                lineage_state._persist_lineage_state(lineage, current, "撤回 Lineage 元数据更新")
-                if previous_resident_records:
-                    resident_domain.persist_lineage_project_member_updates(
-                        previous_resident_records
-                    )
-            raise
+        if project_id == previous_project_id:
+            lineage_state._persist_lineage_state(current, lineage, "更新 Lineage 元数据")
+            return _clone_json(lineage)
+        from management_common.directory_move_store import DirectoryMoveStore
+        from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+        from .directory_owner import directory_metadata
+        store = lineage_aggregate.lineage_catalog_store().state_store
+        members = resident_catalog.get_catalog().for_lineage(lineage_id)
+        metadata = directory_metadata(current.get('directory'), lineage_id)
+        source = _lineage_project_folder(lineage_id, previous_project_id)
+        target = _lineage_project_folder(lineage_id, project_id)
+
+        def update(connection, source, target):
+            relocate_nested(connection, source, target)
+            lineage_state._persist_lineage_state(current, lineage, "更新 Lineage 元数据")
+            for member in members:
+                rid = member['resident_id']
+                store.enqueue_resident_resource_projection(rid, store.resident_record(rid))
+
+        with resident_domain.directory_move_execution_scope(members, lineage_ids=[lineage_id], actor=actor_id) as terminate:
+            DirectoryMoveStore().move(source, target, owner_id=lineage_id, origin=metadata['origin'], actor=actor_id,
+                terminate=terminate, database=store.database, update=update, dependencies=reconcile_dependencies)
         return _clone_json(lineage)
 
 
@@ -494,52 +402,50 @@ def _lineage_with_metadata(
 
 def delete_lineage(lineage_id: str, actor: str) -> dict[str, Any]:
     """Delete a Lineage and its Residents; their folders are removed, not archived."""
-    # Resident deletion confirms Resource tombstones after its own commit. Do not
-    # hold the Lineage lock while invoking that cross-domain operation.
-    with lineage_aggregate.lineage_scope(lineage_id):
+    with prepare_lineage_deletion(lineage_id, actor) as commit:
+        return commit()
+
+
+@contextmanager
+def prepare_lineage_deletion(lineage_id: str, actor: str):
+    """Own exclusion from termination through the enclosing identity commit."""
+    with lineage_aggregate.execution_authority(lineage_id), lineage_aggregate.lineage_scope(lineage_id):
+        pending = lineage_aggregate.lineage_deletion_intent(lineage_id)
+        if pending.get('phase') == 'committed':
+            lineage_aggregate.ensure_manager(pending['definition'], actor)
+            yield lambda: _finish_empty_lineage_deletion(pending)
+            return
         lineage = _read_lineage_for_deletion(lineage_id, actor)
         lineage_aggregate.ensure_manager(lineage, actor)
-        if (lineage.get("principal_hierarchy") or {}).get("level") == "project":
-            from .principal_hierarchy import project_leaders
-            if project_leaders(lineage, lineage_aggregate.lineage_catalog_store().listing_records()):
-                raise ValueError("Project principal still manages child Lineages")
-        preferred_resident_id = _text(lineage.get("leader_resident_id"), 80).lower()
+        preferred_resident_id = _text(lineage.get('leader_resident_id'), 80).lower()
+        resident_domain.terminate_lineage_scripts(lineage_id, actor)
+        preparation = resident_domain.prepare_registered_lineage_deletion(lineage_id, preferred_resident_id, actor)
+        if preparation is None:
+            intent = _stage_empty_lineage_deletion(lineage, actor)
+            yield lambda: _commit_empty_lineage_deletion(lineage_id, actor, lineage, intent)
+            return
+        with preparation as commit_residents:
+            def commit():
+                _check_project_principal_children(lineage)
+                result = commit_residents()
+                from . import system_workflow_switches
+                lineage_aggregate.lineage_catalog_store().state_store.database.after_commit(
+                    lambda: system_workflow_switches.defer_definition_projection(lineage_id, lineage))
+                return {'lineage_id': lineage_id, 'deleted_at': result['deleted_at'],
+                        'deleted_resident_ids': result.get('deleted_resident_ids') or []}
+            yield commit
 
-    result = resident_domain.delete_registered_lineage(
-        lineage_id, preferred_resident_id, actor,
-    )
-    if result is not None:
-        from . import system_workflow_switches
-        system_workflow_switches.defer_definition_projection(lineage_id, lineage)
-        return {
-            "lineage_id": lineage_id,
-            "deleted_at": str(result.get("deleted_at") or lineage_state._now_iso()),
-            "deleted_resident_ids": result.get("deleted_resident_ids") or [],
-        }
 
-    with lineage_aggregate.lineage_scope(lineage_id):
-        lineage = _read_lineage_for_deletion(lineage_id, actor)
-        lineage_aggregate.ensure_manager(lineage, actor)
-        if (lineage.get("principal_hierarchy") or {}).get("level") == "project":
-            from .principal_hierarchy import project_leaders
-            if project_leaders(lineage, lineage_aggregate.lineage_catalog_store().listing_records()):
-                raise ValueError("Project principal still manages child Lineages")
-        if resident_catalog.get_catalog().state_store.residents_for_lineage(lineage_id):
-            raise LineageConflictError("Lineage membership changed during deletion")
-        intent = _stage_empty_lineage_deletion(lineage, actor)
+def _check_project_principal_children(lineage):
+    if (lineage.get('principal_hierarchy') or {}).get('level') == 'project':
+        from .principal_hierarchy import project_leaders
+        if project_leaders(lineage, lineage_aggregate.lineage_catalog_store().listing_records()):
+            raise ValueError('Project principal still manages child Lineages')
 
+
+def _commit_empty_lineage_deletion(lineage_id, actor, lineage, intent):
+    _check_project_principal_children(lineage)
     operation_id = str(intent["operation_id"])
-    try:
-        _sync_deleted_lineage_resource_identity(
-            lineage,
-            str(intent["deleted_by"]),
-            str(intent["deleted_at"]),
-        )
-        _purge_deleted_lineage_folder(intent)
-    except BaseException as exc:
-        _record_lineage_deletion_error(lineage_id, operation_id, exc)
-        raise
-
     removed = False
     with lineage_aggregate.lineage_scope(lineage_id):
         current = lineage_aggregate.lineage_deletion_intent(lineage_id)
@@ -551,17 +457,32 @@ def delete_lineage(lineage_id: str, actor: str) -> dict[str, Any]:
                 intent["definition_revision"]
             ):
                 raise LineageConflictError("Lineage changed after deletion was prepared")
-            lineage_aggregate.lineage_catalog_store().remove(lineage_id, deleted_by=str(intent["deleted_by"]))
+            catalog = lineage_aggregate.lineage_catalog_store()
+            def commit():
+                catalog.remove(lineage_id, deleted_by=str(intent['deleted_by']))
+                with catalog.state_store.lineage_deletion_operations.transaction(lineage_id) as state:
+                    state.update({**intent, 'phase': 'committed'})
+            catalog.state_store.transaction(commit)
             removed = True
 
     if removed:
         from . import system_workflow_switches
-        system_workflow_switches.defer_definition_projection(lineage_id, lineage)
+        lineage_aggregate.lineage_catalog_store().state_store.database.after_commit(
+            lambda: system_workflow_switches.defer_definition_projection(lineage_id, lineage))
         from management_portal.society_service.changes import lineage_changed
 
         lineage_changed(lineage_id)
-    return {
-        "lineage_id": lineage_id,
-        "operation_id": operation_id,
-        "deleted_at": str(intent["deleted_at"]),
-    }
+    return _finish_empty_lineage_deletion(intent)
+
+
+def _finish_empty_lineage_deletion(intent):
+    lineage_id = intent['lineage_id']
+    store = lineage_aggregate.lineage_catalog_store().state_store
+    def publish():
+        _sync_deleted_lineage_resource_identity(intent['definition'], intent['deleted_by'], intent['deleted_at'])
+        store.lineage_deletion_operations.delete(lineage_id)
+    store.database.after_commit(publish)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    return {'lineage_id': lineage_id, 'operation_id': intent['operation_id'],
+            'deleted_at': str(intent['deleted_at']),
+            'directory_cleanup': get_directory_cleanup_store().status(owner_id=lineage_id)}

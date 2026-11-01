@@ -16,8 +16,10 @@
     const {
       $, loadLibrary, mergeDetailPayload, paperApi, paperDialog, setMode, state, syncPaperLocation,
     } = dependencies;
+    let submission = null;
 
     function openPaperModal() {
+      submission = null;
       $("paperForm").reset();
       state.registrationEditedFields.clear();
       state.registrationUploadId = "";
@@ -149,7 +151,16 @@
       const relatedProject = String(payload.session || "").trim();
       payload.project_ids = relatedProject ? [relatedProject] : [];
       try {
-        const detail = await paperApi.request("/paper/api/papers/register", { method: "POST", body: JSON.stringify(payload) });
+        const body = JSON.stringify(payload);
+        // Only this form's failed attempt is retried. Editing its arguments
+        // or opening a new form starts a distinct operation, even if identical.
+        if (!submission || submission.body !== body) {
+          submission = { body, key: `paper-register:${globalThis.PortalUIPrimitives.randomUUID()}` };
+        }
+        const detail = await paperApi.request("/paper/api/papers/register", {
+          method: "POST", body, headers: { "Idempotency-Key": submission.key },
+        });
+        submission = null;
         closePaperModal();
         mergeDetailPayload(detail, { replace: true });
         state.selectedId = detail.paper.id;

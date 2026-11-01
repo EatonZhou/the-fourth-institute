@@ -34,6 +34,7 @@ IDENTITY_FIELDS = {
     # Project at deletion; current membership still derives from the Lineage.
     "historical_project_id": ("historical_project_id", "text"),
     "owned_workspace_id": ("owned_workspace_id", "text"),
+    "directory": ("directory_json", "object"),
 }
 
 # Session maintenance and rebuildable observations have separate owners.

@@ -172,6 +172,8 @@ class SocietyServiceClient:
         raise error
 
     def call(self, domain: str, method: str, *args: Any, **kwargs: Any) -> Any:
+        from management_common.resource_lifecycle import current_lifecycle
+        from .creation_intents import operation_identity
         if domain not in DOMAIN_METHODS or method not in DOMAIN_METHODS[domain]:
             raise ValueError(f"unsupported SocietyService call: {domain}.{method}")
         return self._request(
@@ -181,6 +183,8 @@ class SocietyServiceClient:
                 "name": method,
                 "args": list(args),
                 "kwargs": kwargs,
+                "creation_operation_id": operation_identity(),
+                "resource_lifecycle_id": current_lifecycle(),
             },
         )
 

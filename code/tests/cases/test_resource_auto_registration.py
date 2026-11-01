@@ -129,6 +129,12 @@ def test_existing_projects_are_reconciled_without_treating_articles_as_repos(
 
     with pytest.raises(ValueError, match="project_ids"):
         service.register("repo", {"path": str(code)}, actor="resource-auto-registration")
+    from management_common.directory_cleanup_store import get_directory_cleanup_store, DirectoryPendingCleanup
+    with pytest.raises(DirectoryPendingCleanup):
+        service.register('repo', {'path': str(code), 'project_ids': ['@public']}, actor='resource-auto-registration')
+    get_directory_cleanup_store().run_pending()
+    assert not code.exists()
+    _make_git(code)
     restored = service.register(
         "repo",
         {"path": str(code), "project_ids": ["@public"]},
@@ -175,7 +181,9 @@ def test_suppression_ends_when_its_directory_is_removed(tmp_path: Path) -> None:
 
     kept = registrar.reconcile()
     assert kept["registered"] == [] and kept["pruned_suppressions"] == []
-    shutil.rmtree(article)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    get_directory_cleanup_store().run_pending()
+    assert not article.exists()
     pruned = registrar.reconcile()
 
     assert pruned["pruned_suppressions"] == [suppression]

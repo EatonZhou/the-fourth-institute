@@ -4028,6 +4028,7 @@
       "decision_46c37026e8ea",
       "decision_481dc4e6292c",
       "decision_4a9ba5dfada6",
+      "decision_4aa13bc21e8e",
       "decision_4adcc1ff2f2c",
       "decision_4bc03b20c30f",
       "decision_4dea0db1f45a",
@@ -9408,6 +9409,10 @@
         {
           "source": "/srv/agent-staging/shared/projection_applications/5f5a01741303f6c1366d16d75e773ff579d1b1b046cc3a111784525672a1986b",
           "target": "data/features/projection_applications/5f5a01741303f6c1366d16d75e773ff579d1b1b046cc3a111784525672a1986b"
+        },
+        {
+          "source": "projects:AI员工/knowledge_base/decision/20261102__decision__目录与路径协议__decision_4aa13bc21e8e.md",
+          "target": "data/projects/AI员工/knowledge_base/decision/20261102__decision__目录与路径协议__decision_4aa13bc21e8e.md"
         }
       ],
       "deduplication": "Exact resolved-source/destination pairs only; overlapping bindings retain separate directory copies"
@@ -15046,13 +15051,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__Lineage_Folder包含Lineage记录和各节点Resident_Folder__decision_721c64f9bdcc.md",
-      "sha256": "d7b9f6b06d73fde3b9dfed007b6a070cd95b5c0678d29b06cadd00004a029cb2",
-      "size": 6112
+      "sha256": "df58b6c9c801959bbe2ebe7c19f5fc1d2dbe937c11041388fd4c5de3b4440dc0",
+      "size": 6008
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__Lineage采用统一工作区注册表与显式绑定__decision_8838269736d3.md",
-      "sha256": "d033e26ec54d842505d09a3870310359af19420abb8cede4721552c804910ee8",
-      "size": 19932
+      "sha256": "40837dd25bcec9d3f6d51999115ae957b04261eff58337b8c19fbab6920f6f05",
+      "size": 18757
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__Portal_Agent_Status采用Usage_Attribution统计口径__decision_fc26f883773d.md",
@@ -15066,13 +15071,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__ResourceService_调用协议：查询、读取、变更与动作__decision_b6e74d78f7b6.md",
-      "sha256": "59ccffbf97a4e715d956d592f409d978c9f83daa474ef5d224287a080179748a",
-      "size": 31649
+      "sha256": "916dfaabfe65cf16f591e2e69a970f97ecb96e104732b788cafc5a55a6e38427",
+      "size": 31578
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__工作交接由单一Handoff对象统一记录__decision_7ef392b5f60d.md",
-      "sha256": "0462f3aae333e88284e92f479d85715a59e5d01f5a0dbf77aa9aee7db686dc85",
-      "size": 15671
+      "sha256": "8313029ec966f153aece49117025a47ebbcc4ecf729c1dea1a29e530b1ceaaa8",
+      "size": 15545
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260729__decision__Lineage采用基础HATG原语构建可组合Agent流程__decision_4adcc1ff2f2c.md",
@@ -15176,8 +15181,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Knowledge资源AI对话审计与受控修改__decision_3ece26686464.md",
-      "sha256": "339d87b1d5dff1cf6e8daf6e3489151a15c797dfc151c85a416321454dbc2393",
-      "size": 19795
+      "sha256": "62e394785963d3f6f0466575902fdf11759011ce9e9626151dcdd3389f509011",
+      "size": 19305
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Lineage集合生命周期与协作图模型__decision_6fc653d55c79.md",
@@ -15186,13 +15191,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Paper资源研究产物与AI工作流__decision_528bf9985705.md",
-      "sha256": "2544d5e612568900638c327bd931f1a1fc3c78676323a2647144234674dad72e",
-      "size": 27310
+      "sha256": "bcc5f5a80bfa090682ff957d6cc34e044c07bdbfc7074a2d778b058bacc9d4a1",
+      "size": 27383
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Portal_定向验证与发布证据__decision_6febe7bb57f9.md",
-      "sha256": "7f4211e7eeb28e758eca954a1f5df8b8e6d9389d262a9df099705b8463881ee6",
-      "size": 14156
+      "sha256": "712e974174ff5bd4b09aca3ef3126c1c901e13eade997e30b820a7be1253c809",
+      "size": 14168
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Portal前端组件化设计__decision_741b04821171.md",
@@ -15246,8 +15251,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260902__decision__Portal_Test_Case、Catalog_与运行证据协议__decision_8273271b67b1.md",
-      "sha256": "0f38f56f225d6561dd21bbcbe27c75729f1cff798bb291f41231c343f95b7ad4",
-      "size": 36164
+      "sha256": "d3eae6a21cfb4ae7845206d55a2a0f5b4b1ba9f7ae05f4e39d2f793cdc841c6a",
+      "size": 35861
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260902__decision__Portal_Test_Workbench_的测试浏览、运行与审查界面__decision_f2a6a5dd4646.md",
@@ -15296,8 +15301,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Experiment_Resource_与_Experiment_工作台__decision_9ef033d79173.md",
-      "sha256": "b51e381ca4fc256e909dfa23f98c1c23450109021a272a3beafba7b9897b60c5",
-      "size": 11628
+      "sha256": "c303f75f6ddd0a10b269bd3369d3bd65a0f26c87248ac25604b5a2f138f732fb",
+      "size": 10999
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Home_AI_账号面板：额度、余额、调度设置与批量接单__decision_4dea0db1f45a.md",
@@ -15521,8 +15526,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Project_的创建、Summary_与删除__decision_4648f7fa3295.md",
-      "sha256": "97b564de4324242c5e38624873e41afd2559cb97cafc8bd877fd0bd8089bbc83",
-      "size": 18906
+      "sha256": "50d600a54e869723431f3feab7cd24c5e30a97bbe4fc52112cd335fe9f11aac7",
+      "size": 17875
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Provider_Adapter_的统一执行、事件与中断契约__decision_425e428410e0.md",
@@ -15561,8 +15566,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Skill_资源与_Skill_工作台__decision_f48c2514bf33.md",
-      "sha256": "858c05d8fe67a5532f4ac744b394ddc898abf8f4a92971db2b4646d51d95ff7b",
-      "size": 10012
+      "sha256": "33340b64fd137789321ba190ae59529f58a9270a7411c9098e16847032186207",
+      "size": 10013
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__WALL语义搜索__decision_1a2730dcd3d1.md",
@@ -15596,8 +15601,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260904__decision__Portal_TAU_Campaign与模块Resident自动验证机制__decision_c953eab654cd.md",
-      "sha256": "4458aa1c9a3dc8aaae52b3e02262112f48d9a251c6be237eeb30bc82465a9838",
-      "size": 53442
+      "sha256": "871931e31af78e6b00fc6938b728d47a221f4ebfc0d8704cbde6210951dbe91c",
+      "size": 53468
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260904__decision__Portal_本地文件变化观察与投影失效机制__decision_f55bac7fc199.md",
@@ -15716,8 +15721,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：资源指令__decision_ad3e21094f14.md",
-      "sha256": "e4dcdf1725a56fc498a6b7821137f8f6549c3dc55730d7192f90eac3036f63df",
-      "size": 23875
+      "sha256": "95715cf5a321472384e81db103ec289570a9ce8e08b51f1bf77a167c59fa7bae",
+      "size": 29798
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
@@ -15821,8 +15826,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__AI_Backend_注册与管理页：Provider、执行账号与模型_API__decision_7956d7cb4bde.md",
-      "sha256": "e41ccd592b749faa74ef073dece4650c2efed2e0c232250c564d7cf9b3754707",
-      "size": 27851
+      "sha256": "e943b710a96490a1dd77332966a2c07710f88055fea2aec3aeabd29ff0ed696b",
+      "size": 27889
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Family_内部机制指令__decision_b77fde81e7a0.md",
@@ -15856,13 +15861,18 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md",
-      "sha256": "68017681f58c2600cdbb7c9248ec3dff8a95696bcf312a1db3bc372a9554783a",
-      "size": 31104
+      "sha256": "9dfb7125efe652da09467629568f6ceb5cee095136899b473ba86c1f18e5985a",
+      "size": 36657
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261029__decision__研究地图：项目研发方向的地图、修订与指令__decision_9d15ae2053c4.md",
       "sha256": "022a8cb4fd3704232bd10cdc089595e735e51d05d04b32d1127f42d16f369f37",
       "size": 15088
+    },
+    {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261102__decision__目录与路径协议__decision_4aa13bc21e8e.md",
+      "sha256": "61b4aa756c99bd69f4592da6888d63c208960fe295361465262641d155acbbee",
+      "size": 26890
     },
     {
       "path": "data/projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",

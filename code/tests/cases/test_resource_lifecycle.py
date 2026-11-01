@@ -333,6 +333,7 @@ def test_workspace_allocation_rpc_preserves_authenticated_lifecycle(tmp_path, mo
     from tests.cases.test_resource_service_process import FakePublisher, FakeResourceService
 
     scope = open_scope(tmp_path / 'case')
+    (tmp_path / 'new').mkdir()
     owner = 'resident_abcdef123456'
     LifecycleStore().bind(scope, owner)
     registry = get_resource_type_registry()

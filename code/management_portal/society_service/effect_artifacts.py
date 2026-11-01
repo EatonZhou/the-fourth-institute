@@ -1,7 +1,7 @@
 """Durable, scoped JSON artifacts for Effect recovery and final outputs.
 
-References belong to one activation. Recovery blobs can be discarded only
-after its terminal run record commits; output blobs remain with that history.
+References belong to one activation. Recovery blobs expire when its terminal
+record commits; output blobs expire seven days after that completion.
 The caller must already be authorized to read the corresponding Lineage Run.
 """
 from __future__ import annotations
@@ -13,7 +13,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import tempfile
 from contextlib import contextmanager
 from typing import Any
@@ -32,6 +31,10 @@ class ArtifactStore:
         data = json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode()
         digest = hashlib.sha256(data).hexdigest()
         directory = self._scope(lineage_id, activation_key) / purpose
+        from management_common.directory_retention import RetentionStore
+        retention = RetentionStore()
+        retention.declare(directory.absolute(), category='runtime_tmp' if purpose == 'recovery' else 'background',
+                          owner_id=self._owner(lineage_id, activation_key))
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         for parent in (directory.parent, directory.parent.parent, self.root, self.root.parent):
             with _directory(parent) as handle:
@@ -66,9 +69,22 @@ class ArtifactStore:
         return json.loads(data)
 
     def clear_recovery(self, lineage_id: str, activation_key: str) -> None:
+        from management_common.directory_retention import RetentionStore
+        from management_common.file_retention import remove_generated
         path = self._scope(lineage_id, activation_key) / "recovery"
-        if path.exists():
-            shutil.rmtree(path)
+        owner = self._owner(lineage_id, activation_key)
+        retention = RetentionStore()
+        retention.finish(owner)
+        retention.sweep(owner_id=owner, categories=['runtime_tmp'])
+        # Existing recovery folders predate declarations; their exact scope is
+        # still owned by the durable Effect journal, so they can be queued too.
+        if path.exists() and not retention.queue.pending_at(path):
+            remove_generated(path, owner_id=owner)
+        retention.queue.run_pending()
+
+    @staticmethod
+    def _owner(lineage_id, activation_key):
+        return 'effect:' + lineage_id + ':' + hashlib.sha256(activation_key.encode()).hexdigest()
 
 
 @contextmanager

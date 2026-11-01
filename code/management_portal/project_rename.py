@@ -1,23 +1,8 @@
-"""Renaming a Project changes its ID and moves its directory (decision_6591e7793116).
+"""Project rename enlists ID references and declared directory owners atomically.
 
-RenameProject moves the Project directory under the instance's configured Projects root and
-rewrites every reference Portal keeps to the old ID or the old directory:
-
-* the database, in one transaction over every Portal schema: JSON strings and
-  keys equal to the old ID, whole column values equal to it, ``project:<ID>``
-  key segments, and paths under the old directory.  Records of what happened
-  (conversation events, chat messages, execution records, audits, instruction
-  records) stay as they were written;
-* the permission trees and entries that name the Project, paths included;
-* files under the moved directory that name its old path, the summary and
-  boot titles and ``#project("<ID>")`` marks, git worktree links and symlinks
-  that point into it, and the provider state kept per working directory
-  (Codex trust entries, Claude Code project folders, Kimi sessions).
-
-The Residents of the Project and every Resident working in its directory stop
-taking input while it moves and must not be running.  Mounts and services
-outside Portal that use the directory block the rename: Portal cannot change
-them, and they would break.
+The common move journal prepares files, commits registrations and old-directory
+cleanup, then reconciles Provider cwd and Git worktrees. Cross-filesystem copies
+first terminate affected executions. User-authored text is not a path registry.
 """
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
@@ -30,7 +15,7 @@ import os
 import re
 import subprocess
 import time
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,7 +23,6 @@ from typing import Any
 
 from management_common.portal_database import _database_schema, portal_database
 from management_portal import permission_system, project_registry
-from management_portal.provider_session_relocation import relocate_provider_sessions
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,11 +32,7 @@ HOME = Path.home()
 SYSTEMD_UNIT_DIRS = (HOME / ".config/systemd/user", Path("/etc/systemd/system"))
 SERVICE_SCRIPT_ROOTS = (Path(__file__).resolve().parents[1] / "scripts",)
 MOUNTINFO = Path("/proc/self/mountinfo")
-# Symlinks into a Project usually live in other Projects and Resident workspaces.
-SYMLINK_ROOTS = (PROJECTS_ROOT, portal_path("lineages"))
-MAX_REWRITE_BYTES = 16 * 1024 * 1024
 SCAN_TIMEOUT_SECONDS = 1800
-BUSY_WORK_STATES = frozenset({"running", "stopping"})
 
 PROJECT_ID = project_registry.PROJECT_ID
 
@@ -74,7 +54,7 @@ HISTORY_TABLES = frozenset({
     ("workbenches", "generations"), ("workbenches", "versions"),
 })
 HISTORY_TABLE_NAMES = frozenset({"instruction_executions", "registry_collections"})
-HISTORY_SCHEMAS = frozenset({"harness_effectiveness"})
+HISTORY_SCHEMAS = frozenset({"harness_effectiveness", "directory_lifecycle"})
 # These facts now share a table with current identity fields, but still record
 # what was known at deletion rather than a current Project reference.
 HISTORY_COLUMNS = frozenset({("lineage", "residents", "historical_project_id")})
@@ -141,10 +121,6 @@ class Rewriter:
         self._segment = re.compile(
             r"(^|:)project:" + re.escape(change.old_id) + r"(?=$|:)"
         ) if change.renames_id else None
-        self._mark = re.compile(
-            r"#project\(\s*([\"'])" + re.escape(change.old_id) + r"\1\s*\)"
-        ) if change.renames_id else None
-
     def needles(self) -> list[str]:
         """``LIKE`` patterns that every value this rewriter changes matches."""
         texts = {old for old, _new in self.change.path_pairs()}
@@ -188,27 +164,6 @@ class Rewriter:
                 changed = self.document(parsed)
                 return text if changed == parsed else _dump_like(text, parsed, changed)
         return self.value(text)
-
-    def file_text(self, text: str, relative: str) -> str:
-        """A text file in the moved directory."""
-        text = self.path(text)
-        if self._mark is not None:
-            text = self._mark.sub(lambda match: f"#project({match.group(1)}{self.change.new_id}{match.group(1)})", text)
-        if self.change.renames_id and relative in ("summary.md", "agent_port/boot.md"):
-            text = self._retitle(text)
-        return text
-
-    def _retitle(self, text: str) -> str:
-        """The first heading names the Project (project_seeds)."""
-        lines = text.split("\n")
-        for index, line in enumerate(lines):
-            if line.startswith("# "):
-                lines[index] = re.sub(
-                    r"(?<![\w.@+-])" + re.escape(self.change.old_id) + r"(?![\w@+-])", self.change.new_id, line,
-                )
-                break
-        return "\n".join(lines)
-
 
 _NOT_JSON = object()
 
@@ -284,104 +239,12 @@ def plan(project_id: str, new_project_id: str, *, projects_root: Path | None = N
     return change
 
 
-# -- Residents ------------------------------------------------------------------
-
-
-class Residents:
-    """Intake and work state of Residents, changed as the caller."""
-
-    def __init__(self, actor: str, entry: str = "system") -> None:
-        self.actor = actor
-        self.entry = entry
-
-    def _call(self, instruction: str, arguments: dict[str, Any]) -> Any:
-        from management_portal import isa_client
-
-        return isa_client.call(self.actor, instruction, arguments, entry=self.entry)
-
-    def close_intake(self, resident_ids: list[str]) -> list[str]:
-        closed: list[str] = []
-        for chunk in _chunks(resident_ids, 200):
-            result = self._call("OpenIntake", {"resident_ids": chunk, "open": False})
-            closed.extend(result.get("changed_resident_ids") or [])
-            if result.get("failed"):
-                self.open_intake(closed)
-                raise RenameBlocked("无法暂停 Resident 接单", failed=result["failed"])
-        return closed
-
-    def busy(self, resident_ids: list[str]) -> list[str]:
-        busy: list[str] = []
-        for chunk in _chunks(resident_ids, 200):
-            for item in self._call("ListResidentStates", {"resident_ids": chunk, "include_viewer_state": False}).get("states") or []:
-                state = item.get("state") if isinstance(item.get("state"), dict) else item
-                if str(state.get("work_state") or "") in BUSY_WORK_STATES:
-                    busy.append(str(item.get("resident_id") or ""))
-        return busy
-
-    def open_intake(self, resident_ids: list[str]) -> None:
-        for chunk in _chunks(resident_ids, 200):
-            try:
-                self._call("OpenIntake", {"resident_ids": chunk, "open": True})
-            except Exception:  # noqa: BLE001 - reported; the Residents stay closed until someone opens them
-                LOGGER.exception("Project rename could not reopen intake of %s", chunk)
-
-
-def _chunks(items: list[str], size: int) -> Iterator[list[str]]:
-    for start in range(0, len(items), size):
-        yield items[start:start + size]
-
-
 def _schema_prefix() -> str:
     return _database_schema("x")[:-1]
 
 
 def _quote(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
-
-
-def _current_resident_workspaces(connection: Any, resident_ids: list[str] | None = None):
-    """Resolve ownership and extra bindings from live identities in one query."""
-    lineage = _quote(_database_schema("lineage"))
-    scope = " AND r.resident_id=ANY(%s)" if resident_ids is not None else ""
-    parameters = (resident_ids, resident_ids) if resident_ids is not None else ()
-    return connection.execute(
-        f'SELECT r.resident_id,r.owned_workspace_id AS workspace_id FROM {lineage}.residents r '
-        f'WHERE r.deleted_at IS NULL AND r.owned_workspace_id IS NOT NULL{scope} '
-        f'UNION SELECT r.resident_id,b.workspace_id FROM {lineage}.residents r '
-        f'JOIN {lineage}.resident_workspace_bindings b ON b.resident_id=r.resident_id '
-        f'WHERE r.deleted_at IS NULL{scope} ORDER BY resident_id,workspace_id', parameters,
-    ).fetchall()
-
-
-def affected_residents(change: ProjectRename, rewriter: Rewriter) -> list[str]:
-    """Residents of the Project's Lineages and Residents whose workspaces are in its directory."""
-    lineage = _quote(_database_schema("lineage"))
-    database = portal_database(schema="lineage")
-    found: set[str] = set()
-    with database.snapshot() as connection:
-        if not _table_exists(connection, _database_schema("lineage"), "lineages"):
-            return []
-        for row in connection.execute(
-            f"SELECT DISTINCT n.node_id AS resident_id FROM {lineage}.lineage_nodes n "
-            f"JOIN {lineage}.lineages l ON l.lineage_id = n.lineage_id "
-            f"JOIN {lineage}.residents r ON r.resident_id = n.node_id "
-            "WHERE l.project_id = %s AND r.deleted_at IS NULL",
-            (change.old_id,),
-        ).fetchall():
-            found.add(str(row[0]))
-        if change.path_pairs():
-            from management_portal.society_service.resource_client import workspace_paths_many
-            bindings = _current_resident_workspaces(connection)
-            paths = workspace_paths_many([row[1] for row in bindings], connection=connection)
-            for resident_id, workspace_id in bindings:
-                path = paths[workspace_id]
-                if rewriter.column(path) != path:
-                    found.add(str(resident_id))
-    return sorted(item for item in found if item)
-
-
-def _table_exists(connection: Any, schema: str, table: str) -> bool:
-    return connection.execute("SELECT to_regclass(%s)", (f"{_quote(schema)}.{_quote(table)}",)).fetchone()[0] is not None
 
 
 # -- database -------------------------------------------------------------------
@@ -419,6 +282,11 @@ class DatabaseChanges:
 def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool) -> DatabaseChanges:
     """Rewrite (or, without ``apply``, count) every reference in one transaction."""
     changes = DatabaseChanges()
+    # Project identity references are distinct from directory registrations.
+    # Only the declared directory owners below may rewrite stored paths.
+    if change.renames_id:
+        rewriter = Rewriter(ProjectRename(change.old_id, change.new_id, change.old_root, change.old_root,
+                                         projects_root=change.projects_root))
     database = portal_database(schema="lineage")
     with (database.transaction() if apply else database.snapshot()) as connection:
         if apply:
@@ -497,6 +365,19 @@ def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool) 
             moved = permission_system.rename_element(connection, change.old_id, change.new_id, apply=apply)
             if moved:
                 changes.tables["permission.scheme_nodes.path"] = moved
+        if change.moves and change.renames_id and apply:
+            from management_portal.directory_move_owner import relocate_nested
+            from management_common.instance_locations import stored_location
+            from management_portal.resources.registry_store import get_registry_store
+            relocate_nested(connection, change.old_root, change.new_root)
+            with get_registry_store().writer(project_registry.COLLECTION, connection=connection) as writer:
+                document = writer.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID)
+                for record in document['projects']:
+                    if record['id'] == change.new_id:
+                        record['path'] = stored_location(change.new_root)
+                        if record.get('directory'):
+                            record['directory']['owner_id'] = change.new_id
+                writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, document)
     return changes
 
 
@@ -638,140 +519,13 @@ class FileChanges:
         self.errors.append({"path": str(path), "error": str(exc) or type(exc).__name__})
 
 
-def _file_patterns(change: ProjectRename) -> list[str]:
-    patterns = [old for old, _new in change.path_pairs()]
-    if change.renames_id:
-        patterns.append("#project(")
-    return patterns
-
-
-def _rewrite_file(path: Path, rewrite: Callable[[str], str], result: FileChanges, into: list[str] | None = None) -> bool:
-    try:
-        if path.is_symlink() or not path.is_file():
-            return False
-        if path.stat().st_size > MAX_REWRITE_BYTES:
-            result.errors.append({"path": str(path), "error": "文件过大，未改写"})
-            return False
-        before = path.read_bytes()
-        text = before.decode("utf-8")
-        after = rewrite(text)
-        if after == text:
-            return False
-        # Writing in place keeps the file's owner, mode and links.
-        with path.open("r+b") as stream:
-            stream.write(after.encode("utf-8"))
-            stream.truncate()
-        (result.rewritten if into is None else into).append(str(path))
-        return True
-    except UnicodeDecodeError:
-        return False
-    except OSError as exc:
-        result.fail(path, exc)
-        return False
-
-
 def fix_files(change: ProjectRename, rewriter: Rewriter) -> FileChanges:
-    """Make what refers to the moved directory follow it; errors are reported, not raised."""
+    """Only declared runtime dependencies follow a move; user prose stays intact."""
     result = FileChanges()
-    root = change.new_root
-    patterns = _file_patterns(change)
-    candidates: set[str] = set()
-    if patterns:
-        try:
-            candidates.update(_grep_files(patterns, [str(root)]))
-        except Exception as exc:  # noqa: BLE001 - reported
-            result.fail(root, exc)
-    if change.renames_id:
-        candidates.update(str(root / name) for name in ("summary.md", "agent_port/boot.md"))
-    for name in sorted(candidates):
-        path = Path(name)
-        relative = path.relative_to(root).as_posix() if root in path.parents else ""
-        _rewrite_file(path, lambda text, relative=relative: rewriter.file_text(text, relative), result)
     if change.moves:
-        _fix_git_links(root, rewriter, result)
-        _fix_symlinks(change, rewriter, result)
-        _fix_provider_state(change, result)
+        from management_portal.directory_move_owner import reconcile_dependencies
+        reconcile_dependencies(change.old_root, change.new_root)
     return result
-
-
-def _fix_git_links(root: Path, rewriter: Rewriter, result: FileChanges) -> None:
-    """Worktrees and their repositories name each other by absolute path."""
-    try:
-        completed = subprocess.run(
-            ["find", str(root), "-name", ".git", "-print0", "-prune"],
-            capture_output=True, timeout=SCAN_TIMEOUT_SECONDS, check=False,
-        )
-    except Exception as exc:  # noqa: BLE001 - reported
-        result.fail(root, exc)
-        return
-    backlinks: set[Path] = set()
-    for item in completed.stdout.split(b"\0"):
-        if not item:
-            continue
-        git = Path(item.decode("utf-8", "surrogateescape"))
-        if git.is_file():
-            # A worktree: its repository's gitdir file points back here.
-            try:
-                pointer = git.read_text(encoding="utf-8").strip()
-            except (OSError, UnicodeDecodeError):
-                continue
-            if pointer.startswith("gitdir:"):
-                gitdir = Path(pointer[len("gitdir:"):].strip())
-                gitdir = gitdir if gitdir.is_absolute() else (git.parent / gitdir)
-                backlinks.add(gitdir / "gitdir")
-        elif git.is_dir():
-            # A repository: each of its worktrees has a .git file pointing here.
-            for link in (git / "worktrees").glob("*/gitdir"):
-                try:
-                    worktree_git = Path(link.read_text(encoding="utf-8").strip())
-                except (OSError, UnicodeDecodeError):
-                    continue
-                backlinks.add(worktree_git)
-    for path in sorted(backlinks):
-        if root == path or root in path.parents:
-            continue  # rewritten with the directory's own files
-        _rewrite_file(path, rewriter.path, result, result.links)
-
-
-def _fix_symlinks(change: ProjectRename, rewriter: Rewriter, result: FileChanges) -> None:
-    deadline = time.monotonic() + SCAN_TIMEOUT_SECONDS
-    def links():
-        for root in SYMLINK_ROOTS:
-            for directory, folders, files in os.walk(root, followlinks=False, onerror=lambda exc: result.fail(root, exc)):
-                if time.monotonic() >= deadline:
-                    result.fail(root, TimeoutError("Project symlink scan timed out"))
-                    return
-                for name in (*folders, *files):
-                    link = Path(directory) / name
-                    if link.is_symlink():
-                        yield link
-    for link in links():
-        temporary = None
-        try:
-            target = os.readlink(link)
-            replacement = rewriter.path(target)
-            if replacement == target:
-                continue
-            temporary = link.with_name(f".{link.name}.rename-{os.getpid()}")
-            directory_link = link.is_dir() or bool(getattr(link.lstat(), "st_file_attributes", 0) & 0x10)
-            os.symlink(replacement, temporary, target_is_directory=directory_link)
-            os.replace(temporary, link)
-            result.links.append(str(link))
-        except OSError as exc:
-            result.fail(link, exc)
-        finally:
-            if temporary is not None:
-                temporary.unlink(missing_ok=True)
-
-
-def _fix_provider_state(change: ProjectRename, result: FileChanges) -> None:
-    """Sessions of Residents working under the moved directory follow it."""
-    moved = relocate_provider_sessions(change.old_root, change.new_root)
-    result.provider_state.extend(moved["changed"])
-    result.errors.extend(moved["errors"])
-    result.errors.extend({"path": item["source"], "error": f"{item['target']} 已存在，未合并"}
-                         for item in moved["conflicts"])
-
 
 # -- the rename -------------------------------------------------------------------
 
@@ -799,8 +553,7 @@ def rename_project(
     actor: str,
     *,
     dry_run: bool = False,
-    entry: str = "system",
-    residents: Residents | None = None,
+    execution_control,
 ) -> dict[str, Any]:
     # Papers and the other objects of a feature's shared library live outside
     # the project folder; their relations to the project follow the new ID.
@@ -810,11 +563,11 @@ def rename_project(
         return {feature: relate_project(change.old_id, change.new_id, write=write)
                 for feature, relate_project in portal_features.contributions("project.relations")}
 
-    control = residents or Residents(actor, entry)
+    control = execution_control
     with _rename_lock():
         change = plan(project_id, new_project_id)
         rewriter = Rewriter(change)
-        resident_ids = affected_residents(change, rewriter)
+        resident_ids = control.affected_residents(change)
         blockers = external_blockers(change, rewriter)
         report: dict[str, Any] = {
             "project_id": change.new_id,
@@ -827,37 +580,35 @@ def rename_project(
         }
         if dry_run:
             database = rewrite_database(change, rewriter, apply=False)
-            patterns = _file_patterns(change)
-            files = _grep_files(patterns, [str(change.old_root)]) if patterns else []
             return {
                 **report,
                 "database": database.report(),
-                "files": {"rewritten_count": len(files), "rewritten": files[:200]},
+                "files": FileChanges().report(),
                 "relations": relate(write=False),
                 "busy_resident_ids": control.busy(resident_ids),
                 "blockers": blockers,
             }
         if blockers:
             raise RenameBlocked("Project 目录被 Portal 之外的挂载或服务使用，先迁移它们再改名", blockers=blockers)
-        closed = control.close_intake(resident_ids)
-        try:
-            busy = control.busy(resident_ids)
-            if busy:
-                raise RenameBlocked("这些 Resident 正在执行，等它们完成后再改名", busy_resident_ids=busy)
+        with control.move_scope(resident_ids) as terminate:
+            from management_common.directory_move_store import DirectoryMoveStore
+            record = project_registry.project(project_id)
+            directory = (record or {}).get('directory')
+            if not directory:
+                raise RuntimeError('Project directory origin requires the offline migration')
             if change.moves:
-                os.rename(change.old_root, change.new_root)
-            try:
+                _operation, database = DirectoryMoveStore().move(change.old_root, change.new_root,
+                    owner_id=change.new_id, origin=directory['origin'], actor=actor,
+                    terminate=terminate,
+                    database=portal_database(schema='lineage'),
+                    update=lambda connection, source, target: rewrite_database(change, rewriter, apply=True),
+                    dependencies=lambda source, target: fix_files(change, rewriter))
+            else:
                 database = rewrite_database(change, rewriter, apply=True)
-            except BaseException:
-                if change.moves:
-                    os.rename(change.new_root, change.old_root)
-                raise
-            files = fix_files(change, rewriter)
+            files = FileChanges()
             relations = relate(write=True)
             from management_portal.avatar_store import scope_avatar_store, scope_subject
 
             scope_avatar_store().move(scope_subject("project", change.old_id), scope_subject("project", change.new_id))
-        finally:
-            control.open_intake(closed)
         _announce(database)
         return {**report, "database": database.report(), "files": files.report(), "relations": relations}

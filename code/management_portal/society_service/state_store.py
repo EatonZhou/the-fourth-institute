@@ -159,8 +159,10 @@ def _postgres_lineage_data_schema_matches(connection: Any) -> bool:
     actual_columns: dict[str, list[str]] = defaultdict(list)
     for row in rows:
         actual_columns[str(row["table_name"])].append(str(row["column_name"]))
+    # All storage statements name columns. An offline ADD COLUMN appends its
+    # physical position; that order is not a second schema contract.
     if any(
-        tuple(actual_columns.get(table, ())) != expected
+        set(actual_columns.get(table, ())) != set(expected)
         for table, expected in POSTGRES_LINEAGE_DATA_COLUMNS.items()
     ):
         return False
@@ -263,6 +265,8 @@ def create_lineage_data_schema(connection: Any) -> None:
         """
     )
     _create_resident_lifecycle_schema(connection)
+    from .resident_workspace_storage import create_workspace_deletion_binding
+    create_workspace_deletion_binding(connection)
     trigger_path_storage.create_schema(connection)
     for statement in MAILBOX_DDL:
         connection.execute(statement)

@@ -138,7 +138,7 @@ def resident_record(
         lambda: SessionManager(agent_data=session_store),
     )
     deliver_resident_input = resident_protocol.deliver_resident_input
-    install_resource_boundary(monkeypatch)
+    install_resource_boundary(monkeypatch, synthetic_residents=False)
     monkeypatch.setattr(resident_protocol, "deliver_resident_input", deliver_resident_input)
     record: dict[str, object] = {
         "resident_id": "resident_aaaaaaaaaaaa",

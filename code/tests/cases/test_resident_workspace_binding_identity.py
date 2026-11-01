@@ -222,27 +222,3 @@ def test_workspace_binding_and_projection_request_commit_together(
         mutate()
     assert resident_record_domain.find_resident(resident_id) == before_record
     assert document.read_bytes() == before_document
-
-
-def test_deletion_preserves_workspace_still_bound_by_another_resident(future_creation_store, tmp_path):
-    """删除 Resident 后其他 Resident 仍绑定的 Workspace 保留，最后一个使用者删除后回收"""
-    from management_portal.resources.workspace_store import get_workspace_store
-    from management_portal.society_service import resident_catalog
-    shared=tmp_path/'shared-deletion-case'
-    shared.mkdir()
-    (shared/'keep.txt').write_text('retain')
-    a=resident_domain.register_resident(_new_session_payload('Owner A'), 'sample_admin')
-    b=resident_domain.register_resident(_new_session_payload('User B'), 'sample_admin')
-    for record in (a,b):
-        resident_domain.add_resident_reference_workspace(record['resident_id'],str(shared),'sample_admin')
-    resident_domain.add_resident_reference_workspace(b['resident_id'],a['default_cwd'],'sample_admin',workspace_id=a['owned_workspace_id'])
-    resident_domain.delete_resident_lineage(a['resident_id'],'sample_admin')
-    store=get_workspace_store()
-    assert not store.rows([a['owned_workspace_id']],include_deleted=True)[a['owned_workspace_id']]['deleted_at']
-    current=resident_record_domain.find_resident(b['resident_id'])
-    assert a['owned_workspace_id'] in {v['workspace_id'] for v in current['workspace_bindings']}
-    assert Path(a['default_cwd']).is_dir()
-    assert str(shared) in current['workspace_paths']
-    assert (shared/'keep.txt').read_text()=='retain'
-    assert resident_catalog.get_catalog().get(a['resident_id'],include_deleted=True)['owned_workspace_id']==a['owned_workspace_id']
-

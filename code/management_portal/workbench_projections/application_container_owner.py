@@ -80,7 +80,8 @@ def run(project: Path, command: list[str], *, config: dict, input=None, mounts=(
                 # Never discard recovery material merely because the CLI died.
                 raise ProjectionError('projection.application_cleanup', f'构建容器清理未确认，恢复计划：{control}')
             process_runtime.terminate_process_tree(process, force=True)
-        shutil.rmtree(control)
+        from management_common.file_retention import remove_generated
+        remove_generated(control, owner_id=name)
 
 
 def worker(control: Path) -> int:

@@ -115,6 +115,7 @@ def launch(record, config):
     runtime.PRIVATE_ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
     private = runtime.PRIVATE_ROOT / (record['script_run_id'] + '.json')
     config = {**config, 'run_dir': str(run_dir), 'script_run_id': record['script_run_id'],
+              'resource_lifecycle_id': (record.get('identity') or {}).get('resource_lifecycle_id', ''),
               'process_tree_id': _payload_tree(record['script_run_id']),
               'portal_url': load().internal_web_origin()}
     config['token'] = _issue_token(record['caller_id'], record['script_run_id'], private, config.get('timeout_seconds'))
@@ -174,7 +175,20 @@ def owning_lineage(arguments, caller):
 
 
 def start(arguments, caller, *, idempotency_key='', trigger_path_id=''):
-    args = _validate(arguments)
+    from .. import lineage_aggregate, directory_execution_admission
+    lineage_id = owning_lineage(arguments, caller)
+    # Deletion holds this authority from termination through identity commit.
+    # Admission and native launch must finish before deletion enumerates runs.
+    with lineage_aggregate.execution_authority(lineage_id):
+        lineage_aggregate.lineage_catalog_store().get(lineage_id)
+        arguments = _validate(arguments)
+        with directory_execution_admission.admit([arguments['cwd'], arguments['path']]):
+            return _start(arguments, caller, idempotency_key=idempotency_key, trigger_path_id=trigger_path_id)
+
+
+def _start(arguments, caller, *, idempotency_key='', trigger_path_id=''):
+    from management_common.resource_lifecycle import current_lifecycle, LifecycleStore, record_allocation
+    args = arguments
     activation = deepcopy(ACTIVATION.get())
     lineage_id = owning_lineage(arguments, caller)
     source = Path(args['path']).read_bytes()
@@ -186,9 +200,13 @@ def start(arguments, caller, *, idempotency_key='', trigger_path_id=''):
                   'started_at': now(), 'finished_at': '', 'duration_seconds': 0, 'sha256': hashlib.sha256(source).hexdigest(),
                   'exit_code': None, 'outputs': {}, 'error_code': '', 'stderr_tail': '', 'artifacts': [],
                   'unit': '', 'admission': admission, 'notified': False}
+    if current_lifecycle():
+        scope = LifecycleStore().scope(current_lifecycle())
+        record['identity'] = {**record['identity'], 'resource_lifecycle_id': scope['id'], 'test_run_id': scope['run_id']}
     record, admitted = store.admit(record)
     if admitted != 'created':
         return {**_receipt(record), 'status': 'already_running'} if admitted == 'already_running' else _receipt(record)
+    record_allocation(identifier)
     # Commit admission before the external launch; crash recovery marks an
     # abandoned admission lost, never starts it twice.
     launch_record = {**record, 'unit': 'portal-script-' + identifier}

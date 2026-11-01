@@ -754,18 +754,18 @@ def test_portal_fork_context_is_injected_until_provider_accepts_input(resident_r
 
 def test_fork_intake_state_uses_protocol_state_and_holds_promoted_queue_item(
     resident_record: dict[str, object],
+    monkeypatch,
 ) -> None:
     """分叉 Resident 的接收状态以协议状态为准"""
-    created_resident_id = "resident_bbbbbbbbbbbb"
-    registry = resident_lineage.snapshot(resident_record)
-    registry["residents"].append({
-        "resident_id": created_resident_id,
+    from management_portal.society_service import lineage_resident_nodes
+    from management_portal.society_service import project_folders
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: Path(resident_record['workspace_path']))
+    child = lineage_resident_nodes.create_lineage_resident(resident_record['lineage_id'], {
+        "title": "Intake child",
         "source_resident_id": resident_record["resident_id"],
-        "lineage_id": resident_record["lineage_id"],
-        "created_by": "CASE-A",
         "backend": "codex",
-    })
-    resident_fork_domain._persist_derived_resident(resident_record, registry["residents"][-1])
+    }, 'CASE-A')['resident']
+    created_resident_id = child['resident_id']
 
     response = resident_protocol.change_resident_state(
         created_resident_id,

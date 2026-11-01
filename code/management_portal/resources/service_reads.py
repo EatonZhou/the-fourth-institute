@@ -9,6 +9,8 @@ from urllib.parse import quote
 from .address import ResourceAddress
 from .content_payload import resolved_media_type
 from .contracts import normalize_resolution
+from .file_references import FILE_REFERENCE_KEYS, file_reference_address, file_reference_for
+from .providers import folder_files
 
 if TYPE_CHECKING:
     from .service import ResourceService
@@ -16,11 +18,13 @@ if TYPE_CHECKING:
 
 def resolve(
     service: "ResourceService",
-    address: str,
+    address: str | Mapping[str, str],
     *,
     actor: str = "",
 ) -> dict[str, Any]:
     parsed = service.parse_address(address)
+    if parsed.resource_type in FILE_REFERENCE_KEYS.values() and parsed.suffix and parsed.suffix[0] == "file":
+        return _resolve_file(service, parsed, actor=actor)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
     resolved = normalize_resolution(
@@ -44,9 +48,47 @@ def resolve(
     return resolved
 
 
+def _resolve_file(service, parsed, *, actor):
+    # Root identity and authorization precede inspecting any relative filename.
+    root = service.resolve(parsed.root_id, actor=actor)
+    record = root["record"]
+    attributes = record.get("attributes") or {}
+    if (attributes.get("status") == "deleted" or attributes.get("deleted_at")
+            or record.get("status") == "deleted" or record.get("deleted_at")):
+        raise KeyError(parsed.root_id)
+    parts = folder_files.file_parts("/".join(parsed.suffix))
+    if parsed.resource_type == "workspace":
+        from .providers.workspace import _root, authorize_file
+
+        directory = _root(record)
+        authorize_file(actor, parsed.root_id, directory, parts)
+    else:
+        directory = Path(root["checkout_path" if parsed.resource_type == "repo" else "article_root"])
+    if not directory.is_absolute():
+        raise ValueError("File reference requires a registered absolute directory")
+    result = {**root, "address": parsed.value, "exists": True}
+    result.pop("resolved_path", None)
+    try:
+        result = folder_files.describe(result, directory, parts, hide=parsed.resource_type == "workspace")
+    except KeyError as exc:
+        raise FileNotFoundError(parsed.value) from exc
+    if not result["exists"]:
+        raise FileNotFoundError(parsed.value)
+    result["file_reference"] = file_reference_for(parsed.root_id, "/".join(parts))
+    result = normalize_resolution(parsed, result)
+    result["address"] = file_reference_address(result["file_reference"])
+    return result
+
+
+def _file_root(resolved):
+    if resolved["resource_type"] == "workspace":
+        return Path(resolved["record"]["attributes"]["path"])
+    return Path(resolved["checkout_path" if resolved["resource_type"] == "repo" else "article_root"])
+
+
 def read_content(
     service: "ResourceService",
-    address: str,
+    address: str | Mapping[str, str],
     *,
     actor: str = "",
     max_bytes: int = 4 * 1024 * 1024,
@@ -54,12 +96,14 @@ def read_content(
     parsed = service.parse_address(address)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
-    if resolver.read_content is None:
-        raise ValueError(f"{parsed.resource_type} resources expose no byte content")
     resolved = service.resolve(
-        parsed.value,
+        address,
         actor=actor,
     )
+    if resolved.get("file_reference"):
+        return folder_files.read_content(resolved, _file_root(resolved), max_bytes=max_bytes)
+    if resolver.read_content is None:
+        raise ValueError(f"{parsed.resource_type} resources expose no byte content")
     return resolver.read_content(
         resolved,
         address=parsed.value,
@@ -70,7 +114,7 @@ def read_content(
 
 def open_content(
     service: "ResourceService",
-    address: str,
+    address: str | Mapping[str, str],
     *,
     actor: str = "",
     max_bytes: int = 4 * 1024 * 1024,
@@ -78,7 +122,11 @@ def open_content(
     parsed = service.parse_address(address)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
-    resolved = service.resolve(parsed.value, actor=actor)
+    resolved = service.resolve(address, actor=actor)
+    if resolved.get("file_reference"):
+        if resolved["target_kind"] == "file":
+            return resolved
+        return folder_files.read_content(resolved, _file_root(resolved), max_bytes=max_bytes)
     resolved_path = Path(str(resolved.get("resolved_path") or ""))
     if resolved_path.is_file() or (
         resolved.get("target_kind") == "file"
@@ -101,7 +149,7 @@ def open_content(
 
 def read_content_range(
     service: "ResourceService",
-    address: str,
+    address: str | Mapping[str, str],
     *,
     start: int,
     end: int,
@@ -112,12 +160,14 @@ def read_content_range(
     parsed = service.parse_address(address)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
-    if resolver.read_content_range is None:
-        raise ValueError(f"{parsed.resource_type} resources expose no ranged byte content")
     resolved = service.resolve(
-        parsed.value,
+        address,
         actor=actor,
     )
+    if resolved.get("file_reference"):
+        return folder_files.read_content_range(resolved, _file_root(resolved), start=start, end=end)
+    if resolver.read_content_range is None:
+        raise ValueError(f"{parsed.resource_type} resources expose no ranged byte content")
     return resolver.read_content_range(
         resolved,
         address=parsed.value,
@@ -129,13 +179,13 @@ def read_content_range(
 
 def reference(
     service: "ResourceService",
-    address: str,
+    address: str | Mapping[str, str],
     *,
     actor: str = "",
 ) -> dict[str, Any]:
     parsed = service.parse_address(address)
     resolved = service.resolve(
-        parsed.value,
+        address,
         actor=actor,
     )
     if resolved.get("exists") is False:
@@ -166,7 +216,8 @@ def reference(
     filename, media_type, content_kind, content_size = _reference_content(resolved, candidate)
     portal_url = _reference_portal_url(service, parsed, resolved, indexed, candidate)
     return {
-        "address": parsed.value,
+        "address": resolved["address"] if resolved.get("file_reference") else parsed.value,
+        **({"file_reference": resolved["file_reference"]} if resolved.get("file_reference") else {}),
         "resource_id": parsed.root_id,
         "resource_type": parsed.resource_type,
         "title": title or parsed.root_id,

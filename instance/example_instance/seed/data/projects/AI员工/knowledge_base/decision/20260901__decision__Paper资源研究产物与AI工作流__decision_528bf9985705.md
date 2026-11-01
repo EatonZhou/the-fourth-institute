@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 23
+  number: 25
   created_at: '2026-09-01'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T02:02:38Z'
+  updated_at: '2026-11-01T18:52:31Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_24014e2b9bf6
 importance: 8
 metaness: 2
 ai_generated: true
@@ -42,6 +42,7 @@ links:
   - decision_6ad0384e020d
   - decision_61e50306cc79
   - decision_3ece26686464
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -184,7 +185,7 @@ Paper 页面按本文的用户与论文绑定规则解析 Paper Lineage 内的 R
 - Paper contributor 可以补传或替换当前 PDF。成功后更新 manifest 的当前文件并刷新派生文本状态，Paper ID 和其他长期产物不变。
 - Paper contributor 可以只删除 PDF。后端同时删除派生文本 cache，并把 Paper 标为缺少 PDF；manifest、Reviews、Notes、Refs 和 Figures 保留。
 - 远程 PDF 获取失败不会删除 Paper 身份。Contributor 可以稍后补传文件。
-- 删除整个 Paper 会把完整 bundle 移入 Paper trash，并通知统一资源索引。Trash 中的条目不再出现在普通 Library。
+- Paper 包的目录删除与保留按《目录与路径协议》（decision_4aa13bc21e8e）处理，资源索引仍由 Paper 领域通知。
 - 读取不存在的 Paper 或 asset 返回 404。后端不会用相似论文或其他文件替代目标。
 
 ## 个人收藏
@@ -246,7 +247,7 @@ Research Workspace 按论文与正式产物类型查询内容。通过 Lineage �
 - **CCF 登记：** `POST /paper/api/ccf/register` 把目录条目变为正式 Paper，复用或创建身份，并保留已有 `related_projects`。
 - **上传或替换 PDF：** `POST /paper/api/papers/upload-pdf` 要求 contributor，保存当前 PDF 并刷新派生文本状态。
 - **只删除 PDF：** `POST /paper/api/papers/delete-pdf` 要求 contributor，删除 PDF 和派生文本 cache，保留 manifest 与长期研究产物。
-- **删除 Paper：** `POST /paper/api/papers/delete` 要求 contributor，把整个 bundle 移入 trash 并通知统一资源索引。
+- **删除 Paper：** `POST /paper/api/papers/delete` 要求 contributor，目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理，并通知统一资源索引。
 - **读取 asset：** `GET /paper/api/asset?id=&kind=&figure_id=&generated_id=` 校验 Paper viewer 和 bundle 路径后返回受控文件。
 - **CCF venue：** `GET /paper/api/ccf/venues` 返回按类别和 rank 组织的 venue 数据。
 - **CCF 年份：** `GET /paper/api/ccf/years?venue=` 返回指定 venue 可用的年份或 issue。

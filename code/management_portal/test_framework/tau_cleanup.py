@@ -112,9 +112,6 @@ class TauTeamCleanup:
                         or marker not in str(resident.get("title") or "")
                         or resident_id == graph.get("leader_resident_id")):
                     raise ValueError("Temporary member ownership, home or marker changed")
-                node = next((n for n in graph.get("nodes", []) if n.get("id") == resident_id), {})
-                if node.get("status") not in {"idle", "closed"}:
-                    raise ValueError("Temporary member still has active or unknown work")
                 request = entry.setdefault("request", {
                     "arguments": {"resident_id": resident_id},
                     "key": f"tau-cleanup:{state['run_id']}:{state['module_id']}:{resident_id}",
@@ -180,8 +177,6 @@ class TauTeamCleanup:
                 if (graph.get("created_by") != TAU_ACTOR
                         or marker not in str(graph.get("title") or "")):
                     raise ValueError("Temporary team creation provenance or marker changed")
-                if any(node.get("status") not in {"idle", "closed"} for node in graph.get("nodes", [])):
-                    raise ValueError("Temporary team still has active or unknown work")
                 # An ambiguous transport result reuses this exact request after
                 # restart; never silently rebase an already dispatched deletion.
                 request = entry.setdefault("request", {

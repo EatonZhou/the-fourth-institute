@@ -81,7 +81,7 @@ class ResourceServiceClient:
             return False
         return True
 
-    def parse_address(self, address: str) -> ResourceAddress:
+    def parse_address(self, address: str | Mapping[str, str]) -> ResourceAddress:
         return self._addresses.parse(address)
 
     @staticmethod
@@ -289,7 +289,7 @@ class ResourceServiceClient:
         )
         return dict(result or {})
 
-    def resolve(self, address: str, **kwargs: Any) -> dict[str, Any]:
+    def resolve(self, address: str | Mapping[str, str], **kwargs: Any) -> dict[str, Any]:
         result = self._exchange(
             "resource.resolve",
             {"address": address, **kwargs},
@@ -299,7 +299,7 @@ class ResourceServiceClient:
 
     def read_content(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         actor: str = "",
         max_bytes: int = 4 * 1024 * 1024,
@@ -317,7 +317,7 @@ class ResourceServiceClient:
 
     def open_content(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         actor: str = "",
         max_bytes: int = 4 * 1024 * 1024,
@@ -331,7 +331,7 @@ class ResourceServiceClient:
 
     def read_content_range(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         start: int,
         end: int,
@@ -349,7 +349,7 @@ class ResourceServiceClient:
             expect_content=True,
         )
 
-    def reference(self, address: str, **kwargs: Any) -> dict[str, Any]:
+    def reference(self, address: str | Mapping[str, str], **kwargs: Any) -> dict[str, Any]:
         result = self._exchange(
             "resource.reference",
             {"address": address, **kwargs},

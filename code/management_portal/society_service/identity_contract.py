@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import secrets
 
 from management_common.resource_identity import get_resource_type_registry
 
 
 def new_id(resource_type: str, existing_ids: Iterable[str] = ()) -> str:
     return get_resource_type_registry().new_id(resource_type, existing_ids)
+
+
+def creation_candidate_id(resource_type: str, existing_ids: Iterable[str] = ()) -> str:
+    """Choose an unpublished identity; its creation transaction owns allocation."""
+    occupied = set(existing_ids)
+    while True:
+        candidate = f'{resource_type}_{secrets.token_hex(6)}'
+        validate_id(candidate, resource_type)
+        if candidate not in occupied:
+            return candidate
 
 
 def validate_id(resource_id: str, resource_type: str | None = None):

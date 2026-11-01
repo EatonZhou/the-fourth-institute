@@ -44,7 +44,7 @@ def test_operation_pending_completed_and_polling_preserve_the_original_move(team
     first = query(operation_id)
     assert first.result == {
         "operation_id": operation_id, "resident_id": member["resident_id"],
-        "operation_type": "workspace_transfer", "phase": "workspace_move",
+        "operation_type": "workspace_transfer", "phase": "directory_dependencies",
         "status": "pending", "terminal": False, "error": None, "retry_at": None,
         "completed_steps": 0, "total_steps": 4,
         "source_lineage_id": source["lineage_id"], "target_lineage_id": target["lineage_id"],
@@ -158,7 +158,7 @@ def test_operation_is_queryable_after_the_source_becomes_empty(teams, transfer):
 def test_operation_requires_a_move_receipt_even_if_the_outbox_has_a_matching_id(teams):
     """没有迁移回执的 outbox 操作 ID 在 GetMoveOperation 中报告不存在"""
     operations = resident_record_domain.lifecycle_operations()
-    operation_id = operations.enqueue(teams[2]["resident_id"], [{"kind": "workspace_move"}])
+    operation_id = operations.enqueue(teams[2]["resident_id"], [{"kind": "directory_dependencies"}])
     assert query(operation_id).error["code"] == "instruction.not_found"
     assert operations.pending(teams[2]["resident_id"])
 
@@ -191,7 +191,7 @@ def test_operation_read_does_not_wait_for_transfer_or_graph_lock(teams, transfer
             with invariant_locks.lineage_scope(teams[0]["lineage_id"], operation="test.operation.query"):
                 result = pool.submit(observed, transfer.result["operation_id"]).result(timeout=2)
             assert result["terminal"] is False
-            assert result["phase"] == "workspace_move"
+            assert result["phase"] == "directory_dependencies"
         finally:
             release.set()
         assert worker.result(timeout=2) == teams[2]["resident_id"]

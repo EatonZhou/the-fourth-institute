@@ -479,8 +479,8 @@ def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, set
                "near_resident_id": near}
     if not follow_default_backend:
         payload["backend"] = chosen.get("provider") or "codex"
-    if creation_key:
-        payload["creation_key"] = creation_key
+    from ..creation_intents import operation_identity
+    payload["creation_key"] = creation_key or f"familize:{operation_identity()}:{role}"
     starting = chosen.get("settings", {})
     if starting:
         payload["runtime_settings"] = starting

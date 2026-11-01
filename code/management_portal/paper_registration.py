@@ -27,10 +27,12 @@ LOGGER = logging.getLogger(__name__)
 PAPER_PDF_UPLOAD_MAX_BYTES = 512 * 1024 * 1024
 
 
-PAPER_REGISTRATION_DRAFT_TTL_SECONDS = 24 * 60 * 60
+def register_paper(payload: dict, actor: str, *, operation_id: str = "") -> dict:
+    """Register or relate a Paper; callers retain an explicit key for retries.
 
-
-def register_paper(payload: dict, actor: str) -> dict:
+    An omitted key starts a new creation operation. Literature matching still
+    relates an already held Paper independently of request identity.
+    """
     clean_payload = dict(payload)
     upload_id = str(clean_payload.pop("registration_upload_id", "") or "").strip()
     draft = _paper_registration_draft(upload_id, actor=actor) if upload_id else {}
@@ -60,26 +62,37 @@ def register_paper(payload: dict, actor: str) -> dict:
                 stream.read(1)
         except OSError as exc:
             raise ValueError("registration PDF is unreadable; upload the PDF again") from exc
+    from management_portal.resources.directory_registrations import directory_writer
     with LOCK:
-        reused = bool(PAPER_STORE.find_existing_id(clean_payload))
-        paper = PAPER_STORE.register(clean_payload, actor)
+        # An existing creation operation owns its original identity and input.
+        # Only a new operation performs the library's literature deduplication.
+        retry = PAPER_STORE.has_creation_operation(clean_payload, actor, operation_id)
+        reused = '' if retry else PAPER_STORE.find_existing_id(clean_payload)
+        paper = (PAPER_STORE.relate_existing(reused, clean_payload, actor) if reused
+                 else PAPER_STORE.register(clean_payload, actor, operation_id=operation_id))
         paper_id = str(paper.get("id") or "")
-        current_pdf = _paper_store_file(paper, "pdf")
-        if staged_pdf and (not current_pdf or not current_pdf.is_file()):
-            found = PAPER_STORE.manifest_for_paper_id(paper_id)
-            if not found:
-                raise KeyError("paper store manifest not found")
-            manifest_path, manifest = found
-            paper_dir = PAPER_STORE.paper_dir_from_manifest(manifest, manifest_path)
-            paper_dir.mkdir(parents=True, exist_ok=True)
-            target = paper_dir / "paper.pdf"
-            shutil.copy2(staged_pdf, target)
-            paper = PAPER_STORE.update_paper(
-                paper_id,
-                {"pdf_path": str(target), "status": "registered"},
-            ) or paper
-    if upload_id:
-        shutil.rmtree(_paper_registration_draft_dir(upload_id), ignore_errors=True)
+        # Creation commits its intent before publishing files. Only accepted
+        # upload ownership belongs to this subsequent directory transaction.
+        with directory_writer('paper') as writer:
+            current_pdf = _paper_store_file(paper, "pdf")
+            if staged_pdf and (not current_pdf or not current_pdf.is_file()):
+                found = PAPER_STORE.manifest_for_paper_id(paper_id)
+                if not found:
+                    raise KeyError("paper store manifest not found")
+                manifest_path, manifest = found
+                paper_dir = PAPER_STORE.paper_dir_from_manifest(manifest, manifest_path)
+                target = paper_dir / "paper.pdf"
+                shutil.copy2(staged_pdf, target)
+                paper = PAPER_STORE.update_paper(
+                    paper_id,
+                    {"pdf_path": str(target), "status": "registered"},
+                ) or paper
+            if staged_pdf:
+                from management_common.upload_retention import consumed
+                consumed(staged_pdf.parent, owner_id=paper_id, connection=writer.connection)
+            elif pdf_source and not _is_url(pdf_source) and current_pdf and current_pdf.is_file():
+                from management_portal.resources.upload_consumption import consume_file
+                consume_file(Path(pdf_source), owner_id=paper_id, connection=writer.connection)
     if not reused or staged_pdf:
         # Registering a paper the library already holds only merges its relations
         # (e.g. relating it to another Project); its summary and assets stay.
@@ -136,6 +149,9 @@ def _public_paper_registration_draft(draft: dict) -> dict:
 
 def _paper_registration_draft(upload_id: object, *, actor: str) -> dict:
     path = _paper_registration_draft_state_path(upload_id)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    if get_directory_cleanup_store().pending_at(path.parent):
+        raise KeyError('paper registration upload has expired')
     draft = _load_json(path, {})
     if not draft:
         raise KeyError("paper registration upload not found")
@@ -155,32 +171,17 @@ def _set_paper_registration_draft(upload_id: object, patch: dict) -> dict:
     return updated
 
 
-def _prune_paper_registration_drafts() -> None:
-    root = PAPER_STORE.root / "_incoming" / "registration-drafts"
-    if not root.is_dir():
-        return
-    cutoff = _now() - PAPER_REGISTRATION_DRAFT_TTL_SECONDS
-    for path in root.iterdir():
-        if not path.is_dir():
-            continue
-        draft = _load_json(path / "draft.json", {})
-        updated_at = int(draft.get("updated_at") or draft.get("created_at") or 0)
-        if not updated_at:
-            try:
-                updated_at = int(path.stat().st_mtime)
-            except OSError:
-                continue
-        if updated_at < cutoff:
-            shutil.rmtree(path, ignore_errors=True)
-
-
 def create_paper_registration_draft(payload: dict, actor: str) -> dict:
     from management_portal import business_tasks
 
     pdf, filename = _validated_pdf_upload(payload)
-    _prune_paper_registration_drafts()
     upload_id = f"paper-upload-{secrets.token_hex(6)}"
     draft_dir = _paper_registration_draft_dir(upload_id)
+    from datetime import datetime, timezone
+    from management_common.directory_retention import RetentionStore
+    created_at = _now()
+    RetentionStore().declare(draft_dir, category='unused_upload', owner_id=upload_id,
+                             created_at=datetime.fromtimestamp(created_at, timezone.utc))
     draft_dir.mkdir(parents=True, exist_ok=False)
     _paper_registration_draft_pdf(upload_id).write_bytes(pdf)
     draft = {
@@ -190,7 +191,7 @@ def create_paper_registration_draft(payload: dict, actor: str) -> dict:
         "actor": str(actor or ""),
         "status": "queued",
         "step": "queued",
-        "created_at": _now(),
+        "created_at": created_at,
         "updated_at": _now(),
         "metadata": {},
         "warnings": [],

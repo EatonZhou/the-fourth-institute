@@ -300,6 +300,9 @@ def discover_git_checkouts(
                 dirnames.remove(".git")
             if not marker.exists():
                 continue
+            from management_common.directory_cleanup_store import get_directory_cleanup_store
+            if get_directory_cleanup_store().pending_at(current):
+                continue
             try:
                 checkout = inspect_git_checkout(current)
             except Exception as exc:
@@ -510,6 +513,7 @@ def _merge_record(
     group: list[dict[str, Any]],
     project_roots: list[tuple[str, Path]],
     explicit_project_ids: Iterable[str] = (),
+    origin: str = 'created',
 ) -> dict[str, Any]:
     now = utc_now_iso()
     previous = dict(existing or {})
@@ -519,6 +523,8 @@ def _merge_record(
     merged_checkouts = registry_sync.merge_locations(
         previous.get("checkouts") or [], map(_checkout_entry, group)
     )
+    from .resources.directory_registrations import merge_origins
+    merge_origins(merged_checkouts, previous.get('checkouts') or [], repo_id, origin=origin)
 
     remotes: list[dict[str, Any]] = []
     remote_keys: set[tuple[str, str]] = set()
@@ -632,6 +638,7 @@ def scan_and_sync_repo_registry(
         groups,
         merge=functools.partial(_merge_record, project_roots=_project_roots()),
         apply=apply,
+        scanning=True,
     )
     report.update(
         {
@@ -648,6 +655,7 @@ def register_repo_checkout(
     *,
     project_ids: Iterable[str] = (),
     repo_id: str = "",
+    origin: str = 'adopted',
 ) -> dict[str, Any]:
     checkout = inspect_git_checkout(path)
     report = REPO_REGISTRY.sync(
@@ -656,6 +664,7 @@ def register_repo_checkout(
             _merge_record,
             project_roots=_project_roots(),
             explicit_project_ids=tuple(project_ids),
+            origin=origin,
         ),
         apply=True,
         forced_id=repo_id,
@@ -673,13 +682,17 @@ def register_repo_checkout(
 
 
 def initialize_git_checkout(path: str | Path) -> Path:
+    from .resources.directory_registrations import directory_writer
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
     checkout = Path(path).expanduser().resolve(strict=False)
-    if not checkout.exists() or not checkout.is_dir():
-        raise FileNotFoundError(f"checkout directory not found: {checkout}")
-    try:
-        inspect_git_checkout(checkout)
-    except GitCheckoutRequired:
-        _run_git(checkout, "init", "-q", "-b", "main")
+    with directory_writer(REPO_COLLECTION) as writer:
+        get_directory_cleanup_store().assert_available(checkout, connection=writer.connection)
+        if not checkout.exists() or not checkout.is_dir():
+            raise FileNotFoundError(f"checkout directory not found: {checkout}")
+        try:
+            inspect_git_checkout(checkout)
+        except GitCheckoutRequired:
+            _run_git(checkout, "init", "-q", "-b", "main")
     return checkout
 
 
@@ -797,15 +810,15 @@ def update_repo_ssh_key(
     return record
 
 
-def unregister_repo(repo_id: str) -> dict[str, Any]:
-    """Remove a repo registry record while preserving every Git checkout."""
-    with _repo_writer() as writer:
-        record = _locked_repo(writer, repo_id)
-        writer.delete(REPO_COLLECTION, repo_id)
+def unregister_repo(repo_id: str, *, actor: str = '') -> dict[str, Any]:
+    from .resources.directory_registrations import unregister_registry
+    stored, cleanup_ids = unregister_registry(REPO_COLLECTION, repo_id, actor=actor)
+    record = _validated_repo(repo_id, stored)
     announce_registry_changes(REPO_COLLECTION, {repo_id: "deleted"}, resource_type="repo")
     return {
         "id": repo_id,
         "deleted": True,
+        "cleanup_ids": cleanup_ids,
         "checkout_paths": repo_checkout_paths(record),
     }
 

@@ -22,6 +22,7 @@ import pytest
 
 from management_portal.society_service.script_runs import runner, runtime, service, store, worker, events
 from management_portal.society_service import lineage_aggregate
+from tests.cases.test_resident_folder_creation_contract import future_creation_store, resident_domain, _new_session_payload
 
 
 @pytest.fixture
@@ -182,14 +183,15 @@ runner.main()
 
 
 @pytest.mark.parametrize('caller', ['sample_admin', 'resident_aaaaaaaaaaaa', 'portal'])
-def test_atomic_idempotency_and_exclusion(work, monkeypatch, caller):
+def test_atomic_idempotency_and_exclusion(work, monkeypatch, caller, future_creation_store):
     """相同幂等键返回同一运行，相同互斥键在运行中返回已在运行，只启动一次
 
     :design-point:"""
     script=work/'s.py';script.write_text('pass')
     launched=[]
     monkeypatch.setattr(service,'launch',lambda row,config:launched.append(row))
-    token=service.ACTIVATION.set({'lineage_id':'lineage_aaaaaaaaaaaa','effect_id':'effect_a','trigger_type':'time.reached'})
+    lineage_id = resident_domain.register_resident(_new_session_payload('Scripts'), 'sample_admin')['lineage_id']
+    token=service.ACTIVATION.set({'lineage_id':lineage_id,'effect_id':'effect_a','trigger_type':'time.reached'})
     try:
         first=service.start({'path':str(script),'exclusive_key':'one'},caller,idempotency_key='same',trigger_path_id='run_a')
         again=service.start({'path':str(script),'exclusive_key':'one'},caller,idempotency_key='same')
@@ -379,8 +381,12 @@ def test_coordinator_lease_lost_and_retention(work,monkeypatch,timeout,status):
     with store.edit(row['script_run_id']) as saved:
         saved['finished_at']=datetime.fromtimestamp(time.time()-61*86400,timezone.utc).isoformat()
     (work/row['script_run_id']).mkdir()
-    one.next_cleanup = 0
     one.tick()
+    # Retention is invoked by Portal System's time event, not this coordinator.
+    assert store.get(row['script_run_id']) is not None
+    store.delete_expired(row['script_run_id'])
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    get_directory_cleanup_store().run_pending()
     assert store.get(row['script_run_id']) is None and not (work/row['script_run_id']).exists()
 
 
@@ -458,16 +464,17 @@ def test_script_completion_payload_keeps_full_outputs_and_signed_exit():
     assert event.payload==payload
 
 
-def test_postgres_admission_serializes_parallel_callers(work,monkeypatch):
+def test_postgres_admission_serializes_parallel_callers(work,monkeypatch,future_creation_store):
     """并行提交同一互斥键的脚本时 PostgreSQL 准入只放行一个运行
 
     :design-point:"""
     from concurrent.futures import ThreadPoolExecutor
     script=work/'once.py';script.write_text('pass')
     launched=[]
+    lineage_id = resident_domain.register_resident(_new_session_payload('Parallel scripts'), 'sample_admin')['lineage_id']
     monkeypatch.setattr(service,'launch',lambda row,config:launched.append(row))
     def start(index):
-        return service.start({'path':str(script),'lineage_id':'lineage_aaaaaaaaaaaa','exclusive_key':'global'},'sample_admin',idempotency_key=str(index))
+        return service.start({'path':str(script),'lineage_id':lineage_id,'exclusive_key':'global'},'sample_admin',idempotency_key=str(index))
     with ThreadPoolExecutor(max_workers=4) as pool:
         results=list(pool.map(start,range(4)))
     assert len({row['script_run_id'] for row in results})==1

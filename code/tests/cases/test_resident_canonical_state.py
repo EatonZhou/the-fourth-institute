@@ -106,7 +106,7 @@ def test_peer_resident_rejects_conflicting_session_identity_before_write_contrac
             registry = {'residents': [{'resident_id': created_resident_id, 'lineage_id': lineage_id, 'lineage_membership': 'formal', 'backend': 'codex', 'codex_thread_id': '019f9f39-52a0-75d3-adb2-86c2b96a5352', 'backend_session_id': '019f9f39-52a0-75d3-adb2-86c2b96a5353'}]}
             monkeypatch.setattr(resident_lineage, 'snapshot', lambda _record: {'residents': []})
             with pytest.raises(ValueError, match='persisted Agent session fields'):
-                resident_fork_domain._sync_resident_files(record, registry["residents"][0])
+                resident_fork_domain._persist_derived_resident(record, registry["residents"][0])
             with pytest.raises(KeyError):
                 resident_catalog.get_catalog().get(created_resident_id)
     with subtests.test(contract='test_runtime_only_resident_save_does_not_sync_resource_identity'), isolated_portal_case() as case_path:

@@ -132,7 +132,7 @@ def test_a_project_commits_with_its_creator_and_its_place_in_the_permission_tree
     """项目登记记录写入创建者，并与它在权限树中的位置同一事务提交
 
     创建者写进 Project 自己的记录（created_by），权限系统开启时 Project 在登记的事务里放进 R 树并得到“Project 创建人”表项；
-    放置失败时登记一起回滚，记录与目录都不留下。
+    放置失败时登记一起回滚，目录由持久 intent 保留，原操作可恢复。
     """
     from management_portal.permission_system import par
     from tests.cases.permission_test_support import enable, user_fact
@@ -148,11 +148,14 @@ def test_a_project_commits_with_its_creator_and_its_place_in_the_permission_tree
 
     def fails(*_args, **_kwargs):
         raise RuntimeError("placing failed")
-    monkeypatch.setattr(par.PARPermissions, "sync_resource", fails)
-    with pytest.raises(RuntimeError, match="placing failed"):
-        project.create_project({"id": "Lost"}, actor="alice")
+    with monkeypatch.context() as patch:
+        patch.setattr(par.PARPermissions, "sync_resource", fails)
+        with pytest.raises(RuntimeError, match="placing failed"):
+            project.create_project({"id": "Lost"}, actor="alice", operation_id='lost-project')
     assert project_registry.project("Lost") is None
-    assert not (tmp_path / "Projects" / "Lost").exists()
+    assert (tmp_path / "Projects" / "Lost").is_dir()
+    project.create_project({"id": "Lost"}, actor="alice", operation_id='lost-project')
+    assert project_registry.project('Lost')['created_by'] == 'alice'
 
 
 def test_a_project_is_named_only_by_its_id():
@@ -189,5 +192,6 @@ def test_a_project_record_holds_only_the_fields_portal_reads():
             document["projects"][0]["status"] = "paused"
     with project_registry.mutate() as document:
         document["projects"][0].pop("db_name")
-        document["projects"].append({"id": "Full", **{field: "" for field in project_registry.PROJECT_FIELDS - {"id"}}})
+        document["projects"].append({"id": "Full", **{field: "" for field in project_registry.PROJECT_FIELDS - {"id", "directory"}},
+                                     'directory': {'origin': 'created', 'owner_id': 'Full'}})
     assert project_registry.project("FlowTango") == {"id": "FlowTango", "status": "active"}

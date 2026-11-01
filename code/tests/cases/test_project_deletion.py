@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from contextlib import contextmanager
 
 import pytest
 import yaml
@@ -24,7 +25,8 @@ def _configure_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *,
     (project_root / "notes.md").write_text("Business content that goes with the project.\n", encoding="utf-8")
     registry = ProjectRegistryYaml()
     write_projects({"schema_version": 1, "projects": [
-        {"id": "Example", "path": str(project_root), "description": "test project"},
+        {"id": "Example", "path": str(project_root), "description": "test project",
+         "directory": {"origin": "created", "owner_id": "Example"}},
     ]})
     archive = tmp_path / "archive" / "project_deletions.json"
     deleted: list[str] = []
@@ -36,9 +38,11 @@ def _configure_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *,
         return {"deleted_resident_ids": [lineage_id.replace("lineage_", "resident_")]}
 
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", projects_root)
-    monkeypatch.setattr(project_domain, "PROJECT_DELETION_AUDIT", archive)
     monkeypatch.setattr(project_domain, "_project_lineage_ids", lambda identities: lineages)
-    monkeypatch.setattr(lineage_lifecycle, "delete_lineage", delete_lineage)
+    @contextmanager
+    def prepare(lineage_id, actor):
+        yield lambda: delete_lineage(lineage_id, actor)
+    monkeypatch.setattr(lineage_lifecycle, "prepare_lineage_deletion", prepare)
     return project_root, registry, archive, deleted
 
 
@@ -49,6 +53,9 @@ def test_a_project_with_content_is_deleted_with_its_lineages_residents_and_files
         monkeypatch, tmp_path, lineages=(ordinary, principal),
     )
     result = project_domain.delete_project("Example", "alice")
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    assert project_root.exists()
+    get_directory_cleanup_store().run_pending()
     # Ordinary Lineages first, the Project-level Lineage last.
     assert deleted == [*ordinary, *principal]
     assert result["lineage_ids"] == [*ordinary, *principal]
@@ -57,9 +64,10 @@ def test_a_project_with_content_is_deleted_with_its_lineages_residents_and_files
     assert not project_root.exists()
     assert "deleted_path" not in result
     assert yaml.safe_load(registry.read_text(encoding="utf-8"))["projects"] == []
-    index = project_domain.resident_store.read_json(archive, {})
-    assert [item["project_id"] for item in index["projects"]] == ["Example"]
-    assert index["projects"][0]["lineage_ids"] == [*ordinary, *principal]
+    from management_portal.resources.registry_store import get_registry_store
+    entry = get_registry_store().get('project_deletions', 'Example')
+    assert entry['project_id'] == 'Example'
+    assert entry['lineage_ids'] == [*ordinary, *principal]
 
 
 def test_unknown_projects_and_anonymous_callers_are_refused(monkeypatch, tmp_path):

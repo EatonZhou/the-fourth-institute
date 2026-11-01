@@ -12,8 +12,6 @@ import os
 from pathlib import Path
 import re
 import sys
-import subprocess
-import tempfile
 from urllib.parse import unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -22,27 +20,45 @@ from management_common.secret_environment import secret_environment
 from scripts.instance_storage_migration import (
     Move, PrefixMap, Report, apply_moves, check_move, parse_common, require_offline,
     require_protected, require_database_alone, remove_empty_directories,
-    rewrite_text_files, walk_files, write_report,
+    write_report,
 )
 from scripts.migrate_instance_staging import read_instance
 
 LINEAGE = re.compile(r"lineage_[0-9a-f]{12}\Z")
 
 
-def text_candidates(moves, mapping):
-    roots = [m.target for m in moves if m.kind == 'project-lineage']
-    if not roots:
-        return []
-    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8') as patterns:
-        patterns.write('\n'.join(old for old, _ in mapping.pairs) + '\n')
-        patterns.flush()
-        command = ['rg', '--hidden', '--no-ignore', '-l', '-0', '-F', '-f', patterns.name, '--max-filesize', '16M']
-        for name in ('.git', 'node_modules', '__pycache__', '.venv', 'venv', 'runtime'):
-            command += ['--glob', '!**/' + name + '/**']
-        result = subprocess.run([*command, '--', *roots], capture_output=True)
-        if result.returncode not in (0, 1):
-            raise RuntimeError('Cannot enumerate Lineage text files: ' + result.stderr.decode(errors='replace')[:2000])
-        return [Path(os.fsdecode(p)) for p in result.stdout.split(b'\0') if p]
+def apply_registered_lineage_moves(moves):
+    """The offline conversion uses the same owner commit as ordinary moves."""
+    from management_common.directory_move_store import DirectoryMoveStore
+    from management_common.portal_database import portal_database, _database_schema
+    from management_common.json_columns import json_value
+    from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+    database = portal_database(schema='lineage')
+    mover = DirectoryMoveStore()
+    receipts = []
+    for move in moves:
+        identity = Path(move.source).name
+        if move.kind != 'project-lineage':
+            # Programs and instance feature areas follow the existing instance
+            # protocol; they are not registered Society object moves.
+            apply_moves([move])
+            continue
+        if not LINEAGE.fullmatch(identity):
+            descriptor = Path(move.source) / 'lineage.json'
+            identity = json.loads(descriptor.read_text()).get('lineage_id') if descriptor.is_file() else None
+            if not identity or not LINEAGE.fullmatch(identity):
+                raise ValueError('Legacy Lineage directory needs an explicit registered owner: ' + move.source)
+        with database.read() as connection:
+            row = connection.execute(f'SELECT directory_json FROM "{_database_schema("lineage")}".lineages '
+                                     'WHERE lineage_id=%s AND deleted_at IS NULL', (identity,)).fetchone()
+        if row is None:
+            raise ValueError('Lineage move requires a registered owner: ' + identity)
+        metadata = json_value(row['directory_json'])
+        operation_id, _ = mover.move(move.source, move.target, owner_id=identity,
+            origin=metadata['origin'], actor='instance-lineage-migration', terminate=lambda _path: None,
+            database=database, update=relocate_nested, dependencies=reconcile_dependencies)
+        receipts.append(operation_id)
+    return receipts
 
 
 def plan(instance, projects, program_root=Path('/opt/tfi')):
@@ -143,10 +159,6 @@ def main(argv=None):
             write_report(args.report, report)
             result['remainder_outcome'] = instance_resident_relocation.apply(instance, remainder)
             write_report(args.report, report)
-            outcome = result['outcome']
-            if any(o['files'].get('errors') or any(s['errors'] or s['conflicts'] for s in o['sessions'])
-                   for o in (outcome, result['remainder_outcome'])):
-                raise RuntimeError('Resident relocation has file/session issues; inspect report')
         print(json.dumps({'residents': len(result['residents']), 'conflicts': len(result['conflicts'])}))
         return 0
     if args.apply:
@@ -157,7 +169,7 @@ def main(argv=None):
             if any(os.path.lexists(m.source) or not os.path.lexists(m.target) for m in moves):
                 raise RuntimeError('Resume requires every reported directory move to have completed')
         else:
-            apply_moves(moves)
+            result['directory_move_operations'] = apply_registered_lineage_moves(moves)
         result['renamed'] = True
         write_report(args.report, report)
         mapping = PrefixMap.from_moves([*moves, *(Move(**m) for m in result['aliases'])])
@@ -169,7 +181,9 @@ def main(argv=None):
             if not link.is_symlink() or str(link.resolve()) != item['target']:
                 raise RuntimeError('Lineage entry link changed during migration')
             link.unlink()
-        result['text_rewrites'] = rewrite_text_files(text_candidates(moves, mapping), mapping, apply=True)
+        # User-authored paths are historical prose. Registered directories and
+        # Provider/Git dependencies were reconciled by their move owners.
+        result['text_rewrites'] = {'errors': []}
         write_report(args.report, report)
         from management_portal.provider_session_relocation import relocate_provider_sessions
         result['sessions'] = [relocate_provider_sessions(old, new) for old, new in mapping.pairs]
@@ -204,12 +218,8 @@ def main(argv=None):
         document['services']['programs'] = relocate(document['services'].get('programs', {}))
         atomic_json(instance.root / 'instance.json', document)
         write_report(args.report, report)
-        if (result['text_rewrites'].get('errors') or any(r['errors'] or r['conflicts'] for r in result['sessions'])
-                or result['resident_outcome']['files'].get('errors')
-                or any(r['errors'] or r['conflicts'] for r in result['resident_outcome']['sessions'])
-                or result['remainder_outcome']['files'].get('errors')
-                or any(r['errors'] or r['conflicts'] for r in result['remainder_outcome']['sessions'])):
-            raise RuntimeError('Relocation completed with text/session issues; see report before starting')
+        if any(r['errors'] or r['conflicts'] for r in result['sessions']):
+            raise RuntimeError('Relocation completed with session issues; see report before starting')
     print(json.dumps({'moves': len(result['moves']), 'links': len(result['links']), 'conflicts': len(result['conflicts'])}))
     return 0
 

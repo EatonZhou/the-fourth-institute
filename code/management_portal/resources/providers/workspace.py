@@ -5,7 +5,6 @@ from stat import S_ISDIR
 from typing import TYPE_CHECKING
 
 from ..errors import ResourceOperationError
-from . import folder_files
 
 if TYPE_CHECKING:
     from ..service import ResourceService
@@ -22,12 +21,21 @@ def _root(record):
 
 
 def _resolve(service: "ResourceService", address, *, actor="", **_context):
-    root_id, separator, suffix = address.partition("/")
-    record = service.get(root_id, actor=actor)
+    root_id, separator, _suffix = address.partition("/")
+    if separator:
+        raise ValueError("Workspace file address requires <workspace-id>/file/<relative-path>")
+    from ..collaboration_registry import descriptor_resource_record
+    from management_portal.society_service.lineage_access_policy import hidden_private_ids
+
+    record = descriptor_resource_record(service._collaboration.get(root_id))
     attributes = record.get("attributes") or {}
     exists = attributes.get("status") != "deleted" and not attributes.get("deleted_at")
-    # get() checks current descriptor lifecycle and the Resource facade. File
-    # traversal remains pinned below.
+    if not exists:
+        raise KeyError(root_id)
+    service._access.authorize_read(record, actor=actor)
+    if hidden_private_ids(actor, [record]):
+        raise PermissionError(f"Workspace access denied: {root_id}")
+    # The descriptor is authoritative even while discovery is stale.
     result = {
         "address": address,
         "root_id": root_id,
@@ -37,51 +45,31 @@ def _resolve(service: "ResourceService", address, *, actor="", **_context):
         "exists": bool(exists),
         "portal_url": record.get("url", ""),
     }
-    if not exists:
-        if separator:
-            raise KeyError(address)
+    try:
+        path = Path(str(attributes.get("path") or ""))
+        result["directory_status"] = "available" if S_ISDIR(path.stat().st_mode) else "not_directory"
+    except FileNotFoundError:
         result["directory_status"] = "missing"
-        return result
-    if not separator:
-        try:
-            path = Path(str(attributes.get("path") or ""))
-            result["directory_status"] = "available" if S_ISDIR(path.stat().st_mode) else "not_directory"
-        except FileNotFoundError:
-            result["directory_status"] = "missing"
-        except OSError:
-            result["directory_status"] = "unavailable"
-        return result
-    parts = folder_files.file_parts(suffix)
-    if parts is None:
-        raise ValueError("Workspace file address requires <workspace-id>/file/<relative-path>")
+    except OSError:
+        result["directory_status"] = "unavailable"
+    return result
+
+
+def authorize_file(actor, root_id, root, parts):
     from management_portal.society_service.lineage_access_policy import workspace_reaches
 
-    # Before any file is touched, so a denied read looks like a missing one.
-    root = _root(record)
-    file_path = str(root.joinpath(*parts))
-    if not workspace_reaches(actor, root_id, write=False, path=file_path):
-        raise KeyError(address)
-    # Sensitive paths (.env, secrets/, ...) read as missing, as in the Lineage Folder.
-    return folder_files.describe(result, root, parts, hide=True)
+    if not workspace_reaches(actor, root_id, write=False, path=str(root.joinpath(*parts))):
+        raise PermissionError(f"File access denied: {root_id}")
 
 
 def _read_content(resolved, *, max_bytes=4 * 1024 * 1024, **_context):
-    if resolved["target_kind"] not in {"file", "directory"}:
-        raise ValueError("Workspace root has no byte content; use <workspace-id>/file/<relative-path>")
-    return folder_files.read_content(resolved, _root(resolved["record"]), max_bytes=max_bytes)
-
-
-def _read_content_range(resolved, *, start, end, **_context):
-    if resolved["target_kind"] != "file":
-        raise ValueError("Workspace root has no byte content; use <workspace-id>/file/<relative-path>")
-    return folder_files.read_content_range(resolved, _root(resolved["record"]), start=start, end=end)
+    raise ValueError("Workspace root has no byte content; use <workspace-id>/file/<relative-path>")
 
 
 def install_resolver(service: "ResourceService") -> None:
     service.register_resolver(
         "workspace", lambda address, **context: _resolve(service, address, **context),
         read_content=_read_content,
-        read_content_range=_read_content_range,
     )
 
 

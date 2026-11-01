@@ -312,9 +312,21 @@ Portal 中的文档、知识条目、Resident、Lineage 等大多数对象用统
 | 读正文或资源内的文件 | `ReadResource`（`address`，例如 `<ID>` 或 `<ID>/file/<相对路径>`） |
 | 浏览 Workspace、Resident Folder 或 Lineage Folder | `ReadResource`（`workspace_…`、`resident_…` 或 `lineage_…` 加 `/file/<目录>`，返回直接子项；读文件可加 `preview` 或 `meta_only`） |
 
-只看得到你有权读取的资源；无权读取与不存在一样返回 `instruction.not_found`。
+交付物和报告中的长期文件引用可以作为 `address` 传给 `ReadResource` 或 `ResolveResource`：
 
-有目标 Workspace 的 `@admin` 权限时，可以用 `UnregisterResource(resource_id=workspace_id)` 注销无人使用的工作区。存活 Resident 的自有或绑定关系、有效子 Workspace 或其他嵌套目录资源登记会阻止注销，返回 `instruction.conflict` 和具体原因。实例区域内目录一并删除，区域外主机目录保留；目录已不存在时只注销登记。区域根目录不能用此指令删除。
+```json
+{"workspace_id": "workspace_0123456789ab", "relative_path": "reports/result.md"}
+```
+
+Repo 和 Article 分别用 `repo_id`、`article_id` 替换 `workspace_id`，一次只给一个对象 ID；`relative_path` 为空字符串表示目录根。分隔符始终为 `/`；拒绝绝对路径、盘符、空路径段、`.`、`..`、软链接越界和当前文件系统不允许的文件名字符。结构引用允许 POSIX 文件名中的字面反斜线和换行；反斜线不作为分隔符。
+
+解析在访问引用文件前检查对象和读取权限。`ReadResource`（包括预览、仅元数据读取）与 `ResolveResource` 沿用 ISA 的读取防泄露契约：PAR 拒绝读取返回 `instruction.not_found`，`details.reason` 在命中 deny 时为 `denied`，没有匹配 permit 时为 `no_permit`。权限错误的 `details` 还包含 `target_id`（对象 ID）、`action`（权限动作）、`a`（有映射时的权限节点，默认方案为 `@viewer`）；命中 deny 时另含 `deny_entry_id`。权限检查可能先结束请求，即使对象不存在也可能返回此类拒绝，不能据此推断对象存在。通过权限检查后，对象查找确认不存在或已删除时返回 `instruction.not_found`、`details={"reason":"object_not_found"}`；文件缺失时返回 `instruction.not_found`、`details={"reason":"file_not_found"}`。
+
+对象移动后引用按当前登记目录解析，不回退到旧绝对路径。字符串资源地址仍是合法入口。保存结构引用时使用返回的 `file_reference`，不保存解析得到的主机路径作为后备地址。
+
+`CreateWorkspace` 在空位置新建目录，`RegisterWorkspace` 将现成目录登记为新的 Workspace。两者都传 `path`（绝对目录路径）和稳定的 `operation_id`，可选 `title` 和 `owner_id`；同一调用者用相同操作 ID 和参数重试会沿用同一对象。`owner_id` 是目录所属 Resident、Lineage 或 Project，省略时属于 Workspace 自己；它不是权限 owner，不授予访问权限。创建可以在实例区域外，来源为 `created`；登记要求目录已存在，来源为 `adopted`，不能接入其他实例的实例根或区域。来源和所属对象在资源的 `attributes.directory` 中返回。
+
+有目标 Workspace 的 `@admin` 权限时，可以用 `UnregisterResource(resource_id=workspace_id)` 注销。`created` 目录整树进入后台清理，`adopted` 目录保留文件；归属决定生命周期，区域内外不决定删留。嵌套登记与绑定按目录协议注销和解除，不受引用保护。注销和文件清理分别报告，用 `GetDirectoryCleanup(resource_id=workspace_id)` 查询清理进度与重试原因；区域根、实例根及其上级目录不能删除。
 
 ### 7.3 聊天室
 

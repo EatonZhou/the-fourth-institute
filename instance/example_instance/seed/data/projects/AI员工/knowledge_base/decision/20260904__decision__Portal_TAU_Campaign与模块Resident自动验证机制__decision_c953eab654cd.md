@@ -9,7 +9,7 @@ version:
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T03:39:30Z'
+  updated_at: '2026-11-01T18:45:16Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -42,6 +42,7 @@ links:
   - decision_f2a6a5dd4646
   - decision_6febe7bb57f9
   - decision_4adcc1ff2f2c
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---

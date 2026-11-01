@@ -320,7 +320,7 @@ def test_committed_cleanup_survives_lineage_deletion_and_service_restart(monkeyp
     """
     from management_portal.society_service.effect_recovery_worker import EffectRecoveryWorker
     from management_portal.society_service.state_store import reset_lineage_data_store_for_tests
-    lid = _lineage("lineage_cleanup_deleted")["lineage_id"]
+    lid = _lineage("lineage_aaaabbbb0001")["lineage_id"]
     store = get_lineage_data_store()
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "caller": "resident_original", "instruction_id": "inst_lin_maint", "result": {"body": "x" * (journal.MAX_RESULT_BYTES + 1)}})
@@ -412,7 +412,7 @@ def test_lineage_deletion_settles_safe_effect_and_retains_cleanup_for_tick(monke
     :design-point:
     """
     from management_portal.society_service.effect_recovery_worker import EffectRecoveryWorker
-    lid = _lineage("lineage_delete_settled")["lineage_id"]
+    lid = _lineage("lineage_aaaabbbb0002")["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "caller": "resident_original", "instruction_id": "inst_lin_delete", "result": {"body": "x" * (journal.MAX_RESULT_BYTES + 1)}})
     observed = []

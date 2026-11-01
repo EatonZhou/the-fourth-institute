@@ -13,7 +13,7 @@ from ..declarations import CATEGORIES, InstructionDeclaration, merge
 from . import (
     conversation, environment, family, family_internal, function_block, isa, lineage_definition,
     lineage_run, lineage_state, mailbox, organization, permission, resident, resident_execution,
-    resource, user, script_run, template,
+    resource, directory, user, script_run, template,
 )
 
 
@@ -39,6 +39,7 @@ def categories() -> dict[str, str]:
 def instruction_catalog() -> dict[str, InstructionDeclaration]:
     catalog = merge(
         resource.DECLARATIONS,
+        directory.DECLARATIONS,
         user.DECLARATIONS,
         resident.DECLARATIONS,
         conversation.DECLARATIONS,

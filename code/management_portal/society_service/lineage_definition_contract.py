@@ -15,6 +15,7 @@ EDGE_FAMILIES = {
 }
 LINEAGE_MEMBERSHIP_VALUES = frozenset({"formal", "personal"})
 LINEAGE_DEFINITION_FIELDS = frozenset({
+    "directory",
     "schema",
     "schema_version",
     "lineage_id",

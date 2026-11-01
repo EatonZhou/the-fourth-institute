@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import re
 import secrets
-import shutil
 import unicodedata
 from datetime import date
 from pathlib import Path
@@ -14,6 +13,8 @@ import yaml
 from management_portal.shared_state import exclusive_file_lock
 
 from .common import canonical_record
+from ..directory_registrations import directory_writer, register_owned, unregister_owned, is_deleted
+from management_common.directory_cleanup_store import get_directory_cleanup_store
 
 if TYPE_CHECKING:
     from ..service import ResourceService
@@ -147,6 +148,8 @@ def _documents() -> Iterable[tuple[str, Path, dict[str, Any], str]]:
         for entry in entries:
             if entry.name.startswith("."):
                 continue
+            if get_directory_cleanup_store().pending_at(entry):
+                continue
             candidates = (
                 [entry]
                 if entry.is_file() and entry.suffix.lower() == ".md"
@@ -162,6 +165,8 @@ def _documents() -> Iterable[tuple[str, Path, dict[str, Any], str]]:
                 if _text(metadata.get("type")).lower() not in {"", "experiment"}:
                     continue
                 resource_id = _text(metadata.get("kb_id"))
+                if is_deleted(resource_id):
+                    continue
                 if re.fullmatch(r"experiment_[0-9a-f]{12}", resource_id):
                     yield project_id, path, metadata, body
                     break
@@ -221,9 +226,8 @@ def register_experiment(
     *,
     actor: str = "",
     resource_id: str = "",
-    reservation_created: bool = False,
+    operation_id: str = "",
 ) -> dict[str, Any]:
-    del actor
     project_id = _text(payload.get("project_id"), 80)
     title = _text(payload.get("title"), 200)
     if not project_id:
@@ -235,19 +239,20 @@ def register_experiment(
     root = _experiment_root(project_root)
     entry_root = root / f"{_slug(payload.get('slug'), title)}__{resource_id}"
     path = entry_root / "experiment.md"
-    lock_path = project_root / "knowledge_base" / ".experiment-resource.lock"
-    with exclusive_file_lock(lock_path):
-        # A fresh reservation cannot be a replay. Only retries need to look
-        # for an existing ID, including a document moved from its original path.
-        if not reservation_created:
-            try:
-                existing = _by_resource_id(resource_id)
-            except KeyError:
-                existing = None
-            if existing is not None:
-                return _record(*existing, created=False)
-        if entry_root.exists():
-            raise FileExistsError(f"Experiment directory exists: {entry_root}")
+    from ..creation import Creation
+    from ..registry_store import get_registry_store
+    creation = Creation(resource_id, actor=actor, payload=payload, operation_id=operation_id)
+    with creation.prepare([(entry_root, 'directory')]):
+        if creation.completed:
+            previous = get_registry_store().get('knowledge', resource_id)
+            if previous is None:
+                raise KeyError(resource_id)
+            from management_common.instance_locations import located_path
+            path = Path(located_path(previous['directories'][0]['path'])) / 'experiment.md'
+            metadata, body = _split_document(path.read_text(encoding='utf-8'))
+            return _record(project_id, path, metadata, body, created=False)
+        if get_registry_store().get('knowledge', resource_id) is not None:
+            raise FileExistsError('Experiment identity is already registered: ' + resource_id)
         status = _text(payload.get("status") or "planned", 80)
         importance = _importance(payload.get("importance", 5))
         body_text = str(
@@ -265,15 +270,14 @@ def register_experiment(
             "status": status,
             "importance": importance,
         }
-        entry_root.mkdir(parents=True)
-        try:
-            _write_atomic(path, _render_document(metadata, body))
-        except Exception:
-            try:
-                entry_root.rmdir()
-            except OSError:
-                pass
-            raise
+        creation.publish(lambda index, stage: _write_atomic(stage / 'experiment.md', _render_document(metadata, body)))
+        entry_root, = creation.paths
+        path = entry_root / 'experiment.md'
+        with directory_writer('knowledge') as writer, creation.registration(writer.connection):
+            register_owned('knowledge', resource_id, [entry_root], connection=writer.connection)
+            from management_portal import permission_system
+            permission_system.sync_resource({'resource_id': resource_id, 'project_ids': [project_id]},
+                                            resource_type='experiment', connection=writer.connection)
         return _record(
             project_id,
             path,
@@ -283,13 +287,13 @@ def register_experiment(
         )
 
 
-def _mutation_paths(project_id: str, path: Path) -> tuple[Path, Path, Path]:
+def _mutation_paths(project_id: str, path: Path) -> tuple[Path, Path]:
     knowledge_root = _project_root(project_id) / "knowledge_base"
     experiment_root = (knowledge_root / "experiment").resolve()
     entry_root = path.parent.resolve()
     if entry_root.parent != experiment_root or not path.resolve().is_relative_to(entry_root):
         raise ValueError("experiment mutation requires a contained experiment directory")
-    return entry_root, knowledge_root / ".experiment-resource.lock", knowledge_root / ".trash"
+    return entry_root, knowledge_root / ".experiment-resource.lock"
 
 
 def update_experiment(
@@ -308,7 +312,7 @@ def update_experiment(
     if not payload:
         raise ValueError("experiment update requires at least one field")
     project_id, path, metadata, body = _by_resource_id(resource_id)
-    _entry_root, lock_path, _trash_root = _mutation_paths(project_id, path)
+    _entry_root, lock_path = _mutation_paths(project_id, path)
     with exclusive_file_lock(lock_path):
         project_id, path, metadata, body = _by_resource_id(resource_id)
         _mutation_paths(project_id, path)
@@ -349,18 +353,11 @@ def unregister_experiment(
     *,
     actor: str = "",
 ) -> dict[str, Any]:
-    del actor
     project_id, path, metadata, body = _by_resource_id(resource_id)
-    _entry_root, lock_path, _trash_root = _mutation_paths(project_id, path)
+    _entry_root, lock_path = _mutation_paths(project_id, path)
     with exclusive_file_lock(lock_path):
         project_id, path, metadata, body = _by_resource_id(resource_id)
-        entry_root, _lock_path, trash_root = _mutation_paths(project_id, path)
-        trash_root.mkdir(parents=True, exist_ok=True)
-        target = trash_root / entry_root.name
-        if target.exists():
-            target = trash_root / (
-                f"{entry_root.name}_{secrets.token_hex(4)}"
-            )
+        entry_root, _lock_path = _mutation_paths(project_id, path)
         record = _record(
             project_id,
             path,
@@ -368,11 +365,10 @@ def unregister_experiment(
             body,
             created=False,
         )
-        shutil.move(str(entry_root), str(target))
+        result = unregister_owned('knowledge', resource_id, actor=actor)
     return {
         **record,
-        "deleted": True,
-        "trash_path": str(target),
+        **result,
     }
 
 
@@ -384,7 +380,6 @@ def install_mutation_provider(service: "ResourceService") -> None:
             payload,
             actor=str(context.get("actor") or ""),
             resource_id=str(context.get("resource_id") or ""),
-            reservation_created=bool(context.get("reservation_created")),
         ),
         update=lambda resource_id, payload, **context: update_experiment(
             resource_id,

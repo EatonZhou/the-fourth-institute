@@ -147,7 +147,11 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
     changed = False
     from management_portal.resource_auto_registration import IGNORE_COLLECTION
 
-    with store.writer(repos.REPO_COLLECTION, RECOVERIES, IGNORE_COLLECTION) as writer:
+    from .directory_registrations import directory_writer
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    with directory_writer(repos.REPO_COLLECTION, RECOVERIES, IGNORE_COLLECTION) as writer:
+        for checkout in group:
+            get_directory_cleanup_store().assert_available(checkout['path'], connection=writer.connection)
         records = repos.REPO_REGISTRY.records(writer)
         receipt = writer.get(RECOVERIES, receipt_id)
         if receipt:
@@ -176,7 +180,7 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
                         {item["path"] for item in group}):
                     raise ValueError("Duplicate Repo contains checkouts outside this recovery")
             prior_without_locations = {**previous, "checkouts": []}
-            result = repos._merge_record(prior_without_locations, resource_id, group, [])
+            result = repos._merge_record(prior_without_locations, resource_id, group, [], origin='adopted')
             result["canonical_checkout"] = by_path[mapping[previous["canonical_checkout"]]]["path"]
             receipt = {
                 "schema": "tfi.repo-registration-recovery.v1", "resource_id": resource_id,

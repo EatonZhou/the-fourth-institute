@@ -973,6 +973,24 @@
       "a": "@free",
       "r": "@portal"
     },
+    "CreateWorkspace:fixed": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CreateWorkspace:owner_id": {
+      "a": "@contributor"
+    },
+    "RegisterWorkspace:fixed": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "RegisterWorkspace:owner_id": {
+      "a": "@contributor"
+    },
+    "GetDirectoryCleanup": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "CreateReply": {
       "a": "@viewer"
     },

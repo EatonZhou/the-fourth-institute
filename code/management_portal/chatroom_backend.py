@@ -448,6 +448,9 @@ def _Transaction(chatroom_id, *, viewer=None, delivery_ids=None, permissions=Fal
             if set(rooms) - {chatroom_id}:
                 raise ValueError("A Chatroom transaction may only write its own room")
             store.save(chatroom_id, rooms.get(chatroom_id), previous)
+            if previous and chatroom_id not in rooms:
+                from management_common.directory_retention import RetentionStore
+                RetentionStore().release_owner(chatroom_id, connection=connection)
             if permissions:
                 _sync_permissions(rooms.get(chatroom_id) or previous, deleted=chatroom_id not in rooms, connection=connection)
 
@@ -458,6 +461,12 @@ def _append(room: dict[str, Any], message: dict[str, Any]) -> dict[str, Any]:
     message.setdefault("created_at", _now())
     agent_data = _agent_data()
     stored = agent_data.display_chat_message(room["chatroom_id"], message)
+    from management_common.upload_retention import consumed
+    from management_portal.resources.isa import _upload_dir
+    for part in stored.get('content_parts') or []:
+        if part.get('upload_id'):
+            consumed(_upload_dir(part['upload_id']), owner_id=room['chatroom_id'],
+                     connection=agent_data.database._current_connection())
     ordinal = agent_data.chat_message_ordinal(room["chatroom_id"], stored["message_id"])
     if ordinal is None:
         raise RuntimeError("Chatroom message was not displayed")

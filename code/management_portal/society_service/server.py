@@ -771,6 +771,8 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
                 self._finish_changes(changes)
 
     def _domain_call(self, params: dict[str, Any]) -> Any:
+        from management_common.resource_lifecycle import lifecycle_scope
+        from management_portal.resources.creation import creation_operation
         domain = str(params.get("domain") or "")
         method = str(params.get("name") or "")
         args = params.get("args")
@@ -787,7 +789,11 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
         state_scope = lineage_module.lineage_state_scope(lineage_id, f"{domain}.{method}") if lineage_id else nullcontext()
         with collect_changes() as changes:
             try:
-                with state_scope:
+                with state_scope, creation_operation(str(params.get('creation_operation_id') or '')), lifecycle_scope(
+                    str(params.get('resource_lifecycle_id') or '')
+                    if operation.mode == 'write' and 'actor' in bound.arguments else '',
+                    actor=str(bound.arguments.get('actor') or ''),
+                ):
                     return _invoke_domain(operation, handler, bound)
             finally:
                 self._finish_changes(changes)

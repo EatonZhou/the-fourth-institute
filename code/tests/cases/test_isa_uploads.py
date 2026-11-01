@@ -142,7 +142,8 @@ def test_avatar_uploads_must_belong_to_the_caller(monkeypatch):
     stored = {}
 
     class Store:
-        def update(self, username, payload):
+        def update(self, username, payload, *, upload_id=None):
+            assert upload_id
             stored[username] = payload
             return {"kind": "upload", "version": "v1"}
 
@@ -256,6 +257,7 @@ def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypat
     monkeypatch.setattr(resource_isa, "upload_root", lambda: tmp_path)
     monkeypatch.setattr(resource_isa, "DOWNLOAD_CHUNK_BYTES", 4096)
     monkeypatch.setattr(resource_isa, "_service", lambda: SimpleNamespace(
+        parse_address=lambda address: SimpleNamespace(suffix=('file', 'big.bin')),
         read_content=read_content, read_content_range=read_content_range,
         resolve=lambda address, actor: {"content_size": len(blob), "media_type": "application/octet-stream"},
     ))

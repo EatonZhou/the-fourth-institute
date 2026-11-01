@@ -210,7 +210,7 @@ def test_off_mode_real_actor_and_personal_ama(workspace, monkeypatch):
         (str(workspace.root), "lineage_123456789abc", "alice"),
     ])
     assert_error(workspace.update({"title": "No", "expected_version": token}, actor="bob"), "instruction.not_found")
-    assert_error(workspace.call("ResolveResource", {"address": WID}, actor="bob"), "instruction.not_found")
+    assert_error(workspace.call("ResolveResource", {"address": WID}, actor="bob"), "instruction.forbidden")
     result = workspace.update({"title": "Owner", "expected_version": token}, actor="alice").raise_for_error()
     assert result["resource"]["title"] == "Owner"
 

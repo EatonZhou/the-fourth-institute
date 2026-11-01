@@ -188,7 +188,9 @@ def test_writer_resource_response_contracts():
     assert change['schema'] == 'tfi.resource_change_notification.v1'
     assert change['change']['resource_id'] == R
     assert portal_route_contract()['schema'] == 'tfi.resource-portal-routes.v1'
-    row = {'workspace_id':'workspace_0123456789ab','title':'same','summary':'','path':'/same','deleted_at':None,'created_at':T1,'updated_at':T1}
+    row = {'workspace_id':'workspace_0123456789ab','title':'same','summary':'','path':'/same',
+           'origin':'created','owner_id':'workspace_0123456789ab','operation_id':'writer-fixture',
+           'deleted_at':None,'created_at':T1,'updated_at':T1}
     before = copy.deepcopy(row)
     result = WorkspaceStore.descriptor(row)
     assert result['schema'] == 'tfi.collaboration-descriptor.v2'

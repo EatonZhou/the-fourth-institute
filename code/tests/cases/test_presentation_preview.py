@@ -64,6 +64,16 @@ def test_cache_uses_content_and_releases_conversion_slot(converter):
     assert not list(first.parent.glob('convert-*'))
 
 
+def test_presentation_cache_is_not_deleted_by_age(converter):
+    import os
+    import time
+    first = preview.presentation_pdf(b'old', 'slides.pptx')
+    old = time.time() - 8 * 86400
+    os.utime(first, (old, old))
+    preview.presentation_pdf(b'new', 'slides.pptx')
+    assert first.exists()
+
+
 def test_video_deck_above_64_mib_can_preview(tmp_path, converter):
     # Embedded videos can make an otherwise ordinary presentation exceed 64 MiB.
     source = tmp_path / 'deck-with-videos.pptx'

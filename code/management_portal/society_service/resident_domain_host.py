@@ -48,6 +48,9 @@ class ResidentDomainHost:
             (resident_intake_domain, ("deliver_resident_message_content",)),
             (resident_lifecycle_domain, (
                 "observe_committed_resident_transfer",
+                "terminate_resident_work",
+                "directory_move_execution_scope",
+                "terminate_lineage_scripts",
             )),
             (resident_lifecycle_steps_domain, ("apply_resident_lifecycle_step",)),
             (resident_media_domain, ("cleanup_expired_input_images",)),
@@ -61,7 +64,6 @@ class ResidentDomainHost:
             )),
             (resident_workspace_domain, (
                 "delete_resident_identities", "confirm_resident_deletion_projection",
-                "prepare_lineage_project_member_updates", "persist_lineage_project_member_updates",
                 "get_resident_workspace_roots",
                 "add_resident_reference_workspace", "remove_resident_reference_workspace",
                 "resolve_resident_identity",
@@ -81,11 +83,19 @@ class ResidentDomainHost:
         resident_lineage.invalidate_access_projection(lineage_id)
 
     @staticmethod
-    def delete_registered_lineage(
+    def delete_registered_lineage(lineage_id: str, preferred_resident_id: str, actor: str) -> dict[str, Any] | None:
+        preparation = ResidentDomainHost.prepare_registered_lineage_deletion(lineage_id, preferred_resident_id, actor)
+        if preparation is None:
+            return None
+        with preparation as commit:
+            return commit()
+
+    @staticmethod
+    def prepare_registered_lineage_deletion(
         lineage_id: str,
         preferred_resident_id: str,
         actor: str,
-    ) -> dict[str, Any] | None:
+    ):
         records = [
             item
             for item in resident_lineage.for_lineage(lineage_id)
@@ -93,7 +103,6 @@ class ResidentDomainHost:
             and str(item.get("lineage_id") or "") == lineage_id
         ]
         if not records:
-            resident_record_domain.lifecycle_operations().require_lineage_transfer_settled(lineage_id)
             return None
         target = next(
             (
@@ -119,7 +128,7 @@ class ResidentDomainHost:
             # A formal Lineage may have members without a designated leader.
             # This record locates the aggregate; it does not acquire a role.
             target = min(records, key=lambda item: str(item.get("resident_id") or ""))
-        return resident_workspace_domain.delete_resident_lineage(
+        return resident_workspace_domain.prepare_resident_lineage_deletion(
             str(target.get("resident_id") or ""),
             actor,
         )

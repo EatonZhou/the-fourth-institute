@@ -9,6 +9,7 @@ from __future__ import annotations
 import errno
 import os
 import stat
+import sys
 from contextlib import ExitStack, contextmanager
 from functools import lru_cache
 from pathlib import Path, PureWindowsPath
@@ -141,6 +142,72 @@ def unlink_child(directory: int, name: str) -> None:
         (directory_path(directory) / name).unlink()
     else:
         os.unlink(name, dir_fd=directory)
+
+
+def lstat_child(directory: int, name: str):
+    """Inspect the directory entry itself, including symlinks/reparse points."""
+    _part(name)
+    if os.name == 'nt':
+        return (directory_path(directory) / name).lstat()
+    return os.stat(name, dir_fd=directory, follow_symlinks=False)
+
+
+def rename_child_no_replace(source_parent, source, target_parent, target):
+    """Atomically claim/restore an entry through pinned parents, never overwrite."""
+    _part(source)
+    _part(target)
+    if os.name == 'nt':
+        os.rename(directory_path(source_parent) / source, directory_path(target_parent) / target)
+        return
+    import ctypes
+    library = ctypes.CDLL(None, use_errno=True)
+    if sys.platform == 'linux':
+        function, flag = library.renameat2, 1  # RENAME_NOREPLACE
+    elif sys.platform == 'darwin':
+        function, flag = library.renameatx_np, 4  # RENAME_EXCL
+    else:
+        raise NotImplementedError('Atomic entry claims are not supported on this platform')
+    function.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    function.restype = ctypes.c_int
+    if function(source_parent, os.fsencode(source), target_parent, os.fsencode(target), flag):
+        number = ctypes.get_errno()
+        raise OSError(number, os.strerror(number), target)
+
+
+def sync_directory(directory):
+    if os.name != 'nt':
+        os.fsync(directory)
+
+
+def rmdir_child(directory, name):
+    _part(name)
+    if os.name == 'nt':
+        os.rmdir(directory_path(directory) / name)
+    else:
+        os.rmdir(name, dir_fd=directory)
+
+
+@contextmanager
+def private_child(directory, name, *, create=False):
+    """Exclusive private operation directory; existing entries are never adopted."""
+    from .file_permissions import _WindowsSecurity, assert_private_posix_acl
+    _part(name)
+    with ExitStack() as stack:
+        if os.name == 'nt':
+            security = _WindowsSecurity()
+            handle = stack.enter_context(security.handle(
+                directory_path(directory) / name, directory=True, create=create))
+            security.assert_private(handle)
+        elif create:
+            os.mkdir(name, 0o700, dir_fd=directory)
+        child = open_child(directory, name, os.O_RDONLY, is_directory=True)
+        stack.callback(os.close, child)
+        if os.name != 'nt':
+            info = os.fstat(child)
+            if info.st_uid != os.geteuid() or info.st_mode & 0o077:
+                raise PermissionError('Operation directory is not private: ' + name)
+            assert_private_posix_acl(child)
+        yield child
 
 
 @contextmanager

@@ -253,48 +253,6 @@ def test_owner_cannot_move_lineage_back_to_no_project(
     assert (project_folder / "LINEAGE.md").read_text(encoding="utf-8") == "keep me\n"
     assert projected_projects[-1] == "project_robotcompany"
 
-
-def test_lineage_project_move_rejects_active_resident_execution_work(
-    lineage_store: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Lineage 中仍有 Resident 任务排队或处理时，拒绝把它移到其他 Project"""
-    project_root = lineage_store / "projects" / "RobotCompany"
-    project_root.mkdir(parents=True)
-    monkeypatch.setattr(
-        resource_client,
-        "project_roots",
-        lambda **_kwargs: {"project_robotcompany": project_root},
-    )
-    monkeypatch.setattr(
-        lineage_lifecycle,
-        "_lineage_relocation_blockers",
-        lambda _lineage_id: ["resident_0123456789ab"],
-    )
-    created = lineage_lifecycle.create_lineage(
-        {"title": "Busy project relocation", "nodes": [], "edges": []},
-        "sample_admin",
-    )
-    canonical = lineage_state._lineage_dir(created["lineage_id"])
-
-    with pytest.raises(ValueError, match="仍有任务正在排队或处理"):
-        lineage_lifecycle.update_lineage_metadata(
-            created["lineage_id"],
-            {
-                "expected_revision": created["revision"],
-                "project_id": "project_robotcompany",
-            },
-            "sample_admin",
-        )
-
-    assert canonical.is_dir()
-    assert not canonical.is_symlink()
-    assert lineage_reads.get_lineage(
-        created["lineage_id"],
-        "sample_admin",
-    )["project_id"] == "project_test"
-
-
 def test_create_lineage_in_project_binds_canonical_entry(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -639,7 +597,8 @@ def test_lineage_lifecycle_revision_and_recoverable_delete(
     result = lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
     # Deletion removes the Lineage folder; nothing stays in the deleted root.
     assert "recoverable_path" not in result
-    assert not any(lineage_lifecycle._deleted_root().glob(f"{created['lineage_id']}_*"))
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    assert get_directory_cleanup_store().status(owner_id=created['lineage_id'])
     assert lineage_reads.list_lineages("sample_admin")["lineages"] == []
     assert synced[-1]["lineage_id"] == created["lineage_id"]
     assert result["deleted_at"]
@@ -647,12 +606,12 @@ def test_lineage_lifecycle_revision_and_recoverable_delete(
         assert connection.execute("SELECT deleted_at FROM lineages WHERE lineage_id=%s", (created["lineage_id"],)).fetchone()["deleted_at"]
 
 
-def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
+def test_empty_lineage_delete_commits_identity_when_cleanup_fails(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """空 Lineage 原位清理失败时目录保留，删除意图可重试且不移动存活路径"""
-    from management_portal.society_service import resident_workspace_deletion
+    from management_common import directory_cleanup_store
 
     created = lineage_lifecycle.create_lineage(
         {"title": "Cleanup failure", "nodes": [], "edges": []},
@@ -671,20 +630,20 @@ def test_empty_lineage_delete_preserves_retryable_intent_when_cleanup_fails(
         capture_sync,
     )
     monkeypatch.setattr(
-        resident_workspace_deletion,
-        "remove_deleted_folder",
+        directory_cleanup_store,
+        "remove_path",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("cleanup failed")),
     )
 
-    with pytest.raises(OSError, match="cleanup failed"):
-        lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
+    lineage_lifecycle.delete_lineage(created["lineage_id"], "sample_admin")
+    queue = directory_cleanup_store.get_directory_cleanup_store()
+    assert all(item['status'] == 'retry' for item in queue.run_pending())
 
     assert lineage_state._lineage_dir(created["lineage_id"]).is_dir()
     assert len(synced) == 1
     assert synced[0]["deleted_at"]
-    intent = lineage_aggregate.lineage_deletion_intent(created["lineage_id"])
-    assert intent["phase"] == "retryable"
-    assert intent["operation_id"].startswith("lineage-delete_")
+    assert not lineage_aggregate.lineage_deletion_intent(created['lineage_id'])
+    assert lineage_reads.list_lineages('sample_admin')['lineages'] == []
 
 
 def test_lineage_list_includes_every_owned_lineage(

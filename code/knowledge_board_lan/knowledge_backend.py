@@ -12,7 +12,6 @@ from __future__ import annotations
 import os
 import re
 import secrets
-import shutil
 import time
 from datetime import date
 from pathlib import Path
@@ -116,23 +115,6 @@ def _write_text_atomic(path: Path, text: str) -> None:
             temporary.unlink()
         except FileNotFoundError:
             pass
-
-
-def _write_new_text_atomic(path: Path, text: str) -> None:
-    """Publish one new text file without replacing an existing fact."""
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(
-        f".{path.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp"
-    )
-    try:
-        from management_common.file_permissions import set_created_file_permissions
-        with temporary.open("x", encoding="utf-8") as stream:
-            set_created_file_permissions(temporary, 0o664)
-            stream.write(text)
-        os.link(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def _raw_knowledge_entries() -> tuple[list[dict], list[Path]]:
@@ -667,35 +649,6 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
     return dict(payload)
 
 
-def _knowledge_base_root_for_item(path: Path) -> Path:
-    resolved_path = path.resolve(strict=True)
-    for proj in _parse_projects_yaml():
-        project_path = str(proj.get("path") or "").strip()
-        if not project_path:
-            continue
-        kb_root = (Path(project_path).expanduser() / "knowledge_base").resolve(strict=False)
-        try:
-            resolved_path.relative_to(kb_root)
-        except ValueError:
-            continue
-        return kb_root
-    raise ValueError("knowledge item is outside registered project knowledge_base")
-
-
-def _unique_trash_path(trash_root: Path, source_name: str) -> Path:
-    candidate = trash_root / source_name
-    if not candidate.exists():
-        return candidate
-    source = Path(source_name)
-    stamp = int(time.time())
-    for index in range(1, 1000):
-        suffix = f"__deleted_{stamp}" if index == 1 else f"__deleted_{stamp}_{index}"
-        candidate = trash_root / f"{source.stem}{suffix}{source.suffix}"
-        if not candidate.exists():
-            return candidate
-    raise RuntimeError("could not allocate trash filename")
-
-
 def _valid_item_path(abs_path: str) -> Path | None:
     raw = str(abs_path or "").strip()
     if not raw:
@@ -720,6 +673,9 @@ def resolve_item_record(
     clean_id = str(kb_id or "").strip()
     if not is_canonical_kb_id(clean_id):
         raise ValueError("canonical kb_id required")
+    from management_portal.resources.directory_registrations import is_deleted
+    if is_deleted(clean_id):
+        raise KeyError('knowledge item not found')
 
     try:
         service = get_resource_service()
@@ -1057,6 +1013,7 @@ def register_item(
     payload: dict,
     *,
     actor: str = "",
+    operation_id: str = "",
 ) -> dict:
     """Create one canonical Markdown-backed Knowledge resource."""
 
@@ -1161,14 +1118,35 @@ def register_item(
         creating=True,
     )
 
-    with resource_mutation_lock(tag_root, clean_id):
-        if path.exists():
-            existing = _yaml_front_matter(_read_file_text(str(path)))
-            if str(existing.get("kb_id") or "").strip() != clean_id:
-                raise FileExistsError(f"Knowledge file already exists: {path}")
+    from management_portal.resources.directory_registrations import directory_writer, register_owned
+    from management_portal.resources.creation import Creation
+    from management_portal.resources.registry_store import get_registry_store
+    creation = Creation(clean_id, actor=actor, payload=payload, operation_id=operation_id)
+    with creation.prepare([(path, 'file'), (tag_root / clean_id, 'directory')]):
+        if creation.completed:
+            registration = get_registry_store().get('knowledge', clean_id)
+            if registration is None:
+                raise KeyError(clean_id)
+            from management_common.instance_locations import located_path
+            path = Path(located_path(registration['directories'][0]['path']))
+            existing_text = _read_file_text(str(path))
+            title = next((line[2:].strip() for line in existing_text.splitlines() if line.startswith('# ')), title)
             created = False
         else:
-            _write_new_text_atomic(path, document)
+            if get_registry_store().get('knowledge', clean_id) is not None:
+                raise FileExistsError('Knowledge identity is already registered: ' + clean_id)
+            def initialize(index, stage):
+                if index == 0:
+                    from management_common.file_permissions import set_created_file_permissions
+                    set_created_file_permissions(stage, 0o664)
+                    stage.write_text(document, encoding='utf-8')
+            creation.publish(initialize)
+            path, companion = creation.paths
+            with directory_writer('knowledge') as writer, creation.registration(writer.connection):
+                registration = register_owned('knowledge', clean_id, [path, companion], connection=writer.connection)
+                from management_portal import permission_system
+                permission_system.sync_resource({'resource_id': clean_id, 'project_ids': [project_id]},
+                                                resource_type=clean_type, connection=writer.connection)
             created = True
         with _LOCK:
             _MD_CACHE.pop(str(path), None)
@@ -1182,6 +1160,7 @@ def register_item(
         "title": title,
         "path": str(path),
         "created": created,
+        "directory": registration['directory'],
         "project_ids": _knowledge_project_ids({"project": project_id}),
     }
 
@@ -1425,13 +1404,10 @@ def delete_item(kb_id: str, *, actor: str = "") -> dict:
         path = Path(str(record.get("path") or ""))
         if path.suffix.lower() not in _EDITABLE_TEXT_FILE_EXTENSIONS:
             raise ValueError("text file required")
-        kb_root = _knowledge_base_root_for_item(path)
-        trash_root = kb_root / ".trash"
-        trash_root.mkdir(parents=True, exist_ok=True)
-        target = _unique_trash_path(trash_root, path.name)
-        from management_portal.workbench_projections.resource_lifecycle import release_resource
-        release_resource(clean_id, actor=actor)
-        shutil.move(str(path), str(target))
+        from management_portal.workbench_projections.resource_lifecycle import finish_resource_releases
+        from management_portal.resources.directory_registrations import unregister_owned
+        result = unregister_owned('knowledge', clean_id, actor=actor)
+        result['projection_cleanup_errors'] = finish_resource_releases([clean_id])
         with _LOCK:
             _MD_CACHE.pop(str(path), None)
             _MD_CACHE.pop(os.path.abspath(str(path)), None)
@@ -1440,7 +1416,6 @@ def delete_item(kb_id: str, *, actor: str = "") -> dict:
             _KNOWLEDGE_GRAPH_CACHE.clear()
     return {
         "kb_id": clean_id,
-        "deleted": True,
-        "trash_path": str(target),
+        **result,
         "project_ids": _knowledge_project_ids(record),
     }

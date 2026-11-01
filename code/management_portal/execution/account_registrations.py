@@ -30,6 +30,10 @@ DDL = """
 CREATE TABLE IF NOT EXISTS registrations (
     account_id TEXT PRIMARY KEY, provider TEXT NOT NULL, kind TEXT NOT NULL,
     route_id TEXT NOT NULL DEFAULT '', config JSONB NOT NULL DEFAULT '{}',
+    directory_origin TEXT GENERATED ALWAYS AS
+        (CASE WHEN config ? 'account_dir' THEN 'adopted'::text ELSE NULL::text END) STORED,
+    directory_owner TEXT GENERATED ALWAYS AS
+        (CASE WHEN config ? 'account_dir' THEN 'host'::text ELSE NULL::text END) STORED,
     max_concurrency INTEGER NOT NULL CHECK(max_concurrency > 0),
     enabled BOOLEAN NOT NULL DEFAULT TRUE, version INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL, created_by TEXT NOT NULL,

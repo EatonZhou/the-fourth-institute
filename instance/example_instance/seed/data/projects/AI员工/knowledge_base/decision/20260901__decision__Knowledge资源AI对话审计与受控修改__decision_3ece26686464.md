@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 21
+  number: 22
   created_at: '2026-09-01'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T18:14:41Z'
+  updated_at: '2026-11-01T18:52:35Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -39,6 +39,7 @@ links:
   - decision_b6e74d78f7b6
   - decision_8dc6b3d03ca7
   - decision_4a9ba5dfada6
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -118,10 +119,10 @@ Knowledge 主文件的受控更新支持两种互斥输入：`text` 是带 YAML 
 ### 删除
 
 - 删除只接受资源根 ID。嵌套文件不能作为独立资源删除。
-- 删除需要页面确认和服务端权限检查；知识条目及伴随文件的删除按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍移入所属 Project 的 `knowledge_base/.trash` 供运维恢复（Knowledge backend 删除流程）。
+- 删除需要页面确认和服务端权限检查；知识条目及伴随文件的删除按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 - 通用 Knowledge 页面保护 `article` 与 `experiment`，不显示其普通删除动作。Skill 的删除由 Skill provider 负责整个包；Experiment 的删除由 Experiment provider 负责整个实验目录。
-- 资源提供者在完成权限与业务检查后、注销前，按资源根 ID 调用统一投影生命周期服务，释放该资源所有用户的专属 Resident、Event、Effect、连线、角色绑定和创建关联。Skill 包也遵循此规则；共享团队与公共功能成员保留。注销与清理失败的处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在清理失败时保留源资源供重试（原投影释放流程）；已完成的部分无需重建。协议见 decision_f67ae5e70793。
-- 删除成功后，Portal 刷新列表和详情状态；注销及文件清理的进度、操作 ID 与失败原因按《目录与路径协议》（decision_4aa13bc21e8e）分别报告。现在的代码仍在删除失败时保留原资源和登记可解析，并在页面显示错误（原错误回执）。
+- 资源提供者在完成权限与业务检查后、注销前，按资源根 ID 调用统一投影生命周期服务，释放该资源所有用户的专属 Resident、Event、Effect、连线、角色绑定和创建关联。Skill 包也遵循此规则；共享团队与公共功能成员保留。注销与清理失败的处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。已完成的部分无需重建。协议见 decision_f67ae5e70793。
+- 删除成功后，Portal 刷新列表和详情状态；注销及文件清理的进度、操作 ID 与失败原因按《目录与路径协议》（decision_4aa13bc21e8e）分别报告。
 
 ## 组件各自负责什么
 
@@ -131,7 +132,7 @@ Knowledge 主文件的受控更新支持两种互斥输入：`text` 是带 YAML 
 | HTTP 路由层 | 取得当前登录用户、校验输入和角色、把异常转换为状态码 | 不直接扫描知识目录 |
 | ResourceService | 统一解析 ID、执行访问控制、保留登记身份并协调 provider | 不解释 Markdown 内部结构 |
 | Knowledge provider | 把统一的登记、读取、更新、删除调用转换成知识后端操作 | 不拥有私有聊天或共享留言状态 |
-| Knowledge backend | 扫描规范主文件、解析嵌套地址、按根资源隔离并发、维护版本、原子写入；目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理，现在的代码仍移入回收目录 | 不把未归档输入自动写入项目 |
+| Knowledge backend | 扫描规范主文件、解析嵌套地址、按根资源隔离并发、维护版本、原子写入；目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理 | 不把未归档输入自动写入项目 |
 
 一次受控修改按下面的顺序流动：
 
@@ -189,7 +190,7 @@ ResourceService 在 provider 完成写入后，用规范归属同步授权资源
 
 资源身份与访问控制由 ResourceService 拥有；主文件、伴随文件和规范版本记录由 Project 知识库拥有；页面筛选、当前详情和未保存编辑稿只属于浏览器会话。私有 Chat 状态由对应 Resident Workspace 拥有，遵循 decision_58db6282c244。
 
-服务重启后，Knowledge backend 会从规范主文件重新扫描资源；ResourceService 的登记用于维持统一发现。原子写入失败时旧文件仍可读。版本冲突不自动合并，调用方重读后只重放自己的修改。删除与恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍支持由运维从原 Project 的 `.trash` 恢复材料，Portal 没有面向用户的一键恢复控件（原恢复流程）。
+服务重启后，Knowledge backend 会从规范主文件重新扫描资源；ResourceService 的登记用于维持统一发现。原子写入失败时旧文件仍可读。版本冲突不自动合并，调用方重读后只重放自己的修改。删除与恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 
 ## Knowledge 输入字段
 

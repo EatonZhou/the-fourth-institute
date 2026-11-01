@@ -303,6 +303,11 @@ class _ArticleBuild:
         }
 
     def _compile(self, timeout_seconds: int) -> tuple[subprocess.CompletedProcess[str], str, list[dict[str, Any]], bool]:
+        from management_common.file_retention import cache_file
+        with cache_file(self.cache_root, group='article', owner_id=self.article_id), cache_file(self.output, group='article', owner_id=self.article_id):
+            return self._compile_owned_cache(timeout_seconds)
+
+    def _compile_owned_cache(self, timeout_seconds: int) -> tuple[subprocess.CompletedProcess[str], str, list[dict[str, Any]], bool]:
         """Run latexmk and publish its PDF: the run, its output, its diagnostics, and whether SyncTeX is there."""
         output = self.output
         output.parent.mkdir(parents=True, exist_ok=True)

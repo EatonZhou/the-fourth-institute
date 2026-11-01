@@ -102,6 +102,11 @@ def run(job_id: str, *, backend) -> None:
     if job.get("status") in {"done", "error", "cancelled", "deleted"} or job.get("deleted"):
         return
     work_dir = backend.PAPER_COLLECTOR_WORK_ROOT / job_id
+    from management_common.directory_retention import RetentionStore
+    from management_common.database_time import instant
+    retention = RetentionStore()
+    retention.declare(work_dir, category='background', owner_id=job_id,
+                      created_at=instant(job['created_at']))
     work_dir.mkdir(parents=True, exist_ok=True)
     stdout_path, stderr_path = work_dir / "stdout.json", work_dir / "stderr.log"
 
@@ -173,3 +178,6 @@ def run(job_id: str, *, backend) -> None:
                 "status": "error", "step": "error", "progress": 100, "error": str(exc)[-2000:],
             })
         raise
+    finally:
+        # This invocation has stopped, including cancellation and failed work.
+        retention.finish(job_id)

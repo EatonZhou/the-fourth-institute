@@ -119,7 +119,7 @@ DOMAIN_OPERATIONS = {
             validate_project_deletion project_teams
         """),
         (Operation('write', 'project', implementation='management_portal.society_service.project_domain'), """
-            delete_project
+            delete_project rename_project
         """),
     ),
     "lineage": _catalog(

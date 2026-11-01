@@ -7,33 +7,17 @@ from management_portal.test_framework import tau_fixtures
 from management_portal.test_framework.runner_adapters import TauAdapter
 
 
-@pytest.mark.parametrize('refusal', ['', 'foreign', 'owner', 'denied'])
-def test_workspace_cleanup_only_detaches_its_own_operation_users(monkeypatch, refusal):
-    """正式解绑本用例成员；外部使用者、owner 和权限拒绝均保留登记"""
+def test_workspace_cleanup_uses_unconditional_domain_deletion(monkeypatch):
+    """引用与绑定不再阻止注销；目录删除由对象 owner 的队列负责。"""
     from management_portal import isa_client
-    from management_portal.hatg.contracts import InstructionError
-    rid, wid = 'resident_aaaaaaaaaaaa', 'workspace_bbbbbbbbbbbb'
+    wid = 'workspace_bbbbbbbbbbbb'
     calls = []
     def call(actor, name, args, **kw):
         calls.append((name, args, kw['key']))
         assert actor == 'test-actor'
-        if len(calls) == 1:
-            raise InstructionError('instruction.conflict', 'in use', details={
-                'reason': 'workspace_in_use', 'users': [{
-                    'resident_id': rid if refusal != 'foreign' else 'resident_cccccccccccc',
-                    'usage': 'owner' if refusal == 'owner' else 'binding'}]})
-        if name == 'UnbindWorkspace' and refusal == 'denied':
-            raise InstructionError('instruction.forbidden', 'denied')
     monkeypatch.setattr(isa_client, 'call', call)
-    if refusal:
-        with pytest.raises(InstructionError):
-            tau_fixtures._release_workspace(wid, 'cleanup', {rid})
-        assert len(calls) == (2 if refusal == 'denied' else 1)
-    else:
-        tau_fixtures._release_workspace(wid, 'cleanup', {rid})
-        assert [c[0] for c in calls] == ['UnregisterResource', 'UnbindWorkspace', 'UnregisterResource']
-        assert calls[1][1] == {'resident_id': rid, 'workspace_id': wid}
-        assert calls[0][2] != calls[-1][2]
+    tau_fixtures._release_resource(wid, 'cleanup')
+    assert [c[0] for c in calls] == ['UnregisterResource']
 
 
 def test_content_fixture_is_in_area_and_cleanup_reaches_wall_owner(tmp_path, monkeypatch):

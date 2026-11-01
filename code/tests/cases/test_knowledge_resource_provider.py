@@ -371,8 +371,11 @@ def test_knowledge_mutations_sync_canonical_project_and_creator_permissions(
 
     deleted = service.unregister(resource_id, actor=actor)
     assert deleted["project_ids"] == ["AI员工"]
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    assert path.exists()
+    assert deleted['cleanup_ids']
+    get_directory_cleanup_store().run_pending()
     assert not path.exists()
-    assert Path(deleted["trash_path"]).exists()
     assert placed(resource_id) is None
     # Only the everyone-viewer on 共享 is left; the Project's admin left with the element.
     assert permissions.holds(member, "@viewer", resource_id) and not permissions.holds(member, "@contributor", resource_id)
@@ -471,12 +474,14 @@ def test_register_knowledge_item_writes_canonical_versioned_markdown(tmp_path, m
                     "decision_0123456789ab",
                     payload,
                     actor="resident_aaaaaaaaaaaa",
+                    operation_id='knowledge-test',
                 )
                 repeated = knowledge_backend.register_item(
                     "decision",
                     "decision_0123456789ab",
                     payload,
                     actor="resident_aaaaaaaaaaaa",
+                    operation_id='knowledge-test',
                 )
 
                 path = project_root / "knowledge_base" / "decision" / created["path"].split("/")[-1]

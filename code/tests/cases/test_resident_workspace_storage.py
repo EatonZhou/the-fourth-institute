@@ -66,7 +66,7 @@ def test_duplicate_ids_rejected_and_empty_extra_list_valid():
 
 
 def test_read_projection_follows_location_without_copying_paths(tmp_path):
-    """Workspace 路径随存储位置变化且位置异常时 cwd 为空"""
+    """Workspace cwd 跟随登记位置，已删除的登记不提供 cwd"""
     folder=tmp_path/LID
     own=str(folder/'residents'/RID/'workspace')
     records=[dict(resident_id=RID,lineage_id=LID,owned_workspace_id=OWNED)]
@@ -76,10 +76,14 @@ def test_read_projection_follows_location_without_copying_paths(tmp_path):
     assert value['owned_workspace']==dict(workspace_id=OWNED,path=own)
     assert value['workspace_paths']==[paths[EXTRA]]
     assert resident_catalog.default_cwd_path(value)==own
-    paths[OWNED]='/wrong'
+    paths[OWNED]=str(tmp_path/'relocated')
     value = storage.project_records(records, relations, paths, {LID: str(folder)})[0]
-    assert value['owned_workspace']['path'] == '/wrong'
+    assert value['owned_workspace']['path'] == paths[OWNED]
+    assert value['default_cwd'] == paths[OWNED]
+    paths[OWNED]=''
+    value = storage.project_records(records, relations, paths, {LID: str(folder)})[0]
     assert value['default_cwd'] == ''
+    assert value['owned_workspace']['status'] == 'deleted'
     assert 'path' not in relations[RID][0]
 
 

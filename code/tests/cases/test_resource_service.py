@@ -402,7 +402,7 @@ def test_address_resolution_is_registered_by_type() -> None:
         service.register_resolver("unknown", resolve)
 
 
-def test_exact_address_query_uses_actor_aware_resolver_before_fuzzy_index() -> None:
+def test_exact_address_query_uses_actor_aware_resolver_before_fuzzy_index(tmp_path) -> None:
     """查询词是精确资源地址时按调用者身份解析，不走模糊索引查询"""
     index = mock.Mock()
     index.get_resource.return_value = {
@@ -416,6 +416,7 @@ def test_exact_address_query_uses_actor_aware_resolver_before_fuzzy_index() -> N
     }
     service = ResourceService(index_provider=index)
     calls: list[tuple[str, str]] = []
+    (tmp_path / "README.md").write_text("report", encoding="utf-8")
 
     def resolve(address: str, **context):
         calls.append((address, str(context.get("actor") or "")))
@@ -423,7 +424,8 @@ def test_exact_address_query_uses_actor_aware_resolver_before_fuzzy_index() -> N
             "address": address,
             "root_id": "repo_0123456789ab",
             "resource_type": "repo",
-            "target_kind": "file",
+            "target_kind": "repo",
+            "checkout_path": str(tmp_path),
             "record": {"resource_id": "repo_0123456789ab"},
             "exists": True,
         }
@@ -438,13 +440,13 @@ def test_exact_address_query_uses_actor_aware_resolver_before_fuzzy_index() -> N
         limit=10,
     )
 
-    assert calls == [("repo_0123456789ab/file/README.md", "sample_admin")]
+    assert calls == [("repo_0123456789ab", "sample_admin")]
     assert payload["total"] == 1
     assert payload["resources"][0]["address"] == "repo_0123456789ab/file/README.md"
-    assert payload["resources"][0]["title"] == "Portal repo"
+    assert payload["resources"][0]["title"] == "README.md"
     assert (
         payload["resources"][0]["url"]
-        == "/resource/repo?item=repo_0123456789ab"
+        == "/api/resources/content?address=repo_0123456789ab%2Ffile%2FREADME.md"
     )
     index.query.assert_not_called()
 

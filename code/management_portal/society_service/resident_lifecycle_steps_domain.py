@@ -55,11 +55,6 @@ def _context_archive(operation_id: str, step: dict[str, Any]) -> None:
     )
 
 
-def _remove(operation_id: str, step: dict[str, Any]) -> None:
-    from .resident_workspace_deletion import remove_deleted_folder
-    remove_deleted_folder(step["source"])
-
-
 def _archive(operation_id: str, step: dict[str, Any]) -> None:
     # Clearing context moves the run folder into the Resident's context archive.
     source, target = Path(step["source"]), Path(step["target"])
@@ -115,23 +110,18 @@ def _workspace_document(operation_id: str, step: dict[str, Any]) -> None:
             get_lineage_data_store().enqueue_resident_resource_projection(step["resident_id"], current)
 
 
-def _workspace_move(operation_id: str, step: dict[str, Any]) -> None:
-    from . import resident_workspace_transfer
-    # A turn that is already running keeps working in the old folder;
-    # the folder moves when it ends. Queued work waits for this move.
-    if resident_lifecycle_domain.resident_turn_running(Path(step["source"]).name):
-        raise LifecycleStepPending()
-    resident_workspace_transfer.relocate(operation_id.rsplit(":", 1)[0], step["source"], step["target"])
+def _directory_dependencies(operation_id: str, step: dict[str, Any]) -> None:
+    from management_common.directory_move_store import DirectoryMoveStore
+    from management_portal.directory_move_owner import reconcile_dependencies
+    DirectoryMoveStore().finish(step['directory_operation'], dependencies=reconcile_dependencies)
 
 
 def _workspace_finish(operation_id: str, step: dict[str, Any]) -> None:
-    from . import resident_workspace_transfer
     current = resident_record_domain.find_resident(step["resident_id"])
     if not current or resident_lineage.lineage_id(current) != step["lineage_id"]:
         raise RuntimeError("Resident membership changed during workspace transfer")
     resident_workspace_domain.ensure_resident_workspace(current)
     resident_workspace_domain.refresh_resident_workspace_document(current)
-    resident_workspace_transfer.finish(operation_id.rsplit(":", 1)[0], step["source"], step["target"])
 
 
 
@@ -171,10 +161,9 @@ def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -
     apply_resident_lifecycle_step(
         operation_id, resident_lifecycle_domain.resident_release_step(record, step["actor"]),
     )
-    if step.get("source"):
-        apply_resident_lifecycle_step(operation_id, {
-            "kind": "archive", "source": step["source"], "target": step["target"],
-        })
+    # A registration-abort path is not proof of filesystem ownership, even
+    # for preparations written before Creation. Leave it untouched. Creation
+    # retains the inode evidence and exclusively owns staged-file recovery.
 
 
 def resident_execution_session_key(record: dict[str, Any]) -> str:
@@ -187,14 +176,13 @@ STEPS: dict[str, Callable[[str, dict[str, Any]], None]] = {
     "session_restart": _session_restart,
     "execution_ack": _execution_ack,
     "context_archive": _context_archive,
-    "remove": _remove,
     "archive": _archive,
     "release": _release,
     "forget_deleted": _forget_deleted,
     "lineage_tombstone": _lineage_tombstone,
     "resident_detach": _resident_detach,
     "workspace_document": _workspace_document,
-    "workspace_move": _workspace_move,
+    "directory_dependencies": _directory_dependencies,
     "workspace_finish": _workspace_finish,
 }
 

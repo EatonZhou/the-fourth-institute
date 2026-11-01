@@ -206,6 +206,8 @@ class Store:
         require_live_identity(connection, resource_id, parents=parents)
 
     def create(self, resource_id: str, payload: dict, actor: str) -> dict:
+        from management_common.directory_retention import RetentionStore
+        retention = RetentionStore()
         if not actor or not IDENTITY.fullmatch(resource_id):
             raise ProjectionError("projection.identity", "工作台身份无效")
         if "application_build" in payload:
@@ -215,6 +217,7 @@ class Store:
         builtin = str(data.get("builtin") or resource_id)
         data.update(workbench_id=resource_id, created_by=actor, created_at=utc_now_iso(), updated_at=utc_now_iso())
         with self.connect() as connection:
+            retention.queue.lock(connection)
             self._require_live_manifest(connection, resource_id, data)
             connection.execute('INSERT INTO apps VALUES (%s,%s,%s,1,NULL,%s,%s,%s)',
                                (resource_id,actor,builtin,data['created_at'],data['updated_at'],data['navigation']))
@@ -337,6 +340,8 @@ class Store:
         return data
 
     def update(self, app_id: str, payload: dict, actor: str, expected_revision: int) -> dict:
+        from management_common.directory_retention import RetentionStore
+        retention = RetentionStore()
         current = self.get(app_id, actor)
         self.require_write(current, actor)
         if current["revision"] != expected_revision:
@@ -345,6 +350,7 @@ class Store:
         self.prepare_application(data, actor, current)
         revision = expected_revision + 1
         with self.connect() as connection:
+            retention.queue.lock(connection)
             self._require_live_manifest(connection, app_id, data)
             result = connection.execute('UPDATE apps SET revision=%s,updated_at=%s,navigation=%s WHERE id=%s AND revision=%s',
                                         (revision,data['updated_at'],data['navigation'],app_id,expected_revision))
@@ -354,6 +360,9 @@ class Store:
         return self.get(app_id, actor)
 
     def publish(self, app_id: str, actor: str, revision: int) -> dict:
+        from .application_retention import reconcile
+        from management_common.directory_retention import RetentionStore
+        retention = RetentionStore()
         current = self.get(app_id, actor)
         self.require_write(current, actor)
         validate_manifest(current)
@@ -367,21 +376,29 @@ class Store:
         if not current.get("builtin") and not current.get("manifest") and not current.get("html", "").strip():
             raise ProjectionError("projection.empty", "请先生成或填写页面源码")
         with self.connect() as connection:
+            retention.queue.lock(connection)
             result = connection.execute('UPDATE apps SET published=%s WHERE id=%s AND revision=%s', (revision, app_id, revision))
             if result.rowcount != 1:
                 raise ProjectionError("projection.conflict", "发布版本已变化，请重新预览", 409)
+            reconcile(connection)
         return self.get(app_id, actor)
 
     def delete(self, app_id: str, actor: str) -> dict:
+        from .application_retention import reconcile
+        from management_common.directory_retention import RetentionStore
+        retention = RetentionStore()
         self.require_write(self.get(app_id, actor), actor)
         with self.connect() as connection:
+            retention.queue.lock(connection)
             connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema(), 0))")
             if connection.execute('SELECT 1 FROM native_entrypoints WHERE app_id=%s', (app_id,)).fetchone():
                 raise ProjectionError("projection.active_entrypoint", "不能删除正在使用的权威业务入口；请先显式切换到已验证的工作台", 409)
+            builds = [json.loads(row[0]) for row in connection.execute('SELECT build FROM application_packages WHERE app_id=%s', (app_id,))]
             connection.execute('DELETE FROM apps WHERE id=%s', (app_id,))
             connection.execute('DELETE FROM versions WHERE app_id=%s', (app_id,))
             connection.execute('DELETE FROM preferences WHERE app_id=%s', (app_id,))
             connection.execute('DELETE FROM role_requests WHERE workbench_id=%s', (app_id,))
+            reconcile(connection, deleted_hashes=[build['artifact_hash'] for build in builds if build.get('artifact_hash')])
         from management_portal import presentation_store
         presentation_store.forget_favorite_target(FAVORITE_SURFACE, app_id)
         return {"deleted": app_id}

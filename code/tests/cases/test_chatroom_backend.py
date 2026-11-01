@@ -90,7 +90,15 @@ def lineage(monkeypatch):
     inboxes: list[list[str]] = []
     monkeypatch.setattr(chatroom_backend, "_publish_inbox", lambda users: inboxes.append(sorted(users)))
     uploads: dict[str, dict] = {}
-    monkeypatch.setattr(resource_isa, "read_upload", lambda upload_id: dict(uploads[upload_id]))
+    registered_uploads = set()
+    def read_upload(upload_id):
+        metadata = dict(uploads[upload_id])
+        from management_common.directory_retention import RetentionStore
+        if upload_id not in registered_uploads:
+            RetentionStore().declare(resource_isa._upload_dir(upload_id), category='unused_upload', owner_id=upload_id)
+            registered_uploads.add(upload_id)
+        return metadata
+    monkeypatch.setattr(resource_isa, "read_upload", read_upload)
     fake.published = published
     fake.progress_wakes = progress_wakes
     fake.inboxes = inboxes

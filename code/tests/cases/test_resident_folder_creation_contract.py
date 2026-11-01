@@ -162,12 +162,12 @@ def test_slow_registration_preparation_does_not_block_other_residents(
     entered, release = threading.Event(), threading.Event()
     prepare = resident_workspace_domain.ensure_resident_workspace
 
-    def slow(record):
+    def slow(record, **options):
         if record["title"] == "Slow preparation":
             assert not invariant_locks.lock_held(), "Preparation must not hold graph/catalog state locks"
             entered.set()
             assert release.wait(5)
-        return prepare(record)
+        return prepare(record, **options)
 
     monkeypatch.setattr(resident_workspace_domain, "ensure_resident_workspace", slow)
 
@@ -240,9 +240,9 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
     prepared = []
     prepare = resident_workspace_domain.ensure_resident_workspace
 
-    def graph_changed_during_preparation(record):
+    def graph_changed_during_preparation(record, **options):
         assert not invariant_locks.lock_held()
-        prepare(record)
+        prepare(record, **options)
         if record["title"] == "Prepared creation":
             prepared.append(record["resident_id"])
             lineage_resident_nodes.create_lineage_resident(lineage_id, _new_session_payload("Concurrent node"), "sample_admin")
@@ -259,9 +259,8 @@ def test_hatg_registration_keeps_a_creation_committed_during_its_preparation(fut
     assert titles[parent["resident_id"]] == "Parent"
 
 
-def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_creation_store, monkeypatch):
-    """成员迁往另一 Lineage 时先提交两张图，锁外文件迁移失败后可重试完成"""
-    from management_portal.society_service import resident_workspace_transfer
+def test_member_move_commits_graphs_only_after_files_are_ready(future_creation_store, monkeypatch):
+    """成员迁移先准备文件，再原子更新两张图与嵌套目录登记。"""
 
     monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     source = resident_domain.register_resident(_new_session_payload("Move source"), "sample_admin")
@@ -276,31 +275,16 @@ def test_member_move_commits_graphs_then_recovers_unlocked_file_transfer(future_
         "target_lineage_id": destination["lineage_id"],
     })
     assert result["workspace_pending"] is True
-    assert original.exists()
+    assert not original.exists()
     moved = resident_record_domain.find_resident(resident_id)
     target = resident_record_domain.resident_folder_path(moved)
-    assert not target.exists()
+    assert target.exists()
     assert moved["lineage_id"] == destination["lineage_id"]
     old_graph = lineage_aggregate.lineage_catalog_store().get(source["lineage_id"])
     new_graph = lineage_aggregate.lineage_catalog_store().get(destination["lineage_id"])
     assert resident_id not in {item["id"] for item in old_graph["nodes"]}
     assert resident_id in {item["id"] for item in new_graph["nodes"]}
     operations = resident_record_domain.lifecycle_operations()
-    relocate = resident_workspace_transfer.relocate
-
-    def fail(*args):
-        assert not invariant_locks.lock_held()
-        raise OSError("temporary filesystem failure")
-
-    monkeypatch.setattr(resident_workspace_transfer, "relocate", fail)
-    assert not operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
-    assert operations.pending(resident_id)
-    assert original.exists()
-    assert resident_lifecycle_domain.resident_has_pending_work(resident_id)
-    monkeypatch.setattr(resident_workspace_transfer, "relocate", relocate)
-    operations.store.database.write(lambda c: c.execute(
-        'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (result["operation_id"],),
-    ))
     assert operations.run(result["operation_id"], resident_lifecycle_steps_domain.apply_resident_lifecycle_step) == resident_id, operations.health()
     assert not original.exists()
     assert (target / "keep.txt").read_text() == "preserve"
@@ -384,8 +368,8 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
         lineage_aggregate.lineage_catalog_store().get(lineage_ids[0])
 
 
-def test_failed_registration_archives_only_new_resident_folder(future_creation_store, monkeypatch):
-    """成员注册失败后只归档新 Resident 的文件夹，已有成员的文件保留"""
+def test_failed_registration_keeps_staging_evidence_and_existing_member(future_creation_store, monkeypatch):
+    """成员准备失败保留 staging 证据；生命周期补偿不触碰目录。"""
     monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Kept parent"), "sample_admin")
     parent_folder = resident_record_domain.resident_folder_path(parent)
@@ -394,9 +378,8 @@ def test_failed_registration_archives_only_new_resident_folder(future_creation_s
     created = []
     prepare = resident_workspace_domain.ensure_resident_workspace
 
-    def interrupted(record):
-        prepare(record)
-        folder = resident_record_domain.resident_folder_path(record)
+    def interrupted(record, *, folder):
+        prepare(record, folder=folder)
         (folder / "partial.txt").write_text("partial preparation", encoding="utf-8")
         created.append(folder)
         raise RuntimeError("preparation interrupted")
@@ -411,10 +394,9 @@ def test_failed_registration_archives_only_new_resident_folder(future_creation_s
     keys = operations.ready()
     assert len(keys) == 1
     assert operations.run(keys[0], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
-    assert not created[0].exists()
-    archives = list(created[0].parent.glob(f".aborted-{created[0].name}-*"))
-    assert len(archives) == 1
-    assert (archives[0] / "partial.txt").read_text(encoding="utf-8") == "partial preparation"
+    assert created[0].exists()
+    assert not list(created[0].parent.glob('.aborted-*'))
+    assert (created[0] / "partial.txt").read_text(encoding="utf-8") == "partial preparation"
     assert keep.read_text(encoding="utf-8") == "existing data"
     assert resident_catalog.get_catalog().get(parent["resident_id"])
 
@@ -1777,19 +1759,22 @@ def test_deleted_resident_cleanup_failure_retries_without_resurrecting_identity(
     assert resident_record_domain.find_resident(created_resident_id) is None
     operations = resident_record_domain.lifecycle_operations()
     operation_id, = operations.ready()
+    assert resident_domain.resume_resident_lifecycle_operation(operation_id)
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    queue = get_directory_cleanup_store()
     with monkeypatch.context() as failure:
-        from management_portal.society_service import resident_workspace_deletion
-        failure.setattr(resident_workspace_deletion, "remove_deleted_folder",
+        from management_common import directory_cleanup_store
+        failure.setattr(directory_cleanup_store, "remove_path",
                         lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("remove failed")))
-        assert not resident_domain.resume_resident_lifecycle_operation(operation_id)
-    assert "remove failed" in operations.health()["last_error"]
+        assert all(item['status'] == 'retry' for item in queue.run_pending())
+    assert any('remove failed' in item['last_error'] for item in queue.status(owner_id=created_resident_id))
     assert resident_record_domain.find_resident(created_resident_id) is None
     assert folder.is_dir()
     assert get_workspace_store().rows([workspace_id], include_deleted=True)[workspace_id]["deleted_at"]
-    operations.store.database.write(lambda connection: connection.execute(
-        'UPDATE resident_lifecycle_operations SET available_at=to_timestamp(0) WHERE operation_id=%s', (operation_id,),
+    queue.database.write(lambda connection: connection.execute(
+        f'UPDATE {queue.table} SET available_at=to_timestamp(0) WHERE completed_at IS NULL',
     ))
-    assert resident_domain.resume_resident_lifecycle_operation(operation_id)
+    queue.run_pending()
     # Deletion removes the folder; nothing is archived (decision_d19b9909a674).
     assert not folder.exists()
     assert not operations.pending(created_resident_id)
@@ -1824,7 +1809,7 @@ def test_delete_source_resident_preserves_child_provenance(
     parent["session_state"] = "active"
     parent.pop("backend_start_deferred", None)
     parent.pop("backend_start_gate", None)
-    resident_fork_domain._persist_derived_resident(record, parent)
+    resident_record_domain.save_resident_record(parent)
 
     _append_conversation_turn(parent_id, 0)
     child_detail = resident_domain.create_resident_full_context_fork(

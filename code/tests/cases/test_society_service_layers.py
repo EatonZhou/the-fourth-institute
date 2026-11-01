@@ -43,13 +43,13 @@ LAYERS = (
     resident_default_backend resident_hatg_credentials resident_intake_admission resident_message_contract
     resident_project_domain resident_projection resident_resource_changes resident_runtime_payload
     resident_settings_contract resident_state resident_turn_scope resident_workspace_deletion
-    resident_workspace_transfer runtime runtime.contracts runtime.ports script_runs
+    runtime runtime.contracts runtime.ports script_runs
     script_runs.clients.portal_script script_runs.runner script_runs.runtime seed_state_marker
     workspace_contracts
     """,
     # Tables, rows and stores.
     """
-    definition_collections domain_work_storage edge_storage family_chat_storage family_storage
+    creation_intents definition_collections directory_execution_admission directory_owner domain_work_storage edge_storage family_chat_storage family_storage
     family_task_dispatch_storage graph_storage lineage_data_columns lineage_data_definitions
     lineage_data_effect_cleanup lineage_data_executions lineage_data_mailbox lineage_data_notifications
     lineage_data_project_graphs lineage_data_projection_outbox lineage_data_residents lineage_data_runtime

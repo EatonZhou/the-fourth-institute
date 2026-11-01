@@ -4,7 +4,7 @@ from __future__ import annotations
 from management_common.skill_paths import CORE_SKILLS_ROOT, CORE_SKILL_NAMES
 
 import hashlib
-import shutil
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -438,6 +438,9 @@ def scan_index_source(active_only: bool = False) -> dict[str, Any]:
         source_label: str,
     ) -> None:
         check_scan_cancelled()
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        if get_directory_cleanup_store().pending_at(root):
+            return
         try:
             markdown_files = _candidate_markdown_files(root)
             primary = _choose_primary_file(root, markdown_files)
@@ -462,6 +465,13 @@ def scan_index_source(active_only: bool = False) -> dict[str, Any]:
             return
         if not item:
             return
+        from management_portal.resources.directory_registrations import register_owned
+        if not re.fullmatch(r'skill_[0-9a-f]{12}', str(item.get('skill_id') or '')):
+            return
+        registration = register_owned('knowledge', item['skill_id'], [root], scanning=True)
+        if registration is None:
+            return
+        item['directory'] = registration['directory']
         item.pop("path", None)
         items.append(item)
 
@@ -537,6 +547,9 @@ def _path_is_allowed(path: Path, *, text_only: bool = False) -> bool:
 
 
 def _resolve_skill_record(skill_id: str, *, actor: str = "") -> dict[str, Any]:
+    from management_portal.resources.directory_registrations import is_deleted
+    if is_deleted(skill_id):
+        raise KeyError('skill not found')
     from management_portal.resources import get_resource_service
 
     try:
@@ -574,49 +587,6 @@ def _resolve_skill_address(address: str, *, actor: str = "") -> tuple[str, Path]
     return skill_id, path
 
 
-def _direct_child(path: Path, root: Path) -> bool:
-    try:
-        relative = path.relative_to(root)
-    except ValueError:
-        return False
-    return len(relative.parts) == 1 and not relative.parts[0].startswith(".")
-
-
-def _skill_trash_root(target: Path) -> Path:
-    resolved = target.resolve(strict=True)
-    shared_root = SHARED_SKILLS_ROOT.resolve(strict=False)
-    third_party_root = THIRD_PARTY_SKILLS_ROOT.resolve(strict=False)
-    if _direct_child(resolved, third_party_root):
-        return THIRD_PARTY_SKILLS_ROOT / ".trash"
-    if _direct_child(resolved, shared_root) and resolved.name != THIRD_PARTY_SKILLS_ROOT.name:
-        return SHARED_SKILLS_ROOT / ".trash"
-
-    for project in _parse_projects(active_only=False):
-        project_path = Path(str(project.get("path") or "")).expanduser()
-        skill_root = (project_path / "knowledge_base" / "skill").resolve(strict=False)
-        if _direct_child(resolved, skill_root):
-            return project_path / "knowledge_base" / ".trash"
-    raise PermissionError("skill package path is not deletable")
-
-
-def _unique_skill_trash_path(trash_root: Path, target: Path) -> Path:
-    candidate = trash_root / target.name
-    if not candidate.exists():
-        return candidate
-    stamp = int(time.time())
-    for index in range(1, 1000):
-        suffix = f"__deleted_{stamp}" if index == 1 else f"__deleted_{stamp}_{index}"
-        name = (
-            f"{target.stem}{suffix}{target.suffix}"
-            if target.is_file()
-            else f"{target.name}{suffix}"
-        )
-        candidate = trash_root / name
-        if not candidate.exists():
-            return candidate
-    raise RuntimeError("could not allocate Skill trash path")
-
-
 def delete_skill(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]:
     clean = str(address or "").strip().strip("/")
     if "/" in clean:
@@ -624,6 +594,8 @@ def delete_skill(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]
     try:
         record = _resolve_skill_record(clean, actor=actor)
         attrs = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
+        if attrs.get('source') == 'core':
+            raise PermissionError('Core Skill is part of the installed code')
         source = record.get("source") if isinstance(record.get("source"), dict) else {}
         source_path_text = str(source.get("path") or "").strip()
         content_root_text = str(attrs.get("content_root") or "").strip()
@@ -641,15 +613,13 @@ def delete_skill(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]
             raise KeyError("skill file not found")
         if attrs.get("single_file") is not True and not target.is_dir():
             raise KeyError("skill package not found")
-        trash_root = _skill_trash_root(target)
-        trash_root.mkdir(parents=True, exist_ok=True)
-        trash_path = _unique_skill_trash_path(trash_root, target)
         original_path = str(target)
-        from management_portal.workbench_projections.resource_lifecycle import release_resource
+        from management_portal.workbench_projections.resource_lifecycle import finish_resource_releases
         from management_portal.resources.locking import resource_mutation_lock
         with resource_mutation_lock(source_path.parent, clean):
-            release_resource(clean, actor=actor)
-            shutil.move(original_path, str(trash_path))
+            from management_portal.resources.directory_registrations import unregister_owned
+            deletion = unregister_owned('knowledge', clean, actor=actor)
+            deletion['projection_cleanup_errors'] = finish_resource_releases([clean])
         _MD_CACHE.clear()
     except ValueError as exc:
         return 400, {"error": str(exc)}
@@ -666,7 +636,7 @@ def delete_skill(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]
         "skill_id": clean,
         "kb_id": clean,
         "path": original_path,
-        "trash_path": str(trash_path),
+        **deletion,
     }
 
 

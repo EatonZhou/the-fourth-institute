@@ -3,6 +3,7 @@ import pytest
 
 from management_portal import project_rename
 from management_portal.society_service import resource_client
+from management_portal.society_service.project_domain import ProjectExecutionControl
 from management_portal.society_service.state_store import LineageDataStore
 from management_portal.resources.workspace_store import WorkspaceStore
 from tests.cases.permission_test_support import permissions  # noqa: F401
@@ -57,11 +58,11 @@ def identities(world, monkeypatch):
     original_paths = resource_client.workspace_paths_many
     calls = []
 
-    def current_paths(ids, *, connection=None):
+    def current_paths(ids, *, connection=None, include_deleted=False):
         ids = list(ids)
         assert set(ids) <= {WORKSPACE, OWNED}, "Deleted Workspaces must not be required"
         calls.append(ids)
-        return original_paths(ids, connection=connection)
+        return original_paths(ids, connection=connection, include_deleted=include_deleted)
 
     monkeypatch.setattr(resource_client, "workspace_paths_many", current_paths)
     return world, store, calls
@@ -75,8 +76,8 @@ def test_rename_affected_identities_exclude_deleted_graph_and_bindings(identitie
     """
     world, store, calls = identities
     change = project_rename.plan("Old", "New")
-    assert project_rename.affected_residents(change, project_rename.Rewriter(change)) == [ACTIVE]
-    assert calls == [[WORKSPACE, OWNED]]
+    assert ProjectExecutionControl('alice').affected_residents(change) == [ACTIVE]
+    assert len(calls) == 1 and set(calls[0]) == {WORKSPACE, OWNED}
     assert not (world["old_root"] / "src").exists()
     with store.database.snapshot() as connection:
         assert connection.execute("SELECT count(*) FROM resident_workspace_bindings").fetchone()[0] == 3
@@ -104,22 +105,22 @@ def test_rename_preserves_deletion_project_facts_and_never_hydrates_history(iden
     assert plan.tables["lineage.residents"] == 1
     assert historical_rows() == before
     control = _Residents()
-    result = project_rename.rename_project("Old", "New", "alice", residents=control)
+    result = project_rename.rename_project("Old", "New", "alice", execution_control=control)
     assert result["resident_ids"] == [ACTIVE]
-    assert control.calls == [("close", [ACTIVE]), ("open", [ACTIVE])]
+    assert control.calls == []
     assert historical_rows() == before
     assert not (world["new_root"] / "src").exists()
     with store.database.snapshot() as connection:
         assert tuple(connection.execute(
             "SELECT title,description FROM residents WHERE resident_id=%s", (ACTIVE,),
-        ).fetchone()) == ("New", f"Work in {world['new_root']}/src")
+        ).fetchone()) == ("New", f"Work in {world['old_root']}/src")  # User text is not a path registry.
         for rid in (DELETED, ORPHAN):
             assert tuple(connection.execute(
                 "SELECT title,description,historical_project_id FROM residents WHERE resident_id=%s", (rid,),
             ).fetchone()) == ("Old", f"Work in {world['old_root']}/src", "Old")
         assert connection.execute("SELECT project_id FROM lineages WHERE lineage_id=%s", (LINEAGE,)).fetchone()[0] == "New"
         assert connection.execute("SELECT count(*) FROM resident_workspace_bindings").fetchone()[0] == 3
-    assert calls == [[WORKSPACE, OWNED]]
+    assert len(calls) == 2 and all(set(ids) == {WORKSPACE, OWNED} for ids in calls)
     after = workspaces.rows(original_workspaces, include_deleted=True)
     assert after["workspace_222222222222"] == original_workspaces["workspace_222222222222"]
     for wid in (WORKSPACE, OWNED):
@@ -134,5 +135,5 @@ def test_rename_finds_owned_workspace_even_without_membership_or_extra_binding(i
         connection.execute("DELETE FROM lineage_nodes WHERE node_id=%s", (ACTIVE,))
         connection.execute("DELETE FROM resident_workspace_bindings WHERE resident_id=%s", (ACTIVE,))
     change = project_rename.plan("Old", "New")
-    assert project_rename.affected_residents(change, project_rename.Rewriter(change)) == [ACTIVE]
+    assert ProjectExecutionControl('alice').affected_residents(change) == [ACTIVE]
     assert calls == [[OWNED]]

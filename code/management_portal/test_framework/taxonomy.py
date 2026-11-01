@@ -50,7 +50,7 @@ MODULE_GROUPS = (
     ModuleGroup("resource", "4. 资源注册、搜索与内容管理", (
         node("resource.identity", "统一资源身份、解析与授权", "decision_4a9ba5dfada6", "decision_a4e5f03c8b9b"),
         node("resource.service", "ResourceService、Adapter 与资源协作", "decision_cf27d39e39cd", "decision_b6e74d78f7b6", "decision_36f46b395d8e", "decision_b0997bc3a922",
-             "decision_355ed742bca5"),
+             "decision_355ed742bca5", "decision_4aa13bc21e8e"),
         node("resource.index-search", "资源索引、搜索与内容投影", "decision_8dc6b3d03ca7", "decision_eb066fbea4ed"),
     )),
     ModuleGroup("resident", "5. Resident、Session 与 Conversation", (

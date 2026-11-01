@@ -41,6 +41,7 @@ def install_mutation_provider(service: "ResourceService") -> None:
             )
         locations = payload.get("project_ids")
         options: dict[str, Any] = {
+            "origin": 'created' if automatic else 'adopted',
             "project_ids": registration_project_ids(locations) if automatic else explicit_project_ids(locations, "Repo"),
         }
         try:
@@ -61,15 +62,7 @@ def install_mutation_provider(service: "ResourceService") -> None:
         *,
         actor: str = "",
     ) -> dict[str, Any]:
-        del actor
-        result = resource_identity_backend.unregister_repo(resource_id)
-        from management_portal import resource_auto_registration
-
-        resource_auto_registration.suppress_paths(
-            "repo",
-            resource_id,
-            result.get("checkout_paths") or [],
-        )
+        result = resource_identity_backend.unregister_repo(resource_id, actor=actor)
         return canonical_record(resource_id, result)
 
     def update(

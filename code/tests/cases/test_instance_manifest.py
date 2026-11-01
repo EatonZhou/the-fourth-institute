@@ -105,9 +105,18 @@ class InstanceManifestTests(unittest.TestCase):
 
     def test_reject_traversal_and_noncanonical_references(self):
         instance = load(self.root)
-        for reference in ("projects:../key", "projects:/etc/passwd", "projects:a/../b", "projects:a//b", "projects:a\\b", "unknown:a", "relative"):
+        for reference in ("projects:../key", "projects:/etc/passwd", "projects:a/../b", "projects:a//b", "unknown:a", "relative"):
             with self.subTest(reference=reference), self.assertRaises(ValueError):
                 instance.resolve(reference)
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX literal filenames')
+    def test_native_area_and_host_filenames_roundtrip(self):
+        instance = load(self.root)
+        for name in ('literal\\name', 'with\nnewline'):
+            for root in (instance.area('projects'), self.base / 'host-data'):
+                with self.subTest(name=name, root=root):
+                    path = root / name
+                    self.assertEqual(instance.resolve(instance.reference(path)), path)
 
     def test_reject_symlink_escaping_an_area(self):
         instance = load(self.root)

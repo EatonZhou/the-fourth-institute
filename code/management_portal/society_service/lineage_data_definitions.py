@@ -413,6 +413,10 @@ class LineageDefinitions:
             check_definition_version(connection, lineage_id)
             projects = self.project_graphs.lineage_projects(connection, [lineage_id])
             deleted_at = now_iso_millis()
+            from .directory_owner import delete_folder
+            from .lineage_storage import lineage_folders
+            delete_folder(connection, table='lineages', identity=lineage_id,
+                          folder=lineage_folders([lineage_id], connection=connection)[lineage_id], actor=deleted_by)
             connection.execute('UPDATE lineages SET deleted_at=%s,deleted_by=%s WHERE lineage_id=%s AND deleted_at IS NULL', (deleted_at,deleted_by,lineage_id))
             # The Lineage's Families go with it, as when their Function Blocks are removed.
             family_storage.store_program(connection, lineage_id, {"function_blocks": []}, deleted_at)

@@ -93,8 +93,6 @@ from .resident_workspace_domain import (
     delete_resident_identities,
     delete_resident_lineage,
     get_resident_workspace_roots,
-    persist_lineage_project_member_updates,
-    prepare_lineage_project_member_updates,
     remove_resident_reference_workspace,
     remove_resident_reference_workspace,
     resolve_resident_identity,

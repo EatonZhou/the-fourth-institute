@@ -56,16 +56,10 @@ def confirm_resident_registration(resident_id: str, actor: str) -> dict[str, Any
 
 def register_resident(
     payload: dict, actor: str, *, lineage_node: dict[str, Any] | None = None,
-    creation_key: str = "",
+    creation_key: str = "", operation_id: str = "",
 ) -> dict:
-    requested = dict(payload)
-    lineage_id = str(requested.get("lineage_id") or "").strip()
-    if not lineage_id:
-        lineage_id = resident_domain_common.new_lineage_id()
-        requested["lineage_id"] = lineage_id
-
-    record, _lineage = register_resident_and_lineage(requested, actor, lineage_node=lineage_node,
-                                        **({"creation_key": creation_key} if creation_key else {}))
+    record, _lineage = register_resident_and_lineage(payload, actor, lineage_node=lineage_node,
+                                        creation_key=creation_key, operation_id=operation_id)
     return record
 
 
@@ -75,7 +69,27 @@ def register_resident_and_lineage(
     project_principal: bool = False,
     personal_owner: str = "",
     creation_key: str = "",
+    operation_id: str = "",
 ) -> tuple[dict, dict | None]:
+    from .creation_intents import CreationIntent
+    from . import lineage_aggregate
+    actor_id = canonical_actor_id(actor)
+    intent = CreationIntent('resident', actor_id, {
+        'payload': payload, 'lineage_node': lineage_node,
+        'project_principal': project_principal, 'personal_owner': personal_owner,
+    }, operation_id or (f"{payload.get('lineage_id', '')}:{creation_key}" if creation_key else ''))
+    with intent.open(lambda: {}):
+        if intent.snapshot.get('completed'):
+            record = confirm_resident_registration(intent.snapshot['record']['resident_id'], actor_id)
+            return record, lineage_aggregate.read_lineage(record['lineage_id'], actor=actor_id)
+        return _register_resident_and_lineage(payload, actor_id, lineage_node=lineage_node,
+            project_principal=project_principal, personal_owner=personal_owner,
+            creation_key=creation_key, intent=intent)
+
+
+def _register_resident_and_lineage(
+    payload, actor, *, lineage_node, project_principal, personal_owner, creation_key, intent,
+):
     """Prepare an unpublished identity outside state locks, then commit its graph membership.
 
     ``personal_owner`` registers that User's own Ask Me Anything: a new
@@ -96,21 +110,28 @@ def register_resident_and_lineage(
     resident_execution_provider.validate_registration(backend, mode)
     backend_route_id = _registration_route(payload, backend, awaiting_default)
     _refuse_supplied_session_ids(payload)
-    record, workspace_path = _new_resident_record(
-        payload, actor_id,
-        title=title, project_id=project_id, backend=backend, backend_route_id=backend_route_id,
-        project_principal=project_principal, owner=personal_owner or personal_member_owner,
-    )
-    if awaiting_default:
-        from management_portal.execution.resident_runtime_settings import normalize_settings
-        runtime_settings = normalize_settings({"backend": backend, **payload["runtime_settings"]})
+    if intent.snapshot.get('record'):
+        record = copy.deepcopy(intent.snapshot['record'])
+        runtime_settings = intent.snapshot['runtime_settings']
+        workspace_path = Path(record['workspace_path'])
     else:
-        runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
-            record, payload, actor_id, record["created_at"],
+        record, workspace_path = _new_resident_record(
+            payload, actor_id,
+            title=title, project_id=project_id, backend=backend, backend_route_id=backend_route_id,
+            project_principal=project_principal, owner=personal_owner or personal_member_owner,
         )
+        if awaiting_default:
+            from management_portal.execution.resident_runtime_settings import normalize_settings
+            runtime_settings = normalize_settings({"backend": backend, **payload["runtime_settings"]})
+        else:
+            runtime_settings = resident_runtime_domain.resident_runtime_settings_from_register_payload(
+                record, payload, actor_id, record["created_at"],
+            )
+        intent.snapshot.update(record=record, runtime_settings=runtime_settings)
+        intent.save()
     registered_lineage = _publish_registration(
         record, payload, workspace_path, runtime_settings, actor_id,
-        lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key,
+        lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key, intent=intent,
     )
     # Resource acknowledgement is outside state locks. A failed publication
     # retains the committed identity and outbox for exact-identity recovery.
@@ -313,28 +334,36 @@ def _publish_registration(
     lineage_node: dict[str, Any] | None,
     personal_owner: str,
     creation_key: str,
+    intent,
 ) -> dict[str, Any] | None:
     """Prepare the Resident's folders and context, then commit its identity and Lineage membership.
 
-    A failure before the commit aborts the prepared registration; returns the Lineage the Resident joined.
+    Failed attempts retain their creation evidence and Provider compensation.
+    Returns the Lineage the Resident joined.
     """
 
     resident_id = record["resident_id"]
     resident_folder = resident_record_domain.resident_folder_path(record)
-    # Existing files are never owned by an aborted registration, even when
-    # its Lineage Folder was explicitly supplied by the caller.
-    owned_folder = not (resident_folder.exists() or resident_folder.is_symlink())
+    from management_portal.resources.creation import Creation
+    folder_supplied = bool(str(payload.get("lineage_folder_path") or "").strip())
+    target = resident_folder if folder_supplied else workspace_path
+    creation = Creation(resident_id, actor=actor_id, payload=intent.request, operation_id=intent.key)
     operations = resident_record_domain.lifecycle_operations()
-    with operations.prepare(resident_id, lambda operation_id: [{
+    with creation.prepare([(target, 'directory')]), operations.prepare(resident_id, lambda operation_id: [{
         "kind": "registration_abort", "record": dict(record), "actor": actor_id,
-        "source": str(resident_folder) if owned_folder else "",
-        "target": str(resident_folder.with_name(f".aborted-{resident_id}-{operation_id}")),
-    }]) as preparation_id:
-        folder_supplied = bool(str(payload.get("lineage_folder_path") or "").strip())
-        workspace_path.mkdir(parents=True, exist_ok=folder_supplied)
-        resident_workspace_domain.ensure_resident_workspace(record)
+        # Creation alone owns directory evidence. Provider compensation must
+        # never rename or delete an unproven target (including a replacement).
+        "source": "",
+    }], operation_id=intent.key) as preparation_id:
+        def initialize(_index, stage):
+            folder = stage if folder_supplied else stage / 'residents' / resident_id
+            if not folder_supplied:
+                (stage / 'LINEAGE.md').touch()
+                (stage / 'runtime').mkdir()
+            resident_workspace_domain.ensure_resident_workspace(record, folder=folder)
+        creation.publish(initialize)
         resident_runtime_domain.write_resident_runtime_settings(record, runtime_settings)
-        if bool(payload.get("initialize_from_source")):
+        if bool(payload.get("initialize_from_source")) and not intent.snapshot.get('context_prepared'):
             source_resident_id = str(payload.get("source_resident_id") or "").strip()
             if not source_resident_id:
                 raise ValueError(
@@ -347,11 +376,13 @@ def _publish_registration(
                 actor_id,
                 preparation_id=preparation_id,
             )
-            resident_session_backend_domain.materialize_pending_agent_data_fork(record, actor_id)
+            intent.snapshot.update(record=copy.deepcopy(record), context_prepared=True)
+            intent.save()
+        resident_session_backend_domain.materialize_pending_agent_data_fork(record, actor_id)
         return _commit_registration(
             record, actor_id, operations, preparation_id,
             joins_canonical_lineage=not folder_supplied, lineage_node=lineage_node,
-            personal_owner=personal_owner, creation_key=creation_key,
+            personal_owner=personal_owner, creation_key=creation_key, creation=creation, intent=intent,
         )
 
 
@@ -365,6 +396,8 @@ def _commit_registration(
     lineage_node: dict[str, Any] | None,
     personal_owner: str,
     creation_key: str,
+    creation,
+    intent,
 ) -> dict[str, Any] | None:
     """Publish identity and Lineage membership in one domain commit.
 
@@ -373,6 +406,7 @@ def _commit_registration(
     """
 
     from .resident_projection import _resident_lineage_node_projection
+    from .creation_intents import directory_creation_scope
     resident_id, lineage_id = record["resident_id"], record["lineage_id"]
     registered_lineage = None
 
@@ -404,7 +438,19 @@ def _commit_registration(
     with invariant_locks.lineage_scope(lineage_id, operation="resident.register.commit"):
         # Serialize only this identity; unrelated registrations remain independent.
         with invariant_locks.catalog_lock(f"resident-registration:{resident_id}", operation="resident.register.commit"):
-            resident_catalog.get_catalog().state_store.transaction(commit_registration)
+            store = resident_catalog.get_catalog().state_store
+            with store.database.transaction() as connection, directory_creation_scope(creation.key):
+                commit_registration()
+                with creation.registration(connection):
+                    intent.complete(connection)
+                    if creation.scope_id:
+                        from management_common.resource_lifecycle import current_lifecycle
+                        identities = [record['owned_workspace_id']]
+                        if joins_canonical_lineage:
+                            identities.append(lineage_id)
+                        for identity in identities:
+                            connection.execute(f'INSERT INTO "{creation.lifecycle.db.schema}".allocations(resource_id,scope_id) '
+                                               'VALUES (%s,%s) ON CONFLICT DO NOTHING', (identity, current_lifecycle()))
     return registered_lineage
 
 

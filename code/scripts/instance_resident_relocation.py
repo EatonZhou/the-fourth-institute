@@ -6,14 +6,16 @@ owns updates to registrations, nested repositories and current provider state.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 import json
-import os
 from pathlib import Path
 
-from management_portal.project_rename import ProjectRename, Rewriter, rewrite_database, _announce, _like_escape
+from management_common.directory_move_store import DirectoryMoveStore
+from management_common.json_columns import json_value
+from management_common.portal_database import portal_database
+from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
 from management_portal.society_service.lineage_storage import lineage_folder_for_project
-from scripts.instance_storage_migration import Move, PrefixMap, apply_moves, check_move, remove_empty_directories
+from scripts.instance_storage_migration import Move, PrefixMap, check_move
 
 
 def resident_rows(connection):
@@ -67,37 +69,6 @@ def plan(instance, rows, prior_moves=()):
             conflicts.append({**entry, 'reason': 'source and destination Workspace both missing'})
     return {'moves': [asdict(m) for m in moves], 'aliases': [asdict(m) for m in aliases],
             'residents': residents, 'conflicts': conflicts}
-
-
-@dataclass(frozen=True)
-class DirectoryChanges(ProjectRename):
-    pairs: tuple[tuple[str, str], ...] = ()
-
-    def path_pairs(self):
-        return list(self.pairs)
-
-
-class DirectoryRewriter(Rewriter):
-    def needles(self):
-        # This is only a conservative SQL candidate filter; Rewriter still
-        # checks every exact path boundary. Hundreds of LIKE patterns per
-        # column make a bulk migration quadratic over large current tables.
-        groups = {}
-        for old, _new in self.change.path_pairs():
-            groups.setdefault('/' if old.startswith('/') else old.partition(':')[0], []).append(old)
-        prefixes = [os.path.commonprefix(values) for values in groups.values()]
-        prefixes += [json.dumps(prefix)[1:-1] for prefix in list(prefixes)]
-        return sorted({'%' + _like_escape(prefix) + '%' for prefix in prefixes})
-
-
-def directory_change(instance, moves):
-    pairs = []
-    for move in moves:
-        pairs.append((move.source, move.target))
-        # Stored area references must move too; a path does not have to exist.
-        pairs.append((instance.reference(Path(move.source)), instance.reference(Path(move.target))))
-    pairs = tuple(sorted(set(pairs), key=lambda pair: (-len(pair[0]), pair[0])))
-    return DirectoryChanges('', '', instance.root, instance.root, pairs=pairs)
 
 
 def reference_moves(moves):
@@ -157,38 +128,31 @@ def plan_remainders(instance, resident_report, projects):
 def apply(instance, report):
     """Caller owns the offline window or the affected Residents' mutation locks.
 
-    No overwrite/merge, no re-registration, no change of Workspace IDs. A failed
-    database transaction reverses this operation's renames. Later file/provider
-    failures retain a resumable alias plan and are explicitly reported.
+    Every move commits its declared owner registrations and cleanup together.
+    Recovery uses the same journal as online moves, including Provider and Git.
     """
     if report['conflicts']:
         raise RuntimeError('Resident folder conflicts; inspect migration report')
-    moves = [Move(**m) for m in report['moves']]
-    mappings = reference_moves([*moves, *(Move(**m) for m in report['aliases'])])
-    if not mappings:
-        return {'database': {'rows': 0}, 'files': {}, 'sessions': []}
-    change = directory_change(instance, mappings)
-    rewriter = DirectoryRewriter(change)
-    created_parents = set()
-    for move in moves:
-        parent = Path(move.target).parent
-        while not parent.exists():
-            created_parents.add(parent)
-            parent = parent.parent
-    apply_moves(moves)
-    try:
-        database = rewrite_database(change, rewriter, apply=True)
-    except BaseException:
-        apply_moves(Move(m.target, m.source, m.kind) for m in reversed(moves))
-        remove_empty_directories(created_parents)
-        raise
-    _announce(database)
-    from scripts.migrate_instance_lineages import text_candidates
-    from scripts.instance_storage_migration import rewrite_text_files
-    from management_portal.provider_session_relocation import relocate_provider_sessions
-    mapping = PrefixMap.from_moves(mappings)
-    candidates = text_candidates([Move(m.source, m.target, 'project-lineage') for m in mappings], mapping)
-    files = rewrite_text_files(candidates, mapping, apply=True)
-    sessions = [relocate_provider_sessions(m.source, m.target) for m in mappings]
-    removed = remove_empty_directories(Path(p) for p in report.get('empty', []))
-    return {'database': database.report(), 'files': files, 'sessions': sessions, 'removed_empty': removed}
+    database = portal_database(schema='lineage')
+    mover = DirectoryMoveStore()
+    declarations = {row['source']: row for row in [*report.get('residents', []), *report.get('owners', [])]}
+    operations = []
+    for external, rows in ((False, report['moves']), (True, report['aliases'])):
+        for move in reference_moves([Move(**row) for row in rows]):
+            owner = declarations[move.source]
+            key, table = ('resident_id', 'residents') if 'resident_id' in owner else ('lineage_id', 'lineages')
+            with database.read() as connection:
+                row = connection.execute(f'SELECT directory_json FROM {table} WHERE {key}=%s AND deleted_at IS NULL',
+                                         (owner[key],)).fetchone()
+            if row is None or not row['directory_json']:
+                raise RuntimeError('Directory owner requires offline provenance migration: ' + owner[key])
+            directory = json_value(row['directory_json'])
+            kwargs = dict(owner_id=owner[key], actor='instance-layout-migration', database=database,
+                          update=relocate_nested, dependencies=reconcile_dependencies)
+            if external:
+                operation_id, _ = mover.register_external_move(move.source, move.target, **kwargs)
+            else:
+                operation_id, _ = mover.move(move.source, move.target, origin=directory['origin'],
+                                             terminate=lambda _path: None, **kwargs)
+            operations.append(operation_id)
+    return {'directory_operations': operations}

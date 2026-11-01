@@ -106,7 +106,7 @@ class DatabaseAvatarStore:
                 self._write(connection, subject, avatar)
             return avatar
 
-    def update(self, subject, payload):
+    def update(self, subject, payload, *, upload_id=None):
         key = self._key(subject)
         if not isinstance(payload, dict):
             raise ValueError("Avatar payload must be an object")
@@ -119,6 +119,11 @@ class DatabaseAvatarStore:
             raise ValueError("Specify only a sprite index or an uploaded image")
         with database().transaction(":".join(key)) as connection:
             self._write(connection, subject, avatar, content)
+            if upload_id:
+                from management_common.upload_retention import consumed
+                from management_portal.resources.isa import _upload_dir
+                owner_id = key[1].split(':', 1)[1] if self.kind == 'scope' else key[1]
+                consumed(_upload_dir(upload_id), owner_id=owner_id, connection=connection)
         return self._avatar(subject, avatar)
 
     def delete(self, subject):

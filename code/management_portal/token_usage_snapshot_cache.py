@@ -20,6 +20,12 @@ def _path(source: Path, key: str) -> Path:
 
 
 def _load(path: Path) -> tuple[str, dict]:
+    from management_common.file_retention import cache_file
+    with cache_file(path, group='usage'):
+        return _load_file(path)
+
+
+def _load_file(path: Path) -> tuple[str, dict]:
     stat = path.stat()
     signature = (stat.st_ino, stat.st_mtime_ns, stat.st_size)
     with _lock:
@@ -71,4 +77,10 @@ def write(source: Path, key: str, entry: dict) -> None:
         # failure. Scheduling metadata must not prevent that state from saving.
         if previous_key and _rank(previous_key, previous)[:2] > _rank(key, entry)[:2]:
             return
-        atomic_replace_json(path, document, indent=None, sort_keys=False)
+        from management_common.file_retention import cache_file
+        from management_common.directory_cleanup_store import DirectoryPendingCleanup
+        try:
+            with cache_file(path, group='usage'):
+                atomic_replace_json(path, document, indent=None, sort_keys=False)
+        except DirectoryPendingCleanup:
+            return

@@ -286,6 +286,8 @@ class NativeSocketBackend:
         context.set_interrupt_target(session.backend_session_id)
         if operation == "release":
             return self._release_session(invocation, session_key=session_key)
+        from .session_retention import reopened
+        reopened(self.provider_id, session.backend_session_id, config_dir=str(options.get('config_dir') or ''))
         if operation == "fork":
             return self._fork_session(invocation, route_id=route_id)
         if operation == "compact":
@@ -309,6 +311,9 @@ class NativeSocketBackend:
             # (its daemon reuses it), so it is not released yet; the
             # release is retried once that turn has ended.
             raise RuntimeError(f"{self.provider_id} session has an active turn; release it when the turn ends")
+        from .session_retention import released
+        released(self.provider_id, invocation.session.backend_session_id,
+                 cwd=invocation.request.cwd, config_dir=str(invocation.request.runtime_options.get('config_dir') or ''))
         return BackendResult(
             output={
                 "message": "",

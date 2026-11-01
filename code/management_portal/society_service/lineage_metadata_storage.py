@@ -10,9 +10,9 @@ FIELDS = {
     "leader_resident_id": "text",
     "revision": "integer", "layout_revision": "integer", "created_at": "instant",
     "updated_at": "instant", "graph_updated_at": "instant", "layout_updated_at": "instant",
-    "created_by": "text", "deleted_at": "instant", "deleted_by": "text",
+    "created_by": "text", "deleted_at": "instant", "deleted_by": "text", "directory": "object",
 }
-COLUMNS = {"lineages": ("lineage_id", *FIELDS, "runtime_revision", "runtime_updated_at"), "project_lineage_entries": ("project_id", "lineage_id")}
+COLUMNS = {"lineages": ("lineage_id", *(field + '_json' if kind == 'object' else field for field, kind in FIELDS.items()), "runtime_revision", "runtime_updated_at"), "project_lineage_entries": ("project_id", "lineage_id")}
 
 
 def create_schema(connection: Any) -> None:
@@ -29,9 +29,15 @@ def put(connection: Any, lineage_id: str, value: dict) -> None:
     from .lineage_definition_versions import check_definition_version
 
     check_definition_version(connection, lineage_id)
-    existing = connection.execute("SELECT deleted_at FROM lineages WHERE lineage_id=%s", (lineage_id,)).fetchone()
+    existing = connection.execute("SELECT deleted_at,directory_json FROM lineages WHERE lineage_id=%s", (lineage_id,)).fetchone()
     if existing and existing["deleted_at"]:
         raise ValueError("A deleted Lineage cannot be rewritten")
+    from .directory_owner import directory_metadata
+    from management_common.json_columns import json_value
+    value = {**value, 'directory': directory_metadata(
+        json_value(existing['directory_json']) if existing and existing['directory_json'] else None,
+        lineage_id, creating=existing is None,
+    )}
     upsert(connection, "lineages", {"lineage_id": lineage_id}, typed_values(value, FIELDS))
     level = (value.get("principal_hierarchy") or {}).get("level")
     if level == "user" and value.get("lineage_membership") != "personal":

@@ -27,10 +27,8 @@ def graph(name, **changes):
             "revision": 3, "nodes": [{"id": "resident-test", "status": "idle"}], **changes}
 
 
-def test_team_cleanup_preserves_unrelated_active_and_persistent_teams(tmp_path):
-    """分页清理只作用于本 Run/模块；异主、运行中及长期模块团队保留并报告。
-
-    分页清理只作用于本 Run/模块；异主、运行中及长期模块团队保留并报告。
+def test_team_cleanup_deletes_running_owned_teams_and_preserves_persistent_teams(tmp_path):
+    """运行中的所属团队由正式删除入口终止；异主及长期模块团队保留并报告。
 
     :aspects: functional
     :risk: no-external-side-effects
@@ -61,9 +59,9 @@ def test_team_cleanup_preserves_unrelated_active_and_persistent_teams(tmp_path):
         run_id=RUN, module_id=MODULE, run_dir=tmp_path,
         protected_lineages=set(), protected_residents={"resident-module"}, emit=lambda _: None,
     )
-    assert calls == ["ok"]
+    assert calls == ["ok", "active", "unknown"]
     assert result["status"] == "error"
-    assert len(result["errors"]) == 5
+    assert len(result["errors"]) == 3
     assert "other" not in result["teams"]
     assert result["teams"]["ok"]["status"] == "deleted"
 
@@ -239,7 +237,7 @@ def test_module_member_cleanup_preserves_team_executor_and_recovers_receipts(tmp
                 assert second["residents"]["sample"]["status"] == "deleted"
                 assert len(calls) == (1 if mode == "after_commit" else 2)
                 assert all(c == calls[0] for c in calls)
-            elif mode not in {"normal", "shared_team", "by_executor"}:
+            elif mode not in {"normal", "shared_team", "by_executor", "active"}:
                 assert not calls and first["residents"]["sample"]["status"] == "error"
             else:
                 assert len(calls) == 1 and first["residents"]["sample"]["status"] == "deleted"

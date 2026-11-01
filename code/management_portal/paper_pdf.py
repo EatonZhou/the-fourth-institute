@@ -42,13 +42,25 @@ def _pdf_document_properties(pdf_path: Path) -> dict[str, str]:
     return result
 
 
-def _extract_pdf_text_file(pdf_path: Path, *, cache_path: Path | None = None) -> str:
+def _extract_pdf_text_file(pdf_path: Path, *, cache_path: Path | None = None,
+                           owner_id=None, raw=False) -> str:
+    from contextlib import nullcontext
+    from management_common.file_retention import cache_file
+    from management_common.directory_cleanup_store import DirectoryPendingCleanup
+    try:
+        with cache_file(cache_path, group='paper_text', owner_id=owner_id) if cache_path else nullcontext():
+            return _extract_pdf_text(pdf_path, cache_path=cache_path, raw=raw)
+    except DirectoryPendingCleanup:
+        return _extract_pdf_text(pdf_path, raw=raw)
+
+
+def _extract_pdf_text(pdf_path: Path, *, cache_path: Path | None = None, raw=False) -> str:
     if cache_path:
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         if cache_path.is_file() and cache_path.stat().st_size > 1000:
             return cache_path.read_text(encoding="utf-8", errors="replace")
     proc = process_runtime.run_process(
-        [_poppler_command("pdftotext"), "-layout", "-enc", "UTF-8", str(pdf_path), "-"],
+        [_poppler_command("pdftotext"), "-raw" if raw else "-layout", "-enc", "UTF-8", str(pdf_path), "-"],
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

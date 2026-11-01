@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import secrets
-import shutil
 import threading
 import time
 
@@ -21,7 +20,6 @@ class Worker:
         self.stop_event = threading.Event()
         self.thread = None
         self.after = ''
-        self.next_cleanup = 0.0
         self.lease_lost = threading.Event()
         self.lease_until = 0.0
 
@@ -63,13 +61,6 @@ class Worker:
                     LOGGER.warning('脚本运行协调失败 %s', identifier, exc_info=True)
             if len(records) < 100:
                 self.after = ''
-            if time.monotonic() >= self.next_cleanup:
-                self.next_cleanup = time.monotonic() + 60
-                for identifier in store.expired():
-                    if self.stop_event.is_set() or not self.owns_lease():
-                        return
-                    shutil.rmtree(runtime.RUN_ROOT / identifier, ignore_errors=True)
-                    store.delete_expired(identifier)
         finally:
             finished.set()
             renewal.join(timeout=3)

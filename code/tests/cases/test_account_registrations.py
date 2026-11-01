@@ -17,6 +17,8 @@ def test_registration_versions_and_roles(tmp_path):
                                      "kind": "subscription_login", "route_id": "test",
                                      "config": {"account_dir": str(tmp_path / "accounts" / "codex_test"), "is_default": True}}, "alice")
     assert row["version"] == 1
+    assert row['directory_origin'] == 'adopted'
+    assert row['directory_owner'] == 'host'
     assert store.registration("codex_test")["created_by"] == "alice"
     assert store.create_registration(row, "bob") is None
     changed = store.update_registration("codex_test", {"enabled": False}, 1, "bob")

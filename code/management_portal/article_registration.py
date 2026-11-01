@@ -23,7 +23,7 @@ def scan_and_sync_article_registry(
 ) -> dict[str, Any]:
     article_roots, skipped = article_discovery.discover_article_roots(roots)
     groups = article_discovery.group_logical_articles(article_roots)
-    report = article_registry.ARTICLE_REGISTRY.sync(groups, merge=article_registry._merge_record, apply=apply)
+    report = article_registry.ARTICLE_REGISTRY.sync(groups, merge=article_registry._merge_record, apply=apply, scanning=True)
     report.update(
         {
             "article_root_count": len(article_roots),
@@ -42,11 +42,12 @@ def register_article(
     primary_file: str = "",
     compiler: str = "",
     build_root: str | Path | None = None,
+    origin: str = 'adopted',
 ) -> dict[str, Any]:
     item = article_discovery.inspect_article_root(path, primary_file=primary_file)
     report = article_registry.ARTICLE_REGISTRY.sync(
         [[item]],
-        merge=functools.partial(article_registry._merge_record, explicit_project_ids=tuple(project_ids)),
+        merge=functools.partial(article_registry._merge_record, explicit_project_ids=tuple(project_ids), origin=origin),
         apply=True,
         forced_id=article_id,
     )
@@ -89,20 +90,17 @@ def _apply_build_settings(record, item, *, created, primary_file, compiler, buil
     article_settings.update_article_settings(str(record.get("id") or ""), settings, build_root=build_root)
 
 
-def unregister_article(article_id: str) -> dict[str, Any]:
-    """Remove an article registry record while preserving every manuscript file."""
+def unregister_article(article_id: str, *, actor: str = '') -> dict[str, Any]:
     if not get_resource_service().is_valid_id(article_id, "article"):
         raise ValueError(f"invalid article id: {article_id}")
-    with get_registry_store().writer(article_registry.ARTICLE_COLLECTION) as writer:
-        stored = writer.get(article_registry.ARTICLE_COLLECTION, article_id)
-        if stored is None:
-            raise KeyError(article_id)
-        record = article_registry._validated_article(article_id, stored)
-        writer.delete(article_registry.ARTICLE_COLLECTION, article_id)
+    from .resources.directory_registrations import unregister_registry
+    stored, cleanup_ids = unregister_registry(article_registry.ARTICLE_COLLECTION, article_id, actor=actor)
+    record = article_registry._validated_article(article_id, stored)
     announce_registry_changes(article_registry.ARTICLE_COLLECTION, {article_id: "deleted"}, resource_type="article")
     return {
         "id": article_id,
         "deleted": True,
+        "cleanup_ids": cleanup_ids,
         "manuscript_paths": [
             stripped_text(item.get("path"))
             for item in record.get("roots") or []

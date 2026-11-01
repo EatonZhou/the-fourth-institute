@@ -253,6 +253,26 @@ def test_retire_stops_removes_unregisters_and_keeps_external_areas(creation, tmp
         installer.retire(load(write_instance(tmp_path / "unregistered")))
 
 
+def test_retire_cleanup_failure_keeps_registry_and_database_for_retry(creation, monkeypatch):
+    installer.create(creation.engineering, name='accept_tmp', postgres=creation.postgres, skip_file_verification=True)
+    instance = host_instances.find('accept_tmp')
+    instance.directory('database').mkdir(parents=True, exist_ok=True)
+    (instance.directory('database') / 'PG_VERSION').write_text('16')
+    events = []
+    monkeypatch.setattr(instance_services, 'controller', lambda _: SimpleNamespace(
+        start=lambda _: events.append('postgres-start'), stop=lambda _: events.append('postgres-stop')))
+    monkeypatch.setattr(instance_services, 'wait_database', lambda _: None)
+    monkeypatch.setattr(instance_services, 'remove_definitions', lambda _: pytest.fail('cleanup pending'))
+    def fail(*args, **kwargs):
+        raise RuntimeError('created directory occupied')
+    monkeypatch.setattr(installer, 'code_child', fail)
+    with pytest.raises(RuntimeError, match='occupied'):
+        installer.retire(instance)
+    assert host_instances.find('accept_tmp').root == instance.root
+    assert instance.root.exists()
+    assert events == ['postgres-start', 'postgres-stop']
+
+
 def test_ports_change_only_while_stopped_and_follow_into_database_url(host, tmp_path, monkeypatch):
     root = write_instance(tmp_path / "site")
     instance = load(root)

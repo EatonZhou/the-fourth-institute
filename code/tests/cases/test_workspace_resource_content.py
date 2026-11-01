@@ -127,9 +127,9 @@ def test_workspace_requires_a_reading_actor(workspace, operation):
     :importance: P2
     :aspects: functional
     """
-    # A registered Workspace is read from its descriptor; an actor who cannot read it does not see it.
+    # A registered Workspace distinguishes access denial from a missing object.
     for actor in ("", "bob"):
-        with pytest.raises(KeyError):
+        with pytest.raises(PermissionError):
             getattr(workspace.service, operation)(ADDRESS, actor=actor)
     assert getattr(workspace.service, operation)(ADDRESS, actor="alice")
 
@@ -142,10 +142,10 @@ def test_workspace_files_need_viewer_on_the_workspace(workspace, operation):
     :aspects: functional
     """
     # bob reads only once he holds @viewer on the Workspace; what he holds on a
-    # binding Resident does not count, and a denied read looks like a missing file.
+    # binding Resident does not count; denial is distinct from a missing file.
     read = lambda: getattr(workspace.service, operation)(ADDRESS, actor="bob")
     workspace.grants[("bob", RESIDENT)] = "@admin"
-    with pytest.raises(KeyError):
+    with pytest.raises(PermissionError):
         read()
     workspace.grants[("bob", WORKSPACE)] = "@viewer"
     assert read()
@@ -154,7 +154,7 @@ def test_workspace_files_need_viewer_on_the_workspace(workspace, operation):
 def test_workspace_files_inside_a_personal_ama_folder_answer_only_to_that_ama(workspace, monkeypatch):
     """权限系统关闭时，个人 AMA 文件夹中的 Workspace 文件只对该 AMA 的所有者及代表所有者的 Resident 开放
 
-    关闭时其余一律放行，这是保留的唯一一条规则；其他主体读取时 Workspace 对其不存在。
+    关闭时其余一律放行，这是保留的唯一一条规则；其他主体读取文件时返回无权访问。
 
     :importance: P2
     :aspects: functional
@@ -175,8 +175,8 @@ def test_workspace_files_inside_a_personal_ama_folder_answer_only_to_that_ama(wo
         argument={"address": ADDRESS, "content": f"# {actor}\n"}.get, caller=actor, expected_version=None,
         name="UpdateWorkspaceFile"))
 
-    # The Workspace is unknown to alice.
-    with pytest.raises(KeyError):
+    # File reads distinguish denial; the write entry keeps its own contract.
+    with pytest.raises(PermissionError):
         workspace.service.reference(ADDRESS, actor="alice")
     with pytest.raises(KeyError):
         write("alice")
@@ -478,7 +478,7 @@ def test_workspace_sensitive_paths_are_neither_read_nor_written_by_address(works
     target.write_text("token", encoding="utf-8")
     address = WORKSPACE + "/file/" + relative
     for operation in ("resolve", "read_content"):
-        with pytest.raises(KeyError):
+        with pytest.raises(FileNotFoundError):
             getattr(workspace.service, operation)(address, actor="alice")
     monkeypatch.setattr(resource_isa, "_service", lambda: workspace.service)
     with pytest.raises(InstructionError) as refused:
@@ -575,10 +575,15 @@ def test_authenticated_http_reference_content_download_and_rpc(workspace, resour
             assert response.headers["Content-Security-Policy"] == "sandbox"
             assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert client.read_content(ADDRESS, actor=RESIDENT)[0] == workspace.file.read_bytes()
+    structured = {"workspace_id": WORKSPACE, "relative_path": "sample/plans/设计 plan.md"}
+    assert client.read_content(structured, actor=RESIDENT)[0] == workspace.file.read_bytes()
+    assert client.resolve(structured, actor=RESIDENT)["file_reference"] == structured
+    assert client.reference(structured, actor=RESIDENT)["file_reference"] == structured
+    assert client.read_content_range(structured, actor=RESIDENT, start=0, end=9)[0] == workspace.file.read_bytes()[:10]
     with pytest.raises(HTTPError) as error:
         urlopen(base + "/api/resources/content?" + urlencode({"address": WORKSPACE, "download": "1"}))
     assert error.value.code == 400
-    with pytest.raises(KeyError):
+    with pytest.raises(PermissionError):
         client.read_content(ADDRESS, actor="bob")
 
 

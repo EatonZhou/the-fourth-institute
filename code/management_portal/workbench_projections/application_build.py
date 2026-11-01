@@ -906,8 +906,19 @@ def _artifact_root() -> Path:
 
 
 def _store(index: dict, contents: dict[str, bytes]) -> str:
+    from management_common.directory_retention import RetentionStore
+    from .application_retention import register_build
     digest = hashlib.sha256(_canonical(index)).hexdigest()
     root = _artifact_root()
+    retention = RetentionStore()
+    # Persist ownership before filesystem writes. Failed builds retain a bounded
+    # staging lease; successful version registration protects the content hash.
+    with retention.database.transaction() as connection:
+        register_build(digest, connection=connection)
+        return _store_files(index, contents, digest, root)
+
+
+def _store_files(index, contents, digest, root):
     root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".pending-", dir=root) as temporary:
         staged = Path(temporary) / "artifact"
@@ -949,7 +960,8 @@ def build_application(application: dict, actor: str) -> dict:
     for path in application["entries"].values():
         _path(path)
     try:
-        with tempfile.TemporaryDirectory(prefix="portal-projection-build-") as temporary:
+        from management_common.file_retention import temporary_directory
+        with temporary_directory(prefix="portal-projection-build-") as temporary:
             project = Path(temporary) / "source"
             project.mkdir()
             _snapshot(application, actor, project)

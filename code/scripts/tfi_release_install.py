@@ -677,6 +677,18 @@ def retire(instance, *, delete_external_areas=False):
     if not (instance.root / "instance.json").is_file() or len(instance.root.parts) < 3:
         raise ValueError("Refusing to delete an unrecognized directory")
     instance_services.lifecycle("stop", instance.root)
+    # The object directory registry must still exist while external created
+    # directories are removed. Occupied files keep the instance for retry.
+    external_created = {'external_created_deleted': []}
+    if (instance.directory('database') / 'PG_VERSION').is_file():
+        controller = instance_services.controller(instance)
+        postgres_unit = instance_services.unit_name(instance, 'postgres')
+        controller.start(postgres_unit)
+        try:
+            instance_services.wait_database(instance)
+            external_created = json.loads(code_child(instance, 'directory_protocol_retire.py'))
+        finally:
+            controller.stop(postgres_unit)
     removed = instance_services.remove_definitions(instance)
     external = [str(instance.area(area)) for area in AREAS
                 if not instance.area(area).is_relative_to(instance.root) and instance.area(area).exists()]
@@ -687,7 +699,7 @@ def retire(instance, *, delete_external_areas=False):
             remove_tree(path)
     return {"status": "retired", "name": instance.name, "root": str(instance.root),
             "removed_services": removed, "external_areas": external,
-            "external_areas_deleted": bool(external) and delete_external_areas}
+            "external_areas_deleted": bool(external) and delete_external_areas, **external_created}
 
 
 def first_admin(instance, username, *, if_needed=False):

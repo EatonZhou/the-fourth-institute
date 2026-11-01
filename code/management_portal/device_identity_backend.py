@@ -658,10 +658,13 @@ def _empty_status_store() -> dict[str, Any]:
 
 
 def _read_status_store(status_path: str | Path | None = None) -> dict[str, Any]:
+    from management_common.file_retention import cache_file
+    from management_common.directory_cleanup_store import DirectoryPendingCleanup
     path = Path(status_path or DEFAULT_STATUS_PATH).expanduser()
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        with cache_file(path, group='devices'):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, DirectoryPendingCleanup):
         return _empty_status_store()
     if not isinstance(payload, dict) or not schema_matches(payload.get("schema"), "tfi.device_status.v1"):
         return _empty_status_store()
@@ -713,7 +716,13 @@ def store_gpu_server_status(
             "stored_at_iso": utc_now_iso(),
             "payload": stored,
         }
-        atomic_replace_json(path, store, sort_keys=False)
+        from management_common.file_retention import cache_file
+        from management_common.directory_cleanup_store import DirectoryPendingCleanup
+        try:
+            with cache_file(path, group='devices'):
+                atomic_replace_json(path, store, sort_keys=False)
+        except DirectoryPendingCleanup:
+            pass
     return stored
 
 

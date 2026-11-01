@@ -1,4 +1,18 @@
 {
+  "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。": {"zh-CN": "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。", "en": "Create a Portal-managed Workspace at an empty location; delete it with its owning object."},
+  "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。": {"zh-CN": "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。", "en": "Register an existing directory as a new Workspace; unregistering removes the record and preserves the directory."},
+  "区域内或区域外的绝对目录路径": {"zh-CN": "区域内或区域外的绝对目录路径", "en": "Absolute directory path inside or outside instance areas"},
+  "本次操作的稳定 ID；同一 ID 重试沿用原 Workspace": {"zh-CN": "本次操作的稳定 ID；同一 ID 重试沿用原 Workspace", "en": "Stable operation ID; retries with the same ID reuse the original Workspace"},
+  "目录所属 Resident、Lineage 或 Project；省略表示属于 Workspace 自己；不授予权限": {"zh-CN": "目录所属 Resident、Lineage 或 Project；省略表示属于 Workspace 自己；不授予权限", "en": "Resident, Lineage or Project the directory belongs to; omit for the Workspace itself; grants no permissions"},
+  "Workspace 名称": {"zh-CN": "Workspace 名称", "en": "Workspace name"},
+  "稳定 Workspace ID": {"zh-CN": "稳定 Workspace ID", "en": "Stable Workspace ID"},
+  "Workspace 记录": {"zh-CN": "Workspace 记录", "en": "Workspace record"},
+  "查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。": {"zh-CN": "查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。", "en": "View directory file cleanup progress; available to the original unregistering caller or callers with read access to the object."},
+  "被删除或产生清理任务的对象 ID": {"zh-CN": "被删除或产生清理任务的对象 ID", "en": "ID of the deleted object or the object that generated cleanup work"},
+  "文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告": {"zh-CN": "文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告", "en": "File cleanup status, attempt count, failure reason and completion time; reported separately from registration removal"},
+  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；relative_path 用 / 分隔，不接受绝对路径、.. 或当前文件系统不允许的字符": {"zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；relative_path 用 / 分隔，不接受绝对路径、.. 或当前文件系统不允许的字符", "en": "String resource address or {workspace_id|repo_id|article_id, relative_path} file reference; relative_path uses / separators and rejects absolute paths, .. and characters invalid on the current filesystem"},
+  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；移动后继续按对象的当前登记目录读取": {"zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；移动后继续按对象的当前登记目录读取", "en": "String resource address or {workspace_id|repo_id|article_id, relative_path} file reference; reads use the object's current registered directory after a move"},
+  "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 文件引用": {"zh-CN": "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 文件引用", "en": "Durable {workspace_id|repo_id|article_id, relative_path} file reference"},
   "本轮已结束": {"zh-CN": "本轮已结束", "en": "Turn ended"},
   "本轮失败": {"zh-CN": "本轮失败", "en": "Turn failed"},
   "本轮已中断": {"zh-CN": "本轮已中断", "en": "Turn interrupted"},
@@ -40930,20 +40944,12 @@
     "en": "An instance area root cannot be removed as a Workspace",
     "zh-CN": "不能通过注销 Workspace 删除实例区域根目录"
   },
-  "Workspace contains active registered resources": {
-    "en": "Workspace contains active registered resources",
-    "zh-CN": "Workspace 包含仍有效的嵌套资源登记"
-  },
-  "Workspace is owned or bound by a live Resident": {
-    "en": "Workspace is owned or bound by a live Resident",
-    "zh-CN": "Workspace 仍由存活的 Resident 拥有或绑定"
-  },
   "Workspace unregistration requires @admin": {
     "en": "Workspace unregistration requires @admin",
     "zh-CN": "注销 Workspace 需要 @admin 权限"
   },
-  "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只注销登记。": {
-    "en": "Unregister a resource with @admin. A Workspace must have no live Resident owner or binding and no active nested registration. Remove its directory inside instance areas, preserve external host directories, and unregister only the registration if the directory is missing.",
-    "zh-CN": "以 @admin 权限撤销资源登记。Workspace 仅在没有存活 Resident 拥有或绑定、没有有效嵌套登记时可注销；实例区域内目录一并删除，区域外主机目录保留，目录已不存在时只注销登记。"
+  "当前步骤，如 directory_dependencies、finalizing；结束后为 completed": {
+    "en": "Current step, such as directory_dependencies or finalizing; completed after all steps finish",
+    "zh-CN": "当前步骤，如 directory_dependencies、finalizing；结束后为 completed"
   }
 }

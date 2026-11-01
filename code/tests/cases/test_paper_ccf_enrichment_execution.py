@@ -38,9 +38,7 @@ def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
         assert accepted["business_task_id"].startswith("paper-ccf:")
         assert "execution_id" not in accepted
         start.assert_called_once()
-        request_path = paper_ccf_enrichment._ccf_enrichment_request_path(
-            paper_ccf_enrichment._ccf_enrichment_cache_path(paper)
-        )
+        request_path = start.call_args.args[2]
         request = json.loads(request_path.read_text(encoding="utf-8"))
         assert request["paper"]["title"] == paper["title"]
 
@@ -65,6 +63,7 @@ def test_ccf_enrichment_uses_portal_business_task_and_shared_result(
             ),
         ):
             paper_ccf_enrichment._run_ccf_enrichment_request(request_path)
+        assert not request_path.exists()
 
         completed = json.loads(
             paper_ccf_enrichment._ccf_enrichment_cache_path(paper).read_text(

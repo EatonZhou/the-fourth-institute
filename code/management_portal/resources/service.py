@@ -107,7 +107,7 @@ class ResourceService:
             return False
         return True
 
-    def parse_address(self, address: str) -> ResourceAddress:
+    def parse_address(self, address: str | Mapping[str, str]) -> ResourceAddress:
         return self._addresses.parse(address)
 
     @staticmethod
@@ -241,13 +241,14 @@ class ResourceService:
         payload: Mapping[str, Any],
         *,
         actor: str = "",
+        operation_id: str = "",
         automatic: bool = False,
         wait_for_index: bool = False,
         index_timeout: float = 45.0,
     ) -> dict[str, Any]:
         return service_mutations.register(
             self, resource_type, payload, actor=actor, automatic=automatic, wait_for_index=wait_for_index,
-            index_timeout=index_timeout,
+            index_timeout=index_timeout, operation_id=operation_id,
         )
 
     def _existing_identity(
@@ -312,7 +313,7 @@ class ResourceService:
 
     def resolve(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         actor: str = "",
     ) -> dict[str, Any]:
@@ -320,7 +321,7 @@ class ResourceService:
 
     def read_content(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         actor: str = "",
         max_bytes: int = 4 * 1024 * 1024,
@@ -329,7 +330,7 @@ class ResourceService:
 
     def open_content(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         actor: str = "",
         max_bytes: int = 4 * 1024 * 1024,
@@ -343,7 +344,7 @@ class ResourceService:
 
     def read_content_range(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         start: int,
         end: int,
@@ -353,7 +354,7 @@ class ResourceService:
 
     def reference(
         self,
-        address: str,
+        address: str | Mapping[str, str],
         *,
         actor: str = "",
     ) -> dict[str, Any]:

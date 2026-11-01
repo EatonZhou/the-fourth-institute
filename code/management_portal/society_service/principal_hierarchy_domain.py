@@ -35,7 +35,7 @@ def ensure_project(project_id: str, actor: str) -> dict[str, Any]:
         from management_common.instance_locations import current_instance
         project_path = current_instance().resolve(str((project.get("attributes") or {}).get("path") or ""))
         record, graph = resident_registration_domain.register_resident_and_lineage({
-            "lineage_id": resident_domain_common.new_lineage_id(), "project_id": project_id,
+            "project_id": project_id,
             "title": str(project.get("title") or project_id),
             "workspace_paths": [str(project_path)],
             "mode": "new_session",
@@ -72,7 +72,7 @@ def ensure_personal_ama(username: str, actor: str) -> dict[str, Any]:
                 ama_id = (leader.get("family") or {}).get("personal_ama_id") or graph["leader_resident_id"]
                 return {"resident_id": ama_id, "lineage_id": graph["lineage_id"], "created": False}
         record, _ = resident_registration_domain.register_resident_and_lineage({
-            "lineage_id": resident_domain_common.new_lineage_id(), "title": PERSONAL_AMA_TITLE,
+            "title": PERSONAL_AMA_TITLE,
             "mode": "new_session",
         }, owner.id, personal_owner=owner.id)
         return {"resident_id": record["resident_id"], "lineage_id": record["lineage_id"], "created": True}

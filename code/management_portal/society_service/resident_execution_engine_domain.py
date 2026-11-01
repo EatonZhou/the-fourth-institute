@@ -875,6 +875,23 @@ def bind_or_resume_resident_execution(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> str:
+    from . import directory_execution_admission
+    resident_id = resident_domain_common.record_resident_id(record)
+    # Same ordering as directory mutations: Resident state, then admission.
+    # Keep the guard through recording submission, including recovery/resume.
+    with resident_record_domain.state_lock(resident_id):
+        current = resident_record_domain.find_resident(resident_id)
+        if not current:
+            raise RuntimeError('Resident disappeared before Execution submission')
+        paths = (*resident_lifecycle_domain.resident_execution_paths(current, job),
+                 getattr(request, 'cwd', ''))
+        with directory_execution_admission.admit(paths):
+            return _bind_or_resume_resident_execution(service, request, record, job)
+
+
+def _bind_or_resume_resident_execution(
+    service: object, request: object, record: dict[str, Any], job: dict[str, Any],
+) -> str:
     resident_catalog.ensure_resident_agent(record, actor=str(job.get("actor") or ""))
     execution_id = resident_execution_work.submitted_execution_id(job)
     actor = str(getattr(request, "actor", "") or job.get("actor") or "")

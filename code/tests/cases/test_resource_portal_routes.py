@@ -434,7 +434,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
     with subtests.test(contract='test_skill_detail_delete_route_refreshes_the_skill_resource'), isolated_portal_case() as case_path:
         server, thread, base = _server()
         skill_id = 'skill_0123456789ab'
-        deleted = {'deleted': True, 'resource_type': 'skill', 'skill_id': skill_id, 'kb_id': skill_id, 'path': '/share/Skills/example', 'trash_path': '/share/Skills/.trash/example'}
+        deleted = {'deleted': True, 'resource_type': 'skill', 'skill_id': skill_id, 'kb_id': skill_id, 'path': '/share/Skills/example', 'cleanup_ids': ['cleanup_test']}
         try:
             with _authenticated_resource_api(skill_id), mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal.knowledge_backend, 'delete_item', return_value=deleted) as delete_item, mock.patch.object(web_resources, '_notify_resource_index') as notify:
                 status, payload = _post_json(f'{base}/knowledge/api/detail/delete', {'kb_id': skill_id})

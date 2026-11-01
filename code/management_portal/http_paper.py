@@ -236,7 +236,10 @@ class PaperHttp:
         return self.media_file(request, path, content_type)
 
     def register(self, request, payload, auth, actor):
-        result = paper_registration.register_paper(payload, actor)
+        operation_id = str(request.headers.get("Idempotency-Key") or "").strip()
+        if operation_id and not re.fullmatch(r"[!-~]{1,200}", operation_id):
+            raise ValueError("Idempotency-Key must contain 1–200 printable ASCII characters without spaces")
+        result = paper_registration.register_paper(payload, actor, operation_id=operation_id)
         self.notify_index(
             resource_id=str((result.get("paper") or {}).get("id") or result.get("id") or ""),
             resource_type="paper", kind="created",

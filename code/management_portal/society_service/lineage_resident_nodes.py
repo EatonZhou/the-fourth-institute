@@ -6,7 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from management_common.projection_receipts import CommittedProjectionError, project_committed
+from management_common.projection_receipts import CommittedProjectionError
 
 from .lineage_values import _clone_json, _safe_actor, _text
 from .lineage_view_projection import (
@@ -226,27 +226,6 @@ def create_lineage_resident(
         f"{store.database.schema}:resident_creation:{lineage_id}:{creation_key}".encode()
     ).digest()[:8], "big", signed=True)
     with store.database.advisory_lock(lock_key):
-        receipt = store.resident_creation_operations.get(lineage_id, creation_key)
-        resident_id = str(receipt.get("resident_id") or "")
-        if resident_id:
-            updated = lineage_aggregate.read_lineage(lineage_id, actor=actor)
-            lineage_aggregate.ensure_manager(updated, actor)
-            if resident_id not in {str(node.get("id") or "") for node in updated.get("nodes") or []}:
-                raise ValueError("该创建请求建立的 Resident 已移走或删除，请重新发起")
-            try:
-                resident = resident_domain.confirm_resident_registration(resident_id, actor)
-                project_committed(
-                    {"projection": "lineage.resource_identity", "lineage_id": lineage_id,
-                     "committed_revision": int(updated["revision"])},
-                    lambda: lineage_state._publish_lineage_resource_projection(lineage_id, None, actor=actor),
-                )
-            except CommittedProjectionError as exc:
-                exc.details["resident_creation"] = {
-                    "lineage_id": lineage_id, "request_id": creation_key, "resident_id": resident_id,
-                }
-                raise
-            return {"lineage": updated, "resident": resident,
-                    "node": lineage_state._lineage_node(updated, resident_id)}
         try:
             result = _create_lineage_resident(lineage_id, payload, actor)
         except CommittedProjectionError as exc:

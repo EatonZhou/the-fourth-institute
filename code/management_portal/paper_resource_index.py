@@ -71,6 +71,10 @@ class PaperManifestAdapter(_PathsAdapter):
     resource_types = frozenset({"paper"})
     protect_existing_sources = True
 
+    def protects_missing_source(self, record, source_path):
+        from .resources.directory_registrations import excluded_from_scan
+        return not excluded_from_scan(record.get('resource_id'), source_path)
+
     @property
     def roots(self) -> tuple[Path, ...]:
         return (Path(paper_store.PAPER_STORE.items_root),)
@@ -96,6 +100,7 @@ class PaperManifestAdapter(_PathsAdapter):
         attributes = {
             key: value for key, value in paper.items() if key in _PAPER_ATTRIBUTE_FIELDS
         }
+        attributes['directory'] = paper.get('directory', {})
         search_terms: list[object] = [
             paper.get("slug"),
             paper.get("authors"),
@@ -125,7 +130,7 @@ class PaperManifestAdapter(_PathsAdapter):
             search_terms=search_terms,
         )
 
-    def _record_for_manifest(self, manifest_path: Path) -> dict[str, Any]:
+    def _record_for_manifest(self, manifest_path: Path) -> dict[str, Any] | None:
         with paper_store.LOCK:
             manifest = paper_store.PAPER_STORE.read_manifest(manifest_path)
             if not manifest:
@@ -133,6 +138,11 @@ class PaperManifestAdapter(_PathsAdapter):
             paper = paper_store._paper_public(
                 paper_store.PAPER_STORE.manifest_to_paper(manifest, manifest_path)
             )
+        from .resources.directory_registrations import register_owned
+        registration = register_owned('paper', paper['id'], [paper['_store_root']], scanning=True)
+        if registration is None:
+            return None
+        paper['directory'] = registration['directory']
         return self._record_for_paper(paper)
 
     def scan(self) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -141,7 +151,9 @@ class PaperManifestAdapter(_PathsAdapter):
         for manifest_path in paper_store.PAPER_STORE.manifest_paths():
             check_scan_cancelled()
             try:
-                records.append(self._record_for_manifest(manifest_path))
+                record = self._record_for_manifest(manifest_path)
+                if record is not None:
+                    records.append(record)
             except Exception as exc:
                 resource_errors.append(
                     {
@@ -199,7 +211,11 @@ class PaperManifestAdapter(_PathsAdapter):
                     deletes.append(stripped_text(previous_record.get("resource_id")))
                 continue
             try:
-                upserts.append(self._record_for_manifest(_paper_store_path(manifest_path)))
+                record = self._record_for_manifest(_paper_store_path(manifest_path))
+                if record is not None:
+                    upserts.append(record)
+                elif previous_record:
+                    deletes.append(stripped_text(previous_record.get('resource_id')))
             except Exception as exc:
                 resource_errors.append(
                     {

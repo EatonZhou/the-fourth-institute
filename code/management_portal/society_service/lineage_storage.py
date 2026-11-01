@@ -6,22 +6,15 @@ points at a folder: finding one means computing it from the Project.
 """
 from __future__ import annotations
 
-import os
 import re
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable
 
-from management_common.file_lock import lock_stream
 from management_common.portal_paths import path as portal_path
 
 
 LINEAGE_ID_RE = re.compile(r"^lineage_[0-9a-f]{12}$")
 PROJECT_LINEAGE_DIRECTORY = "agents"
-
-
-class LineageStorageConflictError(RuntimeError):
-    """Raised when a Lineage folder cannot be moved to its computed place."""
 
 
 def _lineage_id(value: object) -> str:
@@ -64,35 +57,3 @@ def lineage_project_ids(lineage_ids: Iterable[object], *, connection) -> dict[st
 def lineage_folders(lineage_ids: Iterable[object], *, connection) -> dict[str, Path]:
     return {identity: lineage_folder_for_project(identity, project_id)
             for identity, project_id in lineage_project_ids(lineage_ids, connection=connection).items()}
-
-
-@contextmanager
-def _folder_lock(root: Path):
-    root.mkdir(parents=True, exist_ok=True)
-    with (root / ".lineage-folders.lock").open("a+b") as handle, lock_stream(handle):
-        yield
-
-
-def relocate_lineage_folder(source: str | Path, target: str | Path) -> Path:
-    """Move one Lineage folder to its newly computed place on one filesystem."""
-
-    source_path = Path(os.path.abspath(Path(source)))
-    target_path = Path(os.path.abspath(Path(target)))
-    if source_path.name != target_path.name or not LINEAGE_ID_RE.fullmatch(source_path.name):
-        raise LineageStorageConflictError("A Lineage folder keeps its Lineage ID as its name")
-    with _folder_lock(lineages_root()):
-        if source_path == target_path:
-            return target_path
-        if source_path.is_symlink() or not source_path.is_dir():
-            raise FileNotFoundError(f"Lineage folder not found: {source_path}")
-        if source_path in target_path.parents or target_path in source_path.parents:
-            raise LineageStorageConflictError(
-                "Lineage relocation target cannot contain or be contained by the source"
-            )
-        if target_path.exists() or target_path.is_symlink():
-            raise LineageStorageConflictError(f"Lineage target already exists: {target_path}")
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        if target_path.parent.stat().st_dev != source_path.stat().st_dev:
-            raise LineageStorageConflictError("Lineage relocation must stay on one filesystem")
-        os.replace(source_path, target_path)
-    return target_path

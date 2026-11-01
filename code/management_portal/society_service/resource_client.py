@@ -229,8 +229,15 @@ def workspace_id_for_path(path: str | Path, *, preferred_id: str = "") -> str:
     return service.workspace_id_for_path(path, preferred_id=preferred)
 
 
-def workspace_paths_many(workspace_ids: Iterable[object], *, connection: Any = None) -> dict[str, str]:
+def workspace_paths_many(workspace_ids: Iterable[object], *, connection: Any = None,
+                         include_deleted: bool = False) -> dict[str, str]:
     from management_portal.resources.workspace_store import get_workspace_store
+    if include_deleted:
+        ids = _dedupe(workspace_ids)
+        rows = get_workspace_store().rows(ids, connection=connection, include_deleted=True)
+        if set(ids) - rows.keys():
+            raise KeyError('Workspace registration does not exist')
+        return {wid: '' if row['deleted_at'] else row['path'] for wid, row in rows.items()}
     return get_workspace_store().paths(_dedupe(workspace_ids), connection=connection)
 
 
@@ -238,13 +245,20 @@ def ensure_workspaces(record: Mapping[str, Any], *, connection: Any) -> None:
     """Commit Workspace rows with their owning Resident and usage relationships."""
     from management_portal.resources.workspace_store import get_workspace_store, canonical_path
     from .resident_workspace_storage import normalize_bindings
+    from .creation_intents import current_directory_creation
     store = get_workspace_store()
     own_id = record['owned_workspace_id']
     own = record['owned_workspace']
-    expected = canonical_path(Path(record['workspace_path']) / 'residents' / record['resident_id'] / 'workspace')
-    if own['workspace_id'] != own_id or own['path'] != expected:
-        raise ValueError('Resident owned Workspace identity or location mismatch')
-    store.ensure(own_id, expected, connection=connection, move=True)
+    if own['workspace_id'] != own_id:
+        raise ValueError('Resident owned Workspace identity mismatch')
+    if own.get('status') == 'deleted':
+        row = store.rows([own_id], connection=connection, include_deleted=True).get(own_id)
+        if row is None or not row['deleted_at'] or own.get('path'):
+            raise ValueError('Resident deleted Workspace projection differs from its registration')
+    else:
+        store.ensure(own_id, canonical_path(own['path']), connection=connection, move=True,
+                     origin='created', owner_id=record['resident_id'],
+                     operation_id=current_directory_creation() or None)
     normalize_bindings(record['workspace_bindings'])
     for binding in sorted(record['workspace_bindings'], key=lambda item: item['workspace_id']):
         if binding['workspace_id'] == own_id:

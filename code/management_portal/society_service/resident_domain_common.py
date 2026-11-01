@@ -31,12 +31,12 @@ RESIDENT_VIDEO_SUFFIXES = {".mp4", ".webm", ".ogv", ".ogg", ".mov", ".m4v"}
 
 def new_resident_id(existing_ids: set[str] | None = None) -> str:
     occupied = {str(value or "").strip() for value in existing_ids or set()}
-    return identity_contract.new_id("resident", occupied)
+    return identity_contract.creation_candidate_id("resident", occupied)
 
 
 def new_lineage_id(existing_ids: set[str] | None = None) -> str:
     occupied = {str(value or "").strip() for value in existing_ids or set()}
-    return identity_contract.new_id("lineage", occupied)
+    return identity_contract.creation_candidate_id("lineage", occupied)
 
 
 AGENTS_ROOT = (portal_path('lineages'))

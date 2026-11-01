@@ -64,9 +64,10 @@ def residents_from_rows(connection: Any, rows: Iterable[Any]) -> list[dict[str, 
     paths = resource_client.workspace_paths_many(
         [record['owned_workspace_id'] for record in active] +
         [binding['workspace_id'] for rid in ids for binding in bindings.get(rid, [])], connection=connection,
+        include_deleted=True,
     )
     folders = {lineage_id: str(folder.resolve(strict=False)) for lineage_id, folder in lineage_storage.lineage_folders(
-        (record['lineage_id'] for record in active), connection=connection).items()}
+        (record['lineage_id'] for record in active if record.get('lineage_id')), connection=connection).items()}
     projected = {record['resident_id']: record for record in workspaces.project_records(active, bindings, paths, folders)}
     records = [projected.get(record['resident_id'], record) for record in records]
     roles = family_storage.resident_roles(connection, all_ids)
@@ -93,7 +94,10 @@ class ResidentRecords:
     def all_residents(self) -> list[dict[str, Any]]:
         with self.database.snapshot() as connection:
             rows = connection.execute(
-                resident_select("ORDER BY r.resident_id")
+                # Identity and owned Workspace outlive graph attachment. Keep
+                # every live identity in the catalog (including directory users
+                # undergoing membership repair), without hydrating tombstones.
+                resident_select("WHERE r.deleted_at IS NULL ORDER BY r.resident_id", include_deleted=True)
             ).fetchall()
             return residents_from_rows(connection, rows)
 
@@ -213,7 +217,13 @@ class ResidentRecords:
         def write(connection: Any) -> None:
             from management_portal.resources.deleted_identity_boundary import require_live_identity
             require_live_identity(connection, resident_id, parents=[record.get('lineage_id')])
-            prior = connection.execute('SELECT n.lineage_id,r.backend,r.deleted_at,r.intake_open,r.intake_transition_id,r.registration_state FROM residents r LEFT JOIN lineage_nodes n ON n.node_id=r.resident_id WHERE r.resident_id=%s FOR UPDATE OF r', (resident_id,)).fetchone()
+            prior = connection.execute('SELECT n.lineage_id,r.backend,r.deleted_at,r.intake_open,r.intake_transition_id,r.registration_state,r.directory_json FROM residents r LEFT JOIN lineage_nodes n ON n.node_id=r.resident_id WHERE r.resident_id=%s FOR UPDATE OF r', (resident_id,)).fetchone()
+            from .directory_owner import directory_metadata
+            from management_common.json_columns import json_value
+            record['directory'] = directory_metadata(
+                json_value(prior['directory_json']) if prior and prior['directory_json'] else None,
+                resident_id, creating=prior is None,
+            )
             if record.get('deleted_at') or (prior and prior['deleted_at'] is not None):
                 raise ValueError('Deleted Resident identity cannot be updated or restored')
             for field in ('deleted_at', 'deleted_by', 'historical_project_id'):
@@ -307,11 +317,16 @@ class ResidentRecords:
                     raise KeyError(rid)
                 if prior['deleted_at'] is not None:
                     continue
+                from .directory_owner import delete_folder
+                from .lineage_storage import lineage_folders
+                from pathlib import Path
+                membership = connection.execute('SELECT lineage_id FROM lineage_nodes WHERE node_id=%s', (rid,)).fetchone()
+                if membership:
+                    folder = lineage_folders([membership['lineage_id']], connection=connection)[membership['lineage_id']]
+                    delete_folder(connection, table='residents', identity=rid,
+                                  folder=Path(folder) / 'residents' / rid, actor=record.get('deleted_by') or '')
                 if prior['owned_workspace_id']:
                     workspace_ids.add(prior['owned_workspace_id'])
-                workspace_ids.update(row['workspace_id'] for row in connection.execute(
-                    'SELECT workspace_id FROM resident_workspace_bindings WHERE resident_id=%s', (rid,),
-                ).fetchall())
                 connection.execute(
                     'UPDATE residents SET deleted_at=%s,deleted_by=%s,historical_project_id='
                     'COALESCE((SELECT project_id FROM lineages WHERE lineages.lineage_id=(SELECT lineage_id FROM lineage_nodes WHERE node_id=residents.resident_id)),%s) '
@@ -320,18 +335,17 @@ class ResidentRecords:
                 )
                 connection.execute('DELETE FROM resident_workspace_bindings WHERE resident_id=%s', (rid,))
                 connection.execute('DELETE FROM resident_workspace_transfers WHERE resident_id=%s', (rid,))
-            if not workspace_ids:
-                return []
-            from .resident_workspace_deletion import delete_unreferenced
-            return delete_unreferenced(connection, workspace_ids=workspace_ids,
+            from .resident_workspace_deletion import delete_workspaces
+            return delete_workspaces(connection, workspace_ids=workspace_ids,
+                                       owner_ids=[record['resident_id'] for record in values],
                                        deleted_at=values[0]['deleted_at'],
                                        deleted_by=values[0].get('deleted_by') or '')
         return self.database.write(write)
 
     def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:
-        """Unregister unused registrations within folders being deleted."""
-        from .resident_workspace_deletion import delete_unreferenced
-        return self.database.write(lambda connection: delete_unreferenced(
+        """Unregister everything within the deleted object's directories."""
+        from .resident_workspace_deletion import delete_workspaces
+        return self.database.write(lambda connection: delete_workspaces(
             connection, paths=paths, deleted_at=deleted_at, deleted_by=deleted_by,
         ))
 

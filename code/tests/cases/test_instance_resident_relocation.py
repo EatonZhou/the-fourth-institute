@@ -4,7 +4,6 @@ import shutil
 import pytest
 from management_common.instance_manifest import load
 from management_common.portal_database import portal_database, _database_schema
-from management_portal.project_rename import Rewriter
 from scripts import instance_resident_relocation as migration
 from scripts.instance_storage_migration import Move
 from tests.cases.instance_test_support import write_instance
@@ -28,18 +27,27 @@ def setup_paths(instance, *, placed=False):
     return old, new, [(RID, LID, 'P', instance.reference(old / 'workspace'))]
 
 
+def seed_owner(*, resident=RID, lineage=LID):
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from management_portal.resources.workspace_store import get_workspace_store
+    from management_common.instance_manifest import current_instance
+    get_workspace_store().ensure('workspace_000000000000', str(current_instance().area('projects') / 'seed-workspace'), origin='created')
+    database = get_lineage_data_store().database
+    with database.transaction() as connection:
+        for table, key, identifier in [('residents', 'resident_id', resident), ('lineages', 'lineage_id', lineage)]:
+            extra_columns = ',owned_workspace_id' if table == 'residents' else ''
+            extra_values = ",'workspace_000000000000'" if table == 'residents' else ''
+            connection.execute(f'INSERT INTO {table}({key},directory_json{extra_columns}) VALUES (%s,%s::jsonb{extra_values}) ON CONFLICT DO NOTHING',
+                               (identifier, json.dumps({'origin': 'created', 'owner_id': identifier})))
+    return database
+
+
 @pytest.mark.parametrize('placed', [False, True])
 def test_old_named_and_already_moved_residents_are_planned(instance, placed):
     old, new, rows = setup_paths(instance, placed=placed)
     report = migration.plan(instance, rows)
     assert not report['conflicts']
     assert len(report['aliases' if placed else 'moves']) == 1
-    rewrite = Rewriter(migration.directory_change(instance, [Move(str(old), str(new), 'resident-folder')]))
-    for path in (old / 'workspace', old / 'workspace/repo'):
-        target = new / path.relative_to(old)
-        assert rewrite.value(str(path)) == str(target)
-        assert rewrite.value(instance.reference(path)) == instance.reference(target)
-    assert rewrite.value(str(old) + '-other/workspace') == str(old) + '-other/workspace'
 
 
 def test_membership_wins_over_a_different_lineage_directory(instance):
@@ -79,6 +87,11 @@ def test_whole_upgrade_plans_using_future_lineage_prefix(instance):
 
 def test_apply_moves_whole_folder_and_nested_current_registrations(instance, monkeypatch):
     old, new, rows = setup_paths(instance)
+    seed_owner()
+    from management_portal.resources.workspace_store import get_workspace_store
+    workspace = get_workspace_store()
+    wid = 'workspace_111111111111'
+    workspace.ensure(wid, str(old / 'workspace'), origin='created', owner_id=RID)
     schema = _database_schema('relocation_probe')
     database = portal_database(schema='relocation_probe')
     with database.transaction() as c:
@@ -93,25 +106,27 @@ def test_apply_moves_whole_folder_and_nested_current_registrations(instance, mon
                         lambda old,new: sessions.append((old,new)) or {'errors':[],'conflicts':[]})
     outcome = migration.apply(instance, migration.plan(instance, rows))
     assert not old.exists() and (new / 'resident.md').read_text() == 'identity'
-    assert outcome['database']['rows'] >= 1
+    assert len(outcome['directory_operations']) == 1
+    from management_common.instance_locations import located_path
+    assert located_path(workspace.rows([wid])[wid]['path']) == str(new / 'workspace')
     with database.snapshot() as c:
         row=c.execute(f'SELECT id,path,data FROM "{schema}".registrations').fetchone()
         assert row[0] == 'workspace-stable-id'
-        assert row[1] == instance.reference(new / 'workspace')
-        assert row[2] == {'repo':str(new / 'workspace/repo'),'binding':'workspace-stable-id'}
-    assert sessions == [(str(old),str(new))]
+        assert row[1] == instance.reference(old / 'workspace')
+        assert row[2] == {'repo':str(old / 'workspace/repo'),'binding':'workspace-stable-id'}
+    assert sessions == [(old,new)]
     assert not migration.plan(instance, [(RID,LID,'P',instance.reference(new/'workspace'))])['residents']
 
 
 def test_database_failure_reverses_directory_move(instance, monkeypatch):
     old, new, rows = setup_paths(instance)
+    seed_owner()
     def fail(*args, **kwargs):
         raise RuntimeError('database unavailable')
-    monkeypatch.setattr(migration, 'rewrite_database', fail)
+    monkeypatch.setattr(migration, 'relocate_nested', fail)
     with pytest.raises(RuntimeError,match='database unavailable'):
         migration.apply(instance, migration.plan(instance, rows))
     assert (old/'resident.md').read_text()=='identity' and not new.exists()
-    assert not new.parents[1].exists()
 
 
 def test_lineage_remainders_use_database_project_and_preserve_collisions(instance, monkeypatch):
@@ -119,6 +134,7 @@ def test_lineage_remainders_use_database_project_and_preserve_collisions(instanc
     report = migration.plan(instance, rows)
     old_root = old.parents[1]
     owner = 'lineage_444444444444'
+    seed_owner(lineage=owner)
     (old_root/'lineage.json').write_text(json.dumps({'lineage_id':owner,'project_id':'STALE'}))
     (old_root/'shared').mkdir()
     (old_root/'shared'/'notes.md').write_text('keep')
@@ -140,18 +156,10 @@ def test_lineage_remainders_use_database_project_and_preserve_collisions(instanc
     assert (real/'legacy-layout'/'Old_name'/'shared'/'notes.md').read_text()=='keep'
 
 
-def test_bulk_candidate_filter_still_includes_every_exact_mapping(instance):
-    old,new,_=setup_paths(instance)
-    change=migration.directory_change(instance,[Move(str(old),str(new),'resident-folder'),
-        Move(str(old).replace('Old_name','另一个'),str(new).replace(RID,'resident_555555555555'),'resident-folder')])
-    rewrite=migration.DirectoryRewriter(change)
-    assert len(rewrite.needles())==2
-    assert rewrite.value(instance.reference(old/'workspace'))==instance.reference(new/'workspace')
-
-
 def test_multiple_old_folders_keep_separate_resource_directories(instance, monkeypatch):
     """多个旧目录归属同一 Lineage 时保留独立目录和内容，不合并登记身份。"""
     old,new,rows=setup_paths(instance)
+    seed_owner()
     report=migration.plan(instance,rows)
     other=old.parents[1].with_name('Other_name')
     other.mkdir()
@@ -161,13 +169,12 @@ def test_multiple_old_folders_keep_separate_resource_directories(instance, monke
         (root/'lineage.json').write_text(json.dumps({'lineage_id':LID}))
     report['residents'].append({**report['residents'][0], 'source':str(other/'residents'/RID)})
     shutil.rmtree(old)
-    database = portal_database(schema='remainder_probe')
-    schema = _database_schema('remainder_probe')
-    with database.transaction() as c:
-        c.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
-        c.execute(f'CREATE TABLE "{schema}".registrations (id TEXT PRIMARY KEY,path TEXT UNIQUE)')
-        for identity,path in [('old',old.parents[1]),('other',other),('current',new.parents[1])]:
-            c.execute(f'INSERT INTO "{schema}".registrations VALUES (%s,%s)',(identity,instance.reference(path)))
+    from management_portal.resources.workspace_store import get_workspace_store
+    store = get_workspace_store()
+    paths_by_id = {'workspace_111111111111': old.parents[1], 'workspace_222222222222': other,
+                   'workspace_333333333333': new.parents[1]}
+    for identity, path in paths_by_id.items():
+        store.ensure(identity, str(path), origin='created')
     remainder=migration.plan_remainders(instance,report,{LID:'P'})
     assert not remainder['conflicts']
     from management_portal import provider_session_relocation
@@ -177,8 +184,22 @@ def test_multiple_old_folders_keep_separate_resource_directories(instance, monke
     assert (target/'legacy-layout'/'Old_name'/'shared'/'same.md').read_text()=='Old_name'
     assert (target/'legacy-layout'/'Other_name'/'shared'/'same.md').read_text()=='Other_name'
     assert not other.exists() and not old.parents[1].exists()
-    with database.snapshot() as c:
-        paths = dict(c.execute(f'SELECT id,path FROM "{schema}".registrations').fetchall())
-    assert paths == {'old':instance.reference(target/'legacy-layout'/'Old_name'),
-                     'other':instance.reference(target/'legacy-layout'/'Other_name'),
-                     'current':instance.reference(target)}
+    assert {wid: row['path'] for wid, row in store.rows(list(paths_by_id)).items()} == {
+        'workspace_111111111111': str(target/'legacy-layout'/'Old_name'),
+        'workspace_222222222222': str(target/'legacy-layout'/'Other_name'),
+        'workspace_333333333333': str(target)}
+
+
+def test_already_moved_owner_only_updates_registration(instance):
+    old, new, rows = setup_paths(instance, placed=True)
+    seed_owner()
+    from management_portal.resources.workspace_store import get_workspace_store
+    from management_common.directory_move_store import DirectoryMoveStore
+    store = get_workspace_store()
+    wid = 'workspace_111111111111'
+    store.ensure(wid, str(old / 'workspace'), origin='adopted', owner_id=RID)
+    result = migration.apply(instance, migration.plan(instance, rows))
+    operation = DirectoryMoveStore().get(result['directory_operations'][0])
+    assert operation['mode'] == 'external' and operation['phase'] == 'completed'
+    assert (new / 'resident.md').read_text() == 'identity'
+    assert not DirectoryMoveStore().cleanup.pending_at(old)

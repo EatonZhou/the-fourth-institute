@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 17
+  number: 18
   created_at: '2026-07-26'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T03:38:48Z'
+  updated_at: '2026-11-01T18:52:24Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -31,6 +31,7 @@ links:
   - decision_ccb99a00eebd
   - decision_d918ebebc062
   - decision_6fc653d55c79
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from:
   - decision_ccb99a00eebd
@@ -80,7 +81,7 @@ Lineage 目录由所属 Project 直接决定；不属于 Project 的目录存放
 - **目录中的说明文件只是给人看的。** 成员关系、Leader、组件与连线和 Lineage 版本都保存在 SocietyService 的数据库中，谁能查看和修改由权限系统判定（decision_b820faf42218）；手工修改 `README.md` 或 `LINEAGE.md` 不会增加成员、授予权限或改变 Lineage。
 - **Lineage 和 Resident 的目录都不是启动目录。** 每个 Resident 从自己的 `residents/<resident_id>/workspace/` 启动任务。
 - **修改 Lineage 所属的 Project 会搬迁目录。** `UpdateLineage` 修改 `project_id` 时，SocietyService 把目录移到新位置：新 Project 的 `agents/<lineage_id>/`，或不再属于 Project 时 lineages 区域的 `<lineage_id>/`；这个 Lineage 中有 Resident 正在排队、执行或停止时拒绝，报错“Lineage 仍有任务正在排队或处理，停止或完成后再修改所属项目”。
-- **删除 Lineage 会删除其中的 Resident。** `DeleteLineage`（decision_4637ca4a69e2）及 Project 删除涉及的目录、嵌套登记和执行终止按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在删除计划中拒绝目录内的独立活跃 Workspace，并要求先迁出或删除（原删除检查）。
+- **删除 Lineage 会删除其中的 Resident。** `DeleteLineage`（decision_4637ca4a69e2）及 Project 删除涉及的目录、嵌套登记和执行终止按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 - **新文件要说明归属。** 在 Lineage Folder 中新增文件或子目录时，需要说明哪个组件拥有它、能否从数据库重建、以及骨架更新时是否允许覆盖；说不清的文件不放在 Lineage Folder 根目录。Resident 的任务文件放进工作区，可复用的项目知识放进 Project 的知识库，正式交付物放进 Artifact Store。
 
 ## 实现说明

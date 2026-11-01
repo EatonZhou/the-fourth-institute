@@ -11,7 +11,6 @@ from . import (
     resident_fork_context,
     resident_execution_work,
     resident_lineage,
-    resident_store,
     resident_storage,
     resident_runtime_domain,
     resident_lifecycle_domain,
@@ -31,9 +30,56 @@ from management_common.actor_identity import canonical_actor_id
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 from management_portal.execution import resident_runtime_settings
 import copy
+from contextvars import ContextVar
+from functools import wraps
+import inspect
 
 from typing import Any, Mapping
 from pathlib import Path
+
+
+_FORK_CREATION = ContextVar('resident_fork_creation', default=None)
+
+
+def _creation_request(function):
+    """Freeze one internal Fork request before it can create files or history."""
+    @wraps(function)
+    def invoke(*args, **kwargs):
+        from .creation_intents import CreationIntent
+        bound = inspect.signature(function).bind(*args, **kwargs)
+        bound.apply_defaults()
+        actor = canonical_actor_id(bound.arguments['actor'])
+        intent = CreationIntent(function.__name__, actor, dict(bound.arguments))
+        with intent.open(lambda: {'resident_id': resident_domain_common.new_resident_id()}):
+            if intent.snapshot.get('completed'):
+                resident = resident_catalog.get_catalog().get(intent.snapshot['resident_id'])
+                if resident.get('deleted_at'):
+                    raise KeyError(resident['resident_id'])
+                ensure_resident_visible_to_actor(resident, actor)
+                return _derived_resident_creation_result(resident, resident, actor)
+            token = _FORK_CREATION.set(intent)
+            try:
+                return function(*args, **kwargs)
+            finally:
+                _FORK_CREATION.reset(token)
+    return invoke
+
+
+def _fork_resident_id():
+    intent = _FORK_CREATION.get()
+    if intent is None:
+        raise RuntimeError('Fork creation requires its request owner')
+    return intent.snapshot['resident_id']
+
+
+def _freeze_fork_child(child):
+    intent = _FORK_CREATION.get()
+    if intent.snapshot.get('record'):
+        child.clear()
+        child.update(copy.deepcopy(intent.snapshot['record']))
+    else:
+        intent.snapshot['record'] = copy.deepcopy(child)
+        intent.save()
 
 
 def _fork_target_backend(source: Mapping[str, Any], provider: str = "") -> str:
@@ -41,73 +87,6 @@ def _fork_target_backend(source: Mapping[str, Any], provider: str = "") -> str:
     if backend not in {*AGENT_PROVIDERS, "provider_api"}:
         raise ValueError(f"不支持的 Fork Provider：{backend}")
     return backend
-
-
-def _ensure_derived_resident_folder(
-    record: dict[str, Any],
-    resident: dict[str, Any],
-) -> None:
-    target_resident_id = str(resident.get("resident_id") or "").strip()
-    if not target_resident_id:
-        return
-    workspace_record = {
-        **record,
-        **{key: resident[key] for key in ("owned_workspace_id", "owned_workspace") if key in resident},
-        "resident_id": target_resident_id,
-        "workspace_bindings": resident.get("workspace_bindings") or [],
-        "default_cwd": str(resident.get("default_cwd") or ""),
-    }
-    resident_record_domain.set_resident_owned_workspace_binding(workspace_record, resident_id=target_resident_id)
-    resident["workspace_bindings"] = workspace_record["workspace_bindings"]
-    resident["owned_workspace_id"] = workspace_record["owned_workspace_id"]
-    resident["owned_workspace"] = workspace_record["owned_workspace"]
-    resident["default_cwd"] = workspace_record["default_cwd"]
-    resident_folder = resident_runtime_domain.resident_folder_for_id(record, target_resident_id)
-    runtime = resident_folder / "runtime"
-    owned_workspace = resident_record_domain.resident_owned_workspace_path(record, target_resident_id)
-    resident_folder.mkdir(parents=True, exist_ok=True)
-    runtime.mkdir(parents=True, exist_ok=True)
-    owned_workspace.mkdir(parents=True, exist_ok=True)
-    parent_identity = resident_record_domain.resident_instructions_path(record)
-    identity_text = ""
-    if parent_identity.is_file():
-        try:
-            identity_text = parent_identity.read_text(encoding="utf-8")
-        except OSError:
-            identity_text = ""
-    resident_workspace_domain.ensure_resident_file(
-        resident_folder,
-        resident_domain_common.RESIDENT_INSTRUCTIONS_FILE,
-        initial_content=identity_text,
-    )
-    resident_workspace_domain.ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_DIARY_FILE)
-    resident_workspace_domain.ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_MAILBOX_FILE)
-    resident_workspace_domain.ensure_resident_file(
-        resident_folder,
-        resident_domain_common.RESIDENT_WORKSPACES_FILE,
-        initial_content=resident_workspace_domain.resident_workspaces_text(resident),
-    )
-    resident_payload = resident_record_domain.canonical_derived_resident_record(record, resident)
-    resident_payload = copy.deepcopy(dict(resident_payload))
-    resident_payload["schema"] = resident_storage.RESIDENT_RECORD_SCHEMA
-    resident_record_domain.save_resident_record(resident_payload)
-    resident_store.replace_file_text(
-        resident_folder / resident_domain_common.RESIDENT_WORKSPACES_FILE,
-        resident_workspace_domain.resident_workspaces_text(resident),
-    )
-
-
-def _sync_resident_files(record: dict, resident: dict[str, Any]) -> None:
-    from .resident_settings_contract import stage_runtime_settings
-    resident_backend.validate_resident_session_identity(resident)
-    target_resident_id = str(resident.get("resident_id") or "")
-    if not target_resident_id:
-        return
-    resident_runtime_dir = resident_runtime_dir_for_id(record, target_resident_id)
-    if "execution_settings" not in resident or "harness_config" not in resident:
-        stage_runtime_settings(resident, resident_runtime_domain.read_resident_runtime_settings({**record, **resident}))
-    _ensure_derived_resident_folder(record, resident)
-    resident_runtime_dir.mkdir(parents=True, exist_ok=True)
 
 
 def _persist_derived_resident(
@@ -121,6 +100,7 @@ def _persist_derived_resident(
     the canonical Resident fact commits.
     """
 
+    resident_backend.validate_resident_session_identity(resident)
     target_resident_id = resident_lineage.resident_id(resident)
     if not identity_contract.is_valid_id(target_resident_id, "resident"):
         raise ValueError("Resident creation requires a canonical resident_id")
@@ -163,7 +143,37 @@ def _persist_derived_resident(
     resident["owned_workspace"] = workspace_record["owned_workspace"]
     resident["default_cwd"] = workspace_record["default_cwd"]
 
-    _sync_resident_files(record, resident)
+    from management_portal.resources.creation import Creation
+    intent = _FORK_CREATION.get()
+    if intent is None:
+        raise RuntimeError('Derived registration requires its creation request')
+    resident_payload = resident_record_domain.canonical_derived_resident_record(record, resident)
+    resident_payload['schema'] = resident_storage.RESIDENT_RECORD_SCHEMA
+    folder = resident_record_domain.resident_folder_path(resident_payload)
+    creation = Creation(target_resident_id, actor=str(resident_payload['created_by']),
+                        payload=intent.request, operation_id=intent.key)
+    with creation.prepare([(folder, 'directory')]):
+        if creation.completed:
+            existing = resident_catalog.get_catalog().get(target_resident_id)
+            resident.clear()
+            resident.update(existing)
+            return
+        def initialize(_index, stage):
+            resident_workspace_domain.ensure_resident_workspace(resident_payload, folder=stage)
+            source_identity = resident_record_domain.resident_instructions_path(record)
+            if source_identity.is_file():
+                (stage / resident_domain_common.RESIDENT_INSTRUCTIONS_FILE).write_text(
+                    source_identity.read_text(encoding='utf-8'), encoding='utf-8')
+        creation.publish(initialize)
+        with resident_catalog.get_catalog().state_store.database.transaction() as connection:
+            with creation.registration(connection):
+                resident_record_domain.save_resident_record(resident_payload)
+                intent.complete(connection)
+                if creation.lifecycle:
+                    from management_common.resource_lifecycle import current_lifecycle
+                    connection.execute(f'INSERT INTO "{creation.lifecycle.db.schema}".allocations(resource_id,scope_id) '
+                                       'VALUES (%s,%s) ON CONFLICT DO NOTHING',
+                                       (resident_payload['owned_workspace_id'], current_lifecycle()))
 
     from management_portal.society_service.changes import resident_changed
 
@@ -234,6 +244,7 @@ def _ensure_derived_resident_session(
     resident: dict[str, Any],
     actor: str,
 ) -> dict[str, Any]:
+    _freeze_fork_child(resident)
     ensure_resident_supports_forks(record)
     resident.pop("backend_start_deferred", None)
     resident.pop("backend_start_gate", None)
@@ -295,7 +306,7 @@ def _create_resident_by_full_context_fork(
             raise ValueError(f"目标 Provider {target_backend} 不支持压缩继承")
         if not context_snapshot.get("segments"):
             raise ValueError("压缩继承需要非空的有效模型上下文")
-    target_resident_id = resident_domain_common.new_resident_id()
+    target_resident_id = _fork_resident_id()
     sequence = len(derived_residents) + 1
     child = {
         "resident_id": target_resident_id,
@@ -353,6 +364,7 @@ def _create_resident_by_full_context_fork(
         segment_ids=[item["segment_id"] for item in resident_fork_context.select_segments(context_snapshot)],
     )
     if defer_backend_start:
+        _freeze_fork_child(child)
         resident_session_backend_domain.materialize_pending_agent_data_fork(child, actor_id)
         child["updated_at"] = resident_domain_common.now_iso()
         _persist_derived_resident(record, child)
@@ -388,6 +400,7 @@ def _derived_resident_creation_result(
     }
 
 
+@_creation_request
 def create_resident_full_context_fork(
     source_resident_id: str,
     actor: str,
@@ -423,6 +436,7 @@ def create_resident_full_context_fork(
     return _derived_resident_creation_result(record, child, actor_id)
 
 
+@_creation_request
 def create_resident_compacted_context_fork(
     source_resident_id: str,
     actor: str,
@@ -476,6 +490,7 @@ def _fork_provider_context_snapshot(
         through_message_id=through_message_id, through_turn_id=through_turn_id)
 
 
+@_creation_request
 def create_resident_fork_from_message(
     source_resident_id: str,
     actor: str,
@@ -538,7 +553,7 @@ def create_resident_fork_from_message(
             actor_id,
         )
         now = resident_domain_common.now_iso()
-        target_resident_id = resident_domain_common.new_resident_id()
+        target_resident_id = _fork_resident_id()
         sequence = len(derived_residents) + 1
         snapshot = _fork_provider_context_snapshot(
             record,
@@ -604,6 +619,7 @@ def create_resident_fork_from_message(
     return _derived_resident_creation_result(target_record, child, actor_id)
 
 
+@_creation_request
 def create_resident_context_fork(
     source_resident_id: str,
     actor: str,
@@ -641,7 +657,7 @@ def create_resident_context_fork(
             actor_id,
         )
         now = resident_domain_common.now_iso()
-        target_resident_id = resident_domain_common.new_resident_id()
+        target_resident_id = _fork_resident_id()
         sequence = len(derived_residents) + 1
         child = {
             "resident_id": target_resident_id,

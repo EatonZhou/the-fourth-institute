@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 38
+  number: 40
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-27T12:55:46Z'
+  updated_at: '2026-11-01T18:53:48Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_24014e2b9bf6
 importance: 8
 metaness: 2
 ai_generated: false
@@ -28,6 +28,7 @@ links:
   - decision_4a9ba5dfada6
   - decision_b6e74d78f7b6
   - decision_8838269736d3
+  - decision_4aa13bc21e8e
   - decision_7ef392b5f60d
   - decision_b820faf42218
   - decision_600ae27b0538
@@ -59,6 +60,9 @@ links:
 | `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
+| `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
+| `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
+| `GetDirectoryCleanup` | 否 | 读取对象的目录文件清理进度 | 固定槽免检；领域只向原操作调用者或有对象读取权限的调用者返回清理记录 |
 | `UpdateResource` | 是 | 修改资源的正文或元数据 | 对 `resource_id` 有 @contributor |
 | `UnregisterResource` | 是 | 撤销资源登记 | 对 `resource_id` 有 @admin |
 | `RunResourceAction` | 按动作声明 | 执行资源类型声明的专用动作 | 对 `resource_id` 有 @contributor |
@@ -67,6 +71,18 @@ links:
 | `UpdateWorkspaceFile` | 是 | 写入工作区中的文本文件 | 对 `address` 有 @contributor |
 
 ## 查找与读取
+
+### 对象文件引用
+
+`ResolveResource` 和 `ReadResource` 的必填参数 `address` 接受合法的字符串资源地址，也接受对象文件引用。结构化形式必须恰好包含 `workspace_id`、`repo_id`、`article_id` 中的一个，以及字符串 `relative_path`；ID 的类型必须与字段匹配，不能附加其他字段。例如：
+
+```json
+{"address": {"workspace_id": "workspace_0123456789ab", "relative_path": "reports/result.md"}}
+```
+
+`relative_path` 用 `/` 分隔，空字符串指向对象目录根；拒绝绝对路径、盘符、`.`、`..`、空路径段及软链接越界。服务先确认对象存在并检查调用者权限，再按对象当前登记的位置读取文件；对象移动不改变引用，不回退到旧的绝对路径。对象文件引用及其对应的 `<资源ID>/file/<相对路径>` 字符串形式分别报告三种失败：对象不存在或已删除、无权访问、文件不存在，遵循目录协议 decision_4aa13bc21e8e。其他资源地址隐藏不可见资源的既有规则不替代这项契约。
+
+合法的 `<资源ID>/file/<相对路径>` 字符串地址继续可用，其他类型原有字符串寻址能力保留。Workspace、Repo 和 Article 文件的读取结果可带 `file_reference`，供报告和交付物保存稳定引用；根对象 ID 字符串仍表示资源本身。ResourceService 的 `resolve`、`reference`、`read_content` 与 `read_content_range` 使用相同的 `address` 契约，区间读取经既有读取/下载通道完成，见 decision_b6e74d78f7b6。
 
 ### `SearchResources`
 
@@ -82,7 +98,7 @@ links:
 
 - 参数：`address`。
 - 结果：资源记录、地址中的内部目标，以及调用者当前可以执行的操作。
-- 地址不存在或调用者无权读取时返回 `instruction.not_found`。Runtime 不根据相似标题、路径或 ID 猜测其他资源。
+- 除上述对象文件引用及其对应的字符串文件地址外，地址不存在或调用者无权读取时返回 `instruction.not_found`。Runtime 不根据相似标题、路径或 ID 猜测其他资源。
 
 ### `ReadResource`
 
@@ -91,7 +107,7 @@ links:
 - 参数：`address`、`max_bytes`（可选，默认 4 MiB）、`meta_only`（可选）、`preview`（可选）。后两个参数只用于文件地址。
 - 结果：内容类型、版本令牌 `version`，以及内容本身：不超过 `max_bytes` 时直接返回文本或 base64 编码的字节；根资源有版本号时返回该版本号的字符串，缺少版本号时使用资源修改时间或内容摘要。超过时返回一个有时效的下载地址和内容大小，调用者从下载地址分段读取。下载地址形如 `/api/resources/download/<令牌>`，15 分钟内有效，只有发起读取的调用者可以使用，支持单段 `Range` 请求；结果同时给出 `expires_at` 与内容摘要作为 `version`。
 - 读取内部文件时使用 `<资源ID>/file/<相对路径>`，文件的 `version` 是内容摘要。读取知识条目根正文得到的数字版本字符串可以用于 `UpdateResource`；下载结果中的内容摘要用于标识本次内容。
-- 文件地址的根可以是 Workspace（`workspace_<id>`）、Resident（`resident_<id>`，指 Resident Folder）或 Lineage（`lineage_<id>`，指 Lineage Folder）。Resident Folder 与 Lineage Folder 的文件要求对该 Resident 或 Lineage 有 viewer，Workspace 文件按 decision_8838269736d3 的规则检查；无权读取与文件不存在返回相同结果。路径不能含 `.` 或 `..` 段，不跟随符号链接。Resident Folder 与 Lineage Folder 中点开头的路径和凭证类目录不可读取；Workspace 中这些路径仍可按地址读取，只在目录子项里隐藏。
+- 文件地址的根可以是 Workspace（`workspace_<id>`）、Resident（`resident_<id>`，指 Resident Folder）或 Lineage（`lineage_<id>`，指 Lineage Folder）。Resident Folder 与 Lineage Folder 的文件要求对该 Resident 或 Lineage 有 viewer，Workspace 文件按 decision_8838269736d3 的规则检查。Resident Folder 与 Lineage Folder 无权读取与文件不存在返回相同结果；Workspace、Repo 和 Article 的对象文件引用及其字符串形式遵循上文分别报告三种失败的规则。路径不能含 `.` 或 `..` 段，不跟随符号链接。Resident Folder 与 Lineage Folder 中点开头的路径和凭证类目录不可读取；Workspace 中这些路径仍可按地址读取，只在目录子项里隐藏。
 - 地址指向目录时（`<资源ID>/file` 本身即根目录），结果的内容类型为 `application/vnd.tfi.directory+json`，`entries` 列出至多 200 个直接子项，每项含 name、kind、size、modified_at、mtime_ns、相对路径 `path` 和自己的文件地址 `address`。目录在前，按名称排序；点开头与凭证类子项不列出，只计入 `hidden_count`，`truncated` 表示还有未返回的子项。
 - 文件地址的结果还给出 name、kind（directory、markdown、json、jsonl、text、image、pdf 或 binary）、modified_at、mtime_ns 和 `content_url`。`content_url` 是 Portal 页面显示和下载该文件的地址 `/api/resources/content?address=…`，每次请求重新检查权限，支持单段 Range，加 `&download=1` 作为附件下载；图片、PDF、音视频内联显示，其他类型按附件返回；响应都带 `X-Content-Type-Options: nosniff` 与 `Content-Security-Policy: sandbox`。Workspace 文件的结果另带 `allows.UpdateWorkspaceFile`，表示调用者能否把这个文件写回同一地址，页面的保存按钮据此显示。
 - `meta_only` 只返回元数据，不读内容。`preview` 返回不超过 `max_bytes` 的 UTF-8 文本：文件更长时返回前段并标记 `truncated`，截断的预览不带 `version`；图片、PDF 与其他二进制文件不返回内容，只标记 `binary`。页面的文件预览使用 2 MiB 的 preview。
@@ -129,12 +145,43 @@ links:
 
 - 参数：`resource_type`、`fields`（该类型要求的字段对象）。例如 Markdown 知识条目在 `fields` 中提交 `project_id`、`title` 和 `body`，ResourceService 分配统一 ID、生成文件名和头部。
 - 结果：新资源的统一 ID 与资源记录。
-- **放在 Project 下的类型必须给出位置，没有隐含的默认 Project**（weihao 2026-10-18）。知识条目与实验写 `fields.project_id`；repo 与 Workbench 写 `fields.project_ids`（Project ID 数组），公共内容写 `["@public"]`，`@public` 不能与 Project 同时给出；文章由所在目录决定，目录必须在已登记的 Project 内；设备没有位置。Workbench 从页面设计流程创建时取所绑定 Lineage 的 Project，Lineage 不属于任何 Project 时为公共内容。自动登记（扫描 Project 目录发现的 repo 等）按路径确定位置，不受这条约束；通过 RegisterResource 登记 repo 或 Workbench 而不给 `project_ids` 时登记失败。
+- **放在 Project 下的类型必须给出位置，没有隐含的默认 Project**（TFI portal 2026-10-18）。知识条目与实验写 `fields.project_id`；repo 与 Workbench 写 `fields.project_ids`（Project ID 数组），公共内容写 `["@public"]`，`@public` 不能与 Project 同时给出；文章由所在目录决定，目录必须在已登记的 Project 内；设备没有位置。Workbench 从页面设计流程创建时取所绑定 Lineage 的 Project，Lineage 不属于任何 Project 时为公共内容。自动登记（扫描 Project 目录发现的 repo 等）按路径确定位置，不受这条约束；通过 RegisterResource 登记 repo 或 Workbench 而不给 `project_ids` 时登记失败。
 - `fields.project_id` 与 `fields.project_ids` 在指令 schema 中声明，该声明不限制各资源类型原有的其他 fields。新资源的创建者记录为认证调用者。
 - **登记权限以拟放置位置判定。** RegisterResource 的正式权限声明把 `resource_type` 与 `fields.project_id` / `fields.project_ids` 交给方案的 `place` 规则，要求 contributor；它与登记后入树使用同一放置契约。各类型的默认位置、公共内容和多 Project 的父节点选择，统一见 decision_600ae27b0538；领域仍校验 Project 是否存在和必填位置，权限通过不代替输入校验。
 
 - 用同一幂等键重试时返回同一个 ID，不会登记两次。
 - `RegisterResource` 返回成功前同步持久化单条索引摘要；`UpdateResource` 与 `UnregisterResource` 请求有时限的索引确认。提交后失败与未确认结果见 decision_b6e74d78f7b6，不把领域已提交误判为未执行。资源类型要求目录是 Git 检出而目录不是时，以 `instruction.conflict` 失败，`details.reason` 为 `git_checkout_required`；在 `fields` 中给出 `initialize_git: true` 可让服务先初始化 Git。
+
+### `CreateWorkspace` 与 `RegisterWorkspace`
+
+**CreateWorkspace 在尚未占用的位置创建空 Workspace；RegisterWorkspace 将已经存在的目录登记为一个新的 Workspace 对象。** 两者由 ResourceService 执行，WorkspaceStore 保存身份、位置、来源和目录归属。通用 `RegisterResource` 不开放 Workspace 登记；新对象的接入使用 `RegisterWorkspace`，Resident 的使用关系继续由绑定指令管理。
+
+| 参数 | 类型 | 必填 | 含义 |
+| --- | --- | --- | --- |
+| `path` | string | 是 | 区域内或区域外的绝对目录路径，最长 4096 字符；父目录必须存在 |
+| `operation_id` | string | 是 | 本次业务操作的稳定 ID，最长 200 字符；重试沿用同一值 |
+| `owner_id` | string | 否 | 目录所属的 Resident、Lineage 或 Project ID；省略时属于新 Workspace 自己 |
+| `title` | string | 否 | Workspace 名称，最长 200 字符；未提供时按 Workspace 的默认名称规则处理 |
+
+两条指令的结果都包含 `workspace_id`（稳定的新对象 ID）与 `resource`（Workspace 资源记录）。CreateWorkspace 的来源为 `origin=created`，RegisterWorkspace 为 `origin=adopted`。来源由操作决定，不能由调用者另传 `origin` 改写。`owner_id` 只决定目录随谁删除，不授予权限，也不建立 Resident 绑定；省略它不会把调用者隐式设为所属对象。
+
+声明包含固定判定槽和可选的 `owner_id` 判定槽，后者只接受 Resident、Lineage、Project。默认方案将固定槽设为免检，给出所属对象时要求对该对象有 contributor；所属对象必须存在且未删除。Workspace 登记后的权限继续按当前权限方案及 decision_8838269736d3 判断。
+
+`operation_id` 在认证调用者作用域内保存创建身份和进度。同一调用者以相同操作 ID 和相同参数重试，沿用原 Workspace ID 与目录；改用不同路径、归属、标题或创建/接入方式时拒绝。同一请求的传输重试仍遵循 ISA 信封 `idempotency_key` 规则，业务操作 ID 不替代信封键。
+
+CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是现成目录，不移动、不改名、不覆盖内容。两者都拒绝仍被清理任务占用的位置、冲突登记及落在本机其他实例根目录或区域内的位置。参数非法以 `instruction.invalid_arguments` 失败，位置已占用以 `instruction.conflict` 失败，父目录、接入目录或所属对象不存在以 `instruction.not_found` 失败；权限拒绝沿用 ISA 授权错误。文件系统故障保留创建进度，同一操作 ID 可继续，目录和登记都就绪才返回创建完成。
+
+### `GetDirectoryCleanup`
+
+**读取某个对象产生的文件清理任务，不发起删除，也不改变清理进度。**
+
+| 参数 | 类型 | 必填 | 含义 |
+| --- | --- | --- | --- |
+| `resource_id` | string | 是 | 被删除或产生清理任务的对象 ID；对象注销后仍用原 ID 查询 |
+
+结果为 `items` 数组。每项包含 `cleanup_id`（清理任务 ID）、`owner_id`（产生清理任务的对象）、`operation_id`（原操作）、`location`（待清理位置）、`actor`（原操作调用者）、`created_at`、`available_at`（下次可尝试时间）、`completed_at`、`attempts`、`last_error` 和 `status`。状态为 `pending`（待执行）、`retry`（等待重试）或 `completed`（已完成）。没有清理任务时返回空数组，空数组本身不证明登记仍存在或已注销。
+
+固定槽在默认方案中免检，领域继续检查可见性：原操作调用者可以读取自己的清理记录；其他调用者必须有对应对象的读取权限，否则返回 `instruction.forbidden`。注销结果与文件清理进度分别报告；清理失败不恢复登记，后台持久重试，重启后继续。该入口不授予对象权限，不提供任意目录清理或管理员重试动作。
 
 ### `UpdateResource`
 
@@ -153,11 +200,11 @@ links:
 - 结果：被撤销的统一 ID。
 - 撤销登记后正文是否保留，由该资源类型的 Design 规定。
 
-Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`；类型能力 `unregisterable=true`，不开放通用 RegisterResource。只有没有未删除 Resident 的 `owned_workspace_id` 指向它、没有未删除 Resident 的 `resident_workspace_bindings` 使用它，且没有活跃子 Workspace 或同目录/子目录中的 Repo、Article、Project、Lineage 登记时才允许注销。祖先登记不因此阻止独立子 Workspace 注销。拒绝返回 `instruction.conflict`，`details.reason` 分别为 `workspace_in_use`、`workspace_nested_registration`、`workspace_area_root`；使用关系或阻止注销的资源 ID 在 details 中给出，无权限返回 `instruction.forbidden`，个人 AMA 的私有边界仍先行适用。
+Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`，类型能力 `unregisterable=true`；个人 AMA 的私有边界仍先行适用，无权限返回 `instruction.forbidden`。目录生命周期遵循 decision_4aa13bc21e8e：绑定、自有引用或其他对象的引用不阻止注销；注销解除使用绑定，已删除身份不得复活，删除 Workspace 不终止其他 Resident 的执行。
 
-注销复用 `resident_workspace_deletion.delete_unreferenced`，写入 Workspace 的 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活。仅当目录位于本实例 manifest 定义的区域内时删除目录；区域外主机目录保持不动，目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。显式注销不级联注销有效的嵌套登记；Resident/Project 生命周期删除原有的引用保留规则不变。
+来源为 `created` 的目录随对象删除，区域内外采用同一规则；目录中的嵌套登记、接入目录和手放文件随外层目录处理。直接注销 `adopted` 目录只删除其登记并保留文件。区域根、实例根及其上级目录永不删除，软链接只删除链接本身；目录已不存在时仍可完成注销。
 
-显式注销在同一事务中锁定 Workspace 表与目标行，重新鉴权并检查使用关系；其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断。锁持有至目录清理和删除提交，登记、移动、绑定不能插入检查与删除之间。文件清理失败回滚登记，修复文件系统问题后可以重试；已删除的部分文件不提供回收或恢复。提交后的索引确认继续使用通用 ResourceService 回执。
+注销对象、关联登记和绑定与记录待清理目录在同一次数据库写入中完成，随后返回注销结果。后台清理失败记录原因并持久重试，不回滚登记；未清理完的位置继续占位，创建和接入拒绝，扫描跳过。调用者用 `GetDirectoryCleanup(resource_id=workspace_id)` 单独读取文件清理进度。注销前在事务中重新鉴权，目录登记以权威存储为准；提交后的索引确认继续遵循 decision_b6e74d78f7b6。
 
 ### `RunResourceAction`
 
@@ -212,7 +259,7 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 - 参数：`address`（`<工作区ID>/file/<相对路径>`）、`content`。
 - 结果：写入后的内容摘要和修改时间。
-- 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（weihao 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
+- 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（TFI portal 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
 
 ## 参数名契约
 
@@ -227,6 +274,9 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 | `GetResourceType` | `resource_type` |
 | `UpdateResourceType` | `resource_type`、`enabled` |
 | `RegisterResource` | `resource_type`、`fields` |
+| `CreateWorkspace` | `path`、`operation_id`、`owner_id`、`title` |
+| `RegisterWorkspace` | `path`、`operation_id`、`owner_id`、`title` |
+| `GetDirectoryCleanup` | `resource_id` |
 | `UpdateResource` | `resource_id`、`changes` |
 | `UnregisterResource` | `resource_id` |
 | `RunResourceAction` | `resource_id`、`action`、`arguments` |

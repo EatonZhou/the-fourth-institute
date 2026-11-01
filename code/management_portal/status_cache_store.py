@@ -3,6 +3,7 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
 from management_common.file_lock import lock_stream
+from management_common.directory_cleanup_store import DirectoryPendingCleanup
 import json
 import re
 from contextlib import contextmanager
@@ -34,9 +35,11 @@ def locked(path: Path):
 
 
 def read(path: Path) -> dict:
+    from management_common.file_retention import cache_file
     try:
-        entries = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
+        with cache_file(path, group='status'):
+            entries = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, DirectoryPendingCleanup):
         return {}
     if not isinstance(entries, dict):
         raise ValueError("Invalid status cache")
@@ -44,4 +47,9 @@ def read(path: Path) -> dict:
 
 
 def write(path: Path, entries: dict) -> None:
-    atomic_replace_json(path, current_entries(entries), indent=None, sort_keys=False)
+    from management_common.file_retention import cache_file
+    try:
+        with cache_file(path, group='status'):
+            atomic_replace_json(path, current_entries(entries), indent=None, sort_keys=False)
+    except DirectoryPendingCleanup:
+        return  # A later refresh may repopulate once eviction is confirmed.

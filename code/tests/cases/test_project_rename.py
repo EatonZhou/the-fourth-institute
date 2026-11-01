@@ -17,6 +17,7 @@ from management_portal import project_registry, project_rename, provider_session
 from management_portal.hatg import catalog
 from management_portal.project_rename import ProjectRename, RenameBlocked, Rewriter
 from management_portal.resources import isa as resource_isa
+from management_portal.society_service.project_domain import ProjectExecutionControl
 from tests.cases.permission_test_support import Fact, permissions  # noqa: F401
 from tests.cases.registry_support import write_projects
 
@@ -97,22 +98,6 @@ def test_a_json_column_keeps_its_encoding(options):
     assert any("\\u5458" in needle for needle in Rewriter(change).needles())
 
 
-def test_project_files_get_the_new_title_marks_and_paths():
-    """Project 改名更新项目文件标题与 #project 标记
-
-    summary.md 与 agent_port/boot.md 标题中的项目 ID 和 #project("<ID>") 标记改为新 ID，其他标题与其他项目的标记不变。
-
-    :importance: P2
-    """
-    rewriter = Rewriter(CHANGE)
-    assert rewriter.file_text("# ACLink\n\nACLink 的目标\n", "summary.md") == "# ACLinkNext\n\nACLink 的目标\n"
-    assert rewriter.file_text("# ACLink 项目指南\n", "agent_port/boot.md") == "# ACLinkNext 项目指南\n"
-    assert rewriter.file_text("# ACLink\n", "notes.md") == "# ACLink\n"
-    assert rewriter.file_text('见 #project("ACLink") 与 #project(\'ACLinkCoKernel\')', "a.md") == (
-        '见 #project("ACLinkNext") 与 #project(\'ACLinkCoKernel\')'
-    )
-
-
 def test_rename_is_a_declared_resource_instruction():
     """RenameProject 由 ResourceService 执行并登记处理函数
 
@@ -128,20 +113,15 @@ def test_rename_is_a_declared_resource_instruction():
 # -- the whole rename against the test database --------------------------------------
 
 
-class _Residents:
+class _Residents(ProjectExecutionControl):
     def __init__(self, busy=()):
+        super().__init__('alice')
         self.busy_ids = list(busy)
         self.calls = []
 
-    def close_intake(self, ids):
-        self.calls.append(("close", list(ids)))
-        return list(ids)
-
     def busy(self, ids):
+        self.calls.append(('busy', list(ids)))
         return [item for item in ids if item in self.busy_ids]
-
-    def open_intake(self, ids):
-        self.calls.append(("open", list(ids)))
 
 
 def _git(*arguments, cwd):
@@ -203,14 +183,15 @@ def world(monkeypatch, tmp_path, permissions):
     mountinfo.write_text("")
     for name, value in {
         "PROJECTS_ROOT": projects, "HOME": home,
-        "SYMLINK_ROOTS": (projects, agents), "SERVICE_SCRIPT_ROOTS": (services,),
+        "SERVICE_SCRIPT_ROOTS": (services,),
         "SYSTEMD_UNIT_DIRS": (units,), "MOUNTINFO": mountinfo,
     }.items():
         monkeypatch.setattr(project_rename, name, value)
     monkeypatch.setattr(provider_session_relocation, "kimi_home", lambda: kimi)
 
     write_projects({"schema_version": 1, "status_vocab": ["active"], "tag_vocab": [], "projects": [
-        {"id": "Old", "path": str(old_root), "status": "active", "description": "d"},
+        {"id": "Old", "path": str(old_root), "status": "active", "description": "d",
+         "directory": {"origin": "created", "owner_id": "Old"}},
         {"id": "Taken", "path": str(projects / "Taken"), "status": "active"},
     ]})
     project_registry.reset_cache_for_tests()
@@ -270,9 +251,9 @@ def test_rename_updates_area_references_even_when_the_registered_file_is_missing
             "workspace_stable", "projects:Old/missing", json.dumps({"repo": "projects:Old/src"})))
         connection.execute(f'INSERT INTO "{probe}".instruction_executions VALUES (%s,%s)',
                            ("area-history", "projects:Old/missing"))
-    project_rename.rename_project("Old", "New", "alice", residents=_Residents())
+    project_rename.rename_project("Old", "New", "alice", execution_control=_Residents())
     assert _probe_rows(world, "locations") == [
-        ("workspace_stable", "projects:New/missing", {"repo": "projects:New/src"})]
+        ("workspace_stable", "projects:Old/missing", {"repo": "projects:Old/src"})]
     assert ("area-history", "projects:Old/missing") in _probe_rows(world, "instruction_executions")
 
 
@@ -295,7 +276,7 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
             connection.execute(f'CREATE TABLE "{world["probe"]}".{table} (id TEXT, payload TEXT)')
             connection.execute(f'INSERT INTO "{world["probe"]}".{table} VALUES (%s,%s)',
                                ("e1", f"Old {old_root}"))
-    result = project_rename.rename_project("Old", "New", "alice", residents=residents)
+    result = project_rename.rename_project("Old", "New", "alice", execution_control=residents)
 
     assert (result["project_id"], result["previous_project_id"]) == ("New", "Old")
     assert not old_root.exists() and (new_root / "summary.md").is_file()
@@ -307,7 +288,7 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
     assert set(items) == {"New", "OldX"}
     assert items["New"][1] == "New"
     doc = json.loads(items["New"][2])
-    assert doc == {"memberships": {"New": "admin"}, "path": f"{new_root}/agents/r1", "other": f"{projects}/OldX"}
+    assert doc == {"memberships": {"New": "admin"}, "path": f"{old_root}/agents/r1", "other": f"{projects}/OldX"}
     assert "\\u" not in items["New"][2] or items["New"][2].isascii()
     assert items["New"][3] == {"project_ids": ["New"], "binding": "portal-chat:u:project:project:New"}
     assert items["OldX"][3] == {"project_ids": ["OldX"]}
@@ -328,14 +309,14 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
     assert permissions.holds("alice", "@admin", "article_aaaaaaaaaaaa")
     assert permissions.holds("alice", "@viewer", "Taken") and not permissions.holds("alice", "@contributor", "Taken")
     # Files in the Project, the worktree link outside it and symlinks into it.
-    assert (new_root / "summary.md").read_text(encoding="utf-8") == "# New\n\n目标\n"
-    assert (new_root / "agent_port/boot.md").read_text(encoding="utf-8") == "# New 项目指南\n"
+    assert (new_root / "summary.md").read_text(encoding="utf-8") == "# Old\n\n目标\n"
+    assert (new_root / "agent_port/boot.md").read_text(encoding="utf-8") == "# Old 项目指南\n"
     assert (new_root / "notes.md").read_text(encoding="utf-8") == (
-        f"代码在 {new_root}/src，另见 {projects}/OldX 与 #project(\"New\")。\n")
+        f"代码在 {old_root}/src，另见 {projects}/OldX 与 #project(\"Old\")。\n")
     assert subprocess.run(["git", "status", "--short"], cwd=new_root / "wt", capture_output=True).returncode == 0
     assert subprocess.run(["git", "worktree", "list"], cwd=world["repository"], capture_output=True,
                           text=True).stdout.count(str(new_root / "wt")) == 1
-    assert os.readlink(world["agents"] / "notes") == str(new_root / "notes.md")
+    assert os.readlink(world["agents"] / "notes") == str(old_root / "notes.md")
     # Provider state kept per working directory.
     assert f'[projects."{world["old_root"]}/src"]' in (world["home"] / ".codex/config.toml").read_text()
     assert (world["accounts"] / "codex/codex_one/config.toml").read_text().count(f'[projects."{new_root}/wt"]') == 1
@@ -349,7 +330,7 @@ def test_a_rename_moves_the_directory_and_every_reference_follows(world, monkeyp
     # Every feature with Project relations reports; this Project has no research map directions.
     assert result["relations"] == {"paper": ["paper_aaaaaaaaaaaa"], "projects": []}
     assert result["external_references"] == [str(project_rename.SERVICE_SCRIPT_ROOTS[0] / "job.py")]
-    assert residents.calls[0][0] == "close" and residents.calls[-1][0] == "open"
+    assert residents.calls == []  # Execution control belongs to the shared directory owner.
 
 
 def test_a_dry_run_reports_and_changes_nothing(world):
@@ -359,12 +340,12 @@ def test_a_dry_run_reports_and_changes_nothing(world):
 
     :importance: P2
     """
-    result = project_rename.rename_project("Old", "New", "alice", dry_run=True, residents=_Residents())
+    result = project_rename.rename_project("Old", "New", "alice", dry_run=True, execution_control=_Residents())
     assert result["dry_run"] and result["blockers"] == [] and result["busy_resident_ids"] == []
     assert result["database"]["tables"]["rename_probe.items"] == 1
     assert result["database"]["tables"]["permission.scheme_nodes.path"] == 3
     assert set(_permission_nodes(world)) == {"Old", "Taken", "article_aaaaaaaaaaaa"}
-    assert str(world["old_root"] / "notes.md") in result["files"]["rewritten"]
+    assert result['files']['rewritten'] == []
     # Every feature with Project relations reports; this Project has no research map directions.
     assert result["relations"] == {"paper": ["paper_aaaaaaaaaaaa"], "projects": []}
     assert '"Old"' in world["paper"].read_text()
@@ -373,18 +354,13 @@ def test_a_dry_run_reports_and_changes_nothing(world):
     assert {row[0] for row in _probe_rows(world, "items")} == {"Old", "OldX"}
 
 
-def test_a_running_resident_blocks_the_rename_and_intake_reopens(world, monkeypatch):
-    """Resident 正在执行时 Project 改名被拒绝且恢复接单
-
-    项目中的 Resident 正在执行时拒绝改名，之前暂停的接单恢复，目录不移动。
-    """
-    monkeypatch.setattr(project_rename, "affected_residents", lambda *_args: ["resident_aaaaaaaaaaaa"])
+def test_same_filesystem_rename_does_not_wait_for_running_resident(world, monkeypatch):
+    """同文件系统改名先就绪文件，提交登记后恢复接单。"""
+    monkeypatch.setattr(ProjectExecutionControl, "affected_residents", lambda *_args: ["resident_aaaaaaaaaaaa"])
     residents = _Residents(busy=["resident_aaaaaaaaaaaa"])
-    with pytest.raises(RenameBlocked) as error:
-        project_rename.rename_project("Old", "New", "alice", residents=residents)
-    assert error.value.details == {"busy_resident_ids": ["resident_aaaaaaaaaaaa"]}
-    assert residents.calls == [("close", ["resident_aaaaaaaaaaaa"]), ("open", ["resident_aaaaaaaaaaaa"])]
-    assert world["old_root"].is_dir() and not world["new_root"].exists()
+    project_rename.rename_project("Old", "New", "alice", execution_control=residents)
+    assert residents.calls == []
+    assert not world["old_root"].exists() and world["new_root"].is_dir()
 
 
 def test_a_failed_database_rewrite_moves_the_directory_back(world, monkeypatch):
@@ -401,9 +377,9 @@ def test_a_failed_database_rewrite_moves_the_directory_back(world, monkeypatch):
 
     monkeypatch.setattr(project_rename, "rewrite_database", fail)
     with pytest.raises(RuntimeError):
-        project_rename.rename_project("Old", "New", "alice", residents=residents)
+        project_rename.rename_project("Old", "New", "alice", execution_control=residents)
     assert world["old_root"].is_dir() and not world["new_root"].exists()
-    assert residents.calls[-1][0] == "open"
+    assert residents.calls == []
     assert [item["id"] for item in project_registry.projects()] == ["Old", "Taken"]
 
 
@@ -417,12 +393,12 @@ def test_mounts_and_services_outside_portal_block_the_rename(world, monkeypatch)
     (world["units"] / "other.service").write_text(f"[Service]\nWorkingDirectory={world['projects']}/OldX\n")
     mountinfo = project_rename.MOUNTINFO
     mountinfo.write_text(f"36 35 8:1 /x {str(world['old_root']).replace(' ', chr(92) + '040')}/data rw - ext4 /dev/sda rw\n")
-    preview = project_rename.rename_project("Old", "New", "alice", dry_run=True, residents=_Residents())
+    preview = project_rename.rename_project("Old", "New", "alice", dry_run=True, execution_control=_Residents())
     assert preview["blockers"] == [{"kind": "mount", "path": f"{world['old_root']}/data"},
                                    {"kind": "systemd_unit", "path": str(unit)}]
     residents = _Residents()
     with pytest.raises(RenameBlocked):
-        project_rename.rename_project("Old", "New", "alice", residents=residents)
+        project_rename.rename_project("Old", "New", "alice", execution_control=residents)
     assert residents.calls == [] and world["old_root"].is_dir()
 
 
@@ -437,7 +413,7 @@ def test_invalid_targets_change_nothing(world, new_id, error):
     :importance: P2
     """
     with pytest.raises(error):
-        project_rename.rename_project("Old", new_id, "alice", residents=_Residents())
+        project_rename.rename_project("Old", new_id, "alice", execution_control=_Residents())
     assert world["old_root"].is_dir()
 
 
@@ -450,7 +426,7 @@ def test_an_existing_target_directory_blocks_the_rename(world):
     """
     world["new_root"].mkdir()
     with pytest.raises(RenameBlocked):
-        project_rename.rename_project("Old", "New", "alice", residents=_Residents())
+        project_rename.rename_project("Old", "New", "alice", execution_control=_Residents())
 
 
 def test_a_project_id_that_is_also_a_status_cannot_be_renamed_by_id(world):
@@ -464,4 +440,4 @@ def test_a_project_id_that_is_also_a_status_cannot_be_renamed_by_id(world):
         {"id": "Old", "path": str(world["old_root"]), "status": "Old"}]})
     project_registry.reset_cache_for_tests()
     with pytest.raises(RenameBlocked):
-        project_rename.rename_project("Old", "New", "alice", residents=_Residents())
+        project_rename.rename_project("Old", "New", "alice", execution_control=_Residents())

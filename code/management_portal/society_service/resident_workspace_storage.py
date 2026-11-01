@@ -21,6 +21,45 @@ WORKSPACE_SCHEMA_SQL = (
 )
 
 
+def create_workspace_deletion_binding(connection):
+    """Society owns the same-transaction response to Workspace logical deletion.
+
+    Like its foreign key, this binding applies to every Workspace owner without
+    making ResourceService import Society. Generated files use the existing
+    Resident lifecycle outbox and are retried after the registration commits.
+    """
+    from management_common.portal_database import _database_schema
+    lineage = '"' + _database_schema('lineage') + '"'
+    workspace = '"' + _database_schema('workspace') + '".workspaces'
+    connection.execute(f'''CREATE OR REPLACE FUNCTION {lineage}.workspace_deleted_bindings()
+        RETURNS trigger LANGUAGE plpgsql AS $body$
+        DECLARE affected TEXT; step JSONB;
+        BEGIN
+            FOR affected IN
+                WITH removed AS (
+                    DELETE FROM {lineage}.resident_workspace_bindings
+                    WHERE workspace_id=NEW.workspace_id RETURNING resident_id
+                )
+                SELECT r.resident_id FROM {lineage}.residents r
+                WHERE r.deleted_at IS NULL AND
+                    (r.resident_id IN (SELECT resident_id FROM removed) OR r.owned_workspace_id=NEW.workspace_id)
+            LOOP
+                step := jsonb_build_object('kind','workspace_document','resident_id',affected);
+                INSERT INTO {lineage}.resident_lifecycle_operations(operation_id,resident_id,payload_json)
+                VALUES ('workspace-document:' || affected, affected,
+                        jsonb_build_object('steps',jsonb_build_array(step),'next_step',0))
+                ON CONFLICT(resident_id) DO UPDATE SET payload_json=jsonb_set(
+                    resident_lifecycle_operations.payload_json::jsonb, '{{steps}}',
+                    (resident_lifecycle_operations.payload_json::jsonb->'steps') || jsonb_build_array(step));
+            END LOOP;
+            RETURN NEW;
+        END $body$''')
+    connection.execute(f'DROP TRIGGER IF EXISTS workspace_deleted_bindings ON {workspace}')
+    connection.execute(f'''CREATE TRIGGER workspace_deleted_bindings AFTER UPDATE OF deleted_at ON {workspace}
+        FOR EACH ROW WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
+        EXECUTE FUNCTION {lineage}.workspace_deleted_bindings()''')
+
+
 def normalize_binding(binding: Mapping[str, Any]) -> dict[str, Any]:
     unknown = set(binding) - set(BINDING_FIELDS) - {"path"}
     if unknown:
@@ -78,17 +117,18 @@ def project_records(records, bindings_by_resident, workspace_paths, lineage_fold
                 value.pop(field, None)
             value["workspace_bindings"] = []
         else:
-            folder = canonical_path(lineage_folders[value["lineage_id"]])
+            folder = lineage_folders.get(value["lineage_id"])
             own_id = value["owned_workspace_id"]
             value["owned_workspace"] = {"workspace_id": own_id, "path": workspace_paths[own_id]}
+            if not workspace_paths[own_id]:
+                value["owned_workspace"]["status"] = "deleted"
             value["workspace_bindings"] = [{**binding, "path": workspace_paths[binding["workspace_id"]]}
                 for binding in normalize_bindings(bindings_by_resident.get(rid, []))]
-            value["workspace_path"] = folder
-            from pathlib import Path
-            value["workspace_root"] = str(Path(folder).parent)
+            if folder is not None:
+                value["workspace_path"] = canonical_path(folder)
+                from pathlib import Path
+                value["workspace_root"] = str(Path(folder).parent)
             apply_binding_projection(value)
-            if value["owned_workspace"]["path"] != canonical_path(Path(folder) / "residents" / rid / "workspace"):
-                value["default_cwd"] = ""
         result.append(value)
     return result
 
@@ -106,5 +146,5 @@ def apply_binding_projection(record):
     if own_id in {value["workspace_id"] for value in values}:
         raise ValueError("Owned Workspace cannot also be an additional binding")
     record["workspace_bindings"] = bindings
-    record["default_cwd"] = canonical_path(own["path"])
+    record["default_cwd"] = '' if own.get('status') == 'deleted' else canonical_path(own["path"])
     record["workspace_paths"] = [binding["path"] for binding in bindings]

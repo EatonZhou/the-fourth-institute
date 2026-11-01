@@ -8,20 +8,18 @@ import logging
 from pathlib import Path
 import re
 import shutil
-import subprocess
 import threading
 import time
 from urllib.parse import urlparse
 import urllib.request
 
-from management_common import process_runtime
 from management_common.instance_manifest import AREAS
 from management_common.instance_locations import current_instance
 from management_common.portal_paths import path as portal_path
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_portal import paper_state_store
 from management_portal.notifications import publish_local_projection_change
-from management_portal.paper_pdf import _extract_pdf_text_file, _poppler_command
+from management_portal.paper_pdf import _extract_pdf_text_file
 from management_portal.paper_records import (
     _arxiv_id_from_text, _coerce_timestamp, _is_non_project_tag, _is_project_relation_id, _is_project_tag,
     _is_url, _merge_paper_relations, _merge_project_tags, _normalize_fingerprint_text, _normalize_list,
@@ -158,7 +156,7 @@ class PaperStore:
         self.index_root = self.root / "_index"
 
     def ensure(self) -> None:
-        for path in (self.items_root, self.index_root, self.root / "_incoming", self.root / "_work", self.root / "_trash"):
+        for path in (self.items_root, self.index_root, self.root / "_incoming", self.root / "_work"):
             path.mkdir(parents=True, exist_ok=True)
 
     def index_path(self, name: str) -> Path:
@@ -171,7 +169,14 @@ class PaperStore:
         for year in self.items_root.iterdir():
             check_scan_cancelled()
             if year.is_dir():
-                manifests.extend(path for path in walk_paths(year) if path.name == "manifest.json")
+                from management_common.directory_cleanup_store import get_directory_cleanup_store
+                from .resources.directory_registrations import is_deleted
+                for path in walk_paths(year):
+                    if path.name != 'manifest.json' or get_directory_cleanup_store().pending_at(path):
+                        continue
+                    if is_deleted(str(self.read_manifest(path).get('paper_id') or '')):
+                        continue
+                    manifests.append(path)
         return sorted(manifests)
 
     def read_manifest(self, path: Path) -> dict:
@@ -187,10 +192,23 @@ class PaperStore:
         )
 
     def manifest_for_paper_id(self, paper_id: str) -> tuple[Path, dict] | None:
+        from .resources.directory_registrations import is_deleted
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        if is_deleted(paper_id):
+            return None
         try:
             target = _validated_paper_id(paper_id)
         except ValueError:
             return None
+        from .resources.registry_store import get_registry_store
+        from management_common.instance_locations import located_path
+        registration = get_registry_store().get('paper', target)
+        if registration is not None:
+            path = Path(located_path(registration['directories'][0]['path'])) / 'manifest.json'
+            if get_directory_cleanup_store().pending_at(path) or not path.is_file():
+                return None
+            manifest = self.read_manifest(path)
+            return (path, manifest) if _manifest_matches_paper_address(manifest, target) else None
         relative_manifest = str(self.manifest_map().get(target) or "").strip()
         if relative_manifest:
             indexed_manifest_path = self.root / relative_manifest
@@ -200,7 +218,7 @@ class PaperStore:
                 for root in (self.root, self.items_root)
             ):
                 indexed_manifest_path = Path()
-            if indexed_manifest_path.is_file():
+            if indexed_manifest_path.is_file() and not get_directory_cleanup_store().pending_at(indexed_manifest_path):
                 manifest = self.read_manifest(indexed_manifest_path)
                 if _manifest_matches_paper_address(manifest, target):
                     return indexed_manifest_path, manifest
@@ -211,6 +229,11 @@ class PaperStore:
         return None
 
     def paper_dir_from_manifest(self, manifest: dict, manifest_path: Path | None = None) -> Path:
+        from .resources.registry_store import get_registry_store
+        from management_common.instance_locations import located_path
+        registration = get_registry_store().get('paper', str(manifest.get('paper_id') or ''))
+        if registration is not None:
+            return Path(located_path(registration['directories'][0]['path']))
         root = str(manifest.get("root") or "").strip()
         if root:
             return Path(root)
@@ -278,16 +301,26 @@ class PaperStore:
         paper["_manifest_path"] = str(manifest_path or paper_dir / "manifest.json")
         paper["_files"] = files
         paper["_identifiers"] = manifest.get("identifiers") if isinstance(manifest.get("identifiers"), dict) else {}
+        from .resources.registry_store import get_registry_store
+        registration = get_registry_store().get('paper', paper['id'])
+        if registration:
+            paper['directory'] = registration['directory']
         return paper
 
     def all_papers(self) -> list[dict]:
+        from .resources.directory_registrations import register_owned
         papers = []
         for path in self.manifest_paths():
             manifest = self.read_manifest(path)
             if not manifest:
                 continue
             try:
-                papers.append(self.manifest_to_paper(manifest, path))
+                paper = self.manifest_to_paper(manifest, path)
+                registration = register_owned('paper', paper['id'], [self.paper_dir_from_manifest(manifest, path)], scanning=True)
+                if registration is None:
+                    continue
+                paper['directory'] = registration['directory']
+                papers.append(paper)
             except Exception:
                 LOGGER.warning("Paper manifest %s could not be read; the paper is left out", path, exc_info=True)
                 continue
@@ -310,12 +343,7 @@ class PaperStore:
             key = _slugify(str(paper.get("slug") or paper.get("title") or paper.get("id") or "paper"))
         title_slug = _slugify(str(paper.get("title") or "paper"))
         base = self.items_root / year / f"{key}__{title_slug[:80]}"
-        path = base
-        suffix = 2
-        while path.exists() and not (path / "manifest.json").is_file():
-            path = Path(f"{base}-{suffix}")
-            suffix += 1
-        return path
+        return base.with_name(base.name + '__' + str(paper['id']))
 
     def fingerprint_map(self) -> dict:
         path = self.index_path("fingerprints.json")
@@ -345,10 +373,14 @@ class PaperStore:
         return result
 
     def find_existing_id(self, payload: dict) -> str:
+        from .resources.registry_store import get_registry_store
         fp_map = self.fingerprint_map()
         for fp in self.fingerprints_for_payload(payload):
             paper_id = str(fp_map.get(fp) or "").strip()
-            if paper_id:
+            # An index can observe a published package before the owner commits.
+            # Content matching never turns that interrupted creation into an
+            # already held Paper or takes over an unregistered user package.
+            if paper_id and get_registry_store().get('paper', paper_id) is not None:
                 return paper_id
         return ""
 
@@ -409,7 +441,42 @@ class PaperStore:
         }
         return manifest
 
-    def write_manifest(self, paper: dict, paper_dir: Path, existing: dict | None = None) -> dict:
+    def write_manifest(self, paper: dict, paper_dir: Path, existing: dict | None = None, *, connection=None, operation_id='') -> dict:
+        from .resources.directory_registrations import directory_writer, register_owned
+        from .resources.registry_store import get_registry_store
+        if connection is None:
+            if operation_id or get_registry_store().get('paper', paper['id']) is None:
+                from .resources.creation import Creation
+                creation = Creation(paper['id'], actor=str(paper.get('created_by') or ''), payload=paper, operation_id=operation_id)
+                with creation.prepare([(paper_dir, 'directory')]):
+                    if creation.completed:
+                        previous = get_registry_store().get('paper', paper['id'])
+                        if previous is None:
+                            raise KeyError(paper['id'])
+                        from management_common.instance_locations import located_path
+                        manifest_path = Path(located_path(previous['directories'][0]['path'])) / 'manifest.json'
+                    else:
+                        def initialize(index, stage):
+                            for subdir in ('text', 'reviews', 'notes', 'refs', 'figures', 'runs'):
+                                (stage / subdir).mkdir()
+                            manifest = self.manifest_from_paper(paper, stage, existing=existing)
+                            manifest['root'] = str(creation.paths[0])
+                            _write_json(stage / 'manifest.json', manifest)
+                        creation.publish(initialize)
+                        with directory_writer('paper') as writer, creation.registration(writer.connection):
+                            register_owned('paper', paper['id'], creation.paths, connection=writer.connection)
+                        manifest_path = creation.paths[0] / 'manifest.json'
+                    self.ensure()
+                    manifest = self.read_manifest(manifest_path)
+                    if not manifest or manifest.get('paper_id') != paper['id']:
+                        raise ValueError('Registered Paper manifest is missing or has a different identity')
+                    return manifest
+            with directory_writer('paper') as writer:
+                return self.write_manifest(paper, paper_dir, existing, connection=writer.connection)
+        with get_registry_store().writer('paper', connection=connection) as writer:
+            if writer.get('paper', paper['id']) is None:
+                raise RuntimeError('Prepare Paper creation before opening its registration transaction')
+        register_owned('paper', paper['id'], [paper_dir], connection=connection)
         self.ensure()
         paper_dir.mkdir(parents=True, exist_ok=True)
         for subdir in ("text", "reviews", "notes", "refs", "figures", "runs"):
@@ -451,40 +518,39 @@ class PaperStore:
             return True
         return False
 
-    def register(self, payload: dict, actor: str) -> dict:
-        existing_id = self.find_existing_id(payload)
-        if existing_id:
-            found = self.manifest_for_paper_id(existing_id)
-            if found:
-                manifest_path, manifest = found
-                paper = _clean_paper({**payload, "id": existing_id}, actor=actor)
-                manifest["relations"] = _merge_paper_relations(
-                    manifest.get("relations") if isinstance(manifest.get("relations"), dict) else {},
-                    paper,
-                )
-                manifest["tags"] = _merge_project_tags(
-                    manifest.get("tags") if isinstance(manifest.get("tags"), list) else [],
-                    paper,
-                )
-                manifest["source"] = {
-                    **(manifest.get("source") if isinstance(manifest.get("source"), dict) else {}),
-                    "updated_at": _now(),
-                }
-                _write_json(manifest_path, manifest)
-                self.rebuild_fingerprint_index()
-                return self.manifest_to_paper(manifest, manifest_path)
+    def relate_existing(self, paper_id: str, payload: dict, actor: str) -> dict:
+        """Merge associations of a registered Paper without claiming disk content."""
+        from .resources.directory_registrations import directory_writer
+        with directory_writer('paper') as writer:
+            if writer.get('paper', paper_id) is None:
+                raise KeyError(paper_id)
+            found = self.manifest_for_paper_id(paper_id)
+            if found is None:
+                raise FileNotFoundError('Registered Paper manifest is unavailable')
+            path, manifest = found
+            paper = _clean_paper({**payload, 'id': paper_id}, actor=actor)
+            manifest['relations'] = _merge_paper_relations(manifest.get('relations') or {}, paper)
+            manifest['tags'] = _merge_project_tags(manifest.get('tags') or [], paper)
+            manifest['source'] = {**(manifest.get('source') or {}), 'updated_at': _now()}
+            _write_json(path, manifest)
+            self.rebuild_fingerprint_index()
+            return self.manifest_to_paper(manifest, path)
+
+    def has_creation_operation(self, payload, actor, operation_id):
+        from .resources.registration import ResourceRegistrationStore
+        return ResourceRegistrationStore().existing(
+            'paper', payload, actor=actor, operation_id=operation_id) is not None
+
+    def register(self, payload: dict, actor: str, *, operation_id: str = '') -> dict:
+        from .resources.creation import Creation, creation_operation_id
+        from .resources.registration import ResourceRegistrationStore
+        operation_id = creation_operation_id(operation_id)
         clean_payload = dict(payload)
         if not str(clean_payload.get("id") or "").strip():
-            existing_ids = []
-            for manifest_path in self.manifest_paths():
-                manifest = self.read_manifest(manifest_path)
-                paper_id = str((manifest or {}).get("paper_id") or "").strip()
-                if paper_id:
-                    existing_ids.append(paper_id)
-            clean_payload["id"] = get_resource_service().new_id(
-                "paper",
-                existing_ids,
-            )
+            from uuid import uuid4
+            clean_payload['id'], _ = ResourceRegistrationStore().reserve(
+                'paper', payload, actor=actor, operation_id=operation_id,
+                allocate=lambda: 'paper_' + uuid4().hex[:12])
         paper = _clean_paper(clean_payload, actor=actor)
         source_pdf_url = str(payload.get("source_pdf_url") or "").strip()
         if _is_url(source_pdf_url):
@@ -501,7 +567,34 @@ class PaperStore:
             if str(value or "").strip()
         }
         paper_dir = self.paper_dir_for_new(paper)
-        paper_dir.mkdir(parents=True, exist_ok=True)
+        from .resources.directory_registrations import register_owned, directory_writer
+        from .resources.registry_store import get_registry_store
+        from management_common.instance_locations import located_path
+        creation = Creation(paper['id'], actor=actor, payload=payload, operation_id=operation_id)
+        with creation.prepare([(paper_dir, 'directory')]):
+            if creation.completed:
+                previous = get_registry_store().get('paper', paper['id'])
+                if previous is None:
+                    raise KeyError(paper['id'])
+                paper_dir = Path(located_path(previous['directories'][0]['path']))
+            else:
+                if get_registry_store().get('paper', paper['id']) is not None:
+                    raise FileExistsError('Paper identity is already registered: ' + paper['id'])
+                creation.publish(lambda index, stage: self._initialize_paper_package(paper, payload, stage, creation.paths[0]))
+                paper_dir, = creation.paths
+                with directory_writer('paper') as writer, creation.registration(writer.connection):
+                    register_owned('paper', paper['id'], [paper_dir], connection=writer.connection)
+                    from management_portal import permission_system
+                    permission_system.sync_resource({**paper, 'resource_id': paper['id']},
+                                                    resource_type='paper', connection=writer.connection)
+            manifest = self.read_manifest(paper_dir / 'manifest.json')
+            if not manifest or manifest.get('paper_id') != paper['id']:
+                raise ValueError('Registered Paper manifest is missing or has a different identity')
+            self.rebuild_fingerprint_index()
+            return self.manifest_to_paper(manifest, paper_dir / 'manifest.json')
+
+    def _initialize_paper_package(self, paper, payload, paper_dir, target):
+        paper = dict(paper)
         pdf_source = str(payload.get("pdf_path") or "")
         pdf_error = ""
         try:
@@ -519,9 +612,11 @@ class PaperStore:
             paper["pdf_path"] = str(paper_dir / "paper.pdf")
         if (paper_dir / "analysis.md").is_file():
             paper["analysis_path"] = str(paper_dir / "analysis.md")
-        manifest = self.write_manifest(paper, paper_dir)
-        self.rebuild_fingerprint_index()
-        return self.manifest_to_paper(manifest, paper_dir / "manifest.json")
+        for subdir in ('text', 'reviews', 'notes', 'refs', 'figures', 'runs'):
+            (paper_dir / subdir).mkdir()
+        manifest = self.manifest_from_paper(paper, paper_dir)
+        manifest['root'] = str(target)
+        _write_json(paper_dir / 'manifest.json', manifest)
 
     def update_paper(self, paper_id: str, fields: dict) -> dict | None:
         found = self.manifest_for_paper_id(paper_id)
@@ -576,38 +671,20 @@ class PaperStore:
                 _write_json(path, manifest)
         return changed
 
-    def delete_paper(self, paper_id: str) -> dict | None:
+    def delete_paper(self, paper_id: str, *, actor: str = '', projection_ids=()) -> dict | None:
         found = self.manifest_for_paper_id(paper_id)
         if not found:
             return None
         manifest_path, manifest = found
         paper_dir = self.paper_dir_from_manifest(manifest, manifest_path)
-        try:
-            resolved_dir = paper_dir.resolve(strict=False)
-            resolved_items = self.items_root.resolve(strict=False)
-            resolved_root = self.root.resolve(strict=False)
-        except (OSError, RuntimeError, ValueError):
-            LOGGER.warning("Paper %s directory %s could not be resolved; nothing deleted", paper_id, paper_dir, exc_info=True)
-            return None
-        if not (resolved_dir == resolved_items or resolved_items in resolved_dir.parents):
-            raise ValueError(f"refusing to delete path outside Paper items: {paper_dir}")
-        if resolved_dir == resolved_items or resolved_dir == resolved_root:
-            raise ValueError(f"refusing to delete unsafe Paper path: {paper_dir}")
-        self.ensure()
-        trash_name = f"{time.strftime('%Y%m%d-%H%M%S')}__{str(paper_id or '').strip() or paper_dir.name}"
-        trash_path = self.root / "_trash" / _slugify(trash_name)
-        suffix = 2
-        while trash_path.exists():
-            trash_path = self.root / "_trash" / f"{_slugify(trash_name)}-{suffix}"
-            suffix += 1
-        if paper_dir.exists():
-            shutil.move(str(paper_dir), str(trash_path))
+        from .resources.directory_registrations import unregister_owned
+        result = unregister_owned('paper', paper_id, actor=actor, projection_ids=projection_ids)
         self.rebuild_fingerprint_index()
         return {
             "paper_id": str(manifest.get("paper_id") or paper_id),
             "title": str(manifest.get("title") or ""),
             "deleted_path": str(paper_dir),
-            "trash_path": str(trash_path),
+            **result,
         }
 
     def rebuild_fingerprint_index(self) -> dict[str, str]:
@@ -913,13 +990,15 @@ def _local_pdf_for_paper(paper: dict) -> Path:
         if not name.lower().endswith(".pdf"):
             name += ".pdf"
         path = cache_dir / name
-        if not path.is_file() or path.stat().st_size < 20_000:
-            req = urllib.request.Request(pdf_path, headers={"User-Agent": "TFIPortalPaperDeepRead/0.1"})
-            with urllib.request.urlopen(req, timeout=270) as response:
-                data = response.read()
-            if not data.startswith(b"%PDF"):
-                raise RuntimeError("remote PDF did not return PDF bytes")
-            path.write_bytes(data)
+        from management_common.file_retention import cache_file
+        with cache_file(path, group='paper_pdf'):
+            if not path.is_file() or path.stat().st_size < 20_000:
+                req = urllib.request.Request(pdf_path, headers={"User-Agent": "TFIPortalPaperDeepRead/0.1"})
+                with urllib.request.urlopen(req, timeout=270) as response:
+                    data = response.read()
+                if not data.startswith(b"%PDF"):
+                    raise RuntimeError("remote PDF did not return PDF bytes")
+                path.write_bytes(data)
         return path
     path = _safe_file_path(pdf_path)
     if not path or not path.is_file():
@@ -933,7 +1012,7 @@ def _extract_pdf_text(pdf_path: Path, *, paper_id: str) -> str:
     if not text_path:
         PDF_TEXT_ROOT.mkdir(parents=True, exist_ok=True)
         text_path = PDF_TEXT_ROOT / f"{_slugify(paper_id)}.txt"
-    return _extract_pdf_text_file(pdf_path, cache_path=text_path)
+    return _extract_pdf_text_file(pdf_path, cache_path=text_path, owner_id=paper_id)
 
 
 def _extract_pdf_text_raw(pdf_path: Path, *, paper_id: str) -> str:
@@ -942,23 +1021,7 @@ def _extract_pdf_text_raw(pdf_path: Path, *, paper_id: str) -> str:
     if not text_path:
         PDF_TEXT_ROOT.mkdir(parents=True, exist_ok=True)
         text_path = PDF_TEXT_ROOT / f"{_slugify(paper_id)}.raw.txt"
-    text_path.parent.mkdir(parents=True, exist_ok=True)
-    if text_path.is_file() and text_path.stat().st_size > 1000:
-        return text_path.read_text(encoding="utf-8", errors="replace")
-    proc = process_runtime.run_process(
-        [_poppler_command("pdftotext"), "-raw", "-enc", "UTF-8", str(pdf_path), "-"],
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=360,
-    )
-    if proc.returncode != 0:
-        stderr = proc.stderr.decode("utf-8", errors="replace")[:400]
-        raise RuntimeError(f"pdftotext raw failed: {stderr}")
-    text = proc.stdout.decode("utf-8", errors="replace")
-    text = re.sub(r"\n{4,}", "\n\n\n", text).strip()
-    text_path.write_text(text, encoding="utf-8")
-    return text
+    return _extract_pdf_text_file(pdf_path, cache_path=text_path, owner_id=paper_id, raw=True)
 
 
 def _summary_text(paper: dict, limit: int = 2000) -> str:

@@ -32,7 +32,9 @@ def file_parts(suffix: str) -> tuple[str, ...] | None:
         return None
     if not separator or not relative:
         return ()
-    return secure_paths.relative_parts(relative)
+    from ..file_references import portable_parts
+
+    return portable_parts(relative)
 
 
 def lineage_folder(lineage_id: str) -> Path:
@@ -64,7 +66,7 @@ def describe(result: dict[str, Any], root: PurePath, parts: tuple[str, ...], *, 
     relative = "/".join(parts)
     name = parts[-1] if parts else (root.name or "/")
     result.update(target_kind="file", relative_path=relative, filename=name, title=name,
-                  portal_url="/api/resources/content?" + urlencode({"address": result["address"]}))
+                  portal_url="/api/resources/content?" + urlencode({"address": result["address"].replace("%", "%25")}))
     if result.get("exists"):
         try:
             with open_target(root, parts) as (_fd, target):
@@ -105,6 +107,8 @@ def metadata(info: os.stat_result, name: str) -> dict[str, Any]:
 
 
 def _listing(fd: int, root_id: str, parts: tuple[str, ...]) -> dict[str, Any]:
+    from ..file_references import file_reference_for, portable_parts
+
     infos = {}
     with secure_paths.scandir(fd) as entries:
         for entry in entries:
@@ -113,11 +117,21 @@ def _listing(fd: int, root_id: str, parts: tuple[str, ...]) -> dict[str, Any]:
             except FileNotFoundError:
                 continue
     ordered = sorted(infos, key=lambda name: (not stat.S_ISDIR(infos[name].st_mode), name.casefold()))
-    visible = [name for name in ordered if not hidden((*parts, name))]
+    visible = []
+    for name in ordered:
+        try:
+            portable_parts("/".join((*parts, name)))
+        except ValueError:
+            continue
+        if not hidden((*parts, name)):
+            visible.append(name)
     entries = []
     for name in visible[:MAX_DIRECTORY_ENTRIES]:
         relative = "/".join((*parts, name))
-        entries.append({**metadata(infos[name], name), "path": relative, "address": f"{root_id}/file/{relative}"})
+        reference = file_reference_for(root_id, relative)
+        address = f"{root_id}/file/{relative.replace('%', '%25')}"
+        entries.append({**metadata(infos[name], name), "path": relative, "address": address,
+                        **({"file_reference": reference} if reference else {})})
     return {"entries": entries, "truncated": len(visible) > MAX_DIRECTORY_ENTRIES,
             "hidden_count": len(ordered) - len(visible)}
 

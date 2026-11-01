@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 16
+  number: 18
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T18:16:04Z'
+  updated_at: '2026-11-01T18:52:39Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -39,6 +39,7 @@ links:
   - decision_8dc6b3d03ca7
   - decision_4a9ba5dfada6
   - decision_61e50306cc79
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -101,12 +102,12 @@ Portal 从三个位置发现 Skill：
 
 ## 删除
 
-**只能删除 Skill 本身；删除把整个 Skill 移入对应来源的回收目录，可以由维护者恢复。**
+**只能删除 Skill 本身。** Skill 包或单文件的删除、来源保留及失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 
-- 内部文件地址不能单独删除。目录型 Skill 移动整个目录，Project 中的单文件 Skill 只移动这个文件。页面在删除前说明影响范围。
-- 共享和第三方 Skill 移入各自来源目录下的 `.trash`；Project Skill 移入该 Project 的 `knowledge_base/.trash`。目标名称已被占用时，使用带时间的新名称，不覆盖已有内容。
-- 删除后服务通知资源索引刷新。路径越界、地址不是 Skill 本身、权限不足或 Skill 不存在时，不移动任何内容。
-- Portal 没有“还原”按钮，恢复由维护者在回收目录中操作。
+- 内部文件地址不能单独删除。目录型 Skill 的处理范围是整个目录，Project 中的单文件 Skill 是该文件；页面在删除前说明影响范围。
+- 各来源的文件清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。
+- 删除后服务通知资源索引刷新。路径越界、地址不是 Skill 本身、权限不足或 Skill 不存在时，不执行删除。
+- 删除后的恢复边界按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 
 ## 新建 Skill
 
@@ -120,7 +121,7 @@ Portal 不提供登记新 Skill 的入口，Skill 资源类型也不接受 `Regi
 | 详情界面 | `knowledge_board_lan/knowledge_board.html`（嵌入模式）与 `static/knowledge_board_detail*.js` | 文件树、预览、编辑、Chat 和删除确认 |
 | 资源索引 | `management_portal/resource_index_knowledge.py`（`SkillPackageAdapter`） | 汇总可见 Skill 的标题、摘要、Project、修改时间和属性 |
 | ResourceService | `management_portal/resources/` | 解析 Skill ID、检查当前用户能否访问，把操作交给 Skill 后端 |
-| Skill 后端 | `skill_board_lan/skill_backend.py` | 扫描三个来源、确定主说明、限制包内路径、保存文本、整包移入回收目录 |
+| Skill 后端 | `skill_board_lan/skill_backend.py` | 扫描三个来源、确定主说明、限制包内路径、保存文本、按《目录与路径协议》（decision_4aa13bc21e8e）处理包删除 |
 
 ```text
 Skill 页面查询当前用户可见的 Skill

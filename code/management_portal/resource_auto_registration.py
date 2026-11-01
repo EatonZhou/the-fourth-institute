@@ -3,7 +3,6 @@ from management_common.product_environment import read_product_env
 from management_common.portal_paths import path as portal_path
 
 from management_common.file_lock import try_lock_descriptor
-from management_common.clock import utc_now_iso
 import logging
 import threading
 import time
@@ -18,7 +17,6 @@ from management_portal.resources import ResourceService, get_resource_service
 
 LOGGER = logging.getLogger(__name__)
 IGNORE_COLLECTION = "auto_registration_ignore"
-IGNORE_SCHEMA = "tfi.resource-auto-ignores.v1"
 DEFAULT_INTERVAL_SECONDS = 24 * 60 * 60
 DEFAULT_INITIAL_DELAY_SECONDS = 60
 DEFAULT_RUN_STATE_PATH = portal_path("runtime") / "resource-auto-registration.last-run"
@@ -51,14 +49,8 @@ def suppress_paths(
     if not normalized:
         return
     with get_registry_store().writer(IGNORE_COLLECTION) as writer:
-        for path in sorted(normalized):
-            writer.put(IGNORE_COLLECTION, _ignore_id(resource_type, path), {
-                "schema": IGNORE_SCHEMA,
-                "resource_type": resource_type,
-                "path": path,
-                "resource_id": resource_id,
-                "ignored_at": utc_now_iso(),
-            })
+        from .resources.directory_registrations import suppress_removed
+        suppress_removed(writer, resource_type, resource_id, [{'path': path} for path in sorted(normalized)])
 
 
 def clear_suppressed_path(resource_type: str, path: str | Path) -> None:

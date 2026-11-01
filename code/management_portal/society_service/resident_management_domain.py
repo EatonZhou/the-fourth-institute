@@ -322,6 +322,11 @@ def move_resident_identities(
     scopes and supplies exact new identity projections to the graph callback.
     """
     from .resident_projection import _resident_lineage_node_projection
+    from management_common.directory_move_store import DirectoryMoveStore
+    from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+    from .directory_owner import directory_metadata
+    from uuid import uuid4
+    mover = DirectoryMoveStore()
     with ExitStack() as stack:
         for resident_id in sorted(resident_ids):
             stack.enter_context(resident_record_domain.state_lock(resident_id))
@@ -337,6 +342,24 @@ def move_resident_identities(
             resident_record_domain.set_resident_owned_workspace_binding(record)
             prepared.append((record, transfer, previous_path))
 
+        staged = []
+        try:
+            for record, transfer, _previous_path in prepared:
+                directory_operation = 'directory-move_' + uuid4().hex
+                stack.enter_context(mover.operation_lock(directory_operation))
+                metadata = directory_metadata(record.get('directory'), record['resident_id'])
+                terminate = stack.enter_context(resident_lifecycle_domain.directory_move_execution_scope([record], actor=actor))
+                mover.prepare(transfer['source'], transfer['target'], owner_id=record['resident_id'],
+                              origin=metadata['origin'], actor=actor,
+                              terminate=terminate,
+                              operation_id=directory_operation)
+                transfer['directory_operation'] = directory_operation
+                staged.append(directory_operation)
+        except BaseException:
+            for operation in reversed(staged):
+                mover.abort(operation)
+            raise
+
         def commit():
             from .lineage_definition_scope import check_before_membership_write
             check_before_membership_write(resident_catalog.get_catalog().state_store, source_id)
@@ -344,6 +367,8 @@ def move_resident_identities(
             operations = []
             for record, transfer, previous_path in prepared:
                 resident_id = record["resident_id"]
+                resident_catalog.get_catalog().state_store.database.write(lambda connection:
+                    mover.commit(transfer['directory_operation'], connection=connection, update=relocate_nested))
                 resident_record_domain.apply_resident_resource_identity(record)
                 resident_record_domain.save_resident_record(record)
                 projections[resident_id] = _resident_lineage_node_projection(record)
@@ -352,7 +377,15 @@ def move_resident_identities(
             commit_graphs(projections)
             return operations
 
-        return resident_catalog.get_catalog().state_store.membership_transaction(commit)
+        try:
+            result = resident_catalog.get_catalog().state_store.membership_transaction(commit)
+        except BaseException:
+            for operation in reversed(staged):
+                mover.abort(operation)
+            raise
+        for operation in staged:
+            mover.finish(operation, dependencies=reconcile_dependencies)
+        return result
 
 
 def update_resident(
@@ -366,9 +399,11 @@ def update_resident(
         require_visible=True,
     )
 
+    directory_operation = None
     def commit() -> dict[str, Any]:
         previous_title = str(target.record.get("title") or "")
-        result = resident_workspace_domain.update_resident_record(target.resident_id, payload, actor)
+        result = resident_workspace_domain.update_resident_record(target.resident_id, payload, actor,
+                                                                 directory_operation=directory_operation)
         next_title = str(result.get("title") or "")
         if next_title != previous_title:
             resident_lineage_host_port.commit_resident_title_projection(
@@ -392,4 +427,22 @@ def update_resident(
         current = resident_record_domain.find_resident(target.resident_id)
         if not current or resident_lineage.lineage_id(current) != graph_ids[0]:
             raise ValueError("Resident membership changed; retry the update")
+        if destination_lineage and destination_lineage != graph_ids[0]:
+            from management_common.directory_move_store import DirectoryMoveStore
+            from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+            from .directory_owner import directory_metadata
+            from uuid import uuid4
+            directory_operation = 'directory-move_' + uuid4().hex
+            source = resident_record_domain.resident_folder_path(current)
+            target_folder = resident_lineage_host_port.lineage_folder(destination_lineage) / 'residents' / resident_id
+            metadata = directory_metadata(current.get('directory'), resident_id)
+            def update(connection, source, target):
+                relocate_nested(connection, source, target)
+                return commit()
+            with resident_lifecycle_domain.directory_move_execution_scope([current], actor=actor) as terminate:
+                _operation, result = DirectoryMoveStore().move(source, target_folder, owner_id=resident_id,
+                    origin=metadata['origin'], actor=actor, terminate=terminate,
+                    database=resident_catalog.get_catalog().state_store.database, update=update,
+                    dependencies=reconcile_dependencies, operation_id=directory_operation)
+            return result
         return resident_catalog.get_catalog().state_store.transaction(commit)

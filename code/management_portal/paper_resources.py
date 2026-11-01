@@ -171,17 +171,15 @@ def delete_paper(payload: dict, actor: str) -> dict:
         paper = _paper_by_id(paper_id)
         if not paper:
             raise KeyError("paper not found")
-        from .workbench_projections.resource_lifecycle import release_resource
-        release_resource(paper_id, actor=actor)
-        for review in _all_reviews():
-            if str(review.get('paper_id') or '') == paper_id:
-                release_resource(review['review_id'], actor=actor)
-        store_deleted = PAPER_STORE.delete_paper(paper_id)
+        from .workbench_projections.resource_lifecycle import finish_resource_releases
+        review_ids = [review['review_id'] for review in _all_reviews() if str(review.get('paper_id') or '') == paper_id]
+        store_deleted = PAPER_STORE.delete_paper(paper_id, actor=actor, projection_ids=review_ids)
+        projection_cleanup_errors = finish_resource_releases([paper_id, *review_ids])
         kinds = ("review_jobs", "reviews", "notes", "deep_read_jobs", "exp_jobs")
         with paper_state_store.locked(*kinds):
             for kind in kinds:
                 paper_state_store.delete_paper(kind, paper_id)
-    # The package's review files went with it.
+    # The package's review files are owned by the pending cleanup.
     _announce_review_changes()
     return {
         "deleted": True,
@@ -190,4 +188,5 @@ def delete_paper(payload: dict, actor: str) -> dict:
         "deleted_by": actor,
         "deleted_at": _now(),
         "store": store_deleted or {},
+        "projection_cleanup_errors": projection_cleanup_errors,
     }

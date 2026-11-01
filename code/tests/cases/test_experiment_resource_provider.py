@@ -105,14 +105,19 @@ def test_experiment_update_rejects_symlinked_document_outside_entry(
     assert outside.read_bytes() == before
 
 
-def test_experiment_deletion_uses_project_knowledge_trash(
+def test_experiment_unregister_queues_owned_directory(
     experiment_service: tuple[ResourceService, Path],
 ) -> None:
-    """实验删除移入项目知识库回收站"""
+    """实验注销持久入队，清理完成前扫描不再发现。"""
     service, project_root = experiment_service
     created = service.register("experiment", {"project_id": "OSForAgent", "title": "Deletion path"}, actor="resident_aaaaaaaaaaaa")
     result = experiment.unregister_experiment(created["resource_id"])
-    assert Path(result["trash_path"]).parent == project_root / "knowledge_base" / ".trash"
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    assert result['cleanup_ids']
+    assert list(project_root.glob('knowledge_base/experiment/*/experiment.md'))
+    assert not list(experiment._documents())
+    get_directory_cleanup_store().run_pending()
+    assert not list(project_root.glob('knowledge_base/experiment/*/experiment.md'))
 
 
 def test_experiment_index_preserves_registered_title_instead_of_folder_slug(experiment_service):
@@ -159,8 +164,8 @@ def test_experiment_registration_is_idempotent_and_updatable(
         "summary": "Prepare the baseline and optimization tree.",
     }
 
-    created = service.register("experiment", payload, actor="resident_aaaaaaaaaaaa")
-    repeated = service.register("experiment", payload, actor="resident_aaaaaaaaaaaa")
+    created = service.register("experiment", payload, actor="resident_aaaaaaaaaaaa", operation_id='create-experiment')
+    repeated = service.register("experiment", payload, actor="resident_aaaaaaaaaaaa", operation_id='create-experiment')
     updated = service.update(
         created["resource_id"],
         {
@@ -199,6 +204,7 @@ def test_experiment_registration_is_idempotent_and_updatable(
         "experiment",
         payload,
         actor="resident_aaaaaaaaaaaa",
+        operation_id='create-experiment',
     )
     assert repeated_after_update["resource_id"] == created["resource_id"]
     assert repeated_after_update["created"] is False
@@ -216,8 +222,11 @@ def test_experiment_registration_is_idempotent_and_updatable(
         resource_type="experiment",
     )
     assert deleted["deleted"] is True
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    assert deleted['cleanup_ids']
+    assert documents[0].exists()
+    get_directory_cleanup_store().run_pending()
     assert not documents[0].exists()
-    assert Path(deleted["trash_path"]).is_dir()
 
     recreated = service.register("experiment", payload, actor="resident_aaaaaaaaaaaa")
     assert recreated["resource_id"] != created["resource_id"]
@@ -283,14 +292,14 @@ def test_experiment_registration_idempotency_survives_service_restart(
         registration_store=ResourceRegistrationStore(),
     )
     experiment.install_mutation_provider(first)
-    created = first.register("experiment", payload, actor="resident_aaaaaaaaaaaa")
+    created = first.register("experiment", payload, actor="resident_aaaaaaaaaaaa", operation_id='restart-test')
 
     restarted = ResourceService(
         index_provider=index,
         registration_store=ResourceRegistrationStore(),
     )
     experiment.install_mutation_provider(restarted)
-    repeated = restarted.register("experiment", payload, actor="resident_aaaaaaaaaaaa")
+    repeated = restarted.register("experiment", payload, actor="resident_aaaaaaaaaaaa", operation_id='restart-test')
 
     assert repeated["resource_id"] == created["resource_id"]
     assert repeated["created"] is False
@@ -351,6 +360,7 @@ def test_concurrent_retries_share_one_registration_id() -> None:
         reservations = list(workers.map(
             lambda _: store.reserve("experiment", {"key": token},
                                     actor="resident_aaaaaaaaaaaa",
+                                    operation_id=token,
                                     allocate=lambda: "experiment_" + secrets.token_hex(6)),
             range(4),
         ))
@@ -363,7 +373,7 @@ def test_replayed_reservation_is_not_reported_as_new_when_allocator_repeats_id()
     store = ResourceRegistrationStore()
     payload = {"key": secrets.token_hex(6)}
     allocate = lambda: "experiment_0123456789ab"
-    first = store.reserve("experiment", payload, actor="resident_aaaaaaaaaaaa", allocate=allocate)
-    second = store.reserve("experiment", payload, actor="resident_aaaaaaaaaaaa", allocate=allocate)
+    first = store.reserve("experiment", payload, actor="resident_aaaaaaaaaaaa", allocate=allocate, operation_id='same-operation')
+    second = store.reserve("experiment", payload, actor="resident_aaaaaaaaaaaa", allocate=allocate, operation_id='same-operation')
     assert first == ("experiment_0123456789ab", True)
     assert second == ("experiment_0123456789ab", False)

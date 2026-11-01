@@ -1465,8 +1465,8 @@ def test_shared_tau_identity_is_exclusive_without_consuming_test_capacity(tmp_pa
     assert entered.is_set()
 
 
-def test_run_history_limit_preserves_active_campaigns(tmp_path):
-    """运行历史只保留最近 100 条已结束记录，进行中和排队的运行不被清除"""
+def test_run_history_preserves_records_until_expiry(tmp_path):
+    """记录按结束时间到期，数量不截断；进行中和排队的运行不被清除。"""
     records = RunRecords(tmp_path / "runs.json")
     plan = {"selected": [], "execution": {"groups": []}}
     active = records.create(plan, "alice")["run_id"]
@@ -1479,7 +1479,7 @@ def test_run_history_limit_preserves_active_campaigns(tmp_path):
     current = records.create(plan, "alice")["run_id"]
     assert records.get(active)["status"] == "running"
     assert records.get(current)["status"] == "queued"
-    assert records.run_ids() == {active, current, *completed[-100:]}
+    assert records.run_ids() == {active, current, *completed}
 
 
 @pytest.mark.parametrize("first_verdict", ["passed", "failed"])

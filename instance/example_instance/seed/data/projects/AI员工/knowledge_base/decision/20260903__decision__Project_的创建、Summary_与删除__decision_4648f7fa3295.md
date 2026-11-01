@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 42
+  number: 43
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T18:15:50Z'
+  updated_at: '2026-11-01T18:52:19Z'
   updated_by:
     user: ''
     agent: resident_24014e2b9bf6
@@ -41,6 +41,7 @@ links:
   - decision_6591e7793116
   - decision_34158fdd4078
   - decision_b6e74d78f7b6
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from: []
 ---
@@ -140,17 +141,17 @@ Portal 的项目页“新建项目”与 Society 项目列表标题旁的“＋�
 
 ### 删除 Project
 
-**调用者用 `DeleteProject` 删除 Project 及其 Lineage、Resident。** 项目所属对象、执行终止与目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍按存活 Resident 的引用保留 Workspace（原项目删除流程）。
+**调用者用 `DeleteProject` 删除 Project 及其 Lineage、Resident。** 项目所属对象、执行终止与目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 
 - 项目页的页头菜单提供删除：说明将删除的内容，用户输入项目 ID 后才调用 `DeleteProject`；Resident 也可直接调用这条指令。默认模板要求调用者对该 Project 有 admin：创建者、管理员，或经实例中增加的表项、临时凭证取得 admin 的主体（decision_600ae27b0538）。
-- 删除可以处理有内容的项目；其下执行终止、登记注销和后台清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍等待排队任务、运行任务和 Fork 创建任务完成或停止及相关迁移结束后才删除 Lineage（原删除前提）。各服务职责如下：
-  1. 先读取项目登记中的原始路径，检查它必须指向 projects 区域内的真实目录，不能是符号链接、区域根本身或区域之外的路径；确认之后再使用解析后的路径。独立或共享 Workspace 的存在不拒绝删除；其清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍由第 4 步按存活引用判断（原目录检查）。ResourceService 注销资源前调用 SocietyService 的路径校验，防止定位到登记范围以外的目录。
-  2. ResourceService 分页列出项目下的全部资源登记，逐个注销（Lineage 和 Resident 的登记由第 3 步处理）。这一步在项目登记仍然存在时进行。注销与文件清理的失败及重试按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在任一资源注销失败时返回错误和失败资源列表，并阻止项目文件删除（原资源注销步骤）。其他功能共享库中的对象不随项目注销，例如论文属于共享论文库：拥有这类对象的功能在功能登记中声明它们的资源类型和 `project.relations` 接入点（decision_15aab18c0ab3），这一步跳过这些类型；删除项目内容前，各功能经接入点去掉对象与项目的关联，对象本身保留。Paper 从论文 manifest 的 `relations.projects` 中去掉这个项目。结果的 `unlinked` 按功能键列出改动过的对象，例如 `unlinked.paper` 是论文 ID；没有安装的功能不出现。
-  3. 按 `DeleteLineage` 的规则删除属于该项目的全部 Lineage 及其中的 Resident：先删除普通 Lineage，最后删除 Project 层 Lineage。Lineage 与 Resident 的身份删除，目录按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍由按引用清理任务处理目录，不移入归档（原身份删除步骤）。
-  4. 项目目录内的 Workspace、嵌套登记、手放文件及绑定按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍按 decision_8838269736d3 计算存活引用，保留被其他 Resident 使用的 Workspace 的 ID、路径、文件、绑定及必要父目录（原目录清理步骤）。
+- 删除可以处理有内容的项目；其下执行终止、登记注销和后台清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。各服务职责如下：
+  1. 先读取项目登记中的原始路径，检查它必须指向 projects 区域内的真实目录，不能是符号链接、区域根本身或区域之外的路径；确认之后再使用解析后的路径。独立或共享 Workspace 的存在不拒绝删除；其清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。ResourceService 注销资源前调用 SocietyService 的路径校验，防止定位到登记范围以外的目录。
+  2. ResourceService 分页列出项目下的全部资源登记，逐个注销（Lineage 和 Resident 的登记由第 3 步处理）。这一步在项目登记仍然存在时进行。注销与文件清理的失败及重试按《目录与路径协议》（decision_4aa13bc21e8e）处理。其他功能共享库中的对象不随项目注销，例如论文属于共享论文库：拥有这类对象的功能在功能登记中声明它们的资源类型和 `project.relations` 接入点（decision_15aab18c0ab3），这一步跳过这些类型；删除项目内容前，各功能经接入点去掉对象与项目的关联，对象本身保留。Paper 从论文 manifest 的 `relations.projects` 中去掉这个项目。结果的 `unlinked` 按功能键列出改动过的对象，例如 `unlinked.paper` 是论文 ID；没有安装的功能不出现。
+  3. 按 `DeleteLineage` 的规则删除属于该项目的全部 Lineage 及其中的 Resident：先删除普通 Lineage，最后删除 Project 层 Lineage。Lineage 与 Resident 的身份删除，目录按《目录与路径协议》（decision_4aa13bc21e8e）处理。
+  4. 项目目录内的 Workspace、嵌套登记、手放文件及绑定按《目录与路径协议》（decision_4aa13bc21e8e）处理。
   5. 从项目登记中移除这条记录，向 features 区域的 `deleted_projects/project_deletions.json` 追加一条审计记录，内容包括项目 ID、路径、说明、删除时间、删除者，以及被删除的 Lineage 和 Resident ID。
   6. 最后撤销项目本身的资源登记，并通知权限系统：项目和随目录删除的 Workspace 离开 P、R 两棵树，以它们为锚的规则表项、指向它们的表项和创建者记录一并删除（decision_b820faf42218）。项目 ID 就是项目名称，以后可以再次用来创建 Project；新建的 Project 是新的实例，按新建规则由新的创建者取得 admin。
-- 删除后的绑定及文件引用按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍保留其他存活 Resident 使用的 Workspace 及其文件引用，残留目录不恢复 Project 身份；未保留文件的引用失效（原引用保留规则）。
+- 删除后的绑定及文件引用按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 - 中途失败时，指令返回错误，已经删除的内容不恢复；再次调用 `DeleteProject` 会从剩余部分继续：第 2 步失败后重试会注销剩余资源；项目登记已经移除后，发起这次删除的调用者重试会返回原来的删除记录，并完成第 6 步。资源索引已经不再列出该项目时，这次重试同样有效。
 
 ## 组件与流程
@@ -179,7 +180,7 @@ RegisterResource(project) 或 CreateProject  →  ResourceService
 建立 Project 层 Lineage 与 Leader（失败则登记待恢复回执）
 ```
 
-删除流程的执行终止、注销与后台清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍在资源注销失败时保留项目内容，并按存活引用保留 Workspace（原流程图）；审计和权限撤销职责如下：
+删除流程的执行终止、注销与后台清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。审计和权限撤销职责如下：
 
 ```text
 DeleteProject(project_id)  →  ResourceService

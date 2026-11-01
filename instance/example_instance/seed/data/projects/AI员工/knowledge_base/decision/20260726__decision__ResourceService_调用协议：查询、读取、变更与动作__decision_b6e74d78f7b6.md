@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 32
+  number: 33
   created_at: '2026-07-26'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-27T12:56:33Z'
+  updated_at: '2026-11-01T18:52:15Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_24014e2b9bf6
 importance: 10
 metaness: 2
 ai_generated: false
@@ -54,6 +54,7 @@ links:
   - decision_8273271b67b1
   - decision_b820faf42218
   - decision_600ae27b0538
+  - decision_4aa13bc21e8e
   supersedes: []
   derived_from:
   - decision_8dc6b3d03ca7
@@ -174,6 +175,10 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 
 **读取正文的一个字节区间。** 领域解析器提供了区间读取函数时可用，用于大文件分段下载和浏览器的区间请求。
 
+### 对象 ID 加相对路径
+
+`resolve`、`reference`、`read_content` 与 `read_content_range` 的 `address` 同时接受合法字符串地址和对象文件引用：恰好一个 `workspace_id`、`repo_id` 或 `article_id`，加字符串 `relative_path`。空相对路径表示目录根，分隔符为 `/`，拒绝路径越界；先查根对象和权限，再读取当前位置下的文件。解析及引用结果携带稳定的 `file_reference`，目录移动后继续有效；不回退到旧绝对路径。区间读取保持原有 `start`、`end` 与正文传输契约。ISA 的参数和结果说明见 decision_ad3e21094f14，生命周期与失败类别见 decision_4aa13bc21e8e。
+
 ## 协作资源
 
 ### 协作资源的同步
@@ -213,7 +218,7 @@ Workspace 名称更新只接受非空 `title` 与必填 `expected_version`，令
 
 - 权限：UnregisterResource 的正式声明要求目标资源的 admin；领域删除适配器仍履行自己的业务约束。
 - 领域决定对象是软删除、物理删除还是只取消登记。
-- 目录注销与后台清理的提交、失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理；登记释放后发送 `deleted` 变化通知。现在的代码仍在领域失败时保留登记 ID，领域成功后才释放（原注销流程）。
+- 目录注销与后台清理的提交、失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理；登记释放后发送 `deleted` 变化通知。
 
 ### 等待索引确认
 
@@ -350,8 +355,8 @@ Repo 登记遇到目录还不是 Git 仓库时，调用方可以提示用户选�
 
 ### Workspace 注销适配
 
-Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`；类型能力 `unregisterable=true`，不开放通用 RegisterResource。Workspace 注销的绑定与嵌套登记处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍以存活 Resident 的自有引用、使用绑定和有效嵌套登记拒绝注销，返回 `instruction.conflict` 及 `workspace_in_use`、`workspace_nested_registration` 或 `workspace_area_root`，details 给出相关资源 ID（`resources/providers/workspace.py`、`resources/workspace_dependencies.py`）。无权限返回 `instruction.forbidden`，个人 AMA 的私有边界仍先行适用。
+Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 Workspace 的 `@admin`；类型能力 `unregisterable=true`，不开放通用 RegisterResource。Workspace 注销的绑定与嵌套登记处理按《目录与路径协议》（decision_4aa13bc21e8e）处理。无权限返回 `instruction.forbidden`，个人 AMA 的私有边界仍先行适用。
 
-Workspace 注销的来源、区域内外目录与嵌套登记范围按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍复用 `resident_workspace_deletion.delete_unreferenced`，仅删除区域内目录、保留区域外目录，不级联有效嵌套登记，并在生命周期删除时保留被引用目录。注销写入 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活；目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。
+Workspace 注销的来源、区域内外目录与嵌套登记范围按《目录与路径协议》（decision_4aa13bc21e8e）处理。注销写入 deleted_at/deleted_by 并推进 updated_at，已删除身份不得复活；目录已不存在时只注销登记。不能用此入口删除区域根目录，也不沿子符号链接删除外部文件。
 
-Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。现在的代码仍持锁至目录清理和删除提交，文件清理失败回滚登记（`society_service/resident_workspace_deletion.py`）。提交前在事务中锁定 Workspace 表与目标行并重新鉴权，其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。
+Workspace 注销提交、后台文件清理、持久重试与进度回执按《目录与路径协议》（decision_4aa13bc21e8e）处理。提交前在事务中锁定 Workspace 表与目标行并重新鉴权，其他目录资源从权威注册表及 Lineage 表读取，不以搜索索引判断；提交后的索引确认继续使用通用 ResourceService 回执。

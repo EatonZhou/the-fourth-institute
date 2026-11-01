@@ -42,17 +42,15 @@ def test_chat_attachments_use_the_exact_resident_identity(
 ) -> None:
     """聊天图片和附件使用目标 Resident 的准确身份"""
     root_id = str(resident_record["resident_id"])
-    child_id = "resident_bbbbbbbbbbbb"
-    registry = resident_lineage.snapshot(resident_record)
-    registry["residents"].append({
-        "resident_id": child_id,
+    from management_portal.society_service import lineage_resident_nodes
+    from management_portal.society_service import project_folders
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: tmp_path)
+    child = lineage_resident_nodes.create_lineage_resident(resident_record['lineage_id'], {
+        "title": "Attachment child",
         "source_resident_id": root_id,
-        "lineage_id": resident_record["lineage_id"],
-        "session_state": "active",
-        "created_by": "CASE-A",
         "backend": "codex",
-    })
-    resident_fork_domain._persist_derived_resident(resident_record, registry["residents"][-1])
+    }, 'CASE-A')['resident']
+    child_id = child['resident_id']
     monkeypatch.setattr(workspace_domain, "CHAT_IMAGE_CACHE_ROOT", tmp_path / "images")
     monkeypatch.setattr(workspace_contracts, "CHAT_IMAGE_CACHE_ROOT", tmp_path / "images")
     monkeypatch.setattr(
@@ -201,6 +199,10 @@ def test_inline_media_positions_survive_delivery_and_provider_capture(resident_r
     attachment = tmp_path / upload_id / ("inline.png" if media_type == "image" else "manuscript.docx")
     attachment.parent.mkdir()
     attachment.write_bytes(VALID_PNG_BYTES if media_type == "image" else b"file-content")
+    from management_portal.resources import isa as upload_isa
+    from management_common.directory_retention import RetentionStore
+    monkeypatch.setattr(upload_isa, 'upload_root', lambda: tmp_path)
+    RetentionStore().declare(attachment.parent, category='unused_upload', owner_id=upload_id)
     monkeypatch.setattr(resident_media_domain, "resident_input_media", lambda *a, **kw: [{
         "media_type": media_type, "source_type": "local_path", "source": str(attachment),
         "mime_type": "image/png" if media_type == "image" else "application/octet-stream", "name": attachment.name,
@@ -304,16 +306,15 @@ def test_resident_input_media_rejects_another_residents_image(
 ) -> None:
     """复用其他 Resident 图片时要求可访问其对话"""
     root_id = str(resident_record["resident_id"])
-    child_id = "resident_bbbbbbbbbbbb"
-    registry = resident_lineage.snapshot(resident_record)
-    registry["residents"].append({
-        "resident_id": child_id,
+    from management_portal.society_service import lineage_resident_nodes
+    from management_portal.society_service import project_folders
+    monkeypatch.setattr(project_folders, 'project_root_for_id', lambda _: tmp_path)
+    child = lineage_resident_nodes.create_lineage_resident(resident_record['lineage_id'], {
+        "title": "Media child",
         "source_resident_id": root_id,
-        "lineage_id": resident_record["lineage_id"],
-        "created_by": "CASE-A",
         "backend": "codex",
-    })
-    resident_fork_domain._persist_derived_resident(resident_record, registry["residents"][-1])
+    }, 'CASE-A')['resident']
+    child_id = child['resident_id']
     monkeypatch.setattr(workspace_domain, "CHAT_IMAGE_CACHE_ROOT", tmp_path / "images")
     monkeypatch.setattr(workspace_contracts, "CHAT_IMAGE_CACHE_ROOT", tmp_path / "images")
     image = workspace_domain.save_workspace_pasted_image({

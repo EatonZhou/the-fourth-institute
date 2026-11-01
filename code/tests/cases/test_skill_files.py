@@ -21,8 +21,11 @@ def test_core_skill_is_code_owned_and_shared_copy_is_not_indexed(tmp_path, monke
     monkeypatch.setattr(skill_backend, "_parse_projects", lambda **kwargs: [])
     assert skill_backend._iter_shared_skill_roots() == [shared / "ordinary"]
     assert not skill_backend._path_is_allowed(core / "tfi-agent-rule/SKILL.md", text_only=True)
-    with pytest.raises(PermissionError, match="not deletable"):
-        skill_backend._skill_trash_root(core / "tfi-agent-rule")
+    monkeypatch.setattr(skill_backend, '_resolve_skill_record', lambda *a, **kw: {
+        'source': {'path': str(core / 'tfi-agent-rule/SKILL.md')},
+        'attributes': {'source': 'core', 'content_root': str(core / 'tfi-agent-rule')},
+    })
+    assert skill_backend.delete_skill('skill_0123456789ab')[0] == 403
 
 
 class _SkillService:

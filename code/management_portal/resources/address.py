@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Callable, Iterable, Iterator
@@ -31,7 +32,15 @@ class AddressParser:
     def __init__(self, identity: ResourceTypeRegistry) -> None:
         self.identity = identity
 
-    def parse(self, address: str) -> ResourceAddress:
+    def parse(self, address: str | Mapping) -> ResourceAddress:
+        if isinstance(address, Mapping):
+            from .file_references import file_reference_parts, portable_parts
+
+            identifier, relative = file_reference_parts(address)
+            value = identifier + "/file" + ("/" + relative if relative else "")
+            return ResourceAddress(value, self.identity.parse(identifier), ("file", *portable_parts(relative)))
+        if not isinstance(address, str):
+            raise ValueError("Resource address must be a string or file reference")
         clean_address = unquote(str(address or "").strip())
         if (
             not clean_address
