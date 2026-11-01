@@ -16,6 +16,7 @@ from urllib.request import urlopen
 REPO = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(REPO), str(REPO / "code")]
 from prepare_install import digest
+from management_common import host_instances
 from management_common.distribution_targets import identify_host
 from management_common.code_environment import GENERATED_CODE_DIRECTORIES, source_inventory
 from scripts.windows.build import public_seed, bundle_seed, bundle_native_dependencies, verify_prepared_payload
@@ -102,7 +103,7 @@ def smoke(executable, destination, instance_root, included, *, require_long_rpc_
               destination / "code/scripts/tfi_release_install.py", "retire", "--instance", INSTANCE]
     if not included:
         argv.append("--without-examples")
-    if registered_instance(destination) is not None:
+    if INSTANCE in host_instances.read_registry():
         raise ValueError("The runner already has a registered desktop instance")
     failure = None
     session = None
@@ -160,7 +161,7 @@ def smoke(executable, destination, instance_root, included, *, require_long_rpc_
     finally:
         if session is not None:
             session.close()
-        if registered_instance(destination) is not None:
+        if INSTANCE in host_instances.read_registry():
             # Retire the temporary instance: services, definitions, registration, root.
             try:
                 command(retire, timeout=300)

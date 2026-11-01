@@ -239,11 +239,29 @@ class MacDesktop(unittest.TestCase):
     def test_native_smoke_keeps_original_failure_if_retire_also_fails(self):
         from scripts.macos import build
         with tempfile.TemporaryDirectory() as tmp, \
-                patch.object(build, "registered_instance", side_effect=[None, {"root": tmp}]), \
+                patch.object(build.host_instances, "read_registry", side_effect=[{}, {"desktop": tmp}]), \
                 patch.object(build, "command", side_effect=[ValueError("install failed"), RuntimeError("retire failed")]):
             with self.assertRaises(ExceptionGroup) as caught:
                 build.smoke(Path("/fake/app"), Path(tmp), Path(tmp) / "instance", False)
         self.assertEqual([str(exc) for exc in caught.exception.exceptions], ["install failed", "retire failed"])
+
+    def test_native_smoke_can_start_before_destination_exists(self):
+        from scripts.macos import build
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(build.host_instances, "read_registry", return_value={}), \
+                patch.object(build, "command", side_effect=ValueError("native launcher reached")):
+            destination = Path(tmp) / "not-installed"
+            with self.assertRaisesRegex(ValueError, "native launcher reached"):
+                build.smoke(Path("/fake/app"), destination, Path(tmp) / "instance", False)
+            self.assertFalse(destination.exists())
+
+    def test_native_smoke_refuses_existing_host_instance_before_launch(self):
+        from scripts.macos import build
+        with patch.object(build.host_instances, "read_registry", return_value={"desktop": "/existing"}), \
+                patch.object(build, "command") as command:
+            with self.assertRaisesRegex(ValueError, "already has a registered"):
+                build.smoke(Path("/fake/app"), Path("/not-installed"), Path("/instance"), False)
+            command.assert_not_called()
 
     def test_long_address_instance_root_exceeds_web_rpc_but_fits_postgres(self):
         from scripts.macos import build
