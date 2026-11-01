@@ -184,6 +184,16 @@
       });
     }
 
+    async function handleFamilyUnfamilized({type, residentId, lineageId, result}) {
+      if (type !== "unfamilize" || state.lineage?.lineage_id !== lineageId) return;
+      const controller = state.graphController;
+      window.PortalResidentProjection?.invalidate?.(residentId);
+      const lineage = await societyService.loadLineage(lineageId);
+      if (state.lineage?.lineage_id !== lineageId || state.graphController !== controller) return;
+      commitLineage(lineage);
+      revealUnfamilizedMember(lineageId, result);
+    }
+
     function residentMenuHandlers() {
       return {
         onDelete: node => removeSelectedNode({nodeId: node.id}),
@@ -193,10 +203,9 @@
             commitLineage(result.lineage);
           } else if (type === "intake") {
             renderGraph();
-          } else if (type === "delete-family" || type === "unfamilize" || type === "family-members" || type === "family-auto-migrate") {
+          } else if (type === "delete-family" || type === "family-members" || type === "family-auto-migrate") {
             window.PortalResidentProjection?.invalidate?.(residentId);
             commitLineage(await societyService.loadLineage(lineageId));
-            if (type === "unfamilize") revealUnfamilizedMember(lineageId, result);
           } else if (type === "move") {
             // The moved Resident keeps its identity and conversation, so the
             // canvas follows it into the receiving Lineage and its Chat stays
@@ -665,7 +674,7 @@
       renderNodeProviderFields, openNodeModal, nextNodePosition, submitNodeForm,
       openNodeSettingsModal, residentMenuHandlers, absorbNodeIntoTarget, keepAbsorbedSourceNode,
       deleteAbsorbedSourceNode, updateBranchAccountHint, configureBranchProvider,
-      resetBranchModalState, openBranchModal, createQuickFork, submitBranch, removeSelectedNode,
+      resetBranchModalState, openBranchModal, createQuickFork, submitBranch, removeSelectedNode, handleFamilyUnfamilized,
     });
   }
 

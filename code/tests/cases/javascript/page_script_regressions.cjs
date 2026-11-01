@@ -274,7 +274,8 @@ function unfamilizeViewportFixture() {
     commitLineage: () => calls.push(['render']),
   });
   const graph = {removeFamilyInstance: blocks.removeFamilyInstance,
-    revealUnfamilizedMember: blocks.revealUnfamilizedMember, residentMenuHandlers: menu.residentMenuHandlers};
+    revealUnfamilizedMember: blocks.revealUnfamilizedMember, residentMenuHandlers: menu.residentMenuHandlers,
+    handleFamilyUnfamilized: menu.handleFamilyUnfamilized};
   return {graph, state, frames, calls, receipt};
 }
 
@@ -282,7 +283,7 @@ for (const entry of ['canvas', 'menu']) {
   test(`Family ${entry} ungroup reveals a retained nested facade after rendering without changing Chat`, async () => {
     const f = unfamilizeViewportFixture();
     if (entry === 'canvas') await f.graph.removeFamilyInstance('outer');
-    else await f.graph.residentMenuHandlers().onChanged({type: 'unfamilize', lineageId: 'lineage_one',
+    else await f.graph.handleFamilyUnfamilized({type: 'unfamilize', lineageId: 'lineage_one',
       residentId: 'removed_facade', result: f.receipt});
     assert.equal(f.calls.some(call => call[0] === 'reveal'), false);
     assert.equal(f.frames.length, 1);
@@ -305,6 +306,33 @@ test('Family viewport completion cannot move a newer Lineage, controller or work
     f.frames.shift()();
     assert.deepEqual(f.calls, []);
   }
+});
+
+test('Unfamilize from Chat Menu reaches the owning HATG panel exactly once', async () => {
+  const f = unfamilizeViewportFixture(), listeners = new Map();
+  const window = {};
+  vm.runInContext(readHatgModule('hatg_panel_bindings.js'), vm.createContext({window}));
+  const dependencies = Object.fromEntries(window.PortalHatgPanelBindings.dependencies.map(name => [name, noop]));
+  const element = {addEventListener: noop, querySelectorAll: () => []};
+  const bindings = owner('hatg_panel_bindings.js', ['bindActions'], {
+    ...dependencies, window, state: f.state,
+    handleFamilyUnfamilized: f.graph.handleFamilyUnfamilized,
+    bindComponentLibraryResize: noop, $id: () => element, $queryAll: () => [],
+    panelHost: {pageStateController: {listen: (_scope, _target, name, handler) => listeners.set(name, handler)}},
+    ResizeObserver: class {observe() {}},
+    hatgModule: () => ({observeNavigationHeight: noop}),
+  });
+  bindings.bindActions();
+  assert.ok(listeners.has('portal:resident-menu-changed'), 'Chat-originated Family changes must reach the canvas');
+  const detail = {type:'unfamilize', residentId:'removed_facade', lineageId:'lineage_one', result:f.receipt};
+  await listeners.get('portal:resident-menu-changed')({detail});
+  // A canvas-opened Menu also invokes its local callback after the global event.
+  await f.graph.residentMenuHandlers().onChanged(detail);
+  assert.deepEqual(f.calls, [['load'], ['render']]);
+  assert.equal(f.frames.length, 1);
+  f.frames.shift()();
+  assert.deepEqual(f.calls.slice(-2), [['measure', true], ['reveal', 'inner_card']]);
+  assert.equal(f.state.selectedNodeId, 'removed_facade');
 });
 
 test('Family deletion or non-visible retained members never invent a viewport target', async () => {

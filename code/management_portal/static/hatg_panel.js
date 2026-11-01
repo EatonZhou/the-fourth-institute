@@ -280,7 +280,7 @@
 
   const {
     renderNodeProviderFields, openNodeModal, nextNodePosition, submitNodeForm,
-    openNodeSettingsModal, residentMenuHandlers, absorbNodeIntoTarget, keepAbsorbedSourceNode,
+    openNodeSettingsModal, residentMenuHandlers, handleFamilyUnfamilized, absorbNodeIntoTarget, keepAbsorbedSourceNode,
     deleteAbsorbedSourceNode, updateBranchAccountHint, configureBranchProvider,
     resetBranchModalState, openBranchModal, createQuickFork, submitBranch,
   } = hatgModule("PortalHatgResidentDialogs").createResidentDialogs({
@@ -484,7 +484,7 @@
     batchDeleteCanvasSelection, bindGraphNodeSearch, bindPrimitiveLibrary, cancelGraphInteractionMode,
     cancelHandoffMode, changeGraphRelationFilter, clearCanvasSelection, clone, closeModal,
     closeRelationInspector, commitLineage, configureBranchProvider, deleteAbsorbedSourceNode,
-    deleteCurrentLineage, focusLineageLeader, hatgModule, keepAbsorbedSourceNode, loadLineages,
+    deleteCurrentLineage, focusLineageLeader, handleFamilyUnfamilized, hatgModule, keepAbsorbedSourceNode, loadLineages,
     loadSubgraphMoveTargets, openBranchModal, openEditLineageModal, openFamilize, openFunctionalize,
     openNodeModal, openSeedDismissModal, openSeedPromoteModal, openSubgraphMove, panelHost,
     positionSeedInspector, previewSubgraphMove, reconcileLineageRuntime, removeEditingEdge,

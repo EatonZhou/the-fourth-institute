@@ -14,7 +14,7 @@
     "cancelGraphInteractionMode", "cancelHandoffMode", "changeGraphRelationFilter",
     "clearCanvasSelection", "clone", "closeModal", "closeRelationInspector", "commitLineage",
     "configureBranchProvider", "deleteAbsorbedSourceNode", "deleteCurrentLineage", "focusLineageLeader",
-    "hatgModule", "keepAbsorbedSourceNode", "loadLineages", "loadSubgraphMoveTargets",
+    "handleFamilyUnfamilized", "hatgModule", "keepAbsorbedSourceNode", "loadLineages", "loadSubgraphMoveTargets",
     "openBranchModal", "openEditLineageModal", "openFamilize", "openFunctionalize", "openNodeModal",
     "openSeedDismissModal", "openSeedPromoteModal", "openSubgraphMove", "panelHost",
     "positionSeedInspector", "previewSubgraphMove", "reconcileLineageRuntime", "removeEditingEdge",
@@ -34,7 +34,7 @@
       batchDeleteCanvasSelection, bindGraphNodeSearch, bindPrimitiveLibrary, cancelGraphInteractionMode,
       cancelHandoffMode, changeGraphRelationFilter, clearCanvasSelection, clone, closeModal,
       closeRelationInspector, commitLineage, configureBranchProvider, deleteAbsorbedSourceNode,
-      deleteCurrentLineage, focusLineageLeader, hatgModule, keepAbsorbedSourceNode, loadLineages,
+      deleteCurrentLineage, focusLineageLeader, handleFamilyUnfamilized, hatgModule, keepAbsorbedSourceNode, loadLineages,
       loadSubgraphMoveTargets, openBranchModal, openEditLineageModal, openFamilize, openFunctionalize,
       openNodeModal, openSeedDismissModal, openSeedPromoteModal, openSubgraphMove, panelHost,
       positionSeedInspector, previewSubgraphMove, reconcileLineageRuntime, removeEditingEdge,
@@ -128,6 +128,10 @@
     function bindActions() {
       bindComponentLibraryResize();
       bindPrimitiveLibrary();
+      // Resident Menu can be opened from Chat, the canvas or another surface.
+      // One panel-owned listener refreshes and reveals the retained member.
+      panelHost.pageStateController.listen("panel", window, "portal:resident-menu-changed", event =>
+        handleFamilyUnfamilized(event.detail || {}).catch(error => toast(error.message || error, "error")));
       $id("refreshLineagesBtn")?.addEventListener("click", () => loadLineages().catch(error => toast(error.message || error, "error")));
       $id("hatgCollapseBtn")?.addEventListener("click", () => {
         panelHost.hatgComponentOptions.onCollapseRequest?.();
