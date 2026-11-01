@@ -73,7 +73,21 @@ async function currentProgrammingInspectors(page) {
     label: node.getAttribute('aria-label'),
   })));
 }
+async function currentMessageQuoteAction(page, {messageId}) {
+  if (typeof messageId !== 'string' || !messageId) throw new Error('Original message identity is required');
+  const menus = page.locator('[data-portal-message-menu]:visible');
+  const identities = await menus.evaluateAll(nodes => nodes.map(node => node.dataset.portalMessageKey));
+  const matches = identities.flatMap((key, index) => key === messageId ? [index] : []);
+  if (matches.length > 1) throw new Error('Ambiguous current message menu');
+  if (!matches.length) return null;
+  const quote = menus.nth(matches[0]).locator('[data-portal-message-action="quote"]:visible');
+  const count = await quote.count();
+  if (count > 1) throw new Error('Ambiguous current quote action');
+  return count === 1 && await quote.isEnabled() ? quote : null;
+}
 ```
+
+消息引用先在精确原message_id对应的可见正文上正常右键，再在同一原ready中用currentMessageQuoteAction核对菜单所属消息及可用引用按钮。原生菜单移到document.body，不能限定在原article内部；按钮文案随语言显示“引用回复”或“Quote reply”，不要固定英语名称。保存当下实际名称，引用后核对composer的原消息预览和随后真实提交的message.quote.message_id。该发现函数只读，不点击、不发送、不代替引用提交或业务终态。
 
 运行设置中的账号替换返回completed时，原生dialog会自动关闭。原ready核验同一原回执、目标账号/设置及对话框关闭，截图当前可见页面；不要给已经关闭的dialog截图并等待超时，也不要为补原截图重新打开。currentNativeDialog只发现当前可见原生dialog，null可表示已关闭，不等于替换失败。Route/Watch/Target连线属于编程对象Inspector，不是Resident关系详情。打开后用currentProgrammingInspectors记录当前真实面板ID、kind及wire_id，再按精确本轮wire_id选唯一面板，核验其中实际Label/保存/删除控件；不猜另一个complementary名称。组件面板同理按component_id；这些快照不代替保存回执和原ready。
 

@@ -182,6 +182,30 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.equal((await readResidentChatReady(page.locator('#'+originalEditor),{residentId:childId})).ready,true,
     'the original Fork-opened Editor is selected by its discovered DOM identity');
   const stableRoot = page.locator('#sample-second-editor');
+  // Render real Resident message menus in both supported UI languages. The
+  // open popover is portalled outside its article, but keeps its message key.
+  const currentMessageQuoteAction=new Function(controlsExample[1]+'; return currentMessageQuoteAction;')();
+  for (const language of ['zh-CN','en']) {
+    await page.evaluate(language=>{
+      PortalI18n.apply(language);
+      sampleSecondEditor.workspace.setMessages([]);
+      sampleSecondEditor.workspace.setMessages([{id:'msg_quote_sample',message_id:'msg_quote_sample',role:'agent',
+        content:'Native quote sample 42'}]);
+    },language);
+    const message=stableRoot.locator('article.messageItem[data-message-key="msg_quote_sample"]');
+    await message.getByText('Native quote sample 42',{exact:true}).click({button:'right'});
+    const nativeQuote=page.locator('[data-portal-message-menu]:visible [data-portal-message-action="quote"]');
+    await nativeQuote.waitFor({state:'visible'});
+    assert.equal(await nativeQuote.innerText(),language==='zh-CN'?'引用回复':'Quote reply');
+    if(language==='zh-CN') assert.equal(await page.getByRole('button',{name:'Quote reply',exact:true}).count(),0,
+      'the old literal English readiness condition cannot find a Chinese menu');
+    const quote=await currentMessageQuoteAction(page,{messageId:'msg_quote_sample'});
+    assert.ok(quote);
+    assert.equal(await quote.getAttribute('data-portal-message-action'),'quote');
+    assert.equal(await currentMessageQuoteAction(page,{messageId:'msg_other'}),null);
+    await page.keyboard.press('Escape');
+    assert.equal(await currentMessageQuoteAction(page,{messageId:'msg_quote_sample'}),null);
+  }
   const oldName = stableRoot.and(page.getByRole('region',{name:'Fixture Child',exact:true}));
   assert.equal(await oldName.count(),1);
   deleteFixtureResident(childId);
