@@ -110,6 +110,36 @@ def test_tool_progress_is_separate_from_final_answer(agent):
     assert messages[0]["id"] != messages[1]["id"]
 
 
+@pytest.mark.parametrize("prompt", ["parallel-tool-error", "parallel-tool-correction", "parallel-tool-empty-result"])
+def test_parallel_error_flush_preserves_actual_tool_result_and_immutable_segments(agent, prompt):
+    from tests.cases.live_trace_support import _turn
+    from management_portal.execution.agent_data_output_capture import live_tool_segment_id
+
+    store, projector, request, _ = _turn("antigravity")
+    ctx, events, state = context()
+
+    def observe(provider, sid, route, event):
+        events.append(event)
+        projector.observe(provider=provider, backend_route_id=route, backend_session_id=sid,
+                          execution_id=request.execution_id, event=event)
+
+    ctx._provider_event_observer = observe
+    result = AntigravityBackend().execute(invocation(agent, prompt, sid="thread-native",
+                                                    execution=request.execution_id), ctx)
+    assert result.output["message"] == prompt
+    assert state["phase"] == "completed"
+    for call in ("parallel-error", "parallel-command"):
+        for method in ("item/started", "item/completed"):
+            assert sum(e["method"] == method and e["params"].get("item", {}).get("id") == call for e in events) == 1
+    command = store.segment(live_tool_segment_id(request.execution_id, "parallel-command"))
+    failure = store.segment(live_tool_segment_id(request.execution_id, "parallel-error"))
+    assert command["status"] == "completed"
+    assert command["content"]["result"]["aggregatedOutput"] == ("" if prompt == "parallel-tool-empty-result" else "parallel-ok")
+    assert failure["status"] == "failed"
+    assert "missing address" in str(failure["content"]["result"])
+    assert events[-1]["method"] == "turn/completed"
+
+
 @pytest.mark.parametrize("owner,outcome", [(True, "selected"), (False, "cancelled")])
 def test_permissions_are_enforced_in_protocol_not_prompt(agent, owner, outcome):
     result = AntigravityBackend().execute(invocation(agent, "permission", owner=owner), context()[0])

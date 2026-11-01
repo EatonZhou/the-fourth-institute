@@ -105,6 +105,7 @@ class AntigravityBackend:
         segment = 0
         after_tool = False
         text_parts, tools = [], {}
+        completed_tools = set()
         turn_id = request.execution_id
         tool_edits = ToolEditArtifacts(request.cwd)
 
@@ -120,6 +121,13 @@ class AntigravityBackend:
                 context.bind_input(provider=self.provider_id, backend_session_id=sid, turn_id=turn_id, backend_route_id=route)
                 emit("turn/started", turn={"id": turn_id})
                 accepted = True
+
+        def complete_tool(tool_id, item):
+            name, arguments = _tool_arguments(item)
+            event = tool_completed(tool_id, name, arguments, item.get("rawOutput", item.get("content", [])),
+                                   failed=item["status"] == "failed", cwd=request.cwd)
+            emit(event["method"], **event["params"])
+            completed_tools.add(tool_id)
 
         def update(params):
             nonlocal segment, after_tool
@@ -147,21 +155,28 @@ class AntigravityBackend:
                 else:
                     emit("item/reasoning/textDelta", itemId=f"{turn_id}:thought", delta=delta)
             elif kind in {"tool_call", "tool_call_update"}:
-                after_tool = True
                 tool_id = item.get("toolCallId")
-                if not tool_id:
+                if not tool_id or tool_id in completed_tools:
                     return
+                after_tool = True
                 before = tools.get(tool_id)
-                merged = {**(before or {}), **item}
+                previous = dict(before or {})
+                if previous.get("status") == "failed" and item.get("status") in {"pending", "in_progress", "completed"}:
+                    # A sibling's error is not the resumed tool's result.
+                    previous.pop("rawOutput", None)
+                    previous.pop("content", None)
+                merged = {**previous, **item}
                 tools[tool_id] = merged
                 name, arguments = _tool_arguments(merged)
                 if before is None:
                     event = tool_started(tool_id, name, arguments, cwd=request.cwd)
                     emit(event["method"], **event["params"])
-                if merged.get("status") in {"completed", "failed"} and (before or {}).get("status") not in {"completed", "failed"}:
-                    event = tool_completed(tool_id, name, arguments, merged.get("rawOutput", merged.get("content", [])),
-                                           failed=merged["status"] == "failed", cwd=request.cwd)
-                    emit(event["method"], **event["params"])
+                # ACP can flush every open parallel call as failed when just
+                # one tool errors, then re-announce a sibling and complete it.
+                # Failures remain provisional until prompt settlement; success
+                # is final and later progress must never reopen its Segment.
+                if merged.get("status") == "completed":
+                    complete_tool(tool_id, merged)
             elif kind == "usage_update":
                 usage = {"input_tokens": int(item.get("used", 0))}
                 context.observe_context_usage(usage, int(item.get("size", 0)))
@@ -223,6 +238,9 @@ class AntigravityBackend:
                 if result.get("stopReason") == "cancelled" or context.is_cancelled():
                     raise InterruptedError("Antigravity turn cancelled")
                 accept()
+                for tool_id, item in tools.items():
+                    if tool_id not in completed_tools and item.get("status") == "failed":
+                        complete_tool(tool_id, item)
                 output = {"message": "".join(text_parts), "provider": self.provider_id,
                           "operation": "turn", "turn_id": turn_id, "stop_reason": result.get("stopReason", "")}
                 raw = result.get("usage") or {}

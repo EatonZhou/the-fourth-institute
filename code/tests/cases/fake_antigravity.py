@@ -59,6 +59,25 @@ def prompt(identifier, params):
         update(sid, sessionUpdate="tool_call", toolCallId="edit-1", title="replace_file_content", kind="edit",
                status="in_progress", rawInput={"TargetFile": "file.txt", "TargetContent": "old", "ReplacementContent": "new"})
         update(sid, sessionUpdate="tool_call_update", toolCallId="edit-1", status="completed", rawOutput="written")
+    if text in {"parallel-tool-error", "parallel-tool-correction", "parallel-tool-empty-result"}:
+        # ACP 1.4.5 flushes ALL open calls on one error, then re-announces
+        # a still-running sibling and reports its actual result.
+        command = dict(toolCallId="parallel-command", title="run_command", kind="execute",
+                       status="in_progress", rawInput={"command": "printf parallel-ok"})
+        update(sid, sessionUpdate="tool_call", toolCallId="parallel-error", title="search_portal_resource",
+               kind="other", status="in_progress", rawInput={"query": "example"})
+        update(sid, sessionUpdate="tool_call", **command)
+        for call in ("parallel-error", "parallel-command"):
+            update(sid, sessionUpdate="tool_call_update", toolCallId=call, status="failed",
+                   rawOutput="Harness tool failed: missing address")
+        if text == "parallel-tool-error":
+            update(sid, sessionUpdate="tool_call", **command)
+        result_fields = {"rawOutput": "parallel-ok"} if text != "parallel-tool-empty-result" else {"content": []}
+        update(sid, sessionUpdate="tool_call_update", toolCallId="parallel-command", status="completed", **result_fields)
+        # Further progress/replayed terminal updates cannot reopen a completed item.
+        update(sid, sessionUpdate="tool_call", **command)
+        update(sid, sessionUpdate="tool_call_update", toolCallId="parallel-command", status="completed",
+               rawOutput="stale duplicate")
     for server in session.get("mcpServers", []):
         headers = {item["name"]: item["value"] for item in server["headers"]}
         headers["Content-Type"] = "application/json"
