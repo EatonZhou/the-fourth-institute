@@ -1715,6 +1715,24 @@ protocols:
       - "decision_cf27d39e39cd"
     description: "PostgreSQL 是业务与运行真值；领域拥有独立 schema 和事务边界，跨领域靠接口、关联 ID 与待发件箱协作。"
     example: "Lineage 保存输入和待执行工作，Execution 保存执行请求与租约；双方用关联 ID 对账，各自修改自己的表。"
+  - id: "object-directory-lifecycle"
+    title: "对象目录登记、引用与生命周期协议"
+    modules:
+      - "storage"
+      - "resources"
+      - "lineage"
+      - "delivery"
+      - "engineering"
+      - "execution"
+    designs:
+      - "decision_4aa13bc21e8e"
+    related_designs:
+      - "decision_d88306d0bd17"
+      - "decision_8838269736d3"
+      - "decision_ccb99a00eebd"
+      - "decision_c953eab654cd"
+    description: "约定对象目录的位置、来源、所属对象、对象 ID 加相对路径引用，以及删除、移动和到期清理时各领域的责任。实例层负责区域和实例生命周期；领域登记负责单个对象及其目录，文件存储执行实际 I/O。新目录协议规定的来源与外层目录优先删除语义仍需与现有 Workspace 引用感知回收实现完成迁移，协议归属不代表迁移已完成。"
+    example: "规范场景：删除 Resident → SocietyService 注销对象与绑定并持久化所属目录清理记录 → 后台按登记边界清理文件；ResourceService 处理目录内资源登记，Execution 处理仍使用该目录的工作。当前保留活引用目录的实现不能作为新协议删除语义已落地的证据。"
   - id: "file-storage"
     title: "共享文件锁与原子替换协议"
     modules:
