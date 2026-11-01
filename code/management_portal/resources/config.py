@@ -22,7 +22,7 @@ def resource_service_socket() -> Path:
 
 
 def resource_database_schema() -> str:
-    """The schema of the instance's resource index (``resource_dev``, ``resource_release``).
+    """The configured schema of the one resource index shared by both deployments.
 
     A process that keeps the index locally must name it; only an isolated test
     database namespace may fall back to ``resources``.
