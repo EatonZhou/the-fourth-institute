@@ -34,7 +34,9 @@ def test_deleted_workspace_projection_drops_location_without_changing_history():
         "resource_id": "workspace_0123456789ab", "status": "active",
         "attributes": {"path": "/retired/workspace"},
     }
-    assert descriptor_resource_record(descriptor)["attributes"]["path"] == "/retired/workspace"
+    active = descriptor_resource_record(descriptor)
+    assert active["attributes"]["path"] == "/retired/workspace"
+    assert "active" not in active["search_terms"]
     descriptor["status"] = "deleted"
     record = descriptor_resource_record(descriptor)
     assert record["attributes"]["status"] == "deleted"
