@@ -42,7 +42,6 @@ def native(request, tmp_path, monkeypatch):
     monkeypatch.setattr(adapter, "register_services", register)
     monkeypatch.setattr(adapter, "remove_services", remove)
     monkeypatch.setattr(account_hosting, "ensure_account_home", lambda *args: tmp_path / "account")
-    monkeypatch.setattr(account_hosting, "write_codex_launch", lambda account: None)
     yield SimpleNamespace(root=root, platform=platform, adapter=adapter, directory=directory,
                           control=control, events=events, units=units)
     assert real_provider_links() == links
@@ -117,7 +116,7 @@ def test_windows_scm_host_reads_registered_codex_command(tmp_path, monkeypatch):
     definition = tmp_path / "portal-codex-app-server@test.service.json"
     command = [str(tmp_path / "Python With Spaces.exe"), "-m", "management_portal.codex_app_server_host",
                "--socket", str(tmp_path / "codex.sock"), "--binary", str(tmp_path / "Codex With Spaces.cmd"),
-               "--account-config", str(tmp_path / "launch.json")]
+               "--account-id", "test"]
     definition.write_text(json.dumps({"name": definition.stem, "command": command,
                                       "cwd": str(tmp_path), "log_path": str(tmp_path / "host.log")}))
     received = []

@@ -1,7 +1,7 @@
 """Codex survives the clean launchd environment, without exposing credentials.
 
 A launch agent carries only the instance selection; the launcher derives the
-code-owned Codex entry, its Node runtime and the account launch record.
+code-owned Codex entry, its Node runtime and the registered account ID.
 
 :module: execution.providers
 :profiles: local.fixture
@@ -26,7 +26,6 @@ COMPONENT = "codex-app-server@one"
 @pytest.fixture
 def account(tmp_path, monkeypatch):
     from management_common import code_environment
-    from management_common.file_permissions import atomic_write_private_bytes
     from management_common.instance_manifest import load
     from tests.cases.provider_service_test_support import provider_instance, real_provider_links
     links = real_provider_links()
@@ -44,9 +43,15 @@ def account(tmp_path, monkeypatch):
     binary.chmod(0o755)
     home = tmp_path / "account"
     home.mkdir()
-    launch = root / "runtime/provider-accounts/codex/one/launch.json"
-    launch.parent.mkdir(parents=True)
-    atomic_write_private_bytes(launch, json.dumps({"account_id": "one", "account_dir": str(home)}).encode())
+    from management_portal.execution import account_registrations
+    from management_common.portal_database import portal_database_url
+    account_registrations.create_registration({"account_id": "one", "provider": "codex", "route_id": "clean_launch",
+        "kind": "subscription_login", "config": {"account_dir": str(home)}}, "test")
+    # The child is a real clean service process, reading only this fixture DB.
+    import shlex
+    (root / "secrets/postgres.env").write_text(
+        "PORTAL_DATABASE_URL=" + shlex.quote(portal_database_url()) + "\n"
+        + "PORTAL_DATABASE_NAMESPACE=" + shlex.quote(os.environ["PORTAL_DATABASE_NAMESPACE"]) + "\n")
     monkeypatch.setenv("PATH", os.defpath)
     monkeypatch.setenv("CODEX_HOME", "/another/account/must-not-inherit")
     monkeypatch.setenv("OPENAI_API_KEY", "fixture-key-must-not-be-in-definitions")
@@ -62,14 +67,14 @@ def test_launchd_definition_carries_only_the_instance(account):
     assert "fixture-key" not in content and "must-not-inherit" not in content
 
 
-def test_launcher_uses_code_owned_entry_and_account_record(account):
+def test_launcher_uses_code_owned_entry_and_registered_account(account):
     from management_common.code_environment import provider_entry
     from management_portal.service_runtime import component_command
     command, environment = component_command(account, COMPONENT)
     entry = provider_entry("codex_binary", account)
     assert command[command.index("--binary") + 1] == str(entry) and entry.is_relative_to(account.root.parent)
-    assert command[command.index("--account-config") + 1] == str(
-        account.root / "runtime/provider-accounts/codex/one/launch.json")
+    assert command[command.index("--account-id") + 1] == "one"
+    assert not (account.root / "runtime/provider-accounts").exists()
     assert not {"CODEX_HOME", "OPENAI_API_KEY"} & environment.keys()
     assert environment["PATH"].split(os.pathsep)[0].endswith("native node")
 

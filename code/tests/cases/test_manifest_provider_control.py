@@ -17,7 +17,6 @@ def test_new_account_definition_is_accepted_by_instance_control(tmp_path, monkey
     monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
     monkeypatch.setattr(host_instances, 'registry_path', lambda: tmp_path / 'host/instances.json')
     monkeypatch.setattr(account_hosting, 'ensure_account_home', lambda *args: tmp_path / 'account')
-    monkeypatch.setattr(account_hosting, 'write_codex_launch', lambda account: None)
     directory = tmp_path / 'units'
     directory.mkdir()
     monkeypatch.setattr(linux, 'unit_directory', lambda: directory)

@@ -105,12 +105,9 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
             binary /= 'codex.cmd'
         if not binary.is_file():
             raise FileNotFoundError('Prepare the Codex runtime before startup')
-        account_config = instance.directory('runtime') / 'provider-accounts/codex' / account / 'launch.json'
-        if not account_config.is_file():
-            raise FileNotFoundError('Prepare the registered Codex account launch configuration before startup')
         return [python, '-m', 'management_portal.codex_app_server_host',
                 '--socket', str(instance.directory('runtime') / 's' / f'codex-{account}.sock'),
-                '--binary', str(binary), '--account-config', str(account_config)], env
+                '--binary', str(binary), '--account-id', account], env
     if component in {'web', 'dev-web'}:
         deployment = 'dev' if component == 'dev-web' else 'release'
         return [python, '-m', 'management_portal.web_server', '--host', ('127.0.0.1' if len(instance.deployments) > 1 else instance.document['network']['bind']),

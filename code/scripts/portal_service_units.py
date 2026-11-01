@@ -261,8 +261,6 @@ def start_codex_instance(account_id: str) -> dict[str, Any]:
     from management_portal.execution.account_hosting import ensure_account_home, codex_socket_path
     from scripts.instance_services import verify_definitions
     ensure_account_home("codex", account_id)
-    from management_portal.execution.account_hosting import write_codex_launch
-    write_codex_launch(account_id)
     component = _codex_component(account_id)
     codex_socket_path(account_id).parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     lock_root = _instance().directory("runtime") / "service-locks"

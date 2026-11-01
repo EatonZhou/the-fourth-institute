@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import shutil
-import json
 
 from management_common.instance_manifest import instance_runtime_root, instance_secrets_root
 from management_common.file_permissions import atomic_write_private_bytes, ensure_private_directory
@@ -28,17 +27,6 @@ def account_home(provider: str, account_id: str) -> Path:
     return registered_home(row)
 
 
-
-
-def codex_launch_path(account_id: str) -> Path:
-    return account_runtime("codex", account_id) / "launch.json"
-
-
-def write_codex_launch(account_id: str) -> Path:
-    path = codex_launch_path(account_id)
-    atomic_write_private_bytes(path, json.dumps({"account_id": validate_account_id(account_id),
-                                               "account_dir": str(account_home("codex", account_id))}).encode())
-    return path
 
 
 def codex_socket_path(account_id: str) -> Path:

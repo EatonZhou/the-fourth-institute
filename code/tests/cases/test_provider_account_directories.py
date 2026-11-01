@@ -61,16 +61,28 @@ def test_paths_require_canonical_absolute_non_symlink_directory(tmp_path):
         hosting.registered_home({"kind": "subscription_login", "config": {}})
 
 
-def test_launch_record_uses_registered_directory_and_control_stays_in_runtime(tmp_path):
+def test_host_resolves_registration_after_runtime_is_removed(tmp_path, monkeypatch):
+    from management_portal import codex_app_server_host as host
+    import shutil
     directory = tmp_path / "host-account"
     directory.mkdir()
     store.create_registration({"account_id": "codex_descriptor", "provider": "codex",
         "kind": "subscription_login", "config": {"account_dir": str(directory)}}, "test")
-    launch = hosting.write_codex_launch("codex_descriptor")
-    import json
-    assert json.loads(launch.read_text())["account_dir"] == str(directory)
-    assert launch.is_relative_to(paths.runtime_root())
-    assert list(directory.iterdir()) == []
+    runtime = paths.account_runtime("codex", "codex_descriptor")
+    runtime.mkdir(parents=True, exist_ok=True)
+    (runtime / "launch.json").write_text('{"account_dir":"/obsolete"}')
+    shutil.rmtree(runtime)
+    observed = []
+    monkeypatch.setattr(sys, "argv", ["host", "--socket", str(tmp_path / "rpc.sock"),
+        "--binary", str(tmp_path / "codex"), "--account-id", "codex_descriptor"])
+    monkeypatch.setattr(host, "run_host", lambda socket, binary, home, stop: observed.append(home))
+    host.main()
+    assert observed == [directory]
+    assert not runtime.exists() and list(directory.iterdir()) == []
+    store.delete_registration("codex_descriptor")
+    with pytest.raises(ValueError, match="not registered"):
+        host.main()
+    assert observed == [directory]
 
 
 def test_native_daemon_hosts_share_account_cwd(tmp_path):

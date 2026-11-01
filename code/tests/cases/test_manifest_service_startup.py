@@ -134,13 +134,11 @@ def test_provider_launchers_use_code_owned_programs(instance, monkeypatch):
     for path in (sdk, package, binary):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.touch()
-    launch = instance.root / 'runtime/provider-accounts/codex/test_account/launch.json'
-    launch.parent.mkdir(parents=True)
-    launch.write_text('{}')
     command, _ = instance_runtime.component_command(instance, 'claude-code')
     assert command == [str(sdk), '-m', 'management_portal.claude_code_daemon']
     command, _ = instance_runtime.component_command(instance, 'codex-app-server@test_account')
-    assert command[-1] == str(launch)
+    assert command[-2:] == ["--account-id", "test_account"]
+    assert not (instance.root / "runtime/provider-accounts").exists()
     assert command[command.index('--binary') + 1] == str(binary)
     assert command[command.index('--socket') + 1] == str(instance.root / 'runtime/s/codex-test_account.sock')
     sdk.unlink()

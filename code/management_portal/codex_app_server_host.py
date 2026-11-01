@@ -216,14 +216,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--socket", required=True)
     parser.add_argument("--binary", required=True)
-    parser.add_argument("--account-config", required=True)
+    parser.add_argument("--account-id", required=True)
     args = parser.parse_args()
     stop = threading.Event()
     previous = install_shutdown_handlers(lambda *_: stop.set())
     try:
-        from management_common.provider_account_paths import canonical_directory
-        record = json.loads(read_private_bytes(Path(args.account_config)))
-        home = canonical_directory(record["account_dir"])
+        from .execution.account_hosting import ensure_account_home
+        home = ensure_account_home("codex", args.account_id)
         return run_host(args.socket, args.binary, home, stop)
     finally:
         restore_shutdown_handlers(previous)
