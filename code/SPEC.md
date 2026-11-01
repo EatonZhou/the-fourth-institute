@@ -6,6 +6,7 @@
 - [macOS 桌面安装与数据归属](docs/design/macos-desktop.md)
 
 - [Portal 实例协议](/r/decision_d88306d0bd17)
+- [目录与路径协议](/r/decision_4aa13bc21e8e)
 
 - [Portal设计规范Spec.md索引](/r/decision_ef80c6d3b5ee)
 - [Portal 改进 Plan 的编写与 IMPROVE.md 索引规范](/r/decision_9c258743f91e)
