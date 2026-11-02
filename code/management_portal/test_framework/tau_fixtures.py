@@ -41,12 +41,6 @@ def _release_resource(resource_id: str, key: str) -> None:
             raise
 
 
-def _delete_upload(upload_id: str, key: str) -> None:
-    from management_portal.resources.upload_files import remove_upload
-
-    remove_upload(upload_id)
-
-
 def _fixture_workspaces(roots: list[Path]) -> list[str]:
     """Find asynchronous product allocations in the case's owned directories.
 
@@ -134,9 +128,11 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
         except Exception as exc:
             errors.append(f'{resource_id}: {exc}')
     released_uploads = []
+    from management_portal.resources.upload_files import remove_upload
+
     for upload_id in list(uploads):
         try:
-            _delete_upload(upload_id, f'tau-upload:{root.name}:{upload_id}:{attempt_id}')
+            remove_upload(upload_id)
             released_uploads.append(upload_id)
             uploads.remove(upload_id)
         except Exception as exc:

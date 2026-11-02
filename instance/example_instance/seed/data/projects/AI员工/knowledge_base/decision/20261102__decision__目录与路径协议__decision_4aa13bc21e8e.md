@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-11-02'
 version:
-  number: 4
+  number: 6
   created_at: "2026-11-02"
   created_by:
     user: ""
     agent: "resident_24014e2b9bf6"
-  updated_at: "2026-11-02T15:45:36Z"
+  updated_at: "2026-11-02T15:57:27Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_83d75ad3a6c7"
 importance: 7
 ai_generated: false
 links:
@@ -112,8 +112,10 @@ Portal 在主机上为各种对象保存文件，例如项目资料、Resident �
 |Repo、Article 源码|项目目录内，或主机上任意位置|Repo、Article|两种都可能|删除 Repo、Article 时|
 |Paper 包|`papers:items/<年>/<包>/`|Paper|Portal 创建|删除 Paper 时|
 |Skill|`skills:<名称>/`，或项目知识库的 `skill/` 下|Skill|Portal 创建|删除 Skill 时|
-|上传文件|`uploads:upload_<ID>/`|上传它的对话或对象|Portal 创建|所属对象删除时；上传后一直没有用到的，7 天后删除|
+|上传文件|`uploads:upload_<ID>/`|上传它的对话或对象|Portal 创建|可直接删除；所属对象删除时；上传后一直没有用到的，7 天后删除|
 |主机执行账号目录|主机用户选定的位置|主机|按接入对待|从不删除|
+
+上传文件是普通文件，Resident 可通过系统工具修改或删除内容文件，也可删除整个上传目录，不需要专用 HATG 删除指令。既有目录维护任务只检查上传根目录下已登记的直接子目录：根目录可访问且保持原身份时，整目录缺失，或稳定的已完成元数据所指内容文件缺失，才注销保留登记并让既有清理队列删除剩余元数据、转录等文件。未完成上传、缺失或变化中的元数据、根目录不可访问及 I/O 错误保留登记。创建上传时，空目录与登记在同一事务内准备，避免创建间隙被误判为删除。正常修改已存在的内容文件不改变其生命周期；原消息和文档引用仍保留，后续访问按文件不存在处理。
 
 **“两种都可能”的目录按登记里的来源处理。** Portal 创建的随所属对象删除，接入的只注销。
 

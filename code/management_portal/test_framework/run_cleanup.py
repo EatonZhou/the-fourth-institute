@@ -32,7 +32,8 @@ def finish_run(run_id):
 
 
 def _finish_run(store, run_id):
-    from .tau_fixtures import _release_resource, _delete_upload
+    from .tau_fixtures import _release_resource
+    from management_portal.resources.upload_files import remove_upload
     from management_common.directory_retention import RetentionStore
     from management_portal.resources.creation import finish_scope_creations
 
@@ -44,9 +45,11 @@ def _finish_run(store, run_id):
         failures = []
         for resource_id in resources:
             try:
-                key = f'run-cleanup:{run_id}:{resource_id}:{uuid4().hex}'
-                delete = _delete_upload if resource_id.startswith('upload_') else _release_resource
-                delete(resource_id, key)
+                if resource_id.startswith('upload_'):
+                    remove_upload(resource_id)
+                else:
+                    key = f'run-cleanup:{run_id}:{resource_id}:{uuid4().hex}'
+                    _release_resource(resource_id, key)
                 store.released(scope['id'], resource_id)
                 released.append(resource_id)
             except Exception as error:

@@ -200,6 +200,34 @@ def test_upload_handles_use_file_cleanup_and_preserve_failed_cleanup(tmp_path, m
         assert not sample.exists()
 
 
+def test_run_cleanup_removes_allocated_upload_without_instruction(monkeypatch):
+    from datetime import datetime, timezone
+    from management_common.portal_paths import path
+    from management_common.resource_lifecycle import LifecycleStore, lifecycle_scope
+    from management_common.upload_retention import created
+    from management_portal import isa_client
+    from management_portal.test_framework.run_cleanup import finish_run
+
+    upload_id = 'upload_' + 'b' * 24
+    directory = path('uploads') / upload_id
+    store = LifecycleStore()
+    scope = store.open('upload-test', actor='test-actor', run_id='upload-run', case_id='cleanup')
+    with lifecycle_scope(scope, actor='test-actor'):
+        created(directory, upload_id=upload_id,
+                created_at=datetime.now(timezone.utc).isoformat())
+        (directory / 'meta.json').write_text(json.dumps({'upload_id': upload_id, 'ready': True,
+            'file_name': 'sample.txt'}))
+        (directory / 'sample.txt').write_text('fixture')
+    def unexpected_instruction(*args, **kwargs):
+        pytest.fail('Upload file cleanup must not call HATG')
+    monkeypatch.setattr(isa_client, 'call', unexpected_instruction)
+    result = finish_run('upload-run')
+    assert result['status'] == 'complete', result
+    assert result['resources'] == [upload_id]
+    assert not directory.exists() and not store.pending(scope)
+    assert store.scope(scope)['state'] == 'complete'
+
+
 def test_legacy_scripts_removed_even_when_report_is_missing(tmp_path):
     """没有夹具清单时仍删除遗留脚本，保留截图
 

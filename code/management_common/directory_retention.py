@@ -223,6 +223,19 @@ class RetentionStore:
                 self._release(row, conn)
             return bool(row)
 
+    def registered_children(self, root, *, categories):
+        """Return declarations immediately under one root, without walking files."""
+        prefix = cleanup_location(root)
+        if not prefix.endswith(':'):
+            prefix = prefix.rstrip('/') + '/'
+        with self.database.read() as connection:
+            rows = connection.execute(f'''SELECT location FROM {self.table}
+                WHERE starts_with(location,%s) AND length(location)>%s
+                AND position('/' in substring(location from %s))=0
+                AND category=ANY(%s::text[]) ORDER BY location''',
+                (prefix, len(prefix), len(prefix)+1, list(categories))).fetchall()
+        return [cleanup_path(row['location']) for row in rows]
+
     def sweep(self, *, now=None, cache_capacities=None, owner_id=None, categories=None):
         now = now or utc_now()
         count = 0
