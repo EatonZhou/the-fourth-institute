@@ -243,7 +243,9 @@ Runtime 只在 `turn` 和 `generate` 上附加指令；会话操作不计为注�
 
 ### 领取、开始和续租
 
-- **`scheduler.claim.wait`**：按 Worker 状态、能力、延迟时间、同一会话串行、账号额度保护、容量、派发间隔、优先级和提交者公平性领取执行。等待时间限制在 0.1 到 30 秒，默认 15 秒；租约默认 90 秒，最短 15 秒。没有可领取执行时返回空结果和原因：`worker_not_registered`、`worker_not_active`、`quota_reserve`、`capacity`、`dispatch_interval`、`deferred` 或 `empty`。
+- **`scheduler.claim.wait`**：按 Worker 状态、能力、延迟时间、同一会话串行、账号额度保护、容量、派发间隔、优先级和提交者公平性领取执行。等待时间限制在 0.1 到 30 秒，默认 15 秒；租约默认 90 秒，最短 15 秒。没有可领取执行时返回空结果和原因：`worker_not_registered`、`worker_not_active`、`quota_reserve`、`capacity`、`dispatch_interval`、`deferred`、`empty` 或 `service_closing`。后者表示本服务代次正在关闭，不开始新领取；Worker 资格和能力参数仍先校验。与关闭并发但已经提交的领取必须返回原 `claimed=true` 及完整领取回执，不得改为空结果或丢弃租约。
+
+服务代次开始关闭时，在本地条件锁内设置等待关闭标记并唤醒领取、执行观察及 Worker 控制三类长轮询，不等待各轮询时限耗尽。`execution.wait` 仍先校验原 actor，按原 full/quiet 形状返回当前快照；`scheduler.control.wait` 仍先验证 Worker 与 claim_token，返回当前真实 status、cancel_requested、handover_requested 及待投递控制，不用关闭标记伪造取消、交接或终态。关闭后的新等待不再休眠。等待关闭标记只属于当前服务进程，不写执行、Worker 或租约表；新代次继续依共享持久事实工作。已经受理的变更 RPC 仍排空并返回结果，服务保留非 daemon 请求线程和原关闭等待约束。
 - **`scheduler.start`**：当前 Worker 用领取令牌把 `claimed` 原子地改为 `running`。令牌已经失效的 Worker 收到“领取资格已变化”。
 - **`scheduler.heartbeat`**：当前持有者延长 Worker 和这次执行的租约，返回是否已请求取消（`cancel_requested`）。运行中输入和交接指示通过 `scheduler.control.wait` 获取。
 

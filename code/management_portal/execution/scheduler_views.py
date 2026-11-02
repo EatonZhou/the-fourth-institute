@@ -184,7 +184,7 @@ class SchedulerViews:
                     or has_events
                 ):
                     return full_snapshot()
-                if remaining <= 0:
+                if remaining <= 0 or self.changes.waits_stopped:
                     if quiet_reply:
                         return {
                             "execution_id": execution_id,

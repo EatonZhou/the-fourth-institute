@@ -98,6 +98,8 @@ class Claims:
                     "reason": "worker_not_active",
                     "worker_state": str(worker["state"]),
                 }
+            if self.changes.waits_stopped:
+                return {"claimed": False, "reason": "service_closing"}
             connection.execute(
                 '\n                UPDATE execution_workers\n                SET heartbeat_at = %s, updated_at = %s\n                WHERE worker_id = %s\n                ',
                 (instant(now_epoch), execution_timestamp(), worker_id),
@@ -259,10 +261,11 @@ class Claims:
                 if result.get("claimed") or result.get("reason") in {
                     "worker_not_active",
                     "worker_not_registered",
+                    "service_closing",
                 }:
                     return result
                 remaining = deadline - time.monotonic()
-                if remaining <= 0:
+                if remaining <= 0 or self.changes.waits_stopped:
                     return result
                 self.changes.wait_for_change_signal(
                     "claim", seen, self._next_claim_wake_seconds(remaining),

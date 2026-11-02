@@ -269,7 +269,7 @@ class TurnControls:
                 ):
                     return payload
                 remaining = deadline - time.monotonic()
-                if remaining <= 0:
+                if remaining <= 0 or self.changes.waits_stopped:
                     return payload
                 # Peer Dev/Release commits cannot signal this local Condition.
                 # Bound cancel, handover and input delivery latency independently

@@ -140,6 +140,7 @@ class SchedulerChanges:
         self._claim_changed = threading.Condition(self.lock)
         self._worker_control_changed = threading.Condition(self.lock)
         self._change_generations = {"execution": 0, "claim": 0, "control": 0}
+        self.waits_stopped = False
         self._listener_guard = threading.Lock()
         self._listener_ready = threading.Event()
         self._listener_thread: threading.Thread | None = None
@@ -177,11 +178,21 @@ class SchedulerChanges:
         with self.lock:
             return self._change_generations[kind]
 
+    def stop_waits(self) -> None:
+        """End this service generation's long polls, without changing durable work.
+
+        Set the flag and advance generations under the Condition lock, so a
+        waiter between its database read and sleep cannot miss shutdown.
+        """
+        with self.lock:
+            self.waits_stopped = True
+            self.notify("execution", "claim", "control")
+
     def wait_for_change_signal(self, kind: str, seen: int, timeout: float) -> None:
         """Sleep until a change after ``seen``; the caller read the database unlocked."""
         condition = self.signal(kind)
         with condition:
-            if self._change_generations[kind] == seen:
+            if not self.waits_stopped and self._change_generations[kind] == seen:
                 condition.wait(timeout)
 
     def publish_events(self, events: list[dict[str, Any]]) -> None:

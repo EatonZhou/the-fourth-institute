@@ -854,16 +854,18 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
 
     def shutdown(self) -> None:
         self._closing.set()
+        self.scheduler.changes.stop_waits()
         super().shutdown()
 
     def server_close(self) -> None:
+        self._closing.set()
+        self.scheduler.changes.stop_waits()
         from contextlib import nullcontext
         phase = getattr(self, '_shutdown_phase', lambda _name: nullcontext())
         maintenance = getattr(self, 'instruction_maintenance', None)
         if maintenance is not None:
             with phase('instruction_maintenance'):
                 maintenance.stop()
-        self._closing.set()
         worker = self._maintenance_thread
         if worker is not None and worker is not threading.current_thread():
             with phase('maintenance_worker'):
