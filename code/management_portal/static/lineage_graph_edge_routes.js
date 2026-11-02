@@ -128,11 +128,13 @@
     function routeBlockingNodes(edge, segments) {
       const points = sampledRoute(segments);
       return state.model.nodes.filter(node => {
-        if (node.id === edge.source || node.id === edge.target) return false;
         const position = nodePosition(node);
         const half = nodeHalfExtents(node);
-        const marginX = half.x + 0.65;
-        const marginY = half.y + 0.85;
+        // An endpoint may touch its own boundary, but its curve must not
+        // cross back through the card to reach a port on the opposite side.
+        const endpoint = node.id === edge.source || node.id === edge.target;
+        const marginX = Math.max(0, half.x + (endpoint ? -0.1 : 0.65));
+        const marginY = Math.max(0, half.y + (endpoint ? -0.1 : 0.85));
         return points.some(point => graphGeometry.pointInBox(point, position, { x: marginX, y: marginY }));
       });
     }
@@ -193,6 +195,29 @@
       };
       const blockers = routeBlockingNodes(edge, [originalSegment]);
       if (!blockers.length) return baseGeometry;
+      if (isProgramWire(edge) && (edge.wire_type || edge.type) === "route"
+          && blockers.some(node => node.id === edge.source || node.id === edge.target)) {
+        // Program Route ports face right (output) and left (input), regardless
+        // of the relative positions of the cards. Leave and approach on those
+        // sides; choosing tangents solely from the destination reverses them.
+        const tracks = [blockers, state.model.nodes].flatMap(nodes => {
+          const boxes = nodes.map(node => ({position: nodePosition(node), half: nodeHalfExtents(node)}));
+          return [Math.min(...boxes.map(box => box.position.y - box.half.y)) - 2,
+            Math.max(...boxes.map(box => box.position.y + box.half.y)) + 2];
+        });
+        const candidates = tracks.map(trackY => {
+          const segments = detourSegments(originalSegment, originalSegment.x1 + 2, originalSegment.x2 - 2, trackY);
+          return {segments, blocked: routeBlockingNodes(edge, segments).length, distance: routeLength(segments)};
+        }).sort((left, right) => left.blocked - right.blocked || left.distance - right.distance);
+        const best = candidates[0];
+        if (best.blocked < blockers.length) {
+          const routePoints = sampledRoute(best.segments, 48);
+          const label = routePoints[Math.floor(routePoints.length / 2)];
+          return {...baseGeometry, d: routePath(best.segments), labelPathPoints: routePoints,
+            labelX: label.x, labelY: label.y, routing: "obstacle",
+            routeDirection: originalSegment.x2 >= originalSegment.x1 ? "forward" : "backward"};
+        }
+      }
       const baseSegment = vertical ? transposeSegment(originalSegment) : originalSegment;
       const routeBase = baseSegment;
       const transposePoint = point => vertical ? { x: point.y, y: point.x } : point;
@@ -346,7 +371,7 @@
       edgeGeometryMap.clear();
       const placed = [];
       // Node placement does not reserve space for edge labels. Include endpoint
-      // cards as obstacles here too: path detours intentionally exclude them.
+      // cards as obstacles here too, including the source and destination.
       const cards = state.model.nodes.map(node => {
         const position = nodePosition(node), half = nodeHalfExtents(node);
         return { x: position.x / 100 * worldSize.width, y: position.y / 100 * worldSize.height,

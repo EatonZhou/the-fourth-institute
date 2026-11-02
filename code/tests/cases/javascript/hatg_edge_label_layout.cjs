@@ -130,6 +130,44 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
   await page.evaluate(()=>graph.refresh());
   await verifyPathAttachment('separated endpoints');
   assert.equal(await page.locator('line.hatgEdgeLabelLeader').count(),0,'obsolete leaders disappear when the curve can hold its label');
-  assert.deepEqual(errors,[]);console.log('Route labels avoid labels and cards through geometry changes');
+  // A Route leaving a right-side output must approach the left-side input
+  // from outside the card, including when its target is behind the source.
+  const verifyReturnRoute=async stage=>{
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const crossings=await page.evaluate(()=>{
+    const edge=document.querySelector('path.hatgEdge[data-edge-id="return-route"]');
+    const length=edge.getTotalLength(),matrix=edge.getScreenCTM();
+    return [...document.querySelectorAll('.hatgNode')].filter(node=>{
+     const r=node.getBoundingClientRect();
+     for(let i=1;i<1200;i++){
+      const p=edge.getPointAtLength(length*i/1200).matrixTransform(matrix);
+      if(p.x>r.left+1&&p.x<r.right-1&&p.y>r.top+1&&p.y<r.bottom-1)return true;
+     }
+     return false;
+    }).map(node=>node.dataset.nodeId);
+   });
+   assert.deepEqual(crossings,[],stage+': Route must avoid endpoint and intervening card interiors');
+   await verifyPathAttachment(stage);
+  };
+  for(const [name,source,target] of [
+   ['backward',{x:85,y:45},{x:15,y:45}],
+   ['backward above',{x:85,y:65},{x:15,y:25}],
+   ['backward below',{x:85,y:25},{x:15,y:65}],
+   ['vertical',{x:50,y:15},{x:50,y:85}],
+  ]){
+   await page.evaluate(({source,target})=>graph.render({nodes:[
+    {id:'return-source',kind:'reducer',title:'Join',...source,ports:[{port_id:'output',type:'route',direction:'out'}]},
+    {id:'return-target',kind:'agent',title:'Resident title must remain readable',...target,ports:[{port_id:'invoke',type:'invoke',direction:'in'}]},
+    {id:'return-blocker',kind:'filter',title:'Filter',x:50,y:45},
+   ],edges:[{id:'return-route',source:'return-source',target:'return-target',type:'route',wire_type:'route',
+    _program_wire:true,source_port:'output',target_port:'invoke',label:'Route'}]}),{source,target});
+   await page.evaluate(()=>graph.fit({duration:0}));await verifyReturnRoute(name+' fit');
+   await page.evaluate(()=>graph.refresh());await verifyReturnRoute(name+' refresh');
+   await page.locator('#canvas').evaluate(n=>Object.assign(n.style,{width:'700px',height:'620px'}));
+   await verifyReturnRoute(name+' resize');
+   await page.locator('#canvas').evaluate(n=>Object.assign(n.style,{width:'1000px',height:'760px'}));
+  }
+  if(process.env.TAU_EDGE_LABEL_SCREENSHOT)await page.screenshot({path:process.env.TAU_EDGE_LABEL_SCREENSHOT});
+  assert.deepEqual(errors,[]);console.log('Route labels and paths avoid cards through geometry changes');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
