@@ -18,7 +18,7 @@ class WindowsCrtTests(unittest.TestCase):
     def test_members_verified_before_install_and_retry_is_offline(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            pg = root / 'postgres'
+            pg = root / '中文 空格 postgres'
             (pg / 'bin').mkdir(parents=True)
             archive = root / 'fixture.exe'
             archive.write_bytes(b'MSCFpayloadMSCFlicense')
@@ -33,8 +33,11 @@ class WindowsCrtTests(unittest.TestCase):
             # and retry exercise production code with real files.
             def expand(args, **kw):
                 self.assertEqual(Path(args[0]).name, 'expand.exe')
+                self.assertFalse(Path(args[1]).is_absolute())
+                self.assertFalse(Path(args[3]).is_absolute())
+                self.assertTrue(args[1].isascii() and args[3].isascii())
                 member = args[2][3:]
-                (Path(args[3]) / member).write_bytes(content.get(member, b'cabinet'))
+                (Path(kw['cwd']) / args[3] / member).write_bytes(content.get(member, b'cabinet'))
                 return SimpleNamespace(returncode=0)
             entry = {'directory': str(pg), 'platform': 'windows/x86_64'}
             with patch.object(crt, 'specification', return_value=spec), \

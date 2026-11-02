@@ -48,9 +48,14 @@ def prepare(base, postgres, *, offline=False):
 
         def extract(cabinet, member, output):
             output.mkdir(exist_ok=True)
-            result = run_native_capture([expand, str(cabinet), '-F:' + member, str(output)], timeout=90)
+            # expand.exe converts path arguments through the legacy code page.
+            # Keep them ASCII-relative; CreateProcess receives the Unicode cwd.
+            result = run_native_capture([expand, str(cabinet.relative_to(temp)), '-F:' + member,
+                                         str(output.relative_to(temp))], cwd=temp, timeout=90)
             if result.returncode or not (output / member).is_file():
-                raise RuntimeError(f'Cannot extract Microsoft C++ runtime: {member} (exit {result.returncode})')
+                detail = ((result.stdout or '') + (result.stderr or '')).strip()[-1000:]
+                raise RuntimeError(f'Cannot extract Microsoft C++ runtime: {member} '
+                                   f'(exit {result.returncode}): {detail}')
             return output / member
 
         cabinets = {}
