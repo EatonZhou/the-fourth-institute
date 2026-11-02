@@ -64,6 +64,8 @@ class ResourceIndex(Protocol):
 
     def project_updated(self, resource_type: str, record: dict[str, Any]) -> dict[str, Any]: ...
 
+    def project_relocated(self, records: Iterable[dict[str, Any]]) -> dict[str, Any]: ...
+
     def change_targets(
         self,
         *,

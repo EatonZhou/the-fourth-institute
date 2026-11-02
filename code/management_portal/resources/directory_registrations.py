@@ -101,11 +101,28 @@ def register_owned(collection, resource_id, paths, *, origin='created', scanning
             if scanning:
                 return None
             raise KeyError(resource_id)
+        previous = writer.get(collection, resource_id)
+        if scanning and previous is not None:
+            # A scan observes the registered location; it cannot move an ID.
+            # A relocation can temporarily publish its new files while the
+            # source remains authoritative. Do not adopt that second path or
+            # reject an unchanged authoritative read due to its move lease.
+            known = {str(Path(located_path(item['path']))) for item in locations(collection, previous)}
+            incoming = {str(Path(path)) for path in paths}
+            if known != incoming:
+                return None
+            if any(queue.pending_at(path, connection=writer.connection) for path in paths):
+                return None
+            return previous
         for path in paths:
             if scanning and queue.pending_at(path, connection=writer.connection):
                 return None
-            queue.assert_available(path, connection=writer.connection)
-        previous = writer.get(collection, resource_id)
+            try:
+                queue.assert_available(path, connection=writer.connection)
+            except FileExistsError:
+                if scanning:
+                    return None
+                raise
         if previous is not None:
             known = {str(Path(located_path(item['path'])).resolve(strict=False)) for item in locations(collection, previous)}
             incoming = {str(Path(path).resolve(strict=False)) for path in paths}

@@ -93,7 +93,7 @@ DECLARATIONS = (
     ), mutates=True),
     _d("UpdateResource", (On("resource_id"),), "按资源类型修改正文或元数据；知识正文与 Skill 支持 expected_version 检查（知识正文用版本号，Skill 用 ReadResource 返回的 sha256）。Workspace 只允许修改非空 title，必须原样携带 ResolveResource 返回的 resource.version。", (
         R("resource_id", description="资源统一 ID"),
-        R("changes", "object", "要修改的字段；Knowledge 的 text（全文）与 body（仅 Markdown 主文件正文，保留元数据）必须且只能提供一个；body 可为空字符串，不可用于 Skill、伴随文件或版本恢复。可附 expected_version 防止覆盖。Workspace 只接受 title 和 expected_version（也可用请求顶层 expected_version）"),
+        R("changes", "object", "要修改的字段；Knowledge 的 text（全文）与 body（仅 Markdown 主文件正文，保留元数据）必须且只能提供一个；body 可为空字符串，不可用于 Skill、伴随文件或版本恢复。可附 expected_version 防止覆盖。Knowledge 改变所属项目须对目标 Project 执行 RunResourceAction 的 knowledge.move，不能只改全文中的 project。Workspace 只接受 title 和 expected_version（也可用请求顶层 expected_version）"),
     ), (
         RESOURCE_RECORD,
         R("version", description="类型提供的版本号或修改时间；未提供时为空字符串"),

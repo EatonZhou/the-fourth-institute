@@ -24,6 +24,7 @@ from management_common.text_values import strip_quotes
 
 from management_portal.resources import get_resource_service
 from management_portal.resources.locking import resource_mutation_lock
+from management_portal.resources.knowledge_move_locks import knowledge_identity_lock
 from management_portal import resource_views
 
 from knowledge_board_lan.knowledge_details import _article_item_record, _indexed_item_files
@@ -1234,7 +1235,7 @@ def update_item_text(
         }
     root_id = str(record.get("kb_id") or "").strip()
     primary_path = Path(str(record.get("path") or ""))
-    with resource_mutation_lock(primary_path.parent, root_id):
+    with knowledge_identity_lock(root_id), resource_mutation_lock(primary_path.parent, root_id):
         record = resolve_item_address(
             clean_address,
             active_only=False,
@@ -1284,6 +1285,9 @@ def update_item_text(
         if version_path is not None and path.resolve() == version_path.resolve():
             if body is not None:
                 content = replace_knowledge_body(previous_primary, body)
+            previous_project = _yaml_front_matter(previous_primary).get("project")
+            if _yaml_front_matter(content).get("project") != previous_project:
+                raise ValueError("Use the target Project knowledge.move action to change Knowledge project membership")
             document_metaness(_yaml_front_matter(content))
         elif body is not None:
             raise ValueError("Knowledge body update requires a Knowledge Markdown primary")
@@ -1395,7 +1399,7 @@ def delete_item(kb_id: str, *, actor: str = "") -> dict:
     path = Path(str(record.get("path") or ""))
     if path.suffix.lower() not in _EDITABLE_TEXT_FILE_EXTENSIONS:
         raise ValueError("text file required")
-    with resource_mutation_lock(path.parent, clean_id):
+    with knowledge_identity_lock(clean_id), resource_mutation_lock(path.parent, clean_id):
         record = resolve_item_record(
             clean_id,
             active_only=False,

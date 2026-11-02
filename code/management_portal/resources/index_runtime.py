@@ -202,6 +202,9 @@ class ResourceIndexRuntime:
     def project_updated(self, resource_type: str, record: dict[str, Any]) -> dict[str, Any]:
         return self.adapter_layer.project_updated(resource_type, record)
 
+    def project_relocated(self, records: Iterable[dict[str, Any]]) -> dict[str, Any]:
+        return self.adapter_layer.project_relocated(records)
+
     def change_targets(
         self,
         *,

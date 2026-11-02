@@ -298,6 +298,43 @@ class AdapterLayer:
         """Read and persist the changed object's current summary, not an adapter scan."""
         return self._project_one(resource_type, record, refresh_source=True)
 
+    def project_relocated(self, records: Iterable[dict[str, Any]]) -> dict[str, Any]:
+        """Publish a committed relocation batch through the live index owner.
+
+        The caller holds these scopes across its domain commit and this call.
+        Read the new authoritative paths, never the previous index locations.
+        A single direct ChangeSet also fences scans started before the move.
+        """
+        from contextlib import ExitStack
+        from management_portal.resources.locking import mutation_projection_scope
+
+        records = list(records)
+        ids = [stripped_text(record.get("resource_id")) for record in records]
+        if not ids or any(not rid for rid in ids) or len(set(ids)) != len(ids):
+            raise ValueError("relocation projection requires distinct resource IDs")
+        with ExitStack() as locks:
+            for rid in sorted(ids):
+                locks.enter_context(mutation_projection_scope(rid))
+            owners = [adapter for adapter in self.adapters.values()
+                      if all(record.get("resource_type") in adapter.resource_types for record in records)
+                      and callable(getattr(adapter, "project_records", None))]
+            if len(owners) != 1:
+                raise ValueError("relocation batch requires one batch projection owner")
+            adapter = owners[0]
+            summaries = adapter.project_records(records)
+            if len(summaries) != len(ids) or {s.get("resource_id") for s in summaries} != set(ids):
+                raise ValueError("relocation projection changed resource identities")
+            result = self.store.apply(ChangeSet(
+                adapter.name, upserts=tuple(summaries),
+                source_state=self.store.adapter_source_state(adapter.name),
+            ), direct=True)
+            if set(result["upserted_ids"]) != set(ids):
+                raise RuntimeError("relocation projection rejected committed resources")
+            self._completed_refresh(adapter.name, {
+                **result, "changed": True, "scanned": False, "incremental": True,
+            }, forced=True, emit=True)
+            return result
+
     def _project_one(self, resource_type, record, *, refresh_source):
         from management_portal.resources.locking import mutation_projection_scope
         with mutation_projection_scope(record["resource_id"]):

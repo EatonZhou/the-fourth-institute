@@ -424,6 +424,21 @@ def install_mutation_provider(service: "ResourceService") -> None:
 
 def install_action_provider(service: "ResourceService") -> None:
 
+    def move_knowledge(
+        resource_id: str,
+        payload: dict[str, Any],
+        *,
+        actor: str = "",
+    ) -> dict[str, Any]:
+        from management_portal import permission_system
+        from management_portal.resources.knowledge_move import move_knowledge as move
+
+        if resource_id not in permission_system.permitted_ids(
+            actor, "RunResourceAction", "resource_id", [resource_id],
+        ):
+            raise PermissionError("Knowledge relocation requires target Project contributor permission")
+        return move(resource_id, payload, actor=actor, project_batch=service._index().project_relocated)
+
     def read_summary(
         resource_id: str,
         _payload: dict[str, Any],
@@ -450,5 +465,6 @@ def install_action_provider(service: "ResourceService") -> None:
         {
             "summary.read": read_summary,
             "summary.save": save_summary,
+            "knowledge.move": move_knowledge,
         },
     )

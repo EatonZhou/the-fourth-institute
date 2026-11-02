@@ -13,6 +13,16 @@ from .declarations import P, R, ResourceActionDeclaration as A
 
 
 ACTIONS = (
+    A("project", "knowledge.move", "将一批 Markdown 知识条目迁入目标 Project；保留原 ID、正文和伴随文件，统一更新归属、版本、目录登记、权限和在线索引。成功返回时可按原 ID 读取。", (
+        P("operation_id", description="本批稳定操作 ID；省略时由调用者、目标及条目版本列表生成；恢复重试时保持相同参数，不能复用于不同请求"),
+        R("items", "array", "待迁移知识条目，必须提供当前 expected_version；最多 100 项；仅 created 登记的 Project 类型目录主 Markdown 与 ID 伴随目录，同一文件系统；不含 Skill、Experiment、adopted 或含独立资源/保留登记的伴随目录", items={
+            "type": "object", "required": ["resource_id", "expected_version"],
+            "properties": {"resource_id": {"type": "string"}, "expected_version": {
+                "description": "ReadResource 返回的 Knowledge 版本号或版本对象"}},
+        }),
+    ), (R("operation_id"), R("status", description="completed 或 partial；partial 须按原参数重试"),
+        R("committed", "array", "已经提交的资源及当前路径、项目、版本"),
+        R("pending", "array", "尚未提交的资源 ID"), R("projected", "boolean", "本批在线索引是否已同步"), P("error"))),
     A("device", "ssh.test", "测试到设备的 SSH 连接。", (
         P("timeout_seconds", "integer", "超时秒数，默认 15", minimum=1, maximum=45),
     ), (R("ok", "boolean"), P("error")), mutates=False),

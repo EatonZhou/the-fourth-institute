@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 22
+  number: 23
   created_at: '2026-09-01'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T18:52:35Z'
+  updated_at: "2026-11-02T19:00:18Z"
   updated_by:
     user: ''
-    agent: resident_24014e2b9bf6
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: false
@@ -107,6 +107,18 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
 - 历史主文件缺少版本记录时，读取不会编造创建者。第一次受控写入会建立规范版本记录。
 - 当前 Knowledge 页面保存接口只发送资源地址和正文，没有发送 `expected_version`。因此页面层采用最后一次成功保存的内容；需要防止并发覆盖的 Agent 或接口调用方必须使用 ResourceService 的受控更新能力。
 - 用户或外部程序直接写底层文件时不会取得 ResourceService 的资源锁，也不会自动递增版本。文件监测与索引对账会重新发现其结果，但不能把这种旁路写入包装成受控并发事务；需要冲突保护和完整审计的修改必须通过 ResourceService。
+
+### 项目间批量迁移
+
+Markdown 知识条目改变所属项目时，由 ResourceService 负责同时搬迁主文件与伴随目录、更新项目元数据与版本、目录登记、权限事实及运行服务的索引。调用者通过现有 `RunResourceAction` 指定目标 Project，动作 `knowledge.move`，提供 `items`（每项 `resource_id` 与 `expected_version`）；不再自行拼接全文更新、文件改名、登记修改和索引刷新。普通 `UpdateResource(text)` 若改变主文件的 `project` 字段会拒绝并指向此动作，避免出现只有元数据变化的半迁移。
+
+本动作接受一至一百条不同 ID 的普通 Markdown Knowledge，限登记为 created、位于 Project 类型目录中的平面主 Markdown 与 `<ID>/` 伴随目录，并要求源与目标位于同一文件系统。伴随文件以硬链接暂存，保留文件 inode 和已有打开描述符，不复制大文件内容。adopted 内容、Skill、Experiment 及伴随目录内有独立 Repo、Article、Paper、Knowledge、Workspace 或保留登记的条目须由其 owner 迁移，在任何搬动前拒绝；不会静默迁走独立资源。迁移保持统一 ID、正文、伴随文件与创建审计，项目归属变更按正常规则推进一次版本。正文中的手写绝对路径不重写；长期引用应使用资源 ID 和相对文件地址。输入的版本前提在资源锁内检查；源、目标项目和每个源条目都必须通过当前调用者的权限检查。任何一项预检失败都不会开始本批新迁移。
+
+迁移有持久操作记录。`operation_id` 可显式提供，省略时由真实调用者、目标项目及规范化条目版本列表稳定生成。一次操作的受理范围不能变更；重试必须保持原目标和条目版本。资源提交与目录登记、权限事实、单项回执协调；已提交条目重试不重复推进版本。编辑、删除和迁移共用按资源 ID 的跨进程锁，不因项目路径改变而绕过等待中的编辑。批量按条目提交，不声称全批原子性。进度记录只记录操作及恢复事实，目录登记仍是当前位置的唯一权威。
+
+返回包含 `operation_id`、`status`、`committed`、`pending`、`projected` 与可选 `error`。`completed` 表示所有条目、旧位置处理和在线索引已完成；`partial` 明确列出已经提交的条目与尚未提交的 ID，并保留可重试状态。故障后可重新调用同一动作继续处理；若 HATG 的幂等键重放了旧回执，新的继续调用保留动作 `operation_id`、使用新的指令调用键。中断期间若未提交源内容已改变，撤回能证明归属的准备文件并释放租约，调用者回读新版本后重新发起；不能证明归属的暂存路径保留并列在 `preserved_staging_paths` 中。不要把超时或未知回执解释成未提交，也不要据此另建资源。
+
+运行服务在同一批资源的修改串行边界内，直接读取新的权威路径，以一次索引 ChangeSet 发布并持久化本批结果；不逐条排队等待全量扫描。直接投影的代次保护阻止旧扫描覆盖新位置，同一资源后续更新也不能被较早投影覆盖。投影失败保留领域已提交状态并返回未完成；只有真实运行服务的索引同步确认后，才承诺原 ID 可按新位置读取。
 
 ### 已版本化正文与受损版本恢复
 

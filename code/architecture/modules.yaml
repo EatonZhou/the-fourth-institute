@@ -495,6 +495,7 @@ modules:
       - "config/resource-types/"
       - "management_portal/resources/resource_types.py"
       - "management_portal/resources/providers"
+      - "management_portal/resources/knowledge_move*.py"
       - "knowledge_board_lan/knowledge_backend.py"
       - "knowledge_board_lan/knowledge_details.py"
       - "knowledge_board_lan/knowledge_source.py"

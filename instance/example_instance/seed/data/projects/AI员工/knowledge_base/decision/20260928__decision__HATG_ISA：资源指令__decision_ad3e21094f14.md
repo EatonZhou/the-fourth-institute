@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 42
+  number: 43
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-11-02T15:45:23Z'
+  updated_at: "2026-11-02T19:00:19Z"
   updated_by:
     user: ''
     agent: resident_83d75ad3a6c7
@@ -274,3 +274,9 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 | `RunResourceAction` | `resource_id`、`action`、`arguments` |
 | `CreateUpload` | `purpose`、`target`、`source_address`、`file_name`、`media_type`、`size` |
 | `UpdateWorkspaceFile` | `address`、`content` |
+
+### Project 知识迁移动作
+
+`RunResourceAction(resource_id=<目标Project>, action="knowledge.move", arguments={items:[{resource_id, expected_version}], operation_id?})` 统一完成普通 Markdown Knowledge 的项目归属、主文件和伴随目录、版本审计、目录登记、权限事实与在线索引迁移。一次接受一至一百条不同 ID，必须携带各条目当前版本；限 created 登记、Project 类型目录内的平面主 Markdown 与 `<ID>/` 伴随目录，同一文件系统；adopted、Skill、Experiment、跨文件系统和含独立资源或保留登记的伴随目录不适用。默认权限要求源、目标 Project 与源知识条目的 contributor 权限。
+
+`operation_id` 可省略，省略时从调用者、目标和条目版本列表稳定生成；重试保留相同参数。结果给出 `operation_id`、`status`（`completed` 或 `partial`）、已提交的 `committed`、未提交 ID 列表 `pending`、索引确认 `projected` 与可选 `error`。部分完成时沿同一操作继续，已提交版本不重复增加；指令幂等键只重放旧回执，继续处理应使用新的指令调用键。预检、恢复与并发语义见 decision_3ece26686464。

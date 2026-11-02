@@ -58,23 +58,33 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         """Read only the newly registered entry when publishing its summary."""
         if resource_type not in self.resource_types:
             raise ValueError(f"unsupported Knowledge resource type: {resource_type}")
-        source_path = Path(stripped_text(item.get("path"))).resolve(strict=False)
-        project_id = stripped_text(item.get("project") or next(iter(item.get("project_ids") or []), ""))
-        if not source_path.is_file() or not project_id:
-            raise ValueError("Knowledge registration requires its source path and Project")
-        content_root = Path(stripped_text(item.get("content_root")) or str(source_path.parent))
-        raw = self._raw_item_for_existing_record({
-            "resource_id": item.get("resource_id"),
-            "source": {"path": str(source_path)},
-            "attributes": {"content_root": str(content_root), "project_ids": [project_id]},
-        })
-        if not raw:
-            raise RuntimeError(f"could not parse registered Knowledge resource: {item.get('resource_id')}")
+        return self.project_records([{**item, "resource_type": resource_type}])[0]
+
+    def project_records(self, items: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Read a relocation batch without rediscovering projects for every item."""
         statuses = _project_statuses(knowledge_source._parse_projects_yaml())
-        result = self._record_for_item(raw, statuses=statuses, order=0)
-        if result is None:
-            raise RuntimeError("registered Knowledge resource has no index summary")
-        return result
+        records = []
+        for item in items:
+            resource_type = item.get("resource_type")
+            if resource_type not in self.resource_types:
+                raise ValueError(f"unsupported Knowledge resource type: {resource_type}")
+            source_path = Path(stripped_text(item.get("path"))).resolve(strict=False)
+            project_id = stripped_text(item.get("project") or next(iter(item.get("project_ids") or []), ""))
+            if not source_path.is_file() or not project_id:
+                raise ValueError("Knowledge projection requires its source path and Project")
+            content_root = Path(stripped_text(item.get("content_root")) or str(source_path.parent))
+            raw = self._raw_item_for_existing_record({
+                "resource_id": item.get("resource_id"),
+                "source": {"path": str(source_path)},
+                "attributes": {"content_root": str(content_root), "project_ids": [project_id]},
+            })
+            if not raw:
+                raise RuntimeError(f"could not parse registered Knowledge resource: {item.get('resource_id')}")
+            result = self._record_for_item(raw, statuses=statuses, order=0)
+            if result is None or result.get("resource_type") != resource_type:
+                raise RuntimeError("registered Knowledge resource has no matching index summary")
+            records.append(result)
+        return records
 
     def source_scope(self) -> dict[str, Any]:
         """The sources the change finder lists: each knowledge base's

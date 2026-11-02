@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 43
+  number: 44
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T18:52:19Z'
+  updated_at: "2026-11-02T19:00:18Z"
   updated_by:
     user: ''
-    agent: resident_24014e2b9bf6
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: true
@@ -206,3 +206,7 @@ ResourceService：最后撤销项目本身，注销对应权限记录与头像
 - **索引未确认**：项目已经创建成功，资源索引稍后自动收录。调用者按原项目 ID 核对状态，不要重复创建。
 - **删除中途失败**：已经删除的内容保持删除，再次调用 `DeleteProject` 继续删除剩余部分。
 - **登记与目录不一致**：维护者依据删除审计记录和资源索引修复。
+
+## 知识条目迁入项目
+
+知识条目迁入 Project 通过资源动作 `knowledge.move` 完成：以目标 Project 为动作对象，提交条目 ID 和版本列表。Project provider 提供目标与权限入口，Knowledge owner 维护主文件、目录登记与版本，ResourceService 批量同步在线索引。接口及失败恢复见 decision_3ece26686464、decision_ad3e21094f14；此动作不搬迁整个 Project 或其运行团队。
