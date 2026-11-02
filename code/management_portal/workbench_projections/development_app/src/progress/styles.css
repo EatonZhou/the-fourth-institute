@@ -267,6 +267,18 @@
   }
 }
 
+.progressRegion .pToolbarHeading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  max-width: 100%;
+}
+.progressRegion .pResultCount {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
 .progressRegion .pToolbarTitle {
   font-size: 20px;
   margin: 0;

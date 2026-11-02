@@ -419,8 +419,17 @@ export async function mount(root, context) {
     if (!alive()) return;
     const before = hiddenView || view.capture();
     root.replaceChildren();
+    const rows = currentItems();
+    const filtered = query || filters.module_filter || filters.start_date || filters.end_date;
     const toolbar = el("header", undefined, "pToolbar");
-    toolbar.append(el("h1", "阶段进展", "pToolbarTitle"));
+    const heading = el("div", undefined, "pToolbarHeading");
+    heading.append(el("h1", "阶段进展", "pToolbarTitle"));
+    const total = `${snapshot.failures.length ? "已读取" : "共"} ${snapshot.items.length} 项`;
+    const count = el("span", filtered ? `显示 ${rows.length} 项 / ${total}` : total, "pResultCount");
+    count.setAttribute("role", "status");
+    count.setAttribute("aria-label", "阶段进展数量");
+    heading.append(count);
+    toolbar.append(heading);
     const dates = el("div", undefined, "pDates");
     dates.setAttribute("role", "group");
     dates.setAttribute("aria-label", "成果日期（香港时间，按所属阶段结束日）");
@@ -484,7 +493,6 @@ export async function mount(root, context) {
     }
     const main = el("div", undefined, "pStories");
     root.append(main);
-    const rows = currentItems();
     for (const r of snapshot.reports) {
       const group = rows.filter(x => x.report_ref === r.ref);
       if (!group.length) continue;
