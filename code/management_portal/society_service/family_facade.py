@@ -1226,8 +1226,17 @@ def routing_snapshot(facade, message):
     """The author's routing policy frozen once on admission, before the Router runs."""
     from . import family_chat_storage
     from .state_store import get_lineage_data_store
-    return get_lineage_data_store().database.write(lambda c: family_chat_storage.capture(
+    snapshot = get_lineage_data_store().database.write(lambda c: family_chat_storage.capture(
         c, facade['resident_id'], message.get('author_id', ''), message['message_id']))
+    # A process already holding the previous storage owner can still return
+    # its excluded_member_ids envelope during a shared-code activation. This
+    # is the frozen routing fact, not today's mutable notification preference.
+    muted = snapshot.get('muted_member_ids', snapshot.get('excluded_member_ids', []))
+    solo = snapshot.get('solo_member_id', '')
+    if (not isinstance(muted, list) or any(not isinstance(m, str) or not m for m in muted)
+            or not isinstance(solo, str)):
+        raise ValueError('Family 路由快照格式无效')
+    return {'muted_member_ids': list(muted), 'solo_member_id': solo}
 
 
 def direct_member(facade, message):

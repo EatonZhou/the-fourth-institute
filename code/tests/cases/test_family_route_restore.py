@@ -30,7 +30,18 @@ def _recover(family, root, **extra):
         "member_id": family["right"], "recover": True, "reason": "Router 复核已核定目标", **extra})
 
 
-def test_failed_route_restores_original_once_with_failure_audit(family, failed_route):
+@pytest.mark.parametrize('envelope', ['current', 'legacy', 'empty'])
+def test_failed_route_restores_original_once_with_failure_audit(family, failed_route, monkeypatch, envelope):
+    from management_portal.society_service import family_chat_storage
+    capture = family_chat_storage.capture
+    if envelope != 'current':
+        def older_owner(*args):
+            policy = capture(*args)
+            if envelope == 'empty':
+                assert policy == {'muted_member_ids': [], 'solo_member_id': ''}
+                return {}
+            return {'excluded_member_ids': policy['muted_member_ids'], 'solo_member_id': policy['solo_member_id']}
+        monkeypatch.setattr(family_chat_storage, 'capture', older_owner)
     root, repo = failed_route
     before = repo.message(family["facade"], root)
     failure = repo.input_state(family["facade"], root)
@@ -54,6 +65,24 @@ def test_failed_route_restores_original_once_with_failure_audit(family, failed_r
     assert reassigned["status"] == "reassigned"
     assert run("RelayFamilyMessage", {"resident_id": family["facade"], "message_id": root,
         "member_id": family["wrong"]}).raise_for_error()["message_id"] == reassigned["message_id"]
+
+
+@pytest.mark.parametrize('key', ['excluded_member_ids', 'muted_member_ids'])
+def test_routing_envelope_compatibility_keeps_exclusion_guard(family, failed_route, monkeypatch, key):
+    from management_portal.society_service import family_chat_storage
+    root, repo = failed_route
+    monkeypatch.setattr(family_chat_storage, 'capture', lambda *_: {key: [family['right']], 'solo_member_id': ''})
+    assert _recover(family, root).status == 'failed'
+    assert repo.input_state(family['facade'], root)['state'] == 'failed'
+    assert not family_facade.relay_links(_record(family)).get(root)
+
+
+def test_invalid_routing_envelope_is_not_treated_as_empty(family, failed_route, monkeypatch):
+    from management_portal.society_service import family_chat_storage
+    root, repo = failed_route
+    monkeypatch.setattr(family_chat_storage, 'capture', lambda *_: {'muted_member_ids': 'invalid'})
+    assert _recover(family, root).status == 'failed'
+    assert repo.input_state(family['facade'], root)['state'] == 'failed'
 
 
 @pytest.mark.parametrize("state", ["queued", "running", "completed", "cancelled"])

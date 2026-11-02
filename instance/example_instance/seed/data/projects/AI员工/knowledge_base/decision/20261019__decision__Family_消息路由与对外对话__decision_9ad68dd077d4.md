@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 15
+  number: 16
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-02T18:12:18Z"
+  updated_at: "2026-11-02T18:27:38Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -75,7 +75,7 @@ Solo 一次一个；点另一成员的 S 切换，点亮着的 S 或头部“退
 
 `GetFamilyChatPreferences(resident_id)` 返回 `muted_member_ids`、`solo_member_id`；`UpdateFamilyChatPreferences(resident_id, member_id, control="mute"|"solo", enabled)` 只修改实际调用者，不接受代填用户身份。门面 @viewer 可管理自己的偏好；已离开的成员只能关闭其仍保存的设置。通知写入 owner 不再读取这些偏好，正常记录所有结果和主动发件的未读提醒。
 
-`family_chat_preferences` 保存个人 Mute/Solo，读取已有分离设置时将旧 Mute 与旧 Exclude 的成员并入 Mute；修改后清除旧 Exclude 值，解除 Mute 可完整撤销两种来源。`family_chat_inputs` 保留每个已受理输入的不可变路由约束。LineageData v66 的私有旧字段仅承载兼容读取与原快照，不再作为独立功能或公开合同；本次无需破坏性 DDL 或重写历史请求。
+`family_chat_preferences` 保存个人 Mute/Solo，读取已有分离设置时将旧 Mute 与旧 Exclude 的成员并入 Mute；修改后清除旧 Exclude 值，解除 Mute 可完整撤销两种来源。`family_chat_inputs` 保留每个已受理输入的不可变路由约束。路由读取边界将旧 `excluded_member_ids` 快照映射为当前 `muted_member_ids`；未设置偏好的空快照提供明确默认值，已存在但格式错误的排除列表须拒绝，不能按空偏好放行。共享代码激活期间仍由旧存储 owner 返回的快照也遵守这一边界，不重算或放宽原请求约束。LineageData v66 的私有旧字段仅承载兼容读取与原快照，不再作为独立功能或公开合同；本次无需破坏性 DDL 或重写历史请求。
 
 到达事件中的 `direct_member_id` 由平台根据持久原输入的偏好与合法问题回答归属计算。生成的 router Effect 仅在原消息作者、事件主体、目标与平台重算值一致时取得有限转交身份；不信任单独提供的目标字段。普通路由同时约束 Router 的候选 facts 与 `RelayFamilyMessage` 的最终成员检查，不能仅靠 prompt 绕过 Solo/Mute。Conversation、翻页及浏览器增量显示均使用当前查看者偏好；原消息与权限本身不被删除或收紧。
 
