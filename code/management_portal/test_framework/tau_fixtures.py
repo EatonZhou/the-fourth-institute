@@ -37,8 +37,19 @@ def _release_resource(resource_id: str, key: str) -> None:
             return
         isa_client.call(TAU_ACTOR, 'UnregisterResource', {'resource_id': resource_id}, key=key)
     except InstructionError as exc:
-        if exc.code != 'instruction.not_found':
-            raise
+        if exc.code == 'instruction.not_found':
+            return
+        if exc.code == 'instruction.forbidden':
+            # Unregistration removes permission facts too. A second deletion
+            # can therefore fail authorization before reaching the owner.
+            # Only the ordinary resolver's explicit absence confirms cleanup;
+            # denial, unavailable services and existing resources stay pending.
+            try:
+                isa_client.call(TAU_ACTOR, 'ResolveResource', {'address': resource_id})
+            except InstructionError as resolution:
+                if resolution.code == 'instruction.not_found':
+                    return
+        raise
 
 
 def _fixture_workspaces(roots: list[Path]) -> list[str]:

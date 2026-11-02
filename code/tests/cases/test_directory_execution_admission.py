@@ -84,7 +84,7 @@ def resident_attempt(world, *, resume=False, cwd=None):
 
 
 @pytest.mark.parametrize('entry', ['submit', 'resume', 'script'])
-@pytest.mark.parametrize('purpose', ['resource_creation', 'directory_move_source', 'directory_move_target'])
+@pytest.mark.parametrize('purpose', ['resource_creation', 'directory_move_source', 'directory_move_target', 'cleanup'])
 def test_child_reservation_does_not_block_execution_with_shared_parent(admission_world, entry, purpose):
     world = admission_world
     project = Path(world.outside['workspace_bindings'][0]['path'])
@@ -92,7 +92,11 @@ def test_child_reservation_does_not_block_execution_with_shared_parent(admission
     target.mkdir()
     queue = admission.get_directory_cleanup_store()
     with queue.database.transaction() as connection:
-        queue.reserve(target, operation_id='another-operation', purpose=purpose, connection=connection)
+        if purpose == 'cleanup':
+            queue.enqueue(target, owner_id='other-object', operation_id='another-operation',
+                          actor='bob', connection=connection)
+        else:
+            queue.reserve(target, operation_id='another-operation', purpose=purpose, connection=connection)
     # The ordinary inherited project binding is an ancestor of the new object.
     # Neither an independent Resident turn nor a script in the parent enters it.
     if entry == 'script':

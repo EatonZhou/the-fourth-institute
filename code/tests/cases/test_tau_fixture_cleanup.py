@@ -310,6 +310,37 @@ def test_missing_fixture_is_complete_but_denied_fixture_is_preserved(tmp_path, m
         assert json.loads(path.read_text())['resources'] == manifest['resources']
 
 
+@pytest.mark.parametrize('resolution', ['instruction.not_found', 'instruction.forbidden',
+                                        'instruction.owner_unavailable', 'existing'])
+def test_deleted_fixture_permission_facts_do_not_prevent_confirming_absence(monkeypatch, resolution):
+    """注销删除权限事实后，框架用同一主体的正式解析确认缺失。
+
+    :module: operations.test-workbench
+    :design: decision_c953eab654cd
+    """
+    from management_portal import isa_client
+    from management_portal.hatg.contracts import InstructionError
+    rid = 'information_123456789abc'
+    calls = []
+    def instruction(actor, name, arguments, **kwargs):
+        assert actor == 'test-actor'
+        calls.append(name)
+        if name == 'UnregisterResource':
+            assert arguments == {'resource_id': rid}
+            raise InstructionError('instruction.forbidden', 'permission facts removed or denied')
+        assert name == 'ResolveResource' and arguments == {'address': rid}
+        if resolution != 'existing':
+            raise InstructionError(resolution, 'resolution result')
+        return {'resource': {'resource_id': rid}}
+    monkeypatch.setattr(isa_client, 'call', instruction)
+    if resolution == 'instruction.not_found':
+        tau_fixtures._release_resource(rid, 'cleanup')
+    else:
+        with pytest.raises(InstructionError):
+            tau_fixtures._release_resource(rid, 'cleanup')
+    assert calls == ['UnregisterResource', 'ResolveResource']
+
+
 @pytest.mark.parametrize('outcome', ['deleted', 'missing', 'raced', 'busy', 'denied', 'incomplete'])
 def test_paper_fixture_cleanup_uses_product_deletion_and_preserves_failures(tmp_path, monkeypatch, outcome):
     """Paper 测试样本经产品生命周期清理并核验删除

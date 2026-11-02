@@ -75,12 +75,14 @@ class DirectoryCleanupStore:
         connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',
                            (self.table + ':paths',))
 
-    def pending_at(self, path, *, connection=None):
+    def pending_at(self, path, *, connection=None, include_descendants=True):
         target = lexical_path(path)
         with nullcontext(connection) if connection is not None else self.database.read() as conn:
             rows = conn.execute(f'SELECT cleanup_id,location FROM {self.table} '
                                 'WHERE completed_at IS NULL ORDER BY created_at,cleanup_id').fetchall()
-        return [row['cleanup_id'] for row in rows if overlaps(target, cleanup_path(row['location']))]
+        return [row['cleanup_id'] for row in rows
+                if (overlaps(target, cleanup_path(row['location'])) if include_descendants
+                    else contains(cleanup_path(row['location']), target))]
 
     def assert_available(self, path, *, connection, operation_id=None):
         self._assert_available(path, connection=connection, operation_id=operation_id)
@@ -96,7 +98,7 @@ class DirectoryCleanupStore:
 
     def _assert_available(self, path, *, connection, operation_id=None, for_execution=False):
         self.lock(connection)
-        pending = self.pending_at(path, connection=connection)
+        pending = self.pending_at(path, connection=connection, include_descendants=not for_execution)
         if pending:
             raise DirectoryPendingCleanup(pending[0])
         target = lexical_path(path)
