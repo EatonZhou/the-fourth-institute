@@ -37,6 +37,7 @@ DECLARATIONS = (
     _d("RelayFamilyMessage", ON_RESIDENT, "按 Router 的选择转交门面原请求；成员周额度低于 5% 时先交 steward 复核；"
        "带 scope_gap 时请求不在现有成员职责内，先交 steward 决定是否新建成员，steward 安排后以 scope_reviewed=true 转交给所选成员。"
        "reassign=true 时把已交给其他成员的请求改派给所选成员，并记下这次纠正。"
+       "recover=true 时把尚未转交的失败请求恢复给核定成员，保存失败回执和恢复审计，仍执行正常准入。"
        "notice=true 时门面直接收下不需要成员行动的结果报告或纯告知：不选成员、不转交、不做额度复核，门面摘要可读到它。", (
         R("resident_id", description="Family 门面"), R("message_id", description="门面中的原请求"),
         P("member_id", description="Router 选中的成员；带 scope_gap 时为最接近的成员；steward 安排时为它选定的成员（可以是刚新建的）；改派时为新成员；"
@@ -47,13 +48,15 @@ DECLARATIONS = (
         P("scope_reviewed", "boolean", "本 Family steward 安排好成员（新建或最接近的成员）后设 true，转交等它安排的请求"),
         P("reassign", "boolean", "改派：撤回原成员尚未开始的副本，交给所选成员重新处理；原成员正在处理时先停止本轮。"
           "限原发送者、能管理门面的身份与本 Family steward"),
-        P("reason", description="steward 放行或安排成员时必填，说明判断；改派时说明为什么原成员不合适；Router 转交时为它的理由"),
+        P("recover", "boolean", "恢复尚未转交的失败门面原请求；reason 必填。限原发送者、门面管理者或本 Family Steward；不能与 notice 或 reassign 同用；相同目标重试幂等，取消请求不恢复"),
+        P("reason", description="steward 放行、安排成员或恢复时必填，说明判断；改派时说明为什么原成员不合适；Router 转交时为它的理由"),
     ), (R("status", description="relayed、waiting_for_quota_review、waiting_for_steward、arranged、reassigned、"
           "kept（门面已作为告知收下），或 withdrawn（请求已撤回，不再转交）"),
         P("message_id", description="已转交时为成员收到的消息；等待复核或安排时以及 kept 时为门面原请求；withdrawn 时没有"),
         P("member_id", description="承接的成员；等待 steward 安排时为 Router 建议的成员；kept 时没有"),
         P("steward_message_id", description="等待复核或安排时发给 steward 的消息"),
-        P("previous_member_id", description="改派前承接的成员")),
+        P("previous_member_id", description="改派前承接的成员"),
+        P("recovery", "object", "恢复审计：原失败回执、恢复操作者、理由、时间、目标和投递结果")),
        target="resident_id"),
     _d("CheckFamilyProgress", ON_LINEAGE, "登记门面收到的工作轮次，达到间隔后请 Steward 撰写 Family 进展简报；同一输入只计一次。", (
         R("lineage_id", description="Family 所在的 Lineage"),

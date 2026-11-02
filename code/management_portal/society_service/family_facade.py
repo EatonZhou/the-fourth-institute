@@ -91,7 +91,7 @@ def parse_relay_mark(business_ref: object) -> tuple[str, str] | None:
 def validate_relay(business_ref: object, actor: str) -> tuple[str, str] | None:
     """The facade message a delivery relays, checked before the delivery is accepted.
 
-    Only the facade message's sender, the facade itself (the Family Router
+    Only the facade message's sender, its own steward, the facade itself (the Family Router
     runs as the Lineage runtime principal, which is the facade once a leader
     member is familized) or the facade's owner may relay it, so a relay never
     closes someone else's message.  Marks that do not point at a
@@ -113,9 +113,10 @@ def validate_relay(business_ref: object, actor: str) -> tuple[str, str] | None:
     if not (
         same_actor(message.get("author_id"), actor_id)
         or same_actor(source[0], actor_id)
+        or is_own_steward(facade, actor_id)
         or resident_access.can_manage(facade, actor_id)
     ):
-        raise PermissionError("只有门面消息的发送者、门面自身或能管理门面的身份可以转交这条消息")
+        raise PermissionError("只有门面消息的发送者、本 Family Steward、门面自身或能管理门面的身份可以转交这条消息")
     return source
 
 
@@ -377,6 +378,10 @@ def _complete_relay(source: tuple[str, str], member_id: str, member_message_id: 
                 links.setdefault(facade_message_id, {
                     "resident_id": member_id, "message_id": member_message_id, "relayed_at": utc_now_iso(),
                 })
+                restorations = (state.get("route_restorations") or {}).get(facade_message_id) or []
+                if restorations:
+                    restorations[-1].update(status="relayed", result={
+                        "status": "relayed", "member_id": member_id, "message_id": member_message_id})
             show_request(facade_id, facade_message_id)
             repository.set_input_state(facade_id, facade_message_id, "completed")
     if current == "queued":

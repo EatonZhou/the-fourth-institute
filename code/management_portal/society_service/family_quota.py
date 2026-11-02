@@ -67,7 +67,11 @@ def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] 
 
 def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                   *, quota_reviewed: bool = False, reason: str = "", scope_gap: str = "",
-                  scope_reviewed: bool = False) -> dict[str, Any]:
+                  scope_reviewed: bool = False, recover: bool = False) -> dict[str, Any]:
+    if recover:
+        from . import family_recovery
+        return family_recovery.relay_failed_route(facade_id, message_id, member_id, actor,
+            reason=reason, quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
     result = _relay_message(facade_id, message_id, member_id, actor, quota_reviewed=quota_reviewed,
                             reason=reason, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
     if result["status"] in {"waiting_for_quota_review", "waiting_for_steward"}:
@@ -127,6 +131,10 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         if link["resident_id"] != member_id:
             raise ValueError("该门面请求已经投给其他成员")
         return {"status": "relayed", "member_id": member_id, "message_id": link["message_id"]}
+    from . import family_recovery
+    restorations = family_recovery.route_restorations(facade).get(message_id) or []
+    if restorations and restorations[-1]["member_id"] != member_id:
+        raise ValueError("失败恢复已核定其他成员，不能由旧路由覆盖")
     if family_facade.kept_notice(facade, message_id):
         raise ValueError("门面已把这条消息作为告知收下，不再转交成员")
     from . import family_chat_preferences

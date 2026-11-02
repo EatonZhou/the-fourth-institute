@@ -186,13 +186,15 @@ def relay_family_message(inv: Invocation) -> dict[str, Any]:
         from management_portal.society_service.family_facade import keep_notice
 
         if inv.argument("member_id") or any(inv.argument(name) for name in
-                                            ("reassign", "quota_reviewed", "scope_gap", "scope_reviewed")):
-            raise invalid("notice=true 时由门面收下告知，不能同时指定成员、改派或复核参数")
+                                            ("reassign", "recover", "quota_reviewed", "scope_gap", "scope_reviewed")):
+            raise invalid("notice=true 时由门面收下告知，不能同时指定成员、恢复、改派或复核参数")
         return keep_notice(inv.argument("resident_id"), inv.argument("message_id"), inv.caller,
                            reason=inv.argument("reason") or "")
     if not inv.argument("member_id"):
         raise invalid("转交门面请求需要 member_id；只是告知时设 notice=true")
     if inv.argument("reassign") is True:
+        if inv.argument("recover") is True:
+            raise invalid("recover 与 reassign 不能同时使用")
         from management_portal.society_service.family_reassign import reassign_request
 
         return reassign_request(inv.argument("resident_id"), inv.argument("message_id"),
@@ -202,7 +204,8 @@ def relay_family_message(inv: Invocation) -> dict[str, Any]:
                          quota_reviewed=inv.argument("quota_reviewed") is True,
                          reason=inv.argument("reason") or "",
                          scope_gap=inv.argument("scope_gap") or "",
-                         scope_reviewed=inv.argument("scope_reviewed") is True)
+                         scope_reviewed=inv.argument("scope_reviewed") is True,
+                         recover=inv.argument("recover") is True)
 
 
 def _forwarded_item(caller: str, item: Any) -> dict[str, Any]:

@@ -31,6 +31,72 @@ def records(facade: Mapping[str, Any]) -> dict:
     return get_lineage_data_store().family_relays.by_keys([facade_id]).get(facade_id, {}).get("recoveries") or {}
 
 
+def route_restorations(facade: Mapping[str, Any]) -> dict:
+    """Direct failed-route recovery intents, separate from conversational continue inputs."""
+    return get_lineage_data_store().family_relays.by_keys([facade["resident_id"]]).get(
+        facade["resident_id"], {}).get("route_restorations") or {}
+
+
+def relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: str, *, reason: str,
+                      quota_reviewed=False, scope_gap="", scope_reviewed=False) -> dict:
+    """Recover the same failed request through ordinary membership/quota/delivery admission.
+
+    Save intent and the failed receipt before reopening. Retrying after a crash
+    uses that intent and the ordinary deterministic relay identity. Withdrawal
+    and a different existing holder always win over recovery.
+    """
+    from . import family_chat_preferences, family_quota, resident_record_domain
+
+    facade = resident_record_domain.find_resident(facade_id)
+    if not family_facade.is_facade(facade):
+        raise ValueError("目标必须是 Family 门面")
+    repository = resident_conversation_stream.get_repository()
+    store = get_lineage_data_store()
+    if not str(reason or "").strip():
+        raise ValueError("恢复失败请求必须说明理由")
+    with resident_record_domain.state_lock(facade_id):
+        original = repository.message(facade_id, message_id)
+        if not original or original.get("role") != "user":
+            raise ValueError("门面原请求不存在")
+        if not (_allowed(facade, original, actor) or family_facade.is_own_steward(facade, actor)):
+            raise PermissionError("只有原发送者、门面管理者或本 Family Steward 可以恢复请求")
+        if (quota_reviewed or scope_reviewed) and not family_facade.is_own_steward(facade, actor):
+            raise PermissionError("只有本 Family 的 steward 可以批准复核")
+        if not family_facade.is_relay_target(facade, member_id):
+            raise ValueError("所选 Resident 已不属于这个 Family")
+        family_chat_preferences.validate_target(facade, original, member_id)
+        previous = repository.input_state(facade_id, message_id)
+        if previous["state"] == "cancelled":
+            return {"status": "withdrawn", "member_id": member_id}
+        history = route_restorations(facade).get(message_id) or []
+        entry = history[-1] if history else None
+        link = family_facade.relay_links(facade).get(message_id)
+        if link:
+            if not entry or link["resident_id"] != member_id or entry["member_id"] != member_id:
+                raise ValueError("原请求已有承接关系，不能通过恢复覆盖；改派请用 reassign")
+            return {"status": "relayed", "member_id": member_id, "message_id": link["message_id"], "recovery": entry}
+        if family_facade.kept_notice(facade, message_id):
+            raise ValueError("门面已作为告知收下，不能恢复为任务")
+        if entry and entry["member_id"] != member_id:
+            raise ValueError("恢复已核定其他成员，不能重复选择目标")
+        if previous["state"] == "failed":
+            if not entry or entry["failed_receipt"]["updated_at"] != previous["updated_at"]:
+                entry = {"actor": actor, "reason": reason.strip(), "member_id": member_id,
+                         "requested_at": datetime.now(timezone.utc).isoformat(),
+                         "failed_receipt": previous, "status": "pending"}
+                with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
+                    ledger.setdefault("route_restorations", {}).setdefault(message_id, []).append(entry)
+            repository.reopen_input(facade_id, message_id)
+        elif previous["state"] != "queued" or not entry:
+            raise ValueError("仅可恢复尚未转交的失败请求，不能重启活动或完成的请求")
+        result = family_quota.relay_message(facade_id, message_id, member_id, actor, reason=reason,
+            quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
+        with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
+            entry = ledger["route_restorations"][message_id][-1]
+            entry.update(status=result["status"], result=result)
+        return {**result, "recovery": entry}
+
+
 def register(facade: Mapping[str, Any], message: Mapping[str, Any]) -> bool:
     """Register before publishing the queued input, so arrival cannot route 'continue'."""
     if not is_command(message):
@@ -67,6 +133,8 @@ def request_status(facade: Mapping[str, Any], message_id: str) -> dict:
     attempts += trigger_paths.find_event_paths(lineage_id, {"input_business_ref": f"family-route/{facade_id}/message/{message_id}"})
     retry_at = max((_instant(item.get("requested_at")) for item in records(facade).values()
                     if item.get("request_message_id") == message_id and item.get("route_occurrence")), default=_instant(""))
+    retry_at = max([retry_at, *(_instant(item["requested_at"]) for item in
+                               route_restorations(facade).get(message_id) or [])])
     latest = max((item for item in attempts if _instant(item["occurred_at"]) >= retry_at), key=lambda item: _instant(item["occurred_at"]), default={})
     with get_lineage_data_store().database.read() as connection:
         routing_nodes = family_storage.routing_nodes(connection, facade["family"]["family_id"])
@@ -221,6 +289,8 @@ def arrival(facade, message_id: str) -> str | None:
         latest = max(related, key=lambda item: _instant(item.get("requested_at")), default={})
         return str(entry["request_message_id"]) if latest.get("route_occurrence") == message_id else None
     # The recovery occurrence owns the retry; the reopened original must not also trigger it.
+    if message_id in route_restorations(facade):
+        return None  # Explicit recovery already owns direct delivery to its verified target.
     if any(item.get("request_message_id") == message_id and item.get("route_occurrence") for item in entries.values()):
         return None
     return message_id
@@ -302,6 +372,9 @@ def routing_failed(event, error: str, *, node_id: str = ""):
     with resident_record_domain.state_lock(facade_id):
         entries = records(facade)
         related = [(mid, item) for mid, item in entries.items() if item.get("request_message_id") == request_id and item.get("route_occurrence")]
+        if any(_instant(item["requested_at"]) > _instant(event.get("occurred_at"))
+               for item in route_restorations(facade).get(request_id) or []):
+            return
         if related and max(_instant(item.get("requested_at")) for _, item in related) > _instant(event.get("occurred_at")):
             return  # An earlier attempt cannot fail a newer retry.
         repository = resident_conversation_stream.get_repository()
