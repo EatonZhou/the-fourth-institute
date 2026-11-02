@@ -379,6 +379,8 @@ def _publish_registration(
         "source": "",
     }], operation_id=intent.key) as preparation_id:
         def initialize(_index, stage):
+            from management_common.filesystem_paths import filesystem_path
+            stage = filesystem_path(stage)
             folder = stage if folder_supplied else stage / 'residents' / resident_id
             if not folder_supplied:
                 (stage / 'LINEAGE.md').touch()

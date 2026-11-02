@@ -16,6 +16,7 @@ from . import (
 from .domain_ports import resident_lineage_host_port, resource_port
 from .resident_access import ensure_resident_visible_to_actor, manage_refusal
 from management_common.actor_identity import canonical_actor_id
+from management_common.filesystem_paths import filesystem_path
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 import copy
@@ -64,7 +65,7 @@ def ensure_resident_file(
 ) -> Path:
     path = resident_folder / filename
     try:
-        with path.open('x', encoding='utf-8') as stream:
+        with filesystem_path(path).open('x', encoding='utf-8') as stream:
             stream.write(initial_content)
     except FileExistsError:
         pass
@@ -78,21 +79,21 @@ def refresh_resident_workspace_document(record: dict[str, Any]) -> None:
     queue = get_directory_cleanup_store()
     with resident_catalog.get_catalog().state_store.database.transaction() as connection:
         queue.lock(connection)
-        if record.get('deleted_at') or not resident_folder.is_dir() or queue.pending_at(resident_folder, connection=connection):
+        if record.get('deleted_at') or not filesystem_path(resident_folder).is_dir() or queue.pending_at(resident_folder, connection=connection):
             return
         # This projection may replace a generated file, but never creates its
         # parent. In particular a user removal racing the write stays removed.
         temporary = None
         try:
-            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=resident_folder, delete=False) as stream:
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=filesystem_path(resident_folder), delete=False) as stream:
                 temporary = Path(stream.name)
                 stream.write(resident_workspaces_text(record))
                 stream.flush()
                 os.fsync(stream.fileno())
-            os.replace(temporary, resident_folder / resident_domain_common.RESIDENT_WORKSPACES_FILE)
+            os.replace(filesystem_path(temporary), filesystem_path(resident_folder / resident_domain_common.RESIDENT_WORKSPACES_FILE))
         finally:
             if temporary is not None:
-                temporary.unlink(missing_ok=True)
+                filesystem_path(temporary).unlink(missing_ok=True)
 
 
 def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> None:
@@ -102,6 +103,7 @@ def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> No
     if folder is not None:
         # Creation supplies a private staging directory. Documents describe
         # the final paths; preparation never writes into the published tree.
+        folder = filesystem_path(folder)
         folder.mkdir(parents=True, exist_ok=True)
         (folder / 'workspace').mkdir()
         (folder / 'runtime').mkdir()
@@ -113,19 +115,19 @@ def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> No
                              initial_content=resident_workspaces_text(record))
         return
     workspace = resident_record_domain.resident_workspace_path(record)
-    workspace.mkdir(parents=True, exist_ok=True)
-    (workspace / "residents").mkdir(parents=True, exist_ok=True)
+    filesystem_path(workspace).mkdir(parents=True, exist_ok=True)
+    filesystem_path(workspace / "residents").mkdir(parents=True, exist_ok=True)
     lineage_md = workspace / LINEAGE_INSTRUCTIONS_FILE
-    if not lineage_md.exists():
-        lineage_md.touch()
+    if not filesystem_path(lineage_md).exists():
+        filesystem_path(lineage_md).touch()
     owned = resident_record_domain.require_resident_owned_workspace_binding(record)
     owned_path = Path(str(owned["path"])).resolve(strict=False)
     expected = resident_record_domain.resident_owned_workspace_path(record)
     if owned_path != expected:
         raise ValueError("Resident managed Workspace path must be <resident_folder>/workspace")
-    owned_path.mkdir(parents=True, exist_ok=True)
+    filesystem_path(owned_path).mkdir(parents=True, exist_ok=True)
     resident_folder = resident_record_domain.resident_folder_path(record)
-    resident_folder.mkdir(parents=True, exist_ok=True)
+    filesystem_path(resident_folder).mkdir(parents=True, exist_ok=True)
     ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_INSTRUCTIONS_FILE)
     ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_DIARY_FILE)
     ensure_resident_file(resident_folder, resident_domain_common.RESIDENT_MAILBOX_FILE)
@@ -134,7 +136,7 @@ def ensure_resident_workspace(record: dict, *, folder: Path | None = None) -> No
         resident_domain_common.RESIDENT_WORKSPACES_FILE,
         initial_content=resident_workspaces_text(record),
     )
-    resident_record_domain.sessions_path(record).mkdir(parents=True, exist_ok=True)
+    filesystem_path(resident_record_domain.sessions_path(record)).mkdir(parents=True, exist_ok=True)
 
 
 def _safe_workspace_location_for_delete(record: dict) -> Path:
