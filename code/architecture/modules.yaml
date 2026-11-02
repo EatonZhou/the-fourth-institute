@@ -2174,8 +2174,21 @@ protocols:
     designs: []
     related_designs:
       - "decision_1e2eb869bc10"
-    description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。对于已持久化且全为精确权限请求的问题组，Society可将认证User的明确对话同意绑定为该组唯一回答；权限owner校验真实签发者当前持权，凭证与回答接纳同事务提交，仅在收件方处理该输入期间有效。范围、签发身份不从任意正文或页面上下文推断，失效回答重放不重新签发。"
+    description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。结构化权限卡片要求精确 credentials，用户明确选择后沿 MessageLending 原子投递与签发，接收方处理该回答结束时凭证失效。自然语言授权保持原消息，不改造为问题回答、不从旧问题推导权限；Resident 理解后沿 user-authorization-acceptance 协议接受。"
     example: "原生 requestApproval/userInput → Adapter 内容项 → Lineage 问题消息 → prepare_question_answer(source_message_id,entries) → 原执行的回答入口 → 观察已关闭问题。Codex 原生异步提问按已观察问题和原生调用 ID 持久化为独立问题组，轮次结束后仍可回答；不占最终答复身份，accepted 不代表落库或授权。恢复日志只校验已受理调用身份，不从工具参数补造正文；身份不明则延后。原生异步问题没有 credentials 字段，权限请求/接受仍沿正式授权来源与凭证路径。"
+
+  - id: "user-authorization-acceptance"
+    title: "当前用户输入的授权接受与凭证回执"
+    modules:
+      - "kernel.isa"
+      - "lineage.conversation"
+      - "resources.permissions"
+    designs: []
+    related_designs:
+      - "decision_22227d0ad075"
+      - "decision_1e2eb869bc10"
+    description: "Resident 理解用户直接正文的授权意图，提交原消息 ID、原文证据及准确权限；Society 证明已认证来源与本 Resident 当前执行的接纳关系。直接输入、Mailbox 成员、已送达追加输入或持久 Family 转交按真实关系核验，排队、停止及历史任务不能签发。输入生命周期锁下，权限 owner 在同一事务核验 User 当前持权并保存整批凭证及不可变回执，不解析自然语言、不反向 RPC 查询 Society；失败整批回滚。来源消息与当前主任务分别记录，默认随任务结束，明确时长按请求处理。重放只复用原凭证、不续期，失效后不凭旧消息重签或扩签。"
+    example: "用户授权可与业务及附件同条输入 → 当前 Resident 理解具体资源、动作及有效期 → AcceptUserAuthorization(message_id,evidence,credentials) → Society 核验原 User、已送达来源及执行状态 → 权限 owner 校验账号和 A/R、事务保存凭证与回执 → 当前 Resident 使用。任务完成/失败/取消与默认凭证清理同事务；重复请求沿原回执，不由关键词、引用或附件文字自动授权。"
 
   - id: "mailbox-viewer-state"
     title: "Mailbox 主体视图与待办操作"
