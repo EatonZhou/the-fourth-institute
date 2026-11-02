@@ -164,7 +164,7 @@ async function membersQuotaAndSummary() {
     runtimes.get('res_wait').handlers.onState({ restart: { status: 'accepted', phase: 'waiting_current_execution', restart_id: 'r2' } });
     assert.deepEqual(nodes.map(node => work(root(), node.resident_id)),
       ['空闲', '工作中', '等待执行', '停止中', '空闲', '失败', '迁移中', '等待本轮后迁移']);
-    assert.deepEqual([...root().querySelectorAll('th')].map(text), ['节点', 'backend', '周剩余', '工作状态', '门面展示']);
+    assert.deepEqual([...root().querySelectorAll('th')].map(text), ['节点', 'backend', '周剩余', '工作状态', '通知 / 路由 / 对话']);
     assert.equal(summaries.at(-1), '运行 2 · 排队 3 · 需关注 5', 'the summary counts work, queue and members that need attention');
 
     const quota = id => cells(root(), id)[2];
@@ -190,7 +190,7 @@ async function membersQuotaAndSummary() {
     assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'true');
     mix('res_run', 'solo').click(); await settle();
     assert.equal(mix('res_run', 'solo').getAttribute('aria-pressed'), 'true');
-    assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'false');
+    assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'true', 'Solo preserves independent Mute');
     mix('res_run', 'solo').click(); await settle();
     assert.equal(mix('res_run', 'mute').getAttribute('aria-pressed'), 'true', 'exit Solo restores M');
     const intake = id => cells(root(), id)[3].querySelector('button');

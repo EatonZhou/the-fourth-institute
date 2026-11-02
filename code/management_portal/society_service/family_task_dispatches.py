@@ -97,15 +97,14 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
             raise KeyError("门面原消息不存在")
         from . import family_chat_preferences, family_quota
         policy = family_facade.routing_snapshot(facade, message)
-        from management_common.async_questions import answered_set
-        direct = family_facade.direct_member(facade, message) if answered_set(message) else policy['solo_member_id']
+        direct = family_facade.direct_member(facade, message)
         if direct:
             return family_quota.relay_message(facade_id, mid, direct, actor)
         facts['routing']['members'] = family_chat_preferences.allowed(facade, policy)
         facts['routing']['chat_preferences'] = policy
-        facts['routing']['constraint'] += ' M/S 是原发送者的硬约束，不能选择被排除的成员。'
-        if policy['muted_member_ids'] and not facts['routing']['members']:
-            raise ValueError('当前所有成员已 Mute，请先取消至少一个成员的 M')
+        facts['routing']['constraint'] += ' Solo/Exclude 是原发送者的路由约束，不能自动选择被排除的成员；Mute 只影响通知。'
+        if policy['excluded_member_ids'] and not facts['routing']['members']:
+            raise ValueError('当前所有成员已 Exclude，请先允许至少一个成员自动路由，或进入成员 Solo')
         facts.update(sender=message.get("author_id"), content=message.get("content_parts"))
         if message.get("quote"):
             facts["quote"] = message["quote"]

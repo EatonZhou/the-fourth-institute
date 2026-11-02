@@ -4,38 +4,38 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 64
-  created_at: '2026-08-25'
+  number: 66
+  created_at: "2026-08-25"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T02:36:41Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T07:43:36Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 3
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_common/portal_database.py
-  - ${code_root}/management_portal/hatg/store.py
-  - ${code_root}/management_portal/society_service/lineage_effect_script_journal.py
-  - ${code_root}/management_portal/society_service/effect_recovery_worker.py
-  - ${code_root}/management_portal/society_service/resident_storage.py
-  - ${code_root}/management_portal/society_service/resident_input_scope.py
-  - ${code_root}/management_portal/society_service/resident_conversation_event_relay.py
-  - ${code_root}/management_portal/society_service/runtime_read_models.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/management_portal/society_service/lineage_state_domains.py
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/management_common/postgres_database.py
-  - ${code_root}/management_portal/society_service/lineage_catalog.py
-  - ${code_root}/management_portal/society_service/resident_catalog.py
-  - ${code_root}/tests/cases/test_lineage_object_state.py
-  - ${code_root}/tests/cases/test_lineage_catalogs.py
-  - ${code_root}/tests/cases/test_resident_resource_projection_outbox.py
-  - ${code_root}/tests/cases/test_conversation_projection_authority.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/portal_database.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_effect_script_journal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/effect_recovery_worker.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_input_scope.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_event_relay.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/runtime_read_models.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_state_domains.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/postgres_database.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_object_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_catalogs.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_resource_projection_outbox.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_conversation_projection_authority.py
   related:
   - decision_0e043d5f81be
   - decision_1b2bdf5c33d6
@@ -99,9 +99,11 @@ LineageData 是 SocietyService（decision_1b2bdf5c33d6）的数据层：它把 L
 
 LineageData 通过 `PORTAL_DATABASE_URL` 连接 Portal 统一的 PostgreSQL 服务，使用其中的 `lineage` schema；这个 schema 只包含 LineageData 的表。测试环境设置 `PORTAL_DATABASE_NAMESPACE` 后，schema 名加上这个前缀，例如 `<namespace>_lineage`。连接池大小由 `PORTAL_POSTGRES_DOMAIN_POOL_SIZE` 决定，默认 8。Dev 与 Release 两个实例共用同一份 LineageData。
 
-`lineage_meta` 表中保存结构版本标识，当前为 `tfi.lineage-data.v60`。服务初始化时取得数据库咨询锁，然后：schema 为空时直接创建当前结构；已有结构时严格核对版本标识和表、列、索引、触发器与外键，任何不一致都使服务启动失败。结构升级由单独验证过的迁移脚本完成；运行中的服务不读取旧格式，也不在线修复结构。迁移脚本固定来源版本和目标版本，只随目标版本的代码运行，代码已是其他版本时拒绝执行；数据库越过该版本后，脚本在下一次结构升级时删除。
+`lineage_meta` 表中保存结构版本标识，当前为 `tfi.lineage-data.v66`。服务初始化时取得数据库咨询锁，然后：schema 为空时直接创建当前结构；已有结构时严格核对版本标识和表、列、索引、触发器与外键，任何不一致都使服务启动失败。结构升级由单独验证过的迁移脚本完成；运行中的服务不读取旧格式，也不在线修复结构。迁移脚本固定来源版本和目标版本，只随目标版本的代码运行，代码已是其他版本时拒绝执行；数据库越过该版本后，脚本在下一次结构升级时删除。
 
 这个 schema 只放核心表，严格核对的也就只是核心表。可选功能的表放在功能自己的 schema 里，由功能首次使用时自行建表（`DomainDatabase`，decision_15aab18c0ab3）；打包时去掉哪些功能，lineage schema 的表都相同。v60 把原先按应用分开、在 CHECK 中写死 Paper、WALL、公告板分类器和 TAU 的七张配置表合并为通用表 `application_targets`（decision_6591e7793116），并把不属于任何 Lineage 的人类通知从公告板的 schema 移入 `portal_human_notifications`。
+
+Family 个人设置中，family_chat_preferences 分开保存 muted_member_ids（通知）、excluded_member_ids（自动路由）和 solo_member_id（对话）；family_chat_inputs 仅冻结原输入的 excluded_member_ids/solo_member_id。显式 v65→v66 转换保留旧 M 的路由约束并迁为 Exclude，新通知 Mute 默认关闭；不删除消息或更改既有输入目标。预演完整执行并回滚，正式转换校验身份与路由快照一致；代码与 Dev/Release 共用结构协调切换，不在服务初始化内兼容旧结构。
 
 ## 各类表保存什么
 
@@ -303,7 +305,7 @@ sequenceDiagram
 
 ## PostgreSQL 事务与并发
 
-读取缓存仅在存取缓存条目时持有全局短锁。消息计数等需要访问存储的计算按读取种类、Lineage 和查看者分别合并；同一范围的并发读取复用结果，其他 Lineage 及定义缓存的读取不等待该计算。缓存有效性由当前 revision、Resident 游标和查看者范围的指纹决定；读进程池复用有效条目，不在每次 RPC 前清空。
+读取缓存仅在存取缓存条目时持有全局短锁。消息计数等需要访问存储的计算按读取种类、Lineage 和查看者分别合并；同一范围的并发读取复用结果，其他 Lineage 及定义缓存的读取不等待该计算。缓存有效性由当前 revision、正式定义内容、Resident 游标和查看者范围的依赖指纹决定。Resident 与 Family 的名称等身份事实可独立于图编排版本改变；缓存须核对本次已读取的正式内容，不能仅凭图版本相同或写进程中的本地失效继续返回旧身份。此核对不另读一份数据库快照，不推进图编排版本；读进程池复用依赖未变的有效条目，不在每次 RPC 前清空。
 
 资源描述发布在同一物理事务中锁定本次涉及的 Resident 身份行、当前成员归属行、Lineage 身份行及已有 Workspace 绑定行，再核对当前事实并提交描述与来源收据。Resident 的父 Lineage 同时受保护，因为它决定 Project 与组织层级。成员集合的写入通过所属 Lineage 身份行串行提交；Workspace 删除直接解除的既有绑定也与投影互斥。不存在或已删除的身份在发布前拒绝，不能靠描述重建身份。锁以稳定 ID 排序，重叠领域写入造成冲突时立即结束本次尝试并保留原发布工作重试，避免跨领域锁顺序形成死锁。此过程不取得全表共享锁；无关 Lineage 的图修改、同一团队其他 Resident 的独立身份修改及运行进度可以继续。目标身份和生命周期写入仍与描述提交互斥，防止已删除或已变更的对象被旧描述覆盖。
 

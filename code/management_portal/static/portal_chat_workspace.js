@@ -303,7 +303,8 @@
     const loadingId = options.loadingId || "";
     return window.PortalI18n.html`<div class="paneHead chatHead portalWorkspaceHead">
       <div class="paneHeadText chatHeadText">
-        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的路由与显示" hidden></span></div>
+        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的通知、路由与单独对话" hidden></span></div>
+        <div class="familySoloProxy" data-family-solo="header" role="status" hidden></div>
         <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div>
       </div>
       <div class="paneHeadActions actionGroup">
@@ -319,6 +320,7 @@
     </div>
     ${options.afterBodyHtml || ""}
     ${composerSplitterId ? window.PortalI18n.html`<div class="composerSplitter" id="${escapeHtml(composerSplitterId)}" role="separator" aria-orientation="horizontal" aria-label="调整发送框高度" title="拖动调整发送框高度"></div>` : ""}
+    <div class="familySoloProxy" data-family-solo="composer" role="status" hidden></div>
     <div class="composer" id="${escapeHtml(composerId)}"></div>
     <div class="portalWorkspaceLoading" ${loadingId ? `id="${escapeHtml(loadingId)}"` : ""} data-workspace-loading hidden></div>`;
   }
@@ -3124,9 +3126,9 @@
       const stopping = Boolean(this.stopRequest);
       this.workspace.setStopPending(stopping);
       // A facade's Stop stops the requests this viewer sees executing. Its
-      // work state and controls cover the whole Family, ignore Mute/Solo and
+      // work state and controls cover the whole Family, ignore personal settings and
       // differ between the Conversation and Resident state reads, so the
-      // M/S-filtered requests decide, as they do for what Stop cancels.
+      // Solo-filtered requests decide, as they do for what Stop cancels.
       const protocolCanStop = snapshot?.family_facade
         ? familyExecution(snapshot).active.length > 0
         : snapshot
@@ -3321,7 +3323,7 @@
 
     // A facade's Stop stops every request shown here at once, so it asks first and
     // points to each request's own Stop: each running request is stopped at its
-    // member, each one being routed is withdrawn. Members hidden by M/S keep working.
+    // member, each one being routed is withdrawn. Solo-hidden members keep working.
     async stopFamily() {
       const target = this.target();
       const snapshot = this.protocol?.snapshot?.() || {};
@@ -3333,13 +3335,13 @@
         counts.set(label, (counts.get(label) || 0) + 1);
       });
       const preferences = snapshot.family_facade?.chat_preferences || {};
-      const filtered = Boolean(preferences.solo_member_id || preferences.muted_member_ids?.length);
+      const filtered = Boolean(preferences.solo_member_id);
       const confirmed = await window.PortalUI.confirm({
         title: window.PortalI18n.t("停止这里显示的全部请求？"),
         message: window.PortalI18n.text`这个 Stop 会一次停止这里正在执行的全部 ${active.length} 条请求：成员正在处理的停止本轮，正在选择成员的撤回。`,
         description: [
           window.PortalI18n.t("只想停止某位成员时，请取消，再点那条请求状态栏里的“停止”。"),
-          filtered ? window.PortalI18n.t("被 Mute／Solo 隐藏的成员不受影响。") : "",
+          filtered ? window.PortalI18n.t("Solo 视图以外的成员不受影响。") : "",
           waiting ? window.PortalI18n.text`排队中的 ${waiting} 条请求不受影响，会照常开始；需要时可以逐条撤回。` : "",
         ].filter(Boolean).join(" "),
         metadata: [...counts].map(([label, count]) => ({ label, value: `${count} 条` })),

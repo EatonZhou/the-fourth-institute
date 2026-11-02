@@ -4,24 +4,30 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 159
-  created_at: '2026-10-01'
+  number: 162
+  created_at: "2026-10-01"
   created_by:
-    user: ''
-    agent: resident_4b1da6140cf2
-  updated_at: '2026-10-31T01:31:24Z'
+    user: ""
+    agent: "resident_4b1da6140cf2"
+  updated_at: "2026-11-02T07:43:36Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 8
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/family_workflows.py
-  - ${code_root}/management_portal/society_service/lineage_program.py
-  - ${code_root}/management_portal/society_service/lineage_program_effect_execution.py
-  - ${code_root}/management_portal/society_service/resident_context/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/family_workflows.py
+  - resident_4b1da6140cf2
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program_effect_execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_context/service.py
   related:
+  - decision_9ad68dd077d4
+  - decision_89b9df038a95
+  - decision_a64b3ea2c3c5
+  - decision_f5ab721f3d5d
+  - decision_328fb2548b8f
   - decision_0f57656a2acd
   - decision_6fc653d55c79
   - decision_4adcc1ff2f2c
@@ -32,14 +38,20 @@ links:
   - decision_d19b9909a674
   - decision_2a3ff353165c
   - decision_8fe87d812a4c
+  - concept_613d4cba37cf
+  - concept_3e2144112950
+  - concept_43c793b4f3ab
+  - concept_83af607c587f
+  - insight_20b1516d5bcf
   - decision_bd5217d08c09
   - decision_b820faf42218
   - decision_600ae27b0538
   supersedes: []
-  derived_from: []
+  derived_from:
+  - plan_0825ff40aaaa
+  - plan_7dddf00a1913
 metaness: 3
 ---
-
 # Family：把多个 Resident 组合为对外一个 Resident
 
 Family 把同一 Lineage 中的业务 Resident 组合成一个对外入口：门面保存外部请求，Router 选择承接者，成员完成实际工作，Steward 维护分工、记忆、积压与恢复。平台维护转交关系和运行保障，使请求、执行结果与故障都能回到原入口。
@@ -52,13 +64,13 @@ Family 是一种特殊 Function Block，不新增执行主体层级。门面、R
 
 | 阅读目的 | 规范 |
 | --- | --- |
-| 请求怎么选人、转交、改派、撤回与回复 | 消息路由与对外对话 |
-| Router/Steward 由什么 Event 触发，执行什么 Effect，收到什么 prompt | Event、Effect 与 Prompt |
-| 摘要谁维护、队列怎么整理、额度或成员故障怎么恢复 | 记忆、队列与故障恢复 |
-| 画布、工作流程编辑、门面 Chat 与状态表怎么使用 | 画布、菜单与状态交互 |
-| 用户个人助手的创建、历史、偏好和组织确认 | 私人 Family 与个人助手 |
+| 请求怎么选人、转交、改派、撤回与回复 | [消息路由与对外对话](/resource/knowledge?item=decision_9ad68dd077d4) |
+| Router/Steward 由什么 Event 触发，执行什么 Effect，收到什么 prompt | [Event、Effect 与 Prompt](/resource/knowledge?item=decision_89b9df038a95) |
+| 摘要谁维护、队列怎么整理、额度或成员故障怎么恢复 | [记忆、队列与故障恢复](/resource/knowledge?item=decision_a64b3ea2c3c5) |
+| 画布、工作流程编辑、门面 Chat 与状态表怎么使用 | [画布、菜单与状态交互](/resource/knowledge?item=decision_f5ab721f3d5d) |
+| 用户个人助手的创建、历史、偏好和组织确认 | [私人 Family 与个人助手](/resource/knowledge?item=decision_328fb2548b8f) |
 
-接口参数以 [Family 内部 ISA](/r/decision_b77fde81e7a0) 和各指令 schema 为准。通用 [Function Block](/r/decision_5b5653c3eaa5)、[Resident 摘要](/r/decision_d19b9909a674)、[Mailbox](/r/decision_15f7df737ed5)、[Session 迁移](/r/decision_c47a13e8b962) 继续拥有各自协议；Family 专题不建立平行定义。
+接口参数以 [Family 内部 ISA](/resource/knowledge?item=decision_b77fde81e7a0) 和各指令 schema 为准。通用 [Function Block](/resource/knowledge?item=decision_5b5653c3eaa5)、[Resident 摘要](/resource/knowledge?item=decision_d19b9909a674)、[Mailbox](/resource/knowledge?item=decision_15f7df737ed5)、[Session 迁移](/resource/knowledge?item=decision_c47a13e8b962) 继续拥有各自协议；Family 专题不建立平行定义。
 
 ## 角色与协作
 
@@ -111,16 +123,16 @@ UpdateFamily.add_element_ids/remove_element_ids 处理当前 Lineage 的普通�
 
 收纳不改变 Event、Effect、连线 ID、业务配置、游标、暂停状态和执行目标。外部入口与内部工作流的界线按结构范围确定：范围外指向新增成员的入口改接门面，范围内显式执行目标保留；即使连线存放在别的块也依语义判断。不得为 Familize 重建缺失工作流或把业务 Effect 的执行者换成门面。
 
-auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更换成员、Router、Steward 的账号及备用账号种类的顺序，不改变名册和结构；判定与恢复规则见 记忆、队列与故障恢复。
+auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更换成员、Router、Steward 的账号及备用账号种类的顺序，不改变名册和结构；判定与恢复规则见 [记忆、队列与故障恢复](/resource/knowledge?item=decision_a64b3ea2c3c5)。
 
 ## 个人聊天偏好
 
 | 指令 | 改变状态 | 责任 | 默认方案要求 |
 | --- | --- | --- | --- |
-| `GetFamilyChatPreferences` | 否 | 读取调用者本人在该门面上设为 Mute 的成员和 Solo 成员 | 对 `resident_id` 有 @viewer |
-| `UpdateFamilyChatPreferences` | 是 | 开启或关闭调用者本人对一个业务成员的 Mute 或 Solo | 对 `resident_id` 有 @viewer |
+| `GetFamilyChatPreferences` | 否 | 读取调用者本人在该门面的 Solo、Mute 与 Exclude 三项设置 | 对 `resident_id` 有 @viewer |
+| `UpdateFamilyChatPreferences` | 是 | 独立切换调用者对业务成员的 Solo 对话、Mute 通知或 Exclude 自动路由 | 对 `resident_id` 有 @viewer |
 
-两条指令的 `resident_id` 是 Family 门面，只读写实际调用者自己的偏好；可以查看门面的用户即可管理自己的偏好。偏好只约束调用者此后发出的普通消息的承接者及其门面对话中显示哪些成员的往来，不改变成员接单状态、名册、原消息、权限或其他用户的偏好。多个 Mute、单个 Solo、Solo 期间与 Mute 的关系、问题卡片与引用的处理由 消息路由与对外对话 维护。
+两条指令的 `resident_id` 是 Family 门面，只读写实际调用者自己的偏好；门面 @viewer 即可管理。Solo 决定当前对话对象与视图，Mute 只抑制之后的新 Mailbox 提醒，Exclude 只排除自动路由；三者独立，不改变在途工作、名册、原消息、权限或其他用户。返回 muted_member_ids、excluded_member_ids、solo_member_id，修改 control 为 mute、exclude 或 solo。Solo 代理头部与退出入口、问题卡片、显式引用及旧 M 迁移见[消息路由与对外对话](/resource/knowledge?item=decision_9ad68dd077d4)。
 
 ## leader 与权限
 
@@ -128,7 +140,7 @@ auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更�
 
 门面身份用于对外署名和协调入口，**不表示成员、Router、Steward 可以通用地借用发送者或门面的权限**。自动 Event 使用明确执行主体并按当前权限核验；有限的原请求转交授权和附件读取由消息路由契约限定。实际执行者始终可追溯。
 
-Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授权，随角色变更、迁移和解散调整；不以额外临时凭证另造常驻权限。权限树与默认方案见 [权限资源规则](/r/decision_600ae27b0538)。
+Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授权，随角色变更、迁移和解散调整；不以额外临时凭证另造常驻权限。权限树与默认方案见 [权限资源规则](/resource/knowledge?item=decision_600ae27b0538)。
 
 ## 退出、迁移与删除
 
@@ -153,7 +165,7 @@ Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授�
 | 时间层摘要与覆盖 | Resident 摘要领域；Family 内按角色分工写入 |
 | 账号准入、Session 迁移 | Execution 与 Restart/lifecycle |
 | Family 恢复、额度复核与升级记录 | Family 监督领域 |
-| 用户个人的 Mute／Solo 偏好，及按原输入冻结的路由约束 | family_chat_preferences、family_chat_inputs |
+| 用户个人的 Solo／Mute／Exclude 设置，及按原输入冻结的 Exclude／Solo 路由约束 | family_chat_preferences、family_chat_inputs |
 
 families 的 family_id 与 function_block_id 相同，resource_id 是持久的正式资源身份。family_residents 保存 member/facade/router/steward；普通 Resident 更新不能覆写归属。完整图和 Family 专表在同一事务更新，读取时附加只读 function_blocks[].family 投影，不在普通块配置里再存一份名册。
 
@@ -161,7 +173,7 @@ families 的 family_id 与 function_block_id 相同，resource_id 是持久的�
 
 Family 的正式资源类型为 family，归属当前 Lineage 并投影 Project；迁移保持 resource_id，权限关系随 Lineage 移动。ResolveResource/ReadResource/SearchResources 从当前业务事实投影，索引不能覆盖真实名册或生命周期。family_id 块键只在指定 Lineage 中匹配，不能借此访问别的 Family。
 
-创建、重命名与名册变更发布同一资源描述符；Unfamilize 或删除 Lineage 保存删除墓碑并撤下有效发现。现存资源可周期对账重建，删除投影按提交回执重试；同一删除时间的墓碑内容必须稳定，不能事后改写再当同次删除重放。描述符、发现摘要和 UI 均不是第二套权威状态。
+创建、重命名与名册变更发布同一资源描述符；Unfamilize 或删除 Lineage 保存删除墓碑并撤下有效发现。现存资源可周期对账重建。对账只用扫描结果确定待处理的身份，发布前重新读取这些 Family 的当前事实；并发变更或行锁冲突时有限重读重试，持续繁忙留给下一轮对账，不持有领域状态锁等待资源 RPC。重读后已删除的 Family 不再作为活跃对象发布，其他失败保留错误诊断。删除投影按提交回执重试；同一删除时间的墓碑内容必须稳定，不能事后改写再当同次删除重放。描述符、发现摘要和 UI 均不是第二套权威状态。
 
 ## 维护边界
 

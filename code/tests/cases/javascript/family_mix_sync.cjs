@@ -7,7 +7,7 @@ const dom = new JSDOM('<main></main>', {runScripts: 'outside-only'});
 const w = dom.window;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return {promise, resolve, reject}; };
-const empty = () => ({muted_member_ids: [], solo_member_id: ''});
+const empty = () => ({muted_member_ids: [], excluded_member_ids: [], solo_member_id: ''});
 let policy = empty(), save, snapshot, delayedRead;
 const watchers = new Set(), errors = [];
 let writes = 0, reads = 0;
@@ -21,7 +21,13 @@ w.PortalInstructionClient = {execute: async (name, args) => {
   if (name === 'GetFamilyChatPreferences') { reads++; return delayedRead ? delayedRead.promise : structuredClone(policy); }
   assert.equal(name, 'UpdateFamilyChatPreferences'); writes++;
   await save.promise;
-  policy = {muted_member_ids: [], solo_member_id: args.enabled ? args.member_id : ''};
+  if (args.control === 'solo') policy.solo_member_id = args.enabled ? args.member_id : '';
+  else {
+    assert.ok(['mute', 'exclude'].includes(args.control));
+    const field = args.control === 'mute' ? 'muted_member_ids' : 'excluded_member_ids';
+    policy[field] = policy[field].filter(id => id !== args.member_id);
+    if (args.enabled) policy[field].push(args.member_id);
+  }
   return structuredClone(policy);
 }};
 w.PortalResidentProtocol = {loadSnapshot: () => snapshot.promise};
@@ -62,8 +68,35 @@ const button = host => host.querySelector('[data-family-mix="solo"]');
   assert.deepEqual(errors, ['save failed']);
   save = deferred(); original.click(); save.resolve(); snapshot.resolve(); await tick();
   assert.equal(button(root).getAttribute('aria-pressed'), 'false');
+  // A legacy M is now Exclude, with new notification Mute off. The UI
+  // consumes all three fields; it must not interpret E as a Solo restriction.
+  policy = {...empty(), excluded_member_ids: ['member']};
+  w.PortalResidentProjection.invalidate(); await tick();
+  const mode = name => root.querySelector(`[data-family-mix="${name}"]`);
+  const pressed = name => mode(name).getAttribute('aria-pressed');
+  assert.equal(pressed('mute'), 'false');
+  assert.equal(pressed('exclude'), 'true');
+  assert.equal(mode('solo').disabled, false, 'Exclude cannot restrict Solo');
+  const change = async name => {
+    save = deferred(); snapshot = deferred(); mode(name).click();
+    save.resolve(); snapshot.resolve(); await tick();
+  };
+  await change('solo');
+  assert.equal(pressed('solo'), 'true', 'excluded member can be selected for Solo');
+  await change('mute');
+  assert.equal(pressed('mute'), 'true');
+  assert.equal(pressed('solo'), 'true', 'Mute never clears Solo');
+  assert.equal(pressed('exclude'), 'true');
+  await change('exclude');
+  assert.equal(pressed('exclude'), 'false');
+  assert.equal(pressed('solo'), 'true', 'changing Exclude never clears Solo');
+  await change('exclude');
+  await change('solo');
+  assert.equal(pressed('solo'), 'false');
+  assert.equal(pressed('mute'), 'true', 'exiting Solo preserves Mute');
+  assert.equal(pressed('exclude'), 'true', 'exiting Solo preserves Exclude');
   // Fresh external changes remain observable after our mutation has finished.
-  policy = {muted_member_ids: [], solo_member_id: 'member'};
+  policy = {...empty(), solo_member_id: 'member'};
   w.PortalResidentProjection.invalidate(); await tick();
   assert.equal(button(root).getAttribute('aria-pressed'), 'true');
   // Unfamilize removes the facade while mounted reply controls may still

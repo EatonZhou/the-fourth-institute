@@ -162,20 +162,19 @@
       ].filter(Boolean).join("；");
       const policy = snapshot.family_facade?.chat_preferences;
       const solo = policy?.solo_member_id || '';
-      const muted = new Set(policy?.muted_member_ids || []);
       const memberIds = new Set((familyMembers || []).map(m => m.resident_id));
       const visible = message => {
-        if (!solo && !muted.size) return true;
+        if (!solo) return true;
         const relay = message.family_reply || message.relay || message.family_history || {};
         const chain = [...(relay.via || []).map(m => m.resident_id), relay.resident_id, message.origin?.initiated_by?.id];
-        const owner = chain.find(id => memberIds.has(id) || muted.has(id) || id === solo);
-        return !owner || (solo ? owner === solo : !muted.has(owner));
+        const owner = chain.find(id => memberIds.has(id) || id === solo);
+        return !owner || owner === solo;
       };
       const projected = foldDeliveredInfos((Array.isArray(snapshot.messages) ? snapshot.messages : []).filter(visible),
         { handedToSteward: facade }).map(residentProtocolMessageToWorkspace);
       const known = new Set(projected.map(message => message.id));
       for (const message of snapshot.local_submissions || []) {
-        if (!known.has(message.message_id)) projected.push(residentProtocolMessageToWorkspace(message));
+        if (!known.has(message.message_id) && visible(message)) projected.push(residentProtocolMessageToWorkspace(message));
       }
       const messages = facade ? withFamilyRequestStatus(projected) : projected;
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];

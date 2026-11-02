@@ -10620,7 +10620,7 @@ INSERT INTO "lineage"."lineage_layout_positions" ("lineage_id","object_id","x","
 
 
 
-INSERT INTO "lineage"."lineage_meta" ("key","value") VALUES ('schema','tfi.lineage-data.v65');
+INSERT INTO "lineage"."lineage_meta" ("key","value") VALUES ('schema','tfi.lineage-data.v66');
 
 INSERT INTO "lineage"."lineage_node_references" ("lineage_id","node_id") VALUES ('lineage_0e350f5b5c3d','resident_03eb8a8bda0b');
 
@@ -19689,6 +19689,7 @@ CREATE TABLE lineage.family_chat_preferences (
     facade_id text NOT NULL REFERENCES lineage.residents(resident_id) ON DELETE CASCADE,
     actor text NOT NULL,
     muted_member_ids text[] DEFAULT '{}'::text[] NOT NULL,
+    excluded_member_ids text[] DEFAULT '{}'::text[] NOT NULL,
     solo_member_id text DEFAULT ''::text NOT NULL,
     PRIMARY KEY (facade_id, actor)
 );
@@ -19700,7 +19701,7 @@ CREATE TABLE lineage.family_chat_preferences (
 CREATE TABLE lineage.family_chat_inputs (
     facade_id text NOT NULL REFERENCES lineage.residents(resident_id) ON DELETE CASCADE,
     message_id text NOT NULL,
-    muted_member_ids text[] DEFAULT '{}'::text[] NOT NULL,
+    excluded_member_ids text[] DEFAULT '{}'::text[] NOT NULL,
     solo_member_id text DEFAULT ''::text NOT NULL,
     PRIMARY KEY (facade_id, message_id)
 );

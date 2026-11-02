@@ -35,6 +35,26 @@ const text = value => ({ type: 'text', text: value });
 const project = (snapshot, metadata = {}) => plain(chat.projectResidentConversation(metadata, snapshot));
 const byId = messages => Object.fromEntries(messages.map(message => [message.id, message]));
 
+function familyModes() {
+  const members = ['a', 'b'].map(resident_id => ({resident_id}));
+  const messages = [
+    {message_id: 'a', role: 'user', relay: {resident_id: 'a', state: 'running'}},
+    {message_id: 'b', role: 'user', relay: {resident_id: 'b', state: 'running'}},
+    {message_id: 'nested', role: 'agent', family_reply: {resident_id: 'child', via: [{resident_id: 'a'}]},
+      content_parts: [{type: 'request_user_input', request_id: 'original-question'}]},
+  ];
+  const snapshot = {messages, family_facade: {members, chat_preferences: {
+    muted_member_ids: ['a'], excluded_member_ids: ['a'], solo_member_id: '',
+  }}};
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'b', 'nested'], 'M/E never hide conversations or progress');
+  snapshot.family_facade.chat_preferences.solo_member_id = 'a';
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'nested'], 'Solo may select a muted/excluded nested facade');
+  assert.deepEqual(plain(w.PortalChatWorkspaceResidentMessages.familyExecution(snapshot)).active.map(m => m.message_id), ['a'], 'global Stop follows Solo view');
+  assert.deepEqual(project(snapshot).messages.find(m => m.id === 'nested').family_reply, messages[2].family_reply, 'original question owner chain stays intact');
+  snapshot.family_facade.chat_preferences.solo_member_id = '';
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'b', 'nested'], 'exit restores team view');
+}
+
 function protocolMessages() {
   const one = message => plain(chat.residentProtocolMessageToWorkspace(message));
   const reply = one({ message_id: 'm1', role: 'agent', origin: { sender: { id: 'resident_a' } }, usage: { output_tokens: 3 }, content_parts: [text('Hello'), text('world')] });
@@ -193,6 +213,7 @@ async function loading() {
     localSubmissions();
     deliveredInfos();
     familyRequests();
+    familyModes();
     chatContract();
     queueNotices();
     await loading();

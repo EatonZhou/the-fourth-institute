@@ -17,10 +17,12 @@
 
     function memberMixHtml(id, title, policy, busy = false) {
       const solo = policy?.solo_member_id || '';
-      const muted = !solo && (policy?.muted_member_ids || []).includes(id);
+      const muted = (policy?.muted_member_ids || []).includes(id);
+      const excluded = (policy?.excluded_member_ids || []).includes(id);
       return `<span class="familyMemberMix" aria-busy="${busy}">${[
-        ['mute', 'M', muted, 'Mute：排除路由并隐藏对话'],
-        ['solo', 'S', solo === id, 'Solo：直连并只显示此成员'],
+        ['mute', 'M', muted, 'Mute：仅静音此成员给我的通知，保留对话、进度与路由'],
+        ['exclude', 'E', excluded, 'Exclude：仅排除此成员的自动路由，保留对话与通知'],
+        ['solo', 'S', solo === id, 'Solo：通过门面单独与此成员对话，不改变静音或路由排除设置'],
       ].map(([mode, label, active, hint]) => `<button type="button" class="familyMemberMixButton" data-family-mix="${mode}" data-member="${escapeHtml(id)}" aria-label="${escapeHtml(`${title || id} · ${hint}`)}" title="${escapeHtml(hint)}" aria-pressed="${active}" ${!policy || busy ? 'disabled' : ''}>${label}</button>`).join('')}</span>`;
     }
 
@@ -129,6 +131,22 @@
       function render() {
         if (disposed) return;
         const members = new Map((family?.members || []).map(member => [member.resident_id, member]));
+        const policy = mix.state.policy;
+        const solo = policy?.solo_member_id;
+        const name = members.get(solo)?.title || solo;
+        for (const slot of root.querySelectorAll('[data-family-solo]')) {
+          slot.hidden = !solo;
+          if (!solo) { slot.replaceChildren(); continue; }
+          // Keep the exit button stable across projection and preference reads.
+          if (!slot.firstElementChild) slot.innerHTML = '<span></span><button type="button" class="portalButton is-compact" data-family-mix="solo" aria-pressed="true">退出 Solo</button>';
+          slot.firstElementChild.textContent = slot.dataset.familySolo === 'composer'
+            ? `发送目标：${family?.title || 'Family 门面'} → ${name}（Solo）`
+            : `${family?.title || 'Family 门面'} → ${name} · Solo 单独对话${members.has(solo) ? '' : '（成员已离开，请退出）'}`;
+          const exit = slot.querySelector('button');
+          exit.dataset.member = solo;
+          exit.disabled = mix.state.busy;
+          exit.setAttribute('aria-label', `退出与 ${name} 的 Solo，恢复团队视图，保留 Mute 与 Exclude 设置`);
+        }
         for (const slot of root.querySelectorAll('[data-family-reply-controls]')) {
           const member = JSON.parse(slot.dataset.familyReplyChain).map(id => members.get(id)).find(Boolean);
           if (member) renderMemberMix(slot, member.resident_id, member.title, mix.state);
@@ -136,7 +154,7 @@
         }
       }
       async function onClick(event) {
-        const button = event.target.closest('[data-family-reply-controls] [data-family-mix]');
+        const button = event.target.closest('[data-family-reply-controls] [data-family-mix], [data-family-solo] [data-family-mix]');
         if (!button || button.disabled || mix.state.busy) return;
         event.preventDefault();
         const slot = button.closest('[data-family-reply-controls]');
@@ -144,7 +162,8 @@
           await mix.state.change(button);
         } catch (error) { window.PortalUI?.toast?.(error.message, 'error'); }
         finally {
-          if (!disposed && slot.isConnected) slot.querySelector(`[data-family-mix="${button.dataset.familyMix}"]`)?.focus({preventScroll: true});
+          if (!disposed && slot?.isConnected) slot.querySelector(`[data-family-mix="${button.dataset.familyMix}"]`)?.focus({preventScroll: true});
+          else if (!disposed && !mix.state.policy?.solo_member_id) root.querySelector('[role="textbox"]')?.focus({preventScroll: true});
         }
       }
       root.addEventListener('click', onClick);
@@ -156,7 +175,10 @@
           render();
         },
         render,
-        destroy() { disposed = true; mix.release(); root.removeEventListener('click', onClick); },
+        destroy() {
+          disposed = true; mix.release(); root.removeEventListener('click', onClick);
+          for (const slot of root.querySelectorAll('[data-family-solo]')) { slot.hidden = true; slot.replaceChildren(); }
+        },
       };
     }
 
@@ -288,7 +310,7 @@
         };
         const missingSolo = chatPolicy?.solo_member_id && !rows.has(chatPolicy.solo_member_id);
         const soloNotice = missingSolo ? `<p class="paneNote">Solo 成员已离开 <button type="button" class="portalButton is-compact" data-family-mix="solo" data-member="${escapeHtml(chatPolicy.solo_member_id)}" aria-pressed="true" ${mixBusy ? 'disabled' : ''}>取消 Solo</button></p>` : '';
-        const table = values => window.PortalI18n.html`<table><thead><tr><th scope="col">节点</th><th scope="col">backend</th><th scope="col">周剩余</th><th scope="col">工作状态</th><th scope="col">门面展示</th></tr></thead><tbody>${values.map(rowHtml).join("")}</tbody></table>`;
+        const table = values => window.PortalI18n.html`<table><thead><tr><th scope="col">节点</th><th scope="col">backend</th><th scope="col">周剩余</th><th scope="col">工作状态</th><th scope="col">通知 / 路由 / 对话</th></tr></thead><tbody>${values.map(rowHtml).join("")}</tbody></table>`;
         // Preserve keyboard focus and detail expansion during live refresh.
         const active = document.activeElement;
         const focusKey = active?.closest("[data-family-status-row]")?.dataset.familyStatusRow;

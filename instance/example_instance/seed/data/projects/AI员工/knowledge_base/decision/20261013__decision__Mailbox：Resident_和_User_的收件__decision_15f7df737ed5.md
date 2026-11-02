@@ -4,53 +4,55 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 54
-  created_at: '2026-10-12T17:40:00Z'
+  number: 55
+  created_at: "2026-10-12T17:40:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_0b07d8e39e01
-  updated_at: '2026-10-31T01:58:16Z'
+    user: "ET"
+    agent: "resident_0b07d8e39e01"
+  updated_at: "2026-11-02T07:43:37Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_mailbox.py
-  - ${code_root}/management_portal/society_service/resident_intake_domain.py
-  - ${code_root}/management_portal/society_service/resident_input_recovery.py
-  - ${code_root}/management_portal/society_service/resident_execution_domain.py
-  - ${code_root}/management_portal/society_service/resident_catalog.py
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/management_portal/society_service/runtime/backend_adapter.py
-  - ${code_root}/management_portal/society_service/outward_messages.py
-  - ${code_root}/management_portal/society_service/lineage_human_notifications.py
-  - ${code_root}/management_portal/society_service/lineage_failure_notifications.py
-  - ${code_root}/management_portal/hatg/catalog/resident_execution.py
-  - ${code_root}/management_portal/hatg/catalog/conversation.py
-  - ${code_root}/management_common/principal.py
-  - ${code_root}/management_portal/web_isa.py
-  - ${code_root}/management_portal/mailbox_todos.py
-  - ${code_root}/management_portal/static/portal_mailbox_todos.js
-  - ${code_root}/management_portal/agent_conversation_index_backend.py
-  - ${code_root}/management_portal/conversation_index_projection.py
-  - ${code_root}/management_portal/conversation_completion.py
-  - ${code_root}/management_portal/http_portal_session.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/management_portal/society_service/resident_conversation_projection_domain.py
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/portal_agent_inbox.js
-  - ${code_root}/management_portal/static/portal_conversation_store.js
-  - ${code_root}/tests/cases/test_resident_mailbox.py
-  - ${code_root}/tests/cases/test_resident_mailbox_requeue.py
-  - ${code_root}/tests/cases/test_resident_queue_after_turn.py
-  - ${code_root}/tests/cases/test_lineage_batch_deletion.py
-  - ${code_root}/tests/cases/test_conversation_pagination.py
-  - ${code_root}/tests/cases/test_agent_conversation_index_backend.py
-  - ${code_root}/tests/cases/test_conversation_projection_authority.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_mailbox.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_intake_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_input_recovery.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/runtime/backend_adapter.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/outward_messages.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_human_notifications.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_failure_notifications.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/resident_execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/conversation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/principal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/web_isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/mailbox_todos.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_mailbox_todos.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_conversation_index_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/conversation_index_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/conversation_completion.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_portal_session.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_projection_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_agent_inbox.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_conversation_store.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_mailbox.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_mailbox_requeue.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_queue_after_turn.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_batch_deletion.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_conversation_pagination.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_conversation_index_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_conversation_projection_authority.py
   related:
+  - concept_83af607c587f
+  - concept_43c793b4f3ab
   - decision_c524c775e0be
   - decision_44cf587c1721
   - decision_a6bebf4ac283
@@ -70,6 +72,8 @@ links:
   - decision_6fc653d55c79
   - decision_4adcc1ff2f2c
   - decision_b820faf42218
+  supersedes:
+  derived_from:
 ---
 # Mailbox：Resident 和 User 的收件
 
@@ -81,6 +85,10 @@ Portal 中参与对话的主体有两种：Resident 和 User。两者收消息�
 登录为 User 的人和远程 agent 使用同一个 Mailbox 和同一组 HATG ISA 指令；远程 agent 不需要像 Resident 那样排队串行执行，它和人一样自由选择处理什么。
 
 本篇先说明双方共用的消息模型，再分别说明 Resident Mailbox 和 User Mailbox，最后列出指令。
+
+### Family 成员通知静音
+
+Family Mute 是「当前用户 × 门面 × 直属成员」的新提醒设置，与 Solo 对话及 Exclude 自动路由独立。该成员的结果、失败、取消和主动发件仍保存于原会话，工作进度与回复仍可见，但不为该用户推进 Mailbox 提醒及未读位置；已有未读不被清除，解除静音只影响之后的新事件，不回补过去的提醒。嵌套处理按每个门面的直属承接者识别，主动发件沿真实发起者所属 Family 识别；未知或歧义归属不抑制提醒。其他用户、其他成员、直接与成员的独立会话和原收件人不受影响。通知 owner 在事件的原领域事务中读取当前设置并决定是否写提醒；不通过隐藏消息、删除收件人或标记已读实现。偏好入口及 Solo 代理界面见[Family 消息路由与对外对话](/resource/knowledge?item=decision_9ad68dd077d4)。
 
 ## 共同模型
 
@@ -251,7 +259,7 @@ Conversation Index（会话索引）是 Mailbox 背后由服务端生成的摘�
 | 阅读状态行 | 服务端为每位用户、每个条目保存的一行（Portal UI 的 `conversation_states`）：最新提醒的位置、读到的位置、置顶位置、清除时间和修订号。最新提醒位置大于读到的位置时条目未读；没有行的条目是已读、未置顶。 |
 | 提醒 | 值得用户注意的新事件把这一行的提醒位置推进到新位置：给他的结果、发给他的消息、发给他的通知、Notice Board 中提到他。提醒同时记下事件的标识，同一事件再次送达不再提醒。 |
 | 修订号（`read_revision`） | 一行每次变化（提醒、已读、未读、置顶、清除）都从同一个序列取得更大的修订号。条目、角标汇总、Resident 状态快照和指令结果都带着它；浏览器只接受比手中更新的状态（decision_18abbdef3da3），`GetMailbox(user_id)` 条目的 `version` 也是它。 |
-| 清除时间 | 用户“清除全部”时，服务端为每个条目记下它当时的活动时间（`updated_at`）。活动时间不晚于清除时间的条目保持隐藏；出现新活动或新提醒后重新显示。分页读取 Resident 对话时，SocietyService 在读取身份和摘要之前就跳过这些隐藏的对话，每页用仍会显示的对话填满（TFI portal 有 502 个隐藏对话时，第一页原先只剩 13 条，后面各页为空）。 |
+| 清除时间 | 用户“清除全部”时，服务端为每个条目记下它当时的活动时间（`updated_at`）。活动时间不晚于清除时间的条目保持隐藏；出现新活动或新提醒后重新显示。分页读取 Resident 对话时，SocietyService 在读取身份和摘要之前就跳过这些隐藏的对话，每页用仍会显示的对话填满（weihao 有 502 个隐藏对话时，第一页原先只剩 13 条，后面各页为空）。 |
 
 阅读状态行只属于这位用户，只影响他自己的 Mailbox。
 
@@ -270,7 +278,7 @@ Conversation Index（会话索引）是 Mailbox 背后由服务端生成的摘�
 - **新增、编辑、勾选与删除。** 用户在 Todo 栏输入文字并选择日期。点击条目文字就地编辑文字和日期，没有编辑图标；点击其他区域或编辑区失焦默认保存，Ctrl/Cmd+Enter 也可保存，Escape 取消本次编辑。编辑时 Tab 增加缩进，Shift+Tab 减少缩进。只有点击复选框才切换完成状态，勾选前先保存当前草稿；每项可单独删除。已完成项保留并显示删除线，完成状态变化不移动条目。日期为 `YYYY-MM-DD`，新增时默认香港时区当天，用于分组而非定时提醒；这些操作不启动 Resident 工作。
 - **分组与排序。** 日期从新到旧，每天可独立折叠；同一天按用户保存的个人顺序显示，新项追加在当天末尾。拖动行前手柄可将该项放到另一项之前或之后，跨日期组拖动会同步修改日期；界面不提供上移、下移按钮，键盘聚焦手柄后可用 Alt+↑/↓ 在同日调序。一次拖动通过单次事务定位，不依靠连续多次上移或下移。顺序、缩进和完成状态保存在服务端，换设备后保持；展开期间刷新保持日期的折叠状态，上次选中的栏按设备记住。
 - **计数和清理独立。** Todo 按钮及该栏标题显示未完成待办数，不表示消息未读；Mailbox 入口角标仍只统计对话与通知。打开、勾选待办不修改消息已读。“清除未读”“清除全部”、对话置顶、`GetMailbox(user_id)` 和 `WatchMailbox` 都只作用于对话与通知，不读取或删除 Todo。
-- **人与 Agent 使用相同指令。** User 可以读取和管理自己的待办，不能操作其他 User 的清单。`CreateMailboxTodo(text, user_id, date?)` 的 `user_id` 对 User 和 Resident 都必填：User 写自己的用户名，Resident 写已登记且启用的接收 User（TFI portal 2026-10-18）；真实创建者从认证身份取得。该能力不授予 Resident 读取、编辑、调序或删除用户已有待办的权限。
+- **人与 Agent 使用相同指令。** User 可以读取和管理自己的待办，不能操作其他 User 的清单。`CreateMailboxTodo(text, user_id, date?)` 的 `user_id` 对 User 和 Resident 都必填：User 写自己的用户名，Resident 写已登记且启用的接收 User（weihao 2026-10-18）；真实创建者从认证身份取得。该能力不授予 Resident 读取、编辑、调序或删除用户已有待办的权限。
 - **保存和刷新。** `mailbox_todos` 模块负责独立的逐条数据库记录、所有权和校验，Portal Web ISA 与页面共用它；写入按用户加事务锁，防止并发添加或调序覆盖。写入沿用 ISA 幂等键，重放返回已有条目引用，不重复新增。Mailbox 首次展开或重新展开即读取 Todo，无须先选择 Todo 栏；在消息栏也显示当前未完成数。切换到 Todo、窗口恢复焦点、页面恢复可见、手动刷新和操作成功后重读；只要 Mailbox 展开且页面可见，每 15 秒检查一次，不以当前选中的栏目为条件。切换离开 Todo 仍自动保存正在编辑的内容。编辑或拖动期间推迟非必要读取，保护草稿和正在拖动的节点；旧读取不能覆盖操作后的结果，身份变化时清空本地数据。读取/保存失败明确报错，保存失败保留草稿，完成状态写入失败还原复选框。
 
 ### 人和远程 agent 用同一套能力

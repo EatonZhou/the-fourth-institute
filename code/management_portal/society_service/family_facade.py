@@ -1215,7 +1215,7 @@ def continued_member(facade: Mapping[str, Any], message: Mapping[str, Any] | Non
 
 
 def routing_snapshot(facade, message):
-    """The author's M/S policy for a request, frozen once when admitted, before any event or Router model runs."""
+    """The author's routing policy frozen once on admission, before the Router runs."""
     from . import family_chat_storage
     from .state_store import get_lineage_data_store
     return get_lineage_data_store().database.write(lambda c: family_chat_storage.capture(
@@ -1223,7 +1223,7 @@ def routing_snapshot(facade, message):
 
 
 def direct_member(facade, message):
-    """The member a request goes to without the Router, under its author's M/S snapshot; "" for the Router."""
+    """The member selected by Solo, an explicit quote or continuation; "" for the Router."""
     from management_common.async_questions import answered_set
     policy = routing_snapshot(facade, message)
     quoted = quoted_member(facade, message)
@@ -1232,10 +1232,10 @@ def direct_member(facade, message):
         return quoted
     if policy['solo_member_id']:
         return policy['solo_member_id']  # Invalid/departed Solo fails; never silently route elsewhere.
-    if quoted and quoted not in policy['muted_member_ids']:
+    if quoted:
         return quoted
     continued = continued_member(facade, message)
-    return continued if continued not in policy['muted_member_ids'] else ''
+    return continued if continued not in policy['excluded_member_ids'] else ''
 
 
 def _moment(value: object) -> datetime | None:
