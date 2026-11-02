@@ -119,6 +119,31 @@ def test_login_store_expiration_and_late_observations(isolated_login, monkeypatc
     assert store.get("login_expiry")["started_at"] == replaced["started_at"]
 
 
+def test_login_success_and_observation_commit_together(isolated_login, monkeypatch):
+    """成功会话与已登录观察一起可见，观察写入失败不留下虚假成功。"""
+    store = isolated_login
+    session = store.begin("login_atomic")
+    store.observe("login_atomic", "logged_out")
+    observe = store._observe
+
+    def fail_observation(*args):
+        raise RuntimeError("observation unavailable")
+
+    monkeypatch.setattr(store, "_observe", fail_observation)
+    with pytest.raises(RuntimeError, match="observation unavailable"):
+        store.transition(session, "succeeded")
+    assert store.get("login_atomic")["state"] == "pending"
+    assert store.login_state("login_atomic") == "logged_out"
+
+    monkeypatch.setattr(store, "_observe", observe)
+    assert store.transition(session, "succeeded")
+    assert store.get("login_atomic")["state"] == "succeeded"
+    assert store.login_state("login_atomic") == "logged_in"
+    store.observe("login_atomic", "login_expired")
+    assert not store.transition(session, "succeeded")
+    assert store.login_state("login_atomic") == "login_expired"
+
+
 @pytest.mark.parametrize("provider,authenticated", [("codex", True), ("codex", False), ("claude", True), ("claude", False)])
 def test_first_login_state_reads_native_status_from_registered_directory(isolated_login, monkeypatch, tmp_path, provider, authenticated):
     """已登记目录首次读取原生认证状态并缓存

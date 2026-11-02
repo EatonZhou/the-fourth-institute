@@ -194,6 +194,10 @@ def test_old_outbox_retry_keeps_revision_lease_and_receipt(projection, monkeypat
     deleted_workspace = workspaces.rows([W], include_deleted=True)
     monkeypatch.setattr(resource_client, 'get_resource_service', lambda: projection.service)
     worker = ResidentResourceProjectionWorker(store, resource_client)
+    from tests.cases.canonical_domain_fixture import canonical_projection
+    canonical_projection(R, lineage_id=L, updated_at=T0)
+    store.remove_residents([{'resident_id': R, 'deleted_at': T1, 'deleted_by': 'CASE-A'}])
+    committed = store.resident_record(R, include_deleted=True)
     store.enqueue_resident_resource_projection(R, payload)
     first = store.claim_resident_resource_projections(resident_id=R)
     normal = projection.service.sync_collaboration_resources
@@ -201,7 +205,8 @@ def test_old_outbox_retry_keeps_revision_lease_and_receipt(projection, monkeypat
     with pytest.raises(RuntimeError, match='unavailable'):
         worker._publish(first)
     retry = store.claim_resident_resource_projections(resident_id=R)
-    assert first[0]['payload'] == retry[0]['payload'] == payload
+    assert first[0]['payload'] == retry[0]['payload'] == committed
+    assert first[0]['payload']['title'] != payload['title']
     assert first[0]['revision'] == retry[0]['revision']
     assert first[0]['lease_token'] != retry[0]['lease_token']
     assert store.complete_resident_resource_projections(first)['completed'] == 0

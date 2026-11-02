@@ -309,6 +309,8 @@ async function pagesNavigation(browser) {
     assert.equal(h.s.calls.slice(firstCall).some(c => c.path === '/api/workbenches/facade'), false, 'undeclared Chat never requests facade');
     const frames = {};
     for (const f of h.page.frames().filter(f => f.parentFrame()?.parentFrame())) {
+      await f.waitForURL('about:srcdoc');
+      await f.waitForFunction(() => typeof Projection !== 'undefined');
       frames[await f.evaluate(async () => (await Projection.context()).panel_id)] = f;
     }
     // Use the production SDK rather than reaching into the application parent.
@@ -363,7 +365,12 @@ async function pagesNavigation(browser) {
       await Promise.all(['architecture', 'progress', 'evolution'].map(id => controller.getPanel(id).ready));
     }, h.s.app);
     const chatFrames = {};
-    for (const f of h.page.frames().filter(f => f.parentFrame()?.parentFrame())) chatFrames[await f.evaluate(async () => (await Projection.context()).panel_id)] = f;
+    for (const f of h.page.frames().filter(f => f.parentFrame()?.parentFrame())) {
+      // Panel mounting installs srcdoc; wait for that document before using its SDK.
+      await f.waitForURL('about:srcdoc');
+      await f.waitForFunction(() => typeof Projection !== 'undefined');
+      chatFrames[await f.evaluate(async () => (await Projection.context()).panel_id)] = f;
+    }
     assert.equal(await h.page.locator('.portalActivityRail').evaluate(el => el.hidden), false, 'page navigation remains reachable in embedded previews');
     await h.page.locator('[data-activity-view="architecture"]').click();
     await chatFrames.architecture.evaluate(() => Projection.openChat());

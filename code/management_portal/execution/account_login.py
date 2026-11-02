@@ -93,9 +93,12 @@ class LoginSessionStore:
         if state not in ACTIVE:
             code = url = ""
         with self.connection() as c:
-            return bool(c.execute("UPDATE login_sessions SET state=%s,verification_code=%s,verification_url=%s,error=%s,updated_at=%s "
+            changed = bool(c.execute("UPDATE login_sessions SET state=%s,verification_code=%s,verification_url=%s,error=%s,updated_at=%s "
                                   "WHERE account_id=%s AND started_at=%s AND state IN ('pending','awaiting_user')",
                                   (state, code, url, error, now(), session["account_id"], session["started_at"])).rowcount)
+            if changed and state == "succeeded":
+                self._observe(c, session["account_id"], "logged_in", now())
+            return changed
 
     def login_state(self, account_id, *, default="logged_out"):
         with self.connection() as c:
@@ -107,9 +110,13 @@ class LoginSessionStore:
             raise ValueError("Invalid login state")
         observed_at = observed_at or now()
         with self.connection() as c:
-            c.execute("INSERT INTO login_states(account_id,state,observed_at) VALUES(%s,%s,%s) "
-                      "ON CONFLICT(account_id) DO UPDATE SET state=EXCLUDED.state,observed_at=EXCLUDED.observed_at "
-                      "WHERE login_states.observed_at<=EXCLUDED.observed_at", (account_id, state, observed_at))
+            self._observe(c, account_id, state, observed_at)
+
+    @staticmethod
+    def _observe(connection, account_id, state, observed_at):
+        connection.execute("INSERT INTO login_states(account_id,state,observed_at) VALUES(%s,%s,%s) "
+                           "ON CONFLICT(account_id) DO UPDATE SET state=EXCLUDED.state,observed_at=EXCLUDED.observed_at "
+                           "WHERE login_states.observed_at<=EXCLUDED.observed_at", (account_id, state, observed_at))
 
     def remove(self, account_id):
         with self.connection() as c:
@@ -406,7 +413,6 @@ class LoginManager:
                     changed = self.store.transition(session, "succeeded" if success else "failed",
                                                     error="" if success else parser.error or "Provider 未确认登录成功，请重试")
                     if changed and success:
-                        self.store.observe(session["account_id"], "logged_in")
                         if registration["provider"] == "codex" and registration.get("enabled", True):
                             start_codex_instance(session["account_id"])
                             # The CLI changed credentials on disk. An already
