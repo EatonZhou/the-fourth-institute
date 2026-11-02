@@ -11,6 +11,36 @@ import os
 from pathlib import Path
 
 
+def processes_using(prefixes, *, ignore=()):
+    """Find native process image/command references without returning arguments.
+
+    Service shutdown is checked separately. Windows rename additionally refuses
+    open handles that deny deletion; apply_moves rolls back earlier renames.
+    """
+    import base64
+    import subprocess
+    roots = json.dumps([str(Path(p)) for p in prefixes]).replace("'", "''")
+    script = """$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.Encoding]::UTF8;
+$roots=ConvertFrom-Json '%s';
+$rows=@(Get-CimInstance Win32_Process | ForEach-Object {
+  $p=$_; $hits=@();
+  foreach($root in $roots) {
+    $pattern=[regex]::Escape($root)+'(?=[\\\\/"\\s]|$)';
+    if(($p.ExecutablePath -and $p.ExecutablePath -imatch $pattern) -or
+       ($p.CommandLine -and $p.CommandLine -imatch $pattern)) {$hits+=@(@('reference',$root))}
+  }
+  if($hits.Count) {@{pid=[int]$p.ProcessId;command=$p.Name;hits=$hits}}
+}); ConvertTo-Json -InputObject $rows -Depth 5 -Compress
+""" % roots
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand',
+                             base64.b64encode(script.encode('utf-16le')).decode()],
+                            capture_output=True, encoding='utf-8', check=False, timeout=45)
+    if result.returncode:
+        raise RuntimeError('Native process inspection failed: ' + result.stderr.strip())
+    ignored = {os.getpid(), *map(int, ignore)}
+    return [row for row in json.loads(result.stdout) if row['pid'] not in ignored]
+
+
 def legacy_directory():
     configured = os.environ.get('TFI_WINDOWS_SERVICE_DIRECTORY')
     return Path(configured) if configured else Path(os.environ['LOCALAPPDATA']) / 'TFI/services'

@@ -155,6 +155,9 @@ def require_protected(pids: Iterable[int]) -> dict[int, str]:
 
 def processes_using(prefixes: Iterable[Path], *, ignore: Iterable[int] = ()) -> list[dict]:
     """Processes whose cwd, root, executable, open files or mapped files lie under ``prefixes``."""
+    if sys.platform == 'win32':
+        from scripts.migrate_instance_windows_services import processes_using as native
+        return native(prefixes, ignore=ignore)
     roots = [str(Path(prefix)) for prefix in prefixes]
     ignored = {os.getpid(), *map(int, ignore)}
 

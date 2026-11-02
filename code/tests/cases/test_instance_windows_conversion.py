@@ -1,6 +1,8 @@
 import json
 import tempfile
 import unittest
+import sys
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -9,6 +11,18 @@ from scripts.migrate_instance_units import Replacement
 
 
 class WindowsConversionTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'win32', 'native Windows process inventory')
+    def test_native_process_reference_and_ignore(self):
+        script = self.base / 'running.py'
+        script.write_text('import time; time.sleep(60)', encoding='utf-8')
+        process = subprocess.Popen([sys.executable, str(script)])
+        try:
+            self.assertIn(process.pid, {r['pid'] for r in windows.processes_using([self.base])})
+            self.assertNotIn(process.pid, {r['pid'] for r in windows.processes_using([self.base], ignore=[process.pid])})
+        finally:
+            process.terminate()
+            process.wait(timeout=10)
+
     def test_subscription_mapping_preserves_state_and_requires_existing_directories(self):
         from scripts.migrate_instance_registrations import subscription_directories
         directory = self.base / 'existing-login'
