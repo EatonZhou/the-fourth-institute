@@ -4,13 +4,13 @@ from __future__ import annotations
 import json
 import hashlib
 import re
-import shutil
 import uuid
 from pathlib import Path
 
 from management_portal.hatg.contracts import InstructionError
 from management_portal.shared_state import atomic_replace_json
 from management_portal.test_framework.tau_residents import TAU_ACTOR
+from management_common.directory_paths import remove_path
 
 
 def _release_resource(resource_id: str, key: str) -> None:
@@ -160,7 +160,7 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     standalone_paths = tau_fixture_paths.cleanup(root)
     if content and content.exists():
         # Recheck the receipt after the product owners have finished.
-        shutil.rmtree(tau_fixture_paths.inspect_content(root))
+        remove_path(tau_fixture_paths.inspect_content(root))
         standalone_paths.append(str(content))
     lifecycle.complete(scope_id)
     removed = standalone_paths
@@ -168,7 +168,7 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
         if path.is_symlink():
             path.unlink()
         elif path.exists():
-            shutil.rmtree(path)
+            remove_path(path)
         removed.append(path.name)
     # Remove legacy helpers at the evidence root too. Logs/screenshots survive
     # failure and cancellation; executable helper files are never evidence.

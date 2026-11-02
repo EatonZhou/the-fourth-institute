@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-11-02'
 version:
-  number: 8
+  number: 9
   created_at: "2026-11-02"
   created_by:
     user: ""
     agent: "resident_24014e2b9bf6"
-  updated_at: "2026-11-02T20:11:53Z"
+  updated_at: "2026-11-02T21:48:54Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -388,3 +388,7 @@ Creation 是创建文件、占位及清理的唯一责任方。它在删除前�
 1. 管理该对象的服务查登记，得到对象目录的当前位置；
 2. 拼接相对路径；
 3. 确认结果仍在对象目录内。
+
+## Windows只读文件的已授权回收
+
+已授权的目录回收须处理目录内的只读普通文件（例如Git对象）。只读属性不改变删除权限边界：仍要求目标文件的删除访问权，权限拒绝、占用或替换身份错误须保留诊断。Windows回收对已核对身份且不跟随重解析点的文件句柄请求忽略只读属性删除，不修改ACL，也不清除其他硬链接共享的只读属性。

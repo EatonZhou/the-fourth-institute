@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 import tempfile
 from pathlib import Path
 
 from management_portal.shared_state import atomic_replace_json
 from management_common.file_permissions import assert_private_directory
+from management_common.directory_paths import remove_path
 
 
 def fixture_root(root: Path) -> Path:
@@ -136,5 +136,5 @@ def cleanup(root: Path) -> list[str]:
         return []
     path, _ = existing
     if path.exists():
-        shutil.rmtree(path)
+        remove_path(path)
     return [str(path)]

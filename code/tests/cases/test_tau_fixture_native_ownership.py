@@ -1,5 +1,7 @@
 """Owned TAU directories use native ownership checks on every platform."""
 from pathlib import Path
+import os
+import stat
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -51,11 +53,20 @@ class NativeFixtureOwnership(unittest.TestCase):
                     patch.object(instance_locations, 'current_instance', return_value=InstanceManifest(base / 'instance', {})), \
                     patch.object(fixtures, '_inside_checkout', return_value=False):
                 path = fixtures.prepare(root)
-                (path / 'artifact').write_text('owned')
+                # Git objects are read-only on Windows. Deleting one link must
+                # not make another link to the same object writable.
+                original = root / 'retained-object'
+                original.write_text('owned')
+                os.link(original, path / 'artifact')
+                original.chmod(stat.S_IREAD)
                 self.assertEqual(fixtures.prepare(root), path)
                 self.assertEqual(fixtures.cleanup(root), [str(path)])
                 self.assertFalse(path.exists())
                 self.assertTrue(root.exists())
+                self.assertEqual(original.read_text(), 'owned')
+                if os.name == 'nt':
+                    self.assertTrue(original.stat().st_file_attributes & 0x1)
+                original.chmod(stat.S_IREAD | stat.S_IWRITE)
 
 
 if __name__ == '__main__':

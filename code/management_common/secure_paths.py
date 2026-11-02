@@ -187,9 +187,41 @@ def _windows_replace_child(directory: int, source: str, target: str) -> None:
 def unlink_child(directory: int, name: str) -> None:
     _part(name)
     if os.name == "nt":
-        (directory_path(directory) / name).unlink()
+        path = directory_path(directory) / name
+        try:
+            path.unlink()
+        except PermissionError as error:
+            before = path.lstat()
+            if (error.winerror != 5 or not stat.S_ISREG(before.st_mode)
+                    or not before.st_file_attributes & 0x1
+                    or before.st_file_attributes & 0x400):
+                raise
+            _windows_unlink_readonly(path, before)
     else:
         os.unlink(name, dir_fd=directory)
+
+
+def _windows_unlink_readonly(path: Path, before) -> None:
+    """Delete the checked entry without changing its ACL or shared inode attributes."""
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    descriptor = _windows_open(path, os.O_RDONLY, delete=True)
+    try:
+        if not os.path.samestat(before, os.fstat(descriptor)):
+            raise FileExistsError("Read-only entry changed during cleanup")
+        kernel = _windows_api()
+        delete = kernel.SetFileInformationByHandle
+        delete.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+        delete.restype = wintypes.BOOL
+        # FileDispositionInfoEx: DELETE | IGNORE_READONLY_ATTRIBUTE.
+        # DELETE access is still required; reparse points were rejected at open.
+        flags = wintypes.DWORD(0x1 | 0x10)
+        if not delete(msvcrt.get_osfhandle(descriptor), 21, ctypes.byref(flags), ctypes.sizeof(flags)):
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        os.close(descriptor)
 
 
 def lstat_child(directory: int, name: str):
