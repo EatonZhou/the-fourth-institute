@@ -65,6 +65,9 @@ class LineageBackendRuntimeAdapter:
         fact: ResidentTerminalFact,
     ) -> dict[str, Any]:
         fact.validate()
+        if fact.terminal_status == "failed":
+            from .. import family_recovery
+            family_recovery.route_task_failed(fact.resident_id, fact.message_id)
         result = self._backend().handle_resident_message_terminal(
             fact.resident_id,
             fact.actor,

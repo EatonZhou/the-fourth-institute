@@ -299,11 +299,20 @@ def absent_services_fail_at_once(isolate_portal_databases, request, monkeypatch)
         monkeypatch.setattr(module, "connect_service", connect_at_once)
 
 
-@pytest.fixture(autouse=True)
-def domain_ports_forward_again():
+@pytest.fixture
+def monkeypatch():
+    """Undo test patches before removing attributes pinned on forwarding ports.
+
+    Own the standard MonkeyPatch lifetime here: an independent autouse
+    finalizer can otherwise delete a patched attribute before undo restores
+    (or deletes) it. All fixtures using monkeypatch share this same lifetime.
+    """
     _unpin_domain_ports()
-    yield
-    _unpin_domain_ports()
+    try:
+        with pytest.MonkeyPatch.context() as patch:
+            yield patch
+    finally:
+        _unpin_domain_ports()
 
 
 def _register_test_site(request, monkeypatch, root):

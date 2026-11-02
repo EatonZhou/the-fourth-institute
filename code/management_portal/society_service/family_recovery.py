@@ -234,6 +234,53 @@ def relay_completed(facade, request_id):
             repository.set_input_state(resident_lineage.resident_id(facade), mid, "completed")
 
 
+def reconcile_failed_route_tasks() -> None:
+    """Repair lost failure notifications from durable task and input receipts."""
+    with get_lineage_data_store().database.read() as connection:
+        rows = connection.execute("""SELECT child.resident_id, child.message_id
+            FROM family_task_dispatches task
+            JOIN conversation_input_states child
+              ON child.resident_id=task.intent_json->'request'->>'target'
+             AND child.message_id=task.message_id AND child.state='failed'
+            JOIN conversation_input_states parent
+              ON parent.resident_id=task.intent_json->'request'->>'facade'
+             AND parent.message_id=task.intent_json->'request'->'facts'->>'message_id'
+             AND parent.state='queued'
+            WHERE task.intent_json->'request'->>'trigger'='route'""").fetchall()
+    for row in rows:
+        route_task_failed(row["resident_id"], row["message_id"])
+
+
+def route_task_failed(resident_id: str, message_id: str) -> None:
+    """Project an admitted Router input's failure without requiring a Trigger Path.
+
+    The frozen dispatch intent owns the link to the original request. Never
+    infer that link from model text, a caller-supplied reference or role alone.
+    """
+    from management_common.json_columns import json_value
+    from . import resident_record_domain
+
+    router = resident_record_domain.find_resident(resident_id)
+    if not router:
+        return
+    store = get_lineage_data_store()
+    with store.database.read() as connection:
+        row = connection.execute("SELECT intent_json FROM family_task_dispatches "
+                                 "WHERE lineage_id=%s AND message_id=%s",
+                                 (router["lineage_id"], message_id)).fetchone()
+    request = (json_value(row["intent_json"]) if row else {}).get("request") or {}
+    if request.get("trigger") != "route" or request.get("target") != resident_id:
+        return
+    repository = resident_conversation_stream.get_repository()
+    state = _state(repository, resident_id, message_id)
+    if state["state"] != "failed":
+        return
+    original = repository.message(resident_id, message_id) or {}
+    routing_failed({"occurred_at": original.get("created_at"), "payload": {
+        "resident_id": request["facade"], "message_id": request["facts"]["message_id"],
+    }}, str((state.get("error") or {}).get("message") or "Family Router 执行失败"))
+
+
 def routing_failed(event, error: str, *, node_id: str = ""):
     """Close a failed routing attempt so the facade shows it and can explicitly retry."""
     from . import resident_record_domain

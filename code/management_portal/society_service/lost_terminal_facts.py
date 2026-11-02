@@ -53,6 +53,9 @@ def find(started_at: str, *, lookback: timedelta = LOOKBACK) -> list[dict[str, A
     """Facts for completed turns finished before ``started_at`` whose reply started no Trigger Path."""
     from .runtime.contracts import ResidentTerminalFact
     from .state_store import get_lineage_data_store
+    from . import family_recovery
+
+    family_recovery.reconcile_failed_route_tasks()
 
     cutoff = instant(started_at)
     if cutoff is None:

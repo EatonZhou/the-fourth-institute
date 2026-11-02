@@ -95,6 +95,45 @@ def test_invalid_template_is_rejected_before_it_can_replace_current_task(configu
         family_tasks.validate_routes(body, block)
 
 
+@pytest.mark.parametrize("initial", ["queued", "cancelled"])
+@pytest.mark.parametrize("delivery", ["restart", "terminal"])
+def test_router_failure_closes_original_without_trigger_path(configured_family, monkeypatch, initial, delivery):
+    from management_portal.society_service import family_recovery
+    _, block = configured_family
+    family = block["family"]
+    repository = resident_conversation_stream.get_repository()
+    root = "msg_0123456789abcdef0123456789abcd01"
+    original = resident_input_queue_domain.build_message("user", "请处理原请求", ACTOR, message_id=root)
+    repository.accept_user_message(family["facade"], original)
+    repository.set_input_state(family["facade"], root, "queued")
+    monkeypatch.setattr(resident_intake_domain, "deliver_resident_message_content", deliver_resident_message_content)
+    dispatched = ok("DispatchFamilyTask", {"resident_id": family["facade"],
+        "trigger": "route", "source_message_id": root})
+    mid = dispatched["message_id"]
+    router = family["router"]
+    if initial == "cancelled":
+        repository.set_input_state(family["facade"], root, "cancelled")
+    repository.set_input_state(router, mid, "failed", error={"message": "Directory reserved"})
+    if delivery == "restart":
+        family_recovery.reconcile_failed_route_tasks()
+    else:
+        from types import SimpleNamespace
+        from management_portal.society_service.runtime.backend_adapter import LineageBackendRuntimeAdapter
+        from management_portal.society_service.runtime.contracts import ResidentTerminalFact
+        monkeypatch.setattr(LineageBackendRuntimeAdapter, "_backend", staticmethod(lambda: SimpleNamespace(
+            handle_resident_message_terminal=lambda *a, **k: {},
+            dispatch_resident_terminal_observers=lambda *a, **k: {})))
+        LineageBackendRuntimeAdapter().consume_terminal(ResidentTerminalFact(
+            resident_id=router, actor=ACTOR, message_id=mid, terminal_status="failed"))
+    expected = "failed" if initial == "queued" else "cancelled"
+    assert repository.input_state(family["facade"], root)["state"] == expected
+    if expected == "failed":
+        assert repository.input_state(family["facade"], root)["error"]["message"] == "Directory reserved"
+    # Repeated consumption is harmless and cannot reopen a cancelled request.
+    family_recovery.route_task_failed(router, mid)
+    assert repository.input_state(family["facade"], root)["state"] == expected
+
+
 def test_queue_task_preserves_actual_pressure_facts_without_bulk_context(configured_family, monkeypatch):
     _, block = configured_family
     family = block["family"]
