@@ -309,6 +309,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     'an outer dialog path cannot resolve relative to a candidate region');
   assert.equal(await scope.getByRole('region').filter({has:page.getByRole('table')}).count(),1);
   await page.evaluate(() => {sampleFamily.destroy();document.getElementById('sample-family-host').remove();});
+  await require('./tau_native_workspace_directory.cjs')({page});
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({status:'passed', formal_acceptance:false,
     samples:['native Chat without Session header', 'full Session via native Resident Menu', 'copy event identity',

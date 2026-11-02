@@ -7,7 +7,7 @@ const framework=path.join(root,'management_portal/test_framework');
 const api=require(path.join(framework,'tau_evidence'));
 const modules=['tau_native_controls','tau_chat_ready_evidence','tau_session_dom_evidence',
   'tau_session_prerequisites','tau_readiness_wait','tau_hatg_view_evidence','tau_hatg_fork_evidence',
-  'tau_workbench_tabs','tau_trigger_path_evidence','tau_finite_instruction_evidence'];
+  'tau_workbench_tabs','tau_trigger_path_evidence','tau_finite_instruction_evidence','tau_workspace_directory_evidence'];
 const names=[];
 for(const module of modules)for(const [name,implementation] of Object.entries(require(path.join(framework,module)))){
   assert.equal(typeof implementation,'function');assert(!names.includes(name),'one implementation owner for '+name);

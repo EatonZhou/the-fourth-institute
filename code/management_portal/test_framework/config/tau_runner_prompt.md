@@ -188,13 +188,15 @@ async function measured(name, invoke) {
 
 `portal.instruction` 的原 HTTP 请求预算默认为 180 秒，日志记录 timeout_ms；必要时在首次调用前显式设置 `{timeoutMs}`（1–600000 毫秒），不能在失败后放大预算重发已受理写操作。APIRequestContext 的传输超时只说明原响应未取得，不证明服务未提交；助手不自动重试这类失败。保留原错误与身份后继续只读查询，不把超时当作业务终态。不得用扩大的请求预算替代 UI 原 ready 或隐瞒实际耗时。
 
-Workspace 首次目录打开/刷新前，按本轮准确 workspaceId 安装有限原响应观察器；`origin` 来自实际运行环境，`record` 同步追加安全元数据。根目录地址是 `workspace_id/file`，不是裸 ID，也没有末尾斜杠。每个原动作先安装观察器和精确 response 监听，再执行一次原生导航/刷新；原 ready 内把对应 Response 交给 `directoryObserver.original(response)`，核对 HTTP、body_status、result.kind、file_reference、目录条目及原页面内容，并将本轮测试目录的原响应落盘。子文件响应或事后补读不替代目录响应。finally 有界 close；关闭观察器失败也须独立关闭浏览器。跨请求目标使用分别声明的准确 targets，不手写前缀过滤。
+Workspace 目录原响应按实际原生组件识别：Workspace面板通过GET `/api/agent-workbench/link-file?path=...`读取目录；Resident目录树也可通过ISA ReadResource读取`workspace_id/file`。`workspaceId`和`directoryPath`取本轮正式解析/绑定结果，`origin`取运行环境，`record`同步追加安全元数据。先安装下面的观察器；预期实际读取的原动作前，用`page.waitForResponse(r=>directoryObserver.hasOriginalResponse(r))`监听同一观察器已经识别的原响应，再且仅执行一次原生操作。原ready内`directoryObserver.original(response)`读取HTTP/body_status：GET正文核kind/path/children，ISA正文核result.kind/file_reference/entries，并核当前目录页面。元数据探测、子文件或事后补读不替代原目录内容。
+
+已加载目录再次显示可直接使用组件缓存而没有新请求；不能为这种导航硬等网络或额外刷新来制造证据。该原ready核准确目录与已有列表展示，并明确未发生新读取。首次真正点击原生刷新会清缓存并读取，必须在它之前装好观察器，按该原响应和页面内容核完整首次刷新。finally有界close，观察关闭失败也须独立关闭浏览器。
 
 ```js
 // tau-workspace-root-read
-const {observeFiniteInstructionResponses} = require(frameworkRoot + '/tau_evidence.js');
-const directoryObserver = observeFiniteInstructionResponses(portal.page, {
-  origin, targets: [{instruction:'ReadResource', arguments:{address:workspaceId + '/file'}}],
+const {observeWorkspaceDirectoryResponses} = require(frameworkRoot + '/tau_evidence.js');
+const directoryObserver = observeWorkspaceDirectoryResponses(portal.page, {
+  origin, workspaceId, directoryPath,
   requestId: request => portal.requestId(request), record,
 });
 ```

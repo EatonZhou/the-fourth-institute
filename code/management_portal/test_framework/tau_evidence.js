@@ -14,6 +14,7 @@ const owners = [
   require('./tau_workbench_tabs'),
   require('./tau_trigger_path_evidence'),
   require('./tau_finite_instruction_evidence'),
+  require('./tau_workspace_directory_evidence'),
 ];
 const api = {};
 for (const owner of owners) {

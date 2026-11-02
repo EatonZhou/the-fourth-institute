@@ -8,7 +8,7 @@ const {chromium}=require(path.join(frameworkRoot,'tau_runtime/node_modules/playw
 const prompt=fs.readFileSync(path.join(frameworkRoot,'config/tau_runner_prompt.md'),'utf8');
 const example=prompt.match(/```js\n(\/\/ tau-workspace-root-read\n[\s\S]*?)\n```/);
 assert.ok(example,'Workspace root response example must cover the exact /file address');
-const install=new Function('require','frameworkRoot','portal','origin','workspaceId','record',example[1]+'; return directoryObserver;');
+const install=new Function('require','frameworkRoot','portal','origin','workspaceId','directoryPath','record',example[1]+'; return directoryObserver;');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   try {
@@ -32,7 +32,7 @@ const install=new Function('require','frameworkRoot','portal','origin','workspac
       return response;
     };
     const previous=await post(rootAddress);
-    const observer=install(require,frameworkRoot,{page,requestId:r=>identities.get(r)},origin,workspaceId,r=>rows.push(r));
+    const observer=install(require,frameworkRoot,{page,requestId:r=>identities.get(r)},origin,workspaceId,'/fixture/shared',r=>rows.push(r));
     try {
       await assert.rejects(observer.original(previous),/UnobservedOriginal/);
       for(const address of [workspaceId,rootAddress+'/sample.txt','workspace_222222222222/file'])

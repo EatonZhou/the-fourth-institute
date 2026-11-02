@@ -11,6 +11,7 @@ from xml.etree import ElementTree
 
 
 SAMPLES = (
+    "test_watchboard_action_contract.py::test_tau_finite_instruction_evidence_keeps_the_original_response",
     "test_tau_evidence_api.py",
     "test_tau_workspace_root_read.py",
     "test_tau_browser_bootstrap.py::test_instruction_helper_failures_keep_original_safe_target_scope",
