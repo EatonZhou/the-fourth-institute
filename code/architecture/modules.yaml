@@ -1210,6 +1210,7 @@ modules:
     code_paths:
       - "management_portal/test_framework"
       - "tests/cases"
+      - "management_portal/workbench_projections/development_app/tests"
       - "package.json"
     designs:
       - "decision_8273271b67b1"
@@ -1757,7 +1758,7 @@ protocols:
       - "decision_ccb99a00eebd"
       - "decision_c953eab654cd"
     description: "约定对象目录的位置、来源、所属对象、对象 ID 加相对路径引用，以及删除、移动和到期清理时各领域的责任。领域登记区分 Portal 创建与接入现成目录；外层自建目录删除覆盖其嵌套登记。共享路径辅助库维护边界校验、持久清理队列、移动日志与到期登记，领域服务提交登记变更，文件步骤独立执行并恢复。写入者由执行租约、进程身份和结束回执共同约束；数据库会话锁释放不证明写入已经结束，原生子进程仍持有的租约阻止清理。Society 组合迁移准入与当前 Handoff 位置，ResourceService 拥有创建和 Git 依赖恢复；历史 attempt 保持不变。ResourceService 提供 CreateWorkspace、RegisterWorkspace 和 GetDirectoryCleanup；实例层仍拥有区域与实例生命周期。已有实例的数据转换与各平台运行验证需独立确认。"
-    example: "删除 Resident → SocietyService 注销对象及绑定并登记目录清理 → 共享清理队列按来源处理文件，原调用者通过 GetDirectoryCleanup 读取进度；移动先保存日志，目录操作与登记提交后再协调 Provider Session 和 Git 路径，System 维护重试未完成步骤。注销成功与文件清理完成分别报告。"
+    example: "删除 Resident → SocietyService 注销对象及绑定并登记目录清理 → 共享清理队列按来源处理文件，原调用者通过 GetDirectoryCleanup 读取进度；移动先保存日志，目录操作与登记提交后再协调 Provider Session 和 Git 路径，System 维护重试未完成步骤。未登记的 Resident 创建由 SocietyService 通过 GetResourceCreation/CancelResourceCreation 核验父 Lineage 权限、冻结请求和未登记状态；Creation 持久撤销并阻止原操作继续，再独占 writer/原生进程准入，按保存的文件身份清理。cancelled 与 cleanup_complete 分别报告；证据不足保持 pending，不按失败状态或空闲锁推定 writer 已结束。旧元数据缺失时，仅由领域在原执行排他下核验完全同步初始化及原指令正常未提交回执，不能接受调用者自报证明或覆盖已有 writer 证据。注销成功与文件清理完成分别报告。"
   - id: "file-storage"
     title: "共享文件锁与原子替换协议"
     modules:
