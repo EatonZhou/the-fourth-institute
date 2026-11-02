@@ -2320,10 +2320,11 @@ protocols:
       - "resources"
     designs: []
     related_designs:
+      - "decision_ad3e21094f14"
       - "decision_605810a1292b"
       - "decision_61e50306cc79"
       - "decision_dca903d71575"
-    description: "CreateUpload 返回上传 ID、用途、过期时间与字节通道；服务按 purpose 校验大小、真实媒体类型和归属。Workspace 图片入口另经 workspace_contracts 校验后保存文件；读取端用已授权文件描述与范围参数返回字节。Notice Board 图片复用 purpose=post_image，不另造上传库。"
+    description: "CreateUpload 返回上传 ID、用途、过期时间与字节通道；服务按 purpose 校验大小、真实媒体类型和归属。Workspace 图片入口另经 workspace_contracts 校验后保存文件；读取端用已授权文件描述与范围参数返回字节。DeleteUpload 保留调用身份认证，两种权限模式下均免额外权限及上传者检查；ResourceService 校验上传 ID 和存在性后交共享清理队列处理，已被引用的上传也可删除并使引用失效，读取规则保持独立。Notice Board 图片复用 purpose=post_image，不另造上传库。"
     example: "CreateUpload(purpose,target,metadata/source_address) → resources.isa 创建句柄 → 上传/校验 → Resource/Workspace 读取；ASGI download → workspace provider.read_content_range → 单一 Range 响应。"
 
   - id: "home-directory-view"
