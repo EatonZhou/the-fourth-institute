@@ -17,9 +17,34 @@ receipt.
    name the previous code environment and runs
    `tfi_release_install.py update-code --instance <name>`: it prepares the new
    code's dependencies, refreshes the service definitions and restarts the
-   services. Services update their database themselves when they start.
+   services. Services validate their database on startup. An existing schema
+   that requires an explicit conversion must be migrated before restarting;
+   an empty-database installation check does not establish upgrade compatibility.
 
 The example instance's content is used only when an instance is created; a code
 update never imports it again. When a fallback is wanted, back the instance up
 with backup software before updating (database dump, areas, `secrets/`,
 `instance.json` and `site.json`).
+
+Installed LineageData v65 databases (including 3dc0798) require the offline
+conversion in `scripts/migrate_installed_database.py` before v66 code can start.
+Keep this converter in packages while those installed releases are supported;
+completion on the development server does not complete users' migrations.
+
+After installing the matching program, stop the instance's services and start
+only its PostgreSQL component. Select its existing `PORTAL_INSTANCE_ROOT` and
+run the converter using the installed code's Python environment, from `code/`:
+
+```text
+python -m scripts.migrate_installed_database --report <archive>/migration-preview.json
+python -m scripts.migrate_installed_database --apply --report <archive>/migration-applied.json
+```
+
+Run the apply command only after the preview succeeds and a current backup has
+been verified. The converter checks that PostgreSQL has no other clients. It
+converts the registry identity name, directory ownership and Family controls in
+one transaction, validates the resulting owner schemas, and compares protected
+business-field hashes. Preview executes the conversion then rolls back; normal
+PostgreSQL sequence allocation may leave harmless revision gaps. It does not
+move or delete files. Conflicts abort the transaction; do not bypass the checks.
+Then resume `update-code --instance <name>` and verify services and retained data.
