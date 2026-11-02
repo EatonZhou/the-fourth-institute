@@ -52,6 +52,9 @@ def clean_environment(instance: InstanceManifest, *, component: str = '', postgr
     if component != 'nats':
         node = code_environment.native_binary(instance.service_code(component) if component else instance.code_root(), 'node')
         env['PATH'] = str(node.parent) + os.pathsep + env.get('PATH', '')
+        if os.name == 'nt':
+            git = code_environment.native_binary(instance.service_code(component) if component else instance.code_root(), 'git')
+            env['PATH'] = str(git.parent) + os.pathsep + env['PATH']
     # Private environment values are read at process startup, not written into
     # user units or public configuration. They are never returned by status APIs.
     database = instance.directory('secrets') / 'postgres.env'

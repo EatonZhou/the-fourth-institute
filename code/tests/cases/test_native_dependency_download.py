@@ -160,14 +160,14 @@ class NativeDownloads(unittest.TestCase):
             self.assertEqual(record, {"message": "正在准备浏览器"})
 
     def test_builder_archives_are_consumed_by_installer_without_network(self):
-        """构建器内置的三种归档可由正式安装入口离线解压，重复准备沿用已核验程序。"""
+        """构建器内置的原生归档可由正式安装入口离线解压，重复准备沿用已核验程序。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             cache = root / "cache"
             cache.mkdir()
             packages = {}
             for name, executable in {"postgres": "bin/postgres.exe",
-                                     "nats": "nats-server.exe", "node": "node.exe"}.items():
+                                     "nats": "nats-server.exe", "node": "node.exe", "git": "cmd/git.exe"}.items():
                 archive = cache / (name + ".zip")
                 with zipfile.ZipFile(archive, "w") as zipped:
                     zipped.writestr("package/" + executable, b"fixture executable")
@@ -204,11 +204,11 @@ class NativeDownloads(unittest.TestCase):
                 bundle_native_dependencies(root / "source", platform, cache)
                 # The installer prepares them beside the platform's code, offline.
                 installed = native.prepare(platform / "code", offline=True)
-                self.assertEqual(len(installed), 3)
+                self.assertEqual(len(installed), 4)
                 self.assertEqual(windows_steps, [("utf8_manifest", "postgres"), ("msvc_runtime", "postgres")])
                 self.assertEqual({row["artifact"]["name"]: row.get("windows_compatibility") for row in installed},
                                  {"postgres": {"utf8_manifest": "fixture", "msvc_runtime": {"version": "fixture"}},
-                                  "nats": None, "node": None})
+                                  "nats": None, "node": None, "git": None})
                 for row in installed:
                     receipt = Path(row["artifact"]["directory"]) / "tfi-native-dependency.json"
                     self.assertTrue(Path(row["artifact"]["directory"]).is_relative_to(platform / "dependencies/native"))

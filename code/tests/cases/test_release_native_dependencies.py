@@ -81,7 +81,7 @@ class NativeDependenciesTests(unittest.TestCase):
         for platform in ('linux', 'windows', 'macos'):
             for architecture in ('x86_64', 'aarch64'):
                 host = {'platform': platform, 'architecture': architecture}
-                for name in native.PACKAGES:
+                for name in native.packages_for_host(host):
                     with self.subTest(platform=platform, architecture=architecture, name=name):
                         entry = native.catalog_entry(self.code, name, host=host)
                         self.assertTrue(entry['url'].startswith('https://'))

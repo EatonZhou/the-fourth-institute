@@ -532,7 +532,8 @@ def prepare_code(code, *, base_python=None, offline=False, postgres=False):
     """Dependencies of a code directory, shared by every instance running it."""
     from scripts import tfi_release_dependencies, tfi_release_native_dependencies as native
     tfi_release_dependencies.prepare(code, base_python=base_python, offline=offline)
-    return native.prepare(code, ("postgres", "nats", "node") if postgres else ("nats", "node"), offline=offline)
+    names = tuple(name for name in native.packages_for_host() if postgres or name != 'postgres')
+    return native.prepare(code, names, offline=offline)
 
 
 def validate_runtime_paths(instance):

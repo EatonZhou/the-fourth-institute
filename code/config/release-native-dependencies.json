@@ -99,6 +99,13 @@
         "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-win-x64.zip",
         "sha256": "2b0ff57b049cda1bbcea2240eec20467018713c1efe1f7360c2681859b90ed71",
         "provider": "Node.js project (includes npm)"
+      },
+      "git": {
+        "version": "2.56.0.4",
+        "reported_version": "2.56.0.windows.4",
+        "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip",
+        "sha256": "e3bf78351fe777fba47ddee5950082f8a98bb0f02604fdc7ba3ee2cb68ffa877",
+        "provider": "Git for Windows (MinGit)"
       }
     },
     "windows/aarch64": {
@@ -119,6 +126,13 @@
         "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-win-arm64.zip",
         "sha256": "33dad22e4cef5ee8f9fbb1b0d037fdacd0e56d12a4580f0d63f68b894deab535",
         "provider": "Node.js project (includes npm)"
+      },
+      "git": {
+        "version": "2.56.0.4",
+        "reported_version": "2.56.0.windows.4",
+        "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-arm64.zip",
+        "sha256": "70f7649f78088c1db1d2f3571ca46a04d5bef06e4e9d56d8ed7f9829e8c6c4db",
+        "provider": "Git for Windows (MinGit)"
       }
     }
   }

@@ -100,8 +100,9 @@ def native_directory(code: Path, package: str, host=None) -> Path:
 
 def native_binary(code: Path, package: str) -> Path:
     root = native_directory(code, package)
-    executable = {"nats": "nats-server", "node": "node"}[package]
-    path = root / (("" if package == "nats" or os.name == "nt" else "bin/") + executable + (".exe" if os.name == "nt" else ""))
+    executable = {"nats": "nats-server", "node": "node", "git": "git"}[package]
+    prefix = 'cmd/' if package == 'git' else ("" if package == "nats" or os.name == "nt" else "bin/")
+    path = root / (prefix + executable + (".exe" if os.name == "nt" else ""))
     if not path.is_file():
         raise FileNotFoundError(f"Prepare the code native dependency before starting services: {path}")
     return path

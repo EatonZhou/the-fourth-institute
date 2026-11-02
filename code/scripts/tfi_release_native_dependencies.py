@@ -26,9 +26,14 @@ from management_common.installation_progress import report
 from management_common.native_output import run_native_capture
 
 PACKAGES = ('postgres', 'nats', 'node')
+WINDOWS_PACKAGES = (*PACKAGES, 'git')
 MAX_DOWNLOAD = 256 * 1024 * 1024
 MAX_EXPANDED = 2 * 1024 * 1024 * 1024
-DISPLAY_NAMES = {'postgres': 'PostgreSQL 数据库', 'nats': 'NATS 消息服务', 'node': 'Node.js 运行环境'}
+DISPLAY_NAMES = {'postgres': 'PostgreSQL 数据库', 'nats': 'NATS 消息服务', 'node': 'Node.js 运行环境', 'git': 'Git 版本管理'}
+
+
+def packages_for_host(host=None):
+    return WINDOWS_PACKAGES if (host or identify_host())['platform'] == 'windows' else PACKAGES
 
 
 def artifact_name(entry):
@@ -45,7 +50,7 @@ def checksum(path):
 
 def catalog_entry(code, name, *, host=None):
     """The pinned artifact of one native program for this host and checkout."""
-    if name not in PACKAGES:
+    if name not in WINDOWS_PACKAGES:
         raise ValueError('Unknown native dependency: ' + str(name))
     host = host or identify_host()
     platform_key = host['platform'] + '/' + host['architecture']
@@ -189,6 +194,7 @@ def package_root(tree, entry):
     suffix = '.exe' if entry['platform'].startswith('windows/') else ''
     expected = ('bin/postgres' + suffix if entry['name'] == 'postgres' else
                 'nats-server' + suffix if entry['name'] == 'nats' else
+                'cmd/git.exe' if entry['name'] == 'git' else
                 'node.exe' if suffix else 'bin/node')
     candidates = [tree, *[p for p in tree.iterdir() if p.is_dir()]]
     matches = [p for p in candidates if (p / expected).is_file()]
@@ -204,6 +210,8 @@ def verify(entry):
         commands = {'postgres': [str(root / 'bin' / ('postgres' + suffix)), '--version']}
     elif entry['name'] == 'nats':
         commands = {'nats': [str(root / ('nats-server' + suffix)), '--version']}
+    elif entry['name'] == 'git':
+        commands = {'git': [str(root / 'cmd/git.exe'), '--version']}
     else:
         node = root / 'node.exe' if suffix else root / 'bin/node'
         npm = root / 'node_modules/npm/bin/npm-cli.js' if suffix else root / 'lib/node_modules/npm/bin/npm-cli.js'
@@ -217,7 +225,8 @@ def verify(entry):
             status = f'0x{result.returncode & 0xffffffff:08X}'
             detail = ' (required DLL missing)' if status == '0xC0000135' else ''
             raise RuntimeError(f'Native dependency cannot run on this host: {name}; exit {status}{detail}')
-        if name != 'npm' and not re.search(r'(?<![\d.])' + re.escape(entry['version']) + r'(?![\d.])', version):
+        expected_version = entry.get('reported_version', entry['version'])
+        if name != 'npm' and not re.search(r'(?<![\d.])' + re.escape(expected_version) + r'(?![\d.])', version):
             raise ValueError('Native dependency version differs from its catalog: ' + name)
         versions[name] = version
     return versions
@@ -237,14 +246,15 @@ def native_environment(entry):
     return environment
 
 
-def prepare(code, names=PACKAGES, *, offline=False):
+def prepare(code, names=None, *, offline=False):
     """Download, unpack and probe pinned programs; reuse verified ones."""
     base = dependencies_directory(code) / 'native'
     base.mkdir(parents=True, exist_ok=True)
     if base.resolve() != base.absolute():
         raise ValueError('Code dependencies cannot be redirected')
     with (base / '.prepare.lock').open('a+b') as stream, lock_stream(stream):
-        return [_prepare(base, catalog_entry(code, name), offline=offline) for name in names]
+        return [_prepare(base, catalog_entry(code, name), offline=offline)
+                for name in (packages_for_host() if names is None else names)]
 
 
 def _prepare(base, entry, *, offline):
@@ -284,8 +294,8 @@ if __name__ == '__main__':
     import sys
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--code', type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument('--package', action='append', choices=PACKAGES)
+    parser.add_argument('--package', action='append', choices=WINDOWS_PACKAGES)
     parser.add_argument('--offline', action='store_true')
     args = parser.parse_args()
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    print(json.dumps(prepare(args.code.resolve(), args.package or PACKAGES, offline=args.offline), ensure_ascii=False))
+    print(json.dumps(prepare(args.code.resolve(), args.package, offline=args.offline), ensure_ascii=False))
