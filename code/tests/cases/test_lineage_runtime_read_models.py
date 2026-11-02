@@ -145,10 +145,10 @@ def test_relay_uses_committed_sequence_and_never_reuses_deleted_tail(tmp_path):
 
 
 
-def test_control_queue_keeps_bounded_preview_without_loading_message_body(tmp_path):
-    """控制队列预览有界且不携带完整消息正文
+def test_control_queue_keeps_bounded_preview_but_chat_restores_full_message_body(tmp_path):
+    """控制态预览有界，但 Chat 队列返回完整正文及附件
 
-    轻量控制队列去除完整输入正文，保持与原队列一致的预览及有界序列化大小。
+    轻量控制队列去除完整正文；面向用户的队列按原消息读取，不把预览作为正文。
     """
     from management_portal.society_service.resident_execution_work import _conversation_queue_item
 
@@ -156,7 +156,7 @@ def test_control_queue_keeps_bounded_preview_without_loading_message_body(tmp_pa
     queued = {'user_message_id': 'queued', 'input_message': {
         'author_id': 'CASE-A', 'created_at': 'now',
         'content_parts': [
-            {'type': 'text', 'text': 'hello ' * 100_000},
+            {'type': 'text', 'text': 'hello ' * 100_000 + '完整末尾🙂'},
             {
                 'type': 'image',
                 'source_type': 'local_path',
@@ -165,12 +165,20 @@ def test_control_queue_keeps_bounded_preview_without_loading_message_body(tmp_pa
             },
         ],
     }}
+    queued['enqueued_at'] = 'now'
+    message = _message('queued', '', '2026-09-14T00:00:00Z')
+    message['author_id'] = 'CASE-A'
+    message['content_parts'] = copy.deepcopy(queued['input_message']['content_parts'])
+    repository.append_message(RESIDENT, message)
     repository.state_store.put_resident_execution_record(RESIDENT, {'execution_id': 'job', 'actor': 'CASE-A', 'queue': [queued]})
     projected = repository.state_store.resident_execution_control(RESIDENT)['state']['queue'][0]
     assert 'input_message' not in projected
     assert len(json.dumps(projected)) < 1500
     assert projected['conversation_queue_preview']['media_parts'][0]['type'] == 'image'
-    assert _conversation_queue_item(repository, RESIDENT, projected) == _conversation_queue_item(repository, RESIDENT, queued)
+    public = _conversation_queue_item(repository, RESIDENT, projected)
+    assert public == _conversation_queue_item(repository, RESIDENT, queued)
+    assert public['content_parts'] == queued['input_message']['content_parts']
+    assert public['content_preview'] == queued['input_message']['content_parts'][0]['text']
 
 
 def test_relay_retries_failed_publish_without_skipping_events(tmp_path):

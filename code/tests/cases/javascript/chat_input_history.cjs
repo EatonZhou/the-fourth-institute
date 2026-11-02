@@ -115,7 +115,7 @@ async function arrowHistoryListsQueuedSentThenServerPages() {
 
 async function deletedQueueInputRemainsRecallable() {
   let scope = 'deleted-queue';
-  const fullText = 'queued input '.repeat(80) + 'the complete ending';
+  const fullText = input.longQueueText || 'queued input '.repeat(80) + 'the complete ending';
   const queued = (id, text, author = 'sample_admin', extra = []) => ({
     message_id: id, author_id: author,
     content_parts: [{ type: 'text', text }, ...extra],
@@ -124,7 +124,7 @@ async function deletedQueueInputRemainsRecallable() {
     queued('other-user', 'not my input', 'CASE-A'),
     { message_id: 'preview-only', author_id: 'sample_admin', preview: 'truncated preview' },
     queued('mine-first', 'earlier queued input'),
-    queued('mine-last', fullText, 'sample_admin', [{
+    queued('mine-last', input.projectedQueueText ?? fullText, 'sample_admin', [{
       type: 'file', upload_id: 'upload-history', path: '/uploads/history.txt',
       name: 'history.txt', mime: 'text/plain',
     }]),

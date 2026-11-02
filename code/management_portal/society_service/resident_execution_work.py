@@ -289,7 +289,10 @@ def _conversation_queue_item(
     item: Mapping[str, object],
 ) -> dict[str, Any]:
     preview = item.get("conversation_queue_preview")
-    if isinstance(preview, Mapping):
+    # Mailbox groups have their own synthetic display summary. Ordinary inputs
+    # must read the canonical message: scheduling previews are not recoverable
+    # message bodies and may be shorter than what the person sent.
+    if isinstance(preview, Mapping) and preview.get("author_id") == "mailbox":
         content_preview = str(preview.get("content_preview") or "")
         media_parts = preview.get("media_parts")
         if not isinstance(media_parts, list):
@@ -347,10 +350,10 @@ def _conversation_queue_item(
     return {
         "message_id": message_id,
         "author_id": str(message.get("author_id") or ""),
-        "content_preview": content_preview[:500],
+        "content_preview": content_preview,
         "content_parts": [
             *(
-                [{"type": "text", "text": content_preview[:500]}]
+                [{"type": "text", "text": content_preview}]
                 if content_preview
                 else []
             ),
