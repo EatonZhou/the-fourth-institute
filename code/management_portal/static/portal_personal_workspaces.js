@@ -48,6 +48,27 @@
       return [...retained, ...current];
     };
 
+    function folderLocation(path) {
+      const normalize = value => String(value || "").replaceAll("\\", "/").replace(/\/+$/, "");
+      const target = normalize(path);
+      const holding = [...residentItems.map(item => item.root), ...locks.map(item => item.value.resource_root)]
+        .filter(item => item?.path && item.directory_id)
+        .map(item => ({ root: item, base: normalize(item.path) }))
+        .filter(item => target === item.base || target.startsWith(`${item.base}/`))
+        .sort((a, b) => b.base.length - a.base.length)[0];
+      // Owned/bound Workspaces keep their editable path preview. A Resident or
+      // Lineage Folder has its own ReadResource boundary, even without any
+      // enclosing Workspace registration (for example an installed seed).
+      if (!holding || !["resident_folder", "lineage_folder"].includes(holding.root.root_kind)) return null;
+      const relative = target.slice(holding.base.length).replace(/^\//, "");
+      return { root: holding.root, relative,
+        resourceAddress: `${holding.root.directory_id}/file${relative ? `/${relative}` : ""}` };
+    }
+    const previewRequest = path => {
+      const location = folderLocation(path);
+      return { path, source: "workspace", ...(location ? { resourceAddress: location.resourceAddress } : {}) };
+    };
+
     function tree(path, depth, open, isRoot = false, resourceRoot = false) {
       const entry = { path, name: path.split("/").filter(Boolean).at(-1) || path, type: "directory", depth };
       const data = directories.get(path);
@@ -98,10 +119,10 @@
             open: async path => {
               selected = path;
               render();
-              try { await onOpen(path); } catch (failure) { report(failure); }
+              try { await onOpen(path, previewRequest(path)); } catch (failure) { report(failure); }
             },
             openMenu: ({ path, trigger, event }) => window.PortalPreview.openFileMenu({
-              event, trigger, request: { path, source: "workspace" },
+              event, trigger, request: previewRequest(path),
               onOpen: request => onOpen(request.path, request),
             }),
           });
@@ -117,7 +138,10 @@
       directories.set(path, request);
       render();
       try {
-        const payload = await window.PortalFileLinks.load(path);
+        const location = folderLocation(path);
+        const listing = location ? await window.PortalResidentService.listDirectory(location.root.directory_id, location.relative) : null;
+        const payload = listing ? { kind: "directory", path, children: listing.entries || [] }
+          : await window.PortalFileLinks.load(path);
         if (payload.kind !== "directory") throw new Error("该路径不是文件夹");
         Object.assign(request, { path: payload.path, children: payload.children || [] });
       } catch (failure) { request.error = String(failure.message || failure); }
@@ -175,7 +199,10 @@
             await window.PortalIdentity.removeUIAssociation(namespace, lock.key);
             locks = locks.filter(candidate => candidate.key !== lock.key);
           } else {
-            const value = { kind: "locked-directory", name: item.readOnly ? item.value.name : folder.split("/").filter(Boolean).at(-1) || folder, folders: [folder] };
+            const location = folderLocation(folder);
+            const resourceRoot = location ? { directory_id: location.root.directory_id,
+              root_kind: location.root.root_kind, path: location.root.path } : null;
+            const value = { ...(resourceRoot ? { resource_root: resourceRoot } : {}), kind: "locked-directory", name: item.readOnly ? item.value.name : folder.split("/").filter(Boolean).at(-1) || folder, folders: [folder] };
             const result = await window.PortalIdentity.putUIAssociation(namespace, window.PortalUIPrimitives.randomUUID(), value);
             locks.push(result.association);
             membership(directoryKey(folder)).add(folder);

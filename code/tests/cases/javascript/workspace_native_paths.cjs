@@ -14,6 +14,7 @@ w.PortalFileLinks = {load:async target => { reads.push(target); return {kind:'di
 for (const name of ['portal_resident_service','portal_personal_workspaces','hatg_workspace_projection']) {
  w.eval(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static',name+'.js'),'utf8'));
 }
+w.PortalResidentService = {...w.PortalResidentService, listDirectory:async()=>({entries:[]})};
 (async()=>{
  for (const base of ['/native/project','C:/Users/测试/project','C:\\Users\\测试\\project','\\\\server\\share\\project']) {
   const sep=base.includes('\\')?'\\':'/';

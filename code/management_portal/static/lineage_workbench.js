@@ -1091,7 +1091,9 @@
         if (personalWorkspaces?.root !== root) {
           personalWorkspaces?.controller.destroy();
           personalWorkspaces = { root, controller: window.PortalPersonalWorkspaces.mount({
-            root, onOpen: (path, options) => loadLocalLinkPreview(path, "", options), onRefresh: loadFolder,
+            root, onOpen: (path, options) => options?.resourceAddress
+              ? openResourceChipPreview({ ...options, address: options.resourceAddress })
+              : loadLocalLinkPreview(path, "", options), onRefresh: loadFolder,
           }) };
           const residentId = selectedResidentId();
           personalWorkspaces.controller.setResident({
