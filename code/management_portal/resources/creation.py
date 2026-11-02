@@ -13,6 +13,7 @@ import json
 import os
 from uuid import uuid4
 
+from management_common.filesystem_paths import filesystem_path
 from management_common.directory_cleanup_store import get_directory_cleanup_store
 from management_common.directory_paths import assert_missing_location, cleanup_location, cleanup_path, lexical_path, rename_directory_no_replace, remove_path
 from management_common.portal_database import portal_database
@@ -169,15 +170,15 @@ def initialize_creation_schema(connection, schema):
 
 
 def _identity(path):
-    info = path.lstat()
-    if path.is_symlink():
+    info = filesystem_path(path).lstat()
+    if filesystem_path(path).is_symlink():
         raise FileExistsError('Creation path is a symbolic link: ' + str(path))
     return [info.st_dev, info.st_ino]
 
 
 def _assert_identity(path, expected):
     for parent in path.parents:
-        if parent.is_symlink():
+        if filesystem_path(parent).is_symlink():
             raise FileExistsError('Creation parent was redirected: ' + str(parent))
     if not expected or _identity(path) != expected:
         raise FileExistsError('Creation path was replaced: ' + str(path))
@@ -188,10 +189,10 @@ def _remove_owned(path, identity):
     # path can be replaced before that worker executes it. Creation retains
     # both the claim and reservation until its own deletion succeeds.
     for parent in path.parents:
-        if parent.is_symlink():
+        if filesystem_path(parent).is_symlink():
             raise FileExistsError('Creation parent was redirected: ' + str(parent))
     if identity is None:
-        if path.exists() or path.is_symlink():
+        if filesystem_path(path).exists() or filesystem_path(path).is_symlink():
             raise FileExistsError('Creation path has no ownership proof: ' + str(path))
         return
     # A missing public path may already have been claimed before interruption.
@@ -201,12 +202,12 @@ def _remove_owned(path, identity):
 
 def _sync(path):
     """Make prepared contents durable before committing publication evidence."""
-    children = list(path.rglob('*')) if path.is_dir() else []
+    children = list(filesystem_path(path).rglob('*')) if filesystem_path(path).is_dir() else []
     for item in [*children, path, path.parent]:
-        if not item.is_symlink() and not (os.name == 'nt' and item.is_dir()):
+        if not filesystem_path(item).is_symlink() and not (os.name == 'nt' and filesystem_path(item).is_dir()):
             # Windows FlushFileBuffers requires a write-capable handle. The
             # CRT reports EBADF when fsync receives a read-only descriptor.
-            descriptor = os.open(item, os.O_RDWR if os.name == 'nt' else os.O_RDONLY)
+            descriptor = os.open(filesystem_path(item), os.O_RDWR if os.name == 'nt' else os.O_RDONLY)
             try:
                 os.fsync(descriptor)
             finally:
@@ -260,11 +261,11 @@ class Creation:
                     for path, kind in artifacts:
                         path = lexical_path(path)
                         for parent in (path, *path.parents):
-                            if parent.is_symlink():
+                            if filesystem_path(parent).is_symlink():
                                 raise FileExistsError('Creation path contains a symbolic link: ' + str(parent))
                         if kind == 'adopted':
                             self.queue.assert_available(path, connection=conn)
-                            if not path.is_dir():
+                            if not filesystem_path(path).is_dir():
                                 raise FileNotFoundError('An adopted directory must already exist')
                             artifact = {'identity': _identity(path), 'ready': True}
                         elif kind in {'file', 'directory'}:
@@ -333,16 +334,16 @@ class Creation:
                 _assert_identity(target, artifact['identity'])
                 continue
             for parent in target.parents:
-                if parent.is_symlink():
+                if filesystem_path(parent).is_symlink():
                     raise FileExistsError('Creation parent was redirected: ' + str(parent))
-            if target.exists() or target.is_symlink():
+            if filesystem_path(target).exists() or filesystem_path(target).is_symlink():
                 _assert_identity(target, artifact.get('identity'))
                 if not artifact.get('ready'):
                     raise FileExistsError('Unprepared creation target: ' + str(target))
                 continue
             assert_missing_location(target)
             stage = cleanup_path(artifact['stage']) if artifact.get('stage') else None
-            if stage and artifact.get('identity') and (artifact.get('ready') or stage.exists() or stage.is_symlink()):
+            if stage and artifact.get('identity') and (artifact.get('ready') or filesystem_path(stage).exists() or filesystem_path(stage).is_symlink()):
                 _assert_identity(stage, artifact['identity'])
             if not artifact.get('ready'):
                 # An interrupted initializer is never merged into a new attempt.
@@ -369,11 +370,11 @@ class Creation:
                                     stage_operation=self.key + ':stage:' + uuid4().hex)
                     self.queue.reserve(stage, operation_id=artifact['stage_operation'], purpose='resource_creation', connection=conn)
                     self._save(conn)
-                target.parent.mkdir(parents=True, exist_ok=True)
+                filesystem_path(target.parent).mkdir(parents=True, exist_ok=True)
                 if artifact['kind'] == 'directory':
-                    stage.mkdir()
+                    filesystem_path(stage).mkdir()
                 else:
-                    stage.touch(exist_ok=False)
+                    filesystem_path(stage).touch(exist_ok=False)
                 artifact['identity'] = _identity(stage)
                 self.db.write(self._save)
                 initialize(index, stage)

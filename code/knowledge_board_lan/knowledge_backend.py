@@ -19,6 +19,7 @@ from urllib.parse import quote, unquote
 
 import yaml
 
+from management_common.filesystem_paths import filesystem_path, logical_path
 from management_common.knowledge_metadata import document_metaness
 from management_common.text_values import strip_quotes
 
@@ -101,19 +102,19 @@ def _set_frontmatter_kb_id(text: str, kb_id: str) -> str:
 
 
 def _write_text_atomic(path: Path, text: str) -> None:
-    mode = path.stat().st_mode & 0o7777
+    mode = filesystem_path(path).stat().st_mode & 0o7777
     temporary = path.with_name(
         f".{path.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp"
     )
     try:
         from management_common.file_permissions import prepare_atomic_permissions
-        with temporary.open("x", encoding="utf-8") as stream:
+        with filesystem_path(temporary).open("x", encoding="utf-8") as stream:
             prepare_atomic_permissions(temporary, path, mode)
             stream.write(text)
-        os.replace(temporary, path)
+        os.replace(filesystem_path(temporary), filesystem_path(path))
     finally:
         try:
-            temporary.unlink()
+            filesystem_path(temporary).unlink()
         except FileNotFoundError:
             pass
 
@@ -129,12 +130,12 @@ def _raw_knowledge_entries() -> tuple[list[dict], list[Path]]:
         if not project_id or not project_path:
             continue
         knowledge_root = Path(project_path).expanduser() / "knowledge_base"
-        if not knowledge_root.is_dir():
+        if not filesystem_path(knowledge_root).is_dir():
             continue
         knowledge_roots.append(knowledge_root.resolve())
         for item_type in allowed_types:
             tag_root = knowledge_root / (tag_folder_map.get(item_type) or item_type)
-            if not tag_root.is_dir():
+            if not filesystem_path(tag_root).is_dir():
                 continue
             for entry_root, primary_path, _entry_files in _entry_specs(tag_root, item_type):
                 resolved = primary_path.resolve()
@@ -219,9 +220,9 @@ def scan_knowledge_ids(*, apply: bool = False) -> dict:
                 continue
             source = tag_root / previous_id
             target = tag_root / str(assignment["new_id"])
-            if not source.is_dir():
+            if not filesystem_path(source).is_dir():
                 continue
-            if target.exists():
+            if filesystem_path(target).exists():
                 companion_conflicts.append(
                     {"source": str(source), "target": str(target)}
                 )
@@ -244,7 +245,7 @@ def scan_knowledge_ids(*, apply: bool = False) -> dict:
                     ),
                 )
             for source, target in companion_moves:
-                source.rename(target)
+                filesystem_path(source).rename(filesystem_path(target))
 
             replacements: dict[str, list[dict]] = {}
             for assignment in assignments:
@@ -260,11 +261,11 @@ def scan_knowledge_ids(*, apply: bool = False) -> dict:
                     ),
                     "",
                 )
-                for path in knowledge_root.rglob("*"):
-                    if not path.is_file() or path.suffix.lower() not in _TEXT_FILE_EXTENSIONS:
+                for path in (logical_path(item) for item in filesystem_path(knowledge_root).rglob("*")):
+                    if not filesystem_path(path).is_file() or path.suffix.lower() not in _TEXT_FILE_EXTENSIONS:
                         continue
                     try:
-                        original = path.read_text(encoding="utf-8")
+                        original = filesystem_path(path).read_text(encoding="utf-8")
                     except (OSError, UnicodeDecodeError):
                         continue
                     updated = original
@@ -465,9 +466,9 @@ def build_item_graph(item_id: str, *, max_depth: int = 2, actor: str = "") -> di
             if not source_record:
                 continue
             source_path = Path(str(source_record.get("path") or ""))
-            if source_kb_id == root_kb_id and not source_path.is_file():
+            if source_kb_id == root_kb_id and not filesystem_path(source_path).is_file():
                 source_path = Path(str(root.get("path") or ""))
-            if not source_path.is_file():
+            if not filesystem_path(source_path).is_file():
                 continue
             item_links = _item_links_from_text(_read_file_text(str(source_path)))
             for relation, values in item_links.items():
@@ -655,7 +656,7 @@ def _valid_item_path(abs_path: str) -> Path | None:
     if not raw:
         return None
     path = Path(raw).expanduser().resolve(strict=False)
-    if not path.exists() or not path.is_file():
+    if not filesystem_path(path).exists() or not filesystem_path(path).is_file():
         return None
     if (
         path.suffix.lower() not in _VALID_ITEM_FILE_EXTENSIONS
@@ -703,7 +704,7 @@ def resolve_item_record(
     if not path:
         raise KeyError("knowledge item not found")
     content_root = Path(str(attrs.get("content_root") or path.parent)).resolve(strict=False)
-    if not content_root.is_dir():
+    if not filesystem_path(content_root).is_dir():
         content_root = path.parent
     files = _indexed_item_files(record, path, content_root)
     file_id = _file_id_for_path(str(path))
@@ -769,7 +770,7 @@ def resolve_item_address(
     except ValueError as exc:
         raise ValueError("invalid Knowledge file address") from exc
     if str(item.get("type") or "") == "article":
-        if not path.is_file():
+        if not filesystem_path(path).is_file():
             raise KeyError("article file not found")
     elif not _valid_item_path(str(path)):
         raise KeyError("knowledge item file not found")
@@ -829,7 +830,7 @@ def resolve_knowledge_address(address: str, *, actor: str = "") -> dict:
         "filename": selected_path.name,
         "resolved_path": str(selected_path),
         "portal_url": f"/resource/{resource_category}?item={quote(kb_id, safe='')}",
-        "exists": selected_path.is_file(),
+        "exists": filesystem_path(selected_path).is_file(),
     }
 
 
@@ -840,7 +841,7 @@ def knowledge_resource_id_for_path(abs_path: str) -> str:
         raise KeyError("knowledge item not found")
 
     def frontmatter_id(candidate: Path, expected_type: str = "") -> str:
-        if candidate.suffix.lower() != ".md" or not candidate.is_file():
+        if candidate.suffix.lower() != ".md" or not filesystem_path(candidate).is_file():
             return ""
         meta, _body = _parse_front_matter(_read_file_text(str(candidate)))
         metadata = meta.get("metadata")
@@ -970,7 +971,7 @@ def _registered_project(project_id: str) -> dict:
     root = Path(str(project.get("path") or "")).expanduser().resolve(
         strict=False
     )
-    if not root.is_dir():
+    if not filesystem_path(root).is_dir():
         raise FileNotFoundError(f"Project directory not found: {root}")
     project["path"] = str(root)
     return project
@@ -1140,7 +1141,7 @@ def register_item(
                 if index == 0:
                     from management_common.file_permissions import set_created_file_permissions
                     set_created_file_permissions(stage, 0o664)
-                    stage.write_text(document, encoding='utf-8')
+                    filesystem_path(stage).write_text(document, encoding='utf-8')
             creation.publish(initialize)
             path, companion = creation.paths
             with directory_writer('knowledge') as writer, creation.registration(writer.connection):
@@ -1263,8 +1264,8 @@ def update_item_text(
             current_version = knowledge_version_record(
                 previous_primary,
                 mtime=(
-                    int(version_path.stat().st_mtime)
-                    if version_path.exists()
+                    int(filesystem_path(version_path).stat().st_mtime)
+                    if filesystem_path(version_path).exists()
                     else 0
                 ),
             )
@@ -1321,15 +1322,15 @@ def update_item_text(
             if stamped_primary != previous_primary:
                 _write_text_atomic(version_path, stamped_primary)
         try:
-            mtime = int(path.stat().st_mtime)
+            mtime = int(filesystem_path(path).stat().st_mtime)
         except OSError:
             mtime = 0
         version = (
             knowledge_version_record(
                 _read_file_text(str(version_path)),
                 mtime=(
-                    int(version_path.stat().st_mtime)
-                    if version_path is not None and version_path.exists()
+                    int(filesystem_path(version_path).stat().st_mtime)
+                    if version_path is not None and filesystem_path(version_path).exists()
                     else 0
                 ),
             )

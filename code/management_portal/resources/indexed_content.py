@@ -14,6 +14,7 @@ from typing import Any
 from urllib.parse import unquote
 
 from management_common.text_values import stripped_text
+from management_common.filesystem_paths import filesystem_path
 
 
 def _safe_repo_relative_path(raw_path: str) -> str:
@@ -54,7 +55,7 @@ def resolve_indexed_resource_address(
         "record": record,
         "portal_url": stripped_text(record.get("url")),
         "resolved_path": str(source_path) if stripped_text(source.get("path")) else "",
-        "exists": not deleted and (source_path.exists() if stripped_text(source.get("path")) else True),
+        "exists": not deleted and (filesystem_path(source_path).exists() if stripped_text(source.get("path")) else True),
     }
     if not separator:
         return result
@@ -77,7 +78,7 @@ def resolve_indexed_resource_address(
             "target_kind": "file",
             "relative_path": relative_path,
             "resolved_path": str(target),
-            "exists": not deleted and target.is_file(),
+            "exists": not deleted and filesystem_path(target).is_file(),
         }
     )
     return result
@@ -93,11 +94,11 @@ def read_resolved_resource_content(
     """The bytes of a resolved file: the target file, or the record's own file."""
     kind = resolved["target_kind"]
     resolved_path = stripped_text(resolved.get("resolved_path"))
-    if kind == "file" or (resolved_path and Path(resolved_path).is_file()):
+    if kind == "file" or (resolved_path and filesystem_path(resolved_path).is_file()):
         path = Path(resolved_path)
-        if not path.is_file():
+        if not filesystem_path(path).is_file():
             raise FileNotFoundError(path)
-        with path.open('rb') as stream:
+        with filesystem_path(path).open('rb') as stream:
             metadata = os.fstat(stream.fileno())
             if metadata.st_size > max_bytes:
                 raise ValueError(f"resource exceeds {max_bytes} byte content limit")

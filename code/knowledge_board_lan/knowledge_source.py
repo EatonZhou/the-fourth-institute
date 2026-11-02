@@ -24,6 +24,8 @@ from urllib.parse import quote
 
 import yaml
 
+from management_common.filesystem_paths import filesystem_path, logical_path
+
 from management_common.knowledge_metadata import document_metaness
 from management_common.path_containment import path_is_within
 from management_common.scan_cancellation import check_scan_cancelled
@@ -269,7 +271,7 @@ def _is_index_file(path: Path) -> bool:
 
 
 def _is_entry_file(path: Path) -> bool:
-    return path.is_file() and path.suffix.lower() in _ENTRY_FILE_EXTENSIONS
+    return filesystem_path(path).is_file() and path.suffix.lower() in _ENTRY_FILE_EXTENSIONS
 
 
 def _file_kind(path: Path) -> str:
@@ -296,11 +298,11 @@ def _file_language(path: Path) -> str:
 
 
 def _candidate_entry_files(root: Path) -> list[Path]:
-    if not root.is_dir():
+    if not filesystem_path(root).is_dir():
         return []
     return sorted(
         [
-            path for path in root.rglob("*")
+            path for path in (logical_path(item) for item in filesystem_path(root).rglob("*"))
             if _is_entry_file(path)
             and not path.name.startswith(".")
             and not any(
@@ -484,7 +486,7 @@ def _read_kb_file(
     entry_files: list[Path],
 ) -> dict:
     try:
-        with open(path, encoding="utf-8") as f:
+        with open(filesystem_path(path), encoding="utf-8") as f:
             md = f.read()
     except (OSError, ValueError):
         return {}
@@ -550,7 +552,7 @@ def _read_kb_file(
     abs_path = os.path.abspath(path)
     file_id = _file_id_for_path(abs_path)
     try:
-        mtime = int(os.path.getmtime(abs_path))
+        mtime = int(os.path.getmtime(filesystem_path(abs_path)))
     except OSError:
         mtime = 0
     version = knowledge_version_record(
@@ -578,9 +580,9 @@ def _read_kb_file(
         "version": version,
         "related": list(dict.fromkeys(related)),
         "root_path": str(root_path),
-        "relative_path": primary_path.relative_to(root_path).as_posix() if root_path.is_dir() else primary_path.name,
+        "relative_path": primary_path.relative_to(root_path).as_posix() if filesystem_path(root_path).is_dir() else primary_path.name,
         "file_count": len(entry_files),
-        "files": _file_records(root_path if root_path.is_dir() else primary_path.parent, primary_path, entry_files),
+        "files": _file_records(root_path if filesystem_path(root_path).is_dir() else primary_path.parent, primary_path, entry_files),
     }
 
 
@@ -595,13 +597,13 @@ def _get_md_item_cached(
 ) -> dict:
     abs_path = os.path.abspath(str(primary_path))
     try:
-        mtime = os.path.getmtime(abs_path)
+        mtime = os.path.getmtime(filesystem_path(abs_path))
     except (OSError, ValueError):
         _MD_CACHE.pop(abs_path, None)
         return {}
     cached = _MD_CACHE.get(abs_path)
     files_signature = [
-        (str(path.resolve()), int(path.stat().st_mtime_ns) if path.exists() else 0)
+        (str(path.resolve()), int(filesystem_path(path).stat().st_mtime_ns) if filesystem_path(path).exists() else 0)
         for path in entry_files
     ]
     if (
@@ -637,12 +639,12 @@ def _get_md_item_cached(
 
 
 def _top_level_markdown_files(tag_root: Path) -> list[Path]:
-    if not tag_root.is_dir():
+    if not filesystem_path(tag_root).is_dir():
         return []
     return sorted(
         [
-            path for path in tag_root.iterdir()
-            if path.is_file() and path.suffix.lower() == ".md" and not path.name.startswith(".") and not _is_index_file(path)
+            path for path in (logical_path(item) for item in filesystem_path(tag_root).iterdir())
+            if filesystem_path(path).is_file() and path.suffix.lower() == ".md" and not path.name.startswith(".") and not _is_index_file(path)
         ],
         key=lambda path: path.name.lower(),
     )
@@ -665,12 +667,12 @@ def _entry_specs(tag_root: Path, item_type: str) -> list[tuple[Path, Path, list[
         kb_id = knowledge_metadata_id(meta)
         companion_root = tag_root / kb_id if kb_id else None
         files = [primary_path]
-        if companion_root and companion_root.is_dir():
+        if companion_root and filesystem_path(companion_root).is_dir():
             attachment_dirs.add(companion_root.resolve())
             files.extend(_candidate_entry_files(companion_root))
         specs.append((tag_root, primary_path, sorted(files, key=lambda path: str(path.relative_to(tag_root)).lower())))
 
-    for entry_root in sorted((path for path in tag_root.iterdir() if path.is_dir() and not path.name.startswith(".")), key=lambda path: path.name.lower()):
+    for entry_root in sorted((path for path in (logical_path(item) for item in filesystem_path(tag_root).iterdir()) if filesystem_path(path).is_dir() and not path.name.startswith(".")), key=lambda path: path.name.lower()):
         if entry_root.resolve() in attachment_dirs:
             continue
         markdown_files = _candidate_markdown_files(entry_root)
@@ -684,10 +686,10 @@ def _entry_specs(tag_root: Path, item_type: str) -> list[tuple[Path, Path, list[
 
 
 def _bounded_index_files(root: Path) -> tuple[list[Path], bool]:
-    if not root.is_dir():
+    if not filesystem_path(root).is_dir():
         return [], False
     files: list[Path] = []
-    for directory, names, filenames in os.walk(root, followlinks=False):
+    for directory, names, filenames in os.walk(filesystem_path(root), followlinks=False):
         check_scan_cancelled()
         names[:] = sorted(
             name
@@ -698,7 +700,7 @@ def _bounded_index_files(root: Path) -> tuple[list[Path], bool]:
         for filename in sorted(filenames):
             if filename.startswith("."):
                 continue
-            path = Path(directory) / filename
+            path = logical_path(Path(directory) / filename)
             if not _is_entry_file(path) or _is_index_file(path):
                 continue
             files.append(path)
@@ -729,7 +731,7 @@ def _index_entry_specs(
         meta, _body = _parse_front_matter(text)
         kb_id = knowledge_metadata_id(meta)
         companion_root = tag_root / kb_id if kb_id else None
-        if companion_root and companion_root.is_dir():
+        if companion_root and filesystem_path(companion_root).is_dir():
             attachment_dirs.add(companion_root.resolve())
         files, truncated = _bounded_entry_files(primary_path, companion_root)
         specs.append((tag_root, primary_path, files, truncated))
@@ -737,8 +739,8 @@ def _index_entry_specs(
     for entry_root in sorted(
         (
             path
-            for path in tag_root.iterdir()
-            if path.is_dir() and not path.name.startswith(".")
+            for path in (logical_path(item) for item in filesystem_path(tag_root).iterdir())
+            if filesystem_path(path).is_dir() and not path.name.startswith(".")
         ),
         key=lambda path: path.name.lower(),
     ):
@@ -748,8 +750,8 @@ def _index_entry_specs(
         top_level_markdown = sorted(
             (
                 path
-                for path in entry_root.iterdir()
-                if path.is_file()
+                for path in (logical_path(item) for item in filesystem_path(entry_root).iterdir())
+                if filesystem_path(path).is_file()
                 and path.suffix.lower() == ".md"
                 and not path.name.startswith(".")
                 and not _is_index_file(path)
@@ -819,13 +821,13 @@ def scan_index_source(active_only: bool = False) -> dict:
         if not project_id or not project_path:
             continue
         kb_root = os.path.join(os.path.normpath(project_path), "knowledge_base")
-        if not os.path.isdir(kb_root):
+        if not filesystem_path(kb_root).is_dir():
             continue
         for item_type in allowed_types:
             check_scan_cancelled()
             folder = tag_folder_map.get(item_type) or item_type
             root = Path(kb_root) / folder
-            if not root.is_dir():
+            if not filesystem_path(root).is_dir():
                 continue
             for entry_root, primary_path, entry_files, files_truncated in _index_entry_specs(root):
                 check_scan_cancelled()
@@ -892,18 +894,18 @@ def scan_index_source(active_only: bool = False) -> dict:
 
 def _read_file_text(abs_path: str, max_bytes: int = 2_000_000) -> str:
     try:
-        size = os.path.getsize(abs_path)
+        size = os.path.getsize(filesystem_path(abs_path))
     except (OSError, ValueError):
         size = 0
     if size and size > max_bytes:
         try:
-            with open(abs_path, "rb") as f:
+            with open(filesystem_path(abs_path), "rb") as f:
                 raw = f.read(max_bytes)
             return raw.decode("utf-8", errors="replace")
         except (OSError, ValueError):
             return ""
     try:
-        with open(abs_path, encoding="utf-8") as f:
+        with open(filesystem_path(abs_path), encoding="utf-8") as f:
             return f.read()
     except (OSError, ValueError):
         return ""

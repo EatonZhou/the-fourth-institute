@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from management_common.filesystem_paths import filesystem_path, logical_path
 from management_portal.resources import get_resource_service
 
 from knowledge_board_lan.knowledge_source import (
@@ -48,7 +49,7 @@ def _indexed_item_files(
     seen: set[Path] = set()
     for raw_path in [primary_path, *candidates]:
         path = raw_path.resolve(strict=False)
-        if path in seen or not path.is_file():
+        if path in seen or not filesystem_path(path).is_file():
             continue
         try:
             path.relative_to(content_root)
@@ -79,7 +80,7 @@ def _indexed_item_files(
 def _candidate_article_files(root: Path) -> list[Path]:
     resolved_root = root.resolve(strict=False)
     candidates: list[Path] = []
-    for dirpath, dirnames, filenames in os.walk(resolved_root):
+    for dirpath, dirnames, filenames in os.walk(filesystem_path(resolved_root)):
         dirnames[:] = sorted(
             name
             for name in dirnames
@@ -88,8 +89,8 @@ def _candidate_article_files(root: Path) -> list[Path]:
         for filename in sorted(filenames):
             if filename.startswith("."):
                 continue
-            path = Path(dirpath) / filename
-            if path.is_symlink() or not path.is_file():
+            path = logical_path(Path(dirpath) / filename)
+            if filesystem_path(path).is_symlink() or not filesystem_path(path).is_file():
                 continue
             resolved = path.resolve(strict=False)
             try:
@@ -120,7 +121,7 @@ def _article_primary_path(article: dict, article_root: Path) -> Path:
         primary_path.relative_to(article_root)
     except ValueError as exc:
         raise ValueError("article primary file escapes the article root") from exc
-    if not primary_path.is_file():
+    if not filesystem_path(primary_path).is_file():
         raise KeyError("article primary file not found")
     return primary_path
 
@@ -144,7 +145,7 @@ def _article_item_record(
         raise KeyError("article not found") from exc
     article = resolved.get("record") if isinstance(resolved.get("record"), dict) else {}
     article_root = Path(str(resolved.get("article_root") or article.get("canonical_root") or "")).expanduser().resolve(strict=False)
-    if not article_root.is_dir():
+    if not filesystem_path(article_root).is_dir():
         raise KeyError("article root not found")
     status = str(article.get("status") or attrs.get("status") or "").strip()
     if active_only and status not in {"active", "system"}:
@@ -179,7 +180,7 @@ def _article_item_record(
         if str(value).strip()
     ]
     try:
-        mtime = int(primary_path.stat().st_mtime)
+        mtime = int(filesystem_path(primary_path).stat().st_mtime)
     except OSError:
         mtime = 0
     return {

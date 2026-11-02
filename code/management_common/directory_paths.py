@@ -6,6 +6,7 @@ from pathlib import Path
 import stat
 import sys
 
+from management_common.filesystem_paths import filesystem_path
 from .instance_manifest import AREAS, current_instance
 
 
@@ -83,7 +84,7 @@ def _remove_entry(parent, name, *, identity=None):
     # Windows stat_child rejects reparse points for reads. Cleanup instead
     # needs their lstat attributes so it can remove the link entry itself.
     try:
-        before = ((directory_path(parent) / name).lstat() if os.name == 'nt'
+        before = (filesystem_path(directory_path(parent) / name).lstat() if os.name == 'nt'
                   else os.stat(name, dir_fd=parent, follow_symlinks=False))
     except FileNotFoundError:
         return
@@ -171,7 +172,7 @@ def _directory_case_sensitive(path: Path) -> bool:
     requested = path
     while True:
         try:
-            status = path.stat()
+            status = filesystem_path(path).stat()
             if stat.S_ISDIR(status.st_mode):
                 break
         except (FileNotFoundError, NotADirectoryError):
@@ -190,21 +191,21 @@ def _directory_case_sensitive(path: Path) -> bool:
 def _existing_directory_case_sensitive(path: Path) -> bool:
     # Ask the filesystem to look up an alternate spelling of an existing
     # entry. No writes and no platform assumptions (including network mounts).
-    with os.scandir(path) as entries:
+    with os.scandir(filesystem_path(path)) as entries:
         for entry in entries:
             alternate = ''.join(c.swapcase() if c.isascii() else c for c in entry.name)
             if alternate == entry.name:
                 continue
             original = entry.stat(follow_symlinks=False)
             try:
-                other = (path / alternate).lstat()
+                other = filesystem_path(path / alternate).lstat()
             except FileNotFoundError:
                 return True
             if not os.path.samestat(original, other):
                 return True
             # Same inode alone is insufficient: distinct hard-link entries
             # must not be mistaken for alternate spellings of one entry.
-            return any(item.name == alternate for item in path.iterdir())
+            return any(item.name == alternate for item in filesystem_path(path).iterdir())
 
     # Empty/numeric-only directories need a native policy query.
     if sys.platform == 'darwin':
@@ -269,11 +270,11 @@ def assert_missing_location(path: Path) -> None:
     """Reject occupied entries and aliased ancestors using the common rule."""
     path = lexical_path(path)
     for candidate in reversed((path, *path.parents)):
-        if str(candidate) == str(candidate.parent) or not candidate.parent.is_dir():
+        if str(candidate) == str(candidate.parent) or not filesystem_path(candidate.parent).is_dir():
             continue
         sensitive = _directory_case_sensitive(candidate.parent)
         key = candidate.name if sensitive else candidate.name.casefold()
-        for entry in candidate.parent.iterdir():
+        for entry in filesystem_path(candidate.parent).iterdir():
             name = entry.name if sensitive else entry.name.casefold()
             if (name == key
                     and (str(candidate) == str(path) or entry.name != candidate.name)):
@@ -301,7 +302,7 @@ def rename_directory_no_replace(source: Path, destination: Path) -> None:
     """Atomically publish a directory without replacing even an empty target."""
     assert_missing_location(destination)
     if os.name == 'nt':
-        os.rename(source, destination)  # Windows rename refuses existing targets.
+        os.rename(filesystem_path(source), filesystem_path(destination))  # Windows rename refuses existing targets.
         return
     import ctypes
     libc = ctypes.CDLL(None, use_errno=True)
