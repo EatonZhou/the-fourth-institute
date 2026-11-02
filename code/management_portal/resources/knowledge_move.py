@@ -169,9 +169,9 @@ def _assert_no_nested_owners(plan, connection):
     registry = get_registry_store()
     nested = connection.execute(f'''
         SELECT d.document_id FROM "{registry.database.schema}".registry_documents d,
-        LATERAL jsonb_array_elements(COALESCE(d.document_json->'directories','[]'::jsonb)
-            || COALESCE(d.document_json->'checkouts','[]'::jsonb)
-            || COALESCE(d.document_json->'roots','[]'::jsonb)) e
+        LATERAL jsonb_array_elements(COALESCE(d.document_json::jsonb->'directories','[]'::jsonb)
+            || COALESCE(d.document_json::jsonb->'checkouts','[]'::jsonb)
+            || COALESCE(d.document_json::jsonb->'roots','[]'::jsonb)) e
         WHERE d.collection=ANY(%s) AND d.document_id<>%s
           AND EXISTS(SELECT 1 FROM unnest(%s::text[]) p
                      WHERE e->>'path'=p OR starts_with(e->>'path',p||'/')) LIMIT 1

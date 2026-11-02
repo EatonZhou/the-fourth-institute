@@ -369,6 +369,31 @@ def test_nested_owners_and_adopted_directories_require_own_migration(relocation,
     sync.assert_not_called()
 
 
+@pytest.mark.parametrize("nested_owner", [False, True])
+def test_text_registry_storage_preserves_move_and_nested_owner_checks(relocation, nested_owner):
+    source, payload, _create, _permissions, sync = relocation
+    registry = get_registry_store()
+    with registry.database.transaction() as connection:
+        connection.execute(
+            f'ALTER TABLE "{registry.database.schema}".registry_documents '
+            'ALTER COLUMN document_json TYPE TEXT USING document_json::text'
+        )
+    if nested_owner:
+        with registry.writer("repo") as writer:
+            writer.put("repo", "repo_0123456789ab", {"checkouts": [{
+                "path": str(source.parent / KNOWLEDGE_ID / "history"), "origin": "created",
+            }]})
+        with pytest.raises(ValueError, match="independently registered"):
+            invoke(payload)
+        assert current() == source and source.exists()
+        sync.assert_not_called()
+    else:
+        result = invoke(payload)
+        assert result["status"] == "completed" and result["projected"]
+        assert not source.exists() and current().exists()
+        assert _yaml_front_matter(current().read_text())["project"] == "Destination"
+
+
 def test_source_permission_precedes_any_metadata_version_read(relocation, monkeypatch):
     source, payload, _create, permissions, _sync = relocation
     permissions.side_effect = lambda *args: set()
