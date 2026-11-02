@@ -1,8 +1,7 @@
 'use strict';
 
-// One diagnostic read of the original, caller-bound HATG panel. Save the whole
-// result before asserting captured. No navigation, mutations, recovery or polls;
-// a snapshot is not a business receipt or a replacement for original readiness.
+// Read one diagnostic snapshot of the caller-bound HATG panel. The result
+// is optional report material; this function does not navigate or mutate.
 async function readHatgControlsSnapshot(panel, {lineageId, snapshotTimeoutMs = 1000} = {}) {
   if (!/^lineage_[a-z0-9]+$/.test(lineageId || '')) throw new TypeError('Exact lineageId is required');
   if (!Number.isFinite(snapshotTimeoutMs) || snapshotTimeoutMs <= 0 || snapshotTimeoutMs > 10000) {

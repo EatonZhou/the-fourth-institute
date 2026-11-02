@@ -1,8 +1,7 @@
 'use strict';
 
-// Original pre-action DOM evidence only. Never fits, scrolls, selects or retries.
-// Save the result before asserting ready. This bounds browser frame sampling,
-// not the original caller's tool RTT or the enclosing business action.
+// Read current native Watchboard controls. The deadline bounds browser
+// frame sampling, not the business action. Samples are optional report material.
 async function readWatchboardNodePrerequisites(panel, {residentId, frameTimeoutMs = 1000} = {}) {
   if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new TypeError('Exact Resident ID required');
   if (!Number.isFinite(frameTimeoutMs) || frameTimeoutMs <= 0 || frameTimeoutMs > 10000)

@@ -1,10 +1,8 @@
 'use strict';
 
-// Install before the original click. Only observes its Request/Response objects;
-// never submits, retries, cancels, navigates, or infers a transport abort cause.
-// A receipt is not a refreshed-running UI sample or a successful review body.
-// record must persist synchronously; join request_id to the original public
-// action/page/frame/document record before accepting the caller's receipt.
+// Observe the selected Paper's Request/Response objects after registration.
+// This does not submit, retry, cancel, navigate or infer an abort cause.
+// The record callback consumes observations synchronously for report material.
 function observePaperReviewSubmission(page, {origin, paperId, requestId, record,
   frame = page.mainFrame(), bodyTimeoutMs = 5000} = {}) {
   const base = new URL(origin);

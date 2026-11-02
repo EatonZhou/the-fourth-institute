@@ -1,9 +1,8 @@
 'use strict';
 
-// Passive prerequisite only. Caller reveals the real native strip, waits in
-// the original action, clicks once, and separately proves that panel closed.
-// This browser deadline bounds frame sampling only, not the caller's tool RTT.
-// The caller must save this result before asserting ready or taking any action.
+// Read whether the native tab close control is currently reachable.
+// The deadline bounds browser frame sampling only. Retaining the snapshot
+// is optional and does not determine the product-use report.
 async function readWorkbenchTabClose(tab, {panelId, frameTimeoutMs = 1000} = {}) {
   if (!panelId || typeof panelId !== 'string') throw new TypeError('Exact original panel ID required');
   if (!Number.isFinite(frameTimeoutMs) || frameTimeoutMs <= 0 || frameTimeoutMs > 10000)

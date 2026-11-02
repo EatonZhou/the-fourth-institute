@@ -92,15 +92,19 @@ def test_tfi_framework_format_writers_plan_identity():
     assert request == original
 
 
-def test_tfi_framework_format_writers_report_keeps_failed_and_budget():
-    """报告投影保留原失败和预算，不创建 Campaign。"""
-    record = {"run_id": RUN_ID, "status": "failed", "results": [{"status": "failed", "failure_class": "product"}],
+def test_tfi_framework_format_writers_report_keeps_usage_and_budget():
+    """报告投影保留过程和产品问题，不创建 Campaign。"""
+    record = {"run_id": RUN_ID, "status": "reported", "results": [{"status": "reported", "details": {
+        "process": {"status": "blocked"},
+        "issues": [{"category": "product", "severity": "blocking", "symptom": "保存后无法继续"}]}}],
               "groups": [], "plan": {"execution": {"mode": "parallel-modules", "max_parallel_modules": 3}}}
     original = deepcopy(record)
     result = tau_campaign.tau_report(record)
-    assert result["schema"] == "tfi.portal-tau-report.v1"
-    assert result["status"] == "failed" and result["campaign_id"] == RUN_ID
-    assert result["summary"]["failed"] == 1 and result["summary"]["failure_classes"] == {"product": 1}
+    assert result["schema"] == "tfi.portal-tau-report.v2"
+    assert result["status"] == "reported" and result["campaign_id"] == RUN_ID
+    assert result["summary"]["reported"] == 1
+    assert result["summary"]["process"]["blocked"] == 1
+    assert result["summary"]["issues"]["product"] == 1
     assert result["execution"] == {"mode": "parallel-modules", "max_parallel_modules": 3,
                                    "account": "test-actor", "target": "DEV"}
     assert record == original

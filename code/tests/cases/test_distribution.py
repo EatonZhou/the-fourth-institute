@@ -68,8 +68,24 @@ def test_full_test_requires_supervision_and_behavior():
     evidence.update(supervisor_resident_id=run["supervisor_resident_id"], instance_url="http://localhost:9876", behavior_evidence=["selected repo read"])
     with pytest.raises(ValueError, match="TAU"):
         store.report(run["run_id"], state="succeeded", stage="checks", evidence=evidence, expected_revision=1)
-    evidence["tau_status"] = "passed"
+    evidence["tau_report"] = {"process": {"status": "completed"}, "issues": [], "performance": [],
+                              "evidence_gaps": ["截图和耗时未记录"]}
     assert store.report(run["run_id"], state="succeeded", stage="checks", evidence=evidence, expected_revision=1)["state"] == "succeeded"
+
+
+def test_full_test_preserves_usage_report_without_automatic_tau_verdict():
+    store = ReleaseStore()
+    run = store.create_run(actor="viewer", request_key="usage-report", mode="full_test", snapshot={}, tau_validation=True)
+    report = {"process": {"status": "blocked", "stopped_at": "保存", "reason": "页面未恢复"},
+              "issues": [{"category": "product", "severity": "blocking", "step": "保存", "symptom": "页面未恢复"}],
+              "performance": [], "evidence_gaps": "截图未记录"}
+    evidence = {"manifest": "manifest.json", "checks_passed": True,
+                "supervisor_resident_id": run["supervisor_resident_id"], "instance_url": "http://localhost:9876",
+                "behavior_evidence": ["installed behavior reviewed"], "tau_report": report}
+    result = store.report(run["run_id"], state="succeeded", stage="checks", evidence=evidence, expected_revision=1)
+    assert result["state"] == "succeeded"
+    assert result["result"]["tau_report"]["process"]["status"] == "blocked"
+    assert result["result"]["tau_report"]["evidence_gaps"] == ["截图未记录"]
 
 
 def test_config_save_receipt_retries():

@@ -1,8 +1,7 @@
 'use strict';
 
-// One passive original-window snapshot. No selection, zoom, request, click or
-// retry. Caller saves all fields before judging readiness, and independently
-// verifies stability within its original bounded action before clicking once.
+// Read the selected HATG panel before a Fork. This passive snapshot does
+// not select, zoom, request or click; retaining it is optional.
 async function readHatgForkPrerequisites(panel, {residentId} = {}) {
   if (!/^resident_[a-z0-9]+$/.test(residentId || '')) throw new TypeError('Exact source Resident ID required');
   if (await panel.count() !== 1) throw new Error('One original HATG region required');

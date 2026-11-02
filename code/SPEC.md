@@ -180,7 +180,7 @@
 - [Portal Resource Backup 监控、触发与恢复边界](/r/decision_b06ae321a668)
 - [Portal Test Case、Catalog 与运行证据协议](/r/decision_8273271b67b1)
 - [共享代码实例的回归与 TAU 验收](docs/testing.md)
-- [Portal Test Workbench 的测试浏览、运行与审查界面](/r/decision_f2a6a5dd4646)
+- [Portal Test 页面：测试总览、用例目录、运行与 TAU](/r/decision_f2a6a5dd4646)
 - [Portal TAU Campaign 与模块 Resident 自动验证机制](/r/decision_c953eab654cd)
 - [Portal 定向验证与发布证据](/r/decision_6febe7bb57f9)
 - [TFI Portal 开源发行：命名、发布内容、首次部署与发布工作台](/r/decision_15aab18c0ab3)

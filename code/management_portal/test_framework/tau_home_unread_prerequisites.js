@@ -1,9 +1,8 @@
 'use strict';
 
-// Read once in the original pre-navigation window. inputMessageId/finalMessageId
-// must come from the original accepted input and its verified Final, not from the
-// index being checked. The caller saves this result before asserting it, alongside
-// its original observer identities/receipts. This is not a read-mark or RTT test.
+// Read Home's current unread view for the specified Resident and messages.
+// Use known message IDs to avoid circular identity checks; the snapshot is
+// optional report material and does not mark messages as read.
 async function readHomeUnreadPrerequisites(root, { residentId, lineageId, inputMessageId, finalMessageId, requestActor }) {
   if (!/^resident_[a-z0-9]+$/.test(residentId || '') || !/^lineage_[a-z0-9]+$/.test(lineageId || '')
     || !/^msg_[a-zA-Z0-9_]+$/.test(inputMessageId || '') || !/^msg_[a-zA-Z0-9_]+$/.test(finalMessageId || '')

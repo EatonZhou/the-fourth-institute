@@ -1,8 +1,6 @@
 'use strict';
-// Call in the original committed-delete callback. Two passive frames describe
-// current visible UI and cache; they cannot replace a failed earlier callback.
-// Save the complete result before asserting ready. This browser-frame budget
-// is not a measurement of the original caller's RTT or business action.
+// Read the current deleted-target feedback across two passive frames.
+// The frame budget bounds observation only. Missing samples are report gaps.
 async function readMailboxDeletedTarget(page,{residentId,entryKey,frameTimeoutMs=1000}={}) {
  if(!/^resident_[0-9a-f]+$/.test(residentId)||entryKey!=='resident:'+residentId)throw new Error('Exact Resident and entry key required');
  if(!Number.isFinite(frameTimeoutMs)||frameTimeoutMs<=0||frameTimeoutMs>10000)throw new TypeError('Frame sampling deadline must be in (0, 10000] ms');

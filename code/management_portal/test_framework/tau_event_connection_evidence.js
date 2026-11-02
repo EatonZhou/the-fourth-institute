@@ -1,7 +1,7 @@
 'use strict';
 
-// One original-action observation after the original CreateWire receipt. The
-// caller persists it before deciding. No request, click, wait, poll or retry.
+// Read the current Event/Effect connection for known object identities.
+// The result is optional report material; no request or click is performed.
 async function readEventEffectConnection(panel,{lineageId,eventId,effectId,wireId}={}) {
   for(const [name,prefix,value] of [['lineageId','lineage',lineageId],['eventId','event_source',eventId],['effectId','effect',effectId],['wireId','wire',wireId]])
     if(!new RegExp('^'+prefix+'_[a-z0-9]+$').test(value || '')) throw new TypeError('Original '+name+' is required');

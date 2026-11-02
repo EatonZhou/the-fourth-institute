@@ -1,8 +1,7 @@
 'use strict';
 
-// Component rows only: pair with readFunctionBlockMenuReady(..., pane:'objects')
-// in the original action. This does not establish Resident membership, a new
-// failed step, or unread-alert retention. Persist each observation separately.
+// Read component rows alongside the current Function Block objects pane.
+// The returned rows are optional report material, not an overall verdict.
 async function readFunctionBlockObjectRows(panel,{blockId,title,components}={}) {
   if(!/^fbi_[a-z0-9]+$/.test(blockId || '') || typeof title!=='string' || !title.trim() ||
       !Array.isArray(components) || !components.length || new Set(components.map(x=>x?.id)).size!==components.length ||

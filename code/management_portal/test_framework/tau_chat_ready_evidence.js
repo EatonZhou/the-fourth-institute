@@ -9,8 +9,8 @@ function visibleResidentChatRoots(page, {residentId}) {
   });
 }
 
-// Read the current full native Chat root in one DOM snapshot. The original
-// action owns bounded waits and must persist each snapshot before asserting it.
+// Read the current full native Chat root in one DOM snapshot. The caller
+// owns bounded waits and may retain useful snapshots in the report.
 // Only native Portal deletion feedback is inspected; no message text is returned.
 // No requests, clicks, timers or implicit retries.
 async function readResidentChatReady(region, { residentId }) {

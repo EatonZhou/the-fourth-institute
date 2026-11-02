@@ -1974,8 +1974,7 @@ def test_tau_accepts_mixed_evidence_when_a_ui_screenshot_is_present(tmp_path: Pa
             "resident_id": "resident-ui",
             "message": (
                 'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"UI 可用","issues":[],'
-                '"evidence":["screen.png","notes.json"],'
-                '"visual_review":{"status":"reported","process":{"status":"completed"},"summary":"布局正常"}}'
+                '"evidence":["screen.png","notes.json"]}'
             ),
         }
 

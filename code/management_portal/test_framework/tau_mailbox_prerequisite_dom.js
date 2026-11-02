@@ -1,7 +1,7 @@
 'use strict';
 
-// Read only the exact native Menu. Call before and after the single native
-// Pin click, inside its original action. This cannot recover a missed ready.
+// Read the exact native Mailbox Menu. This can be sampled before or
+// after an operation and retained as optional report material.
 async function readMailboxPinDom(menu, {residentId, pinned} = {}) {
   if (!/^resident_[a-f0-9]{12}$/.test(residentId || '') || typeof pinned !== 'boolean') {
     throw new TypeError('Exact Resident identity and expected Pin state required');

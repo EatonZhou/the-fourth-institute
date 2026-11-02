@@ -1,8 +1,7 @@
 'use strict';
 
-// Read the actual scoped Watchboard; a button ancestor is not the whole panel.
-// The state is observed, not assumed to be idle. Generated files and instruction
-// receipts still need to be checked inside the caller's original action.
+// Read the current Watchboard surface for the specified identity.
+// The result can accompany a usage report; it is not a completeness gate.
 async function readWatchboardPanel(root) {
   if (await root.count() !== 1) throw new Error('One actual Watchboard root is required');
   return root.evaluate(node => {

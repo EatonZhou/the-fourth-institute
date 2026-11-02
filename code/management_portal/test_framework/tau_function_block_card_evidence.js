@@ -1,8 +1,7 @@
 'use strict';
 
-// One passive original-action read. The native collapsed card exposes its
-// title as aria-label, not body text. This is card readiness, not a creation,
-// membership, Menu or issue-state receipt. Persist before judging ready.
+// Read the native collapsed card, whose title is exposed as aria-label.
+// Card readiness describes the current UI, not the use report's outcome.
 async function readFunctionBlockCardReady(panel,{lineageId,blockId,title}={}) {
   if(!/^lineage_[a-z0-9]+$/.test(lineageId || '') || !/^fbi_[a-z0-9]+$/.test(blockId || '') ||
       typeof title!=='string' || !title.trim()) throw new TypeError('Original lineageId, blockId and title are required');

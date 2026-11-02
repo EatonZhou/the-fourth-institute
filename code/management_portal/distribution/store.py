@@ -176,8 +176,11 @@ class ReleaseStore:
                 if run["mode"] == "full_test":
                     if evidence.get("supervisor_resident_id") != run["supervisor_resident_id"] or not evidence.get("instance_url") or not evidence.get("behavior_evidence"):
                         raise ValueError("Full test requires actual supervisor and installed behavior evidence")
-                    if run["tau_validation"] and evidence.get("tau_status") != "passed":
-                        raise ValueError("Requested TAU validation has not passed")
+                    if run["tau_validation"]:
+                        from management_portal.test_framework.tau_usage_report import usage_report
+
+                        report = usage_report(evidence.get("tau_report"))
+                        evidence = {**evidence, "tau_report": report}
             revision = run["revision"] + 1
             c.execute("INSERT INTO stages(run_id,sequence,stage,evidence) VALUES (%s,%s,%s,%s::jsonb)",
                       (run_id, revision, stage, canonical(evidence)))

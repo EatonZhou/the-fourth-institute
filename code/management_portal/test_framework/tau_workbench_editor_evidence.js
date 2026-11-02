@@ -2,8 +2,8 @@
 
 const { createHash } = require('node:crypto');
 
-// Samples only. Never opens details, changes values, clicks, fetches, or repairs
-// earlier evidence. Caller must retain its original action/page/document IDs.
+// Samples only: no details are opened and no values are changed. A caller may
+// collect later snapshots too, labelling their observation times in the report.
 async function readEditorEvidence(page) {
   const sample = await page.evaluate(() => {
     const visible = e => {

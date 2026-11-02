@@ -1,8 +1,7 @@
 'use strict';
 
-// Original-window evidence. The read/wait functions only observe; the explicit
-// fitAndWait operation clicks the native Fit control once. Callers supply exact
-// sets from original receipts and persist every sample, including failures.
+// Read or wait for the specified HATG view. The explicit fitAndWait
+// operation clicks the native Fit control. Sample recording is optional.
 async function readHatgViewSnapshot(panel, {lineageId}) {
   if (!/^lineage_[a-z0-9]+$/.test(lineageId || '')) throw new TypeError('Exact Lineage identity required');
   const candidates = await panel.evaluateAll(roots => roots.map(root => {

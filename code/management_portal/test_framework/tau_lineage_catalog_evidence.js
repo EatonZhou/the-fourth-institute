@@ -1,8 +1,7 @@
 'use strict';
 
-// Read only the caller-bound navigation surface. This is NOT proof that a
-// catalog response completed: retain and check the original response separately.
-// Save all candidates before asserting; do not open HATG to satisfy navigation.
+// Read the current native Lineage catalog. Surface readiness and a
+// network response are separate observations; either may supply report material.
 async function readLineageCatalogSurface(panel, {panelId = 'navigation'} = {}) {
   if (typeof panelId !== 'string' || !panelId.trim()) throw new TypeError('Exact panelId required');
   const candidates = await panel.evaluateAll((roots, expectedId) => {

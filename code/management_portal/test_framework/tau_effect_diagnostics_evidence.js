@@ -1,7 +1,7 @@
 'use strict';
 
-// One observation of the current native Inspector. The original action owns
-// the deadline and records every sample; this does not fetch or save a script.
+// Observe the current native Inspector. Sampling does not fetch or save a
+// script; the caller can retain useful observations for its report.
 async function readEffectDiagnosticsReady(inspector, {componentId}) {
   if (typeof componentId !== 'string' || !componentId.trim()) throw new TypeError('Expected an exact Effect ID');
   const candidates = await inspector.evaluateAll((panels, expected) => panels.map(panel => {
