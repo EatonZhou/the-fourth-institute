@@ -29,7 +29,7 @@
     const meta = String(valueFor(options.getMeta, entry, "") || "");
     const badge = valueFor(options.getBadge, entry, "") || "";
     const marker = directory && valueFor(options.hasChildren, entry, entry?.has_children !== false)
-      ? window.PortalUIPrimitives?.iconHtml?.(expanded ? "chevron-up" : "chevron-down") || ""
+      ? window.PortalUIPrimitives?.iconHtml?.(expanded ? "chevron-down" : "chevron-right") || ""
       : "";
     const extraClasses = String(valueFor(options.getClasses, entry, "") || "").trim();
     const indentation = Number(options.indentBase ?? 8) + depth * Number(options.indentStep ?? 14);
