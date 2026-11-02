@@ -1001,7 +1001,7 @@ modules:
   - id: "interface.workbenches"
     title: "工作台与投影应用"
     parent: "interface"
-    responsibility: "装载工作台区域和投影 iframe，展示地图、进展、演化并发送五字段语义焦点。"
+    responsibility: "装载工作台区域和投影 iframe，展示地图、进展、演化并发送五字段语义焦点；独立探索前沿预览组织来源关联的工作线、介入入口和执行回执，复用原服务维护状态与结果。"
     instruction_owners: []
     code_paths:
       - "management_portal/static/*workbench*"
@@ -1009,6 +1009,10 @@ modules:
       - "management_portal/static/lineage_*.js"
       - "management_portal/static/hatg_panel.js"
       - "management_portal/workbench_projections/development_app/src"
+      - "management_portal/frontier.html"
+      - "management_portal/static/frontier.js"
+      - "management_portal/static/frontier_model.js"
+      - "management_portal/static/frontier.css"
       - "management_portal/static/portal_editor_open_service.js"
       - "management_portal/static/portal_resource_registration_service.js"
       - "management_portal/static/hatg_panel.css"
@@ -1026,6 +1030,7 @@ modules:
       - "management_portal/hatg-panel.html"
       - "management_portal/static/lineage_primitive_definitions.json"
     designs:
+      - "decision_82deabe891a5"
       - "decision_0571f3741e23"
       - "decision_4bc03b20c30f"
       - "decision_4348ed990621"
@@ -2388,6 +2393,22 @@ protocols:
       - "decision_99bb5dc0f96b"
     description: "component_recovery 读取独立服务状态端点和当前应用端点；服务换代状态由 Lifecycle/控制面拥有，浏览器只据返回状态提供恢复操作与等待提示。"
     example: "requestStatus(independentStatusEndpoint) → 控制面快照；requestStatus(endpoint) → 应用可达性；组件比较响应后继续等待或恢复页面。"
+
+  - id: "exploration-frontier"
+    title: "探索前沿的共享入口、来源核验与投递回执"
+    modules:
+      - "interface.workbenches"
+      - "lineage.automation"
+      - "lineage.conversation"
+      - "resources"
+      - "web.community"
+    designs: []
+    related_designs:
+      - "decision_82deabe891a5"
+      - "decision_71ba0494b93e"
+      - "decision_9d15ae2053c4"
+    description: "浏览器以 Lineage 共享单元保存探索种子的局部身份、来源与介入要求，使用 expected_value 比较保存；来源正文和执行状态仍由原资源与消息服务拥有。ResolveResource 失败时隐藏入口及关系，Project 只聚合可读团队；稍后关注属个人页面偏好，不改变业务。投递前复核来源权限和版本，先 CAS 冻结 dispatch，再以同一消息 ID 和幂等键提交 DeliverMessage；GetInputState 的已有回复不代表目标完成。"
+    example: "用户打开 /frontier?lineage=… → GetSharedState 加载工作线 → ResolveResource 核对来源 → 编辑并用 UpdateSharedState CAS 保存 → 冻结负责人、正文与消息 ID → DeliverMessage → GetInputState 展示接收、推进与回复。回执丢失重用原请求，不根据摘要启动第二份工作。"
 
   - id: "lineage-template-view"
     title: "Lineage 模板目录与实例化输入"
