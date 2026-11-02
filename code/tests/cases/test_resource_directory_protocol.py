@@ -49,13 +49,14 @@ def test_pending_checkout_does_not_hide_sibling_from_scan(tmp_path):
 
 
 def test_repo_enqueue_failure_rolls_back_object_transaction(tmp_path, monkeypatch):
+    from management_portal.resources import directory_registrations
+
     root = tmp_path / 'repo'
     _make_repo(root, 'https://example.invalid/rollback.git')
     record = repos.scan_and_sync_repo_registry([root], apply=True)['created'][0]
-    queue = get_directory_cleanup_store()
     def fail(*args, **kwargs):
         raise RuntimeError('queue unavailable')
-    monkeypatch.setattr(queue, 'enqueue', fail)
+    monkeypatch.setattr(directory_registrations, 'enqueue_directory_cleanup', fail)
     with pytest.raises(RuntimeError, match='queue unavailable'):
         repos.unregister_repo(record['id'])
     assert get_registry_store().get('repo', record['id']) is not None

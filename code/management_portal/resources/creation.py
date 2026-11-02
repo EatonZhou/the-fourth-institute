@@ -88,7 +88,9 @@ def _sync(path):
     children = list(path.rglob('*')) if path.is_dir() else []
     for item in [*children, path, path.parent]:
         if not item.is_symlink() and not (os.name == 'nt' and item.is_dir()):
-            descriptor = os.open(item, os.O_RDONLY)
+            # Windows FlushFileBuffers requires a write-capable handle. The
+            # CRT reports EBADF when fsync receives a read-only descriptor.
+            descriptor = os.open(item, os.O_RDWR if os.name == 'nt' else os.O_RDONLY)
             try:
                 os.fsync(descriptor)
             finally:
