@@ -41,7 +41,10 @@
         },
       );
       return [{ id: "lineage", title: window.PortalI18n.t("My Projects"), items: [], itemType: "resident", projectGroups,
-        empty: residentSidebarPendingText("Project") || (state.query ? "没有匹配的 Project。" : "暂无可访问的 Project。") }];
+        empty: residentSidebarPendingText("Project") || (state.query.trim()
+          ? window.PortalI18n.text`没有与「${state.query.trim()}」匹配的项目。`
+          : state.projectFilter !== "all" || (state.projectDisplayFilter === "non-empty" && state.principalHierarchy?.projects?.length)
+            ? window.PortalI18n.t("当前筛选条件下没有项目。") : window.PortalI18n.t("暂无可访问的 Project。")) }];
     }
 
     // Until the first ready sidebar snapshot arrives nothing is known about
@@ -55,18 +58,23 @@
     function renderResidentGroup(group) {
       const queryActive = !!state.query.trim();
       const open = queryActive || state.residentGroups[group.id] !== false;
-      const hasProjectGroups = Array.isArray(group.projectGroups) && group.projectGroups.length;
+      const hasProjectGroups = state.residentSidebarReady && Array.isArray(group.projectGroups) && group.projectGroups.length;
       const bodyHtml = hasProjectGroups
         ? renderProjectSubgroups(group)
         : group.items.length
           ? group.items.map(renderRegisteredResidentItem).join("")
-          : window.PortalI18n.html`<div class="residentEmpty">${esc(group.empty)}</div>`;
+          : window.PortalI18n.html`<div class="residentEmpty" ${state.residentSidebarError ? 'role="alert"' : 'role="status"'}>${esc(group.empty)}
+              ${state.residentSidebarReady ? (queryActive || state.projectFilter !== "all" || state.projectDisplayFilter !== "all"
+                ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-sidebar-show-all>${queryActive ? window.PortalI18n.t("清除搜索，显示全部项目") : window.PortalI18n.t("显示全部项目")}</button>` : "")
+                : state.residentSidebarError ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-sidebar-retry>重新读取项目</button>` : ""}
+            </div>`;
       return window.PortalI18n.html`<section class="residentSection ${open ? "open" : "collapsed"}" data-resident-group="${esc(group.id)}">
           <div class="residentGroupHead">
             <button class="residentToggle" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" aria-label="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")}" data-portal-icon="${open ? "chevron-up" : "chevron-down"}" data-portal-icon-class="residentChevron"></button>
             <button class="residentGroupName" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
             ${group.id === "lineage" ? window.PortalI18n.html`<button class="residentAddBtn" type="button" data-project-create aria-label="创建 Project" title="创建 Project" data-portal-icon="plus"></button>` : ""}
           </div>
+          ${queryActive ? window.PortalI18n.html`<div class="sidebarSearchSummary" role="status"><span>${window.PortalI18n.text`正在筛选：${esc(state.query.trim())}`}</span><span>${state.residentSidebarReady ? window.PortalI18n.text`匹配 ${group.projectGroups.length} 个项目` : window.PortalI18n.t(state.residentSidebarError ? "项目读取失败" : "正在读取项目…")}</span><button class="portalButton is-icon is-compact" type="button" data-sidebar-search-clear aria-label="清除搜索" title="清除搜索">×</button></div>` : ""}
           ${open ? window.PortalI18n.html`<div class="residentGroupBody">
             ${bodyHtml}
           </div>` : ""}
@@ -182,6 +190,21 @@
       const list = $id("agentList");
       const groups = residentGroups();
       list.innerHTML = window.PortalI18n.html`<div class="agentList">${residentNavigationShortcutsHtml()}${groups.map(renderResidentGroup).join("")}</div>`;
+      list.querySelectorAll("[data-sidebar-search-clear], [data-sidebar-show-all]").forEach(button => {
+        button.addEventListener("click", () => {
+          if (button.hasAttribute("data-sidebar-show-all")) {
+            state.projectFilter = "all";
+            state.projectDisplayFilter = "all";
+            writeLineageUiState({ projectFilter: "all", projectDisplayFilter: "all" });
+          }
+          const input = $id("searchInput");
+          input.value = "";
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+      });
+      list.querySelector("[data-sidebar-retry]")?.addEventListener("click", () => {
+        refreshResidentSidebarIfDue(true).catch(error => window.PortalUI.toast(error.message || String(error), "error"));
+      });
       renderActivityRecentRail();
       list.querySelectorAll("[data-resident-toggle]").forEach(btn => {
         btn.addEventListener("click", event => {
@@ -205,7 +228,7 @@
         state.projectFilter = "all";
         state.residentGroups.lineage = true;
         $id("searchInput").value = "";
-        writeLineageUiState({ query: "", projectFilter: "all", projectDisplayFilter: "all" });
+        writeLineageUiState({ projectFilter: "all", projectDisplayFilter: "all" });
         window.PortalUI.toast(window.PortalI18n.t("Project 已创建，可在项目卡片中添加 Lineage。"), "success");
         try {
           await refreshResidentSidebarIfDue(true);

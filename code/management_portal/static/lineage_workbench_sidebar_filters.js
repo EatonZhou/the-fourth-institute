@@ -109,7 +109,11 @@
 
     function setSearchOpen(open) {
       state.searchOpen = !!open;
-      writeLineageUiState({ searchOpen: state.searchOpen });
+      if (!state.searchOpen) {
+        state.query = "";
+        $id("searchInput").value = "";
+        renderAgentList();
+      }
       syncAgentTools();
       if (state.searchOpen) {
         window.setTimeout(() => $id("searchInput").focus(), 0);

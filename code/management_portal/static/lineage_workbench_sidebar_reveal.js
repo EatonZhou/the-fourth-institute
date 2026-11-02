@@ -44,7 +44,7 @@
       focusPreferredSidebarTarget({ residentId });
     }
 
-    function ensureResidentSidebarTargetVisible(item, { preserveQuery = false } = {}) {
+    function ensureResidentSidebarTargetVisible(item, { preserveQuery = true } = {}) {
       if (!item) return;
       state.residentGroups.lineage = true;
       const meta = projectMetaForAgent(item);
@@ -57,7 +57,6 @@
         state.query = "";
         const input = $id("searchInput");
         if (input) input.value = "";
-        patch.query = state.query;
       }
       const itemProject = String(item.project_id || item.project || "");
       if (state.projectFilter !== "all" && state.projectFilter !== itemProject) {
@@ -94,7 +93,7 @@
       if (menuTarget?.type === "resident") {
         ensureResidentSidebarTargetVisible(
           lineageRoot || menuTarget.item,
-          { preserveQuery: Boolean(target.preserveQuery) },
+          { preserveQuery: target.preserveQuery !== false },
         );
         setSideView("agents");
         renderAgentList();

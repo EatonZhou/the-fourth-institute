@@ -374,8 +374,7 @@
             ? saved.layout
             : {},
         );
-        if (typeof saved.query === "string") state.query = saved.query;
-        if (typeof saved.searchOpen === "boolean") state.searchOpen = saved.searchOpen;
+        // Search belongs to this page visit; stored layout must not revive it.
         if (typeof saved.projectFilter === "string") state.projectFilter = saved.projectFilter || "all";
         state.projectDisplayFilter = normalizedProjectDisplayFilter(saved.projectDisplayFilter || state.projectDisplayFilter);
         if (saved.favoriteGroups && typeof saved.favoriteGroups === "object" && !Array.isArray(saved.favoriteGroups)) {
@@ -1022,9 +1021,6 @@
         $id("chatroomRefreshBtn").addEventListener("click", () => loadChatrooms());
         $id("searchInput").addEventListener("input", event => {
           state.query = event.target.value || "";
-          // Search is user-owned navigation state and must survive an immediate refresh.
-          // It is small enough to persist synchronously on each input event.
-          writeLineageUiState({ query: state.query });
           renderAgentList();
         });
         $id("searchToggleBtn").addEventListener("click", () => setSearchOpen(!state.searchOpen));
@@ -1150,6 +1146,7 @@
       }
 
       function persistCurrentSideView() {
+        setSearchOpen(false);
         writeLineageUiState({ sideView: state.sideView || "agents", lastSideView: state.sideView || "agents" });
       }
 

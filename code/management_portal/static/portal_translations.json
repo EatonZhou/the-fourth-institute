@@ -1,4 +1,12 @@
 {
+  "没有与「{p0}」匹配的项目。": {"zh-CN": "没有与「{p0}」匹配的项目。", "en": "No projects match “{p0}”."},
+  "当前筛选条件下没有项目。": {"zh-CN": "当前筛选条件下没有项目。", "en": "No projects match the current filters."},
+  "清除搜索，显示全部项目": {"zh-CN": "清除搜索，显示全部项目", "en": "Clear search and show all projects"},
+  "显示全部项目": {"zh-CN": "显示全部项目", "en": "Show all projects"},
+  "重新读取项目": {"zh-CN": "重新读取项目", "en": "Reload projects"},
+  "正在筛选：{p0}": {"zh-CN": "正在筛选：{p0}", "en": "Filtering by: {p0}"},
+  "匹配 {p0} 个项目": {"zh-CN": "匹配 {p0} 个项目", "en": "{p0} matching projects"},
+  "清除搜索": {"zh-CN": "清除搜索", "en": "Clear search"},
   "Workspace 已删除或不可用": {"zh-CN": "Workspace 已删除或不可用", "en": "Workspace has been deleted or is unavailable"},
   "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。": {"zh-CN": "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。", "en": "Create a Portal-managed Workspace at an empty location; delete it with its owning object."},
   "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。": {"zh-CN": "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。", "en": "Register an existing directory as a new Workspace; unregistering removes the record and preserves the directory."},
