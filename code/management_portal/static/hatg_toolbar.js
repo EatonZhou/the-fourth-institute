@@ -186,7 +186,7 @@
         handoff.dataset.portalTooltip = tooltip;
         handoff.setAttribute("aria-label", tooltip.replace(/。$/, ""));
       }
-      ["context", "workspace"].forEach(mode => {
+      ["context", "workspace", "frontier"].forEach(mode => {
         const tab = $id(`graph${mode[0].toUpperCase()}${mode.slice(1)}ViewBtn`);
         const active = state.graphViewMode === mode;
         tab?.classList.toggle("active", active);
@@ -225,7 +225,7 @@
       });
       const graphActions = $id("graphActions");
       if (graphActions) {
-        const viewLabel = ({ context: "Context", workspace: "Workspace" })[state.graphViewMode] || "HATG";
+        const viewLabel = ({ context: "Context", workspace: "Workspace", frontier: "线头" })[state.graphViewMode] || "HATG";
         graphActions.dataset.viewMode = state.graphViewMode;
         graphActions.dataset.selectionActive = selectedCanvasCount > 0 ? "true" : "false";
         graphActions.setAttribute(

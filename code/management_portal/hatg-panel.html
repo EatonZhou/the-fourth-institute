@@ -13,6 +13,7 @@
           <div class="hatgViewSwitch" role="tablist" aria-label="HATG 视图" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 视图&quot;}">
             <button class="hatgViewTab active" id="graphContextViewBtn" type="button" role="tab" aria-selected="true" aria-controls="hatgViewport"><span><!--portal-i18n:"Context"-->Context</span></button>
             <button class="hatgViewTab" id="graphWorkspaceViewBtn" type="button" role="tab" aria-selected="false" aria-controls="hatgViewport"><span><!--portal-i18n:"Workspace"-->Workspace</span></button>
+            <button class="hatgViewTab" id="graphFrontierViewBtn" type="button" role="tab" aria-selected="false" aria-controls="hatgFrontier"><span>线头</span></button>
           </div>
           <div class="graphActions" id="graphActions" data-portal-toolbar data-view-mode="context" role="toolbar" aria-label="Context 操作" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Context 操作&quot;}">
             <button class="portalButton is-compact is-primary graphAction" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="addNodeBtn" type="button" aria-label="新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident" data-portal-tooltip="新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident。" disabled data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;新节点：创建独立 Agent，或通过 Resident ID 加入已有 Resident&quot;}">
@@ -74,6 +75,7 @@
               title="取消连线（Esc）"
              data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;取消当前原语连线&quot;, &quot;title&quot;: &quot;取消连线（Esc）&quot;}"><span><!--portal-i18n:"取消"-->取消</span><kbd><!--portal-i18n:"Esc"-->Esc</kbd></button>
           </div>
+        <section id="hatgFrontier" role="tabpanel" aria-label="Lineage 探索前沿" hidden style="flex:1;min-height:0;overflow:auto"></section>
         <div class="hatgViewport" id="hatgViewport">
           <div class="hatgCanvas" id="hatgCanvas" tabindex="0" aria-label="HATG 图编辑画布；按住 Shift 点击或拖出选框可多选节点" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 图编辑画布；按住 Shift 点击或拖出选框可多选节点&quot;}">
             <div class="hatgWorld" id="hatgWorld" data-hatg-engine="d3">

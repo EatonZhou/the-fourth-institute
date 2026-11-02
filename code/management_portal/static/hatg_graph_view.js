@@ -267,7 +267,34 @@
       $id("graphVisibilitySummary").textContent = `${model.nodes.length} / ${model.overviewNodes.length}`;
     }
 
+    let frontier = null, frontierLineage = '', frontierSequence = 0;
+    function renderFrontier() {
+      const host = $id("hatgFrontier");
+      if (!host) return false;
+      const active = state.graphViewMode === "frontier" && !!state.lineage;
+      host.hidden = !active;
+      const pane = $id("hatgPane");
+      [$id("hatgViewport"), pane?.querySelector(".functionShelf"), $id("graphActions")].forEach(el => {
+        if (el) el.style.display = active ? "none" : "";
+      });
+      const id = state.lineage?.lineage_id || '';
+      if (frontierLineage !== id) {
+        frontier?.destroy(); frontier = null; frontierLineage = ''; frontierSequence++;
+      }
+      if (active && frontierLineage !== id) {
+        frontierLineage = id;
+        const sequence = ++frontierSequence;
+        host.textContent = '正在打开探索前沿…';
+        import('/static/frontier.js').then(module => {
+          if (sequence !== frontierSequence) return;
+          host.textContent = '';
+          frontier = module.mountFrontier(host, {lineage:id});
+        }).catch(error => { if(sequence === frontierSequence) { frontierLineage=''; host.textContent=error.message; } });
+      }
+      return active;
+    }
     function renderGraph() {
+      if (renderFrontier()) return;
       const empty = $id("graphEmpty");
       const display = state.lineage;
       const model = graphVisibleModel();
@@ -716,7 +743,7 @@
     }
 
     async function setGraphViewMode(mode) {
-      const next = ["context", "workspace"].includes(mode) ? mode : "context";
+      const next = ["context", "workspace", "frontier"].includes(mode) ? mode : "context";
       if (next !== "context" && state.programWireDraft) cancelProgramWireDraft();
       if (next === "workspace" && state.workspaceViewLoading) return;
       const requestSequence = ++state.graphViewRequestSeq;
@@ -761,6 +788,12 @@
         : "";
       clearCanvasSelection({ render: false });
       state.graphViewMode = next;
+      if (/^\/lineage\/?$/.test(location.pathname)) {
+        const url = new URL(location.href);
+        if (next === 'frontier') url.searchParams.set('view', 'frontier');
+        else url.searchParams.delete('view');
+        history.replaceState(history.state, '', url);
+      }
       state.graphFocusMode = false;
       clearGraphNodeSearch();
       state.graphRelationFilter = "all";

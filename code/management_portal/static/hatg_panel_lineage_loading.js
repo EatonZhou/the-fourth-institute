@@ -83,7 +83,7 @@
       activateLineageEdits();
       state.graphFocusMode = false;
       state.graphRelationFilter = "all";
-      state.graphViewMode = "context";
+      state.graphViewMode = new URLSearchParams(location.search).get("view") === "frontier" ? "frontier" : "context";
       state.selectedEdgeId = "";
       state.selectedProgramObjectId = "";
       programFeature.clearForLineageChange();

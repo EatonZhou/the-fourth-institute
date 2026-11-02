@@ -14,10 +14,15 @@ const seeds=[
 let state={schema:'tfi.exploration-frontier.v1',items:seeds}, denied=false, conflict=false, delivered=0, input='running';
 const server=http.createServer(async(req,res)=>{
   let name=new URL(req.url,'http://localhost').pathname;
+  if(name==='/fixture') {res.writeHead(200,{'Content-Type':'text/html'});return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style><script src="/static/portal_state.js"></script><script src="/static/portal_api.js"></script><script src="/static/portal_instruction_client.js"></script><script src="/static/portal_page_state.js"></script><div id="surface"></div><script type="module">import {mountFrontier} from '/static/frontier.js';window.frontier=mountFrontier(document.querySelector('#surface'),{lineage:'${lineage}'});</script>`);}
+
+  if(name==='/map-fixture') {res.writeHead(200,{'Content-Type':'text/html'});return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;--border:#dde4df;--accent:#286050;--muted:#718078;--panel:#fff;--text:#253e36;--warn:#a57b30;--ok:#25835a;font:14px system-ui}button{font:inherit}</style><link rel="stylesheet" href="/static/portal_components.css"><link rel="stylesheet" href="/static/portal_design_system.css"><link rel="stylesheet" href="/static/project.css"><link rel="stylesheet" href="/static/project_map.css">${['portal_state','portal_text','portal_translations','portal_i18n','portal_api','portal_instruction_client','portal_page_state','portal_ui_primitives','portal_ui','project_common','project_map_layout','project_map_drawer','project_map'].map(n=>'<script src="/static/'+n+'.js"></script>').join('')}<main id="map"></main><script>window.map=PortalProjectMap.create({root:document.querySelector('#map')});map.load('example');</script>`);}
   if(name==='/api/instructions/execute'){
     let text='';for await(const chunk of req)text+=chunk;const body=JSON.parse(text),a=body.arguments;let result={};
     if(body.instruction==='GetLineage')result={lineage:{title:'研究协作 · 实际内容预览',nodes:[{id:owner,title:'研究伙伴'}],project_id:'example'}};
-    if(body.instruction==='GetSharedState')result={value:state};
+    if(body.instruction==='GetSharedState')result={value:a.lineage_id===lineage ? state : {schema:'tfi.exploration-frontier.v1',items:[{...seeds[0],title:'Project team seed'}]}};
+    if(body.instruction==='GetProject')result={project:{resource_id:'example'},team:{project_lineage_id:'lineage_abcdefabcdef',lineages:[{lineage_id:lineage,title:'Research team'}]}};
+    if(body.instruction==='GetResearchMap')result={project_id:'example',revision:1,goal:'Explore with context',relations:[],notes:[],outputs:{},layout:{},directions:[{direction_id:'direction_aaaaaaaaaaaa',title:'Research judgement',stance:'focus',teams:[lineage]},{direction_id:'direction_bbbbbbbbbbbb',title:'Unassigned question',stance:'explore',teams:[]}]};
     if(body.instruction==='ResolveResource'){
       if(denied){res.writeHead(403,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:{message:'来源不可读'}}));}
       result={resource:{title:a.address.startsWith('thinking')?'科研选题的思想框架与研究品味':'线头视图：持续呈现探索前沿',version:{number:1}}};
@@ -37,7 +42,7 @@ const server=http.createServer(async(req,res)=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1050}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
-    await page.goto(`http://127.0.0.1:${server.address().port}/frontier?lineage=${lineage}`);await page.waitForSelector('.card');
+    await page.goto(`http://127.0.0.1:${server.address().port}/fixture?lineage=${lineage}`);await page.waitForSelector('.card');
     assert.equal(await page.locator('.card').count(),3);
     await page.screenshot({path:path.join(out,'desktop.png'),fullPage:true});
     await page.getByRole('button',{name:'关系图',exact:true}).click();assert.equal(await page.locator('.graph-line').count(),1);
@@ -48,12 +53,40 @@ const server=http.createServer(async(req,res)=>{
     await page.locator('.card h3 button').first().click();await page.getByRole('button',{name:'更新线头'}).click();
     await page.locator('[name="reason"]').fill('寻找可以实际反驳的方法。');conflict=true;
     await page.getByRole('button',{name:'保存线头'}).click();await page.getByText('其他人已更新这条工作线。',{exact:false}).waitFor();assert.equal(await page.locator('[name="reason"]').inputValue(),'寻找可以实际反驳的方法。');
-    conflict=false;await page.getByRole('button',{name:'保存线头'}).click();await page.waitForFunction(()=>!document.querySelector('#editor').open);
-    await page.locator('.card h3 button').first().click();await page.getByRole('button',{name:'交给 Agent',exact:true}).click();await page.getByRole('button',{name:'确认交给 Agent',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#dispatch').open);assert.equal(delivered,1);
-    await page.getByText('推进中',{exact:true}).waitFor();input='completed';await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('.card').length===2);await page.locator('[data-filter="history"]').click();await page.getByText('已有回复',{exact:true}).waitFor();
+    conflict=false;await page.getByRole('button',{name:'保存线头'}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#editor').open);
+    await page.locator('.card h3 button').first().click();await page.getByRole('button',{name:'交给 Agent',exact:true}).click();await page.getByRole('button',{name:'确认交给 Agent',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#dispatch').open);assert.equal(delivered,1);
+    await page.getByText('推进中',{exact:true}).waitFor();input='completed';await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#surface').shadowRoot.querySelectorAll('.card').length===2);await page.locator('[data-filter="history"]').click();await page.getByText('已有回复',{exact:true}).waitFor();
     denied=true;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.getByText('内容已隐藏',{exact:false}).waitFor();assert.equal(await page.locator('.card').count(),0);
     denied=false;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForSelector('.card');await page.locator('[data-filter="all"]').click();
     await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
+    // Native Research Map: direction context, project aggregate, duplicate local IDs,
+    // and live map rerenders preserve the open reading surface.
+    state={schema:'tfi.exploration-frontier.v1',items:seeds};
+    await page.setViewportSize({width:1400,height:950});
+    await page.goto(`http://127.0.0.1:${server.address().port}/map-fixture`);
+    await page.locator('[data-frontier-direction="direction_aaaaaaaaaaaa"]').click();
+    await page.locator('.mapFrontier .card').first().waitFor();
+    assert.equal(await page.locator('.mapFrontier .card').count(),3);
+    assert.ok(await page.locator('[data-map-viewport]').isVisible());
+    await page.locator('[data-frontier-direction="direction_bbbbbbbbbbbb"]').click();
+    await page.locator('.mapFrontier #refresh:not([disabled])').waitFor();
+    assert.equal(await page.locator('.mapFrontier .card').count(),0);
+    await page.locator('[data-frontier-all]').click();
+    await page.locator('.mapFrontier .card').first().waitFor();
+    assert.equal(await page.locator('.mapFrontier .card').count(),4);
+    await page.getByRole('button',{name:'Project team seed',exact:true}).click();
+    assert.match(await page.locator('.mapFrontier #detail a').last().getAttribute('href'),/lineage_abcdefabcdef/);
+    await page.evaluate(()=>map.load('example'));
+    assert.ok(await page.locator('.mapFrontier #detail').isVisible());
+    await page.locator('.mapFrontier #detail [data-close]').click();
+    await page.screenshot({path:path.join(out,'map-desktop.png'),fullPage:true});
+    await page.setViewportSize({width:390,height:844});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.screenshot({path:path.join(out,'map-mobile.png'),fullPage:true});
+    await page.locator('[data-frontier-close]').click();
+    assert.equal(await page.locator('.mapFrontier').count(),0);
+    assert.ok(await page.locator('[data-map-viewport]').isVisible());
+    assert.deepEqual(errors,[]);
     console.log('PASS: render, relationships, personal defer/restore, conflict preserves draft, dispatch receipt, result convergence, permission loss, mobile overflow. Fixture execution only; no live messages.');
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});

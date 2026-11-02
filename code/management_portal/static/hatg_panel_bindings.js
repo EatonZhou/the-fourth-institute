@@ -258,6 +258,7 @@
       $id("graphFocusModeBtn").addEventListener("click", toggleGraphFocusMode);
       $id("graphContextViewBtn")?.addEventListener("click", () => setGraphViewMode("context"));
       $id("graphWorkspaceViewBtn")?.addEventListener("click", () => setGraphViewMode("workspace"));
+    $id("graphFrontierViewBtn")?.addEventListener("click", () => setGraphViewMode("frontier"));
       $id("graphRelationFilter").addEventListener("change", changeGraphRelationFilter);
       $id("reconcileLineageRuntimeBtn")?.addEventListener("click", event => reconcileLineageRuntime({ button: event.currentTarget, notify: true }).catch(() => {}));
       bindGraphNodeSearch();

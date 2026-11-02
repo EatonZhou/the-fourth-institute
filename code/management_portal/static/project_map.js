@@ -25,6 +25,48 @@
     };
     let drawer = null;
     let reloadTimer = 0;
+    let frontierOpen = new URLSearchParams(location.search).get('frontier') === '1';
+    let frontierPanel = null, frontierSurface = null, frontierKey = '', frontierSequence = 0;
+    let viewportSize = '';
+    const viewportObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
+      const {width, height} = entries[0].contentRect;
+      const next = `${Math.round(width)}:${Math.round(height)}`;
+      if (width && height && viewportSize && next !== viewportSize) fit();
+      if (width && height) viewportSize = next;
+    }) : null;
+
+    function closeFrontier() {
+      frontierOpen = false;
+      frontierPanel?.remove();
+      const host = root.querySelector('[data-map-drawer]');
+      if (host) host.hidden = !drawer?.selected();
+      root.querySelector('[data-map-frontier]')?.setAttribute('aria-pressed', 'false');
+      fit();
+    }
+
+    function renderFrontier() {
+      if (!frontierOpen || state.replay) { frontierPanel?.remove(); return; }
+      if (!frontierPanel) {
+        frontierPanel = document.createElement('aside');
+        frontierPanel.className = 'mapFrontier';
+        frontierPanel.setAttribute('aria-label', '研究地图探索前沿');
+        frontierPanel.innerHTML = '<header class="mapFrontierHead"><strong>探索前沿</strong><button type="button" data-frontier-all>项目全部</button><button type="button" data-frontier-close aria-label="关闭探索前沿">×</button></header><div class="mapFrontierBody"></div>';
+      }
+      root.querySelector('.mapStage').append(frontierPanel);
+      root.querySelector('[data-map-drawer]').hidden = true;
+      root.querySelector('[data-map-frontier]')?.setAttribute('aria-pressed', 'true');
+      const direction = state.map.directions.find(d => d.direction_id === drawer?.selected());
+      const key = JSON.stringify([state.projectId, direction?.direction_id, direction?.teams]);
+      if (key === frontierKey) return;
+      frontierKey = key;
+      frontierSurface?.destroy(); frontierSurface = null;
+      const sequence = ++frontierSequence;
+      const host = frontierPanel.querySelector('.mapFrontierBody');
+      import('/static/frontier.js').then(module => {
+        if (sequence !== frontierSequence) return;
+        frontierSurface = module.mountFrontier(host, {project:state.projectId, teams:direction?.teams, title:direction?.title || '项目的探索前沿'});
+      }).catch(error => { if(sequence === frontierSequence) { frontierKey=''; host.textContent=error.message; } });
+    }
 
     const teams = () => {
       const current = state.team || { lineages: [] };
@@ -56,6 +98,7 @@
           style="left:${position.x}px;top:${position.y}px;--heat:${heat.toFixed(2)}">
         <div class="mapNodeHead"><span class="mapNodeStance">${esc(t(STANCE_LABELS[direction.stance]))}</span>${outputs.length ? `<span class="mapNodeCount" title="${esc(t("产出"))}">${outputs.length}</span>` : ""}</div>
         <strong class="mapNodeTitle">${esc(direction.title)}</strong>
+        ${!state.replay ? `<button class="mapNodeFrontier" type="button" data-frontier-direction="${esc(direction.direction_id)}">${esc(t('探索'))} · Frontier ↗</button>` : ""}
         ${line ? `<p class="mapNodeLine">${esc(line)}</p>` : ""}
         ${direction.stance === "candidate" ? `<div class="mapNodeCandidate"><button type="button" data-accept="${esc(direction.direction_id)}">${esc(t("接纳"))}</button><button type="button" data-discard="${esc(direction.direction_id)}">${esc(t("丢弃"))}</button></div>` : ""}
         ${avatars || running ? `<div class="mapNodeFoot">${avatars}${running ? `<span class="mapNodeLive"><i class="projectPulse" aria-hidden="true"></i>${esc(t("正在工作"))}</span>` : ""}</div>` : ""}
@@ -96,6 +139,7 @@
         <div class="mapTitle"><h1>研究地图</h1><span class="mapRevision">${esc(revision)}</span></div>
         <div class="mapCounts">${summary}</div>
         <div class="mapActions">
+          ${state.replay ? "" : `<button type="button" class="portalButton is-compact" data-map-frontier aria-pressed="${frontierOpen}">Frontier</button>`}
           ${state.replay ? "" : `<button type="button" class="portalButton is-compact is-primary" data-map-add data-portal-icon="plus"><span>${esc(t("新方向"))}</span></button>`}
           <label class="mapToggle"><input type="checkbox" data-map-dropped${state.showDropped ? " checked" : ""} /> ${esc(t("显示放弃的方向"))}</label>
           <button type="button" class="portalButton is-compact" data-map-fit data-portal-icon="fit-view"><span>${esc(t("适应视图"))}</span></button>
@@ -131,6 +175,7 @@
       const empty = !directions.length ? window.PortalI18n.html`<div class="mapEmpty"><h2>开始绘制研究地图</h2>
           <p>写下这个项目要攻的几条路线：每条一个方向，主攻、探索或观望由你决定。也可以在右侧请 Project Resident 根据项目的知识起草一版候选方向。</p>
           <button type="button" class="portalButton is-primary" data-map-add data-portal-icon="plus"><span>提出第一个方向</span></button></div>` : "";
+      frontierPanel?.remove();
       root.innerHTML = window.PortalI18n.html`<section class="projectMap${state.replay ? " is-replay" : ""}">
         ${toolbarHtml(directions)}
         <div class="mapStage">
@@ -157,6 +202,9 @@
       drawer.update({ map, teams: teams(), states: state.states, summaries: state.summaries });
       if (previous && !state.replay && directions.some(item => item.direction_id === previous)) drawer.open(previous);
       markSelection();
+      renderFrontier();
+      viewportObserver?.disconnect();
+      viewportObserver?.observe(root.querySelector('[data-map-viewport]'));
     }
 
     function markSelection() {
@@ -205,6 +253,7 @@
       const first = state.projectId !== projectId;
       state.projectId = projectId;
       if (first) {
+        frontierSurface?.destroy(); frontierSurface = null; frontierKey = ''; frontierSequence++;
         state.replay = null;
         state.project = null;
         state.team = null;
@@ -306,6 +355,8 @@
       markSelection();
       const direction = state.map.directions.find(item => item.direction_id === directionId);
       onSelectionChange?.(direction || null);
+      renderFrontier();
+      if (frontierOpen) fit();
     }
 
     async function addDirection() {
@@ -443,6 +494,15 @@
       try {
         const back = target.closest("[data-map-back]");
         if (back && common().plainClick(event)) { event.preventDefault(); onBack?.(); return; }
+        if (target.closest('[data-frontier-close]')) return closeFrontier();
+        if (target.closest('[data-frontier-all]')) { drawer.close(); renderFrontier(); return; }
+        const frontierDirection = target.closest('[data-frontier-direction]');
+        if (frontierDirection) { frontierOpen = true; select(frontierDirection.dataset.frontierDirection); return; }
+        if (target.closest('[data-map-frontier]')) {
+          if (frontierOpen) closeFrontier();
+          else { frontierOpen = true; renderFrontier(); fit(); }
+          return;
+        }
         if (target.closest("[data-map-add]")) return await addDirection();
         if (target.closest("[data-map-fit]")) return fit();
         if (target.closest("[data-map-replay]")) return state.replay ? stopReplay() : await startReplay();
@@ -485,6 +545,8 @@
       team: () => state.team,
       snapshot: () => JSON.parse(JSON.stringify({ map: state.map, view: state.view, replay: state.replay ? { index: state.replay.index, revision: state.replay.map.revision } : null })),
       destroy() {
+        viewportObserver?.disconnect();
+        frontierSequence++; frontierSurface?.destroy(); frontierPanel?.remove();
         state.generation += 1;
         window.removeEventListener("portal:change", onChange);
         window.clearTimeout(reloadTimer);

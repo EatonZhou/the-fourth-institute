@@ -227,7 +227,17 @@ def prefix_unit(root: Path, prefix: str) -> tuple[str, ...]:
 
 
 def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
-    return (LINEAGE_WORKBENCH_RELEASE_UNIT, chat_workspace_unit(root),
+    frontier = (
+        'management_portal/frontier.html',
+        'management_portal/static/frontier_entry.js',
+        'management_portal/static/frontier.js',
+        'management_portal/static/frontier_model.js',
+        'management_portal/static/frontier_template.js',
+        'management_portal/static/frontier.css',
+        'management_portal/static/hatg_graph_view.js',
+        'management_portal/static/project_map.js',
+    )
+    return (LINEAGE_WORKBENCH_RELEASE_UNIT, frontier, chat_workspace_unit(root),
             *(script_group_unit(root, group) for group in PART_SCRIPT_GROUPS),
             *(page_unit(root, page, prefix) for page, prefix in PAGES),
             page_unit(root, *MANAGEMENT_PAGE), prefix_unit(root, PERMISSION_SCHEMES_PREFIX))

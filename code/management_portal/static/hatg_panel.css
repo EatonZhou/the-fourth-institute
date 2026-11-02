@@ -131,7 +131,7 @@
 .hatgViewSwitch {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, minmax(82px, 1fr));
+  grid-template-columns: repeat(3, minmax(64px, 1fr));
   gap: 2px;
   border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
   border-radius: 9px;
