@@ -61,6 +61,7 @@
     }
     layout.append(tabs, stage); root.prepend(layout);
     tabs.querySelector('[data-management-tab="users"]').hidden = allows.CreateUser !== true;
+    tabs.querySelector('[data-management-tab="execution"]').hidden = !portalAdmin && !panelState.permissionsOff && allows.GetExecutionSettings !== true && allows.UpdateExecutionSettings !== true;
     tabs.querySelector('[data-management-tab="resource-types"]').hidden = allows.ListResourceTypes !== true && !panelState.permissionsOff;
     tabs.querySelector('[data-management-tab="backend"]').hidden = allows.ListProviders !== true && allows.ListProviderAccounts !== true && allows.UpdateProviderAccount !== true && allows.RegisterProviderAccount !== true && !panelState.permissionsOff;
     tabs.querySelector('[data-management-tab="paths"]').hidden = me.access?.user_category !== "portal_admin";

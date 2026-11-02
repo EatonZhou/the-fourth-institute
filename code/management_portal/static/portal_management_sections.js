@@ -83,6 +83,7 @@
     const openSection = async ({view = "users", principalId, accountId, createAccount = false} = {}) => {
       if (!entries.has(view)) throw new Error("Unknown Portal Management view.");
       if (["network", "instances"].includes(view) && !portalAdmin) return false;
+      if (view === "execution" && root.querySelector('[data-management-tab="execution"]').hidden) return false;
       if (panelState.permissionsOff && permissionViews.has(view)) { view = "users"; principalId = undefined; }
       if (panelState.destroyed || panelState.confirming) return false;
       const current = entries.get(currentView);

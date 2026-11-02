@@ -19,7 +19,8 @@ const response = (body, status = 200) => ({ ok: status < 400, status, json: asyn
 const tick = () => new Promise(resolve => setImmediate(resolve));
 async function settle() { for (let index = 0; index < 6; index++) await tick(); }
 
-async function harness(t, { category = 'portal_admin', view = 'users', pendingAccess = false } = {}) {
+async function harness(t, { category = 'portal_admin', view = 'users', pendingAccess = false,
+  permissionSystem = 'open', allows = {} } = {}) {
   const dom = new JSDOM('<main id="host"></main>', { url: 'https://portal.example/', runScripts: 'outside-only' });
   const w = dom.window;
   const tag = (strings, ...values) => strings.reduce((text, part, index) => text + part + (values[index] ?? ''), '');
@@ -52,7 +53,7 @@ async function harness(t, { category = 'portal_admin', view = 'users', pendingAc
   let panel;
   t.after(() => { panel?.destroy(); w.close(); });
   const mounting = w.PortalManagementPanel.mount(root, {
-    me: { username: 'admin', access: { user_category: category, permission_system: 'open', allows: { GetExecutionSettings: true, CreateUser: pendingAccess } } },
+    me: { username: 'admin', access: { user_category: category, permission_system: permissionSystem, allows: { GetExecutionSettings: true, CreateUser: pendingAccess, ...allows } } },
     ...(view ? { view } : {}),
   }).then(value => { panel = value; return value; });
   if (pendingAccess) { await settle(); return { w, root, mounting, finishAccess }; }
@@ -115,6 +116,27 @@ test('non-admin cannot load the network panel', async t => {
   const h = await harness(t, { category: 'member' });
   assert.equal(await h.open(), false);
   assert.equal(h.requests.length, 0);
+});
+
+test('execution settings are hidden and direct navigation refused when neither read nor update is allowed', async t => {
+  const h = await harness(t, { category: 'member', permissionSystem: 'enforced',
+    allows: { GetExecutionSettings: false, UpdateExecutionSettings: false, ListResourceTypes: true } });
+  const tab = h.root.querySelector('[data-management-tab="execution"]');
+  assert.equal(tab.hidden, true);
+  assert.equal(await h.panel.openSection({ view: 'execution' }), false);
+  assert.equal(h.root.querySelector('[data-management-view="execution"]').hidden, true);
+});
+
+test('execution settings remain discoverable for granted read or update, admins and open permissions', async t => {
+  for (const config of [
+    { category: 'member', permissionSystem: 'enforced', allows: { GetExecutionSettings: true } },
+    { category: 'member', permissionSystem: 'enforced', allows: { GetExecutionSettings: false, UpdateExecutionSettings: true } },
+    { category: 'portal_admin', permissionSystem: 'enforced', allows: { GetExecutionSettings: false, ListResourceTypes: true } },
+    { category: 'member', permissionSystem: 'open', allows: { GetExecutionSettings: false, ListResourceTypes: true } },
+  ]) {
+    const h = await harness(t, config);
+    assert.equal(h.root.querySelector('[data-management-tab="execution"]').hidden, false);
+  }
 });
 
 test('a failed read reports the error and a reload shows the settings', async t => {
