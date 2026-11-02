@@ -992,12 +992,6 @@
           target: "agentFilterSummary",
           items: () => {
             const items = [];
-            if (state.projectDisplayFilter === "non-empty") {
-              items.push({
-                label: window.PortalI18n.t("显示范围"),
-                value: window.PortalI18n.t("有内容"),
-              });
-            }
             if (state.projectFilter !== "all") {
               const option = projectFilterOptions().find(item => item.value === state.projectFilter);
               items.push({ label: window.PortalI18n.t("项目"), value: option?.label || state.projectFilter });
@@ -1006,11 +1000,9 @@
           },
           onClear: () => {
             state.projectFilter = "all";
-            state.projectDisplayFilter = "all";
             agentFilterDropdown?.close();
             writeLineageUiState({
               projectFilter: state.projectFilter,
-              projectDisplayFilter: state.projectDisplayFilter,
             });
             renderAgentList();
           },

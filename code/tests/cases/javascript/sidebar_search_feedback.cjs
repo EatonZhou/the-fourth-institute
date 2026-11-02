@@ -24,17 +24,22 @@ test('navigation search exposes its cause, clears safely and stays local to the 
   page.window.PortalI18n.apply('zh-CN');
   part.exports.renderAgentList();
   const filterSummary=()=>doc.querySelector('#agentFilterSummary .portalFilterSummary');
-  assert.equal(filterSummary().hidden,false,'only-content is an actual restriction');
-  assert.match(filterSummary().textContent,/有内容/);
-  filterSummary().querySelector('.portalFilterSummaryClear').click();
-  assert.equal(state.projectDisplayFilter,'all','clear removes restrictions instead of adding a default restriction');
-  assert.equal(filterSummary().hidden,true,'unrestricted projects do not show a filter summary');
-  assert.equal(doc.getElementById('agentFilterSummary').classList.contains('is-empty'),true);
-  assert.equal(doc.getElementById('filterToggleBtn').classList.contains('is-active'),false);
+  assert.equal(state.projectDisplayFilter,'non-empty');
+  assert.equal(filterSummary().hidden,true,'the initial display range does not show a status block');
+  for (const mode of ['all','non-empty']) {
+    doc.querySelector(`[data-project-display-filter="${mode}"]`).click();
+    assert.equal(state.projectDisplayFilter,mode,'the range remains selectable from the filter menu');
+    assert.equal(filterSummary().hidden,true,`${mode} does not show a filter summary`);
+    assert.equal(doc.getElementById('agentFilterSummary').classList.contains('is-empty'),true);
+    assert.equal(doc.getElementById('filterToggleBtn').classList.contains('is-active'),mode==='non-empty');
+  }
   state.lineages=[{lineage_id:'lineage_aaaaaaaaaaaa',project_id:'alpha'}];
   state.projectFilter='alpha';part.exports.renderAgentList();
   assert.equal(filterSummary().hidden,false,'a selected Project remains visible as a restriction');
+  assert.doesNotMatch(filterSummary().textContent,/显示范围|有内容/);
   filterSummary().querySelector('.portalFilterSummaryClear').click();
+  assert.equal(state.projectFilter,'all');
+  assert.equal(state.projectDisplayFilter,'non-empty','clearing the Project preserves the display range');
   assert.equal(filterSummary().hidden,true);
   doc.getElementById('searchToggleBtn').click();
   search('provider');
