@@ -3,12 +3,13 @@ follows a committed change (identity checks, permission sync, index projection).
 from __future__ import annotations
 
 import logging
+from contextlib import nullcontext
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from .action import action_payload
 from .mutation import mutation_payload
-from .locking import serialized_mutation
+from .locking import serialized_mutation, mutation_projection_scope
 
 if TYPE_CHECKING:
     from .service import ResourceService
@@ -315,7 +316,6 @@ def execution_content_changes(service: "ResourceService", execution_id: str, *, 
     return changes
 
 
-@serialized_mutation
 def unregister(
     service: "ResourceService",
     resource_id: str,
@@ -333,15 +333,20 @@ def unregister(
         raise ValueError(
             f"{identity.resource_type} resources do not support unregistration"
         )
-    result = provider.unregister(
-        identity.resource_id,
-        actor=str(actor or ""),
-    )
-    return service._complete_mutation(
-        result, resource_type=identity.resource_type, expected_id=identity.resource_id,
-        actor=actor, kind="delete", wait_for_index=wait_for_index,
-        index_timeout=index_timeout,
-    )
+    # Remote domain owners serialize their own deletion and confirm it by
+    # calling our projection endpoint on a different thread. Holding the index
+    # lock across that RPC makes each service wait for the other. Local adapters
+    # retain the commit + projection boundary; final index cleanup is ordered in
+    # both cases.
+    scope = nullcontext() if provider.owner_managed_unregistration else mutation_projection_scope(identity.resource_id)
+    with scope:
+        result = provider.unregister(identity.resource_id, actor=str(actor or ""))
+        with mutation_projection_scope(identity.resource_id):
+            return service._complete_mutation(
+                result, resource_type=identity.resource_type, expected_id=identity.resource_id,
+                actor=actor, kind="delete", wait_for_index=wait_for_index,
+                index_timeout=index_timeout,
+            )
 
 
 def action(

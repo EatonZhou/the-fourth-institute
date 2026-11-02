@@ -172,11 +172,13 @@ class ResourceService:
         update: Any = None,
         content_updatable: bool = False,
         service_managed_registration: bool = False,
+        owner_managed_unregistration: bool = False,
         replace: bool = False,
     ) -> None:
         service_providers.register_mutation_provider(
             self, resource_types, register=register, unregister=unregister, update=update,
             content_updatable=content_updatable, service_managed_registration=service_managed_registration,
+            owner_managed_unregistration=owner_managed_unregistration,
             replace=replace,
         )
 

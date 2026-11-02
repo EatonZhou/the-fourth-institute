@@ -190,4 +190,5 @@ def install_mutation_provider(service: "ResourceService") -> None:
                 raise
         return canonical_record(resource_id, {"deleted": True})
 
-    service.register_mutation_provider(["lineage", "resident"], unregister=unregister)
+    service.register_mutation_provider(["lineage", "resident"], unregister=unregister,
+                                       owner_managed_unregistration=True)

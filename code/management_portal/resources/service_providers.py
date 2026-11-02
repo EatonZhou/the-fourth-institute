@@ -100,6 +100,7 @@ def register_mutation_provider(
     update: Any = None,
     content_updatable: bool = False,
     service_managed_registration: bool = False,
+    owner_managed_unregistration: bool = False,
     replace: bool = False,
 ) -> None:
     values = (
@@ -119,6 +120,7 @@ def register_mutation_provider(
             update=update,
             content_updatable=bool(content_updatable),
             service_managed_registration=bool(service_managed_registration),
+            owner_managed_unregistration=bool(owner_managed_unregistration),
         ),
         replace=replace,
     )

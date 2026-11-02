@@ -19,6 +19,9 @@ class ResourceMutationProvider:
     update: UpdateHandler | None = None
     content_updatable: bool = False
     service_managed_registration: bool = False
+    # The domain serializes deletion and may synchronously publish its tombstone
+    # back through another ResourceService request. Do not lock across that call.
+    owner_managed_unregistration: bool = False
 
 
 class MutationProviderRegistry:
