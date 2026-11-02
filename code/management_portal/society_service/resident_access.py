@@ -24,7 +24,12 @@ def can_manage_resident(record: dict[str, Any], actor: str, *, operation: str = 
 
     if not actor_can_manage_residents(actor):
         return False
-    if not personal_ama.reaches(actor, record.get("personal_owner_id")):
+    resource_id = str(record.get("resident_id") or "")
+    action = "GetResident" if operation == "read" else "@admin" if operation == "manage" else operation
+    if record.get("personal_owner_id") and not personal_ama.acts_for(actor, record.get("personal_owner_id")) and operation in {"read", "manage"}:
+        from .resident_access_scope import action_for
+        action = action_for(resource_id, action)
+    if not personal_ama.reaches(actor, record.get("personal_owner_id"), resource_id, action=action):
         return False
     if operation == "read":
         from management_portal import permission_system
@@ -38,7 +43,7 @@ def may_change_resident(record: dict[str, Any], actor: str) -> bool:
     from .lineage_access_policy import changeable_ids
 
     resident_id = str(record.get("resident_id") or "").strip()
-    return bool(resident_id) and can_manage_resident(record, actor) and resident_id in changeable_ids(
+    return bool(resident_id) and can_manage_resident(record, actor, operation="UpdateResidentSettings") and resident_id in changeable_ids(
         actor, {resident_id: record.get("personal_owner_id") or ""}, "UpdateResidentSettings", "resident_id")
 
 
@@ -62,7 +67,7 @@ def resident_allows(record: dict[str, Any], actor: str) -> dict[str, bool]:
     from management_portal import permission_system
 
     resident_id = str(record.get("resident_id") or "").strip()
-    if not resident_id or not can_manage_resident(record, actor):
+    if not resident_id or not actor_can_manage_residents(actor):
         allowed = dict.fromkeys(RESIDENT_ACTIONS, False)
         if resident_id and resident_deliverable_to_actor(record, actor):
             allowed["DeliverMessage"] = permission_system.allows(actor, "DeliverMessage", {"resident_id": resident_id})
@@ -70,7 +75,15 @@ def resident_allows(record: dict[str, Any], actor: str) -> dict[str, bool]:
     # ForkResident is asked for a fork in this Resident's own Lineage.
     arguments = {"resident_id": resident_id, "lineage_id": str(record.get("lineage_id") or "").strip(),
                  "source_resident_id": resident_id}
-    return permission_system.allows_each(actor, RESIDENT_ACTIONS, arguments)
+    allowed = permission_system.allows_each(actor, RESIDENT_ACTIONS, arguments)
+    for instruction in RESIDENT_ACTIONS:
+        action = instruction
+        if record.get("personal_owner_id") and not personal_ama.acts_for(actor, record.get("personal_owner_id")):
+            from .resident_access_scope import action_for_parameter
+            action = action_for_parameter(instruction, "source_resident_id" if instruction == "ForkResident" else "resident_id")
+        if instruction != "DeliverMessage" and not can_manage_resident(record, actor, operation=action):
+            allowed[instruction] = False
+    return allowed
 
 
 def manage_refusal(record: dict[str, Any]) -> Exception:
@@ -147,7 +160,8 @@ def visible_resident_records(
         if (
             (record := records_by_id.get(resident_id)) is not None
             and resident_catalog.registration_ready(record)
-            and str(record.get("lineage_id") or "").strip() in visible_lineage_ids
+            and (str(record.get("lineage_id") or "").strip() in visible_lineage_ids
+                 or (record.get("personal_owner_id") and resident_visible_to_actor(record, actor_id)))
         )
     ]
 

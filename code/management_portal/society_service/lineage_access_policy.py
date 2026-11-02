@@ -25,8 +25,14 @@ def actor_can_manage_lineage(
     """A valid identity the personal AMA rule lets through; reading also asks GetLineage."""
     if not actor_can_manage_lineages(actor):
         return False
-    if is_personal_lineage(lineage) and not personal_ama.reaches(actor, lineage.get("created_by")):
-        return False
+    if is_personal_lineage(lineage):
+        from .resident_access_scope import action_for
+        resource_id = str(lineage.get("lineage_id") or "")
+        action = "GetLineage" if operation == "read" else "@admin" if operation == "manage" else operation
+        if operation in {"read", "manage"} and not personal_ama.acts_for(actor, lineage.get("created_by")):
+            action = action_for(resource_id, action)
+        if not personal_ama.reaches(actor, lineage.get("created_by"), resource_id, action=action):
+            return False
     if operation == "read":
         from management_portal import permission_system
 
@@ -54,8 +60,11 @@ def changeable_ids(actor: object, owners_by_id: Mapping[str, object], instructio
     """
     from management_portal import permission_system
 
+    from .resident_access_scope import action_for_parameter
+    action = (action_for_parameter(instruction, parameter)
+              if any(owner and not personal_ama.acts_for(actor, owner) for owner in owners_by_id.values()) else instruction)
     ids = [str(resource_id) for resource_id, owner in owners_by_id.items()
-           if resource_id and personal_ama.reaches(actor, _text(owner, 120))]
+           if resource_id and personal_ama.reaches(actor, _text(owner, 120), str(resource_id), action=action)]
     return permission_system.permitted_ids(actor, instruction, parameter, ids)
 
 
@@ -116,9 +125,9 @@ def file_reaches(actor: object, resource_id: str, *, write: bool, owner: str = "
     from management_portal import permission_system
 
     actor_id = str(actor or "").strip()
-    if not actor_id or not resource_id or not personal_ama.reaches(actor_id, owner):
-        return False
     instruction, parameter = FILE_WRITE if write else FILE_READ
+    if not actor_id or not resource_id or not personal_ama.reaches(actor_id, owner, resource_id, action=instruction):
+        return False
     return resource_id in permission_system.permitted_ids(actor_id, instruction, parameter, [resource_id])
 
 

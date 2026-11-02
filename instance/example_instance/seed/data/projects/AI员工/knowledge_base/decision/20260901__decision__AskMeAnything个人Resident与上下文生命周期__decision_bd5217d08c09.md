@@ -4,38 +4,40 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 28
-  created_at: '2026-09-01'
+  number: 30
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T19:12:02Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T09:34:42Z"
   updated_by:
-    user: ''
-    agent: resident_60ae6d0cdf74
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 7
 metaness: 1
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/society_service/principal_hierarchy.py
-  - ${code_root}/management_portal/portal_ui_state.py
-  - ${code_root}/management_portal/personal_ama.py
-  - ${code_root}/management_portal/permission_system/personal_ama.py
-  - ${code_root}/management_portal/society_service/principal_hierarchy_domain.py
-  - ${code_root}/tests/cases/test_personal_ama_provisioning.py
-  - ${code_root}/management_portal/resident_sidebar_backend.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/static/home.js
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_resident_sidebar_backend.py
-  - ${code_root}/tests/cases/test_resident_context_reset.py
-  - ${code_root}/management_portal/society_service/personal_assistant.py
-  - ${code_root}/management_portal/static/portal_agent_inbox.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/principal_hierarchy.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_ui_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/personal_ama.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/personal_ama.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/principal_hierarchy_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_personal_ama_provisioning.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_sidebar_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_sidebar_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_context_reset.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/personal_assistant.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_agent_inbox.js
   related:
+  - decision_328fb2548b8f
   - decision_44cf587c1721
   - decision_8fe87d812a4c
+  - plan_7dddf00a1913
   - decision_3e07c6d35cac
   - decision_0f57656a2acd
   - decision_c47a13e8b962
@@ -50,7 +52,7 @@ links:
 
 Ask Me Anything 是每个用户自己的个人 Agent 关联。用户可以从 Home 的 Agent Access 或已有会话、直接地址回到自己长期使用的那个 Resident。Society 工作台导航不再提供固定的 Ask Me Anything 快捷卡片。关联保存在用户个人页面状态中，指向一个普通 Resident。
 
-本篇说明这条关联怎样保存、Home 和 Society 工作台怎样显示入口，以及目标不可用时的表现。Resident 本身的身份与成员关系见 decision_0f57656a2acd。个人 Lineage 建成私人 Family 后，用户另有一个指向 Family 门面的个人助手入口，见下文“个人助手入口”；私人 Family 的路由、历史投影和 Steward 规则见 私人 Family 与个人助手。
+本篇说明这条关联怎样保存、Home 和 Society 工作台怎样显示入口，以及目标不可用时的表现。Resident 本身的身份与成员关系见 decision_0f57656a2acd。个人 Lineage 建成私人 Family 后，用户另有一个指向 Family 门面的个人助手入口，见下文“个人助手入口”；私人 Family 的路由、历史投影和 Steward 规则见 [私人 Family 与个人助手](/resource/knowledge?item=decision_328fb2548b8f)。
 
 ## 基本概念
 
@@ -75,8 +77,8 @@ Ask Me Anything 是每个用户自己的个人 Agent 关联。用户可以从 Ho
 ### 只有能看到的 Resident 才显示为入口
 
 - **入口可用的前提是目标出现在当前用户可见的 Resident 目录中。** 关联本身不授予访问权；用户打开、发消息、清空上下文、重启或 Fork 时，服务端照常检查权限。
-- **个人 AMA 只属于它的所有者，管理员也看不到。** 每个用户只有一个 AMA Lineage（`lineage_membership=personal`）。这个 Lineage、带 `personal_owner_id` 的 Resident 与 Family，以及个人 Lineage 目录中的 Workspace，只对登记所有者、代表所有者的 Resident 和 Portal 自身存在（TFI portal 2026-10-12）。这是 Society 对个人 AMA 的规定，不是权限规则（TFI portal 2026-10-26）：共用的登记所有者查询和私有性判定函数位于 `permission_system/personal_ama.py`，Society 在进入权限端口前执行私有性判定，权限实现复用登记所有者查询来判定主体代表关系。私有性判定不读权限方案，也不调用权限端口，权限系统开或关都同样生效；管理员、实例中增加的表项和临时凭证都不能越过它。对其他主体，这些对象不存在：读、改、搜索、列出得到 not found，不提示“无权”或需要什么权限。权限系统开启时，规定放过的再由方案判定。Lineage 列表、Resident 目录、资源搜索和按 ID 读取都按这条规定隐藏；登记所有者本人直接可见，登记尚未同步完成时也能使用自己的 AMA。带 `personal_owner_id` 的分支被移到别的 Lineage 后仍按所有者私有。个人 Lineage 中新建的 Resident（私人 Family 的门面、Router、steward 和后加入的成员）同样登记 `personal_owner_id` 为所有者，受同一保护，并且不进入任何人的找人候选。
-- **给 AMA 发消息对所有人开放**（TFI portal 2026-10-26）。私有规定只有这一个例外：任何已登录的 User 和 Resident 都可以 DeliverMessage 或 ForwardMessages 到任何人的个人 AMA Resident，Resident 做完别人通过 AMA 交办的任务后可以直接回传。只开放投递，读对话、搜索、查看状态和管理仍按私有规定处理。不能读该 AMA 的发送方只得到自己那条消息的回执（消息 ID、消息本身、输入状态、是否接收与排期），不带 AMA 的状态、队列、游标或对话控制，也看不到主人的消息；引用回复仍要求能读被引用的对话。权限系统开启时，投递还要通过方案：默认方案“全员可给 Resident 发消息”覆盖个人空间中的 AMA（decision_600ae27b0538）。
+- **个人 AMA 只属于它的所有者，管理员也看不到。** 每个用户只有一个 AMA Lineage（`lineage_membership=personal`）。这个 Lineage、带 `personal_owner_id` 的 Resident 与 Family，以及个人 Lineage 目录中的 Workspace，只对登记所有者、代表所有者的 Resident 和 Portal 自身存在（weihao 2026-10-12）。这是 Society 对个人 AMA 的规定，不是权限规则（weihao 2026-10-26）：共用的登记所有者查询和私有性判定函数位于 `permission_system/personal_ama.py`，Society 在进入权限端口前执行私有性判定，权限实现复用登记所有者查询来判定主体代表关系。私有性判定在权限系统开或关时都生效；管理员和普通表项不能越过它。所有者本人或其既有 AMA 可用正式临时凭证委托精确资源与动作，判定读取活跃临时行，详见本文“对话中的临时授权与个人 AMA 委托”。对其他主体，这些对象不存在：读、改、搜索、列出得到 not found，不提示“无权”或需要什么权限。权限系统开启时，规定放过的再由方案判定。Lineage 列表、Resident 目录、资源搜索和按 ID 读取都按这条规定隐藏；登记所有者本人直接可见，登记尚未同步完成时也能使用自己的 AMA。带 `personal_owner_id` 的分支被移到别的 Lineage 后仍按所有者私有。个人 Lineage 中新建的 Resident（私人 Family 的门面、Router、steward 和后加入的成员）同样登记 `personal_owner_id` 为所有者，受同一保护，并且不进入任何人的找人候选。
+- **给 AMA 发消息对所有人开放**（weihao 2026-10-26）。投递例外不要求先取得临时委托：任何已登录的 User 和 Resident 都可以 DeliverMessage 或 ForwardMessages 到任何人的个人 AMA Resident，Resident 做完别人通过 AMA 交办的任务后可以直接回传。只开放投递，读对话、搜索、查看状态和管理仍按私有规定处理。不能读该 AMA 的发送方只得到自己那条消息的回执（消息 ID、消息本身、输入状态、是否接收与排期），不带 AMA 的状态、队列、游标或对话控制，也看不到主人的消息；引用回复仍要求能读被引用的对话。权限系统开启时，投递还要通过方案：默认方案“全员可给 Resident 发消息”覆盖个人空间中的 AMA（decision_600ae27b0538）。
 - **入口失效时只影响入口本身。** 关联缺失、目标已删除、用户失去查看权限或关联读取失败时，入口显示为不可用，其他入口和 Resident 目录照常工作。
 
 ## 登记所有者与代表权限
@@ -84,7 +86,7 @@ Ask Me Anything 是每个用户自己的个人 Agent 关联。用户可以从 Ho
 个人 AMA 及其所有分支代表登记所有者。登记时保存 `personal_owner_id`，Fork 逐代继承同一字段，ResourceService 从 Resident 描述符中的该字段读取代表关系；调用者、创建者、名称、页面关联和旧 `record_type` 不替代登记所有者。代表关系有两个用处：
 
 - 私有规定把代表所有者的 Resident 当作所有者，它们能访问和管理所有者的个人 AMA。
-- **AMA 等同于主人**（TFI portal 2026-10-26）。在权限判定中，这些 Resident 与所有者 User 拥有同样的权限：用户能做的事，AMA 自动能做。权限引擎判定它们时加上主人在权限树上的位置，主人的表项、分类和收到的临时凭证都对它们生效，与方案怎样放置 AMA 无关；Portal 管理员保底也按主人判定，但它们不能对主人本人做管理员名单变更。临时凭证中 AMA Resident 与主人算同一方，两者之间不签发凭证，一方可以续期、收回或交还另一方的凭证（decision_b820faf42218 第 3.1、5.5、5.6 节）。
+- **AMA 等同于主人**（weihao 2026-10-26）。在权限判定中，这些 Resident 与所有者 User 拥有同样的权限：用户能做的事，AMA 自动能做。权限引擎判定它们时加上主人在权限树上的位置，主人的表项、分类和收到的临时凭证都对它们生效，与方案怎样放置 AMA 无关；Portal 管理员保底也按主人判定，但它们不能对主人本人做管理员名单变更。临时凭证中 AMA Resident 与主人算同一方，两者之间不签发凭证，一方可以续期、收回或交还另一方的凭证（decision_b820faf42218 第 3.1、5.5、5.6 节）。
 
 这只对登记了 `personal_owner_id` 的 Resident 成立；其他 Resident 仍只按自己的权限判定，不继承发起者的权限。
 
@@ -148,5 +150,18 @@ Principal 组织层级（decision_3e07c6d35cac）把个人承载图中的 Reside
 2. 入口只在目标对当前用户可见时可用，打开之后的每个操作由服务端重新检查权限。
 3. 导航快捷卡片的显示与 `is_lineage_leader` 标志不改变 Lineage 的成员和 Leader。
 4. 入口缺失或失效只影响入口本身，不影响 Resident 目录。
-5. 个人 AMA 只对所有者及其 AMA Resident 存在，这条私有规定不依赖权限系统；唯一例外是任何人都可以给它投递消息，投递不回显它的任何内容。
+5. 个人 AMA 只对所有者及其 AMA Resident 存在，这条私有规定不依赖权限系统；任何人都可以给它投递消息而不回显内容；所有者还可临时委托精确资源和动作，不能由永久授权或父资源继承替代。
 6. 带 `personal_owner_id` 的 Resident 在权限判定中等同于所有者。
+
+
+### 对话中的临时授权与个人 AMA 委托（2026-11-02）
+
+用户在对话中完成授权，不需要到设置页签发或复制凭证 ID。Resident 先在回复末尾用 `portal-question.credentials` 持久说明用途、精确资源 ID、A 节点和本轮有效期。用户可选“同意交出这些权限”，也可整条回复“我给你临时凭证”“同意交出这些权限”“同意授予这些临时权限”或“我同意授予这些临时权限”。纯文字同意仅对应当前会话最近的 Agent 回复中全部为权限请求的问题组；精确引用可指定较早的一组。混有普通问题、没有明确请求、引用示例、假设、否定、附件、非 User 发送方或注明其他收件人的请求，均不推导授权。其他待回答问题组不被关闭，也不把历史授权文字回填成新的授权证明。
+
+Society 将明确同意规范化为原问题唯一的 `async_question_answer` 和该组逐项列明的凭证，继续使用既有 `MessageLending`、`permission_system.lend_message` 和 `temporary.issue`。签发者始终是此次投递经过认证的 User，而不是正文中的 author、消息发起者声称的身份或收件 Resident。签发前按启用方案核验该 User 当前确实持有全部 A；接收输入和整批签发在同一事务完成，Worker 唤醒在提交之后。回答消息在 plain_consent 中保留明确同意原文和原客户端消息 ID，同时保留认证作者、问题来源及规范回答 ID；ISA 执行记录保存认证调用者、内容指纹和业务引用，不声称它保留完整原始参数。页面随附 context_reference 不参与解释授权范围。重放使用原问题回答 ID 和既有凭证批次；已撤销、已过期、已终结输入不能重签。凭证只在收件 Resident 处理该回答的输入期间有效，完成、失败、取消时事务删除，最迟七天。
+
+个人 AMA 的所有者可据此向其他主体临时委托精确资源与动作。私有边界只接受登记所有者或其既有 AMA 实际签发给当前主体（或其原有代表的 User）、仍活跃且未停用的临时 permit；永久 grant、管理员身份、其他签发者、group、父资源继承和再次转借均不能打开 AMA。父子在同批检查中也逐个核对精确 `r`。登记所有者、其 AMA 与 Portal 原有路径不变。
+
+`personal_ama.reaches(actor, owner, resource_id='', *, action='ReadResource')` 和 `hidden(actor, owners, *, action='ReadResource')` 只回答私有边界是否可达。省略资源 ID 保持原所有者规则。Society 对受委托对象传精确资源及本次实际 A 元素，多槽指令传该资源的 `slot.element`；调用上下文结束立即复位，模糊的 manage 默认不能推定具体操作。Resource 列表使用读动作；查看一个精确 Resident 不因此打开它的父 Lineage、兄弟、Workspace 或文件。启用 PAR 后仍继续正常动作授权；OPEN 下私有边界仍按临时行 A 范围和 deny 判定，不能把 viewer 扩成管理权限。到期逐次看时钟，撤销和停用随实例版本立即失效。
+
+定向证据：`test_plain_credential_consent.py` 验证认证 User 签发、原子回滚、严格文字判定、引用、关闭及失效重放；`test_personal_ama_delegation.py` 验证所有者、精确资源/动作、撤销/过期/停用、拒绝继承与转借；`test_society_ama_delegation.py` 验证实际指令槽、OPEN 边界和精确 Resident 可达但父 Lineage 仍私有。前端沿现有消息发送入口，无新增设置页。

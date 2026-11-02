@@ -1,12 +1,13 @@
 """A personal AMA is its owner's: a rule of personal AMAs, kept by Society (decision_bd5217d08c09).
 
 A personal AMA — its Lineage, its Residents and Families, the Workspaces in
-its folder — reaches only its owner User, that User's AMA Residents and the
-Portal itself; to everyone else it does not exist, so what the rule keeps
-from someone is reported as not found.  The rule is not a permission: it
-holds whether the permission system is on or off, reads no scheme and asks
-nothing of the permission system.  With the permission system on, the scheme
-judges what the rule lets through, as it judges any other object.
+its folder — reaches its owner User, that User's AMA Residents and the
+Portal itself. Its owner may also lend a specific action on a specific
+resource to another principal with a temporary credential. Everyone else
+sees it as not found. This boundary holds whether the permission system is
+on or off; delegation always checks the live credential and its action.
+With the permission system on, the scheme also judges what the rule lets
+through, as it judges any other object.
 
 Everyone may deliver a message to an AMA's Resident (DeliverMessage); the
 sender gets the receipt of its own message and nothing of the Conversation.
@@ -108,19 +109,32 @@ def acts_for(actor: object, owner: object) -> bool:
     return bool(owner_id) and same_party(actor_id, owner_id)
 
 
-def reaches(actor: object, owner: object) -> bool:
-    """Whether the rule lets ``actor`` reach something whose personal AMA owner is ``owner`` ("" for anything else)."""
-    return not str(owner or "").strip() or acts_for(actor, owner)
+def reaches(actor: object, owner: object, resource_id: str = "", *, action: str = "ReadResource") -> bool:
+    """Owner access, or the owner's live delegation of ``action`` on this exact resource.
+
+    Callers checking an operation pass its A element (the instruction's
+    relevant slot), not a generic read check. Omitting the resource retains
+    the owner-only boundary. The caller's identity is never replaced.
+    """
+    if not str(owner or "").strip() or acts_for(actor, owner):
+        return True
+    return bool(resource_id) and not hidden(actor, {resource_id: owner}, action=action)
 
 
-def hidden(actor: object, owners: Mapping[str, object]) -> set[str]:
+def hidden(actor: object, owners: Mapping[str, object], *, action: str = "ReadResource") -> set[str]:
     """Of the resources ``owners`` (ID -> personal AMA owner), those the rule keeps from ``actor``."""
     reached: dict[str, bool] = {}
-    kept = set()
+    kept: dict[str, str] = {}
     for resource_id, owner in owners.items():
         key = str(owner or "").strip()
         if key not in reached:
-            reached[key] = reaches(actor, key)
+            reached[key] = not key or acts_for(actor, key)
         if not reached[key]:
-            kept.add(resource_id)
-    return kept
+            kept[resource_id] = key
+    if not kept:
+        return set()
+    from management_portal.permission_system import active, temporary
+
+    _scheme, engine, _instance = active().current()
+    delegated = temporary.delegated_ids(engine, principal=str(actor or "").strip(), owners=kept, action=action)
+    return set(kept) - delegated

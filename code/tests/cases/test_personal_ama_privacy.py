@@ -1,11 +1,10 @@
 """A personal AMA belongs to its owner, administrators included (sample_admin 2026-10-12, decision_bd5217d08c09).
 
-That is a rule of personal AMAs, kept by Society (``personal_ama``), not a
-permission: it holds with the permission system on or off, asks nothing of
-the permission port and reports what it keeps as not found.  With the
-system on, the scheme judges what the rule lets through, like anything
-else.  The owner and the owner's AMA Residents reach the AMA; nobody else
-does, except to deliver it a message (weihao 2026-10-26).
+Society's personal boundary (``personal_ama``) holds with the permission
+system on or off and reports what it keeps as not found. Ordinary grants
+do not open it. The owner's exact, live temporary delegation is covered in
+test_personal_ama_delegation; the cases here retain the owner-only behavior
+when there is no such credential. Anyone can deliver a message to an AMA.
 """
 from __future__ import annotations
 
@@ -27,11 +26,11 @@ WORKER = 'resident_bbbbbbbbbbbb'
 SIBLING = 'resident_cccccccccccc'
 
 
-def test_the_rule_answers_a_personal_ama_by_its_owner_without_the_permission_port(monkeypatch):
-    """个人 AMA 只对所有者开放是 Society 的规定：开关开或关都生效，不经过权限端口
+def test_without_delegation_the_personal_boundary_only_opens_for_the_owner(monkeypatch):
+    """没有临时委托时，个人 AMA 私有边界在权限开关开或关时都生效
 
     所有者、所有者的 AMA Resident 和 Portal 通过，其他人（包括管理员）都不通过；没有所有者的对象不受这条规定影响。
-    规定拒绝的对象不交给权限系统判定，权限端口也不再接受 owners。
+    私有边界拒绝的对象不进入普通权限判定，权限端口不接受 owners。
     """
     from management_portal.society_service import lineage_access_policy
 

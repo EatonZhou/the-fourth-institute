@@ -4,45 +4,46 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 81
-  created_at: '2026-10-16T09:28:31Z'
+  number: 84
+  created_at: "2026-10-16T09:28:31Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_0d928ae486ba
-  updated_at: '2026-10-31T01:59:25Z'
+    user: "weihao"
+    agent: "resident_0d928ae486ba"
+  updated_at: "2026-11-02T09:34:43Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/permission_system/__init__.py
-  - ${code_root}/management_portal/permission_system/inline.py
-  - ${code_root}/management_portal/permission_system/categories.py
-  - ${code_root}/management_portal/permission_system/par.py
-  - ${code_root}/management_portal/permission_system/engine/__init__.py
-  - ${code_root}/management_portal/permission_system/engine/model.py
-  - ${code_root}/management_portal/permission_system/engine/decision.py
-  - ${code_root}/management_portal/permission_system/engine/store.py
-  - ${code_root}/management_portal/permission_system/scheme/compiler.py
-  - ${code_root}/management_portal/permission_system/scheme/vocabulary.py
-  - ${code_root}/management_portal/permission_system/scheme/repository.py
-  - ${code_root}/management_portal/permission_system/scheme/builtin/default.json
-  - ${code_root}/management_portal/permission_system/facts.py
-  - ${code_root}/management_portal/permission_system/requests.py
-  - ${code_root}/management_portal/permission_system/temporary.py
-  - ${code_root}/management_portal/permission_system/management.py
-  - ${code_root}/management_portal/permission_system/schemes.py
-  - ${code_root}/management_portal/permission_system/authdiff.py
-  - ${code_root}/management_portal/hatg/catalog/permission.py
-  - ${code_root}/management_portal/society_service/isa/system_workflows.py
-  - ${code_root}/management_portal/permission_system/personal_ama.py
-  - ${code_root}/tests/cases/test_permission_engine.py
-  - ${code_root}/tests/cases/test_permission_system_switch.py
-  - ${code_root}/tests/cases/test_permission_schemes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/inline.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/categories.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/par.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/engine/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/engine/model.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/engine/decision.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/engine/store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/scheme/compiler.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/scheme/vocabulary.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/scheme/repository.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/scheme/builtin/default.json
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/facts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/requests.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/temporary.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/management.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/schemes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/authdiff.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/permission.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/system_workflows.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/personal_ama.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_permission_engine.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_permission_system_switch.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_permission_schemes.py
   related:
+  - thinking_3cbdd375ebf8
   - decision_600ae27b0538
   - decision_22227d0ad075
   - decision_ea13b85216d0
@@ -51,7 +52,9 @@ links:
   - decision_4527448ad07f
   - decision_bd5217d08c09
   - decision_44cf587c1721
-  derived_from: []
+  supersedes:
+  derived_from:
+  - thinking_3cbdd375ebf8
 ---
 
 # Portal 权限系统：PAR 引擎架构与开关
@@ -123,7 +126,7 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 
 **关闭就是没有权限系统**（weihao 2026-10-18）。端口不导入引擎，只检查已登录（有效的 User、Resident 或 Portal 自身）和上面的管理员名单规则。其余一律放行，包括 OpenTerminal；指令声明中没有按 User 分类的例外，GetInstructionSchema 的 `permission` 报告不需要权限（Portal 管理员保底照样写出）。一般用户与实习用户之间的分类调整同样放行（weihao 2026-10-18），开启时由方案对 UpdateUser 的要求判定。`allows` 对已登录主体都为真，`permitted` 对已登录主体的每个资源都通过。
 
-“个人 AMA 归所有者”不是权限规则，端口中没有它（weihao 2026-10-26）。它是 Society 对个人 AMA 的规定。共用的登记所有者查询和私有性判定函数位于 `permission_system/personal_ama.py`：Society 在进入权限端口前执行私有性判定，权限实现复用登记所有者查询来判定主体代表关系。私有性判定在开关开或关时都生效，不读方案，也不调用权限端口；别人的 AMA 对其余主体不存在，拒绝报告为 not found，不说成权限问题。开关开启时，规定放过的对象再按方案判定（Lineage 问 GetLineage，Resident 问 GetResident），列表、目录和监控按同一读判定隐去调用者读不到的对象；这类过滤调用 `readable_ids`，被过滤掉的对象不写“permission refused”日志。规定的内容与投递例外见第 5.5 节和 decision_bd5217d08c09。
+“个人 AMA 归所有者”不是权限规则，端口中没有它（weihao 2026-10-26）。它是 Society 对个人 AMA 的规定。共用的登记所有者查询和私有性判定函数位于 `permission_system/personal_ama.py`：Society 在进入权限端口前执行私有性判定，权限实现复用登记所有者查询来判定主体代表关系。私有性判定在开关开或关时都生效；所有者本人或其既有 AMA 签发的精确资源/动作临时委托由私有边界核对活跃临时行，其余主体仍隔离；别人的 AMA 对其余主体不存在，拒绝报告为 not found，不说成权限问题。开关开启时，规定放过的对象再按方案判定（Lineage 问 GetLineage，Resident 问 GetResident），列表、目录和监控按同一读判定隐去调用者读不到的对象；这类过滤调用 `readable_ids`，被过滤掉的对象不写“permission refused”日志。规定的内容与投递例外见第 5.5 节和 decision_bd5217d08c09。
 
 关闭期间方案和实例照常可以查看和编辑，只是不在当前系统中生效。全部权限指令（第 3.7 节）在两种模式下由同一份代码处理，区别只在调用者校验：开启时按指令的判定槽与启用方案的分类判定，关闭时任何已登录主体都可以调用，不检查调用者在实例上的权限。方案的创建、修改、删除和启用与开启时相同，编译错误和版本冲突的返回也相同；ActivatePermissionScheme 只记录开启时使用哪套方案，并报告开启时补齐将新增、移动、删除多少节点和表项；GetPermissionSystem 返回 `enabled: false`、`mode: open` 和这套方案，方案列表与读取也把它标为启用。表项写入启用方案（或指定方案）保存的实例，开启时随实例生效；GetPermissionNode、SearchPermissionNodes、ListPermissionEntries 读取的也是这份实例。关闭期间对象变化不维护实例（只记录创建者），所以实例中缺少关闭期间新建的对象，开启时补齐。理由是关闭期间任何已登录主体都能修改并启用方案，方案能改变全部规则，单独收紧表项不增加保护；开启开关的人可以用 ListPermissionEntries 和 ActivatePermissionScheme 的 dry_run 查看将生效的实例。临时凭证照常签发、续期和撤销，写入这份实例，开启后生效；有效权限、试判定和临时凭证列表按这份实例作答。
 
@@ -273,7 +276,7 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 - **权限指令**：写表项、编辑方案只按指令的判定槽与方案的分类判定。表项指令（CreatePermissionEntry、UpdatePermissionEntry、DeletePermissionEntry）的处理代码只核对 p、a、r 是方案树上的节点，不检查“permit 不超过授予者自己的权限”“permit 不落在 deny 之内”，删除表项时不另做判定，也不做防锁死检查；临时凭证由 RevokeTemporaryCredential 撤销（第 5.6 节）。
 - **个人 AMA**（weihao 2026-10-26 修订）。分四件事：
   - *AMA 等同于主人。* 个人 AMA 中登记了 `personal_owner_id` 的 Resident（包括多层分支）在一切权限判定中与主人 User 相同。引擎判定这样的 Resident 时，在它自己的 P 路径之外加上主人的 P 路径（`Engine.represents`，`par.represents` 读 `personal_ama.owner_of`），主人的全部表项、分类节点上的表项和收到的临时凭证都对它生效；它自己位置上的表项照常生效，只增不减。这不依赖方案怎样放置 AMA，换任何方案都成立。GetEffectivePermissions 对它报告 `represents` 并在 `path` 中列出两条路径。Portal 管理员保底同样按主人判定（第 3.1 节）。
-  - *“个人 AMA 归所有者”是 Society 的规定，不是权限。* 规定写在 `permission_system/personal_ama.py`：个人 AMA 的 Lineage、Resident、Family 和其文件夹中的 Workspace 只对所有者、所有者的 AMA Resident 和 Portal 自身存在，其余主体读、改、搜索、列出时得到 not found（`personal_ama.NotFound`，是 `KeyError`），不出现“无权”“需要 @xxx”之类的权限说法。开关开或关它都独立生效，不读方案、不调用权限系统；开关开启时，规定放过的再按方案判定。权限端口中原来的 `acts_for`、`private_reaches`、`hidden_private` 和 `permitted` 的 `owners` 参数已删除。
+  - *“个人 AMA 归所有者”是 Society 的规定，不是权限。* 规定写在 `permission_system/personal_ama.py`：个人 AMA 的 Lineage、Resident、Family 和其文件夹中的 Workspace 只对所有者、所有者的 AMA Resident 和 Portal 自身存在，其余主体读、改、搜索、列出时得到 not found（`personal_ama.NotFound`，是 `KeyError`），不出现“无权”“需要 @xxx”之类的权限说法。开关开或关它都独立生效；登记所有者及其 AMA 的原规则不读方案，额外临时委托按精确资源和动作核验活跃临时行与 deny；开关开启时，规定放过的再按方案判定。权限端口中原来的 `acts_for`、`private_reaches`、`hidden_private` 和 `permitted` 的 `owners` 参数已删除。
   - *投递对所有人开放。* 任何已登录的 User 和 Resident 都可以 DeliverMessage（以及 ForwardMessages）到任何人的个人 AMA，这是规定唯一的例外；读对话、搜索、查看状态、管理一律不开放。不能读该 AMA 的发送方只得到自己那条消息的回执（`resident_id`、`message_id`、`message`、`input_state`、是否接收、注入与排期情况），不带 AMA 的状态、队列、游标或对话控制，也不回显主人的消息；引用回复仍要求能读被引用的对话。开关开启时 DeliverMessage 还要过方案：默认方案“全员可给 Resident 发消息”的 r 从“共享”改为 Portal 根，覆盖个人空间中的 AMA（decision_600ae27b0538）。
   - *方案中 AMA 的放置。* R 树“个人空间 → 个人 AMA”仍有用：所有者在个人空间上的 admin 表项让主人能管理自己的 AMA，管理员表项写在“共享”上覆盖不到这里，方案读判定也随之私有。它不再承担私有规定。P 树原有的“User → 个人 AMA（在所有者名下）”在引擎按主人判定之后已经多余，2026-10-27 删去（weihao 定，df5391c）：个人 Lineage 改按没有 Project 的 Lineage 放在“Resident”下。删除前核对线上实例：没有表项指向这个节点；矿智 上对两个 AMA Lineage 元素的 deny 指向的是元素本身，随元素移动原样保留；“User”和“Resident”节点上都没有表项。删除后 `@residents` 下 16 个个人 Lineage 的 62 个 Resident 全部按主人判定，各自的有效权限都覆盖主人的全部 permit 与 deny，实际判定没有变化。授权差同样按主人计算（第 5.12 节）。
 - **Workspace**：按绝对路径访问时，先按已登记 Workspace 的路径做最长前缀匹配，得到所属的 Workspace 资源 ID，再由引擎按这个 Workspace 判定；不属于任何已登记 Workspace 的路径按 R 树默认节点判定。删除独立的路径授权。按绝对路径只做读取（链接文件预览）；写入只有 UpdateWorkspaceFile 一条路，它只接受 `<workspace_id>/file/<相对路径>`，预览结果里的 `file_address` 给出这个地址（weihao 2026-10-18）。
@@ -418,3 +421,16 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 ## 资源发现与直接读取
 
 资源列表、搜索联想和项目导航按各对象的读取权限过滤；项目拒绝覆盖其资源、Lineage 与 Resident，直接读取遵循同一判定。
+
+
+### 对话中的临时授权与个人 AMA 委托（2026-11-02）
+
+用户在对话中完成授权，不需要到设置页签发或复制凭证 ID。Resident 先在回复末尾用 `portal-question.credentials` 持久说明用途、精确资源 ID、A 节点和本轮有效期。用户可选“同意交出这些权限”，也可整条回复“我给你临时凭证”“同意交出这些权限”“同意授予这些临时权限”或“我同意授予这些临时权限”。纯文字同意仅对应当前会话最近的 Agent 回复中全部为权限请求的问题组；精确引用可指定较早的一组。混有普通问题、没有明确请求、引用示例、假设、否定、附件、非 User 发送方或注明其他收件人的请求，均不推导授权。其他待回答问题组不被关闭，也不把历史授权文字回填成新的授权证明。
+
+Society 将明确同意规范化为原问题唯一的 `async_question_answer` 和该组逐项列明的凭证，继续使用既有 `MessageLending`、`permission_system.lend_message` 和 `temporary.issue`。签发者始终是此次投递经过认证的 User，而不是正文中的 author、消息发起者声称的身份或收件 Resident。签发前按启用方案核验该 User 当前确实持有全部 A；接收输入和整批签发在同一事务完成，Worker 唤醒在提交之后。回答消息在 plain_consent 中保留明确同意原文和原客户端消息 ID，同时保留认证作者、问题来源及规范回答 ID；ISA 执行记录保存认证调用者、内容指纹和业务引用，不声称它保留完整原始参数。页面随附 context_reference 不参与解释授权范围。重放使用原问题回答 ID 和既有凭证批次；已撤销、已过期、已终结输入不能重签。凭证只在收件 Resident 处理该回答的输入期间有效，完成、失败、取消时事务删除，最迟七天。
+
+个人 AMA 的所有者可据此向其他主体临时委托精确资源与动作。私有边界只接受登记所有者或其既有 AMA 实际签发给当前主体（或其原有代表的 User）、仍活跃且未停用的临时 permit；永久 grant、管理员身份、其他签发者、group、父资源继承和再次转借均不能打开 AMA。父子在同批检查中也逐个核对精确 `r`。登记所有者、其 AMA 与 Portal 原有路径不变。
+
+`personal_ama.reaches(actor, owner, resource_id='', *, action='ReadResource')` 和 `hidden(actor, owners, *, action='ReadResource')` 只回答私有边界是否可达。省略资源 ID 保持原所有者规则。Society 对受委托对象传精确资源及本次实际 A 元素，多槽指令传该资源的 `slot.element`；调用上下文结束立即复位，模糊的 manage 默认不能推定具体操作。Resource 列表使用读动作；查看一个精确 Resident 不因此打开它的父 Lineage、兄弟、Workspace 或文件。启用 PAR 后仍继续正常动作授权；OPEN 下私有边界仍按临时行 A 范围和 deny 判定，不能把 viewer 扩成管理权限。到期逐次看时钟，撤销和停用随实例版本立即失效。
+
+定向证据：`test_plain_credential_consent.py` 验证认证 User 签发、原子回滚、严格文字判定、引用、关闭及失效重放；`test_personal_ama_delegation.py` 验证所有者、精确资源/动作、撤销/过期/停用、拒绝继承与转借；`test_society_ama_delegation.py` 验证实际指令槽、OPEN 边界和精确 Resident 可达但父 Lineage 仍私有。前端沿现有消息发送入口，无新增设置页。

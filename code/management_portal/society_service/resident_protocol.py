@@ -93,11 +93,14 @@ def _conversation_controls(
     allowed, problem = _send_problem(target.record, actor, allowed=allowed)
     active_message_id = str(state.get("active_message_id") or "")
     closed = state.get("intake_state") == "closed"
+    stop_allowed = allowed
+    if target.record.get("personal_owner_id"):
+        stop_allowed = allowed and resident_access.can_manage_resident(target.record, actor, operation="CancelInput")
     capabilities = resident_execution_provider.provider_for(target.record).capabilities
     return {
         "can_send": allowed and not problem,
         # A facade routing a request has nothing running yet; its Stop withdraws that request.
-        "can_stop": allowed and (bool(active_message_id) or state.get("work_phase") == family_facade.ROUTING_PHASE),
+        "can_stop": stop_allowed and (bool(active_message_id) or state.get("work_phase") == family_facade.ROUTING_PHASE),
         "active_turn_input": capabilities.supports_active_turn_input,
         # What a message to it may carry; the Family Router gives a request with
         # images or files only to a member that reads them.

@@ -29,12 +29,12 @@ the other issued, or hand back what the other received.
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from . import inline
-from .engine import Engine
-from .engine.model import PERMIT, Entry
+from .engine import Engine, Grants
+from .engine.model import DENY, PERMIT, Entry
 from .engine.store import Store, new_entry_id
 from .scheme.compiler import CompiledScheme
 
@@ -44,6 +44,40 @@ MAX_SECONDS = 7 * 24 * 3600
 
 class LoanRefused(PermissionError):
     pass
+
+
+def delegated_ids(engine: Engine, *, principal: str, owners: Mapping[str, str], action: str) -> set[str]:
+    """Exact resources their owners lent to this principal for this action.
+
+    A private resource's visibility cannot come from an administrator, a
+    group grant, an ancestor resource or a recipient's onward loan. Only
+    temporary rows addressed to this principal (or its represented User)
+    and issued by that resource's owner qualify. Current deny rows still
+    apply. Reading grants checks the instance version on every call, and
+    expiry is checked even when those grants are cached.
+    """
+    if not principal or not owners or not action:
+        return set()
+    from .personal_ama import owner_of, owners_of
+
+    _path, grants, paths = engine.grants(principal, owners)
+    now = engine.clock()
+    recipients = {principal, owner_of(principal)} - {""}
+    candidates = [entry for entry in grants.entries
+                  if entry.effect == PERMIT and entry.expires_at is not None and not entry.disabled
+                  and entry.live(now) and entry.issued_by and entry.p in recipients and entry.r in owners]
+    if not candidates:
+        return set()
+    issuers = owners_of(entry.issued_by for entry in candidates)
+    loans = [entry for entry in candidates
+             if (issuers.get(entry.issued_by) or entry.issued_by).casefold() == owners[entry.r].casefold()]
+    denies = [entry for entry in grants.entries if entry.effect == DENY and not entry.disabled]
+    a_path = engine.a_path(action)
+    # Even in a batch containing both parent and child, a loan for the parent
+    # must not open the child. Resource ancestry is still used for deny rows.
+    return {resource for resource in owners
+            if Grants([*(entry for entry in loans if entry.r == resource), *denies], engine.a_path)
+            .decide(a_path, paths[resource], now).allowed}
 
 
 def _party(principal: str) -> str:

@@ -36,7 +36,7 @@
   async function deliverInput(payload) {
     const requestActorRevision = actorRevision;
     try {
-      return await controlAcknowledgement(window.PortalResidentService.sendInput(payload));
+      return await currentActorResponse(window.PortalResidentService.sendInput(payload));
     } catch (error) {
       if (requestActorRevision !== actorRevision) throw error;
       const residentId = String(payload?.resident_id || "").trim();
@@ -65,9 +65,19 @@
         ...(snapshot?.controls ? { controls: snapshot.controls } : {}),
         ...(snapshot?.queue ? { queue: snapshot.queue } : {}),
       });
-      acceptControlAcknowledgement(acknowledgement);
       return acknowledgement;
     }
+  }
+
+  function submissionReceiptId(acknowledgement, residentId) {
+    const parts = [acknowledgement, acknowledgement?.message, acknowledgement?.input_state];
+    const ids = parts.map(part => String(part?.message_id || "").trim()).filter(Boolean);
+    if (acknowledgement?.resident_id !== residentId || !ids.length
+      || ids.some(id => id !== ids[0])
+      || parts.some(part => part?.resident_id && part.resident_id !== residentId)) {
+      throw new Error("Resident input acknowledgement target mismatch");
+    }
+    return ids[0];
   }
 
   // Local submissions belong to the shared Resident store, separately from
@@ -377,6 +387,11 @@
       if (existing) return existing.promise;
       const entry = { payload: clone(payload), prepare, state: "sending", settled: false,
         preview: { ...clone(payload.message), created_at: new Date().toISOString(), ...clone(preview) } };
+      // Bind admission retries to the original request, even when the server
+      // normalizes its message ID. The Service otherwise generates a new key.
+      if (!String(entry.payload.idempotency_key || "").trim()) {
+        entry.payload.idempotency_key = `portal-deliver:${this.residentId}:${id}`;
+      }
       entry.promise = new Promise((resolve, reject) => { entry.resolve = resolve; entry.reject = reject; });
       this.submissions.set(id, entry);
       this.emit({ type: "submission", snapshot: this.snapshot });
@@ -397,9 +412,10 @@
     reconcileSubmissions() {
       if (!this.snapshot) return;
       for (const [id, entry] of this.submissions) {
-        const message = this.snapshot.messages?.find(item => item.message_id === id);
-        const input = this.snapshot.input_states?.find(item => item.message_id === id);
-        const queued = this.snapshot.queue?.items?.find(item => item.message_id === id);
+        const messageId = entry.receiptMessageId || id;
+        const message = this.snapshot.messages?.find(item => item.message_id === messageId);
+        const input = this.snapshot.input_states?.find(item => item.message_id === messageId);
+        const queued = this.snapshot.queue?.items?.find(item => item.message_id === messageId);
         if (!message && !input && !queued) continue;
         this.settleSubmission(entry, { resident_id: this.residentId,
           ...(message ? { message } : {}), ...(input ? { input_state: input } : {}) });
@@ -426,8 +442,14 @@
         return deliverInput(entry.payload);
       }).then(result => {
         if (revision !== actorRevision || !result) return;
+        // Only this request's verified receipt can associate a local ID with
+        // a normalized server ID. Keep the request payload/key for retries;
+        // reconcile and display use the committed identity from here on.
+        entry.receiptMessageId = submissionReceiptId(result, this.residentId);
+        entry.preview.message_id = entry.receiptMessageId;
         entry.state = "accepted";
         this.settleSubmission(entry, result);
+        acceptControlAcknowledgement(result);
         this.emit({ type: "submission", snapshot: this.snapshot });
       }).catch(error => {
         if (revision !== actorRevision || entry.settled) return;

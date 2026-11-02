@@ -4,31 +4,31 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 20
-  created_at: '2026-09-30T11:45:00Z'
+  number: 22
+  created_at: "2026-09-30T11:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_57f585eb8ae9
-  updated_at: '2026-11-01T03:50:18Z'
+    user: "weihao"
+    agent: "resident_57f585eb8ae9"
+  updated_at: "2026-11-02T09:34:42Z"
   updated_by:
-    user: ''
-    agent: resident_86865032d392
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/codex_app_server_client.py
-  - ${code_root}/management_common/provider_turn_artifacts.py
-  - ${code_root}/management_portal/society_service/resident_execution_domain.py
-  - ${code_root}/management_portal/execution/event_projection.py
-  - ${code_root}/management_portal/execution/codex_turn_run.py
-  - ${code_root}/management_portal/execution/native_socket_backend.py
-  - ${code_root}/management_portal/society_service/resident_questions.py
-  - ${code_root}/management_portal/society_service/resident_resource_changes.py
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/management_portal/resources/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/codex_app_server_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/provider_turn_artifacts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/event_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_turn_run.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/native_socket_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_questions.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_resource_changes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
   related:
   - decision_f560803947c6
   - decision_c524c775e0be
@@ -70,14 +70,14 @@ Resident 工作时，除了用文字回复，还会遇到需要用户参与或�
 
 - **Resident 一条回复中的全部问题组成一个问题组。** Codex 回复中的 `agentMessage.questions`，或回复正文中的 `portal-question` 代码块，由统一的内容解析器转成这条消息唯一的 `async_questions` 部分，和消息其他内容一起保存。代码块可以写一个问题对象，也可以写问题对象数组；每个问题有 `title` 和字符串 `options`。一条回复中有多个代码块时，问题按出现顺序编号，合进同一组，问题组放在第一个代码块的位置。Resident 不需要调用 Portal 接口来发问。
 - **一组只接收一条回答消息。** 问题组的 `answer_message_id` 由 Resident 和来源消息推导，是这组唯一可用的回答消息 ID。回答消息带一个 `async_question_answer` 部分，写明来源消息和 `answers`（每个问题序号对应一个非空答案）。服务端要求答案恰好覆盖这组的每个问题，再生成发给 Resident 的正文：一题时写“关于你提出的问题「…」，我的回答是：…”，多题时按问题顺序编号列出。这条消息按普通输入进入 Resident 队列，只触发一轮工作；同一 ID 重试时不会覆盖已提交的不同答案。
-- **问题可以请用户交出权限，回答时随消息签发。** Resident 的身份缺少用户持有的权限时，在问题对象中写 `credentials`：逐项给出 A 树节点 `a` 和资源 `resource_id`，`title` 说明用途。2026-10-24 TFI portal 确定：用户的操作都应能在对话中完成，不再让用户另去签发凭证。
+- **问题可以请用户交出权限，回答时随消息签发。** Resident 的身份缺少用户持有的权限时，在问题对象中写 `credentials`：逐项给出 A 树节点 `a` 和资源 `resource_id`，`title` 说明用途。2026-10-24 weihao 确定：用户的操作都应能在对话中完成，不再让用户另去签发凭证。
   - **问题解析**：权限请求只接受精确、去重后的 `{a, resource_id}`。一个问题最多 20 项，即一条消息可交出的上限。格式不对的整段保持为普通文本，不会出现缺少精确权限的请求。这类问题的选项由服务端固定为“同意交出这些权限”和“不交出”，第一个表示同意（`management_common.async_questions.CREDENTIAL_APPROVE`）。
   - **卡片展示**：作答卡片列出每项 `a · resource_id`，说明凭证只在 Resident 处理这条回答期间有效，不提供自由输入。
   - **签发**：用户同意时，浏览器以用户本人身份调用 DeliverMessage，把所同意问题列出的权限作为 `temporary_credentials` 随回答签发。服务端照常核对用户此刻持有这些权限，凭证在 Resident 对这条回答的输入结束时失效（decision_b820faf42218 §5.6）。
   - **一致性检查**：服务端在这个 Resident 的对话中找到问题组，要求回答带的凭证正好等于所同意问题列出的权限，多给、少给、重复或同意时缺少凭证都拒绝。
   - **Family 门面**：门面上显示的成员问题组不能同意，因为凭证只交给拥有这组问题的 Resident，卡片会说明原因。
-- **问题可以请求用户交出权限。** Resident 的身份缺少用户持有的权限时，在问题对象中加 `credentials`，逐项写出 A 树节点 `a` 和资源 `resource_id`，例如 `{"title":"同意把这个工作台的协作权限交给我来发布吗？","credentials":[{"a":"@contributor","resource_id":"workbench_…"}]}`。解析器只接受每项恰好含这两个非空、无空白字段的请求，去重后最多 20 项；格式不精确时整个代码块保持为文本，不出现缺少精确权限的请求。这类问题的选项固定为“同意交出这些权限”和“不交出”（`CREDENTIAL_APPROVE`、`CREDENTIAL_DECLINE`），第一项表示同意。作答卡片列出每项 A 节点和资源，说明凭证只在 Resident 处理这条回答期间有效，不提供自由输入。用户同意时，浏览器以用户本人身份调用 `DeliverMessage`，把所同意问题列出的权限作为 `temporary_credentials` 随回答签发（decision_b820faf42218 第 5.6 节）；服务端要求回答带的凭证正好等于所同意问题请求的权限，并照常核对用户此刻持有这些权限。Resident 在处理这条回答的一轮内使用权限，这一轮结束凭证即失效。门面中显示的成员问题组不能经门面交出权限，卡片禁用同意并说明原因。2026-10-24 TFI portal 确定：用户的操作都应能在对话中完成，Resident 不再要求用户另行签发凭证。
-- **问题组在回答前一直待回答，用户也可以关闭它。** 问题组的状态只由回答消息和回答位置决定，不另存状态：回答消息已经存在时为“已回答”；用户关闭了这组时为“已关闭”；否则为“待回答”。之后出现的消息都不会让它失效：Resident 同一轮后续的回复、其他 Resident 送来的汇报、用户自己改发的其他消息，以及之后新提出的问题组都一样。2026-10-12 TFI portal 确定这条规则：此前人发出的消息或新的问题组会结束旧问题组，一个协调者向他提出的四个问题在成员汇报到达 30 秒后失效，另一组五个问题被协调者随后提出的新一组取代，他都来不及回答。服务端接收回答时确认问题组存在于这个 Resident 的对话中、答案覆盖全部问题；同一问题组只接受一条回答消息，重复提交同一回答按原回答处理。聊天页用同一规则，从它显示的消息和回答状态推导卡片状态。
+- **问题可以请求用户交出权限。** Resident 的身份缺少用户持有的权限时，在问题对象中加 `credentials`，逐项写出 A 树节点 `a` 和资源 `resource_id`，例如 `{"title":"同意把这个工作台的协作权限交给我来发布吗？","credentials":[{"a":"@contributor","resource_id":"workbench_…"}]}`。解析器只接受每项恰好含这两个非空、无空白字段的请求，去重后最多 20 项；格式不精确时整个代码块保持为文本，不出现缺少精确权限的请求。这类问题的选项固定为“同意交出这些权限”和“不交出”（`CREDENTIAL_APPROVE`、`CREDENTIAL_DECLINE`），第一项表示同意。作答卡片列出每项 A 节点和资源，说明凭证只在 Resident 处理这条回答期间有效，不提供自由输入。用户同意时，浏览器以用户本人身份调用 `DeliverMessage`，把所同意问题列出的权限作为 `temporary_credentials` 随回答签发（decision_b820faf42218 第 5.6 节）；服务端要求回答带的凭证正好等于所同意问题请求的权限，并照常核对用户此刻持有这些权限。Resident 在处理这条回答的一轮内使用权限，这一轮结束凭证即失效。门面中显示的成员问题组不能经门面交出权限，卡片禁用同意并说明原因。2026-10-24 weihao 确定：用户的操作都应能在对话中完成，Resident 不再要求用户另行签发凭证。
+- **问题组在回答前一直待回答，用户也可以关闭它。** 问题组的状态只由回答消息和回答位置决定，不另存状态：回答消息已经存在时为“已回答”；用户关闭了这组时为“已关闭”；否则为“待回答”。之后出现的消息都不会让它失效：Resident 同一轮后续的回复、其他 Resident 送来的汇报、用户自己改发的其他消息，以及之后新提出的问题组都一样。2026-10-12 weihao 确定这条规则：此前人发出的消息或新的问题组会结束旧问题组，一个协调者向他提出的四个问题在成员汇报到达 30 秒后失效，另一组五个问题被协调者随后提出的新一组取代，他都来不及回答。服务端接收回答时确认问题组存在于这个 Resident 的对话中、答案覆盖全部问题；同一问题组只接受一条回答消息，重复提交同一回答按原回答处理。聊天页用同一规则，从它显示的消息和回答状态推导卡片状态。
 - **“不再回答”关闭问题组，不通知 Resident。** 用户已经用普通文字回答过、或不打算回答时，在作答卡片或摘要上点“不再回答”。页面调用 `AnswerResidentRequest`，`message_id` 是提出问题的消息，`answers` 为 `{"action": "cancel"}`；对消息中的问题组，这条指令只接受这个关闭动作，权限与回答相同。服务端把问题组的回答消息 ID 记为输入状态 `cancelled`，错误码 `question_set_closed`（`management_common.async_questions.QUESTION_SET_CLOSED`），不写回答消息，也不排队任何输入，Resident 不会收到消息。已回答的问题组不能关闭；已关闭的问题组再提交回答时拒绝，提示“这组问题已关闭，不再回答”。聊天页从对话快照的输入状态中读出这个错误码，各个浏览器看到同样的状态。Family 门面上显示的成员问题组不提供关闭。
 - **提问后 Resident 结束这一轮，等待回答。** Portal 注入给 Resident 的提问说明要求把问题写在回复末尾、提问后结束本轮，不继续做依赖答案的工作。等待期间 Resident 处于空闲，Portal 不创建等待计时、催答或自动空答案；用户可以先发其他消息，Resident 按新消息继续；问题组仍然可以回答，回答到达时 Resident 再按回答继续。
 - **Family 门面中显示的成员问题，回答回到提问的成员。** 门面对话显示成员的回复时，回复中的问题组仍属于成员：回答消息 ID 由成员和来源消息推导，状态按成员自己的对话判断。门面把成员问题组的“已回答”标在显示出的问题组上；成员对话已被清空、找不到来源消息时标为“已失效”。聊天页按这个状态显示卡片。用户在门面中提交回答时，服务端在门面对话中找不到来源消息，就通过转交记录找到写这条回复的成员，用成员的问题组检查答案和状态；成员对话中已有其他回答时拒绝。通过检查的回答保存在门面对话中，并自动引用被回答的成员回复，Family Router 因此不经模型直接把它交回这个成员。转交给成员的副本沿用问题组的回答消息 ID，成员对话据此把问题组记为已回答，副本同时引用成员自己的那条回复。嵌套 Family 中每一层门面都按同样方式转交。
@@ -159,3 +159,16 @@ Codex 每一轮把当前 Execution ID 放进工具进程的环境变量，Reside
 定向测试分别覆盖：消息提问卡片与分页；权限请求的解析、固定选项与随回答签发的一致性检查（`test_resident_question_credentials.py`，浏览器侧 `test_chat_question_credentials.py`）；权限请求的解析、固定选项与回答所交凭证的精确匹配；原生请求的等待、答案返回原请求、取消与失效、重复提交、权限与 Fork 限制、按 Segment 查询；计划步骤与审查；Claude、Kimi、DSH 由工具调用生成本轮修改与普通一轮审查；资源修改记录。浏览器测试用真实样式和编辑器检查逐题作答与整组提交、对话继续和新问题组出现后仍可回答、从摘要切换作答的问题组、从卡片和摘要关闭问题组、失败保留已选答案、提交回执、失效后禁用，以及无计划时的紧凑布局、窄面板、Diff 着色、折叠展开和截断后禁用审查；断言使用布局范围和语义，不比对截图。
 
 真实 Provider 验收使用 Portal-test 身份，保存请求所属的 Resident、Execution、轮次和截图。只有 Provider 真的发出请求、Portal 显示卡片并把操作送回原请求，才算这条链路通过。Provider 没有提供对应能力时（如没有触发审批、没有可发起补充信息的 MCP 服务），明确记录为未覆盖，不用普通文本或人工构造的卡片代替。
+
+
+### 对话中的临时授权与个人 AMA 委托（2026-11-02）
+
+用户在对话中完成授权，不需要到设置页签发或复制凭证 ID。Resident 先在回复末尾用 `portal-question.credentials` 持久说明用途、精确资源 ID、A 节点和本轮有效期。用户可选“同意交出这些权限”，也可整条回复“我给你临时凭证”“同意交出这些权限”“同意授予这些临时权限”或“我同意授予这些临时权限”。纯文字同意仅对应当前会话最近的 Agent 回复中全部为权限请求的问题组；精确引用可指定较早的一组。混有普通问题、没有明确请求、引用示例、假设、否定、附件、非 User 发送方或注明其他收件人的请求，均不推导授权。其他待回答问题组不被关闭，也不把历史授权文字回填成新的授权证明。
+
+Society 将明确同意规范化为原问题唯一的 `async_question_answer` 和该组逐项列明的凭证，继续使用既有 `MessageLending`、`permission_system.lend_message` 和 `temporary.issue`。签发者始终是此次投递经过认证的 User，而不是正文中的 author、消息发起者声称的身份或收件 Resident。签发前按启用方案核验该 User 当前确实持有全部 A；接收输入和整批签发在同一事务完成，Worker 唤醒在提交之后。回答消息在 plain_consent 中保留明确同意原文和原客户端消息 ID，同时保留认证作者、问题来源及规范回答 ID；ISA 执行记录保存认证调用者、内容指纹和业务引用，不声称它保留完整原始参数。页面随附 context_reference 不参与解释授权范围。重放使用原问题回答 ID 和既有凭证批次；已撤销、已过期、已终结输入不能重签。凭证只在收件 Resident 处理该回答的输入期间有效，完成、失败、取消时事务删除，最迟七天。
+
+个人 AMA 的所有者可据此向其他主体临时委托精确资源与动作。私有边界只接受登记所有者或其既有 AMA 实际签发给当前主体（或其原有代表的 User）、仍活跃且未停用的临时 permit；永久 grant、管理员身份、其他签发者、group、父资源继承和再次转借均不能打开 AMA。父子在同批检查中也逐个核对精确 `r`。登记所有者、其 AMA 与 Portal 原有路径不变。
+
+`personal_ama.reaches(actor, owner, resource_id='', *, action='ReadResource')` 和 `hidden(actor, owners, *, action='ReadResource')` 只回答私有边界是否可达。省略资源 ID 保持原所有者规则。Society 对受委托对象传精确资源及本次实际 A 元素，多槽指令传该资源的 `slot.element`；调用上下文结束立即复位，模糊的 manage 默认不能推定具体操作。Resource 列表使用读动作；查看一个精确 Resident 不因此打开它的父 Lineage、兄弟、Workspace 或文件。启用 PAR 后仍继续正常动作授权；OPEN 下私有边界仍按临时行 A 范围和 deny 判定，不能把 viewer 扩成管理权限。到期逐次看时钟，撤销和停用随实例版本立即失效。
+
+定向证据：`test_plain_credential_consent.py` 验证认证 User 签发、原子回滚、严格文字判定、引用、关闭及失效重放；`test_personal_ama_delegation.py` 验证所有者、精确资源/动作、撤销/过期/停用、拒绝继承与转借；`test_society_ama_delegation.py` 验证实际指令槽、OPEN 边界和精确 Resident 可达但父 Lineage 仍私有。前端沿现有消息发送入口，无新增设置页。

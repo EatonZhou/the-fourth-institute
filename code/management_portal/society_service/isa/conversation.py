@@ -117,6 +117,11 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
             raise invalid("临时凭证只随发给 Resident 的消息签发")
         return deliver_to_user(inv, inv.argument("user_id"), message)
     resident_id = inv.argument("resident_id")
+    if not credentials and (inv.argument("activation_policy") or "enqueue_and_trigger") == "enqueue_and_trigger":
+        from .. import resident_credential_answers, resident_conversation_stream
+
+        message, credentials = resident_credential_answers.plain_answer(
+            resident_id, message, actor=inv.caller, repository=resident_conversation_stream.get_repository())
     _check_answer_credentials(resident_id, message, credentials)
     if credentials:
         _check_lendable(inv, credentials)

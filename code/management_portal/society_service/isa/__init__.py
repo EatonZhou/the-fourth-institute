@@ -7,6 +7,7 @@ instructions, plus the organization instructions other than Project ones.
 from __future__ import annotations
 
 from typing import Any
+from functools import wraps
 
 from management_portal.hatg.kernel import InstructionKernel, Invocation, OwnerBinding
 
@@ -15,13 +16,22 @@ from .common import guard_definition_handler
 from ..lineage_definition_scope import guard_source_scope
 
 
+def _access_scope(handler):
+    @wraps(handler)
+    def scoped(inv):
+        from ..resident_access_scope import instruction_scope
+        with instruction_scope(inv):
+            return handler(inv)
+    return scoped
+
+
 def _handlers() -> dict[str, Any]:
     merged: dict[str, Any] = {}
     for module in (residents, conversation, execution, definition, shared_state, runs, families, function_blocks, organization, script_runs, templates, system_workflows):
         for name, handler in module.HANDLERS.items():
             if name in merged:
                 raise RuntimeError(f"SocietyService 重复登记指令实现：{name}")
-            merged[name] = guard_source_scope(name, guard_definition_handler(name, handler))
+            merged[name] = _access_scope(guard_source_scope(name, guard_definition_handler(name, handler)))
     return merged
 
 

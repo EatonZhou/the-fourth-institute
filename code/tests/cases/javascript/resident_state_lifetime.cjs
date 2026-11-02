@@ -8,6 +8,195 @@ const root = process.env.SOURCE_ROOT || path.resolve(__dirname, '../../..');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const ids = Array.from({length: 105}, (_, index) => `resident_${index.toString(16).padStart(12, '0')}`);
 
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return {promise, resolve, reject};
+}
+
+async function submissionFixture(t) {
+  const f = fixture(t), residentId = ids[0], sends = [], reads = [], updates = [];
+  let snapshot = {resident: {resident_id: residentId}, cursor: 1,
+    messages: [], input_states: [], queue: {items: []}, state: {}, controls: {can_send: true}};
+  f.w.PortalResidentService.snapshot = async () => snapshot;
+  f.w.PortalResidentService.sendInput = payload => {
+    const request = deferred(); sends.push({payload, ...request}); return request.promise;
+  };
+  f.w.PortalResidentService.inputState = async (resident_id, message_id) => {
+    reads.push({resident_id, message_id}); throw Object.assign(new Error('not found'), {status: 404});
+  };
+  const sub = f.track(f.p.acquire(residentId, update => updates.push(update), {load: false}));
+  await sub.load();
+  const submit = (message_id = 'msg_local') => f.p.sendInput({resident_id: residentId,
+    message: {message_id, role: 'user', content_parts: [{type: 'text', text: 'I grant the credentials'}]}});
+  const receipt = (message_id = 'msg_canonical') => ({resident_id: residentId, message_id, cursor: 2,
+    message: {message_id, role: 'user', content_parts: [{type: 'text', text: 'canonical answer'}]},
+    input_state: {resident_id: residentId, message_id, state: 'completed'}});
+  return {...f, residentId, sub, sends, reads, updates, submit, receipt,
+    async refresh(value) { snapshot = value; await sub.load({force: true}); },
+    snapshot(value = {}) { return {...snapshot, ...value}; }};
+}
+
+for (const order of ['receipt-first', 'snapshot-first']) {
+  test(`canonical submission identity reconciles once with ${order}`, async t => {
+    const f = await submissionFixture(t), pending = f.submit(), ack = f.receipt();
+    let settled = false; pending.then(() => { settled = true; });
+    await tick();
+    assert.equal(f.sub.snapshot().local_submissions[0].message_id, 'msg_local');
+    const committed = f.snapshot({cursor: 2, messages: [ack.message], input_states: [ack.input_state]});
+    if (order === 'snapshot-first') {
+      await f.refresh(committed);
+      assert.equal(settled, false, 'an unrelated ID in a snapshot cannot prove this request succeeded');
+      assert.equal(f.sub.snapshot().local_submissions[0].message_id, 'msg_local');
+    }
+    const marker = f.updates.length;
+    f.sends[0].resolve(ack);
+    assert.equal((await pending).message_id, 'msg_canonical');
+    await tick();
+    if (order === 'receipt-first') {
+      // An older in-flight snapshot cannot restore the local ID or duplicate.
+      await f.refresh(f.snapshot());
+      await f.refresh(committed);
+    }
+    assert.equal(f.sub.snapshot().local_submissions?.length || 0, 0);
+    assert.equal(f.sub.snapshot().messages.length, 1);
+    assert.equal(f.sub.snapshot().messages[0].message_id, 'msg_canonical');
+    for (const update of f.updates.slice(marker).filter(u => u.snapshot)) {
+      assert.equal(update.snapshot.local_submissions?.length || 0, 0);
+      assert.equal(update.snapshot.messages.length, 1);
+    }
+    assert.equal(f.sends.length, 1);
+    assert.equal(f.sends[0].payload.message.message_id, 'msg_local', 'request identity remains immutable');
+  });
+}
+
+test('minimal canonical receipt retains one accepted preview until its queue projection arrives', async t => {
+  const f = await submissionFixture(t), first = f.submit(), second = f.submit('msg_next');
+  await tick();
+  assert.equal(f.sends.length, 1);
+  f.sends[0].resolve({resident_id: f.residentId, message_id: 'msg_canonical', cursor: 2,
+    input_state: {message_id: 'msg_canonical', state: 'queued'}});
+  await first; await tick();
+  const local = f.sub.snapshot().local_submissions;
+  assert.equal(local[0].message_id, 'msg_canonical');
+  assert.equal(local[0].local_delivery.state, 'accepted');
+  assert.equal(f.sends.length, 2, 'next submission is admitted only after receipt');
+  await f.refresh(f.snapshot({cursor: 2, queue: {items: [{message_id: 'msg_canonical'}]}}));
+  assert.deepEqual(Array.from(f.sub.snapshot().local_submissions, m => m.message_id), ['msg_next']);
+  f.sends[1].resolve(f.receipt('msg_next')); await second;
+});
+
+for (const mismatch of ['recipient', 'nested-recipient', 'identity', 'missing-identity']) {
+  test(`a ${mismatch} receipt cannot settle or remove the original submission`, async t => {
+    const f = await submissionFixture(t), pending = f.submit();
+    let settled = false; pending.then(() => { settled = true; }, () => { settled = true; });
+    await tick();
+    const ack = f.receipt();
+    if (mismatch === 'recipient') ack.resident_id = ids[1];
+    if (mismatch === 'nested-recipient') ack.input_state.resident_id = ids[1];
+    if (mismatch === 'identity') ack.input_state.message_id = 'msg_unrelated';
+    if (mismatch === 'missing-identity') { delete ack.message_id; delete ack.message; delete ack.input_state; }
+    f.sends[0].resolve(ack); await tick();
+    assert.equal(settled, false);
+    assert.equal(f.sub.snapshot().local_submissions[0].message_id, 'msg_local');
+    assert.equal(f.sub.snapshot().local_submissions[0].local_delivery.state, 'confirming');
+    assert.equal(f.sub.snapshot().messages.length, 0);
+    await f.p.checkSubmissions(f.residentId);
+    assert.ok(f.reads.every(read => read.message_id === 'msg_local' && read.resident_id === f.residentId));
+    assert.equal(settled, false);
+    assert.equal(f.sends.length, 1, 'invalid receipt cannot trigger redelivery');
+  });
+}
+
+test('uncertain network result keeps original identity and blocks the next submission until proven', async t => {
+  const f = await submissionFixture(t), first = f.submit(), second = f.submit('msg_next');
+  let settled = false; first.then(() => { settled = true; });
+  await tick();
+  f.sends[0].reject(new TypeError('network disconnected')); await tick();
+  await f.p.checkSubmissions(f.residentId);
+  assert.equal(settled, false);
+  assert.equal(f.sends.length, 1);
+  assert.equal(f.sub.snapshot().local_submissions[0].local_delivery.state, 'confirming');
+  const ack = f.receipt('msg_local');
+  await f.refresh(f.snapshot({cursor: 2, messages: [ack.message], input_states: [ack.input_state]}));
+  await first; await tick();
+  assert.equal(f.sends.length, 2);
+  f.sends[1].resolve(f.receipt('msg_next')); await second;
+});
+
+test('a receipt received while Chat is detached reconciles when the same Resident is reopened', async t => {
+  const f = await submissionFixture(t), pending = f.submit();
+  await tick(); f.sub.destroy();
+  f.sends[0].resolve(f.receipt());
+  assert.equal((await pending).message_id, 'msg_canonical');
+  const reopened = f.track(f.p.acquire(f.residentId, () => {}, {load: false}));
+  await reopened.load();
+  assert.equal(reopened.snapshot().local_submissions[0].message_id, 'msg_canonical');
+  assert.equal(reopened.snapshot().local_submissions[0].local_delivery.state, 'accepted');
+  const ack = f.receipt();
+  await f.refresh(f.snapshot({cursor: 2, messages: [ack.message], input_states: [ack.input_state]}));
+  assert.equal(reopened.snapshot().local_submissions?.length || 0, 0);
+  assert.equal(reopened.snapshot().messages.length, 1);
+});
+
+for (const idempotencyKey of [undefined, 'caller-delivery-key']) {
+test(`explicit rejection retry preserves prepared payload and ${idempotencyKey ? 'caller' : 'generated'} key`, async t => {
+  const f = await submissionFixture(t); let prepared = 0;
+  const pending = f.p.sendInput({resident_id: f.residentId,
+    ...(idempotencyKey ? {idempotency_key: idempotencyKey} : {}),
+    message: {message_id: 'msg_local', content_parts: []}}, {prepare: payload => {
+      prepared++; payload.message.content_parts.push({type: 'text', text: 'prepared'});
+    }});
+  const rejected = assert.rejects(pending, /forbidden/);
+  await tick();
+  const preparedPayload = JSON.stringify(f.sends[0].payload);
+  assert.equal(f.sends[0].payload.idempotency_key,
+    idempotencyKey || `portal-deliver:${f.residentId}:msg_local`);
+  f.sends[0].reject(Object.assign(new Error('forbidden'), {status: 403}));
+  await rejected; await tick();
+  assert.equal(f.sub.snapshot().local_submissions[0].local_delivery.state, 'failed');
+  const retry = f.p.retrySubmission(f.residentId, 'msg_local'); await tick();
+  assert.equal(prepared, 1);
+  assert.equal(f.sends[1].payload.message.message_id, 'msg_local');
+  assert.equal(f.sends[1].payload.message.content_parts.length, 1);
+  assert.equal(JSON.stringify(f.sends[1].payload), preparedPayload);
+  f.sends[1].resolve(f.receipt()); await retry; await tick();
+  f.sub.acceptAcknowledgement(f.receipt());
+  assert.equal(f.sub.snapshot().local_submissions?.length || 0, 0);
+  assert.equal(f.sub.snapshot().messages.length, 1, 'repeated canonical receipt cannot duplicate the message');
+});
+}
+
+test('recreating an original request retains its key after canonical reconciliation', async t => {
+  const f = await submissionFixture(t);
+  const first = f.submit(); await tick();
+  const firstPayload = JSON.stringify(f.sends[0].payload);
+  f.sends[0].resolve(f.receipt()); await first; await tick();
+  const repeated = f.submit(); await tick();
+  assert.equal(JSON.stringify(f.sends[1].payload), firstPayload);
+  f.sends[1].resolve(f.receipt()); await repeated; await tick();
+  assert.equal(f.sub.snapshot().local_submissions?.length || 0, 0);
+  assert.equal(f.sub.snapshot().messages.length, 1);
+  const next = f.submit('msg_different'); await tick();
+  assert.notEqual(f.sends[2].payload.idempotency_key, f.sends[0].payload.idempotency_key);
+  f.sends[2].resolve(f.receipt('msg_different')); await next;
+});
+
+test('identity switch discards late canonical receipts and never dispatches the old queued request', async t => {
+  const f = await submissionFixture(t), first = f.submit(), second = f.submit('msg_old_next');
+  const rejected = [assert.rejects(first, {name: 'AbortError'}), assert.rejects(second, {name: 'AbortError'})];
+  await tick();
+  f.w.dispatchEvent(new f.w.Event('portal:identity-changed'));
+  await Promise.all(rejected); await tick();
+  const fresh = f.submit('msg_new_actor'); await tick();
+  f.sends[0].resolve(f.receipt()); await tick();
+  assert.equal(f.sub.snapshot().messages.length, 0);
+  assert.equal(f.sub.snapshot().local_submissions.length, 1);
+  assert.equal(f.sub.snapshot().local_submissions[0].message_id, 'msg_new_actor');
+  assert.deepEqual(f.sends.map(send => send.payload.message.message_id), ['msg_local', 'msg_new_actor']);
+  f.sends[1].resolve(f.receipt('msg_new_actor')); await fresh;
+});
+
 function fixture(t) {
   const dom = new JSDOM('', {url: 'https://states.fixture.invalid', runScripts: 'outside-only'});
   const w = dom.window, calls = [], subscriptions = new Set();
@@ -22,7 +211,8 @@ function fixture(t) {
   }};
   w.eval(fs.readFileSync(path.join(root, 'management_portal/static/resident_protocol.js'), 'utf8'));
   t.after(() => { for (const sub of subscriptions) sub.destroy(); dom.window.close(); });
-  return {w, p: w.PortalResidentProtocol, calls, acquire(wanted, options = {}, listener = () => {}) {
+  return {w, p: w.PortalResidentProtocol, calls, track(sub) { subscriptions.add(sub); return sub; },
+    acquire(wanted, options = {}, listener = () => {}) {
     const sub = w.PortalResidentProtocol.acquireStates(wanted, listener, {load: false, ...options});
     subscriptions.add(sub); return sub;
   }};
