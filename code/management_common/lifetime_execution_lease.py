@@ -25,6 +25,7 @@ import time
 from uuid import uuid4
 
 from . import file_lock
+from .filesystem_paths import filesystem_path
 from .instance_manifest import instance_runtime_root
 
 
@@ -109,7 +110,10 @@ def reap_native_leases(paths):
 
 def _registry(namespace, identity):
     digest = sha256(identity.encode()).hexdigest()
-    root = instance_runtime_root() / 'execution-leases' / sha256(namespace.encode()).hexdigest()
+    # The holder name adds two hashes to a normal per-user instance path.
+    # Use the native I/O spelling for the whole registry, including guards,
+    # scans and inherited holders, without changing its logical identity.
+    root = filesystem_path(instance_runtime_root()) / 'execution-leases' / sha256(namespace.encode()).hexdigest()
     shard = root / f'{int(digest[:2], 16) % 64:02x}'
     shard.mkdir(parents=True, exist_ok=True)
     return shard, digest
