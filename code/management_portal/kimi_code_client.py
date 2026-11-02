@@ -153,7 +153,9 @@ class KimiCodeClient:
             headers["Content-Type"] = "application/json"
         request = Request(url, data=body, method=method.upper(), headers=headers)
         try:
-            with urlopen(request, timeout=timeout) as response:
+            from management_portal.execution.account_observation import active, urlopen as observation_urlopen
+            open_response = observation_urlopen if active() else urlopen
+            with open_response(request, timeout=timeout) as response:
                 raw = response.read()
         except HTTPError as exc:
             try:

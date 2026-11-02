@@ -247,8 +247,12 @@ def provider_logged_in(provider, account_id):
     if provider == "kimi":
         from .kimi_account_login import logged_in
         return logged_in(account_id)
-    result = run_process(login_command(provider, status=True), env=login_environment(provider, account_id),
-                            stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
+    from .account_observation import active, login_status
+    if active():
+        result = login_status(login_command(provider, status=True), env=login_environment(provider, account_id))
+    else:
+        result = run_process(login_command(provider, status=True), env=login_environment(provider, account_id),
+                                stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
     if provider == "codex":
         return result.returncode == 0
     try:

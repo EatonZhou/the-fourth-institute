@@ -216,7 +216,9 @@ class CodexAccounts:
 
     def usage(self, account):
         from management_portal.codex_app_server_client import client_for_socket
-        payload = client_for_socket(self.registry.get(account.route_id).socket_path).request("account/usage/read", {}, timeout=15.0)
+        from .account_observation import cancelled, check_cancelled
+        check_cancelled()
+        payload = client_for_socket(self.registry.get(account.route_id).socket_path).request("account/usage/read", {}, timeout=15.0, cancellation_requested=cancelled)
         buckets = payload.get("dailyUsageBuckets")
         if not isinstance(buckets, list):
             raise ValueError("Account usage response is missing daily buckets")
@@ -238,7 +240,9 @@ class CodexAccounts:
             # Rate-limit windows belong to ChatGPT plans; an API key's spend is its balance.
             return {"status": "ok", "rate_limits": []}
         client = client_for_socket(route.socket_path)
-        payload = client.request("account/rateLimits/read", {}, timeout=15.0)
+        from .account_observation import cancelled, check_cancelled
+        check_cancelled()
+        payload = client.request("account/rateLimits/read", {}, timeout=15.0, cancellation_requested=cancelled)
         sample = quota_sample(payload, observed_at=time.time())
         credit_sample = credits(payload)
         if credit_sample is not None:
@@ -290,6 +294,8 @@ class ClaudeAccounts:
         if account.quota_policy == "none":
             return {"status": "ok", "rate_limits": []}
         snapshot = shared_client().account_usage(account.route_id, force_refresh=force)
+        from .account_observation import check_cancelled
+        check_cancelled()
         error_code = snapshot.get("quota_error_code", "")
         error = snapshot.get("quota_error", "")
         login_observation, login_observed_at = None, None

@@ -43,6 +43,8 @@ class AccountMonitor:
         self._refreshing = False
         self._lock = threading.RLock()
         self.stopped, self.wakeup = threading.Event(), threading.Event()
+        from .account_observation import ObservationLifetime
+        self.observations = ObservationLifetime()
         self.thread = threading.Thread(target=self._run, name="execution-account-status", daemon=True)
 
     def _stored_usage(self, account):
@@ -53,9 +55,19 @@ class AccountMonitor:
             return {}
 
     def refresh_account(self, account, *, force=False):
+        try:
+            with self.observations.scope():
+                self._refresh_account(account, force=force)
+        except InterruptedError:
+            if not self.stopped.is_set():
+                raise
+
+    def _refresh_account(self, account, *, force=False):
         observed_at = login_now()
         try:
             sample = self.accounts.observe(account, force=force)
+            if self.stopped.is_set():
+                return  # Cancellation is not a fresh quota or login observation.
             sample["checked_at"] = time.time()
             if _subscription(account):
                 if "login_observation" in sample:
@@ -76,6 +88,8 @@ class AccountMonitor:
             if account.billing_account_id and account.quota_policy != "reserve":
                 from .account_quota import finite_number
                 balance = self.billing.observe(account.billing_account_id)
+                if self.stopped.is_set():
+                    return
                 sample["balance"] = balance
                 try:
                     observed = datetime.fromisoformat(balance.get("updated_at", "").replace("Z", "+00:00")).timestamp()
@@ -90,6 +104,8 @@ class AccountMonitor:
             with self._lock:
                 self._samples[account.account_id] = sample
         except Exception as error:
+            if self.stopped.is_set():
+                return
             if is_authentication_failure(error, provider=account.provider):
                 error_code, message = "provider_authentication_failed", "登录凭据失效，请重新登录"
                 if _subscription(account):
@@ -101,7 +117,8 @@ class AccountMonitor:
             with self._lock:
                 self._samples[account.account_id] = self._failed_sample(account, {
                     "status": "unavailable", "error_code": error_code, "error": message, "refreshing": False})
-        self.refresh_usage(account)
+        if not self.stopped.is_set():
+            self.refresh_usage(account)
 
     def _failed_sample(self, account, sample):
         previous = deepcopy(self._samples.get(account.account_id) or {})
@@ -116,6 +133,8 @@ class AccountMonitor:
         return callable(getattr(self.accounts.adapters[account.provider], "usage", None)) and _subscription(account)
 
     def refresh_usage(self, account):
+        if self.stopped.is_set():
+            return
         if not self._reads_usage(account):
             return
         read = self.accounts.adapters[account.provider].usage
@@ -126,9 +145,14 @@ class AccountMonitor:
         if now - previous.get("checked_at", 0) < retry_after:
             return
         try:
-            sample = self._usage_store.save(account.provider, account.account_id, read(account), observed_at=now)
+            reading = read(account)
+            if self.stopped.is_set():
+                return
+            sample = self._usage_store.save(account.provider, account.account_id, reading, observed_at=now)
             sample["checked_at"] = now
         except Exception as exc:  # noqa: BLE001 - one account's failure keeps its last sample
+            if self.stopped.is_set():
+                return
             stored = self._stored_usage(account)
             if stored.get("observed_at", 0) > previous.get("observed_at", 0):
                 previous = stored
@@ -179,6 +203,8 @@ class AccountMonitor:
                 finally:
                     with self._lock:
                         self._refreshing = False
+                if self.stopped.is_set():
+                    break
                 self.wakeup.wait(POLL_SECONDS)
 
     def snapshot(self):
@@ -220,5 +246,8 @@ class AccountMonitor:
     def close(self):
         self.stopped.set()
         self.wakeup.set()
-        if self.thread.is_alive():
-            self.thread.join(timeout=21)
+        try:
+            self.observations.close()
+        finally:
+            if self.thread.is_alive():
+                self.thread.join()  # IO owners cancel and reap; do not abandon pool workers.

@@ -154,8 +154,11 @@ def observe_account(account_id):
                 chunks.append(content.get("text", ""))
 
     sample = {"status": "unknown", "rate_limits": []}
+    from management_portal.execution.account_observation import cancel_resource, check_cancelled, cancelled
+    check_cancelled()
     try:
-        with AcpClient(command(), env=environment(account_id), on_update=update) as client:
+        with AcpClient(command(), env=environment(account_id), on_update=update) as client, \
+                cancel_resource(lambda: client.close(timeout=1)):
             client.initialize()
             client.call("authenticate", {"methodId": "oauth-personal"})
             sample.update(login_observation="logged_in", login_observed_at=datetime.now(timezone.utc).isoformat())
@@ -166,7 +169,11 @@ def observe_account(account_id):
                 # Do not turn a missing native slash command into an LLM prompt.
                 # Google advertises commands asynchronously AFTER session/new.
                 with advertised:
-                    advertised.wait_for(lambda: session_id in commands, timeout=5)
+                    deadline = time.monotonic() + 5
+                    while session_id not in commands and time.monotonic() < deadline:
+                        check_cancelled()
+                        advertised.wait(timeout=.1)
+                check_cancelled()
                 if "usage" not in commands.get(session_id, set()):
                     sample.update(error_code="quota_unsupported", error="当前 Antigravity 运行时未提供额度查询")
                     return sample

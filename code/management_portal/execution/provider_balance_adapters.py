@@ -36,7 +36,8 @@ class BalanceResponseError(ValueError):
 
 def _read_json_response(url: str, headers: dict[str, str], timeout: float) -> dict[str, Any]:
     req = urllib.request.Request(url, headers=headers, method="GET")
-    with urllib.request.urlopen(req, timeout=timeout) as response:
+    from .account_observation import urlopen
+    with urlopen(req, timeout=timeout) as response:
         raw = response.read().decode("utf-8", errors="replace")
     payload = json.loads(raw) if raw else {}
     return payload if isinstance(payload, dict) else {}

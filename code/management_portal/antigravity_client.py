@@ -64,6 +64,8 @@ class AcpClient:
         self._pending = {}
         self._next = 0
         self._failure = None
+        self._close_lock = threading.Lock()
+        self._closed = False
         self.process = spawn_process(command, env=env, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE, text=True, bufsize=1, start_new_session=True)
         self._reader = threading.Thread(target=self._read, daemon=True)
@@ -193,12 +195,16 @@ class AcpClient:
             raise ValueError("Unsupported ACP protocol version")
         return result
 
-    def close(self):
-        terminate_process_tree(self.process, timeout=5)
-        self._reader.join(2)
-        self._stderr.join(2)
-        for pipe in (self.process.stdin, self.process.stdout, self.process.stderr):
-            pipe.close()
+    def close(self, *, timeout=5):
+        with self._close_lock:
+            if self._closed:
+                return
+            terminate_process_tree(self.process, timeout=timeout)
+            self._reader.join(2)
+            self._stderr.join(2)
+            for pipe in (self.process.stdin, self.process.stdout, self.process.stderr):
+                pipe.close()
+            self._closed = True
 
 
 class ToolServer:

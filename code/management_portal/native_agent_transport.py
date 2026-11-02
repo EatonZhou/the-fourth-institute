@@ -49,7 +49,9 @@ class NativeAgentClient:
         """
         request_id = secrets.token_hex(16)
         try:
-            with connect_local(self.socket_path, timeout=15) as sock:
+            from management_portal.execution.account_observation import cancel_resource, interrupt_socket, check_cancelled
+            check_cancelled()
+            with connect_local(self.socket_path, timeout=15) as sock, cancel_resource(lambda: interrupt_socket(sock)):
                 sock.settimeout(DETACH_POLL_SECONDS if detach_requested else response_timeout)
                 def send(message):
                     sock.sendall(json.dumps(message, ensure_ascii=False).encode() + b"\n")
