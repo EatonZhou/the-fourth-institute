@@ -199,12 +199,19 @@ def test_round4_concurrent_event_sequences_remain_unique_after_recursive_redacti
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         assert list(pool.map(send, range(4))) == [{'ok': True}] * 4
-    events = [event for event in isolated_rpc.scheduler.changes._transient_event_items[request.execution_id]
-              if event['type'] == 'provider_event']
+    # Concurrent transactions can publish their private buffers out of order.
+    # Callers receive the committed events through the sorted status view.
+    params = {'execution_id': request.execution_id, 'actor': request.actor}
+    snapshot = isolated_rpc.service.client.request('execution.status', params)
+    events = [event for event in snapshot['events'] if event['type'] == 'provider_event']
     sequences = [event['sequence'] for event in events]
     assert len(events) == 4 and len(set(sequences)) == 4 and sequences == sorted(sequences)
     assert 'round4-fake-secret' not in json.dumps(events)
     assert '[REDACTED]' in json.dumps(events)
+    resumed = isolated_rpc.service.client.request('execution.status', {
+        **params, 'after_sequence': sequences[1],
+    })
+    assert [event for event in resumed['events'] if event['type'] == 'provider_event'] == events[2:]
 
 
 @pytest.mark.parametrize('field', ['provider_session_ref', 'provider', 'backend_session_id', 'backend_route_id'])
