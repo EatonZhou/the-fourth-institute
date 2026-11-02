@@ -26,29 +26,56 @@ def _native_path(path: Path) -> str:
     return "\\\\?\\" + value
 
 
-def plain_tree(root: Path) -> None:
+# These stable program entry points are owned by Provider runtime installation.
+_PROVIDER_ALIASES = frozenset({
+    "codex-cli-current", "claude-agent-sdk-current", "claude-app-server-current",
+    "kimi-code-current", "dsh-runtime-current", "opencode-current", "antigravity-current",
+})
+
+
+def _managed_alias(path: Path, providers: Path | None) -> bool:
+    if providers is None or path.parent != providers or path.name not in _PROVIDER_ALIASES:
+        return False
+    from management_common.directory_links import is_directory_link
+    if not is_directory_link(path):
+        return False
+    target = path.resolve(strict=True)
+    # Resolve only to check the boundary; traversal never follows the alias.
+    # The ordinary tree walk validates the real target and all its ancestors.
+    return target != providers and target.is_relative_to(providers) and target.is_dir()
+
+
+def plain_tree(root: Path, *, providers: Path | None = None) -> list[Path]:
     """Reject redirections before any recursive deletion, including junctions."""
+    aliases = []
     pending = [Path(_native_path(root))]
     while pending:
         path = pending.pop()
         info = path.lstat()
         if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            if _managed_alias(path, providers):
+                aliases.append(path)
+                continue
             raise ValueError(f"Removal tree contains a link or reparse point: {path}")
         if stat.S_ISDIR(info.st_mode):
             pending.extend(path.iterdir())
+    return aliases
 
 
-def validate_platform_caches(platform: Path) -> None:
+def validate_platform_caches(platform: Path) -> list[Path]:
     """Validate all caches before deleting instance data or prepared bundles."""
+    aliases = []
+    providers = Path(_native_path(platform / "dependencies/providers"))
     for name in (".build", "dependencies"):
         root = platform / name
         try:
             info = root.lstat()
         except FileNotFoundError:
             continue
-        plain_tree(root)
+        aliases.extend(plain_tree(root, providers=providers))
         if not stat.S_ISDIR(info.st_mode):
             raise ValueError(f"Expected a platform cache directory: {root}")
+    return aliases
 
 
 def _remove_prepared_cache(platform: Path) -> None:
@@ -88,6 +115,11 @@ def remove_instances(platform: Path) -> list[str]:
     # Prepared bundles can exceed MAX_PATH. Remove them through the same Python
     # filesystem APIs that prepared them; failures preserve the installed tools
     # and instance data for diagnosis/retry instead of stranding a deep tree.
+    # Revalidate after stopping writers, then unlink approved aliases themselves.
+    # Never recursively delete through a junction or relax instance-tree checks.
+    from management_common.directory_links import remove_directory_link
+    for alias in validate_platform_caches(platform):
+        remove_directory_link(alias)
     _remove_prepared_cache(platform)
     kept = []
     for instance in plan:

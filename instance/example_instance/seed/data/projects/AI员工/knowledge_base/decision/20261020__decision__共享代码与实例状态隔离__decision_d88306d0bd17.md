@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-20'
 version:
-  number: 35
-  created_at: '2026-10-20'
+  number: 36
+  created_at: "2026-10-20"
   created_by:
-    user: ''
-    agent: resident_977d1a613d44
-  updated_at: '2026-11-01T18:52:50Z'
+    user: ""
+    agent: "resident_977d1a613d44"
+  updated_at: "2026-11-02T22:49:01Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 7
 ai_generated: false
 links:
@@ -22,7 +22,6 @@ links:
   supersedes: []
   derived_from: []
 ---
-
 # Portal 实例协议
 
 规范所有者：实例安装与生命周期模块。
@@ -314,6 +313,12 @@ Portal 在数据库和配置中保存根位置时，继续使用以下两种形�
   - 停止服务，删除实例中的所有对象，再删除服务单元，从本机实例登记中注销，删除实例根目录及其中的数据库。对象目录的处理按《目录与路径协议》（decision_4aa13bc21e8e）执行。
   - 放在实例根目录之外的区域目录，退役时列出来，由操作者确认后删除。
   - Portal 在区域外创建的目录随所属对象一并删除；接入的现成目录、主机执行账号目录和主机模型保留。
+
+### Windows 程序卸载中的托管目录联接
+
+明确选择删除本程序实例时，先核对全部实例和程序缓存，再停止全部实例，随后由安装器执行退役。实例树及缓存中的未知链接、重解析点或指向程序范围之外的重定向阻止删除；核对失败不停止实例或删除数据。
+
+Provider 安装器在本程序 `dependencies/providers` 直接创建的已知 `*-current` 目录入口是托管版本别名。卸载允许这些入口指向同一 providers 树中的真实目录；仍核对真实目录及其父目录，不沿别名递归。停止写入者后再次核对，只删除别名本身，再清理本程序缓存；不通过别名删除目标，也不放宽实例数据的链接检查。停止失败保留别名和数据。主机账号目录、其他程序和其他实例不在此范围内。
 
 ## 隔离规则
 

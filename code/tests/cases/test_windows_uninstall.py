@@ -273,3 +273,57 @@ def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
     assert "Call un.ListResiduals" in section
     assert "Remaining:$ResidualItems" in section
     assert "$LOCALAPPDATA\\TFI\\instances" in section
+
+
+@pytest.mark.parametrize("name", ["codex-cli-current", "dsh-runtime-current"])
+def test_managed_provider_alias_removed_without_following_target(platform, registry, name):
+    from management_common.directory_links import create_directory_link, is_directory_link
+    root = instance(platform, registry)
+    target = platform / "dependencies/providers" / (name.removesuffix("current") + "1.2.3")
+    target.mkdir(parents=True)
+    sentinel = target / "keep"
+    sentinel.write_bytes(b"provider runtime")
+    alias = target.parent / name
+    create_directory_link(alias, target)
+    calls = []
+    with patch.object(uninstall.subprocess, "run", side_effect=installer_run(registry, calls)):
+        uninstall.remove_instances(platform)
+    assert not is_directory_link(alias)
+    assert not alias.exists()
+    assert sentinel.read_bytes() == b"provider runtime"
+    assert not root.exists()
+
+
+@pytest.mark.parametrize("kind", ["external", "unknown", "nested_redirect"])
+def test_provider_alias_validation_failure_preserves_everything(platform, registry, tmp_path, kind):
+    from management_common.directory_links import create_directory_link, is_directory_link
+    root = instance(platform, registry)
+    providers = platform / "dependencies/providers"
+    providers.mkdir(parents=True)
+    target = tmp_path / "external" if kind == "external" else providers / "codex-cli-1"
+    target.mkdir()
+    sentinel = target / "keep"
+    sentinel.write_text("keep")
+    alias = providers / ("unknown-current" if kind == "unknown" else "codex-cli-current")
+    create_directory_link(alias, target)
+    if kind == "nested_redirect":
+        create_directory_link(target / "redirect", platform / "code")
+    with patch.object(uninstall.subprocess, "run") as run, pytest.raises(ValueError, match="link or reparse"):
+        uninstall.remove_instances(platform)
+    run.assert_not_called()
+    assert is_directory_link(alias)
+    assert sentinel.read_text() == "keep"
+    assert root.exists()
+
+
+def test_failed_stop_preserves_managed_alias(platform, registry):
+    from management_common.directory_links import create_directory_link, is_directory_link
+    root = instance(platform, registry)
+    target = platform / "dependencies/providers/codex-cli-1"
+    target.mkdir(parents=True)
+    alias = target.parent / "codex-cli-current"
+    create_directory_link(alias, target)
+    with patch.object(uninstall.subprocess, "run", side_effect=subprocess.CalledProcessError(1, ["stop"])), pytest.raises(subprocess.CalledProcessError):
+        uninstall.remove_instances(platform)
+    assert is_directory_link(alias)
+    assert root.exists()
