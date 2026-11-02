@@ -2,7 +2,9 @@
 
 Run using the installed code environment with PORTAL_INSTANCE_ROOT selected,
 after stopping all instance services except PostgreSQL and verifying a backup.
-No service control, file moves, file deletion or secret output is performed.
+No service control, file deletion or secret output is performed. An explicit
+legacy Article preview can authorize verified copies into project areas; the
+source files remain intact and database apply checks the reviewed preview.
 """
 from __future__ import annotations
 
@@ -46,7 +48,7 @@ def preservation_facts(connection):
     return facts
 
 
-def convert(connection):
+def convert(connection, *, relocate_legacy_articles=False, expected_article_plan=None, require_article_targets=False):
     """One transaction for the ordered owner conversions and final validation."""
     from scripts.migrate_deleted_identities import migrate as identities
     from scripts.migrate_directory_protocol import migrate_schema as directories
@@ -66,6 +68,16 @@ def convert(connection):
     before = preservation_facts(connection)
     report = {'from_schema': version['value']}
     report['identities'] = identities(connection, _database_schema('resource_registry'), apply=True)
+    if relocate_legacy_articles:
+        from management_common.instance_manifest import current_instance
+        from scripts import installed_article_migration as articles
+        proposal = articles.plan(connection, current_instance())
+        if expected_article_plan is not None and proposal != expected_article_plan:
+            raise ValueError('Article migration differs from the reviewed preview')
+        if require_article_targets:
+            articles.verify_targets(proposal)
+        report['legacy_articles'] = proposal
+        report['relocated_resource_documents'] = articles.rewrite(connection, proposal)
     report['directories'] = directories(connection)
     report['family'] = family(connection)
     # Family conversion validates the complete Lineage schema, not just its fields.
@@ -103,13 +115,43 @@ def main():
     from management_common.instance_manifest import current_instance
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--relocate-legacy-articles', action='store_true')
+    parser.add_argument('--expected-preview', type=Path)
+    parser.add_argument('--prepare-article-copies', type=Path, metavar='PREVIEW_REPORT')
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
+    if args.prepare_article_copies and (args.apply or args.relocate_legacy_articles or args.expected_preview):
+        parser.error('Copy preparation is separate from database preview/apply')
+    if args.expected_preview and not (args.apply and args.relocate_legacy_articles):
+        parser.error('--expected-preview requires --apply --relocate-legacy-articles')
+    if args.apply and args.relocate_legacy_articles and not args.expected_preview:
+        parser.error('Article relocation apply requires --expected-preview')
+    expected = None
+    if args.expected_preview or args.prepare_article_copies:
+        expected = json.loads((args.expected_preview or args.prepare_article_copies).read_text(encoding='utf-8'))
+        if (expected.get('committed') is not False or expected.get('to_schema') != 'tfi.lineage-data.v66'
+                or not isinstance(expected.get('legacy_articles'), dict)):
+            raise ValueError('A successful uncommitted Article migration preview is required')
     require_offline(current_instance(), running=('postgres',))
     with psycopg.connect(portal_database_url(), row_factory=_portal_row_factory) as raw:
         connection = PostgresConnection(raw)
         require_database_alone(connection)
-        result = convert(connection)
+        if expected and preservation_facts(connection) != expected['preservation']:
+            raise ValueError('Protected business records changed after preview')
+        if args.prepare_article_copies:
+            from scripts import installed_article_migration as articles
+            proposal = articles.plan(connection, current_instance())
+            if proposal != expected['legacy_articles']:
+                raise ValueError('Article copy plan differs from the reviewed preview')
+            articles.prepare_copies(proposal)
+            raw.rollback()
+            args.report.write_text(json.dumps({'committed': False, 'article_copies_verified': True,
+                'sources_retained': True, 'legacy_articles': proposal}, ensure_ascii=False, indent=2), encoding='utf-8')
+            print(json.dumps({'article_copies_verified': True, 'database_changed': False, 'sources_retained': True}))
+            return
+        result = convert(connection, relocate_legacy_articles=args.relocate_legacy_articles,
+                         expected_article_plan=expected['legacy_articles'] if expected else None,
+                         require_article_targets=args.apply and args.relocate_legacy_articles)
         if not args.apply:
             raw.rollback()
     report = {**result, 'committed': args.apply}

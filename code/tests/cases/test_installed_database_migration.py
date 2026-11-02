@@ -24,6 +24,24 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
     routing = family_facade.routing_snapshot(facade, message)
     registry = get_registry_store()
     registry._ensure()
+    from management_common.instance_manifest import current_instance
+    from scripts import installed_article_migration as articles
+    instance = current_instance()
+    article_id, project_id = 'article_123456789abc', '旧项目'
+    source = instance.root / 'data/share/Articles' / article_id
+    source.mkdir(parents=True)
+    (source / 'main.tex').write_bytes(b'old manuscript\n')
+    (source / '空目录').mkdir()
+    project_root = instance.area('projects') / project_id
+    project_root.mkdir(parents=True)
+    target = project_root / 'articles' / article_id
+    with registry.writer('project_registry', 'article') as writer:
+        projects = writer.get('project_registry', 'projects') or {'projects': []}
+        projects['projects'].append({'id': project_id, 'path': '/Projects/' + project_id})
+        writer.put('project_registry', 'projects', projects)
+        writer.put('article', article_id, {'id': article_id, 'project_ids': [project_id],
+            'roots': [{'path': str(source), 'present': True}], 'canonical_root': str(source),
+            'primary_file': 'main.tex', 'description': str(source)})
     index = portal_database(schema=resource_database_schema())
     with index.transaction() as c:
         c.execute('CREATE TABLE IF NOT EXISTS resource_index_records(record_json TEXT)')
@@ -48,22 +66,45 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
 
     with pytest.raises(Rollback):
         with database.transaction() as c:
-            preview = convert(c)
+            preview = convert(c, relocate_legacy_articles=True)
             assert preview['to_schema'] == 'tfi.lineage-data.v66'
             assert preservation_facts(c) == before
+            assert not target.exists()
             raise Rollback()
     with database.read() as c:
         assert c.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()[0] == 'tfi.lineage-data.v65'
         assert c.execute('SELECT to_regclass(%s)', (f'"{registry.database.schema}".retired_identities',)).fetchone()[0]
         assert preservation_facts(c) == before
+    assert registry.get('article', article_id)['canonical_root'] == str(source)
+    proposal = preview['legacy_articles']
+    with pytest.raises(ValueError, match='missing'):
+        articles.verify_targets(proposal)
+    articles.prepare_copies(proposal)
+    assert articles.tree_manifest(source) == articles.tree_manifest(target)
+    # A source edit after preview is not silently accepted at database apply.
+    (source / 'main.tex').write_bytes(b'changed after preview')
+    with pytest.raises(ValueError, match='differs from source'):
+        with database.transaction() as c:
+            convert(c, relocate_legacy_articles=True, expected_article_plan=proposal, require_article_targets=True)
+    (source / 'main.tex').write_bytes(b'old manuscript\n')
     with database.transaction() as c:
-        applied = convert(c)
+        applied = convert(c, relocate_legacy_articles=True, expected_article_plan=proposal, require_article_targets=True)
         assert applied['preservation'] == before
         LineageDataStore._initialize(c)
     assert controls.read(facade, ACTOR)['excluded_member_ids'] == [member]
     assert family_facade.routing_snapshot(facade, message) == routing
+    record = registry.get('article', article_id)
+    assert record['canonical_root'] == str(target)
+    assert record['roots'][0]['path'] == record['canonical_root']
+    assert record['description'] == str(source)
+    assert (source / 'main.tex').read_bytes() == (target / 'main.tex').read_bytes()
     with database.transaction() as c:
-        assert convert(c)['family']['changed'] is False
+        row = c.execute(f'SELECT document_json FROM "{registry.database.schema}".registry_documents '
+                        "WHERE collection='article' AND document_id=%s", (article_id,)).fetchone()
+        assert articles.stored_json(row[0])['canonical_root'] == 'projects:' + project_id + '/articles/' + article_id
+        reentry = convert(c, relocate_legacy_articles=True)
+        assert reentry['family']['changed'] is False
+        assert reentry['legacy_articles']['articles'] == []
         assert preservation_facts(c) == before
 
 
@@ -76,3 +117,21 @@ def test_unrecognized_schema_refuses_before_changes(future_creation_store, works
             convert(c)
     with database.read() as c:
         assert c.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()[0] == 'tfi.lineage-data.v66'
+
+
+def test_article_copy_refuses_conflict_and_links(tmp_path):
+    from scripts.installed_article_migration import tree_manifest, prepare_copies
+    source, target = tmp_path / 'source', tmp_path / 'target'
+    source.mkdir()
+    (source / 'main.tex').write_bytes(b'original')
+    proposal = {'articles': [{'resource_id': 'article_123456789abc', 'source': str(source),
+        'target': str(target), 'manifest': tree_manifest(source)}]}
+    target.mkdir()
+    (target / 'main.tex').write_bytes(b'different')
+    with pytest.raises(ValueError, match='no longer matches'):
+        prepare_copies(proposal)
+    assert (target / 'main.tex').read_bytes() == b'different'
+    assert (source / 'main.tex').read_bytes() == b'original'
+    (source / 'escape').symlink_to(target, target_is_directory=True)
+    with pytest.raises(ValueError, match='links or reparse'):
+        tree_manifest(source)

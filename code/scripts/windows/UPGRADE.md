@@ -48,3 +48,25 @@ business-field hashes. Preview executes the conversion then rolls back; normal
 PostgreSQL sequence allocation may leave harmless revision gaps. It does not
 move or delete files. Conflicts abort the transaction; do not bypass the checks.
 Then resume `update-code --instance <name>` and verify services and retained data.
+
+Some older Windows instances still store Article manuscripts in
+`data/share/Articles/<article_id>` and project registrations as `/Projects/<id>`.
+These are not valid instance area references. Do not add an `articles` area or
+disable location validation. The explicit compatibility path is:
+
+```text
+python -m scripts.migrate_installed_database --relocate-legacy-articles --report <archive>/migration-preview.json
+python -m scripts.migrate_installed_database --prepare-article-copies <archive>/migration-preview.json --report <archive>/article-copies.json
+python -m scripts.migrate_installed_database --relocate-legacy-articles --apply --expected-preview <archive>/migration-preview.json --report <archive>/migration-applied.json
+```
+
+The preview requires an unambiguous registered project and its existing directory
+under the projects area. It records all source files and their hashes, plans
+`projects:<project>/articles/<article_id>`, converts project and Article locations
+in the rollback transaction, and validates the full database migration. Copy
+preparation rechecks that plan, copies without replacing any target, and verifies
+every file and empty directory; original manuscripts remain in place. Apply
+requires the same source inventories, verified target copies, and protected
+business records as the preview, then commits the path and schema conversions
+together. Changed or conflicting trees stop the operation. Keep the old files
+and migration evidence archived until service and Article access are verified.
