@@ -259,6 +259,7 @@ modules:
       - "management_portal/execution/client.py"
       - "management_portal/execution/isa.py"
       - "management_portal/execution/service_lifecycle.py"
+      - "management_portal/execution/shutdown_diagnostics.py"
       - "management_portal/execution/service_settings.py"
       - "management_portal/execution/transport.py"
     designs:
