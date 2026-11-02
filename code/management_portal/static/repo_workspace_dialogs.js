@@ -111,13 +111,14 @@
       if (!workspaceCapability("write_files")) return;
       const basePath = state.tree?.path || queryState().path || "";
       state.editorOriginalPath = String(file?.path || "");
-      state.editorOriginalContent = String(file?.content || "");
       state.editorExpectedHash = String(file?.hash || "");
       state.editorNew = !file;
       elements.editorEyebrow.textContent = file ? window.PortalI18n.t("编辑文件") : window.PortalI18n.t("新建文件");
       elements.editorTitle.textContent = file?.name || window.PortalI18n.t("New file");
       elements.editorPath.value = file?.path || (basePath ? `${basePath}/` : "");
       elements.editorSource.value = file?.content || "";
+      // Textareas normalize CRLF/CR to LF; compare edits to the displayed value.
+      state.editorOriginalContent = elements.editorSource.value;
       elements.editorStatus.textContent = window.PortalI18n.t("保存后进入 Changes，可与其他改动一起提交。");
       setEditorMode("edit");
       dialogs.editor.open({ focusTarget: file ? elements.editorSource : elements.editorPath });
