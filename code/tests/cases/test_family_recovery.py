@@ -110,6 +110,10 @@ def test_continue_requeues_failed_member_once_and_keeps_original_link(family):
     member_message, _ = _round(family["wrong"], state="failed", text="完成双芯片方案，保留原始要求")
     family_facade.complete_relay((family["facade"], root), family["wrong"], member_message)
     before = family_facade.relay_links(_record(family))[root]
+    shown = family_facade.project_messages(_record(family), repository.read_messages(family['facade']), input_states={})
+    relay = next(message for message in shown if message['message_id'] == root)['relay']
+    assert relay['state'] == 'failed'
+    assert relay['error']['message'] == 'provider timeout'
     command = _send(family, "continue")
     assert repository.input_state(family["wrong"], member_message)["state"] == "queued"
     assert _view(family, command)["original_message_id"] == root
@@ -167,6 +171,11 @@ def test_failed_routing_uses_original_payload_and_new_deduplicated_occurrence(fa
     first_event = lineage_message_events.arrival_event("source", family["facade"], original)
     family_recovery.routing_failed(first_event.to_dict(), "Router 额度不足")
     assert repository.input_state(family["facade"], root)["state"] == "failed"
+    for states in (None, {root: 'failed'}):
+        shown = family_facade.project_messages(facade, repository.read_messages(family['facade']), input_states=states)
+        relay = next(message for message in shown if message['message_id'] == root)['relay']
+        assert relay['state'] == 'failed'
+        assert 'Router 额度不足' in str(relay['error'])
     command = _send(family, "continue")
     details = lineage_message_events.arrival_details(repository, family["facade"], command, family["steward"], facade)
     assert details["message_id"] == root and details["author_id"] == "sample_admin"

@@ -762,11 +762,13 @@ def project_messages(
     states = dict(input_states or {})
     unlinked = [(facade_id, str(message["message_id"])) for message in messages
                 if isinstance(message, dict) and message.get("role") == "user" and message.get("message_id")
-                and message["message_id"] not in links and message["message_id"] not in states
+                and message["message_id"] not in links
+                and (message["message_id"] not in states or states[message["message_id"]] == "failed")
                 and not any(message.get(mark) for mark in INFO_MARKS)]
+    state_details = repository.input_states_by_id(unlinked) if unlinked else {}
     if unlinked:
         states.update({message_id: value.get("state", "")
-                       for (_, message_id), value in repository.input_states_by_id(unlinked).items()})
+                       for (_, message_id), value in state_details.items()})
     members: dict[str, dict[str, Any]] | None = {} if input_states is not None else None
     member_ids = family_members(facade) if input_states is not None else []
     selected = {str(message.get("message_id") or ""): links[str(message["message_id"])]
@@ -788,6 +790,10 @@ def project_messages(
             continue
         link = links.get(message_id)
         if not link:
+            if states.get(message_id) == "failed" and not any(message.get(mark) for mark in INFO_MARKS):
+                message["relay"] = {"state": "failed", "error":
+                    state_details.get((facade_id, message_id), {}).get("error") or {}}
+                continue
             if (input_states or {}).get(message_id) == "queued" and not any(message.get(mark) for mark in INFO_MARKS):
                 review = reviews.get(message_id) or {}
                 if (scopes.get(message_id) or {}).get("status") == "waiting":
@@ -1021,6 +1027,8 @@ def _relay_views(
             "message_id": member_message_id, "state": state,
             "relayed_at": str(link.get("relayed_at") or ""),
         }
+        if state == "failed":
+            relay["error"] = round_["input_state"].get("error") or {}
         group_id = str(round_["input_state"].get("grouped_into_message_id") or "")
         if group_id:
             relay["grouped_into_message_id"] = group_id

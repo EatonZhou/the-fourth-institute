@@ -310,6 +310,10 @@
         if (status.error) body += `<div class="paneNote">${escapeHtml(typeof status.error === "string" ? status.error : status.error.message || JSON.stringify(status.error))}</div>`;
         if (status.original_message_id) actions = button("family-recovery-view", "查看原请求");
         body += (status.candidates || []).map(candidate => `<div class="paneNote"><button type="button" class="portalButton is-compact" data-portal-message-action="family-recovery-choose" data-recovery-request="${escapeHtml(candidate.message_id)}">${escapeHtml(candidate.text || candidate.message_id)}</button></div>`).join("");
+      } else if (state === "failed") {
+        label = window.PortalI18n.t("失败");
+        const error = typeof status.error === "string" ? status.error : status.error?.message;
+        if (error) body = `<div class="paneNote" role="status">${escapeHtml(error)}</div>`;
       } else if (state === "routing") {
         label = RUNTIME_PHASE_STATUS.family_routing.label;
         // Stopped while being routed, the request is withdrawn before any member gets it.

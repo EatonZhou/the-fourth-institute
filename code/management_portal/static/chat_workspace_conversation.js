@@ -117,7 +117,7 @@
     // the member's queue, the member's live work — not one block below all
     // messages.  The block belongs to the request's last shown message, so a new
     // output moves it and re-renders both.
-    const FAMILY_OPEN_REQUEST_STATES = new Set(["waiting_members", "delivering", "routing", "scope_review", "quota_review", "queued", "running", "recovery"]);
+    const FAMILY_VISIBLE_REQUEST_STATES = new Set(["waiting_members", "delivering", "routing", "scope_review", "quota_review", "queued", "running", "recovery", "failed"]);
 
     // A withdrawn message never reaches the Resident. A Family facade, which
     // already displayed the request, keeps only a withdrawal annotation.
@@ -134,7 +134,7 @@
       const live = new Set();
       messages.forEach((item, index) => {
         const relay = item?.relay && typeof item.relay === "object" ? item.relay : null;
-        if (item?.role !== "user" || !relay || !FAMILY_OPEN_REQUEST_STATES.has(String(relay.state || ""))) return;
+        if (item?.role !== "user" || !relay || !FAMILY_VISIBLE_REQUEST_STATES.has(String(relay.state || ""))) return;
         let end = index;
         while (end + 1 < messages.length
           && String(messages[end + 1]?.family_reply?.request_message_id || "") === item.id) end += 1;

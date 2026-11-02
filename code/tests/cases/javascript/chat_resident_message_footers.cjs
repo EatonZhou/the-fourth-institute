@@ -175,6 +175,16 @@ function requestProgress() {
   assert.deepEqual(actions(progress({ state: 'running' })), ['family-request-stop']);
   assert.deepEqual(actions(progress({ state: 'queued', ahead: 1 }, { actions: false })), [], 'a Chatroom shows the progress without actions');
   assert.equal(chat.requestProgressHtml({ state: 'completed' }), '', 'a finished request shows no progress');
+  const projected = chat.projectResidentConversation({}, { family_facade: {}, messages: [{
+    message_id: 'failed-request', role: 'user', content_parts: [text('Do it')],
+    relay: { state: 'failed', error: { message: 'Directory <reserved>' } },
+  }] }).messages[0];
+  assert.equal(projected.family_status.state, 'failed', 'failure remains attached to its request');
+  const failed = progress(projected.family_status);
+  assert.equal(words(failed.querySelector('.familyRequestLabel')), '失败');
+  assert.ok(words(failed).includes('Directory <reserved>'));
+  assert.equal(failed.querySelector('reserved'), null, 'error is text, not markup');
+  assert.deepEqual(actions(failed), [], 'a failed input does not offer Stop or resend');
 }
 
 function familyControls() {
