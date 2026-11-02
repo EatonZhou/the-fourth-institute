@@ -15166,8 +15166,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__AskMeAnything个人Resident与上下文生命周期__decision_bd5217d08c09.md",
-      "sha256": "ad055b5e5bf5d60317c7a67e46de7e720b8f5d2c2c90e6a7403afaa4e472d9bf",
-      "size": 15957
+      "sha256": "2a025bd854e1473d59d269344b00610ddcdaaa9483ac143e6811b982666b8ea3",
+      "size": 20180
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__ExecutionService_请求、生命周期与控制协议__decision_6ad0384e020d.md",
@@ -15746,8 +15746,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_聊天中的提问、审批与本轮修改卡片__decision_1e2eb869bc10.md",
-      "sha256": "cb3f2fe9a937def49d4e643ac74f4b4e5e59b2430b960520641894517b973412",
-      "size": 28954
+      "sha256": "5e14c8ff7f6ff343a2659aea003ab56b9986cfd06e816cca415b57c24f7d4993",
+      "size": 32794
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_运行设置：模型、推理强度、速度、权限与协作模式__decision_8b2fa224616b.md",
@@ -15756,8 +15756,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
-      "sha256": "2dddf4d649da8b316fb454334155ba0aaadd52a1f1259fd3fc722e61a4705f1b",
-      "size": 18496
+      "sha256": "b598005fbeadf1b07e6497364dc5fe25bfe3244c3d8b19ddd2ab2657242a0235",
+      "size": 19097
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261002__decision__Chatroom：用户聊天室与_@_Resident_投递__decision_a6bebf4ac283.md",
@@ -15811,8 +15811,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限系统：PAR_引擎架构与开关__decision_b820faf42218.md",
-      "sha256": "05395312be33de29ab98671121ac9992d4b22d454a3c77ac2a33516589b4c1ef",
-      "size": 85033
+      "sha256": "b9215ccfe81904c720a7212c5c1e779890205f1547011c334c7a279c92931b22",
+      "size": 89467
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限默认方案：P、A、R_三棵树与表规则__decision_600ae27b0538.md",
