@@ -40,11 +40,11 @@ def agent(monkeypatch, tmp_path):
     return tmp_path
 
 
-def invocation(root, text="hello", *, sid="", tools=(), owner=True, execution="execution-test"):
+def invocation(root, text="hello", *, sid="", tools=(), media=(), owner=True, execution="execution-test"):
     return SimpleNamespace(
         request=SimpleNamespace(runtime_options={"provider_profile": "one", "model": "gemini-test"},
             operation="turn", execution_id=execution, cwd=str(root), provider="antigravity",
-            permission_profile="owner" if owner else "restricted"),
+            permission_profile="owner" if owner else "restricted", input_media=tuple(media)),
         session=SimpleNamespace(backend_route_id="one", backend_session_id=sid),
         user_prompt=text, system_context="Portal rules", session_system_context="All Portal rules",
         attach_system_context=True, recovery_checkpoint={}, harness_tools=tuple(tools),
@@ -62,6 +62,160 @@ def context(cancel=None):
 
 def requests(root):
     return [json.loads(line) for line in (root / "requests.jsonl").read_text().splitlines()]
+
+
+def test_images_reach_acp_on_new_and_resumed_sessions(agent):
+    from PIL import Image
+    import base64
+    from management_portal.execution.contracts import InputMedia
+    from management_portal.execution.provider_catalog import AGENT_PROVIDERS
+    from management_portal.society_service import resident_media_domain as media_domain, resident_execution_provider
+    from management_portal import resident_chat_projection
+
+    source = agent / "diagram.png"
+    Image.new("RGB", (7, 5), "blue").save(source)
+    original = source.read_bytes()
+    media = media_domain.resident_input_media(
+        [{"media_type": "image", "source": str(source)}], actor="test",
+        resident_id="resident_111111111111", content="", workspace_roots=(agent,))
+    staged = media_domain.stage_resident_input_images(media, agent / "staged", "msg-image")
+    source.unlink()  # accepted media must survive deletion of the composer copy
+    image = InputMedia.from_payload(staged[0])
+    record = {"backend": "antigravity", "provider_profile": "one"}
+    text = media_domain.provider_message_with_native_media(record, f"Read [image: {source}]", staged)
+    assert str(source) not in text
+    backend = AntigravityBackend()
+    first = backend.execute(invocation(agent, text, media=[image], owner=False), context()[0])
+    second = backend.execute(invocation(agent, "next", sid=first.backend_session_id, media=[image],
+                                        owner=False, execution="execution-next"), context()[0])
+    digest = hashlib.sha256(original).hexdigest()
+    assert first.output["message"] == text + ":image:image/png:" + digest
+    assert second.output["message"] == "next:image:image/png:" + digest
+    prompts = [r["params"]["prompt"] for r in requests(agent) if r["method"] == "session/prompt"]
+    assert len(prompts) == 2
+    for prompt in prompts:
+        assert len(prompt) == 2
+        assert prompt[1]["mimeType"] == "image/png"
+        assert base64.b64decode(prompt[1]["data"]) == original
+    assert AGENT_PROVIDERS["antigravity"].media
+    capabilities = resident_execution_provider.capability_projection(record)
+    assert capabilities["image_input"] is True
+    projected = resident_chat_projection.project_session({"resident_id": "resident_111111111111",
+        "resident": record, "backend_capabilities": capabilities, "allows": {"DeliverMessage": True}}, "test")
+    assert projected["chat_workspace"]["composer"]["can_attach"] is True
+
+
+@pytest.mark.parametrize("suffix,body", [(".txt", b"attachment verification: 7149"),
+                                          (".csv", b"name,value\nverification,7149\n")])
+def test_file_attachments_reach_acp_and_are_read_through_offered_tools(agent, suffix, body):
+    from management_portal.society_service import resident_media_domain as media_domain
+    path = agent / ("attachment" + suffix)
+    path.write_bytes(body)
+    media = media_domain.resident_input_media(
+        [{"media_type": "file", "source": str(path)}], actor="test",
+        resident_id="resident_111111111111", content="Read this file", workspace_roots=(agent,))
+    text = media_domain.resident_message_with_file_references("Read this file", media)
+    seen = []
+    def read_file(args):
+        assert Path(args["path"]) == path
+        seen.append(args["path"])
+        return path.read_bytes().decode("utf-8")
+    tool = HarnessTool("read_file", "Read the authorized attachment", {"type": "object"}, read_file)
+    result = AntigravityBackend().execute(invocation(agent, text, tools=[tool], owner=False), context()[0])
+    assert seen == [str(path)]
+    assert result.output["message"] == text + ":" + body.decode("utf-8")
+    prompt = next(r["params"]["prompt"] for r in requests(agent) if r["method"] == "session/prompt")
+    assert prompt == [{"type": "text", "text": text}]
+    # Plain user text is never reinterpreted as an authorized embedded resource.
+    assert all(block["type"] != "resource_link" for block in prompt)
+
+
+def test_runtime_without_images_rejects_before_authentication_or_prompt(agent, monkeypatch):
+    from PIL import Image
+    from management_portal.execution.contracts import InputMedia
+    path = agent / "input.png"
+    Image.new("RGB", (1, 1)).save(path)
+    monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(agent), "FAKE_NO_IMAGES": "1"})
+    with pytest.raises(ValueError, match="does not support image"):
+        AntigravityBackend().execute(invocation(agent, media=[InputMedia("image", "local_path", str(path))]), context()[0])
+    assert [r["method"] for r in requests(agent)] == ["initialize"]
+
+
+def test_catalog_refreshes_legacy_media_flag_and_preserves_native_capability(agent, monkeypatch):
+    cache = agent / "catalog"
+    cache.mkdir()
+    monkeypatch.setattr(accounts, "account_runtime", lambda *args: cache)
+    (cache / "catalog.json").write_text(json.dumps({"observed_at": time.time(), "capabilities": {"media": False}}))
+    (cache / "catalog.json").chmod(0o600)
+    assert accounts.catalog("one")["capabilities"]["media"] is True
+    assert len([r for r in requests(agent) if r["method"] == "initialize"]) == 1
+    assert accounts.catalog("one")["capabilities"]["media"] is True
+    assert len([r for r in requests(agent) if r["method"] == "initialize"]) == 1
+    native = {"models": {"currentModelId": "text", "availableModels": [{"modelId": "text"}]}}
+    accounts.save_catalog("antigravity_one", native, {"promptCapabilities": {"image": False}})
+    assert accounts.catalog("one")["capabilities"]["media"] is False
+
+
+def test_input_media_validation_never_silently_drops_images(agent, monkeypatch):
+    from PIL import Image
+    from management_portal import antigravity_input_media as media
+    from management_portal.execution.contracts import InputMedia
+    path = agent / "input.png"
+    Image.new("RGB", (1, 1)).save(path)
+    local = InputMedia("image", "local_path", str(path), "image/png")
+    with pytest.raises(ValueError, match="staged locally"):
+        media.prompt_content("", [InputMedia("image", "url", "https://example.com/image.png")])
+    with pytest.raises(ValueError, match="at most 20"):
+        media.prompt_content("", [local] * 21)
+    with pytest.raises(ValueError, match="matching MIME"):
+        media.prompt_content("", [InputMedia("image", "local_path", str(path), "image/jpeg")])
+    with monkeypatch.context() as m:
+        m.setattr(media, "MAX_IMAGE_BYTES", 8)
+        with pytest.raises(ValueError, match="20 MiB"):
+            media.prompt_content("", [local])
+    with monkeypatch.context() as m:
+        m.setattr(media, "MAX_TURN_IMAGE_BYTES", path.stat().st_size)
+        with pytest.raises(ValueError, match="40 MiB"):
+            media.prompt_content("", [local, local])
+    path.write_text("not an image")
+    with pytest.raises(ValueError, match="valid image"):
+        AntigravityBackend().execute(invocation(agent, media=[local]), context()[0])
+    assert not (agent / "requests.jsonl").exists()
+    path.unlink()
+    with pytest.raises(ValueError, match="readable file"):
+        media.prompt_content("", [local])
+
+
+@pytest.mark.parametrize("format,mime", [("PNG", "image/png"), ("JPEG", "image/jpeg"),
+                                        ("WEBP", "image/webp")])
+def test_supported_image_formats_preserve_bytes(agent, format, mime):
+    import base64
+    from PIL import Image
+    from management_portal.antigravity_input_media import prompt_content
+    from management_portal.execution.contracts import InputMedia
+    path = agent / "image.bin"
+    Image.new("RGB", (2, 3), "green").save(path, format=format)
+    block = prompt_content("look", [InputMedia("image", "local_path", str(path), mime)])[1]
+    assert block["mimeType"] == mime
+    assert base64.b64decode(block["data"]) == path.read_bytes()
+
+
+def test_static_gif_is_converted_and_animation_is_rejected(agent):
+    import base64
+    from PIL import Image
+    from management_portal.antigravity_input_media import prompt_content
+    from management_portal.execution.contracts import InputMedia
+    path = agent / "image.gif"
+    frame = Image.new("RGB", (2, 3), "green")
+    frame.save(path)
+    media = InputMedia("image", "local_path", str(path), "image/gif")
+    block = prompt_content("look", [media])[1]
+    assert block["mimeType"] == "image/png"
+    with Image.open(io.BytesIO(base64.b64decode(block["data"]))) as converted:
+        assert converted.convert("RGB").tobytes() == frame.tobytes()
+    frame.save(path, save_all=True, append_images=[Image.new("RGB", (2, 3), "red")])
+    with pytest.raises(ValueError, match="animated GIF"):
+        prompt_content("look", [media])
 
 
 def test_turn_serves_portal_tools_and_reports_native_events_and_usage(agent):

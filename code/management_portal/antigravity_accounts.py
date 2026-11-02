@@ -34,7 +34,7 @@ def environment(account_id):
     return login_environment("antigravity", account_id)
 
 
-def save_catalog(account_id, session):
+def save_catalog(account_id, session, agent_capabilities):
     selection = session.get("models") or {}
     models = [str(item["modelId"]) for item in selection.get("availableModels", [])]
     default = selection.get("currentModelId", "")
@@ -45,9 +45,11 @@ def save_catalog(account_id, session):
         default = option.get("currentValue", "")
     if not models or default not in models:
         raise ValueError("Antigravity returned no usable model catalog")
+    prompt_capabilities = agent_capabilities.get("promptCapabilities") or {}
     value = {"models": models, "default_model": default, "efforts_by_model": {},
              "default_efforts_by_model": {}, "service_tiers_by_model": {},
-             "capabilities": {"media": False}, "observed_at": time.time()}
+             "capabilities": {"media": prompt_capabilities.get("image") is True},
+             "prompt_capabilities": prompt_capabilities, "observed_at": time.time()}
     atomic_write_private_bytes(account_runtime("antigravity", account_id) / "catalog.json", json.dumps(value).encode())
     return value
 
@@ -58,15 +60,15 @@ def catalog(route=""):
     cached = account_runtime("antigravity", row["account_id"]) / "catalog.json"
     if cached.is_file():
         value = json.loads(cached.read_text())
-        if time.time() - value.get("observed_at", 0) < 300:
+        if "prompt_capabilities" in value and time.time() - value.get("observed_at", 0) < 300:
             return value
     with AcpClient(command(), env=environment(row["account_id"]), cwd=str(home)) as client:
-        client.initialize()
+        handshake = client.initialize()
         client.call("authenticate", {"methodId": "oauth-personal"})
         # An empty native session lists models, without invoking one.
         result = client.call("session/new", {"cwd": str(home), "mcpServers": [],
                              "_meta": {"antigravity": {"enabledTools": []}}})
-        return save_catalog(row["account_id"], result)
+        return save_catalog(row["account_id"], result, handshake.get("agentCapabilities") or {})
 
 
 def routes():

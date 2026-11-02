@@ -70,6 +70,7 @@ ADAPTER_TESTS: dict[str, dict[str, str]] = {
         "opencode": "tests/cases/test_opencode_adapter.py::test_a_failed_opencode_turn_is_continued_in_its_session",
     },
     capabilities.NATIVE_IMAGE_INPUT: {
+        "antigravity": "tests/cases/test_antigravity.py::test_images_reach_acp_on_new_and_resumed_sessions",
         "claude": "tests/cases/test_claude_native_integration.py::test_claude_images_reach_native_client_and_common_composer",
         "codex": f"{_CODEX_TURNS}::test_codex_backend_maps_input_media_to_native_app_server_images",
     },

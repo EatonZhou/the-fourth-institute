@@ -10,6 +10,7 @@ from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
 from management_portal.antigravity_client import AcpClient, ToolServer
 from management_portal.antigravity_runtime import command
+from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
 from .backend_contracts import BackendResult, full_system_context
 from .context_seed import realize_portable_seed
@@ -203,6 +204,7 @@ class AntigravityBackend:
                                      frozenset(prior.get("available_harness_tool_names", [])))
             if prior.get("phase") == "prompt_sent":
                 raise RuntimeError("Antigravity input delivery is uncertain after disconnection; refusing to replay it")
+        prompt = prompt_content(invocation.user_prompt, request.input_media) if request.operation == "turn" else []
         row = accounts.account_for_route(route)
         route = row["route_id"]
         env, _ = resident_process_environment(options)
@@ -328,6 +330,8 @@ class AntigravityBackend:
                                         on_update=update, on_request=client_request))
             handshake = client.initialize()
             capabilities = handshake.get("agentCapabilities") or {}
+            if request.input_media and not capabilities.get("promptCapabilities", {}).get("image"):
+                raise ValueError("Antigravity ACP runtime does not support image input")
             if not capabilities.get("loadSession") or (server and not capabilities.get("mcpCapabilities", {}).get("http")):
                 raise RuntimeError("Antigravity ACP runtime lacks required session/MCP capabilities")
             client.call("authenticate", {"methodId": "oauth-personal"})
@@ -344,7 +348,7 @@ class AntigravityBackend:
             if not sid:
                 raise RuntimeError("Antigravity returned no session ID")
             context.set_interrupt_target(sid, turn_id, route)
-            discovered = accounts.save_catalog(row["account_id"], created)
+            discovered = accounts.save_catalog(row["account_id"], created, capabilities)
             model = str(options.get("model") or discovered["default_model"])
             if model not in discovered["models"]:
                 raise ValueError("The selected model is no longer offered by this Antigravity account")
@@ -362,7 +366,7 @@ class AntigravityBackend:
             start_idx, _ = _read_steps(env, sid)
             active_turn = True
             try:
-                result = client.call("session/prompt", {"sessionId": sid, "prompt": [{"type": "text", "text": invocation.user_prompt}]},
+                result = client.call("session/prompt", {"sessionId": sid, "prompt": prompt},
                                      timeout=None, cancelled=context.is_cancelled, session_id=sid)
                 if result.get("stopReason") == "cancelled" or context.is_cancelled():
                     raise InterruptedError("Antigravity turn cancelled")

@@ -1,6 +1,9 @@
 """A stdio ACP peer exercising real Portal framing, process lifetime and MCP calls."""
 import json
+import base64
+import hashlib
 import os
+import re
 from pathlib import Path
 import sys
 import threading
@@ -106,8 +109,14 @@ def prompt(identifier, params):
         mcp("initialize", {})
         tools = mcp("tools/list", {})["tools"]
         if tools:
-            result = mcp("tools/call", {"name": tools[0]["name"], "arguments": {"id": "resource-one"}})
+            attachment = re.search(r"\[file: ([^\]\r\n]+)\]", text)
+            args = {"path": attachment[1]} if attachment else {"id": "resource-one"}
+            result = mcp("tools/call", {"name": tools[0]["name"], "arguments": args})
             text += ":" + result["content"][0]["text"]
+    for block in params["prompt"]:
+        if block["type"] == "image":
+            data = base64.b64decode(block["data"], validate=True)
+            text += ":image:" + block["mimeType"] + ":" + hashlib.sha256(data).hexdigest()
     update(sid, sessionUpdate="tool_call", toolCallId="native-1", title="view_file", kind="read",
            status="in_progress", rawInput={"path": "file.txt"})
     update(sid, sessionUpdate="tool_call_update", toolCallId="native-1", status="completed", rawOutput="content")
@@ -127,7 +136,8 @@ for line in sys.stdin:
         log.write(json.dumps({"method": method, "params": params}) + "\n")
     if method == "initialize":
         result = {"protocolVersion": 1, "agentInfo": {"version": "1.4.5"},
-                  "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True}}}
+                  "agentCapabilities": {"loadSession": True, "mcpCapabilities": {"http": True},
+                                        "promptCapabilities": {"image": not bool(os.environ.get("FAKE_NO_IMAGES"))}}}
     elif method == "authenticate":
         if os.environ.get("FAKE_LOGIN"):
             print("https://accounts.google.com/o/oauth2/auth?state=s&redirect_uri=http%3A%2F%2Flocalhost%3A12345%2F", file=sys.stderr, flush=True)
