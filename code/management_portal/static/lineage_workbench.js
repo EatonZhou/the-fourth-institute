@@ -992,10 +992,10 @@
           target: "agentFilterSummary",
           items: () => {
             const items = [];
-            if (state.projectDisplayFilter !== "non-empty") {
+            if (state.projectDisplayFilter === "non-empty") {
               items.push({
                 label: window.PortalI18n.t("显示范围"),
-                value: "全部",
+                value: window.PortalI18n.t("有内容"),
               });
             }
             if (state.projectFilter !== "all") {
@@ -1006,7 +1006,7 @@
           },
           onClear: () => {
             state.projectFilter = "all";
-            state.projectDisplayFilter = "non-empty";
+            state.projectDisplayFilter = "all";
             agentFilterDropdown?.close();
             writeLineageUiState({
               projectFilter: state.projectFilter,

@@ -94,7 +94,7 @@
       searchWrap.classList.toggle("open", state.searchOpen);
       searchBtn.classList.toggle("is-active", state.searchOpen || queryActive);
       searchBtn.setAttribute("aria-expanded", state.searchOpen ? "true" : "false");
-      filterBtn.classList.toggle("is-active", state.filterOpen || state.projectFilter !== "all" || state.projectDisplayFilter !== "non-empty");
+      filterBtn.classList.toggle("is-active", state.filterOpen || state.projectFilter !== "all" || state.projectDisplayFilter === "non-empty");
       filterBtn.setAttribute("aria-expanded", state.filterOpen ? "true" : "false");
       filterPanel.classList.toggle("open", state.filterOpen);
       filterPanel.setAttribute("aria-hidden", state.filterOpen ? "false" : "true");

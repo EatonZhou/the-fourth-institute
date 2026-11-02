@@ -22,6 +22,20 @@ test('navigation search exposes its cause, clears safely and stays local to the 
   const state=part.dependencies.state;
   await page.until(()=>state.loadAllComplete);
   page.window.PortalI18n.apply('zh-CN');
+  part.exports.renderAgentList();
+  const filterSummary=()=>doc.querySelector('#agentFilterSummary .portalFilterSummary');
+  assert.equal(filterSummary().hidden,false,'only-content is an actual restriction');
+  assert.match(filterSummary().textContent,/有内容/);
+  filterSummary().querySelector('.portalFilterSummaryClear').click();
+  assert.equal(state.projectDisplayFilter,'all','clear removes restrictions instead of adding a default restriction');
+  assert.equal(filterSummary().hidden,true,'unrestricted projects do not show a filter summary');
+  assert.equal(doc.getElementById('agentFilterSummary').classList.contains('is-empty'),true);
+  assert.equal(doc.getElementById('filterToggleBtn').classList.contains('is-active'),false);
+  state.lineages=[{lineage_id:'lineage_aaaaaaaaaaaa',project_id:'alpha'}];
+  state.projectFilter='alpha';part.exports.renderAgentList();
+  assert.equal(filterSummary().hidden,false,'a selected Project remains visible as a restriction');
+  filterSummary().querySelector('.portalFilterSummaryClear').click();
+  assert.equal(filterSummary().hidden,true);
   doc.getElementById('searchToggleBtn').click();
   search('provider');
   assert.match(list().textContent,/正在筛选：provider/);
@@ -30,6 +44,7 @@ test('navigation search exposes its cause, clears safely and stays local to the 
   list().querySelector('[data-sidebar-show-all]').click();
   assert.equal(input.value,'');
   assert.equal(list().querySelectorAll('.principalProjectCard').length,2);
+  assert.equal(filterSummary().hidden,true,'show-all must not leave an all-projects chip behind');
   search('Alpha');
   assert.match(list().textContent,/匹配 1 个项目/);
   assert.equal(list().querySelectorAll('.principalProjectCard').length,1);
