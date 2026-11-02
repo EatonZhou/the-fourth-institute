@@ -20,6 +20,11 @@
     let showAll = false;
     let disposed = false;
 
+    const saveChoices = () => {
+      draft = T.setDraft(draft.caseIds, draft.implementation, draft.source,
+        { ...draft.options, runner: runnerChoice, profile: profileChoice });
+    };
+
     const request = () => ({
       select: { case_ids: draft.caseIds },
       implementation: {
@@ -120,7 +125,7 @@
           </div>
           <div class="testHeroActions">
             <button class="portalButton is-compact is-primary" type="button" data-plan-start data-portal-icon="play" ${ready ? "" : "disabled"}><span>${esc(pending === "start" ? t("正在启动…") : t("开始运行"))}</span></button>
-            <a class="portalButton is-compact" href="${esc(T.catalogHref())}">返回用例目录</a>
+            <a class="portalButton is-compact" href="${esc(T.catalogHref(draft.options?.catalogFilters || {}))}">返回用例目录</a>
           </div>
           <div class="testStats">
             <span class="testStat"><strong>${draft.caseIds.length}</strong><span>条用例</span></span>
@@ -138,16 +143,16 @@
       root.querySelector("[data-plan-start]")?.addEventListener("click", () => void start());
       root.querySelector("[data-plan-retry]")?.addEventListener("click", () => void preview());
       root.querySelector("[data-plan-all]")?.addEventListener("click", () => { showAll = !showAll; render(); });
-      root.querySelector("[data-plan-runner]")?.addEventListener("change", event => { runnerChoice = event.target.value; void preview(); });
-      root.querySelector("[data-plan-profile]")?.addEventListener("change", event => { profileChoice = event.target.value; void preview(); });
+      root.querySelector("[data-plan-runner]")?.addEventListener("change", event => { runnerChoice = event.target.value; saveChoices(); void preview(); });
+      root.querySelector("[data-plan-profile]")?.addEventListener("change", event => { profileChoice = event.target.value; saveChoices(); void preview(); });
     }
 
     async function load() {
       draft = T.draft();
       plan = null;
       failure = "";
-      runnerChoice = "";
-      profileChoice = "";
+      runnerChoice = String(draft.options?.runner || "");
+      profileChoice = String(draft.options?.profile || "");
       await T.loadOverview();
       if (disposed) return null;
       if (!draft.caseIds.length) {

@@ -170,7 +170,7 @@
         root.querySelectorAll("[data-select-case]").forEach(input => { input.checked = false; input.closest("[data-case-id]").dataset.selected = "false"; });
         syncSelection();
       });
-      host?.querySelector("[data-run-selection]")?.addEventListener("click", () => T.prepareRun([...T.selection], {}, t("用例目录中的选择")));
+      host?.querySelector("[data-run-selection]")?.addEventListener("click", () => T.prepareRun([...T.selection], {}, t("用例目录中的选择"), { catalogFilters: { ...filters } }));
     }
 
     function renderList() {

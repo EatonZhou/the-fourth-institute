@@ -119,3 +119,25 @@ def test_cleanup_error_is_a_tool_issue_without_rewriting_user_process():
                                  "symptom": "helper did not exit", "evidence": []}]
     assert report_counts([{"details": report}])["issues"]["tool"] == 1
     assert interrupted_report("error", report)["issues"] == report["issues"]
+
+
+def test_running_campaign_summary_counts_completed_reports_before_final_report(tmp_path, monkeypatch):
+    from management_portal.test_framework import records as module
+    records = module.RunRecords(tmp_path / 'runs.json')
+    run = records.create({'campaign': 'tau', 'selected': [], 'execution': {'groups': []}}, 'sample_admin')
+    records.update(run['run_id'], {'status': 'running'})
+    result = {'case_id': 'test_aaaaaaaaaaaa', 'status': 'reported', 'details': {
+        'process': {'status': 'completed'}, 'issues': [
+            {'category': 'product', 'severity': 'impact', 'symptom': 'draft lost'},
+            {'category': 'tool', 'severity': 'minor', 'symptom': 'helper recovered'}]}}
+    records.append_result(run['run_id'], '', result)
+    summary = records.recent_summaries()[0]['usage_summary']
+    assert summary['reported'] == 1
+    assert summary['issues']['product'] == 1
+    assert summary['issues']['tool'] == 1
+    monkeypatch.setattr(module, '_executor_alive', lambda _: True)
+    coordinator = module.RunCoordinator(records, tmp_path / 'artifacts', launch=lambda _: None)
+    detail = coordinator.get(run['run_id'], 'sample_admin')
+    assert detail['status'] == 'running'
+    assert detail['report'] == {}
+    assert detail['usage_summary'] == summary

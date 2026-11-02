@@ -4,41 +4,20 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 35
-  created_at: '2026-09-02'
+  number: 37
+  created_at: "2026-09-02"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-29T12:20:48Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T20:31:36Z"
   updated_by:
-    user: ''
-    agent: resident_96d93d0d568b
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 7
 metaness: 2
 ai_generated: false
 links:
-  source:
-  - ${code_root}/management_portal/test_framework/page/test_native_view.html
-  - ${code_root}/management_portal/test_framework/page/test_page.js
-  - ${code_root}/management_portal/test_framework/page/test_page_core.js
-  - ${code_root}/management_portal/test_framework/page/test_page_overview.js
-  - ${code_root}/management_portal/test_framework/page/test_page_catalog.js
-  - ${code_root}/management_portal/test_framework/page/test_page_case.js
-  - ${code_root}/management_portal/test_framework/page/test_page_run.js
-  - ${code_root}/management_portal/test_framework/page/test_page_plan.js
-  - ${code_root}/management_portal/test_framework/page/test_page_tau.js
-  - ${code_root}/management_portal/test_framework/page/test_page.css
-  - ${code_root}/management_portal/test_framework/page/test_live_adapter.js
-  - ${code_root}/management_portal/test_framework/web.py
-  - ${code_root}/management_portal/test_framework/service.py
-  - ${code_root}/management_portal/test_framework/api.py
-  - ${code_root}/management_portal/static/development_workspace.js
-  - ${code_root}/management_portal/static/portal_design_live_testlab.js
-  - ${code_root}/management_portal/static/portal_demo_player.js
-  - ${code_root}/management_portal/static/portal_live_tour.js
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/resources/providers/test.py
-  - ${code_root}/management_portal/static/portal_resource_chips.js
+  source: []
   related:
   - decision_8273271b67b1
   - decision_c953eab654cd
@@ -50,6 +29,7 @@ links:
   - decision_79de71d9890d
   - decision_c524c775e0be
   - decision_6ad0384e020d
+  - thinking_091fdad228c4
   - decision_9f6135cbbb22
   - decision_cf27d39e39cd
   - decision_4a9ba5dfada6
@@ -57,7 +37,8 @@ links:
   - decision_e5f66e2f6a5e
   - decision_06defc47e960
   supersedes: []
-  derived_from: []
+  derived_from:
+  - thinking_091fdad228c4
 ---
 # Portal Test 页面：测试总览、用例目录、运行与 TAU
 
@@ -83,7 +64,7 @@ Test 页面是开发投影页中与 WALL 并列的一个视图，开发者和审
 
 ## 总览
 
-- **页头是一块紧凑的卡片。** 标题“Portal 测试”旁是执行方式是否可用（pytest、TAU）、TAU 是否暂停接收新测试和目录错误数；一句说明之后，最后一行并排列出用例数、有用例的模块数、P0 与 P1 数、设计点数、TAU 任务数、缺实现的用例数和最近运行的结果（通过、有问题、进行中）。右侧是“浏览用例”和“刷新”。
+- **页头是一块紧凑的卡片。** 标题“Portal 测试”旁是执行方式是否可用（pytest、TAU）、TAU 是否暂停接收新测试和目录错误数；一句说明之后，最后一行并排列出用例数、有用例的模块数、P0 与 P1 数、设计点数、TAU 任务数、缺实现的用例数和最近运行的结果（本地测试结果、TAU 使用报告、进行中）。右侧是“浏览用例”和“刷新”。
 - **覆盖地图按领域画出每个功能模块。** 一个格子是一个二级模块：数字是用例数，色条是 P0–P3 的构成，底色随用例数（对数）加深；没有用例的格子画成虚线框，缺少 P0/P1 或缺少设计点的格子右上角有警示角，格子里写明缺什么；圆点是最近一次包含该模块用例的运行结果。点击格子打开按该模块筛选的用例目录，点击领域标题打开按整个领域筛选的目录。
 - **最近运行列出最新的 8 次。** 每行显示结果、标题（只有一条用例时是它的标题，否则是用例数）、执行方式、所在模块、发起者和时间，点击打开运行页；全部记录在运行记录页。
 - **待关注列出需要处理的缺口。** 声明有误而暂不在目录中的用例（写出 ID 和原因）、还没有实现的用例（链接到 `runner=none` 的目录）、没有用例的模块、缺少 P0/P1 的模块和缺少设计点的模块，模块都可以点击。没有缺口时说明目录没有需要处理的缺口。
@@ -118,21 +99,19 @@ Test 页面是开发投影页中与 WALL 并列的一个视图，开发者和审
 
 ## 新运行
 
-- **新运行页把选中的用例变成运行计划。** 选择来自用例目录的勾选、用例页的“运行”、快捷组合、TAU 页或运行页的“再次运行”；它们保存在当前浏览器标签页中（用例 ID、实现限定和来源说明），刷新后仍在，其他标签页和其他用户看不到。
+- **新运行页把选中的用例变成运行计划。** 选择来自用例目录的勾选、用例页的“运行”、快捷组合、TAU 页或运行页的“再次运行”；它们保存在当前浏览器标签页中（用例 ID、实现限定、来源说明、用户所选执行方式和运行环境、来源目录筛选），跨页返回或刷新后仍在，其他标签页和其他用户看不到。计划中的“返回用例目录”恢复来源筛选；开始运行后清空草稿，新选择不继承旧草稿的覆盖选项。
 - **打开就生成计划，开始运行要再确认。** 页面立即调用 `POST /test/api/preview` 并显示：能否运行、用例数、实现数、不会运行的条数和执行方式（TAU 写明模块数和同时执行的上限）；“将要运行”列出每个实现的用例、执行方式、运行配置、执行风险与环境风险和入口（先显示 40 个，可展开全部）；“不会运行”列出被排除的用例和原因。“运行方式”可以改用某一种执行方式或某个运行配置，改动后重新生成计划。
 - **只有“开始运行”启动运行。** 计划可运行且目录响应的 `access.can_operate` 允许时按钮可用；它把计划中的请求提交给 `POST /test/api/run`，随后把地址替换为新运行的运行页，并清空这份选择。
 
 ## 运行页与运行记录
 
-- **运行页的页头说明这次运行的结果。** 状态、标题、执行方式（TAU Campaign 或本地运行）、运行配置和目标实例，发起者、发起时间与用时，以及运行 ID。“中止”只对发起者、只在运行未结束时出现；“再次运行”用同一批用例和实现限定打开新运行页；“删除”只对已结束的运行出现。页头最后一行是用例数、通过数、有问题的数、进行中的数和分组（或模块）数。
-- **结果按分组排列，有问题的在前。** 本地运行按 pytest 文件分片分组（如 `pytest 1/3`），TAU Campaign 每个模块一组。分组显示状态、结果计数、正在运行的用例或等待原因和错误；每条结果显示状态、用例（可点击）、失败分类、摘要、问题或观察与改进项、截图审查、证据（折叠）以及体验记录、源码与 SPEC 诊断和其他元数据（折叠）。TAU 结果有“查看对话”，在右侧打开执行这条用例的模块 Resident 的对话。TAU 运行另写明模块间的并发上限和各失败分类的数量。
-- **运行中每 900 毫秒重新读取。** 读取失败时保留已显示的记录并提示，1.5 秒后重试；运行结束后停止。切换到另一个运行或离开运行页后，旧运行的迟到响应不会覆盖当前显示。重新读取时保留读者展开或收起的部分。是否通过只看运行记录的状态，不从输出文字推断。
-- **原始输出原样保留。** Runner 原始输出用 `textContent` 写入，保留开头换行、CRLF 和字面 HTML；没有输出时，已结束的运行写明没有输出（有错误时显示错误），进行中的运行显示等待输出。失败的本地运行默认展开原始输出。运行计划（选中的实现与排除原因）折叠在页尾。
-- **打开已不存在的运行时说明报告已不存在。** 页面提供查看其他运行的入口，不改为显示其他运行，也不启动新运行。
-<!-- wall: {"key": "6822717bb2f93fa4"} -->
-- **删除运行报告需要明确确认。** 运行页可以删除当前报告，运行记录页可以勾选多份后一起删除；正在执行的运行不能删除。确认后调用 `POST /test/api/runs/delete`，总览、运行记录和用例页随之移除这些报告；产物清理失败时显示服务端返回的警告。删除报告不影响用例、Design 或 TAU Resident。
-<!-- wall: {"key": "0373e18a0ac45a6d"} -->
-- **运行记录列出服务端保留的全部运行。** 不按发起者筛选，最新的在前；可以只看有问题、通过或进行中的运行，也可以只看 TAU 或本地运行。打开已结束的运行只读取它的记录，不启动新运行。
+运行页展示执行状态、目标、发起者、时间和用例列表。本地自动化测试显示断言结果；TAU 按模块展示使用报告，页头汇总已报告数量、过程完成情况和问题分类，不把证据缺项显示为失败。
+
+每份 TAU 报告直接呈现过程、问题清单和性能体验。问题行显示发生步骤、现象、产品／用例／执行偏差／工具分类及阻断／影响使用／小问题严重程度。截图、原始响应和诊断作为可展开材料，缺项显示“未记录”。恢复成功的重启只显示过程和耗时。
+
+运行中定期读取进度，短暂读取失败保留已显示内容并重试。切换运行后旧请求不能覆盖新页面，刷新保留展开状态。原始输出作为纯文本呈现；缺少机器可读报告时说明限制，不能从输出关键词推断产品失败。
+
+发起者可中止未结束运行；再次运行先生成新计划，不因缺材料自动重跑。删除已结束报告需确认，运行中的报告不可删除。删除报告不修改用例、Design 或执行身份。记录页可按执行方式及运行状态筛选，TAU 使用报告单独识别。
 
 ## TAU 页
 
@@ -160,7 +139,9 @@ TAU 页的“对话”和运行页的“查看对话”让模块 Resident 暂时
 
 ## 读取与速度
 
-总览不带用例行：`GET /test/api/catalog?projection=overview` 返回目录摘要、每个模块的用例构成（总数、P0–P3、设计点、TAU、缺实现、Live）、目录错误、执行方式与运行配置、最近 100 次运行（附用例数、所在模块和单条用例的标题）、TAU 模块 Resident 和调用者的 `access`，约三十 KB。用例目录每次读取一页：`projection=page` 接受目录筛选与 `offset`、`limit`（最多 500），返回匹配总数和这一页用例的浏览字段，不带删除用例（请求指定生命周期时除外）。目录查询接受 `runner`（`none` 表示没有实现）和 `current=true`（排除删除用例）。2026-10-29 在 Dev 上测得总览从打开到画出约 0.36 秒，原先的面板工作台需要下载 3.8 MB 的完整目录，约 0.9 秒。
+运行尚未结束时，TAU 汇总也按已交付的逐例使用报告计算报告数和分类问题数，与同一运行详情一致；未完成项不计作已有报告。刷新总览和打开运行详情均更新当前浏览器的汇总。
+
+总览不带用例行：`GET /test/api/catalog?projection=overview` 返回目录摘要、每个模块的用例构成（总数、P0–P3、设计点、TAU、缺实现、Live）、目录错误、执行方式与运行配置、最近 100 次运行（附用例数、所在模块和单条用例的标题）、TAU 模块 Resident 和调用者的 `access`，约三十 KB。用例目录每次读取一页：`projection=page` 接受目录筛选与 `offset`、`limit`（最多 500），返回匹配总数和这一页用例的浏览字段，不带删除用例（请求指定生命周期时除外）。目录查询接受 `runner`（`none` 表示没有实现）和 `current=true`（排除删除用例）。
 
 | 内容 | 接口 |
 | --- | --- |
@@ -212,3 +193,19 @@ Test 视图由 Test 功能自己提供：`test_native_view.html` 保存视图模
 - 生成计划或启动失败时保留新运行的选择，并显示服务端给出的原因。
 - 更换模块 Resident、改变准入或删除报告失败时显示实际原因，页面保持原来的状态。
 - 视图在挂载完成前被销毁时不再挂载；之后再次进入 Test 会重新挂载一次。
+
+## TAU 使用报告
+
+TAU 让 Agent 像真实用户一样完整使用产品，再报告使用中的问题。每个用例产出一份使用报告，包含三部分：
+
+- **过程**：用户目标、实际操作、流程是否走完；未走完时写明停在哪一步及原因。
+- **问题清单**：每条写现象、发生步骤、截图或原始响应，以及严重程度。问题分为产品问题、用例问题、执行偏差和工具问题；严重程度分为阻断（无法继续）、影响使用和小问题。
+- **性能体验**：关键步骤的耗时，哪里慢、慢多少；优先记录创建、首次加载、关键操作、删除与重启后恢复。
+
+计时、截图、原始响应和因果关系是帮助理解问题的材料。没有记录的写“未记录”，可补充观察并说明取得时间；不伪造原始记录，不以材料完整性给用例判通过或失败。没有录下截图也可以报告实际看到的现象。
+
+用例步骤、等待条件或接口用法与产品设计不符时，修正用例并在报告归入用例问题。模型没有按用例操作归入执行偏差；辅助脚本或观察工具出错归入工具问题并修工具。它们不计为产品问题。
+
+发布和重启是正常使用环境的一部分。短暂报错后等待、刷新或重新连接，能够继续就记录恢复过程和耗时，不列为产品问题。重启后操作仍卡死、数据丢失或必须人工处理才列为产品问题。网络中断本身也不代表产品故障；无法继续时说明环境限制和停留步骤。
+
+报告不要求每步原样一次成功，不要求完整计时或因果链，也不因漏记材料安排重跑。验证修复时按受影响的真实用户行为选择复验范围。

@@ -17,6 +17,7 @@ from management_portal.execution.activity_redaction import redact_sensitive_text
 from management_portal.business_tasks import process_identity, process_is_alive
 from management_portal.shared_state import atomic_replace_json, exclusive_file_lock
 from management_portal.test_framework.run_ids import new_test_run_id
+from management_portal.test_framework.tau_usage_report import report_counts
 
 
 LOGGER = logging.getLogger(__name__)
@@ -170,7 +171,7 @@ class RunRecords:
             "created_at": str(record.get("created_at") or ""),
             "started_at": str(record.get("started_at") or ""),
             "finished_at": str(record.get("finished_at") or ""),
-            **({"usage_summary": (record.get("report") or {}).get("summary") or {}} if is_tau_run(record) else {}),
+            **({"usage_summary": report_counts(record.get("results") or [])} if is_tau_run(record) else {}),
             "plan": {
                 "campaign": str(plan.get("campaign") or ""),
                 "selected": selected,
@@ -660,6 +661,8 @@ class RunCoordinator:
         if record.get("status") not in TERMINAL and not _executor_alive(record):
             self.recover({run_id})
             record = self.records.get(run_id)
+        if is_tau_run(record):
+            record["usage_summary"] = report_counts(record.get("results") or [])
         return record
 
     def cancel(self, run_id: str, actor: str) -> dict[str, Any]:

@@ -114,6 +114,7 @@ function runRecord(state) {
               {category: 'case', severity: 'minor', step: '准备', symptom: '步骤文案已修正', evidence: []}],
             performance: [{step: '创建', duration_ms: 1250}], evidence_gaps: ['截图未记录']}};
           return json({...runRecord('reported'), run_id: id, plan: {campaign: 'tau', selected: [{case_id: result.case_id, runner: {id: 'tau'}}]},
+            usage_summary: {reported: 1, issues: {product: 1, case: 1}},
             results: [result], groups: [{group_id: 'tau:1', status: 'reported', results: [result]}]});
         }
         if (id === 'testrun_3333333333333333') { runPolls += 1; return json(runRecord(runPolls >= 2 ? 'passed' : 'running')); }
@@ -204,6 +205,8 @@ function runRecord(state) {
     await page.click('[data-catalog-clear]');
     await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 4);
     // Two rows selected become a plan; the plan previews at once and starts only on the button.
+    await page.selectOption('[data-catalog-runner]', 'pytest');
+    await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 2);
     await page.check('[data-select-case="test_aaaaaaaaaaaa"]');
     await page.check('[data-select-case="test_dddddddddddd"]');
     assert.match(await page.$eval('[data-selection-bar]', node => node.textContent), /已选 2 条用例/);
@@ -212,6 +215,20 @@ function runRecord(state) {
     assert.equal(new URL(page.url()).search, '?view=test&page=plan');
     assert.deepEqual(posts.filter(([name]) => name === '/test/api/preview').map(([, body]) => body.select.case_ids), [['test_aaaaaaaaaaaa', 'test_dddddddddddd']]);
     assert.equal(posts.some(([name]) => name === '/test/api/run'), false, 'previewing starts nothing');
+    await page.selectOption('[data-plan-runner]', 'tau');
+    await page.selectOption('[data-plan-profile]', 'local.fixture');
+    await page.evaluate(() => PortalTestPage.navigate('/development?view=test&page=runs'));
+    await page.goBack();
+    await page.waitForSelector('[data-plan-implementation]');
+    assert.equal(await page.inputValue('[data-plan-runner]'), 'tau');
+    assert.equal(await page.inputValue('[data-plan-profile]'), 'local.fixture');
+    assert.match(await page.locator('a', { hasText: '返回用例目录' }).getAttribute('href'), /runner=pytest/);
+    assert.deepEqual(posts.filter(([name]) => name === '/test/api/preview').at(-1)[1].implementation,
+      { runners: ['tau'], profile: 'local.fixture' });
+    assert.equal(posts.some(([name]) => name === '/test/api/run'), false, 'restoring a draft starts nothing');
+    await page.selectOption('[data-plan-runner]', '');
+    await page.selectOption('[data-plan-profile]', '');
+    await page.waitForFunction(() => !document.querySelector('[data-plan-start]').disabled);
     await page.click('[data-plan-start]');
     // The run page replaces the plan, follows the run until it ends and keeps the raw output exact.
     await page.waitForSelector('.testRunPage [data-run-result]');
@@ -285,6 +302,9 @@ function runRecord(state) {
     assert.match(report, /1250/);
     assert.match(report, /截图未记录/);
     assert.match(await page.locator('.testHero').innerText(), /使用报告/);
+    await page.click('[data-test-tab="tau"]');
+    await page.waitForSelector('.testTauPage');
+    assert.match(await page.locator('.testTauPage .testStats').innerText(), /1 份报告 · 1 个产品问题/);
     assert.deepEqual(errors, []);
     console.log('PASS test page');
   } catch (error) {

@@ -150,6 +150,7 @@
       case_count: selected.length,
       title: selected.length === 1 ? (run.plan?.selected || [])[0]?.case_title || "" : "",
       module_ids: [...new Set((run.plan?.selected || []).map(item => item.module).filter(Boolean))].sort(),
+      ...(run.usage_summary || run.report?.summary ? { usage_summary: run.usage_summary || run.report.summary } : {}),
     };
     const known = recentRuns().find(item => item.run_id === run.run_id);
     overview.recent_runs = [known ? { ...known, ...summary, title: summary.title || known.title } : summary, ...recentRuns().filter(item => item.run_id !== run.run_id)];
@@ -183,17 +184,18 @@
   function draft() {
     try {
       const value = JSON.parse(window.sessionStorage.getItem(DRAFT_KEY) || "null");
-      if (value && Array.isArray(value.caseIds)) return { caseIds: value.caseIds.map(String), implementation: value.implementation || {}, source: String(value.source || "") };
+      if (value && Array.isArray(value.caseIds)) return { caseIds: value.caseIds.map(String), implementation: value.implementation || {}, source: String(value.source || ""), options: value.options || {} };
     } catch (_error) { /* an unreadable draft is an empty one */ }
-    return { caseIds: [], implementation: {}, source: "" };
+    return { caseIds: [], implementation: {}, source: "", options: {} };
   }
-  function setDraft(caseIds, implementation = {}, source = "") {
-    const value = { caseIds: [...new Set(caseIds.map(String).filter(Boolean))], implementation, source };
+  function setDraft(caseIds, implementation = {}, source = "", options = {}) {
+    const value = { caseIds: [...new Set(caseIds.map(String).filter(Boolean))], implementation, source,
+      options: { runner: String(options.runner || ""), profile: String(options.profile || ""), catalogFilters: options.catalogFilters || {} } };
     try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(value)); } catch (_error) { /* storage full: the plan page reads none */ }
     return value;
   }
-  function prepareRun(caseIds, implementation = {}, source = "") {
-    setDraft(caseIds, implementation, source);
+  function prepareRun(caseIds, implementation = {}, source = "", options = {}) {
+    setDraft(caseIds, implementation, source, options);
     navigate(pageHref("plan"));
   }
 
