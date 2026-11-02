@@ -18,11 +18,9 @@
     function memberMixHtml(id, title, policy, busy = false) {
       const solo = policy?.solo_member_id || '';
       const muted = (policy?.muted_member_ids || []).includes(id);
-      const excluded = (policy?.excluded_member_ids || []).includes(id);
       return `<span class="familyMemberMix" aria-busy="${busy}">${[
-        ['mute', 'M', muted, 'Mute：仅静音此成员给我的通知，保留对话、进度与路由'],
-        ['exclude', 'E', excluded, 'Exclude：仅排除此成员的自动路由，保留对话与通知'],
-        ['solo', 'S', solo === id, 'Solo：通过门面单独与此成员对话，不改变静音或路由排除设置'],
+        ['mute', 'M', muted, 'Mute：在此门面隐藏此成员的请求、进度与回复，并排除后续自动路由；Mailbox 通知不变'],
+        ['solo', 'S', solo === id, 'Solo：通过门面单独与此成员对话，显示该成员，即使已 Mute；退出后恢复 Mute 设置'],
       ].map(([mode, label, active, hint]) => `<button type="button" class="familyMemberMixButton" data-family-mix="${mode}" data-member="${escapeHtml(id)}" aria-label="${escapeHtml(`${title || id} · ${hint}`)}" title="${escapeHtml(hint)}" aria-pressed="${active}" ${!policy || busy ? 'disabled' : ''}>${label}</button>`).join('')}</span>`;
     }
 
@@ -143,7 +141,7 @@
           const exit = slot.querySelector('button');
           exit.dataset.member = solo;
           exit.disabled = mix.state.busy;
-          exit.setAttribute('aria-label', `退出与 ${name} 的 Solo，恢复团队视图，保留 Mute 与 Exclude 设置`);
+          exit.setAttribute('aria-label', `退出与 ${name} 的 Solo，恢复团队视图，保留 Mute 设置`);
         }
         for (const slot of root.querySelectorAll('[data-family-reply-controls]')) {
           const member = JSON.parse(slot.dataset.familyReplyChain).map(id => members.get(id)).find(Boolean);
@@ -308,7 +306,7 @@
         };
         const missingSolo = chatPolicy?.solo_member_id && !rows.has(chatPolicy.solo_member_id);
         const soloNotice = missingSolo ? `<p class="paneNote">Solo 成员已离开 <button type="button" class="portalButton is-compact" data-family-mix="solo" data-member="${escapeHtml(chatPolicy.solo_member_id)}" aria-pressed="true" ${mixBusy ? 'disabled' : ''}>取消 Solo</button></p>` : '';
-        const table = values => window.PortalI18n.html`<table><thead><tr><th scope="col">节点</th><th scope="col">backend</th><th scope="col">周剩余</th><th scope="col">工作状态</th><th scope="col">通知 / 路由 / 对话</th></tr></thead><tbody>${values.map(rowHtml).join("")}</tbody></table>`;
+        const table = values => window.PortalI18n.html`<table><thead><tr><th scope="col">节点</th><th scope="col">backend</th><th scope="col">周剩余</th><th scope="col">工作状态</th><th scope="col">静音 / 对话</th></tr></thead><tbody>${values.map(rowHtml).join("")}</tbody></table>`;
         // Preserve keyboard focus and detail expansion during live refresh.
         const active = document.activeElement;
         const focusKey = active?.closest("[data-family-status-row]")?.dataset.familyStatusRow;

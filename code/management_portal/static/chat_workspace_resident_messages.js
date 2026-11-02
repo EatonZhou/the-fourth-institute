@@ -27,12 +27,12 @@
     const requests = (Array.isArray(snapshot?.messages) ? snapshot.messages : [])
       .filter(message => message?.role === "user" && message.relay && typeof message.relay === "object" && message.message_id)
       .filter(message => {
-        const solo = snapshot?.family_facade?.chat_preferences?.solo_member_id;
-        if (!solo) return true;
+        const policy = snapshot?.family_facade?.chat_preferences;
+        const solo = policy?.solo_member_id;
         const relay = message.relay;
         const members = new Set((snapshot.family_facade.members || []).map(member => member.resident_id));
         const owner = [...(relay.via || []).map(member => member.resident_id), relay.resident_id].find(id => members.has(id) || id === solo);
-        return !owner || owner === solo;
+        return !owner || (solo ? owner === solo : !(policy?.muted_member_ids || []).includes(owner));
       })
       .map(message => ({ message_id: String(message.message_id), state: String(message.relay.state || ""),
         stopping: message.relay.work_state === "stopping",

@@ -1243,7 +1243,7 @@ def direct_member(facade, message):
     if quoted:
         return quoted
     continued = continued_member(facade, message)
-    return continued if continued not in policy['excluded_member_ids'] else ''
+    return continued if continued not in policy['muted_member_ids'] else ''
 
 
 def _moment(value: object) -> datetime | None:

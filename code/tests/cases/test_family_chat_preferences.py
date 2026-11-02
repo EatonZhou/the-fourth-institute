@@ -1,4 +1,4 @@
-"""Independent personal Family conversation, notification and routing controls.
+"""Personal Family Mute and Solo controls.
 
 :module: lineage.team
 :importance: P1
@@ -19,9 +19,9 @@ def test_preferences_are_personal_and_controls_are_independent(family_chat):
     f, m = family_chat
     p.change(f['resident_id'], ACTOR, m, 'mute', True)
     assert p.read(f, ACTOR)['muted_member_ids'] == [m]
-    assert p.allowed(f, p.read(f, ACTOR)) == [m]
+    assert p.allowed(f, p.read(f, ACTOR)) == []
     assert p.read(f, 'someone-else')['muted_member_ids'] == []
-    p.change(f['resident_id'], ACTOR, m, 'exclude', True)
+    p.change(f['resident_id'], ACTOR, m, 'mute', True)
     assert p.allowed(f, p.read(f, ACTOR)) == []
     p.change(f['resident_id'], ACTOR, m, 'solo', True)
     assert p.read(f, ACTOR)['solo_member_id'] == m
@@ -31,7 +31,6 @@ def test_preferences_are_personal_and_controls_are_independent(family_chat):
     p.change(f['resident_id'], ACTOR, m, 'solo', False)
     assert p.allowed(f, p.read(f, ACTOR)) == []
     assert p.read(f, ACTOR)['muted_member_ids'] == [m]
-    assert p.read(f, ACTOR)['excluded_member_ids'] == [m]
     with pytest.raises(ValueError):
         p.change(f['resident_id'], ACTOR, f['resident_id'], 'solo', True)
 
@@ -40,22 +39,24 @@ def test_admission_snapshot_survives_later_toggle(family_chat):
     f, m = family_chat
     msg = {'message_id': 'msg_chat_1', 'author_id': ACTOR}
     family_facade.routing_snapshot(f, msg)
-    p.change(f['resident_id'], ACTOR, m, 'exclude', True)
+    p.change(f['resident_id'], ACTOR, m, 'mute', True)
     assert p.allowed(f, family_facade.routing_snapshot(f, msg)) == [m]
     assert p.allowed(f, family_facade.routing_snapshot(f, {**msg, 'message_id': 'msg_chat_2'})) == []
 
-def test_mute_and_exclude_preserve_entire_round_and_nested_replies(family_chat):
+def test_mute_hides_entire_round_and_nested_replies(family_chat):
     from management_portal.society_service import family_chat_preferences as p
     f, m = family_chat
     rows = [{'message_id':'q','relay':{'resident_id':'child','via':[{'resident_id':m}]}},
             {'message_id':'a','family_reply':{'resident_id':'child','via':[{'resident_id':m}], 'request_message_id':'q'}, 'content_parts':[{'type':'async_questions'}]},
             {'message_id':'unrouted','role':'user'}]
     p.change(f['resident_id'], ACTOR, m, 'mute', True)
-    p.change(f['resident_id'], ACTOR, m, 'exclude', True)
-    assert p.filter_messages(f, ACTOR, rows) == rows
+    p.change(f['resident_id'], ACTOR, m, 'mute', True)
+    assert p.filter_messages(f, ACTOR, rows) == rows[-1:]
     assert p.filter_messages(f, 'someone-else', rows) == rows
+    p.change(f['resident_id'], ACTOR, m, 'mute', False)
+    assert p.filter_messages(f, ACTOR, rows) == rows
 
-def test_direct_route_and_relay_validation_respect_solo_and_exclude(family_chat, monkeypatch):
+def test_direct_route_and_relay_validation_respect_solo_and_mute(family_chat, monkeypatch):
     from management_portal.society_service import family_chat_preferences as p
     f, m = family_chat
     monkeypatch.setattr(family_facade, 'quoted_member', lambda *a: '')
@@ -63,14 +64,14 @@ def test_direct_route_and_relay_validation_respect_solo_and_exclude(family_chat,
     msg = {'message_id': 'msg_direct', 'author_id': ACTOR}
     assert family_facade.direct_member(f, msg) == m
     p.validate_target(f, msg, m)
-    with pytest.raises(ValueError, match='Solo/Exclude'):
+    with pytest.raises(ValueError, match='Solo/Mute'):
         p.validate_target(f, msg, f['resident_id'])
-    # Later Exclude cannot change this input's frozen destination, nor override Solo.
-    p.change(f['resident_id'], ACTOR, m, 'exclude', True)
+    # Later Mute cannot change this input's frozen destination, nor override Solo.
+    p.change(f['resident_id'], ACTOR, m, 'mute', True)
     p.validate_target(f, msg, m)
     p.validate_target(f, {**msg, 'message_id':'msg_new_solo'}, m)
     p.change(f['resident_id'], ACTOR, m, 'solo', False)
-    with pytest.raises(ValueError, match='Solo/Exclude'):
+    with pytest.raises(ValueError, match='Solo/Mute'):
         p.validate_target(f, {**msg, 'message_id':'msg_new'}, m)
 
 def test_real_admission_freezes_routing_and_projection_uses_viewer(family_chat):
@@ -80,7 +81,7 @@ def test_real_admission_freezes_routing_and_projection_uses_viewer(family_chat):
     resident_domain.deliver_resident_message_content(f['resident_id'], ACTOR, 'before mute', message_id=mid)
     p.change(f['resident_id'], ACTOR, m, 'mute', True)
     message = resident_conversation_stream.get_repository().message(f['resident_id'], mid)
-    assert family_facade.routing_snapshot(f, message)['excluded_member_ids'] == []
+    assert family_facade.routing_snapshot(f, message)['muted_member_ids'] == []
     snap = resident_protocol.get_resident_conversation_snapshot(f['resident_id'], ACTOR)
     assert snap['family_facade']['chat_preferences']['muted_member_ids'] == [m]
 
@@ -104,15 +105,15 @@ def test_projection_includes_outward_history_and_queue_ownership(family_chat):
     assert result['queue']['items'] == result['input_states'] == [{'message_id':'q'}]
 
 
-def test_exclude_allows_explicit_quote_but_blocks_automatic_continuation(family_chat, monkeypatch):
+def test_mute_allows_explicit_quote_but_blocks_automatic_continuation(family_chat, monkeypatch):
     from management_portal.society_service import family_chat_preferences as p
     f, m = family_chat
-    p.change(f['resident_id'], ACTOR, m, 'exclude', True)
+    p.change(f['resident_id'], ACTOR, m, 'mute', True)
     monkeypatch.setattr(family_facade, 'quoted_member', lambda *_: '')
     monkeypatch.setattr(family_facade, 'continued_member', lambda *_: m)
     msg = {'message_id':'msg_auto', 'author_id':ACTOR}
     assert family_facade.direct_member(f, msg) == ''
-    with pytest.raises(ValueError, match='Exclude'):
+    with pytest.raises(ValueError, match='Mute'):
         p.validate_target(f, msg, m)
     monkeypatch.setattr(family_facade, 'quoted_member', lambda *_: m)
     explicit = {**msg, 'message_id':'msg_explicit'}
@@ -151,12 +152,13 @@ def test_explicit_schema_migration_preserves_legacy_routing_and_rolls_back_previ
     from management_portal.society_service import family_chat_preferences as p
     from management_portal.society_service.state_store import get_lineage_data_store, LineageDataStore
     f, m = family_chat
-    p.change(f['resident_id'], ACTOR, m, 'exclude', True)
+    p.change(f['resident_id'], ACTOR, m, 'mute', True)
     p.change(f['resident_id'], ACTOR, m, 'solo', True)
     request = {'message_id':'msg_migration', 'author_id':ACTOR}
     before = family_facade.routing_snapshot(f, request)
     database = get_lineage_data_store().database
     def legacy(c):
+        c.execute('UPDATE family_chat_preferences SET excluded_member_ids=muted_member_ids')
         c.execute('ALTER TABLE family_chat_preferences DROP COLUMN muted_member_ids')
         for table in ('family_chat_preferences', 'family_chat_inputs'):
             c.execute(f'ALTER TABLE {table} RENAME COLUMN excluded_member_ids TO muted_member_ids')
@@ -169,7 +171,7 @@ def test_explicit_schema_migration_preserves_legacy_routing_and_rolls_back_previ
             assert c.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()[0] == 'tfi.lineage-data.v65'
         assert migrate(database, apply=True)['changed']
         database.write(LineageDataStore._initialize)
-        assert p.read(f, ACTOR) == {'muted_member_ids':[], 'excluded_member_ids':[m], 'solo_member_id':m}
+        assert p.read(f, ACTOR) == {'muted_member_ids':[m], 'solo_member_id':m}
         assert family_facade.routing_snapshot(f, request) == before
         assert not migrate(database, apply=True)['changed']
     finally:
@@ -190,10 +192,24 @@ def test_viewers_change_only_their_own_preferences_through_isa(family_chat, perm
     ok('UpdateFamilyChatPreferences', args, actor='chat-alice')
     assert ok('GetFamilyChatPreferences', {'resident_id':facade_id}, actor='chat-alice')['muted_member_ids'] == [m]
     assert ok('GetFamilyChatPreferences', {'resident_id':facade_id}, actor='chat-bob')['muted_member_ids'] == []
-    ok('UpdateFamilyChatPreferences', {**args, 'control':'exclude'}, actor='chat-alice')
+    assert run('UpdateFamilyChatPreferences', {**args, 'control':'exclude'}, actor='chat-alice').status != 'committed'
     ok('UpdateFamilyChatPreferences', {**args, 'control':'solo'}, actor='chat-alice')
     assert ok('GetFamilyChatPreferences', {'resident_id':facade_id}, actor='chat-alice') == {
-        'muted_member_ids':[m], 'excluded_member_ids':[m], 'solo_member_id':m}
+        'muted_member_ids':[m], 'solo_member_id':m}
     assert run('UpdateFamilyChatPreferences', {**args, 'actor':'chat-bob'}, actor='chat-alice').status != 'committed'
     permissions.deny('chat-alice', facade_id, '@viewer')
     assert run('UpdateFamilyChatPreferences', args, actor='chat-alice').status != 'committed'
+
+
+def test_old_exclude_merges_into_mute_and_can_be_cleared(family_chat):
+    """Legacy excludes survive as Mute; unmute clears both stored sources."""
+    from management_portal.society_service import family_chat_preferences as p
+    from management_portal.society_service.state_store import get_lineage_data_store
+    f, m = family_chat
+    db = get_lineage_data_store().database
+    p.change(f['resident_id'], ACTOR, m, 'mute', False)
+    db.write(lambda c: c.execute('UPDATE family_chat_preferences SET excluded_member_ids=%s WHERE facade_id=%s', ([m], f['resident_id'])))
+    assert p.read(f, ACTOR) == {'muted_member_ids':[m], 'solo_member_id':''}
+    assert p.allowed(f, p.read(f, ACTOR)) == []
+    assert p.change(f['resident_id'], ACTOR, m, 'mute', False)['muted_member_ids'] == []
+    assert p.allowed(f, p.read(f, ACTOR)) == [m]

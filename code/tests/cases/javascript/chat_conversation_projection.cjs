@@ -44,15 +44,24 @@ function familyModes() {
       content_parts: [{type: 'request_user_input', request_id: 'original-question'}]},
   ];
   const snapshot = {messages, family_facade: {members, chat_preferences: {
-    muted_member_ids: ['a'], excluded_member_ids: ['a'], solo_member_id: '',
+    muted_member_ids: ['a'], solo_member_id: '',
   }}};
-  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'b', 'nested'], 'M/E never hide conversations or progress');
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['b'], 'Mute hides the request, progress and nested question replies');
+  assert.deepEqual(plain(w.PortalChatWorkspaceResidentMessages.familyExecution(snapshot)).active.map(m => m.message_id), ['b'], 'global Stop only targets displayed unmuted requests');
   snapshot.family_facade.chat_preferences.solo_member_id = 'a';
-  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'nested'], 'Solo may select a muted/excluded nested facade');
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'nested'], 'Solo displays the selected muted nested facade');
   assert.deepEqual(plain(w.PortalChatWorkspaceResidentMessages.familyExecution(snapshot)).active.map(m => m.message_id), ['a'], 'global Stop follows Solo view');
   assert.deepEqual(project(snapshot).messages.find(m => m.id === 'nested').family_reply, messages[2].family_reply, 'original question owner chain stays intact');
   snapshot.family_facade.chat_preferences.solo_member_id = '';
-  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'b', 'nested'], 'exit restores team view');
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['b'], 'exit restores the muted team view');
+  snapshot.local_submissions = [
+    {message_id: 'local-muted', role: 'user', relay: {resident_id: 'a'}},
+    {message_id: 'local-public', role: 'user', content_parts: [text('pending routing')]},
+  ];
+  snapshot.messages.push({message_id: 'public', role: 'agent', content_parts: [text('notice')]});
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['b', 'public', 'local-public'], 'unassigned requests and public notices remain visible');
+  snapshot.family_facade.chat_preferences.muted_member_ids = [];
+  assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'b', 'nested', 'public', 'local-muted', 'local-public'], 'unmute restores saved messages and local submissions');
 }
 
 function protocolMessages() {

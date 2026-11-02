@@ -415,7 +415,7 @@ def test_unified_summary_default_migration_preserves_custom_guides(trigger, cust
     if trigger == "summary":
         assert "prompt" not in family_tasks.saved_fields(trigger, {"prompt": family_tasks._PRE_UNIFIED_SUMMARY_PROMPT})
 
-def test_exclude_limits_router_facts_mute_does_not_and_solo_skips_model(configured_family, monkeypatch):
+def test_mute_limits_router_facts_and_solo_skips_model(configured_family, monkeypatch):
     from management_portal.society_service import family_chat_preferences as p, family_quota, family_task_dispatches
     _, block = configured_family
     f = block['family']; facade = _find_resident(f['facade']); a, b = f['members']
@@ -426,8 +426,7 @@ def test_exclude_limits_router_facts_mute_does_not_and_solo_skips_model(configur
         resident_conversation_stream.get_repository().accept_user_message(f['facade'], msg)
         return msg
     p.change(f['facade'], ACTOR, a, 'mute', True)
-    assert p.allowed(facade, p.read(facade, ACTOR)) == [a, b]
-    p.change(f['facade'], ACTOR, a, 'exclude', True)
+    assert p.allowed(facade, p.read(facade, ACTOR)) == [b]
     mid = 'msg_0000000000000221'; message(mid)
     family_task_dispatches.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid)
     assert deliveries[0]['routing']['members'] == [b]
@@ -440,8 +439,7 @@ def test_exclude_limits_router_facts_mute_does_not_and_solo_skips_model(configur
     assert len(deliveries) == 1
     p.change(f['facade'], ACTOR, b, 'mute', True)
     assert p.read(facade, ACTOR)['solo_member_id'] == b
-    p.change(f['facade'], ACTOR, b, 'exclude', True)
     p.change(f['facade'], ACTOR, b, 'solo', False)
     mid3 = 'msg_0000000000000223'; message(mid3)
-    with pytest.raises(ValueError, match='所有成员已 Exclude'):
+    with pytest.raises(ValueError, match='所有成员已 Mute'):
         family_task_dispatches.dispatch(f['facade'], 'route', ACTOR, source_message_id=mid3)

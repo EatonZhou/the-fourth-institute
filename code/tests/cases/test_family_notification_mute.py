@@ -1,4 +1,4 @@
-"""Family Mute only controls new personal Mailbox alerts.
+"""Family Mute never suppresses personal Mailbox alerts.
 
 :module: resident.conversation
 :importance: P1
@@ -13,7 +13,7 @@ from management_portal import conversation_read_state as reads
 from management_portal import conversation_receipt_store as receipts
 from management_portal.society_service import (
     family_facade, outward_messages, resident_conversation_records as events,
-    resident_conversation_stream, resident_record_domain, resident_unread,
+    resident_conversation_stream, resident_record_domain,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.family_test_support import set_role
@@ -44,14 +44,14 @@ def chat():
     return resident_conversation_stream.get_repository()
 
 
-def policy(facade, actor=ALICE, *, muted=(), excluded=(), solo=''):
+def policy(facade, actor=ALICE, *, muted=(), solo=''):
     # Isolated fixture state; preference API authorization is owned/tested separately.
     get_lineage_data_store().database.write(lambda c: c.execute(
-        'INSERT INTO family_chat_preferences(facade_id,actor,muted_member_ids,excluded_member_ids,solo_member_id) '
-        'VALUES (%s,%s,%s,%s,%s) ON CONFLICT(facade_id,actor) DO UPDATE SET '
-        'muted_member_ids=EXCLUDED.muted_member_ids,excluded_member_ids=EXCLUDED.excluded_member_ids,'
+        'INSERT INTO family_chat_preferences(facade_id,actor,muted_member_ids,solo_member_id) '
+        'VALUES (%s,%s,%s,%s) ON CONFLICT(facade_id,actor) DO UPDATE SET '
+        'muted_member_ids=EXCLUDED.muted_member_ids,'
         'solo_member_id=EXCLUDED.solo_member_id',
-        (facade, actor, list(muted), list(excluded), solo),
+        (facade, actor, list(muted), solo),
     ))
 
 
@@ -98,16 +98,16 @@ def notify(sender, actor, mid):
 
 @pytest.mark.parametrize('outcome', ['completed', 'failed', 'cancelled'])
 @pytest.mark.parametrize('chain', [(OUTER, SIBLING), (OUTER, INNER, LEAF)])
-def test_persisted_terminal_events_respect_viewer_and_direct_member(chat, outcome, chain):
+def test_muted_member_terminal_events_still_notify_each_sender(chat, outcome, chain):
     policy(OUTER, muted=[chain[1]])
     mine = request(chat, 'mine', chain=chain)
     theirs = request(chat, 'theirs', actor=BOB, chain=chain)
     finish(chat, mine, outcome)
-    assert not state()['unread']
+    assert state()['unread'] and not state(actor=BOB)['unread']
     finish(chat, theirs, outcome)
     # Read back through a fresh receipt-store handle, not an in-memory alert spy.
     receipts._database.cache_clear()
-    assert not state()['unread'] and state(actor=BOB)['unread']
+    assert state()['unread'] and state(actor=BOB)['unread']
     assert chat.input_state(*mine)['state'] == outcome
     assert chat.stored_message(*mine)['content_parts']
     assert not state(chain[-1])['unread']  # relay copies never create a private alert
@@ -115,42 +115,45 @@ def test_persisted_terminal_events_respect_viewer_and_direct_member(chat, outcom
     assert state()['unread']
 
 
-def test_nested_mute_is_scoped_to_each_facade_and_never_a_leaf_guess(chat):
-    policy(OUTER, muted=[LEAF])  # stale/non-direct preference cannot mute the outer member
+def test_nested_mute_does_not_suppress_either_conversation_alert(chat):
+    policy(OUTER, muted=[INNER])
     policy(INNER, muted=[LEAF])
     finish(chat, request(chat, 'outer-request'))
     assert state()['unread']
     finish(chat, request(chat, 'inner-request', chain=(INNER, LEAF)))
-    assert not state(INNER)['unread']
-    # An outer setting does not suppress a user's independent inner conversation.
+    assert state(INNER)['unread']
+    reads.set_read(ALICE, 'resident:' + INNER, unread_value=False)
+    # An outer setting does not suppress an independent inner conversation.
     policy(INNER)
     policy(OUTER, muted=[INNER])
     finish(chat, request(chat, 'inner-unmuted', chain=(INNER, LEAF)))
     assert state(INNER)['unread']
 
 
-def test_mute_preserves_old_unread_and_unmute_allows_subsequent_results(chat):
+def test_mute_toggle_preserves_old_unread_and_all_new_results_alert(chat):
     finish(chat, request(chat, 'before'))
     before = state()
     policy(OUTER, muted=[INNER], solo=INNER)
+    assert state() == before  # Preferences never mutate an existing receipt.
     finish(chat, request(chat, 'during'))
-    assert state() == before  # Solo does not override notification Mute
+    assert state()['unread'] and state()['read_revision'] > before['read_revision']
     reads.set_read(ALICE, 'resident:' + OUTER, unread_value=False)
     finish(chat, request(chat, 'during-after-read'), 'failed')
-    assert not state()['unread']
+    assert state()['unread']
+    reads.set_read(ALICE, 'resident:' + OUTER, unread_value=False)
     policy(OUTER)
     assert not state()['unread']
     finish(chat, request(chat, 'after'), 'cancelled')
     assert state()['unread'] and state()['read_revision'] > before['read_revision']
 
 
-def test_late_final_reply_checks_current_mute_without_changing_direct_chat(chat):
+def test_late_final_reply_alerts_despite_mute_and_direct_chat_still_alerts(chat):
     rid, mid = request(chat, 'late')
     chat.set_input_state(rid, mid, 'completed')
     assert not state()['unread']
     policy(OUTER, muted=[INNER])
     append(chat, rid, mid + '_late_reply', author=rid, role='agent', reply_to_message_id=mid)
-    assert not state()['unread']
+    assert state()['unread']
     # Personal direct conversations have their own notification contract.
     finish(chat, request(chat, 'direct', chain=(LEAF,)))
     assert state(LEAF)['unread']
@@ -161,21 +164,21 @@ def test_outward_notifications_keep_messages_and_recipients_and_use_nested_membe
     mine = notify(LEAF, ALICE, 'outward-muted')
     theirs = notify(LEAF, BOB, 'outward-other-user')
     assert mine['resident_id'] == theirs['resident_id'] == OUTER
-    assert not state()['unread'] and state(actor=BOB)['unread']
+    assert state()['unread'] and state(actor=BOB)['unread']
     stored = chat.stored_message(OUTER, mine['message_id'])
     assert stored['recipients'] == [{'kind': 'user', 'id': ALICE}]
     assert stored['origin']['initiated_by']['id'] == LEAF
     assert stored['content_parts'] == [{'type': 'text', 'text': 'outward-muted'}]
-    # An update of an addressed message also passes the same mute gate.
+    # Message updates retain normal receipt handling; Mute is not consulted.
     chat.update_message(OUTER, mine['message_id'], message={
         **stored, 'content_parts': [{'type': 'text', 'text': 'edited'}],
     })
-    assert not state()['unread']
+    assert state()['unread']
     notify(SIBLING, ALICE, 'outward-sibling')
     before = state()
     assert before['unread']
     notify(LEAF, ALICE, 'outward-muted-again')
-    assert state() == before
+    assert state()['unread'] and state()['read_revision'] > before['read_revision']
     reads.set_read(ALICE, 'resident:' + OUTER, unread_value=False)
     policy(OUTER)
     notify(LEAF, ALICE, 'outward-unmuted')
@@ -200,24 +203,27 @@ def test_unknown_provenance_non_business_and_resident_recipients_still_alert(cha
     assert state(actor=RESIDENT_VIEWER)['unread']
 
 
-def test_exclude_and_solo_do_not_suppress_new_notifications(chat):
-    policy(OUTER, excluded=[INNER], solo=SIBLING)
+def test_mute_and_solo_do_not_suppress_new_notifications(chat):
+    policy(OUTER, muted=[INNER], solo=SIBLING)
     finish(chat, request(chat, 'already-routed'))
     assert state()['unread']
     reads.set_read(ALICE, 'resident:' + OUTER, unread_value=False)
-    notify(LEAF, ALICE, 'excluded-outward')
+    notify(LEAF, ALICE, 'muted-outward')
     assert state()['unread']
 
 
-def test_projected_via_provenance_is_direct_and_unknown_is_not_muted(chat):
-    with get_lineage_data_store().database.read() as c:
-        for field in ('family_reply', 'relay', 'family_history'):
-            assert resident_unread._message_member(c, OUTER, {
-                field: {'resident_id': LEAF, 'via': [{'resident_id': INNER}]},
-            }) == INNER
-        assert resident_unread._message_member(c, OUTER, {
-            'family_reply': {'resident_id': LEAF, 'via': [{'resident_id': RESIDENT_VIEWER}]},
-        }) == ''
+def test_notification_writes_do_not_read_family_chat_policy(chat, monkeypatch):
+    from management_portal.society_service import family_chat_storage
+
+    policy(OUTER, muted=[INNER])
+    pending = request(chat, 'no-policy-read')
+    monkeypatch.setattr(family_chat_storage, 'read_policy',
+                        lambda *args: pytest.fail('Mailbox must not read chat preferences'))
+    finish(chat, pending)
+    assert state()['unread']
+    reads.set_read(ALICE, 'resident:' + OUTER, unread_value=False)
+    notify(LEAF, ALICE, 'no-policy-read-outward')
+    assert state()['unread']
 
 
 def test_muted_event_rolls_back_with_its_conversation_transaction(chat):

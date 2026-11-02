@@ -38,7 +38,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       window.PortalIdentity = {username: () => 'viewer'};
       window.calls = []; window.toasts = []; window.failNext = false; window.denyRead = false;
       PortalUI.toast = message => toasts.push(message);
-      let policy = {muted_member_ids: [], excluded_member_ids: [], solo_member_id: ''};
+      let policy = {muted_member_ids: [], solo_member_id: ''};
       const members = [0, 1].map(i => ({resident_id: `member_${i}`, title: `成员 ${i} · 架构与实现`, role: 'member'}));
       const family = {family_id: 'family_fixture', title: 'Family', lineage_id: 'fixture', members,
         nodes: [{resident_id: 'router', role: 'router', title: 'Router'}, ...members]};
@@ -58,8 +58,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         if (name === 'GetFamilyChatPreferences' && denyRead) throw new Error('Not visible');
         if (name === 'UpdateFamilyChatPreferences') {
           if (failNext) { failNext = false; throw new Error('Save failed'); }
-          if (args.control === 'mute' || args.control === 'exclude') {
-            const key = args.control === 'mute' ? 'muted_member_ids' : 'excluded_member_ids';
+          if (args.control === 'mute') {
+            const key = 'muted_member_ids';
             policy[key] = policy[key].filter(id => id !== args.member_id);
             if (args.enabled) policy[key].push(args.member_id);
           } else policy.solo_member_id = args.enabled ? args.member_id : '';
@@ -96,7 +96,9 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     };
     await pressed('member_0', 'mute', false);
     assert.equal(await page.locator('[data-family-chat-members]').count(), 0, 'no facade-wide member bar');
-    assert.equal(await own.locator('button').count(), 3, 'this member has independent M/E/S controls');
+    assert.equal(await own.locator('button').count(), 2, 'this member has M/S controls');
+    assert.equal(await page.locator('[data-family-mix="exclude"]').count(), 0);
+    assert.match(await button('member_0', 'mute').getAttribute('title'), /隐藏.*排除后续自动路由.*Mailbox 通知不变/);
     assert.equal(await own.evaluate(node => node.previousElementSibling.classList.contains('paneTitle')), true, 'buttons immediately follow the Chat title');
     await button('member_0', 'mute').click(); await pressed('member_0', 'mute', true);
     await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
@@ -155,12 +157,11 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     }
     await page.evaluate(() => panel.updateFamilyStatus(facadeDetail()));
     await page.evaluate(async () => { menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor: document.getElementById('family-anchor')}); });
-    await button('member_0', 'exclude', popover).click(); await pressed('member_0', 'exclude', true, popover);
     await button('member_0', 'solo', popover).click(); await pressed('member_0', 'solo', true, popover);
     const proxy = page.locator('[data-family-solo="header"]');
     await proxy.waitFor({state: 'visible'});
     assert.match(await proxy.innerText(), /Family → 成员 0/);
-    assert.match(await page.locator('[data-family-solo="composer"]').innerText(), /发送目标/);
+    assert.equal(await page.locator('[data-family-solo="composer"]').count(), 0, 'Solo target and exit stay in the header');
     // Remount the facade UI: policy is read from the server, not local mode state.
     await page.evaluate(() => { panel.updateFamilyStatus(memberDetail()); panel.updateFamilyStatus(facadeDetail()); });
     await proxy.waitFor({state: 'visible'});
@@ -168,7 +169,6 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await proxy.waitFor({state: 'hidden'});
     await page.evaluate(async () => { menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor: document.getElementById('family-anchor')}); });
     await pressed('member_0', 'mute', true, popover);
-    await pressed('member_0', 'exclude', true, popover);
     await page.evaluate(() => menu.close());
     await page.evaluate(() => panel.workspace.setMessages([
       {id: 'reply_0', role: 'agent', content: '这是成员的回复。',
@@ -203,7 +203,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await button('member_0', 'solo', footer).click(); await pressed('member_0', 'solo', false, footer);
     assert.equal(await footer.locator('[data-family-reply-source] + [data-family-reply-controls]').count(), 1, 'M/S immediately follow attribution');
     assert.equal(await page.locator('[data-family-reply-member="former"] button').count(), 0);
-    assert.equal(await page.locator('[data-family-reply-member="nested"] [data-member="member_1"]').count(), 3, 'nested replies control M/E/S on their direct Family member');
+    assert.equal(await page.locator('[data-family-reply-member="nested"] [data-member="member_1"]').count(), 2, 'nested replies control M/S on their direct Family member');
     await button('member_0', 'mute', footer).click(); await pressed('member_0', 'mute', false, footer);
     await page.evaluate(() => { failNext = true; });
     await button('member_0', 'solo', footer).click(); await pressed('member_0', 'solo', false, footer);
@@ -211,8 +211,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.equal(await button('member_0', 'solo', footer).evaluate(node => getComputedStyle(node).cursor), 'default');
     await page.evaluate(async () => { menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor: document.getElementById('family-anchor')}); });
     await pressed('member_0', 'solo', true, popover);
-    assert.deepEqual(await popover.locator('th').allTextContents(), ['节点', 'backend', '周剩余', '工作状态', '通知 / 路由 / 对话']);
-    assert.equal(await popover.locator('[data-family-status-row="member_0"] td:last-child [data-family-mix]').count(), 3);
+    assert.deepEqual(await popover.locator('th').allTextContents(), ['节点', 'backend', '周剩余', '工作状态', '静音 / 对话']);
+    assert.equal(await popover.locator('[data-family-status-row="member_0"] td:last-child [data-family-mix]').count(), 2);
     const intakeSwitch = popover.locator('[data-family-status-intake="member_0"]');
     await intakeSwitch.click();
     await page.waitForFunction(() => document.querySelector('[data-family-status-intake="member_0"]').getAttribute('aria-checked') === 'false');
