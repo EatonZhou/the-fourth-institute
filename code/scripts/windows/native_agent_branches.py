@@ -173,8 +173,9 @@ def codex(binary, root, record):
         return client.run_turn(thread, prompt, cwd=str(root), model='gpt-test', config=config,
                                dynamic_tool_handler=tool, **kwargs)
     try:
-        with patch.object(wire, 'connect_transport', lambda path: host.connect_transport(path, platform='win32')), \
-                patch.object(portal_network, 'saved_proxy_environment', return_value={}):
+        # Native Windows selects its transport through sys.platform. Do not
+        # replace a private client import that can move when RPC is refactored.
+        with patch.object(portal_network, 'saved_proxy_environment', return_value={}):
             with service() as client:
                 thread = client.start_thread(params)['thread']['id']
                 assert 'BRANCH_REPLY' in turn(client, thread, 'FIRST_INPUT').response

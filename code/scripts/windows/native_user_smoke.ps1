@@ -1,6 +1,8 @@
 # Disposable CI only: exercise the desktop product with a real standard user.
 param([Parameter(Mandatory)][string]$Installer, [Parameter(Mandatory)][string]$Evidence,
-      [switch]$CliOnly)
+      [switch]$CliOnly,
+      [ValidateSet('codex', 'claude', 'kimi', 'opencode')]
+      [string[]]$Providers = @('codex', 'claude', 'kimi', 'opencode'))
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true') { throw 'This fixture creates a disposable CI user; run in Actions only.' }
 $username = 'tfi_native_test'
@@ -60,6 +62,7 @@ try {
     $packageSha = (Get-Content (Join-Path (Split-Path $Installer) 'receipt.json') -Raw | ConvertFrom-Json).source_commit
     if ($packageSha -notmatch '^[0-9a-f]{40}$') { throw 'Missing package source commit' }
     $runInstaller = if ($CliOnly) { '$false' } else { '$true' }
+    $providerArguments = ($Providers | ForEach-Object { '--provider ' + $_ }) -join ' '
     $script = @"
 `$ErrorActionPreference = 'Stop'
 try {
@@ -87,7 +90,7 @@ if ($runInstaller) {
     `$code = `$LASTEXITCODE
 }
 if (`$code -eq 0) {
-    & '$quotedPython' native_cli_smoke.py --installer Setup.exe --work 'CLI 中文 空格' --evidence evidence 2>&1 | Out-File evidence/native-cli.log -Encoding utf8
+    & '$quotedPython' native_cli_smoke.py --installer Setup.exe --work 'CLI 中文 空格' --evidence evidence $providerArguments 2>&1 | Out-File evidence/native-cli.log -Encoding utf8
     `$code = `$LASTEXITCODE
 }
 # native_smoke.py saves component log tails into evidence before it retires each instance.

@@ -1,7 +1,8 @@
 {
-  "request": "20261102-et-5fe7ef5a-cli-fixture-r4",
+  "request": "20261102-et-5fe7ef5a-codex-fixture-r5",
   "reuse_package_run": 41474740714,
   "native_cli_only": true,
+  "native_cli_providers": ["codex"],
   "delivery": "Portal",
   "publish_to_github": false
 }

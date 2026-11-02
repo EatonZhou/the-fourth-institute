@@ -145,7 +145,13 @@ jobs:
         if: ${{ !cancelled() && success() }}
         run: |
           $cliOnly = '${{ needs.package.outputs.cli_only }}' -eq 'true'
-          ./code/scripts/windows/native_user_smoke.ps1 -Installer .build/windows/TheFourthInstitute-Setup-x64.exe -Evidence .build/windows-native -CliOnly:$cliOnly
+          $request = Get-Content code/scripts/windows/test-build.json -Raw | ConvertFrom-Json
+          $providers = @('codex', 'claude', 'kimi', 'opencode')
+          if ($request.native_cli_providers) {
+            if (-not $cliOnly) { throw 'Provider selection requires a CLI-only follow-up' }
+            $providers = @($request.native_cli_providers)
+          }
+          ./code/scripts/windows/native_user_smoke.ps1 -Installer .build/windows/TheFourthInstitute-Setup-x64.exe -Evidence .build/windows-native -CliOnly:$cliOnly -Providers $providers
       - name: Show failure diagnostics
         if: failure()
         shell: pwsh

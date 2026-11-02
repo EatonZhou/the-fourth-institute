@@ -274,6 +274,7 @@ def main():
     source.add_argument('--installer', type=Path)
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--evidence', type=Path, required=True)
+    parser.add_argument('--provider', choices=('codex', 'claude', 'kimi', 'opencode'), action='append')
     args = parser.parse_args()
     assert sys.platform == 'win32', 'Windows only'
     import ctypes
@@ -303,6 +304,7 @@ def exercise_cli(args, root):
     updates.RUNTIMES = runtimes
     receipt = {'schema': 'tfi.windows-native-cli.v1', 'source_commit': os.environ.get('TFI_PACKAGE_SHA', ''),
                'harness_source_commit': os.environ.get('GITHUB_SHA', ''),
+               'selected_providers': args.provider or ['codex', 'claude', 'kimi', 'opencode'],
                'process_elevated': False, 'inherited_host_job': False,
                'real_credentials': False, 'external_inference': False, 'providers': {}}
     args.evidence.mkdir(parents=True, exist_ok=True)
@@ -310,6 +312,8 @@ def exercise_cli(args, root):
         (args.evidence / 'native-cli.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
     for name, runtime in [('codex', updates.CodexRuntime()), ('claude', updates.ClaudeRuntime()),
                           ('kimi', updates.KimiRuntime()), ('opencode', OpenCodeRuntime())]:
+        if args.provider and name not in args.provider:
+            continue
         row = receipt['providers'][name] = {'status': 'failed', 'stage': 'download_and_validate'}
         checkpoint()
         try:
