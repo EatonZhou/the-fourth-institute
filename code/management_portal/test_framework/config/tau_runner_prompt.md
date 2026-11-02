@@ -214,6 +214,8 @@ TAU 是无人值守运行，禁止向用户提问、输出 `portal-question` 或
 
 运行证据须区分 Resident 工作状态与工具状态：`portal.waitForRunningActivity` 只等待 Chat 中真实 running 的工具，纯文本回复不会产生这种状态。HATG 的 Resident 运行窗口可在 Trigger 前启动被动采样，用 `tau_session_prerequisites.js` 的 `readSessionGraphSnapshot(activeHatg,{residentId})` 记录精确可见节点的 `work_state`；`running` 与工具无关，隐藏/缺失/不唯一节点不提供状态。只有同一原窗口的节点身份、running 状态、可读布局与实际截图共同满足时才完成运行态取证，不能用后续 idle 或别的 Resident 代替。
 
+`readSessionMessageCards` 接受完整原生 `section.portalChatWorkspaceRoot`（含隐式 region）或显式 region，仍核对精确 Resident、消息 ID 与唯一可见消息卡。`readSessionGraphSnapshot` 的 `search_ready` 表示目标命中；`search_empty_ready` 表示同一精确查询的原生“没有匹配节点 / No matching nodes”已显示、无结果和目标节点、无 busy。后者只证明当前搜索明确为空，不单独证明删除成功；删除还须原提交回执及正式 not_found。loading、错误和未知状态仍不通过，不可把 positive search_ready 用作删除后的空结果条件。
+
 ready 不对整个区域正文搜索 Loading/加载：帮助说明、脚本示例也可包含这些词。使用原生加载属性及本次控件状态。HATG Inspector 已公开 `data-component-id`，原 ready 核对精确对象、唯一可见 `input[name=title]` 的本轮值和启用状态；Effect 诊断独立核对 `data-effect-diagnostics-state`，不要把说明文字当成异步状态。运行设置按正式账号ID、设置值和能力声明核验，显示标签可能本地化；Fast 不支持同样不在使用 Fast，不能硬断言所有标准速度角色必须显示某一种英文文案。等待不能省略或回填原窗口。
 
 测试结束前关闭自己启动的浏览器、交互脚本和辅助进程；只保留截图、日志等静态证据，避免长驻测试工具占用后续 TAU 用例的资源。

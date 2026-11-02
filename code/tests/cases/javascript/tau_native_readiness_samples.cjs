@@ -112,6 +112,15 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const newNode = hatg.getByRole('button', {name:/^New node:/});
   await newNode.waitFor({state:'visible'});
   await page.waitForFunction(() => !document.getElementById('addNodeBtn')?.disabled);
+  const searchAbsentId='resident_999999999999';
+  await hatg.locator('#graphNodeSearchInput').fill(searchAbsentId);
+  await page.getByText('No matching nodes',{exact:true}).waitFor({state:'visible'});
+  const {readSessionGraphSnapshot:readEmptySearch}=require('../../../management_portal/test_framework/tau_session_prerequisites');
+  const absentSearch=await readEmptySearch(hatg,{residentId:searchAbsentId});
+  assert.equal(absentSearch.unresolved_status_count,0,'a settled native empty result is not unresolved');
+  assert.equal(absentSearch.search_empty_ready,true);
+  await hatg.locator('#graphNodeSearchInput').fill('');
+
   // Both the Workbench host and its named SECTION are real region roots.
   // The latter has an implicit accessibility role and no literal role attribute.
   const {readSessionLineageIdentity, readSessionGraphSnapshot} = require('../../../management_portal/test_framework/tau_session_prerequisites');
@@ -222,6 +231,13 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const implicitChat=await readResidentChatReady(stableRoot,{residentId:childId});
   assert.equal(implicitChat.ready,true,'native Editor identity and structure do not require a literal role attribute');
   assert.equal(implicitChat.deletion_feedback_ready,false);
+  await page.evaluate(()=>sampleSecondEditor.workspace.setMessages([{id:'msg_444444444444',
+    message_id:'msg_444444444444',role:'agent',content:'Native implicit-region message'}]));
+  await stableRoot.getByText('Native implicit-region message',{exact:true}).waitFor({state:'visible'});
+  const {readSessionMessageCards}=require('../../../management_portal/test_framework/tau_session_prerequisites');
+  assert.equal((await readSessionMessageCards(stableRoot,{residentId:childId,messageId:'msg_444444444444'})).ready,true);
+  assert.equal((await readSessionMessageCards(stableRoot,{residentId:childId,messageId:'msg_555555555555'})).ready,false);
+
   // Render real Resident message menus in both supported UI languages. The
   // open popover is portalled outside its article, but keeps its message key.
   const currentMessageQuoteAction=new Function('require','frameworkRoot',controlsExample[1]+'; return currentMessageQuoteAction;')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));

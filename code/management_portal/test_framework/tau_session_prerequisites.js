@@ -32,7 +32,8 @@ async function readSessionMessageCards(region, {residentId, messageId}) {
   if (count === 0) return {region_present: false, ready: false};
   if (count !== 1) throw new Error('Expected one original Chat region');
   return region.evaluate((root, {residentId, messageId}) => {
-    if (root.getAttribute('role') !== 'region') throw new Error('Expected the full original Chat region');
+    if (!root.matches('[role="region"], section.portalChatWorkspaceRoot'))
+      throw new Error('Expected the full original Chat region');
     const visible = node => !!node?.isConnected && !node.closest('[hidden],[inert],[aria-hidden="true"]')
       && node.checkVisibility({checkOpacity: true, checkVisibilityCSS: true});
     const bound = [...new Set([...root.querySelectorAll('[data-workspace-resident-id]')]
@@ -53,7 +54,7 @@ async function readSessionGraphSnapshot(panel, {residentId, minWidth = 160, minH
       || !Number.isFinite(minHeight) || minWidth <= 0 || minHeight <= 0)
     throw new Error('Expected original Resident and positive capture dimensions');
   const count = await panel.count();
-  if (count === 0) return {panel_present: false, search_ready: false, capture_candidate: false};
+  if (count === 0) return {panel_present: false, search_ready: false, search_empty_ready: false, capture_candidate: false};
   if (count !== 1) throw new Error('Expected one active HATG panel');
   return panel.evaluate((root, {residentId, minWidth, minHeight}) => {
     if (!root.matches('.portalHatgPanelComponent[role="region"], #lineage-hatg-panel[role="region"], section#hatgPane[data-lineage-pane="hatg"][aria-label]'))
@@ -75,9 +76,12 @@ async function readSessionGraphSnapshot(panel, {residentId, minWidth = 160, minH
     const lists = popover ? [...popover.querySelectorAll(':scope > .graphNodeSearchResultList')] : [];
     if (lists.length > 1) throw new Error('Ambiguous original search result list');
     const list = lists[0];
-    const hits = list ? [...list.querySelectorAll('[data-graph-search-node]')]
-      .filter(n => n.getAttribute('data-graph-search-node') === residentId && visible(n)) : [];
+    const results = list ? [...list.querySelectorAll('[data-graph-search-node]')].filter(visible) : [];
+    const hits = results.filter(n => n.getAttribute('data-graph-search-node') === residentId);
     const statuses = list ? [...list.querySelectorAll('.graphSearchEmpty')].filter(visible) : [];
+    const statusTexts = statuses.map(n => n.textContent.trim());
+    const isEmptyResult = text => text === '没有匹配节点' || text === 'No matching nodes';
+    const unresolvedStatuses = statusTexts.filter(text => !isEmptyResult(text));
     const busy = [root, input, popover, list].filter(Boolean).some(n =>
       n.matches('[aria-busy="true"]') || [...n.querySelectorAll('[aria-busy="true"]')].some(visible));
     const cards = [...root.querySelectorAll('[data-node-id]')]
@@ -91,10 +95,14 @@ async function readSessionGraphSnapshot(panel, {residentId, minWidth = 160, minH
     const graphVisible = visible(root);
     const searchReady = graphVisible && visible(input) && input.value.trim() === residentId
       && visible(popover) && visible(list) && hits.length === 1 && !statuses.length && !busy && cards.length === 1;
+    const searchEmptyReady = graphVisible && visible(input) && input.value.trim() === residentId
+      && visible(popover) && visible(list) && !results.length && !cards.length && !busy
+      && statusTexts.length === 1 && isEmptyResult(statusTexts[0]);
     return {panel_present:true, panel_visible:graphVisible, panel_id:root.id, resident_id:residentId,
       search_input_id:input?.id || '', search_popover_id:popover?.id || '',
       portalled_to_body:popover?.parentElement === doc.body, exact_hit_count:hits.length,
-      unresolved_status_count:statuses.length, busy, visible_node_count:cards.length, search_ready:searchReady,
+      search_status_texts:statusTexts, unresolved_status_count:unresolvedStatuses.length,
+      busy, visible_node_count:cards.length, search_ready:searchReady, search_empty_ready:searchEmptyReady,
       geometry, layout_position:card ? {left:card.style.left, top:card.style.top} : null,
       // This is the exact visible Resident card's work state. It says nothing
       // about running tools, provider activity or business input completion.

@@ -79,6 +79,28 @@ const {readSessionLineageIdentity,readSessionMessageCards,readSessionGraphSnapsh
     await list.evaluate(n=>n.insertAdjacentHTML('beforeend','<div class="graphSearchEmpty">Searching</div>'));
     assert.equal((await readSessionGraphSnapshot(graph,options)).search_ready,false);
     await list.locator('.graphSearchEmpty').evaluate(n=>n.remove());
+    const originalResults=await list.innerHTML();
+    await graph.locator('[data-node-id]').evaluate(n=>n.hidden=true);
+    for (const status of ['Searching','正在搜索当前 Lineage 节点…','智能搜索暂时不可用','Unknown','No matching nodes','没有匹配节点']) {
+      await list.evaluate((n,text)=>{n.replaceChildren();const status=document.createElement('div');status.className='graphSearchEmpty';status.textContent=text;n.append(status);},status);
+      const snapshot=await readSessionGraphSnapshot(graph,options);
+      const settled=['No matching nodes','没有匹配节点'].includes(status);
+      assert.equal(snapshot.search_empty_ready,settled);
+      assert.equal(snapshot.search_ready,false);
+      assert.equal(snapshot.unresolved_status_count,settled?0:1);
+    }
+    await list.evaluate(n=>n.setAttribute('aria-busy','true'));
+    assert.equal((await readSessionGraphSnapshot(graph,options)).search_empty_ready,false);
+    await list.evaluate(n=>n.removeAttribute('aria-busy'));
+    await graph.locator('input').evaluate(n=>n.value='resident_other');
+    assert.equal((await readSessionGraphSnapshot(graph,options)).search_empty_ready,false);
+    await graph.locator('input').evaluate(n=>n.value='resident_source');
+    await list.evaluate(n=>n.insertAdjacentHTML('beforeend','<button data-graph-search-node="resident_other">Other</button>'));
+    assert.equal((await readSessionGraphSnapshot(graph,options)).search_empty_ready,false);
+    await list.locator('button').evaluate(n=>n.remove());
+    await graph.locator('[data-node-id]').evaluate(n=>n.hidden=false);
+    assert.equal((await readSessionGraphSnapshot(graph,options)).search_empty_ready,false);
+    await list.evaluate((n,html)=>n.innerHTML=html,originalResults);
     await graph.locator('[data-node-id]').evaluate(n=>n.style.transform='scale(0.02)');
     const tiny=await readSessionGraphSnapshot(graph,options);
     assert.equal(tiny.search_ready,true); assert.equal(tiny.capture_candidate,false);
