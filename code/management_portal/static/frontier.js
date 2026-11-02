@@ -102,6 +102,14 @@ function openDetail(id) {
   const r=selected,s=inputOf(r),history=isHistory(r,s);
   $('#detail-body').innerHTML=`<div class="dialog-heading"><span class="tag ${esc(r.attention)}">${LABELS[r.attention]}</span><button data-close="detail" aria-label="关闭">×</button></div><h1 style="font-size:27px">${esc(r.title)}</h1><div class="muted">${esc(r.line)} · ${esc(progressOf(r,s))}</div><h3>已经推进到哪里</h3><p>${esc(r.progress)}</p><h3>为什么值得继续</h3><p>${esc(r.reason)}</p><h3>下一步</h3><p>${esc(r.next)}</p><h3>依据与来路</h3><ul>${r.sources.map(address=>`<li><a href="/r/${encodeURI(address)}" target="_blank" rel="noopener">${esc(sources.get(address)?.resource?.title || address)} ↗</a></li>`).join('')}</ul>${r.dispatch?`<h3>这次交付</h3><p class="muted">${esc(progressOf(r,s))}${s?.error?' · '+esc(typeof s.error==='string'?s.error:JSON.stringify(s.error)):''}</p><a href="/lineage?resident=${encodeURIComponent(r.dispatch.owner)}" target="_blank" rel="noopener">打开负责 Agent 的对话与结果 ↗</a><p class="muted">${(s?.reply_message_ids||[]).length?'已收到回复，结论请以原对话和产物为准。':'投递成功不代表任务完成。'}</p>`:''}<footer><button data-action="later">${later.includes(r.id)?'恢复关注':'稍后关注'}</button>${lineage?'<button data-action="edit">更新线头</button>':`<a href="/frontier?lineage=${r._lineage}">进入团队继续 ↗</a>`}${lineage&&!history?`<button class="primary" data-action="dispatch">${r.dispatch?'查看 / 重试投递':'交给 Agent'}</button>`:''}</footer>`;
   if(!$('#detail').open)$('#detail').showModal();
+  $('#detail-body').querySelectorAll('li a').forEach((a,index)=>{
+    const b=document.createElement('button');b.textContent='在此阅读';b.style.marginLeft='10px';
+    b.onclick=async()=>{
+      $('#source-text').textContent='正在读取…';$('#source').showModal();
+      try{const content=await call('ReadResource',{address:r.sources[index],max_bytes:120000});$('#source-text').textContent=content.text || '此来源需在原页面打开完整文件。';}
+      catch(error){$('#source-text').textContent=error.message;}
+    };a.after(b);
+  });
 }
 function edit(item=null) {
   editing=item ? structuredClone(doc.items.find(r=>r.id===item.id)) : null;

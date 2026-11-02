@@ -25,6 +25,7 @@
     </div>
   </main>
   <dialog id="detail"><div id="detail-body"></div></dialog>
+  <dialog id="source"><div class="dialog-heading"><h2>来源原文</h2><button type="button" data-close="source" aria-label="关闭">×</button></div><pre id="source-text" style="white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.9"></pre></dialog>
   <dialog id="editor"><form id="edit-form"><div class="dialog-heading"><h2 id="edit-title">留下一条线头</h2><button type="button" data-close="editor" aria-label="关闭">×</button></div><p class="muted">围绕一个推进目标持续更新，让下一次思考有所依据。</p>
     <label>正在探索什么<input name="title" required maxlength="120" placeholder="一个值得继续追问的问题"></label>
     <div class="form-grid"><label>工作线<input name="line" required maxlength="80" placeholder="例如：长期研究判断"></label><label>介入要求<select name="attention"><option value="optional">可以介入 · 已授权工作继续</option><option value="decision">需要决定 · 对应选择等待</option><option value="explore">留待探索 · 尚未启动</option></select></label></div>
