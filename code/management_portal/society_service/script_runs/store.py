@@ -131,13 +131,14 @@ def expired(limit=100):
 
 def delete_expired(identifier):
     from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from management_common.directory_retention import enqueue_directory_cleanup
     from . import runtime
     queue = get_directory_cleanup_store()
     with domain().transaction() as c:
         queue.lock(c)
         row = c.execute("SELECT notified FROM runs WHERE script_run_id=%s AND status<>'running' AND finished_at <= CURRENT_TIMESTAMP-INTERVAL '7 days' FOR UPDATE", (identifier,)).fetchone()
         if row:
-            queue.enqueue(runtime.RUN_ROOT / identifier, owner_id=identifier,
+            enqueue_directory_cleanup(runtime.RUN_ROOT / identifier, owner_id=identifier,
                           operation_id='expire:' + identifier, actor='directory-retention', connection=c)
             if row['notified']:
                 c.execute('DELETE FROM runs WHERE script_run_id=%s', (identifier,))

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from .directory_cleanup_store import get_directory_cleanup_store
-from .directory_paths import cleanup_location, cleanup_path
+from .directory_paths import cleanup_location, cleanup_path, contains, lexical_path
 from .portal_database import portal_database
 
 
@@ -41,6 +41,17 @@ CREATE TABLE IF NOT EXISTS artifacts (
 
 def utc_now():
     return datetime.now(timezone.utc)
+
+
+def enqueue_directory_cleanup(path, *, owner_id, operation_id, actor, connection):
+    """Unregister artifacts covered by a deletion intent in its owner transaction.
+
+    Call only for a tree whose files will be removed, never an adopted tree
+    being detached. The low-level queue owns filesystem effects; retention
+    owns invalidating declarations, including those made by other owners.
+    """
+    return RetentionStore(connection=connection).enqueue_cleanup(
+        path, owner_id=owner_id, operation_id=operation_id, actor=actor, connection=connection)
 
 
 def relocate_artifacts(connection, relocate):
@@ -144,19 +155,50 @@ class RetentionStore:
             conn.execute(f'UPDATE {self.table} SET last_access=%s,bytes=coalesce(%s,bytes) WHERE location=%s',
                          (at or utc_now(), bytes, cleanup_location(path)))
 
+    def unregister_tree(self, roots, *, connection):
+        """Forget all declarations covered by removed roots, without new effects.
+
+        Origins and owners do not protect contents of a deleted outer tree.
+        Path membership uses the same boundary rules as directory deletion;
+        filesystem absence is not evidence that a declaration has expired.
+        """
+        self.queue.lock(connection)
+        roots = tuple(lexical_path(root) for root in roots)
+        if not roots:
+            return 0
+        rows = connection.execute(f'SELECT location FROM {self.table} FOR UPDATE').fetchall()
+        locations = [row['location'] for row in rows
+                     if any(contains(root, cleanup_path(row['location'])) for root in roots)]
+        if not locations:
+            return 0
+        return connection.execute(f'DELETE FROM {self.table} WHERE location=ANY(%s::text[])',
+                                  (locations,)).rowcount
+
+    def enqueue_cleanup(self, path, *, owner_id, operation_id, actor, connection):
+        cleanup_id = self.queue.enqueue(path, owner_id=owner_id, operation_id=operation_id,
+                                        actor=actor, connection=connection)
+        # A completed operation may be retried after the location was reused.
+        # Its receipt must not invalidate declarations from the new lifetime.
+        if self.queue.status(cleanup_id=cleanup_id, connection=connection)[0]['status'] != 'completed':
+            self.unregister_tree([path], connection=connection)
+        return cleanup_id
+
     def _release(self, row, connection):
+        # An earlier outer release in this batch may already cover this row.
+        # Do not re-enqueue a stale snapshot or count it as another release.
+        if not connection.execute(f'DELETE FROM {self.table} WHERE location=%s',
+                                  (row['location'],)).rowcount:
+            return False
         if row['origin'] == 'created':
-            self.queue.enqueue(cleanup_path(row['location']), owner_id=row['owner_id'],
-                               operation_id='retention:' + uuid4().hex, actor='directory-retention', connection=connection)
-        connection.execute(f'DELETE FROM {self.table} WHERE location=%s', (row['location'],))
+            self.enqueue_cleanup(cleanup_path(row['location']), owner_id=row['owner_id'],
+                                 operation_id='retention:' + uuid4().hex, actor='directory-retention', connection=connection)
+        return True
 
     def release_owner(self, owner_id, *, connection=None):
         with nullcontext(connection) if connection is not None else self.database.transaction() as conn:
             self.queue.lock(conn)
             rows = conn.execute(f'SELECT * FROM {self.table} WHERE owner_id=%s FOR UPDATE', (owner_id,)).fetchall()
-            for row in rows:
-                self._release(row, conn)
-            return len(rows)
+            return sum(self._release(row, conn) for row in rows)
 
     def release_run(self, run_id):
         """After the run's writers stop, remove its generated fixtures/artifacts.
@@ -170,9 +212,7 @@ class RetentionStore:
             self.queue.lock(connection)
             rows = connection.execute(f'''SELECT * FROM {self.table} WHERE test_run_id=%s
                 AND category NOT IN ('test_evidence','workbench_build','cache') FOR UPDATE''', (run_id,)).fetchall()
-            for row in rows:
-                self._release(row, connection)
-            return len(rows)
+            return sum(self._release(row, connection) for row in rows)
 
     def release_path(self, path, *, connection=None):
         with nullcontext(connection) if connection is not None else self.database.transaction() as conn:
@@ -193,8 +233,7 @@ class RetentionStore:
                                 'AND (%s::text[] IS NULL OR category=ANY(%s::text[])) FOR UPDATE',
                                 (now, owner_id, owner_id, categories, categories)).fetchall()
             for row in rows:
-                self._release(row, conn)
-                count += 1
+                count += self._release(row, conn)
             for group, capacity in (cache_capacities or {}).items():
                 if capacity < 0:
                     raise ValueError('Cache capacity cannot be negative')
@@ -206,7 +245,11 @@ class RetentionStore:
                     from .cache_retention_lock import cache_lease
                     with cache_lease(cleanup_path(row['location']), blocking=False) as acquired:
                         if acquired:
-                            self._release(row, conn)
-                            size -= row['bytes']
-                            count += 1
+                            count += self._release(row, conn)
+                            # An evicted outer cache can cover other entries
+                            # in this group. Do not evict unrelated survivors
+                            # using the batch's now-stale byte total.
+                            size = conn.execute(f"SELECT coalesce(sum(bytes),0) FROM {self.table} "
+                                                "WHERE category='cache' AND cache_group=%s AND origin='created'",
+                                                (group,)).fetchone()[0]
         return {'queued': count}

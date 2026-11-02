@@ -4,7 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 from functools import wraps
 
-from .directory_retention import RetentionStore, utc_now
+from .directory_retention import RetentionStore, enqueue_directory_cleanup, utc_now
 from .directory_paths import cleanup_location
 
 
@@ -68,7 +68,7 @@ def remove_generated(path, *, owner_id):
     from .directory_cleanup_store import get_directory_cleanup_store
     queue = get_directory_cleanup_store()
     with queue.database.transaction() as connection:
-        identifier = queue.enqueue(path.absolute(), owner_id=owner_id, operation_id='runtime-end:' + uuid4().hex,
+        identifier = enqueue_directory_cleanup(path.absolute(), owner_id=owner_id, operation_id='runtime-end:' + uuid4().hex,
                                    actor='directory-retention', connection=connection)
     queue.run_pending()
     return queue.status(cleanup_id=identifier)[0]

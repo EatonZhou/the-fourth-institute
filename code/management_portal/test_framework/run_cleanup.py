@@ -2,6 +2,7 @@
 from uuid import uuid4
 
 from management_common.resource_lifecycle import LifecycleStore
+from management_common.directory_retention import enqueue_directory_cleanup
 
 
 def delete_script_run(identifier):
@@ -18,7 +19,7 @@ def delete_script_run(identifier):
         if row and row['status'] not in service.TERMINAL:
             raise RuntimeError('Test ScriptRun has not stopped')
         connection.execute('DELETE FROM runs WHERE script_run_id=%s', (identifier,))
-        queue.enqueue(runtime.RUN_ROOT / identifier, owner_id=identifier, operation_id='test-end:' + identifier,
+        enqueue_directory_cleanup(runtime.RUN_ROOT / identifier, owner_id=identifier, operation_id='test-end:' + identifier,
                       actor='directory-retention', connection=connection)
 
 

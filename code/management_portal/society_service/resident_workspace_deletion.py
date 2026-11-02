@@ -1,6 +1,7 @@
 """Unregister Workspaces and bindings atomically with durable file cleanup."""
 from management_common.directory_cleanup_store import get_directory_cleanup_store
 from management_common.directory_paths import lexical_path, validate_removal
+from management_common.directory_retention import enqueue_directory_cleanup
 from management_common.instance_locations import located_path
 from management_portal.resources.workspace_store import get_workspace_store, now
 
@@ -46,5 +47,5 @@ def remove_deleted_folder(folder, *, connection, owner_id, actor='', origin='cre
     queue.lock(connection)
     delete_workspaces(connection, paths=[folder], owner_ids=[owner_id],
                       deleted_at=deleted_at or now(), deleted_by=actor)
-    return queue.enqueue(folder, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
+    return enqueue_directory_cleanup(folder, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
                          actor=actor, connection=connection)

@@ -47,6 +47,7 @@ def cleanup_external_created():
     from management_common.instance_manifest import current_instance, AREAS
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     from management_common.directory_paths import cleanup_path
+    from management_common.directory_retention import enqueue_directory_cleanup
     from management_common.directory_move_store import DirectoryMoveStore, cancel_owner_moves
     from management_portal.resources.creation import finish_instance_creations
     from management_common.owned_path_deletion import OwnedPathDeletionStore
@@ -80,7 +81,7 @@ def cleanup_external_created():
             path = cleanup_path(task['location'])
             if not task['completed_at'] and not any(path.is_relative_to(root) for root in boundaries):
                 directories[str(path)] = task['owner_id']
-        ids = [queue.enqueue(path, owner_id=owner, operation_id='instance-retire:' + instance.instance_id,
+        ids = [enqueue_directory_cleanup(path, owner_id=owner, operation_id='instance-retire:' + instance.instance_id,
                              actor='instance-retirement', connection=connection) for path, owner in directories.items()]
     for cleanup_id in ids:
         queue.run_pending(cleanup_id=cleanup_id)

@@ -13,6 +13,7 @@ import shutil
 from uuid import uuid4
 
 from .directory_cleanup_store import get_directory_cleanup_store
+from .directory_retention import enqueue_directory_cleanup
 from .directory_paths import (
     cleanup_location, cleanup_path, lexical_path, remove_path, validate_removal,
     rename_directory_no_replace, validate_filename,
@@ -255,7 +256,7 @@ class DirectoryMoveStore:
                 if self.get(operation_id, connection=connection)['phase'] != 'committed':
                     return self.get(operation_id, connection=connection)
                 if row['mode'] != 'external':
-                    self.cleanup.enqueue(cleanup_path(row['source']), owner_id=row['owner_id'],
+                    enqueue_directory_cleanup(cleanup_path(row['source']), owner_id=row['owner_id'],
                         operation_id=operation_id, actor=row['actor'], connection=connection)
                 self.cleanup.release(operation_id, connection=connection)
                 connection.execute(f"UPDATE {self.table} SET phase='completed',last_error='',updated_at=clock_timestamp() "
@@ -341,6 +342,6 @@ def cancel_owner_moves(connection, owner_id):
                            "WHERE owner_id=%s AND phase='committed' RETURNING *", (owner_id,)).fetchall()
         for row in operations:
             if row['mode'] != 'external':
-                queue.enqueue(cleanup_path(row['source']), owner_id=row['owner_id'],
+                enqueue_directory_cleanup(cleanup_path(row['source']), owner_id=row['owner_id'],
                     operation_id=row['operation_id'], actor=row['actor'], connection=connection)
             queue.release(row['operation_id'], connection=connection)

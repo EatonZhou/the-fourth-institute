@@ -8,6 +8,7 @@ from contextlib import contextmanager
 
 from management_common.directory_cleanup_store import get_directory_cleanup_store
 from management_common.directory_paths import validate_removal
+from management_common.directory_retention import enqueue_directory_cleanup
 from management_common.instance_locations import located_path
 from management_common.instance_locations import stored_location
 
@@ -210,6 +211,7 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
         timestamp = deleted_at or now()
         deleted_paths = []
         retention = RetentionStore(connection=connection)
+        retention.unregister_tree(roots, connection=connection)
         for owner in owners:
             retention.release_owner(owner, connection=connection)
         for row in rows:
@@ -220,7 +222,7 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             path = located_path(row['path'])
             deleted_paths.append(path)
             if row['origin'] == 'created':
-                queue.enqueue(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
+                enqueue_directory_cleanup(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
         for collection, identifier, entries in documents:
             if identifier not in resource_ids:
                 continue
@@ -229,13 +231,12 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             unregister_identity(identifier, connection=connection, actor=actor)
             for item in entries:
                 if item.get('origin') == 'created':
-                    queue.enqueue(located_path(item['path']), owner_id=identifier,
+                    enqueue_directory_cleanup(located_path(item['path']), owner_id=identifier,
                                   operation_id='delete:' + identifier, actor=actor, connection=connection)
     return {'resource_ids': sorted(resource_ids | selected), 'workspace_paths': deleted_paths}
 
 
 def unregister_registry(collection, resource_id, *, actor='', projection_ids=()):
-    queue = get_directory_cleanup_store()
     with directory_writer(*COLLECTIONS, IGNORE_COLLECTION) as writer:
         document = writer.get(collection, resource_id)
         if document is None:
@@ -249,7 +250,7 @@ def unregister_registry(collection, resource_id, *, actor='', projection_ids=())
         roots = [Path(located_path(item['path'])) for item in entries if item.get('origin') == 'created']
         for root in roots:
             validate_removal(root)
-        cleanup_ids = [queue.enqueue(root, owner_id=resource_id, operation_id='delete:' + resource_id,
+        cleanup_ids = [enqueue_directory_cleanup(root, owner_id=resource_id, operation_id='delete:' + resource_id,
                                      actor=actor, connection=writer.connection) for root in roots]
         unregister_nested(roots, connection=writer.connection, actor=actor)
     return document, cleanup_ids

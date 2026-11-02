@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from management_common.format_tags import schema_matches
+from management_common.directory_retention import enqueue_directory_cleanup
 from management_portal.execution.activity_redaction import redact_sensitive_text
 from management_portal.business_tasks import process_identity, process_is_alive
 from management_portal.shared_state import atomic_replace_json, exclusive_file_lock
@@ -305,7 +306,7 @@ class RunRecords:
                     if run_root is not None:
                         paths.append(run_root / run_id)
                     for path in paths:
-                        queue.enqueue(path.absolute(), owner_id=run_id, operation_id='report-delete:' + run_id,
+                        enqueue_directory_cleanup(path.absolute(), owner_id=run_id, operation_id='report-delete:' + run_id,
                                       actor='directory-retention', connection=connection)
             self._write_index([item for item in index if item.get("run_id") not in deleting])
             return deleted
@@ -351,7 +352,7 @@ class RunRecords:
                         continue
                     run_id = self._run_id(item['run_id'])
                     for path in (run_root / run_id, self._record_path(run_id)):
-                        queue.enqueue(path.absolute(), owner_id=run_id, operation_id='expire:' + run_id,
+                        enqueue_directory_cleanup(path.absolute(), owner_id=run_id, operation_id='expire:' + run_id,
                                       actor='directory-retention', connection=connection)
                     removed.append(run_id)
             # This file index cannot share the SQL commit. Keep the durable
@@ -621,7 +622,7 @@ class RunCoordinator:
                 for path in root.iterdir():
                     name = path.stem if root == self.records.records_root else path.name
                     if re.fullmatch(r'testrun_[0-9a-f]{16}', name) and name not in known:
-                        queue.enqueue(path.absolute(), owner_id=name, operation_id='orphan:' + name,
+                        enqueue_directory_cleanup(path.absolute(), owner_id=name, operation_id='orphan:' + name,
                                       actor='directory-retention', connection=connection)
                         removed.append(name)
         queue.run_pending()
