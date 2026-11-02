@@ -335,6 +335,9 @@
 }
 .composerQuoteAuthor,
 .messageQuoteAuthor {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
