@@ -180,6 +180,17 @@ async function measured(name, invoke) {
 
 `portal.instruction` 的原 HTTP 请求预算默认为 180 秒，日志记录 timeout_ms；必要时在首次调用前显式设置 `{timeoutMs}`（1–600000 毫秒），不能在失败后放大预算重发已受理写操作。APIRequestContext 的传输超时只说明原响应未取得，不证明服务未提交；助手不自动重试这类失败。保留原错误与身份后继续只读查询，不把超时当作业务终态。不得用扩大的请求预算替代 UI 原 ready 或隐瞒实际耗时。
 
+Workspace 首次目录打开/刷新前，按本轮准确 workspaceId 安装有限原响应观察器；`origin` 来自实际运行环境，`record` 同步追加安全元数据。根目录地址是 `workspace_id/file`，不是裸 ID，也没有末尾斜杠。每个原动作先安装观察器和精确 response 监听，再执行一次原生导航/刷新；原 ready 内把对应 Response 交给 `directoryObserver.original(response)`，核对 HTTP、body_status、result.kind、file_reference、目录条目及原页面内容，并将本轮测试目录的原响应落盘。子文件响应或事后补读不替代目录响应。finally 有界 close；关闭观察器失败也须独立关闭浏览器。跨请求目标使用分别声明的准确 targets，不手写前缀过滤。
+
+```js
+// tau-workspace-root-read
+const {observeFiniteInstructionResponses} = require(frameworkRoot + '/tau_finite_instruction_evidence.js');
+const directoryObserver = observeFiniteInstructionResponses(portal.page, {
+  origin, targets: [{instruction:'ReadResource', arguments:{address:workspaceId + '/file'}}],
+  requestId: request => portal.requestId(request), record,
+});
+```
+
 `portal.close()` 自己在关闭动作开始即写 tau-browser-close.json 的 closing/started_at，结束保存 finished_at、原单调 duration_ms、ready/ok 和实际错误。直接引用这份生命周期证据，不在浏览器已经关闭后补造 UI ready 或再次打开浏览器取关闭截图。外层原工具 RTT 仍按能力记录。
 
 Program/Trigger Path 的完成独立于某个 Resident 输入完成。共享 `portal.waitForTriggerPath(lineageId, triggerPathId)` 持续只读核对同一个原路径，直到 completed/failed/cancelled，返回包含 path 的最新正式结果；每次真实 GetTriggerPath 调用已有公共 RTT。两段推进中，首段路径及完成事件启动的下游路径分别核对，不能只等输入 completed 后沿用此前读取的 active 路径。先在原单次 Trigger 后捕捉页面真实运行态，再观察输入和所有原路径终态，最后刷新和清理；运行态已错过就保留缺口，不重新触发。观察预算到期只表示该段观察未完成，不把它当产品终态或重发许可；沿原 ID 继续。返回 failed/cancelled 是原路径的真实失败/取消，不是工具成功即业务 PASS。
