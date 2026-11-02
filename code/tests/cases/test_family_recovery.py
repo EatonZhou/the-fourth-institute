@@ -113,7 +113,7 @@ def test_continue_requeues_failed_member_once_and_keeps_original_link(family):
     shown = family_facade.project_messages(_record(family), repository.read_messages(family['facade']), input_states={})
     relay = next(message for message in shown if message['message_id'] == root)['relay']
     assert relay['state'] == 'failed'
-    assert relay['error']['message'] == 'provider timeout'
+    assert relay['error'] == repository.input_state(family['wrong'], member_message)['error']
     command = _send(family, "continue")
     assert repository.input_state(family["wrong"], member_message)["state"] == "queued"
     assert _view(family, command)["original_message_id"] == root
