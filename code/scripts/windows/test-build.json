@@ -1,5 +1,7 @@
 {
-  "request": "20261102-et-current-main-install-r3",
+  "request": "20261102-et-5fe7ef5a-cli-fixture-r4",
+  "reuse_package_run": 41474740714,
+  "native_cli_only": true,
   "delivery": "Portal",
   "publish_to_github": false
 }

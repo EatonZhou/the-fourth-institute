@@ -1,5 +1,6 @@
 # Disposable CI only: exercise the desktop product with a real standard user.
-param([Parameter(Mandatory)][string]$Installer, [Parameter(Mandatory)][string]$Evidence)
+param([Parameter(Mandatory)][string]$Installer, [Parameter(Mandatory)][string]$Evidence,
+      [switch]$CliOnly)
 $ErrorActionPreference = 'Stop'
 if ($env:GITHUB_ACTIONS -ne 'true') { throw 'This fixture creates a disposable CI user; run in Actions only.' }
 $username = 'tfi_native_test'
@@ -58,6 +59,7 @@ try {
     $sha = $env:GITHUB_SHA
     $packageSha = (Get-Content (Join-Path (Split-Path $Installer) 'receipt.json') -Raw | ConvertFrom-Json).source_commit
     if ($packageSha -notmatch '^[0-9a-f]{40}$') { throw 'Missing package source commit' }
+    $runInstaller = if ($CliOnly) { '$false' } else { '$true' }
     $script = @"
 `$ErrorActionPreference = 'Stop'
 try {
@@ -79,11 +81,13 @@ New-Item -ItemType Directory -Force `$env:TEMP | Out-Null
 New-Item -ItemType Directory -Force `$env:APPDATA | Out-Null
 New-Item -ItemType Directory evidence | Out-Null
 `$ErrorActionPreference = 'Continue'
-& '$quotedPython' native_smoke.py --installer Setup.exe --work installations --evidence evidence 2>&1 | Out-File evidence/smoke.log -Encoding utf8
-`$code = `$LASTEXITCODE
+`$code = 0
+if ($runInstaller) {
+    & '$quotedPython' native_smoke.py --installer Setup.exe --work installations --evidence evidence 2>&1 | Out-File evidence/smoke.log -Encoding utf8
+    `$code = `$LASTEXITCODE
+}
 if (`$code -eq 0) {
-    `$installedCode = Get-ChildItem installations -Directory | Select-Object -First 1 | ForEach-Object { Join-Path `$_.FullName 'code' }
-    & '$quotedPython' native_cli_smoke.py --code `$installedCode --work 'CLI 中文 空格' --evidence evidence 2>&1 | Out-File evidence/native-cli.log -Encoding utf8
+    & '$quotedPython' native_cli_smoke.py --installer Setup.exe --work 'CLI 中文 空格' --evidence evidence 2>&1 | Out-File evidence/native-cli.log -Encoding utf8
     `$code = `$LASTEXITCODE
 }
 # native_smoke.py saves component log tails into evidence before it retires each instance.
@@ -192,5 +196,7 @@ exit `$code
 }
 if (Test-Path (Join-Path $evidencePath 'smoke.log')) {
     Get-Content (Join-Path $evidencePath 'smoke.log') -Encoding utf8
+} elseif ($CliOnly -and (Test-Path (Join-Path $evidencePath 'native-cli.log'))) {
+    Get-Content (Join-Path $evidencePath 'native-cli.log') -Encoding utf8
 } else { throw "Native smoke did not produce a log (process exit $result); see bootstrap diagnostics" }
 exit $result

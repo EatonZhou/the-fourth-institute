@@ -6,11 +6,12 @@ used. Run as the same ordinary user as the installed EXE smoke, against its code
 from __future__ import annotations
 
 import argparse
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 import json
 import os
 from pathlib import Path
 import queue
+import shutil
 import socket
 import subprocess
 import sys
@@ -232,9 +233,45 @@ def disposable_instance(root, code):
     return root
 
 
+@contextmanager
+def installed_code(args):
+    """Own a separate program install; the desktop smoke uninstalls its copies."""
+    if args.code:
+        code = args.code.resolve()
+        if not (code / 'management_common/instance_manifest.py').is_file():
+            raise FileNotFoundError(f'CLI smoke code is not installed: {code}')
+        yield code
+        return
+    exe = args.installer.resolve()
+    platform = args.work.resolve() / 'program'
+    if platform.exists():
+        raise FileExistsError(platform)
+    command = subprocess.list2cmdline([str(exe), '/S', '/NOEXAMPLES']) + ' /D=' + str(platform)
+    subprocess.run(command, executable=str(exe), check=True, timeout=300)
+    try:
+        code = platform / 'code'
+        if not (code / 'management_common/instance_manifest.py').is_file():
+            raise FileNotFoundError(f'CLI smoke code is not installed: {code}')
+        yield code
+    finally:
+        # No instance is created in this program directory. Uninstall only this
+        # fixture's program files, with NSIS's synchronous uninstaller form.
+        uninstaller = args.work.resolve() / 'cli-uninstall.exe'
+        shutil.copyfile(platform / 'Uninstall.exe', uninstaller)
+        command = subprocess.list2cmdline([str(uninstaller), '/S']) + ' _?=' + str(platform)
+        try:
+            subprocess.run(command, executable=str(uninstaller), check=True, timeout=180)
+            if code.exists():
+                raise RuntimeError('CLI fixture uninstall left program code behind')
+        finally:
+            uninstaller.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--code', type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--code', type=Path)
+    source.add_argument('--installer', type=Path)
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--evidence', type=Path, required=True)
     args = parser.parse_args()
@@ -246,6 +283,13 @@ def main():
     assert not inherited_job.value, 'Run from the standard-user task, outside the CI runner Job'
     root = args.work.resolve()
     root.mkdir(parents=True)
+    args.evidence.mkdir(parents=True, exist_ok=True)
+    with installed_code(args) as code:
+        args.code = code
+        exercise_cli(args, root)
+
+
+def exercise_cli(args, root):
     sys.path.insert(0, str(args.code.resolve()))
     os.environ['PORTAL_INSTANCE_ROOT'] = str(disposable_instance(root / 'instance', args.code))
     # Provider programs are code-owned (dependencies/providers beside the code).
@@ -258,6 +302,7 @@ def main():
     from management_portal.opencode_runtime import OpenCodeRuntime
     updates.RUNTIMES = runtimes
     receipt = {'schema': 'tfi.windows-native-cli.v1', 'source_commit': os.environ.get('TFI_PACKAGE_SHA', ''),
+               'harness_source_commit': os.environ.get('GITHUB_SHA', ''),
                'process_elevated': False, 'inherited_host_job': False,
                'real_credentials': False, 'external_inference': False, 'providers': {}}
     args.evidence.mkdir(parents=True, exist_ok=True)

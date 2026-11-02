@@ -20,6 +20,9 @@ jobs:
   package:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    outputs:
+      reuse: ${{ steps.request.outputs.reuse }}
+      cli_only: ${{ steps.request.outputs.cli_only }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Select package or fixture-only rerun
@@ -28,10 +31,14 @@ jobs:
           python3 - <<'PY'
           import json, os
           from pathlib import Path
-          run = json.loads(Path('code/scripts/windows/test-build.json').read_text()).get('reuse_package_run', 0)
+          request = json.loads(Path('code/scripts/windows/test-build.json').read_text())
+          run = request.get('reuse_package_run', 0)
           assert type(run) is int and run >= 0
+          cli_only = request.get('native_cli_only', False)
+          assert type(cli_only) is bool and (not cli_only or run > 0)
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               print(f'reuse={run}', file=output)
+              print(f'cli_only={str(cli_only).lower()}', file=output)
           PY
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: steps.request.outputs.reuse != '0'
@@ -87,7 +94,35 @@ jobs:
         working-directory: code
         run: |
           python -m pip install -r requirements.txt pytest httpx
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: needs.package.outputs.cli_only == 'true'
+        with:
+          name: windows-native-evidence
+          path: .build/windows-prior-native
+          run-id: ${{ needs.package.outputs.reuse }}
+          github-token: ${{ github.token }}
+      - name: Verify the reused EXE already passed installer acceptance
+        if: needs.package.outputs.cli_only == 'true'
+        shell: python
+        env:
+          TFI_REUSED_RUN: ${{ needs.package.outputs.reuse }}
+        run: |
+          import hashlib, json, os
+          from pathlib import Path
+          package = Path('.build/windows')
+          previous = json.loads(Path('.build/windows-prior-native/native-smoke.json').read_text())
+          receipt = json.loads((package / 'receipt.json').read_text())
+          with (package / 'TheFourthInstitute-Setup-x64.exe').open('rb') as stream:
+              digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+          assert previous['status'] == 'passed'
+          assert previous['source_commit'] == receipt['source_commit']
+          assert previous['exe_sha256'] == digest
+          evidence = Path('.build/windows-native')
+          evidence.mkdir(parents=True, exist_ok=True)
+          (evidence / 'reused-installer-acceptance.json').write_text(json.dumps({
+              'run_id': int(os.environ['TFI_REUSED_RUN']), 'acceptance': previous}, indent=2))
       - name: Windows permissions, process identity and local transport
+        if: needs.package.outputs.cli_only != 'true'
         working-directory: code
         run: |
           New-Item -ItemType Directory -Force ../.build/windows-native | Out-Null
@@ -107,9 +142,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
       - name: Install EXE, register, open AMA and restart with blocked download proxies
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && success() }}
         run: |
-          ./code/scripts/windows/native_user_smoke.ps1 -Installer .build/windows/TheFourthInstitute-Setup-x64.exe -Evidence .build/windows-native
+          $cliOnly = '${{ needs.package.outputs.cli_only }}' -eq 'true'
+          ./code/scripts/windows/native_user_smoke.ps1 -Installer .build/windows/TheFourthInstitute-Setup-x64.exe -Evidence .build/windows-native -CliOnly:$cliOnly
       - name: Show failure diagnostics
         if: failure()
         shell: pwsh
