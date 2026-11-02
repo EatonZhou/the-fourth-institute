@@ -1113,7 +1113,7 @@ modules:
   - id: "delivery.services"
     title: "发布与服务生命周期控制"
     parent: "delivery"
-    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；读取与校验实例清单，维护本机实例登记、实例创建、启停、代码更新与退役，以及代码旁依赖的准备。"
+    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；读取与校验实例清单，维护本机实例登记、实例创建、启停、代码更新与退役，以及代码旁依赖的准备；通过显式迁移脚本转换已声明的持久化版本，数据结构契约由相应领域拥有。"
     instruction_owners: []
     code_paths:
       - "scripts/tfi_dev.py"
@@ -1139,6 +1139,7 @@ modules:
       - "management_common/process_observation.py"
       - "scripts/instance_resident_relocation.py"
       - "scripts/migrate_instance_lineages.py"
+      - "scripts/migrate_family_chat_controls.py"
       - "scripts/tfi_relocate_instance.py"
       - "management_common/_process_posix.py"
       - "management_common/_process_windows.py"
@@ -1992,8 +1993,8 @@ protocols:
     designs: []
     related_designs:
       - "decision_15f7df737ed5"
-    description: "Runtime消费ResidentTerminalFact并派发终态观察；失败通知和对外消息沿真实Family speaking身份写Mailbox。"
-    example: "一个 Resident 进入终态：Runtime 消费 ResidentTerminalFact，通知经 Family speaking 身份进入实际 Mailbox。"
+    description: "Runtime消费ResidentTerminalFact并派发终态观察；失败通知和对外消息沿真实Family speaking身份写Mailbox。写入新提醒时按当前用户、Family门面及其直接业务成员读取Mute偏好；该偏好只抑制未来提醒，不改变路由、消息记录或已有未读，来源不明时保留提醒。"
+    example: "一个 Resident 进入终态：Runtime 消费 ResidentTerminalFact，通知沿 Family speaking 身份解析当前门面的直接业务成员；仅对设置Mute的当前用户跳过新提醒，原消息仍保存，其他用户照常收到提醒。"
 
   - id: "resource-type-registration"
     title: "资源类型适配、登记与索引接口"
