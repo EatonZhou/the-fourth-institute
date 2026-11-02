@@ -52,7 +52,7 @@ def _windows_api():
     return kernel
 
 
-def _windows_open(path, flags: int, *, directory: bool = False) -> int:
+def _windows_open(path, flags: int, *, directory: bool = False, delete: bool = False) -> int:
     import ctypes
     import msvcrt
     from ctypes import wintypes
@@ -60,6 +60,8 @@ def _windows_open(path, flags: int, *, directory: bool = False) -> int:
     kernel = _windows_api()
     write = bool(flags & (os.O_WRONLY | os.O_RDWR))
     access = 0xC0000000 if flags & os.O_RDWR else (0x40000000 if write else 0x80000000)
+    if delete:
+        access |= 0x10000  # DELETE, for a rename through this checked handle.
     creation = (1 if flags & os.O_EXCL else 4) if flags & os.O_CREAT else 3
     if flags & os.O_TRUNC:
         raise ValueError("Pinned files must not be truncated during open")
@@ -130,10 +132,56 @@ def replace_child(directory: int, source: str, target: str) -> None:
     _part(source)
     _part(target)
     if os.name == "nt":
-        parent = directory_path(directory)
-        os.replace(parent / source, parent / target)
+        _windows_replace_child(directory, source, target)
     else:
         os.replace(source, target, src_dir_fd=directory, dst_dir_fd=directory)
+
+
+def _windows_replace_child(directory: int, source: str, target: str) -> None:
+    """Rename in place through the checked source, retaining every directory pin.
+
+    A path-based replace reopens the destination directory for writing, which
+    conflicts with the pin that prevents reparse-point substitution. Native
+    FileRenameInformation with a simple name and NULL RootDirectory renames
+    inside the source's existing parent, without that conflicting reopen.
+    https://learn.microsoft.com/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_rename_information
+    """
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    class RenameInformation(ctypes.Structure):
+        _fields_ = [('ReplaceIfExists', wintypes.DWORD),
+                    ('RootDirectory', wintypes.HANDLE),
+                    ('FileNameLength', wintypes.DWORD),
+                    ('FileName', wintypes.WCHAR * 1)]
+
+    class IoStatusBlock(ctypes.Structure):
+        _fields_ = [('Status', ctypes.c_void_p), ('Information', ctypes.c_size_t)]
+
+    native = ctypes.WinDLL('ntdll')
+    rename = native.NtSetInformationFile
+    rename.argtypes = [wintypes.HANDLE, ctypes.c_void_p, ctypes.c_void_p,
+                       wintypes.ULONG, ctypes.c_int]
+    rename.restype = wintypes.LONG
+    translate = native.RtlNtStatusToDosError
+    translate.argtypes = [wintypes.LONG]
+    translate.restype = wintypes.ULONG
+    name = target.encode('utf-16-le')
+    buffer = ctypes.create_string_buffer(ctypes.sizeof(RenameInformation) + len(name))
+    information = RenameInformation.from_buffer(buffer)
+    information.ReplaceIfExists = 1
+    information.RootDirectory = None
+    information.FileNameLength = len(name)
+    ctypes.memmove(ctypes.addressof(buffer) + RenameInformation.FileName.offset, name, len(name))
+    descriptor = _windows_open(directory_path(directory) / source, os.O_RDONLY, delete=True)
+    try:
+        status = rename(msvcrt.get_osfhandle(descriptor), ctypes.byref(IoStatusBlock()),
+                        buffer, len(buffer), 10)  # FileRenameInformation
+        if status < 0:
+            raise ctypes.WinError(translate(status))
+    finally:
+        os.close(descriptor)
 
 
 def unlink_child(directory: int, name: str) -> None:
