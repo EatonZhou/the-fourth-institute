@@ -2001,6 +2001,7 @@ protocols:
     modules:
       - "resources.types"
       - "resources.access"
+      - "lineage"
     designs: []
     related_designs:
       - "decision_355ed742bca5"
@@ -2009,7 +2010,8 @@ protocols:
       - "decision_f48c2514bf33"
       - "decision_36f46b395d8e"
       - "decision_8dc6b3d03ca7"
-    description: "类型声明提供统一身份、类别与安装状态，类型provider注册resolver/mutation provider，通用登记/扫描/index使用规范resource record和类型操作。Article通过resource.article_registration贡献目录发现、分类与登记校验，通过resource.registry_projection贡献登记摘要；共享层按安装状态加载，领域存储和摘要规则由类型适配器拥有。"
+      - "decision_b6e74d78f7b6"
+    description: "类型声明提供统一身份、类别与安装状态，类型provider注册resolver/mutation provider，通用登记/扫描/index使用规范resource record和类型操作。Article通过resource.article_registration贡献目录发现、分类与登记校验，通过resource.registry_projection贡献登记摘要；共享层按安装状态加载，领域存储和摘要规则由类型适配器拥有。跨服务注销由领域拥有者串行删除，ResourceService不持有投影锁等待领域RPC，允许领域回调确认删除墓碑；随后在单对象投影作用域内完成索引确认。本地适配器仍在同一作用域内串行领域提交与投影，成功回执均要求索引确认。"
     example: "Article已安装时，自动登记使用其发现与分类结果，索引使用其登记投影；未安装时Repo继续独立工作。模块内部依赖损坏保留原错误，索引写入仍遵守自身持久化边界。"
 
   - id: "resource-view-projection"
