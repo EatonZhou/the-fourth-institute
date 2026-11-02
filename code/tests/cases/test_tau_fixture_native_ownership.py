@@ -8,6 +8,24 @@ from management_portal.test_framework import tau_fixture_paths as fixtures
 
 
 class NativeFixtureOwnership(unittest.TestCase):
+    def test_standalone_can_be_registered_when_temp_is_instance_runtime(self):
+        from management_common import instance_locations
+        from management_common.instance_manifest import InstanceManifest
+        with tempfile.TemporaryDirectory() as temporary:
+            instance = InstanceManifest(Path(temporary).resolve() / 'instance', {})
+            runtime = instance.directory('runtime') / 'tmp'
+            runtime.mkdir(parents=True)
+            instance.area('features').mkdir(parents=True)
+            evidence = instance.directory('runtime') / 'case'
+            with patch.object(instance_locations, 'current_instance', return_value=instance), \
+                    patch.object(fixtures.tempfile, 'gettempdir', return_value=str(runtime)):
+                path = fixtures.prepare(evidence)
+                self.assertTrue(instance.reference(path))
+                self.assertFalse(fixtures._inside_checkout(path))
+                self.assertEqual(fixtures.prepare(evidence), path)
+                fixtures.cleanup(evidence)
+                self.assertFalse(path.exists())
+
     def test_content_reuse_and_replacement(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary).resolve()
@@ -24,10 +42,13 @@ class NativeFixtureOwnership(unittest.TestCase):
                 self.assertTrue((content / 'keep').exists())
 
     def test_standalone_reuse_and_owned_cleanup(self):
+        from management_common import instance_locations
+        from management_common.instance_manifest import InstanceManifest
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary).resolve()
             root = base / 'evidence'
             with patch.object(fixtures, '_bases', return_value=[base]), \
+                    patch.object(instance_locations, 'current_instance', return_value=InstanceManifest(base / 'instance', {})), \
                     patch.object(fixtures, '_inside_checkout', return_value=False):
                 path = fixtures.prepare(root)
                 (path / 'artifact').write_text('owned')

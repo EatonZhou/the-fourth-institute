@@ -12,6 +12,7 @@ python3 code/scripts/check_tau_samples.py
 
 | 行为 | 固定验证 |
 |---|---|
+| 独立Git夹具位置 | 即使服务临时目录位于实例runtime/tmp，准备的独立夹具仍可按真实实例路径协议登记；保持Git隔离、原目录复用和属主清理，Windows原生同样验证 |
 | Chat ready 与身份 | 原生 Chat 的头部、输入框、加载状态；正文中相同 ID 和 Loading 文本不参与身份判断；隐藏、错误目标、多匹配被拒绝 |
 | 完整 Session ID | 原生 lineage 页面已提供 Provider Session，Chat 仍无 Session 头部；共享Menu快照读出完整值，拒绝错误身份和已关闭Menu；真实复制事件取得同一值；保留旧头部硬等待的负样例 |
 | 相对定位 | 原生 Family 状态表渲染在测试宿主中；`has` 的正确相对子定位匹配一处，携带外层 dialog 的旧定位匹配零处 |

@@ -57,7 +57,11 @@ def prepare_content(root: Path) -> Path:
 
 
 def _bases() -> list[Path]:
-    return list(dict.fromkeys(Path(p).resolve() for p in (tempfile.gettempdir(), '/var/tmp', '/tmp')))
+    from management_common.instance_locations import current_instance
+    # Service TMPDIR may be the instance's runtime/tmp, which is deliberately
+    # not registrable content. Keep legacy bases for validating old receipts.
+    return list(dict.fromkeys(Path(p).resolve() for p in (
+        current_instance().area('features'), tempfile.gettempdir(), '/var/tmp', '/tmp')))
 
 
 def _name(root: Path) -> str:
@@ -97,6 +101,7 @@ def inspect(root: Path) -> tuple[Path, dict] | None:
 
 
 def prepare(root: Path) -> Path:
+    from management_common.instance_locations import current_instance
     root = root.resolve()
     existing = inspect(root)
     if existing is not None:
@@ -109,6 +114,10 @@ def prepare(root: Path) -> Path:
         if not base.is_dir() or _inside_checkout(base):
             continue
         path = base / _name(root)
+        try:
+            current_instance().reference(path)
+        except ValueError:
+            continue
         # An unreceipted existing directory is never adopted or deleted.
         path.mkdir(mode=0o700)
         assert_private_directory(path)
