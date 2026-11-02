@@ -320,7 +320,6 @@
     </div>
     ${options.afterBodyHtml || ""}
     ${composerSplitterId ? window.PortalI18n.html`<div class="composerSplitter" id="${escapeHtml(composerSplitterId)}" role="separator" aria-orientation="horizontal" aria-label="调整发送框高度" title="拖动调整发送框高度"></div>` : ""}
-    <div class="familySoloProxy" data-family-solo="composer" role="status" hidden></div>
     <div class="composer" id="${escapeHtml(composerId)}"></div>
     <div class="portalWorkspaceLoading" ${loadingId ? `id="${escapeHtml(loadingId)}"` : ""} data-workspace-loading hidden></div>`;
   }

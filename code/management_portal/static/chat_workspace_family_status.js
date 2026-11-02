@@ -139,9 +139,7 @@
           if (!solo) { slot.replaceChildren(); continue; }
           // Keep the exit button stable across projection and preference reads.
           if (!slot.firstElementChild) slot.innerHTML = '<span></span><button type="button" class="portalButton is-compact" data-family-mix="solo" aria-pressed="true">退出 Solo</button>';
-          slot.firstElementChild.textContent = slot.dataset.familySolo === 'composer'
-            ? `发送目标：${family?.title || 'Family 门面'} → ${name}（Solo）`
-            : `${family?.title || 'Family 门面'} → ${name} · Solo 单独对话${members.has(solo) ? '' : '（成员已离开，请退出）'}`;
+          slot.firstElementChild.textContent = `${family?.title || 'Family 门面'} → ${name} · Solo 单独对话${members.has(solo) ? '' : '（成员已离开，请退出）'}`;
           const exit = slot.querySelector('button');
           exit.dataset.member = solo;
           exit.disabled = mix.state.busy;
