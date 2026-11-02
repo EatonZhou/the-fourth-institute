@@ -6,7 +6,6 @@ This adapter never reads a Provider rollout or treats media bytes as text.
 from __future__ import annotations
 
 import copy
-import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -14,12 +13,6 @@ from typing import Any
 
 def _json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
-
-
-def _item_id(prefix: str, segment_id: str) -> str:
-    # PostgreSQL identities remain in provenance; Provider item IDs have typed
-    # prefixes (fc/msg/rs), independently of the original tool call_id.
-    return prefix + "_" + hashlib.sha256(segment_id.encode()).hexdigest()[:32]
 
 
 def _has_media(value: Any) -> bool:
@@ -105,7 +98,6 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
         kind = segment.get("segment_type")
         content = segment.get("content")
         metadata = segment.get("metadata") or {}
-        identity = str(segment["segment_id"])
         if kind == "compaction":
             replacement = content.get("replacement_history") if isinstance(content, Mapping) else None
             if not isinstance(replacement, list) or not replacement or any(
@@ -137,7 +129,7 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
             if content.get("error") is not None:
                 output = {"result": output, "error": content["error"]}
             items.extend([
-                {"type": "function_call", "id": _item_id("fc", identity), "call_id": call_id,
+                {"type": "function_call", "call_id": call_id,
                  "name": name, **({"namespace": namespace} if namespace else {}),
                  "arguments": arguments if isinstance(arguments, str) else _json(arguments)},
                 {"type": "function_call_output", "call_id": call_id, "output": _tool_output(output)},
@@ -150,7 +142,7 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
                 continue  # Existing audit-only placeholder, not recoverable model content.
             if not summary and not reasoning:
                 raise ValueError("unsupported historical reasoning content")
-            item = {"type": "reasoning", "id": _item_id("rs", identity), "summary": summary}
+            item = {"type": "reasoning", "summary": summary}
             if reasoning:
                 item["content"] = reasoning
             items.append(item)
@@ -161,7 +153,9 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
         if not isinstance(content, str):
             raise ValueError(f"unsupported historical {kind} content")
         item: dict[str, Any] = {
-            "type": "message", "id": _item_id("msg", identity), "role": role,
+            # Segment identities belong to Portal provenance. Invented
+            # Responses item IDs are rejected by the model on replay.
+            "type": "message", "role": role,
             "content": [{"type": "output_text" if role == "assistant" else "input_text", "text": content}],
         }
         phase = metadata.get("phase") or metadata.get("kind")

@@ -39,7 +39,7 @@ def test_compacted_multimodal_history_is_not_converted_to_user_text_contracts(su
         items = response_items_from_segments(segments)
         assert items[:3] == replacement
         assert items[3]['role'] == 'user'
-        assert items[3]['id'].startswith('msg_')
+        assert 'id' not in items[3]
         assert items[4]['role'] == 'assistant'
         assert items[4]['phase'] == 'final_answer'
         assert items[0]['encrypted_content'] == 'opaque-compaction'
@@ -82,7 +82,7 @@ def test_tools_keep_call_identity_arguments_and_multimodal_output(subtests, isol
             }])
             call, output = items
             assert call['type'] == 'function_call'
-            assert call['id'].startswith('fc_')
+            assert 'id' not in call
             assert call['call_id'] == output['call_id'] == 'call-original'
             assert call['name'] == 'inspect'
             if namespace:
@@ -457,5 +457,5 @@ def test_codex_backend_injects_frozen_fork_context_before_initial_compact(tmp_pa
         'threadId': 'compacted-child-session',
         'items': [{'type': 'message', 'role': 'user', 'content': [
             {'type': 'input_text', 'text': 'frozen inherited context'},
-        ], 'id': mock.ANY}],
+        ]}],
     }
