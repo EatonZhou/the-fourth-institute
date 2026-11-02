@@ -9,6 +9,7 @@ from management_common.operation_errors import OperationError
 from management_portal import portal_features, script_groups
 from management_portal.http_errors import instruction_error_payload
 from management_portal.http_routes import RouteDefinition
+from management_portal.http_auth import _principal_route
 
 
 def wall_page_location(query):
@@ -166,7 +167,7 @@ class PortalPagesHttp:
             RouteDefinition("GET", "/", self.home, "portal-pages-get", page=True),
             RouteDefinition("GET", "/index.html", self.home, "portal-pages-get", page=True),
             RouteDefinition("GET", "/lineage", self.lineage, "portal-pages-get", page=True),
-            RouteDefinition("GET", "/frontier", self.frontier, "portal-pages-get", page=True),
+            _principal_route("GET", "/frontier", self.frontier, "portal-pages-get", page=True),
             RouteDefinition("GET", "/lineage/", self.lineage, "portal-pages-get", page=True),
             RouteDefinition("GET", "/lineage.html", self.lineage, "portal-pages-get", page=True),
             RouteDefinition("GET", "/hatg-panel.html", self.hatg_panel, "portal-pages-get", page=True),
