@@ -61,7 +61,7 @@ def _seconds(value: Any) -> int:
 
 def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str, a: str, resource: str,
           seconds: Any = None, message_id: str = "",
-          input_open: Callable[[str, str], bool] | None = None) -> dict[str, Any]:
+          input_open: Callable[[str, str], bool] | None = None, connection=None) -> dict[str, Any]:
     """Lend ``a`` on ``resource`` to ``recipient``.
 
     With ``message_id`` the credential lasts while ``recipient``'s input of that
@@ -83,14 +83,29 @@ def issue(engine: Engine, scheme: CompiledScheme, *, issuer: str, recipient: str
         raise LoanRefused(f"签发者对 {resource} 没有 {a}，不能签发")
     loan = Entry(new_entry_id(), PERMIT, recipient, a, resource, issued_by=issuer, issued_at=now,
                  expires_at=now + lasting, message_id=message_id)
-    with engine.store.transaction() as connection:
+    with engine.store.transaction(connection) as connection:
         if message_id:
             # Issuing for a message and ending that message's input take turns, so no credential outlives its task.
             inline.lock(connection, message_id)
             if input_open is None or not input_open(recipient, message_id):
                 raise LoanRefused(f"{recipient} 没有处理中的消息 {message_id}，不能随它签发")
         engine.store.add(connection, [loan])
-    return credential(loan)
+        return credential(_loan(engine.store, connection, loan.entry_id))
+
+
+def message_credentials(engine: Engine, *, issuer: str, recipient: str, message_id: str,
+                        requests: list[dict[str, str]], input_open, connection) -> list[dict[str, Any]]:
+    """Replay an accepted delivery without reissuing revoked/expired permissions."""
+    inline.lock(connection, message_id)
+    if not input_open(recipient, message_id):
+        raise LoanRefused("原回答输入已结束，请重新请求权限")
+    loans = engine.store.entries(connection, where=(
+        "p_node=%s AND issued_by=%s AND message_id=%s AND expires_at>now() AND NOT disabled"),
+        parameters=(recipient, issuer, message_id))
+    by_permission = {(loan.a, loan.r): loan for loan in loans}
+    if set(by_permission) != {(item['a'], item['resource_id']) for item in requests}:
+        raise LoanRefused("原回答的凭证已失效或与本次请求不符，请重新请求权限")
+    return [credential(by_permission[item['a'], item['resource_id']]) for item in requests]
 
 
 def credential(loan: Entry) -> dict[str, Any]:

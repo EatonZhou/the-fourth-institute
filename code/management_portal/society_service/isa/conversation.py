@@ -31,6 +31,7 @@ def _message_id(inv: Invocation, message: dict[str, Any], resident_id: str) -> s
 
 def deliver(
     inv: Invocation, resident_id: str, message: dict[str, Any], *, business_ref: str = "", reply_to: str = "",
+    lending=None,
 ) -> dict[str, Any]:
     from management_portal.society_service import outward_messages, resident_protocol
 
@@ -49,6 +50,7 @@ def deliver(
         lineage_id=lineage_of_resident(resident_id),
 
         business_ref=business_ref,
+        lending=lending,
     )
     # A Family member sending outside its Family speaks as the facade (decision_44cf587c1721).
     result = outward_messages.deliver_to_resident(payload, inv.caller, delivery_context=context, reply_to=reply_to)
@@ -101,18 +103,6 @@ def _credential_requests(inv: Invocation) -> list[dict[str, str]]:
     return found
 
 
-def _lend(inv: Invocation, resident_id: str, message_id: str, credentials: list[dict[str, str]]) -> list[dict[str, Any]]:
-    """Issue the credentials for the delivered message; each one is checked against what the caller holds now."""
-    from management_portal import permission_system
-
-    issued = []
-    for item in credentials:
-        issued.append(permission_system.manage("IssueTemporaryCredential", {
-            "principal_id": resident_id, "a": item["a"], "resource_id": item["resource_id"], "message_id": message_id,
-        }, actor=inv.caller))
-    return issued
-
-
 def deliver_message(inv: Invocation) -> dict[str, Any]:
     message = inv.argument("message") or {}
     unknown = sorted(set(message) - {"message_id", "role", "content_parts", "quote"})
@@ -130,11 +120,12 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
     _check_answer_credentials(resident_id, message, credentials)
     if credentials:
         _check_lendable(inv, credentials)
+    from ..resident_message_lending import MessageLending
+    lending = MessageLending(inv.caller, credentials) if credentials else None
     result = deliver(inv, resident_id, message, business_ref=inv.argument("business_ref") or "",
-                     reply_to=inv.argument("reply_to_message_id") or "")
-    if credentials:
-        # The message exists now and its input is open: the credentials end with that input (decision_b820faf42218 §5.6).
-        result["temporary_credentials"] = _lend(inv, result["resident_id"], result["message_id"], credentials)
+                     reply_to=inv.argument("reply_to_message_id") or "", lending=lending)
+    if lending is not None:
+        result["temporary_credentials"] = lending.issued
     if any(isinstance(part, dict) and part.get("type") == "async_question_answer" for part in message.get("content_parts") or []):
         from management_portal.society_service import family_quota
         # A facade's own question about its Router/Steward account is answered here, not by any Resident.
@@ -157,8 +148,19 @@ def _check_answer_credentials(resident_id: object, message: dict[str, Any], cred
     except ValueError:
         source = None  # Delivery reports the invalid Resident.
     questions = question_set(source)
+    if questions is None:
+        # The same Family projection used by answer admission may show a
+        # member's question here. It permits ordinary answers, never lending.
+        from .. import family_facade, resident_record_domain
+        facade = resident_record_domain.find_resident_for_admission(resident_id)
+        projected = family_facade.relayed_reply(facade, str(answer.get("source_message_id") or "").strip()) if facade and family_facade.is_facade(facade) else None
+        questions = question_set(projected["reply"]) if projected else None
+        if questions and approved_credentials(questions["questions"], answer.get("answers")):
+            raise invalid("成员在 Family 内提出的权限请求不能经门面交出")
+    if questions is None:
+        raise invalid("该 Resident 中的问题不存在或已不可用")
     requested = {(item["a"], item["resource_id"])
-                 for item in approved_credentials(questions["questions"], answer.get("answers"))} if questions else set()
+                 for item in approved_credentials(questions["questions"], answer.get("answers"))}
     lent = [(item["a"], item["resource_id"]) for item in credentials]
     if set(lent) != requested or len(set(lent)) != len(lent):
         raise invalid("回答随消息交出的权限必须正好是所同意的问题请求的权限")

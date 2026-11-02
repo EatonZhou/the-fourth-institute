@@ -105,3 +105,24 @@ def test_facade_async_card_keeps_original_answer_identity_and_route(question_rou
     assert checked['message_id'] == part['answer_message_id']
     assert checked['content_parts'][1]['source_message_id'] == message['message_id']
     assert family_facade.relayed_reply(facade, message['message_id'])['worker_id'] == MEMBER
+
+
+def test_member_permission_approval_cannot_be_silently_delivered_without_credentials(question_round):
+    from management_common.async_questions import CREDENTIAL_APPROVE, CREDENTIAL_DECLINE
+    from management_portal.society_service.isa.conversation import _check_answer_credentials
+    from management_portal.hatg.contracts import InstructionError
+    facade, repo, outer, inner, _, _, _ = question_round
+    message = resident_input_queue_domain.build_message('agent', '', MEMBER)
+    message['reply_to_message_id'] = inner['message_id']
+    requested = [{'a': '@contributor', 'resource_id': 'decision_000000000001'}]
+    message['content_parts'] = question_message_parts('', [{
+        'question_index': 0, 'title': 'Permission?', 'credentials': requested,
+        'options': [CREDENTIAL_APPROVE, CREDENTIAL_DECLINE],
+    }], MEMBER, message['message_id'])
+    repo.append_message(MEMBER, message)
+    answer = {'content_parts': [{'type': 'async_question_answer', 'source_message_id': message['message_id'],
+                                'answers': [{'question_index': 0, 'answer': CREDENTIAL_APPROVE}]}]}
+    with pytest.raises(InstructionError, match='不能经门面交出'):
+        _check_answer_credentials(facade['resident_id'], answer, [])
+    answer['content_parts'][0]['answers'][0]['answer'] = CREDENTIAL_DECLINE
+    _check_answer_credentials(facade['resident_id'], answer, [])

@@ -1009,13 +1009,16 @@ def write(
     )
 
 
-def admit(record: Mapping[str, object], job: dict[str, Any], message: Mapping[str, Any]) -> None:
+def admit(record: Mapping[str, object], job: dict[str, Any], message: Mapping[str, Any], *, lending=None) -> None:
     """Commit immutable input, execution/queue state and publication intent together."""
     from .resident_conversation_stream import get_repository
     resident_id = resident_lineage.resident_id(record)
     def commit():
         get_repository().accept_user_message(resident_id, message)
         write(record, job, delivery_message_id=str(message["message_id"]))
+        if lending is not None:
+            with get_lineage_data_store().database.transaction() as connection:
+                lending.issue(connection, resident_id, str(message["message_id"]))
     with invariant_locks.resident_conversation_lock(resident_id):
         get_lineage_data_store().transaction(commit)
 

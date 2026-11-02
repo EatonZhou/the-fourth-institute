@@ -62,6 +62,7 @@ class ResidentDeliveryContext:
     business_ref: str = ""
     # A Family reply's source in the actual sender's Conversation, not the facade's.
     reply_source_message_id: str = ""
+    lending: Any = None
 
 
 def _target(resident_id: str, actor: str) -> resident_domain_common.ResidentRuntimeTarget:
@@ -392,6 +393,7 @@ def deliver_resident_input(
             protocol_input=message,
             business_ref=trusted_context.business_ref,
             reply_source_message_id=trusted_context.reply_source_message_id,
+            lending=trusted_context.lending,
         ) or {}
     if resident_input_scope.permits(resident_id, actor, message_id):
         return {key: result[key] for key in ("resident_id", "message_id", "message", "input_state", "cursor") if key in result}

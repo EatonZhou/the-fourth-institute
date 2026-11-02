@@ -120,7 +120,7 @@ LAYERS = (
     resident_directory_domain resident_execution_domain resident_execution_engine_domain
     resident_fork_domain resident_initialization resident_input_queue_domain resident_input_recovery
     resident_intake_domain resident_lifecycle_domain resident_lifecycle_steps_domain
-    resident_management_domain resident_media_domain resident_prompt_domain resident_protocol
+    resident_management_domain resident_media_domain resident_message_lending resident_prompt_domain resident_protocol
     resident_questions resident_queue_control_domain resident_registration_domain resident_restart_domain
     resident_restart_handoff resident_runtime_domain resident_session_backend_domain
     resident_watchboard_domain resident_work_recovery resident_workspace_domain

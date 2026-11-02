@@ -371,6 +371,26 @@ def maintain() -> None:
 # -- permission instructions ------------------------------------------------------
 
 
+def lend_message(connection: Any, *, issuer: str, resident_id: str, message_id: str,
+                 credentials: list[dict[str, str]], replay: bool = False) -> list[dict[str, Any]]:
+    """Lend in the input owner's admission transaction, using the normal issuance rules."""
+    from .management import input_open
+    from . import temporary
+    from .schemes import instruction_errors
+
+    scheme, engine, _instance = active().current()
+    with instruction_errors():
+        if replay:
+            return temporary.message_credentials(
+                engine, issuer=issuer, recipient=resident_id, message_id=message_id,
+                requests=credentials, input_open=input_open, connection=connection,
+            )
+        return [temporary.issue(
+            engine, scheme, issuer=issuer, recipient=resident_id, a=item["a"], resource=item["resource_id"],
+            message_id=message_id, input_open=input_open, connection=connection,
+        ) for item in credentials]
+
+
 def manage(instruction: str, arguments: Mapping[str, Any], *, actor: str, collect_facts: Callable[[], list] | None = None,
            expected_version: Any = None) -> dict[str, Any]:
     """Answer a permission instruction (schemes, nodes, entries, checks, temporary credentials).

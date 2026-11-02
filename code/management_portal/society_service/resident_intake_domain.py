@@ -100,6 +100,7 @@ class ResidentInput:
     speaking_member: str
     reply_source_message_id: str = ""
     quote: Mapping[str, Any] | None = None
+    lending: Any = None
 
     @property
     def runs_commands(self) -> bool:
@@ -564,6 +565,7 @@ def persist_resident_input(
     protocol_input: Mapping[str, Any] | None = None,
     business_ref: str = "",
     reply_source_message_id: str = "",
+    lending=None,
 ) -> dict:
     """Admit one input to the Resident and make it the work its activation policy asks for."""
     from .outward_messages import speaking_for
@@ -591,6 +593,7 @@ def persist_resident_input(
         relay=_input_relay(business_ref, actor_id, resident_id, protocol_input),
         speaking_member=speaking_for(actor_id),
         reply_source_message_id=reply_source_message_id,
+        lending=lending,
     )
     # A request may quote one message of this Conversation; an info carries
     # only what it says.  The quote is checked and filled in once, here.
@@ -661,12 +664,16 @@ def _admit_input(request: ResidentInput) -> dict[str, Any]:
         if record.get("deleted_at"):
             raise ValueError("该 Resident 已删除，不能接收消息")
         request = _with_question_answer(request, record)
+        if request.lending is not None and request.message.lstrip().startswith("/"):
+            raise ValueError("即时命令没有可借出权限的处理轮次")
         if family_facade.is_facade(record):
             return _deliver_to_facade(request, record, environment)
         if request.activation.waits_as_info:
             return _hold_info(request, record)
         capabilities = resident_execution_provider.provider_for(record).capabilities
         if request.activation.joins_active_turn and _already_in_active_turn(request, record, capabilities):
+            if request.lending is not None:
+                request.lending.replay(resident_id, message_id)
             return _receipt(request)
         _require_supported_input(request, capabilities)
         input_record = copy.deepcopy(record)
@@ -797,6 +804,8 @@ def _deliver_to_facade(
     facade_message = copy.deepcopy(facade_item)
     facade_message_id = str(facade_message.get("message_id") or "")
     if request.activation.waits_as_info:
+        if request.lending is not None:
+            raise ValueError("门面的 info 消息立即结束，不能随它借出权限")
         if not existing_resident_delivery(record_id, facade_item):
             # Held only to be shown with the facade's next request.
             resident_held_infos.hold(record, facade_item)
@@ -818,6 +827,8 @@ def _deliver_to_facade(
     from . import family_recovery, family_role_quota_questions
 
     if family_role_quota_questions.question_of(record_id, facade_message) is not None:
+        if request.lending is not None:
+            raise ValueError("门面额度回答立即结束，不能随它借出权限")
         # The facade asked this itself; the Router never routes the answer.
         # DeliverMessage carries out the choice once the answer is stored.
         if not existing_resident_delivery(record_id, facade_item):
@@ -831,22 +842,29 @@ def _deliver_to_facade(
             invariant_locks.defer_until_state_unlock(accept_quota_answer)
         return _receipt(request)
     if existing_resident_delivery(record_id, facade_item):
+        if request.lending is not None:
+            request.lending.replay(record_id, facade_message_id)
         invariant_locks.defer_until_state_unlock(lambda: family_recovery.handle(record, facade_message_id))
         return _receipt(request)
 
-    def accept_for_router() -> None:
+    from .state_store import get_lineage_data_store
+    with invariant_locks.resident_conversation_lock(record_id), get_lineage_data_store().database.transaction() as connection:
         resident_lifecycle_domain.accept_resident_user_message(request.resident_id, facade_message)
         family_recovery.register(record, facade_message)
         resident_conversation_stream.get_repository().set_input_state(
             request.resident_id, facade_message_id, "queued",
         )
+        if request.lending is not None:
+            request.lending.issue(connection, request.resident_id, facade_message_id)
+
+    def publish_for_router() -> None:
         # Infos that came before this request are shown with it.
         resident_held_infos.release_with(record, facade_message_id)
         # Its sender sees it at once; the Router still chooses a member.
         family_facade.show_request(request.resident_id, facade_message_id)
         family_recovery.handle(record, facade_message_id)
 
-    invariant_locks.defer_until_state_unlock(accept_for_router)
+    invariant_locks.defer_until_state_unlock(publish_for_router)
     invariant_locks.defer_until_state_unlock(
         lambda: lineage_message_events.wake_watchers(record, facade_message_id)
     )
@@ -863,18 +881,21 @@ def _hold_info(request: ResidentInput, record: dict[str, Any]) -> dict[str, Any]
     record_id = resident_domain_common.record_resident_id(record)
     info_item = request.with_business_ref(request.user_message(record_id))
     if existing_resident_delivery(record_id, info_item):
+        if request.lending is not None:
+            request.lending.replay(record_id, request.message_id)
         return _receipt(request)
-    resident_held_infos.hold(record, info_item)
     held_message = copy.deepcopy(info_item)
     held_message_id = str(held_message.get("message_id") or "")
 
-    def accept_info() -> None:
+    from .state_store import get_lineage_data_store
+    with invariant_locks.resident_conversation_lock(record_id), get_lineage_data_store().database.transaction() as connection:
+        resident_held_infos.hold(record, info_item)
         resident_lifecycle_domain.accept_resident_user_message(request.resident_id, held_message)
         resident_conversation_stream.get_repository().set_input_state(
             request.resident_id, held_message_id, "queued",
         )
-
-    invariant_locks.defer_until_state_unlock(accept_info)
+        if request.lending is not None:
+            request.lending.issue(connection, request.resident_id, held_message_id)
     invariant_locks.defer_until_state_unlock(
         lambda: lineage_message_events.wake_watchers(record, held_message_id)
     )
@@ -1115,7 +1136,10 @@ def _bootstrap_session(request: ResidentInput, record: dict[str, Any], prepared:
         lineage_id=request.lineage_id,
         delivery_message_id=request.message_id if prepared.deferred_delivery else "",
         user_message=request.user_message(resident_domain_common.record_resident_id(record)),
+        lending=request.lending,
     )
+    if request.lending is not None and not request.lending.issued:
+        request.lending.replay(request.resident_id, request.message_id)
     record["session_state"] = resident_record_domain.record_backend_session_state(record)
     record["last_error"] = ""
     record["updated_at"] = resident_domain_common.now_iso()
@@ -1142,6 +1166,8 @@ def _enqueue(
         bound_job=running,
         require_execution_binding=True,
     ):
+        if request.lending is not None:
+            request.lending.replay(request.resident_id, request.message_id)
         return _receipt(request, deferred_delivery=prepared.deferred_delivery)
     queue_item = _queue_item(request, record, prepared, runtime_settings, user_item, now)
     record_message = _user_message_recorder(
@@ -1172,7 +1198,7 @@ def _enqueue(
         }
         job[resident_state.INTAKE_FIELD] = intake_state
     if prepared.deferred_delivery:
-        resident_execution_work.admit(record, job, user_item)
+        resident_execution_work.admit(record, job, user_item, lending=request.lending)
     else:
         resident_execution_work.write(record, job)
     if not running:
@@ -1278,6 +1304,7 @@ def queue_bootstrap_resident_session(
     business_ref: str = "",
     lineage_id: str = "",
     delivery_message_id: str = "",
+    lending=None,
 ) -> dict[str, Any]:
     message = str(message or "")
     if not message.strip():
@@ -1352,7 +1379,7 @@ def queue_bootstrap_resident_session(
                 lambda: record_message(resident_domain_common.record_resident_id(record), user_item)
             )
     if delivery_message_id:
-        resident_execution_work.admit(record, job, user_item)
+        resident_execution_work.admit(record, job, user_item, lending=lending)
     else:
         resident_execution_work.write(record, job)
     return job
