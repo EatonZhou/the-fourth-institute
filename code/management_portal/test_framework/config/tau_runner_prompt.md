@@ -235,6 +235,13 @@ TAU 是无人值守运行，禁止向用户提问、输出 `portal-question` 或
 
 `readSessionMessageCards` 接受完整原生 `section.portalChatWorkspaceRoot`（含隐式 region）或显式 region，仍核对精确 Resident、消息 ID 与唯一可见消息卡。`readSessionGraphSnapshot` 的 `search_ready` 表示目标命中；`search_empty_ready` 表示同一精确查询的原生“没有匹配节点 / No matching nodes”已显示、无结果和目标节点、无 busy。后者只证明当前搜索明确为空，不单独证明删除成功；删除还须原提交回执及正式 not_found。loading、错误和未知状态仍不通过，不可把 positive search_ready 用作删除后的空结果条件。
 
+消息卡读取的完整签名是`readSessionMessageCards(chat,{residentId,messageId})`，一次接收一个原消息ID；名称中的Cards表示该ID可能匹配零个、一个或重复物理卡片，不是数组参数。核多个原输入/回复时，在同一原ready中逐ID调用并保存全部快照；不传messageIds、不从工具成功推定消息终态。先确认原消息ID字段存在，再执行以下调用，完整ready仍须结合原消息终态和本步骤的其他条件。
+
+```js
+// tau-single-message-card
+const originalCard = await readSessionMessageCards(chat, {residentId, messageId});
+```
+
 ready 不对整个区域正文搜索 Loading/加载：帮助说明、脚本示例也可包含这些词。使用原生加载属性及本次控件状态。HATG Inspector 已公开 `data-component-id`，原 ready 核对精确对象、唯一可见 `input[name=title]` 的本轮值和启用状态；Effect 诊断独立核对 `data-effect-diagnostics-state`，不要把说明文字当成异步状态。运行设置按正式账号ID、设置值和能力声明核验，显示标签可能本地化；Fast 不支持同样不在使用 Fast，不能硬断言所有标准速度角色必须显示某一种英文文案。等待不能省略或回填原窗口。
 
 测试结束前关闭自己启动的浏览器、交互脚本和辅助进程；只保留截图、日志等静态证据，避免长驻测试工具占用后续 TAU 用例的资源。

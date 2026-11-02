@@ -235,7 +235,12 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     message_id:'msg_444444444444',role:'agent',content:'Native implicit-region message'}]));
   await stableRoot.getByText('Native implicit-region message',{exact:true}).waitFor({state:'visible'});
   const {readSessionMessageCards}=require('../../../management_portal/test_framework/tau_evidence');
-  assert.equal((await readSessionMessageCards(stableRoot,{residentId:childId,messageId:'msg_444444444444'})).ready,true);
+  const messageExample=prompt.match(/```js\n(\/\/ tau-single-message-card\n[\s\S]*?)\n```/);
+  assert.ok(messageExample,'the plural helper name still requires one original messageId');
+  const readDocumentedMessage=new Function('readSessionMessageCards','chat','residentId','messageId',
+    'return (async()=>{'+messageExample[1]+'; return originalCard;})();');
+  assert.equal((await readDocumentedMessage(readSessionMessageCards,stableRoot,childId,'msg_444444444444')).ready,true);
+  await assert.rejects(readSessionMessageCards(stableRoot,{residentId:childId,messageIds:['msg_444444444444']}),/exact original/);
   assert.equal((await readSessionMessageCards(stableRoot,{residentId:childId,messageId:'msg_555555555555'})).ready,false);
 
   // Render real Resident message menus in both supported UI languages. The
