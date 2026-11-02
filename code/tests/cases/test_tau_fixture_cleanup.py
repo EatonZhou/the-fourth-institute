@@ -173,26 +173,24 @@ def test_cleanup_failure_receipt_is_not_complete(tmp_path, monkeypatch):
     assert receipt['complete'] is False and receipt['error'] == 'fixture remains'
 
 
-@pytest.mark.parametrize('outcome', ['deleted', 'missing', 'denied'])
-def test_upload_handles_use_delete_upload_and_preserve_denied_cleanup(tmp_path, monkeypatch, outcome):
-    """上传文件经 DeleteUpload 清理，权限被拒时保留清单和夹具"""
-    from management_portal import isa_client
-    from management_portal.hatg.contracts import InstructionError
+@pytest.mark.parametrize('outcome', ['deleted', 'missing', 'failed'])
+def test_upload_handles_use_file_cleanup_and_preserve_failed_cleanup(tmp_path, monkeypatch, outcome):
+    """上传文件直接经内部文件清理，I/O失败时保留清单和夹具。"""
+    from management_portal.resources import upload_files
 
     upload_id = 'upload_' + 'a' * 24
     manifest = tmp_path / 'test-fixtures.json'
     manifest.write_text(json.dumps({'resources': [], 'uploads': [upload_id]}))
     sample = tmp_path / 'fixtures'; sample.mkdir()
     monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': []})
-    def call(actor, name, arguments, **kwargs):
-        assert actor == 'test-actor'
-        assert name == 'DeleteUpload' and arguments == {'upload_id': upload_id}
-        assert kwargs['key'].startswith(f'tau-upload:{tmp_path.name}:{upload_id}:')
-        if outcome != 'deleted':
-            raise InstructionError('instruction.not_found' if outcome == 'missing' else 'instruction.permission_denied', outcome)
-    monkeypatch.setattr(isa_client, 'call', call)
-    if outcome == 'denied':
-        with pytest.raises(RuntimeError, match='denied'):
+    def remove(actual_id):
+        assert actual_id == upload_id
+        if outcome == 'failed':
+            raise OSError('file cleanup failed')
+        return {'upload_id': upload_id, 'deleted': outcome == 'deleted'}
+    monkeypatch.setattr(upload_files, 'remove_upload', remove)
+    if outcome == 'failed':
+        with pytest.raises(RuntimeError, match='file cleanup failed'):
             tau_fixtures.cleanup(tmp_path)
         assert sample.exists()
         assert json.loads(manifest.read_text())['uploads'] == [upload_id]

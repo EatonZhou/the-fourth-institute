@@ -565,7 +565,7 @@
   function handleAttachmentDragOver(event) {
     if (Array.from(event?.dataTransfer?.types || []).includes("text/plain")) {
       event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      if (event.dataTransfer) event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
       return true;
     }
     if (!event?.dataTransfer?.files?.length) return false;
@@ -636,6 +636,13 @@
     input.addEventListener("drop", event => {
       const raw = event.dataTransfer?.getData("text/plain") || "";
       if (raw.startsWith("portal-attachment:") && currentOptions().onMoveAttachment?.(raw.slice("portal-attachment:".length), event)) return;
+      // Copy-only text drags (including prompt templates) use the same plain
+      // text insertion and undo boundary as paste. Files keep their own path.
+      if (raw && !event.dataTransfer?.files?.length && event.dataTransfer?.effectAllowed === "copy") {
+        if (input.getAttribute("contenteditable") === "false" || input.disabled) return;
+        applyAttachmentPaste(input, event, [], raw, pasteOptions);
+        return;
+      }
       handleAttachmentDrop(event, {
         onFiles: files => currentOptions().onFiles?.(files),
       });

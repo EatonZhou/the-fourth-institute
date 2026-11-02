@@ -198,9 +198,10 @@ def test_failures_go_to_the_creating_user_while_the_system_is_off(open_mode, mon
 
 
 @pytest.mark.parametrize("mode", [permission_system.PAR, permission_system.OPEN])
-def test_delete_upload_is_unrestricted_in_either_permission_mode(monkeypatch, tmp_path, mode):
+def test_upload_file_removal_is_unrestricted_in_either_permission_mode(monkeypatch, tmp_path, mode):
     """附件删除在两种权限模式下均不限制上传者，并走统一清理队列。"""
     from management_portal.resources import isa as resource_isa
+    from management_portal.resources.upload_files import remove_upload
     from management_common.upload_retention import created
     from management_common.directory_cleanup_store import get_directory_cleanup_store
 
@@ -211,8 +212,7 @@ def test_delete_upload_is_unrestricted_in_either_permission_mode(monkeypatch, tm
     monkeypatch.setattr(permission_system, "configured_mode", lambda: mode)
     monkeypatch.setattr(resource_isa, "read_upload", lambda upload_id: {"created_by": "alice"})
     monkeypatch.setattr(resource_isa, "_upload_dir", lambda upload_id: tmp_path / upload_id)
-    invocation = SimpleNamespace(argument=lambda name: "upload_abc", caller="bob")
-    assert resource_isa.delete_upload(invocation) == {"upload_id": "upload_abc"}
+    assert remove_upload("upload_abc") == {"upload_id": "upload_abc", "deleted": True}
     assert directory.exists() and get_directory_cleanup_store().pending_at(directory)
 
 

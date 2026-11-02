@@ -38,7 +38,7 @@ LAYERS = (
     application_target_configuration changes config contracts domain_ports effect_artifacts errors
     family_definition folder_removal identity_contract invariant_locks lineage_effect_syntax
     lineage_execution_authority lineage_member_projection lineage_placement lineage_values
-    principal_hierarchy project_folders read_snapshot resident_backend resident_capability_materials
+    principal_hierarchy project_folders read_snapshot resident_access_scope resident_credential_answers resident_backend resident_capability_materials
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers
     resident_default_backend resident_hatg_credentials resident_intake_admission resident_message_contract
     resident_project_domain resident_projection resident_resource_changes resident_runtime_payload
@@ -122,12 +122,12 @@ LAYERS = (
     resident_intake_domain resident_lifecycle_domain resident_lifecycle_steps_domain
     resident_management_domain resident_media_domain resident_message_lending resident_prompt_domain resident_protocol
     resident_questions resident_queue_control_domain resident_registration_domain resident_restart_domain
-    resident_restart_handoff resident_runtime_domain resident_session_backend_domain
+    resident_restart_handoff resident_runtime_domain resident_session_backend_domain resident_session_credits
     resident_watchboard_domain resident_work_recovery resident_workspace_domain
     """,
     # The Lineage domain.
     """
-    handoff_location_owner lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
+    handoff_location_owner resource_creation_owner lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
     lineage_program_edits lineage_program_services lineage_read_cache lineage_reads
     lineage_resident_controls lineage_resident_nodes lineage_resident_workspaces lineage_state
     lineage_view_projection
@@ -143,7 +143,7 @@ LAYERS = (
     # Instruction handlers, hosts, projections and the service.
     """
     active_agent_projection application conversation_projection coordinator isa isa.common isa.conversation
-    isa.definition isa.execution isa.families isa.function_blocks isa.organization isa.residents isa.runs
+    isa.definition isa.resource_creation isa.execution isa.families isa.function_blocks isa.organization isa.residents isa.runs
     isa.script_runs isa.shared_state isa.system_workflows isa.templates resident_context.domain
     resident_context.worker resident_domain_host resident_lineage_host runtime.backend_adapter
     script_runs.events script_runs.worker server service_invocation_domain status_projection

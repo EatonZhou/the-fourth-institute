@@ -20,3 +20,18 @@ DECLARATIONS = tuple(D(
     parameters=(R('resource_id', description='被删除或产生清理任务的对象 ID'),),
     result=(R('items', 'array', '文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告'),),
 ),)
+
+
+DECLARATIONS += tuple(D(
+    name=name, category='resource', owner='lineage', mutates=mutates,
+    target='lineage_id', decides=(On('lineage_id', 'lineage'),),
+    description=description,
+    parameters=(R('lineage_id', description='冻结创建请求所属的父 Lineage'),
+                R('resource_id', description='尚未完成创建的 Resident ID')) + ((
+                    P('originating_instruction_id', description='原始创建指令引用；owner 核验正常结束和同步初始化契约，不接受调用者证明'),
+                ) if mutates else ()),
+    result=(R('creation', 'object', '创建状态；取消和文件清理分别报告，可重试 pending cleanup'),),
+) for name, mutates, description in (
+    ('GetResourceCreation', False, '读取父 Lineage 中的资源创建状态与 writer 证据状态。'),
+    ('CancelResourceCreation', True, '持久撤销未登记的资源创建并阻止继续或重试；文件清理须证明 writer 已停止，证据不足保持 pending。'),
+))

@@ -3,7 +3,10 @@
   "provenance": {
     "commit": "f25572ad4949a008259d0d5fc5b02f942d0bdfea",
     "catalog_ref": "repo_711b6ab6d5c8/commit/f25572ad4949a008259d0d5fc5b02f942d0bdfea/file/management_portal/hatg/catalog/__init__.py",
-    "observed_at": "2026-10-18"
+    "observed_at": "2026-10-18",
+    "fixture_adjustments": [
+      "Removed retired upload deletion instruction; browser uses its file endpoint."
+    ]
   },
   "catalog": {
     "instructions": [
@@ -94,16 +97,6 @@
         "owner": "resource",
         "owner_title": "ResourceService",
         "description": "开始一次文件上传，返回上传句柄和写入字节的数据通道地址。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
-        "instruction": "DeleteUpload",
-        "category": "resource",
-        "category_title": "资源",
-        "owner": "resource",
-        "owner_title": "ResourceService",
-        "description": "由上传者本人删除上传；已被引用的上传删除后，引用随之失效。",
         "mutates": true,
         "streaming": false
       },
@@ -2802,33 +2795,6 @@
             "size"
           ]
         ]
-      },
-      "DeleteUpload": {
-        "instruction": "DeleteUpload",
-        "category": "resource",
-        "category_title": "资源",
-        "owner": "resource",
-        "owner_title": "ResourceService",
-        "description": "由上传者本人删除上传；已被引用的上传删除后，引用随之失效。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "upload_id",
-            "type": "string",
-            "required": true,
-            "description": "上传 ID"
-          }
-        ],
-        "result": [
-          {
-            "name": "upload_id",
-            "type": "string",
-            "required": true,
-            "description": "被删除的上传 ID"
-          }
-        ],
-        "target": "upload_id"
       },
       "UpdateWorkspaceFile": {
         "instruction": "UpdateWorkspaceFile",

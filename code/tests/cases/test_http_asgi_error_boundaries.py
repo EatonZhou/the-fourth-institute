@@ -143,6 +143,7 @@ def test_independent_api_failures_use_private_json_error():
                                 mock.patch.object(asgi, "ensure_notification_listener", failing))),
         ("/api/instructions/execute", "POST", (mock.patch.object(asgi, "_instruction_principal", failing),)),
         ("/api/uploads/upload_0123456789ab", "GET", (mock.patch.object(asgi, "_instruction_principal", failing),)),
+        ("/api/uploads/upload_0123456789ab", "DELETE", (mock.patch.object(asgi, "_instruction_principal", failing),)),
     )
     for path, method, patches in cases:
         with contextlib.ExitStack() as stack:

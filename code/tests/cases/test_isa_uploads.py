@@ -1,4 +1,4 @@
-"""Uploads: CreateUpload, its data channel, reading back, DeleteUpload (decision_ad3e21094f14).
+"""Uploads: CreateUpload, its data channel and browser file removal.
 
 :module: isa.instructions
 :importance: P2
@@ -106,10 +106,11 @@ def test_attachments_are_private_to_their_creator_admins_and_the_target_viewers(
 
 
 @pytest.mark.parametrize("caller", ["alice", "bob", "admin", "resident_111111111111"])
-def test_delete_upload_has_no_creator_restriction(permissions, caller):
+def test_browser_upload_removal_has_no_creator_restriction(permissions, caller, monkeypatch):
     """权限系统开启时，User 和 Resident 均可删除他人已被引用的上传。"""
     from management_common.upload_retention import consumed
-    from management_portal import permission_system
+    import asyncio
+    from starlette.requests import Request
 
     permissions.users("alice", "bob", "admin")
     permissions.administrator("admin")
@@ -117,17 +118,39 @@ def test_delete_upload_has_no_creator_restriction(permissions, caller):
     upload_id = create("conversation_attachment", data)
     resource_isa.complete_upload(upload_id, data, actor="alice")
     consumed(resource_isa._upload_dir(upload_id), owner_id="msg_upload_delete_test")
-    invocation = invoke("DeleteUpload", {"upload_id": upload_id}, caller)
-    assert permission_system.authorize_instruction(
-        invocation.declaration, {"upload_id": upload_id}, invocation.context,
-    ) is None
-    assert resource_isa.delete_upload(invocation) == {"upload_id": upload_id}
+    monkeypatch.setattr(asgi, "_instruction_principal", lambda request: (caller, "web"))
+    request = Request({"type": "http", "method": "DELETE", "scheme": "http",
+                       "path": f"/api/uploads/{upload_id}", "server": ("testserver", 80),
+                       "headers": [(b"host", b"testserver"), (b"origin", b"http://testserver")],
+                       "path_params": {"upload_id": upload_id}})
+    response = asyncio.run(asgi.upload_delete(request))
+    assert response.status_code == 200 and b'"deleted":true' in response.body
     with pytest.raises(InstructionError) as gone:
         resource_isa.read_upload(upload_id)
     assert gone.value.code == "instruction.not_found"
-    with pytest.raises(InstructionError) as missing:
-        resource_isa.delete_upload(invocation)
-    assert missing.value.code == "instruction.not_found"
+    response = asyncio.run(asgi.upload_delete(request))
+    assert response.status_code == 200 and b'"deleted":false' in response.body
+
+
+@pytest.mark.parametrize("caller,origin,status", [("", "http://testserver", 401), ("bob", "http://evil.invalid", 403)])
+def test_browser_upload_removal_authenticates_and_rejects_cross_origin(monkeypatch, caller, origin, status):
+    """删除使用浏览器登录与同源校验，被拒请求不改变文件。"""
+    import asyncio
+    from starlette.requests import Request
+    upload_id = create("conversation_attachment", png_bytes())
+    monkeypatch.setattr(asgi, "_instruction_principal", lambda request: (caller, "web"))
+    request = Request({"type": "http", "method": "DELETE", "scheme": "http",
+                       "path": f"/api/uploads/{upload_id}", "server": ("testserver", 80),
+                       "headers": [(b"host", b"testserver"), (b"origin", origin.encode())],
+                       "path_params": {"upload_id": upload_id}})
+    assert asyncio.run(asgi.upload_delete(request)).status_code == status
+    assert resource_isa.read_upload(upload_id)["created_by"] == "alice"
+
+
+def test_upload_removal_is_not_an_isa_instruction():
+    """上传删除不再出现在HATG目录或ResourceService指令实现中。"""
+    assert "DeleteUpload" not in catalog.instruction_catalog()
+    assert "DeleteUpload" not in resource_isa.HANDLERS
 
 
 def test_upload_ids_cannot_escape_the_upload_root():
@@ -195,7 +218,6 @@ def test_resource_mutations_compare_the_version_get_resource_reports(monkeypatch
     for name, arguments in (("UnregisterResource", {"resource_id": resource_id}),
                             ("RunResourceAction", {"resource_id": resource_id, "action": "refresh"})):
         assert resource_isa.version_of(invoke(name, arguments), resource_id) == "v7"
-    assert resource_isa.version_of(invoke("DeleteUpload", {"upload_id": "upload_0123456789ab"}), "upload_0123456789ab") is None
 
 
 def test_version_envelope_only_compares_the_target_resource(monkeypatch, tmp_path):

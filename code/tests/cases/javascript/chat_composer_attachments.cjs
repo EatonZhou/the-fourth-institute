@@ -94,6 +94,16 @@ const uploaded = (id, extra = {}) => ({ upload_id: id, path: `uploads/${id}.png`
 (async () => {
   try {
     {
+      // Default deletion uses the browser file endpoint, never an ISA call.
+      const calls = [];
+      w.PortalAPI = { request: async (url, options) => { calls.push([url, options.method]); return { deleted: true }; } };
+      const { workspace, root } = fresh('http-removal', { deleteAttachment: undefined });
+      workspace.setAttachments([uploaded('upload_aaaaaaaaaaaa')]);
+      root.querySelector('[data-remove-portal-composer-attachment]').click();
+      await settle();
+      assert.deepEqual(calls, [['/api/uploads/upload_aaaaaaaaaaaa', 'DELETE']]);
+    }
+    {
       // A file goes in as a token and a chip, and uploads.
       const { workspace, inputEl, tokens, chip, only } = fresh('upload');
       caretInText(inputEl());

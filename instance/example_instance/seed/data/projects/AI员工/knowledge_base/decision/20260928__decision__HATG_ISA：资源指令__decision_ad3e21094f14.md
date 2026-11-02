@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 40
+  number: 42
   created_at: '2026-09-28T10:45:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-11-01T18:53:48Z'
+  updated_at: '2026-11-02T15:45:23Z'
   updated_by:
     user: ''
-    agent: resident_24014e2b9bf6
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: false
@@ -67,7 +67,6 @@ links:
 | `UnregisterResource` | 是 | 撤销资源登记 | 对 `resource_id` 有 @admin |
 | `RunResourceAction` | 按动作声明 | 执行资源类型声明的专用动作 | 对 `resource_id` 有 @contributor |
 | `CreateUpload` | 是 | 开始一次文件上传，取得上传地址 | 免检 |
-| `DeleteUpload` | 是 | 删除一个上传 | 免检 |
 | `UpdateWorkspaceFile` | 是 | 写入工作区中的文本文件 | 对 `address` 有 @contributor |
 
 ## 查找与读取
@@ -244,14 +243,7 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 - `purpose` 还包括头像（`avatar`，PNG、JPEG 或 WebP，最大 2 MiB，不接受动画），供 `UpdateUser`、`UpdateResident`、`UpdateProject` 和 `UpdateLineage` 设置头像；权限系统让上传只归上传者时（PAR），只有上传者本人能用它设置头像（decision_5bc3fdfc7eec）。帖子图片完成后所有登录用户都可以读取，内容校验为 PNG、JPEG、GIF 或 WebP，最大 12 MiB。上传完成后的字节可以由创建者、Portal 管理员和能看到目标 Resident 的用户按上传 ID 读取。
 - 大小和类型限制由用途决定，以 decision_61e50306cc79 的上传用途契约为准；本篇不另列一份附件容量默认值。服务在写入目标工作区前校验调用者、目标、大小和类型。见 decision_61e50306cc79。`target` 为 Resident ID 时（对话附件），调用者需要能看到该 Resident；其他 `target` 必须是调用者可以修改的工作区或资源地址，否则以 `instruction.not_found` 或 `instruction.forbidden` 失败。图片按文件内容识别类型，Paper PDF 要求内容以 `%PDF-` 开头；使用 `source_address` 复制时同样检查。
 
-### `DeleteUpload`
-
-**由原上传者本人删除一个上传。**
-
-- 参数：`upload_id`。
-- 结果：被删除的上传 ID。
-- 权限系统开启时，服务端按上传记录中的 `created_by` 核对真实调用者；其他调用者即使可以读取或是管理员，也不能删除。拒绝返回 `instruction.forbidden`，上传保持不变。权限系统关闭时不做这项核对。
-- 已经被消息、帖子或其他内容引用的上传也可以删除，删除后这些引用失效。附件读取规则不因此改变。
+上传后的文件是普通文件；Resident 可按实际文件路径使用系统工具删除，无独立的上传删除指令。浏览器移除附件通过上传文件 HTTP 接口完成，文件及保留登记的生命周期见 decision_61e50306cc79。
 
 ### `UpdateWorkspaceFile`
 
@@ -281,5 +273,4 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 | `UnregisterResource` | `resource_id` |
 | `RunResourceAction` | `resource_id`、`action`、`arguments` |
 | `CreateUpload` | `purpose`、`target`、`source_address`、`file_name`、`media_type`、`size` |
-| `DeleteUpload` | `upload_id` |
 | `UpdateWorkspaceFile` | `address`、`content` |

@@ -127,11 +127,6 @@ DECLARATIONS = (
         P("upload_url", description="写入字节的数据通道地址"),
         P("expires_at", description="数据通道到期时间"),
     ), mutates=True, one_of=(("source_address",), ("file_name", "media_type", "size"))),
-    _d("DeleteUpload", FIXED, "删除上传，无额外权限限制；已被引用的上传删除后，引用随之失效。", (
-        R("upload_id", description="上传 ID"),
-    ), (
-        R("upload_id", description="被删除的上传 ID"),
-    ), mutates=True, target="upload_id"),
     _d("UpdateWorkspaceFile", (On("address"),), "把文本内容写入工作区中的一个文件。", (
         R("address", description="<工作区ID>/file/<相对路径>；不接受绝对路径，也不接受以 . 开头或 secrets、credentials 等敏感路径"),
         R("content", description="文件文本内容", allow_empty=True),

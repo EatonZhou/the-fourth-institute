@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: 2026-10-16
 version:
-  number: 48
+  number: 49
   created_at: '2026-10-16T16:03:37Z'
   created_by:
     user: tfi-exported-user
     agent: resident_9c94c8b365fe
-  updated_at: '2026-10-29T05:28:00Z'
+  updated_at: '2026-11-02T15:47:45Z'
   updated_by:
     user: tfi-exported-user
-    agent: resident_dbfb834a0539
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: false
@@ -58,7 +58,7 @@ A 根：全部动作（@actions）
 
 | 要求 | 指令 |
 | --- | --- |
-| 免检：调用者本人的数据 | Mailbox 条目（MarkMailboxItemRead、PinMailboxItem）、个人待办（Create/Update/Move/DeleteMailboxTodo）、撤销自己的访问凭据（RevokeUserAccessToken）、个人动态（PublishPulseItem，公开与撤回）、上传（CreateUpload、DeleteUpload）、作者对自己消息与回复的修改（UpdateChatroomMessage、RetractChatroomMessage、DeleteReply）、退出聊天室（LeaveChatroom） |
+| 免检：调用者本人的数据 | Mailbox 条目（MarkMailboxItemRead、PinMailboxItem）、个人待办（Create/Update/Move/DeleteMailboxTodo）、撤销自己的访问凭据（RevokeUserAccessToken）、个人动态（PublishPulseItem，公开与撤回）、上传（CreateUpload）、作者对自己消息与回复的修改（UpdateChatroomMessage、RetractChatroomMessage、DeleteReply）、退出聊天室（LeaveChatroom） |
 | 免检：处理器按固定角色核对调用者 | Family 简报与摘要材料（CheckResidentWorkSummary、GetFamilySummaryInputs、PublishFamilyProgress，只允许本 Family 门面或 Steward）、工作摘要（UpdateResidentWorkSummary，只允许本人或 Steward）、独立摘要队列（ClaimResidentSummaryJobs 只允许 resident-summary 职责承担者，SubmitResidentSummary、ReleaseResidentSummaryJob 只允许认领者）、临时凭证（IssueTemporaryCredential 由引擎核对签发者此刻持有，RenewTemporaryCredential 只允许签发者，RevokeTemporaryCredential 只允许签发者或接收者） |
 | 对参数所指记录保存的对象有 `@admin` / `@viewer`，在入口判定（`via` 槽位，decision_22227d0ad075；828f133f 起处理代码不再另问引擎） | UpdatePermissionEntry（对 `entry_id` 所指表项已保存的 `r` 要求 `@admin`，改 `r` 时对新 `r` 也要求 `@admin`）、DeletePermissionEntry（对 `entry_id` 或 `entry_ids` 每条表项已保存的 `r` 要求 `@admin`）/ GetInstructionExecution（对 `instruction_id` 所指回执记录的 Lineage 要求 `@viewer`，回执没有 Lineage 时不产生请求；另有免检槽位，只看调用者自己回执的情况由处理代码按调用者过滤） |
 | 免检：目录与创建 | GetInstructionSchema、ListInstructions、GetPermissionSystem、ListPermissionSchemes、GetPermissionScheme、GetPermissionNode、SearchPermissionNodes；CreateChatroom、CreatePost、CreateProject（创建后按创建者规则管理）；CompleteChat（使用已登记的模型接口，与运行 Resident 同级，不返回凭据） |

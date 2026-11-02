@@ -324,6 +324,29 @@ def _new_resident_record(
     return record, workspace_path
 
 
+def require_synchronous_resident_creation(request, snapshot):
+    """Contract for legacy normal-unwind cancellation of plain allocations.
+
+    _publish_registration's initializer calls ensure_resident_workspace with a
+    private folder: only synchronous mkdir/open/write. Runtime settings stage in
+    memory before commit. No source initialization or pending fork is admissible.
+    Keep this contract aligned with that path if registration gains new effects.
+    """
+    payload = request.get('payload', {})
+    record = snapshot.get('record', {})
+    if (set(payload) != {'title', 'lineage_id', 'project_id', 'lineage_title', 'lineage_folder_path'}
+            or not payload.get('lineage_folder_path') or not payload.get('lineage_id')
+            or set(request) != {'payload', 'lineage_node', 'project_principal', 'personal_owner'}
+            or request.get('project_principal') or request.get('personal_owner')
+            or not isinstance(request.get('lineage_node'), dict)
+            or set(snapshot) - {'record', 'runtime_settings', 'normal_handler_completion', 'cancellation'}
+            or any(k in record for k in ('_pending_agent_data_fork', 'source_resident_id', 'fork_mode'))
+            or record.get('session_state') != 'pending_create'
+            or record.get('registration_state') != 'initializing'):
+        raise ValueError('Creation is outside the synchronous Resident initializer contract')
+    _refuse_supplied_session_ids(record)
+
+
 def _publish_registration(
     record: dict[str, Any],
     payload: dict[str, Any],

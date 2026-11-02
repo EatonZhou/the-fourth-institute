@@ -11,7 +11,7 @@ from functools import wraps
 
 from management_portal.hatg.kernel import InstructionKernel, Invocation, OwnerBinding
 
-from . import conversation, definition, execution, families, function_blocks, organization, residents, runs, shared_state, script_runs, templates, system_workflows
+from . import resource_creation, conversation, definition, execution, families, function_blocks, organization, residents, runs, shared_state, script_runs, templates, system_workflows
 from .common import guard_definition_handler
 from ..lineage_definition_scope import guard_source_scope
 
@@ -27,7 +27,7 @@ def _access_scope(handler):
 
 def _handlers() -> dict[str, Any]:
     merged: dict[str, Any] = {}
-    for module in (residents, conversation, execution, definition, shared_state, runs, families, function_blocks, organization, script_runs, templates, system_workflows):
+    for module in (resource_creation, residents, conversation, execution, definition, shared_state, runs, families, function_blocks, organization, script_runs, templates, system_workflows):
         for name, handler in module.HANDLERS.items():
             if name in merged:
                 raise RuntimeError(f"SocietyService 重复登记指令实现：{name}")

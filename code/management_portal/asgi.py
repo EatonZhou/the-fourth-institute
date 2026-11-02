@@ -574,6 +574,23 @@ async def upload_bytes(request: Request):
     return JSONResponse(result)
 
 
+async def upload_delete(request: Request):
+    """The browser's file-removal endpoint; not a HATG instruction."""
+    from .resources.upload_files import remove_upload
+
+    caller, entry = await asyncio.to_thread(_instruction_principal, request)
+    if not caller:
+        return _json_error(401, "需要登录")
+    if entry == "web" and not _same_origin(request):
+        return _json_error(403, "跨站请求被拒绝")
+    try:
+        result = await asyncio.to_thread(remove_upload, request.path_params["upload_id"])
+    except Exception as exc:  # noqa: BLE001
+        status, payload = exception_http_error(exc)
+        return JSONResponse(payload, status_code=status)
+    return JSONResponse(result)
+
+
 def _upload_readable(meta: dict, caller: str) -> bool:
     """The HTTP entry already authenticates the caller."""
     return bool(caller)
@@ -780,6 +797,7 @@ app = Starlette(
         Route("/api/instructions/execute", _independent_api_error_boundary(instruction_execute), methods=["POST"]),
         Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_bytes), methods=["PUT", "POST"]),
         Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_content), methods=["GET"]),
+        Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_delete), methods=["DELETE"]),
         Route("/api/resources/download/{token}", _independent_api_error_boundary(resource_download), methods=["GET"]),
         Route(
             "/{path:path}",

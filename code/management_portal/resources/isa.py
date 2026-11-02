@@ -676,15 +676,6 @@ def complete_upload(upload_id: str, data: bytes, *, actor: str) -> dict[str, Any
     return {"upload_id": upload_id, "ready": True, "size": len(data)}
 
 
-def delete_upload(inv: Invocation) -> dict[str, Any]:
-    from management_common.upload_retention import deleted
-
-    upload_id = inv.argument("upload_id")
-    read_upload(upload_id)  # an unknown upload is not_found
-    deleted(_upload_dir(upload_id))
-    return {"upload_id": upload_id}
-
-
 # -- workspace files ---------------------------------------------------------------
 
 
@@ -1012,7 +1003,6 @@ HANDLERS = {
     "UnregisterResource": unregister_resource,
     "RunResourceAction": run_resource_action,
     "CreateUpload": create_upload,
-    "DeleteUpload": delete_upload,
     "UpdateWorkspaceFile": update_workspace_file,
     "CreateProject": create_project,
     "ListProjects": list_projects,

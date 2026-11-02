@@ -4,7 +4,9 @@ The domain chooses initial contents and commits its registration. This module
 owns operation identity, path reservations and proof of filesystem ownership.
 Only a staged inode recorded before publication can be resumed at a target.
 """
-from contextlib import contextmanager, nullcontext
+from contextlib import contextmanager, nullcontext, ExitStack
+from dataclasses import dataclass
+from typing import Callable, ContextManager
 from contextvars import ContextVar
 import hashlib
 import json
@@ -39,6 +41,20 @@ def assert_creation_authority():
         check()
 
 
+@dataclass(frozen=True)
+class SynchronousCreationCompletion:
+    """Internal domain attestation, issued under original execution exclusion.
+
+    Only the missing legacy receipt case may use this. It never represents a
+    historical writer receipt and cannot override any existing writer metadata.
+    """
+    operation_id: str
+    instruction_id: str
+
+
+SynchronousCompletionVerifier = Callable[[dict, object], ContextManager[SynchronousCreationCompletion]]
+
+
 class _CreationWriter:
     """Creation's existing journal owns the writer as well as its inodes.
 
@@ -46,15 +62,19 @@ class _CreationWriter:
     death and exclusive execution admission (including native children) are
     required before another writer can touch its files.
     """
-    def __init__(self, db, key, session):
+    def __init__(self, db, key, session, *, cleanup=False):
         self.db, self.key, self.session = db, key, session
+        self.cleanup = cleanup
         self.table = f'"{db.schema}".resource_creations'
         self.receipt = dict(token=uuid4().hex, process=process_identity(), ended=False)
         self.claimed = False
 
-    def claim(self, artifacts, connection, *, new=False):
+    def claim(self, artifacts, connection, *, new=False, completion=None):
         previous = artifacts[0].get('writer', {}) if artifacts else {}
-        if not new and previous.get('ended') is not True and process_is_alive(previous.get('process', {})):
+        proven = (isinstance(completion, SynchronousCreationCompletion)
+                  and completion.operation_id == self.key and completion.instruction_id
+                  and artifacts and all('writer' not in a for a in artifacts))
+        if not new and not proven and previous.get('ended') is not True and process_is_alive(previous.get('process', {})):
             raise RuntimeError('Creation writer ownership is active or unknown')
         if not artifacts:
             raise ValueError('Creation requires at least one artifact')
@@ -72,8 +92,10 @@ class _CreationWriter:
         if connection is None:
             with self.db.read() as conn:
                 return self.check(conn)
-        row = connection.execute(f'SELECT artifacts FROM {self.table} WHERE operation_id=%s FOR UPDATE',
+        row = connection.execute(f'SELECT artifacts,aborted FROM {self.table} WHERE operation_id=%s FOR UPDATE',
                                  (self.key,)).fetchone()
+        if row and row['aborted'] and not self.cleanup:
+            raise RuntimeError('Creation operation was cancelled')
         receipt = row['artifacts'][0].get('writer', {}) if row and row['artifacts'] else {}
         if receipt.get('token') != self.receipt['token'] or receipt.get('ended') is not False:
             raise RuntimeError('Creation execution ownership lost')
@@ -90,24 +112,24 @@ class _CreationWriter:
 
 
 @contextmanager
-def _creation_writer(db, key):
+def _creation_writer(db, key, *, cleanup=False):
     # Both recovery and ordinary writers use this identity. Python end/death
     # receipts remain necessary but cannot override a surviving native tree.
     with execution_lease(key, namespace=db.schema, blocking=False) as acquired:
         if not acquired:
             raise RuntimeError('Creation writer ownership is active or unknown')
-        with _creation_session(db, key) as writer:
+        with _creation_session(db, key, cleanup=cleanup) as writer:
             yield writer
 
 
 @contextmanager
-def _creation_session(db, key):
+def _creation_session(db, key, *, cleanup=False):
     import psycopg
     lock = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], 'big', signed=True)
     with psycopg.connect(db.dsn, autocommit=True, connect_timeout=30) as session:
         session.execute("SET lock_timeout = '90s'")
         session.execute('SELECT pg_advisory_lock(%s)', (lock,))
-        writer = _CreationWriter(db, key, session)
+        writer = _CreationWriter(db, key, session, cleanup=cleanup)
         try:
             yield writer
         finally:
@@ -431,7 +453,8 @@ def finish_deleted_creations():
     return _finish_creations(deleted_only=True)
 
 
-def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None, unregister=None):
+def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None, unregister=None, validate=None,
+                     synchronous_completion: SynchronousCompletionVerifier | None = None):
     db = portal_database(schema='directory_lifecycle')
     table = f'"{db.schema}".resource_creations'
     queue = get_directory_cleanup_store()
@@ -457,10 +480,12 @@ def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None,
     errors = []
     for key in keys:
         try:
-            with _creation_writer(db, key) as writer:
+            with _creation_writer(db, key, cleanup=True) as writer, ExitStack() as completion_scope:
                 # Commit the tombstone before deletion, including on cleanup failure.
                 with db.transaction() as conn:
                     row = dict(conn.execute(f'SELECT * FROM {table} WHERE operation_id=%s FOR UPDATE', (key,)).fetchone())
+                    if validate is not None:
+                        validate(row, conn)
                     if row['cleanup_complete']:
                         continue
                     assert_creation_authority()
@@ -472,7 +497,11 @@ def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None,
                         # or end a writer, touch files, or unregister identities.
                         conn.execute(f'UPDATE {table} SET cleanup_complete=TRUE WHERE operation_id=%s', (key,))
                         continue
-                    writer.claim(row['artifacts'], conn)
+                    completion = None
+                    if (synchronous_completion is not None and row['artifacts']
+                            and all('writer' not in a for a in row['artifacts'])):
+                        completion = completion_scope.enter_context(synchronous_completion(row, conn))
+                    writer.claim(row['artifacts'], conn, completion=completion)
                     writer.check(conn)
                     if unregister is not None and not row['aborted']:
                         queue.lock(conn)
@@ -534,3 +563,58 @@ def abort_creations(*, actor, operation_ids, unregister):
     errors = _finish_creations(operation_keys=keys, unregister=unregister)
     if errors:
         raise RuntimeError('Creation cleanup pending: ' + '; '.join(errors))
+
+
+def get_resource_creation(resource_id):
+    """Read the journal by allocated identity, without reconstructing its caller."""
+    db = portal_database(schema='directory_lifecycle')
+    with db.read() as conn:
+        if conn.execute("SELECT to_regclass('resource_creations')").fetchone()[0] is None:
+            raise KeyError(resource_id)
+        row = conn.execute('SELECT * FROM resource_creations WHERE resource_id=%s',
+                           (resource_id,)).fetchone()
+    if row is None:
+        raise KeyError(resource_id)
+    return dict(row)
+
+
+def cancel_resource_creation(resource_id, *, validate, record_cancellation,
+                             synchronous_completion: SynchronousCompletionVerifier | None = None):
+    """A domain delegates cancellation; all writer/inode effects stay here.
+
+    validate runs again under the ordinary creation writer lock. The internal
+    domain verifier may attest missing legacy metadata only, under that row lock.
+    Existing writer evidence, completed registration and native admission remain
+    mandatory. This callback is never exposed as caller-authored proof or a flag.
+    Domain cancellation and the aborted flag commit before acquiring cleanup
+    authority. Missing writer proof keeps cleanup pending, never authorization.
+    """
+    row = get_resource_creation(resource_id)
+    def unfinished(current, connection):
+        if current['completed']:
+            raise ValueError('Registered creation cannot be cancelled')
+        validate(current, connection)
+    db = portal_database(schema='directory_lifecycle')
+    with db.transaction() as conn:
+        current = dict(conn.execute('SELECT * FROM resource_creations WHERE operation_id=%s FOR UPDATE',
+                                   (row['operation_id'],)).fetchone())
+        unfinished(current, conn)
+        if not current['aborted']:
+            record_cancellation(current, conn)
+            conn.execute('UPDATE resource_creations SET aborted=TRUE WHERE operation_id=%s',
+                         (row['operation_id'],))
+    errors = _finish_creations(operation_keys={row['operation_id']},
+        validate=unfinished,
+        synchronous_completion=synchronous_completion)
+    current = get_resource_creation(resource_id)
+    return dict(resource_id=resource_id, cancelled=current['aborted'],
+                cleanup_complete=current['cleanup_complete'], errors=errors)
+
+
+def resource_creation_status(row):
+    """Public observation, never an admission grant; cancellation checks again."""
+    writer = row['artifacts'][0].get('writer', {}) if row['artifacts'] else {}
+    return dict(resource_id=row['resource_id'], completed=row['completed'],
+        cancelled=row['aborted'], cleanup_complete=row['cleanup_complete'],
+        writer_evidence=('missing' if not writer else
+                         'ended' if writer.get('ended') is True else 'requires_quiescence_check'))

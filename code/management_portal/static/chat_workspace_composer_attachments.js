@@ -27,9 +27,7 @@
   function defaultWorkspaceDeleteAttachment(item = {}) {
     const uploadId = String(item.upload_id || "").trim();
     if (!uploadId) return Promise.resolve({ deleted: false });
-    return window.PortalInstructionClient.execute("DeleteUpload", { upload_id: uploadId }, {
-      idempotencyKey: `upload-delete:${uploadId}`,
-    });
+    return window.PortalAPI.request(`/api/uploads/${encodeURIComponent(uploadId)}`, { method: "DELETE" });
   }
 
   // One Workspace's composer attachments: the files and passages the message

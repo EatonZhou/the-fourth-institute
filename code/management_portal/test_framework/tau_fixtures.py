@@ -42,13 +42,9 @@ def _release_resource(resource_id: str, key: str) -> None:
 
 
 def _delete_upload(upload_id: str, key: str) -> None:
-    from management_portal import isa_client
+    from management_portal.resources.upload_files import remove_upload
 
-    try:
-        isa_client.call(TAU_ACTOR, 'DeleteUpload', {'upload_id': upload_id}, key=key)
-    except InstructionError as exc:
-        if exc.code != 'instruction.not_found':
-            raise
+    remove_upload(upload_id)
 
 
 def _fixture_workspaces(roots: list[Path]) -> list[str]:

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-04'
 version:
-  number: 83
+  number: 85
   created_at: '2026-09-04'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T18:45:16Z'
+  updated_at: '2026-11-02T15:47:45Z'
   updated_by:
     user: ''
-    agent: resident_24014e2b9bf6
+    agent: resident_83d75ad3a6c7
 importance: 9
 metaness: 3
 ai_generated: false
@@ -134,7 +134,7 @@ TAU（Test by Agent Use）是 Portal 测试框架登记的真实使用执行方�
 - **同一用例的消息内容在 Dev 重启前后保持不变。** 发送给 Resident 的内容不包含会变化的构建标识；起止构建由框架的运行前后检查分别保存。
 - **只读的业务用例从当前产品入口发现测试对象。** 它们在本轮开始时找到正式对象并记下 ID，不依赖可能已被删除的历史资源；缺少所需的图、调用或产物时报告前置条件不满足，不降低验收要求。
 
-临时上传使用独立的清理入口：本用例新建的 `CreateUpload.upload_id` 写入 `test-fixtures.json.uploads` 字符串数组，框架调用 `DeleteUpload`，并保留服务端上传者权限检查。上传句柄不放入正式资源 `resources` 清单；删除失败时保留句柄和文件供恢复，只有删除成功或明确不存在才移出清单。
+临时上传使用独立的清理入口：本用例新建的 `CreateUpload.upload_id` 写入 `test-fixtures.json.uploads` 字符串数组，框架调用内部上传文件清理，不经过 HATG 指令，也不检查上传者权限。上传句柄不放入正式资源 `resources` 清单；删除失败时保留句柄和文件供恢复，只有删除成功或明确不存在才移出清单。
 
 ### 工具运行时的页面观察
 

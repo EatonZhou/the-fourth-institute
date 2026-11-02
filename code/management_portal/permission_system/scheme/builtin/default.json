@@ -997,6 +997,12 @@
       "a": "@free",
       "r": "@portal"
     },
+    "GetResourceCreation": {
+      "a": "@viewer"
+    },
+    "CancelResourceCreation": {
+      "a": "@contributor"
+    },
     "CreateReply": {
       "a": "@viewer"
     },
@@ -1025,10 +1031,6 @@
     "DeleteTemplate": {
       "a": "@admin",
       "r": "@public"
-    },
-    "DeleteUpload": {
-      "a": "@free",
-      "r": "@portal"
     },
     "UpdateChatroomMessage": {
       "a": "@free",

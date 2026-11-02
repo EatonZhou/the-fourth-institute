@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-11-02'
 version:
-  number: 3
-  created_at: '2026-11-02'
+  number: 4
+  created_at: "2026-11-02"
   created_by:
-    user: ''
-    agent: resident_24014e2b9bf6
-  updated_at: '2026-11-01T16:55:39Z'
+    user: ""
+    agent: "resident_24014e2b9bf6"
+  updated_at: "2026-11-02T15:45:36Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 7
 ai_generated: false
 links:
@@ -235,6 +235,14 @@ Workspace 搬到别处以后，这条引用仍然指向同一个文件，不用�
 **正在清理的位置不能再用。** 一个对象删除后，它的目录在后台删完之前，这个位置不能用来创建新目录，也不能接入。否则后台清理可能删掉新对象的文件。
 
 **目录和登记都就绪，对象才算创建完成。** 创建中途失败时，可以用同一个操作 ID 重试。重试沿用同一个对象和同一个目录，不会重复创建。
+
+**未完成的创建可以明确撤销。** 管理该对象的服务保存冻结的创建请求、已分配的身份及其父对象。对父 Lineage 有 `@viewer` 权限可以通过 `GetResourceCreation(lineage_id, resource_id)` 读取 Resident 创建状态；有 `@contributor` 权限可以通过 `CancelResourceCreation` 撤销尚未登记或恢复的创建。服务核对父对象与冻结请求的真实归属，不以调用者提交的路径作为清理依据。
+
+撤销先持久记录调用者与受理时间，并封闭原创建操作。原操作不能继续登记、覆盖撤销状态或用同一操作 ID 重试。撤销受理与文件清理分别报告：`cancelled=true` 表示撤销已经受理，`cleanup_complete=true` 才表示文件清理完成。写入者仍活跃、结束证据不足或文件身份不匹配时，清理保持 pending，返回具体原因；已受理的撤销不回退。后续调用可以重试清理。
+
+Creation 是创建文件、占位及清理的唯一责任方。它在删除前取得写入与原生子进程的排他执行准入，核验结束证据，再按已保存的文件身份删除；外来替换目录保持原样。占位一直保留到所有清理完成。撤销本身不能伪造旧 writer 的结束回执，也不能仅凭时间经过、失败状态或空闲锁认定写入已停止。
+
+缺少旧 writer 元数据时，调用者可附 `originating_instruction_id`，仅作为原创建指令的引用。管理对象的服务在原操作与创建锁内读取权威执行回执，核对原调用者、指令、冻结分配和 Creation 操作之间的身份链。只有已证明正常退出且文件初始化完全同步的责任链，才能作为结束证据：普通 Resident 创建没有来源派生、Provider 会话克隆、Git 或后台写入，原指令以父 Lineage 版本冲突正常返回未提交时，服务保存该正常退出的证据并允许 Creation 取得新的清理 writer。中断结算、未知提交状态、身份不符或可能遗留异步写入均不能用此证明清理安全；已有 writer 元数据仍按其自身证据核验，不被该途径覆盖。
 
 **接入要求目录已经存在。**
 - 接入只增加一条来源为“接入”的登记，Portal 不移动、不改名这个目录。
