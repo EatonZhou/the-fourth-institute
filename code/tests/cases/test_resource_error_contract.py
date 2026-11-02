@@ -324,3 +324,13 @@ def test_register_resource_instruction_keeps_the_git_checkout_recovery_details()
     assert raised.value.details["reason"] == "git_checkout_required"
     assert raised.value.details["path"] == "/srv/candidate"
     assert raised.value.details["can_initialize_git"] is True
+
+
+def test_windows_long_name_is_not_a_missing_business_resource():
+    from management_portal.resources.errors import resource_error_payload, resource_error_from_payload, resource_error_http_response
+    error = FileNotFoundError('Windows filename too long')
+    error.winerror = 206
+    payload = resource_error_payload(error)
+    assert payload['code'] == 'internal_error'
+    assert type(resource_error_from_payload(payload)) is RuntimeError
+    assert resource_error_http_response(error)[0] == 500

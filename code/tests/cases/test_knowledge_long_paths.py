@@ -4,6 +4,7 @@
 :design: decision_3ece26686464, decision_4aa13bc21e8e
 """
 import shutil
+from unittest.mock import patch
 from pathlib import Path
 
 from management_common.directory_paths import rename_directory_no_replace, remove_path
@@ -41,6 +42,16 @@ def exercise_long_knowledge_path(root: Path):
         item = source._get_md_item_cached(target, directory, [target], 'LongPath', 'test', {'information'}, {})
         assert item['kb_id'] == resource_id and item['path'] == str(target) and item['mtime'] > 0
         assert all(not str(path).startswith('\\\\?\\') for path in source._candidate_entry_files(directory))
+        from management_portal.resource_index_knowledge import ProjectKnowledgeAdapter
+        adapter = ProjectKnowledgeAdapter()
+        parsed = []
+        def summary(raw, **kwargs):
+            parsed.append(raw)
+            return {'resource_type': 'information'}
+        with patch.object(source, '_parse_projects_yaml', return_value=[{'id': 'LongPath', 'status': 'active'}]), \
+                patch.object(adapter, '_record_for_item', side_effect=summary):
+            adapter.project_record('information', {'resource_id': resource_id, 'path': str(target), 'project': 'LongPath', 'content_root': str(directory)})
+        assert parsed and parsed[0]['kb_id'] == resource_id
         records = _indexed_item_files({'resource_id': resource_id, 'resource_type': 'information'}, target, directory)
         assert records[0]['address'] == resource_id and records[0]['name'] == target.name
         backend._write_text_atomic(target, original.replace('Original', 'Updated'))

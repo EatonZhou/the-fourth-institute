@@ -51,7 +51,11 @@ def failure_payload(exc: Exception) -> dict[str, Any]:
     if isinstance(exc, OperationError):
         return exc.failure_payload()
     code, status, state = "operation.failed", 500, "unknown"
-    if isinstance(exc, PermissionError):
+    if isinstance(exc, OSError) and getattr(exc, "winerror", None) == 206:
+        # Windows reports an overlong name as FileNotFoundError on some APIs.
+        # It is an I/O failure, not proof that the business object is absent.
+        pass
+    elif isinstance(exc, PermissionError):
         code, status, state = "operation.forbidden", 403, "not_committed"
     elif isinstance(exc, FileNotFoundError):
         code, status, state = "operation.file_not_found", 404, "not_committed"

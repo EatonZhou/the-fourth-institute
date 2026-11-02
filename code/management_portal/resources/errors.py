@@ -84,6 +84,8 @@ def resource_error_payload(error: Exception) -> dict[str, Any]:
          if isinstance(error, error_type)),
         "internal_error",
     )
+    if isinstance(error, OSError) and getattr(error, "winerror", None) == 206:
+        code = "internal_error"
     details: dict[str, Any] = {}
     message = str(error)
     if isinstance(error, ResourceOperationError):

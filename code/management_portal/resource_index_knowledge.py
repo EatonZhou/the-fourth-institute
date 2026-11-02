@@ -3,6 +3,7 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 from management_common.skill_paths import CORE_SKILLS_ROOT, CORE_SKILL_NAMES
 
+from management_common.filesystem_paths import filesystem_path, logical_path
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -70,7 +71,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 raise ValueError(f"unsupported Knowledge resource type: {resource_type}")
             source_path = Path(stripped_text(item.get("path"))).resolve(strict=False)
             project_id = stripped_text(item.get("project") or next(iter(item.get("project_ids") or []), ""))
-            if not source_path.is_file() or not project_id:
+            if not filesystem_path(source_path).is_file() or not project_id:
                 raise ValueError("Knowledge projection requires its source path and Project")
             content_root = Path(stripped_text(item.get("content_root")) or str(source_path.parent))
             raw = self._raw_item_for_existing_record({
@@ -96,7 +97,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
                 "max_depth": 2,
                 "files": ["*" + extension for extension in extensions],
             }
-            for root in sorted(Path(str(portal_path('projects'))).glob("*/knowledge_base"))
+            for root in sorted(map(logical_path, filesystem_path(portal_path('projects')).glob("*/knowledge_base")))
         ]
         return {"trees": trees, "files": []}
 
@@ -152,7 +153,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
 
     def watch_directories(self) -> list[Path]:
         directories: set[Path] = set()
-        for root in Path(str(portal_path('projects'))).glob("*/knowledge_base"):
+        for root in map(logical_path, filesystem_path(portal_path('projects')).glob("*/knowledge_base")):
             directories.update(_watch_tree(root, max_depth=2))
         return sorted(directories, key=str)
 
@@ -312,7 +313,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         attrs = record.get("attributes") if isinstance(record.get("attributes"), dict) else {}
         source_path = Path(stripped_text(source.get("path"))).resolve(strict=False)
         content_root = Path(stripped_text(attrs.get("content_root"))).resolve(strict=False)
-        if not source_path.is_file():
+        if not filesystem_path(source_path).is_file():
             return {}
         if content_root.parent.name == "knowledge_base":
             files_root = content_root / stripped_text(record.get("resource_id"))
@@ -425,7 +426,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         deletes: list[str] = []
         for resource_id, previous_record in affected.items():
             source = previous_record.get("source") if isinstance(previous_record.get("source"), dict) else {}
-            if not Path(stripped_text(source.get("path"))).is_file():
+            if not filesystem_path(Path(stripped_text(source.get("path")))).is_file():
                 deletes.append(resource_id)
                 continue
             raw = self._raw_item_for_existing_record(previous_record)
@@ -489,7 +490,7 @@ class SkillPackageAdapter(_PathsAdapter):
     protect_existing_sources = True
 
     def source_paths(self) -> list[Path]:
-        project_roots = sorted(Path(str(portal_path('projects'))).glob("*/knowledge_base/skill"))
+        project_roots = sorted(map(logical_path, filesystem_path(portal_path('projects')).glob("*/knowledge_base/skill")))
         roots = [
             CORE_SKILLS_ROOT,
             Path(str(portal_path('skills'))),
@@ -503,7 +504,7 @@ class SkillPackageAdapter(_PathsAdapter):
     def watch_directories(self) -> list[Path]:
         directories = set(_watch_tree(Path(str(portal_path('skills'))), max_depth=1))
         directories.update(_watch_tree(CORE_SKILLS_ROOT, max_depth=1))
-        for root in Path(str(portal_path('projects'))).glob("*/knowledge_base/skill"):
+        for root in map(logical_path, filesystem_path(portal_path('projects')).glob("*/knowledge_base/skill")):
             directories.update(_watch_tree(root, max_depth=1))
         return sorted(directories, key=str)
 
@@ -535,8 +536,8 @@ class SkillPackageAdapter(_PathsAdapter):
         skill_id = stripped_text(raw.get("skill_id"))
         raw_root_path = Path(stripped_text(raw.get("root_path")))
         relative_path = stripped_text(raw.get("relative_path") or raw.get("filename") or "SKILL.md")
-        source_path = raw_root_path if raw_root_path.is_file() else raw_root_path / relative_path
-        root_path = raw_root_path.parent if raw_root_path.is_file() else raw_root_path
+        source_path = raw_root_path if filesystem_path(raw_root_path).is_file() else raw_root_path / relative_path
+        root_path = raw_root_path.parent if filesystem_path(raw_root_path).is_file() else raw_root_path
         from .resources.directory_registrations import register_owned
         registration = register_owned('knowledge', skill_id, [raw_root_path], scanning=True)
         if registration is None:
@@ -575,7 +576,7 @@ class SkillPackageAdapter(_PathsAdapter):
             "filename": stripped_text(raw.get("filename") or "SKILL.md"),
             "relative_path": relative_path,
             "content_root": str(root_path),
-            "single_file": raw_root_path.is_file(),
+            "single_file": filesystem_path(raw_root_path).is_file(),
             "directory": registration['directory'],
             "file_count": int(raw.get("file_count") or len(files)),
             "name": stripped_text(raw.get("name")),
@@ -749,7 +750,7 @@ class SkillPackageAdapter(_PathsAdapter):
                 preferred_primary=source_path,
             )
             if not raw:
-                if source_path.is_file():
+                if filesystem_path(source_path).is_file():
                     raise RuntimeError(f"could not parse changed Skill resource: {resource_id}")
                 deletes.append(resource_id)
                 continue

@@ -136,6 +136,8 @@ def normalize_error(exc: BaseException) -> InstructionError:
             retryable=failure["retryable"],
             commit_state=failure["commit_state"],
         )
+    if isinstance(exc, OSError) and getattr(exc, "winerror", None) == 206:
+        return InstructionError("instruction.failed", str(exc), commit_state="unknown")
     declared_code = getattr(exc, "code", None)
     if isinstance(declared_code, str) and declared_code in ERROR_STATUS:
         return InstructionError(declared_code, str(exc) or declared_code)

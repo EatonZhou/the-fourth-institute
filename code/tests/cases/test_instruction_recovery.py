@@ -279,3 +279,29 @@ def test_fresh_interrupted_cursor_does_not_starve_behind_live_execution(owner, m
         assert kernel.store.get('inst_exe_' + 'a' * 20)['status'] == 'executing'
         assert kernel.store.get('inst_exe_' + 'b' * 20)['status'] == 'failed'
     assert effects == []
+
+
+@pytest.mark.parametrize('transport', [False, True])
+def test_windows_long_name_failure_remains_recoverable(owner, monkeypatch, transport):
+    from management_common.operation_errors import failure_payload, remote_failure
+    from management_portal.hatg.contracts import normalize_error
+    error = FileNotFoundError('Windows filename too long')
+    error.winerror = 206
+    wire = failure_payload(error)
+    assert wire['code'] == 'operation.failed' and wire['commit_state'] == 'unknown'
+    raised = remote_failure(wire) if transport else error
+    assert normalize_error(raised).code == 'instruction.failed'
+    kernel, call, effects, _ = owner
+    original = kernel.binding.recover_projections
+    def unavailable(*_):
+        raise raised
+    monkeypatch.setattr(kernel.binding, 'recover_projections', unavailable)
+    first = kernel.execute(call, InstructionContext('alice', 'web'))
+    pending = kernel.store.get(first.instruction_id)
+    kernel.maintain()
+    assert kernel.store.get(first.instruction_id) == pending
+    assert pending['error']['retryable'] and pending['error']['commit_state'] == 'committed'
+    monkeypatch.setattr(kernel.binding, 'recover_projections', original)
+    replay = kernel.execute(call, InstructionContext('alice', 'web'))
+    assert replay.status == 'committed' and replay.replayed
+    assert effects == [first.instruction_id]
