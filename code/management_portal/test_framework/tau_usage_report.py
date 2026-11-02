@@ -16,12 +16,15 @@ def usage_report(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("TAU 使用报告必须是对象")
     process = payload.get("process")
-    if not isinstance(process, dict) or process.get("status") not in PROCESS_STATES:
+    if (not isinstance(process, dict) or not isinstance(process.get("status"), str)
+            or process["status"] not in PROCESS_STATES):
         raise ValueError("TAU 使用报告须说明流程 completed、blocked 或 not_started")
     issues = _items(payload.get("issues"))
     if not isinstance(issues, list) or any(
-        not isinstance(item, dict) or item.get("category") not in ISSUE_CATEGORIES
-        or item.get("severity") not in SEVERITIES or not item.get("symptom")
+        not isinstance(item, dict) or not isinstance(item.get("category"), str)
+        or item["category"] not in ISSUE_CATEGORIES
+        or not isinstance(item.get("severity"), str) or item["severity"] not in SEVERITIES
+        or not item.get("symptom")
         for item in issues
     ):
         raise ValueError("TAU 问题须包含 category、severity 与 symptom")
@@ -56,7 +59,12 @@ def report_counts(results: list[dict[str, Any]]) -> dict[str, Any]:
 
 def interrupted_report(status: str, details: dict[str, Any], *, started: bool | None = None) -> dict[str, Any]:
     """Describe an uncompleted run without guessing a product defect."""
+    cleanup_error = str(details.get("cleanup_error") or "")
+    cleanup_issue = {"category": "tool", "severity": "blocking", "step": "框架清理",
+                     "symptom": cleanup_error, "evidence": []}
     if details.get("process"):
+        if cleanup_error and cleanup_issue not in _items(details.get("issues")):
+            return {**details, "issues": [*_items(details.get("issues")), cleanup_issue]}
         return details
     summary = str(details.get("summary") or "本次运行未交付使用报告")
     original_notes = details.get("issues") or []
@@ -65,6 +73,8 @@ def interrupted_report(status: str, details: dict[str, Any], *, started: bool | 
     if status not in {"cancelled", "unsupported"} and not issues:
         issues.append({"category": "tool", "severity": "blocking", "step": "运行",
                        "symptom": summary, "evidence": []})
+    if cleanup_error:
+        issues.append(cleanup_issue)
     report = usage_report({
         "summary": summary,
         "process": {"status": "not_started" if started is False or status == "unsupported" else "blocked",

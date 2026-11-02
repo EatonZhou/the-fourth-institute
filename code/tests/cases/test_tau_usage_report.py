@@ -1,5 +1,6 @@
 """TAU reports use; missing observations never become a product verdict."""
 import json
+import pytest
 
 from management_portal.test_framework.tau import parse_result
 from management_portal.test_framework.records import TERMINAL, aggregate_status, failure_class
@@ -49,12 +50,12 @@ def test_missing_material_is_recorded_without_changing_process_or_issues(tmp_pat
     execution.run_dir = tmp_path
     (tmp_path / "notes.json").write_text("{}")
     report = {"status": "reported", "process": {"status": "completed"},
-              "issues": [], "evidence": ["missing.png", "notes.json", "../outside"]}
+              "issues": [], "evidence": ["missing.png", "notes.json", "../outside", "bad\u0000path"]}
     execution._record_material_gaps(report)
     assert report["status"] == "reported"
     assert report["issues"] == []
     assert report["evidence"] == ["notes.json"]
-    assert len(report["evidence_gaps"]) == 2
+    assert len(report["evidence_gaps"]) == 3
 
 
 def test_uncited_material_remains_available_for_usage_report(tmp_path):
@@ -93,3 +94,28 @@ def test_single_observations_are_normalized_to_lists():
     assert report["evidence"] == ["screen.png"]
     assert report["issues"][0]["step"] == "未记录"
     assert report["issues"][0]["evidence"] == ["notes.txt"]
+
+
+@pytest.mark.parametrize("field,value", [("status", []), ("category", {}), ("severity", [])])
+def test_malformed_enumerations_raise_a_report_format_error(field, value):
+    from management_portal.test_framework.tau_usage_report import usage_report
+
+    payload = {"process": {"status": "completed"}, "issues": [
+        {"category": "tool", "severity": "minor", "symptom": "观察"}]}
+    (payload["process"] if field == "status" else payload["issues"][0])[field] = value
+    with pytest.raises(ValueError):
+        usage_report(payload)
+
+
+def test_cleanup_error_is_a_tool_issue_without_rewriting_user_process():
+    from management_portal.test_framework.tau_usage_report import interrupted_report, report_counts
+
+    original = {"process": {"status": "completed", "steps": ["创建", "编辑"]}, "issues": [],
+                "performance": [{"step": "创建", "duration_ms": 123}], "cleanup_error": "helper did not exit"}
+    report = interrupted_report("error", original)
+    assert report["process"] == original["process"]
+    assert report["performance"] == original["performance"]
+    assert report["issues"] == [{"category": "tool", "severity": "blocking", "step": "框架清理",
+                                 "symptom": "helper did not exit", "evidence": []}]
+    assert report_counts([{"details": report}])["issues"]["tool"] == 1
+    assert interrupted_report("error", report)["issues"] == report["issues"]

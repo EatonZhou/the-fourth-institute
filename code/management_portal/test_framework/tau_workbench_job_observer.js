@@ -17,7 +17,7 @@ function readJob(raw) {
   return job;
 }
 
-function observeWorkbenchJob(page, { origin, operation, requestId, record }) {
+function observeWorkbenchJob(page, { origin, operation, requestId, record = () => {} }) {
   if (!['generate', 'reverse'].includes(operation) || typeof requestId !== 'function' ||
       typeof record !== 'function') throw new Error('InvalidWorkbenchObservationOptions');
   const site = new URL(origin).origin;
@@ -57,8 +57,9 @@ function observeWorkbenchJob(page, { origin, operation, requestId, record }) {
         row.error = ['ExpectedTopLevelWorkbenchJob', 'WorkbenchResponseNotSuccessful'].includes(error.message)
           ? error.message : 'OriginalWorkbenchResponseBodyUnavailable';
       }
-      // Append each original response once, without later accepted-job backfill.
-      try { record(structuredClone(row)); } catch (error) { recordingError = error; }
+      // Keep each observation, including temporary errors, without making
+      // recording availability a prerequisite for observing the same job.
+      try { await record(structuredClone(row)); } catch (error) { recordingError = error; }
       return row;
     })();
     responses.set(response, task);
@@ -70,16 +71,23 @@ function observeWorkbenchJob(page, { origin, operation, requestId, record }) {
 
   function requireOpen() {
     if (closed) throw new Error('WorkbenchObserverClosed');
-    if (recordingError) throw recordingError;
+  }
+  function observation(job = {}) {
+    return structuredClone({...job,
+      evidence_gaps: recordingError ? ['未记录：任务观察记录写入失败'] : [],
+      observation_notes: rows.filter(row => row.error &&
+        (row === accepted || row.query_job_id === initial?.id)).map(row => ({
+          request_id:row.request_id, observed_at:row.observed_at, status:row.status, error:row.error,
+        })),
+    });
   }
   function update() {
-    if (recordingError) throw recordingError;
     if (rows.some(row => row.kind === 'acceptance' && row !== accepted)) throw new Error('UnexpectedAdditionalWorkbenchAcceptance');
     const identity = { ...initial };
     latest = initial;
     for (const row of [...rows].sort((a, b) => a.sequence - b.sequence)) {
       if (row.kind !== 'snapshot' || row.sequence <= accepted.sequence || row.query_job_id !== initial.id) continue;
-      if (row.error) throw new Error(row.error);
+      if (row.error) continue;
       if (!row.job) continue;
       if (row.job.id !== initial.id) throw new Error('WorkbenchSnapshotJobMismatch');
       for (const key of ['workbench_id', 'resident_id', 'lineage_id', 'message_id']) {
@@ -88,7 +96,7 @@ function observeWorkbenchJob(page, { origin, operation, requestId, record }) {
       }
       latest = row.job;
     }
-    return structuredClone(latest);
+    return observation(latest);
   }
   return {
     async accept(response) {
@@ -97,12 +105,11 @@ function observeWorkbenchJob(page, { origin, operation, requestId, record }) {
       const info = requests.get(response.request());
       if (!info || info.kind !== 'acceptance' || !responses.has(response)) throw new Error('UnobservedOriginalWorkbenchAcceptance');
       const row = await responses.get(response);
-      if (recordingError) throw recordingError;
       if (row.error) throw new Error(row.error);
       accepted = row;
       initial = structuredClone(row.job);
       latest = initial;
-      return structuredClone(initial);
+      return observation(initial);
     },
     async current() {
       requireOpen();
@@ -111,12 +118,12 @@ function observeWorkbenchJob(page, { origin, operation, requestId, record }) {
       return update();
     },
     async close() {
-      if (closed) return;
+      if (closed) return observation(latest);
       closed = true;
       page.off('request', onRequest);
       page.off('response', onResponse);
       await Promise.all([...pending]);
-      if (recordingError) throw recordingError;
+      return observation(latest);
     },
   };
 }

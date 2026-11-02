@@ -171,6 +171,36 @@ def test_proven_unaccepted_request_ends_without_send_or_cancel(tmp_path, config)
     assert adapter.cleanup_ready(run_dir=tmp_path / "evidence")
 
 
+@pytest.mark.parametrize("scenario", ["malformed_report", "cancelled_before_input"])
+def test_campaign_finishes_malformed_report_and_reports_unstarted_cancellation(tmp_path, config, monkeypatch, scenario):
+    monkeypatch.setattr(TauCampaignExecutor, "_verify_source", lambda _self, _item: None)
+    plan = {"executable": True, "campaign": "tau", "selected": [PLANNED], "execution": {"groups": [{
+        "group_id": "module:platform.core", "module_id": "platform.core", "runner": "tau",
+        "item_indexes": [0], "continue_on_failure": True}]}}
+    records = RunRecords(tmp_path / "runs.json")
+    run_id = records.create(plan, "requester")["run_id"]
+
+    def invoke(**kwargs):
+        kwargs["on_submitted"](ACCEPTED)
+        return {**ACCEPTED, "message": 'PORTAL_TAU_RESULT: {"process":{"status":[]}}'}
+
+    adapter = TauAdapter(config, invoke, lambda _: _verified_dev_target())
+    monkeypatch.setattr(adapter, "cleanup", lambda **_: {"complete": True})
+    monkeypatch.setattr(adapter, "finalize_group", lambda **_: {"status": "complete"})
+    if scenario == "cancelled_before_input":
+        monkeypatch.setattr(runner_adapters._TauCaseRun, "_prepare_assignment", lambda _: runner_adapters.AdapterResult(
+            status="cancelled", details={"summary": "配置等待已取消，未发送用例"}))
+    status = TauCampaignExecutor(records, tmp_path / "artifacts", adapter).run(run_id)
+    record = records.get(run_id)
+    assert status == ("error" if scenario == "malformed_report" else "cancelled")
+    assert record["finished_at"]
+    assert record["groups"][0]["active_invocation"] == {}
+    report = record["results"][0]["details"]
+    assert report["process"]["status"] == ("blocked" if scenario == "malformed_report" else "not_started")
+    if scenario == "malformed_report":
+        assert report["issues"][0]["category"] == "tool"
+
+
 def test_pre_submission_lifecycle_rejection_does_not_create_unknown_input(tmp_path, config, monkeypatch):
     """投递前资源归属检查拒绝时不发送输入，也不进入未知回执循环"""
     from management_common.resource_lifecycle import LifecycleStore

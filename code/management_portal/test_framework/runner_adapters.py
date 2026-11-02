@@ -271,10 +271,15 @@ class TauAdapter(RunnerAdapter):
         reason = self.config.unavailable_reason()
         if reason:
             raise UnsupportedRunner(reason)
-        return _TauCaseRun(
+        case = _TauCaseRun(
             self, run_id=run_id, planned=planned, run_dir=run_dir, actor=actor,
             emit=emit, cancelled=cancelled, on_submitted=on_submitted,
-        ).execute()
+        )
+        outcome = case.execute()
+        return AdapterResult(status=outcome.status, returncode=outcome.returncode, details={
+            **outcome.details,
+            "input_submitted": bool(case.submitted.get("message_id") or (case.resume_handle or {}).get("message_id")),
+        })
 
 
 class _TauCaseRun:
@@ -798,8 +803,12 @@ class _TauCaseRun:
         evidence_root = self.run_dir.resolve()
         available = []
         for item in parsed["evidence"]:
-            candidate = (self.run_dir / item).resolve(strict=False)
-            if evidence_root not in candidate.parents or not candidate.is_file():
+            try:
+                candidate = (self.run_dir / item).resolve(strict=False)
+                readable = evidence_root in candidate.parents and candidate.is_file()
+            except (OSError, ValueError, RuntimeError):
+                readable = False
+            if not readable:
                 parsed.setdefault("evidence_gaps", []).append(f"材料未记录或不可读取：{item}")
             else:
                 available.append(item)

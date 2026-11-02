@@ -800,6 +800,7 @@ def test_tau_cancellation_stops_waiting_for_dev_without_submitting_contracts(mon
             adapter = TauAdapter(TauConfig(tmp_path / 'storage.json'), invoke, verify)
             result = adapter.execute(run_id='testrun_0123456789abcdef', planned={}, run_dir=tmp_path, actor='resident_aaaaaaaaaaaa', emit=mock.Mock(), cancelled=lambda: True)
             assert result.status == 'cancelled'
+            assert result.details.get('input_submitted') is False
             invoke.assert_not_called()
 
 

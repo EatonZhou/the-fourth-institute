@@ -399,7 +399,8 @@ class TauCampaignExecutor:
                 item_status = outcome.status
                 if item_status not in TERMINAL:
                     raise RuntimeError(f"Runner 返回了无效的终态：{item_status}")
-                details = interrupted_report(item_status, dict(outcome.details))
+                details = interrupted_report(item_status, dict(outcome.details),
+                                             started=outcome.details.get("input_submitted"))
                 result = {
                     "case_id": item["case_id"],
                     "implementation_id": item["implementation"]["id"],

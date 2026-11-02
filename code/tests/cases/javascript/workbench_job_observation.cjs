@@ -9,9 +9,11 @@ const { observeWorkbenchJob, readJob } = require(process.env.TFI_WORKBENCH_OBSER
 (async () => {
   const received = [];
   let body = { id: 'job-own', status: 'submitting', workbench_id: 'workbench-own' };
+  let responseStatus = 200;
   const server = http.createServer((req, res) => {
     received.push({ method: req.method, path: req.url });
     if (req.url === '/') { res.setHeader('Content-Type', 'text/html'); res.end('<button id="generate">Generate</button><script>generate.onclick=()=>fetch("/api/workbenches/generate",{method:"POST"}).then(r=>r.json());</script>'); return; }
+    res.statusCode = responseStatus;
     res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -36,8 +38,13 @@ const { observeWorkbenchJob, readJob } = require(process.env.TFI_WORKBENCH_OBSER
     await fetch('/api/workbenches/generation?id=job-other'); assert.equal((await observer.current()).status, 'submitting');
     body = { id: 'job-own', status: 'running', workbench_id: 'workbench-own', message_id: 'message-own' };
     await fetch('/api/workbenches/generation?id=job-own'); assert.equal((await observer.current()).message_id, 'message-own');
+    responseStatus = 503;
+    await fetch('/api/workbenches/generation?id=job-own');
+    assert.equal((await observer.current()).status, 'running');
+    responseStatus = 200;
     body = { ...body, status: 'completed', revision: 2, save_receipt: { revision: 2 } };
     await fetch('/api/workbenches/generation?id=job-own'); assert.equal((await observer.current()).save_receipt.revision, 2);
+    assert.ok((await observer.current()).observation_notes.some(row => row.status === 503));
     assert.equal(JSON.stringify(rows[0]), initialEvidence); assert.equal(initial.status, 'submitting');
     const beforeReads = received.length; await observer.current(); await observer.current(); assert.equal(received.length, beforeReads);
     body = { ...body, workbench_id: 'workbench-wrong' };
@@ -63,8 +70,13 @@ const { observeWorkbenchJob, readJob } = require(process.env.TFI_WORKBENCH_OBSER
     await assert.rejects(duplicate.current(), /UnexpectedAdditional/); await duplicate.close();
     const brokenRecord = observeWorkbenchJob(page, { ...opts, record() { throw Error('fixture-record-unavailable'); } });
     const [unrecorded] = await Promise.all([page.waitForResponse(r => r.request().method() === 'POST'), page.locator('#generate').click()]);
-    await assert.rejects(brokenRecord.accept(unrecorded), /fixture-record-unavailable/);
-    await assert.rejects(brokenRecord.close(), /fixture-record-unavailable/);
+    assert.ok((await brokenRecord.accept(unrecorded)).evidence_gaps.length);
+    body = {...body, status:'completed'};
+    await fetch('/api/workbenches/generation?id=job-duplicate');
+    const recovered = await brokenRecord.current();
+    assert.equal(recovered.status, 'completed');
+    assert.ok(recovered.evidence_gaps.length);
+    assert.ok((await brokenRecord.close()).evidence_gaps.length);
     assert.throws(() => readJob({ id: '', status: 'running' }), /ExpectedTopLevel/);
     assert.equal(received.filter(r => r.method === 'POST').length, 7);
     assert.ok(reverseRows[0].request_id);
