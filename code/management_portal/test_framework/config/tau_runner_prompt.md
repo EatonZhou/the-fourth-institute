@@ -1,12 +1,20 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
-以下发现函数统一从共享 `tau_native_controls.js` 导入；`frameworkRoot` 为本轮代码根下 `management_portal/test_framework` 的绝对路径，与共享浏览器启动器同目录。不要在每个 Run 重新实现这些函数。它们只读当前页面，仍须按本步骤实际身份与业务条件完成原 ready。
+常用证据函数统一从共享 `tau_evidence.js` 导入；`frameworkRoot` 为本轮代码根下 `management_portal/test_framework` 的绝对路径，与共享浏览器启动器同目录。该入口直接提供同一权威函数，包括原生控件发现、Chat/消息卡/引用、Session/Menu/Lineage身份、图集合/几何、Fork前置、tab展开、Trigger Path文本关联和有限原响应观察。后文具体模块名说明实现职责，不需据函数名猜导入文件。业务操作前导入所需函数并确认可调用，再以真实定位运行只读准备检查；不要在每个Run重新实现这些函数，也不要等创建已提交才第一次调用。原身份、ready、期限、错误和原证据要求保持。
+
+```js
+// tau-evidence-entry
+const {readSessionLineageIdentity, readResidentMenuSession, readSessionMessageCards,
+  readSessionGraphSnapshot, waitForEvidenceReady} = require(frameworkRoot + '/tau_evidence.js');
+```
+
+HATG读取函数的panel参数使用当前`page.getByRole('region',{name:'HATG',exact:true})`或其真实`section#hatgPane`；整个main和内部canvas都不是完整HATG区域。菜单按钮名称含menu不证明弹层role是menu，先发现实际dialog/alertdialog/menu，再核目标身份。
 
 Society 默认布局隐藏 HATG；普通 `/lineage?lineage=...` 只绑定目标并保留布局，不保证出现画布。导航原 ready 先核验页面与实际入口，不能等待仍隐藏的 HATG 身份。随后用独立原动作点击当前原生 Show HATG（或本轮发现的 Lineage 导航入口），在该动作 ready 内核验完整 Lineage 身份与图。页面已经显示 HATG 时不重复点击显示按钮。显式 `view=hatg` 是设计支持的画布入口，但仍遵守用例规定的导航方式。下面只发现控件，返回 Locator 或 null；不点击、不修改布局、不代替身份核验。
 
 ```js
 // tau-hatg-opening
-const {nativeHatgShowControl} = require(require('node:path').join(frameworkRoot, 'tau_native_controls.js'));
+const {nativeHatgShowControl} = require(require('node:path').join(frameworkRoot, 'tau_evidence.js'));
 ```
 
 HATG新建组件的身份来自本次原始CreateComponent回执`result.component_id`，其`result.component.id`必须一致；GetLineage的`lineage.program.components`里字段是`id`，不是`component_id`。不要按标题扫描后取不存在的字段，也不接受undefined作为原ready的目标。以下函数接收完整ISA回执，不发送请求、不代替完整原图集合核验。
@@ -35,7 +43,7 @@ HTTP非成功响应按request_id关联原request_started及response_received/req
 
 ```js
 // tau-current-controls
-const {currentNativeTab, nativeEntryDestination, currentStatusTexts, currentSelectOptions, currentNativeDialog, currentProgrammingInspectors, currentMessageQuoteAction} = require(require('node:path').join(frameworkRoot, 'tau_native_controls.js'));
+const {currentNativeTab, nativeEntryDestination, currentStatusTexts, currentSelectOptions, currentNativeDialog, currentProgrammingInspectors, currentMessageQuoteAction} = require(require('node:path').join(frameworkRoot, 'tau_evidence.js'));
 ```
 
 消息引用先在精确原message_id对应的可见正文上正常右键，再在同一原ready中用currentMessageQuoteAction核对菜单所属消息及可用引用按钮。原生菜单移到document.body，不能限定在原article内部；按钮文案随语言显示“引用回复”或“Quote reply”，不要固定英语名称。保存当下实际名称，点击引用后的原ready用`tau_chat_ready_evidence.js`的`readResidentComposerQuote(root,{residentId,messageId})`核精确Chat及可见原消息预览。composer身份在data-composer-quote，data-message-quote是已发送消息的跳转控件，不能混用；随后仍核真实提交的message.quote.message_id。助手只读，不点击、不发送、不代替业务终态；取消引用、错误目标或未就绪Chat返回ready=false，原窗口逐样本保存。
@@ -184,7 +192,7 @@ Workspace 首次目录打开/刷新前，按本轮准确 workspaceId 安装有�
 
 ```js
 // tau-workspace-root-read
-const {observeFiniteInstructionResponses} = require(frameworkRoot + '/tau_finite_instruction_evidence.js');
+const {observeFiniteInstructionResponses} = require(frameworkRoot + '/tau_evidence.js');
 const directoryObserver = observeFiniteInstructionResponses(portal.page, {
   origin, targets: [{instruction:'ReadResource', arguments:{address:workspaceId + '/file'}}],
   requestId: request => portal.requestId(request), record,

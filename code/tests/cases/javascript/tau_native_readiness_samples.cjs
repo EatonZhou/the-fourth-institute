@@ -6,7 +6,7 @@ const path = require('node:path');
 // Invoked by the native lineage.html fixture. No fabricated Chat/Menu markup.
 module.exports = async ({page, root, residentId, childId, sessionId, errors, requests, deleteFixtureResident}) => {
   page.setDefaultTimeout(5000);
-  const {readResidentChatReady,visibleResidentChatRoots} = require('../../../management_portal/test_framework/tau_chat_ready_evidence');
+  const {readResidentChatReady,visibleResidentChatRoots} = require('../../../management_portal/test_framework/tau_evidence');
   const discoveredRoot=visibleResidentChatRoots(page,{residentId});
   assert.equal(await discoveredRoot.count(),1);
   assert.equal(await discoveredRoot.getAttribute('id'),await root.getAttribute('id'));
@@ -39,7 +39,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await copy.waitFor({state: 'visible'});
   assert.equal(await copy.isEnabled(), true);
   assert.equal(await menu.locator('#nodeMenuSessionId').innerText(), sessionId);
-  const {readResidentMenuSession} = require('../../../management_portal/test_framework/tau_session_dom_evidence');
+  const {readResidentMenuSession} = require('../../../management_portal/test_framework/tau_evidence');
   const menuSession = await readResidentMenuSession(menu, {residentId});
   assert.equal(menuSession.ready, true, JSON.stringify(menuSession));
   assert.equal(menuSession.session_id, sessionId);
@@ -52,7 +52,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await page.evaluate(() => { window.sampleCopied = []; PortalUI.copyText = async value => { sampleCopied.push(value); }; });
   await copy.click();
   assert.deepEqual(await page.evaluate(() => sampleCopied), [sessionId], 'native event copies the full opaque ID');
-  const {readResidentMenuTitle}=require('../../../management_portal/test_framework/tau_session_dom_evidence');
+  const {readResidentMenuTitle}=require('../../../management_portal/test_framework/tau_evidence');
   const {waitForEvidenceReady}=require('../../../management_portal/test_framework/tau_readiness_wait');
   assert.ok((await readResidentMenuTitle(menu,{residentId,title:'Fixture Resident'})).ready);
   assert.equal((await readResidentMenuTitle(menu,{residentId:childId,title:'Fixture Resident'})).ready,false);
@@ -90,7 +90,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const openingExample=prompt.match(/```js\n(\/\/ tau-hatg-opening\n[\s\S]*?)\n```/);
   assert.ok(openingExample, 'ordinary navigation must not wait for a hidden HATG');
   const nativeHatgShowControl=new Function('require','frameworkRoot',openingExample[1]+'; return nativeHatgShowControl;')(require,path.resolve(__dirname,'../../../management_portal/test_framework'));
-  const {readSessionLineageIdentity:readOpeningIdentity}=require('../../../management_portal/test_framework/tau_session_prerequisites');
+  const {readSessionLineageIdentity:readOpeningIdentity}=require('../../../management_portal/test_framework/tau_evidence');
   const hiddenGraph=page.getByRole('region',{name:'HATG',exact:true});
   assert.equal((await readOpeningIdentity(hiddenGraph,{lineageId:'lineage_222222222222'})).identity_ready,false);
   await page.evaluate(() => PortalI18n.apply('zh-CN'));
@@ -115,7 +115,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const searchAbsentId='resident_999999999999';
   await hatg.locator('#graphNodeSearchInput').fill(searchAbsentId);
   await page.getByText('No matching nodes',{exact:true}).waitFor({state:'visible'});
-  const {readSessionGraphSnapshot:readEmptySearch}=require('../../../management_portal/test_framework/tau_session_prerequisites');
+  const {readSessionGraphSnapshot:readEmptySearch}=require('../../../management_portal/test_framework/tau_evidence');
   const absentSearch=await readEmptySearch(hatg,{residentId:searchAbsentId});
   assert.equal(absentSearch.unresolved_status_count,0,'a settled native empty result is not unresolved');
   assert.equal(absentSearch.search_empty_ready,true);
@@ -123,12 +123,12 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
 
   // Both the Workbench host and its named SECTION are real region roots.
   // The latter has an implicit accessibility role and no literal role attribute.
-  const {readSessionLineageIdentity, readSessionGraphSnapshot} = require('../../../management_portal/test_framework/tau_session_prerequisites');
-  const {readHatgForkPrerequisites} = require('../../../management_portal/test_framework/tau_hatg_fork_evidence');
+  const {readSessionLineageIdentity, readSessionGraphSnapshot} = require('../../../management_portal/test_framework/tau_evidence');
+  const {readHatgForkPrerequisites} = require('../../../management_portal/test_framework/tau_evidence');
   const {readWatchboardNodePrerequisites} = require('../../../management_portal/test_framework/tau_watchboard_node_prerequisites');
   const nativePane = hatg.locator('section#hatgPane[data-lineage-pane="hatg"]');
   assert.equal(await nativePane.getAttribute('role'), null);
-  const {waitForHatgView} = require('../../../management_portal/test_framework/tau_hatg_view_evidence');
+  const {waitForHatgView} = require('../../../management_portal/test_framework/tau_evidence');
   const geometrySamples=[];
   const graphReady=await waitForHatgView(hatg,{lineageId:'lineage_222222222222',nodeIds:[residentId],edgeIds:[],
     requireExecutionOpen:true,requireWithinCanvas:true,stableMs:120,intervalMs:30,timeoutMs:3000,
@@ -234,7 +234,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await page.evaluate(()=>sampleSecondEditor.workspace.setMessages([{id:'msg_444444444444',
     message_id:'msg_444444444444',role:'agent',content:'Native implicit-region message'}]));
   await stableRoot.getByText('Native implicit-region message',{exact:true}).waitFor({state:'visible'});
-  const {readSessionMessageCards}=require('../../../management_portal/test_framework/tau_session_prerequisites');
+  const {readSessionMessageCards}=require('../../../management_portal/test_framework/tau_evidence');
   assert.equal((await readSessionMessageCards(stableRoot,{residentId:childId,messageId:'msg_444444444444'})).ready,true);
   assert.equal((await readSessionMessageCards(stableRoot,{residentId:childId,messageId:'msg_555555555555'})).ready,false);
 
@@ -259,7 +259,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     assert.ok(quote);
     assert.equal(await quote.getAttribute('data-portal-message-action'),'quote');
     assert.equal(await currentMessageQuoteAction(page,{messageId:'msg_other'}),null);
-    const {readResidentComposerQuote}=require('../../../management_portal/test_framework/tau_chat_ready_evidence');
+    const {readResidentComposerQuote}=require('../../../management_portal/test_framework/tau_evidence');
     const quoteTarget={residentId:childId,messageId:'msg_quote_sample'};
     assert.equal((await readResidentComposerQuote(stableRoot,quoteTarget)).ready,false);
     await quote.click();
