@@ -100,24 +100,11 @@ def prepare_question_answer(
             f"{number}. 「{titles[entry['question_index']]}」：{entry['answer']}"
             for number, entry in enumerate(answered, 1)
         )
-    consent = answers[0].get("plain_consent")
-    if consent is not None:
-        from .resident_credential_answers import APPROVALS
-        from management_common.async_questions import CREDENTIAL_APPROVE
-        original_text = "\n".join(str(part.get("text") or "") for part in parts if part.get("type") == "text")
-        if (not isinstance(consent, Mapping) or set(consent) != {"text", "message_id"}
-                or not isinstance(consent.get("message_id"), str) or consent.get("text") != original_text
-                or original_text.strip().rstrip("。.!！ ") not in APPROVALS
-                or any(not q.get("credentials") for q in questions["questions"])
-                or any(entry["answer"] != CREDENTIAL_APPROVE for entry in answered)):
-            raise ValueError("文字授权必须保留本条明确同意的原文及消息标识")
-        content = original_text + "\n\n" + content
     return content, {
         "message_id": questions["answer_message_id"],
         "role": "user",
         "content_parts": [
             {"type": "text", "text": content},
-            {"type": ANSWER_PART, "source_message_id": source_id, "answers": answered,
-             **({"plain_consent": dict(consent)} if consent is not None else {})},
+            {"type": ANSWER_PART, "source_message_id": source_id, "answers": answered},
         ],
     }

@@ -139,6 +139,24 @@ CREATE TABLE IF NOT EXISTS {s}.scheme_merges (
     auth_diff JSONB,
     regenerated BOOLEAN NOT NULL DEFAULT TRUE
 );
+CREATE TABLE IF NOT EXISTS {s}.user_authorizations (
+    resident_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    a_node TEXT NOT NULL,
+    r_node TEXT NOT NULL,
+    authorization_id TEXT NOT NULL,
+    scheme_id TEXT NOT NULL,
+    credential_id TEXT NOT NULL,
+    issuer TEXT NOT NULL,
+    source_digest TEXT NOT NULL,
+    evidence TEXT NOT NULL,
+    source_resident_id TEXT NOT NULL,
+    bound_input_message_id TEXT NOT NULL,
+    execution_id TEXT NOT NULL,
+    lifetime_seconds INTEGER,
+    accepted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (resident_id, message_id, a_node, r_node)
+);
 """
 
 
@@ -290,6 +308,24 @@ class Store:
 
     # -- reads -----------------------------------------------------------------------
 
+    def user_authorizations(self, connection, resident_id: str, message_id: str) -> list[dict]:
+        """Durable source receipts, independent of credential expiry and scheme regeneration."""
+        return [dict(row) for row in self.execute(connection,
+            "SELECT * FROM {s}.user_authorizations WHERE resident_id=%s AND message_id=%s",
+            (resident_id, message_id)).fetchall()]
+
+    def record_user_authorization(self, connection, *, resident_id: str, message_id: str, a: str,
+                                  resource_id: str, authorization_id: str, credential_id: str,
+                                  issuer: str, source_digest: str, evidence: str, source_resident_id: str,
+                                  bound_input_message_id: str, execution_id: str, lifetime_seconds: int | None) -> None:
+        self.execute(connection, "INSERT INTO {s}.user_authorizations"
+            " (resident_id,message_id,a_node,r_node,authorization_id,scheme_id,credential_id,issuer,source_digest,evidence,"
+            " source_resident_id,bound_input_message_id,execution_id,lifetime_seconds)"
+            " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (resident_id, message_id, a, resource_id, authorization_id, self.scheme_id,
+             credential_id, issuer, source_digest, evidence, source_resident_id, bound_input_message_id,
+             execution_id, lifetime_seconds))
+
     def snapshot(self, principal: str, resources: Sequence[str], *, active: bool = False) -> Snapshot:
         """In one statement: the version number, the principal's stored path and the stored paths of ``resources``.
 
@@ -425,6 +461,15 @@ class Store:
                 for row in self.execute(connection, statement, parameters).fetchall()}
 
     # -- writes (inside a transaction) --------------------------------------------------
+
+    def lock_version(self, connection) -> None:
+        """Fence issuance against all permission mutations, which bump this row.
+
+        Decisions are read after this lock. A concurrent writer either commits
+        before that read, or waits to commit until this transaction finishes.
+        """
+        self.execute(connection, "INSERT INTO {s}.state (singleton,version) VALUES (TRUE,0) ON CONFLICT DO NOTHING")
+        self.execute(connection, "SELECT version FROM {s}.state FOR UPDATE").fetchone()
 
     def bump(self, connection) -> None:
         """Add one to the version number, in the caller's transaction: every process drops its decision cache."""

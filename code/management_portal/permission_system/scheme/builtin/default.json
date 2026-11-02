@@ -1129,6 +1129,10 @@
       "a": "@viewer",
       "r": "@shared"
     },
+    "AcceptUserAuthorization": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "IssueTemporaryCredential": {
       "a": "@free",
       "r": "@portal"

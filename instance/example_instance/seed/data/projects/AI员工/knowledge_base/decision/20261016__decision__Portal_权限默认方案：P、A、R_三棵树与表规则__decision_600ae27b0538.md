@@ -11,8 +11,8 @@ version:
     agent: "resident_9c94c8b365fe"
   updated_at: "2026-11-02T17:47:44Z"
   updated_by:
-    user: ""
-    agent: "resident_83d75ad3a6c7"
+    user: ''
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: false

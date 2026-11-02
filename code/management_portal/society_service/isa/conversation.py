@@ -117,11 +117,6 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
             raise invalid("临时凭证只随发给 Resident 的消息签发")
         return deliver_to_user(inv, inv.argument("user_id"), message)
     resident_id = inv.argument("resident_id")
-    if not credentials and (inv.argument("activation_policy") or "enqueue_and_trigger") == "enqueue_and_trigger":
-        from .. import resident_credential_answers, resident_conversation_stream
-
-        message, credentials = resident_credential_answers.plain_answer(
-            resident_id, message, actor=inv.caller, repository=resident_conversation_stream.get_repository())
     _check_answer_credentials(resident_id, message, credentials)
     if credentials:
         _check_lendable(inv, credentials)
@@ -467,7 +462,19 @@ def create_notification(inv: Invocation) -> dict[str, Any]:
     }
 
 
+def accept_user_authorization(inv: Invocation) -> dict[str, Any]:
+    from .. import resident_user_authorization
+
+    return resident_user_authorization.accept(
+        caller=inv.caller, execution_id=inv.context.execution_id,
+        message_id=inv.argument("message_id"), credentials=inv.argument("credentials"),
+        evidence=inv.argument("evidence"),
+        expires_in_seconds=inv.argument("expires_in_seconds"),
+    )
+
+
 HANDLERS = {
+    "AcceptUserAuthorization": accept_user_authorization,
     "RelayFamilyMessage": relay_family_message,
     "DeliverMessage": deliver_message,
     "ForwardMessages": forward_messages,

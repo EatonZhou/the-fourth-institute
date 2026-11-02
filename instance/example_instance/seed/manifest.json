@@ -15166,8 +15166,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__AskMeAnything个人Resident与上下文生命周期__decision_bd5217d08c09.md",
-      "sha256": "82e13297397e6fd0a55893b153af7610bd62bf8e7ba9704f5dc9e5c4823055a1",
-      "size": 20790
+      "sha256": "1db549ef90e83dea83a14904190a6cd79821accd15944ba4b5ba56ec38d7429c",
+      "size": 20788
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__ExecutionService_请求、生命周期与控制协议__decision_6ad0384e020d.md",
@@ -15706,8 +15706,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：权限指令__decision_22227d0ad075.md",
-      "sha256": "378c687530baa0827b16adae720e8ddfa5bfa91c876138fe24cda1b3b5e95bb2",
-      "size": 24323
+      "sha256": "dd568d9c0f1b42486352e9bc58c04610fa1f61324e7b4285d1ce6e98fd828fc4",
+      "size": 24908
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：用户指令__decision_6eac174d85bf.md",
@@ -15746,8 +15746,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_聊天中的提问、审批与本轮修改卡片__decision_1e2eb869bc10.md",
-      "sha256": "226a68e31113f1bb4b9473c6d913f33021a0c5b8243f19171c5465af9a169354",
-      "size": 34716
+      "sha256": "b4837f70bc62a47687e01f26be8de2e349d48fa8207a7b2a0339b6fd2f82b6d3",
+      "size": 36158
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_运行设置：模型、推理强度、速度、权限与协作模式__decision_8b2fa224616b.md",
@@ -15811,13 +15811,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限系统：PAR_引擎架构与开关__decision_b820faf42218.md",
-      "sha256": "6397a99b6a9409a4f92179da63db1e22eda56e4b8d61a13dee721ecd50149fe8",
-      "size": 90077
+      "sha256": "5288cbf28a987fcd1e6b043156a964b07aecec956c5b19eaa0a8bdd212a60574",
+      "size": 90075
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限默认方案：P、A、R_三棵树与表规则__decision_600ae27b0538.md",
-      "sha256": "235d6059455615d86db0a7da49ece32e5eb0090570d5dc7826c273a41451d168",
-      "size": 31758
+      "sha256": "1628de0422466a380e841127e2e57aba1d4d6f269693e6c9ef0ebd46a72d1bb1",
+      "size": 31756
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261017__decision__Portal_管理页：权限方案编辑器__decision_ea13b85216d0.md",

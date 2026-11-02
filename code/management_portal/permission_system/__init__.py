@@ -391,6 +391,31 @@ def lend_message(connection: Any, *, issuer: str, resident_id: str, message_id: 
         ) for item in credentials]
 
 
+def accept_user_authorization(connection: Any, *, issuer: str, resident_id: str, message_id: str,
+                              credentials: list[dict[str, str]], evidence: str, source_digest: str,
+                              bound_input_message_id: str, execution_id: str, source_resident_id: str,
+                              expires_in_seconds: int | None = None) -> dict[str, Any]:
+    """Society's authenticated current-input proof, in its locked transaction."""
+    from . import user_authorization
+    from . import inline
+    from .schemes import instruction_errors
+    from management_portal.identity_store import lock_active_user
+
+    implementation = active()
+    _scheme, initial_engine, _instance = implementation.current()
+    with instruction_errors():
+        with initial_engine.store.transaction(connection) as connection:
+            inline.lock(connection, bound_input_message_id)
+            lock_active_user(connection, issuer)
+            initial_engine.store.lock_version(connection)
+            # The scheme may have changed before we acquired the version lock.
+            scheme, engine, _instance = implementation.current()
+            return user_authorization.accept(engine, scheme, connection, issuer=issuer, resident_id=resident_id,
+                message_id=message_id, credentials=credentials, evidence=evidence, source_digest=source_digest,
+                bound_input_message_id=bound_input_message_id, execution_id=execution_id,
+                source_resident_id=source_resident_id, expires_in_seconds=expires_in_seconds)
+
+
 def manage(instruction: str, arguments: Mapping[str, Any], *, actor: str, collect_facts: Callable[[], list] | None = None,
            expected_version: Any = None) -> dict[str, Any]:
     """Answer a permission instruction (schemes, nodes, entries, checks, temporary credentials).

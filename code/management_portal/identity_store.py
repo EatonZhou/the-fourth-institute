@@ -49,6 +49,22 @@ def database():
     return _database(os.getenv('PORTAL_DATABASE_URL'), os.getenv('PORTAL_DATABASE_NAMESPACE'))
 
 
+def lock_active_user(connection, username: str) -> None:
+    """Pin an authenticated authorization issuer until the caller's transaction commits.
+
+    Read only the account status, never credentials. Account deletion or disabling
+    takes a conflicting row lock, so it cannot commit halfway through issuance.
+    """
+    from management_common.portal_database import _database_schema
+
+    database().ensure()
+    schema = '"' + _database_schema('portal_identity') + '"'
+    row = connection.execute(f"SELECT status FROM {schema}.user_accounts WHERE username=%s FOR SHARE",
+                             (username,)).fetchone()
+    if row is None or row['status'] != 'active':
+        raise PermissionError('授权来源用户已停用或不存在')
+
+
 TIME_FIELDS = {
     'user_accounts': ('created_at', 'updated_at'),
     'user_invitations': ('created_at', 'expires_at', 'accepted_at'),

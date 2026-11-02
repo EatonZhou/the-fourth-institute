@@ -659,7 +659,7 @@ modules:
       - "management_portal/society_service/resident_protocol.py"
       - "management_portal/society_service/resident_questions.py"
       - "management_common/async_questions.py"
-      - "management_portal/society_service/resident_credential_answers.py"
+      - "management_portal/society_service/resident_user_authorization.py"
       - "management_portal/society_service/resident_record_domain.py"
       - "management_portal/society_service/resident_registration_domain.py"
       - "management_portal/society_service/resident_released_executions.py"
@@ -1012,6 +1012,7 @@ modules:
       - "management_portal/frontier.html"
       - "management_portal/static/frontier.js"
       - "management_portal/static/frontier_model.js"
+      - "management_portal/static/frontier_*.js"
       - "management_portal/static/frontier.css"
       - "management_portal/static/portal_editor_open_service.js"
       - "management_portal/static/portal_resource_registration_service.js"
@@ -1147,6 +1148,14 @@ modules:
       - "management_common/process_runtime.py"
       - "management_common/process_observation.py"
       - "scripts/instance_resident_relocation.py"
+      - "scripts/directory_protocol_legacy_schema.py"
+      - "scripts/directory_protocol_lifecycle_migration.py"
+      - "scripts/directory_protocol_resource_migration.py"
+      - "scripts/directory_protocol_retention_migration.py"
+      - "scripts/installed_article_migration.py"
+      - "scripts/migrate_deleted_identities.py"
+      - "scripts/migrate_directory_protocol.py"
+      - "scripts/migrate_installed_database.py"
       - "scripts/migrate_instance_lineages.py"
       - "scripts/migrate_family_chat_controls.py"
       - "scripts/tfi_relocate_instance.py"
@@ -1234,7 +1243,7 @@ modules:
     code_paths:
       - "management_portal/permission_system"
       - "management_portal/resources/rpc_auth.py"
-    responsibility: "通过统一权限端口按执行者、动作和资源判定访问；封装开放/PAR 实现、模板编译、事实适配、权限表项和临时凭证。ResourceService 拥有实例的全量重建与管理，调用方只提交请求或其拥有的领域事实。"
+    responsibility: "通过统一权限端口按执行者、动作和资源判定访问；封装开放/PAR 实现、模板编译、事实适配、权限表项和临时凭证。Society 在当前输入事务中证明用户授权来源，权限 owner 核验签发者权限、签发及保存防重放回执；不解析自然语言。ResourceService 拥有实例的全量重建与管理，调用方只提交请求或其拥有的领域事实。"
     parent: "resources"
     deployed_in:
       - "web"
@@ -2166,7 +2175,7 @@ protocols:
     related_designs:
       - "decision_1e2eb869bc10"
     description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。对于已持久化且全为精确权限请求的问题组，Society可将认证User的明确对话同意绑定为该组唯一回答；权限owner校验真实签发者当前持权，凭证与回答接纳同事务提交，仅在收件方处理该输入期间有效。范围、签发身份不从任意正文或页面上下文推断，失效回答重放不重新签发。"
-    example: "原生 requestApproval/userInput → Adapter 内容项 → Lineage 问题消息 → prepare_question_answer(source_message_id,entries) → 原执行的回答入口 → 观察已关闭问题。"
+    example: "原生 requestApproval/userInput → Adapter 内容项 → Lineage 问题消息 → prepare_question_answer(source_message_id,entries) → 原执行的回答入口 → 观察已关闭问题。Codex 原生异步提问按已观察问题和原生调用 ID 持久化为独立问题组，轮次结束后仍可回答；不占最终答复身份，accepted 不代表落库或授权。恢复日志只校验已受理调用身份，不从工具参数补造正文；身份不明则延后。原生异步问题没有 credentials 字段，权限请求/接受仍沿正式授权来源与凭证路径。"
 
   - id: "mailbox-viewer-state"
     title: "Mailbox 主体视图与待办操作"
@@ -2408,7 +2417,7 @@ protocols:
       - "decision_71ba0494b93e"
       - "decision_9d15ae2053c4"
     description: "浏览器以 Lineage 共享单元保存探索种子的局部身份、来源与介入要求，使用 expected_value 比较保存；来源正文和执行状态仍由原资源与消息服务拥有。ResolveResource 失败时隐藏入口及关系，Project 只聚合可读团队；稍后关注属个人页面偏好，不改变业务。投递前复核来源权限和版本，先 CAS 冻结 dispatch，再以同一消息 ID 和幂等键提交 DeliverMessage；GetInputState 的已有回复不代表目标完成。"
-    example: "用户打开 /frontier?lineage=… → GetSharedState 加载工作线 → ResolveResource 核对来源 → 编辑并用 UpdateSharedState CAS 保存 → 冻结负责人、正文与消息 ID → DeliverMessage → GetInputState 展示接收、推进与回复。回执丢失重用原请求，不根据摘要启动第二份工作。"
+    example: "独立 /frontier、HATG 前沿视图或项目研究地图 → mountFrontier 按当前 Lineage/Project 加载同一共享入口 → ResolveResource/ReadResource 鉴权并内联查看来源 → D3 图与卡片共用对象 → UpdateSharedState CAS 保存并冻结投递 → DeliverMessage → GetInputState。个人布局和聚焦由 PortalPageState 保存，销毁及切换阻止旧请求更新新视图；投递回执丢失重用原请求，不根据摘要启动第二份工作。"
 
   - id: "lineage-template-view"
     title: "Lineage 模板目录与实例化输入"

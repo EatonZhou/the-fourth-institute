@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 24
+  number: 25
   created_at: "2026-09-30T11:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-02T17:53:56Z"
+  updated_at: "2026-11-02T17:56:08Z"
   updated_by:
-    user: ""
-    agent: "resident_2e9ea0072551"
+    user: ''
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: false
@@ -91,6 +91,12 @@ Resident 工作时，除了用文字回复，还会遇到需要用户参与或�
 - **异步提问是消息，不是等待中的工具请求。** `request_user_input_async` 通过 `item/completed` 发送含 `questions`、`delivery=async` 的 `agentMessage`；正文可以为空。问题通过 AgentData 的同一持久问题通路保存，按原生调用 ID 形成独立消息与回答身份，刷新和轮次结束后仍可作答。原生字段 `phase=final_answer` 不代表本轮最终回复：异步问题不占用最终回复身份，也不使正常控制提前结束。
 - **实时与恢复共用原生身份。** 只重放实时事件或会话快照已观察到的问题；恢复时，普通回复与异步问题分开核对身份。对应轮次的原生已受理调用记录仅用于核对调用 ID，不能从工具参数补造未观察到的问题，不能因 `accepted:true` 就宣称卡片已落库。身份无法可靠核对时延后恢复，不另造身份或重复发问。
 - **权限申请使用明确的权限字段。** Codex 原生异步问题只支持标题和选项，不支持权限字段；需要授权时由 Resident 在正文写带精确 `credentials` 的 `portal-question`。普通选择题的同意回答不签发权限，工具的受理回执也不证明授权发生。权限仍沿现有问题回答和正式凭证签发路径核验。
+
+### Codex 原生异步问题
+
+- **异步提问是消息，不是等待中的工具请求。** `request_user_input_async` 通过 `item/completed` 发送含 `questions`、`delivery=async` 的 `agentMessage`；正文可以为空。问题通过 AgentData 的同一持久问题通路保存，按原生调用 ID 形成独立消息与回答身份，刷新和轮次结束后仍可作答。原生字段 `phase=final_answer` 不代表本轮最终回复：异步问题不占用最终回复身份，也不使正常控制提前结束。
+- **实时与恢复共用原生身份。** 只重放实时事件或会话快照已观察到的问题；恢复时，普通回复与异步问题分开核对身份。对应轮次的原生已受理调用记录仅用于核对调用 ID，不能从工具参数补造未观察到的问题，不能因 `accepted:true` 就宣称卡片已落库。身份无法可靠核对时延后恢复，不另造身份或重复发问。
+- **权限申请使用明确的权限字段。** Codex 原生异步问题只支持标题和选项，不支持权限字段；尚需询问授权时，可由 Resident 在正文写带精确 `credentials` 的 `portal-question`；用户已明确用自然语言授权时，直接沿 `AcceptUserAuthorization` 接受，无需补问卡片。普通选择题的同意回答不由传输层自动签发权限，工具受理回执也不证明授权发生。权限始终沿正式来源核验与凭证签发路径处理。
 
 ### 原生提问卡片
 
