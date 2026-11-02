@@ -30,7 +30,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       const data={accounts:[
         api('deepseek', {status:'ok',display:'123.45 CNY',comparison_amount:123,comparison_currency:'CNY'}),
         {account_id:'claude_one',provider:'claude',kind:'subscription_login',credits:{balance:44904.19},rate_limits:[quota('five_hour','5 小时',72),quota('weekly','每周',64)]},
-        {account_id:'antigravity_one',provider:'antigravity',kind:'subscription_login',rate_limits:[quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',100),quota('Gemini Models/Five Hour Limit Remaining','Gemini Five Hour',90),quota('other','other models',10)]},
+        {account_id:'antigravity_one',provider:'antigravity',kind:'subscription_login',rate_limits:[quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',100),quota('Gemini Models/Five Hour Limit Remaining','Gemini Five Hour',90),quota('other','other models',10),quota('Gemini 4 Argon/Gemini 4 Argon Weekly Limit','Gemini 4 Argon · Gemini 4 Argon Weekly Limit',100)]},
         {account_id:'kimi-code',provider:'kimi',kind:'subscription_login',rate_limits:[quota('limit5h','5 小时',75),quota('limit7d','每周',58),quota('monthCode','每月编程额度',85)]},
         api('a_very_long_api_account_name', {status:'ok',display:'0 USD'}, {resident_details:false}),
         api('stale', {status:'unavailable',display:'52.12 USD',stale:true}),
@@ -41,7 +41,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     `});
     for(const id of ['claude_one','antigravity_one','kimi-code']) {
       const row=page.locator('[data-account-limit-account="'+id+'"]');
-      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
+      assert.deepEqual(await row.locator('.agent-status-window-name').allTextContents(),id==='antigravity_one'?['5 小时','每周','Argon']:['5 小时','每周']);
     }
     assert.deepEqual(await page.locator('[data-account-api] .agent-status-balance-value').allTextContents(),['123.45 CNY','0 USD','52.12 USD*','—','100000 CNY','—']);
     assert.equal(await page.locator('[data-account-api=deepseek] .agent-status-balance-coins i').count(),12);
@@ -53,13 +53,19 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     const notice=antigravity.locator('[data-account-quota-warning]');
     assert.equal(await notice.count(),0);
     await page.evaluate(()=>{
-      Object.assign(data.accounts[2].rate_limits[2],{id:'Gemini 4 Argon/Weekly',label:'Gemini 4 Argon · Weekly',remaining_percent:0,observed_at:Date.now()/1000,resets_at:Date.now()/1000+6*86400});
+      Object.assign(data.accounts[2].rate_limits[2],{id:'Claude and GPT models/Weekly Limit Remaining',label:'Claude and GPT models · Weekly Limit Remaining',remaining_percent:0,observed_at:Date.now()/1000,resets_at:Date.now()/1000+6*86400});
       refreshAccountQuotaWindows();
     });
     assert.match(await notice.innerText(),/其他额度已耗尽/);
-    assert.match(await notice.getAttribute('title'),/Gemini 4 Argon.*剩余 0%.*采样于.*预计重置/);
-    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
-    assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['90%','100%']);
+    assert.match(await notice.getAttribute('title'),/Claude and GPT models.*剩余 0%.*采样于.*预计重置/);
+    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周','Argon']);
+    assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['90%','100%','100%']);
+    const argon=antigravity.locator('[data-account-quota-window="Gemini 4 Argon/Gemini 4 Argon Weekly Limit"]');
+    assert.match(await argon.getAttribute('title'),/Gemini 4 Argon Weekly Limit/);
+    for(const [remaining,stale,expected] of [[null,false,'—'],[0,false,'0%'],[100,true,'100%*']]) {
+      await page.evaluate(({remaining,stale})=>{Object.assign(data.accounts[2].rate_limits[3],{remaining_percent:remaining,stale});refreshAccountQuotaWindows();},{remaining,stale});
+      assert.equal(await argon.locator('.agent-status-limit-meta').innerText(),expected);
+    }
     for(const width of [1920,1440,1024,768,390,320]) {
       await page.setViewportSize({width,height:1000});
       const problems=await page.evaluate(()=>{
@@ -90,7 +96,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     });
     await page.evaluate(()=>{accountDetails.accountId='antigravity_one';renderAccountDetails();});
     const detailsNotice=page.locator('.account-details-quota-warning');
-    assert.match(await detailsNotice.innerText(),/Gemini 4 Argon.*剩余 0%.*预计重置/);
+    assert.match(await detailsNotice.innerText(),/Claude and GPT models.*剩余 0%.*预计重置/);
     for(const width of [1440,390,320]) {
       await page.setViewportSize({width,height:900});
       assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
@@ -115,7 +121,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     assert.equal(await detailsNotice.locator('img').count(),0,'quota names are escaped');
     assert.match(await detailsNotice.innerText(),/<img src=x onerror=alert\(1\)>/);
     await page.evaluate(()=>{
-      data.accounts[2].rate_limits[2].label='Gemini 4 Argon · Weekly';
+      data.accounts[2].rate_limits[2].label='Claude and GPT models · Weekly Limit Remaining';
       refreshAccountQuotaWindows();
       accountDetails.accountId='claude_one';renderAccountDetails();
     });

@@ -67,6 +67,7 @@
       ] : account.provider === "antigravity" ? [
         ["Gemini Models/Five Hour Limit Remaining", window.PortalI18n.t("5 小时")],
         ["Gemini Models/Weekly Limit Remaining", window.PortalI18n.t("每周")],
+        ["Gemini 4 Argon/Gemini 4 Argon Weekly Limit", "Argon"],
       ] : null;
       // Keep the shared rolling windows compact. Omitted exhausted limits are
       // reported separately so these bars do not imply every model is available.
