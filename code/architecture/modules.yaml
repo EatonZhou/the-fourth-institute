@@ -2012,8 +2012,21 @@ protocols:
     designs: []
     related_designs:
       - "decision_15f7df737ed5"
-    description: "Runtime消费ResidentTerminalFact并派发终态观察；失败通知和对外消息沿真实Family speaking身份写Mailbox。写入新提醒时按当前用户、Family门面及其直接业务成员读取Mute偏好；该偏好只抑制未来提醒，不改变路由、消息记录或已有未读，来源不明时保留提醒。"
-    example: "一个 Resident 进入终态：Runtime 消费 ResidentTerminalFact，通知沿 Family speaking 身份解析当前门面的直接业务成员；仅对设置Mute的当前用户跳过新提醒，原消息仍保存，其他用户照常收到提醒。"
+    description: "Runtime 消费 ResidentTerminalFact 并派发终态观察；失败通知和对外消息沿真实 Family speaking 身份写 Mailbox。通知与会话事件在同一事务提交，按实际收件人及持久转交来源产生提醒；不读取 Family 的 Solo/Mute 偏好，也不因门面对话隐藏而跳过新提醒或改写已有未读。"
+    example: "一个 Resident 进入终态 → Runtime 消费 ResidentTerminalFact → 沿持久转交链找到外部原请求及实际收件人 → 保存回复或终态并写入 Mailbox 提醒。即使当前查看者已 Mute 该成员，通知仍按原事件产生；事务回滚时提醒一并回滚。"
+
+  - id: "family-chat-preferences"
+    title: "Family 个人对话偏好与受理时路由快照"
+    modules:
+      - "kernel.isa"
+      - "lineage.family"
+      - "lineage.conversation"
+      - "interface.conversation"
+    designs: []
+    related_designs:
+      - "decision_9ad68dd077d4"
+    description: "Society 按调用者和 Family 门面保存 Mute/Solo；查看者的当前偏好过滤对话、进度与问题，发送者在输入受理时冻结的偏好约束 Router 候选及最终转交。Mute 同时隐藏直属成员关联的门面往来、排除后续自动选择和延续，Solo 可显式选择已 Mute 成员；问题答案仍交原承接者，非 Solo 的合法引用可直接选择成员。两项不改变权限、成员接单状态、在途工作或 Mailbox 通知。旧 Mute/Exclude 合并读取为 Mute，修改后清空旧 Exclude；私有旧字段保留已受理输入的不可变快照，不作为独立公开控制。"
+    example: "用户在门面开启某成员 Mute → UpdateFamilyChatPreferences 保存个人偏好 → 服务端分页与浏览器增量按当前查看者隐藏其往来 → 下一条输入受理时冻结路由约束 → Router 候选与 RelayFamilyMessage 最终检查均排除自动选中该成员。进入该成员 Solo 可继续显式对话，退出后恢复 Mute；解除 Mute 恢复历史可见，不重派旧输入，原问题回答和 Mailbox 提醒照常。"
 
   - id: "resource-type-registration"
     title: "资源类型适配、登记与索引接口"
