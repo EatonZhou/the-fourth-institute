@@ -279,8 +279,8 @@ def test_deleted_bindings_quota_overrides_are_forgotten_through_the_control_plan
         service = ExecutionService(client=transport)
         assert service.forget_binding_quota_overrides(["resident:manual"]) == {"removed": 1}
         assert service.forget_binding_quota_overrides(["resident:manual"]) == {"removed": 0}
-    request = submit(scheduler, binding_id="resident:manual")
-    assert claim(scheduler)["reason"] == "quota_reserve"
+        request = submit(scheduler, binding_id="resident:manual")
+        assert claim(scheduler)["reason"] == "quota_reserve"
     assert scheduler.snapshot(request.execution_id)["scheduler"]["queue_reason"] == "quota_reserve"
     with pytest.raises(ValueError):
         scheduler.forget_binding_quota_overrides(["not a binding"])

@@ -284,18 +284,29 @@ def _percent(value: Any) -> str:
     return f"{value:g}%" if isinstance(value, (int, float)) else "未知"
 
 
-def reserved_account_quota(route_id: str) -> dict[str, Any] | None:
-    """The quota reserve of the execution account behind a route, when it has paused new work."""
+def reserved_account_quota(route_id: str, *, resident_id: str = "") -> dict[str, Any] | None:
+    """Respect account protection and the scheduler's acknowledged binding exception."""
     from management_portal.execution.service import ExecutionService
 
     try:
-        accounts = ExecutionService().accounts().get("accounts", [])
+        execution = ExecutionService()
+        accounts = execution.accounts().get("accounts", [])
     except Exception:  # noqa: BLE001 - an unreadable quota never blocks a run
         LOGGER.warning("Account quota of route %s unreadable; the run is not held for it", route_id, exc_info=True)
         return None
     for account in accounts:
         quota = account.get("quota_reserve") or {}
         if account.get("backend_route_id") == route_id and quota.get("status") == "reserved":
+            if resident_id:
+                binding = f"resident:{resident_id}"
+                account_id = account["account_id"]
+                try:
+                    gate = execution.binding_quota_states({binding: account_id}).get(binding, {})
+                except (OSError, RuntimeError):
+                    gate = {}
+                if (gate.get("state") == "open" and gate.get("override_enabled") is True
+                        and gate.get("account_id") == account_id):
+                    return None
             return quota
     return None
 
@@ -315,10 +326,9 @@ def prepare_configuration(
     emit(f"准备 TAU 账号配置：{assignment['module_id']} → {assignment['backend_route_id']} · {assignment['runtime_options']['service_tier'] or 'standard'}\n")
     if cancelled():
         return {"ready": False, "status": "cancelled"}
-    reserved = reserved_account_quota(assignment["backend_route_id"])
+    reserved = reserved_account_quota(assignment["backend_route_id"], resident_id=str(assignment.get("resident_id") or ""))
     if reserved is not None:
-        # The quota reserve closes intake on every Resident of the account: a
-        # restart cannot reopen it and a replacement would be closed too.
+        # Restarting or replacing an executor cannot grant a paid-work exception.
         raise RuntimeError(
             f"TAU 执行账号 {assignment['backend_route_id']} 的额度已到保留线"
             f"（剩余 {_percent(reserved.get('remaining_percent'))}），新工作已暂停；"

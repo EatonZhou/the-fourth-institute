@@ -69,7 +69,7 @@ def configured(tmp_path, monkeypatch):
 
     monkeypatch.setattr(isa_client, "call", call)
     monkeypatch.setattr(tau_runtime, "get_society_service", lambda: SimpleNamespace(resident=resident))
-    monkeypatch.setattr(tau_runtime, "reserved_account_quota", lambda _route: None)
+    monkeypatch.setattr(tau_runtime, "reserved_account_quota", lambda _route, **_: None)
     monkeypatch.setattr(tau_runtime, "resolve_application_lineage", lambda **_: "lineage_0123456789ab")
     return SimpleNamespace(assignments=assignments, assignment=assignment, original=original, state=state,
                            resident=resident, restart=restart_session, update_settings=update_settings, isa=isa)

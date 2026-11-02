@@ -32,7 +32,7 @@ def test_an_account_at_its_quota_reserve_stops_preparation_with_the_reason(confi
     configured.state.options["source"]["account_id"] = "five"
     configured.state.conversation["intake_state"] = "closed"
     monkeypatch.setattr(tau_runtime, "reserved_account_quota",
-                        lambda route: {"status": "reserved", "remaining_percent": 0.0} if route == "five" else None)
+                        lambda route, **_: {"status": "reserved", "remaining_percent": 0.0} if route == "five" else None)
     replace = mock.Mock(side_effect=AssertionError("replaced an executor the quota reserve closed"))
     configured.restart.side_effect = AssertionError("restarted an executor the quota reserve closed")
 
