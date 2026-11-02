@@ -151,7 +151,8 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
     def safe_release(**request):
         assert request["operation"] == "release"
         assert request["binding_id"] == resident_backend.execution_binding_id(target.record)
-        assert Path(request["cwd"]) == target.owned
+        # Release uses the existing binding and starts no new working directory.
+        assert request["cwd"] == ""
         assert_deleted_reference(target)
         assert target.marker.read_text() == "original bytes survive release failure"
         assert target.folder.is_dir()

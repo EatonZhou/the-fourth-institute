@@ -333,10 +333,11 @@ def test_relay_link_waits_for_the_nested_facades_admission(facade, monkeypatch, 
             MEMBER, "CASE-A", "Nested request", message_id=forwarded,
             business_ref=family_facade.relay_mark(outer, original),
         )
-        # Family quota also completes the relay on receipt. Its inner facade
-        # has not yet run accept_for_router under this outer operation scope.
+        # Admission stores the inner input atomically. Publishing the relay
+        # still waits for the enclosing operation scope to unlock.
         family_facade.complete_relay((outer, original), MEMBER, forwarded)
-        assert repository.message(MEMBER, forwarded) is None
+        assert repository.message(MEMBER, forwarded)["message_id"] == forwarded
+        assert repository.input_state(MEMBER, forwarded)["state"] == "queued"
         assert family_facade.relay_links(facade) == {}
         assert state()["state"] == "queued"
 

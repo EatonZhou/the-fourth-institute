@@ -124,13 +124,16 @@ class InstanceManagementTests(unittest.TestCase):
         """安装与实例回归：linux job outlives web cgroup。"""
         record = {"id": "test", "unit": "tfi-control-test"}
         (self.root / "runtime").mkdir(exist_ok=True)
-        with patch.object(manager.sys, "platform", "linux"), patch.object(manager.subprocess, "run") as run:
+        with patch.object(manager.sys, "platform", "linux"), \
+                patch.object(manager, "runtime_python", return_value=Path("/fixture/python")), \
+                patch.object(manager.subprocess, "run") as run:
             manager.launch(self.root, record)
         args = run.call_args.args[0]
         self.assertEqual(args[:2], ["systemd-run", "--user"])
         self.assertIn("--property=Type=exec", args)
         self.assertIn("--setenv=PORTAL_INSTANCE_ROOT=" + str(self.root), args)
         self.assertIn("_run", args)
+        self.assertIn("/fixture/python", args)
         self.assertNotIn("shell", run.call_args.kwargs)
 
     @unittest.skipIf(os.name == "nt", "POSIX service-owner environment")
