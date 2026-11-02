@@ -2327,7 +2327,7 @@ protocols:
       - "decision_61e50306cc79"
       - "decision_dca903d71575"
     description: "CreateUpload 返回上传 ID、用途、过期时间与字节通道；服务按 purpose 校验大小、真实媒体类型和归属。Workspace 图片入口另经 workspace_contracts 校验后保存文件；读取端用已授权文件描述与范围参数返回字节。浏览器通过上传文件HTTP DELETE接口移除附件，内部消费者复用文件清理；Resident可直接删除文件，目录维护收敛缺失文件的保留登记，不为删除文件提供HATG指令。已被引用的上传删除后引用失效。Notice Board 图片复用 purpose=post_image，不另造上传库。"
-    example: "CreateUpload(purpose,target,metadata/source_address) → resources.isa 创建句柄 → 上传/校验 → Resource/Workspace 读取；ASGI download → workspace provider.read_content_range → 单一 Range 响应。"
+    example: "CreateUpload(purpose,target,metadata/source_address) → resources.isa 创建句柄 → 上传/校验 → Resource/Workspace 读取；ASGI download → workspace provider.read_content_range → 单一 Range 响应。系统工具直接删除上传文件后，目录维护仅核对 uploads 根下已登记的直接子目录；根身份稳定且目录或 ready 元数据所指内容稳定缺失时，upload_retention 注销保留登记并交原清理队列删除残余文件。未完成上传、变化中元数据、根不可访问或 I/O 错误均保留登记，普通内容编辑不触发生命周期变化；TAU 收尾复用 remove_upload，不再调用删除指令。"
 
   - id: "home-directory-view"
     title: "Home 目录、公开摘要与运行观察"
@@ -2393,12 +2393,13 @@ protocols:
     title: "Lineage 模板目录与实例化输入"
     modules:
       - "interface.workbenches"
+      - "interface.conversation"
       - "lineage.definition"
       - "kernel.isa"
     designs: []
     related_designs:
       - "decision_b04cac4188bb"
-    description: "模板目录声明获取/应用模板的 ISA 参数，浏览器模板图按正式模板内容产生实例化输入；Lineage 校验并建立新图对象。预览中的局部图 ID 不替代实例化后的正式资源身份。"
+    description: "模板目录声明获取/应用模板的 ISA 参数，浏览器模板图按正式模板内容产生实例化输入；Lineage 校验并建立新图对象。预览中的局部图 ID 不替代实例化后的正式资源身份。提示词模板拖放由浏览器填写可编辑 Chat 草稿：输入框按当前位置插入，Resident 节点以实际落点打开聊天并追加正文，保留已有草稿和附件；异步打开后再次核对当前目标，避免串填。参数引用仅转换为待填提示，拖放不调用 ApplyTemplate，也不自动投递。显式 ApplyTemplate 仍沿服务端模板执行语义。"
     example: "模板列表/详情 → lineage_templates/lineage_template_graph 预览 → ApplyTemplate 参数 → Lineage 返回正式图及对象 ID。"
 
   - id: "lineage-editor-metadata"
