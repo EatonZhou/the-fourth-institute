@@ -115,7 +115,13 @@ function resourceScope(request) {
 function instructionScope(request) {
   try {
     if (request.method() !== 'POST' || new URL(request.url()).pathname !== '/api/instructions/execute') return {};
-    const body = request.postDataJSON();
+    return instructionEvidenceScope(request.postDataJSON());
+  } catch { return {}; }
+}
+
+// One allowlist for browser requests and APIRequestContext helper calls.
+function instructionEvidenceScope(body) {
+  try {
     if (['ReadResource', 'ResolveResource'].includes(body?.instruction)) {
       const address = body.arguments?.address;
       let target = typeof address === 'string' && address.length > 0 && address.length <= 8192 ? address : null;
@@ -827,4 +833,4 @@ async function observeBrowser(context, { evidenceDir }) {
     },
   };
 }
-module.exports = { observeBrowser };
+module.exports = { observeBrowser, instructionEvidenceScope };

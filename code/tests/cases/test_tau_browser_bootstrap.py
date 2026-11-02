@@ -425,6 +425,43 @@ def test_instruction_attempts_keep_transport_identity_separate_from_idempotency(
     assert 'private-idempotency-key' not in text and 'resident_111111111111' not in text
 
 
+def test_instruction_helper_failures_keep_original_safe_target_scope(tmp_path, portal):
+    """API helper每个原HTTP保留与页面观察相同的目标摘要，错误不丢失身份也不记录正文。"""
+    from hashlib import sha256
+
+    _Portal.read_failures = {'GetLineage': [404, 404], 'GetResident': [403],
+                             'ReadResource': [404], 'Unknown': [404]}
+    calls = [('GetLineage', {'lineage_id': 'lineage_111111111111'}),
+             ('GetLineage', {'lineage_id': 'lineage_222222222222'}),
+             ('GetResident', {'resident_id': 'resident_333333333333'}),
+             ('ReadResource', {'address': 'private-original-address', 'preview': True}),
+             ('Unknown', {'address': 'private-unknown-address', 'text': 'private-body'})]
+    result = _open(tmp_path, portal, 'test-actor', body=(
+        f'for(const [name,args] of {json.dumps(calls)})'
+        '{try {await p.instruction(name,args);} catch {}}'
+    ))
+    assert result.returncode == 0, result.stderr
+    text = (tmp_path / 'evidence/tau-helper-calls.jsonl').read_text()
+    rows = [json.loads(line) for line in text.splitlines()]
+    starts = [r for r in rows if r['kind'] == 'request_started']
+    ends = [r for r in rows if r['kind'] == 'request_finished']
+    assert len(starts) == len(ends) == len(calls)
+    assert [r['http_status'] for r in ends] == [404, 404, 403, 404, 404]
+    expected = [('lineage', 'lineage_111111111111'), ('lineage', 'lineage_222222222222'),
+                ('resident', 'resident_333333333333'), ('resource', 'private-original-address')]
+    for index, (kind, target) in enumerate(expected):
+        scope = starts[index]['resource_scope']
+        assert scope['kind'] == kind
+        assert scope['target_sha256'] == sha256(target.encode()).hexdigest()
+        assert all(r['resource_scope'] == scope for r in rows if r['call_id'] == starts[index]['call_id'])
+        assert starts[index]['request_id'] == ends[index]['request_id']
+        assert ends[index]['duration_ms'] > 0
+        assert target not in text
+    assert starts[3]['resource_scope']['read_mode'] == 'preview'
+    assert 'resource_scope' not in starts[4]
+    assert 'private-unknown-address' not in text and 'private-body' not in text
+
+
 def test_the_bootstrap_waits_for_one_message_by_its_own_input_state(tmp_path, portal):
     """TAU 共享启动器按消息 ID 读取并等待这条消息自己的处理状态
 

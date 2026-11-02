@@ -50,7 +50,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { randomUUID } = require("crypto");
 const { performance } = require("perf_hooks");
-const { observeBrowser } = require("./tau_browser_observer");
+const { observeBrowser, instructionEvidenceScope } = require("./tau_browser_observer");
 const { safeError, safeInstructionError, safeTransport } = require("./tau_safe_error");
 const { sendThenStop } = require('./tau_send_stop');
 const { writeNetworkReview } = require('./tau_network_review');
@@ -217,7 +217,9 @@ async function openPortal({ evidenceDir, storageState, origin, pythonExecutable,
     }
     const callId = randomUUID();
     const started = performance.now();
-    const identity = { call_id: callId, tool: /^[A-Z][A-Za-z0-9]{0,79}$/.test(name) ? name : "instruction", helper_pid: process.pid };
+    const scope = instructionEvidenceScope({instruction:name,arguments:args});
+    const identity = { call_id: callId, tool: /^[A-Z][A-Za-z0-9]{0,79}$/.test(name) ? name : "instruction", helper_pid: process.pid,
+      resource_scope:scope.resourceScope, resident_count:scope.residentCount };
     const append = record => fs.appendFileSync(path.join(evidence, 'tau-helper-calls.jsonl'),
       JSON.stringify({ ...identity, ...record }) + '\n');
     append({ kind: 'call_started', at: new Date().toISOString() });
