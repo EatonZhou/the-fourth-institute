@@ -100,6 +100,9 @@ def require_offline(instance: InstanceManifest, *, running: Iterable[str] = ()) 
 
     ``running`` components must be active; their main PIDs are returned.
     """
+    if sys.platform == 'win32':
+        from scripts.migrate_instance_windows_services import require_offline as windows_offline
+        return windows_offline(instance, running=running)
     allowed = {instance.service_name(component) + ".service": component for component in running}
     pids = {}
     for unit in sorted(instance_units(instance)):
@@ -303,6 +306,14 @@ class PrefixMap:
         return bool(self.pairs)
 
     def match(self, path: str) -> tuple[str, str] | None:
+        from pathlib import PureWindowsPath
+        if PureWindowsPath(path).is_absolute():
+            candidate = PureWindowsPath(path)
+            for old, new in self.pairs:
+                source = PureWindowsPath(old)
+                if source.is_absolute() and candidate.is_relative_to(source):
+                    return old, new
+            return None
         for old, new in self.pairs:
             if path == old or path.startswith(old + "/"):
                 return old, new
@@ -313,6 +324,9 @@ class PrefixMap:
         if found is None:
             return None
         old, new = found
+        from pathlib import PureWindowsPath
+        if PureWindowsPath(path).is_absolute():
+            return str(PureWindowsPath(new) / PureWindowsPath(path).relative_to(PureWindowsPath(old)))
         return new + path[len(old):]
 
     @classmethod

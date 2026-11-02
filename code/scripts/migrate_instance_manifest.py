@@ -151,6 +151,9 @@ def require_backup(result: dict) -> None:
 
 def require_stopped(root: Path, manifest: dict) -> None:
     """Observe actual user units immediately before applying; never stop them here."""
+    if sys.platform == 'win32':
+        from scripts import migrate_instance_windows_services as windows
+        return windows.require_stopped(root, _read(root, 'config/target.json'))
     if sys.platform != "linux":
         raise NotImplementedError("Offline conversion service checks are not implemented for this platform")
     prefix = manifest["services"]["prefix"]
@@ -195,7 +198,8 @@ def _write_new(path: Path, value: dict) -> None:
 
 
 def apply_conversion(root: Path, *, proposal: dict, backup: dict, backup_program: Path | None = None,
-                     gateway_network: Path | None = None, provider_package: Path | None = None, check_only: bool = False) -> dict:
+                     gateway_network: Path | None = None, provider_package: Path | None = None, check_only: bool = False,
+                     code_root: Path | None = None) -> dict:
     """Apply the offline configuration stage; activation and old-file cleanup follow.
 
     Moves are renames, never copies of credentials. Failure restores moved files
@@ -209,7 +213,7 @@ def apply_conversion(root: Path, *, proposal: dict, backup: dict, backup_program
     descriptor = os.open(root / ".configuration.lock", os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
     with os.fdopen(descriptor, "r+b") as stream, lock_stream(stream), host_instances._locked_registry() as registry_file:
         fresh = conversion_manifest(root, components=proposal["services"]["components"], backup_program=backup_program,
-                                    gateway_network=gateway_network, programs=proposal['services'].get('programs'))
+                                    gateway_network=gateway_network, programs=proposal['services'].get('programs'), code_root=code_root)
         if fresh != proposal:
             raise ValueError("Conversion proposal no longer matches the installation")
         instance = validate(root, fresh)
@@ -323,7 +327,8 @@ def _read(root: Path, name: str) -> dict:
 
 
 def conversion_manifest(root: Path, *, components: list[str], backup_program: Path | None = None,
-                        gateway_network: Path | None = None, programs: dict | None = None) -> dict:
+                        gateway_network: Path | None = None, programs: dict | None = None,
+                        code_root: Path | None = None) -> dict:
     """Build and validate identity and locations without reading any secret file."""
     root = Path(root).resolve()
     if (root / "instance.json").exists():
@@ -358,6 +363,12 @@ def conversion_manifest(root: Path, *, components: list[str], backup_program: Pa
         if 'gateway' not in components:
             components = [*components, 'gateway']
     release_code = pair.get("release_code", target["shared_code_root"])
+    if code_root is not None:
+        if pair:
+            raise ValueError('A paired development instance requires its existing code deployments')
+        if not code_root.is_absolute() or code_root.resolve() != code_root or not (code_root / 'scripts/tfi_release_install.py').is_file():
+            raise ValueError('Conversion code root must be an installed canonical program directory')
+        release_code = str(code_root)
     deployments = {"release": {"kind": "release", "code_root": str(Path(release_code).resolve()),
                                 "web_port": pair.get("web_ports", {}).get("release", target["ports"]["web"])}}
     if pair:
@@ -416,6 +427,7 @@ def main() -> None:
     parser.add_argument("--backup-program", type=Path, help="Installed backup application's entry point")
     parser.add_argument("--gateway-network", type=Path, help="Actual external gateway network env file for paired installations")
     parser.add_argument("--provider-package", type=Path, help="New packaged Claude code prepared beside dependencies/providers")
+    parser.add_argument("--code-root", type=Path, help="Separately installed program used after conversion; old program is retained")
     parser.add_argument("--check", action="store_true", help="With --apply, verify conversion readiness without stopping or mutating data")
     args = parser.parse_args()
     if args.apply:
@@ -423,7 +435,8 @@ def main() -> None:
             parser.error("--apply requires --backup-result and cannot be combined with planning arguments")
         result = apply_conversion(args.root, proposal=json.loads(args.apply.read_text()),
                                   backup=json.loads(args.backup_result.read_text()), backup_program=args.backup_program,
-                                  gateway_network=args.gateway_network, provider_package=args.provider_package, check_only=args.check)
+                                  gateway_network=args.gateway_network, provider_package=args.provider_package, check_only=args.check,
+                                  code_root=args.code_root)
         print(json.dumps(result))
         return
     if not args.output or not args.component or args.backup_result or args.check:
@@ -431,7 +444,8 @@ def main() -> None:
     if args.output.resolve() == args.root.resolve() / "instance.json":
         parser.error("Planning cannot write the live instance manifest")
     manifest = conversion_manifest(args.root, components=args.component, backup_program=args.backup_program,
-                                   gateway_network=args.gateway_network, programs=json.loads(args.programs.read_text()) if args.programs else None)
+                                   gateway_network=args.gateway_network, programs=json.loads(args.programs.read_text()) if args.programs else None,
+                                   code_root=args.code_root)
     args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"planned": True, "instance": manifest["name"], "output": str(args.output)}))
 

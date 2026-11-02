@@ -37,7 +37,7 @@ class Conversion:
         self.missing, self.unclassified = {}, {}
 
     def location(self, value, field, deleted=False):
-        if not value.startswith('/') or '\n' in value or '\0' in value:
+        if not Path(value).is_absolute() or '\n' in value or '\0' in value:
             return value
         mapped = value
         seen = set()
@@ -82,6 +82,11 @@ class Conversion:
 
 def assert_unused_index(instance):
     """Inspect definitions and live process environments, without exposing secrets."""
+    if sys.platform == 'win32':
+        # The native offline check rejects all non-database processes, including
+        # Provider supervisors. No resource client can retain an alternate index.
+        require_offline(instance, running=('postgres',))
+        return
     for unit in instance_units(instance):
         result = subprocess.run(['systemctl', '--user', 'show', unit, '-p', 'Environment'],
                                 capture_output=True, text=True, check=True)
@@ -126,11 +131,15 @@ def convert_database(conn, instance, mapping, *, apply):
         # deleted_at is a timestamp and therefore absent from the text-column list.
         deleted_col = bool(conn.execute('SELECT 1 FROM information_schema.columns WHERE table_schema=%s AND table_name=%s AND column_name=%s',
                                        (schema, table, 'deleted_at')).fetchone())
-        where = sql.SQL(' OR ').join(sql.SQL('{}::text LIKE %s').format(sql.Identifier(name)) for name, _ in fields)
+        # Include native Windows separators in both text and serialized JSON.
+        # strpos avoids LIKE's backslash escape rules.
+        where = sql.SQL(' OR ').join(
+            sql.SQL('(strpos({0}::text, %s)>0 OR strpos({0}::text, %s)>0)').format(sql.Identifier(name))
+            for name, _ in fields)
         query = sql.SQL('SELECT ctid::text,{},{} FROM {} WHERE {}').format(
             sql.SQL('deleted_at IS NOT NULL') if deleted_col else sql.SQL('false'),
             sql.SQL(',').join(sql.Identifier(name) for name, _ in fields), table_id, where)
-        rows = conn.execute(query, ['%/%'] * len(fields)).fetchall()
+        rows = conn.execute(query, ['/', '\\'] * len(fields)).fetchall()
         changed_rows = 0
         for row in rows:
             changes, values = [], []

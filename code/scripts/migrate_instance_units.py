@@ -55,6 +55,11 @@ def _owned(instance, text):
 
 
 def plan(instance, *, obsolete_units=(), renamed_units=None) -> list[Replacement]:
+    if sys.platform == 'win32':
+        from scripts import migrate_instance_windows_services as windows
+        if obsolete_units or renamed_units:
+            raise ValueError('Linux unit overrides cannot be converted on Windows')
+        return windows.plan(instance)
     if sys.platform != 'linux':
         raise NotImplementedError('Offline unit conversion requires a native service ownership check on this platform')
     missing = missing_launchers(instance)
@@ -151,6 +156,9 @@ def _write(path, text):
 
 
 def apply(replacements):
+    if sys.platform == 'win32':
+        from scripts import migrate_instance_windows_services as windows
+        return windows.apply(replacements)
     applied = []
     try:
         for item in replacements:
@@ -179,6 +187,9 @@ def apply(replacements):
 
 
 def rollback(replacements):
+    if sys.platform == 'win32':
+        from scripts import migrate_instance_windows_services as windows
+        return windows.rollback(replacements)
     newly_enabled = [item.unit_name for item in replacements if item.enable_after and not item.enabled]
     if newly_enabled:
         subprocess.run(['systemctl', '--user', 'disable', *newly_enabled], check=True,

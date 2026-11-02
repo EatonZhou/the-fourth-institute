@@ -6,6 +6,45 @@ from scripts.instance_storage_migration import PrefixMap
 from scripts.migrate_instance_database_paths import Conversion
 
 
+def test_database_scan_includes_native_windows_paths(tmp_path, monkeypatch):
+    """PostgreSQL scans native separators in text and JSON without changing prose."""
+    import json
+    import os
+    import uuid
+    import psycopg
+    from psycopg import sql
+    from scripts.migrate_instance_database_paths import convert_database
+
+    schema = 'migration_scan_' + uuid.uuid4().hex
+    instance = InstanceManifest(tmp_path / 'instance', {})
+    seen = []
+
+    def location(self, value, field, deleted=False):
+        seen.append((field, value))
+        self.counts[field] += 1
+        return 'projects:converted'
+
+    monkeypatch.setattr(Conversion, 'location', location)
+    with psycopg.connect(os.environ['PORTAL_POSTGRES_TEST_DSN']) as conn:
+        try:
+            conn.execute(sql.SQL('CREATE SCHEMA {}').format(sql.Identifier(schema)))
+            table = sql.Identifier(schema, 'locations')
+            conn.execute(sql.SQL('CREATE TABLE {} (path text, metadata jsonb, snapshot text, prompt text)').format(table))
+            path = r'C:\Users\ET\中文\file.txt'
+            conn.execute(sql.SQL('INSERT INTO {} VALUES (%s,%s::jsonb,%s,%s)').format(table),
+                         (path, json.dumps({'path': path}), json.dumps({'path': path}), path))
+            result = convert_database(conn, instance, PrefixMap([]), apply=False)
+            assert result['tables'][schema + '.locations'] == 1
+            assert {(f, v) for f, v in seen if f.startswith(schema + '.')} == {
+                (schema + '.locations.path', path),
+                (schema + '.locations.metadata.path', path),
+                (schema + '.locations.snapshot.path', path),
+            }
+            assert conn.execute(sql.SQL('SELECT path,prompt FROM {}').format(table)).fetchone() == (path, path)
+        finally:
+            conn.rollback()
+
+
 def test_location_conversion_preserves_prose_and_host_locations(tmp_path):
     """路径字段归入区域，消息正文与主机目录保持原样"""
     root = tmp_path / 'instance'

@@ -85,6 +85,17 @@ class ManifestConversionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "one-time"):
             conversion_manifest(self.root, components=["web"])
 
+    def test_conversion_can_select_separately_installed_code_without_moving_data(self):
+        code = self.base / 'new-program/code'
+        (code / 'scripts').mkdir(parents=True)
+        (code / 'scripts/tfi_release_install.py').write_text('# fixture')
+        before = (self.root / 'config/target.json').read_bytes()
+        doc = conversion_manifest(self.root, components=['web'], code_root=code)
+        self.assertEqual(doc['deployments']['release']['code_root'], str(code))
+        self.assertEqual(doc['instance_id'], 'preserve-this-identity')
+        self.assertEqual((self.root / 'config/target.json').read_bytes(), before)
+        self.assertFalse((self.root / 'instance.json').exists())
+
     def apply(self, *, backup=None):
         proposal = conversion_manifest(self.root, components=["web"])
         completed = {"status": "success", "operation": "content", "succeeded": True,

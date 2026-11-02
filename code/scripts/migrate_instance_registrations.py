@@ -57,7 +57,42 @@ def relocated_secret_path(value, old_root: Path, new_root: Path):
     return str(new_root / path.relative_to(old_root))
 
 
+def subscription_directories(rows, directories):
+    """Bind historical subscriptions to explicitly reviewed existing host directories.
+
+    Never infer a directory from an account name, create one, or read credentials.
+    Validate the entire mapping before the caller starts updating any row.
+    """
+    from management_common.provider_account_paths import canonical_directory
+    if not isinstance(directories, dict):
+        raise ValueError('Subscription directory mapping must be an object')
+    missing = {row['account_id'] for row in rows
+               if row['kind'] == 'subscription_login' and not row['config'].get('account_dir')}
+    if set(directories) != missing:
+        raise ValueError('Provide exactly the historical subscriptions missing account_dir')
+    updates, used = {}, set()
+    for row in rows:
+        if row['kind'] != 'subscription_login':
+            continue
+        value = row['config'].get('account_dir') or directories[row['account_id']]
+        directory = canonical_directory(value)
+        if not directory.is_dir():
+            raise ValueError('Historical subscription directory is missing')
+        if directory in used:
+            raise ValueError('Subscription directory mapping contains duplicates')
+        used.add(directory)
+        if row['account_id'] in missing:
+            config = dict(row['config'], account_dir=str(directory))
+            # This former onboarding option is no longer registration state.
+            config.pop('reuse_local_login', None)
+            updates[row['account_id']] = config
+    return updates
+
+
 def require_clients_stopped(instance):
+    if sys.platform == 'win32':
+        from scripts.instance_storage_migration import require_offline
+        return require_offline(instance, running=('postgres',))
     if not sys.platform.startswith('linux'):
         raise NotImplementedError('Verify native service ownership before running this conversion on another platform')
     result = subprocess.run(['systemctl', '--user', 'list-units', '--all', '--plain', '--output=json',
@@ -78,14 +113,15 @@ def require_clients_stopped(instance):
             raise RuntimeError('Stop all instance clients before migrating device settings: ' + unit)
 
 
-def migrate(root: Path, *, check_only=False):
+def migrate(root: Path, *, check_only=False, account_directories=None):
     import psycopg
     instance = load(root)
     with configuration_lock(instance.root):
-        old_site = json.loads((instance.root / 'config/site.json').read_text())
-        target = json.loads((instance.root / 'config/target.json').read_text())
+        old_site = json.loads((instance.root / 'config/site.json').read_text(encoding='utf-8'))
+        target = json.loads((instance.root / 'config/target.json').read_text(encoding='utf-8'))
         old_secrets = Path(target['data_roots']['secrets_dir'])
         changed_apis = []
+        changed_accounts = {}
         overrides = old_site.get('deployment', {}).get('device_ssh_paths', {})
         endpoint = secret_environment(instance, 'postgres.env')['PORTAL_DATABASE_URL']
         if not check_only:
@@ -100,6 +136,15 @@ def migrate(root: Path, *, check_only=False):
                     if cursor.fetchone()[0]:
                         raise RuntimeError('Other database clients are still connected')
                     cursor.execute('LOCK TABLE resource_registry.registry_documents IN EXCLUSIVE MODE')
+                cursor.execute('SELECT account_id,kind,config FROM execution_accounts.registrations')
+                accounts = [dict(zip(('account_id', 'kind', 'config'), row)) for row in cursor.fetchall()]
+                changed_accounts = subscription_directories(accounts, account_directories or {})
+                if changed_accounts and not check_only:
+                    from psycopg.types.json import Jsonb
+                    for account_id, config in changed_accounts.items():
+                        cursor.execute('UPDATE execution_accounts.registrations SET config=%s,version=version+1,'
+                                       "updated_at=now(),updated_by='instance-migration' WHERE account_id=%s",
+                                       (Jsonb(config), account_id))
                 cursor.execute("SELECT document_id,document_json::jsonb FROM resource_registry.registry_documents WHERE collection='device'")
                 updates = converted_documents(dict(cursor.fetchall()), overrides)
                 if updates and not check_only:
@@ -123,12 +168,16 @@ def migrate(root: Path, *, check_only=False):
                             cursor.execute('UPDATE model_apis.apis SET api_key_file=%s,config_dir=%s,version=version+1,'
                                            "updated_at=now(),updated_by='instance-migration' WHERE api_id=%s",
                                            (*changed, api_id))
-        return {'checked': check_only, 'devices': len(updates), 'model_api_paths': len(changed_apis), 'services_started': False}
+        return {'checked': check_only, 'devices': len(updates), 'model_api_paths': len(changed_apis),
+                'subscription_directories': len(changed_accounts), 'services_started': False}
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--account-directories', type=Path,
+                        help='JSON mapping of historical subscription IDs to reviewed existing host directories')
     args = parser.parse_args()
-    print(json.dumps(migrate(args.root, check_only=args.check)))
+    directories = json.loads(args.account_directories.read_text(encoding='utf-8')) if args.account_directories else None
+    print(json.dumps(migrate(args.root, check_only=args.check, account_directories=directories)))
