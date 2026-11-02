@@ -104,6 +104,29 @@ class ExamplePaths(unittest.TestCase):
                                 expected_origin = 'adopted' if location['path'] == replacements['${code_root}'] else 'created'
                                 self.assertEqual(location['origin'], expected_origin)
                                 self.assertEqual(location['owner_id'], document['id'])
+                    # A seed import bypasses state_store._create_schema. Its
+                    # cross-owner deletion trigger must therefore be present in
+                    # the dump, not merely in fresh-schema Python tests.
+                    owner, borrower = connection.execute(
+                        "SELECT resident_id,owned_workspace_id FROM residents "
+                        "WHERE deleted_at IS NULL ORDER BY resident_id LIMIT 2"
+                    ).fetchall()
+                    connection.execute(
+                        "INSERT INTO resident_workspace_bindings(resident_id,workspace_id,purpose) "
+                        "VALUES (%s,%s,'seed deletion regression') ON CONFLICT DO NOTHING",
+                        (borrower['resident_id'], owner['owned_workspace_id']))
+                    connection.execute(
+                        "UPDATE workspace.workspaces SET deleted_at=now() "
+                        "WHERE workspace_id=%s", (owner['owned_workspace_id'],))
+                    self.assertEqual(connection.execute(
+                        "SELECT count(*) AS n FROM resident_workspace_bindings WHERE workspace_id=%s",
+                        (owner['owned_workspace_id'],)).fetchone()['n'], 0)
+                    queued = connection.execute(
+                        "SELECT payload_json FROM resident_lifecycle_operations WHERE resident_id=%s",
+                        (borrower['resident_id'],)).fetchone()
+                    self.assertIsNotNone(queued)
+                    self.assertIn({'kind': 'workspace_document', 'resident_id': borrower['resident_id']},
+                                  json_value(queued['payload_json'])['steps'])
                     actual_registry_tables = {row['table_name'] for row in connection.execute(
                         "SELECT table_name FROM information_schema.tables "
                         "WHERE table_schema='resource_registry'"

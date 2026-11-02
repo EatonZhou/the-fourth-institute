@@ -290,10 +290,15 @@
     const EDITABLE_KINDS = new Set(["markdown", "json", "jsonl", "text"]);
     const trimSlashes = value => String(value || "").replace(/^\/+|\/+$/g, "");
     const parentPath = path => {
-      const clean = trimSlashes(path);
-      return clean.includes("/") ? `/${clean.slice(0, clean.lastIndexOf("/"))}` : "";
+      // These are server filesystem paths, including Windows drives and UNC.
+      // Preserve their root; adding a POSIX slash makes C:/... unreadable.
+      const clean = String(path || "").replaceAll("\\", "/").replace(/\/+$/, "");
+      const index = clean.lastIndexOf("/");
+      if (index < 0) return "";
+      if (index === 0) return "/";
+      return index === 2 && /^[a-z]:/i.test(clean) ? clean.slice(0, 3) : clean.slice(0, index);
     };
-    const baseName = path => trimSlashes(path).split("/").pop() || "";
+    const baseName = path => trimSlashes(String(path || "").replaceAll("\\", "/")).split("/").pop() || "";
     const fileAddress = (rootId, relPath = "") => `${rootId}/file${trimSlashes(relPath) ? `/${trimSlashes(relPath)}` : ""}`;
     const workspaceRoot = (directoryId, rootKind, label, path, extra = {}) => ({
       directory_id: directoryId, workspace_id: rootKind === "workspace" ? directoryId : "",

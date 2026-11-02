@@ -139,7 +139,7 @@
         ]);
         if (destroyed || current !== revision) return;
         const records = (result.items || []).filter(item => typeof item.value?.name === "string").map(item => ({
-          ...item, value: { ...item.value, folders: [...new Set((item.value.folders || []).filter(path => typeof path === "string" && path.startsWith("/")))] },
+          ...item, value: { ...item.value, folders: [...new Set((item.value.folders || []).filter(path => typeof path === "string" && /^(?:\/|[a-z]:[\\/]|\\\\[^\\]+\\[^\\]+)/i.test(path)))] },
         }));
         items = records.filter(item => item.value.kind !== "locked-directory");
         locks = records.filter(item => item.value.kind === "locked-directory" && item.value.folders.length === 1);
@@ -226,7 +226,7 @@
       load,
       setResident({ id = "", roots = null, error: failure = "" } = {}) {
         if (destroyed) return;
-        const nextItems = (roots || []).filter(item => String(item.path || "").startsWith("/")).map(item => ({
+        const nextItems = (roots || []).filter(item => /^(?:\/|[a-z]:[\\/]|\\\\[^\\]+\\[^\\]+)/i.test(String(item.path || ""))).map(item => ({
           key: directoryKey(item.path),
           readOnly: true,
           source: "resident",

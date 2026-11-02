@@ -19706,3 +19706,34 @@ CREATE TABLE lineage.family_chat_inputs (
     PRIMARY KEY (facade_id, message_id)
 );
 
+
+-- Society response to logical Workspace deletion, including fresh installs.
+CREATE OR REPLACE FUNCTION "lineage".workspace_deleted_bindings()
+        RETURNS trigger LANGUAGE plpgsql AS $body$
+        DECLARE affected TEXT; step JSONB;
+        BEGIN
+            FOR affected IN
+                WITH removed AS (
+                    DELETE FROM "lineage".resident_workspace_bindings
+                    WHERE workspace_id=NEW.workspace_id RETURNING resident_id
+                )
+                SELECT r.resident_id FROM "lineage".residents r
+                WHERE r.deleted_at IS NULL AND
+                    (r.resident_id IN (SELECT resident_id FROM removed) OR r.owned_workspace_id=NEW.workspace_id)
+            LOOP
+                step := jsonb_build_object('kind','workspace_document','resident_id',affected);
+                INSERT INTO "lineage".resident_lifecycle_operations(operation_id,resident_id,payload_json)
+                VALUES ('workspace-document:' || affected, affected,
+                        jsonb_build_object('steps',jsonb_build_array(step),'next_step',0))
+                ON CONFLICT(resident_id) DO UPDATE SET payload_json=jsonb_set(
+                    resident_lifecycle_operations.payload_json::jsonb, '{steps}',
+                    (resident_lifecycle_operations.payload_json::jsonb->'steps') || jsonb_build_array(step));
+            END LOOP;
+            RETURN NEW;
+        END $body$;
+
+DROP TRIGGER IF EXISTS workspace_deleted_bindings ON "workspace".workspaces;
+
+CREATE TRIGGER workspace_deleted_bindings AFTER UPDATE OF deleted_at ON "workspace".workspaces
+        FOR EACH ROW WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
+        EXECUTE FUNCTION "lineage".workspace_deleted_bindings();

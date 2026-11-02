@@ -5,7 +5,7 @@
     const roots = (binding?.roots || []).filter(root => (
       root.root_kind === "workspace"
       && String(root.workspace_id || "")
-      && String(root.path || "").startsWith("/")
+      && /^(?:\/|[a-z]:[\\/]|\\\\[^\\]+\\[^\\]+)/i.test(String(root.path || ""))
     ));
     return [...new Map(roots.map(root => [root.workspace_id, root])).values()];
   }
