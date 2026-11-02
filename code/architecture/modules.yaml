@@ -787,6 +787,7 @@ modules:
       - "management_portal/claude_tool_bridge.py"
       - "management_portal/antigravity_accounts.py"
       - "management_portal/antigravity_client.py"
+      - "management_portal/antigravity_input_media.py"
       - "management_portal/antigravity_runtime.py"
       - "scripts/antigravity_account.py"
       - "management_portal/execution/provider_catalog.py"
