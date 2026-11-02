@@ -15141,8 +15141,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260825__decision__Portal_LineageData采用结构化图事实_运行投影与投递协调__decision_71aa039e3211.md",
-      "sha256": "98744c413f8a264a213c045fe425208d0d1869e57b472e841036ffedd2377acc",
-      "size": 41251
+      "sha256": "78296539777b5faf03f978dc1c78afe5f38d248cef940081b2a1cd9d491282da",
+      "size": 42598
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260825__decision__Portal_网络入口、TLS_与可信代理边界__decision_85222f2d316b.md",
@@ -15756,8 +15756,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
-      "sha256": "85be1b97a8b8f42f87625e0567bb3a0c4dd19471164ea7a14d8ee9bbbe69e9c8",
-      "size": 17143
+      "sha256": "2dddf4d649da8b316fb454334155ba0aaadd52a1f1259fd3fc722e61a4705f1b",
+      "size": 18496
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261002__decision__Chatroom：用户聊天室与_@_Resident_投递__decision_a6bebf4ac283.md",
@@ -15786,8 +15786,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261013__decision__Mailbox：Resident_和_User_的收件__decision_15f7df737ed5.md",
-      "sha256": "3cc8eb3aa7f252d83edc1c37fb6433397f33c772c47f6c0fddfc0edd9d947f42",
-      "size": 81640
+      "sha256": "eb17e1a9089cf8e403d9c19e27fca8f003600dd6abcacbe37ff05cdec37f8211",
+      "size": 83467
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261013__decision__Portal_新用户指引与统一入口__decision_3286d4167180.md",
@@ -15853,6 +15853,11 @@
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__资源类型注册：声明文件、提供者绑定与管理页__decision_355ed742bca5.md",
       "sha256": "042b62fa68ee67f28c9b0ea0064a02860ccb9ab94327d9db503fae10fd5d78ba",
       "size": 10279
+    },
+    {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_消息路由与对外对话__decision_9ad68dd077d4.md",
+      "sha256": "e21c72aed7964caa2483a1a4d45a2eea9b4f5c36652d6908f5b0a0c0a0681fdd",
+      "size": 20995
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Portal_运行维护：安装、检查、发布与恢复__decision_ab9880dc4c9d.md",
@@ -31271,8 +31276,8 @@
     },
     {
       "path": "database/distribution.sql",
-      "sha256": "149b8a4bc5627d05cebda56d5d60c4fd3a892fc190b408e548292b409cd4fe5a",
-      "size": 3150594
+      "sha256": "cc1e78559caeac96c5fee698a2d57b6b1f41fa0bcc12aaf47f2ae6562dd0d128",
+      "size": 3150659
     }
   ]
 }
