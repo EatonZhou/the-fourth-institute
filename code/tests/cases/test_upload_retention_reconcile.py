@@ -1,6 +1,6 @@
 """Direct upload deletion converges through the registered directory lifecycle.
 
-:module: storage
+:module: resource.service
 :design: decision_4aa13bc21e8e
 """
 from contextlib import contextmanager

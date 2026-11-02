@@ -1,6 +1,6 @@
 """Knowledge move commits and recovery share the production registry owner.
 
-:module: resources.types
+:module: workflow.knowledge
 :design: decision_3ece26686464
 """
 from pathlib import Path

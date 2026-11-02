@@ -226,3 +226,35 @@ def test_control_sync_retry_does_not_create_another_paid_session(monkeypatch, is
         monkeypatch.setattr(execution_port, "service", lambda: pytest.fail("committed session must not be submitted again"))
         resident_restart_domain.resume_resident_session_restart(step)
         assert len(operations) == 1
+
+
+@pytest.mark.parametrize("strategy", ["fresh", "preserve"])
+def test_paid_empty_session_keeps_queued_input_for_atomic_handoff(monkeypatch, isolated_portal_case, strategy):
+    """A credits-funded candidate must not reroute an unbound queued turn first."""
+    from copy import deepcopy
+    from management_portal.society_service import resident_execution_work
+    from tests.cases.test_session_restart import ExecutionStub
+
+    with isolated_portal_case():
+        record, operations, saved = _restart_domain(monkeypatch)
+        job = {"execution_id": "execution-original", "user_message_id": "msg_original",
+               "actor": "resident_bbbbbbbbbbbb", "status": "queued",
+               "submitted_at": "2026-11-03T00:00:00Z"}
+        original = deepcopy(job)
+        rerouted = []
+        monkeypatch.setattr(resident_backend, "session_record", lambda *a, **kw: {})
+        monkeypatch.setattr(resident_execution_work, "read", lambda *a: job)
+        monkeypatch.setattr(resident_execution_work, "is_active", lambda value: bool(value))
+        monkeypatch.setattr(execution_port, "service", lambda: ExecutionStub(
+            reassign_queued_route=lambda *a, **kw: rerouted.append((a, kw))))
+        monkeypatch.setattr(execution_port, "health", lambda: {"scheduler": {"capacity_partitions": {
+            "codex:one": {"quota_reserve": paid_quota()}}}})
+        body = {"target_provider": "codex", "target_account": "one", "context_strategy": strategy,
+                "idempotency_key": "paid-queued", "credits_consent": {"account_id": "one", "confirmed": True}}
+        result = resident_domain.restart_resident_session(record["resident_id"], "alice", body)
+        assert result["status"] == "accepted" and result["phase"] == "waiting_current_execution"
+        assert result["deferred"]["payload"]["credits_consent"] == body["credits_consent"]
+        assert result["deferred"]["actor"] == "alice"
+        assert job == original and not rerouted and not operations
+        assert saved[-1]["session_restart"]["restart_id"] == result["restart_id"]
+        assert resident_domain.restart_resident_session(record["resident_id"], "alice", body) == result

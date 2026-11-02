@@ -1,6 +1,6 @@
 """Current-input grants are atomic, bounded and cannot be resurrected by replay.
 
-:module: resources.permissions
+:module: security.identity-access
 :importance: P1
 :design: decision_b820faf42218, decision_22227d0ad075
 """

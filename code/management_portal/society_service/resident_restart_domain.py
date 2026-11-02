@@ -539,9 +539,14 @@ def restart_resident_session(
     pending = _pending_restart(resident_id, actor_id, record, intent)
     if pending:
         return pending
+    prepare_session = use_credits or not (
+        restart_target.provider == "provider_api" or strategy == "fresh"
+        or (not source["has_session"] and not unbound_previous_session)
+    )
     work = _settle_active_work(
         record, target.resident_id, actor_id, body, source, restart_target, intent,
         active_execution_policy=active_execution_policy, portal_reason=portal_reason,
+        prepare_session=prepare_session,
     )
     if work.scheduled is not None:
         return work.scheduled
@@ -571,8 +576,7 @@ def restart_resident_session(
         resume_message_id=str(failed_input.get("message_id") or "") if intent["resume_failed_input"] else "",
         work=work,
     )
-    if not use_credits and (restart_target.provider == "provider_api" or strategy == "fresh"
-            or (not source["has_session"] and not unbound_previous_session)):
+    if not prepare_session:
         return _configure_session_target(restart)
     return _admit_session_replacement(restart)
 
@@ -805,6 +809,7 @@ def _settle_active_work(
     *,
     active_execution_policy: str,
     portal_reason: str,
+    prepare_session: bool,
 ) -> _ActiveWork:
     """Keep, move, wait for or cancel the active work, as the restart's policy and the work allow."""
 
@@ -824,7 +829,8 @@ def _settle_active_work(
     if active_execution_policy == "wait":
         candidate_execution_id = resident_execution_work.submitted_execution_id(current_job)
         can_preserve_queued_execution = (
-            not source["has_session"]
+            not prepare_session
+            and not source["has_session"]
             and target.source_provider == target.provider
             and bool(target.route)
             and bool(candidate_execution_id)
