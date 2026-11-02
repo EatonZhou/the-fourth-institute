@@ -92,19 +92,23 @@ def test_explicit_workflow_roundtrip_keeps_objects_and_binding(lineage, workflow
     assert bindings.store.get(lineage, member, NAME) == state
 
 
-def test_child_can_collect_ancestor_workflow_without_duplicate_ownership(lineage, workflows):
+@pytest.mark.parametrize("wrap_member", [False, True], ids=["child-first", "parent-first"])
+def test_child_can_collect_ancestor_workflow_without_duplicate_ownership(lineage, workflows, wrap_member):
     """子Family从祖先收纳工作流保持唯一归属"""
     bindings, _calls = workflows
     member = resident(lineage, "Descendant module")
-    child = _family(lineage, member)
-    parent = _family(lineage, child["facade_resident_id"])
+    child = None if wrap_member else _family(lineage, member)
+    parent = _family(lineage, member if wrap_member else child["facade_resident_id"])
     install(bindings, lineage, member)
     state = bindings.store.get(lineage, member, NAME)
     steps = state["steps"]
     before = flow_objects(graph(lineage), state)
     _update(lineage, parent, add_element_ids=list(steps.values()))
     _assert_owner(graph(lineage), steps.values(), parent)
-    _update(lineage, child, add_element_ids=[steps["event"], steps["effect"]])
+    if wrap_member:
+        child = _family(lineage, member)
+    else:
+        _update(lineage, child, add_element_ids=[steps["event"], steps["effect"]])
     _assert_owner(graph(lineage), steps.values(), child)
     assert flow_objects(graph(lineage), state) == before
     _update(lineage, child, remove_element_ids=list(steps.values()))

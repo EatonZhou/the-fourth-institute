@@ -537,6 +537,25 @@ def join_new_resident(lineage_id: str, resident_id: str, creator: str, family_id
     return True
 
 
+def _prepare_selection(body: dict, members: list[str]) -> str:
+    """Release one parent's selected elements for an atomic nested Familize.
+
+    The parent roster is replaced with the new facade before committing. Mixed
+    parents (including unassigned members) have no unambiguous nesting scope.
+    """
+    parents = {rid: block for block in facts.family_blocks(body) for rid in facts.member_ids(block)}
+    scopes = {parents[rid]["id"] if rid in parents else "" for rid in members}
+    if len(scopes) > 1:
+        raise TemplateError("Familize 选区必须属于同一个直属 Family，不能混选其他 Family 或未归属成员")
+    parent_id = next(iter(scopes), "")
+    validate_members(body, members, family_id=parent_id)
+    if parent_id:
+        parent = facts.family_block(body, parent_id)
+        selected = set(_member_elements(body, members))
+        parent["elements"] = [e for e in parent["elements"] if e["id"] not in selected]
+    return parent_id
+
+
 def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title: str = "", goal: str = "",
              parameters: Mapping | None = None, placement_request: dict | None = None,
              resident_settings: Mapping | None = None, template_id: str = TEMPLATE_ID, scope: str = "selection",
@@ -555,7 +574,9 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                 member_resident_ids=family["members"], leader_resident_id=lineage.get("leader_resident_id", ""),
                 rewired_wire_ids=[])
         resident_ids = facts.lineage_members(lineage)
-    members = validate_members(lineage, _selection(lineage, resident_ids))
+    members = _selection(lineage, resident_ids)
+    candidate = copy.deepcopy(lineage)
+    parent_id = _prepare_selection(candidate, members)
     if personal_ama_id and (lineage.get("lineage_membership") != "personal" or members != [personal_ama_id]):
         raise TemplateError("个人助手只以当前 AMA 为初始成员")
     if not members and scope != "lineage":
@@ -567,7 +588,7 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
     element_keys = _member_elements(lineage, members, lineage_scope=scope == "lineage")
     # Validate ownership and nesting before creating any roles.
     if element_keys:
-        function_block_authoring.functionalize_in_body(copy.deepcopy(lineage), list(element_keys), actor, title=title)
+        function_block_authoring.functionalize_in_body(candidate, list(element_keys), actor, title=title)
     placement = dict(placement_request or {})
     near = str(placement.get("near_resident_id") or _central_member(lineage, members))
     roles = {role: _new_role(lineage_id, role, title, actor, near, settings, placement,
@@ -587,14 +608,32 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
                       history_before_ordinal=(page.get("ordinals") or [0])[-1] + 1)
 
     def edit(body):
-        validate_members(body, members)
+        if _prepare_selection(body, members) != parent_id:
+            raise FamilyBusy("选区的 Family 归属已改变，请重新选择后重试。")
         keys = {**_member_elements(body, members, lineage_scope=scope == "lineage"),
                 **{rid: role + "_resident" for role, rid in roles.items()}}
         block = function_block_authoring.functionalize_in_body(body, list(keys), actor, title=title,
                     template_id=template_id, element_keys=keys, x=placement.get("x"), y=placement.get("y"))
         block["family"] = copy.deepcopy(family)
+        if parent_id:
+            parent = facts.family_block(body, parent_id)
+            roster = parent["family"]["members"]
+            replacement = []
+            for rid in roster:
+                if rid in members:
+                    if roles["facade"] not in replacement:
+                        replacement.append(roles["facade"])
+                else:
+                    replacement.append(rid)
+            parent["family"]["members"] = replacement
+            if parent["family"].get("previous_leader_id") in members:
+                parent["family"]["previous_leader_id"] = roles["facade"]
+            parent["elements"].append({"id": block["id"], "kind": "function_block",
+                                       "key": "member:" + roles["facade"]})
         family_workflows.update(body, block, actor, collect=True)
         reconcile_in_body(body, block, actor)
+        if parent_id:
+            reconcile_in_body(body, parent, actor)
         if leader in members or scope == "lineage" or personal_ama_id:
             body["leader_resident_id"] = roles["facade"]
         return {"family_id": block["id"], "rewired_wire_ids": _rewire(body, set(members), roles["facade"], block)}

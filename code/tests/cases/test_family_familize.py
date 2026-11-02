@@ -46,6 +46,48 @@ def _target_of(lineage_id: str, wire_id: str) -> str:
     return next(item for item in graph(lineage_id)["program"]["wires"] if item["id"] == wire_id)["target"]
 
 
+@pytest.mark.parametrize("via_template", [False, True], ids=["instruction", "template"])
+@pytest.mark.parametrize("count", [1, 2])
+def test_familize_existing_members_replaces_parent_roster_atomically(lineage, charters, via_template, count):
+    """已有 Family 内成员可原地组合成子 Family，解散后还原父组名册。"""
+    first, second, sibling = (resident(lineage, title) for title in ("Debug", "Test", "Docs"))
+    ok("UpdateLineage", {"lineage_id": lineage, "changes": {"leader_resident_id": first}})
+    parent = ok("Familize", {"lineage_id": lineage, **({"scope": "lineage"} if via_template else
+                 {"resident_ids": [first, second, sibling]})})
+    selected = [first, second][:count]
+    if via_template:
+        template = next(t for t in ok("ListTemplates", {})["templates"] if t.get("builtin_key") == "family")
+        child = ok("ApplyTemplate", {"lineage_id": lineage, "template_id": template["template_id"],
+                                     "target": {"kind": "resident" if count == 1 else "selection",
+                                                "resident_ids": selected}})
+    else:
+        child = ok("Familize", {"lineage_id": lineage, "resident_ids": selected})
+    view = graph(lineage)
+    blocks = {b["id"]: b for b in view["function_blocks"]}
+    outer, inner = blocks[parent["family_id"]], blocks[child["family_id"]]
+    assert set(outer["family"]["members"]) == {child["facade_resident_id"], sibling} | ({second} if count == 1 else set())
+    assert set(inner["family"]["members"]) == set(selected)
+    assert outer["family"]["previous_leader_id"] == child["facade_resident_id"]
+    assert view["leader_resident_id"] == parent["facade_resident_id"]
+    assert any(e["id"] == child["family_id"] for e in outer["elements"])
+    assert not set(selected) & {e["id"] for e in outer["elements"]}
+    for rid in (first, second, sibling, child["facade_resident_id"]):
+        assert sum(rid in b.get("family", {}).get("members", []) for b in blocks.values()) == 1
+    watch_ids = {e["id"] for e in outer["elements"] if e["kind"] == "wire"}
+    assert not any(w["target"] in selected for w in view["program"]["wires"]
+                   if w["id"] in watch_ids and w["kind"] == "watch")
+    wrapper = ok("Familize", {"lineage_id": lineage, "resident_ids": [child["facade_resident_id"]]})
+    outer = next(b for b in graph(lineage)["function_blocks"] if b["id"] == parent["family_id"])
+    assert wrapper["facade_resident_id"] in outer["family"]["members"]
+    assert child["facade_resident_id"] not in outer["family"]["members"]
+    ok("Unfamilize", {"lineage_id": lineage, "family_id": wrapper["family_id"],
+                       "rewire_to_resident_id": child["facade_resident_id"]})
+    ok("Unfamilize", {"lineage_id": lineage, "family_id": child["family_id"], "rewire_to_resident_id": first})
+    outer = next(b for b in graph(lineage)["function_blocks"] if b["id"] == parent["family_id"])
+    assert set(outer["family"]["members"]) == {first, second, sibling}
+    assert outer["family"]["previous_leader_id"] == first
+
+
 def test_facade_rename_updates_family_title_and_survives_parameter_changes(lineage, charters, monkeypatch):
     """门面改名同步 Family 标题且后续参数更新保留名称"""
     member = resident(lineage, "Member")
@@ -165,7 +207,7 @@ def test_familize_hands_leadership_and_wires_to_the_facade_and_unfamilize_return
     refused = run("DeleteResident", {"lineage_id": lineage, "resident_id": facade})
     assert refused.error["code"] == "instruction.conflict"
     again = run("Familize", {"lineage_id": lineage, "resident_ids": [second, outsider]})
-    assert again.error["code"] == "instruction.invalid_arguments" and "只能直接属于一个 Family" in again.error["message"]
+    assert again.error["code"] == "instruction.invalid_arguments" and "同一个直属 Family" in again.error["message"]
     direct = run("DeleteFunctionBlock", {"lineage_id": lineage, "function_block_id": family["family_id"]})
     assert direct.error["code"] == "instruction.invalid_arguments"
     fork = run("ForkResident", {"lineage_id": lineage, "source_resident_id": facade})

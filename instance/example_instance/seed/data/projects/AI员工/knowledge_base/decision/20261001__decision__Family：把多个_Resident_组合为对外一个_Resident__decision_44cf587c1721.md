@@ -84,6 +84,8 @@ CreateLineage 的界面默认勾选 Familize，可取消；API 未传 familize �
 
 **每个 Resident 最多直接属于一个 Family，成员关系构成树。** 所有直接成员必须属于同一 Lineage；内层门面可同时是内层 facade 与外层 member，执行身份以其内层角色为准。创建和名册变更检查循环、唯一归属及角色约束，Router、Steward 不充当本 Family 业务成员。
 
+在已有 Family 内对同一直属名册中的一个或多个成员执行 Familize，会原地建立子 Family：原成员进入内层名册，父 Family 以新门面替换这些成员，并同步块归属、监听及原 leader 的继任引用。图和名册在同一事务提交；已有工作和历史转交关系保留。选区不能混合不同直属 Family，也不能混合已归属与未归属成员。已有子 Family 的门面同样可以继续包装，Lineage 范围 Family 本身仍不能嵌入其他 Family。
+
 CreateResident/ForkResident 优先遵循显式 family_id；否则成员或 Steward 创建的新 Resident 加入创建者所在 Family，再否则按 Lineage 范围 Family 默认加入。没有范围 Family 时，在折叠门面外新建不推断归属；展开 Family 内的新建请求显式带 family_id。加入时维护监听和路由，并通知 Steward 更新分工；Steward 自己创建不再自我通知。
 
 **Family 创建者只记录实际人类调用者。** human_familizer_id 由 families 保存；Resident 创建的 Family 留空，不能推测为 owner、最近发送者或管理员。它是联络事实，不授予权限。业务联系人及持续角色故障升级的区别见运行维护专题。
