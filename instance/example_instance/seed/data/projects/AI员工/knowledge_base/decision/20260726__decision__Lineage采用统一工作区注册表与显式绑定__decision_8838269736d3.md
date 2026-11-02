@@ -4,43 +4,47 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 43
-  created_at: '2026-07-26'
+  number: 44
+  created_at: "2026-07-26"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T18:51:59Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T22:06:17Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/tests/cases/test_resident_workspace_name_projection.py
-  - ${code_root}/tests/cases/test_workspace_resource_rename.py
-  - ${code_root}/management_portal/resources/providers/workspace.py
-  - ${code_root}/management_portal/resources/workspace_store.py
-  - ${code_root}/tests/cases/test_isa_g5_audit_regressions.py
-  - ${code_root}/management_portal/society_service/isa/residents.py
-  - ${code_root}/management_portal/society_service/lineage_workspace_binding.py
-  - ${code_root}/management_portal/society_service/resident_record_domain.py
-  - ${code_root}/management_portal/society_service/resident_workspace_domain.py
-  - ${code_root}/management_portal/society_service/resident_workspace_storage.py
-  - ${code_root}/management_portal/society_service/resource_client.py
-  - ${code_root}/tests/cases/test_resident_workspace_storage.py
-  - ${code_root}/management_portal/society_service/lineage_handoff_backend.py
-  - ${code_root}/tests/cases/test_resident_folder_creation_contract.py
-  - ${code_root}/tests/cases/test_lineage_handoff_backend.py
-  - ${code_root}/tests/cases/test_repo_workspace_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_workspace_name_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_workspace_resource_rename.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/workspace.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/workspace_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_g5_audit_regressions.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/residents.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_workspace_binding.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_record_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_workspace_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_workspace_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resource_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_workspace_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_folder_creation_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_repo_workspace_backend.py
   related:
   - decision_c616d197abbb
   - decision_5bf5bfbd52cb
   - decision_d19b9909a674
+  - thinking_7fa3e2b6c491
+  - decision_b3cf5f83de9b
   - decision_721c64f9bdcc
+  - concept_43444ecc6c18
   - decision_ccb99a00eebd
+  - concept_0c95d76935f7
   - decision_7ef392b5f60d
   - decision_34158fdd4078
   - decision_b820faf42218
@@ -59,7 +63,7 @@ Society 页的 Workspace 图以工作区卡片为主对象，用稳定 Workspace
 
 目录元信息与目录内容分开读取。尚未加载子项的工作区不能显示为已确认的空文件夹；Navigation 展开它或通过工作区资源打开它时读取实际目录，保留读取错误与重试入口。已有目录内容不被后续仅含元信息的绑定更新清空。
 
-Workspace ID 标识目录资源，路径是该资源当前的位置。自有归属保存在 Resident 上，使用关系保存在绑定表上。默认 cwd 由自有 Workspace 推导；为一次任务选择其他 cwd 不改变归属和绑定。Binding 表达 Resident 对目录的使用关系。通过 Resident 读取绑定目录时，ISA 按该 Resident 的 viewer 检查。不经 Resident、直接按 Workspace 访问文件时，权限同样来自拥有或绑定该 Workspace 的存活 Resident：调用者对其中任一 Resident 达到 viewer 才能读取文件，达到 contributor 才能写入。在权限 R 树上，Resident 自有的 Workspace 挂在该 Resident 下，通过 Binding 使用的其他 Workspace 留在“共享”下（decision_600ae27b0538）；没有存活 Resident 拥有或绑定的 Workspace，只按调用者对该 Workspace 自身的权限判断。文件系统权限与路径边界仍需满足，Binding 不保存另一套 access 或 manage 权限。
+Workspace ID 标识目录资源，路径是该资源当前的位置。自有归属保存在 Resident 上，使用关系保存在绑定表上。默认 cwd 由自有 Workspace 推导；为一次任务选择其他 cwd 不改变归属和绑定。Binding 表达 Resident 对目录的使用关系，不授予读取、写入或注销权限。文件读写由权限端口按文件所属 Workspace 判定：读取问 ReadResource 的 address，保存问 UpdateWorkspaceFile 的 address（decision_b820faf42218 §5.5）。在权限 R 树上，Resident 自有的 Workspace 挂在该 Resident 下，额外绑定的 Workspace 保持自身位置，缺少归属时留在“共享”下（decision_600ae27b0538）。因此对 Resident 或其 Project 的授权可通过树覆盖自有 Workspace，但不会因绑定额外目录而扩展到该目录。文件系统权限、路径边界和个人 AMA 私有规定仍须满足；Binding 不保存另一套 access 或 manage 权限。
 
 ## 设计点
 
@@ -131,11 +135,11 @@ WorkspaceStore 负责身份、路径、名称及其版本、删除状态。Linea
 
 ### Workspace 导航与文件预览
 
-一个 Resident 的文件根有四类：Resident Folder、Lineage Folder、自有 Workspace 和全部额外绑定的外部目录。页面从 GetResident 的 `lineage_id` 与 `workspaces` 得到这些根，再用 ReadResource 读取 `<根 ID>/file/<相对路径>`：Resident Folder 的根 ID 是 `resident_<id>`，Lineage Folder 是 `lineage_<id>`，Workspace 是 `workspace_<id>`（decision_ad3e21094f14）。读目录返回直接子项，读文件返回预览或元数据。Resident Folder 与 Lineage Folder 的文件要求对该 Resident 或 Lineage 有 viewer，写在 Project 或“共享”等上级节点上的 viewer 同样适用；Workspace 文件按下文规则检查拥有或绑定它的 Resident。每次请求从当前登记与绑定解析根，不接受任意绝对目录，不跟随符号链接；解除绑定或删除对象后原地址失效。
+一个 Resident 的文件根有四类：Resident Folder、Lineage Folder、自有 Workspace 和全部额外绑定的外部目录。页面从 GetResident 的 `lineage_id` 与 `workspaces` 得到这些根，再用 ReadResource 读取 `<根 ID>/file/<相对路径>`：Resident Folder 的根 ID 是 `resident_<id>`，Lineage Folder 是 `lineage_<id>`，Workspace 是 `workspace_<id>`（decision_ad3e21094f14）。读目录返回直接子项，读文件返回预览或元数据。Resident Folder 与 Lineage Folder 的文件要求对该 Resident 或 Lineage 有 viewer，写在 Project 或“共享”等上级节点上的 viewer 同样适用；Workspace 文件按其 Workspace 资源自身的 ReadResource 权限检查。每次请求从当前登记与绑定解析根，不接受任意绝对目录，不跟随符号链接；解除绑定或删除对象后原地址失效。
 
 Resident 工作台的目录、文本预览和媒体下载同样使用这组地址。原始字节由 `/api/resources/content?address=<文件地址>` 流式读取，每次请求重新检查权限，支持媒体分段读取，不放入指令结果。Resident 专用的读取指令、下载句柄以及旧的 node-workspace 与 agent-workbench Resident folder/file/file-raw 读取入口均已删除。
 
-按 Workspace 访问文件的入口有两类：`workspace_<id>/file/<relative-path>` 地址（ReadResource、`/api/resources/content` 与资源引用，以及 UpdateWorkspaceFile），和绝对路径（UpdateWorkspaceFile 的绝对路径形式与 link-file 预览、保存）。这两类入口都按“基本概念”中的规则检查拥有或绑定该 Workspace 的 Resident：Workspace 地址由 Workspace provider 在解析文件时检查，绝对路径在匹配到所在 Workspace 后检查。检查只看调用者自身的权限：Resident 工作时按 Resident 自己的表项判定，不继承发消息者的权限（decision_b820faf42218）。被拒绝的读取与文件不存在返回相同结果，被拒绝的写入返回 `instruction.forbidden`。Portal 仓库这类共享 Workspace 可能被数百个 Resident 绑定，因此向权限端口分批询问等级，遇到满足要求的 Resident 即停止。skills 区域与 lineages 区域属于共享协作目录，对已认证的 User 与 Resident 开放读写。lineages 区域建立之前（`plan_4d1990717dc0` 第六步拆分旧 share 根下的 `Agents/`），这条规则作用于 `Agents/`，其中的 `Agents/PersonalAgents` 除外，这个目录里的文件只按 Workspace 规则访问。
+Workspace 文件读取支持 `<workspace_id>/file/<relative-path>` 地址（ReadResource、`/api/resources/content` 与资源引用）和绝对路径形式的链接文件预览。绝对路径先按登记的 Workspace 路径做最长前缀匹配，再按所属 Workspace 的 ReadResource 权限判定；不属于已登记 Workspace 的路径按权限 R 树默认节点判定。写入统一使用 UpdateWorkspaceFile，只接受 `<workspace_id>/file/<relative-path>`，不接受绝对路径；预览结果的 `file_address` 给出可用地址，`allows.UpdateWorkspaceFile` 决定保存入口。判定只使用调用者自身的权限，Resident 不继承发消息者的权限（decision_b820faf42218）。读取被拒与文件不存在返回相同结果，写入被拒返回 `instruction.forbidden`。共享目录或绑定关系本身不提供额外放行规则，目录访问按同一权限端口处理。
 
 文件路径落在个人 AMA 的 Lineage 文件夹内时，只认这个 AMA 本身：只有登记所有者和代表所有者的 Resident 可以访问，由权限端口在询问权限系统之前回答，管理员、实例中增加的表项和临时凭证都不例外（decision_b820faf42218 第 4 节）。其他 Lineage 的 Resident 绑定这个目录或它的上级目录，不因此获得其中文件的权限；登记在 AMA 文件夹上、无人绑定的 Workspace 也不对他人开放。两类入口都按文件的实际路径（符号链接已解析）判断，资源搜索和 ResolveResource 也不向无权者列出这些 Workspace（decision_bd5217d08c09）。
 
