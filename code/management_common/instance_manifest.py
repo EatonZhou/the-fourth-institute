@@ -27,7 +27,9 @@ def absolute_path(value: str | Path) -> Path:
     if not isinstance(value, (str, Path)) or not str(value) or '\0' in str(value):
         raise ValueError("Expected a canonical absolute path")
     path = Path(value)
-    if not path.is_absolute() or str(path) != str(value) or path.resolve() != path:
+    # Stored host references use forward slashes on every platform. Accept
+    # either canonical spelling while still rejecting normalized aliases.
+    if not path.is_absolute() or str(value) not in (str(path), path.as_posix()) or path.resolve() != path:
         raise ValueError("Path must be absolute and canonical, without symbolic links")
     if os.name == 'nt' and path.parts[1:]:
         from .secure_paths import relative_parts
