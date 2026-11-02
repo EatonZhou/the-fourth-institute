@@ -1127,6 +1127,8 @@ modules:
       - "management_common/instance_locations.py"
       - "scripts/tfi_move_area.py"
       - "management_common/code_environment.py"
+      - "config/release-native-dependencies.json"
+      - "management_portal/service_runtime.py"
       - "scripts/instance_services.py"
       - "scripts/instance_service_definitions.py"
       - "scripts/tfi_shutdown.py"
