@@ -82,7 +82,7 @@
         const payload = readDraft();
         const result = await request(draft.template_id ? 'UpdateTemplate' : 'CreateTemplate', draft.template_id ? { template_id: draft.template_id, ...payload, dry_run: true } : { template: payload, dry_run: true });
         if (serial !== editorState.revision || !view.root.isConnected) return;
-        view.root.querySelector('[data-template-behavior]').innerHTML = behaviorHtml(result.template.behavior);
+        view.root.querySelector('[data-template-behavior]').innerHTML = behaviorHtml(result.template.behavior, {}, result.template.kind);
         status.textContent = t('预览已更新'); status.dataset.state = 'valid';
       } catch (error) {
         if (serial !== editorState.revision || !view.root.isConnected) return;

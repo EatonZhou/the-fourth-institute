@@ -19,10 +19,11 @@
     } = dependencies;
 
     // Templates use the same selection and coordinate system as canvas gestures.
-    function templateCanvasTarget(event) {
+    function templateCanvasTarget(event, template) {
       const position = state.graphController?.screenToPosition?.(event.clientX, event.clientY) || { x: 50, y: 50 };
       const hit = event.target?.closest?.("[data-node-id], [data-edge-id], [data-function-block-boundary]");
       const id = hit?.dataset.nodeId || hit?.dataset.edgeId || hit?.dataset.functionBlockBoundary || "";
+      if (template?.kind === "prompt" && nodeById(id)) return { kind: "resident", resident_ids: [id], ...position };
       if (state.selectedCanvasObjectIds.has(id)) {
         const element_ids = [...state.selectedCanvasObjectIds];
         return { kind: "selection", element_ids, resident_ids: element_ids.filter(id => Boolean(nodeById(id))), ...position };
@@ -41,6 +42,16 @@
         resolveTarget: templateCanvasTarget,
         residentSettingsOptions: () => state.agentBackendCatalog,
         onChange: renderGraph,
+        onPromptDraft: (text, target) => {
+          const ids = target.resident_ids || [];
+          const node = ids.length === 1 ? nodeById(ids[0]) : null;
+          if (!node || node.accessible === false) throw new Error(window.PortalI18n.t("请把提示词模板拖到一个可访问的 Resident 节点或聊天输入框"));
+          return panelHost.hatgComponentOptions.emit("open-resource", {
+            type: "chat", draftText: text,
+            resource: { kind: "chat", resident_id: node.id,
+              lineage_id: node.home_lineage_id || state.lineage.lineage_id, title: node.title, backend: node.backend },
+          });
+        },
         toast,
         // Previews change nothing, so they do not wait for or block graph edits.
         request: (instruction, args) => instruction === "ApplyTemplate" && !args?.dry_run

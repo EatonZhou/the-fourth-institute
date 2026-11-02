@@ -331,6 +331,16 @@
         backend: String(target.backend || ""),
         revealInGraph: target.reveal_in_graph === true
           || intent.revealInGraph === true,
+      }).then(opened => {
+        const draft = String(intent.draftText || "");
+        // A later navigation must never receive another Resident's draft.
+        if (!opened || currentAgentChatPanel() !== panel || panel.target?.().resident_id !== residentId) return opened;
+        if (draft && panel.workspace) {
+          const existing = panel.workspace.draftText();
+          panel.workspace.setDraftText(existing ? `${existing}\n\n${draft}` : draft);
+          panel.workspace.focusComposer();
+        }
+        return opened;
       });
     }
 

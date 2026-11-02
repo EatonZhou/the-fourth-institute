@@ -10,7 +10,7 @@
   const DEPENDENCIES = Object.freeze([
     'behaviorHtml', 'button', 'canvas', 'dialog', 'esc', 'field', 'getContext', 'load', 'optionsHtml', 'readField',
     'renderResidentSettings', 'request', 'residentRoles', 't', 'targetLabels', 'templatesState', 'toast',
-    'unsupported',
+    'unsupported', 'promptText',
   ]);
   // Fields of mount's config, which a caller may leave out.
   const OPTIONAL = Object.freeze(['canvas', 'getContext', 'request', 'toast']);
@@ -21,6 +21,7 @@
     const {
       behaviorHtml, button, canvas, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatesState, toast, unsupported,
+      promptText, onPromptDraft,
     } = dependencies;
 
     async function apply(id, target) {
@@ -30,6 +31,10 @@
       if (!template.targets.includes(target.kind)) { toast(unsupported(template), 'warning'); return; }
       if (!context.lineage_id) throw new Error(t('请先选择 Lineage'));
       if (context.lineage_id !== getContext().lineage_id) throw new Error(t('目标 Lineage 已切换，请重新施加'));
+      if (template.kind === 'prompt') {
+        if (!onPromptDraft) throw new Error(t('请把提示词模板拖到聊天输入框'));
+        return onPromptDraft(promptText(template), target);
+      }
       const roles = residentRoles(template);
       const parameters = template.application_parameters || template.parameters || [];
       // A template that finds existing elements always shows what it would change first.

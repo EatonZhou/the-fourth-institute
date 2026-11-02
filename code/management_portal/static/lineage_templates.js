@@ -7,6 +7,15 @@
   const clone = value => JSON.parse(JSON.stringify(value));
   const categories = () => ({ apply: t('施加'), structure: t('结构'), team: t('团队') });
   const targetLabels = () => ({ resident: 'Resident', selection: t('选区'), canvas: t('画布') });
+  // Drafts expose template parameters as editable prose, not executable bindings.
+  function promptText(template) {
+    const parameters = template.application_parameters || template.parameters || [];
+    return String(template.body?.message || '').replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (_, token) => {
+      const name = token.trim().replace(/^param\./, '').split('|')[0].trim();
+      const parameter = parameters.find(item => item.name === name);
+      return `[${parameter?.label || parameter?.description || name}]`;
+    });
+  }
   const button = (label, action, className = '') => `<button type="button" class="portalButton ${className}" data-action="${action}">${esc(t(label))}</button>`;
   const optionsHtml = (choices, chosen) => choices.map(choice => {
     const value = typeof choice === 'object' ? choice.value : choice;
@@ -39,7 +48,8 @@
     return input.value;
   }
 
-  function behaviorHtml(behavior = {}, parameters = {}) {
+  function behaviorHtml(behavior = {}, parameters = {}, kind = '') {
+    if (kind === 'prompt') return `<p>${esc(t('拖到聊天输入框或 Resident 节点，填入草稿后编辑发送；点击编辑模板'))}</p>`;
     const describe = step => window.PortalI18n.message(step).replace(/\{\{param\.([A-Za-z_][A-Za-z0-9_]*)\}\}/g,
       (token, name) => Object.hasOwn(parameters, name) && parameters[name] !== '' ? String(parameters[name]) : token);
     return `<h3>${esc(t('施加后会做什么'))}</h3><ol>${(behavior.steps || []).map(step => `<li>${esc(describe(step))}</li>`).join('')}</ol>
@@ -102,7 +112,7 @@
     const { abort, dropHint, find, load, render, unsupported } = templatePart('LineageTemplatesShelf').createShelf({
       MIME, apply: (...args) => apply(...args), canvas, categories, config, esc, getContext,
       openEditor: (...args) => openEditor(...args), pigeonHtml, request, resolveTarget, shelf, t, targetLabels,
-      templatesState, toast,
+      templatesState, toast, promptText,
     });
     const {
       renderResidentSettings, residentRoles,
@@ -112,6 +122,7 @@
     const { apply, applyFamily } = templatePart('LineageTemplatesApplication').createApplication({
       behaviorHtml, button, canvas, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatesState, toast, unsupported,
+      promptText, onPromptDraft: config.onPromptDraft,
     });
     const { newTemplate, openEditor, saveSelection } = templatePart('LineageTemplatesEditing').createEditing({
       behaviorHtml, button, categories, clone, dialog, esc, field, getContext, load, optionsHtml, readField,

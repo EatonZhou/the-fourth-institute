@@ -49,7 +49,7 @@
       if (draft.kind === 'prompt') {
         bodyPage.innerHTML = `<div class="templateParameterTokens">${draft.parameters.map(parameter => `<button type="button" data-insert-parameter="${esc(parameter.name)}">{{param.${esc(parameter.name)}}}</button>`).join('')}</div>
             ${field({ label: '消息内容', type: 'text', required: true }, draft.body.message, 'data-body-field="message"')}
-            ${field({ label: '投递方式', type: 'enum', options: [{ value: 'queue', label: t('加入队列') }, { value: 'attach_to_next', label: t('随下一条消息附带') }] }, draft.body.activation_policy, 'data-body-field="activation_policy"')}`;
+            <p class="templateHelp">${esc(t('用 [音频文件]、[条目类型] 等中括号标出待填写内容。拖到聊天输入框或 Resident 节点后编辑草稿，再发送。'))}</p>`;
       } else if (draft.kind === 'structure') {
         bodyPage.innerHTML = `<p class="templateHelp">${esc(t('可以先在画布搭好结构，再用“存为模板”开始创作。'))}</p>
             <div class="templateStructureToolbar" role="group" aria-label="${esc(t('结构视图'))}">${[['graph', '图视图'], ['list', '列表视图'], ['json', 'JSON 视图']].map(([mode, label]) => `<button type="button" class="portalButton is-compact" data-structure-view="${mode}" aria-pressed="false">${esc(t(label))}</button>`).join('')}</div><div data-structure-content></div>`;

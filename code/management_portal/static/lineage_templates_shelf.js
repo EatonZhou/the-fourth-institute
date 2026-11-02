@@ -10,7 +10,7 @@
 
   const DEPENDENCIES = Object.freeze([
     'MIME', 'apply', 'canvas', 'categories', 'config', 'esc', 'getContext', 'openEditor', 'pigeonHtml', 'request',
-    'resolveTarget', 'shelf', 't', 'targetLabels', 'templatesState', 'toast',
+    'resolveTarget', 'shelf', 't', 'targetLabels', 'templatesState', 'toast', 'promptText',
   ]);
   // Fields of mount's config, which a caller may leave out.
   const OPTIONAL = Object.freeze(['canvas', 'getContext', 'request', 'resolveTarget', 'shelf', 'toast']);
@@ -20,7 +20,7 @@
     if (missing.length) throw new Error(`LineageTemplatesShelf is missing: ${missing.join(', ')}`);
     const {
       MIME, apply, canvas, categories, config, esc, getContext, openEditor, pigeonHtml, request, resolveTarget, shelf,
-      t, targetLabels, templatesState, toast,
+      t, targetLabels, templatesState, toast, promptText,
     } = dependencies;
 
     let loading = null;
@@ -45,7 +45,9 @@
         if (!rows.length) return '';
         return `<div class="templateCategory" role="group" aria-label="${esc(label)}" data-template-category="${category}"><span class="templateCategoryLabel" aria-hidden="true">${esc(label)}</span>
           ${rows.map(item => {
-            const hint = window.PortalI18n.text`${t(item.behavior?.persistent ? '施加后保留为 Function Block' : '一次性操作')} · 拖到 ${item.targets.map(kind => targetLabels()[kind]).join(' / ')} · 点击编辑`;
+            const hint = item.kind === 'prompt'
+              ? t('拖到聊天输入框或 Resident 节点，填入草稿后编辑发送；点击编辑模板')
+              : window.PortalI18n.text`${t(item.behavior?.persistent ? '施加后保留为 Function Block' : '一次性操作')} · 拖到 ${item.targets.map(kind => targetLabels()[kind]).join(' / ')} · 点击编辑`;
             return `<button type="button" class="templateTile" draggable="true" data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.title))}" title="${esc([t(item.title), t(item.description), hint].filter(Boolean).join('\n'))}">
             ${pigeonHtml(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>`;
           }).join('')}</div>`;
@@ -84,6 +86,8 @@
       if (!tile) return;
       dragged = tile.dataset.templateId;
       event.dataTransfer.setData(MIME, dragged);
+      const item = find(dragged);
+      if (item?.kind === 'prompt') event.dataTransfer.setData('text/plain', promptText(item));
       event.dataTransfer.effectAllowed = 'copy';
     });
     listen(shelf, 'dragend', () => { dragged = ''; clearDrop(); });
@@ -92,7 +96,7 @@
       event.preventDefault(); event.stopPropagation();
       const item = find(dragged);
       if (!item) return;
-      const target = resolveTarget(event);
+      const target = resolveTarget(event, item);
       const supported = item.targets.includes(target.kind);
       clearDrop();
       canvas.classList.add(supported ? 'templateDropAllowed' : 'templateDropForbidden');
@@ -109,7 +113,7 @@
       const id = event.dataTransfer?.getData(MIME) || dragged;
       if (!id) return;
       event.preventDefault(); event.stopPropagation();
-      const target = resolveTarget(event);
+      const target = resolveTarget(event, find(id));
       clearDrop(); dragged = '';
       apply(id, target).catch(report);
     }, true);

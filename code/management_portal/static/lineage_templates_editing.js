@@ -38,7 +38,7 @@
     function newTemplate() {
       const view = dialog('new', t('新建模板'));
       view.content.innerHTML = `<p>${esc(t('选择模板类型'))}</p><div class="templateKindChoices">${[
-        ['prompt', '施加 Prompt', '给目标 Resident 投递一段消息'], ['structure', '放入结构', '组合角色、组件与连线'], ['script', '执行脚本', '执行一次 Effect 脚本'],
+        ['prompt', '提示词', '填入聊天草稿，编辑后发送'], ['structure', '放入结构', '组合角色、组件与连线'], ['script', '执行脚本', '执行一次 Effect 脚本'],
       ].map(([kind, title, description]) => `<button type="button" data-kind="${kind}"><strong>${esc(t(title))}</strong><small>${esc(t(description))}</small></button>`).join('')}</div>`;
       view.content.addEventListener('click', event => { const choice = event.target.closest('[data-kind]'); if (choice) { view.close(); create(choice.dataset.kind); } });
     }
@@ -82,7 +82,7 @@
         </div>
         <div class="templateEditorLayout"><div class="templateEditorMain"><nav class="templateTabs" role="tablist">${[['body', '内容'], ['parameters', '参数'], ...(templateRoles.length ? [['objects', '内部对象']] : [])].map(([key, label], index) => `<button type="button" role="tab" aria-selected="${!index}" data-tab="${key}">${esc(t(label))}</button>`).join('')}</nav>
           <section data-page="body" role="tabpanel"></section><section data-page="parameters" role="tabpanel" hidden></section>${templateRoles.length ? '<section data-page="objects" role="tabpanel" hidden></section>' : ''}</div>
-          <aside class="templatePreview" aria-live="polite"><section data-template-behavior>${behaviorHtml(draft.behavior)}</section><p class="templatePreviewStatus" data-preview-status></p></aside></div>`;
+          <aside class="templatePreview" aria-live="polite"><section data-template-behavior>${behaviorHtml(draft.behavior, {}, draft.kind)}</section><p class="templatePreviewStatus" data-preview-status></p></aside></div>`;
       view.footer.innerHTML = `${draft.template_id ? button('删除', 'delete', 'is-danger') : ''}${draft.builtin_key ? button('恢复内置', 'restore', 'is-quiet') : ''}<span class="modalActionSpacer"></span>${button('另存为副本', 'copy')}${button('取消', 'close')}<button type="submit" class="portalButton is-primary">${esc(t('保存'))}</button>`;
       const bodyPage = view.root.querySelector('[data-page="body"]');
       const parametersPage = view.root.querySelector('[data-page="parameters"]');
