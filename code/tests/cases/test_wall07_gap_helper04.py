@@ -521,7 +521,7 @@ def test_handoff_copy_excludes_file_and_directory_symlinks(tmp_path):
     (source / "regular.txt").write_text("copied")
     (source / "file-link").symlink_to(external / "private.txt")
     (source / "directory-link").symlink_to(external, target_is_directory=True)
-    result = lineage_handoff_backend.materialize_handoff_item({"source": {"path": str(source)}, "target": {"path": str(target)}, "transfer": {"mode": "copy", "method": "filesystem_copy"}}, allowed_target_roots=[tmp_path], checked_at="2026-09-12T00:00:00Z")
+    result = lineage_handoff_backend.materialize_handoff_item({"source": {"path": str(source)}, "target": {"path": str(target)}, "transfer": {"mode": "copy", "method": "filesystem_copy"}}, actor='handoff-test', operation_id='handoff-test', allowed_target_roots=[tmp_path], checked_at="2026-09-12T00:00:00Z")
     assert (target / "regular.txt").read_text() == "copied"
     assert not (target / "file-link").exists()
     assert not (target / "directory-link").exists()

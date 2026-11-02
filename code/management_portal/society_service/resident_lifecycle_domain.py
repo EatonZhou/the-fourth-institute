@@ -17,7 +17,7 @@ def resident_execution_paths(record, work=None):
     return tuple(dict.fromkeys(str(path) for path in paths if path))
 
 
-def directory_execution_users(path, *, lineage_ids=()):
+def directory_execution_users(path, *other_paths, lineage_ids=()):
     """Discover Portal executors by location, never by the directory's membership.
 
     This is not a host-process scanner: unknown external processes are outside
@@ -25,26 +25,49 @@ def directory_execution_users(path, *, lineage_ids=()):
     """
     from management_common.directory_paths import overlaps
     from .script_runs import store as script_store
+    paths = (path, *other_paths)
     catalog = resident_catalog.get_catalog()
     residents = catalog.all()
     work_by_id = catalog.state_store.resident_execution_records([record['resident_id'] for record in residents])
     records = []
     for record in residents:
         work = work_by_id.get(record['resident_id'], {})
-        if any(overlaps(path, candidate) for candidate in resident_execution_paths(record, work)):
+        if any(overlaps(root, candidate) for root in paths
+               for candidate in resident_execution_paths(record, work)):
             records.append(record)
     runs, after = [], ''
     while True:
         page = script_store.pending(after, limit=200)
         for run in page:
             if run['status'] == 'running' and (run.get('lineage_id') in lineage_ids or any(
-                overlaps(path, run[key]) for key in ('cwd', 'path') if run.get(key)
+                overlaps(root, run[key]) for root in paths for key in ('cwd', 'path') if run.get(key)
             )):
                 runs.append(run)
         if len(page) < 200:
             break
         after = page[-1]['script_run_id']
     return records, runs
+
+
+def require_idle_directory(path, *other_paths):
+    """Require execution-owner terminal proof, including work awaiting Society ack."""
+    from .state_store import get_lineage_data_store
+    from . import execution_client
+    records, runs = directory_execution_users(path, *other_paths)
+    if runs:
+        raise RuntimeError('Directory has active execution users; quiesce through their owner first')
+    store = get_lineage_data_store()
+    for record in records:
+        work = store.resident_execution_record(record['resident_id'])
+        if not resident_execution_work.is_active(work):
+            continue
+        execution_id = resident_execution_work.submitted_execution_id(work)
+        # A submitted Execution may already be terminal while Society has yet
+        # to consume its result. Observe its owner; never clear/ack its work here.
+        terminal = execution_client.service().wait(execution_id,
+            actor=resident_execution_work.request_actor(work), timeout_seconds=0) if execution_id else {}
+        if terminal.get('status') not in resident_execution_work.TERMINAL_OUTCOMES:
+            raise RuntimeError('Directory has active execution users; quiesce through their owner first')
 
 
 @contextmanager
@@ -58,14 +81,19 @@ def directory_move_execution_scope(records=(), *, resident_ids=(), lineage_ids=(
     from .state_store import get_lineage_data_store
     from .script_runs import service as script_service
     from . import execution_client
-    records = [*records, *resident_catalog.get_catalog().get_many(resident_ids)]
+    records, resident_ids = list(records), tuple(resident_ids)
     active = True
     def terminate(path):
         if not active:
             raise RuntimeError('Directory move execution scope has already closed')
         with directory_execution_admission.authority():
             selected, runs = directory_execution_users(path, lineage_ids=lineage_ids)
-            selected = list({record['resident_id']: record for record in [*records, *selected]}.values())
+            # Same-filesystem moves never invoke this termination callback.
+            # Resolve explicit identities only here, and only those the current
+            # directory-user discovery has not already loaded.
+            known = {record['resident_id'] for record in [*records, *selected]}
+            extra = resident_catalog.get_catalog().get_many(rid for rid in resident_ids if rid not in known)
+            selected = list({record['resident_id']: record for record in [*records, *extra, *selected]}.values())
             for record in selected:
                 work = get_lineage_data_store().resident_execution_record(record['resident_id'])
                 if (resident_execution_work.is_active(work)

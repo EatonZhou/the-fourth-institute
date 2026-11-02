@@ -11,6 +11,7 @@ import signal
 import subprocess
 import sys
 import threading
+from uuid import uuid4
 
 
 class ProcessCleanupError(RuntimeError):
@@ -37,14 +38,51 @@ def spawn_process(*args, tree_id=None, kill_on_owner_exit=True, **kwargs):
     arguments are rejected before spawn. Use [native.exe, script, *argv] when
     arbitrary literal arguments are required; shell=True is not supported there.
     """
-    return _backend().spawn_process(*args, tree_id=tree_id,
-                                   kill_on_owner_exit=kill_on_owner_exit, **kwargs)
+    from .lifetime_execution_lease import inherit_execution_leases
+    backend = _backend()
+    with inherit_execution_leases() as (descriptors, record, paths):
+        if descriptors:
+            if sys.platform == 'win32':
+                # This identity exists durably before CreateProcess. A missing
+                # Job after owner death cannot have runnable assigned children.
+                tree_id = tree_id or uuid4().hex
+                record(backend.lifetime_receipt(tree_id))
+            else:
+                kwargs['pass_fds'] = tuple(set((*kwargs.get('pass_fds', ()), *descriptors)))
+                kwargs['lifetime_registered'] = record
+        try:
+            process = backend.spawn_process(*args, tree_id=tree_id,
+                                            kill_on_owner_exit=kill_on_owner_exit, **kwargs)
+        except ProcessCleanupError:
+            # Unconfirmed rollback retains the receipt, including live/unknown
+            # Jobs. Never manufacture an end from the launcher's exception.
+            raise
+        except BaseException:
+            # No child ran, or the backend proved rollback. In particular a
+            # rejected duplicate Job name must not retain holders for that
+            # unrelated existing Job on every failed retry.
+            record(None)
+            raise
+        process._portal_execution_leases = paths
+        return process
+
+
+def native_lifetime_alive(receipt):
+    """Observe a durable native receipt. Unknown identities never prove end."""
+    if not isinstance(receipt, dict) or receipt.get('version') != 1:
+        return True
+    if receipt.get('platform') != sys.platform:
+        return True
+    return _backend().lifetime_alive(receipt)
 
 
 def terminate_process_tree(process, timeout=15, force=False, *, tree_id=None):
     if timeout < 0:
         raise ValueError("timeout must be nonnegative")
-    return _backend().terminate_process_tree(process, timeout=timeout, force=force, tree_id=tree_id)
+    result = _backend().terminate_process_tree(process, timeout=timeout, force=force, tree_id=tree_id)
+    from .lifetime_execution_lease import reap_native_leases
+    reap_native_leases(getattr(process, '_portal_execution_leases', ()))
+    return result
 
 
 def process_alive(pid):

@@ -1,4 +1,4 @@
-"""Registration owners enlisted by every directory relocation entry point.
+"""Resource registrations and native dependencies enlisted by directory moves.
 
 Workspace rows and the resource registry's declared directory entries remain
 their sole path authorities. Identity/graph changes are supplied by the caller.
@@ -10,6 +10,8 @@ from management_common.directory_paths import cleanup_location, cleanup_path
 
 
 def relocated(value, source, target):
+    if not value or not Path(located_path(value)).is_absolute():
+        return value
     path = cleanup_path(value)
     if path.is_relative_to(source):
         return cleanup_location(target / path.relative_to(source))
@@ -63,12 +65,6 @@ def reconcile_dependencies(source, target):
     return result
 
 
-def recover_pending_moves():
-    """Portal System maintenance retries the journal's remaining dependencies."""
-    from management_common.directory_move_store import DirectoryMoveStore
-    return DirectoryMoveStore().recover(dependencies=reconcile_dependencies)
-
-
 def repair_git_worktrees(source, target):
     """Repair only Git's declared pointers, including a worktree's external backlink."""
     import os
@@ -88,6 +84,8 @@ def repair_git_worktrees(source, target):
         directories[:] = [name for name in directories if not (here / name).is_symlink()]
         if '.git' in files:
             pointer = here / '.git'
+            if pointer.is_symlink():
+                raise ValueError('Git worktree pointer must not be a symlink')
             rewrite(pointer)
             text = pointer.read_text(encoding='utf-8').strip()
             if not text.startswith('gitdir: '):
@@ -97,7 +95,24 @@ def repair_git_worktrees(source, target):
                 admin = (here / admin).resolve()
             if not (admin / 'gitdir').is_file():
                 raise FileNotFoundError('Git worktree backlink is missing: ' + str(admin))
-            rewrite(admin / 'gitdir')
+            backlink = admin / 'gitdir'
+            before = Path(backlink.read_text(encoding='utf-8').strip())
+            if before.is_absolute() and not before.is_relative_to(source) and before != pointer:
+                # The forward pointer proves the selected admin record. For an
+                # older alias additionally prove Git's common-dir relationship;
+                # an existing other worktree is never an alias we may steal.
+                common_file = admin / 'commondir'
+                if (admin.resolve() != admin or backlink.is_symlink() or not common_file.is_file()
+                        or common_file.is_symlink()):
+                    raise ValueError('Unproven Git worktree admin relationship')
+                common = (admin / common_file.read_text().strip()).resolve()
+                if admin.parent != common / 'worktrees' or not (common / 'HEAD').is_file():
+                    raise ValueError('Unproven Git common directory')
+                if before.exists() or before.is_symlink():
+                    raise FileExistsError('Git backlink belongs to an existing other worktree')
+                backlink.write_text(str(pointer) + '\n', encoding='utf-8')
+            else:
+                rewrite(backlink)
         if here.name == '.git':
             for pointer in here.glob('worktrees/*/gitdir'):
                 rewrite(pointer)

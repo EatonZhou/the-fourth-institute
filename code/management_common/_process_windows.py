@@ -10,6 +10,8 @@ from ctypes import wintypes as w
 from functools import lru_cache
 import hashlib
 import os
+import socket
+import sys
 import subprocess
 import time
 import weakref
@@ -73,6 +75,7 @@ def _api():
         "OpenThread": ([w.DWORD, w.BOOL, w.DWORD], w.HANDLE),
         "ResumeThread": ([w.HANDLE], w.DWORD),
         "GenerateConsoleCtrlEvent": ([w.DWORD, w.DWORD], w.BOOL),
+        "ProcessIdToSessionId": ([w.DWORD, ctypes.POINTER(w.DWORD)], w.BOOL),
     }
     for name, (args, result) in signatures.items():
         function = getattr(api, name)
@@ -88,6 +91,26 @@ def _check(value):
 
 def _name(tree_id):
     return "Local\\PortalTree-" + hashlib.sha256(str(tree_id).encode()).hexdigest() if tree_id else None
+
+
+def _session_id():
+    session = w.DWORD()
+    _check(_api().ProcessIdToSessionId(os.getpid(), ctypes.byref(session)))
+    return session.value
+
+
+def lifetime_receipt(tree_id):
+    return dict(version=1, platform=sys.platform, host=socket.gethostname(),
+                session=_session_id(), tree_id=tree_id)
+
+
+def lifetime_alive(receipt):
+    if (receipt.get('host') != socket.gethostname() or not receipt.get('tree_id')
+            or receipt.get('session') != _session_id()):
+        # PortalTree names are Local to the Windows login session. Absence in
+        # another session is not evidence that the original Job has ended.
+        return True
+    return process_tree_alive(tree_id=receipt['tree_id'])
 
 
 class Job:

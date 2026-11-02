@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import os
+import hashlib
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -16,13 +17,7 @@ from . import lineage_state, lineage_resident_workspaces
 
 
 def _handoff_allowed_target_roots(lineage_id: str) -> list[Path]:
-    roots = [
-        lineage_state._lineage_dir(lineage_id) / "handoff-workspaces",
-        lineage_handoff_preparation.EXPLORATIONS_ROOT,
-    ]
-    configured = os.getenv("PORTAL_HANDOFF_TARGET_ROOTS", "")
-    roots.extend(Path(value.strip()).expanduser() for value in configured.split(os.pathsep) if value.strip())
-    return [root.resolve(strict=False) for root in roots]
+    return [lineage_state._lineage_dir(lineage_id) / "handoff-workspaces"]
 
 
 def _handoff_workspace_root(
@@ -77,6 +72,7 @@ def _save_handoff_lineage(
     *,
     runtime: bool = False,
 ) -> dict[str, Any]:
+    lineage_handoff_execution.check_current_writer()
     if runtime:
         # Handoff execution mutates only runtime fields on an already
         # normalized edge. Revalidate the changed Handoff edge itself, not
@@ -108,7 +104,16 @@ def _save_handoff_lineage(
             else edge
             for edge in saved.get("edges") or []
         ]
-        lineage_state._persist_lineage_runtime_state(previous, saved, reason)
+        def persist():
+            # Own the actual transaction: the nested persistence API otherwise
+            # opens it only after the entry check. Its runtime CAS locks and
+            # compares the persisted attempt/receipt against `previous`, allowing
+            # an authorized claim to replace that expected predecessor. Validate
+            # our candidate token and session before writing and before commit.
+            lineage_handoff_execution.check_current_writer(saved)
+            lineage_state._persist_lineage_runtime_state(previous, saved, reason)
+            lineage_handoff_execution.check_current_writer(saved)
+        lineage_aggregate.lineage_catalog_store().state_store.transaction(persist)
         return saved
     normalized = lineage_state._normalize_lineage_payload(lineage, previous, actor)
     lineage_state._persist_lineage_state(previous, normalized, reason)
@@ -224,6 +229,20 @@ def get_handoff(lineage_id: str, handoff_id: str, actor: str, *, full_view: bool
 def update_handoff(
     lineage_id: str, handoff_id: str, changes: dict[str, Any], actor: str, *, full_view: bool = True,
 ) -> dict[str, Any]:
+    if 'items' not in changes:
+        return _update_handoff(lineage_id, handoff_id, changes, actor, full_view=full_view)
+    with _handoff_lease(lineage_id, handoff_id, actor):
+        current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage_aggregate.ensure_manager(current, _safe_actor(actor))
+        handoff = _handoff_edge(current, handoff_id)
+        if handoff.get('status') in {'failed', 'preparing'}:
+            handoff = _claim_handoff_writer(lineage_id, handoff_id, actor)
+            _cleanup_failed_attempt(lineage_id, handoff, actor)
+        lineage_handoff_execution.assert_owned()
+        return _update_handoff(lineage_id, handoff_id, changes, actor, full_view=full_view)
+
+
+def _update_handoff(lineage_id, handoff_id, changes, actor, *, full_view=True):
     """Change a handoff's items, explanation or label; prepared results stay as they are."""
 
     actor_id = _safe_actor(actor)
@@ -260,7 +279,10 @@ def update_handoff(
                 "交接已准备或正在准备，不能再修改交接项；需要交接其他内容时删除这条交接后重新建立"
             )
         if items is not None:
+            lineage_handoff_execution.assert_owned()
             edge["items"] = items
+            edge["status"] = "draft"
+            edge["error"] = ""
         if "explanation" in changes:
             edge["explanation"] = _text(changes.get("explanation"), 8000)
         if "label" in changes:
@@ -297,10 +319,9 @@ def _set_handoff_failure(
     handoff_id: str,
     actor: str,
     error: str,
-    prepared: list[tuple[dict[str, Any], dict[str, Any]]],
 ) -> dict[str, Any]:
-    lineage_handoff_preparation.cleanup_items(prepared)
     with lineage_aggregate.lineage_scope(lineage_id):
+        lineage_handoff_execution.assert_owned()
         previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         lineage = _clone_json(previous)
         handoff = _handoff_edge(lineage, handoff_id)
@@ -325,14 +346,77 @@ def execute_handoff(
     actor: str,
 ) -> dict[str, Any]:
     """Prepare and bind Workspace items without dispatching a Resident task."""
+    with _handoff_lease(lineage_id, handoff_id, actor):
+        return _execute_handoff(lineage_id, handoff_id, actor)
+
+
+@contextmanager
+def _handoff_lease(lineage_id, handoff_id, actor=None):
+    import psycopg
+    from management_common.portal_database import portal_database
+    handoff_id = _text(handoff_id, 80).lower()
+    key = int.from_bytes(hashlib.sha256(f'handoff:{lineage_id}:{handoff_id}'.encode()).digest()[:8],
+                         'big', signed=True)
+    db = portal_database(schema='directory_lifecycle')
+    with psycopg.connect(db.dsn, autocommit=True, connect_timeout=30) as session:
+        if not session.execute('SELECT pg_try_advisory_lock(%s)', (key,)).fetchone()[0]:
+            raise LineageConflictError("Handoff 正在准备，请等待当前 attempt 完成")
+        writer = None
+        try:
+            with lineage_handoff_execution.writer_scope(session) as writer:
+                yield
+        finally:
+            if writer is not None and writer.claimed:
+                # The delegated Creation and file-writing stack has exited.
+                # Session loss must not prevent this explicit end receipt.
+                with lineage_aggregate.lineage_scope(lineage_id):
+                    previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+                    lineage = _clone_json(previous)
+                    edge = _handoff_edge(lineage, handoff_id)
+                    receipt = lineage_handoff_execution.owner_receipt(edge)
+                    if receipt.get('token') == writer.receipt['token']:
+                        for item in edge.get('items') or []:
+                            item['attempts'][-1]['result']['_writer']['ended'] = True
+                        _save_handoff_lineage(previous, lineage, actor,
+                                              'Handoff writer ended', runtime=True)
+
+
+def _claim_handoff_writer(lineage_id, handoff_id, actor):
+    with lineage_aggregate.lineage_scope(lineage_id):
+        previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+        lineage = _clone_json(previous)
+        handoff = _handoff_edge(lineage, handoff_id)
+        lineage_handoff_execution.claim_writer(handoff)
+        saved = _save_handoff_lineage(previous, lineage, actor, 'Handoff writer claimed', runtime=True)
+        return _handoff_edge(saved, handoff_id)
+
+
+def _cleanup_failed_attempt(lineage_id, handoff, actor, error=''):
+    lineage_handoff_execution.assert_owned()
+    error = error or handoff.get('error') or 'Handoff interrupted before editing'
+    try:
+        lineage_handoff_preparation.cleanup_items(lineage_id, handoff)
+    except Exception as cleanup_error:
+        lineage_handoff_execution.assert_owned()
+        _set_handoff_failure(lineage_id, handoff['id'], actor,
+                             f'{error}; cleanup pending: {cleanup_error}')
+        raise
+    _set_handoff_failure(lineage_id, handoff['id'], actor, error)
+
+
+def _execute_handoff(lineage_id: str, handoff_id: str, actor: str) -> dict[str, Any]:
     actor_id = _safe_actor(actor)
     target_handoff_id = _text(handoff_id, 80).lower()
+    current = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+    lineage_aggregate.ensure_manager(current, actor_id)
+    prior = _handoff_edge(current, target_handoff_id)
+    if prior.get('status') == 'failed':
+        prior = _claim_handoff_writer(lineage_id, target_handoff_id, actor_id)
+        _cleanup_failed_attempt(lineage_id, prior, actor_id)
     with lineage_aggregate.lineage_scope(lineage_id):
         previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         lineage_aggregate.ensure_manager(previous, actor_id)
         handoff = _handoff_edge(previous, target_handoff_id)
-        if handoff.get("status") == "preparing":
-            raise LineageConflictError("Handoff 正在准备，请等待当前 attempt 完成")
         if handoff.get("status") == "ready":
             return {
                 "lineage": lineage_state._verified_lineage_view(previous, actor_id),
@@ -340,9 +424,14 @@ def execute_handoff(
                 "created": False,
             }
         else:
+            lineage_handoff_execution.assert_owned()
             lineage = _clone_json(previous)
             preparing = _handoff_edge(lineage, target_handoff_id)
-            lineage_handoff_execution.begin_attempt(preparing, lineage_state._now_iso())
+            if preparing.get('status') == 'preparing':
+                lineage_handoff_execution.claim_writer(preparing)
+            else:
+                lineage_handoff_execution.begin_attempt(preparing, lineage_state._now_iso())
+                lineage_handoff_execution.attach_writer(preparing)
             previous = _save_handoff_lineage(
                 previous,
                 lineage,
@@ -368,29 +457,25 @@ def execute_handoff(
                 ),
                 prepared,
             )
+            with lineage_aggregate.lineage_scope(lineage_id):
+                lineage_handoff_execution.assert_owned()
+                previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
+                lineage = _clone_json(previous)
+                ready = _handoff_edge(lineage, target_handoff_id)
+                lineage_handoff_execution.complete_attempt(ready, prepared, lineage_state._now_iso())
+                saved = _save_handoff_lineage(
+                    previous,
+                    lineage,
+                    actor_id,
+                    "Handoff Workspace 已就绪",
+                    runtime=True,
+                )
+                handoff = _handoff_edge(saved, target_handoff_id)
         except Exception as exc:
-            _set_handoff_failure(
-                lineage_id,
-                target_handoff_id,
-                actor_id,
-                _text(exc, 4000) or "Handoff 准备失败",
-                prepared,
-            )
+            lineage_handoff_execution.assert_owned()
+            _cleanup_failed_attempt(lineage_id, handoff, actor_id,
+                                    _text(exc, 4000) or 'Handoff 准备失败')
             raise
-
-        with lineage_aggregate.lineage_scope(lineage_id):
-            previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
-            lineage = _clone_json(previous)
-            ready = _handoff_edge(lineage, target_handoff_id)
-            lineage_handoff_execution.complete_attempt(ready, prepared, lineage_state._now_iso())
-            saved = _save_handoff_lineage(
-                previous,
-                lineage,
-                actor_id,
-                "Handoff Workspace 已就绪",
-                runtime=True,
-            )
-            handoff = _handoff_edge(saved, target_handoff_id)
     else:
         saved = previous
 

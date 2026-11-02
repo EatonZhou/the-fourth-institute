@@ -35,6 +35,12 @@ def run(*, now=None, test_roots=None):
     from management_portal.test_framework.run_cleanup import finish_run
     retention = RetentionStore()
     report = {'tests': [], 'scripts': [], 'errors': []}
+    from management_common.file_retention import recover_temporary_directories
+    try:
+        report['temporary_directories'] = recover_temporary_directories()
+        report['errors'].extend(report['temporary_directories']['errors'])
+    except Exception as error:
+        report['errors'].append(f'temporary directories: {error}')
     from management_common.owned_path_deletion import OwnedPathDeletionStore
     try:
         report['claimed_deletions'] = OwnedPathDeletionStore().recover()
@@ -42,7 +48,7 @@ def run(*, now=None, test_roots=None):
     except Exception as error:
         report['errors'].append(f'claimed deletions: {error}')
     # Recover ownership transfers before any queued old path can be removed.
-    from management_portal.directory_move_owner import recover_pending_moves
+    from management_portal.society_service.directory_relocation import recover_pending_moves
     from management_portal.resources.project_deletion_effects import run_pending as project_effects
     from management_portal.workbench_projections.resource_lifecycle import ResourceProjectionCleanup
     for name, perform in (('moves', recover_pending_moves), ('projects', project_effects)):
@@ -64,6 +70,17 @@ def run(*, now=None, test_roots=None):
         report['ccf_requests'] = cleanup_interrupted_requests()
     except Exception as error:
         report['errors'].append(f'ccf requests: {error}')
+    from management_portal.paper_collection_jobs import reconcile_collection_retention
+    from management_portal.paper_figures import recover_figure_artifacts
+    from management_portal.workbench_projections.application_container_owner import recover_completed_controls
+    for name, recover in (('paper_collections', reconcile_collection_retention),
+                          ('paper_figures', recover_figure_artifacts),
+                          ('application_controls', recover_completed_controls)):
+        try:
+            report[name] = recover()
+            report['errors'].extend(report[name]['errors'])
+        except Exception as error:
+            report['errors'].append(f'{name}: {error}')
     # Allocation cleanup survives the seven-day evidence limit independently.
     for run_id in LifecycleStore().closing_runs():
         try:
@@ -90,6 +107,14 @@ def run(*, now=None, test_roots=None):
         except Exception as error:
             report['errors'].append(f'{identifier}: {error}')
     report.update(retention.sweep(now=now, cache_capacities=CACHE_CAPACITIES))
+    # Failed attempts and deleted parents can retain Creation reservations.
+    # Retry their inode-owned effects before the queue removes parent paths.
+    from management_portal.resources.creation import finish_deleted_creations
+    try:
+        report['deleted_creations'] = finish_deleted_creations()
+        report['errors'].extend(report['deleted_creations'])
+    except Exception as error:
+        report['errors'].append(f'deleted creations: {error}')
     report['cleanup'] = retention.queue.run_pending()
     report['pending_cleanup'] = [row for row in retention.queue.status() if row['status'] != 'completed']
     report['ok'] = not report['errors'] and not report['pending_cleanup'] and not report.get('pending_projections')

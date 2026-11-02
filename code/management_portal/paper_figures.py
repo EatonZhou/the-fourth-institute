@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from hashlib import sha256
 import json
+import logging
 from pathlib import Path
 import re
 import secrets
-import shutil
 from typing import Any
 from urllib.parse import quote
 
 from PIL import Image
 
+from management_common.directory_paths import cleanup_path, contains
+from management_common.directory_retention import RetentionStore
+from management_common.portal_database import portal_database
 from management_portal.paper_figure_extraction import (
     _crop_figure_above_caption, _extract_embedded_pdf_images, _extract_figure_caption_blocks,
     _figure_number_sort_key, _figure_pixel_digest, _prepare_figure_caption_blocks, _render_pdf_page_png,
@@ -20,7 +24,7 @@ from management_portal.paper_figure_extraction import (
 from management_portal.paper_records import _now
 from management_portal.paper_store import (
     LOCK, _load_json, _local_pdf_for_paper, _notify_paper_projection, _paper_bundle_path, _paper_by_id,
-    _paper_job_store_lock, _paper_root, _paper_store_file, _safe_file_path, _write_json,
+    _paper_job_store_lock, _paper_root, _paper_store_file, _write_json,
 )
 
 
@@ -91,12 +95,10 @@ def _figure_update(paper: dict):
 def _dedupe_figures_by_label(figures: list[dict]) -> list[dict]:
     labels = {str(figure.get("label") or "").strip().lower() for figure in figures}
     best_by_label: dict[str, dict] = {}
-    dropped: list[dict] = []
     for figure in figures:
         label = str(figure.get("label") or "").strip().lower()
         suffix_match = re.match(r"^(figure\s+)([0-9]+)[a-z]$", label, flags=re.I)
         if suffix_match and f"{suffix_match.group(1)}{suffix_match.group(2)}".lower() in labels:
-            dropped.append(figure)
             continue
         key = label or str(figure.get("figure_id") or "")
         current = best_by_label.get(key)
@@ -116,17 +118,9 @@ def _dedupe_figures_by_label(figures: list[dict]) -> list[dict]:
             int(current.get("size_bytes") or 0),
         )
         if figure_score > current_score:
-            dropped.append(current)
             best_by_label[key] = figure
-        else:
-            dropped.append(figure)
-    for figure in dropped:
-        path = _safe_file_path(str(figure.get("_path_for_cleanup") or ""))
-        if path and path.is_file():
-            try:
-                path.unlink()
-            except OSError:
-                pass
+    # Selection has no filesystem side effects. The generation owner releases
+    # unreferenced candidates after the metadata outcome is known.
     kept = sorted(
         best_by_label.values(),
         key=lambda item: (
@@ -257,6 +251,165 @@ def _read_figure_extraction_metadata(path: Path, *, missing_ok: bool = False) ->
     return payload
 
 
+@contextmanager
+def _figure_writer_lease(paper_id: str, *, blocking: bool = True):
+    """The existing extraction file lock survives a lost database connection."""
+    from management_common.file_lock import lock_stream, try_lock_descriptor, unlock_descriptor
+    database = portal_database(schema="directory_retention")
+    identity = database.schema + ":paper-figures:" + paper_id
+    key = int.from_bytes(sha256(identity.encode()).digest()[:8], "big", signed=True)
+    with database.advisory_lock(key, blocking=blocking) as acquired:
+        if not acquired:
+            yield False
+            return
+        from management_common.lifetime_execution_lease import execution_lease
+        with execution_lease(identity, namespace=database.schema, blocking=blocking) as running:
+            if not running:
+                yield False
+                return
+            paper = _paper_by_id(paper_id)
+            if not paper:
+                raise ValueError('Paper owner unavailable; retain figure artifacts')
+            root = _figures_dir(paper)
+            if root is None:
+                raise ValueError('Paper figure artifact location is missing')
+            if blocking:
+                root.mkdir(parents=True, exist_ok=True)
+            with (root / 'extraction.lock').open('a+') as stream:
+                if blocking:
+                    with lock_stream(stream):
+                        yield True
+                else:
+                    acquired = try_lock_descriptor(stream.fileno())
+                    try:
+                        yield acquired
+                    finally:
+                        if acquired:
+                            unlock_descriptor(stream.fileno())
+
+
+def _figure_artifact_owner(paper_id: str) -> str:
+    return "paper-figures:" + paper_id
+
+
+def _figure_artifacts(store: RetentionStore, paper_id: str) -> list:
+    with store.database.read() as connection:
+        return connection.execute(f"SELECT * FROM {store.table} WHERE owner_id=%s",
+                                  (_figure_artifact_owner(paper_id),)).fetchall()
+
+
+def _figure_reference_paths(value, paper_root: Path) -> set[Path]:
+    """Include generated images and nested artifact metadata, not only originals."""
+    paths = set()
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == "image_rel_path" and item:
+                if not isinstance(item, str):
+                    raise ValueError("Invalid Paper figure reference")
+                path = _paper_bundle_path(paper_root, item)
+                if path is None:
+                    raise ValueError("Paper figure reference escapes its bundle")
+                paths.add(path)
+            else:
+                paths.update(_figure_reference_paths(item, paper_root))
+    elif isinstance(value, list):
+        for item in value:
+            paths.update(_figure_reference_paths(item, paper_root))
+    return paths
+
+
+def _prepare_figure_commit(store: RetentionStore, paper: dict, generation: Path, existing: list[dict]):
+    """Persist possible commit and replacement intents before touching metadata."""
+    root = _paper_root(paper)
+    extracted = (_figures_dir(paper) / "extracted").resolve()
+    from management_common.directory_paths import cleanup_location
+    with store.database.transaction() as connection:
+        store.queue.lock(connection)
+        # runtime_tmp proves metadata publication has not been attempted. Once
+        # object_data, even missing metadata is an uncertain result, not garbage.
+        connection.execute(f"UPDATE {store.table} SET category='object_data' WHERE location=%s AND owner_id=%s",
+                           (cleanup_location(generation), _figure_artifact_owner(paper["id"])))
+        # A referenced generation may also contain rejected duplicate images.
+        # Declare its individual outputs before commit so preserving one image
+        # does not hide unreferenced files from durable reconciliation.
+        for path in generation.rglob('*'):
+            if path.is_file() or path.is_symlink():
+                store.declare(path, category='object_data', owner_id=_figure_artifact_owner(paper['id']),
+                              connection=connection)
+        for item in existing:
+            rel = item.get("image_rel_path")
+            path = _paper_bundle_path(root, rel) if rel else None
+            if path and path != extracted and contains(extracted, path):
+                store.declare(path, category="object_data", owner_id=_figure_artifact_owner(paper["id"]),
+                              connection=connection)
+
+
+def _settle_figure_artifacts(store: RetentionStore, paper_id: str) -> dict:
+    """Caller holds the writer lease; only current metadata authorizes release."""
+    report = {"queued": 0, "protected": 0, "errors": []}
+    try:
+        paper = _paper_by_id(paper_id)
+        if not paper:
+            raise ValueError("Paper owner unavailable; retain figure artifacts")
+        metadata = _figures_json_path(paper)
+        root = _paper_root(paper)
+        extracted = (_figures_dir(paper) / "extracted").resolve()
+        with LOCK, _paper_job_store_lock(metadata):
+            missing_metadata = False
+            try:
+                references = _figure_reference_paths(_read_figure_extraction_metadata(metadata), root)
+            except FileNotFoundError:
+                missing_metadata = True
+                references = set()
+            for row in _figure_artifacts(store, paper_id):
+                path = cleanup_path(row["location"])
+                # Never infer ownership from a directory listing, age, or an
+                # obsolete Paper location. Only this owner's declared paths.
+                if (row["category"] not in {"object_data", "runtime_tmp"} or row["origin"] != "created"
+                        or path == extracted or not contains(extracted, path)):
+                    raise ValueError("Figure declaration outside current owner boundary")
+                if missing_metadata and row["category"] == "object_data":
+                    report["errors"].append(f"{paper_id}: metadata missing; retain possible committed artifact")
+                    continue
+                if any(contains(path, ref) or contains(ref, path) for ref in references):
+                    report["protected"] += 1
+                    continue
+                report["queued"] += int(store.release_path(path))
+    except Exception as error:
+        report["errors"].append(f"{paper_id}: {error}")
+    return report
+
+
+def recover_figure_artifacts(*, paper_id: str | None = None) -> dict:
+    """Maintenance hook: reclaim dead writers using durable intent and metadata.
+
+    This queues filesystem effects; the shared cleanup runner owns deletion and
+    retry. Committed/uncertain research artifacts have no age-based expiry.
+    """
+    store = RetentionStore()
+    if paper_id is None:
+        with store.database.read() as connection:
+            owners = connection.execute(f"SELECT DISTINCT owner_id FROM {store.table} "
+                                        "WHERE owner_id LIKE %s", ("paper-figures:%",)).fetchall()
+        identifiers = [row["owner_id"].removeprefix("paper-figures:") for row in owners]
+    else:
+        identifiers = [paper_id]
+    report = {"queued": 0, "protected": 0, "active": 0, "errors": []}
+    for identifier in identifiers:
+        try:
+            with _figure_writer_lease(identifier, blocking=False) as acquired:
+                if not acquired:
+                    report["active"] += 1
+                    continue
+                outcome = _settle_figure_artifacts(store, identifier)
+                report["queued"] += outcome["queued"]
+                report["protected"] += outcome["protected"]
+                report["errors"].extend(outcome["errors"])
+        except Exception as error:
+            report["errors"].append(f"{identifier}: {error}")
+    return report
+
+
 def extract_figures(payload: dict, actor: str) -> dict:
     paper_id = str(payload.get("paper_id") or "").strip()
     if not paper_id:
@@ -273,14 +426,18 @@ def extract_figures(payload: dict, actor: str) -> dict:
         raise ValueError("paper has no figure store")
     # Serialize extraction per paper without holding the global metadata lock
     # during PDF rendering. Annotation writers remain free to finish meanwhile.
-    with _paper_job_store_lock(figures_dir / "extraction"):
+    with _figure_writer_lease(paper_id):
         initial_pdf = pdf_path.stat()
         extracted_root = figures_dir / "extracted"
         generation = extracted_root / f"run-{secrets.token_hex(12)}"
-        generation.mkdir(parents=True)
-        preserve_generation = False
+        retention = RetentionStore()
+        # Persist intent before creating any files. A killed writer releases its
+        # session lease; recovery then decides from the current metadata.
+        retention.declare(generation, category="runtime_tmp", owner_id=_figure_artifact_owner(paper_id))
+        cleanup_ready = True
         warning = ""
         try:
+            generation.mkdir(parents=True)
             figures = _render_extracted_figures(pdf_path, generation, paper_root, paper_id, actor)
             with LOCK, _paper_job_store_lock(metadata_path):
                 current = _paper_by_id(paper_id)
@@ -295,34 +452,30 @@ def extract_figures(payload: dict, actor: str) -> dict:
                     raise RuntimeError("PDF changed during figure extraction")
                 existing = _read_figure_extraction_metadata(metadata_path, missing_ok=True)
                 figures = _reconcile_extracted_figures(figures, existing, paper_root)
+                _prepare_figure_commit(retention, paper, generation, existing)
                 # A write or notification failure can happen after the atomic
                 # metadata switch. Never delete files with an uncertain commit.
-                preserve_generation = True
+                cleanup_ready = False
                 try:
                     _write_figures(paper, figures)
                 except Exception as exc:
                     persisted = _read_figure_extraction_metadata(metadata_path)
+                    cleanup_ready = True
                     if persisted != figures:
-                        prefix = generation.relative_to(paper_root).as_posix() + "/"
-                        preserve_generation = any(str(item.get("image_rel_path") or "").startswith(prefix) for item in persisted)
                         raise
                     warning = f"Figures persisted; post-write handling reported: {exc}"
-                preserve_generation = bool(figures)
-                protected = {str(item.get("image_rel_path") or "") for item in figures}
-                protected.update(str(image.get("image_rel_path") or "") for item in figures for image in item.get("generated", []))
-                for old in existing:
-                    rel = str(old.get("image_rel_path") or "")
-                    path = _paper_bundle_path(paper_root, rel) if rel else None
-                    if path and rel not in protected and path.is_relative_to(extracted_root.resolve()):
-                        try:
-                            path.unlink(missing_ok=True)
-                            if path.parent != extracted_root:
-                                path.parent.rmdir()  # remove only empty old generations
-                        except OSError:
-                            pass
+                cleanup_ready = True
         finally:
-            if not preserve_generation:
-                shutil.rmtree(generation, ignore_errors=True)
+            if cleanup_ready:
+                cleanup_report = _settle_figure_artifacts(retention, paper_id)
+                if cleanup_report["errors"]:
+                    logging.getLogger(__name__).warning("Figure cleanup deferred: %s", cleanup_report["errors"])
+                # Deletion failures are recorded by the queue, never swallowed.
+                # A queue outage must not replace the extraction's own error.
+                try:
+                    retention.queue.run_pending()
+                except Exception:
+                    logging.getLogger(__name__).exception("Figure cleanup remains pending")
         result = {"figures": [_figure_public(item, paper_id) for item in figures], "count": len(figures)}
         if warning:
             result["persistence_warning"] = warning

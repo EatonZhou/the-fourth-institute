@@ -84,6 +84,11 @@ def test_abrupt_web_exit_reaps_daemon_container(tmp_path, daemon):
         process.wait(timeout=5)
         eventually(lambda: (tmp_path / 'removed').exists())
         assert not (tmp_path / 'container.json').exists()
+        from management_portal.workbench_projections.application_container_owner import recover_completed_controls
+        eventually(lambda: bool(list(tmp_path.glob('portal-build-owner-*/result.json'))))
+        report = recover_completed_controls()
+        assert not report['errors']
+        assert not list(tmp_path.glob('portal-build-owner-*'))
     finally:
         (tmp_path / 'finish').touch()
         if process.poll() is None: process.kill()
@@ -134,7 +139,7 @@ def test_cleanup_failure_retains_private_recovery_plan(tmp_path, daemon):
     from management_portal.workbench_projections.application_container_owner import recover
     (tmp_path / 'deny-remove').unlink()
     recover(plans[0].parent)
-    assert json.loads((plans[0].parent / 'result.json').read_text())['cleanup_complete']
+    assert not plans[0].parent.exists()
     assert not (tmp_path / 'container.json').exists()
 
 
@@ -154,3 +159,130 @@ def test_recovery_refuses_replaced_container(tmp_path, daemon):
         recover(control)
     assert (tmp_path / 'container.json').exists()
     assert not json.loads((control / 'result.json').read_text())['cleanup_complete']
+
+
+def test_live_parent_is_leased(tmp_path, daemon):
+    from management_portal.workbench_projections import application_container_owner as owner
+    process = caller(tmp_path, daemon)
+    try:
+        eventually(lambda: (tmp_path / 'started').exists())
+        control = next(tmp_path.glob('portal-build-owner-*'))
+        assert str(control) in owner.recover_completed_controls()['active']
+        with pytest.raises(RuntimeError, match='active'):
+            owner.recover(control)
+        assert control.exists()
+    finally:
+        (tmp_path / 'finish').touch()
+        process.communicate(timeout=20)
+
+
+def test_same_process_recovery_and_occupied_retry(tmp_path, daemon, monkeypatch):
+    from management_portal.workbench_projections import application_container_owner as owner
+    from management_common.directory_retention import RetentionStore
+    from management_common.owned_path_deletion import OwnedPathDeletionStore
+    from management_common.directory_paths import cleanup_location
+    monkeypatch.setattr(owner.tempfile, 'tempdir', str(tmp_path))
+    (tmp_path / 'finish').touch()
+    (tmp_path / 'deny-remove').touch()
+    config = dict(docker_executable=str(daemon), docker_endpoint='unix:///fake.sock', container_image=IMAGE)
+    with pytest.raises(Exception, match='清理未确认'):
+        owner.run(tmp_path, ['/usr/bin/node'], config=config, input=b'keep')
+    control = next(tmp_path.glob('portal-build-owner-*'))
+    store = RetentionStore()
+    with store.database.read() as conn:
+        row = conn.execute(f'SELECT * FROM {store.table} WHERE location=%s', (cleanup_location(control),)).fetchone()
+        assert row['category'] == 'runtime_tmp'
+    assert not owner.recover_completed_controls()['cleanup']
+    assert (control / 'input').read_bytes() == b'keep'
+    with pytest.raises(Exception):
+        owner.recover(control)
+    assert (control / 'input').exists()
+    (tmp_path / 'deny-remove').unlink()
+    original = OwnedPathDeletionStore.remove
+    def busy(*args, **kwargs):
+        raise PermissionError('occupied control')
+    monkeypatch.setattr(OwnedPathDeletionStore, 'remove', busy)
+    owner.recover(control)
+    assert any(row['status'] == 'retry' for row in store.queue.status())
+    owner.recover(control)
+    monkeypatch.setattr(OwnedPathDeletionStore, 'remove', original)
+    store.database.write(lambda conn: conn.execute(f'UPDATE {store.queue.table} SET available_at=clock_timestamp()'))
+    assert not owner.recover_completed_controls()['errors']
+    assert not control.exists()
+    owner.recover(control)
+
+
+@pytest.mark.parametrize('stage', ['existing', 'collision', 'unproven', 'replaced'])
+def test_control_allocation_identity_boundaries(tmp_path, monkeypatch, stage):
+    from contextlib import contextmanager
+    from concurrent.futures import ThreadPoolExecutor
+    from types import SimpleNamespace
+    from management_common import secure_paths as fs
+    from management_common.directory_paths import cleanup_location
+    from management_portal.workbench_projections import application_container_owner as owner
+    monkeypatch.setattr(owner.tempfile, 'tempdir', str(tmp_path))
+    monkeypatch.setattr(owner.uuid, 'uuid4', lambda: SimpleNamespace(hex='fixed'))
+    control = tmp_path / 'portal-build-owner-fixed'
+    store = owner._store()
+    def declaration():
+        with store.database.read() as conn:
+            return conn.execute(f'SELECT * FROM {store.table} WHERE location=%s',
+                                (cleanup_location(control),)).fetchone()
+    if stage == 'existing':
+        control.mkdir()
+        (control / 'keep').write_text('other owner')
+    elif stage == 'collision':
+        original = fs.private_child
+        @contextmanager
+        def collide(parent, name, *, create=False):
+            with ThreadPoolExecutor() as pool:
+                assert pool.submit(declaration).result()['category'] == 'runtime_tmp'
+            control.mkdir()
+            (control / 'keep').write_text('other owner')
+            with original(parent, name, create=create) as fd:
+                yield fd
+        monkeypatch.setattr(fs, 'private_child', collide)
+    elif stage == 'unproven':
+        def interrupted(*args):
+            (control / 'keep').write_text('unproven')
+            raise RuntimeError('interrupted identity commit')
+        monkeypatch.setattr(fs, 'sync_directory', interrupted)
+    if stage != 'replaced':
+        with pytest.raises((FileExistsError, RuntimeError)):
+            with owner._control():
+                pytest.fail('must not yield')
+    else:
+        with owner._control() as (control, _, _):
+            control.rename(tmp_path / 'original')
+            control.mkdir()
+            (control / 'keep').write_text('replacement')
+            owner._write(control / 'result.json', {'cleanup_complete': True})
+    report = owner.recover_completed_controls()
+    assert (control / 'keep').exists()
+    assert not store.queue.status()
+    if stage in ('existing', 'collision'):
+        assert declaration() is None and not report['errors']
+    else:
+        assert declaration() and report['errors']
+
+
+def test_terminal_receipt_does_not_override_live_lease(tmp_path, monkeypatch):
+    from management_portal.workbench_projections import application_container_owner as owner
+    monkeypatch.setattr(owner.tempfile, 'tempdir', str(tmp_path))
+    with owner._control() as (control, _, _):
+        owner._write(control / 'result.json', {'cleanup_complete': True})
+        assert owner.recover_completed_controls()['active'] == [str(control)]
+        with pytest.raises(RuntimeError, match='active'):
+            owner.recover(control)
+        assert control.exists()
+    assert not owner.recover_completed_controls()['errors']
+    assert not control.exists()
+
+
+def test_failed_plan_preparation_releases_control(tmp_path, monkeypatch):
+    from management_portal.workbench_projections import application_container_owner as owner
+    monkeypatch.setattr(owner.tempfile, 'tempdir', str(tmp_path))
+    with pytest.raises(AttributeError):
+        owner.run(None, [], config={})
+    assert not list(tmp_path.glob('portal-build-owner-*'))
+    assert not owner.recover_completed_controls()['errors']

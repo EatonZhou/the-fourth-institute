@@ -56,7 +56,9 @@ def test_handoff_rejects_overflow_without_dropping_items_contracts(subtests, iso
 
         assert fields["status"] == "failed"
         assert fields["items"][0]["attempts"][0]["error"] == "branch exists"
-        assert "operation_id" not in fields["items"][0]["attempts"][0]
+        # Historical attempts have no execution identity; normalization must
+        # neither invent one nor reject their retained failure history.
+        assert fields["items"][0]["attempts"][0]["operation_id"] == ""
         assert "purpose" not in fields
         assert "acceptance" not in fields
         assert fields["explanation"] == "portal 目录包含本次交接的 Lineage 界面实现。"
@@ -96,7 +98,7 @@ def test_handoff_copy_cannot_select_an_excluded_file_or_directory(tmp_path, subt
                         "transfer": {"mode": "copy", "method": "filesystem_copy", "parameters": {"exclude": ["custom.txt"]}},
                         "target": {"path": str(target)},
                     },
-                    allowed_target_roots=[tmp_path],
+                    actor="handoff-test", operation_id=str(target), allowed_target_roots=[tmp_path],
                     checked_at="2026-09-12T00:00:00Z",
                 )
 
@@ -128,7 +130,7 @@ def test_handoff_commands_use_a_configurable_long_timeout(
         observed.update(kwargs)
         return subprocess.CompletedProcess(command, 0, b"", b"")
 
-    monkeypatch.setattr(lineage_handoff_backend.subprocess, "run", fake_run)
+    monkeypatch.setattr(lineage_handoff_backend, "run_process", fake_run)
 
     lineage_handoff_backend._run(["git", "status"])
 
@@ -145,7 +147,7 @@ def test_handoff_command_timeout_can_be_overridden(
         observed.update(kwargs)
         return subprocess.CompletedProcess(command, 0, b"", b"")
 
-    monkeypatch.setattr(lineage_handoff_backend.subprocess, "run", fake_run)
+    monkeypatch.setattr(lineage_handoff_backend, "run_process", fake_run)
 
     lineage_handoff_backend._run(
         ["git", "status"],
@@ -167,7 +169,7 @@ def test_handoff_command_timeout_is_reported_as_preparation_error(
     def time_out(command: list[str], **kwargs: object):
         raise subprocess.TimeoutExpired(command, kwargs["timeout"])
 
-    monkeypatch.setattr(lineage_handoff_backend.subprocess, "run", time_out)
+    monkeypatch.setattr(lineage_handoff_backend, "run_process", time_out)
 
     with pytest.raises(
         lineage_handoff_backend.HandoffPreparationError,
@@ -198,7 +200,7 @@ def test_filesystem_copy_excludes_secrets_and_records_the_actual_result_contract
                 "transfer": {"mode": "copy", "method": "filesystem_copy", "parameters": {}},
                 "target": {"path": str(target), "scope": "."},
             },
-            allowed_target_roots=[target_root],
+            actor="handoff-test", operation_id=str(target), allowed_target_roots=[target_root],
             checked_at="2026-07-26T00:00:00Z",
         )
 
@@ -237,7 +239,7 @@ def test_filesystem_copy_excludes_secrets_and_records_the_actual_result_contract
                 },
                 "target": {"path": str(target), "scope": "."},
             },
-            allowed_target_roots=[target_root],
+            actor="handoff-test", operation_id=str(target), allowed_target_roots=[target_root],
             checked_at="2026-07-26T00:00:00Z",
         )
 
@@ -265,6 +267,6 @@ def test_filesystem_copy_excludes_secrets_and_records_the_actual_result_contract
                     "transfer": {"mode": "copy", "method": "filesystem_copy"},
                     "target": {"path": str(tmp_path / "outside"), "scope": "."},
                 },
-                allowed_target_roots=[tmp_path / "allowed"],
+                actor="handoff-test", operation_id="outside", allowed_target_roots=[tmp_path / "allowed"],
                 checked_at="2026-07-26T00:00:00Z",
             )

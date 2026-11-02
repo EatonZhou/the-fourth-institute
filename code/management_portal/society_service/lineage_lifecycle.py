@@ -312,7 +312,7 @@ def update_lineage_metadata(
             lineage_state._persist_lineage_state(current, lineage, "更新 Lineage 元数据")
             return _clone_json(lineage)
         from management_common.directory_move_store import DirectoryMoveStore
-        from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+        from .directory_relocation import relocate_nested, reconcile_dependencies
         from .directory_owner import directory_metadata
         store = lineage_aggregate.lineage_catalog_store().state_store
         members = resident_catalog.get_catalog().for_lineage(lineage_id)

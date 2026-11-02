@@ -65,6 +65,14 @@ class ProjectExecutionControl:
         return resident_lifecycle_domain.directory_move_execution_scope(
             resident_ids=resident_ids, actor=self.actor)
 
+    def rewrite_database(self, change, rewriter, *, apply):
+        from .directory_relocation import rewrite_project_database
+        return rewrite_project_database(change, rewriter, apply=apply)
+
+    def reconcile_dependencies(self, source, target):
+        from .directory_relocation import reconcile_dependencies
+        return reconcile_dependencies(source, target)
+
 
 def rename_project(project_id: str, new_project_id: str, actor: str, *,
                    dry_run: bool = False, entry: str = 'system') -> dict[str, Any]:

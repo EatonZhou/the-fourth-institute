@@ -323,7 +323,7 @@ def move_resident_identities(
     """
     from .resident_projection import _resident_lineage_node_projection
     from management_common.directory_move_store import DirectoryMoveStore
-    from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+    from .directory_relocation import relocate_nested, reconcile_dependencies
     from .directory_owner import directory_metadata
     from uuid import uuid4
     mover = DirectoryMoveStore()
@@ -429,7 +429,7 @@ def update_resident(
             raise ValueError("Resident membership changed; retry the update")
         if destination_lineage and destination_lineage != graph_ids[0]:
             from management_common.directory_move_store import DirectoryMoveStore
-            from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+            from .directory_relocation import relocate_nested, reconcile_dependencies
             from .directory_owner import directory_metadata
             from uuid import uuid4
             directory_operation = 'directory-move_' + uuid4().hex

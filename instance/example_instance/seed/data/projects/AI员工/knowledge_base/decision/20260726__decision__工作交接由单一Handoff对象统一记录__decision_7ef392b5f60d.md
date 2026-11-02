@@ -4,36 +4,39 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 28
-  created_at: '2026-07-26'
+  number: 30
+  created_at: "2026-07-26"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T18:52:28Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T04:10:17Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_24014e2b9bf6"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_isa_g5_audit_regressions.py
-  - ${code_root}/management_portal/static/hatg_panel.js
-  - ${code_root}/management_portal/society_service/lineage_event_observers.py
-  - ${code_root}/management_portal/hatg/catalog/lineage_definition.py
-  - ${code_root}/management_portal/society_service/isa/definition.py
-  - ${code_root}/management_portal/society_service/lineage_handoff_execution.py
-  - ${code_root}/management_portal/society_service/lineage_handoff_preparation.py
-  - ${code_root}/management_portal/society_service/lineage_handoff_backend.py
-  - ${code_root}/management_portal/society_service/lineage_state_domains.py
-  - ${code_root}/management_portal/society_service/lineage_handoffs.py
-  - ${code_root}/tests/cases/test_lineage_handoff_backend.py
-  - ${code_root}/tests/cases/test_lineage_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_g5_audit_regressions.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/hatg_panel.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_event_observers.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/lineage_definition.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/definition.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoff_execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoff_preparation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_state_domains.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoffs.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_backend.py
   related:
   - decision_4adcc1ff2f2c
   - decision_4637ca4a69e2
   - decision_898b8911a2ff
+  - thinking_7fa3e2b6c491
+  - concept_3d7f9a2e6c41
+  - concept_0c95d76935f7
   - decision_8838269736d3
   - decision_ccb99a00eebd
   - decision_6fc653d55c79
@@ -89,12 +92,12 @@ Workspace Handoff（工作区交接）让同一个 Lineage 中的一个 Resident
 ### 已准备的交接不再改变
 
 - **准备开始后，交接项不能再修改。** 交接处于正在准备或 ready 时，修改交接项报错“交接已准备或正在准备，不能再修改交接项；需要交接其他内容时删除这条交接后重新建立”。说明和标签仍可以修改。
-- **ready 的交接不会重新准备。** 对 ready 的交接再次准备，直接返回现有结果；正在准备时再次准备，报错“Handoff 正在准备，请等待当前 attempt 完成”。草稿和失败的交接可以准备或重试。
+- **ready 的交接不会重新准备。** 对 ready 的交接再次准备，直接返回现有结果；原执行者仍持有准备租约时再次准备，报错“Handoff 正在准备，请等待当前 attempt 完成”。原执行进程已经退出时，重新准备沿用同一 attempt 和创建操作身份，从持久进度继续。草稿和明确失败的交接可以准备或重试；失败后的新尝试使用新的创建操作身份，不复活已注销的副本。
 
 ### 失败不留下半成品
 
 - **任一交接项失败，整条交接失败。** 交接状态变为 `failed`，错误写在交接和每个交接项最近一次尝试上；其他交接项已经完成的部分不会让交接显示为成功。
-- **失败时只清理本次新建的目录。** 本次准备复制出的目录和新建的 Git worktree 与分支被删除；来源目录、事先已经存在的目录和其他交接的结果不受影响。直接共享没有新建任何目录，失败时不删除文件。
+- **失败时只清理本次新建的目录。** 本次准备复制出的目录和新建的 Git worktree 与分支被删除；已登记的副本先注销并移除绑定，文件清理由统一目录 owner 持久重试。来源目录、事先已经存在的目录和其他交接的结果不受影响。直接共享没有新建任何目录，失败时不删除文件。清理尚未完成的位置保持占位，不能用于下一次创建。
 - **每次重试都是新的尝试。** 旧的尝试和错误保留（每个交接项最多保留最近 40 次），用户可以看出问题是否已经解决。
 
 ## 三种准备方式
@@ -116,7 +119,7 @@ Workspace Handoff（工作区交接）让同一个 Lineage 中的一个 Resident
 - **`scope` 选择复制的范围。** 省略或为 `.` 时复制整个来源工作区；指定时必须是来源工作区内的相对路径，可以是目录或单个文件。绝对路径（包括 Windows 盘符路径）、空路径段、`.` 和 `..` 路径段一律拒绝，报错“工作区内容范围必须是安全的相对路径”。
 - **一些内容不复制。** 目录或文件名为 `.git`、`.venv`、`node_modules`、`__pycache__`、`.pytest_cache`、`.mypy_cache`、`.ruff_cache`、`test-results`、`credentials`、`secrets`、`private_keys`、`.env`、`.env.local`、`.env.production` 的内容和所有符号链接不复制；交接项的 `parameters.exclude` 可以再列出最多 80 个名称。所选范围本身属于排除项时报错。
 - **复制有上限。** 最多 60,000 个文件、总计 2 GiB；每个文件复制前按同一排除规则检查累计文件数和字节数，超出时立即中止并删除本次已复制的部分。
-- **副本放在允许的目录下。** 目标路径默认为 `<Lineage Folder>/handoff-workspaces/<交接 ID>/<交接项 ID>`；自行指定时必须位于允许的根目录之内（`<Lineage Folder>/handoff-workspaces`、features 区域的 `explorations/`，以及环境变量 `PORTAL_HANDOFF_TARGET_ROOTS` 列出的目录），并且事先不存在。
+- **副本放在所属 Lineage 的交接目录下。** 目标路径默认为 `<Lineage Folder>/handoff-workspaces/<交接 ID>/<交接项 ID>`；自行指定时也必须位于该 Lineage 的 `handoff-workspaces/` 内，并且事先不存在。副本登记为 Portal 创建的独立 Workspace，目录归属该 Workspace 自己；其删除与所在 Lineage 的整树删除均按《目录与路径协议》（decision_4aa13bc21e8e）执行。
 - **结果记录复制了什么。** 包括文件数、总字节数、按每个文件的 SHA-256 计算出的内容哈希、完成时间，以及来源在准备时的 Git 状态（是否为仓库、提交、分支、是否有未提交修改）。
 
 ### Git worktree
@@ -127,7 +130,7 @@ Git worktree 是与原仓库共享历史、但位于另一个目录的工作副�
 - **需要一个新的分支名。** `parameters.branch` 必填，只能包含字母、数字和 `._/-`，最长 160 个字符，并且仓库中还没有这个分支。
 - **起点默认是来源当前的提交。** `parameters.base_commit` 可以指定其他提交。
 - **可以带上未提交的修改。** `parameters.include_worktree_changes=true` 时，把来源相对所选 `base_commit`（默认 HEAD）的修改作为补丁应用到新 worktree，并复制未被 Git 忽略的新文件（排除规则同普通复制）。
-- **默认位置**为 features 区域的 `explorations/<交接 ID>/<交接项 ID>/worktree`，指定位置的规则同普通复制。结果另外记录分支名、起点提交和补丁哈希。
+- **默认位置**与普通复制相同，为 `<Lineage Folder>/handoff-workspaces/<交接 ID>/<交接项 ID>`，指定位置也遵循相同规则。结果另外记录分支名、起点提交和补丁哈希。
 
 ### 长时间命令
 

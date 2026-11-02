@@ -50,7 +50,7 @@ LAYERS = (
     # Tables, rows and stores.
     """
     creation_intents definition_collections directory_execution_admission directory_owner domain_work_storage edge_storage family_chat_storage family_storage
-    family_task_dispatch_storage graph_storage lineage_data_columns lineage_data_definitions
+    family_task_dispatch_storage graph_storage handoff_location_storage lineage_data_columns lineage_data_definitions
     lineage_data_effect_cleanup lineage_data_executions lineage_data_mailbox lineage_data_notifications
     lineage_data_project_graphs lineage_data_projection_outbox lineage_data_residents lineage_data_runtime
     lineage_definition_contract lineage_definition_versions lineage_metadata_storage lineage_state_domains
@@ -113,7 +113,7 @@ LAYERS = (
     """,
     # The Resident domain and the Events about Resident messages.
     """
-    family_chat_preferences family_recovery family_role_quota_questions lineage_event_observers lineage_event_reconciliation
+    directory_relocation family_chat_preferences family_recovery family_role_quota_questions lineage_event_observers lineage_event_reconciliation
     lineage_failure_notifications lineage_message_events lineage_program_polling resident_actual_sent_domain
     resident_context.work_summary resident_context_evidence resident_conversation_event_relay
     resident_conversation_projection_domain resident_deferred_restart resident_delivery_work
@@ -127,7 +127,7 @@ LAYERS = (
     """,
     # The Lineage domain.
     """
-    lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
+    handoff_location_owner lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
     lineage_program_edits lineage_program_services lineage_read_cache lineage_reads
     lineage_resident_controls lineage_resident_nodes lineage_resident_workspaces lineage_state
     lineage_view_projection

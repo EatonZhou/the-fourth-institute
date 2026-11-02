@@ -4,62 +4,38 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 47
-  created_at: '2026-09-02'
+  number: 51
+  created_at: "2026-09-02"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T18:52:46Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T03:42:55Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_24014e2b9bf6"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
-  source:
-  - ${code_root}/management_portal/test_framework/models.py
-  - ${code_root}/management_portal/test_framework/taxonomy.py
-  - ${code_root}/tests/cases/case_ids.json
-  - ${code_root}/management_portal/test_framework/catalog_source.py
-  - ${code_root}/management_portal/test_framework/catalog.py
-  - ${code_root}/management_portal/test_framework/registry.py
-  - ${code_root}/management_portal/test_framework/planner.py
-  - ${code_root}/management_portal/test_framework/records.py
-  - ${code_root}/management_portal/test_framework/service.py
-  - ${code_root}/management_portal/test_framework/api.py
-  - ${code_root}/management_portal/test_framework/paths.py
-  - ${code_root}/management_portal/test_framework/runner_adapters.py
-  - ${code_root}/management_portal/test_framework/executor.py
-  - ${code_root}/management_portal/test_framework/tau_campaign.py
-  - ${code_root}/management_portal/test_framework/local_runs.py
-  - ${code_root}/management_portal/test_framework/slots.py
-  - ${code_root}/management_portal/test_framework/pytest_results.py
-  - ${code_root}/management_portal/test_framework/isolation.py
-  - ${code_root}/management_portal/test_framework/live_adapter.py
-  - ${code_root}/management_portal/test_framework/tools/sync_catalog.py
-  - ${code_root}/management_portal/test_framework/catalog_metadata.py
-  - ${code_root}/management_portal/test_framework/web.py
-  - ${code_root}/management_portal/resources/providers/test.py
-  - ${code_root}/management_portal/wall_backend.py
-  - ${code_root}/config/resource-types/test.json
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_test_framework.py
+  source: []
   related:
   - decision_6febe7bb57f9
   - decision_f2a6a5dd4646
   - decision_c953eab654cd
   - decision_ef80c6d3b5ee
   - decision_06defc47e960
+  - insight_ee85097d560b
+  - insight_62b384b1e497
   - decision_4aa13bc21e8e
   supersedes: []
-  derived_from: []
+  derived_from:
+  - thinking_091fdad228c4
 ---
 # Portal Test Case、Catalog 与运行证据协议
 
-Portal 的测试框架（Python 包 `management_portal/test_framework`）把仓库里的自动化测试登记为带说明的测试条目，支持按模块、重要级别和覆盖角度查找、计划、执行与保存证据。开发者、审查者、Agent、ResourceService 和 Test 工作区共用目录及运行记录。当前本地执行只运行 pytest；原 Playwright 浏览器套件已移除。TAU 声明式条目继续可运行；真实页面验证使用独立的可选 Playwright/Chromium 运行时，与已删除的本地浏览器测试套件分开。运行由独立执行进程承担，Web 重启不直接中断已有记录。
+Portal 的测试框架（Python 包 `management_portal/test_framework`）把仓库里的自动化测试登记为带说明的测试条目，支持按模块、重要级别和覆盖角度查找、计划、执行与保存证据。开发者、审查者、Agent、ResourceService 和 Test 工作区共用目录及运行记录。当前本地执行只运行 pytest；TAU 声明式条目继续可运行；真实页面验证使用独立的可选 Playwright/Chromium 运行时，。运行由独立执行进程承担，Web 重启不直接中断已有记录。
 
-本 Design 定义测试条目和测试目录、运行计划、运行记录、pytest 本地执行及 TAU 声明式运行，也定义 `/test/api/*` 接口和权限。Test 工作区见 `decision_f2a6a5dd4646`；TAU 的原任务模型见 `decision_c953eab654cd`；开发者验证范围见 `decision_6febe7bb57f9`。
+本 Design 定义测试条目和测试目录、运行计划、运行记录、pytest 本地执行及 TAU 声明式运行，也定义 `/test/api/*` 接口和权限。Test 工作区见 `decision_f2a6a5dd4646`；TAU 的使用任务模型见 `decision_c953eab654cd`；开发者验证范围见 `decision_6febe7bb57f9`。
 
 ## 基本概念
 
@@ -67,7 +43,7 @@ Portal 的测试框架（Python 包 `management_portal/test_framework`）把仓�
 - **Implementation（实现入口）**：把测试意图连接到可运行的 pytest 函数，或保留的 TAU 任务声明。一个 Test Case 可以有零个或多个 Implementation；没有 Implementation 的条目只登记测试意图。
 - **Catalog（测试目录）**：全部 Test Case 的集合。pytest 函数从源码自动发现，标题、说明和分类写在 docstring；TAU、SPEC Design 和设计点 Live 用例保存在各自 JSON。仓库不保存生成目录。
 - **runner（执行方式）**：`pytest` 是当前可运行的本地执行方式；`tau` 执行 Resident 真实页面验收；运行前须安装独立 TAU 浏览器运行时并配置 portal-test 状态。`browser-script` 不再注册。
-- **profile（运行配置）**：实现声明可以在哪种环境下运行。当前有 `local.fixture`（本地测试数据，风险 `isolated`）和 `live.portal-test`（在当前唯一的 Dev 上使用受控账号 `portal-test`，风险 `live-account`）。
+- **profile（运行配置）**：实现声明可以在哪种环境下运行。当前有 `local.fixture`（本地测试数据，风险 `isolated`）和 `live.controlled`（在显式选择的实例 Dev 上使用受控测试账号，风险 `live-account`）。
 - **RunPlan（运行计划）**：一次请求选中的具体 Implementation 列表，固定每个实现的入口、配置和源码摘要。
 - **Run record（运行记录）**：一次执行的发起者、状态、输出、逐项结果、产物和报告。
 - **功能模块**：`module` 字段的取值来自测试分类表（`management_portal/test_framework/taxonomy.py`），它按 SPEC.md 的十一个顶层领域分组，每个模块列出相关的 Design ID。
@@ -124,13 +100,13 @@ Implementation 的字段：
       """
   ```
 - **保留的用例 ID 稳定，新测试的 ID 由入口派生。** 仍存在的旧 pytest 入口在 `tests/cases/case_ids.json` 中保留 ID；已删除的浏览器入口从该映射中清除。其他测试 ID 由入口摘要派生。测试移动、改名和显式 JSON 入口的冲突仍由目录同步校验。
-- **`sync_catalog` 只做检查和清理。** `python -m management_portal.test_framework.tools.sync_catalog` 报告被拒绝的字段和无法解析的源码、测试已经不存在的 `case_ids.json` 条目、按移动规则沿用的 ID，以及测试已经不存在的 `live_cases.json` Live 定义；有错误时以状态 1 退出。它还报告两类需要人处理、但不影响退出状态的问题（TFI portal 2026-10-18 定）：标题不含中文的测试（没有 docstring 标题，目录显示函数名），以及设计点已不在设计文档中的绑定。WALL 用设计点标签文字的哈希作点 ID，改写标签就会让绑定失效，除非该点带有 `<!-- wall: {"key": ...} -->` 显式 key。工具按 `<Projects>/<项目>/knowledge_base/<类型>/*__<ID>.md` 读取设计文档，读不到的绑定只计入“未检查”。`--apply` 把沿用的 ID 写入新入口并删除失效条目（在各文件的 `.lock` 文件锁内原子替换）；`--export <路径>` 把完整目录写成一份 `tfi.portal-test-catalog.v2` 文档，供留存证据。`live_cases.json` 继续按入口为自动发现的测试提供 Live 定义。
+- **`sync_catalog` 只做检查和清理。** `python -m management_portal.test_framework.tools.sync_catalog` 报告被拒绝的字段和无法解析的源码、测试已经不存在的 `case_ids.json` 条目、按移动规则沿用的 ID，以及测试已经不存在的 `live_cases.json` Live 定义；有错误时以状态 1 退出。它还报告两类需要人处理、但不影响退出状态的问题：标题不含中文的测试（没有 docstring 标题，目录显示函数名），以及设计点已不在设计文档中的绑定。WALL 用设计点标签文字的哈希作点 ID，改写标签就会让绑定失效，除非该点带有 `<!-- wall: {"key": ...} -->` 显式 key。工具按 `<Projects>/<项目>/knowledge_base/<类型>/*__<ID>.md` 读取设计文档，读不到的绑定只计入“未检查”。`--apply` 把沿用的 ID 写入新入口并删除失效条目（在各文件的 `.lock` 文件锁内原子替换）；`--export <路径>` 把完整目录写成一份 `tfi.portal-test-catalog.v2` 文档，供留存证据。`live_cases.json` 继续按入口为自动发现的测试提供 Live 定义。
 - **SPEC.md 索引的每份 Design 都要出现在测试分类表中。** `tests/cases/test_test_framework.py` 检查分类表覆盖 SPEC.md 的全部顶层领域和当前索引的每个 Design ID，并检查每个条目的 `module` 都来自分类表；在 SPEC.md 新增或移动 Design 时，同时把它的 ID 加入对应模块，否则该检查失败。
 - **目录校验在读取时进行。** 每个条目必须有合法 ID、`key`、标题和能识别的模块，说明可以为空；`is_design_point` 为真或含 `architecture-conformance` 的条目必须有非空 `design_refs`（含 `architecture-conformance` 而没有声明时默认为 SPEC.md）；Test Case 的 `id`、`key` 以及 Implementation 的 `id`、`entrypoint` 在目录内唯一。模块 ID 必须来自当前分类表；旧模块名没有别名映射。`tests/cases/test_catalog_from_code.py` 检查仓库目录没有错误。
 - **单个条目有错误时，其余条目照常可用。** docstring 中被拒绝的字段（未知字段、未知模块、无效等级）记入 `catalog_errors`，这个测试仍按其余字段和推断值留在目录中；无法解析的源码文件记一条错误，它的测试暂时不出现；重复的 ID、入口或设计点绑定使相关条目进入 `catalog_errors`，其他条目正常返回。
 <!-- wall: {"key": "ae08985efa54f238"} -->
 - **目录按源码文件缓存。** 每个测试文件按修改时间和大小缓存解析结果，任一来源文件变化时重建目录；首次构建需要解析全部测试文件，之后的读取只检查文件状态。ResourceService 的 `test` 资源按同一组来源文件判断是否需要刷新。
-- **条目只在源码中修改（TFI portal 2026-10-16 定）。** Test 工作区和接口都不能修改条目：标题、说明、分类、WALL 设计点绑定和 `lifecycle` 写在测试的 docstring 或显式用例 JSON 中，随代码评审和提交生效。删除一个条目就是在 docstring 中写 `:lifecycle: deleted`。
+- **条目只在源码中修改。** Test 工作区和接口都不能修改条目：标题、说明、分类、WALL 设计点绑定和 `lifecycle` 写在测试的 docstring 或显式用例 JSON 中，随代码评审和提交生效。删除一个条目就是在 docstring 中写 `:lifecycle: deleted`。
 - **一个 WALL 设计点最多绑定一个 Test Case。** docstring 字段 `:design-point: source#point` 设置绑定，同时把条目标记为设计点并把来源文档加入 `design_refs`；显式用例 JSON 设置 `design_point_ref` 时必须自己写 `is_design_point: true` 和来源文档。两个条目绑定同一个点时，两者都进入 `catalog_errors`。Test Case 面板通过 `/api/wall/test-binding` 显示绑定的点在当前用户可访问的 WALL 工程中是否仍然存在。
 - **Test Case 也是只读的标准资源。** 资源类型 `test` 的提供者把 Catalog 中的条目发布给 ResourceService，所有人可读；资源地址在 Portal 中打开为 `/wall?case=<id>`。`test` 类型没有修改提供者，`UpdateResource` 对它返回错误。
 
@@ -157,7 +133,7 @@ Implementation 的字段：
 <!-- wall: {"key": "05144a9e88f5a7cc"} -->
 - **只有运行的发起者可以取消运行。** 服务端比较认证身份与 `created_by`；已结束的运行原样返回，未结束的运行进入取消流程。取消请求不等于被测输入已终止。
 <!-- wall: {"key": "a215e09fc162cad9"} -->
-- **服务保留全部未结束的运行和最近 100 条已结束报告。** 创建新运行时只淘汰超出上限的最早终止报告；已通过接口认证的调用者也可以批量删除已经结束的报告。证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。
+- **服务保留全部未结束的运行；已结束的运行记录与证据保留七天。** 期限从运行结束时间开始计算，不因创建新运行或报告数量超过 100 条而提前淘汰。已通过接口认证的调用者也可以批量删除已经结束的报告。证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 - **一次运行属于执行它的进程。** 本地运行和 TAU Campaign 都由各自的测试执行进程执行，Web 重启不影响它们。执行进程在运行结束前退出时，Web 在启动时或下一次读取这条运行时重新启动执行单元：已经开始的本地运行记为 `error`，TAU Campaign 由新的执行进程从已记录的 Resident 消息继续。仍在运行的执行进程继续拥有自己的运行，其他进程不抢占。
 
 ## 接口协议
@@ -221,7 +197,7 @@ Implementation 的字段：
 | `selected` | 每个将要执行的实现：条目信息、实现定义、执行方式、运行配置、实现风险 `risk` 与配置风险 `profile_risk`、`source_sha256` |
 | `excluded` | 命中但没有可运行实现的条目及原因 |
 | `selected_case_count`、`selected_implementation_count` | 选中的条目数和实现数 |
-| `execution` | 执行方式：`batch`（本地运行；每个分组有 `group_id`、`label`、`runner`、`lane`（`isolated` 或 `live`）、`slot`、`item_indexes` 和 `continue_on_failure`），或 `parallel-modules`（TAU，每模块一组、失败继续，附并发上限） |
+| `execution` | 执行方式：`batch`（本地运行；每个分组有 `group_id`、`label`、`runner`、`lane`（`isolated` 或 `live`）、`slot`、`item_indexes` 和 `continue_on_failure`），或 `parallel-modules`（TAU，每模块一组、受阻后继续下一用例，附并发上限） |
 | `campaign` | 纯 TAU 运行为 `tau`，否则为空 |
 | `executable` | 是否至少有一个可运行的实现 |
 
@@ -229,22 +205,9 @@ Implementation 的字段：
 
 ### 运行记录
 
-运行记录的状态：
+本地自动化运行保留排队、运行、取消、通过、失败、错误和前提不足等状态及其失败分类。TAU 的排队、运行、取消和框架异常只描述执行管理；每个用例交付使用报告，状态为 `reported`。报告中的过程说明走完、受阻或未开始，问题按产品、用例、执行偏差与工具分类，并按阻断、影响使用、小问题分级。具体报告协议由 decision_c953eab654cd 定义。
 
-| 状态 | 含义 |
-| --- | --- |
-| `queued` | 已记录，等待执行 |
-| `running` | 正在执行某个实现 |
-| `cancelling` | 已收到取消请求，等待当前执行结束 |
-| `passed` | 计划中的实现全部通过 |
-| `failed` | 至少一个实现给出失败结论 |
-| `cancelled` | 已取消 |
-| `error` | 框架、源码摘要、执行器或证据处理出错 |
-| `unsupported` | 当前环境无法提供计划要求的执行方式，或用例的运行前提没有满足、用例没有执行 |
-
-最终状态按 `error`、`unsupported`、`failed`、`cancelled`、`passed` 的优先顺序从各项结果中取最严重的一项。记录还包含 `created_by`（发起者）、`executor`（执行进程的身份）、`plan`、开始和结束时间、当前执行的条目、聚合输出、逐项 `results`、按组的 `groups`（本地运行每个 pytest 分片一组，TAU 每个模块一组）和 `report`（TAU 报告）。本地运行的分组还记录 `waiting`（等待主机并发名额时的说明）、`slots`（取得的名额数）和 `isolation_holes`（隔离漏洞，见下文）。
-
-未通过的每项结果带 `failure_class`，说明未通过的原因：`product`（产品缺陷）、`test`（测试问题）、`environment`（环境问题）、`precondition`（运行前提没有满足，用例没有执行）、`concurrent-change`（并行修改）或 `unknown`（尚未判定）。框架能判断的直接写入：`unsupported` 为 `precondition`，`error` 和被信号终止的进程为 `environment`，TAU Resident 没有交付可解析的结论为 `test`；其余失败记为 `unknown`，由处理失败的人或 Resident 判定。TAU 报告的摘要按分类计数（`failure_classes`），Test 工作区在结果状态旁显示分类。
+运行记录包含发起者、执行进程身份、冻结计划、开始和结束时间、逐项结果、分组和汇总报告。本地分片按程序断言统计通过与失败；TAU 按使用报告统计过程和问题，不计算证据完整性通过率。缺少截图、计时、因果说明或结构化材料时注明未记录，不改判产品结果。
 
 `POST /test/api/run/cancel` 接受 `run_id`：已结束的运行原样返回；否则记录进入 `cancelling`。本地运行的执行进程在下一次写入进度时（至多约 2 秒）看到这个状态，向各组进程发送 `SIGTERM`，10 秒后仍未退出时发送 `SIGKILL`；TAU Campaign 的执行进程在等待 Resident 时读到这个状态，通知正在执行的 Resident 输入停止。执行结束后写入最终状态。`POST /test/api/runs/delete` 接受 `run_ids` 列表：去重后，只要有一个 ID 不存在或运行尚未结束，整批拒绝；成功时删除记录；证据与产物目录的删除和期限按《目录与路径协议》（decision_4aa13bc21e8e）处理。接口返回 `tfi.portal-test-run-deletion.v1`、`deleted_run_ids`、`deleted_count` 和 `artifact_warnings`（产物清理失败的说明）。
 
@@ -282,7 +245,7 @@ pytest 和保留的 TAU 任务共用主机并发预算，默认 4 个名额，�
 | 执行方式 | 执行内容 | 结果判定 |
 | --- | --- | --- |
 | `pytest` | 每个分片运行一次 `python -m pytest -q --tb=short -p no:cacheprovider -p management_portal.test_framework.pytest_results --continue-on-collection-errors @<入口列表文件>`，普通组另加 `--basetemp=/tmp/tfi-pytest-<随机十六进制串>`，不在失败后继续的组另加 `--maxfail=1`；插件 `pytest_results` 把每个测试的开始、各阶段结果和收集错误逐行写入组目录的 `results.jsonl`，普通组的临时目录位于该组 bwrap 私有 `/tmp`，组结束后随隔离环境销毁；短路径避免 Unix socket 地址超长。Live pytest 使用 pytest 自己分配的唯一临时目录，保留当前用户的 `XDG_RUNTIME_DIR` 与 `DBUS_SESSION_BUS_ADDRESS`，供明确声明的 systemd 用户单元测试使用。报告插件在加载时保存文件打开函数，测试对文件访问的临时替换不能中断报告写入 | 入口匹配的全部测试（含参数化实例和类内方法）都通过即 `passed`；任一阶段失败即 `failed`，失败在分片运行中就写入记录；全部跳过为 `unsupported`；文件无法收集为 `failed` |
-| `tau` | 由模块 Resident 执行真实使用任务（见 `decision_c953eab654cd`） | Resident 返回的机器可读结论 |
+| `tau` | 由模块 Resident 执行真实使用任务（见 `decision_c953eab654cd`） | Resident 返回的过程、问题清单与性能体验报告 |
 
 进程退出后仍没有结果的实现：已有取消请求时记为 `cancelled`（失败即停时摘要写明“失败即停”）；进程被信号终止时记为 `error`，摘要写明信号名称和编号（无法识别的编号写为“未知信号”）；其他情况记为 `error`，摘要写明退出码。负的退出码只说明进程收到了信号，不能据此判断是谁发送的；排查时需要把运行时间、执行单元名与服务重启日志对照。框架不自动重试。
 
@@ -296,7 +259,7 @@ Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal`
 
 ### 进程重启后的恢复
 
-每条运行记录保存执行进程的身份 `executor`（主机、启动 ID、PID 命名空间、PID 和进程启动时刻；排队中的运行保存创建它的 Web 进程）。Web 启动时检查所有未结束的运行，读取单条未结束的运行时也检查它；执行进程仍然存活的保持不变。执行进程已退出时：已经开始的本地运行记为 `error`（“测试执行进程在运行完成前退出。”）；其余运行（TAU Campaign 和创建后还没有执行进程认领的运行）由 Web 重新启动执行单元，同一运行每 30 秒至多重启一次，启动失败留待下一次读取重试。PID 命名空间与当前进程不同的身份无法判断，按存活处理；构建测试框架服务本身不做任何恢复。TAU 接管原调用、恢复准备失败但仍有有效调用、取消收尾与提交前后源码摘要的专有规则统一见 `decision_c953eab654cd`“执行与恢复”；不得因重新启动执行单元重复投递业务。
+每条运行记录保存执行进程的身份 `executor`（主机、启动 ID、PID 命名空间、PID 和进程启动时刻；排队中的运行保存创建它的 Web 进程）。Web 启动时检查所有未结束的运行，读取单条未结束的运行时也检查它；执行进程仍然存活的保持不变。执行进程已退出时：已经开始的本地运行记为 `error`（“测试执行进程在运行完成前退出。”）；其余运行（TAU Campaign 和创建后还没有执行进程认领的运行）由 Web 重新启动执行单元，同一运行每 30 秒至多重启一次，启动失败留待下一次读取重试。PID 命名空间与当前进程不同的身份无法判断，按存活处理；构建测试框架服务本身不做任何恢复。TAU 接管原调用、恢复准备失败但仍有有效调用、取消收尾与提交前后源码摘要的专有规则统一见 `decision_c953eab654cd`“真实使用与恢复”；不得因重新启动执行单元重复投递业务。
 
 ### Live 演示定义
 
@@ -320,7 +283,22 @@ Portal 的真实状态目录（当前运行用户的 `~/.local/state/tfi-portal`
 
 测试用例面板的分区展开状态与用户偏好由 `decision_f2a6a5dd4646`“Test Case：理解一个条目”定义；运行记录不承担界面偏好存储。
 
-TAU 模块的跨进程占用、容量等待及失败清理恢复统一见 `decision_c953eab654cd`；本 Design 只定义通用运行记录与保留上限，未结束 Campaign 同其他未结束运行一样不会被创建新运行时的保留清理淘汰。
+TAU 模块的跨进程占用、容量等待及失败清理恢复统一见 `decision_c953eab654cd`；本 Design 定义通用运行记录，保留期限统一按《目录与路径协议》（decision_4aa13bc21e8e）执行；未结束 Campaign 同其他未结束运行一样不会被到期清理淘汰。
 
-原 Playwright 界面套件与固定浏览器 Campaign 检查已删除，不再作为当前覆盖证明。当前 TAU 样本、临时对象与证据生命周期以 `decision_c953eab654cd` 为准；是否执行及如何复用历史有效证据以 `decision_6febe7bb57f9` 为准。删除不改写原 Run、失败结论或稳定条目 ID，也不证明当前端到端能力已通过。
 
+
+## TAU 使用报告
+
+TAU 让 Agent 像真实用户一样完整使用产品，再报告使用中的问题。每个用例产出一份使用报告，包含三部分：
+
+- **过程**：用户目标、实际操作、流程是否走完；未走完时写明停在哪一步及原因。
+- **问题清单**：每条写现象、发生步骤、截图或原始响应，以及严重程度。问题分为产品问题、用例问题、执行偏差和工具问题；严重程度分为阻断（无法继续）、影响使用和小问题。
+- **性能体验**：关键步骤的耗时，哪里慢、慢多少；优先记录创建、首次加载、关键操作、删除与重启后恢复。
+
+计时、截图、原始响应和因果关系是帮助理解问题的材料。没有记录的写“未记录”，可补充观察并说明取得时间；不伪造原始记录，不以材料完整性给用例判通过或失败。没有录下截图也可以报告实际看到的现象。
+
+用例步骤、等待条件或接口用法与产品设计不符时，修正用例并在报告归入用例问题。模型没有按用例操作归入执行偏差；辅助脚本或观察工具出错归入工具问题并修工具。它们不计为产品问题。
+
+发布和重启是正常使用环境的一部分。短暂报错后等待、刷新或重新连接，能够继续就记录恢复过程和耗时，不列为产品问题。重启后操作仍卡死、数据丢失或必须人工处理才列为产品问题。网络中断本身也不代表产品故障；无法继续时说明环境限制和停留步骤。
+
+报告不要求每步原样一次成功，不要求完整计时或因果链，也不因漏记材料安排重跑。验证修复时按受影响的真实用户行为选择复验范围。

@@ -15,9 +15,103 @@ from management_common.directory_cleanup_store import get_directory_cleanup_stor
 from management_common.directory_paths import assert_missing_location, cleanup_location, cleanup_path, lexical_path, rename_directory_no_replace, remove_path
 from management_common.portal_database import portal_database
 from management_common.resource_lifecycle import current_lifecycle, LifecycleStore
+from management_common.process_observation import process_identity, process_is_alive
+from management_common.lifetime_execution_lease import execution_lease
 
 
 _OPERATION = ContextVar('resource_creation_operation', default='')
+_AUTHORITY = ContextVar('resource_creation_authority', default=None)
+
+
+@contextmanager
+def creation_authority(check):
+    """Carry the delegating domain's execution fence through creation effects."""
+    token = _AUTHORITY.set(check)
+    try:
+        yield
+    finally:
+        _AUTHORITY.reset(token)
+
+
+def assert_creation_authority():
+    check = _AUTHORITY.get()
+    if check is not None:
+        check()
+
+
+class _CreationWriter:
+    """Creation's existing journal owns the writer as well as its inodes.
+
+    A free PG lock only serializes claims. An end receipt or observed Python
+    death and exclusive execution admission (including native children) are
+    required before another writer can touch its files.
+    """
+    def __init__(self, db, key, session):
+        self.db, self.key, self.session = db, key, session
+        self.table = f'"{db.schema}".resource_creations'
+        self.receipt = dict(token=uuid4().hex, process=process_identity(), ended=False)
+        self.claimed = False
+
+    def claim(self, artifacts, connection, *, new=False):
+        previous = artifacts[0].get('writer', {}) if artifacts else {}
+        if not new and previous.get('ended') is not True and process_is_alive(previous.get('process', {})):
+            raise RuntimeError('Creation writer ownership is active or unknown')
+        if not artifacts:
+            raise ValueError('Creation requires at least one artifact')
+        artifacts[0]['writer'] = self.receipt
+        connection.execute(f'UPDATE {self.table} SET artifacts=%s::jsonb WHERE operation_id=%s',
+                           (json.dumps(artifacts), self.key))
+        self.claimed = True
+
+    def check(self, connection=None):
+        assert_creation_authority()
+        try:
+            self.session.execute('SELECT 1')
+        except Exception as error:
+            raise RuntimeError('Creation execution ownership lost') from error
+        if connection is None:
+            with self.db.read() as conn:
+                return self.check(conn)
+        row = connection.execute(f'SELECT artifacts FROM {self.table} WHERE operation_id=%s FOR UPDATE',
+                                 (self.key,)).fetchone()
+        receipt = row['artifacts'][0].get('writer', {}) if row and row['artifacts'] else {}
+        if receipt.get('token') != self.receipt['token'] or receipt.get('ended') is not False:
+            raise RuntimeError('Creation execution ownership lost')
+
+    def end(self):
+        if self.claimed:
+            # This receipt is allowed after session loss: the Python stack has
+            # unwound and will perform no more file/domain effects. Never save
+            # a stale artifact snapshot or replace a successor's receipt here.
+            self.db.write(lambda conn: conn.execute(
+                f"UPDATE {self.table} SET artifacts=jsonb_set(artifacts, '{{0,writer,ended}}', 'true') "
+                "WHERE operation_id=%s AND artifacts->0->'writer'->>'token'=%s",
+                (self.key, self.receipt['token'])))
+
+
+@contextmanager
+def _creation_writer(db, key):
+    # Both recovery and ordinary writers use this identity. Python end/death
+    # receipts remain necessary but cannot override a surviving native tree.
+    with execution_lease(key, namespace=db.schema, blocking=False) as acquired:
+        if not acquired:
+            raise RuntimeError('Creation writer ownership is active or unknown')
+        with _creation_session(db, key) as writer:
+            yield writer
+
+
+@contextmanager
+def _creation_session(db, key):
+    import psycopg
+    lock = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], 'big', signed=True)
+    with psycopg.connect(db.dsn, autocommit=True, connect_timeout=30) as session:
+        session.execute("SET lock_timeout = '90s'")
+        session.execute('SELECT pg_advisory_lock(%s)', (lock,))
+        writer = _CreationWriter(db, key, session)
+        try:
+            yield writer
+        finally:
+            writer.end()
 
 
 def creation_operation_id(operation_id=''):
@@ -118,11 +212,10 @@ class Creation:
     def prepare(self, artifacts):
         """Persist intent before any filesystem effect; artifacts are (path, kind)."""
         from .directory_registrations import assert_empty_location, is_deleted
-        lock = int.from_bytes(hashlib.sha256(self.key.encode()).digest()[:8], 'big', signed=True)
         self.scope_id = current_lifecycle()
         self.lifecycle = LifecycleStore() if self.scope_id else None
         lease = self.lifecycle.owner_lease(self.scope_id) if self.lifecycle else nullcontext()
-        with lease, self.db.advisory_lock(lock):
+        with lease, _creation_writer(self.db, self.key) as self.writer:
             with self.db.transaction() as conn:
                 self._assert_scope_open(conn)
                 self.queue.lock(conn)
@@ -136,6 +229,8 @@ class Creation:
                         raise ValueError('Unfinished creation belongs to another resource lifecycle')
                     self.artifacts = row['artifacts']
                     self.completed = row['completed']
+                    if is_deleted(self.resource_id, connection=conn):
+                        raise KeyError(self.resource_id)
                 else:
                     if is_deleted(self.resource_id, connection=conn):
                         raise KeyError(self.resource_id)
@@ -164,6 +259,11 @@ class Creation:
                 if not self.completed:
                     for artifact in self.artifacts:
                         self.queue.reserve(cleanup_path(artifact['path']), operation_id=self.key, purpose='resource_creation', connection=conn)
+                    self.writer.claim(self.artifacts, conn, new=row is None)
+                    self.writer.check(conn)
+                # Registration is the authoritative completion checkpoint.
+                # Replaying it reads the original result; it acquires no file
+                # authority and must not replace even an unknown writer receipt.
             self._active = True
             try:
                 yield self
@@ -175,22 +275,37 @@ class Creation:
         return [cleanup_path(item['path']) for item in self.artifacts]
 
     def _save(self, connection):
+        self.assert_owned(connection)
         connection.execute(f'UPDATE {self.table} SET artifacts=%s::jsonb WHERE operation_id=%s',
                            (json.dumps(self.artifacts), self.key))
+
+    def assert_owned(self, connection=None):
+        if not self._active:
+            raise RuntimeError('Creation requires an active preparation lease')
+        if self.completed:
+            raise RuntimeError('Completed creation is read-only')
+        self.writer.check(connection)
 
     def _assert_scope_open(self, connection):
         if self.lifecycle:
             self.lifecycle.assert_open(self.scope_id, connection=connection)
+        parent_id = self.payload.get('parent_id')
+        if parent_id:
+            from .directory_registrations import is_deleted
+            if is_deleted(parent_id, connection=connection):
+                raise KeyError('Creation parent was deleted: ' + parent_id)
 
     def publish(self, initialize):
         """Build each artifact in private staging, then publish without replacing."""
         if not self._active:
             raise RuntimeError('Creation requires an active preparation lease')
-        with self.db.transaction() as conn:
-            self._assert_scope_open(conn)
         if self.completed:
             return
+        with self.db.transaction() as conn:
+            self.assert_owned(conn)
+            self._assert_scope_open(conn)
         for index, artifact in enumerate(self.artifacts):
+            self.assert_owned()
             target = cleanup_path(artifact['path'])
             if artifact['kind'] == 'adopted':
                 _assert_identity(target, artifact['identity'])
@@ -211,8 +326,13 @@ class Creation:
                 # An interrupted initializer is never merged into a new attempt.
                 # Its known inode can be cleaned; an unproven path is untouched.
                 with self.db.transaction() as conn:
+                    self.assert_owned(conn)
                     self.queue.lock(conn)
                     if stage and artifact.get('identity'):
+                        if artifact.get('git_dependency'):
+                            from .creation_git import GitWorktreeCreation
+                            GitWorktreeCreation(artifact, lambda: self.db.write(self._save), self.key, check=self.assert_owned).cleanup()
+                        self.assert_owned(conn)
                         _remove_owned(stage, artifact['identity'])
                         self.queue.release(artifact['stage_operation'], connection=conn)
                     elif stage:
@@ -235,6 +355,7 @@ class Creation:
                 artifact['identity'] = _identity(stage)
                 self.db.write(self._save)
                 initialize(index, stage)
+                self.assert_owned()
                 if artifact['kind'] == 'directory':
                     _assert_identity(stage, artifact['identity'])
                 _sync(stage)
@@ -243,6 +364,7 @@ class Creation:
                 artifact['ready'] = True
                 self.db.write(self._save)
             _assert_identity(stage, artifact['identity'])
+            self.assert_owned()
             rename_directory_no_replace(stage, target)
             if os.name != 'nt':
                 descriptor = os.open(target.parent, os.O_RDONLY)
@@ -258,6 +380,7 @@ class Creation:
         if not self._active:
             raise RuntimeError('Creation requires an active preparation lease')
         self._assert_scope_open(connection)
+        self.assert_owned(connection)
         self.queue.lock(connection)
         if is_deleted(self.resource_id, connection=connection):
             raise KeyError(self.resource_id)
@@ -272,6 +395,7 @@ class Creation:
             if artifact.get('stage_operation'):
                 self.queue.release(artifact['stage_operation'], connection=connection)
         yield
+        self.assert_owned(connection)
         self.registrations.complete(self.resource_id, connection=connection)
         if self.scope_id:
             connection.execute(f'INSERT INTO "{self.lifecycle.db.schema}".allocations(resource_id,scope_id) '
@@ -298,43 +422,115 @@ def finish_instance_creations():
     return _finish_creations()
 
 
-def _finish_creations(*, scope_id=None):
+def finish_deleted_creations():
+    """Retry aborted effects and effects whose object or explicit parent was deleted.
+
+    The original Creation lease fences an active initializer. Tombstones are
+    committed before cleanup, and retries retain every unproven inode claim.
+    """
+    return _finish_creations(deleted_only=True)
+
+
+def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None, unregister=None):
     db = portal_database(schema='directory_lifecycle')
     table = f'"{db.schema}".resource_creations'
     queue = get_directory_cleanup_store()
     with db.read() as conn:
         if conn.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
             return []
-        scope_filter = ' AND scope_id=%s' if scope_id is not None else ''
-        keys = [row[0] for row in conn.execute(
-            f'SELECT operation_id FROM {table} WHERE NOT cleanup_complete' + scope_filter,
-            (scope_id,) if scope_id is not None else ())]
+        filters, values = ['NOT cleanup_complete'], []
+        if scope_id is not None:
+            filters.append('scope_id=%s')
+            values.append(scope_id)
+        if operation_keys is not None:
+            filters.append('operation_id=ANY(%s)')
+            values.append(sorted(operation_keys))
+        rows = conn.execute(
+            f'SELECT operation_id,resource_id,payload,aborted FROM {table} WHERE ' + ' AND '.join(filters),
+            tuple(values)).fetchall()
+        if deleted_only:
+            from .directory_registrations import is_deleted
+            rows = [row for row in rows if row['aborted'] or is_deleted(row['resource_id'], connection=conn)
+                    or (row['payload'].get('parent_id')
+                        and is_deleted(row['payload']['parent_id'], connection=conn))]
+        keys = [row['operation_id'] for row in rows]
     errors = []
     for key in keys:
-        lock = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], 'big', signed=True)
-        with db.advisory_lock(lock):
-            # Commit the tombstone before deletion, including on cleanup failure.
-            with db.transaction() as conn:
-                row = conn.execute(f'SELECT * FROM {table} WHERE operation_id=%s FOR UPDATE', (key,)).fetchone()
-                if row['cleanup_complete']:
-                    continue
-                if not row['completed']:
-                    conn.execute(f'UPDATE {table} SET aborted=TRUE WHERE operation_id=%s', (key,))
-            try:
+        try:
+            with _creation_writer(db, key) as writer:
+                # Commit the tombstone before deletion, including on cleanup failure.
                 with db.transaction() as conn:
+                    row = dict(conn.execute(f'SELECT * FROM {table} WHERE operation_id=%s FOR UPDATE', (key,)).fetchone())
+                    if row['cleanup_complete']:
+                        continue
+                    assert_creation_authority()
+                    if (row['completed'] and not row['aborted'] and unregister is None
+                            and not any(a.get('unproven_stages') for a in row['artifacts'])):
+                        # Registration already released these reservations and
+                        # transferred the published files to their domain owner.
+                        # Only this journal's bookkeeping remains. Do not claim
+                        # or end a writer, touch files, or unregister identities.
+                        conn.execute(f'UPDATE {table} SET cleanup_complete=TRUE WHERE operation_id=%s', (key,))
+                        continue
+                    writer.claim(row['artifacts'], conn)
+                    writer.check(conn)
+                    if unregister is not None and not row['aborted']:
+                        queue.lock(conn)
+                        # Registration released the original reservation. Take it
+                        # back before unregistering; no path-only worker may race
+                        # this owner's recorded inode claims.
+                        def retain(path, **kwargs):
+                            from management_common.directory_paths import contains
+                            if not any(contains(cleanup_path(a['path']), path) for a in row['artifacts']):
+                                raise ValueError('Unregistration escaped Creation artifacts')
+                        for artifact in row['artifacts']:
+                            queue.reserve(cleanup_path(artifact['path']), operation_id=key,
+                                          purpose='resource_creation', connection=conn)
+                        unregister(row, conn, retain)
+                        writer.check(conn)
+                    if not row['completed'] or unregister is not None:
+                        row['aborted'] = True
+                        conn.execute(f'UPDATE {table} SET aborted=TRUE WHERE operation_id=%s', (key,))
+                with db.transaction() as conn:
+                    writer.check(conn)
                     queue.lock(conn)
                     for artifact in row['artifacts']:
-                        if not row['completed'] and artifact['kind'] != 'adopted':
+                        writer.check(conn)
+                        if (not row['completed'] or row['aborted']) and artifact['kind'] != 'adopted':
+                            if artifact.get('git_dependency'):
+                                from .creation_git import GitWorktreeCreation
+                                def save_artifacts():
+                                    writer.check(conn)
+                                    conn.execute(f'UPDATE {table} SET artifacts=%s::jsonb WHERE operation_id=%s',
+                                                 (json.dumps(row['artifacts']), key))
+                                GitWorktreeCreation(artifact, save_artifacts, key, check=lambda: writer.check(conn)).cleanup()
+                            writer.check(conn)
                             _remove_owned(cleanup_path(artifact['path']), artifact.get('identity'))
                             if artifact.get('stage'):
+                                writer.check(conn)
                                 _remove_owned(cleanup_path(artifact['stage']), artifact.get('identity'))
                         for stage in artifact.get('unproven_stages', []):
+                            writer.check(conn)
                             _remove_owned(cleanup_path(stage['path']), None)
                             queue.release(stage['operation_id'], connection=conn)
                         if artifact.get('stage_operation'):
                             queue.release(artifact['stage_operation'], connection=conn)
+                    writer.check(conn)
                     queue.release(key, connection=conn)
                     conn.execute(f'UPDATE {table} SET cleanup_complete=TRUE WHERE operation_id=%s', (key,))
-            except (OSError, ValueError) as error:
-                errors.append(f"{row['resource_id']}: {error}")
+        except Exception as error:
+            errors.append(f"{key}: {error}")
     return errors
+
+
+def abort_creations(*, actor, operation_ids, unregister):
+    """Terminate selected intents under their leases, then retry proven effects.
+
+    The domain unregisters its identities in the abort transaction. This owner
+    keeps reservations until every artifact and dependency is removed.
+    """
+    keys = {'resource-create:' + hashlib.sha256((actor + '\0' + operation).encode()).hexdigest()
+            for operation in operation_ids}
+    errors = _finish_creations(operation_keys=keys, unregister=unregister)
+    if errors:
+        raise RuntimeError('Creation cleanup pending: ' + '; '.join(errors))

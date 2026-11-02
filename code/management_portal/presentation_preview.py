@@ -6,13 +6,12 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-import tempfile
 import threading
 
 from management_common.instance_manifest import instance_runtime_root
 from management_common.file_lock import try_lock_descriptor
 from management_common.process_runtime import run_process
-from management_common.file_retention import cache_file
+from management_common.file_retention import cache_file, temporary_directory
 
 # Video-bearing decks can be much larger than the static PDF they produce.
 MAX_SOURCE_BYTES = 256 * 1024 * 1024
@@ -77,7 +76,7 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
         if cached.is_file():
             with cache_file(cached, group='presentation'):
                 return cached
-        with tempfile.TemporaryDirectory(prefix="convert-", dir=root) as directory:
+        with temporary_directory(prefix="convert-", dir=root) as directory:
             work = Path(directory)
             source = work / ("slides" + suffix)
             source.write_bytes(data)

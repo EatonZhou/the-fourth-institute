@@ -176,6 +176,41 @@ class DirectoryCleanupStore:
                 outcomes.extend(self.status(cleanup_id=row['cleanup_id'], connection=connection))
         return outcomes
 
+    def run_reserved(self, *, cleanup_id, operation_id, identity):
+        """Delete an identity-proven allocation while retaining its reservation.
+
+        The allocation owner must hold its session lease. Ordinary workers skip
+        this reserved path; the owner retries it here after recovering that lease.
+        Keep the same queue backoff and receipt used by ordinary cleanup.
+        """
+        from .owned_path_deletion import OwnedPathDeletionStore
+        deletion = OwnedPathDeletionStore()
+        with self.database.transaction() as connection:
+            self.lock(connection)
+            row = connection.execute(f'SELECT *,available_at<=clock_timestamp() AS ready FROM {self.table} '
+                                     'WHERE cleanup_id=%s FOR UPDATE', (cleanup_id,)).fetchone()
+            if row is None or row['operation_id'] != operation_id:
+                raise ValueError('Reserved cleanup requires its allocation operation')
+            reservations = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+            if not any(item['operation_id'] == operation_id and item['location'] == row['location']
+                       for item in reservations):
+                raise ValueError('Allocation cleanup reservation is missing')
+            if row['completed_at']:
+                self.release(operation_id, connection=connection)
+            elif row['ready'] and not any(item['operation_id'] != operation_id and
+                    overlaps(cleanup_path(item['location']), cleanup_path(row['location'])) for item in reservations):
+                try:
+                    deletion.remove(cleanup_path(row['location']), identity)
+                except (OSError, ValueError) as error:
+                    connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=%s,'
+                        "available_at=clock_timestamp()+least(3600,30*power(2,least(attempts,7)))*interval '1 second' "
+                        'WHERE cleanup_id=%s', (str(error)[:4000], cleanup_id))
+                else:
+                    connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=\'\','
+                                       'completed_at=clock_timestamp() WHERE cleanup_id=%s', (cleanup_id,))
+                    self.release(operation_id, connection=connection)
+            return self.status(cleanup_id=cleanup_id, connection=connection)[0]
+
 
 @lru_cache(maxsize=16)
 def _store(dsn, schema):

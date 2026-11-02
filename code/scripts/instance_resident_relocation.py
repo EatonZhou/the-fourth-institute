@@ -13,7 +13,7 @@ from pathlib import Path
 from management_common.directory_move_store import DirectoryMoveStore
 from management_common.json_columns import json_value
 from management_common.portal_database import portal_database
-from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+from management_portal.society_service.directory_relocation import relocate_nested, reconcile_dependencies
 from management_portal.society_service.lineage_storage import lineage_folder_for_project
 from scripts.instance_storage_migration import Move, PrefixMap, check_move
 

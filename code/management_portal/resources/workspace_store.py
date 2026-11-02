@@ -157,6 +157,31 @@ class WorkspaceStore:
             if row['workspace_id'] != workspace_id and location_key(Path(located_path(row['path']))) == key:
                 raise ValueError('Workspace location already has a different identity: ' + row['workspace_id'])
 
+    def require_created_owner(self, workspace_id, *, expected_version, expected_owner,
+                              expected_path, connection):
+        """Validate a relocation snapshot under the identity owner's row lock."""
+        row = connection.execute(f'SELECT * FROM {self.table} WHERE workspace_id=%s FOR UPDATE',
+                                 (workspace_id,)).fetchone()
+        if row is None or row['deleted_at'] is not None:
+            raise KeyError(workspace_id)
+        row = _located(decode_times(row, ('created_at', 'updated_at', 'deleted_at')))
+        if row['origin'] != 'created':
+            raise ValueError('Only created Workspace directories can be relocated')
+        if (row['updated_at'] != expected_version or row['owner_id'] != expected_owner
+                or row['path'] != str(expected_path)):
+            raise ResourceVersionConflict('Workspace relocation snapshot changed',
+                expected_version=expected_version, current_version=row['updated_at'])
+        return row
+
+    def restore_self_owner(self, workspace_id, *, expected_version, expected_owner,
+                           expected_path, connection):
+        """Repair a proven created copy, never convert an adopted directory."""
+        self.require_created_owner(workspace_id, expected_version=expected_version,
+            expected_owner=expected_owner, expected_path=expected_path, connection=connection)
+        connection.execute(f'UPDATE {self.table} SET owner_id=%s,'
+                           "updated_at=GREATEST(clock_timestamp(),updated_at+interval '1 microsecond') "
+                           'WHERE workspace_id=%s', (workspace_id, workspace_id))
+
     def update_metadata(self, workspace_id: str, *, title=None, summary=None, expected_version: str, authorize):
         """Compare and change metadata while holding the lifecycle row lock.
 

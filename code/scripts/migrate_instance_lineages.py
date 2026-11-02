@@ -32,7 +32,7 @@ def apply_registered_lineage_moves(moves):
     from management_common.directory_move_store import DirectoryMoveStore
     from management_common.portal_database import portal_database, _database_schema
     from management_common.json_columns import json_value
-    from management_portal.directory_move_owner import relocate_nested, reconcile_dependencies
+    from management_portal.society_service.directory_relocation import relocate_nested, reconcile_dependencies
     database = portal_database(schema='lineage')
     mover = DirectoryMoveStore()
     receipts = []

@@ -100,6 +100,9 @@ def run(job_id: str, *, backend) -> None:
         raise RuntimeError("Collector job does not satisfy the current execution contract")
     actor = require_actor(str(job.get("created_by") or ""))
     if job.get("status") in {"done", "error", "cancelled", "deleted"} or job.get("deleted"):
+        from management_portal import business_tasks
+        if job.get("process_owner") == business_tasks.process_identity():
+            backend._finish_paper_collection_job(job_id)
         return
     work_dir = backend.PAPER_COLLECTOR_WORK_ROOT / job_id
     from management_common.directory_retention import RetentionStore
@@ -107,7 +110,6 @@ def run(job_id: str, *, backend) -> None:
     retention = RetentionStore()
     retention.declare(work_dir, category='background', owner_id=job_id,
                       created_at=instant(job['created_at']))
-    work_dir.mkdir(parents=True, exist_ok=True)
     stdout_path, stderr_path = work_dir / "stdout.json", work_dir / "stderr.log"
 
     def cancelled() -> bool:
@@ -119,6 +121,7 @@ def run(job_id: str, *, backend) -> None:
             backend._set_paper_collection_job(job_id, {"invocation": deepcopy(receipt)})
 
     try:
+        work_dir.mkdir(parents=True, exist_ok=True)
         binding = job.get("invocation") or {}
         if binding and (not binding.get("input_message_id") or binding.get("input_identity_status") == "unconfirmed"):
             raise RuntimeError("Collector input delivery is unconfirmed; inspect the original workflow; no resubmission")
@@ -180,4 +183,4 @@ def run(job_id: str, *, backend) -> None:
         raise
     finally:
         # This invocation has stopped, including cancellation and failed work.
-        retention.finish(job_id)
+        backend._finish_paper_collection_job(job_id)

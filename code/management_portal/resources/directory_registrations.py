@@ -170,9 +170,10 @@ def unregister_nested(roots, *, connection, actor):
     return unregister_tree(roots, connection=connection, actor=actor)['resource_ids']
 
 
-def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=(), deleted_at=None):
+def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=(), deleted_at=None, cleanup_owner=enqueue_directory_cleanup):
     """Every directory owner uses one closure and one registration transaction.
 
+    A durable artifact owner can retain filesystem cleanup responsibility.
     Workspace identity owns its deletion; Society's binding constraint reacts
     in the same database transaction without an upward Python dependency.
     """
@@ -222,7 +223,7 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             path = located_path(row['path'])
             deleted_paths.append(path)
             if row['origin'] == 'created':
-                enqueue_directory_cleanup(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
+                cleanup_owner(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
         for collection, identifier, entries in documents:
             if identifier not in resource_ids:
                 continue
@@ -231,7 +232,7 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             unregister_identity(identifier, connection=connection, actor=actor)
             for item in entries:
                 if item.get('origin') == 'created':
-                    enqueue_directory_cleanup(located_path(item['path']), owner_id=identifier,
+                    cleanup_owner(located_path(item['path']), owner_id=identifier,
                                   operation_id='delete:' + identifier, actor=actor, connection=connection)
     return {'resource_ids': sorted(resource_ids | selected), 'workspace_paths': deleted_paths}
 

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from contextvars import copy_context
 from pathlib import Path
 import re
 import secrets
-import threading
 
-from management_portal import paper_state_store
+from management_portal import business_tasks, paper_state_store
 from management_portal.paper_detail import get_paper_detail
 from management_portal.paper_records import _now, _slugify
 from management_portal.paper_resident import _resident_reply
@@ -23,10 +23,6 @@ ANALYSIS_ROOT = DATA_ROOT / "analysis"
 
 
 EXP_STALE_SECONDS = 45 * 60
-
-
-_DEEP_READ_TASK_LOCK = threading.RLock()
-_ACTIVE_DEEP_READ_TASKS: set[str] = set()
 
 
 def _set_job_with_run_record(kind: str, job_id: str, patch: dict) -> dict:
@@ -137,23 +133,18 @@ def _launch_deep_read_business_task(job: dict) -> dict:
     job_id = str(job.get("job_id") or "")
     if not job_id:
         raise ValueError("Deep Read job id required")
-    with _DEEP_READ_TASK_LOCK:
-        if job_id in _ACTIVE_DEEP_READ_TASKS:
-            return _latest_deep_read_job(job_id=job_id) or job
-        _ACTIVE_DEEP_READ_TASKS.add(job_id)
+    def fail(exc: BaseException) -> None:
+        _set_deep_read_job(job_id, {
+            "status": "error", "step": "error", "progress": 100, "error": str(exc),
+        })
 
-    def run() -> None:
-        try:
-            _run_deep_read_job(job_id)
-        finally:
-            with _DEEP_READ_TASK_LOCK:
-                _ACTIVE_DEEP_READ_TASKS.discard(job_id)
-
-    threading.Thread(
-        target=run,
-        name=f"paper-deep-read-{job_id}",
-        daemon=True,
-    ).start()
+    try:
+        business_tasks.start(
+            f"paper-deep-read:{job_id}", copy_context().run, _run_deep_read_job, job_id, on_error=fail,
+        )
+    except Exception as exc:
+        fail(exc)
+        raise
     return _latest_deep_read_job(job_id=job_id) or job
 
 

@@ -63,4 +63,17 @@ def read_many(connection: Any, edges: list) -> dict:
         for prefix in ('source','transfer','target'):
             item[prefix] = {k.removeprefix(prefix+'_'):v for k,v in flat.items() if k.startswith(prefix+'_')}
         result[row['edge_id']].setdefault('items',[]).append(item)
+    # IDs remain authoritative even before explicit reconciliation of old
+    # materialized path fields. A deleted ID never falls back to an old root.
+    from management_portal.resources.workspace_store import get_workspace_store
+    ids = {item[prefix].get('workspace_id') for value in result.values()
+           for item in value.get('items', []) for prefix in ('source', 'target')
+           if item[prefix].get('workspace_id')}
+    rows = get_workspace_store().rows(ids, connection=connection)
+    for value in result.values():
+        for item in value.get('items', []):
+            for prefix in ('source', 'target'):
+                wid = item[prefix].get('workspace_id')
+                if wid:
+                    item[prefix]['path'] = rows[wid]['path'] if wid in rows else ''
     return result

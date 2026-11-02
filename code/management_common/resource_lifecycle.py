@@ -9,6 +9,7 @@ import hashlib
 import time
 
 from management_common.portal_database import portal_database
+from management_common.lifetime_execution_lease import execution_lease
 
 _CURRENT = ContextVar("resource_lifecycle", default="")
 
@@ -76,12 +77,24 @@ class LifecycleStore:
             raise ValueError('Resource lifecycle is closed')
 
     @contextmanager
+    def _execution_lease(self, scope_id, *, shared, blocking=True):
+        """One admission/quiescence mechanism for scopes, owners and sealing."""
+        with self.db.advisory_lock(self.lock_key(scope_id), shared=shared,
+                                   blocking=blocking) as acquired:
+            if not acquired:
+                yield False
+                return
+            with execution_lease(scope_id, namespace=self.db.schema,
+                                 shared=shared, blocking=blocking) as running:
+                yield running
+
+    @contextmanager
     def owner_lease(self, scope_id):
         """Keep pre-registration effects visible to seal, including nested calls."""
         if not scope_id:
             yield
             return
-        with self.db.advisory_lock(self.lock_key(scope_id), shared=True):
+        with self._execution_lease(scope_id, shared=True):
             with self.db.transaction() as connection:
                 self.assert_open(scope_id, connection=connection)
             yield
@@ -107,9 +120,8 @@ class LifecycleStore:
         # Never queue an exclusive lock behind a request: it may still need a
         # nested RPC's shared lock to finish. Wait without blocking that RPC.
         deadline = time.monotonic() + timeout
-        key = self.lock_key(scope_id)
         while True:
-            with self.db.advisory_lock(key, blocking=False) as acquired:
+            with self._execution_lease(scope_id, shared=False, blocking=False) as acquired:
                 if acquired:
                     self.db.write(lambda db: db.execute(
                         "UPDATE scopes SET state='closing' WHERE id=%s AND state='open'", (scope_id,)))
@@ -146,11 +158,9 @@ class LifecycleStore:
 @contextmanager
 def lifecycle_scope(scope_id='', *, actor='', discover=False):
     inherited = current_lifecycle()
-    if inherited and (not scope_id or scope_id == inherited):
-        yield
-        return
-    if inherited:
+    if inherited and scope_id and scope_id != inherited:
         raise ValueError("Cannot switch resource lifecycle within a request")
+    scope_id = scope_id or inherited
     if not scope_id and not (discover and actor.startswith('resident_')):
         yield
         return
@@ -159,14 +169,14 @@ def lifecycle_scope(scope_id='', *, actor='', discover=False):
     if not scope_id:
         yield
         return
-    # A dedicated lock connection neither occupies the data pool nor makes
-    # allocation writes part of the request's transaction.
-    with store.db.advisory_lock(store.lock_key(scope_id), shared=True):
+    # Even an explicitly inherited/copied context gets its own actual holder;
+    # a parent can exit while a background thread is still using its files.
+    with store.owner_lease(scope_id):
         with store.db.read() as db:
             row = db.execute("SELECT actor,state FROM scopes WHERE id=%s", (scope_id,)).fetchone()
         if not row or row['state'] != 'open':
             raise ValueError("Resource lifecycle is closed")
-        if actor != row['actor'] and store.for_actor(actor) != scope_id:
+        if not inherited and actor != row['actor'] and store.for_actor(actor) != scope_id:
             raise PermissionError("Resource lifecycle does not belong to this caller")
         token = _CURRENT.set(scope_id)
         try:

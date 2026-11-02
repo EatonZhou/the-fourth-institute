@@ -79,7 +79,8 @@ def test_fixed_operation_retry_reports_original_state_without_mutation(workspace
     target = workspace.root.with_name('retry')
     operation = prepare(mover, workspace.root, target, operation_id='fixed-move')
     if phase == 'prepared':
-        mover._phase(operation, 'prepared')
+        with mover.operation_lock(operation):
+            mover._phase(operation, 'prepared')
     elif phase == 'aborted':
         mover.abort(operation)
     elif phase in {'committed', 'completed', 'cancelled'}:

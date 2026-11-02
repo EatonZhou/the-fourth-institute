@@ -4,16 +4,14 @@ The caller owns Handoff state transitions. This module never writes Lineage
 state and must be called outside the Lineage state lock.
 """
 from __future__ import annotations
-from management_common.portal_paths import path as portal_path
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 from . import lineage_handoff_backend
+from .lineage_handoff_execution import assert_owned
 from .lineage_values import _text
-
-EXPLORATIONS_ROOT = portal_path("features") / "explorations"
 
 def draft_items(
     *,
@@ -48,14 +46,9 @@ def draft_items(
         if mode == "direct":
             target_path = str(source_root.get("path") or "")
         elif not target_path:
-            if method == "git_worktree":
-                target_path = str((
-                    EXPLORATIONS_ROOT / handoff_id / item_id / "worktree"
-                ).resolve(strict=False))
-            else:
-                target_path = str((
-                    lineage_folder / "handoff-workspaces" / handoff_id / item_id
-                ).resolve(strict=False))
+            target_path = str(lineage_folder / "handoff-workspaces" / handoff_id / item_id)
+        if any(item['item_id'] == item_id for item in items):
+            raise ValueError('Handoff item_id 必须唯一')
         items.append({
             "item_id": item_id,
             "label": _text(raw_item.get("label"), 160) or str(source_root.get("label") or f"Workspace {index}"),
@@ -97,21 +90,35 @@ def prepare_items(
 ) -> None:
     """Materialize first, then bind each result to the target Resident.
 
-    `prepared` is owned by the caller so partial results can be cleaned up
-    if any materializer or binding raises.
+    Lost-lease recovery resumes Creation effects. A failed attempt delegates
+    unregistration and cleanup to the Workspace creation owner.
     """
     for item in handoff.get("items") or []:
+        assert_owned()
         if not isinstance(item, dict):
             continue
+        source = item.get('source') or {}
+        current = access.workspaces(lineage_id, str(handoff.get('source') or ''), actor)
+        root = next((root for root in current.get('workspaces') or []
+                     if root.get('workspace_id') == source.get('workspace_id')), None)
+        if not root:
+            raise ValueError('来源必须是该节点已经绑定的 Workspace')
+        resolved = {**item, 'source': {**source, 'path': root['path']}}
         result = lineage_handoff_backend.materialize_handoff_item(
-            item,
+            resolved,
+            # The Lineage owns the operation across retries by different
+            # authorized managers; actor still governs all reads and bindings.
+            actor=lineage_id, operation_id=operation_id(handoff, item),
+            parent_id=lineage_id,
             allowed_target_roots=access.allowed_target_roots(lineage_id),
             checked_at=access.now(),
             max_files=access.max_files,
             max_bytes=access.max_bytes,
         )
+        assert_owned()
         prepared.append((item, result))
     for item, result in prepared:
+        assert_owned()
         transfer = item.get("transfer") if isinstance(item.get("transfer"), dict) else {}
         source = item.get("source") if isinstance(item.get("source"), dict) else {}
         source_workspace_id = str(source.get("workspace_id") or "")
@@ -124,15 +131,18 @@ def prepare_items(
             ),
             None,
         )
+        assert_owned()
         mounted = (
             access.bind(
                 lineage_id, target_id, actor,
                 str(result.get("target_path") or ""),
-                workspace_id=(source_workspace_id if str(transfer.get("mode") or "") == "direct" else ""),
+                workspace_id=(source_workspace_id if str(transfer.get("mode") or "direct") == "direct"
+                              else str(result['target_workspace_id'])),
             )
             if str(transfer.get("mode") or "") == "direct" or not existing_root
             else {"workspace": target_workspaces}
         )
+        assert_owned()
         bound_root = next(
             (
                 root for root in (mounted.get("workspace") or {}).get("workspaces") or []
@@ -145,6 +155,8 @@ def prepare_items(
         target_workspace_id = str(bound_root.get("workspace_id") or "")
         if not target_workspace_id:
             raise RuntimeError("目标 Workspace 已绑定，但没有登记规范 Workspace")
+        if result.get('target_workspace_id') and target_workspace_id != result['target_workspace_id']:
+            raise RuntimeError('Handoff 副本绑定必须使用持久创建的 Workspace ID')
         if (str(transfer.get("mode") or "") == "direct" and source_workspace_id
                 and target_workspace_id != source_workspace_id):
             raise RuntimeError(
@@ -154,9 +166,17 @@ def prepare_items(
         result["target_workspace_id"] = target_workspace_id
 
 
-def cleanup_items(prepared: list[tuple[dict[str, Any], dict[str, Any]]]) -> None:
-    for item, result in reversed(prepared):
-        try:
-            lineage_handoff_backend.cleanup_materialized_item(item, result)
-        except (OSError, ValueError):
-            pass
+def operation_id(handoff, item):
+    attempt = (item.get('attempts') or [{}])[-1]
+    suffix = ':' + attempt['operation_id'] if attempt.get('operation_id') else ''
+    return f"handoff:{handoff['id']}:{item['item_id']}" + suffix
+
+
+def cleanup_items(lineage_id, handoff):
+    """Retire only this attempt's copies, including unpublished artifacts."""
+    from management_portal.resources.workspace_creation_store import WorkspaceCreationStore
+    assert_owned()
+    WorkspaceCreationStore().abort(actor=lineage_id, operation_ids=[
+        operation_id(handoff, item) for item in handoff.get('items') or []
+        if (item.get('transfer') or {}).get('mode') == 'copy' and item.get('attempts')
+    ])

@@ -8,8 +8,11 @@ dependencies, then enqueues old-directory cleanup.
 from contextlib import contextmanager
 from contextvars import ContextVar
 import hashlib
+import json
+import logging
 import os
 import shutil
+import threading
 from uuid import uuid4
 
 from .directory_cleanup_store import get_directory_cleanup_store
@@ -19,8 +22,70 @@ from .directory_paths import (
     rename_directory_no_replace, validate_filename,
 )
 from .operation_errors import OperationError
+from .process_observation import process_identity, process_is_alive
 
-_LOCKED = ContextVar('directory_move_locks', default=frozenset())
+_LOCKED = ContextVar('directory_move_locks', default={})
+_WRITER_PREFIX = 'directory-move-writer-v1:'
+
+
+class MoveWriterUnavailable(OperationError):
+    """The previous writer has not ended, or this execution lost authority."""
+
+    code = 'directory.move_writer_unavailable'
+    http_status = 409
+
+
+def _receipt(purpose):
+    if not purpose.startswith(_WRITER_PREFIX):
+        return None
+    try:
+        value = json.loads(purpose[len(_WRITER_PREFIX):])
+    except (ValueError, TypeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _writer_has_ended(receipt, operation_id):
+    return bool(receipt and receipt.get('operation_id') == operation_id
+                and isinstance(receipt.get('token'), str) and receipt['token']
+                and receipt.get('kind') == 'move-source'
+                and (receipt.get('ended') is True or not process_is_alive(receipt.get('process'))))
+
+
+class _Writer:
+    def __init__(self, operation_id, session):
+        self.operation_id = operation_id
+        self.session = session
+        self.process = process_identity()
+        self.thread = threading.current_thread()
+        self.context = ContextVar('directory_move_execution')
+        self.context_token = self.context.set(self)
+        self.active = True
+        self.location = None
+        self.receipt = {'operation_id': operation_id, 'token': uuid4().hex,
+                        'process': self.process, 'ended': False, 'kind': 'move-source'}
+
+    def check_execution(self):
+        if (not self.active or self.thread is not threading.current_thread()
+                or self.process != process_identity()):
+            raise MoveWriterUnavailable('Directory move belongs to a different execution')
+        # ContextVar values are copied by copy_context/create_task. A Token can
+        # only be reset in its originating Context, even on the same thread.
+        try:
+            self.context.reset(self.context_token)
+        except (ValueError, RuntimeError) as exc:
+            raise MoveWriterUnavailable('Directory move context was copied') from exc
+        self.context_token = self.context.set(self)
+
+    def check_session(self):
+        self.check_execution()
+        try:
+            self.session.execute('SELECT 1')
+        except Exception as exc:
+            raise MoveWriterUnavailable('Directory move writer lost its PostgreSQL session') from exc
+
+    def purpose(self, *, ended=False):
+        return _WRITER_PREFIX + json.dumps({**self.receipt, 'ended': ended}, sort_keys=True)
 
 
 def initialize_move_schema(connection, schema):
@@ -74,20 +139,107 @@ class DirectoryMoveStore:
         self.table = f'"{self.database.schema}".moves'
         self.database.write(lambda c: initialize_move_schema(c, self.database.schema))
 
+    def _execution_key(self, operation_id):
+        return self.database.dsn, self.database.schema, operation_id
+
+    def _writer(self, operation_id):
+        writer = _LOCKED.get().get(self._execution_key(operation_id))
+        if writer is None:
+            raise MoveWriterUnavailable('Directory move has no owning execution')
+        writer.check_session()
+        return writer
+
+    def _assert_writer(self, operation_id, connection):
+        writer = self._writer(operation_id)
+        if writer.location is not None:
+            row = connection.execute(f'SELECT purpose FROM {self.cleanup.reservations} '
+                'WHERE operation_id=%s AND location=%s', (operation_id, writer.location)).fetchone()
+            if row is None or row['purpose'] != writer.purpose():
+                raise MoveWriterUnavailable('Directory move writer receipt changed')
+        return writer
+
+    def _check_writer(self, operation_id):
+        self._writer(operation_id)  # reject copied/forked execution before using any DB connection
+        with self.database.read() as connection:
+            return self._assert_writer(operation_id, connection)
+
     @contextmanager
-    def operation_lock(self, operation_id):
-        # Session lock spans the file operation without keeping a DB transaction
-        # open; another recovery worker cannot delete an in-progress copy.
-        if operation_id in _LOCKED.get():
+    def operation_lock(self, operation_id, *, connection=None):
+        key = self._execution_key(operation_id)
+        if key in _LOCKED.get():
+            self._check_writer(operation_id)
             yield
             return
-        key = int.from_bytes(hashlib.sha256(operation_id.encode()).digest()[:8], 'big', signed=True)
-        with self.database.advisory_lock(key):
-            token = _LOCKED.set(_LOCKED.get() | {operation_id})
+        # Own the actual session, not just a boolean returned by advisory_lock.
+        # Session loss fences later effects, but is never proof of writer end.
+        import psycopg
+        lock_key = int.from_bytes(hashlib.sha256(operation_id.encode()).digest()[:8], 'big', signed=True)
+        with psycopg.connect(self.database.dsn, autocommit=True, connect_timeout=30) as session:
+            if not session.execute('SELECT pg_try_advisory_lock(%s)', (lock_key,)).fetchone()[0]:
+                raise MoveWriterUnavailable('Directory move writer is active')
+            writer = _Writer(operation_id, session)
+            token = _LOCKED.set({**_LOCKED.get(), key: writer})
             try:
-                yield
+                def claim(c):
+                    self.cleanup.lock(c)
+                    writer.check_session()
+                    try:
+                        row = self.get(operation_id, connection=c)
+                    except KeyError:
+                        return
+                    receipts = c.execute(f'SELECT location,purpose FROM {self.cleanup.reservations} '
+                        'WHERE operation_id=%s AND purpose LIKE %s',
+                        (operation_id, _WRITER_PREFIX + '%')).fetchall()
+                    if not receipts and row['phase'] in {'completed', 'aborted', 'cancelled'}:
+                        return
+                    previous = _receipt(receipts[0]['purpose']) if len(receipts) == 1 else None
+                    if not _writer_has_ended(previous, operation_id):
+                        raise MoveWriterUnavailable('Previous directory move writer has no proven end')
+                    writer.location = receipts[0]['location']
+                    c.execute(f'UPDATE {self.cleanup.reservations} SET purpose=%s '
+                              'WHERE operation_id=%s AND location=%s AND purpose=%s',
+                              (writer.purpose(), operation_id, writer.location, receipts[0]['purpose']))
+                claim(connection) if connection is not None else self.database.write(claim)
+                try:
+                    yield
+                finally:
+                    # All synchronous copying, callbacks and rollback have now
+                    # unwound. A fresh connection may attest end after lease loss;
+                    # it must never publish phases or perform filesystem cleanup.
+                    def end(c):
+                        writer.check_execution()
+                        self.cleanup.lock(c)
+                        if writer.location is None:
+                            return
+                        changed = c.execute(f'UPDATE {self.cleanup.reservations} SET purpose=%s '
+                            'WHERE operation_id=%s AND location=%s AND purpose=%s',
+                            (writer.purpose(ended=True), operation_id, writer.location, writer.purpose())).rowcount
+                        if changed:
+                            row = self.get(operation_id, connection=c)
+                            if row['phase'] in {'completed', 'aborted', 'cancelled'}:
+                                c.execute(f'DELETE FROM {self.cleanup.reservations} WHERE operation_id=%s '
+                                          "AND purpose<>'move-unproven-staging'", (operation_id,))
+                    try:
+                        end(connection) if connection is not None else self.database.write(end)
+                    except Exception:
+                        # Losing the end write leaves a conservative live receipt.
+                        logging.getLogger(__name__).exception('Could not persist directory move writer end')
             finally:
+                writer.active = False
+                writer.context.reset(writer.context_token)
                 _LOCKED.reset(token)
+
+    def _reserve_writer(self, source, operation_id, connection):
+        writer = self._writer(operation_id)
+        self.cleanup.reserve(source, operation_id=operation_id, purpose=writer.purpose(), connection=connection)
+        writer.location = cleanup_location(source)
+
+    def _record_identity(self, operation_id, column, identity):
+        def write(c):
+            self.cleanup.lock(c)
+            self._assert_writer(operation_id, c)
+            c.execute(f'UPDATE {self.table} SET {column}=%s WHERE operation_id=%s', (identity, operation_id))
+        self.database.write(write)
 
     def get(self, operation_id, *, connection=None):
         if connection is None:
@@ -100,6 +252,8 @@ class DirectoryMoveStore:
 
     def _phase(self, operation_id, phase, *, connection=None, error=''):
         def write(c):
+            self.cleanup.lock(c)
+            self._assert_writer(operation_id, c)
             c.execute(f"UPDATE {self.table} SET phase=%s,last_error=%s,updated_at=clock_timestamp() WHERE operation_id=%s AND phase<>'cancelled'",
                       (phase, str(error)[:4000], operation_id))
         return write(connection) if connection is not None else self.database.write(write)
@@ -137,7 +291,7 @@ class DirectoryMoveStore:
             raise ValueError('Directory move requires a real source directory')
         with self.operation_lock(operation_id):
             with self.database.transaction() as connection:
-                self.cleanup.reserve(source, operation_id=operation_id, purpose='move-source', connection=connection)
+                self._reserve_writer(source, operation_id, connection)
                 self.cleanup.reserve(target, operation_id=operation_id, purpose='move-target', connection=connection)
                 if os.path.lexists(target):
                     raise FileExistsError(target)
@@ -150,31 +304,37 @@ class DirectoryMoveStore:
                     self.cleanup.reserve(staging, operation_id=operation_id, purpose='move-staging', connection=connection)
                     if os.path.lexists(staging):
                         raise FileExistsError(staging)
+                self._assert_writer(operation_id, connection)
                 connection.execute(f'INSERT INTO {self.table}(operation_id,owner_id,actor,source,target,mode,phase,staging,file_identity) '
                                    "VALUES (%s,%s,%s,%s,%s,%s,'prepared',%s,%s)",
                                    (operation_id, owner_id, actor, cleanup_location(source), cleanup_location(target), mode,
                                     cleanup_location(staging) if mode == 'copy' else '',
                                     _directory_identity(source) if mode == 'rename' else ''))
             try:
+                self._check_writer(operation_id)
                 if mode == 'copy':
                     terminate(source)
+                self._check_writer(operation_id)
                 target.parent.mkdir(parents=True, exist_ok=True)
+                self._check_writer(operation_id)
                 if mode == 'rename':
                     rename_directory_no_replace(source, target)
                 else:
                     staging.mkdir(mode=0o700)
                     identity = _directory_identity(staging)
-                    self.database.write(lambda c: c.execute(
-                        f'UPDATE {self.table} SET staging_identity=%s WHERE operation_id=%s', (identity, operation_id)))
+                    self._record_identity(operation_id, 'staging_identity', identity)
+                    self._check_writer(operation_id)
                     with (staging / 'operation').open('x', encoding='utf-8') as stream:
                         stream.write(operation_id)
                         stream.flush()
                         os.fsync(stream.fileno())
                     payload = staging / 'directory'
+                    self._check_writer(operation_id)
                     shutil.copytree(source, payload, symlinks=True)
+                    self._check_writer(operation_id)
                     identity = _directory_identity(payload)
-                    self.database.write(lambda c: c.execute(
-                        f'UPDATE {self.table} SET file_identity=%s WHERE operation_id=%s', (identity, operation_id)))
+                    self._record_identity(operation_id, 'file_identity', identity)
+                    self._check_writer(operation_id)
                     rename_directory_no_replace(payload, target)
                 self._phase(operation_id, 'files_ready')
                 error = self._remove_staging(self.get(operation_id))
@@ -187,7 +347,12 @@ class DirectoryMoveStore:
 
     def commit(self, operation_id, *, connection, update):
         """Owner registrations and the journal's cleanup intent share this commit."""
+        with self.operation_lock(operation_id, connection=connection):
+            return self._commit(operation_id, connection=connection, update=update)
+
+    def _commit(self, operation_id, *, connection, update):
         self.cleanup.lock(connection)
+        writer = self._assert_writer(operation_id, connection)
         row = self.get(operation_id, connection=connection)
         if row['phase'] != 'files_ready':
             raise ValueError('Directory files are not ready for registration commit')
@@ -195,12 +360,13 @@ class DirectoryMoveStore:
         if row['mode'] != 'external' and _directory_identity(target) != row['file_identity']:
             raise FileExistsError('Move destination was replaced before registration commit')
         self.cleanup.assert_available(target, connection=connection, operation_id=operation_id)
-        self.cleanup.release(operation_id, connection=connection)
+        # Registration writers must be able to register the destination, while
+        # the source reservation remains the durable writer/dependency boundary.
+        connection.execute(f'DELETE FROM {self.cleanup.reservations} WHERE operation_id=%s AND location<>%s',
+                           (operation_id, writer.location))
+        self._assert_writer(operation_id, connection)
         result = update(connection, source, target)
-        if row['mode'] != 'external':
-            # Keep the old files and name until dependency recovery completes.
-            # The committed journal is the durable intent to enqueue cleanup.
-            self.cleanup.reserve(source, operation_id=operation_id, purpose='move-dependencies', connection=connection)
+        self._assert_writer(operation_id, connection)
         self._phase(operation_id, 'committed', connection=connection)
         return result
 
@@ -225,7 +391,9 @@ class DirectoryMoveStore:
         operation_id = 'directory-move_' + uuid4().hex
         with self.operation_lock(operation_id):
             with self.database.transaction() as connection:
+                self._reserve_writer(source, operation_id, connection)
                 self.cleanup.reserve(target, operation_id=operation_id, purpose='external-move', connection=connection)
+                self._assert_writer(operation_id, connection)
                 connection.execute(f'INSERT INTO {self.table}(operation_id,owner_id,actor,source,target,mode,phase) '
                     "VALUES (%s,%s,%s,%s,%s,'external','files_ready')",
                     (operation_id, owner_id, actor, cleanup_location(source), cleanup_location(target)))
@@ -245,25 +413,30 @@ class DirectoryMoveStore:
             if row['phase'] != 'committed':
                 raise ValueError('Directory registration has not committed')
             try:
+                self._check_writer(operation_id)
                 dependencies(cleanup_path(row['source']), cleanup_path(row['target']))
+            except MoveWriterUnavailable:
+                raise
             except Exception as exc:
                 self._phase(operation_id, 'committed', error=exc)
                 raise OperationError(str(exc), code='directory.move_dependencies_pending',
                                      commit_state='committed', details={'operation_id': operation_id}) from exc
             with self.database.transaction() as connection:
                 self.cleanup.lock(connection)
+                self._assert_writer(operation_id, connection)
                 # Owner deletion can cancel while dependency I/O is running.
                 if self.get(operation_id, connection=connection)['phase'] != 'committed':
                     return self.get(operation_id, connection=connection)
                 if row['mode'] != 'external':
                     enqueue_directory_cleanup(cleanup_path(row['source']), owner_id=row['owner_id'],
                         operation_id=operation_id, actor=row['actor'], connection=connection)
-                self.cleanup.release(operation_id, connection=connection)
+                self._assert_writer(operation_id, connection)
                 connection.execute(f"UPDATE {self.table} SET phase='completed',last_error='',updated_at=clock_timestamp() "
                                    "WHERE operation_id=%s AND phase='committed'", (operation_id,))
             return self.get(operation_id)
 
     def _remove_staging(self, row):
+        self._check_writer(row['operation_id'])
         if not row['staging']:
             return ''
         staging = cleanup_path(row['staging'])
@@ -274,6 +447,7 @@ class DirectoryMoveStore:
         # before the marker was written. Legacy/unproven stages stay untouched.
         if not row['staging_identity'] or (os.path.lexists(staging) and _directory_identity(staging) != row['staging_identity']):
             return 'Move staging directory ownership cannot be verified; preserved: ' + str(staging)
+        self._check_writer(row['operation_id'])
         remove_path(staging, identity=tuple(map(int, row['staging_identity'].split(':'))))
         return ''
 
@@ -285,49 +459,63 @@ class DirectoryMoveStore:
         row = self.get(operation_id)
         if row['phase'] not in {'prepared', 'files_ready'}:
             return
+        self._check_writer(operation_id)
         source, target = cleanup_path(row['source']), cleanup_path(row['target'])
         owned_target = bool(row['file_identity']) and _directory_identity(target) == row['file_identity']
         if row['mode'] == 'rename' and owned_target:
             if os.path.lexists(source):
                 raise FileExistsError('Both sides of an uncommitted rename exist')
+            self._check_writer(operation_id)
             rename_directory_no_replace(target, source)
         elif row['mode'] == 'copy' and row['file_identity']:
             identity = tuple(map(int, row['file_identity'].split(':')))
             if owned_target or not os.path.lexists(target):
+                self._check_writer(operation_id)
                 remove_path(target, identity=identity)
             else:
                 # A target that won the no-replace race was never ours. A
                 # previous abort may nevertheless have claimed our own copy
                 # before another host entry appeared at the public name.
                 from .owned_path_deletion import OwnedPathDeletionStore
+                self._check_writer(operation_id)
                 OwnedPathDeletionStore().resume(target, identity)
         elif row['mode'] == 'rename' and _directory_identity(source) != row['file_identity']:
             raise FileExistsError('Original move directory is missing or replaced; recovery requires inspection')
         error = self._remove_staging(row)
         with self.database.transaction() as connection:
-            self.cleanup.release(operation_id, connection=connection)
+            self.cleanup.lock(connection)
+            self._assert_writer(operation_id, connection)
             if error:
-                self.cleanup.reserve(cleanup_path(row['staging']), operation_id=operation_id,
-                                     purpose='move-unproven-staging', connection=connection)
+                connection.execute(f'UPDATE {self.cleanup.reservations} SET purpose=%s '
+                                   'WHERE operation_id=%s AND location=%s',
+                                   ('move-unproven-staging', operation_id, row['staging']))
             self._phase(operation_id, 'aborted', connection=connection, error=error)
 
     def recover(self, *, dependencies):
         with self.database.read() as connection:
             ids = [r['operation_id'] for r in connection.execute(
-                f"SELECT operation_id FROM {self.table} WHERE phase NOT IN ('completed','aborted','cancelled') ORDER BY created_at",
+                f"SELECT operation_id FROM {self.table} m WHERE phase NOT IN ('completed','aborted','cancelled') "
+                f'OR EXISTS (SELECT 1 FROM {self.cleanup.reservations} r WHERE r.operation_id=m.operation_id '
+                'AND r.purpose LIKE %s) ORDER BY created_at', (_WRITER_PREFIX + '%',)
             ).fetchall()]
         results = []
         for operation_id in ids:
-            with self.operation_lock(operation_id):
-                row = self.get(operation_id)
-                try:
-                    if row['phase'] in {'prepared', 'files_ready'}:
-                        self.abort(operation_id)
-                    elif row['phase'] == 'committed':
-                        self.finish(operation_id, dependencies=dependencies)
-                except Exception as exc:
-                    self._phase(operation_id, row['phase'], error=exc)
-                results.append(self.get(operation_id))
+            try:
+                with self.operation_lock(operation_id):
+                    row = self.get(operation_id)
+                    try:
+                        if row['phase'] in {'prepared', 'files_ready'}:
+                            self.abort(operation_id)
+                        elif row['phase'] == 'committed':
+                            self.finish(operation_id, dependencies=dependencies)
+                    except MoveWriterUnavailable:
+                        raise
+                    except Exception as exc:
+                        self._phase(operation_id, row['phase'], error=exc)
+            except MoveWriterUnavailable:
+                # A free session lock never proves that a writer has stopped.
+                pass
+            results.append(self.get(operation_id))
         return results
 
 
@@ -344,4 +532,10 @@ def cancel_owner_moves(connection, owner_id):
             if row['mode'] != 'external':
                 enqueue_directory_cleanup(cleanup_path(row['source']), owner_id=row['owner_id'],
                     operation_id=row['operation_id'], actor=row['actor'], connection=connection)
-            queue.release(row['operation_id'], connection=connection)
+            receipts = connection.execute(f'SELECT purpose FROM {queue.reservations} '
+                'WHERE operation_id=%s AND purpose LIKE %s',
+                (row['operation_id'], _WRITER_PREFIX + '%')).fetchall()
+            if len(receipts) == 1:
+                receipt = _receipt(receipts[0]['purpose'])
+                if _writer_has_ended(receipt, row['operation_id']):
+                    queue.release(row['operation_id'], connection=connection)

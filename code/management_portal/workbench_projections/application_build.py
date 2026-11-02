@@ -906,49 +906,52 @@ def _artifact_root() -> Path:
 
 
 def _store(index: dict, contents: dict[str, bytes]) -> str:
-    from management_common.directory_retention import RetentionStore
-    from .application_retention import register_build
     digest = hashlib.sha256(_canonical(index)).hexdigest()
-    root = _artifact_root()
-    retention = RetentionStore()
-    # Persist ownership before filesystem writes. Failed builds retain a bounded
-    # staging lease; successful version registration protects the content hash.
-    with retention.database.transaction() as connection:
-        register_build(digest, connection=connection)
-        return _store_files(index, contents, digest, root)
+    return _store_files(index, contents, digest, _artifact_root())
 
 
 def _store_files(index, contents, digest, root):
+    from management_common.directory_retention import RetentionStore
+    from management_common.file_retention import temporary_directory
+    from .application_retention import register_build
     root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".pending-", dir=root) as temporary:
-        staged = Path(temporary) / "artifact"
-        staged.mkdir()
-        for path, data in contents.items():
-            target = staged / "files" / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with target.open("xb") as handle:
-                handle.write(data)
-                handle.flush()
-                os.fsync(handle.fileno())
-            target.chmod(0o444)
-        manifest = staged / "artifact.json"
-        with manifest.open("xb") as handle:
-            handle.write(_canonical(index))
+    # The allocation commits before the build transaction. Keep the existing
+    # final-artifact path lock across registration and atomic publication.
+    with temporary_directory(prefix=".pending-", dir=root) as temporary:
+        with RetentionStore().database.transaction() as connection:
+            register_build(digest, connection=connection)
+            _write_artifact_files(index, contents, digest, root, Path(temporary))
+    return digest
+
+
+def _write_artifact_files(index, contents, digest, root, temporary):
+    staged = temporary / "artifact"
+    staged.mkdir()
+    for path, data in contents.items():
+        target = staged / "files" / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as handle:
+            handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
-        manifest.chmod(0o444)
-        for parent, _, _ in os.walk(staged, topdown=False):
-            sync_directory(Path(parent))
-        try:
-            os.rename(staged, root / digest)
-        except OSError as error:
-            if error.errno not in {errno.EEXIST, errno.ENOTEMPTY}:
-                raise
-            # Another identical build may have completed; never overwrite it.
-            for path in index["files"]:
-                read_artifact({"status": "ready", "artifact_hash": digest, **index}, path)
-        sync_directory(root)
-    return digest
+        target.chmod(0o444)
+    manifest = staged / "artifact.json"
+    with manifest.open("xb") as handle:
+        handle.write(_canonical(index))
+        handle.flush()
+        os.fsync(handle.fileno())
+    manifest.chmod(0o444)
+    for parent, _, _ in os.walk(staged, topdown=False):
+        sync_directory(Path(parent))
+    try:
+        os.rename(staged, root / digest)
+    except OSError as error:
+        if error.errno not in {errno.EEXIST, errno.ENOTEMPTY}:
+            raise
+        # Another identical build may have completed; never overwrite it.
+        for path in index["files"]:
+            read_artifact({"status": "ready", "artifact_hash": digest, **index}, path)
+    sync_directory(root)
 
 
 def build_application(application: dict, actor: str) -> dict:

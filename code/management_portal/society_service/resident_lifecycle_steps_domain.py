@@ -113,7 +113,7 @@ def _workspace_document(operation_id: str, step: dict[str, Any]) -> None:
 
 def _directory_dependencies(operation_id: str, step: dict[str, Any]) -> None:
     from management_common.directory_move_store import DirectoryMoveStore
-    from management_portal.directory_move_owner import reconcile_dependencies
+    from .directory_relocation import reconcile_dependencies
     DirectoryMoveStore().finish(step['directory_operation'], dependencies=reconcile_dependencies)
 
 

@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 import subprocess
+from management_common.process_runtime import run_process
 from pathlib import Path, PureWindowsPath
 from typing import Any
 
@@ -129,6 +130,7 @@ def normalize_handoff_fields(
             if not isinstance(attempt, dict):
                 continue
             attempts.append({
+                "operation_id": _text(attempt.get("operation_id"), 80),
                 "number": max(1, _integer(attempt.get("number"), len(attempts) + 1)),
                 "status": _text(attempt.get("status"), 32).lower() or "failed",
                 "method": _text(attempt.get("method"), 40).lower() or method,
@@ -196,7 +198,7 @@ def _run(
         _handoff_command_timeout_seconds(),
     )
     try:
-        return subprocess.run(
+        return run_process(
             command,
             cwd=str(cwd) if cwd else None,
             input=input_bytes,
@@ -206,13 +208,17 @@ def _run(
             timeout=timeout,
         )
     except subprocess.TimeoutExpired as exc:
-        rendered = shlex.join(command)
-        if len(rendered) > 500:
-            rendered = rendered[:497] + "..."
-        raise HandoffPreparationError(
-            f"工作区交接命令运行超过 {timeout:g} 秒：{rendered}。"
-            f"可通过 {HANDOFF_COMMAND_TIMEOUT_ENV} 调整超时时间。"
-        ) from exc
+        raise _command_timeout_error(exc) from exc
+
+
+def _command_timeout_error(exc):
+    rendered = shlex.join(exc.cmd)
+    if len(rendered) > 500:
+        rendered = rendered[:497] + "..."
+    return HandoffPreparationError(
+        f"工作区交接命令运行超过 {exc.timeout:g} 秒：{rendered}。"
+        f"可通过 {HANDOFF_COMMAND_TIMEOUT_ENV} 调整超时时间。"
+    )
 
 
 def _git_text(repo: Path, *args: str) -> str:
@@ -242,7 +248,8 @@ def inspect_git_workspace(path: Path) -> dict[str, Any]:
 
 
 def _safe_target(path: Path, allowed_roots: list[Path]) -> Path:
-    target = path.expanduser().resolve(strict=False)
+    from management_common.directory_paths import lexical_path
+    target = lexical_path(path)
     if not target.is_absolute():
         raise ValueError("目标工作区必须使用绝对路径")
     allowed = False
@@ -257,8 +264,6 @@ def _safe_target(path: Path, allowed_roots: list[Path]) -> Path:
             continue
     if not allowed:
         raise PermissionError("目标工作区不在允许的 Handoff 根目录中")
-    if target.exists():
-        raise FileExistsError(f"目标工作区已经存在：{target}")
     return target
 
 
@@ -365,181 +370,110 @@ def materialize_handoff_item(
     *,
     allowed_target_roots: list[Path],
     checked_at: str,
+    actor: str = "",
+    operation_id: str = "",
+    parent_id: str = "",
     max_files: int = DEFAULT_MAX_FILES,
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> dict[str, Any]:
-    source = item.get("source") if isinstance(item.get("source"), dict) else {}
-    transfer = item.get("transfer") if isinstance(item.get("transfer"), dict) else {}
-    target = item.get("target") if isinstance(item.get("target"), dict) else {}
+    """Materialize through the Workspace creation owner, never at a bare path."""
+    from management_portal.resources.workspace_creation_store import WorkspaceCreationStore
+
+    source = item.get("source") or {}
+    transfer = item.get("transfer") or {}
+    target = item.get("target") or {}
     mode = str(transfer.get("mode") or "direct")
     method = str(transfer.get("method") or ("direct" if mode == "direct" else "filesystem_copy"))
-    source_root = Path(str(source.get("path") or "")).expanduser().resolve(strict=True)
-    if not source_root.is_dir():
-        raise ValueError("来源 Workspace 不存在或不是目录")
     source_scope = _scope(source.get("scope"))
-    selected = _selected_source(source_root, source_scope)
     if mode == "direct":
+        source_root = Path(str(source.get("path") or "")).expanduser().resolve(strict=True)
+        if not source_root.is_dir():
+            raise ValueError("来源 Workspace 不存在或不是目录")
+        _selected_source(source_root, source_scope)
         return {
-            "source_state": {
-                "captured_at": checked_at,
-                "git": inspect_git_workspace(source_root),
-            },
-            "target_path": str(source_root),
-            "target_scope": source_scope,
-            "file_count": 0,
-            "byte_size": 0,
-            "content_hash": "",
-            "checked_at": checked_at,
+            "source_state": {"captured_at": checked_at, "git": inspect_git_workspace(source_root)},
+            "target_path": str(source_root), "target_scope": source_scope,
+            "file_count": 0, "byte_size": 0, "content_hash": "", "checked_at": checked_at,
         }
-
-    target_root = _safe_target(Path(str(target.get("path") or "")), allowed_target_roots)
-    parameters = transfer.get("parameters") if isinstance(transfer.get("parameters"), dict) else {}
-    if method == "filesystem_copy":
-        extra_excluded = set(str(value) for value in parameters.get("exclude") or [])
-        scope_parent = source_root
-        for scope_part in Path(source_scope).parts:
-            if _copy_ignored(str(scope_parent), [scope_part], extra_excluded):
-                raise ValueError("选择的内容范围属于 Handoff 复制排除项")
-            scope_parent /= scope_part
-        copied_files = 0
-        copied_bytes = 0
-
-        def copy_with_limits(source_path, target_path):
-            nonlocal copied_files, copied_bytes
-            copied_files += 1
-            copied_bytes += Path(source_path).stat().st_size
-            if copied_files > max_files:
-                raise ValueError(f"工作区文件超过 {max_files} 个")
-            if copied_bytes > max_bytes:
-                raise ValueError(f"工作区内容超过 {max_bytes} bytes")
-            return shutil.copy2(source_path, target_path)
-
-        try:
-            target_root.parent.mkdir(parents=True, exist_ok=True)
-            if selected.is_dir():
-                shutil.copytree(
-                    selected,
-                    target_root,
-                    symlinks=False,
-                    copy_function=copy_with_limits,
-                    ignore=lambda directory, names: _copy_ignored(directory, names, extra_excluded),
-                )
-            else:
-                target_root.mkdir(parents=True)
-                copy_with_limits(selected, target_root / selected.name)
-            files, total_bytes, content_hash = _manifest(
-                target_root,
-                max_files=max_files,
-                max_bytes=max_bytes,
-            )
-        except Exception:
-            if target_root.exists():
-                shutil.rmtree(target_root, ignore_errors=True)
-            raise
-        return {
-            "source_state": {
-                "captured_at": checked_at,
-                "git": inspect_git_workspace(source_root),
-            },
-            "target_path": str(target_root),
-            "target_scope": _scope(target.get("scope")),
-            "file_count": len(files),
-            "byte_size": total_bytes,
-            "content_hash": content_hash,
-            "checked_at": checked_at,
-        }
-
-    if method != "git_worktree":
+    if mode != "copy" or method not in {"filesystem_copy", "git_worktree"}:
         raise ValueError("不支持的工作区准备方式")
-    if source_scope != ".":
+    target_root = _safe_target(Path(str(target.get("path") or "")), allowed_target_roots)
+    parameters = _parameters(transfer.get("parameters"))
+    if method == "git_worktree" and source_scope != ".":
         raise ValueError("Git worktree 只能交接整个 Git Workspace")
-    git = inspect_git_workspace(source_root)
-    if not git.get("is_repo"):
-        raise ValueError("来源 Workspace 不是 Git 仓库，不能创建 worktree")
-    repo = Path(str(git["root"]))
-    branch = _text(parameters.get("branch"), 180)
-    if not BRANCH_RE.fullmatch(branch):
+    branch = parameters["branch"]
+    if method == "git_worktree" and not BRANCH_RE.fullmatch(branch):
         raise ValueError("Git worktree 需要合法且唯一的目标分支")
-    branch_exists = _run(
-        ["git", "-C", str(repo), "show-ref", "--verify", "--quiet", f"refs/heads/{branch}"],
-        check=False,
-    ).returncode == 0
-    if branch_exists:
-        raise ValueError(f"Git 分支已经存在：{branch}")
-    requested_base = _text(parameters.get("base_commit"), 160) or str(git.get("commit") or "HEAD")
-    base_commit = _git_text(repo, "rev-parse", f"{requested_base}^{{commit}}")
-    created = False
+
+    def initialize(stage, effects):
+        source_root = Path(str(source.get("path") or "")).expanduser().resolve(strict=True)
+        if not source_root.is_dir():
+            raise ValueError("来源 Workspace 不存在或不是目录")
+        selected = _selected_source(source_root, source_scope)
+        git = inspect_git_workspace(source_root)
+        source_state = {"captured_at": checked_at, "git": git}
+        git_result = {}
+        if method == "filesystem_copy":
+            extra_excluded = set(parameters["exclude"])
+            scope_parent = source_root
+            for scope_part in Path(source_scope).parts:
+                if _copy_ignored(str(scope_parent), [scope_part], extra_excluded):
+                    raise ValueError("选择的内容范围属于 Handoff 复制排除项")
+                scope_parent /= scope_part
+            copied_files = copied_bytes = 0
+
+            def copy_with_limits(source_path, target_path):
+                nonlocal copied_files, copied_bytes
+                copied_files += 1
+                copied_bytes += Path(source_path).stat().st_size
+                if copied_files > max_files:
+                    raise ValueError(f"工作区文件超过 {max_files} 个")
+                if copied_bytes > max_bytes:
+                    raise ValueError(f"工作区内容超过 {max_bytes} bytes")
+                return shutil.copy2(source_path, target_path)
+
+            if selected.is_dir():
+                shutil.copytree(selected, stage, dirs_exist_ok=True, symlinks=False,
+                                copy_function=copy_with_limits,
+                                ignore=lambda directory, names: _copy_ignored(directory, names, extra_excluded))
+            else:
+                copy_with_limits(selected, stage / selected.name)
+        else:
+            if not git.get("is_repo"):
+                raise ValueError("来源 Workspace 不是 Git 仓库，不能创建 worktree")
+            repo = Path(git["root"])
+            if _run(["git", "-C", str(repo), "show-ref", "--verify", "--quiet",
+                     f"refs/heads/{branch}"], check=False).returncode == 0:
+                raise ValueError(f"Git 分支已经存在：{branch}")
+            requested_base = parameters["base_commit"] or git["commit"]
+            base_commit = _git_text(repo, "rev-parse", f"{requested_base}^{{commit}}")
+            # A detached staging worktree needs no destructive branch rollback.
+            # The requested branch is created only after durable publication.
+            effects.add(stage, repo, base_commit, branch, timeout=_handoff_command_timeout_seconds())
+            changes = {"patch_sha256": "", "untracked_file_count": 0}
+            if parameters["include_worktree_changes"]:
+                changes = _apply_worktree_changes(repo, stage, base_commit)
+            source_state["git"] = {**git, "base_commit": base_commit, **changes}
+            git_result = {"branch": branch, "base_commit": base_commit,
+                          "include_worktree_changes": parameters["include_worktree_changes"]}
+        files, total_bytes, content_hash = _manifest(stage, max_files=max_files, max_bytes=max_bytes)
+        return {"source_state": source_state, "git": git_result,
+                "target_scope": _scope(target.get("scope")) if method == "filesystem_copy" else ".",
+                "file_count": len(files), "byte_size": total_bytes,
+                "content_hash": content_hash, "checked_at": checked_at}
+
+    contents = {
+        "source": {"workspace_id": source.get("workspace_id"), "scope": source_scope},
+        "method": method, "parameters": parameters, "target_scope": _scope(target.get("scope")),
+    }
+    if not source.get("workspace_id"):
+        contents["source"]["path"] = str(source.get("path") or "")
     try:
-        target_root.parent.mkdir(parents=True, exist_ok=True)
-        result = _run(
-            ["git", "-C", str(repo), "worktree", "add", "-b", branch, str(target_root), base_commit],
-            check=False,
+        row, result = WorkspaceCreationStore().materialize(
+            path=target_root, actor=actor, operation_id=operation_id,
+            parent_id=parent_id,
+            title=str(target.get("label") or ""), contents=contents, initialize=initialize,
         )
-        if result.returncode != 0:
-            raise HandoffPreparationError(
-                result.stderr.decode("utf-8", errors="replace").strip()
-                or "Git worktree 创建失败"
-            )
-        created = True
-        worktree_changes = {"patch_sha256": "", "untracked_file_count": 0}
-        if _bool(parameters.get("include_worktree_changes"), False):
-            worktree_changes = _apply_worktree_changes(repo, target_root, base_commit)
-        files, total_bytes, content_hash = _manifest(
-            target_root,
-            max_files=max_files,
-            max_bytes=max_bytes,
-        )
-        return {
-            "source_state": {
-                "captured_at": checked_at,
-                "git": {
-                    **git,
-                    "base_commit": base_commit,
-                    **worktree_changes,
-                },
-            },
-            "target_path": str(target_root),
-            "target_scope": ".",
-            "file_count": len(files),
-            "byte_size": total_bytes,
-            "content_hash": content_hash,
-            "checked_at": checked_at,
-            "git": {
-                "branch": branch,
-                "base_commit": base_commit,
-                "include_worktree_changes": _bool(parameters.get("include_worktree_changes"), False),
-            },
-        }
-    except Exception:
-        if created:
-            _run(
-                ["git", "-C", str(repo), "worktree", "remove", "--force", str(target_root)],
-                check=False,
-            )
-        elif target_root.exists():
-            shutil.rmtree(target_root, ignore_errors=True)
-        _run(["git", "-C", str(repo), "branch", "-D", branch], check=False)
-        raise
-
-
-def cleanup_materialized_item(item: dict[str, Any], result: dict[str, Any]) -> None:
-    transfer = item.get("transfer") if isinstance(item.get("transfer"), dict) else {}
-    if str(transfer.get("mode") or "") != "copy":
-        return
-    target = Path(str(result.get("target_path") or "")).expanduser().resolve(strict=False)
-    if not target.exists():
-        return
-    method = str(transfer.get("method") or "")
-    if method == "git_worktree":
-        source = item.get("source") if isinstance(item.get("source"), dict) else {}
-        git = inspect_git_workspace(Path(str(source.get("path") or "")))
-        if git.get("is_repo"):
-            _run(
-                ["git", "-C", str(git["root"]), "worktree", "remove", "--force", str(target)],
-                check=False,
-            )
-            branch = str((transfer.get("parameters") or {}).get("branch") or "")
-            if branch:
-                _run(["git", "-C", str(git["root"]), "branch", "-D", branch], check=False)
-            return
-    shutil.rmtree(target, ignore_errors=True)
+    except subprocess.TimeoutExpired as exc:
+        raise _command_timeout_error(exc) from exc
+    return {**result, "target_path": row["path"], "target_workspace_id": row["workspace_id"]}

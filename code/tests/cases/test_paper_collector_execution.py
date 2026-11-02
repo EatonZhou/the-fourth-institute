@@ -474,17 +474,15 @@ def test_listing_marks_a_collector_job_whose_task_is_gone_as_interrupted(monkeyp
                                    "updated_at": now - paper_collection_jobs.COLLECTOR_STALE_SECONDS - 1},
     }
 
-    def set_job(job_id, patch):
-        jobs[job_id] = {**jobs[job_id], **patch, "updated_at": now}
-        return jobs[job_id]
-
+    for job in jobs.values():
+        paper_state_store.append("collector_jobs", job)
     monkeypatch.setattr(paper_collection_jobs, "_now", lambda: now)
-    monkeypatch.setattr(paper_collection_jobs, "_all_paper_collection_jobs", lambda: list(jobs.values()))
-    monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", set_job)
+    monkeypatch.setattr(paper_collection_jobs, "_notify_paper_projection", lambda *a, **kw: None)
     # The third job is still running in this process.
     monkeypatch.setattr(business_tasks, "is_active", lambda task_id: task_id == "paper-collection:collector-000000000003")
 
     listed = {job["job_id"]: job for job in paper_collection_jobs.list_paper_collection_jobs(ACTOR)["jobs"]}
+    jobs = {job["job_id"]: job for job in paper_state_store.records("collector_jobs")}
 
     assert jobs["collector-000000000001"]["status"] == "error" and jobs["collector-000000000001"]["step"] == "stale"
     assert listed["collector-000000000001"]["status"] == "error"

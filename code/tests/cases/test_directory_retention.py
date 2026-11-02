@@ -294,20 +294,21 @@ def test_provider_release_reopen_and_host_account_protection(tmp_path, monkeypat
 
 
 def test_runtime_temporary_directory_is_owned_and_cleanup_retry_is_durable(monkeypatch):
-    from management_common.file_retention import temporary_directory
+    from management_common.file_retention import temporary_directory, recover_temporary_directories
     from management_common import directory_cleanup_store as cleanup
+    from management_common.owned_path_deletion import OwnedPathDeletionStore
     from pathlib import Path
     queue = cleanup.get_directory_cleanup_store()
-    remove = cleanup.remove_path
-    monkeypatch.setattr(cleanup, 'remove_path', lambda path: (_ for _ in ()).throw(PermissionError('occupied')))
+    remove = OwnedPathDeletionStore.remove
+    monkeypatch.setattr(OwnedPathDeletionStore, 'remove', lambda *a, **kw: (_ for _ in ()).throw(PermissionError('occupied')))
     with temporary_directory(prefix='retention-test-') as temporary:
         path = Path(temporary)
         (path / 'data').write_text('runtime')
     assert path.exists() and queue.pending_at(path)
-    monkeypatch.setattr(cleanup, 'remove_path', remove)
+    monkeypatch.setattr(OwnedPathDeletionStore, 'remove', remove)
     with queue.database.transaction() as connection:
         connection.execute(f'UPDATE {queue.table} SET available_at=clock_timestamp()')
-    queue.run_pending()
+    recover_temporary_directories()
     assert not path.exists()
 
 

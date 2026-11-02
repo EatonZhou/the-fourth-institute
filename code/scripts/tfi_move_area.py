@@ -155,8 +155,8 @@ def _execute_locked(root, record):
         moved = True
         _stage(root, record, "starting")
         _start_database(root)
-        from management_portal.directory_move_owner import reconcile_dependencies
-        record['provider_sessions'] = reconcile_dependencies(Path(result["source"]), Path(result["target"]))
+        from management_portal.society_service.directory_relocation import relocate_area
+        record['provider_sessions'] = relocate_area(Path(result["source"]), Path(result["target"]))
         atomic_json(root / RECOVERY_RECORD, {**recovery, 'status': 'completed'})
         instance_services.lifecycle("start", root)
         if result["old_copy_retained"]:

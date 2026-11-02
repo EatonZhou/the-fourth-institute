@@ -279,8 +279,8 @@ class DatabaseChanges:
         return {"tables": dict(sorted(self.tables.items())), "rows": sum(self.tables.values())}
 
 
-def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool) -> DatabaseChanges:
-    """Rewrite (or, without ``apply``, count) every reference in one transaction."""
+def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool, preserve_tables=()) -> DatabaseChanges:
+    """Rewrite ID references, leaving enlisted storage owners their own tables."""
     changes = DatabaseChanges()
     # Project identity references are distinct from directory registrations.
     # Only the declared directory owners below may rewrite stored paths.
@@ -305,7 +305,7 @@ def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool) 
         registry_rows: dict[str, dict[str, set[str]]] = {}
         for (schema, table), table_columns in columns.items():
             name = schemas[schema]
-            if _history(name, table):
+            if _history(name, table) or (schema, table) in preserve_tables:
                 continue
             table_columns = [(column, data_type) for column, data_type in table_columns
                              if (name, table, column) not in HISTORY_COLUMNS]
@@ -365,11 +365,12 @@ def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool) 
             moved = permission_system.rename_element(connection, change.old_id, change.new_id, apply=apply)
             if moved:
                 changes.tables["permission.scheme_nodes.path"] = moved
-        if change.moves and change.renames_id and apply:
+        if change.moves and apply:
             from management_portal.directory_move_owner import relocate_nested
+            relocate_nested(connection, change.old_root, change.new_root)
+        if change.moves and change.renames_id and apply:
             from management_common.instance_locations import stored_location
             from management_portal.resources.registry_store import get_registry_store
-            relocate_nested(connection, change.old_root, change.new_root)
             with get_registry_store().writer(project_registry.COLLECTION, connection=connection) as writer:
                 document = writer.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID)
                 for record in document['projects']:
@@ -519,14 +520,6 @@ class FileChanges:
         self.errors.append({"path": str(path), "error": str(exc) or type(exc).__name__})
 
 
-def fix_files(change: ProjectRename, rewriter: Rewriter) -> FileChanges:
-    """Only declared runtime dependencies follow a move; user prose stays intact."""
-    result = FileChanges()
-    if change.moves:
-        from management_portal.directory_move_owner import reconcile_dependencies
-        reconcile_dependencies(change.old_root, change.new_root)
-    return result
-
 # -- the rename -------------------------------------------------------------------
 
 
@@ -579,7 +572,7 @@ def rename_project(
             "external_references": external_references(change),
         }
         if dry_run:
-            database = rewrite_database(change, rewriter, apply=False)
+            database = control.rewrite_database(change, rewriter, apply=False)
             return {
                 **report,
                 "database": database.report(),
@@ -601,10 +594,10 @@ def rename_project(
                     owner_id=change.new_id, origin=directory['origin'], actor=actor,
                     terminate=terminate,
                     database=portal_database(schema='lineage'),
-                    update=lambda connection, source, target: rewrite_database(change, rewriter, apply=True),
-                    dependencies=lambda source, target: fix_files(change, rewriter))
+                    update=lambda connection, source, target: control.rewrite_database(change, rewriter, apply=True),
+                    dependencies=control.reconcile_dependencies)
             else:
-                database = rewrite_database(change, rewriter, apply=True)
+                database = control.rewrite_database(change, rewriter, apply=True)
             files = FileChanges()
             relations = relate(write=True)
             from management_portal.avatar_store import scope_avatar_store, scope_subject

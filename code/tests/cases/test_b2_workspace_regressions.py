@@ -25,7 +25,7 @@ def test_handoff_copy_limits_checked_before_copying(tmp_path, monkeypatch):
     monkeypatch.setattr(handoff.shutil, 'copy2', copy)
     item = {'source': {'path': str(source)}, 'transfer': {'mode': 'copy', 'method': 'filesystem_copy'}, 'target': {'path': str(tmp_path / 'target')}}
     with pytest.raises(ValueError, match='bytes'):
-        handoff.materialize_handoff_item(item, allowed_target_roots=[tmp_path], checked_at='now', max_bytes=10)
+        handoff.materialize_handoff_item(item, actor='handoff-test', operation_id='handoff-test', allowed_target_roots=[tmp_path], checked_at='now', max_bytes=10)
     assert copied == []
     assert not (tmp_path / 'target').exists()
 
@@ -49,7 +49,7 @@ def test_handoff_git_diff_uses_selected_base(tmp_path):
     git('commit', '-am', 'head')
     (repo / 'file.txt').write_text('working\n')
     item = {'source': {'path': str(repo)}, 'transfer': {'mode': 'copy', 'method': 'git_worktree', 'parameters': {'branch': 'handoff', 'base_commit': base, 'include_worktree_changes': True}}, 'target': {'path': str(tmp_path / 'target')}}
-    handoff.materialize_handoff_item(item, allowed_target_roots=[tmp_path], checked_at='now')
+    handoff.materialize_handoff_item(item, actor='handoff-test', operation_id='handoff-test', allowed_target_roots=[tmp_path], checked_at='now')
     assert (tmp_path / 'target/file.txt').read_text() == 'working\n'
 
 

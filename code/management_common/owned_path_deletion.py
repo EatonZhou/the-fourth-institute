@@ -70,6 +70,7 @@ class OwnedPathDeletionStore:
         with self.db.advisory_lock(lock):
             with self.db.read() as conn:
                 row = conn.execute(f'SELECT * FROM {self.table} WHERE claim_id=%s', (key,)).fetchone()
+                row = dict(row) if row is not None else None
             if row is None and _pending_only:
                 return
             # Missing source is success only if there is no outstanding claim.
@@ -146,13 +147,28 @@ class OwnedPathDeletionStore:
         _remove_entry(claim, 'entry', identity=row['identity'])
 
     def recover(self):
-        """Retry outstanding claims after restart; retain and report unknowns."""
+        """Recover unreserved claims; a journal alone cannot override a live owner.
+
+        Owner-directed remove/resume retain their caller's authorization. This
+        autonomous entry has no such authorization and must honor every path
+        reservation, including the claimed path's descendants and ancestors.
+        Hold the registration lock across observation and filesystem effect.
+        """
+        from .directory_cleanup_store import get_directory_cleanup_store
+        from .directory_paths import overlaps
+        queue = get_directory_cleanup_store()
         with self.db.read() as conn:
             rows = conn.execute(f'SELECT location,identity FROM {self.table} ORDER BY claim_id').fetchall()
         errors = []
         for row in rows:
             try:
-                self.remove(cleanup_path(row['location']), row['identity'])
+                path = cleanup_path(row['location'])
+                with queue.database.transaction() as conn:
+                    queue.lock(conn)
+                    reservations = conn.execute(f'SELECT location FROM {queue.reservations}').fetchall()
+                    if any(overlaps(path, cleanup_path(item['location'])) for item in reservations):
+                        raise FileExistsError('Deletion recovery path is reserved: ' + str(path))
+                    self.resume(path, row['identity'])
             except (OSError, ValueError) as error:
                 errors.append(str(error))
         return errors

@@ -1093,6 +1093,7 @@ def test_canonical_handoff_prepares_copy_binds_target_without_dispatch(
         "resident_0123456789ab": [source],
         "resident_222222222222": [target_default],
     }
+    copy_ids = {}
     sent: list[tuple[str, str]] = []
     released: list[tuple[str, str]] = []
 
@@ -1100,7 +1101,7 @@ def test_canonical_handoff_prepares_copy_binds_target_without_dispatch(
         roots = []
         for index, path in enumerate(mounted[resident_id], start=1):
             roots.append({
-                "workspace_id": f"workspace_{resident_id[-4:]}_{index}",
+                "workspace_id": copy_ids.get(str(path), f"workspace_{resident_id[-4:]}_{index}"),
                 "label": path.name,
                 "path": str(path),
                 "is_default_cwd": index == 1,
@@ -1120,6 +1121,7 @@ def test_canonical_handoff_prepares_copy_binds_target_without_dispatch(
         **_kwargs: object,
     ) -> dict:
         mounted[resident_id].append(Path(path))
+        copy_ids[path] = _kwargs['workspace_id']
         return {
             "workspace": workspace_view(lineage_id, resident_id, actor),
             "added": True,
@@ -1281,7 +1283,7 @@ def test_ready_handoff_keeps_items_but_accepts_explanation_changes(
 
     def add_workspace(lineage_id: str, resident_id: str, actor: str, path: str, **_kwargs: object) -> dict:
         view = workspace_view(lineage_id, resident_id, actor)
-        view["workspaces"].append({"workspace_id": "workspace_copy_ready", "path": path})
+        view["workspaces"].append({"workspace_id": _kwargs['workspace_id'], "path": path})
         return {"workspace": view, "added": True}
 
     monkeypatch.setattr(lineage_resident_workspaces, "add_node_reference_workspace", add_workspace)

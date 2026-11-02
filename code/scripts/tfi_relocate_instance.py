@@ -55,14 +55,16 @@ def relocation_manifest(instance, target):
 
 def migrate_references(old_root, new_root):
     """Run inside the moved instance's environment with PostgreSQL alone."""
-    from management_portal.project_rename import ProjectRename, Rewriter, rewrite_database
-    from management_portal.provider_session_relocation import relocate_provider_sessions
+    from management_portal.project_rename import ProjectRename, Rewriter
+    from management_portal.society_service.directory_relocation import rewrite_project_database
+    from management_portal.directory_move_owner import reconcile_dependencies
     # The existing move semantics retain IDs, bindings, and historical messages.
     change = ProjectRename('', '', Path(old_root), Path(new_root))
-    database = rewrite_database(change, Rewriter(change), apply=True)
-    sessions = relocate_provider_sessions(old_root, new_root)
-    if sessions['errors'] or sessions['conflicts']:
-        raise RuntimeError('Provider session relocation is incomplete; inspect the relocation log and retry')
+    database = rewrite_project_database(change, Rewriter(change), apply=True)
+    # The installer has stopped every client. Use the same native dependency
+    # owner as ordinary moves, including Git's forward and reverse pointers.
+    # Any failure leaves the installer's durable relocation record incomplete.
+    sessions = reconcile_dependencies(Path(old_root), Path(new_root))
     return {'database': database.report(), 'provider_sessions': sessions}
 
 
