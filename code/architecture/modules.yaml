@@ -2016,6 +2016,22 @@ protocols:
     description: "Runtime 消费 ResidentTerminalFact 并派发终态观察；失败通知和对外消息沿真实 Family speaking 身份写 Mailbox。通知与会话事件在同一事务提交，按实际收件人及持久转交来源产生提醒；不读取 Family 的 Solo/Mute 偏好，也不因门面对话隐藏而跳过新提醒或改写已有未读。"
     example: "一个 Resident 进入终态 → Runtime 消费 ResidentTerminalFact → 沿持久转交链找到外部原请求及实际收件人 → 保存回复或终态并写入 Mailbox 提醒。即使当前查看者已 Mute 该成员，通知仍按原事件产生；事务回滚时提醒一并回滚。"
 
+  - id: "knowledge-project-move"
+    title: "知识条目项目迁移与在线索引确认"
+    modules:
+      - "kernel.isa"
+      - "resources.types"
+      - "resources.access"
+      - "resources.permissions"
+      - "storage"
+    designs: []
+    related_designs:
+      - "decision_3ece26686464"
+      - "decision_4648f7fa3295"
+      - "decision_ad3e21094f14"
+    description: "目标 Project 的 knowledge.move 动作由 Knowledge owner 维护主文件、伴随目录、版本与登记；ResourceService 用真实 actor 检查源条目及源/目标项目权限，并协调修改串行边界和在线索引。限 created 登记、同一文件系统的普通 Markdown Knowledge；全批预检版本、路径及独立子资源后才准备，伴随文件硬链接暂存。编辑、删除与迁移共用稳定资源 ID 锁。逐项事务切换目录登记、权限事实及操作回执，登记仍是位置唯一权威，日志不充当第二索引；批量不承诺整体原子。已提交结果沿同一运行索引 owner 一次直接 ChangeSet 确认，防止旧扫描覆盖新位置，随后处理旧路径。"
+    example: "RunResourceAction(目标Project, knowledge.move, items及expected_version, operation_id) → 全批预检 → 保持源登记可读并准备目标文件 → 逐项提交登记/权限/回执 → 从新权威路径批量投影在线索引 → 校验身份并清理旧位置。只有全部完成才返回 completed；partial 保留 committed/pending/projected，恢复沿同一 operation_id 和原参数，必要时换指令调用键继续，已提交条目不重复增版。未提交源变更时只撤回能证明归属的准备文件，未知路径保留报告，超时不推定未提交。"
+
   - id: "family-chat-preferences"
     title: "Family 个人对话偏好与受理时路由快照"
     modules:
