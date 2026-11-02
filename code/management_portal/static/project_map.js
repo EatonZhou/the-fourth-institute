@@ -38,6 +38,7 @@
     function closeFrontier() {
       frontierOpen = false;
       frontierPanel?.remove();
+      root.querySelector('[data-map-viewport]')?.removeAttribute('hidden');
       const host = root.querySelector('[data-map-drawer]');
       if (host) host.hidden = !drawer?.selected();
       root.querySelector('[data-map-frontier]')?.setAttribute('aria-pressed', 'false');
@@ -45,18 +46,18 @@
     }
 
     function renderFrontier() {
-      if (!frontierOpen || state.replay) { frontierPanel?.remove(); return; }
+      if (!frontierOpen || state.replay) { frontierPanel?.remove(); root.querySelector('[data-map-viewport]')?.removeAttribute('hidden'); return; }
       if (!frontierPanel) {
         frontierPanel = document.createElement('aside');
         frontierPanel.className = 'mapFrontier';
         frontierPanel.setAttribute('aria-label', '研究地图探索前沿');
-        frontierPanel.innerHTML = '<header class="mapFrontierHead"><strong>探索前沿</strong><button type="button" data-frontier-all>项目全部</button><button type="button" data-frontier-close aria-label="关闭探索前沿">×</button></header><div class="mapFrontierBody"></div>';
+        frontierPanel.innerHTML = '<div class="mapFrontierBody"></div>';
       }
       root.querySelector('.mapStage').append(frontierPanel);
+      root.querySelector('[data-map-viewport]').hidden = true;
       root.querySelector('[data-map-drawer]').hidden = true;
       root.querySelector('[data-map-frontier]')?.setAttribute('aria-pressed', 'true');
-      const direction = state.map.directions.find(d => d.direction_id === drawer?.selected());
-      const key = JSON.stringify([state.projectId, direction?.direction_id, direction?.teams]);
+      const key = JSON.stringify([state.projectId, state.map.revision,state.showDropped]);
       if (key === frontierKey) return;
       frontierKey = key;
       frontierSurface?.destroy(); frontierSurface = null;
@@ -64,7 +65,7 @@
       const host = frontierPanel.querySelector('.mapFrontierBody');
       import('/static/frontier.js').then(module => {
         if (sequence !== frontierSequence) return;
-        frontierSurface = module.mountFrontier(host, {project:state.projectId, teams:direction?.teams, title:direction?.title || '项目的探索前沿'});
+        frontierSurface = module.mountFrontier(host, {project:state.projectId, map:state.map, showDropped:state.showDropped, focusDirection:drawer?.selected(), title:state.map.goal || state.projectId, onDirection:id=>{ closeFrontier(); select(id); }});
       }).catch(error => { if(sequence === frontierSequence) { frontierKey=''; host.textContent=error.message; } });
     }
 
@@ -494,8 +495,6 @@
       try {
         const back = target.closest("[data-map-back]");
         if (back && common().plainClick(event)) { event.preventDefault(); onBack?.(); return; }
-        if (target.closest('[data-frontier-close]')) return closeFrontier();
-        if (target.closest('[data-frontier-all]')) { drawer.close(); renderFrontier(); return; }
         const frontierDirection = target.closest('[data-frontier-direction]');
         if (frontierDirection) { frontierOpen = true; select(frontierDirection.dataset.frontierDirection); return; }
         if (target.closest('[data-map-frontier]')) {
@@ -504,7 +503,7 @@
           return;
         }
         if (target.closest("[data-map-add]")) return await addDirection();
-        if (target.closest("[data-map-fit]")) return fit();
+        if (target.closest("[data-map-fit]")) return frontierOpen && !state.replay ? frontierSurface?.fit() : fit();
         if (target.closest("[data-map-replay]")) return state.replay ? stopReplay() : await startReplay();
         if (target.closest("[data-replay-play]")) return togglePlay();
         const tick = target.closest("[data-replay-index]");

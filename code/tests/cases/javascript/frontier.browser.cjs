@@ -14,7 +14,7 @@ const seeds=[
 let state={schema:'tfi.exploration-frontier.v1',items:seeds}, denied=false, conflict=false, delivered=0, input='running';
 const server=http.createServer(async(req,res)=>{
   let name=new URL(req.url,'http://localhost').pathname;
-  if(name==='/fixture') {res.writeHead(200,{'Content-Type':'text/html'});return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style><script src="/static/portal_state.js"></script><script src="/static/portal_api.js"></script><script src="/static/portal_instruction_client.js"></script><script src="/static/portal_page_state.js"></script><div id="surface"></div><script type="module">import {mountFrontier} from '/static/frontier.js';window.frontier=mountFrontier(document.querySelector('#surface'),{lineage:'${lineage}'});</script>`);}
+  if(name==='/fixture') {res.writeHead(200,{'Content-Type':'text/html'});return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style><script src="/static/portal_state.js"></script><script src="/static/portal_api.js"></script><script src="/static/portal_instruction_client.js"></script><script src="/static/portal_page_state.js"></script><div id="surface" style="height:100vh"></div><script type="module">import {mountFrontier} from '/static/frontier.js';window.frontier=mountFrontier(document.querySelector('#surface'),{lineage:'${lineage}'});</script>`);}
 
   if(name==='/map-fixture') {res.writeHead(200,{'Content-Type':'text/html'});return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;--border:#dde4df;--accent:#286050;--muted:#718078;--panel:#fff;--text:#253e36;--warn:#a57b30;--ok:#25835a;font:14px system-ui}button{font:inherit}</style><link rel="stylesheet" href="/static/portal_components.css"><link rel="stylesheet" href="/static/portal_design_system.css"><link rel="stylesheet" href="/static/project.css"><link rel="stylesheet" href="/static/project_map.css">${['portal_state','portal_text','portal_translations','portal_i18n','portal_api','portal_instruction_client','portal_page_state','portal_ui_primitives','portal_ui','project_common','project_map_layout','project_map_drawer','project_map'].map(n=>'<script src="/static/'+n+'.js"></script>').join('')}<main id="map"></main><script>window.map=PortalProjectMap.create({root:document.querySelector('#map')});map.load('example');</script>`);}
   if(name==='/api/instructions/execute'){
@@ -42,50 +42,79 @@ const server=http.createServer(async(req,res)=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1440,height:1050}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
-    await page.goto(`http://127.0.0.1:${server.address().port}/fixture?lineage=${lineage}`);await page.waitForSelector('.card');
-    assert.equal(await page.locator('.card').count(),3);
+    await page.goto(`http://127.0.0.1:${server.address().port}/fixture?lineage=${lineage}`);await page.waitForSelector('[data-kind="seed"]');
+    assert.equal(await page.locator('[data-kind="seed"]').count(),3);
     await page.screenshot({path:path.join(out,'desktop.png'),fullPage:true});
-    await page.getByRole('button',{name:'关系图',exact:true}).click();assert.equal(await page.locator('.graph-line').count(),1);
+    assert.equal(await page.locator('.graphEdge.builds_on').count(),1);
+    const oldZoom=await page.locator('#zoom-level').textContent();await page.getByRole('button',{name:'放大',exact:true}).click();assert.notEqual(await page.locator('#zoom-level').textContent(),oldZoom);
+    await page.locator('#fit').click();
+    const node=page.locator('[data-kind="seed"]').first();const oldPos=await node.getAttribute('transform');const bounds=await node.boundingBox();await page.mouse.move(bounds.x+60,bounds.y+30);await page.mouse.down();await page.mouse.move(bounds.x+130,bounds.y+85,{steps:8});await page.mouse.up();assert.notEqual(await node.getAttribute('transform'),oldPos);await page.locator('#undo').click();assert.equal(await node.getAttribute('transform'),oldPos);
+    await page.locator('#search').fill('判断');assert.ok(await page.locator('.graphNode.is-dim').count()>0);await page.locator('#search').fill('');await page.locator('#fit').click();
     await page.getByRole('button',{name:'让研究判断随着工作积累',exact:true}).last().click();
-    await page.getByRole('button',{name:'稍后关注',exact:true}).click();await page.locator('#detail [data-close]').click();assert.equal(await page.locator('.card').count(),2);
-    await page.locator('[data-filter="later"]').click();assert.equal(await page.locator('.card').count(),1);
-    await page.locator('.card h3 button').click();await page.getByRole('button',{name:'恢复关注'}).click();await page.locator('#detail [data-close]').click();await page.locator('[data-filter="all"]').click();
-    await page.locator('.card h3 button').first().click();await page.getByRole('button',{name:'更新线头'}).click();
+    await page.getByRole('button',{name:'稍后关注',exact:true}).click();await page.locator('#detail [data-close]').click();assert.equal(await page.locator('[data-kind="seed"]').count(),2);
+    await page.locator('[data-filter="later"]').click();assert.equal(await page.locator('[data-kind="seed"]').count(),1);
+    await page.locator('[data-kind="seed"]').click();await page.getByRole('button',{name:'恢复关注'}).click();await page.locator('#detail [data-close]').click();await page.locator('[data-filter="all"]').click();
+    await page.locator('[data-kind="seed"]').first().click();await page.getByRole('button',{name:'更新线头'}).click();
     await page.locator('[name="reason"]').fill('寻找可以实际反驳的方法。');conflict=true;
     await page.getByRole('button',{name:'保存线头'}).click();await page.getByText('其他人已更新这条工作线。',{exact:false}).waitFor();assert.equal(await page.locator('[name="reason"]').inputValue(),'寻找可以实际反驳的方法。');
     conflict=false;await page.getByRole('button',{name:'保存线头'}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#editor').open);
-    await page.locator('.card h3 button').first().click();await page.getByRole('button',{name:'交给 Agent',exact:true}).click();await page.getByRole('button',{name:'确认交给 Agent',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#dispatch').open);assert.equal(delivered,1);
-    await page.getByText('推进中',{exact:true}).waitFor();input='completed';await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#surface').shadowRoot.querySelectorAll('.card').length===2);await page.locator('[data-filter="history"]').click();await page.getByText('已有回复',{exact:true}).waitFor();
-    denied=true;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.getByText('内容已隐藏',{exact:false}).waitFor();assert.equal(await page.locator('.card').count(),0);
-    denied=false;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForSelector('.card');await page.locator('[data-filter="all"]').click();
+    await page.locator('[data-kind="seed"]').first().click();await page.getByRole('button',{name:'交给 Agent',exact:true}).click();await page.getByRole('button',{name:'确认交给 Agent',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#dispatch').open);assert.equal(delivered,1);
+    await page.getByText('推进中',{exact:true}).first().waitFor();input='completed';await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#surface').shadowRoot.querySelectorAll('[data-kind="seed"]').length===2);await page.locator('[data-filter="history"]').click();await page.getByText('已有回复',{exact:true}).waitFor();
+    denied=true;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.getByText('内容已隐藏',{exact:false}).waitFor();assert.equal(await page.locator('[data-kind="seed"]').count(),0);
+    denied=false;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForSelector('[data-kind="seed"]');await page.locator('[data-filter="all"]').click();
     await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
     // Native Research Map: direction context, project aggregate, duplicate local IDs,
     // and live map rerenders preserve the open reading surface.
     state={schema:'tfi.exploration-frontier.v1',items:seeds};
     await page.setViewportSize({width:1400,height:950});
     await page.goto(`http://127.0.0.1:${server.address().port}/map-fixture`);
-    await page.locator('[data-frontier-direction="direction_aaaaaaaaaaaa"]').click();
-    await page.locator('.mapFrontier .card').first().waitFor();
-    assert.equal(await page.locator('.mapFrontier .card').count(),3);
-    assert.ok(await page.locator('[data-map-viewport]').isVisible());
-    await page.locator('[data-frontier-direction="direction_bbbbbbbbbbbb"]').click();
-    await page.locator('.mapFrontier #refresh:not([disabled])').waitFor();
-    assert.equal(await page.locator('.mapFrontier .card').count(),0);
-    await page.locator('[data-frontier-all]').click();
-    await page.locator('.mapFrontier .card').first().waitFor();
-    assert.equal(await page.locator('.mapFrontier .card').count(),4);
+    await page.locator('[data-map-frontier]').click();
+    await page.locator('.mapFrontier [data-kind="seed"]').first().waitFor();
+    assert.equal(await page.locator('.mapFrontier [data-kind="seed"]').count(),4);
+    assert.equal(await page.locator('.mapFrontier [data-kind="direction"]').count(),2);
+    assert.ok(await page.locator('.mapFrontier .graphEdge.team').count()>0);
     await page.getByRole('button',{name:'Project team seed',exact:true}).click();
     assert.match(await page.locator('.mapFrontier #detail a').last().getAttribute('href'),/lineage_abcdefabcdef/);
     await page.evaluate(()=>map.load('example'));
     assert.ok(await page.locator('.mapFrontier #detail').isVisible());
     await page.locator('.mapFrontier #detail [data-close]').click();
     await page.screenshot({path:path.join(out,'map-desktop.png'),fullPage:true});
+    await page.getByRole('button',{name:'Research judgement',exact:true}).click();
+    await page.getByRole('button',{name:'管理研究方向',exact:true}).click();
+    assert.ok(await page.locator('[data-map-viewport]').isVisible());
+    await page.locator('[data-map-frontier]').click();
     await page.setViewportSize({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:path.join(out,'map-mobile.png'),fullPage:true});
-    await page.locator('[data-frontier-close]').click();
+    await page.locator('[data-map-frontier]').click();
     assert.equal(await page.locator('.mapFrontier').count(),0);
     assert.ok(await page.locator('[data-map-viewport]').isVisible());
+    state={schema:'tfi.exploration-frontier.v1',items:[...seeds,
+      {...seeds[0],id:'four',title:'如何区分方法收益与框架收益？',parent:'two',relation:'depends_on',attention:'decision'},
+      {...seeds[2],id:'five',title:'让反例成为下一轮选题的依据',parent:'two',relation:'converges'},
+      {...seeds[2],id:'six',title:'哪些探索适合保持自主推进？',parent:'three',relation:'builds_on',attention:'explore'}]};
+    await page.setViewportSize({width:1500,height:960});
+    await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);
+    await page.locator('.graphEdge.converges').waitFor();
+    assert.equal(await page.locator('.graphEdge.depends_on').count(),1);
+    await page.locator('[data-kind="line"]').first().click();
+    assert.equal(await page.locator('[data-kind="seed"]').count(),3);
+    await page.locator('[data-kind="line"]').first().click();
+    assert.equal(await page.locator('[data-kind="seed"]').count(),6);
+    await page.locator('[data-kind="seed"]').first().click();await page.locator('#focus').click();
+    assert.ok(await page.locator('.graphNode.is-dim').count()>0);
+    await page.locator('#focus').click();await page.locator('#detail [data-close]').click();await page.locator('#fit').click();
+    await page.screenshot({path:path.join(out,'branches.png'),fullPage:true});
+    const beforePan=await page.locator('.frontierCanvas>g').getAttribute('transform');
+    await page.locator('.frontierMinimap').click({position:{x:20,y:20}});
+    assert.notEqual(await page.locator('.frontierCanvas>g').getAttribute('transform'),beforePan);
+    state={schema:'tfi.exploration-frontier.v1',items:[]};
+    await page.goto(`http://127.0.0.1:${server.address().port}/fixture`);
+    await page.locator('[data-kind="new"]').waitFor();
+    assert.equal(await page.locator('[data-kind="seed"]').count(),0);
+    await page.screenshot({path:path.join(out,'empty.png'),fullPage:true});
+    await page.getByRole('button',{name:'留下第一条线头',exact:true}).click();
+    assert.ok(await page.locator('#editor').isVisible());
     assert.deepEqual(errors,[]);
     console.log('PASS: render, relationships, personal defer/restore, conflict preserves draft, dispatch receipt, result convergence, permission loss, mobile overflow. Fixture execution only; no live messages.');
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

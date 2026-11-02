@@ -232,6 +232,7 @@ def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
         'management_portal/static/frontier_entry.js',
         'management_portal/static/frontier.js',
         'management_portal/static/frontier_model.js',
+        'management_portal/static/frontier_graph.js',
         'management_portal/static/frontier_template.js',
         'management_portal/static/frontier.css',
         'management_portal/static/hatg_graph_view.js',

@@ -52,11 +52,6 @@
 .mapToggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 
 .mapStage { position: relative; flex: 1; min-height: 0; display: flex; }
-.mapFrontier { flex:0 0 48%; min-width:340px; max-width:720px; display:flex; flex-direction:column; min-height:0; border-left:1px solid var(--border); background:#f7f8f4; }
-.mapFrontierHead { display:flex; align-items:center; gap:10px; padding:12px 18px; border-bottom:1px solid #e1e6de; }
-.mapFrontierHead strong { margin-right:auto; color:#245e50; font-size:13px; }
-.mapFrontierHead button { border:1px solid #dce3d9; background:white; border-radius:7px; padding:5px 9px; cursor:pointer; }
-.mapFrontierBody { flex:1; min-height:0; }
 .mapNodeFrontier { border:0; background:transparent; padding:4px 0; color:var(--accent,#245e50); cursor:pointer; font-size:11px; }
 .mapViewport {
   position: relative;
@@ -386,10 +381,11 @@
 .projectMapCardText p { margin: 8px 0 0; color: var(--muted); line-height: 1.6; }
 
 @media (max-width: 900px) {
-  .mapFrontier { flex:0 0 60%; width:100%; min-width:0; max-width:none; border-left:0; border-top:1px solid var(--border); }
   .mapStage { flex-direction: column; }
   .mapDrawerHost { width: auto; max-height: 50%; border-left: 0; border-top: 1px solid var(--border); }
   .mapReplay { grid-template-columns: auto minmax(0, 1fr); }
   .mapReplayInfo { grid-column: 1 / -1; }
   .projectMapCardBody { grid-template-columns: minmax(0, 1fr); }
 }
+
+.mapFrontier{flex:1;min-width:0;min-height:0;display:flex}.mapFrontierBody{flex:1;min-width:0;min-height:0;height:100%}

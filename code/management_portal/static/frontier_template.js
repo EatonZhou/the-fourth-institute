@@ -1,14 +1,15 @@
 // Shared native surface; each mount owns its DOM and event handlers.
 export default `
-  <main>
-    <div class="intro"><div><div class="eyebrow">EXPLORATION FRONTIER / 探索前沿</div><h1>接着想，往前走<span class="accent">。</span></h1><p>看见正在生长的想法，在值得的地方介入。</p></div><button id="new" class="primary" disabled>＋ 留下一条线头</button></div>
-    <div id="notice" role="status" aria-live="polite"></div>
-    <div class="workspace">
-      <aside class="rail"><div class="eyebrow">我的视野</div><nav id="filters" aria-label="线头筛选"></nav></aside>
-      <section class="content" aria-label="工作前沿"><div class="toolbar"><div><h2 id="section-title">全部前沿</h2><span id="checked">选择一个团队，接上它的工作。</span></div><div class="tools"><label class="sr-only" for="search">搜索线头</label><input id="search" type="search" placeholder="寻找问题、想法…"><button id="refresh" title="核对来源与执行状态">刷新</button><button id="map-toggle" aria-pressed="false">关系图</button></div></div><div id="graph" hidden></div><div id="cards"></div></section>
+  <main class="graphWorkspace">
+    <div class="graphToolbar">
+      <div class="graphTools"><button id="zoom-out" aria-label="缩小">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="放大">＋</button><button id="fit" title="适应全图 (F)">适应</button><button id="undo" title="撤销上次节点移动">↶</button><button id="arrange" title="恢复自动布局">整理</button></div>
+      <div class="graphTools"><input id="search" type="search" aria-label="搜索线头" placeholder="搜索问题、工作线"><button id="focus" aria-pressed="false">局部</button><button id="refresh">刷新</button><button id="new" class="primary" disabled>＋ 线头</button></div>
     </div>
+    <nav id="filters" aria-label="线头筛选"></nav>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <div class="graphStage"><div id="graph"></div><aside id="detail" hidden aria-label="线头详情"><div id="detail-body"></div></aside></div>
+    <footer class="graphFooter"><span class="legend"><i></i>发展 <i class="dependency"></i>依赖 <i class="merge"></i>汇合 <i class="team"></i>团队关联</span><span id="checked">正在读取…</span><span>拖动画布 · 滚轮缩放 · 点击节点查看</span></footer>
   </main>
-  <dialog id="detail"><div id="detail-body"></div></dialog>
   <dialog id="source"><div class="dialog-heading"><h2>来源原文</h2><button type="button" data-close="source" aria-label="关闭">×</button></div><pre id="source-text" style="white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.9"></pre></dialog>
   <dialog id="editor"><form id="edit-form"><div class="dialog-heading"><h2 id="edit-title">留下一条线头</h2><button type="button" data-close="editor" aria-label="关闭">×</button></div><p class="muted">围绕一个推进目标持续更新，让下一次思考有所依据。</p>
     <label>正在探索什么<input name="title" required maxlength="120" placeholder="一个值得继续追问的问题"></label>
