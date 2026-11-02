@@ -206,9 +206,9 @@
       if (elementIds.some(id => !visibleIds.has(id))) {
         throw new Error(window.PortalI18n.t("选区已变化，请重新选择要封装的元素。"));
       }
-      await applyProgramMutation(() => executeHatgInstruction("Functionalize", {
+      await applyProgramMutation(mutation => executeHatgInstruction("Functionalize", {
         element_ids: [...new Set(elementIds)], title: title.trim() || "Function Block",
-      }), "选区已封装为 Function Block。");
+      }, mutation), "选区已封装为 Function Block。");
       clearCanvasSelection();
     }
 
@@ -260,7 +260,7 @@
         const componentIds = deletableTargets.filter(target => target.kind === "component").map(target => target.id);
         const deletedNodes = residentIds.map(nodeById).filter(Boolean);
         const idempotencyKey = `portal:delete-objects:${globalThis.PortalUIPrimitives.randomUUID()}`;
-        const result = await applyProgramMutation(() => societyService.deleteObjects( {
+        const result = await applyProgramMutation(mutation => societyService.deleteObjects( { ...mutation,
           lineage_id: lineageId,
           idempotency_key: idempotencyKey,
           ...(residentIds.length ? { resident_ids: residentIds } : {}),

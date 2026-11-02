@@ -369,6 +369,8 @@
     async function removeSelectedNode(options = {}) {
       const node = nodeById(options.nodeId) || currentNode();
       if (!node || !state.lineage) return false;
+      const lineageId = state.lineage.lineage_id;
+      const expectedVersion = state.lineage.revision;
       const family = familyForFacade(node.id);
       if (family) return Boolean(await removeFamilyInstance(family.instance.id, "delete"));
       const incidentEdges = state.lineage.edges.filter(edge => lineageEdgeReferencesResident(edge, node.id));
@@ -398,9 +400,31 @@
 
       try {
           const result = await societyService.deleteNode( {
-            lineage_id: state.lineage.lineage_id,
+            lineage_id: lineageId,
+            expected_version: expectedVersion,
             resident_id: node.id,
+            defer_refresh: true,
           });
+          if (result.refresh) {
+            state.residents = state.residents.filter(item => String(item.resident_id || "") !== nodeResidentId(node));
+            if (state.lineage?.lineage_id === lineageId) {
+              if (state.selectedNodeId === node.id) clearNodeSelection();
+              setSyncStatus("修改已提交，正在更新图…", "saving");
+            }
+            void result.refresh.then(updated => {
+              if (state.lineage?.lineage_id !== lineageId) return;
+              commitLineage(updated.lineage);
+              setSyncStatus("状态已保存", "saved");
+              void Promise.allSettled([loadResults()]);
+            }).catch(error => {
+              if (state.lineage?.lineage_id === lineageId) {
+                setSyncStatus("修改已提交，但图刷新失败。请刷新查看，勿重复提交。", "error");
+                toast(error.message || String(error), "warning", 9000);
+              }
+            });
+            if (!options.quiet) toast(window.PortalI18n.t("节点与对应 Resident session 已同步删除。"), "success", 6000);
+            return true;
+          }
           if (!result?.lineage || result.lineage.lineage_id !== state.lineage.lineage_id) {
             throw new Error("删除节点的响应缺少 Lineage 状态");
           }
@@ -524,7 +548,7 @@
         : null;
       // A dialog owns the displayed source until it is explicitly reopened.
       // Selection and metadata refreshes must not retarget an accepted form.
-      branchSourceSnapshot = Object.freeze({ residentId: node.id, lineageId, message: anchoredMessage,
+      branchSourceSnapshot = Object.freeze({ residentId: node.id, lineageId, revision: state.lineage.revision, message: anchoredMessage,
         source: clone(node), detail: clone(sourceDetail), catalog });
       state.branchMessageContext = anchoredMessage ? {
         source_resident_id: node.id,
@@ -568,6 +592,7 @@
       const actionLabel = fresh ? window.PortalI18n.t("创建会话") : window.PortalI18n.t("创建分支");
       const button = options.button || null;
       const quick = options.quick === true;
+      const sourceRevision = options.sourceRevision ?? state.lineage.revision;
       if (button) setBusy(button, true, `${actionLabel}…`);
       state.structureMutationInFlight = true;
       if (quick) {
@@ -586,6 +611,7 @@
         if (!fresh && familyForFacade(source.id)) return null;
         const payload = {
           lineage_id: state.lineage.lineage_id,
+          ...(!fresh ? { expected_version: sourceRevision } : {}),
           ...(fresh
             ? { provider: options.provider || source.backend }
             : { source_resident_id: source.id, fork_mode: mode }),
@@ -600,9 +626,15 @@
         if (mode === "message") {
           payload.message = options.message;
         }
+        payload.defer_refresh = true;
+        const lineageId = payload.lineage_id;
+        const selectionAtSubmit = state.selectedNodeId;
         const response = fresh
           ? await societyService.createNode(payload)
           : await societyService.branchNode(payload);
+        const deferredRefresh = response.refresh;
+        const applyResponse = async response => {
+        if (state.lineage?.lineage_id !== lineageId) return null;
         if (!response?.lineage || response.lineage.lineage_id !== state.lineage.lineage_id) {
           throw new Error(`${actionLabel}的响应缺少 Lineage 状态`);
         }
@@ -610,7 +642,7 @@
         const createdResidentId = String(response.resident_id || "");
         const node = state.lineage.nodes.find(item => item.id === createdResidentId);
         if (!node) throw new Error(`${actionLabel}的响应缺少新节点`);
-        if (options.closeModalOnSuccess) closeModal("branchModal");
+        if (!deferredRefresh && options.closeModalOnSuccess) closeModal("branchModal");
         // The committed card includes runtime/Family content absent from the
         // placement probe. Correct overlap using its rendered bounds, moving
         // only this new node. A failed layout save must never replay creation.
@@ -623,7 +655,7 @@
         // before completing this action; Fork also awaits its Chat navigation.
         // A blank session keeps the current Chat, as ordinary node creation does.
         try {
-          await selectNode(node.id, {
+          if (state.lineage?.lineage_id === lineageId && state.selectedNodeId === selectionAtSubmit) await selectNode(node.id, {
             force: true, notifyParent: !fresh, revealInGraph: true, duration: 0,
           });
         } catch (error) {
@@ -631,6 +663,7 @@
           toast(window.PortalI18n.text`${actionLabel}已完成，请刷新查看，勿重复提交：${error.message || error}`, "warning", 9000);
           return node;
         }
+        if (state.lineage?.lineage_id !== lineageId) return node;
         const currentRevision = Number(state.lineage.revision || 0);
         const completedLabel = fresh ? window.PortalI18n.t("空白会话已创建") : window.PortalI18n.t("分支已创建");
         setSyncStatus(currentRevision ? `${completedLabel} · revision ${currentRevision}` : completedLabel, "saved");
@@ -643,6 +676,20 @@
           );
         }
         return node;
+        };
+        if (response.refresh) {
+          if (state.lineage?.lineage_id === lineageId) {
+            if (options.closeModalOnSuccess) closeModal("branchModal");
+            setSyncStatus("修改已提交，正在更新图…", "saving");
+          }
+          void response.refresh.then(applyResponse).catch(error => {
+            if (state.lineage?.lineage_id !== lineageId) return;
+            setSyncStatus("修改已提交，但图刷新失败。请刷新查看，勿重复提交。", "error");
+            toast(error.message || String(error), "warning", 9000);
+          });
+          return response;
+        }
+        return await applyResponse(response);
       } catch (error) {
         if (["CreateResident", "ForkResident"].includes(error.committedMutation?.instruction)) {
           if (options.closeModalOnSuccess) closeModal("branchModal");
@@ -690,6 +737,7 @@
       const accountInput = $id("branchAccountInput");
       await createAdjacentResident(source.residentId, {
         sourceLineageId: source.lineageId,
+        sourceRevision: source.revision,
         mode,
         title: $id("branchTitleInput").value.trim(),
         provider: $id("branchProviderInput").value,

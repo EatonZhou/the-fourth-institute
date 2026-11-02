@@ -41,8 +41,12 @@ def projection(monkeypatch):
     # What the permission system is told about each saved descriptor.
     permissions = Mock(return_value=False)
     monkeypatch.setattr(permission_system, 'sync_resource', permissions)
-    service = ResourceService(collaboration_store=descriptors)
-    monkeypatch.setattr(service, '_notify_mutation', lambda **kwargs: None)
+    from management_portal import resource_index_backend as backend
+    from management_portal.resource_index_registries import CollaborationRegistryAdapter
+    index = backend.ResourceIndexService(store=backend.IndexStore(),
+        adapters=[CollaborationRegistryAdapter()], start_worker=False)
+    index.adapter_layer._on_projection_changed = None
+    service = ResourceService(collaboration_store=descriptors, index_provider=index)
     return SimpleNamespace(service=service, descriptors=descriptors, registry=registry, permissions=permissions)
 
 

@@ -29,6 +29,7 @@ def workspace(tmp_path, monkeypatch):
     store.ensure(WID, str(tmp_path), title="Before")
     # No discovery record is available: all identity reads must use the owner.
     index = SimpleNamespace(supports_type=lambda kind: True, type_counts=dict,
+                            project_updated=lambda *args, **kwargs: None,
                             project_unregistered=lambda *args, **kwargs: None)
     service = ResourceService(index_provider=index, resolver_loader=install_resolvers,
                               mutation_provider_loader=install_mutation_providers)
@@ -76,7 +77,7 @@ def test_formal_rename_round_trip_capability_and_stale_version(workspace):
     written = workspace.update({"title": "  新名称  ", "expected_version": token}).raise_for_error()
     assert written["resource"]["title"] == "新名称"
     assert written["version"] == written["resource"]["version"] != token
-    assert written["resource"]["index_projection"]["status"] == "unconfirmed"
+    assert "index_projection" not in written["resource"]
     current = workspace.resolve()
     assert current["version"] == written["version"] == current["attributes"]["updated_at"]
     assert current["title"] == "新名称"

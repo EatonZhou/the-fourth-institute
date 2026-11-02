@@ -123,14 +123,23 @@ def sync_collaboration_resources(
                     writer.put(EVIDENCE_COLLECTION, rid, evidence)
         mark = timer.add("descriptor", mark)
 
-    for resource_id, resource_type in notifications:
-        service._notify_mutation(
-            path=service._collaboration.change_key(resource_id),
-            resource_id=resource_id,
-            resource_type=resource_type,
-            kind="updated",
-        )
-    timer.add("notify", mark)
+    # A retry after a projection failure must repair the committed descriptor
+    # even when put_with_change now reports no domain change.
+    for result in results:
+        resource_id = result["resource_id"]
+        resource_type = service._identity.parse(resource_id).resource_type
+        try:
+            service._index().project_updated(resource_type, {"resource_id": resource_id})
+        except Exception as exc:
+            from management_common.operation_errors import failure_payload
+            from .errors import ResourceOperationError
+            raise ResourceOperationError(
+                "resource.mutation_post_commit_failed", str(exc), 500,
+                details={"domain_committed": True, "resource_id": resource_id,
+                         "resource_type": resource_type, "stage": "index_projection",
+                         "cause": failure_payload(exc)},
+            ) from exc
+    timer.add("index_projection", mark)
     timer.report_if_slow(
         "collaboration sync", SLOW_COLLABORATION_SYNC_SECONDS,
         resources=len(prepared), changed=len(notifications),

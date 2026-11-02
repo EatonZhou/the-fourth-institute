@@ -63,32 +63,91 @@ def _register(service, **options):
         'body': 'Isolated UTF-8 fixture: 中文。',
     }, **options)
 
-def test_committed_mutation_reports_unconfirmed_projection(subtests, isolated_portal_case):
-    """更新或注销已提交但索引刷新未确认时，结果标记投影未确认且不泄露内部错误"""
+def test_committed_mutation_reports_failed_projection(subtests, isolated_portal_case):
+    """更新与注销在单对象投影失败时明确报告领域已提交。"""
+    from management_portal.resources.errors import ResourceOperationError
     for operation in ['update', 'unregister']:
-        for failure in ['refresh_incomplete', 'notification_failed', 'no_targets']:
-            with subtests.test(operation=operation, failure=failure), isolated_portal_case() as case_path:
+        with subtests.test(operation=operation), isolated_portal_case() as case_path:
                 resource_id = 'information_0123456789ab'
                 index = mock.Mock()
-                index.change_targets.return_value = [] if failure == 'no_targets' else ['project_knowledge']
-                index.queue_change.return_value = ['project_knowledge']
-                index.wait_for_refresh.return_value = False
-                if failure == 'notification_failed':
-                    index.change_targets.side_effect = RuntimeError('private diagnostic detail')
+                projector = index.project_updated if operation == 'update' else index.project_unregistered
+                projector.side_effect = RuntimeError('projection unavailable')
                 service = ResourceService(index_provider=index)
                 provider = mock.Mock(return_value={'resource_id': resource_id, 'project_ids': ['Fixture'], 'committed': True})
                 service.register_mutation_provider('information', **{operation: provider})
-                if operation == 'update':
-                    result = service.update(resource_id, {}, actor='test-actor', wait_for_index=True, index_timeout=0)
-                else:
-                    result = service.unregister(resource_id, actor='test-actor', wait_for_index=True, index_timeout=0)
-                assert result['committed'] is True
-                assert result['index_projection'] == {
-                    'status': 'unconfirmed', 'reason': failure, 'wait_requested': True,
-                    'targets': [] if failure in {'no_targets', 'notification_failed'} else ['project_knowledge'],
-                }
-                assert 'private diagnostic detail' not in str(result)
+                with pytest.raises(ResourceOperationError) as failure:
+                    if operation == 'update':
+                        service.update(resource_id, {}, actor='test-actor', wait_for_index=True, index_timeout=0)
+                    else:
+                        service.unregister(resource_id, actor='test-actor', wait_for_index=True, index_timeout=0)
+                assert failure.value.details['domain_committed'] is True
+                assert failure.value.details['stage'] == 'index_projection'
                 provider.assert_called_once()
+                index.wait_for_refresh.assert_not_called()
+
+
+def test_update_and_delete_are_durable_while_scan_queue_is_pending(knowledge_service):
+    """积压的扫描不延迟单对象提交，旧扫描不能覆盖提交，重新打开索引可见结果。"""
+    service, index = knowledge_service
+    record = _register(service)
+    resource_id = record['resource_id']
+    old = index.store.internal_get(resource_id)
+    scan_generation = index.store.generation()
+    from management_portal.resource_index_records import ChangeSet
+    index.adapter_layer.request_refresh(['project_knowledge'], force=True)
+    with mock.patch.object(index, 'wait_for_refresh', side_effect=AssertionError('queue wait')), \
+         mock.patch.object(index.store, 'records_for_adapter', side_effect=AssertionError('adapter copy')):
+        service.update(resource_id, {'body': '# Updated immediately\nCurrent body.'}, actor='test-actor',
+                       wait_for_index=True, index_timeout=0)
+        current = index.store.internal_get(resource_id)
+        assert current['title'] == 'Updated immediately'
+        assert any(item['resource_id'] == resource_id for item in service.query(
+            actor='test-actor', resource_types=['information'], q='Updated immediately')['resources'])
+        assert backend.IndexStore().internal_get(resource_id)['title'] == current['title']
+        index.store.publish_snapshot('project_knowledge', [old], {}, scan_started_generation=scan_generation)
+        index.store.apply(ChangeSet('project_knowledge', upserts=(old,)), scan_started_generation=scan_generation)
+        assert index.store.internal_get(resource_id)['title'] == current['title']
+        service.unregister(resource_id, actor='test-actor', wait_for_index=True, index_timeout=0)
+        index.store.publish_snapshot('project_knowledge', [old], {}, scan_started_generation=scan_generation)
+        index.store.apply(ChangeSet('project_knowledge', upserts=(old,)), scan_started_generation=scan_generation)
+        with pytest.raises(KeyError):
+            backend.IndexStore().internal_get(resource_id)
+
+
+def test_same_resource_mutations_order_domain_and_projection(knowledge_service, monkeypatch):
+    """A 卡在投影时 B 不能先提交同资源；其他资源可继续，最终持久结果是 B。"""
+    from concurrent.futures import ThreadPoolExecutor
+    service, index = knowledge_service
+    first, other = _register(service), _register(service)
+    entered, release, started_b = threading.Event(), threading.Event(), threading.Event()
+    original = index.project_updated
+
+    def held(kind, record):
+        if record['resource_id'] == first['resource_id'] and not entered.is_set():
+            entered.set()
+            assert release.wait(5)
+        return original(kind, record)
+
+    def write(record, title):
+        if title == 'B':
+            started_b.set()
+        return service.update(record['resource_id'], {'body': '# ' + title}, actor='test-actor')
+
+    monkeypatch.setattr(index, 'project_updated', held)
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        a = pool.submit(write, first, 'A')
+        try:
+            assert entered.wait(3)
+            b = pool.submit(write, first, 'B')
+            assert started_b.wait(3)
+            pool.submit(write, other, 'Independent').result(3)
+            assert not b.done()
+            assert '# A' in Path(first['path']).read_text()
+        finally:
+            release.set()
+        a.result(3)
+        b.result(3)
+    assert backend.IndexStore().internal_get(first['resource_id'])['title'] == 'B'
 
 
 def test_registration_projects_authoritative_path_without_queueing(knowledge_service):

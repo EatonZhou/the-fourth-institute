@@ -54,14 +54,28 @@ def save_catalog(account_id, session, agent_capabilities):
     return value
 
 
+def catalog_snapshot(route=""):
+    """Read observed capabilities only; page reads must never start ACP or OAuth.
+
+    Capabilities remain the last native observation beyond the model-list TTL.
+    Legacy, absent or unreadable observations offer no media capability.
+    Execution still validates the current initialize response before sending.
+    """
+    row = account_for_route(route)
+    cached = account_runtime("antigravity", row["account_id"]) / "catalog.json"
+    try:
+        value = json.loads(cached.read_text())
+        return value if isinstance(value, dict) and isinstance(value.get("prompt_capabilities"), dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def catalog(route=""):
     row = account_for_route(route)
     home = account_home("antigravity", row["account_id"])
-    cached = account_runtime("antigravity", row["account_id"]) / "catalog.json"
-    if cached.is_file():
-        value = json.loads(cached.read_text())
-        if "prompt_capabilities" in value and time.time() - value.get("observed_at", 0) < 300:
-            return value
+    value = catalog_snapshot(route)
+    if value and time.time() - value.get("observed_at", 0) < 300:
+        return value
     with AcpClient(command(), env=environment(row["account_id"]), cwd=str(home)) as client:
         handshake = client.initialize()
         client.call("authenticate", {"methodId": "oauth-personal"})

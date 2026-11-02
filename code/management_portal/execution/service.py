@@ -377,7 +377,8 @@ class ExecutionService:
 
     def states(self, executions: Mapping[str, str]) -> dict[str, Any]:
         """Small scheduler observations for the business owner's current turns."""
-        return self.client.request("execution.states", {"executions": dict(executions)})
+        return self.client.request("execution.states", {"executions": dict(executions)},
+                                   timeout=1.0, restart_wait=0.0, retry_on_unavailable=False)
 
 
     def withdraw_unstarted(self, execution_id: str, *, actor: str, binding_id: str,
@@ -754,6 +755,7 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         self._next_maintenance_at = time.monotonic()
         self.started = threading.Event()
         self._closing = threading.Event()
+        self._maintenance_thread = None
         super().__init__(self.endpoint.address, _ExecutionRequestHandler)
         if self.endpoint.is_unix:
             os.chmod(self.socket_path, 0o660)
@@ -831,22 +833,37 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         return result
 
     def service_actions(self) -> None:
+        if self._closing.is_set() or (self._maintenance_thread is not None and self._maintenance_thread.is_alive()):
+            return
         now = time.monotonic()
         if now < self._next_maintenance_at:
             return
         self._next_maintenance_at = (
             now + self._maintenance_interval_seconds
         )
-        try:
-            self.run_maintenance()
-        except Exception:
-            LOGGER.exception("ExecutionService maintenance failed")
+        def maintain():
+            try:
+                self.run_maintenance()
+            except Exception:
+                LOGGER.exception("ExecutionService maintenance failed")
+        # Maintenance owns durable transactions, not the RPC accept loop.
+        # Do not wait for it on shutdown: unfinished transactions roll back on
+        # process exit and canonical execution recovery repeats the next pass.
+        self._maintenance_thread = threading.Thread(target=maintain, name="execution-maintenance", daemon=True)
+        self._maintenance_thread.start()
+
+    def shutdown(self) -> None:
+        self._closing.set()
+        super().shutdown()
 
     def server_close(self) -> None:
         maintenance = getattr(self, 'instruction_maintenance', None)
         if maintenance is not None:
             maintenance.stop()
         self._closing.set()
+        worker = self._maintenance_thread
+        if worker is not None and worker is not threading.current_thread():
+            worker.join(timeout=1.0)
         self.quota_monitor.close()
         super().server_close()
         if self.endpoint.is_unix:

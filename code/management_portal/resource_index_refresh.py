@@ -292,24 +292,53 @@ class AdapterLayer:
         self, resource_type: str, record: dict[str, Any],
     ) -> dict[str, Any]:
         """Publish one committed registration without waiting for the scan queue."""
+        return self._project_one(resource_type, record, refresh_source=False)
+
+    def project_updated(self, resource_type: str, record: dict[str, Any]) -> dict[str, Any]:
+        """Read and persist the changed object's current summary, not an adapter scan."""
+        return self._project_one(resource_type, record, refresh_source=True)
+
+    def _project_one(self, resource_type, record, *, refresh_source):
+        from management_portal.resources.locking import mutation_projection_scope
+        with mutation_projection_scope(record["resource_id"]):
+            return self._project_one_locked(resource_type, record, refresh_source=refresh_source)
+
+    def _project_one_locked(self, resource_type, record, *, refresh_source):
         resource_id = stripped_text(record.get("resource_id"))
+        try:
+            previous = self.store.internal_get(resource_id)
+        except KeyError:
+            previous = None
         owners = [adapter for adapter in self.adapters.values()
                   if resource_type in adapter.resource_types]
+        owner_name = stripped_text(((previous or record).get("source") or {}).get("adapter"))
+        if owner_name:
+            owners = [adapter for adapter in owners if adapter.name == owner_name]
+        if len(owners) > 1 and record.get("path"):
+            owners = [adapter for adapter in owners if adapter.owns_path(Path(record["path"]))]
         if len(owners) != 1:
             raise ValueError(f"registration has no unique index adapter: {resource_type}")
         adapter = owners[0]
         projector = getattr(adapter, "project_record", None)
-        if callable(projector):
+        scan_changes = getattr(adapter, "scan_changes", None)
+        change_key = getattr(adapter, "change_key", None)
+        path = (change_key(resource_type, resource_id) if refresh_source and callable(change_key)
+                else stripped_text(record.get("path")))
+        if refresh_source and previous and not callable(change_key):
+            # A companion-file edit also changes the primary's version. Read
+            # the root's existing source, never index the companion as a root.
+            path = stripped_text((previous.get("source") or {}).get("path")) or path
+        if callable(projector) and not (refresh_source and path and callable(scan_changes)):
             summary = projector(resource_type, record)
         else:
-            path = stripped_text(record.get("path"))
-            scan_changes = getattr(adapter, "scan_changes", None)
             if not path or not callable(scan_changes):
                 raise ValueError(f"adapter {adapter.name} cannot project one registration")
             changes = scan_changes(
-                (path,), self.store.records_for_adapter(adapter.name),
+                (path,), [previous] if previous else [],
                 self.store.adapter_source_state(adapter.name),
             )
+            if changes is None:
+                raise RuntimeError(f"adapter {adapter.name} cannot project one changed resource")
             matches = [item for item in changes.upserts
                        if stripped_text(item.get("resource_id")) == resource_id]
             if len(matches) != 1:
@@ -330,6 +359,11 @@ class AdapterLayer:
         return result
 
     def project_unregistered(self, resource_type: str, resource_id: str) -> dict[str, Any]:
+        from management_portal.resources.locking import mutation_projection_scope
+        with mutation_projection_scope(resource_id):
+            return self._project_unregistered_locked(resource_type, resource_id)
+
+    def _project_unregistered_locked(self, resource_type: str, resource_id: str) -> dict[str, Any]:
         """Remove a committed identity before callers query the derived list.
 
         The direct revision also fences scans begun before the unregistration,

@@ -40,6 +40,7 @@ def definition_refresh_signature(lineage: dict[str, Any]) -> str:
         "program_event_source_runtime",
         "program_effect_runtime",
         "program_execution_explanations",
+        "resident_runtime_observation",
         "refresh_signature",
     }:
         definition.pop(field, None)
@@ -143,11 +144,18 @@ def definition_fingerprint(
             fingerprint.append((str(path), stat.st_mtime_ns, stat.st_size))
         except OSError:
             fingerprint.append((str(path), 0, 0))
-    state_snapshots = resident_protocol.read_resident_state_snapshots([
-        node_resident_id(node)
-        for node in lineage.get("nodes") or []
-        if isinstance(node, dict) and node_resident_id(node)
-    ])
+    from management_portal.execution.transport import ExecutionServiceUnavailable, ExecutionResponseUnknown
+    try:
+        state_snapshots = resident_protocol.read_resident_state_snapshots([
+            node_resident_id(node)
+            for node in lineage.get("nodes") or []
+            if isinstance(node, dict) and node_resident_id(node)
+        ])
+    except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
+        # A failed runtime observation invalidates a healthy cached view but
+        # does not prevent reading the independently authorized definition.
+        fingerprint.append(("resident-state:unavailable", 0, 0))
+        return tuple(fingerprint)
     fingerprint.extend(
         (f"resident-state:{resident_id}", int(snapshot.get("cursor") or 0), 0)
         for resident_id, snapshot in sorted(state_snapshots.items())

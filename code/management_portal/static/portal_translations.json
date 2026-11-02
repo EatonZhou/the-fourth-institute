@@ -1,4 +1,6 @@
 {
+  "图刷新失败，本次修改尚未提交。请刷新后重试。": {"zh-CN": "图刷新失败，本次修改尚未提交。请刷新后重试。", "en": "Graph refresh failed; this change was not submitted. Refresh and try again."},
+  "修改已提交，正在更新图…": {"zh-CN": "修改已提交，正在更新图…", "en": "Change committed; updating the graph…"},
   "没有与「{p0}」匹配的项目。": {"zh-CN": "没有与「{p0}」匹配的项目。", "en": "No projects match “{p0}”."},
   "当前筛选条件下没有项目。": {"zh-CN": "当前筛选条件下没有项目。", "en": "No projects match the current filters."},
   "清除搜索，显示全部项目": {"zh-CN": "清除搜索，显示全部项目", "en": "Clear search and show all projects"},

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from .action import action_payload
 from .mutation import mutation_payload
+from .locking import serialized_mutation
 
 if TYPE_CHECKING:
     from .service import ResourceService
@@ -91,24 +92,13 @@ def complete_mutation(
             permission_system.unregister_resources([resource_id])
         else:
             permission_system.sync_resource({**record, "resource_id": resource_id}, resource_type=resource_type)
+        stage = "index_projection"
         if kind == "create":
-            stage = "index_projection"
             service._index().project_registered(resource_type, record)
-            projection = {}
+        elif kind == "update":
+            service._index().project_updated(resource_type, record)
         else:
-            if kind == "delete":
-                stage = "index_projection"
-                service._index().project_unregistered(resource_type, resource_id)
-            stage = "index_notification"
-            projection = service._notify_mutation(
-                resource_id=resource_id,
-                resource_type=resource_type,
-                kind={"update": "updated", "delete": "deleted"}[kind],
-                wait_for_index=wait_for_index,
-                index_timeout=index_timeout,
-            )
-        if projection:
-            record["index_projection"] = projection
+            service._index().project_unregistered(resource_type, resource_id)
         return record
     except Exception as exc:
         raise ResourceOperationError(
@@ -274,6 +264,7 @@ def require_mutation_actor(actor: str) -> None:
         raise PermissionError("Resource mutation requires an authenticated User or Resident")
 
 
+@serialized_mutation
 def update(
     service: "ResourceService",
     resource_id: str,
@@ -324,6 +315,7 @@ def execution_content_changes(service: "ResourceService", execution_id: str, *, 
     return changes
 
 
+@serialized_mutation
 def unregister(
     service: "ResourceService",
     resource_id: str,

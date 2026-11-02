@@ -324,8 +324,20 @@
       // revision. A new failed/cancelled turn can leave every graph revision
       // unchanged; take its observation from the latest serialized read.
       const observedResidents = lineageItemsById(incoming.nodes);
+      // Availability is an observation of this read, independent of definition
+      // and runtime revisions. A degraded read and its recovery may share both.
+      const runtimeAvailabilityChanged = Object.hasOwn(current, "resident_runtime_observation")
+        || Object.hasOwn(incoming, "resident_runtime_observation");
+      if (Object.hasOwn(incoming, "resident_runtime_observation")) {
+        next.resident_runtime_observation = clone(incoming.resident_runtime_observation);
+      } else {
+        delete next.resident_runtime_observation;
+      }
       for (const node of next.nodes || []) {
         const observed = observedResidents.get(String(node?.id || ""));
+        if (runtimeAvailabilityChanged && observed && Object.hasOwn(observed, "status")) {
+          node.status = observed.status;
+        }
         if (observed && Object.hasOwn(observed, "last_execution")) {
           node.last_execution = clone(observed.last_execution || {});
         }
@@ -447,6 +459,12 @@
       change.runtimeChanged = Number(next.runtime_revision || 0) !== Number(previous.runtime_revision || 0);
       change.membershipChanged = !sameIdSet(displayedResidentIds(previous), displayedResidentIds(next));
       state.lineage = next;
+      if (previous.resident_runtime_observation || next.resident_runtime_observation) {
+        for (const node of next.nodes || []) {
+          state.runtimeStatus.delete(node.id);
+          state.residentRuntimeById?.delete(nodeResidentId(node));
+        }
+      }
       state.localVersion += 1;
       forgetRemovedLineageMembers(next);
       options.afterMerge?.(next);

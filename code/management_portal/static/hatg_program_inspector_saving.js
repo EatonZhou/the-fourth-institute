@@ -42,6 +42,20 @@
       switchProgramInvokeEditorTarget, toast,
     } = dependencies;
 
+    function selectAfterProjection(response, selectSaved, selection) {
+      if (!response?.refresh) return selectSaved(response?.component);
+      void response.refresh.then(updated => {
+        const dirty = (selection.form.isConnected && selection.form.dataset.programDraftDirty === "true")
+          || selection.host?.querySelector('[data-program-draft-dirty="true"]');
+        if (!dirty && state.lineage?.lineage_id === selection.lineageId
+          && state.selectedProgramObjectId === selection.selected) {
+          return selectSaved(updated.component);
+        }
+      }).catch(error => {
+        if (!error.committedMutation) toast(error.message || String(error), "warning", 6500);
+      });
+    }
+
     // Set, replace or remove a Seed's candidate fork (CreateCandidateFork / DeleteCandidateFork).
     async function setSeedCandidateFork(seedId, sourceResidentId) {
       if (!state.lineage) return;
@@ -67,6 +81,8 @@
     }
 
     async function saveProgramComponentFromInspector(componentId, form, { onSaved = null } = {}) {
+      const selection = { lineageId: state.lineage?.lineage_id, selected: state.selectedProgramObjectId,
+        form, host: form.parentElement };
       // A failed conflict refresh leaves no safe precondition. Retry the read,
       // retain the form, and never send an unversioned replacement definition.
       if (form.dataset.programDraftConflict === "true" && definitionRevisions.get(form) === undefined) {
@@ -92,7 +108,7 @@
       const data = new FormData(form);
       if (component.kind === "seed") {
         const response = await applyProgramMutation(
-          () => societyService.saveProgramComponent( {
+          mutation => societyService.saveProgramComponent( { ...mutation,
             lineage_id: state.lineage.lineage_id,
             expected_version: definitionRevisions.get(form),
             component_id: component.id,
@@ -109,12 +125,12 @@
           "Seed 已保存。",
           { draftForm: form },
         );
-        if (response?.component) await selectSaved(response.component);
-        return;
+        if (response?.component) await selectAfterProjection(response, selectSaved, selection);
+        return response;
       }
       if (component.kind === "effect") {
         const response = await applyProgramMutation(
-          () => societyService.saveProgramComponent({
+          mutation => societyService.saveProgramComponent({ ...mutation,
             lineage_id: state.lineage.lineage_id,
             expected_version: definitionRevisions.get(form),
             component_id: component.id,
@@ -126,12 +142,12 @@
           "Effect 已保存。",
           { draftForm: form },
         );
-        if (response?.component) await selectSaved(response.component);
-        return;
+        if (response?.component) await selectAfterProjection(response, selectSaved, selection);
+        return response;
       }
       if (component.kind === "loop") {
         const response = await applyProgramMutation(
-          () => societyService.saveProgramComponent({
+          mutation => societyService.saveProgramComponent({ ...mutation,
             lineage_id: state.lineage.lineage_id,
             expected_version: definitionRevisions.get(form),
             component_id: component.id,
@@ -143,8 +159,8 @@
           "循环已保存。",
           { draftForm: form },
         );
-        if (response?.component) await selectSaved(response.component);
-        return;
+        if (response?.component) await selectAfterProjection(response, selectSaved, selection);
+        return response;
       }
       if (isPacketOperatorComponent(component)) {
         const { config, error } = window.PortalLineageElementFields.operatorConfigFromFields(form, component);
@@ -153,7 +169,7 @@
           return;
         }
         const response = await applyProgramMutation(
-          () => societyService.saveProgramComponent( {
+          mutation => societyService.saveProgramComponent( { ...mutation,
             lineage_id: state.lineage.lineage_id,
             expected_version: definitionRevisions.get(form),
             component_id: component.id,
@@ -166,9 +182,9 @@
           { draftForm: form },
         );
         if (response?.component) {
-          await selectSaved(response.component);
+          await selectAfterProjection(response, selectSaved, selection);
         }
-        return;
+        return response;
       }
       const parsedConfig = window.PortalLineagePrimitiveInspector.readConfig(form);
       if (parsedConfig.errors.length) {
@@ -283,7 +299,7 @@
           return;
         }
       }
-      const response = await applyProgramMutation(() => societyService.saveProgramComponent( {
+      const response = await applyProgramMutation(mutation => societyService.saveProgramComponent( { ...mutation,
         lineage_id: state.lineage.lineage_id,
         expected_version: definitionRevisions.get(form),
         component_id: component.id,
@@ -294,9 +310,9 @@
         },
       }), "", { draftForm: form });
       if (onSaved) {
-        await onSaved(response?.component);
+        await selectAfterProjection(response, onSaved, selection);
         toast(window.PortalI18n.t("Event 已保存。"), "success");
-        return;
+        return response;
       }
       const createdWireIds = response?.created_wire_ids || [];
       const updatedWireIds = response?.updated_wire_ids || [];
@@ -305,11 +321,11 @@
       const feedbackWireId = createdWireIds[0] || updatedWireIds[0] || "";
       if (feedbackWireId) {
         const focusNodeId = watchSubject?.id || component.id;
-        showProgramReferenceWire(feedbackWireId, focusNodeId);
+        await selectAfterProjection(response, () => showProgramReferenceWire(feedbackWireId, focusNodeId), selection);
       }
       if (!removedCount && !referenceChangedCount) {
         toast(window.PortalI18n.text`${component.kind === "event_source" ? "Event" : "Effect"} 已保存。`, "success");
-        return;
+        return response;
       }
       const connectionName = component.kind === "event_source"
         ? "监听连线"
@@ -320,11 +336,12 @@
         ...(removedCount ? [`删除 ${removedCount} 条不再使用的连线`] : []),
       ];
       toast(window.PortalI18n.text`${component.kind === "event_source" ? "Event" : "Effect"} 已保存，并${details.join("、")}。`, "success", 5600);
+      return response;
     }
 
     async function deleteProgramComponent(componentId, options = {}) {
       if (!programComponentById(componentId)) return false;
-      const response = await applyProgramMutation(() => societyService.deleteProgramComponent( {
+      const response = await applyProgramMutation(mutation => societyService.deleteProgramComponent( { ...mutation,
         lineage_id: state.lineage.lineage_id,
         component_id: componentId,
       }), options.quiet ? "" : "原语及其连线已删除。");
@@ -386,7 +403,7 @@
         const profileKey = programInvokeProfileKey(effectiveTargetId);
         invokeProfiles[profileKey] = { arguments: invokeArgumentMapping };
       }
-      await applyProgramMutation(() => societyService.saveProgramWire( {
+      await applyProgramMutation(mutation => societyService.saveProgramWire( { ...mutation,
         lineage_id: state.lineage.lineage_id,
         expected_version: definitionRevisions.get(form),
         wire_id: wire.id,
@@ -410,7 +427,7 @@
     }
 
     async function deleteProgramWire(wireId) {
-      await applyProgramMutation(() => societyService.deleteProgramWire( {
+      await applyProgramMutation(mutation => societyService.deleteProgramWire( { ...mutation,
         lineage_id: state.lineage.lineage_id,
         wire_id: wireId,
       }), "连线已删除。");

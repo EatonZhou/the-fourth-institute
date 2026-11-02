@@ -197,6 +197,7 @@
     }
 
     function nodeWorkPresentation(node, status = effectiveNodeStatus(node)) {
+      if (status === "unknown") return { phase: "", label: window.PortalI18n.t("状态未知"), title: "" };
       const resident = state.residentRuntimeById.get(nodeResidentId(node));
       const work = window.PortalResidentProtocol.stateView(resident?.resident_state || resident);
       if (work.display_work_state === "queued" && work.work_phase === "waiting_quota") {

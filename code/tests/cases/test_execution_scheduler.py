@@ -458,6 +458,7 @@ def test_scheduler_cancels_queued_work_and_recovers_expired_claims_contracts(tmp
             ):
                 server.service_actions()
                 server.service_actions()
+                server._maintenance_thread.join(timeout=2)
             maintain.assert_called_once_with()
         finally:
             server.server_close()

@@ -3,13 +3,16 @@
 
   // Society page operations. Every change is one named HATG ISA instruction
   // (decision_898b8911a2ff); a mutation answers with the instruction result
-  // plus the freshly read Lineage so the page can redraw the current state.
+  // plus the freshly read Lineage. Canvas callers can request defer_refresh
+  // to receive the committed result and a separate refresh promise instead.
   if (window.PortalSocietyService) return;
 
   function createClient(options = {}) {
     const get = options.get || (path => window.PortalAPI.get(path, { cache: "no-store" }));
     const execute = options.execute || ((name, args, controls) => window.PortalInstructionClient.execute(name, args, controls));
     const revisions = new Map();
+    const reads = new Map();
+    const reconciliations = new Map();
     const revisionOf = lineageId => options.getRevision?.(lineageId) ?? revisions.get(lineageId);
 
     const requiredLineageId = value => {
@@ -27,11 +30,18 @@
     );
     const PLACEMENT = ["near_resident_id", "placement", "x", "y"];
 
-    async function loadLineage(lineageId) {
-      const result = await execute("GetLineage", { lineage_id: requiredLineageId(lineageId) });
-      const lineage = result?.lineage || {};
-      if (lineage.revision !== undefined) revisions.set(lineageId, lineage.revision);
-      return lineage;
+    function loadLineage(lineageId) {
+      const id = requiredLineageId(lineageId);
+      if (reads.has(id)) return reads.get(id);
+      const read = Promise.resolve().then(() => execute("GetLineage", { lineage_id: id })).then(result => {
+        const lineage = result?.lineage || {};
+        if (lineage.revision !== undefined) revisions.set(id, lineage.revision);
+        return lineage;
+      });
+      reads.set(id, read);
+      const release = () => { if (reads.get(id) === read) reads.delete(id); };
+      read.then(release, release);
+      return read;
     }
 
     // Capture the precondition before dispatch. A conflict only refreshes reads;
@@ -42,11 +52,30 @@
         "CreateWorkspaceHandoff", "UpdateWorkspaceHandoff", "DeleteWorkspaceHandoff", "PrepareWorkspaceHandoff",
       ]);
       if (scopedInstructions.has(name)) args = { ...args, lineage_id: requiredLineageId(lineageId) };
+      // Capture the version used to construct args before any await can
+      // install a newer projection in the displayed graph.
+      const expectedVersion = payload.expected_version ?? revisionOf(lineageId);
+      // An earlier committed write may still be reconciling. Do not submit a
+      // new definition before that read settles. Its captured precondition
+      // stays unchanged so stale drafts still conflict.
+      if (definition && reconciliations.has(lineageId)) {
+        const pending = reconciliations.get(lineageId);
+        try {
+          if (pending) await pending.catch(() => loadLineage(lineageId));
+          else await loadLineage(lineageId);
+          if (reconciliations.get(lineageId) === null) reconciliations.delete(lineageId);
+        } catch (refreshError) {
+          throw Object.assign(new Error(window.PortalI18n.t("图刷新失败，本次修改尚未提交。请刷新后重试。")), {
+            code: "lineage.refresh_required", refreshError,
+            body: { error: { commit_state: "not_committed" } },
+          });
+        }
+      }
       const instructionControls = controls(payload, prefix);
       // Creating a fresh identity appends under the server's Lineage lock.
       // It does not replace the graph the page previously read.
       if (definition && (name !== "CreateResident" || payload.expected_version !== undefined)) {
-        instructionControls.expectedVersion = payload.expected_version ?? revisionOf(lineageId);
+        instructionControls.expectedVersion = expectedVersion;
       }
       let result;
       try {
@@ -75,18 +104,36 @@
       const deletedResidents = result?.deleted_resident_ids || (name === "DeleteResident" ? [args.resident_id]
         : name === "ApplyLineageChanges" ? (args.operations || []).filter(op => op.op === "delete" && op.kind === "resident").map(op => op.id)
         : name.startsWith("Delete") ? (result?.resident_ids || []) : []);
-      let lineage;
-      try {
-        if (deletedResidents.length) await options.onResidentsDeleted?.(deletedResidents);
-        lineage = reload && lineageId ? await loadLineage(lineageId) : undefined;
-      } catch (error) {
-        // The write already committed. Keep its receipt distinct from this
-        // failed read so callers can close creation forms without replaying it.
-        error.committedMutation = { instruction: name, result: result || {} };
-        error.message = `${window.PortalI18n.t("修改已提交，但图刷新失败。请刷新查看，勿重复提交。")} ${error.message || error}`;
-        throw error;
+      const previousRead = reads.get(lineageId);
+      const refresh = Promise.resolve().then(async () => {
+        try {
+          if (deletedResidents.length) await options.onResidentsDeleted?.(deletedResidents);
+          // A read started before the commit cannot acknowledge this write.
+          if (previousRead) await previousRead.catch(() => {});
+          const lineage = reload && lineageId ? await loadLineage(lineageId) : undefined;
+          return lineage ? { ...(result || {}), lineage } : (result || {});
+        } catch (error) {
+          // The write already committed. Keep its receipt distinct from this
+          // failed read so callers can close creation forms without replaying it.
+          error.committedMutation = { instruction: name, result: result || {} };
+          error.message = `${window.PortalI18n.t("修改已提交，但图刷新失败。请刷新查看，勿重复提交。")} ${error.message || error}`;
+          throw error;
+        }
+      });
+      if (definition && reload && lineageId) {
+        reconciliations.set(lineageId, refresh);
+        // Failed reconciliation remains a barrier: the next action first
+        // retries the read, never the already committed instruction.
+        refresh.then(() => {
+          if (reconciliations.get(lineageId) === refresh) reconciliations.delete(lineageId);
+        }, () => {
+          if (reconciliations.get(lineageId) === refresh) {
+            reconciliations.set(lineageId, null);
+          }
+        });
       }
-      return lineage ? { ...(result || {}), lineage } : (result || {});
+      refresh.catch(() => {});
+      return payload.defer_refresh ? { ...(result || {}), refresh } : refresh;
     }
 
     return Object.freeze({

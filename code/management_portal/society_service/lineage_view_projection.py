@@ -36,9 +36,16 @@ def project_resident_runtime_state(view: dict[str, Any], actor: str) -> None:
         node for node in view.get("nodes") or []
         if isinstance(node, dict) and node_resident_id(node) and node.get("accessible") is not False
     ]
-    states = resident_protocol.read_resident_states([
-        node_resident_id(node) for node in nodes
-    ])
+    from management_portal.execution.transport import ExecutionServiceUnavailable, ExecutionResponseUnknown
+    try:
+        states = resident_protocol.read_resident_states([
+            node_resident_id(node) for node in nodes
+        ])
+    except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
+        view["resident_runtime_observation"] = {"status": "unavailable", "source": "execution"}
+        for node in nodes:
+            node["status"] = "unknown"
+        return
     for node in nodes:
         resident_id = node_resident_id(node)
         if resident_id not in states:

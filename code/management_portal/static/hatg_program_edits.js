@@ -89,7 +89,12 @@
       const componentId = String(panel?.dataset.componentId || "");
       if (!componentId || !programComponentById(componentId)) return "unchanged";
       const previousRevision = Number(state.lineage?.revision || 0);
-      await saveProgramComponentFromInspector(componentId, form);
+      const lineageId = state.lineage?.lineage_id;
+      const response = await saveProgramComponentFromInspector(componentId, form);
+      // Connecting a wire depends on the saved component's current ports.
+      // Only this dependent action waits for the projection, not the save button.
+      if (response?.refresh) await response.refresh;
+      if (state.lineage?.lineage_id !== lineageId) return "blocked";
       const saved = Number(state.lineage?.revision || 0) > previousRevision;
       if (!saved && form.isConnected) {
         form.dataset.programDraftDirty = "true";
@@ -185,7 +190,7 @@
       );
       try {
         await applyProgramMutation(
-          () => societyService.saveProgramWire(request()),
+          mutation => societyService.saveProgramWire({ ...request(), ...mutation }),
           `${validation.type} 连线已建立。`,
         );
         programFeature.setWireDraft(null);
@@ -206,8 +211,8 @@
         )
       ) return;
       const response = await applyProgramMutation(
-        () => societyService.createProgramComponent(
-          window.PortalLineageProgram.buildComponentCreateRequest(
+        mutation => societyService.createProgramComponent({
+          ...window.PortalLineageProgram.buildComponentCreateRequest(
             state.lineage,
             kind,
             position,
@@ -217,13 +222,13 @@
               title: window.PortalI18n.text`新 ${window.PortalLineageProgram.manifest.component_kinds[kind].title}`,
               config: {},
             }) },
-          ),
-        ),
+          ), ...mutation,
+        }),
         `${window.PortalLineageProgram?.manifest?.component_kinds?.[kind]?.title || "原语"} 已放入 HATG。`,
       );
       if (!response?.component_id) return;
       await new Promise(resolve => window.requestAnimationFrame(resolve));
-      if (state.lineage?.lineage_id === response.lineage.lineage_id) {
+      if (response.lineage && state.lineage?.lineage_id === response.lineage.lineage_id) {
         state.graphController?.ensureNodeVisible?.(response.component_id);
       }
     }
@@ -266,12 +271,13 @@
 
     let programMutationStatusTimer = 0;
 
-    function showProgramMutationStatus(message) {
+    function showProgramMutationStatus(message, persistent = false) {
       const status = $id("programMutationStatus");
       if (!status) return;
       window.clearTimeout(programMutationStatusTimer);
       status.textContent = message;
       status.hidden = false;
+      if (persistent) return;
       programMutationStatusTimer = window.setTimeout(() => {
         status.hidden = true;
         programMutationStatusTimer = 0;
@@ -287,13 +293,15 @@
           programFeature.beginMutation();
           renderProgramInspector();
           try {
-            const response = await request();
+            const response = await request({ defer_refresh: true });
+            const deferredRefresh = response?.refresh;
+            const applyResponse = async response => {
             if (!response?.lineage || response.lineage.lineage_id !== lineageId) {
               throw new Error("Portal 没有返回更新后的程序图");
             }
             if (!lineageEditQueue.isCurrent(intent)) return null;
-            if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
             commitLineage(response.lineage);
+            if (deferredRefresh) showProgramMutationStatus(window.PortalI18n.t("状态已保存"));
             const resizedObjectId = response.component_id || response.component?.id
               || response.function_block_id || response.function_block?.id;
             if (resizedObjectId) {
@@ -304,7 +312,7 @@
                 placementSave = separateGraphObject(resizedObjectId).catch(() => null);
               }
             }
-            const createdNodeId = response.facade_resident_id || response.function_block_id;
+            const createdNodeId = response.facade_resident_id || response.function_block_id || response.component_id;
             if (createdNodeId) {
               await new Promise(resolve => window.requestAnimationFrame(resolve));
               if (lineageEditQueue.isCurrent(intent)) {
@@ -316,6 +324,22 @@
             }
             if (message) showProgramMutationStatus(message);
             return response;
+            };
+            if (response?.refresh) {
+              if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
+              showProgramMutationStatus(window.PortalI18n.t("修改已提交，正在更新图…"), true);
+              void response.refresh.then(updated => {
+                if (!lineageEditQueue.isCurrent(intent)) return;
+                return applyResponse(updated);
+              }).catch(error => {
+                if (!lineageEditQueue.isCurrent(intent)) return;
+                showProgramMutationStatus(window.PortalI18n.t("修改已提交，但图刷新失败。请刷新查看，勿重复提交。"), true);
+                toast(error.message || String(error), "warning", 9000);
+              });
+              return response;
+            }
+            if (draftForm?.isConnected) draftForm.dataset.programDraftDirty = "false";
+            return await applyResponse(response);
           } finally {
             if (lineageEditQueue.isCurrent(intent)) {
               programFeature.endMutation();
@@ -347,6 +371,7 @@
       return societyService.mutate(lineageId, instruction, args, {
         idempotency_key: options.idempotencyKey,
         expected_version: options.expectedVersion,
+        defer_refresh: options.defer_refresh,
       }, "hatg", { definition: options.definition !== false, reload: options.reload !== false });
     }
 

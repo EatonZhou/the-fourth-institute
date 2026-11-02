@@ -202,18 +202,17 @@ def test_directory_domain_views_preserve_supplied_facts_without_resource_rpc(mon
     assert hydrated == records and hydrated[0] is not records[0]
 
 
-def test_collaboration_sync_notifies_the_exact_descriptor_path_contracts(monkeypatch, tmp_path, subtests, isolated_portal_case):
-    """协作描述符同步按该描述符的变更键通知索引，内容未变时不重写"""
+def test_collaboration_sync_projects_the_committed_descriptor_contracts(monkeypatch, tmp_path, subtests, isolated_portal_case):
+    """协作描述提交后直接投影这一对象，内容未变时不重写领域记录。"""
     with subtests.test(contract='test_collaboration_sync_notifies_the_exact_descriptor_path'), isolated_portal_case():
         with monkeypatch.context() as monkeypatch:
             item = canonical_projection("resident_0123456789ab", title="Resident")
             descriptor = item["descriptor"]
             collaboration = CollaborationDescriptorStore()
-            service = ResourceService(collaboration_store=collaboration)
-            notify = mock.Mock()
-            monkeypatch.setattr(service, '_notify_mutation', notify)
+            index = mock.Mock()
+            service = ResourceService(collaboration_store=collaboration, index_provider=index)
             service.sync_collaboration_resource(descriptor)
-            notify.assert_called_once_with(path=collaboration.change_key(descriptor['resource_id']), resource_id=descriptor['resource_id'], resource_type='resident', kind='updated')
+            index.project_updated.assert_called_once_with('resident', {'resource_id': descriptor['resource_id']})
     with subtests.test(contract='test_collaboration_store_skips_semantically_unchanged_write'), isolated_portal_case():
         with monkeypatch.context() as monkeypatch:
             store = CollaborationDescriptorStore()
@@ -226,19 +225,19 @@ def test_collaboration_sync_notifies_the_exact_descriptor_path_contracts(monkeyp
             assert second == first
 
 
-def test_unchanged_collaboration_sync_does_not_notify_contracts(monkeypatch, subtests, isolated_portal_case):
-    """协作描述符内容未变时再次同步不发变更通知"""
+def test_unchanged_collaboration_sync_repairs_projection_contracts(monkeypatch, subtests, isolated_portal_case):
+    """重试同一协作描述会补齐此前提交后可能失败的索引投影。"""
     with subtests.test(contract='test_unchanged_collaboration_sync_does_not_notify'), isolated_portal_case():
         with monkeypatch.context() as monkeypatch:
             item = canonical_projection("resident_0123456789ab", title="Resident")
             descriptor = item["descriptor"]
             collaboration = CollaborationDescriptorStore()
-            service = ResourceService(collaboration_store=collaboration)
+            index = mock.Mock()
+            service = ResourceService(collaboration_store=collaboration, index_provider=index)
             service.sync_collaboration_resource(**item)
-            notify = mock.Mock()
-            monkeypatch.setattr(service, '_notify_mutation', notify)
+            index.reset_mock()
             service.sync_collaboration_resource(descriptor)
-            notify.assert_not_called()
+            index.project_updated.assert_called_once_with('resident', {'resource_id': descriptor['resource_id']})
 
 def test_collaboration_bundle_validates_before_writing_and_notifies_after_commit(
     tmp_path: Path,
@@ -293,12 +292,14 @@ def test_collaboration_bundle_validates_before_writing_and_notifies_after_commit
     resources[1] = canonical_projection(lineage_id, title="Lineage")
     notifications: list[str] = []
 
-    def notify(**kwargs) -> None:
+    def notify(resource_type, record) -> None:
         assert registry_document("resident", resident_id) is not None
         assert registry_document("lineage", lineage_id) is not None
-        notifications.append(str(kwargs["resource_id"]))
+        notifications.append(str(record["resource_id"]))
 
-    monkeypatch.setattr(service, "_notify_mutation", notify)
+    index = mock.Mock()
+    index.project_updated.side_effect = notify
+    monkeypatch.setattr(service, "_index_provider", index)
 
     result = service.sync_collaboration_resources(resources)
 
@@ -850,22 +851,11 @@ def test_resource_mutations_dispatch_by_type_and_notify_the_derived_index(tmp_pa
     ]
     index.project_registered.assert_called_once_with("repo", created)
     index.project_unregistered.assert_called_once_with("repo", repo_id)
-    assert index.change_targets.call_args_list == [
-        mock.call(
-            path="",
-            resource_id=repo_id,
-            resource_type="repo",
-        ),
-        mock.call(
-            path="",
-            resource_id=repo_id,
-            resource_type="repo",
-        ),
-    ]
-    assert index.queue_change.call_args_list == [
-        mock.call(("resource_registry",), path=""),
-        mock.call(("resource_registry",), path=""),
-    ]
+    index.project_updated.assert_called_once()
+    assert index.project_updated.call_args.args[0] == 'repo'
+    assert index.project_updated.call_args.args[1]['resource_id'] == repo_id
+    index.change_targets.assert_not_called()
+    index.queue_change.assert_not_called()
     with pytest.raises(
         ValueError,
         match="no mutation provider registered for article",

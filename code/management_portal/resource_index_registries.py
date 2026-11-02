@@ -168,6 +168,16 @@ class CollaborationRegistryAdapter(_PathsAdapter):
     def owns_path(self, path: Path) -> bool:
         return False
 
+    def project_record(self, resource_type: str, item: dict[str, Any]) -> dict[str, Any]:
+        # Descriptors are read from the canonical Workspace/Collaboration
+        # store so an older RPC result cannot replace newer domain metadata.
+        store = CollaborationDescriptorStore()
+        current = store.get(item["resource_id"])
+        record = self._index_record(current, store)
+        if record["resource_type"] != resource_type:
+            raise ValueError("collaboration projection type mismatch")
+        return record
+
     def _index_record(
         self,
         item: dict[str, Any],

@@ -299,6 +299,7 @@
     }
 
     function effectiveNodeStatus(node) {
+      if (node?.status === "unknown") return "unknown";
       return state.runtimeStatus.get(node?.id) || node?.status || "idle";
     }
 

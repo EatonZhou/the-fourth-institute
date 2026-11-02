@@ -167,7 +167,7 @@ class AgentProvider:
             hook = self._account_hook("route_takes_images")
             return hook(route) if hook else True
         try:
-            return bool(self.catalog(route)["capabilities"]["media"])
+            return bool(self.capability_catalog(route)["capabilities"]["media"])
         except (KeyError, ValueError):  # an unknown route, or one that declares no media, offers no image input
             return False
         except Exception:  # noqa: BLE001 - an unreadable catalog offers no image input
@@ -210,6 +210,13 @@ class AgentProvider:
     def build_backend(self):
         module, _, name = self.adapter.rpartition(".")
         return getattr(import_module(module), name)()
+
+    def capability_catalog(self, route: str = "") -> dict[str, Any]:
+        """Passive capability facts; native discovery belongs to the catalog owner."""
+        if self.catalog_module:
+            module = import_module(self.catalog_module)
+            return getattr(module, "catalog_snapshot", module.catalog)(route or self.default_route)
+        return self.catalog(route)
 
     def catalog(self, route: str = "") -> dict[str, Any]:
         if not self.catalog_module:

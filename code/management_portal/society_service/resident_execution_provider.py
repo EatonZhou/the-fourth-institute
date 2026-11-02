@@ -146,7 +146,7 @@ def provider_for(record: Mapping[str, Any]) -> ExecutionProvider:
             route = (resident_backend.execution_account(record)["backend_route_id"]
                      if record.get("resident_id") else
                      record.get("backend_route_id") or record.get("provider_profile") or definition.default_route)
-            media = bool(definition.catalog(route).get("capabilities", {}).get("media", definition.media))
+            media = bool(definition.capability_catalog(route).get("capabilities", {}).get("media", False))
         except (ValueError, RuntimeError):
             media = False
         return SessionExecutionProvider(
