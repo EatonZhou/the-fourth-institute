@@ -83,6 +83,32 @@ def resident_attempt(world, *, resume=False, cwd=None):
     return lambda: engine.bind_or_resume_resident_execution(world.service, request, record, job)
 
 
+@pytest.mark.parametrize('entry', ['submit', 'resume', 'script'])
+def test_child_creation_does_not_block_execution_with_shared_parent(admission_world, entry):
+    world = admission_world
+    project = Path(world.outside['workspace_bindings'][0]['path'])
+    target = project / 'another-resident-being-created'
+    target.mkdir()
+    queue = admission.get_directory_cleanup_store()
+    with queue.database.transaction() as connection:
+        queue.reserve(target, operation_id='another-creation', purpose='resource_creation', connection=connection)
+    # The ordinary inherited project binding is an ancestor of the new object.
+    # Neither an independent Resident turn nor a script in the parent enters it.
+    if entry == 'script':
+        scripts.start({'lineage_id': world.outside['lineage_id'],
+            'cwd': str(project), 'path': str(world.script)}, 'bob')
+        assert len(world.launches) == 1
+    else:
+        resident_attempt(world, resume=entry == 'resume', cwd=world.outside['default_cwd'])()
+        assert world.calls == [entry]
+    # Registration and execution inside the unpublished object remain blocked.
+    with queue.database.transaction() as connection:
+        with pytest.raises(FileExistsError, match='reserved'):
+            queue.assert_available(project, connection=connection)
+    with pytest.raises(FileExistsError, match='reserved'):
+        resident_attempt(world, cwd=target / 'workspace')()
+
+
 @pytest.mark.parametrize('entry', ['submit', 'resume', 'script-cwd', 'script-path'])
 @pytest.mark.parametrize('phase', ['prepared', 'copy', 'recovery'])
 def test_real_entries_refuse_persistent_reservations(admission_world, monkeypatch, entry, phase):

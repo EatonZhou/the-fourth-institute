@@ -10,7 +10,7 @@ from contextlib import nullcontext
 from functools import lru_cache
 from uuid import uuid4
 
-from .directory_paths import cleanup_location, cleanup_path, lexical_path, overlaps, remove_path
+from .directory_paths import cleanup_location, cleanup_path, contains, lexical_path, overlaps, remove_path
 from .portal_database import _database_schema, portal_database, portal_database_url
 from .database_time import decode_times
 
@@ -83,14 +83,30 @@ class DirectoryCleanupStore:
         return [row['cleanup_id'] for row in rows if overlaps(target, cleanup_path(row['location']))]
 
     def assert_available(self, path, *, connection, operation_id=None):
+        self._assert_available(path, connection=connection, operation_id=operation_id)
+
+    def assert_execution_available(self, path, *, connection):
+        """Creation cannot block work outside the new directory's boundary.
+
+        Move reservations still protect all overlapping users while copying.
+        An existing parent binding does not enter an unpublished child merely
+        because that child is being created below it.
+        """
+        self._assert_available(path, connection=connection, for_execution=True)
+
+    def _assert_available(self, path, *, connection, operation_id=None, for_execution=False):
         self.lock(connection)
         pending = self.pending_at(path, connection=connection)
         if pending:
             raise DirectoryPendingCleanup(pending[0])
         target = lexical_path(path)
-        rows = connection.execute(f'SELECT operation_id,location FROM {self.reservations}').fetchall()
+        rows = connection.execute(f'SELECT operation_id,location,purpose FROM {self.reservations}').fetchall()
         for row in rows:
-            if row['operation_id'] != operation_id and overlaps(target, cleanup_path(row['location'])):
+            reserved = cleanup_path(row['location'])
+            conflict = (contains(reserved, target)
+                        if for_execution and row['purpose'] == 'resource_creation'
+                        else overlaps(target, reserved))
+            if row['operation_id'] != operation_id and conflict:
                 raise FileExistsError('Directory is reserved by operation: ' + row['operation_id'])
 
     def reserve(self, path, *, operation_id, purpose, connection):

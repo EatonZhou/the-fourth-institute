@@ -29,5 +29,5 @@ def admit(paths):
         with queue.database.transaction() as connection:
             for path in paths:
                 if path:
-                    queue.assert_available(path, connection=connection)
+                    queue.assert_execution_available(path, connection=connection)
         yield
