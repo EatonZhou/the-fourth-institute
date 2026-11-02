@@ -75,6 +75,25 @@ def test_other_lineage_binding_cwd_and_script_are_stopped(users):
     assert resident_catalog.get_catalog().get(cwd['resident_id'])['intake_open'] is False
 
 
+def test_shared_parent_does_not_make_sibling_resident_or_script_a_move_user(users, monkeypatch):
+    outside = resident_domain.register_resident(_new_session_payload('Independent sibling'), 'bob')
+    # The fixture places Lineages outside its synthetic Project directory.
+    # Supply the ordinary shared ancestor binding in the catalog projection.
+    project = users.source.parent.parent.parent
+    catalog = resident_catalog.get_catalog()
+    records = catalog.all()
+    next(r for r in records if r['resident_id'] == outside['resident_id'])['workspace_bindings'].append(
+        {'path': str(project)})
+    monkeypatch.setattr(catalog, 'all', lambda: records)
+    script_store.admit({'script_run_id': 'parent-script', 'status': 'running',
+        'lineage_id': outside['lineage_id'], 'caller_id': 'bob', 'cwd': str(project),
+        'path': str(project / 'independent.py'), 'started_at': scripts.now(), 'unit': 'isolated'})
+    records, runs = lifecycle.directory_execution_users(users.source)
+    assert outside['resident_id'] not in {r['resident_id'] for r in records}
+    assert 'parent-script' not in {r['script_run_id'] for r in runs}
+    assert {r['resident_id'] for r in records} == {r['resident_id'] for r in users.records}
+
+
 def cross_device(monkeypatch, source):
     stat = Path.stat
     def changed(path, *args, **kwargs):

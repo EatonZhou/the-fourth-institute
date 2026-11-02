@@ -86,11 +86,11 @@ class DirectoryCleanupStore:
         self._assert_available(path, connection=connection, operation_id=operation_id)
 
     def assert_execution_available(self, path, *, connection):
-        """Creation cannot block work outside the new directory's boundary.
+        """Reserve execution locations inside the affected directory.
 
-        Move reservations still protect all overlapping users while copying.
-        An existing parent binding does not enter an unpublished child merely
-        because that child is being created below it.
+        A parent binding grants access; it does not make every child directory
+        the current execution location. Registration mutations still check
+        overlap in both directions, including ancestor replacement.
         """
         self._assert_available(path, connection=connection, for_execution=True)
 
@@ -104,7 +104,7 @@ class DirectoryCleanupStore:
         for row in rows:
             reserved = cleanup_path(row['location'])
             conflict = (contains(reserved, target)
-                        if for_execution and row['purpose'] == 'resource_creation'
+                        if for_execution
                         else overlaps(target, reserved))
             if row['operation_id'] != operation_id and conflict:
                 raise FileExistsError('Directory is reserved by operation: ' + row['operation_id'])

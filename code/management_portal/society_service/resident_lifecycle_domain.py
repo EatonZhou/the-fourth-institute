@@ -23,7 +23,7 @@ def directory_execution_users(path, *other_paths, lineage_ids=()):
     This is not a host-process scanner: unknown external processes are outside
     Portal's execution contract and must be stopped by their host owner.
     """
-    from management_common.directory_paths import overlaps
+    from management_common.directory_paths import contains
     from .script_runs import store as script_store
     paths = (path, *other_paths)
     catalog = resident_catalog.get_catalog()
@@ -32,7 +32,9 @@ def directory_execution_users(path, *other_paths, lineage_ids=()):
     records = []
     for record in residents:
         work = work_by_id.get(record['resident_id'], {})
-        if any(overlaps(root, candidate) for root in paths
+        # Parent bindings (notably the inherited Project root) are available
+        # scope, not evidence of working inside every descendant directory.
+        if any(contains(root, candidate) for root in paths
                for candidate in resident_execution_paths(record, work)):
             records.append(record)
     runs, after = [], ''
@@ -40,7 +42,7 @@ def directory_execution_users(path, *other_paths, lineage_ids=()):
         page = script_store.pending(after, limit=200)
         for run in page:
             if run['status'] == 'running' and (run.get('lineage_id') in lineage_ids or any(
-                overlaps(root, run[key]) for root in paths for key in ('cwd', 'path') if run.get(key)
+                contains(root, run[key]) for root in paths for key in ('cwd', 'path') if run.get(key)
             )):
                 runs.append(run)
         if len(page) < 200:
