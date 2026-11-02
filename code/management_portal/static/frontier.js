@@ -65,7 +65,7 @@ async function load() {
     states.clear();sources.clear(); rows=[];render();
     if(lineage) {
       const [l,s]=await Promise.all([call('GetLineage',{lineage_id:lineage}),call('GetSharedState',{lineage_id:lineage,key:KEY})]);
-      doc=s.value; members=(l.lineage.nodes||[]).filter(n=>n.resident_id);
+      doc=s.value; members=(l.lineage.nodes||[]).filter(n=>/^resident_[a-f0-9]{12}$/.test(n.id)).map(n=>({...n,resident_id:n.id}));
       rows=readItems(doc).map(r=>({...r,_lineage:lineage}));
       $('#scope-title').textContent=l.lineage.title;
       addScope(lineage,l.lineage.title);$('#scope-id').value=lineage;

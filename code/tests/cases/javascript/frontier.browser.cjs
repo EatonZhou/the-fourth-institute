@@ -16,7 +16,7 @@ const server=http.createServer(async(req,res)=>{
   let name=new URL(req.url,'http://localhost').pathname;
   if(name==='/api/instructions/execute'){
     let text='';for await(const chunk of req)text+=chunk;const body=JSON.parse(text),a=body.arguments;let result={};
-    if(body.instruction==='GetLineage')result={lineage:{title:'研究协作 · 实际内容预览',nodes:[{resident_id:owner,title:'研究伙伴'}],project_id:'example'}};
+    if(body.instruction==='GetLineage')result={lineage:{title:'研究协作 · 实际内容预览',nodes:[{id:owner,title:'研究伙伴'}],project_id:'example'}};
     if(body.instruction==='GetSharedState')result={value:state};
     if(body.instruction==='ResolveResource'){
       if(denied){res.writeHead(403,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:{message:'来源不可读'}}));}
