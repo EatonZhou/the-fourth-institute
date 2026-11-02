@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 65
-  created_at: '2026-09-28T10:45:00Z'
+  number: 66
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-27T12:48:20Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-02T17:47:44Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -52,7 +52,7 @@ links:
 - 修改方案规则会按现有对象重新生成该方案的实例，此前对实例的修改不保留；只改标题、说明或指令分类时不重新生成。启用方案时把它保存的实例补齐到现有对象，保留实例中已有的每一行。
 - 表项和节点指令带可选的 `scheme_id`，省略时作用于启用的方案。
 - 开关由 UpdateExecutionSettings 的 `permission_system_enabled` 控制（decision_4527448ad07f），不另设指令。开关关闭时，全部权限指令照常工作，任何已登录主体都可以调用，不检查调用者在实例上的权限（关闭即没有权限系统，decision_b820faf42218 §3.1）；“启用的方案”指开启时将使用的方案，ActivatePermissionScheme 只记录这个选择，开启时补齐。读指令读的是这份实例，签发的临时凭证写入这份实例，开启后生效。方案还没有保存的实例时，CreatePermissionEntry 返回 `instruction.conflict`，因为之后生成实例会丢掉这行。
-- 不检查方案是否会让管理员失去修改权限。退路是 Portal 管理员保底（TFI portal 2026-10-19，decision_b820faf42218 §3.1）：不论启用哪套方案、开关开或关，Portal 管理员永远可以读取方案列表（ListPermissionSchemes）、启用方案（ActivatePermissionScheme），也永远可以开关权限系统（UpdateExecutionSettings 只改 `permission_system_enabled`），所以不关开关也能切换方案。这三件事管理员做时不问方案，非管理员按方案判定。
+- 不检查方案是否会让管理员失去修改权限。退路是 Portal 管理员保底（weihao 2026-10-19，decision_b820faf42218 §3.1）：不论启用哪套方案、开关开或关，Portal 管理员永远可以读取方案列表（ListPermissionSchemes）、启用方案（ActivatePermissionScheme），也永远可以开关权限系统（UpdateExecutionSettings 只改 `permission_system_enabled`），所以不关开关也能切换方案。这三件事管理员做时不问方案，非管理员按方案判定。
 - User 分类（Portal 管理员、一般用户、实习用户）是账号的事实，用用户指令 UpdateUser 的 `changes.category` 修改（decision_6eac174d85bf），不在这里授予。
 
 ## 指令
@@ -70,18 +70,19 @@ links:
 | `ActivatePermissionScheme` | 是 | 补齐方案保存的实例后切换（实例缺失或由其他规则生成时重新生成；内置方案的实例由发布前的规则生成时，按新规则重新生成并写回实例中的编辑，与启动时跟随发布相同，记为 `last_merge`），报告新增、移动、删除的节点与表项数，写回时另报 `restored_entries`、写不回的 `unrestored` 和保持删除的 `deleted_again`；内置方案和自定义方案都可以启用；开关关闭时只记录开启时使用这个方案；`dry_run` 只报告；结果带这个方案的 `unmapped` 清单，以及启用中方案现在的实例对比这个方案补齐后实例的授权差 `auth_diff`（`diff_limit` 限制列出的组数） | 对“共享”有 @admin |
 | `GetPermissionNode` | 否 | 方案实例中 P、A、R 树上的一个节点或元素：位置、祖先链、直接子节点（分页） | 免检 |
 | `SearchPermissionNodes` | 否 | 在一棵树中按 ID 或标题查找节点：声明的分类节点与指令元素在前，实例中的元素在后 | 免检 |
-| `ListPermissionEntries` | 否 | 按 p、a、r 筛选并分页列出表项（`cursor` + `limit`，结果带 `total`，还有下一页时带 `next_cursor`）；每个节点可按 `exact`（节点本身）、`ancestors`（节点及其祖先，即判定会读到的表项）或 `subtree`（节点及其下全部节点）匹配；还可按效果、停用、临时凭证筛选。`p` 与 `r` 至少给一个，没有“省略即列出自己”；列出整个实例用 `r=@portal`、`r_scope=subtree`（TFI portal 2026-10-18）。每条表项带 `allows`（UpdatePermissionEntry、DeletePermissionEntry），按它自己的 r 报告调用者能否修改、删除它；给出 r 时结果另带 `allows`（CreatePermissionEntry、DeletePermissionEntry），报告能否在这个 r 上写入、删除表项 | 给出 p 时对 p 所指的主体或节点有 @admin，给出 r 时对 r 有 @viewer |
+| `ListPermissionEntries` | 否 | 按 p、a、r 筛选并分页列出表项（`cursor` + `limit`，结果带 `total`，还有下一页时带 `next_cursor`）；每个节点可按 `exact`（节点本身）、`ancestors`（节点及其祖先，即判定会读到的表项）或 `subtree`（节点及其下全部节点）匹配；还可按效果、停用、临时凭证筛选。`p` 与 `r` 至少给一个，没有“省略即列出自己”；列出整个实例用 `r=@portal`、`r_scope=subtree`（weihao 2026-10-18）。每条表项带 `allows`（UpdatePermissionEntry、DeletePermissionEntry），按它自己的 r 报告调用者能否修改、删除它；给出 r 时结果另带 `allows`（CreatePermissionEntry、DeletePermissionEntry），报告能否在这个 r 上写入、删除表项 | 给出 p 时对 p 所指的主体或节点有 @admin，给出 r 时对 r 有 @viewer |
 | `CreatePermissionEntry` | 是 | 在实例中写入一条表项 (p, a, r, permit/deny)，可直接写为停用 | 对 r 有 @admin |
 | `UpdatePermissionEntry` | 是 | 修改一条表项的效果、p、a、r 或停用标记；调用信封给出 `expected_version` 时按表项版本比较，版本已变化返回 `instruction.version_conflict` | 入口按已保存的表项判定（声明 `via="permission_entry.r"`）：调用者在表项已保存的 r 上要有 @admin，改 r 时在新的 r 上也要有；表项不存在返回 `instruction.not_found` |
 | `DeletePermissionEntry` | 是 | 删除一条或多条表项（同一事务）；临时凭证用 RevokeTemporaryCredential | 入口按每条已保存的表项判定（声明 `via="permission_entry.r"`）：调用者在每条表项已保存的 r 上要有 @admin，任何一条不通过或不存在时整批不删除；`entry_id` 与 `entry_ids` 恰好给一个 |
 | `GetEffectivePermissions` | 否 | 主体在各 A 分类节点上被授权的 R 节点与洞（`coverage`）、全部表项、有效的临时凭证，User 另有 `user_category`；Package 的奖章读取这里；`principal_id` 必填 | 对该主体有 @admin |
 | `CheckPermission` | 否 | 判定一个主体能否执行一条指令，或在一个资源上是否持有某个 A 节点；返回每个请求的结果、原因（permitted、no_permit、denied）与命中的表项；Portal 管理员保底放行的调用返回 `portal_admin: true`、`requests` 为空；`principal_id` 必填 | 对该主体有 @admin |
+| `AcceptUserAuthorization` | 是 | Resident 理解当前执行中真实 User 的自然语言授权后，提交源 message_id、原文 evidence 与准确 credentials；Society 核验来源与执行关系，权限 owner 检查 User 持有并原子签发、审计。凭证只给调用 Resident，默认随当前任务，明确时长可给 expires_in_seconds；重试不重签，附件不阻止授权 | 免检；处理器证明当前 User 来源及执行归属，引擎核验签发者持有 |
 | `IssueTemporaryCredential` | 是 | 把自己在一个资源上持有的一个 A 节点临时交给另一个主体：只核对签发者此刻持有，随即写入一行 (接收者, A 节点, 资源, permit)，带签发者和过期时间。给出 `message_id`（接收 Resident 正在处理的、发给它的消息）时凭证随任务：这条消息的输入进入完成、失败或取消时在同一事务中删除；否则按 `expires_in_seconds` 到期（默认一天）。两种都最迟在签发 7 天后失效。DeliverMessage 的 `temporary_credentials` 在投递时以同样方式签发（decision_2fe6fd5367fb） | 免检；由引擎核对签发者持有 |
 | `RenewTemporaryCredential` | 是 | 签发者在按时长签发的凭证到期前续期：新的过期时间为此刻加 `expires_in_seconds`，不晚于签发后 7 天；随任务签发的凭证不能续期 | 免检；只有签发者 |
 | `RevokeTemporaryCredential` | 是 | 撤销一张临时凭证：签发者撤回，接收者做完事后交还 | 免检；处理器只允许签发者或接收者（固定角色，开关关闭时同样生效） |
 | `ListTemporaryCredentials` | 否 | 一个主体签发的和收到的有效临时凭证；`principal_id` 必填 | 对该主体有 @admin |
 
-表中“免检”是默认方案的显式分类（放在“免检”节点下，固定槽对 Portal 节点判定）；默认方案给全部 A 元素分类，没有分类的 A 元素只有 Portal 管理员能调用（见 decision_600ae27b0538）。写表项的要求按表项所在的方案区分：启用方案实例中的行按上表；其他方案实例中的行，调用者要能通过 UpdatePermissionScheme。查看主体的指令（GetEffectivePermissions、CheckPermission、ListTemporaryCredentials）都要求写明 `principal_id`，查看自己也写自己的 ID，不再有“省略即自己”（TFI portal 2026-10-18）；它们把 `principal_id` 当作 R 树上的这个 User 或 Resident 判定，处理器不再另问其他指令：默认方案中账号本人对自己的账号有 @admin，Project 中的 Resident 对本 Project 有 @admin，个人 AMA 中的 Resident 与所有者相同，所以查看自己总能通过。默认方案把每个 User 按分类放在 P 树的 Portal 管理员、一般用户或实习用户节点下，并把“共享”上的全部动作交给 Portal 管理员节点，所以方案管理等指令默认只有 Portal 管理员满足。
+表中“免检”是默认方案的显式分类（放在“免检”节点下，固定槽对 Portal 节点判定）；默认方案给全部 A 元素分类，没有分类的 A 元素只有 Portal 管理员能调用（见 decision_600ae27b0538）。写表项的要求按表项所在的方案区分：启用方案实例中的行按上表；其他方案实例中的行，调用者要能通过 UpdatePermissionScheme。查看主体的指令（GetEffectivePermissions、CheckPermission、ListTemporaryCredentials）都要求写明 `principal_id`，查看自己也写自己的 ID，不再有“省略即自己”（weihao 2026-10-18）；它们把 `principal_id` 当作 R 树上的这个 User 或 Resident 判定，处理器不再另问其他指令：默认方案中账号本人对自己的账号有 @admin，Project 中的 Resident 对本 Project 有 @admin，个人 AMA 中的 Resident 与所有者相同，所以查看自己总能通过。默认方案把每个 User 按分类放在 P 树的 Portal 管理员、一般用户或实习用户节点下，并把“共享”上的全部动作交给 Portal 管理员节点，所以方案管理等指令默认只有 Portal 管理员满足。
 
 表中只写默认方案的要求。ListPermissionSchemes 和 ActivatePermissionScheme 另有方案之外的 Portal 管理员保底（decision_b820faf42218 §3.1）：Portal 管理员调用时永远通过，不问启用的是哪套方案，与 UpdateExecutionSettings 只改 `permission_system_enabled` 时相同（见上文）。
 
@@ -143,6 +144,7 @@ UpdatePermissionScheme 和 ActivatePermissionScheme 的结果带 `auth_diff`，�
 | `DeletePermissionEntry` | `scheme_id`、`entry_id`、`entry_ids` |
 | `GetEffectivePermissions` | `principal_id` |
 | `CheckPermission` | `principal_id`、`instruction`、`arguments`、`a`、`resource_id` |
+| `AcceptUserAuthorization` | `message_id`、`evidence`、`credentials`、`expires_in_seconds` |
 | `IssueTemporaryCredential` | `principal_id`、`a`、`resource_id`、`message_id`、`expires_in_seconds` |
 | `RenewTemporaryCredential` | `credential_id`、`expires_in_seconds` |
 | `RevokeTemporaryCredential` | `credential_id` |

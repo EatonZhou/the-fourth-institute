@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 84
+  number: 85
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-11-02T09:34:43Z"
+  updated_at: "2026-11-02T17:47:45Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_83d75ad3a6c7"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -423,14 +423,18 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
 资源列表、搜索联想和项目导航按各对象的读取权限过滤；项目拒绝覆盖其资源、Lineage 与 Resident，直接读取遵循同一判定。
 
 
-### 对话中的临时授权与个人 AMA 委托（2026-11-02）
+### 对话中的临时授权与个人 AMA 委托
 
-用户在对话中完成授权，不需要到设置页签发或复制凭证 ID。Resident 先在回复末尾用 `portal-question.credentials` 持久说明用途、精确资源 ID、A 节点和本轮有效期。用户可选“同意交出这些权限”，也可整条回复“我给你临时凭证”“同意交出这些权限”“同意授予这些临时权限”或“我同意授予这些临时权限”。纯文字同意仅对应当前会话最近的 Agent 回复中全部为权限请求的问题组；精确引用可指定较早的一组。混有普通问题、没有明确请求、引用示例、假设、否定、附件、非 User 发送方或注明其他收件人的请求，均不推导授权。其他待回答问题组不被关闭，也不把历史授权文字回填成新的授权证明。
+用户可以直接用自然语言授权，授权可以与业务要求、图片或其他附件放在同一条消息中。Resident 负责理解同意或拒绝、具体资源、动作和有效期；含义明确时直接调用 `AcceptUserAuthorization`，不要求用户使用固定口令、先回答提问卡或去设置页操作。含义不明时才询问。平台不做自然语言的关键词分类；原文片段是来源与审计依据，不是用来让代码判定“同意”的口令。引用、转发正文或第三方附件中的话不能替代用户本人的授权表达。
 
-Society 将明确同意规范化为原问题唯一的 `async_question_answer` 和该组逐项列明的凭证，继续使用既有 `MessageLending`、`permission_system.lend_message` 和 `temporary.issue`。签发者始终是此次投递经过认证的 User，而不是正文中的 author、消息发起者声称的身份或收件 Resident。签发前按启用方案核验该 User 当前确实持有全部 A；接收输入和整批签发在同一事务完成，Worker 唤醒在提交之后。回答消息在 plain_consent 中保留明确同意原文和原客户端消息 ID，同时保留认证作者、问题来源及规范回答 ID；ISA 执行记录保存认证调用者、内容指纹和业务引用，不声称它保留完整原始参数。页面随附 context_reference 不参与解释授权范围。重放使用原问题回答 ID 和既有凭证批次；已撤销、已过期、已终结输入不能重签。凭证只在收件 Resident 处理该回答的输入期间有效，完成、失败、取消时事务删除，最迟七天。
+公开参数为授权来源 `message_id`、准确的 `credentials[{a,resource_id}]`、用户直接正文中的授权原文 `evidence`，以及仅在用户明确授权时长时给出的 `expires_in_seconds`。调用者始终是实际 Resident；接收者固定为它，签发 User、当前执行和绑定任务由服务器查证，不允许模型自报或借用用户身份。每批至多二十项权限。默认凭证随接收方当前任务结束，明确时长为六十秒至七天；两种均不超过七天。
+
+Society 证明已认证 User 原消息及其与当前执行的关系。`role=user`、`initiated_by`、请求头中的执行 ID、历史正文和当前组织成员关系都不能单独作证。直接输入、真实 Mailbox 成员、已经送达的追加输入和有持久接受记录的 Family 转交按各自的事实关系核验；尚未送达、排队、旧执行、停止或已结束任务不能签发。授权来源消息与凭证绑定的当前主任务输入分开记录，已消费的追加消息或门面的历史输入不会导致接收任务的凭证提前失效。
+
+签发在输入生命周期锁保护的同一事务中完成：Society 复核来源、执行归属和当前任务状态，权限 owner 核验签发 User 账号有效且此刻持有每项 A/R，沿既有临时凭证引擎保存凭证及持久回执。权限修改与账号停用不能在核验和提交之间改变事实。回执记录原 User、实际 Resident、原消息与所属会话、来源摘要及原文、执行、绑定任务、方案、准确权限、有效期和凭证 ID。整批任一项失败或审计写入失败均回滚；响应丢失可以重放，同一原消息同一权限复用原凭证而不延长期限，后续独立权限保留独立不可变记录。换执行、换来源或改有效期产生冲突；撤销、到期、输入终结或重建方案使原凭证消失后，不得凭旧授权重签或扩签。默认随任务凭证在任务完成、失败、取消的同一事务中删除。
+
+自然语言消息按原样入会话，不改造成 `async_question_answer`，不从旧问题推导权限。结构化 `portal-question.credentials` 卡片仍可在需要询问时使用：用户明确选择后沿既有 `MessageLending` 原子投递与签发。它是可选交互，不是自然语言授权的前置条件。
 
 个人 AMA 的所有者可据此向其他主体临时委托精确资源与动作。私有边界只接受登记所有者或其既有 AMA 实际签发给当前主体（或其原有代表的 User）、仍活跃且未停用的临时 permit；永久 grant、管理员身份、其他签发者、group、父资源继承和再次转借均不能打开 AMA。父子在同批检查中也逐个核对精确 `r`。登记所有者、其 AMA 与 Portal 原有路径不变。
 
 `personal_ama.reaches(actor, owner, resource_id='', *, action='ReadResource')` 和 `hidden(actor, owners, *, action='ReadResource')` 只回答私有边界是否可达。省略资源 ID 保持原所有者规则。Society 对受委托对象传精确资源及本次实际 A 元素，多槽指令传该资源的 `slot.element`；调用上下文结束立即复位，模糊的 manage 默认不能推定具体操作。Resource 列表使用读动作；查看一个精确 Resident 不因此打开它的父 Lineage、兄弟、Workspace 或文件。启用 PAR 后仍继续正常动作授权；OPEN 下私有边界仍按临时行 A 范围和 deny 判定，不能把 viewer 扩成管理权限。到期逐次看时钟，撤销和停用随实例版本立即失效。
-
-定向证据：`test_plain_credential_consent.py` 验证认证 User 签发、原子回滚、严格文字判定、引用、关闭及失效重放；`test_personal_ama_delegation.py` 验证所有者、精确资源/动作、撤销/过期/停用、拒绝继承与转借；`test_society_ama_delegation.py` 验证实际指令槽、OPEN 边界和精确 Resident 可达但父 Lineage 仍私有。前端沿现有消息发送入口，无新增设置页。

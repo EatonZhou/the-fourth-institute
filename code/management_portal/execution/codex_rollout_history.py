@@ -83,6 +83,53 @@ class CodexCompactionRead:
     reason: str = ""
 
 
+def read_codex_turn_async_message_ids(path: Path | str, turn_id: str) -> tuple[str, ...] | None:
+    """Resolve observed async messages to accepted native calls in this turn.
+
+    The native handler uses its call_id as the AgentMessage ID. Arguments are
+    deliberately not read: this resolver cannot manufacture question content.
+    """
+    if not turn_id:
+        return None
+    accepted: set[str] = set()
+    identities: list[str] = []
+    try:
+        for raw_line in _reverse_lines(Path(path), complete_lines_only=True):
+            entry = json.loads(raw_line)
+            payload = entry.get("payload") if isinstance(entry, dict) else None
+            if not isinstance(payload, dict):
+                continue
+            if entry.get("type") == "event_msg":
+                if _is_rollback_event(payload):
+                    return None
+                if payload.get("type") == "task_started":
+                    if payload.get("turn_id") == turn_id:
+                        return tuple(reversed(identities))
+                    accepted.clear()
+                    identities.clear()
+            elif entry.get("type") == "response_item":
+                identity = payload.get("call_id")
+                if not isinstance(identity, str) or not identity.strip():
+                    continue
+                if payload.get("type") == "function_call_output":
+                    output = payload.get("output")
+                    try:
+                        output = json.loads(output) if isinstance(output, str) else output
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(output, dict) and output.get("accepted") is True:
+                        accepted.add(identity)
+                elif (payload.get("type") == "function_call"
+                      and payload.get("name") == "request_user_input_async"
+                      and identity in accepted):
+                    if identity in identities:
+                        return None
+                    identities.append(identity)
+    except (OSError, UnicodeError, json.JSONDecodeError, _ActiveHistoryScanLimit):
+        return None
+    return None
+
+
 def read_codex_turn_messages(
     path: Path | str, turn_id: str, *, thread_id: str = "",
 ) -> tuple[dict[str, Any], ...] | None:

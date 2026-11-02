@@ -12,6 +12,7 @@ import logging
 import os
 import time
 from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -43,6 +44,7 @@ from .codex_rollout_history import (
     read_codex_latest_compaction,
     read_codex_request_usage,
     read_codex_turn_messages,
+    read_codex_turn_async_message_ids,
 )
 from .codex_turn_run import CodexSession, CodexTurnRun, codex_goal_command
 from .context_seed import preserve_structured_seed
@@ -109,20 +111,54 @@ class CodexBackend:
             isinstance(item, dict) and item.get("type") == "agentMessage"
             and not str(item.get("text") or "").strip() and not item.get("questions")
         )]
+        def async_message(item):
+            return (isinstance(item, dict) and item.get("type") == "agentMessage"
+                    and (item.get("delivery") == "async" or bool(item.get("questions"))))
+
+        asynchronous = [item for item in items if async_message(item)]
         expected = sum(isinstance(item, dict) and item.get("type") == "agentMessage"
-                       for item in items)
-        if not expected:
+                       and not async_message(item) for item in items)
+        if not expected and not asynchronous:
             return {**turn, "items": items}
         path = self.account_registry.find_thread_rollout(
             account_id, thread_id, include_archived=True,
         )
         native = (read_codex_turn_messages(path, str(turn.get("id") or ""), thread_id=thread_id)
                   if isinstance(path, (str, Path)) else None)
+        async_ids = (read_codex_turn_async_message_ids(path, str(turn.get("id") or ""))
+                     if asynchronous and isinstance(path, (str, Path)) else ())
+        observed_ids = [str(item.get("id") or "") for item in asynchronous]
+        resolved_ids = observed_ids
+        if asynchronous:
+            known_ids = set(observed_ids).intersection(async_ids or ())
+            unmatched_ids = [identity for identity in async_ids or () if identity not in known_ids]
+            unresolved = sum(identity not in known_ids for identity in observed_ids)
+            if async_ids is None or (unresolved and len(unmatched_ids) != unresolved):
+                raise ExecutionRecoveryDeferred(
+                    "Codex native async message identities are not yet available for replay",
+                    retry_after_seconds=1,
+                )
+            identities = iter(unmatched_ids)
+            resolved_ids = [identity if identity in known_ids else next(identities) for identity in observed_ids]
+            if len(set(resolved_ids)) != len(resolved_ids):
+                raise ExecutionRecoveryDeferred(
+                    "Codex async snapshot contains duplicate native message identities",
+                    retry_after_seconds=1,
+                )
+        # Questions come from observed ThreadItems, never from tool arguments.
+        # Their native IDs live in a separate pool from ordinary model messages.
+        async_messages = iter(
+            {**deepcopy(item), "id": identity,
+             "phase": str(item.get("phase") or "final_answer"), "delivery": "async"}
+            for item, identity in zip(asynchronous, resolved_ids)
+        )
         if str(turn.get("status") or "").casefold() in {"inprogress", "in_progress"}:
             messages = iter(native or ())
             canonical = []
             for item in items:
-                if isinstance(item, dict) and item.get("type") == "agentMessage":
+                if async_message(item):
+                    canonical.append({**next(async_messages), "status": "completed"})
+                elif isinstance(item, dict) and item.get("type") == "agentMessage":
                     completed_message = next(messages, None)
                     if completed_message is not None:
                         canonical.append({**completed_message, "status": "completed"})
@@ -130,15 +166,16 @@ class CodexBackend:
                     canonical.append(item)
             canonical.extend({**message, "status": "completed"} for message in messages)
             return {**turn, "items": canonical}
-        if native is None or len(native) < expected:
+        if (native is None and expected) or len(native or ()) < expected:
             # Do not manufacture a second message ID or re-send the input.
             # Scheduler retains the accepted-turn checkpoint and retries it.
             raise ExecutionRecoveryDeferred(
                 "Codex native message identities are not yet available for replay",
                 retry_after_seconds=1,
             )
-        messages = iter(native)
-        canonical = [next(messages) if isinstance(item, dict) and item.get("type") == "agentMessage"
+        messages = iter(native or ())
+        canonical = [next(async_messages) if async_message(item)
+                     else next(messages) if isinstance(item, dict) and item.get("type") == "agentMessage"
                      else item for item in items]
         canonical.extend(messages)
         return {**turn, "items": canonical}

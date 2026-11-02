@@ -338,6 +338,13 @@ class CodexEventRouter:
         item_id = ""
         if method in {"item/started", "item/completed"}:
             item = params.get("item") if isinstance(params.get("item"), dict) else {}
+            if (item.get("type") == "agentMessage"
+                    and (item.get("delivery") == "async" or item.get("questions"))
+                    and not str(item.get("phase") or "").strip()):
+                # request_user_input_async emits a final_answer AgentMessage
+                # with the tool's call_id; it is not an unphased model reply.
+                item = {**item, "phase": "final_answer"}
+                params = {**params, "item": item}
             if is_final_answer(item):
                 waiter.final_answer_seen = True
         if method == "item/completed":
@@ -388,7 +395,7 @@ class CodexEventRouter:
         """A completion that omits the turn's final answers carries the ones streamed."""
 
         completed_turn = params.get("turn") or {}
-        if any(isinstance(item, dict) and item.get("phase") == "final_answer"
+        if any(isinstance(item, dict) and is_final_answer(item)
                for item in completed_turn.get("items") or []):
             return params
         return {**params, "turn": {**completed_turn, "items": [

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -329,7 +330,21 @@ class OutputCapture:
         item_id = ""
         if method == "item/completed" and str(item.get("type") or "") == "agentMessage":
             text = str(item.get("text") or item.get("message") or "").strip()
+            from management_common.async_questions import normalize_async_questions
+            questions = normalize_async_questions(item.get("questions"))
+            if questions:
+                # Use the same durable question channel as text-authored cards.
+                # Runtime-only updates disappear when the turn completes.
+                cards = [{key: value for key, value in question.items() if key != "question_index"}
+                         for question in questions]
+                # Put the fence first so decoding preserves the exact text
+                # (no separator whitespace becomes part of the message).
+                text = "```portal-question\n" + json.dumps(cards, ensure_ascii=False) + "\n```\n" + text
             phase = str(item.get("phase") or "message").strip()
+            if questions:
+                # Native async cards use final_answer on the wire, but are
+                # independent messages, not the turn's one final reply.
+                phase = "async"
             item_id = str(item.get("id") or "").strip()
         elif (
             event_type == "response_item"

@@ -327,12 +327,14 @@ def is_final_answer(item: Mapping[str, Any]) -> bool:
     return (
         item.get("type") == "agentMessage"
         and str(item.get("phase") or "").strip().casefold() == "final_answer"
+        and item.get("delivery") != "async" and not item.get("questions")
     )
 
 
 def collect_agent_message(waiter: TurnWaiter | GoalWaiter, item: dict[str, Any]) -> bool:
     text = str(item.get("text") or "").strip()
-    if item.get("type") != "agentMessage" or not text:
+    if (item.get("type") != "agentMessage" or not text
+            or item.get("delivery") == "async" or item.get("questions")):
         return False
     waiter.agent_messages.append(text)
     return True
@@ -498,6 +500,8 @@ def codex_final_agent_response(
     other_messages: list[str] = []
     for item in turn.get("items") or []:
         if not isinstance(item, dict) or item.get("type") != "agentMessage":
+            continue
+        if item.get("delivery") == "async" or item.get("questions"):
             continue
         text = str(item.get("text") or "").strip()
         if not text:

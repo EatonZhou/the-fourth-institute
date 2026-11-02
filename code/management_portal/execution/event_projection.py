@@ -284,6 +284,10 @@ def _execution_output(detail: dict[str, Any], *, execution_id: str = "") -> dict
     phase = str(detail.get("message_phase") or "").strip()
     if not phase and status in {"commentary", "final_answer"}:
         phase = status
+    if questions:
+        # Every async question group owns its native item identity; it must
+        # not share the turn-wide canonical final message ID.
+        phase = "async"
     provider_item = str(detail.get("provider_item_id") or "")
     if not provider_item and detail_id.startswith("runtime-update:"):
         provider_item = detail_id.removeprefix("runtime-update:")

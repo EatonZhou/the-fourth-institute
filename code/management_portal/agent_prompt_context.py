@@ -117,6 +117,8 @@ def portal_system_instructions(
         from management_common.async_questions import QUESTION_CONTENT_INSTRUCTIONS
 
         lines.append(QUESTION_CONTENT_INSTRUCTIONS)
+        lines.append("生成权限请求卡片时必须使用带准确 credentials 的 portal-question；Codex 原生 request_user_input_async "
+                     "只支持普通问题，不支持权限字段，工具返回 accepted 也不能代表已请求或取得权限。")
     if additional_paths:
         lines.extend(
             [

@@ -342,8 +342,8 @@ def test_questions_survive_durable_execution_activity(tmp_path):
     assert recovered[0]["questions"][0]["title"] == "选择测试范围？"
 
 
-def test_final_question_persists_without_duplicating_final_answer_text(resident_record):
-    """最终回复中的问题只保存为问题卡片，不重复保存回复正文"""
+def test_native_question_with_final_wire_phase_is_an_independent_message(resident_record):
+    """原生异步问题保留正文及独立身份，不占用本轮最终回复"""
     persist_question(resident_record)
     event = question_event("最终内容由原有结果链路保存")
     event["details"]["params"]["item"].update(id="item-final-question", phase="final_answer")
@@ -352,7 +352,9 @@ def test_final_question_persists_without_duplicating_final_answer_text(resident_
         resident_record["resident_id"],  "execution-question", outputs,
     )
     assert len(messages) == 1
-    assert [part["type"] for part in messages[0]["content_parts"]] == ["async_questions"]
+    assert [part["type"] for part in messages[0]["content_parts"]] == ["text", "async_questions"]
+    from management_portal.execution.message_projection import model_message_id
+    assert messages[0]['message_id'] != model_message_id('execution-question', 'final', 'final_answer')
 
 
 def test_questions_follow_history_page_and_answers_are_idempotent(resident_record):

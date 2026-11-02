@@ -672,7 +672,7 @@ def persist_execution_display_messages(
         }
         if is_final and not questions and canonical_final is None:
             continue
-        if is_final:
+        if is_final and not questions:
             content = ""
 
         existing = repository.message(resident_id, message_id)
