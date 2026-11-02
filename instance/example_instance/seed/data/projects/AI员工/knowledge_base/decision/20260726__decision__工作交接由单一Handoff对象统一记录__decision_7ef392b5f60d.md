@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 30
+  number: 31
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T04:10:17Z"
+  updated_at: "2026-11-02T15:16:00Z"
   updated_by:
     user: ""
-    agent: "resident_24014e2b9bf6"
+    agent: "resident_dbcd3920b7cc"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -146,6 +146,14 @@ Git worktree 是与原仓库共享历史、但位于另一个目录的工作副�
 4. 为每个结果建立目标的工作区使用关系（只含 Workspace ID 和用途），并确认绑定确实存在；交接来源与操作结果保存在 handoff 记录中；直接共享还要确认目标拿到的是来源的同一个工作区 ID。目标已经绑定了同一目录时复用这条绑定。
 5. 全部成功时，交接状态变为 `ready`，记录 `ready_at` 和每项结果；任何一步失败时，清理本次新建的目录，交接状态变为 `failed` 并记录错误。
 
+## 已登记副本的归位
+
+`RelocateWorkspaceHandoff` 将交接项已登记的副本搬到该 Lineage 的标准交接目录。调用者须同时对 Lineage 和副本 Workspace 有 `@contributor` 权限，并提供从 `ResolveResource` 取得的 Workspace 版本。目录 owner 从当前登记推导源位置、从交接身份推导目标位置，不接受任意目标路径，也不把接入目录转换为创建目录。
+
+归位保留 Workspace ID、所有文件和已有绑定，目录归属修正为该 Workspace 自己。嵌套目录登记、交接当前引用、Git 双向指针和 Provider 工作目录一起随移动更新；准备尝试历史不变，不重新准备交接或投递任务。正在准备的交接或仍在使用该目录的执行阻止归位，不为搬迁终止其工作。
+
+版本过期时不改文件，返回 `instruction.version_conflict`。登记已提交而依赖修复尚未完成时，指令返回 committed、结果 `status=pending` 和持久 `operation_id`，后台按同一移动回执重试；不能把这个状态报告为没有提交。调用重试沿用 HATG 幂等键，当前目录和版本通过资源读取接口取得。
+
 ## 在页面上使用
 
 Context 图显示 Resident 之间的交接关系；Workspace 图按交接项将关系投影为实际工作区卡片之间的连线。一个交接含多个工作区时逐项显示，点击任一投影边仍查看原交接的完整详情。仅在当前工作区登记与两端 Resident 绑定可以确认端点时绘制；没有有效端点的历史记录保留在原交接中，不以某个代表工作区代替。直接共享的两端为同一工作区时显示自环，普通绑定线只表示 Resident 使用该工作区。
@@ -168,12 +176,13 @@ Context 图显示 Resident 之间的交接关系；Workspace 图按交接项将�
 | `UpdateWorkspaceHandoff` | 修改交接项、说明或标签 | `handoff_id`、`changes`（只能含 `items`、`explanation`、`label`；`explanation` 为空字符串时清除） | 修改后的交接 |
 | `DeleteWorkspaceHandoff` | 删除交接关系 | `handoff_id` | `handoff_id` |
 | `PrepareWorkspaceHandoff` | 准备目录并建立绑定 | `handoff_id`，或这对 Resident 的 `source_resident_id` 与 `target_resident_id` | `status`（`preparing`、`ready`、`failed`）、各交接项、错误 |
+| `RelocateWorkspaceHandoff` | 将已有副本归位，保留身份和内容 | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` | 移动 `operation_id`、`status`、Workspace 登记；未完成依赖的错误 |
 | `GetWorkspaceHandoff` | 读取交接定义和最近一次准备的结果 | `handoff_id` | 交接、`status`、各交接项、错误 |
 
 - **修改交接项时提交完整列表。** `changes.items` 替换全部交接项，每项都要写明来源和准备方式；省略 `transfer` 的项按直接共享处理。
 - **没有交接项的交接共享来源的当前工作区。** 创建时不给 `items`（包括 `PrepareWorkspaceHandoff` 按 Resident 对新建的交接），交接只有一项：直接共享来源 Resident 当前工作目录所在的 Workspace。
 - **准备失败作为结果返回。** 准备失败已经记录在交接上时，`PrepareWorkspaceHandoff` 返回 `status=failed` 和错误，不作为指令错误。
-- **交接指令不需要 `expected_version`。** 它们直接作用于 Lineage 的当前状态（decision_898b8911a2ff）。
+- **版本前提按变更对象比较。** 定义修改按 HATG 的可选 Lineage `expected_version` 比较；准备不使用 Lineage revision 前提。副本归位必须携带 `expected_workspace_version`，按 Workspace 当前登记版本比较，避免覆盖并发修改。
 
 ## 实现说明
 

@@ -323,6 +323,22 @@ def get_workspace_handoff(inv: Invocation) -> dict[str, Any]:
     return {"handoff": handoff, **_handoff_result(handoff), "status": str(handoff.get("status") or "draft")}
 
 
+def relocate_workspace_handoff(inv: Invocation) -> dict[str, Any]:
+    from ..handoff_location_owner import relocate_registered_copy
+    from management_portal.resources.errors import ResourceVersionConflict
+
+    try:
+        return relocate_registered_copy(
+            inv.argument("lineage_id"), inv.argument("handoff_id"), inv.argument("item_id"), inv.caller,
+            workspace_id=inv.argument("workspace_id"),
+            expected_version=inv.argument("expected_workspace_version"), operation_id=inv.instruction_id,
+        )
+    except ResourceVersionConflict as error:
+        raise InstructionError("instruction.version_conflict", str(error), details={
+            "expected_version": error.expected_version, "current_version": error.current_version,
+        }) from error
+
+
 # -- compile, diagnose, batch -------------------------------------------------------
 
 
@@ -486,6 +502,7 @@ HANDLERS = {
     "DeleteWorkspaceHandoff": delete_workspace_handoff,
     "PrepareWorkspaceHandoff": prepare_workspace_handoff,
     "GetWorkspaceHandoff": get_workspace_handoff,
+    "RelocateWorkspaceHandoff": relocate_workspace_handoff,
     "GetLineageDiagnostics": get_lineage_diagnostics,
     "ApplyLineageChanges": apply_lineage_changes,
 }

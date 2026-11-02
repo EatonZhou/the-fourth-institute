@@ -13,6 +13,34 @@ from .state_store import get_lineage_data_store
 from .handoff_location_storage import synchronize
 
 
+def relocate_registered_copy(lineage_id, handoff_id, item_id, actor, *, workspace_id,
+                             expected_version, operation_id):
+    """Public relocation contract: the caller supplies an identity and version.
+
+    The owner derives path/ownership from the registration, never caller input.
+    A committed move with unfinished native dependencies remains a committed,
+    pending result rather than reporting that no mutation occurred.
+    """
+    from management_common.directory_move_store import DirectoryMoveStore
+    store = get_workspace_store()
+    row = store.rows([workspace_id])[workspace_id]
+    try:
+        result = relocate_copy(lineage_id, handoff_id, item_id, actor,
+            workspace_id=workspace_id, expected_version=expected_version,
+            expected_owner=row['owner_id'], expected_path=row['path'], operation_id=operation_id)
+    except Exception as error:
+        try:
+            move = DirectoryMoveStore().get(operation_id)
+        except KeyError:
+            raise error
+        if (not move or move['phase'] not in {'committed', 'completed'}
+                or move['owner_id'] != workspace_id or move['actor'] != actor):
+            raise
+        return {'operation_id': operation_id, 'status': 'pending',
+                'workspace': store.rows([workspace_id])[workspace_id], 'error': str(error)}
+    return {**result, 'status': 'completed'}
+
+
 def reconcile_locations(lineage_id, handoff_id, actor):
     """Explicit current-reference repair; return missing targets without inventing readiness."""
     with _handoff_lease(lineage_id, handoff_id), lineage_aggregate.lineage_scope(lineage_id):
@@ -33,7 +61,9 @@ def relocate_copy(lineage_id, handoff_id, item_id, actor, *, workspace_id,
         handoff = _handoff_edge(current, handoff_id)
         if handoff.get('status') == 'preparing':
             raise ValueError('Preparing Handoff must be recovered by its preparation owner first')
-        item = next(x for x in handoff['items'] if x['item_id'] == item_id)
+        item = next((x for x in handoff['items'] if x['item_id'] == item_id), None)
+        if item is None:
+            raise KeyError(item_id)
         if (item['transfer'].get('mode') != 'copy'
                 or item['transfer'].get('method') not in {'filesystem_copy', 'git_worktree'}):
             raise ValueError('Only existing Handoff copies can be relocated')

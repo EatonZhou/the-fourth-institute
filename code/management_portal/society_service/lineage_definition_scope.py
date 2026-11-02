@@ -24,6 +24,7 @@ SOURCE_ARGUMENTS = {
     "UpdateWorkspaceHandoff": ("handoff_id",),
     "DeleteWorkspaceHandoff": ("handoff_id",),
     "PrepareWorkspaceHandoff": ("handoff_id", "source_resident_id", "target_resident_id"),
+    "RelocateWorkspaceHandoff": ("handoff_id",),
 }
 
 

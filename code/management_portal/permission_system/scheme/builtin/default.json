@@ -690,6 +690,12 @@
     "PrepareWorkspaceHandoff": {
       "a": "@contributor"
     },
+    "RelocateWorkspaceHandoff:lineage_id": {
+      "a": "@contributor"
+    },
+    "RelocateWorkspaceHandoff:workspace_id": {
+      "a": "@contributor"
+    },
     "PreviewPromptInjection": {
       "a": "@viewer"
     },

@@ -124,6 +124,18 @@ DECLARATIONS = (
         R("items", "array", "交接项：每项含 item_id、source、transfer、target 及准备结果 result"),
     ), mutates=True, target="handoff_id",
        one_of=(("handoff_id",), ("source_resident_id", "target_resident_id"))),
+    _d("RelocateWorkspaceHandoff", "将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。", (
+        R("lineage_id", description="交接所属 Lineage"),
+        R("handoff_id", description="已有交接 ID"),
+        R("item_id", description="要归位的交接项 ID"),
+        R("workspace_id", description="该交接项已登记的副本 Workspace ID"),
+        R("expected_workspace_version", description="原样携带 ResolveResource 返回的 resource.version"),
+    ), (
+        R("operation_id", description="持久移动回执 ID；无需移动时为空"),
+        R("status", description="completed 已完成；pending 登记已提交、依赖修复等待重试", enum=("completed", "pending")),
+        R("workspace", "object", "归位后的 Workspace 登记及版本"),
+        P("error", description="依赖修复尚未完成的原因"),
+    ), mutates=True, target="handoff_id", decides=(On("lineage_id", "lineage"), On("workspace_id", "workspace"))),
     _d("GetWorkspaceHandoff", "读取交接定义和最近一次准备的结果。", (R("handoff_id", description="要读取的交接"),), (
         R("handoff", "object", "交接定义：id、source、target、items、explanation、label、status"),
         P("status", description="交接的记录状态，如 draft、ready、failed"),
