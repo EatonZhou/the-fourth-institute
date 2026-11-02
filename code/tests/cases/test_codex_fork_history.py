@@ -412,6 +412,44 @@ def test_explicit_fork_recovers_a_missing_source_only_from_recorded_context(tmp_
     assert not client.run_turn.called
 
 
+@pytest.mark.parametrize('registered', [True, False])
+def test_explicit_preserve_of_empty_thread_keeps_pending_agent_history(tmp_path, registered):
+    """保留重启可恢复已知空线程，未交付的 Fork 历史仍留给首轮；未知源拒绝恢复"""
+    from management_portal.codex_app_server_protocol import CodexThreadNotFound
+
+    store = AgentDataStore()
+    request = replace(_turn_request('resident_empty_fork'), operation='fork', prompt='',
+                      metadata={'preserve_session_context': True})
+    inherited = store.put_segment(segment_type='input', content='pending inherited fact')
+    store.append_agent_segments(request.agent_id, [inherited], actor_ref=request.actor)
+    if registered:
+        store.ensure_provider_session(provider='codex', backend_route_id='zero',
+                                      backend_session_id='empty-thread', agent_id=request.agent_id,
+                                      actor_ref=request.actor)
+    before = store.provider_context_snapshot(agent_id=request.agent_id)
+    client = mock.Mock()
+    client.fork_thread.side_effect = CodexThreadNotFound('no rollout found for thread id empty-thread')
+    client.start_thread.return_value = {'thread': {'id': 'replacement-empty'}}
+    registry = mock.Mock()
+    registry.get.return_value = mock.Mock(account_id='zero', socket_path=tmp_path / 'fake.sock')
+    backend = CodexBackend(account_registry=registry, client_factory=lambda _: client)
+    context = BackendContext(emit_event=lambda *_: None, cancellation_requested=lambda: False,
+                             set_interrupt_target=lambda *_: None)
+    with mock.patch('management_portal.execution.agent_data_store.get_agent_data_store', return_value=store):
+        if registered:
+            result = backend.execute(_invocation(request, _runtime_session(request, 'empty-thread')), context)
+            assert result.backend_session_id == 'replacement-empty'
+            client.start_thread.assert_called_once()
+        else:
+            with pytest.raises(CodexThreadNotFound):
+                backend.execute(_invocation(request, _runtime_session(request, 'empty-thread')), context)
+            client.start_thread.assert_not_called()
+    client.request.assert_not_called()
+    client.run_turn.assert_not_called()
+    assert store.provider_context_snapshot(agent_id=request.agent_id) == before
+    assert before['segments'][0]['segment_id'] == inherited
+
+
 def test_codex_backend_injects_frozen_fork_context_before_initial_compact(tmp_path):
     """首轮前需压缩的 Fork 先导入冻结的继承上下文再压缩"""
     store = AgentDataStore()

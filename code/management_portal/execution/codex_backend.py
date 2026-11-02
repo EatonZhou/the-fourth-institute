@@ -1035,8 +1035,8 @@ class CodexBackend:
     def _restore_fork_source(self, session: CodexSession) -> str | None:
         """Fork a source thread app-server lost from the history Portal kept of it.
 
-        The new thread receives the source's history from the agent trace;
-        ``None`` when Portal kept none.
+        The new thread receives the source's recorded context. A known empty
+        context needs no import; an unknown context cannot be restored.
         """
 
         from .agent_data_store import get_agent_data_store
@@ -1048,7 +1048,7 @@ class CodexBackend:
             provider=self.provider_id, backend_route_id=session.route.account_id,
             backend_session_id=session.thread_id, agent_id=agent_id,
         )
-        if not snapshot or not snapshot.get("segments"):
+        if not snapshot or not (snapshot.get("segments") or snapshot.get("empty_context") is True):
             return None
         references = snapshot["segments"]
         if request.metadata.get("preserve_session_context"):

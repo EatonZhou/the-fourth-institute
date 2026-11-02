@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-08-22'
 version:
-  number: 43
+  number: 44
   created_at: "2026-08-22"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T15:19:16Z"
+  updated_at: "2026-11-02T20:23:40Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -116,7 +116,7 @@ Resident Menu、Chat 运行摘要和 Family 成员入口共用运行控制器。
 
 preserve 保留已有清除、压缩边界之后的有效摘要、消息、工具调用与对应结果、必要媒体及来源。canonical history 导入必须核对内容类型、调用/结果配对、顺序、媒体可读性和目标容量，并取得可验证的导入结果；历史工具调用只作为记录，不重新执行。不能用截断的文本历史、隐式 compact 或确认话术代替完整导入。
 
-Codex 跨账号可使用严格、可验证的 canonical history 导入。其他 Provider 的跨账号及跨 Provider 完整导入当前未支持时，明确拒绝 preserve，保持原绑定和配置；不能自动降级到 compact、visible 或 fresh。源会话不存在时仍须验证有效上下文，单有旧 session ID 不构成恢复证据。
+Codex 跨账号可使用严格、可验证的 canonical history 导入。其他 Provider 的跨账号及跨 Provider 完整导入当前未支持时，明确拒绝 preserve，保持原绑定和配置；不能自动降级到 compact、visible 或 fresh。源会话不存在时仍须验证有效上下文，单有旧 session ID 不构成恢复证据。 对 Portal 已记录且明确为空的 Provider 上下文，保留重建可以创建无模型轮次的新线程，不要求空线程已有 rollout；仍待交付的 Fork 来源材料保留在原有效上下文中，供首条真实输入交付。未知或无法验证的上下文不能按空上下文处理。
 
 只有用户明确发起 compact 或 visible 才发送模型交接输入（账号切换页通过已说明影响的“交接并切换”提交 compact）；它以 `[Portal Session Initialization Context]` 标明身份、方案与目的，要求整理事实、进度、决定、未决问题和约束。这轮有独立输入、用量与结果记录，不派发业务任务或启动后台目标。超过各方案上限时按该显式交接合同截取，成功后后续消息沿用新会话。
 
