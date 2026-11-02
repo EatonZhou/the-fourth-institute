@@ -98,6 +98,9 @@ class PortalPagesHttp:
     def lineage(self, request, parsed, actor):
         return self.document(request, 200, self.lineage_html())
 
+    def frontier(self, request, parsed, actor):
+        return self.document(request, 200, (self.root / "frontier.html").read_bytes())
+
     def hatg_panel(self, request, parsed, actor):
         return self.document(request, 200, self.hatg_html())
 
@@ -163,6 +166,7 @@ class PortalPagesHttp:
             RouteDefinition("GET", "/", self.home, "portal-pages-get", page=True),
             RouteDefinition("GET", "/index.html", self.home, "portal-pages-get", page=True),
             RouteDefinition("GET", "/lineage", self.lineage, "portal-pages-get", page=True),
+            RouteDefinition("GET", "/frontier", self.frontier, "portal-pages-get", page=True),
             RouteDefinition("GET", "/lineage/", self.lineage, "portal-pages-get", page=True),
             RouteDefinition("GET", "/lineage.html", self.lineage, "portal-pages-get", page=True),
             RouteDefinition("GET", "/hatg-panel.html", self.hatg_panel, "portal-pages-get", page=True),

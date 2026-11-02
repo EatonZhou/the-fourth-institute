@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>线头 · TFI Portal</title>
+  <link rel="stylesheet" href="/static/frontier.css">
+  <script src="/static/portal_state.js"></script>
+  <script defer src="/static/portal_text.js"></script>
+  <script defer src="/static/portal_translations.js"></script>
+  <script defer src="/static/portal_i18n.js"></script>
+  <script defer src="/static/portal_api.js"></script>
+  <script defer src="/static/portal_instruction_client.js"></script>
+  <script defer src="/static/portal_page_state.js"></script>
+  <script type="module" src="/static/frontier.js"></script>
+</head>
+<body>
+  <header class="site"><a href="/">TFI <span>Portal</span></a><nav><a href="/projects">项目</a><a href="/lineage">团队</a><span aria-current="page">线头预览</span></nav></header>
+  <main>
+    <div class="intro"><div><div class="eyebrow">EXPLORATION FRONTIER / 探索前沿</div><h1>接着想，往前走<span class="accent">。</span></h1><p>看见正在生长的想法，在值得的地方介入。</p></div><button id="new" class="primary" disabled>＋ 留下一条线头</button></div>
+    <form id="scope" class="scope"><label for="scope-id">当前范围</label><select id="scope-id" required aria-label="选择项目或团队"><option value="">选择项目或团队</option></select><button>打开</button><span id="scope-title"></span></form>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <div class="workspace">
+      <aside class="rail"><div class="eyebrow">我的视野</div><nav id="filters" aria-label="线头筛选"></nav><div class="rail-note"><span class="small-orbit">↗</span><b>留出思考的空间</b><p>关注是一种选择。可以自主推进的工作，会继续向前。</p><a id="project-link" hidden>查看项目全景 ↗</a></div></aside>
+      <section class="content" aria-label="工作前沿"><div class="toolbar"><div><h2 id="section-title">全部前沿</h2><span id="checked">选择一个团队，接上它的工作。</span></div><div class="tools"><label class="sr-only" for="search">搜索线头</label><input id="search" type="search" placeholder="寻找问题、想法…"><button id="refresh" title="核对来源与执行状态">刷新</button><button id="map-toggle" aria-pressed="false">关系图</button></div></div><div id="project-teams"></div><div id="graph" hidden></div><div id="cards"></div></section>
+    </div>
+  </main>
+  <dialog id="detail"><div id="detail-body"></div></dialog>
+  <dialog id="editor"><form id="edit-form"><div class="dialog-heading"><h2 id="edit-title">留下一条线头</h2><button type="button" data-close="editor" aria-label="关闭">×</button></div><p class="muted">围绕一个推进目标持续更新，让下一次思考有所依据。</p>
+    <label>正在探索什么<input name="title" required maxlength="120" placeholder="一个值得继续追问的问题"></label>
+    <div class="form-grid"><label>工作线<input name="line" required maxlength="80" placeholder="例如：长期研究判断"></label><label>介入要求<select name="attention"><option value="optional">可以介入 · 已授权工作继续</option><option value="decision">需要决定 · 对应选择等待</option><option value="explore">留待探索 · 尚未启动</option></select></label></div>
+    <label>已经推进到哪里<textarea name="progress" required maxlength="1200" rows="2"></textarea></label>
+    <label>为什么值得继续<textarea name="reason" required maxlength="1200" rows="2" placeholder="它可能带来什么新认识？哪些判断还需要检验？"></textarea></label>
+    <label>下一步 / 需要作出的选择<textarea name="next" required maxlength="1200" rows="2"></textarea></label>
+    <label>依据（资源地址，每行一个）<textarea name="sources" required rows="2" placeholder="thinking_…&#10;plan_…"></textarea></label>
+    <div class="form-grid"><label>负责 Agent<select name="owner"><option value="">暂不指定</option></select></label><label>关联线头<select name="parent"><option value="">独立线索</option></select></label><label>关系<select name="relation"><option value="builds_on">从它发展</option><option value="depends_on">依赖它</option><option value="converges">与它汇合</option></select></label><label>入口状态<select name="closed"><option value="">仍可展开</option><option value="concluded">已收束</option><option value="cancelled">已取消</option></select></label></div>
+    <p class="muted">内容向本团队共享；请只填写可在此范围分享的判断。来源正文按当前访问权限打开。</p><p class="form-error" role="alert"></p><footer><button type="button" data-close="editor">取消</button><button class="primary">保存线头</button></footer>
+  </form></dialog>
+  <dialog id="dispatch"><form id="dispatch-form"><div class="dialog-heading"><h2>接着推进这条线</h2><button type="button" data-close="dispatch" aria-label="关闭">×</button></div><label>负责 Agent<select name="owner" required></select></label><label>你的判断或希望探索的下一步<textarea name="instruction" required rows="5" maxlength="6000"></textarea></label><p class="muted">确认后发送真实消息。接收、执行和结果将分开显示；重复提交同一请求不会重复启动。</p><p class="form-error" role="alert"></p><footer><button type="button" data-close="dispatch">取消</button><button class="primary">确认交给 Agent</button></footer></form></dialog>
+</body></html>
