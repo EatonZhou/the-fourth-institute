@@ -80,3 +80,49 @@ def test_windows_permission_failure_never_writes_secret(case_dir, windows_io, mo
         shared_state.atomic_replace_json(target, {"secret": "never written"}, mode=0o600)
     assert target.read_bytes() == b"old"
     assert list(case_dir.iterdir()) == [target]
+
+
+@pytest.mark.parametrize('kind', ['json', 'text'])
+@pytest.mark.parametrize('winerror', [5, 32, 33])
+def test_windows_atomic_replace_waits_for_short_reader(case_dir, windows_io, monkeypatch, kind, winerror):
+    target = case_dir / 'state.json'
+    target.write_text('old')
+    attempts = []
+    sleeps = []
+    def replace(source, destination):
+        attempts.append(source)
+        if len(attempts) == 1:
+            assert target.read_text() == 'old'
+            error = PermissionError('reader holds target')
+            error.winerror = winerror
+            raise error
+        os.replace(source, destination)
+    monkeypatch.setattr(shared_state.os, 'replace', replace)
+    monkeypatch.setattr(shared_state.time, 'sleep', sleeps.append)
+    if kind == 'json':
+        shared_state.atomic_replace_json(target, {'revision': 2})
+        assert json.loads(target.read_text()) == {'revision': 2}
+    else:
+        shared_state.atomic_replace_text(target, 'new')
+        assert target.read_text() == 'new'
+    assert len(attempts) == 2 and attempts[0] == attempts[1]
+    assert sleeps == [0.02]
+    assert list(case_dir.iterdir()) == [target]
+
+
+def test_windows_permanent_replace_denial_is_bounded_and_keeps_original(case_dir, windows_io, monkeypatch):
+    target = case_dir / 'state.json'
+    target.write_text('old')
+    clock = iter([0, 0, 1.01])
+    monkeypatch.setattr(shared_state.time, 'monotonic', lambda: next(clock))
+    monkeypatch.setattr(shared_state.time, 'sleep', lambda _: None)
+    error = PermissionError('still denied')
+    error.winerror = 5
+    def denied(*_):
+        raise error
+    monkeypatch.setattr(shared_state.os, 'replace', denied)
+    with pytest.raises(PermissionError) as caught:
+        shared_state.atomic_replace_json(target, {'revision': 2})
+    assert caught.value is error
+    assert target.read_text() == 'old'
+    assert list(case_dir.iterdir()) == [target]

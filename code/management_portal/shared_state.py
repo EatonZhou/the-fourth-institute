@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -34,6 +35,22 @@ def exclusive_file_lock(path: Path) -> Iterator[None]:
             yield
 
 
+def _replace_file(temporary: Path, target: Path) -> None:
+    """Allow short Windows readers to close without exposing partial state."""
+    deadline = time.monotonic() + 1.0
+    while True:
+        try:
+            os.replace(temporary, target)
+            return
+        except PermissionError as exc:
+            if os.name != "nt" or getattr(exc, "winerror", None) not in {5, 32, 33}:
+                raise
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise
+            time.sleep(min(0.02, remaining))
+
+
 def atomic_replace_text(path: Path, content: str, *, mode: int | None = None) -> None:
     """Replace shared text state without exposing a partial write."""
     target = Path(path)
@@ -47,7 +64,7 @@ def atomic_replace_text(path: Path, content: str, *, mode: int | None = None) ->
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, target)
+        _replace_file(temporary, target)
     finally:
         temporary.unlink(missing_ok=True)
 
@@ -91,7 +108,7 @@ def atomic_replace_json(
             stream.write("\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, target)
+        _replace_file(temporary, target)
         sync_directory(target.parent)
     finally:
         temporary.unlink(missing_ok=True)
