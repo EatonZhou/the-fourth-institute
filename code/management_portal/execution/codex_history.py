@@ -17,7 +17,12 @@ def _json(value: Any) -> str:
 
 def _has_media(value: Any) -> bool:
     if isinstance(value, Mapping):
-        if value.get("type") in {"image", "image_url", "input_image", "input_file"}:
+        kind = value.get("type")
+        if (kind == "input_image" and "image_url" in value) or (
+            kind == "input_file" and any(key in value for key in ("file_data", "file_id", "file_url"))
+        ) or (
+            kind == "image" and any(key in value for key in ("source", "data", "mimeType"))
+        ) or (kind == "image_url" and "image_url" in value):
             return True
         return any(_has_media(item) for item in value.values())
     return isinstance(value, list) and any(_has_media(item) for item in value)
@@ -25,12 +30,21 @@ def _has_media(value: Any) -> bool:
 
 def _output_part(part: Mapping[str, Any]) -> dict[str, Any]:
     kind = part.get("type")
-    if kind in {"input_image", "input_file"}:
+    if (kind == "input_image" and isinstance(part.get("image_url"), str) and part["image_url"]) or (
+        kind == "input_file" and any(isinstance(part.get(key), str) and part[key]
+                                      for key in ("file_data", "file_id", "file_url"))
+    ):
         return copy.deepcopy(dict(part))
     if kind in {"text", "input_text", "output_text"} and isinstance(part.get("text"), str):
         return {"type": "input_text", "text": part["text"]}
     if kind == "image" and part.get("mimeType") and part.get("data"):
         return {"type": "input_image", "image_url": f"data:{part['mimeType']};base64,{part['data']}"}
+    if kind == "image" and isinstance(part.get("source"), Mapping):
+        source = part["source"]
+        if source.get("type") == "base64" and source.get("media_type") and source.get("data"):
+            return {"type": "input_image", "image_url": f"data:{source['media_type']};base64,{source['data']}"}
+        if source.get("type") == "url" and isinstance(source.get("url"), str) and source["url"]:
+            return {"type": "input_image", "image_url": source["url"]}
     if kind == "image_url":
         image = part.get("image_url")
         url = image.get("url") if isinstance(image, Mapping) else image
@@ -45,11 +59,28 @@ def _output_part(part: Mapping[str, Any]) -> dict[str, Any]:
 def _tool_output(value: Any) -> str | list[dict[str, Any]]:
     if isinstance(value, str):
         return value
-    if isinstance(value, Mapping) and set(value) == {"result"}:
-        return _tool_output(value["result"])
-    if isinstance(value, Mapping) and isinstance(value.get("content"), list):
-        parts = [_output_part(part) for part in value["content"]]
-        extra = {key: item for key, item in value.items() if key != "content"}
+    if isinstance(value, Mapping) and "result" in value:
+        inner = _tool_output(value["result"])
+        extra = {key: item for key, item in value.items() if key != "result"}
+        if not extra:
+            return inner
+        if isinstance(inner, list):
+            if _has_media(extra):
+                raise ValueError("unsupported media outside historical tool content")
+            return [*inner, {"type": "input_text", "text": _json(extra)}]
+        if _has_media(extra):
+            raise ValueError("unsupported media outside historical tool content")
+        return _json(value)
+    # MCP uses content; Claude's completed tool results use output. Only
+    # typed block lists are media envelopes, not arbitrary business JSON.
+    field = next((key for key in ("content", "output")
+                  if isinstance(value, Mapping) and isinstance(value.get(key), list)
+                  and all(isinstance(part, Mapping) and part.get("type") in {
+                      "text", "input_text", "output_text", "image", "image_url", "input_image", "input_file"
+                  } for part in value[key])), None)
+    if field is not None:
+        parts = [_output_part(part) for part in value[field]]
+        extra = {key: item for key, item in value.items() if key != field}
         if extra:
             if _has_media(extra):
                 raise ValueError("unsupported media outside historical tool content")

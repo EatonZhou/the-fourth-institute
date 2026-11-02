@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-12'
 version:
-  number: 20
+  number: 21
   created_at: '2026-07-12'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-01T03:38:40Z'
+  updated_at: '2026-11-02T15:45:39Z'
   updated_by:
     user: ''
-    agent: resident_24014e2b9bf6
+    agent: resident_2e9ea0072551
 importance: 9
 metaness: 2
 ai_generated: false
@@ -191,3 +191,10 @@ Codex 的权限和工作目录由执行准备阶段确定（decision_6ad0384e020
 ## 相关实现与测试
 
 客户端入口是 `management_portal/codex_app_server_client.py` 的 `CodexAppServerClient`，传输、thread 记录、事件分发、子 Agent、运行中控制、一轮的运行与跟随、Goal 和压缩分别在同目录的 `codex_app_server_*.py` 模块中，适配器在 `management_portal/execution/codex_backend.py` 的 `CodexBackend`，单次 turn 由 `management_portal/execution/codex_turn_run.py` 的 `CodexTurnRun` 执行，执行运行时在 `management_portal/execution/runtime.py`，Worker 交接在 `management_portal/execution/worker.py` 与 `management_portal/execution/scheduler.py`。协议基础参见 OpenAI 的 Codex App Server 文档；Portal 的具体行为由 `tests/cases/test_codex_app_server_client.py` 与 `tests/cases/test_codex_backend_turns.py`、`tests/cases/test_codex_backend_continuation.py`、`tests/cases/test_codex_backend_options.py` 验证。
+
+## 跨 Provider 的历史工具媒体
+
+PostgreSQL 有效历史是跨 Provider 导入的内容来源。Codex 历史适配器依据工具返回的结构转换媒体：MCP 的 content 内容块与 Claude 的 output 内容块均保留顺序，文本转换为 input_text；MCP 图片及 Claude source.base64/source.url 图片转换为 input_image，原生 input_image/input_file 保持 typed 结构。工具 call_id、名称、命名空间与参数保持关联，result 封装和错误等兄弟元数据随结果保留，媒体字节不得序列化成给模型阅读的 JSON 文本。
+
+业务对象中的 type=image 等资源分类字段本身不是媒体内容。只有明确携带媒体载荷或媒体引用的内容块才进入媒体校验；无法识别或缺少必要字段的真实媒体仍在导入前拒绝。转换只生成目标 Provider 的投递内容，不改写不可变历史，也不因适配缺口丢弃图片、清空上下文或伪造成功回执。
+
