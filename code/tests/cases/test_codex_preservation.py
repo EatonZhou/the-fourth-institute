@@ -53,7 +53,7 @@ def test_immutable_native_seed_is_idempotent_and_does_not_rewrite_chat(tmp_path,
     binding={'provider':'codex','backend_session_id':'thread','backend_route_id':'one','provider_session_ref':'source'}
     first=native_seed('agent',binding,store=store,routes=routes)
     assert native_seed('agent',binding,store=store,routes=routes)==first
-    assert store.fork_context_segments(first['segments'])[0]['content']==item
+    assert store.fork_context_segments(first['segments'])[0]['content']=={'replacement_history':[item]}
     from management_portal.execution.codex_history_delivery import CodexHistoryDelivery
     delivered=[]
     delivery=CodexHistoryDelivery(references=first['segments'],route_id='five',agent_id='agent',
@@ -61,5 +61,9 @@ def test_immutable_native_seed_is_idempotent_and_does_not_rewrite_chat(tmp_path,
     delivery.initialize('target')
     delivery.initialize('target')
     assert delivered==[('target',[item])]
-    with pytest.raises(KeyError, match='trace not found'):
-        store.agent_context_snapshot('agent')
+    session=store.ensure_provider_session(provider='codex',backend_route_id='five',backend_session_id='target',agent_id='agent',actor_ref='test')
+    store.record_context_received(first['source_agent_id'],session['provider_session_ref'],
+        [r['segment_id'] for r in first['segments']],actor_ref='test')
+    assert store.provider_context_snapshot(provider_session_ref=session['provider_session_ref'],agent_id='agent')['segments'][0]['content']=={'replacement_history':[item]}
+    assert store.read_chat_messages('agent')==[]
+    assert len(store.agent_context_snapshot('agent')['segments'])==1

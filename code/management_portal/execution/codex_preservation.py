@@ -62,17 +62,19 @@ def native_seed(agent_id, binding, *, store=None, routes=None):
     if path is None:
         return None
     items = read_native_window(path, thread_id)
-    refs = []
-    for index, item in enumerate(items):
-        digest = hashlib.sha256(json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-        sid = stable_segment_id('native-preservation', agent_id, binding['provider_session_ref'], str(index), digest)
-        # Standalone immutable replay facts, never appended to visible Chat.
-        kind = ('input' if item.get('type') == 'message' and item.get('role') in {'user','system','developer'}
-                else 'tool' if item.get('type') in {'function_call','function_call_output','custom_tool_call','custom_tool_call_output'} else 'model')
-        store.put_segment(segment_id=sid, segment_type=kind, content=item,
-            content_type='application/json', created_by_agent_id=agent_id,
-            created_by_actor_ref=agent_id, metadata={'kind':'native_preservation',
-                'provider_session_ref':binding['provider_session_ref'], 'native_index':index})
-        refs.append({'segment_id':sid})
-    return {'schema':'tfi.provider-context-seed.v1', 'segments':refs,
-            'empty_context':not refs, 'source_agent_id':agent_id}
+    if not items:
+        return {'schema':'tfi.provider-context-seed.v1', 'segments':[],
+                'empty_context':True, 'source_agent_id':agent_id}
+    # Materialize the Provider's existing effective window as one immutable
+    # context boundary. No model compaction runs and no old Segment changes.
+    # Trace membership is required by the durable context-received receipt.
+    digest = hashlib.sha256(json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    sid = stable_segment_id('native-preservation', agent_id, binding['provider_session_ref'], digest)
+    store.put_segment(segment_id=sid, segment_type='compaction',
+        content={'replacement_history':items}, content_type='application/json',
+        created_by_agent_id=agent_id, created_by_actor_ref=agent_id,
+        metadata={'kind':'native_preservation', 'provider_session_ref':binding['provider_session_ref'],
+                  'source':'native_effective_window'})
+    store.append_agent_segments(agent_id, [sid], actor_ref=agent_id)
+    return {'schema':'tfi.provider-context-seed.v1', 'segments':[{'segment_id':sid}] if items else [],
+            'empty_context':not items, 'source_agent_id':agent_id}
