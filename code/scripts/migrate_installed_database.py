@@ -80,6 +80,8 @@ def convert(connection, *, relocate_legacy_articles=False, expected_article_plan
         report['relocated_resource_documents'] = articles.rewrite(connection, proposal)
     report['directories'] = directories(connection)
     report['family'] = family(connection)
+    from scripts.directory_protocol_lifecycle_migration import validate_project_locations
+    validate_project_locations(connection)
     # Family conversion validates the complete Lineage schema, not just its fields.
     schema = _database_schema('resource_registry')
     tables = {row[0] for row in connection.execute(

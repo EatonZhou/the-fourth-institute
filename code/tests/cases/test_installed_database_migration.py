@@ -106,6 +106,25 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
         assert reentry['family']['changed'] is False
         assert reentry['legacy_articles']['articles'] == []
         assert preservation_facts(c) == before
+    # Reconcile an already committed Windows metadata backfill that expanded
+    # project references. This must neither repeat Article copies nor touch IDs.
+    with database.transaction() as c:
+        row = c.execute(f'SELECT document_json FROM "{registry.database.schema}".registry_documents '
+                        "WHERE collection='project_registry' AND document_id='projects'").fetchone()
+        document = articles.stored_json(row[0])
+        project = next(p for p in document['projects'] if p['id'] == project_id)
+        project['path'] = str(project_root)
+        import json
+        c.execute(f'UPDATE "{registry.database.schema}".registry_documents SET document_json=%s '
+                  "WHERE collection='project_registry' AND document_id='projects'", (json.dumps(document),))
+    with database.transaction() as c:
+        repaired = convert(c)
+        assert repaired['from_schema'] == 'tfi.lineage-data.v66'
+        assert repaired['family']['changed'] is False
+        assert repaired['preservation'] == before
+        row = c.execute(f'SELECT document_json FROM "{registry.database.schema}".registry_documents '
+                        "WHERE collection='project_registry' AND document_id='projects'").fetchone()
+        assert next(p for p in articles.stored_json(row[0])['projects'] if p['id'] == project_id)['path'] == 'projects:' + project_id
 
 
 def test_unrecognized_schema_refuses_before_changes(future_creation_store, workspace):
@@ -135,3 +154,24 @@ def test_article_copy_refuses_conflict_and_links(tmp_path):
     (source / 'escape').symlink_to(target, target_is_directory=True)
     with pytest.raises(ValueError, match='links or reparse'):
         tree_manifest(source)
+
+
+def test_metadata_backfill_keeps_area_references_without_posix_encoder(future_creation_store, monkeypatch):
+    from management_portal.resources.registry_store import get_registry_store
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from management_common import json_columns
+    from scripts.directory_protocol_lifecycle_migration import migrate, validate_project_locations
+    from scripts.installed_article_migration import stored_json
+    registry = get_registry_store()
+    with registry.writer('project_registry') as writer:
+        writer.put('project_registry', 'projects', {'projects': [{'id': '中文', 'path': 'projects:中文'}]})
+    # Model the Windows serialization boundary: it does not encode C:/... paths.
+    # An offline metadata change must not need runtime expansion/re-encoding.
+    monkeypatch.setattr(json_columns, 'stored_record', lambda value: value)
+    with get_lineage_data_store().database.transaction() as c:
+        migrate(c)
+        validate_project_locations(c)
+        row = c.execute(f'SELECT document_json FROM "{registry.database.schema}".registry_documents '
+                        "WHERE collection='project_registry' AND document_id='projects'").fetchone()
+        assert stored_json(row[0])['projects'] == [{'id': '中文', 'path': 'projects:中文',
+            'directory': {'origin': 'adopted', 'owner_id': '中文'}}]

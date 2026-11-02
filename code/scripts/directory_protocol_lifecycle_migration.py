@@ -3,6 +3,7 @@
 No command line, service control, credentials, filesystem deletion or implicit
 commit. Run with the Workspace/cleanup migration before new clients start.
 """
+import json
 from management_common.json_columns import json_text, json_value
 from management_common.portal_database import _database_schema
 from scripts.directory_protocol_legacy_schema import migrate_move_safety_schema
@@ -25,19 +26,44 @@ def migrate(connection):
     row = connection.execute(f"SELECT document_json FROM {registry}.registry_documents "
                              "WHERE collection='project_registry' AND document_id='projects' FOR UPDATE").fetchone()
     if row:
-        document = json_value(row['document_json'])
+        # The runtime JSON decoder expands area references. Metadata backfills
+        # must keep stored references intact, including on Windows where native
+        # absolute paths are not converted by json_text's POSIX path encoder.
+        document = json.loads(row['document_json']) if isinstance(row['document_json'], str) else row['document_json']
+        from management_common.instance_locations import located_path, stored_location
         changed = 0
         for project in document.get('projects', []):
+            updated = False
             if 'directory' not in project:
                 project['directory'] = {'origin': 'adopted', 'owner_id': project['id']}
-                changed += 1
+                updated = True
+            if project.get('path'):
+                reference = stored_location(located_path(project['path']))
+                if project['path'] != reference:
+                    project['path'] = reference
+                    updated = True
+            changed += int(updated)
         if changed:
-            connection.execute(f"UPDATE {registry}.registry_documents SET document_json=%s,revision=revision+1 "
-                               "WHERE collection='project_registry' AND document_id='projects'", (json_text(document),))
-            connection.execute(f"UPDATE {registry}.registry_collections SET revision=revision+1 WHERE collection='project_registry'")
+            from management_portal.resources.registry_store import RegistryWriter
+            RegistryWriter(connection, ('project_registry',), _database_schema('resource_registry')).put(
+                'project_registry', 'projects', document)
         counts['projects'] = changed
     counts['converted_removals'] = migrate_cleanup_steps(connection)
     return counts
+
+
+def validate_project_locations(connection):
+    """Check persisted values, never the runtime-decoded view of those values."""
+    from management_common.instance_locations import located_path, stored_location
+    registry = '"' + _database_schema('resource_registry') + '"'
+    row = connection.execute(f"SELECT document_json FROM {registry}.registry_documents "
+                             "WHERE collection='project_registry' AND document_id='projects'").fetchone()
+    if row:
+        document = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+        for project in document.get('projects', []):
+            value = project.get('path')
+            if value and value != stored_location(located_path(value)):
+                raise ValueError('Project location is not stored canonically: ' + project['id'])
 
 
 def migrate_cleanup_steps(connection):

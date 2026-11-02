@@ -70,3 +70,9 @@ requires the same source inventories, verified target copies, and protected
 business records as the preview, then commits the path and schema conversions
 together. Changed or conflicting trees stop the operation. Keep the old files
 and migration evidence archived until service and Article access are verified.
+
+The converter also accepts an already converted v66 database. Its project
+metadata backfill preserves area references and normalizes any native absolute
+project paths left by an earlier Windows backfill. Use the ordinary preview and
+apply commands for that correction; do not copy Articles again. Final validation
+checks the raw stored project paths before the transaction can commit.
