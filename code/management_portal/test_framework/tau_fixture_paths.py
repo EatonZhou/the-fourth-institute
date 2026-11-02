@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import shutil
 import tempfile
 from pathlib import Path
 
 from management_portal.shared_state import atomic_replace_json
+from management_common.file_permissions import assert_private_directory
 
 
 def fixture_root(root: Path) -> Path:
@@ -30,9 +30,9 @@ def inspect_content(root: Path) -> Path | None:
     if path.is_symlink() or path.resolve() != path:
         raise ValueError('TAU content fixture cannot escape its area')
     if path.exists():
+        assert_private_directory(path)
         stat = path.stat()
-        if (not path.is_dir() or stat.st_uid != os.getuid()
-                or [stat.st_dev, stat.st_ino] != record.get('identity')):
+        if not path.is_dir() or [stat.st_dev, stat.st_ino] != record.get('identity'):
             raise ValueError('TAU content fixture directory was replaced')
     return path
 
@@ -48,6 +48,7 @@ def prepare_content(root: Path) -> Path:
     if path.resolve() != path:
         raise ValueError('TAU content fixture cannot escape its area')
     path.mkdir(parents=True, mode=0o700)
+    assert_private_directory(path)
     stat = path.stat()
     atomic_replace_json(root / 'content-fixture.json', {
         'evidence_dir': str(root.resolve()), 'identity': [stat.st_dev, stat.st_ino],
@@ -88,9 +89,9 @@ def inspect(root: Path) -> tuple[Path, dict] | None:
     if record.get('evidence_dir') != str(root):
         raise ValueError('TAU standalone fixture belongs to another case')
     if path.exists():
+        assert_private_directory(path)
         stat = path.stat()
-        if (not path.is_dir() or stat.st_uid != os.getuid()
-                or [stat.st_dev, stat.st_ino] != record.get('identity')):
+        if not path.is_dir() or [stat.st_dev, stat.st_ino] != record.get('identity'):
             raise ValueError('TAU standalone fixture directory was replaced')
     return path, record
 
@@ -110,6 +111,7 @@ def prepare(root: Path) -> Path:
         path = base / _name(root)
         # An unreceipted existing directory is never adopted or deleted.
         path.mkdir(mode=0o700)
+        assert_private_directory(path)
         stat = path.stat()
         atomic_replace_json(_receipt(root), {
             'path': str(path), 'evidence_dir': str(root),

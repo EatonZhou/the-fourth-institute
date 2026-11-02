@@ -403,6 +403,12 @@ def ensure_private_directory(path):
         pass
 
 
+def assert_private_directory(path):
+    """Validate an existing owner-only directory without creating a missing leaf."""
+    with _directory(path, private=True):
+        pass
+
+
 @contextmanager
 def _private_stream(path, *, create=False):
     path = _absolute(path)
