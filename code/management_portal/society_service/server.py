@@ -302,8 +302,9 @@ def _domain_module(domain: str) -> Any:
 
 
 def _lost_terminal_facts(started_at: str) -> list[dict[str, Any]]:
-    from . import lost_terminal_facts
+    from . import family_recovery, lost_terminal_facts
 
+    family_recovery.reconcile_failed_route_tasks()
     return lost_terminal_facts.find(started_at)
 
 

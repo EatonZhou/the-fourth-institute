@@ -115,7 +115,10 @@ def test_router_failure_closes_original_without_trigger_path(configured_family, 
         repository.set_input_state(family["facade"], root, "cancelled")
     repository.set_input_state(router, mid, "failed", error={"message": "Directory reserved"})
     if delivery == "restart":
-        family_recovery.reconcile_failed_route_tasks()
+        from datetime import datetime, timezone
+        from management_portal.society_service import server
+
+        server._lost_terminal_facts(datetime.now(timezone.utc).isoformat())
     else:
         from types import SimpleNamespace
         from management_portal.society_service.runtime.backend_adapter import LineageBackendRuntimeAdapter
