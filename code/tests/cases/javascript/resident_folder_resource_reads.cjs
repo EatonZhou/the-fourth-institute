@@ -12,6 +12,7 @@ w.PortalPreview={openFileMenu:args=>{menus.push(args.request);}};
 w.PortalFileLinks={load:async p=>{absolute.push(p);if(p!=='C:/project/residents/resident_fixture/workspace')throw Error('No registered Workspace contains this parent folder');return {kind:'directory',path:p,children:[]};}};
 w.PortalResidentService={listDirectory:async(id,rel)=>{
  requests.push({id,rel});
+ if(id==='workspace_fixture')return {entries:[]};
  return {entries:rel?[{name:'note.md',type:'file'}]:[{name:'resident.md',type:'file'},{name:'notes',type:'directory'}]};
 }};
 for(const file of ['portal_file_tree','portal_personal_workspaces'])w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static',file+'.js'),'utf8'));
@@ -21,7 +22,7 @@ for(const file of ['portal_file_tree','portal_personal_workspaces'])w.eval(fs.re
  const base='C:/project/residents/resident_fixture';
  panel.setResident({id:'resident_fixture',roots:[{directory_id:'resident_fixture',root_kind:'resident_folder',path:base,label:'Resident Folder',children_loaded:false},{directory_id:'workspace_fixture',workspace_id:'workspace_fixture',root_kind:'workspace',path:base+'/workspace',children_loaded:false}]});
  await tick();await tick();
- assert.deepEqual(requests,[{id:'resident_fixture',rel:''}]);
+ assert.deepEqual(requests,[{id:'resident_fixture',rel:''},{id:'workspace_fixture',rel:''}]);
  assert.equal(root.textContent.includes('读取失败'),false);
  const clickText=text=>{const row=[...root.querySelectorAll('[role=treeitem]')].find(n=>n.textContent.trim()===text);assert.ok(row,text);row.click();};
  clickText('resident.md');await tick();
@@ -38,6 +39,6 @@ for(const file of ['portal_file_tree','portal_personal_workspaces'])w.eval(fs.re
  panel.setResident({id:'another',roots:[]});await panel.load(true);await tick();await tick();
  assert.equal(root.textContent.includes('读取失败'),false);
  assert.equal(requests.at(-1).id,'resident_fixture','retained folder keeps its formal resource identity');
- assert.ok(absolute.every(p=>p===base+'/workspace'),'folder reads never widen absolute-path authorization');
+ assert.deepEqual(absolute,[],'registered directory roots keep formal ReadResource filtering');
  panel.destroy();dom.window.close();console.log('Formal folder listing, descendant reads, preview/menu addresses and retained folders passed');
 })().catch(e=>{console.error(e);dom.window.close();process.exitCode=1;});
