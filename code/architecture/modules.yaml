@@ -658,6 +658,8 @@ modules:
       - "management_portal/society_service/resident_projection.py"
       - "management_portal/society_service/resident_protocol.py"
       - "management_portal/society_service/resident_questions.py"
+      - "management_common/async_questions.py"
+      - "management_portal/society_service/resident_credential_answers.py"
       - "management_portal/society_service/resident_record_domain.py"
       - "management_portal/society_service/resident_registration_domain.py"
       - "management_portal/society_service/resident_released_executions.py"
@@ -1565,7 +1567,7 @@ protocols:
       - "decision_b820faf42218"
       - "decision_22227d0ad075"
       - "decision_fb910c43ab07"
-    description: "入口认证真实 actor，业务层经统一权限端口提交执行者、动作、资源请求，并在对象变更时同步领域事实；端口按开关选择开放或 PAR 模板判定。ResourceService 维护权限实例与模板，Lineage 开启权限前请求其重建；个人 AMA 私有性和领域业务规则在关闭权限时仍保留。"
+    description: "入口认证真实 actor，业务层经统一权限端口提交执行者、动作、资源请求，并在对象变更时同步领域事实；端口按开关选择开放或 PAR 模板判定。ResourceService 维护权限实例与模板，Lineage 开启权限前请求其重建。个人 AMA 私有边界在开放模式仍生效，只接受所有者实际签发给当前主体的活跃临时委托，逐个核对精确资源与本次实际动作；不从管理员、组、父资源或再次转借扩大访问，正常动作授权与 deny 继续适用。调用方身份始终不变。"
     example: "管理员调用 UpdateExecutionSettings 开启权限 → Lineage 经受认证的 permission.rebuild RPC 要求 ResourceService 按当前模板和现有对象重建 → 成功后保存开关 → 各进程重新读取模式并使用 PAR 实例判定。"
   - id: "operation-identity"
     title: "操作身份与来源协议"
@@ -2151,10 +2153,11 @@ protocols:
       - "execution.agent-data"
       - "lineage.conversation"
       - "interface.conversation"
+      - "resources.permissions"
     designs: []
     related_designs:
       - "decision_1e2eb869bc10"
-    description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。"
+    description: "Adapter 将原生提问/批准请求归一为可关联的内容项；Lineage 保存问题与来源消息，回答必须引用同一来源及当前可回答项，再交回对应执行。浏览器是问题/回答数据消费者，不直接充当 Provider socket 客户端。对于已持久化且全为精确权限请求的问题组，Society可将认证User的明确对话同意绑定为该组唯一回答；权限owner校验真实签发者当前持权，凭证与回答接纳同事务提交，仅在收件方处理该输入期间有效。范围、签发身份不从任意正文或页面上下文推断，失效回答重放不重新签发。"
     example: "原生 requestApproval/userInput → Adapter 内容项 → Lineage 问题消息 → prepare_question_answer(source_message_id,entries) → 原执行的回答入口 → 观察已关闭问题。"
 
   - id: "mailbox-viewer-state"
