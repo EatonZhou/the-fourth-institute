@@ -4,23 +4,23 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 32
-  created_at: '2026-09-03'
+  number: 33
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-27T12:50:08Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T21:04:08Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 8
 metaness: 1
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/scheduled_triggered_monitor.py
-  - ${code_root}/management_portal/agent_status_backend.py
-  - ${code_root}/management_portal/static/home.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/scheduled_triggered_monitor.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_status_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home.js
   related:
   - decision_ef80c6d3b5ee
   - decision_5ff0cb51ed84
@@ -99,7 +99,7 @@ Home 的 Agent Status 包含“定时与自动触发”面板（Scheduled & Trig
 
 - **每个操作只改变一件事。** 暂停调度不关闭接单，也不取消当前运行；取消当前运行不暂停调度；修改定时不立即触发。
 - **Lineage 中没有连到该 Resident 或脚本 Effect 的手动事件源时，“运行一次”不可用。** 按钮说明缺少手动入口；内置 Function Block“定时工作”自带手动入口（decision_5b5653c3eaa5）。
-- **身份阻塞和计划等待按权威运行态展示。** 自动源的显式运行 User 由 Lineage 创建与设置入口配置，面板不按创建者、owner 或当前浏览者代填。`GetComponentRuntime` 返回 `state=blocked` 时，即使从未有 Trigger Path，也将该行标为异常并显示具体原因。主体恢复有效后重新读取同一状态与计划，旧错误不继续保持。下一次实际时间尚未建立时明确显示等待建立，周期说明不能替代到期时间。手动运行仍按实际调用者和自己的入口检查权限。
+- **身份阻塞和计划等待按权威运行态展示。** 自动源以 Lineage 当前有效 Leader 为运行主体（decision_5ff0cb51ed84）；没有单独的自动运行 User 选项，面板不按创建者、owner 或当前浏览者代填身份。`GetComponentRuntime` 返回 `state=blocked` 时，即使从未有 Trigger Path，也将该行标为异常并显示具体原因。主体恢复有效后重新读取同一状态与计划，旧错误不继续保持。下一次实际时间尚未建立时明确显示等待建立，周期说明不能替代到期时间。手动运行仍按实际调用者和自己的入口检查权限。
 - **操作前由权限系统检查调用者。** 检查失败时页面显示拒绝原因，该行状态保持不变。
 - **操作完成后重新读取面板。** 指令成功后，页面绕过汇总缓存重新读取全部行。汇总仍在重建时明确提示“操作已提交，正在刷新状态”，并继续读取；取得新状态后才按新状态显示。汇总中的异常任务只影响任务健康状态，不改变已经提交的操作结果。指令失败时恢复按钮并显示失败原因；指令已提交但刷新失败时明确提示“操作已提交，但状态刷新失败”，不重放操作。
 - **“运行一次”遇到正在运行的任务时排队。** 手动触发的 Event 在目标忙碌时默认进入等待队列（连线明确配置 `unavailable_policy` 时以配置为准），不再静默丢弃。
