@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 162
+  number: 163
   created_at: "2026-10-01"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-02T07:43:36Z"
+  updated_at: "2026-11-02T14:31:03Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_217c1dcc230c"
 importance: 8
 ai_generated: false
 links:
@@ -133,6 +133,10 @@ auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更�
 | `UpdateFamilyChatPreferences` | 是 | 独立切换调用者对业务成员的 Solo 对话、Mute 通知或 Exclude 自动路由 | 对 `resident_id` 有 @viewer |
 
 两条指令的 `resident_id` 是 Family 门面，只读写实际调用者自己的偏好；门面 @viewer 即可管理。Solo 决定当前对话对象与视图，Mute 只抑制之后的新 Mailbox 提醒，Exclude 只排除自动路由；三者独立，不改变在途工作、名册、原消息、权限或其他用户。返回 muted_member_ids、excluded_member_ids、solo_member_id，修改 control 为 mute、exclude 或 solo。Solo 代理头部与退出入口、问题卡片、显式引用及旧 M 迁移见[消息路由与对外对话](/resource/knowledge?item=decision_9ad68dd077d4)。
+
+## 工作派发的权限范围
+
+`DispatchFamilyTask` 的授权对象是 `resident_id` 指定的门面。非本 Family 门面、Router、Steward 的调用者须同时通过该门面的私有访问边界和本指令权限；向个人门面持有所有者签发的精确 contributor 委托即可请求其既有内部角色工作，不要求附带整个私人 Lineage 的访问权限。派发仍由 Family 定义选择角色，原消息、任务事实和幂等记录保持，调用者不因此取得成员会话或父 Lineage 的读取、修改权。原生内部角色照常按本 Family 身份核验。
 
 ## leader 与权限
 

@@ -70,7 +70,12 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
     body, block = family_tasks.context(facade)
     family = block["family"]
     if actor not in {family["facade"], family["steward"], family["router"]}:
-        lineage_aggregate.ensure_manager(body, actor)
+        from management_portal import permission_system
+        from . import resident_access
+
+        if (not resident_access.can_manage_resident(facade, actor, operation="DispatchFamilyTask")
+                or not permission_system.allows(actor, "DispatchFamilyTask", {"resident_id": facade_id})):
+            raise resident_access.manage_refusal(facade)
     role = family_tasks.TASKS[trigger][1]
     target = resident_record_domain.find_resident(family[role])
     facts = copy.deepcopy(facts or {})
