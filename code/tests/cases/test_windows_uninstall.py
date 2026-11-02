@@ -327,3 +327,25 @@ def test_failed_stop_preserves_managed_alias(platform, registry):
         uninstall.remove_instances(platform)
     assert is_directory_link(alias)
     assert root.exists()
+
+
+@pytest.mark.parametrize('external', [False, True])
+def test_dsh_local_package_alias_only_targets_own_code(platform, registry, tmp_path, external):
+    from management_common.directory_links import create_directory_link, is_directory_link
+    alias = platform / 'dependencies/providers/dsh-runtime-1/node_modules/tfi-portal'
+    alias.parent.mkdir(parents=True)
+    target = tmp_path / 'external-code' if external else platform / 'code'
+    target.mkdir(exist_ok=True)
+    sentinel = target / 'keep'
+    sentinel.write_text('program source')
+    create_directory_link(alias, target)
+    with patch.object(uninstall.subprocess, 'run') as run:
+        if external:
+            with pytest.raises(ValueError, match='link or reparse'):
+                uninstall.remove_instances(platform)
+            assert is_directory_link(alias)
+        else:
+            uninstall.remove_instances(platform)
+            assert not is_directory_link(alias)
+        run.assert_not_called()
+    assert sentinel.read_text() == 'program source'

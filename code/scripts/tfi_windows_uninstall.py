@@ -34,12 +34,20 @@ _PROVIDER_ALIASES = frozenset({
 
 
 def _managed_alias(path: Path, providers: Path | None) -> bool:
-    if providers is None or path.parent != providers or path.name not in _PROVIDER_ALIASES:
+    if providers is None or not path.is_relative_to(providers):
         return False
     from management_common.directory_links import is_directory_link
     if not is_directory_link(path):
         return False
     target = path.resolve(strict=True)
+    relative = path.relative_to(providers).parts
+    if len(relative) == 3 and relative[0].startswith("dsh-runtime-") and relative[1:] == ("node_modules", "tfi-portal"):
+        # npm's local package entry is also a managed alias, to this program's
+        # code only. It must be unlinked, never traversed during cache removal.
+        code = providers.parent.parent / "code"
+        return target == code and code.is_dir() and not is_directory_link(code)
+    if path.parent != providers or path.name not in _PROVIDER_ALIASES:
+        return False
     # Resolve only to check the boundary; traversal never follows the alias.
     # The ordinary tree walk validates the real target and all its ancestors.
     return target != providers and target.is_relative_to(providers) and target.is_dir()
