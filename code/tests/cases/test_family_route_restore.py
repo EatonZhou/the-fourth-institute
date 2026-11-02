@@ -92,11 +92,11 @@ def test_saved_recovery_intent_survives_interruption_and_ignores_old_failure(fam
 
 def test_recovery_requires_authority_and_reason_before_reopening(family, failed_route, monkeypatch):
     root, repo = failed_route
-    monkeypatch.setattr(family_recovery, "_allowed", lambda *_: False)
+    monkeypatch.setattr(family_recovery, "can_recover", lambda *_: False)
     monkeypatch.setattr(family_facade, "is_own_steward", lambda *_: False)
     assert _recover(family, root).status == "failed"
     assert repo.input_state(family["facade"], root)["state"] == "failed"
-    monkeypatch.setattr(family_recovery, "_allowed", lambda *_: True)
+    monkeypatch.setattr(family_recovery, "can_recover", lambda *_: True)
     assert _recover(family, root, reason="").status == "failed"
     assert _recover(family, root, reassign=True).status == "failed"
     assert _recover(family, root, notice=True).status == "failed"
@@ -133,7 +133,7 @@ def test_withdrawal_after_saved_recovery_intent_wins(family, failed_route, monke
 
 def test_own_steward_can_recover_without_being_original_author(family, failed_route, monkeypatch):
     root, repo = failed_route
-    monkeypatch.setattr(family_recovery, "_allowed", lambda *_: False)
+    monkeypatch.setattr(family_recovery, "can_recover", lambda *_: False)
     monkeypatch.setattr(family_facade, "is_own_steward", lambda facade, actor: actor == family["steward"])
     restored = family_quota.relay_message(family["facade"], root, family["right"], family["steward"],
                                          recover=True, reason="本层 Steward 复核目标")

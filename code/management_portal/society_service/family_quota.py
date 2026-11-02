@@ -69,8 +69,7 @@ def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                   *, quota_reviewed: bool = False, reason: str = "", scope_gap: str = "",
                   scope_reviewed: bool = False, recover: bool = False) -> dict[str, Any]:
     if recover:
-        from . import family_recovery
-        return family_recovery.relay_failed_route(facade_id, message_id, member_id, actor,
+        return _relay_failed_route(facade_id, message_id, member_id, actor,
             reason=reason, quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
     result = _relay_message(facade_id, message_id, member_id, actor, quota_reviewed=quota_reviewed,
                             reason=reason, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
@@ -78,9 +77,65 @@ def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         from . import changes
         changes.resident_changed(facade_id)
     return result
+def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: str, *, reason: str,
+                      quota_reviewed=False, scope_gap="", scope_reviewed=False) -> dict:
+    """Recover the same failed request through ordinary membership/quota/delivery admission.
 
+    Save intent and the failed receipt before reopening. Retrying after a crash
+    uses that intent and the ordinary deterministic relay identity. Withdrawal
+    and a different existing holder always win over recovery.
+    """
+    from . import family_chat_preferences, family_recovery, resident_conversation_stream, resident_record_domain
+    from datetime import datetime, timezone
 
-
+    facade = resident_record_domain.find_resident(facade_id)
+    if not family_facade.is_facade(facade):
+        raise ValueError("目标必须是 Family 门面")
+    repository = resident_conversation_stream.get_repository()
+    store = get_lineage_data_store()
+    if not str(reason or "").strip():
+        raise ValueError("恢复失败请求必须说明理由")
+    with resident_record_domain.state_lock(facade_id):
+        original = repository.message(facade_id, message_id)
+        if not original or original.get("role") != "user":
+            raise ValueError("门面原请求不存在")
+        if not (family_recovery.can_recover(facade, original, actor) or family_facade.is_own_steward(facade, actor)):
+            raise PermissionError("只有原发送者、门面管理者或本 Family Steward 可以恢复请求")
+        if (quota_reviewed or scope_reviewed) and not family_facade.is_own_steward(facade, actor):
+            raise PermissionError("只有本 Family 的 steward 可以批准复核")
+        if not family_facade.is_relay_target(facade, member_id):
+            raise ValueError("所选 Resident 已不属于这个 Family")
+        family_chat_preferences.validate_target(facade, original, member_id)
+        previous = repository.input_state(facade_id, message_id)
+        if previous["state"] == "cancelled":
+            return {"status": "withdrawn", "member_id": member_id}
+        history = family_recovery.route_restorations(facade).get(message_id) or []
+        entry = history[-1] if history else None
+        link = family_facade.relay_links(facade).get(message_id)
+        if link:
+            if not entry or link["resident_id"] != member_id or entry["member_id"] != member_id:
+                raise ValueError("原请求已有承接关系，不能通过恢复覆盖；改派请用 reassign")
+            return {"status": "relayed", "member_id": member_id, "message_id": link["message_id"], "recovery": entry}
+        if family_facade.kept_notice(facade, message_id):
+            raise ValueError("门面已作为告知收下，不能恢复为任务")
+        if entry and entry["member_id"] != member_id:
+            raise ValueError("恢复已核定其他成员，不能重复选择目标")
+        if previous["state"] == "failed":
+            if not entry or entry["failed_receipt"]["updated_at"] != previous["updated_at"]:
+                entry = {"actor": actor, "reason": reason.strip(), "member_id": member_id,
+                         "requested_at": datetime.now(timezone.utc).isoformat(),
+                         "failed_receipt": previous, "status": "pending"}
+                with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
+                    ledger.setdefault("route_restorations", {}).setdefault(message_id, []).append(entry)
+            repository.reopen_input(facade_id, message_id)
+        elif previous["state"] != "queued" or not entry:
+            raise ValueError("仅可恢复尚未转交的失败请求，不能重启活动或完成的请求")
+        result = relay_message(facade_id, message_id, member_id, actor, reason=reason,
+            quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
+        with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
+            entry = ledger["route_restorations"][message_id][-1]
+            entry.update(status=result["status"], result=result)
+        return {**result, "recovery": entry}
 
 def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                    *, quota_reviewed: bool, reason: str, scope_gap: str = "",
