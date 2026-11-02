@@ -4,7 +4,7 @@ const {homeStatements} = require('./home_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
-  'accountSummaryQuotaWindows','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
+  'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
   'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
@@ -49,6 +49,17 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     assert.equal(await page.locator('[data-account-api="a_very_long_api_account_name"] [data-account-details]').count(),0);
     await page.evaluate(()=>{data.accounts[3].rate_limits[0].stale=true;refreshAccountQuotaWindows();});
     assert.deepEqual(await page.locator('[data-account-limit-account="kimi-code"] .agent-status-limit-meta').allTextContents(),['75%*','58%']);
+    const antigravity=page.locator('[data-account-limit-account="antigravity_one"]');
+    const notice=antigravity.locator('[data-account-quota-warning]');
+    assert.equal(await notice.count(),0);
+    await page.evaluate(()=>{
+      Object.assign(data.accounts[2].rate_limits[2],{id:'Gemini 4 Argon/Weekly',label:'Gemini 4 Argon · Weekly',remaining_percent:0,observed_at:Date.now()/1000,resets_at:Date.now()/1000+6*86400});
+      refreshAccountQuotaWindows();
+    });
+    assert.match(await notice.innerText(),/其他额度已耗尽/);
+    assert.match(await notice.getAttribute('title'),/Gemini 4 Argon.*剩余 0%.*采样于.*预计重置/);
+    assert.deepEqual(await antigravity.locator('.agent-status-window-name').allTextContents(),['5 小时','每周']);
+    assert.deepEqual(await antigravity.locator('.agent-status-limit-meta').allTextContents(),['90%','100%']);
     for(const width of [1920,1440,1024,768,390,320]) {
       await page.setViewportSize({width,height:1000});
       const problems=await page.evaluate(()=>{
@@ -58,7 +69,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
         const apis=[...document.querySelectorAll('[data-account-api]')];
         if(innerWidth>1082 && Math.abs(box(apis[0].querySelector('[data-account-details]')).left-box(document.querySelector('[data-account-limit-account] [data-account-details]')).left)>1) issues.push('API and subscription actions not aligned');
         if(box(apis[1]).top<=box(apis[0]).top) issues.push('APIs not single column');
-        for(const row of [...apis,...document.querySelectorAll('.agent-status-account-window, .agent-status-account-balance, .agent-status-balance-visual')]) {
+        for(const row of [...apis,...document.querySelectorAll('.agent-status-account-windows, .agent-status-account-window, .agent-status-account-balance, .agent-status-balance-visual')]) {
           const children=[...row.children], bounds=box(row);
           for(let i=0;i<children.length;i++) {
             const a=box(children[i]);
@@ -77,6 +88,37 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
         popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}};
       renderAccountDetails();
     });
+    await page.evaluate(()=>{accountDetails.accountId='antigravity_one';renderAccountDetails();});
+    const detailsNotice=page.locator('.account-details-quota-warning');
+    assert.match(await detailsNotice.innerText(),/Gemini 4 Argon.*剩余 0%.*预计重置/);
+    for(const width of [1440,390,320]) {
+      await page.setViewportSize({width,height:900});
+      assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    }
+    await page.evaluate(()=>{
+      data.accounts[2].rate_limits[2].stale=true;
+      data.accounts[2].rate_limits[2].resets_at=1;
+      refreshAccountQuotaWindows();
+    });
+    assert.match(await notice.innerText(),/其他额度待确认/);
+    assert.match(await detailsNotice.innerText(),/剩余 0%\*，上次读数，待刷新确认/);
+    for(const remaining of [null, '0', 10]) {
+      await page.evaluate(value=>{Object.assign(data.accounts[2].rate_limits[2],{remaining_percent:value,stale:false});refreshAccountQuotaWindows();},remaining);
+      assert.equal(await notice.count(),0,'unknown and recovered limits do not signal exhaustion');
+      assert.equal(await detailsNotice.count(),0);
+    }
+    await page.evaluate(()=>{
+      Object.assign(data.accounts[2].rate_limits[2],{remaining_percent:0,label:'<img src=x onerror=alert(1)>',resets_at:Date.now()/1000+6*86400});
+      refreshAccountQuotaWindows();
+    });
+    assert.equal(await detailsNotice.locator('img').count(),0,'quota names are escaped');
+    assert.match(await detailsNotice.innerText(),/<img src=x onerror=alert\(1\)>/);
+    await page.evaluate(()=>{
+      data.accounts[2].rate_limits[2].label='Gemini 4 Argon · Weekly';
+      refreshAccountQuotaWindows();
+      accountDetails.accountId='claude_one';renderAccountDetails();
+    });
     assert.match(await page.locator('[data-account-credits] dd').innerText(),/44.?904[.,]19/);
     for(const width of [1440,390,320]) {
       await page.setViewportSize({width,height:900});
@@ -86,6 +128,6 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     await page.evaluate(()=>{data.accounts[1].credits={balance:0,stale:true};refreshAccountQuotaWindows();});
     assert.equal(await page.locator('[data-account-credits] dd').innerText(),'0*');
     if (process.env.PORTAL_LAYOUT_SCREENSHOT) { await page.setViewportSize({width:1440,height:650}); await page.screenshot({path:process.env.PORTAL_LAYOUT_SCREENSHOT}); }
-    console.log('Subscription summaries unchanged; API and subscription rows aligned, bounded coins; six widths pass');
+    console.log('Omitted quota exhaustion, stale/unknown/recovery and details refresh pass; compact summaries and six widths pass');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

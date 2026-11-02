@@ -16,7 +16,7 @@ const context = vm.createContext({document,URL,window:{PortalI18n:{t:x=>x,html:t
   changeAccountResidentsIntake:(_,action)=>actions.push(action),
   accountDetails:{accountId:'api',panel:document.querySelector('#panel'),snapshot,
     popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}}});
-for (const name of ['accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
+for (const name of ['accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration' && n.id.name===name).source,context);
 }
 try {

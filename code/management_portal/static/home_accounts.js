@@ -68,8 +68,8 @@
         ["Gemini Models/Five Hour Limit Remaining", window.PortalI18n.t("5 小时")],
         ["Gemini Models/Weekly Limit Remaining", window.PortalI18n.t("每周")],
       ] : null;
-      // Home keeps the two shared rolling windows; monthly and model-specific
-      // limits remain in the full details, including after an in-place refresh.
+      // Keep the shared rolling windows compact. Omitted exhausted limits are
+      // reported separately so these bars do not imply every model is available.
       if (!summary) return windows;
       return summary.flatMap(([id, label]) => {
         const quotaWindow = windows.find(item => item.id === id);
@@ -77,7 +77,25 @@
       });
     }
 
-    // Refresh the selected Home windows and the complete dialog windows in place.
+    function accountQuotaWarning(account, expanded = false) {
+      if (!account) return "";
+      const shown = new Set(accountSummaryQuotaWindows(account).map(item => item.id));
+      const exhausted = accountQuotaWindows(account).filter(item => !shown.has(item.id) && item.remaining_percent === 0);
+      if (!exhausted.length) return "";
+      const stale = exhausted.every(accountQuotaWindowIsStale);
+      const label = stale ? window.PortalI18n.t("其他额度待确认") : window.PortalI18n.t("其他额度已耗尽");
+      const explanation = window.PortalI18n.t("摘要只显示部分额度，模型专属或其他周期的限额仍可能阻止调用。");
+      const readings = exhausted.map(item => {
+        const sampled = typeof item.observed_at === "number" ? item.observed_at * 1000 : item.observed_at;
+        return [item.label || item.id, accountQuotaWindowIsStale(item) ? window.PortalI18n.t("剩余 0%*，上次读数，待刷新确认") : window.PortalI18n.t("剩余 0%"),
+          sampled && window.PortalI18n.text`采样于 ${formatDateTime(sampled)}`,
+          item.resets_at && window.PortalI18n.text`预计重置 ${formatDateTime(item.resets_at * 1000)}`].filter(Boolean).join(" · ");
+      });
+      if (expanded) return window.PortalI18n.html`<div class="account-details-quota-warning" data-account-quota-warning><strong>${esc(label)}</strong><p>${esc(explanation)}</p><ul>${readings.map(reading => `<li>${esc(reading)}</li>`).join("")}</ul></div>`;
+      return window.PortalI18n.html`<span data-account-quota-warning title="${esc([explanation, ...readings].join("\n"))}">${esc(label)} · ${window.PortalI18n.t("见详情")}</span>`;
+    }
+
+    // Refresh quota readings, status and an open details dialog together.
     function refreshAccountQuotaWindows() {
       const accounts = new Map(executionAccounts(currentAgentStatusData()).map(account => [account.account_id, account]));
       for (const node of document.querySelectorAll("[data-account-quota-account]")) {
@@ -87,6 +105,10 @@
         const quotaWindow = windows && windows.find(window => window.id === node.dataset.accountQuotaWindow);
         if (quotaWindow) node.outerHTML = accountQuotaWindow(account, quotaWindow);
         else if (account) node.remove();
+      }
+      for (const node of document.querySelectorAll("[data-account-limit-status]")) {
+        const account = accounts.get(node.dataset.accountLimitStatus);
+        if (account) node.innerHTML = accountLimitStatus(account);
       }
       renderAccountDetails();
     }
@@ -169,8 +191,7 @@
       </div>`;
     }
 
-    function accountLimitRow(account) {
-      const accountId = String(account.account_id || "");
+    function accountLimitStatus(account) {
       const windows = accountSummaryQuotaWindows(account);
       const quota = account.quota_reserve || {};
       const reserved = quota.status === "reserved";
@@ -178,12 +199,22 @@
       const recovery = blocked.length && blocked.every(window => window.resets_at > 0) ? Math.max(...blocked.map(window => window.resets_at)) * 1000 : 0;
       const recoveryPending = recovery > 0 && recovery <= Date.now();
       const authenticationFailed = account.error_code === "provider_authentication_failed";
-      const authenticationLabel = authenticationFailed ? window.PortalI18n.t('<span class="agent-status-muted" data-account-status-error>登录凭据失效</span>') : "";
-      const content = authenticationLabel + (windows.length ? windows.map(window => accountQuotaWindow(account, window)).join("")
-        : authenticationFailed ? "" : account.balance ? accountBalanceHtml(account) : window.PortalI18n.html`<span class="agent-status-muted"${reserved ? "" : " data-account-limit-stale"}>${esc(account.status === "loading" ? window.PortalI18n.t("正在读取额度…") : account.error || window.PortalI18n.t("额度数据不可用"))}</span>`);
+      const warning = accountQuotaWarning(account);
+      if (!authenticationFailed && !reserved && warning) return warning;
       const resets = windows.filter(w => w.resets_at > Date.now() / 1000).map(w => w.resets_at);
       const refreshLabel = authenticationFailed ? window.PortalI18n.t("请重新登录该账号") : account.balance && !windows.length ? (account.balance.updated_at ? window.PortalI18n.text`更新 ${formatDateTime(account.balance.updated_at)}` : account.balance.status === "loading" ? window.PortalI18n.t("正在刷新余额…") : "") : reserved ? recovery > Date.now() ? window.PortalI18n.text`预计恢复 ${formatDateTime(recovery)}` : window.PortalI18n.t("等待额度恢复确认") : account.refreshing ? window.PortalI18n.t("正在刷新用量…") : account.error ? window.PortalI18n.t("用量刷新失败")
         : resets.length ? window.PortalI18n.text`预计刷新 ${formatDateTime(Math.min(...resets) * 1000)}` : window.PortalI18n.t("等待用量刷新");
+      return (reserved && quota.remaining_percent !== 0 ? window.PortalI18n.html`<span data-account-limit-stale>${recoveryPending ? window.PortalI18n.t("额度恢复待确认") : window.PortalI18n.t("额度不足，等待恢复")}</span> · ` : "") + esc(refreshLabel);
+    }
+
+    function accountLimitRow(account) {
+      const accountId = String(account.account_id || "");
+      const windows = accountSummaryQuotaWindows(account);
+      const reserved = account.quota_reserve?.status === "reserved";
+      const authenticationFailed = account.error_code === "provider_authentication_failed";
+      const authenticationLabel = authenticationFailed ? window.PortalI18n.t('<span class="agent-status-muted" data-account-status-error>登录凭据失效</span>') : "";
+      const content = authenticationLabel + (windows.length ? windows.map(window => accountQuotaWindow(account, window)).join("")
+        : authenticationFailed ? "" : account.balance ? accountBalanceHtml(account) : window.PortalI18n.html`<span class="agent-status-muted"${reserved ? "" : " data-account-limit-stale"}>${esc(account.status === "loading" ? window.PortalI18n.t("正在读取额度…") : account.error || window.PortalI18n.t("额度数据不可用"))}</span>`);
       return window.PortalI18n.html`<div class="agent-status-account-limit" data-account-limit-account="${esc(accountId)}">
     <span class="agent-status-account-name">${esc(accountId)}
       ${account.enabled === false ? window.PortalI18n.html`<small>已停用</small>` : ""}
@@ -193,7 +224,7 @@
       <div class="agent-status-account-rate-windows">${content}</div>
       <button class="portalButton is-compact agent-status-account-details" type="button" data-account-details="${esc(accountId)}" aria-haspopup="dialog" aria-expanded="false" aria-controls="account-details">详情</button>
 
-      <span class="agent-status-account-refresh">${reserved && quota.remaining_percent !== 0 ? window.PortalI18n.html`<span data-account-limit-stale>${recoveryPending ? window.PortalI18n.t("额度恢复待确认") : window.PortalI18n.t("额度不足，等待恢复")}</span> · ` : ""}${esc(refreshLabel)}</span>
+      <span class="agent-status-account-refresh" data-account-limit-status="${esc(accountId)}">${accountLimitStatus(account)}</span>
     </div></div>`;
     }
 
@@ -371,7 +402,7 @@
       const focusedElement = details.panel.contains(document.activeElement) ? document.activeElement : null;
       const focused = focusedElement?.dataset.accountAction;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
-    <div class="account-details-body">${accountCreditsHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
+    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
       ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>

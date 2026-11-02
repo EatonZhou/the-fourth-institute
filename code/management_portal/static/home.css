@@ -929,6 +929,10 @@ a.agent-status-creature.queued:hover {
   font-size: 11px;
   white-space: nowrap;
 }
+[data-account-quota-warning] { color: var(--danger, #b42318); }
+.account-details-quota-warning { font-size: 12px; overflow-wrap: anywhere; }
+.account-details-quota-warning p { margin: 6px 0; }
+.account-details-quota-warning ul { margin: 6px 0 12px; padding-left: 18px; }
 .agent-status-tabs {
   display: flex;
   align-items: center;
