@@ -198,9 +198,14 @@ def private_child(directory, name, *, create=False):
             handle = stack.enter_context(security.handle(
                 directory_path(directory) / name, directory=True, create=create))
             security.assert_private(handle)
+            # The ACL-protected operation directory must accept child renames.
+            # Reuse its checked handle (read/write sharing, no delete sharing);
+            # an additional ordinary directory pin would deny those writes.
+            child = security.file_descriptor(handle, writable=False)
         elif create:
             os.mkdir(name, 0o700, dir_fd=directory)
-        child = open_child(directory, name, os.O_RDONLY, is_directory=True)
+        if os.name != 'nt':
+            child = open_child(directory, name, os.O_RDONLY, is_directory=True)
         stack.callback(os.close, child)
         if os.name != 'nt':
             info = os.fstat(child)
