@@ -37,9 +37,11 @@ class Conversion:
         self.missing, self.unclassified = {}, {}
 
     def location(self, value, field, deleted=False):
-        if not Path(value).is_absolute() or '\n' in value or '\0' in value:
+        if '\n' in value or '\0' in value:
             return value
-        mapped = value
+        mapped = str(self.instance.resolve(value)) if value.partition(':')[0] in AREAS else value
+        if not Path(mapped).is_absolute():
+            return value
         seen = set()
         while mapped not in seen:
             seen.add(mapped)

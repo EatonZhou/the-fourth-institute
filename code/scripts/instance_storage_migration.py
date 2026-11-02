@@ -274,18 +274,21 @@ def remove_empty_directories(paths: Iterable[Path]) -> list[str]:
 
 
 def tree_size(path: Path) -> int:
-    """Bytes used under ``path`` without following links."""
+    """Allocated bytes where available, logical bytes on Windows; no link traversal."""
+    def size(info):
+        blocks = getattr(info, 'st_blocks', None)
+        return info.st_size if blocks is None else blocks * 512
     total = 0
     try:
         info = path.lstat()
     except OSError:
         return 0
-    total += info.st_blocks * 512
+    total += size(info)
     if path.is_dir() and not path.is_symlink():
         for directory, folders, files in os.walk(path, followlinks=False):
             for name in (*folders, *files):
                 try:
-                    total += os.lstat(os.path.join(directory, name)).st_blocks * 512
+                    total += size(os.lstat(os.path.join(directory, name)))
                 except OSError:
                     pass
     return total

@@ -65,6 +65,19 @@ def test_location_conversion_preserves_prose_and_host_locations(tmp_path):
     assert after['account_dir'] == str(host)
 
 
+def test_existing_area_references_follow_later_directory_moves(tmp_path):
+    root = tmp_path / 'instance'
+    projects, lineages = root / 'projects', root / 'lineages'
+    target = projects / '中文/agents/lineage_a/workspace'
+    target.mkdir(parents=True)
+    instance = InstanceManifest(root, {'areas': {'projects': str(projects), 'lineages': str(lineages)}})
+    converter = Conversion(instance, PrefixMap([(str(lineages / 'lineage_a'), str(target.parent))]))
+    before = {'path': 'lineages:lineage_a/workspace', 'prompt': 'lineages:lineage_a/workspace'}
+    after = converter.convert(before, 'workspace')
+    assert after == {'path': 'projects:中文/agents/lineage_a/workspace', 'prompt': before['prompt']}
+    assert not converter.missing
+
+
 def test_deleted_outside_locations_and_missing_registrations_are_reported(tmp_path):
     """已删除登记的区域外路径不动，缺失的有效登记单列"""
     project = tmp_path / 'projects'

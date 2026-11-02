@@ -11,6 +11,13 @@ from scripts.migrate_instance_units import Replacement
 
 
 class WindowsConversionTests(unittest.TestCase):
+    def test_tree_size_on_native_filesystem(self):
+        from scripts.instance_storage_migration import tree_size
+        folder = self.base / 'tree'
+        folder.mkdir()
+        (folder / 'data.bin').write_bytes(b'x' * 8192)
+        self.assertGreaterEqual(tree_size(folder), 8192)
+
     @unittest.skipUnless(sys.platform == 'win32', 'native Windows process inventory')
     def test_native_process_reference_and_ignore(self):
         script = self.base / 'running.py'
