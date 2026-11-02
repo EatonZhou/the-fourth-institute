@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from contextlib import ExitStack
+from pathlib import Path
+import sqlite3
 import threading
 
 from management_common.provider_turn_artifacts import ToolEditArtifacts
@@ -13,9 +15,118 @@ from .backend_contracts import BackendResult, full_system_context
 from .context_seed import realize_portable_seed
 from .native_harness_tools import prepare_tools
 from .native_options import NativeOptions
+from .provider_turn_usage import TOKEN_USAGE_KEYS, _CAMEL_KEYS, usage_payload
 from .resident_capability_assembly import require_offered_tools
 from .native_socket_backend import _report_tool_events, _observe_tool_edit_artifacts
 from .native_tool_events import tool_started, tool_completed
+
+
+def _pb_fields(buf):
+    pos, end = 0, len(buf)
+    while pos < end:
+        tag = shift = 0
+        while pos < end:
+            b = buf[pos]
+            pos += 1
+            tag |= (b & 0x7F) << shift
+            if not (b & 0x80):
+                break
+            shift += 7
+        field, wtype = tag >> 3, tag & 7
+        if wtype == 0:
+            val = shift = 0
+            while pos < end:
+                b = buf[pos]
+                pos += 1
+                val |= (b & 0x7F) << shift
+                if not (b & 0x80):
+                    break
+                shift += 7
+            yield field, wtype, val
+        elif wtype == 1:
+            pos += 8
+        elif wtype == 2:
+            ln = shift = 0
+            while pos < end:
+                b = buf[pos]
+                pos += 1
+                ln |= (b & 0x7F) << shift
+                if not (b & 0x80):
+                    break
+                shift += 7
+            yield field, wtype, buf[pos:pos + ln]
+            pos += ln
+        elif wtype == 5:
+            pos += 4
+        else:
+            return
+
+
+def _step_usage(blob):
+    """Extract canonical single-request token usage from CortexStepGeneratorMetadata."""
+    vals = {}
+    for f1, w1, v1 in _pb_fields(blob):
+        if f1 == 1 and w1 == 2:
+            for f2, w2, v2 in _pb_fields(v1):
+                if f2 == 4 and w2 == 2:
+                    for f3, w3, v3 in _pb_fields(v2):
+                        if w3 == 0:
+                            vals[f3] = int(v3)
+    uncached = vals.get(2, 0) + vals.get(4, 0)
+    cached = vals.get(5, 0)
+    thinking = vals.get(9, 0)
+    output = vals.get(3, 0) or (vals.get(10, 0) + thinking)
+    input_tokens = uncached + cached
+    usage = {
+        "input_tokens": input_tokens,
+        "cached_input_tokens": cached,
+        "output_tokens": output,
+        "reasoning_output_tokens": thinking,
+        "total_tokens": input_tokens + output,
+    }
+    return {k: v for k, v in usage.items() if v > 0}
+
+
+def _read_steps(env, sid, after_idx=-1):
+    """Read per-step usage rows from Antigravity's conversation SQLite database."""
+    home = env.get("GEMINI_HOME") if isinstance(env, dict) else ""
+    db_path = Path(home) / "antigravity-acp" / "conversations" / f"{sid}.db" if home and sid else None
+    if not db_path or not db_path.is_file():
+        return after_idx, []
+    try:
+        with sqlite3.connect(db_path, timeout=1.0) as conn:
+            rows = conn.execute(
+                "SELECT idx, data FROM gen_metadata WHERE idx > ? ORDER BY idx",
+                (after_idx,),
+            ).fetchall()
+    except sqlite3.Error:
+        return after_idx, []
+    if not rows:
+        return after_idx, []
+    steps = [u for _, data in rows if isinstance(data, (bytes, memoryview)) and (u := _step_usage(bytes(data)))]
+    return int(rows[-1][0]), steps
+
+
+def _raw_turn_usage(raw):
+    """Normalize ACP session/prompt usage into Portal's canonical token usage."""
+    if not isinstance(raw, dict):
+        return {}
+    inp = int(raw.get("inputTokens") or 0)
+    cached = int(raw.get("cachedReadTokens") or 0)
+    out = int(raw.get("outputTokens") or 0)
+    thought = int(raw.get("thoughtTokens") or 0)
+    total = int(raw.get("totalTokens") or 0)
+    if thought > 0 and (not total or inp + out + thought <= total):
+        out += thought
+    total = total or (inp + out)
+    usage = {
+        "input_tokens": inp,
+        "cached_input_tokens": cached,
+        "output_tokens": out,
+        "reasoning_output_tokens": thought,
+        "total_tokens": total,
+    }
+    return {k: v for k, v in usage.items() if v > 0}
 
 
 def _tool_arguments(item):
@@ -109,6 +220,8 @@ class AntigravityBackend:
         completed_tools = set()
         turn_id = request.execution_id
         tool_edits = ToolEditArtifacts(request.cwd)
+        context_usage, context_window = {}, 0
+        start_idx = -1
 
         def emit(method, **params):
             event = {"method": method, "params": {"threadId": sid, "turnId": turn_id, **params}}
@@ -131,11 +244,13 @@ class AntigravityBackend:
             completed_tools.add(tool_id)
 
         def update(params):
-            nonlocal segment, after_tool
-            if not active_turn or params.get("sessionId") != sid:
-                return  # session/load may replay historical updates.
+            nonlocal segment, after_tool, context_usage, context_window
             item = params.get("update") or {}
             kind = item.get("sessionUpdate")
+            if kind == "usage_update" and (not sid or params.get("sessionId") == sid):
+                context_window = int(item.get("size", 0)) or context_window
+            if not active_turn or params.get("sessionId") != sid:
+                return  # session/load may replay historical updates.
             if kind in {"agent_message_chunk", "agent_thought_chunk", "tool_call", "tool_call_update"}:
                 accept()
             if kind in {"agent_message_chunk", "agent_thought_chunk"}:
@@ -179,10 +294,16 @@ class AntigravityBackend:
                 if merged.get("status") == "completed":
                     complete_tool(tool_id, merged)
             elif kind == "usage_update":
-                usage = {"input_tokens": int(item.get("used", 0))}
-                context.observe_context_usage(usage, int(item.get("size", 0)))
-                emit("thread/tokenUsage/updated", tokenUsage={"context": {"inputTokens": usage["input_tokens"]},
-                                                              "modelContextWindow": int(item.get("size", 0))})
+                _, steps = _read_steps(env, sid, start_idx)
+                used = int(item.get("used", 0))
+                step_usage = steps[-1] if steps else ({"input_tokens": used} if used > 0 else {})
+                if step_usage:
+                    context_usage = step_usage
+                    context.observe_context_usage(step_usage, context_window)
+                    emit("thread/tokenUsage/updated", tokenUsage={
+                        "context": {_CAMEL_KEYS[k]: v for k, v in step_usage.items() if k in _CAMEL_KEYS and v > 0},
+                        "modelContextWindow": context_window,
+                    })
 
         def client_request(method, params):
             if method == "session/request_permission":
@@ -238,6 +359,7 @@ class AntigravityBackend:
             context.set_provider_recovery_state({"phase": "prompt_sent", "turn_id": turn_id, "session_id": sid})
             with self._lock:
                 self._active[(route, sid, turn_id)] = client
+            start_idx, _ = _read_steps(env, sid)
             active_turn = True
             try:
                 result = client.call("session/prompt", {"sessionId": sid, "prompt": [{"type": "text", "text": invocation.user_prompt}]},
@@ -250,11 +372,20 @@ class AntigravityBackend:
                         complete_tool(tool_id, item)
                 output = {"message": "".join(text_parts), "provider": self.provider_id,
                           "operation": "turn", "turn_id": turn_id, "stop_reason": result.get("stopReason", "")}
-                raw = result.get("usage") or {}
-                usage = {target: int(raw[source]) for source, target in
-                         (("inputTokens", "input_tokens"), ("outputTokens", "output_tokens"),
-                          ("cachedReadTokens", "cached_input_tokens"), ("thoughtTokens", "reasoning_output_tokens"),
-                          ("totalTokens", "total_tokens")) if isinstance(raw.get(source), (int, float))}
+                turn_usage = _raw_turn_usage(result.get("usage"))
+                _, steps = _read_steps(env, sid, start_idx)
+                if steps:
+                    summed = {
+                        k: sum(s.get(k, 0) for s in steps)
+                        for k in TOKEN_USAGE_KEYS
+                        if sum(s.get(k, 0) for s in steps) > 0
+                    }
+                    if summed.get("total_tokens", 0) >= turn_usage.get("total_tokens", 0):
+                        turn_usage = summed
+                    context_usage = steps[-1]
+                    if context_window:
+                        context.observe_context_usage(context_usage, context_window)
+                usage = usage_payload(turn_usage, context_usage or turn_usage, context_window)
                 emit("item/completed", item={"id": f"{turn_id}:answer:{segment}", "type": "agentMessage", "text": output["message"], "phase": "final_answer"})
                 _observe_tool_edit_artifacts(context, tool_edits, provider=self.provider_id, session_id=sid,
                                              turn_id=turn_id, status="completed")

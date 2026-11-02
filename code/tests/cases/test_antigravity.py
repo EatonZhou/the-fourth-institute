@@ -72,7 +72,11 @@ def test_turn_serves_portal_tools_and_reports_native_events_and_usage(agent):
     result = AntigravityBackend().execute(inv, ctx)
     assert result.output["message"] == "hello:resource text"
     assert result.backend_session_id == "google-session-1"
-    assert result.usage == {"input_tokens": 80, "output_tokens": 6, "total_tokens": 86}
+    assert result.usage == {
+        "last": {"inputTokens": 80, "outputTokens": 6, "totalTokens": 86},
+        "context": {"inputTokens": 80},
+        "modelContextWindow": 1000,
+    }
     assert seen == [{"id": "resource-one"}]
     capability_contracts.check_tool_events(events)
     observed = [call.args[0] for call in inv.provider_event_processor.process_event.call_args_list]
@@ -404,3 +408,91 @@ def test_installer_rejects_archive_path_escape(monkeypatch, tmp_path):
     with pytest.raises(ValueError, match="Unsafe path"):
         runtime.AntigravityRuntime().stage(("1.4.5",))
     assert not (tmp_path / "outside").exists()
+
+
+def _varint(value):
+    out = bytearray()
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        if value:
+            out.append(byte | 0x80)
+        else:
+            out.append(byte)
+            return bytes(out)
+
+
+def _step_blob(*, uncached, cached, output, thinking, response):
+    usage = (
+        b"\x10" + _varint(uncached)
+        + b"\x18" + _varint(output)
+        + b"\x28" + _varint(cached)
+        + b"\x48" + _varint(thinking)
+        + b"\x50" + _varint(response)
+    )
+    chat_model = b"\x22" + _varint(len(usage)) + usage
+    return b"\x0a" + _varint(len(chat_model)) + chat_model
+
+
+def test_multi_step_turn_separates_turn_sum_from_context_window_usage(agent):
+    import sqlite3
+    from management_portal.society_service.resident_domain_common import execution_token_usage_contract
+
+    conv_dir = agent / "antigravity-acp" / "conversations"
+    conv_dir.mkdir(parents=True, exist_ok=True)
+    db_path = conv_dir / "google-session-1.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("CREATE TABLE gen_metadata (idx INTEGER PRIMARY KEY, data BLOB, size INTEGER)")
+        # Prior turn step (idx=0) must not be summed into the new turn.
+        conn.execute("INSERT INTO gen_metadata VALUES (0, ?, 0)",
+                     (_step_blob(uncached=5000, cached=10000, output=200, thinking=50, response=150),))
+        conn.commit()
+
+    ctx, events, state = context()
+    # Simulate the Go harness writing two new steps (idx=1, idx=2) during the turn before usage_update.
+    orig_observe = ctx.observe_context_usage
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO gen_metadata VALUES (1, ?, 0)",
+                     (_step_blob(uncached=2000, cached=15000, output=300, thinking=100, response=200),))
+        conn.execute("INSERT INTO gen_metadata VALUES (2, ?, 0)",
+                     (_step_blob(uncached=2277, cached=150489, output=2958, thinking=2385, response=573),))
+        conn.commit()
+
+    # Pass start_idx=0 by intercepting _read_steps on the initial pre-prompt call only.
+    from management_portal.execution import antigravity_backend as backend_mod
+    real_read = backend_mod._read_steps
+    calls = []
+    defread = lambda env, sid, after_idx=-1: (calls.append(after_idx), (0, []) if len(calls) == 1 else real_read(env, sid, after_idx))[1]
+    with mock.patch.object(backend_mod, "_read_steps", side_effect=defread):
+        result = AntigravityBackend().execute(invocation(agent, sid="google-session-1"), ctx)
+
+    assert result.usage == {
+        "last": {
+            "inputTokens": 169766,
+            "cachedInputTokens": 165489,
+            "outputTokens": 3258,
+            "reasoningOutputTokens": 2485,
+            "totalTokens": 173024,
+        },
+        "context": {
+            "inputTokens": 152766,
+            "cachedInputTokens": 150489,
+            "outputTokens": 2958,
+            "reasoningOutputTokens": 2385,
+            "totalTokens": 155724,
+        },
+        "modelContextWindow": 1000,
+    }
+    assert state["context"] == {
+        "input_tokens": 152766,
+        "cached_input_tokens": 150489,
+        "output_tokens": 2958,
+        "reasoning_output_tokens": 2385,
+        "total_tokens": 155724,
+    }
+    assert state["window"] == 1000
+    contract = execution_token_usage_contract(result.usage)
+    assert contract["turn_usage"]["total_tokens"] == 173024
+    assert contract["context_usage"]["input_tokens"] == 152766
+    assert contract["context_usage"]["total_tokens"] == 155724
+    assert contract["model_context_window"] == 1000
