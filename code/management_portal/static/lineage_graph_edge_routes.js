@@ -372,11 +372,13 @@
       const placed = [];
       // Node placement does not reserve space for edge labels. Include endpoint
       // cards as obstacles here too, including the source and destination.
+      // Keep their measured bounds: the label box below already includes the
+      // clearance. Padding both boxes rejects labels that fit between cards.
       const cards = state.model.nodes.map(node => {
         const position = nodePosition(node), half = nodeHalfExtents(node);
         return { x: position.x / 100 * worldSize.width, y: position.y / 100 * worldSize.height,
-          halfWidth: half.x / 100 * worldSize.width + 8,
-          halfHeight: half.y / 100 * worldSize.height + 8 };
+          halfWidth: half.x / 100 * worldSize.width,
+          halfHeight: half.y / 100 * worldSize.height };
       });
       [...edges]
         .filter(edge => edge.type !== "workspace_binding")

@@ -19,7 +19,7 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
   for(const n of ['portal_design_system','portal_themes',...HATG_PANEL_STYLES,'lineage_function_blocks'])await page.addStyleTag({url:'/static/'+n+'.css'});
   for(const n of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','projection_libraries/portal-graph/1.0.0/geometry','vendor/d3/d3.v7.9.0.min',...LINEAGE_GRAPH_SCRIPTS])await page.addScriptTag({url:'/static/'+n+'.js'});
   await page.evaluate(()=>{
-   window.graph=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',scaleExtent:[.05,3.2],nodeContent:node=>'<strong>'+PortalUIPrimitives.escapeHtml(node.title)+'</strong>'});
+   window.graph=PortalHatgGraph.createGraph({root:'#canvas',world:'#world',edgeLayer:'#edges',effectLayer:'#effects',labelLayer:'#labels',nodeLayer:'#nodes',scaleExtent:[.05,3.2],nodeContent:node=>'<strong>'+PortalUIPrimitives.escapeHtml(node.title)+'</strong>',onEdgeClick:edge=>{window.clickedEdgeId=edge.id;}});
    graph.render({nodes:[{id:'a',x:20,y:20},{id:'b',x:80,y:80},{id:'c',x:20,y:80},{id:'d',x:80,y:20}].map(n=>({...n,kind:'agent',title:n.id})),edges:[{id:'one',source:'a',target:'b',type:'route',label:'Route'},{id:'two',source:'c',target:'d',type:'route',label:'Route'}]});
   });
   const verifyPathAttachment=async stage=>{
@@ -130,9 +130,61 @@ const root=path.resolve(__dirname,'../../../management_portal/static');
   await page.evaluate(()=>graph.refresh());
   await verifyPathAttachment('separated endpoints');
   assert.equal(await page.locator('line.hatgEdgeLabelLeader').count(),0,'obsolete leaders disappear when the curve can hold its label');
+  // Screenshot regression: a continuation label fits between staggered cards,
+  // but counting clearance on both cards and labels sent it above both cards.
+  await page.evaluate(()=>graph.render({nodes:[
+   {id:'inherit-source',kind:'agent',title:'HATG ISA检查与润色 · 分支',x:30,y:50},
+   {id:'inherit-target',kind:'agent',title:'Projects页面重新设计',x:50,y:45},
+  ],edges:[{id:'continuation',source:'inherit-source',target:'inherit-target',type:'inheritance',label:'从消息继续'}]}));
+  const inheritanceFixture=await page.evaluate(()=>{
+   const width=Number(document.querySelector('#canvas').dataset.worldWidth);
+   const height=Number(document.querySelector('#canvas').dataset.worldHeight);
+   const cardWidth=document.querySelector('.hatgNode').offsetWidth;
+   const labelWidth=document.querySelector('.edgeLabelBtn').offsetWidth;
+   // The real label fits with at least eight world pixels on each side.
+   const gap=labelWidth+20;
+   return {nodes:[
+    {id:'inherit-source',kind:'agent',title:'HATG ISA检查与润色 · 分支',x:30,y:50},
+    {id:'inherit-target',kind:'agent',title:'Projects页面重新设计',x:30+(cardWidth+gap)/width*100,y:50-43/height*100},
+   ],edges:[{id:'continuation',source:'inherit-source',target:'inherit-target',type:'inheritance',label:'从消息继续'}]};
+  });
+  await page.evaluate(model=>{graph.render(model);graph.fit({duration:0,maxScale:1.8});},inheritanceFixture);
+  const verifyContinuation=async stage=>{
+   await page.waitForFunction(()=>{
+    const nodes=[...document.querySelectorAll('.hatgNode')];
+    return nodes.length===2&&nodes.every(node=>node.dataset.nodeId.startsWith('inherit-'));
+   });
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const geometry=await page.evaluate(()=>{
+    const rect=n=>{const r=n.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
+    return {cards:[...document.querySelectorAll('.hatgNode')].map(rect),label:rect(document.querySelector('.edgeLabelBtn')),
+     leaders:document.querySelectorAll('line.hatgEdgeLabelLeader').length,transform:graph.getTransform()};
+   });
+   console.log(stage,JSON.stringify(geometry));
+   if(stage==='continuation fit'&&process.env.TAU_EDGE_LABEL_SCREENSHOT)await page.screenshot({path:process.env.TAU_EDGE_LABEL_SCREENSHOT.replace(/\.png$/, '-continuation.png')});
+   assert.equal(geometry.leaders,0,stage+': a continuation label that fits in the gap stays on its own curve');
+   for(const card of geometry.cards)assert.ok(geometry.label.right<=card.left||geometry.label.left>=card.right
+    ||geometry.label.bottom<=card.top||geometry.label.top>=card.bottom,stage+': label must clear both cards');
+   await verifyPathAttachment(stage);
+  };
+  await verifyContinuation('continuation fit');
+  await page.evaluate(()=>graph.refresh());await verifyContinuation('continuation refresh');
+  await page.evaluate(()=>graph.setTransform({x:0,y:0,k:1},{duration:0}));await verifyContinuation('continuation zoom');
+  const inheritanceSource=await page.locator('.hatgNode[data-node-id="inherit-source"]').boundingBox();
+  const inheritanceX=inheritanceSource.x+inheritanceSource.width/2,inheritanceY=inheritanceSource.y+inheritanceSource.height/2;
+  await page.mouse.move(inheritanceX,inheritanceY);await page.mouse.down();
+  await page.mouse.move(inheritanceX-12,inheritanceY+8,{steps:3});
+  await page.mouse.move(inheritanceX,inheritanceY,{steps:3});await page.mouse.up();
+  await verifyContinuation('continuation drag');
+  await page.locator('.edgeLabelBtn[data-edge-id="continuation"]').click();
+  assert.equal(await page.evaluate(()=>window.clickedEdgeId),'continuation','the attached label still opens its own relationship');
   // A Route leaving a right-side output must approach the left-side input
   // from outside the card, including when its target is behind the source.
   const verifyReturnRoute=async stage=>{
+   await page.waitForFunction(()=>{
+    const nodes=[...document.querySelectorAll('.hatgNode')];
+    return nodes.length===3&&nodes.every(node=>node.dataset.nodeId.startsWith('return-'));
+   });
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    const crossings=await page.evaluate(()=>{
     const edge=document.querySelector('path.hatgEdge[data-edge-id="return-route"]');
