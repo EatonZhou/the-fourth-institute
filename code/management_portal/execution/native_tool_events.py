@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from typing import Any
+from urllib.parse import urlsplit
 
 _TOOL_ITEM_TYPES = frozenset({"commandExecution", "dynamicToolCall", "toolCall", "mcpToolCall"})
 _SHELL_TOOLS = frozenset({"bash", "shell", "exec", "run_command", "execute_command", "terminal"})
@@ -129,6 +130,31 @@ def _item(call_id: str, name: str, arguments: dict[str, Any], cwd: str) -> dict[
     return {"type": "dynamicToolCall", "id": call_id, "tool": name, "arguments": arguments}
 
 
+def _image_url(part: Mapping[str, Any]) -> str:
+    """Preserve an explicitly typed image's actual URL or declared MIME."""
+    source = _mapping(part.get("source"))
+    image = part.get("imageUrl") or part.get("image_url")
+    if isinstance(image, Mapping):
+        image = image.get("url")
+    if image is None and source.get("type") == "url":
+        image = source.get("url")
+    if isinstance(image, str) and image:
+        parsed = urlsplit(image)
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            return image
+        header, comma, data = image.partition(",")
+        if image.startswith("data:image/") and header.endswith(";base64") and comma and data:
+            return image
+        raise ValueError("unsupported native tool image URL")
+    if source.get("type") == "base64":
+        data, mime = source.get("data"), source.get("media_type")
+    else:
+        data, mime = part.get("data"), part.get("mimeType")
+    if isinstance(data, str) and data and isinstance(mime, str) and mime.startswith("image/"):
+        return f"data:{mime};base64,{data}"
+    raise ValueError("native tool image requires an explicit URL or base64 MIME type")
+
+
 def _output_parts(value: object) -> tuple[str, list[str]]:
     """Text and inline image data of a tool result in any Provider's form."""
 
@@ -142,14 +168,9 @@ def _output_parts(value: object) -> tuple[str, list[str]]:
             continue
         if not isinstance(part, Mapping):
             continue
-        kind = str(part.get("type") or "").casefold()
-        if "image" in kind:
-            source = _mapping(part.get("source"))
-            data = str(
-                part.get("imageUrl") or part.get("image_url") or part.get("data") or source.get("data") or ""
-            )
-            if data:
-                images.append(data if data.startswith("data:") else f"data:image/unknown;base64,{data}")
+        kind = part.get("type")
+        if kind in {"image", "image_url", "input_image", "inputImage"}:
+            images.append(_image_url(part))
         elif isinstance(part.get("text"), str):
             texts.append(part["text"])
     return "\n".join(texts), images

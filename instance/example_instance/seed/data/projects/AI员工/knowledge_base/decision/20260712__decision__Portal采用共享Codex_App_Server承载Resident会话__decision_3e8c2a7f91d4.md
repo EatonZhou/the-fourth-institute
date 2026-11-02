@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-07-12'
 version:
-  number: 21
+  number: 22
   created_at: '2026-07-12'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-02T15:45:39Z'
+  updated_at: '2026-11-02T15:57:22Z'
   updated_by:
     user: ''
     agent: resident_2e9ea0072551
@@ -197,4 +197,6 @@ Codex 的权限和工作目录由执行准备阶段确定（decision_6ad0384e020
 PostgreSQL 有效历史是跨 Provider 导入的内容来源。Codex 历史适配器依据工具返回的结构转换媒体：MCP 的 content 内容块与 Claude 的 output 内容块均保留顺序，文本转换为 input_text；MCP 图片及 Claude source.base64/source.url 图片转换为 input_image，原生 input_image/input_file 保持 typed 结构。工具 call_id、名称、命名空间与参数保持关联，result 封装和错误等兄弟元数据随结果保留，媒体字节不得序列化成给模型阅读的 JSON 文本。
 
 业务对象中的 type=image 等资源分类字段本身不是媒体内容。只有明确携带媒体载荷或媒体引用的内容块才进入媒体校验；无法识别或缺少必要字段的真实媒体仍在导入前拒绝。转换只生成目标 Provider 的投递内容，不改写不可变历史，也不因适配缺口丢弃图片、清空上下文或伪造成功回执。
+
+原生动态工具完成事件使用 contentItems，其中 inputText/text 和 inputImage/imageUrl 在 Codex 历史投递时转换为对应的 input_text 与 input_image；不能因字段命名不同将图片变成 JSON 文本。工具媒体归一化保留明确的 MIME 类型和 URL，不把远程 URL 当作 base64，不用猜测的 MIME 伪造媒体类型。工具完成事件持久化后的 failed、cancelled 等终态与实际错误一起进入历史结果元数据；缺少错误正文不等于工具成功。只有新的执行能产生新的结果，重放转换不改写工具的既有状态。
 

@@ -18,7 +18,7 @@ def _json(value: Any) -> str:
 def _has_media(value: Any) -> bool:
     if isinstance(value, Mapping):
         kind = value.get("type")
-        if (kind == "input_image" and "image_url" in value) or (
+        if (kind in {"input_image", "inputImage"} and any(key in value for key in ("image_url", "imageUrl"))) or (
             kind == "input_file" and any(key in value for key in ("file_data", "file_id", "file_url"))
         ) or (
             kind == "image" and any(key in value for key in ("source", "data", "mimeType"))
@@ -30,6 +30,11 @@ def _has_media(value: Any) -> bool:
 
 def _output_part(part: Mapping[str, Any]) -> dict[str, Any]:
     kind = part.get("type")
+    if kind in {"inputText", "inputImage"}:
+        part = {**part, "type": {"inputText": "input_text", "inputImage": "input_image"}[kind]}
+        if "imageUrl" in part:
+            part["image_url"] = part.pop("imageUrl")
+        kind = part["type"]
     if (kind == "input_image" and isinstance(part.get("image_url"), str) and part["image_url"]) or (
         kind == "input_file" and any(isinstance(part.get(key), str) and part[key]
                                       for key in ("file_data", "file_id", "file_url"))
@@ -71,12 +76,14 @@ def _tool_output(value: Any) -> str | list[dict[str, Any]]:
         if _has_media(extra):
             raise ValueError("unsupported media outside historical tool content")
         return _json(value)
-    # MCP uses content; Claude's completed tool results use output. Only
+    # MCP uses content, Claude uses output, and common native tool events
+    # use contentItems. Only
     # typed block lists are media envelopes, not arbitrary business JSON.
-    field = next((key for key in ("content", "output")
+    field = next((key for key in ("content", "output", "contentItems")
                   if isinstance(value, Mapping) and isinstance(value.get(key), list)
                   and all(isinstance(part, Mapping) and part.get("type") in {
-                      "text", "input_text", "output_text", "image", "image_url", "input_image", "input_file"
+                      "text", "input_text", "output_text", "image", "image_url", "input_image", "input_file",
+                      "inputText", "inputImage",
                   } for part in value[key])), None)
     if field is not None:
         parts = [_output_part(part) for part in value[field]]
@@ -157,8 +164,13 @@ def response_items_from_segments(segments: Sequence[Mapping[str, Any]]) -> list[
             if isinstance(arguments, Mapping) and set(arguments) == {"arguments"}:
                 arguments = arguments["arguments"]
             output = content.get("result")
+            outcome = {}
             if content.get("error") is not None:
-                output = {"result": output, "error": content["error"]}
+                outcome["error"] = content["error"]
+            if segment.get("status") in {"failed", "cancelled", "canceled"}:
+                outcome["status"] = segment["status"]
+            if outcome:
+                output = {"result": output, **outcome}
             items.extend([
                 {"type": "function_call", "call_id": call_id,
                  "name": name, **({"namespace": namespace} if namespace else {}),
