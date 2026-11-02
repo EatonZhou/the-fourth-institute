@@ -4,36 +4,36 @@ type: decision
 project: AI员工
 created_at: '2026-08-23'
 version:
-  number: 90
-  created_at: '2026-08-23'
+  number: 91
+  created_at: "2026-08-23"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:59:22Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T08:27:09Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_session_transcript_from_trace.py
-  - ${code_root}/tests/cases/test_subagent_trace.py
-  - ${code_root}/tests/cases/test_live_trace_ingress.py
-  - ${code_root}/management_common/provider_subagent_runs.py
-  - ${code_root}/management_portal/codex_subagent_cards.py
-  - ${code_root}/tests/cases/test_interrupted_turn_continues.py
-  - ${code_root}/tests/cases/test_recovered_turn_item_identity.py
-  - ${code_root}/tests/cases/test_claude_compaction_projection.py
-  - ${code_root}/management_portal/execution/claude_transcript_compaction.py
-  - ${code_root}/management_portal/execution/codex_rollout_history.py
-  - ${code_root}/management_portal/execution/agent_data_store.py
-  - ${code_root}/management_portal/execution/agent_data_projection.py
-  - ${code_root}/management_portal/execution/runtime.py
-  - ${code_root}/management_portal/execution/recovery_messages.py
-  - ${code_root}/tests/cases/test_execution_session_bindings.py
-  - ${code_root}/tests/cases/test_execution_runtime_checkpoints.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_session_transcript_from_trace.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_subagent_trace.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_live_trace_ingress.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/provider_subagent_runs.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/codex_subagent_cards.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_interrupted_turn_continues.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_recovered_turn_item_identity.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_claude_compaction_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/claude_transcript_compaction.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_rollout_history.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/recovery_messages.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_session_bindings.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_runtime_checkpoints.py
   related:
   - decision_6b9e42f1c8a7
   - decision_3948ce9b9443
@@ -45,6 +45,7 @@ links:
   - decision_71aa039e3211
   - decision_5c62deb8253a
   - decision_c47a13e8b962
+  - concept_b32a4548a68b
   - decision_6ad0384e020d
   - decision_25eb93d803a4
   - decision_425e428410e0
@@ -52,7 +53,6 @@ links:
   supersedes: []
   derived_from: []
 ---
-
 # AgentData 的当前内容轨迹、不可变修订与运行记录
 
 AgentData 保存 Agent 工作使用的内容。Segment 是不可变的内容版本，trace 是当前有效版本的有序引用。Portal、Agent Harness 和 Provider 共用这条内容轨迹；聊天页面从当前内容计算展示，Provider 会话从当前轨迹选择上下文窗口。
@@ -240,3 +240,12 @@ Segment 的时间字段为 `started_at`、`finished_at`，不再保存独立的 
 新 Execution 不为计时启动代理，不改变模型 base URL、认证、代理环境、TLS、压缩、重试或 HTTP/WebSocket 路由，也不解析模型正文补取关联 ID。旧绑定会话所需的代理兼容代码不证明新请求启用了计时。全局开关只控制可选时间副本的持久化；关闭、读取设置失败或缺少关联都不改变业务执行，不丢弃输出或重跑请求。历史缺失值继续为空。
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+
+
+### Codex 原生有效上下文与账号切换
+
+账号是执行资源，不以展示用思考摘要是否可重放限制普通切号。同 Provider 切号优先从当前绑定账号登记的原生会话取得有效上下文，核验原生 session 身份、完整记录及读取期间文件稳定性。最新原生 compaction 的 replacement_history 替换之前历史，再保留之后全部原生 response_item；消息、媒体、工具调用与结果、加密 reasoning 和原生压缩项目原样保存，不另外压缩、不展开已淘汰的窗口。无法确认有效窗口时不把未知读成空白。
+
+原生窗口在执行数据 owner 中冻结为不可变、带原会话来源的 Segment 引用，沿既有严格导入及请求/确认回执进入候选会话。快照不改写旧 Segment、不补造 Chat 消息，不按文本相似度匹配历史身份。新会话确认后才条件提交绑定，原会话保留；权限、在途等待、幂等和取消机制保持。找不到原生归档时使用已有可完整验证的 canonical history；仅保存摘要的历史不冒充完整原生数据。
+
+展示思考与迁移记录分工：展示只使用可读正文、摘要或加密占位，不能输出密文；Provider 明确提供的完整原生 reasoning（含 encrypted_content）保存原样用于迁移，不能仅记录 encrypted=true 后丢弃原件。实时完成事件未提供密文时如实记录展示摘要，迁移从已验证的原生有效窗口恢复，不伪造或重复补录思考事件。

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 
@@ -24,6 +25,9 @@ class ProviderReasoning:
     item_id: str
     content: dict[str, Any]
     formats: tuple[str, ...]
+    # A display summary is not the native context needed for session import.
+    # Keep the latter separate and out of diagnostic object representations.
+    native_content: dict[str, Any] | None = field(default=None, repr=False)
 
 
 def _item_reasoning_tokens(item: Mapping[str, Any]) -> int | None:
@@ -55,6 +59,12 @@ def provider_reasoning(event: Mapping[str, Any]) -> ProviderReasoning | None:
         return None
     if item.get("status") in {"in_progress", "incomplete", "failed", "cancelled"}:
         return None
+    native_content = None
+    item_id = str(item.get("id") or item.get("update_id") or "")
+    if item.get("type") == "reasoning":
+        native_encrypted = item.get("encrypted_content")
+        if isinstance(native_encrypted, str) and native_encrypted:
+            native_content = deepcopy(dict(item))
     content: dict[str, Any] = {}
     text = _blocks(item.get("content")) or _blocks(
         item.get("thinking") or item.get("text") or item.get("message")
@@ -70,10 +80,13 @@ def provider_reasoning(event: Mapping[str, Any]) -> ProviderReasoning | None:
     if summary:
         content["summary"] = summary
         formats.append("summary")
-    has_encrypted = (isinstance(encrypted, str) and bool(encrypted)) or item.get("encrypted") is True
+    has_encrypted = (
+        (isinstance(encrypted, str) and bool(encrypted))
+        or item.get("encrypted") is True or native_content is not None
+    )
     if has_encrypted and not text:
-        # Ciphertext is not a useful record of the model's thinking. Retain
-        # only its presence; readable summaries are still kept as summaries.
+        # The readable projection records presence only. The exact native
+        # representation below remains available to context preservation.
         content["encrypted"] = True
         formats.append("encrypted")
     if not formats:
@@ -83,9 +96,9 @@ def provider_reasoning(event: Mapping[str, Any]) -> ProviderReasoning | None:
         content["reasoning_tokens"] = tokens
     if text and isinstance(item.get("signature"), str) and item["signature"]:
         content["signature"] = item["signature"]
-    item_id = str(item.get("id") or item.get("update_id") or "")
     return ProviderReasoning(
         item_id=item_id,
         content=content,
         formats=tuple(formats),
+        native_content=native_content,
     )

@@ -4,36 +4,37 @@ type: decision
 project: AI员工
 created_at: '2026-08-22'
 version:
-  number: 40
-  created_at: '2026-08-22'
+  number: 42
+  created_at: "2026-08-22"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T02:03:30Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-02T08:27:09Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/isa/conversation.py
-  - ${code_root}/management_portal/society_service/isa/residents.py
-  - ${code_root}/management_portal/society_service/resident_lifecycle_domain.py
-  - ${code_root}/management_portal/society_service/resident_intake_domain.py
-  - ${code_root}/management_portal/society_service/resident_restart_domain.py
-  - ${code_root}/management_portal/execution/session_manager.py
-  - ${code_root}/management_portal/society_service/resident_backend.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/execution/agent_data_store.py
-  - ${code_root}/tests/cases/test_session_restart.py
-  - ${code_root}/tests/cases/test_resident_context_reset.py
-  - ${code_root}/tests/cases/test_agent_data_store.py
-  - ${code_root}/management_portal/society_service/resident_settings_contract.py
-  - ${code_root}/management_portal/society_service/resident_runtime_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/conversation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/residents.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_lifecycle_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_intake_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_restart_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/session_manager.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_session_restart.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_context_reset.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_data_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_settings_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_runtime_domain.py
   related:
+  - decision_ccbb1cac24aa
   - decision_5bf5bfbd52cb
   - decision_4dea0db1f45a
   - decision_91eb3626d323
@@ -200,7 +201,7 @@ RestartSession（SocietyService，会话操作 owner）
 ### 状态归属
 
 - SocietyService 保存 Resident 身份、owner 权限、接单开关、有限重启记录和生命周期队列；当前执行配置由 `resident_execution_configuration` 唯一拥有，不由 `runtime/settings.json`、Resident 顶层模型字段或 Conversation 的设置副本决定。
-- SessionManager 负责会话绑定的创建、验证、替换和释放。
+- SessionManager 负责会话绑定的创建、验证、替换和释放。释放操作使用生命周期记录捕获的精确绑定、Provider 和账号路由，不启动模型轮次，执行请求的 cwd 为空。Workspace 已删除或默认绑定已解除时仍可释放；当前绑定已被替换则拒绝释放新会话。释放沿用持久操作与 Execution 身份恢复，只有确认成功后才删除对应绑定。工作目录存在性继续由创建会话和执行输入的入口校验。
 - AgentData 保存不可变内容、当前 trace 和清空等运行操作；Chat service 负责页面消息的展示与归档窗口，不把清空动作变成模型内容。
 - Resident Folder 与工作区的结构分别见 decision_ccb99a00eebd 和 decision_8838269736d3。
 
@@ -219,3 +220,12 @@ _apply_resident_session_target 仅准备候选。提升和配置提交须同时�
 会话重启与清空上下文的实际实现分别位于 `resident_restart_domain.py` 和 `resident_intake_domain.py`，公开 Resident 操作经 `resident_domain.py` 聚合。`lineage_domain.py` 是 Lineage 聚合装配入口，不另行实现重启或清空；保留该入口说明，不把它列作本规则的具体实现文件。
 
 原语静态定义 `lineage_primitive_definitions.json` 提供通用图编辑和事件字段，不包含 `RestartSession` 或 `ClearContext` 操作实现；重启与清空通过上述实际领域函数和 Session 操作面板进入。此文件作为编辑器背景定位保留，不列作本规则的直接实现来源。
+
+
+### Codex 原生有效上下文与账号切换
+
+账号是执行资源，不以展示用思考摘要是否可重放限制普通切号。同 Provider 切号优先从当前绑定账号登记的原生会话取得有效上下文，核验原生 session 身份、完整记录及读取期间文件稳定性。最新原生 compaction 的 replacement_history 替换之前历史，再保留之后全部原生 response_item；消息、媒体、工具调用与结果、加密 reasoning 和原生压缩项目原样保存，不另外压缩、不展开已淘汰的窗口。无法确认有效窗口时不把未知读成空白。
+
+原生窗口在执行数据 owner 中冻结为不可变、带原会话来源的 Segment 引用，沿既有严格导入及请求/确认回执进入候选会话。快照不改写旧 Segment、不补造 Chat 消息，不按文本相似度匹配历史身份。新会话确认后才条件提交绑定，原会话保留；权限、在途等待、幂等和取消机制保持。找不到原生归档时使用已有可完整验证的 canonical history；仅保存摘要的历史不冒充完整原生数据。
+
+展示思考与迁移记录分工：展示只使用可读正文、摘要或加密占位，不能输出密文；Provider 明确提供的完整原生 reasoning（含 encrypted_content）保存原样用于迁移，不能仅记录 encrypted=true 后丢弃原件。实时完成事件未提供密文时如实记录展示摘要，迁移从已验证的原生有效窗口恢复，不伪造或重复补录思考事件。

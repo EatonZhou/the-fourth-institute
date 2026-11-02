@@ -34,6 +34,10 @@ def check_replay(state, body):
 
 def canonical_seed(record, source_binding):
     """Freeze the effective window after work drains, without Chat truncation."""
+    from management_portal.execution.codex_preservation import native_seed
+    native = native_seed(record['resident_id'], source_binding)
+    if native is not None:
+        return native
     snapshot = execution_port.agent_context_snapshot(
         record["resident_id"], provider_session_ref=str(source_binding.get("provider_session_ref") or ""),
     )
