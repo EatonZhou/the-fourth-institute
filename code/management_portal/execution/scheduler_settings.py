@@ -14,6 +14,7 @@ from .scheduler_capacity import SchedulerCapacity, capacity_dispatch_state
 from .scheduler_changes import SchedulerChanges
 from .scheduler_quota import SchedulerQuota
 from .scheduler_rows import compact_json, json_object
+from .account_session_credits import override_allows
 
 
 class SchedulerSettings:
@@ -51,7 +52,7 @@ class SchedulerSettings:
         for binding, account_id in bindings.items():
             account = known.get(binding)
             quota = quotas.get(account.capacity_key, {}) if account else {}
-            override = binding in overrides
+            override = override_allows(overrides, binding, account_id)
             state, reason = 'open', ''
             if not account:
                 state, reason = 'unknown', 'account_unavailable'
@@ -127,7 +128,7 @@ class SchedulerSettings:
             # An unreadable sample never releases a hold, also when a zero
             # threshold would report it as available.
             if previous["status"] == "reserved" and "unknown" in (incoming, sample.get("status")):
-                sample = previous
+                sample = {**previous, "credits": sample.get("credits") or {}}
             connection.execute(
                 'INSERT INTO execution_store_meta(key, value) VALUES (%s, %s) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
                 (f"quota:{capacity_key}", compact_json(sample)),

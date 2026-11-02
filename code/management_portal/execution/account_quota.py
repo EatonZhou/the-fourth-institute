@@ -11,13 +11,19 @@ MAX_SAMPLE_AGE_SECONDS = 60.0
 
 def normalize_quota_override(policy: Any) -> dict[str, Any]:
     """The binding-scoped control state, without duplicated audit metadata."""
-    if not isinstance(policy, dict) or set(policy) != {"binding_id", "revision", "enabled"}:
+    if not isinstance(policy, dict) or set(policy) not in (
+        {"binding_id", "revision", "enabled"},
+        {"binding_id", "revision", "enabled", "credits_scope"},
+    ):
         raise ValueError("quota policy requires only binding_id, revision and enabled")
     binding_id = policy["binding_id"]
     if not isinstance(binding_id, str) or not BINDING_RE.fullmatch(binding_id):
         raise ValueError("quota policy requires a valid binding_id")
     if type(policy["revision"]) is not int or policy["revision"] < 1 or type(policy["enabled"]) is not bool:
         raise ValueError("quota policy requires a positive revision and boolean enabled")
+    if "credits_scope" in policy:
+        from .account_session_credits import normalize_scope
+        return {**policy, "credits_scope": normalize_scope(policy["credits_scope"])}
     return dict(policy)
 
 

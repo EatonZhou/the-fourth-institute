@@ -9,6 +9,7 @@ from .contracts import execution_timestamp
 from .scheduler_capacity import ActiveRequests, SchedulerCapacity
 from .scheduler_changes import SchedulerChanges
 from .scheduler_rows import compact_json, json_object
+from .account_session_credits import credits_available, override_allows
 
 
 def _threshold_exempt_ids(connection, capacity_key: str) -> set[str]:
@@ -51,7 +52,22 @@ class SchedulerQuota:
             sample = metadata.get("quota:" + key, {})
             threshold = account_close_threshold(accounts[key], sample, metadata.get("quota_threshold:" + key, {}))
             states[key] = quota_state(sample, now=now, threshold=threshold)
-        overrides = {binding for binding in binding_ids if metadata.get("quota_override:" + binding, {}).get("enabled") is True}
+        overrides = {binding: metadata["quota_override:" + binding] for binding in binding_ids
+                     if metadata.get("quota_override:" + binding, {}).get("enabled") is True}
+        scoped = {binding: policy["credits_scope"] for binding, policy in overrides.items()
+                  if "credits_scope" in policy}
+        if scoped:
+            from .agent_data_store import AgentDataStore
+            refs = [binding for binding, scope in scoped.items() if "provider_session_ref" in scope]
+            sessions = AgentDataStore().provider_binding_routes(refs) if refs else {}
+            by_id = {account.account_id: account for account in accounts.values()}
+            for binding, scope in scoped.items():
+                account = by_id.get(scope["account_id"])
+                sample = states.get(account.capacity_key, {}) if account else {}
+                if (not credits_available(sample, now=now) or
+                        ("provider_session_ref" in scope and
+                         sessions.get(binding, {}).get("provider_session_ref") != scope["provider_session_ref"])):
+                    overrides.pop(binding)
         return states, overrides
 
     def close_threshold(self, connection, capacity_key, sample=None):
@@ -69,14 +85,10 @@ class SchedulerQuota:
         if capacity_key not in self.quota_capacity_keys:
             return False
         binding_id = str((request.get("session") or {}).get("binding_id") or "")
-        if binding_id:
-            row = connection.execute(
-                'SELECT value FROM execution_store_meta WHERE key = %s',
-                (f"quota_override:{binding_id}",),
-            ).fetchone()
-            if row and json_object(row["value"]).get("enabled") is True:
-                return False
-        return self.account_quota(connection, capacity_key)["automatic_paused"]
+        quotas, overrides = self.quota_states(connection, {capacity_key}, {binding_id}, now=time.time())
+        account = self.accounts.for_request(request)
+        return (quotas[capacity_key]["automatic_paused"] and not override_allows(
+            overrides, binding_id, account.account_id if account else "", request.get("execution_id", "")))
 
     def exempt_running_from_threshold_change(self, connection, capacity_key: str) -> None:
         """Work already claimed or running when a Close threshold changes runs to completion.
@@ -115,7 +127,9 @@ class SchedulerQuota:
             quota = quotas[key]
             # Work kept through a threshold change still stops once the quota is
             # used up; only a binding that a person opened keeps running.
-            if (execution_id in exempt[key] and not quota.get("used_up")) or binding in overrides or not quota["automatic_paused"] or quota["status"] != "reserved":
+            if ((execution_id in exempt[key] and not quota.get("used_up"))
+                    or override_allows(overrides, binding, account_ids[key], execution_id)
+                    or not quota["automatic_paused"] or quota["status"] != "reserved"):
                 continue
             connection.execute(
                 "UPDATE executions SET cancel_requested='1', updated_at=%s WHERE execution_id=%s",

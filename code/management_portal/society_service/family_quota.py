@@ -13,6 +13,7 @@ import time
 from typing import Any, Mapping
 
 from . import family_facade, family_role_quota_questions, family_storage, resident_execution_work, resident_message_contract
+from .resident_session_credits import override_enabled
 from .domain_ports import execution_port
 from .resident_account_policy import (
     MIGRATION_RESERVE_PERCENT, fallback_account, resident_account, sufficient_reserve, migration_target_options,
@@ -372,7 +373,7 @@ def _follow_facade_quota_release(record: dict[str, Any], facade: dict[str, Any])
     """
     from . import resident_backend, resident_input_queue_domain, resident_record_domain
     release = resident_record_domain.resident_quota_override(facade)
-    if not release or resident_record_domain.resident_quota_override(record).get("enabled") is release["enabled"]:
+    if not release or release.get("credits_scope") or resident_record_domain.resident_quota_override(record).get("enabled") is release["enabled"]:
         return record
     with resident_record_domain.state_lock(record["resident_id"]):
         current = resident_record_domain.find_resident_canonical(record["resident_id"])
@@ -488,7 +489,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         # Stale observations cannot clear an outstanding incident; a manual
         # quota release still lets the turn run.
         return (bool(role_migration(record).get("status"))
-                and resident_record_domain.resident_quota_override(record).get("enabled") is not True)
+                and not override_enabled(record))
     epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
     now = time.time()
     expired: tuple[Any, Any] = (None, None)
@@ -510,7 +511,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         # A manual quota release (the role's own, or the facade's for Router
         # and Steward) lets the turn run on the current account's credits when
         # no safe account takes it; a safe account is still preferred.
-        released = resident_record_domain.resident_quota_override(current).get("enabled") is True
+        released = override_enabled(current)
         if not released and now - float(migration.get("checked_at") or 0) < RECHECK_SECONDS:
             return True
         migration["checked_at"] = now
@@ -596,13 +597,12 @@ def answer_role_quota_question(facade_id: str, message_id: str, actor: str) -> N
             text = "你没有管理这个门面的权限，未放行。请让有管理权限的人选择。"
         else:
             try:
-                if resident_record_domain.resident_quota_override(facade).get("enabled") is not True:
+                if not override_enabled(facade):
                     resident_management_domain.transition_resident_state(facade_id, actor, transition="open")
             except (KeyError, PermissionError, ValueError) as exc:
                 text = f"放行失败：{exc}"
             else:
-                released = resident_record_domain.resident_quota_override(
-                    resident_record_domain.find_resident(facade_id) or {}).get("enabled") is True
+                released = override_enabled(resident_record_domain.find_resident(facade_id) or {})
                 text = ("已对门面人工放行。Router 和 steward 会跟随放行，用当前账号的 credits 继续工作；"
                         "之后在门面上关闭接单即可取消放行。" if released else
                         "已提交放行，但回读门面时还没有生效，请在 Family 状态中检查接单设置。")

@@ -33,11 +33,11 @@ import copy
 import hashlib
 import json
 import logging
-import math
 import secrets
 import time
 
 from . import resident_domain_common, resident_session_preservation as preservation
+from . import resident_session_credits
 
 LOGGER = logging.getLogger(__name__)
 SESSION_RESTART_STRATEGIES = frozenset(
@@ -374,7 +374,7 @@ def _session_restart_runtime_options(
     }
 
 
-def _account_session_open_quota(account: Mapping[str, Any]) -> dict[str, Any]:
+def _account_session_open_quota(account: Mapping[str, Any], *, use_credits=False) -> dict[str, Any]:
     try:
         health = execution_port.health()
     except Exception as error:
@@ -385,21 +385,8 @@ def _account_session_open_quota(account: Mapping[str, Any]) -> dict[str, Any]:
         .get("quota_reserve")
         or {}
     )
-    if quota.get("used_up") is True:
-        raise ValueError("目标 Backend 账号额度已用完，不能创建新 Session")
-    if quota.get("threshold_enabled") is False:
-        return copy.deepcopy(quota)
-    remaining = quota.get("remaining")
-    if (
-        quota.get("status") not in {"available", "reserved"}
-        or quota.get("fresh") is False
-        or isinstance(remaining, bool)
-        or not isinstance(remaining, (int, float))
-        or not math.isfinite(float(remaining))
-        or float(remaining) <= 0
-    ):
-        raise ValueError("目标 Backend 账号没有可用额度，不能创建新 Session")
-    return copy.deepcopy(quota)
+    from management_portal.execution.account_session_credits import admit_session
+    return admit_session(account, quota, use_credits=use_credits)
 
 
 def _release_session_restart_quota_override(step: Mapping[str, Any]) -> None:
@@ -444,6 +431,8 @@ def get_resident_restart_options(
         "restart": copy.deepcopy(record.get("session_restart") or {}),
         "runtime_settings": resident_runtime_domain.read_resident_runtime_settings(record),
         "choose_runtime_settings": True,
+        "credits_confirmation": {"allowed": resident_session_credits.human_actor(actor_id),
+                                 "scope": "target_session"},
         "preservation_capabilities": preservation.preservation_capabilities(),
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
                        "operations": row.get("operations", [])} for row in catalog],
@@ -501,6 +490,8 @@ def restart_resident_session(
     body = payload if isinstance(payload, dict) else {}
     operation, requested_strategy = _requested_restart(body)
     actor_id = canonical_actor_id(actor)
+    if body.get("credits_consent") is not None and not resident_session_credits.human_actor(actor_id):
+        raise PermissionError("只有已登录的人类可以确认本次 Session 使用 credits")
     if not actor_id:
         raise ValueError("需要登录后重启 session")
     target = resident_record_domain.resolve_resident_runtime_target(
@@ -536,6 +527,9 @@ def restart_resident_session(
     if active_execution_policy not in SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
         raise ValueError("active_execution_policy 必须是 wait 或 cancel")
     restart_target = _restart_target(body, source, source_provider, target_provider)
+    use_credits = resident_session_credits.validate_consent(body, actor_id, restart_target)
+    if use_credits:
+        _account_session_open_quota(restart_target.account, use_credits=True)
     if operation == "switch_account" and restart_target.same_route:
         return _unchanged_restart(resident_id, operation, source_binding)
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
@@ -577,7 +571,7 @@ def restart_resident_session(
         resume_message_id=str(failed_input.get("message_id") or "") if intent["resume_failed_input"] else "",
         work=work,
     )
-    if (restart_target.provider == "provider_api" or strategy == "fresh"
+    if not use_credits and (restart_target.provider == "provider_api" or strategy == "fresh"
             or (not source["has_session"] and not unbound_previous_session)):
         return _configure_session_target(restart)
     return _admit_session_replacement(restart)
@@ -766,6 +760,7 @@ def _restart_intent(
         "source_generation": source["generation"], "target_provider": target.provider,
         "target_account": target.route, "context_strategy": strategy, "active_execution_policy": active_execution_policy,
         "resume_failed_input": body.get("resume_failed_input", False),
+        **({"credits_consent": copy.deepcopy(body["credits_consent"])} if body.get("credits_consent") else {}),
         **({"runtime_settings": {key: body[key] for key in SESSION_RESTART_SETTING_FIELDS if key in body}}
            if any(key in body for key in SESSION_RESTART_SETTING_FIELDS) else {}),
     }
@@ -1019,8 +1014,9 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
     prepared_binding_id = f"session-restart:{restart.restart_id}"
     quota_override: dict[str, Any] = {}
     quota_admission: dict[str, Any] = {}
+    authorization = resident_session_credits.authorization(restart)
     if restart.target.account.get("quota_protection_enabled") is True:
-        quota_admission = _account_session_open_quota(restart.target.account)
+        quota_admission = _account_session_open_quota(restart.target.account, use_credits=bool(authorization))
         quota_override = {
             "binding_id": prepared_binding_id,
             "revision": 1,
@@ -1035,6 +1031,9 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
         )
     request = _session_operation_request(restart, prompt, prepared_binding_id)
     state = _accepted_restart_state(restart, request, quota_admission)
+    if authorization:
+        quota_override = resident_session_credits.prepared_policy(quota_override, authorization, request.execution_id)
+        state["credits_authorization"] = authorization
     with resident_record_domain.state_lock(resident_id):
         current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
@@ -1116,7 +1115,7 @@ def _accepted_restart_state(
         "target": {"provider": target.provider, "account_id": target.route},
         "target_runtime_settings": copy.deepcopy(restart.target_runtime_settings),
         "quota_admission": copy.deepcopy(quota_admission),
-        "previous_session_retained": True,
+        "previous_session_retained": restart.source["has_session"],
         "resume_message_id": restart.resume_message_id,
         "resume_failed_input": restart.intent["resume_failed_input"],
         "failed_message_id": str(restart.failed_input.get("message_id") or ""),
@@ -1140,6 +1139,9 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
     if saved.get("restart_id") != state["restart_id"]:
         raise ValueError("Resident session restart identity changed")
     if saved.get("status") in {"completed", "failed", "cancelled"}:
+        if saved.get("status") == "completed" and saved.get("credits_authorization"):
+            if not resident_input_queue_domain.sync_resident_quota_overrides([resident_record_domain.find_resident(resident_id)]):
+                raise LifecycleStepPending()
         _release_session_restart_quota_override(step)
         resident_backend.discard_prepared_session(step["prepared_binding_id"])
         return
@@ -1253,6 +1255,9 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
                 current.pop("context_compaction_state", None)
             if isinstance(native_goal, dict) and native_goal.get("status") == "active":
                 current["codex_goal"] = {**native_goal, "status": "paused", "paused_reason": "session_restart"}
+            if state.get("credits_authorization"):
+                resident_session_credits.promote(current, state["credits_authorization"],
+                                                replacement["current_binding"]["provider_session_ref"])
         next_state = {
             **state,
             "status": "cancelled" if cancel_requested else "failed" if failure else "completed",
@@ -1292,6 +1297,9 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
             if replacement is not None:
                 resident_backend.restore_replaced_session(step["record"], replacement)
             raise
+    if not failure and not cancel_requested and state.get("credits_authorization"):
+        if not resident_input_queue_domain.sync_resident_quota_overrides([current]):
+            raise LifecycleStepPending()
     resident_backend.discard_prepared_session(prepared_id)
     _release_session_restart_quota_override(step)
 

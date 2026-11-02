@@ -267,6 +267,7 @@ DECLARATIONS = (
         P("active_execution_policy", description="有正在进行的轮次时：wait 等本轮结束再切换（默认），cancel 先取消它",
           enum=("wait", "cancel")),
         P("resume_failed_input", "boolean", "显式请求恢复失败输入；账号切换不自动重试，默认false"),
+        P("credits_consent", "object", "仅已登录人类可提交：{account_id:目标稳定账号ID,confirmed:true}；明确授权本次新建/迁移目标Session使用credits，必须携带幂等键，不继承给后续Session"),
     ), (
         R("restart_id", description="这次重启的 ID，供 GetSessionRestart、CancelSessionRestart 使用"),
         R("status", description="当前进度"),

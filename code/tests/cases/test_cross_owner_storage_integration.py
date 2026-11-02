@@ -157,7 +157,8 @@ def owners(tmp_path, monkeypatch):
     project_adapter = resource_index_registries.ProjectRegistryAdapter()
     index = resource_index_backend.ResourceIndexService(
         store=index_store,
-        adapters=[project_adapter, resource_index_knowledge.ProjectKnowledgeAdapter()],
+        adapters=[project_adapter, resource_index_knowledge.ProjectKnowledgeAdapter(),
+                  resource_index_registries.CollaborationRegistryAdapter()],
         start_worker=False,  portal_access=access,
     )
     resource = ResourceService(

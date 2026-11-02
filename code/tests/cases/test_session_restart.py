@@ -982,7 +982,8 @@ def test_restart_submission_rejection_is_terminal_and_retains_old_binding_contra
 
 @pytest.mark.parametrize("provider,settings", [
     ("claude", {"model": "selected-model", "reasoning_effort": "high"}),
-    ("codex", {"model": "selected-model", "reasoning_effort": "high", "collaboration_mode": "plan", "service_tier": "", "permission_preset": ""}),
+    ("codex", {"model": "selected-model", "reasoning_effort": "high", "collaboration_mode": "plan", "service_tier": "", "permission_preset": "",
+               "credits_consent": {"account_id": "codex_one", "confirmed": True}}),
     ("provider_api", {"model": "api-model", "prompt_context": {"history": {"enabled": False}},
                       "backend_options": {"parameters": {}, "timeout_seconds": 45}}),
 ])

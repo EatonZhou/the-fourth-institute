@@ -89,12 +89,18 @@ class Admission:
         binding = str((request.get("session") or {}).get("binding_id") or "")
         paused = admission["quotas"].get(capacity, {}).get("automatic_paused", False)
         return _queue_reason(
-            paused=not interrupt_only and paused and binding not in admission["overrides"],
+            paused=not interrupt_only and paused and not self.quota_override_allows(request, account, binding, admission),
             deferred=float(available_at) > admission["now"],
             capacity=interrupt_only or admission["limits"][capacity] > admission["active_counts"][capacity],
             dispatch_wait=not interrupt_only and admission["dispatch"].get(capacity, {}).get("next_dispatch_at", 0) > admission["now"],
             binding_busy=binding in admission["active_bindings"],
         )
+
+    @staticmethod
+    def quota_override_allows(request, account, binding, admission):
+        from .account_session_credits import override_allows
+        return override_allows(admission["overrides"], binding, account.account_id if account else "",
+                               request.get("execution_id", ""))
 
     @staticmethod
     def fair_queue_order(

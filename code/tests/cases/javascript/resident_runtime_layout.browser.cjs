@@ -33,6 +33,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         window.dialog?.destroy();
         window.dialog = api.createSessionRestartDialog();
         dialog.open({resident_id: 'fixture', source: {provider: 'codex', account_id: 'one'}, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
+          credits_confirmation: {allowed: true, scope: 'target_session'},
           application: {items: Array.from({length: 30}, (_, i) => ({path: 'capability_config.' + i, status: 'unknown', delivery: 'unknown'}))},
           providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}], accounts: {codex: [{id: 'one', context_options: choices(true)}, {id: 'two', context_options: choices(true)}], claude: [{id: 'claude_one', context_options: choices(false)}]},
           onSave: async values => {saves.push(values); return {settings: values};}}, async values => {requests.push(values); return {status: 'completed'};});
@@ -95,12 +96,14 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.equal(await page.evaluate(() => requests[0].context_strategy), 'compact');
     await page.evaluate(() => openSettings()); await tab('restart');
     await page.selectOption('[data-session-restart="strategy"]', 'fresh');
+    await page.check('[data-session-credits-consent]');
     await page.click('[data-session-restart-submit]');
     await page.waitForFunction(() => requests.length === 2);
     assert.equal(await page.evaluate(() => requests[1].context_strategy), 'fresh');
+    assert.deepEqual(await page.evaluate(() => requests[1].credits_consent), {account_id: 'one', confirmed: true});
     assert.deepEqual(errors, []);
     if (process.env.RUNTIME_SETTINGS_SCREENSHOT) {
-      await page.evaluate(() => openSettings()); await tab('capabilities');
+      await page.evaluate(() => openSettings()); await tab('restart');
       await page.screenshot({path: process.env.RUNTIME_SETTINGS_SCREENSHOT});
     }
     console.log('PASS runtime dialog: stable 1200/840/390px layout, scrolling, X/Escape/backdrop/cancel, background interaction, save, handoff and deliberate fresh restart');

@@ -10,9 +10,10 @@ const service = window.PortalResidentService.createClient({api: {get: async () =
 (async () => {
   await service.updateRuntimeSettings('r1', {model: 'm2'}, 'save-key', 'sha256:old');
   assert.deepEqual(mutations[0], {name: 'UpdateResidentSettings', args: {resident_id: 'r1', changes: {model: 'm2'}, expected_revision: 'sha256:old'}, controls: {idempotencyKey: 'save-key'}});
-  await service.restartSession({resident_id: 'r1', operation: 'switch_account', target_provider: 'codex', target_account: 'three', context_strategy: 'preserve', active_execution_policy: 'wait', resume_failed_input: false, idempotency_key: 'switch-key'});
+  await service.restartSession({resident_id: 'r1', operation: 'switch_account', target_provider: 'codex', target_account: 'three', context_strategy: 'preserve', active_execution_policy: 'wait', resume_failed_input: false, idempotency_key: 'switch-key', credits_consent: {account_id: 'codex_three', confirmed: true}});
   assert.equal(mutations[1].args.operation, 'switch_account'); assert.equal(mutations[1].args.context_strategy, 'preserve');
   assert.equal(mutations[1].args.resume_failed_input, false); assert.equal(mutations[1].controls.idempotencyKey, 'switch-key');
+  assert.deepEqual(mutations[1].args.credits_consent, {account_id: 'codex_three', confirmed: true});
   vm.runInNewContext(fs.readFileSync(path.join(root, 'portal_resident_runtime_controller.js'), 'utf8'), {window});
   let revision = 'r1', config, writes = [], settings = {model: 'm'};
   const controller = window.PortalResidentRuntimeController.create({service: {

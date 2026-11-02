@@ -168,4 +168,35 @@ const plain = value => JSON.parse(JSON.stringify(value));
   }
   assert.deepEqual(errors, []);
   console.log('PASS target default resolution, explicit model override, default inheritance and invalid catalog rejection');
+  const paid = api.createSessionRestartDialog();
+  const paidRequests = [];
+  paid.open({...config, credits_confirmation: {allowed: true, scope: 'target_session'}},
+    async values => {paidRequests.push(plain(values)); return {status: 'completed'};}); await flush();
+  const consent = () => w.document.querySelector('[data-session-credits-consent]');
+  assert.equal(consent().checked, false);
+  select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
+  consent().checked = true; consent().dispatchEvent(new w.Event('change'));
+  select('[data-session-target]', JSON.stringify(['codex', 'two'])); await flush();
+  assert.equal(consent().checked, false, 'changing target cannot carry a credit confirmation');
+  select('[data-session-target]', JSON.stringify(['codex', 'three'])); await flush();
+  consent().checked = true; consent().dispatchEvent(new w.Event('change'));
+  click('[data-session-restart-submit]'); await flush();
+  assert.deepEqual(paidRequests[0].credits_consent, {account_id: 'codex_three', confirmed: true});
+  assert.ok(paidRequests[0].idempotency_key);
+  paid.open({...config, initial_view: 'restart', credits_confirmation: {allowed: true}},
+    async values => {paidRequests.push(plain(values)); return {status: 'completed'};}); await flush();
+  assert.equal(consent().checked, false, 'a later Session needs a new human choice');
+  consent().checked = true;
+  select('[data-session-restart="strategy"]', 'fresh');
+  assert.equal(consent().checked, false, 'changing the operation clears confirmation');
+  consent().checked = true; consent().dispatchEvent(new w.Event('change'));
+  click('[data-session-restart-submit]'); await flush();
+  assert.deepEqual(paidRequests[1].credits_consent, {account_id: 'codex_two', confirmed: true});
+  paid.destroy();
+  const noConsent = api.createSessionRestartDialog();
+  noConsent.open({...config, credits_confirmation: {allowed: false}}, async () => ({})); await flush();
+  assert.equal(w.document.querySelector('[data-session-credits-confirmation]').hidden, true);
+  noConsent.destroy();
+  assert.deepEqual(errors, []);
+  console.log('PASS explicit credits confirmation, canonical target account and non-inheritance');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(async () => {await flush(); dom.window.close();});

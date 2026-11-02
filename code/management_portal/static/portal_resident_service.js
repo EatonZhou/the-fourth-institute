@@ -671,6 +671,7 @@
         const options = Object.fromEntries([
           "idempotency_key", "target_provider", "target_account", "operation",
           "context_strategy", "active_execution_policy", "resume_failed_input",
+          "credits_consent",
           "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options",
         ].filter(name => Object.prototype.hasOwnProperty.call(source, name))
           .map(name => [name, source[name]]));
@@ -702,6 +703,7 @@
               .filter(key => Object.hasOwn(options, key)).map(key => [key, options[key]])),
             ...(options.prompt_context ? { prompt_context: options.prompt_context } : {}),
             ...(options.backend_options ? { backend_options: options.backend_options } : {}),
+            ...(options.credits_consent ? { credits_consent: options.credits_consent } : {}),
             ...(typeof options.resume_failed_input === "boolean" ? { resume_failed_input: options.resume_failed_input } : {}),
           }, { idempotencyKey: options.idempotency_key });
           client.rememberSessionRestart(residentId, receipt);

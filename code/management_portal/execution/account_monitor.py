@@ -100,7 +100,13 @@ class AccountMonitor:
                                    "remaining_balance": balance.get("amount") if known else None,
                                    "currency": balance.get("currency", ""), "observed_at": observed, "max_age_seconds": 120}
             if account.quota_enabled and self.scheduler.quota_reserve_enabled:
-                self.scheduler.update_account_quota(account.account_id, sample.get("quota") or {"status": "unknown"})
+                credit = sample.get("credits") or {}
+                self.scheduler.update_account_quota(account.account_id, {
+                    **(sample.get("quota") or {"status": "unknown"}),
+                    "credits": {**credit, "observed_at": sample["checked_at"],
+                                "authenticated": sample.get("status") == "ok"
+                                and self._login_store.login_state(account.account_id) == "logged_in"},
+                })
             with self._lock:
                 self._samples[account.account_id] = sample
         except Exception as error:
@@ -117,6 +123,8 @@ class AccountMonitor:
             with self._lock:
                 self._samples[account.account_id] = self._failed_sample(account, {
                     "status": "unavailable", "error_code": error_code, "error": message, "refreshing": False})
+            if account.quota_enabled and self.scheduler.quota_reserve_enabled:
+                self.scheduler.update_account_quota(account.account_id, {"status": "unknown", "credits": {}})
         if not self.stopped.is_set():
             self.refresh_usage(account)
 

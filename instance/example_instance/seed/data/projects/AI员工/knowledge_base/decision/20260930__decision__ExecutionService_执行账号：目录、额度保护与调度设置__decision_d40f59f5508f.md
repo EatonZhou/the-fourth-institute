@@ -4,33 +4,33 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 24
-  created_at: '2026-09-30T12:00:00Z'
+  number: 26
+  created_at: "2026-09-30T12:00:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_36c860ac51b6
-  updated_at: '2026-10-31T15:10:03Z'
+    user: "weihao"
+    agent: "resident_36c860ac51b6"
+  updated_at: "2026-11-02T15:19:16Z"
   updated_by:
-    user: ''
-    agent: resident_a562583efdb4
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/execution/accounts.py
-  - ${code_root}/management_portal/execution/account_adapters.py
-  - ${code_root}/management_portal/execution/account_monitor.py
-  - ${code_root}/management_portal/execution/account_quota.py
-  - ${code_root}/management_portal/execution/codex_quota.py
-  - ${code_root}/management_portal/execution/account_usage_store.py
-  - ${code_root}/management_portal/execution/provider_balance_adapters.py
-  - ${code_root}/management_portal/execution/provider_catalog.py
-  - ${code_root}/management_portal/execution/scheduler.py
-  - ${code_root}/management_portal/execution/service.py
-  - ${code_root}/management_portal/execution/isa.py
-  - ${code_root}/tests/cases/test_account_close_threshold.py
-  - ${code_root}/tests/cases/test_codex_quota_reserve.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/accounts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_adapters.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_monitor.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_quota.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_quota.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_usage_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_balance_adapters.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/scheduler.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_account_close_threshold.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_codex_quota_reserve.py
   related:
   - decision_25eb93d803a4
   - decision_6ad0384e020d
@@ -108,7 +108,19 @@ Resident 的接单开关只表达人工输入控制。额度保留、等待与�
 - **Close 阈值为正数时，读数未知的百分比账号暂停，余额账号不因此暂停。** 百分比账号读数过期、读取失败或窗口不完整时，自动工作同样暂停；阈值为 0 时仍按前文的禁用阈值及额度用完规则判断。余额账号只有明确读到低于阈值的余额才会进入保护，余额未知不会被当成零。
 - **保护阈值设置不变时，已经进入保护的账号只有取得新鲜的恢复读数才会解除。** 读取失败或仅仅过了额度重置时间，都保持 `reserved`。显式将阈值改为 0 可解除由阈值造成的保护；已确认额度用完的百分比账号仍按前文保持暂停。解除后，原来排队的工作按原顺序继续领取；被取消的执行保持取消，不会自动重放。
 - **Resident 被人工打开接单时，会为它当前的会话记录一条 binding 例外；再被人工关闭时，这条例外改为停用。** 例外只作用于这个 binding，不会传给其他 Resident 或 Fork 出的新会话。唯一的传递发生在 Family：门面的放行由 Family 监督同步为 Router、Steward 各自 binding 的例外，规则见 decision_a64b3ea2c3c5。修改阈值不会撤销已有例外。
-- **创建或迁移模型会话前，调用方检查目标账号还有剩余额度。** 目标账号的 Close 阈值为正数时，`quota_reserve.remaining`（原币金额或百分比）必须新鲜且严格大于零，否则不能创建新会话；阈值为 0 时只拒绝 `quota_reserve.used_up` 为真的账号，不要求新鲜的正余量。准备中的临时会话、取消迁移和保留原会话的流程见 decision_c47a13e8b962。
+- **创建或迁移模型会话前，默认检查目标账号还有剩余额度；人类可明确授权本次目标 Session 使用 credits。** 目标账号的 Close 阈值为正数时，`quota_reserve.remaining`（原币金额或百分比）必须新鲜且严格大于零，未提供本次 credits 确认时不足则不能创建新会话；阈值为 0 时只拒绝 `quota_reserve.used_up` 为真的账号，不要求新鲜的正余量。准备中的临时会话、取消迁移和保留原会话的流程见 decision_c47a13e8b962。
+
+### 人类确认本次目标 Session 使用 credits
+
+会话设置中的切换账号和重新开始会话提供默认不勾选的付费确认。页面展示本次目标稳定账号，说明授权只适用于本次新建或迁移得到的目标会话；切换目标账号、改变操作或再次打开页面时必须重新选择。只有已认证的人类且具有该 Resident 管理权限才可确认，Resident 和 service actor 不能授予或重放该授权。
+
+正式 `RestartSession` 指令接受 `credits_consent={account_id,confirmed:true}`，并要求本次幂等键与明确的目标账号。服务把确认账号与解析后的稳定账号ID精确比较；同一幂等键的目标、上下文策略和确认内容必须相同。授权随本次会话操作持久保存，包含操作ID、目标账号、人类确认主体及时间。等待当前轮结束或重启服务时沿同一操作恢复；不会因为恢复而生成另一份授权或自动重试历史失败输入。
+
+额度准入和运行保护由 Execution Scheduler 的同一账号契约解释。人类确认仅允许越过本次目标账号的订阅额度保护，不改变原始额度、Close阈值、站点默认策略或账号登记。准入要求目标账号启用，最新观察确认已认证，credits样本不超过60秒且读取未失败，has_credits为真，余额严格大于零或unlimited为真。额度读数不足仍如实保留。认证失效、停用、credits不足或不可确认、Provider实际限流及执行失败继续按其原有错误与恢复规则处理。
+
+授权分两个不可互换的范围。准备阶段只授权本次候选binding、目标账号和唯一Execution；成功提升后，授权绑定到该Resident的binding、目标账号和真实Provider Session引用。Scheduler在读取、派发及运行中额度保护时都校验同一范围与credits观察。后续重新开始、ClearContext、换账号、迁移、Fork或其他Resident不会继承；同一个Resident的稳定binding ID也不能代替具体Session身份。取消、准备失败及回滚不提升目标授权，临时候选例外按生命周期收尾。成功后的控制同步可重试，不能因此重复创建Session。
+
+为在授权时固定确切会话，有本次credits确认的空白新建通过候选创建与条件提升建立一个真实空Session，再绑定授权；创建操作不调用模型、不发送初始化消息。没有该确认时保持原有配置保存及首条输入懒建协议。已有会话的OpenIntake放行是独立操作，不把此次会话确认传播为Family或其他binding的授权。
 
 ### 额度与余额的读取
 
@@ -119,6 +131,7 @@ Resident 的接单开关只表达人工输入控制。额度保留、等待与�
 HTTP 账号观察（Kimi 原生服务与计费余额）使用可回收的独立短进程，标准 urllib 保持既有代理与 TLS 校验。URL、认证头、正文与结果经私有管道传递，不写 argv 或文件；连接前、DNS/TCP/TLS、响应头及正文读取都在同一关闭范围内。原有请求 timeout 也是短进程结果读取的总上限，超时或取消均回收进程；HTTP 状态、响应正文及超时分类保留，未知不转换成可用。普通业务 HTTP 与真实模型执行不进入该作用域。
 
 取消观察不生成登录、额度或 usage 成功/失败结论，不覆盖已持久保存的成功事实，也不从取消推断登录失效。已进入提交的数据库事务与原子文件写入依既有 owner 完成；关闭不绕过事务、不清空账本或缓存。线程 join 以资源回收完成为准，而非超时后宣称关闭；数据库提交、操作系统进程创建/回收本身发生故障时仍按原错误与恢复语义处理，不伪造关闭成功。
+
 - **额度窗口来自 Provider 自己的接口。** Codex 从账号对应的 App Server 读取 `account/rateLimits/read`，得到 Codex 当前报告的额度窗口、套餐额度是否已用完，以及账号的 credits 余额；Claude 原生订阅从 Claude Code daemon 读取，daemon 每 3 分钟查询一次 `/usage`。每个窗口带有效期 `fresh_until`：Codex 窗口为采样后 60 秒，Claude 窗口为采样后 300 秒（不晚于重置时间）。`fresh_until` 用于额度保护的新鲜度判断；页面展示的刷新与过期规则统一见 decision_4dea0db1f45a，不因超过该时间自行变灰。
 - **余额来自计费账号的接口。** 每个 ExecutionService 实例内，同一个计费账号每 60 秒最多读取一次，多条执行路线共用这次结果；展示读数的过期状态遵循 decision_4dea0db1f45a：读取失败才标为过期，不按读数年龄自行过期。余额采集同时更新展示用汇率快照；Web 只读取账号快照。原生余额接口、响应解析和币种规则集中在 `provider_balance_adapters.py`。
 - **某个账号读取失败只影响它自己。** 失败时保留上一次读数并标为过期，状态为 `unavailable`，错误说明写入 `error`；其他账号继续正常更新。
@@ -178,12 +191,12 @@ Provider 原生接口 ──读取──> 账号适配器（每个 Provider 一�
 | `close_threshold` | `{metric, unit, value, supported}`：`metric` 为 `percent` 或 `balance`；`supported` 为假时这个账号暂时不能设置阈值。 |
 | `quota_reserve` | 当前额度保护状态，包括 `status`（`available`、`reserved` 或 `unknown`）、`remaining`、`fresh`、`close_threshold`、`threshold_enabled`、`used_up`（百分比账号额度已用完而暂停）、`automatic_paused`、原始的 `remaining_percent` 或 `remaining_balance`，以及采样时间。 |
 | `rate_limits` | 额度窗口数组，每项包含 `id`、`label`、`remaining_percent`（未知为 null）、`resets_at`、`observed_at` 和 `stale`。 |
-| `credits` | Codex 账号的 credits：`balance`（数值，未知为 null）、`has_credits`、`unlimited`。只用于展示；Portal 在额度用完时暂停账号，不消耗 credits。读取失败时保留上一次的值。 |
+| `credits` | Codex 账号的 credits：`balance`（数值，未知为 null）、`has_credits`、`unlimited`。展示原生付费余额；默认自动工作在订阅额度用完时暂停。人类按binding放行或明确确认本次目标Session后可使用credits。展示可保留失败前读数，但该旧读数不能通过新会话授权的准入与运行检查。 |
 | `balance` | 关联了计费账号时的余额读数：`metric_kind`（`balance` 或 `availability`）、`status`、`display`、`amount`、`currency`、`updated_at`、`stale`、`source_account_id`、`billing_url`。零余额保留为零，未知不填零。 |
 | `status`、`error`、`refreshing` | 最近一次读取的结果。 |
 | `capabilities` | 这个账号是否可以修改调度设置、是否可以查看 Resident 明细。 |
 
-`scheduler.quota_overrides.configure` 接收 `policies` 数组。每项只包含唯一且合法的 `binding_id`、大于零的整数 `revision` 和布尔值 `enabled`。缺少字段、类型错误或额外字段均被拒绝。同一 binding 的策略按 `revision` 决定新旧：更低的版本被忽略；相同版本且内容相同是重复提交；相同版本内容不同时整批回滚并报错；更高的版本覆盖旧策略。撤销例外要提交 `enabled=false` 的更高版本，提交空数组不会删除已有策略。返回 `{"updated": N}`，有更新时 Scheduler 立即重新判断额度保护并唤醒等待中的领取和控制。这个 RPC 由可信的同机服务调用；用户是否有权放行由调用它的 SocietyService 先检查。Resident 的 `quota_reserve_override` 配置和 Scheduler 的控制状态使用同一份三字段契约：`binding_id` 限定放行对象并防止跨 Resident 继承，`revision` 防止乱序同步和旧记录覆盖，`enabled` 表达当前放行状态。配置不重复保存操作者；会话重启临时 binding 的放行也遵守同一契约。
+`scheduler.quota_overrides.configure` 接收 `policies` 数组。每项包含唯一且合法的 `binding_id`、大于零的整数 `revision` 和布尔值 `enabled`。本次Session付费授权另外携带 `credits_scope`：必须包含 `account_id`、`operation_id`，并且在候选阶段只含 `execution_id`、在提升后只含 `provider_session_ref`，二者不能同时出现。缺少字段、类型错误或额外字段均被拒绝。同一 binding 的策略按 `revision` 决定新旧：更低的版本被忽略；相同版本且内容相同是重复提交；相同版本内容不同时整批回滚并报错；更高的版本覆盖旧策略。撤销例外要提交 `enabled=false` 的更高版本，提交空数组不会删除已有策略。返回 `{"updated": N}`，有更新时 Scheduler 立即重新判断额度保护并唤醒等待中的领取和控制。这个 RPC 由可信的同机服务调用；用户是否有权放行由调用它的 SocietyService 先检查。Resident 的 `quota_reserve_override` 配置和 Scheduler 的控制状态使用同一份基础字段及可选credits范围契约：`binding_id` 限定放行对象并防止跨 Resident 继承，`revision` 防止乱序同步和旧记录覆盖，`enabled` 表达当前放行状态。配置不重复保存操作者，人类审计归本次会话操作所有；会话重启临时 binding 的放行也遵守同一契约。
 
 ## 相邻 Design
 

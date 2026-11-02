@@ -559,6 +559,8 @@
         '<section data-runtime-panel="restart" hidden><label class="portalRuntimeSettingsField"><span>新会话的上下文</span>' +
         '<select data-session-restart="strategy"><option value="preserve">保留当前有效上下文</option><option value="fresh">清空上下文，从新任务开始</option></select></label>' +
         '<p data-session-restart-hint>使用当前账号重新开始会话，等待正在运行的工作完成。旧会话和历史记录保留。</p></section>' +
+        '<label class="portalRuntimeSettingsField" data-session-credits-confirmation hidden><span data-session-credits-description></span>' +
+        '<span><input type="checkbox" data-session-credits-consent> 我明确授权本次目标 Session 使用该账号的付费 credits；不授权后续新建、重置或迁移的会话。</span></label>' +
         '<p class="portalRuntimeSettingsHint" data-runtime-save-hint role="status"></p>' +
         '</div>' +
         '<div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton is-danger" data-session-restart-cancel type="button" hidden>取消操作</button>' +
@@ -573,6 +575,7 @@
       const submit = find("[data-session-restart-submit]"), cancel = find("[data-session-restart-cancel]");
       const saveButton = find("[data-runtime-settings-submit]"), capabilityButton = find("[data-capability-submit]");
       const source = find("[data-session-restart-source]"), saveHint = find("[data-runtime-save-hint]");
+      const creditsConsent = find("[data-session-credits-consent]");
       const editor = createRuntimeSettingsEditor(), targetEditor = createRuntimeSettingsEditor();
       const capabilities = createCapabilityEditor();
       find("[data-capability-editor-host]").replaceWith(capabilities.element);
@@ -618,6 +621,12 @@
         const locked = submitting || tracking;
         const retry = restartView.restart?.status === "confirming";
         const purpose = {switch_account: "切换账号", parameters: "运行参数", capabilities: "能力配置", restart: "重新开始会话"};
+        const creditTarget = view === "restart" ? [current.source?.provider, current.source?.account_id] : selected();
+        const showCredits = current.credits_confirmation?.allowed === true && ["switch_account", "restart"].includes(view)
+          && creditTarget[0] === "codex" && Boolean(creditTarget[1]);
+        find("[data-session-credits-confirmation]").hidden = !showCredits;
+        creditsConsent.disabled = locked || !showCredits;
+        find("[data-session-credits-description]").textContent = "本次目标账号：" + canonicalAccount(...creditTarget);
         overlay.querySelectorAll("[data-runtime-panel]").forEach(panel => {panel.hidden = panel.dataset.runtimePanel !== view;});
         overlay.querySelectorAll("[data-runtime-view]").forEach(button => {
           button.disabled = locked;
@@ -655,10 +664,12 @@
       };
       overlay.querySelectorAll("[data-runtime-view]").forEach(button => button.addEventListener("click", () => {
         if (submitting || tracking) return;
-        view = button.dataset.runtimeView; saveHint.textContent = ""; update();
+        view = button.dataset.runtimeView; creditsConsent.checked = false; requestKey = requestId(); saveHint.textContent = ""; update();
       }));
       overlay.querySelectorAll("[data-session-restart-close]").forEach(button => button.addEventListener("click", () => close({source: "button"})));
-      target.addEventListener("change", () => {requestKey = requestId(); renderContext(); void loadTarget();});
+      target.addEventListener("change", () => {creditsConsent.checked = false; requestKey = requestId(); renderContext(); void loadTarget();});
+      strategy.addEventListener("change", () => {creditsConsent.checked = false; requestKey = requestId();});
+      creditsConsent.addEventListener("change", () => {requestKey = requestId();});
       saveButton.addEventListener("click", async () => {
         if (saveButton.disabled || !current.onSave) return;
         try {
@@ -710,12 +721,15 @@
           if (isSwitch && sameAccount() && restartView.restart?.status !== "confirming") return;
           const runtime = isSwitch && crossProvider() && restartView.restart?.status !== "confirming" ? targetEditor.read({complete: true}) : {};
           if (isSwitch && crossProvider() && !runtime.model && restartView.restart?.status !== "confirming") throw new Error("请选择目标 Provider 的模型。");
+          const consent = creditsConsent.checked && !creditsConsent.disabled
+            ? {account_id: canonicalAccount(provider, account), confirmed: true} : null;
           submitting = true; update();
           const result = restartView.restart?.status === "confirming"
             ? await restartService.retrySessionRestart(current.resident_id)
             : await restart({operation: isSwitch && contextChoice()?.id === "preserve" ? "switch_account" : "restart",
               target_provider: provider, target_account: account,
               context_strategy: isSwitch ? contextChoice().id : strategy.value,
+              ...(consent ? {credits_consent: consent} : {}),
               active_execution_policy: "wait", resume_failed_input: false, ...runtime, idempotency_key: requestKey});
           current.restart = result; restartView.restart = result;
           tracking = sessionRestartActive(result); progress.update(restartView);
@@ -730,7 +744,7 @@
           current = {...config}; view = config.initial_view || "switch_account";
           restart = onRestart; reload = onReload; cancelRestart = onCancel; requestKey = requestId();
           submitting = false; tracking = sessionRestartActive(config.restart); restartView = {restart: config.restart};
-          unobserve?.(); saveHint.textContent = ""; strategy.value = "preserve";
+          unobserve?.(); saveHint.textContent = ""; strategy.value = "preserve"; creditsConsent.checked = false;
           const groups = (current.providers || []).map(provider => {
             const group = document.createElement("optgroup"); group.label = provider.label || provider.id;
             for (const row of current.accounts?.[provider.id] || []) {

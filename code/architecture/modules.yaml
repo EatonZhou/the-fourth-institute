@@ -665,6 +665,7 @@ modules:
       - "management_portal/society_service/resident_released_executions.py"
       - "management_portal/society_service/resident_resource_changes.py"
       - "management_portal/society_service/resident_restart_domain.py"
+      - "management_portal/society_service/resident_session_credits.py"
       - "management_portal/society_service/resident_restart_handoff.py"
       - "management_portal/society_service/resident_runtime_domain.py"
       - "management_portal/society_service/resident_runtime_payload.py"
