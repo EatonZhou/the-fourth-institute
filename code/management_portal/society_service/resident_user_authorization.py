@@ -101,7 +101,7 @@ def _delivered_inputs(connection, repository, caller: str, execution_id: str, jo
         f"JOIN {prefix}segment_relations relation ON relation.target_segment_id=delivered.segment_id "
         f"JOIN {prefix}segments source ON source.segment_id=relation.source_segment_id "
         "WHERE delivered.execution_id=%s AND delivered.created_by_agent_id=%s "
-        "AND delivered.metadata_json->>'kind'='appended_provider_input' "
+        "AND delivered.metadata_json::jsonb->>'kind'='appended_provider_input' "
         "AND relation.operation_type='provider_input.append' "
         "AND source.created_by_agent_id=%s", (execution_id, caller, caller),
     ).fetchall()

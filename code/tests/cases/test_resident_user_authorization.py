@@ -368,7 +368,8 @@ def test_deleted_resident_cannot_use_retained_execution_work(active):
 
 
 @pytest.mark.parametrize("delivered", [True, False])
-def test_append_requires_persisted_provider_delivery(active, delivered):
+@pytest.mark.parametrize("metadata_type", ["jsonb", "text"])
+def test_append_requires_persisted_provider_delivery(active, delivered, metadata_type):
     from management_portal.execution.appended_input_projection import materialize_delivered_input
     from management_portal.execution.contracts import ExecutionInputControl
     mid = "msg_" + "d" * 32
@@ -386,6 +387,21 @@ def test_append_requires_persisted_provider_delivery(active, delivered):
                                                   "updated_at": "2026-11-03T00:01:00Z"})
     active.repository.set_input_state(active.resident, mid, "completed" if delivered else "queued")
     active.arguments["message_id"] = mid
+    if metadata_type == "text":
+        # Existing instances retain the original TEXT column while new ones
+        # create JSONB. Exercise the same authorization path against both.
+        from management_portal.execution.agent_data_tables import CHAT_READ_INDEX_SQL, CHAT_STATISTICS_SQL
+
+        with active.agent.database.transaction() as connection:
+            # PostgreSQL elides redundant JSONB casts in stored index/statistic
+            # expressions. Rebuild them for the historical column type.
+            for name in CHAT_READ_INDEX_SQL:
+                connection.execute(f"DROP INDEX {name}")
+            for name in CHAT_STATISTICS_SQL:
+                connection.execute(f"DROP STATISTICS {name}")
+            connection.execute("ALTER TABLE segments ALTER COLUMN metadata_json TYPE text USING metadata_json::text")
+            for sql in (*CHAT_READ_INDEX_SQL.values(), *CHAT_STATISTICS_SQL.values()):
+                connection.execute(sql)
     if not delivered:
         with pytest.raises(PermissionError):
             conversation.accept_user_authorization(active.inv)
