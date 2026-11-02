@@ -127,7 +127,7 @@ DECLARATIONS = (
         P("upload_url", description="写入字节的数据通道地址"),
         P("expires_at", description="数据通道到期时间"),
     ), mutates=True, one_of=(("source_address",), ("file_name", "media_type", "size"))),
-    _d("DeleteUpload", FIXED, "由上传者本人删除上传；已被引用的上传删除后，引用随之失效。", (
+    _d("DeleteUpload", FIXED, "删除上传，无额外权限限制；已被引用的上传删除后，引用随之失效。", (
         R("upload_id", description="上传 ID"),
     ), (
         R("upload_id", description="被删除的上传 ID"),

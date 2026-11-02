@@ -105,24 +105,29 @@ def test_attachments_are_private_to_their_creator_admins_and_the_target_viewers(
     assert asgi._upload_readable(meta, "stranger")
 
 
-def test_delete_upload_is_limited_to_its_creator(permissions):
-    """权限系统开启时删除上传仅限创建者
+@pytest.mark.parametrize("caller", ["alice", "bob", "admin", "resident_111111111111"])
+def test_delete_upload_has_no_creator_restriction(permissions, caller):
+    """权限系统开启时，User 和 Resident 均可删除他人已被引用的上传。"""
+    from management_common.upload_retention import consumed
+    from management_portal import permission_system
 
-    上传归创建它的 User 所有，管理员和其他 Resident 也不能删除。
-    """
     permissions.users("alice", "bob", "admin")
     permissions.administrator("admin")
     data = png_bytes()
     upload_id = create("conversation_attachment", data)
-    for caller in ("bob", "admin", "resident_111111111111"):
-        with pytest.raises(InstructionError) as denied:
-            resource_isa.delete_upload(invoke("DeleteUpload", {"upload_id": upload_id}, caller))
-        assert denied.value.code == "instruction.forbidden"
-        assert resource_isa.read_upload(upload_id)["created_by"] == "alice"
-    assert resource_isa.delete_upload(invoke("DeleteUpload", {"upload_id": upload_id}, "alice")) == {"upload_id": upload_id}
+    resource_isa.complete_upload(upload_id, data, actor="alice")
+    consumed(resource_isa._upload_dir(upload_id), owner_id="msg_upload_delete_test")
+    invocation = invoke("DeleteUpload", {"upload_id": upload_id}, caller)
+    assert permission_system.authorize_instruction(
+        invocation.declaration, {"upload_id": upload_id}, invocation.context,
+    ) is None
+    assert resource_isa.delete_upload(invocation) == {"upload_id": upload_id}
     with pytest.raises(InstructionError) as gone:
         resource_isa.read_upload(upload_id)
     assert gone.value.code == "instruction.not_found"
+    with pytest.raises(InstructionError) as missing:
+        resource_isa.delete_upload(invocation)
+    assert missing.value.code == "instruction.not_found"
 
 
 def test_upload_ids_cannot_escape_the_upload_root():

@@ -680,12 +680,7 @@ def delete_upload(inv: Invocation) -> dict[str, Any]:
     from management_common.upload_retention import deleted
 
     upload_id = inv.argument("upload_id")
-    meta = read_upload(upload_id)  # an unknown upload is not_found
-    from management_common.actor_identity import same_actor
-    from management_portal import permission_system
-
-    if permission_system.owners_only() and not same_actor(meta.get("created_by"), inv.caller):
-        raise InstructionError("instruction.forbidden", "只有上传者本人可以删除上传")
+    read_upload(upload_id)  # an unknown upload is not_found
     deleted(_upload_dir(upload_id))
     return {"upload_id": upload_id}
 

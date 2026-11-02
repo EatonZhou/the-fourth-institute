@@ -197,11 +197,9 @@ def test_failures_go_to_the_creating_user_while_the_system_is_off(open_mode, mon
     assert notifications.creating_user("lineage_777777777777") == []
 
 
-def test_open_mode_lifts_creator_and_uploader_rules(monkeypatch, tmp_path):
-    """权限系统关闭时取消上传者限制
-
-    附件删除不再只限上传者；任何已登录调用者都可以操作。
-    """
+@pytest.mark.parametrize("mode", [permission_system.PAR, permission_system.OPEN])
+def test_delete_upload_is_unrestricted_in_either_permission_mode(monkeypatch, tmp_path, mode):
+    """附件删除在两种权限模式下均不限制上传者，并走统一清理队列。"""
     from management_portal.resources import isa as resource_isa
     from management_common.upload_retention import created
     from management_common.directory_cleanup_store import get_directory_cleanup_store
@@ -210,15 +208,10 @@ def test_open_mode_lifts_creator_and_uploader_rules(monkeypatch, tmp_path):
     directory.mkdir()
     (directory / "attachment.txt").write_text("uploaded")
     created(directory, upload_id="upload_abc", created_at="2026-11-02T00:00:00Z")
-    monkeypatch.setattr(permission_system, "configured_mode", lambda: permission_system.PAR)
+    monkeypatch.setattr(permission_system, "configured_mode", lambda: mode)
     monkeypatch.setattr(resource_isa, "read_upload", lambda upload_id: {"created_by": "alice"})
     monkeypatch.setattr(resource_isa, "_upload_dir", lambda upload_id: tmp_path / upload_id)
     invocation = SimpleNamespace(argument=lambda name: "upload_abc", caller="bob")
-    with pytest.raises(InstructionError):
-        resource_isa.delete_upload(invocation)
-    assert not get_directory_cleanup_store().pending_at(directory)
-
-    monkeypatch.setattr(permission_system, "configured_mode", lambda: permission_system.OPEN)
     assert resource_isa.delete_upload(invocation) == {"upload_id": "upload_abc"}
     assert directory.exists() and get_directory_cleanup_store().pending_at(directory)
 
