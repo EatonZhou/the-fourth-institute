@@ -53,6 +53,7 @@ def without_inline_media(value: Any) -> Any:
             if key == "data" and media_type and isinstance(item, str) and len(item) > 256
             else without_inline_media(item)
             for key, item in value.items()
+            if key != "encrypted_content"
         }
     return value
 
@@ -132,7 +133,12 @@ def seed_messages(
             item["segment_type"] == "input" and metadata.get("role") in {"system", "developer"}
         ):
             continue
-        content = without_inline_media(item.get("content"))
+        content = item.get("content")
+        if isinstance(content, dict) and content.get("type") == "reasoning":
+            from management_portal.execution.provider_reasoning import provider_reasoning
+            projected = provider_reasoning({"type":"response_item", "payload":content})
+            content = projected.content if projected else {}
+        content = without_inline_media(content)
         kind = item["segment_type"]
         if kind == "compaction" and (
             not content or isinstance(content, dict)

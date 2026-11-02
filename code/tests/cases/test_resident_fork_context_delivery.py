@@ -135,8 +135,14 @@ def test_fork_context_does_not_silently_truncate_delivery_links_contracts(subtes
     with subtests.test(contract='test_fork_does_not_inject_encrypted_reasoning_placeholders'), isolated_portal_case() as case_path:
         snapshot = {'provider_session_ref': 'source', 'segments': [{'segment_id': 'encrypted-only', 'segment_type': 'model', 'content': {'encrypted': True}, 'metadata': {'kind': 'reasoning'}}, {'segment_id': 'readable', 'segment_type': 'model', 'content': {'encrypted': True, 'summary': 'readable summary'}, 'metadata': {'kind': 'reasoning'}}, {'segment_id': 'native', 'segment_type': 'model', 'content': {'encrypted': True, 'encrypted_content': 'opaque-native-content'}, 'metadata': {'kind': 'reasoning'}}]}
         messages = resident_fork_context.seed_messages(snapshot)
-        assert [item['source_segment_id'] for item in messages] == ['readable', 'native']
+        assert [item['source_segment_id'] for item in messages] == ['readable']
         assert 'readable summary' in messages[0]['content_parts'][0]['text']
+        assert 'opaque-native-content' not in str(messages)
+        snapshot['segments'] = [{'segment_id':'typed','segment_type':'model','content':{
+            'type':'reasoning','encrypted_content':'opaque-typed','summary':[{'type':'summary_text','text':'native readable'}]},
+            'metadata':{'kind':'reasoning'}}]
+        projected=resident_fork_context.seed_messages(snapshot)
+        assert 'native readable' in str(projected) and 'opaque-typed' not in str(projected)
     with subtests.test(contract='test_recent_fork_counts_harness_transformed_user_turns'), isolated_portal_case() as case_path:
         segments = []
         for index in range(7):
