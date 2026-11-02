@@ -30,7 +30,7 @@ from urllib.request import urlopen
 from packaging.version import Version
 
 from management_common.portal_database import portal_database
-from management_common.file_lock import try_lock_descriptor
+from management_common.file_lock import lock_stream, try_lock_descriptor
 from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path
 from management_common.code_environment import provider_entry, provider_directory
@@ -586,6 +586,28 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=Fa
 
 
 @contextmanager
+def _snapshot_access():
+    """Hold only while reading/replacing the small status document.
+
+    Windows readers prevent replacement of their open file. This separate
+    short lock coordinates them with publication without waiting for the
+    installation lock, which can be held for an entire package download.
+    """
+    STATE_ROOT.mkdir(parents=True, exist_ok=True)
+    with (STATE_ROOT / "provider-updates.snapshot.lock").open("a+b") as lock:
+        with lock_stream(lock):
+            yield
+
+
+def _read_state():
+    with _snapshot_access():
+        try:
+            return json.loads((STATE_ROOT / "provider-updates.json").read_text())
+        except (FileNotFoundError, ValueError):
+            return {}
+
+
+@contextmanager
 def _update_state():
     STATE_ROOT.mkdir(parents=True, exist_ok=True)
     with (STATE_ROOT / "provider-updates.lock").open("a+") as lock:
@@ -596,16 +618,14 @@ def _update_state():
             yield None
             return
         path = STATE_ROOT / "provider-updates.json"
-        try:
-            state = json.loads(path.read_text())
-        except (FileNotFoundError, ValueError):
-            state = {}
+        state = _read_state()
 
         def save():
             temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
             try:
-                temporary.write_text(json.dumps(state, sort_keys=True) + "\n")
-                temporary.replace(path)
+                with _snapshot_access():
+                    temporary.write_text(json.dumps(state, sort_keys=True) + "\n")
+                    temporary.replace(path)
             finally:
                 temporary.unlink(missing_ok=True)
 
@@ -645,7 +665,7 @@ def provider_runtime_status(*, refresh=False):
                 state["last_checked_at"] = time.time()
                 save()
     try:
-        state = json.loads((STATE_ROOT / "provider-updates.json").read_text())
+        state = _read_state()
     except (OSError, ValueError):
         state = {}
     result = {}
@@ -668,7 +688,7 @@ def preparation_status(provider: str) -> dict:
     """Observe preparation without waiting for an installation's file lock."""
     from management_portal.business_tasks import process_is_alive, process_identity, is_active
     try:
-        state = json.loads((STATE_ROOT / "provider-updates.json").read_text())
+        state = _read_state()
     except (OSError, ValueError):
         state = {}
     result = dict(state.get("preparations", {}).get(provider) or {})
