@@ -32,6 +32,11 @@ async function readResidentChatReady(region, { residentId }) {
       .map(e => ({ id: e.id, label: e.getAttribute('aria-label'), visible: visible(e),
         editable: e.isContentEditable && e.getAttribute('aria-disabled') !== 'true' && e.getAttribute('aria-readonly') !== 'true' }));
     const sendButtons = composers.flatMap(composer => [...composer.querySelectorAll('button[aria-keyshortcuts="Control+Enter Meta+Enter"]')]);
+    const quotes = composers.flatMap(composer => [...composer.querySelectorAll('[data-composer-quote-host] > [data-composer-quote][role="group"]')])
+      .map(node => ({message_id:node.getAttribute('data-composer-quote'),visible:visible(node),
+        preview_visible:visible(node.querySelector('.composerQuoteText')),
+        cancel_enabled:[...node.querySelectorAll('[data-composer-quote-cancel]')]
+          .filter(button=>visible(button)&&!button.disabled).length===1}));
     const deletedMessageVisible = bodies.some(body => [...body.querySelectorAll('.messageItem.portal .messageContent')]
       .some(node => visible(node) && /该 Resident 已删除或不存在|This Resident has been deleted/i.test(node.textContent || '')));
     const loading = { node_count: loadingNodes.length, aria_busy: root.getAttribute('aria-busy'),
@@ -50,7 +55,7 @@ async function readResidentChatReady(region, { residentId }) {
       && inputs.length === 1 && inputs[0].visible && !inputs[0].editable
       && sendButtons.length === 1 && visible(sendButtons[0]) && sendButtons[0].disabled
       && deletedMessageVisible;
-    return { dom_id: root.id, role, connected: root.isConnected, visible: visible(root), headers, sessions, inputs, loading, checks,
+    return { dom_id: root.id, role, connected: root.isConnected, visible: visible(root), headers, sessions, inputs, quotes, loading, checks,
       deletion_feedback_ready: deletionFeedbackReady,
       ready: Object.values(checks).every(Boolean) };
   }), residentId);
@@ -66,4 +71,13 @@ async function readResidentChatReady(region, { residentId }) {
     deletion_feedback_ready: candidates.length === 1 && candidates[0].deletion_feedback_ready };
 }
 
-module.exports = { readResidentChatReady, visibleResidentChatRoots };
+async function readResidentComposerQuote(region, {residentId, messageId}) {
+  if (typeof messageId !== 'string' || !messageId.trim()) throw new TypeError('Exact original quoted message ID required');
+  const chat = await readResidentChatReady(region,{residentId});
+  const quotes = chat.ready ? chat.candidates[0].quotes : [];
+  return {observed_at_ms:Date.now(),resident_id:residentId,message_id:messageId,chat,quotes,
+    ready:chat.ready && quotes.length===1 && quotes[0].message_id===messageId
+      && quotes[0].visible && quotes[0].preview_visible && quotes[0].cancel_enabled};
+}
+
+module.exports = { readResidentChatReady, visibleResidentChatRoots, readResidentComposerQuote };

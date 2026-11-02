@@ -243,7 +243,18 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
     assert.ok(quote);
     assert.equal(await quote.getAttribute('data-portal-message-action'),'quote');
     assert.equal(await currentMessageQuoteAction(page,{messageId:'msg_other'}),null);
-    await page.keyboard.press('Escape');
+    const {readResidentComposerQuote}=require('../../../management_portal/test_framework/tau_chat_ready_evidence');
+    const quoteTarget={residentId:childId,messageId:'msg_quote_sample'};
+    assert.equal((await readResidentComposerQuote(stableRoot,quoteTarget)).ready,false);
+    await quote.click();
+    const composed=await readResidentComposerQuote(stableRoot,quoteTarget);
+    assert.equal(composed.ready,true,JSON.stringify(composed));
+    assert.equal(await stableRoot.locator('[data-message-quote="msg_quote_sample"]').count(),0,
+      'sent-message jump controls are not composer quote identity');
+    assert.equal((await readResidentComposerQuote(stableRoot,{...quoteTarget,messageId:'msg_other'})).ready,false);
+    assert.equal((await readResidentComposerQuote(stableRoot,{...quoteTarget,residentId})).ready,false);
+    await stableRoot.locator('[data-composer-quote-cancel]').click();
+    assert.equal((await readResidentComposerQuote(stableRoot,quoteTarget)).ready,false);
     assert.equal(await currentMessageQuoteAction(page,{messageId:'msg_quote_sample'}),null);
   }
   const oldName = stableRoot.and(page.getByRole('region',{name:'Fixture Child',exact:true}));

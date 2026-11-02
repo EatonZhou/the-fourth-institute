@@ -38,7 +38,7 @@ HTTP非成功响应按request_id关联原request_started及response_received/req
 const {currentNativeTab, nativeEntryDestination, currentStatusTexts, currentSelectOptions, currentNativeDialog, currentProgrammingInspectors, currentMessageQuoteAction} = require(require('node:path').join(frameworkRoot, 'tau_native_controls.js'));
 ```
 
-消息引用先在精确原message_id对应的可见正文上正常右键，再在同一原ready中用currentMessageQuoteAction核对菜单所属消息及可用引用按钮。原生菜单移到document.body，不能限定在原article内部；按钮文案随语言显示“引用回复”或“Quote reply”，不要固定英语名称。保存当下实际名称，引用后核对composer的原消息预览和随后真实提交的message.quote.message_id。该发现函数只读，不点击、不发送、不代替引用提交或业务终态。
+消息引用先在精确原message_id对应的可见正文上正常右键，再在同一原ready中用currentMessageQuoteAction核对菜单所属消息及可用引用按钮。原生菜单移到document.body，不能限定在原article内部；按钮文案随语言显示“引用回复”或“Quote reply”，不要固定英语名称。保存当下实际名称，点击引用后的原ready用`tau_chat_ready_evidence.js`的`readResidentComposerQuote(root,{residentId,messageId})`核精确Chat及可见原消息预览。composer身份在data-composer-quote，data-message-quote是已发送消息的跳转控件，不能混用；随后仍核真实提交的message.quote.message_id。助手只读，不点击、不发送、不代替业务终态；取消引用、错误目标或未就绪Chat返回ready=false，原窗口逐样本保存。
 
 Resident及Family门面改名原ready可用`tau_session_dom_evidence.js`的`readResidentMenuTitle(menu,{residentId,title})`：同时核验唯一可见原生Menu、完整身份、精确显示名称和改名表单收起。原生名称保留在strong元素中，保存不会删除它；不要等待strong数量变0，也不要用输入框里的未提交值代替已显示名称。该只读快照与原UpdateResident回执、正式Family/node投影和图中标题分别核验，在同一个原ready窗口逐样本保存，不在后续重新打开Menu回填。
 
