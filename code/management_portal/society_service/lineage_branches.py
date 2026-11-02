@@ -202,9 +202,9 @@ def create_lineage_branch(
             )
 
         lineage_source = f"lineage:{lineage_id}:{source_node_id}"
-        requested_title = _text(payload.get("title"), 120) or _text(
-            f"{source.get('title') or source_resident_id} · 分支",
-            120,
+        suffix = " · 分支"
+        requested_title = _text(payload.get("title"), 120) or (
+            _text(source.get('title') or source_resident_id, 120 - len(suffix)) + suffix
         )
         child_x, child_y = lineage_placement.node_position(
             previous, source, payload, child={"title": requested_title},
