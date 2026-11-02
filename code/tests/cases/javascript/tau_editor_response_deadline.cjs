@@ -78,11 +78,11 @@ const server = http.createServer(async (req, res) => {
     assert.equal(await page.evaluate(() => nativeSettled), false);
     const closedRows = JSON.stringify(rows); await release(); await delay(20);
     assert.equal(JSON.stringify(rows), closedRows); reports.push(result);
-    await assert.rejects(observer.original(response), /Closed/);
+    assert.equal((await observer.original(response)).body_read, 'closed');
     // In-window successful body reading still preserves safe errors only.
     mode = 'complete'; rows.length = 0;
     observer = observeEditorResponses(page, { ...options, bodyTimeoutMs: 2000 });
-    await assert.rejects(observer.original(response), /Unobserved/);
+    assert.equal((await observer.original(response)).body_read, 'not_recorded');
     response = await post(); result = await observer.original(response);
     assert.equal(result.body_read, 'success'); assert.equal(result.error_code, 'fixture.binding_conflict');
     assert.equal(result.commit_state, 'not_committed'); assert.equal(result.retryable, false);
@@ -92,11 +92,11 @@ const server = http.createServer(async (req, res) => {
     observer = observeEditorResponses(page, options); response = await post(); result = await observer.original(response);
     assert.equal(result.body_read, 'unavailable'); assert.equal(result.status, 409); reports.push(result);
     await observer.close();
-    // A persistence error must survive bounded settling and closure.
+    // A persistence error remains a report gap through bounded closure.
     mode = 'held';
     observer = observeEditorResponses(page, { ...options, bodyTimeoutMs: 60, record: () => { throw new Error('fixture-disk-failure'); } });
-    response = await post(); await assert.rejects(observer.original(response), /fixture-disk-failure/);
-    await assert.rejects(observer.close(), /fixture-disk-failure/); await release();
+    response = await post(); assert.ok((await observer.original(response)).evidence_gaps.length);
+    assert.ok((await observer.close()).evidence_gaps.length); await release();
     const callCount = calls.length;
     await delay(20); assert.equal(calls.length, callCount, 'observer sends no retries or other requests');
     assert.throws(() => observeEditorResponses(page, { ...options, bodyTimeoutMs: Infinity }), /Invalid/);

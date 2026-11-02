@@ -303,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
                 "current_case_id": "", "active_case_ids": [], "finished_at": now_iso(),
             })
         raise
-    return 0 if status in {"passed", ""} else 1
+    return 0 if status in {"reported", "passed", ""} else 1
 
 
 if __name__ == "__main__":

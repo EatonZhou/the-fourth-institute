@@ -178,8 +178,7 @@ def test_tau_prompt_carries_the_campaign_resident_runtime(tmp_path):
         tau.TauConfig(storage), tmp_path / "evidence", _verified_dev_target(), "testrun_0000000000000003",
     )
     assert "保留原模型与速度设置" in plain
-    # Executors judged loading regions as missing, empty or stuck within a second.
-    assert "该区域尚无结论" in plain and "严格模式错误属于辅助脚本错误" in plain
+    assert "助手错误归为工具问题" in plain
     assert "保留原模型与速度设置" not in pinned
     assert "模型 gpt-5.6-sol、推理强度 medium、权限预设 full-access" in pinned
     # Fork offers no account or model choice and keeps the source's settings,
@@ -655,7 +654,7 @@ def test_tau_adapter_preserves_live_speed_when_sending_existing_resident(configu
     target.result_details.return_value = {}
     invoke = mock.Mock(return_value={
         "resident_id": configured.assignment["resident_id"], "lineage_id": configured.assignment["lineage_id"],
-        "message": 'PORTAL_TAU_RESULT: {"status":"passed","summary":"done","issues":[],"evidence":[]}',
+        "message": 'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"done","issues":[],"evidence":[]}',
     })
     adapter = runner_adapters.TauAdapter(tau.TauConfig(tmp_path / "storage.json"), invoke, lambda _storage: target, assignments=configured.assignments)
     result = adapter.execute(
@@ -663,7 +662,7 @@ def test_tau_adapter_preserves_live_speed_when_sending_existing_resident(configu
                                                   "implementation": {"task_prompt": "检查速度配置。"}},
         run_dir=tmp_path, actor="resident_aaaaaaaaaaaa", emit=mock.Mock(), cancelled=lambda: False,
     )
-    assert result.status == "passed", result.details
+    assert result.status == "reported", result.details
     invoke.assert_called_once()
     assert "service_tier" not in invoke.call_args.kwargs["runtime_options"]
     from management_portal.society_service.resident_runtime_payload import runtime_settings_updates_from_payload
@@ -742,7 +741,7 @@ def test_tau_waits_for_transient_dev_health_and_keeps_confirmed_message(configur
     target = VerifiedDevTarget("dev", "http://portal.test", "dev-current", "dev-current", "component-v2", "test-actor")
     verify = mock.Mock(side_effect=[DevTargetError("temporarily unavailable", details={"health_error_type": "TimeoutError"}), target, target])
     handle = {"resident_id": configured.assignment["resident_id"], "lineage_id": configured.assignment["lineage_id"], "message_id": "msg_existing"}
-    result = {**handle, "message": 'PORTAL_TAU_RESULT: {"status":"passed","summary":"completed","issues":[],"evidence":[]}'}
+    result = {**handle, "message": 'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"completed","issues":[],"evidence":[]}'}
     invoke, resume = mock.Mock(return_value=result), mock.Mock(return_value=result)
     planned = {"case_id": "test_0123456789ab", "case_title": "recovery", "module": "workbench.panels", "implementation": {"task_prompt": "Use the page"}}
     if required_account:
@@ -763,7 +762,7 @@ def test_tau_waits_for_transient_dev_health_and_keeps_confirmed_message(configur
         invoke.assert_not_called()
         resume.assert_not_called()
         return
-    assert outcome.status == "passed"
+    assert outcome.status == "reported"
     context = json.loads((tmp_path / 'run-context.json').read_text())
     assert len(context['resource_lifecycle_id']) == 64
     assert invoke.call_count == (0 if resuming else 1)
@@ -782,8 +781,8 @@ def test_tau_waits_for_transient_dev_health_and_keeps_confirmed_message(configur
             assert "仅用于执行测试的 TAU Resident" in invoke.call_args.kwargs["prompt"]
             assert "仅当用例明确指定账号或速度时" in invoke.call_args.kwargs["prompt"]
         assert "同一账号与 service tier" not in invoke.call_args.kwargs["prompt"]
-        assert "正常 build 更新本身不构成功能失败" in invoke.call_args.kwargs["prompt"]
-        assert "不能盲目重发" in invoke.call_args.kwargs["prompt"]
+        assert "发布、重启、短暂网络中断后等待或刷新并继续" in invoke.call_args.kwargs["prompt"]
+        assert "不要为补证据重复已受理的业务操作" in invoke.call_args.kwargs["prompt"]
     assert sum("等待 DEV 预检连接恢复" in text for text in output) == 1
 
 
@@ -871,32 +870,6 @@ def test_tau_rotation_during_creation_rejects_old_receipt(configured, monkeypatc
     assert not configured.assignments.assignment("execution.service")["resident_id"]
 
 
-def test_tau_case_keeps_only_the_evidence_its_report_cites(tmp_path):
-    """TAU 用例结束后只保留报告引用的证据
-
-    有结论（passed/failed）的 TAU 用例结束后，证据目录中未被 evidence 引用的文件和空目录被删除；没有结论（error/cancelled）时全部保留以便诊断。
-
-    :aspects: functional, behavior
-    """
-    from management_portal.test_framework.runner_adapters import TauAdapter
-
-    adapter = object.__new__(TauAdapter)
-    case_dir = tmp_path / "case"
-    for name in ("run-context.json", "shots/010-final.png", "shots/005-step.png",
-                 "network.json", "dumps/state.json", "framework-helper-cleanup.json"):
-        (case_dir / name).parent.mkdir(parents=True, exist_ok=True)
-        (case_dir / name).write_bytes(b"x" * 10)
-    details = {"evidence": ["run-context.json", "./shots/010-final.png", "framework-helper-cleanup.json"]}
-
-    # Without a parsed report nothing is removed.
-    for status in ("error", "cancelled"):
-        assert adapter.prune_evidence(run_dir=case_dir, status=status, details={"evidence": []}) is None
-    assert len([p for p in case_dir.rglob("*") if p.is_file()]) == 6
-
-    assert adapter.prune_evidence(run_dir=case_dir, status="failed", details=details) == {"files": 3, "bytes": 30}
-    assert sorted(p.relative_to(case_dir).as_posix() for p in case_dir.rglob("*")) == [
-        "framework-helper-cleanup.json", "run-context.json", "shots", "shots/010-final.png",
-    ]
 
 
 @pytest.mark.parametrize(("names", "stale"), [

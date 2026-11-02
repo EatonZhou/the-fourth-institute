@@ -21,7 +21,7 @@ from management_portal.test_framework.run_ids import new_test_run_id
 LOGGER = logging.getLogger(__name__)
 
 
-TERMINAL = frozenset({"passed", "failed", "cancelled", "error", "unsupported"})
+TERMINAL = frozenset({"reported", "passed", "failed", "cancelled", "error", "unsupported"})
 # Why a result did not pass.  The framework sets what it can tell from the run
 # (a precondition that kept the case from running, a runner or process that
 # broke); a failed verdict stays ``unknown`` until someone looks at it.
@@ -31,7 +31,7 @@ FAILURE_CLASSES = ("product", "test", "environment", "precondition", "concurrent
 def failure_class(status: str, returncode: int | None, details: dict[str, Any]) -> str:
     """The failure class of one result ('' when it passed or was cancelled)."""
 
-    if status in {"passed", "cancelled"}:
+    if status in {"reported", "passed", "cancelled"}:
         return ""
     declared = str(details.get("failure_class") or "")
     if declared in FAILURE_CLASSES:
@@ -48,7 +48,7 @@ def aggregate_status(statuses: list[str]) -> str:
     for candidate in ("error", "unsupported", "failed", "cancelled"):
         if candidate in statuses:
             return candidate
-    return "passed"
+    return "reported" if "reported" in statuses else "passed"
 
 
 def is_tau_run(record: dict[str, Any]) -> bool:
@@ -169,6 +169,7 @@ class RunRecords:
             "created_at": str(record.get("created_at") or ""),
             "started_at": str(record.get("started_at") or ""),
             "finished_at": str(record.get("finished_at") or ""),
+            **({"usage_summary": (record.get("report") or {}).get("summary") or {}} if is_tau_run(record) else {}),
             "plan": {
                 "campaign": str(plan.get("campaign") or ""),
                 "selected": selected,

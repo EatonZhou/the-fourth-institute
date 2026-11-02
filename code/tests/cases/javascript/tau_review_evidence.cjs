@@ -89,39 +89,31 @@ const residentId = 'resident_111111111111';
     };
     const original = await mount(), first = await begin(original), data = await clickAndFinishData(original);
     const beforeFinish = requests.length;
-    assert.equal((await first.window.finish(data)).ready, true);
-    assert.equal(requests.length, beforeFinish, 'read-only finish makes no request');
+    const observed = await first.window.finish(data);
+    assert.equal(observed.terminal.state, 'completed');
+    assert.equal(requests.length, beforeFinish, 'read-only observations make no request');
     const saved = JSON.stringify(first.rows);
     data.replies[0].content_parts[0].text = 'mutated by caller';
-    assert.equal(JSON.stringify(first.rows), saved, 'saved evidence is immutable from caller mutation');
-    await assert.rejects(first.window.finish(data), /WindowClosed/);
+    assert.equal(JSON.stringify(first.rows), saved);
+    const partial = await first.window.finish({});
+    assert.ok(partial.evidence_gaps.includes('未记录：terminal'));
+    const supplement = await first.window.finish(data);
+    assert.equal(supplement.terminal.state, 'completed', 'later observations may supplement the report');
+    await first.window.close();
+    const closed = await first.window.finish(data);
+    assert.ok(closed.evidence_gaps.length, 'closed browser observations record missing material');
 
-    for (const [alter, reason] of [
-      [p => { p.terminal.state = 'running'; p.terminal.reply_message_ids = []; }, 'OriginalTerminal'],
-      [p => { p.receipt.result.resident_id = 'resident_other'; }, 'OriginalAcceptance'],
-      [p => { p.input.content_parts[0].segment_id = 'segment_other'; }, 'ReviewInputIdentity'],
-      [p => { p.replies[0].reply_to_message_id = 'msg_other'; }, 'ReplyIdentity'],
-      [p => { p.replies[0].role = 'assistant'; }, 'ReplyIdentity'],
-      [p => { p.replies[0].content_parts[0].text = 'not on screen'; }, 'VisibleFinalMissing'],
-    ]) {
-      const message = await mount(), observation = await begin(message), proof = await clickAndFinishData(message);
-      const correct = structuredClone(proof); alter(proof);
-      await assert.rejects(observation.window.finish(proof), new RegExp(reason));
-      assert.equal(observation.rows.length, 2, 'failure evidence saved before assertion');
-      await assert.rejects(observation.window.finish(correct), /WindowClosed/, 'later correct state cannot fill the original gap');
-    }
-    for (const hide of [true, false]) {
-      const message = await mount(), observation = await begin(message), proof = await clickAndFinishData(message);
-      await page.evaluate(({ hide, replyId }) => {
-        if (hide) document.querySelector(`[data-message-key="${replyId}"]`).hidden = true;
-        else { const root = document.querySelector('#fixture'); root.replaceWith(root.cloneNode(true)); }
-      }, { hide, replyId: proof.replies[0].message_id });
-      await assert.rejects(observation.window.finish(proof), new RegExp(hide ? 'VisibleFinalMissing' : 'OriginalChatIdentity'));
-    }
+    const message = await mount(), observation = await begin(message), proof = await clickAndFinishData(message);
+    proof.terminal.state = 'running';
+    proof.replies = [];
+    const running = await observation.window.finish(proof);
+    assert.equal(running.terminal.state, 'running');
+    assert.equal(Object.hasOwn(running, 'ready'), false, 'observations do not judge the use report');
+    await observation.window.close();
     await page.evaluate(() => panel.destroy());
     assert.deepEqual(errors, []);
     assert.deepEqual(requests.filter(url => new URL(url).pathname.startsWith('/api/')), [],
       'fixture uses no real service actions; native static asset loads are intercepted');
-    console.log('Native Chat Review evidence: exact Diff/input/reply identity, completed visible final, accepted-only rejection and closed-window no-backfill. Isolated Chromium only.');
+    console.log('Native Chat Review observations: partial material, supplementary observations and explicit gaps. Isolated Chromium only.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

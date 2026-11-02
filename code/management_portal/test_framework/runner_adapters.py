@@ -234,13 +234,10 @@ class TauAdapter(RunnerAdapter):
             raise RuntimeError(cleanup_error)
         return receipt
 
-    def prune_evidence(self, *, run_dir: Path, status: str, details: dict[str, Any]) -> dict[str, int] | None:
-        """Delete the files the report does not cite; the verdict rests on the cited ones.
-
-        Without a parsed report (error, cancelled) everything stays for diagnosis.
-        """
+    def retain_observations(self, *, run_dir: Path, details: dict[str, Any]) -> None:
+        """Retain observations, including materials not cited by the report."""
         # Standard passive observations belong to this result even when the
-        # executor omitted them. Retain them before pruning and result storage.
+        # executor omitted them. Retain them in result storage.
         if run_dir.is_dir():
             root = run_dir.resolve()
             for name in ("tau-browser-observations.jsonl", "tau-helper-calls.jsonl", "tau-browser-identity.jsonl", "harness-tool-rtt.jsonl", "tau-network-review.json"):
@@ -249,29 +246,7 @@ class TauAdapter(RunnerAdapter):
                     evidence = details.setdefault("evidence", [])
                     if name not in evidence:
                         evidence.append(name)
-        if status not in {"passed", "failed"} or not run_dir.is_dir():
-            return None
-        root = run_dir.resolve()
-        cited = {os.path.normpath(root / str(item)) for item in details.get("evidence") or []}
-        files = freed = 0
-        for dirpath, dirnames, filenames in os.walk(root, topdown=False):
-            for name in filenames + [name for name in dirnames if os.path.islink(os.path.join(dirpath, name))]:
-                path = os.path.join(dirpath, name)
-                if path in cited:
-                    continue
-                try:
-                    size = os.lstat(path).st_size
-                    os.unlink(path)
-                except OSError:
-                    continue
-                files += 1
-                freed += size
-            for name in dirnames:
-                try:
-                    os.rmdir(os.path.join(dirpath, name))
-                except OSError:
-                    pass
-        return {"files": files, "bytes": freed}
+        return None
 
     def finalize_group(self, *, run_id: str, module_id: str, run_dir: Path,
                        emit: Callable[[str], None],
@@ -347,7 +322,7 @@ class _TauCaseRun:
             result = self._observe()
         except Exception as exc:
             return self._abort(exc)
-        return self._verdict(result)
+        return self._report(result)
 
     def verify_ready_target(self) -> VerifiedDevTarget:
         waiting = False
@@ -399,7 +374,7 @@ class _TauCaseRun:
         except DevTargetError as exc:
             self.emit(f"TAU 预检失败：{exc}\n")
             return AdapterResult(
-                status="pending" if self.resume_handle else ("cancelled" if self.cancelled() else "failed"),
+                status="pending" if self.resume_handle else ("cancelled" if self.cancelled() else "unsupported"),
                 details={
                     "summary": str(exc),
                     "issues": [str(exc)],
@@ -774,8 +749,8 @@ class _TauCaseRun:
         return reader(actor=TAU_ACTOR, resident_id=submitted["resident_id"],
                       message_id=submitted["message_id"])
 
-    def _verdict(self, result: dict[str, Any]) -> AdapterResult:
-        """The case's result from the Resident's report, checked against its evidence and the DEV target."""
+    def _report(self, result: dict[str, Any]) -> AdapterResult:
+        """Store the Resident's usage report with available materials and target observations."""
         self.save_checkpoint(self.submitted or result, safe=True)
         message = str(result.get("message") or "")
         self.adapter.assignments.record_identity(
@@ -785,9 +760,8 @@ class _TauCaseRun:
         )
         if message:
             self.emit(message + "\n")
-        requires_visual = "ui" in (self.planned.get("aspects") or [])
         try:
-            parsed = parse_result(message, require_visual=requires_visual)
+            parsed = parse_result(message)
         except ValueError as exc:
             parse_error = str(exc)
             self.emit(f"TAU 结果解析失败：{parse_error}\n")
@@ -802,7 +776,7 @@ class _TauCaseRun:
                     "conversation": self._conversation(result),
                 },
             )
-        self._check_evidence(parsed, requires_visual)
+        self._record_material_gaps(parsed)
         target_postflight = self._postflight(parsed)
         status = str(parsed.pop("status"))
         return AdapterResult(
@@ -819,51 +793,35 @@ class _TauCaseRun:
         return {key: str(result.get(key) or self.submitted.get(key) or "")
                 for key in ("resident_id", "lineage_id", "message_id")}
 
-    def _check_evidence(self, parsed: dict[str, Any], requires_visual: bool) -> None:
-        invalid_evidence = []
-        screenshot_evidence = []
+    def _record_material_gaps(self, parsed: dict[str, Any]) -> None:
+        """Keep available material and describe missing observations without a verdict."""
         evidence_root = self.run_dir.resolve()
+        available = []
         for item in parsed["evidence"]:
             candidate = (self.run_dir / item).resolve(strict=False)
             if evidence_root not in candidate.parents or not candidate.is_file():
-                invalid_evidence.append(item)
-            elif candidate.suffix.casefold() in {".png", ".jpg", ".jpeg"}:
-                screenshot_evidence.append(item)
-        if invalid_evidence:
-            parsed["status"] = "failed"
-            parsed["issues"].append("证据文件不存在或越出证据目录：" + ", ".join(invalid_evidence))
-        if requires_visual and not screenshot_evidence:
-            parsed["status"] = "failed"
-            parsed["issues"].append("UI 用例缺少有效的 PNG/JPEG 截图证据。")
+                parsed.setdefault("evidence_gaps", []).append(f"材料未记录或不可读取：{item}")
+            else:
+                available.append(item)
+        parsed["evidence"] = available
 
     def _postflight(self, parsed: dict[str, Any]) -> dict[str, Any]:
-        """Check the DEV target again after the case; a different target fails it."""
+        """Record target observations; a transient interruption is not a product issue."""
         try:
             completed_target = self.verify_ready_target()
-            target_postflight = completed_target.result_details()
+            observation = completed_target.result_details()
             baseline = self.original_target or self.target
-            target_postflight["build_changed"] = (
-                completed_target.actual_build_id != self.original_target.actual_build_id
-                if self.original_target else None
-            )
-            if (
-                completed_target.deployment_id != baseline.deployment_id
-                or completed_target.origin != baseline.origin
-                or completed_target.actor != baseline.actor
-            ):
-                parsed["status"] = "failed"
-                parsed["issues"].append(
-                    "TAU 执行期间 DEV 目标发生变化："
-                    f"{baseline.deployment_id}@{baseline.origin} ({baseline.actor}) → "
-                    f"{completed_target.deployment_id}@{completed_target.origin} ({completed_target.actor})。"
-                )
-            elif target_postflight["build_changed"]:
-                self.emit(
-                    "记录正常 DEV 构建变化："
-                    f"{baseline.actual_build_id} → {completed_target.actual_build_id}；保留本次行为结论。\n"
-                )
+            observation["build_changed"] = (completed_target.actual_build_id != self.original_target.actual_build_id
+                                            if self.original_target else None)
+            if (completed_target.deployment_id != baseline.deployment_id
+                    or completed_target.origin != baseline.origin
+                    or completed_target.actor != baseline.actor):
+                parsed["issues"].append({
+                    "category": "execution", "severity": "blocking", "step": "结束复检",
+                    "symptom": "运行期间测试目标或身份改变，需核对实际操作范围",
+                    "evidence": [],
+                })
+            return observation
         except DevTargetError as exc:
-            target_postflight = dict(exc.details)
-            parsed["status"] = "failed"
-            parsed["issues"].append(f"TAU 运行后 DEV 复检失败：{exc}")
-        return target_postflight
+            parsed.setdefault("evidence_gaps", []).append(f"结束时目标复检未记录：{exc}")
+            return dict(exc.details)

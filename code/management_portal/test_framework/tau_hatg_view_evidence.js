@@ -52,7 +52,7 @@ async function readHatgViewSnapshot(panel, {lineageId}) {
       && view.lineage_ids.length === 1 && view.lineage_ids[0] === lineageId};
 }
 
-async function waitForHatgView(panel, {lineageId, nodeIds, edgeIds, record,
+async function waitForHatgView(panel, {lineageId, nodeIds, edgeIds, record = () => {},
   requireWithinCanvas=false, requireExecutionOpen=false, executionResidentIds=nodeIds,
   timeoutMs=10000, stableMs=350, intervalMs=75}) {
   const validSet = a => Array.isArray(a) && a.every(x=>typeof x==='string' && x) && new Set(a).size===a.length;
@@ -80,7 +80,8 @@ async function waitForHatgView(panel, {lineageId, nodeIds, edgeIds, record,
     last.stable_for_ms=stableSince===null ? 0 : Date.now()-stableSince;
     last.ready=!!matches && last.stable_for_ms>=stableMs;
     last.elapsed_ms=Date.now()-started;
-    await record(last);
+    try { await record(last); }
+    catch (_) { last.evidence_gaps = ['未记录：观察记录写入失败']; }
     if (last.ready && Date.now()<=deadline) return last;
     await new Promise(resolve=>setTimeout(resolve,Math.min(intervalMs,Math.max(0,deadline-Date.now()))));
   }
@@ -89,9 +90,8 @@ async function waitForHatgView(panel, {lineageId, nodeIds, edgeIds, record,
 }
 
 async function fitAndWaitForHatgView(panel, options) {
-  if(typeof options.record!=='function')throw new TypeError('Original sample persistence callback required');
   const started=Date.now(), timeoutMs=options.timeoutMs ?? 10000, deadline=started+timeoutMs;
-  const persist=phase=>sample=>options.record({...sample,phase,original_elapsed_ms:Date.now()-started});
+  const persist=phase=>sample=>options.record?.({...sample,phase,original_elapsed_ms:Date.now()-started});
   // Fit before the restored graph mounts can be overwritten by its camera.
   await waitForHatgView(panel,{...options,timeoutMs,requireWithinCanvas:false,record:persist('before-fit')});
   const fit=panel.locator('#graphFitBtn');

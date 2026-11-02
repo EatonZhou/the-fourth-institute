@@ -150,11 +150,9 @@ function observeEditorResponses(page, { origin, workbenchId, frame = page.mainFr
   page.on('request', onRequest); page.on('response', onResponse);
   return {
     async original(response) {
-      if (closed) throw new Error('EditorObserverClosed');
-      if (!responses.has(response)) throw new Error('UnobservedOriginalEditorResponse');
+      if (!responses.has(response)) return {body_read:'not_recorded',evidence_gaps:['未记录：响应']};
       const row = await responses.get(response).promise;
-      if (failure) throw failure;
-      return structuredClone(row);
+      return structuredClone({...row,evidence_gaps:failure ? ['未记录：观察器记录不完整'] : []});
     },
     close({ drainMs = 1000 } = {}) {
       if (closePromise) return closePromise;
@@ -172,7 +170,7 @@ function observeEditorResponses(page, { origin, workbenchId, frame = page.mainFr
           for (const entry of [...pending]) entry.finish({ body_read: 'closed',
             error: { name: 'ObservationClosed', stage: 'original_response_body', reason: 'observer_close_deadline' } });
         }
-        if (failure) throw failure;
+        return {evidence_gaps:failure ? ['未记录：观察器记录不完整'] : []};
       })();
       return closePromise;
     },

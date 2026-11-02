@@ -15,7 +15,6 @@ function reviewRequests(rows) {
       : row.failed_reason ? 'other_network_failure' : 'unknown',
     proofs: proofs.filter(proof => proof.request_id === row.request_id
       && proof.frame_id === row.frame_id && proof.document_id === row.document_id),
-    verdict: null,
   }));
 }
 
@@ -23,12 +22,10 @@ function writeNetworkReview(input, output) {
   const rows = fs.readFileSync(input, 'utf8').split('\n').filter(Boolean).map(JSON.parse);
   const requests = reviewRequests(rows);
   const result = { requests, failed_count: requests.length,
-    // Retain the original no-proof count for existing consumers. It is not a
-    // count of cancellations: connection refusal never establishes an abort.
+    // Missing causal observations remain unknown; they are report material.
     unknown_count: requests.filter(row => !row.proofs.length).length,
     unproven_abort_count: requests.filter(row => row.failure_kind === 'aborted' && !row.proofs.length).length,
-    connection_refused_count: requests.filter(row => row.failure_kind === 'connection_refused').length,
-    verdict: null };
+    connection_refused_count: requests.filter(row => row.failure_kind === 'connection_refused').length };
   fs.writeFileSync(output, JSON.stringify(result, null, 2));
   return result;
 }

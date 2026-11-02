@@ -3,8 +3,8 @@ BUILTIN = {"name": "test", "title": "Test", "path": "/development?view=test", "d
 
 def verification_flow():
     return {
-        "name": "test:tau:verify", "title": "TAU 模块验收",
-        "prompt": "执行本次 TAU 模块验收：先真实操作指定 DEV 页面，保留步骤与截图证据，再定位原因。严格按本次输入的 Case、权限、预算与结果协议工作；不要递归启动 TAU 或伪造通过。结果必须回到当前 Run 的正式证据目录。",
+        "name": "test:tau:verify", "title": "TAU 模块使用报告",
+        "prompt": "像真实用户一样使用指定 DEV 页面完成本次任务，报告过程、问题清单和性能体验。问题分产品问题、用例问题、执行偏差、工具问题，严重程度分阻断、影响使用、小问题。缺截图、耗时或因果材料注明未记录；短暂重启和断线恢复后继续。遵守本次权限与操作范围，不递归启动 TAU。将使用报告和已有材料保存到当前 Run 目录。",
     }
 
 

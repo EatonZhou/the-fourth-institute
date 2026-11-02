@@ -161,8 +161,8 @@
       const modules = (overview.modules || []).filter(item => item.tau);
       const tasks = modules.reduce((sum, item) => sum + item.tau, 0);
       const runs = (overview.recent_runs || []).filter(T.isTauRun);
-      const passed = runs.filter(run => run.status === "passed").length;
-      const problems = runs.filter(run => T.problemStatuses.has(run.status)).length;
+      const reported = runs.reduce((count, run) => count + Number(run.usage_summary?.reported || 0), 0);
+      const problems = runs.reduce((count, run) => count + Number(run.usage_summary?.issues?.product || 0), 0);
       const config = admission?.configuration;
       const state = !admission ? t("正在读取准入状态…") : config?.admission_state === "open" ? t("正在接收新的 TAU 测试") : config?.admission_state === "paused" ? t("已暂停接收新的 TAU 测试") : t("TAU 尚未配置可用的 Lineage");
       return window.PortalI18n.html`<section class="testSection testTauSummary" data-test-section="tau">
@@ -170,7 +170,7 @@
         <p class="testTauSummaryLead">每个功能模块有一个负责的 Resident，它像真实用户一样在 Portal 上完成任务，再写下体验、问题和证据。</p>
         <div class="testTauSummaryFigures">
           <span><strong>${tasks}</strong>个任务</span><span><strong>${modules.length}</strong>个模块</span>
-          <span><strong>${runs.length}</strong>${esc(window.PortalI18n.text`次最近运行 · ${passed} 通过 · ${problems} 有问题`)}</span>
+          <span><strong>${runs.length}</strong>${esc(window.PortalI18n.text`次最近运行 · ${reported} 份报告 · ${problems} 个产品问题`)}</span>
         </div>
         <p class="testTauAdmissionLine" data-admission-state="${esc(config?.admission_state || "")}">${esc(state)}</p>
       </section>`;

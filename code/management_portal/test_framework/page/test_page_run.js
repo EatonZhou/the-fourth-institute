@@ -87,7 +87,7 @@
     function heroHtml() {
       const results = run.results || [];
       const count = status => results.filter(item => item.status === status).length;
-      const problems = results.filter(item => T.problemStatuses.has(item.status)).length;
+      const problems = T.isTauRun(run) ? results.reduce((count, item) => count + (item.details?.issues || []).filter(issue => issue.category === "product").length, 0) : results.filter(item => T.problemStatuses.has(item.status)).length;
       const active = results.filter(item => T.activeStatuses.has(item.status)).length;
       const canCancel = Boolean(run.created_by && run.created_by === T.access().actor) && !T.terminalStatuses.has(run.status);
       const deletable = T.canOperate() && T.terminalStatuses.has(run.status);
@@ -109,8 +109,8 @@
         </div>
         <div class="testStats">
           <span class="testStat"><strong>${results.length || T.runCaseIds(run).length}</strong><span>条用例</span></span>
-          <span class="testStat is-ok"><strong>${count("passed")}</strong><span>通过</span></span>
-          <span class="testStat${problems ? " is-danger" : ""}"><strong>${problems}</strong><span>有问题</span></span>
+          <span class="testStat is-ok"><strong>${T.isTauRun(run) ? results.filter(item => item.details?.process).length : count("passed")}</strong><span>${esc(T.isTauRun(run) ? t("使用报告") : t("通过"))}</span></span>
+          <span class="testStat${problems ? " is-danger" : ""}"><strong>${problems}</strong><span>${esc(T.isTauRun(run) ? t("产品问题") : t("有问题"))}</span></span>
           ${active ? window.PortalI18n.html`<span class="testStat"><strong>${active}</strong><span>进行中</span></span>` : ""}
           <span class="testStat"><strong>${(run.groups || []).length}</strong><span>${esc(T.isTauRun(run) ? t("个模块") : t("个分组"))}</span></span>
         </div>
@@ -119,20 +119,27 @@
 
     function resultHtml(result) {
       const details = result.details || {};
-      const issues = list(details.issues);
+      const issues = Array.isArray(details.issues) ? details.issues : [];
+      const categoryLabels = {product: "产品问题", case: "用例问题", execution: "执行偏差", tool: "工具问题"};
+      const severityLabels = {blocking: "阻断", impact: "影响使用", minor: "小问题"};
+      const processLabels = {completed: "流程已走完", blocked: "流程未走完", not_started: "尚未开始"};
+      const process = details.process;
+      const observationText = item => typeof item === "string" ? item : item && typeof item === "object" ? [item.step || item.name || item.title, item.observation || item.description || item.result].filter(Boolean).join("：") || "未记录" : "未记录";
+      const processSteps = Array.isArray(process?.steps) ? process.steps : [];
+      const performance = Array.isArray(details.performance) ? details.performance : [];
+      const materialsText = value => Array.isArray(value) && value.length ? value.map(observationText).join("；") : "未记录";
       const evidence = list(details.evidence);
-      const visual = details.visual_review && typeof details.visual_review === "object" ? details.visual_review : {};
-      const { summary: _s, issues: _i, evidence: _e, user_experience: experience, diagnosis, visual_review: _v, conversation, ...metadata } = details;
-      const visualStatus = ["passed", "failed"].includes(visual.status) ? visual.status : "";
+      const { summary: _s, issues: _i, evidence: _e, process: _p, performance: _t, evidence_gaps: _g, diagnosis, conversation, ...metadata } = details;
       const key = `${result.group_id || ""}:${result.item_index ?? result.case_id}`;
-      const raw = [[t("体验记录"), experience, "experience"], [t("源码与 SPEC 诊断"), diagnosis, "diagnosis"], [t("其他运行元数据"), metadata, "metadata"]]
+      const raw = [[t("源码与 SPEC 诊断"), diagnosis, "diagnosis"], [t("其他运行元数据"), metadata, "metadata"]]
         .filter(([, value]) => filled(value))
         .map(([label, value, name]) => `<details class="testRaw" data-detail-key="${esc(`${key}:${name}`)}"><summary>${esc(label)}</summary><pre>${esc(JSON.stringify(value, null, 2))}</pre></details>`).join("");
       return window.PortalI18n.html`<article class="testResult" data-run-result data-result-status="${esc(result.status)}" data-case-id="${esc(result.case_id)}">
         <header>${T.statusHtml(result.status)}<a href="${esc(T.caseHref(result.case_id))}"><strong>${esc(caseTitle(result.case_id))}</strong></a>${result.failure_class && result.status !== "passed" ? T.chip(T.failureClassLabel(result.failure_class), "is-warning") : ""}${conversation?.resident_id ? `<button type="button" class="portalButton is-compact is-quiet" data-result-chat="${esc(conversation.resident_id)}" data-lineage="${esc(conversation.lineage_id || "")}" data-module="${esc(result.module_id || "")}" data-portal-icon="chat"><span>${esc(t("查看对话"))}</span></button>` : ""}</header>
         <p class="testResultSummary">${esc(details.summary || result.error || t("这次运行没有提供结果摘要。"))}</p>
-        ${issues.length ? `<div class="testResultBlock"><strong>${esc(result.status === "passed" ? t("观察与改进项") : t("问题"))}</strong><ul>${issues.map(item => `<li>${esc(item)}</li>`).join("")}</ul></div>` : ""}
-        ${visual.summary ? window.PortalI18n.html`<div class="testResultBlock" data-run-visual-review><strong>截图审查${visualStatus ? ` · ${T.statusHtml(visualStatus)}` : ""}</strong><p>${esc(visual.summary)}</p></div>` : ""}
+        ${process ? `<div class="testResultBlock" data-usage-process><strong>过程</strong><p>${esc(processLabels[process.status] || process.status)} ${esc(process.stopped_at || "")} ${esc(process.reason || "")}</p>${processSteps.length ? `<ol>${processSteps.map(step => `<li>${esc(observationText(step))}</li>`).join("")}</ol>` : "<p>步骤未记录</p>"}</div>` : ""}
+        ${issues.length ? `<div class="testResultBlock"><strong>问题清单</strong><ul>${issues.map(item => `<li>${esc(item && typeof item === "object" ? `${categoryLabels[item.category] || item.category} · ${severityLabels[item.severity] || item.severity} · ${item.step || "步骤未记录"}：${item.symptom}；材料：${materialsText(item.evidence)}` : item)}</li>`).join("")}</ul></div>` : ""}
+        ${process ? `<div class="testResultBlock" data-usage-performance><strong>性能体验</strong>${performance.length ? `<ul>${performance.map(item => `<li>${esc(item && typeof item === "object" ? `${item.step || "步骤未记录"}：${typeof item.duration_ms === "number" ? `${item.duration_ms} 毫秒` : "耗时未记录"}；${item.observation || "体验未记录"}` : observationText(item))}</li>`).join("")}</ul>` : "<p>未记录</p>"}<p>${esc((details.evidence_gaps || []).join("；"))}</p></div>` : ""}
         ${evidence.length ? window.PortalI18n.html`<details class="testRaw" data-detail-key="${esc(`${key}:evidence`)}"><summary>证据 · ${evidence.length} 份</summary><ul class="testEvidence">${evidence.map(item => `<li><code>${esc(item)}</code></li>`).join("")}</ul></details>` : ""}
         ${raw}
       </article>`;
@@ -143,9 +150,9 @@
       const firstModule = results[0]?.module_id || group.module_id;
       const label = group.label || (firstModule ? T.moduleLabel(firstModule) : group.group_id || t("未分类"));
       const problems = results.filter(item => T.problemStatuses.has(item.status)).length;
-      const passed = results.filter(item => item.status === "passed").length;
+      const passed = results.filter(item => T.isTauRun(run) ? item.details?.process : item.status === "passed").length;
       const active = results.filter(item => T.activeStatuses.has(item.status)).length;
-      const outcome = [problems ? window.PortalI18n.text`${problems} 个有问题` : "", active ? window.PortalI18n.text`${active} 个进行中` : "", passed ? window.PortalI18n.text`${passed} 个通过` : ""].filter(Boolean).join(" · ") || t("等待结果");
+      const outcome = [problems ? window.PortalI18n.text`${problems} 个运行异常` : "", active ? window.PortalI18n.text`${active} 个进行中` : "", passed ? (T.isTauRun(run) ? `${passed} 份报告` : window.PortalI18n.text`${passed} 个通过`) : ""].filter(Boolean).join(" · ") || t("等待结果");
       const progress = group.current_case_id ? window.PortalI18n.text`正在运行：${caseTitle(group.current_case_id)}` : group.waiting || "";
       return window.PortalI18n.html`<section class="testRunGroup" data-run-group data-result-status="${esc(group.status)}">
         <header><strong>${esc(label)}</strong>${T.statusHtml(group.status)}<span class="testMuted">${esc(outcome)}</span></header>
@@ -159,7 +166,7 @@
       if (!T.isTauRun(run)) return "";
       const execution = run.report?.execution || run.plan?.execution || {};
       const max = Number(execution.max_parallel_modules || 0);
-      const classes = Object.entries(run.report?.summary?.failure_classes || {});
+      const classes = Object.entries(run.report?.summary?.issues || {}).filter(([, count]) => count);
       return window.PortalI18n.html`<p class="testRunPolicy">${esc(max ? window.PortalI18n.text`模块之间最多 ${max} 个 Resident 同时执行，模块内的用例依次执行。` : t("模块之间同时执行，模块内的用例依次执行。"))}${classes.length ? ` ${classes.map(([key, value]) => T.chip(`${T.failureClassLabel(key)} ${value}`, "is-warning")).join("")}` : ""}</p>`;
     }
 
@@ -273,7 +280,8 @@
     let disposed = false;
     const chosen = new Set();
 
-    const matches = run => (filter === "all" || (filter === "problem" ? T.problemStatuses.has(run.status) : filter === "active" ? T.activeStatuses.has(run.status) : run.status === filter))
+    const hasProblem = run => T.problemStatuses.has(run.status) || Number(run.usage_summary?.issues?.product || 0) > 0;
+    const matches = run => (filter === "all" || (filter === "problem" ? hasProblem(run) : filter === "active" ? T.activeStatuses.has(run.status) : run.status === filter))
       && (kind === "all" || (kind === "tau") === T.isTauRun(run));
     const deletable = run => T.canOperate() && T.terminalStatuses.has(run.status);
 
@@ -282,12 +290,12 @@
       const shown = runs.filter(matches);
       [...chosen].forEach(id => { if (!shown.some(run => run.run_id === id && deletable(run))) chosen.delete(id); });
       const segment = (name, value, current, label, total) => `<button type="button" class="testToggle" data-runs-${name}="${esc(value)}" aria-pressed="${value === current}">${esc(label)}${total === undefined ? "" : ` <small>${total}</small>`}</button>`;
-      const counts = { all: runs.length, problem: runs.filter(run => T.problemStatuses.has(run.status)).length, passed: runs.filter(run => run.status === "passed").length, active: runs.filter(run => T.activeStatuses.has(run.status)).length };
+      const counts = { all: runs.length, problem: runs.filter(hasProblem).length, reported: runs.filter(run => run.status === "reported").length, passed: runs.filter(run => run.status === "passed").length, active: runs.filter(run => T.activeStatuses.has(run.status)).length };
       root.innerHTML = window.PortalI18n.html`<article class="testRunsPage">
         ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("运行记录") }])}
         <header class="testListHead"><h1>运行记录</h1><span class="testListCount">${esc(window.PortalI18n.text`保留最近 ${runs.length} 次运行，谁发起的都在这里`)}</span></header>
         <div class="testCatalogToolbar">
-          <div class="testChipRow" role="group" aria-label="结果">${segment("filter", "all", filter, t("全部"), counts.all)}${segment("filter", "problem", filter, t("有问题"), counts.problem)}${segment("filter", "passed", filter, t("通过"), counts.passed)}${segment("filter", "active", filter, t("进行中"), counts.active)}</div>
+          <div class="testChipRow" role="group" aria-label="结果">${segment("filter", "all", filter, t("全部"), counts.all)}${segment("filter", "problem", filter, t("有问题"), counts.problem)}${segment("filter", "reported", filter, t("使用报告"), counts.reported)}${segment("filter", "passed", filter, t("通过"), counts.passed)}${segment("filter", "active", filter, t("进行中"), counts.active)}</div>
           <div class="testChipRow" role="group" aria-label="执行方式">${segment("kind", "all", kind, t("全部方式"))}${segment("kind", "tau", kind, "TAU")}${segment("kind", "local", kind, t("本地运行"))}</div>
         </div>
         ${shown.length ? `<div class="testRunRows is-list">${shown.map(run => T.runRowHtml(run, { selectable: T.canOperate(), checked: chosen.has(run.run_id), disabled: busy || !deletable(run) })).join("")}</div>` : T.stateHtml("empty", t("没有符合条件的运行"))}

@@ -413,16 +413,16 @@ plans:
       - 范围为 Repo 工作台的提交；Plan 明确排除发布和推送，不构成 Portal Release 发布策略变更。
 
   - id: plan_e3b4ef59be38
-    title: TAU 的通过结论必须能由实际使用证据说明
+    title: TAU 使用报告清楚呈现过程、问题与性能体验
     status: proposed
-    source: {ref: plan_e3b4ef59be38, version: '2'}
+    source: {ref: plan_e3b4ef59be38, version: '4'}
     modules: [engineering.validation, interface.workbenches]
     depends_on: []
     suggested_after:
       - id: plan_187e56a424f1
-        reason: 先固定已审阅用例与运行目标，有助于解释一份结果评估的范围；TAU 的动作、观察和证据接纳规则可独立交付。
+        reason: 先固定已审阅用例与运行目标，有助于解释使用报告的范围；TAU 的过程、问题与性能体验可独立交付。
     cost_level: medium
-    cost: 中（定性估计）。结果解释、运行器与页面需使用同一证据关系，并区分产品失败、体验摩擦和无法评估；仍需真实使用检查。
+    cost: 中（定性估计）。运行器与页面需使用同一报告协议，区分产品、用例、执行偏差与工具问题，材料缺项注明未记录；仍需真实使用检查。
 
   - id: plan_fdc5a650ef28
     title: 默认先看现在需要我处理的事情

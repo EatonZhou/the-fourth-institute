@@ -34,8 +34,14 @@ component before starting a campaign. Neither a Git branch named `dev` nor a
 obsolete deployment registry selects the target automatically.
 
 TAU runs through the configured application Lineage and module Resident slots.
-Cases may mutate only their declared test fixtures; they must retain cleanup
-and evidence of any incomplete work. Use the actual feature set of the package: an optional feature the package
+Cases may mutate only their declared test fixtures and must clean up objects they
+create. Each case delivers a usage report: the process and where it stopped,
+issues classified as product, case, execution or tool issues with blocking,
+impact or minor severity, and performance observations for key steps. Missing
+screenshots, responses or timing are marked “not recorded”; they do not cause a
+case to fail. Correct mistaken case instructions and repair broken helpers.
+After a deployment, restart or brief disconnect, wait or refresh and continue;
+only recovery failures that affect use are product issues. Use the actual feature set of the package: an optional feature the package
 leaves out, such as the Projects page or Resident semantic search, is not an
 acceptance requirement of that package. Project resources and their ISA
 operations are supported in every package and keep their tests.

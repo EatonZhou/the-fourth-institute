@@ -2,7 +2,7 @@
 
 // Reveal the existing native tab strip through a real pointer move. No forced
 // click, focus injection, style change, panel close or automatic layout unlock.
-async function revealWorkbenchTabControls(tab, {record, timeoutMs=3000}) {
+async function revealWorkbenchTabControls(tab, {record = () => {}, timeoutMs=3000} = {}) {
   if (typeof record!=='function' || !Number.isFinite(timeoutMs) || timeoutMs<=0 || timeoutMs>30000)
     throw new TypeError('Persistence callback and bounded timeout required');
   const deadline=Date.now()+timeoutMs;
@@ -26,7 +26,8 @@ async function revealWorkbenchTabControls(tab, {record, timeoutMs=3000}) {
     last={observed_at_ms:Date.now(),candidates,ready:false};
     const v=candidates.length===1 ? candidates[0] : null;
     last.ready=!!v?.native && !v.locked && v.revealed && !!v.close?.enabled && v.close.reachable;
-    await record(last);
+    try { await record(last); }
+    catch (_) { last.evidence_gaps = ['未记录：观察记录写入失败']; }
     if (last.ready && Date.now()<=deadline) return last;
     if (candidates.length>1 || v?.locked) throw Object.assign(new Error('Ambiguous or locked native tab'),{snapshot:last});
     if (v?.native && v.hover_reachable && !moved) {

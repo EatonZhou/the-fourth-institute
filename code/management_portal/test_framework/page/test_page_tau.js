@@ -115,8 +115,8 @@
       const found = latest();
       const runs = T.recentRuns().filter(T.isTauRun);
       const tau = T.runner("tau");
-      const passed = runs.filter(run => run.status === "passed").length;
-      const problems = runs.filter(run => T.problemStatuses.has(run.status)).length;
+      const reported = runs.reduce((count, run) => count + Number(run.usage_summary?.reported || 0), 0);
+      const problems = runs.reduce((count, run) => count + Number(run.usage_summary?.issues?.product || 0), 0);
       const ready = runnable();
       root.innerHTML = window.PortalI18n.html`<article class="testTauPage">
         ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: "TAU" }])}
@@ -130,7 +130,7 @@
           <div class="testStats">
             <span class="testStat"><strong>${cases.length}</strong><span>个任务</span></span>
             <span class="testStat"><strong>${groups.length}</strong><span>个模块</span></span>
-            <span class="testStat"><strong>${runs.length}</strong><span>${esc(window.PortalI18n.text`次最近运行 · ${passed} 通过 · ${problems} 有问题`)}</span></span>
+            <span class="testStat"><strong>${runs.length}</strong><span>${esc(window.PortalI18n.text`次最近运行 · ${reported} 份报告 · ${problems} 个产品问题`)}</span></span>
           </div>
         </header>
         ${T.canOperate() ? "" : window.PortalI18n.html`<p class="testNote" role="note">当前账号可以查看任务和记录；运行测试和更换 Resident 需要 Test 的操作权限。</p>`}

@@ -24,17 +24,16 @@ from management_portal.business_tasks import process_identity
 from management_portal.test_framework.catalog import planned_source_changed
 from management_portal.test_framework.compatibility import test_actor
 from management_portal.test_framework.records import (
-    FAILURE_CLASSES,
     TERMINAL,
     RunRecords,
     aggregate_status,
-    failure_class,
     now_iso,
 )
 from management_portal.test_framework.runner_adapters import RunnerAdapter, UnsupportedRunner
 from management_portal.test_framework.runner_ids import TAU_RUNNER_ID
 from management_portal.test_framework.tau_limits import tau_max_parallel_modules
 from management_portal.test_framework import slots
+from management_portal.test_framework.tau_usage_report import report_counts, interrupted_report
 
 
 def tau_adapter(state_root: Path) -> RunnerAdapter:
@@ -63,13 +62,10 @@ def tau_adapter(state_root: Path) -> RunnerAdapter:
 
 def tau_report(record: dict[str, Any]) -> dict[str, Any]:
     results = list(record.get("results") or [])
-    counts = {
-        name: sum(1 for item in results if item.get("status") == name)
-        for name in ("passed", "failed", "error", "cancelled", "unsupported")
-    }
+    counts = report_counts(results)
     execution = record.get("plan", {}).get("execution", {})
     return {
-        "schema": "tfi.portal-tau-report.v1",
+        "schema": "tfi.portal-tau-report.v2",
         "campaign_id": record.get("run_id"),
         "status": record.get("status"),
         "started_at": record.get("started_at"),
@@ -78,10 +74,6 @@ def tau_report(record: dict[str, Any]) -> dict[str, Any]:
             "module_count": len(record.get("groups") or []),
             "case_count": len(results),
             **counts,
-            "failure_classes": {
-                name: count for name in FAILURE_CLASSES
-                if (count := sum(1 for item in results if item.get("failure_class") == name))
-            },
         },
         "execution": {
             "mode": execution.get("mode"),
@@ -115,7 +107,7 @@ class TauCampaignExecutor:
         if record is None:
             return ""
         run_dir = self.run_root / run_id
-        status, error = "passed", ""
+        status, error = "reported", ""
         try:
             run_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             selected = record["plan"]["selected"]
@@ -152,7 +144,7 @@ class TauCampaignExecutor:
                         for group in pending_specs
                     ]
                     outcomes.extend(future.result() for future in as_completed(futures))
-            status = aggregate_status([item[0] for item in outcomes])
+            status = aggregate_status([item[0] for item in outcomes]) if outcomes else "reported"
             error = "；".join(item[1] for item in outcomes if item[1])
         except Exception as exc:
             status, error = "error", str(exc)
@@ -167,11 +159,37 @@ class TauCampaignExecutor:
             "active_case_ids": [],
             "finished_at": now_iso() if status in TERMINAL else "",
         }
+        if status in TERMINAL:
+            self._report_unstarted_cases(run_id, status, error)
         final_patch["report"] = tau_report({**self.records.get(run_id), **final_patch})
         # Publish the terminal status and its report in one record update so
         # readers can never observe "finished" without the final report.
         self.records.update(run_id, final_patch)
         return status
+
+    def _report_unstarted_cases(self, run_id: str, status: str, error: str) -> None:
+        """Every planned case gets an honest report, including cases never submitted."""
+        record = self.records.get(run_id)
+        selected = record["plan"]["selected"]
+        groups = {group["group_id"]: group for group in record.get("groups") or []}
+        for spec in record["plan"].get("execution", {}).get("groups") or []:
+            group_id = spec["group_id"]
+            group = groups.get(group_id, {})
+            completed = {int(result.get("item_index", -1)) for result in group.get("results") or []}
+            for index in spec.get("item_indexes") or []:
+                if int(index) in completed:
+                    continue
+                item = selected[int(index)]
+                reason = str(group.get("error") or error or (
+                    "运行已取消，本用例尚未开始" if status == "cancelled" else "前序工作结束后未启动本用例"))
+                lifecycle = "cancelled" if status == "cancelled" else "unsupported"
+                self.records.append_result(run_id, group_id, {
+                    "case_id": item["case_id"], "implementation_id": item["implementation"]["id"],
+                    "runner": TAU_RUNNER_ID, "module_id": str(item.get("module") or ""),
+                    "group_id": group_id, "item_index": int(index), "status": lifecycle,
+                    "returncode": None,
+                    "details": interrupted_report(lifecycle, {"summary": reason}, started=False),
+                })
 
     def _append_group(self, run_id: str, group_id: str, text: str) -> None:
         self.records.append_output(run_id, text, group_id=group_id)
@@ -293,7 +311,7 @@ class TauCampaignExecutor:
         )
         prior_results = list(group_record.get("results") or [])
         prior_statuses = [str(item.get("status") or "") for item in prior_results]
-        status = aggregate_status(prior_statuses) if prior_statuses else "passed"
+        status = aggregate_status(prior_statuses) if prior_statuses else "reported"
         error = ""
         self.records.update_group(run_id, group_id, {"status": "running"})
         try:
@@ -375,21 +393,13 @@ class TauCampaignExecutor:
                     cleanup_evidence = str(cleanup_result.get("evidence") or "").strip()
                     if cleanup_evidence and cleanup_evidence not in evidence:
                         evidence.append(cleanup_evidence)
-                prune = getattr(self.adapter, "prune_evidence", None)
-                if callable(prune):
-                    try:
-                        pruned = prune(run_dir=case_dir, status=outcome.status, details=outcome.details)
-                    except Exception as exc:
-                        self._append_group(run_id, group_id, f"未引用证据清理失败：{exc}\n")
-                    else:
-                        if pruned and pruned.get("files"):
-                            outcome.details["uncited_evidence_removed"] = pruned
+                retain = getattr(self.adapter, "retain_observations", None)
+                if callable(retain):
+                    retain(run_dir=case_dir, details=outcome.details)
                 item_status = outcome.status
                 if item_status not in TERMINAL:
                     raise RuntimeError(f"Runner 返回了无效的终态：{item_status}")
-                details = dict(outcome.details)
-                classification = failure_class(item_status, outcome.returncode, details)
-                details.pop("failure_class", None)
+                details = interrupted_report(item_status, dict(outcome.details))
                 result = {
                     "case_id": item["case_id"],
                     "implementation_id": item["implementation"]["id"],
@@ -398,7 +408,6 @@ class TauCampaignExecutor:
                     "group_id": group_id,
                     "item_index": int(item_index),
                     "status": item_status,
-                    **({"failure_class": classification} if classification else {}),
                     "returncode": outcome.returncode,
                     **({"details": details} if details else {}),
                 }
@@ -410,7 +419,7 @@ class TauCampaignExecutor:
                     status = "error"
                     error = f"测试资源清理尚未完成，停止本模块后续用例：{cleanup_error}"
                     break
-                if item_status != "passed":
+                if item_status != "reported":
                     status = item_status
                     if not group_spec.get("continue_on_failure"):
                         break

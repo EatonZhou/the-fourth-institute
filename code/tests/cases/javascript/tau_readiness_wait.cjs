@@ -37,8 +37,12 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     {record:()=>{}}),error=>error===original);
   assert.equal(reads,1,'a generic readiness wait must not replay failed reads');
   let persistedReads=0;
-  await assert.rejects(waitForEvidenceReady(async()=>{persistedReads++;return {ready:true};},
-    {record:()=>{throw new Error('persistence failed');}}),/persistence failed/);
+  const withoutRecording=await waitForEvidenceReady(async()=>({ready:true}));
+  assert.equal(withoutRecording.ready,true);
+  const recordingFailed=await waitForEvidenceReady(async()=>{persistedReads++;return {ready:true};},
+    {record:()=>{throw new Error('persistence failed');}});
+  assert.equal(recordingFailed.ready,true);
+  assert.ok(recordingFailed.evidence_gaps.includes('未记录：观察记录写入失败'));
   assert.equal(persistedReads,1);
-  console.log('strict readiness, original deadline, persistence and error propagation passed');
+  console.log('bounded readiness, optional recording and recording gaps passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

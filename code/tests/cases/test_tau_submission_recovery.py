@@ -25,7 +25,7 @@ PLANNED = {"case_id": "test_123456789abc", "case_title": "Recover the original i
            "description": "Do not resend or release its environment.", "module": "platform.core",
            "implementation": {"id": "impl-recovery", "task_prompt": "Observe the page."},
            "runner": {"id": "tau"}}
-VERDICT = {**ACCEPTED, "message": 'PORTAL_TAU_RESULT: {"status":"passed","summary":"completed",'
+VERDICT = {**ACCEPTED, "message": 'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"completed",'
            '"issues":[],"evidence":[]}'}
 
 
@@ -69,7 +69,7 @@ def test_interrupted_receipt_resumes_actual_input_without_resubmission(tmp_path,
                          resolve_submission=resolve,
                          cancel_invocation=lambda *args: pytest.fail("accepted work must continue"))
     outcome = execute(adapter, tmp_path, on_submitted=persisted.append)
-    assert outcome.status == "passed"
+    assert outcome.status == "reported"
     assert sent == [True]
     assert len(resolved) == 1
     assert all(resolved[0][key] == value for key, value in PENDING.items())
@@ -236,7 +236,7 @@ def test_campaign_preserves_unresolved_work_and_recovers_without_retrigger(tmp_p
     monkeypatch.setattr(TauCampaignExecutor, "_verify_source", lambda _self, _: pytest.fail("do not prepare new work"))
     adapter.resolve_submission = lambda **_: ACCEPTED
     records.update(run_id, {"executor": {**record["executor"], "pid": 999_999_999}})
-    assert executor.run(run_id) == "passed"
+    assert executor.run(run_id) == "reported"
     assert sent == [True]
     assert cleaned == [True] and finalized == [True]
     assert records.get(run_id)["groups"][0]["active_invocation"] == {}
@@ -264,7 +264,7 @@ def test_owner_exception_preserves_late_causal_locator(tmp_path, config, rejecte
                          resolve_submission=resolve, resume=lambda **_: VERDICT,
                          cancel_invocation=lambda *args: pytest.fail("no unrelated cancellation"))
     outcome = execute(adapter, tmp_path, on_submitted=persisted.append)
-    assert outcome.status == ("unsupported" if rejected else "passed")
+    assert outcome.status == ("unsupported" if rejected else "reported")
     assert any(handle.get("instruction_id") == late["instruction_id"] for handle in persisted)
     assert bool(observations) is not rejected
     assert adapter.cleanup_ready(run_dir=tmp_path / "evidence")
@@ -341,7 +341,7 @@ def test_campaign_process_exit_recovers_through_real_invocation_resolver(tmp_pat
     assert original["request_id"] and original["idempotency_key"] == original_key
     assert not cleaned and record["status"] == "running"
     records.update(run_id, {"executor": {**record["executor"], "pid": 999_999_999}})
-    assert executor.run(run_id) == "passed", records.get(run_id).get("error")
+    assert executor.run(run_id) == "reported", records.get(run_id).get("error")
     assert calls.count("TriggerEvent") == 1 and calls.count("GetInstructionExecution") >= 1
     assert cleaned == [True]
     assert not records.get(run_id)["groups"][0]["active_invocation"]

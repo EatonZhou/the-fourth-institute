@@ -46,11 +46,11 @@ const { observeFiniteInstructionResponses } = require(path.join(codeRoot, 'manag
     const rows = [];
     const options = { origin, targets: [{ instruction: 'GetConversation', arguments: { resident_id: 'resident_owned' } }], requestId: r => primary.requestId(r), record: row => rows.push(row), bodyTimeoutMs: 150 };
     observer = observeFiniteInstructionResponses(page, options);
-    await assert.rejects(observer.original(previous), /UnobservedOriginal/);
+    assert.equal((await observer.original(previous)).body_status, 'not_recorded');
     const other = await post('other', 'GetConversation', 'resident_other');
-    await assert.rejects(observer.original(other), /UnobservedOriginal/);
+    assert.equal((await observer.original(other)).body_status, 'not_recorded');
     const watch = await post('excluded-watch', 'WatchConversationEvents');
-    await assert.rejects(observer.original(watch), /UnobservedOriginal/);
+    assert.equal((await observer.original(watch)).body_status, 'not_recorded');
     assert.throws(() => observeFiniteInstructionResponses(page, { ...options, targets: [{ instruction: 'WatchConversationEvents', arguments: { resident_id: 'resident_owned' } }] }), /NonStreamingTarget/);
     const goodResponse = await post('normal'), good = await observer.original(goodResponse);
     assert.equal(good.body_status, 'read'); assert.equal(good.body.result.reply_to_message_id, 'msg_original');
@@ -79,18 +79,20 @@ const { observeFiniteInstructionResponses } = require(path.join(codeRoot, 'manag
     await post('after-detach'); assert.equal(JSON.stringify(rows), afterClose);
     assert(!JSON.stringify(rows).includes('DO-NOT-LOG')); assert(!JSON.stringify(rows).includes('content'));
     const failed = observeFiniteInstructionResponses(page, { ...options, record: () => { throw new Error('EvidenceDiskFailure'); } });
-    let originalCloseError;
+    let closeReport;
     try {
-      await failed.original(await post('record-failure'));
-    } catch (error) { assert.match(error.message, /EvidenceDiskFailure/); }
+      const observed = await failed.original(await post('record-failure'));
+      assert.equal(observed.body_status, 'read');
+      assert.ok(observed.evidence_gaps.length);
+    }
     finally {
-      try { await failed.close({ drainMs: 20 }); } catch (error) { originalCloseError = error; }
+      closeReport = await failed.close({ drainMs: 20 });
       // The application helper must use this nested finally shape. Observation
       // errors do not prevent the existing browser owner from closing.
       await context.close();
       await primary.flush(); primary.stop();
     }
-    assert.match(originalCloseError.message, /EvidenceDiskFailure/);
+    assert.ok(closeReport.evidence_gaps.length);
     const capture = fs.readFileSync(path.join(dir, 'tau-browser-observations.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);
     assert(capture.some(r => r.kind === 'capture_ended'));
     assert(capture.some(r => r.kind === 'page_closed'));

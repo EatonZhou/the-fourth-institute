@@ -8,7 +8,7 @@ import subprocess
 
 
 def test_route_save_records_exact_native_inspector_and_public_counts():
-    """原生 Inspector 与公开回执不一致时保留精确字段，关闭后禁止以后来的正确值补写"""
+    """保留原生 Inspector 与公开响应，缺材料和补记不产生判定。"""
     result = subprocess.run(
         ["node", str(Path(__file__).with_name("javascript") / "tau_route_limit_evidence.cjs")],
         capture_output=True, text=True, timeout=60,

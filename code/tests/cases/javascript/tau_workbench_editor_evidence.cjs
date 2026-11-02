@@ -85,8 +85,8 @@ const expected = { workbenchId: 'workbench-owned', revision: 2, publishedRevisio
     const rows = [], ids = new WeakMap(); let n = 0;
     const options = { origin, workbenchId: 'workbench-owned', requestId: req => { if (!ids.has(req)) ids.set(req, 'fixture-' + ++n); return ids.get(req); }, record: row => { rows.push(row); } };
     const observer = observeEditorResponses(page, options);
-    await assert.rejects(observer.original(previous), /UnobservedOriginal/);
-    const other = await post('update', 'workbench-other'); await assert.rejects(observer.original(other), /UnobservedOriginal/);
+    assert.equal((await observer.original(previous)).body_read, 'not_recorded');
+    const other = await post('update', 'workbench-other'); assert.equal((await observer.original(other)).body_read, 'not_recorded');
     const update = await post('update'), receipt = await observer.original(update);
     assert.equal(receipt.identity.workbench_id, 'workbench-owned'); assert.equal(receipt.pathname, '/api/workbenches/update');
     const priorRows = JSON.stringify(rows);
@@ -101,9 +101,9 @@ const expected = { workbenchId: 'workbench-owned', revision: 2, publishedRevisio
     const netBeforeReads = network.length; await observer.original(conflict); await observer.close(); assert.equal(network.length, netBeforeReads);
     const rowCount = rows.length; await post('publish'); assert.equal(rows.length, rowCount);
     const broken = observeEditorResponses(page, { ...options, record: () => { throw new Error('EvidenceDiskFailure'); } });
-    const last = await post('publish'); await assert.rejects(broken.original(last), /EvidenceDiskFailure/); await assert.rejects(broken.close(), /EvidenceDiskFailure/);
+    const last = await post('publish'); assert.ok((await broken.original(last)).evidence_gaps.length); assert.ok((await broken.close()).evidence_gaps.length);
     console.log(JSON.stringify({ status: 'passed', scope: 'isolated Chromium native editor template and passive original HTTP responses', production_calls: 0, business_acceptance: false,
-      checks: ['published identity and exact v2/v22', 'hidden status/busy/wrong target rejection', 'native collapsed Advanced and plan remount', 'team data identity', 'immutable samples', 'pre-registration and other identity rejection', 'original response/status/body gap preserved', '409 safe code only', 'no private payload leakage', 'passive reads and detach', 'record failure propagation'] }));
+      checks: ['published identity and exact v2/v22', 'hidden status/busy/wrong target rejection', 'native collapsed Advanced and plan remount', 'team data identity', 'immutable samples', 'unrecorded responses remain explicit', 'original response/status/body gap preserved', '409 safe code only', 'no private payload leakage', 'passive reads and detach', 'record failure remains a report gap'] }));
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));

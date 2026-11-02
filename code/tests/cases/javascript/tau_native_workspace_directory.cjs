@@ -55,7 +55,7 @@ module.exports=async({page})=>{
       await page.evaluate(address=>fetch(address).then(r=>r.json()),address);
       const excluded=await pending;
       assert.equal(observer.hasOriginalResponse(excluded),false);
-      await assert.rejects(observer.original(excluded),/UnobservedOriginal/);
+      assert.equal((await observer.original(excluded)).body_status,'not_recorded');
     }
   }finally{
     await observer.close();page.off('request',started);

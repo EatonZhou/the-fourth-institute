@@ -318,5 +318,5 @@ def test_lineage_fixture_contract_defaults_to_reuse_and_survives_planning(tmp_pa
     default["implementation"].pop("lineage_fixture")
     prompt = build_prompt(default, TauConfig(tmp_path / "state.json"), tmp_path, target, RUN)
     assert "本用例没有独立团队声明" in prompt
-    assert "产品正常创建的业务成员遵循产品绑定" in prompt
-    assert "DeleteResident" in prompt and "临时 Resident 放在本模块的临时团队中" not in prompt
+    assert "使用产品绑定的固定 Lineage/Resident" in prompt
+    assert "固定团队与执行器保留" in prompt

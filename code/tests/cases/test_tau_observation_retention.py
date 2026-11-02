@@ -10,10 +10,10 @@ import pytest
 from management_portal.test_framework.runner_adapters import TauAdapter
 
 @pytest.mark.parametrize('filename', ['tau-browser-observations.jsonl', 'tau-helper-calls.jsonl', 'tau-browser-identity.jsonl', 'harness-tool-rtt.jsonl', 'tau-network-review.json'])
-def test_standard_browser_observations_are_cited_before_pruning_and_remain_original(tmp_path, filename):
+def test_standard_browser_observations_are_cited_are_retained(tmp_path, filename):
     """TAU 标准观测证据在清理前引用并保留
 
-    验证正式结果引用本用例的观测日志，清理无关文件时保留原始失败与未完成请求记录。
+    验证正式结果引用本用例的观测日志，未引用的文件也可用于报告补充观察。
     """
     adapter = object.__new__(TauAdapter)
     root = tmp_path / "case"
@@ -23,12 +23,12 @@ def test_standard_browser_observations_are_cited_before_pruning_and_remain_origi
     evidence.write_bytes(original)
     (root / "uncited.json").write_text("discard")
     details = {"evidence": []}
-    assert adapter.prune_evidence(run_dir=root, status="failed", details=details) == {"files": 1, "bytes": 7}
+    assert adapter.retain_observations(run_dir=root, details=details) is None
     assert details["evidence"] == [evidence.name]
     assert evidence.read_bytes() == original
-    # Error results retain evidence too, without changing their verdict or pruning.
+    assert (root / "uncited.json").read_text() == "discard"
     details = {"evidence": []}
-    assert adapter.prune_evidence(run_dir=root, status="error", details=details) is None
+    assert adapter.retain_observations(run_dir=root, details=details) is None
     assert details["evidence"] == [evidence.name]
     assert evidence.read_bytes() == original
 
@@ -45,6 +45,6 @@ def test_standard_browser_observations_do_not_cite_files_outside_the_case(tmp_pa
     outside.write_text("not this run")
     (root / filename).symlink_to(outside)
     details = {"evidence": []}
-    adapter.prune_evidence(run_dir=root, status="failed", details=details)
+    adapter.retain_observations(run_dir=root, details=details)
     assert details["evidence"] == []
     assert outside.read_text() == "not this run"

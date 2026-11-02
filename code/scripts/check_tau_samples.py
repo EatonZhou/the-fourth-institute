@@ -11,6 +11,12 @@ from xml.etree import ElementTree
 
 
 SAMPLES = (
+    "test_tau_usage_report.py",
+    "test_tau_review_evidence.py",
+    "test_tau_route_limit_evidence.py",
+    "test_tau_editor_evidence.py",
+    "test_tau_editor_response_deadline.py",
+    "test_tau_evidence_readiness.py::test_network_review_separates_refusal_from_unproven_cancellation",
     "test_watchboard_action_contract.py::test_tau_finite_instruction_evidence_keeps_the_original_response",
     "test_tau_evidence_api.py",
     "test_tau_workspace_root_read.py",
@@ -45,7 +51,8 @@ def main():
     # Repository test fixtures select their disposable database and runtime.
     framework = code / "management_portal/test_framework"
     def sources():
-        paths = [framework / "config/tau_runner_prompt.md", *sorted(framework.glob("tau*.js"))]
+        paths = [framework / "config/tau_runner_prompt.md", framework / "tau_fixtures.py",
+                 *sorted(framework.glob("tau*.js"))]
         return {str(p.relative_to(code)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     before = sources()
     print("TAU fixed samples: native UI + isolated ISA; no model or production mutation", flush=True)

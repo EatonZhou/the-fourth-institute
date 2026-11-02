@@ -3,7 +3,7 @@
 // One owner for bounded original finite-response bodies and observer shutdown.
 // Target adapters identify requests; this owner never sends or repeats one.
 function observeFiniteResponses(page, {
-  origin, identifyRequest, requestId, record, frame = page.mainFrame(), bodyTimeoutMs = 5000,
+  origin, identifyRequest, requestId, record = () => {}, frame = page.mainFrame(), bodyTimeoutMs = 5000,
 }) {
   if (typeof identifyRequest !== 'function' || typeof requestId !== 'function' || typeof record !== 'function'
       || !Number.isInteger(bodyTimeoutMs) || bodyTimeoutMs < 1 || bodyTimeoutMs > 60000) throw new TypeError('InvalidFiniteObservationOptions');
@@ -69,10 +69,9 @@ function observeFiniteResponses(page, {
     hasOriginalResponse(response) { return responses.has(response); },
     async original(response) {
       const entry = responses.get(response);
-      if (!entry) throw new Error('UnobservedOriginalInstructionResponse');
+      if (!entry) return {body_status:'not_recorded', evidence_gaps:['未记录：响应']};
       const outcome = await entry.promise;
-      if (failure) throw failure;
-      return structuredClone(outcome);
+      return structuredClone({...outcome, evidence_gaps:failure ? ['未记录：观察器记录不完整'] : []});
     },
     pending() {
       return [...pending].map(entry => structuredClone(entry.metadata));
@@ -98,8 +97,7 @@ function observeFiniteResponses(page, {
         const outcomes = [...responses.values()].map(entry => ({ ...entry.metadata, body_status: entry.outcome.body_status }));
         const report = { stopped, observation_complete: !missingResponses.length && outcomes.every(x => x.body_status === 'read'), outcomes, missing_responses: missingResponses };
         emit({ phase: 'observer_closed', ...report });
-        if (failure) throw failure;
-        return report;
+        return {...report, evidence_gaps:failure ? ['未记录：观察器记录不完整'] : []};
       })();
       return closePromise;
     },

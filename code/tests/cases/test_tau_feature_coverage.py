@@ -20,9 +20,6 @@ def test_global_resource_search_tau_is_selectable_and_read_only(isolated_portal_
         implementation, = selected.implementations
         assert implementation.runner == "tau"
         assert implementation.risk == "no-external-side-effects"
-        assert "Ctrl+K" in implementation.task_prompt
-        assert "全部类型" in implementation.task_prompt
-        assert "Resident" in implementation.task_prompt
         plan = RunPlanner(CatalogRepository(), RunnerRegistry(tau_available=True)).preview({
             "select": {"case_ids": [source_case.id]},
             "implementation": {"runners": ["tau"], "profile": "live.controlled"},
@@ -132,8 +129,6 @@ def test_core_workflow_tau_cases_are_separate_selectable_real_use_tasks(subtests
             assert implementation.runner == "tau"
             assert implementation.risk == "external-side-effects"
             assert bool(implementation.lineage_fixture) is contract["lineage_fixture"]
-            assert "核验" in implementation.task_prompt and ("测试实例" in implementation.task_prompt or "受测实例" in implementation.task_prompt)
-            assert "实际查看" in implementation.task_prompt
 
             selected, = repository.query({"case_ids": [source_case.id]})
             assert selected == source_case

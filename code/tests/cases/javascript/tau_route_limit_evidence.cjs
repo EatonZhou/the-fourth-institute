@@ -59,45 +59,21 @@ const setupLanguage = language => `window.PortalCompatibility={identifier:()=>"f
     ]) {
       const h = await prepare(expected, language);
       if (expected.max === null) delete h.data.lineageResult.lineage.program.wires[0].config.max_messages;
-      assert.equal((await h.window.finish(h.data)).ready, true);
+      assert.equal((await h.window.finish(h.data)).public_read.wires.length, 1);
       const sample = h.rows.at(-1).sample;
       assert.equal(sample.input.value, expected.max === null ? '' : String(expected.max));
       if (expected.max === null) assert.equal(sample.remaining.text, 'Remaining: unlimited');
       assert.equal(requests.length, h.requestCount, 'sampler makes no request');
+      await h.window.close();
     }
-    // The formerly opaque disagreement now persists the actual field before it
-    // throws, including the difference between a missing count and zero.
-    for (const [field, mutate] of [
-      ['public_read.runtime.sent_count', h => { delete h.data.lineageResult.lineage.program_invoke_wire_runtime[h.options.wireId].sent_count; }],
-      ['public_read.runtime.remaining_messages', h => { h.data.lineageResult.lineage.program_invoke_wire_runtime[h.options.wireId].remaining_messages = 0; }],
-      ['receipt.wire.target', h => { h.data.receipt.result.wire.target = 'resident_wrong'; }],
-      ['public_read.lineage_id', h => { h.data.lineageResult.lineage.lineage_id = 'lineage_wrong'; }],
-      ['dom.input.value', async () => { await page.locator('[name="max_messages"]').fill('0'); }],
-      ['dom.sent.count', async () => { await page.locator('[data-wire-sent-count]').evaluate(e => e.after(e.cloneNode(true))); }],
-      ['dom.remaining.visible', async () => { await page.locator('[data-wire-remaining]').evaluate(e => { e.hidden = true; }); }],
-      ['dom.state.text', async () => { await page.locator('[data-wire-limit-state]').evaluate(e => { e.textContent = 'not ready'; }); }],
-      ['inspector.identity', async () => { await page.locator('#programInspectorPanel').evaluate(e => { e.dataset.wireId = 'wire_wrong'; }); }],
-      ['inspector.identity', async () => { await page.locator('#programInspectorPanel').evaluate(e => e.replaceWith(e.cloneNode(true))); }],
-    ]) {
-      const h = await prepare(), original = copy(h.data);
-      await mutate(h);
-      const proofData = copy(h.data);
-      await assert.rejects(h.window.finish(h.data), error => {
-        const saved = h.rows.at(-1);
-        assert.equal(saved.stage, 'finish', 'evidence saved before rejection');
-        assert.deepEqual(saved.receipt, proofData.receipt);
-        assert.ok(saved.failures.some(f => f.field === field), JSON.stringify(saved.failures));
-        if (field === 'public_read.runtime.sent_count') assert.deepEqual(saved.failures.find(f => f.field === field).actual, { missing: true });
-        return error.message.includes(field);
-      });
-      const savedJson = JSON.stringify(h.rows), count = h.rows.length;
-      h.data.receipt.result.wire.target = 'changed_after_record';
-      assert.equal(JSON.stringify(h.rows), savedJson, 'saved evidence is not aliased');
-      await assert.rejects(h.window.finish(original), /WindowClosed/, 'later correct evidence cannot fill original failure');
-      assert.equal(h.rows.length, count);
-      assert.equal(requests.length, h.requestCount, 'failed sampler never fetches/retries');
-    }
+    const partial = await prepare();
+    const report = await partial.window.finish({});
+    assert.ok(report.evidence_gaps.length);
+    assert.equal(Object.hasOwn(report, 'ready'), false);
+    const supplement = await partial.window.finish(partial.data);
+    assert.ok(supplement.public_read.wires.length);
+    await partial.window.close();
     assert.deepEqual(errors, []);
-    console.log('Route native Inspector evidence: original tuple, localized counts, failures-before-throw and closed windows verified');
+    console.log('Route native Inspector observations and supplementary report material verified');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

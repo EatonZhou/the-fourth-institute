@@ -125,9 +125,8 @@ def test_every_discovered_implementation_has_one_explicit_classified_case_contra
             assert '总预算约' not in prompt
             assert '选择 four' not in prompt
         runner_prompt = (ROOT / 'management_portal/test_framework/config/tau_runner_prompt.md').read_text(encoding='utf-8')
-        assert 'TAU 是无人值守运行' in runner_prompt
-        assert '禁止向用户提问' in runner_prompt
-        assert '始终以 `PORTAL_TAU_RESULT` 结束本次用例' in runner_prompt
+        assert 'PORTAL_TAU_RESULT' in runner_prompt
+        assert '使用报告' in runner_prompt
     with subtests.test(contract='test_module_taxonomy_covers_all_spec_domains_and_every_case_uses_it'), isolated_portal_case() as case_path:
         cases = CatalogRepository().all()
         assert [group.id for group in MODULE_GROUPS] == ['spec', 'isa', 'security', 'resource', 'resident', 'lineage', 'execution', 'workflow', 'workbench', 'platform', 'operations']
@@ -512,23 +511,6 @@ def test_runner_filter_is_an_implementation_constraint_not_a_case_dimension_cont
         plan = planner.preview({'select': {'case_ids': [local_case.id]}, 'implementation': {'profile': 'live.controlled'}})
         assert plan['executable'] is False
         assert plan['excluded'] == [{'case_id': local_case.id, 'title': local_case.title, 'reason': 'no-compatible-implementation'}]
-    with subtests.test(contract='test_agent_use_result_requires_an_explicit_machine_readable_verdict'), isolated_portal_case():
-        parsed = parse_result('操作完成。\nPORTAL_TAU_RESULT: {"status":"passed","summary":"可用","issues":[],"evidence":["shot.png"]}')
-        assert parsed == {'status': 'passed', 'summary': '可用', 'issues': [], 'evidence': ['shot.png'], 'visual_review': {'status': 'not-applicable', 'summary': ''}, 'user_experience': {}, 'diagnosis': {}}
-        structured = parse_result('PORTAL_TAU_RESULT: {"status":"failed","summary":"failed","issues":[{"code":"BOUNDARY","title":"页面不可用","evidence":["shot.png"]}],"evidence":["shot.png"]}')
-        assert structured['issues'] == ['页面不可用']
-        assert structured['issue_details'] == [{'code': 'BOUNDARY', 'title': '页面不可用', 'evidence': ['shot.png']}]
-    with subtests.test(contract='test_ui_agent_use_result_requires_evidence_and_visual_verdict'), isolated_portal_case():
-        message = 'PORTAL_TAU_RESULT: {"status":"passed","summary":"可用","issues":[],"evidence":["shot.png"],"visual_review":{"status":"failed","summary":"截图中面板相互遮挡"}}'
-        parsed = parse_result(message, require_visual=True)
-        assert parsed['status'] == 'failed'
-        assert parsed['visual_review']['summary'] == '截图中面板相互遮挡'
-        try:
-            parse_result('PORTAL_TAU_RESULT: {"status":"passed","summary":"可用","issues":[],"evidence":[]}', require_visual=True)
-        except ValueError as exc:
-            assert '截图证据' in str(exc)
-        else:
-            raise AssertionError('UI 的 AI 真实使用不能在缺少截图证据时通过')
     with subtests.test(contract='test_portal_test_profile_uses_the_selected_instance_and_contains_no_password'), isolated_portal_case():
         deployment = PortalDeployment(deployment_id='dev', label='Dev', kind='dev', origin='http://127.0.0.1:18086', order=1)
         payload = storage_state_payload(deployment, 'signed-token')
@@ -1070,8 +1052,8 @@ def test_tau_campaign_runs_modules_concurrently_and_cases_in_module_order(tmp_pa
             # A failure keeps its module going; the framework classifies what it can.
             return {
                 "operations.test-workbench-2": AdapterResult(status="unsupported", details={"summary": "未发送用例"}),
-                "spec.design-system-2": AdapterResult(status="failed", returncode=1),
-            }.get(kwargs["planned"]["case_id"], AdapterResult(status="passed"))
+                "spec.design-system-2": AdapterResult(status="reported", details={"process": {"status": "blocked"}, "issues": [{"category": "product", "severity": "blocking", "symptom": "保存后无法继续"}]}),
+            }.get(kwargs["planned"]["case_id"], AdapterResult(status="reported", details={"process": {"status": "completed"}}))
 
     created = coordinator.start(plan, "alice")
     # Web only queues the Campaign; its executor unit drives it against DEV.
@@ -1084,16 +1066,14 @@ def test_tau_campaign_runs_modules_concurrently_and_cases_in_module_order(tmp_pa
 
     assert record["status"] == "unsupported"
     assert all(values == [f"{module}-1", f"{module}-2"] for module, values in observed.items())
-    assert {group["status"] for group in record["groups"]} == {"unsupported", "failed"}
-    assert {item["case_id"]: item.get("failure_class") for item in record["results"]} == {
-        "operations.test-workbench-1": None, "operations.test-workbench-2": "precondition",
-        "spec.design-system-1": None, "spec.design-system-2": "unknown",
-    }
-    assert record["report"]["schema"] == "tfi.portal-tau-report.v1"
+    assert {group["status"] for group in record["groups"]} == {"unsupported", "reported"}
+    assert all("failure_class" not in item for item in record["results"])
+    assert record["report"]["schema"] == "tfi.portal-tau-report.v2"
     assert record["report"]["summary"] == {
-        "module_count": 2, "case_count": 4, "passed": 2,
-        "failed": 1, "error": 0, "cancelled": 0, "unsupported": 1,
-        "failure_classes": {"precondition": 1, "unknown": 1},
+        "module_count": 2, "case_count": 4, "reported": 4,
+        "process": {"blocked": 1, "completed": 2, "not_started": 1},
+        "issues": {"product": 1, "case": 0, "tool": 0, "execution": 0},
+        "product_severity": {"blocking": 1, "impact": 0, "minor": 0},
     }
     assert record["report"]["execution"]["account"] == "test-actor"
     assert record["report"]["execution"]["target"] == "DEV"
@@ -1154,13 +1134,13 @@ def test_tau_campaign_bounds_parallel_modules(tmp_path: Path) -> None:
             overlapped.wait(timeout=10)
             with lock:
                 active -= 1
-            return AdapterResult(status="passed")
+            return AdapterResult(status="reported")
 
     created = records.create(plan, "alice")
-    assert TauCampaignExecutor(records, tmp_path / "artifacts", LimitedAdapter()).run(created["run_id"]) == "passed"
+    assert TauCampaignExecutor(records, tmp_path / "artifacts", LimitedAdapter()).run(created["run_id"]) == "reported"
     record = records.get(created["run_id"])
 
-    assert record["status"] == "passed"
+    assert record["status"] == "reported"
     assert peak == 2
     assert record["report"]["execution"]["max_parallel_modules"] == 2
 
@@ -1482,8 +1462,8 @@ def test_run_history_preserves_records_until_expiry(tmp_path):
     assert records.run_ids() == {active, current, *completed}
 
 
-@pytest.mark.parametrize("first_verdict", ["passed", "failed"])
-def test_tau_cleanup_failure_stops_same_module_but_other_modules_continue(tmp_path, first_verdict):
+@pytest.mark.parametrize("first_status", ["reported", "error"])
+def test_tau_cleanup_failure_stops_same_module_but_other_modules_continue(tmp_path, first_status):
     """资源未清理时不向同一模块继续派发，其他模块正常执行并保留原结果。"""
     records = RunRecords(tmp_path / "runs.json")
     source = "tests/cases/test_test_framework.py"
@@ -1507,7 +1487,7 @@ def test_tau_cleanup_failure_stops_same_module_but_other_modules_continue(tmp_pa
     class Adapter:
         def execute(self, *, planned, **kwargs):
             executed.append(planned["case_id"])
-            return AdapterResult(status=first_verdict if planned["case_id"] == selected[0]["case_id"] else "passed",
+            return AdapterResult(status=first_status if planned["case_id"] == selected[0]["case_id"] else "reported",
                                  details={"summary": "原始行为证据保留"})
 
         def cleanup(self, *, run_dir, emit):
@@ -1523,7 +1503,11 @@ def test_tau_cleanup_failure_stops_same_module_but_other_modules_continue(tmp_pa
     assert results[selected[0]["case_id"]]["status"] == "error"
     assert results[selected[0]["case_id"]]["details"]["summary"] == "原始行为证据保留"
     assert results[selected[0]["case_id"]]["details"]["cleanup_error"] == "review is still running"
-    assert results[selected[2]["case_id"]]["status"] == "passed"
+    assert results[selected[2]["case_id"]]["status"] == "reported"
+    unstarted = results[selected[1]["case_id"]]
+    assert unstarted["details"]["process"]["status"] == "not_started"
+    assert "清理尚未完成" in unstarted["details"]["process"]["reason"]
+    assert unstarted["details"]["issues"] == []
     paper = next(group for group in record["groups"] if group["module_id"] == "workflow.paper")
     assert "清理尚未完成" in paper["error"]
     assert not paper.get("active_invocation")
@@ -1534,7 +1518,7 @@ def test_tau_cleanup_scan_tolerates_concurrent_report_deletion(tmp_path, monkeyp
     records = RunRecords(tmp_path / "runs.json")
     plan = {"selected": [], "execution": {"groups": []}}
     previous = records.create(plan, "alice")["run_id"]
-    records.update(previous, {"status": "passed"})
+    records.update(previous, {"status": "reported"})
     current = records.create(plan, "alice")["run_id"]
     snapshot = records.run_ids()
     records.delete_many([previous])
@@ -1643,17 +1627,17 @@ def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_pat
             # A cancelled Campaign still hands the submitted case to the
             # adapter, which withdraws that Resident input.
             assert kwargs["cancelled"]() == (mode == "cancelling")
-            return AdapterResult(status="cancelled" if kwargs["cancelled"]() else "passed")
+            return AdapterResult(status="cancelled" if kwargs["cancelled"]() else "reported")
 
     executor = TauCampaignExecutor(records, tmp_path / "artifacts", ResumingAdapter())
-    assert executor.run(created["run_id"]) == ("cancelled" if mode == "cancelling" else "passed")
+    assert executor.run(created["run_id"]) == ("cancelled" if mode == "cancelling" else "reported")
     record = records.get(created["run_id"])
 
-    assert record["status"] == ("cancelled" if mode == "cancelling" else "passed")
+    assert record["status"] == ("cancelled" if mode == "cancelling" else "reported")
     assert observed["resident_id"] == "resident-stable"
     assert observed["message_id"] == "message-existing"
     assert record["groups"][0]["active_invocation"] == {}
-    assert record["report"]["schema"] == "tfi.portal-tau-report.v1"
+    assert record["report"]["schema"] == "tfi.portal-tau-report.v2"
 
 
 def test_agent_use_profile_requires_a_private_storage_state_contracts(tmp_path, subtests, isolated_portal_case):
@@ -1866,7 +1850,7 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
             "resident_id": "resident-test",
             "lineage_id": "lineage-test",
             "message_id": "message-test",
-            "message": '完成。\nPORTAL_TAU_RESULT: {"status":"passed","summary":"真实页面可用","issues":[],"evidence":["test.png"]}',
+            "message": '完成。\nPORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"真实页面可用","issues":[],"evidence":["test.png"]}',
         }
 
     output = []
@@ -1890,17 +1874,15 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
         cancelled=lambda: False,
     )
 
-    assert outcome.status == "passed", outcome.details
+    assert outcome.status == "reported", outcome.details
     assert outcome.details["summary"] == "真实页面可用"
     assert outcome.details["conversation"]["resident_id"] == "resident-test"
     assert "PORTAL_TAU_RESULT" in "".join(output)
     assert str(storage) in captured["prompt"]
     assert str(run_dir) in captured["prompt"]
-    assert "本次独立运行：testrun_0000000000000004" in captured["prompt"]
-    assert "当前结论必须来自本次操作" in captured["prompt"]
+    assert "本次运行：testrun_0000000000000004" in captured["prompt"]
     assert "用例总时限" not in captured["prompt"]
     assert "UTC 截止时间" not in captured["prompt"]
-    assert "不得以固定墙钟时长判定失败" in "".join(captured["prompt"].split())
     assert "run-context.json" in captured["prompt"]
     # The framework records the run context and initial build before the case is sent.
     context = json.loads((run_dir / "run-context.json").read_text(encoding="utf-8"))
@@ -1912,26 +1894,8 @@ def test_agent_use_adapter_invokes_resident_and_preserves_reviewable_result(
     assert Path(context["browser_runtime"]["python_executable"]).is_absolute()
     assert context["evidence_dir"] == str(run_dir.resolve())
     assert context["build_id"]
-    assert "此前 Run 的文件不能作为本轮证据" in captured["prompt"]
-    assert "node --check" in captured["prompt"]
-    assert "动态值写入同目录 JSON 配置" in captured["prompt"]
-    assert "PW_TEST_SCREENSHOT_NO_FONTS_READY=1" in captured["prompt"]
-    assert "document.fonts.ready" in captured["prompt"]
-    assert "framework-helper-cleanup.json" in captured["prompt"]
-    assert "TMPDIR" in captured["prompt"]
-    assert "NUL 字节解析 argv" in captured["prompt"]
-    assert "文件实际行数" in captured["prompt"]
-    assert "waitForURL" in captured["prompt"]
-    assert "waitForLoadState('domcontentloaded')" in captured["prompt"]
-    assert "同一个稳定面板根节点" in captured["prompt"]
-    assert "不得用整个 document" in captured["prompt"]
-    assert "已经激活的标签直接读取" in captured["prompt"]
-    assert "导航时刻标记" in captured["prompt"]
-    assert "执行上下文因导航销毁属于辅助脚本同步错误" in captured["prompt"]
-    assert "检查匹配数量" in captured["prompt"]
-    assert "net::ERR_ABORTED" in captured["prompt"]
-    assert "预期取消" in captured["prompt"]
-    assert "superseded media request" in captured["prompt"]
+    assert "关键操作的耗时" in captured["prompt"]
+    assert "未记录" in captured["prompt"]
     assert captured["metadata"]["test_case_id"] == "test_000000000009"
     assert captured["resident_scope"].startswith("portal-tau:test-actor:operations.test-workbench:")
     assert captured["lineage_scope"] == "portal-tau:test-actor:operations.test-workbench"
@@ -2009,9 +1973,9 @@ def test_tau_accepts_mixed_evidence_when_a_ui_screenshot_is_present(tmp_path: Pa
         return {
             "resident_id": "resident-ui",
             "message": (
-                'PORTAL_TAU_RESULT: {"status":"passed","summary":"UI 可用","issues":[],'
+                'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"UI 可用","issues":[],'
                 '"evidence":["screen.png","notes.json"],'
-                '"visual_review":{"status":"passed","summary":"布局正常"}}'
+                '"visual_review":{"status":"reported","process":{"status":"completed"},"summary":"布局正常"}}'
             ),
         }
 
@@ -2030,58 +1994,10 @@ def test_tau_accepts_mixed_evidence_when_a_ui_screenshot_is_present(tmp_path: Pa
         cancelled=lambda: False,
     )
 
-    assert outcome.status == "passed"
+    assert outcome.status == "reported"
     assert outcome.details["evidence"] == ["screen.png", "notes.json"]
 
 
-@pytest.mark.parametrize("changed,expected_status", [
-    ({"actual_build_id": "dev-next", "expected_build_id": "dev-next"}, "passed"),
-    ({"deployment_id": "release"}, "failed"),
-    ({"origin": "http://127.0.0.1:18085"}, "failed"),
-    ({"actor": "another-actor"}, "failed"),
-])
-def test_tau_fails_when_the_dev_target_changes_during_use(tmp_path: Path, changed, expected_status) -> None:
-    """使用期间 DEV 实例、地址或身份改变时 TAU 用例失败，仅构建更新时仍通过
-
-    :design: decision_c953eab654cd
-    :design-point:
-    """
-    storage = tmp_path / "test-actor.json"
-    storage.write_text("{}", encoding="utf-8")
-    storage.chmod(0o600)
-    original = _verified_dev_target()
-    targets = [original, VerifiedDevTarget(**{**original.__dict__, **changed})]
-
-    def verify(_storage):
-        return targets.pop(0)
-
-    def invoke(**kwargs):
-        kwargs["on_submitted"]({"resident_id": "resident-drift", "message_id": "message-drift"})
-        return {
-            "resident_id": "resident-drift",
-            "message": 'PORTAL_TAU_RESULT: {"status":"passed","summary":"完成","issues":[],"evidence":[]}',
-        }
-
-    outcome = TauAdapter(_tau_config(storage), invoke, verify).execute(
-        run_id="testrun_0000000000000007",
-        planned={
-            "case_id": "test_00000000000b", "case_title": "DEV 稳定性", "description": "检查 DEV。",
-            "module": "operations.deployment", "aspects": ["functional"],
-            "implementation": {"task_prompt": "检查页面。"},
-        },
-        run_dir=tmp_path / "evidence",
-        actor="alice",
-        emit=lambda _chunk: None,
-        cancelled=lambda: False,
-    )
-
-    assert outcome.status == expected_status
-    if expected_status == "failed":
-        assert any("DEV 目标发生变化" in issue for issue in outcome.details["issues"])
-    else:
-        assert not outcome.details["issues"]
-        assert outcome.details["target_postflight"]["actual_build_id"] == "dev-next"
-        assert outcome.details["target_postflight"]["build_changed"] is True
 
 
 @pytest.mark.parametrize("phase", ["preflight", "postflight"])
@@ -2112,7 +2028,7 @@ def test_tau_rechecks_build_mismatch_without_resubmitting(tmp_path: Path, monkey
         calls.append(kwargs)
         kwargs["on_submitted"]({"resident_id": "resident-build", "message_id": "message-build"})
         return {"resident_id": "resident-build", "message":
-                'PORTAL_TAU_RESULT: {"status":"passed","summary":"完成","issues":[],"evidence":[]}'}
+                'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"完成","issues":[],"evidence":[]}'}
 
     outcome = TauAdapter(_tau_config(storage), invoke, verify).execute(
         run_id="testrun_0000000000000007",
@@ -2122,10 +2038,9 @@ def test_tau_rechecks_build_mismatch_without_resubmitting(tmp_path: Path, monkey
         run_dir=tmp_path / "evidence", actor="alice", emit=observations.append, cancelled=lambda: False,
     )
 
-    assert outcome.status == ("passed" if recovers else "failed")
+    assert outcome.status == ("reported" if recovers or phase == "postflight" else "unsupported")
     assert len(calls) == (1 if recovers or phase == "postflight" else 0)
     assert clock[0] == (30 if recovers else 60)
-    assert any(original.actual_build_id in line and "dev-next" in line for line in observations)
     if recovers:
         assert outcome.details["target_postflight"]["actual_build_id"] == "dev-next"
 
@@ -2165,7 +2080,7 @@ def test_agent_use_preflight_failure_never_invokes_resident(tmp_path: Path, resu
         cancelled=lambda: False,
     )
 
-    assert outcome.status == ("pending" if resuming else "failed")
+    assert outcome.status == ("pending" if resuming else "unsupported")
     assert not invoked
     if resuming:
         assert outcome.details["target_preflight"] == _verified_dev_target().result_details()
@@ -2202,7 +2117,7 @@ def test_tau_reconnects_to_accepted_input_without_resubmitting(tmp_path: Path, m
         resumed.append({key: kwargs[key] for key in handle})
         if len(resumed) == 1:
             raise unavailable_error("service restarting")
-        return {**handle, "message": 'PORTAL_TAU_RESULT: {"status":"passed","summary":"same input completed","issues":[],"evidence":[]}'}
+        return {**handle, "message": 'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"same input completed","issues":[],"evidence":[]}'}
 
     planned = {
         "case_id": "test_00000000000c", "case_title": "reconnect", "description": "Resume an accepted input.",
@@ -2224,7 +2139,7 @@ def test_tau_reconnects_to_accepted_input_without_resubmitting(tmp_path: Path, m
         run_id="testrun_0000000000000009", planned=planned, run_dir=tmp_path / "evidence",
         actor="alice", emit=output.append, cancelled=lambda: False, on_submitted=persisted.append,
     )
-    assert outcome.status == "passed"
+    assert outcome.status == "reported"
     assert len(submissions) == (0 if resuming else 1)
     assert resumed == [handle, handle]
     assert delays == [1.0] * (1 if resuming else 2)

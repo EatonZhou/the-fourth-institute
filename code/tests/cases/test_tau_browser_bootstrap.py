@@ -161,7 +161,7 @@ def test_prompt_first_refresh_waits_for_the_original_view_to_remount(tmp_path, p
         " setTimeout(()=>{region.innerHTML='<span>Persisted</span>';},200); };});"
         "const expectedRegion=page.getByRole('region',{name:'Fixture'}), expectedText='Persisted';"
         "const refreshButton=page.getByRole('button',{name:'Refresh'});"
-        "const waitForOriginalResponse=()=>Promise.resolve({original:true});"
+        "const waitForOriginalResponse=()=>{throw Error('cached refresh must not require a response');};"
         + example +
         "if(await page.evaluate(()=>window.clicks)!==1)throw Error('repeated refresh');")
     assert result.returncode == 0, result.stderr

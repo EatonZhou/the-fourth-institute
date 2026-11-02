@@ -34,9 +34,9 @@ const install=new Function('require','frameworkRoot','portal','origin','workspac
     const previous=await post(rootAddress);
     const observer=install(require,frameworkRoot,{page,requestId:r=>identities.get(r)},origin,workspaceId,'/fixture/shared',r=>rows.push(r));
     try {
-      await assert.rejects(observer.original(previous),/UnobservedOriginal/);
+      assert.equal((await observer.original(previous)).body_status,'not_recorded');
       for(const address of [workspaceId,rootAddress+'/sample.txt','workspace_222222222222/file'])
-        await assert.rejects(observer.original(await post(address)),/UnobservedOriginal/);
+        assert.equal((await observer.original(await post(address))).body_status,'not_recorded');
       const response=await post(rootAddress),receipt=await observer.original(response);
       assert.equal(receipt.request_id,identities.get(response.request()));
       assert.equal(receipt.http_status,200);assert.equal(receipt.body_status,'read');

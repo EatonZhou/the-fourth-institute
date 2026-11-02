@@ -107,6 +107,15 @@ function runRecord(state) {
       if (url.pathname === '/test/api/run' && request.method() === 'POST') return json(runRecord('queued'));
       if (url.pathname === '/test/api/run') {
         const id = url.searchParams.get('run_id');
+        if (id === 'testrun_6666666666666666') {
+          const result = {case_id: 'test_bbbbbbbbbbbb', status: 'reported', details: {
+            summary: '编辑未完成', process: {status: 'blocked', stopped_at: '编辑', reason: '保存后不能继续', steps: ['创建', '保存']},
+            issues: [{category: 'product', severity: 'blocking', step: '编辑', symptom: '刷新后仍不能编辑', evidence: []},
+              {category: 'case', severity: 'minor', step: '准备', symptom: '步骤文案已修正', evidence: []}],
+            performance: [{step: '创建', duration_ms: 1250}], evidence_gaps: ['截图未记录']}};
+          return json({...runRecord('reported'), run_id: id, plan: {campaign: 'tau', selected: [{case_id: result.case_id, runner: {id: 'tau'}}]},
+            results: [result], groups: [{group_id: 'tau:1', status: 'reported', results: [result]}]});
+        }
         if (id === 'testrun_3333333333333333') { runPolls += 1; return json(runRecord(runPolls >= 2 ? 'passed' : 'running')); }
         if (id === 'testrun_4444444444444444') return json({ ...runRecord('error'), run_id: id, output: '', error: '测试执行进程在运行完成前退出。', groups: [], results: [] });
         if (id === 'testrun_5555555555555555') return json({ ...runRecord('running'), run_id: id, output: '', groups: [], results: [] });
@@ -267,6 +276,15 @@ function runRecord(state) {
     assert.deepEqual(posts.filter(([name]) => name === '/test/api/runs/delete').map(([, body]) => body), [{ run_ids: ['testrun_1111111111111111'] }]);
     assert.equal((await page.evaluate(() => f.confirms)).length, 1);
 
+    await page.evaluate(() => PortalTestPage.navigate('/development?view=test&run=testrun_6666666666666666'));
+    await page.waitForSelector('[data-usage-process]');
+    const report = await page.locator('[data-run-result]').innerText();
+    assert.match(report, /流程未走完/);
+    assert.match(report, /产品问题 · 阻断 · 编辑/);
+    assert.match(report, /用例问题 · 小问题 · 准备/);
+    assert.match(report, /1250/);
+    assert.match(report, /截图未记录/);
+    assert.match(await page.locator('.testHero').innerText(), /使用报告/);
     assert.deepEqual(errors, []);
     console.log('PASS test page');
   } catch (error) {

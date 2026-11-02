@@ -1,4 +1,4 @@
-"""Review evidence must finish in its original action window.
+"""Review observations remain useful when some report material is absent.
 
 :module: resident.conversation
 :importance: P1
@@ -10,8 +10,8 @@ import subprocess
 from management_portal.resources.portal import portal_route_script
 
 
-def test_review_original_window_requires_exact_visible_final():
-    """原生 Review 原动作核对捕获 Diff、原输入和可见终态，接纳不等于完成，关闭后不可补写"""
+def test_review_collects_partial_observations_and_supplements():
+    """原生 Review 保留实际观察，缺材料可补记，不产生使用结果判定。"""
     result = subprocess.run(
         ["node", str(Path(__file__).with_name("javascript") / "tau_review_evidence.cjs")],
         input=json.dumps({"routeScript": portal_route_script().decode()}),

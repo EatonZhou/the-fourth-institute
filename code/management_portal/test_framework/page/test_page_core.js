@@ -14,7 +14,7 @@
   const statusLabels = Object.freeze({ queued: t("排队中"), running: t("运行中"), cancelling: t("正在中止"), passed: t("通过"), failed: t("失败"), cancelled: t("已中止"), error: t("错误"), unsupported: t("不支持") });
   const failureClassLabels = Object.freeze({ product: t("产品缺陷"), test: t("测试问题"), environment: t("环境问题"), precondition: t("前提未满足"), "concurrent-change": t("并行修改"), unknown: t("未分类") });
   const runnerLabels = Object.freeze({ pytest: "pytest", tau: "TAU", none: t("缺实现") });
-  const terminalStatuses = new Set(["passed", "failed", "cancelled", "error", "unsupported"]);
+  const terminalStatuses = new Set(["reported", "passed", "failed", "cancelled", "error", "unsupported"]);
   const problemStatuses = new Set(["failed", "error", "cancelled", "unsupported"]);
   const activeStatuses = new Set(["queued", "running", "cancelling"]);
 
@@ -224,9 +224,9 @@
   };
 
   // Renderers.
-  const statusLabel = status => statusLabels[status] || status || "";
+  const statusLabel = status => status === "reported" ? t("已报告") : statusLabels[status] || status || "";
   const statusHtml = (status, extra = "") => status ? `<span class="testStatus${extra ? ` ${extra}` : ""}" data-status="${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>` : "";
-  const failureClassLabel = value => failureClassLabels[value] || value || "";
+  const failureClassLabel = value => ({case: t("用例问题"), tool: t("工具问题"), execution: t("执行偏差")})[value] || failureClassLabels[value] || value || "";
   const riskLabel = risk => riskLabels[risk] || risk || riskLabels.unspecified;
   const riskTone = risk => ["no-external-side-effects", "isolated", "read-only"].includes(risk) ? "is-safe" : !risk || risk === "unspecified" ? "is-undeclared" : "is-risk";
   const chip = (text, tone = "", attributes = "") => `<span class="testChip${tone ? ` ${tone}` : ""}"${attributes ? ` ${attributes}` : ""}>${escapeHtml(text)}</span>`;
