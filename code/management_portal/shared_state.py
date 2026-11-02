@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from management_common.filesystem_paths import filesystem_path, logical_path
 from management_common.file_lock import lock_stream
 from management_common.file_durability import sync_directory
 
@@ -28,7 +29,7 @@ def _prepare_permissions(descriptor: int, temporary: Path, target: Path, mode: i
 @contextmanager
 def exclusive_file_lock(path: Path) -> Iterator[None]:
     """Serialize writes to business state shared by Portal instances."""
-    lock_path = Path(path)
+    lock_path = filesystem_path(path)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+") as stream:
         with lock_stream(stream):
@@ -40,7 +41,7 @@ def _replace_file(temporary: Path, target: Path) -> None:
     deadline = time.monotonic() + 1.0
     while True:
         try:
-            os.replace(temporary, target)
+            os.replace(filesystem_path(temporary), filesystem_path(target))
             return
         except PermissionError as exc:
             if os.name != "nt" or getattr(exc, "winerror", None) not in {5, 32, 33}:
@@ -54,10 +55,10 @@ def _replace_file(temporary: Path, target: Path) -> None:
 def atomic_replace_text(path: Path, content: str, *, mode: int | None = None) -> None:
     """Replace shared text state without exposing a partial write."""
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target_mode = mode if mode is not None else (target.stat().st_mode & 0o7777 if target.exists() else 0o664)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
-    temporary = Path(temporary_name)
+    filesystem_path(target.parent).mkdir(parents=True, exist_ok=True)
+    target_mode = mode if mode is not None else (filesystem_path(target).stat().st_mode & 0o7777 if filesystem_path(target).exists() else 0o664)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=filesystem_path(target.parent))
+    temporary = logical_path(temporary_name)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             _prepare_permissions(stream.fileno(), temporary, target, target_mode)
@@ -66,7 +67,7 @@ def atomic_replace_text(path: Path, content: str, *, mode: int | None = None) ->
             os.fsync(stream.fileno())
         _replace_file(temporary, target)
     finally:
-        temporary.unlink(missing_ok=True)
+        filesystem_path(temporary).unlink(missing_ok=True)
 
 
 def atomic_replace_json(
@@ -84,17 +85,17 @@ def atomic_replace_json(
     for a new file.
     """
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    filesystem_path(target.parent).mkdir(parents=True, exist_ok=True)
     target_mode = (
         int(mode)
         if mode is not None
-        else (target.stat().st_mode & 0o7777 if target.exists() else 0o664)
+        else (filesystem_path(target).stat().st_mode & 0o7777 if filesystem_path(target).exists() else 0o664)
     )
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".{target.name}.",
-        dir=target.parent,
+        dir=filesystem_path(target.parent),
     )
-    temporary = Path(temporary_name)
+    temporary = logical_path(temporary_name)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             _prepare_permissions(stream.fileno(), temporary, target, target_mode)
@@ -111,7 +112,7 @@ def atomic_replace_json(
         _replace_file(temporary, target)
         sync_directory(target.parent)
     finally:
-        temporary.unlink(missing_ok=True)
+        filesystem_path(temporary).unlink(missing_ok=True)
 
 
 def atomic_create_json(
@@ -124,11 +125,11 @@ def atomic_create_json(
 ) -> None:
     """Durably create immutable JSON state and fail if the target exists."""
     target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
+    filesystem_path(target.parent).mkdir(parents=True, exist_ok=True)
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
-    descriptor = os.open(target, flags, int(mode))
+    descriptor = os.open(filesystem_path(target), flags, int(mode))
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             if os.name == "nt":
@@ -149,5 +150,5 @@ def atomic_create_json(
             os.fsync(stream.fileno())
         sync_directory(target.parent)
     except Exception:
-        target.unlink(missing_ok=True)
+        filesystem_path(target).unlink(missing_ok=True)
         raise
