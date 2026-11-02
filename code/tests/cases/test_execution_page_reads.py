@@ -1,6 +1,6 @@
 """Page reads cannot start native discovery or wait through service restarts.
 
-:module: execution
+:module: execution.service
 :design: decision_25eb93d803a4, decision_44f8f67d7390
 """
 import json

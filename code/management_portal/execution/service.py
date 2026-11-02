@@ -857,17 +857,24 @@ class ExecutionServiceServer(LocalServiceSocketMixin, socketserver.ThreadingTCPS
         super().shutdown()
 
     def server_close(self) -> None:
+        from contextlib import nullcontext
+        phase = getattr(self, '_shutdown_phase', lambda _name: nullcontext())
         maintenance = getattr(self, 'instruction_maintenance', None)
         if maintenance is not None:
-            maintenance.stop()
+            with phase('instruction_maintenance'):
+                maintenance.stop()
         self._closing.set()
         worker = self._maintenance_thread
         if worker is not None and worker is not threading.current_thread():
-            worker.join(timeout=1.0)
-        self.quota_monitor.close()
-        super().server_close()
+            with phase('maintenance_worker'):
+                worker.join(timeout=1.0)
+        with phase('quota_monitor'):
+            self.quota_monitor.close()
+        with phase('rpc_threads'):
+            super().server_close()
         if self.endpoint.is_unix:
-            self.socket_path.unlink(missing_ok=True)
+            with phase('endpoint_remove'):
+                self.socket_path.unlink(missing_ok=True)
 
     def publish_change(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         """Announce a changed Execution to its observers; return the snapshot."""

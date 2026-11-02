@@ -1,6 +1,6 @@
 """Observation shutdown reaps IO owners without changing account facts.
 
-:module: execution
+:module: execution.service
 :design: decision_d40f59f5508f
 """
 import json

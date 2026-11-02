@@ -10,6 +10,19 @@ from management_portal.execution import service_lifecycle as lifecycle
 from scripts.portal_service_control import ServiceControl
 
 
+@pytest.fixture(autouse=True)
+def cancel_test_shutdown_traces(monkeypatch):
+    original, traces = lifecycle.ShutdownTrace, []
+    def create():
+        trace = original()
+        traces.append(trace)
+        return trace
+    monkeypatch.setattr(lifecycle, 'ShutdownTrace', create)
+    yield
+    for trace in traces:
+        trace.cancel()
+
+
 def platform(monkeypatch, value):
     # Do not change pytest's own sys.platform or import native Windows modules.
     monkeypatch.setattr(lifecycle, 'sys', SimpleNamespace(platform=value, executable=sys.executable))

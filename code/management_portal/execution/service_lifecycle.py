@@ -10,6 +10,7 @@ import sys
 import threading
 
 from management_common import process_runtime
+from .shutdown_diagnostics import ShutdownTrace
 
 
 def _platform():
@@ -24,6 +25,8 @@ class ServiceLifecycle:
         self.server = server
         self.stop = threading.Event()
         self.error = None
+        self.shutdown_trace = ShutdownTrace()
+        self.server._shutdown_phase = self.shutdown_trace.phase
 
     def _serve(self):
         try:
@@ -52,10 +55,15 @@ class ServiceLifecycle:
             while not self.stop.wait(.1):
                 pass
         finally:
+            self.shutdown_trace.begin()
             if thread.is_alive():
-                self.server.shutdown()
-                thread.join()
-            self.server.server_close()
+                with self.shutdown_trace.phase('shutdown'):
+                    self.server.shutdown()
+                with self.shutdown_trace.phase('rpc_loop_join'):
+                    thread.join()
+            with self.shutdown_trace.phase('server_close'):
+                self.server.server_close()
+            self.shutdown_trace.process_exit()
         if self.error:
             raise self.error
         return 0
