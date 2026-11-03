@@ -15031,8 +15031,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260712__decision__Portal采用共享Codex_App_Server承载Resident会话__decision_3e8c2a7f91d4.md",
-      "sha256": "f8834bf604f8d81831024ea8bff5759bc4b6009bbd1253728f01c8cca6c60d80",
-      "size": 22283
+      "sha256": "19f95c323c8c7d4416969c956edd136559b9dcc50e3a738984838bfd30fcd9d0",
+      "size": 22689
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260714__decision__Portal_Dev_与_Release_实例、用户路由与服务控制面__decision_850e6248d680.md",
@@ -15476,8 +15476,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_前端恢复与_Web_重启衔接__decision_f25266e5a0e7.md",
-      "sha256": "f14816908c90cb4027e6e9aede7e503e159314b1c1627ee05648ef4b685930b6",
-      "size": 18018
+      "sha256": "74f83fcdfb6df912b4b9901effb01c828445dc584a61f26e2dfe82165ca58cac",
+      "size": 19020
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_敏感账户操作的当前凭据再认证__decision_6c3d74a9bc9d.md",
@@ -15656,8 +15656,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260924__decision__Portal_共享运行基础与_Dev_到_Release_的发布流程__decision_08bb2d9141f9.md",
-      "sha256": "3852c91cf256781706d5c9caaa108835658480fe15160c10accce70ac42734ad",
-      "size": 11606
+      "sha256": "b26531b311c5ec89a21ff5f249505df8afac595d35643d5bf6728a356d347b00",
+      "size": 12519
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Function_Block_可复用模块与指令__decision_5b5653c3eaa5.md",
