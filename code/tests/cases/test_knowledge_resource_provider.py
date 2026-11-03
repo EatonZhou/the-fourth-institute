@@ -370,6 +370,7 @@ def test_knowledge_mutations_sync_canonical_project_and_creator_permissions(
     assert permissions.holds(member, "@admin", resource_id)
 
     deleted = service.unregister(resource_id, actor=actor)
+    index.project_unregistered.assert_called_once_with(resource_type, resource_id)
     assert deleted["project_ids"] == ["AI员工"]
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     assert path.exists()
@@ -379,7 +380,8 @@ def test_knowledge_mutations_sync_canonical_project_and_creator_permissions(
     assert placed(resource_id) is None
     # Only the everyone-viewer on 共享 is left; the Project's admin left with the element.
     assert permissions.holds(member, "@viewer", resource_id) and not permissions.holds(member, "@contributor", resource_id)
-    assert [call.kwargs["kind"] for call in notify.call_args_list] == ["updated", "deleted"]
+    index.project_updated.assert_called_once_with(resource_type, updated)
+    notify.assert_not_called()
 
 
 def test_knowledge_update_rejects_stale_version_before_writing(tmp_path) -> None:

@@ -79,7 +79,20 @@ def _authenticated_resource_api(resource_id: str):
         mock.patch.object(web_resources, "get_resource_service", return_value=service),
         mock.patch.object(http_repo, "get_resource_service", return_value=service),
     ):
-        yield
+        yield service
+
+
+def test_knowledge_delete_preserves_article_read_only_boundary():
+    from management_portal.http_knowledge import KnowledgeHttp
+    route = KnowledgeHttp.__new__(KnowledgeHttp)
+    backend, resource = mock.Mock(), mock.Mock()
+    backend.resolve_item_record.return_value = {'type': 'article'}
+    route.knowledge_backend = lambda: backend
+    route.resource_service = lambda: resource
+    with pytest.raises(PermissionError, match='cannot be deleted'):
+        route.post_detail_delete(None, {'kb_id': 'article_0123456789ab'}, 'CASE-A')
+    backend.resolve_item_record.assert_called_once_with('article_0123456789ab', active_only=False, actor='CASE-A')
+    resource.unregister.assert_not_called()
 
 
 def test_resource_http_routes_preserve_actor_and_validation() -> None:
@@ -436,12 +449,14 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
         skill_id = 'skill_0123456789ab'
         deleted = {'deleted': True, 'resource_type': 'skill', 'skill_id': skill_id, 'kb_id': skill_id, 'path': '/share/Skills/example', 'cleanup_ids': ['cleanup_test']}
         try:
-            with _authenticated_resource_api(skill_id), mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal.knowledge_backend, 'delete_item', return_value=deleted) as delete_item, mock.patch.object(web_resources, '_notify_resource_index') as notify:
+            with _authenticated_resource_api(skill_id) as resource, mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal.knowledge_backend, 'resolve_item_record', return_value={'type': 'skill'}) as resolve, mock.patch.object(serve_management_portal.knowledge_backend, 'delete_item', side_effect=AssertionError('HTTP must use synchronous resource unregistration')), mock.patch.object(web_resources, '_notify_resource_index') as notify:
+                resource.unregister.return_value = deleted
                 status, payload = _post_json(f'{base}/knowledge/api/detail/delete', {'kb_id': skill_id})
             assert status == 200
             assert payload == deleted
-            delete_item.assert_called_once_with(skill_id, actor='CASE-A')
-            notify.assert_called_once_with(path='/share/Skills/example', resource_id=skill_id, resource_type='skill', kind='deleted', wait=True)
+            resolve.assert_called_once_with(skill_id, active_only=False, actor='CASE-A')
+            resource.unregister.assert_called_once_with(skill_id, actor='CASE-A')
+            notify.assert_not_called()
         finally:
             server.shutdown()
             server.server_close()

@@ -227,9 +227,13 @@ class KnowledgeHttp:
 
     def post_detail_delete(self, request, payload, actor):
         kb_id = str(payload.get('kb_id') or '').strip()
-        result = self.knowledge_backend().delete_item(kb_id, actor=actor)
-        self.notify_resource_index(path=str(result.get('path') or ''), resource_id=kb_id, resource_type=str(result.get('resource_type') or ''), kind='deleted', wait=True)
-        return self.respond(request, 200, result)
+        # Keep this surface's Knowledge admission (including Article's read-only
+        # projection), then let the resource owner commit and fence its index.
+        record = self.knowledge_backend().resolve_item_record(kb_id, active_only=False, actor=actor)
+        if record.get('type') == 'article':
+            raise PermissionError('This resource cannot be deleted from Knowledge detail')
+        result = self.resource_service().unregister(kb_id, actor=actor)
+        return self.respond(request, 200, {**result, 'kb_id': kb_id})
 
     def post_chat_prepare(self, request, payload, actor):
         return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.prepare(actor, str(payload.get('kb_id') or ''), str(payload.get('message') or '')))
