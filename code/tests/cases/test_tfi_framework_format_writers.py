@@ -106,7 +106,22 @@ def test_tfi_framework_format_writers_report_keeps_usage_and_budget():
     assert result["summary"]["process"]["blocked"] == 1
     assert result["summary"]["issues"]["product"] == 1
     assert result["execution"] == {"mode": "parallel-modules", "max_parallel_modules": 3,
-                                   "account": "test-actor", "target": "DEV"}
+                                   "account": "test-actor", "target": "not_recorded"}
+    assert record == original
+
+
+@pytest.mark.parametrize("deployments,expected", [
+    (["release", "release"], "release"),
+    (["dev"], "dev"),
+    (["release", "dev"], "mixed"),
+    ([""], "not_recorded"),
+])
+def test_tau_report_uses_observed_deployment(deployments, expected):
+    """汇总采用原预检身份，缺失时不冒称 Dev，也不抹去不同部署。"""
+    record = {"results": [{"details": {"target_preflight": {"deployment": value}}}
+                          for value in deployments]}
+    original = deepcopy(record)
+    assert tau_campaign.tau_report(record)["execution"]["target"] == expected
     assert record == original
 
 

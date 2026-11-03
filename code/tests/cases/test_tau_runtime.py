@@ -107,16 +107,19 @@ def test_tau_checks_actual_business_binding_before_dispatch(configured, monkeypa
     invoke = mock.Mock(return_value={"status": "completed"})
     monkeypatch.setattr(tau_runtime, "ensure_module_resident", ensure)
     monkeypatch.setattr(tau_runtime, "prepare_configuration", prepare)
+    installed = mock.Mock(return_value=bindings["workflow_binding"])
     monkeypatch.setattr(
         lineage_workflows.WorkflowBindings,
         "install",
-        lambda self, **kwargs: bindings["workflow_binding"],
+        installed,
     )
     monkeypatch.setattr(resident_handoff, "run_resident_turn", invoke)
     options = {"actor": TAU_ACTOR, "provider": "codex", "prompt": "probe", "metadata": {"test_module_id": "workbench.panels"}}
     if ready and not rebound:
         assert tau_runtime.invoke_configured_resident(configured.assignments, **options) == {"status": "completed"}
         invoke.assert_called_once_with(**options, **bindings)
+        assert "指定部署" in installed.call_args.kwargs["prompt"]
+        assert "DEV" not in installed.call_args.kwargs["prompt"]
     else:
         with pytest.raises(InterruptedError, match="未发送用例"):
             tau_runtime.invoke_configured_resident(configured.assignments, **options)

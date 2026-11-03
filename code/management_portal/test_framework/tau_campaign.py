@@ -64,6 +64,11 @@ def tau_report(record: dict[str, Any]) -> dict[str, Any]:
     results = list(record.get("results") or [])
     counts = report_counts(results)
     execution = record.get("plan", {}).get("execution", {})
+    deployments = {
+        str(((item.get("details") or {}).get("target_preflight") or {}).get("deployment") or "").strip()
+        for item in results
+    } - {""}
+    target = next(iter(deployments)) if len(deployments) == 1 else "mixed" if deployments else "not_recorded"
     return {
         "schema": "tfi.portal-tau-report.v2",
         "campaign_id": record.get("run_id"),
@@ -79,7 +84,7 @@ def tau_report(record: dict[str, Any]) -> dict[str, Any]:
             "mode": execution.get("mode"),
             "max_parallel_modules": execution.get("max_parallel_modules"),
             "account": test_actor(),
-            "target": "DEV",
+            "target": target,
         },
         "modules": [
             {
