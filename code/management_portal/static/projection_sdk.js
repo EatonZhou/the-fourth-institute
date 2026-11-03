@@ -171,6 +171,7 @@
     openPanel: panelId => call("open-panel", { panelId }),
     openChat: () => call("open-chat"),
     openPage: url => call("open-page", { url }),
+    openExternal: name => call("open-external", { name }),
     focus: object => call("focus", { object }),
     onFocus(fn) {
       focusListeners.add(fn);

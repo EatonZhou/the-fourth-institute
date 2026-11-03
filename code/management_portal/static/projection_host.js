@@ -71,6 +71,37 @@
     });
   }
   let stylesPromise;
+  function confirmExternal(link, signal) {
+    if (signal.aborted) return Promise.resolve(false);
+    return new Promise(resolve => {
+      const dialog = document.createElement("dialog");
+      dialog.className = "projectionConfirm";
+      dialog.setAttribute("aria-label", window.PortalI18n.t("打开外部应用"));
+      dialog.innerHTML = window.PortalI18n.markup('<form method="dialog"><h2>打开外部应用</h2><p>将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。</p><h3></h3><pre></pre><div class="projectionActions"><button class="portalButton" value="cancel" autofocus>取消</button><button type="button" data-open-external class="portalButton is-primary">打开应用</button></div></form>');
+      dialog.querySelector("h3").textContent = link.title;
+      dialog.querySelector("pre").textContent = link.url;
+      let settled = false;
+      const finish = accepted => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener("abort", cancel);
+        dialog.remove();
+        resolve(accepted);
+      };
+      const cancel = () => finish(false);
+      dialog.addEventListener("close", cancel, { once: true });
+      dialog.querySelector("[data-open-external]").addEventListener("click", () => {
+        if (settled || signal.aborted) return cancel();
+        // Open synchronously inside the trusted user gesture. With noopener a
+        // null handle is normal: the receipt describes a request, not liveness.
+        window.open(link.url, "_blank", "noopener,noreferrer");
+        finish(true);
+      });
+      signal.addEventListener("abort", cancel, { once: true });
+      document.body.append(dialog);
+      dialog.showModal();
+    });
+  }
   const statuses = { current: "当前实现", proposed: "拟议方案", simulated: "模拟演示", verified: "已验证结果" };
   const displayObject = object => ({ ...object, status: statuses[object.status], source: object.source || "缺少依据" });
   const fail = (code, message) => Object.assign(new Error(message), { code: `projection.${code}` });
@@ -177,7 +208,7 @@
   }
   function setObservationVisibility(record, visible) {
     record.visible = visible;
-    if (!visible) { cancelFeedback(record, "反馈功能区已隐藏，请返回并重新检查后发送"); invalidateObservation(record); }
+    if (!visible) { record.pendingExternal?.abort(); cancelFeedback(record, "反馈功能区已隐藏，请返回并重新检查后发送"); invalidateObservation(record); }
     post(record, "visibility", { visible });
     if (visible) void observe(record);
   }
@@ -368,7 +399,7 @@
     frame.addEventListener("load", () => post(record, "visibility", { visible: record.visible }));
     return {
       setVisible(visible) { record.panelVisible = visible; setObservationVisibility(record, visible && record.page?.visible !== false); },
-      destroy() { cancelFeedback(record, "反馈功能区已关闭，请重新打开后发送"); record.destroyed = true; invalidateObservation(record); active.delete(channel); surface.remove(); },
+      destroy() { record.pendingExternal?.abort(); cancelFeedback(record, "反馈功能区已关闭，请重新打开后发送"); record.destroyed = true; invalidateObservation(record); active.delete(channel); surface.remove(); },
     };
   }
   function createContentPanel({ root, app, projectionId, preview, panelId, page, source, regionTitle }) {
@@ -769,6 +800,29 @@
         } catch (error) {
           if (error.code?.startsWith("portal.")) error.code = error.code.replace("portal.", "projection.");
           throw error;
+        }
+      }
+      else if (message.method === "open-external") {
+        const links = app.manifest?.external_links;
+        if (typeof payload.name !== "string" || !links || !Object.hasOwn(links, payload.name)) throw fail("external_unknown", "外部应用入口未在当前清单中声明");
+        const link = links[payload.name];
+        let target;
+        try { target = new URL(link.url); } catch { throw fail("external_invalid", "外部应用地址无效"); }
+        if (!/^https?:$/.test(target.protocol) || target.username || target.password
+            || /[\u0000-\u0020\u007f\\]/.test(link.url)) throw fail("external_invalid", "外部应用地址无效");
+        if (!record.visible) throw fail("cancelled", "功能区已隐藏");
+        if (record.busy) throw fail("confirmation_pending", "已有操作等待确认，请完成后重试");
+        const controller = new AbortController();
+        record.pendingExternal = controller;
+        record.busy = true;
+        post(record, "confirmation", { requestId: message.requestId, phase: "pending" });
+        try {
+          if (!await confirmExternal({ title: link.title, url: target.href }, controller.signal)) throw fail("cancelled", "已取消打开外部应用");
+          reply.result = { navigation: "requested", name: payload.name, url: target.href };
+        } finally {
+          record.pendingExternal = null;
+          record.busy = false;
+          post(record, "confirmation", { requestId: message.requestId, phase: "resolved" });
         }
       }
       else if (message.method === "watch") {

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+from urllib.parse import urlsplit
 
 from management_common.format_tags import schema_matches
 
@@ -38,7 +39,22 @@ def validate_page(manifest, panels, bindings, application=None):
 
     require(isinstance(manifest, dict), "页面清单必须是对象")
     require(schema_matches(manifest.get("schema"), expected="tfi.projection.v2"), "不支持的投影页面清单版本")
-    require(not set(manifest) - {"schema", "sidebar", "chat", "context", "navigation"}, "页面清单包含未知字段")
+    require(not set(manifest) - {"schema", "sidebar", "chat", "context", "navigation", "external_links"}, "页面清单包含未知字段")
+    links = manifest.get("external_links", {})
+    require(isinstance(links, dict) and len(links) <= 32, "外部应用入口须为最多 32 项的对象")
+    for name, link in links.items():
+        require(isinstance(name, str) and re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", name), "外部应用入口名称无效")
+        require(isinstance(link, dict) and set(link) == {"title", "url"}, "外部应用入口需要 title 和 url")
+        require(isinstance(link["title"], str) and 0 < len(link["title"].strip()) <= 120, "外部应用入口需要名称")
+        url = link["url"]
+        require(isinstance(url, str) and 0 < len(url) <= 4096 and not re.search(r"[\x00-\x20\x7f\\]", url), "外部应用地址无效")
+        try:
+            parsed = urlsplit(url)
+            valid = parsed.scheme in {"http", "https"} and bool(parsed.hostname) and parsed.username is None and parsed.password is None
+            parsed.port  # Reject invalid ports before browser URL normalization.
+        except ValueError:
+            valid = False
+        require(valid, "外部应用需要不含登录凭据的完整 HTTP(S) 地址")
     if "navigation" in manifest:
         require(manifest["navigation"] == {"mode": "pages"}, "navigation 必须为 {mode: pages}")
     require(isinstance(panels, dict), "面板源码必须按 source 路径保存")

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-15'
 version:
-  number: 20
-  created_at: '2026-10-15'
+  number: 21
+  created_at: "2026-10-15"
   created_by:
-    user: tfi-exported-user
-    agent: resident_e8b66d1ae69d
-  updated_at: '2026-10-27T12:53:03Z'
+    user: "weihao"
+    agent: "resident_e8b66d1ae69d"
+  updated_at: "2026-11-03T19:33:24Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 7
 metaness: 3
 ai_generated: false
@@ -40,7 +40,7 @@ links:
 
 v1 的规则保持有效并作为 v2 的基础，见 decision_f67ae5e70793 与 `management_portal/workbench_projections/sdk.md`：页面绑定普通 Lineage，调用者始终是当前登录用户，改变状态的指令由宿主确认，AI 结果按输入消息 ID 和输入状态追踪，产物按领域对象查询。v1 的单页面工作台视为“只有一个功能区、没有对话区”的 v2 页面，继续运行。
 
-实现状态：片段形式的宿主能力首版已发布，第一个 v2 工作台是 Portal 开发投影（decision_13e1a748cf04）；投影应用包的构建、发布与宿主加载已实现；这一实现状态不代表所有真实使用闭环均已验收。WALL 的领域身份与动作继续由 decision_06defc47e960 维护；它与 Test 的页面组合入口见 decision_13e1a748cf04。
+WALL 的领域身份与动作由 decision_06defc47e960 维护；它与 Test 的页面组合入口见 decision_13e1a748cf04。
 
 ## 协议分层
 
@@ -147,6 +147,16 @@ Portal 内的投影页面、内置组合页面和 Studio 预览必须使用与 L
 当前已装配 v2 工作台的 /workbenches/view?id=<当前ID>&region=<区域ID或facade> 进入现有区域或原生门面对话，不重新装配 iframe、不丢弃草稿和 focus。没有 region 时与显式 region=facade 等价，聚焦已装配的原生门面对话；没有 Chat 时明确报目标未装配错误，不空转成功；只接受唯一 id 和至多一个 region，不接受额外查询或锚点。未知或未装配目标返回 projection.page_target。布局拒绝切换返回 {opened:false, mode:"local", url}，不得宣称成功或改用整页刷新。原地成功返回 opened:true。
 
 其他已登记页面由宿主当前标签发起普通导航，查询与锚点交给目标页面解释；返回 mode:"page" 只表示导航已发起，原文档退出后 SDK Promise 不保证继续可观察。这一取舍保留目标页面自身身份与加载流程，不把任意页面嵌入投影 sandbox。既有 openPanel、openLineage 与反馈确认/取消语义保持。
+
+## 外部应用入口
+
+团队交付的软件可以运行在独立站点或浏览器所在计算机的本地端口。v2 清单的可选 external_links 持有这些入口的声明，名称映射到 {title, url}，随工作台修订保存和发布。服务端拥有格式校验：最多 32 项，名称为小写字母开头、含小写字母/数字/下划线/连字符且最多 64 字符；名称对应的 title 非空且最多 120 字符，url 为最多 4096 字符的完整 HTTP(S) 地址。拒绝用户凭据、空白和控制字符、反斜杠、无主机或非法端口，以及其他协议。应用不把外部地址冒充 Portal 页面目录条目。
+
+Projection.openExternal(name) 只按当前已加载修订的声明名称申请导航，不能从面板传入或拼接任意地址。宿主核对声明，在可信确认框中以纯文本显示名称和完整规范化地址；只有用户在宿主点击打开后，才通过浏览器新标签发出导航。导航隔离 opener 且不发送 referrer；不转交 Portal 令牌，不代理网络请求或读取目标响应。浏览器按目标站点本身的登录规则访问，目标加载和鉴权由目标服务拥有。
+
+确认等待暂停该请求的 SDK 活动预算；取消、隐藏或销毁功能区使待确认操作失效。并发确认明确拒绝，旧确认不能因持有 DOM 引用重新生效。回执 {navigation:"requested", name, url} 只说明已请求浏览器打开，不证明弹窗未被拦截、目标在线或业务成功。调用者应在新页实际核对；没有声明或地址非法分别报告 projection.external_unknown / projection.external_invalid，取消为 projection.cancelled。
+
+该能力属于宿主的显式用户导航，保持 sandbox 隔离及 connect-src none。既有 openPage 继续只接受已登记的同源 Portal 页面；openExternal 不获得资源动作、跨站身份或外部 Workbench 协议能力。
 
 ## 投影应用包
 

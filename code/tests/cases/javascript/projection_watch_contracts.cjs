@@ -25,7 +25,7 @@ async function until(predicate, label) {
 // execution and MessageEvent.source for postMessage; the fixture transports
 // structured-cloned packets asynchronously between real Window instances.
 // It makes no assertions about browser sandbox, layout, focus or fullscreen.
-async function createHarness({ sourceTransform = (_name, source) => source, context = [], objectResponse, apiResponse } = {}) {
+async function createHarness({ sourceTransform = (_name, source) => source, context = [], externalLinks = {}, objectResponse, apiResponse } = {}) {
   const errors = [], cleanupErrors = [], messages = [], observers = new Set();
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(String(error.stack || error)));
@@ -129,7 +129,7 @@ async function createHarness({ sourceTransform = (_name, source) => source, cont
       manifest: { schema: 'tfi.projection.v2', sidebar: [
         { id: 'architecture', title: '架构与协议', source: 'a.html' },
         { id: 'progress', title: '阶段进展', source: 'b.html' },
-      ], context }, panels: { 'a.html': '<main id="app"></main>', 'b.html': '<main id="app"></main>' },
+      ], context, external_links: externalLinks }, panels: { 'a.html': '<main id="app"></main>', 'b.html': '<main id="app"></main>' },
     });
     for (const frame of window.document.querySelectorAll('iframe')) {
       const parsed = new window.DOMParser().parseFromString(frame.srcdoc, 'text/html');

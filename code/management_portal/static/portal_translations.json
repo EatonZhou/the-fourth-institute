@@ -1,4 +1,7 @@
 {
+  "打开外部应用": {"zh-CN": "打开外部应用", "en": "Open external application"},
+  "将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。": {"zh-CN": "将在新标签页打开下列地址。Portal 不会转交登录凭据，也不确认应用是否正在运行。", "en": "Open this address in a new tab. Portal does not forward login credentials or verify that the application is running."},
+  "打开应用": {"zh-CN": "打开应用", "en": "Open application"},
   "Expires in days (leave blank for no expiry)": {
     "zh-CN": "过期天数（留空则不过期）",
     "en": "Expires in days (leave blank for no expiry)"

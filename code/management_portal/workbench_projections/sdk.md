@@ -128,6 +128,10 @@ await sdk.resource('read_many', { addresses, format: 'text' }); // 或 yaml
 
 ## 情境、反馈和变化
 
+外部软件入口由 v2 清单 `external_links` 声明，例如 `{"music":{"title":"音乐工作站","url":"http://127.0.0.1:8765/"}}`。最多 32 项，键为小写字母开头、含小写字母/数字/下划线/连字符、最多 64 字符；title 非空且最多 120 字符，url 为最多 4096 字符的完整 HTTP(S) 地址，不能含用户凭据、空白/控制字符或反斜杠。入口随清单修订保存和发布。
+
+`await Projection.openExternal("music")` 仅接受声明名称。宿主显示真实名称与完整地址，由用户再次点击后在独立标签打开，使用 `noopener,noreferrer`；不转交 Portal 身份或读取目标内容，不改变 sandbox 网络权限。返回 `{navigation:"requested",name,url}` 只表示请求浏览器导航，不证明窗口未被拦截、应用在线或访问成功；应用需要用户在新页核对。取消/隐藏/销毁功能区取消待确认操作，报 `projection.cancelled`；未声明为 `projection.external_unknown`，非法地址为 `projection.external_invalid`，已有确认待处理为 `projection.confirmation_pending`。用户审阅确认的时间不消耗 SDK 响应预算。浏览器按目的站自身规则处理已有登录状态；Portal 不提供跨站鉴权代理。`openPage` 的站内页面目录合同保持不变。
+
 对象格式为 `{ref, kind, status, source, observed_at}`。status 为 current/proposed/simulated/verified；source 是依据的资源地址或空字符串，observed_at 是带时区 ISO 时间。ref 使用统一资源地址，源码定位可加 `#L123`。宿主检查对象与依据的读取权限，确认框按 Portal 界面语言显示状态，发送的对话上下文不随界面语言转换，无依据显示“缺少依据”；同一页面同 ref 的矛盾状态报 `projection.status_conflict`。
 
 - `await Projection.focus(object)`：发布 focus，仅清单 publishers 可调用，返回 `{object, revision}`。宿主在异步对象鉴权前为本页请求排序；被后续合法发布者请求取代或来自已销毁区域的结果以 `projection.cancelled` 拒绝，不写入对象登记、不递增 revision 或推送。后续请求鉴权失败时保留最后已提交的 focus，不恢复先前仍在途的选择。该请求排序与 SDK 收到通知后的 revision 过滤分别负责提交前和读取后的乱序。

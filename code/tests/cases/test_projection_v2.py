@@ -41,6 +41,27 @@ def page():
     }
 
 
+@pytest.mark.parametrize("url", ["http://127.0.0.1:8765/", "https://example.org/app?q=1", "http://[::1]:8765/"])
+def test_external_application_links_are_versioned_declarations(url):
+    value = page()
+    value["manifest"]["external_links"] = {"music": {"title": "Music", "url": url}}
+    store = Store()
+    store.create(APP, value, "alice")
+    store.publish(APP, "alice", 1)
+    assert store.get(APP, "alice", published=True)["manifest"]["external_links"] == value["manifest"]["external_links"]
+
+
+@pytest.mark.parametrize("link", [
+    {"title": "Music", "url": url} for url in
+    ["//example.org/app", "/api/logout", "javascript:alert(1)", "file:///C:/data", "http://u:p@host/", "https://host\\evil/", " https://host", "http://host:99999/", "http://[bad/", "http://host/\n"]
+] + [{"title": "", "url": "https://host/"}, {"title": "Music", "url": "https://host/", "secret": "no"}])
+def test_external_application_links_reject_unsafe_or_ambiguous_declarations(link):
+    value = page()
+    value["manifest"]["external_links"] = {"music": link}
+    with pytest.raises(ProjectionError):
+        validate_manifest(value)
+
+
 def test_page_package_publication_and_panel_preferences():
     """页面包发布区分草稿版本并隔离用户面板偏好"""
     store = Store()
