@@ -47,8 +47,11 @@ def configured(tmp_path, monkeypatch):
     resident = mock.Mock(spec=list(DOMAIN_METHODS["resident"]))
     resident.get_resident_restart_options.side_effect = lambda *_args: state.options
     resident.get_resident_state.side_effect = lambda *_args: {"state": {
-        "execution_gate": {"state": "open", "account_id": state.options['source']['account_id']},
+        "execution_gate": {"state": "open", "account_id": 'registered_' + state.options['source']['account_id']},
         **state.conversation}}
+    from management_portal.execution import accounts
+    monkeypatch.setattr(accounts, 'resolve_account_configuration',
+                        lambda provider, route: {'account_id': 'registered_' + route, 'backend_route_id': route})
 
     def restart(_actor, arguments, _key, _version):
         state.options["restart"] = {"status": "accepted", "target": {"account_id": arguments["account_id"]}}
@@ -300,6 +303,25 @@ def test_tau_configuration_updates_fast_without_restarting_matching_account(conf
     """账号相同时 TAU 配置直接就绪，不重启 Resident"""
     configured.state.options["source"]["account_id"] = "five"
     assert tau_runtime.apply_configuration(configured.assignment)["ready"] is True
+    configured.restart.assert_not_called()
+
+
+@pytest.mark.parametrize(('gate_account', 'gate_state', 'ready'), [
+    ('paid_execution', 'open', True),
+    ('five', 'open', False),
+    ('another_account', 'open', False),
+    ('', 'open', False),
+    ('paid_execution', 'closed', False),
+])
+def test_tau_gate_matches_registered_account_identity(configured, monkeypatch, gate_account, gate_state, ready):
+    """会话路由与 gate 的稳定账号通过登记映射比较，不以同名或前缀猜账号。"""
+    from management_portal.execution import accounts
+    configured.state.options['source']['account_id'] = 'five'
+    configured.state.runtime['service_tier'] = 'priority'
+    configured.state.conversation['execution_gate'] = {'state': gate_state, 'account_id': gate_account}
+    resolve = mock.Mock(return_value={'account_id': 'paid_execution', 'backend_route_id': 'five'})
+    monkeypatch.setattr(accounts, 'resolve_account_configuration', resolve)
+    assert tau_runtime.resident_status(configured.assignment)['ready'] is ready
     configured.restart.assert_not_called()
 
 

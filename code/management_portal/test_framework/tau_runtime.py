@@ -216,7 +216,18 @@ def resident_status(assignment: dict[str, Any]) -> dict[str, Any]:
         and not tools_stale
     )
     gate = conversation.get('execution_gate') or {}
-    execution_open = gate.get('state') == 'open' and gate.get('account_id') == source.get('account_id')
+    from management_portal.execution.accounts import resolve_account_configuration
+
+    # Restart options name a Provider route; the gate names its registered
+    # execution account. Only the account owner can relate those identities.
+    execution_open = (
+        gate.get('state') == 'open'
+        and bool(gate.get('account_id'))
+        and source.get('provider') == 'codex'
+        and gate.get('account_id') == resolve_account_configuration(
+            'codex', source.get('account_id', ''),
+        ).get('account_id')
+    )
     return {
         **result,
         "actual_account": source.get("account_id", ""),

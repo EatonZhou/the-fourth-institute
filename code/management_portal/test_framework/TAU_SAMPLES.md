@@ -36,6 +36,7 @@ python3 code/scripts/check_tau_samples.py
 | Workspace 精确许可 | 真实 PAR 权限引擎检查绑定无隐式写权；只借单 Workspace 的编辑/注销，验证相邻对象与管理员权限不变，撤销及回执丢失恢复 |
 | Workspace 准备 | 真实 BindWorkspace 返回当前 binding DTO，并通过正式 ID 分配器进入本轮生命周期；后台复用不再分配；目录外目标拒绝 |
 | 执行前提 | 初始化、当前 Session 与独立新上下文分别回读；OpenIntake、回调 true、当前 Session credits 均不能伪造其他许可 |
+| 执行账号身份 | Session 路由通过账号 owner 解析到 gate 的稳定账号；开放的同一账号可准入，同名路由、其他账号和关闭 gate 均不能放行 |
 
 维护规则由 `decision_c953eab654cd` 定义。每次修改公共提示或测试辅助函数，在发布和下一次正式 Run 使用前运行整个固定组，并保留原输出。新问题先补能复现失败的检查；修复检查在修复前源码上失败、修复后通过。测试夹具应加载原生模板、组件和事件，不为使新条件通过而手造产品没有的字段。
 
