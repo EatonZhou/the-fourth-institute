@@ -63,10 +63,15 @@ def restore_lineage_events(manifest, connection):
     """
     from .features import SYSTEM
     from management_portal.society_service.component_runtime import update_pause_checkpoint
+    from management_portal.society_service.lineage_program_runtime import _normalized_event_source
 
     if manifest.get('history_freeze', {}).get('event_sources_paused') is not True:
         return {'status': 'not_declared', 'event_sources': [], 'work_dispatched': False}
-    identity = 'ordinary_lineage_events.v1'
+    identity = 'ordinary_lineage_events.v2'
+    # SocietyService normalizes the imported checkpoint at its first start.
+    # Match that owner's exact empty state too, without discarding arbitrary
+    # local fields by normalizing the candidate itself.
+    frozen_states = ({'paused': True}, _normalized_event_source({'paused': True}))
     actions = manifest.get('feature_resolution', {}).get('initialization', {}).get('actions', [])
     managed = {event['source_id'] for action in actions for event in action.get('event_sources', [])}
     managed.update(component['id'] for action in actions
@@ -79,6 +84,11 @@ def restore_lineage_events(manifest, connection):
             cursor.execute('CREATE TABLE IF NOT EXISTS distribution_installation.feature_initializations(id TEXT PRIMARY KEY,evidence JSONB NOT NULL)')
             if cursor.execute('SELECT id FROM distribution_installation.feature_initializations WHERE id=%s', (identity,)).fetchone():
                 return {'status': 'preserved_existing', 'event_sources': [], 'work_dispatched': False}
+            previous = cursor.execute('SELECT evidence FROM distribution_installation.feature_initializations WHERE id=%s',
+                                      ('ordinary_lineage_events.v1',)).fetchone()
+            evidence = previous['evidence'] if previous else {}
+            evidence = json.loads(evidence) if isinstance(evidence, str) else evidence
+            previously_restored = {(event['lineage_id'], event['source_id']) for event in evidence.get('event_sources', [])}
             events = []
             for row in cursor.execute(
                     "SELECT n.lineage_id,n.node_id,c.config_json,p.checkpoint_json FROM lineage.lineage_nodes n "
@@ -88,9 +98,10 @@ def restore_lineage_events(manifest, connection):
                     "FOR UPDATE OF p", (SYSTEM,)).fetchall():
                 config = json.loads(row['config_json']) if isinstance(row['config_json'], str) else row['config_json']
                 checkpoint = json.loads(row['checkpoint_json']) if isinstance(row['checkpoint_json'], str) else row['checkpoint_json']
-                # Any extra checkpoint fields belong to this installation;
-                # never erase a local pause, cursor, observation or timer.
-                if (row['node_id'] in managed or checkpoint != {'paused': True}
+                # v1 may have restored some sources successfully. Never undo
+                # a later local pause of those sources while repairing others.
+                if ((row['lineage_id'], row['node_id']) in previously_restored
+                        or row['node_id'] in managed or checkpoint not in frozen_states
                         or not config.get('event_type') or config['event_type'] == 'time.reached'):
                     continue
                 update_pause_checkpoint(checkpoint, 'event_source', False, config)

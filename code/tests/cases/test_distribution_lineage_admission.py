@@ -54,7 +54,8 @@ def test_imported_ordinary_team_accepts_new_events_and_preserves_local_choices(t
         assert json.loads(c.execute("SELECT checkpoint_json FROM lineage.event_source_progress WHERE source_id='facade'").fetchone()['checkpoint_json']) == {'paused': True}
 
 
-def test_public_example_seed_repair_is_once_only_and_does_not_replay(distribution_target_dsn):
+@pytest.mark.parametrize('started,old_ledger', [(False, False), (True, False), (True, True), (True, 'partial')])
+def test_public_example_seed_repair_is_once_only_and_does_not_replay(distribution_target_dsn, monkeypatch, started, old_ledger):
     from management_portal.distribution.history import verify_frozen
     seed = Path(__file__).resolve().parents[3] / 'instance/example_instance/seed'
     manifest = json.loads((seed / 'manifest.json').read_text())['engineering']
@@ -67,16 +68,64 @@ def test_public_example_seed_repair_is_once_only_and_does_not_replay(distributio
         # The same source pause which blocked all shipped teams is present.
         with c.cursor(row_factory=psycopg.rows.tuple_row) as cursor:
             assert verify_frozen(cursor)['passed']
+        if started:
+            # SocietyService performs this real migration at startup, before
+            # an administrator can run the repair on an installed instance.
+            from management_portal.distribution.initialization import _TargetDatabase
+            from management_portal.society_service import lineage_program_runtime as runtime
+
+            class Database(_TargetDatabase):
+                read_current = _TargetDatabase.transaction
+
+                def write(self, fn):
+                    with self.transaction() as cursor:
+                        return fn(cursor)
+
+            monkeypatch.setattr(runtime, 'get_lineage_data_store', lambda: SimpleNamespace(database=Database(c, 'lineage')))
+            assert runtime.migrate_stored_runtime()['migrated'] > 0
+        if old_ledger:
+            c.execute('CREATE SCHEMA distribution_installation')
+            c.execute('CREATE TABLE distribution_installation.feature_initializations(id TEXT PRIMARY KEY,evidence JSONB NOT NULL)')
+            restored = []
+            if old_ledger == 'partial':
+                row = c.execute("SELECT n.lineage_id,n.node_id AS source_id FROM lineage.lineage_nodes n "
+                                "JOIN lineage.lineage_components c ON c.node_id=n.node_id "
+                                "WHERE n.node_type='event_source' AND n.lineage_id<>%s "
+                                "AND c.config_json::jsonb->>'event_type'='resident.message_received' LIMIT 1", (SYSTEM,)).fetchone()
+                restored = [dict(row)]
+            c.execute("INSERT INTO distribution_installation.feature_initializations VALUES('ordinary_lineage_events.v1',%s)",
+                      (json.dumps({'status': 'applied', 'event_sources': restored, 'work_dispatched': False}),))
         old_work = {table: c.execute('SELECT count(*) AS n FROM lineage.' + table).fetchone()['n']
                     for table in ('pending_event_deliveries', 'resident_execution_work', 'trigger_paths')}
         result = restore_lineage_events(manifest, c)
         assert result['event_sources'], 'the actual public seed must have usable team event entries'
         assert result['work_dispatched'] is False
+        if old_ledger == 'partial':
+            assert not any(event in result['event_sources'] for event in restored)
+            old = restored[0]
+            state = c.execute('SELECT checkpoint_json FROM lineage.event_source_progress WHERE lineage_id=%s AND source_id=%s',
+                              (old['lineage_id'], old['source_id'])).fetchone()['checkpoint_json']
+            assert (json.loads(state) if isinstance(state, str) else state)['paused'] is True
         for event in result['event_sources']:
             row = c.execute('SELECT config_json FROM lineage.lineage_components WHERE node_id=%s', (event['source_id'],)).fetchone()
             config = row['config_json'] if isinstance(row['config_json'], dict) else json.loads(row['config_json'])
             assert config['event_type'] != 'time.reached'
             assert event['lineage_id'] != SYSTEM
+        # Check the actual shipped Family facade entries, including both
+        # development teams, rather than only an aggregate restored count.
+        entries = c.execute("SELECT f.title,f.lineage_id,e.source_node_id AS source_id,p.checkpoint_json "
+                            "FROM lineage.function_blocks f JOIN lineage.family_residents r "
+                            "ON r.family_id=f.function_block_id AND r.role='facade' "
+                            "JOIN lineage.lineage_edges e ON e.target_node_id=r.resident_id AND e.edge_type='watch' "
+                            "JOIN lineage.lineage_components co ON co.node_id=e.source_node_id "
+                            "JOIN lineage.event_source_progress p ON p.lineage_id=f.lineage_id AND p.source_id=e.source_node_id "
+                            "WHERE co.config_json::jsonb->>'event_type'='resident.message_received'").fetchall()
+        assert {'开发团队', 'Portal 开发'} <= {entry['title'] for entry in entries}
+        for entry in entries:
+            if old_ledger == 'partial' and any(entry['source_id'] == event['source_id'] for event in restored):
+                continue
+            checkpoint = entry['checkpoint_json']
+            assert not (json.loads(checkpoint) if isinstance(checkpoint, str) else checkpoint).get('paused'), entry['title']
         assert old_work == {table: c.execute('SELECT count(*) AS n FROM lineage.' + table).fetchone()['n'] for table in old_work}
         assert restore_lineage_events(manifest, c)['status'] == 'preserved_existing'
         print(f"Public example seed: restored {len(result['event_sources'])} non-timer team sources; no work replayed")

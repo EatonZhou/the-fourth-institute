@@ -22,6 +22,7 @@ from management_portal.society_service import lineage_aggregate
 from management_portal.society_service import family_task_dispatches
 from tests.cases.isa_test_support import ACTOR, ok
 from tests.cases.test_family_familize import lineage, charters, future_creation_store, resident, graph  # noqa: F401
+from tests.cases.test_resident_delivery_receipts import REAL_DELIVER_RESIDENT_INPUT
 
 
 @pytest.fixture
@@ -93,6 +94,42 @@ def test_invalid_template_is_rejected_before_it_can_replace_current_task(configu
     wire["config"]["invoke_profiles"]["effect"]["arguments"]["family_tasks"]["value"]["route"]["prompt"] = "${unknown}"
     with pytest.raises(ValueError, match="仅支持"):
         family_tasks.validate_routes(body, block)
+
+
+def test_resumed_facade_event_delivers_fresh_request_to_real_router(configured_family, monkeypatch):
+    """冻结入口阻止路由；原生恢复后，新消息经 Effect 进入 Router 的真实输入队列。"""
+    from management_portal.society_service import component_runtime, lineage_domain, lineage_program_runtime, resident_protocol
+    monkeypatch.setattr(resident_protocol, 'deliver_resident_input', REAL_DELIVER_RESIDENT_INPUT)
+    body, block = configured_family
+    family = block['family']
+    source = next(w['source'] for w in body['program']['wires']
+                  if w['kind'] == 'watch' and w['target'] == family['facade'])
+    config = next(c['config'] for c in body['program']['components'] if c['id'] == source)
+    with lineage_program_runtime._runtime_transaction(body['lineage_id']) as runtime:
+        runtime['event_sources'][source] = lineage_program_runtime._normalized_event_source({'paused': True})
+    repository = resident_conversation_stream.get_repository()
+    monkeypatch.setattr(resident_intake_domain, 'deliver_resident_message_content', deliver_resident_message_content)
+    mid = ok('DeliverMessage', {'resident_id': family['facade'], 'message': {
+        'content_parts': [{'type': 'text', 'text': '请修复预置开发团队'}]}})['message_id']
+    blocked = lineage_domain.dispatch_message_arrival(body['lineage_id'], family['facade'], mid)
+    assert not any(r['status'] == 'executed' for e in blocked['events'] for r in e.get('results', []))
+    assert repository.input_states(family['router']) == []
+    with lineage_program_runtime._runtime_transaction(body['lineage_id']) as runtime:
+        component_runtime.update_pause_checkpoint(runtime['event_sources'][source], 'event_source', False, config)
+    assert repository.input_states(family['router']) == []
+    mid = ok('DeliverMessage', {'resident_id': family['facade'], 'message': {
+        'content_parts': [{'type': 'text', 'text': '请修复预置开发团队，新请求'}]}}, key='after-repair')['message_id']
+    outcome = lineage_domain.dispatch_message_arrival(body['lineage_id'], family['facade'], mid)
+    assert outcome['status'] == 'dispatched', outcome
+    assert [r['status'] for e in outcome['events'] for r in e['results']] == ['executed']
+    received = repository.input_states(family['router'])
+    assert len(received) == 1, received
+    assert received[0]['state'] == 'queued'
+    routed = repository.message(family['router'], received[0]['message_id'])
+    assert routed['author_id'] == family['facade']
+    assert '请修复预置开发团队' in json.dumps(routed, ensure_ascii=False)
+    lineage_domain.dispatch_message_arrival(body['lineage_id'], family['facade'], mid)
+    assert repository.input_states(family['router']) == received
 
 
 @pytest.mark.parametrize("initial", ["queued", "cancelled"])
