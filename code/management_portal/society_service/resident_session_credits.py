@@ -13,17 +13,33 @@ def validate_consent(body, actor, target):
     consent = body.get("credits_consent")
     if consent is None:
         return False
+    return validate_target_consent(consent, actor, target.account, target.provider,
+                                   body.get("idempotency_key") if body.get("target_account") else "")
+
+
+def validate_target_consent(consent, actor, account, provider, request_id):
     if not human_actor(actor):
         raise PermissionError("只有已登录的人类可以确认本次 Session 使用 credits")
     if (not isinstance(consent, dict) or set(consent) != {"account_id", "confirmed"}
             or consent.get("confirmed") is not True):
         raise ValueError("credits_consent 需要明确的 account_id 和 confirmed=true")
-    if (not body.get("idempotency_key") or not body.get("target_account")
-            or consent["account_id"] != target.account.get("account_id")):
+    if not request_id or consent["account_id"] != account.get("account_id"):
         raise ValueError("credits 确认必须对应本次操作和明确的目标账号")
-    if target.provider != "codex" or not target.account.get("quota_protection_enabled"):
+    if provider != "codex" or not account.get("quota_protection_enabled"):
         raise ValueError("目标账号不支持本次 credits 授权")
     return True
+
+
+def account_open_quota(account, *, use_credits=False):
+    from .domain_ports import execution_port
+    from management_portal.execution.account_session_credits import admit_session
+    try:
+        health = execution_port.health()
+    except Exception as error:
+        raise ValueError("无法读取目标 Backend 账号额度，请刷新后重试") from error
+    quota = ((health.get("scheduler") or {}).get("capacity_partitions") or {}).get(
+        str(account["capacity_key"]), {}).get("quota_reserve") or {}
+    return admit_session(account, quota, use_credits=use_credits)
 
 
 def authorization(restart):

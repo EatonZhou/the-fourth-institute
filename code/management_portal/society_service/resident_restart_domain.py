@@ -374,21 +374,6 @@ def _session_restart_runtime_options(
     }
 
 
-def _account_session_open_quota(account: Mapping[str, Any], *, use_credits=False) -> dict[str, Any]:
-    try:
-        health = execution_port.health()
-    except Exception as error:
-        raise ValueError("无法读取目标 Backend 账号额度，请刷新后重试") from error
-    quota = (
-        ((health.get("scheduler") or {}).get("capacity_partitions") or {})
-        .get(str(account["capacity_key"]), {})
-        .get("quota_reserve")
-        or {}
-    )
-    from management_portal.execution.account_session_credits import admit_session
-    return admit_session(account, quota, use_credits=use_credits)
-
-
 def _release_session_restart_quota_override(step: Mapping[str, Any]) -> None:
     policy = step.get("quota_override")
     if not isinstance(policy, dict) or not policy.get("binding_id"):
@@ -529,7 +514,7 @@ def restart_resident_session(
     restart_target = _restart_target(body, source, source_provider, target_provider)
     use_credits = resident_session_credits.validate_consent(body, actor_id, restart_target)
     if use_credits:
-        _account_session_open_quota(restart_target.account, use_credits=True)
+        resident_session_credits.account_open_quota(restart_target.account, use_credits=True)
     if operation == "switch_account" and restart_target.same_route:
         return _unchanged_restart(resident_id, operation, source_binding)
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
@@ -1022,7 +1007,7 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
     quota_admission: dict[str, Any] = {}
     authorization = resident_session_credits.authorization(restart)
     if restart.target.account.get("quota_protection_enabled") is True:
-        quota_admission = _account_session_open_quota(restart.target.account, use_credits=bool(authorization))
+        quota_admission = resident_session_credits.account_open_quota(restart.target.account, use_credits=bool(authorization))
         quota_override = {
             "binding_id": prepared_binding_id,
             "revision": 1,

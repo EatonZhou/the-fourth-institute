@@ -180,7 +180,10 @@ def get_resident_initialization(inv: Invocation) -> dict[str, Any]:
 
 def retry_resident_initialization(inv: Invocation) -> dict[str, Any]:
     from ..resident_initialization import retry
-    result = retry(inv.argument('resident_id'), inv.caller)
+    result = retry(inv.argument('resident_id'), inv.caller,
+                   credits_consent=inv.argument('credits_consent'),
+                   expected_initialization_id=inv.argument('expected_initialization_id') or '',
+                   request_id=inv.idempotency_key)
     return {key: result[key] for key in ('resident_id', 'initialization_id', 'status', 'phase',
                                         'candidate_agent_id', 'candidate_binding_id')}
 

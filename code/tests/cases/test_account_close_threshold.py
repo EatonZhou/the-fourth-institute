@@ -229,9 +229,9 @@ def test_session_open_uses_the_common_remaining_metric(monkeypatch, remaining, f
         'account:usd': {'quota_reserve': {'status': 'reserved', 'remaining': remaining, 'fresh': fresh,
                                         'remaining_balance': remaining, 'currency': 'USD'}}}}})
     if allowed:
-        assert resident_restart_domain._account_session_open_quota({'capacity_key': 'account:usd'})['remaining'] == remaining
+        assert resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'account:usd'})['remaining'] == remaining
     else:
-        with pytest.raises(ValueError):resident_restart_domain._account_session_open_quota({'capacity_key': 'account:usd'})
+        with pytest.raises(ValueError):resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'account:usd'})
 
 
 def test_monitor_keeps_successful_balance_current_without_time_expiry(scheduler, monkeypatch):
@@ -350,7 +350,7 @@ def test_session_open_respects_disabled_threshold_without_fresh_positive_quota(m
         threshold={'metric': metric, 'unit': unit, 'value': 0, 'supported': True})
     monkeypatch.setattr(execution_port, 'health', lambda: {'scheduler': {'capacity_partitions': {
         'test': {'quota_reserve': quota}}}})
-    assert resident_restart_domain._account_session_open_quota({'capacity_key': 'test'}) == quota
+    assert resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'test'}) == quota
 
 
 def test_session_open_refuses_a_used_up_account_with_zero_threshold(monkeypatch):
@@ -361,4 +361,4 @@ def test_session_open_refuses_a_used_up_account_with_zero_threshold(monkeypatch)
     monkeypatch.setattr(execution_port, 'health', lambda: {'scheduler': {'capacity_partitions': {
         'test': {'quota_reserve': quota}}}})
     with pytest.raises(ValueError, match='额度已用完'):
-        resident_restart_domain._account_session_open_quota({'capacity_key': 'test'})
+        resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'test'})

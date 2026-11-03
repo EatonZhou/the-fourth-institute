@@ -241,6 +241,8 @@ DECLARATIONS = (
     ), target="resident_id"),
     _d("RetryResidentInitialization", ON_RESIDENT, "恢复创建或首轮前压缩；复用在途工作，未知原生结果使用独立候选会话，不重发业务输入。", (
         R("resident_id", description="初始化未完成、要恢复的 Resident"),
+        P("expected_initialization_id", description="确认 credits 时必填：刚读取的初始化尝试 ID；状态变化后须重新确认"),
+        P("credits_consent", "object", "仅人类：{account_id:本次目标稳定账号ID,confirmed:true}；须有幂等键，仅授权本次初始化及其目标Session，不重发业务输入，不继承给后续会话"),
     ), (
         R("resident_id", description="被恢复的 Resident"),
         R("initialization_id", description="恢复后的初始化尝试 ID"),

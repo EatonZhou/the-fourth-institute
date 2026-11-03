@@ -276,6 +276,8 @@ def create_exact_resident_session(
     route = str(account.get("backend_route_id") or "")
     options = resident_execution_engine_domain.resident_execution_runtime_options(record, job, is_owner=is_owner)
     options.update(ephemeral=False, exclude_turns=True, thread_source="user")
+    from .resident_initialization_credits import synchronize
+    synchronize(resident_domain_common.record_resident_id(record), job['execution_id'])
     result = run_backend_session_operation(
         backend=definition.provider, operation="create", actor=actor, cwd=cwd,
         binding_id=target_binding_id,

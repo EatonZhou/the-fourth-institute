@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 26
+  number: 27
   created_at: "2026-09-30T12:00:00Z"
   created_by:
     user: "weihao"
     agent: "resident_36c860ac51b6"
-  updated_at: "2026-11-02T15:19:16Z"
+  updated_at: "2026-11-03T02:47:03Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -115,6 +115,10 @@ Resident 的接单开关只表达人工输入控制。额度保留、等待与�
 会话设置中的切换账号和重新开始会话提供默认不勾选的付费确认。页面展示本次目标稳定账号，说明授权只适用于本次新建或迁移得到的目标会话；切换目标账号、改变操作或再次打开页面时必须重新选择。只有已认证的人类且具有该 Resident 管理权限才可确认，Resident 和 service actor 不能授予或重放该授权。
 
 正式 `RestartSession` 指令接受 `credits_consent={account_id,confirmed:true}`，并要求本次幂等键与明确的目标账号。服务把确认账号与解析后的稳定账号ID精确比较；同一幂等键的目标、上下文策略和确认内容必须相同。授权随本次会话操作持久保存，包含操作ID、目标账号、人类确认主体及时间。等待当前轮结束或重启服务时沿同一操作恢复；不会因为恢复而生成另一份授权或自动重试历史失败输入。
+
+Fork 初始化的付费确认由初始化自身持有。人类在正式 `RetryResidentInitialization` 中同时提交刚读取的 `expected_initialization_id`、`credits_consent={account_id,confirmed:true}` 和本次幂等键；账号必须与该初始化的稳定目标账号相同，主体、管理权限及新鲜 credits 读数沿用同一准入规则。已完成的初始化和已变化的尝试不能复用旧确认；没有确认时不增加额度例外。
+
+确认恢复原创建工作及冻结历史，不调用普通会话迁移，不重发排队消息。创建和首轮前压缩分别只授权当前步骤的唯一 Execution；恢复候选的授权只属于该候选。初始化完成后，授权提升到实际目标 Provider Session 引用，原队列按既有接单状态继续。中断恢复复用同一授权及执行身份，已提交结果只重试授权同步；明确失败后换用新候选时须重新确认，后续 ClearContext、重新开始、换账号和新 Fork 不继承。
 
 额度准入和运行保护由 Execution Scheduler 的同一账号契约解释。人类确认仅允许越过本次目标账号的订阅额度保护，不改变原始额度、Close阈值、站点默认策略或账号登记。准入要求目标账号启用，最新观察确认已认证，credits样本不超过60秒且读取未失败，has_credits为真，余额严格大于零或unlimited为真。额度读数不足仍如实保留。认证失效、停用、credits不足或不可确认、Provider实际限流及执行失败继续按其原有错误与恢复规则处理。
 

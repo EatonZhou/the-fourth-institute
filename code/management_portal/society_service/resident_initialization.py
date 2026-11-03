@@ -84,14 +84,40 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
             'execution_ids': dict(attempt.get('execution_ids') or {})}
 
 
-def retry(resident_id: str, actor: str) -> dict[str, Any]:
+def retry(resident_id: str, actor: str, *, credits_consent=None,
+          expected_initialization_id: str = "", request_id: str = "") -> dict[str, Any]:
+    from . import resident_initialization_credits, resident_session_credits
+    if credits_consent is not None:
+        if not resident_session_credits.human_actor(actor):
+            raise PermissionError("只有已登录的人类可以确认本次 Session 使用 credits")
+        record = _record(resident_id, actor)
+        current = view(resident_id, actor)
+        if not expected_initialization_id or current['initialization_id'] != expected_initialization_id:
+            raise ValueError('初始化状态已变化，请重新读取并确认 credits')
+        if current['status'] in {'completed', 'not_required'}:
+            raise ValueError('初始化已结束，不能沿用它的 credits 确认')
+        account = resident_backend.execution_account(record)
+        resident_session_credits.validate_target_consent(
+            credits_consent, actor, account, resident_backend.execution_backend(record), request_id)
+        resident_session_credits.account_open_quota(account, use_credits=True)
+    result = _prepare_retry(resident_id, actor, expected_initialization_id=expected_initialization_id if credits_consent is not None else "")
+    if credits_consent is not None:
+        resident_initialization_credits.authorize(resident_id, result['initialization_id'], actor,
+                                                 credits_consent, request_id)
+    resident_domain_port.resume_resident_execution(resident_id)
+    return result
+
+
+def _prepare_retry(resident_id: str, actor: str, *, expected_initialization_id="") -> dict[str, Any]:
     from . import resident_domain_common, resident_record_domain
+    from .resident_initialization_credits import identity
     # Provider/AgentData reads happen outside the Resident state lock.
     record = _record(resident_id, actor)
     prior = resident_execution_work.read(record)
+    if expected_initialization_id and identity(prior) != expected_initialization_id:
+        raise ValueError('初始化状态已变化，请重新读取并确认 credits')
     if resident_execution_work.is_active(prior) and prior.get('operation') == 'context_fork_create':
-        resident_domain_port.resume_resident_execution(resident_id)
-        return view(resident_id, actor)
+        return {**view(resident_id, actor), 'initialization_id': identity(prior)}
     if not requires_initial_context_compaction(record):
         if prior.get('operation') != 'context_fork_create' or resident_backend.record_session_id(record):
             return view(resident_id, actor)
@@ -110,10 +136,12 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
         job = resident_execution_work.read(record)
         if resident_record_domain.lifecycle_operations().pending(resident_id):
             raise ValueError('Resident 生命周期操作尚未完成')
+        if expected_initialization_id and identity(job) != expected_initialization_id:
+            raise ValueError('初始化状态已变化，请重新读取并确认 credits')
         if resident_execution_work.is_active(job):
             if job.get('operation') != 'context_fork_create':
                 raise ValueError('Resident 当前有执行中的输入，不能替换初始化')
-            return view(resident_id, actor)
+            return {**view(resident_id, actor), 'initialization_id': identity(job)}
         if str(job.get('execution_id') or '') != str(prior.get('execution_id') or ''):
             raise ValueError('初始化状态已变化，请重新读取')
         if facts and any(eid != prior.get('execution_id') for eid in facts['active_execution_ids']):
@@ -123,15 +151,15 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
         attempt = copy.deepcopy(job.get('initialization_recovery') or {})
         # A failed candidate can be abandoned, but never operated on again by
         # a different attempt. Its Session, Execution and fork receipt remain.
-        identity = 'initialization_' + secrets.token_hex(12)
+        attempt_id = 'initialization_' + secrets.token_hex(12)
         if facts and not reuse:
             if not facts['segment_ids']:
                 raise ValueError('压缩继承缺少冻结上下文')
-            attempt = {'id': identity, 'phase': 'prepare', 'source_binding': facts['binding'],
+            attempt = {'id': attempt_id, 'phase': 'prepare', 'source_binding': facts['binding'],
                        'segment_ids': facts['segment_ids'], 'candidate_agent_id': 'agent_' + secrets.token_hex(12),
-                       'candidate_binding_id': 'initialization:' + identity,
+                       'candidate_binding_id': 'initialization:' + attempt_id,
                        'existing_compaction': facts['compaction_segment_id'],
-                       'execution_ids': {op: 'execution-' + hashlib.sha256((identity + ':' + op).encode()).hexdigest()[:24]
+                       'execution_ids': {op: 'execution-' + hashlib.sha256((attempt_id + ':' + op).encode()).hexdigest()[:24]
                                          for op in ('create', 'compact')}}
         fresh = {'operation': 'context_fork_create', 'actor': str(job.get('actor') or actor) if reuse else actor, 'resident_id': resident_id,
                  'started_at': now, 'updated_at': now, 'queue': queue,
@@ -141,12 +169,14 @@ def retry(resident_id: str, actor: str) -> dict[str, Any]:
                  # inputs must still respect the unchanged intake state.
                  'intake_admitted_at': now}
         resident_execution_work.ensure_execution_id(fresh)
+        if reuse and identity(fresh) == identity(job):
+            for field in ('credits_authorization', 'credits_preparation_policy'):
+                if field in job:
+                    fresh[field] = copy.deepcopy(job[field])
         resident_execution_work.write(record, fresh)
         record.update(session_state='creating', last_error='', updated_at=now)
         resident_record_domain.save_resident_record(record)
-    result = view(resident_id, actor)
-    resident_domain_port.resume_resident_execution(resident_id)
-    return result
+    return {**view(resident_id, actor), 'initialization_id': identity(fresh)}
 
 
 def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> dict[str, Any]:
@@ -185,6 +215,8 @@ def run(record: dict[str, Any], job: dict[str, Any], continuation_id: str) -> di
                 raise ValueError('初始化恢复已被替换')
             saved['initialization_recovery']['phase'] = name
             resident_execution_work.write(current, saved)
+        from .resident_initialization_credits import synchronize
+        synchronize(rid, job['execution_id'])
 
     execution_port.fork_agent_data(rid, attempt['candidate_agent_id'], actor=actor, segment_ids=attempt['segment_ids'])
     from . import resident_domain_common

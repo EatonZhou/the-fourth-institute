@@ -4,50 +4,50 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 63
-  created_at: '2026-09-01'
+  number: 64
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:58:43Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-03T02:47:04Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_initialization.py
-  - ${code_root}/management_portal/society_service/resident_execution_domain.py
-  - ${code_root}/tests/cases/test_lineage_fork_identity.py
-  - ${code_root}/tests/cases/test_fork_runtime_inheritance.py
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/lineage_graph.js
-  - ${code_root}/management_portal/static/hatg_panel.js
-  - ${code_root}/management_portal/society_service/isa/residents.py
-  - ${code_root}/management_portal/execution/context_seed.py
-  - ${code_root}/management_portal/society_service/resident_runtime_domain.py
-  - ${code_root}/management_portal/society_service/lineage_branch_transitions.py
-  - ${code_root}/management_portal/society_service/resident_fork_domain.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/execution/agent_data_store.py
-  - ${code_root}/management_portal/execution/backend_services.py
-  - ${code_root}/management_portal/execution/codex_backend.py
-  - ${code_root}/management_portal/execution/codex_history.py
-  - ${code_root}/management_portal/execution/codex_history_delivery.py
-  - ${code_root}/management_portal/society_service/resident_fork_context.py
-  - ${code_root}/management_portal/agent_prompt_context.py
-  - ${code_root}/management_portal/execution/agent_data_projection.py
-  - ${code_root}/management_portal/execution/session_manager.py
-  - ${code_root}/tests/cases/test_lineage_backend.py
-  - ${code_root}/tests/cases/test_resident_execution_provider.py
-  - ${code_root}/tests/cases/test_resident_folder_creation_contract.py
-  - ${code_root}/tests/cases/test_resident_fork_context_delivery.py
-  - ${code_root}/tests/cases/test_codex_fork_history.py
-  - ${code_root}/tests/cases/test_agent_data_projection.py
-  - ${code_root}/management_portal/society_service/resident_settings_contract.py
-  - ${code_root}/management_portal/society_service/resident_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_initialization.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_fork_identity.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_fork_runtime_inheritance.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_graph.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/hatg_panel.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/residents.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/context_seed.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_runtime_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_branch_transitions.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_fork_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/backend_services.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_history.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_history_delivery.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_fork_context.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_prompt_context.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/session_manager.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_provider.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_folder_creation_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_fork_context_delivery.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_codex_fork_history.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_data_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_settings_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_storage.py
   related:
   - decision_ccb99a00eebd
   - decision_7ef392b5f60d
@@ -184,6 +184,10 @@ Resident 是 Portal 中可以长期工作的 AI 节点；一组有协作关系�
 ### 初始化状态与原队列恢复
 
 `GetResidentInitialization(resident_id)` 读取初始化状态；`RetryResidentInitialization(resident_id)` 只恢复初始化，不建立新 Resident，不重发业务消息，不改变用户选定的上下文策略。读取要求目标 Resident 的 @viewer，恢复要求 @contributor。初始化尚未完成时，普通输入仍以原身份排队，不能覆盖创建工作；失败收尾与执行确认也不能因为已有 Session 而丢弃初始化工作。阻塞初始化期间的 Mailbox 读取包含已经接纳的原 pending 输入，保留作者、正文、媒体与顺序。
+
+Fork 初始化的付费确认由初始化自身持有。人类在正式 `RetryResidentInitialization` 中同时提交刚读取的 `expected_initialization_id`、`credits_consent={account_id,confirmed:true}` 和本次幂等键；账号必须与该初始化的稳定目标账号相同，主体、管理权限及新鲜 credits 读数沿用同一准入规则。已完成的初始化和已变化的尝试不能复用旧确认；没有确认时不增加额度例外。
+
+确认恢复原创建工作及冻结历史，不调用普通会话迁移，不重发排队消息。创建和首轮前压缩分别只授权当前步骤的唯一 Execution；恢复候选的授权只属于该候选。初始化完成后，授权提升到实际目标 Provider Session 引用，原队列按既有接单状态继续。中断恢复复用同一授权及执行身份，已提交结果只重试授权同步；明确失败后换用新候选时须重新确认，后续 ClearContext、重新开始、换账号和新 Fork 不继承。
 
 恢复前核对当前绑定、冻结子 trace 的 forked 回执和原执行事实。原执行仍活动、绑定已变化、冻结引用不完整或不匹配时拒绝开始重叠尝试。已有可证明完成的原压缩直接收敛；Worker 失租或 failed 状态本身不证明原生压缩副作用已结束。原结果不确定时，恢复在独立候选 Agent／Session 中导入原冻结引用并压缩，不继续修改旧 Session。只有候选压缩执行已完成且规范 Segment 与候选绑定一致，才在 AgentData 同一事务内比较原绑定、采纳压缩事实并提升新绑定，写入不可变提升凭据。失败或比较冲突保留旧绑定、原队列及审计事实。
 

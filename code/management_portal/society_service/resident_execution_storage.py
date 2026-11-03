@@ -15,6 +15,7 @@ PREPARATION = frozenset({
     "effective_message", "actual_sent_prompt", "prompt_cwd", "context_refs", "input_media",
     "enqueued_at", "additional_skills", "runtime_context", "allow_subagents",
     "agent_data_fork", "compact_session_id", "initialization_recovery", "initial_compaction_operation_id",
+    "credits_authorization", "credits_preparation_policy",
     "compact_scope_label", "fork_context_input", "business_ref", "mailbox_members",
     "execution_request", "prompt_builder_version", "prompt_built_at",
     "authorization_prompt", "filesystem_scope",
@@ -35,7 +36,8 @@ DERIVED = frozenset({"schema", "schema_version", "resident_id", "lineage_id", "b
                      "intake_state", "message", "queue", "status", "queue_reason"})
 IDENTITY = frozenset({"execution_id", "user_message_id", "execution_event_cursor"})
 EXECUTION_PREPARATION = frozenset({"execution_request",
-                              "authorization_prompt", "filesystem_scope", "fork_context_input"})
+                              "authorization_prompt", "filesystem_scope", "fork_context_input",
+                              "credits_authorization", "credits_preparation_policy"})
 QUEUE_INPUT_FIELDS = (PREPARATION - EXECUTION_PREPARATION) | frozenset({
     "user_message_id", "actor", "activation_policy", "operation", "message",
 })

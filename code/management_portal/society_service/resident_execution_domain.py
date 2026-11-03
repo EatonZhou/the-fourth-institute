@@ -339,6 +339,10 @@ def _finalize_applied_execution(
     record = resident_record_domain.find_resident(resident_id) or {}
     if not record:
         return False
+    if current_job.get('operation') == 'context_fork_create':
+        from .resident_initialization_credits import finish
+        if not finish(record, current_job):
+            return False
     session_state = resident_record_domain.record_backend_session_state(record)
     with resident_record_domain.state_lock(resident_id):
         job = resident_execution_work.read(record)
@@ -594,6 +598,9 @@ def _create_resident_session(
 ) -> bool:
     """A ``context_fork_create`` Job creates the Resident's session, compacting inherited context first."""
 
+    from . import resident_initialization_credits
+    if _completion_applied(current_job):
+        return _finalize_applied_execution(resident_id, continuation_id, current_job)
     thread, initial_compaction = _created_session_thread(record_snapshot, current_job, continuation_id)
     applied_creation_job: dict[str, Any] = {}
     with resident_record_domain.state_lock(resident_id):
@@ -627,6 +634,7 @@ def _create_resident_session(
                 if isinstance(initial_compaction.get("usage"), dict)
                 else {},
             )
+        resident_initialization_credits.promote(record, job)
         _mark_completion_applied(job, now)
         resident_execution_work.write(record, job)
         resident_record_domain.save_resident_record(record, commit_configuration=True)
@@ -2107,6 +2115,8 @@ def _compact_inherited_resident_context(
             raise RuntimeError('初始化工作已变化')
         saved['initial_compaction_operation_id'] = operation_id
         resident_execution_work.write(current, saved)
+    from .resident_initialization_credits import synchronize
+    synchronize(resident_domain_common.record_resident_id(record), job['execution_id'])
     return resident_session_backend_domain.run_backend_session_operation(
         backend=backend,
         operation="compact",
