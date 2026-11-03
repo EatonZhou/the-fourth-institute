@@ -114,6 +114,15 @@
       renderAccountDetails();
     }
 
+    function accountQuotaBlockers(account, quotaWindow) {
+      const group = quotaWindow?.quota_group;
+      // Only the provider can declare which windows constrain the same pool.
+      // A missing group is unknown, never an account-wide dependency.
+      if (!group || quotaWindow.remaining_percent === 0) return [];
+      return accountQuotaWindows(account).filter(item => item.id !== quotaWindow.id
+        && item.quota_group === group && item.remaining_percent === 0);
+    }
+
     function accountQuotaWindow(account, quotaWindow) {
       const value = quotaWindow?.remaining_percent;
       const known = typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
@@ -123,13 +132,22 @@
       const reset = quotaWindow?.resets_at ? formatDateTime(quotaWindow.resets_at * 1000) : "";
       const observed = quotaWindow?.observed_at;
       const sampled = formatDateTime(typeof observed === "number" ? observed * 1000 : observed || "");
+      const blockers = accountQuotaBlockers(account, quotaWindow);
+      const blocked = blockers.length > 0;
+      const pending = blocked && blockers.every(accountQuotaWindowIsStale);
+      const blockedLabel = pending ? window.PortalI18n.t("待确认") : window.PortalI18n.t("受限");
+      const constraints = blockers.map(item => [item.label || item.id,
+        accountQuotaWindowIsStale(item) ? window.PortalI18n.t("上次读数为 0%，等待恢复确认") : window.PortalI18n.t("额度已耗尽"),
+        item.resets_at && window.PortalI18n.text`预计重置 ${formatDateTime(item.resets_at * 1000)}`].filter(Boolean).join(" · ")).join("；");
       const title = [quotaWindow.full_label || label, stale ? window.PortalI18n.t("数据已过期，百分比为上次采样") : !known ? window.PortalI18n.t("额度数据不可用") : window.PortalI18n.t("剩余额度"),
+        blocked && (known ? window.PortalI18n.text`本窗口剩余 ${remaining}%${stale ? "*" : ""}` : ""),
+        blocked && window.PortalI18n.text`受同组额度限制：${constraints}`,
         sampled && window.PortalI18n.text`采样于 ${sampled}`, reset && window.PortalI18n.text`重置 ${reset}`, account?.error].filter(Boolean).join(" · ");
       return window.PortalI18n.html`<div class="agent-status-account-window" data-account-quota-account="${esc(account.account_id)}" data-account-quota-window="${esc(quotaWindow.id || "")}" title="${esc(title)}">
     <span class="agent-status-window-name">${esc(label)}</span>
-    <span class="agent-status-limit-track${!known ? " is-unknown" : stale ? " is-stale" : ""}" ${known && !stale ? `role="meter" aria-label="${esc(window.PortalI18n.text`${account.account_id} ${label}剩余额度`)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${remaining}"` : `role="img" aria-label="${esc(title)}"`}>
-      ${known ? window.PortalI18n.html`<span class="agent-status-limit-fill" style="width:${remaining}%"></span>` : ""}
-    </span><span class="agent-status-limit-meta">${known ? `${remaining}%${stale ? "*" : ""}` : "—"}</span>
+    <span class="agent-status-limit-track${blocked ? " is-blocked" : !known ? " is-unknown" : stale ? " is-stale" : ""}" ${known && !stale && !blocked ? `role="meter" aria-label="${esc(window.PortalI18n.text`${account.account_id} ${label}剩余额度`)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${remaining}"` : `role="img" aria-label="${esc(title)}"`}>
+      ${known && !blocked ? window.PortalI18n.html`<span class="agent-status-limit-fill" style="width:${remaining}%"></span>` : ""}
+    </span><span class="agent-status-limit-meta">${blocked ? esc(blockedLabel) : known ? `${remaining}%${stale ? "*" : ""}` : "—"}</span>
   </div>`;
     }
 

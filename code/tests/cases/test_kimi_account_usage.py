@@ -22,6 +22,7 @@ def test_windows_convert_used_ratios_and_do_not_invent_missing_limits():
         limit7d={"usedRatio": .42}, monthTotal={"usedRatio": .3}, monthCode={"usedRatio": 0}), 1000)
     windows = sample["rate_limits"]
     assert [w["remaining_percent"] for w in windows] == [75, 58, 70, 100]
+    assert {w["quota_group"] for w in windows} == {"kimi-code"}
     assert windows[0]["resets_at"] == 1893456000
     assert windows[1]["resets_at"] is None
     assert sample["quota"]["remaining_percent"] == 58
@@ -85,9 +86,12 @@ def test_monitor_keeps_last_windows_on_usage_failure_and_recovers(monkeypatch):
     assert failed["status"] == "unavailable" and "secret" not in repr(failed)
     assert [w["remaining_percent"] for w in failed["rate_limits"]] == [75, 58]
     assert all(w["stale"] for w in failed["rate_limits"])
+    assert {w["quota_group"] for w in failed["rate_limits"]} == {"kimi-code"}
     assert failed["rate_limits"][0]["observed_at"] == first["rate_limits"][0]["observed_at"]
     assert store.observe.call_args.args == ("kimi_sub", "logged_in")
-    assert scheduler.update_account_quota.call_args.args[1] == {"status": "unknown"}
+    failed_quota = scheduler.update_account_quota.call_args.args[1]
+    assert failed_quota["status"] == "unknown"
+    assert failed_quota["credits"]["authenticated"] is False
     data = payload(limit5h={"usedRatio": 0}, limit7d={"usedRatio": 0})
     monitor.refresh_account(account)
     recovered = monitor._samples[account.account_id]

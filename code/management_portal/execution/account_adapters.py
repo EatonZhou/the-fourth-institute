@@ -248,7 +248,7 @@ class CodexAccounts:
         if credit_sample is not None:
             credit_sample.update(observed_at=sample["observed_at"], stale=False)
         return {"status": "ok", "quota": sample, "credits": credit_sample,
-                "rate_limits": [{"id": window["window"],
+                "rate_limits": [{"id": window["window"], "quota_group": "codex",
                                  "label": "Weekly" if window.get("window_duration_mins") == 10080 else "5 小时" if window.get("window_duration_mins") == 300 else window["window"],
                                  "remaining_percent": window["remaining_percent"],
                                  "window_duration_mins": window.get("window_duration_mins"),
@@ -322,6 +322,7 @@ class ClaudeAccounts:
             login_observed_at = min((w["observed_at"] for w in windows if w.get("observed_at")), default=None)
         found = {window["id"] for window in windows}
         windows = [*windows, *({"id": key, "label": label, "remaining_percent": None, "stale": False} for key, label in (("five_hour", "5 小时"), ("seven_day", "每周")) if key not in found)]
+        windows = [{**window, "quota_group": "claude" if window["id"] in {"five_hour", "seven_day"} else window["id"]} for window in windows]
         known = [window for window in windows if isinstance(window.get("remaining_percent"), (int, float)) and not window.get("stale")]
         remaining = min((window["remaining_percent"] for window in known), default=None)
         return {"status": snapshot.get("quota_status", "unknown"),

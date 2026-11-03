@@ -4,7 +4,7 @@ const {homeStatements} = require('./home_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
-  'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
+  'accountSummaryQuotaWindows','accountQuotaWarning','accountQuotaBlockers','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
   'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
@@ -25,18 +25,19 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       const syncAccountDetailsButtons=()=>{};
       let accountDetails=null;
       ${renderer}
-      const quota=(id,label,value)=>({id,label,remaining_percent:value,resets_at:Date.now()/1000+3600});
+      const quota=(id,label,value,group)=>({id,label,quota_group:group,remaining_percent:value,resets_at:Date.now()/1000+3600});
       const api=(id,balance,capabilities)=>({account_id:id,kind:'api_profile',balance,capabilities});
       const data={accounts:[
         api('deepseek', {status:'ok',display:'123.45 CNY',comparison_amount:123,comparison_currency:'CNY'}),
-        {account_id:'claude_one',provider:'claude',kind:'subscription_login',credits:{balance:44904.19},rate_limits:[quota('five_hour','5 小时',72),quota('weekly','每周',64)]},
-        {account_id:'antigravity_one',provider:'antigravity',kind:'subscription_login',rate_limits:[quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',100),quota('Gemini Models/Five Hour Limit Remaining','Gemini Five Hour',90),quota('other','other models',10),quota('Gemini 4 Argon/Gemini 4 Argon Weekly Limit','Gemini 4 Argon · Gemini 4 Argon Weekly Limit',100)]},
-        {account_id:'kimi-code',provider:'kimi',kind:'subscription_login',rate_limits:[quota('limit5h','5 小时',75),quota('limit7d','每周',58),quota('monthCode','每月编程额度',85)]},
+        {account_id:'claude_one',provider:'claude',kind:'subscription_login',credits:{balance:44904.19},rate_limits:[quota('five_hour','5 小时',72,'claude'),quota('seven_day','每周',64,'claude')]},
+        {account_id:'antigravity_one',provider:'antigravity',kind:'subscription_login',rate_limits:[quota('Gemini Models/Weekly Limit Remaining','Gemini Weekly',100,'Gemini Models'),quota('Gemini Models/Five Hour Limit Remaining','Gemini Five Hour',90,'Gemini Models'),quota('other','other models',10,'Claude and GPT models'),quota('Gemini 4 Argon/Gemini 4 Argon Weekly Limit','Gemini 4 Argon · Gemini 4 Argon Weekly Limit',100,'Gemini 4 Argon')]},
+        {account_id:'kimi-code',provider:'kimi',kind:'subscription_login',rate_limits:[quota('limit5h','5 小时',75,'kimi-code'),quota('limit7d','每周',58,'kimi-code'),quota('monthCode','每月编程额度',85,'kimi-code')]},
         api('a_very_long_api_account_name', {status:'ok',display:'0 USD'}, {resident_details:false}),
         api('stale', {status:'unavailable',display:'52.12 USD',stale:true}),
         api('unknown', {status:'not_supported'}),
         api('large', {status:'ok',display:'100000 CNY',currency:'CNY',comparison_amount:100000,comparison_currency:'CNY'}),
-        api('availability', {status:'ok',metric_kind:'availability'})]};
+        api('availability', {status:'ok',metric_kind:'availability'}),
+        {account_id:'codex_one',provider:'codex',kind:'subscription_login',rate_limits:[quota('primary','5 小时',100,'codex'),quota('secondary','每周',0,'codex')]}]};
       document.querySelector('main > div').innerHTML=accountRows(data.accounts);
     `});
     for(const id of ['claude_one','antigravity_one','kimi-code']) {
@@ -65,7 +66,25 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     for(const [remaining,stale,expected] of [[null,false,'—'],[0,false,'0%'],[100,true,'100%*']]) {
       await page.evaluate(({remaining,stale})=>{Object.assign(data.accounts[2].rate_limits[3],{remaining_percent:remaining,stale});refreshAccountQuotaWindows();},{remaining,stale});
       assert.equal(await argon.locator('.agent-status-limit-meta').innerText(),expected);
+      assert.equal(await antigravity.locator('[data-account-quota-window="Gemini Models/Five Hour Limit Remaining"] .agent-status-limit-meta').innerText(),'90%','Argon cannot block the shared Gemini pool');
     }
+    const codex=page.locator('[data-account-limit-account="codex_one"]');
+    assert.deepEqual(await codex.locator('.agent-status-limit-meta').allTextContents(),['受限','0%']);
+    for(const [index,id,shortId,weekIndex] of [[1,'claude_one','five_hour',1],[2,'antigravity_one','Gemini Models/Five Hour Limit Remaining',0],[3,'kimi-code','limit5h',1]]) {
+      const short=page.locator('[data-account-limit-account="'+id+'"] [data-account-quota-window="'+shortId+'"]');
+      await page.evaluate(({index,weekIndex})=>{Object.assign(data.accounts[index].rate_limits[weekIndex],{remaining_percent:0,stale:false});refreshAccountQuotaWindows();},{index,weekIndex});
+      assert.equal(await short.locator('.agent-status-limit-meta').innerText(),'受限');
+      assert.equal(await short.locator('.agent-status-limit-fill, [role=meter]').count(),0,'blocked windows never look full or expose a full meter');
+      assert.match(await short.getAttribute('title'),/本窗口剩余.*受同组额度限制.*预计重置/);
+      await page.evaluate(({index,weekIndex})=>{Object.assign(data.accounts[index].rate_limits[weekIndex],{stale:true,resets_at:1});refreshAccountQuotaWindows();},{index,weekIndex});
+      assert.equal(await short.locator('.agent-status-limit-meta').innerText(),'待确认','a reset time alone does not confirm recovery');
+      await page.evaluate(({index,weekIndex})=>{Object.assign(data.accounts[index].rate_limits[weekIndex],{remaining_percent:25,stale:false});refreshAccountQuotaWindows();},{index,weekIndex});
+      assert.match(await short.locator('.agent-status-limit-meta').innerText(),/%/);
+      assert.equal(await short.locator('.is-blocked').count(),0);
+    }
+    await page.evaluate(()=>{data.accounts[3].rate_limits[2].remaining_percent=0;refreshAccountQuotaWindows();});
+    assert.equal(await page.locator('[data-account-limit-account="kimi-code"] [data-account-quota-window="limit5h"] .agent-status-limit-meta').innerText(),'受限','omitted monthly limits also constrain the same pool');
+    await page.evaluate(()=>{data.accounts[3].rate_limits[2].remaining_percent=85;refreshAccountQuotaWindows();});
     for(const width of [1920,1440,1024,768,390,320]) {
       await page.setViewportSize({width,height:1000});
       const problems=await page.evaluate(()=>{

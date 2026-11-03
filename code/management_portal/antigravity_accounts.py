@@ -132,7 +132,7 @@ def quota_windows(report, observed_at):
                 reset = datetime.strptime(percent[2], "%b %d, %Y, %H:%M UTC").replace(tzinfo=timezone.utc).timestamp()
             except ValueError:
                 pass
-        windows.append({"id": f"{group}/{label}", "label": f"{group} · {label}",
+        windows.append({"id": f"{group}/{label}", "label": f"{group} · {label}", "quota_group": group,
                         "remaining_percent": remaining, "resets_at": reset,
                         "observed_at": observed_at, "stale": False})
     return windows

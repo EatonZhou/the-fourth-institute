@@ -41,7 +41,7 @@ def quota_sample(payload, observed_at):
                 reset = date.timestamp() if date.tzinfo is not None else None
             except (ValueError, TypeError, AttributeError, OverflowError):
                 pass  # The percentage remains useful without a reset time.
-        windows.append({"id": key, "label": label, "remaining_percent": round(max(0, 1 - ratio) * 100, 6),
+        windows.append({"id": key, "label": label, "quota_group": "kimi-code", "remaining_percent": round(max(0, 1 - ratio) * 100, 6),
                         "window_duration_mins": minutes, "resets_at": reset,
                         "observed_at": observed_at, "stale": False})
     if not windows:
