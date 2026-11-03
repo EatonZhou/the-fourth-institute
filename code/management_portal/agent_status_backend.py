@@ -79,7 +79,7 @@ DISK_RESOURCE_POOL: tuple[dict[str, Any], ...] = (
         "display_name": "dirty-base",
         "host_label": "local",
         "kind": "local",
-        "paths": [str(portal_path(key)) for key in ("projects", "skills", "papers", "lineages", "runtime")],
+        "paths": [str(portal_path(key)) for key in ("projects", "skills", "papers", "lineages", "runtime")] + ([str(Path("/data2"))] if Path("/data2").exists() else []),
     },
     {
         "resource_id": "thor_storage",
