@@ -506,6 +506,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           ["failed", "cancelled", "completed"].includes(result.check.status) ? "失败，可重试" : "进行中");
         status.textContent = t(result.check.message);
         if (!["completed", "failed", "cancelled"].includes(result.check.status)) {
+          nextStep.textContent = t(result.check.next_step || "");
+          nextStep.hidden = !result.check.next_step;
           progressMessage = result.check.message;
           timer = setTimeout(() => void pollCheck(executionId), 2000); return;
         }

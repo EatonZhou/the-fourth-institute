@@ -41,6 +41,7 @@ class AccountMonitor:
         self._last_refresh_request = 0.0
         self._refresh_refused = False
         self._refreshing = False
+        self._inflight = {}
         self._lock = threading.RLock()
         self.stopped, self.wakeup = threading.Event(), threading.Event()
         from .account_observation import ObservationLifetime
@@ -200,20 +201,46 @@ class AccountMonitor:
                 self.wakeup.set()
 
     def _run(self):
-        with ThreadPoolExecutor(max_workers=max(1, len(self.accounts.accounts())), thread_name_prefix="execution-accounts") as pool:
-            while not self.stopped.is_set():
-                with self._lock:
-                    force = self.wakeup.is_set()
-                    self.wakeup.clear()
-                    self._refreshing = True
-                try:
-                    list(pool.map(lambda account: self.refresh_account(account, force=force), self.accounts.accounts()))
-                finally:
+        # A slow account must not hold the next refresh of every other account.
+        # Bound resource use and keep at most one pending observation per identity.
+        try:
+            with ThreadPoolExecutor(max_workers=32, thread_name_prefix="execution-accounts") as pool:
+                while not self.stopped.is_set():
                     with self._lock:
-                        self._refreshing = False
-                if self.stopped.is_set():
-                    break
-                self.wakeup.wait(POLL_SECONDS)
+                        force = self.wakeup.is_set()
+                        self.wakeup.clear()
+                        self._refreshing = True
+                    try:
+                        for account_id, future in list(self._inflight.items()):
+                            if future.done():
+                                with self._lock:
+                                    del self._inflight[account_id]
+                                try:
+                                    future.result()
+                                except Exception as error:
+                                    if not self.stopped.is_set():
+                                        logger.warning("Account observation failed for %s (%s); retrying next poll",
+                                                       account_id, type(error).__name__)
+                        for account in self.accounts.accounts():
+                            if self.stopped.is_set():
+                                break
+                            with self._lock:
+                                if account.account_id not in self._inflight:
+                                    self._inflight[account.account_id] = pool.submit(self.refresh_account, account, force=force)
+                    except Exception as error:
+                        if not self.stopped.is_set():
+                            # Directory/database outages are not empty account catalogs.
+                            # Keep observations and retry; never log connection strings.
+                            logger.warning("Account monitor poll failed (%s); retrying next poll", type(error).__name__)
+                    finally:
+                        with self._lock:
+                            self._refreshing = False
+                    if not self.stopped.is_set():
+                        self.wakeup.wait(POLL_SECONDS)
+        finally:
+            with self._lock:
+                self._inflight.clear()
+                self._refreshing = False
 
     def snapshot(self):
         from .account_migration_types import migration_type
@@ -222,7 +249,7 @@ class AccountMonitor:
         partitions = health.get("capacity_partitions") or {}
         with self._lock:
             samples = deepcopy(self._samples)
-            refreshing = self._refreshing or self.wakeup.is_set()
+            refreshing = self._refreshing or self.wakeup.is_set() or any(not f.done() for f in self._inflight.values())
             retry_after = max(0, 60 - (time.monotonic() - self._last_refresh_request)) if self._refresh_refused else 0
         items = []
         for account in self.accounts.accounts():

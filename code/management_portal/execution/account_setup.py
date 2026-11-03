@@ -321,12 +321,25 @@ def _check_result(account_id, execution_id, actor):
     failed = bool(result.get("error") or result.get("error_code")) or result.get("status") in {"failed", "cancelled"}
     passed = status == "completed" and has_reply and not failed and current and row["enabled"]
     queue_reason = (snapshot.get("scheduler") or {}).get("queue_reason", "") if status == "queued" else ""
-    waiting = {"quota_reserve": "账号额度保护暂停了测试，等待额度恢复或选择其他账号。",
-               "capacity": "账号正在处理其他任务，测试排队中。"}.get(queue_reason, "正在等待账号执行测试…")
+    waiting = {"capacity": "账号正在处理其他任务，测试排队中。"}.get(queue_reason, "正在等待账号执行测试…")
     response = {"execution_id": snapshot["execution_id"], "status": status, "passed": bool(passed),
                 "model": checked.get("model", ""), "configuration_current": current,
                 "message": "测试通过" if passed else "配置已变化，请重新测试" if not current else waiting,
                 "queue_reason": queue_reason, "next_step": "", "diagnostic": None, "log": ""}
+    if current and queue_reason == "quota_reserve":
+        quota = (snapshot.get("scheduler") or {}).get("quota_reserve") or {}
+        if not quota.get("fresh") or quota.get("status") == "unknown":
+            response.update(message="尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。",
+                            next_step="等待账号监控刷新；若持续无更新，请检查账号监控服务。",
+                            diagnostic={"reason": "quota_unconfirmed"})
+        elif quota.get("used_up"):
+            response.update(message="该账号的订阅额度已用完，测试正在等待额度恢复。",
+                            next_step="等待服务商额度恢复，或选择其他有额度的账号。",
+                            diagnostic={"reason": "quota_exhausted"})
+        else:
+            response.update(message="该账号剩余额度已达到保护阈值，测试正在等待额度恢复。",
+                            next_step="等待额度恢复到保护阈值以上，或选择其他账号。",
+                            diagnostic={"reason": "quota_reserved"})
     if not row["enabled"]:
         response["message"] = "账号已停用，请启用后重新测试。"
     elif current and not passed and status in {"completed", "failed", "cancelled"}:

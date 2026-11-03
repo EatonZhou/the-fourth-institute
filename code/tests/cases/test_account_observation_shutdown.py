@@ -15,6 +15,79 @@ from management_portal.execution.account_observation import ObservationLifetime,
 from management_portal.execution.account_monitor import AccountMonitor
 
 
+def test_monitor_retries_catalog_pool_timeout_without_losing_samples(monkeypatch, caplog):
+    """目录暂不可读时监控保留事实，下轮恢复；异常内容不进入日志。"""
+    from psycopg_pool import PoolTimeout
+    from management_portal.execution import account_monitor
+    monkeypatch.setattr(account_monitor, "POLL_SECONDS", .01)
+    account = SimpleNamespace(account_id="native", provider="test", kind="service")
+    accounts = SimpleNamespace(accounts=lambda: [account], adapters={"test": SimpleNamespace()})
+    monitor = AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=Mock())
+    monitor._samples["native"] = {"checked_at": 123}
+    reads = 0
+    recovered = threading.Event()
+    def catalog():
+        nonlocal reads
+        reads += 1
+        if reads <= 2:
+            raise PoolTimeout("private database connection detail")
+        assert monitor._samples["native"] == {"checked_at": 123}
+        return [account]
+    accounts.accounts = catalog
+    monkeypatch.setattr(monitor, "refresh_account", lambda *a, **k: recovered.set())
+    monitor.start()
+    try:
+        assert recovered.wait(2)
+        assert monitor.thread.is_alive()
+        assert "PoolTimeout" in caplog.text
+        assert "private database" not in caplog.text
+    finally:
+        monitor.close()
+    assert not monitor._refreshing and not monitor._inflight
+
+
+def test_monitor_isolates_slow_and_failed_accounts_and_discovers_new_accounts(monkeypatch, caplog):
+    """慢账号不阻止其他账号再次刷新；错误处理再次失败也不终止监控。"""
+    from psycopg_pool import PoolTimeout
+    from management_portal.execution import account_monitor
+    monkeypatch.setattr(account_monitor, "POLL_SECONDS", .01)
+    def account(name):
+        return SimpleNamespace(account_id=name, provider="test", kind="service", billing_account_id="",
+                               quota_policy="reserve", quota_enabled=True)
+    catalog = [account("slow"), account("broken"), account("healthy")]
+    entered, released, refreshed, discovered = (threading.Event() for _ in range(4))
+    counts = dict.fromkeys(["slow", "broken", "healthy", "new"], 0)
+    def observe(a, **kwargs):
+        counts[a.account_id] += 1
+        if a.account_id == "slow":
+            with cancel_resource(released.set):
+                entered.set()
+                assert released.wait(3)
+        return {"status": "ok", "quota": {"status": "available"}}
+    def update(name, sample):
+        if name == "broken":
+            raise PoolTimeout("private quota write detail")
+        if name == "healthy" and counts[name] >= 2:
+            refreshed.set()
+        if name == "new":
+            discovered.set()
+    accounts = SimpleNamespace(accounts=lambda: list(catalog), adapters={"test": SimpleNamespace()}, observe=observe)
+    scheduler = SimpleNamespace(quota_reserve_enabled=True, update_account_quota=update)
+    monitor = AccountMonitor(accounts, scheduler, usage_store=Mock(), login_state_store=Mock())
+    monitor.start()
+    try:
+        assert entered.wait(2)
+        catalog.append(account("new"))
+        assert refreshed.wait(2) and discovered.wait(2)
+        assert counts["slow"] == 1 and not released.is_set()
+        assert monitor.thread.is_alive() and counts["broken"] >= 2
+        assert "Account observation failed for broken (PoolTimeout)" in caplog.text
+        assert "private quota" not in caplog.text
+    finally:
+        monitor.close()
+    assert released.is_set() and not monitor.thread.is_alive()
+
+
 def test_monitor_close_cancels_and_joins_pool_without_overwriting_facts():
     entered, released = threading.Event(), threading.Event()
     account = SimpleNamespace(account_id="native", provider="test", billing_account_id="", quota_policy="none")

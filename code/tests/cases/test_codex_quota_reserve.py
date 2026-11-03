@@ -109,6 +109,21 @@ def test_other_accounts_continue_and_fresh_recovery_releases_original_queue(sche
     assert claim(scheduler)["execution"]["execution_id"] == paused.execution_id
 
 
+def test_queue_snapshot_uses_its_own_account_quota(scheduler):
+    """排队诊断取目标账号同一准入快照，不能拿耗尽账号的样本代替新账号。"""
+    scheduler.update_account_quota("two", sample(100))
+    request = submit(scheduler, account="one")
+    waiting = scheduler.snapshot(request.execution_id)["scheduler"]
+    assert waiting["queue_reason"] == "quota_reserve"
+    assert waiting["quota_reserve"]["status"] == "unknown"
+    assert not waiting["quota_reserve"]["fresh"]
+    scheduler.update_account_quota("one", sample(8))
+    ready = scheduler.snapshot(request.execution_id)["scheduler"]
+    assert ready["quota_reserve"]["remaining_percent"] == 92
+    assert ready["quota_reserve"]["fresh"]
+    assert claim(scheduler)["execution"]["execution_id"] == request.execution_id
+
+
 def test_running_requests_stop_regardless_of_actor_and_cancellation_is_idempotent(scheduler):
     """进入额度保留时停止所有进行中的执行，不论发起者，取消只记录一次"""
     scheduler.update_account_quota("one", sample(10))

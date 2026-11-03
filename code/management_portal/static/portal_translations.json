@@ -1,4 +1,10 @@
 {
+  "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。": {"zh-CN": "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。", "en": "The test is waiting for a fresh, complete quota reading for this account."},
+  "等待账号监控刷新；若持续无更新，请检查账号监控服务。": {"zh-CN": "等待账号监控刷新；若持续无更新，请检查账号监控服务。", "en": "Wait for the account monitor to refresh. If updates remain unavailable, check the account monitoring service."},
+  "该账号的订阅额度已用完，测试正在等待额度恢复。": {"zh-CN": "该账号的订阅额度已用完，测试正在等待额度恢复。", "en": "This account's subscription quota is exhausted. The test is waiting for quota to recover."},
+  "等待服务商额度恢复，或选择其他有额度的账号。": {"zh-CN": "等待服务商额度恢复，或选择其他有额度的账号。", "en": "Wait for the provider quota to recover, or choose another account with quota available."},
+  "该账号剩余额度已达到保护阈值，测试正在等待额度恢复。": {"zh-CN": "该账号剩余额度已达到保护阈值，测试正在等待额度恢复。", "en": "This account's remaining quota has reached its protection threshold. The test is waiting for quota to recover."},
+  "等待额度恢复到保护阈值以上，或选择其他账号。": {"zh-CN": "等待额度恢复到保护阈值以上，或选择其他账号。", "en": "Wait for quota to rise above the protection threshold, or choose another account."},
   "添加 AI 后端": {"zh-CN": "添加 AI 后端", "en": "Add an AI backend"},
   "接入订阅帐号": {"zh-CN": "接入订阅帐号", "en": "Connect subscription account"},
   "新增 API Key": {"zh-CN": "新增 API Key", "en": "Add API Key"},

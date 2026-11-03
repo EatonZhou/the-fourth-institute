@@ -271,6 +271,24 @@ def check_snapshot(monkeypatch):
     return snapshot, account
 
 
+@pytest.mark.parametrize("quota,reason,message", [
+    ({}, "quota_unconfirmed", "额度确认"),
+    ({"status": "unknown", "fresh": True}, "quota_unconfirmed", "额度确认"),
+    ({"status": "reserved", "fresh": False, "used_up": True}, "quota_unconfirmed", "额度确认"),
+    ({"status": "reserved", "fresh": True, "used_up": True}, "quota_exhausted", "已用完"),
+    ({"status": "reserved", "fresh": True, "used_up": False}, "quota_reserved", "保护阈值"),
+])
+def test_queued_check_explains_target_account_quota_without_resubmission(check_snapshot, quota, reason, message):
+    """测试区分目标账号缺样本/过期、耗尽与保护阈值，不将排队当成测试失败。"""
+    snapshot, _ = check_snapshot
+    snapshot.update(status="queued", scheduler={"queue_reason": "quota_reserve", "quota_reserve": quota})
+    result = setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]
+    assert result["status"] == "queued" and not result["passed"]
+    assert result["diagnostic"]["reason"] == reason
+    assert message in result["message"] and result["next_step"]
+    assert result["log"] == ""
+
+
 @pytest.mark.parametrize("http_status,kind,reason,action", [
     (401, "http_error", "authentication", "API Key"),
     (403, "http_error", "access_denied", "权限"),

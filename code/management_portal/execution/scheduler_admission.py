@@ -217,6 +217,7 @@ class Admission:
 
         return {
             "queue_reason": reason,
+            "quota_reserve": admission["quotas"].get(capacity_key, {}),
             "queue_position": queue_position,
             "capacity_key": capacity_key,
             "capacity_limit": capacity_limit,

@@ -59,7 +59,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       return {session: {state: loginCancelled ? 'cancelled' : 'pending'}};
     case 'GetProviderAccountCheck': return {check: {execution_id: 'execution_check', status: queued ? 'queued' : 'completed', passed: !queued && !fail,
       model: 'model', message: queued ? '账号正在处理其他任务，测试排队中。' : fail ? '测试未通过：接口拒绝了身份认证。' : '测试通过',
-      next_step: fail ? '请在模型 API 中更换 API Key，然后重新测试。' : '',
+      next_step: queued ? '等待账号监控刷新；若持续无更新，请检查账号监控服务。' : fail ? '请在模型 API 中更换 API Key，然后重新测试。' : '',
       diagnostic: fail ? {reason: 'authentication', http_status: 401} : null,
       log: fail ? 'execution_check\nHTTP 401: [REDACTED]\n<script>not markup</script>' : ''}};
     case 'UpdateBackendRole':
@@ -229,6 +229,8 @@ const openSetup = async () => {
   assert.equal(queuedStatus.getAttribute('aria-busy'), 'true');
   for (const fn of intervals.values()) fn();
   assert.match(queuedStatus.textContent, /测试排队中.*已等待/);
+  assert(!window.document.querySelector('[data-backend-check-next-step]').hidden);
+  assert.match(window.document.querySelector('[data-backend-check-next-step]').textContent, /账号监控/);
   assert(!calls.some(call => call.name === 'UpdateBackendRole'));
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
   [...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').click();
