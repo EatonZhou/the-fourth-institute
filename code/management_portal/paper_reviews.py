@@ -76,6 +76,14 @@ def _review_job_by_id(job_id: str) -> dict | None:
     return paper_state_store.get("review_jobs", str(job_id or "").strip())
 
 
+def _review_job_response(job: dict | None) -> dict | None:
+    """Keep stored diagnostics intact; present a useful quota failure summary."""
+    from management_portal.execution.provider_failures import is_usage_limit_failure
+    if job and job.get('status') == 'error' and is_usage_limit_failure(job.get('error')):
+        return {**job, 'error': '模型服务余额或额度不足，本次评审未完成。任务记录已保留。'}
+    return job
+
+
 def start_review(payload: dict, actor: str) -> dict:
     from management_portal import business_tasks
 
@@ -102,7 +110,7 @@ def start_review(payload: dict, actor: str) -> dict:
                 None,
             )
             if active is not None:
-                return active
+                return _review_job_response(active)
             known_ids = [
                 item.get("review_id")
                 for item in _all_reviews()
@@ -130,7 +138,7 @@ def start_review(payload: dict, actor: str) -> dict:
                 "error": "",
             }
             paper_state_store.append("review_jobs", job)
-    return _start_review_task(job)
+    return _review_job_response(_start_review_task(job))
 
 
 def _start_review_task(job: dict) -> dict:
@@ -257,7 +265,7 @@ def get_review_status(*, actor: str, job_id: str = "", paper_id: str = "") -> di
         if paper_id and str(job.get("paper_id") or "") != paper_id:
             raise ValueError("Paper review job belongs to another paper")
         job = _settle_interrupted_review(job)
-    return {"job": job}
+    return {"job": _review_job_response(job)}
 
 
 def wait_review(

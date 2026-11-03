@@ -10,6 +10,18 @@ import pytest
 from management_portal import paper_ccf_enrichment, paper_reviews, paper_state_store, paper_store, paper_summaries
 
 
+def test_review_status_summarizes_quota_failure_without_rewriting_diagnostics():
+    """公开评审状态解释余额前提，持久原错误仍可用于诊断。"""
+    raw = 'Provider kimi_primary HTTP 429: insufficient balance for upstream-account-example'
+    job = {'job_id': 'quota-error', 'paper_id': 'paper_one', 'created_by': 'alice',
+           'status': 'error', 'error': raw}
+    paper_state_store.append('review_jobs', job)
+    public = paper_reviews.get_review_status(job_id=job['job_id'], actor='alice')['job']
+    assert public['error'] == '模型服务余额或额度不足，本次评审未完成。任务记录已保留。'
+    assert public['job_id'] == job['job_id'] and public['status'] == 'error'
+    assert paper_state_store.get('review_jobs', job['job_id'])['error'] == raw
+
+
 @pytest.mark.parametrize("saved_result", [False, True])
 def test_review_settles_dead_owner_without_regenerating(tmp_path, saved_result):
     """评审持有进程已退出时复用已存结果或标记错误且不重生成
