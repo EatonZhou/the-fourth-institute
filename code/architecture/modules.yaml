@@ -943,6 +943,7 @@ modules:
       - "management_portal/static/portal_board_shell.js"
       - "management_portal/static/portal_board_toolbar.js"
       - "management_portal/static/portal_form_controls.js"
+      - "management_portal/translations"
       - "management_portal/static/portal_live_tour.js"
       - "management_portal/static/portal_ui.js"
       - "management_portal/static/portal_ui_primitives.js"
