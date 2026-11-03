@@ -72,8 +72,11 @@ def _family_note_context(
 
     if instruction in {"RelayFamilyMessage", "DispatchFamilyTask"}:
         from .family_facade import facade_for_arrival_call
+        from .family_familize import facade_for_summary_call
         facade = facade_for_arrival_call(lineage, effect_id, instruction, arguments, event, context.caller,
                                          lineage_id=lineage_id) if context.entry == "lineage" else ""
+        if not facade and instruction == "DispatchFamilyTask" and context.entry == "lineage":
+            facade = facade_for_summary_call(lineage, effect_id, arguments, event, lineage_id=lineage_id)
         return replace(context, caller=facade) if facade else context
     if instruction in FAMILY_STATE_CALLS:
         if str(arguments.get("lineage_id") or "") != lineage_id:

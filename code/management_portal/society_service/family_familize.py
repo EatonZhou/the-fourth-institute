@@ -79,6 +79,40 @@ def facade_for_internal_note(
     return ""
 
 
+def facade_for_summary_call(lineage, component_id, arguments, event, *, lineage_id):
+    """Bind generated summary maintenance to its own Family, never its initiator.
+
+    This capability only dispatches the summary owner's material-keyed notice;
+    it cannot relay business inputs or supply arbitrary task facts.
+    """
+    import re
+
+    if (event is None or set(arguments) != {"resident_id", "trigger", "message_id"}
+            or arguments.get("trigger") != "summary"
+            or not re.fullmatch(r"msg_[0-9a-f]{32}", str(arguments.get("message_id") or ""))):
+        return ""
+    block = component_family(lineage, component_id)
+    if not block:
+        return ""
+    key = next((e.get("key") for e in block.get("elements") or [] if e["id"] == component_id), "")
+    if key == "summary_check":
+        if event.type != "resident.work_finished" or event.subject_resident_id not in member_ids(block):
+            return ""
+    elif key in {"summary_rollup", "memory_rollup"}:
+        if event.type != "time.reached":
+            return ""
+    else:
+        return ""
+    facade_id = role_of(block, "facade")
+    record = find_record(facade_id)
+    family = record.get("family") or {}
+    if (arguments.get("resident_id") != facade_id or record.get("deleted_at")
+            or record.get("lineage_id") != lineage_id or family.get("role") != "facade"
+            or family.get("family_id") != block["id"]):
+        return ""
+    return facade_id
+
+
 # The Family's own State Cells: the routing guide the steward writes, the
 # reassignment corrections the platform appends, and the record of what the
 # Router Resident has been told (decision_44cf587c1721).
