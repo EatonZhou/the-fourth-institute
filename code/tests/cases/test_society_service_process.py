@@ -739,6 +739,43 @@ def test_domain_conflict_preserves_its_payload(lineage_process, monkeypatch, mod
     assert publisher.items == []
 
 
+def test_domain_write_keeps_actor_for_workspace_allocation(lineage_process, monkeypatch, tmp_path):
+    """业务创建经真实 Society RPC 保留操作身份，Workspace 仍归原用例。"""
+    from management_common.operation_identity import current_operation_identity
+    from management_common.resource_lifecycle import LifecycleStore, lifecycle_scope, current_lifecycle
+    from management_portal.resources.transport import ResourceServiceClient
+
+    client, _publisher = lineage_process
+    actor = 'resident_abcdef123456'
+    scope = LifecycleStore().open(str(tmp_path / 'fixture'), actor=actor, run_id='run', case_id='case')
+    allocations = []
+    resource_client = ResourceServiceClient(tmp_path / 'unused-resource.sock')
+
+    def exchange(method, params, **_options):
+        assert method == 'resource.collaboration.workspace_id_for_path'
+        assert params['actor'] == actor
+        assert current_lifecycle() == scope
+        allocations.append(params)
+        return 'workspace_abcdef123456'
+
+    monkeypatch.setattr(resource_client, '_exchange', exchange)
+
+    def allocate(resident_id: str, actor: str, message_id: str):
+        identity = current_operation_identity()
+        workspace = resource_client.workspace_id_for_path(tmp_path / 'new-workspace')
+        return {'workspace_id': workspace, 'principal': identity.principal.to_dict(),
+                'initiated_by': identity.initiated_by.to_dict()}
+
+    monkeypatch.setattr(_ResidentDomain, 'cancel_resident_service_input', staticmethod(allocate))
+    with lifecycle_scope(scope, actor=actor):
+        result = client.resident.cancel_resident_service_input('resident_123456abcdef', actor, 'msg_test')
+    assert result == {'workspace_id': 'workspace_abcdef123456',
+                      'principal': {'kind': 'resident', 'id': actor},
+                      'initiated_by': {'kind': 'resident', 'id': actor}}
+    assert len(allocations) == 1
+    assert current_operation_identity() is None
+
+
 def test_read_pools_split_the_cores_between_dev_and_release(monkeypatch):
     """SocietyService 默认 12 个读取进程
 
