@@ -15,6 +15,7 @@ from packaging.version import Version
 
 from management_portal.execution import provider_updates as updates
 from management_common.distribution_targets import identify_host
+from management_portal.native_agent_transport import NativeAgentUnavailable
 
 REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/antigravity-acp/agent.json"
 
@@ -105,6 +106,6 @@ def command(root: Path | None = None):
     root = root or AntigravityRuntime().link()
     path = root / "distribution.json"
     if not path.is_file():
-        raise RuntimeError("Antigravity ACP is not installed; prepare the Provider runtime first")
+        raise NativeAgentUnavailable("Antigravity ACP is not installed; prepare the Provider runtime first")
     value = json.loads(path.read_text())
     return [str(root / value["cmd"]), *value.get("args", []), "--logtostderr"]

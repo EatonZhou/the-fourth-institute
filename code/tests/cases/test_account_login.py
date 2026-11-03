@@ -240,6 +240,36 @@ def test_kimi_missing_runtime_keeps_registration_and_onboarding_readable(tmp_pat
     assert login.get_login_state(registration) == "logged_out"
 
 
+def test_antigravity_without_runtime_registers_and_remains_manageable(tmp_path, isolated_login, monkeypatch):
+    """A missing native program must not report a failed save after committing it."""
+    from management_portal import antigravity_runtime, permission_system
+    from management_portal.execution import account_registrations, isa, account_setup
+
+    monkeypatch.setattr(antigravity_runtime, "platform_key", lambda: "linux-x86_64")
+    monkeypatch.setattr(antigravity_runtime.AntigravityRuntime, "link", lambda _: tmp_path / "missing-runtime")
+    monkeypatch.setattr(permission_system, "allows", lambda *_: True)
+    arguments = {"account_id": "gemini", "provider": "antigravity", "kind": "subscription_login",
+                 "config": {"account_dir": str(tmp_path / "selected-account")}}
+    inv = SimpleNamespace(caller="alice", argument=arguments.get)
+    row = isa.register_provider_account(inv)["registration"]
+    assert row["account_id"] == "gemini" and row["login_state"] == "unavailable"
+    assert account_registrations.registration("gemini") is not None
+    monkeypatch.setattr(isa, "_accounts_snapshot", lambda _: {"accounts": []})
+    assert isa.list_provider_accounts(inv)["accounts"][0]["registration"]["account_id"] == "gemini"
+    setup = account_setup.get_setup(inv)["setup"]
+    assert setup["login_state"] == "unavailable" and setup["runtime_ready"] is False
+    assert isolated_login.login_state("gemini", default=None) is None
+    # Deleting the incomplete registration releases its directory, not credentials.
+    home = Path(row["home_path"])
+    (home / "existing-login").write_text("synthetic-login")
+    monkeypatch.setattr(isa, "account_busy_counts", lambda _: {"session_count": 0, "execution_count": 0})
+    assert isa.delete_provider_account(inv) == {"account_id": "gemini"}
+    assert account_registrations.registration("gemini") is None
+    assert (home / "existing-login").read_text() == "synthetic-login"
+    arguments["account_id"] = "gemini-zero"
+    assert isa.register_provider_account(inv)["registration"]["account_id"] == "gemini-zero"
+
+
 @pytest.mark.parametrize("transport", [None, "unix", "tcp"])
 @pytest.mark.parametrize("provider", ["claude", "antigravity"])
 def test_claude_code_submission_is_ephemeral_and_single_session(isolated_login, monkeypatch, capsys, transport, provider):

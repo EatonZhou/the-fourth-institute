@@ -138,6 +138,12 @@ def create_registration(data, actor):
             data.get("provider") == "kimi" and data.get("kind") == "service"):
         data["route_id"] = str(data.get("account_id") or "").removeprefix("codex_") if data.get("provider") == "codex" else data.get("account_id", "")
     _validate(data)
+    if data["provider"] == "antigravity":
+        from management_portal.antigravity_runtime import platform_key
+        try:
+            platform_key()
+        except RuntimeError:
+            raise invalid("当前平台暂不支持 Antigravity 订阅账号，未创建账号登记") from None
     created = None
     try:
         with database().transaction("registrations") as c:

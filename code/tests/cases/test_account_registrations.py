@@ -77,6 +77,32 @@ def test_registration_rejects_invalid_identity_and_sensitive_config(tmp_path):
     assert store.registrations() == []
 
 
+def test_rejected_registration_does_not_reserve_account_directory(tmp_path, monkeypatch):
+    """Invalid names and unsupported hosts fail before either record or directory creation."""
+    from management_portal import antigravity_runtime
+    from management_portal.execution import account_registrations as store, isa
+
+    monkeypatch.setattr(antigravity_runtime, "sys", SimpleNamespace(platform="darwin"))
+    directory = tmp_path / "selected-account"
+    arguments = {"account_id": "Gemini Zero", "provider": "antigravity", "kind": "subscription_login",
+                 "config": {"account_dir": str(directory)}}
+    inv = SimpleNamespace(caller="alice", argument=arguments.get)
+    with pytest.raises(InstructionError, match="account_id"):
+        isa.register_provider_account(inv)
+    assert store.registrations() == [] and not directory.exists()
+    arguments["account_id"] = "gemini-zero"
+    with pytest.raises(InstructionError, match="当前平台暂不支持"):
+        isa.register_provider_account(inv)
+    assert store.registrations() == [] and not directory.exists()
+    # An existing directory likewise remains untouched and unclaimed.
+    directory.mkdir()
+    marker = directory / "existing-login"
+    marker.write_text("synthetic-login")
+    with pytest.raises(InstructionError, match="当前平台暂不支持"):
+        store.create_registration(arguments, "alice")
+    assert store.registrations() == [] and marker.read_text() == "synthetic-login"
+
+
 def test_role_blocks_account_deletion(tmp_path, monkeypatch):
     """仍被 Backend 角色使用的账号不能删除。"""
     from management_portal.execution import account_registrations as store
