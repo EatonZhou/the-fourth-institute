@@ -43,8 +43,10 @@ DISK_STATUS_TIMEOUT_SECONDS = float(os.getenv("AGENT_STATUS_DISK_TIMEOUT_SECONDS
 DISK_STATUS_CACHE_SECONDS = int(os.getenv("AGENT_STATUS_DISK_CACHE_SECONDS", "300"))
 DISK_WARN_USED_PERCENT = float(os.getenv("AGENT_STATUS_DISK_WARN_USED_PERCENT", "85"))
 DISK_CRITICAL_USED_PERCENT = float(os.getenv("AGENT_STATUS_DISK_CRITICAL_USED_PERCENT", "92"))
-DISK_TRIAGE_LARGE_FILE_BYTES = int(os.getenv("AGENT_STATUS_DISK_TRIAGE_LARGE_FILE_BYTES", str(5 * 1024 * 1024 * 1024)))
-DISK_TRIAGE_MAX_LARGE_FILES = int(os.getenv("AGENT_STATUS_DISK_TRIAGE_MAX_LARGE_FILES", "10"))
+DISK_TRIAGE_LARGE_DIR_BYTES = int(os.getenv("AGENT_STATUS_DISK_TRIAGE_LARGE_DIR_BYTES", str(10 * 1024 * 1024 * 1024)))
+DISK_TRIAGE_MAX_LARGE_DIRS = int(os.getenv("AGENT_STATUS_DISK_TRIAGE_MAX_LARGE_DIRS", "10"))
+DISK_TRIAGE_LARGE_FILE_BYTES = DISK_TRIAGE_LARGE_DIR_BYTES
+DISK_TRIAGE_MAX_LARGE_FILES = DISK_TRIAGE_MAX_LARGE_DIRS
 AGENT_STATUS_SUMMARY_WAIT_SECONDS = 1.0
 RESIDENT_USAGE_REFRESH_SECONDS = int(os.getenv("AGENT_STATUS_RESIDENT_USAGE_REFRESH_SECONDS", "600"))
 PORTAL_DEPLOYMENT = re.sub(
@@ -848,30 +850,65 @@ def _disk_triage_docker(resource: dict[str, Any]) -> tuple[dict[str, Any] | None
 
 
 def _disk_triage_large_files(resource: dict[str, Any], roots: list[str]) -> tuple[dict[str, Any] | None, str]:
-    threshold_mb = max(1, DISK_TRIAGE_LARGE_FILE_BYTES // (1024 * 1024))
-    limit = max(1, min(50, DISK_TRIAGE_MAX_LARGE_FILES))
+    threshold_bytes = max(1, DISK_TRIAGE_LARGE_DIR_BYTES)
+    limit = max(1, min(50, DISK_TRIAGE_MAX_LARGE_DIRS))
     script = r"""
 threshold="$1"
 limit="$2"
 shift 2
-for root in "$@"; do
-  if [ -d "$root" ]; then
-    find "$root" -xdev -type f -size +"${threshold}"M -printf '%s\t%TY-%Tm-%Td\t%p\n' 2>/dev/null
+
+run_diskus() {
+  target="$1"
+  if [ -d "$target" ] && [ ! -L "$target" ]; then
+    if command -v diskus >/dev/null 2>&1; then
+      val=$(diskus "$target" 2>/dev/null | grep -E '^[0-9]+$' | head -n 1)
+      if [ -n "$val" ] && [ "$val" -ge "$threshold" ] 2>/dev/null; then
+        echo "$val\t$target"
+      fi
+    elif [ -x "$HOME/.local/bin/diskus" ]; then
+      val=$("$HOME/.local/bin/diskus" "$target" 2>/dev/null | grep -E '^[0-9]+$' | head -n 1)
+      if [ -n "$val" ] && [ "$val" -ge "$threshold" ] 2>/dev/null; then
+        echo "$val\t$target"
+      fi
+    elif command -v du >/dev/null 2>&1; then
+      val=$(du -s -B1 "$target" 2>/dev/null | awk '{print $1}')
+      if [ -n "$val" ] && [ "$val" -ge "$threshold" ] 2>/dev/null; then
+        echo "$val\t$target"
+      fi
+    fi
+  fi
+}
+
+for base in "$@"; do
+  if [ -d "$base" ]; then
+    for sub in "$base"/*; do
+      if [ "$sub" = "/share/Projects" ] || [ "$sub" = "$HOME/DirtyBaseFiles" ]; then
+        for proj in "$sub"/*; do
+          run_diskus "$proj"
+        done
+      elif [ "$sub" = "/var/tmp" ]; then
+        for vsub in "$sub"/*; do
+          run_diskus "$vsub"
+        done
+      else
+        run_diskus "$sub"
+      fi
+    done
   fi
 done | sort -nr | head -n "$limit"
 """
-    stdout, error = _disk_triage_run(resource, script, [str(threshold_mb), str(limit), *roots])
+    stdout, error = _disk_triage_run(resource, script, [str(threshold_bytes), str(limit), *roots])
     items = []
     for line in stdout.splitlines():
-        parts = line.split("\t", 2)
-        if len(parts) != 3:
+        parts = line.split("\t", 1)
+        if len(parts) != 2:
             continue
         size = _nonnegative_int(parts[0])
         if size <= 0:
             continue
         items.append({
-            "label": parts[2],
-            "detail": f"{_human_bytes(size)} · modified {parts[1]}",
+            "label": parts[1].strip(),
+            "detail": f"{_human_bytes(size)}",
             "size_bytes": size,
         })
     if not items:
@@ -880,24 +917,17 @@ done | sort -nr | head -n "$limit"
     return {
         "kind": "large_files",
         "severity": "info",
-        "title": f"Large files over {_human_bytes(DISK_TRIAGE_LARGE_FILE_BYTES)}",
-        "detail": f"{len(items)} candidate file(s). Largest: {largest.get('detail')}",
+        "title": f"大文件夹（超 {_human_bytes(DISK_TRIAGE_LARGE_DIR_BYTES)}，可迁移至 HDD）",
+        "detail": f"{len(items)} 个大目录候选。最大：{largest.get('label')}（{largest.get('detail')}）",
         "items": items,
     }, error
 
 
 def _disk_triage_roots(resource: dict[str, Any], filesystems: list[dict[str, Any]]) -> list[str]:
-    roots: list[str] = []
-    for path in resource.get("paths") or []:
-        text = str(path or "").strip()
-        if text and text not in roots:
-            roots.append(text)
-    for item in filesystems:
-        for mount in item.get("mounts") or []:
-            text = str(mount or "").strip()
-            if text and text not in roots:
-                roots.append(text)
-    return roots[:8]
+    kind = str(resource.get("kind") or "local")
+    if kind == "ssh":
+        return ["/home", "/home/RoboLab", "/home/RoboLab/DirtyBaseFiles", "/var/tmp", "/tmp", "/srv"]
+    return ["/share", str(Path.home()), "/var"]
 
 
 def _disk_triage_recommendations(filesystems: list[dict[str, Any]], targets: list[dict[str, Any]], findings: list[dict[str, Any]]) -> list[str]:
@@ -910,10 +940,7 @@ def _disk_triage_recommendations(filesystems: list[dict[str, Any]], targets: lis
     if "docker_usage" in kinds:
         recommendations.append("Docker 占用需要先确认镜像和 volume 是否仍被实验使用，再执行 prune 类清理。")
     if "large_files" in kinds:
-        if targets:
-            recommendations.append("大文件候选优先检查 checkpoint、数据副本、日志归档和缓存；确认不用后迁移到外接盘或归档盘。")
-        else:
-            recommendations.append("大文件候选优先检查 checkpoint、数据副本、日志归档和缓存；未检测到外接盘时先不要批量迁移。")
+        recommendations.append("发现超大文件夹候选，建议评估是否为历史实验、数据副本、归档或暂存镜像，可优先迁移至大容量 HDD 存储。")
     if not recommendations and any(str(item.get("status") or "") in {"warn", "critical"} for item in filesystems):
         recommendations.append("未发现明确快速清理项；下一步再手动触发目录级扫描，或先检查最近实验输出目录。")
     return recommendations
@@ -1025,6 +1052,7 @@ def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, i
                 if name == "large_files" and resource.get("kind") == "ssh":
                     payload["stages"][name] = {"status": "skipped", "reason": "Remote scan disabled"}
                     continue
+
                 if payload["stages"][name]["status"] == "skipped":
                     continue
                 stage(name, finder, lambda finding: triage["findings"].append(finding) if finding else None)

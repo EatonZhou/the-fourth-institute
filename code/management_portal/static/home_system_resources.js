@@ -237,7 +237,7 @@
       const findings = Array.isArray(triage.findings) ? triage.findings : [];
       const recommendations = Array.isArray(triage.recommendations) ? triage.recommendations : [];
       const errors = Array.isArray(triage.errors) ? triage.errors : [];
-      const checks = [["deleted_open_files", "已删除仍占用"], ["journal_usage", "系统日志"], ["docker_usage", "容器存储"], ["large_files", "大文件扫描"]];
+      const checks = [["deleted_open_files", "已删除仍占用"], ["journal_usage", "系统日志"], ["docker_usage", "容器存储"], ["large_files", "大文件夹排查"]];
       const states = checks.map(([name]) => resource?.stages?.[name]?.status).filter(Boolean);
       const emptyText = states.some(state => ["pending", "running"].includes(state))
         ? window.PortalI18n.t("诊断采集中，结果将逐段补充。")
