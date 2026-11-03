@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from . import resident_lineage, resident_record_domain, watchboard_lineage
 from management_common.actor_identity import canonical_actor_id
-from management_common.portal_paths import path as portal_path
 from pathlib import Path
 from typing import Any
 import hashlib
@@ -107,12 +106,18 @@ def watchboard_readme_text(record: dict[str, Any]) -> str:
         f"# {resident_id} Watchboard",
         "",
         "本目录保存该 Resident 的 Watchboard 展示定义、配置、状态和可运行脚本。",
-        f"修改前读取 `{portal_path('skills') / 'create-resident-watchboard/SKILL.md'}`。",
+        "设计说明：`decision_0571f3741e23`（Resident Watchboard 的脚本、配置、命令与工作台应用）。",
         "",
         "- `watchboard.yaml` 定义通用展示信息。",
         "- `agent.yaml` 声明配置、状态、命令和运行方式。",
         "- `src/` 保存脚本代码。",
         "- `state/` 保存脚本侧轻量状态。",
+        "",
+        "在面板的 Full config 中修改已有配置；入口脚本由 agent.yaml 的 entrypoint 指定。",
+        "commands 只声明允许执行的命令，可用 map_to 映射脚本命令，用 args 声明命令参数。",
+        "更改命令声明后，移除再安装面板以更新命令组件；移除保留脚本、配置和状态文件。",
+        "脚本每次执行有界的一轮工作。运行状态、输出和取消由同一次 RunScript 管理。",
+        "Fork 复制独立文件，副本需显式安装自己的面板。",
         "",
     ])
 
