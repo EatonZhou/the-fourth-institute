@@ -814,6 +814,40 @@ def project_messages(
             result[-1] = _withdrawn_request(message)
             continue
         result.extend(_facade_reply(facade_id, reply, relay, message_id) for reply in reply_messages)
+    return _order_member_messages(result, repository)
+
+
+def _order_member_messages(messages: list[Any], repository: Any) -> list[Any]:
+    """Keep each member's actual input/output order across relayed requests.
+
+    An injected input does not start a new execution: subsequent replies still
+    name the original request. Grouping the whole round after that request
+    would place those replies before the injection. Keep their associations,
+    but interleave by the member's durable conversation positions. Other
+    members, routing/queued inputs and messages without a position keep their
+    slots. Include positions so merging older pages uses the same order.
+    """
+    selected = []
+    for index, message in enumerate(messages):
+        if not isinstance(message, dict) or message.get("withdrawn"):
+            continue
+        source = message.get("family_reply") or message.get("relay") or {}
+        resident_id = str(source.get("resident_id") or "")
+        message_id = str(source.get("grouped_into_message_id") or source.get("message_id") or "")
+        if resident_id and message_id:
+            selected.append((index, resident_id, message_id))
+    positions = repository.message_positions([(resident, identity) for _, resident, identity in selected]) if selected else {}
+    members: dict[str, list[int]] = {}
+    for index, resident, identity in selected:
+        position = positions.get((resident, identity))
+        if position is not None:
+            messages[index] = {**messages[index], "family_position": {"resident_id": resident, "ordinal": position}}
+            members.setdefault(resident, []).append(index)
+    result = list(messages)
+    for indices in members.values():
+        ordered = sorted((messages[index] for index in indices), key=lambda item: item["family_position"]["ordinal"])
+        for index, message in zip(indices, ordered):
+            result[index] = message
     return result
 
 

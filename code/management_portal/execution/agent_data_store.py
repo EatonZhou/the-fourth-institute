@@ -603,6 +603,9 @@ class AgentDataStore:
     def chat_message_ordinal(self, agent_id: str, message_id: str) -> int | None:
         return self.chat.chat_message_ordinal(agent_id, message_id)
 
+    def trace_message_ordinals(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], int]:
+        return self.chat.trace_message_ordinals(requests)
+
     def chat_message(
         self,
         agent_id: str,

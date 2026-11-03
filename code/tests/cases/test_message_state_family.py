@@ -28,6 +28,14 @@ def test_interleaved_append_preserves_independent_groups():
     _run("interleaved-append")
 
 
+def test_injected_request_precedes_later_output_after_history_merge():
+    """门面即时注入按实际位置显示，跨页加载及刷新后仍在后续回复之前。
+
+    :design: decision_9ad68dd077d4
+    """
+    _run("injection-order")
+
+
 def test_live_family_member_roster_updates_with_header():
     """Family 成员增删时，空对话名册与人数由同一实时快照更新，无需刷新"""
     _run("live-roster")

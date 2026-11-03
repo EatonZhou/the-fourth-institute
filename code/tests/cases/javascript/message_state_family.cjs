@@ -124,6 +124,41 @@ function mount(routeScript, messages, { older = [], family = true, transform = (
 }
 
 const checks = {
+  async 'injection-order'(routeScript) {
+    const placed = (item, ordinal) => ({ ...item, family_position: { resident_id: MEMBER, ordinal } });
+    const original = placed(request(REQUEST_A), 1);
+    const before = placed(reply('before-inject', REQUEST_A), 2);
+    const injected = placed(request(REQUEST_B, { state: 'completed' }), 3);
+    const after = placed(reply('after-inject', REQUEST_A), 4);
+    // A history page containing the original round can arrive after the page
+    // containing the injected request. Timestamps are deliberately identical.
+    const app = mount(routeScript, [injected], { older: [original, before, after] });
+    try {
+      await app.workspace.revealMessage('before-inject');
+      const projected = () => app.window.PortalChatWorkspace.projectResidentConversation({}, app.snapshot).messages;
+      const check = () => {
+        const items = projected();
+        assert.deepEqual(Array.from(items, item => item.id), [REQUEST_A, 'before-inject', REQUEST_B, 'after-inject']);
+        assert.equal(items[3].family_status.request_message_id, REQUEST_A);
+        assert.equal(items[1].live_output, true);
+        assert.equal(items[3].live_output, true);
+        assert.ok(!items[2].live_output && !items[2].family_status);
+        const nodes = [app.output(REQUEST_A), app.output('before-inject'), app.output(REQUEST_B), app.output('after-inject')];
+        for (let i = 1; i < nodes.length; i++) {
+          assert.ok(nodes[i - 1].compareDocumentPosition(nodes[i]) & app.window.Node.DOCUMENT_POSITION_FOLLOWING);
+        }
+        assert.ok(app.output('after-inject').compareDocumentPosition(app.progress(REQUEST_A)) & app.window.Node.DOCUMENT_POSITION_FOLLOWING);
+        assert.ok(app.output('after-inject').querySelector('.messageHead'), 'reply after an injection shows its sender again');
+      };
+      check();
+      app.render();
+      check();
+      app.snapshot.messages[0].relay.state = 'completed';
+      app.render();
+      assert.equal(app.root.querySelectorAll('.familyRequestStatus').length, 0);
+      assert.deepEqual(Array.from(projected(), item => item.id), [REQUEST_A, 'before-inject', REQUEST_B, 'after-inject']);
+    } finally { await app.close(); }
+  },
   async 'live-roster'(routeScript) {
     const app = mount(routeScript, []);
     try {

@@ -340,7 +340,10 @@
         const isWorkHead = !!work && work.headKey === key;
         const system = messageSystemPresentation(item);
         const previousRole = idx > 0 ? messageRole(items[idx - 1]) : "";
-        const continued = work ? !isWorkHead : role === "agent" && previousRole === "agent" && sameAgentRun(items[idx - 1], item);
+        // An injected user message interrupts the visual run, even while the
+        // following output still belongs to the original Family work group.
+        const continued = work ? !isWorkHead && previousRole !== "human"
+          : role === "agent" && previousRole === "agent" && sameAgentRun(items[idx - 1], item);
         const group = work ? null : agentGroups.get(idx) || null;
         const isGroupEnd = !!group && group.end === idx;
         const hiddenByGroup = (!!work?.collapsed && !isWorkHead) || (!!group?.collapsed && !isGroupEnd);

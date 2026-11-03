@@ -132,15 +132,21 @@
     function withFamilyRequestStatus(messages) {
       const status = new Map();
       const live = new Set();
+      const outputs = new Map();
+      messages.forEach((item, index) => {
+        const request = item?.family_reply?.request_message_id;
+        if (!request) return;
+        if (!outputs.has(request)) outputs.set(request, []);
+        outputs.get(request).push(index);
+      });
       messages.forEach((item, index) => {
         const relay = item?.relay && typeof item.relay === "object" ? item.relay : null;
         if (item?.role !== "user" || !relay || !FAMILY_VISIBLE_REQUEST_STATES.has(String(relay.state || ""))) return;
-        let end = index;
-        while (end + 1 < messages.length
-          && String(messages[end + 1]?.family_reply?.request_message_id || "") === item.id) end += 1;
+        const replies = outputs.get(item.id) || [];
+        const end = replies.length ? replies[replies.length - 1] : index;
         status.set(end, { ...relay, request_message_id: item.id });
         // Outputs of a request its member is running stay open, like a running turn's.
-        if (relay.state === "running") for (let output = index + 1; output <= end; output += 1) live.add(output);
+        if (relay.state === "running") replies.forEach(output => live.add(output));
       });
       if (!status.size) return messages;
       return messages.map((item, index) => (status.has(index) || live.has(index) ? {
@@ -148,6 +154,24 @@
         ...(live.has(index) ? { live_output: true } : {}),
         ...(status.has(index) ? { family_status: status.get(index) } : {}),
       } : item));
+    }
+
+    function orderFamilyMessages(messages) {
+      // Snapshots are already ordered. Merging older pages must also preserve
+      // the member's input/output order when an injection splits a live round.
+      const members = new Map();
+      messages.forEach((item, index) => {
+        const position = item?.family_position;
+        if (!position?.resident_id || !Number.isSafeInteger(position.ordinal)) return;
+        if (!members.has(position.resident_id)) members.set(position.resident_id, []);
+        members.get(position.resident_id).push(index);
+      });
+      const result = messages.slice();
+      members.forEach(indices => {
+        const ordered = indices.map(index => messages[index]).sort((a, b) => a.family_position.ordinal - b.family_position.ordinal);
+        indices.forEach((index, order) => { result[index] = ordered[order]; });
+      });
+      return result;
     }
 
     function projectResidentConversation(metadata = {}, snapshot = {}) {
@@ -176,7 +200,7 @@
       for (const message of snapshot.local_submissions || []) {
         if (!known.has(message.message_id) && visible(message)) projected.push(residentProtocolMessageToWorkspace(message));
       }
-      const messages = facade ? withFamilyRequestStatus(projected) : projected;
+      const messages = facade ? withFamilyRequestStatus(orderFamilyMessages(projected)) : projected;
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];
       const state = window.PortalResidentProtocol.stateView(snapshot.state);
       const controls = snapshot.controls || {};

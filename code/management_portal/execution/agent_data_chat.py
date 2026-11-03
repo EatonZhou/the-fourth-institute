@@ -514,6 +514,31 @@ class ChatReads:
             row = _shown_member(connection, self._chat_trace(agent_id), message_id)
         return int(row["ordinal"]) if row is not None else None
 
+    def trace_message_ordinals(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], int]:
+        """Positions of selected messages, including retained history before a reset.
+
+        Only named messages are read. Positions from different Agents are not
+        comparable; a relayed conversation uses them within each member only.
+        """
+        wanted = list(dict.fromkeys(requests))
+        if not wanted:
+            return {}
+        result = {}
+        with self.database.read() as connection:
+            traces = self.chat_traces(list(dict.fromkeys(agent for agent, _ in wanted)))
+            pairs = [(agent, message, traces[agent]) for agent, message in wanted if agent in traces]
+            for chunk in in_batches(pairs):
+                rows = connection.execute(
+                    "SELECT requested.agent_id,requested.message_id,MAX(position.ordinal) AS ordinal "
+                    "FROM unnest(%s::text[],%s::text[],%s::text[]) requested(agent_id,message_id,sequence_id) "
+                    "JOIN chat_message_positions position ON position.sequence_id=requested.sequence_id "
+                    "AND position.message_id=requested.message_id AND position.source_kind<>'sync' "
+                    f"WHERE {SHOWN_POSITION} GROUP BY requested.agent_id,requested.message_id",
+                    tuple(list(column) for column in zip(*chunk)),
+                ).fetchall()
+                result.update({(str(row["agent_id"]), str(row["message_id"])): int(row["ordinal"]) for row in rows})
+        return result
+
     def chat_message(
         self,
         agent_id: str,

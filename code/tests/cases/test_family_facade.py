@@ -73,6 +73,55 @@ def test_facade_message_waits_without_starting_a_turn(facade):
     assert [item["message_id"] for item in repository.read_messages(resident_id)] == ["msg_00000000000000f1"]
 
 
+@pytest.mark.parametrize("state", ["running", "completed"])
+def test_facade_injected_request_keeps_member_conversation_position(facade, monkeypatch, state):
+    """门面注入消息按成员实际接收位置穿插，回复仍关联原请求；刷新与分页保留位置。
+
+    :design: decision_9ad68dd077d4
+    """
+    _register_test_member(facade, "处理成员")
+    repository = resident_conversation_stream.get_repository()
+    head, injected, injected_again, queued = [f"msg_{i:016x}" for i in range(1, 5)]
+    before, after, final = [f"msg_{i:016x}" for i in range(11, 14)]
+    outside = "msg_0000000000000020"
+    original = {identity: f"msg_{i:016x}" for i, identity in enumerate([head, injected, injected_again, queued], 101)}
+    links = {original[identity]: {"resident_id": MEMBER, "message_id": identity} for identity in original}
+    monkeypatch.setattr(family_facade, "relay_links", lambda _: links)
+
+    def message(identity, role="user"):
+        return {"message_id": identity, "role": role, "author_id": "CASE-A" if role == "user" else MEMBER,
+                # Equal timestamps deliberately cannot establish this ordering.
+                "created_at": "2026-11-03T02:09:00Z", "content_parts": [{"type": "text", "text": identity}],
+                **({"reply_to_message_id": head} if role == "agent" else {})}
+
+    for identity, role in [(head, "user"), (before, "agent"), (injected, "user"),
+                           (after, "agent"), (injected_again, "user"), (final, "agent")]:
+        repository.append_message(MEMBER, message(identity, role))
+    repository.set_input_state(MEMBER, head, state)
+    for identity in [injected, injected_again]:
+        repository.set_input_state(MEMBER, identity, "completed")
+    repository.set_input_state(MEMBER, queued, "queued")
+    requests = [message(original[head]), message(outside, "agent"),
+                *[message(original[identity]) for identity in [injected, injected_again, queued]]]
+    expected = [original[head], before, injected, after, injected_again, final]
+    expected = [original.get(identity, identity) for identity in expected]
+    # The unrelated facade message keeps its slot; the waiting input has no
+    # member trace position and must never jump ahead of delivered output.
+    for _ in range(2):
+        shown = family_facade.project_messages(facade, requests)
+        assert [item["message_id"] for item in shown if item["message_id"] not in {outside, original[queued]}] == expected
+        assert shown[4]["message_id"] == outside
+        assert shown[-1]["message_id"] == original[queued]
+        assert "family_position" not in shown[-1]
+        assert all(item["family_reply"]["request_message_id"] == original[head]
+                   for item in shown if item.get("family_reply"))
+    older = family_facade.project_messages(facade, requests[:1])
+    newer = family_facade.project_messages(facade, requests[2:])
+    positions = {item["message_id"]: item["family_position"]["ordinal"]
+                 for item in older + newer if item.get("family_position")}
+    assert sorted(expected, key=positions.__getitem__) == expected
+
+
 def test_facade_rejects_injection_and_infos_carrying_more_than_text(facade):
     """门面拒收插入当前一轮的消息和带附件的 info
 
@@ -833,6 +882,9 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
     titles = {outer: "外层", inner: "内层 Family", MEMBER: "前端"}
 
     class Repository:
+        def message_positions(self, requests):
+            return {}
+
         def tool_status_messages(self, messages, *, resident_id):
             return messages
 
@@ -915,7 +967,8 @@ def test_facade_batches_only_the_page_and_reuses_nested_member_lookups(monkeypat
     monkeypatch.setattr(resident_record_domain, "find_resident", record)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", relays)
-    monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: SimpleNamespace(reply_rounds=replies))
+    monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: SimpleNamespace(
+        reply_rounds=replies, message_positions=lambda requests: {}))
     monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
     messages = [{"message_id": f"outer_{i}", "role": "user"} for i in range(90, 100)]
     shown = family_facade.project_messages({"resident_id": outer}, messages)
@@ -1007,6 +1060,9 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     reads = []
 
     class Repository:
+        def message_positions(self, requests):
+            return {}
+
         def tool_status_messages(self, messages, *, resident_id):
             return messages
 

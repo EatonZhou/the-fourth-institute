@@ -271,6 +271,10 @@ class ResidentConversationRepository:
 
     # History
 
+    def message_positions(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], int]:
+        """Order selected messages within each Resident's retained conversation."""
+        return self.agent_data.trace_message_ordinals(requests)
+
     def read_messages(self, resident_id: object, *, limit: int = 0) -> list[dict[str, Any]]:
         return self.history.read_messages(resident_id, limit=limit)
 
