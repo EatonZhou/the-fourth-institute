@@ -65,8 +65,6 @@ class TauTeamCleanup:
             if exc.code == "instruction.not_found":
                 return None
             raise
-        except (KeyError, FileNotFoundError):
-            return None
 
     def _resident(self, lineage_id: str, resident_id: str) -> dict[str, Any] | None:
         try:
@@ -75,8 +73,6 @@ class TauTeamCleanup:
             if exc.code == "instruction.not_found":
                 return None
             raise
-        except (KeyError, FileNotFoundError):
-            return None
 
     def _cleanup_members(self, state: dict[str, Any], path: Path, marker: str,
                          lineages: set[str], protected: set[str],

@@ -48,6 +48,10 @@ def test_standalone_cleanup_waits_for_business_owner(locations, monkeypatch):
     (path / '.git').mkdir()
     (path / 'sample.txt').write_text('sample')
     resource = 'repo_123456789abc'
+    from management_common.resource_lifecycle import LifecycleStore, lifecycle_scope, record_allocation
+    scope = LifecycleStore().open(str(evidence.resolve()), actor='test-actor', run_id='standalone', case_id='cleanup')
+    with lifecycle_scope(scope, actor='test-actor'):
+        record_allocation(resource)
     (evidence / 'test-fixtures.json').write_text(json.dumps({'resources': [resource]}))
     from management_portal import portal_features
     monkeypatch.setattr(portal_features, 'contributions', lambda name: [])

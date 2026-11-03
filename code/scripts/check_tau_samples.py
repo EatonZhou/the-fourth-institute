@@ -13,6 +13,7 @@ from xml.etree import ElementTree
 SAMPLES = (
     "test_tau_usage_report.py",
     "test_tau_fixture_native_ownership.py",
+    "test_tau_fixture_prerequisites.py",
     "test_tau_review_evidence.py",
     "test_tau_route_limit_evidence.py",
     "test_tau_editor_evidence.py",
@@ -54,6 +55,8 @@ def main():
     def sources():
         paths = [framework / "config/tau_runner_prompt.md", framework / "tau_fixtures.py",
                  framework / "tau_fixture_paths.py",
+                 framework / "tau_fixture_access.py", framework / "tau_execution_prerequisites.py",
+                 framework / "tau_workspace_fixture.py",
                  *sorted(framework.glob("tau*.js"))]
         return {str(p.relative_to(code)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
     before = sources()

@@ -15,7 +15,15 @@
 
 使用共享浏览器启动器 tau_browser.js 和 tau_evidence.js 中所需函数。frameworkRoot 是本轮代码根下 management_portal/test_framework 的绝对路径。助手的 ready 表示当前控件可操作或观察条件已出现，不是整例判定。可省略可选材料采集；辅助定位错误应修工具，不升级为产品缺陷。账号、资源归属和清理边界仍遵守运行配置，只处理本轮创建的临时对象。
 
+执行前提由 `tau_execution_prerequisites.prepare_execution_prerequisite` 统一读取。传入本次身份的正式 ISA 调用函数和目标 resident_id；Fork、重建或迁移后重新读取 GetResident、GetResidentInitialization、ListResidentStates，不以 OpenIntake、绑定已打开或回调返回 true 代替初始化/Session 执行许可。未完成 Fork 用 RetryResidentInitialization 和原 expected_initialization_id 恢复；普通 Session 重建用当前 RestartSession 的精确目标与 preserve 策略。需要 credits 时，只能由真实人类在支持入口确认精确账号和初始化/Session；服务主体、测试用户 profile、自动点击与自报 confirmed:true 都不构成人类许可。可传 interact 回调打开真实交互入口，之后助手正式回读；缺前提报告流程受阻，不擅换账号或重复创建。
+
+定时 time.reached 及其他独立新上下文使用同一助手的 `new_context=True`：从 ListProviderAccounts 读取原账号的自动执行额度状态，当前 Session 的付费例外不能继承。waiting_quota 表示执行前提不足，保留已建立的自动触发和原输入，记录尚未覆盖自动回复；不得为了报告完整关闭保护或扩大 Family 许可。
+
+本轮内容文件放运行上下文的 fixture_dir；独立 Git 例放声明提供的 standalone_fixture_dir，不用执行者 Workspace、runtime 区或既有 Git checkout 代替。额外 Workspace 的绑定不授予编辑/注销权。需要这些动作时使用 `tau_fixture_access.prepare_workspace_access(evidence_dir, workspace_id, check=测试用户的正式ISA, issue=实际有权控制者的正式ISA)`，只借给配置的测试用户单一 Workspace 的 UpdateWorkspaceFile/UnregisterResource，保存原幂等请求与许可回执；没有合法控制者则返回明确前提。不要冒充控制者或扩展 Resident 管理权限。清理先停工作、经资源 owner 释放本轮分配对象，再撤销已记录许可并删自有目录；不凭不存在 ID、权限拒绝或路径相近宣称回收。
+
 以下是经过原生页面小样例验证的操作示例，按用例需要选用。变量来自当前页面与正式响应；不要求每个用例使用全部示例或采集全部内部字段。
+
+WALL 等后台工作使用本轮新目录时，在启动工作前通过 `tau_workspace_fixture.prepare_workspace(evidence_dir, 工程目录, 本例ResidentID, instruction=本例Resident的正式ISA)` 登记目录。其 BindWorkspace 原请求保存在 fixture-workspaces.json，并由当前资源生命周期记录新分配的 Workspace；后台只复用该目录。随后按上述精确许可助手检查清理权限。不要等后台创建未归属对象后让清理器按路径猜归属。注销 WALL 前先停本轮自动化和工作；既有 WALL 团队不能被替换或注销。
 
 实际控件说明：
 - 普通 Society 布局可能隐藏 HATG。需要画布时使用 Show HATG 或当前导航入口；面板取完整 HATG region 或 section#hatgPane。等待用户要看的内容出现，别从按钮名称猜弹层 role。

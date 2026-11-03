@@ -204,6 +204,7 @@ def resident_status(assignment: dict[str, Any]) -> dict[str, Any]:
     except KeyError:
         return {**result, "status": "stale", "ready": False}
     source = options["source"]
+    initialization = options.get("initialization") or {}
     restart = options.get("restart") or {}
     pending = restart.get("status") not in {None, "", "completed", "failed", "cancelled"}
     intake_closed = str(conversation.get("intake_state") or "") == "closed"
@@ -214,6 +215,8 @@ def resident_status(assignment: dict[str, Any]) -> dict[str, Any]:
         and str(runtime.get("service_tier") or "") == result["service_tier"]
         and not tools_stale
     )
+    gate = conversation.get('execution_gate') or {}
+    execution_open = gate.get('state') == 'open' and gate.get('account_id') == source.get('account_id')
     return {
         **result,
         "actual_account": source.get("account_id", ""),
@@ -221,8 +224,10 @@ def resident_status(assignment: dict[str, Any]) -> dict[str, Any]:
         "intake_state": str(conversation.get("intake_state") or ""),
         "session_tools_stale": tools_stale,
         "restart": restart if pending or not matches else {},
-        "status": "migrating" if pending else "closed" if intake_closed else "ready" if matches else "not_ready",
-        "ready": bool(matches and not pending and not intake_closed),
+        "initialization": initialization,
+        "execution_gate": gate,
+        "status": "initializing" if initialization else "migrating" if pending else "closed" if intake_closed else "execution_blocked" if matches and not execution_open else "ready" if matches else "not_ready",
+        "ready": bool(matches and execution_open and not pending and not intake_closed and not initialization),
     }
 
 
@@ -244,6 +249,10 @@ def apply_configuration(assignment: dict[str, Any]) -> dict[str, Any]:
         return resident_status(assignment)
     resident = get_society_service().resident
     options = resident.get_resident_restart_options(resident_id, TAU_ACTOR)
+    if options.get("initialization"):
+        # Fork preparation owns its current attempt. A configuration refresh
+        # must not replace it or manufacture human credits consent.
+        return resident_status(assignment)
     source = options["source"]
     if source.get("provider") != "codex":
         raise ValueError("TAU 账号设置仅支持已有 Codex Resident")
@@ -274,7 +283,7 @@ def apply_configuration(assignment: dict[str, Any]) -> dict[str, Any]:
             "account_id": assignment["backend_route_id"],
             # A native fork keeps the old thread's tools, so a session without
             # a required tool is replaced by a compact handoff.
-            "context_strategy": "compact" if tools_stale else "smart",
+            "context_strategy": "compact" if tools_stale else "preserve",
             "active_execution_policy": "wait",
         }, key=idempotency_key, version={resident_id: source["generation"]})
     return resident_status(assignment)
@@ -329,10 +338,11 @@ def prepare_configuration(
     reserved = reserved_account_quota(assignment["backend_route_id"], resident_id=str(assignment.get("resident_id") or ""))
     if reserved is not None:
         # Restarting or replacing an executor cannot grant a paid-work exception.
-        raise RuntimeError(
+        raise CaseNotSent(
             f"TAU 执行账号 {assignment['backend_route_id']} 的额度已到保留线"
             f"（剩余 {_percent(reserved.get('remaining_percent'))}），新工作已暂停；"
-            "未发送用例，也未替换模块 Resident。额度恢复或改用其他账号后重跑。"
+            "未发送用例，也未替换模块 Resident。前提为原账号额度恢复，或真实人类"
+            "通过支持入口确认精确 Session 的 credits；服务主体不能代为确认。"
         )
     last_phase = ""
     while True:
@@ -342,6 +352,18 @@ def prepare_configuration(
             assignment = refresh_assignment()
         try:
             status = resident_status(assignment)
+            if status['status'] == 'execution_blocked':
+                raise CaseNotSent('TAU 当前 Session 执行前提未满足，未发送用例；保留账号与 Session，'
+                                  '正式回读执行门禁，所需 credits 仅由真实人类通过支持入口确认：'
+                                  + str(status['execution_gate'].get('reason') or 'execution_gate_unavailable'))
+            if status["status"] == "initializing":
+                initialization = status["initialization"]
+                raise CaseNotSent(
+                    "TAU 执行者初始化尚未完成，保留原对象与输入；通过 GetResidentInitialization "
+                    "回读并按 RetryResidentInitialization 恢复原尝试。需要 credits 时仅真实人类"
+                    "可确认精确账号和初始化 ID，OpenIntake 不代替确认："
+                    f"{initialization.get('initialization_id', '')} / {initialization.get('status', '')}"
+                )
             if status["status"] == "stale" and replace_unusable_assignment is not None:
                 assignment = replace_unusable_assignment(assignment)
                 emit("TAU Resident 已被删除；已保留账号配置并创建新的模块身份。\n")

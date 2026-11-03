@@ -15,6 +15,7 @@ from management_portal.test_framework.records import RunRecords
 from management_portal.test_framework.runner_adapters import AdapterResult
 from management_portal.test_framework.tau_campaign import TauCampaignExecutor
 from management_portal.test_framework.tau_cleanup import TauTeamCleanup, team_marker
+from management_portal.hatg.contracts import InstructionError
 
 
 RUN = "testrun_0123456789abcdef"
@@ -50,6 +51,8 @@ def test_team_cleanup_deletes_running_owned_teams_and_preserves_persistent_teams
     def instruction(name, arguments, *, key="", version=None):
         lid = arguments["lineage_id"]
         if name == "GetLineage":
+            if lid not in graphs:
+                raise InstructionError('instruction.not_found', 'Lineage deleted')
             return {"lineage": copy.deepcopy(graphs[lid])}
         calls.append(lid)
         del graphs[lid]
@@ -85,6 +88,8 @@ def test_team_cleanup_recovers_exact_request_and_verifies_deletion(tmp_path, sub
             def instruction(name, arguments, *, key="", version=None):
                 lid = arguments["lineage_id"]
                 if name == "GetLineage":
+                    if lid not in graphs:
+                        raise InstructionError('instruction.not_found', 'Lineage deleted')
                     return {"lineage": copy.deepcopy(graphs[lid])}
                 calls.append({"arguments": dict(arguments), "key": key})
                 if len(calls) == 1:
@@ -204,7 +209,7 @@ def test_module_member_cleanup_preserves_team_executor_and_recovers_receipts(tmp
                     # The HATG DTO intentionally does not expose creation
                     # provenance.
                     if rid not in members:
-                        raise KeyError(rid)
+                        raise InstructionError('instruction.not_found', 'Resident deleted')
                     return {"resident": {k: members[rid][k] for k in ("resident_id", "lineage_id", "title")}}
                 assert name == "DeleteResident" and rid == "sample"
                 calls.append({"arguments": dict(arguments), "key": key})

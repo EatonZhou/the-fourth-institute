@@ -109,6 +109,11 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const hatg = page.getByRole('region', {name:'HATG', exact:true});
   await hatg.waitFor({state:'visible'});
   assert.equal(await nativeHatgShowControl(page),null,'shown graph does not require another opening action');
+  const section = page.locator('section#hatgPane');
+  const oldRole = await section.getAttribute('role');
+  await section.evaluate(node => node.removeAttribute('role'));
+  assert.equal(await nativeHatgShowControl(page),null,'native section does not require an ARIA region');
+  if (oldRole) await section.evaluate((node, role) => node.setAttribute('role', role), oldRole);
   const newNode = hatg.getByRole('button', {name:/^New node:/});
   await newNode.waitFor({state:'visible'});
   await page.waitForFunction(() => !document.getElementById('addNodeBtn')?.disabled);

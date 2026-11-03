@@ -5,6 +5,17 @@ import pytest
 from management_portal import wall_backend as wall
 from management_portal.test_framework import tau_fixtures
 from management_portal.test_framework.runner_adapters import TauAdapter
+from tests.cases.test_wall import wall_project  # noqa: F401
+
+
+def allocate(root, *ids):
+    """Test owners record actual allocations, not just a handwritten manifest."""
+    from management_common.resource_lifecycle import LifecycleStore, lifecycle_scope, record_allocation
+    scope = LifecycleStore().open(str(root.resolve()), actor='test-actor', run_id='fixture-test', case_id='cleanup')
+    with lifecycle_scope(scope, actor='test-actor'):
+        for rid in ids:
+            record_allocation(rid)
+    return scope
 
 
 def test_workspace_cleanup_uses_unconditional_domain_deletion(monkeypatch):
@@ -59,8 +70,9 @@ def test_content_fixture_replacement_is_refused_before_product_cleanup(tmp_path,
 
 
 @pytest.mark.parametrize('directory_missing', [False, True])
-def test_async_wall_workspace_unregistered_without_allocation_context(tmp_path, monkeypatch, directory_missing):
-    """后台 WALL 分配未继承请求上下文时仍注销夹具登记，不碰目录外已有资源"""
+@pytest.mark.parametrize('allocated', [False, True])
+def test_workspace_cleanup_requires_allocation_not_only_directory(tmp_path, monkeypatch, directory_missing, allocated):
+    """位置不能证明归属；只有本轮分配对象可注销，未知登记阻止删除目录。"""
     from management_common.resource_identity import get_resource_type_registry
     from management_portal.resources.workspace_store import get_workspace_store, now
     from management_portal.test_framework import tau_fixture_paths
@@ -73,11 +85,11 @@ def test_async_wall_workspace_unregistered_without_allocation_context(tmp_path, 
     new_id = lambda: get_resource_type_registry().new_id('workspace')
     wid = store.for_path(str(repo), new_id=new_id)
     keep = store.for_path(str(outside), new_id=new_id)
+    if allocated:
+        allocate(root, wid)
     if directory_missing:
         repo.rmdir()
         content.rmdir()
-    # No lifecycle_scope: this mirrors a WALL background job. Its own release
-    # hook has detached its workers before the framework handles the directory.
     calls = []
     monkeypatch.setattr(portal_features, 'contributions', lambda name: [])
     def release(rid, key):
@@ -85,6 +97,12 @@ def test_async_wall_workspace_unregistered_without_allocation_context(tmp_path, 
         calls.append(rid)
         store.database.write(lambda conn: store.mark_deleted(rid, deleted_at=now(), deleted_by='test-actor', connection=conn))
     monkeypatch.setattr(tau_fixtures, '_release_resource', release)
+    if not allocated:
+        with pytest.raises(RuntimeError, match='不能凭路径'):
+            tau_fixtures.cleanup(root)
+        assert calls == [] and store.rows([wid]) and store.rows([keep])
+        assert content.exists() is (not directory_missing)
+        return
     result = tau_fixtures.cleanup(root)
     assert calls == [wid] and wid in result['resources']
     assert not store.rows([wid]) and store.rows([keep]) and outside.is_dir()
@@ -125,8 +143,10 @@ def test_cleanup_unregisters_only_case_projects_before_deleting_files(tmp_path, 
     outside = tmp_path / 'outside'; outside.mkdir()
     (root / 'fixtures' / 'link').symlink_to(outside, target_is_directory=True)
     monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': [
-        {'id': 'sample', 'root': str(sample)}, {'id': 'other', 'root': str(outside)}]})
+        {'id': 'sample', 'root': str(sample)},
+        {'id': 'other', 'root': str(outside)}]})
     monkeypatch.setattr(wall, '_read_state', lambda: {'jobs': {}})
+    allocate(root, 'sample')
     calls = []
     def unregister(payload, actor):
         assert (sample / 'SPEC.md').exists()
@@ -147,6 +167,7 @@ def test_failed_business_cleanup_keeps_fixture_and_can_retry(tmp_path, monkeypat
     sample = tmp_path / 'fixtures' / 'repo'; sample.mkdir(parents=True)
     (sample / 'SPEC.md').write_text('# sample')
     monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': [{'id': 'sample', 'root': str(sample)}]})
+    allocate(tmp_path, 'sample')
     monkeypatch.setattr(wall, '_read_state', lambda: {'jobs': {}})
     monkeypatch.setattr(wall, 'unregister', lambda *a: (_ for _ in ()).throw(RuntimeError('Resident running')))
     with pytest.raises(RuntimeError, match='Resident running'):
@@ -179,6 +200,7 @@ def test_upload_handles_use_file_cleanup_and_preserve_failed_cleanup(tmp_path, m
     from management_portal.resources import upload_files
 
     upload_id = 'upload_' + 'a' * 24
+    allocate(tmp_path, upload_id)
     manifest = tmp_path / 'test-fixtures.json'
     manifest.write_text(json.dumps({'resources': [], 'uploads': [upload_id]}))
     sample = tmp_path / 'fixtures'; sample.mkdir()
@@ -253,6 +275,7 @@ def test_collaboration_fixtures_use_their_owner_and_verify_deletion(tmp_path, mo
     providers = {}
     collaboration.install_mutation_provider(SimpleNamespace(register_mutation_provider=lambda types, **kwargs: providers.update(kwargs)))
     resource_id = f'{kind}_123456789abc'
+    allocate(tmp_path, resource_id)
     lineage_id = 'lineage_123456789abc'
     path = tmp_path / 'test-fixtures.json'
     path.write_text(json.dumps({'resources': [resource_id]}))
@@ -296,6 +319,7 @@ def test_missing_fixture_is_complete_but_denied_fixture_is_preserved(tmp_path, m
     from management_portal.hatg.contracts import InstructionError
     path = tmp_path / 'test-fixtures.json'
     manifest = {'resources': ['resident_123456789abc']}
+    allocate(tmp_path, manifest['resources'][0])
     path.write_text(json.dumps(manifest))
     monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': []})
     def instruction(*args, **kwargs):
@@ -356,6 +380,7 @@ def test_paper_fixture_cleanup_uses_product_deletion_and_preserves_failures(tmp_
     paper_provider.install_mutation_provider(SimpleNamespace(register_mutation_provider=lambda kind, **kwargs: providers.update(kwargs)))
 
     paper_id = 'paper_123456789abc'
+    allocate(tmp_path, paper_id)
     manifest = tmp_path / 'test-fixtures.json'
     manifest.write_text(json.dumps({'resources': [paper_id]}))
     sample = tmp_path / 'fixtures'; sample.mkdir()
@@ -399,6 +424,7 @@ def test_review_cleanup_uses_paper_owner_and_retains_failed_allocations(tmp_path
         register_mutation_provider=lambda kind, **handlers: providers.update({kind: handlers})
     ), 'review')
     review_id = 'review_123456789abc'
+    allocate(tmp_path, review_id)
     manifest = tmp_path / 'test-fixtures.json'
     manifest.write_text(json.dumps({'resources': [review_id]}))
     monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': []})
@@ -435,6 +461,7 @@ def test_repaired_cleanup_owner_is_not_blocked_by_a_cached_failed_instruction(tm
     from management_portal import isa_client
     from management_portal.hatg.contracts import InstructionError
     resource_id = 'review_123456789abc'
+    allocate(tmp_path, resource_id)
     manifest = tmp_path / 'test-fixtures.json'
     manifest.write_text(json.dumps({'resources': [resource_id]}))
     monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': []})
@@ -456,3 +483,86 @@ def test_repaired_cleanup_owner_is_not_blocked_by_a_cached_failed_instruction(tm
     repaired = True
     assert tau_fixtures.cleanup(tmp_path)['resources'] == [resource_id]
     assert len(set(calls)) == 2
+
+
+def test_unallocated_manifest_does_not_turn_missing_or_existing_id_into_owned_fixture(tmp_path, monkeypatch):
+    from management_portal import isa_client
+    sample = tmp_path / 'fixtures'; sample.mkdir()
+    (tmp_path / 'test-fixtures.json').write_text(json.dumps({'resources': ['resident_0123456789ab']}))
+    monkeypatch.setattr(isa_client, 'call', lambda *a, **kw: pytest.fail('unowned deletion attempted'))
+    with pytest.raises(ValueError, match='分配记录'):
+        tau_fixtures.cleanup(tmp_path)
+    assert sample.exists()
+
+
+def test_ambiguous_cleanup_resumes_original_instruction_after_restart(tmp_path, monkeypatch):
+    from management_portal import isa_client
+    rid = 'review_abcdefabcdef'
+    allocate(tmp_path, rid)
+    calls = []
+    def release(actor, name, args, *, key):
+        calls.append(key)
+        if len(calls) == 1:
+            raise ConnectionError('committed reply unknown')
+        return {'resource_id': rid}
+    monkeypatch.setattr(isa_client, 'call', release)
+    with pytest.raises(RuntimeError, match='reply unknown'):
+        tau_fixtures.cleanup(tmp_path)
+    assert tau_fixtures.cleanup(tmp_path)['resources'] == [rid]
+    assert len(calls) == 2 and calls[0] == calls[1]
+
+
+def test_wall_project_path_does_not_replace_creation_provenance(tmp_path, monkeypatch):
+    sample = tmp_path / 'fixtures' / 'repo'; sample.mkdir(parents=True)
+    monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': [{'id': 'foreign', 'root': str(sample)}]})
+    monkeypatch.setattr(wall, 'unregister', lambda *a: pytest.fail('unowned WALL project removed'))
+    with pytest.raises(RuntimeError, match='不能仅凭目录'):
+        tau_fixtures.cleanup(tmp_path)
+    assert sample.is_dir()
+
+
+def test_wall_registration_records_case_scope_and_retries_do_not_adopt_existing(wall_project, tmp_path):
+    from management_common.resource_lifecycle import LifecycleStore, lifecycle_scope
+    root = tmp_path / 'owned-wall'; root.mkdir()
+    (root / 'SPEC.md').write_text('# Isolated project')
+    store = LifecycleStore()
+    first = store.open('wall-first', actor='owner', run_id='first', case_id='fixture')
+    second = store.open('wall-second', actor='owner', run_id='second', case_id='fixture')
+    with lifecycle_scope(first, actor='owner'):
+        record = wall.register({'root': str(root), 'project_id': 'AI员工'}, 'owner')['project']
+    assert store.owns(first, record['id'])
+    with lifecycle_scope(second, actor='owner'):
+        again = wall.register({'root': str(root), 'project_id': 'AI员工'}, 'owner')['project']
+    assert again['id'] == record['id'] and not store.owns(second, record['id'])
+
+
+def test_fixture_owner_stops_background_before_sealing(tmp_path, monkeypatch):
+    from management_common.resource_lifecycle import LifecycleStore
+    from management_portal import portal_features
+    sample = tmp_path / 'fixtures'; sample.mkdir()
+    phases = []
+    monkeypatch.setattr(LifecycleStore, 'seal', lambda *a, **kw: phases.append('seal'))
+    def stop(*args, **kw):
+        phases.append('stop'); return {}, []
+    monkeypatch.setattr(portal_features, 'contributions', lambda _: [('wall', stop)])
+    tau_fixtures.cleanup(tmp_path)
+    assert phases == ['stop', 'seal']
+
+
+def test_run_fallback_stops_only_recorded_wall_work_before_unregistration(tmp_path, monkeypatch):
+    from management_portal.test_framework.run_cleanup import finish_run
+    rid = 'project-fixture-root'
+    scope = allocate(tmp_path, rid)
+    job = {'project': rid, 'actor': 'test-actor', 'id': 'fixture-job', 'status': next(iter(wall.ACTIVE))}
+    phases = []
+    monkeypatch.setattr(wall, 'projects', lambda actor: {'projects': [{'id': rid}]})
+    monkeypatch.setattr(wall, '_read_state', lambda: {'jobs': {'fixture-job': job}})
+    def stop(args, actor):
+        assert args == {'project': rid, 'action': 'stop', 'job_id': job['id']}
+        assert actor == 'test-actor'
+        phases.append('stop'); job['status'] = 'cancelled'
+    monkeypatch.setattr(wall, 'action', stop)
+    monkeypatch.setattr(wall, 'unregister', lambda args, actor: phases.append('unregister'))
+    result = finish_run('fixture-test')
+    assert result['status'] == 'complete', result
+    assert phases == ['stop', 'unregister']

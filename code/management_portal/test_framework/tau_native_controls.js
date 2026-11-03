@@ -5,8 +5,8 @@ function hatgShowControlLocator(page) {
   return page.getByRole('button', {name: /^(Show|显示) HATG$/});
 }
 async function nativeHatgShowControl(page) {
-  const graph = page.getByRole('region', {name: 'HATG', exact: true});
-  if (await graph.count() === 1 && await graph.isVisible()) return null;
+  const graph = page.locator('.portalHatgPanelComponent[role="region"]:visible, #lineage-hatg-panel[role="region"]:visible, section#hatgPane:visible');
+  if (await graph.count() > 0) return null;
   const show = hatgShowControlLocator(page);
   if (await show.count() !== 1 || !await show.isVisible() || !await show.isEnabled())
     throw new Error('Current native HATG opening control is unavailable');

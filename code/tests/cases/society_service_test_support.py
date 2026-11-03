@@ -489,9 +489,9 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
 
     def workspace_id_for_path(path, *, preferred_id: str = ""):
         from management_portal.resources.workspace_store import get_workspace_store
-        suffix = hashlib.sha256(str(Path(path).resolve(strict=False)).encode()).hexdigest()[:12]
+        from management_common.resource_identity import get_resource_type_registry
         return get_workspace_store().for_path(str(path), preferred_id=preferred_id,
-                                              new_id=lambda: f"workspace_{suffix}")
+            new_id=lambda: get_resource_type_registry().new_id('workspace'))
 
     monkeypatch.setattr(resource_client, "sync_lineage", sync_lineage)
     monkeypatch.setattr(resource_client, "sync_resident", sync_resident)

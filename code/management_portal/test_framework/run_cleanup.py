@@ -1,5 +1,4 @@
 """Finish the run's allocation scopes through normal product deletion owners."""
-from uuid import uuid4
 
 from management_common.resource_lifecycle import LifecycleStore
 from management_common.directory_retention import enqueue_directory_cleanup
@@ -48,7 +47,7 @@ def _finish_run(store, run_id):
                 if resource_id.startswith('upload_'):
                     remove_upload(resource_id)
                 else:
-                    key = f'run-cleanup:{run_id}:{resource_id}:{uuid4().hex}'
+                    key = f"test-release:{scope['id']}:{resource_id}"
                     _release_resource(resource_id, key)
                 store.released(scope['id'], resource_id)
                 released.append(resource_id)

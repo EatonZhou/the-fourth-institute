@@ -138,6 +138,8 @@ def register(payload: dict[str, Any], actor: str) -> dict[str, Any]:
     def put(data):
         if item["id"] in data["projects"]:
             return data["projects"][item["id"]]
+        from management_common.resource_lifecycle import record_allocation
+        record_allocation(item['id'])
         data["projects"][item["id"]] = item
         return item
     return {"project": _change(put)}
@@ -1190,6 +1192,29 @@ def _try_resident_cleanup(key: str, actor: str) -> str:
     return 'completed'
 
 
+def release_test_project(key: str, actor: str, *, timeout: float = 30) -> None:
+    """Stop a recorded test project through WALL before unregistering it."""
+    state = _read_state()
+    jobs = [j for j in state['jobs'].values() if j['project'] == key and j['status'] in ACTIVE]
+    for job in jobs:
+        if job['actor'] != actor:
+            raise ValueError('测试工程仍有其他调用者的工作')
+        action({'project': key, 'action': 'stop', 'job_id': job['id']}, actor)
+    deadline = time.monotonic() + timeout
+    while any(j['project'] == key and j['status'] in ACTIVE for j in _read_state()['jobs'].values()):
+        if time.monotonic() >= deadline:
+            raise RuntimeError('测试工程的 WALL 工作尚未停止')
+        time.sleep(0.1)
+    while True:
+        try:
+            unregister({'project': key}, actor)
+            break
+        except Exception as exc:
+            if getattr(exc, 'code', '') != 'projection.resident_busy' or time.monotonic() >= deadline:
+                raise
+            time.sleep(0.1)
+
+
 def release_test_fixtures(root: Path, manifest: dict[str, Any], actor: str, *, timeout: float) -> tuple[dict[str, Any], list[str]]:
     """Unregister the WALL projects a test run created under ``root`` and reject its recorded cards.
 
@@ -1203,26 +1228,12 @@ def release_test_fixtures(root: Path, manifest: dict[str, Any], actor: str, *, t
     # No title search and no test-only Resident deletion: ordinary WALL owns it.
     for found in projects_found:
         try:
+            scope = manifest.get('_resource_lifecycle_id')
+            from management_common.resource_lifecycle import LifecycleStore
+            if not scope or not LifecycleStore().owns(scope, found['id']):
+                raise ValueError('WALL 工程缺少本轮创建归属，不能仅凭目录注销')
             key = found['id']
-            state = _read_state()
-            jobs = [j for j in state['jobs'].values() if j['project'] == key and j['status'] in ACTIVE]
-            for job in jobs:
-                if job['actor'] != actor:
-                    raise ValueError('测试工程仍有其他调用者的工作')
-                action({'project': key, 'action': 'stop', 'job_id': job['id']}, actor)
-            deadline = time.monotonic() + timeout
-            while any(j['project'] == key and j['status'] in ACTIVE for j in _read_state()['jobs'].values()):
-                if time.monotonic() >= deadline:
-                    raise RuntimeError('测试工程的 WALL 工作尚未停止')
-                time.sleep(0.1)
-            while True:
-                try:
-                    unregister({'project': key}, actor)
-                    break
-                except Exception as exc:
-                    if getattr(exc, 'code', '') != 'projection.resident_busy' or time.monotonic() >= deadline:
-                        raise
-                    time.sleep(0.1)
+            release_test_project(key, actor, timeout=timeout)
             removed_projects.append(key)
         except Exception as exc:
             errors.append(f"{found['id']}: {exc}")

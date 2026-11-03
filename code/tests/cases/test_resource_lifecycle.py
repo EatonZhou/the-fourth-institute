@@ -266,7 +266,8 @@ def test_automatic_cleanup_without_manifest_retries_failures_and_preserves_other
         assert arguments == {'resource_id': rid}
         calls.append(options['key'])
         if len(calls) == 1:
-            raise RuntimeError('owner unavailable')
+            from management_portal.hatg.contracts import InstructionError
+            raise InstructionError('instruction.owner_unavailable', 'owner unavailable')
         return {'deleted': True}
     monkeypatch.setattr(isa_client, 'call', release)
     with pytest.raises(RuntimeError, match='owner unavailable'):
@@ -276,7 +277,7 @@ def test_automatic_cleanup_without_manifest_retries_failures_and_preserves_other
     receipt = tau_fixtures.cleanup(root)
     assert receipt['resources'] == [rid] and receipt['resource_lifecycle_id'] == scope
     assert calls[0] != calls[1]  # A repaired owner must not replay its old failed instruction.
-    assert all(key.startswith(f'tau-fixture:{root.name}:{rid}:') for key in calls)
+    assert all(key.startswith(f'test-release:{scope}:{rid}:') for key in calls)
     assert not (root / 'helpers').exists()
     assert store.pending(scope) == [] and store.pending(other) == [unrelated]
 

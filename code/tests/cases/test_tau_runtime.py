@@ -46,7 +46,9 @@ def configured(tmp_path, monkeypatch):
     )
     resident = mock.Mock(spec=list(DOMAIN_METHODS["resident"]))
     resident.get_resident_restart_options.side_effect = lambda *_args: state.options
-    resident.get_resident_state.side_effect = lambda *_args: {"state": state.conversation}
+    resident.get_resident_state.side_effect = lambda *_args: {"state": {
+        "execution_gate": {"state": "open", "account_id": state.options['source']['account_id']},
+        **state.conversation}}
 
     def restart(_actor, arguments, _key, _version):
         state.options["restart"] = {"status": "accepted", "target": {"account_id": arguments["account_id"]}}
@@ -287,7 +289,7 @@ def test_tau_configuration_migrates_with_generation_and_stable_request(configure
     resident_id = configured.assignment["resident_id"]
     assert call.args == (TAU_ACTOR, {
         "resident_id": resident_id, "provider": "codex", "account_id": "five",
-        "context_strategy": "smart", "active_execution_policy": "wait",
+        "context_strategy": "preserve", "active_execution_policy": "wait",
     }, f"tau-config:{configured.assignment['configuration_id']}:{resident_id}", {resident_id: "source-generation"})
     assert configured.state.runtime["service_tier"] == "priority"
     tau_runtime.apply_configuration(configured.assignment)
@@ -315,7 +317,7 @@ def test_tau_configuration_restarts_closed_matching_account(configured):
     resident_id = configured.assignment["resident_id"]
     assert call.args == (TAU_ACTOR, {
         "resident_id": resident_id, "provider": "codex", "account_id": "five",
-        "context_strategy": "smart", "active_execution_policy": "wait",
+        "context_strategy": "preserve", "active_execution_policy": "wait",
     }, f"tau-config:{configured.assignment['configuration_id']}:{resident_id}:closed:source-generation",
         {resident_id: "source-generation"})
 

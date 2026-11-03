@@ -134,6 +134,12 @@ class LifecycleStore:
         with self.db.read() as db:
             return [row[0] for row in db.execute("SELECT resource_id FROM allocations WHERE scope_id=%s AND NOT released ORDER BY ordinal DESC", (scope_id,)).fetchall()]
 
+    def owns(self, scope_id, resource_id):
+        """Allocation provenance survives deletion and successful cleanup."""
+        with self.db.read() as db:
+            return db.execute("SELECT 1 FROM allocations WHERE scope_id=%s AND resource_id=%s",
+                              (scope_id, resource_id)).fetchone() is not None
+
     def actors(self, scope_id):
         """Residents assigned to this operation, including its new identities."""
         with self.db.read() as db:

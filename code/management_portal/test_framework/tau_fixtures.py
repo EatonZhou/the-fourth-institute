@@ -14,9 +14,48 @@ from management_common.directory_paths import remove_path
 
 
 def _release_resource(resource_id: str, key: str) -> None:
+    """Resume an ambiguous release; replace only a definitively failed request."""
+    from management_common.instance_manifest import instance_runtime_root
+    directory = instance_runtime_root() / 'test-resource-cleanup'
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / (hashlib.sha256(key.encode()).hexdigest() + '.json')
+    if path.is_symlink():
+        raise ValueError('Resource cleanup journal cannot be a symlink')
+    state = json.loads(path.read_text()) if path.exists() else {}
+    if state and (state.get('resource_id') != resource_id or state.get('scope_key') != key):
+        raise ValueError('Resource cleanup journal identity changed')
+    if state.get('completed'):
+        return
+    if not state or state.get('rejected'):
+        state = {'resource_id': resource_id, 'scope_key': key,
+                 'key': key + ':' + uuid.uuid4().hex}
+        atomic_replace_json(path, state)
+    try:
+        _release_resource_once(resource_id, state['key'])
+    except InstructionError as error:
+        if error.commit_state == 'not_committed' and error.code != 'instruction.in_progress':
+            state['rejected'] = error.code
+            atomic_replace_json(path, state)
+        raise
+    state['completed'] = True
+    atomic_replace_json(path, state)
+
+
+def _release_resource_once(resource_id: str, key: str) -> None:
     """Use the lifecycle owner, including when the UI already removed it."""
     from management_portal import isa_client
 
+    if resource_id.startswith('project-'):
+        # WALL engineering roots use the WALL owner's existing opaque key,
+        # distinct from registered Portal project_<id> resources.
+        from management_portal import wall_backend
+        if any(p['id'] == resource_id for p in wall_backend.projects(TAU_ACTOR)['projects']):
+            wall_backend.release_test_project(resource_id, TAU_ACTOR)
+        return
+    if resource_id.startswith('upload_'):
+        from management_portal.resources.upload_files import remove_upload
+        remove_upload(resource_id)
+        return
     if resource_id.startswith('script_run_'):
         from .run_cleanup import delete_script_run
         delete_script_run(resource_id)
@@ -53,11 +92,9 @@ def _release_resource(resource_id: str, key: str) -> None:
 
 
 def _fixture_workspaces(roots: list[Path]) -> list[str]:
-    """Find asynchronous product allocations in the case's owned directories.
+    """Find registrations that must not be erased with the fixture directory.
 
-    WALL jobs can create a Workspace after the HTTP request's allocation scope
-    has ended. Read the authoritative store, not an eventually updated index.
-    Discovery grants no rights: unregistration still runs the ordinary ISA checks.
+    Location detects a blocker, never proves this case allocated the object.
     """
     from management_portal.resources.workspace_store import get_workspace_store
     roots = [root.resolve() for root in roots if not root.is_symlink()
@@ -73,14 +110,11 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     from management_portal import portal_features
 
     root = run_dir.resolve()
-    # A later cleanup is a new attempt after an owner/permission failure.
-    # Transport retries within each ISA call still reuse this attempt's key.
-    attempt_id = uuid.uuid4().hex
     from management_common.resource_lifecycle import LifecycleStore
 
     lifecycle = LifecycleStore()
     scope_id = hashlib.sha256(str(root).encode()).hexdigest()
-    lifecycle.seal(scope_id, timeout=timeout)
+    lifecycle.request_close(scope_id)
     manifest_path = root / 'test-fixtures.json'
     if manifest_path.is_symlink():
         raise ValueError('测试清理清单不能是符号链接')
@@ -97,12 +131,20 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
         for resource_id in resources
     ):
         raise ValueError('测试清理清单 resources 必须是正式资源 ID 字符串数组，不接受对象或删除状态声明')
+    unowned = [rid for rid in resources if not lifecycle.owns(scope_id, rid)]
+    if unowned:
+        raise ValueError('测试清理对象缺少本轮分配记录，保留对象和文件：' + ', '.join(unowned))
     uploads = manifest.get('uploads', [])
     if not isinstance(uploads, list) or any(
         not isinstance(upload_id, str) or not re.fullmatch(r'upload_[0-9a-f]{24}', upload_id)
         for upload_id in uploads
     ):
         raise ValueError('测试清理清单 uploads 必须是 CreateUpload 返回的上传句柄字符串数组')
+    if any(not lifecycle.owns(scope_id, uid) for uid in uploads):
+        raise ValueError('测试上传缺少本轮分配记录，保留文件和清单')
+    # Feature owners compare their creation provenance with the actual case,
+    # not a scope supplied in a handwritten manifest.
+    manifest['_resource_lifecycle_id'] = scope_id
     # Source/script folders are an execution contract, independent of whether
     # the report parsed or its author cited one of the files as evidence.
     scratch = [root / name for name in ('fixtures', 'helpers')]
@@ -120,39 +162,47 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
                     else:
                         released[name] = value
                 errors.extend(failed)
-    # New allocations and legacy manifests use the same domain deletion entry.
+    if errors:
+        raise RuntimeError('；'.join(errors))
+    for project_id in released.get('projects', []):
+        lifecycle.released(scope_id, project_id)
+    # WALL/background owners have stopped their work before waiting for the
+    # last allocation lease; otherwise cleanup waits on the work it must stop.
+    lifecycle.seal(scope_id, timeout=timeout)
+    # A manifest is a reminder of actual allocations, never deletion authority.
     automatic = lifecycle.pending(scope_id)
-    fixture_workspaces = _fixture_workspaces([root / 'fixtures', *owned_content])
     # Business objects own their projection members; release those objects
     # before any directly allocated members or temporary teams.
-    targets = sorted(dict.fromkeys([*automatic, *resources, *fixture_workspaces]),
+    targets = sorted(dict.fromkeys([*automatic, *resources, *uploads]),
                      key=lambda rid: {'resident': 1, 'lineage': 2, 'workspace': 3}.get(rid.partition('_')[0], 0))
     released_resources = []
+    released_uploads = []
     for resource_id in targets:
         try:
-            key = f'tau-fixture:{root.name}:{resource_id}:{attempt_id}'
+            key = f'test-release:{scope_id}:{resource_id}'
             _release_resource(resource_id, key)
             lifecycle.released(scope_id, resource_id)
             released_resources.append(resource_id)
             if resource_id in resources:
                 resources.remove(resource_id)
+            if resource_id.startswith('upload_'):
+                released_uploads.append(resource_id)
+                if resource_id in uploads:
+                    uploads.remove(resource_id)
         except Exception as exc:
             errors.append(f'{resource_id}: {exc}')
-    released_uploads = []
-    from management_portal.resources.upload_files import remove_upload
-
-    for upload_id in list(uploads):
-        try:
-            remove_upload(upload_id)
-            released_uploads.append(upload_id)
-            uploads.remove(upload_id)
-        except Exception as exc:
-            errors.append(f'{upload_id}: {exc}')
     if manifest_path.exists():
         atomic_replace_json(manifest_path, manifest)
+    remaining = _fixture_workspaces([root / 'fixtures', *owned_content])
+    if remaining:
+        errors.append('夹具目录仍有已登记 Workspace，不能凭路径删除或声称完成：' + ', '.join(remaining))
     if errors:
         # A registered/running project must keep its files for the next attempt.
         raise RuntimeError('；'.join(errors))
+    from .tau_fixture_access import release_workspace_access
+    from management_portal import isa_client
+    permissions = release_workspace_access(root, instruction=lambda name, args, **kw:
+        isa_client.call(TAU_ACTOR, name, args, **kw))
     from management_portal.resources.creation import finish_scope_creations
     creation_errors = finish_scope_creations(scope_id) if lifecycle.scope(scope_id) else []
     if creation_errors:
@@ -177,4 +227,5 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
             path.unlink()
             removed.append(str(path.relative_to(root)))
     return {**released, 'paths': removed,
-            'resource_lifecycle_id': scope_id, 'resources': released_resources, 'uploads': released_uploads}
+            'resource_lifecycle_id': scope_id, 'resources': released_resources, 'uploads': released_uploads,
+            'permissions': permissions}
