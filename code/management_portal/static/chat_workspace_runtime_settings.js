@@ -122,7 +122,7 @@
       element.className = "portalRuntimeSettingsEditor";
       element.innerHTML = window.PortalI18n.html`        <div class="portalRuntimeSettingsGrid">
           <label class="portalRuntimeSettingsField" hidden><span>API 账号</span><select data-runtime-setting="backend_route_id"></select></label>
-          <label class="portalRuntimeSettingsField"><span>账号选择</span><select data-runtime-setting="account_selection"><option value="fixed">手动固定当前账号</option><option value="auto">自动（同后端、同模型，按可用额度）</option></select></label>
+          <label class="portalRuntimeSettingsField" hidden><span>账号选择</span><select data-runtime-setting="account_selection"><option value="fixed">手动固定当前账号</option><option value="auto">自动（同后端、同模型，按可用额度）</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Model</span><select data-runtime-setting="model"></select></label>
           <label class="portalRuntimeSettingsField"><span>Mode</span><select data-runtime-setting="collaboration_mode"><option value="default">Default · 默认执行</option><option value="plan">Plan · 先制定计划</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Effort</span><select data-runtime-setting="reasoning_effort"></select></label>
@@ -150,6 +150,7 @@
       let initialSettings = {};
       let providerCatalog = null;
       const syncModelControls = () => {
+        accountSelection.closest(".portalRuntimeSettingsField").hidden = providerCatalog?.account_selection?.enabled !== true;
         if (!providerCatalog) return;
         const selectedModel = model.value || providerCatalog.default_model;
         const knownModel = providerCatalog.models.includes(selectedModel);
@@ -202,7 +203,7 @@
         read({complete = false} = {}) {
           // A new provider session needs a concrete model; ordinary edits may inherit its default.
           const selected = { model: String(model.value || (complete ? providerCatalog?.default_model : "") || "").trim() };
-          if (accountSelection.value !== (initialSettings.account_selection || "fixed")) selected.account_selection = accountSelection.value;
+          if (providerCatalog?.account_selection?.enabled === true && accountSelection.value !== (initialSettings.account_selection || "fixed")) selected.account_selection = accountSelection.value;
           const modelChanged = selected.model !== String(initialSettings.model || "");
           const effortChanged = effort.value !== String(initialSettings.reasoning_effort || "");
           if (!mode.closest(".portalRuntimeSettingsField").hidden) {
