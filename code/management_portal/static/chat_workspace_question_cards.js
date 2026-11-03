@@ -95,8 +95,9 @@
                 || (!closed.has(part.answer_message_id) && (states.has(part.answer_message_id) || queued.has(part.answer_message_id)));
               groups.push({
                 kind: "async", key: part.answer_message_id, source_message_id: message.message_id,
-                // A member's set shown on a facade is closed in the member's own conversation.
-                closable: !message.family_reply,
+                // The server resolves facade replies to the original member's
+                // question set; closing uses the same conversation permission.
+                closable: true,
                 // Permissions are lent to the Resident this conversation belongs to, never through a facade.
                 lendable: !message.family_reply,
                 questions: (part.questions || []).map(question => ({ id: question.question_index, title: question.title, options: question.options || [],

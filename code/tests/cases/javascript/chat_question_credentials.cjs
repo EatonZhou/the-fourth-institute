@@ -45,15 +45,25 @@ function check(name, actual, expected) {
     page.on('pageerror', e => evidence.errors.push(e.message));
     await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
     await page.goto(origin);
+    for (const name of ['portal_design_system.css', 'portal_components_turn_cards.css']) {
+      await page.addStyleTag({path: path.join(repo, 'management_portal/static', name)});
+    }
     await page.evaluate(() => {
       window.PortalIdentity = { username: () => 'credential-fixture' };
       window.delivered = [];
+      window.closedRequests = [];
+      window.failClose = false;
       window.PortalAPI = { get: async url => {
         if (!url.includes('session-restart')) throw new Error('Unexpected API: ' + url);
         return { config: {}, restart: null };
       } };
       window.PortalInstructionClient = { execute: async (instruction, args) => {
         if (instruction === 'ListInputHistory') return { entries: [] };
+        if (instruction === 'AnswerResidentRequest') {
+          if (failClose) throw new Error('Close fixture failed');
+          closedRequests.push(JSON.parse(JSON.stringify(args)));
+          return { status: 'cancelled' };
+        }
         if (instruction !== 'DeliverMessage') throw new Error('Unexpected instruction: ' + instruction);
         delivered.push(JSON.parse(JSON.stringify(args)));
         return { resident_id: args.resident_id, message_id: args.message.message_id, input_state: { state: 'queued' } };
@@ -101,8 +111,53 @@ function check(name, actual, expected) {
     check('a member request on a facade cannot be approved', await card().locator('[data-question-option="0"]').isDisabled(), true);
     check('a member request on a facade says why', await card().locator('.residentQuestionCredentials > span').first().innerText(),
       '成员在 Family 内提出的权限请求不能经门面交出');
+    check('a member permission question can still be closed without lending', await card().locator('[data-question-close]').count(), 1);
+    await card().locator('[data-question-close]').click();
+    await page.waitForFunction(() => closedRequests.length === 1);
+    check('close uses the facade and original source message', await page.evaluate(() => closedRequests[0]), {
+      resident_id: 'resident_111111111111', message_id: 'msg_answer_c', answers: {action: 'cancel'},
+    });
+    check('closed member question shows its outcome', await page.locator('[data-resident-question="answer_c"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
+
+    await page.evaluate(() => {
+      window.plain = id => {
+        const message = asking(id, {resident_id: 'resident_222222222222', message_id: 'msg_' + id});
+        message.content_parts[1].questions = [{question_index: 0, title: '执行后，请贴出 repair 命令的 JSON 输出，以及新请求的 Router 状态。', options: []}];
+        return message;
+      };
+      snap.messages = [plain('close_older'), plain('close_active')]; render();
+    });
+    const older = page.locator('[data-resident-question="close_older"]');
+    check('older facade question offers close in summary', await older.locator('[data-question-close]').count(), 1);
+    for (const width of [945, 625, 390]) {
+      await page.setViewportSize({width, height: 900});
+      const button = card().locator('[data-question-close]');
+      check(`close button visible at ${width}px`, await button.isVisible(), true);
+      check(`card fits at ${width}px`, await card().evaluate(element => element.scrollWidth <= element.clientWidth), true);
+      if (process.env.SCREENSHOT_DIR) {
+        fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true});
+        await card().screenshot({path: path.join(process.env.SCREENSHOT_DIR, `facade-question-close-${width}.png`)});
+      }
+    }
+    await older.locator('[data-question-close]').click();
+    check('summary close leaves the active question available', await card().locator('[data-question-custom]').count(), 1);
+    check('summary close records the correct question', await page.evaluate(() => closedRequests.at(-1).message_id), 'msg_close_older');
+    await page.evaluate(() => { failClose = true; });
+    await card().locator('[data-question-close]').click();
+    check('failed close leaves the question open for retry', await card().locator('[data-question-close]').isEnabled(), true);
+    await page.evaluate(() => { failClose = false; });
+    await card().locator('[data-question-close]').click();
+    check('active facade question is closed', await page.locator('[data-resident-question="close_active"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
+    check('close never sends an answer or credentials', await page.evaluate(() => delivered.length), 2);
+    await page.evaluate(() => {
+      const message = plain('closed_on_server'); message.content_parts[1].state = 'closed';
+      snap.messages = [message]; render();
+    });
+    check('server-projected closure is shown without local close history', await page.locator('[data-resident-question="closed_on_server"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
+    await page.evaluate(() => { snap.messages = [plain('read_only')]; snap.controls.can_send = false; render(); });
+    check('read-only viewers cannot close questions', await page.locator('[data-question-close]').count(), 0);
     check('browser errors', evidence.errors, []);
-    console.log('PASS question cards request permissions and lend exactly the approved ones with the answer');
+    console.log('PASS permission requests and facade question closure without sending answers');
   } finally {
     if (browser) await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
     if (process.env.EVIDENCE_PATH) fs.writeFileSync(process.env.EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\n');

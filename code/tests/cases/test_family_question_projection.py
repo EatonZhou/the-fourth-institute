@@ -126,3 +126,46 @@ def test_member_permission_approval_cannot_be_silently_delivered_without_credent
         _check_answer_credentials(facade['resident_id'], answer, [])
     answer['content_parts'][0]['answers'][0]['answer'] = CREDENTIAL_DECLINE
     _check_answer_credentials(facade['resident_id'], answer, [])
+
+
+def test_facade_closes_member_question_without_sending_or_stopping_work(question_round):
+    facade, repo, outer, inner, _, service, _ = question_round
+    facade_id = facade['resident_id']
+    message = resident_input_queue_domain.build_message('agent', '', MEMBER)
+    message['reply_to_message_id'] = inner['message_id']
+    message['content_parts'] = question_message_parts('', [{
+        'question_index': 0, 'title': 'Paste the repair result', 'options': [],
+    }], MEMBER, message['message_id'])
+    repo.append_message(MEMBER, message)
+    answer_id = message['content_parts'][0]['answer_message_id']
+    payload = {'message_id': message['message_id'], 'action': 'cancel'}
+    messages_before = {rid: repo.read_messages(rid) for rid in [facade_id, MEMBER]}
+    queues_before = repo.queues([facade_id, MEMBER])
+    # The user can manage the facade only. No arbitrary member question may be closed.
+    with pytest.raises((PermissionError, KeyError)):
+        resident_protocol.respond_resident_user_input(facade_id, 'someone-else', payload)
+    unrelated = resident_input_queue_domain.build_message('agent', '', MEMBER)
+    unrelated['reply_to_message_id'] = 'msg_unrelated_input'
+    unrelated['content_parts'] = question_message_parts('', [{
+        'question_index': 0, 'title': 'Unrelated question', 'options': [],
+    }], MEMBER, unrelated['message_id'])
+    repo.append_message(MEMBER, unrelated)
+    messages_before[MEMBER] = repo.read_messages(MEMBER)
+    with pytest.raises(ValueError):
+        resident_protocol.respond_resident_user_input(facade_id, 'CASE-A', {
+            **payload, 'message_id': unrelated['message_id'],
+        })
+    for _ in range(2):
+        assert resident_protocol.respond_resident_user_input(facade_id, 'CASE-A', payload) == {'status': 'cancelled'}
+    assert repo.question_set_state(MEMBER, message['message_id']) == 'closed'
+    assert repo.question_set_state(MEMBER, unrelated['message_id']) == 'open'
+    projected = family_facade.projected_reply(facade, message['message_id'])
+    assert projected['content_parts'][0]['state'] == 'closed'
+    assert projected['content_parts'][0]['answer_message_id'] == answer_id
+    assert repo.input_state(MEMBER, answer_id)['error']['code'] == 'question_set_closed'
+    assert repo.input_state(MEMBER, inner['message_id'])['state'] == 'running'
+    assert repo.queues([facade_id, MEMBER]) == queues_before
+    assert {rid: repo.read_messages(rid) for rid in [facade_id, MEMBER]} == messages_before
+    assert repo.message(MEMBER, answer_id) is None
+    assert repo.message(facade_id, answer_id) is None
+    service.append_input.assert_not_called()
