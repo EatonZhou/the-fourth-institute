@@ -17,6 +17,8 @@
 
 使用共享浏览器启动器 tau_browser.js 和 tau_evidence.js 中所需函数。frameworkRoot 是本轮代码根下 management_portal/test_framework 的绝对路径。助手的 ready 表示当前控件可操作或观察条件已出现，不是整例判定。可省略可选材料采集；辅助定位错误应修工具，不升级为产品缺陷。账号、资源归属和清理边界仍遵守运行配置，只处理本轮创建的临时对象。
 
+共享 Workbench 可能自动恢复与本例无关的 Chat。首次采集前先确认可见面板，只对本例目标业务 region 或准确 Resident Chat 做正文快照和截图，避免整页采集带入其他对话。确需整页布局图时，先用原生控件收起无关 Chat，结束后恢复其原可见性；不读取、发送、标记或改写这些对话来准备材料。误采的无关正文或截图不纳入本例报告，记录工具偏差后收窄观察范围继续。
+
 执行前提由 `tau_execution_prerequisites.prepare_execution_prerequisite` 统一读取。传入本次身份的正式 ISA 调用函数和目标 resident_id；Fork、重建或迁移后重新读取 GetResident、GetResidentInitialization、ListResidentStates，不以 OpenIntake、绑定已打开或回调返回 true 代替初始化/Session 执行许可。未完成 Fork 用 RetryResidentInitialization 和原 expected_initialization_id 恢复；普通 Session 重建用当前 RestartSession 的精确目标与 preserve 策略。需要 credits 时，只能由真实人类在支持入口确认精确账号和初始化/Session；服务主体、测试用户 profile、自动点击与自报 confirmed:true 都不构成人类许可。可传 interact 回调打开真实交互入口，之后助手正式回读；缺前提报告流程受阻，不擅换账号或重复创建。
 
 定时 time.reached 及其他独立新上下文使用同一助手的 `new_context=True`：从 ListProviderAccounts 读取原账号的自动执行额度状态，当前 Session 的付费例外不能继承。waiting_quota 表示执行前提不足，保留已建立的自动触发和原输入，记录尚未覆盖自动回复；不得为了报告完整关闭保护或扩大 Family 许可。
