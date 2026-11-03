@@ -4,9 +4,14 @@ const {JSDOM} = require('jsdom');
 const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
 let apis = [];
-let failRegistration = true;
-let provisionAutomatically = false;
+let failRoutes = true;
 const offered = protocols => ['openai_chat', ...Object.keys(protocols || {})];
+const routes = api => [
+  {account_id: api.api_id, provider: 'provider_api'},
+  ...[['codex', 'openai_responses'], ['claude', 'anthropic_messages'], ['kimi', 'openai_chat'],
+    ['opencode', 'openai_chat'], ['dsh', 'anthropic_messages']].filter(([, protocol]) => offered(api.protocols).includes(protocol))
+    .map(([provider]) => ({account_id: `${api.api_id}-${provider}`, provider})),
+];
 window.PortalI18n = {t: (text, values = {}) => text.replace(/\{(p\d+)\}/g, (_, key) => values[key])};
 window.PortalUI = {createDialogController: ({modal, onClose}) => ({
   open: () => modal.setAttribute('open', ''), close: onClose, destroy() {},
@@ -24,15 +29,18 @@ window.PortalInstructionClient = {execute: async (name, args) => {
     case 'ListProviderAccounts': return {accounts: []};
     case 'ListBackendRoles': return {roles: []};
     case 'ListModelApis': return {apis};
-    case 'CreateModelApi': apis = [{...args, harness_protocols: offered(args.protocols), version: 1}]; return {api: apis[0], accounts: provisionAutomatically ? [{account_id:args.api_id,provider:'provider_api'}, {account_id:args.api_id+'-kimi',provider:'kimi'}, {account_id:args.api_id+'-opencode',provider:'opencode'}] : []};
+    case 'CreateModelApi': {
+      apis = [{...args, harness_protocols: offered(args.protocols), version: 1}];
+      if (failRoutes) throw Object.assign(new Error('routes unavailable'), {details: {reason: 'model_api.routes_incomplete', api_id: args.api_id}});
+      return {api: apis[0], accounts: routes(apis[0])};
+    }
     case 'UpdateModelApi': {
       const index = apis.findIndex(api => api.api_id === args.api_id);
       apis[index] = {...apis[index], ...args.changes, version: apis[index].version + 1};
       apis[index].harness_protocols = offered(apis[index].protocols);
-      return {api: apis[index], version: apis[index].version};
+      return {api: apis[index], version: apis[index].version, accounts: routes(apis[index])};
     }
     case 'RegisterProviderAccount':
-      if (failRegistration) throw Error('account name already registered');
       return {registration: {...args}};
     case 'GetProviderAccountSetup': return {setup: {provider: args.account_id, enabled: true, runtime_ready: true,
       login_state: 'not_applicable', default_model: 'gpt-test', models: ['gpt-test']}};
@@ -53,7 +61,7 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   click('新增模型 API');
   let form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'gateway'; form.elements.base_url.value = 'https://gateway.invalid/v1';
-  form.elements.default_model.value = 'gpt-test';
+  form.querySelector('[data-backend-model-id]').value = 'gpt-test';
   // Unsupported runners stay visible with the missing protocol explained.
   assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'opencode', 'kimi']);
   assert.match([...form.elements.harness.options].find(x => x.value === 'dsh').textContent, /Anthropic Messages/);
@@ -69,16 +77,16 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   form.elements.harness.value = 'codex';
   submit(form); await flush();
   assert.deepEqual(last('CreateModelApi').protocols, {openai_responses: {}});
-  assert(form.elements.api_id.closest('details').open, 'failed account registration exposes the retry controls');
-  for (const name of ['protocol_openai_responses', 'protocol_anthropic_messages', 'anthropic_base_url', 'anthropic_auth']) {
-    assert(form.elements[name].disabled, 'saved API protocols cannot change during account retry');
-  }
-  assert(!form.elements.account_id.disabled, 'account name remains editable for retry');
-  failRegistration = false;
+  assert.match(form.querySelector('[role=alert]').textContent, /接口已保存.*重试保存/);
+  assert(!form.elements.account_id, 'the server owns the API account identities');
+  assert(form.elements.api_id.disabled, 'a route retry keeps the saved connection identity');
+  assert(!form.elements.protocol_openai_responses.disabled, 'route errors do not freeze editable connection settings');
+  failRoutes = false;
   submit(form); await flush();
   assert.equal(calls.filter(call => call.name === 'CreateModelApi').length, 1, 'retry reuses the saved API');
-  assert.deepEqual(last('RegisterProviderAccount'), {account_id: 'gateway-codex', provider: 'codex', kind: 'api_profile',
-    config: {api_id: 'gateway'}, max_concurrency: 1}, 'a harness account is named apart from the API');
+  assert.equal(last('UpdateModelApi').api_id, 'gateway', 'retry provisions routes through the API owner');
+  assert.equal(last('GetProviderAccountSetup').account_id, 'gateway-codex');
+  assert(!calls.some(call => call.name === 'RegisterProviderAccount'), 'saving a Model API never registers a second account');
   click('关闭');
 
   click('编辑'); form = window.document.querySelector('dialog form');
@@ -110,10 +118,9 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   submit(form); await flush();
   assert.deepEqual(last('RegisterProviderAccount').config, {api_id: 'gateway'});
 
-  provisionAutomatically = true;
   click('新增模型 API'); form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'automatic'; form.elements.base_url.value = 'https://example.invalid';
-  form.elements.default_model.value = 'chat'; form.elements.harness.value = 'kimi';
+  form.querySelector('[data-backend-model-id]').value = 'chat'; form.elements.harness.value = 'kimi';
   const registeredBefore = calls.filter(call => call.name === 'RegisterProviderAccount').length;
   submit(form); await flush();
   assert.equal(calls.filter(call => call.name === 'RegisterProviderAccount').length, registeredBefore);

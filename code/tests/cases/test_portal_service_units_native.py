@@ -4,8 +4,26 @@ from __future__ import annotations
 import json
 import plistlib
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
+
+
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
+def test_stopping_a_codex_account_before_its_first_start_is_a_noop(tmp_path, monkeypatch, platform):
+    """API credential preparation may stop a registered account that has no service yet."""
+    from scripts import instance_services, portal_service_units as units
+    from tests.cases.provider_service_test_support import provider_instance
+
+    root, _ = provider_instance(monkeypatch, tmp_path)
+    manifest = (root / "instance.json").read_bytes()
+    control = Mock(side_effect=AssertionError("must not control an unregistered service"))
+    monkeypatch.setattr(units, "sys", SimpleNamespace(platform=platform))
+    monkeypatch.setattr(units, "_run", control)
+    monkeypatch.setattr(instance_services, "controller", control)
+    assert units.stop_codex_instance("fresh")["load"] == "not-found"
+    control.assert_not_called()
+    assert (root / "instance.json").read_bytes() == manifest
 
 
 @pytest.fixture(params=["darwin", "win32"])
