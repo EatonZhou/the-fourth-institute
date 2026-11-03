@@ -225,9 +225,16 @@
       const authenticationFailed = account.error_code === "provider_authentication_failed";
       const warning = accountQuotaWarning(account);
       if (!authenticationFailed && !reserved && warning) return warning;
-      const resets = windows.filter(w => w.resets_at > Date.now() / 1000).map(w => w.resets_at);
+      const weeklyResets = windows.filter(w => {
+        const minutes = Number(w.window_duration_mins || 0);
+        const weekly = minutes ? minutes === 7 * 24 * 60 : [
+          "seven_day", "limit7d", "Gemini Models/Weekly Limit Remaining",
+          "Gemini 4 Argon/Gemini 4 Argon Weekly Limit",
+        ].includes(w.id);
+        return weekly && w.resets_at > Date.now() / 1000;
+      }).map(w => w.resets_at);
       const refreshLabel = authenticationFailed ? window.PortalI18n.t("请重新登录该账号") : account.balance && !windows.length ? (account.balance.updated_at ? window.PortalI18n.text`更新 ${formatDateTime(account.balance.updated_at)}` : account.balance.status === "loading" ? window.PortalI18n.t("正在刷新余额…") : "") : reserved ? recovery > Date.now() ? window.PortalI18n.text`预计恢复 ${formatDateTime(recovery)}` : window.PortalI18n.t("等待额度恢复确认") : account.refreshing ? window.PortalI18n.t("正在刷新用量…") : account.error ? window.PortalI18n.t("用量刷新失败")
-        : resets.length ? window.PortalI18n.text`预计刷新 ${formatDateTime(Math.min(...resets) * 1000)}` : window.PortalI18n.t("等待用量刷新");
+        : weeklyResets.length ? window.PortalI18n.text`周刷新 ${formatDateTime(Math.min(...weeklyResets) * 1000)}` : window.PortalI18n.t("等待用量刷新");
       return (reserved && quota.remaining_percent !== 0 ? window.PortalI18n.html`<span data-account-limit-stale>${recoveryPending ? window.PortalI18n.t("额度恢复待确认") : window.PortalI18n.t("额度不足，等待恢复")}</span> · ` : "") + esc(refreshLabel);
     }
 

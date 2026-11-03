@@ -9,7 +9,8 @@ const context = vm.createContext({
   esc: x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;'),
   formatDateTime: value => value ? new Date(value).toISOString() : '',
 });
-for (const name of ['accountQuotaWindow', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountQuotaBlockers']) {
+for (const name of ['accountQuotaWindow', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountQuotaBlockers',
+  'rateLimitWindowLabel', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountLimitStatus']) {
   const fn = homeStatements().find(({node: n}) => n.type === 'FunctionDeclaration' && n.id.name === name);
   vm.runInContext(fn.source, context);
 }
@@ -51,5 +52,27 @@ try {
   }
   assert.equal(render({...short, remaining_percent: 2.17, stale: true}, {...weekly, remaining_percent: 50}), '2%*');
   assert.match(dom.window.document.querySelector('[data-account-quota-window]').title, /2\.17%\*/);
+  const now = Math.floor(Date.now() / 1000);
+  const shortReset = now + 3600;
+  const weeklyReset = now + 3 * 86400;
+  for (const [provider, shortId, weeklyId, minutes] of [
+    ['kimi', 'limit5h', 'limit7d', 10080],
+    ['codex', 'primary', 'secondary', 10080],
+    ['claude', 'five_hour', 'seven_day', undefined],
+    ['antigravity', 'Gemini Models/Five Hour Limit Remaining', 'Gemini Models/Weekly Limit Remaining', undefined],
+  ]) {
+    const row = {provider, kind: 'subscription_login', rate_limits: [
+      {id: shortId, remaining_percent: 100, window_duration_mins: 300, resets_at: shortReset},
+      {id: weeklyId, remaining_percent: 2.17, window_duration_mins: minutes, resets_at: weeklyReset},
+    ]};
+    assert.equal(context.accountLimitStatus(row), `周刷新 ${new Date(weeklyReset * 1000).toISOString()}`,
+      `${provider} shows the weekly reset even when the short window resets earlier`);
+    assert.equal(context.accountLimitStatus({...row, refreshing: true}), '正在刷新用量…');
+    assert.equal(context.accountLimitStatus({...row, error: 'failed'}), '用量刷新失败');
+    assert.equal(context.accountLimitStatus({...row, rate_limits: row.rate_limits.slice(0, 1)}), '等待用量刷新',
+      'a short-window reset must never be labelled as weekly');
+    row.rate_limits[1].resets_at = now - 1;
+    assert.equal(context.accountLimitStatus(row), '等待用量刷新', 'past resets do not imply a new weekly reset');
+  }
   console.log('Subscription percentages preserve stale and unknown states');
 } finally { dom.window.close(); }
