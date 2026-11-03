@@ -633,7 +633,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           status.textContent = t(progressMessage);
           const currentDefault = state.roles.find(role => role.role === "default");
           await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId,
-            model: result.check.model, verification_execution_id: executionId}, {expectedVersion: currentDefault?.version || 0});
+            model: result.check.model, verification_execution_id: executionId,
+            ...(currentDefault?.account_id === accountId && currentDefault.model === result.check.model
+              ? {reasoning_effort: currentDefault.reasoning_effort || ""} : {})}, {expectedVersion: currentDefault?.version || 0});
           if (!closed) status.textContent = t("测试通过，已设为默认 AI；新对话和未配置的 Resident 将使用此账号。");
           await refresh("roles");
         }

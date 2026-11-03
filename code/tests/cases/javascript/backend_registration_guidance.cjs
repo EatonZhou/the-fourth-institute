@@ -39,7 +39,8 @@ window.PortalInstructionClient = {execute: async (name, args, options = {}) => {
       const api = apis.find(a => a.api_id === args.api_id); Object.assign(api, args.changes); return provision(api);
     }
     case 'RegisterProviderAccount': accounts.push({...args, registration: {version: 1, enabled: true, config: args.config}}); return {};
-    case 'UpdateBackendRole': roles = [{role: 'default', account_id: args.account_id, model: args.model, version: 2}]; return {role: roles[0]};
+    case 'UpdateBackendRole': roles = [{role: 'default', account_id: args.account_id, model: args.model,
+      reasoning_effort: args.reasoning_effort || '', version: 2}]; return {role: roles[0]};
     case 'GetProviderAccountSetup': return {setup: {provider: 'provider_api', enabled: true, runtime_ready: true,
       login_state: 'not_applicable', default_model: 'example-model', models: ['example-model']}};
     case 'CheckProviderAccount': return {execution_id: 'execution_api_check'};
@@ -120,6 +121,14 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.equal(defaultUpdate.expectedVersion, 1);
   assert(!window.document.querySelector('[data-backend-default-missing]'));
   assert.match(window.document.querySelector('[data-backend-account="example-api"]').textContent, /默认 AI/);
+  roles[0].reasoning_effort = 'high';
+  const retest = [...window.document.querySelector('[data-backend-account="example-api"]').querySelectorAll('button')]
+    .find(b => b.textContent === '设置与测试');
+  retest.click(); await flush();
+  assert(window.document.querySelector('[name=use_default]').checked, 'retesting the current default keeps it selected');
+  click('测试并完成'); await flush();
+  assert.equal(calls.filter(c => c.name === 'UpdateBackendRole').at(-1).args.reasoning_effort, 'high',
+    'retesting the same default model preserves its reasoning preference');
   const tableEdit = [...window.document.querySelectorAll('[data-backend-api-connection] > header button')].find(b => b.textContent === '编辑连接');
   assert(tableEdit && !tableEdit.disabled); tableEdit.click();
   form = window.document.querySelector('dialog form'); assert.equal(form.elements.api_id.value, 'example-api');
