@@ -732,14 +732,6 @@
     "zh-CN": "启用此接口",
     "en": "Enable this API"
   },
-  "AI 账号名称（可选）": {
-    "zh-CN": "AI 账号名称（可选）",
-    "en": "AI account name (optional)"
-  },
-  "留空使用连接名称": {
-    "zh-CN": "留空使用连接名称",
-    "en": "Leave blank to use the connection name"
-  },
   "同时添加为 AI 账号，继续接入与测试": {
     "zh-CN": "同时添加为 AI 账号，继续接入与测试",
     "en": "Also add an AI account and continue setup"
@@ -748,9 +740,29 @@
     "zh-CN": "用于 Resident 对话。保存后选择模型并测试，可设为默认 AI；直连模型 API 不提供工具执行。测试会发起模型调用，可能产生费用。",
     "en": "Use this for Resident conversations. After saving, choose a model and test it; you can then set it as the default AI. Direct model APIs do not execute tools. Testing makes a model call and may incur charges."
   },
-  "API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。": {
-    "zh-CN": "API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。",
-    "en": "API saved, but the AI account was not added. You can change the account name and retry without creating another API, or uncheck the option to keep just the API."
+  "接口已保存，运行器配置未完成。请重试保存；不会重复创建接口或账号。": {
+    "zh-CN": "接口已保存，运行器配置未完成。请重试保存；不会重复创建接口或账号。",
+    "en": "The API was saved, but runner setup is incomplete. Save again to retry; this will reuse the same API and accounts."
+  },
+  "接口已保存，请点击“测试并完成”启用 AI。": {
+    "zh-CN": "接口已保存，请点击“测试并完成”启用 AI。",
+    "en": "API saved. Click “Test and finish” to enable AI."
+  },
+  "尚未配置默认 AI。请在执行账号中选择“设为默认 AI”，测试通过后 Ask Me Anything 即可使用。": {
+    "zh-CN": "尚未配置默认 AI。请在执行账号中选择“设为默认 AI”，测试通过后 Ask Me Anything 即可使用。",
+    "en": "No default AI is configured. Choose “Make default AI” on an execution account and pass its connection test to enable Ask Me Anything."
+  },
+  "设为默认 AI": {
+    "zh-CN": "设为默认 AI",
+    "en": "Make default AI"
+  },
+  "默认 AI": {
+    "zh-CN": "默认 AI",
+    "en": "Default AI"
+  },
+  "测试通过后，Ask Me Anything 和未配置后端的 Resident 将使用此账号。仅保存接口或设置默认路线不会启用默认 AI。": {
+    "zh-CN": "测试通过后，Ask Me Anything 和未配置后端的 Resident 将使用此账号。仅保存接口或设置默认路线不会启用默认 AI。",
+    "en": "After a successful test, Ask Me Anything and Residents without a backend will use this account. Saving an API or choosing a default route does not configure the default AI."
   },
   "账号额度保护暂停了测试，等待额度恢复或选择其他账号。": {
     "en": "The test is waiting for account quota to recover. You can choose another account.",

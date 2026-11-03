@@ -287,7 +287,13 @@ def start_codex_instance(account_id: str) -> dict[str, Any]:
 
 def stop_codex_instance(account_id: str) -> dict[str, Any]:
     from scripts.instance_services import verify_definitions
-    verify_definitions(_instance(), exact=False, selected_components=(_codex_component(account_id),))
+    instance = _instance()
+    component = _codex_component(account_id)
+    # A newly registered API account can receive its first configuration before
+    # its app-server has ever been defined. There is no owned service to stop yet.
+    if component not in instance.document['services']['components']:
+        return codex_instance_state(account_id)
+    verify_definitions(instance, exact=False, selected_components=(component,))
     if sys.platform in {"win32", "darwin"}:
         _native_codex_controller().stop(_codex_unit(account_id))
         return _native_codex_state(account_id)

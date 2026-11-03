@@ -152,6 +152,7 @@ function loadStyle() {
     {rel: "stylesheet", href: "/static/portal_management_backend.css", "data-backend-style": ""}));
 }
 function errorText(error) {
+  if (error.details?.reason === "model_api.routes_incomplete") return t("接口已保存，运行器配置未完成。请重试保存；不会重复创建接口或账号。");
   if (error.details?.reason === "account.busy") return t("账号仍关联 {p0} 个会话、{p1} 个排队或运行中的执行。请先迁移会话并等待或取消执行；也可先停用账号。", {
     p0: error.details?.session_count ?? "—", p1: error.details?.execution_count ?? "—"});
   if (error.details?.reason === "account.role_in_use") return error.details.roles?.length
@@ -164,6 +165,7 @@ function errorText(error) {
 function secretSubmissionError(error) {
   // Never display an arbitrary exception from a request containing credentials.
   const code = String(error.code || "");
+  if (error.details?.reason === "model_api.routes_incomplete") return errorText(error);
   if (error.details?.reason === "model_api.secret_write_failed") return t("Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。");
   if (code === "instruction.conflict") return t("连接名称已存在。请在高级设置中换一个名称，或编辑已有连接；这不表示 API Key 无效。");
   if (/permission|forbidden|unauthorized|access_denied/.test(code) || [401, 403].includes(error.status)) return t("当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。");
@@ -313,7 +315,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const canDeleteApi = me.access?.permission_system === "open" || me.access?.allows?.DeleteModelApi === true;
   const execute = (name, args = {}, options = {}) => call(name, args, {...options, signal: abort.signal});
   const state = {providers: [], accounts: [], apis: [], roles: []};
-  let providersReady = false;
+  let providersReady = false, rolesReady = false;
   const addAccount = button("新增执行账号", () => accountEditor(), true);
   const addSubscription = button("接入订阅帐号", () => accountEditor("subscription_login"), true);
   const addApi = button("新增 API Key", () => apiEditor(), !canWrite);
@@ -447,7 +449,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       });
     });
   }
-  function setupEditor(accountId) {
+  function setupEditor(accountId, {useDefault: requestedDefault = false} = {}) {
     let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
     let preparationRequested = false, setupFailed = false;
     let progressMessage = "", startedAt = 0;
@@ -488,7 +490,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     model.setAttribute("list", choices.id); form.append(choices);
     const useDefault = field(form, "用作默认 AI", "use_default", "", {type: "checkbox"});
     const defaultRole = state.roles.find(role => role.role === "default");
-    useDefault.checked = !defaultRole?.account_id;
+    useDefault.checked = requestedDefault || !defaultRole?.account_id || defaultRole.account_id === accountId;
+    hint(useDefault, "测试通过后，Ask Me Anything 和未配置后端的 Resident 将使用此账号。仅保存接口或设置默认路线不会启用默认 AI。");
     const authorize = button("登录", () => {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
@@ -676,7 +679,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         const compatible = state.apis.filter(item => !backend.api_protocol || (item.harness_protocols || []).includes(backend.api_protocol));
         extra.append(button("新建模型 API 并接入", () => {
           if (id.value && !id.reportValidity()) return;
-          apiEditor(null, {newAccountId: id.value.trim(), newProvider: provider.value});
+          apiEditor(null, {newProvider: provider.value});
         }, !canWrite));
         if (compatible.length) {
           const api = select(extra, "使用已有模型 API", "api_id", compatible.map(api => [api.api_id, `${api.api_id} · ${api.default_model}`]));
@@ -719,7 +722,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       });
     });
   }
-  function apiEditor(api = null, {accountId: setupAccountId = "", newAccountId = "", newProvider = "provider_api"} = {}) {
+  function apiEditor(api = null, {accountId: setupAccountId = "", newProvider = "provider_api"} = {}) {
     const {view, form} = newEditor(api ? "编辑模型 API" : "新增模型 API");
     form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "填写接口地址、API Key 和模型列表。连接名称和账号关联会自动完成。"), {class: "backendHint"}));
     const url = field(form, "接口基础地址（Base URL）", "base_url", api?.base_url || "", {type: "url", required: true, placeholder: "https://api.example.com/v1"});
@@ -781,9 +784,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     hint(probe, "向三种协议各发一次很短的请求并按结果勾选上面的协议，可再修改；会调用模型，可能产生少量费用。");
     options.append(probeResults);
     const enabled = field(options, "启用此接口", "enabled", "", {type: "checkbox"}); enabled.checked = api?.enabled !== false;
-    const canCreateAccount = !api && canRegister && state.providers.some(p => p.provider === "provider_api" && p.kinds.includes("api_profile"));
-    const account = canCreateAccount ? field(options, "AI 账号名称（可选）", "account_id", newAccountId, {pattern: "[a-z][a-z0-9_\\-]{0,127}", placeholder: t("留空使用连接名称")}) : null;
-    const register = canCreateAccount ? field(options, "保存后继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
+    const register = !api && canWrite ? field(options, "保存后继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。"); }
     const harness = register ? select(form, "Agent 运行器", "harness", []) : null;
     if (harness) hint(harness, "Agent 运行器能执行命令、编辑文件和使用工具；请在高级设置中声明或测试接口支持的协议。直连只对话。模型还需支持工具调用。");
@@ -845,23 +846,16 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         finally { delete changes.secret; }
         if (register?.checked) {
           const backend = harness?.value || "provider_api";
-          // Direct calls are scheduled under the API's own name; a harness account takes another.
           const existing = provisionedAccounts.find(row => row.provider === backend || (backend === "provider_api" && row.account_id === createdId));
-          const accountId = account.value.trim() || existing?.account_id || (backend === "provider_api" ? createdId : `${createdId}-${backend}`);
-          try {
-            if (!provisionedAccounts.some(row => row.account_id === accountId)) await execute("RegisterProviderAccount", {account_id: accountId, provider: backend, kind: "api_profile", config: {api_id: createdId}, max_concurrency: 1});
-          } catch (_) {
-            options.parentElement.open = true;
-            for (const input of [id, provider, url, path, models.el, responses, anthropic, anthropicUrl, anthropicAuth, probe, secret, enabled]) input.disabled = true;
-            const message = t("API 已保存，但 AI 账号尚未添加。可修改账号名称后重试保存，不会重复创建 API；也可取消勾选，仅保留接口。");
-            form.querySelector('[role="alert"]').textContent = message; notice.textContent = message;
-            await refresh("apis"); return false;
+          if (!existing) {
+            retryApiRoutes = true;
+            throw Object.assign(new Error(), {details: {reason: "model_api.routes_incomplete"}});
           }
-          view.close(); await Promise.all([refresh("apis"), refresh("accounts")]); setupEditor(accountId); return;
+          view.close(); await Promise.all([refresh("apis"), refresh("accounts")]); setupEditor(existing.account_id); return;
         }
-        view.close(); await refresh("apis");
+        view.close(); await Promise.all([refresh("apis"), refresh("accounts")]);
         if (setupAccountId) setupEditor(setupAccountId);
-      }, Boolean(changes.secret));
+      }, Boolean(changes.secret), {success: register?.checked ? "接口已保存，请点击“测试并完成”启用 AI。" : "已保存"});
     });
   }
   function roleEditor(role = null) {
@@ -884,13 +878,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       const readonly = !canWrite || a.kind === "service" || !Number.isInteger(a.registration_version);
       const defaultRoute = state.providers.find(p => p.provider === a.provider)?.default_route_id;
       const isDefault = Boolean(defaultRoute) && defaultRoute === a.route_id;
+      const isDefaultAI = state.roles.some(role => role.role === "default" && role.account_id === a.account_id);
       const reload = async () => { await refresh("providers"); await refresh("accounts"); };
       return {id: a.account_id, cells: [linked ? runnerTitle(a.provider) : identity,
         linked ? identity : [t(kinds[a.kind] || a.kind || "—"), runnerTitle(a.provider)].filter(Boolean).join(" · "),
         [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : "",
-          isDefault ? t("默认路线") : ""].filter(Boolean).join(" · "),
+          isDefault ? t("默认路线") : "", isDefaultAI ? t("默认 AI") : ""].filter(Boolean).join(" · "),
         actions(...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
           ...(linked ? [button("设置与测试", () => setupEditor(a.account_id), !canWrite)] : []),
+          ...(a.enabled !== false && !isDefaultAI ? [button("设为默认 AI", () => setupEditor(a.account_id, {useDefault: true}), !canWrite)] : []),
           ...(a.provider === "claude" && a.kind === "subscription_login" ? [button("编辑模型目录", () => claudeCatalogEditor(a), readonly)] : []),
           ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
             await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
@@ -906,6 +902,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const expanded = new Set([...output.querySelectorAll("details[data-backend-api-accounts]")]
       .filter(details => details.open).map(details => details.dataset.backendApiAccounts));
     output.replaceChildren();
+    if (rolesReady && !state.roles.some(role => role.role === "default" && role.account_id)) {
+      output.append(node("p", t("尚未配置默认 AI。请在执行账号中选择“设为默认 AI”，测试通过后 Ask Me Anything 即可使用。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
+    }
     if (!state.accounts.length) { output.append(node("p", t("暂无登记"))); return; }
     const standalone = [], groups = new Map();
     for (const account of state.accounts) {
@@ -966,8 +965,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         ...account, ...account.registration, registration_version: account.registration.version,
       } : account) : result[key] || [];
       if (key === "providers") providersReady = true;
+      if (key === "roles") rolesReady = true;
       renderers[key]();
-      if (key === "apis" || key === "providers") renderers.accounts();
+      if (key === "apis" || key === "providers" || key === "roles") renderers.accounts();
       if (key === "accounts" && pendingAccountId) focusAccount(pendingAccountId);
     } catch (error) { if (!destroyed) sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"})); }
     finally { if (!destroyed) syncAccountButton(); }
