@@ -508,6 +508,30 @@
     "zh-CN": "模型列表",
     "en": "Models"
   },
+  "连接名称：{p0}": {
+    "zh-CN": "连接名称：{p0}",
+    "en": "Connection: {p0}"
+  },
+  "其他模型：{p0}": {
+    "zh-CN": "其他模型：{p0}",
+    "en": "Other models: {p0}"
+  },
+  "运行器：{p0}": {
+    "zh-CN": "运行器：{p0}",
+    "en": "Runners: {p0}"
+  },
+  "查看执行账号（{p0}）": {
+    "zh-CN": "查看执行账号（{p0}）",
+    "en": "View execution accounts ({p0})"
+  },
+  "设置与测试": {
+    "zh-CN": "设置与测试",
+    "en": "Setup and test"
+  },
+  "同一 API 可通过不同运行器使用；每个执行账号的状态和默认路线可分别管理。": {
+    "zh-CN": "同一 API 可通过不同运行器使用；每个执行账号的状态和默认路线可分别管理。",
+    "en": "One API can be used with different runners. Each execution account has its own status and default route settings."
+  },
   "添加服务商提供的模型标识，并选择一个默认模型。名称需与服务商文档完全一致。": {
     "zh-CN": "添加服务商提供的模型标识，并选择一个默认模型。名称需与服务商文档完全一致。",
     "en": "Add the model identifiers your provider offers and choose a default. Use the exact names from your provider's documentation."

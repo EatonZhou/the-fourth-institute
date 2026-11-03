@@ -41,6 +41,8 @@ In Portal Management → AI Backend, prepare the Provider and register execution
   - Not every "OpenAI-compatible" server implements `/responses` or Anthropic Messages; the connection test decides. Add `NO_PROXY` in network settings for LAN endpoints that must bypass the site proxy.
 - **Backend roles:** `UpdateBackendRole` sets account, model, and reasoning defaults. New Residents can select a role; otherwise they use `default`. Explicit provider, account, and settings take precedence. Changing a role does not rewrite existing Resident or session bindings.
 
+Connected AI groups execution accounts by their Model API connection. The model and endpoint appear once per connection; expand “View execution accounts” to see runners such as Codex, Kimi Code, OpenCode and direct calls, including multiple accounts for the same runner. Each account retains its own setup, testing, default route and delete controls. Separate connections stay separate even when their endpoint and default model match.
+
 Check for updates uses `ListProviders(refresh=true)` to record installed and available versions. The runtime updater owns installation and activation.
 
 Home → AI Activity & Accounts shows quota or balance per execution account. Its scheduling controls set concurrency, dispatch interval, and the Close threshold below which new automatic work pauses (`ListProviderAccounts`, `UpdateProviderAccount`). Registered `max_concurrency` is an initial value; updating registration does not overwrite Scheduler settings.

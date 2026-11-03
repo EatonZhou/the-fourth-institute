@@ -54,6 +54,8 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
   - 并不是所有“OpenAI 兼容”接口都实现了 `/responses` 或 Anthropic Messages；以“接入并启用 AI”的测试结果为准。局域网内的接口如果需要绕过站点代理，请在网络设置中加入 `NO_PROXY`。
 - **Backend 角色**：用 `UpdateBackendRole` 设置账号、模型和推理强度。新建 Resident 可选角色，省略时使用 `default`；显式 provider、account_id 和 settings 优先。角色更改不会改写已有 Resident 或 Provider 会话绑定。
 
+“已接入的 AI”按模型 API 的连接名称合并展示，同一连接的模型和地址只显示一次；展开“查看执行账号”可区分 Codex、Kimi Code、OpenCode 和直连等运行方式，以及同一运行器下的不同账号。各账号保留独立的设置与测试、默认路线和删除操作。即使接口地址和默认模型相同，不同连接也分别展示。
+
 Provider 区的“检查更新”调用 `ListProviders(refresh=true)`，只查询已安装和可用版本并保存观察；安装和激活由运行时更新器负责。
 
 配置完成后，打开 Home 的 AI Activity & Accounts 面板：每个执行账号一行，显示剩余额度或余额。管理员可以在这里设置每个账号的并发上限、两次派发之间的间隔，以及 Close 阈值（剩余额度低于它时暂停这个账号上的自动工作），对应指令 `ListProviderAccounts` 和 `UpdateProviderAccount`。

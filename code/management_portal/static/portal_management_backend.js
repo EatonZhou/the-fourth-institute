@@ -351,9 +351,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     } }
     finally { busy = false; buttons.forEach((el, i) => { if (el.isConnected) el.disabled = disabled[i]; }); syncAccountButton(); }
   };
-  const table = (key, headers, rows) => {
-    const output = sections[key].output; output.replaceChildren();
-    if (!rows.length) { output.append(node("p", t("暂无登记"))); return; }
+  const buildTable = (headers, rows) => {
     const grid = node("table"), head = node("tr"), body = node("tbody");
     for (const title of headers) head.append(node("th", t(title), {scope: "col"}));
     const thead = node("thead"); thead.append(head); grid.append(thead, body);
@@ -362,7 +360,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       for (const value of cells) { const cell = node("td"); cell.append(value instanceof Node ? value : document.createTextNode(String(value ?? "—"))); row.append(cell); }
       body.append(row);
     }
-    output.append(grid);
+    return grid;
+  };
+  const table = (key, headers, rows) => {
+    sections[key].output.replaceChildren(rows.length ? buildTable(headers, rows) : node("p", t("暂无登记")));
   };
   const actions = (...buttons) => { const el = node("div", undefined, {class: "backendActions"}); el.append(...buttons); return el; };
   const confirm = (title, id) => window.PortalUI.confirm({title: t(title), message: id, confirmLabel: t("删除"), tone: "danger"});
@@ -875,31 +876,72 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       view.close(); await refresh("roles");
     }); });
   }
-  const renderers = {
-    providers: () => table("providers", ["Provider", "账号种类", "已安装版本", "可用版本", "待切换"], state.providers.map(p => ({cells: [p.title || p.provider,
-      p.kinds.map(k => t(kinds[k] || k)).join(" / "), p.runtime?.installed_version || "—", p.runtime?.available_version || "—", t(p.runtime?.pending_switch ? "是" : "否")]}))),
-    accounts: () => table("accounts", ["名称", "接入方式", "状态", "操作"], state.accounts.map(a => {
-      const api = state.apis.find(api => api.api_id === a.config?.api_id);
-      const identity = node("div", api?.default_model || a.account_id, {title: a.account_id});
-      if (api?.base_url) identity.append(node("small", api.base_url));
+  const runnerTitle = provider => provider === "provider_api" ? t("直连模型（只对话，不执行工具）")
+    : state.providers.find(item => item.provider === provider)?.title || provider;
+  function accountRows(accounts, linked = false) {
+    return accounts.map(a => {
+      const identity = node("div", a.account_id);
       const readonly = !canWrite || a.kind === "service" || !Number.isInteger(a.registration_version);
-      // The route a Resident uses when it names no account: marked, or the only enabled one.
       const defaultRoute = state.providers.find(p => p.provider === a.provider)?.default_route_id;
       const isDefault = Boolean(defaultRoute) && defaultRoute === a.route_id;
-      // Enabling, disabling or removing an account can change which one is the default.
       const reload = async () => { await refresh("providers"); await refresh("accounts"); };
-      return {id: a.account_id, cells: [identity, a.kind === "api_profile" ? "API Key" : t(kinds[a.kind] || a.kind || "—"),
+      return {id: a.account_id, cells: [linked ? runnerTitle(a.provider) : identity,
+        linked ? identity : [t(kinds[a.kind] || a.kind || "—"), runnerTitle(a.provider)].filter(Boolean).join(" · "),
         [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : "",
           isDefault ? t("默认路线") : ""].filter(Boolean).join(" · "),
         actions(...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
-          ...(api ? [button("编辑连接", () => apiEditor(api, {accountId: a.account_id}), !canWrite)] : []),
+          ...(linked ? [button("设置与测试", () => setupEditor(a.account_id), !canWrite)] : []),
           ...(a.provider === "claude" && a.kind === "subscription_login" ? [button("编辑模型目录", () => claudeCatalogEditor(a), readonly)] : []),
           ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
             await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
             await reload(); }), readonly)] : []),
           deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || !Number.isInteger(a.registration_version),
             !Number.isInteger(a.registration_version) ? "Provider 内置身份没有可删除的账号登记。" : "当前身份没有删除权限。"))]};
-    })),
+    });
+  }
+  function renderAccounts() {
+    const output = sections.accounts.output;
+    const focusedAccount = output.contains(document.activeElement)
+      ? document.activeElement.closest("[data-backend-account]")?.dataset.backendAccount : "";
+    const expanded = new Set([...output.querySelectorAll("details[data-backend-api-accounts]")]
+      .filter(details => details.open).map(details => details.dataset.backendApiAccounts));
+    output.replaceChildren();
+    if (!state.accounts.length) { output.append(node("p", t("暂无登记"))); return; }
+    const standalone = [], groups = new Map();
+    for (const account of state.accounts) {
+      const apiId = account.kind === "api_profile" && account.config?.api_id;
+      if (!apiId) { standalone.push(account); continue; }
+      if (!groups.has(apiId)) groups.set(apiId, []);
+      groups.get(apiId).push(account);
+    }
+    if (standalone.length) output.append(buildTable(["名称", "接入方式", "状态", "操作"], accountRows(standalone)));
+    for (const [apiId, accounts] of groups) {
+      const api = state.apis.find(item => item.api_id === apiId);
+      const connection = node("article", undefined, {class: "backendApiConnection", "data-backend-api-connection": apiId});
+      const header = node("header"), identity = node("div", undefined, {class: "backendApiIdentity"});
+      identity.append(node("h3", api?.default_model || apiId));
+      if (api?.base_url) identity.append(node("p", api.base_url, {class: "backendHint"}));
+      identity.append(node("small", t("连接名称：{p0}", {p0: apiId})));
+      const otherModels = (api?.models || []).filter(model => model.enabled !== false && model.id !== api.default_model).map(model => model.id);
+      if (otherModels.length) identity.append(node("small", t("其他模型：{p0}", {p0: otherModels.join("、")})));
+      const controls = actions();
+      if (api) controls.append(node("span", "API Key · " + t(api.enabled === false ? "已停用" : "已启用"), {class: "backendHint"}),
+        button("编辑连接", () => apiEditor(api), !canWrite));
+      header.append(identity, controls); connection.append(header);
+      connection.append(node("p", t("运行器：{p0}", {p0: [...new Set(accounts.map(account => runnerTitle(account.provider)))].join("、")}), {class: "backendHint"}));
+      const details = node("details", undefined, {"data-backend-api-accounts": apiId, open: expanded.has(apiId)});
+      details.append(node("summary", t("查看执行账号（{p0}）", {p0: accounts.length})),
+        node("p", t("同一 API 可通过不同运行器使用；每个执行账号的状态和默认路线可分别管理。"), {class: "backendHint"}));
+      const scroll = node("div", undefined, {class: "backendTableScroll"});
+      scroll.append(buildTable(["Agent 运行器", "执行账号", "状态", "操作"], accountRows(accounts, true)));
+      details.append(scroll); connection.append(details); output.append(connection);
+    }
+    if (focusedAccount && state.accounts.some(account => account.account_id === focusedAccount)) focusAccount(focusedAccount);
+  }
+  const renderers = {
+    providers: () => table("providers", ["Provider", "账号种类", "已安装版本", "可用版本", "待切换"], state.providers.map(p => ({cells: [p.title || p.provider,
+      p.kinds.map(k => t(kinds[k] || k)).join(" / "), p.runtime?.installed_version || "—", p.runtime?.available_version || "—", t(p.runtime?.pending_switch ? "是" : "否")]}))),
+    accounts: renderAccounts,
     apis: () => table("apis", ["连接名称", "服务商", "接口地址", "默认模型", "状态", "操作"], state.apis.map(api => {
       const result = node("span", "", {role: "status"});
       const test = button("测试连接", async () => {
@@ -949,7 +991,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (!id) return;
     pendingAccountId = id;
     const row = [...root.querySelectorAll("[data-backend-account]")].find(el => el.dataset.backendAccount === id);
-    if (row) { pendingAccountId = ""; row.scrollIntoView({block: "center"}); row.focus({preventScroll: true}); }
+    if (row) {
+      pendingAccountId = "";
+      const details = row.closest("details"); if (details) details.open = true;
+      row.scrollIntoView({block: "center"}); row.focus({preventScroll: true});
+    }
   }
   focusAccount(accountId);
   return {focusAccount, openAccountEditor: accountEditor, isBusy: () => busy, hasUnsavedChanges: () => Boolean(editor),

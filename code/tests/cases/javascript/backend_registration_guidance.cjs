@@ -99,7 +99,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert(window.document.querySelector('[data-backend-setup-status]'), 'saving an existing connection returns to its test flow');
   checkFails = false; window.document.querySelector('input[name=use_default]').checked = false;
   click('测试并完成'); await flush(); assert(!window.document.querySelector('dialog'));
-  const tableEdit = [...window.document.querySelectorAll('[data-backend-account] button')].find(b => b.textContent === '编辑连接');
+  const tableEdit = [...window.document.querySelectorAll('[data-backend-api-connection] > header button')].find(b => b.textContent === '编辑连接');
   assert(tableEdit && !tableEdit.disabled); tableEdit.click();
   form = window.document.querySelector('dialog form'); assert.equal(form.elements.api_id.value, 'example-api');
   click('关闭'); click('新增模型 API');
