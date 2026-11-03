@@ -783,6 +783,8 @@ modules:
       - "management_portal/agent_skill_context.py"
       - "core_skills/**"
       - "management_portal/execution/resident_runtime_settings.py"
+      - "management_portal/execution/resident_capability_settings.py"
+      - "management_portal/execution/resident_configuration.py"
       - "management_portal/execution/slash_commands.py"
       - "management_portal/native_agent_transport.py"
       - "management_portal/provider_transport_diagnostics.py"
