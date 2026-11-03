@@ -177,7 +177,7 @@
           "profiles": [
             "live.controlled"
           ],
-          "task_prompt": "在 Lineage 中打开一个有权访问且已有会话的 Resident，通过其 Chat 右上角齿轮进入 Resident Menu → Settings，记录完整 Session ID、Provider 和账号身份，核对复制得到完整值；打开 Backend 的 Session 操作窗口，在当前绑定信息中记录状态版本（Generation），只查看，不提交迁移。切换到另一个面板再返回并刷新，确认这些值仍对应同一 Resident 的当前会话，不把历史状态显示为当前运行。不要发送消息。第一阶段只读页面；第二阶段用 GetSessionRestart 的当前绑定回执核对页面并保留原始证据。"
+          "task_prompt": "在 Lineage 中打开一个有权访问且已有会话的 Resident，通过其 Chat 右上角齿轮进入 Resident Menu → Settings，记录完整 Session ID、Provider 和账号身份，核对复制得到完整值；打开当前运行设置中的切换账号或重新开始会话页，记录页面实际展示的当前 Provider、账号与会话信息，只查看，不提交迁移。切换到另一个面板再返回并刷新，确认这些值仍对应同一 Resident 的当前会话，不把历史状态显示为当前运行。不要发送消息。第一阶段只读页面；第二阶段用 GetSessionRestart 的 actual_binding 当前绑定回执核对页面并保留原始证据，将历史重启来源与当前绑定分开。若回执提供状态版本（Generation），仅作回执诊断记录，不要求页面展示内部版本。"
         }
       ]
     },
