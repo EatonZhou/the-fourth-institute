@@ -3,27 +3,44 @@ const fs = require('node:fs'), vm = require('node:vm');
 const {JSDOM} = require('jsdom');
 const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
-let failRegistration = true, apis = [], accounts = [], createFailure = null, checkFails = true;
+let failRoutes = true, apis = [], accounts = [], createFailure = null, checkFails = true;
+let roles = [{role: 'default', account_id: null, version: 1}];
+const provision = api => {
+  let account = accounts.find(a => a.account_id === api.api_id);
+  if (!account) {
+    account = {account_id: api.api_id, provider: 'provider_api', kind: 'api_profile',
+      registration: {version: 1, enabled: true, config: {api_id: api.api_id}}};
+    accounts.push(account);
+  }
+  return {api, accounts: [account]};
+};
 window.PortalI18n = {t: text => text};
 window.PortalUI = {createDialogController: ({modal, onClose}) => ({
   open: () => modal.setAttribute('open', ''), close: onClose, destroy() {},
 })};
-window.PortalInstructionClient = {execute: async (name, args) => {
+window.PortalInstructionClient = {execute: async (name, args, options = {}) => {
   assert(args && typeof args === 'object' && !Array.isArray(args), `${name} arguments must be an object`);
-  calls.push({name, args: JSON.parse(JSON.stringify(args))});
+  calls.push({name, args: JSON.parse(JSON.stringify(args)), expectedVersion: options.expectedVersion});
   switch (name) {
     case 'ListProviders': return {providers: [
       {provider: 'codex', title: 'Codex', kinds: ['subscription_login']},
       {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login']},
       {provider: 'provider_api', title: 'Model API', kinds: ['api_profile']}]};
     case 'ListProviderAccounts': return {accounts};
-    case 'ListBackendRoles': return {roles: []};
+    case 'ListBackendRoles': return {roles};
     case 'ListModelApis': return {apis};
-    case 'CreateModelApi': if (createFailure) throw createFailure; apis.push({...args}); return {api: apis.at(-1)};
-    case 'UpdateModelApi': {
-      const api = apis.find(a => a.api_id === args.api_id); Object.assign(api, args.changes); return {api};
+    case 'CreateModelApi': {
+      if (createFailure) throw createFailure;
+      apis.push({...args});
+      if (failRoutes) throw Object.assign(new Error('route preparation failed'), {details: {reason: 'model_api.routes_incomplete', api_id: args.api_id}});
+      return provision(apis.at(-1));
     }
-    case 'RegisterProviderAccount': if (failRegistration) throw Error('registration unavailable'); accounts.push({...args, registration: {version: 1, enabled: true, config: args.config}}); return {};
+    case 'UpdateModelApi': {
+      const api = apis.find(a => a.api_id === args.api_id); Object.assign(api, args.changes); return provision(api);
+    }
+    case 'RegisterProviderAccount': accounts.push({...args, registration: {version: 1, enabled: true, config: args.config}}); return {};
+    case 'UpdateBackendRole': roles = [{role: 'default', account_id: args.account_id, model: args.model,
+      reasoning_effort: args.reasoning_effort || '', version: 2}]; return {role: roles[0]};
     case 'GetProviderAccountSetup': return {setup: {provider: 'provider_api', enabled: true, runtime_ready: true,
       login_state: 'not_applicable', default_model: 'example-model', models: ['example-model']}};
     case 'CheckProviderAccount': return {execution_id: 'execution_api_check'};
@@ -41,6 +58,8 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.equal(introduction.querySelector('h2').textContent, '添加 AI 后端');
   assert.deepEqual([...introduction.querySelectorAll('button')].map(b => b.textContent), ['接入订阅帐号', '新增 API Key']);
   assert(!introduction.querySelector('p, .backendChoice'), 'the introduction is a compact action row');
+  await flush();
+  assert(window.document.querySelector('[data-backend-default-missing]'), 'missing defaults are visible beside connected accounts');
   click('接入订阅帐号');
   let form = window.document.querySelector('dialog form');
   assert.equal(form.elements.kind.value, 'subscription_login');
@@ -58,31 +77,28 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   click('新建模型 API 并接入');
   form = window.document.querySelector('dialog form');
   assert.match(form.textContent, /API Key/);
-  assert.equal(form.elements.account_id.value, 'example-api', 'the account name survives API creation');
+  assert(!form.elements.account_id, 'API creation uses server-provisioned identities');
   assert.match(form.textContent, /连接名称/);
   assert(form.elements.api_id.closest('details'), 'internal connection name is optional advanced configuration');
   assert(form.elements.register_account.closest('details'), 'users do not need to understand account linkage');
   assert.deepEqual([...form.elements].filter(e => e.tagName === 'INPUT' && !e.closest('details')).map(e => e.name),
-    ['base_url', 'secret', 'default_model']);
+    ['base_url', 'secret', 'model_default', 'model_id_1']);
   assert(!form.elements.secret_file.closest('details').open);
   form.elements.api_id.value = 'Invalid.Name';
   assert(!form.elements.api_id.checkValidity(), 'names follow the registration contract');
   form.elements.api_id.value = 'example-api';
   form.elements.provider.value = 'example';
   form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model';
+  form.querySelector('[data-backend-model-id]').value = 'example-model';
   form.elements.secret.value = 'fixture-key';
   const submit = () => form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
   submit(); await flush();
   assert.equal(form.elements.secret.value, '');
-  assert.match(form.querySelector('[role=alert]').textContent, /API 已保存/);
+  assert.match(form.querySelector('[role=alert]').textContent, /接口已保存.*重试保存/);
   assert.equal(calls.filter(c => c.name === 'CreateModelApi').length, 1);
-  failRegistration = false; submit(); await flush();
+  failRoutes = false; submit(); await flush();
   assert.equal(calls.filter(c => c.name === 'CreateModelApi').length, 1, 'retry must reuse the saved API');
-  const registration = calls.filter(c => c.name === 'RegisterProviderAccount').at(-1).args;
-  assert.equal(registration.provider, 'provider_api');
-  assert.equal(registration.config.api_id, 'example-api');
-  assert(!('secret' in registration));
+  assert(!calls.some(c => c.name === 'RegisterProviderAccount'), 'route retry creates no duplicate account');
   assert(window.document.querySelector('[data-backend-setup-status]'));
   assert(!calls.some(c => ['CompleteChat', 'CheckProviderAccount', 'OpenProviderAccountLogin'].includes(c.name)), 'registration does not spend quota or authorize automatically');
   click('测试并完成'); await flush();
@@ -97,18 +113,41 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.equal(calls.filter(c => c.name === 'UpdateModelApi').at(-1).args.changes.secret, 'replacement-fixture-key');
   assert.equal(calls.filter(c => ['CreateModelApi', 'RegisterProviderAccount'].includes(c.name)).length, beforeRepair, 'repair edits the same connection without duplicate accounts');
   assert(window.document.querySelector('[data-backend-setup-status]'), 'saving an existing connection returns to its test flow');
-  checkFails = false; window.document.querySelector('input[name=use_default]').checked = false;
+  assert(!calls.some(c => c.name === 'UpdateBackendRole'), 'failed checks cannot enable the default AI');
+  checkFails = false;
   click('测试并完成'); await flush(); assert(!window.document.querySelector('dialog'));
-  const tableEdit = [...window.document.querySelectorAll('[data-backend-account] button')].find(b => b.textContent === '编辑连接');
+  const defaultUpdate = calls.find(c => c.name === 'UpdateBackendRole');
+  assert.deepEqual(defaultUpdate.args, {backend_role: 'default', account_id: 'example-api', model: 'example-model', verification_execution_id: 'execution_api_check'});
+  assert.equal(defaultUpdate.expectedVersion, 1);
+  assert(!window.document.querySelector('[data-backend-default-missing]'));
+  assert.match(window.document.querySelector('[data-backend-account="example-api"]').textContent, /默认 AI/);
+  roles[0].reasoning_effort = 'high';
+  const retest = [...window.document.querySelector('[data-backend-account="example-api"]').querySelectorAll('button')]
+    .find(b => b.textContent === '设置与测试');
+  retest.click(); await flush();
+  assert(window.document.querySelector('[name=use_default]').checked, 'retesting the current default keeps it selected');
+  click('测试并完成'); await flush();
+  assert.equal(calls.filter(c => c.name === 'UpdateBackendRole').at(-1).args.reasoning_effort, 'high',
+    'retesting the same default model preserves its reasoning preference');
+  const tableEdit = [...window.document.querySelectorAll('[data-backend-api-connection] > header button')].find(b => b.textContent === '编辑连接');
   assert(tableEdit && !tableEdit.disabled); tableEdit.click();
   form = window.document.querySelector('dialog form'); assert.equal(form.elements.api_id.value, 'example-api');
   click('关闭'); click('新增模型 API');
   form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'api-only'; form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model'; form.elements.register_account.checked = false;
+  form.querySelector('[data-backend-model-id]').value = 'example-model'; form.elements.register_account.checked = false;
   const before = calls.filter(c => c.name === 'RegisterProviderAccount').length;
   form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
   assert.equal(calls.filter(c => c.name === 'RegisterProviderAccount').length, before);
+  const savedOnly = window.document.querySelector('[data-backend-account="api-only"]');
+  assert(savedOnly, 'saving without continuing setup still refreshes the server-provisioned accounts');
+  const makeDefault = [...savedOnly.querySelectorAll('button')].find(b => b.textContent === '设为默认 AI');
+  assert(makeDefault && !makeDefault.disabled);
+  const defaultUpdates = calls.filter(c => c.name === 'UpdateBackendRole').length;
+  makeDefault.click(); await flush();
+  assert(window.document.querySelector('[name=use_default]').checked, 'the action selects this account even when another default exists');
+  assert.equal(calls.filter(c => c.name === 'UpdateBackendRole').length, defaultUpdates, 'opening default setup does not skip the real check');
+  click('关闭');
   click('编辑'); form = window.document.querySelector('dialog form');
   assert.equal(form.elements.api_id.readOnly, true);
   assert.equal(form.elements.secret.value, '');
@@ -116,7 +155,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   click('关闭'); click('新增模型 API');
   form = window.document.querySelector('dialog form');
   form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model';
+  form.querySelector('[data-backend-model-id]').value = 'example-model';
   for (const [error, expected] of [
     [{code: 'instruction.conflict'}, /名称.*已存在/],
     [{code: 'permission.denied'}, /权限/],
@@ -138,7 +177,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   submit(); await flush();
   const generated = calls.filter(c => c.name === 'CreateModelApi').at(-1).args;
   assert.match(generated.api_id, /^api-[a-z0-9-]+$/);
-  assert.equal(calls.filter(c => c.name === 'RegisterProviderAccount').at(-1).args.config.api_id, generated.api_id);
+  assert.equal(calls.filter(c => c.name === 'GetProviderAccountSetup').at(-1).args.account_id, generated.api_id);
   assert(window.document.querySelector('[data-backend-setup-status]'));
   click('关闭'); click('接入订阅帐号');
   form = window.document.querySelector('dialog form');

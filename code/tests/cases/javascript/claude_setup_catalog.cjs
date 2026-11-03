@@ -57,8 +57,8 @@ const model = registering ? 'sonnet' : 'opus-5.5';
     const button = [...scope.querySelectorAll('button')].find(b => b.textContent === label && !b.hidden);
     assert(button && !button.disabled, `available action: ${label}`); button.click();
   };
-  if (registering) click('接入订阅账号');
-  else { click('接入与测试'); await flush(); click('编辑模型目录'); }
+  if (registering) click('接入订阅帐号');
+  else click('编辑模型目录');
   const form = window.document.querySelector('dialog form');
   const submit = () => form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
   const mutations = () => calls.filter(c => ['RegisterProviderAccount', 'UpdateProviderAccountRegistration'].includes(c.name));

@@ -4,7 +4,7 @@ const {JSDOM} = require('jsdom');
 const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
 let apis = [];
-window.PortalI18n = {t: text => text};
+window.PortalI18n = {t: (text, values = {}) => text.replace(/\{(p\d+)\}/g, (_, key) => values[key])};
 window.PortalUI = {createDialogController: ({modal, onClose}) => ({
   open: () => modal.setAttribute('open', ''), close: onClose, destroy() {},
 })};
@@ -23,47 +23,150 @@ window.PortalInstructionClient = {execute: async (name, args) => {
 const context = vm.createContext({window, document: window.document, Node: window.Node, AbortController, setTimeout, clearTimeout, URL});
 vm.runInContext(fs.readFileSync('management_portal/static/portal_management_backend.js', 'utf8').replaceAll('export ', ''), context);
 const flush = async () => {for (let n = 0; n < 6; n++) await new Promise(resolve => setImmediate(resolve));};
-const click = text => {const b = [...window.document.querySelectorAll('button')].find(el => el.textContent === text); assert(b && !b.disabled, text); b.click();};
+const click = (text, root = window.document) => {
+  const b = [...root.querySelectorAll('button')].find(el => el.textContent === text);
+  assert(b && !b.disabled && !b.closest('fieldset:disabled'), text); b.click();
+};
 const submit = form => form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
 const count = name => calls.filter(c => c.name === name).length;
-const catalog = [{id: 'example-model', reasoning_efforts: ['low', 'medium', 'high']}, {id: 'example-mini'}];
+const last = name => calls.filter(c => c.name === name).at(-1).args;
+const rows = () => [...window.document.querySelectorAll('[data-backend-model-row]')];
+const modelId = row => row.querySelector('[data-backend-model-id]');
+const defaultChoice = row => row.querySelector('[name=model_default]');
+const enabled = row => row.querySelector('input[name^=model_enabled_]');
+const setModel = (row, value) => {const input = modelId(row); input.value = value; input.dispatchEvent(new window.Event('input'));};
+const chooseEffort = (row, value) => {
+  const input = [...row.querySelectorAll('.backendModelEfforts input')].find(input => input.value === value);
+  assert(input, value); input.click();
+};
+const removeEffort = (row, value) => {
+  const control = [...row.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === `移除推理强度 ${value}`);
+  assert(control, `custom effort ${value} can be removed`); control.click();
+  assert(![...row.querySelectorAll('.backendModelEfforts input')].some(input => input.value === value));
+};
+const customEffort = row => row.querySelector('input[name^=model_effort_]');
+const edit = () => {click('编辑'); return window.document.querySelector('dialog form');};
+const refresh = async () => {click('刷新', window.document.querySelector('[data-backend-section=apis]')); await flush();};
 (async () => {
   const panel = await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
   click('新增模型 API');
   let form = window.document.querySelector('dialog form');
-  const models = form.elements.models;
-  assert.equal(models.tagName, 'TEXTAREA');
-  assert.equal(models.value, '');
-  assert(models.closest('details'), 'the model list is an advanced setting');
+  assert(!form.querySelector('textarea'), 'models are edited with ordinary controls');
+  assert(!form.querySelector('[data-backend-model-catalog]').closest('details'), 'models are a primary setting');
+  assert.equal(rows().length, 1);
+  assert(defaultChoice(rows()[0]).checked);
+  assert(rows()[0].querySelector('button').disabled, 'at least one model row remains');
   form.elements.api_id.value = 'example-api'; form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model'; form.elements.register_account.checked = false;
+  form.elements.register_account.checked = false;
+  submit(form); await flush();
+  assert.match(form.querySelector('[role=alert]').textContent, /请填写每个模型的标识/);
+  assert.equal(count('CreateModelApi'), 0);
+  setModel(rows()[0], '  example-model  ');
+  chooseEffort(rows()[0], 'low'); chooseEffort(rows()[0], 'high');
+  customEffort(rows()[0]).value = 'ultra';
+  customEffort(rows()[0]).dispatchEvent(new window.KeyboardEvent('keydown', {key: 'Enter', cancelable: true}));
+  assert.equal(count('CreateModelApi'), 0, 'Enter adds a reasoning effort without submitting the API');
+  assert.equal(customEffort(rows()[0]).value, '');
+  removeEffort(rows()[0], 'ultra');
+  assert.equal(window.document.activeElement, customEffort(rows()[0]), 'removal keeps keyboard focus in the effort editor');
+  assert.equal(count('CreateModelApi'), 0, 'removing an effort does not submit the API');
+  customEffort(rows()[0]).value = 'ultra'; click('添加推理强度', rows()[0]);
+  assert(rows()[0].querySelector('input[value=ultra]').checked, 'a removed effort can be added again');
+  click('添加模型');
+  assert.equal(window.document.activeElement, modelId(rows()[1]), 'the new model is ready to type');
+  setModel(rows()[1], 'example-model');
+  submit(form); await flush();
+  assert.match(form.querySelector('[role=alert]').textContent, /模型标识不能重复/);
+  assert.equal(count('CreateModelApi'), 0);
+  setModel(rows()[1], 'example-mini');
+  defaultChoice(rows()[1]).click();
+  assert(!defaultChoice(rows()[0]).checked);
+  submit(form); await flush();
+  const catalog = [{id: 'example-model', reasoning_efforts: ['low', 'high', 'ultra']}, {id: 'example-mini'}];
+  assert.deepEqual(last('CreateModelApi').models, catalog);
+  assert.equal(last('CreateModelApi').default_model, 'example-mini');
 
-  models.value = '{"id": "example-model"}';
+  form = edit();
+  assert.deepEqual(rows().map(row => modelId(row).value), ['example-model', 'example-mini']);
+  assert(defaultChoice(rows()[1]).checked);
+  assert(rows()[0].querySelector('input[value=ultra]').checked, 'custom reasoning efforts survive editing');
   submit(form); await flush();
-  assert.match(form.querySelector('[role=alert]').textContent, /JSON 数组/);
-  models.value = JSON.stringify([{id: 'other-model'}]);
-  submit(form); await flush();
-  assert.match(form.querySelector('[role=alert]').textContent, /包含上面填写的模型名称/);
-  assert.equal(count('CreateModelApi'), 0, 'an invalid model list is not sent');
+  assert(!('models' in last('UpdateModelApi').changes), 'an unchanged list is not resent');
 
-  models.value = JSON.stringify(catalog);
+  form = edit();
+  removeEffort(rows()[0], 'ultra');
+  chooseEffort(rows()[0], 'low'); chooseEffort(rows()[0], 'high');
   submit(form); await flush();
-  assert.equal(count('CreateModelApi'), 1);
-  assert.deepEqual(calls.find(c => c.name === 'CreateModelApi').args.models, catalog);
+  assert.deepEqual(last('UpdateModelApi').changes.models, [{id: 'example-model', reasoning_efforts: []}, {id: 'example-mini'}], 'all reasoning efforts can be removed');
+  form = edit();
+  assert(!rows()[0].querySelector('input[value=ultra]'), 'deleted custom efforts stay deleted after saving and reopening');
+  assert(!rows()[0].querySelector('input[value=low]').checked, 'unchecked presets are not saved as supported');
+  assert(!rows()[0].querySelector('input[value=high]').checked);
+  customEffort(rows()[0]).value = 'ultra'; click('添加推理强度', rows()[0]);
+  chooseEffort(rows()[0], 'low'); chooseEffort(rows()[0], 'high');
+  submit(form); await flush();
+  assert.deepEqual(last('UpdateModelApi').changes.models, catalog, 'efforts can be restored after a saved deletion');
 
-  click('编辑'); form = window.document.querySelector('dialog form');
-  assert.deepEqual(JSON.parse(form.elements.models.value), catalog, 'editing shows the declared models');
+  form = edit(); defaultChoice(rows()[0]).click();
   submit(form); await flush();
-  assert(!('models' in calls.filter(c => c.name === 'UpdateModelApi').at(-1).args.changes), 'an unchanged list is not resent');
+  assert.equal(last('UpdateModelApi').changes.default_model, 'example-model');
+  assert(!('models' in last('UpdateModelApi').changes), 'changing the default does not rewrite model metadata');
 
-  click('编辑'); form = window.document.querySelector('dialog form');
-  form.elements.default_model.value = 'missing-model';
+  form = edit();
+  click('移除模型', rows()[0]);
+  assert.equal(rows().length, 1);
+  assert(defaultChoice(rows()[0]).checked, 'removing the default selects the remaining enabled model');
+  assert.equal(window.document.activeElement, modelId(rows()[0]));
   submit(form); await flush();
-  assert.match(form.querySelector('[role=alert]').textContent, /包含上面填写的模型名称/);
-  assert.equal(count('UpdateModelApi'), 1, 'a default model outside the declared list is refused');
-  form.elements.default_model.value = 'example-model'; form.elements.models.value = '';
+  assert.deepEqual(last('UpdateModelApi').changes.models, [{id: 'example-mini'}]);
+  assert.equal(last('UpdateModelApi').changes.default_model, 'example-mini');
+
+  // Preserve undeclared UI fields, disabled models and effort order during edits.
+  apis[0].models = [
+    {id: 'example-mini', enabled: true, reasoning_efforts: ['high', 'low', 'custom'],
+     context_window: 128000, supported_parameters: ['reasoning_effort'], aliases: ['small'], extension: {vendor: true}},
+    {id: 'archived', enabled: false, supported_efforts: ['medium']},
+  ];
+  await refresh(); form = edit();
+  assert(!enabled(rows()[1]).checked);
+  assert(defaultChoice(rows()[1]).disabled);
   submit(form); await flush();
-  assert.deepEqual(calls.filter(c => c.name === 'UpdateModelApi').at(-1).args.changes.models, [], 'clearing removes the list');
+  assert(!('models' in last('UpdateModelApi').changes), 'opening and saving preserves metadata without normalization');
+  form = edit();
+  const metadata = apis[0].models[0];
+  setModel(rows()[0], 'renamed-mini');
+  chooseEffort(rows()[0], 'high');
+  customEffort(rows()[0]).value = 'max'; // Include typed values when saving directly.
+  submit(form); await flush();
+  assert.deepEqual(last('UpdateModelApi').changes.models, [
+    {...metadata, id: 'renamed-mini', reasoning_efforts: ['low', 'custom', 'max']},
+    {id: 'archived', enabled: false, supported_efforts: ['medium']},
+  ]);
+  assert.equal(last('UpdateModelApi').changes.default_model, 'renamed-mini', 'the default follows a renamed row');
+
+  form = edit();
+  enabled(rows()[1]).click(); defaultChoice(rows()[1]).click();
+  enabled(rows()[1]).click();
+  assert(defaultChoice(rows()[0]).checked, 'disabling the default selects an enabled model');
+  enabled(rows()[0]).click();
+  const updates = count('UpdateModelApi'); submit(form); await flush();
+  assert.match(form.querySelector('[role=alert]').textContent, /至少启用一个模型/);
+  assert.equal(count('UpdateModelApi'), updates);
+  enabled(rows()[1]).click();
+  assert(defaultChoice(rows()[1]).checked, 'enabling a model restores a valid default');
+  submit(form); await flush();
+  assert.equal(last('UpdateModelApi').changes.default_model, 'archived');
+
+  // Old APIs that only saved default_model still appear as one editable model.
+  apis[0] = {api_id: 'legacy', base_url: 'https://api.example.com/v1', default_model: 'legacy-model', version: 1};
+  await refresh(); form = edit();
+  assert.equal(rows().length, 1); assert.equal(modelId(rows()[0]).value, 'legacy-model');
+  submit(form); await flush();
+  assert(!('models' in last('UpdateModelApi').changes), 'credential-only edits keep a legacy catalog undeclared');
+  form = edit(); click('添加模型'); setModel(rows()[1], '<img src=x onerror=alert(1)>');
+  submit(form); await flush();
+  assert.deepEqual(last('UpdateModelApi').changes.models, [{id: 'legacy-model'}, {id: '<img src=x onerror=alert(1)>'}]);
+  form = edit(); assert.equal(form.querySelector('img'), null, 'model names are rendered as text');
 
   panel.destroy(); dom.window.close(); console.log('Model API model catalog editing passed');
 })().catch(error => {console.error(error); dom.window.close(); process.exitCode = 1;});

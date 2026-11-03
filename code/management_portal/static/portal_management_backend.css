@@ -1,6 +1,6 @@
 .backendManagement { display:grid; gap:16px; }
 .backendManagement > [role=status]:empty { display:none; }
-.backendManagement .settingsSection { margin:0; padding:14px; }
+.backendManagement .settingsSection { min-width:0; margin:0; padding:14px; }
 .backendManagement header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
 .backendManagement h2 { margin:0; }
 .backendTableScroll { overflow:auto; }
@@ -10,6 +10,19 @@
 .backendManagement td { max-width:320px; overflow-wrap:anywhere; }
 .backendManagement small { display:block; color:var(--muted); font-size:10px; margin-top:4px; }
 .backendManagement tr:focus { outline:2px solid var(--accent); outline-offset:-2px; background:var(--panel-2); }
+.backendApiConnection { min-width:0; margin-top:12px; padding:14px; border:1px solid var(--border); border-radius:8px; background:var(--panel-2); overflow-wrap:anywhere; }
+.backendApiConnection:first-child { margin-top:0; }
+.backendApiConnection > header { align-items:start; }
+.backendApiIdentity { min-width:0; flex:1 1 200px; }
+.backendApiIdentity h3 { margin:0; font-size:15px; overflow-wrap:anywhere; }
+.backendApiIdentity p { margin:4px 0; overflow-wrap:anywhere; }
+.backendApiConnection > p { margin:8px 0 12px; }
+.backendApiConnection > details > summary { cursor:pointer; font-size:13px; font-weight:600; }
+.backendApiConnection > details[open] > summary { margin-bottom:8px; }
+.backendApiConnection table { min-width:640px; }
+.backendApiConnection td:first-child { min-width:110px; }
+.backendApiConnection td:nth-child(2) { min-width:140px; }
+.backendApiConnection td:nth-child(3) { white-space:nowrap; }
 .backendActions { display:flex; flex-wrap:wrap; gap:6px; }
 .backendDialog { box-sizing:border-box; width:min(560px, calc(100vw - 32px)); max-height:85vh; inset:0; margin:auto; overflow:auto; overflow-wrap:anywhere; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:20px; }
 .backendDialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -34,3 +47,23 @@
 .backendForm > .portalField:has(input[type=checkbox]) { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .backendForm > .portalField:has(input[type=checkbox]) > input { width:18px; height:18px; order:-1; }
 .backendForm > .portalField:has(input[type=checkbox]) > small { flex-basis:100%; }
+.backendModelCatalog, .backendModelReasoning { min-width:0; margin:0; padding:0; border:0; }
+.backendModelCatalog > legend { padding:0; font-weight:600; }
+.backendModelCatalog > .backendHint { margin:4px 0 10px; }
+.backendModelList { display:grid; gap:10px; margin-bottom:10px; }
+.backendModelRow { display:grid; gap:10px; min-width:0; padding:12px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; }
+.backendModelRow[data-enabled=false] { border-style:dashed; }
+.backendModelHeading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.backendModelDefault, .backendModelEfforts label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; }
+.backendModelDefault input, .backendModelEfforts input { width:16px; height:16px; margin:0; flex:none; }
+.backendModelSettings > summary { cursor:pointer; color:var(--muted); font-size:13px; }
+.backendModelSettings > .backendForm { margin-top:10px; }
+.backendModelReasoning > legend { padding:0; font-size:13px; font-weight:600; }
+.backendModelEfforts { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.backendModelEffort { display:inline-flex; align-items:stretch; max-width:100%; background:var(--panel); border:1px solid var(--border); border-radius:6px; }
+.backendModelEffort > label { min-width:0; padding:6px 8px; overflow-wrap:anywhere; }
+.backendModelEffort:has(:checked) { border-color:var(--accent); }
+.backendModelEffortRemove { align-self:center; flex:none; min-width:28px; min-height:28px; margin:2px 2px 2px 0; padding:0; border:0; background:transparent; color:var(--muted); font-size:18px; cursor:pointer; }
+.backendModelCustomEffort { display:flex; flex-wrap:wrap; align-items:end; gap:8px; }
+.backendModelCustomEffort > .portalField { flex:1 1 140px; min-width:0; }
+.backendModelCustomEffort > button { flex:none; }

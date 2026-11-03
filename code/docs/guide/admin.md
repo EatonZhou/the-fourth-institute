@@ -45,14 +45,18 @@ Resident 本身不含模型。它每次工作都要通过一个**执行账号**�
 打开“Portal 管理”→“AI Backend”，依次配置 Provider、执行账号、模型 API 和 Backend 角色。页面和 HATG ISA 使用同一份站点登记：
 
 - **订阅账号**：用 `RegisterProviderAccount` 登记 Codex 或 Claude 的 `subscription_login` 账号，再在账号行打开登录会话。对应指令为 `OpenProviderAccountLogin`、`GetProviderAccountLogin`、`CancelProviderAccountLogin`；Claude 要求授权码时，用 `UpdateProviderAccountLogin` 提交到现有等待会话。订阅登记的 `config.account_dir` 保存主机目录的规范绝对路径。新建账号必须填写 `config.account_dir`，不设默认目录；指定位置不存在时创建空目录，已有目录直接使用其中的登录。删除登记保留目录。Codex 服务通过账号 ID 从正式登记读取并校验 `CODEX_HOME`，实例 runtime 清理重建后仍从登记取得账号目录。各实例运行自己的常驻进程，多个实例与终端 CLI 可共享同一账号目录，由 Provider 协调登录刷新。
-- **模型 API**：先用 `CreateModelApi` 登记接口地址、默认模型及认证方式，再登记引用已有 `config.api_id` 的 `api_profile` 执行账号。一次性 `secret` 经受控写入保存到密钥文件；`UpdateModelApi` 可通过 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。接口提供多个模型或支持推理强度时，在“高级设置”的模型列表（`models`）中声明，如 `[{"id": "example-model", "reasoning_efforts": ["low", "medium", "high"]}]`；直连该接口的 Resident 即可在对话设置中选择模型和推理强度。
-- **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。之后可以把这个接口登记为 Codex、Claude Code 或 OpenCode（使用 Chat Completions）的 `api_profile` 账号，Resident 就能用这个 API Key 执行命令、编辑文件和使用工具；新增模型 API 时也可以在“Agent 运行器”中直接选择。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
+- **模型 API**：在新增或编辑表单中填写接口地址和 API Key，在“模型列表”中逐项添加服务商的模型标识，并选择一个默认模型。每个模型的“模型设置”中可启用或停用模型、勾选支持的推理强度，也可添加服务商提供的其他强度值。取消勾选可移除推理强度，自定义值也可点击旁边的 × 删除；保存后生效。直连该接口的 Resident 即可在对话设置中选择这些模型和推理强度。页面通过 `CreateModelApi` / `UpdateModelApi` 保存接口、默认模型和 `models` 目录；`api_profile` 执行账号通过 `config.api_id` 绑定接口。一次性 `secret` 经受控写入保存到密钥文件，更新时用 `changes.secret` 更换。不要把密钥放入账号 config、对话、日志或文档。
+- **用 API Key 运行 Agent Harness**：模型 API 默认只提供 Chat Completions。接口也支持其他协议时，在“高级设置”中声明（`protocols`）：`openai_responses`（`/responses`，Codex 使用）、`anthropic_messages`（Claude Code 使用，可指定地址和认证方式 Bearer 或 `x-api-key`）。保存接口后，后端自动提供所有协议兼容的运行器账号；“Agent 运行器”只选择接下来测试的账号，不会再登记第二个账号。Resident 可使用这些账号执行命令、编辑文件和使用工具。登记时 Portal 检查接口是否声明了该 Harness 需要的协议；仍有账号使用的协议不能撤下，接口也不能删除。
   - 不确定接口支持哪些协议时，点“高级设置”中的“检测接口协议”（`ProbeModelApi`）：Portal 用表单中的地址、模型和密钥向 Chat Completions、Responses 和 Anthropic Messages 各发一次很短的请求，按结果勾选协议并选好 Anthropic 的认证方式，仍可手动修改。返回 2xx 且内容符合协议格式才算支持；检测会调用模型，可能产生少量费用，不修改登记。
   - Codex：密钥由 `codex login --with-api-key` 写入账号目录的 `auth.json`，`config.toml` 中由 Portal 维护的部分把整个 app-server 指向该接口，并关闭联网搜索、连接器、插件和遥测；模型及推理强度来自模型列表，`context_window` 用于自动压缩。修改接口地址或密钥会重写配置并重启该账号的 app-server，已有会话在重启后继续；账号有排队或运行中的执行时拒绝修改，只改模型列表不重启。
-  - Codex 默认路线：未指定账号的 Resident 和个人助理使用它。站点只有一个启用的 Codex 账号时，它就是默认路线；有多个时，在执行账号列表中对另一个启用的 Codex 账号点“设为默认路线”，原默认账号的标记同时取消。
+  - Codex 默认路线：已选择 Codex 但没有指定路线时的 Provider 内部默认值。站点只有一个启用的 Codex 账号时，它就是默认路线；有多个时，在执行账号列表中对另一个启用的 Codex 账号点“设为默认路线”，原默认账号的标记同时取消。AMA 使用的站点默认 AI 仍需按下文配置。
   - Claude Code：后台、标题和子代理请求都使用所选模型。
   - 并不是所有“OpenAI 兼容”接口都实现了 `/responses` 或 Anthropic Messages；以“接入并启用 AI”的测试结果为准。局域网内的接口如果需要绕过站点代理，请在网络设置中加入 `NO_PROXY`。
 - **Backend 角色**：用 `UpdateBackendRole` 设置账号、模型和推理强度。新建 Resident 可选角色，省略时使用 `default`；显式 provider、account_id 和 settings 优先。角色更改不会改写已有 Resident 或 Provider 会话绑定。
+
+“已接入的 AI”按模型 API 的连接名称合并展示，同一连接的模型和地址只显示一次；展开“查看执行账号”可区分 Codex、Kimi Code、OpenCode 和直连等运行方式，以及同一运行器下的不同账号。各账号保留独立的设置与测试、默认路线和删除操作。即使接口地址和默认模型相同，不同连接也分别展示。
+
+**启用 Ask Me Anything**：保存接口之后，还需完成账号的“测试并完成”，并勾选“用作默认 AI”。已保存的账号可从“已接入的 AI”中点击“设为默认 AI”进入测试；只有测试通过才更新 `default` Backend 角色。页面会显示尚未配置默认 AI 的提示，并标记当前默认 AI。Codex 的“默认路线”与站点的默认 AI 是不同设置，设置路线不能代替配置 Backend 角色。首次配置后，已有但尚未绑定后端的 AMA 和 Resident 会使用默认 AI；已有会话绑定保持不变。
 
 Provider 区的“检查更新”调用 `ListProviders(refresh=true)`，只查询已安装和可用版本并保存观察；安装和激活由运行时更新器负责。
 
