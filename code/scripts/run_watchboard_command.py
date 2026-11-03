@@ -26,9 +26,17 @@ def main():
     if not isinstance(args, dict):
         raise ValueError("command arguments must be an object")
     os.chdir(root)
-    # exec keeps cancellation, stdout/stderr and exit status owned by RunScript.
-    os.execv(sys.executable, [sys.executable, str(entrypoint),
-                             *command_words(command, spec), *argument_words(spec, args)])
+    argv = [sys.executable, str(entrypoint),
+            *command_words(command, spec), *argument_words(spec, args)]
+    if sys.platform == "win32":
+        # Windows exec exits the original process before its replacement ends.
+        # RunScript would then finish and reap that replacement's enclosing Job.
+        # Wait in the owned wrapper and inherit stdout/stderr; nested Jobs keep
+        # cancellation and descendants inside the original ScriptRun lifetime.
+        from management_common.process_runtime import run_process
+        raise SystemExit(run_process(argv).returncode)
+    # POSIX exec preserves the process identity and its owned process group.
+    os.execv(sys.executable, argv)
 
 
 if __name__ == "__main__":
