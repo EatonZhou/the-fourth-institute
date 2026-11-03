@@ -5,21 +5,20 @@ from pathlib import Path
 from urllib.parse import parse_qs
 
 from management_portal import (
-    http_auth, http_documents, http_request_body, http_responses, repo_workspace_ai,
+    http_auth, http_documents, http_request_body, http_responses, permission_system, repo_workspace_ai,
     repo_workspace_auto_commit, repo_workspace_checkout, repo_workspace_descriptions, repo_workspace_files,
     repo_workspace_git, repo_workspace_history, repo_workspace_network, repo_workspace_operations,
     repo_workspace_overview, repo_workspace_statistics, web_resources,
 )
-from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
+from management_portal.http_routes import ROUTE_NOT_FOUND
 from management_portal.resources import get_resource_service
 
 ROOT = Path(__file__).resolve().parent
 
 
 class RepoHttp:
-    def __init__(self, *, session_actor, resource_service, read_json, require_resource,
+    def __init__(self, *, resource_service, read_json, require_resource,
                  notify_index, respond, exception_response):
-        self.session_actor = session_actor
         self.resource_service = resource_service
         self.read_json = read_json
         self.require_resource = require_resource
@@ -27,9 +26,14 @@ class RepoHttp:
         self.respond = respond
         self.exception_response = exception_response
 
+    def require_write(self, repo_id, actor):
+        self.require_resource(repo_id, actor)
+        if not permission_system.allows(actor, 'UpdateResource', {'resource_id': repo_id}):
+            raise PermissionError('没有修改此 Repo 的权限')
+
     def automation_status(self, request, parsed, route_actor):
         qs = parse_qs(parsed.query)
-        actor = self.session_actor(request) or ''
+        actor = route_actor
         repo_ids = [value for raw in qs.get('repo_id') or [] for value in str(raw).split(',') if value]
         if not repo_ids:
             repo_ids = [str(item.get('resource_id') or '') for item in self.resource_service().query(resource_types=['repo'], actor=actor, limit=5000).get('resources') or []]
@@ -44,9 +48,11 @@ class RepoHttp:
         if not re.fullmatch('repo_[0-9a-f]{12}', repo_id) or action not in {'', 'tree', 'stats', 'file', 'search', 'commits', 'commit', 'blame', 'diff', 'credentials'}:
             return ROUTE_NOT_FOUND
         qs = parse_qs(parsed.query)
-        actor = self.session_actor(request) or ''
+        actor = route_actor
         try:
             self.require_resource(repo_id, actor)
+            if action == 'credentials':
+                self.require_write(repo_id, actor)
             if not action:
                 result = repo_workspace_overview.repo_overview(repo_id)
             elif action == 'tree':
@@ -85,7 +91,7 @@ class RepoHttp:
 
     def description_generate(self, request, parsed, route_actor):
         payload = self.read_json(request)
-        actor = self.session_actor(request) or ''
+        actor = route_actor
         raw_repo_ids = payload.get('repo_ids') or []
         if isinstance(raw_repo_ids, str):
             raw_repo_ids = [raw_repo_ids]
@@ -93,7 +99,7 @@ class RepoHttp:
             return self.respond(request, 400, {'error': 'repo_ids must be an array'})
         try:
             for repo_id in raw_repo_ids:
-                self.require_resource(str(repo_id), actor)
+                self.require_write(str(repo_id), actor)
             result = repo_workspace_descriptions.generate_repo_descriptions([str(value) for value in raw_repo_ids], force=bool(payload.get('force')), provider_id=str(payload.get('provider') or ''), actor=actor)
             if result.get('generated_count'):
                 self.notify_index(resource_type='repo', kind='updated')
@@ -116,9 +122,9 @@ class RepoHttp:
         }:
             return ROUTE_NOT_FOUND
         payload = self.read_json(request)
-        actor = self.session_actor(request) or ''
+        actor = route_actor
         try:
-            self.require_resource(repo_id, actor)
+            self.require_write(repo_id, actor)
             if action == 'file':
                 result = repo_workspace_files.write_repo_file(repo_id, str(payload.get('path') or ''), str(payload.get('content') or ''), expected_hash=str(payload.get('expected_hash') or ''))
                 status = 200
@@ -184,7 +190,6 @@ class RepoHttp:
 def routes(portal):
     """The Repo workspace page and API (``web.routes``); ``portal`` is the Web shell."""
     http = RepoHttp(
-        session_actor=lambda request: http_auth._get_session_username(request),
         resource_service=lambda: get_resource_service(),
         read_json=lambda request: http_request_body._read_request_json(request),
         require_resource=lambda *args: web_resources._require_resource(*args),
@@ -197,10 +202,10 @@ def routes(portal):
         return http_documents._serve_authenticated_document(request, 200, (ROOT / 'repo_workspace.html').read_bytes())
 
     return (
-        RouteDefinition('GET', '/api/repos/automation/status', http.automation_status, 'portal-repo'),
-        RouteDefinition('GET', '/api/repos/{repo_id}/workspace', http.workspace_get, 'portal-repo', match='template'),
-        RouteDefinition('GET', '/api/repos/{repo_id}/workspace/{action}', http.workspace_get, 'portal-repo', match='template'),
-        RouteDefinition('POST', '/api/repos/descriptions/generate', http.description_generate, 'portal-repo'),
-        RouteDefinition('POST', '/api/repos/{repo_id}/workspace/{action}', http.workspace_post, 'portal-repo', match='template'),
-        *(RouteDefinition('GET', path, page, 'portal-pages-get', page=True) for path in ('/resource/repo', '/resource/repo/')),
+        http_auth._principal_route('GET', '/api/repos/automation/status', http.automation_status, 'portal-repo'),
+        http_auth._principal_route('GET', '/api/repos/{repo_id}/workspace', http.workspace_get, 'portal-repo', match='template'),
+        http_auth._principal_route('GET', '/api/repos/{repo_id}/workspace/{action}', http.workspace_get, 'portal-repo', match='template'),
+        http_auth._principal_route('POST', '/api/repos/descriptions/generate', http.description_generate, 'portal-repo'),
+        http_auth._principal_route('POST', '/api/repos/{repo_id}/workspace/{action}', http.workspace_post, 'portal-repo', match='template'),
+        *(http_auth._principal_route('GET', path, page, 'portal-pages-get', page=True) for path in ('/resource/repo', '/resource/repo/')),
     )

@@ -147,7 +147,7 @@ def test_stale_execution_receipt_does_not_replace_resource_authorization(checkpo
     execution = mock.Mock()
     execution.status.return_value = {"status": "completed", "request": {}}
     monkeypatch.setattr(content_changes, "get_execution_service", lambda: execution)
-    registry = ResourceService()
+    registry = ResourceService(index_provider=mock.Mock())
     update = mock.Mock(return_value={"resource_id": D})
     registry.register_mutation_provider("article", update=update)
     monkeypatch.setattr(registry, "_notify_mutation", mock.Mock(return_value={}))

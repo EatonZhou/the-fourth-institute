@@ -385,9 +385,9 @@ def routes(portal):
         *(RouteDefinition(method, f"/paper/api/{path}", handler, "paper", phase="dual-auth")
           for method, path, handler in api),
         # Bearer callers of a missing Paper API get 401/403 before 404, like the routes above.
-        RouteDefinition("GET", "/", lambda request, parsed, actor: unknown_api(request, parsed, actor, method="GET"),
-                        "paper-not-found", phase="dual-auth", match="fallback"),
-        RouteDefinition("POST", "/", lambda request, parsed, actor: unknown_api(request, parsed, actor, method="POST"),
-                        "paper-not-found", phase="dual-auth", match="fallback"),
+        RouteDefinition("GET", "/paper/api/", lambda request, parsed, actor: unknown_api(request, parsed, actor, method="GET"),
+                        "paper-not-found", phase="dual-auth", match="prefix_fallback"),
+        RouteDefinition("POST", "/paper/api/", lambda request, parsed, actor: unknown_api(request, parsed, actor, method="POST"),
+                        "paper-not-found", phase="dual-auth", match="prefix_fallback"),
         *(RouteDefinition("GET", path, page, "portal-pages-get", page=True) for path in ("/paper", "/paper/", "/paper.html")),
     )

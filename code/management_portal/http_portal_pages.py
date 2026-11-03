@@ -160,7 +160,7 @@ class PortalPagesHttp:
             principal_route("GET", "/workbenches/view", self.workbenches, "portal-portal-get", page=True),
             principal_route("GET", "/development", self.workbenches, "portal-portal-get", page=True),
             principal_route("GET", "/development/native-views", self.development_native_views, "portal-portal-get"),
-            RouteDefinition("GET", "/r/", self.resource_redirect, "portal-pages-get", match="prefix"),
+            principal_route("GET", "/r/", self.resource_redirect, "portal-pages-get", match="prefix"),
             RouteDefinition("GET", "/wall", self.wall, "portal-pages-get", page=True),
             RouteDefinition("GET", "/wall/", self.wall, "portal-pages-get", page=True),
             RouteDefinition("GET", "", self.home, "portal-pages-get"),

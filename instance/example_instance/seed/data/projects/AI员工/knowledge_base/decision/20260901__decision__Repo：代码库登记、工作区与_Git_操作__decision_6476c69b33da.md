@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 30
+  number: 31
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-03T18:37:04Z"
+  updated_at: "2026-11-03T20:08:38Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -217,6 +217,14 @@ repo_* → Repo 登记 → source_kind
 ```
 
 Repo ID 与磁盘路径分开，代码库可以通过明确维护更换位置，Git 来源可以登记多个 checkout，导出源码始终只有一个 canonical 内容根；凭据与共享的登记文件分开保存，秘密内容不会进入共享配置；Git 操作失败时以真实的工作区状态为恢复起点。
+
+## 页面调用者与资源授权
+
+Repo 页面、资源地址跳转及其配套 HTTP API 接受已登录 User 或 Portal 正式签发凭据的 Resident。公共页面鉴权核对 Resident 的当前 Lineage 成员身份；路由将同一已认证 actor 传给资源读取、可见列表、修改和 Git 凭据领域，不把 Resident 转成人类，也不回退到 Cookie 或空身份。模板路由的 Repo ID 与动作参数在鉴权后原样交给领域处理。
+
+无凭据的人类页面请求跳转登录；带无效凭据的请求和未认证 API 明确返回 401。主体存在但身份关系或资源授权被拒绝时返回 403。Repo 列表和读取沿用 ResourceService 的 ResolveResource 权限；文件及 Git 修改、简介生成和凭据管理额外按同一 actor 的 UpdateResource 权限检查目标 Repo。凭据列表也属于管理操作，凭据归属仍仅是当前主体。文档壳可打开不等于其内容可读取，页面内每个领域操作继续独立检查。
+
+鉴权只决定调用者身份，不能扩大 Git 来源的写权限或导出源码的只读能力；来源能力、路径边界和并发语义仍由 Repo 领域拥有。
 
 ## HTTP 接口
 

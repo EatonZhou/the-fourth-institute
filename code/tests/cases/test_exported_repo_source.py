@@ -56,7 +56,6 @@ def _service():
 
 def _workspace_http():
     return RepoHttp(
-        session_actor=lambda _request: "test-reader",
         resource_service=_service,
         read_json=lambda request: request,
         require_resource=lambda repo_id, _actor: resource_identity_backend.get_repo_record(repo_id),
@@ -125,7 +124,7 @@ def test_exported_workspace_http_browses_source_without_git(tmp_path, monkeypatc
         monkeypatch.setattr(module, "_git_bytes", lambda *_a, **_k: pytest.fail("exported browse invoked Git"))
     http = _workspace_http()
     def get(action="", path=""):
-        return http.workspace_get(None, urlparse("/?" + urlencode({"path": path})), "", {"repo_id": record["id"], "action": action})
+        return http.workspace_get(None, urlparse("/?" + urlencode({"path": path})), "test-reader", {"repo_id": record["id"], "action": action})
     status, overview = get()
     assert status == 200
     assert overview["source_kind"] == "exported_tree"
@@ -157,7 +156,7 @@ def test_exported_workspace_http_rejects_git_and_writes(tmp_path):
     record, root = _source(tmp_path)
     http = _workspace_http()
     for action in ("commits", "commit", "blame", "diff", "credentials", "stats", "search"):
-        status, result = http.workspace_get(None, urlparse("/?path=README.txt&sha=" + "a" * 40 + "&q=read"), "", {"repo_id": record["id"], "action": action})
+        status, result = http.workspace_get(None, urlparse("/?path=README.txt&sha=" + "a" * 40 + "&q=read"), "test-reader", {"repo_id": record["id"], "action": action})
         assert status == 400 and "exported_tree" in result["error"], (action, status, result)
     payloads = {
         "file": {"path": "README.txt", "content": "changed"},
@@ -171,7 +170,7 @@ def test_exported_workspace_http_rejects_git_and_writes(tmp_path):
         "credentials": {"operation": "delete", "credential_id": "test"},
     }
     for action, payload in payloads.items():
-        status, result = http.workspace_post(payload, urlparse("/"), "", {"repo_id": record["id"], "action": action})
+        status, result = http.workspace_post(payload, urlparse("/"), "test-reader", {"repo_id": record["id"], "action": action})
         assert status == 400 and "exported_tree" in result["error"], (action, status, result)
     assert (root / "README.txt").read_text() == "Exported source documentation\n"
     assert not (root / "new.txt").exists() and not (root / ".git").exists()
@@ -193,7 +192,7 @@ def test_exported_workspace_paths_do_not_expose_outside_or_git_metadata(tmp_path
     http = _workspace_http()
     for action in ("tree", "file"):
         for path in ("../private/secret", str(outside), "escape/secret", ".git/config", "metadata/config", "a\\b", "bad\x00name"):
-            status, _ = http.workspace_get(None, urlparse("/?" + urlencode({"path": path})), "", {"repo_id": record["id"], "action": action})
+            status, _ = http.workspace_get(None, urlparse("/?" + urlencode({"path": path})), "test-reader", {"repo_id": record["id"], "action": action})
             assert status == 400, (action, path, status)
     tree = repo_workspace_files.list_repo_tree(record["id"])
     assert tree["readme"] is None
@@ -227,7 +226,7 @@ def test_exported_workspace_browser_navigation(tmp_path):
             match = re.fullmatch(r"/api/repos/(repo_[0-9a-f]{12})/workspace/(\w+)", parsed.path)
             if match:
                 payload = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
-                status, data = http.workspace_post(payload, parsed, "", {"repo_id": match[1], "action": match[2]})
+                status, data = http.workspace_post(payload, parsed, "test-reader", {"repo_id": match[1], "action": match[2]})
             else:
                 status, data = 404, {}
             self.send_response(status)
@@ -239,7 +238,7 @@ def test_exported_workspace_browser_navigation(tmp_path):
             parsed = urlparse(self.path)
             match = re.fullmatch(r"/api/repos/(repo_[0-9a-f]{12})/workspace(?:/(\w+))?", parsed.path)
             if match:
-                status, data = http.workspace_get(None, parsed, "", {"repo_id": match[1], "action": match[2] or ""})
+                status, data = http.workspace_get(None, parsed, "test-reader", {"repo_id": match[1], "action": match[2] or ""})
             elif parsed.path == "/api/resource-index/query":
                 status, data = 200, {"resources": [{"resource_id": item["id"], "title": item["name"], "summary": "Fixture source"} for item in (record, git_record)]}
             elif parsed.path == "/api/repos/automation/status":

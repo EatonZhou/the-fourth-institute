@@ -575,7 +575,7 @@ def test_resource_routes_expose_category_shells_and_canonical_deep_links() -> No
     """资源分类页输出各自的页面骨架，/r/ 短链和 address 参数跳到规范详情地址"""
     server, thread, base = _server()
     try:
-        with mock.patch.object(http_auth, "_check_session", return_value=True):
+        with mock.patch.object(http_auth, "_check_session", return_value=True), mock.patch.object(http_auth, "_get_page_api_actor", return_value="CASE-A"):
             with urllib.request.urlopen(f"{base}/resource") as response:
                 html = _with_board_scripts(response.read().decode("utf-8"))
                 assert response.geturl().endswith("/resource/knowledge")
@@ -769,7 +769,7 @@ def test_resource_bridge_routes_do_not_fall_back_to_the_generic_resolver_page_co
         server, thread, base = _server()
         address = 'dataset_0123456789ab'
         try:
-            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(web_resources, '_resource_portal_location', return_value=''):
+            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(http_auth, '_get_page_api_actor', return_value='CASE-A'), mock.patch.object(web_resources, '_resource_portal_location', return_value=''):
                 for path in (f'/r/{address}', f'/{address}', f'/resource?address={address}', f'/resource.html?address={address}'):
                     try:
                         urllib.request.urlopen(f'{base}{path}')

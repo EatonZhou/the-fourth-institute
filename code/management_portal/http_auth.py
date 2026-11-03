@@ -82,7 +82,7 @@ def _get_request_actor(handler: SimpleHTTPRequestHandler) -> str | None:
 
 def _principal_route(method, path, handler, group, **options):
     """Declare a native surface whose domain supports both User and Resident."""
-    def route(request, parsed, _actor):
+    def route(request, parsed, _actor, *route_arguments):
         try:
             actor = _get_page_api_actor(request)
         except PermissionError as exc:
@@ -102,7 +102,7 @@ def _principal_route(method, path, handler, group, **options):
         from management_common.resource_lifecycle import lifecycle_scope
         try:
             with lifecycle_scope(request.headers.get("X-Portal-Resource-Lifecycle", ""), actor=actor):
-                return handler(request, parsed, actor)
+                return handler(request, parsed, actor, *route_arguments)
         finally:
             # A keep-alive HTTP handler can serve a different principal next.
             request._portal_authenticated_actor = None
