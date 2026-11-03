@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 65
+  number: 66
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-03T02:55:43Z"
+  updated_at: "2026-11-03T04:07:36Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -186,6 +186,8 @@ Resident 是 Portal 中可以长期工作的 AI 节点；一组有协作关系�
 `GetResidentInitialization(resident_id)` 读取初始化状态；`RetryResidentInitialization(resident_id)` 只恢复初始化，不建立新 Resident，不重发业务消息，不改变用户选定的上下文策略。读取要求目标 Resident 的 @viewer，恢复要求 @contributor。初始化尚未完成时，普通输入仍以原身份排队，不能覆盖创建工作；失败收尾与执行确认也不能因为已有 Session 而丢弃初始化工作。阻塞初始化期间的 Mailbox 读取包含已经接纳的原 pending 输入，保留作者、正文、媒体与顺序。
 
 Fork 初始化的付费确认由初始化自身持有。人类在正式 `RetryResidentInitialization` 中同时提交刚读取的 `expected_initialization_id`、`credits_consent={account_id,confirmed:true}` 和本次幂等键；账号必须与该初始化的稳定目标账号相同，主体、管理权限及新鲜 credits 读数沿用同一准入规则。已完成的初始化和已变化的尝试不能复用旧确认；没有确认时不增加额度例外。
+
+运行设置在当前初始化未完成时显示“继续初始化”，隐藏新会话上下文策略；该操作恢复当前尝试及已排队消息，不发起 Session 替换。人类在同一页面明确勾选本次目标账号的 credits 确认，页面提交当前初始化 ID。关闭后重新打开、目标尝试变化或刷新状态均清空勾选，后续会话不继承；非人类主体不显示付费确认。
 
 确认恢复原创建工作及冻结历史，不调用普通会话迁移，不重发排队消息。创建和首轮前压缩分别只授权当前步骤的唯一 Execution；恢复候选的授权只属于该候选。初始化完成后，授权提升到实际目标 Provider Session 引用，原队列按既有接单状态继续。中断恢复复用同一授权及执行身份，已提交结果只重试授权同步；明确失败后换用新候选时须重新确认，后续 ClearContext、重新开始、换账号和新 Fork 不继承。
 

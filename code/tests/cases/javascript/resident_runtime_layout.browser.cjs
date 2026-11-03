@@ -29,14 +29,18 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       window.PortalResidentService = {runtimeAccounts: async () => ({accounts: []}), runtimeCatalog: async () => catalog, observeSessionRestart: () => () => {}, refreshSessionRestart: async () => ({})};
       PortalUI.toast = message => {throw new Error(message);};
       const api = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml});
-      window.openSettings = () => {
+      window.initializationRequests = [];
+      PortalResidentService.retryResidentInitialization = async (rid, values) => {
+        initializationRequests.push({rid, ...values}); return {status: 'running'};
+      };
+      window.openSettings = (extra = {}) => {
         window.dialog?.destroy();
         window.dialog = api.createSessionRestartDialog();
         dialog.open({resident_id: 'fixture', source: {provider: 'codex', account_id: 'one'}, runtime_settings: {model: 'm'}, runtime_catalog: catalog,
           credits_confirmation: {allowed: true, scope: 'target_session'},
           application: {items: Array.from({length: 30}, (_, i) => ({path: 'capability_config.' + i, status: 'unknown', delivery: 'unknown'}))},
           providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}], accounts: {codex: [{id: 'one', context_options: choices(true)}, {id: 'two', context_options: choices(true)}], claude: [{id: 'claude_one', context_options: choices(false)}]},
-          onSave: async values => {saves.push(values); return {settings: values};}}, async values => {requests.push(values); return {status: 'completed'};});
+          onSave: async values => {saves.push(values); return {settings: values};}, ...extra}, async values => {requests.push(values); return {status: 'completed'};});
       };
       openSettings();
     });
@@ -101,6 +105,22 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.waitForFunction(() => requests.length === 2);
     assert.equal(await page.evaluate(() => requests[1].context_strategy), 'fresh');
     assert.deepEqual(await page.evaluate(() => requests[1].credits_consent), {account_id: 'one', confirmed: true});
+    await page.evaluate(() => openSettings({initialization: {initialization_id: 'original-init', status: 'running'}}));
+    assert.equal(await page.locator('[data-session-restart-submit]').innerText(), '继续当前初始化');
+    assert.equal(await page.locator('[data-session-restart="strategy"]').isVisible(), false);
+    assert.equal(await page.locator('[data-session-credits-consent]').isChecked(), false);
+    await page.check('[data-session-credits-consent]');
+    await page.click('[data-session-restart-submit]');
+    await page.waitForFunction(() => initializationRequests.length === 1);
+    const initialization = await page.evaluate(() => initializationRequests[0]);
+    assert.equal(initialization.expected_initialization_id, 'original-init');
+    assert.deepEqual(initialization.credits_consent, {account_id: 'one', confirmed: true});
+    assert.equal(await page.evaluate(() => requests.length), 2, 'initialization must not start a Session replacement');
+    await page.evaluate(() => openSettings({initialization: {initialization_id: 'next-init', status: 'running'}}));
+    assert.equal(await page.locator('[data-session-credits-consent]').isChecked(), false, 'a later attempt cannot inherit confirmation');
+    await page.locator('[data-session-restart-close]').last().click();
+    await page.evaluate(() => openSettings({initialization: {initialization_id: 'next-init', status: 'running'}, credits_confirmation: {allowed: false}}));
+    assert.equal(await page.locator('[data-session-credits-consent]').isVisible(), false, 'only humans can confirm');
     assert.deepEqual(errors, []);
     if (process.env.RUNTIME_SETTINGS_SCREENSHOT) {
       await page.evaluate(() => openSettings()); await tab('restart');

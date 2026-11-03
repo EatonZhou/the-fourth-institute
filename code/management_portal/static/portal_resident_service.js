@@ -665,6 +665,13 @@
         if (!pending) throw new Error("没有待确认的迁移请求，请刷新状态");
         return client.restartSession(pending.payload);
       },
+      retryResidentInitialization(residentId, options = {}) {
+        return execute("RetryResidentInitialization", {
+          resident_id: required(residentId, "resident_id"),
+          expected_initialization_id: options.expected_initialization_id,
+          ...(options.credits_consent ? {credits_consent: options.credits_consent} : {}),
+        }, {idempotencyKey: options.idempotency_key});
+      },
       async restartSession(payload = {}) {
         const source = payload && typeof payload === "object" ? payload : {};
         const residentId = source.resident_id;

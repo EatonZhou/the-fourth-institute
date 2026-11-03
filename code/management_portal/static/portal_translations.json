@@ -1,92 +1,356 @@
 {
-  "图刷新失败，本次修改尚未提交。请刷新后重试。": {"zh-CN": "图刷新失败，本次修改尚未提交。请刷新后重试。", "en": "Graph refresh failed; this change was not submitted. Refresh and try again."},
-  "修改已提交，正在更新图…": {"zh-CN": "修改已提交，正在更新图…", "en": "Change committed; updating the graph…"},
-  "没有与「{p0}」匹配的项目。": {"zh-CN": "没有与「{p0}」匹配的项目。", "en": "No projects match “{p0}”."},
-  "当前筛选条件下没有项目。": {"zh-CN": "当前筛选条件下没有项目。", "en": "No projects match the current filters."},
-  "清除搜索，显示全部项目": {"zh-CN": "清除搜索，显示全部项目", "en": "Clear search and show all projects"},
-  "显示全部项目": {"zh-CN": "显示全部项目", "en": "Show all projects"},
-  "重新读取项目": {"zh-CN": "重新读取项目", "en": "Reload projects"},
-  "正在筛选：{p0}": {"zh-CN": "正在筛选：{p0}", "en": "Filtering by: {p0}"},
-  "匹配 {p0} 个项目": {"zh-CN": "匹配 {p0} 个项目", "en": "{p0} matching projects"},
-  "清除搜索": {"zh-CN": "清除搜索", "en": "Clear search"},
-  "Workspace 已删除或不可用": {"zh-CN": "Workspace 已删除或不可用", "en": "Workspace has been deleted or is unavailable"},
-  "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。": {"zh-CN": "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。", "en": "Create a Portal-managed Workspace at an empty location; delete it with its owning object."},
-  "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。": {"zh-CN": "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。", "en": "Register an existing directory as a new Workspace; unregistering removes the record and preserves the directory."},
-  "区域内或区域外的绝对目录路径": {"zh-CN": "区域内或区域外的绝对目录路径", "en": "Absolute directory path inside or outside instance areas"},
-  "本次操作的稳定 ID；同一 ID 重试沿用原 Workspace": {"zh-CN": "本次操作的稳定 ID；同一 ID 重试沿用原 Workspace", "en": "Stable operation ID; retries with the same ID reuse the original Workspace"},
-  "目录所属 Resident、Lineage 或 Project；省略表示属于 Workspace 自己；不授予权限": {"zh-CN": "目录所属 Resident、Lineage 或 Project；省略表示属于 Workspace 自己；不授予权限", "en": "Resident, Lineage or Project the directory belongs to; omit for the Workspace itself; grants no permissions"},
-  "Workspace 名称": {"zh-CN": "Workspace 名称", "en": "Workspace name"},
-  "稳定 Workspace ID": {"zh-CN": "稳定 Workspace ID", "en": "Stable Workspace ID"},
-  "Workspace 记录": {"zh-CN": "Workspace 记录", "en": "Workspace record"},
-  "查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。": {"zh-CN": "查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。", "en": "View directory file cleanup progress; available to the original unregistering caller or callers with read access to the object."},
-  "被删除或产生清理任务的对象 ID": {"zh-CN": "被删除或产生清理任务的对象 ID", "en": "ID of the deleted object or the object that generated cleanup work"},
-  "文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告": {"zh-CN": "文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告", "en": "File cleanup status, attempt count, failure reason and completion time; reported separately from registration removal"},
-  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；relative_path 用 / 分隔，不接受绝对路径、.. 或当前文件系统不允许的字符": {"zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；relative_path 用 / 分隔，不接受绝对路径、.. 或当前文件系统不允许的字符", "en": "String resource address or {workspace_id|repo_id|article_id, relative_path} file reference; relative_path uses / separators and rejects absolute paths, .. and characters invalid on the current filesystem"},
-  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；移动后继续按对象的当前登记目录读取": {"zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；移动后继续按对象的当前登记目录读取", "en": "String resource address or {workspace_id|repo_id|article_id, relative_path} file reference; reads use the object's current registered directory after a move"},
-  "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 文件引用": {"zh-CN": "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 文件引用", "en": "Durable {workspace_id|repo_id|article_id, relative_path} file reference"},
-  "本轮已结束": {"zh-CN": "本轮已结束", "en": "Turn ended"},
-  "本轮失败": {"zh-CN": "本轮失败", "en": "Turn failed"},
-  "本轮已中断": {"zh-CN": "本轮已中断", "en": "Turn interrupted"},
-  "本轮已取消": {"zh-CN": "本轮已取消", "en": "Turn cancelled"},
-  "未完成": {"zh-CN": "未完成", "en": "Incomplete"},
-  "未执行": {"zh-CN": "未执行", "en": "Not executed"},
-  "当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。": {"zh-CN": "当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。", "en": "This instance's root directory, its areas and its fixed directories. An area can move as a whole to another absolute path: Portal stops its services during the move and restarts them afterwards; database records do not change. Secrets, the database, the cache and runtime files stay fixed under the instance root."},
-  "共享 Skill": {"zh-CN": "共享 Skill", "en": "Shared Skills"},
-  "功能数据": {"zh-CN": "功能数据", "en": "Feature data"},
-  "Provider 状态": {"zh-CN": "Provider 状态", "en": "Provider state"},
-  "密钥": {"zh-CN": "密钥", "en": "Secrets"},
-  "数据库": {"zh-CN": "数据库", "en": "Database"},
-  "缓存": {"zh-CN": "缓存", "en": "Cache"},
-  "运行文件": {"zh-CN": "运行文件", "en": "Runtime files"},
-  "正在移动文件": {"zh-CN": "正在移动文件", "en": "Moving files"},
-  "正在启动服务": {"zh-CN": "正在启动服务", "en": "Starting services"},
-  "正在删除原目录": {"zh-CN": "正在删除原目录", "en": "Deleting the original directory"},
-  "移动完成": {"zh-CN": "移动完成", "en": "Move completed"},
-  "移动失败": {"zh-CN": "移动失败", "en": "Move failed"},
-  "无法计算占用大小": {"zh-CN": "无法计算占用大小", "en": "Unable to measure the size"},
-  "占用": {"zh-CN": "占用", "en": "Size"},
-  "占用：计算中…": {"zh-CN": "占用：计算中…", "en": "Size: measuring…"},
-  "剩余空间": {"zh-CN": "剩余空间", "en": "Free space"},
-  "目录尚未创建": {"zh-CN": "目录尚未创建", "en": "Directory not created yet"},
-  "新的绝对路径": {"zh-CN": "新的绝对路径", "en": "New absolute path"},
-  "移动区域": {"zh-CN": "移动区域", "en": "Move area"},
-  "固定位置，不可修改": {"zh-CN": "固定位置，不可修改", "en": "Fixed location; cannot be changed"},
-  "无法读取数据目录": {"zh-CN": "无法读取数据目录", "en": "Unable to read the data directories"},
-  "实例根目录": {"zh-CN": "实例根目录", "en": "Instance root"},
-  "Portal 服务暂不可用，移动状态将在服务恢复后刷新。": {"zh-CN": "Portal 服务暂不可用，移动状态将在服务恢复后刷新。", "en": "Portal is temporarily unavailable; the move status refreshes when the service is back."},
-  "请填写新的绝对路径。": {"zh-CN": "请填写新的绝对路径。", "en": "Enter the new absolute path."},
-  "要把区域「{p0}」从 {p1} 移到 {p2} 吗？\n\n移动期间 Portal 停止服务，完成后自动重启，连接会暂时断开。": {"zh-CN": "要把区域「{p0}」从 {p1} 移到 {p2} 吗？\n\n移动期间 Portal 停止服务，完成后自动重启，连接会暂时断开。", "en": "Move the area “{p0}” from {p1} to {p2}?\n\nPortal stops its services during the move and restarts them afterwards; the connection drops for a while."},
-  "正在启动独立的移动任务…": {"zh-CN": "正在启动独立的移动任务…", "en": "Starting the independent move job…"},
-  "无法启动区域移动": {"zh-CN": "无法启动区域移动", "en": "Unable to start the area move"},
-  "账号目录": {"zh-CN": "账号目录", "en": "Account directory"},
-  "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。": {"zh-CN": "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。", "en": "Enter the canonical absolute path of the account directory on this host. An existing directory uses its current login; a missing directory is created before sign-in."},
-  "约每 ¥10 一枚金币，四舍五入": {"zh-CN": "约每 ¥10 一枚金币，四舍五入", "en": "About one coin per ¥10, rounded to the nearest coin"},
-  "约 {p0} CNY · 汇率 {p1}": {"zh-CN": "约 {p0} CNY · 汇率 {p1}", "en": "About {p0} CNY · Exchange rate dated {p1}"},
-  "充值 / 账单": {"zh-CN": "充值 / 账单", "en": "Top up / billing"},
-  "保存后继续接入与测试": {"zh-CN": "保存后继续接入与测试", "en": "Continue setup and testing after saving"},
-  "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。": {"zh-CN": "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。", "en": "Saving makes every protocol-compatible runner available when creating a Resident. Select one here to test; testing calls the model and may incur charges."},
-  "用量刷新失败": {"zh-CN": "用量刷新失败", "en": "Usage refresh failed"},
-  "每月总额度": {"zh-CN": "每月总额度", "en": "Monthly total quota"},
-  "每月编程额度": {"zh-CN": "每月编程额度", "en": "Monthly coding quota"},
-  "中国区": {"zh-CN": "中国区", "en": "Mainland China"},
-  "国际区": {"zh-CN": "国际区", "en": "International"},
-  "账号所属区域": {"zh-CN": "账号所属区域", "en": "Account region"},
-  "获取登录授权": {"zh-CN": "获取登录授权", "en": "Start authorization"},
-  "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。": {"zh-CN": "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。", "en": "Mainland China accounts use kimi.com; international accounts use kimi.ai. Start a new authorization after switching regions."},
-  "请获取所选区域的登录授权。": {"zh-CN": "请获取所选区域的登录授权。", "en": "Start authorization for the selected region."},
-  "请选择账号所属区域，然后获取登录授权。": {"zh-CN": "请选择账号所属区域，然后获取登录授权。", "en": "Choose your account region, then start authorization."},
-  "不支持的 Kimi 登录区域": {"zh-CN": "不支持的 Kimi 登录区域", "en": "Unsupported Kimi login region"},
-  "仅 Kimi 订阅登录支持选择区域": {"zh-CN": "仅 Kimi 订阅登录支持选择区域", "en": "Region selection is supported only for Kimi subscription login"},
-  "点击输入路径打开文件": {"en": "Click to type a path and open the file", "zh-CN": "点击输入路径打开文件"},
-  "{p0}\n点击输入路径打开文件": {"en": "{p0}\nClick to type a path and open the file", "zh-CN": "{p0}\n点击输入路径打开文件"},
-  "当前文件路径：{p0}": {"en": "Current file path: {p0}", "zh-CN": "当前文件路径：{p0}"},
-  "输入文件路径或资源 ID，回车打开": {"en": "Type a file path or resource ID, press Enter to open", "zh-CN": "输入文件路径或资源 ID，回车打开"},
-  "门面展示": {"en": "Facade display", "zh-CN": "门面展示"},
-  "{p1} · 工作详情": {"en": "{p1} · Work details", "zh-CN": "{p1} · 工作详情"},
-  "置顶消息": {"en": "Pin message", "zh-CN": "置顶消息"},
-  "跳到置顶消息": {"en": "Go to pinned message", "zh-CN": "跳到置顶消息"},
-  "取消置顶": {"en": "Unpin", "zh-CN": "取消置顶"},
-  "仅你可见，保存在当前浏览器": {"en": "Only visible to you, saved in this browser", "zh-CN": "仅你可见，保存在当前浏览器"},
+  "图刷新失败，本次修改尚未提交。请刷新后重试。": {
+    "zh-CN": "图刷新失败，本次修改尚未提交。请刷新后重试。",
+    "en": "Graph refresh failed; this change was not submitted. Refresh and try again."
+  },
+  "修改已提交，正在更新图…": {
+    "zh-CN": "修改已提交，正在更新图…",
+    "en": "Change committed; updating the graph…"
+  },
+  "没有与「{p0}」匹配的项目。": {
+    "zh-CN": "没有与「{p0}」匹配的项目。",
+    "en": "No projects match “{p0}”."
+  },
+  "当前筛选条件下没有项目。": {
+    "zh-CN": "当前筛选条件下没有项目。",
+    "en": "No projects match the current filters."
+  },
+  "清除搜索，显示全部项目": {
+    "zh-CN": "清除搜索，显示全部项目",
+    "en": "Clear search and show all projects"
+  },
+  "显示全部项目": {
+    "zh-CN": "显示全部项目",
+    "en": "Show all projects"
+  },
+  "重新读取项目": {
+    "zh-CN": "重新读取项目",
+    "en": "Reload projects"
+  },
+  "正在筛选：{p0}": {
+    "zh-CN": "正在筛选：{p0}",
+    "en": "Filtering by: {p0}"
+  },
+  "匹配 {p0} 个项目": {
+    "zh-CN": "匹配 {p0} 个项目",
+    "en": "{p0} matching projects"
+  },
+  "清除搜索": {
+    "zh-CN": "清除搜索",
+    "en": "Clear search"
+  },
+  "Workspace 已删除或不可用": {
+    "zh-CN": "Workspace 已删除或不可用",
+    "en": "Workspace has been deleted or is unavailable"
+  },
+  "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。": {
+    "zh-CN": "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。",
+    "en": "Create a Portal-managed Workspace at an empty location; delete it with its owning object."
+  },
+  "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。": {
+    "zh-CN": "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。",
+    "en": "Register an existing directory as a new Workspace; unregistering removes the record and preserves the directory."
+  },
+  "区域内或区域外的绝对目录路径": {
+    "zh-CN": "区域内或区域外的绝对目录路径",
+    "en": "Absolute directory path inside or outside instance areas"
+  },
+  "本次操作的稳定 ID；同一 ID 重试沿用原 Workspace": {
+    "zh-CN": "本次操作的稳定 ID；同一 ID 重试沿用原 Workspace",
+    "en": "Stable operation ID; retries with the same ID reuse the original Workspace"
+  },
+  "目录所属 Resident、Lineage 或 Project；省略表示属于 Workspace 自己；不授予权限": {
+    "zh-CN": "目录所属 Resident、Lineage 或 Project；省略表示属于 Workspace 自己；不授予权限",
+    "en": "Resident, Lineage or Project the directory belongs to; omit for the Workspace itself; grants no permissions"
+  },
+  "Workspace 名称": {
+    "en": "Workspace name",
+    "zh-CN": "Workspace 名称"
+  },
+  "稳定 Workspace ID": {
+    "zh-CN": "稳定 Workspace ID",
+    "en": "Stable Workspace ID"
+  },
+  "Workspace 记录": {
+    "zh-CN": "Workspace 记录",
+    "en": "Workspace record"
+  },
+  "查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。": {
+    "zh-CN": "查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。",
+    "en": "View directory file cleanup progress; available to the original unregistering caller or callers with read access to the object."
+  },
+  "被删除或产生清理任务的对象 ID": {
+    "zh-CN": "被删除或产生清理任务的对象 ID",
+    "en": "ID of the deleted object or the object that generated cleanup work"
+  },
+  "文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告": {
+    "zh-CN": "文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告",
+    "en": "File cleanup status, attempt count, failure reason and completion time; reported separately from registration removal"
+  },
+  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；relative_path 用 / 分隔，不接受绝对路径、.. 或当前文件系统不允许的字符": {
+    "zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；relative_path 用 / 分隔，不接受绝对路径、.. 或当前文件系统不允许的字符",
+    "en": "String resource address or {workspace_id|repo_id|article_id, relative_path} file reference; relative_path uses / separators and rejects absolute paths, .. and characters invalid on the current filesystem"
+  },
+  "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；移动后继续按对象的当前登记目录读取": {
+    "zh-CN": "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；移动后继续按对象的当前登记目录读取",
+    "en": "String resource address or {workspace_id|repo_id|article_id, relative_path} file reference; reads use the object's current registered directory after a move"
+  },
+  "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 文件引用": {
+    "zh-CN": "可持久保存的 {workspace_id|repo_id|article_id, relative_path} 文件引用",
+    "en": "Durable {workspace_id|repo_id|article_id, relative_path} file reference"
+  },
+  "本轮已结束": {
+    "zh-CN": "本轮已结束",
+    "en": "Turn ended"
+  },
+  "本轮失败": {
+    "zh-CN": "本轮失败",
+    "en": "Turn failed"
+  },
+  "本轮已中断": {
+    "zh-CN": "本轮已中断",
+    "en": "Turn interrupted"
+  },
+  "本轮已取消": {
+    "zh-CN": "本轮已取消",
+    "en": "Turn cancelled"
+  },
+  "未完成": {
+    "zh-CN": "未完成",
+    "en": "Incomplete"
+  },
+  "未执行": {
+    "en": "Not executed",
+    "zh-CN": "未执行"
+  },
+  "当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。": {
+    "zh-CN": "当前实例的根目录、各区域和固定目录。区域可以整体移到另一个绝对路径：移动期间 Portal 停止服务，完成后自动重启；数据库中的记录不用修改。密钥、数据库、缓存和运行文件固定在实例根目录下。",
+    "en": "This instance's root directory, its areas and its fixed directories. An area can move as a whole to another absolute path: Portal stops its services during the move and restarts them afterwards; database records do not change. Secrets, the database, the cache and runtime files stay fixed under the instance root."
+  },
+  "共享 Skill": {
+    "zh-CN": "共享 Skill",
+    "en": "Shared Skills"
+  },
+  "功能数据": {
+    "zh-CN": "功能数据",
+    "en": "Feature data"
+  },
+  "Provider 状态": {
+    "zh-CN": "Provider 状态",
+    "en": "Provider state"
+  },
+  "密钥": {
+    "zh-CN": "密钥",
+    "en": "Secrets"
+  },
+  "数据库": {
+    "zh-CN": "数据库",
+    "en": "Database"
+  },
+  "缓存": {
+    "zh-CN": "缓存",
+    "en": "Cache"
+  },
+  "运行文件": {
+    "zh-CN": "运行文件",
+    "en": "Runtime files"
+  },
+  "正在移动文件": {
+    "zh-CN": "正在移动文件",
+    "en": "Moving files"
+  },
+  "正在启动服务": {
+    "zh-CN": "正在启动服务",
+    "en": "Starting services"
+  },
+  "正在删除原目录": {
+    "zh-CN": "正在删除原目录",
+    "en": "Deleting the original directory"
+  },
+  "移动完成": {
+    "zh-CN": "移动完成",
+    "en": "Move completed"
+  },
+  "移动失败": {
+    "zh-CN": "移动失败",
+    "en": "Move failed"
+  },
+  "无法计算占用大小": {
+    "zh-CN": "无法计算占用大小",
+    "en": "Unable to measure the size"
+  },
+  "占用": {
+    "zh-CN": "占用",
+    "en": "Size"
+  },
+  "占用：计算中…": {
+    "zh-CN": "占用：计算中…",
+    "en": "Size: measuring…"
+  },
+  "剩余空间": {
+    "zh-CN": "剩余空间",
+    "en": "Free space"
+  },
+  "目录尚未创建": {
+    "zh-CN": "目录尚未创建",
+    "en": "Directory not created yet"
+  },
+  "新的绝对路径": {
+    "zh-CN": "新的绝对路径",
+    "en": "New absolute path"
+  },
+  "移动区域": {
+    "zh-CN": "移动区域",
+    "en": "Move area"
+  },
+  "固定位置，不可修改": {
+    "zh-CN": "固定位置，不可修改",
+    "en": "Fixed location; cannot be changed"
+  },
+  "无法读取数据目录": {
+    "zh-CN": "无法读取数据目录",
+    "en": "Unable to read the data directories"
+  },
+  "实例根目录": {
+    "zh-CN": "实例根目录",
+    "en": "Instance root"
+  },
+  "Portal 服务暂不可用，移动状态将在服务恢复后刷新。": {
+    "zh-CN": "Portal 服务暂不可用，移动状态将在服务恢复后刷新。",
+    "en": "Portal is temporarily unavailable; the move status refreshes when the service is back."
+  },
+  "请填写新的绝对路径。": {
+    "zh-CN": "请填写新的绝对路径。",
+    "en": "Enter the new absolute path."
+  },
+  "要把区域「{p0}」从 {p1} 移到 {p2} 吗？\n\n移动期间 Portal 停止服务，完成后自动重启，连接会暂时断开。": {
+    "zh-CN": "要把区域「{p0}」从 {p1} 移到 {p2} 吗？\n\n移动期间 Portal 停止服务，完成后自动重启，连接会暂时断开。",
+    "en": "Move the area “{p0}” from {p1} to {p2}?\n\nPortal stops its services during the move and restarts them afterwards; the connection drops for a while."
+  },
+  "正在启动独立的移动任务…": {
+    "zh-CN": "正在启动独立的移动任务…",
+    "en": "Starting the independent move job…"
+  },
+  "无法启动区域移动": {
+    "zh-CN": "无法启动区域移动",
+    "en": "Unable to start the area move"
+  },
+  "账号目录": {
+    "zh-CN": "账号目录",
+    "en": "Account directory"
+  },
+  "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。": {
+    "zh-CN": "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。",
+    "en": "Enter the canonical absolute path of the account directory on this host. An existing directory uses its current login; a missing directory is created before sign-in."
+  },
+  "约每 ¥10 一枚金币，四舍五入": {
+    "zh-CN": "约每 ¥10 一枚金币，四舍五入",
+    "en": "About one coin per ¥10, rounded to the nearest coin"
+  },
+  "约 {p0} CNY · 汇率 {p1}": {
+    "zh-CN": "约 {p0} CNY · 汇率 {p1}",
+    "en": "About {p0} CNY · Exchange rate dated {p1}"
+  },
+  "充值 / 账单": {
+    "zh-CN": "充值 / 账单",
+    "en": "Top up / billing"
+  },
+  "保存后继续接入与测试": {
+    "zh-CN": "保存后继续接入与测试",
+    "en": "Continue setup and testing after saving"
+  },
+  "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。": {
+    "zh-CN": "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。",
+    "en": "Saving makes every protocol-compatible runner available when creating a Resident. Select one here to test; testing calls the model and may incur charges."
+  },
+  "用量刷新失败": {
+    "zh-CN": "用量刷新失败",
+    "en": "Usage refresh failed"
+  },
+  "每月总额度": {
+    "zh-CN": "每月总额度",
+    "en": "Monthly total quota"
+  },
+  "每月编程额度": {
+    "zh-CN": "每月编程额度",
+    "en": "Monthly coding quota"
+  },
+  "中国区": {
+    "zh-CN": "中国区",
+    "en": "Mainland China"
+  },
+  "国际区": {
+    "zh-CN": "国际区",
+    "en": "International"
+  },
+  "账号所属区域": {
+    "zh-CN": "账号所属区域",
+    "en": "Account region"
+  },
+  "获取登录授权": {
+    "zh-CN": "获取登录授权",
+    "en": "Start authorization"
+  },
+  "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。": {
+    "zh-CN": "中国区账号使用 kimi.com，国际区账号使用 kimi.ai。切换区域后请重新获取授权。",
+    "en": "Mainland China accounts use kimi.com; international accounts use kimi.ai. Start a new authorization after switching regions."
+  },
+  "请获取所选区域的登录授权。": {
+    "zh-CN": "请获取所选区域的登录授权。",
+    "en": "Start authorization for the selected region."
+  },
+  "请选择账号所属区域，然后获取登录授权。": {
+    "zh-CN": "请选择账号所属区域，然后获取登录授权。",
+    "en": "Choose your account region, then start authorization."
+  },
+  "不支持的 Kimi 登录区域": {
+    "zh-CN": "不支持的 Kimi 登录区域",
+    "en": "Unsupported Kimi login region"
+  },
+  "仅 Kimi 订阅登录支持选择区域": {
+    "zh-CN": "仅 Kimi 订阅登录支持选择区域",
+    "en": "Region selection is supported only for Kimi subscription login"
+  },
+  "点击输入路径打开文件": {
+    "en": "Click to type a path and open the file",
+    "zh-CN": "点击输入路径打开文件"
+  },
+  "{p0}\n点击输入路径打开文件": {
+    "en": "{p0}\nClick to type a path and open the file",
+    "zh-CN": "{p0}\n点击输入路径打开文件"
+  },
+  "当前文件路径：{p0}": {
+    "en": "Current file path: {p0}",
+    "zh-CN": "当前文件路径：{p0}"
+  },
+  "输入文件路径或资源 ID，回车打开": {
+    "en": "Type a file path or resource ID, press Enter to open",
+    "zh-CN": "输入文件路径或资源 ID，回车打开"
+  },
+  "门面展示": {
+    "en": "Facade display",
+    "zh-CN": "门面展示"
+  },
+  "{p1} · 工作详情": {
+    "en": "{p1} · Work details",
+    "zh-CN": "{p1} · 工作详情"
+  },
+  "置顶消息": {
+    "en": "Pin message",
+    "zh-CN": "置顶消息"
+  },
+  "跳到置顶消息": {
+    "en": "Go to pinned message",
+    "zh-CN": "跳到置顶消息"
+  },
+  "取消置顶": {
+    "en": "Unpin",
+    "zh-CN": "取消置顶"
+  },
+  "仅你可见，保存在当前浏览器": {
+    "en": "Only visible to you, saved in this browser",
+    "zh-CN": "仅你可见，保存在当前浏览器"
+  },
   "下载并安装运行依赖": {
     "zh-CN": "下载并安装运行依赖",
     "en": "Downloading and installing dependencies"
@@ -23107,10 +23371,6 @@
     "en": "Cancel editing",
     "zh-CN": "取消编辑"
   },
-  "取消置顶": {
-    "en": "Unpin",
-    "zh-CN": "取消置顶"
-  },
   "取消请求": {
     "en": "Cancel request",
     "zh-CN": "取消请求"
@@ -29510,10 +29770,6 @@
   "未恢复的文件": {
     "en": "Unrecovered file",
     "zh-CN": "未恢复的文件"
-  },
-  "未执行": {
-    "en": "Not executed",
-    "zh-CN": "未执行"
   },
   "未找到所选消息": {
     "en": "Selected message not found",
@@ -39159,10 +39415,6 @@
     "en": "Resident binding",
     "zh-CN": "Resident 绑定"
   },
-  "Workspace 名称": {
-    "en": "Workspace name",
-    "zh-CN": "Workspace 名称"
-  },
   "Workspace 已不存在。": {
     "en": "Workspace no longer exists.",
     "zh-CN": "Workspace 已不存在。"
@@ -40962,5 +41214,17 @@
   "当前步骤，如 directory_dependencies、finalizing；结束后为 completed": {
     "en": "Current step, such as directory_dependencies or finalizing; completed after all steps finish",
     "zh-CN": "当前步骤，如 directory_dependencies、finalizing；结束后为 completed"
+  },
+  "继续初始化": {
+    "zh-CN": "继续初始化",
+    "en": "Continue initialization"
+  },
+  "继续当前初始化": {
+    "zh-CN": "继续当前初始化",
+    "en": "Continue current initialization"
+  },
+  "继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。": {
+    "zh-CN": "继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。",
+    "en": "Continue the current initialization, preserving inherited context and queued messages. Credits consent applies only to this initialization and the Session it creates."
   }
 }

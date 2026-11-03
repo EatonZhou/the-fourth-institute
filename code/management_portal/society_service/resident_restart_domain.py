@@ -396,7 +396,7 @@ def get_resident_restart_options(
     resident_id: str,
     actor: str = "",
 ) -> dict[str, Any]:
-    from . import resident_access
+    from . import resident_access, resident_initialization
     target = resident_record_domain.resolve_resident_runtime_target(
         resident_id,
         actor,
@@ -413,6 +413,8 @@ def get_resident_restart_options(
     return {
         "resident_id": target.resident_id,
         "source": source_snapshot,
+        "initialization": resident_initialization.view(target.resident_id, actor_id)
+        if resident_initialization.blocked(record) else {},
         "restart": copy.deepcopy(record.get("session_restart") or {}),
         "runtime_settings": resident_runtime_domain.read_resident_runtime_settings(record),
         "choose_runtime_settings": True,

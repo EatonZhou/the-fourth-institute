@@ -586,6 +586,8 @@
       let current = {}, view = "switch_account", restart, reload, cancelRestart, unobserve;
       let requestKey, submitting = false, tracking = false, restartView = {}, catalogRevision = 0, targetReady = false;
       const restartService = window.PortalResidentService;
+      const initializing = () => Boolean(current.initialization?.initialization_id)
+        && ["pending", "running", "failed"].includes(current.initialization.status);
       const requestId = () => "portal-session-restart:" + globalThis.PortalUIPrimitives.randomUUID();
       const selected = () => { try { return JSON.parse(target.value); } catch (_) { return []; } };
       const canonicalAccount = (provider, account) => {
@@ -619,6 +621,7 @@
       const close = context => dialog.close(context);
       const update = () => {
         const locked = submitting || tracking;
+        const preparing = initializing() && view === "restart";
         const retry = restartView.restart?.status === "confirming";
         const purpose = {switch_account: "切换账号", parameters: "运行参数", capabilities: "能力配置", restart: "重新开始会话"};
         const creditTarget = view === "restart" ? [current.source?.provider, current.source?.account_id] : selected();
@@ -632,8 +635,13 @@
           button.disabled = locked;
           button.setAttribute("aria-pressed", String(button.dataset.runtimeView === view));
           button.hidden = ["parameters", "capabilities"].includes(button.dataset.runtimeView) && !current.onSave;
+          if (button.dataset.runtimeView === "restart") button.textContent = window.PortalI18n.t(initializing() ? "继续初始化" : "重新开始会话");
         });
-        target.disabled = locked; strategy.disabled = locked;
+        target.disabled = locked; strategy.disabled = locked || preparing;
+        strategy.closest("label").hidden = preparing;
+        find("[data-session-restart-hint]").textContent = window.PortalI18n.t(preparing
+          ? "继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。"
+          : "使用当前账号重新开始会话，等待正在运行的工作完成。旧会话和历史记录保留。");
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         capabilities.disabled(locked);
         saveButton.hidden = view !== "parameters" || !current.onSave; saveButton.disabled = locked;
@@ -643,7 +651,7 @@
         find("[data-switch-context-description]").textContent = window.PortalI18n.t(!sameAccount() && choice?.id === "compact" ? choice.description : "");
         submit.disabled = submitting || !restart || (tracking && !retry) || (!retry && view === "switch_account" && (!target.value || sameAccount() || !choice || (crossProvider() && !targetReady)));
         const switchLabel = choice?.id === "compact" ? "交接并切换" : "切换账号";
-        submit.textContent = window.PortalI18n.t(retry ? "重试同一请求" : submitting ? "正在提交…" : view === "switch_account" ? switchLabel : purpose[view]);
+        submit.textContent = window.PortalI18n.t(retry ? "重试同一请求" : submitting ? "正在提交…" : preparing ? "继续当前初始化" : view === "switch_account" ? switchLabel : purpose[view]);
         cancel.hidden = !tracking; cancel.disabled = submitting || restartView.restart?.status === "cancelling";
       };
       const loadTarget = async () => {
@@ -698,6 +706,7 @@
         try {
           const refreshed = await reload?.();
           if (refreshed?.application) capabilities.showApplication(refreshed.application);
+          if (refreshed?.initialization) {current.initialization = refreshed.initialization; creditsConsent.checked = false; requestKey = requestId(); update();}
           await restartService.refreshSessionRestart?.(current.resident_id);
         }
         catch (error) {window.PortalUI.toast(window.PortalUI.errorMessage("刷新状态", error), "error");}
@@ -724,6 +733,15 @@
           const consent = creditsConsent.checked && !creditsConsent.disabled
             ? {account_id: canonicalAccount(provider, account), confirmed: true} : null;
           submitting = true; update();
+          if (!isSwitch && initializing()) {
+            await restartService.retryResidentInitialization(current.resident_id, {
+              expected_initialization_id: current.initialization.initialization_id,
+              ...(consent ? {credits_consent: consent} : {}), idempotency_key: requestKey,
+            });
+            await restartService.refreshSessionRestart?.(current.resident_id);
+            close({accepted: true});
+            return;
+          }
           const result = restartView.restart?.status === "confirming"
             ? await restartService.retrySessionRestart(current.resident_id)
             : await restart({operation: isSwitch && contextChoice()?.id === "preserve" ? "switch_account" : "restart",
@@ -736,12 +754,12 @@
           if (result?.status === "completed") close({accepted: true});
         } catch (error) {
           tracking = sessionRestartActive(restartView.restart);
-          if (!error.restartPending) {requestKey = requestId(); window.PortalUI.toast(window.PortalUI.errorMessage("会话操作", error), "error");}
+          if (!error.restartPending) {if (!initializing()) requestKey = requestId(); window.PortalUI.toast(window.PortalUI.errorMessage("会话操作", error), "error");}
         } finally {submitting = false; update();}
       });
       return {
         open(config = {}, onRestart = null, onReload = null, onCancel = null) {
-          current = {...config}; view = config.initial_view || "switch_account";
+          current = {...config}; view = config.initial_view || (initializing() ? "restart" : "switch_account");
           restart = onRestart; reload = onReload; cancelRestart = onCancel; requestKey = requestId();
           submitting = false; tracking = sessionRestartActive(config.restart); restartView = {restart: config.restart};
           unobserve?.(); saveHint.textContent = ""; strategy.value = "preserve"; creditsConsent.checked = false;
@@ -767,6 +785,10 @@
           if (current.resident_id && restartService) {
             unobserve = restartService.observeSessionRestart(current.resident_id, value => {
               const wasTracking = tracking;
+              if (value.config?.initialization && value.config.initialization.initialization_id !== current.initialization?.initialization_id) {
+                creditsConsent.checked = false; requestKey = requestId();
+              }
+              if (value.config?.initialization) current.initialization = value.config.initialization;
               restartView = value; tracking = sessionRestartActive(value.restart);
               if (tracking && value.restart?.target) {
                 const endpoint = value.restart.target;

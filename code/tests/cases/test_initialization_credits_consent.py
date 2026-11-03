@@ -42,6 +42,16 @@ def consent_io(monkeypatch):
     return policies
 
 
+def test_runtime_settings_exposes_current_initialization(pending_child):
+    from management_portal.society_service import resident_restart_domain
+    rid = pending_child['resident_id']
+    expected = resident_initialization.view(rid, 'sample_admin')
+    options = resident_restart_domain.get_resident_restart_options(rid, 'sample_admin')
+    assert options['initialization'] == expected
+    assert options['initialization']['initialization_id']
+    assert options['initialization']['status'] in {'pending', 'running', 'failed'}
+
+
 def consent_args(record):
     return {'resident_id': record['resident_id'],
             'expected_initialization_id': resident_initialization.view(record['resident_id'], 'sample_admin')['initialization_id'],
