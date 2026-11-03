@@ -316,8 +316,9 @@ class ResidentWatchboardTest(unittest.TestCase):
         """子 Resident 继承 Watchboard 文件副本，但需自行安装图组件，命令 ID 与父级不同"""
         self.install()
         child = {**self.record, "resident_id": "resident_bbbbbbbbbbbb",
-                 "owned_workspace": {"path": str(self.root / "child")}}
-        resident_watchboard_domain.inherit_watchboard(self.record, child)
+                 "owned_workspace": {"path": str(self.root / "child" / "workspace")}}
+        resident_watchboard_domain.inherit_watchboard(
+            self.record, resident_folder=watchboard_lineage.root(child).parent.parent)
         self.assertTrue((watchboard_lineage.root(child) / "agent.yaml").exists())
         self.assertFalse(resident_watchboard_domain.has_watchboard(child))
         self.assertNotEqual(watchboard_lineage.command_ids(child, "status"),

@@ -160,6 +160,12 @@ def _persist_derived_resident(
             return
         def initialize(_index, stage):
             resident_workspace_domain.ensure_resident_workspace(resident_payload, folder=stage)
+            # Message Fork can place the child under a different parent. Its
+            # Watchboard still comes from the context source, not that parent.
+            context_source_id = resident.get("context_source_resident_id")
+            watchboard_source = (resident_catalog.get_catalog().get(context_source_id)
+                                 if context_source_id else record)
+            resident_watchboard_domain.inherit_watchboard(watchboard_source, resident_folder=stage)
             source_identity = resident_record_domain.resident_instructions_path(record)
             if source_identity.is_file():
                 (stage / resident_domain_common.RESIDENT_INSTRUCTIONS_FILE).write_text(
@@ -346,10 +352,6 @@ def _create_resident_by_full_context_fork(
         lineage_source or "fork:full_context",
         now,
     )
-    watchboard_child = {**record, **child}
-    resident_watchboard_domain.inherit_watchboard(record, watchboard_child)
-    if "watchboard" in watchboard_child:
-        child["watchboard"] = watchboard_child["watchboard"]
     registry["residents"].append(child)
     child["fork_mode"] = "full"
     if compact_context:
@@ -605,10 +607,6 @@ def create_resident_fork_from_message(
             lineage_source or ("branch:message" if target_record is not record else "fork:message"),
             now,
         )
-        watchboard_child = {**target_record, **child}
-        resident_watchboard_domain.inherit_watchboard(record, watchboard_child)
-        if "watchboard" in watchboard_child:
-            child["watchboard"] = watchboard_child["watchboard"]
         stage_agent_data_fork(
             child,
             source.resident_id,
@@ -698,10 +696,6 @@ def create_resident_context_fork(
             lineage_source or "fork:recent_context",
             now,
         )
-        watchboard_child = {**record, **child}
-        resident_watchboard_domain.inherit_watchboard(record, watchboard_child)
-        if "watchboard" in watchboard_child:
-            child["watchboard"] = watchboard_child["watchboard"]
         stage_agent_data_fork(child, source.resident_id,
             segment_ids=[item["segment_id"] for item in segments])
         registry["residents"].append(child)

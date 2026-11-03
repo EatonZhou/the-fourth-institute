@@ -38,12 +38,12 @@ def _watchboard_agent_manifest_rel(record: dict[str, Any]) -> str:
     return "agent.yaml"
 
 
-def inherit_watchboard(source: dict[str, Any], child: dict[str, Any]) -> None:
-    """Give the child its own script tree, independently of source relocation."""
+def inherit_watchboard(source: dict[str, Any], *, resident_folder: Path) -> None:
+    """Copy into the creation owner's staging folder, before publication."""
     if not has_watchboard(source):
         return
     source_root = _watchboard_root(source)
-    target_root = watchboard_lineage.root(child)
+    target_root = resident_folder / "workspace" / "watchboard"
     if not target_root.exists() and source_root.is_dir():
         shutil.copytree(source_root, target_root, symlinks=True)
     # Independent files; the child installs its own graph through ISA.
