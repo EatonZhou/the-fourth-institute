@@ -29,6 +29,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       registration: {version: 1, enabled: true}, login_state: 'logged_in'}]};
     case 'ListModelApis': return {apis: []};
     case 'ListBackendRoles': return {roles};
+    case 'RegisterProviderAccount': return {};
     case 'GetProviderAccountSetup':
       if (setupError) throw new Error('暂时无法读取接入状态');
       if (holdSetup) await new Promise(resolve => { finishSetup = resolve; });
@@ -82,9 +83,18 @@ const click = text => {
   const button = [...window.document.querySelectorAll('button')].find(el => el.textContent === text);
   assert(button && !button.disabled, text); button.click();
 };
+let nextAccount = 0;
+const openSetup = async () => {
+  click('接入订阅帐号');
+  const form = window.document.querySelector('dialog form');
+  form.elements.account_id.value = `new-${++nextAccount}`;
+  form.elements.account_dir.value = `/fixture/accounts/new-${nextAccount}`;
+  form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
+  await flush();
+};
 (async () => {
   await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
-  click('接入与测试'); await flush();
+  await openSetup();
   assert.equal(window.document.querySelector('input[name=model]').value, 'model');
   const setupActions = () => [...window.document.querySelectorAll('dialog .backendActions button')].filter(el => !el.hidden);
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
@@ -93,12 +103,12 @@ const click = text => {
   assert(calls.some(call => call.name === 'UpdateBackendRole' && call.args.verification_execution_id === 'execution_check'));
   assert(!calls.some(call => ['PrepareProviderRuntime', 'OpenProviderAccountLogin'].includes(call.name)));
   assert.equal(window.document.querySelector('dialog'), null, 'a passing check completes the dialog');
-  click('接入与测试'); await flush();
+  await openSetup();
   window.document.querySelector('input[name=use_default]').checked = true;
   click('测试并完成'); await flush(); await flush();
   assert.deepEqual(calls.filter(call => call.name === 'UpdateBackendRole').map(call => call.options.expectedVersion), [0, 1]);
   missing = true; fail = true; prepareResult = 'preparing'; calls.length = 0;
-  click('接入与测试'); await flush();
+  await openSetup();
   assert.match(window.document.querySelector('[data-backend-preparation-detail]').textContent, /下载并安装运行依赖/);
   assert.match(window.document.querySelector('[data-backend-setup-stages]').textContent, /准备运行环境.*进行中/);
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '测试并完成').disabled);
@@ -143,7 +153,7 @@ const click = text => {
   click('关闭');
   // Failures expose recovery only when needed, rather than permanent manual steps.
   missing = true; preparation = 'missing'; prepareResult = 'failed'; calls.length = 0;
-  click('接入与测试'); await flush();
+  await openSetup();
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /准备失败/);
   assert.equal(timers.size, 0, 'failed preparation must not retry in a loop');
   click('重试'); await flush();
@@ -151,11 +161,11 @@ const click = text => {
   prepareResult = 'ready'; click('重试'); await flush();
   assert.deepEqual(setupActions().map(el => el.textContent), ['测试并完成']);
   click('关闭');
-  setupError = true; click('接入与测试'); await flush();
+  setupError = true; await openSetup();
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /无法读取/);
   setupError = false; click('重试'); await flush(); click('关闭');
   missing = true; preparation = 'missing'; prepareResult = 'busy'; calls.length = 0;
-  click('接入与测试'); await flush();
+  await openSetup();
   assert.equal(timers.size, 1, 'runtime update locks are retried automatically');
   prepareResult = 'ready'; tick(); await flush();
   assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 2);
@@ -163,17 +173,17 @@ const click = text => {
   click('关闭');
   // Observe an existing preparation, without submitting another one, and stop polling on close.
   missing = true; preparation = 'pending'; calls.length = 0;
-  click('接入与测试'); await flush();
+  await openSetup();
   assert(!calls.some(call => call.name === 'PrepareProviderRuntime'));
   assert.equal(timers.size, 1); click('关闭'); assert.equal(timers.size, 0);
   preparation = 'missing'; holdPrepare = true; calls.length = 0;
-  click('接入与测试'); await flush(); click('关闭');
+  await openSetup(); click('关闭');
   finishPrepare({preparation: {status: 'preparing'}}); await flush();
   assert.equal(calls.filter(call => call.name === 'GetProviderAccountSetup').length, 1);
   assert.equal(timers.size, 0); assert.equal(intervals.size, 0);
   holdPrepare = false;
   missing = false; loginState = 'logged_out'; provider = 'codex'; emptyCatalog = true; calls.length = 0;
-  click('接入与测试'); await flush();
+  await openSetup();
   assert.deepEqual(setupActions().map(el => el.textContent), ['登录', '测试并完成']);
   assert(setupActions().find(el => el.textContent === '测试并完成').disabled);
   assert(window.document.querySelector('input[name=model]').parentElement.hidden);
@@ -201,7 +211,7 @@ const click = text => {
   assert.equal(window.document.querySelector('dialog'), null);
   provider = 'claude'; emptyCatalog = false; loginSession = null;
   holdCheck = true; fail = false;
-  click('接入与测试'); await flush();
+  await openSetup();
   click('测试并完成'); await flush();
   const status = window.document.querySelector('[data-backend-setup-status]');
   assert.match(status.textContent, /正在启动本地后台/);
@@ -212,7 +222,7 @@ const click = text => {
   assert.equal(status.getAttribute('aria-busy'), 'false');
   assert.equal(window.document.querySelector('dialog'), null);
   holdCheck = false; queued = true; calls.length = 0;
-  click('接入与测试'); await flush();
+  await openSetup();
   window.document.querySelector('input[name=use_default]').checked = true;
   click('测试并完成'); await flush();
   const queuedStatus = window.document.querySelector('[data-backend-setup-status]');
@@ -234,7 +244,7 @@ const click = text => {
   assert.equal(window.document.querySelector('dialog'), null);
   // Closing during submission must not start a detached poll/default update.
   holdCheck = true; calls.length = 0;
-  click('接入与测试'); await flush(); click('测试并完成'); await flush(); click('关闭');
+  await openSetup(); click('测试并完成'); await flush(); click('关闭');
   finishCheck({execution_id: 'execution_check'}); await flush(); await flush();
   assert(!calls.some(call => ['GetProviderAccountCheck', 'UpdateBackendRole'].includes(call.name)));
   assert.equal(intervals.size, 0);

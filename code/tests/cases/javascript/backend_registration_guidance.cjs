@@ -37,7 +37,11 @@ const flush = async () => {for (let n = 0; n < 6; n++) await new Promise(resolve
 const click = text => {const b = [...window.document.querySelectorAll('button')].find(el => el.textContent === text); assert(b && !b.disabled, text); b.click();};
 (async () => {
   const panel = await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
-  click('接入订阅账号');
+  const introduction = window.document.querySelector('.backendIntroduction');
+  assert.equal(introduction.querySelector('h2').textContent, '添加 AI 后端');
+  assert.deepEqual([...introduction.querySelectorAll('button')].map(b => b.textContent), ['接入订阅帐号', '新增 API Key']);
+  assert(!introduction.querySelector('p, .backendChoice'), 'the introduction is a compact action row');
+  click('接入订阅帐号');
   let form = window.document.querySelector('dialog form');
   assert.equal(form.elements.kind.value, 'subscription_login');
   assert.match(form.textContent, /添加可用的 Agent 后端/);
@@ -136,7 +140,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.match(generated.api_id, /^api-[a-z0-9-]+$/);
   assert.equal(calls.filter(c => c.name === 'RegisterProviderAccount').at(-1).args.config.api_id, generated.api_id);
   assert(window.document.querySelector('[data-backend-setup-status]'));
-  click('关闭'); click('接入订阅账号');
+  click('关闭'); click('接入订阅帐号');
   form = window.document.querySelector('dialog form');
   form.elements.provider.value = 'claude';
   form.elements.provider.dispatchEvent(new window.Event('change'));
@@ -149,9 +153,12 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.equal(native.config.default_model, 'sonnet');
   assert.deepEqual(native.config.models, [{id: 'sonnet'}]);
   assert.equal(native.max_concurrency, 1);
+  const rowActions = [...window.document.querySelectorAll('[data-backend-account] button')].map(b => b.textContent);
+  for (const removed of ['接入与测试', '停用', '启用', '编辑初始并发']) assert(!rowActions.includes(removed));
+  assert(rowActions.includes('登录') && rowActions.includes('删除'));
   panel.destroy();
   const readonly = await context.mount(window.document.querySelector('main'), {me: {access: {allows: {}}}});
-  for (const title of ['接入订阅账号', '新增模型 API']) {
+  for (const title of ['接入订阅帐号', '新增 API Key', '新增模型 API']) {
     assert([...window.document.querySelectorAll('button')].filter(b => b.textContent === title).every(b => b.disabled));
   }
   readonly.destroy(); dom.window.close(); console.log('Backend registration guidance and partial-failure retry passed');

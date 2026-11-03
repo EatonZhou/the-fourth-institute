@@ -1,4 +1,7 @@
 {
+  "添加 AI 后端": {"zh-CN": "添加 AI 后端", "en": "Add an AI backend"},
+  "接入订阅帐号": {"zh-CN": "接入订阅帐号", "en": "Connect subscription account"},
+  "新增 API Key": {"zh-CN": "新增 API Key", "en": "Add API Key"},
   "图刷新失败，本次修改尚未提交。请刷新后重试。": {
     "zh-CN": "图刷新失败，本次修改尚未提交。请刷新后重试。",
     "en": "Graph refresh failed; this change was not submitted. Refresh and try again."

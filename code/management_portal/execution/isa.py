@@ -423,7 +423,8 @@ def list_providers(inv):
     from .account_registrations import PROVIDER_KINDS, config_fields, default_route, registrations
     from .provider_catalog import AGENT_PROVIDERS
     from .provider_updates import provider_runtime_status
-    runtime_status = provider_runtime_status(refresh=inv.argument("refresh") is True)
+    include_runtime = inv.argument("include_runtime") is not False
+    runtime_status = provider_runtime_status(refresh=inv.argument("refresh") is True) if include_runtime else {}
     rows = registrations()
     providers = []
     for provider, kinds in PROVIDER_KINDS.items():
@@ -437,15 +438,17 @@ def list_providers(inv):
         # Providers whose registrations mark a default report the route that is used.
         marks_default = any("is_default" in config_fields(provider, kind) for kind in kinds)
         default = (default_route(own) if marks_default else "") or (definition.default_route if definition else "")
-        providers.append({"provider": provider, "title": definition.label if definition else "Model API",
+        item = {"provider": provider, "title": definition.label if definition else "Model API",
                           "kinds": list(kinds), "capabilities": definition.runtime_capabilities() if definition else {},
-                          "runtime": runtime_status.get(provider, {"installed_version": "", "available_version": "",
-                                                                   "pending_switch": False, "checked_at": "", "check_error": ""}),
                           "default_route_id": default, "account_count": len(own),
                           # The Model API protocol an api_profile account needs ("" accepts any).
-                          "api_protocol": definition.api_protocol if definition else ""})
-        from .provider_updates import preparation_status
-        providers[-1]["preparation"] = preparation_status(provider)
+                          "api_protocol": definition.api_protocol if definition else ""}
+        if include_runtime:
+            from .provider_updates import preparation_status
+            item["runtime"] = runtime_status.get(provider, {"installed_version": "", "available_version": "",
+                                                           "pending_switch": False, "checked_at": "", "check_error": ""})
+            item["preparation"] = preparation_status(provider)
+        providers.append(item)
     return {"providers": providers}
 
 

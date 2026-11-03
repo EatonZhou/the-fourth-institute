@@ -126,6 +126,7 @@ DECLARATIONS = (
         R("default_routes", "object", description="Provider 到默认执行路由 ID 的映射")), owner="execution"),
     _d("ListProviders", FIXED, "列出 Provider、账号种类、能力与运行时状态。", (
         P("refresh", "boolean", "检查可用版本并保存观察；不安装或激活运行时"),
+        P("include_runtime", "boolean", "默认 true；false 只读接入目录，不探测版本或准备状态，并忽略 refresh"),
     ), (R("providers", "array", "Provider：provider、title、kinds、capabilities、runtime（已装与可用版本）、"
           "default_route_id、account_count"),), owner="execution"),
     _d("PrepareProviderRuntime", FIXED, "准备所选 Provider 的运行环境；复用已装程序，缺失时异步安装。", (

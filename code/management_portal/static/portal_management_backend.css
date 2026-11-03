@@ -24,11 +24,9 @@
 .backendForm [role=alert]:empty { display:none; }
 .backendDelete { max-width:32rem; }
 .backendDelete [role=alert] { color:var(--danger, #b3261e); white-space:normal; overflow-wrap:anywhere; }
-.backendIntroduction h2, .backendChoice h3 { margin:0; }
-.backendIntroduction p, .backendHint { color:var(--muted); font-size:13px; line-height:1.5; }
-.backendChoices { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap:12px; }
-.backendChoice { display:flex; flex-direction:column; align-items:flex-start; padding:16px; border:1px solid var(--border); border-radius:8px; background:var(--panel); }
-.backendChoice p { flex:1; }
+.backendIntroduction { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.backendIntroduction h2 { margin:0; font-size:16px; }
+.backendHint { color:var(--muted); font-size:13px; line-height:1.5; }
 .backendAdvanced { border-top:1px solid var(--border); padding-top:10px; }
 .backendAdvanced summary { cursor:pointer; color:var(--muted); }
 .backendAdvanced > .backendForm { margin-top:12px; }

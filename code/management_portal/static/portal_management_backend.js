@@ -202,6 +202,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
 export async function mount(root, {me = {}, accountId = ""} = {}) {
   loadStyle(); root.classList.add("backendManagement"); root.replaceChildren();
   let destroyed = false, busy = false, editor = null, login = null;
+  let pendingAccountId = accountId;
   const abort = new AbortController();
   const canWrite = me.access?.permission_system === "open" || me.access?.allows?.UpdateProviderAccount === true;
   const canRegister = me.access?.permission_system === "open" || me.access?.allows?.RegisterProviderAccount === true;
@@ -211,24 +212,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const state = {providers: [], accounts: [], apis: [], roles: []};
   let providersReady = false;
   const addAccount = button("新增执行账号", () => accountEditor(), true);
-  const addSubscription = button("接入订阅账号", () => accountEditor("subscription_login"), true);
-  const addApi = button("新增模型 API", () => apiEditor(), !canWrite);
+  const addSubscription = button("接入订阅帐号", () => accountEditor("subscription_login"), true);
+  const addApi = button("新增 API Key", () => apiEditor(), !canWrite);
   function syncAccountButton() {
     addAccount.disabled = !canRegister || busy || !providersReady || !state.providers.length;
     addSubscription.disabled = !canRegister || busy || !providersReady || !state.providers.some(p => p.kinds.includes("subscription_login"));
   }
   const notice = node("p", "", {role: "status", "data-backend-notice": ""}); root.append(notice);
   const introduction = node("section", undefined, {class: "backendIntroduction"});
-  introduction.append(node("h2", t("接入你的 AI")), node("p", t("先选择接入方式。这里连接你已有的账号或接口；订阅开通和 API Key 申请请在服务商处完成。")));
-  const choices = node("div", undefined, {class: "backendChoices"});
-  for (const [title, description, action] of [
-    ["订阅账号登录", "已有支持的 AI 编程订阅？给账号起名，选择后端，再通过浏览器登录授权，无需填写 API Key。", addSubscription],
-    ["使用 API Key", "只需服务商提供的接口地址、API Key 和模型名称。Portal 自动建立连接，随后测试并启用 AI。", addApi],
-  ]) {
-    const card = node("div", undefined, {class: "backendChoice"});
-    card.append(node("h3", t(title)), node("p", t(description)), action); choices.append(card);
-  }
-  introduction.append(choices); root.append(introduction);
+  introduction.append(node("h2", t("添加 AI 后端")), addSubscription, addApi); root.append(introduction);
   const management = advanced(root);
   const sections = {};
   for (const [key, title] of [["accounts", "已接入的 AI"], ["providers", "Provider"], ["apis", "模型 API"], ["roles", "Backend 角色"]]) {
@@ -621,14 +613,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       });
     });
   }
-  function concurrencyEditor(account) {
-    const {view, form} = newEditor("编辑初始并发");
-    const value = field(form, "初始并发上限", "max_concurrency", account.initial_max_concurrency ?? account.max_concurrency, {type: "number", min: "1", max: "256", step: "1", required: true});
-    saveButton(form); form.addEventListener("submit", event => { event.preventDefault(); void run(async () => {
-      await execute("UpdateProviderAccountRegistration", {account_id: account.account_id, changes: {max_concurrency: Number(value.value)}}, {expectedVersion: account.registration_version});
-      view.close(); await refresh("accounts");
-    }); });
-  }
   function apiEditor(api = null, {accountId: setupAccountId = "", newAccountId = "", newProvider = "provider_api"} = {}) {
     const {view, form} = newEditor(api ? "编辑模型 API" : "新增模型 API");
     form.append(node("p", t(api ? "修改连接信息。API Key 留空时保留当前密钥。" : "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"), {class: "backendHint"}));
@@ -813,14 +797,12 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       return {id: a.account_id, cells: [identity, a.kind === "api_profile" ? "API Key" : t(kinds[a.kind] || a.kind || "—"),
         [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : "",
           isDefault ? t("默认路线") : ""].filter(Boolean).join(" · "),
-        actions(button("接入与测试", () => setupEditor(a.account_id), !canWrite), ...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
+        actions(...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
           ...(api ? [button("编辑连接", () => apiEditor(api, {accountId: a.account_id}), !canWrite)] : []),
           ...(a.provider === "claude" && a.kind === "subscription_login" ? [button("编辑模型目录", () => claudeCatalogEditor(a), readonly)] : []),
           ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
             await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
             await reload(); }), readonly)] : []),
-          button(a.enabled === false ? "启用" : "停用", () => void run(async () => { await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {enabled: a.enabled === false}}, {expectedVersion: a.registration_version}); await reload(); }), readonly),
-          button("编辑初始并发", () => concurrencyEditor(a), readonly),
           deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || !Number.isInteger(a.registration_version),
             !Number.isInteger(a.registration_version) ? "Provider 内置身份没有可删除的账号登记。" : "当前身份没有删除权限。"))]};
     })),
@@ -842,16 +824,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   };
   const instructions = {providers: "ListProviders", accounts: "ListProviderAccounts", apis: "ListModelApis", roles: "ListBackendRoles"};
   async function refresh(key, args = {}) {
-    if (key === "providers") { providersReady = false; syncAccountButton(); }
     try {
       const result = await execute(instructions[key], args); if (destroyed) return;
       state[key] = key === "accounts" ? (result.accounts || []).map(account => account.registration ? {
         ...account, ...account.registration, registration_version: account.registration.version,
-        initial_max_concurrency: account.registration.max_concurrency,
       } : account) : result[key] || [];
       if (key === "providers") providersReady = true;
       renderers[key]();
-      if (key === "apis") renderers.accounts();
+      if (key === "apis" || key === "providers") renderers.accounts();
+      if (key === "accounts" && pendingAccountId) focusAccount(pendingAccountId);
     } catch (error) { if (!destroyed) sections[key].output.replaceChildren(node("p", errorText(error), {role: "alert"})); }
     finally { if (!destroyed) syncAccountButton(); }
   }
@@ -865,11 +846,16 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   sections.apis.actions.append(button("新增模型 API", () => apiEditor(), !canWrite));
   sections.roles.actions.append(button("新增 Backend 角色", () => roleEditor(), !canWrite));
   for (const key of Object.keys(sections)) sections[key].actions.append(button("刷新", () => void refresh(key)));
-  await Promise.all(Object.keys(sections).map(key => refresh(key)));
+  // Opening registration needs the catalog, not runtime probes or account health.
+  const catalogReady = refresh("providers", {include_runtime: false});
+  for (const key of ["accounts", "apis", "roles"]) void refresh(key);
+  await catalogReady;
+  if (!destroyed) void refresh("providers");
   function focusAccount(id) {
     if (!id) return;
+    pendingAccountId = id;
     const row = [...root.querySelectorAll("[data-backend-account]")].find(el => el.dataset.backendAccount === id);
-    if (row) { row.scrollIntoView({block: "center"}); row.focus({preventScroll: true}); }
+    if (row) { pendingAccountId = ""; row.scrollIntoView({block: "center"}); row.focus({preventScroll: true}); }
   }
   focusAccount(accountId);
   return {focusAccount, openAccountEditor: accountEditor, isBusy: () => busy, hasUnsavedChanges: () => Boolean(editor),

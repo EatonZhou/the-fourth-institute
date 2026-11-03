@@ -9,6 +9,8 @@ const source = name => fs.readFileSync(path.resolve(__dirname, '../../../managem
 const tag = (parts, ...args) => parts.reduce((s, p, i) => s + p + (args[i] ?? ''), '');
 const calls = [], notices = [];
 let accounts = [], panel, release;
+let holdInitial = true;
+const pendingLists = new Map();
 w.PortalI18n = {t: x => x, html: tag, text: tag};
 w.PortalIdentity = {passwordRequirements: ''};
 w.PortalUI = {toast: message => notices.push(message), createDialogController: ({modal, onClose}) => ({
@@ -16,6 +18,10 @@ w.PortalUI = {toast: message => notices.push(message), createDialogController: (
 })};
 w.PortalInstructionClient = {execute: async (name, args) => {
   calls.push({name, args});
+  if (holdInitial && ['ListProviders', 'ListProviderAccounts', 'ListModelApis', 'ListBackendRoles'].includes(name)
+      && !(name === 'ListProviders' && args.include_runtime === false)) {
+    return new Promise(resolve => pendingLists.set(name, resolve));
+  }
   switch (name) {
     case 'ListProviders': return {providers: [{provider: 'codex', kinds: ['subscription_login']}]};
     case 'ListProviderAccounts': return {accounts};
@@ -74,8 +80,15 @@ const flush = async () => { for (let i = 0; i < 10; i++) await new Promise(r => 
   assert(!button.disabled);
   const form = w.document.querySelector('dialog[aria-label="新增执行账号"] form');
   assert(form, 'Home entry opens the existing account registration form through Management');
+  assert.equal(pendingLists.size, 4, 'registration opens while runtime, account, API and role reads are still pending');
+  const subscribe = [...w.document.querySelectorAll('button')].find(b => b.textContent === '接入订阅帐号');
+  assert(subscribe && !subscribe.disabled, 'runtime probes must not disable subscription registration');
   assert(!form.elements.max_concurrency, 'initial settings are assigned without advanced fields');
   form.elements.account_id.value = 'first-ai';
+  holdInitial = false;
+  for (const [name, resolve] of pendingLists) resolve(await w.PortalInstructionClient.execute(name, {}));
+  await flush();
+  assert.equal(form.elements.account_id.value, 'first-ai', 'late list responses preserve the registration draft');
   form.dispatchEvent(new w.Event('submit', {bubbles: true, cancelable: true})); await flush();
   const registered = calls.filter(c => c.name === 'RegisterProviderAccount');
   assert.equal(registered.length, 1);
@@ -106,5 +119,18 @@ const flush = async () => { for (let i = 0; i < 10; i++) await new Promise(r => 
   const denied = await backend.namespace.mount(w.document.querySelector('main'), {me: {access: {allows: {UpdateProviderAccount: true}}}});
   assert.throws(() => denied.openAccountEditor(), /没有新增/);
   assert(!w.document.querySelector('dialog')); denied.destroy();
+  holdInitial = true; pendingLists.clear();
+  const focused = [];
+  w.HTMLElement.prototype.scrollIntoView = function () { focused.push(this.dataset.backendAccount); };
+  const targeted = await backend.namespace.mount(w.document.querySelector('main'), {me, accountId: 'first-ai'});
+  assert.equal(focused.length, 0);
+  pendingLists.get('ListProviderAccounts')({accounts}); await flush();
+  assert.deepEqual(focused, ['first-ai'], 'a late account list still honors navigation to a specific account');
+  targeted.destroy();
+  pendingLists.get('ListProviders')({providers: []});
+  pendingLists.get('ListModelApis')({apis: []});
+  pendingLists.get('ListBackendRoles')({roles: []});
+  await flush();
+  assert.equal(w.document.querySelector('main').childElementCount, 0, 'late reads cannot revive a closed panel');
   console.log('Home empty-account entry, Management dialog, registration, permissions and retry passed');
 })().finally(() => { panel?.destroy(); dom.window.close(); }).catch(error => { console.error(error); process.exitCode = 1; });
