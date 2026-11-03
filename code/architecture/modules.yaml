@@ -1181,6 +1181,8 @@ modules:
       - "scripts/tfi_release_windows_service.py"
       - "scripts/bootstrap_portal"
       - "scripts/install_article_tooling*"
+      - "scripts/article_dependencies.py"
+      - "management_common/tex_tool_paths.py"
       - "scripts/portal_background_jobs.py"
       - "management_portal/__init__.py"
       - "scripts/portal_services"
