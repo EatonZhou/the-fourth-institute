@@ -504,21 +504,73 @@
     "zh-CN": "Codex 本地后台未能在规定时间内就绪。登录授权仍然保留；请重试“测试并完成”，若仍失败请检查该账号的后台服务日志。",
     "en": "The local Codex service did not become ready in time. Your sign-in is preserved. Retry “Test and finish”; if it fails again, check this account’s service logs."
   },
-  "模型列表（可选，JSON 数组）": {
-    "zh-CN": "模型列表（可选，JSON 数组）",
-    "en": "Models (optional, JSON array)"
+  "模型列表": {
+    "zh-CN": "模型列表",
+    "en": "Models"
   },
-  "声明这个接口提供的模型。每项的 id 是模型名称，reasoning_efforts 是该模型接受的推理强度；声明后，直连这个接口的 Resident 可在对话设置中选择。列表需包含上面的模型名称；留空则不声明。": {
-    "zh-CN": "声明这个接口提供的模型。每项的 id 是模型名称，reasoning_efforts 是该模型接受的推理强度；声明后，直连这个接口的 Resident 可在对话设置中选择。列表需包含上面的模型名称；留空则不声明。",
-    "en": "Declare the models this API offers. Each item's id is the model name, and reasoning_efforts lists the reasoning efforts that model accepts; once declared, Residents calling this API directly can choose them in their conversation settings. The list must include the model name above; leave it empty to declare none."
+  "添加服务商提供的模型标识，并选择一个默认模型。名称需与服务商文档完全一致。": {
+    "zh-CN": "添加服务商提供的模型标识，并选择一个默认模型。名称需与服务商文档完全一致。",
+    "en": "Add the model identifiers your provider offers and choose a default. Use the exact names from your provider's documentation."
   },
-  "模型列表必须是 JSON 数组。": {
-    "zh-CN": "模型列表必须是 JSON 数组。",
-    "en": "The model list must be a JSON array."
+  "模型标识": {
+    "zh-CN": "模型标识",
+    "en": "Model identifier"
   },
-  "模型列表需要包含上面填写的模型名称。": {
-    "zh-CN": "模型列表需要包含上面填写的模型名称。",
-    "en": "The model list must include the model name entered above."
+  "添加模型": {
+    "zh-CN": "添加模型",
+    "en": "Add model"
+  },
+  "移除模型": {
+    "zh-CN": "移除模型",
+    "en": "Remove model"
+  },
+  "未命名模型": {
+    "zh-CN": "未命名模型",
+    "en": "Unnamed model"
+  },
+  "将模型 {p0} 设为默认": {
+    "zh-CN": "将模型 {p0} 设为默认",
+    "en": "Use {p0} as the default model"
+  },
+  "移除模型 {p0}": {
+    "zh-CN": "移除模型 {p0}",
+    "en": "Remove model {p0}"
+  },
+  "模型设置（可选）": {
+    "zh-CN": "模型设置（可选）",
+    "en": "Model settings (optional)"
+  },
+  "启用模型": {
+    "zh-CN": "启用模型",
+    "en": "Enable model"
+  },
+  "支持的推理强度": {
+    "zh-CN": "支持的推理强度",
+    "en": "Supported reasoning efforts"
+  },
+  "只勾选服务商支持的值；不支持推理强度时留空。": {
+    "zh-CN": "只勾选服务商支持的值；不支持推理强度时留空。",
+    "en": "Select only the values your provider supports. Leave empty if reasoning effort is not supported."
+  },
+  "其他推理强度": {
+    "zh-CN": "其他推理强度",
+    "en": "Other reasoning effort"
+  },
+  "添加推理强度": {
+    "zh-CN": "添加推理强度",
+    "en": "Add reasoning effort"
+  },
+  "请填写每个模型的标识。": {
+    "zh-CN": "请填写每个模型的标识。",
+    "en": "Enter an identifier for each model."
+  },
+  "模型标识不能重复：{p0}": {
+    "zh-CN": "模型标识不能重复：{p0}",
+    "en": "Model identifiers must be unique: {p0}"
+  },
+  "请至少启用一个模型，并选择默认模型。": {
+    "zh-CN": "请至少启用一个模型，并选择默认模型。",
+    "en": "Enable at least one model and choose a default."
   },
   "服务账号": {
     "zh-CN": "服务账号",
@@ -619,10 +671,6 @@
   "模型名称": {
     "zh-CN": "模型名称",
     "en": "Model name"
-  },
-  "填写服务商文档中的模型标识，必须与接口支持的名称完全一致。": {
-    "zh-CN": "填写服务商文档中的模型标识，必须与接口支持的名称完全一致。",
-    "en": "Use the exact model identifier supported by the API, as listed in your provider's documentation."
   },
   "API Key（密钥）": {
     "zh-CN": "API Key（密钥）",
@@ -41064,9 +41112,9 @@
     "en": "Click Sign in and authorize in your browser. No model name is needed.",
     "zh-CN": "先点击登录并在浏览器完成授权；无需填写模型名称。"
   },
-  "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。": {
-    "en": "Copy the three values from your provider. Portal generates the connection name and links the account automatically.",
-    "zh-CN": "复制服务商给你的三项信息即可。连接名称和账号关联会自动完成。"
+  "填写接口地址、API Key 和模型列表。连接名称和账号关联会自动完成。": {
+    "en": "Enter the base URL, API key and models. Portal generates the connection name and links the account automatically.",
+    "zh-CN": "填写接口地址、API Key 和模型列表。连接名称和账号关联会自动完成。"
   },
   "Portal 服务器无法保存密钥。请管理员检查密钥存储目录的写入权限和磁盘空间，再重新提交；这不表示 API Key 无效。": {
     "en": "Portal could not save the key. Ask an administrator to check secret storage permissions and free disk space, then submit it again. This does not mean the API Key is invalid.",
@@ -41080,9 +41128,9 @@
     "en": "Your current login cannot add or change AI connections. Sign in again or contact an administrator.",
     "zh-CN": "当前登录身份没有添加或修改 AI 连接的权限。请重新登录或联系管理员。"
   },
-  "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。": {
-    "en": "The connection details are invalid. Check the base URL, model name and advanced settings, then try again.",
-    "zh-CN": "连接信息不符合要求。请检查接口地址、模型名称和高级设置后重试。"
+  "连接信息不符合要求。请检查接口地址、模型列表和高级设置后重试。": {
+    "en": "The connection details are invalid. Check the base URL, models and advanced settings, then try again.",
+    "zh-CN": "连接信息不符合要求。请检查接口地址、模型列表和高级设置后重试。"
   },
   "未能确认保存结果。请检查网络与 Portal 服务，刷新连接列表确认是否已保存，再重试。": {
     "en": "Could not confirm whether the connection was saved. Check the network and Portal service, then refresh the connection list before retrying.",

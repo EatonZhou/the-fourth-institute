@@ -34,3 +34,21 @@
 .backendForm > .portalField:has(input[type=checkbox]) { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
 .backendForm > .portalField:has(input[type=checkbox]) > input { width:18px; height:18px; order:-1; }
 .backendForm > .portalField:has(input[type=checkbox]) > small { flex-basis:100%; }
+.backendModelCatalog, .backendModelReasoning { min-width:0; margin:0; padding:0; border:0; }
+.backendModelCatalog > legend { padding:0; font-weight:600; }
+.backendModelCatalog > .backendHint { margin:4px 0 10px; }
+.backendModelList { display:grid; gap:10px; margin-bottom:10px; }
+.backendModelRow { display:grid; gap:10px; min-width:0; padding:12px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; }
+.backendModelRow[data-enabled=false] { border-style:dashed; }
+.backendModelHeading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.backendModelDefault, .backendModelEfforts label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; }
+.backendModelDefault input, .backendModelEfforts input { width:16px; height:16px; margin:0; flex:none; }
+.backendModelSettings > summary { cursor:pointer; color:var(--muted); font-size:13px; }
+.backendModelSettings > .backendForm { margin-top:10px; }
+.backendModelReasoning > legend { padding:0; font-size:13px; font-weight:600; }
+.backendModelEfforts { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; }
+.backendModelEfforts label { max-width:100%; padding:6px 8px; background:var(--panel); border:1px solid var(--border); border-radius:6px; overflow-wrap:anywhere; }
+.backendModelEfforts label:has(:checked) { border-color:var(--accent); }
+.backendModelCustomEffort { display:flex; flex-wrap:wrap; align-items:end; gap:8px; }
+.backendModelCustomEffort > .portalField { flex:1 1 140px; min-width:0; }
+.backendModelCustomEffort > button { flex:none; }

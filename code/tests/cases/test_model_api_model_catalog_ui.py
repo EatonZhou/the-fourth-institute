@@ -4,7 +4,7 @@ import subprocess
 
 
 def test_model_api_model_catalog_ui():
-    """Model lists are validated before saving, prefilled on edit and only sent when changed.
+    """Model rows, default selection and reasoning controls preserve catalog metadata.
 
     :design: decision_7956d7cb4bde
     """

@@ -51,7 +51,7 @@ const status = id => row(id).children[2].textContent;
   // A new API is probed with the form's values; the result ticks the protocols and the harnesses follow.
   click('新增模型 API');
   let form = window.document.querySelector('dialog form');
-  form.elements.base_url.value = 'https://new.invalid/v1'; form.elements.default_model.value = 'gpt-new';
+  form.elements.base_url.value = 'https://new.invalid/v1'; form.querySelector('[data-backend-model-id]').value = 'gpt-new';
   form.elements.secret.value = 'sk-draft';
   probe = {openai_chat: {status: 'supported', http_status: 200}, openai_responses: {status: 'supported', http_status: 200},
            anthropic_messages: {status: 'supported', http_status: 200, auth: 'x-api-key'}};

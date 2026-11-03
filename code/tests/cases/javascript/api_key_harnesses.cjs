@@ -53,7 +53,7 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   click('新增模型 API');
   let form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'gateway'; form.elements.base_url.value = 'https://gateway.invalid/v1';
-  form.elements.default_model.value = 'gpt-test';
+  form.querySelector('[data-backend-model-id]').value = 'gpt-test';
   // Unsupported runners stay visible with the missing protocol explained.
   assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'opencode', 'kimi']);
   assert.match([...form.elements.harness.options].find(x => x.value === 'dsh').textContent, /Anthropic Messages/);
@@ -73,6 +73,7 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   for (const name of ['protocol_openai_responses', 'protocol_anthropic_messages', 'anthropic_base_url', 'anthropic_auth']) {
     assert(form.elements[name].disabled, 'saved API protocols cannot change during account retry');
   }
+  assert(form.querySelector('[data-backend-model-catalog]').disabled, 'saved model controls cannot change during account retry');
   assert(!form.elements.account_id.disabled, 'account name remains editable for retry');
   failRegistration = false;
   submit(form); await flush();
@@ -113,7 +114,7 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   provisionAutomatically = true;
   click('新增模型 API'); form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'automatic'; form.elements.base_url.value = 'https://example.invalid';
-  form.elements.default_model.value = 'chat'; form.elements.harness.value = 'kimi';
+  form.querySelector('[data-backend-model-id]').value = 'chat'; form.elements.harness.value = 'kimi';
   const registeredBefore = calls.filter(call => call.name === 'RegisterProviderAccount').length;
   submit(form); await flush();
   assert.equal(calls.filter(call => call.name === 'RegisterProviderAccount').length, registeredBefore);

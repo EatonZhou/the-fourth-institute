@@ -63,14 +63,14 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert(form.elements.api_id.closest('details'), 'internal connection name is optional advanced configuration');
   assert(form.elements.register_account.closest('details'), 'users do not need to understand account linkage');
   assert.deepEqual([...form.elements].filter(e => e.tagName === 'INPUT' && !e.closest('details')).map(e => e.name),
-    ['base_url', 'secret', 'default_model']);
+    ['base_url', 'secret', 'model_default', 'model_id_1']);
   assert(!form.elements.secret_file.closest('details').open);
   form.elements.api_id.value = 'Invalid.Name';
   assert(!form.elements.api_id.checkValidity(), 'names follow the registration contract');
   form.elements.api_id.value = 'example-api';
   form.elements.provider.value = 'example';
   form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model';
+  form.querySelector('[data-backend-model-id]').value = 'example-model';
   form.elements.secret.value = 'fixture-key';
   const submit = () => form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true}));
   submit(); await flush();
@@ -105,7 +105,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   click('关闭'); click('新增模型 API');
   form = window.document.querySelector('dialog form');
   form.elements.api_id.value = 'api-only'; form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model'; form.elements.register_account.checked = false;
+  form.querySelector('[data-backend-model-id]').value = 'example-model'; form.elements.register_account.checked = false;
   const before = calls.filter(c => c.name === 'RegisterProviderAccount').length;
   form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
   assert.equal(calls.filter(c => c.name === 'RegisterProviderAccount').length, before);
@@ -116,7 +116,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   click('关闭'); click('新增模型 API');
   form = window.document.querySelector('dialog form');
   form.elements.base_url.value = 'https://api.example.com/v1';
-  form.elements.default_model.value = 'example-model';
+  form.querySelector('[data-backend-model-id]').value = 'example-model';
   for (const [error, expected] of [
     [{code: 'instruction.conflict'}, /名称.*已存在/],
     [{code: 'permission.denied'}, /权限/],
