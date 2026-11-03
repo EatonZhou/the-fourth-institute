@@ -82,6 +82,27 @@ python3 code/scripts/tfi_release_install.py update-code --instance my_portal
 
 它为实例各部署的代码准备依赖（已有则复用），按当前代码刷新服务单元，再重启服务。服务启动时自己把数据库结构更新到新代码需要的样子；示例实例的发布内容不会重新导入。需要退路时，更新前用备份软件做一次备份。
 
+### 修复旧发行实例中暂停的团队入口
+
+旧发行安装可能将普通 Lineage 的全部事件源留在发行冻结状态，表现为门面收到
+消息后一直“正在选择成员”，Router 没有开始工作。新安装会自动恢复普通团队的
+非定时事件入口。已有实例在更新代码后，用创建该实例时的原始 seed manifest
+执行一次修复（先按上述备份建议备份）：
+
+```bash
+python3 code/scripts/tfi_release_install.py stop --instance my_portal
+python3 code/scripts/tfi_release_install.py repair-lineage-events --instance my_portal \
+  --seed-manifest instance/example_instance/seed/manifest.json
+python3 code/scripts/tfi_release_install.py start --instance my_portal
+```
+
+manifest 的 run ID 必须匹配本站 `instance.json` 的 `seed_version`，使用自定义
+发行工程时改用创建时的原始 manifest。命令只临时启动本站 PostgreSQL，不重导
+数据库、不修改账号和对话。仅恢复仍为 `{"paused":true}` 的普通非定时源，并登记
+一次性账本；带本地状态、游标或暂停时间的组件不改动。System、功能开关管理的
+流程和定时源保留既有设置。再次执行不会撤销使用者后续主动暂停的选择。
+旧的等待请求不会因修复自动重放；启动后重新发送请求验证 Router 和成员执行。
+
 ## 搬迁实例根目录
 
 同一文件系统内搬迁须先停止实例。目标为尚不存在的规范绝对路径：

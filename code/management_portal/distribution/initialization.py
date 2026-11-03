@@ -54,6 +54,55 @@ def _lineage_timer_sources(cursor, results):
     return sources
 
 
+def restore_lineage_events(manifest, connection):
+    """Open fresh ordinary-team admission once, retaining all local choices.
+
+    Frozen checkpoints, not historical queues, are the only input. Timers and
+    explicitly managed feature sources keep their own initialization policy.
+    This also serves the explicit repair command for older installations.
+    """
+    from .features import SYSTEM
+    from management_portal.society_service.component_runtime import update_pause_checkpoint
+
+    if manifest.get('history_freeze', {}).get('event_sources_paused') is not True:
+        return {'status': 'not_declared', 'event_sources': [], 'work_dispatched': False}
+    identity = 'ordinary_lineage_events.v1'
+    actions = manifest.get('feature_resolution', {}).get('initialization', {}).get('actions', [])
+    managed = {event['source_id'] for action in actions for event in action.get('event_sources', [])}
+    managed.update(component['id'] for action in actions
+                   for component in (action.get('binding') or {}).get('components', [])
+                   if component.get('kind') == 'event_source')
+    with connection.transaction():
+        with connection.cursor(row_factory=dict_row) as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended('tfi.feature-initialization',0))")
+            cursor.execute('CREATE SCHEMA IF NOT EXISTS distribution_installation')
+            cursor.execute('CREATE TABLE IF NOT EXISTS distribution_installation.feature_initializations(id TEXT PRIMARY KEY,evidence JSONB NOT NULL)')
+            if cursor.execute('SELECT id FROM distribution_installation.feature_initializations WHERE id=%s', (identity,)).fetchone():
+                return {'status': 'preserved_existing', 'event_sources': [], 'work_dispatched': False}
+            events = []
+            for row in cursor.execute(
+                    "SELECT n.lineage_id,n.node_id,c.config_json,p.checkpoint_json FROM lineage.lineage_nodes n "
+                    "JOIN lineage.lineage_components c ON c.node_id=n.node_id "
+                    "JOIN lineage.event_source_progress p ON p.source_id=n.node_id AND p.lineage_id=n.lineage_id "
+                    "WHERE n.node_type='event_source' AND n.deleted_at IS NULL AND n.lineage_id<>%s "
+                    "FOR UPDATE OF p", (SYSTEM,)).fetchall():
+                config = json.loads(row['config_json']) if isinstance(row['config_json'], str) else row['config_json']
+                checkpoint = json.loads(row['checkpoint_json']) if isinstance(row['checkpoint_json'], str) else row['checkpoint_json']
+                # Any extra checkpoint fields belong to this installation;
+                # never erase a local pause, cursor, observation or timer.
+                if (row['node_id'] in managed or checkpoint != {'paused': True}
+                        or not config.get('event_type') or config['event_type'] == 'time.reached'):
+                    continue
+                update_pause_checkpoint(checkpoint, 'event_source', False, config)
+                cursor.execute('UPDATE lineage.event_source_progress SET checkpoint_json=%s WHERE lineage_id=%s AND source_id=%s',
+                               (json.dumps(checkpoint), row['lineage_id'], row['node_id']))
+                events.append({'lineage_id': row['lineage_id'], 'source_id': row['node_id']})
+            evidence = {'status': 'applied', 'event_sources': events, 'work_dispatched': False}
+            cursor.execute('INSERT INTO distribution_installation.feature_initializations(id,evidence) VALUES(%s,%s)',
+                           (identity, Jsonb(evidence)))
+            return evidence
+
+
 def initialize(manifest, connection, instance, *, site_config_path=None):
     """Apply a bundle's feature defaults to a newly created instance; return evidence.
 
@@ -178,9 +227,11 @@ def initialize(manifest, connection, instance, *, site_config_path=None):
                             site_changed = True
                 c.execute('INSERT INTO distribution_installation.feature_initializations(id,evidence) VALUES(%s,%s)', (identity, Jsonb(evidence)))
                 results.append(evidence)
+            ordinary_events = restore_lineage_events(manifest, connection)
             timer_sources = _lineage_timer_sources(c, results)
             if site_changed:
                 site_path.parent.mkdir(parents=True, exist_ok=True)
                 site_path.write_text(json.dumps(site, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     return {'status': 'initialized', 'features': results, 'work_dispatched': False,
+            'lineage_event_initialization': ordinary_events,
             'lineage_timer_required': bool(timer_sources), 'lineage_timer_sources': timer_sources}

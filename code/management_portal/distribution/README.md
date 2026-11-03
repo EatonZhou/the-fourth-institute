@@ -113,7 +113,15 @@ checkouts 只保留该根，清空远端和 SSH 路径并关闭 push。运行时
 在副本清空，活动输入和触发路径取消，事件源暂停。原控制行匿名化归档到
 `distribution_history.records`；`history_freeze` 记录处理范围。安装器导入后、
 启动服务前只读核查无活动输入/队列/触发路径（有监督 Resident 的工程用其核查证据）。新实例
-默认不运行 Lineage 定时源，须单独配置。
+默认不运行 Lineage 定时源，须单独配置。冻结核查完成后，安装初始化一次性恢复
+普通 Lineage 的非定时事件源，使门面新收到的请求能够触发 Router。
+观察源通过原生恢复操作重建基线，不重放导出前的状态变化。Portal System 与
+显式功能开关管理的事件源继续遵守对应功能默认值；定时源保持暂停。
+该恢复只接受精确的发行冻结检查点 `{"paused":true}`，并在初始化账本登记；
+重试和代码更新不会覆盖本站已经设置的暂停或游标。存量实例可在停止应用后使用
+安装器 `repair-lineage-events --instance <名称> --seed-manifest <原始seed manifest>`
+进行同一次性恢复；命令核对实例的 `seed_version`，临时只启动独立 PostgreSQL，
+不导入 seed SQL、不运行历史任务、不启动应用服务。
 生成前按实际 PostgreSQL 约束扫描全部外键。只有领域明确允许且实际可空的
 源 Provider Session 控制引用被分离；执行和消息历史保留，原引用归档。
 匿名化导致最近活动投影同键时按其 owner 语义保留最新时间，不去重消息载荷。

@@ -765,6 +765,33 @@ def update_code(instance, *, base_python=None, offline=False):
     return lifecycle("start", instance)
 
 
+def repair_lineage_events(instance, seed_manifest):
+    """Repair frozen request admission on an explicitly stopped installation."""
+    from scripts.tfi_instance_manager import control_lock
+    with control_lock(instance.root), instance_services.configuration_lock(instance.root):
+        document = json.loads(Path(seed_manifest).read_text(encoding='utf-8'))
+        manifest = document.get('engineering', document)
+        if (manifest.get('run_id') != instance.document['seed_version']
+                or manifest.get('history_freeze', {}).get('event_sources_paused') is not True):
+            raise ValueError('Repair requires this instance\'s original frozen seed manifest')
+        states = instance_services.status(instance)
+        if any(row['active'] not in {'inactive', 'failed'} for key, row in states.items() if key != 'postgres'):
+            raise ValueError('Stop the instance before repairing Lineage event sources')
+        controller = instance_services.controller(instance)
+        postgres = instance_services.unit_name(instance, 'postgres')
+        started = states['postgres']['active'] != 'active'
+        if started:
+            controller.start(postgres)
+        try:
+            instance_services.wait_database(instance)
+            evidence = json.loads(code_child(instance, 'tfi_release_initialization.py',
+                                             'restore-lineage-events', str(Path(seed_manifest).resolve())))
+        finally:
+            if started:
+                controller.stop(postgres)
+        return {'status': 'repaired', 'name': instance.name, 'lineage_events': evidence}
+
+
 # ------------------------------------------------------------------------ CLI
 
 def main(argv=None):
@@ -785,7 +812,7 @@ def main(argv=None):
             sub.add_argument("--offline", action="store_true", help="Use only dependencies bundled with the code")
             sub.add_argument("--no-start", action="store_true")
             sub.add_argument("--freeze-evidence", type=Path)
-    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code", "relocate"):
+    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code", "relocate", "repair-lineage-events"):
         sub = commands.add_parser(command)
         sub.add_argument("--instance", required=command == "retire",
                          help="Registered instance name; otherwise PORTAL_INSTANCE_ROOT")
@@ -804,6 +831,9 @@ def main(argv=None):
         if command == "relocate":
             sub.add_argument("--target", type=Path, required=True,
                              help="New root on the same filesystem; stop the instance first")
+        if command == "repair-lineage-events":
+            sub.add_argument('--seed-manifest', type=Path, required=True,
+                             help='Original frozen seed manifest used to create this instance')
     commands.add_parser("list")
     args = parser.parse_args(argv)
     try:
@@ -831,6 +861,8 @@ def main(argv=None):
                                                     if (value := getattr(args, key + "_port")) is not None})
             elif args.command == "update-code":
                 result = update_code(instance, base_python=args.python, offline=args.offline)
+            elif args.command == "repair-lineage-events":
+                result = repair_lineage_events(instance, args.seed_manifest)
             elif args.command == "relocate":
                 from scripts.tfi_relocate_instance import relocate
                 result = relocate(instance, args.target)
