@@ -33,7 +33,10 @@ def install_mutation_provider(service: "ResourceService") -> None:
         del actor
         path = str(payload.get("path") or "").strip()
         if not path:
-            raise ValueError("repo checkout path required")
+            raise ValueError("repo source path required")
+        source_kind = resource_identity_backend.repo_source_kind(payload)
+        if source_kind == "exported_tree" and payload.get("initialize_git"):
+            raise ValueError("exported_tree cannot initialize Git")
         article_source = portal_features.contribution("resource.article_registration")
         if article_source is not None and article_source.is_storage_path(path):
             raise ValueError(
@@ -44,13 +47,16 @@ def install_mutation_provider(service: "ResourceService") -> None:
             "origin": 'created' if automatic else 'adopted',
             "project_ids": registration_project_ids(locations) if automatic else explicit_project_ids(locations, "Repo"),
         }
-        try:
-            record = resource_identity_backend.register_repo_checkout(path, **options)
-        except GitCheckoutRequired:
-            if not bool(payload.get("initialize_git")):
-                raise
-            resource_identity_backend.initialize_git_checkout(path)
-            record = resource_identity_backend.register_repo_checkout(path, **options)
+        if source_kind == "exported_tree":
+            record = resource_identity_backend.register_exported_tree(path, **options)
+        else:
+            try:
+                record = resource_identity_backend.register_repo_checkout(path, **options)
+            except GitCheckoutRequired:
+                if not bool(payload.get("initialize_git")):
+                    raise
+                resource_identity_backend.initialize_git_checkout(path)
+                record = resource_identity_backend.register_repo_checkout(path, **options)
         if not automatic:
             from management_portal import resource_auto_registration
 

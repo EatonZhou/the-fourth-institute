@@ -681,6 +681,53 @@ def register_repo_checkout(
     return records_by_path[str(Path(path).resolve(strict=False))]
 
 
+def register_exported_tree(
+    path: str | Path,
+    *,
+    project_ids: Iterable[str] = (),
+    origin: str = 'adopted',
+) -> dict[str, Any]:
+    """Register an explicit source directory without inferring or creating Git."""
+    root = Path(path).expanduser()
+    if not root.is_absolute():
+        raise ValueError("exported_tree requires an absolute source directory")
+    root = root.resolve(strict=False)
+    if not root.is_dir():
+        raise FileNotFoundError(f"source directory not found: {root}")
+    projects = tuple(project_ids)
+    project_roots = _project_roots()
+
+    def merge(existing, repo_id, group):
+        from .resources.directory_registrations import merge_origins
+
+        if existing is not None and repo_source_kind(existing) != "exported_tree":
+            raise ValueError("source directory already belongs to a Git Repo; source kind cannot be changed by registration")
+        previous = dict(existing or {})
+        now = utc_now_iso()
+        checkouts = [{"path": str(root)}]
+        merge_origins(checkouts, previous.get("checkouts") or [], repo_id, origin=origin)
+        return {
+            **previous,
+            "schema": REGISTRY_SCHEMA, "id": repo_id, "type": "repo",
+            "source_kind": "exported_tree",
+            "name": stripped_text(previous.get("name")) or root.name,
+            "status": stripped_text(previous.get("status")) or "active",
+            "ownership": stripped_text(previous.get("ownership")) or "unknown",
+            "project_ids": _dedupe_strings([
+                *previous.get("project_ids", []), *projects,
+                *_projects_for_path(root, project_roots),
+            ]),
+            "canonical_checkout": str(root), "checkouts": checkouts,
+            "remotes": [], "push_enabled": False, "ssh_key": "",
+            "created_at": stripped_text(previous.get("created_at")) or now,
+            "updated_at": now,
+        }
+
+    report = REPO_REGISTRY.sync([[{"path": str(root)}]], merge=merge, apply=True)
+    records = [*report["created"], *report["updated"]]
+    return records[0] if records else get_repo_record(report["unchanged"][0])
+
+
 def initialize_git_checkout(path: str | Path) -> Path:
     from .resources.directory_registrations import directory_writer
     from management_common.directory_cleanup_store import get_directory_cleanup_store

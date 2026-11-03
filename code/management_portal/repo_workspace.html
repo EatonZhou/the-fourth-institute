@@ -148,15 +148,22 @@
       >
         <header class="portalDetailHeader">
           <div>
-            <div class="portalRegistryEyebrow"><!--portal-i18n:"REGISTER CHECKOUT"-->REGISTER CHECKOUT</div>
+            <div class="portalRegistryEyebrow"><!--portal-i18n:"REGISTER REPO"-->REGISTER REPO</div>
             <h2 id="repoRegisterTitle"><!--portal-i18n:"注册 Repo"-->注册 Repo</h2>
           </div>
           <button class="portalDetailClose" data-portal-detail-close id="repoRegisterClose" type="button" aria-label="关闭 Repo 注册" data-portal-icon="close" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;关闭 Repo 注册&quot;}"></button>
         </header>
         <div class="portalDetailBody portalRegistryBody">
-          <p><!--portal-i18n:"输入 Portal host 上的 Git checkout 根目录。系统会识别 Git 顶层目录、remote 和提交历史，并复用匹配的 Repo ID。"-->输入 Portal host 上的 Git checkout 根目录。系统会识别 Git 顶层目录、remote 和提交历史，并复用匹配的 Repo ID。</p>
+          <p><!--portal-i18n:"选择代码来源并填写 Portal 主机上的目录。Git 仓库提供版本与协作操作；导出源码仅供浏览，不创建 Git 历史。"-->选择代码来源并填写 Portal 主机上的目录。Git 仓库提供版本与协作操作；导出源码仅供浏览，不创建 Git 历史。</p>
           <label class="portalField">
-            <span><!--portal-i18n:"Checkout 路径"-->Checkout 路径</span>
+            <span><!--portal-i18n:"代码来源"-->代码来源</span>
+            <select id="repoRegisterSourceKind" name="source_kind">
+              <option value="git_checkout"><!--portal-i18n:"Git 仓库"-->Git 仓库</option>
+              <option value="exported_tree"><!--portal-i18n:"导出源码（无 Git）"-->导出源码（无 Git）</option>
+            </select>
+          </label>
+          <label class="portalField">
+            <span><!--portal-i18n:"源码目录"-->源码目录</span>
             <input id="repoRegisterPath" name="path" required placeholder="/share/Projects/Example/src/repo" autocomplete="off"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;/share/Projects/Example/src/repo&quot;}"/>
           </label>
           <label class="portalField">

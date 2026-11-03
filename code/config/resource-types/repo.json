@@ -1,7 +1,7 @@
 {
   "type": "repo",
   "category": "resource",
-  "description": "A logical Git repository, independent of checkout path, remote URL, and commit.",
+  "description": "A code repository with a stable identity: a Git checkout or an explicitly registered exported source tree.",
   "title": {
     "zh": "仓库",
     "en": "Repo"

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 29
-  created_at: '2026-09-01'
+  number: 30
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T16:05:25Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-03T18:37:04Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -96,7 +96,7 @@ Repo 也可以明确登记为不附带 Git 工作副本的导出源码树：它�
 | --- | --- |
 | 工具栏 | 搜索框（按名称、简介、Project 或 ID）、语义检索、Project 筛选、刷新、“全部 AI 提交”、Board / Workspace 切换 |
 | Repo 卡片 | ID、名称、Project、最多两行简介、远端、最近变化和自动提交状态，以及打开 Workspace 的入口 |
-| 注册窗口 | 选择 checkout、Project，以及是否初始化 Git |
+| 注册窗口 | 明确选择 Git 仓库或导出源码、填写内容目录与 Project；仅 Git 来源可确认初始化 Git |
 
 - 列表从资源索引分页读取（每页最多 500 条），直到取得当前用户可见的全部 Repo。搜索或筛选条件改变时，页面取消旧请求，旧结果不会覆盖新结果。
 - 自动提交状态每批最多读取 120 个 Repo。状态或简介读取失败时，卡片照常显示，并提示该部分不可用。缺少简介的 Repo 由页面批量请求生成简介。
@@ -127,10 +127,10 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 
 ## 登记、发现和打开 Repo
 
-**普通 Git Repo 在注册窗口选择 checkout 后，通过 `RegisterResource` 登记；Repo Workspace 从主 checkout 读取。导出源码记录由上文的明确导出/导入合同建立，普通注册窗口不把无 `.git` 目录自动当成导出源码。**
+**两类来源都通过 `RegisterResource` 正式登记。注册窗口明确选择 Git 仓库或导出源码，不根据目录是否含 `.git` 猜测来源。Repo 领域拥有身份匹配、来源类型及内容根；调用者不直接写登记表。**
 
-1. 登记字段为 `path`（checkout 目录）、可选的 `project_ids` 和 `initialize_git`。目录默认必须已经是 Git 仓库；设置 `initialize_git: true` 时，服务先在目录中初始化 Git。
-2. 目录必须位于已登记的 Project 内。已经作为 Article 登记的文稿目录不能再登记为 Repo。
+1. 登记字段为 `path`（内容目录）、`project_ids`、可选的 `source_kind` 和 `initialize_git`。省略 `source_kind` 或明确为 `git_checkout` 时沿用 Git 登记；设置 `initialize_git: true` 时，经用户明确确认才初始化 Git。明确为 `exported_tree` 时，目录必须是存在的绝对目录，服务按上文合同建立唯一 canonical 根、关闭 Git 能力；与 `initialize_git: true` 同时提交会拒绝，未知或空来源也拒绝。导出源码只按规范目录匹配，同目录再次登记复用原 ID、创建信息及目录归属；不能覆盖已有 Git 身份或静默改变来源。登记事务复用资源目录的占用和清理检查。
+2. 登记必须明确所属 Project；公共内容在 `project_ids` 中单独给出 `@public`。已作为 Article 登记的文稿目录不能再登记为 Repo。导出源码采用既有目录的 adopted 归属，单纯登记不获得目录删除所有权。
 3. 对 Git 来源，checkout 的路径、Git 目录（`git_common_dir`）或身份远端与某个已有 Repo 相同时，加入该 Repo；同时对上两个 Repo 时拒绝登记；都对不上的新代码库获得新的 Repo ID。单个 checkout 失效时，只要还存在有效副本，Repo ID 与登记继续保留；全部 checkout 均已失效时，自动核对注销 Repo，目录与 Git 历史不删除。检查无法确认有效性时保留登记并报告错误；生命周期规则见 decision_36f46b395d8e。
 4. Git Repo 的设置修改使用 `UpdateResource`，`operation` 取以下三种之一：`set_remote`（远端名称、地址和推送地址）、`set_policy`（推送开关）、`set_ssh_key`（SSH 私钥引用）。
 5. 两类来源均通过 `UnregisterResource` 撤销登记，只删除登记并加入自动登记的忽略列表；磁盘内容保持不变。

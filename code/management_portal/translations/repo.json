@@ -1,4 +1,9 @@
 {
+  "REGISTER REPO": {"en": "REGISTER REPO", "zh-CN": "注册代码库"},
+  "代码来源": {"en": "Source type", "zh-CN": "代码来源"},
+  "导出源码（无 Git）": {"en": "Exported source (no Git)", "zh-CN": "导出源码（无 Git）"},
+  "源码目录": {"en": "Source directory", "zh-CN": "源码目录"},
+  "选择代码来源并填写 Portal 主机上的目录。Git 仓库提供版本与协作操作；导出源码仅供浏览，不创建 Git 历史。": {"en": "Choose the source type and its directory on the Portal host. Git repositories support versioning and collaboration; exported source is browsable and creates no Git history.", "zh-CN": "选择代码来源并填写 Portal 主机上的目录。Git 仓库提供版本与协作操作；导出源码仅供浏览，不创建 Git 历史。"},
   "Repo — Resource": {
     "en": "Repo — Resource",
     "zh-CN": "仓库 — 资源"

@@ -54,17 +54,18 @@
       const payload = {
         resource_type: "repo",
         path,
+        source_kind: String(data.get("source_kind") || "git_checkout"),
         project_ids: publicContent ? ["@public"] : projects,
       };
       const submit = form.querySelector('button[type="submit"]');
       setBusy(submit, true, "注册中…");
       try {
         const result = await window.PortalResourceRegistrationService.register(payload, {
-          confirmInitialize: error => window.PortalUI.confirm({
+          confirmInitialize: payload.source_kind === "git_checkout" ? error => window.PortalUI.confirm({
               title: window.PortalI18n.t("初始化 Git 仓库？"),
               message: window.PortalI18n.text`这个目录还不是 Git 仓库：\n${error.path || path}\n\n是否先创建 .git，再注册为 Repo？`,
               confirmLabel: window.PortalI18n.t("初始化并注册"),
-            }),
+            }) : undefined,
         });
         if (result?.cancelled) return;
         const repoId = String(result.resource_id || "");

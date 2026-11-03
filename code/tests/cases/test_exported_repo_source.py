@@ -66,6 +66,55 @@ def _workspace_http():
     )
 
 
+def test_register_exported_source_through_resource_service(tmp_path, monkeypatch):
+    root = tmp_path / "source"
+    root.mkdir()
+    (root / "README.txt").write_text("Source from a user archive\n")
+    write_projects({"projects": [{"id": "Music", "path": str(tmp_path)}]})
+    monkeypatch.setattr(resource_identity_backend, "inspect_git_checkout",
+                        lambda *_a, **_k: pytest.fail("exported registration inspected Git"))
+    service = _service()
+    fields = {"path": str(root), "project_ids": ["Music"], "source_kind": "exported_tree"}
+    first = service.register("repo", fields, actor="test-reader")
+    second = service.register("repo", fields, actor="test-reader")
+    assert first["resource_id"] == second["resource_id"]
+    record = resource_identity_backend.get_repo_record(first["resource_id"])
+    assert record["source_kind"] == "exported_tree"
+    assert record["canonical_checkout"] == str(root)
+    assert record["project_ids"] == ["Music"]
+    assert record["checkouts"][0]["origin"] == "adopted"
+    assert record["remotes"] == [] and not record["push_enabled"] and not record["ssh_key"]
+    assert not (root / ".git").exists()
+    assert service.read_content(first["resource_id"] + "/file/README.txt", actor="test-reader")[0] == b"Source from a user archive\n"
+    assert resource_auto_registration.ResourceAutoRegistrar(service=service).reconcile()["removed"] == []
+
+
+@pytest.mark.parametrize("kind", [None, "", "unknown"])
+def test_register_rejects_invalid_explicit_source_kind(tmp_path, kind):
+    with pytest.raises(ValueError, match="source_kind"):
+        _service().register("repo", {"path": str(tmp_path), "project_ids": ["@public"], "source_kind": kind}, actor="test-reader")
+    assert not resource_identity_backend.load_repo_records()
+
+
+def test_exported_registration_cannot_initialize_or_replace_git(tmp_path):
+    service = _service()
+    fields = {"path": str(tmp_path), "project_ids": ["@public"], "source_kind": "exported_tree"}
+    with pytest.raises(ValueError, match="cannot initialize Git"):
+        service.register("repo", {**fields, "initialize_git": True}, actor="test-reader")
+    assert not (tmp_path / ".git").exists()
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    original = resource_identity_backend.register_repo_checkout(tmp_path)
+    with pytest.raises(ValueError, match="already belongs to a Git Repo"):
+        service.register("repo", fields, actor="test-reader")
+    assert resource_identity_backend.get_repo_record(original["id"]) == original
+
+
+def test_exported_registration_requires_existing_absolute_directory(tmp_path):
+    for path, exception in [("relative", ValueError), (str(tmp_path / "missing"), FileNotFoundError)]:
+        with pytest.raises(exception):
+            _service().register("repo", {"path": path, "project_ids": ["@public"], "source_kind": "exported_tree"}, actor="test-reader")
+
+
 @pytest.mark.parametrize("git_location", [None, "root", "parent"])
 def test_exported_workspace_http_browses_source_without_git(tmp_path, monkeypatch, git_location):
     """工作台三个真实HTTP处理入口读源码，邻近Git不产生历史或写能力。"""
