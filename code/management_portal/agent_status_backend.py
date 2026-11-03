@@ -60,10 +60,21 @@ _REFRESHING_KEYS: set[str] = set()
 _REFRESH_DONE: dict[str, threading.Event] = {}
 
 
+def _thor_ssh_config() -> str:
+    for candidate in (
+        Path.home() / ".config/osforagent/thor_ssh_config",
+        Path.home() / ".ssh/thor_robolab_config",
+        Path.home() / ".ssh/config",
+    ):
+        if candidate.is_file():
+            return str(candidate)
+    return str(Path.home() / ".ssh/config")
+
+
 DISK_RESOURCE_POOL: tuple[dict[str, Any], ...] = (
     {
         "resource_id": "nas_storage",
-        "display_name": "NAS",
+        "display_name": "dirty-base",
         "host_label": "local",
         "kind": "local",
         "paths": [str(portal_path(key)) for key in ("projects", "skills", "papers", "lineages", "runtime")],
@@ -73,7 +84,7 @@ DISK_RESOURCE_POOL: tuple[dict[str, Any], ...] = (
         "display_name": "Thor",
         "host_label": "dirtythor0",
         "kind": "ssh",
-        "ssh_config": str(str(Path.home() / ".ssh/config")),
+        "ssh_config": _thor_ssh_config(),
         "ssh_host": "thor",
         "paths": ["/home", "/srv", "/tmp"],
     },
@@ -495,6 +506,10 @@ def _disk_status_placeholder(resource: dict[str, Any]) -> dict[str, Any]:
         "transfer_targets": [],
         "suggestions": [],
         "triage": {"findings": [], "recommendations": [], "errors": []},
+        "stages": {
+            name: {"status": "pending"}
+            for name in ("capacity", "transfer_targets", "deleted_open_files", "journal_usage", "docker_usage", "large_files", "suggestions")
+        },
     }
 
 
@@ -503,6 +518,8 @@ def _run_disk_script(resource: dict[str, Any], script: str, args: list[str]) -> 
     timeout = max(6.0, DISK_STATUS_TIMEOUT_SECONDS)
     if kind == "ssh":
         ssh_config = str(resource.get("ssh_config") or "").strip()
+        if not ssh_config or not Path(ssh_config).is_file():
+            ssh_config = _thor_ssh_config()
         ssh_host = str(resource.get("ssh_host") or "").strip()
         if not ssh_host:
             raise ValueError("missing ssh host")
@@ -946,6 +963,14 @@ def _aggregate_disk_resource_status(filesystems: list[dict[str, Any]]) -> str:
 
 def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, include_triage: bool) -> None:
     key = _disk_status_cache_key(resource)
+    payload.update(_disk_resource_public(resource))
+    payload.setdefault("stages", {})
+    for name in ("capacity", "transfer_targets", "deleted_open_files", "journal_usage", "docker_usage", "large_files", "suggestions"):
+        payload["stages"].setdefault(name, {"status": "pending"})
+    payload.setdefault("triage", {})
+    payload["triage"].setdefault("findings", [])
+    payload["triage"].setdefault("recommendations", [])
+    payload["triage"].setdefault("errors", [])
 
     def publish() -> None:
         _store_payload(key, payload, {}, force=include_triage, refresh_after_seconds=DISK_STATUS_CACHE_SECONDS)
@@ -997,6 +1022,9 @@ def _refresh_disk_status(resource: dict[str, Any], payload: dict[str, Any], *, i
                 ("docker_usage", lambda: _disk_triage_docker(resource)),
                 ("large_files", lambda: _disk_triage_large_files(resource, _disk_triage_roots(resource, filesystems))),
             ):
+                if name == "large_files" and resource.get("kind") == "ssh":
+                    payload["stages"][name] = {"status": "skipped", "reason": "Remote scan disabled"}
+                    continue
                 if payload["stages"][name]["status"] == "skipped":
                     continue
                 stage(name, finder, lambda finding: triage["findings"].append(finding) if finding else None)
@@ -1036,6 +1064,7 @@ def _collect_disk_status(
         if payload and not force and not should_refresh and not payload.get("refreshing"):
             return payload
         payload = payload or _disk_status_placeholder(resource)
+        payload.update(_disk_resource_public(resource))
         payload.update(refreshing=True, transfer_targets=[], suggestions=[])
         payload["triage"] = {
             "mode": "lightweight" if include_triage else "on_demand",
