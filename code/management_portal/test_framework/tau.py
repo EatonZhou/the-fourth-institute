@@ -206,8 +206,8 @@ def build_prompt(
     if resident_account:
         account_instruction = (
             ("\n除本轮补充要求明确限定的例外步骤外，" if case_instructions else "\n")
-            + f"本次 Campaign 的全部 Codex Resident 必须使用账号 {resident_account}，"
-            "范围包括 TAU 执行器、被测业务成员、讨论成员以及本用例创建或 Fork 的临时成员。"
+            + f"本次 Campaign 可配置测试对象范围内的全部 Codex Resident 必须使用账号 {resident_account}，"
+            "范围包括本次可控制的 TAU 执行器，以及本用例新建或 Fork 的被测业务成员、讨论成员和临时成员。"
             "独立 API 模型保持原 Provider 与模型，不转换为 Codex。"
             "这是本次运行发起者明确授权的账号配置要求，优先于用例中的历史账号选择。"
             "每次发送消息或触发 AI 工作前，通过正式页面或 HATG Instruction 核对实际 Session 账号；"
@@ -228,8 +228,9 @@ def build_prompt(
             "页面没有提供的账号或运行设置选择（例如 Fork 与新建表单中没有的项）不是用例步骤，"
             "不要记为覆盖缺口或失败，只需在发送前核对实际设置。"
             "产品在被测流程中自行创建并立即启动的成员（例如 WALL 分配的工作成员），"
-            "以及产品已绑定、本用例无权修改的共享业务成员（例如论文绑定的 Research Chat Resident），"
+            "以及本用例复用的产品固定绑定共享业务成员（例如开发投影绑定的 Family、论文绑定的 Research Chat Resident），"
             "记录其实际账号与设置后照常使用，不以上述约束判定失败，也不为迎合约束修改它们或产品默认值。"
+            "即使当前权限允许修改，也不能为本轮账号要求迁移或改写这些共享成员；实际额度不足时记录执行前提缺口。"
             "把所调用成员的 Resident ID、Lineage ID 与实际账号写入本用例证据。"
             "无权配置或账号不可用时如实报告阻塞，不在错误账号上执行；涉及跨账号行为的用例"
             "若与本次约束冲突，记录不能完成的验收条件，不伪报通过。\n"

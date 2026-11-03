@@ -15,6 +15,7 @@ SAMPLES = (
     "test_tau_fixture_native_ownership.py",
     "test_tau_fixture_prerequisites.py",
     "test_tau_runtime.py::test_tau_gate_matches_registered_account_identity",
+    "test_tau_runtime.py::test_tau_prompt_carries_the_campaign_resident_runtime",
     "test_tau_review_evidence.py",
     "test_tau_route_limit_evidence.py",
     "test_tau_editor_evidence.py",
@@ -54,7 +55,7 @@ def main():
     # Repository test fixtures select their disposable database and runtime.
     framework = code / "management_portal/test_framework"
     def sources():
-        paths = [framework / "config/tau_runner_prompt.md", framework / "tau_fixtures.py",
+        paths = [framework / "config/tau_runner_prompt.md", framework / "tau.py", framework / "tau_fixtures.py",
                  framework / "tau_fixture_paths.py",
                  framework / "tau_fixture_access.py", framework / "tau_execution_prerequisites.py",
                  framework / "tau_workspace_fixture.py",

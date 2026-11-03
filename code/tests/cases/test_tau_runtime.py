@@ -190,7 +190,13 @@ def test_tau_prompt_carries_the_campaign_resident_runtime(tmp_path):
     # and WALL starts the members it creates itself: neither is a failure.
     assert "不因页面没有选择器判定失败" in pinned
     assert "不以上述约束判定失败" in pinned
-    assert "不要记为覆盖缺口或失败" in pinned and "本用例无权修改的共享业务成员" in pinned
+    assert "不要记为覆盖缺口或失败" in pinned
+    # A broad project ACL is not consent to move an existing product team.
+    # Account pinning covers the test's own configurable participants; shared
+    # product bindings stay unchanged regardless of the caller's permissions.
+    assert "本用例复用的产品固定绑定共享业务成员" in pinned
+    assert "即使当前权限允许修改，也不能为本轮账号要求迁移或改写这些共享成员" in pinned
+    assert "本用例无权修改的共享业务成员" not in pinned
 
 
 def test_tau_reuses_fixed_module_resident_without_creation(configured, monkeypatch):
