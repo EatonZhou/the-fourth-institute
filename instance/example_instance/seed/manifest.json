@@ -15221,8 +15221,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__ResidentFork来源与上下文派生__decision_5bf5bfbd52cb.md",
-      "sha256": "d26709e5d3a0179968c0a6fab319d5920357bab57f8fb21636478175ee77ddb6",
-      "size": 34289
+      "sha256": "80da79cbeb7b275932357a3ecd42f7f17bb62d7a0b74b17d8baaa0ed58cf7c78",
+      "size": 36933
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Telepus外部消息Channel与Resident投递__decision_692a484e9bea.md",
@@ -15256,8 +15256,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260902__decision__Portal_Test_Workbench_的测试浏览、运行与审查界面__decision_f2a6a5dd4646.md",
-      "sha256": "46ade14af647659e942126e61c27492ac3d91b287c8f3660f2c93be1dd3c1ac6",
-      "size": 23097
+      "sha256": "f743580e23dd6f2567cb852c0debab9233cd4cf3c2ab68bf3f90428b68d25098",
+      "size": 23894
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Claude_Code_Provider_daemon_与_Session_接入__decision_3948ce9b9443.md",
@@ -15736,8 +15736,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__ExecutionService_执行账号：目录、额度保护与调度设置__decision_d40f59f5508f.md",
-      "sha256": "7aebec92cbf20774a76e486a1d0516f286eae5a6926fa1cb61ba341894302ce7",
-      "size": 30160
+      "sha256": "d87ed23d5435dddc545c309e87072335c172d81864df2fd914bc926303743b85",
+      "size": 31162
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_Watchboard_扩展的脚本、配置、命令与工作台应用__decision_0571f3741e23.md",
