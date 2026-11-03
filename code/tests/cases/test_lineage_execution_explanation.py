@@ -6,6 +6,20 @@ from management_portal.society_service import lineage_execution_explanation
 from tests.cases.effect_script_support import effect_config, lower_effect_call
 
 
+def test_output_only_effect_is_ready_without_isa_calls():
+    from management_portal.society_service.lineage_effect_script import script_label
+    component = {"id": "effect_output", "kind": "effect",
+                 "config": {"script": 'output branch="continue"', "endpoints": []}}
+    assert script_label(component["config"]["script"]) == "Effect 脚本"
+    assert script_label("# comment only") == ""
+    assert script_label("if") == ""
+    explanation = lineage_execution_explanation.explain_program(_lineage(
+        components=[_event(), component],
+        wires=[_wire("wire_output", "route", "event_source_test", "effect_output")],
+    ))["nodes"]["effect_output"]
+    assert explanation["state"] == "ready"
+
+
 def _lineage(*, components=None, wires=None, nodes=None):
     return {
         "program": {

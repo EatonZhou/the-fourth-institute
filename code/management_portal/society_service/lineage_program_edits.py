@@ -91,8 +91,8 @@ def _create_packet_operator_executor(
         lineage_id,
         {
             "title": f"{title} · Resident 执行器",
-            "x": x,
-            "y": y,
+            **({"x": x} if x is not None else {}),
+            **({"y": y} if y is not None else {}),
         },
         actor,
     )
@@ -164,6 +164,7 @@ def save_lineage_program_component(
     full_view: bool = True,
 ) -> dict[str, Any]:
     component_id, requested = lineage_program_authoring.component_patch(payload)
+    created_executor_resident_id = ""
     effective_payload = dict(payload)
     effect_changes = payload.get("effect_changes") if isinstance(payload.get("effect_changes"), dict) else {}
     with lineage_aggregate.lineage_scope(lineage_id):
@@ -210,9 +211,10 @@ def save_lineage_program_component(
                 x=requested.get("x", current_component.get("x")),
                 y=requested.get("y", current_component.get("y")),
             )
-            candidate_config["resident_executor_id"] = str(
+            created_executor_resident_id = str(
                 (created_executor.get("node") or {}).get("id") or ""
             )
+            candidate_config["resident_executor_id"] = created_executor_resident_id
         requested["config"] = candidate_config
     requested_endpoint_reference_ids = (
         payload.get("endpoint_reference_ids")
@@ -231,6 +233,7 @@ def save_lineage_program_component(
         requested=requested,
         requested_endpoint_reference_ids=requested_endpoint_reference_ids,
         requested_watch_subject=requested_watch_subject,
+        created_executor_resident_id=created_executor_resident_id,
     )
 
     response = _mutate_lineage_program(

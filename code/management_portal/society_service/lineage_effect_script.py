@@ -1193,7 +1193,7 @@ def deliver_script_parts(text: str) -> tuple[str, str, dict[str, Any]] | None:
 
 
 def script_label(text: str) -> str:
-    """Short description for cards and explanations: the instructions a script calls."""
+    """Describe a parsed script, including control flow and output-only scripts."""
 
     try:
         script = parse(text)
@@ -1201,7 +1201,7 @@ def script_label(text: str) -> str:
         return ""
     names = list(dict.fromkeys(call.instruction for call in script.calls))
     if not names:
-        return ""
+        return "Effect 脚本" if script.statements else ""
     if len(script.calls) == 1:
         return names[0]
     shown = "、".join(names[:3]) + ("…" if len(names) > 3 else "")

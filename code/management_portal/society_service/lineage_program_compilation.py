@@ -377,16 +377,16 @@ def _compile_program(program: object, node_list: list[dict[str, Any]]) -> dict[s
             )
         elif component["kind"] == "loop":
             event_sources.update(_compiled_loop_sources(component, wires, components_by_id, invoke_routes))
+    operator_executors: dict[str, list[str]] = {}
+    for operator_id, operator in packet_operators.items():
+        if resident_id := operator.get("resident_executor_id"):
+            operator_executors.setdefault(resident_id, []).append(operator_id)
     return {
         "schema": PROGRAM_SCHEMA,
         "program": normalized,
         "event_sources": event_sources,
         "packet_operators": packet_operators,
-        "operator_executors": {
-            operator["resident_executor_id"]: operator_id
-            for operator_id, operator in packet_operators.items()
-            if operator.get("resident_executor_id")
-        },
+        "operator_executors": operator_executors,
         "effects": effects,
         "loops": loops,
         "invoke_routes": invoke_routes,

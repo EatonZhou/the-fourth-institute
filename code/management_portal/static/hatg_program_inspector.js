@@ -107,7 +107,7 @@
       .replace(/'[^']*'/g, "''")
       .replace(/(^|\s)#.*$/gm, "$1");
     const names = [...code.matchAll(/(?:^|[\s;(])([A-Z][A-Za-z0-9]{1,79})(?=[\s)]|$)/g)].map(match => match[1]);
-    if (!names.length) return "";
+    if (!names.length) return code.trim() ? window.PortalI18n.t("Effect 脚本") : "";
     if (names.length === 1) return window.PortalI18n.text`调用 ${names[0]}`;
     const unique = [...new Set(names)];
     return window.PortalI18n.text`${names.length} 次调用：${unique.slice(0, 3).join("、")}${unique.length > 3 ? "…" : ""}`;

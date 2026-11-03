@@ -116,6 +116,15 @@ def release_operator_executor_leadership(
     lineage["leader_resident_id"] = ""
 
 
+def _mark_dedicated_executor(body: dict[str, Any], component_id: str, kind: str, resident_id: str) -> None:
+    executor = next((node for node in body.get("nodes") or []
+                     if isinstance(node, dict) and str(node.get("id") or "") == resident_id), None)
+    if executor is None:
+        raise ValueError("Packet Operator Resident 执行器创建失败")
+    executor["operator_executor"] = {"component_id": component_id, "kind": kind}
+    release_operator_executor_leadership(body, resident_id)
+
+
 def delete_program_objects_with_observer_dependents(
     program: dict[str, Any],
     *,
@@ -223,10 +232,10 @@ def remove_program_components(
             executor_ids.add(executor_resident_id)
     removed = delete_program_objects_with_observer_dependents(program, component_ids=component_ids)
     for node in body.get("nodes") or []:
-        if str(node.get("id") or "") in executor_ids:
+        marker = node.get("operator_executor") or {}
+        if marker.get("component_id") in component_ids:
             node["operator_executor"] = {}
-    for executor_id in sorted(executor_ids):
-        release_operator_executor_leadership(body, executor_id)
+            release_operator_executor_leadership(body, str(node.get("id") or ""))
     return {**removed, "executor_ids": sorted(executor_ids)}
 
 
@@ -254,25 +263,7 @@ def create_component(
         "config": requested_config,
     }
     if executor_resident_id:
-        executor = next(
-            (
-                node
-                for node in body.get("nodes") or []
-                if isinstance(node, dict)
-                and str(node.get("id") or "") == executor_resident_id
-            ),
-            None,
-        )
-        if not executor:
-            raise ValueError("Packet Operator Resident 执行器创建失败")
-        executor["operator_executor"] = {
-            "component_id": component_id,
-            "kind": kind,
-        }
-        release_operator_executor_leadership(
-            body,
-            executor_resident_id,
-        )
+        _mark_dedicated_executor(body, component_id, kind, executor_resident_id)
     program.setdefault("components", []).append(component)
     return {"component_id": component_id}
 
@@ -285,6 +276,7 @@ def update_component(
     requested: dict[str, Any],
     requested_endpoint_reference_ids: dict[str, Any] | None,
     requested_watch_subject: dict[str, Any] | None,
+    created_executor_resident_id: str = "",
 ) -> dict[str, Any]:
     existing = next(
         (
@@ -313,28 +305,8 @@ def update_component(
     ):
         # Watching the Lineage or all of Portal replaces the Watch wires.
         effective_watch_subject = {"kind": "resident", "ids": []}
-    if kind in lineage_program_vocabulary.PACKET_OPERATOR_KINDS:
-        executor_id = str(
-            (existing.get("config") or {}).get("resident_executor_id")
-            or ""
-        )
-        if executor_id:
-            executor = next(
-                (
-                    node
-                    for node in body.get("nodes") or []
-                    if isinstance(node, dict)
-                    and str(node.get("id") or "") == executor_id
-                ),
-                None,
-            )
-            if not executor:
-                raise ValueError("Packet Operator Resident 执行器已不存在")
-            executor["operator_executor"] = {
-                "component_id": component_id,
-                "kind": kind,
-            }
-            release_operator_executor_leadership(body, executor_id)
+    if created_executor_resident_id:
+        _mark_dedicated_executor(body, component_id, kind, created_executor_resident_id)
     transitions: list[dict[str, Any]] = []
     if kind == "effect":
         transitions.append(lineage_program_bindings.reconcile_effect_endpoints(program, component_id))

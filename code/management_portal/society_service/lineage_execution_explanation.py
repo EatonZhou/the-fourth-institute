@@ -272,7 +272,7 @@ def _effect_explanation(
             "blocked",
             "Effect 尚未编写可运行的脚本" if script.strip() else "Effect 尚未编写脚本",
             tone="danger",
-            blocked_reason="Effect 的脚本没有可调用的指令，或无法解析",
+            blocked_reason="Effect 的脚本没有可执行语句，或无法解析",
             next_action="在检查器中编写脚本；保存后查看该脚本的诊断。",
         )
     incoming = [

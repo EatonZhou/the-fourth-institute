@@ -439,6 +439,7 @@ class _ExecutorTurn:
 def _executor_turn(
     lineage_id: str,
     executor_resident_id: str,
+    message_id: str,
     actor: str,
     *,
     ports: ProgramExecutionPorts,
@@ -453,12 +454,16 @@ def _executor_turn(
             if isinstance(node, dict)
         }
         plan = _compiled_program(lineage)
-        operator_id = str(
-            (plan.get("operator_executors") or {}).get(
-                executor_resident_id
-            )
-            or ""
-        )
+        candidates = (plan.get("operator_executors") or {}).get(executor_resident_id) or []
+        matching = [
+            operator_id for operator_id in candidates
+            if message_id in (lineage_operator_runtime.read_operator_runtime(
+                lineage_id, operator_id,
+            ).get("pending_deliveries") or {})
+        ]
+        if len(matching) > 1:
+            raise ValueError("Resident turn belongs to more than one Packet Operator")
+        operator_id = matching[0] if matching else ""
         current_operator = (
             (plan.get("packet_operators") or {}).get(operator_id) or {}
         )
@@ -591,7 +596,7 @@ def complete_operator_invocation(
     terminal_status: str = "completed",
     ports: ProgramExecutionPorts,
 ) -> dict[str, Any] | None:
-    turn = _executor_turn(lineage_id, executor_resident_id, actor, ports=ports)
+    turn = _executor_turn(lineage_id, executor_resident_id, expected_execution_id, actor, ports=ports)
     if turn is None:
         return None
     claim = _claim_operator_delivery(lineage_id, turn, executor_resident_id, expected_execution_id, ports=ports)
@@ -617,10 +622,17 @@ def complete_operator_invocation(
         evidence, operator_kind, output = _operator_reply(
             turn, pending, expected_execution_id, actor, ports=ports,
         )
-        event = trigger_paths.begin_resident_output(
-            lineage_id, executor_resident_id, expected_execution_id, at=ports.state.now_iso(), actor=actor,
-        )
-        output_path_id = event.payload["trigger_path_id"]
+        # The Resident answers this logical operator's pending decision.
+        # Keep its original occurrence and the barriers frozen for that batch;
+        # only ordinary Resident outputs start an independent occurrence.
+        from management_common.principal import OperationIdentity
+        identity = OperationIdentity.from_dict(event.identity)
+        event = lineage_primitives.normalize_event({
+            **event.to_dict(),
+            "identity": OperationIdentity.for_actor(actor, initiated_by=identity.initiated_by).to_dict(),
+        })
+        # This is the continuation's authority, not a rewrite of the observed
+        # facts carried in output.packets[].events.
         routed = dispatch_program_packets(
             turn.lineage_snapshot,
             turn.plan,
@@ -635,7 +647,6 @@ def complete_operator_invocation(
             packets_by_source_port=output.by_source_port,
             ports=ports,
         )
-        trigger_paths.event_settled(output_path_id, executor_resident_id, event.id)
         failed = _first_failed_route(routed)
         if failed:
             raise RuntimeError(

@@ -3244,7 +3244,9 @@ def test_event_can_drive_reducer_then_effect(
         (WORK_B, "job_2"),
     ], json.dumps(completed, ensure_ascii=False)
     assert completed["operator_results"][0]["status"] == "reduced"
-    assert dispatch_actors[-1] == REDUCER_EXECUTOR
+    # The logical operator continues the human-initiated batch; graph ISA
+    # retains its verified human delegation instead of inventing a new input.
+    assert dispatch_actors[-1] == ACTOR
 
 
 def test_resident_packet_can_drive_reducer_then_endpoint_free_effect(
@@ -3357,7 +3359,7 @@ def test_resident_packet_can_drive_reducer_then_endpoint_free_effect(
     ]
     reducer_result = completed["operator_results"][0]
     assert reducer_result["status"] == "reduced"
-    assert dispatch_actors[-1] == REDUCER_EXECUTOR
+    assert dispatch_actors[-1] == ACTOR
 
 
 def test_pre_dispatch_reducer_failure_releases_generic_event_route_claim(
