@@ -520,7 +520,10 @@
       return false;
     }
     link.href = url;
-    link.setAttribute("download", filename);
+    // HTTP attachments use Content-Disposition and the normal authenticated
+    // navigation path. Chromium's download-attribute path bypasses request routing.
+    if (/^(?:blob:|data:)/i.test(url)) link.setAttribute("download", filename);
+    else link.removeAttribute("download");
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     return true;

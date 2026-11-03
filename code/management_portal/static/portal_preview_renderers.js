@@ -528,7 +528,8 @@
         || document.preview_unavailable_reason
         || context.unsupportedText
         || window.PortalI18n.t("当前文件种类不支持预览。");
-      root.innerHTML = window.PortalI18n.html`<div class="previewWelcome"><span data-portal-icon="file" aria-hidden="true"></span><span>${esc(message)}</span>${url ? window.PortalI18n.html`<a class="portalButton" href="${esc(url)}" download>下载文件</a>` : ""}</div>`;
+      root.innerHTML = window.PortalI18n.html`<div class="previewWelcome"><span data-portal-icon="file" aria-hidden="true"></span><span>${esc(message)}</span>${url ? window.PortalI18n.html`<a class="portalButton">下载文件</a>` : ""}</div>`;
+      if (url) window.PortalPreview.configureDownloadLink(root.querySelector("a"), { url, filename: document.downloadName });
     },
   });
 

@@ -333,13 +333,14 @@
     requireContract(rendered.renderer === "text" && root.textContent.includes('"verified"') && root.dataset.previewLanguage === "json", "JSON 文档未选择生产代码 renderer");
     const unsupported = global.PortalPreview.render({ root, document: {
       path: "resource-live/archive.unknown", kind: "binary", binary: true,
-      downloadUrl: "/api/resources/content?address=article_0123456789ab",
+      downloadUrl: "/api/resources/content?address=article_0123456789ab&download=1",
     } });
     await unsupported.promise;
     check(run, signal);
     requireContract(unsupported.renderer === "unsupported" && root.textContent.includes("不支持"), "未支持格式留下空白 Preview");
-    const download = root.querySelector("a[download]");
-    requireContract(download && download.getAttribute("href") === "/api/resources/content?address=article_0123456789ab", "不支持格式没有保留下载入口");
+    const download = root.querySelector("a.portalButton[href]");
+    requireContract(download && download.getAttribute("href") === "/api/resources/content?address=article_0123456789ab&download=1", "不支持格式没有保留下载入口");
+    requireContract(!download.hasAttribute("download") && download.target === "_blank", "HTTP附件必须使用保留主体认证的新标签导航");
     root.dataset.verified = "preview-renderer-fallback";
     return root;
   }

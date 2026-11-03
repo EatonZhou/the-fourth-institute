@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 39
-  created_at: '2026-09-01'
+  number: 40
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-02T15:45:23Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-03T21:23:43Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -124,7 +124,7 @@ Windows 驱动器绝对路径（如 `C:/Users/example/draft.md` 或 `C:\Users\ex
 
 - **宿主**：`registerHost(name, handler, { priority })` 登记一个宿主，同名再次登记时替换；注销只移除仍属于自己的那次登记。`request` 按优先级从高到低依次询问宿主（同优先级按登记顺序），宿主返回 `false` 时继续询问下一个，全部拒绝时返回 `false`。
 - **来源**：`registerSource(adapter)` 要求来源 ID 唯一，注销只移除这次登记，重复注销没有作用。`load` 遇到未知来源时报错，读取结果再经过 `normalizeDocument`。来源没有保存能力时 `save` 返回只读错误；草稿先转成字符串，保存结果也重新整理。
-- **下载链接**：`configureDownloadLink(link, { url, filename })` 是所有宿主共用的下载按钮设置方法。地址为空时隐藏链接并去掉 `href`、`download`、`target` 和 `rel`；地址有效时显示链接，文件名只取最后一段，并设置 `download`、`target="_blank"` 和 `rel="noopener noreferrer"`。它不读取资源、不判断权限，下载地址由宿主从已经授权的文档中取得。
+- **下载链接**：`configureDownloadLink(link, { url, filename })` 是工具栏、文件菜单与不支持预览时的降级按钮共同使用的下载设置方法。地址为空时隐藏链接并去掉 `href`、`download`、`target` 和 `rel`；地址有效时使用 `target="_blank"` 和 `rel="noopener noreferrer"`，保留当前文档。HTTP(S) 原始文件通过普通导航请求下载，由服务端 `Content-Disposition: attachment` 提供原始文件名，链接不使用 HTML `download` 属性；下载请求与其他原生页面请求经过同一主体认证与领域授权。`blob:`、`data:` 等浏览器生成文件使用 `download` 属性，建议文件名只取最后一段。该方法不读取资源、不判断权限，下载地址由宿主从已经授权的文档中取得；来源适配器提供真正的原始附件地址，不能拿预览转换地址或错误JSON冒作文件下载。
 - **渲染器**：`registerRenderer(renderer, { priority })` 按唯一 ID 和优先级排序，`rendererFor` 返回第一个接受这份文档的渲染器（`accepts` 抛出的错误直接交给调用方，方便定位）。`render` 在同一区域显示新文档前先释放旧的显示；返回值包含 `document`、`renderer`、`promise` 和 `dispose`，渲染器的清理出错时 `dispose` 也会释放这个区域。
 
 ## 文件入口的操作
