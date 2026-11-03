@@ -221,7 +221,7 @@ def routes() -> tuple[RouteDefinition, ...]:
     return (
         RouteDefinition("GET", "/api/health", _route_health, "portal-public", phase="public"),
         RouteDefinition("GET", "/favicon.ico", _route_favicon, "portal-public", phase="public"),
-        RouteDefinition("GET", "/api/users", _route_users, "portal-overview"),
+        http_auth._principal_route("GET", "/api/users", _route_users, "portal-overview"),
         http_auth._principal_route("GET", "/api/agent-context-options", _route_agent_context_options, "portal-overview"),
         RouteDefinition("GET", "/api/config", _route_config, "portal-overview"),
         RouteDefinition("GET", "/api/summary", _route_summary, "portal-overview"),

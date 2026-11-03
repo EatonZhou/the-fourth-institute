@@ -2,16 +2,14 @@
 
 from urllib.parse import parse_qs
 
-from management_portal.http_routes import RouteDefinition
 
 
 class LineageHttp:
     def __init__(self, *, respond, exception_response, service_unavailable,
-                 session_actor, service_status, lineage, unavailable_error):
+                 service_status, lineage, unavailable_error):
         self.respond = respond
         self.exception_response = exception_response
         self.service_unavailable = service_unavailable
-        self.session_actor = session_actor
         self.service_status = service_status
         self.lineage = lineage
         self.unavailable_error = unavailable_error
@@ -21,11 +19,12 @@ class LineageHttp:
         return str((qs.get(key) or [""])[0]).strip()
 
     def get_route(self, operation):
-        def route(request, parsed, _route_actor):
+        def route(request, parsed, actor):
             qs = parse_qs(parsed.query)
-            actor = self.session_actor(request) or ""
             try:
                 return operation(request, qs, actor)
+            except PermissionError as exc:
+                return self.respond(request, 403, {"error": str(exc)})
             except self.unavailable_error as exc:
                 return self.service_unavailable(request, exc)
             except Exception as exc:
@@ -57,8 +56,8 @@ class LineageHttp:
         ``principal_route`` declares a route Users and Residents both call.
         """
         return (
-            RouteDefinition("GET", "/lineage/api/service-status", self.get_route(self.status), "lineage"),
+            principal_route("GET", "/lineage/api/service-status", self.get_route(self.status), "lineage"),
             principal_route("GET", "/lineage/api/lineages", self.get_route(self.lineages), "lineage"),
-            RouteDefinition("GET", "/lineage/api/node-message-counts", self.get_route(self.node_message_counts), "lineage"),
-            RouteDefinition("GET", "/lineage/api/node-metadata", self.get_route(self.node_metadata), "lineage"),
+            principal_route("GET", "/lineage/api/node-message-counts", self.get_route(self.node_message_counts), "lineage"),
+            principal_route("GET", "/lineage/api/node-metadata", self.get_route(self.node_metadata), "lineage"),
         )

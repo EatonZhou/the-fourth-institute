@@ -182,7 +182,6 @@ def test_sidebar_reads_during_a_restart_answer_with_a_code_the_page_retries(fail
     arguments.update(
         respond=lambda request, status, payload: answered.append(("respond", status, payload)),
         error=lambda request, exc: answered.append(("error", exc)),
-        session_actor=lambda request: "CASE-A",
         lineage_unavailable=lambda request, exc: answered.append(("unavailable", exc.http_status, exc.code)),
         resident_sidebar_snapshot=sidebar,
         resident_sidebar_backend=lambda: SimpleNamespace(shortcuts=sidebar),

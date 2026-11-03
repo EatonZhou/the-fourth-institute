@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 class AgentWorkbenchHttp:
     def __init__(
-        self, *, respond, error, session_actor, lineage_unavailable,
+        self, *, respond, error, lineage_unavailable,
         link_permission_denied, media_file,
         download_file, send_empty, media_content_type, resolved_path,
         lineage_favorite_payload, resident_sidebar_snapshot,
@@ -29,7 +29,6 @@ class AgentWorkbenchHttp:
     ):
         self.respond = respond
         self.error = error
-        self.session_actor = session_actor
         self.lineage_unavailable = lineage_unavailable
         self.link_permission_denied = link_permission_denied
         self.media_file = media_file
@@ -72,7 +71,7 @@ class AgentWorkbenchHttp:
                     payload = self.read_json(request, max_bytes=size)
             except self.body_too_large as exc:
                 return self.respond(request, 413, {"error": str(exc)})
-            return operation(request, payload, self.session_actor(request) or "")
+            return operation(request, payload, actor)
         return route
 
     def _discovery_result(self, request, operation):
@@ -126,17 +125,17 @@ class AgentWorkbenchHttp:
         ))
 
     def agent_backends(self, request, parsed, actor):
-        return self._runtime_catalog(request, parsed, include_backends=True)
+        return self._runtime_catalog(request, parsed, actor, include_backends=True)
 
     def runtime_catalog(self, request, parsed, actor):
-        return self._runtime_catalog(request, parsed, include_backends=False)
+        return self._runtime_catalog(request, parsed, actor, include_backends=False)
 
-    def _runtime_catalog(self, request, parsed, *, include_backends):
+    def _runtime_catalog(self, request, parsed, actor, *, include_backends):
         try:
             query = parse_qs(parsed.query)
             resident_id = str((query.get("resident_id") or [""])[0])
             runtime_route = self.resident_api().get_resident_runtime_route(
-                resident_id, self.session_actor(request) or ""
+                resident_id, actor
             ) if resident_id else {}
             catalog = self.execution_api().runtime_catalog(
                 account_id=str(runtime_route.get("account_id") or (query.get("account_id") or [""])[0]),
@@ -148,7 +147,6 @@ class AgentWorkbenchHttp:
             return self.error(request, exc)
 
     def get_favorites(self, request, parsed, actor):
-        actor = self.session_actor(request) or ''
         try:
             from management_portal.principal_favorites import project_favorite_statuses
             forget = (lambda selection: self.forget_favorite(actor, selection)) if self.forget_favorite else None
@@ -159,7 +157,6 @@ class AgentWorkbenchHttp:
             return self.error(request, exc)
 
     def get_residents(self, request, parsed, actor):
-        actor = self.session_actor(request) or ''
         try:
             return self.respond(request, 200, self.resident_sidebar_snapshot(actor))
         except SocietyServiceUnavailable as exc:
@@ -174,7 +171,6 @@ class AgentWorkbenchHttp:
             return self.error(request, exc)
 
     def get_resident_shortcuts(self, request, parsed, actor):
-        actor = self.session_actor(request) or ''
         try:
             return self.respond(request, 200, self.resident_sidebar_backend().shortcuts(actor))
         except SocietyServiceUnavailable as exc:
@@ -191,7 +187,6 @@ class AgentWorkbenchHttp:
         resident_id = str((qs.get('id') or [''])[0]).strip()
         if not resident_id:
             return self.respond(request, 400, {'error': 'resident id required'})
-        actor = self.session_actor(request) or ''
         try:
             result = self.resident_api().resolve_resident_identity(resident_id, actor)
         except KeyError:
@@ -207,7 +202,6 @@ class AgentWorkbenchHttp:
         resident_id = str((qs.get('id') or [''])[0]).strip()
         if not resident_id:
             return self.respond(request, 400, {'error': 'resident id required'})
-        actor = self.session_actor(request) or ''
         try:
             result = self.resident_chat_projection().project_session(self.resident_api().get_resident_session_projection(resident_id, actor), actor)
         except KeyError:
@@ -223,7 +217,6 @@ class AgentWorkbenchHttp:
         resident_id = str((qs.get('id') or [''])[0]).strip()
         if not resident_id:
             return self.respond(request, 400, {'error': 'resident id required'})
-        actor = self.session_actor(request) or ''
         try:
             result = self.watchboard_applications().project(self.resident_api().get_resident_watchboard(resident_id, actor), actor)
         except KeyError:
@@ -237,7 +230,6 @@ class AgentWorkbenchHttp:
         resident_id = str((qs.get('id') or [''])[0]).strip()
         if not resident_id:
             return self.respond(request, 400, {'error': 'resident id required'})
-        actor = self.session_actor(request) or ''
         try:
             result = self.resident_api().get_resident_restart_options(resident_id, actor)
         except KeyError:
@@ -251,7 +243,6 @@ class AgentWorkbenchHttp:
         return self.respond(request, 200, result)
 
     def get_residents_forward_targets(self, request, parsed, actor):
-        actor = self.session_actor(request) or ''
         qs = parse_qs(parsed.query)
         try:
             result = self.resident_api().list_resident_forward_targets(actor, scope_id=str((qs.get('scope_id') or [''])[0]).strip(), lineage_id=str((qs.get('lineage_id') or [''])[0]).strip(), resident_id=str((qs.get('resident_id') or [''])[0]).strip(), preferred_lineage_id=str((qs.get('preferred_lineage_id') or [''])[0]).strip())
@@ -268,7 +259,6 @@ class AgentWorkbenchHttp:
     def get_chat_attachments_image(self, request, parsed, actor):
         qs = parse_qs(parsed.query)
         file_id = str((qs.get('file_id') or [''])[0]).strip()
-        actor = self.session_actor(request) or ''
         try:
             path, content_type = self.workspace_api().resolve_workspace_pasted_image(file_id, actor)
             return self.media_file(request, Path(path), content_type)
@@ -285,7 +275,6 @@ class AgentWorkbenchHttp:
         qs = parse_qs(parsed.query)
         session_id = str((qs.get('session_id') or [''])[0]).strip()
         cursor = str((qs.get('cursor') or ['0'])[0]).strip()
-        actor = self.session_actor(request) or ''
         try:
             result = self.local_terminal_backend().read_terminal(actor, session_id, cursor)
         except KeyError as exc:
@@ -300,7 +289,6 @@ class AgentWorkbenchHttp:
         meta_only = str((qs.get('meta') or [''])[0]).strip().lower() in {'1', 'true', 'yes', 'on'}
         if not raw_path:
             return self.respond(request, 400, {'error': 'path required'})
-        actor = self.session_actor(request) or ''
         try:
             result = self.workspace_api().get_workspace_link_file(raw_path, actor, meta_only=meta_only, allow_outside_roots=False)
             if not meta_only and str(result.get('kind') or '') == 'markdown' and (str(result.get('access_source') or '') != 'shared'):
@@ -332,7 +320,7 @@ class AgentWorkbenchHttp:
         if not raw_path:
             return self.send_empty(request, 400)
         try:
-            media_path = self.resolved_path(self.workspace_api().resolve_workspace_link_file_path(raw_path, allow_outside_roots=False, actor=self.session_actor(request) or ''), 'Lineage Workbench link file path')
+            media_path = self.resolved_path(self.workspace_api().resolve_workspace_link_file_path(raw_path, allow_outside_roots=False, actor=actor), 'Lineage Workbench link file path')
             if media_path.is_dir():
                 return self.send_empty(request, 415)
             if download:
@@ -402,30 +390,30 @@ class AgentWorkbenchHttp:
         ``principal_route`` declares a route Users and Residents both call.
         """
         return (
-            RouteDefinition("GET", "/api/agent-workbench/agent-backends", self.agent_backends, "agent-workbench-runtime"),
+            principal_route("GET", "/api/agent-workbench/agent-backends", self.agent_backends, "agent-workbench-runtime"),
             principal_route("GET", "/api/agent-workbench/agent-runtime-catalog", self.runtime_catalog, "agent-workbench-runtime"),
-            RouteDefinition("GET", "/api/agent-workbench/favorites", self.get_favorites, "agent-workbench-favorites"),
-            RouteDefinition("GET", "/api/agent-workbench/residents", self.get_residents, "agent-workbench-residents"),
-            RouteDefinition("GET", "/api/agent-workbench/residents/shortcuts", self.get_resident_shortcuts, "agent-workbench-residents"),
-            RouteDefinition("GET", "/api/agent-workbench/residents/navigation-target", self.get_residents_navigation_target, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/favorites", self.get_favorites, "agent-workbench-favorites"),
+            principal_route("GET", "/api/agent-workbench/residents", self.get_residents, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/residents/shortcuts", self.get_resident_shortcuts, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/residents/navigation-target", self.get_residents_navigation_target, "agent-workbench-residents"),
             principal_route("GET", "/api/agent-workbench/residents/projection", self.get_residents_projection, "agent-workbench-residents"),
-            RouteDefinition("GET", "/api/agent-workbench/residents/watchboard", self.get_residents_watchboard, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/residents/watchboard", self.get_residents_watchboard, "agent-workbench-residents"),
             principal_route("GET", "/api/agent-workbench/residents/session-restart-options", self.get_residents_session_restart_options, "agent-workbench-residents"),
-            RouteDefinition("GET", "/api/agent-workbench/residents/forward-targets", self.get_residents_forward_targets, "agent-workbench-residents"),
+            principal_route("GET", "/api/agent-workbench/residents/forward-targets", self.get_residents_forward_targets, "agent-workbench-residents"),
             principal_route("GET", "/api/agent-workbench/chat-attachments/image", self.get_chat_attachments_image, "agent-workbench-chat-attachments"),
             RouteDefinition("GET", "/api/agent-workbench/local-terminal/read", self.get_local_terminal_read, "agent-workbench-local-terminal"),
-            RouteDefinition("GET", "/api/agent-workbench/link-file", self.get_link_file, "agent-workbench-link-file"),
-            RouteDefinition("GET", "/api/agent-workbench/link-file-raw", self.get_link_file_raw, "agent-workbench-link-file-raw"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/contexts", self.post_route(self.discovery_contexts), "agent-workbench-resident-discovery"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/recommend", self.post_route(self.discovery_recommend), "agent-workbench-resident-discovery"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/recommend/latest", self.post_route(self.discovery_recommend_latest), "agent-workbench-resident-discovery"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/recommend/result", self.post_route(self.discovery_recommend_result), "agent-workbench-resident-discovery"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/routing-evals/residents/search", self.post_route(self.discovery_routing_residents_search), "agent-workbench-resident-discovery"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/routing-evals/submit", self.post_route(self.discovery_routing_submit), "agent-workbench-resident-discovery"),
-            RouteDefinition("POST", "/api/agent-workbench/resident-discovery/search", self.post_route(self.discovery_search), "agent-workbench-resident-discovery"),
+            principal_route("GET", "/api/agent-workbench/link-file", self.get_link_file, "agent-workbench-link-file"),
+            principal_route("GET", "/api/agent-workbench/link-file-raw", self.get_link_file_raw, "agent-workbench-link-file-raw"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/contexts", self.post_route(self.discovery_contexts), "agent-workbench-resident-discovery"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/recommend", self.post_route(self.discovery_recommend), "agent-workbench-resident-discovery"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/recommend/latest", self.post_route(self.discovery_recommend_latest), "agent-workbench-resident-discovery"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/recommend/result", self.post_route(self.discovery_recommend_result), "agent-workbench-resident-discovery"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/routing-evals/residents/search", self.post_route(self.discovery_routing_residents_search), "agent-workbench-resident-discovery"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/routing-evals/submit", self.post_route(self.discovery_routing_submit), "agent-workbench-resident-discovery"),
+            principal_route("POST", "/api/agent-workbench/resident-discovery/search", self.post_route(self.discovery_search), "agent-workbench-resident-discovery"),
             RouteDefinition("POST", "/api/agent-workbench/local-terminal/start", self.post_route(self.post_local_terminal_start), "agent-workbench-local-terminal"),
             RouteDefinition("POST", "/api/agent-workbench/local-terminal/input", self.post_route(self.post_local_terminal_input), "agent-workbench-local-terminal"),
             RouteDefinition("POST", "/api/agent-workbench/local-terminal/control", self.post_route(self.post_local_terminal_control), "agent-workbench-local-terminal"),
-            RouteDefinition("POST", "/api/agent-workbench/residents/watchboard-application", self.post_route(self.post_residents_watchboard_application), "agent-workbench-residents"),
+            principal_route("POST", "/api/agent-workbench/residents/watchboard-application", self.post_route(self.post_residents_watchboard_application), "agent-workbench-residents"),
         )
 

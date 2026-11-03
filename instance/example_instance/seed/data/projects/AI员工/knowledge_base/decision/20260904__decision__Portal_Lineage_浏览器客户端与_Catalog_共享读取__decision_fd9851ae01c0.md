@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-04'
 version:
-  number: 37
-  created_at: '2026-09-04'
+  number: 38
+  created_at: "2026-09-04"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-02T15:47:45Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-03T20:57:40Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -47,6 +47,14 @@ links:
 Society 页面（Society Workbench）、HATG 团队图编辑面板、Chat 工作区和 Workbench Studio 都要读取和修改 Lineage，也都要在选择器中列出 Resident、用户、项目和可用的模型后端。本 Design 说明它们共用的两个浏览器模块：把页面操作映射为 HATG ISA 指令的 Lineage 客户端，以及在一个页面中短期共享目录读取结果的 Catalog。
 
 两个模块都不拥有业务事实。Lineage、Resident 及其运行状态由 SocietyService 保存；用户、项目和模型后端目录由各自的服务提供；页面负责选择状态、加载提示、空态和错误展示。
+
+## 原生页面与目录的调用者
+
+Society 文档、HATG 模板、Chat Workspace 会话读取和它们的目录、收藏、导航、发现、Resident 投影、Workspace 文件预览/下载入口接受已登录 User 或当前 Lineage 成员关系核验通过的 Resident。共同使用正式页面主体认证，不因页面从工作台跳入而要求 Resident 借用 User Cookie。
+
+HTTP 路由将同一个已认证 actor 传给 Society、Resident、Workspace、偏好与发现领域；处理函数不重新读取 Cookie，也不使用空身份。Lineage 列表、节点计数和元数据继续按领域可见性校验；文件读取/下载仍按原 Workspace 路径与资源授权，不能因为文档可打开就越过权限。用户目录只提供已有公开目录字段，不携带登录材料。缺凭据返回401，身份关系或领域权限拒绝返回403。当前身份检查每次请求独立进行。
+
+本地终端的启动、输入、控制和输出保持其人类会话入口；账号安全与系统管理仍按各自契约认证授权。开放主体文档不隐含这些能力的授权，不把 Resident 转成人类，也不创建人类会话。页面导航成功、目录加载和实际文件下载分别报告，不能用打开 Workspace 根目录代替下载某个文件。
 
 ## 基本概念
 

@@ -125,13 +125,13 @@ def test_admin_access_is_read_only_and_keeps_actor(monkeypatch):
 def test_user_routes_keep_actor_and_response_contract(monkeypatch):
     """用户路由保留当前身份及响应结构"""
     request = SimpleNamespace(headers={})
-    monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "alice")
+    monkeypatch.setattr(http_auth, "_get_page_api_actor", lambda handler: "alice")
     monkeypatch.setattr(http_overview, "list_users", lambda: {"users": ["alice"]})
     monkeypatch.setattr(http_responses, "_serve_json", lambda handler, status, payload: (status, payload))
 
     todos = urlparse("/api/users")
     assert server._PORTAL_HTTP_ROUTES.dispatch(
-        "GET", todos.path, request, todos, "alice", phase="protected",
+        "GET", todos.path, request, todos, "alice", phase="dual-auth",
     ) == (200, {"users": ["alice"]})
 
 
