@@ -74,6 +74,14 @@ def _version(binary):
                               check=True, timeout=60).stdout.strip()
 
 
+def _prepare_runtime(directory):
+    if platform.system() == 'Windows':
+        from scripts.windows.msvc_runtime import prepare
+        machine = platform.machine().lower()
+        architecture = {'amd64': 'x86_64', 'arm64': 'arm64'}.get(machine, machine)
+        prepare(ROOT.parent / 'dependencies/native', directory, architecture)
+
+
 def install():
     url, digest, version, name = release_asset()
     tool_home = Path(os.environ.get('ARTICLE_TOOL_HOME') or Path.home())
@@ -93,6 +101,7 @@ def install():
     if not synctex and not tlmgr:
         raise RuntimeError('Private TeX preparation did not provide SyncTeX or tlmgr')
     target = bin_dir / name
+    _prepare_runtime(bin_dir)
     existing = _version(target) if target.is_file() else None
     if existing != f'texlab {version}':
         bin_dir.mkdir(parents=True, exist_ok=True)
@@ -111,6 +120,7 @@ def install():
                 raise ValueError('TexLab archive checksum mismatch')
             candidate = directory / name
             _extract_binary(archive, candidate, name)
+            _prepare_runtime(directory)
             if _version(candidate) != f'texlab {version}':
                 raise ValueError('TexLab binary version mismatch')
             os.replace(candidate, target)

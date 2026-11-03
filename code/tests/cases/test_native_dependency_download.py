@@ -188,10 +188,12 @@ class NativeDownloads(unittest.TestCase):
             def prepare_postgres(directory):
                 windows_steps.append(("utf8_manifest", Path(directory).name.split("-")[0]))
                 return {"utf8_manifest": "fixture"}
-            def prepare_crt(base, entry, *, offline=False):
+            def prepare_crt(base, directory, architecture, *, offline=False):
                 self.assertTrue(offline)
                 self.assertEqual(base, platform / "dependencies/native")
-                windows_steps.append(("msvc_runtime", entry["name"]))
+                self.assertEqual(architecture, "x86_64")
+                self.assertEqual(directory.name, "bin")
+                windows_steps.append(("msvc_runtime", directory.parent.name.split("-")[0]))
                 return {"version": "fixture"}
             host = {"platform": "windows", "architecture": "x86_64"}
             with patch.object(native, "urlopen", side_effect=AssertionError("Unexpected network")), \

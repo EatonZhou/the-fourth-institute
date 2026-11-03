@@ -76,7 +76,8 @@ def test_dsh_profile_imports_code_dependencies_without_copying_or_linking(tmp_pa
     assert (profile / 'request_timing.mjs').is_file()
 
 
-def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypatch):
+@pytest.mark.parametrize('windows', [False, True])
+def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypatch, windows):
     data = io.BytesIO()
     with zipfile.ZipFile(data, 'w') as bundle:
         bundle.writestr('texlab.exe', b'verified fixture executable')
@@ -87,7 +88,21 @@ def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypa
     target.write_bytes(b'previous')
     monkeypatch.setenv('ARTICLE_TOOL_BIN_DIR', str(bin_dir))
     monkeypatch.setattr(article, 'release_asset', lambda:('https://fixture.invalid/asset', hashlib.sha256(payload).hexdigest(), '5.26.0', 'texlab.exe'))
-    monkeypatch.setattr(article, '_version', lambda p: 'texlab 5.26.0' if p.read_bytes() == b'verified fixture executable' else 'texlab 0.0.0')
+    prepared = []
+    monkeypatch.setattr(article.platform, 'system', lambda: 'Windows' if windows else 'Linux')
+    monkeypatch.setattr(article.platform, 'machine', lambda: 'AMD64')
+    from scripts.windows import msvc_runtime
+    def prepare_runtime(base, directory, architecture):
+        assert architecture == 'x86_64'
+        assert base == article.ROOT.parent / 'dependencies/native'
+        prepared.append(directory)
+        (directory / 'vcruntime140.dll').write_bytes(b'verified runtime fixture')
+    monkeypatch.setattr(msvc_runtime, 'prepare', prepare_runtime)
+    def version(p):
+        if windows:
+            assert (p.parent / 'vcruntime140.dll').is_file(), 'DLLs must precede every native probe'
+        return 'texlab 5.26.0' if p.read_bytes() == b'verified fixture executable' else 'texlab 0.0.0'
+    monkeypatch.setattr(article, '_version', version)
     monkeypatch.setattr(article.shutil, 'which', lambda *a, **kw:'/fixture/synctex')
     monkeypatch.setattr(article.urllib.request, 'urlopen', lambda *a, **kw:io.BytesIO(payload))
     monkeypatch.setattr(article, 'run_process', lambda *a, **kw:None)
@@ -96,7 +111,8 @@ def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypa
     monkeypatch.setattr(article_dependencies, 'smoke_compile', lambda *_a, **_kw: None)
     assert article.install() == target
     assert target.read_bytes() == b'verified fixture executable'
-    assert list(bin_dir.iterdir()) == [target]
+    assert set(bin_dir.iterdir()) == ({target, bin_dir / 'vcruntime140.dll'} if windows else {target})
+    assert len(prepared) == (2 if windows else 0)
 
 
 def test_windows_tex_preparation_uses_native_sfx_and_runtime_discovery_root(tmp_path, monkeypatch):

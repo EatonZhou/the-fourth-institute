@@ -39,21 +39,21 @@ class WindowsCrtTests(unittest.TestCase):
                 member = args[2][3:]
                 (Path(kw['cwd']) / args[3] / member).write_bytes(content.get(member, b'cabinet'))
                 return SimpleNamespace(returncode=0)
-            entry = {'directory': str(pg), 'platform': 'windows/x86_64'}
+            directory = pg / 'bin'
             with patch.object(crt, 'specification', return_value=spec), \
                     patch.object(crt, 'run_native_capture', side_effect=expand), \
                     patch.object(crt, 'download', return_value=archive) as download:
                 content['u4'] = b'corrupted'
                 with self.assertRaisesRegex(ValueError, 'checksum'):
-                    crt.prepare(root, entry, offline=True)
+                    crt.prepare(root, directory, 'x86_64', offline=True)
                 self.assertFalse((pg / 'bin/vcruntime140.dll').exists())
                 content['u4'] = b'license'
-                receipt = crt.prepare(root, entry, offline=True)
+                receipt = crt.prepare(root, directory, 'x86_64', offline=True)
                 self.assertTrue(download.call_args.kwargs['offline'])
                 self.assertEqual(download.call_args.args[1].parent, root / 'archives')
                 self.assertEqual((pg / 'bin/vcruntime140.dll').read_bytes(), b'CRT')
                 download.side_effect = AssertionError('retry must reuse verified files')
-                self.assertEqual(crt.prepare(root, entry, offline=True), receipt)
+                self.assertEqual(crt.prepare(root, directory, 'x86_64', offline=True), receipt)
 
     def test_missing_archive_stays_offline(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -61,7 +61,7 @@ class WindowsCrtTests(unittest.TestCase):
             (pg / 'bin').mkdir(parents=True)
             with patch.object(native, 'urlopen', side_effect=AssertionError('network')):
                 with self.assertRaisesRegex(RuntimeError, '缺少内置依赖'):
-                    crt.prepare(Path(tmp), {'directory': str(pg), 'platform': 'windows/x86_64'}, offline=True)
+                    crt.prepare(Path(tmp), pg / 'bin', 'x86_64', offline=True)
 
     def test_native_failure_keeps_windows_status(self):
         failed = SimpleNamespace(returncode=0xc0000135, stdout='')

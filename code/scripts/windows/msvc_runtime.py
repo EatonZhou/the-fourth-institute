@@ -1,4 +1,4 @@
-"""Prepare app-local PostgreSQL CRT DLLs from the pinned Microsoft package.
+"""Prepare app-local CRT DLLs from the pinned Microsoft package.
 
 Never execute the redistributable installer or depend on a globally installed
 CRT. Windows' own expand.exe reads the verified embedded cabinets as data.
@@ -28,12 +28,12 @@ def bundle(destination, cache):
     return {**entry, 'path': target.relative_to(destination).as_posix(), 'size': target.stat().st_size}
 
 
-def prepare(base, postgres, *, offline=False):
-    """Place the CRT beside PostgreSQL in the code's dependencies/native (``base``)."""
+def prepare(base, directory, architecture, *, offline=False):
+    """Place verified CRT files beside a native executable, using ``base``'s cache."""
     entry = specification()
-    architecture = postgres['platform'].split('/')[1]
     selected = entry['architectures'][architecture]
-    directory = Path(postgres['directory']) / 'bin'
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
     files = {**selected['files'], 'Microsoft-Visual-C++-License.rtf': entry['license']}
     receipt = {'version': entry['version'], 'archive_sha256': entry['sha256'],
                'architecture': architecture, 'files': {n: f['sha256'] for n, f in files.items()}}

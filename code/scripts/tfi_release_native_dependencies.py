@@ -279,7 +279,8 @@ def _prepare(base, entry, *, offline):
         from scripts.windows.utf8_manifest import prepare_postgres
         from scripts.windows.msvc_runtime import prepare as prepare_crt
         compatibility = prepare_postgres(destination)
-        compatibility['msvc_runtime'] = prepare_crt(base, entry, offline=offline)
+        compatibility['msvc_runtime'] = prepare_crt(
+            base, Path(entry['directory']) / 'bin', entry['platform'].split('/')[1], offline=offline)
     # Probe before any service registration. A failed probe leaves its
     # receipt for diagnosis/retry and never activates an incomplete program.
     value = {'artifact': entry, 'resolved_versions': verify(entry), 'status': 'verified'}
