@@ -4,20 +4,24 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 33
-  created_at: '2026-07-26'
+  number: 36
+  created_at: "2026-07-26"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T18:52:15Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-03T20:33:28Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 10
 metaness: 2
 ai_generated: false
 links:
   source:
+  - ${code_root}/management_portal/resources/service_mutations.py
+  - ${code_root}/management_portal/resources/locking.py
+  - ${code_root}/management_portal/resources/providers/collaboration.py
+  - ${code_root}/tests/cases/test_resource_owner_unregistration.py
   - ${code_root}/tests/cases/test_workspace_resource_rename.py
   - ${code_root}/management_portal/resources/workspace_store.py
   - ${code_root}/management_portal/resources/providers/workspace.py
@@ -207,7 +211,7 @@ Resident、Lineage 和工作区的关系由协作领域（SocietyService）保�
 
 - 参数：`resource_id`、`payload`，可选的 `resource_type`（必须与 ID 一致）、`wait_for_index`、`index_timeout`。
 - 权限：UpdateResource 按正式声明要求目标资源的 contributor；专用 Project、Resident 或 Lineage 指令依其各自声明授权。门面校验认证身份，领域保留业务约束，不存在通用的 Resident 全局管理旁路。
-- 领域返回的记录不能改变资源 ID。成功后发送 `updated` 变化通知。
+- 领域返回的记录不能改变资源 ID。领域提交并同步授权后，所属适配器读取当前单对象来源，持久化摘要后返回；不等待后台刷新队列。
 - 领域抛出 `ResourceVersionConflict` 时，错误中保留调用方提交的版本 `expected_version` 和当前版本 `current_version`，调用方据此重新读取、合并后再提交。
 
 Workspace 名称更新只接受非空 `title` 与必填 `expected_version`，令牌原样取自 `ResolveResource.result.resource.version`；原子鉴权、行锁 CAS、返回版本与错误合同统一见 decision_8838269736d3「名称更新与版本冲突」。类型是否可更新从 GetResourceType 的顶层 `updatable` 读取。
@@ -220,12 +224,14 @@ Workspace 名称更新只接受非空 `title` 与必填 `expected_version`，令
 - 领域决定对象是软删除、物理删除还是只取消登记。
 - 目录注销与后台清理的提交、失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理；登记释放后发送 `deleted` 变化通知。
 
-### 等待索引确认
+### 变更的索引确认
 
-- **登记成功即确认单条索引投影。** `register` 和 `RegisterResource` 无论是否给出 `wait_for_index`，都会在返回前同步持久化新资源摘要；这个参数不使登记进入后台刷新等待。`CreateProject` 同样走登记流程。
-- **`wait_for_index` 对修改和撤销登记等待索引反映这次变更。** 领域修改在等待之前已经提交。HATG 的 `UpdateResource` 与 `UnregisterResource` 请求索引确认，最多等待 20 秒。
-- **修改或撤销登记没有确认时，结果中带 `index_projection`。** 等待超时或刷新失败时 `reason` 为 `refresh_incomplete`，没有对应的适配器时为 `no_targets`，通知发送失败时为 `notification_failed`；同时给出 `status: unconfirmed`、`wait_requested` 和 `targets`。登记投影失败不返回成功结果，而是报告带 `domain_committed: true` 的提交后错误。
-- **调用方遇到提交后错误时保留资源 ID 并重新读取。** 领域事实可能已提交，不能盲目再次创建对象；成功的登记结果可立即用于查询、解析及读取。
+- **登记、修改和注销成功即确认单对象投影。** 所属适配器在返回前同步持久化该对象的摘要或删除。CreateWorkspace 与协作描述同步同样按单对象提交，不等待串行扫描队列。接口保留的 `wait_for_index` 与 `index_timeout` 参数不降低这项成功条件；显式刷新仍按自己的批次等待契约执行。
+- **投影失败明确报告领域已提交。** 返回提交后错误，包含 `domain_committed: true` 与 `stage: index_projection`，不能返回成功并附带“索引未确认”来代替投影。
+- **保留当前授权与并发语义。** 单对象更新仍按真实调用者鉴权、检查领域版本，再同步权限与索引。同资源更新在 ResourceService 的单对象变更作用域内，从领域提交到索引持久化串行；注销按下述领域归属划分串行范围。旧完整扫描和增量扫描不能覆盖晚于其开始时间的单对象结果。
+- **本地注销在同一作用域完成提交与投影。** 本地适配器沿用 ResourceService 的单对象变更作用域，将领域删除、提交后的登记清理、授权同步和索引持久化串行完成，不因跨服务注销的分工而缩短本地串行边界。
+- **跨服务注销由领域拥有删除串行边界。** 类型提供器以 `owner_managed_unregistration` 声明领域 owner 负责串行删除；这是受信提供器的职责声明，不是调用方可用来跳过授权或并发约束的请求参数。ResourceService 调用领域删除 RPC 时，不持有会被领域回调再次取得的单对象变更或投影锁，允许领域从另一请求线程同步回传删除墓碑。领域调用返回后，ResourceService 在该资源的单对象作用域内完成登记清理、授权同步和最终索引确认。领域删除及其回调不代替这次最终确认，成功回执仍要求索引删除结果已持久化；确认失败沿用领域已提交的错误合同，不返回未确认的成功。
+- **调用方遇到提交后错误时保留资源 ID 并重新读取。** 领域事实可能已提交，不能盲目再次创建对象；成功结果可立即用于查询、解析及读取。
 
 ### 正文修改记录
 
@@ -251,6 +257,12 @@ Resident 在一次执行中修改资源正文时，ResourceService 为每次实�
 - 处理函数必须返回对象，ResourceService 原样返回，不包装成变更记录。动作的请求字段、幂等规则和结果结构由领域定义；请求内容中的 `timeout_seconds` 只延长客户端的等待时间。
 - 动作不自动发送变化通知，会改变状态的动作由所属领域通知自己的索引。
 
+### 资源目录 HTTP 身份边界
+
+资源目录查询、建议、详情、索引状态、服务状态与已保存语义检索的 HTTP 入口接受正式登录 User 或通过当前 Lineage 身份核验的 Resident，与资源正文入口使用同一公共鉴权 owner。路由把已认证 actor 原样交给查询及语义检索领域；列表按该主体的资源权限过滤，详情和保存检索的读取、创建、刷新、删除继续履行各自领域授权。不得在配套请求中退回仅 Cookie 身份或空 actor。
+
+索引刷新 HTTP 入口同样要求已认证主体，由 Portal 服务提交既有受信索引控制请求。它只重建索引，不授予资源访问权，不修改来源资源或权限；之后的查询仍按原主体过滤。没有凭据返回 401，身份关系或领域授权拒绝返回 403。页面文档与配套 API 分别核验，不能只验证文档成功便认定页面可用。
+
 ## 资源索引控制
 
 以下方法供受信的 Portal 服务使用：
@@ -266,13 +278,12 @@ Resident 在一次执行中修改资源正文时，ResourceService 为每次实�
   → ResourceService 核对身份、类型与权限
   → 领域提供器提交领域修改
   → ResourceService 核对返回的根身份，同步授权记录
-  → 登记：所属适配器同步投影单条摘要并持久化后返回
-  → 修改或撤销登记：发送变化通知，按需等待后台索引确认
+  → 所属适配器同步投影或删除单条摘要，持久化后返回
 ```
 
-领域修改先于索引确认，因为正文和业务状态属于领域，索引只是可以重建的摘要。登记在同一请求内投影单条索引记录；修改或撤销登记的通知失败、等待超时，调用方报告“领域已提交、索引未确认”，后台刷新和周期核对补上索引。
+领域修改先于索引确认，因为正文和业务状态属于领域，索引只是可以重建的摘要。登记、修改和注销都在同一请求内完成单对象索引投影；投影失败保留领域已提交的事实并报告提交后错误，后台刷新和周期核对继续用于恢复。
 
-领域提交之后的步骤（核对返回记录、释放登记账本中的 ID、同步授权记录、登记的单条索引投影、其他变更的变化通知）抛出异常时，`register`、`update`、`unregister` 统一抛出 `ResourceOperationError("resource.mutation_post_commit_failed", ..., 500)`。`details` 包含 `domain_committed: true`、`resource_id`、`resource_type`、`mutation`（`create`、`update`、`delete`）、失败步骤 `stage`（`mutation_result`、`registration_cleanup`、`authorization_sync`、`index_projection`、`index_notification`）和原因 `cause`。通过指令调用时结果的 `commit_state` 为 `committed`，不可原样重试；调用方重新读取资源确认当前状态。修改或撤销登记等待索引超时仍以 `index_projection` 返回已提交结果。
+领域提交之后的步骤（核对返回记录、释放登记账本中的 ID、同步授权记录、单对象索引投影）抛出异常时，`register`、`update`、`unregister` 统一抛出 `ResourceOperationError("resource.mutation_post_commit_failed", ..., 500)`。`details` 包含 `domain_committed: true`、`resource_id`、`resource_type`、`mutation`（`create`、`update`、`delete`）、失败步骤 `stage`（`mutation_result`、`registration_cleanup`、`authorization_sync`、`index_projection`）和原因 `cause`。通过指令调用时结果的 `commit_state` 为 `committed`，不可原样重试；调用方重新读取资源确认当前状态。
 
 ## Resource RPC 协议
 

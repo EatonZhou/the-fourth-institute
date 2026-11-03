@@ -241,12 +241,12 @@ class ResourceHttp:
         ``principal_route`` declares a route Users and Residents both call.
         """
         return (
-            RouteDefinition("GET", "/api/resource-semantic-searches", self.semantic_searches, "portal-catalog-get"),
-            RouteDefinition("GET", "/resource/api/service-status", self.service_status, "portal-catalog-get"),
-            RouteDefinition("GET", "/api/resource-index/query", self.index_query, "portal-catalog-get"),
-            RouteDefinition("GET", "/api/resource-index/suggest", self.index_suggest, "portal-catalog-get"),
-            RouteDefinition("GET", "/api/resource-index/status", self.index_status, "portal-catalog-get"),
-            RouteDefinition("GET", "/api/resource-index/resources/{resource_id}", self.index_detail, "portal-resource-index", match="template"),
+            principal_route("GET", "/api/resource-semantic-searches", self.semantic_searches, "portal-catalog-get"),
+            principal_route("GET", "/resource/api/service-status", self.service_status, "portal-catalog-get"),
+            principal_route("GET", "/api/resource-index/query", self.index_query, "portal-catalog-get"),
+            principal_route("GET", "/api/resource-index/suggest", self.index_suggest, "portal-catalog-get"),
+            principal_route("GET", "/api/resource-index/status", self.index_status, "portal-catalog-get"),
+            principal_route("GET", "/api/resource-index/resources/{resource_id}", self.index_detail, "portal-resource-index", match="template"),
             principal_route("GET", "/api/resources/capabilities", self.capabilities, "portal-resources"),
             principal_route("GET", "/api/resources/resolve", self.resolve, "portal-resources"),
             principal_route("GET", "/api/resources/reference", self.reference, "portal-resources"),
@@ -262,8 +262,8 @@ class ResourceHttp:
             RouteDefinition("GET", "/resource", self.resource_page, "portal-pages-get", page=True),
             RouteDefinition("GET", "/resource/", self.resource_page, "portal-pages-get", page=True),
             RouteDefinition("GET", "/resource.html", self.resource_page, "portal-pages-get", page=True),
-            RouteDefinition("POST", "/api/resource-semantic-search/start", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="start")), "portal-terminal-post"),
-            RouteDefinition("POST", "/api/resource-semantic-search/refresh", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="refresh")), "portal-terminal-post"),
-            RouteDefinition("POST", "/api/resource-semantic-search/delete", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="delete")), "portal-terminal-post"),
-            RouteDefinition("POST", "/api/resource-index/refresh", self.index_refresh, "portal-resources-post"),
+            principal_route("POST", "/api/resource-semantic-search/start", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="start")), "portal-terminal-post"),
+            principal_route("POST", "/api/resource-semantic-search/refresh", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="refresh")), "portal-terminal-post"),
+            principal_route("POST", "/api/resource-semantic-search/delete", (lambda request, parsed, actor: self.semantic_search(request, parsed, actor, operation="delete")), "portal-terminal-post"),
+            principal_route("POST", "/api/resource-index/refresh", self.index_refresh, "portal-resources-post"),
         )

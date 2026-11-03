@@ -415,7 +415,7 @@ def test_resident_reference_reports_society_service_unavailable_contracts(subtes
         service = mock.Mock()
         service.query.side_effect = web_resources.ResourceService.Unavailable('socket unavailable')
         try:
-            with mock.patch.object(http_auth, '_check_session', return_value=True), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=service), mock.patch.object(web_resources, 'get_resource_service', return_value=service):
+            with mock.patch.object(http_auth, '_get_page_api_actor', return_value='CASE-A'), mock.patch.object(serve_management_portal, 'get_resource_service', return_value=service), mock.patch.object(web_resources, 'get_resource_service', return_value=service):
                 with pytest.raises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(f'{base}/api/resource-index/query?resource_type=repo')
             assert error.value.code == 503
@@ -832,8 +832,8 @@ def test_resource_semantic_search_routes_preserve_the_requested_scope() -> None:
         with (
             mock.patch.object(
                 http_auth,
-                "_check_session",
-                return_value=True,
+                "_get_page_api_actor",
+                return_value="CASE-A",
             ),
             mock.patch.object(
                 semantic_search_jobs,
@@ -855,7 +855,7 @@ def test_resource_semantic_search_routes_preserve_the_requested_scope() -> None:
             ) as response:
                 payload = json.loads(response.read().decode("utf-8"))
                 assert payload["searches"] == [job]
-            list_searches.assert_called_once_with("repo", "")
+            list_searches.assert_called_once_with("repo", "CASE-A")
 
             list_searches.reset_mock()
             with urllib.request.urlopen(
@@ -863,7 +863,7 @@ def test_resource_semantic_search_routes_preserve_the_requested_scope() -> None:
             ) as response:
                 assert response.status == 200
             # Without a scope the request is about Knowledge.
-            list_searches.assert_called_once_with("knowledge", "")
+            list_searches.assert_called_once_with("knowledge", "CASE-A")
 
             status, started = _post_json(
                 f"{base}/api/resource-semantic-search/start",
@@ -880,7 +880,7 @@ def test_resource_semantic_search_routes_preserve_the_requested_scope() -> None:
                     "query": "runtime repository",
                     "resource_scope": "repo",
                 },
-                "",
+                "CASE-A",
             )
             notify.assert_called_once_with(
                 resource_id="search_0123456789ab",

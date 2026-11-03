@@ -105,3 +105,64 @@ def test_resource_address_redirect_preserves_resident(entry, monkeypatch):
     location.assert_called_once_with(REPO, RESIDENT)
     request.send_header.assert_called_once_with('Location', '/resource/repo?item=' + REPO)
     assert request._portal_authenticated_actor is None
+
+
+@pytest.mark.parametrize('actor', [RESIDENT, 'human-reader'])
+def test_repo_catalog_dependencies_preserve_principal(entry, monkeypatch, actor):
+    from management_portal import serve_management_portal as server, semantic_search_jobs
+    entry.actor[0] = actor
+    owner = server._RESOURCE_HTTP
+    service = Mock()
+    service.query.return_value = {'resources': [{'resource_id': REPO}]}
+    service.get.return_value = {'resource_id': REPO}
+    monkeypatch.setattr(owner, 'respond', lambda request, status, value: (status, value))
+    monkeypatch.setattr(owner, 'resource_error', lambda request, error: (403, str(error)))
+    monkeypatch.setattr(owner, 'resource_service', lambda: service)
+    monkeypatch.setattr(owner, 'status_payload', lambda: {'ok': True})
+    monkeypatch.setattr(owner, 'read_json', lambda request: {'resource_scope': 'repo', 'adapters': ['repo']})
+    monkeypatch.setattr(owner, 'notify_index', Mock())
+    searches = Mock(return_value={'searches': []})
+    monkeypatch.setattr(semantic_search_jobs, 'list_searches', searches)
+    operations = {}
+    for name in ('start', 'refresh', 'delete'):
+        operations[name] = Mock(return_value={'search_id': 'search_0123456789ab'})
+        monkeypatch.setattr(semantic_search_jobs, name + '_search', operations[name])
+
+    def call(path, method='GET'):
+        parsed = urlparse(path)
+        result = server._PORTAL_HTTP_ROUTES.dispatch(method, parsed.path, entry.request, parsed, '', phase='dual-auth')
+        assert not getattr(entry.request, '_portal_authenticated_actor', None)
+        return result
+
+    paths = ['/api/resource-index/query?resource_type=repo',
+             '/api/resource-index/suggest?resource_type=repo',
+             '/api/resource-index/resources/' + REPO,
+             '/api/resource-index/status', '/resource/api/service-status',
+             '/api/resource-semantic-searches?resource_scope=repo']
+    for path in paths:
+        assert call(path)[0] == 200
+    assert service.query.call_args.kwargs['actor'] == actor
+    assert service.suggest.call_args.kwargs['actor'] == actor
+    service.get.assert_called_once_with(REPO, actor=actor)
+    searches.assert_called_once_with('repo', actor)
+    for name, operation in operations.items():
+        assert call('/api/resource-semantic-search/' + name, 'POST')[0] == 200
+        assert operation.call_args.args[-1] == actor
+    assert call('/api/resource-index/refresh', 'POST')[0] == 202
+    service.refresh.assert_called_once_with(adapters=['repo'], path='', wait=False, timeout=180.0)
+
+    service.get.side_effect = PermissionError('outside caller scope')
+    assert call('/api/resource-index/resources/' + REPO)[0] == 403
+    entry.actor[0] = None
+    service.reset_mock()
+    searches.reset_mock()
+    for path in paths:
+        assert call(path)[0] == 401
+    assert call('/api/resource-index/refresh', 'POST')[0] == 401
+    for name, operation in operations.items():
+        operation.reset_mock()
+        assert call('/api/resource-semantic-search/' + name, 'POST')[0] == 401
+        operation.assert_not_called()
+    service.assert_not_called()
+    assert service.method_calls == []
+    searches.assert_not_called()
