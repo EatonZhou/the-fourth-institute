@@ -213,6 +213,8 @@
 
   // Lazy assets revalidate. A content digest belongs to one file and must never
   // be copied from another script (nor reuse a legacy immutable release URL).
+  // http_static_files owns content identity; static-only releases need no new
+  // process build tag. Preload and loadAsset must use this same canonical URL.
   function staticAssetUrl(path) {
     return path;
   }
