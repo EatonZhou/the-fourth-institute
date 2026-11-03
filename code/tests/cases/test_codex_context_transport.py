@@ -1,6 +1,7 @@
 from dataclasses import replace
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import pytest
@@ -68,6 +69,77 @@ def test_thread_configuration_stays_stable_while_the_execution_changes(tmp_path,
     assert execution_context() == {'execution_id': first.execution_id}
     CodexBackend._write_execution_context(second)
     assert execution_context() == {'execution_id': second.execution_id}
+
+
+def test_prepared_thread_context_survives_binding_promotion(tmp_path, monkeypatch):
+    """临时会话提升到正式 binding 后，首轮工具仍读取创建时的稳定上下文文件。"""
+    select_instance(monkeypatch, tmp_path / "instance")
+    preparation = ExecutionRequest.new(
+        service_type='agent_session', provider='codex', operation='create',
+        actor='sample_admin', agent_id='fixture', cwd=str(tmp_path),
+        prompt='prepare', session=SessionOptions(
+            mode='persistent', binding_id='prepared:fixture', backend_route_id='one'))
+    client = mock.Mock()
+    client.start_thread.return_value = {'thread': {'id': 'prepared-thread'}}
+    thread = CodexBackend._start_thread(client, preparation)
+    initial = client.start_thread.call_args.args[0]['config']
+    promoted = replace(preparation, execution_id='execution-'+'b'*24,
+                       operation='turn', session=replace(preparation.session, binding_id='fixture'))
+    from management_portal.execution.codex_turn_run import CodexTurnRun
+    run = SimpleNamespace(
+        options={}, request=promoted, backend=CodexBackend,
+        session=SimpleNamespace(thread_id=thread, route=SimpleNamespace(account_id='one')),
+        invocation=SimpleNamespace(harness_tools=(), tool_batch_processor=None),
+        event_processor=None, context=SimpleNamespace(has_turn_control_provider=lambda:False))
+    actual = CodexTurnRun._turn_options(run)['config']
+    assert actual == initial
+    CodexBackend._write_execution_context(
+        promoted, backend_route_id='one', backend_session_id=thread)
+    monkeypatch.setenv('PORTAL_EXECUTION_CONTEXT_FILE',
+                      initial['shell_environment_policy.set']['PORTAL_EXECUTION_CONTEXT_FILE'])
+    assert execution_context() == {'execution_id': promoted.execution_id}
+    # Another account's same native ID does not adopt this transport context.
+    other = CodexBackend._runtime_thread_config(
+        promoted, backend_route_id='two', backend_session_id=thread)
+    assert other != actual
+    # A corrupt locator must fail closed rather than write outside its owner.
+    from management_portal.execution.codex_execution_context import _receipt
+    receipt = _receipt('one', thread)
+    record = json.loads(receipt.read_text())
+    receipt.write_text(json.dumps({**record, 'filename':'../outside.json'}))
+    with pytest.raises(ValueError, match='locator'):
+        CodexBackend._write_execution_context(
+            promoted, backend_route_id='one', backend_session_id=thread)
+    assert not (receipt.parent.parent / 'outside.json').exists()
+
+
+def test_native_fork_retains_its_own_locator_after_promotion(tmp_path, monkeypatch):
+    """原生 Fork 的环境跟随子 thread，不能采用来源或另一个账号的上下文位置。"""
+    select_instance(monkeypatch, tmp_path / 'instance')
+    request = ExecutionRequest.new(
+        service_type='agent_session', provider='codex', operation='fork',
+        actor='sample_admin', agent_id='fixture', cwd=str(tmp_path), prompt='fork',
+        session=SessionOptions(mode='persistent', binding_id='prepared:child',
+                               backend_route_id='one', context_source_binding_id='source'))
+    client = mock.Mock()
+    client.fork_thread.return_value = {'thread':{'id':'child-thread'}}
+    session = SimpleNamespace(request=request, client=client, thread_id='source-thread',
+                              route=SimpleNamespace(account_id='one'), provider_cancelled=lambda:False)
+    backend = object.__new__(CodexBackend)
+    result = backend._fork(session)
+    initial = client.fork_thread.call_args.args[0]['config']
+    promoted = replace(request, operation='turn',
+                       session=replace(request.session, binding_id='child', context_source_binding_id=''))
+    actual = CodexBackend._runtime_thread_config(
+        promoted, backend_route_id='one', backend_session_id=result.backend_session_id)
+    assert actual == initial
+    assert CodexBackend._runtime_thread_config(
+        promoted, backend_route_id='one', backend_session_id='source-thread') != actual
+    CodexBackend._write_execution_context(
+        promoted, backend_route_id='one', backend_session_id=result.backend_session_id)
+    monkeypatch.setenv('PORTAL_EXECUTION_CONTEXT_FILE',
+                      initial['shell_environment_policy.set']['PORTAL_EXECUTION_CONTEXT_FILE'])
+    assert execution_context() == {'execution_id':promoted.execution_id}
 
 
 def test_new_input_cannot_adopt_another_active_turn():

@@ -176,7 +176,8 @@ class CodexTurnRun:
         if sandbox_policy is not None:
             turn_options["sandbox_policy"] = sandbox_policy
         turn_options["cwd"] = self.request.cwd
-        turn_options["config"] = self.backend._runtime_thread_config(self.request)
+        turn_options["config"] = self.backend._runtime_thread_config(
+            self.request, backend_route_id=self.session.route.account_id, backend_session_id=self.session.thread_id)
         portal_message_id = str(
             options.get("client_user_message_id") or ""
         )
@@ -247,7 +248,8 @@ class CodexTurnRun:
             f"{session.route.account_id}:{session.thread_id}",
             cancellation_requested=session.provider_cancelled,
         ):
-            self.backend._write_execution_context(self.request)
+            self.backend._write_execution_context(
+                self.request, backend_route_id=session.route.account_id, backend_session_id=session.thread_id)
             if session.provider_cancelled():
                 raise InterruptedError(
                     f"Codex execution cancelled before turn start for {session.thread_id}"
@@ -829,7 +831,12 @@ class CodexTurnRun:
         lost_thread_id = session.thread_id
         session.thread_id = self.backend._start_thread(
             session.client, self.request, self.context.is_cancelled, self.invocation.harness_tools,
+            backend_route_id=session.route.account_id,
         )
+        self.turn_options['config'] = self.backend._runtime_thread_config(
+            self.request, backend_route_id=session.route.account_id, backend_session_id=session.thread_id)
+        self.backend._write_execution_context(
+            self.request, backend_route_id=session.route.account_id, backend_session_id=session.thread_id)
         sessions.replace_unaccepted_session(
             self.request, self.invocation.session, backend_session_id=session.thread_id,
             backend_route_id=session.route.account_id,

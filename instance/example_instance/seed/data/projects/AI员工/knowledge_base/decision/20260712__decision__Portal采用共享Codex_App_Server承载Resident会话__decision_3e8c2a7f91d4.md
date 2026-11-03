@@ -114,7 +114,7 @@ ExecutionService 保存规范消息、会话记录和执行终态
 
 **创建。** `thread/start` 带上工作目录、模型、速度、审批方式、沙箱、动态工具、开发者指令和 Codex 配置。`threadSource` 默认为 `user`，`ephemeral` 默认为 `false`（两者都可以由运行设置指定）。Portal 把 Codex 配置中的 `project_doc_max_bytes` 设为 0，不让 Codex 自动读取项目文档；是否允许子 Agent（`allow_subagents`）和 Goal 能力按运行设置写入配置。
 
-**每轮执行身份。** 创建、运行、恢复、Goal 和显式压缩共用 thread 配置。环境只保存每个会话稳定的 `PORTAL_EXECUTION_CONTEXT_FILE` 路径；执行前原子更新文件中的 execution ID 和授权上下文。HATG 客户端调用时读取该文件，避免每轮身份变化触发 thread 配置重载。
+**每轮执行身份。** 创建、运行、恢复、Goal 和显式压缩共用 thread 配置。环境只保存每个会话稳定的 `PORTAL_EXECUTION_CONTEXT_FILE` 路径；执行前原子更新文件中的 execution ID。Codex 适配器在创建或原生 Fork 返回后，按准确账号路由和原生 thread 记录其创建环境实际使用的上下文位置；临时 binding 提升为正式 binding 后仍使用这个位置。该记录是适配器的运行产物，不承担 Provider Binding、执行接收或授权事实。上下文文件只包含 execution ID，Resident 权限仍由自身凭证判定。HATG 客户端调用时读取该文件，避免每轮身份变化或 binding 提升触发尚未持久化 thread 的配置重载。
 
 **加载与释放。** 已有会话的 thread 不在客户端缓存中时，客户端调用 `thread/resume` 加载原来的 thread。`thread/unsubscribe` 只释放 App Server 和客户端中的缓存，不删除 Portal 的会话记录或历史。
 

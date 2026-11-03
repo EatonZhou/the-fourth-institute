@@ -338,31 +338,28 @@ class CodexBackend:
         return config
 
     @classmethod
-    def _runtime_thread_config(cls, request: ExecutionRequest) -> dict[str, Any]:
+    def _runtime_thread_config(cls, request: ExecutionRequest, *, backend_route_id: str = "", backend_session_id: str = "") -> dict[str, Any]:
         config = cls._thread_config(request.runtime_options)
         database = portal_database_environment(may_inherit_portal_database(request))
         environment = {**config.get("shell_environment_policy.set", {}), **database}
         environment.pop("PORTAL_EXECUTION_ID", None)
-        mirror_product_env(environment, "PORTAL_EXECUTION_CONTEXT_FILE", str(cls._execution_context_path(request)))
+        mirror_product_env(environment, "PORTAL_EXECUTION_CONTEXT_FILE", str(cls._execution_context_path(
+            request, backend_route_id=backend_route_id, backend_session_id=backend_session_id)))
         config["shell_environment_policy.set"] = environment
         return config
 
     @staticmethod
-    def _execution_context_path(request: ExecutionRequest) -> Path:
-        import hashlib
-        identity = request.session.binding_id or request.execution_id
-        digest = hashlib.sha256(identity.encode()).hexdigest()
-        from .config import execution_state_root
-        root = execution_state_root() / "codex_context"
-        return root / (digest + ".json")
+    def _execution_context_path(request: ExecutionRequest, *, backend_route_id: str = "", backend_session_id: str = "") -> Path:
+        from .codex_execution_context import context_path
+        return context_path(request, backend_route_id=backend_route_id, backend_session_id=backend_session_id)
 
     @classmethod
-    def _write_execution_context(cls, request: ExecutionRequest) -> None:
+    def _write_execution_context(cls, request: ExecutionRequest, *, backend_route_id: str = "", backend_session_id: str = "") -> None:
         from management_portal.shared_state import atomic_replace_json
 
         # The turn's tools report which execution they belong to; permissions
         # are the Resident's own, so nothing else travels with them.
-        path = cls._execution_context_path(request)
+        path = cls._execution_context_path(request, backend_route_id=backend_route_id, backend_session_id=backend_session_id)
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         atomic_replace_json(path, {"execution_id": request.execution_id})
 
@@ -521,6 +518,7 @@ class CodexBackend:
         cancellation_requested: Callable[[], bool] | None = None,
         harness_tools: tuple[HarnessTool, ...] = (),
         developer_instructions: str = "",
+        backend_route_id: str = "",
     ) -> str:
         options = request.runtime_options
         params = {
@@ -562,6 +560,10 @@ class CodexBackend:
         ).strip()
         if not thread_id:
             raise RuntimeError("Codex thread/start returned no thread id")
+        from .codex_execution_context import remember_thread_context
+        context_route = backend_route_id or request.session.backend_route_id
+        if context_route:
+            remember_thread_context(request, backend_route_id=context_route, backend_session_id=thread_id)
         return thread_id
 
 
@@ -595,7 +597,7 @@ class CodexBackend:
         client = self.client_factory(route.socket_path)
         return (route, client, self._start_thread(
             client, request, context.is_cancelled, invocation.harness_tools,
-            invocation.system_context if invocation.attach_system_context else ""),
+            invocation.system_context if invocation.attach_system_context else "", backend_route_id=route.account_id),
             bool(invocation.attach_system_context and invocation.system_context))
 
     def configure_auto_compact_threshold(
@@ -969,6 +971,9 @@ class CodexBackend:
         forked_id = str(thread.get("id") or "")
         if not forked_id:
             raise RuntimeError("Codex thread/fork returned no thread id")
+        from .codex_execution_context import remember_thread_context
+        remember_thread_context(session.request, backend_route_id=session.route.account_id,
+                                backend_session_id=forked_id)
         return self._operation_result(
             session,
             {"forked_from_session_id": session.thread_id},
@@ -1023,6 +1028,7 @@ class CodexBackend:
             validate_codex_preservation(references)
         replacement = self._start_thread(
             session.client, request, session.context.is_cancelled, session.invocation.harness_tools,
+            backend_route_id=session.route.account_id,
         )
         delivery = session.history_delivery(references, agent_id=agent_id, store=store)
         delivery.initialize(replacement)
@@ -1035,7 +1041,7 @@ class CodexBackend:
     def _compact(self, session: CodexSession) -> BackendResult:
         request, context, route = session.request, session.context, session.route
         thread_id = session.thread_id
-        self._write_execution_context(request)
+        self._write_execution_context(request, backend_route_id=route.account_id, backend_session_id=thread_id)
         fork_history = request.metadata.get("fork_context_input") or {}
         if fork_history:
             if (
@@ -1051,7 +1057,7 @@ class CodexBackend:
         try:
             usage = session.client.compact_thread(
                 thread_id,
-                config=self._runtime_thread_config(request),
+                config=self._runtime_thread_config(request, backend_route_id=route.account_id, backend_session_id=thread_id),
                 cancellation_requested=session.provider_cancelled,
                 **self._compaction_wait_options(),
             )
