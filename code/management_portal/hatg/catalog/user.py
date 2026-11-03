@@ -35,13 +35,13 @@ DECLARATIONS = (
         _user_id("凭据所属 User 的用户名"),
         R("secret_sha256", description="客户端生成 dbu_ 随机 token 的 SHA256，不提交原文"),
         P("name", description="凭据名称，便于辨认；默认 API"),
-        P("expires_in_days", "integer", description="有效期 1-365 天，默认 90"),
-    ), (R("credential", "object", "新凭据：credential_id、username、name、created_at、expires_at（Unix 秒）、status，不含密钥"),),
+        P("expires_in_days", "integer", description="有效天数；省略或 0 表示不过期，正整数不设天数上限"),
+    ), (R("credential", "object", "新凭据：credential_id、username、name、created_at、expires_at（Unix 秒，不过期时为 null）、status，不含密钥"),),
         mutates=True, target="user_id"),
     _d("ListUserAccessTokens", ON_USER, "列出一位 User 的个人访问凭据，不返回密钥。", (
         _user_id(),
     ), (
-        R("credentials", "array", "每项 credential_id、name、created_at、expires_at 与 status（active、revoked、expired）"),
+        R("credentials", "array", "每项 credential_id、name、created_at、expires_at（不过期时为 null）与 status（active、revoked、expired）"),
     ), target="user_id"),
     _d("RevokeUserAccessToken", FIXED, "撤销当前 User 的一个个人访问凭据。", (
         R("credential_id", description="要撤销的凭据，取 ListUserAccessTokens 返回的 credential_id"),

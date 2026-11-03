@@ -7,6 +7,7 @@ import secrets
 import time
 
 from management_common.principal import validate_user_id
+from management_common.database_time import instant
 from .portal_access_control import PortalAccessStore, PortalCredentialStore
 from .identity_store import IdentityState
 
@@ -46,6 +47,19 @@ class UserEnrollment:
         if type(value) is not int or not 1 <= value <= maximum:
             raise ValueError(f"expires_in_days must be between 1 and {maximum}")
         return value * 86400
+
+    @staticmethod
+    def _token_expiry(days):
+        if type(days) is not int or days < 0:
+            raise ValueError("expires_in_days must be a non-negative integer; 0 means no expiration")
+        if days == 0:
+            return None
+        try:
+            expires_at = time.time() + days * 86400
+            instant(expires_at)
+        except (OverflowError, ValueError, OSError) as exc:
+            raise ValueError("Expiration date cannot be represented; use 0 for no expiration") from exc
+        return expires_at
 
     @staticmethod
     def _public(record):
@@ -111,7 +125,7 @@ class UserEnrollment:
                 self.state.replace(state)
             return self._public(row)
 
-    def create_account(self, actor, username, *, display_name="", recovery_email="", password="", secret_sha256="", token_name="API", expires_in_days=90, status="active"):
+    def create_account(self, actor, username, *, display_name="", recovery_email="", password="", secret_sha256="", token_name="API", expires_in_days=0, status="active"):
         username = validate_user_id(username)
         if status not in {"active", "disabled"}:
             raise ValueError("New accounts must be active or disabled")
@@ -119,7 +133,7 @@ class UserEnrollment:
             self.credentials.validate_password(password)
         if secret_sha256:
             self._digest(secret_sha256)
-            self._duration(expires_in_days, 365)
+            self._token_expiry(expires_in_days)
         if not password and not secret_sha256:
             raise ValueError("A password or machine credential is required")
         from management_portal import permission_system
@@ -160,7 +174,7 @@ class UserEnrollment:
             offer["first_admin"] = True
         return offer
 
-    def accept_invitation(self, invitation_secret, *, password="", secret_sha256="", token_name="API", expires_in_days=90):
+    def accept_invitation(self, invitation_secret, *, password="", secret_sha256="", token_name="API", expires_in_days=0):
         digest = self._invitation_digest(invitation_secret)
         with self.access._transaction(), self.state.transaction():
             state = self._read()
@@ -181,16 +195,16 @@ class UserEnrollment:
             # The first account a Portal makes is its first Portal 管理员 (create_account), whichever invitation made it.
             return {**result, "first_admin": self.access.user(row["username"]).get("category") == "portal_admin"}
 
-    def create_token(self, username, secret_sha256, *, name="API", expires_in_days=90):
+    def create_token(self, username, secret_sha256, *, name="API", expires_in_days=0):
         digest = self._digest(secret_sha256)
-        duration = self._duration(expires_in_days, 365)
+        expires_at = self._token_expiry(expires_in_days)
         with self.access._transaction(), self.state.transaction():
             self._active(username)
             state = self._read()
             if any(r["secret_sha256"] == digest for r in state["tokens"].values()):
                 raise ValueError("Generate a new credential secret")
             row = {"credential_id": secrets.token_hex(16), "username": username, "name": str(name).strip()[:120] or "API",
-                   "secret_sha256": digest, "created_at": time.time(), "expires_at": time.time() + duration,
+                   "secret_sha256": digest, "created_at": time.time(), "expires_at": expires_at,
                    "status": "active"}
             state["tokens"][row["credential_id"]] = row
             self.state.replace(state)
@@ -204,7 +218,7 @@ class UserEnrollment:
                 continue
             row = self._public(record)
             if row["status"] == "active":
-                if row["expires_at"] <= time.time():
+                if row["expires_at"] is not None and row["expires_at"] <= time.time():
                     row["status"] = "expired"
             items.append(row)
         return items
@@ -224,7 +238,7 @@ class UserEnrollment:
             return ""
         digest = hashlib.sha256(token.encode()).hexdigest()
         row = next((r for r in self._read()["tokens"].values() if secrets.compare_digest(r["secret_sha256"], digest)), None)
-        if not row or row["status"] != "active" or row["expires_at"] <= time.time():
+        if not row or row["status"] != "active" or (row["expires_at"] is not None and row["expires_at"] <= time.time()):
             return ""
         user = self.access.user(row["username"])
         if not user["configured"] or user["status"] != "active":

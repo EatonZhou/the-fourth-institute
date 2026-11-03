@@ -46,6 +46,11 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.deepEqual(result.digests, values.map(v => createHash('sha256').update(v).digest('hex')));
     assert.notEqual(result.random[0], result.random[1]);
     assert.match(result.random[0], /^[A-Za-z0-9_-]{43}$/);
+    assert.equal(await page.locator('[name=days]').inputValue(), '7');
+    assert.equal(await page.locator('[name=days]').getAttribute('max'), '30');
+    await page.locator('[name=days]').fill('31');
+    assert.equal(await page.locator('[name=days]').evaluate(input => input.checkValidity()), false);
+    await page.locator('[name=days]').fill('7');
     await page.locator('[name=name]').fill('release-invite-test');
     await page.locator('button[type=submit]').click();
     await page.waitForFunction(() => document.querySelector('[role=status]').textContent === 'Invitation created.');
@@ -64,7 +69,61 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     for (const value of values.slice(0, 4)) {
       assert.equal(await native.sha256(new TextEncoder().encode(value)), createHash('sha256').update(value).digest('hex'));
     }
-    console.log('PASS LAN HTTP source enrollment UI, random secrets, SHA-256 vectors, hashed-only request');
+    const catalog = JSON.parse(fs.readFileSync(path.join(root, 'portal_translations.json'), 'utf8'));
+    for (const language of ['zh-CN', 'en']) {
+      await page.evaluate(async ({catalog, language}) => {
+        const {mountEnrollment} = await import('/portal_user_enrollment.js');
+        window.PortalI18n.t = key => catalog[key]?.[language] ?? key;
+        window.PortalIdentity = {userId: async () => 'fixture-user'};
+        window.PortalUI.formatDateTime = date => date.toISOString();
+        window.calls = [];
+        window.PortalInstructionClient.execute = async (name, args) => {
+          window.calls.push({name, args});
+          return {credentials: [
+            {name: 'permanent-fixture', credential_id: 'p', status: 'active', expires_at: null},
+            {name: 'finite-fixture', credential_id: 'f', status: 'active', expires_at: 1800000000},
+          ]};
+        };
+        mountEnrollment(document.querySelector('main'));
+        document.querySelector('details').open = true;
+      }, {catalog, language});
+      const forever = catalog['Never expires'][language];
+      await page.waitForFunction(() => document.querySelectorAll('li').length === 2);
+      assert.match(await page.locator('li').nth(0).innerText(), new RegExp(forever));
+      assert.match(await page.locator('li').nth(1).innerText(), /2027-01-15/);
+      assert.equal(await page.locator('[name=days]').inputValue(), '');
+      assert.equal(await page.locator('[name=days]').getAttribute('max'), null);
+      assert.equal(await page.locator('[name=days]').getAttribute('required'), null);
+      assert.equal(await page.locator('[name=days]').getAttribute('placeholder'), forever);
+      assert.equal(await page.locator('.enrollmentExpiry span').innerText(), catalog['Expires in days (leave blank for no expiry)'][language]);
+      for (const days of ['', '30000']) {
+        await page.locator('[name=name]').fill('new-fixture-token');
+        await page.locator('[name=days]').fill(days);
+        assert.equal(await page.locator('form').evaluate(form => form.checkValidity()), true);
+        const before = await page.evaluate(() => window.calls.filter(call => call.name === 'CreateUserAccessToken').length);
+        await page.locator('button[type=submit]').click();
+        await page.waitForFunction(before => window.calls.filter(call => call.name === 'CreateUserAccessToken').length > before, before);
+        await page.waitForFunction(() => document.querySelector('[name=name]').value === '');
+        const request = await page.evaluate(async () => {
+          const {secretDigest} = await import('/portal_user_enrollment.js');
+          const args = window.calls.filter(call => call.name === 'CreateUserAccessToken').at(-1).args;
+          const secret = document.querySelector('.enrollmentSecret textarea').value;
+          return {args, matchesDigest: args.secret_sha256 === await secretDigest(secret), rawSent: JSON.stringify(args).includes(secret)};
+        });
+        assert.deepEqual(Object.keys(request.args).sort(), ['expires_in_days', 'name', 'secret_sha256', 'user_id']);
+        assert.equal(request.args.expires_in_days, Number(days));
+        assert.equal(request.matchesDigest, true);
+        assert.equal(request.rawSent, false);
+        assert.equal(await page.locator('[name=days]').inputValue(), '');
+      }
+      await page.locator('[name=name]').fill('invalid-fixture-token');
+      for (const days of ['-1', '1.5']) {
+        await page.locator('[name=days]').fill(days);
+        assert.equal(await page.locator('[name=days]').evaluate(input => input.checkValidity()), false);
+      }
+      assert.equal(await page.evaluate(() => window.calls.filter(call => call.name === 'CreateUserAccessToken').length), 2);
+    }
+    console.log('PASS serial Chromium: invitation bounds; PAT no-expiry/30000 days, validation, bilingual list/form, private-secret requests');
   } finally {
     await browser.close();
   }

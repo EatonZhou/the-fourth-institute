@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import secrets
+import time
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
@@ -44,6 +45,8 @@ def test_token_only_user_and_secret_redaction(enrollment):
     assert "memberships" not in result["user"]
     assert "sample_editor" not in enrollment.credentials.load()
     assert enrollment.authenticate(token) == "sample_editor"
+    assert result["credential"]["expires_at"] is None
+    assert enrollment.list_tokens("sample_editor")[0]["expires_at"] is None
     assert enrollment.authenticate("dbu_" + secrets.token_urlsafe(32)) == ""
     assert secret not in json.dumps(enrollment.state.read({}))
     assert token not in json.dumps(enrollment.state.read({}))
@@ -55,6 +58,101 @@ def test_token_only_user_and_secret_redaction(enrollment):
         enrollment.revoke_token("someone_else", result["credential"]["credential_id"])
     enrollment.revoke_token("sample_editor", result["credential"]["credential_id"])
     assert not enrollment.authenticate(token)
+
+
+@pytest.mark.parametrize("days", [None, 0, 366, 30000])
+def test_access_token_isa_expiration_and_revocation(enrollment, monkeypatch, days):
+    """ISA 默认或零天令牌不过期，长有效期可用且准确到期，均可撤销。
+
+    :design: decision_6eac174d85bf
+    """
+    from management_portal import web_accounts, web_isa
+    from management_portal.hatg import catalog
+    from management_portal.hatg.contracts import InstructionCall, InstructionContext
+    from management_portal.hatg.kernel import Invocation
+
+    enrollment.create_account("CASE-A", "sample_editor", password="Sample-password-123")
+    token = "dbu_" + secrets.token_urlsafe(32)
+    args = {"user_id": "sample_editor", "secret_sha256": digest(token)}
+    if days is not None:
+        args["expires_in_days"] = days
+    declaration = catalog.declaration("CreateUserAccessToken")
+    declaration.validate_arguments(args)
+    monkeypatch.setattr(web_accounts, "_USER_ENROLLMENT", enrollment)
+    invocation = Invocation(declaration, InstructionCall(instruction="CreateUserAccessToken", arguments=args),
+                            InstructionContext(caller="sample_editor", entry="web"), "inst_pat_expiry")
+    before = time.time()
+    row = web_isa.user_access_token(invocation)["credential"]
+    after = time.time()
+    # Read back through a new owner instance to cover SQL NULL and timestamp conversion.
+    reloaded = UserEnrollment(enrollment.access, enrollment.credentials)
+    stored, = reloaded.list_tokens("sample_editor")
+    assert stored == {**row, "created_at": pytest.approx(row["created_at"], abs=1e-6, rel=0),
+                      "expires_at": None if row["expires_at"] is None else pytest.approx(row["expires_at"], abs=1e-6, rel=0)}
+    row = stored
+    assert reloaded.authenticate(token) == "sample_editor"
+    if not days:
+        assert row["expires_at"] is None
+        monkeypatch.setattr(time, "time", lambda: after + 100000 * 86400)
+        assert reloaded.authenticate(token) == "sample_editor"
+        assert reloaded.list_tokens("sample_editor")[0]["status"] == "active"
+    else:
+        assert before + days * 86400 <= row["expires_at"] <= after + days * 86400
+        monkeypatch.setattr(time, "time", lambda: row["expires_at"] - 1)
+        assert reloaded.authenticate(token) == "sample_editor"
+        monkeypatch.setattr(time, "time", lambda: row["expires_at"])
+        assert reloaded.authenticate(token) == ""
+        assert reloaded.list_tokens("sample_editor")[0]["status"] == "expired"
+    reloaded.revoke_token("sample_editor", row["credential_id"])
+    assert reloaded.authenticate(token) == ""
+    assert reloaded.list_tokens("sample_editor")[0]["status"] == "revoked"
+
+
+@pytest.mark.parametrize("days", [-1, 1.5, True, "30000", None, 10 ** 100])
+def test_invalid_token_expiry_leaves_invitation_pending(enrollment, days):
+    """无效时长在账号写入前拒绝，原邀请仍可使用。
+
+    :design: decision_6eac174d85bf
+    """
+    secret, _ = invitation(enrollment)
+    with pytest.raises(ValueError):
+        enrollment.accept_invitation(secret, secret_sha256=digest("dbu_" + secrets.token_urlsafe(32)),
+                                     expires_in_days=days)
+    assert not enrollment.access.user("sample_editor")["configured"]
+    assert enrollment.list_invitations()[0]["status"] == "pending"
+    assert not enrollment._read()["tokens"]
+
+
+def test_token_schema_upgrade_preserves_existing_expiration(enrollment):
+    """旧表允许空到期时间后，原令牌仍按原时间过期，新令牌可永久使用。
+
+    :design: decision_6eac174d85bf
+    """
+    from management_common.domain_database import DomainDatabase
+    from management_portal import identity_store
+
+    token = "dbu_" + secrets.token_urlsafe(32)
+    enrollment.create_account("CASE-A", "sample_editor", secret_sha256=digest(token), expires_in_days=90)
+    existing, = enrollment.list_tokens("sample_editor")
+    with identity_store.database().transaction() as connection:
+        connection.execute("ALTER TABLE user_access_tokens ALTER COLUMN expires_at SET NOT NULL")
+    DomainDatabase("portal_identity", "accounts", identity_store.DDL).ensure()
+    assert enrollment.list_tokens("sample_editor") == [existing]
+    assert enrollment.authenticate(token) == "sample_editor"
+    permanent = "dbu_" + secrets.token_urlsafe(32)
+    assert enrollment.create_token("sample_editor", digest(permanent))["expires_at"] is None
+    assert enrollment.authenticate(permanent) == "sample_editor"
+    assert next(r for r in enrollment.list_tokens("sample_editor") if r["credential_id"] == existing["credential_id"]) == existing
+
+
+@pytest.mark.parametrize("days", [0, 31])
+def test_invitation_duration_limits_remain(enrollment, days):
+    """个人令牌的无限期能力不改变邀请的一至三十天有效期。
+
+    :design: decision_6eac174d85bf
+    """
+    with pytest.raises(ValueError, match="between 1 and 30"):
+        enrollment.create_invitation("CASE-A", "sample_editor", digest(secrets.token_urlsafe(32)), expires_in_days=days)
 
 
 @pytest.mark.parametrize("state", ["revoked", "expired"])

@@ -12,6 +12,7 @@ from management_portal.society_service.resident_record_domain import (
 
 @pytest.mark.parametrize("module,schema,owner,table,column", [
     (identity_store, "portal_identity", "accounts", "user_invitations", "first_admin"),
+    (identity_store, "portal_identity", "accounts", "user_access_tokens", "expires_at"),
     (mailbox_todos, "portal_ui", "mailbox_todos", "mailbox_todos", "indent"),
 ])
 def test_startup_during_backup_does_not_acquire_exclusive_table_locks(module, schema, owner, table, column):

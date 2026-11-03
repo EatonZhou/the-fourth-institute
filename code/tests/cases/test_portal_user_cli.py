@@ -127,6 +127,49 @@ def test_cli_join_records_endpoint_and_does_not_reregister_for_alias(client, mon
     request.assert_not_called()
 
 
+@pytest.mark.parametrize("days", [None, 0, 30000])
+def test_cli_join_supports_permanent_and_long_lived_tokens(client, monkeypatch, capsys, days):
+    """PAT 默认及显式 0 不过期，较长整数天数无策略上限，密钥只存于私有文件。
+
+    :design: decision_6eac174d85bf
+    """
+    import hashlib
+
+    path, _, request, run = client
+    path.unlink()
+    monkeypatch.setattr(cli.getpass, "getpass", lambda _: "fixture-invitation")
+    expiry = None if not days else 4392000000
+    request.return_value = {"username": "sample_editor", "credential": {"credential_id": "fixture-token", "expires_at": expiry}}
+    run("https://portal.example", "join", *([] if days is None else ["--expires-in-days", str(days)]))
+    saved = json.loads(path.read_text())
+    payload = request.call_args.args[2]
+    assert payload["expires_in_days"] == (days or 0)
+    assert payload["secret_sha256"] == hashlib.sha256(saved["token"].encode()).hexdigest()
+    assert saved["token"] not in json.dumps(payload)
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    output = capsys.readouterr().out
+    assert saved["token"] not in output
+    assert ("Token never expires" in output) == (expiry is None)
+    assert ("Token expires at" in output) == (expiry is not None)
+
+
+@pytest.mark.parametrize("days", ["-1", "1.5", "invalid"])
+def test_cli_rejects_invalid_token_days_before_storage_or_request(client, monkeypatch, days):
+    """无效 PAT 天数在写凭据文件、索取邀请或发送请求前被拒绝。
+
+    :design: decision_6eac174d85bf
+    """
+    path, _, request, run = client
+    path.unlink()
+    prompt = Mock()
+    monkeypatch.setattr(cli.getpass, "getpass", prompt)
+    with pytest.raises(SystemExit):
+        run("https://portal.example", "join", "--expires-in-days", days)
+    assert not path.exists()
+    request.assert_not_called()
+    prompt.assert_not_called()
+
+
 def test_cli_discovery_shortcuts_and_join_report(client, monkeypatch, capsys):
     """用户 CLI 的 list 和 schema 映射到对应指令，join 报告令牌到期日和个人 AMA
 

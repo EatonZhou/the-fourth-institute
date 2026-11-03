@@ -37,8 +37,8 @@ export function mountEnrollment(root, {invitations = false} = {}) {
         ${invitations ? `<label class="portalField"><span>${window.PortalI18n.t("Display name")}</span><input name="display" maxlength="160" /></label>
         <label class="portalField enrollmentAudience"><span>${window.PortalI18n.t("邀请对象")}</span><select name="audience">
           <option value="human">${window.PortalI18n.t("人类")}</option><option value="agent">Agent</option></select></label>` : ""}
-        <label class="portalField enrollmentExpiry"><span>${window.PortalI18n.t("Expires in days")}</span>
-          <input name="days" type="number" required min="1" max="${invitations ? 30 : 365}" value="${invitations ? 7 : 90}" /></label>
+        <label class="portalField enrollmentExpiry"><span>${window.PortalI18n.t(invitations ? "Expires in days" : "Expires in days (leave blank for no expiry)")}</span>
+          <input name="days" type="number" min="1" step="1" ${invitations ? 'required max="30" value="7"' : `placeholder="${window.PortalI18n.t("Never expires")}"`} /></label>
         <button class="portalButton" type="submit">${invitations ? window.PortalI18n.t("Create invitation") : window.PortalI18n.t("Create token")}</button>
       </form>
       <div class="enrollmentSecret" hidden>
@@ -64,7 +64,9 @@ export function mountEnrollment(root, {invitations = false} = {}) {
     const rows = invitations ? result.invitations : result.credentials;
     root.querySelector("ul").replaceChildren(...rows.map(row => {
       const li = document.createElement("li"), text = document.createElement("span");
-      text.textContent = `${invitations ? row.username : row.name} · ${row.status} · ${window.PortalUI.formatDateTime(new Date(row.expires_at * 1000))}`;
+      const expiry = !invitations && row.expires_at === null ? window.PortalI18n.t("Never expires")
+        : window.PortalUI.formatDateTime(new Date(row.expires_at * 1000));
+      text.textContent = `${invitations ? row.username : row.name} · ${row.status} · ${expiry}`;
       li.append(text);
       if (row.status === (invitations ? "pending" : "active")) {
         const button = document.createElement("button");

@@ -103,10 +103,11 @@ def test_first_admin_page_loads_and_submits_without_a_session(monkeypatch):
 
 
 def test_lan_http_enrollment_hashes_the_secret_without_web_crypto():
-    """局域网 HTTP 来源的用户邀请界面在无 Web Crypto 时仍只提交密钥摘要
+    """局域网 HTTP 来源的邀请及个人令牌界面只提交摘要，个人令牌默认不过期。
 
     Chromium 打开命名的 HTTP 来源（非安全上下文、无 crypto.subtle），portal_user_enrollment.js 的 SHA-256 与 Node 对空串、中文与 emoji 及多种长度一致；
     生成的随机密钥不重复且为 43 位 URL 安全字符；提交只带 secret_sha256 和 user_id，原密钥不离开浏览器；复制走后备路径。
+    邀请保留 1–30 天、默认 7 天；个人令牌留空提交 0、支持 30000 天且拒绝负数/小数，中英文均明示不过期，有限期列表照常显示。
 
     :module: security.device-credentials
     :design: decision_30528aff7035

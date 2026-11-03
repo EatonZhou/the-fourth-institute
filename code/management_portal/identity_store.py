@@ -16,7 +16,7 @@ TABLES = {
     'passwords': (('username',), {'digest':'TEXT NOT NULL'}),
     'directory_users': (('id',), {'name':'TEXT NOT NULL'}),
     'user_invitations': (('invitation_id',), {'username':'TEXT NOT NULL','display_name':'TEXT NOT NULL','invited_by':'TEXT NOT NULL','created_at':'TIMESTAMPTZ NOT NULL','expires_at':'TIMESTAMPTZ NOT NULL','status':'TEXT NOT NULL','secret_sha256':'TEXT NOT NULL UNIQUE','accepted_at':'TIMESTAMPTZ','first_admin':'BOOLEAN'}),
-    'user_access_tokens': (('credential_id',), {'username':'TEXT NOT NULL','name':'TEXT NOT NULL','secret_sha256':'TEXT NOT NULL UNIQUE','created_at':'TIMESTAMPTZ NOT NULL','expires_at':'TIMESTAMPTZ NOT NULL','status':'TEXT NOT NULL'}),
+    'user_access_tokens': (('credential_id',), {'username':'TEXT NOT NULL','name':'TEXT NOT NULL','secret_sha256':'TEXT NOT NULL UNIQUE','created_at':'TIMESTAMPTZ NOT NULL','expires_at':'TIMESTAMPTZ','status':'TEXT NOT NULL'}),
     'password_reset_tokens': (('digest',), {'username':'TEXT NOT NULL','created_at':'TIMESTAMPTZ NOT NULL','expires_at':'TIMESTAMPTZ NOT NULL'}),
     'login_attempts': (('attempt_key',), {'attempts':'BIGINT NOT NULL','expires_at':'TIMESTAMPTZ NOT NULL'}),
     'passkey_users': (('username',), {'user_handle':'TEXT NOT NULL UNIQUE'}),
@@ -31,6 +31,15 @@ CREATE INDEX IF NOT EXISTS access_token_username_idx ON user_access_tokens(usern
 CREATE INDEX IF NOT EXISTS reset_expiry_idx ON password_reset_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS login_attempt_expiry_idx ON login_attempts(expires_at);
 CREATE INDEX IF NOT EXISTS passkey_username_idx ON passkey_credentials(username);
+DO $$ BEGIN
+    -- Upgrade existing instances without taking an exclusive table lock on
+    -- subsequent service starts. Existing expiration dates remain unchanged.
+    IF EXISTS (SELECT 1 FROM pg_attribute
+               WHERE attrelid = 'user_access_tokens'::regclass
+                 AND attname = 'expires_at' AND attnotnull) THEN
+        ALTER TABLE user_access_tokens ALTER COLUMN expires_at DROP NOT NULL;
+    END IF;
+END $$;
 """
 KINDS = {
     'access': ('user_accounts',), 'credentials': ('passwords',), 'user_directory': ('directory_users',),
@@ -87,10 +96,10 @@ def decode(kind, tables):
                     row[field] = 0
                 else:
                     row[field] = epoch_seconds(row[field])
-    def mapping(table, key, *, remove=False):
+    def mapping(table, key, *, remove=False, nullable=()):
         result = {}
         for row in tables[table]:
-            value = {k:v for k,v in row.items() if v is not None and (not remove or k != key)}
+            value = {k:v for k,v in row.items() if (v is not None or k in nullable) and (not remove or k != key)}
             result[row[key]] = value
         return result
     if kind == 'access':
@@ -101,7 +110,7 @@ def decode(kind, tables):
     if kind == 'user_directory':
         return {'humans':sorted(tables['directory_users'], key=lambda r:r['id']), 'agents':[]}
     if kind == 'user_enrollment':
-        return {'invitations':mapping('user_invitations','invitation_id'), 'tokens':mapping('user_access_tokens','credential_id')}
+        return {'invitations':mapping('user_invitations','invitation_id'), 'tokens':mapping('user_access_tokens','credential_id',nullable=('expires_at',))}
     if kind == 'password_resets':
         return {'schema':'tfi.portal-password-resets.v1','tokens':mapping('password_reset_tokens','digest',remove=True)}
     if kind == 'authentication_attempts':

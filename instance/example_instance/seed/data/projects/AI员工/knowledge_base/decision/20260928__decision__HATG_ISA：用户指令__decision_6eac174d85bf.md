@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 41
+  number: 42
   created_at: '2026-09-28T12:30:00Z'
   created_by:
     user: tfi-exported-user
     agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-30T18:12:13Z'
+  updated_at: '2026-11-03T14:49:00Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 2
 ai_generated: false
@@ -177,17 +177,17 @@ User、初始认证凭据与邀请的已领取状态在同一个数据库事务�
 
 ### 个人访问凭据
 
-`CreateUserAccessToken(user_id, secret_sha256, name?, expires_in_days?)` 为 `user_id` 指定的 User 创建 token。默认有效期 90 天，范围 1–365 天。`ListUserAccessTokens(user_id)` 只列出这位 User 的 token 元数据。两条指令在默认方案中都要求调用者对这个 User 有 `@admin`，开关打开时每个 User 只能管理自己的 token；`RevokeUserAccessToken(credential_id)` 只能撤销自己的 token。可创建多个 token；轮换方式是创建新 token、切换客户端、撤销旧 token。
+`CreateUserAccessToken(user_id, secret_sha256, name?, expires_in_days?)` 为 `user_id` 指定的 User 创建 token。`expires_in_days` 省略或为 `0` 时不过期；正整数设置有效天数，不设策略上限，负数与非整数拒绝。`expires_at` 在不过期时保存并返回 `null`，有期限时返回 Unix 秒；已有凭据保留原来的到期时间。Settings 的个人访问令牌表单默认留空表示不过期，也可填写正整数天数（例如 30000）；列表明确显示“不过期”。`ListUserAccessTokens(user_id)` 只列出这位 User 的 token 元数据。两条指令在默认方案中都要求调用者对这个 User 有 `@admin`，开关打开时每个 User 只能管理自己的 token；`RevokeUserAccessToken(credential_id)` 只能撤销自己的 token。可创建多个 token；轮换方式是创建新 token、切换客户端、撤销旧 token。
 
 客户端使用 `dbu_` 前缀加至少 32 随机字节的 base64url 字符串，原文自己保管，只提交 SHA256。摘要不能用于登录。邀请/token 原文均不进入 ISA 执行参数或结果。Settings 提供创建、一次性展示、状态与撤销；尚未收起的密钥纳入未保存检查，不进入浏览器持久存储。
 
 User bearer 调用同一个 `/api/instructions/execute`，身份是这个 User，而不是邀请人或 Resident。User 不接受 Resident 的执行授权上下文，也不采纳执行 ID。使用既有 User 业务授权，不增加额外隔离、Linux 账户、Project 或 Lineage 绑定；SSH 身份不能替代 Portal 身份。
 
-每次 token 认证检查摘要、有效期、凭据自身的状态与 User 活跃状态。修改或重置密码、启用或停用 TOTP、重新生成恢复码、管理员撤销会话，以及停用或删除账号，都会持久撤销该用户全部 `dbu_` 令牌；恢复账号不会恢复已撤销令牌。普通浏览器登出只增加浏览器会话版本，不撤销个人令牌。账号存在性由 User 记录决定，不要求密码记录。
+每次 token 认证检查摘要、凭据自身的状态与 User 活跃状态；仅当 `expires_at` 非空时检查是否到期。修改或重置密码、启用或停用 TOTP、重新生成恢复码、管理员撤销会话，以及停用或删除账号，都会持久撤销该用户全部 `dbu_` 令牌；恢复账号不会恢复已撤销令牌。普通浏览器登出只增加浏览器会话版本，不撤销个人令牌。账号存在性由 User 记录决定，不要求密码记录。
 
 ### 外部客户端接入
 
-客户端 `scripts/portal_user.py` 只依赖 Python 标准库，每个 Portal 在 `<Portal 地址>/guide/portal_user.py` 公开提供这份文件，正在加入的 agent 可以直接下载。下载版另外内嵌读写凭据文件所需的 `management_common.file_permissions` 及其依赖 `management_common.filesystem_paths`（依赖在前，按原模块名登记），因此没有仓库也能检查和写入 0600 凭据文件；`file_permissions` 增加新的内部依赖时，要一起加入 `http_user_guide.client_script` 的内嵌列表，`test_downloaded_cli_carries_private_owner_and_works_without_repo` 在隔离的 Python 中运行下载版检查这一点。`--url <HTTPS Portal地址> --credentials <个人凭据文件> join` 交互读取邀请，将 token 保存于权限 0600 的文件；`--expires-in-days`（1–365，默认 90）设置 token 有效期。成功后打印 token 到期时间、本人 Ask Me Anything 的 Resident ID 和下一步命令。使用同样的全局参数执行 `call GetUser --arguments '{"user_id": "<用户名>"}'` 确认自身身份（`join` 成功后打印的下一步命令已填好用户名），`list [--category <类别>]` 与 `schema <指令>` 发现指令，`call <指令> --arguments '<JSON>'` 执行业务操作，写操作可传 `--idempotency-key`，需要防止目标在读取后又变化时传 `--expected-version <版本>`。流式指令（`WatchMailbox` 等）用 `watch <指令> --arguments '<JSON>'`：每个条目输出一行 JSON，连接断开后按该指令 schema 中的续读参数（`WatchMailbox` 为 `cursor`，其他多为 `after_cursor`）带上最后的 cursor 重连，收到结束事件时退出；`call` 只处理 JSON 结果。`guide` 打印该 Portal 的 Agent 指引，不需要 `--credentials`，也不发送 token。新用户指引见 decision_3286d4167180。
+客户端 `scripts/portal_user.py` 只依赖 Python 标准库，每个 Portal 在 `<Portal 地址>/guide/portal_user.py` 公开提供这份文件，正在加入的 agent 可以直接下载。下载版另外内嵌读写凭据文件所需的 `management_common.file_permissions` 及其依赖 `management_common.filesystem_paths`（依赖在前，按原模块名登记），因此没有仓库也能检查和写入 0600 凭据文件；`file_permissions` 增加新的内部依赖时，要一起加入 `http_user_guide.client_script` 的内嵌列表，`test_downloaded_cli_carries_private_owner_and_works_without_repo` 在隔离的 Python 中运行下载版检查这一点。`--url <HTTPS Portal地址> --credentials <个人凭据文件> join` 交互读取邀请，将 token 保存于权限 0600 的文件；`--expires-in-days` 默认为 `0`（不过期），正整数设置 token 有效天数。成功后打印 token 到期时间或“不过期”、本人 Ask Me Anything 的 Resident ID 和下一步命令。使用同样的全局参数执行 `call GetUser --arguments '{"user_id": "<用户名>"}'` 确认自身身份（`join` 成功后打印的下一步命令已填好用户名），`list [--category <类别>]` 与 `schema <指令>` 发现指令，`call <指令> --arguments '<JSON>'` 执行业务操作，写操作可传 `--idempotency-key`，需要防止目标在读取后又变化时传 `--expected-version <版本>`。流式指令（`WatchMailbox` 等）用 `watch <指令> --arguments '<JSON>'`：每个条目输出一行 JSON，连接断开后按该指令 schema 中的续读参数（`WatchMailbox` 为 `cursor`，其他多为 `after_cursor`）带上最后的 cursor 重连，收到结束事件时退出；`call` 只处理 JSON 结果。`guide` 打印该 Portal 的 Agent 指引，不需要 `--credentials`，也不发送 token。新用户指引见 decision_3286d4167180。
 
 客户端支持 localhost SSH 隧道，不跟随重定向，在发送领取请求前保留 token 文件。若响应丢失，可用同一文件对邀请对应的用户名执行 GetUser 判断是否已成功，避免生成第二套身份。token 和邀请原文不得加入代码库、共享日志或任务正文。
 

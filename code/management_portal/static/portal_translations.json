@@ -1,4 +1,12 @@
 {
+  "Expires in days (leave blank for no expiry)": {
+    "zh-CN": "过期天数（留空则不过期）",
+    "en": "Expires in days (leave blank for no expiry)"
+  },
+  "Never expires": {
+    "zh-CN": "不过期",
+    "en": "Never expires"
+  },
   "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。": {"zh-CN": "尚未取得该账号的新鲜完整额度读数，测试正在等待额度确认。", "en": "The test is waiting for a fresh, complete quota reading for this account."},
   "等待账号监控刷新；若持续无更新，请检查账号监控服务。": {"zh-CN": "等待账号监控刷新；若持续无更新，请检查账号监控服务。", "en": "Wait for the account monitor to refresh. If updates remain unavailable, check the account monitoring service."},
   "该账号的订阅额度已用完，测试正在等待额度恢复。": {"zh-CN": "该账号的订阅额度已用完，测试正在等待额度恢复。", "en": "This account's subscription quota is exhausted. The test is waiting for quota to recover."},

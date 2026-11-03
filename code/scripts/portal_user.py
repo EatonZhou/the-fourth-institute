@@ -142,7 +142,8 @@ def main():
     sub.add_parser("guide", help="Print this Portal's guide for agents (no credentials sent)")
     join = sub.add_parser("join", help="Read an invitation link/code without echoing it")
     join.add_argument("--name", default="External assistant")
-    join.add_argument("--expires-in-days", type=int, default=90, help="Token lifetime, 1-365 days (default 90)")
+    join.add_argument("--expires-in-days", type=int, default=0,
+                      help="Token lifetime in whole days; 0 means never expires (default 0), no day limit")
     call = sub.add_parser("call", help="Execute one instruction and print its JSON result")
     call.add_argument("instruction")
     call.add_argument("--arguments", default="{}", help="JSON arguments (never include secrets)")
@@ -158,6 +159,8 @@ def main():
     sub.add_parser("trust-url", help="Trust --url as another entrance to this Portal (local only; verify its ownership first)")
     sub.add_parser("untrust-url", help="Remove --url from trusted entrances (local only; does not revoke the token)")
     args = parser.parse_args()
+    if args.command == "join" and args.expires_in_days < 0:
+        parser.error("--expires-in-days must be a nonnegative integer (0 means never expires)")
     try:
         base = endpoint_url(args.url)
     except ValueError as error:
@@ -214,7 +217,9 @@ def main():
         _save_credentials(path, saved, parser)
         print(f"Joined as {saved['username']}. Credential stored in {path}.")
         expires_at = (result.get("credential") or {}).get("expires_at")
-        if expires_at:
+        if expires_at is None:
+            print("Token never expires; use RevokeUserAccessToken to revoke it when no longer needed.")
+        else:
             print("Token expires at " + datetime.fromtimestamp(expires_at, timezone.utc).isoformat(timespec="minutes")
                   + "; create a replacement with CreateUserAccessToken before then.")
         ama = result.get("personal_ama") or {}

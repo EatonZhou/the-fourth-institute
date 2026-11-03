@@ -400,7 +400,7 @@ def user_access_token(inv: Invocation) -> dict[str, Any]:
         return {"credentials": service.list_tokens(owner)}
     return {"credential": service.create_token(
         owner, inv.argument("secret_sha256"), name=inv.argument("name", "API"),
-        expires_in_days=inv.argument("expires_in_days", 90),
+        expires_in_days=inv.argument("expires_in_days", 0),
     )}
 
 
