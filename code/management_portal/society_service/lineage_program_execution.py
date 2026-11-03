@@ -190,7 +190,10 @@ def try_dispatch_operator(
         trigger_paths.operator_settled(step, status="failed", result={"error": str(exc)})
         raise
     state = str(result.get("status") or "")
-    status = "waiting" if state == "waiting" else "failed" if state == "failed" else "cancelled" if state == "cancelled" else "completed"
+    # Dispatching a Resident decision has only admitted asynchronous work.
+    # Keep the logical step open even after its linked Execution has finished,
+    # until the observer parses that decision and admits its downstream work.
+    status = "waiting" if state == "waiting" or result.get("message_id") else "failed" if state == "failed" else "cancelled" if state == "cancelled" else "completed"
     trigger_paths.operator_settled(step, status=status)
     return result
 
@@ -518,6 +521,7 @@ def _settle_operator_turn(
     status: str,
     output: dict[str, Any] | None = None,
     *,
+    event: lineage_primitives.LineageEvent,
     ports: ProgramExecutionPorts,
 ) -> None:
     """Settle the turn's handoff (anything but completed, failed or cancelled counts as cancelled) and notify."""
@@ -526,6 +530,10 @@ def _settle_operator_turn(
         status
         if status in {"completed", "failed", "cancelled"}
         else "cancelled"
+    )
+    trigger_paths.operator_settled(
+        str(event.payload["trigger_step_id"]), status=ledger_status,
+        result={"error": output["error"]} if output and output.get("error") else None,
     )
     completed_at = ports.state.now_iso()
     invocations = lineage_program_resident_inputs.settle_resident_handoffs(
@@ -605,13 +613,13 @@ def complete_operator_invocation(
     pending, event, actor = claim
     trigger_path_id = lineage_program_identity.event_path_id(lineage_id, event)
     if terminal_status != "completed":
-        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, terminal_status, ports=ports)
+        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, terminal_status, event=event, ports=ports)
         return {"status": "failed", "event_id": event.id, "trigger_path_id": trigger_path_id}
 
     if lineage_program_operator_execution.has_changed_output_topology(
         pending, turn.operator
     ):
-        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "discarded", ports=ports)
+        _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "discarded", event=event, ports=ports)
         return {
             "status": "discarded",
             "event_id": event.id,
@@ -653,7 +661,7 @@ def complete_operator_invocation(
                 str(failed.get("error") or "Packet Operator route failed")
             )
         _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "completed", evidence,
-                              ports=ports)
+                              event=event, ports=ports)
         return {
             "status": lineage_program_operator_execution.completed_status(operator_kind),
             "event_id": event.id,
@@ -664,7 +672,7 @@ def complete_operator_invocation(
         LOGGER.exception("Packet Operator %s of %s could not take turn %s of %s",
                          turn.operator_id, lineage_id, expected_execution_id, executor_resident_id)
         _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, "failed",
-                              {"error": str(exc)}, ports=ports)
+                              {"error": str(exc)}, event=event, ports=ports)
         return {
             "status": "failed",
             "event_id": event.id,

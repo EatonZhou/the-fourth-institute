@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from management_portal.society_service import lineage_domain, lineage_operator_runtime
+from management_portal.society_service import lineage_domain, lineage_operator_runtime, trigger_paths
 from tests.cases import society_service_test_support as support
 from tests.cases.isa_test_support import ok, run
 from tests.cases.test_isa_lineage_lifecycle import (  # noqa: F401
@@ -61,7 +61,8 @@ def test_new_dedicated_executor_stays_exclusive_and_is_released_on_delete(lineag
     assert not next(n for n in graph(lineage)['nodes'] if n['id'] == worker).get('operator_executor')
 
 
-def test_shared_executor_chain_joins_the_original_rule_branch_once(primitive_store, monkeypatch):
+@pytest.mark.parametrize('parallel_rule_branch', [False, True])
+def test_shared_executor_chain_joins_the_original_rule_branch_once(primitive_store, monkeypatch, parallel_rule_branch):
     """同一普通执行者串行处理两个算子，与同步规则分支在原批次只汇合一次。"""
     support.install_registered_lineage_members(monkeypatch)
     sent = []
@@ -83,6 +84,9 @@ def test_shared_executor_chain_joins_the_original_rule_branch_once(primitive_sto
                    {'id': join, 'kind': 'reducer', 'config': {'operator_implementation': 'rules',
                      'reduce_strategy': 'join', 'reduce_separator': ' | ', 'output_key': 'joined'}}]
     edges = [(source, first), (source, rules), (first, second), (second, join), (rules, join), (join, WORK_B)]
+    if not parallel_rule_branch:
+        components = [c for c in components if c['id'] not in {rules, join}]
+        edges = [(source, first), (first, second), (second, WORK_B)]
     wires = [{'id': f'wire_{i+1:012x}', 'kind': 'route', 'source': a, 'source_port': 'output',
               'target': b, 'target_port': 'invoke'} for i, (a,b) in enumerate(edges)]
     saved = support.create_lineage_with_resident_members({'title': 'Async operator join',
@@ -92,12 +96,21 @@ def test_shared_executor_chain_joins_the_original_rule_branch_once(primitive_sto
     assert [(rid, mid) for rid, mid, _ in sent] == [(WORK_A, 'job_1')]
     for cid, mid in [(first, 'job_1'), (second, 'job_2')]:
         pending = lineage_operator_runtime.read_operator_runtime(lid, cid)['pending_deliveries'][mid]
+        # Native execution finishes and can be projected before the operator's
+        # completion observer runs. Its pending decision must keep the path open.
+        execution_id = support.record_terminal_execution(WORK_A, mid, ACTOR)
+        trigger_paths.link_input(lid, WORK_A, mid, execution_id)
+        path_id = pending['event']['payload']['trigger_path_id']
+        trigger_paths.settle(path_id)
+        assert trigger_paths.get(lid, path_id)['status'] == 'active'
         replies[mid] = '<filter-result>'+json.dumps({'selected_packet_ids':[p['id'] for p in pending['input_packets']]})+'</filter-result>'
         result = support.complete_resident_message(WORK_A, ACTOR, mid, lineage_id=lid)
         assert result['operator_results'][0]['status'] == 'filtered', result
     assert [(rid, mid) for rid, mid, _ in sent] == [(WORK_A, 'job_1'), (WORK_A, 'job_2'), (WORK_B, 'job_3')]
-    assert sent[-1][2].count('chosen') >= 2
-    for cid in [first, second, rules, join]:
+    assert sent[-1][2].count('chosen') >= (2 if parallel_rule_branch else 1)
+    for cid in ([first, second, rules, join] if parallel_rule_branch else [first, second]):
         runtime = lineage_operator_runtime.read_operator_runtime(lid, cid)
         assert not runtime.get('inbox')
         assert not runtime.get('pending_deliveries')
+    support.complete_resident_message(WORK_B, ACTOR, 'job_3', lineage_id=lid)
+    assert trigger_paths.get(lid, path_id)['status'] == 'completed'
