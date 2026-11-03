@@ -42,5 +42,14 @@ try {
   assert.equal(render({...short, quota_group: undefined}, {...weekly, quota_group: undefined}), '73%', 'legacy windows have no inferred dependency');
   assert.equal(render(short, {...weekly, quota_group: 'other'}), '73%', 'independent pools do not constrain each other');
   assert.equal(render({...weekly, remaining_percent: 85}, {...short, remaining_percent: 0}), '受限', 'short-window exhaustion also constrains the weekly window');
+  for (const [value, label] of [[2.17, '2%'], [72.6, '73%'], [0, '0%'], [0.001, '<1%'], [0.9, '<1%'],
+    [99.9, '>99%'], [100, '100%']]) {
+    assert.equal(render({...short, remaining_percent: value}, {...weekly, remaining_percent: 50}), label);
+    const node = dom.window.document.querySelector('[data-account-quota-window]');
+    assert.ok(node.title.includes(`本窗口剩余 ${value}%`), 'tooltip preserves the sample precision');
+    assert.equal(node.querySelector('[role="meter"]').getAttribute('aria-valuenow'), String(value));
+  }
+  assert.equal(render({...short, remaining_percent: 2.17, stale: true}, {...weekly, remaining_percent: 50}), '2%*');
+  assert.match(dom.window.document.querySelector('[data-account-quota-window]').title, /2\.17%\*/);
   console.log('Subscription percentages preserve stale and unknown states');
 } finally { dom.window.close(); }
