@@ -152,6 +152,22 @@ def test_deepseek_proxy_non_balance_response_is_not_a_successful_zero(monkeypatc
     assert 'amount' not in result and 'SECRET' not in json.dumps(result)
 
 
+def test_home_keeps_scheduler_limits_on_individual_api_routes():
+    from management_portal.execution.account_resources import home_account_resources
+    source = [{"account_id": name, "billing_account_id": "api", "max_concurrency": limit,
+               "dispatch_interval_min_seconds": 2, "dispatch_interval_max_seconds": 6,
+               "private_config": "must not enter the summary"}
+              for name, limit in [("direct", 4), ("harness", 8)]]
+    rows = home_account_resources(source, {})
+    assert len(rows) == 1
+    assert rows[0]["execution_accounts"] == [
+        {key: row[key] for key in ("account_id", "max_concurrency", "dispatch_interval_min_seconds", "dispatch_interval_max_seconds")}
+        for row in source]
+    assert "max_concurrency" not in rows[0], "the API itself has no route concurrency limit"
+    rows[0]["execution_accounts"][0]["max_concurrency"] = 12
+    assert source[0]["max_concurrency"] == 4
+
+
 def test_home_groups_harness_routes_by_billing_api_without_adding_balances():
     from management_portal.execution.account_resources import home_account_resources
     balance = {'id': 'deepseek', 'status': 'ok', 'display': '0 CNY', 'amount': 0, 'currency': 'CNY'}

@@ -12,11 +12,12 @@ const account = {account_id:'api',capabilities:{resident_details:true,scheduler_
 const context = vm.createContext({document,URL,window:{PortalI18n:{t:x=>x,html:tag,text:tag,markup:x=>x}},
   esc:x=>String(x??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'), formatDateTime:()=>'', executionAccounts:d=>d.accounts,
   currentAgentStatusData:()=>({accounts:[account]}),accountIntakePending:new Map(),
+  currentCanSetScheduler:()=>false,accountConcurrencyEdits:new Map(),
   syncAccountDetailsButtons:()=>{}, loadAgentStatus:()=>{},loadAccountDetails:()=>actions.push('refresh'),
   changeAccountResidentsIntake:(_,action)=>actions.push(action),
   accountDetails:{accountId:'api',panel:document.querySelector('#panel'),snapshot,
     popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}}});
-for (const name of ['accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
+for (const name of ['accountConcurrencyRows', 'accountConcurrencyHtml', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration' && n.id.name===name).source,context);
 }
 try {
@@ -24,7 +25,8 @@ try {
   assert.equal(document.querySelector('[data-account-metric="total"]').textContent,'8');
   assert.equal(document.querySelector('[data-account-metric="queued_messages"]').textContent,'3');
   assert.equal(document.querySelector('[data-account-metric="running"]').textContent,'2');
-  assert.equal(document.querySelector('form, [data-account-balance], [data-account-quota-window], .account-details-quota, [data-account-action="backend"]'),null);
+  assert.equal(document.querySelector('[data-account-balance], [data-account-quota-window], .account-details-quota, [data-account-action="backend"]'),null);
+  assert(document.querySelector('[name=max_concurrency]').disabled, 'viewers cannot edit concurrency');
   assert.doesNotMatch(document.body.textContent,/500 CNY|调度设置/);
   const creditValue = () => document.querySelector('[data-account-credits] dd')?.textContent;
   assert.equal(creditValue(),'10');

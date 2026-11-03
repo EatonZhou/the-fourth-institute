@@ -248,7 +248,61 @@
     }
 
     const accountIntakePending = new Map();
+    const accountConcurrencyEdits = new Map();
     let accountDetails = null;
+
+    function accountConcurrencyRows(account) {
+      return account?.details_scope === "model_api" ? account.execution_accounts || [] : account ? [account] : [];
+    }
+
+    function accountConcurrencyHtml(account) {
+      const rows = accountConcurrencyRows(account);
+      if (!rows.length) return "";
+      return window.PortalI18n.html`<section class="account-concurrency"><h4>并行数</h4>${rows.map(row => {
+        const edit = accountConcurrencyEdits.get(row.account_id);
+        const known = Number.isInteger(row.max_concurrency) && row.max_concurrency >= 1;
+        const label = account.details_scope === "model_api" ? row.account_id : window.PortalI18n.t("最大并行数");
+        return window.PortalI18n.html`<form data-account-concurrency="${esc(row.account_id)}">
+          <label><span>${esc(label)}</span><input type="number" name="max_concurrency" min="1" max="256" step="1" required aria-label="${esc(window.PortalI18n.text`${row.account_id} 最大并行数`)}" value="${esc(edit?.value ?? (known ? row.max_concurrency : ""))}" ${!currentCanSetScheduler() || !known || edit?.pending ? "disabled" : ""}></label>
+          ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${!known || edit?.pending ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
+          ${edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? "alert" : "status"}">${esc(edit.feedback)}</p>` : !known ? window.PortalI18n.markup('<p role="status">并行数暂不可用，请刷新</p>') : ""}
+        </form>`;
+      }).join("")}</section>`;
+    }
+
+    async function saveAccountConcurrency(form) {
+      const id = form.dataset.accountConcurrency;
+      if (!currentCanSetScheduler() || accountConcurrencyEdits.get(id)?.pending || !form.reportValidity()) return;
+      const value = Number(form.elements.max_concurrency.value);
+      if (!Number.isInteger(value) || value < 1 || value > 256) return;
+      const edit = {value, pending: true, feedback: "", error: false};
+      accountConcurrencyEdits.set(id, edit);
+      renderAccountDetails();
+      try {
+        // Read the route itself, not the API summary, preserving its current intervals.
+        const latest = await window.PortalInstructionClient.execute("ListProviderAccounts", {account_id: id});
+        const route = latest.accounts?.find(row => row.account_id === id);
+        if (!route || ![route.dispatch_interval_min_seconds, route.dispatch_interval_max_seconds].every(Number.isFinite)) throw new Error("执行账号设置不可用，请刷新后重试");
+        const result = await window.PortalInstructionClient.execute("UpdateProviderAccount", {
+          account_id: id, max_concurrency: value,
+          dispatch_interval_min_seconds: route.dispatch_interval_min_seconds,
+          dispatch_interval_max_seconds: route.dispatch_interval_max_seconds,
+        }, {idempotencyKey: `account-concurrency:${id}:${globalThis.PortalUIPrimitives.randomUUID()}`});
+        for (const account of executionAccounts(currentAgentStatusData())) {
+          for (const row of accountConcurrencyRows(account)) {
+            if (row.account_id === id) Object.assign(row, result.settings);
+          }
+        }
+        edit.value = undefined;
+        edit.feedback = window.PortalI18n.t("已保存");
+      } catch (error) {
+        edit.error = true;
+        edit.feedback = window.PortalUI.errorMessage(window.PortalI18n.t("保存并行数"), error);
+      } finally {
+        edit.pending = false;
+        renderAccountDetails();
+      }
+    }
 
     function accountManagementActions(hasAccounts) {
       return window.PortalI18n.html`
@@ -420,8 +474,10 @@
       } catch (_) { /* Unknown billing destinations do not get a link. */ }
       const focusedElement = details.panel.contains(document.activeElement) ? document.activeElement : null;
       const focused = focusedElement?.dataset.accountAction;
+      const focusedRoute = focusedElement?.closest("[data-account-concurrency]")?.dataset.accountConcurrency;
+      const focusedControl = focusedElement?.tagName;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
-    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
+    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
       ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>
@@ -431,6 +487,11 @@
       details.panel.querySelector('[data-account-action="refresh"]').addEventListener("click", () => { loadAgentStatus(true); loadAccountDetails(details); });
       details.panel.querySelector('[data-account-open-residents]')?.addEventListener("click", event => changeAccountResidentsIntake(event.currentTarget, "open"));
       details.panel.querySelector('[data-account-close-residents]')?.addEventListener("click", event => changeAccountResidentsIntake(event.currentTarget, "close"));
+      details.panel.querySelectorAll('[data-account-concurrency]').forEach(form => {
+        form.addEventListener("input", () => accountConcurrencyEdits.set(form.dataset.accountConcurrency, {value: form.elements.max_concurrency.value}));
+        form.addEventListener("submit", event => { event.preventDefault(); void saveAccountConcurrency(form); });
+        if (form.dataset.accountConcurrency === focusedRoute) form.querySelector(`${focusedControl}:not(:disabled)`)?.focus({preventScroll: true});
+      });
       details.panel.querySelector(".account-details-more")?.addEventListener("toggle", event => {
         if (!event.currentTarget.isConnected) return;
         details.moreExpanded = event.currentTarget.open;

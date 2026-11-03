@@ -36,12 +36,15 @@ def home_account_resources(accounts, exchange_rates):
             continue
         if api_id not in grouped:
             row = {"account_id": api_id, "billing_account_id": api_id, "kind": "api_profile",
-                   "details_scope": "model_api", "execution_account_ids": [],
+                   "details_scope": "model_api", "execution_account_ids": [], "execution_accounts": [],
                    "capabilities": {"resident_details": True}}
             grouped[api_id] = row
             result.append(row)
         row = grouped[api_id]
         row["execution_account_ids"].append(account["account_id"])
+        # A billing balance is shared; scheduler limits still belong to each route.
+        row["execution_accounts"].append({key: account.get(key) for key in (
+            "account_id", "max_concurrency", "dispatch_interval_min_seconds", "dispatch_interval_max_seconds")})
         balance = account.get("balance") or {}
         previous = row.get("balance") or {}
         # One shared sample, never add balances. Prefer the latest successful

@@ -34,6 +34,15 @@ def test_activity_icons_keep_identity_links_with_fallback_avatars() -> None:
     subprocess.run(["node", str(script)], check=True, cwd=ROOT)
 
 
+def test_account_details_edit_route_concurrency_without_overwriting_other_settings() -> None:
+    """并行数按执行账号保存，保留草稿、派发间隔和失败状态。
+
+    :design: decision_4dea0db1f45a
+    """
+    script = Path(__file__).with_name("javascript") / "home_account_concurrency.cjs"
+    subprocess.run(["node", str(script)], cwd=ROOT, check=True)
+
+
 def test_account_details_show_resident_information_and_billing_link() -> None:
     """账号详情显示 Credits、节点统计和批量接单，提供充值链接。
 
