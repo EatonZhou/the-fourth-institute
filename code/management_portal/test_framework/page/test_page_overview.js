@@ -65,7 +65,7 @@
           <div class="testHeroTitle"><h1>Portal 测试</h1><div class="testHeroMeta">${runnerChip(pytest, "pytest")}${runnerChip(tau, "TAU")}${admissionChip}${errors ? T.chip(window.PortalI18n.text`${errors} 个目录错误`, "is-danger") : ""}</div></div>
           <p class="testHeroDescription">用例的标题、说明与分类写在测试源码中，目录随代码更新。在这里查看各模块的覆盖、运行用例，并阅读每次运行的证据。</p>
         </div>
-        <div class="testHeroActions"><a class="portalButton is-compact is-primary" href="${esc(T.catalogHref())}" data-portal-icon="list"><span>浏览用例</span></a><button class="portalButton is-compact" type="button" data-overview-refresh data-portal-icon="refresh"><span>刷新</span></button></div>
+        <div class="testHeroActions"><a class="portalButton is-compact is-primary" href="${esc(T.listHref("cases"))}" data-portal-icon="list"><span>浏览用例</span></a><button class="portalButton is-compact" type="button" data-overview-refresh data-portal-icon="refresh"><span>刷新</span></button></div>
         <div class="testStats">
           <span class="testStat"><strong>${summary.total ?? 0}</strong><span>用例</span></span>
           <span class="testStat"><strong>${modules.filter(item => item.total).length}</strong><span>${esc(window.PortalI18n.text`个模块（共 ${modules.length}）`)}</span></span>

@@ -6,6 +6,10 @@ const root = path.resolve(__dirname, '../../../management_portal');
 const page_root = path.join(root, 'test_framework/page');
 const { chromium } = require(path.join(root, 'test_framework/tau_runtime/node_modules/playwright'));
 const ORIGIN = 'http://portal.test';
+const address = value => {
+  const url = new URL(value, ORIGIN);
+  return { path: url.pathname, query: [...url.searchParams].sort() };
+};
 
 const GROUPS = [
   { id: 'lineage', label: '6. Lineage', modules: [{ id: 'lineage.hatg', label: 'HATG 原语', design_refs: [] }, { id: 'lineage.team', label: '团队', design_refs: [] }] },
@@ -118,6 +122,7 @@ function runRecord(state) {
             results: [result], groups: [{group_id: 'tau:1', status: 'reported', results: [result]}]});
         }
         if (id === 'testrun_3333333333333333') { runPolls += 1; return json(runRecord(runPolls >= 2 ? 'passed' : 'running')); }
+        if (id === 'testrun_2222222222222222') return json({ ...runRecord('passed'), run_id: id });
         if (id === 'testrun_4444444444444444') return json({ ...runRecord('error'), run_id: id, output: '', error: '测试执行进程在运行完成前退出。', groups: [], results: [] });
         if (id === 'testrun_5555555555555555') return json({ ...runRecord('running'), run_id: id, output: '', groups: [], results: [] });
         return json({ error: 'missing' }, 404);
@@ -204,6 +209,29 @@ function runRecord(state) {
     assert.match(page.url(), /importance=P2/);
     await page.click('[data-catalog-clear]');
     await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 4);
+    // Generic return links retain the addressed list, including combined filters.
+    await page.selectOption('[data-catalog-module]', 'lineage.hatg');
+    await page.selectOption('[data-catalog-runner]', 'pytest');
+    await page.fill('[data-catalog-search]', 'Route');
+    await page.waitForFunction(() => new URL(location.href).searchParams.get('q') === 'Route' && document.querySelectorAll('[data-case-id]').length === 1);
+    const filteredCatalog = new URL(page.url()).pathname + new URL(page.url()).search;
+    await page.click('[data-open-case="test_aaaaaaaaaaaa"]');
+    await page.waitForSelector('.testCasePage .testImpl');
+    assert.deepEqual(address(await page.locator('.testCrumbs a').nth(1).getAttribute('href')), address(filteredCatalog));
+    await page.locator('.testCrumbs a').nth(1).click();
+    await page.waitForSelector('[data-catalog-search]');
+    assert.equal(await page.inputValue('[data-catalog-search]'), 'Route');
+    await page.click('[data-test-tab="overview"]');
+    await page.waitForSelector('.testOverview');
+    assert.deepEqual(address(await page.locator('[data-test-tab="cases"]').getAttribute('href')), address(filteredCatalog));
+    await page.click('[data-test-tab="cases"]');
+    await page.waitForSelector('[data-catalog-search]');
+    assert.equal(await page.inputValue('[data-catalog-module]'), 'lineage.hatg');
+    assert.equal(await page.inputValue('[data-catalog-runner]'), 'pytest');
+    assert.equal(await page.inputValue('[data-catalog-search]'), 'Route');
+    await page.click('[data-catalog-clear]');
+    await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 4);
+    assert.equal(await page.locator('[data-test-tab="cases"]').getAttribute('href'), '/development?view=test&page=cases');
     // Two rows selected become a plan; the plan previews at once and starts only on the button.
     await page.selectOption('[data-catalog-runner]', 'pytest');
     await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 2);
@@ -285,6 +313,28 @@ function runRecord(state) {
     // Runs: problems only, then deleting a report after confirmation removes it everywhere.
     await page.click('[data-test-tab="runs"]');
     await page.waitForSelector('.testRunsPage');
+    await page.click('[data-runs-filter="passed"]');
+    await page.click('[data-runs-kind="local"]');
+    const filteredRuns = '/development?view=test&page=runs&status=passed&kind=local';
+    assert.equal(new URL(page.url()).pathname + new URL(page.url()).search, filteredRuns);
+    await page.click('.testRunsPage [data-run-row="testrun_2222222222222222"] a');
+    await page.waitForSelector('.testRunPage [data-run-result]');
+    assert.equal(await page.locator('.testCrumbs a').nth(1).getAttribute('href'), filteredRuns);
+    await page.goBack();
+    await page.waitForSelector('.testRunsPage');
+    assert.equal(await page.locator('[data-runs-filter="passed"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('[data-runs-kind="local"]').getAttribute('aria-pressed'), 'true');
+    await page.click('[data-test-tab="tau"]');
+    await page.waitForSelector('.testTauPage');
+    await page.click('[data-test-tab="runs"]');
+    await page.waitForSelector('.testRunsPage');
+    assert.equal(await page.locator('[data-runs-filter="passed"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('[data-runs-kind="local"]').getAttribute('aria-pressed'), 'true');
+    // An explicitly unfiltered address remains unfiltered; remembered return
+    // destinations never override the page named by a link or browser history.
+    await page.evaluate(() => PortalTestPage.navigate('/development?view=test&page=runs'));
+    await page.waitForFunction(() => document.querySelector('[data-runs-filter="all"]')?.getAttribute('aria-pressed') === 'true');
+    assert.equal(await page.locator('[data-runs-kind="all"]').getAttribute('aria-pressed'), 'true');
     await page.click('[data-runs-filter="problem"]');
     assert.deepEqual(await page.$$eval('.testRunsPage [data-run-row]', rows => rows.map(row => row.dataset.runRow)), ['testrun_1111111111111111']);
     await page.check('[data-select-run="testrun_1111111111111111"]');

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 37
+  number: 38
   created_at: "2026-09-02"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T20:31:36Z"
+  updated_at: "2026-11-03T03:43:46Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -55,12 +55,12 @@ Test 页面是开发投影页中与 WALL 并列的一个视图，开发者和审
 | `/development?view=test&case=<用例 ID>` | 用例页 |
 | `/development?view=test&page=plan` | 新运行 |
 | `/development?view=test&run=<运行 ID>` | 运行页 |
-| `/development?view=test&page=runs` | 运行记录 |
+| `/development?view=test&page=runs` | 运行记录；筛选写在地址中：`status`（`problem`、`reported`、`passed`、`active`）和 `kind`（`tau`、`local`），省略表示全部 |
 | `/development?view=test&page=tau` | TAU 页 |
 
-地址是页面唯一的状态：打开链接、前进和后退都显示地址所指的内容。页面内的链接在原处切换并记入浏览器历史；改变目录筛选只替换当前地址，不增加历史记录。`/wall?case=<用例 ID>`、`/wall?run=<运行 ID>` 和 `/wall?view=test` 是旧地址，服务端把它们重定向到上表中对应的地址；Portal 正文中出现的 `testrun_…` 运行 ID 显示为资源引用，点击打开运行页。
+当前页面和列表筛选以地址为准：打开链接、前进、后退和刷新都显示地址所指的内容。页面内的链接在原处切换并记入浏览器历史；改变用例目录或运行记录筛选只替换当前地址，不增加历史记录。`/wall?case=<用例 ID>`、`/wall?run=<运行 ID>` 和 `/wall?view=test` 是旧地址，服务端把它们重定向到上表中对应的地址；Portal 正文中出现的 `testrun_…` 运行 ID 显示为资源引用，点击打开运行页。
 
-每一页顶部是“总览、用例、运行、TAU”四个标签；用例页、运行页和新运行页另有面包屑，回到它们所属的列表。
+每一页顶部是“总览、用例、运行、TAU”四个标签；用例页、运行页和新运行页另有面包屑，回到它们所属的列表。 同一页面生命周期内，导航记住最近访问的用例目录和运行记录地址；标签、详情面包屑和通用返回入口使用这些地址，保留筛选。这里保存的是返回目的地，不是另一份显示状态；显式提供的列表地址始终优先，没有筛选参数就显示全部。首次直达详情、没有来源列表时，返回完整列表。计划的返回入口使用该草稿保存的来源筛选；“清除筛选”也更新后续返回目的地。
 
 ## 总览
 
@@ -159,7 +159,8 @@ TAU 页的“对话”和运行页的“查看对话”让模块 Resident 暂时
 
 | 状态 | 保存位置 | 生命周期 |
 | --- | --- | --- |
-| 当前页面、用例、运行和目录筛选 | 地址 | 随地址 |
+| 当前页面、用例、运行和两类列表筛选 | 地址 | 随地址 |
+| 最近访问的用例目录、运行记录地址 | 页面内存，仅供返回导航 | 当前页面生命周期 |
 | 对话收起 | `PortalPageState("test-chat")`，按用户 | 长期 |
 | 目录的多选 | 页面内存 | 当前标签页停留在 Test 期间 |
 | 新运行的选择 | 当前标签页的 sessionStorage | 开始运行或关闭标签页为止 |

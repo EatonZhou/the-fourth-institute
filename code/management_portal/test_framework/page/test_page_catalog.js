@@ -36,7 +36,7 @@
       if (key === "module") delete next.group;
       if (key === "group") delete next.module;
       filters = next;
-      window.history.replaceState({}, "", T.catalogHref(filters));
+      T.replaceListAddress("cases", filters);
       syncToolbar();
       void fetchPage();
     }
@@ -235,7 +235,7 @@
       toolbar.querySelector("[data-catalog-live]").addEventListener("click", () => setFilter("live", !filters.live));
       toolbar.querySelector("[data-catalog-clear]").addEventListener("click", () => {
         filters = {};
-        window.history.replaceState({}, "", T.catalogHref());
+        T.replaceListAddress("cases", filters);
         root.querySelector("[data-catalog-search]").value = "";
         syncToolbar();
         void fetchPage();

@@ -183,8 +183,8 @@
     function render() {
       if (missing) {
         root.innerHTML = window.PortalI18n.html`<article class="testRunPage">
-          ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("运行记录"), href: T.pageHref("runs") }, { label: runId }])}
-          <div data-run-feedback data-tone="error">${T.stateHtml("error", t("运行报告已不存在"), window.PortalI18n.text`${runId} 已被删除或从未存在。`, `<a class="portalButton is-compact" href="${esc(T.pageHref("runs"))}">${esc(t("查看其他运行"))}</a>`)}</div>
+          ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("运行记录"), href: T.listHref("runs") }, { label: runId }])}
+          <div data-run-feedback data-tone="error">${T.stateHtml("error", t("运行报告已不存在"), window.PortalI18n.text`${runId} 已被删除或从未存在。`, `<a class="portalButton is-compact" href="${esc(T.listHref("runs"))}">${esc(t("查看其他运行"))}</a>`)}</div>
         </article>`;
         return;
       }
@@ -195,7 +195,7 @@
       const sameRun = root.querySelector("[data-run-id]")?.dataset.runId === run.run_id;
       const failed = T.problemStatuses.has(run.status) && !T.isTauRun(run);
       root.innerHTML = window.PortalI18n.html`<article class="testRunPage" data-run-id="${esc(run.run_id)}">
-        ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("运行记录"), href: T.pageHref("runs") }, { label: run.run_id }])}
+        ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("运行记录"), href: T.listHref("runs") }, { label: run.run_id }])}
         ${heroHtml()}
         ${pollError ? `<p class="testRunError" data-run-feedback role="alert">${esc(pollError)}</p>` : ""}
         <section class="testSection" data-test-section="results">
@@ -231,7 +231,7 @@
         const deleted = await deleteReports([run.run_id]);
         if (deleted.includes(run.run_id)) {
           stop();
-          T.navigate(T.pageHref("runs"), { replace: true });
+          T.navigate(T.listHref("runs"), { replace: true });
         }
       }));
       root.querySelectorAll("[data-result-chat]").forEach(button => button.addEventListener("click", () => {
@@ -280,6 +280,13 @@
     let disposed = false;
     const chosen = new Set();
 
+    function setFilters(nextFilter, nextKind) {
+      filter = nextFilter;
+      kind = nextKind;
+      T.replaceListAddress("runs", { status: filter === "all" ? "" : filter, kind: kind === "all" ? "" : kind });
+      render();
+    }
+
     const hasProblem = run => T.problemStatuses.has(run.status) || Number(run.usage_summary?.issues?.product || 0) > 0;
     const matches = run => (filter === "all" || (filter === "problem" ? hasProblem(run) : filter === "active" ? T.activeStatuses.has(run.status) : run.status === filter))
       && (kind === "all" || (kind === "tau") === T.isTauRun(run));
@@ -303,8 +310,8 @@
       </article>`;
       window.PortalUIPrimitives?.mountIcons?.(root);
       T.fillNames(root);
-      root.querySelectorAll("[data-runs-filter]").forEach(button => button.addEventListener("click", () => { filter = button.dataset.runsFilter; render(); }));
-      root.querySelectorAll("[data-runs-kind]").forEach(button => button.addEventListener("click", () => { kind = button.dataset.runsKind; render(); }));
+      root.querySelectorAll("[data-runs-filter]").forEach(button => button.addEventListener("click", () => setFilters(button.dataset.runsFilter, kind)));
+      root.querySelectorAll("[data-runs-kind]").forEach(button => button.addEventListener("click", () => setFilters(filter, button.dataset.runsKind)));
       root.querySelectorAll("[data-select-run]").forEach(input => input.addEventListener("change", () => {
         input.checked ? chosen.add(input.dataset.selectRun) : chosen.delete(input.dataset.selectRun);
         render();
@@ -323,7 +330,9 @@
       });
     }
 
-    async function load() {
+    async function load(addressFilters = {}) {
+      filter = addressFilters.status || "all";
+      kind = addressFilters.kind || "all";
       if (!T.overview()) root.innerHTML = T.stateHtml("loading", t("正在读取运行记录…"));
       else render();
       await T.loadOverview({ fresh: Boolean(T.overview()) });

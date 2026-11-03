@@ -168,7 +168,7 @@
     function render() {
       const module = T.moduleInfo(item.module);
       root.innerHTML = window.PortalI18n.html`<article class="testCasePage">
-        ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("用例目录"), href: T.catalogHref() }, { label: module?.label || item.module, href: T.catalogHref({ module: item.module }) }, { label: item.title || item.key }])}
+        ${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("用例目录"), href: T.listHref("cases") }, { label: module?.label || item.module, href: T.catalogHref({ module: item.module }) }, { label: item.title || item.key }])}
         ${heroHtml()}
         <section class="testSection" data-test-section="implementations">
           <div class="testSectionHead"><h2>实现</h2><span class="testSectionNote">${esc(implementations().length > 1 ? t("选中的实现是“运行”默认使用的那一个。") : t("这条用例由下面的实现执行。"))}</span></div>

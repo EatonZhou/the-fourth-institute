@@ -157,7 +157,7 @@
       if (disposed) return null;
       if (!draft.caseIds.length) {
         root.innerHTML = window.PortalI18n.html`<article class="testPlanPage">${T.crumbsHtml([{ label: "Test", href: T.href() }, { label: t("新运行") }])}
-          ${T.stateHtml("empty", t("还没有选择要运行的用例"), t("在用例目录勾选用例、在用例页点“运行”，或使用总览中的快捷组合。"), `<a class="portalButton is-compact is-primary" href="${esc(T.catalogHref())}">${esc(t("打开用例目录"))}</a>`)}</article>`;
+          ${T.stateHtml("empty", t("还没有选择要运行的用例"), t("在用例目录勾选用例、在用例页点“运行”，或使用总览中的快捷组合。"), `<a class="portalButton is-compact is-primary" href="${esc(T.listHref("cases"))}">${esc(t("打开用例目录"))}</a>`)}</article>`;
         return null;
       }
       await preview();

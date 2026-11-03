@@ -13,8 +13,8 @@
 
   const TABS = Object.freeze([
     { id: "overview", label: t("总览"), href: () => T.href() },
-    { id: "cases", label: t("用例"), href: () => T.catalogHref() },
-    { id: "runs", label: t("运行"), href: () => T.pageHref("runs") },
+    { id: "cases", label: t("用例"), href: () => T.listHref("cases") },
+    { id: "runs", label: t("运行"), href: () => T.listHref("runs") },
     { id: "tau", label: "TAU", href: () => T.pageHref("tau") },
   ]);
   const FACTORIES = Object.freeze({
@@ -98,10 +98,18 @@
       });
     }
 
+    const unsubscribeLists = T.subscribe(event => {
+      if (event !== "list-address") return;
+      page.querySelectorAll("[data-test-tab]").forEach(link => {
+        link.href = TABS.find(tab => tab.id === link.dataset.testTab).href();
+      });
+    });
+
     async function route() {
       const current = ++routing;
       const address = T.addressed();
       const [kind, key] = kindOf(address);
+      if (kind === "cases" || kind === "runs") T.rememberList(kind, kind === "runs" ? address.runFilters : address.filters);
       const changed = kind !== shown || key !== shownKey;
       markTab(kind);
       const target = container(kind);
@@ -109,7 +117,7 @@
       if (changed) main.scrollTop = 0;
       document.title = `${{ overview: t("Test"), cases: t("用例目录"), case: t("用例"), run: t("运行"), runs: t("运行记录"), plan: t("新运行"), tau: "TAU" }[kind]} · Portal`;
       try {
-        const result = await target.load(kind === "case" ? address.caseId : kind === "run" ? address.runId : address.filters);
+        const result = await target.load(kind === "case" ? address.caseId : kind === "run" ? address.runId : kind === "runs" ? address.runFilters : address.filters);
         return current === routing ? result : null;
       } catch (error) {
         if (current !== routing || disposed) return null;
@@ -214,6 +222,7 @@
         disposed = true;
         routing += 1;
         main.removeEventListener("click", onClick);
+        unsubscribeLists();
         view?.destroy?.();
         chat?.destroy?.();
         page.replaceChildren();

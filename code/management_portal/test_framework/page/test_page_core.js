@@ -67,6 +67,22 @@
   const runHref = runId => href({ run: runId });
   const pageHref = (page, extra = {}) => href({ page, ...extra });
   const catalogHref = (filters = {}) => href({ page: "cases", ...filters });
+  const runsHref = (filters = {}) => href({ page: "runs", ...filters });
+  // Return destinations remember addresses, never an alternative copy of a
+  // displayed list's filters. Explicit links and browser history remain authoritative.
+  const listAddresses = new Map();
+  const listHref = page => listAddresses.get(page) || pageHref(page);
+  function rememberList(page, filters) {
+    const url = page === "cases" ? catalogHref(filters) : runsHref(filters);
+    if (listAddresses.get(page) !== url) {
+      listAddresses.set(page, url);
+      emit("list-address");
+    }
+    return url;
+  }
+  function replaceListAddress(page, filters) {
+    window.history.replaceState({}, "", rememberList(page, filters));
+  }
 
   function addressed(search = window.location.search) {
     const params = new URLSearchParams(search);
@@ -77,7 +93,10 @@
       if (!values.length) continue;
       filters[key] = MULTIPLE.has(key) ? [...new Set(values)] : values[values.length - 1];
     }
-    return { page: value("page"), caseId: value("case"), runId: value("run"), filters };
+    const runFilters = {};
+    if (["problem", "reported", "passed", "active"].includes(value("status"))) runFilters.status = value("status");
+    if (["tau", "local"].includes(value("kind"))) runFilters.kind = value("kind");
+    return { page: value("page"), caseId: value("case"), runId: value("run"), filters, runFilters };
   }
 
   // The catalog filters of an address as Test Framework query parameters.
@@ -313,9 +332,9 @@
   window.PortalTest = Object.freeze({
     access, activeStatuses, addressed, api, aspectLabels, canOperate, caseChipsHtml, caseDetail, caseHref, catalogHref,
     chip, copyLink, crumbsHtml, draft, duration, escapeHtml, failureClassLabel, fillNames, filterQuery, FILTER_KEYS,
-    forgetRuns, groupModules, href, importanceHtml, isTauRun, loadOverview, moduleGroups, moduleInfo, moduleLabel, navigate,
+    forgetRuns, groupModules, href, importanceHtml, isTauRun, listHref, loadOverview, moduleGroups, moduleInfo, moduleLabel, navigate,
     notify, overview: () => overview, pageHref, personHtml, prepareRun, problemStatuses, recentRuns, relativeTime,
-    rememberRun, residentName, riskLabel, riskTone, runCaseIds, runHref, runKind, runner, runnerLabels, runRowHtml, runTitle,
+    rememberList, replaceListAddress, rememberRun, residentName, riskLabel, riskTone, runCaseIds, runHref, runKind, runner, runnerLabels, runRowHtml, runTitle,
     selection, setDraft, stateHtml, statusHtml, statusLabel, subscribe, terminalStatuses,
     openChat: target => chatOpener(target),
     install({ navigate: nextNavigate, openChat }) {
