@@ -1,7 +1,7 @@
 'use strict';
 // The chat workspace loads the image viewer on demand through
-// PortalUIPrimitives.loadAsset: one tag per file with the page's asset
-// version; a failed load says so, removes its tag and the next request tries
+// PortalUIPrimitives.loadAsset: one revalidating tag per file without copying
+// another asset's version; a failed load removes its tag and the next request tries
 // again; once the script runs every waiting preview gets the same viewer.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -39,8 +39,8 @@ const tags = file => [...w.document.head.querySelectorAll(`script[src*="${file}"
   await settle();
   // Loading the chat workspace already asked for the viewer once.
   assert.deepEqual(tags('portal_image_editor').map(tag => tag.getAttribute('src') || tag.getAttribute('href')),
-    ['/static/portal_image_editor.css?portal_v=r42', '/static/portal_image_editor.js?portal_v=r42'],
-    'one stylesheet and one script, both with the page\'s asset version');
+    ['/static/portal_image_editor.css', '/static/portal_image_editor.js'],
+    'one stylesheet and one script, neither reusing the legacy immutable cache URL');
 
   const chat = w.PortalChatWorkspace;
   chat.openImagePreview('/files/a.png', 'a.png');

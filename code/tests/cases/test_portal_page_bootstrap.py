@@ -1,9 +1,15 @@
 import json
+import hashlib
 import re
 from pathlib import Path
 
 from management_portal import script_groups
 from management_portal.page_bootstrap import inject_page_bootstrap
+
+
+def versioned(source):
+    path = Path(__file__).resolve().parents[2] / 'management_portal' / source.lstrip('/')
+    return source + '?portal_v=sha256-' + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def test_bootstrap_precedes_resources_and_preserves_versioned_manifest():
@@ -68,7 +74,7 @@ def test_html_response_injects_after_versioning_without_changing_identity_or_cac
     args, options = http_documents._serve_bytes(None, 200, html, "text/html", cache_control="private, no-cache")
     result = args[2].decode()
     config = json.loads(re.search(r'\}\s*\)\((\{.*?\})\);</script>', result).group(1))
-    assert config["assets"] == ["/static/portal_theme.js?portal_v=boot-contract", "/static/portal_identity.js?portal_v=boot-contract"]
+    assert config["assets"] == [versioned(source) for source in ("/static/portal_theme.js", "/static/portal_identity.js")]
     assert result.index('id="portalPageBootScript"') < result.index('__PORTAL_IDENTITY_BOOTSTRAP__')
     assert result.index('__PORTAL_IDENTITY_BOOTSTRAP__') < result.index('src="/static/portal_identity.js')
     assert options["cache_control"] == "private, no-cache"
@@ -91,6 +97,6 @@ def test_html_response_expands_script_groups_before_versioning(monkeypatch):
     args, _ = http_documents._serve_bytes(None, 200, html, "text/html")
     result = args[2].decode()
     config = json.loads(re.search(r'\}\s*\)\((\{.*?\})\);</script>', result).group(1))
-    assert config["assets"] == [f"{source}?portal_v=group-contract" for source in (
+    assert config["assets"] == [versioned(source) for source in (
         "/static/portal_theme.js", *script_groups.scripts("chat-workspace"))]
     assert "data-portal-script-group" not in result

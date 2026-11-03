@@ -23,7 +23,8 @@ python3 code/scripts/tfi_development_runtime.py activate --root /实际实例目
 `--dev` 省略时是主检出旁的 `<目录名>-dev`。命令行工具用 `--instance <名称>` 或 `PORTAL_INSTANCE_ROOT` 选择实例。
 
 配置后的发布会排队激活受影响组件（读取返回的 `activation.receipt` 确认结果），Worker 使用平滑换代；无需重建实例，也不
-重启数据库和 Provider 账号服务。`--no-activate` 仅用于明确要求延迟激活的准备阶段。
+重启数据库和 Provider 账号服务。完整发布范围无需重启时使用 `--no-activate`，随后核对 Release 的实际 HTTP 资源。
+静态 URL 的 `portal_v` 由公共 HTTP owner 按文件内容计算 SHA-256；静态发布不依赖 Web 进程换代来更新缓存身份。
 
 ## Resident 从哪里读取规则
 

@@ -211,11 +211,10 @@
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   }
 
-  // A static asset URL with the page's release tag, so a lazily loaded asset matches the page.
+  // Lazy assets revalidate. A content digest belongs to one file and must never
+  // be copied from another script (nor reuse a legacy immutable release URL).
   function staticAssetUrl(path) {
-    const tagged = [...document.scripts].find(script => script.src.includes("portal_v="));
-    const version = tagged ? new URL(tagged.src).searchParams.get("portal_v") : "";
-    return version ? `${path}?portal_v=${encodeURIComponent(version)}` : path;
+    return path;
   }
 
   // Lazily loaded scripts and stylesheets by file path. Every lazy loader of a
@@ -226,7 +225,7 @@
     return new URL(url, location.href).pathname;
   }
 
-  // Loads a script or stylesheet once, with the page's release tag. A script
+  // Loads a script or stylesheet once, revalidating its URL. A script
   // whose ready() holds counts as loaded. Without ready(), so does a file the
   // page's own markup declares: those tags ran before any lazy loader asks.
   // With ready() failing, the declared copy did not arrive and is loaded again.

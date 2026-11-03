@@ -165,7 +165,7 @@
 - [Portal Resource Catalog 的统一分类导航、资源发现与详情入口](/r/decision_2f67ed28db67)
 - [Portal Workspace Surface 与 Document Session](/r/decision_769a35d6b5c7)
 - [Portal Terminal 的会话、输入与输出生命周期](/r/decision_f22e45dfd382)
-- [Portal 前端恢复、HTTP 缓存与 Web 重启衔接](/r/decision_f25266e5a0e7)
+- [Portal 前端恢复、HTTP 内容版本缓存与 Web 重启衔接](/r/decision_f25266e5a0e7)
 - [Portal Web 应用与请求处理架构](/r/decision_0820081083f5)
 - [Portal Core NATS 变化通知与浏览器实时刷新](/r/decision_abaedeefca6f)
 - [Portal 本地文件变化观察与投影失效机制](/r/decision_f55bac7fc199)

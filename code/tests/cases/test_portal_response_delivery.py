@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
+from html import unescape
 import json
 import urllib.error
 import urllib.request
@@ -87,7 +89,7 @@ def test_a_static_file_outside_the_public_list_is_revalidated_not_cached_by_heur
 
 
 def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, isolated_portal_case, monkeypatch):
-    """静态资源支持 gzip 和 ETag 重新验证，只有 Release 当前构建版本的资源长期缓存"""
+    """静态资源支持 gzip 和 ETag 重新验证，只有 Release 内容摘要匹配的资源长期缓存"""
     with subtests.test(contract='test_static_assets_support_gzip_and_etag_revalidation'), isolated_portal_case() as case_path:
         server = ThreadingHTTPServer(('127.0.0.1', 0), _QuietHandler)
         thread = Thread(target=server.serve_forever, daemon=True)
@@ -115,11 +117,12 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
             for deployment in ('dev', 'release'):
                 with monkeypatch.context() as patch:
                     patch.setattr(http_instance, '_PORTAL_DEPLOYMENT', deployment)
-                    for version in ('', 'previous-build', http_instance._PORTAL_BUILD_ID):
+                    digest = 'sha256-' + hashlib.sha256(expected).hexdigest()
+                    for version in ('', 'previous-build', http_instance._PORTAL_BUILD_ID, digest):
                         versioned_url = f'{url}?portal_v={quote(str(version), safe="")}'
                         expected_cache = (
                             'public, max-age=31536000, immutable'
-                            if deployment == 'release' and version == http_instance._PORTAL_BUILD_ID
+                            if deployment == 'release' and version == digest
                             else 'public, max-age=0, must-revalidate'
                         )
                         versioned = urllib.request.Request(versioned_url, headers={'Accept-Encoding': 'gzip'})
@@ -142,12 +145,13 @@ def test_static_assets_support_gzip_and_etag_revalidation_contracts(subtests, is
             server.server_close()
             thread.join(timeout=2)
     with subtests.test(contract='test_html_static_references_receive_current_build_version'), isolated_portal_case() as case_path:
-        source = b'<script src="/static/portal_identity.js"></script><link href="/static/app.css?theme=1">'
-        versioned = http_static_files._version_static_asset_urls(source)
-        version = quote(str(http_instance._PORTAL_BUILD_ID), safe='').encode('ascii')
+        source = b'<script src="/static/portal_identity.js"></script><script src="/static/portal_identity.js?theme=1&portal_v=old#part"></script>'
+        encoded = http_static_files._version_static_asset_urls(source)
+        versioned = unescape(encoded.decode()).encode()
+        version = ('sha256-' + hashlib.sha256((http_static_files.ROOT / 'static/portal_identity.js').read_bytes()).hexdigest()).encode()
         assert b'/static/portal_identity.js?portal_v=' + version in versioned
-        assert b'/static/app.css?theme=1&amp;' not in versioned
-        assert b'/static/app.css?theme=1&portal_v=' + version in versioned
+        assert b'/static/portal_identity.js?theme=1&portal_v=' + version + b'#part' in versioned
+        assert http_static_files._version_static_asset_urls(encoded) == encoded
     with subtests.test(contract='test_concurrent_static_requests_share_one_compression'), isolated_portal_case() as case_path:
         asset = case_path / 'cacheable.js'
         asset.write_bytes(b'const payload = "static-cache";\n' * 200)

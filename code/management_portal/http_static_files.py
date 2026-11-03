@@ -1,16 +1,18 @@
 """Serving Portal static files: one cached, optionally gzipped payload per file version,
-revalidating cache headers, build-versioned asset URLs and the authenticated
+revalidating cache headers, content-versioned asset URLs and the authenticated
 ``/static/`` fallback.
 """
 from __future__ import annotations
 
 import gzip
+import hashlib
+from html import escape, unescape
 import re
 import threading
 from collections import OrderedDict
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import parse_qs, quote, unquote, urlparse
+from urllib.parse import parse_qs, parse_qsl, urlencode, unquote, urlparse, urlunparse
 
 from management_portal import http_auth, http_instance, http_responses
 from management_portal.http_routes import RouteDefinition
@@ -24,10 +26,10 @@ _STATIC_IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable"
 _STATIC_PAYLOAD_CACHE_LIMIT = 512
 _STATIC_PAYLOAD_CACHE_LOCK = threading.RLock()
 _STATIC_PAYLOAD_CACHE: OrderedDict[
-    tuple[str, int, int, bool], tuple[bytes, str]
+    tuple, tuple[bytes, str, str]
 ] = OrderedDict()
 _STATIC_PAYLOAD_BUILD_LOCKS: dict[
-    tuple[str, int, int, bool], threading.Lock
+    tuple, threading.Lock
 ] = {}
 
 _STATIC_HTML_REFERENCE_RE = re.compile(
@@ -36,27 +38,32 @@ _STATIC_HTML_REFERENCE_RE = re.compile(
 
 
 def _version_static_asset_urls(data: bytes) -> bytes:
-    version = quote(str(http_instance._PORTAL_BUILD_ID or "").strip(), safe="").encode("ascii")
-    if not version:
-        return data
-
     def replace(match: re.Match[bytes]) -> bytes:
-        url = match.group(2)
-        separator = b"&" if b"?" in url else b"?"
-        return match.group(1) + url + separator + b"portal_v=" + version + match.group(3)
+        url = urlparse(unescape(match.group(2).decode("utf-8")))
+        path = _static_fallback_file(url.path)
+        if path is None:
+            return match.group(0)
+        try:
+            _, _, version = _cached_static_payload(path, gzip_variant=False)
+        except OSError:
+            return match.group(0)
+        query = [(key, value) for key, value in parse_qsl(url.query, keep_blank_values=True) if key != "portal_v"]
+        query.append(("portal_v", version))
+        versioned = urlunparse(url._replace(query=urlencode(query)))
+        return match.group(1) + escape(versioned, quote=True).encode("utf-8") + match.group(3)
 
     return _STATIC_HTML_REFERENCE_RE.sub(replace, data)
 
 
-def _static_cache_control(handler: SimpleHTTPRequestHandler) -> str:
+def _static_cache_control(handler: SimpleHTTPRequestHandler, version: str) -> str:
     requested = str(
         (parse_qs(urlparse(handler.path).query).get("portal_v") or [""])[0]
     ).strip()
-    # Dev serves a mutable working tree even while its Web build ID is unchanged.
+    # Only a digest of the bytes in this response is an immutable identity.
     if (
         http_instance._PORTAL_DEPLOYMENT == "release"
         and requested
-        and requested == str(http_instance._PORTAL_BUILD_ID or "").strip()
+        and requested == version
     ):
         return _STATIC_IMMUTABLE_CACHE_CONTROL
     return _STATIC_CACHE_CONTROL
@@ -65,13 +72,12 @@ def _static_cache_control(handler: SimpleHTTPRequestHandler) -> str:
 def _cached_static_payload(
     path: Path,
     *,
-    mtime_ns: int,
-    size: int,
     gzip_variant: bool,
-) -> tuple[bytes, str]:
+) -> tuple[bytes, str, str]:
     """Read and encode one immutable file version once across HTTP workers."""
 
-    key = (str(path), int(mtime_ns), int(size), bool(gzip_variant))
+    stat = path.stat()
+    key = (str(path), stat.st_ino, stat.st_ctime_ns, stat.st_mtime_ns, stat.st_size, bool(gzip_variant))
     with _STATIC_PAYLOAD_CACHE_LOCK:
         cached = _STATIC_PAYLOAD_CACHE.get(key)
         if cached is not None:
@@ -87,10 +93,12 @@ def _cached_static_payload(
                     _STATIC_PAYLOAD_CACHE.move_to_end(key)
                     return cached
             data = path.read_bytes()
+            version = "sha256-" + hashlib.sha256(data).hexdigest()
             payload = (
                 gzip.compress(data, compresslevel=4, mtime=0),
                 "gzip",
-            ) if gzip_variant else (data, "")
+                version,
+            ) if gzip_variant else (data, "", version)
             with _STATIC_PAYLOAD_CACHE_LOCK:
                 _STATIC_PAYLOAD_CACHE[key] = payload
                 _STATIC_PAYLOAD_CACHE.move_to_end(key)
@@ -134,9 +142,18 @@ def _serve_static_file(
         and http_responses._compressible_content_type(content_type)
         and http_responses._accepts_gzip(handler)
     )
+    try:
+        data, content_encoding, version = _cached_static_payload(path, gzip_variant=gzip_variant)
+    except OSError:
+        return http_responses._send_empty(handler, 404)
+    requested = (parse_qs(urlparse(handler.path).query).get("portal_v") or [""])[0]
+    if requested.startswith("sha256-") and requested != version:
+        # A document crossed a deployment. Never put new bytes under an old
+        # immutable URL; the document's bounded boot recovery loads fresh HTML.
+        return http_responses._serve_payload(handler, 409, b"Static asset version changed; reload the document", "text/plain", cache_control="no-store")
     variant = "-gzip" if gzip_variant else ""
-    etag = f'"{stat.st_mtime_ns:x}-{stat.st_size:x}{variant}"'
-    cache_control = _static_cache_control(handler)
+    etag = f'"{version}{variant}"'
+    cache_control = _static_cache_control(handler, version)
     if etag in {
         token.strip()
         for token in str(handler.headers.get("If-None-Match") or "").split(",")
@@ -148,15 +165,6 @@ def _serve_static_file(
             handler.send_header("Vary", "Accept-Encoding")
         handler.end_headers()
         return
-    try:
-        data, content_encoding = _cached_static_payload(
-            path,
-            mtime_ns=stat.st_mtime_ns,
-            size=stat.st_size,
-            gzip_variant=gzip_variant,
-        )
-    except OSError:
-        return http_responses._send_empty(handler, 404)
     return http_responses._serve_encoded_payload(
         handler,
         200,
