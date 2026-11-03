@@ -30,9 +30,22 @@ def test_native_async_questions_survive_completion_and_reload(text, resident_rec
         'delivery': 'async', 'text': text,
         'questions': [{'title': '是否继续？', 'options': ['继续', '暂停']}],
     }}}
+    from management_portal.execution.backend_contracts import BackendContext
+    events = []
+    context = BackendContext(
+        emit_event=lambda kind, details: events.append({
+            'type': kind, 'details': details, 'sequence': len(events) + 1,
+            'execution_id': request.execution_id,
+        }),
+        cancellation_requested=lambda: False,
+        set_interrupt_target=lambda *_args: None,
+        provider_event_observer=lambda provider, session_id, route, observed: projector.observe(
+            provider=provider, backend_route_id=route, backend_session_id=session_id,
+            execution_id=request.execution_id, event=observed),
+    )
     for _ in range(2):
-        projector.observe(provider='codex', backend_route_id='zero', backend_session_id='question-session',
-                          execution_id=request.execution_id, event=event)
+        context.observe_provider_event(event, provider='codex', backend_route_id='zero',
+                                       backend_session_id='question-session')
     final_id = projector.complete(execution_id=request.execution_id, backend_session_id='question-session',
                                  backend_route_id='zero', turn_id='turn-card', response='检查已完成。')
     assert store.segment(final_id)['content'] == '检查已完成。'
@@ -48,9 +61,7 @@ def test_native_async_questions_survive_completion_and_reload(text, resident_rec
         'execution_id': request.execution_id, 'status': 'running', 'actor': request.actor, 'queue': [],
         'submitted_at': '2026-11-03T00:00:00Z',
     })
-    outputs = execution_outputs_from_events([{
-        'type': 'provider_event', 'execution_id': request.execution_id, 'sequence': 1, 'details': event,
-    }])
+    outputs = execution_outputs_from_events(events)
     for _ in range(2):
         delivered = resident_execution_engine_domain.persist_execution_display_messages(
             request.agent_id, request.execution_id, outputs)

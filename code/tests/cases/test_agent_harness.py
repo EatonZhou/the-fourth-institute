@@ -1174,6 +1174,28 @@ def test_native_image_observation_and_artifact_store_contracts(tmp_path, subtest
         ) == structured
 
 
+@pytest.mark.parametrize('fields', [
+    {'delivery': 'async'},
+    {'questions': [{'title': 'Continue?', 'options': ['Yes', 'No']}]},
+])
+def test_native_async_question_does_not_end_turn_controls(fields) -> None:
+    outcome = NativeToolLoopGovernorFeature().apply(
+        provider=SimpleNamespace(provider_id='codex'), invocation=_invocation(),
+        context=_context([]), config={'max_checkpoints': 1, 'large_output_bytes': 64 * 1024},
+    )
+    processor = outcome.invocation.provider_event_processor
+    processor.process_event({'method': 'item/completed', 'params': {'item': {
+        'id': 'command-1', 'type': 'commandExecution', 'command': 'pwd',
+        'status': 'completed', 'aggregatedOutput': 'x' * (70 * 1024),
+    }}})
+    processor.process_event({'method': 'item/completed', 'params': {'item': {
+        'id': 'question-1', 'type': 'agentMessage', 'phase': 'final_answer',
+        'text': 'Continue?', **fields,
+    }}})
+    assert processor.next_control() is not None
+    assert processor.report()['runtime_controls_suppressed'] == 0
+
+
 def test_native_tool_loop_governor_uses_semantic_ledger_and_soft_steer() -> None:
     """原生工具循环治理按语义键识别重复读取，并以中文软检查点引导模型"""
     events: list[tuple[str, dict]] = []

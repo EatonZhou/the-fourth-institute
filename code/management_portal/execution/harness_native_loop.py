@@ -793,6 +793,8 @@ class NativeToolLoopRuntime:
             item_type == "agentMessage"
             and str(item.get("phase") or "").strip().casefold()
             == "final_answer"
+            and item.get("delivery") != "async"
+            and not item.get("questions")
         ):
             self._on_turn_completed(params, now)
             return

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from management_common.async_questions import normalize_async_questions
 from management_common.provider_subagent_runs import PROGRESS_METHOD as SUBAGENT_PROGRESS_METHOD
 
 from .activity_redaction import redact_sensitive_mapping
@@ -91,6 +92,7 @@ def _compact_activity_item(value: object) -> dict[str, Any]:
             "type",
             "status",
             "phase",
+            "delivery",
             "exitCode",
             "exit_code",
             "durationMs",
@@ -98,6 +100,13 @@ def _compact_activity_item(value: object) -> dict[str, Any]:
         )
         if item.get(key) not in (None, "")
     }
+    if item.get('type') == 'agentMessage':
+        # Ordered Conversation delivery consumes this event after canonical
+        # capture. Keep the question identity and payload together so it does
+        # not become the turn's ordinary final answer during projection.
+        questions = normalize_async_questions(item.get('questions'))
+        if questions:
+            compact['questions'] = questions
     for key in (
         "command",
         "cwd",
