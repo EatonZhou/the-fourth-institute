@@ -274,7 +274,9 @@ Paper、Repo、WALL 等使用产品绑定的固定 Lineage/Resident。
 临时 Resident、Fork 子成员和获准创建的 Lineage 保留上述完整标记。
 仅通过正式页面或 Instruction 清理本轮自建对象，固定团队与执行器保留。
 创建后记录正式 ID，重试复用 ID；有工作未结束或归属不明时保留并说明。
-证据目录不能登记或绑定为 Workspace。工程和样例放 fixture_dir；
+证据目录不能登记或绑定为 Workspace。普通工程和样例放 fixture_dir；
+产品目录契约优先，Article 使用有权访问的已登记 Project 内本轮独占新子目录，
+写入前核对路径与权限并记录清理边界，不清理既有文稿或 Project 根目录。
 测试结束框架清理 fixtures、helpers 和进程，观察材料保留供报告查阅。
 使用共享浏览器助手携带 run-context.json 的资源生命周期标识，新建资源自动登记由框架回收。
 已有工程内新建的 WALL 条目写入 test-fixtures.json 的 wall_items（project、block）；
