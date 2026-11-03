@@ -161,7 +161,7 @@ DECLARATIONS = (
         R("provider", description="ListProviders 返回的 Provider 名称"),
         R("kind", description="账号种类，须是该 Provider 支持的种类", enum=("subscription_login", "api_profile", "service")),
         P("route_id", description="执行路由 ID；省略时由账号 ID 得出（codex 去掉 codex_ 前缀），provider_api 与 kimi 留空"),
-        P("config", "object", "Provider 专属设置：api_profile 为 api_id；codex 为 fallback_account_ids、is_default；"
+        P("config", "object", "Provider 专属设置：api_profile 为 api_id；账号选择由 Backend 角色的 account_selection 管理；"
           "claude 为 models、default_model；subscription_login 必须提供 account_dir（主机目录的规范绝对路径，允许尚未创建的目录）"),
         P("max_concurrency", "integer", "并发上限，默认 8", minimum=1, maximum=256),
         P("enabled", "boolean", "是否启用，默认 true"), P("secret", description="api_profile 的一次性密钥"),
@@ -176,7 +176,8 @@ DECLARATIONS = (
        (R("roles", "array", "Backend 角色：role、account_id、model、reasoning_effort、version…"),), owner="execution"),
     _d("UpdateBackendRole", FIXED, "设置 Backend 角色；调用信封的 expected_version 给出角色版本时按它比较（尚未建立的角色为 0），省略时直接写入。", (
         R("backend_role", description="角色名，如 default"),
-        R("account_id", description="角色指向的执行账号 ID，须已启用"),
+        R("account_id", description="固定账号或自动选择的后端/计费范围参考账号，须已启用"),
+        P("account_selection", description="auto（默认）：同后端、模型与计费范围内按可用额度选账号；fixed：固定账号"),
         P("model", description="按该角色创建 Resident 时使用的模型"),
         P("reasoning_effort", description="按该角色创建 Resident 时使用的推理强度"),
         P("verification_execution_id", description="接入流程测试回执；提供时必须匹配当前账号、模型及登记与模型 API 版本"),

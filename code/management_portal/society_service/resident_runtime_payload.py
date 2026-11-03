@@ -27,7 +27,7 @@ def runtime_settings_updates_from_payload(
         "permission_preset", "collaboration_mode", "agent_harness",
         "prompt_injection", "capability_config", "allow_subagents",
         "prompt_context", "backend_options",
-        "backend_role", "backend_role_fallback",
+        "backend_role", "backend_role_fallback", "account_selection",
     }
     unknown = set(data) - allowed
     if unknown:
@@ -38,6 +38,9 @@ def runtime_settings_updates_from_payload(
             if not isinstance(data[key], dict):
                 raise ValueError(f"{key} must be an object")
             updates[key] = dict(data[key])
+    if "account_selection" in data:
+        from management_portal.execution.account_selection import mode
+        updates["account_selection"] = mode(data["account_selection"])
     if "collaboration_mode" in data:
         mode = data["collaboration_mode"]
         if mode not in ("default", "plan"):

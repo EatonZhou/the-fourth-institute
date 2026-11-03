@@ -41,10 +41,13 @@ CREATE TABLE IF NOT EXISTS registrations (
 );
 CREATE TABLE IF NOT EXISTS backend_roles (
     role TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES registrations(account_id),
+    account_selection TEXT NOT NULL DEFAULT 'auto' CHECK(account_selection IN ('auto','fixed')),
     model TEXT NOT NULL DEFAULT '', reasoning_effort TEXT NOT NULL DEFAULT '',
     version INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL, created_by TEXT NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL, updated_by TEXT NOT NULL
 );
+ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS account_selection TEXT NOT NULL DEFAULT 'auto' CHECK(account_selection IN ('auto','fixed'));
+UPDATE registrations SET config=config - 'is_default' - 'fallback_account_ids' WHERE config ?| ARRAY['is_default','fallback_account_ids'];
 """
 
 
@@ -77,20 +80,16 @@ def registration(account_id):
 
 def config_fields(provider, kind):
     """The config keys a registration of this Provider and kind accepts."""
-    # A Codex API account can be the default route; it never falls back to a subscription.
     if kind == "api_profile":
-        return {"api_id", "is_default"} if provider == "codex" else {"api_id"}
-    fields = {"fallback_account_ids", "is_default"} if provider == "codex" else \
-        {"models", "default_model"} if provider == "claude" else set()
+        return {"api_id"}
+    fields = {"models", "default_model"} if provider == "claude" else set()
     return fields | ({"account_dir"} if kind == "subscription_login" else set())
 
 
 def default_route(rows):
-    """The route of the enabled registration marked is_default, else of the only
-    enabled one; empty when several are enabled and none is marked."""
+    """A sole route is a catalog convenience, never an account-selection policy."""
     enabled = [row for row in rows if row["enabled"]]
-    marked = [row["route_id"] for row in enabled if row["config"].get("is_default")]
-    return marked[0] if marked else enabled[0]["route_id"] if len(enabled) == 1 else ""
+    return enabled[0]["route_id"] if len(enabled) == 1 else ""
 
 
 def _validate(data):
@@ -108,13 +107,6 @@ def _validate(data):
         raise invalid("config 含不支持的 Provider 字段")
     if kind == "api_profile" and not IDENTIFIER.fullmatch(str(config.get("api_id") or "")):
         raise invalid("api_profile 必须指定 config.api_id")
-    fallbacks = config.get("fallback_account_ids", [])
-    if not isinstance(fallbacks, list) or any(not isinstance(v, str) or not IDENTIFIER.fullmatch(v) for v in fallbacks):
-        raise invalid("fallback_account_ids 必须是账号 ID 数组")
-    if len(fallbacks) != len(set(fallbacks)) or data["account_id"] in fallbacks:
-        raise invalid("备用账号不能重复或指向自身")
-    if "is_default" in config and type(config["is_default"]) is not bool:
-        raise invalid("is_default 必须是 boolean")
     if kind == "subscription_login" and "account_dir" not in config:
         raise invalid("订阅账号必须指定 config.account_dir")
     if "account_dir" in config:
@@ -192,13 +184,6 @@ def update_registration(account_id, changes, expected_version, actor):
                 prepare_registration_directory(row)
             except (OSError, ValueError) as exc:
                 raise invalid(str(exc)) from None
-        if row["config"].get("is_default"):
-            # Marking an existing account moves the mark in one transaction, so
-            # a Provider never has two defaults or, in between, none.
-            c.execute("""UPDATE registrations SET config=jsonb_set(config,'{is_default}','false'),
-                version=version+1,updated_at=%s,updated_by=%s
-                WHERE provider=%s AND account_id<>%s AND config->>'is_default'='true'""",
-                      (now(), actor, row["provider"], account_id))
         _check_relationships(c, row)
         return _decode(c.execute("""UPDATE registrations SET config=%s,route_id=%s,enabled=%s,
             max_concurrency=%s,version=version+1,updated_at=%s,updated_by=%s WHERE account_id=%s RETURNING *""",
@@ -213,15 +198,6 @@ def _check_relationships(c, row):
     if row["provider"] != "provider_api" and c.execute("SELECT 1 FROM registrations WHERE provider=%s AND route_id=%s AND account_id<>%s",
                                                        (row["provider"], row.get("route_id", ""), row["account_id"])).fetchone():
         raise InstructionError("instruction.conflict", "Provider 路线已被其他账号登记")
-    fallbacks = row.get("config", {}).get("fallback_account_ids", [])
-    if fallbacks and c.execute("SELECT 1 FROM registrations WHERE provider=%s AND kind='api_profile' AND account_id = ANY(%s)",
-                               (row["provider"], fallbacks)).fetchone():
-        # Falling back from a subscription to an API key would spend its balance unasked.
-        raise invalid("备用账号不能是 API 账号")
-    if row["provider"] == "codex" and row.get("config", {}).get("is_default") and c.execute(
-        "SELECT 1 FROM registrations WHERE provider='codex' AND config->>'is_default'='true' AND account_id<>%s",
-        (row["account_id"],)).fetchone():
-        raise InstructionError("instruction.conflict", "Codex 已有默认账号，请先取消原默认标记")
 
 
 def require_no_role_references(account_id, connection=None):
@@ -253,7 +229,9 @@ def _check_version(object_id, current, expected, message):
             "object_id": object_id, "expected_version": expected, "current_version": current})
 
 
-def update_role(role, account_id, model, reasoning_effort, expected_version, actor):
+def update_role(role, account_id, model, reasoning_effort, expected_version, actor, account_selection="auto"):
+    from .account_selection import mode
+    account_selection = mode(account_selection)
     if not IDENTIFIER.fullmatch(str(role or "")):
         raise invalid("角色名格式无效")
     with database().transaction("registrations") as c:
@@ -263,11 +241,11 @@ def update_role(role, account_id, model, reasoning_effort, expected_version, act
         row = c.execute("SELECT version FROM backend_roles WHERE role=%s FOR UPDATE", (role,)).fetchone()
         _check_version(role, row["version"] if row else 0, expected_version, "Backend 角色版本已改变")
         return _decode(c.execute("""INSERT INTO backend_roles
-            (role,account_id,model,reasoning_effort,version,created_at,created_by,updated_at,updated_by)
-            VALUES (%s,%s,%s,%s,1,%s,%s,%s,%s) ON CONFLICT(role) DO UPDATE SET
-            account_id=EXCLUDED.account_id,model=EXCLUDED.model,reasoning_effort=EXCLUDED.reasoning_effort,
+            (role,account_id,model,reasoning_effort,account_selection,version,created_at,created_by,updated_at,updated_by)
+            VALUES (%s,%s,%s,%s,%s,1,%s,%s,%s,%s) ON CONFLICT(role) DO UPDATE SET
+            account_id=EXCLUDED.account_id,model=EXCLUDED.model,reasoning_effort=EXCLUDED.reasoning_effort,account_selection=EXCLUDED.account_selection,
             version=backend_roles.version+1,updated_at=EXCLUDED.updated_at,updated_by=EXCLUDED.updated_by RETURNING *""",
-            (role, account_id, model, reasoning_effort, now(), actor, now(), actor)).fetchone())
+            (role, account_id, model, reasoning_effort, account_selection, now(), actor, now(), actor)).fetchone())
 
 
 def resolve_role(requested):
@@ -286,7 +264,7 @@ def role_configuration(requested="default"):
     row = registration(role["account_id"])
     if not row or not row["enabled"]:
         raise invalid("Backend 角色引用的账号已停用或不存在")
-    settings = {"backend_role": requested}
+    settings = {"backend_role": requested, "account_selection": role["account_selection"]}
     if role["model"]:
         settings["model"] = role["model"]
     if role["reasoning_effort"]:

@@ -32,6 +32,7 @@ from . import (
 from .domain_ports import execution_port, resident_domain_port, resident_terminal_port
 from .resident_access import manage_refusal
 from .resident_default_backend import configuration
+from management_portal.execution.accounts import DefaultAccountUnavailable
 from .resident_fork_context import (
     initial_context_compaction_completed as _initial_context_compaction_completed,
     requires_initial_context_compaction as _requires_initial_context_compaction,
@@ -555,7 +556,10 @@ def _claim_job(resident_id: str, continuation_id: str, claimed: _ContinuationJob
             return False
         if resident_restart_handoff.pending(record, job):
             return False
-        bind_before_execution(record, str(job.get("actor") or ""))
+        try:
+            bind_before_execution(record, str(job.get("actor") or ""))
+        except DefaultAccountUnavailable:
+            return False  # Leave the durable input pending until observations recover.
         job = resident_execution_work.read(record)
         dispatched_at = str(job.get("dispatched_at") or resident_domain_common.now_iso())
         job["dispatched_at"] = dispatched_at
@@ -1151,7 +1155,10 @@ def _prepare_resident_continuation(
             record["updated_at"] = resident_domain_common.now_iso()
             resident_record_domain.save_resident_record(record)
         return None
-    bind_before_execution(record, str(job.get("actor") or ""))
+    try:
+        bind_before_execution(record, str(job.get("actor") or ""))
+    except DefaultAccountUnavailable:
+        return None
     job = resident_execution_work.read(record)
     dispatched_at = resident_domain_common.now_iso()
     job["dispatched_at"] = dispatched_at

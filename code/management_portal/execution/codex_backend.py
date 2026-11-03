@@ -588,48 +588,15 @@ class CodexBackend:
                 thread_id,
                 False,
             )
-        candidates = self.account_registry.candidates(
-            requested_account_id=session.backend_route_id,
-            allow_fallback=bool(
-                request.runtime_options.get(
-                    "allow_backend_route_fallback",
-                    True,
-                )
-            ),
-        )
-        current = candidates[0]
-        unavailable = None
-        for index, route in enumerate(candidates):
-            if index:
-                if not context.reassign_backend_route(route.account_id):
-                    continue
-                context.emit(
-                    "backend_route_fallback",
-                    {
-                        "provider": self.provider_id,
-                        "from_route_id": current.account_id,
-                        "to_route_id": route.account_id,
-                        "reason": type(unavailable).__name__,
-                    },
-                )
-                current = route
-            client = self.client_factory(route.socket_path)
-            try:
-                return (
-                    route,
-                    client,
-                    self._start_thread(
-                        client,
-                        request,
-                        context.is_cancelled,
-                        invocation.harness_tools,
-                        invocation.system_context if invocation.attach_system_context else "",
-                    ),
-                    bool(invocation.attach_system_context and invocation.system_context),
-                )
-            except CodexAppServerUnavailable as exc:
-                unavailable = exc
-        raise unavailable
+        # Selection is committed before a native session starts. A transport
+        # failure must not silently override an explicit account or repeat input.
+        route = (self.account_registry.get(session.backend_route_id) if session.backend_route_id
+                 else self.account_registry.default_for_new_session(request.runtime_options))
+        client = self.client_factory(route.socket_path)
+        return (route, client, self._start_thread(
+            client, request, context.is_cancelled, invocation.harness_tools,
+            invocation.system_context if invocation.attach_system_context else ""),
+            bool(invocation.attach_system_context and invocation.system_context))
 
     def configure_auto_compact_threshold(
         self,

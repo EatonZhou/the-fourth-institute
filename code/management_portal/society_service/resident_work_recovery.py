@@ -236,8 +236,13 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 continue
             tried = list(recovery.get("tried_accounts") or [])
             # A Family switches only between subscriptions unless the user listed another kind.
-            target = fallback_account(accounts or [], provider, route, tried, reserve=True, priority=resident_domain_port.auto_migration_priority(record),
-                                      subscription_only=bool((record.get("family") or {}).get("role")))
+            from .resident_default_backend import selection_mode
+            automatic = selection_mode(record) == "auto"
+            target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
+                                      priority=[] if automatic else resident_domain_port.auto_migration_priority(record),
+                                      subscription_only=bool((record.get("family") or {}).get("role")),
+                              model=(record.get("execution_settings") or {}).get("model", ""),
+                              effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))
             if not target:
                 _notify_steward_blocked(record, message_id, "没有已确认有可用额度的备用账号或后端")
                 continue

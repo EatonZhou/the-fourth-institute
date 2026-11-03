@@ -140,7 +140,7 @@ def test_explicit_resident_requeue_does_not_spend_automatic_budget(team, monkeyp
 
 
 def _account(provider, route, remaining, **quota):
-    return {"account_id": provider + "_" + route, "provider": provider, "backend_route_id": route,
+    return {"account_id": provider + "_" + route, "provider": provider, "backend_route_id": route, "kind": "subscription_login", "login_state": "logged_in",
             "quota_reserve": {"status": "available", "fresh": True, "remaining": remaining,
                               "windows": [{"window": "seven_day", "remaining_percent": remaining}], **quota}}
 
@@ -178,7 +178,7 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
     target, actor, payload, kwargs = calls[0]
     assert target == actor == resident_id
     assert payload["target_provider"] == "codex" and payload["target_account"] == "two"
-    assert payload["resume_failed_input"] is True and payload["context_strategy"] == "compact"
+    assert payload["resume_failed_input"] is True and payload["context_strategy"] == "preserve"
     assert kwargs["portal_reason"] == "steward_quota_recovery"
     assert recovery.recovery_entry(_record(resident_id), message_id)["switch_attempts"] == 1
 
@@ -213,7 +213,8 @@ def test_fallback_requires_fresh_positive_agent_quota_and_can_change_provider():
     """
     accounts = [_account("codex", "one", 0), _account("codex", "two", 99, fresh=False),
                 _account("codex", "three", True), _account("claude", "claude_one", 50)]
-    assert recovery.fallback_account(accounts, "codex", "one", [])["provider"] == "claude"
+    assert recovery.fallback_account(accounts, "codex", "one", []) == {}
+    assert recovery.fallback_account(accounts, "codex", "one", [], priority=["claude:subscription_login"])["provider"] == "claude"
     assert recovery.fallback_account(accounts, "codex", "one", ["claude_claude_one"]) == {}
 
 

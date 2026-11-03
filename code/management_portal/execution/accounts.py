@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DefaultAccountUnavailable(ValueError):
-    """No default account is configured for an otherwise valid provider."""
+    """No eligible automatic account is currently available for a valid provider."""
 
 
 @dataclass(frozen=True)
@@ -105,7 +105,14 @@ class ExecutionAccounts:
     def resolve(self, provider: str, route_id: str = "", options: dict[str, Any] | None = None, *, bound: bool = False) -> ExecutionAccount | None:
         self.refresh()
         adapter = self.adapters.get(provider)
-        return adapter.resolve(route_id, options or {}, bound=bound) if adapter else self._accounts.get(provider)
+        options = options or {}
+        if adapter and not bound and not route_id and not options.get("provider_profile"):
+            from .provider_catalog import AGENT_PROVIDERS
+            if provider in AGENT_PROVIDERS:
+                from .account_selection import select
+                route_id = select(provider, model=options.get("model", ""),
+                                  effort=options.get("reasoning_effort", ""))["route_id"]
+        return adapter.resolve(route_id, options, bound=bound) if adapter else self._accounts.get(provider)
 
     def canonical_route(self, provider: str, route_id: object) -> str:
         adapter = self.adapters.get(provider)
@@ -288,7 +295,7 @@ class ExecutionAccounts:
         return {**result, "schema": "tfi.agent-runtime-catalog.v1", "backend": definition.provider,
                 "provider": definition.provider, "account_id": account.account_id, "backend_route_id": account.route_id,
                 "runtime_settings": capabilities["settings"], "operations": capabilities["operations"],
-                "runtime_capabilities": capabilities}
+                "runtime_capabilities": capabilities, "account_selection": {"enabled": True, "modes": ["auto", "fixed"]}}
 
     def _api_runtime_catalog(self, entry: dict[str, Any], *, include_routes: bool = True) -> dict[str, Any]:
         from .account_adapters import ApiProfileAccounts

@@ -435,9 +435,7 @@ def list_providers(inv):
                 kinds = tuple(kind for kind in kinds if kind != "service")
         definition = AGENT_PROVIDERS.get(provider)
         own = [row for row in rows if row["provider"] == provider]
-        # Providers whose registrations mark a default report the route that is used.
-        marks_default = any("is_default" in config_fields(provider, kind) for kind in kinds)
-        default = (default_route(own) if marks_default else "") or (definition.default_route if definition else "")
+        default = default_route(own)
         item = {"provider": provider, "title": definition.label if definition else "Model API",
                           "kinds": list(kinds), "capabilities": definition.runtime_capabilities() if definition else {},
                           "default_route_id": default, "account_count": len(own),
@@ -628,7 +626,7 @@ def update_backend_role(inv):
     role = inv.argument("backend_role")
     return {"role": update_role(role, inv.argument("account_id"),
                                 inv.argument("model") or "", inv.argument("reasoning_effort") or "",
-                                _registration_expected_version(inv, role, minimum=0), inv.caller)}
+                                _registration_expected_version(inv, role, minimum=0), inv.caller, inv.argument("account_selection") or "auto")}
 
 
 def get_execution_settings(inv: Invocation) -> dict[str, Any]:

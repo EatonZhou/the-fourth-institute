@@ -116,9 +116,13 @@ class ExecutionPreparation:
         request.validate()
         if request.service_type != "agent_session":
             return request
-        incoming = self.accounts.resolve(request.provider, request.session.backend_route_id, request.runtime_options)
-        if incoming and request.session.backend_route_id and incoming.route_id != request.session.backend_route_id:
-            request = replace(request, session=replace(request.session, backend_route_id=incoming.route_id))
+        # Normalize an explicitly supplied alias without selecting an account.
+        if request.session.backend_route_id:
+            incoming = self.accounts.resolve(request.provider, request.session.backend_route_id, request.runtime_options, bound=True)
+            if incoming and incoming.route_id != request.session.backend_route_id:
+                request = replace(request, session=replace(request.session, backend_route_id=incoming.route_id))
+        # Resolve the existing binding/context source before selecting a new
+        # account. A blank request route must never move a bound session.
         runtime_session = self._session_manager().prepare(request)
         account = self.accounts.resolve(request.provider, runtime_session.backend_route_id, request.runtime_options, bound=bool(runtime_session.backend_session_id))
         if account is None or account.route_id == request.session.backend_route_id:

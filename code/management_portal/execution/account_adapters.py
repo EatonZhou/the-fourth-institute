@@ -23,7 +23,6 @@ class CodexAccountRoute:
     codex_home: Path
     socket_path: Path
     max_concurrency: int
-    fallback_account_ids: tuple[str, ...] = ()
     registration_id: str = ""
     kind: str = "subscription_login"
     # The Model API an api_profile route authenticates with.
@@ -37,21 +36,15 @@ class CodexRoutes:
         self._load()
 
     def _load(self):
-        from .account_registrations import default_route, registrations
+        from .account_registrations import registrations
         from .account_hosting import account_home, codex_socket_path
         rows = registrations("codex")
         self._accounts = {row["route_id"]: CodexAccountRoute(
             row["route_id"], account_home("codex", row["account_id"]), codex_socket_path(row["account_id"]),
-            row["max_concurrency"], tuple(next((r["route_id"] for r in rows if r["account_id"] == value), value)
-                                          for value in row["config"].get("fallback_account_ids", [])), row["account_id"],
+            row["max_concurrency"], row["account_id"],
             row["kind"], row["config"].get("api_id", "")) for row in rows}
         self._aliases = {row["account_id"]: row["route_id"] for row in rows}
         self._enabled = {row["route_id"] for row in rows if row["enabled"]}
-        if sum(1 for row in rows if row["enabled"] and row["config"].get("is_default")) > 1:
-            raise ValueError("Multiple default Codex accounts")
-        # A site's only enabled Codex account is its default without being marked;
-        # among several, the default must be chosen explicitly.
-        self.default_account_id = default_route(rows)
         self._loaded_at = time.monotonic()
 
     def _refresh(self):
@@ -70,16 +63,11 @@ class CodexRoutes:
         self._refresh()
         return tuple(self._accounts.values())
 
-    def default_for_new_session(self):
-        self._refresh()
-        if not self.default_account_id:
-            raise DefaultAccountUnavailable("No enabled default Codex account")
-        return self.get(self.default_account_id)
-
-    def candidates(self, *, requested_account_id="", allow_fallback):
-        primary = self.get(requested_account_id) if requested_account_id else self.default_for_new_session()
-        ids = [primary.account_id, *(primary.fallback_account_ids if allow_fallback else ())]
-        return tuple(self.get(key) for key in ids if key in self._enabled)
+    def default_for_new_session(self, options=None):
+        from .account_selection import select
+        options = options or {}
+        row = select("codex", model=options.get("model", ""), effort=options.get("reasoning_effort", ""))
+        return self.get(row["route_id"])
 
     def find_thread_rollout(self, account_id, backend_session_id, *, include_archived=True):
         thread = str(backend_session_id or "").strip().lower()
@@ -130,7 +118,7 @@ class CodexAccounts:
     def resolve(self, route_id, options, *, bound=False):
         if bound and not route_id:
             raise ValueError("existing session requires an account route")
-        route = self.registry.get(route_id) if route_id else self.registry.default_for_new_session()
+        route = self.registry.get(route_id) if route_id else self.registry.default_for_new_session(options=options)
         return self._account(route)
 
     @staticmethod
@@ -167,11 +155,6 @@ class CodexAccounts:
         public_ids = {account.route_id: account.account_id for account in accounts}
         selectable = {route: account_id for route, account_id in public_ids.items() if account_id not in disabled}
         default = source if source in selectable else ""
-        if not default:
-            try:
-                default = self.registry.default_for_new_session().account_id
-            except DefaultAccountUnavailable:
-                pass
         return {
             "enabled": True,
             "account_ids": list(selectable.values()),

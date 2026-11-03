@@ -109,3 +109,15 @@ def test_legacy_bound_api_reprepares_old_codex_input(pending):
     from management_portal.society_service import resident_conversation_stream
     state = resident_conversation_stream.get_repository().input_state(record["resident_id"], current["user_message_id"])
     assert state["state"] != "cancelled"
+
+
+def test_unknown_automatic_quota_keeps_original_input_pending(pending, monkeypatch):
+    from management_portal.execution.accounts import DefaultAccountUnavailable
+    record = pending
+    before = deepcopy(resident_execution_work.read(record))
+    monkeypatch.setattr(resident_execution_work, 'continuation_needed', lambda *args: True)
+    def waiting(*args):
+        raise DefaultAccountUnavailable('No verified candidate')
+    monkeypatch.setattr(resident_execution_domain, 'bind_before_execution', waiting)
+    assert resident_execution_domain._prepare_resident_continuation(record, steward_reserve_checked=True) is None
+    assert resident_execution_work.read(record) == before

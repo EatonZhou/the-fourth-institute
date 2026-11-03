@@ -139,7 +139,7 @@ def settings_application(settings: Mapping[str, Any], *, backend: str, revision:
                 "configured_call_policy_deny" if not item["enabled"] else "assembly_required_without_delivery_observation",
                 **item)
     for name in ("model", "reasoning_effort", "service_tier", "collaboration_mode", "permission_preset",
-                 "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role"):
+                 "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "account_selection"):
         if name in settings:
             add(name, "next_turn", "configured_for_future_input_without_delivery_observation")
     return {"schema": "tfi.resident-application.v1", "settings_revision": revision, "items": items}

@@ -520,6 +520,8 @@ def restart_resident_session(
     if operation == "switch_account" and restart_target.same_route:
         return _unchanged_restart(resident_id, operation, source_binding)
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
+    if body.get("target_account") and not portal_reason:
+        target_runtime_settings["account_selection"] = "fixed"
     strategy, unbound_previous_session = _restart_strategy(record, source, restart_target, requested_strategy)
     intent = _restart_intent(body, operation, source, restart_target, strategy, active_execution_policy)
     failed_input = _failed_input_to_resume(record, body, intent, restart_target)

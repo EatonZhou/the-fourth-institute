@@ -566,133 +566,26 @@ def test_codex_permission_profile_owns_sandbox_policy(subtests, isolated_portal_
             assert sandbox_policy is None
 
 
-def test_codex_account_route_uses_one_then_falls_back_before_thread_start(
-    tmp_path: Path,
-) -> None:
-    """codex 新线程启动前 one 账号不可用时回退到 zero，并记录回退事件"""
-    one_client = mock.Mock()
-    one_client.start_thread.side_effect = (
-        codex_backend.CodexAppServerUnavailable("socket unavailable")
-    )
-    zero_client = mock.Mock()
-    zero_client.start_thread.return_value = {
-        "thread": {"id": "019f0000-0000-7000-8000-000000000501"}
-    }
-    zero_client.run_turn.return_value = mock.Mock(
-        thread_id="019f0000-0000-7000-8000-000000000501",
-        turn_id="019f0000-0000-7000-8000-000000000502",
-        response="done",
-        token_usage={},
-    )
-
-    def client_factory(socket_path):
-        return (
-            one_client
-            if str(socket_path).endswith("codex-app-server-one.sock")
-            else zero_client
-        )
-
-    request = ExecutionRequest.new(
-        actor="sample_reader",
-        prompt="new turn",
-        service_type="agent_session",
-        provider="codex",
-        operation="turn",
-        cwd=str(tmp_path),
-        session=SessionOptions(mode="persistent", binding_id="resident:test-sample_reader"),
-        system_instructions=portal_system_instructions("resident"),
-    )
-    session = RuntimeSession(
-        mode="persistent",
-        binding_id=request.session.binding_id,
-        backend_session_id="",
-        is_new_backend_session=True,
-    )
-    events: list[tuple[str, dict]] = []
-    result = codex_backend.CodexBackend(
-        client_factory=client_factory,
-    ).execute(
-        BackendInvocation(
-            request=request,
-            session=session,
-            user_prompt=request.prompt,
-            system_context="rules",
-            attach_system_context=True,
-            is_new_backend_session=True,
-        ),
-        backend_contracts.BackendContext(
-            emit_event=lambda name, details: events.append((name, details)),
-            cancellation_requested=lambda: False,
-            set_interrupt_target=lambda *_args: None,
-        ),
-    )
-
-    assert result.backend_route_id == "zero"
-    assert one_client.start_thread.call_count == 1
-    assert zero_client.start_thread.call_count == 1
-    assert events[0] == (
-        "backend_route_fallback",
-        {
-            "provider": "codex",
-            "from_route_id": "one",
-            "to_route_id": "zero",
-            "reason": "CodexAppServerUnavailable",
-        },
-    )
-
-
-@pytest.mark.parametrize("blocked", [{"zero"}, {"zero", "two"}])
-def test_codex_fallback_skips_accounts_that_reject_capacity(tmp_path, blocked):
-    """codex 账号回退跳过拒绝转移容量的账号，全部拒绝时报原错误
-
-    :design: decision_3dd52c0692c1
-    :design-point:
-    """
-    request = ExecutionRequest.new(
-        actor="test", prompt="hello", service_type="agent_session", provider="codex", operation="turn",
-        cwd=str(tmp_path), session=SessionOptions(mode="persistent", binding_id="resident:fallback", backend_route_id="one"),
-    )
-    invocation = BackendInvocation(
-        request=request, session=RuntimeSession(mode="persistent", binding_id=request.session.binding_id,
-                                               backend_session_id="", backend_route_id="one", is_new_backend_session=True),
-        user_prompt=request.prompt, system_context="", attach_system_context=False, is_new_backend_session=True,
-    )
-    attempts, events, started = [], [], []
-
-    def reassign(route):
-        attempts.append(route)
-        return {"accepted": route not in blocked}
-
+def test_native_connection_failure_does_not_reassign_selected_account(tmp_path):
+    """Native transport failure cannot silently move an admitted execution."""
     registry = mock.Mock()
-    registry.candidates.return_value = [
-        mock.Mock(account_id=route, socket_path=tmp_path / f"codex-app-server-{route}.sock")
-        for route in ("one", "zero", "two")
-    ]
+    registry.get.return_value = mock.Mock(account_id="one", socket_path=tmp_path / "one.sock")
     backend = codex_backend.CodexBackend(account_registry=registry, client_factory=lambda socket: socket)
-
-    def start(client, *_args):
-        started.append(str(client))
-        if str(client).endswith("codex-app-server-one.sock"):
-            raise codex_backend.CodexAppServerUnavailable("primary unavailable")
-        return "new-thread"
-
-    context = backend_contracts.BackendContext(
-        emit_event=lambda *event: events.append(event), cancellation_requested=lambda: False,
-        set_interrupt_target=lambda *_args: None, reassign_backend_route=reassign,
-    )
-    with mock.patch.object(backend, "_start_thread", side_effect=start):
-        if "two" in blocked:
-            with pytest.raises(codex_backend.CodexAppServerUnavailable, match="primary unavailable"):
-                backend._resolve_client(invocation, context)
-            assert events == []
-            assert len(started) == 1
-        else:
-            route, _client, thread_id, _attached = backend._resolve_client(invocation, context)
-            assert (route.account_id, thread_id) == ("two", "new-thread")
-            assert events[0][1]["from_route_id"] == "one"
-            assert events[0][1]["to_route_id"] == "two"
-            assert not any(path.endswith("codex-app-server-zero.sock") for path in started)
-    assert attempts == ["zero", "two"]
+    request = ExecutionRequest.new(actor="test", prompt="hello", service_type="agent_session", provider="codex",
+        operation="turn", cwd=str(tmp_path), session=SessionOptions(mode="persistent", binding_id="resident:pin", backend_route_id="one"))
+    invocation = BackendInvocation(request=request,
+        session=RuntimeSession(mode="persistent", binding_id=request.session.binding_id, backend_session_id="",
+            backend_route_id="one", is_new_backend_session=True), user_prompt=request.prompt,
+        system_context="", attach_system_context=False, is_new_backend_session=True)
+    reassign, event = mock.Mock(), mock.Mock()
+    context = backend_contracts.BackendContext(emit_event=event, cancellation_requested=lambda: False,
+        set_interrupt_target=lambda *_: None, reassign_backend_route=reassign)
+    with mock.patch.object(backend, "_start_thread", side_effect=codex_backend.CodexAppServerUnavailable("unavailable")) as start:
+        with pytest.raises(codex_backend.CodexAppServerUnavailable, match="unavailable"):
+            backend._resolve_client(invocation, context)
+        assert start.call_count == 1
+    reassign.assert_not_called()
+    event.assert_not_called()
 
 
 def test_explicit_codex_account_route_does_not_fall_back(

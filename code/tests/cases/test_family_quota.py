@@ -32,7 +32,7 @@ from management_portal.society_service import resident_input_queue_domain
 
 
 def _account(route, weekly, *, short=90, provider="codex", fresh=True, duration=False, kind="subscription_login"):
-    return {"account_id": f"{provider}_{route}", "provider": provider, "backend_route_id": route, "kind": kind,
+    return {"account_id": f"{provider}_{route}", "provider": provider, "backend_route_id": route, "kind": kind, "login_state": "logged_in",
             "quota_reserve": {"status": "available", "fresh": fresh, "remaining": min(weekly, short),
                               "windows": [{"window": "primary" if duration else "seven_day",
                                            "window_duration_mins": 10080 if duration else None,
@@ -63,11 +63,11 @@ def test_family_switching_stays_among_subscriptions_unless_a_kind_is_allowed():
     pick = lambda accounts, **kwargs: accounts_policy.fallback_account(
         accounts, "codex", "one", [], reserve=True, subscription_only=True, **kwargs).get("account_id", "")
     assert pick([_account("one", 5), api, service]) == ""
-    assert pick([_account("one", 5), api, service, _account("two", 40, provider="claude")]) == "claude_two"
+    assert pick([_account("one", 5), api, service, _account("two", 40, provider="claude")]) == ""
     assert pick([_account("one", 5), api, service], priority=["codex:api_profile:openai"]) == "codex_api"
     assert pick([_account("one", 5), api, service], priority=["kimi:service"]) == "kimi_svc"
-    # Without the Family rule every eligible kind remains a candidate.
-    assert accounts_policy.fallback_account([_account("one", 5), api], "codex", "one", [], reserve=True)["account_id"] == "codex_api"
+    # General automatic selection uses the same billing and Provider boundary.
+    assert accounts_policy.fallback_account([_account("one", 5), api], "codex", "one", [], reserve=True) == {}
     # The source's own non-subscription kind stays allowed.
     source = {**_account("one", 5), "kind": "api_profile", "billing_account_id": "openai"}
     assert pick([source, api]) == "codex_api"
@@ -81,7 +81,8 @@ def test_reserve_targets_require_weekly_above_five_or_a_funded_metered_agent():
     candidates = [_account("one", 4), _account("two", 5), _account("three", 50, fresh=False),
                   _account("four", 45), _account("claude_one", 80, provider="claude")]
     assert accounts_policy.fallback_account(candidates, "codex", "one", [], reserve=True)["backend_route_id"] == "four"
-    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True)["provider"] == "claude"
+    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True) == {}
+    assert accounts_policy.fallback_account(candidates, "codex", "one", ["codex_four"], reserve=True, priority=["claude:subscription_login"])["provider"] == "claude"
     metered = {"provider": "claude", "account_id": "deepseek_primary", "backend_route_id": "deepseek_primary",
                "quota_reserve": {"status": "available", "fresh": True, "remaining": 15,
                                  "remaining_balance": 15, "currency": "CNY"}}
@@ -365,7 +366,7 @@ def test_platform_migrates_steward_before_execution_at_or_below_five(quota_famil
         assert migration["attempts"] == 1 and migration["pending_restart"] is None
         assert "family_quota_migration" not in before
         assert calls[0][0][2]["target_account"] == "two"
-        assert calls[0][0][2]["context_strategy"] == "compact"
+        assert calls[0][0][2]["context_strategy"] == "preserve"
         assert calls[0][1]["portal_reason"] == "steward_weekly_reserve"
         assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
         assert len(calls) == 1
@@ -722,3 +723,25 @@ def test_a_notice_names_no_member_and_a_relay_still_needs_one(quota_family):
         with pytest.raises(InstructionError):
             relay_family_message(inv)
     assert resident_conversation_stream.get_repository().input_state(f.facade, f.message)["state"] == "queued"
+
+
+def test_ordinary_resident_automatic_selection_preserves_context_and_fixed_waits(team, monkeypatch):
+    """The unified policy applies to ordinary Residents without requiring a Family."""
+    from management_portal.society_service import resident_restart_domain
+    record = dict(team.source)
+    record.update(backend='codex', backend_route_id='one', family={},
+                  execution_settings={'account_selection': 'auto', 'model': 'same-model'})
+    resident_input_queue_domain.commit_resident_intake_state(record, 'open')
+    monkeypatch.setattr(resident_record_domain, 'find_resident', lambda _: record)
+    from management_portal.society_service import resident_backend
+    monkeypatch.setattr(resident_backend, 'session_record', lambda _: {'backend_route_id': 'one', 'backend_session_id': 'existing'})
+    one, two = _account('one', 0), _account('two', 80)
+    two['selection_catalog'] = {'fresh': True, 'models': ['same-model']}
+    calls = []
+    monkeypatch.setattr(resident_restart_domain, 'restart_resident_session', lambda *a, **k: calls.append(a[2]))
+    assert family_quota.ensure_role_reserve(record, [one, two])
+    assert len(calls) == 1 and calls[0]['context_strategy'] == 'preserve'
+    assert calls[0]['target_account'] == 'two'
+    record['execution_settings']['account_selection'] = 'fixed'
+    assert not family_quota.ensure_role_reserve(record, [one, two])
+    assert len(calls) == 1

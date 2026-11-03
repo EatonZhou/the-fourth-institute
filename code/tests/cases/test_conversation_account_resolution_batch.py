@@ -133,15 +133,13 @@ def test_one_request_shares_accounts_across_authorized_candidate_pages(catalog, 
     assert owner["residents"] == []  # no engagement by this actor
 
 
-def test_next_request_refreshes_default_and_disabled_configuration(catalog, monkeypatch):
-    """后续请求刷新默认账号与禁用状态"""
+def test_next_request_refreshes_automatic_candidates_and_disabled_configuration(catalog, monkeypatch):
+    """后续请求重新选择可用账号并刷新禁用状态"""
     ids = populate(2, routes=[("codex", ""), ("provider_api", "batch_api")])
     counts = count_reads(monkeypatch)
     first = activity(resident_ids=ids)["residents"]
     assert [r["account_id"] for r in first] == ["codex_one", "batch_api"]
-    for account_id, marked in (("codex_one", False), ("codex_two", True)):
-        config = account_registrations.registration(account_id)["config"]
-        account_registrations.update_registration(account_id, {"config": {**config, "is_default": marked}}, 1, ACTOR)
+    account_registrations.update_registration("codex_one", {"enabled": False}, 1, ACTOR)
     model_api_store.update_api("batch_api", {"enabled": False}, ACTOR)
     second = activity(resident_ids=ids)["residents"]
     assert [r["account_id"] for r in second] == ["codex_two", "batch_api"]

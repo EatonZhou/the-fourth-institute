@@ -64,7 +64,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       log: fail ? 'execution_check\nHTTP 401: [REDACTED]\n<script>not markup</script>' : ''}};
     case 'UpdateBackendRole':
       if (holdDefault) await new Promise(resolve => { finishDefault = resolve; });
-      roles = [{role: 'default', account_id: args.account_id, version: (roles[0]?.version || 0) + 1}];
+      roles = [{role: 'default', account_id: args.account_id, account_selection: args.account_selection, version: (roles[0]?.version || 0) + 1}];
       return {role: roles[0]};
     case 'PrepareProviderRuntime':
       if (holdPrepare) return new Promise(resolve => { finishPrepare = resolve; });
@@ -314,5 +314,17 @@ const openSetup = async () => {
   assert.equal(window.document.querySelector('[data-backend-login-code]').textContent, 'mainland-cn');
   reopened.close();
   assert.equal(timers.size, 0); assert.equal(intervals.size, 0);
+  // One selector replaces the two conflicting default buttons.
+  assert(![...window.document.querySelectorAll('button')].some(el => ['设为默认路线', '设为默认 AI'].includes(el.textContent)));
+  for (const policy of ['fixed', 'auto']) {
+    click('账号选择设置'); await flush();
+    const form = window.document.querySelector('dialog form');
+    form.elements.account_id.value = 'existing';
+    form.elements.account_selection.value = policy;
+    form.elements.account_selection.dispatchEvent(new window.Event('change'));
+    assert.match(form.elements.account_id.parentElement.textContent, policy === 'fixed' ? /固定账号/ : /参考账号/);
+    form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
+    assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').at(-1).args.account_selection, policy);
+  }
   console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

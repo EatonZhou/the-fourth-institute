@@ -160,7 +160,7 @@
         if (!title) throw new Error("新 Resident 需要名称");
         const provider = $id("nodeBackendSelect").value;
         const route = $id("nodeRouteSelect").value;
-        const settings = {model: $id("nodeModelSelect").value};
+        const settings = {model: $id("nodeModelSelect").value, account_selection: $id("nodeAccountSelection")?.value || "auto"};
         if (!$id("nodeEffortSelect").disabled) settings.reasoning_effort = $id("nodeEffortSelect").value;
         if (!$id("nodeServiceTierInput").closest("label").hidden && $id("nodeServiceTierInput").value === "fast") settings.service_tier = "priority";
         const response = await societyService.createNode({

@@ -488,10 +488,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     hint(model, "无需手动填写；授权完成后自动读取默认模型，也可选择其他模型。");
     const choices = node("datalist", undefined, {id: "backend-setup-models"});
     model.setAttribute("list", choices.id); form.append(choices);
-    const useDefault = field(form, "用作默认 AI", "use_default", "", {type: "checkbox"});
+    const useDefault = field(form, "用作默认模型偏好", "use_default", "", {type: "checkbox"});
     const defaultRole = state.roles.find(role => role.role === "default");
     useDefault.checked = requestedDefault || !defaultRole?.account_id || defaultRole.account_id === accountId;
-    hint(useDefault, "测试通过后，Ask Me Anything 和未配置后端的 Resident 将使用此账号。仅保存接口或设置默认路线不会启用默认 AI。");
+    hint(useDefault, "测试通过后保存后端与模型偏好；新会话会在同类兼容账号中按可用额度自动选择，不自动跨后端或转用其他付费 API。");
     const authorize = button("登录", () => {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
@@ -632,7 +632,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           progressMessage = "测试通过，正在设为默认 AI…";
           status.textContent = t(progressMessage);
           const currentDefault = state.roles.find(role => role.role === "default");
-          await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId,
+          await execute("UpdateBackendRole", {backend_role: "default", account_id: accountId, account_selection: "auto",
             model: result.check.model, verification_execution_id: executionId,
             ...(currentDefault?.account_id === accountId && currentDefault.model === result.check.model
               ? {reasoning_effort: currentDefault.reasoning_effort || ""} : {})}, {expectedVersion: currentDefault?.version || 0});
@@ -642,7 +642,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         stopProgress();
         checking = false; model.disabled = false; useDefault.disabled = false; setButtons();
         if (result.check.passed && !closed) {
-          notice.textContent = t(useDefault.checked ? "测试通过，已设为默认 AI。" : "测试通过，AI 接入已完成。");
+          notice.textContent = t(useDefault.checked ? "测试通过，已保存模型偏好并启用自动选择账号。" : "测试通过，AI 接入已完成。");
           view.close();
         }
       } catch (error) {
@@ -861,14 +861,18 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     });
   }
   function roleEditor(role = null) {
-    const {view, form} = newEditor(role ? "编辑 Backend 角色" : "新增 Backend 角色");
+    const {view, form} = newEditor(role?.role === "default" ? "默认 AI 与账号选择" : role ? "编辑 Backend 角色" : "新增 Backend 角色");
     const name = field(form, "角色", "role", role?.role || "", {required: true, readOnly: Boolean(role)});
-    const account = select(form, "执行账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
+    const selection = select(form, "账号选择", "account_selection", [["auto", t("自动（按可用额度）")], ["fixed", t("手动固定账号")]], role?.account_selection || "auto");
+    const account = select(form, "后端与计费范围参考账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
     account.required = true;
+    const syncAccountLabel = () => { account.parentElement.querySelector("span").textContent = t(selection.value === "fixed" ? "固定账号" : "后端与计费范围参考账号"); };
+    selection.addEventListener("change", syncAccountLabel); syncAccountLabel();
+    hint(selection, "自动选择保持后端、模型与计费范围；额度不足或状态未知时等待。固定账号不会自动迁移。");
     const model = field(form, "模型", "model", role?.model || "");
     const effort = field(form, "推理强度", "reasoning_effort", role?.reasoning_effort || "");
     saveButton(form); form.addEventListener("submit", event => { event.preventDefault(); void run(async () => {
-      await execute("UpdateBackendRole", {backend_role: name.value.trim(), account_id: account.value, model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
+      await execute("UpdateBackendRole", {backend_role: name.value.trim(), account_id: account.value, account_selection: selection.value, model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
       view.close(); await refresh("roles");
     }); });
   }
@@ -878,21 +882,14 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     return accounts.map(a => {
       const identity = node("div", a.account_id);
       const readonly = !canWrite || a.kind === "service" || !Number.isInteger(a.registration_version);
-      const defaultRoute = state.providers.find(p => p.provider === a.provider)?.default_route_id;
-      const isDefault = Boolean(defaultRoute) && defaultRoute === a.route_id;
-      const isDefaultAI = state.roles.some(role => role.role === "default" && role.account_id === a.account_id);
       const reload = async () => { await refresh("providers"); await refresh("accounts"); };
       return {id: a.account_id, cells: [linked ? runnerTitle(a.provider) : identity,
         linked ? identity : [t(kinds[a.kind] || a.kind || "—"), runnerTitle(a.provider)].filter(Boolean).join(" · "),
         [t(a.enabled === false ? "已停用" : "已启用"), a.kind === "subscription_login" ? t(loginStates[a.login_state] || a.login_state || "—") : "",
-          isDefault ? t("默认路线") : "", isDefaultAI ? t("默认 AI") : ""].filter(Boolean).join(" · "),
+          ""].filter(Boolean).join(" · "),
         actions(...(a.kind === "subscription_login" ? [button(a.login_state === "login_expired" ? "重新登录" : "登录", () => { login = openLogin(a.account_id, {onChanged: () => void refresh("accounts")}); }, !canWrite)] : []),
-          ...(linked ? [button("设置与测试", () => setupEditor(a.account_id), !canWrite)] : []),
-          ...(a.enabled !== false && !isDefaultAI ? [button("设为默认 AI", () => setupEditor(a.account_id, {useDefault: true}), !canWrite)] : []),
+          button("设置与测试", () => setupEditor(a.account_id), !canWrite),
           ...(a.provider === "claude" && a.kind === "subscription_login" ? [button("编辑模型目录", () => claudeCatalogEditor(a), readonly)] : []),
-          ...(a.provider === "codex" && a.enabled !== false && !isDefault ? [button("设为默认路线", () => void run(async () => {
-            await execute("UpdateProviderAccountRegistration", {account_id: a.account_id, changes: {config: {...(a.config || {}), is_default: true}}}, {expectedVersion: a.registration_version});
-            await reload(); }), readonly)] : []),
           deleteControl("删除执行账号？", a.account_id, "DeleteProviderAccount", "account_id", reload, !canDeleteAccount || !Number.isInteger(a.registration_version),
             !Number.isInteger(a.registration_version) ? "Provider 内置身份没有可删除的账号登记。" : "当前身份没有删除权限。"))]};
     });
@@ -904,8 +901,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const expanded = new Set([...output.querySelectorAll("details[data-backend-api-accounts]")]
       .filter(details => details.open).map(details => details.dataset.backendApiAccounts));
     output.replaceChildren();
+    if (rolesReady) {
+      const role = state.roles.find(row => row.role === "default") || {role: "default", version: 0};
+      const summary = node("div", undefined, {class: "backendHint", "data-backend-account-selection": ""});
+      summary.append(node("span", role.account_id ? t(role.account_selection === "fixed" ? "账号选择：手动固定" : "账号选择：自动（按可用额度）") + " · " + (role.model || role.account_id) : t("尚未配置默认模型偏好")),
+        button("账号选择设置", () => roleEditor(role), !canWrite));
+      output.append(summary);
+    }
     if (rolesReady && !state.roles.some(role => role.role === "default" && role.account_id)) {
-      output.append(node("p", t("尚未配置默认 AI。请在执行账号中选择“设为默认 AI”，测试通过后 Ask Me Anything 即可使用。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
+      output.append(node("p", t("尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“账号选择设置”。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
     }
     if (!state.accounts.length) { output.append(node("p", t("暂无登记"))); return; }
     const standalone = [], groups = new Map();
@@ -932,7 +936,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       connection.append(node("p", t("运行器：{p0}", {p0: [...new Set(accounts.map(account => runnerTitle(account.provider)))].join("、")}), {class: "backendHint"}));
       const details = node("details", undefined, {"data-backend-api-accounts": apiId, open: expanded.has(apiId)});
       details.append(node("summary", t("查看执行账号（{p0}）", {p0: accounts.length})),
-        node("p", t("同一 API 可通过不同运行器使用；每个执行账号的状态和默认路线可分别管理。"), {class: "backendHint"}));
+        node("p", t("同一 API 可通过不同运行器使用；每个执行账号的状态可分别管理，账号选择由统一策略决定。"), {class: "backendHint"}));
       const scroll = node("div", undefined, {class: "backendTableScroll"});
       scroll.append(buildTable(["Agent 运行器", "执行账号", "状态", "操作"], accountRows(accounts, true)));
       details.append(scroll); connection.append(details); output.append(connection);
@@ -955,8 +959,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         button("编辑", () => apiEditor(api), !canWrite), test, result,
         deleteControl("删除模型 API？", api.api_id, "DeleteModelApi", "api_id", () => refresh("apis"), !canDeleteApi))]};
     })),
-    roles: () => table("roles", ["角色", "执行账号", "模型", "推理强度", "版本", "操作"],
-      (state.roles.some(r => r.role === "default") ? state.roles : [{role: "default", version: 0}, ...state.roles]).map(role => ({cells: [role.role, role.account_id || t("必须设置默认账号"), role.model || "—", role.reasoning_effort || "—", role.version,
+    roles: () => table("roles", ["角色", "账号选择", "参考账号", "模型", "推理强度", "版本", "操作"],
+      (state.roles.some(r => r.role === "default") ? state.roles : [{role: "default", version: 0}, ...state.roles]).map(role => ({cells: [role.role, t(role.account_selection === "fixed" ? "手动固定" : "自动（按可用额度）"), role.account_id || t("尚未配置"), role.model || "—", role.reasoning_effort || "—", role.version,
         button("编辑", () => roleEditor(role), !canWrite)]}))),
   };
   const instructions = {providers: "ListProviders", accounts: "ListProviderAccounts", apis: "ListModelApis", roles: "ListBackendRoles"};

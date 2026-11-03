@@ -18,8 +18,14 @@ def register_codex(monkeypatch, root, *, names=("zero", "one"), default="one", l
     for name in names:
         create_registration({"account_id": f"codex_{name}", "provider": "codex", "kind": "subscription_login",
                              "route_id": name, "max_concurrency": limit,
-                             "config": {"account_dir": str(Path(root) / "accounts" / f"codex_{name}"), "is_default": name == default,
-                                        **({"fallback_account_ids": list(fallbacks)} if name == default and fallbacks else {})}}, "test")
+                             "config": {"account_dir": str(Path(root) / "accounts" / f"codex_{name}")}}, "test")
+    from management_portal.execution import account_selection, account_registrations
+    def observed():
+        return [{**row, "backend_route_id": row["route_id"], "login_state": "logged_in",
+                 "quota_reserve": {"fresh": True, "status": "available", "remaining": 100 if row["route_id"] == default else 80,
+                                   "windows": [{"remaining_percent": 100 if row["route_id"] == default else 80}]}}
+                for row in account_registrations.registrations()]
+    monkeypatch.setattr(account_selection, "observations", observed)
     return CodexRoutes()
 
 
@@ -45,5 +51,5 @@ def register_site_defaults(monkeypatch, root, *, legacy_codex_sockets=False):
         create_registration({"account_id": account_id, "provider": provider, "kind": "api_profile",
                              "route_id": route_id, "config": {"api_id": "deepseek_primary"}}, "test")
     create_registration({"account_id": "kimi_default", "provider": "kimi", "kind": "service"}, "test")
-    update_role("default", "codex_one", "", "", 0, "test")
+    update_role("default", "codex_one", "", "", 0, "test", "fixed")
     return routes

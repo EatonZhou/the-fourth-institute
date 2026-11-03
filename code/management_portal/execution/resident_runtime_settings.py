@@ -121,6 +121,9 @@ def normalize_settings(raw: object) -> dict[str, Any]:
         out["runtime_settings_authority_by"] = authority_by
     if "allow_subagents" in data:
         out["allow_subagents"] = boolean_setting(data["allow_subagents"], default=False)
+    if "account_selection" in data:
+        from .account_selection import mode
+        out["account_selection"] = mode(data["account_selection"])
     if data.get("backend_role"):
         out["backend_role"] = str(data["backend_role"])
     if isinstance(data.get("backend_role_fallback"), dict):
@@ -191,6 +194,7 @@ def merge_settings(base: object, updates: object, *, actor: str = "", updated_at
         "agent_harness",
         "prompt_context",
         "backend_options",
+        "account_selection",
         "backend_role",
         "backend_role_fallback",
     ):

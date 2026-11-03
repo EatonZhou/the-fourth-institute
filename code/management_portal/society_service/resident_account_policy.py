@@ -72,28 +72,27 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
-                     subscription_only: bool = False) -> dict[str, Any]:
-    """The account to switch to.  ``subscription_only`` (Family switching) never
-    leaves subscriptions on its own: a service or API kind qualifies only when it
-    is the source's own kind or the user listed it in ``priority``."""
-    eligible = sufficient_reserve if reserve else account_available
+                     subscription_only: bool = False, model: str = "", effort: str = "") -> dict[str, Any]:
+    from management_portal.execution.account_selection import candidates
     source = next((a for a in accounts if a.get("provider") == provider
-                   and str(a.get("backend_route_id") or "") == route), {"provider": provider})
-    source_type = migration_type(source)["id"]
-    allowed = set(priority or []) | {source_type}
-    candidates = [a for a in accounts if eligible(a)
-                  and (a.get("provider"), str(a.get("backend_route_id") or "")) != (provider, route)
-                  and str(a.get("account_id") or "") not in tried
-                  and (not subscription_only or a.get("kind") == "subscription_login"
-                       or migration_type(a)["id"] in allowed)]
-    order = {key: index for index, key in enumerate(priority or [])}
-    def rank(account):
-        kind = migration_type(account)
-        return (kind["id"] != source_type, order.get(kind["id"], len(order)),
-                kind["default_priority"], kind["id"], -(reserve_remaining(account) or 0),
-                str(account.get("account_id") or ""))
-    candidates.sort(key=rank)
-    return candidates[0] if candidates else {}
+                   and str(a.get("backend_route_id") or "") == route), {})
+    if not source:
+        return {}
+    excluded = [*tried, source["account_id"]]
+    own = candidates(accounts, source, model=model, effort=effort, excluded=excluded,
+                     reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+    if own:
+        return own[0]
+    # Only an explicit Family priority authorizes crossing a backend/billing
+    # boundary. There is no implicit cross-provider or paid fallback order.
+    for kind in priority or []:
+        targets = [a for a in accounts if migration_type(a)["id"] == kind]
+        if targets:
+            ordered = candidates(targets, targets[0], excluded=excluded,
+                                 reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+            if ordered:
+                return ordered[0]
+    return {}
 
 
 def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) -> dict[str, Any]:
@@ -122,7 +121,7 @@ def migration_target_options(account: Mapping[str, Any], source_provider: str, s
     """Use the target model when crossing Providers or account kinds."""
     provider = str(account["provider"])
     route = str(account.get("backend_route_id") or "")
-    options = {"target_provider": provider, "target_account": route, "context_strategy": "compact"}
+    options = {"target_provider": provider, "target_account": route, "context_strategy": "preserve"}
     if provider != source_provider or (source_account and migration_type(account)["id"] != migration_type(source_account)["id"]):
         model, _ = AGENT_PROVIDERS[provider].validate_settings(route, "")
         options.update(model=model, reasoning_effort="")

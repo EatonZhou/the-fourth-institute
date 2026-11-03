@@ -9,7 +9,7 @@ from management_portal.society_service.templates.familize import _values
 
 def account(provider, route, kind='subscription_login', remaining=80, api=''):
     return dict(provider=provider, backend_route_id=route, account_id=route, kind=kind,
-                billing_account_id=api, quota_reserve=dict(status='available', fresh=True,
+                billing_account_id=api, login_state="logged_in", enabled=True, quota_reserve=dict(status='available', fresh=True,
                     remaining=remaining, windows=[dict(window='five_hour', remaining_percent=remaining)]))
 
 
@@ -17,7 +17,8 @@ def test_cc_subscription_does_not_prefer_cc_api_over_codex():
     source=account('claude','claude_one',remaining=0)
     api=account('claude','deepseek','api_profile',api='deepseek_primary')
     codex=account('codex','codex_one')
-    assert fallback_account([source,api,codex], 'claude','claude_one',[], reserve=True)==codex
+    assert fallback_account([source,api,codex], 'claude','claude_one',[], reserve=True)=={}
+    assert fallback_account([source,api,codex], 'claude','claude_one',[], reserve=True, priority=['codex:subscription_login'])==codex
 
 
 def test_priority_same_kind_and_unavailable_accounts():

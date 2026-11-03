@@ -109,6 +109,17 @@ class AccountMonitor:
                                 and self._login_store.login_state(account.account_id) == "logged_in"},
                 })
             with self._lock:
+                catalog = (self._samples.get(account.account_id) or {}).get("selection_catalog") or {}
+            if not catalog.get("fresh") or time.time() - catalog.get("checked_at", 0) >= 300 or force:
+                try:
+                    native = self.accounts.runtime_catalog(account.account_id)
+                    catalog = {"fresh": True, "checked_at": time.time(),
+                               "models": [m if isinstance(m, str) else m["id"] for m in native.get("models", []) if isinstance(m, str) or m.get("enabled", True)],
+                               "efforts_by_model": native.get("efforts_by_model", {}), "default_model": native.get("default_model", "")}
+                except Exception:
+                    catalog = {"fresh": False, "checked_at": time.time(), "models": []}
+            sample["selection_catalog"] = catalog
+            with self._lock:
                 self._samples[account.account_id] = sample
         except Exception as error:
             if self.stopped.is_set():
@@ -251,6 +262,8 @@ class AccountMonitor:
             samples = deepcopy(self._samples)
             refreshing = self._refreshing or self.wakeup.is_set() or any(not f.done() for f in self._inflight.values())
             retry_after = max(0, 60 - (time.monotonic() - self._last_refresh_request)) if self._refresh_refused else 0
+        from .account_registrations import registrations
+        enabled = {r["account_id"]: r["enabled"] for r in registrations()}
         items = []
         for account in self.accounts.accounts():
             settings = partitions.get(account.capacity_key) or {}
@@ -262,6 +275,8 @@ class AccountMonitor:
             # A reading stays current until a read of it fails (refresh_account
             # then marks it stale); its age alone never expires it.
             items.append({**sample, "account_id": account.account_id, "provider": account.provider, "backend_route_id": account.route_id, "billing_account_id": account.billing_account_id,
+                          "enabled": enabled.get(account.account_id, True),
+                          "active_count": settings.get("active_count", 0), "queued_count": settings.get("queued_count", 0),
                           "login_state": self._login_store.login_state(account.account_id) if _subscription(account) else "not_applicable",
                           "max_concurrency": settings.get("limit", account.max_concurrency),
                           "dispatch_interval_min_seconds": settings.get("dispatch_interval_min_seconds", health.get("dispatch_interval", {}).get("min_seconds", 2)),

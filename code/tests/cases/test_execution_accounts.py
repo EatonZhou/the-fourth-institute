@@ -458,7 +458,7 @@ def test_public_account_rpcs_share_catalog_monitor_and_usage_schema():
     accounts = ExecutionAccounts((Adapter(),))
     server = object.__new__(ExecutionServiceServer)
     server.accounts = accounts
-    server.quota_monitor = AccountMonitor(accounts, Scheduler(accounts=accounts))
+    server.quota_monitor = AccountMonitor(accounts, Scheduler(accounts=accounts, quota_reserve_enabled=True))
     facade = ExecutionService(client=SimpleNamespace(request=server.dispatch))
     assert facade.resolve_account("claude", "test_alpha")["account_id"] == "test_alpha"
     assert facade.accounts()["accounts"][0]["account_id"] == "test_alpha"
@@ -487,7 +487,7 @@ def test_account_refresh_tracks_inflight_reads_and_throttles_requests(monkeypatc
     """账号额度刷新进行中时快照标记刷新中，期间重复请求被节流并给出等待秒数"""
     import threading
     accounts = ExecutionAccounts((Adapter(),))
-    monitor = AccountMonitor(accounts, Scheduler(accounts=accounts))
+    monitor = AccountMonitor(accounts, Scheduler(accounts=accounts, quota_reserve_enabled=True))
     started, release = threading.Event(), threading.Event()
     def refresh(account, *, force):
         started.set()
@@ -519,3 +519,23 @@ def test_account_registration_rejects_non_positive_integer_concurrency(tmp_path,
     with pytest.raises(ValueError, match="max_concurrency"):
         register_accounts({"config": {"account_dir": str(tmp_path / "accounts" / "codex_one")}, "account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
                            "max_concurrency": value})
+
+
+def test_account_monitor_publishes_model_compatibility_and_rejects_failed_catalog(monkeypatch):
+    accounts = ExecutionAccounts((Adapter(),))
+    monitor = AccountMonitor(accounts, Scheduler(accounts=accounts, quota_reserve_enabled=True))
+    account = accounts.get('test_alpha')
+    monkeypatch.setattr(accounts, 'runtime_catalog', lambda _: {
+        'models': ['shared'], 'default_model': 'shared', 'efforts_by_model': {'shared': ['high']}})
+    monitor._refresh_account(account, force=True)
+    snapshot = monitor.snapshot()['accounts'][0]
+    assert snapshot['selection_catalog']['models'] == ['shared']
+    assert snapshot['selection_catalog']['efforts_by_model'] == {'shared': ['high']}
+    assert snapshot['quota_reserve']['fresh'] is True
+    def unavailable(_):
+        raise ValueError('catalog unavailable')
+    monkeypatch.setattr(accounts, 'runtime_catalog', unavailable)
+    monitor._refresh_account(account, force=True)
+    snapshot = monitor.snapshot()['accounts'][0]
+    assert snapshot['selection_catalog']['fresh'] is False
+    assert snapshot['quota_reserve']['remaining'] == 80

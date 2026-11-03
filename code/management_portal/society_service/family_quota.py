@@ -342,6 +342,12 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
 
 def auto_migration_enabled(record: dict) -> bool:
     """The immediate Family owns its migration policy; ordinary Residents have none."""
+    from .resident_default_backend import selection_mode
+    mode = selection_mode(record)
+    if (record.get("execution_settings") or {}).get("account_selection") == "fixed":
+        return False
+    if mode == "auto" and not record.get("deleted_at"):
+        return True
     family = record.get("family") or {}
     if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
         return False
@@ -430,6 +436,9 @@ def reserve_candidate(record: dict[str, Any]) -> dict[str, Any] | None:
     """All Family executors share admission; only internal roles auto-open intake."""
     from . import resident_record_domain
     from .resident_work_recovery import _intake_allows_recovery
+    from .resident_default_backend import selection_mode
+    if not record.get("family") and selection_mode(record) == "auto":
+        return record if not record.get("deleted_at") and _intake_allows_recovery(record) else None
     if family_facade.is_operating_role(record):
         return _restore_role_intake(record)
     family = record.get("family") or {}
@@ -476,8 +485,11 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     if migration.get("account_wait"):
         with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as state:
             state.pop("account_wait", None)
+    from .resident_default_backend import selection_mode
+    automatic = selection_mode(record) == "auto"
+    threshold = 0 if automatic else MIGRATION_RESERVE_PERCENT
     remaining = reserve_remaining(account)
-    if (remaining is not None and remaining > MIGRATION_RESERVE_PERCENT
+    if (remaining is not None and remaining > threshold and (not automatic or (account.get("quota_reserve") or {}).get("status") == "available")
             or remaining is None and sufficient_reserve(account)):
         if role_migration(record):
             with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
@@ -488,7 +500,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     if remaining is None:
         # Stale observations cannot clear an outstanding incident; a manual
         # quota release still lets the turn run.
-        return (bool(role_migration(record).get("status"))
+        return ((automatic or bool(role_migration(record).get("status")))
                 and not override_enabled(record))
     epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
     now = time.time()
@@ -519,8 +531,10 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         payload = migration.get("pending_restart")
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                      migration["tried_accounts"], reserve=True, priority=auto_migration_priority(current),
-                                      subscription_only=True)
+                                      migration["tried_accounts"], reserve=not automatic,
+                                      priority=[] if automatic else auto_migration_priority(current), subscription_only=True,
+                                      model=(current.get("execution_settings") or {}).get("model", ""),
+                                      effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
             if target:
                 migration["attempts"] += 1
                 migration["tried_accounts"].append(target["account_id"])
@@ -549,13 +563,13 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     elif not migration.get("owner_notified"):
         from . import lineage_human_notifications
         from .family_owners import recipients
-        owners = recipients(record, creator_only=True)
+        owners = recipients(record, creator_only=bool(record.get("family")))
         reason = f"当前账号额度剩余 {remaining:g}%，没有安全备用后端或迁移已失败两次；原任务保留等待。"
         with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as blocked:
             blocked.update(status="unavailable", reason=reason)
         if owners:
             lineage_human_notifications.create_notification(
-                record["lineage_id"], title=f"Family 角色需要可用后端：{record.get('title') or resident_id}",
+                record["lineage_id"], title=f"Resident 需要可用后端：{record.get('title') or resident_id}",
                 message=reason,
                 recipients=owners, severity="warning", created_by="portal",
                 notification_id=f"steward-reserve:{resident_id}:{epoch}",
@@ -569,7 +583,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             else:
                 from .outward_messages import message_creator
                 message_creator(record, identity=f"role-reserve:{resident_id}:{epoch}",
-                                text=f"Family 内部角色 {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
+                                text=f"Resident {record.get('title') or resident_id} 暂不可用。{reason}请补充可用账号后恢复。")
             with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
                 if committed.get("epoch") == epoch:
                     committed["owner_notified"] = True

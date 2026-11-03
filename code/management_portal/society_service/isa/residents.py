@@ -69,6 +69,8 @@ def create_resident(inv: Invocation) -> dict[str, Any]:
     account = inv.argument("account_id") or (role_account if provider == role_provider else "") or caller_account(inv, provider)
     if account:
         payload["backend_route_id"] = account
+    if inv.argument("account_id"):
+        role_settings["account_selection"] = "fixed"
     if inv.argument("settings") or role_settings:
         payload["runtime_settings"] = {**role_settings, **(inv.argument("settings") or {})}
     if inv.argument("workspace_paths"):
