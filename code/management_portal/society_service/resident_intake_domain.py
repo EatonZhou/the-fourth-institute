@@ -443,6 +443,7 @@ def _resident_quota_account_resolver(
                 runtime_options={
                     "provider_profile": provider_profile,
                 },
+                allow_unassigned=True,
             )
             account_id = str(account.get("account_id") or "").strip()
             resolved_route = str(account.get("backend_route_id") or "").strip()

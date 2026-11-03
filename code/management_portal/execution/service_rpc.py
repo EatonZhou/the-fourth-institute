@@ -100,6 +100,7 @@ def resolve_account(server: Any, params: dict[str, Any]) -> Any:
         required(params, "provider"),
         str(params.get("backend_route_id") or ""),
         params.get("runtime_options") or {},
+        allow_unassigned=params.get("allow_unassigned") is True,
     )
 
 

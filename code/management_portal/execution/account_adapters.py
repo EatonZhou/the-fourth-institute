@@ -11,7 +11,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from .accounts import ExecutionAccount
+from .accounts import DefaultAccountUnavailable, ExecutionAccount
 from .provider_catalog import AGENT_PROVIDERS
 
 LOGGER = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class CodexRoutes:
     def default_for_new_session(self):
         self._refresh()
         if not self.default_account_id:
-            raise ValueError("No enabled default Codex account")
+            raise DefaultAccountUnavailable("No enabled default Codex account")
         return self.get(self.default_account_id)
 
     def candidates(self, *, requested_account_id="", allow_fallback):
@@ -170,7 +170,7 @@ class CodexAccounts:
         if not default:
             try:
                 default = self.registry.default_for_new_session().account_id
-            except ValueError:
+            except DefaultAccountUnavailable:
                 pass
         return {
             "enabled": True,

@@ -251,8 +251,10 @@ class ExecutionService:
     def accounts(self, *, force_refresh: bool = False) -> dict[str, Any]:
         return self.client.request("accounts.list", {"force_refresh": force_refresh})
 
-    def resolve_account(self, provider: str, backend_route_id: str = "", *, runtime_options=None) -> dict[str, Any]:
-        return self.client.request("accounts.resolve", {"provider": provider, "backend_route_id": backend_route_id, "runtime_options": runtime_options or {}})
+    def resolve_account(self, provider: str, backend_route_id: str = "", *, runtime_options=None,
+                        allow_unassigned: bool = False) -> dict[str, Any]:
+        return self.client.request("accounts.resolve", {"provider": provider, "backend_route_id": backend_route_id,
+            "runtime_options": runtime_options or {}, "allow_unassigned": allow_unassigned})
 
     def configure_account_scheduler(
         self,

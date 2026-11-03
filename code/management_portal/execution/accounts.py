@@ -19,6 +19,10 @@ _BATCH = threading.local()
 LOGGER = logging.getLogger(__name__)
 
 
+class DefaultAccountUnavailable(ValueError):
+    """No default account is configured for an otherwise valid provider."""
+
+
 @dataclass(frozen=True)
 class ExecutionAccount:
     account_id: str
@@ -138,9 +142,15 @@ class ExecutionAccounts:
             "runtime_settings": definition.runtime_adapter().reconcile(definition, route, inherited_settings),
         }
 
-    def configuration(self, provider: str, route_id: str = "", options: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Public identity for native routes and registered completion profiles."""
-        account = self.resolve(provider, route_id, options)
+    def configuration(self, provider: str, route_id: str = "", options: dict[str, Any] | None = None,
+                      *, allow_unassigned: bool = False) -> dict[str, Any]:
+        """Public identity; read-only ownership may have no configured default."""
+        try:
+            account = self.resolve(provider, route_id, options)
+        except DefaultAccountUnavailable:
+            if not allow_unassigned or route_id:
+                raise
+            return {}
         if account is not None:
             from .account_registrations import registration
             row = registration(account.account_id)
