@@ -176,8 +176,9 @@ def test_paper_review_runs_as_portal_business_task(
         mock.patch.object(
             paper_reviews,
             "_all_papers",
-            return_value=[paper],
-        ),
+            side_effect=AssertionError('Review start must not enumerate the library'),
+        ) as library,
+        mock.patch.object(paper_reviews, '_paper_by_id', return_value=paper) as lookup,
         mock.patch.object(
             paper_reviews,
             "get_resource_service",
@@ -197,6 +198,13 @@ def test_paper_review_runs_as_portal_business_task(
         assert "runner" not in job
         assert "execution_id" not in job or not job["execution_id"]
         start.assert_called_once()
+        assert paper_reviews.start_review({'paper_id': paper['id']}, 'sample_admin')['job_id'] == job['job_id']
+        start.assert_called_once()
+        assert all(call.args == (paper['id'],) for call in lookup.call_args_list)
+        library.assert_not_called()
+        # Background generation may read related papers; HTTP admission cannot.
+        library.side_effect = None
+        library.return_value = [paper]
 
         with (
             mock.patch.object(

@@ -87,8 +87,7 @@ def start_review(payload: dict, actor: str) -> dict:
         if previous.get("created_by") == clean_actor:
             _settle_interrupted_review(previous)
     with LOCK:
-        papers = _all_papers()
-        paper = next((p for p in papers if p["id"] == paper_id), None)
+        paper = _paper_by_id(paper_id)
         if not paper:
             raise KeyError("paper not found")
         with paper_state_store.locked("review_jobs"):

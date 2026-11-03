@@ -240,7 +240,7 @@ Paper 页面以当前论文的正式产物查询为显示依据，不以“本�
 - 同一 Actor 与 Paper 已有 `queued` 或 `running` job 时，重复 create 返回原 job；旧 job 进入 `error` 后，下一次 create 才建立新 job。
 - Builder 在启动时分配 Review ID。Builder、最终 Markdown 和公开 Review Resource 投影始终使用同一个 ID。
 - HTTP create 会同步等待内部 business task。成功时直接返回长期 Review 对象；执行失败或等待超时时返回错误，不返回空对象伪装完成。
-- 页面采用非阻塞的 start/status 流程：start 返回原有活动任务或新建任务，页面保存 job_id 并查询状态，不占用一次请求等待完整生成。status 只读取任务，按当前 actor 与 Paper 查找最近运行；按 job_id 查询时校验创建者和可选 Paper ID，未知任务明确报错。刷新页面重新关联同一运行，不自动生成第二份评审。
+- 页面采用非阻塞的 start/status 流程：start 只按 ID 读取目标 Paper，返回原有活动任务或新建任务，不枚举、重新登记整个论文库；生成需要的相关论文读取在后台执行。页面保存 job_id 并查询状态，不占用一次请求等待完整生成。status 只读取任务，按当前 actor 与 Paper 查找最近运行；按 job_id 查询时校验创建者和可选 Paper ID，未知任务明确报错。刷新页面重新关联同一运行，不自动生成第二份评审。
 - Job 从 `queued`、`running` 进入 `done` 或 `error`。`done` 写 Review Markdown 和 `paper.reviews` 中的列表记录，并通知资源索引重新扫描评审；即使没有列表记录，Review adapter 仍能从持久文件发现它。
 - Job 在排队持久化时记录执行进程身份（host、boot ID、PID、启动时钟），用于判断重启中断，不能仅根据当前 Web 进程的线程列表判断。状态读取、同步等待与再次启动先核对该身份；确认原进程已退出或 PID 被复用后，在任务锁内重读当前状态。已保存的完整 Review 恢复为 done，否则置为明确的 interrupted/error，允许用户重新生成，不自动重复调用模型；不能证明进程已退出时保留现状。
 - Review job 关联共享 `paper:review` 角色的规范输入，review ID 只标识产物而不创建评审 Resident。绑定执行身份本身不承诺重启后自动续跑；删除按 `review_id` 移除长期 Markdown 和索引记录，不删除共享成员。
