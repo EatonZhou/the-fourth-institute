@@ -1,6 +1,6 @@
 """Static-only deployment preserves the URL-to-bytes cache contract.
 
-:module: web
+:module: platform.core
 :design: decision_f25266e5a0e7
 :importance: P1
 """
