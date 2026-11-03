@@ -70,7 +70,7 @@ scenarios:
       - "resource-access"
     steps:
       - "发布控制面保存带 commit 和 publication_id 的发布完成事实。"
-      - "Lineage 事件源沿游标消费并按显式 run_as 主体激活 Effect。"
+      - "Lineage 事件源沿游标消费；新自动事件以当前有效 Leader 为主体激活 Effect，已受理工作保留原身份并重新检查权限。"
       - "RunScript 从该 commit 读取地图与索引，读取当前 Design 并保存版本证据。"
       - "核对完成事件带报告状态，偏离交给架构成员；检查失败明确标 audit_failed。"
     evidence:
@@ -1729,7 +1729,7 @@ protocols:
       - "decision_538e155e1102"
       - "decision_4348ed990621"
       - "decision_4bc03b20c30f"
-    description: "投影应用通过宿主资源与五字段 focus 合同访问事实；反馈进入真实 Family 对话，修订号保证晚到响应不能覆盖新焦点。"
+    description: "投影应用通过宿主资源与五字段 focus 合同访问事实；反馈进入真实 Family 对话，修订号保证晚到响应不能覆盖新焦点。外部应用入口由当前修订的 external_links 声明，openExternal 仅传声明名称，经宿主纯文本确认后请求浏览器隔离新标签导航；隐藏、销毁或取消使确认失效，不转交 Portal 凭据、不代理目标请求，requested 回执不证明目标可用或业务成功。"
     example: "用户选当前模块 → 宿主发布五字段焦点 → 反馈附对象上下文进入 Family 门面 → 架构成员解释 → 门面回复；revision 较旧的响应丢弃。"
   - id: "lineage-events-effects"
     title: "Lineage 事件、Packet 与 Effect 协议"
