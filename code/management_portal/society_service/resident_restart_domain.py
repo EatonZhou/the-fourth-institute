@@ -1036,6 +1036,10 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
             return pending
         _check_unchanged_since_admission(current, restart)
         if restart.strategy == "preserve":
+            # Imported Residents may not have run yet. Establish their main
+            # Agent through the same owner as registration and execution before
+            # reading its effective context; existing traces stay intact.
+            resident_catalog.ensure_resident_agent(current, actor=restart.actor_id)
             request = replace(request, metadata={**request.metadata,
                 "fork_context_input": preservation.canonical_seed(current, restart.source_binding)})
 

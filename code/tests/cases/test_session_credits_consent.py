@@ -181,6 +181,32 @@ def test_paid_new_session_without_source_uses_candidate_not_lazy_configuration(m
         assert operations[0]["step"]["quota_override"]["credits_scope"]["execution_id"] == result["execution_id"]
 
 
+def test_paid_preserving_session_establishes_imported_residents_main_agent(monkeypatch, isolated_portal_case):
+    from management_portal.society_service import resident_record_domain
+
+    with isolated_portal_case():
+        record, operations, _ = _restart_domain(monkeypatch)
+        record['resident_id'] = 'resident_bbbbbbbbbbbb'
+        monkeypatch.setattr(resident_record_domain, 'resolve_resident_runtime_target',
+                            lambda *_args, **_kwargs: SimpleNamespace(resident_id=record['resident_id'], record=record))
+        monkeypatch.setattr(resident_backend, 'session_record', lambda *_args, **_kwargs: {})
+        monkeypatch.setattr(execution_port, 'health', lambda: {'scheduler': {'capacity_partitions': {
+            'codex:one': {'quota_reserve': paid_quota()}}}})
+        store = AgentDataStore()
+        assert not store.agent(record['resident_id'])
+        body = {'target_provider': 'codex', 'target_account': 'one', 'context_strategy': 'preserve',
+                'idempotency_key': 'imported-paid', 'credits_consent': {'account_id': 'one', 'confirmed': True}}
+        result = resident_domain.restart_resident_session(record['resident_id'], 'alice', body)
+        assert result['status'] == 'accepted'
+        agent = store.agent(record['resident_id'])
+        assert agent['sequence_kind'] == 'agent_trace' and agent['parent_agent_id'] is None
+        seed = operations[0]['step']['request']['metadata']['fork_context_input']
+        assert seed['empty_context'] is True and seed['segments'] == []
+        assert operations[0]['operation'] == 'create' and operations[0]['prompt'] == ''
+        assert resident_domain.restart_resident_session(record['resident_id'], 'alice', body) == result
+        assert len(operations) == 1 and store.agent(record['resident_id']) == agent
+
+
 def test_family_cannot_copy_session_consent_and_supervision_uses_scheduler(monkeypatch):
     from management_portal.society_service import family_quota, resident_record_domain
     facade = {"resident_id": "resident_aaaaaaaaaaaa", "quota_reserve_override": {
