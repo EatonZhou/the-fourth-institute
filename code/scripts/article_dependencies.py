@@ -17,6 +17,7 @@ import urllib.request
 
 from management_common.process_runtime import run_process
 from management_common.native_output import run_native_capture
+from management_common.tex_tool_paths import tinytex_root, tinytex_bin_dirs, tool_home
 
 VERSION = '2026.10'
 ASSETS = {
@@ -24,7 +25,7 @@ ASSETS = {
     ('Linux', 'aarch64'): ('linux-arm64', '1bc5465c7a7c6f13e13c1b54a52147577eb3f389033af0444bc097698eb6653f'),
     ('Darwin', 'x86_64'): ('darwin', 'e40c294efae81026d8cc8d12c09d2dd456d268efe7fe092410478bc1973fd40f'),
     ('Darwin', 'aarch64'): ('darwin', 'e40c294efae81026d8cc8d12c09d2dd456d268efe7fe092410478bc1973fd40f'),
-    ('Windows', 'x86_64'): ('tar', '79d52d94ec844a82ca50e18a8394bfc4ab2316ca5a406632aee38c72907e639c'),
+    ('Windows', 'x86_64'): ('windows', '36c329c644683d981a668419d13c8804696e2816ae4d287ad755788fee231a31'),
 }
 PACKAGES = ('latexmk', 'synctex', 'ctex', 'fandol', 'geometry', 'amsmath', 'amsfonts',
             'amscls', 'mathtools', 'booktabs', 'tools', 'graphics', 'grfext', 'xcolor', 'pgf',
@@ -39,8 +40,8 @@ TEX_FILES = ('ctexbook.cls', 'geometry.sty', 'amsmath.sty', 'amssymb.sty', 'amst
 
 
 def tool_environment(home=None):
-    home = Path(home or os.environ.get('ARTICLE_TOOL_HOME') or Path.home())
-    bins = [home / '.local/bin', *sorted((home / '.TinyTeX/bin').glob('*'))]
+    home = tool_home(home)
+    bins = [home / '.local/bin', *tinytex_bin_dirs(home)]
     return {**os.environ, 'PATH': os.pathsep.join([*map(str, bins), os.environ.get('PATH', '')])}
 
 
@@ -76,15 +77,15 @@ def prepare_tex(home):
     if not asset:
         raise RuntimeError('No native TinyTeX preparation for this platform/architecture; provide a verified native TeX installation')
     flavor, expected = asset
-    extension = 'gz' if flavor == 'tar' else 'tar.xz'
+    extension = 'exe' if flavor == 'windows' else 'tar.xz'
     filename = f'TinyTeX-1-{flavor}-v{VERSION}.{extension}'
     url = f'https://github.com/rstudio/tinytex-releases/releases/download/v{VERSION}/{filename}'
-    destination = home / '.TinyTeX'
+    destination = tinytex_root(home)
     if not destination.exists():
         home.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix='.tex-prepare-', dir=home) as temporary:
             directory = Path(temporary)
-            archive = directory / 'download'
+            archive = directory / ('download.exe' if flavor == 'windows' else 'download')
             checksum, size = hashlib.sha256(), 0
             with urllib.request.urlopen(url, timeout=180) as response, archive.open('wb') as output:
                 while chunk := response.read(1024 * 1024):
@@ -96,17 +97,25 @@ def prepare_tex(home):
             if checksum.hexdigest() != expected:
                 raise ValueError('TinyTeX archive checksum mismatch')
             unpacked = directory / 'unpacked'
-            with tarfile.open(archive) as bundle:
-                if sum(member.size for member in bundle.getmembers()) > 2 * 1024**3:
-                    raise ValueError('TinyTeX extracted size exceeds limit')
-                bundle.extractall(unpacked, filter='data')
+            if flavor == 'windows':
+                # Upstream's checksum-verified Windows asset is a 7-Zip SFX;
+                # its tar.gz asset contains Linux binaries.
+                run_process([str(archive), '-o' + str(unpacked), '-y'], check=True, timeout=300)
+            else:
+                with tarfile.open(archive) as bundle:
+                    if sum(member.size for member in bundle.getmembers()) > 2 * 1024**3:
+                        raise ValueError('TinyTeX extracted size exceeds limit')
+                    bundle.extractall(unpacked, filter='data')
             roots = list(unpacked.iterdir())
             if len(roots) != 1 or not (roots[0] / 'bin').is_dir():
                 raise ValueError('Unexpected TinyTeX layout')
+            if flavor == 'windows' and not (roots[0] / 'bin/windows/tlmgr.bat').is_file():
+                raise ValueError('TinyTeX archive has no native Windows tools')
+            destination.parent.mkdir(parents=True, exist_ok=True)
             roots[0].rename(destination)
     env = tool_environment(home)
     # Restrict mutation to our own distribution, even when PATH has system TeX.
-    local_path = os.pathsep.join(str(p) for p in (destination / 'bin').glob('*'))
+    local_path = os.pathsep.join(map(str, tinytex_bin_dirs(home)))
     tlmgr = shutil.which('tlmgr', path=local_path)
     if not tlmgr:
         raise RuntimeError('Private TinyTeX is incomplete; no native tlmgr')

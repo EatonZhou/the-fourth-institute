@@ -9,28 +9,13 @@ import os
 import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
-
-
-def _tinytex_bin_dirs() -> tuple[Path, ...]:
-    # Installed tools only; custom TeX installations continue to use PATH.
-    home = Path.home()
-    if sys.platform == "win32":
-        root = Path(os.environ.get("APPDATA") or home / "AppData" / "Roaming") / "TinyTeX"
-    elif sys.platform == "darwin":
-        root = home / "Library" / "TinyTeX"
-    else:
-        root = home / ".TinyTeX"
-    return tuple(sorted(path for path in (root / "bin").glob("*") if path.is_dir()))
-
-
-TEX_BIN_DIRS = _tinytex_bin_dirs()
+from management_common.tex_tool_paths import tinytex_bin_dirs
 
 
 def _tex_search_path() -> str:
-    return os.pathsep.join([*(str(item) for item in TEX_BIN_DIRS if item.is_dir()), os.environ.get("PATH", "")])
+    return os.pathsep.join([*map(str, tinytex_bin_dirs()), os.environ.get("PATH", "")])
 
 
 def _tex_which(name: str) -> str | None:

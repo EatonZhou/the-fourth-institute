@@ -84,7 +84,8 @@ def install():
     if not synctex and os.environ.get('ARTICLE_TINYTEX_BIN'):
         synctex = shutil.which('synctex', path=os.environ['ARTICLE_TINYTEX_BIN'])
     if not synctex:
-        for directory in (tool_home / '.TinyTeX/bin').glob('*'):
+        from management_common.tex_tool_paths import tinytex_bin_dirs
+        for directory in tinytex_bin_dirs(tool_home):
             synctex = shutil.which('synctex', path=str(directory))
             if synctex:
                 break

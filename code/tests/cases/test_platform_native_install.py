@@ -97,3 +97,54 @@ def test_verified_native_executable_replaces_previous_install(tmp_path, monkeypa
     assert article.install() == target
     assert target.read_bytes() == b'verified fixture executable'
     assert list(bin_dir.iterdir()) == [target]
+
+
+def test_windows_tex_preparation_uses_native_sfx_and_runtime_discovery_root(tmp_path, monkeypatch):
+    from scripts import article_dependencies as tex
+    from management_common import tex_tool_paths
+    from management_portal import article_toolchain
+
+    monkeypatch.setattr(tex.platform, 'system', lambda: 'Windows')
+    monkeypatch.setattr(tex.platform, 'machine', lambda: 'AMD64')
+    monkeypatch.setattr(tex_tool_paths.sys, 'platform', 'win32')
+    monkeypatch.setenv('ARTICLE_TOOL_HOME', str(tmp_path))
+    payload = b'MZ pinned native installer fixture'
+    flavor, digest = tex.ASSETS[('Windows', 'x86_64')]
+    assert flavor == 'windows' and digest == '36c329c644683d981a668419d13c8804696e2816ae4d287ad755788fee231a31'
+    monkeypatch.setitem(tex.ASSETS, ('Windows', 'x86_64'), (flavor, hashlib.sha256(payload).hexdigest()))
+    urls, commands = [], []
+    def download(url, **kwargs):
+        urls.append(url)
+        assert url.endswith('/TinyTeX-1-windows-v2026.10.exe')
+        return io.BytesIO(payload)
+    def process(command, **kwargs):
+        commands.append(command)
+        if command[0].endswith('download.exe'):
+            assert Path(command[0]).read_bytes() == payload
+            native = Path(command[1][2:]) / 'TinyTeX/bin/windows'
+            native.mkdir(parents=True)
+            (native / 'tlmgr.bat').write_text('native fixture')
+        return SimpleNamespace(returncode=0)
+    monkeypatch.setattr(tex.urllib.request, 'urlopen', download)
+    monkeypatch.setattr(tex, 'run_process', process)
+    monkeypatch.setattr(tex, 'run_native_capture', lambda *_a, **_kw: SimpleNamespace(stdout='latexmk,1'))
+    root = tex_tool_paths.tinytex_root(tmp_path)
+    monkeypatch.setattr(tex.shutil, 'which', lambda *_a, **_kw: str(root / 'bin/windows/tlmgr.bat'))
+    assert tex_tool_paths.tinytex_bin_dirs() == ()
+    environment = tex.prepare_tex(tmp_path)
+    native = root / 'bin/windows'
+    assert root == tmp_path / 'AppData/Roaming/TinyTeX'
+    assert str(native) in environment['PATH'] and str(native) in article_toolchain._tex_search_path()
+    assert (root / 'tfi-dependencies.json').is_file()
+    assert len(urls) == 1 and commands[0][-1] == '-y'
+    assert not (tmp_path / '.TinyTeX').exists()
+
+
+def test_windows_tex_checksum_failure_never_executes_asset(tmp_path, monkeypatch):
+    from scripts import article_dependencies as tex
+    monkeypatch.setattr(tex.platform, 'system', lambda: 'Windows')
+    monkeypatch.setattr(tex.platform, 'machine', lambda: 'AMD64')
+    monkeypatch.setattr(tex.urllib.request, 'urlopen', lambda *_a, **_kw: io.BytesIO(b'changed executable'))
+    monkeypatch.setattr(tex, 'run_process', lambda *_a, **_kw: pytest.fail('unverified executable ran'))
+    with pytest.raises(ValueError, match='checksum mismatch'):
+        tex.prepare_tex(tmp_path)

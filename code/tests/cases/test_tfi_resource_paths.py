@@ -61,9 +61,8 @@ def test_tool_defaults_follow_user_home(isolated,monkeypatch):
     from management_portal import article_toolchain
     importlib.reload(rid);importlib.reload(repo);importlib.reload(article_toolchain)
     assert rid.DEFAULT_SSH_KEY_ROOT==repo._SSH_KEY_ROOT==home/'.ssh'
-    assert all(str(p).startswith(str(home)) for p in article_toolchain.TEX_BIN_DIRS)
+    assert all(str(p).startswith(str(home)) for p in article_toolchain.tinytex_bin_dirs())
     tiny=home/'.TinyTeX/bin/x86_64-linux';tiny.mkdir(parents=True)
-    importlib.reload(article_toolchain)
     assert str(tiny) in article_toolchain._tex_search_path().split(':')
     executable=put(home/'.local/bin/texlab','#!/bin/sh\n');executable.chmod(0o700)
     monkeypatch.setenv('PATH', str(home/'empty-bin'))

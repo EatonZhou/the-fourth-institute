@@ -269,12 +269,14 @@ def test_project_native_mount_blocks_rename_without_proc(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize("platform,relative", [("linux", ".TinyTeX/bin/aarch64-linux"), ("darwin", "Library/TinyTeX/bin/universal-darwin"), ("win32", "AppData/Roaming/TinyTeX/bin/windows")])
 def test_tex_lookup_uses_installed_user_platform_directory(tmp_path, monkeypatch, platform, relative):
+    from management_common import tex_tool_paths
     tools = tmp_path / relative
     tools.mkdir(parents=True)
-    monkeypatch.setattr(article_toolchain.sys, "platform", platform)
+    monkeypatch.setattr(tex_tool_paths.sys, "platform", platform)
     monkeypatch.setattr(article_toolchain.Path, "home", lambda: tmp_path)
     monkeypatch.delenv("APPDATA", raising=False)
-    assert article_toolchain._tinytex_bin_dirs() == (tools,)
+    assert tex_tool_paths.tinytex_bin_dirs() == (tools,)
+    assert str(tools) in article_toolchain._tex_search_path()
 
 
 @pytest.mark.parametrize("deny", [False, True])
