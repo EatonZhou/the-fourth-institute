@@ -9,6 +9,8 @@
 
 截图、原始响应、耗时与因果线索都是报告材料。缺材料不改变结果，不要求完整计时或因果链。可以补记并注明补记时间和来源。保留已有事实，观察不到的写“未记录”；不要为了交齐材料反复跑整个用例。
 
+业务流程和本例清理完成后，及时交付自然语言与结构化使用报告，引用已有可用材料即可。框架会保留原始输出和观察记录；不要求额外生成 ZIP、材料索引、完整性校验或新截图，不为整理这些可选材料推迟交付报告。
+
 发布、重启及短暂网络中断是正常运行情况。等待一会或刷新后继续，记录恢复过程；只有恢复后仍卡死、丢数据或需要人工处理才记产品问题。模型没有按步骤操作归执行偏差；辅助工具报错归工具问题，修好工具后继续；步骤与设计不符归用例问题并修改正文。缺权限或账号不可用时说明流程停在哪，不冒充其他身份。
 
 输出采用 PORTAL_TAU_RESULT: 后跟 JSON，对象平铺包含 status:"reported"、summary、evidence，以及 process{status:completed|blocked|not_started,steps,stopped_at,reason}、issues[{category:product|case|tool|execution,severity:blocking|impact|minor,symptom,step,evidence}]、performance 数组和 evidence_gaps 数组。process.status 描述用户流程是否走完，reported 表示已交使用报告；它们都不是由证据完整性决定的通过或失败。
