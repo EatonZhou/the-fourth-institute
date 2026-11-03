@@ -1,5 +1,5 @@
 {
-  "request": "20261103.1-et-macbook-r1",
-  "purpose": "Build current main with account onboarding, session recovery, authorization and native lifecycle fixes for ET MacBook data-preserving upgrade. Run native package acceptance. No GitHub Release.",
+  "request": "20261103.2-et-macbook-unified-source",
+  "purpose": "Build unified main including registration fixes for ET MacBook. Replace the previous two-file hotfix with a complete verified package using the data-preserving upgrade. No per-Mac source patches and no GitHub Release.",
   "delivery": "Actions artifacts only; no GitHub Release"
 }
