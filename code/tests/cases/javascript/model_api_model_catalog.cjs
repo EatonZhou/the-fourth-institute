@@ -39,6 +39,11 @@ const chooseEffort = (row, value) => {
   const input = [...row.querySelectorAll('.backendModelEfforts input')].find(input => input.value === value);
   assert(input, value); input.click();
 };
+const removeEffort = (row, value) => {
+  const control = [...row.querySelectorAll('button')].find(button => button.getAttribute('aria-label') === `移除推理强度 ${value}`);
+  assert(control, `custom effort ${value} can be removed`); control.click();
+  assert(![...row.querySelectorAll('.backendModelEfforts input')].some(input => input.value === value));
+};
 const customEffort = row => row.querySelector('input[name^=model_effort_]');
 const edit = () => {click('编辑'); return window.document.querySelector('dialog form');};
 const refresh = async () => {click('刷新', window.document.querySelector('[data-backend-section=apis]')); await flush();};
@@ -62,6 +67,11 @@ const refresh = async () => {click('刷新', window.document.querySelector('[dat
   customEffort(rows()[0]).dispatchEvent(new window.KeyboardEvent('keydown', {key: 'Enter', cancelable: true}));
   assert.equal(count('CreateModelApi'), 0, 'Enter adds a reasoning effort without submitting the API');
   assert.equal(customEffort(rows()[0]).value, '');
+  removeEffort(rows()[0], 'ultra');
+  assert.equal(window.document.activeElement, customEffort(rows()[0]), 'removal keeps keyboard focus in the effort editor');
+  assert.equal(count('CreateModelApi'), 0, 'removing an effort does not submit the API');
+  customEffort(rows()[0]).value = 'ultra'; click('添加推理强度', rows()[0]);
+  assert(rows()[0].querySelector('input[value=ultra]').checked, 'a removed effort can be added again');
   click('添加模型');
   assert.equal(window.document.activeElement, modelId(rows()[1]), 'the new model is ready to type');
   setModel(rows()[1], 'example-model');
@@ -82,6 +92,20 @@ const refresh = async () => {click('刷新', window.document.querySelector('[dat
   assert(rows()[0].querySelector('input[value=ultra]').checked, 'custom reasoning efforts survive editing');
   submit(form); await flush();
   assert(!('models' in last('UpdateModelApi').changes), 'an unchanged list is not resent');
+
+  form = edit();
+  removeEffort(rows()[0], 'ultra');
+  chooseEffort(rows()[0], 'low'); chooseEffort(rows()[0], 'high');
+  submit(form); await flush();
+  assert.deepEqual(last('UpdateModelApi').changes.models, [{id: 'example-model', reasoning_efforts: []}, {id: 'example-mini'}], 'all reasoning efforts can be removed');
+  form = edit();
+  assert(!rows()[0].querySelector('input[value=ultra]'), 'deleted custom efforts stay deleted after saving and reopening');
+  assert(!rows()[0].querySelector('input[value=low]').checked, 'unchecked presets are not saved as supported');
+  assert(!rows()[0].querySelector('input[value=high]').checked);
+  customEffort(rows()[0]).value = 'ultra'; click('添加推理强度', rows()[0]);
+  chooseEffort(rows()[0], 'low'); chooseEffort(rows()[0], 'high');
+  submit(form); await flush();
+  assert.deepEqual(last('UpdateModelApi').changes.models, catalog, 'efforts can be restored after a saved deletion');
 
   form = edit(); defaultChoice(rows()[0]).click();
   submit(form); await flush();

@@ -83,17 +83,26 @@ function modelCatalog(host, api) {
     const enabled = field(options, "启用模型", `model_enabled_${key}`, "", {type: "checkbox"});
     enabled.checked = entry.enabled !== false;
     const efforts = node("fieldset", undefined, {class: "backendModelReasoning"});
-    efforts.append(node("legend", t("支持的推理强度")), node("p", t("只勾选服务商支持的值；不支持推理强度时留空。"), {class: "backendHint"}));
+    efforts.append(node("legend", t("支持的推理强度")), node("p", t("只勾选服务商支持的值；不支持时留空。取消勾选可移除，自定义值也可点 × 删除。"), {class: "backendHint"}));
     const choices = node("div", undefined, {class: "backendModelEfforts"});
     const controls = new Map();
+    const presets = ["low", "medium", "high"];
     const addEffort = (value, checked) => {
       if (!controls.has(value)) {
+        const chip = node("span", undefined, {class: "backendModelEffort"});
         const label = node("label");
         const input = node("input", undefined, {type: "checkbox", value}); input.checked = checked;
-        label.append(input, node("span", value)); choices.append(label); controls.set(value, input);
+        label.append(input, node("span", value)); chip.append(label);
+        if (!presets.includes(value)) {
+          const title = t("移除推理强度 {p0}", {p0: value});
+          const removeEffort = node("button", "×", {type: "button", class: "portalButton is-compact backendModelEffortRemove", "aria-label": title, title});
+          removeEffort.addEventListener("click", () => { controls.delete(value); chip.remove(); effort.focus(); });
+          chip.append(removeEffort);
+        }
+        choices.append(chip); controls.set(value, input);
       } else if (checked) controls.get(value).checked = true;
     };
-    for (const value of new Set(["low", "medium", "high", ...(entry.reasoning_efforts || [])])) {
+    for (const value of new Set([...presets, ...(entry.reasoning_efforts || [])])) {
       addEffort(value, (entry.reasoning_efforts || []).includes(value));
     }
     const custom = node("div", undefined, {class: "backendModelCustomEffort"});

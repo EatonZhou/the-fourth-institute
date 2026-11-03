@@ -548,9 +548,13 @@
     "zh-CN": "支持的推理强度",
     "en": "Supported reasoning efforts"
   },
-  "只勾选服务商支持的值；不支持推理强度时留空。": {
-    "zh-CN": "只勾选服务商支持的值；不支持推理强度时留空。",
-    "en": "Select only the values your provider supports. Leave empty if reasoning effort is not supported."
+  "只勾选服务商支持的值；不支持时留空。取消勾选可移除，自定义值也可点 × 删除。": {
+    "zh-CN": "只勾选服务商支持的值；不支持时留空。取消勾选可移除，自定义值也可点 × 删除。",
+    "en": "Select only supported values; leave empty if unsupported. Uncheck to remove a value, or use × to delete a custom value."
+  },
+  "移除推理强度 {p0}": {
+    "zh-CN": "移除推理强度 {p0}",
+    "en": "Remove reasoning effort {p0}"
   },
   "其他推理强度": {
     "zh-CN": "其他推理强度",
