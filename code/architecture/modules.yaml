@@ -1125,12 +1125,13 @@ modules:
   - id: "delivery.services"
     title: "发布与服务生命周期控制"
     parent: "delivery"
-    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；读取与校验实例清单，维护本机实例登记、实例创建、启停、代码更新与退役，以及代码旁依赖的准备；Windows 安装打包入口组装程序、种子与按摘要核验的原生依赖，运行库安装属于该交付职责；通过显式迁移脚本转换已声明的持久化版本，数据结构契约由相应领域拥有。"
+    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；读取与校验实例清单，维护本机实例登记、实例创建、启停、代码更新与退役，以及代码旁依赖的准备；Windows 与 macOS 安装打包入口组装程序、种子与按摘要核验的原生依赖，运行库安装属于该交付职责；通过显式迁移脚本转换已声明的持久化版本，数据结构契约由相应领域拥有。"
     instruction_owners: []
     code_paths:
       - "scripts/tfi_dev.py"
       - "scripts/tfi_windows_uninstall.py"
       - "scripts/windows"
+      - "scripts/macos"
       - "scripts/tfi_development_runtime.py"
       - "management_portal/runtime_status.py"
       - "management_portal/directory_maintenance.py"
@@ -1227,6 +1228,7 @@ modules:
     instruction_owners: []
     code_paths:
       - "management_portal/test_framework"
+      - "scripts/check_tau_samples.py"
       - "tests/cases"
       - "management_portal/workbench_projections/development_app/tests"
       - "package.json"
