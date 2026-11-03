@@ -317,6 +317,17 @@ class AgentContexts:
         self.executions = executions
         self.chat = chat
 
+    def binding_has_context(self, binding_id: str, *, agent_id: str) -> bool:
+        """A received prefix or accepted input establishes this Agent's current Session context."""
+        with self.database.snapshot() as connection:
+            return connection.execute(
+                "SELECT 1 FROM provider_bindings binding JOIN agent_operations operation "
+                "ON operation.session_ref=binding.provider_session_ref "
+                "WHERE binding.binding_id=%s AND operation.agent_id=%s "
+                "AND operation.kind IN ('input_accepted','context_received') LIMIT 1",
+                (binding_id, agent_id),
+            ).fetchone() is not None
+
     def agent_context_snapshot(self, agent_id: str, *, before_message_id: str = "", through_message_id: str = "", through_turn_id: str = "", provider_session_ref: str = "") -> dict[str, Any]:
         """The Agent's own effective window, including a Fork with no session yet.
 

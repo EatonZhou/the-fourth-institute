@@ -332,6 +332,9 @@ class AgentDataStore:
     def binding_has_accepted_input(self, binding_id: str, *, agent_id: str) -> bool:
         return self.executions.binding_has_accepted_input(binding_id, agent_id=agent_id)
 
+    def binding_has_context(self, binding_id: str, *, agent_id: str) -> bool:
+        return self.contexts.binding_has_context(binding_id, agent_id=agent_id)
+
     def running_executions(self) -> list[dict[str, Any]]:
         return self.executions.running_executions()
 

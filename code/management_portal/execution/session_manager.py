@@ -58,6 +58,9 @@ class SessionManager:
     def has_accepted_input(self, binding_id: str, *, agent_id: str) -> bool:
         return self.agent_data.binding_has_accepted_input(binding_id, agent_id=agent_id)
 
+    def has_context(self, binding_id: str, *, agent_id: str) -> bool:
+        return self.agent_data.binding_has_context(binding_id, agent_id=agent_id)
+
 
     def bind_session(
         self,

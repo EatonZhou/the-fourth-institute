@@ -1912,7 +1912,7 @@ def _portable_context_execution(
             "压缩继承上下文尚未准备完成；不能回退为完整上下文投递"
         )
     resident_id = resident_domain_common.record_resident_id(record)
-    accepted = _initial_context_compaction_completed(record) or execution_port.sessions().has_accepted_input(
+    accepted = _initial_context_compaction_completed(record) or execution_port.sessions().has_context(
         resident_backend.execution_binding_id(record), agent_id=resident_id,
     )
     prompt_job = dict(job)

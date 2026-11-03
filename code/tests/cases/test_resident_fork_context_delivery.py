@@ -944,6 +944,52 @@ def test_queued_followup_does_not_repeat_initial_context(future_creation_store, 
     assert 'fork_context_input' not in sent
 
 
+def test_preserved_session_first_input_does_not_reimport_older_provider_history(future_creation_store):
+    """A native-preserved Session already contains its selected context before its first new input."""
+    record = resident_domain.register_resident(_new_session_payload('Preserved session'), 'sample_admin')
+    record = _activate_created_resident(record['resident_id'])
+    store = get_agent_data_store()
+    rid = record['resident_id']
+    for sid, content in [('older-dsh', [{'type': 'tool-removal', 'toolName': 'subagent'}]),
+                         ('handoff-summary', 'The selected handoff knows blue=17.')]:
+        store.put_segment(segment_id=sid, segment_type='input', content=content,
+                          created_by_agent_id=rid, created_by_actor_ref='sample_admin',
+                          metadata={'role': 'user'})
+        store.append_agent_segments(rid, [sid], actor_ref='sample_admin')
+    binding = resident_backend.session_record(record)
+    store.record_context_received(rid, binding['provider_session_ref'], ['handoff-summary'], actor_ref='sample_admin')
+    assert not execution_port.sessions().has_accepted_input(resident_backend.execution_binding_id(record), agent_id=rid)
+    prepared = resident_execution_domain._portable_context_execution(record, {
+        'actor': 'sample_admin', 'raw_message': 'What is blue?',
+        'fork_context_input': {'segments': [{'segment_id': 'older-dsh'}]},
+    })
+    assert 'fork_context_input' not in prepared
+    assert 'What is blue?' in prepared['actual_sent_prompt']
+
+
+def test_received_context_is_specific_to_agent_and_current_session(future_creation_store):
+    record = resident_domain.register_resident(_new_session_payload('Context scope'), 'sample_admin')
+    record = _activate_created_resident(record['resident_id'])
+    rid = record['resident_id']
+    store = get_agent_data_store()
+    sessions = execution_port.sessions()
+    binding = resident_backend.execution_binding_id(record)
+    assert not sessions.has_context(binding, agent_id=rid)
+    store.put_segment(segment_id='context-scope', segment_type='input', content='selected prefix',
+                      created_by_agent_id=rid, created_by_actor_ref='sample_admin')
+    store.append_agent_segments(rid, ['context-scope'], actor_ref='sample_admin')
+    store.record_context_received(rid, sessions.provider_binding(binding)['provider_session_ref'],
+                                  ['context-scope'], actor_ref='sample_admin')
+    assert sessions.has_context(binding, agent_id=rid)
+    assert not sessions.has_accepted_input(binding, agent_id=rid)
+    assert not sessions.has_context(binding, agent_id='resident_bbbbbbbbbbbb')
+    assert not sessions.has_context('resident:unbound', agent_id=rid)
+    sessions.bind_session('session-restart:context-scope', provider='codex', backend_route_id='one',
+                          backend_session_id='01a00000-0000-7000-8000-000000000935')
+    sessions.replace_session(binding, 'session-restart:context-scope')
+    assert not sessions.has_context(binding, agent_id=rid)
+
+
 @pytest.mark.parametrize('count', [5, 10])
 def test_recent_fork_uses_effective_provider_turns_with_tools(future_creation_store, monkeypatch, count):
     """最近 5 或 10 轮 fork 按实际 Provider 轮次保留回复和工具结果"""
