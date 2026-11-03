@@ -90,4 +90,63 @@ async function scenario(browser, patched) {
     return {patched,status:'passed',post_tombstone_http_404s:failures.length,late_response:late,permission_recovery:true,unrelated_target_preserved:true,formal_acceptance:false,scope:'isolated native Store/Projection/Service with HTTP fixtures; not original BA replay or state-batch remediation'};
   } finally {await context.close();await new Promise(r=>server.close(r));}
 }
-(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{for(const patched of (process.env.TAU_COMPARE_BASELINE ? [false,true] : [true]))console.log(JSON.stringify(await scenario(browser,patched)));}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
+async function deletedPin(browser, source) {
+  let omitted = false, unavailable = false, targetReads = 0;
+  const older = 'resident_333333333333', targetIds = [];
+  const entry = id => ({ key: `resident:${id}`, resident_id: id, kind: 'resident-main', pinned: true,
+    updated_at: '2026-11-03T00:00:00Z', read_revision: 1, cursor: 1 });
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url, 'http://localhost');
+    const reply = (status, data) => {res.writeHead(status, {'content-type':'application/json'});res.end(JSON.stringify(data));};
+    if (url.pathname !== '/api/agent-conversations') {res.end('<title>Deleted pin</title>');return;}
+    const id = url.searchParams.get('resident');
+    if (!id) return reply(200, {paged:true, entries:omitted ? [entry(other)] : [entry(rid),entry(other),{...entry(older),pinned:false}],
+      ready:true, read_revision:1, content_signature:omitted ? 'removed' : 'present'});
+    targetReads++;
+    targetIds.push(id);
+    if (unavailable) return reply(503, {error:'temporarily unavailable'});
+    reply(200, {resident_id:id, target_state:'deleted', target_present:false, entries:[],
+      resident_cursor:2, projection_cursor:2, read_revision:1, ready:true});
+  });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const context = await browser.newContext(), page = await context.newPage();
+  page.setDefaultTimeout(5000);
+  try {
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.evaluate(() => {
+      window.PortalI18n={t:x=>x,message:x=>x,requestLanguage:()=> 'en'};
+      window.PortalIdentity={username:()=> 'fixture'};
+      window.PortalCompatibility={identifier:x=>`pin-fixture:${x}`};
+      window.PortalEvents={isConnected:()=>true,connect(){},watchResident:()=>()=>{}};
+    });
+    for (const name of ['portal_state.js','portal_text.js','portal_ui_primitives.js','portal_api.js',
+      'portal_instruction_client.js','portal_resident_service.js','resident_projection.js','resident_protocol.js',
+      'portal_refresh_coordinator.js','portal_conversation_store.js']) {
+      await page.addScriptTag({path:path.join(code,'management_portal/static',name)});
+    }
+    await page.evaluate(()=>PortalConversationStore.refresh());
+    assert.equal(await page.evaluate(rid=>!!PortalConversationStore.entry(`resident:${rid}`),rid),true);
+    if (source === 'event') {
+      await page.evaluate(rid=>window.dispatchEvent(new CustomEvent('portal:change',
+        {detail:{resident_changes:{[rid]:['deleted','identity']}}})),rid);
+    } else {
+      omitted=true;unavailable=true;
+      await page.evaluate(()=>PortalConversationStore.refresh({force:true}));
+      const deadline=Date.now()+3000;
+      while (!targetReads && Date.now()<deadline) await new Promise(r=>setTimeout(r,10));
+      assert.ok(targetReads, 'an absent pin must be verified against its target authority');
+      assert.equal(await page.evaluate(rid=>!!PortalConversationStore.entry(`resident:${rid}`),rid),true,
+        'a failed verification must preserve the pin');
+      unavailable=false;
+      await page.evaluate(()=>PortalConversationStore.refresh({force:true}));
+    }
+    await page.waitForFunction(rid=>!PortalConversationStore.entry(`resident:${rid}`),rid);
+    assert.equal(await page.evaluate(other=>!!PortalConversationStore.entry(`resident:${other}`),other),true);
+    assert.equal(await page.evaluate(older=>!!PortalConversationStore.entry(`resident:${older}`),older),true,
+      'an ordinary entry from an older page must survive a head refresh');
+    assert.ok(targetIds.every(id=>id===rid));
+    if (source === 'event') assert.equal(targetReads,0,'a deletion notification needs no probe');
+    return {source,status:'passed',unrelated_pin_preserved:true,transient_error_preserves_pin:source==='head'};
+  } finally {await context.close();await new Promise(r=>server.close(r));}
+}
+(async()=>{const browser=await chromium.launch({headless:true,args:['--no-sandbox']});try{for(const patched of (process.env.TAU_COMPARE_BASELINE ? [false,true] : [true]))console.log(JSON.stringify(await scenario(browser,patched)));for(const source of ['event','head'])console.log(JSON.stringify(await deletedPin(browser,source)));}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -520,6 +520,20 @@
     for (const item of pageEntries) state.unverifiedResidentIds.delete(String(item?.resident_id || ""));
     if (options.authoritativeRemoval === true) state.unverifiedResidentIds.clear();
     else for (const residentId of state.unverifiedResidentIds) protectedResidentIds.add(residentId);
+    // Every pin belongs on the head page. An absent pin needs a targeted
+    // authority read; omission alone cannot distinguish deletion from a
+    // temporary source failure. Keep ordinary entries from older pages.
+    if (paged && !options.advancePage && !payload?.error && options.authoritativeRemoval !== true) {
+      const headKeys = new Set(pageEntries.map(item => String(item?.key || "")));
+      for (const item of state.entries) {
+        const residentId = String(item?.resident_id || "");
+        if (residentId && PAGED_KINDS.has(item?.kind) && readState(item).pinned
+          && !headKeys.has(String(item?.key || ""))) {
+          protectedResidentIds.add(residentId);
+          noteTargetRead(residentId, "missing_head_pin");
+        }
+      }
+    }
     const incoming = protectedResidentIds.size
       ? sortEntries([
         ...projected.filter(item => !protectedResidentIds.has(String(item?.resident_id || ""))),
@@ -974,7 +988,12 @@
   function handleResidentProjectionChanges(changes) {
     if (!changes || typeof changes !== "object") return;
     for (const [residentId, scopes] of Object.entries(changes)) {
-      if (!Array.isArray(scopes) || !scopes.includes("projection")) continue;
+      if (!Array.isArray(scopes)) continue;
+      if (scopes.includes("deleted")) {
+        discardResident(residentId);
+        continue;
+      }
+      if (!scopes.includes("projection")) continue;
       if (!state.entries.some(entry => String(entry?.resident_id || "") === residentId)) continue;
       noteTargetRead(residentId, "resident_projection");
       state.targetWantedCursors.set(residentId, Number(state.targetWantedCursors.get(residentId) || 0));
