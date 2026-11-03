@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -13,11 +14,12 @@ from urllib.parse import urlparse
 from urllib.request import url2pathname
 
 from management_common import process_runtime
+from management_common.resource_lifecycle import LifecycleStore, current_lifecycle
 from . import article_registry
 
 
 _TEXLAB_MANAGERS_LOCK = threading.RLock()
-_TEXLAB_MANAGERS: dict[str, "TexLabSession"] = {}
+_TEXLAB_MANAGERS: dict[tuple[str, str], "TexLabSession"] = {}
 
 
 def _texlab_command() -> str:
@@ -48,6 +50,7 @@ class TexLabSession:
         self._log: list[str] = []
         self._initialized = False
         self._started_at = 0.0
+        self._closed = threading.Event()
 
     @property
     def alive(self) -> bool:
@@ -55,9 +58,13 @@ class TexLabSession:
         return process is not None and process.poll() is None
 
     def ensure_started(self) -> None:
+        if self._closed.is_set():
+            raise RuntimeError("TexLab session is closed")
         if self.alive and self._initialized:
             return
         with self._start_lock:
+            if self._closed.is_set():
+                raise RuntimeError("TexLab session is closed")
             if self.alive and self._initialized:
                 return
             self._terminate()
@@ -376,6 +383,7 @@ class TexLabSession:
 
     def close(self) -> None:
         with self._start_lock:
+            self._closed.set()
             if self.alive and self._initialized:
                 try:
                     self.request("shutdown", {}, timeout=4.5, start=False)
@@ -385,15 +393,50 @@ class TexLabSession:
             self._terminate()
 
 
+def _close_with_lifecycle(key: tuple[str, str], manager: TexLabSession) -> None:
+    """The language owner releases its native tree before scope sealing.
+
+    Each bounded operation has its own LSP state, even when reading an existing
+    Article. Other operations and ordinary editors must not inherit that lease.
+    Unknown lifecycle/termination state retains the manager for another attempt.
+    """
+    while True:
+        try:
+            if not manager._closed.is_set():
+                scope = LifecycleStore().scope(key[0])
+                if scope and scope['state'] == 'open':
+                    manager._closed.wait(1)
+                    continue
+            manager.close()
+            with _TEXLAB_MANAGERS_LOCK:
+                if _TEXLAB_MANAGERS.get(key) is manager:
+                    del _TEXLAB_MANAGERS[key]
+            return
+        except Exception:
+            logging.getLogger(__name__).exception("TexLab lifecycle cleanup remains pending")
+            # Unknown native state retains ownership and rejects new work;
+            # retry termination even though close() has already set its fence.
+            time.sleep(1)
+
+
 def _manager(article_id: str, root: Path) -> TexLabSession:
+    key = (current_lifecycle(), article_id)
     with _TEXLAB_MANAGERS_LOCK:
-        manager = _TEXLAB_MANAGERS.get(article_id)
+        manager = _TEXLAB_MANAGERS.get(key)
         if manager is not None and manager.root != root.resolve(strict=False):
             manager.close()
             manager = None
         if manager is None:
             manager = TexLabSession(article_id, root)
-            _TEXLAB_MANAGERS[article_id] = manager
+            _TEXLAB_MANAGERS[key] = manager
+            if key[0]:
+                try:
+                    threading.Thread(target=_close_with_lifecycle, args=(key, manager),
+                                     name=f"texlab-lifecycle-{article_id}", daemon=True).start()
+                except BaseException:
+                    del _TEXLAB_MANAGERS[key]
+                    manager.close()
+                    raise
         return manager
 
 
@@ -492,6 +535,13 @@ def article_texlab_request(
         article_id
     )
     manager = _manager(article_id, root)
+    # A lifecycle close waits for the current operation, then fences restarts.
+    with manager._start_lock:
+        return _request_with_manager(article_id, root, payload, manager)
+
+
+def _request_with_manager(article_id: str, root: Path, payload: dict[str, Any],
+                          manager: TexLabSession) -> dict[str, Any]:
     action = str(payload.get("action") or "status").strip().casefold()
     if action == "status":
         try:
@@ -605,10 +655,16 @@ def article_texlab_request(
 
 def _close_all() -> None:
     with _TEXLAB_MANAGERS_LOCK:
-        managers = list(_TEXLAB_MANAGERS.values())
-        _TEXLAB_MANAGERS.clear()
-    for manager in managers:
-        manager.close()
+        managers = list(_TEXLAB_MANAGERS.items())
+    for key, manager in managers:
+        try:
+            manager.close()
+        except Exception:
+            logging.getLogger(__name__).exception("TexLab shutdown remains pending")
+            continue
+        with _TEXLAB_MANAGERS_LOCK:
+            if _TEXLAB_MANAGERS.get(key) is manager:
+                del _TEXLAB_MANAGERS[key]
 
 
 atexit.register(_close_all)
