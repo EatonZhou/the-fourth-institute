@@ -703,6 +703,7 @@
         finally {submitting = false; update();}
       });
       find("[data-session-reload]").addEventListener("click", async () => {
+        creditsConsent.checked = false; requestKey = requestId();
         try {
           const refreshed = await reload?.();
           if (refreshed?.application) capabilities.showApplication(refreshed.application);
