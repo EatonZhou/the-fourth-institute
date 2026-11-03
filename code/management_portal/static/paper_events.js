@@ -194,12 +194,19 @@
           fetchSelectedCcfPapers().catch(alertError);
           return;
         }
+        const ccfRetryEnrichBtn = event.target.closest("[data-ccf-retry-enrich]");
+        if (ccfRetryEnrichBtn) {
+          if (!state.ccfSelectedPaper) return;
+          ccfRetryEnrichBtn.disabled = true;
+          ensureCcfPaperEnrichment(state.ccfSelectedPaper, { retry: true }).catch(alertError);
+          return;
+        }
         const ccfWebEnrichBtn = event.target.closest("[data-ccf-web-enrich]");
         if (ccfWebEnrichBtn) {
           if (!state.ccfSelectedPaper) return;
           ccfWebEnrichBtn.disabled = true;
           ccfWebEnrichBtn.textContent = "Investigating...";
-          ensureCcfPaperEnrichment(state.ccfSelectedPaper, { web: true }).catch(alertError);
+          ensureCcfPaperEnrichment(state.ccfSelectedPaper, { web: true, retry: true }).catch(alertError);
           return;
         }
         const registerCcfPaperBtn = event.target.closest("[data-register-ccf-paper]");

@@ -292,7 +292,7 @@
               ${sourcesHtml}
             `
           : enrichmentStatus === "error"
-            ? window.PortalI18n.html`<div class="paneNote">Enrichment failed: ${esc(enrichment.error || window.PortalI18n.t("unknown error"))}</div>`
+            ? window.PortalI18n.html`<div class="paneNote">Enrichment failed: ${esc(enrichment.error || window.PortalI18n.t("unknown error"))}</div><button class="portalButton is-compact" type="button" data-ccf-retry-enrich>${window.PortalI18n.t("Retry enrichment")}</button>`
             : webRunning
               ? webRunningNote
               : window.PortalI18n.html`<div class="paneNote">Enriching abstract and metadata overview in the background...</div>`

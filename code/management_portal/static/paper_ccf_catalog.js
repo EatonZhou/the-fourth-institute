@@ -262,7 +262,7 @@
       if (paper) paper.enrichment = next;
     }
 
-    async function ensureCcfPaperEnrichment(paper, { refresh = false, web = false } = {}) {
+    async function ensureCcfPaperEnrichment(paper, { refresh = false, web = false, retry = false } = {}) {
       if (!paper || paper.registered_paper_id) return;
       const key = ccfPaperEnrichmentKey(paper);
       if (!key) return;
@@ -272,7 +272,7 @@
       const existing = ccfPaperEnrichment(paper);
       const existingStatus = String(existing?.status || "");
       if (!web && !refresh && ["pending", "running"].includes(existingStatus)) return;
-      if (!web && !refresh && ["done", "error", "web_pending"].includes(existingStatus)) return;
+      if (!web && !refresh && !retry && ["done", "error", "web_pending"].includes(existingStatus)) return;
       if (web && !refresh && String(existing?.web_status || "") === "done") return;
       if (web && !refresh) {
         storeCcfPaperEnrichment(paper, {
@@ -287,12 +287,12 @@
       try {
         const enrichment = await paperApi.request("/paper/api/ccf/enrich", {
           method: "POST",
-          body: JSON.stringify({ paper, web }),
+          body: JSON.stringify({ paper, web, retry }),
         });
         storeCcfPaperEnrichment(paper, enrichment);
         const status = String(enrichment?.status || "");
         const nextWebStatus = String(enrichment?.web_status || "");
-        const shouldRender = !["pending", "running"].includes(status) && !(status === "web_pending" && nextWebStatus === "pending");
+        const shouldRender = retry || (!["pending", "running"].includes(status) && !(status === "web_pending" && nextWebStatus === "pending"));
         if (shouldRender && state.ccfSelectedPaper && ccfPaperEnrichmentKey(state.ccfSelectedPaper) === key) renderWorkspace();
       } finally {
         delete state.ccfEnrichmentInFlight[flightKey];

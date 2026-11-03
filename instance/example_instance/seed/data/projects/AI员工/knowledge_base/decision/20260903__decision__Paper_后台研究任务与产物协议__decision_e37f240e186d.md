@@ -286,7 +286,7 @@ Review 解析器优先读取模型输出中的 JSON 代码块，再用 JSON 解�
 - CCF enrichment 接收带标题的 CCF 目录论文描述，补全元数据和摘要；`web=true` 在同一条目上增加网页调查阶段。
 
 - 处理器按论文 identity 复用缓存和任务。状态使用 `pending|running|web_pending|done|error`。
-- 重复 POST 返回现有状态；需要 web 阶段时在同一缓存条目上继续，元数据和 web 调查共享结果。
+- 重复 POST 返回现有状态，包括失败终态，不因轮询或刷新重新启动失败工作。只有用户明确点击重试并提交 `retry=true` 才重试失败的补全或 web 阶段；页面保留失败原因并提供重试入口。需要首次 web 阶段时在同一缓存条目上继续，元数据和 web 调查共享结果。
 - Portal business task 产生终态。`done` 返回补全元数据与摘要；外部抓取或生成失败写入 `error`。
 - 该动作没有独立 GET status，调用方继续 POST 读取缓存状态。
 - 只有顶层携带 Paper ID 的请求进入通用 Paper 权限预检（经权限系统，decision_b820faf42218）。没有 Paper ID 的目录 enrichment 依赖调用入口边界，缓存服务自身不做权限判断。

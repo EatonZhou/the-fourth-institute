@@ -553,6 +553,7 @@ def ccf_paper_enrichment(payload: dict, actor: str = "") -> dict:
     if not isinstance(paper, dict) or not str(paper.get("title") or "").strip():
         raise ValueError("paper title required")
     want_web = str(payload.get("web") or "").strip().lower() in {"1", "true", "yes", "on"} if isinstance(payload, dict) else False
+    retry = payload.get('retry') is True
     cache_path = _ccf_enrichment_cache_path(paper)
     lock_path = cache_path.with_suffix(".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -563,6 +564,8 @@ def ccf_paper_enrichment(payload: dict, actor: str = "") -> dict:
         if not want_web and status == "done":
             return cached
         if want_web and status == "done" and web_status == "done":
+            return cached
+        if not retry and (status == 'error' or want_web and web_status == 'error'):
             return cached
         stale = (
             _now()
