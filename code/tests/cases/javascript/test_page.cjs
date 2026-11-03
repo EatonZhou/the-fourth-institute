@@ -183,6 +183,31 @@ function runRecord(state) {
     assert.equal(new URL(page.url()).search, '?view=test&page=cases&module=lineage.hatg');
     assert.deepEqual(await page.$$eval('[data-case-id]', rows => rows.map(row => row.dataset.caseId)), ['test_aaaaaaaaaaaa', 'test_bbbbbbbbbbbb']);
     assert.ok(requests.some(item => item.includes('projection=page') && item.includes('module=lineage.hatg')));
+    // A facet change in the same turn as typing must retain the pending search.
+    await page.evaluate(() => {
+      const search = document.querySelector('[data-catalog-search]');
+      search.value = 'tau';
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+      const priority = document.querySelector('[data-catalog-importance]');
+      priority.value = 'P1';
+      priority.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    assert.equal(new URL(page.url()).searchParams.get('q'), 'tau', 'facet update retains typed search before its timer fires');
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-case-id]')].map(row => row.dataset.caseId).join() === 'test_bbbbbbbbbbbb');
+    assert.equal(await page.inputValue('[data-catalog-search]'), 'tau');
+    await page.click('[data-catalog-clear]');
+    await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 4);
+    // Clearing while a search is pending must not let its timer restore it.
+    await page.evaluate(() => {
+      const search = document.querySelector('[data-catalog-search]');
+      search.value = 'pending-clear';
+      search.dispatchEvent(new Event('input', { bubbles: true }));
+      document.querySelector('[data-catalog-clear]').click();
+    });
+    await page.waitForTimeout(280);
+    assert.equal(new URL(page.url()).searchParams.has('q'), false);
+    assert.equal(await page.inputValue('[data-catalog-search]'), '');
+    assert.equal(await page.locator('[data-case-id]').count(), 4);
     // Typing waits for a pause, then filters on the server and replaces the address.
     await page.fill('[data-catalog-search]', 'tau');
     await page.waitForFunction(() => document.querySelectorAll('[data-case-id]').length === 1);

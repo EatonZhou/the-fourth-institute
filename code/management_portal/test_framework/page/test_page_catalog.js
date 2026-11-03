@@ -29,8 +29,21 @@
       return `/test/api/catalog?${params}`;
     };
 
+    function cancelSearch() {
+      window.clearTimeout(searchTimer);
+      searchTimer = 0;
+    }
+
     function setFilter(key, value) {
+      cancelSearch();
       const next = { ...filters };
+      // A facet can be selected before the typing pause expires. Commit the
+      // visible search with it before syncToolbar replaces an unfocused input.
+      const search = root.querySelector("[data-catalog-search]");
+      const draft = search?.value.trim();
+      if (search) {
+        if (draft) next.q = draft; else delete next.q;
+      }
       const empty = value === undefined || value === "" || value === false || (Array.isArray(value) && !value.length);
       if (empty) delete next[key]; else next[key] = value;
       if (key === "module") delete next.group;
@@ -42,7 +55,6 @@
     }
 
     async function fetchPage({ append = false } = {}) {
-      window.clearTimeout(searchTimer);
       const current = ++revision;
       loading = true;
       failure = "";
@@ -213,7 +225,7 @@
       const toolbar = root.querySelector("[data-catalog-toolbar]");
       toolbar.querySelector("[data-catalog-search]").addEventListener("input", event => {
         const value = event.target.value.trim();
-        window.clearTimeout(searchTimer);
+        cancelSearch();
         // Typing invalidates the shown result at once; the request waits for a pause.
         revision += 1;
         searchTimer = window.setTimeout(() => setFilter("q", value), 220);
@@ -234,6 +246,7 @@
       }));
       toolbar.querySelector("[data-catalog-live]").addEventListener("click", () => setFilter("live", !filters.live));
       toolbar.querySelector("[data-catalog-clear]").addEventListener("click", () => {
+        cancelSearch();
         filters = {};
         T.replaceListAddress("cases", filters);
         root.querySelector("[data-catalog-search]").value = "";
@@ -250,6 +263,7 @@
     }
 
     async function load(addressFilters = {}) {
+      cancelSearch();
       await T.loadOverview();
       if (disposed) return null;
       filters = { ...addressFilters };
@@ -270,7 +284,7 @@
 
     return {
       load,
-      destroy() { disposed = true; revision += 1; window.clearTimeout(searchTimer); },
+      destroy() { disposed = true; revision += 1; cancelSearch(); },
       snapshot: () => ({ filters: { ...filters }, count, caseIds: cases.map(item => item.id), loading, failure }),
     };
   }
