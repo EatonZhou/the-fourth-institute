@@ -10,6 +10,10 @@ TOKEN_PREFIX = "personal-history:"
 
 
 def source(facade: Mapping[str, Any]) -> dict[str, Any]:
+    # The pre-Familize AMA history also belongs before the facade's clear
+    # boundary. Keep the member's originals, but stop projecting them here.
+    if facade.get("context_reset_at"):
+        return {}
     family = facade.get("family") or {}
     ama_id = family.get("personal_ama_id")
     if family.get("role") != "facade" or not ama_id or not family.get("history_before_ordinal"):

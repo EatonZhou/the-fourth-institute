@@ -205,6 +205,53 @@ def test_history_pages_preserve_ids_and_quotes_exclude_later_direct_chat(future_
         personal_history.page(facade, "personal-history:9999999", limit=2)
 
 
+def test_clearing_facade_stops_personal_history_without_clearing_ama(future_creation_store, charters, monkeypatch):
+    """清空门面后快照、分页及引用不再回填 AMA 历史，原 AMA 消息仍保留。"""
+    from management_portal.society_service import (
+        message_quotes, resident_domain, resident_lifecycle_steps_domain,
+        resident_session_backend_domain,
+    )
+
+    ama = principal_hierarchy_domain.ensure_personal_ama("newcomer", "newcomer")
+    old = [_append(ama["resident_id"], i) for i in range(1, 5)]
+    assistant = principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
+    rid = assistant["resident_id"]
+    _append(rid, 6)
+    before = resident_protocol.get_resident_conversation_snapshot(rid, "newcomer", history_limit=2)
+    stale_token = before["next_page_token"]
+    assert stale_token.startswith(personal_history.TOKEN_PREFIX)
+    assert any(m.get("family_history") for m in before["messages"])
+
+    monkeypatch.setattr(resident_session_backend_domain, "run_backend_session_operation", lambda **kwargs: {})
+    monkeypatch.setattr(resident_execution_domain, "resume_resident_execution", lambda _resident_id: None)
+    result = resident_domain.reset_resident_context(rid, "newcomer")
+    # Even while the facade's archive is finishing, an old pagination token
+    # must no longer reopen the member's pre-Familize history.
+    with pytest.raises(ValueError, match="Invalid personal history page token"):
+        resident_protocol.get_conversation_messages(rid, "newcomer", stale_token, limit=2)
+    assert resident_lifecycle_steps_domain.resume_resident_lifecycle_operation(result["operation_id"])
+    empty = resident_protocol.get_resident_conversation_snapshot(rid, "newcomer", history_limit=2)
+    assert empty["messages"] == []
+    assert not empty["next_page_token"]
+    assert "family_history" not in empty
+
+    facade = resident_catalog.get_catalog().get(rid)
+    assert facade["context_reset_at"]
+    assert personal_history.message(facade, old[0]) is None
+    with pytest.raises(ValueError, match="被引用的消息不在这段对话中"):
+        message_quotes.accept(facade, {"message_id": old[0]}, reader="newcomer", message_id="msg_" + "f" * 32)
+    originals = resident_protocol.get_resident_conversation_snapshot(ama["resident_id"], "newcomer", history_limit=10)
+    assert [m["message_id"] for m in originals["messages"]] == old
+
+    new = [_append(rid, i) for i in range(7, 10)]
+    page = resident_protocol.get_resident_conversation_snapshot(rid, "newcomer", history_limit=2)
+    assert [m["message_id"] for m in page["messages"]] == new[1:]
+    page = resident_protocol.get_conversation_messages(rid, "newcomer", page["next_page_token"], limit=2)
+    assert [m["message_id"] for m in page["messages"]] == new[:1]
+    assert not page["next_page_token"]
+    assert "family_history" not in page
+
+
 def test_personal_instructions_keep_user_customization_and_refresh_each_turn(personal, monkeypatch):
     """个人行为每轮刷新并保留用户定制，压缩后仍按相同时机注入"""
     ama, assistant = personal
