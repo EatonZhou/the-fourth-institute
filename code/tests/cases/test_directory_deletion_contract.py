@@ -133,6 +133,11 @@ def test_registered_ownership_decides_cleanup_regardless_of_area(workspace, inte
     description = instruction_catalog()['UnregisterResource'].description
     assert '资源归属' in description
     assert '实例区域内目录一并删除' not in description
+    # The registration instruction must disclose the cleanup observed above;
+    # users must not be promised retention by the entry that accepts their tree.
+    registration = instruction_catalog()['RegisterWorkspace'].description
+    assert '只删登记' not in registration
+    assert '归属' in registration and '清理' in registration and '文件' in registration
 
 
 def test_outer_directory_removes_nested_registrations_and_preserves_siblings(workspace):
