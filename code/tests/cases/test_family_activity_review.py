@@ -111,6 +111,129 @@ def test_concurrent_timer_checks_admit_one_review(team):
     assert all(x["status"] in {"requested", "unchanged", "busy"} for x in results)
 
 
+def test_clock_rollback_and_repeated_terminal_updates_use_first_completion_order(team):
+    t = team
+    first = t.completed(1)
+    assert t.check(first)["status"] == "recorded"
+    first_review = t.check()["message_id"]
+    second = t.completed(2)
+    member = second["subject_resident_id"]
+    # Later durable completion, but a lower wall clock than the first input.
+    t.repo.set_input_state(member, second["payload"]["message_id"], "completed", updated_at="2026-10-01T00:00:00Z")
+    assert t.check(second)["status"] == "recorded"
+    assert t.check()["message_id"] != first_review
+    t.repo.set_input_state(member, first["payload"]["message_id"], "completed", updated_at="2027-01-01T00:00:00Z")
+    assert t.check(first)["status"] == "recorded"
+    assert t.check()["status"] == "unchanged"
+
+
+def test_legacy_timestamp_pending_keeps_facts_and_migrates_only_recorded_positions(team, monkeypatch):
+    t = team
+    event = t.completed(1)
+    t.check(event)
+    dispatch = family_review.dispatch
+    receipts = []
+    def interrupted(*args, **kwargs):
+        receipts.append(dispatch(*args, **kwargs))
+        raise OSError("after admission")
+    monkeypatch.setattr(family_review, "dispatch", interrupted)
+    # Emulate the previously published timestamp ledger before creating intent.
+    store = get_lineage_data_store().family_relays
+    with store.transaction(t.body["lineage_id"], t.family["facade"]) as relay:
+        ledger = relay["activity_review"]
+        ledger["position_format"] = "conversation_cursor"  # permit creating the original timestamp intent
+        ledger["activity"][event["subject_resident_id"]] = [1793491201.0, event["payload"]["message_id"]]
+    with pytest.raises(OSError, match="after admission"):
+        family_review.check(t.body["lineage_id"], t.block["id"], ACTOR)
+    with store.transaction(t.body["lineage_id"], t.family["facade"]) as relay:
+        ledger = relay["activity_review"]
+        del ledger["position_format"]
+        frozen = deepcopy(ledger["pending"])
+    monkeypatch.setattr(family_review, "dispatch", lambda *a, **k: pytest.fail("already accepted"))
+    assert t.check()["message_id"] == frozen["message_id"] == receipts[0]["message_id"]
+    ledger = store.get(t.body["lineage_id"], t.family["facade"])["activity_review"]
+    assert ledger["position_format"] == "conversation_cursor"
+    assert ledger["activity"] == ledger["reviewed"]
+    assert t.check()["status"] == "unchanged"
+
+
+def test_accepted_review_consumes_snapshot_after_steward_change_without_readmission(team, monkeypatch):
+    t = team
+    t.check(t.completed(1))
+    dispatch = family_review.dispatch
+    receipts = []
+    def interrupted(*args, **kwargs):
+        receipts.append(dispatch(*args, **kwargs))
+        raise OSError("after admission")
+    monkeypatch.setattr(family_review, "dispatch", interrupted)
+    with pytest.raises(OSError, match="after admission"):
+        family_review.check(t.body["lineage_id"], t.block["id"], ACTOR)
+    mid = receipts[0]["message_id"]
+    old_steward = t.family["steward"]
+    t.repo.set_input_state(old_steward, mid, "cancelled")
+    replacement = deepcopy(t.block)
+    replacement["family"]["steward"] = t.family["members"][0]
+    monkeypatch.setattr(family_review, "read_family", lambda *_: (t.body, replacement))
+    monkeypatch.setattr(family_review, "dispatch", lambda *a, **k: pytest.fail("accepted work cannot be readmitted"))
+    monkeypatch.setattr(family_review, "_idle", lambda _: pytest.fail("accepted work does not need idle"))
+    assert family_review.check(t.body["lineage_id"], t.block["id"], ACTOR)["message_id"] == mid
+    assert t.repo.input_state(old_steward, mid)["state"] == "cancelled"
+    assert t.repo.message(replacement["family"]["steward"], mid) is None
+    assert family_review.check(t.body["lineage_id"], t.block["id"], ACTOR)["status"] == "unchanged"
+
+
+def test_steward_change_between_snapshot_and_dispatch_does_not_admit_wrong_target(team, monkeypatch):
+    from management_portal.society_service import family_tasks
+    t = team
+    t.check(t.completed(1))
+    replacement = deepcopy(t.block)
+    replacement["family"]["steward"] = t.family["members"][0]
+    monkeypatch.setattr(family_tasks, "context", lambda *_: (t.body, replacement))
+    assert t.check()["status"] == "target_changed"
+    ledger = get_lineage_data_store().family_relays.get(t.body["lineage_id"], t.family["facade"])["activity_review"]
+    mid = ledger["pending"]["message_id"]
+    assert not ledger["reviewed"]
+    assert t.repo.message(t.family["steward"], mid) is None
+    assert t.repo.message(replacement["family"]["steward"], mid) is None
+
+
+def test_member_departure_keeps_recorded_work_but_rejects_new_records(team, monkeypatch):
+    t = team
+    first = t.completed(1)
+    t.check(first)
+    later = t.completed(2)
+    replacement = deepcopy(t.block)
+    replacement["family"]["members"] = []
+    monkeypatch.setattr(family_review, "read_family", lambda *_: (t.body, replacement))
+    assert t.check(later)["status"] == "skipped"
+    assert t.check()["status"] == "requested"
+    ledger = get_lineage_data_store().family_relays.get(t.body["lineage_id"], t.family["facade"])["activity_review"]
+    assert ledger["activity"] == ledger["reviewed"]
+    assert ledger["reviewed"][first["subject_resident_id"]][1] == first["payload"]["message_id"]
+    assert t.check()["status"] == "unchanged"
+
+
+def test_receipt_from_different_facts_cannot_consume_pending_activity(team, monkeypatch):
+    from management_portal.society_service.resident_message_contract import MessageIdentityConflict
+    t = team
+    t.check(t.completed(1))
+    dispatch = family_review.dispatch
+    def interrupted(*args, **kwargs):
+        dispatch(*args, **kwargs)
+        raise OSError("after admission")
+    monkeypatch.setattr(family_review, "dispatch", interrupted)
+    with pytest.raises(OSError, match="after admission"):
+        family_review.check(t.body["lineage_id"], t.block["id"], ACTOR)
+    store = get_lineage_data_store().family_relays
+    with store.transaction(t.body["lineage_id"], t.family["facade"]) as relay:
+        pending = relay["activity_review"]["pending"]
+        pending["activity"][t.family["members"][0]][0] += 1
+    with pytest.raises(MessageIdentityConflict):
+        family_review.check(t.body["lineage_id"], t.block["id"], ACTOR)
+    ledger = store.get(t.body["lineage_id"], t.family["facade"])["activity_review"]
+    assert ledger["pending"] and not ledger["reviewed"]
+
+
 def test_failed_admission_preserves_intent_and_paused_family_does_not_consume(team, monkeypatch):
     t = team
     t.check(t.completed(1))
@@ -198,3 +321,6 @@ def test_generated_check_binds_own_family_but_not_external_or_other_components(t
     recorded = t.completed(1)
     event.type, event.payload, event.subject_resident_id = recorded["type"], recorded["payload"], recorded["subject_resident_id"]
     assert scoped("review_activity", {**args, "event": recorded}).caller == f["facade"]
+    for payload in ["bad", [], {"message_id": "other"}, None]:
+        assert scoped("review_activity", {**args, "event": {**recorded, "payload": payload}}).caller == context.caller
+    assert t.check({**recorded, "payload": "bad"})["status"] == "skipped"

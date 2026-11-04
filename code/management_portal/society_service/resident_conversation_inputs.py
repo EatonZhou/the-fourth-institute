@@ -42,6 +42,16 @@ class ConversationInputs:
         self.events = events
         self.messages = messages
 
+    def completed_input_cursor(self, resident_id: str, message_id: str) -> int | None:
+        """The first durable completion position of this input, independent of clocks."""
+        with self.state_store.database.read() as connection:
+            row = connection.execute(
+                "SELECT cursor FROM conversation_events WHERE resident_id=%s AND subject_id=%s "
+                "AND event_type=%s AND payload_json->'input_state'->>'state'='completed' "
+                "ORDER BY cursor LIMIT 1", (resident_id, message_id, INPUT_STATE_CHANGED),
+            ).fetchone()
+        return int(row["cursor"]) if row else None
+
     def question_set_state(self, resident_id: object, message_id: object) -> str:
         """``answered``, ``closed`` or ``open``: the state of the question set an Agent message asks.
 

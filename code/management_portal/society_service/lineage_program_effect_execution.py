@@ -75,10 +75,13 @@ def _family_note_context(
         block = component_family(lineage, effect_id)
         key = next((e.get("key") for e in (block or {}).get("elements", []) if e["id"] == effect_id), "")
         observed = arguments.get("event") if isinstance(arguments.get("event"), dict) else {}
+        observed_payload = observed.get("payload")
         valid_record = (key == "review_activity" and event is not None
                         and event.type == "resident.work_finished" and event.subject_resident_id in member_ids(block)
+                        and observed.get("type") == event.type and isinstance(observed_payload, dict)
+                        and isinstance(event.payload, dict) and bool(event.payload.get("message_id"))
                         and observed.get("subject_resident_id") == event.subject_resident_id
-                        and (observed.get("payload") or {}).get("message_id") == event.payload.get("message_id")
+                        and observed_payload.get("message_id") == event.payload.get("message_id")
                         and set(arguments) == {"lineage_id", "family_id", "event"})
         valid_tick = (key == "notify_periodic_review_task" and event is not None and event.type == "time.reached"
                       and set(arguments) == {"lineage_id", "family_id"})

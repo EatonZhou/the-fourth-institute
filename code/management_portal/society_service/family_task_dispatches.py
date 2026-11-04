@@ -14,6 +14,40 @@ from string import Template
 from . import family_tasks, lineage_aggregate
 
 
+class FamilyTaskTargetChanged(ValueError):
+    """The role changed after the caller captured its task intent."""
+
+
+def accepted_receipt(facade_id, target_id, trigger, message_id, *, family_id, facts):
+    """Verify a persisted dispatch and intake receipt without admitting it again."""
+    from management_common.json_columns import json_value
+    from . import resident_conversation_stream, resident_record_domain
+    from .state_store import get_lineage_data_store
+
+    facade = resident_record_domain.find_resident(facade_id)
+    with get_lineage_data_store().database.read() as connection:
+        row = connection.execute("SELECT intent_json FROM family_task_dispatches "
+                                 "WHERE lineage_id=%s AND message_id=%s",
+                                 (facade["lineage_id"], message_id)).fetchone()
+    if row is None:
+        return None
+    intent = json_value(row["intent_json"])
+    expected_facts = copy.deepcopy(facts)
+    expected_facts.update(facade=facade_id, lineage_id=facade["lineage_id"], family_id=family_id)
+    expected = {"facade": facade_id, "target": target_id, "trigger": trigger,
+                "facts": expected_facts, "business_ref": f"duty/family-{trigger}"}
+    if json.dumps(intent["request"], sort_keys=True) != json.dumps(expected, sort_keys=True):
+        from .resident_message_contract import MessageIdentityConflict
+        raise MessageIdentityConflict("Family task receipt refers to a different request")
+    repository = resident_conversation_stream.get_repository()
+    try:
+        repository.input_state(target_id, message_id)
+    except KeyError:
+        return None
+    _validate_original(repository, target_id, facade_id, message_id, intent["text"], expected["business_ref"])
+    return {"resident_id": target_id, "message_id": message_id, "accepted": True}
+
+
 def _validate_original(repository, target_id, facade_id, mid, text, business_ref):
     from . import resident_input_queue_domain, resident_message_contract
 
@@ -61,7 +95,8 @@ def _legacy_text(target, trigger, facts, original, text):
 
 
 def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,
-             message_id: str = "", source_message_id: str = "", event: dict | None = None) -> dict:
+             message_id: str = "", source_message_id: str = "", event: dict | None = None,
+             expected_target_id: str = "") -> dict:
     from . import family_facade
     from . import resident_record_domain
     facade = resident_record_domain.find_resident(facade_id)
@@ -77,6 +112,8 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
                 or not permission_system.allows(actor, "DispatchFamilyTask", {"resident_id": facade_id})):
             raise resident_access.manage_refusal(facade)
     role = family_tasks.TASKS[trigger][1]
+    if expected_target_id and family[role] != expected_target_id:
+        raise FamilyTaskTargetChanged("Family task role changed before admission")
     target = resident_record_domain.find_resident(family[role])
     facts = copy.deepcopy(facts or {})
     if source_message_id:

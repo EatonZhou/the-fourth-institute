@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 18
+  number: 19
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-04T05:34:31Z"
+  updated_at: "2026-11-04T05:50:51Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -58,7 +58,7 @@ Family 内部机制指令是一个 Family 自己运转时使用的步骤：Route
 
 `CheckFamilyReview(lineage_id, family_id, event?)` 属于 Family 内部机制，owner 为 lineage。event 提供时只记录经持久状态、当前业务成员、非 info 和非维护输入核验的 resident.work_finished，不派发回顾。省略 event 时比较未消费活动，机械核验门面暂停与 Steward 运行/排队状态后，按持久意图合并派发一次 review。参数不接受 N 次门槛、任意 facts、外部指定目标或消息 ID。
 
-结果为 family_id、status，以及派发时的稳定 message_id。status：recorded 已登记；skipped 非有效业务完成；unchanged 无新材料；busy 角色或检查忙碌/运行态不可确认；paused 门面暂停；requested 本次派发或同意图受理续投；target_changed 原派发目标角色已变更、保留待处理意图；not_applicable 个人助手使用原独立机制。requested 不代表模型任务完成。
+结果为 family_id、status，以及派发时的稳定 message_id。status：recorded 已登记；skipped 非有效业务完成；unchanged 无新材料；busy 角色或检查忙碌/运行态不可确认；paused 门面暂停；requested 本次派发或已受理同意图的消费收尾；target_changed 尚未受理的原派发目标角色已变更、保留待处理意图；not_applicable 个人助手使用原独立机制。requested 不代表模型任务完成。
 
 调用需 Lineage @contributor 及本 Family 门面/Steward 或管理校验；受控生成 Effect 的身份绑定不授予事件外部作者权限，普通 workflow 不继承。快照消费、失败、取消和升级协议见 decision_a64b3ea2c3c5“组织回顾”。
 

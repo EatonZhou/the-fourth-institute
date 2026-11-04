@@ -4,29 +4,56 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from datetime import datetime
 
 from management_common.message_identity import derived_message_identity
 
 from . import invariant_locks, lineage_aggregate, resident_conversation_stream, resident_held_infos
 from . import resident_record_domain, resident_protocol
 from .family_familize import read_family
-from .family_task_dispatches import dispatch
+from .family_task_dispatches import FamilyTaskTargetChanged, accepted_receipt, dispatch
 from .state_store import get_lineage_data_store
 
 REF = "family-activity-review"
 
 
 def _ledger(relay):
-    return relay.setdefault("activity_review", {"activity": {}, "reviewed": {}, "pending": None})
+    ledger = relay.setdefault("activity_review", {"activity": {}, "reviewed": {}, "pending": None,
+                                                "position_format": "conversation_cursor"})
+    if ledger.get("position_format") != "conversation_cursor":
+        # Convert only already recorded references. No historical activity is
+        # discovered, and a pending request keeps its immutable original facts.
+        repo = resident_conversation_stream.get_repository()
+        for field in ("activity", "reviewed"):
+            for rid, position in ledger[field].items():
+                cursor = repo.completed_input_cursor(rid, position[1])
+                if cursor is None:
+                    raise ValueError("Family review completion receipt is unavailable")
+                ledger[field][rid] = [cursor, position[1]]
+        ledger["position_format"] = "conversation_cursor"
+    return ledger
+
+
+def _consume(ledger, pending):
+    repo = resident_conversation_stream.get_repository()
+    for rid, value in pending["activity"].items():
+        # Pending may predate the cursor format. Never rewrite its facts/ID.
+        cursor = repo.completed_input_cursor(rid, value[1])
+        if cursor is None:
+            raise ValueError("Family review completion receipt is unavailable")
+        position = [cursor, value[1]]
+        ledger["reviewed"][rid] = max(ledger["reviewed"].get(rid, position), position)
+    ledger["pending"] = None
 
 
 def _completed_position(family, event):
-    """Use the immutable input's persisted terminal receipt, never event timestamps."""
+    """Require persisted completion and use its first Conversation event position."""
     if not isinstance(event, dict) or event.get("type") != "resident.work_finished":
         return None
     rid = event.get("subject_resident_id")
-    mid = (event.get("payload") or {}).get("message_id")
+    payload = event.get("payload")
+    if not isinstance(payload, dict):
+        return None
+    mid = payload.get("message_id")
     if rid not in family["members"] or not mid:
         return None
     repo = resident_conversation_stream.get_repository()
@@ -39,9 +66,8 @@ def _completed_position(family, event):
             or repo.message_business_ref(rid, mid).startswith("duty/")
             or resident_held_infos.is_info({"resident_id": rid}, mid)):
         return None
-    # Each member's latest completion covers earlier work even when event
-    # deliveries arrive late. Replays cannot move the watermark backwards.
-    return rid, [datetime.fromisoformat(state["updated_at"].replace("Z", "+00:00")).timestamp(), mid]
+    cursor = repo.completed_input_cursor(rid, mid)
+    return (rid, [cursor, mid]) if cursor is not None else None
 
 
 def _idle(steward):
@@ -79,21 +105,20 @@ def check(lineage_id, family_id, actor, *, event=None):
             return {"family_id": block["id"], "status": "paused"}
         with store.transaction(lineage_id, facade) as relay:
             ledger = _ledger(relay)
-            snapshot = {rid: value for rid, value in ledger["activity"].items() if rid in family["members"]}
+            # Membership is checked when recording. Later roster changes must
+            # not discard work legitimately recorded before a member left.
+            snapshot = copy.deepcopy(ledger["activity"])
             pending = copy.deepcopy(ledger["pending"])
             changed = any(value > ledger["reviewed"].get(rid, []) for rid, value in snapshot.items())
         if not pending and not changed:
             return {"family_id": block["id"], "status": "unchanged"}
-        repo = resident_conversation_stream.get_repository()
         # A receipt after a crash permits finishing the same intent even while
         # its Steward is busy; replaying dispatch never reopens that input.
         accepted = None
         if pending:
-            try:
-                accepted = repo.input_state(pending["steward"], pending["message_id"])
-            except KeyError:
-                pass
-        if pending and pending["steward"] != steward:
+            accepted = accepted_receipt(facade, pending["steward"], "review", pending["message_id"],
+                                        family_id=block["id"], facts={"activity_versions": pending["activity"]})
+        if not accepted and pending and pending["steward"] != steward:
             return {"family_id": block["id"], "status": "target_changed"}
         if not accepted and not _idle(steward):
             return {"family_id": block["id"], "status": "busy"}
@@ -103,11 +128,13 @@ def check(lineage_id, family_id, actor, *, event=None):
                        "message_id": derived_message_identity(REF, facade, digest)}
             with store.transaction(lineage_id, facade) as relay:
                 _ledger(relay)["pending"] = copy.deepcopy(pending)
-        result = dispatch(facade, "review", facade, message_id=pending["message_id"],
-                          facts={"activity_versions": pending["activity"]})
+        try:
+            result = accepted or dispatch(facade, "review", facade, message_id=pending["message_id"],
+                                         expected_target_id=pending["steward"],
+                                         facts={"activity_versions": pending["activity"]})
+        except FamilyTaskTargetChanged:
+            return {"family_id": block["id"], "status": "target_changed"}
         with store.transaction(lineage_id, facade) as relay:
             ledger = _ledger(relay)
-            for rid, value in pending["activity"].items():
-                ledger["reviewed"][rid] = max(ledger["reviewed"].get(rid, value), value)
-            ledger["pending"] = None
+            _consume(ledger, pending)
         return {"family_id": block["id"], "status": "requested", "message_id": result["message_id"]}

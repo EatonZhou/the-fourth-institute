@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 21
+  number: 22
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-04T05:34:31Z"
+  updated_at: "2026-11-04T05:50:51Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -346,7 +346,7 @@ ${facts}
 
 #### P-review · 周期组织回顾
 
-角色：steward。facts：普通 Family 为 B + `activity_versions`（本次登记的成员完成水位快照）；个人助手通过活动检查后为 B。稳定派发 ID 是投递参数，不附全量消息或摘要。
+角色：steward。facts：普通 Family 为 B + `activity_versions`（本次登记的成员首次完成事件 cursor 与输入 ID 水位快照）；个人助手通过活动检查后为 B。稳定派发 ID 是投递参数，不附全量消息或摘要。
 
 指南（当前默认）：
 

@@ -195,6 +195,9 @@ class ResidentConversationRepository:
     def input_state(self, resident_id: object, message_id: object) -> dict[str, Any]:
         return self.inputs.input_state(resident_id, message_id)
 
+    def completed_input_cursor(self, resident_id: str, message_id: str) -> int | None:
+        return self.inputs.completed_input_cursor(resident_id, message_id)
+
     def input_states_by_id(
         self, requests: Sequence[tuple[str, str]],
     ) -> dict[tuple[str, str], dict[str, Any]]:
