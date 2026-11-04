@@ -181,7 +181,7 @@ class Media:
             if result['review']['status'] == 'pending' and not self.active(ctx):
                 result['review'].update(status='submission_failed', error='送检未完成，可由原请求者重试。')
             if result['review'].get('id') and actor:
-                result['review'] = review.ReviewService(resources=self.service).read(result['review']['id'], actor) or result['review']
+                result['review'] = review.ReviewService(resources=self.service).current(result['review']['id'], actor) or result['review']
             result['quality_met'] = ctx['quality'] != 'high' or result['review'].get('status') == 'passed'
         return result
 
@@ -271,7 +271,7 @@ class Media:
                 raise
             authoring = review.AuthoringService(resources=self.service).submit({
                 'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
-                'digest': ctx['ref']['sha256'], 'quality': quality, 'author': ctx.get('owner_id') or actor,
+                'digest': ctx['ref']['sha256'], 'quality': quality, 'author': actor,
                 'assets': [ctx['ref']], 'task': '修改此解释页的实际分镜，保存新manifest/plan/audio固定引用后生成视频。'}, actor)
             state = {'status': 'cancelled' if authoring['status'] == 'cancelled' else 'awaiting_authoring',
                      'job_id': authoring['id'], 'generation_actor': actor, 'authoring': authoring}
@@ -404,9 +404,14 @@ class Media:
             prefix = ctx['root_id'] + '/file/' + '/'.join(ctx['output']) + '/'
             assets = [{'address': prefix+name, 'sha256': entry['sha256']} for name, entry in sorted(state['assets'].items())]
             digest = hashlib.sha256(json.dumps(assets, sort_keys=True).encode()).hexdigest()
+            responsible = ''
+            if state.get('authoring_proof'):
+                self.require_authored(ctx, state, actor)
+                responsible = state['authoring_proof']['resident_id']
             pending = review.ReviewService(resources=self.service).submit({
                 'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
-                'digest': digest, 'quality': 'high', 'author': ctx.get('owner_id') or state['generation_actor'], 'assets': assets,
+                'digest': digest, 'quality': 'high', 'author': state['generation_actor'],
+                'responsible_resident_id': responsible, 'assets': assets,
                 'task': ctx['plan']['title'], 'previous_review_id': state.get('previous_review_id')}, actor)
         except Exception:
             pending.update(status='submission_failed', error='独立视频检查未提交，请核对检查员与当前权限后重试。')

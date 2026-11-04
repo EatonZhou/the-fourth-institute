@@ -255,7 +255,8 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
         assert len(calls) == before
         # Exact digest/old pass cannot certify a changed file.
         resources.path(record['subject']['assets'][0]['address']).write_bytes(b'tampered')
-        assert reviews.read(record['id'], AUTHOR)['status'] == 'invalidated'
+        assert reviews.read(record['id'], AUTHOR)['status'] == 'passed'  # immutable handoff audit
+        assert reviews.current(record['id'], AUTHOR)['status'] == 'invalidated'
         assert reviews.submit(record['subject'], AUTHOR)['status'] == 'invalidated'
         assert not done(changed, 'high')['quality_met']
     finally:
@@ -270,6 +271,7 @@ def test_cancel_late_worker_and_review_cannot_overwrite(rig):
         started.set(); resume.wait(3); return original(*args)
     media.renderer = slow
     ref = package(1)
+    calls.clear()  # The package fixture has already completed its authoring requests.
     media.start(**ref, actor=AUTHOR, quality='high'); started.wait(1)
     assert media.cancel(**ref, actor=AUTHOR, quality='high')['status'] == 'cancelled'
     resume.set()
@@ -374,8 +376,12 @@ def test_verified_responsible_resident_is_not_the_user_and_cannot_review(rig):
     assert calls[-1][2]['resident_id'] == AUTHOR and 'user_id' not in calls[-1][2]
     assert result['feedback_delivery']['status'] == 'delivered'
     assert result['status'] == 'changes_requested'  # Delivery cannot complete author work.
-    feedback_args = calls[-1][2]
+    assert asset['address'] not in json.dumps(calls[-1][2])
+    feedback_args = next(call[2] for call in reversed(calls) if call[2].get('user_id') == 'fixture-user')
     feedback = json.loads(feedback_args['message']['content_parts'][0]['text'])
+    assert feedback['feedback'] == 'Add the missing explanation.'
+    with pytest.raises(PermissionError):
+        reviews.read(record['id'], AUTHOR)
     assert 'CheckPermission' in feedback['next_action'] and '具体blocked' in feedback['next_action']
     assert 'temporary_credentials' not in feedback_args and 'token' not in feedback_args
     from management_portal import home_explanation_media as module

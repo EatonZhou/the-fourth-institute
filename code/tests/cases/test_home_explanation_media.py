@@ -440,11 +440,15 @@ def test_review_discovery_and_instruction_use_actual_actor(tmp_path, monkeypatch
     for actor in ('weihao', 'resident_0123456789ab'):
         reviewer = helper.discover(actor)
         from types import SimpleNamespace
+        content = b'fixed review video bytes'
+        checksum = hashlib.sha256(content).hexdigest()
         service = helper.ReviewService(root=tmp_path/actor,
-            resources=SimpleNamespace(resolve=lambda address, **kwargs: {}))
+            resources=SimpleNamespace(resolve=lambda address, **kwargs: {},
+                read_content=lambda address, **kwargs: (content, 'video/mp4', {})))
         subject = {'kind': 'explanation_video', 'ref': RID+'/file/page.json', 'version': 'a'*64,
-                   'digest': 'b'*64, 'quality': 'high', 'author': actor,
-                   'assets': [{'address': RID+'/file/video.mp4', 'sha256': 'b'*64}]}
+                   'digest': checksum, 'quality': 'high', 'author': actor,
+                   'responsible_resident_id': 'resident_0123456789ab',
+                   'assets': [{'address': RID+'/file/video.mp4', 'sha256': checksum}]}
         assert service.submit(subject, actor, reviewer)['message_id'] == 'msg_review'
         count = len(calls)
         service.submit(subject, actor, reviewer)
@@ -452,7 +456,7 @@ def test_review_discovery_and_instruction_use_actual_actor(tmp_path, monkeypatch
         assert calls[-1][1].caller == actor and calls[-1][1].entry == 'web'
         assert 'temporary_credentials' not in calls[-1][0].arguments
         payload = json.loads(calls[-1][0].arguments['message']['content_parts'][0]['text'])
-        assert payload['subject']['assets'][0]['sha256'] == 'b'*64
+        assert payload['subject']['assets'][0]['sha256'] == checksum
         assert payload['subject']['author'] == actor
     for results in ([], [{'resident_id': 'resident_aaaaaaaaaaaa', 'title': helper.TITLE, 'can_send': True}]*2):
         with pytest.raises(ValueError):

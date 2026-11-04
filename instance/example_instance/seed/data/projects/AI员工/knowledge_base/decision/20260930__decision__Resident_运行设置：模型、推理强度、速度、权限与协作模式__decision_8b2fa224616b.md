@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 35
+  number: 37
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-04T20:15:21Z"
+  updated_at: "2026-11-04T20:48:46Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -255,3 +255,18 @@ Society 的 resident_reporting.prompt 在每条主输入和运行中追加输入
 high 检查者须独立于作者，按理解任务实际打开、操作和核对固定成果。changes_requested 要求作者实际修改为新固定版并以 --previous-review-id 关联前轮复审，直到当前版本正式记录 passed；submitted、可打开或媒体 ready 不等于通过。取消时停止；缺权限、无法实际验证等原因保留 blocked，不伪称达标。页面通过不能替代用户所请求视频的独立成片检查。模板、媒体、固定版本和审查记录仍由各业务 owner 保存；提示已经送达只能证明作者获得了指导，不能证明模型遵循或作品通过。
 
 新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。列已存在且类型合法时不再 ALTER，不重写已有策略。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
+
+
+### 独立检查的固定成果交接
+
+high 的显式送审同时授权向本轮指定检查者交付选定固定成果。ReviewService 在本次已认证提交期间，以实际请求者身份读取清单中的文件并校验摘要，保存独立字节副本；只接受明确资产清单及其中列出的依赖，来源 ref 仅用于追溯，不遍历原 Workspace，不自动抓取链接或其他私有资料。没有文件范围凭证时不以整根 Workspace viewer 代替这一交接，也不保存或转交作者 token。
+
+交接清单绑定成员名、地址、大小、每项 SHA256 和整体摘要；全部校验完成后原子发布。相同审查身份不能扩大或替换清单，新内容必须形成新固定版。原文件后续变化不改变副本和历史结论；业务展示使用旧通过结论前仍核对本次来源固定版，不能用旧结论放行变更后的内容。
+
+只有本轮请求者和正式指定检查者可读取交接。HTTP 记录、文件、Range 与下载均按实际主体核验；检查者授权最长七天，取消或撤销后关闭，终态关闭检查者的资产读取。检查者可在未撤销且未到期时回读本人轮次结论；请求者保留副本和结论的审计读取。取消与资产响应的受理及正文构造串行，构造期间分块检查期限。正式 ASGI 适配器会缓冲同步处理器的响应：已受理且已形成的在途响应允许发送完成，不承诺撤销或到期后截断网络传输；后续请求（含新的 Range 请求）重新核验授权。已合法下载到检查者 Workspace 的副本无法远程收回，撤销只关闭后续服务端读取。原资源 ReadResource/ResolveResource 保持原权限语义，不获得代理或重新委托能力。
+
+检查者使用 submit_explanation_review.py --export REVIEW_ID --output-dir 本人Workspace内新目录下载副本及 index.json，再实际打开 HTML 或播放媒体。HTML 沿用隔离预览，审查内容不作为指令执行；缺少未列入清单的依赖时返回具体 blocked，由作者补充固定清单。检查证据同样由检查者本人显式提交、校验和固定；请求者可用 --export REVIEW_ID --group evidence 获取意见副本，无需读取检查者的私有 Workspace。完整意见及证据只交原请求者（含 User），第三方负责者仅收到不含意见、源地址或证据的协作通知。负责作者关联不额外授予源写权或交接读取权。
+
+Resident 直接提交解释包时，作者依据已认证提交主体；Workspace directory.owner_id 只表达目录归属，不作为创作身份。视频负责者可沿经核验的正式分镜创作回执确定。User 没有正式业务来源关联时保留 awaiting_author，不接受客户端自报 author 或 responsible_resident_id。指定检查者到期后仅可提交不含证据资产的 blocked 说明；不得继续读取资产或提交 passed/changes_requested。
+
+blocked 或已到期轮次可由原请求者显式 --resume REVIEW_ID 以同一固定内容发起新审查 ID 和轮次，保留原结论及续接关系；更换检查者也在新轮次中完成。原轮迟到回执不能修改新轮，幂等提交不能延长期限、扩大清单或复活已关闭授权。changes_requested 仍要求实际修改新固定版并关联原否决；GET 不投递、blocked 不自动续审。

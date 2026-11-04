@@ -44,7 +44,7 @@ def status(store, identifier, number, actor, *, media=None, service=None):
     if value is None:
         return {'status': 'not_required'}
     service = service or ReviewService()
-    return service.read(service.identifier(value), actor) or {'status': 'not_requested'}
+    return service.current(service.identifier(value), actor) or {'status': 'not_requested'}
 
 
 def submit(store, identifier, number, actor, *, media=None, service=None):
@@ -63,7 +63,7 @@ def submit(store, identifier, number, actor, *, media=None, service=None):
             previous_media = PersistentMedia(store).status(identifier,previous_number,actor,quality='high',include_review=False)
         if media is None or previous_media and previous_media.get('status') == 'ready':
             previous = subject(store,identifier,previous_number,actor,media=previous_media)
-            prior = service.read(service.identifier(previous),actor) if previous else None
+            prior = service.current(service.identifier(previous),actor) if previous else None
             if prior and prior['status'] == 'changes_requested' and previous['author'] == value['author']:
                 value['previous_review_id'] = prior['id']
     return service.submit(value, actor)

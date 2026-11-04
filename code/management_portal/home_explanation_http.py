@@ -64,12 +64,15 @@ def _cancel_media(request, parsed, actor):
 
 def _page_subject(media, address, sha256, actor, task=''):
     ref = {'address': address, 'sha256': sha256}
-    ctx = media.context(**ref, actor=actor)
+    media.context(**ref, actor=actor)
     manifest = json.loads(media.read(ref, actor))
     if manifest.get('quality') != 'high':
         raise ValueError('仅high解释页需要独立审核')
     return {'kind': 'explanation', 'ref': address, 'version': sha256,
-            'digest': sha256, 'quality': 'high', 'author': ctx.get('owner_id') or actor,
+            # A directory owner describes storage, not authorship. Direct
+            # Resident submission binds the authenticated creator; an unbound
+            # User stays awaiting_author rather than trusting payload identities.
+            'digest': sha256, 'quality': 'high', 'author': actor,
             'assets': [ref] + [manifest[k] for k in ('interaction', 'supplement', 'video_plan', 'video') if manifest.get(k)],
             'task': task or manifest.get('summary', '')}
 
@@ -83,7 +86,7 @@ def _reviews(request, parsed, actor):
             if not identifier:
                 subject = _page_subject(Media(), query.get('address', [''])[0], query.get('sha256', [''])[0], actor)
                 identifier = owner.identifier(subject)
-            value = owner.read(identifier, actor)
+            value = owner.read(identifier, actor) if query.get('id') else owner.current(identifier, actor)
         else:
             body = http_request_body._read_bounded_json_object(request, max_bytes=16384)
             if parsed.path.endswith('/verdict'):
@@ -91,11 +94,39 @@ def _reviews(request, parsed, actor):
                     status=body.get('status'), evidence=body.get('evidence'), feedback=body.get('feedback', ''))
             elif parsed.path.endswith('/cancel'):
                 value = owner.cancel(body.get('review_id'), actor)
+            elif parsed.path.endswith('/resume'):
+                value = owner.resume(body.get('review_id'), actor, body.get('reviewer', ''))
             else:
                 subject = _page_subject(Media(), body.get('address'), body.get('sha256'), actor, body.get('task', ''))
                 subject['previous_review_id'] = body.get('previous_review_id')
                 value = owner.submit(subject, actor, body.get('reviewer', ''))
         return http_responses._serve_json(request, 200, {'review': value})
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
+
+
+def _review_file(request, parsed, actor):
+    try:
+        query = parse_qs(parsed.query)
+        with ReviewService().asset(query.get('id', [''])[0], query.get('sha256', [''])[0], actor,
+                                   group=query.get('group', ['subject'])[0]) as (data, entry, check_live):
+            # This protects acceptance/body construction. The ASGI adapter
+            # buffers this response before network transmission, so an already
+            # accepted response can finish after cancellation; new requests fail.
+            response = plan_media_response(request, size=len(data), mtime_ns=0, download=True)
+            response.send_headers(request, entry['content_type'], extra_headers={
+                'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store',
+                'Content-Security-Policy': "sandbox; default-src 'none'"})
+            if response.status in (200, 206):
+                for offset in range(response.start, response.start + response.length, 256 * 1024):
+                    try:
+                        check_live()
+                    except PermissionError:
+                        request.close_connection = True
+                        return
+                    request.wfile.write(data[offset:min(offset + 256 * 1024, response.start + response.length)])
+    except (BrokenPipeError, ConnectionResetError):
+        pass
     except Exception as exc:
         return http_responses._serve_exception_json(request, exc)
 
@@ -130,4 +161,6 @@ def routes():
             route('POST', '/api/home-explanation/reviews', _reviews, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/verdict', _reviews, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/cancel', _reviews, 'home-explanation'),
+            route('POST', '/api/home-explanation/reviews/resume', _reviews, 'home-explanation'),
+            route('GET', '/api/home-explanation/reviews/file', _review_file, 'home-explanation'),
             route('GET', '/api/home-explanation/media/file', _file, 'home-explanation'))
