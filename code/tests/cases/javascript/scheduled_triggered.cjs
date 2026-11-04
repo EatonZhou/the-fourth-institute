@@ -72,7 +72,7 @@ async function main() {
   });
   w.addEventListener('error', event => record.page_errors.push(event.error?.stack || event.message));
   w.eval(fs.readFileSync(path.join(root, 'portal_instruction_client.js'), 'utf8'));
-  const wanted = new Set(['scheduledTriggeredAllows', 'scheduledTriggeredScheduleText', 'scheduledTriggeredNextAt', 'scheduledTriggeredWaitingForPlan', 'scheduledTriggeredItemId', 'scheduledTriggeredScriptStatus', 'scheduledTriggeredSourceState', 'scheduledTriggeredSourceHtml', 'scheduledTriggeredLineageHtml', 'renderScheduledTriggeredStatus', 'controlScheduledTriggered', 'scheduledTriggeredWorkInFlight', 'scheduleScheduledTriggeredFollowup', 'loadScheduledTriggeredStatus', 'connectScheduledTriggered']);
+  const wanted = new Set(['scheduledTriggeredAllows', 'scheduledTriggeredScheduleText', 'scheduledTriggeredNextAt', 'scheduledTriggeredWaitingForPlan', 'scheduledTriggeredItemId', 'scheduledTriggeredScriptStatus', 'scheduledTriggeredSourceState', 'scheduledTriggeredSourceHtml', 'scheduledTriggeredTaskHtml', 'scheduledTriggeredLineageHtml', 'renderScheduledTriggeredStatus', 'controlScheduledTriggered', 'scheduledTriggeredWorkInFlight', 'scheduleScheduledTriggeredFollowup', 'loadScheduledTriggeredStatus', 'connectScheduledTriggered']);
   const declared = node => node.type === 'FunctionDeclaration' ? [node.id] : node.type === 'VariableDeclaration' ? node.declarations.map(item => item.id) : [];
   const selected = homeStatements().filter(({node}) => declared(node).some(id => wanted.has(id.name)));
   for (const {node} of selected) for (const id of declared(node)) wanted.delete(id.name);
@@ -132,6 +132,19 @@ async function main() {
       await act('[data-scheduled-triggered-action="pause_schedule"]');
       assert.equal(record.instructions[0].instruction, 'PauseComponent');
       assert.deepEqual(record.instructions[0].arguments, {lineage_id: 'lineage_100000000009', component_id: 'event_source_daily', paused: true});
+    } else if (caseName === 'task_sources') {
+      toggle();
+      const tasks = [...panel.querySelectorAll('[data-scheduled-triggered-task]')];
+      assert.equal(tasks.length, 3, 'distinct wires retain their task bodies');
+      assert.deepEqual(tasks.map(task => task.querySelector('pre').textContent), ['Same task.', 'Same task.', 'Other task.']);
+      const labels = tasks.map(task => task.querySelector('[data-scheduled-triggered-task-source]').textContent);
+      assert.match(labels[0], /<img src=x onerror="window.__monitorInjected=1">/);
+      assert.match(labels[0], /定时触发/);
+      assert.match(labels[1], /Run now.*手动触发/);
+      assert.match(labels[2], /event_source_gone/);
+      assert.equal(tasks[0].querySelector('img,script,[onerror]'), null);
+      assert.equal(w.__monitorInjected, undefined);
+      assert.equal(record.instructions.length, 0, 'reading task provenance cannot trigger work');
     } else if (caseName === 'lineage_errors_visible_with_valid_neighbor') {
       const error = panel.querySelector('.agent-status-error'); assert.match(error.textContent, /Lineage read failed/);
       assert.equal(error.querySelector('img,script,[onerror]'), null); assert.equal(w.__monitorInjected, undefined);

@@ -58,7 +58,7 @@ Home 的 Agent Status 包含“定时与自动触发”面板（Scheduled & Trig
 | 模型设置 | 当前 Provider、账号、模型与推理强度 | `GetResidentSettings` |
 | 告警 | 见“健康状态” | 由以上各项计算 |
 
-展开一行后，详情显示连线上写明的任务说明、Lineage 诊断和最近若干次 Trigger Path 的记录，并提供“打开 Lineage”入口，进入该 Society 页面查看和编辑完整流程。
+展开一行后，详情显示连线上写明的任务说明、Lineage 诊断和最近若干次 Trigger Path 的记录，并提供“打开 Lineage”入口，进入该 Society 页面查看和编辑完整流程。每条任务说明同时显示该连线的事件源名称与触发类型，手动源与自动源的相同正文也分别保留，使用户能够识别它们的触发来源。来源信息缺失时显示现有来源标识或明确未记录，不从其他事件源推定。
 
 ### 脚本 Effect 的行
 

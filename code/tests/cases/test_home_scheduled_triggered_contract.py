@@ -58,6 +58,15 @@ def _monitor(case_name: str) -> dict:
         resident["state"] = {"work_state": "running", "queued_count": 1}
     if case_name == "resume_visible_monitor":
         resident["state"] = {"work_state": "queued", "queued_count": 1}
+    if case_name == "task_sources":
+        resident["sources"][0]["wire_id"] = "wire_daily"
+        resident["sources"][0]["title"] = INJECTION_TEXT
+        resident["manual_sources"][0].update(wire_id="wire_manual", event_type="manual.triggered")
+        resident["tasks"] = [
+            {"wire_id": "wire_daily", "component_id": "event_source_daily", "text": "Same task."},
+            {"wire_id": "wire_manual", "component_id": "event_source_manual", "text": "Same task."},
+            {"wire_id": "wire_unknown", "component_id": "event_source_gone", "text": "Other task."},
+        ]
     if case_name == "script_effect":
         resident.pop("resident_id")
         resident.update(kind="effect", effect_id="effect_100000000009", row_id="lineage_100000000009/effect_100000000009",
@@ -81,7 +90,7 @@ def test_scheduled_triggered_browser_contract(tmp_path):
     The historical function name preserves the stable case ID.
 
     :design-point:"""
-    for case_name in ("lineage_errors_visible_with_valid_neighbor", "event_schedule_and_identity", "read_only_lineage", "resident_without_timer", "script_effect", "resume_visible_monitor", "cold_loading", "post_mutation_fresh"):
+    for case_name in ("lineage_errors_visible_with_valid_neighbor", "event_schedule_and_identity", "read_only_lineage", "resident_without_timer", "script_effect", "resume_visible_monitor", "cold_loading", "post_mutation_fresh", "task_sources"):
         payload_file = tmp_path / f"{case_name}.json"
         payload_file.write_text(json.dumps(_monitor(case_name), ensure_ascii=False), encoding="utf-8")
         route_file = tmp_path / f"{case_name}-routes.js"

@@ -100,6 +100,17 @@
       if (agentId) scheduledTriggeredExpanded.add(agentId);
     }
 
+    function scheduledTriggeredTaskHtml(item, task) {
+      const source = task.component_id && [...(item.sources || []), ...(item.manual_sources || [])]
+        .find(value => value.component_id === task.component_id);
+      const title = source?.title || task.component_id || window.PortalI18n.t("未记录");
+      const kind = ({"time.reached": "定时触发", "manual.triggered": "手动触发", "file.changed": "文件变化"})[source?.event_type];
+      return window.PortalI18n.html`<div data-scheduled-triggered-task>
+        <div class="scheduled-triggered-unit" data-scheduled-triggered-task-source>来源：${esc(title)}${kind ? ` · ${esc(window.PortalI18n.t(kind))}` : ""}</div>
+        <pre class="scheduled-triggered-task">${esc(task.text)}</pre>
+      </div>`;
+    }
+
     function scheduledTriggeredLineageHtml(monitor) {
       if (!monitor?.loaded) {
         const failed = monitor?.status === "error";
@@ -150,7 +161,7 @@
       </div>
       <div class="scheduled-triggered-detail" id="${detailId}"${expanded ? "" : " hidden"}>
         <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">Event 来源</div>${sources.length ? sources.map(source => scheduledTriggeredSourceHtml(item, source)).join("") : window.PortalI18n.html`<div class="scheduled-triggered-subtle">此 Resident 当前没有连接的时间或文件 Event；运行状态仍来自所属 Lineage。</div>`}</section>
-        <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">任务说明</div>${(item.tasks || []).length ? item.tasks.map(task => window.PortalI18n.html`<pre class="scheduled-triggered-task">${esc(task.text)}</pre>`).join("") : window.PortalI18n.html`<div class="scheduled-triggered-subtle">连线上没有写任务说明。</div>`}</section>
+        <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">任务说明</div>${(item.tasks || []).length ? item.tasks.map(task => scheduledTriggeredTaskHtml(item, task)).join("") : window.PortalI18n.html`<div class="scheduled-triggered-subtle">连线上没有写任务说明。</div>`}</section>
         <section class="scheduled-triggered-detail-section"><div class="scheduled-triggered-detail-title">运行与设置</div>${isEffect ? window.PortalI18n.html`<div class="scheduled-triggered-subtle">最近脚本文件 ${esc(item.last_run?.path || window.PortalI18n.t("尚无记录"))}</div>` : window.PortalI18n.html`<div class="scheduled-triggered-subtle">Provider ${esc(item.resident?.provider || window.PortalI18n.t("未知"))} · 账号 ${esc(item.resident?.account || window.PortalI18n.t("默认"))}${item.settings?.model ? window.PortalI18n.text` · 模型 ${esc(item.settings.model)}` : ""}${item.settings?.reasoning_effort ? window.PortalI18n.text` · 推理 ${esc(item.settings.reasoning_effort)}` : ""}</div>
           ${scheduledTriggeredAllows(item, "UpdateResidentSettings") ? window.PortalI18n.html`<div class="scheduled-triggered-actions" data-scheduled-triggered-settings><label>模型<input type="text" data-scheduled-triggered-setting="model" value="${esc(item.settings?.model || "")}"></label><label>推理强度<input type="text" data-scheduled-triggered-setting="reasoning_effort" value="${esc(item.settings?.reasoning_effort || "")}"></label><button type="button" class="scheduled-triggered-action" data-scheduled-triggered-action="update_settings" data-scheduled-triggered-row-id="${residentId}">修改模型</button></div>` : ""}`}
           <div class="scheduled-triggered-subtle">最近运行 ${esc(isEffect ? scheduledTriggeredScriptStatus(item.last_run?.status) : item.last_run?.status || window.PortalI18n.t("无记录"))}${item.last_run?.started_at ? window.PortalI18n.text` · 开始 ${esc(displayDateTime(item.last_run.started_at) || item.last_run.started_at)}` : ""}${item.last_run?.finished_at ? window.PortalI18n.text` · 结束 ${esc(displayDateTime(item.last_run.finished_at) || item.last_run.finished_at)}` : ""}${Number(item.consecutive_failures) ? window.PortalI18n.text` · 连续失败 ${esc(item.consecutive_failures)} 次` : ""}</div>
