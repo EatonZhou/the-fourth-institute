@@ -199,6 +199,68 @@ def test_current_session_credits_never_authorize_independent_automatic_context(e
     assert read_execution_prerequisite(call, R, new_context=True)['ready']
 
 
+def test_no_credits_run_does_not_reuse_paid_session_override(execution):
+    call, state, init, account = execution
+    assert read_execution_prerequisite(call, R)['ready']
+    calls = []
+    def observe(name, args):
+        calls.append((name, args))
+        return call(name, args)
+    result = prepare_execution_prerequisite(observe, R, require_native_quota=True)
+    assert not result['ready'] and result['reason'] == 'native_quota_unavailable'
+    assert state['execution_gate']['override_enabled'] is True
+    assert ('ListProviderAccounts', {'account_id': 'codex_fixture', 'refresh': True}) in calls
+    assert {name for name, _ in calls} <= {'GetResident', 'GetResidentInitialization',
+                                          'ListResidentStates', 'ListProviderAccounts'}
+
+
+@pytest.mark.parametrize('remaining,fresh,used_up,gate_open,expected', [
+    (30.0, True, False, True, True),
+    (1.0, True, False, True, True),
+    (0.0, True, True, True, False),
+    (30.0, False, False, True, False),
+    (None, True, False, True, False),
+    (True, True, False, True, False),
+    (30.0, True, False, False, False),
+])
+def test_no_credits_run_requires_native_quota_and_current_gate(
+        execution, remaining, fresh, used_up, gate_open, expected):
+    call, state, init, account = execution
+    account['quota_reserve'].update(remaining=remaining, fresh=fresh, used_up=used_up)
+    if not gate_open:
+        state['execution_gate'].update(state='closed', reason='binding_unavailable')
+    result = read_execution_prerequisite(call, R, require_native_quota=True)
+    assert result['ready'] is expected
+    if remaining == 1.0 and not isinstance(remaining, bool):
+        # Existing native Session work may use its remaining native reserve;
+        # independent automatic work still obeys its separate admission.
+        assert not read_execution_prerequisite(call, R, new_context=True)['ready']
+
+
+def test_no_credits_policy_survives_interaction_reread(execution):
+    call, state, init, account = execution
+    account['quota_reserve'].update(remaining=30.0, fresh=True, used_up=False)
+    init.update(status='running', initialization_id='original-attempt')
+    def finish_initialization(_request):
+        init['status'] = 'completed'
+        account['quota_reserve'].update(remaining=0.0, used_up=True)
+        return {'ready': True, 'confirmed': True}
+    callback = Mock(side_effect=finish_initialization)
+    result = prepare_execution_prerequisite(call, R, require_native_quota=True, interact=callback)
+    assert callback.call_count == 1
+    assert not result['ready'] and result['reason'] == 'native_quota_unavailable'
+
+
+def test_no_credits_policy_blocks_paid_initialization_before_interaction(execution):
+    call, state, init, account = execution
+    init.update(status='running', initialization_id='held-attempt')
+    callback = Mock(return_value={'ready': True, 'confirmed': True})
+    result = prepare_execution_prerequisite(call, R, require_native_quota=True, interact=callback)
+    assert not result['ready'] and result['reason'] == 'native_quota_unavailable'
+    assert result['recovery'] is None
+    callback.assert_not_called()
+
+
 def test_fork_initialization_and_human_interaction_require_authoritative_reread(execution):
     call, state, init, account = execution
     init.update(status='running', initialization_id='exact-attempt')

@@ -21,6 +21,8 @@
 
 执行前提由 `tau_execution_prerequisites.prepare_execution_prerequisite` 统一读取。传入本次身份的正式 ISA 调用函数和目标 resident_id；Fork、重建或迁移后重新读取 GetResident、GetResidentInitialization、ListResidentStates，不以 OpenIntake、绑定已打开或回调返回 true 代替初始化/Session 执行许可。未完成 Fork 用 RetryResidentInitialization 和原 expected_initialization_id 恢复；普通 Session 重建用当前 RestartSession 的精确目标与 preserve 策略。需要 credits 时，只能由真实人类在支持入口确认精确账号和初始化/Session；服务主体、测试用户 profile、自动点击与自报 confirmed:true 都不构成人类许可。可传 interact 回调打开真实交互入口，之后助手正式回读；缺前提报告流程受阻，不擅换账号或重复创建。
 
+本次运行明确禁止付费 credits 时，每次向 Codex 成员发送业务消息或触发 AI 工作前，必须调用上述助手并传 `require_native_quota=True`，包括复用的固定共享业务成员。它刷新并核对原账号的新鲜、正数原生额度，同时保留当前执行门检查；旧 Session 的 ready、开放 gate 或 override 不是本轮许可。原生额度耗尽、未知或陈旧时停在发送前，记录前提缺口，不迁移共享角色、确认 credits 或修改保护。普通 API 业务的登记 Provider 与计费配置保持原契约，不把这项 Codex 原生额度检查误用于不提供该额度的 API。
+
 定时 time.reached 及其他独立新上下文使用同一助手的 `new_context=True`：从 ListProviderAccounts 读取原账号的自动执行额度状态，当前 Session 的付费例外不能继承。waiting_quota 表示执行前提不足，保留已建立的自动触发和原输入，记录尚未覆盖自动回复；不得为了报告完整关闭保护或扩大 Family 许可。
 
 普通内容文件放运行上下文的 fixture_dir；独立 Git 例放声明提供的 standalone_fixture_dir，不用执行者 Workspace、runtime 区或既有 Git checkout 代替。产品对业务目录的正式契约优先：Article 文稿必须放在本例有权使用的已登记 Project 内的独占新子目录，不能强制放到 features 区的 fixture_dir。写入前核对实际 Project、目录边界与精确权限，记录本轮子目录和资源 ID；结束只清理该独占子目录，不移动既有文稿或删除 Project 根目录。额外 Workspace 的绑定不授予编辑/注销权。需要这些动作时使用 `tau_fixture_access.prepare_workspace_access(evidence_dir, workspace_id, check=测试用户的正式ISA, issue=实际有权控制者的正式ISA)`，只借给配置的测试用户单一 Workspace 的 UpdateWorkspaceFile/UnregisterResource，保存原幂等请求与许可回执；没有合法控制者则返回明确前提。不要冒充控制者或扩展 Resident 管理权限。清理先停工作、经资源 owner 释放本轮分配对象，再撤销已记录许可并删自有目录；不凭不存在 ID、权限拒绝或路径相近宣称回收。

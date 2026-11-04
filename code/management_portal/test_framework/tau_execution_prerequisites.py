@@ -2,9 +2,20 @@
 from __future__ import annotations
 
 import re
+import math
 
 
-def read_execution_prerequisite(instruction, resident_id: str, *, new_context: bool = False):
+def _execution_account(instruction, account_id, *, refresh=False):
+    arguments = {'account_id': account_id}
+    if refresh:
+        arguments['refresh'] = True
+    accounts = instruction('ListProviderAccounts', arguments)['accounts']
+    matches = [account for account in accounts if account.get('account_id') == account_id]
+    return matches[0] if len(matches) == 1 else {}
+
+
+def read_execution_prerequisite(instruction, resident_id: str, *, new_context: bool = False,
+                                require_native_quota: bool = False):
     if not re.fullmatch(r'resident_[0-9a-f]{12}', resident_id):
         raise ValueError('Expected an exact Resident ID')
     resident = instruction('GetResident', {'resident_id': resident_id})['resident']
@@ -20,7 +31,26 @@ def read_execution_prerequisite(instruction, resident_id: str, *, new_context: b
     gate = state.get('execution_gate') or {}
     reason = ''
     recovery = None
-    if initialization.get('status') not in {'completed', 'not_required'}:
+    native_quota = None
+    account, quota = {}, {}
+    native_unavailable = False
+    if require_native_quota:
+        # Check before offering initialization recovery too: that recovery can
+        # itself prepare a model Session under an older paid exception.
+        account = _execution_account(instruction, account_id, refresh=True)
+        quota = account.get('quota_reserve') or {}
+        native_quota = {key: quota.get(key) for key in (
+            'fresh', 'remaining', 'remaining_percent', 'used_up', 'exhausted', 'observed_at')}
+        remaining = quota.get('remaining')
+        native_unavailable = (not account or account.get('enabled') is False
+            or (account.get('registration') or {}).get('enabled') is False
+            or quota.get('fresh') is not True or quota.get('used_up') is True
+            or quota.get('exhausted') is True or isinstance(remaining, bool)
+            or not isinstance(remaining, (int, float))
+            or not math.isfinite(remaining) or remaining <= 0)
+    if native_unavailable:
+        reason = 'native_quota_unavailable'
+    elif initialization.get('status') not in {'completed', 'not_required'}:
         reason = 'initialization_required'
         recovery = {'instruction': 'RetryResidentInitialization',
                     'arguments': {'resident_id': resident_id,
@@ -28,36 +58,40 @@ def read_execution_prerequisite(instruction, resident_id: str, *, new_context: b
                     'account_id': account_id, 'scope': 'initialization_and_target_session'}
     elif state.get('intake_state') != 'open':
         reason = 'intake_closed'
-    elif new_context:
-        # Automatic time.reached work starts independently. The current
-        # Session's paid exception is deliberately irrelevant to this check.
-        accounts = instruction('ListProviderAccounts', {'account_id': account_id})['accounts']
-        matches = [a for a in accounts if a.get('account_id') == account_id]
-        account = matches[0] if len(matches) == 1 else {}
-        quota = account.get('quota_reserve') or {}
-        if (not account or (account.get('registration') or {}).get('enabled') is False
-                or not (account.get('quota_protection_enabled') is False or quota.get('automatic_paused') is False)):
-            reason = 'independent_context_quota_unavailable'
-    elif gate.get('account_id') != account_id or gate.get('state') != 'open':
-        reason = gate.get('reason') or 'execution_gate_unavailable'
-    return {'resident_id': resident_id, 'account_id': account_id,
+    else:
+        if new_context:
+            if not require_native_quota:
+                account = _execution_account(instruction, account_id)
+                quota = account.get('quota_reserve') or {}
+            if (not account or (account.get('registration') or {}).get('enabled') is False
+                    or not (account.get('quota_protection_enabled') is False or quota.get('automatic_paused') is False)):
+                reason = 'independent_context_quota_unavailable'
+        if not reason and not new_context and (gate.get('account_id') != account_id or gate.get('state') != 'open'):
+            reason = gate.get('reason') or 'execution_gate_unavailable'
+    result = {'resident_id': resident_id, 'account_id': account_id,
             'scope': 'independent_context' if new_context else 'current_session',
             'ready': not reason, 'reason': reason, 'initialization': initialization,
             'execution_gate': gate, 'recovery': recovery}
+    if require_native_quota:
+        result['native_quota'] = native_quota
+    return result
 
 
-def prepare_execution_prerequisite(instruction, resident_id: str, *, new_context=False, interact=None):
+def prepare_execution_prerequisite(instruction, resident_id: str, *, new_context=False,
+                                   require_native_quota=False, interact=None):
     """An optional authenticated interaction owns any human decision.
 
     No confirmed flag, alternate account or inferred human identity is emitted
     here. A callback may open the actual Session/init UI; its return value is
     not evidence of success. Always re-read the authoritative state afterwards.
     """
-    before = read_execution_prerequisite(instruction, resident_id, new_context=new_context)
-    if before['ready'] or interact is None:
+    before = read_execution_prerequisite(instruction, resident_id, new_context=new_context,
+                                        require_native_quota=require_native_quota)
+    if before['ready'] or interact is None or before['reason'] == 'native_quota_unavailable':
         return before
     interact(before)
-    after = read_execution_prerequisite(instruction, resident_id, new_context=new_context)
+    after = read_execution_prerequisite(instruction, resident_id, new_context=new_context,
+                                       require_native_quota=require_native_quota)
     if after['account_id'] != before['account_id']:
         return {**after, 'ready': False, 'reason': 'execution_account_changed'}
     return after
