@@ -325,26 +325,52 @@
   mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 
-.messageFoldToggle {
+/* Own this reading control even inside pages with generic button styling. */
+.messageItem .messageFoldToggle {
+  appearance: none;
   display: none;
-  margin-top: 4px;
-  padding: 0;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  margin: 2px 0 0 -2px;
+  padding: 6px 2px;
   border: 0;
+  border-radius: 4px;
   background: transparent;
+  box-shadow: none;
   color: var(--accent, #2563eb);
   font: inherit;
   font-size: 12px;
+  font-weight: 500;
   line-height: 20px;
   cursor: pointer;
 }
 
-.messageContent[data-message-fold-size="long"] + .messageFoldToggle { display: inline-block; }
-.messageFoldToggle:hover { text-decoration: underline; }
+.messageContent[data-message-fold-size="long"] + .messageFoldToggle { display: inline-flex; }
 
-.messageFoldToggle:focus-visible {
+.messageFoldToggle::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin: -3px 2px 0 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.messageFoldToggle[aria-expanded="true"]::after {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+
+.messageItem .messageFoldToggle:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.messageItem .messageFoldToggle:focus-visible {
   outline: 2px solid var(--accent, #2563eb);
   outline-offset: 2px;
-  border-radius: 3px;
 }
 
 .messageItem.forwardSelectable { position: relative; padding-left: 34px; }
