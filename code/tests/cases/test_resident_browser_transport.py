@@ -1,6 +1,6 @@
 """Resident 原生浏览器的真实流式传输与认证边界。
 
-:module: identity.machine-api
+:module: security.network-boundary
 :design: decision_fb910c43ab07
 :profiles: local.fixture
 :risk: no-external-side-effects
