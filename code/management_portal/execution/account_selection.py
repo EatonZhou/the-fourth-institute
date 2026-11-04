@@ -32,26 +32,50 @@ def headroom(account: Mapping[str, Any]) -> float | None:
     return min([float(remaining), *(float(w["remaining_percent"]) for w in windows)])
 
 
+def available(account: Mapping[str, Any], *, reserve: float = 0) -> bool:
+    """Separate permission to use an account from measurable quota headroom."""
+    if account.get("enabled") is False:
+        return False
+    if account.get("kind") == "subscription_login" and account.get("login_state") != "logged_in":
+        return False
+    quota = account.get("quota_reserve") or {}
+    if quota.get("status") != "available" or quota.get("used_up") or quota.get("automatic_paused"):
+        return False
+    remaining = headroom(account)
+    if remaining is not None:
+        return remaining > reserve
+    threshold = quota.get("close_threshold") or {}
+    reported = quota.get("remaining")
+    # A configured API may have no balance endpoint. The scheduler's zero
+    # threshold permits using it; that does not manufacture a balance reading
+    # or prove a positive reserve for preventative account migrations.
+    return bool(
+        reserve == 0 and account.get("kind") == "api_profile" and account.get("status") == "ok"
+        and (account.get("billing_account_id") or (account.get("config") or {}).get("api_id"))
+        and threshold.get("metric") == "balance" and threshold.get("value") == 0
+        and (reported is None or finite(reported) and reported > 0)
+    )
+
+
 def compatible(account: Mapping[str, Any], source: Mapping[str, Any]) -> bool:
     if account.get("provider") != source.get("provider") or account.get("kind") != source.get("kind"):
         return False
     # A paid API is an explicit billing boundary, even when two APIs expose the
     # same model. Wrappers of that API are also distinct backends.
-    return account.get("kind") == "subscription_login" or (
-        account.get("billing_account_id") or (account.get("config") or {}).get("api_id")) == (
-        source.get("billing_account_id") or (source.get("config") or {}).get("api_id"))
+    if account.get("kind") == "subscription_login":
+        return True
+    scope = account.get("billing_account_id") or (account.get("config") or {}).get("api_id")
+    source_scope = source.get("billing_account_id") or (source.get("config") or {}).get("api_id")
+    return scope == source_scope and (account.get("kind") != "api_profile" or bool(scope))
 
 
 def candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str = "",
                effort: str = "", current: str = "", excluded=(), reserve: float = 0) -> list[dict]:
     eligible = []
     for account in accounts:
-        if not compatible(account, source) or account.get("enabled") is False or account.get("account_id") in excluded:
+        if not compatible(account, source) or account.get("account_id") in excluded:
             continue
-        if account.get("kind") == "subscription_login" and account.get("login_state") != "logged_in":
-            continue
-        remaining = headroom(account)
-        if remaining is None or remaining <= reserve:
+        if not available(account, reserve=reserve):
             continue
         catalog = account.get("selection_catalog") or {}
         if model and (catalog.get("fresh") is not True or model not in catalog.get("models", [])):
@@ -64,7 +88,9 @@ def candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str = 
         load = (account.get("active_count", 0) + account.get("queued_count", 0)) / limit
         # Existing sessions remain sticky. New sessions prefer spare capacity,
         # then headroom, with a stable tie-break; the scheduler owns final admission.
-        return (account.get("account_id") != current, load >= 1, -headroom(account), load, account["account_id"])
+        remaining = headroom(account)
+        return (account.get("account_id") != current, load >= 1, remaining is None,
+                -remaining if remaining is not None else 0, load, account["account_id"])
     return sorted(eligible, key=rank)
 
 
@@ -88,7 +114,7 @@ def select(provider: str, *, anchor: str = "", model: str = "", effort: str = ""
                if sample.get("account_id") in registered]
     selected = candidates(samples, source, model=model, effort=effort)
     if not selected:
-        raise DefaultAccountUnavailable("No compatible account has verified available quota; waiting for account observations or quota reset")
+        raise DefaultAccountUnavailable("No compatible account is available under the current quota policy; waiting for account readiness or quota reset")
     return next(row for row in rows if row["account_id"] == selected[0]["account_id"])
 
 

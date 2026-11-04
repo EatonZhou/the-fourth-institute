@@ -45,6 +45,8 @@ Connected AI groups execution accounts by their Model API connection. The model 
 
 **Enable Ask Me Anything:** After saving an API, complete “Test and finish” with “Use as default AI” checked. For an existing account, choose “Make default AI” in Connected AI to open this test flow. Only a successful test updates the `default` Backend role. The page points out a missing default and marks the current default AI. A Codex default route is separate from the site's default AI; choosing a route does not configure a Backend role. Existing AMA and Residents without backend bindings use the configured default; existing session bindings remain intact.
 
+Custom APIs can be selected automatically as the default AI without a balance endpoint. When an API account's Close balance threshold is zero, automatic selection can use its configured compatible account and model while leaving the balance unknown. Disabled, paused, or known depleted accounts remain ineligible. Selection stays within the API and runner unless another API is explicitly included in the backend order. Subscription quota checks and verified reserve requirements for preventative migrations still apply.
+
 Check for updates uses `ListProviders(refresh=true)` to record installed and available versions. The runtime updater owns installation and activation.
 
 Home → AI Activity & Accounts shows quota or balance per execution account. Its scheduling controls set concurrency, dispatch interval, and the Close threshold below which new automatic work pauses (`ListProviderAccounts`, `UpdateProviderAccount`). Registered `max_concurrency` is an initial value; updating registration does not overwrite Scheduler settings.
