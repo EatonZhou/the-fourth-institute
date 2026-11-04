@@ -278,6 +278,9 @@ Paper、Repo、WALL 等使用产品绑定的固定 Lineage/Resident。
 产品目录契约优先，Article 使用有权访问的已登记 Project 内本轮独占新子目录，
 写入前核对路径与权限并记录清理边界，不清理既有文稿或 Project 根目录。
 测试结束框架清理 fixtures、helpers 和进程，观察材料保留供报告查阅。
+业务步骤与必要补验完成后再清理自建对象，避免提前删除仍需续作的成员或文件。
+浏览器用 try/finally 正常 await portal.close()；若自建 readline、HTTP server 或交互控制循环，
+还须关闭该控制通道并核对脚本退出。浏览器关闭不等于包装脚本退出，不猜测或终止裸 PID。
 使用共享浏览器助手携带 run-context.json 的资源生命周期标识，新建资源自动登记由框架回收。
 已有工程内新建的 WALL 条目写入 test-fixtures.json 的 wall_items（project、block）；
 新建 CreateUpload 句柄写入 uploads 数组。不要把已有资源、输入资源、固定团队或内部 block ID 登记为待注销资源。
