@@ -37,6 +37,54 @@
 .backendDirectoryRow input { flex:1; min-width:0; }
 .backendDirectoryList { display:grid; gap:6px; max-height:260px; overflow:auto; }
 .backendDirectoryList button { text-align:left; white-space:normal; overflow-wrap:anywhere; }
+.backendDirectoryPicker.backendDialog { width:min(860px, calc(100vw - 24px)); max-width:calc(100vw - 24px); height:min(600px, calc(100dvh - 24px)); max-height:calc(100dvh - 24px); padding:0; overflow:hidden; }
+.backendDirectoryPicker[open] { display:flex; flex-direction:column; }
+.backendDirectoryPicker > header { flex:none; padding:8px 12px; border-bottom:1px solid var(--border); }
+.backendDirectoryPicker h2 { display:flex; align-items:baseline; flex-wrap:wrap; gap:12px; margin:0; font-size:1rem; }
+.backendDirectoryPicker h2 small { font-size:.75rem; font-weight:normal; color:var(--muted); }
+.backendDirectoryBrowser { flex:1; min-height:0; min-width:0; display:flex; flex-direction:column; font-size:.875rem; }
+.backendDirectoryPicker .portalButton, .backendDirectoryPicker input { font:inherit; }
+.backendDirectoryPicker .portalButton { min-height:36px; }
+.backendDirectoryNav { display:flex; align-items:center; gap:4px; padding:8px; border-bottom:1px solid var(--border); }
+.backendDirectoryNav > button { width:36px; flex:none; padding:4px; }
+.backendDirectoryLocation { flex:1; min-width:0; }
+.backendDirectoryLocation input { box-sizing:border-box; width:100%; min-width:0; min-height:36px; }
+.backendDirectoryCrumbs { display:flex; align-items:center; gap:2px; overflow-x:auto; white-space:nowrap; scrollbar-width:thin; }
+.backendDirectoryCrumbs > button { flex:none; border:0; background:transparent; padding:4px 8px; font-weight:normal; }
+.backendDirectoryCrumbs > span { color:var(--muted); }
+.backendDirectoryContent { display:grid; grid-template-columns:150px minmax(0,1fr); flex:1; min-height:0; }
+.backendDirectoryPlaces { min-width:0; overflow:auto; padding:8px; background:var(--panel-2); border-right:1px solid var(--border); }
+.backendDirectoryPlaces button { display:block; width:100%; text-align:left; font-weight:normal; border:0; background:transparent; padding:6px 10px; overflow-wrap:anywhere; }
+.backendDirectoryMain { display:flex; flex-direction:column; min-width:0; min-height:0; padding:8px; gap:6px; }
+.backendDirectoryListActions > input { box-sizing:border-box; min-height:36px; padding:6px 10px; }
+.backendDirectoryPicker .backendDirectoryList { display:block; max-height:none; flex:1; min-height:0; overflow:auto; outline-offset:-2px; border:1px solid var(--border); border-radius:4px; }
+.backendDirectoryPicker .backendDirectoryList [role=option] { display:flex; align-items:center; gap:10px; padding:7px 10px; min-height:36px; box-sizing:border-box; cursor:default; user-select:none; text-align:left; }
+.backendDirectoryPicker .backendDirectoryList [role=option] > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.backendDirectoryPicker .backendDirectoryList [role=option]:hover { background:var(--panel-2); }
+.backendDirectoryPicker .backendDirectoryList [aria-selected=true] { background:color-mix(in srgb,var(--accent) 16%,var(--panel)); outline:1px solid var(--accent); outline-offset:-1px; }
+.backendDirectoryIcon { display:inline-block; position:relative; flex:none; width:18px; height:13px; border:1.5px solid var(--accent); border-radius:2px; background:color-mix(in srgb,var(--accent) 12%,var(--panel)); }
+.backendDirectoryIcon::before { content:""; position:absolute; width:7px; height:3px; top:-4px; left:-1.5px; border:1.5px solid var(--accent); border-bottom:0; border-radius:2px 2px 0 0; }
+.backendDirectoryFeedback { display:flex; align-items:center; gap:8px; flex:none; }
+.backendDirectoryFeedback p { margin:0; font-size:.8rem; color:var(--muted); overflow-wrap:anywhere; }
+.backendDirectoryFeedback:has(p:empty) { display:none; }
+.backendDirectoryPicker .backendDirectoryFooter { display:flex; align-items:center; flex-wrap:wrap; flex:none; gap:8px; margin:0; border-top:1px solid var(--border); padding:10px 12px; }
+.backendDirectoryPending { flex:1 1 200px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.backendDirectoryCommit { display:flex; gap:8px; margin-left:auto; }
+.backendDirectoryCommit button { white-space:nowrap; }
+@media (max-width:540px) {
+  .backendDirectoryPicker.backendDialog { width:calc(100vw - 12px); max-width:calc(100vw - 12px); height:calc(100dvh - 12px); max-height:calc(100dvh - 12px); }
+  .backendDirectoryPicker .portalButton, .backendDirectoryPicker input, .backendDirectoryPicker .backendDirectoryList [role=option] { min-height:44px; }
+  .backendDirectoryNav { flex-wrap:wrap; }
+  .backendDirectoryNav > button { width:44px; }
+  .backendDirectoryLocation { flex-basis:calc(100% - 52px); order:1; }
+  .backendDirectoryNav > button:last-child, .backendDirectoryNav > button:nth-last-child(2) { order:2; }
+  .backendDirectoryContent { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); }
+  .backendDirectoryPlaces { display:flex; gap:8px; padding:4px 8px; overflow-x:auto; border-right:0; border-bottom:1px solid var(--border); }
+  .backendDirectoryPlaces > div { display:flex; }
+  .backendDirectoryPlaces button { width:auto; flex:none; white-space:nowrap; }
+  .backendDirectoryPicker .backendDirectoryFooter { padding:8px; }
+  .backendDirectoryPending { flex-basis:100%; }
+}
 .backendSetupStages { display:grid; gap:8px; margin:0; padding:12px 12px 12px 32px; background:var(--panel-2); border-radius:8px; font-size:13px; }
 .backendForm [data-backend-check-log] { box-sizing:border-box; width:100%; min-width:0; resize:vertical; font:12px/1.5 monospace; }
 .backendForm [role=alert] { color:var(--danger, #b3261e); }
@@ -96,3 +144,6 @@
   .backendSelectionSummary > button { align-self:flex-start; }
   .backendPriority { padding:10px; }
 }
+.backendDirectoryListActions { display:flex; gap:8px; align-items:center; }
+.backendDirectoryListActions > input { flex:1; min-width:0; }
+.backendDirectoryListActions > button { flex:none; white-space:nowrap; }

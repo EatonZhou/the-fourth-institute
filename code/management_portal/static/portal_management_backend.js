@@ -191,40 +191,165 @@ function dialog(title, onClose = () => {}) {
 }
 
 function browseHostDirectory(initialPath, onSelect) {
-  let closed = false, generation = 0, current = "", parent = "";
-  const abort = new AbortController();
-  const view = dialog(t("选择 Portal 主机目录"), () => { closed = true; generation++; abort.abort(); });
-  const body = node("div", undefined, {class: "backendForm"});
-  const address = field(body, "目录路径", "browse_path", initialPath, {autocomplete: "off"});
+  // Browsing and selection are separate. Only server-confirmed paths can be
+  // committed; the dialog owns request cancellation and navigation history.
+  let closed = false, generation = 0, request, current = "", parent = "", attempted = initialPath;
+  let entries = [], selected = "", busy = false, invalid = false, editing = false, truncated = false;
+  const history = []; let historyIndex = -1;
+  const view = dialog(t("选择文件夹"), () => { closed = true; generation++; request?.abort(); });
+  view.el.classList.add("backendDirectoryPicker");
+  view.el.querySelector("h2").append(node("small", t("Portal 主机")));
+  const body = node("div", undefined, {class: "backendDirectoryBrowser"});
+  const nav = node("div", undefined, {class: "backendDirectoryNav"});
+  function iconButton(label, glyph, action) {
+    const el = button(label, action); el.textContent = glyph; el.setAttribute("aria-label", t(label)); el.title = t(label); return el;
+  }
+  const back = iconButton("后退", "←", () => void load(history[historyIndex - (current ? 1 : 0)], {index: historyIndex - (current ? 1 : 0)}));
+  const forward = iconButton("前进", "→", () => void load(history[historyIndex + 1], {index: historyIndex + 1}));
+  const up = iconButton("上一级", "↑", () => void load(parent));
+  const location = node("div", undefined, {class: "backendDirectoryLocation"});
+  const crumbs = node("nav", undefined, {"aria-label": t("目录路径"), class: "backendDirectoryCrumbs"});
+  const address = node("input", undefined, {name: "browse_path", "aria-label": t("目录路径"), autocomplete: "off", spellcheck: false, hidden: true});
+  const editPath = iconButton("编辑路径", "⌨", () => editLocation());
+  const go = iconButton("打开目录", "↵", () => void load(address.value.trim(), {focusList: true})); go.hidden = true;
+  location.append(crumbs, address); nav.append(back, forward, up, location, editPath, go);
+  const content = node("div", undefined, {class: "backendDirectoryContent"});
+  const places = node("nav", undefined, {class: "backendDirectoryPlaces", "aria-label": t("位置")});
+  const home = button("主目录", () => void load());
+  const roots = node("div"); places.append(home, roots);
+  const main = node("div", undefined, {class: "backendDirectoryMain"});
+  const filter = node("input", undefined, {type: "search", "aria-label": t("筛选文件夹"), placeholder: t("筛选文件夹")});
+  const listActions = node("div", undefined, {class: "backendDirectoryListActions"});
+  const enter = button("打开目录", () => { if (selected && !enter.disabled) void load(selected, {focusList: true}); }, true);
+  listActions.append(filter, enter);
+  const list = node("div", undefined, {class: "backendDirectoryList", role: "listbox", tabindex: "0", "aria-label": t("文件夹")});
+  const feedback = node("div", undefined, {class: "backendDirectoryFeedback"});
   const status = node("p", "", {role: "status", "aria-live": "polite"});
-  const roots = node("div", undefined, {class: "backendActions"});
-  const list = node("div", undefined, {class: "backendDirectoryList"});
-  const choose = button("选择此目录", () => { if (current) { onSelect(current); view.close(); } }, true);
-  const up = button("上一级", () => void load(parent), true);
-  const controls = node("div", undefined, {class: "backendActions"});
-  controls.append(button("主目录", () => void load()), up, button("打开目录", () => void load(address.value.trim())));
-  address.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); void load(address.value.trim()); } });
-  address.addEventListener("input", () => { choose.disabled = true; });
-  body.append(node("small", t("浏览 Portal 所在主机的目录。")), controls, roots, status, list, choose);
-  view.el.append(body); view.open();
-  async function load(path, fallback = false) {
-    const token = ++generation; choose.disabled = up.disabled = true; current = "";
-    status.textContent = t("正在读取目录…"); list.replaceChildren();
+  const retry = button("重试", () => void load(attempted)); retry.hidden = true;
+  feedback.append(status, retry); main.append(listActions, list, feedback); content.append(places, main);
+  const footer = node("footer", undefined, {class: "backendDirectoryFooter"});
+  const pending = node("output", "", {"aria-label": t("待选路径"), class: "backendDirectoryPending"});
+  const useCurrent = button("选择当前目录", () => { selected = ""; invalid = false; renderList(); sync(); });
+  const actions = node("div", undefined, {class: "backendDirectoryCommit"});
+  const cancel = button("取消", () => view.close());
+  const choose = button("选择文件夹", () => void commit(), true);
+  actions.append(cancel, choose); footer.append(pending, useCurrent, actions);
+  body.append(nav, content, footer); view.el.append(body);
+  const visible = () => entries.filter(entry => entry.name.toLocaleLowerCase().includes(filter.value.trim().toLocaleLowerCase()));
+  function sync() {
+    pending.textContent = busy ? t("正在读取目录…") : selected || current || t("尚未选择目录");
+    pending.title = selected || current || "";
+    choose.disabled = busy || invalid || editing || !(selected || current);
+    useCurrent.disabled = busy || !current || editing; useCurrent.hidden = !selected;
+    up.disabled = !current || !parent || parent === current;
+    back.disabled = current ? historyIndex < 1 : historyIndex < 0;
+    forward.disabled = historyIndex + 1 >= history.length;
+    filter.disabled = busy || !current;
+    enter.disabled = busy || editing || !selected;
+    list.setAttribute("aria-busy", String(busy));
+  }
+  function editLocation() {
+    if (busy) { generation++; request?.abort(); busy = false; invalid = true; status.textContent = ""; retry.hidden = true; }
+    editing = true; address.hidden = false; crumbs.hidden = true; editPath.hidden = true; go.hidden = false;
+    address.value = current || attempted || ""; address.focus(); address.select(); sync();
+  }
+  function endEdit() { editing = false; address.hidden = true; crumbs.hidden = false; editPath.hidden = false; go.hidden = true; sync(); }
+  function renderCrumbs() {
+    crumbs.replaceChildren();
+    // Canonical paths come from the host. Preserve POSIX, drive and UNC roots.
+    const separator = current.includes("\\") ? "\\" : "/";
+    const root = current.match(/^(?:[A-Za-z]:[\\/]|\\\\[^\\]+\\[^\\]+[\\/]?|\/)/)?.[0] || "";
+    let path = root;
+    if (root) crumbs.append(button(root, () => void load(root)));
+    for (const part of current.slice(root.length).split(/[\\/]/).filter(Boolean)) {
+      path += (path.endsWith(separator) ? "" : separator) + part;
+      const target = path;
+      crumbs.append(node("span", "›", {"aria-hidden": "true"}), button(part, () => void load(target)));
+    }
+    crumbs.lastElementChild?.setAttribute("aria-current", "location");
+    crumbs.scrollLeft = crumbs.scrollWidth;
+  }
+  function selectEntry(path) {
+    if (busy || editing) return;
+    selected = path; invalid = false;
+    const items = visible();
+    [...list.children].forEach((row, index) => row.setAttribute("aria-selected", String(items[index].path === path)));
+    const index = items.findIndex(entry => entry.path === path);
+    if (index >= 0) list.setAttribute("aria-activedescendant", `backend-directory-option-${index}`);
+    sync();
+  }
+  function renderList() {
+    const items = visible();
+    list.replaceChildren(...items.map((entry, index) => {
+      const row = node("div", undefined, {role: "option", id: `backend-directory-option-${index}`, "aria-selected": String(entry.path === selected)});
+      row.append(node("span", "", {class: "backendDirectoryIcon", "aria-hidden": "true"}), node("span", entry.name)); row.title = entry.name;
+      row.addEventListener("click", () => { selectEntry(entry.path); list.focus(); });
+      row.addEventListener("dblclick", () => { if (!busy && !editing) void load(entry.path, {focusList: true}); });
+      return row;
+    }));
+    const index = items.findIndex(entry => entry.path === selected);
+    if (index >= 0) list.setAttribute("aria-activedescendant", `backend-directory-option-${index}`);
+    else list.removeAttribute("aria-activedescendant");
+    if (!busy && !invalid) status.textContent = truncated ? t("目录较多，仅显示部分；可输入完整路径。")
+      : !entries.length ? t("此目录没有子目录。") : !items.length ? t("没有匹配的文件夹。") : "";
+  }
+  filter.addEventListener("input", () => { selected = ""; invalid = false; renderList(); sync(); });
+  address.addEventListener("input", () => { invalid = true; sync(); });
+  list.addEventListener("keydown", event => {
+    if (busy || editing) return;
+    const items = visible(), index = items.findIndex(entry => entry.path === selected);
+    if (event.key === "Enter" && selected) { event.preventDefault(); void load(selected, {focusList: true}); return; }
+    const next = {ArrowDown: Math.min(items.length - 1, index + 1), ArrowUp: Math.max(0, index - 1), Home: 0, End: items.length - 1}[event.key];
+    if (next === undefined || !items[next]) return;
+    event.preventDefault(); selectEntry(items[next].path); list.children[next]?.scrollIntoView({block: "nearest"});
+  });
+  view.el.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "l") { event.preventDefault(); event.stopPropagation(); editLocation(); }
+    else if (event.target === address && event.key === "Enter") { event.preventDefault(); void load(address.value.trim(), {focusList: true}); }
+    else if (event.altKey && event.key === "ArrowLeft" && !back.disabled) { event.preventDefault(); back.click(); }
+    else if (event.altKey && event.key === "ArrowRight" && !forward.disabled) { event.preventDefault(); forward.click(); }
+    else if (event.altKey && event.key === "ArrowUp" && !up.disabled) { event.preventDefault(); up.click(); }
+  });
+  async function read(path) {
+    request?.abort(); request = new AbortController();
+    return accountDirectoryRequest("browse", path ? {path} : {}, {signal: request.signal});
+  }
+  async function load(path, {index, focusList = false} = {}) {
+    const token = ++generation; attempted = path; busy = true; invalid = true;
+    current = ""; selected = ""; entries = []; filter.value = ""; retry.hidden = true;
+    status.textContent = t("正在读取目录…"); list.replaceChildren(); list.removeAttribute("aria-activedescendant"); sync();
     try {
-      const result = await accountDirectoryRequest("browse", path ? {path} : {}, {signal: abort.signal});
+      const result = await read(path);
       if (closed || token !== generation) return;
+      if (!result.path) throw new Error(t("操作失败，请重试。"));
       current = result.path; parent = result.parent || ""; address.value = current;
-      choose.disabled = false; up.disabled = !parent || parent === current;
+      entries = result.directories || []; truncated = !!result.truncated; invalid = false; busy = false;
+      if (index !== undefined) { historyIndex = index; history[index] = current; }
+      else if (history[historyIndex] !== current) { history.splice(historyIndex + 1); history.push(current); historyIndex = history.length - 1; }
       roots.replaceChildren(...(result.roots || []).map(root => button(root.name, () => void load(root.path))));
-      list.replaceChildren(...(result.directories || []).map(entry => button(entry.name, () => void load(entry.path))));
-      status.textContent = result.truncated ? t("目录较多，仅显示部分；可输入完整路径。") : result.directories?.length ? "" : t("此目录没有子目录。");
+      endEdit(); renderCrumbs(); renderList(); sync();
+      if (focusList) list.focus();
     } catch (error) {
       if (closed || token !== generation) return;
-      if (fallback) { await load(); return; }
-      status.textContent = errorText(error);
+      busy = false; invalid = true; status.textContent = errorText(error); retry.hidden = false;
+      crumbs.replaceChildren(node("span", path || t("主目录"))); sync();
     }
   }
-  void load(initialPath, Boolean(initialPath));
+  async function commit() {
+    if (choose.disabled) return;
+    const path = selected || current, token = ++generation;
+    busy = true; retry.hidden = true; status.textContent = t("正在读取目录…"); sync();
+    try {
+      const result = await read(path);
+      if (closed || token !== generation) return;
+      if (!result.path) throw new Error(t("操作失败，请重试。"));
+      onSelect(result.path); view.close();
+    } catch (error) {
+      if (closed || token !== generation) return;
+      busy = false; invalid = true; status.textContent = errorText(error); sync();
+    }
+  }
+  view.open(); void load(initialPath);
   return view;
 }
 

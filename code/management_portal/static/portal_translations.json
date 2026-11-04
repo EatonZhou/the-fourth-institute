@@ -1,4 +1,5 @@
 {
+"选择文件夹":{"zh-CN":"选择文件夹","en":"Select folder"},"后退":{"zh-CN":"后退","en":"Back"},"前进":{"zh-CN":"前进","en":"Forward"},"编辑路径":{"zh-CN":"编辑路径","en":"Edit location"},"筛选文件夹":{"zh-CN":"筛选文件夹","en":"Filter folders"},"文件夹":{"zh-CN":"文件夹","en":"Folders"},"待选路径":{"zh-CN":"待选路径","en":"Selected folder"},"选择当前目录":{"zh-CN":"选择当前目录","en":"Select current folder"},"尚未选择目录":{"zh-CN":"尚未选择目录","en":"No folder selected"},"没有匹配的文件夹。":{"zh-CN":"没有匹配的文件夹。","en":"No matching folders."},
 "选择 Portal 主机目录": {"zh-CN":"选择 Portal 主机目录","en":"Choose a directory on the Portal host"},
 "目录路径": {"zh-CN":"目录路径","en":"Directory path"},
 "选择此目录": {"zh-CN":"选择此目录","en":"Select this directory"},

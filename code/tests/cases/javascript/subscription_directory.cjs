@@ -73,23 +73,24 @@ const flush = async () => {for (let i = 0; i < 8; i++) await new Promise(resolve
     assert.match(form.textContent, /扫描失败/);
     assert.equal(form.elements.account_dir.value, '/manual/kept');
     pick('浏览'); await flush();
-    const picker = window.document.querySelector('dialog[aria-label="选择 Portal 主机目录"]');
+    const picker = window.document.querySelector('dialog[aria-label="选择文件夹"]');
     assert(picker);
     [...picker.querySelectorAll('button')].find(b => b.textContent === '主目录').click(); await flush();
-    [...picker.querySelectorAll('button')].find(b => b.textContent === 'team').click(); await flush();
+    [...picker.querySelectorAll('[role=option]')].find(b => b.textContent === 'team').dispatchEvent(new window.MouseEvent('dblclick')); await flush();
     assert.equal(picker.querySelector('[name=browse_path]').value, '/host/team');
-    [...picker.querySelectorAll('button')].find(b => b.textContent === '上一级').click(); await flush();
+    picker.querySelector('[aria-label="上一级"]').click(); await flush();
     assert.equal(picker.querySelector('[name=browse_path]').value, '/host');
     const address = picker.querySelector('[name=browse_path]');
+    picker.querySelector('[aria-label="编辑路径"]').click();
     address.value = '/unreadable'; address.dispatchEvent(new window.Event('input'));
-    assert([...picker.querySelectorAll('button')].find(b => b.textContent === '选择此目录').disabled);
-    [...picker.querySelectorAll('button')].find(b => b.textContent === '打开目录').click(); await flush();
+    assert([...picker.querySelectorAll('button')].find(b => b.textContent === '选择文件夹').disabled);
+    picker.querySelector('[aria-label="打开目录"]').click(); await flush();
     assert.match(picker.textContent, /fixture directory unavailable/);
     [...picker.querySelectorAll('button')].find(b => b.textContent === '主目录').click(); await flush();
-    [...picker.querySelectorAll('button')].find(b => b.textContent === '选择此目录').click();
+    [...picker.querySelectorAll('button')].find(b => b.textContent === '选择文件夹').click(); await flush();
     assert.equal(form.elements.account_dir.value, '/host');
     pick('浏览'); await flush();
-    const cancelledPicker = window.document.querySelector('dialog[aria-label="选择 Portal 主机目录"]');
+    const cancelledPicker = window.document.querySelector('dialog[aria-label="选择文件夹"]');
     [...cancelledPicker.querySelectorAll('button')].find(b => b.textContent === '关闭').click();
     assert.equal(form.elements.account_dir.value, '/host', 'cancel does not select another directory');
     scanFails = false; deferScan = true; pick('重新扫描'); await flush();
@@ -107,4 +108,5 @@ const flush = async () => {for (let i = 0; i < 8; i++) await new Promise(resolve
   assert(!calls.some(c => c.name === 'CheckProviderAccount'), 'no model call before sign-in');
   panel.destroy();
  }
+ console.log('Subscription directory unit checks passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});
