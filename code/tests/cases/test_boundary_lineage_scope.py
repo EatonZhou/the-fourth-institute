@@ -44,3 +44,34 @@ def test_concurrent_source_removal_is_rechecked_under_commit_lock(lineage):
     with pytest.raises(InstructionError, match='对象不属于'):
         scope.guard_source_scope('MoveLineageObjects', delayed_handler)(inv)
     assert graph(lineage)['program']['components'] == []
+
+
+def test_delete_replay_uses_tombstone_after_source_lineage_deleted(monkeypatch):
+    """原团队删除后仍能用同一 Resident 的墓碑确认清理，不重新读取活跃图。"""
+    from management_portal.society_service import resident_catalog
+    args = {'lineage_id': 'lineage_0123456789ab', 'resident_id': 'resident_0123456789ab'}
+    record = {'lineage_id': args['lineage_id'], 'deleted_at': '2026-11-05T00:00:00Z'}
+    monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(get_historical=lambda _: record))
+    def missing(_):
+        pytest.fail('Deleted source must not be read as an active Lineage')
+    monkeypatch.setattr(scope.lineage_aggregate, 'read_lineage_state', missing)
+    inv = SimpleNamespace(argument=lambda name: args.get(name))
+    calls = []
+    scope.guard_source_scope('DeleteResident', lambda original: calls.append(original))(inv)
+    assert calls == [inv]
+    assert scope._SCOPE.get() is None
+
+
+@pytest.mark.parametrize('record', [
+    {'lineage_id': 'lineage_ffffffffffff', 'deleted_at': '2026-11-05T00:00:00Z'},
+    {'lineage_id': 'lineage_0123456789ab'},
+])
+def test_delete_replay_cannot_bypass_wrong_or_active_source(monkeypatch, record):
+    """不同源墓碑与活跃成员都保留源成员校验，不能借重试删除其他对象。"""
+    from management_portal.society_service import resident_catalog
+    args = {'lineage_id': 'lineage_0123456789ab', 'resident_id': 'resident_0123456789ab'}
+    monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(get_historical=lambda _: record))
+    monkeypatch.setattr(scope.lineage_aggregate, 'read_lineage_state', lambda _: {'nodes': []})
+    inv = SimpleNamespace(argument=lambda name: args.get(name))
+    with pytest.raises(InstructionError, match='对象不属于'):
+        scope.guard_source_scope('DeleteResident', lambda _: pytest.fail('Mutation must stay blocked'))(inv)

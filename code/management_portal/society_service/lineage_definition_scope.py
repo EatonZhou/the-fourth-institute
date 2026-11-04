@@ -87,7 +87,6 @@ def guard_source_scope(name, handler):
                 ids.add(value)
         scope = _Scope(lineage_id, frozenset(ids))
         # Avoid external work on an invalid source; the commit checks again.
-        current = lineage_aggregate.read_lineage_state(lineage_id)
         if name == "DeleteResident":
             # A retry may finish cleanup of an already deleted Resident. Its
             # immutable tombstone still carries the original Lineage.
@@ -98,7 +97,12 @@ def guard_source_scope(name, handler):
                 record = {}
             if record.get("deleted_at") and record.get("lineage_id") == lineage_id:
                 scope.object_ids = frozenset()
-        _require_members(current, scope)
+        # The original Lineage can itself have been deleted after this
+        # Resident. A matching immutable tombstone is sufficient source
+        # evidence for finalization; authorization still runs in the kernel.
+        if scope.object_ids:
+            current = lineage_aggregate.read_lineage_state(lineage_id)
+            _require_members(current, scope)
         token = _SCOPE.set(scope)
         try:
             return handler(inv)
