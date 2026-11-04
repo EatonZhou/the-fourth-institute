@@ -415,6 +415,8 @@ def move_repo_entry(
     repo_id: str,
     path: str,
     destination: str,
+    *,
+    expected_hash: str = "",
 ) -> dict[str, Any]:
     source_relative = _safe_relative_path(path)
     destination_relative = _safe_relative_path(destination)
@@ -424,6 +426,12 @@ def move_repo_entry(
         _record, checkout = _checkout(repo_id)
         source = _target(checkout, source_relative, must_exist=True)
         target = _target(checkout, destination_relative)
+        clean_expected = stripped_text(expected_hash)
+        if clean_expected:
+            if source.is_symlink() or not source.is_file():
+                raise ValueError("a version-checked move requires a regular file")
+            if hashlib.sha256(source.read_bytes()).hexdigest() != clean_expected:
+                raise RepoWorkspaceConflict("文件已被其他操作修改，请刷新后重新编辑。")
         if target.exists() or target.is_symlink():
             raise FileExistsError(destination_relative)
         target.parent.mkdir(parents=True, exist_ok=True)

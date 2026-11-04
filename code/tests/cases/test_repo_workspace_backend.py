@@ -275,6 +275,24 @@ def test_large_repo_file_preview_is_streamed_and_marked_truncated(tmp_path: Path
     assert result["preview_unavailable_reason"]
 
 
+def test_version_checked_move_rejects_stale_editor_before_changing_paths(tmp_path: Path) -> None:
+    """编辑器重命名先核对源版本，过期保存不移动别人的新内容。"""
+    repo_id, checkout = _repo(tmp_path)
+    original = repo_workspace_files.read_repo_file(repo_id, "src/app.py")
+    saved = repo_workspace_files.write_repo_file(repo_id, "src/app.py", "new owner content\n",
+                                                expected_hash=original["hash"])
+    with pytest.raises(repo_workspace_checkout.RepoWorkspaceConflict):
+        repo_workspace_files.move_repo_entry(repo_id, "src/app.py", "new/path.py",
+                                              expected_hash=original["hash"])
+    assert (checkout / "src/app.py").read_text() == "new owner content\n"
+    assert not (checkout / "new").exists()
+    moved = repo_workspace_files.move_repo_entry(repo_id, "src/app.py", "new/path.py",
+                                                 expected_hash=saved["hash"])
+    assert moved["destination"] == "new/path.py"
+    assert not (checkout / "src/app.py").exists()
+    assert (checkout / "new/path.py").read_text() == "new owner content\n"
+
+
 def test_workspace_edit_move_delete_diff_commit_and_branches(tmp_path: Path) -> None:
     """仓库工作区支持编辑、移动、删除、查看差异、提交与切换分支，过期哈希的写入被拒绝"""
     repo_id, _checkout = _repo(tmp_path)

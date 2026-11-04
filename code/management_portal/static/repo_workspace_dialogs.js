@@ -143,6 +143,7 @@
         return;
       }
       setBusy(elements.editorSave, true, "保存中…");
+      let moved = false;
       try {
         if (state.editorNew) {
           await postJson(`/api/repos/${encodeURIComponent(state.selectedId)}/workspace/entry`, {
@@ -156,7 +157,13 @@
             await postJson(`/api/repos/${encodeURIComponent(state.selectedId)}/workspace/move`, {
               path: state.editorOriginalPath,
               destination: path,
+              expected_hash: state.editorExpectedHash,
             });
+            // Move and save are separate committed operations. Keep the editor
+            // on the confirmed location if saving subsequently fails.
+            state.editorOriginalPath = path;
+            moved = true;
+            writeQuery({ file: path, path: dirname(path), tab: "code" });
           }
           await postJson(`/api/repos/${encodeURIComponent(state.selectedId)}/workspace/file`, {
             path,
@@ -169,8 +176,12 @@
         await loadWorkspace({ file: path, tab: "code" });
         showToast(window.PortalI18n.t("文件已保存到工作区；可在 Changes 中统一提交。"), "success");
       } catch (error) {
-        elements.editorStatus.textContent = error.message || String(error);
-        showToast(error.message || error, "error");
+        const detail = error.message || String(error);
+        const message = moved
+          ? window.PortalI18n.t("文件已移动到 {path}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。", { path }) + " " + detail
+          : detail;
+        elements.editorStatus.textContent = message;
+        showToast(message, "error");
       } finally {
         setBusy(elements.editorSave, false);
       }

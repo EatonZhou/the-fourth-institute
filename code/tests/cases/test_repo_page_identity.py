@@ -53,6 +53,18 @@ def test_document_template_read_and_commit_preserve_same_principal(entry, monkey
     commit.assert_called_once_with(REPO, 'update', description='', actor=actor)
 
 
+def test_rename_preserves_the_editors_source_version_precondition(entry, monkeypatch):
+    """HTTP 移动契约将编辑器读取版本传入 Repo 唯一 owner。"""
+    monkeypatch.setattr(http_repo.http_request_body, '_read_request_json', lambda request: {
+        'path': '原文.txt', 'destination': '移动后.txt', 'expected_hash': 'source-version'})
+    monkeypatch.setattr(http_repo.permission_system, 'allows', Mock(return_value=True))
+    move = Mock(return_value={'destination': '移动后.txt'})
+    monkeypatch.setattr(http_repo.repo_workspace_files, 'move_repo_entry', move)
+    monkeypatch.setattr(http_repo.web_resources, '_notify_resource_index', Mock())
+    assert entry.call(f'/api/repos/{REPO}/workspace/move', 'POST')[0] == 200
+    move.assert_called_once_with(REPO, '原文.txt', '移动后.txt', expected_hash='source-version')
+
+
 def test_reader_cannot_write_or_read_saved_git_credentials(entry, monkeypatch):
     monkeypatch.setattr(http_repo.permission_system, 'allows', lambda *args: False)
     mutation = Mock()

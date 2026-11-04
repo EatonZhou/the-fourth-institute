@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 31
+  number: 32
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-03T20:08:38Z"
+  updated_at: "2026-11-04T05:26:54Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -18,30 +18,30 @@ metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/resources/providers/repo.py
-  - ${code_root}/management_portal/http_repo.py
-  - ${code_root}/management_portal/repo_workspace_checkout.py
-  - ${code_root}/management_portal/repo_workspace_git.py
-  - ${code_root}/management_portal/repo_workspace_state.py
-  - ${code_root}/management_portal/repo_workspace_network.py
-  - ${code_root}/management_portal/repo_workspace_files.py
-  - ${code_root}/management_portal/repo_workspace_history.py
-  - ${code_root}/management_portal/repo_workspace_operations.py
-  - ${code_root}/management_portal/repo_workspace_overview.py
-  - ${code_root}/management_portal/repo_workspace_statistics.py
-  - ${code_root}/management_portal/repo_workspace_ai.py
-  - ${code_root}/management_portal/repo_workspace_auto_commit.py
-  - ${code_root}/management_portal/repo_workspace_descriptions.py
-  - ${code_root}/management_portal/repo_credentials_backend.py
-  - ${code_root}/management_portal/repo_workspace.html
-  - ${code_root}/management_portal/static/repo_workspace.js
-  - ${code_root}/management_portal/resource_identity_backend.py
-  - ${code_root}/management_portal/registry_sync.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_resource_identity_backend.py
-  - ${code_root}/tests/cases/test_repo_workspace_backend.py
-  - ${code_root}/tests/cases/test_repo_credentials_backend.py
-  - ${code_root}/tests/cases/test_exported_repo_source.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/repo.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_repo.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_checkout.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_git.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_network.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_files.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_history.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_operations.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_overview.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_statistics.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_ai.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_auto_commit.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_descriptions.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_credentials_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/repo_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/registry_sync.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_repo_workspace_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_repo_credentials_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_exported_repo_source.py
   related:
   - decision_36f46b395d8e
   - decision_ad3e21094f14
@@ -164,6 +164,8 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 - 读取文件时返回内容摘要。保存时带上它（`expected_hash`），服务在写入前比较：不一致时返回 409，页面提示重新读取；不带时直接写入。
 - 同一 checkout 的保存、新建、删除和移动按顺序执行；文本以临时文件替换的方式写入。
 - 新建时目标已经存在返回 409；移动只能在主 checkout 内重命名。
+- 移动普通文件可以携带读取时的 `expected_hash`，在同一 checkout 锁内先核对源文件当前摘要，再改变目录或路径；冲突返回 409，源文件、新内容及目标路径保持原样。省略摘要的独立移动继续沿原合同执行，目录移动不能使用文件摘要。
+- 编辑器同时修改路径和内容时，先带源摘要请求移动，再保存内容。已确认移动后，编辑器立即把当前文档身份改为真实目标路径；后续保存失败仍保留草稿并明确已移动的位置及重新打开核对入口。移动与内容保存是分别提交的操作，不能把部分完成显示为全部成功，显式重试也不能再次移动已经消失的旧路径。结果未知继续先读取实际对象，不无脑重投。
 - 新建、删除和移动没有请求编号。结果不确定时，调用者先重新读取目标状态，再决定是否重试。
 
 ## 提交

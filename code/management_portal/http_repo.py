@@ -139,7 +139,7 @@ class RepoHttp:
                 else:
                     raise ValueError('entry operation must be create or delete')
             elif action == 'move':
-                result = repo_workspace_files.move_repo_entry(repo_id, str(payload.get('path') or ''), str(payload.get('destination') or ''))
+                result = repo_workspace_files.move_repo_entry(repo_id, str(payload.get('path') or ''), str(payload.get('destination') or ''), expected_hash=str(payload.get('expected_hash') or ''))
                 status = 200
             elif action == 'commit':
                 result = repo_workspace_operations.commit_repo_changes(repo_id, str(payload.get('message') or ''), description=str(payload.get('description') or ''), actor=actor)
