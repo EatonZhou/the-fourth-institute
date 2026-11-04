@@ -41,20 +41,19 @@ def available(account: Mapping[str, Any], *, reserve: float = 0) -> bool:
     quota = account.get("quota_reserve") or {}
     if quota.get("status") != "available" or quota.get("used_up") or quota.get("automatic_paused"):
         return False
+    threshold = quota.get("close_threshold") or {}
+    # Scheduler owns admission. With balance protection disabled, a balance
+    # observation (including zero) must not add another startup prerequisite.
+    # A positive reserve is a separate, preventative migration requirement.
+    if reserve == 0 and threshold.get("metric") == "balance" and threshold.get("value") == 0:
+        return account.get("kind") != "api_profile" or bool(
+            account.get("status") == "ok"
+            and (account.get("billing_account_id") or (account.get("config") or {}).get("api_id"))
+        )
     remaining = headroom(account)
     if remaining is not None:
         return remaining > reserve
-    threshold = quota.get("close_threshold") or {}
-    reported = quota.get("remaining")
-    # A configured API may have no balance endpoint. The scheduler's zero
-    # threshold permits using it; that does not manufacture a balance reading
-    # or prove a positive reserve for preventative account migrations.
-    return bool(
-        reserve == 0 and account.get("kind") == "api_profile" and account.get("status") == "ok"
-        and (account.get("billing_account_id") or (account.get("config") or {}).get("api_id"))
-        and threshold.get("metric") == "balance" and threshold.get("value") == 0
-        and (reported is None or finite(reported) and reported > 0)
-    )
+    return False
 
 
 def compatible(account: Mapping[str, Any], source: Mapping[str, Any]) -> bool:

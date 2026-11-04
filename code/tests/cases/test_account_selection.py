@@ -40,9 +40,11 @@ def test_configured_api_without_balance_is_usable_for_selection_and_recovery(pro
     assert row == before  # Unknown balance must stay unknown.
 
 
-def test_first_admission_uses_the_default_api_without_a_balance_endpoint(monkeypatch):
+@pytest.mark.parametrize("remaining", [None, 0, -1, float("nan")])
+def test_first_admission_uses_the_default_api_without_a_balance_endpoint(monkeypatch, remaining):
     from management_portal.execution import account_selection, account_registrations
     row = api_account()
+    row["quota_reserve"].update(remaining=remaining, fresh=True)
     registration = {"account_id": row["account_id"], "route_id": row["backend_route_id"],
                     "provider": row["provider"], "kind": row["kind"], "enabled": True,
                     "config": {"api_id": row["billing_account_id"]}}
@@ -65,9 +67,6 @@ def test_first_admission_uses_the_default_api_without_a_balance_endpoint(monkeyp
     {"quota_reserve": {"status": "reserved"}},
     {"quota_reserve": {"used_up": True}},
     {"quota_reserve": {"automatic_paused": True}},
-    {"quota_reserve": {"remaining": 0}},
-    {"quota_reserve": {"remaining": -1}},
-    {"quota_reserve": {"remaining": float("nan")}},
     {"quota_reserve": {"close_threshold": {"metric": "balance", "value": 5}}},
     {"quota_reserve": {"close_threshold": {}}},
     {"selection_catalog": {"fresh": False, "models": ["model"]}},
@@ -92,6 +91,32 @@ def test_optional_balance_reading_does_not_gate_the_configured_api(balance):
     row = api_account()
     row["balance"] = balance
     assert candidates([row], row, model="model") == [row]
+
+
+@pytest.mark.parametrize("remaining", [None, 0, -1, float("nan")])
+@pytest.mark.parametrize("fresh", [False, True])
+def test_disabled_balance_protection_never_requires_positive_balance(remaining, fresh):
+    from management_portal.execution.account_selection import priority_candidates
+    row = api_account()
+    row["quota_reserve"].update(remaining=remaining, fresh=fresh)
+    assert candidates([row], row, model="model") == [row]
+    assert priority_candidates([row], ["codex:api_profile:custom-api"]) == [row]
+    assert candidates([row], row, reserve=5) == []
+
+
+def test_balance_protection_still_obeys_scheduler_pause():
+    from management_portal.execution.account_quota import quota_state
+    row = api_account()
+    row["quota_reserve"] = quota_state(
+        {"remaining_balance": 0, "observed_at": 100, "complete": True}, now=100,
+        threshold={"metric": "balance", "unit": "USD", "value": 1, "supported": True},
+    )
+    assert candidates([row], row) == []
+    row["quota_reserve"] = quota_state(
+        {"remaining_balance": 0, "observed_at": 100}, now=100,
+        threshold={"metric": "balance", "unit": "USD", "value": 0, "supported": True},
+    )
+    assert candidates([row], row) == [row]
 
 
 def test_unmeasured_api_preserves_billing_scope_and_requires_explicit_selection(monkeypatch):
