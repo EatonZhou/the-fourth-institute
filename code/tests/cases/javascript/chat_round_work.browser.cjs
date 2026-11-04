@@ -8,6 +8,8 @@ const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const repo = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
+const baselineProtocol = process.env.RAIL_QUEUE_BASELINE
+  ? require('node:child_process').execFileSync('git', ['show', 'HEAD:code/management_portal/static/resident_protocol.js'], { cwd: repo }) : null;
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_resource_chips.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js',
@@ -30,7 +32,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       response.setHeader('content-type', name.endsWith('.css') ? 'text/css' : 'text/javascript');
       const file = path.join(repo, 'management_portal/static', name.replace(/^static\//, ''));
       if (name !== 'routes.js' && !fs.existsSync(file)) { response.statusCode = 404; response.end(); return; }
-      response.end(name === 'routes.js' ? routeScript : fs.readFileSync(file));
+      response.end(name === 'routes.js' ? routeScript : name === 'resident_protocol.js' && baselineProtocol ? baselineProtocol : fs.readFileSync(file));
     }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -40,7 +42,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const page = await browser.newPage({ viewport: { width: 1200, height: 850 } });
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('http://127.0.0.1:' + server.address().port);
-    await page.evaluate(async () => {
+    await page.evaluate(async ({ queuedOnly }) => {
       window.__PORTAL_SITE__ = { storage_namespace: 'work-fact-test' };
       PortalIdentity = { username: () => 'fixture-reader', load: async () => {} };
       PortalEvents = { watchResident: () => () => {} };
@@ -67,6 +69,18 @@ if (output) fs.mkdirSync(output, { recursive: true });
             { message_id: 'compat', state: 'completed', work: fact('running', 'member-authoritative', 10, 'appended') },
             { message_id: 'revoked', state: 'completed', work: { state: 'unknown', kind: 'unknown', delivery: 'unknown', updated_at: '' } },
             { message_id: 'done', state: 'completed', work: fact('completed', 'execution-done') } ] };
+      if (queuedOnly) {
+        raw.queue = { resident_id: rid, items: [
+          { message_id: 'waiting', author_id: 'fixture-reader', enqueued_at: '2026-11-04T12:01:00Z',
+            content_parts: [{ type: 'text', text: '已正式受理、尚未进入执行轨迹的排队消息。' }] },
+          { message_id: 'queue-unknown', author_id: 'fixture-reader', enqueued_at: '2026-11-04T12:01:01Z', content_preview: '工作状态尚未确认的已受理消息' },
+          { message_id: 'agent-queue', author_id: 'resident_222222222222', enqueued_at: '2026-11-04T12:01:02Z', content_preview: 'Resident 来信不产生用户节点' }
+        ] };
+        raw.input_states.push({ message_id: 'waiting', state: 'queued', work: { state: 'queued', kind: 'primary', delivery: 'pending',
+          primary_message_id: 'waiting', updated_at: '2026-11-04T12:01:00Z' } },
+          { message_id: 'queue-unknown', state: 'queued', work: { state: 'unknown', kind: 'unknown', delivery: 'unknown', updated_at: '' } });
+        raw.local_submissions = [{ ...request('unsent', '未受理的本地草稿'), local_delivery: { state: 'sending' } }];
+      }
       window.reads = 0;
       PortalResidentService = { snapshot: async () => { reads++; if (window.snapshotWait) await new Promise(resolve => window.finishSnapshot = resolve); return structuredClone(raw); },
         conversationMessages: async () => { if (window.pageWait) return await new Promise(resolve => window.finishPage = resolve); return window.historyPage; },
@@ -91,12 +105,59 @@ if (output) fs.mkdirSync(output, { recursive: true });
         window.dispatchEvent(new CustomEvent('portal:change', { detail: { resident_events: [{ resident_id: rid, cursor: ++raw.cursor,
           event_type: 'conversation.message.updated', payload: { message } }] } }));
       };
-    });
+    }, { queuedOnly: !!process.env.RAIL_QUEUE_ONLY });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const node = id => page.locator(`[data-round-key="${id}"]`);
     const running = id => node(id).evaluate(n => n.classList.contains('is-running'));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     await page.waitForSelector('.chatRoundNode'); await settle();
+    if (process.env.RAIL_QUEUE_ONLY) {
+      const evidence = { checks, errors, isolated: true, baseline: !!baselineProtocol };
+      const visibleQueued = await node('waiting').count();
+      if (baselineProtocol) {
+        assert.equal(visibleQueued, 0);
+        evidence.reproduced = 'formal input.work.queued exists but queue-only accepted input has no body row or marker';
+      } else {
+        check('accepted queue-only input has its own body row and marker', visibleQueued === 1
+          && await page.locator('.messageList > [data-message-key="waiting"]').count() === 1);
+        check('queue-only authoritative work.queued draws a diamond', await node('waiting').evaluate(n => n.classList.contains('is-queued')));
+        const shape = await node('waiting').locator('.chatRoundCore').evaluate(n => {
+          const s = getComputedStyle(n, '::after'); return { radius: s.borderRadius, transform: s.transform, border: s.borderTopWidth };
+        });
+        evidence.shape = shape;
+        check('real styles render the hollow rotated square, not a circle', shape.radius === '0px' && shape.border === '1px' && shape.transform.startsWith('matrix(0.707'));
+        check('explicit unknown is not inferred queued from delivery state', !await node('queue-unknown').evaluate(n => n.classList.contains('is-queued')));
+        check('local draft and Resident-authored queue input have no human marker', await node('unsent').count() === 0 && await node('agent-queue').count() === 0);
+        await node('waiting').focus(); await page.keyboard.press('Enter'); await settle();
+        check('queued marker keyboard navigation reaches the real message row', await page.locator('.messageList > [data-message-key="waiting"]').isVisible());
+        await page.evaluate(() => panel.workspace.controller.toggleRoundFollow('waiting')); await settle();
+        check('Flag replaces queued diamond and retains queued accessible status', await node('waiting').locator('.chatRoundCore').evaluate(n => getComputedStyle(n, '::after').display === 'none')
+          && (await node('waiting').getAttribute('aria-label')).includes('排队中'));
+        await page.evaluate(() => panel.workspace.controller.toggleRoundFollow('waiting')); await settle();
+        if (output) await page.screenshot({ path: path.join(output, 'queued-desktop.png') });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.evaluate(() => document.documentElement.style.fontSize = '20px'); await settle();
+        await node('waiting').focus(); await page.keyboard.press('Enter'); await settle();
+        if (output) await page.screenshot({ path: path.join(output, 'queued-390.png') });
+        check('390/20px retains one keyboard reachable queued marker', await node('waiting').count() === 1 && await node('waiting').isVisible());
+        await page.evaluate(() => {
+          raw.messages.push({ message_id: 'waiting', role: 'user', author_id: 'fixture-reader',
+            origin: { sender: { kind: 'user', id: 'fixture-reader' } }, content_parts: raw.queue.items[0].content_parts });
+          raw.queue.items = raw.queue.items.filter(x => x.message_id !== 'waiting');
+          raw.cursor++;
+          raw.input_states.find(x => x.message_id === 'waiting').work = { ...fact('running', 'new-queue-execution', 35), updated_at: '2026-11-04T12:02:00Z' };
+          return panel.protocol.load({ force: true });
+        }); await settle();
+        check('queue admission to execution keeps one stable identity and switches to running', await node('waiting').count() === 1 && await running('waiting')
+          && !await node('waiting').evaluate(n => n.classList.contains('is-queued')));
+        await page.evaluate(() => { raw.queue.items = []; raw.cursor++; return panel.protocol.load({ force: true }); }); await settle();
+        check('removed queue-only input leaves no stale marker', await node('queue-unknown').count() === 0);
+      }
+      assert.deepEqual(errors, []);
+      if (output) fs.writeFileSync(path.join(output, 'queued-result.json'), JSON.stringify(evidence, null, 2));
+      console.log('Queued admission contract: ' + (baselineProtocol ? 'baseline failure reproduced' : checks.length + ' passed'));
+      await page.evaluate(() => panel.destroy()); return;
+    }
     if (process.env.RAIL_BOTTOM_ONLY) {
       await page.evaluate(() => {
         panel.destroy();

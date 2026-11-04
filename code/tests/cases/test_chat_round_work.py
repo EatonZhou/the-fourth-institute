@@ -12,7 +12,7 @@ import pytest
 from management_portal.resources.portal import portal_route_script
 
 
-@pytest.mark.parametrize('mode', ['', 'RAIL_BOTTOM_ONLY'])
+@pytest.mark.parametrize('mode', ['', 'RAIL_BOTTOM_ONLY', 'RAIL_QUEUE_ONLY'])
 def test_round_work_contract(mode):
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'chat_round_work.browser.cjs')],
