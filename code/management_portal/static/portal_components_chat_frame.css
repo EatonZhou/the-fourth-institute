@@ -487,17 +487,19 @@
 .chatRoundLane { position:absolute; top:32px; bottom:8px; left:0; width:30px; }
 .chatRoundLane::before { content:''; position:absolute; left:14.5px; top:0; bottom:0; width:1px; background:var(--border, #8291a426); pointer-events:none; }
 .chatRoundNode { position:absolute; transform:translateY(-50%); left:0; width:30px; height:26px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; touch-action:pan-y; }
-.chatRoundCore { position:absolute; width:6px; height:6px; left:12px; top:calc(50% - 3px); border-radius:50%; background:currentColor; }
-.chatRoundNode.is-current .chatRoundCore { outline:1px solid var(--accent, #578fcf); outline-offset:3px; }
+.chatRoundNode > span { pointer-events:none; }
+.chatRoundCore { position:absolute; width:6px; height:6px; left:12px; top:calc(50% - 3px); }
+.chatRoundCore::after { content:''; position:absolute; inset:0; border-radius:50%; background:currentColor; }
+.chatRoundNode.is-queued .chatRoundCore::after { border:1px solid currentColor; border-radius:0; background:var(--panel, #fff); transform:rotate(45deg); }
+.chatRoundNode.is-current::after { content:''; position:absolute; left:7px; top:calc(50% - 8px); width:16px; height:16px; box-sizing:border-box; border:1px solid var(--accent, #578fcf); border-radius:50%; pointer-events:none; }
 .chatRoundNode.is-running .chatRoundCore { color:#32a86b; }
 .chatRoundNode.is-running .chatRoundCore::before { content:''; position:absolute; inset:-6px; border-radius:50%; background:#59d38e; opacity:.14; animation:chatRoundBreath 3.6s ease-in-out infinite; pointer-events:none; }
 @keyframes chatRoundBreath { 0%,100% { opacity:.09; transform:scale(.8); } 50% { opacity:.25; transform:scale(1.15); } }
 .chatRoundRail button,.chatRoundPreview button { -webkit-tap-highlight-color:transparent; }
-.chatRoundFlag { position:absolute; left:1px; top:calc(50% + 1px); width:10px; height:12px; color:var(--accent, #578fcf); visibility:hidden; }
+.chatRoundFlag { position:absolute; left:8px; top:calc(50% - 7px); width:14px; height:14px; color:var(--accent, #578fcf); visibility:hidden; }
 .chatRoundFlag svg { display:block; width:100%; height:100%; }
 .chatRoundNode.is-followed .chatRoundFlag { visibility:visible; }
-.chatRoundCount { position:absolute; font:9px/12px system-ui; left:19px; top:0; min-width:11px; padding:0 1px; border-radius:4px; background:var(--panel); color:var(--muted); }
-.chatRoundFlagCount { position:absolute; font:9px/10px system-ui; left:0; top:0; color:var(--accent, #578fcf); }
+.chatRoundNode.is-followed .chatRoundCore::after { display:none; }
 .conversationSearchNavigation { display:flex; justify-content:flex-end; gap:4px; }
 .chatRoundNode.is-pressing { box-shadow:inset 0 0 0 1px var(--accent, #578fcf); border-radius:6px; }
 .chatRoundSearchTick { position:absolute; right:0; width:8px; height:8px; transform:translateY(-50%); border:0; border-inline-end:3px solid #d29336; padding:0; background:transparent; cursor:pointer; }
@@ -539,9 +541,8 @@
   .chatRoundLane { width:44px; top:48px; }
   .chatRoundLane::before { left:20.5px; }
   .chatRoundCore { left:18px; }
-  .chatRoundCount { left:28px; }
-  .chatRoundFlag { left:4px; }
-  .chatRoundFlagCount { left:4px; top:4px; }
+  .chatRoundNode.is-current::after { left:13px; }
+  .chatRoundFlag { left:14px; }
   .chatRoundPreview { right:64px; width:min(328px, calc(100% - 72px)); }
   .chatRoundPreview button { min-height:44px; }
   .chatRoundPreviewHead > button,.chatRoundExpand,.chatRoundFollow { width:44px; flex-basis:44px; }

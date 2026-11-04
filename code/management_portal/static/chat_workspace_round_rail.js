@@ -60,7 +60,7 @@
     const notice = el('div', 'chatRoundNotice'); notice.setAttribute('role', 'status'); wrapper.append(notice);
     const cleanups = [];
     const on = (node, type, fn, options) => { node.addEventListener(type, fn, options); cleanups.push(() => node.removeEventListener(type, fn, options)); };
-    let disposed = false, frame = 0, currentScope = '', flags = new Set(), rows = [], clusters = [], search = [];
+    let disposed = false, frame = 0, currentScope = '', flags = new Set(), rows = [], search = [];
     let progress = new Map(), cursor = -1, uncertain = false, bindings = new Map(), signature = '';
     let awaitingRefresh = false, refreshEpoch = 0, refreshing = false;
     let layoutDirty = true, statusDirty = true, searchDirty = true, presented = true, intersecting = true, observing = false;
@@ -263,26 +263,20 @@
         .filter(row => row.y !== undefined).sort((a, b) => a.y - b.y);
       const hit = matchMedia('(pointer: coarse)').matches ? 44 : 26;
       const available = Math.max(0, height - hit);
-      const mapped = rows.map(row => ({ ...row, pixel: hit / 2 + Math.max(0, Math.min(1, row.y / total)) * available }));
-      clusters = [];
-      for (const row of mapped) {
-        const last = clusters.at(-1);
-        if (last && row.pixel - last.items[0].pixel < hit) last.items.push(row);
-        else clusters.push({ items: [row], pixel: row.pixel });
-      }
-      const nextSignature = JSON.stringify(clusters.map(group => group.items.map(row => row.key)));
+      for (const row of rows) row.pixel = hit / 2 + Math.max(0, Math.min(1, row.y / total)) * available;
+      const nextSignature = JSON.stringify(rows.map(row => row.key));
       if (signature !== nextSignature) {
         closePreview(); signature = nextSignature; bindings.clear(); marks.replaceChildren(); currentNode = null;
-        clusters.forEach(group => {
-          const node = button('chatRoundNode', '', ''); const flag = el('span', 'chatRoundFlag'); flag.innerHTML = flagIcon;
-          node.append(el('span', 'chatRoundCore'), flag, el('span', 'chatRoundCount'), el('span', 'chatRoundFlagCount'));
-          node.dataset.roundKey = group.items[0].key; marks.append(node); bindings.set(node, group.items);
+        rows.forEach(row => {
+          const node = button('chatRoundNode', '', '');
+          node.append(el('span', 'chatRoundCore'));
+          node.dataset.roundKey = row.key; marks.append(node); bindings.set(node, row);
         });
       }
       nodeForKey.clear();
       [...bindings].forEach(([node], index) => {
-        const group = clusters[index]; bindings.set(node, group.items); node.style.top = group.pixel + 'px';
-        group.items.forEach(row => nodeForKey.set(row.key, node));
+        const row = rows[index]; bindings.set(node, row); node.style.top = row.pixel + 'px';
+        nodeForKey.set(row.key, node);
       });
       metrics = { total, client: viewport.clientHeight, track: scroll.clientHeight, hit, available,
         thumb: Math.min(scroll.clientHeight, Math.max(32, scroll.clientHeight * viewport.clientHeight / total)) };
@@ -293,18 +287,30 @@
       positionPreview();
     }
     function paintStatus() {
-      [...bindings].forEach(([node], index) => {
-        const group = clusters[index]; bindings.set(node, group.items);
-        group.items.forEach(row => { row.item = state.messageByKey.get(row.key) || row.item; });
-        const active = group.items.filter(row => statusFor(row.item) === 'running').length;
-        const followed = group.items.filter(row => flags.has(row.key)).length;
-        node.classList.toggle('is-running', active > 0);
-        node.classList.toggle('is-followed', group.items.some(row => flags.has(row.key)));
-        node.dataset.runningCount = String(active);
-        node.setAttribute('aria-label', group.items.length > 1 ? `${t('轮次')} · ${group.items.length} · ${t('运行中')} ${active} · ${t('已关注')} ${followed}` : description(group.items[0]));
-        node.querySelector('.chatRoundCount').textContent = group.items.length > 1 ? String(group.items.length) : '';
-        node.querySelector('.chatRoundFlagCount').textContent = group.items.length > 1 && followed > 0 ? String(followed) : '';
+      bindings.forEach((row, node) => {
+        row.item = state.messageByKey.get(row.key) || row.item;
+        const status = statusFor(row.item);
+        node.classList.toggle('is-running', status === 'running');
+        node.classList.toggle('is-queued', status === 'queued');
+        const followed = flags.has(row.key);
+        if (followed !== node.classList.contains('is-followed')) {
+          if (followed) { const flag = el('span', 'chatRoundFlag'); flag.innerHTML = flagIcon; node.append(flag); }
+          else node.querySelector('.chatRoundFlag')?.remove();
+          node.classList.toggle('is-followed', followed);
+        }
+        node.setAttribute('aria-label', description(row));
       });
+    }
+    function pointerRows(node, event) {
+      // Keep every marker at its measured location. Overlapping hit areas use
+      // a local list only for pointer disambiguation; keyboard targets stay 1:1.
+      const row = bindings.get(node); if (!row) return [];
+      const pixel = event.clientY - lane.getBoundingClientRect().top;
+      let low = 0, high = rows.length;
+      while (low < high) { const middle = (low + high) >>> 1; if (rows[middle].pixel < pixel - metrics.hit / 2) low = middle + 1; else high = middle; }
+      const nearby = [];
+      for (let index = low; index < rows.length && rows[index].pixel <= pixel + metrics.hit / 2; index++) nearby.push(rows[index]);
+      return nearby.length ? nearby : [row];
     }
     function paintScroll() {
       const top = viewport.scrollTop, range = Math.max(0, metrics.total - metrics.client);
@@ -337,14 +343,16 @@
     on(marks, 'click', event => {
       const node = event.target.closest('.chatRoundNode'); if (!node) return;
       if (suppressed === node) { suppressed = null; return; }
-      const items = bindings.get(node); if (!items) return;
+      const row = bindings.get(node); if (!row) return;
+      const items = event.detail === 0 ? [row] : pointerRows(node, event);
       if (items.length > 1) showPreview(items, node, true); else void locate(items[0].key);
     });
     on(marks, 'pointerover', event => {
       if (event.pointerType === 'touch') return;
       const node = event.target.closest('.chatRoundNode'); if (!node || node.contains(event.relatedTarget)) return;
       clearTimeout(closeTimer); clearTimeout(hoverTimer);
-      hoverTimer = setTimeout(() => showPreview(bindings.get(node) || [], node), 220);
+      const items = pointerRows(node, event);
+      hoverTimer = setTimeout(() => showPreview(items, node), 220);
     });
     on(marks, 'pointerout', event => {
       if (event.target.closest('.chatRoundNode')?.contains(event.relatedTarget)) return;
@@ -352,12 +360,17 @@
     });
     on(preview, 'pointerenter', () => clearTimeout(closeTimer));
     on(preview, 'pointerleave', () => { closeTimer = setTimeout(() => { if (!popup?.explicit && !preview.contains(document.activeElement)) closePreview(); }, 240); });
-    on(marks, 'focusin', event => { const node = event.target.closest('.chatRoundNode'); if (node && !restoringFocus) showPreview(bindings.get(node) || [], node); });
+    on(marks, 'focusin', event => { const node = event.target.closest('.chatRoundNode'); const row = bindings.get(node); if (row && !restoringFocus) showPreview([row], node); });
     on(marks, 'pointerdown', event => {
-      const node = event.target.closest('.chatRoundNode'); const items = bindings.get(node);
-      cancelPress(); suppressed = null; if (!items || items.length !== 1 || event.button !== 0) return;
+      const node = event.target.closest('.chatRoundNode');
+      cancelPress(); suppressed = null; if (!bindings.has(node) || event.button !== 0) return;
+      const items = pointerRows(node, event);
       node.classList.add('is-pressing');
-      press = { node, x: event.clientX, y: event.clientY, timer: setTimeout(() => { suppressed = node; toggle(items[0].key); cancelPress(); }, 550) };
+      press = { node, x: event.clientX, y: event.clientY, timer: setTimeout(() => {
+        suppressed = node;
+        if (items.length > 1) showPreview(items, node, true); else toggle(items[0].key);
+        cancelPress();
+      }, 550) };
     });
     on(window, 'pointermove', event => {
       if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 7) cancelPress();

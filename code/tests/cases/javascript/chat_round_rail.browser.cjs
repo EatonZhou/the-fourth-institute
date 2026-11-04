@@ -82,14 +82,104 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };
+    if (process.env.RAIL_MARKERS_ONLY) {
+      const afterLayout = target => target.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const seed = async target => {
+        await target.evaluate(() => {
+          const titles = ['请逐步解释注意力机制如何结合上下文理解长句，并比较不同方案的限制。', '这是正在排队的已受理请求，请保留我的原始问题。', '正在运行：说明查询、键和值如何共同决定注意力权重。', '关注这条排队请求，稍后继续检查可复现的例子。', '关注正在运行的验证工作，请同时保留原文与来源。'];
+          items = titles.flatMap((text, i) => [human('m' + i, text), agent('ma' + i, 'm' + i)]);
+          workspace.setMessages(items);
+          workspace.setRequestProgress({ cursor: 50, input_states: titles.map((_, i) => ({ message_id: 'm' + i, state: ['completed', 'queued', 'running', 'queued', 'running'][i] })) });
+        });
+        await afterLayout(target);
+        await target.locator('.chatRoundDirectory').click();
+        for (const key of ['m3', 'm4']) await target.locator(`[data-round-follow="${key}"]`).click();
+        await target.keyboard.press('Escape'); await afterLayout(target);
+      };
+      const inspect = target => target.evaluate(() => ({
+        line: getComputedStyle(document.querySelector('.chatRoundLane'), '::before').content,
+        divider: getComputedStyle(document.querySelector('.chatRoundRail')).borderInlineStartWidth,
+        nodes: [...document.querySelectorAll('.chatRoundNode')].map(node => {
+          const core = node.querySelector('.chatRoundCore'), flag = node.querySelector('.chatRoundFlag');
+          const shape = getComputedStyle(core, '::after'), halo = getComputedStyle(core, '::before');
+          const c = core.getBoundingClientRect(), f = flag?.getBoundingClientRect(), n = node.getBoundingClientRect();
+          return { key: node.dataset.roundKey, text: node.textContent, label: node.getAttribute('aria-label'), shape: shape.display, radius: shape.borderRadius,
+            border: shape.borderWidth, rotation: shape.transform, background: shape.backgroundColor, halo: halo.animationDuration,
+            coreAnimation: getComputedStyle(core).animationName, flag: !!flag,
+            offset: f ? [f.x + f.width / 2 - c.x - c.width / 2, f.y + f.height / 2 - c.y - c.height / 2] : null,
+            width: n.width, height: n.height };
+        }),
+        hiddenFlags: document.querySelectorAll('.chatRoundNode:not(.is-followed) .chatRoundFlag').length,
+        counts: document.querySelectorAll('.chatRoundCount,.chatRoundFlagCount,[data-running-count]').length,
+      }));
+      const dense = async (target, touch) => {
+        await target.evaluate(() => {
+          items = Array.from({ length: 80 }, (_, i) => human('dense' + i, '第 ' + i + ' 条独立用户请求：请保留这条消息的准确位置与完整上下文。'));
+          workspace.setMessages(items);
+          workspace.setRequestProgress({ cursor: 51, input_states: [{ message_id: 'dense35', state: 'queued' }, { message_id: 'dense36', state: 'running' }] });
+        }); await afterLayout(target);
+        check('dense markers keep every message identity', await target.locator('.chatRoundNode').count() === 80);
+        const spacing = await target.evaluate(() => {
+          const view = workspace.els.messages, b = view.getBoundingClientRect(), hit = matchMedia('(pointer:coarse)').matches ? 44 : 26;
+          return [...document.querySelectorAll('.chatRoundNode')].every(node => {
+            const row = view.querySelector(`[data-message-key="${node.dataset.roundKey}"]`), y = row.getBoundingClientRect().top - b.top + view.scrollTop;
+            return Math.abs(parseFloat(node.style.top) - (hit / 2 + y / view.scrollHeight * (document.querySelector('.chatRoundLane').clientHeight - hit))) < 1;
+          });
+        }); check('dense positions stay measured rather than redistributed', spacing);
+        const box = await target.locator('[data-round-key="dense35"]').boundingBox();
+        if (touch) await target.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+        else await target.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        check('overlapping pointer targets open local disambiguation', await target.locator('.chatRoundPreviewItem').count() > 1 && await target.locator('.chatRoundPreviewItem').count() < 80);
+        const follow = target.locator('[data-round-follow="dense35"]');
+        if (touch) await follow.tap(); else await follow.click();
+        await afterLayout(target);
+        check('dense list flags only selected identity', await target.evaluate(() => workspace.isRoundFollowed('dense35') && !workspace.isRoundFollowed('dense36')));
+        if (output) await target.screenshot({ path: path.join(output, touch ? 'markers-dense-390.png' : 'markers-dense-desktop.png') });
+        const jump = target.locator('.chatRoundPreviewItem').filter({ has: target.locator('[data-round-follow="dense35"]') }).locator('.chatRoundPreviewJump');
+        if (touch) await jump.tap(); else await jump.click();
+        check('dense list actual action locates exact message', await target.locator('[data-message-key="dense35"]').evaluate(n => n.classList.contains('messageQuoteTarget')));
+        await target.locator('[data-round-key="dense0"]').focus();
+        const visited = [await target.evaluate(() => document.activeElement.dataset.roundKey)];
+        for (let i = 1; i < 80; i++) { await target.keyboard.press('ArrowDown'); visited.push(await target.evaluate(() => document.activeElement.dataset.roundKey)); }
+        check('all dense identities reachable individually by keyboard', new Set(visited).size === 80 && visited.every((key, i) => key === 'dense' + i));
+        await target.keyboard.press('Home'); await target.keyboard.press('ArrowDown'); await target.keyboard.press('Enter');
+        check('dense keyboard activation stays exact without ambiguous list', await target.locator('[data-message-key="dense1"]').evaluate(n => n.classList.contains('messageQuoteTarget')));
+      };
+      await page.setViewportSize({ width: 1440, height: 1000 }); await seed(page);
+      const desktop = await inspect(page); geometry.push({ desktop });
+      check('each accepted input owns one marker without counts or hidden flags', desktop.nodes.length === 5 && desktop.counts === 0 && desktop.hiddenFlags === 0 && desktop.nodes.every(n => n.text === ''));
+      check('queued is a hollow diamond', desktop.nodes[1].radius === '0px' && desktop.nodes[1].border === '1px' && desktop.nodes[1].rotation.startsWith('matrix(0.707'));
+      check('flag replaces queued and running core at same center', desktop.nodes.slice(3).every(n => n.flag && n.shape === 'none' && n.offset.every(v => Math.abs(v) < .1)));
+      check('ordinary and flagged running keep stable core and green halo', desktop.nodes[2].coreAnimation === 'none' && desktop.nodes[2].halo === '3.6s' && desktop.nodes[4].halo === '3.6s');
+      check('corrected node line and border contract retained', desktop.line !== 'none' && desktop.divider === '0px');
+      await shot('markers-desktop-light');
+      await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot('markers-desktop-dark');
+      await dense(page, false);
+      const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+      const small = await mobile.newPage(); small.on('pageerror', error => errors.push(error.message)); await setup(small);
+      await small.evaluate(() => document.documentElement.style.fontSize = '20px'); await seed(small);
+      const narrow = await inspect(small); geometry.push({ narrow });
+      check('390 font20 preserves independent 44px targets and centered flags', narrow.nodes.every(n => n.width >= 44 && n.height >= 44 && (!n.offset || n.offset.every(v => Math.abs(v) < .1))));
+      if (output) await small.screenshot({ path: path.join(output, 'markers-390-font20-light.png') });
+      await small.evaluate(() => document.documentElement.dataset.portalTheme = 'dark');
+      if (output) await small.screenshot({ path: path.join(output, 'markers-390-font20-dark.png') });
+      await dense(small, true);
+      assert.deepEqual(errors, []);
+      if (output) fs.writeFileSync(path.join(output, 'markers-result.json'), JSON.stringify({ checks, geometry, errors, boundary: 'Native Chat with synthetic accepted input states. No private user session, API writes or official TAU.' }, null, 2));
+      console.log('Round rail marker review passed: ' + checks.length); await mobile.close(); await context.close(); return;
+    }
     if (process.env.RAIL_PERF_ONLY) {
       const measurements = [];
       for (const baseline of [true, false, false, true]) {
         await setup(page, { baseline });
         await page.evaluate(() => {
           const originalRect = Element.prototype.getBoundingClientRect, originalRAF = window.requestAnimationFrame;
-          window.probe = { reads: 0, frames: [], longtasks: [], mutations: 0, railAdds: 0 };
-          Element.prototype.getBoundingClientRect = function() { if (this.matches('.messageList > [data-message-key]')) probe.reads++; return originalRect.call(this); };
+          window.probe = { reads: 0, railGeometryReads: 0, frames: [], longtasks: [], mutations: 0, railAdds: 0 };
+          Element.prototype.getBoundingClientRect = function() {
+            if (this.matches('.messageList > [data-message-key]')) probe.reads++;
+            if (this.matches('.chatRoundViewport') || this.closest('.chatRoundRail')) probe.railGeometryReads++;
+            return originalRect.call(this);
+          };
           window.requestAnimationFrame = fn => originalRAF(time => { const start = performance.now(); fn(time); probe.frames.push(performance.now() - start); });
           new PerformanceObserver(list => probe.longtasks.push(...list.getEntries().map(e => e.duration))).observe({ entryTypes: ['longtask'] });
           new MutationObserver(records => { probe.mutations += records.length; probe.railAdds += records.filter(r => r.type === 'childList' && r.target.closest?.('.chatRoundRail')).reduce((n, r) => n + r.addedNodes.length, 0); })
@@ -98,19 +188,21 @@ if (output) fs.mkdirSync(output, { recursive: true });
           window.mountStart = performance.now(); workspace.setMessages(items, { history: { can_load_older: true } });
         });
         await page.waitForTimeout(400); await settle();
-        const mount = await page.evaluate(() => ({ reads: probe.reads, callbacksMs: probe.frames.reduce((a,b) => a+b, 0), nodes: document.getElementById('chat').querySelectorAll('*').length,
+        const mount = await page.evaluate(() => ({ reads: probe.reads, railGeometryReads: probe.railGeometryReads, callbacksMs: probe.frames.reduce((a,b) => a+b, 0), nodes: document.getElementById('chat').querySelectorAll('*').length,
+          markers: document.querySelectorAll('.chatRoundNode').length, flagElements: document.querySelectorAll('.chatRoundNode .chatRoundFlag').length,
           rowWidth: document.querySelector('.messageList').clientWidth, longtasks: [...probe.longtasks] }));
-        await page.evaluate(() => { probe.reads = probe.mutations = probe.railAdds = 0; probe.frames = []; probe.longtasks = []; });
+        await page.evaluate(() => { probe.reads = probe.railGeometryReads = probe.mutations = probe.railAdds = 0; probe.frames = []; probe.longtasks = []; });
         await page.evaluate(async () => {
           const view = workspace.els.messages, range = view.scrollHeight - view.clientHeight;
           for (let step = 0; step < 120; step++) await new Promise(resolve => requestAnimationFrame(() => { view.scrollTop = range * ((step % 60) / 59); resolve(); }));
         }); await settle();
         const scrolling = await page.evaluate(() => ({ ...probe, frames: [...probe.frames], longtasks: [...probe.longtasks] }));
-        await page.evaluate(() => { probe.reads = probe.mutations = probe.railAdds = 0; probe.frames = []; probe.longtasks = []; });
+        await page.evaluate(() => { probe.reads = probe.railGeometryReads = probe.mutations = probe.railAdds = 0; probe.frames = []; probe.longtasks = []; });
         await page.waitForTimeout(1000);
         const idle = await page.evaluate(() => ({ ...probe }));
         if (!baseline) {
-          check('cached scroll avoids row measurement and search DOM rebuild', scrolling.reads === 0 && scrolling.railAdds === 0);
+          check('cached scroll avoids row and rail geometry measurement and search DOM rebuild', scrolling.reads === 0 && scrolling.railGeometryReads === 0 && scrolling.railAdds === 0);
+          check('long conversation keeps 500 independent markers without hidden flag elements', mount.markers === 500 && mount.flagElements === 0);
           check('idle has no rail scheduling work', idle.reads === 0 && idle.frames.length === 0 && idle.railAdds === 0);
           await page.evaluate(() => { workspace.setRoundRailPresented(false); probe.reads = 0; probe.frames = []; workspace.appendMessage(human('hidden-request', '隐藏内容')); });
           await page.waitForTimeout(100);
@@ -284,8 +376,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.evaluate(() => workspace.setRequestProgress({ cursor: 14, input_states: [{ message_id: 'h2', state: 'running', updated_at: '2026-11-04T12:00:00Z' }] })); await settle();
       check('older updated_at cannot resurrect terminal with new cursor', !(await page.locator('[data-round-key="h2"]').getAttribute('class')).includes('is-running'));
       await page.evaluate(() => { items = Array.from({ length: 80 }, (_, i) => human('d' + i, '请求 ' + i)); workspace.setMessages(items); workspace.toggleRoundFollow('d0'); workspace.toggleRoundFollow('d1'); }); await settle();
-      check('dense group exposes multiple flag count', await page.locator('.chatRoundFlagCount').first().innerText() === '2');
-      await page.locator('.chatRoundNode').first().click(); await shot('review-dense-flags'); await page.keyboard.press('Escape');
+      check('dense messages retain separate flags without counts', await page.locator('.chatRoundNode').count() === 80 && await page.locator('.chatRoundNode.is-followed').count() === 2 && await page.locator('.chatRoundFlagCount').count() === 0);
+      const firstDense = await page.locator('.chatRoundNode').first().boundingBox();
+      await page.mouse.click(firstDense.x + firstDense.width / 2, firstDense.y + firstDense.height / 2); await shot('review-dense-flags'); await page.keyboard.press('Escape');
       await page.evaluate(() => { items = [human('h1'), agent('agent-only')]; workspace.setMessages(items); }); await settle();
       await page.locator('[data-workspace-history-search]').click(); await page.locator('.portalConversationSearch input').fill('match'); await page.waitForTimeout(280);
       // Hover-independent native pointer click on a static result tick must reveal its row.
@@ -389,9 +482,10 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('late search results discarded', await page.locator('.chatRoundSearchTick').count() === 0);
     await page.keyboard.press('Escape');
     await page.evaluate(() => { items = Array.from({ length: 80 }, (_, i) => human('dense' + i, '第 ' + i + ' 条独立请求')); workspace.setMessages(items); }); await settle();
-    check('dense rounds aggregate without fake spacing', await page.locator('.chatRoundNode').count() < 80);
-    await page.locator('.chatRoundNode').first().click();
-    check('dense cluster exposes individual targets', await page.locator('.chatRoundPreviewItem').count() > 1); await shot('desktop-dense');
+    check('dense rounds keep individual measured markers', await page.locator('.chatRoundNode').count() === 80);
+    const firstDense = await page.locator('.chatRoundNode').first().boundingBox();
+    await page.mouse.click(firstDense.x + firstDense.width / 2, firstDense.y + firstDense.height / 2);
+    check('overlapping hit areas expose individual targets', await page.locator('.chatRoundPreviewItem').count() > 1); await shot('desktop-dense');
     await page.keyboard.press('Escape');
     await page.evaluate(() => { scope = 'another'; workspace.setMessages([human('other')]); }); await settle();
     check('conversation switch drops marks and previous states', await page.locator('.chatRoundNode').count() === 1 && await page.locator('.chatRoundNode.is-followed').count() === 0);
