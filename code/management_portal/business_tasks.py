@@ -25,8 +25,10 @@ def start(
     if not clean_id:
         raise ValueError("Portal business task id required")
     from management_common.resource_lifecycle import current_lifecycle, LifecycleStore, lifecycle_scope
+    from management_common.operation_identity import current_operation_identity, operation_identity_scope
     lifecycle_id = current_lifecycle()
     lifecycle = LifecycleStore().scope(lifecycle_id) if lifecycle_id else None
+    identity = current_operation_identity()
     ready = threading.Event()
     admission_errors = []
     with _LOCK:
@@ -35,22 +37,26 @@ def start(
         _ACTIVE.add(clean_id)
 
     def run() -> None:
-        try:
-            scope = lifecycle_scope(lifecycle_id, actor=lifecycle['actor']) if lifecycle else nullcontext()
-            # Acquire the background request's own shared lease before returning
-            # to the caller. Sealing a run cannot slip between parent and child.
-            with scope:
+        # Carry only the authenticated identity, not request-local transactions
+        # or locks. Stored job authors cannot manufacture this context later.
+        identity_scope = operation_identity_scope(identity) if identity is not None else nullcontext()
+        with identity_scope:
+            try:
+                scope = lifecycle_scope(lifecycle_id, actor=lifecycle['actor']) if lifecycle else nullcontext()
+                # Acquire the background request's own shared lease before returning
+                # to the caller. Sealing a run cannot slip between parent and child.
+                with scope:
+                    ready.set()
+                    target(*args, **kwargs)
+            except BaseException as exc:
+                if not ready.is_set():
+                    admission_errors.append(exc)
+                if on_error is not None:
+                    on_error(exc)
+            finally:
                 ready.set()
-                target(*args, **kwargs)
-        except BaseException as exc:
-            if not ready.is_set():
-                admission_errors.append(exc)
-            if on_error is not None:
-                on_error(exc)
-        finally:
-            ready.set()
-            with _LOCK:
-                _ACTIVE.discard(clean_id)
+                with _LOCK:
+                    _ACTIVE.discard(clean_id)
 
     try:
         threading.Thread(
