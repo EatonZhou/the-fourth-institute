@@ -2,6 +2,27 @@
   "schema": "tfi.portal-tau-cases.v1",
   "cases": [
     {
+      "id": "test_f47a318c0e96",
+      "key": "tau.resident.native-approval-allow-deny",
+      "title": "Ask 临时成员的原生审批拒绝与本次允许",
+      "description": "在独占临时成员上选择 Ask，拒绝和允许两个独立文件请求并核对实际结果。",
+      "importance": "P1",
+      "module": "resident.conversation",
+      "aspects": ["functional", "behavior", "ui"],
+      "is_design_point": false,
+      "design_refs": ["decision_1e2eb869bc10", "decision_8b2fa224616b"],
+      "lifecycle": "active",
+      "implementations": [{
+        "id": "impl-tau-resident-native-approval-allow-deny",
+        "runner": "tau",
+        "entrypoint": "tau:resident-native-approval-allow-deny",
+        "source": "tests/cases/tau_cases.json",
+        "profiles": ["live.controlled"],
+        "risk": "external-side-effects",
+        "task_prompt": "用户目标：用 Ask 权限预设运行临时成员，确认原生审批卡片的拒绝和本次允许真实生效。\n准备：在框架固定团队中新建本轮可删临时 Resident，使用当前指定账号和模型；只给这个临时对象显式设置正式 default（Ask）权限预设，回读实际 workspace-write/on-request/user 配置。不要修改模块执行者或共享成员的权限。每次 AI 输入前刷新原账号原生额度并要求 fresh 正数，不确认 credits、不充值、不改保护线、不借身份。通过正式对象能力或本轮允许的本地文件能力准备带 Run 标记的独占临时目录，位于被测 Resident 默认可写工作目录之外；只允许两个尚不存在的标记文本文件。无合法可审批路径时如实记录，不修改系统目录或扩大共享权限。\n用户会怎么操作：给临时成员发送一条短请求，要求只向第一个标记文件写指定纯文本，遇到沙盒限制用 Provider 原生审批申请本次操作，不改用其他身份、工具或目标路径。等待真实审批卡片，查看动作和路径后拒绝；等待原轮次结束，确认该文件不存在。再以第二个文件发送独立短请求，等待真实原生审批，选择本次允许；待原轮次结束后检查文件恰好存在且内容一致。原生审批卡片来源必须是该次 Provider 请求，不能用普通问题卡片、模拟请求或直接后台完成来代替。拒绝后不得换路径完成同一写入。\n要留意什么：审批响应回到原请求；同一卡片不能重复生效；结束后刷新历史仍显示正确终态而不出现可用旧按钮。等待期沿原输入和 Execution 观察，不重复提交未明受理结果。若原生审批实际不可用，记录实际配置和响应，不声称分支成功。MCP 服务不属于此例，不另起完整原生卡片用例。\n报告什么：说明拒绝前后、允许前后真实文件状态，记录本轮对象、原生请求和输入 ID、配置、错误类别及性能；未记录项写未记录，不编造证据。\n操作范围与清理：使用框架指定实例和受控测试会话。所有正式指令必须以执行者自己的身份发送；不借管理员会话代发 Resident 分支。只操作本轮独占临时成员、目录和两个标记文件。结束删除自己的临时成员与文件、关闭自己的浏览器和进程；未结束的审批先在原请求上取消再清理。不删除历史会话或共享资源，不在 TAU 内启动 Campaign。"
+      }]
+    },
+    {
       "id": "test_e69249c20642",
       "key": "tau.resource.catalog-search-filter-recovery",
       "title": "资源目录快速输入、项目筛选与刷新恢复",
