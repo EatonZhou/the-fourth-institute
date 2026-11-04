@@ -1,4 +1,12 @@
 {
+  "全屏观看": {
+    "zh-CN": "全屏观看",
+    "en": "Watch fullscreen"
+  },
+  "退出全屏": {
+    "zh-CN": "退出全屏",
+    "en": "Exit fullscreen"
+  },
   "交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。": {
     "zh-CN": "交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。",
     "en": "Interactive pages must be self-contained, without embedded pages or external scripts."

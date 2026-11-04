@@ -178,6 +178,28 @@
       player.setAttribute("aria-label", t("讲解视频")); player.src = blob(source.bytes, type);
       video = player;
       const frame = node("div", null, "homeExplanationVideo"); frame.append(player); region.append(frame);
+      if (document.fullscreenEnabled && frame.requestFullscreen) {
+        const controls = node("div", null, "homeExplanationVideoControls");
+        const expand = button(t("全屏观看"), async () => {
+          try {
+            if (document.fullscreenElement === frame) await document.exitFullscreen();
+            else await frame.requestFullscreen();
+          } catch (error) { if (current(key)) failure(region, error); }
+        });
+        const syncFullscreen = () => {
+          const expanded = document.fullscreenElement === frame;
+          expand.textContent = t(expanded ? "退出全屏" : "全屏观看");
+          expand.setAttribute("aria-pressed", String(expanded));
+        };
+        expand.classList.add("homeExplanationExpand");
+        controls.append(expand); frame.prepend(controls);
+        // Fullscreen the picture and its captions together, so the enlarged
+        // diagram keeps the same unobscured caption layout as the page.
+        player.controlsList?.add("nofullscreen");
+        document.addEventListener("fullscreenchange", syncFullscreen);
+        disposers.add(() => { document.removeEventListener("fullscreenchange", syncFullscreen); });
+        syncFullscreen();
+      }
       player.addEventListener("loadedmetadata", () => { if (current(key) && playbackTime < player.duration) player.currentTime = playbackTime; });
       player.addEventListener("error", () => { if (current(key)) failure(region, new Error(t("视频无法播放，请重试或阅读下方图文。"))); }, { once: true });
       const items = chapters(spec.chapters);
@@ -210,7 +232,8 @@
               const nativePresentation = document.fullscreenElement === player || player.webkitDisplayingFullscreen || document.pictureInPictureElement === player;
               frame.classList.toggle("homeExplanationInlineCaptions", !nativePresentation);
               const cues = track.track.mode === "showing" ? Array.from(track.track.activeCues || []) : [];
-              captionText.textContent = cues.map(cue => cue.getCueAsHTML ? cue.getCueAsHTML().textContent : cue.text).join("\n");
+              const caption = cues.map(cue => cue.getCueAsHTML ? cue.getCueAsHTML().textContent : cue.text).join("\n");
+              if (captionText.textContent !== caption) { captionText.textContent = caption; captionText.scrollTop = 0; }
               captionText.hidden = !!nativePresentation || !captionText.textContent;
             };
             const listeners = [[track, "load"], [track.track, "cuechange"], [player.textTracks, "change"],

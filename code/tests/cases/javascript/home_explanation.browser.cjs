@@ -136,7 +136,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
     if (process.argv.includes('--captions-only')) {
-      const first = '两路频率没有改变。把同样宽的窗口移到零点二五秒，频差累积了半圈相位。原来的两条曲线上下相反，合成曲线几乎压平；窗口起点恰好抵消。';
+      const first = '两路频率没有改变。把同样宽的窗口移到零点二五秒，频差累积了半圈相位。原来的两条曲线上下相反，合成曲线几乎压平；窗口起点恰好抵消。'.repeat(3);
       const second = '窗口继续移动，比较两条声波和它们的和。';
       const longCaptions = put('long-captions.vtt', `WEBVTT\n\n00:00.000 --> 00:01.000\n${first}\n\n00:01.000 --> 00:02.500\n${second}\n`, 'text/vtt');
       await setup(manifest('caption-layout', { ...base, video_plan: undefined, video: { ...videoRef, captions: longCaptions } }));
@@ -162,6 +162,26 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       checks.push('native CC off clears external caption');
       await page.locator('video').evaluate(v => { v.textTracks[0].mode = 'showing'; });
       await page.waitForFunction(() => !document.querySelector('.homeExplanationCaptions').hidden);
+      await page.locator('.homeExplanationExpand').click();
+      await page.waitForFunction(() => document.fullscreenElement?.classList.contains('homeExplanationVideo'));
+      check('fullscreen keeps captions below the diagram', await position(), { below: true, fits: true, font: 20, external: true, hidden: false, mode: 'showing' });
+      check('fullscreen exit is accessible', await page.locator('.homeExplanationExpand').getAttribute('aria-pressed'), 'true');
+      await page.locator('.homeExplanationExpand').click();
+      await page.waitForFunction(() => !document.fullscreenElement);
+      await page.setViewportSize({ width: 844, height: 390 });
+      await page.locator('.homeExplanationExpand').click();
+      await page.waitForFunction(() => document.fullscreenElement?.classList.contains('homeExplanationVideo'));
+      await page.locator('video').evaluate(v => { v.currentTime = .3; });
+      await page.waitForFunction(text => document.querySelector('.homeExplanationCaptions').textContent === text, first);
+      check('landscape fullscreen gives picture and captions separate columns', await page.locator('.homeExplanationVideo').evaluate(f => {
+        const v = f.querySelector('video').getBoundingClientRect(), c = f.querySelector('.homeExplanationCaptions').getBoundingClientRect();
+        return c.left >= v.right && v.width > 500 && c.bottom <= innerHeight;
+      }), true);
+      check('landscape fullscreen offers scrolling for long captions', await page.locator('.homeExplanationCaptions').evaluate(c => c.scrollHeight > c.clientHeight && getComputedStyle(c).overflowY === 'auto'), true);
+      if (out) await page.locator('.homeExplanationVideo').screenshot({ path: path.join(out, 'captions-fullscreen.png') });
+      await page.locator('.homeExplanationExpand').click();
+      await page.waitForFunction(() => !document.fullscreenElement);
+      check('fullscreen exit restores page layout', (await position()).external, true);
       await page.locator('video').evaluate(v => v.requestFullscreen());
       await page.waitForFunction(() => !!document.fullscreenElement && !document.querySelector('.homeExplanationVideo').classList.contains('homeExplanationInlineCaptions'));
       check('native fullscreen restores native captions only', (await position()).hidden, true);
