@@ -210,6 +210,16 @@ def test_cloud_speech_rejects_unknown_voice_style_and_extreme_controls():
             cloud.validate(**args)
 
 
+def test_worker_bookkeeping_does_not_change_speech_intent_identity(isolated):
+    from dataclasses import replace
+    req = request()
+    speech.prepare(req)
+    speech.prepare(replace(req, metadata={**req.metadata, "worker_attempt": 2},
+                           runtime_options={**req.runtime_options, "resume_context": "worker-owned"}))
+    with pytest.raises(ValueError, match="identity conflict"):
+        speech.prepare(replace(req, prompt="different synthesis text"))
+
+
 def test_cloud_receipt_uses_service_identity_and_never_reads_a_private_registry(isolated, monkeypatch):
     from management_portal.execution import microsoft_speech as cloud
     from management_portal.execution.accounts import ExecutionAccounts

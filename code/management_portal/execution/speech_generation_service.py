@@ -39,7 +39,12 @@ def read_record(execution_id):
 
 
 def prepare(request):
-    digest = hashlib.sha256(json.dumps(request.to_payload(), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    # Worker/session bookkeeping can enrich the accepted ExecutionRequest. Only
+    # the synthesis intent defines identity; transport metadata is not input.
+    intent = {"actor": request.actor, "provider": request.provider, "text": request.prompt,
+              "options": {k: request.runtime_options[k] for k in
+                          ("model", "voice", "style", "rate", "volume", "pitch") if k in request.runtime_options}}
+    digest = hashlib.sha256(json.dumps(intent, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     with _locked(request.execution_id) as path:
         if path.exists():
             record = read_record(request.execution_id)
