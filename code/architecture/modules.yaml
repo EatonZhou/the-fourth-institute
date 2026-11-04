@@ -1396,6 +1396,7 @@ modules:
       - "management_portal/media_tools.py"
       - "scripts/build_explanation_package.py"
       - "scripts/submit_explanation_review.py"
+      - "scripts/index_explanation_reviews.py"
       - "management_portal/home_report.py"
       - "management_portal/home_report_http.py"
       - "management_portal/home_report_media.py"
