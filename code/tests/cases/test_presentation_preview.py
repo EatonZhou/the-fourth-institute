@@ -165,23 +165,30 @@ def test_local_file_permission_checked_before_conversion(tmp_path, monkeypatch):
 
 def test_upload_preview_uses_authenticated_metadata(tmp_path, monkeypatch):
     from management_portal import asgi
-    from management_portal.resources import isa
+    from management_portal import resources
+    from starlette.requests import Request
     source = tmp_path / 'presentation.pptx'
     source.write_bytes(b'original')
-    meta = {'ready': True, 'file_name': source.name, 'path': str(source), 'media_type': 'application/octet-stream'}
-    read = Mock(return_value=meta)
-    monkeypatch.setattr(isa, 'read_upload', read)
+    meta = {'filename': source.name, 'content_size': 8, 'content_mtime_ns': 10,
+            'media_type': 'application/octet-stream', 'target_kind': 'file'}
+    read = Mock(return_value=(b'original', meta['media_type'], meta))
+    service = SimpleNamespace(resolve=Mock(return_value=meta), read_content=read, read_content_range=read)
+    monkeypatch.setattr(resources, 'get_resource_service', lambda: service)
     monkeypatch.setattr(asgi, '_instruction_principal', lambda request: ('viewer', 'web'))
     convert = Mock(return_value=tmp_path / 'result.pdf')
     monkeypatch.setattr(preview, 'presentation_pdf', convert)
-    request = SimpleNamespace(path_params={'upload_id': 'upload_0123456789abcdef01234567'}, query_params={'preview': 'pdf'})
+    scope = {'type': 'http', 'method': 'GET', 'scheme': 'http', 'path': '/api/uploads/upload_0123456789abcdef01234567',
+             'headers': [], 'query_string': b'preview=pdf', 'server': ('testserver', 80),
+             'path_params': {'upload_id': 'upload_0123456789abcdef01234567'}}
+    request = Request(scope)
     response = asyncio.run(asgi.upload_content(request))
     assert response.status_code == 200
     assert response.media_type == 'application/pdf'
     convert.assert_called_once_with(b'original', 'presentation.pptx')
-    request.query_params['download'] = '1'
-    response = asyncio.run(asgi.upload_content(request))
-    assert response.body == b'original'
+    async def download():
+        response = await asgi.upload_content(Request({**scope, 'query_string': b'preview=pdf&download=1'}))
+        return b''.join([part async for part in response.body_iterator])
+    assert asyncio.run(download()) == b'original'
     monkeypatch.setattr(asgi, '_instruction_principal', lambda request: ('', 'web'))
     assert asyncio.run(asgi.upload_content(request)).status_code == 401
     assert read.call_count == 2

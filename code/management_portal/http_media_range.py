@@ -57,24 +57,31 @@ class MediaResponse:
         extra_headers: dict[str, str] | None = None,
     ) -> None:
         handler.send_response(self.status)
-        for name, value in (extra_headers or {}).items():
+        for name, value in self.header_values(content_type, content_disposition=content_disposition,
+                                              extra_headers=extra_headers).items():
             handler.send_header(name, value)
-        if self.status != 304:
-            handler.send_header("Accept-Ranges", "bytes")
-        if self.status in {200, 206}:
-            handler.send_header("Content-Type", content_type)
-        handler.send_header("Cache-Control", self.cache_control)
-        handler.send_header("ETag", self.etag)
-        if self.status == 416:
-            handler.send_header("Content-Range", f"bytes */{self.size}")
-            handler.send_header("Content-Length", "0")
-        elif self.status in {200, 206}:
-            handler.send_header("Content-Length", str(self.length))
-            if self.status == 206:
-                handler.send_header("Content-Range", f"bytes {self.start}-{self.end}/{self.size}")
-            if content_disposition:
-                handler.send_header("Content-Disposition", content_disposition)
         handler.end_headers()
+
+    def header_values(self, content_type: str, *, content_disposition: str = "",
+                      extra_headers: dict[str, str] | None = None) -> dict[str, str]:
+        """The same media response policy for synchronous and ASGI transports."""
+        headers = dict(extra_headers or {})
+        if self.status != 304:
+            headers["Accept-Ranges"] = "bytes"
+        if self.status in {200, 206}:
+            headers["Content-Type"] = content_type
+        headers["Cache-Control"] = self.cache_control
+        headers["ETag"] = self.etag
+        if self.status == 416:
+            headers["Content-Range"] = f"bytes */{self.size}"
+            headers["Content-Length"] = "0"
+        elif self.status in {200, 206}:
+            headers["Content-Length"] = str(self.length)
+            if self.status == 206:
+                headers["Content-Range"] = f"bytes {self.start}-{self.end}/{self.size}"
+            if content_disposition:
+                headers["Content-Disposition"] = content_disposition
+        return headers
 
 
 def plan_media_response(

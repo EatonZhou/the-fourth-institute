@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 20
-  created_at: '2026-09-01'
+  number: 21
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:58:40Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T11:03:43Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -20,7 +20,7 @@ links:
   source:
   - ${code_root}/management_portal/http_resources.py
   - ${code_root}/management_portal/resources/isa.py
-  - skills:tfi-unified-id/SKILL.md
+  - /share/Skills/tfi-unified-id/SKILL.md
   - ${code_root}/config/resource-types/_registry.json
   - ${code_root}/management_common/resource_identity.py
   - ${code_root}/management_portal/resources/address.py
@@ -82,6 +82,12 @@ Portal 管理很多种业务对象：知识条目、论文、代码仓库、文�
 - **地址规范化的步骤：** 先做一次百分号解码，再去除首尾空白和首尾的 `/`。
 - **以下地址被判为语法错误：** 空地址；包含空字符、换行或回车的地址；包含空路径段的地址；根部不是合法统一 ID 的地址。
 - **语法正确只说明地址形状成立。** 对象是否存在、内部路径是否有意义、访问者能否读取，都在领域解析阶段判断。
+
+### 上传文件地址
+
+统一文件读取也接受 `{"upload_id":"upload_<原24位句柄>"}`。这是上传领域的文件引用，不进入统一资源类型注册表或资源索引，也不改动根资源 ID 的语法。相对 `/api/uploads/<句柄>` 与本实例正式 public/internal origin 下的完整 HTTP(S) URL 规范化为同一引用，只允许可选 `download=1`；外站、额外字段、参数、片段和路径穿越均拒绝，不读取远程 URL。
+
+ResourceService 在普通资源地址解析之前把这类引用交给上传文件 owner。owner 检查当前调用者为活跃 User/Resident、上传已完成且不在清理中，并以 no-follow 路径访问文件；引用返回文件元数据、原文件名、受保护内容 URL 和 `file_reference`，不伪造根 ID。该读取规则由上传领域承担，普通资源的 PAR 授权和根身份契约继续保持。
 
 ### 解析始终使用当前访问者
 

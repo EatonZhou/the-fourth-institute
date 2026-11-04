@@ -66,8 +66,10 @@ def test_bytes_complete_an_upload_once_and_only_by_its_creator():
     assert resource_isa.read_upload(upload_id)["ready"] is True
 
 
-def test_post_images_must_be_real_pictures_and_are_readable_by_signed_in_users(monkeypatch):
+def test_post_images_must_be_real_pictures_and_are_readable_by_signed_in_users(permissions):
     """帖子图片校验真实内容并允许已登录用户读取"""
+    from management_portal.resources import upload_files
+    permissions.users("alice", "bob")
     upload_id = create("post_image", b"not a picture", media_type="image/png")
     with pytest.raises(InstructionError) as invalid:
         resource_isa.complete_upload(upload_id, b"not a picture", actor="alice")
@@ -77,32 +79,18 @@ def test_post_images_must_be_real_pictures_and_are_readable_by_signed_in_users(m
     resource_isa.complete_upload(upload_id, data, actor="alice")
     meta = resource_isa.read_upload(upload_id)
     assert meta["media_type"] == "image/png"
-    assert asgi._upload_readable(meta, "bob") is True
+    assert upload_files.resolve({"upload_id": upload_id}, actor="bob")["exists"] is True
 
 
-class _Residents:
-    """alice (the sender) and viewer can see the receiving Resident."""
-
-    def get_resident(self, resident_id, caller):
-        if caller not in {"alice", "viewer"}:
-            raise PermissionError("not visible")
-        return {"resident_id": resident_id}
-
-
-def test_attachments_are_private_to_their_creator_admins_and_the_target_viewers(monkeypatch):
-    """目标附件对创建者、管理员和其他调用者均可读"""
-    monkeypatch.setattr(
-        "management_portal.society_service.get_society_service",
-        lambda: type("Service", (), {"resident": _Residents()})(),
-    )
+def test_attachments_are_readable_by_authenticated_users(permissions):
+    """上传附件对创建者、管理员和其他活跃调用者均可读"""
+    from management_portal.resources import upload_files
+    permissions.users("alice", "admin", "viewer", "stranger")
     data = png_bytes()
-    upload_id = create("conversation_attachment", data, target="resident_aaaaaaaaaaaa")
+    upload_id = create("conversation_attachment", data)
     resource_isa.complete_upload(upload_id, data, actor="alice")
-    meta = resource_isa.read_upload(upload_id)
-    assert asgi._upload_readable(meta, "alice")
-    assert asgi._upload_readable(meta, "admin")
-    assert asgi._upload_readable(meta, "viewer")
-    assert asgi._upload_readable(meta, "stranger")
+    for caller in ("alice", "admin", "viewer", "stranger"):
+        assert upload_files.resolve({"upload_id": upload_id}, actor=caller)["exists"] is True
 
 
 @pytest.mark.parametrize("caller", ["alice", "bob", "admin", "resident_111111111111"])

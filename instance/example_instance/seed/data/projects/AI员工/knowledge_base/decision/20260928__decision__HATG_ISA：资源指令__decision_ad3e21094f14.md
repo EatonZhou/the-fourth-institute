@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 43
-  created_at: '2026-09-28T10:45:00Z'
+  number: 44
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: "2026-11-02T19:00:19Z"
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-04T11:03:42Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -83,6 +83,12 @@ links:
 
 合法的 `<资源ID>/file/<相对路径>` 字符串地址继续可用，其他类型原有字符串寻址能力保留。Workspace、Repo 和 Article 文件的读取结果可带 `file_reference`，供报告和交付物保存稳定引用；根对象 ID 字符串仍表示资源本身。ResourceService 的 `resolve`、`reference`、`read_content` 与 `read_content_range` 使用相同的 `address` 契约，区间读取经既有读取/下载通道完成，见 decision_b6e74d78f7b6。
 
+### 上传文件引用
+
+`ResolveResource` 和 `ReadResource` 也接受恰好一个 `upload_id` 字段的文件引用，例如 `{"address":{"upload_id":"upload_ba95597e97d28c70bae9994c"}}`。值沿用上传时取得的句柄。`/api/uploads/<句柄>` 和本实例正式 public/internal origin 下的完整 URL 可作为等价地址，仅允许可选的 `download=1` 查询参数。其他站点、片段和额外字段会被拒绝，不触发远程抓取。
+
+上传文件由上传领域检查活跃认证身份、完成状态、清理登记和安全路径；所有已认证 User/Resident 都可读。上传句柄不作为资源树节点，普通资源仍按表中的 viewer 权限检查。`ResolveResource` 返回文件 `target` 和只读操作，根 `resource` 为空；`ReadResource` 支持 `meta_only`、`preview`、有界正文及超限下载，返回 `file_reference`、原文件名、类型、大小与内容地址，二进制预览不加载全部字节。
+
 ### `SearchResources`
 
 **按关键词、类型、项目和状态查找调用者可以看到的资源。**
@@ -144,7 +150,7 @@ links:
 
 - 参数：`resource_type`、`fields`（该类型要求的字段对象）。例如 Markdown 知识条目在 `fields` 中提交 `project_id`、`title` 和 `body`，ResourceService 分配统一 ID、生成文件名和头部。
 - 结果：新资源的统一 ID 与资源记录。
-- **放在 Project 下的类型必须给出位置，没有隐含的默认 Project**（TFI portal 2026-10-18）。知识条目与实验写 `fields.project_id`；repo 与 Workbench 写 `fields.project_ids`（Project ID 数组），公共内容写 `["@public"]`，`@public` 不能与 Project 同时给出；文章由所在目录决定，目录必须在已登记的 Project 内；设备没有位置。Workbench 从页面设计流程创建时取所绑定 Lineage 的 Project，Lineage 不属于任何 Project 时为公共内容。自动登记（扫描 Project 目录发现的 repo 等）按路径确定位置，不受这条约束；通过 RegisterResource 登记 repo 或 Workbench 而不给 `project_ids` 时登记失败。
+- **放在 Project 下的类型必须给出位置，没有隐含的默认 Project**（weihao 2026-10-18）。知识条目与实验写 `fields.project_id`；repo 与 Workbench 写 `fields.project_ids`（Project ID 数组），公共内容写 `["@public"]`，`@public` 不能与 Project 同时给出；文章由所在目录决定，目录必须在已登记的 Project 内；设备没有位置。Workbench 从页面设计流程创建时取所绑定 Lineage 的 Project，Lineage 不属于任何 Project 时为公共内容。自动登记（扫描 Project 目录发现的 repo 等）按路径确定位置，不受这条约束；通过 RegisterResource 登记 repo 或 Workbench 而不给 `project_ids` 时登记失败。
 - `fields.project_id` 与 `fields.project_ids` 在指令 schema 中声明，该声明不限制各资源类型原有的其他 fields。新资源的创建者记录为认证调用者。
 - **登记权限以拟放置位置判定。** RegisterResource 的正式权限声明把 `resource_type` 与 `fields.project_id` / `fields.project_ids` 交给方案的 `place` 规则，要求 contributor；它与登记后入树使用同一放置契约。各类型的默认位置、公共内容和多 Project 的父节点选择，统一见 decision_600ae27b0538；领域仍校验 Project 是否存在和必填位置，权限通过不代替输入校验。
 
@@ -240,7 +246,7 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 - 参数：`purpose`（用途：对话附件、帖子图片、Paper PDF、Article 文件或图表输入）、`target`（可选，目标工作区或资源地址），以及文件来源二者之一：`source_address`（已有的工作区文件地址），或 `file_name`、`media_type` 与 `size`（稍后通过数据通道写入字节）。
 - 结果：上传 ID。使用 `source_address` 时，服务直接从该文件复制内容，上传 ID 立即可用；否则同时返回数据通道地址和到期时间，字节写入完成后上传 ID 才可使用。
 - Resident 通过 Harness 工具调用时使用 `source_address`，不需要自己传输字节。
-- `purpose` 还包括头像（`avatar`，PNG、JPEG 或 WebP，最大 2 MiB，不接受动画），供 `UpdateUser`、`UpdateResident`、`UpdateProject` 和 `UpdateLineage` 设置头像；权限系统让上传只归上传者时（PAR），只有上传者本人能用它设置头像（decision_5bc3fdfc7eec）。帖子图片完成后所有登录用户都可以读取，内容校验为 PNG、JPEG、GIF 或 WebP，最大 12 MiB。上传完成后的字节可以由创建者、Portal 管理员和能看到目标 Resident 的用户按上传 ID 读取。
+- `purpose` 还包括头像（`avatar`，PNG、JPEG 或 WebP，最大 2 MiB，不接受动画），供 `UpdateUser`、`UpdateResident`、`UpdateProject` 和 `UpdateLineage` 设置头像；权限系统让上传只归上传者时（PAR），只有上传者本人能用它设置头像（decision_5bc3fdfc7eec）。帖子图片完成后所有登录用户都可以读取，内容校验为 PNG、JPEG、GIF 或 WebP，最大 12 MiB。上传完成后的字节由所有活跃且已认证的 User/Resident 按上述上传文件引用读取。
 - 大小和类型限制由用途决定，以 decision_61e50306cc79 的上传用途契约为准；本篇不另列一份附件容量默认值。服务在写入目标工作区前校验调用者、目标、大小和类型。见 decision_61e50306cc79。`target` 为 Resident ID 时（对话附件），调用者需要能看到该 Resident；其他 `target` 必须是调用者可以修改的工作区或资源地址，否则以 `instruction.not_found` 或 `instruction.forbidden` 失败。图片按文件内容识别类型，Paper PDF 要求内容以 `%PDF-` 开头；使用 `source_address` 复制时同样检查。
 
 上传后的文件是普通文件；Resident 可按实际文件路径使用系统工具删除，无独立的上传删除指令。浏览器移除附件通过上传文件 HTTP 接口完成，文件及保留登记的生命周期见 decision_61e50306cc79。
@@ -251,7 +257,7 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 - 参数：`address`（`<工作区ID>/file/<相对路径>`）、`content`。
 - 结果：写入后的内容摘要和修改时间。
-- 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（TFI portal 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
+- 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（weihao 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
 
 ## 参数名契约
 

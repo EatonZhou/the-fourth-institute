@@ -105,6 +105,31 @@
     return index === 0 ? "/" : path.slice(0, index);
   }
 
+  // An upload handle names a file, not a Resource ID or a server filesystem path.
+  function uploadReference(value) {
+    if (value && typeof value === "object") {
+      const id = value.file_reference?.upload_id || value.upload_id;
+      return /^upload_[0-9a-f]{24}$/.test(id || "") ? Object.freeze({ upload_id: id }) : null;
+    }
+    const raw = stripWrapping(value);
+    if (!/^(?:https?:\/\/[^/?#\\]+)?\/api\/uploads\/upload_[0-9a-f]{24}(?:\?download=1)?$/.test(raw)
+      || /[\u0000-\u0020\u007f]/.test(raw)) return null;
+    try {
+      const url = new URL(raw, global.location?.href || "http://localhost/");
+      if (url.username || url.password || url.hash) return null;
+      if (!raw.startsWith("/") && url.origin !== global.location?.origin) return null;
+      return Object.freeze({ upload_id: url.pathname.slice("/api/uploads/".length) });
+    } catch { return null; }
+  }
+
+  function uploadPath(reference) {
+    return `/api/uploads/${reference.upload_id}`;
+  }
+
+  function invalidUploadPath(value) {
+    return /^\/api\/uploads(?:[/?#]|$)/.test(stripWrapping(value));
+  }
+
   function localPathFromApiUrl(value) {
     const text = clean(value);
     if (!text) return "";
@@ -142,6 +167,9 @@
   function classifyLocator(rawValue, options = {}) {
     const raw = stripWrapping(rawValue);
     if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return Object.freeze({ kind: "invalid", raw, path: "", requiresProbe: false });
+    const upload = uploadReference(rawValue);
+    if (upload) return Object.freeze({ kind: "upload", raw, path: uploadPath(upload), file_reference: upload, requiresProbe: false });
+    if (invalidUploadPath(raw)) return Object.freeze({ kind: "invalid", raw, path: "", requiresProbe: false });
     if (isDrivePath(raw)) {
       return Object.freeze({ kind: "local", raw, path: normalizePath(raw, options), requiresProbe: false });
     }
@@ -184,6 +212,9 @@
   function normalizePath(rawValue, options = {}) {
     let raw = stripWrapping(rawValue);
     if (!raw) return "";
+    const upload = uploadReference(rawValue);
+    if (upload) return uploadPath(upload);
+    if (invalidUploadPath(raw)) return "";
     const apiPath = localPathFromApiUrl(raw);
     if (apiPath) raw = apiPath;
     else if (!isDrivePath(raw)) {
@@ -225,7 +256,9 @@
 
   function imagePreviewUrl(path) {
     const text = clean(path);
-    if (/^\/api\/uploads\/upload_[0-9a-f]+$/.test(text)) return text;
+    const reference = uploadReference(path);
+    if (reference) return uploadPath(reference);
+    if (classifyLocator(text).kind !== "local") return "";
     if (text.includes("/portal_knowledge_item_chats/")) {
       return `/knowledge/api/item-chat/attachment-image?path=${encodeURIComponent(text)}`;
     }
@@ -243,7 +276,12 @@
   function describe(rawValue, options = {}) {
     const raw = stripWrapping(rawValue);
     if (!raw) return null;
-    const locator = classifyLocator(raw, options);
+    const locator = classifyLocator(rawValue, options);
+    if (locator.kind === "upload") return Object.freeze({
+      raw: typeof rawValue === "object" ? locator.path : raw,
+      path: locator.path, locator: "", locatorKind: "upload", file_reference: locator.file_reference,
+      name: locator.file_reference.upload_id, kind: "binary",
+    });
     if (locator.kind !== "local") return null;
     let path = locator.path;
     if (path && typeof options.resolvePath === "function") {
@@ -279,12 +317,8 @@
   }
 
   async function probe(path, options = {}) {
-    const target = clean(path);
-    if (!target) return null;
     try {
-      const payload = await window.PortalAPI.get(apiUrl(target, { meta: true }), {
-        signal: options.signal,
-      });
+      const payload = await load(path, { ...options, meta: true });
       if (String(payload.kind || "") === "directory") return null;
       return payload;
     } catch (error) {
@@ -294,15 +328,34 @@
   }
 
   async function load(path, options = {}) {
+    const reference = uploadReference(path);
+    if (reference) {
+      const payload = await global.PortalInstructionClient.execute("ReadResource", {
+        address: reference,
+        ...(options.meta ? { meta_only: true } : { preview: true, max_bytes: 2 * 1024 * 1024 }),
+      }, { signal: options.signal });
+      const canonical = uploadPath(reference);
+      return {
+        ...payload, path: canonical, file_reference: reference,
+        title: payload.name, content: payload.text ?? payload.content ?? "",
+        raw_url: payload.content_url || canonical,
+        download_url: downloadUrl(reference),
+        editable: false, capabilities: { download: true, edit: false, save: false },
+      };
+    }
     const target = clean(path);
     if (!target) throw new Error("文件路径不能为空");
+    if (invalidUploadPath(target) || /^(?:https?:|\/\/)/i.test(target)) throw new Error("无效的文件引用");
     return window.PortalAPI.get(apiUrl(target, options), {
       signal: options.signal,
     });
   }
 
   function downloadUrl(path) {
+    const reference = uploadReference(path);
+    if (reference) return `${uploadPath(reference)}?download=1`;
     const target = clean(path);
+    if (invalidUploadPath(target) || /^(?:https?:|\/\/)/i.test(target)) return "";
     return target ? `/api/agent-workbench/link-file-raw?path=${encodeURIComponent(target)}&download=1` : "";
   }
 
@@ -401,9 +454,9 @@
   function collect(root, options = {}) {
     if (!root) return [];
     const nodes = [];
-    if (root.matches?.("[data-portal-file-path], [data-portal-preview-link]")) nodes.push(root);
+    if (root.matches?.("[data-portal-file-path], [data-portal-preview-link], a[href]")) nodes.push(root);
     root.querySelectorAll?.(
-      "[data-portal-file-path], [data-portal-preview-link], img[data-portal-preview-image]",
+      "[data-portal-file-path], [data-portal-preview-link], a[href], img[data-portal-preview-image]",
     ).forEach(node => nodes.push(node));
     const seen = new Set();
     const descriptors = [];
@@ -458,8 +511,8 @@
   function bind(root, options = {}) {
     if (!root) return root;
     const nodes = [];
-    if (root.matches?.("[data-portal-file-path], [data-portal-preview-link]")) nodes.push(root);
-    root.querySelectorAll?.("[data-portal-file-path], [data-portal-preview-link]")
+    if (root.matches?.("[data-portal-file-path], [data-portal-preview-link], a[href]")) nodes.push(root);
+    root.querySelectorAll?.("[data-portal-file-path], [data-portal-preview-link], a[href]")
       .forEach(node => nodes.push(node));
     nodes.forEach(node => {
       if (descriptorForNode(node, options)) bindNode(node, options);
@@ -491,5 +544,6 @@
     load,
     normalizePath,
     probe,
+    uploadReference,
   });
 })(window);

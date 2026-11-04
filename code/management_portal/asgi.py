@@ -591,46 +591,42 @@ async def upload_delete(request: Request):
     return JSONResponse(result)
 
 
-def _upload_readable(meta: dict, caller: str) -> bool:
-    """The HTTP entry already authenticates the caller."""
-    return bool(caller)
-
-
 async def upload_content(request: Request):
-    """Read back an upload's bytes (attachment previews)."""
+    """The upload URL reads the same file as ResourceService and shared preview."""
 
-    from .resources.isa import read_upload
+    from .resources import get_resource_service
+    from .resources.content_payload import resolved_media_type
+    from .http_files import authorized_resource_response
+    from .presentation_preview import presentation_pdf, MAX_SOURCE_BYTES, PresentationPreviewError
 
     caller, _entry = await asyncio.to_thread(_instruction_principal, request)
     if not caller:
         return _json_error(401, "需要登录")
+    service = get_resource_service()
+    address = {"upload_id": request.path_params["upload_id"]}
+    download = request.query_params.get("download") == "1"
     try:
-        meta = await asyncio.to_thread(read_upload, request.path_params["upload_id"])
+        if request.query_params.get("preview") == "pdf" and not download:
+            data, _content_type, resolved = await asyncio.to_thread(
+                service.read_content, address, actor=caller, max_bytes=MAX_SOURCE_BYTES,
+            )
+            converted = await asyncio.to_thread(presentation_pdf, data, resolved["filename"])
+            return FileResponse(converted, media_type="application/pdf",
+                                headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
+                                         "Content-Security-Policy": "sandbox"})
+        resolved = await asyncio.to_thread(service.resolve, address, actor=caller)
+        response, headers, chunks = await asyncio.to_thread(
+            authorized_resource_response,
+            SimpleNamespace(headers=request.headers, path=str(request.url)),
+            resource_service=service, address=address, actor=caller, resolved=resolved,
+            content_type=resolved_media_type(resolved, fallback="application/octet-stream"), download=download,
+        )
+    except PresentationPreviewError as exc:
+        return _json_error(422, str(exc))
     except Exception as exc:  # noqa: BLE001
         status, payload = exception_http_error(exc)
         return JSONResponse(payload, status_code=status)
-    if not meta.get("ready") or not await asyncio.to_thread(_upload_readable, meta, caller):
-        return _json_error(404, "上传不存在")
-    if request.query_params.get("preview") == "pdf" and request.query_params.get("download") != "1":
-        from .presentation_preview import presentation_pdf, read_presentation, PresentationPreviewError
-        try:
-            data = await asyncio.to_thread(read_presentation, Path(str(meta.get("path") or "")))
-            converted = await asyncio.to_thread(presentation_pdf, data, str(meta.get("file_name") or ""))
-            return FileResponse(converted, media_type="application/pdf",
-                                headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
-        except PresentationPreviewError as exc:
-            return _json_error(422, str(exc))
-        except OSError:
-            return _json_error(404, "上传不存在")
-    try:
-        data = await asyncio.to_thread(Path(str(meta.get("path") or "")).read_bytes)
-    except OSError:
-        return _json_error(404, "上传不存在")
-    return Response(
-        data,
-        media_type=str(meta.get("media_type") or "application/octet-stream"),
-        headers={"Cache-Control": "private, max-age=300", "X-Content-Type-Options": "nosniff"},
-    )
+    return StreamingResponse(chunks, status_code=response.status, headers=headers)
 
 
 async def resource_download(request: Request):

@@ -2410,7 +2410,7 @@ protocols:
       - "decision_61e50306cc79"
       - "decision_dca903d71575"
     description: "CreateUpload 返回上传 ID、用途、过期时间与字节通道；服务按 purpose 校验大小、真实媒体类型和归属。Workspace 图片入口另经 workspace_contracts 校验后保存文件；读取端用已授权文件描述与范围参数返回字节。浏览器通过上传文件HTTP DELETE接口移除附件，内部消费者复用文件清理；Resident可直接删除文件，目录维护收敛缺失文件的保留登记，不为删除文件提供HATG指令。已被引用的上传删除后引用失效。Notice Board 图片复用 purpose=post_image，不另造上传库。"
-    example: "CreateUpload(purpose,target,metadata/source_address) → resources.isa 创建句柄 → 上传/校验 → Resource/Workspace 读取；ASGI download → workspace provider.read_content_range → 单一 Range 响应。系统工具直接删除上传文件后，目录维护仅核对 uploads 根下已登记的直接子目录；根身份稳定且目录或 ready 元数据所指内容稳定缺失时，upload_retention 注销保留登记并交原清理队列删除残余文件。未完成上传、变化中元数据、根不可访问或 I/O 错误均保留登记，普通内容编辑不触发生命周期变化；TAU 收尾复用 remove_upload，不再调用删除指令。"
+    example: "CreateUpload 创建句柄 → 上传/校验 → {upload_id}、相对上传地址或本站完整URL → ResourceService/upload_files 检查活跃身份、ready、清理登记与 no-follow 路径 → 文件元数据/有界正文。PortalFileLinks 统一探测与预览，ZIP等无渲染器文件显示元数据与下载；ASGI upload/content 与资源下载共用 Range/条件响应和逐段读取规则。上传句柄不进入根资源索引，普通资源权限保持原契约。系统工具直接删除上传文件后，目录维护仅核对 uploads 根下已登记的直接子目录；根身份稳定且目录或 ready 元数据所指内容稳定缺失时，upload_retention 注销保留登记并交原清理队列删除残余文件。未完成上传、变化中元数据、根不可访问或 I/O 错误均保留登记，普通内容编辑不触发生命周期变化；TAU 收尾复用 remove_upload，不再调用删除指令。"
 
   - id: "home-directory-view"
     title: "Home 目录、公开摘要与运行观察"

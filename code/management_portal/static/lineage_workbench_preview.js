@@ -71,7 +71,7 @@
     const rawHref = String(href || "").trim();
     if (!rawHref) return "";
     const locator = window.PortalFileLinks?.classifyLocator?.(rawHref);
-    if (locator?.kind === "local" && locator.path) {
+    if (["local", "upload"].includes(locator?.kind) && locator.path) {
       if (options.explicitPath === true || locator.requiresProbe !== true) return locator.path;
       return await window.PortalFileLinks.probe(locator.path) ? locator.path : "";
     }
