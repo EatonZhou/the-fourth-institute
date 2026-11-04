@@ -11,6 +11,22 @@ from management_portal.hatg.contracts import InstructionError
 from management_portal.shared_state import atomic_replace_json
 from management_portal.test_framework.tau_residents import TAU_ACTOR
 from management_common.directory_paths import remove_path
+from management_common.resource_identity import get_resource_type_registry
+
+
+def _resource_type(resource_id: str) -> str:
+    """Project names are identity exceptions, not resource-ID prefixes."""
+    identity = get_resource_type_registry()
+    try:
+        return identity.parse(resource_id).resource_type
+    except ValueError:
+        identity.validate(resource_id, 'project')
+        return 'project'
+
+
+def resource_release_order(resource_id: str) -> int:
+    # Business owners release their own projections before direct allocations.
+    return {'resident': 1, 'lineage': 2, 'workspace': 3}.get(_resource_type(resource_id), 0)
 
 
 def _release_resource(resource_id: str, key: str) -> None:
@@ -45,13 +61,6 @@ def _release_resource_once(resource_id: str, key: str) -> None:
     """Use the lifecycle owner, including when the UI already removed it."""
     from management_portal import isa_client
 
-    if resource_id.startswith('project-'):
-        # WALL engineering roots use the WALL owner's existing opaque key,
-        # distinct from registered Portal project_<id> resources.
-        from management_portal import wall_backend
-        if any(p['id'] == resource_id for p in wall_backend.projects(TAU_ACTOR)['projects']):
-            wall_backend.release_test_project(resource_id, TAU_ACTOR)
-        return
     if resource_id.startswith('upload_'):
         from management_portal.resources.upload_files import remove_upload
         remove_upload(resource_id)
@@ -62,6 +71,24 @@ def _release_resource_once(resource_id: str, key: str) -> None:
         return
 
     try:
+        if _resource_type(resource_id) == 'project':
+            # Project is a registered identity exception, including names
+            # beginning with "project-". Reuse the same deletion request even
+            # after the identity is gone: its effects may still be pending.
+            try:
+                result = isa_client.call(TAU_ACTOR, 'DeleteProject', {'project_id': resource_id}, key=key)
+            except InstructionError as error:
+                if error.code != 'instruction.not_found' or error.details.get('reason') == 'no_permit':
+                    raise
+                from management_portal import wall_backend
+                if any(p['id'] == resource_id for p in wall_backend.projects(TAU_ACTOR)['projects']):
+                    wall_backend.release_test_project(resource_id, TAU_ACTOR)
+                return
+            if (result.get('project_id') != resource_id
+                    or result.get('registration_status') != 'unregistered'
+                    or result.get('effects', {}).get('status') != 'complete'):
+                raise RuntimeError('Project deletion has unfinished owner effects')
+            return
         if resource_id.startswith('family_'):
             # Family is a domain-owned projection, not a registry mutation.
             # Unfamilize preserves members that may predate this test; the
@@ -76,9 +103,9 @@ def _release_resource_once(resource_id: str, key: str) -> None:
             return
         isa_client.call(TAU_ACTOR, 'UnregisterResource', {'resource_id': resource_id}, key=key)
     except InstructionError as exc:
-        if exc.code == 'instruction.not_found':
+        if exc.code == 'instruction.not_found' and exc.details.get('reason') != 'no_permit':
             return
-        if exc.code == 'instruction.forbidden':
+        if exc.code == 'instruction.forbidden' and _resource_type(resource_id) != 'project':
             # Unregistration removes permission facts too. A second deletion
             # can therefore fail authorization before reaching the owner.
             # Only the ordinary resolver's explicit absence confirms cleanup;
@@ -101,6 +128,10 @@ def _fixture_workspaces(roots: list[Path]) -> list[str]:
              and (not root.exists() or root.is_dir())]
     if not roots:
         return []
+    # A permission-filtered discovery query cannot prove there are no hidden
+    # registrations below a directory. Keep the authoritative guard, including
+    # its explicit offline-migration prerequisite, until its owner provides a
+    # service-side inventory with the same complete semantics.
     return [wid for wid, record in get_workspace_store().descriptors().items()
             if record['status'] == 'active' and any(
                 Path(record['attributes']['path']).is_relative_to(root) for root in roots)]
@@ -127,10 +158,10 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     resources = manifest.get('resources', [])
     if not isinstance(resources, list) or any(
         not isinstance(resource_id, str)
-        or not re.fullmatch(r'[a-z][a-z0-9_]*_[0-9a-f]{12}', resource_id)
+        or not resource_id.strip() or '/' in resource_id or '\x00' in resource_id
         for resource_id in resources
     ):
-        raise ValueError('测试清理清单 resources 必须是正式资源 ID 字符串数组，不接受对象或删除状态声明')
+        raise ValueError('测试清理清单 resources 必须是资源或 Project ID 字符串数组，不接受对象或删除状态声明')
     unowned = [rid for rid in resources if not lifecycle.owns(scope_id, rid)]
     if unowned:
         raise ValueError('测试清理对象缺少本轮分配记录，保留对象和文件：' + ', '.join(unowned))
@@ -173,8 +204,7 @@ def cleanup(run_dir: Path, *, timeout: float = 30) -> dict:
     automatic = lifecycle.pending(scope_id)
     # Business objects own their projection members; release those objects
     # before any directly allocated members or temporary teams.
-    targets = sorted(dict.fromkeys([*automatic, *resources, *uploads]),
-                     key=lambda rid: {'resident': 1, 'lineage': 2, 'workspace': 3}.get(rid.partition('_')[0], 0))
+    targets = sorted(dict.fromkeys([*automatic, *resources, *uploads]), key=resource_release_order)
     released_resources = []
     released_uploads = []
     for resource_id in targets:
