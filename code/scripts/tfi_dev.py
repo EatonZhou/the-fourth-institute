@@ -149,10 +149,12 @@ def publish(message, check=None, push=True, *, paths=(), all_files=False, activa
         selected = tuple(paths) if all_files else release_unit_paths(dev, cfg, paths)
         if selected or all_files:
             from scripts.portal_dev_commit import commit as commit_paths
-            source = commit_paths(dev, selected, message, all_files=all_files)
+            source = commit_paths(dev, selected, message, all_files=all_files, baseline=base)
         else:
             # A caller that already committed its changes can publish that head.
             source = git(dev, "rev-parse", "HEAD")
+        from scripts.portal_seed_inventory import verify_publication_inventory
+        verify_publication_inventory(dev, source, base)
         changed = git(dev, "diff", "--name-only", base, source).splitlines()
         environments = require_dependency_environments(dev, main, source, cfg['code_directory'])
         # Git refuses only actual checkout collisions; unrelated uncommitted

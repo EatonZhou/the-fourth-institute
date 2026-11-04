@@ -7,7 +7,7 @@ def git(root: Path, *args: str) -> bytes:
     return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.PIPE)
 
 
-def commit(root: Path, requested: tuple[str, ...], message: str, *, all_files=False) -> str:
+def commit(root: Path, requested: tuple[str, ...], message: str, *, all_files=False, baseline='HEAD') -> str:
     # A detached Dev HEAD cannot record the publication on the development branch.
     git(root, 'symbolic-ref', '--quiet', 'HEAD')
     if all_files:
@@ -29,6 +29,8 @@ def commit(root: Path, requested: tuple[str, ...], message: str, *, all_files=Fa
                 raise ValueError(f'No tracked or non-ignored source path: {name}')
             selected.update(matches)
         git(root, 'add', '-A', '--', *[':(literal)' + name for name in sorted(selected)])
+    from scripts.portal_seed_inventory import refresh_staged_inventory
+    refresh_staged_inventory(root, baseline)
     # Pre-existing staged work may accompany a publication. Never reset the index
     # or working files: edits after staging remain available for the next commit.
     if git(root, 'diff', '--cached', '--name-only', '-z'):

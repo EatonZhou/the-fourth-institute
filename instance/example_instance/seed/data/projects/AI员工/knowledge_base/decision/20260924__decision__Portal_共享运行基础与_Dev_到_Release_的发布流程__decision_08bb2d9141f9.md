@@ -4,26 +4,26 @@ type: decision
 project: AI员工
 created_at: '2026-09-24'
 version:
-  number: 40
-  created_at: '2026-09-24'
+  number: 43
+  created_at: "2026-09-24"
   created_by:
-    user: ''
-    agent: resident_403556d33f74
-  updated_at: '2026-11-01T03:39:46Z'
+    user: ""
+    agent: "resident_403556d33f74"
+  updated_at: "2026-11-04T05:34:37Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 8
 ai_generated: false
 links:
   source:
-  - ${code_root}/scripts/tfi_dev.py
-  - ${code_root}/scripts/portal_release_units.py
-  - ${code_root}/scripts/tfi_development_runtime.py
-  - ${code_root}/scripts/tfi_release_install.py
-  - ${code_root}/management_portal/agent_prompt_context.py
-  - ${code_root}/management_portal/agent_skill_context.py
-  - ${code_root}/core_skills/tfi-agent-rule/portal-development.md
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_dev.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/portal_release_units.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_development_runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_release_install.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_prompt_context.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_skill_context.py
+  - /opt/tfi/the-fourth-institute-dev/code/core_skills/tfi-agent-rule/portal-development.md
   related:
   - decision_ab9880dc4c9d
   - decision_850e6248d680
@@ -70,6 +70,20 @@ Portal 开发任务的授权默认包含本次修复的提交、发布和推送�
 静态文件的缓存身份由公共 HTTP 静态 owner 从文件原始字节计算 SHA-256，页面引用 `portal_v=sha256-<摘要>`。Release 只对与返回字节匹配的摘要 URL 允许 immutable；旧构建标签和无版本地址每次重新验证。进程 `build_id`、Git 提交与单个静态文件摘要各有用途，不互相替代。`--no-activate` 发布后，即使 Web PID 和启动标识不变，新页面也会引用新的文件摘要。
 
 验收检查实际 HTML 中的带版本 URL、响应字节和缓存头；同时记录提交与激活回执。修改公共 Python 静态 owner 仍需加载 Web 新代码，后续单纯静态修改无需为缓存换版而重启。已打开的旧页面在重新加载时获得新地址，加载过程中遇到摘要不匹配则按启动检查预算恢复；具体 HTTP 和恢复语义见 decision_f25266e5a0e7。
+
+## 发布前的依赖环境检查
+
+Release 快进、推送和激活排队之前，发布器检查两棵树下所需的依赖环境。Release 的指纹从待发布提交的实际依赖输入计算，包含随行的暂存内容与尚未发布的祖先提交；共享服务的 Dev 环境按实际工作树计算，不把未选中的 Dev 编辑当作 Release 内容。两者与启动器使用同一个指纹计算契约，包括 bootstrap、依赖清单及各树的离线 wheel 锁。
+
+所需环境的解释器缺失时，本次发布拒绝继续：已生成的 Dev 提交保留，Release 不前进，也不推送或排队激活。准备好错误中列出的对应环境后重新发布。`--no-activate` 同样检查，避免把缺失环境留到下一次重启才发现。此检查不要求工作树干净，不改变选中文件和随行提交的发布边界。
+
+## 示例内容的发布库存闭合
+
+示例seed的文件库存由发布提交边界根据真实Git快照生成，打包器仍严格校验实际完整内容，不通过放宽校验容忍失配。发布选定文件后，先从索引读取本次seed内容变化及manifest行变化，对这些路径计算摘要与大小，处理新增和删除，再把修正后的完整manifest写入同一Git索引。基准为当前Release，因此尚未发布的祖先提交也在闭合范围内；手工准备的旧manifest行不能覆盖当前内容的真实摘要。
+
+生成器不读取未选择的Dev内容，也不覆盖工作树manifest中的后续编辑。自动修正只属于本次暂存快照，工作树因此继续显示旧库存差异是正常的；后续发布在当次索引上重新计算，不以旧工作树库存作为内容真值。既有暂存字段与工程元数据保留，其他文件仍按共享发布的完整文件规则随行。
+
+直接发布已提交HEAD时，对当前Release到目标提交之间的相同seed闭合范围作验证；库存不匹配则在Release快进与推送前拒绝，保留Dev提交，提示将相关seed路径及manifest一起发布以生成正确库存。此验证只证明本次变更的库存闭合，不能替代完整安装包的seed全量校验。原先已经发布的历史失配仍由严格打包诊断定位并显式修复。
 
 ## 浏览器兼容单元
 
