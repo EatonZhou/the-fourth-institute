@@ -17,6 +17,7 @@
         "runner": "tau",
         "entrypoint": "tau:combination-development-structure-change",
         "source": "tests/cases/tau_cases.json",
+        "standalone_git_fixture": "小程序的临时Git Repo必须位于既有checkout之外，沿本例专属目录完成正式Git初始化与登记；不使用执行者Workspace或证据目录替代。",
         "profiles": ["live.controlled"],
         "risk": "external-side-effects",
         "task_prompt": "用户想在开发中途调整结构，仍能继续交付。只在本例独占临时Project、Git Repo、Workspace和小开发团队里，让实际成员完成一个有文件、有真实运行结果的小程序。已有内容和对话后，用户从正式入口移动源码并调整Workspace绑定，重命名Project；沿原资源和对话入口刷新重开、继续编辑运行，核对稳定ID、当前名称、路径、内容和成员cwd。另建独占Lineage，将已产生会话与文件的临时成员通过MoveResident及当前UI协议转移，核对同一成员、历史、绑定、队列、源目标关系，再让它继续真实工作和交付。活跃工作不支持转移时记录正式拒绝，等自然结束后继续；不猜移动API，不直接改登记或物理搬目录冒充支持。实际打开工作台/资源与交付验证可用。自然结束或正式停止自有工作后，正式删除临时Lineage并核对引用、页面、后台清理及独立资源边界；Unbind不冒充删除。记录每个追加功能的步骤和真实结果。只本例一次业务流程，修复后仅复验受影响步骤；旧失败、输入和历史保留。",
