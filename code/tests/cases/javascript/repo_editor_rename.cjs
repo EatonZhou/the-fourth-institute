@@ -2,14 +2,22 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const window = {PortalI18n: {t: (s, values={}) => s.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '')}};
-vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../../management_portal/static/repo_workspace_dialogs.js'), 'utf8'), {window});
+function browserWindow(language='zh-CN') {
+  const window = {__PORTAL_LANGUAGE__:language, PortalCompatibility:{identifier:s=>s}, addEventListener:()=>{}};
+  const document = {readyState:'loading', documentElement:{lang:language}, addEventListener:()=>{}};
+  const context = vm.createContext({window, document, navigator:{languages:[language]}, localStorage:{getItem:()=>null}, console});
+  for (const file of ['portal_text.js','portal_translations.js','portal_i18n.js','repo_workspace_dialogs.js']) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../../../management_portal/static', file), 'utf8'), context);
+  }
+  return window;
+}
+const window = browserWindow();
 
-function setup(failAt) {
+function setup(failAt, browser=window) {
   const calls = [], queries = [], toasts = [], closed = [];
   const state = {selectedId:'repo_123456789abc', editorNew:false, editorOriginalPath:'原文.txt', editorExpectedHash:'old-hash'};
   const elements = {editorPath:{value:'移动后.txt'}, editorSource:{value:'retained draft'}, editorSave:{}, editorStatus:{textContent:''}};
-  const dependencies = Object.fromEntries(window.PortalRepoWorkspaceDialogs.dependencies.map(key => [key, () => {}]));
+  const dependencies = Object.fromEntries(browser.PortalRepoWorkspaceDialogs.dependencies.map(key => [key, () => {}]));
   Object.assign(dependencies, {
     state, elements, dialogs:{editor:{close: value => closed.push(value)}}, dirname: () => '',
     setBusy: () => {}, writeQuery: value => queries.push(value), showToast: (...args) => toasts.push(args),
@@ -19,7 +27,7 @@ function setup(failAt) {
       return {};
     },
   });
-  return {owner:window.PortalRepoWorkspaceDialogs.createDialogs(dependencies), calls, state, elements, queries, toasts, closed};
+  return {owner:browser.PortalRepoWorkspaceDialogs.createDialogs(dependencies), calls, state, elements, queries, toasts, closed};
 }
 (async () => {
   const stale = setup('move');
@@ -40,9 +48,18 @@ function setup(failAt) {
   assert(partial.elements.editorStatus.textContent.includes('重新打开文件核对内容'));
   assert.equal(partial.elements.editorSource.value, 'retained draft');
   assert.equal(partial.closed.length, 0);
+  assert(!partial.elements.editorStatus.textContent.includes('{p0}'));
+  assert(!partial.elements.editorStatus.textContent.includes('{path}'));
   await partial.owner.saveEditor();
   assert.equal(partial.calls.filter(x => x.url.endsWith('/move')).length, 1);
   assert.equal(partial.calls.at(-1).body.path, '移动后.txt');
+
+  const english = setup('file', browserWindow('en'));
+  english.elements.editorPath.value = '目录/{p1}-<name>.txt';
+  await english.owner.saveEditor();
+  assert(english.elements.editorStatus.textContent.startsWith('The file moved to 目录/{p1}-<name>.txt,'));
+  assert(english.elements.editorStatus.textContent.includes('Your draft is retained'));
+  assert.equal(english.elements.editorSource.value, 'retained draft');
 
   const good = setup('none');
   await good.owner.saveEditor();

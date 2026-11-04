@@ -178,7 +178,7 @@
       } catch (error) {
         const detail = error.message || String(error);
         const message = moved
-          ? window.PortalI18n.t("文件已移动到 {path}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。", { path }) + " " + detail
+          ? window.PortalI18n.text`文件已移动到 ${path}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。` + " " + detail
           : detail;
         elements.editorStatus.textContent = message;
         showToast(message, "error");

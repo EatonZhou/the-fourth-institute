@@ -1,6 +1,6 @@
 """Home 原生地图适配的生命周期与编辑契约。
 
-:module: home
+:module: workbench.notifications
 :importance: P1
 """
 import os

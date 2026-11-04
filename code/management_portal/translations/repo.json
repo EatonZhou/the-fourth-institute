@@ -1,7 +1,7 @@
 {
-  "文件已移动到 {path}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。": {
-    "en": "The file moved to {path}, but saving its content was not confirmed. Your draft is retained; reopen the file to check its content before saving again.",
-    "zh-CN": "文件已移动到 {path}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。"
+  "文件已移动到 {p0}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。": {
+    "en": "The file moved to {p0}, but saving its content was not confirmed. Your draft is retained; reopen the file to check its content before saving again.",
+    "zh-CN": "文件已移动到 {p0}，内容保存未确认。草稿已保留；请重新打开文件核对内容后再保存。"
   },
   "REGISTER REPO": {"en": "REGISTER REPO", "zh-CN": "注册代码库"},
   "代码来源": {"en": "Source type", "zh-CN": "代码来源"},
