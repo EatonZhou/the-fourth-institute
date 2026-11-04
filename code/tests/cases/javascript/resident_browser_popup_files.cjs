@@ -51,6 +51,10 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
       res.setHeader("Content-Type", "application/json");
       return res.end(JSON.stringify({ username: residentId, principal: { kind: "resident", id: residentId } }));
     }
+    if (req.url === "/worker.js") {
+      res.setHeader("Content-Type", "text/javascript");
+      return res.end('onmessage=async e=>{try{const r=await fetch(e.data);postMessage({status:r.status,body:await r.text()})}catch(e){postMessage({error:e.message})}}');
+    }
     if (req.url.startsWith("/api/agent-workbench/link-file-raw")) {
       fileRequests++;
       const status = new URL(req.url, "http://fixture").searchParams.get("status");
@@ -97,6 +101,13 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
     }
     assert.equal(redirectTargets, 0, "popup redirects are stopped before following");
     assert.deepEqual(deniedRequests, [], "every native request retains the runtime identity");
+    const worker = await portal.page.evaluate(() => new Promise(resolve => {
+      const worker = new Worker("/worker.js");
+      worker.onmessage = event => { worker.terminate(); resolve(event.data); };
+      worker.postMessage("/api/agent-workbench/link-file-raw?status=302&foreign=1");
+    }));
+    assert.equal(redirectTargets, 0, JSON.stringify({ worker, deniedRequests }));
+    assert.equal(deniedRequests.some(url => url === "/redirect-target"), false, "worker redirects must not reach a foreign target");
     denyGuard = true;
     await portal.page.evaluate(() => { window.downloadUrl = "/api/agent-workbench/link-file-raw?download=1&unavailable=1"; });
     const before = fileRequests;
