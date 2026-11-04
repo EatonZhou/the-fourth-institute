@@ -141,6 +141,8 @@ def test_retry_diagnostics_keep_only_a_fixed_reason():
                           'message': 'fetch failed https://secret.invalid/?token=private'}) == {
         'type': 'retry', 'attempt': 2, 'next': 123, 'reason': 'network_failure'}
     assert native_status({'type': 'retry', 'message': 'private unknown failure'}) == {'type': 'retry'}
+    assert native_status({'type':'retry','message':'You have exceeded your free usage for this model'}) == {
+        'type':'retry','reason':'quota_exhausted'}
     assert retry_failure({'name': 'APIError', 'data': {'statusCode': 429, 'isRetryable': True,
         'message': 'private', 'responseBody': 'private',
         'responseHeaders': {'retry-after': '3600', 'authorization': 'private'}}}) == {

@@ -1215,6 +1215,8 @@ def native_status(status):
             if any(marker in message for marker in markers):
                 result['reason'] = reason
                 break
+        if 'free usage' in message and 'exceeded' in message:
+            result['reason'] = 'quota_exhausted'
     return result
 
 
