@@ -1179,6 +1179,42 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(handle.key, daemon._session_setup_locks)
         fake_client.disconnect.assert_awaited_once()
 
+    async def test_release_closes_prepared_and_adopted_clients_for_exact_native_session(self) -> None:
+        daemon = daemon_module.ClaudeCodeDaemon()
+        handles = []
+        for key, native_id in [('session-restart:prepared', 'adopted'),
+                               ('resident:current', 'adopted'), ('resident:other', 'unrelated')]:
+            client = mock.Mock(disconnect=mock.AsyncMock())
+            handle = daemon_module.SessionHandle(key=key, signature=(), client=client, session_id=native_id)
+            daemon._sessions[key] = handle
+            daemon._session_ids[native_id] = key
+            daemon._session_setup_locks[key] = asyncio.Lock()
+            handles.append(handle)
+        handles[0].active_turn_id = 'in-flight'
+        result = await daemon.close_session({'session_key': 'resident:current', 'session_id': 'adopted'})
+        self.assertFalse(result['closed'])
+        self.assertEqual(len(daemon._sessions), 3)
+        for handle in handles:
+            handle.client.disconnect.assert_not_awaited()
+        handles[0].active_turn_id = ''
+        result = await daemon.close_session({'session_key': 'resident:current', 'session_id': 'adopted'})
+        self.assertTrue(result['closed'])
+        self.assertEqual(set(daemon._sessions), {'resident:other'})
+        for handle in handles[:2]:
+            handle.client.disconnect.assert_awaited_once()
+        handles[2].client.disconnect.assert_not_awaited()
+
+    async def test_release_stale_session_id_never_closes_keys_new_session(self) -> None:
+        daemon = daemon_module.ClaudeCodeDaemon()
+        client = mock.Mock(disconnect=mock.AsyncMock())
+        handle = daemon_module.SessionHandle(key='resident:current', signature=(), client=client, session_id='new')
+        daemon._sessions[handle.key] = handle
+        daemon._session_setup_locks[handle.key] = asyncio.Lock()
+        result = await daemon.close_session({'session_key': handle.key, 'session_id': 'old'})
+        self.assertFalse(result['closed'])
+        self.assertIn(handle.key, daemon._sessions)
+        client.disconnect.assert_not_awaited()
+
     async def test_authentication_failure_recreates_cached_session_for_next_turn(self) -> None:
         """认证失败后下一轮重建缓存的 Claude 会话，普通工具失败时保留原会话"""
         for detail, should_replace in (

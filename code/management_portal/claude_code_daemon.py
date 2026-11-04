@@ -14,6 +14,7 @@ import signal
 import sys
 import time
 import uuid
+from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 from management_common.local_ipc import start_local_server
@@ -1715,33 +1716,48 @@ class ClaudeCodeDaemon:
     async def close_session(self, params: dict[str, Any]) -> dict[str, Any]:
         session_key = str(params.get("session_key") or "").strip()
         session_id = str(params.get("session_id") or "").strip()
+        def selected():
+            # A prepared restart and its adopted Resident can temporarily
+            # have different client keys for the same native session. Release
+            # owns that exact native identity, including its preparation CLI.
+            if session_id:
+                return [h for h in self._sessions.values() if h.session_id == session_id]
+            handle = self._sessions.get(session_key)
+            return [handle] if handle else []
         async with self._sessions_lock:
-            if not session_key and session_id:
-                session_key = self._session_ids.get(session_id, "")
-            setup_lock = self._session_setup_locks.get(session_key) if session_key else None
-        if setup_lock is None:
+            handles = selected()
+            locks = {h.key: self._session_setup_locks.setdefault(h.key, asyncio.Lock()) for h in handles}
+        if not handles:
             return {"closed": False, "reason": "session not loaded"}
-        async with setup_lock:
+        async with AsyncExitStack() as stack:
+            for key in sorted(locks):
+                await stack.enter_async_context(locks[key])
             async with self._sessions_lock:
-                handle = self._sessions.get(session_key)
-                if not handle:
+                handles = selected()
+                if not handles:
                     return {"closed": False, "reason": "session not loaded", "session_key": session_key}
-                if handle.active_turn_id or handle.lock.locked():
+                if any(h.key not in locks for h in handles):
+                    raise RuntimeError("Claude session clients changed during release; retry")
+                if any(h.active_turn_id or h.lock.locked() for h in handles):
                     return {
                         "closed": False,
                         "reason": "session has an active turn",
                         "session_key": session_key,
-                        "session_id": handle.session_id,
+                        "session_id": session_id or handles[0].session_id,
                     }
-                self._forget_session(session_key, handle)
-            await _disconnect(handle)
+                for handle in handles:
+                    self._forget_session(handle.key, handle)
+            for handle in handles:
+                await _disconnect(handle)
             async with self._sessions_lock:
-                if self._session_setup_locks.get(session_key) is setup_lock:
-                    self._session_setup_locks.pop(session_key, None)
+                for key, lock in locks.items():
+                    if key not in self._sessions and self._session_setup_locks.get(key) is lock:
+                        self._session_setup_locks.pop(key, None)
             return {
                 "closed": True,
                 "session_key": session_key,
-                "session_id": handle.session_id or session_id,
+                "session_id": session_id or handles[0].session_id,
+                "closed_session_keys": [h.key for h in handles],
             }
 
     @staticmethod

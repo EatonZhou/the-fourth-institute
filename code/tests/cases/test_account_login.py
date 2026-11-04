@@ -16,6 +16,26 @@ from management_portal.execution import account_hosting
 from tests.cases.instance_test_support import select_instance
 
 
+def test_antigravity_wrapper_imports_in_filtered_login_environment(tmp_path, monkeypatch):
+    import subprocess
+    instance_root = tmp_path / 'instance'
+    select_instance(monkeypatch, instance_root)
+    home = tmp_path / 'account'
+    home.mkdir()
+    monkeypatch.setattr(login, 'account_home', lambda *args: home)
+    monkeypatch.setenv('PORTAL_DATABASE_URL', 'must-not-inherit')
+    monkeypatch.setenv('GEMINI_API_KEY', 'must-not-inherit')
+    env = login.local_login_environment('antigravity', 'antigravity_one')
+    assert env['PORTAL_INSTANCE_ROOT'] == str(instance_root)
+    assert 'PORTAL_DATABASE_URL' not in env and 'GEMINI_API_KEY' not in env
+    wrapper = Path(login.__file__).resolve().parents[2] / 'scripts/antigravity_account.py'
+    result = subprocess.run([sys.executable, '-c',
+        "import runpy,sys;runpy.run_path(sys.argv[1],run_name='login_import_probe');print('READY')", str(wrapper)],
+        cwd=home, env=env, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == 'READY'
+
+
 @pytest.mark.parametrize("configured", [True, False])
 def test_windows_codex_login_uses_npm_command_in_runtime_directory(tmp_path, monkeypatch, configured):
     from management_portal.execution import provider_updates as updates

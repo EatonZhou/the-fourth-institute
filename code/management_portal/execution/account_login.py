@@ -178,6 +178,13 @@ def local_login_environment(provider, account_id):
     home = account_home(provider, account_id)
     home_key = {"codex": "CODEX_HOME", "claude": "CLAUDE_CONFIG_DIR", "antigravity": "GEMINI_HOME"}[provider]
     env[home_key] = str(home)
+    if provider == 'antigravity':
+        # This login launches our Python ACP wrapper before the vendor
+        # executable. Its imports resolve runtime paths from the selected
+        # instance; this non-secret identity is required even in a fully
+        # filtered child environment. Never inherit the service environment.
+        from management_common.instance_manifest import current_instance
+        env['PORTAL_INSTANCE_ROOT'] = str(current_instance().root)
     return env
 
 
