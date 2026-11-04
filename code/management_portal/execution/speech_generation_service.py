@@ -94,6 +94,7 @@ class SpeechGenerationService:
             stamp = datetime.now(timezone.utc).isoformat()
             record.update(status="dispatched", started_at=stamp)
             atomic_json(path, record)  # Durably forbid duplicate charge before crossing the network.
+            stage = "provider_call"
             try:
                 from . import microsoft_speech
                 if request.provider == microsoft_speech.API_ID:
@@ -101,6 +102,7 @@ class SpeechGenerationService:
                 else:
                     response = self.registry.request_speech(request.provider, body)
                     data, observed = speech_protocol.decode_response(response, options["model"])
+                stage = "publish_audio"
                 from management_portal.resources.isa import publish_generated_file
                 media_type = observed["media_type"]
                 audio = publish_generated_file(owner_id=request.execution_id, actor=request.actor,
@@ -116,7 +118,12 @@ class SpeechGenerationService:
             except Exception as exc:
                 from management_portal.ai_provider_registry import AIProviderHTTPError
                 # No upstream body, key, transcript or exception repr in public evidence.
-                error = str(exc) if isinstance(exc, AIProviderHTTPError) else "Native speech failed or delivery unknown; no automatic retry"
+                kind = type(exc).__name__
+                safe_kind = kind if kind in {"TimeoutError", "TypeError", "ValueError", "RuntimeError",
+                    "ModuleNotFoundError", "ImportError", "PermissionError", "ClientConnectorError",
+                    "ClientConnectorCertificateError", "WSServerHandshakeError", "NoAudioReceived",
+                    "UnexpectedResponse", "UnknownResponse", "MP3StreamInfoError"} else "provider_failure"
+                error = str(exc) if isinstance(exc, AIProviderHTTPError) else f"Speech {stage}: {safe_kind}; no automatic retry"
                 record.update(status="failed", error=error)
                 atomic_json(path, record)
                 raise RuntimeError(error) from None
