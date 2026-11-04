@@ -248,6 +248,31 @@ def test_narrow_normalization_keeps_common_denominator_and_reveal_order(fonts, m
             assert ('0.1192', 44) in drawn, 'earlier revealed weights persist'
 
 
+def test_normalization_shift_is_visible_in_exponents_and_weights(fonts, monkeypatch):
+    drawn = []
+    original = renderer._Canvas.text
+    def record(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return original(self, xy, text, *args, **kwargs)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    v = normal()
+    v['data']['temperature'] = .1
+    for item, score in zip(v['data']['items'], (50, 49, -1)):
+        item['score'] = score
+    v = validate_visual(v, 0, 4, [])
+    m = visual_math(v)
+    assert m['shift'] == 460
+    assert m['exponentials'][0] == pytest.approx(math.exp(40))
+    assert m['weights'][0] == pytest.approx(1/(1+math.exp(-10)))
+    for at in (1.5, 2.5, 3.5):
+        drawn.clear()
+        renderer.frame({}, scene(v), 0, at, fonts)
+        assert 'exp(s/T−h)' in drawn and 'exp(s/T)' not in drawn
+        assert any('h = 460' in text for text in drawn)
+        if at > 3:
+            assert any('Σ a = 1' in text for text in drawn)
+
+
 def test_projection_focus_keeps_nonzero_terms_and_exact_signed_operands(fonts, monkeypatch):
     drawn = []
     original = renderer._Canvas.text

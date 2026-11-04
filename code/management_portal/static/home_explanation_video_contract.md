@@ -1,21 +1,21 @@
 # 声明式计算画面合同
 
-`portal-explanation-video/v1` 使用固定音轨、字幕与持久媒体接口。新增 `scene.visual`，画面通过封闭的数学操作生成；不接受脚本、表达式或作者声称的计算结果。计算图、公式、对照和测试使用同一个数值实现。
+`portal-explanation-video/v1` 使用固定音轨、字幕与持久媒体接口。`scene.visual` 通过封闭操作生成画面，不接受脚本或表达式。数学操作由后端推导结果；通用 plot 绘制作者给出的固定数值样本，模型、采样依据与来源由作者说明并交独立检查。
 
 ## 场景和事件
 
 每个场景仍有 title、speech、start、end。最多24个场景，总时长仍不超过300秒；可选的 duration 估时字段为2–60秒，实际媒体边界使用 start/end。纯 visual 计划可省 nodes，不能在同一个视觉场景混用旧 edges/values。现存节点图计划与旧 ready 结果保留原行为。
 
 `visual = {kind, condition, data, events}`：
-- kind 仅允许下表八种操作。
+- kind 仅允许下表九种操作。
 - condition 是常驻的条件说明，最多80字符；应写当前查询、模式和固定条件，条件重置必须明示。
-- data 是各操作规定的数据结构。所有数学结果由后端计算。
+- data 是各操作规定的数据结构。数学操作的结果由后端计算；plot 的样本值保持原输入，只按声明的模式绘制或作段内线性插值。
 - events 最多48项，绝对时间严格递增且动画不重叠。事件为 `{at, stage, index, duration, cue}`：at 是音轨绝对秒；duration 为0–3秒；index 为当前对象的0起始索引；cue 是根 cues 的索引。事件 onset 必须位于该真实字幕段内。cue:null 表示明确静默停读，校验拒绝其时间范围与任何字幕相交。
 - 事件之前只保留标题与条件；最后事件结束后稳定停留，不按时钟循环切换高亮。
-- `duration` 仅用于缩放和平移的连续画面，其余阶段为精确时间切换。作者可以在一条字幕内用多个显式事件安排分量展开。静默保持无需重复事件。
+- `duration` 用于连续画面，其他阶段为精确时间切换。plot 的 trace 使用线性数据时钟，具体规则见下文。作者可以在一条字幕内用多个显式事件安排分量展开。静默保持无需重复事件。
 - 音轨与字幕时间的真实性由作者制作和独立成片检查负责。数字时间在合法区间，并不能证明旁白已正确对齐。
 
-对象列表最多6项；每项共用稳定 `id`（<=32字符）与 `label`（<=16字符）。单场景不得重名；跨镜头应沿用同一来源ID。数值向量目前为2维，分量范围[-100,100]，均须有限数；高维机制先选取明确的2维教学切片。不要把任意高维数据悄悄裁成2维。
+除 plot 的专门限制外，对象列表最多6项；每项共用稳定 `id`（<=32字符）与 `label`（<=16字符）。单场景不得重名；跨镜头应沿用同一来源ID。数值向量目前为2维，分量范围[-100,100]，均须有限数；高维机制先选取明确的2维教学切片。不要把任意高维数据悄悄裁成2维。
 
 ## 操作数据
 
@@ -29,15 +29,45 @@
 | projection | input_label, input:[1..6个系数], lanes:[{id,label,matrix:[[x,y],…]}] | input / multiply / result |
 | pipeline | input_label,input_width,lane_width,lanes:[{id,label,detail}],merge_label,projection_label,output_label,context:[文字] | lanes / concat / project / residual / context |
 | sequence | items:[{id,label,detail}], note | focus |
+| plot | parameter, axes, views, series；固定样本和显式视窗，详见下文 | overview / trace / inspect |
 
 - dot：逐分量相乘，相加后除 divisor；所有向量共用实际长度与坐标尺度。scores 显示完整带零线的正负分数行，不把分数称作概率。
-- normalize：mask先进入score，排除项指数为0；其余做 exp(score/T)，共同分母求和后相除。极端数值先减共同偏移以避免溢出，画面明确该偏移。exp(0)=1。weights阶段按index逐项填入同一长度为1的预算条。
+- normalize：mask先进入score，排除项指数为0；其余做 exp(score/T)，共同分母求和后相除。极端数值先减共同偏移 h 以避免溢出，非零时表头显示 exp(s/T−h)，指数、分母和权重阶段持续显示实际 h 及统一平移不改变权重的含义。exp(0)=1。weights阶段按index逐项填入同一长度为1的预算条。
 - weighted_sum：每一维贡献等于weight×vector；用完整精度累加部分和。vector保留原向量，scaled显示同尺度缩小，accumulate只平移当前贡献；平移未落定不把端点称为部分和。零贡献保留为静止点。result才画最终直达输出箭头。
 - compare：before/after都是 `{label,query:[x,y],masked:[逐项布尔],temperature}`。change为query、masked或temperature之一，校验要求其余条件相等，K/V在两侧共享。change阶段隐藏尚未落定的权重，after重新计算共同分母和输出。两侧条形共用0–1尺度。
 - matrix：每行以rows中的vector查询共同keys，行归一化后乘values；causal=true时要求行列数一致，并使列索引大于行索引的权重为0。画面圆面积代表权重，遮线表示不可见，右侧展开当前行数值。result展示逐行输出与矩阵维数。
 - projection：每个输入系数乘矩阵对应行，再求和输出2维。最多三条独立通道；矩阵行数必须等于输入维数。参数和结果分别显示。
 - pipeline：最多三条符号通道、五个背景模块。每头lane_width维；Concat沿特征维拼为lane_count×lane_width，再经输出矩阵恢复input_width，与同维输入做残差。这里只给出维数，不虚构未定义的多头参数。
 - sequence：受限的来源/步骤索引与说明，作为引入和收束；核心计算须使用上述数学操作，不能用它替代计算。
+
+## 通用数值图形 plot
+
+plot 用于演化轨迹、波形、参数曲线和离散数值观察。作者先给出理解任务、真实模型及来源、初值与固定条件、采样方法与误差，再选择可核对的样本和必要视窗。比较时固定未讨论的条件。单轮收益表不能证明动力系统的演化或混沌；合成信号也不能自动代表实际乐器。
+
+数据结构为：
+
+```json
+{
+  "parameter": {"label": "数据时间", "unit": "s", "domain": [0, 1]},
+  "axes": {"x": {"label": "时间", "unit": "s"}, "y": {"label": "振幅", "unit": "a.u."}},
+  "views": [{"id": "whole", "label": "完整范围", "x": [0, 1], "y": [-1, 1], "aspect": "free"}],
+  "series": [{"id": "signal", "label": "示意样本", "mode": "linear", "segments": [[[0, 0, 0], [0.5, 0.5, 1], [1, 1, 0]]]}]
+}
+```
+
+这组数值只说明字段形状。每个样本恰为 `[u,x,y]`，u 是数据参数，独立于配音时间；可以表示仿真步、物理时间或其他自变量。u 在同一系列的所有分段间严格递增，x/y 可以回转。`parameter.domain`、视窗 x/y 是递增范围，跨度至少 1e-9。所有数值有限、绝对值不超过 1e9，不接受布尔值充当数值。
+
+- `mode:samples` 只画真实样本点；读数显示实际样本的 u。`mode:linear` 只在同一段内连线和线性插值。段间缺测不连线、不补零、不外推；作者须选择足够的采样密度，避免把插值误作模型细节。
+- `views` 使用显式固定窗口；`aspect:equal` 保持 x/y 同单位长度，`free` 按各轴范围映射。视窗按事件切换，不随数据自动缩放。名称和单位必须与模型一致。
+- 每镜最多4个系列、4个视窗；每系列最多16段、2048个样本，全计划最多8192个样本，计划仍受512KiB读取限额约束。ID最多32字符，标签最多24字符，单位最多12字符。超限报错，不静默裁掉来源数据。
+
+plot 事件沿用真实音轨的 `at/stage/index/duration/cue`，另有 `view`（视窗ID）、`visible`（可见系列ID列表）和 `range:[u0,u1]`。index 指定当前聚焦系列，必须包含在 visible 中；所有范围位于 parameter.domain 内。
+
+- `overview` 展示声明范围，duration 必须为0。
+- `trace` 从 u0 展开到 u1，要求 u1>u0、duration>0。音轨进度按 `u=u0+(u1-u0)×进度` 线性映射，不套用数学操作的 smoothstep，以免改变表观频率或速度。事件时长仍不超过3秒；较长过程分成明确的连续事件。
+- `inspect` 在完整上下文中定位 `cursor` 指定的数据参数，cursor 必须在 range 内，duration 为0。静态范围允许单点。
+
+暂停或跳转按同一时间直接重建画面；显示近似读数，保留实际单位、负号、缺测和插值说明。作者须在480px宽度的实际成片检查坐标、关键读数和字幕。模型求解、FFT、公式执行、外部读取和配音均不在 plot 内执行；数值绘制能力不等于主题解释通过。
 
 ## 输出和资源边界
 

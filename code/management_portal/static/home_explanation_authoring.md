@@ -120,7 +120,7 @@ high 质量的独立检查在生成内容完成后读取固定版本、实际打
 
 只保留实际有用的模块。`quality` 为 low、medium 或 high，构建命令必须显式传入当前有效档位，不提供省略后的默认值；low 包只保留 Markdown supplement，直接文件也可用 Preview 打开。引用也可包含已生成的 `video`，其中 `address/sha256` 指向 MP4，`captions` 与 `transcript` 各带地址和摘要，`chapters` 为 `[{time:秒,title}]`。普通 HTML 文件在 Preview 中仍是代码；解释包的 interaction 才进入隔离宿主。自包含 HTML 内联样式、脚本、数据和所需库，禁止远程依赖及父页面访问。大型图按需更新，不维持无用动画。
 
-视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
+视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、cues；不执行作者脚本。scene.visual 的封闭操作支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线、步骤索引和通用数值图形 plot。plot 可绘制固定数值轨迹、波形、参数曲线及逐点读数；作者须提供模型来源、初值、条件、单位、采样依据和必要视窗，不能仅改注意力图的标签代替新主题。配音秒与数据参数分别声明，动态展开使用线性数据时钟，缺测断线；详见[声明式计算画面合同](/static/home_explanation_video_contract.md)。数学操作由后端推导结果，plot 保留作者样本及明确的段内线性插值，模型正确性仍由独立检查核对。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
 视频 low 可采用已有节点图计划。所有新生成的 medium/high 视频都需要正式作者任务及其完成证明，即使旧计划已有合法 `visual.events` 也不能直接跳过。没有本次质量对应的 `authoring_proof` 时，显式生成操作先派发带质量指导的创作任务，不开始渲染。作者须按任务中的固定来源实际修改分镜，每段提供与真实字幕对应的 `visual.events`，保存新固定版并完成正式回填；只改标题、JSON排版或质量标签均不算修改。medium 按 3Blue1Brown 式概念递进、连续图形与音画同步要求创作；high 还须实际独立审片。结构检查和创作回填成功均不代表审核通过。已 ready 的旧视频仍可只读恢复，不因重开自动生成或投递任务。
 

@@ -8,7 +8,7 @@ import threading
 import wave
 
 from management_portal.media_tools import capabilities, stamp
-from management_portal.home_explanation_plan import visual_math
+from management_portal.home_explanation_plan import visual_math, plot_state
 
 
 _BG, _INK, _MUTED = '#111824', '#f4f2e9', '#9caabc'
@@ -30,7 +30,8 @@ def visual_event(visual, at):
     if event is None:
         return None, 0
     fraction = min(1, max(0, (at-event['at'])/event['duration'])) if event['duration'] else 1
-    return event, fraction*fraction*(3-2*fraction)
+    # Plot parameter time has physical/model meaning; easing would alter it.
+    return event, fraction if visual['kind'] == 'plot' else fraction*fraction*(3-2*fraction)
 
 
 class _Canvas:
@@ -163,7 +164,8 @@ def _normalize_draw(c, d, m, e, t):
     # Keep the six sources as context, but give the current operation its own
     # large working area. Repeating six small fractions hides their denominator.
     c.text((60, 155), '来源', _MUTED, 32)
-    c.text((250, 155), 'exp(s/T)' if exp_visible else '分数', _K, 32)
+    exp_label = 'exp(s/T−h)' if m['shift'] else 'exp(s/T)'
+    c.text((250, 155), exp_label if exp_visible else '分数', _K, 32)
     if weights_visible:
         c.text((470, 155), '权重', _Q, 32)
     maximum = max(m['exponentials'])
@@ -208,9 +210,13 @@ def _normalize_draw(c, d, m, e, t):
             if i <= e['index'] and stop > start:
                 c.draw.rectangle((start, 578, stop, 590), fill=_COLORS[i])
             start = stop
-        c.text((60, 605), '单位预算 0 → 1 · '+('Σ a = 1（读数为四位近似）' if e['index'] == len(d['items'])-1 else '按来源逐项填入'), _Q, 24)
+        budget = 'Σ a = 1' if e['index'] == len(d['items'])-1 else '按来源逐项填入'
+        if m['shift']:
+            c.text((60, 605), f"h = {_num(m['shift'])}，统一平移不改变权重 · {budget}（近似读数）", _Q, 24)
+        else:
+            c.text((60, 605), '单位预算 0 → 1 · '+('Σ a = 1（读数为四位近似）' if e['index'] == len(d['items'])-1 else '按来源逐项填入'), _Q, 24)
     elif m['shift']:
-        c.text((60, 605), f"先统一减 {_num(m['shift'])} 再取指数；归一化结果不变", _MUTED, 24)
+        c.text((60, 605), f"h = {_num(m['shift'])}；先统一减 h 再取指数，归一化结果不变", _MUTED, 24)
     else:
         c.text((60, 605), f"exp(score / T)；T = {_num(d['temperature'])} · 被掩码项指数为 0", _MUTED, 24)
 
@@ -404,9 +410,137 @@ def _sequence(c, d, m, e, t):
     c.text((60, 605), d['note'], _MUTED, 24, 1150)
 
 
+def _plot_number(value):
+    return f'{value:.4g}'.replace('-', '−') if value else '0'
+
+
+def _plot_geometry(view):
+    # Fixed numeric domains, with letterboxing for equal unit lengths.
+    x0, x1 = view['x']
+    y0, y1 = view['y']
+    left, top, right, bottom = 160., 228., 1190., 490.
+    sx, sy = (right-left)/(x1-x0), (bottom-top)/(y1-y0)
+    if view['aspect'] == 'equal':
+        sx = sy = min(sx, sy)
+        cx, cy = (left+right)/2, (top+bottom)/2
+        left, right = cx-(x1-x0)*sx/2, cx+(x1-x0)*sx/2
+        top, bottom = cy-(y1-y0)*sy/2, cy+(y1-y0)*sy/2
+    return {'bounds': (left, top, right, bottom), 'domain': (x0, y0, x1, y1), 'scale': (sx, sy)}
+
+
+def _plot_point(geometry, point):
+    left, _, _, bottom = geometry['bounds']
+    x0, y0, _, _ = geometry['domain']
+    sx, sy = geometry['scale']
+    return left+(point[0]-x0)*sx, bottom-(point[1]-y0)*sy
+
+
+def _clip_plot_line(a, b, domain):
+    """Clip in source space before pixel conversion, including extreme offscreen values."""
+    x0, y0, x1, y1 = domain
+    dx, dy = b[0]-a[0], b[1]-a[1]
+    def clipped(a, dx, dy, domain):
+        x0, y0, x1, y1 = domain
+        low, high = 0, 1
+        for p, q in ((-dx, a[0]-x0), (dx, x1-a[0]), (-dy, a[1]-y0), (dy, y1-a[1])):
+            if p == 0:
+                if q < 0:
+                    return None
+            elif p < 0:
+                low = max(low, q/p)
+            else:
+                high = min(high, q/p)
+            if low > high:
+                return None
+        return ((a[0]+low*dx, a[1]+low*dy), (a[0]+high*dx, a[1]+high*dy))
+    if max(abs(dx), abs(dy))/min(x1-x0, y1-y0) > 1e12:
+        # Avoid cancellation collapsing a narrow viewport crossed by far-away
+        # endpoints. The normal frame path remains bounded float arithmetic.
+        from decimal import Decimal, localcontext
+        with localcontext() as ctx:
+            ctx.prec = 80
+            da, db = [tuple(Decimal(v) for v in p) for p in (a, b)]
+            result = clipped(da, db[0]-da[0], db[1]-da[1], tuple(Decimal(v) for v in domain))
+            return tuple(tuple(float(v) for v in p) for p in result) if result else None
+    return clipped(a, dx, dy, domain)
+
+
+def _plot_draw(c, d, m, e, t):
+    g = m['views'][e['view']]
+    left, top, right, bottom = g['bounds']
+    x0, y0, x1, y1 = g['domain']
+    inside = lambda x, y: x0 <= x <= x1 and y0 <= y <= y1
+    point = lambda xy: _plot_point(g, xy)
+    # Names and source units stay explicit. Only the focused series gets a
+    # detailed numeric readout, rather than four simultaneous tables.
+    for i, series in enumerate(d['series']):
+        if series['id'] in e['visible']:
+            c.text((60+i*295, 148), f"{i+1} · {series['label']}", _COLORS[i], 32, 275)
+    def axis_name(axis):
+        return axis['label'] + (f" ({axis['unit']})" if axis['unit'] else '')
+    for x, key, axis in ((60, 'u', d['parameter']), (455, 'x', d['axes']['x']), (850, 'y', d['axes']['y'])):
+        c.text((x, 184), key+': '+axis_name(axis), _MUTED, 32, 350)
+    for dim, low, high in ((0, x0, x1), (1, y0, y1)):
+        ticks = [low, (low+high)/2, high]
+        if low < 0 < high and 0 not in ticks:
+            ticks[1] = 0
+        for value in ticks:
+            if dim == 0:
+                x, _ = point((value, y0))
+                c.line((x, top), (x, bottom), '#53657b' if value == 0 else '#29394c')
+                c.text((x, bottom+5), _plot_number(value), _MUTED, 32, anchor='mt')
+            else:
+                _, y = point((x0, value))
+                c.line((left, y), (right, y), '#53657b' if value == 0 else '#29394c')
+                anchor = 'rt' if value == high else 'rb' if value == low else 'rm'
+                c.text((left-12, y), _plot_number(value), _MUTED, 32, anchor=anchor)
+    c.draw.rectangle(g['bounds'], outline='#53657b', width=2)
+    lo, hi = e['range']
+    cursor = e.get('cursor')
+    if e['stage'] == 'trace':
+        hi = lo+(hi-lo)*t
+        cursor = hi
+    focus_state = None
+    for i, series in enumerate(d['series']):
+        if series['id'] not in e['visible']:
+            continue
+        state = plot_state(m['series'][series['id']], [lo, hi], cursor)
+        if i == e['index']:
+            focus_state = state
+        color = _COLORS[i]
+        for path in state['paths']:
+            if series['mode'] == 'linear':
+                for a, b in zip(path, path[1:]):
+                    clipped = _clip_plot_line(a[1:], b[1:], g['domain'])
+                    if clipped:
+                        c.line(point(clipped[0]), point(clipped[1]), color, 6 if i == e['index'] else 3)
+            if series['mode'] == 'samples' or len(path) == 1:
+                for _, x, y in path:
+                    if inside(x, y):
+                        px, py = point((x, y))
+                        c.draw.ellipse((px-4, py-4, px+4, py+4), fill=color)
+        sample = state['sample']
+        if sample is not None and inside(*sample[1:]):
+            px, py = point(sample[1:])
+            c.draw.ellipse((px-9, py-9, px+9, py+9), fill=_BG, outline=color, width=4)
+    focused = d['series'][e['index']]
+    mode = '真实样本' if focused['mode'] == 'samples' else '线性连接'
+    sample = focus_state['sample']
+    note = (' · 插值' if focus_state['interpolated'] else ' · 样本') if sample is not None else ''
+    c.text((60, 540), f"{e['index']+1} · {focused['label']} · {mode}{note}", _COLORS[e['index']], 32, 1150)
+    if cursor is None:
+        label = next(v['label'] for v in d['views'] if v['id'] == e['view'])
+        c.text((60, 589), f"{label} · {d['parameter']['label']} [{_plot_number(lo)}, {_plot_number(hi)}] {d['parameter']['unit']}", _INK, 32, 1150)
+    elif sample is None:
+        c.text((60, 589), f"u = {_plot_number(cursor)} · 无样本（缺测或范围外）", _INK, 40, 1150)
+    else:
+        for x, key, value in zip((60, 455, 850), ('u', 'x', 'y'), sample):
+            c.text((x, 584), f'{key} ≈ {_plot_number(value)}', _INK, 40)
+
+
 _DRAW = {'dot': _dot, 'normalize': _normalize_draw, 'weighted_sum': _weighted_draw,
          'compare': _compare, 'projection': _projection, 'matrix': _matrix,
-         'pipeline': _pipeline, 'sequence': _sequence}
+         'pipeline': _pipeline, 'sequence': _sequence, 'plot': _plot_draw}
 
 
 def _prepare_visual(plan, scene, fonts):
@@ -418,7 +552,10 @@ def _prepare_visual(plan, scene, fonts):
     c.text((48, 89), scene['visual']['condition'], _MUTED, 24, 1180)
     c.line((48, 132), (1232, 132), '#344153')
     # Lower 80px stay empty for the real subtitle track, including paused frames.
-    return image, {'visual': scene['visual'], 'math': visual_math(scene['visual']), 'fonts': fonts}
+    math_data = visual_math(scene['visual'])
+    if scene['visual']['kind'] == 'plot':
+        math_data['views'] = {view['id']: _plot_geometry(view) for view in scene['visual']['data']['views']}
+    return image, {'visual': scene['visual'], 'math': math_data, 'fonts': fonts}
 
 
 def _fit(draw, text, font, width):

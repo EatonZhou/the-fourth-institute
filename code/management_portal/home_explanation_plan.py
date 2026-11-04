@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_left, bisect_right
 
 
 VISUAL_STAGES = {
@@ -11,6 +12,7 @@ VISUAL_STAGES = {
     'weighted_sum': {'vector', 'scaled', 'accumulate', 'result'},
     'compare': {'before', 'change', 'after'}, 'matrix': {'row', 'all', 'result'},
     'pipeline': {'lanes', 'concat', 'project', 'residual', 'context'},
+    'plot': {'overview', 'trace', 'inspect'},
 }
 
 
@@ -59,10 +61,85 @@ def _condition(value, count):
             'masked': masked, 'temperature': _number(value['temperature'], .1, 10)}
 
 
+def _plot_range(value, domain=None, nonzero=False):
+    if not isinstance(value, list) or len(value) != 2:
+        raise ValueError('绘图范围需要两个端点')
+    lo, hi = [_number(v, -1e9, 1e9) for v in value]
+    if hi < lo or (nonzero and hi-lo < 1e-9) or (domain and (lo < domain[0] or hi > domain[1])):
+        raise ValueError('绘图范围无效或越界')
+    return [lo, hi]
+
+
+def _plot_data(data):
+    _object(data, {'parameter', 'axes', 'views', 'series'})
+    p = _object(data['parameter'], {'label', 'unit', 'domain'})
+    parameter = {'label': _text(p['label'], 24), 'unit': _text(p['unit'], 12, False),
+                 'domain': _plot_range(p['domain'], nonzero=True)}
+    axes = _object(data['axes'], {'x', 'y'})
+    axes = {key: {k: _text(_object(axis, {'label', 'unit'})[k], 24 if k == 'label' else 12, k == 'label')
+                  for k in ('label', 'unit')} for key, axis in axes.items()}
+    views, series = [], []
+    for view in _items(data['views'], 4):
+        _object(view, {'id', 'label', 'x', 'y', 'aspect'})
+        if view['aspect'] not in ('equal', 'free'):
+            raise ValueError('绘图比例仅支持equal/free')
+        views.append({'id': _text(view['id'], 32), 'label': _text(view['label'], 24),
+                      'x': _plot_range(view['x'], nonzero=True), 'y': _plot_range(view['y'], nonzero=True),
+                      'aspect': view['aspect']})
+    for source in _items(data['series'], 4):
+        _object(source, {'id', 'label', 'mode', 'segments'})
+        if source['mode'] not in ('samples', 'linear'):
+            raise ValueError('绘图样本仅支持samples/linear')
+        segments, previous, count = [], -math.inf, 0
+        for segment in _items(source['segments'], 16):
+            points = []
+            for point in _items(segment, 2048):
+                if not isinstance(point, list) or len(point) != 3:
+                    raise ValueError('绘图样本必须为[u,x,y]')
+                u, x, y = [_number(v, -1e9, 1e9) for v in point]
+                if u <= previous or not parameter['domain'][0] <= u <= parameter['domain'][1]:
+                    raise ValueError('绘图参数必须严格递增且在声明范围内')
+                previous = u
+                points.append([u, x, y])
+            count += len(points)
+            if count > 2048:
+                raise ValueError('每条曲线最多2048个样本')
+            segments.append(points)
+        series.append({'id': _text(source['id'], 32), 'label': _text(source['label'], 24),
+                       'mode': source['mode'], 'segments': segments})
+    for values in (views, series):
+        if len({v['id'] for v in values}) != len(values):
+            raise ValueError('绘图标识重复')
+    return {'parameter': parameter, 'axes': axes, 'views': views, 'series': series}
+
+
+def _plot_event(event, data):
+    _object(event, {'at', 'stage', 'index', 'duration', 'cue', 'view', 'visible', 'range'},
+            {'cursor'} if event['stage'] == 'inspect' else ())
+    if event['view'] not in [v['id'] for v in data['views']]:
+        raise ValueError('未知绘图视窗')
+    visible = _items(event['visible'], 4)
+    if any(not isinstance(v, str) or v not in [s['id'] for s in data['series']] for v in visible):
+        raise ValueError('未知绘图系列')
+    if len(set(visible)) != len(visible) or data['series'][event['index']]['id'] not in visible:
+        raise ValueError('当前绘图系列必须可见且不重复')
+    window = _plot_range(event['range'], data['parameter']['domain'])
+    if event['stage'] == 'trace':
+        if event['duration'] <= 0 or window[0] >= window[1]:
+            raise ValueError('轨迹展开需要正时长与递增参数')
+    elif event['duration'] != 0:
+        raise ValueError('静态绘图阶段不接受动画时长')
+    result = {'view': event['view'], 'visible': visible, 'range': window}
+    if event['stage'] == 'inspect':
+        result['cursor'] = _number(event.get('cursor'), *window)
+    return result
+
+
 def validate_visual(value, start, end, cues):
     """Closed mathematical operations and cue-bound events, never author code.
 
-    Results are derived by visual_math, not accepted as claimed output values.
+    Mathematical results are derived by visual_math. Plot samples are declared
+    source data, not mathematical claims verified by the renderer.
     An explicit null cue is a silent reading beat, not an inferred audio timing.
     """
     _object(value, {'kind', 'condition', 'data', 'events'})
@@ -70,7 +147,9 @@ def validate_visual(value, start, end, cues):
     if not isinstance(kind, str) or kind not in VISUAL_STAGES:
         raise ValueError('不支持的声明式视觉操作')
     data = value['data']
-    if kind == 'dot':
+    if kind == 'plot':
+        data = _plot_data(data)
+    elif kind == 'dot':
         _object(data, {'query_label', 'query', 'items', 'divisor'})
         data = {'query_label': _text(data['query_label'], 16), 'query': _vector(data['query']),
                 'items': _identified(data['items'], {'vector': _vector}), 'divisor': _number(data['divisor'], .1, 100)}
@@ -129,9 +208,12 @@ def validate_visual(value, start, end, cues):
         _object(data, {'items', 'note'})
         data = {'items': _identified(data['items'], {'detail': lambda v: _text(v, 56)}), 'note': _text(data['note'], 100)}
     count = len(data['rows']) if kind == 'matrix' else len(data.get('items', data.get('lanes', [])))
+    if kind == 'plot':
+        count = len(data['series'])
     events = []
     for event in _items(value['events'], 48):
-        _object(event, {'at', 'stage', 'index', 'duration', 'cue'})
+        _object(event, {'at', 'stage', 'index', 'duration', 'cue'},
+                {'view', 'visible', 'range', 'cursor'} if kind == 'plot' else ())
         at = _number(event['at'], start, end)
         duration = _number(event['duration'], 0, 3)
         if not isinstance(event['stage'], str) or event['stage'] not in VISUAL_STAGES[kind] or at + duration > end:
@@ -146,7 +228,8 @@ def validate_visual(value, start, end, cues):
                 raise ValueError('视觉事件未落在指定真实字幕时间内')
         elif any(at < c['end'] and at+max(duration, .001) > c['start'] for c in cues):
             raise ValueError('静默事件不能占用配音字幕时间')
-        events.append({'at': at, 'stage': event['stage'], 'index': index, 'duration': duration, 'cue': cue})
+        extra = _plot_event(event, data) if kind == 'plot' else {}
+        events.append({'at': at, 'stage': event['stage'], 'index': index, 'duration': duration, 'cue': cue, **extra})
     return {'kind': kind, 'condition': _text(value['condition'], 80), 'data': data, 'events': events}
 
 
@@ -169,6 +252,10 @@ def _weighted(vectors, weights):
 def visual_math(visual):
     """One numerical owner for diagrams, equations and direct verification."""
     kind, d = visual['kind'], visual['data']
+    if kind == 'plot':
+        return {'series': {s['id']: {'mode': s['mode'], 'segments': [
+            {'points': points, 'parameters': [p[0] for p in points]} for points in s['segments']]}
+            for s in d['series']}}
     if kind == 'dot':
         products = [[q*k for q, k in zip(d['query'], v['vector'])] for v in d['items']]
         return {'products': products, 'scores': [math.fsum(v)/d['divisor'] for v in products]}
@@ -189,6 +276,49 @@ def visual_math(visual):
     if kind == 'projection':
         return {'outputs': [[math.fsum(x*row[j] for x, row in zip(d['input'], lane['matrix'])) for j in range(2)] for lane in d['lanes']]}
     return {}
+
+
+def _plot_sample(segment, u, linear):
+    """Read a real sample, or an explicitly allowed within-segment interpolation."""
+    points, parameters = segment['points'], segment['parameters']
+    if not parameters[0] <= u <= parameters[-1]:
+        return None, False
+    i = bisect_right(parameters, u)-1
+    a = points[i]
+    if a[0] == u or not linear:
+        return a, False
+    b = points[i+1]
+    t = (u-a[0])/(b[0]-a[0])
+    return [u, a[1]+t*(b[1]-a[1]), a[2]+t*(b[2]-a[2])], True
+
+
+def plot_state(series, window, cursor=None):
+    """Bounded source-space paths/readout shared by rendering and verification.
+
+    No outside-range samples, extrapolation, gap bridges or implicit smoothing.
+    Prepared parameter indices are reused for every frame.
+    """
+    lo, hi = window
+    paths, sample, interpolated = [], None, False
+    linear = series['mode'] == 'linear'
+    for segment in series['segments']:
+        points, parameters = segment['points'], segment['parameters']
+        left, right = bisect_left(parameters, lo), bisect_right(parameters, hi)
+        path = points[left:right]
+        if linear:
+            first, mix = _plot_sample(segment, lo, True)
+            if mix:
+                path = [first, *path]
+            last, mix = _plot_sample(segment, hi, True)
+            if mix and (not path or path[-1][0] != hi):
+                path = [*path, last]
+        if path:
+            paths.append(path)
+        if cursor is not None and lo <= cursor <= hi:
+            candidate, mix = _plot_sample(segment, cursor, linear)
+            if candidate is not None and lo <= candidate[0] <= hi:
+                sample, interpolated = candidate, mix
+    return {'paths': paths, 'sample': sample, 'interpolated': interpolated}
 
 
 def _text(value, limit, required=True):
@@ -271,7 +401,12 @@ def validate(value):
             result['cues'].append({'start': start, 'end': end, 'text': _text(cue['text'], 250)})
     elif 'cues' in value:
         raise ValueError('字幕时间须配合固定音轨')
+    plot_samples = 0
     for source, scene in zip(scenes, result['scenes']):
         if 'visual' in source:
             scene['visual'] = validate_visual(source['visual'], scene['start'], scene['end'], result.get('cues', []))
+            if scene['visual']['kind'] == 'plot':
+                plot_samples += sum(len(segment) for s in scene['visual']['data']['series'] for segment in s['segments'])
+                if plot_samples > 8192:
+                    raise ValueError('全计划绘图样本超过8192个')
     return result
