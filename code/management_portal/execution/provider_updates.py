@@ -79,8 +79,14 @@ def _service_control():
 
 @diagnosed("download")
 def npm_version(package: str, tag: str) -> str:
-    value = run_command("npm", "view", package, f"dist-tags.{tag}", "--json", timeout=135)
+    args = (package, f"dist-tags.{tag}") if tag in {"latest", "next"} else (package + "@" + tag, "version")
+    value = run_command("npm", "view", *args, "--json", timeout=135)
     version = json.loads(value)
+    if isinstance(version, list):
+        versions = [v for v in version if isinstance(v, str) and not Version(v).is_prerelease]
+        if not versions:
+            raise ValueError(f"No compatible npm version for {package}")
+        version = max(versions, key=Version)
     if not isinstance(version, str):
         raise ValueError(f"Invalid npm version for {package}: {version!r}")
     Version(version)
@@ -158,6 +164,10 @@ class ProviderRuntime:
 
     def installed(self) -> tuple[str, ...]:
         raise NotImplementedError
+
+    def supports_versions(self, versions: tuple[str, ...]) -> bool:
+        """Whether this adapter supports the installed native wire contract."""
+        return True
 
     def stage(self, versions: tuple[str, ...]) -> Path:
         raise NotImplementedError
@@ -346,6 +356,14 @@ class ClaudeRuntime(ProviderRuntime):
 
 
 class KimiRuntime(ProviderRuntime):
+    # 2.5 replaces raw live events and snapshot APIs with transcript protocol
+    # v2. This adapter owns the v1 contract; install its newest compatible
+    # release until the v2 adapter is implemented and validated.
+    VERSION_RANGE = "<2.5.0"
+
+    def supports_versions(self, versions):
+        return all(Version(value) < Version("2.5.0") for value in versions)
+
     def account_processes(self):
         from management_portal.kimi_account_runtime import running_accounts
         return tuple(account["account_id"] for account, _, _ in running_accounts())
@@ -374,13 +392,15 @@ class KimiRuntime(ProviderRuntime):
         return provider_runtime_services(self.unit_files[0])
 
     def available(self) -> tuple[str, ...]:
-        return (npm_version("@moonshot-ai/kimi-code", "latest"),)
+        return (npm_version("@moonshot-ai/kimi-code", self.VERSION_RANGE),)
 
     def installed(self) -> tuple[str, ...]:
         return (linked_version(self.link(), "kimi-code-"),)
 
     @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
+        if not self.supports_versions(versions):
+            raise ValueError("Kimi runtime uses an unsupported native protocol")
         self.prepare_prerequisites()
         (version,) = versions
         root = RUNTIMES / f"kimi-code-{version}"
@@ -709,7 +729,7 @@ def preparation_status(provider: str) -> dict:
 def _runtime_installed(runtime):
     try:
         versions = runtime.installed()
-        return bool(versions and all(v and v != "0" for v in versions) and runtime.link().exists()
+        return bool(versions and all(v and v != "0" for v in versions) and runtime.supports_versions(versions) and runtime.link().exists()
                     and runtime.prerequisites_available())
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         return False
@@ -818,7 +838,7 @@ def run_update_pass() -> dict[str, object]:
                 installed = runtime.installed()
                 state.setdefault("observations", {})[provider] = _version_observation(installed, available)
                 result["checked"][provider] = {"installed": " ".join(installed), "available": " ".join(available)}
-                if not _newer(available, installed):
+                if not _newer(available, installed) and runtime.supports_versions(installed):
                     if pending.pop(provider, None) is not None:
                         save()
                     continue

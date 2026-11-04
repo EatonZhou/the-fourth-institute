@@ -20,6 +20,10 @@ from management_common.provider_subagent_runs import PROGRESS_METHOD, SubagentRu
 from .provider_websocket import WebSocketTransport
 
 
+class UnsupportedKimiProtocol(ConnectionError):
+    pass
+
+
 class KimiLiveStream:
     def __init__(self, base_url: str, session_id: str) -> None:
         self.url = urlsplit(base_url)
@@ -34,7 +38,9 @@ class KimiLiveStream:
         self.thread.start()
         if not self.ready.wait(15) or self.error:
             self.close()
-            raise ConnectionError("Kimi live subscription failed") from self.error
+            message = ("Kimi live protocol is unsupported; prepare a compatible runtime"
+                       if isinstance(self.error, UnsupportedKimiProtocol) else "Kimi live subscription failed")
+            raise ConnectionError(message) from self.error
 
     def _run(self) -> None:
         connected = False
@@ -60,12 +66,16 @@ class KimiLiveStream:
                     if not isinstance(frame, dict):
                         continue
                     typ = frame.get("type")
+                    if typ == "server_hello":
+                        if (frame.get("payload") or {}).get("protocol_version", 1) != 1:
+                            raise UnsupportedKimiProtocol("Unsupported Kimi live protocol version")
+                        continue
                     if typ == "ping":
                         transport.send_text(json.dumps({"type": "pong", "id": frame.get("id")}))
                         continue
                     if typ == "ack" and frame.get("id") == "portal-subscribe":
                         payload = frame.get("payload") or {}
-                        if self.session_id not in payload.get("accepted_subscriptions", []):
+                        if frame.get("code", 0) != 0 or self.session_id not in payload.get("accepted_subscriptions", []):
                             raise ConnectionError("Kimi session subscription was rejected")
                         self.ready.set()
                         connected = True

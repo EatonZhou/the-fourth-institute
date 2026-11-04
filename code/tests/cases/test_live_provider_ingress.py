@@ -10,6 +10,7 @@ import socket
 import hashlib
 import base64
 import struct
+import pytest
 
 from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.codex_app_server_protocol import TurnWaiter
@@ -178,7 +179,11 @@ def test_kimi_gap_or_join_never_finalizes_partial_text_but_keeps_tool_outcomes()
         assert live.response=='complete new step'
 
 
-def test_kimi_websocket_handshake_subscribes_before_ready_and_keeps_fast_tools():
+@pytest.mark.parametrize('version,accepted,code,succeeds', [
+    (1, ['s'], 0, True), (1, None, 0, False),
+    (1, [], 0, False), (1, ['s'], 403, False), (2, None, 0, False),
+])
+def test_kimi_websocket_handshake_subscribes_before_ready_and_keeps_fast_tools(version, accepted, code, succeeds):
     """kimi WebSocket 握手在就绪前完成订阅，不丢失紧随其后的工具结果
 
     :design-point:"""
@@ -205,18 +210,31 @@ def test_kimi_websocket_handshake_subscribes_before_ready_and_keeps_fast_tools()
                 if n==126:n=struct.unpack('!H',exact(2))[0]
                 mask=exact(4);data=exact(n);hello=json.loads(bytes(b^mask[i%4] for i,b in enumerate(data)))
                 received.append(hello)
-                send(conn,{'type':'ack','id':'portal-subscribe','code':0,'payload':{'accepted_subscriptions':['s']}})
+                send(conn,{'type':'server_hello','payload':{'protocol_version':version}})
+                send(conn,{'type':'ack','id':'portal-subscribe','code':code,
+                           'payload':{} if accepted is None else {'accepted_subscriptions':accepted}})
+                if not succeeds:
+                    stopped.wait(5)
+                    return
                 send(conn,{**frame('tool.result',toolCallId='fast',output='ok'), 'seq':1})
                 stopped.wait(5)
         except BaseException as e:failures.append(e)
     worker=threading.Thread(target=server);worker.start()
-    stream=KimiLiveStream(f'http://127.0.0.1:{listener.getsockname()[1]}/api/v1','s')
+    stream = None
     try:
+        if not succeeds:
+            with pytest.raises(ConnectionError, match='subscription failed|protocol is unsupported'):
+                KimiLiveStream(f'http://127.0.0.1:{listener.getsockname()[1]}/api/v1','s')
+            return
+        stream=KimiLiveStream(f'http://127.0.0.1:{listener.getsockname()[1]}/api/v1','s')
         event=stream.frames.get(timeout=3)
         assert event['payload']['toolCallId']=='fast'
         assert received[0]['payload']['subscriptions']==['s']
     finally:
-        stopped.set();stream.close();worker.join(5);listener.close()
+        stopped.set()
+        if stream:
+            stream.close()
+        worker.join(5);listener.close()
     assert not failures
 
 

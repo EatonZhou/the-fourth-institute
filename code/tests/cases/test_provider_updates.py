@@ -456,3 +456,26 @@ def test_claude_runtime_installs_a_requirement_the_daemon_gains(monkeypatch, tmp
     staged = ["claude-agent-sdk==0.2.162", *(line for line in requirements if line != "claude-agent-sdk")]
     assert installs == [tuple(staged)]
     assert (root / ".portal-validated").read_text().splitlines() == staged
+
+
+def test_npm_range_chooses_latest_stable_compatible_release(monkeypatch):
+    calls = []
+    def command(*args, **kwargs):
+        calls.append(args)
+        return '["2.3.3", "2.4.0", "2.4.1"]'
+    monkeypatch.setattr(updates, 'run_command', command)
+    assert updates.npm_version('@moonshot-ai/kimi-code', '<2.5.0') == '2.4.1'
+    assert calls == [('npm', 'view', '@moonshot-ai/kimi-code@<2.5.0', 'version', '--json')]
+
+
+def test_kimi_incompatible_protocol_is_not_ready_or_staged(monkeypatch, tmp_path):
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(runtime, 'installed', lambda: ('2.5.0',))
+    monkeypatch.setattr(runtime, 'link', lambda: tmp_path)
+    monkeypatch.setattr(runtime, 'prerequisites_available', lambda: True)
+    assert not updates._runtime_installed(runtime)
+    assert runtime.supports_versions(('2.4.1',))
+    with pytest.raises(updates.PreparationError) as raised:
+        runtime.stage(('2.5.0',))
+    assert isinstance(raised.value.__cause__, ValueError)
+    assert 'unsupported native protocol' in str(raised.value.__cause__)
