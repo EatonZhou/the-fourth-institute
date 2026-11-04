@@ -241,16 +241,28 @@ class ResidentContextStore:
                     INSERT INTO residents(
                         resident_id, lineage_id, lineage_title, project_id, title,
                         lineage_description, status,
-                        metadata_fingerprint, active, discovered_at, updated_at
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s)
+                        metadata_fingerprint, active, discovery_visible,
+                        global_summary_managed, discovered_at, updated_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s, %s, %s, %s)
                     ON CONFLICT(resident_id) DO UPDATE SET
                         lineage_id=excluded.lineage_id, lineage_title=excluded.lineage_title,
                         project_id=excluded.project_id, title=excluded.title,
                         lineage_description=excluded.lineage_description, status=excluded.status,
                         metadata_fingerprint=excluded.metadata_fingerprint, active=TRUE,
+                        discovery_visible=excluded.discovery_visible,
+                        global_summary_managed=excluded.global_summary_managed,
                         updated_at=CASE
                             WHEN residents.metadata_fingerprint=excluded.metadata_fingerprint AND residents.active
                             THEN residents.updated_at ELSE excluded.updated_at END
+                    WHERE (residents.lineage_id, residents.lineage_title, residents.project_id,
+                           residents.title, residents.lineage_description, residents.status,
+                           residents.metadata_fingerprint, residents.active,
+                           residents.discovery_visible, residents.global_summary_managed)
+                       IS DISTINCT FROM
+                          (excluded.lineage_id, excluded.lineage_title, excluded.project_id,
+                           excluded.title, excluded.lineage_description, excluded.status,
+                           excluded.metadata_fingerprint, excluded.active,
+                           excluded.discovery_visible, excluded.global_summary_managed)
                 """, (
                     resident_id,
                     str(record.get("lineage_id") or ""),
@@ -260,11 +272,11 @@ class ResidentContextStore:
                     str(record.get("lineage_description") or ""),
                     str(record.get("status") or ""),
                     digest,
+                    record.get("discovery_visible", True),
+                    global_managed,
                     now,
                     now,
                 ))
-                connection.execute("UPDATE residents SET discovery_visible=%s,global_summary_managed=%s WHERE resident_id=%s",
-                                   (record.get("discovery_visible", True), global_managed, resident_id))
                 if not global_managed:
                     connection.execute("DELETE FROM summary_jobs WHERE resident_id=%s", (resident_id,))
                 if known is not None and known == digest:
