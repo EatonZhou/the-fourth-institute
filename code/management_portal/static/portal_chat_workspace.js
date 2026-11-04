@@ -303,8 +303,7 @@
     const loadingId = options.loadingId || "";
     return window.PortalI18n.html`<div class="paneHead chatHead portalWorkspaceHead">
       <div class="paneHeadText chatHeadText">
-        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的通知、路由与单独对话" hidden></span></div>
-        <div class="familySoloProxy" data-family-solo="header" role="status" hidden></div>
+        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的通知、路由与单独对话" hidden></span><div class="familySoloProxy" data-family-solo="header" role="status" hidden></div></div>
         <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div>
       </div>
       <div class="paneHeadActions actionGroup">
