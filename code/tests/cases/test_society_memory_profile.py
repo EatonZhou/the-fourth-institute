@@ -26,6 +26,16 @@ def test_heap_profile_never_uses_application_repr_or_size(monkeypatch):
     assert "password" not in json.dumps(result)
 
 
+def test_extension_type_metadata_descriptors_do_not_break_sampling(monkeypatch):
+    class NativeType:
+        pass
+    NativeType.__module__ = property(lambda _: "never evaluate a descriptor")
+    monkeypatch.setattr(memory_profile.gc, "get_objects", lambda: [NativeType()])
+    result = memory_profile.heap_summary()
+    assert result["inspected_objects"] == 1
+    assert result["top_types"][0]["type"].startswith("<native>.")
+
+
 def test_profile_is_inert_without_a_current_bounded_operator_lease(monkeypatch, tmp_path):
     monkeypatch.setattr(memory_profile, "instance_runtime_root", lambda: tmp_path)
     monkeypatch.setattr(memory_profile.tracemalloc, "is_tracing", lambda: False)

@@ -56,7 +56,11 @@ def heap_summary(*, object_limit: int = 500_000) -> dict:
     counts, sizes = Counter(), Counter()
     for item in islice(objects, object_limit):
         kind = type(item)
-        name = kind.__module__ + "." + kind.__qualname__
+        module, name = kind.__module__, kind.__qualname__
+        # Some extension metatypes expose descriptors instead of these strings.
+        # Do not stringify a descriptor or inspect an instance to name its type.
+        name = (module if isinstance(module, str) else "<native>") + "." + (
+            name if isinstance(name, str) else "<type>")
         counts[name] += 1
         # Do not dispatch arbitrary application __sizeof__ implementations.
         if kind in (dict, list, tuple, set, frozenset, str, bytes, bytearray):
