@@ -196,6 +196,8 @@ modules:
       - "management_portal/notifications/realtime_lifecycle.py"
       - "management_portal/portal_features.py"
       - "management_portal/frontend_manifest.py"
+      - "management_portal/script_groups.py"
+      - "management_portal/script_groups.json"
     designs:
       - "decision_0820081083f5"
       - "decision_ecf0f2b2de28"
