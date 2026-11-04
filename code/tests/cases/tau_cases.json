@@ -2,6 +2,29 @@
   "schema": "tfi.portal-tau-cases.v1",
   "cases": [
     {
+      "id": "test_e69249c20642",
+      "key": "tau.resource.catalog-search-filter-recovery",
+      "title": "资源目录快速输入、项目筛选与刷新恢复",
+      "description": "连续输入尚未停顿时切换项目、清除筛选或刷新，仍能按当前搜索词浏览资源。",
+      "importance": "P1",
+      "module": "resource.index-search",
+      "aspects": ["functional", "behavior", "ui"],
+      "is_design_point": false,
+      "design_refs": ["decision_2f67ed28db67"],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-tau-resource-catalog-search-filter-recovery",
+          "runner": "tau",
+          "entrypoint": "tau:resource-catalog-search-filter-recovery",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": ["live.controlled"],
+          "risk": "read-only",
+          "task_prompt": "用户目标：连续输入尚未停顿时切换项目、清除筛选或刷新，仍能按当前搜索词浏览资源。\n用户会怎么操作：从 Resource 的 Skill 目录打开项目筛选，输入一段独特关键词后立即选择一个已有项目；再换一段关键词并立即清除项目筛选；再输入第三段关键词并立即点击重新加载。观察输入、筛选、地址和结果是否一致，等待页面稳定后刷新，再用后退和前进检查视图恢复。输入和紧随动作应在同一短交互内完成，可使用浏览器同一事件循环设置输入并触发真实 input/change/click 事件来稳定复现快速操作。只查询资源，不提交语义 AI 搜索。再在 Experiment 或 Device 目录复查一个同类组合；没有项目选项时如实记录该条件未覆盖。\n要留意什么：输入不能被旧地址覆盖；切换项目后仍按当前关键词查询，不应在输入计时结束后再发一份相同查询。过期响应不能覆盖新条件，空结果、加载和权限拒绝分别说明。只观察当前列表和工具栏，不采集无关内容，不打开设备终端。\n性能体验：能测量时记录操作到可用结果耗时，区分网络等待和页面等待；未测量写未记录。\n报告什么：写真实使用报告，说明实际过程、问题和性能；材料缺失写未记录，不以截图或计时齐全判断 PASS/FAIL。问题区分产品、用例、工具和执行偏差，给出实际步骤及原始响应。短暂发布断线后恢复原视图，不重复业务。\n操作范围与清理：使用框架指定的实际实例与受控测试会话。只读查询和改变本页筛选，不创建资源、消息或 AI 任务，不修改共享设置。结束关闭本轮浏览器和辅助进程，不在 TAU 内启动 Campaign。"
+        }
+      ]
+    },
+    {
       "id": "test_84b26d0f79c1",
       "key": "tau.hatg.route-message-limit",
       "title": "Route 消息上限、停发与重置的真实闭环",

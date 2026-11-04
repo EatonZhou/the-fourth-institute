@@ -887,6 +887,14 @@
     keepDetail = true,
     propagateServiceUnavailable = false,
   } = {}) {
+    window.clearTimeout(state.queryTimer);
+    // A filter, refresh or service recovery can run before input debounce.
+    // Merge the visible draft before reading the URL-backed collection state.
+    const query = elements.query.value.trim();
+    if (query !== queryState().q) {
+      writeQuery({ q: query, item: "" });
+      keepDetail = false;
+    }
     cancelResourceQuery();
     const controller = new AbortController();
     state.requestController = controller;
