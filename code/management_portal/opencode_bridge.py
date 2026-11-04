@@ -222,6 +222,7 @@ class Turn:
         self.started_ms = now_ms()
         self.deadline = None
         self.native_status: dict = {}
+        self.retry_failure: dict = {}
         self.event_counts: dict[str, int] = {}
         self.items_started: set[str] = set()
         self.items_completed: set[str] = set()
@@ -522,6 +523,8 @@ class Bridge:
                 return
             part = props.get("part") or {}
             session = session or str(part.get("sessionID") or "")
+            if part.get('type') == 'retry' and session == ours:
+                turn.retry_failure = retry_failure(part.get('error') or {})
             self.part_types[str(part.get("id"))] = str(part.get("type") or "")
             if part.get("type") == "tool":
                 call = str(part.get("callID") or part.get("id"))
@@ -809,7 +812,8 @@ class Bridge:
                     if after.get('type') == 'idle' or time.monotonic() >= cancellation_deadline:
                         break
                     time.sleep(.05)
-                diagnostic = {'before_abort': observed, 'after_abort': after, 'event_counts': dict(turn.event_counts)}
+                diagnostic = {'before_abort': observed, 'after_abort': after,
+                              'retry_failure': dict(turn.retry_failure), 'event_counts': dict(turn.event_counts)}
                 self.state['turns'][turn.id].update(status='failed', diagnostic=diagnostic)
                 self.save()
                 if after.get('type') != 'idle':
@@ -1028,6 +1032,7 @@ class Bridge:
                 return {'session_id': self.session_id, 'active': turn is not None and not turn.done.is_set(),
                         'turn_id': turn.id if turn else '',
                         'native_status': native_status(status.get(self.opencode_session) or {'type': 'idle'}),
+                        'retry_failure': dict(turn.retry_failure) if turn else {},
                         'event_counts': dict(turn.event_counts) if turn else {},
                         'diagnostic': (self.state.get('turns', {}).get(str(params.get('turn_id') or ''), {}) or {}).get('diagnostic')}
         if method == "turn/run":
@@ -1175,6 +1180,21 @@ def summary_tokens(messages: list) -> int:
         if info.get("role") == "assistant" and info.get("summary"):
             return int((info.get("tokens") or {}).get("output") or 0)
     return 0
+
+
+def retry_failure(error):
+    """Allowlisted native retry facts; never expose bodies, messages or headers."""
+    data = error.get('data') if isinstance(error.get('data'), dict) else {}
+    result = {}
+    status = data.get('statusCode')
+    if type(status) is int and 100 <= status <= 599:
+        result['http_status'] = status
+    if type(data.get('isRetryable')) is bool:
+        result['retryable'] = data['isRetryable']
+    value = (data.get('responseHeaders') or {}).get('retry-after')
+    if isinstance(value, str) and value.isascii() and value.isdigit() and len(value) <= 6:
+        result['retry_after_seconds'] = int(value)
+    return result
 
 
 def native_status(status):

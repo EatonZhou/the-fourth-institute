@@ -106,7 +106,8 @@ def test_bounded_turn_aborts_native_work_and_preserves_typed_failure(opencode):
     """Explicit check deadline aborts the real bridge's native run, without a second prompt."""
     context = _context()
     with pytest.raises(Exception) as error:
-        OpenCodeBackend().execute(_invocation(opencode, 'slow', options={'turn_timeout_seconds': .2}), context)
+        OpenCodeBackend().execute(_invocation(opencode, 'slow', options={'turn_timeout_seconds': .2},
+                                             policy=ProviderErrorRecoveryPolicy(2)), context)
     assert getattr(error.value, 'error_code', '') == 'provider_turn_deadline'
     assert len(opencode.prompts()) == 1
     states = [json.loads(p.read_text()) for p in opencode.state.glob('*/state.json')]
@@ -122,11 +123,15 @@ def test_deadline_error_is_projected_as_a_timeout():
 
 
 def test_retry_diagnostics_keep_only_a_fixed_reason():
-    from management_portal.opencode_bridge import native_status
+    from management_portal.opencode_bridge import native_status, retry_failure
     assert native_status({'type': 'retry', 'attempt': 2, 'next': 123,
                           'message': 'fetch failed https://secret.invalid/?token=private'}) == {
         'type': 'retry', 'attempt': 2, 'next': 123, 'reason': 'network_failure'}
     assert native_status({'type': 'retry', 'message': 'private unknown failure'}) == {'type': 'retry'}
+    assert retry_failure({'name': 'APIError', 'data': {'statusCode': 429, 'isRetryable': True,
+        'message': 'private', 'responseBody': 'private',
+        'responseHeaders': {'retry-after': '3600', 'authorization': 'private'}}}) == {
+            'http_status': 429, 'retryable': True, 'retry_after_seconds': 3600}
 
 
 def test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls(opencode) -> None:
