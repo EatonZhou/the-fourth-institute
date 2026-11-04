@@ -10,8 +10,8 @@ import subprocess
 from management_portal.resources.portal import portal_route_script
 
 
-def test_ctrl_arrows_navigate_user_messages_in_browser():
-    """Ctrl+方向键定位当前聊天的人类发言，保留草稿和焦点，普通方向键仍恢复输入。"""
+def test_alt_arrows_navigate_user_messages_in_browser():
+    """Alt/Option+方向键定位人类发言；Ctrl不再跳转；草稿和普通输入历史保持不变。"""
     result = subprocess.run(
         ["node", str(Path(__file__).with_name("javascript") / "chat_user_message_navigation.browser.cjs")],
         input=json.dumps({"routeScript": portal_route_script().decode()}),

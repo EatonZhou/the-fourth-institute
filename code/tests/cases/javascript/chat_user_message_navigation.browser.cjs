@@ -75,8 +75,8 @@ const styles = ['portal_design_system.css', 'lineage_workbench.css', 'portal_com
       assert.equal(await page.locator('.messageQuoteTarget').getAttribute('data-message-key'), expected, key);
       assert.equal(await page.evaluate(() => document.activeElement === workspace.els.input), true, 'composer keeps focus');
     };
-    await press('Control+ArrowUp', 'h3');
-    await press('Control+ArrowUp', 'h2');
+    await press('Alt+ArrowUp', 'h3');
+    await press('Alt+ArrowUp', 'h2');
     const placement = await page.evaluate(() => {
       const top = workspace.els.messages.getBoundingClientRect().top;
       const row = workspace.els.messages.querySelector('[data-message-key="h2"]').getBoundingClientRect();
@@ -86,7 +86,7 @@ const styles = ['portal_design_system.css', 'lineage_workbench.css', 'portal_com
     assert.ok(placement.row >= placement.top && placement.row < placement.top + 30,
       'the target is visible near the top: ' + JSON.stringify(placement));
     await page.evaluate(() => document.getElementById('chat').dispatchEvent(new CustomEvent('portal:workbench-before-layout')));
-    await press('Control+ArrowDown', 'h3');
+    await press('Alt+ArrowDown', 'h3');
     await page.evaluate(() => document.getElementById('chat').dispatchEvent(new CustomEvent('portal:workbench-resize')));
     await settle();
     assert.ok(await page.evaluate(() => {
@@ -95,12 +95,12 @@ const styles = ['portal_design_system.css', 'lineage_workbench.css', 'portal_com
       return row.top >= view.top && row.top < view.top + 30;
     }), 'a pending layout restoration cannot undo explicit navigation');
     let position = await page.evaluate(() => workspace.els.messages.scrollTop);
-    await page.keyboard.press('Control+ArrowDown');
+    await page.keyboard.press('Alt+ArrowDown');
     assert.equal(await page.evaluate(() => workspace.els.messages.scrollTop), position, 'last message is a boundary');
-    await press('Control+ArrowUp', 'h2');
-    await press('Control+ArrowUp', 'h1');
+    await press('Alt+ArrowUp', 'h2');
+    await press('Alt+ArrowUp', 'h1');
     position = await page.evaluate(() => workspace.els.messages.scrollTop);
-    await page.keyboard.press('Control+ArrowUp');
+    await page.keyboard.press('Alt+ArrowUp');
     assert.equal(await page.evaluate(() => workspace.els.messages.scrollTop), position, 'first loaded message is a boundary');
     assert.deepEqual(await page.evaluate(() => ({ html: workspace.els.input.innerHTML, caret: getSelection().anchorOffset,
       unchanged: workspace.els.input.innerHTML === draftHtml, sent, loads })),
@@ -113,7 +113,7 @@ const styles = ['portal_design_system.css', 'lineage_workbench.css', 'portal_com
       view.scrollTop += row.getBoundingClientRect().top - view.getBoundingClientRect().top - 80;
       view.dispatchEvent(new Event('scroll'));
     });
-    await press('Control+ArrowDown', 'h2');
+    await press('Alt+ArrowDown', 'h2');
     position = await page.evaluate(() => workspace.els.messages.scrollTop);
     await page.evaluate(() => workspace.appendMessage(agent('streaming')));
     await settle();
@@ -127,11 +127,19 @@ const styles = ['portal_design_system.css', 'lineage_workbench.css', 'portal_com
     }
     // IME and other modifier combinations keep their native editing meaning.
     position = await page.evaluate(() => workspace.els.messages.scrollTop);
+    for (const key of ['Control+ArrowUp', 'Control+ArrowDown', 'Control+Alt+ArrowUp', 'Meta+Alt+ArrowDown']) {
+      await page.keyboard.press(key);
+      assert.equal(await page.evaluate(() => workspace.els.messages.scrollTop), position, key + ' does not navigate messages');
+    }
     assert.equal(await page.evaluate(() => {
-      const event = new KeyboardEvent('keydown', { key: 'ArrowUp', ctrlKey: true, isComposing: true, bubbles: true, cancelable: true });
+      const event = new KeyboardEvent('keydown', { key: 'ArrowUp', ctrlKey: true, bubbles: true, cancelable: true });
+      workspace.els.input.dispatchEvent(event); return event.defaultPrevented;
+    }), false, 'Ctrl+Up is not consumed by chat navigation');
+    assert.equal(await page.evaluate(() => {
+      const event = new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, isComposing: true, bubbles: true, cancelable: true });
       workspace.els.input.dispatchEvent(event); return event.defaultPrevented;
     }), false);
-    await page.keyboard.press('Control+Shift+ArrowUp');
+    await page.keyboard.press('Alt+Shift+ArrowUp');
     assert.equal(await page.evaluate(() => workspace.els.messages.scrollTop), position);
     await page.evaluate(() => workspace.setInputText('Unsent draft'));
     await page.keyboard.press('ArrowUp');
@@ -140,21 +148,21 @@ const styles = ['portal_design_system.css', 'lineage_workbench.css', 'portal_com
     assert.equal(await page.evaluate(() => workspace.inputText()), 'Unsent draft', 'plain Down restores the draft');
     await page.evaluate(() => { scope = 'other'; workspace.setMessages([human('other1'), agent('other-reply'), human('other2'), agent('end')]); });
     await settle();
-    await press('Control+ArrowUp', 'other2');
-    await press('Control+ArrowUp', 'other1');
+    await press('Alt+ArrowUp', 'other2');
+    await press('Alt+ArrowUp', 'other1');
     await page.setViewportSize({ width: 945, height: 700 });
     await settle();
     if (process.env.SCREENSHOT_DIR) await page.screenshot({ path: path.join(process.env.SCREENSHOT_DIR, 'user-message-navigation-945.png') });
     await page.evaluate(() => { scope = 'empty'; workspace.setMessages([agent('only-reply')]); });
     await settle();
-    await page.keyboard.press('Control+ArrowUp');
-    await page.keyboard.press('Control+ArrowDown');
+    await page.keyboard.press('Alt+ArrowUp');
+    await page.keyboard.press('Alt+ArrowDown');
     assert.equal(await page.locator('.messageQuoteTarget').count(), 0, 'no user messages is a no-op');
     await page.evaluate(() => { scope = 'short'; workspace.setMessages([human('short1'), human('short2')]); });
     await settle();
-    await press('Control+ArrowUp', 'short2');
-    await press('Control+ArrowUp', 'short1');
-    await press('Control+ArrowDown', 'short2');
+    await press('Alt+ArrowUp', 'short2');
+    await press('Alt+ArrowUp', 'short1');
+    await press('Alt+ArrowDown', 'short2');
     assert.deepEqual(errors, []);
     console.log('User message navigation: keyboard, layout, streaming, scope, boundaries, IME and input history passed');
   } finally {

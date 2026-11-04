@@ -685,7 +685,7 @@
     });
     input.addEventListener("keydown", event => {
       if (isComposerImeActive(input, event)) return;
-      if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey
+      if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey
           && (event.key === "ArrowUp" || event.key === "ArrowDown") && currentOptions().onNavigateUserMessage) {
         event.preventDefault();
         currentOptions().onNavigateUserMessage(event.key === "ArrowUp" ? -1 : 1);
