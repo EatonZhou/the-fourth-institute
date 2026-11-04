@@ -47,7 +47,7 @@ class ConversationInputs:
         with self.state_store.database.read() as connection:
             row = connection.execute(
                 "SELECT cursor FROM conversation_events WHERE resident_id=%s AND subject_id=%s "
-                "AND event_type=%s AND payload_json->'input_state'->>'state'='completed' "
+                "AND event_type=%s AND payload_json::jsonb->'input_state'->>'state'='completed' "
                 "ORDER BY cursor LIMIT 1", (resident_id, message_id, INPUT_STATE_CHANGED),
             ).fetchone()
         return int(row["cursor"]) if row else None

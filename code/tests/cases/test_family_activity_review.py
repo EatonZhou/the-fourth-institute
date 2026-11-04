@@ -127,6 +127,30 @@ def test_clock_rollback_and_repeated_terminal_updates_use_first_completion_order
     assert t.check()["status"] == "unchanged"
 
 
+@pytest.mark.parametrize("column_type", ["text", "jsonb"])
+def test_completed_cursor_reads_installed_text_and_new_jsonb_columns(team, column_type):
+    t = team
+    event = t.completed(1)
+    member, mid = event["subject_resident_id"], event["payload"]["message_id"]
+    database = get_lineage_data_store().database
+    with database.read() as c:
+        original = c.execute("SELECT data_type FROM information_schema.columns WHERE "
+                             "table_schema=current_schema() AND table_name='conversation_events' "
+                             "AND column_name='payload_json'").fetchone()["data_type"]
+    assert original in {"text", "jsonb"}
+    expected = t.repo.completed_input_cursor(member, mid)
+    try:
+        database.write(lambda c: c.execute("ALTER TABLE conversation_events ALTER COLUMN payload_json "
+                                           f"TYPE {column_type} USING payload_json::{column_type}"))
+        assert t.repo.completed_input_cursor(member, mid) == expected
+        assert t.check(event)["status"] == "recorded"
+        assert t.check()["status"] == "requested"
+        assert t.check()["status"] == "unchanged"
+    finally:
+        database.write(lambda c: c.execute("ALTER TABLE conversation_events ALTER COLUMN payload_json "
+                                           f"TYPE {original} USING payload_json::{original}"))
+
+
 def test_legacy_timestamp_pending_keeps_facts_and_migrates_only_recorded_positions(team, monkeypatch):
     t = team
     event = t.completed(1)
