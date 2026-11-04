@@ -828,6 +828,7 @@ modules:
       - "management_portal/agent_token_auth.py"
       - "scripts/resident_browser.cjs"
       - "scripts/resident_browser_stream.cjs"
+      - "scripts/resident_browser_files.cjs"
       - "management_portal/manage_agent_tokens.py"
       - "management_portal/portal_access_control.py"
       - "management_portal/resident_avatar.py"
