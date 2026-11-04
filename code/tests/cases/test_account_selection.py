@@ -15,6 +15,114 @@ def account(name, remaining=80, **extra):
                 selection_catalog={"fresh": True, "models": ["model"], "efforts_by_model": {"model": ["high"]}}, **extra)
 
 
+def api_account(name="custom", *, provider="codex", api_id="custom-api"):
+    row = account(name)
+    row.update(provider=provider, kind="api_profile", billing_account_id=api_id,
+               status="ok", login_state="not_applicable",
+               balance={"status": "not_supported"},
+               quota_reserve={"status": "available", "fresh": False, "remaining": None,
+                              "used_up": False, "automatic_paused": False,
+                              "close_threshold": {"metric": "balance", "value": 0, "supported": False}})
+    row["selection_catalog"]["default_model"] = "model"
+    return row
+
+
+@pytest.mark.parametrize("provider", ["codex", "claude", "kimi", "dsh", "opencode"])
+def test_configured_api_without_balance_is_usable_for_selection_and_recovery(provider):
+    from management_portal.execution.account_selection import headroom
+    from management_portal.society_service.resident_account_policy import account_available, sufficient_reserve
+    row = api_account(provider=provider)
+    before = deepcopy(row)
+    assert candidates([row], row, model="model", effort="high") == [row]
+    assert account_available(row)
+    assert headroom(row) is None and not sufficient_reserve(row)
+    assert candidates([row], row, reserve=5) == []
+    assert row == before  # Unknown balance must stay unknown.
+
+
+def test_first_admission_uses_the_default_api_without_a_balance_endpoint(monkeypatch):
+    from management_portal.execution import account_selection, account_registrations
+    row = api_account()
+    registration = {"account_id": row["account_id"], "route_id": row["backend_route_id"],
+                    "provider": row["provider"], "kind": row["kind"], "enabled": True,
+                    "config": {"api_id": row["billing_account_id"]}}
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider=None: [registration])
+    monkeypatch.setattr(account_selection, "observations", lambda: [row])
+    monkeypatch.setattr(defaults, "selection_priority", lambda record: [])
+    monkeypatch.setattr(defaults, "role_configuration", lambda role: {
+        "backend": "codex", "backend_route_id": row["backend_route_id"],
+        "runtime_settings": {"backend_role": role, "account_selection": "auto",
+                             "model": "model", "reasoning_effort": "high"}})
+    record = {"backend": "codex", "backend_route_id": "", "execution_settings": {"backend_role": "default"}}
+    result = defaults.configuration(record, {})
+    assert result["backend_route_id"] == row["backend_route_id"]
+    assert result["runtime_settings"]["account_selection"] == "auto"
+    assert result["runtime_settings"]["model"] == "model"
+
+
+@pytest.mark.parametrize("change", [
+    {"enabled": False}, {"status": "loading"}, {"status": "unavailable"},
+    {"quota_reserve": {"status": "reserved"}},
+    {"quota_reserve": {"used_up": True}},
+    {"quota_reserve": {"automatic_paused": True}},
+    {"quota_reserve": {"remaining": 0}},
+    {"quota_reserve": {"remaining": -1}},
+    {"quota_reserve": {"remaining": float("nan")}},
+    {"quota_reserve": {"close_threshold": {"metric": "balance", "value": 5}}},
+    {"quota_reserve": {"close_threshold": {}}},
+    {"selection_catalog": {"fresh": False, "models": ["model"]}},
+    {"selection_catalog": {"fresh": True, "models": ["other"]}},
+])
+def test_unmeasured_api_still_respects_account_and_model_readiness(change):
+    row = api_account()
+    for key, value in change.items():
+        if key == "quota_reserve":
+            row[key].update(value)
+        else:
+            row[key] = value
+    assert candidates([row], row, model="model", effort="high") == []
+
+
+@pytest.mark.parametrize("balance", [
+    {"status": "not_supported"},
+    {"status": "unavailable"},
+    {"status": "ok", "metric_kind": "availability", "is_available": True},
+])
+def test_optional_balance_reading_does_not_gate_the_configured_api(balance):
+    row = api_account()
+    row["balance"] = balance
+    assert candidates([row], row, model="model") == [row]
+
+
+def test_unmeasured_api_preserves_billing_scope_and_requires_explicit_selection(monkeypatch):
+    from management_portal.execution import account_selection, account_registrations
+    from management_portal.execution.accounts import DefaultAccountUnavailable
+    from management_portal.execution.account_selection import priority_candidates
+    row = api_account()
+    other_api = api_account("other", api_id="other-api")
+    other_harness = api_account("other-harness", provider="kimi")
+    missing_scope = api_account("missing", api_id="")
+    assert candidates([other_api, other_harness, missing_scope], row) == []
+    assert candidates([missing_scope], missing_scope) == []
+    assert priority_candidates([row], ["codex:subscription_login"]) == []
+    assert priority_candidates([row], ["codex:api_profile:custom-api"]) == [row]
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider: [
+        {"account_id": row["account_id"], "route_id": row["backend_route_id"],
+         "provider": "codex", "kind": "api_profile", "config": {"api_id": "custom-api"}}])
+    for anchor in ("", "removed"):
+        with pytest.raises(DefaultAccountUnavailable):
+            account_selection.select("codex", anchor=anchor, accounts=[row])
+
+
+def test_api_ranking_handles_unknown_balances_without_inventing_headroom():
+    unknown, measured = api_account("unknown"), api_account("measured")
+    measured["quota_reserve"].update(fresh=True, remaining=80)
+    assert candidates([unknown, measured], unknown) == [measured, unknown]
+    assert candidates([unknown, measured], unknown, current="unknown")[0] == unknown
+    measured["active_count"] = 2
+    assert candidates([measured, unknown], unknown)[0] == unknown
+
+
 @pytest.mark.parametrize("change", [
     {"enabled": False}, {"login_state": "login_expired"},
     {"quota_reserve": {"fresh": False, "status": "available", "remaining": 100}},
