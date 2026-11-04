@@ -87,6 +87,10 @@ def _launch(monkeypatch, tmp_path, params: dict) -> tuple[dict, dict, dict]:
     runtime = tmp_path / "runtime"
     (runtime / "node_modules/@deepseek-ai/dsh/lib").mkdir(parents=True)
     (runtime / "node_modules/@deepseek-ai/dsh/lib/bin.js").write_text("")
+    if params.pop("explicit_tool_executor", False):
+        executor = runtime / "node_modules/@deepseek-ai/dsh-tool-executor-native"
+        executor.mkdir(parents=True)
+        (executor / "package.json").write_text('{"name":"@deepseek-ai/dsh-tool-executor-native"}')
     key = tmp_path / "key"
     key.write_text("test-key")
     monkeypatch.setattr(dsh_client, "RUNTIME", runtime)
@@ -104,7 +108,7 @@ def _launch(monkeypatch, tmp_path, params: dict) -> tuple[dict, dict, dict]:
         launched.update(kwargs["env"])
         return SimpleNamespace(poll=lambda: 1)
 
-    monkeypatch.setattr(dsh_client.subprocess, "Popen", exited_process)
+    monkeypatch.setattr(dsh_client, "spawn_process", exited_process)
     monkeypatch.setattr(dsh_client, "terminate_process_tree", lambda process, **kwargs: None)
     session = "dsh-" + "a" * 32
     with pytest.raises(dsh_client.NativeAgentUnavailable):
@@ -174,6 +178,14 @@ def test_dsh_subagents_follow_the_residents_setting(monkeypatch, tmp_path):
     assert dsh_client.launched_with_subagents(session) is None
     backend.prepare_native_session(session_key="k", backend_session_id=session, options={})
     assert closed == [session, session]
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_dsh_composes_the_distributions_native_tool_executor(monkeypatch, tmp_path, explicit):
+    plugins, _, _ = _launch(monkeypatch, tmp_path, {"explicit_tool_executor": explicit})
+    assert ("dsh-tool-executor-native" in plugins) is explicit
+    if explicit:
+        assert list(plugins).index("dsh-tools") < list(plugins).index("dsh-tool-executor-native")
 
 
 def test_catalogs_use_common_account_adapter_without_exposing_secrets(monkeypatch):

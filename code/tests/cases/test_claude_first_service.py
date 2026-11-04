@@ -230,6 +230,15 @@ def test_native_first_start_prepares_daemon_before_start(control, monkeypatch, p
     assert len([call for call in control.service.calls if call[0] == "start"]) == 1
 
 
+def test_shared_kimi_first_start_is_owned_and_idempotent(control, monkeypatch):
+    monkeypatch.setattr(units, '_install_claude_backend', Mock(side_effect=AssertionError('Kimi must not install Claude')))
+    units.start_kimi_service()
+    units.start_kimi_service()
+    assert control.service.active == {'tfi-fixture-kimi-code.service'}
+    assert len([cmd for cmd in control.commands if '--now' in cmd]) == 1
+    assert not any(cmd[0] != 'systemctl' for cmd in control.commands)
+
+
 def test_foreign_dropin_rejected_before_new_start(control):
     target = units.install_claude_backend(app_server_only=True)
     before = target.read_bytes()

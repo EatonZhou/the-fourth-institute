@@ -22,6 +22,7 @@ for name in (
     'management_common.format_tags',
     'management_common.product_environment',
     'management_common.instance_manifest',
+    'management_common.secure_paths',
     'management_common.secret_environment',
     'management_common.site_config',
     'management_common.portal_network',

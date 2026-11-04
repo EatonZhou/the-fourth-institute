@@ -146,6 +146,11 @@ class DshClient:
                 rows.append({"id": name, "name": "@deepseek-ai/" + name, **({"config": config} if config else {}), **extra})
             for name in ("cordis-plugin-timer", "dsh-llm", "dsh-session", "dsh-session-projection", "dsh-tools", "dsh-agent"):
                 plugin(name)
+            # Newer DSH distributions publish native dispatch as a separate
+            # capability instead of selecting it inside dsh-tools. Compose
+            # that capability when the installed distribution provides it.
+            if (RUNTIME.resolve() / "node_modules/@deepseek-ai/dsh-tool-executor-native/package.json").is_file():
+                plugin("dsh-tool-executor-native")
             plugin("dsh-system-prompt", {"includeHarnessIdentity": False, "includeRuntimeContext": False})
             models = []
             for model in shared_ai_provider_registry.harness_models(row):

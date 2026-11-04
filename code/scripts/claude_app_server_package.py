@@ -16,7 +16,7 @@ MODULES = {
     "management_common": (
         "provider_subagent_runs", "domain_database", "portal_database", "postgres_database",
         "instance_manifest", "secret_environment", "configuration_files", "distribution_targets", "code_environment", "release_dependencies", "loaded_modules", "host_instances", "portal_paths", "provider_account_paths", "operation_errors",
-        "file_permissions", "filesystem_paths", "format_tags", "product_environment",
+        "file_permissions", "filesystem_paths", "secure_paths", "format_tags", "product_environment",
         "site_config", "portal_network", "file_lock", "local_ipc",
     ),
 }

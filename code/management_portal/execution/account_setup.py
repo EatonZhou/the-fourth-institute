@@ -164,16 +164,30 @@ def check(inv):
                 details={"reason": "account.service_not_ready"}, retryable=True) from None
     elif row["provider"] == "kimi" and row["kind"] == "service":
         from management_portal.kimi_code_server import provider_profile_id, service_configured
-        from scripts.portal_service_units import provider_runtime_services
         if not service_configured():
             raise InstructionError("instruction.conflict",
                 f"Kimi 服务账号使用本站登记的 Kimi 模型 API（{provider_profile_id()}）运行共享服务，本站还没有这个模型 API。"
                 "请改用“订阅登录”接入 Kimi 会员账号，或用“模型 API 账号”填写 Kimi API Key。",
                 details={"reason": "account.service_unconfigured"})
-        if not provider_runtime_services("portal-kimi-code.service"):
+        from scripts.portal_service_units import start_kimi_service
+        from management_portal.kimi_code_client import KimiCodeClient, KimiCodeUnavailable
+        def wait_ready():
+            deadline = time.monotonic() + 45
+            while True:
+                try:
+                    KimiCodeClient()._request("GET", "/sessions", timeout=2)
+                    return
+                except KimiCodeUnavailable:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("Kimi shared service did not become ready")
+                    time.sleep(.1)
+        try:
+            start_kimi_service(wait_ready=wait_ready)
+        except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+            logger.warning("Kimi shared service start failed (%s)", type(exc).__name__)
             raise InstructionError("instruction.owner_unavailable",
-                "本站的 Kimi Code 共享服务没有运行。请检查本站后台服务，或改用“订阅登录”或“模型 API 账号”接入。",
-                details={"reason": "account.service_not_running"}, retryable=True)
+                "本站的 Kimi Code 共享服务未能就绪。请检查本站后台服务后重试；现有账号登记与授权保持不变。",
+                details={"reason": "account.service_not_ready"}, retryable=True) from None
         info = None
     else:
         info = None

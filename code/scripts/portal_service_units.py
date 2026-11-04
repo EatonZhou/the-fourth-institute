@@ -179,21 +179,30 @@ def install_claude_backend(*, app_server_only: bool = False) -> Path:
 
 
 def start_claude_service(*, wait_ready=None) -> None:
+    _start_daemon('claude-code', lambda: _install_claude_backend(app_server_only=True), wait_ready=wait_ready)
+
+
+def start_kimi_service(*, wait_ready=None) -> None:
+    _start_daemon('kimi-code', lambda: _define('kimi-code'), wait_ready=wait_ready)
+
+
+def _start_daemon(component, prepare_definition, *, wait_ready=None) -> None:
     from management_portal.execution.provider_updates import STATE_ROOT
     from scripts.instance_services import controller, unit_name
     STATE_ROOT.mkdir(parents=True, exist_ok=True)
-    with (STATE_ROOT / "claude-backend-install.lock").open("a+") as stream, lock_stream(stream):
+    lock_name = component.removesuffix('-code') + '-backend-install.lock'
+    with (STATE_ROOT / lock_name).open("a+") as stream, lock_stream(stream):
         instance = _instance()
-        if provider_runtime_services("portal-claude-code.service"):
+        if provider_runtime_services('portal-' + component + '.service'):
             if wait_ready:
                 wait_ready()
             return
-        created = not ("claude-code" in instance.document['services']['components']
-                       and _definition_path(instance, "claude-code").exists())
+        created = not (component in instance.document['services']['components']
+                       and _definition_path(instance, component).exists())
         if created:
-            _install_claude_backend(app_server_only=True)
+            prepare_definition()
         instance = _instance()
-        name = unit_name(instance, "claude-code")
+        name = unit_name(instance, component)
         control = controller(instance)
         try:
             if sys.platform in {"win32", "darwin"}:
@@ -206,7 +215,7 @@ def start_claude_service(*, wait_ready=None) -> None:
         except Exception:
             control.stop(name)
             if created:
-                _undefine("claude-code")
+                _undefine(component)
             raise
 
 
