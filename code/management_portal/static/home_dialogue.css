@@ -19,6 +19,9 @@
 .homeDialogueDocument { flex:1; overflow:auto; padding:12px; }
 .homeDialogueEditor { flex:1; min-height:180px; resize:none; font:14px/1.5 monospace; background:var(--panel, #fff); color:inherit; padding:12px; }
 .homeDialogueExpanded { position:fixed; inset:var(--home-dialogue-top, 8px) 8px 8px; width:auto !important; max-width:none !important; height:auto; z-index:900; box-shadow:0 6px 30px #0004; border:1px solid var(--border, #ccc); }
+/* In the native workbench, fixed insets must size the expanded Home panel,
+   overriding the mounted panel's 100% height without changing other panels. */
+.homeDialogue.homeDialogueExpanded[data-portal-workbench-panel] { height:auto; min-height:0; }
 .homeDialogueTabs { display:none; }
 .homeDialogueDisplayBar { display:flex; align-items:center; gap:6px; padding:6px 8px; flex-wrap:wrap; position:relative; }
 .homeDialogueDisplayBar .homeDialogueCurrent { flex:1 1 0; min-width:0; padding:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }

@@ -6,7 +6,8 @@ const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
 const sourceRoot = process.env.HOME_MAP_SOURCE_ROOT || staticRoot;
 const out = process.env.HOME_MAP_EVIDENCE || '/tmp/home-map-evidence'; mkdirSync(out, { recursive: true });
 const lineage = 'lineage_0123456789ab', direction = 'direction_0123456789ab';
-const narrow = process.argv.includes('--narrow');
+const homeNarrow = process.argv.includes('--home-narrow');
+const narrow = homeNarrow || process.argv.includes('--narrow');
 const mark = '[TAU:testrun_8a0424367731dab5:workbench.notifications]';
 const teamTitle = narrow ? mark + ' Home独占测试团队' : 'Test team';
 let map = { revision: 1, goal: 'Testing native map', directions: [{ direction_id: direction, title: 'Test direction', stance: 'explore', teams: [lineage] }], relations: [], layout: {}, notes: [], outputs: {} };
@@ -17,6 +18,12 @@ if (narrow) Object.assign(state.items[0], {
   reason: '确认展示切换保留阅读位置。' + mark,
   next: '本地夹具仅核对布局与原生选择；不启动任何工作。',
 });
+if (homeNarrow) Object.assign(state.items[0], {
+  line: 'Home连续使用',
+  progress: '已完成手动三类汇报、文件草稿返回和保存；组件展示状态曾重建，原因待核对。',
+  reason: '需要确认展示切换及组件重挂载是否保护阅读位置和草稿；本条仅登记问题，不自动执行。',
+  next: '等待owner核对组件重建原因；不启动任何工作。',
+});
 let denied = false, sourceDenied = false, conflict = false;
 const calls = [];
 const scripts = ['portal_state', 'portal_text', 'portal_translations', 'portal_i18n', 'portal_api', 'portal_instruction_client', 'portal_page_state', 'portal_ui_primitives', 'portal_ui', 'project_common', 'project_map_layout', 'project_map_drawer', 'project_map', 'home_map_view'];
@@ -24,6 +31,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/') {
     res.setHeader('Content-Type', 'text/html');
+    if(homeNarrow) return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      ${['portal_components','portal_design_system','portal_workbench','project','project_map','home_dialogue'].map(n=>`<link rel="stylesheet" href="/static/${n}.css">`).join('')}
+      <style>body{margin:0;font:1rem system-ui;--panel:white;--text:#123;--border:#ccc;--accent:teal;--muted:#567}
+      #fixture-nav{position:static;height:82px;box-sizing:border-box;padding:8px}#frame{height:calc(100dvh - 90px);padding:0}</style>
+      ${[...scripts,'home_dialogue_state','home_dialogue'].map(n=>`<script src="/static/${n}.js"></script>`).join('')}
+      <header id="fixture-nav" class="portalSiteHeader">Home</header><div id="frame" class="portalWorkbenchPanelFrame"><section id="root" data-home-component="dialogue-display" data-portal-workbench-panel="dialogue-display"></section></div>`);
     return res.end(`<!doctype html><meta charset="utf-8">${['portal_components','portal_design_system','project','project_map',...(narrow?['home_dialogue']:[])].map(n=>`<link rel="stylesheet" href="/static/${n}.css">`).join('')}<style>body{margin:0;font:${narrow ? '1rem' : '14px'} system-ui;--panel:white;--text:#123;--border:#ccc;--accent:teal;--muted:#567}#root{height:${narrow?540:760}px;max-width:100%}</style>${scripts.map(n=>`<script src="/static/${n}.js"></script>`).join('')}<div id="root" class="${narrow?'homeDialogue':''}"></div><script>window.events=[];window.opens=[];window.view=PortalHomeMapView.create({root:document.querySelector('#root'),onSelection:x=>events.push(x),onOpen:x=>opens.push(x)});</script>`);
   }
   if (url.pathname === '/api/instructions/execute') {
@@ -144,10 +157,16 @@ async function checkNarrow(page, checks) {
 }
 (async()=>{
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
-  const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1100,height:800}});
+  const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1100,height:800},hasTouch:homeNarrow});
   const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));
   try {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
+    if (homeNarrow) {
+      await require('./home_map_view_home_narrow.cjs')({page,out,lineage,teamTitle,checks,calls});
+      assert.deepEqual(errors,[]);
+      writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,errors,calls},null,2));
+      console.log(JSON.stringify({checks,errors}));return;
+    }
     if (narrow) {
       await checkNarrow(page,checks);assert.deepEqual(errors,[]);
       writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,errors,calls},null,2));
