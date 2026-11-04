@@ -217,9 +217,13 @@
       const area = node("div", null, page ? "homeExplanationPageReview" : "homeExplanationVideoReview"); region.append(area);
       const endpoint = `/api/home-explanation/${page ? "reviews" : "media"}?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`;
       const unpack = result => page ? result?.review : (result?.media === undefined ? result : result.media)?.review;
+      let releaseEvidence = [];
+      const clearEvidence = () => { releaseEvidence.forEach(dispose => dispose()); releaseEvidence = []; };
+      disposers.add(clearEvidence);
       const draw = value => {
         if (!current(key)) return;
         if (!page) { clearTimeout(mediaTimer); mediaTimer = null; }
+        clearEvidence();
         area.replaceChildren();
         const state = value?.status || "not_requested";
         const labels = {
@@ -243,8 +247,51 @@
         if (value?.error) area.append(node("p", value.error, "homeExplanationMuted"));
         for (const evidence of value?.evidence || []) {
           if (typeof evidence?.address === "string" && hashPattern.test(evidence.sha256 || "")) {
-            area.append(button("查看审核证据", () => onOpen?.({ view: "preview", target: { address: evidence.address } })));
+            const fixed = value?.handoff?.evidence?.entries?.find(entry => entry.address === evidence.address && entry.sha256 === evidence.sha256);
+            if (!fixed || !hashPattern.test(value.id || "")) {
+              area.append(button("查看审核证据", () => onOpen?.({ view: "preview", target: { address: evidence.address } })));
+              continue;
+            }
+            const body = node("div", null, "homeExplanationSupplement");
+            let evidenceUrl = "";
+            const clearBody = () => { window.PortalPreview.dispose(body); body.replaceChildren();
+              if (evidenceUrl) { URL.revokeObjectURL(evidenceUrl); urls.delete(evidenceUrl); evidenceUrl = ""; } };
+            releaseEvidence.push(clearBody);
+            const open = button("查看审核证据", async () => {
+              if (!current(key)) return;
+              open.disabled = true;
+              clearBody();
+              try {
+                const url = `/api/home-explanation/reviews/file?id=${value.id}&sha256=${fixed.sha256}&group=evidence`;
+                const maxBytes = /^(image|audio|video)\//.test(fixed.content_type || "") ? limits.video : limits.text;
+                const content = await readBytes(url, maxBytes, controller.signal, fixed.sha256);
+                if (!current(key) || !area.contains(open)) return;
+                const type = fixed.content_type || content.type;
+                const kind = /^image\//.test(type) ? "image" : /^audio\//.test(type) ? "audio" : /^video\//.test(type) ? "video"
+                  : /\.md$/i.test(fixed.name) ? "markdown" : /\.json$/i.test(fixed.name) ? "json" : "code";
+                const media = ["image", "audio", "video"].includes(kind);
+                evidenceUrl = media ? blob(content.bytes, type) : "";
+                window.PortalPreview.render({ root: body, document: { source: "review", path: fixed.name,
+                  title: fixed.name.split("/").pop(), contentKind: kind, content: media ? "" : decode(content.bytes),
+                  previewUrl: evidenceUrl, capabilities: { edit: false, save: false } } });
+              } catch (error) {
+                if (current(key) && area.contains(open) && error.name !== "AbortError") failure(body, error, () => open.click());
+              } finally { if (current(key)) open.disabled = false; }
+            });
+            area.append(open, body);
           }
+        }
+        if (state === "blocked" && hashPattern.test(value?.id || "")) {
+          const resume = button("恢复独立检查", async () => {
+            if (!current(key)) return;
+            resume.disabled = true;
+            try {
+              const result = await window.PortalAPI.post("/api/home-explanation/reviews/resume", { review_id: value.id }, { signal: controller.signal });
+              if (current(key)) draw(result.review);
+            } catch (error) { if (current(key) && error.name !== "AbortError") failure(area, error, () => resume.click()); }
+            finally { if (current(key)) resume.disabled = false; }
+          });
+          area.append(resume);
         }
         if (["submitted", "pending"].includes(state)) {
           area.append(button("刷新审核结果", async () => {

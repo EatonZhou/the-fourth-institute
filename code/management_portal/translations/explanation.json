@@ -357,6 +357,7 @@
   "解释页尚未经过独立检查，不能视为高质量达标。": {"zh-CN": "解释页尚未经过独立检查，不能视为高质量达标。", "en": "This explanation has not been independently reviewed; high quality is not yet verified."},
   "提交解释页独立检查": {"zh-CN": "提交解释页独立检查", "en": "Submit explanation for independent review"},
   "查看审核证据": {"zh-CN": "查看审核证据", "en": "View review evidence"},
+  "恢复独立检查": {"zh-CN": "恢复独立检查", "en": "Resume independent review"},
   "视频生成已取消。": {
     "zh-CN": "视频生成已取消。",
     "en": "Video generation was cancelled."

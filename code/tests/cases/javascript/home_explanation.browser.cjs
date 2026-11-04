@@ -30,6 +30,8 @@ const manifest = (name, value) => put(name + '.json', JSON.stringify(value), 'ap
 let state = null, deny = false, deniedAddress = '', delayed = '', releases = [], videoRef;
 let reviewDenied = false, delayReview = false, reviewRelease;
 let pageReviewState = null;
+let reviewCopyDenied = false, reviewCopyCorrupt = false;
+const reviewEvidence = put('private-review.md', '# 固定审核证据\n\n必须补充初始条件对照。\n', 'text/markdown');
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://fixture');
   if (url.pathname === '/') {
@@ -41,6 +43,18 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/static/')) {
     const file = path.resolve(root, url.pathname.slice(8));
     if (file.startsWith(root + '/') && fs.existsSync(file)) { res.writeHead(200, { 'Content-Type': file.endsWith('.css') ? 'text/css' : 'text/javascript' }); res.end(fs.readFileSync(file)); return; }
+  }
+  if (url.pathname === '/api/home-explanation/reviews/file') {
+    requests.push({ url: url.pathname, method: req.method, group: url.searchParams.get('group'), sha256: url.searchParams.get('sha256') });
+    res.writeHead(reviewCopyDenied ? 403 : 200, { 'Content-Type': 'text/markdown' });
+    res.end(reviewCopyDenied ? 'denied' : reviewCopyCorrupt ? 'changed bytes' : records.get(reviewEvidence.address).bytes); return;
+  }
+  if (url.pathname === '/api/home-explanation/reviews/resume') {
+    const entry = { url: url.pathname, method: req.method }; requests.push(entry);
+    let body = ''; req.on('data', chunk => { body += chunk; }); req.on('end', () => {
+      entry.body = JSON.parse(body); pageReviewState = { status: 'submitted', id: 'b'.repeat(64), resumes_review_id: entry.body.review_id };
+      res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ review: pageReviewState }));
+    }); return;
   }
   if (url.pathname === '/api/home-explanation/reviews') {
     requests.push({ url: url.pathname, method: req.method });
@@ -136,6 +150,35 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
         { address: planned.address, sha256: planned.sha256, quality: 'medium' });
       check('authoring UI has no script errors', errors, []);
       if (out) fs.writeFileSync(path.join(out, 'authoring-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
+      return;
+    }
+    if (process.argv.includes('--review-transfer-only')) {
+      const pageOnly = manifest('review-transfer', { ...base, quality: 'high', video_plan: undefined });
+      pageReviewState = { status: 'blocked', id: 'a'.repeat(64), feedback: '等待恢复检查前提。', evidence: [reviewEvidence],
+        handoff: { evidence: { entries: [{ ...reviewEvidence, name: 'private-review.md', content_type: 'text/markdown' }] } } };
+      state = null; requests.length = 0; deniedAddress = reviewEvidence.address;
+      await setup(pageOnly);
+      check('opening blocked does not resume or preload private evidence', requests.filter(r => r.method === 'POST' || r.url === '/api/home-explanation/reviews/file').length, 0);
+      await page.getByRole('button', { name: '查看审核证据', exact: true }).click();
+      await page.locator('.homeExplanationPageReview').getByText('必须补充初始条件对照。', { exact: true }).waitFor();
+      check('fixed evidence uses the bounded handoff', requests.find(r => r.url === '/api/home-explanation/reviews/file').sha256, reviewEvidence.sha256);
+      check('fixed evidence never opens private origin', await page.evaluate(() => opens.length), 0);
+      reviewCopyDenied = true;
+      await page.getByRole('button', { name: '查看审核证据', exact: true }).click();
+      await page.getByText('当前账号无权读取此内容。', { exact: true }).waitFor();
+      check('revoked evidence removes previously shown content', await page.getByText('必须补充初始条件对照。', { exact: true }).count(), 0);
+      reviewCopyDenied = false; reviewCopyCorrupt = true;
+      await page.getByRole('button', { name: '查看审核证据', exact: true }).click();
+      await page.getByText('文件内容已改变，无法打开这个固定版本。', { exact: true }).waitFor();
+      await page.getByRole('button', { name: '恢复独立检查', exact: true }).click();
+      await page.getByText('解释页已提交独立检查，尚未通过。', { exact: true }).waitFor();
+      check('explicit resume binds previous fixed review', requests.find(r => r.url === '/api/home-explanation/reviews/resume').body, { review_id: 'a'.repeat(64) });
+      check('resume does not generate media or claim passed', requests.filter(r => r.url === '/api/home-explanation/media' && r.method === 'POST').length, 0);
+      check('resume never claims passed', await page.getByText('此固定版本已通过独立审核。').count(), 0);
+      await page.setViewportSize({ width: 390, height: 844 });
+      if (out) await page.screenshot({ path: path.join(out, 'review-transfer-390.png') });
+      check('review transfer has no script errors', errors, []);
+      if (out) fs.writeFileSync(path.join(out, 'review-transfer-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
       return;
     }
     if (process.argv.includes('--page-workflow-only')) {
