@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 41
+  number: 42
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-04T21:19:06Z"
+  updated_at: "2026-11-04T21:34:37Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -260,6 +260,12 @@ high 检查者须独立于作者，按理解任务实际打开、操作和核对
 ### 独立检查的固定成果交接
 
 high 的显式送审同时授权向本轮指定检查者交付选定固定成果。ReviewService 在本次已认证提交期间，以实际请求者身份读取清单中的文件并校验摘要，保存独立字节副本；只接受明确资产清单及其中列出的依赖，来源 ref 仅用于追溯，不遍历原 Workspace，不自动抓取链接或其他私有资料。没有文件范围凭证时不以整根 Workspace viewer 代替这一交接，也不保存或转交作者 token。
+
+解释页和讲解视频送审共用显式固定依赖选择：manifest 本身、它声明的 interaction、supplement、video_plan、已有 video 及其 captions/transcript、已核定 video_plan.audio；新生成视频另外纳入本次 video/captions/transcript/poster 等实际产物。音轨、计划和对齐依据以原字节及摘要进入交接，成片可播放不替代来源或对齐检查。只收集这些明确引用，不递归抓取 HTML、JSON 或来源链接。
+
+作者需要补交对齐记录、音轨来源凭据或其他实际检查所需材料时，在新 manifest.review_assets 中明确声明 {address,sha256} 文件列表；build_explanation_package.py 的可重复 --review-asset 包内相对文件参数会固定这些文件的实际 SHA256，拒绝越界和符号链接。额外清单最多32项，与上述依赖和生成产物去重后仍受总40文件及原交接大小上限限制。同地址不同摘要拒绝；读取和冻结逐项按当前提交者的真实权限及摘要核验。sources 仅用于来源说明，不因列出来源就把它的正文或相邻私有文件交给检查者。
+
+已经 blocked 且缺依赖的旧轮次保持原快照和结论，resume 只重交原来的固定选择，不补入文件。补充材料须创作新固定 manifest/版本并明确选定依赖，视频按正常正式 authoring→实际新计划→生成→新审查完成交付；旧 blocked 不能伪作 changes_requested 传入 previous_review_id。恢复检查者能力或原有读取条件才使用同包 resume。不能把反复 retry/resume 当作材料已经补齐，也不自动改写旧通过或否决结论。
 
 交接清单绑定成员名、地址、大小、每项 SHA256 和整体摘要；全部校验完成后原子发布。相同审查身份不能扩大或替换清单，新内容必须形成新固定版。原文件后续变化不改变副本和历史结论；业务展示使用旧通过结论前仍核对本次来源固定版，不能用旧结论放行变更后的内容。
 

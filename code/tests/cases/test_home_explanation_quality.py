@@ -113,6 +113,161 @@ def rig(tmp_path, monkeypatch):
     return resources, reviews, media, calls, renders, put, package, done
 
 
+@pytest.fixture
+def video_review_package(rig):
+    from management_portal import home_explanation_media as module
+    resources, reviews, media, calls, renders, put, package, done = rig
+    def create(number, **fields):
+        original = package(number, authored=False)
+        manifest = json.loads(resources.path(original['address']).read_bytes())
+        ref = put(f'fixed-review-{number}.json', {**manifest, **fields})
+        source = package(-number-1000, False, False)
+        task = module.review.AuthoringService().submit(dict(kind='explanation_video',
+            ref=source['address'], version=source['sha256'], digest=source['sha256'],
+            author=AUTHOR, quality='high', assets=[source]), AUTHOR)
+        media.accept_authoring(**ref, actor=AUTHOR, quality='high', authoring_id=task['id'])
+        return ref
+    return create
+
+
+def test_video_review_freezes_declared_dependencies_and_not_private_neighbors(rig, video_review_package):
+    from management_portal.home_explanation_http import _page_subject
+    resources, reviews, media, calls, renders, put, package, done = rig
+    alignment = put('alignment.json', {'cues': [0, 2], 'source': 'synthetic fixture'})
+    supplement = put('notes.md', b'Explanation and actual timing.')
+    interaction = put('diagram.html', b'<p>Observed relation</p>')
+    video = {**put('authored.mp4', b'preselected video'),
+             'captions': put('authored.vtt', b'WEBVTT\n'), 'transcript': put('authored.txt', b'words')}
+    private = put('not-selected.txt', b'private neighbor/provenance, not shared')
+    ref = video_review_package(301, supplement=supplement, interaction=interaction, video=video,
+                              review_assets=[alignment, supplement], sources=[private])
+    reads = []
+    original_read = resources.read_content
+    def read(address, **kwargs):
+        reads.append((address, kwargs['actor']))
+        return original_read(address, **kwargs)
+    resources.read_content = read
+    media.start(**ref, actor=AUTHOR, quality='high')
+    ready = done(ref, 'high')
+    assert ready['status'] == 'ready' and ready['review']['status'] == 'submitted'
+    record = reviews.read(ready['review']['id'], AUTHOR)
+    manifest = json.loads(resources.path(ref['address']).read_bytes())
+    plan = json.loads(resources.path(manifest['video_plan']['address']).read_bytes())
+    expected = [ref, manifest['video_plan'], plan['audio'], supplement, interaction,
+                video, video['captions'], video['transcript'], alignment]
+    page = _page_subject(media, **ref, actor=AUTHOR, creating=True)
+    assert {x['address'] for x in page['assets']} == {x['address'] for x in expected}
+    entries = record['handoff']['subject']['entries']
+    generated = media._state(media.context(**ref, actor=AUTHOR, quality='high'), AUTHOR)['assets']
+    assert {x['address'] for x in entries} == ({x['address'] for x in expected} |
+        {RID+'/file/explanation-media/'+ref['sha256']+'-high/'+name for name in generated})
+    assert private['address'] not in {address for address, _actor in reads}
+    assert all(actor == AUTHOR for _address, actor in reads)
+    # Checker cannot read originals; each selected byte is available from the
+    # independent copy, even after an original source subsequently changes.
+    resources.denied.add(CHECKER)
+    with pytest.raises(PermissionError):
+        resources.read_content(alignment['address'], actor=CHECKER, max_bytes=1000)
+    original_alignment = resources.path(alignment['address']).read_bytes()
+    resources.path(alignment['address']).write_bytes(b'changed after submission')
+    with reviews.asset(record['id'], alignment['sha256'], CHECKER) as (data, entry, check_live):
+        assert data == original_alignment
+        check_live()
+    with pytest.raises(FileNotFoundError):
+        with reviews.asset(record['id'], private['sha256'], CHECKER): pass
+
+
+@pytest.mark.parametrize('failure', ['digest', 'permission'])
+def test_video_review_rejects_unreadable_or_changed_explicit_dependency(rig, video_review_package, failure):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    dependency = put('alignment-private.json', {'start': 0, 'end': 2})
+    ref = video_review_package(302, review_assets=[dependency])
+    if failure == 'digest':
+        resources.path(dependency['address']).write_bytes(b'tampered')
+    else:
+        original_resolve = resources.resolve
+        def resolve(address, *, actor):
+            if address == dependency['address']:
+                assert actor == AUTHOR
+                raise PermissionError('selected file is not shared with submitter')
+            return original_resolve(address, actor=actor)
+        resources.resolve = resolve
+    before = len([x for x in calls if x[1] == 'DeliverMessage' and x[2].get('resident_id') == CHECKER])
+    media.start(**ref, actor=AUTHOR, quality='high')
+    ready = done(ref, 'high')
+    assert ready['status'] == 'ready' and ready['review']['status'] in {'submission_failed', 'unavailable'}
+    stored = media._state(media.context(**ref, actor=AUTHOR, quality='high'), AUTHOR)
+    assert stored['review']['status'] == 'submission_failed'
+    assert not ready['quality_met']
+    assert len([x for x in calls if x[1] == 'DeliverMessage' and x[2].get('resident_id') == CHECKER]) == before
+    assert not list(reviews.root.glob('*-subject'))
+
+
+def test_new_dependency_selection_does_not_expand_old_blocked_resume(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    ref = package(303)
+    media.start(**ref, actor=AUTHOR, quality='high')
+    new = reviews.read(done(ref, 'high')['review']['id'], AUTHOR)
+    old_subject = copy.deepcopy(new['subject'])
+    old_subject['assets'] = [x for x in old_subject['assets'] if '/explanation-media/' in x['address']]
+    old_subject['digest'] = sha(json.dumps(old_subject['assets'], sort_keys=True).encode())
+    old = reviews.submit(old_subject, AUTHOR)
+    reviews.verdict(old['id'], CHECKER, digest=old_subject['digest'], status='blocked', evidence=[], feedback='Missing fixed plan and audio.')
+    old = reviews.read(old['id'], AUTHOR)
+    snapshot = copy.deepcopy(old['handoff']['subject'])
+    ctx = media.context(**ref, actor=AUTHOR, quality='high')
+    media._save(ctx, AUTHOR, {**media._state(ctx, AUTHOR), 'review': old})
+    before = len(calls)
+    retried = media.retry_review(**ref, actor=AUTHOR, quality='high')['review']
+    assert retried['id'] == old['id'] and retried['status'] == 'blocked'
+    assert len(calls) == before
+    resumed = reviews.resume(old['id'], AUTHOR)
+    assert resumed['id'] != new['id'] and resumed['subject']['assets'] == old_subject['assets']
+    assert resumed['handoff']['subject'] == snapshot
+    retained = reviews.read(old['id'], AUTHOR)
+    assert retained['status'] == 'blocked' and retained['handoff']['subject'] == snapshot
+    assert retained['feedback'] == 'Missing fixed plan and audio.'
+    assert len(new['handoff']['subject']['entries']) > len(snapshot['entries'])
+
+
+def test_review_dependency_selection_rejects_conflicts_paths_and_limits(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    ref = package(304)
+    ctx = media.context(**ref, actor=AUTHOR)
+    for extras in ([{**ref, 'sha256': '0'*64}], [{**ref, 'address': RID+'/file/../secret'}], [ref]*33, 'all'):
+        with pytest.raises(ValueError):
+            media.review_assets({**ctx, 'manifest': {**ctx['manifest'], 'review_assets': extras}})
+    with pytest.raises(ValueError, match='40'):
+        media.review_assets(ctx, [{'address': RID+f'/file/generated-{i}', 'sha256': 'a'*64} for i in range(40)])
+
+
+def test_video_delivery_retry_retains_preexisting_fixed_selection(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    ref = package(305)
+    media.start(**ref, actor=AUTHOR, quality='high')
+    new = reviews.read(done(ref, 'high')['review']['id'], AUTHOR)
+    old_subject = copy.deepcopy(new['subject'])
+    old_subject['assets'] = [x for x in old_subject['assets'] if '/explanation-media/' in x['address']]
+    old_subject['digest'] = sha(json.dumps(old_subject['assets'], sort_keys=True).encode())
+    original_call = reviews.call
+    def fail(actor, name, args, key=''):
+        if name == 'DeliverMessage':
+            raise RuntimeError('temporary delivery failure')
+        return original_call(actor, name, args, key)
+    reviews.call = fail
+    old = reviews.submit(old_subject, AUTHOR)
+    assert old['status'] == 'submission_failed'
+    snapshot = copy.deepcopy(old['handoff']['subject'])
+    ctx = media.context(**ref, actor=AUTHOR, quality='high')
+    media._save(ctx, AUTHOR, {**media._state(ctx, AUTHOR), 'review': old})
+    reviews.call = original_call
+    retried = media.retry_review(**ref, actor=AUTHOR, quality='high')['review']
+    assert retried['id'] == old['id'] and retried['status'] == 'submitted'
+    stored = reviews.read(old['id'], AUTHOR)
+    assert stored['subject']['assets'] == old_subject['assets']
+    assert stored['handoff']['subject'] == snapshot
+
+
 def test_page_review_identity_and_planless_video_request(rig):
     from management_portal.home_explanation_http import _page_subject
     resources, reviews, media, calls, renders, put, package, done = rig

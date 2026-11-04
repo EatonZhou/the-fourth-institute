@@ -67,7 +67,7 @@ def _page_subject(media, address, sha256, actor, task='', *, creating=False):
     context = media.context(**ref, actor=actor)
     if creating:
         media.writable(context, actor)
-    manifest = json.loads(media.read(ref, actor))
+    manifest = context['manifest']
     if manifest.get('quality') != 'high':
         raise ValueError('仅high解释页需要独立审核')
     return {'kind': 'explanation', 'ref': address, 'version': sha256,
@@ -75,7 +75,7 @@ def _page_subject(media, address, sha256, actor, task='', *, creating=False):
             # Resident submission binds the authenticated creator; an unbound
             # User stays awaiting_author rather than trusting payload identities.
             'digest': sha256, 'quality': 'high', 'author': actor,
-            'assets': [ref] + [manifest[k] for k in ('interaction', 'supplement', 'video_plan', 'video') if manifest.get(k)],
+            'assets': media.review_assets(context),
             'task': task or manifest.get('summary', '')}
 
 

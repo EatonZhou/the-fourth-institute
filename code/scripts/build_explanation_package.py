@@ -20,7 +20,8 @@ from management_portal.home_explanation_quality import quality as normalize_qual
 def build(directory: Path, address: str, *, title: str, summary: str = "", revision: int = 1,
           interaction: str | None = None, supplement: str | None = None,
           video_plan: str | None = None, video: str | None = None,
-          captions: str | None = None, transcript: str | None = None, quality: str = 'medium') -> dict:
+          captions: str | None = None, transcript: str | None = None, quality: str = 'medium',
+          review_assets: list[str] | None = None) -> dict:
     quality = normalize_quality(quality)
     if quality == 'low' and (interaction or video or video_plan or not supplement or not supplement.lower().endswith(('.md', '.markdown'))):
         raise ValueError('low解释页直接使用Markdown supplement')
@@ -36,11 +37,15 @@ def build(directory: Path, address: str, *, title: str, summary: str = "", revis
         raise ValueError("An explanation needs at least one authored module")
     if (captions or transcript) and not video:
         raise ValueError("Captions and transcript require a video")
+    if review_assets is not None and (not isinstance(review_assets, list) or len(review_assets) > 32):
+        raise ValueError('review_assets must select at most 32 files')
 
     def asset(relative: str) -> dict:
         name = PurePosixPath(relative)
         if name.is_absolute() or any(p in {"", ".", ".."} for p in relative.split("/")) or "\\" in relative:
             raise ValueError("Assets must be relative files inside the package")
+        if any((root.joinpath(*name.parts[:i])).is_symlink() for i in range(1, len(name.parts) + 1)):
+            raise ValueError("Assets must not traverse symlinks")
         file = (root / relative).resolve(strict=True)
         if not file.is_relative_to(root) or not file.is_file():
             raise ValueError("Asset escapes the package directory")
@@ -62,6 +67,8 @@ def build(directory: Path, address: str, *, title: str, summary: str = "", revis
         manifest["video"]["captions"] = asset(captions)
     if transcript:
         manifest["video"]["transcript"] = asset(transcript)
+    if review_assets:
+        manifest['review_assets'] = list({item['address']: item for item in map(asset, review_assets)}.values())
     return manifest
 
 
@@ -81,6 +88,8 @@ def main() -> None:
     parser.add_argument("--task", required=True, help="What the reader should understand or be able to decide")
     for name in ("interaction", "supplement", "video-plan", "video", "captions", "transcript"):
         parser.add_argument("--" + name)
+    parser.add_argument('--review-asset', dest='review_assets', action='append', default=[],
+                        help='Explicit fixed review dependency inside this package (repeatable, e.g. alignment/source receipt); additions require a new manifest')
     parser.add_argument("--output", default="manifest.json", help="New manifest filename inside the package")
     args = parser.parse_args()
     values = vars(args).copy()

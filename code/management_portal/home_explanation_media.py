@@ -28,6 +28,7 @@ from management_portal.home_explanation_plan import validate
 from management_portal.home_explanation_render import render
 from management_portal import home_explanation_review as review
 from management_portal.home_explanation_quality import quality as normalize_quality, policy, prepare_plan
+from management_portal.quality_review_transfer import selection
 
 MAX_BUNDLE = 128 * 1024 * 1024
 FILES = {'video.mp4': 'video/mp4', 'captions.vtt': 'text/vtt; charset=utf-8',
@@ -120,8 +121,40 @@ class Media:
         from management_portal.resources.providers.workspace import _root
         root = _root(record)
         output = (*parts[:-1], 'explanation-media', sha256 if quality == 'medium' else sha256 + '-' + quality)
-        return {'ref': ref, 'root_id': root_id, 'root': root, 'output': output, 'plan': plan, 'quality': quality,
+        return {'ref': ref, 'root_id': root_id, 'root': root, 'output': output, 'plan': plan, 'manifest': manifest, 'quality': quality,
                 'owner_id': record.get('attributes', {}).get('directory', {}).get('owner_id', '')}
+
+    def review_assets(self, ctx, generated=()):
+        """Select declared fixed dependencies, never discover private siblings.
+
+        The review owner reads and freezes these refs as the submitting actor.
+        Generic provenance links (sources) are not an implicit sharing request.
+        """
+        manifest = ctx['manifest']
+        extra = manifest.get('review_assets', [])
+        if not isinstance(extra, list) or len(extra) > 32:
+            raise ValueError('review_assets须为最多32个明确选定的固定文件')
+        refs = [ctx['ref']]
+        refs.extend(manifest[key] for key in ('interaction', 'supplement', 'video_plan', 'video') if manifest.get(key))
+        video = manifest.get('video')
+        if isinstance(video, dict):
+            refs.extend(video[key] for key in ('captions', 'transcript') if video.get(key))
+        if ctx['plan'] and ctx['plan'].get('audio'):
+            refs.append(ctx['plan']['audio'])
+        refs.extend(extra)
+        refs.extend(generated)
+        fixed = {}
+        for ref in refs:
+            pointer(ref)
+            item = {'address': ref['address'], 'sha256': ref['sha256']}
+            previous = fixed.get(item['address'])
+            if previous is not None and previous != item:
+                raise ValueError('同一审查文件不能声明不同摘要')
+            fixed[item['address']] = item
+        # Enforce the shared member-name and aggregate count contract before
+        # handing the exact selection to the immutable transfer owner.
+        return [{key: item[key] for key in ('address', 'sha256')}
+                for item in selection(list(fixed.values()))]
 
     def writable(self, ctx, actor):
         from management_portal.society_service.lineage_access_policy import workspace_reaches
@@ -407,25 +440,39 @@ class Media:
             raise PermissionError('独立检查须由原生成或送检请求者重试')
         pending = {**previous, 'status': 'pending', 'requested_by': actor}
         try:
-            self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor, ctx['quality'])
+            ctx = self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor, ctx['quality'])
             self.writable(ctx, actor)
             for name in state['assets']:
                 with self.file(**ctx['ref'], name=name, actor=actor, quality=ctx['quality']):
                     pass
-            prefix = ctx['root_id'] + '/file/' + '/'.join(ctx['output']) + '/'
-            assets = [{'address': prefix+name, 'sha256': entry['sha256']} for name, entry in sorted(state['assets'].items())]
-            digest = hashlib.sha256(json.dumps(assets, sort_keys=True).encode()).hexdigest()
-            responsible = ''
-            if state.get('authoring_proof'):
-                self.require_authored(ctx, state, actor)
-                responsible = state['authoring_proof']['resident_id']
-            pending = review.ReviewService(resources=self.service).submit({
-                'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
-                'digest': digest, 'quality': 'high', 'author': state['generation_actor'],
-                'responsible_resident_id': responsible, 'assets': assets,
-                'task': ctx['plan']['title'], 'previous_review_id': state.get('previous_review_id')}, actor)
+            owner = review.ReviewService(resources=self.service)
+            if previous.get('id'):
+                # A delivery retry must retain the selection already accepted
+                # by the review owner, including pre-dependency-contract rounds.
+                stored = owner.read(previous['id'], actor)
+                if not stored:
+                    raise FileNotFoundError('原审核不可确认，不能扩展旧交接')
+                subject = stored['subject']
+                if (subject['kind'], subject['ref'], subject['version'], subject['author']) != (
+                        'explanation_video', ctx['ref']['address'], ctx['ref']['sha256'], state['generation_actor']):
+                    raise ValueError('原审核不属于当前固定视频')
+                pending = owner.submit(subject, actor, reviewer=stored.get('reviewer', ''))
+            else:
+                prefix = ctx['root_id'] + '/file/' + '/'.join(ctx['output']) + '/'
+                generated = [{'address': prefix+name, 'sha256': entry['sha256']} for name, entry in sorted(state['assets'].items())]
+                assets = self.review_assets(ctx, generated)
+                digest = hashlib.sha256(json.dumps(assets, sort_keys=True).encode()).hexdigest()
+                responsible = ''
+                if state.get('authoring_proof'):
+                    self.require_authored(ctx, state, actor)
+                    responsible = state['authoring_proof']['resident_id']
+                pending = owner.submit({
+                    'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
+                    'digest': digest, 'quality': 'high', 'author': state['generation_actor'],
+                    'responsible_resident_id': responsible, 'assets': assets,
+                    'task': ctx['plan']['title'], 'previous_review_id': state.get('previous_review_id')}, actor)
         except Exception:
-            pending.update(status='submission_failed', error='独立视频检查未提交，请核对检查员与当前权限后重试。')
+            pending.update(status='submission_failed', error='独立视频检查未提交，请核对检查员、固定依赖清单、摘要与当前权限；补充或修改依赖须提交新固定包，恢复旧审查不会补入新文件。')
         updated = {**state, 'review': pending}
         try:
             self._save(ctx, actor, updated)
