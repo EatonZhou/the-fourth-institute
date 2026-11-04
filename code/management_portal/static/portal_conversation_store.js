@@ -62,6 +62,7 @@
     pendingReads: new Map(),
     nextPendingRead: 0,
     pinRequests: new Map(),
+    muteRequests: new Map(),
     actorRevision: 0,
     summaryEntries: new Map(),
     inboxOpen: false,
@@ -132,6 +133,7 @@
     state.readStates.set(key, {
       revision,
       unread: Boolean(value.unread),
+      muted: typeof value.muted === "boolean" ? value.muted : Boolean(current?.muted),
       pinned: typeof value.pinned === "boolean" ? value.pinned : Boolean(current?.pinned),
       dismissedThrough: typeof value.dismissed_through === "string"
         ? value.dismissed_through : String(current?.dismissedThrough || ""),
@@ -156,6 +158,7 @@
     const pending = state.pendingReads.get(key);
     return {
       unread: pending ? pending.unread : (accepted ? accepted.unread : Boolean(item?.unread)),
+      muted: accepted ? accepted.muted : Boolean(item?.muted),
       pinned: accepted ? accepted.pinned : Boolean(item?.pinned),
       read_revision: accepted ? accepted.revision : Number(item?.read_revision || 0),
     };
@@ -181,17 +184,18 @@
     const read = readState(item);
     if (item.kind === "chatroom") {
       return { ...item, ...read, unread_count: read.unread ? Math.max(1, Number(item.unread_count || 0)) : 0,
-        attention_unread: Boolean(read.unread && (item.attention_unread ?? true)),
+        attention_unread: Boolean(read.unread && (!read.muted || Number(item.unread_mention_count || 0) > 0)),
         unread_mention_count: read.unread ? Number(item.unread_mention_count || 0) : 0,
         unread_mentions: read.unread ? (item.unread_mentions || []) : [] };
     }
-    if (!item.resident_id) return { ...item, ...read };
+    if (!item.resident_id) return { ...item, ...read, attention_unread: read.unread && !read.muted };
     const snapshot = window.PortalResidentProtocol?.stateSnapshot?.(item.resident_id);
     const residentState = snapshot?.state || null;
     const terminalStatus = ["failed", "interrupted", "archived"].includes(item.status) ? item.status : "idle";
     return {
       ...item,
       ...read,
+      attention_unread: read.unread && !read.muted,
       status: residentState ? (residentState.status === "idle" && !residentState.family_activity ? terminalStatus : residentState.status) : "unknown",
       intake_state: residentState?.intake_state || "",
       resident_state: residentState,
@@ -1156,6 +1160,36 @@
     return request;
   }
 
+  function setMuted(key, muted) {
+    if (state.muteRequests.has(key)) return state.muteRequests.get(key);
+    const actorRevision = state.actorRevision;
+    const request = window.PortalInstructionClient.execute("MuteMailboxItem", { key, muted }, {
+      idempotencyKey: `inbox-mute:${globalThis.PortalUIPrimitives.randomUUID()}`,
+    }).then(async payload => {
+      if (actorRevision !== state.actorRevision) return null;
+      const incoming = payload.item;
+      if (incoming?.key === key) {
+        const item = entry(key);
+        if (item) Object.assign(item, incoming);
+        else state.entries.push(incoming);
+        updateSummary([incoming]);
+      } else {
+        // ISA replays keep flags/IDs, not complete entry contents. Read the
+        // current projection after a compact receipt instead of inventing one.
+        await refresh({ force: true });
+        return payload;
+      }
+      state.contentSignature = "";
+      persistSnapshot();
+      emit("mute");
+      return payload;
+    }).finally(() => {
+      if (state.muteRequests.get(key) === request) state.muteRequests.delete(key);
+    });
+    state.muteRequests.set(key, request);
+    return request;
+  }
+
   function clear(mode, section) {
     if (state.clearRequest || !["unread", "all"].includes(mode)) return state.clearRequest;
     const actorRevision = state.actorRevision;
@@ -1247,6 +1281,7 @@
     state.targetRetryAttempts.clear();
     state.residentInvalidations.clear();
     state.pinRequests.clear();
+    state.muteRequests.clear();
     restoreSnapshot();
     restoreRecent();
     emit("identity");
@@ -1312,6 +1347,7 @@
     setReadState,
     loadPin,
     setPinned,
+    setMuted,
     markRead,
     observeChatroomRead,
     observeResidentRead,

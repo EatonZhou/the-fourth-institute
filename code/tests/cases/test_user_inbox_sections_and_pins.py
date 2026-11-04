@@ -483,3 +483,77 @@ def test_watch_uses_authorized_browser_changes_and_resumable_checkpoints(monkeyp
     gapped = web_isa.watch_inbox(invocation(user_id="CASE-A", after_cursor=first["cursor"], timeout_seconds=1))
     assert next(gapped)[0]["snapshot_required"]
     gapped.close()
+
+
+def test_muted_conversations_keep_unread_and_pins_but_leave_badge_summary(monkeypatch, isolated_portal_case):
+    """Per-user mute persists through alerts/read/clear; unopened pages obey the same badge policy."""
+    from management_portal.resident_view_projection import attach_viewer_state
+
+    key = "resident:resident_111111111111"
+    other = "resident:resident_222222222222"
+    with isolated_portal_case():
+        read_state.alert(["CASE-A", "sample_admin"], key, "first")
+        read_state.alert(["CASE-A"], other, "second")
+        before = read_state.read_rows("CASE-A", [key])[key]
+        read_state.set_pinned("CASE-A", key, True)
+        muted = read_state.set_muted("CASE-A", key, True)
+        assert muted["unread"] and muted["pinned"] and muted["muted"]
+        assert muted["read_revision"] > before["read_revision"]
+        assert not read_state.read_rows("sample_admin", [key])[key]["muted"]
+        read_state.alert(["CASE-A"], key, "third")
+        payload = index.decorate_entries([item(key), item(other)], read_state.load("case-a"))
+        assert payload["unread_count"] == 1
+        assert payload["entries"][0]["muted"] and payload["entries"][0]["unread"]
+        assert not payload["entries"][0]["attention_unread"]
+        # The server's initial summary also covers Residents not loaded into the page.
+        monkeypatch.setattr(index, "get_society_service", lambda: SimpleNamespace(resident=SimpleNamespace(
+            filter_visible_resident_ids=lambda ids, *_: {"resident_ids": ids})))
+        summary = index.mailbox_summary(index.unread_resident_entries("CASE-A", read_state.load("CASE-A")))
+        assert summary["unread_count"] == 1
+        assert [entry["key"] for entry in summary["entries"]] == [other]
+        viewer = attach_viewer_state([{"resident_id": key.removeprefix("resident:")}], "CASE-A")[0]["viewer_state"]
+        assert viewer["muted"] and viewer["unread"]
+        read_state.set_muted("CASE-A", key, False)
+        assert index.decorate_entries([item(key), item(other)], read_state.load("CASE-A"))["unread_count"] == 2
+        read_state.set_muted("CASE-A", key, True)
+        read_state.read_through("CASE-A", [key])
+        assert read_state.read_rows("CASE-A", [key])[key]["muted"]
+        read_state.set_pinned("CASE-A", key, False)
+        read_state.dismiss("CASE-A", {key: "2026-11-04T00:00:00Z"})
+        read_state.alert(["CASE-A"], key, "after-clear")
+        row = read_state.read_rows("CASE-A", [key])[key]
+        assert row["muted"] and row["unread"] and not row["dismissed_through"]
+
+
+def test_mailbox_mute_instruction_validates_scope_and_notifies_other_browsers(monkeypatch, isolated_portal_case):
+    """Mute changes only the authenticated viewer, rejects notifications, and publishes refreshed state."""
+    events = []
+    key = "resident:resident_111111111111"
+    entries = [item(key), item("notification:notice", "lineage-notification")]
+    monkeypatch.setattr(web_isa, "_inbox_entry", lambda actor, key: next((e for e in index.decorate_entries(
+        entries, read_state.load(actor))["entries"] if e["key"] == key), None))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
+        _forget_cached_inbox=lambda actor: events.append(("cache", actor)),
+        _publish_conversation_read_changes=lambda actor, keys, **kw: events.append(("publish", actor, keys))))
+    with isolated_portal_case():
+        read_state.alert(["CASE-A"], key, "one")
+        from management_portal.hatg.contracts import InstructionCall, InstructionContext
+        from management_portal.hatg.kernel import InstructionKernel
+        from management_portal.hatg.store import ExecutionStore
+        from management_common.portal_database import portal_database
+        kernel = InstructionKernel(web_isa.binding(), store=ExecutionStore(portal_database(schema="mute_isa_test")), authorize=lambda *args: None)
+        call = InstructionCall.from_payload({"instruction": "MuteMailboxItem", "arguments": {"key": key, "muted": True}, "idempotency_key": "mute-test"})
+        context = InstructionContext(caller="CASE-A", entry="web")
+        first, replay = kernel.execute(call, context), kernel.execute(call, context)
+        assert first.status == replay.status == "committed", first.error
+        assert replay.replayed and replay.result["item"]["muted"]
+        assert read_state.read_rows("CASE-A", [key])[key]["read_revision"] == first.result["item"]["read_revision"]
+        result = first.result["item"]
+        assert result["muted"] and result["unread"] and not result["attention_unread"]
+        assert ("publish", "CASE-A", {key}) in events
+        result = web_isa.mute_inbox_item(invocation(key=key, muted=False))["item"]
+        assert not result["muted"] and result["attention_unread"]
+        for bad_key, muted in (("notification:notice", True), ("resident:missing", True), (key, "false")):
+            with pytest.raises(InstructionError):
+                web_isa.mute_inbox_item(invocation(key=bad_key, muted=muted))
+        assert not read_state.read_rows("CASE-A", [key])[key]["muted"]

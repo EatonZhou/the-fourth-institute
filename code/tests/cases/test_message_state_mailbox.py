@@ -69,3 +69,8 @@ def test_refresh_removes_obsolete_cached_sources_without_losing_resident_pages()
 def test_clear_reconciles_obsolete_sources_when_server_has_nothing_to_clear():
     """A no-op clear receipt triggers one fresh source read to remove local ghost unread."""
     _run("clear-reconciles-obsolete-sources")
+
+
+def test_mailbox_conversation_mute_menu_receipts_and_new_browser():
+    """Mute retains unread, rejects stale replies, surfaces failure and restores badges on unmute."""
+    _run("conversation-mute")

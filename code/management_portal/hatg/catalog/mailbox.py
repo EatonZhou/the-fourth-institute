@@ -36,7 +36,7 @@ DECLARATIONS = (
         P("items", "array", "带 user_id 时：置顶在前，其余按最近活动从新到旧，同一时间按 key 升序；每项是一段对话或一条通知；"
           "Resident 对话条目的 latest_message_id 是这段对话最近一条可通知消息的 ID，用 GetMessage(resident_id, message_id) 读取原文，"
           "input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 MarkMailboxItemRead 的 expected_version"),
-        P("unread_count", "integer", "带 user_id 时：未读条目数"),
+        P("unread_count", "integer", "带 user_id 时：需要提醒的未读条目数，免打扰的普通未读不计入"),
         P("pending", "array", "带 resident_id 时：等待中的项，先是队列中的请求与群体（按处理顺序），再是等待中的 info；"
           "每项有 kind（request、group、info）、message_id、author_id、created_at、preview，群体另有 members"),
         P("active", "object", "带 resident_id 时：正在处理的一轮，请求与随它送达的 info（infos）；没有时为空"),
@@ -51,6 +51,11 @@ DECLARATIONS = (
         P("timeout_seconds", "integer", "本次订阅时长，默认 30 秒", minimum=1, maximum=60),
     ), (R("keys", "array", "这批有变化的 Mailbox 条目键"), R("cursor", description="下次作 after_cursor 续读的游标"),
         R("snapshot_required", "boolean", "为 true 时须用 GetMailbox 重读整个 Mailbox")), streaming=True),
+    _d("MuteMailboxItem", FIXED, "设置调用者自己的对话消息免打扰。消息与未读仍保留，普通未读不计入 Mailbox 提醒总数；聊天室 @ 提及仍提醒。", (
+        R("key", description="Mailbox 对话条目键；不支持单向通知"),
+        R("muted", "boolean", "true 开启消息免打扰，false 恢复提醒"),
+    ), (R("item", "object", "更新后的条目，包含 muted、unread、attention_unread 与 read_revision"),),
+       mutates=True, target="key"),
     _d("PinMailboxItem", FIXED, "置顶或取消置顶调用者 Mailbox 中的对话；可固定尚未交谈的可见 Resident，不改变未读状态。通知不能置顶，最多 50 个。", (
         R("key", description="条目键；Resident 为 resident:resident_<id>"), R("pinned", "boolean", "true 置顶，false 取消置顶"),
     ), (R("item", "object", "改后的对话条目，与 GetMailbox 的条目同形；仍未列出时为空对象"),), mutates=True, target="key"),

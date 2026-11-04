@@ -27,6 +27,8 @@ class MailboxSource:
     set_unread: Callable[..., dict[str, Any]] | None = None
     # (item_id, actor) -> whether the item is in the actor's Mailbox.
     contains: Callable[[str, str], bool] | None = None
+    # Features owning member preferences change them under their own transaction.
+    set_muted: Callable[[str, str, bool], Any] | None = None
 
 
 def sources() -> list[MailboxSource]:

@@ -6,7 +6,7 @@ def test_resident_view_unread_is_actor_scoped_and_matches_index(monkeypatch):
     """Resident 视图的未读状态按查看者分别计算，共享的运行状态相同"""
     key = "resident:resident_111111111111"
     rows = {
-        "alice": {key: {"unread": True, "read_revision": 7}},
+        "alice": {key: {"unread": True, "muted": True, "read_revision": 7}},
         "bob": {key: {"unread": False, "read_revision": 9}},
         "carol": {},
     }
@@ -15,7 +15,7 @@ def test_resident_view_unread_is_actor_scoped_and_matches_index(monkeypatch):
     base = {"resident_id": "resident_111111111111", "state": {"work_state": "idle"}}
     alice, bob, carol = (resident_view_projection.attach_viewer_state([dict(base)], actor)[0]
                          for actor in ("alice", "bob", "carol"))
-    assert alice["viewer_state"] == {"unread": True, "read_revision": 7}
-    assert bob["viewer_state"] == {"unread": False, "read_revision": 9}
-    assert carol["viewer_state"] == {"unread": False, "read_revision": 0}
+    assert alice["viewer_state"] == {"unread": True, "muted": True, "read_revision": 7}
+    assert bob["viewer_state"] == {"unread": False, "muted": False, "read_revision": 9}
+    assert carol["viewer_state"] == {"unread": False, "muted": False, "read_revision": 0}
     assert alice["state"] == bob["state"]

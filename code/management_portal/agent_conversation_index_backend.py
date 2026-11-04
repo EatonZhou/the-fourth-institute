@@ -151,13 +151,15 @@ def unread_resident_entries(actor: str, read_state: dict[str, Any]) -> list[dict
         "key": "resident:" + resident_id, "resident_id": resident_id,
         "kind": "resident-main", "section": "conversation", "unread": True,
         "read_revision": candidates[resident_id]["read_revision"],
+        "muted": bool(candidates[resident_id].get("muted")),
+        "attention_unread": not candidates[resident_id].get("muted", False),
     } for resident_id in visible]
 
 
 def mailbox_summary(entries: list[dict[str, Any]]) -> dict[str, Any]:
     """One compact membership projection from which all badge totals derive."""
     fields = ("key", "kind", "section", "resident_id", "read_revision",
-              "unread", "attention_unread", "pinned", "cursor")
+              "unread", "attention_unread", "muted", "unread_mention_count", "pinned", "cursor")
     return {
         **summarize_entries(entries),
         "entries": [{key: item[key] for key in fields if key in item} for item in entries
@@ -185,6 +187,10 @@ def decorate_entries(
         # its member rows, decision_a6bebf4ac283) carries its own unread.
         own = str(entry.get("key") or "").startswith(own_read_state)
         entry["unread"] = bool(raw.get("unread")) if own else row["unread"]
+        entry["muted"] = bool(raw.get("muted")) if own else bool(row.get("muted"))
+        entry["attention_unread"] = bool(entry["unread"] and (
+            raw.get("attention_unread", True) if own else not entry["muted"]
+        ))
         entry["read_revision"] = row["read_revision"]
         entry["dismissed_through"] = row["dismissed_through"]
         public_entries.append(entry)

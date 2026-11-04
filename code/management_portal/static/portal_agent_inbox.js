@@ -35,7 +35,7 @@
   };
   let root = null;
   let notificationDetail = null;
-  let pinMenu = null;
+  let conversationMenu = null;
   let todoPanel = null;
   let unregisterAvoidedElements = null;
   let layoutObserver = null;
@@ -207,7 +207,7 @@
   function updateChrome() {
     if (!root) return;
     const snapshot = state.snapshot;
-    const expanded = !state.dragging && Boolean(state.touchExpanded || state.hovered || state.focused || pinMenu?.controller.isOpen()
+    const expanded = !state.dragging && Boolean(state.touchExpanded || state.hovered || state.focused || conversationMenu?.controller.isOpen()
       || (state.activePanel === "assistant" && assistantInteractions.size));
     const assistantOpen = expanded && state.activePanel === "assistant" && !!state.assistant;
     const mailboxOpen = expanded && !assistantOpen;
@@ -231,7 +231,7 @@
       mobileClose.hidden = !mobileOverlayOpen;
       mobileClose.setAttribute("aria-label", window.PortalI18n.t(assistantOpen ? "关闭个人助手并返回当前页面" : "关闭 Mailbox 并返回当前页面"));
     }
-    const assistantUnread = snapshot.entries.some(entry => entry.resident_id === state.assistant?.resident_id && entry.unread);
+    const assistantUnread = snapshot.entries.some(entry => entry.resident_id === state.assistant?.resident_id && (entry.attention_unread ?? entry.unread));
     root.querySelector("[data-personal-assistant-unread]").hidden = !assistantUnread;
     if (assistantOpen) void mountAssistantChat();
     root.querySelectorAll("[data-agent-conversation-count]").forEach(badge => {
@@ -426,7 +426,7 @@
     const unreadMarkup = !routed?.unread ? ""
       : Number.isSafeInteger(unreadCount) && unreadCount > 0
         ? window.PortalI18n.html`<span class="portalAgentInboxUnreadCount${routed.muted ? " is-muted" : ""}" aria-label="${unreadCount} 条未读消息" title="${unreadCount} 条未读消息">${unreadCount > 99 ? "99+" : unreadCount}</span>`
-        : window.PortalI18n.markup('<span class="portalAgentInboxUnreadDot" aria-label="未读"></span>');
+        : window.PortalI18n.html`<span class="portalAgentInboxUnreadDot${routed.muted ? " is-muted" : ""}" aria-label="未读"></span>`;
     return window.PortalI18n.html`<button class="portalAgentInboxItem${attention ? " unread" : ""}${issueClass}" type="button" data-agent-conversation-key="${esc(routed?.key || "")}" data-entry-type="${entryType}" data-status="${esc(status)}" title="${esc(title)}">
       <span class="portalAgentInboxItemIcon" data-portal-icon="${entryIcon(routed)}" aria-hidden="true"></span>
       <span class="portalAgentInboxItemBody"><span class="portalAgentInboxItemTitle"><strong>${esc(title)}</strong>${pinMarkup}</span><small><span>${esc(subtitle || source)}</span>${!residentConversation && subtitle && subtitle !== source ? window.PortalI18n.html`<span>${esc(source)}</span>` : ""}<time datetime="${esc(updatedAt)}" data-agent-conversation-time>${esc(relativeTime(updatedAt))}</time></small></span>
@@ -676,16 +676,16 @@
     }).catch(error => window.PortalUI?.toast?.(error?.message || window.PortalI18n.t("清理 Mailbox 失败"), "error"));
   }
 
-  function closePinMenu() {
-    pinMenu?.controller.destroy();
-    pinMenu?.panel.remove();
-    pinMenu = null;
+  function closeConversationMenu() {
+    conversationMenu?.controller.destroy();
+    conversationMenu?.panel.remove();
+    conversationMenu = null;
   }
 
-  function openPinMenu(button, point) {
-    const entry = store()?.entry?.(button.dataset.agentConversationKey);
+  function openConversationMenu(button, point) {
+    const entry = state.snapshot.entries.find(item => item.key === button.dataset.agentConversationKey);
     if (!entry || isNotification(entry)) return;
-    closePinMenu();
+    closeConversationMenu();
     const panel = document.createElement("div");
     panel.className = "portalAgentInboxPinMenu";
     panel.hidden = true;
@@ -696,17 +696,31 @@
     action.setAttribute("role", "menuitem");
     action.dataset.agentInboxPin = "";
     action.innerHTML = window.PortalI18n.html`<span data-portal-icon="pin" aria-hidden="true"></span><span>${esc(window.PortalI18n.t(entry.pinned ? "取消置顶" : "置顶"))}</span>`;
-    panel.append(action);
+    const muteAction = document.createElement("button");
+    muteAction.type = "button";
+    muteAction.setAttribute("role", "menuitem");
+    muteAction.dataset.agentInboxMute = "";
+    muteAction.innerHTML = window.PortalI18n.html`<span data-portal-icon="bell-off" aria-hidden="true"></span><span>${esc(window.PortalI18n.t(entry.muted ? "关闭消息免打扰" : "消息免打扰"))}</span>`;
+    muteAction.title = window.PortalI18n.t(entry.kind === "chatroom"
+      ? "普通消息不计入未读提醒，@ 提及仍提醒；消息保留"
+      : "不计入未读提醒，消息和未读状态仍保留");
+    panel.append(action, muteAction);
     document.body.append(panel);
     const controller = window.PortalOverlay.bindPopover({
       trigger: button, panel, onOpen: () => action.focus({preventScroll: true}),
       onClose: () => updateChrome(),
     });
-    pinMenu = {panel, controller};
+    conversationMenu = {panel, controller};
     action.addEventListener("click", () => {
       controller.close();
       void store().setPinned(entry.key, !entry.pinned).catch(error => {
         window.PortalUI.toast(error.message || window.PortalI18n.t("置顶失败"), "error");
+      });
+    }, {signal: state.listenerController.signal});
+    muteAction.addEventListener("click", () => {
+      controller.close();
+      void store().setMuted(entry.key, !entry.muted).catch(error => {
+        window.PortalUI.toast(error.message || window.PortalI18n.t("设置消息免打扰失败"), "error");
       });
     }, {signal: state.listenerController.signal});
     controller.open({point});
@@ -776,7 +790,7 @@
           const gesture = {x: event.clientX, y: event.clientY, timer: 0};
           gesture.timer = window.setTimeout(() => {
             state.suppressEntryClickUntil = performance.now() + 800;
-            openPinMenu(button, {x: gesture.x, y: gesture.y});
+            openConversationMenu(button, {x: gesture.x, y: gesture.y});
           }, 550);
           state.longPress = gesture;
         }
@@ -792,12 +806,12 @@
       const button = event.target.closest("[data-agent-conversation-key]");
       if (!button || isNotification(store()?.entry?.(button.dataset.agentConversationKey))) return;
       event.preventDefault();
-      openPinMenu(button, {x: event.clientX, y: event.clientY});
+      openConversationMenu(button, {x: event.clientX, y: event.clientY});
     }, {signal});
     root.addEventListener("keydown", event => {
       if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
         const button = event.target.closest("[data-agent-conversation-key]");
-        if (button) { event.preventDefault(); openPinMenu(button); }
+        if (button) { event.preventDefault(); openConversationMenu(button); }
         return;
       }
       if (event.key === "Escape") {
@@ -837,7 +851,7 @@
       if (!trigger) return;
       state.activePanel = trigger.matches("[data-personal-assistant-trigger]") ? "assistant" : "mailbox";
       state.hovered = true;
-      closePinMenu();
+      closeConversationMenu();
       updateChrome();
     }, { signal });
     root.addEventListener("pointerleave", () => { state.hovered = false; updateChrome(); }, { signal });
@@ -860,7 +874,7 @@
         state.touchExpanded = false;
         state.hovered = false;
         state.focused = false;
-        closePinMenu();
+        closeConversationMenu();
         mobileClose.blur();
         updateChrome();
         return;
@@ -884,7 +898,7 @@
       const filterButton = event.target.closest("[data-agent-inbox-filter]");
       if (filterButton) {
         state.filter = filterButton.dataset.agentInboxFilter;
-        closePinMenu();
+        closeConversationMenu();
         window.PortalState?.write?.(POSITION_PAGE, "device", {section: state.filter, ...(Number.isFinite(state.verticalRatio) ? {verticalRatio: state.verticalRatio} : {})});
         renderList();
         return;
@@ -919,7 +933,7 @@
     todoPanel?.destroy();
     todoPanel = null;
     store()?.setInboxOpen?.(false);
-    closePinMenu();
+    closeConversationMenu();
     cancelLongPress();
     if (notificationDetail) {
       notificationDetail.controller.close({ force: true });

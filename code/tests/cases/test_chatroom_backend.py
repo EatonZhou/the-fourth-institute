@@ -934,3 +934,28 @@ def test_search_residents_lists_visible_residents_and_whether_the_caller_can_sen
     assert reads == [[reader, "resident_000000000001", hidden, "resident_0000000000ff"]]
     assert resident_protocol.search_residents(BOB)["residents"] == []
     assert "SearchResidents" in HANDLERS
+
+
+def test_mailbox_mute_uses_chatroom_owner_and_preserves_mentions(lineage, monkeypatch):
+    """Mailbox and Chatroom settings share member mute, read positions, and the @ exception."""
+    from management_portal import web_isa, agent_conversation_index_backend as index, conversation_read_state
+    chatroom_id = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
+    key = "chatroom:" + chatroom_id
+    monkeypatch.setattr(web_isa, "_inbox_entry", lambda actor, exact: next((entry for entry in index.decorate_entries(
+        chatroom_backend.inbox_entries(actor), conversation_read_state.load(actor))["entries"] if entry["key"] == exact), None))
+    monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
+        _forget_cached_inbox=lambda *_: None, _publish_conversation_read_changes=lambda *a, **kw: None))
+    args = {"key": key, "muted": True}
+    chatroom_backend.mark_read(BOB, chatroom_id)
+    chatroom_backend.post_message(ALICE, chatroom_id, text("first"))
+    result = web_isa.mute_inbox_item(SimpleNamespace(caller=BOB, argument=args.get))["item"]
+    assert result["muted"] and result["unread"] and not result["attention_unread"]
+    chatroom_backend.post_message(ALICE, chatroom_id, text("still delivered"))
+    assert chatroom_backend.get_chatroom(BOB, chatroom_id)["muted"]
+    assert not chatroom_backend.get_chatroom(ALICE, chatroom_id)["muted"]
+    chatroom_backend.post_message(ALICE, chatroom_id, text("@bob please check"))
+    state = chatroom_backend.get_chatroom(BOB, chatroom_id)
+    assert state["unread_count"] == 3 and state["attention_unread"]
+    args["muted"] = False
+    result = web_isa.mute_inbox_item(SimpleNamespace(caller=BOB, argument=args.get))["item"]
+    assert not result["muted"] and result["unread_count"] == 3

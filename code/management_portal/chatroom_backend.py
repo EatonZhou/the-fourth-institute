@@ -420,10 +420,15 @@ def _mailbox_set_unread(actor: object, chatroom_id: object, unread: bool, *, exp
     return {"unread": room["unread_count"] > 0, "read_revision": room["read_revision"]}
 
 
+def _mailbox_set_muted(actor: str, chatroom_id: str, muted: bool):
+    return update_chatroom(actor, chatroom_id, muted=muted)
+
+
 # A Chatroom is a conversation in its members' Mailboxes and moves their read
 # positions itself, in their member rows.
 MAILBOX_SOURCE = MailboxSource(INBOX_KEY_PREFIX, inbox_entries, conversation=True,
-                               set_unread=_mailbox_set_unread, contains=in_mailbox)
+                               set_unread=_mailbox_set_unread, contains=in_mailbox,
+                               set_muted=_mailbox_set_muted)
 
 
 # -- record transactions -----------------------------------------------------------

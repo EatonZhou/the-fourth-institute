@@ -160,6 +160,28 @@ def pin_inbox_item(inv: Invocation) -> dict[str, Any]:
     return {"item": _inbox_entry(inv.caller, key) or {}}
 
 
+def mute_inbox_item(inv: Invocation) -> dict[str, Any]:
+    from management_portal import conversation_read_state, agent_conversation_index_backend, mailbox_sources
+
+    key = str(inv.argument("key") or "")
+    entry = _inbox_entry(inv.caller, key)
+    if entry is None:
+        raise not_found(f"Mailbox 条目不存在：{key}")
+    if agent_conversation_index_backend.section_of(entry) != "conversation":
+        raise invalid("只有对话可以设置消息免打扰")
+    muted = inv.argument("muted")
+    if not isinstance(muted, bool):
+        raise invalid("muted 必须是布尔值")
+    source = mailbox_sources.source_of(key)
+    if source and source.set_muted:
+        source.set_muted(inv.caller, key.removeprefix(source.prefix), muted)
+    else:
+        conversation_read_state.set_muted(inv.caller, key, muted)
+    web("web_read_caches")._forget_cached_inbox(inv.caller)
+    web("web_inbox")._publish_conversation_read_changes(inv.caller, {key}, bulk=True)
+    return {"item": _inbox_entry(inv.caller, key) or {}}
+
+
 def inbox_change_keys(payload: dict[str, Any]) -> tuple[list[str], bool]:
     """Interpret the same authorized change payload consumed by the browser."""
     keys = {
@@ -643,6 +665,7 @@ HANDLERS = {
     "RevokeUserAccessToken": user_access_token,
     "GetMailbox": get_user_mailbox,
     "PinMailboxItem": pin_inbox_item,
+    "MuteMailboxItem": mute_inbox_item,
     "MarkMailboxItemRead": mark_inbox_item_read,
     "ClearMailbox": clear_user_mailbox,
     "ListUsers": list_users,

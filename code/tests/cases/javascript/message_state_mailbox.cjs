@@ -15,7 +15,7 @@ const payload = { entries: Array.from({ length: 18 }, (_, index) => ({
   section: 'conversation', unread: false, pinned: false, updated_at: '2026-10-15T00:00:00Z', read_revision: 0,
 })), content_signature: 'loaded', ready: true, unread_count: 0, next_page_token: 'next' };
 
-function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, transform = (_name, source) => source } = {}) {
+function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, execute, transform = (_name, source) => source } = {}) {
   const errors = [], reads = [], responses = [], readAttempts = [], receipts = [];
   const virtualConsole = new VirtualConsole();
   virtualConsole.on('jsdomError', error => errors.push(error.message));
@@ -64,6 +64,7 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, t
     return response instanceof Error ? Promise.reject(response) : Promise.resolve(response);
   } };
   window.PortalInstructionClient = { execute: async (instruction, args) => {
+    if (instruction === 'MuteMailboxItem' && execute) return execute(instruction, args);
     if (instruction === 'ClearMailbox' && clearResult) {
       assert.deepEqual({ ...args }, { user_id: 'playwright', mode: 'unread' });
       return clearResult;
@@ -75,7 +76,7 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, t
   if (cachedSnapshot) window.localStorage.setItem('tfi.portal.conversations.v7:playwright', JSON.stringify(cachedSnapshot));
   try {
     for (const name of ['portal_state.js', 'portal_text.js', 'portal_ui_primitives.js',
-      'portal_refresh_coordinator.js', 'resident_protocol.js', 'portal_conversation_store.js',
+      'portal_overlay.js', 'portal_refresh_coordinator.js', 'resident_protocol.js', 'portal_conversation_store.js',
       'portal_mailbox_todos.js', 'portal_agent_inbox.js']) {
       window.eval(transform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);
     }
@@ -87,7 +88,7 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, t
     assert.ok(root, 'production mount creates the actual Inbox');
     const banner = root.querySelector('[data-agent-conversation-error]');
     return { window, root, reads, banner, readAttempts, receipts,
-      queue: value => responses.push(value),
+      queue: value => responses.push(value instanceof Error ? value : JSON.parse(JSON.stringify(value))),
       rows: () => [...root.querySelectorAll('[data-agent-conversation-key]')],
       store: window.PortalConversationStore,
       refresh: () => window.PortalAgentInbox.refresh(),
@@ -129,6 +130,71 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, t
 }
 
 const checks = {
+  async 'conversation-mute'() {
+    const original = { ...payload.entries[0], unread: true, muted: false, attention_unread: true, read_revision: 10 };
+    const calls = [], warnings = [];
+    let result = { ...original, muted: true, attention_unread: false, read_revision: 11 };
+    const app = mailbox({ connected: true, execute: async (name, args) => {
+      calls.push({ name, ...args });
+      if (result instanceof Error) throw result;
+      return { item: result };
+    } });
+    try {
+      app.window.PortalUI = { toast: message => warnings.push(message) };
+      app.queue({ ...payload, entries: [original], next_page_token: '', mailbox_summary: { entries: [original] } });
+      await app.advance(300);
+      assert.equal(app.store.snapshot().unreadCount, 1);
+      const openMenu = () => app.rows()[0].dispatchEvent(new app.window.MouseEvent('contextmenu', { bubbles: true }));
+      openMenu();
+      const toggle = () => app.window.document.querySelector('[data-agent-inbox-mute]');
+      assert.equal(toggle().textContent.trim(), '消息免打扰');
+      toggle().click(); await app.advance(20);
+      assert.deepEqual(calls, [{ name: 'MuteMailboxItem', key: original.key, muted: true }]);
+      assert.equal(app.store.snapshot().unreadCount, 0);
+      assert.equal(app.store.entry(original.key).unread, true);
+      assert.ok(app.rows()[0].querySelector('[aria-label="消息免打扰"]'));
+      assert.ok(app.rows()[0].querySelector('.portalAgentInboxUnreadDot.is-muted'));
+      assert.equal(app.rows()[0].classList.contains('unread'), false);
+      // Older in-flight snapshots cannot undo a committed mute.
+      app.queue({ ...payload, content_signature: 'older-mute-snapshot', entries: [original], next_page_token: '' });
+      await app.refresh();
+      assert.equal(app.store.snapshot().unreadCount, 0);
+      assert.equal(app.store.snapshot().entries[0].muted, true);
+      openMenu();
+      assert.equal(toggle().textContent.trim(), '关闭消息免打扰');
+      result = new Error('mute service unavailable');
+      toggle().click(); await app.advance(20);
+      assert.deepEqual(warnings, ['mute service unavailable']);
+      assert.equal(app.store.snapshot().entries[0].muted, true);
+      result = { ...original, muted: false, attention_unread: true, read_revision: 12 };
+      openMenu(); toggle().click(); await app.advance(20);
+      assert.equal(app.store.snapshot().unreadCount, 1, 'unmute immediately restores existing unread attention');
+      assert.equal(app.store.entry(original.key).unread, true);
+      assert.equal(app.rows()[0].querySelector('[aria-label="消息免打扰"]'), null);
+      // A replayed ISA receipt contains only retained flags; fetch current state.
+      result = { muted: true, unread: true, attention_unread: false };
+      app.queue({ ...payload, content_signature: 'mute-replay-read', entries: [
+        { ...original, muted: true, attention_unread: false, read_revision: 13 },
+      ], next_page_token: '' });
+      openMenu(); toggle().click(); await app.advance(20);
+      assert.equal(app.store.snapshot().unreadCount, 0);
+      assert.equal(app.store.snapshot().entries[0].muted, true);
+    } finally { await app.close(); }
+    // A fresh browser receives persisted mute from the server, with no local storage.
+    const fresh = mailbox({ connected: true });
+    try {
+      const muted = { ...original, muted: true, attention_unread: false, read_revision: 13 };
+      fresh.queue({ ...payload, entries: [muted], next_page_token: '', mailbox_summary: { entries: [] } });
+      await fresh.advance(300);
+      assert.equal(fresh.store.snapshot().unreadCount, 0);
+      assert.ok(fresh.rows()[0].querySelector('[aria-label="消息免打扰"]'));
+      const room = { key: 'chatroom:room', kind: 'chatroom', unread: true, muted: true,
+        unread_count: 2, unread_mention_count: 1, attention_unread: true, read_revision: 14 };
+      fresh.queue({ ...payload, entries: [muted, room], next_page_token: '' });
+      await fresh.refresh();
+      assert.equal(fresh.store.snapshot().unreadCount, 1, 'a muted Chatroom mention still needs attention');
+    } finally { await fresh.close(); }
+  },
   async 'clear-reconciles-obsolete-sources'() {
     const notice = { key: 'lineage-notification:lineage_aaaaaaaaaaaa:old', kind: 'lineage-notification',
       title: 'Old notice', section: 'notification', unread: true, read_revision: 10,

@@ -801,3 +801,6 @@
     transition: none;
   }
 }
+
+/* Muted conversations retain a quiet, visible unread marker. */
+.portalAgentInboxUnreadDot.is-muted { background: var(--muted, #64748b); box-shadow: none; }

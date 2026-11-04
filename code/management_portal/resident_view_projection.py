@@ -10,5 +10,5 @@ def attach_viewer_state(items: list[dict], actor: str) -> list[dict]:
     rows = conversation_read_state.read_rows(actor, ["resident:" + item["resident_id"] for item in items])
     for item in items:
         row = rows.get("resident:" + item["resident_id"]) or {}
-        item["viewer_state"] = {"unread": bool(row.get("unread")), "read_revision": int(row.get("read_revision") or 0)}
+        item["viewer_state"] = {"unread": bool(row.get("unread")), "muted": bool(row.get("muted")), "read_revision": int(row.get("read_revision") or 0)}
     return items

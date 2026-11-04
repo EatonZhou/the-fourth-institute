@@ -1220,6 +1220,10 @@
       "a": "@free",
       "r": "@portal"
     },
+    "MuteMailboxItem": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "PinMailboxItem": {
       "a": "@free",
       "r": "@portal"

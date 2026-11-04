@@ -65,6 +65,11 @@ def alert(actors: Iterable[object], key: str, ref: str) -> list[str]:
         return store.alert(connection, actors, key, ref)
 
 
+def set_muted(actor: str, key: str, muted: bool) -> dict[str, Any]:
+    with _transaction(actor) as connection:
+        return store.set_muted(connection, actor, key, muted)
+
+
 def set_pinned(actor: str, key: str, pinned: bool) -> dict[str, Any] | None:
     with _transaction(actor) as connection:
         return store.set_pinned(connection, actor, key, pinned)

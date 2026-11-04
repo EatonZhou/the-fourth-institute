@@ -34,7 +34,7 @@ from management_common.domain_database import DomainDatabase
 MAX_PINNED_ITEMS = 50
 # Named columns: a column added online must not change the result type of a
 # statement other processes have already prepared.
-_FIELDS = "conversation_key, alert_position, read_position, dismissed_through, pin_position, revision"
+_FIELDS = "conversation_key, alert_position, read_position, dismissed_through, pin_position, revision, muted"
 # Every process runs the DDL on its first use. CREATE INDEX IF NOT EXISTS and
 # ADD COLUMN IF NOT EXISTS lock the table even when nothing is missing, and
 # wait behind any open transaction that wrote to it, with readers queued
@@ -91,10 +91,11 @@ def _names() -> tuple[str, str]:
 
 def _state(row: Any) -> dict[str, Any]:
     if row is None:
-        return {'unread': False, 'pinned': False, 'read_revision': 0, 'dismissed_through': ''}
+        return {'unread': False, 'pinned': False, 'muted': False, 'read_revision': 0, 'dismissed_through': ''}
     return {
         'unread': int(row['alert_position']) > int(row['read_position']),
         'pinned': row['pin_position'] is not None,
+        'muted': bool(row['muted']),
         'read_revision': int(row['revision']),
         'dismissed_through': iso_time(row['dismissed_through']) or '',
         'pin_position': row['pin_position'],
@@ -264,6 +265,24 @@ def dismiss(connection, actor, activity: dict[str, object]) -> dict[str, dict[st
         if row is not None:
             changed[key] = _state(row)
     return changed
+
+
+def set_muted(connection, actor, key: str, muted: bool) -> dict[str, Any]:
+    """Change this viewer's reminder preference without advancing their read position."""
+    states, sequence = _names()
+    viewer = actor_key(actor)
+    current = _locked(connection, states, viewer, key)
+    if _state(current)['muted'] == muted:
+        return _state(current)
+    row = connection.execute(
+        f'''INSERT INTO {states} AS current (actor, conversation_key, muted, revision)
+            VALUES (%s, %s, %s, nextval('{sequence}'))
+            ON CONFLICT (actor, conversation_key) DO UPDATE SET
+                muted=EXCLUDED.muted, revision=EXCLUDED.revision
+            RETURNING {_FIELDS}''',
+        (viewer, key, muted),
+    ).fetchone()
+    return _state(row)
 
 
 def set_pinned(connection, actor, key: str, pinned: bool) -> dict[str, Any] | None:
