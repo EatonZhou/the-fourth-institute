@@ -142,6 +142,8 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
         direct = family_facade.direct_member(facade, message)
         if direct:
             return family_quota.relay_message(facade_id, mid, direct, actor)
+        from . import family_continuation
+        facts['previous_round'] = family_continuation.previous_round(facade, message)
         facts['routing']['members'] = family_chat_preferences.allowed(facade, policy)
         facts['routing']['chat_preferences'] = policy
         facts['routing']['constraint'] += ' Solo/Mute 是原发送者的路由约束，不能自动选择被排除的成员。'

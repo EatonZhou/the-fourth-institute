@@ -56,6 +56,31 @@ def _serve_authorized_resource_file(
     content_type: str,
     download: bool,
 ) -> None:
+    response, headers, chunks = authorized_resource_response(
+        handler, resource_service=resource_service, address=address, actor=actor,
+        resolved=resolved, content_type=content_type, download=download,
+    )
+    handler.send_response(response.status)
+    for name, value in headers.items():
+        handler.send_header(name, value)
+    handler.end_headers()
+    if not http_responses._response_body_allowed(handler):
+        return
+    try:
+        for chunk in chunks:
+            handler.wfile.write(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        return
+
+
+def authorized_resource_response(
+    handler, *, resource_service, address, actor, resolved, content_type, download=False,
+):
+    """Prepare headers and a bounded, authorized byte stream for either HTTP transport.
+
+    The first range is read before headers are sent so permission and missing-file
+    errors retain their status. Subsequent ranges recheck the same file metadata.
+    """
     size = resolved.get("content_size")
     mtime_ns = resolved.get("content_mtime_ns")
     if type(size) is not int or size < 0 or type(mtime_ns) is not int or mtime_ns < 0:
@@ -65,9 +90,13 @@ def _serve_authorized_resource_file(
     # browser-safe media display inline, everything else downloads.
     safe_headers = {"X-Content-Type-Options": "nosniff", "Content-Security-Policy": "sandbox"}
     inline = content_type == "application/pdf" or content_type.startswith(("image/", "audio/", "video/"))
+    headers = response.header_values(
+        content_type,
+        content_disposition=_download_content_disposition(resolved.get("filename")) if download or not inline else "",
+        extra_headers=safe_headers,
+    )
     if response.status in {304, 416}:
-        response.send_headers(handler, content_type, extra_headers=safe_headers)
-        return
+        return response, headers, iter(())
     chunk_size = 1024 * 1024
 
     def read_chunk(chunk_start: int, chunk_end: int) -> bytes:
@@ -90,26 +119,15 @@ def _serve_authorized_resource_file(
 
     first_end = min(response.end, response.start + chunk_size - 1)
     first_chunk = read_chunk(response.start, first_end) if response.length else b""
-    response.send_headers(
-        handler,
-        content_type,
-        content_disposition=(
-            _download_content_disposition(resolved.get("filename")) if download or not inline else ""
-        ),
-        extra_headers=safe_headers,
-    )
-    if not http_responses._response_body_allowed(handler):
-        return
-    try:
+    def chunks():
         if first_chunk:
-            handler.wfile.write(first_chunk)
+            yield first_chunk
         offset = first_end + 1
         while offset <= response.end:
             chunk_end = min(response.end, offset + chunk_size - 1)
-            handler.wfile.write(read_chunk(offset, chunk_end))
+            yield read_chunk(offset, chunk_end)
             offset = chunk_end + 1
-    except (BrokenPipeError, ConnectionResetError):
-        return
+    return response, headers, chunks()
 
 
 def _download_content_disposition(filename: object) -> str:

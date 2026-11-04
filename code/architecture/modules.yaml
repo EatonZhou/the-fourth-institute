@@ -142,6 +142,9 @@ features:
   - id: "telepus"
     title: "Telepus"
     modules: ["web.community"]
+  - id: "home_report"
+    title: "Persistent Reports"
+    modules: ["web.projections", "resources.types", "delivery.services"]
 modules:
   - id: "interface"
     title: "浏览器前端"
@@ -738,6 +741,7 @@ modules:
       - "management_portal/execution/execution_*.py"
       - "management_portal/execution/account*.py"
       - "management_portal/execution/accounts.py"
+      - "management_common/provider_account_paths.py"
       - "management_portal/execution/provider_usage_events.py"
       - "management_portal/execution/provider_failures.py"
       - "management_portal/execution/request_timing.py"
@@ -828,6 +832,7 @@ modules:
       - "management_portal/agent_token_auth.py"
       - "scripts/resident_browser.cjs"
       - "scripts/resident_browser_stream.cjs"
+      - "scripts/resident_browser_files.cjs"
       - "management_portal/manage_agent_tokens.py"
       - "management_portal/portal_access_control.py"
       - "management_portal/resident_avatar.py"
@@ -1350,6 +1355,7 @@ modules:
   - id: "web.projections"
     designs:
       - "decision_bd179998ba08"
+      - "decision_e3ced6d30f6b"
     instruction_owners: []
     title: "页面与工作台宿主"
     layer: "entry"
@@ -1362,6 +1368,11 @@ modules:
       - "management_portal/home_report.py"
       - "management_portal/home_report_http.py"
       - "management_portal/home_report_media.py"
+      - "management_portal/home_report_reasoning.py"
+      - "management_portal/home_report_visual.py"
+      - "management_portal/home_report_store.py"
+      - "management_portal/home_report_exports.py"
+      - "management_portal/home_report_persistent_media.py"
       - "management_portal/conversation_*.py"
       - "management_portal/local_terminal_backend.py"
       - "management_portal/resident_workspace_*.py"
@@ -1377,7 +1388,7 @@ modules:
       - "management_portal/watchboards/commands.py"
       - "management_portal/watchboards/service.py"
       - "management_portal/http_ui_state.py"
-    responsibility: "提供页面引导、投影资源白名单、反馈与焦点宿主，保存 UI 配置并代理资源和团队调用；按当前主体经领域读取生成带来源和版本的 Home 汇报及派生媒体，重开时重新核对访问，业务事实与权限仍由领域拥有。"
+    responsibility: "提供页面引导、投影资源白名单、反馈与焦点宿主，保存 UI 配置并代理资源和团队调用；按当前主体经领域读取生成 Home 汇报，由汇报领域拥有固定版本、消息来源绑定及持久媒体和导出，通过统一资源、权限与目录生命周期接口登记和清理。重开重新核对访问，原业务事实与权限仍由来源领域拥有。"
     parent: "web"
     level: "component"
   - id: "notifications.clients"
@@ -2408,7 +2419,7 @@ protocols:
       - "decision_61e50306cc79"
       - "decision_dca903d71575"
     description: "CreateUpload 返回上传 ID、用途、过期时间与字节通道；服务按 purpose 校验大小、真实媒体类型和归属。Workspace 图片入口另经 workspace_contracts 校验后保存文件；读取端用已授权文件描述与范围参数返回字节。浏览器通过上传文件HTTP DELETE接口移除附件，内部消费者复用文件清理；Resident可直接删除文件，目录维护收敛缺失文件的保留登记，不为删除文件提供HATG指令。已被引用的上传删除后引用失效。Notice Board 图片复用 purpose=post_image，不另造上传库。"
-    example: "CreateUpload(purpose,target,metadata/source_address) → resources.isa 创建句柄 → 上传/校验 → Resource/Workspace 读取；ASGI download → workspace provider.read_content_range → 单一 Range 响应。系统工具直接删除上传文件后，目录维护仅核对 uploads 根下已登记的直接子目录；根身份稳定且目录或 ready 元数据所指内容稳定缺失时，upload_retention 注销保留登记并交原清理队列删除残余文件。未完成上传、变化中元数据、根不可访问或 I/O 错误均保留登记，普通内容编辑不触发生命周期变化；TAU 收尾复用 remove_upload，不再调用删除指令。"
+    example: "CreateUpload 创建句柄 → 上传/校验 → {upload_id}、相对上传地址或本站完整URL → ResourceService/upload_files 检查活跃身份、ready、清理登记与 no-follow 路径 → 文件元数据/有界正文。PortalFileLinks 统一探测与预览，ZIP等无渲染器文件显示元数据与下载；ASGI upload/content 与资源下载共用 Range/条件响应和逐段读取规则。上传句柄不进入根资源索引，普通资源权限保持原契约。系统工具直接删除上传文件后，目录维护仅核对 uploads 根下已登记的直接子目录；根身份稳定且目录或 ready 元数据所指内容稳定缺失时，upload_retention 注销保留登记并交原清理队列删除残余文件。未完成上传、变化中元数据、根不可访问或 I/O 错误均保留登记，普通内容编辑不触发生命周期变化；TAU 收尾复用 remove_upload，不再调用删除指令。"
 
   - id: "home-directory-view"
     title: "Home 目录、公开摘要与运行观察"

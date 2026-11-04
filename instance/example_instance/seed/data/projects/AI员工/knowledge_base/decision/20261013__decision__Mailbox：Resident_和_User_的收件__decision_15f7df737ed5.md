@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 55
+  number: 57
   created_at: "2026-10-12T17:40:00Z"
   created_by:
     user: "ET"
     agent: "resident_0b07d8e39e01"
-  updated_at: "2026-11-02T07:43:37Z"
+  updated_at: "2026-11-04T08:03:10Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -150,6 +150,7 @@ SocietyService 校验并执行整理；ExecutionService 继续负责执行。页
 ### 执行、注入与取消
 
 - **群体项与普通消息使用相同的优先发送、注入和取消操作，另外多一个“拆分”。** 群体消息作为一次输入交给现有处理链，不按成员拆成多轮；这些操作仍受运行状态、Provider 能力和权限约束。
+- **从原消息发起立即注入时，队列 owner 按当前归属选择实际输入。** Family 门面继续使用原请求对应的成员副本 ID；副本已经合并时，在与合并、拆分共用的 Resident 锁内解析当前群体，整组只注入一次。拆分后使用原消息本身，再合并后使用新的群体；不依赖页面缓存的群体 ID。回执标明实际选中的输入 ID，仍执行原有权限、接单状态、停止保护与 Provider 能力检查，取消的输入不会重新开启。
 - **群体项一旦被执行领取，成员和顺序就固定下来。** 之后不能再合并、拆分或调序，进入执行后使用现有的停止操作。
 - **群体结束时，所有成员得到同样的终态和回复。** 执行结束的事实到达时，系统把群体的终态和回复消息 ID 写给每个成员；未完成的终态在成员的错误信息中注明所属群体。在这次写入之前读取成员状态时，按群体当前状态投影：群体在运行，成员显示运行中；群体已结束（拆分除外），成员显示同样的终态和回复。
 - **取消整个群体会一起取消其中尚未处理的成员。** 撤回时移出队列、成员终态与群体终态在同一事务提交。取消群体项的权限与普通排队消息相同，由 CancelInput 在当前权限方案中的要求判定：默认方案要求对目标 Resident 有 `@contributor`。
@@ -256,9 +257,9 @@ Conversation Index（会话索引）是 Mailbox 背后由服务端生成的摘�
 | 条目种类（`kind`） | `resident-main`：用户直接对话过的 Resident；`resident`：从这些 Resident Fork 出、用户也发过消息的 Resident；`chatroom`：用户所在的聊天室（decision_a6bebf4ac283）；`lineage-notification`：发给用户的通知；`notice-board-mention`：Notice Board 帖子或回复中提到了用户。 |
 | 条目类型 | “消息”栏同时展示对话和通知。对话是打开后进入 Chat、可以直接回复的条目：`resident-main`、`resident`、`chatroom`；通知是 `lineage-notification`、`notice-board-mention`。接口的 `section` 仍表示这两种类型，不再对应独立的界面栏。 |
 | 完成签名（`completion_signature`） | Resident 条目最近一次值得提醒的结果的引用，例如 Resident 回复了用户的某条消息、某条消息执行失败或有消息发给用户。它记录发起这次请求的用户、输入消息 ID、结果 ID 和完成时间，`GetMailbox(user_id)` 由它给出 `latest_message_id` 和 `input_message_id`。它不参与已读判断。 |
-| 阅读状态行 | 服务端为每位用户、每个条目保存的一行（Portal UI 的 `conversation_states`）：最新提醒的位置、读到的位置、置顶位置、清除时间和修订号。最新提醒位置大于读到的位置时条目未读；没有行的条目是已读、未置顶。 |
+| 阅读状态行 | 服务端为每位用户、每个条目保存的一行（Portal UI 的 `conversation_states`）：最新提醒的位置、读到的位置、置顶位置、免打扰偏好、清除时间和修订号。最新提醒位置大于读到的位置时条目未读；没有行的条目是已读、未置顶。 |
 | 提醒 | 值得用户注意的新事件把这一行的提醒位置推进到新位置：给他的结果、发给他的消息、发给他的通知、Notice Board 中提到他。提醒同时记下事件的标识，同一事件再次送达不再提醒。 |
-| 修订号（`read_revision`） | 一行每次变化（提醒、已读、未读、置顶、清除）都从同一个序列取得更大的修订号。条目、角标汇总、Resident 状态快照和指令结果都带着它；浏览器只接受比手中更新的状态（decision_18abbdef3da3），`GetMailbox(user_id)` 条目的 `version` 也是它。 |
+| 修订号（`read_revision`） | 一行每次变化（提醒、已读、未读、置顶、免打扰、清除）都从同一个序列取得更大的修订号。条目、角标汇总、Resident 状态快照和指令结果都带着它；浏览器只接受比手中更新的状态（decision_18abbdef3da3），`GetMailbox(user_id)` 条目的 `version` 也是它。 |
 | 清除时间 | 用户“清除全部”时，服务端为每个条目记下它当时的活动时间（`updated_at`）。活动时间不晚于清除时间的条目保持隐藏；出现新活动或新提醒后重新显示。分页读取 Resident 对话时，SocietyService 在读取身份和摘要之前就跳过这些隐藏的对话，每页用仍会显示的对话填满（weihao 有 502 个隐藏对话时，第一页原先只剩 13 条，后面各页为空）。 |
 
 阅读状态行只属于这位用户，只影响他自己的 Mailbox。
@@ -271,6 +272,15 @@ Conversation Index（会话索引）是 Mailbox 背后由服务端生成的摘�
 - **置顶记录在服务端。** 置顶保存在这位用户的阅读状态行中，换设备、换浏览器后保持，远程 agent 读到的也一样。Resident 被删除、用户退出或失去访问权限而条目消失时，它的置顶随之删除。
 - **置顶通过 ISA 指令完成。** `PinMailboxItem`（`key`、`pinned`），由 Portal Web 执行，页面和 Agent 调用同一条指令；`GetMailbox(user_id)` 和 HTTP 读取的条目增加 `section`（`conversation` 或 `notification`）和 `pinned`。
 - **节点 Menu 的图钉固定到 User Mailbox。** Resident Menu 右上角使用「固定在 Mailbox／取消 Mailbox 固定」，与 Mailbox 中的置顶共用 `PinMailboxItem` 和服务端状态；普通 Resident、Family 门面与内部 Resident 都适用。它不再修改收藏导航。尚未交谈或曾清理的可见 Resident 也可以固定：服务端核验访问权限后，把该节点加入消息栏，不伪造消息、不标记已读，也不启动工作。取消固定后，没有对话活动的节点从 Mailbox 移除；已有对话仍按原规则展示。状态读取或修改失败不会伪装为成功；服务暂不可用也不删除已有固定。
+
+### 对话消息免打扰
+
+- User Mailbox「消息」栏的 Resident 对话和聊天室支持消息免打扰。右键、触屏长按或键盘菜单键打开「对话操作」，可开启「消息免打扰」或「关闭消息免打扰」；免打扰会话显示划线铃铛，未读标记用灰色显示。
+- 偏好按当前用户与条目键持久保存在 Portal UI 的同一行 `conversation_states.muted` 中，默认关闭；换浏览器、换设备后保持。`MuteMailboxItem(key, muted)` 只修改调用者自己的对话偏好，与置顶、已读、清除共享 `read_revision`；其他浏览器通过原有 Mailbox 变化通知刷新。
+- `unread` 表示实际是否未读，`attention_unread` 表示是否需要提醒。免打扰 Resident 对话仍接收消息、记录未读、显示运行状态，普通未读不计入入口、消息栏及个人助手入口的提醒角标，也不显示未读高亮。开启免打扰不标记已读、不停止 Resident、不关闭接单、不改变排序；取消后尚未阅读的消息立即重新计入提醒。
+- 聊天室沿用其成员偏好与事务，普通未读不提醒，被 @ 提及仍提醒。聊天室设置与 Mailbox 菜单修改的是同一份偏好。
+- 分页之外的未读汇总同样应用免打扰规则。列表中的原始未读标记仍保留，「清除未读」与正常阅读仍能将其读掉；「清除全部」后再次出现的同一对话仍保留免打扰。
+- 本项控制 User Mailbox 的会话提醒；单向通知、Notice Board @ 提及和 Todo 不提供此开关，不受影响。Family 成员通知静音继续使用其独立规则，本项不替代或修改它。
 
 ### 个人 Todo
 

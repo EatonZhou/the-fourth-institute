@@ -14,7 +14,7 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
       const pending = [], requests = [], selected = [], opened = [];
       window.fetch = (url, options) => {requests.push({url,options});return new Promise(resolve => pending.push(resolve));};
       const reply = (body, status=200) => ({ok:status<400,status,json:async()=>body});
-      const report = title => ({title,goal:'实际来源在服务端核对',target:{kind:'project',id:title},version:title,checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],counts:{'已有回复':1},rows:[{id:'r1',title:'<img src=x onerror=alert(1)>',body:'第一条正文',group:'任务',status:'已有回复',sources:[],open:{view:'map',target:{id:title}}}]});
+      const report = title => ({title,goal:'实际来源在服务端核对',target:{kind:'project',id:title},version:title,checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],reasoning:{available:true,mode:'insufficient',question:'测试来源',assumption:'本地演示',rule:'仅 depends_on',limit:'当前范围',seed:'r1',nodes:[{id:'r1',title:'测试对象',x:.4,y:.5}],edges:[],before:{reached:[],trace:[]},after:{reached:[],trace:[]},unconnected:[]},counts:{'已有回复':1},rows:[{id:'r1',title:'<img src=x onerror=alert(1)>',body:'第一条正文',group:'任务',status:'已有回复',sources:[],open:{view:'map',target:{id:title}}}]});
       const view = PortalHomeReportView.create({root,onOpen:v=>opened.push(v),onSelection:v=>selected.push(v)});
       await view.setPresented(false);
       await view.show({kind:'project',id:'old'},{requestId:'old'});

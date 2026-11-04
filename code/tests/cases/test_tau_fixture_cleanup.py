@@ -111,7 +111,7 @@ def test_workspace_cleanup_requires_allocation_not_only_directory(tmp_path, monk
 
 @pytest.mark.parametrize('resources', [
     [{'resource_id': 'resident_123456789abc', 'deleted': True}],
-    'resident_123456789abc', ['not-a-resource'], [None],
+    'resident_123456789abc', ['bad/path'], [None],
 ])
 def test_invalid_resource_manifest_keeps_files_without_business_mutations(tmp_path, monkeypatch, resources):
     """资源清单格式非法时清理报错，保留文件且不做业务删除"""
@@ -121,7 +121,7 @@ def test_invalid_resource_manifest_keeps_files_without_business_mutations(tmp_pa
     sample.mkdir()
     (sample / 'data.txt').write_text('retain for cleanup')
     monkeypatch.setattr(wall, 'projects', lambda actor: pytest.fail('Invalid manifest reached business cleanup'))
-    with pytest.raises(ValueError, match='正式资源 ID 字符串数组'):
+    with pytest.raises(ValueError, match='资源或 Project ID 字符串数组'):
         tau_fixtures.cleanup(tmp_path)
     assert (sample / 'data.txt').exists()
     assert json.loads((tmp_path / 'test-fixtures.json').read_text()) == manifest

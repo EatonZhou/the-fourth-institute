@@ -50,6 +50,9 @@ DECLARATIONS = (
         P("member_id", description="Router 选中的成员；带 scope_gap 时为最接近的成员；steward 安排时为它选定的成员（可以是刚新建的）；改派时为新成员；"
           "组织请求或引用 Steward 消息的回复可选择本 Family Steward，不能选择其他 Family 的角色；notice=true 时不填，其余情况必填"),
         P("notice", "boolean", "Router 判断原消息只是告知、无需成员行动时设 true，由门面收下"),
+        P("continue_previous", "boolean", "仅当前请求明确依赖同一发送者上一轮 previous_round 时设 true；默认 false，证据不足按独立任务。"
+          "不追溯更早历史，不因同一成员、相邻或相似话题判定延续；换成员执行仍可 true。平台保存正判并附可信上一轮背景，"
+          "后续恢复、职责安排与额度放行的缺省 false 不清除已冻结正判；不能与 notice 或 reassign 同用"),
         P("quota_reviewed", "boolean", "仅本 Family steward 可设 true，表示已判断任务强度或完成迁移"),
         P("scope_gap", description="Router 判断没有成员的职责覆盖这条请求时写明缺少的职责；请求留在门面等 steward 安排"),
         P("scope_reviewed", "boolean", "本 Family steward 安排好成员（新建或最接近的成员）后设 true，转交等它安排的请求"),

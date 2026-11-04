@@ -16,7 +16,8 @@
   function normalizeComposerAttachment(item, index = 0) {
     if (!item || typeof item !== "object") return null;
     const fileId = String(item.file_id || "").trim();
-    const path = String(item.path || item.url || "").trim();
+    const upload = window.PortalFileLinks?.describe(item.file_reference || { upload_id: item.upload_id });
+    const path = upload?.path || String(item.path || item.url || "").trim();
     const dataUrl = String(item.data_url || "").trim();
     const previewUrl = String(item.preview_url || dataUrl || item.url || "").trim();
     const contentType = String(item.content_type || item.mime || "").trim();
@@ -27,6 +28,7 @@
       ...item,
       id,
       file_id: fileId,
+      ...(upload ? { upload_id: upload.file_reference.upload_id, file_reference: upload.file_reference } : {}),
       kind,
       name: String(item.name || item.filename || (kind === "image" ? window.PortalI18n.t("pasted image") : "attachment")),
       path,
@@ -683,6 +685,12 @@
     });
     input.addEventListener("keydown", event => {
       if (isComposerImeActive(input, event)) return;
+      if (event.altKey && !event.metaKey && !event.ctrlKey && !event.shiftKey
+          && (event.key === "ArrowUp" || event.key === "ArrowDown") && currentOptions().onNavigateUserMessage) {
+        event.preventDefault();
+        currentOptions().onNavigateUserMessage(event.key === "ArrowUp" ? -1 : 1);
+        return;
+      }
       if (currentOptions().onBeforeKeydown?.(event)) return;
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && String(event.key || "").toLowerCase() === "z") {
         if (currentOptions().onUndo?.(event)) {
@@ -710,9 +718,13 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceComposer is missing: ${missing.join(", ")}`);
     const {
-      attachmentKind, attachmentPreviewUrl, bindImagePreview, bindResourceChips, escapeHtml,
+      attachmentKind, attachmentPreviewUrl, bindImagePreview: bindImages, bindResourceChips, escapeHtml,
       messageAvatarPlaceholderHtml,
     } = dependencies;
+    const bindImagePreview = (root, options = {}) => {
+      bindImages(root, options);
+      window.PortalFileLinks?.bind(root, { source: "chat", onOpen: options.onLinkPreview });
+    };
 
     function inputMediaPayload(items) {
       return normalizeComposerAttachments(items)
@@ -762,7 +774,12 @@
       const media = preview && kind === "image"
         ? window.PortalI18n.html`<img class="${options.thumbClass || "composerImageRefThumb"}" src="${escapeHtml(preview)}" alt="" />`
         : window.PortalI18n.html`<span class="${options.iconClass || "composerFileRefIcon"}">${kind === "file" ? "F" : "I"}</span>`;
-      span.innerHTML = window.PortalI18n.html`${media}<span class="${options.labelClass || "composerImageRefLabel"}">${escapeHtml(label)}</span><button class="${options.removeClass || "composerImageRefRemove"}" type="button" data-remove-portal-composer-attachment="${escapeHtml(id)}" aria-label="移除附件" data-portal-icon="close"></button>`;
+      const file = kind === "file" && !item.uploading && !item.error && !previewRef
+        ? window.PortalFileLinks?.describe(item.path) : null;
+      const labelHtml = file
+        ? `<button type="button" class="${options.labelClass || "composerImageRefLabel"}" data-portal-file-path="${escapeHtml(file.path)}">${escapeHtml(label)}</button>`
+        : `<span class="${options.labelClass || "composerImageRefLabel"}">${escapeHtml(label)}</span>`;
+      span.innerHTML = window.PortalI18n.html`${media}${labelHtml}<button class="${options.removeClass || "composerImageRefRemove"}" type="button" data-remove-portal-composer-attachment="${escapeHtml(id)}" aria-label="移除附件" data-portal-icon="close"></button>`;
       return span;
     }
 
@@ -938,8 +955,10 @@
         const preview = attachmentPreviewUrl(item);
         const progress = Math.max(0, Math.min(100, Number(item?.progress || 0)));
         const status = item?.error || (item?.uploading ? `上传中 ${Math.round(progress)}%` : (item?.path || item?.name || ""));
+        const file = kind === "file" && !item.uploading && !item.error ? window.PortalFileLinks?.describe(item.path) : null;
         const media = preview && kind === "image"
           ? window.PortalI18n.html`<button class="composerImageChipPreview" type="button" data-portal-preview-image="${escapeHtml(preview)}" title="${escapeHtml(item?.name || "image")}" aria-label="放大图片"><img class="composerImageThumb" src="${escapeHtml(preview)}" alt="" /></button>`
+          : file ? `<button type="button" class="composerFileThumb" data-portal-file-path="${escapeHtml(file.path)}" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</button>`
           : window.PortalI18n.html`<span class="composerFileThumb">${kind === "file" ? window.PortalI18n.t("文件") : window.PortalI18n.t("图片")}</span>`;
         return window.PortalI18n.html`<div class="composerImageChip ${item?.uploading ? "uploading" : ""} ${item?.error ? "error" : ""}" data-portal-composer-attachment-id="${escapeHtml(id)}" ${item?.path ? `data-portal-attachment-path="${escapeHtml(item.path)}"` : ""} title="${escapeHtml(status)}">
         ${media}

@@ -241,7 +241,7 @@
   // A draft restored after a reload keeps its upload but not the page's own
   // blob preview, so an uploaded attachment falls back to the upload itself.
   function attachmentPreviewUrl(item) {
-    return String(item?.preview_url || item?.data_url || item?.url || "").trim() || mediaPartPath({ upload_id: item?.upload_id });
+    return String(item?.preview_url || item?.data_url || item?.url || "").trim() || mediaPartPath(item);
   }
 
   function attachmentKind(item) {
@@ -252,10 +252,10 @@
   }
 
   function mediaPartPath(part) {
+    const upload = window.PortalFileLinks?.describe(part?.file_reference || { upload_id: part?.upload_id });
+    if (upload) return upload.path;
     const source = String(part?.source || part?.path || part?.url || "").trim();
-    if (source) return source;
-    const uploadId = String(part?.upload_id || "").trim();
-    return /^upload_[0-9a-f]+$/.test(uploadId) ? `/api/uploads/${uploadId}` : "";
+    return window.PortalFileLinks?.describe(source)?.path || source;
   }
 
   function createMessageContent(dependencies) {
@@ -541,7 +541,10 @@
             : messageAttachmentRefHtml("file", ref.path, { ...options, label: referenceAttachmentLabel(path), title }));
       });
       const attachedRefs = options.includeAttachedFiles === false ? [] : extractAttachedFileRefs(source);
-      source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "").trim();
+      source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "");
+      // Semantic fence extensions need the original indentation: trimming an
+      // indented example would otherwise turn it into a standalone action.
+      if (!options.preserveWhitespace) source = source.trim();
       for (const ref of attachedRefs) {
         const token = stashAttachmentRef(messageAttachmentRefHtml(ref.kind, ref.path, options));
         source = `${source}${source ? "\n\n" : ""}${token}`;

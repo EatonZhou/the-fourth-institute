@@ -13,7 +13,7 @@ DECLARATIONS = tuple(D(
     result=(R('workspace_id', description='稳定 Workspace ID'), R('resource', 'object', 'Workspace 记录')),
 ) for name, description in (
     ('CreateWorkspace', '在空位置创建由 Portal 管理的 Workspace，随所属对象删除。'),
-    ('RegisterWorkspace', '将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。'),
+    ('RegisterWorkspace', '将现成目录登记为新的 Workspace，按归属管理；注销时清理其拥有的目录和文件，目录内的嵌套登记一并注销。'),
 )) + (D(
     name='GetDirectoryCleanup', category='resource', owner='resource', decides=FIXED,
     description='查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。',

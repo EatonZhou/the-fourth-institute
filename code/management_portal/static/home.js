@@ -679,7 +679,11 @@ window.PortalHome = Object.freeze({
 
 setScheduledTriggeredTarget(homeRoute.scheduledTriggeredId);
 window.PortalHome.mount();
-window.addEventListener("pagehide", () => window.PortalHome.destroy());
+// BFCache retains this document and its component instances. Only a final
+// unload disposes them; restoring the cached page must not clear view history.
+window.addEventListener("pagehide", event => {
+  if (!event.persisted) window.PortalHome.destroy();
+});
 window.addEventListener("pageshow", event => {
   if (event.persisted) window.PortalHome.mount();
 });

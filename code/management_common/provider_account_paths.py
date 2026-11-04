@@ -30,6 +30,19 @@ def runtime_root() -> Path:
     return portal_paths.path('runtime') / 'provider-accounts'
 
 
+def default_account_directory_prefix(provider: str) -> str:
+    """Host paths for new subscriptions, projected from this instance's storage."""
+    from .instance_manifest import current_instance
+    # Credentials outlive registration and instance retirement; keep defaults
+    # outside disposable instance areas, with an explicit per-instance scope.
+    root = Path.home() / '.tfi-provider-accounts' / validate_identity(current_instance().instance_id) / validate_identity(provider)
+    return str(root.resolve()) + os.sep
+
+
+def default_account_directory(provider: str, account_id: str) -> str:
+    return default_account_directory_prefix(provider) + validate_identity(account_id)
+
+
 def account_runtime(provider: str, account_id: str) -> Path:
     return runtime_root() / validate_identity(provider) / validate_identity(account_id)
 
@@ -43,7 +56,7 @@ def registered_home(row: dict) -> Path:
 
 
 def prepare_registration_directory(data: dict) -> Path | None:
-    """Use the host directory explicitly selected by the registering user."""
+    """Create or reuse the resolved host directory for the new registration."""
     if data["kind"] != "subscription_login":
         return
     config = dict(data.get("config", {}))

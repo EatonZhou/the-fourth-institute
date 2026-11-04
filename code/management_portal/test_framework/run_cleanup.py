@@ -31,24 +31,19 @@ def finish_run(run_id):
 
 
 def _finish_run(store, run_id):
-    from .tau_fixtures import _release_resource
-    from management_portal.resources.upload_files import remove_upload
+    from .tau_fixtures import _release_resource, resource_release_order
     from management_common.directory_retention import RetentionStore
     from management_portal.resources.creation import finish_scope_creations
 
     released, errors, completed_scopes = [], [], []
     creation_errors = []
     def release_scope(scope):
-        resources = sorted(store.pending(scope['id']), key=lambda rid:
-                           {'project': 0, 'lineage': 1, 'resident': 2, 'workspace': 4}.get(rid.partition('_')[0], 3))
+        resources = sorted(store.pending(scope['id']), key=resource_release_order)
         failures = []
         for resource_id in resources:
             try:
-                if resource_id.startswith('upload_'):
-                    remove_upload(resource_id)
-                else:
-                    key = f"test-release:{scope['id']}:{resource_id}"
-                    _release_resource(resource_id, key)
+                key = f"test-release:{scope['id']}:{resource_id}"
+                _release_resource(resource_id, key)
                 store.released(scope['id'], resource_id)
                 released.append(resource_id)
             except Exception as error:

@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import uuid
+import pytest
 
 from management_portal.society_service import (
     resident_conversation_stream,
@@ -19,6 +20,7 @@ from management_portal.society_service import (
     resident_domain_common,
     resident_record_domain,
     resident_input_queue_domain,
+    resident_input_recovery,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.execution.agent_data_store import get_agent_data_store
@@ -152,20 +154,23 @@ def test_a_stopped_round_goes_back_first_with_its_infos_and_their_senders(team):
 def test_an_idle_resident_takes_a_failed_round_back_as_its_next_input(team):
     """空闲 Resident 把放回的一轮作为下一项工作
 
-    Resident 空闲时放回失败的一轮，它直接成为当前 Job（不带原执行绑定），输入状态 queued；接单关闭时它在 GetMailbox 的等待项中排在最前。
+    Resident 空闲时放回失败的一轮，它成为受接单门控的下一项准备，不继承原执行绑定；关闭时输入 queued、不提交 Provider，并在 GetMailbox 等待项中排在最前。
 
     :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
     resident_id = team.target["resident_id"]
     failed, _ = _round(resident_id, state="failed")
+    previous_execution = execution_inputs.latest(get_agent_data_store(), resident_id, failed)['execution_id']
 
     result = instruction(team, "RequeueMessage", {"resident_id": resident_id, "message_id": failed})
 
     assert result.status == "committed" and result.result["message_ids"] == [failed]
     job = resident_execution_work.read(_record(resident_id))
-    assert not resident_execution_work.is_active(job)
-    assert [item["user_message_id"] for item in job["queue"]] == [failed]
-    assert "execution_id" not in job and "execution_request" not in job
+    assert job['user_message_id'] == failed
+    assert resident_execution_work.is_intake_held(job)
+    assert job['queue'] == []
+    assert 'execution_request' not in job and not job.get('submitted_at')
+    assert get_agent_data_store().execution(previous_execution)['status'] == 'failed'
     assert resident_conversation_stream.get_repository().input_state(resident_id, failed)["state"] == "queued"
     # Intake is closed here: the input waits, and the Mailbox lists it first.
     pending = instruction(team, "GetMailbox", {"resident_id": resident_id}).result["pending"]
@@ -209,8 +214,9 @@ def test_requeue_retried_with_its_key_returns_the_first_result(team):
     assert first.status == again.status == "committed" and again.replayed
     assert again.result["message_ids"] == first.result["message_ids"] == [stopped]
     assert another.status == "committed" and another.result["message_ids"] == [stopped]
-    assert len(resident_execution_work.read(_record(resident_id))["queue"]) == 1
-    assert resident_execution_work.read(_record(resident_id))["queue"][0]["user_message_id"] == stopped
+    job = resident_execution_work.read(_record(resident_id))
+    assert job['user_message_id'] == stopped and job['queue'] == []
+    assert resident_execution_work.is_intake_held(job)
 
 
 def test_only_those_who_organize_the_mailbox_put_a_round_back(team, monkeypatch):
@@ -275,10 +281,11 @@ def test_a_stopped_group_goes_back_with_its_members(team):
     assert member.error["code"] == "instruction.conflict"
 
 
-def test_a_group_requeued_onto_an_idle_resident_finishes_its_members(team):
+@pytest.mark.parametrize('intake_open', [False, True])
+def test_a_group_requeued_onto_an_idle_resident_finishes_its_members(team, intake_open):
     """空闲时放回的群体，结束时带上成员
 
-    已送达又停止的群体在 Resident 空闲、接单开着时放回，直接成为当前工作：成员按原顺序在 Mailbox 中跟随所属群体，仍报告所属群体；群体再次送达并完成后，成员一起完成并离开 Mailbox。
+    已送达又停止的群体在 Resident 空闲时放回，关闭接单则等待，开启后沿原准备继续：成员按原顺序跟随群体；群体再次送达并完成后，成员一起完成并离开 Mailbox。
 
     :design: decision_15f7df737ed5, decision_2a3ff353165c
     """
@@ -301,13 +308,21 @@ def test_a_group_requeued_onto_an_idle_resident_finishes_its_members(team):
     repository.set_input_state(resident_id, group_id, "failed")
     resident_mailbox.finish_group(record, group_id, "failed")
     record = _record(resident_id)
-    record["intake_open"] = True
+    record["intake_open"] = intake_open
     resident_record_domain.save_resident_record(record, commit_intake=True)
 
     result = instruction(team, "RequeueMessage", {"resident_id": resident_id, "message_id": group_id})
     assert result.status == "committed", result.error
 
     assert resident_execution_work.read(_record(resident_id))["user_message_id"] == group_id
+    if not intake_open:
+        job = resident_execution_work.read(_record(resident_id))
+        assert resident_execution_work.is_intake_held(job) and not job.get('submitted_at')
+        assert store.execution('execution-g')['status'] == 'failed'
+        opened = instruction(team, 'OpenIntake', {'resident_id': resident_id, 'open': True})
+        assert opened.status == 'committed', opened.error
+        assert resident_record_domain.resident_intake_state(_record(resident_id)) == 'open'
+        assert resident_execution_work.read(_record(resident_id))['user_message_id'] == group_id
     assert resident_mailbox.members_of(_record(resident_id), group_id) == [a, b]
     state = instruction(team, "GetInputState", {"resident_id": resident_id, "message_id": a}).result["input_state"]
     assert state["grouped_into_message_id"] == group_id
@@ -317,6 +332,116 @@ def test_a_group_requeued_onto_an_idle_resident_finishes_its_members(team):
     assert resident_mailbox.finish_group(_record(resident_id), group_id, "completed") == [a, b]
     assert [repository.input_state(resident_id, member)["state"] for member in (a, b)] == ["completed", "completed"]
     assert get_lineage_data_store().mailbox_entries([resident_id], message_ids=[group_id, a, b]) == []
+
+
+@pytest.mark.parametrize('intake_open', [False, True])
+def test_requeue_repairs_an_existing_headless_waiting_list_without_reordering_or_reaccepting(team, intake_open):
+    """旧版关闭接单时放回的等待表可原位恢复，后到请求不丢失，原 info/失败执行不变。
+
+    :design: decision_15f7df737ed5
+    """
+    resident_id = team.target['resident_id']
+    failed, infos = _round(resident_id, state='failed', infos=((STEWARD, '保留原背景'),))
+    previous_execution = execution_inputs.latest(get_agent_data_store(), resident_id, failed)['execution_id']
+    assert instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': failed}).status == 'committed'
+    held = resident_execution_work.read(_record(resident_id))
+    assert resident_execution_work.is_intake_held(held)
+    later = instruction(team, 'DeliverMessage', {'resident_id': resident_id,
+        'message': {'content_parts': [{'type': 'text', 'text': '后来接受的请求不能丢失或抢先'}]}})
+    assert later.status == 'committed', later.error
+    later_id = later.result['message_id']
+    job = resident_execution_work.read(_record(resident_id))
+    assert job['user_message_id'] == failed
+    assert [item['user_message_id'] for item in job['queue']] == [later_id]
+    original = resident_input_checkpoints.queue_item(job)
+    # Exact persisted shape produced by the earlier closed-intake recovery.
+    resident_execution_work.write(_record(resident_id), {'queue': [original, *job['queue']]})
+    record = _record(resident_id)
+    record['intake_open'] = intake_open
+    resident_record_domain.save_resident_record(record, commit_intake=True)
+    repository = resident_conversation_stream.get_repository()
+    first_message = repository.message(resident_id, failed)
+    before_infos = resident_held_infos.peek(_record(resident_id))
+
+    # Asking about the tail must repair the original head, not promote the tail.
+    recovered = instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': later_id})
+    assert recovered.status == 'committed', recovered.error
+    prepared = resident_execution_work.read(_record(resident_id))
+    assert prepared['user_message_id'] == failed
+    assert [item['user_message_id'] for item in prepared['queue']] == [later_id]
+    assert resident_execution_work.is_intake_held(prepared) == (not intake_open)
+    assert prepared['retry_of_execution_id'] == previous_execution
+    assert get_agent_data_store().execution(previous_execution)['status'] == 'failed'
+    assert repository.message(resident_id, failed) == first_message
+    assert resident_held_infos.peek(_record(resident_id)) == before_infos
+    assert [info['message_id'] for info in before_infos] == infos
+    assert repository.input_state(resident_id, failed)['state'] == ('running' if intake_open else 'queued')
+    assert repository.input_state(resident_id, later_id)['state'] == 'queued'
+    assert instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': failed}).status == 'committed'
+    again = resident_execution_work.read(_record(resident_id))
+    assert again['execution_id'] == prepared['execution_id']
+    assert [item['user_message_id'] for item in again['queue']] == [later_id]
+
+
+@pytest.mark.parametrize('predecessor_proof', [False, True])
+def test_accepted_retry_after_a_later_turn_preserves_independently_consumed_infos(team, monkeypatch, predecessor_proof):
+    """旧等待表被后到轮次挤掉后，仅有完整本地原件及原失败引用时恢复，不重放已消费 info。
+
+    :design: decision_15f7df737ed5
+    """
+    resident_id = team.target['resident_id']
+    failed, infos = _round(resident_id, state='failed', infos=((STEWARD, '旧轮的原背景'),))
+    store = get_agent_data_store()
+    previous_execution = execution_inputs.latest(store, resident_id, failed)['execution_id']
+    def legacy_prepare(record, job, item, waiting, now):
+        item = dict(item)
+        if not predecessor_proof:
+            item.pop('retry_of_execution_id', None)
+        resident_execution_work.write(record, {'queue': [item, *waiting]})
+    # Reproduce the older implementation through the real requeue owner. No
+    # prepared Execution exists for this retry, just as in the native failure.
+    with monkeypatch.context() as legacy:
+        legacy.setattr(resident_input_recovery, '_prepare_requeued_input', legacy_prepare)
+        result = instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': failed})
+        assert result.status == 'committed', result.error
+    record = _record(resident_id)
+    record['intake_open'] = True
+    resident_record_domain.save_resident_record(record, commit_intake=True)
+    later = instruction(team, 'DeliverMessage', {'resident_id': resident_id,
+        'message': {'content_parts': [{'type': 'text', 'text': '后到并已完成的交接'}]}})
+    assert later.status == 'committed', later.error
+    later_id = later.result['message_id']
+    job = resident_execution_work.read(_record(resident_id))
+    assert job['user_message_id'] == later_id and job['queue'] == []
+    repository = resident_conversation_stream.get_repository()
+    repository.commit_user_message(resident_id, job['input_message'])
+    _, carried = resident_held_infos.attach(_record(resident_id), '后到并已完成的交接')
+    resident_held_infos.consume(_record(resident_id), carried, request_message_id=later_id)
+    resident_execution_work.retain_input_checkpoint(_record(resident_id), job, carried)
+    store.finish_execution(job['execution_id'], status='completed')
+    repository.set_input_state(resident_id, later_id, 'completed')
+    resident_execution_work.clear(_record(resident_id))
+    original = repository.message(resident_id, failed)
+    consumed = repository.message(resident_id, infos[0])
+    assert consumed['released_with'] == later_id
+    assert repository.input_state(resident_id, failed)['state'] == 'queued'
+    assert not resident_held_infos.peek(_record(resident_id))
+
+    restored = instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': failed})
+    if not predecessor_proof:
+        assert restored.status != 'committed' and restored.error['code'] == 'instruction.conflict'
+        assert resident_execution_work.read(_record(resident_id)) == {}
+    else:
+        assert restored.status == 'committed', restored.error
+        current = resident_execution_work.read(_record(resident_id))
+        assert current['user_message_id'] == failed and current['queue'] == []
+        assert current['retry_of_execution_id'] == previous_execution
+        assert repository.message(resident_id, failed) == original
+    assert repository.message(resident_id, infos[0]) == consumed
+    assert repository.input_state(resident_id, infos[0])['state'] == 'completed'
+    assert not resident_held_infos.peek(_record(resident_id))
+    assert store.execution(previous_execution)['status'] == 'failed'
+    assert store.execution(job['execution_id'])['status'] == 'completed'
 
 
 def test_a_waiting_info_is_withdrawn_with_cancel_queue_item(team):

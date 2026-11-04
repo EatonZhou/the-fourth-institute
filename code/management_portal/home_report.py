@@ -66,6 +66,7 @@ class ReportReader:
         key = digest([instruction, arguments])[:20]
         self.sources[key] = {"id": key, "label": text(label, 180), "address": address,
                              "read": {"instruction": instruction, "arguments": arguments},
+                             "snapshot": value,
                              "version": str(version if version is not None else digest(value)),
                              "version_kind": "revision" if version is not None else "content_sha256"}
         return key
@@ -162,9 +163,14 @@ class ReportReader:
                          "sources": [lineage_source, source, *sources],
                          "open": {"view": "frontier", "target": {"kind": "lineage", "id": identifier, "focus": item.get("id")}}})
         visible = {row["id"] for row in rows}
-        self.relations.extend({"from": f'{identifier}/{item["id"]}', "to": f'{identifier}/{item["parent"]}', "kind": item["relation"]}
-                              for item in items[:MAX_ROWS] if item.get("parent") and item.get("relation") in {"builds_on", "depends_on", "converges"}
-                              and f'{identifier}/{item["id"]}' in visible and f'{identifier}/{item["parent"]}' in visible)
+        for item in items[:MAX_ROWS]:
+            if not item.get("parent"):
+                continue
+            edge = {"from": f'{identifier}/{item["id"]}', "to": f'{identifier}/{item["parent"]}', "kind": item.get("relation")}
+            if edge["from"] not in visible or edge["to"] not in visible or not edge["kind"]:
+                self.warnings.append("部分工作线关系的端点或类型不完整，未据此推断完整影响。")
+                continue
+            self.relations.append(edge)
         return rows
 
     def project(self, identifier):
@@ -236,6 +242,8 @@ class ReportReader:
         visible = {r["id"] for r in rows}
         relations = [{k: r.get(k) for k in ("from", "to", "kind")} for r in research.get("relations", [])
                      if r.get("from") in visible and r.get("to") in visible]
+        if len(relations) != len(research.get("relations", [])):
+            self.warnings.append("部分研究关系的端点不在本次可读范围，未据此推断完整影响。")
         relations.extend(r for r in self.relations if r["from"] in visible and r["to"] in visible)
         return project.get("title") or identifier, text(research.get("goal") or project.get("description")), rows, relations
 
@@ -245,10 +253,20 @@ def build_report(target: dict, *, actor: str = "", read: Callable | None = None)
     target = normalize_target(target)
     reader = ReportReader(read or isa_reader(actor))
     title, goal, rows, relations = getattr(reader, target["kind"])(target["id"])
+    # Aggregate owners can return records whose referenced sources are unreadable.
+    # Persist only the checked projection, never the rejected rows/notes/outputs.
+    for source in reader.sources.values():
+        if source['read']['instruction'] in {'GetSharedState','GetResearchMap','GetProject'}:
+            visible = [row for row in rows if source['id'] in row['sources']]
+            ids = {row['id'] for row in visible}
+            source['snapshot'] = {'scope':'authorized_report_projection','rows':visible,
+                                  'relations':[edge for edge in relations if edge['from'] in ids and edge['to'] in ids]}
     report = {"schema": "tfi.home-report.v1", "target": target, "title": title, "goal": goal,
               "rows": rows, "relations": relations, "counts": dict(Counter(r["status"] for r in rows)),
               "sources": list(reader.sources.values()), "warnings": list(dict.fromkeys(reader.warnings)),
               "empty": not rows}
+    from management_portal.home_report_reasoning import build_reasoning
+    report["reasoning"] = build_reasoning(report)
     report["version"] = digest(report)
     report["checked_at"] = datetime.now(timezone.utc).isoformat()
     report["read_seconds"] = round(time.monotonic() - started, 3)

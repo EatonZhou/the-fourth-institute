@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 33
+  number: 35
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T06:18:33Z"
+  updated_at: "2026-11-04T09:59:31Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -130,8 +130,8 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 **两类来源都通过 `RegisterResource` 正式登记。注册窗口明确选择 Git 仓库或导出源码，不根据目录是否含 `.git` 猜测来源。Repo 领域拥有身份匹配、来源类型及内容根；调用者不直接写登记表。**
 
 1. 登记字段为 `path`（内容目录）、`project_ids`、可选的 `source_kind` 和 `initialize_git`。省略 `source_kind` 或明确为 `git_checkout` 时沿用 Git 登记；设置 `initialize_git: true` 时，经用户明确确认才初始化 Git。明确为 `exported_tree` 时，目录必须是存在的绝对目录，服务按上文合同建立唯一 canonical 根、关闭 Git 能力；与 `initialize_git: true` 同时提交会拒绝，未知或空来源也拒绝。导出源码只按规范目录匹配，同目录再次登记复用原 ID、创建信息及目录归属；不能覆盖已有 Git 身份或静默改变来源。登记事务复用资源目录的占用和清理检查。
-2. 登记必须明确所属 Project；公共内容在 `project_ids` 中单独给出 `@public`。已作为 Article 登记的文稿目录不能再登记为 Repo。导出源码采用既有目录的 adopted 归属，单纯登记不获得目录删除所有权。
-3. 对 Git 来源，checkout 的路径、Git 目录（`git_common_dir`）或身份远端与某个已有 Repo 相同时，加入该 Repo；同时对上两个 Repo 时拒绝登记；都对不上的新代码库获得新的 Repo ID。单个 checkout 失效时，只要还存在有效副本，Repo ID 与登记继续保留；全部 checkout 均已失效时，自动核对注销 Repo，目录与 Git 历史不删除。检查无法确认有效性时保留登记并报告错误；生命周期规则见 decision_36f46b395d8e。
+2. 登记必须明确所属 Project；公共内容在 `project_ids` 中单独给出 `@public`。已作为 Article 登记的文稿目录不能再登记为 Repo。两类来源均按目录与路径协议 decision_4aa13bc21e8e 记录实际目录归属；显式登记与扫描登记不作创建方式分类。注销 Repo 时清理它拥有的 checkout 及范围内嵌套登记，目录外的独立资源和未登记邻居不受影响；不能以外部路径、历史 adopted 分类或 Workspace 绑定推断文件保留。仅解除 Resident 的使用关系应解除 Workspace 绑定，不注销资源。
+3. 对 Git 来源，checkout 的路径、Git 目录（`git_common_dir`）或身份远端与某个已有 Repo 相同时，加入该 Repo；同时对上两个 Repo 时拒绝登记；都对不上的新代码库获得新的 Repo ID。单个 checkout 失效时，只要还存在有效副本，Repo ID 与登记继续保留；全部 checkout 均已失效时，自动核对按生命周期合同注销 Repo；注销与后台文件清理分别遵循 decision_4aa13bc21e8e 的归属边界，不按扫描或显式登记方式推断文件保留。检查无法确认有效性时保留登记并报告错误；生命周期规则见 decision_36f46b395d8e。
 4. Git Repo 的设置修改使用 `UpdateResource`，`operation` 取以下三种之一：`set_remote`（远端名称、地址和推送地址）、`set_policy`（推送开关）、`set_ssh_key`（SSH 私钥引用）。
 5. 两类来源均通过 `UnregisterResource` 撤销登记，只删除登记并加入自动登记的忽略列表；磁盘内容保持不变。
 

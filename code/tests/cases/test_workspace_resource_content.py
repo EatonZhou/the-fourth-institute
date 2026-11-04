@@ -163,6 +163,10 @@ def test_workspace_files_inside_a_personal_ama_folder_answer_only_to_that_ama(wo
     from management_portal.society_service import lineage_access_policy
     from management_portal.resources import isa as resource_isa
 
+    # This fixture grants no temporary delegation from the AMA owner.
+    from management_portal.permission_system import temporary
+    monkeypatch.setattr(permission_system.active(), "current", lambda: (None, None, None), raising=False)
+    monkeypatch.setattr(temporary, "delegated_ids", lambda *_args, **_kwargs: set())
     monkeypatch.setattr(permission_system, "configured_mode", lambda: permission_system.OPEN)
     ama_lineage, ama = "lineage_aaaaaaaaaaaa", "resident_aaaaaaaaaaaa"
     workspace.descriptors.put({"schema": COLLABORATION_DESCRIPTOR_SCHEMA, "resource_id": ama, "title": "AMA",

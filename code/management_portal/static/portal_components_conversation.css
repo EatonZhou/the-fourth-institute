@@ -538,10 +538,8 @@ button.messageQuote:focus-visible {
 .familyMemberMixButton[data-family-mix="mute"][aria-pressed="true"] { background: #317f94; color: white; }
 .familyMemberMixButton[data-family-mix="solo"][aria-pressed="true"] { background: #a37a20; color: white; }
 .familyMemberMixButton[data-family-mix="exclude"][aria-pressed="true"] { background: var(--accent); color: var(--panel); }
-.familySoloProxy:not([hidden]) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 10px; border: 1px solid var(--accent); border-radius: 6px; background: var(--panel-2); color: var(--text); font-size: 12px; }
-.familySoloProxy span { min-width: 0; overflow-wrap: anywhere; flex: 1; }
-.familySoloProxy[data-family-solo="header"] { margin-top: 6px; }
-.familySoloProxy[data-family-solo="composer"] { margin: 6px 10px; }
+.familySoloProxy:not([hidden]) { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; max-width: 100%; color: var(--accent); font-size: 12px; }
+.familySoloProxy span { min-width: 0; overflow-wrap: anywhere; }
 .familyMemberMixButton:disabled { opacity: .5; cursor: default; }
 .familyMemberMix[aria-busy="true"] > .familyMemberMixButton:disabled { opacity: 1; }
 .familyMemberMixButton:focus-visible { position: relative; outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }

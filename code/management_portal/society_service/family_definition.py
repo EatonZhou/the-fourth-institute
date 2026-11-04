@@ -62,7 +62,21 @@ if [ "${ref:34:9}" != "/message/" ]; then
 fi
 facade="${ref:13:21}"
 mid="${ref:43}"
+# Preserve the Packet value's JSON type: string "true" must never opt in.
+continuation="${packet.message.data.continue_previous}"
+continuation_type:=[${continuation}]
+if [ "$continuation_type" != '[true]' ]; then
+  if [ "$continuation_type" != '[false]' ]; then
+    if [ "$continuation_type" != '[""]' ]; then
+      DispatchFamilyTask resident_id="$facade" trigger="route_review" source_message_id="$mid" facts:={"reason":"continue_previous 必须为布尔值"}
+      fail "Family Router 输出格式或字段无效：continue_previous 必须为布尔值"
+    fi
+  fi
+fi
 if [ "${packet.message.data.disposition}" = "notice" ]; then
+  if [ "$continuation_type" = '[true]' ]; then
+    fail "notice 不能同时声明 continue_previous"
+  fi
   # A result report or plain notice: the facade keeps it and no member works on it.
   kept=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" notice:=true reason="${packet.message.text}")
   output state="${kept.status}" disposition="notice" reason="${packet.message.text}"
@@ -92,11 +106,19 @@ if [ "${packet.message.data.scope}" = "out" ]; then
   if [ -z "$gap" ]; then
     gap="Router 未写明"
   fi
-  held=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="$chosen" scope_gap="$gap" reason="${packet.message.text}")
+  if [ "$continuation_type" = '[true]' ]; then
+    held=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="$chosen" scope_gap="$gap" reason="${packet.message.text}" continue_previous:=true)
+  else
+    held=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="$chosen" scope_gap="$gap" reason="${packet.message.text}")
+  fi
   output target="$chosen" state="${held.status}" scope="out" gap="$gap" reason="${packet.message.text}"
   exit
 fi
-relayed=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="$chosen")
+if [ "$continuation_type" = '[true]' ]; then
+  relayed=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="$chosen" continue_previous:=true)
+else
+  relayed=$(RelayFamilyMessage resident_id="$facade" message_id="$mid" member_id="$chosen")
+fi
 if [ "${relayed.status}" = "withdrawn" ]; then
   # Stopped while the Router was choosing: nobody gets it, and there is nothing to review.
   output target="$chosen" state="withdrawn"

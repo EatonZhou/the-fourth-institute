@@ -613,6 +613,18 @@ def inject_queued_input_into_active_turn(
             ensure_resident_visible_to_actor(record, actor_id)
         elif not _resident_deliverable_to_actor(record, actor_id):
             raise KeyError("resident not found")
+        # A facade keeps the original member-copy ID after the member merges
+        # waiting inputs. Resolve its current Mailbox owner under the same lock
+        # as merge/split, rather than requiring callers to use a snapshot's group.
+        from . import resident_mailbox
+        group_id = resident_mailbox.group_of(record, message_id)
+        if group_id:
+            original_state = resident_conversation_stream.get_repository().input_state(resident_id, message_id)
+            if original_state.get("state") == "completed":
+                return accepted_delivery(resident_id, message_id, injected=True, already_injected=True)
+            if original_state.get("state") in {"failed", "cancelled"}:
+                raise ValueError("这条消息已经结束，不能再注入")
+            message_id = group_id
         job = resident_execution_work.read(record)
         existing = next((item for item in resident_execution_work.send_now_inputs(job)
                          if queue_item_matches(item, message_id)), None)

@@ -4,39 +4,39 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 41
+  number: 43
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T06:31:28Z"
+  updated_at: "2026-11-04T11:12:12Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_83d75ad3a6c7"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/resource.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_media_range.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_instruction_client.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/asgi.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/isa.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/workspace.py
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_agent_preview_source.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resource_chips.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_contract.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_runtime.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_renderers.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_surface.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_file_links.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
-  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/workspace_contracts.py
-  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_paper_registration_upload.py
+  - ${code_root}/management_portal/hatg/catalog/resource.py
+  - ${code_root}/management_portal/http_media_range.py
+  - ${code_root}/management_portal/static/portal_chat_workspace.js
+  - ${code_root}/management_portal/static/portal_instruction_client.js
+  - ${code_root}/management_portal/asgi.py
+  - ${code_root}/management_portal/resources/isa.py
+  - ${code_root}/management_portal/serve_management_portal.py
+  - ${code_root}/management_portal/resources/service.py
+  - ${code_root}/management_portal/resources/providers/workspace.py
+  - ${code_root}/management_portal/static/portal_agent_preview_source.js
+  - ${code_root}/management_portal/static/portal_resource_chips.js
+  - ${code_root}/management_portal/static/portal_preview_contract.js
+  - ${code_root}/management_portal/static/portal_preview_runtime.js
+  - ${code_root}/management_portal/static/portal_preview_renderers.js
+  - ${code_root}/management_portal/static/portal_workspace_surface.js
+  - ${code_root}/management_portal/static/portal_file_links.js
+  - ${code_root}/management_portal/static/lineage_workbench.js
+  - ${code_root}/management_portal/society_service/workspace_contracts.py
+  - ${code_root}/tests/cases/test_paper_registration_upload.py
   related:
   - decision_e5f66e2f6a5e
   - decision_864d4fe41934
@@ -191,13 +191,17 @@ PPT 和 PPTX 以只读的静态幻灯片显示。服务端在本机用 LibreOffi
 
 - **大小和类型由用途决定。** 用途有 `conversation_attachment`（对话附件）、`post_image`（帖子图片）、`paper_pdf`、`article_file`、`figure_input` 和 `avatar`（User、Resident、Project 或 Lineage 的头像）。一般上限为 512 MiB；`post_image` 上限为 12 MiB，只接受 PNG、JPEG、GIF 和 WebP；`avatar` 上限为 2 MiB，只接受 PNG、JPEG 和 WebP；`paper_pdf` 必须是 PDF。服务端在写入时按实际字节检查大小和类型，字节数与声明不一致时拒绝。整个 HTTP 请求体上限为 520 MiB，超过时返回 413。部署入口的反向代理请求体上限至少为 520 MiB，以便 512 MiB 文件通过完整上传链路。
 - **只有创建上传的人能写入字节。** 数据通道过期或已经写完时拒绝再次写入。
-- **读取上传内容受权限限制。** 创建者和 Portal 管理员都能读取；帖子图片所有登录用户都能读取；目标是 Resident 的上传，能看到这个 Resident 的用户可以读取。其他人得到 404。
+- **活跃且已认证的 User 和 Resident 都可以读取上传文件。** 上传目标和上传者不构成额外读取权限。读取时检查完成状态、清理登记和当前文件；未完成、已删除的上传不可读，目录、元数据和内容均拒绝符号链接。
 - **Resident 通过工具调用上传时使用已有的工作区文件。** `CreateUpload` 提供 `source_address` 时，服务端直接复制这个文件，不需要数据通道。
 - **上传文件删除不使用 HATG 指令。** Resident 可通过实际文件路径直接删除上传的内容文件或整个上传目录。浏览器使用 `DELETE /api/uploads/<upload_id>`：沿用登录与同源请求校验，无上传者或对象权限限制；内部文件清理注销保留登记并加入目录清理队列。返回 `{upload_id, deleted}`，重复删除已移除的上传返回 `deleted: false`。已被引用的上传同样可以删除，之后引用失效；读取规则保持独立。
 - **直接删除后的登记由目录维护收敛。** 维护只核对上传存储下已登记的位置，清理由外部文件操作留下的保留登记和元数据，不恢复已删除内容。未完成上传、不可访问的存储和 I/O 错误不构成内容被删除的证据。
 - **上传存放在 Dev 与 Release 共用的 uploads 区域。** 每个上传使用 `<uploads 区域>/<上传 ID>/`，保存文件和 `meta.json`；引用上传时按上传 ID 或“区域 + 相对路径”，不保存绝对路径。服务同一批会话的 Dev 与 Release 必须读取同一上传存储，重启切流不能使已上传附件失效。
 - **对话附件**：Chat Workspace 把图片和普通文件都作为 `conversation_attachment` 上传，目标是当前 Resident；上传完成后，附件在消息中以上传 ID 引用。内容图片再由共享的图片组件插入正文。上传没有浏览器端的去重，同一文件选择两次会产生两个附件；发送按钮只在请求进行中锁定。还没发送的附件随输入框草稿保存上传 ID，页面自己生成的 `blob:` 预览不随草稿保存；刷新页面或 Portal 重启后恢复草稿时，图片缩略图改用 `/api/uploads/<上传 ID>` 显示，附件仍可直接发送。
 - **消息中的图片用上传地址显示。** Chat、Chatroom 和 Society 页面的消息与 Markdown 图片通过 `PortalFileLinks.imagePreviewUrl` 取得显示地址：`/api/uploads/<上传 ID>` 原样使用；位于上传存储目录 `uploads/upload_<…>/` 下的文件路径换成同一个上传地址；知识条目讨论的附件图片和旧的 Resident 聊天图片使用各自的读取接口。已发送消息中的上传图片因此在刷新或重开会话后仍能显示。
+
+上传文件以 `{"upload_id":"upload_<原24位句柄>"}` 保存稳定引用，统一 `ResolveResource`、`ReadResource` 和 ResourceService 文件读取入口都接受它。`/api/uploads/<句柄>` 及本实例正式 public/internal origin 或部署显式登记的 public_origin_aliases 下的完整 URL 是同一引用的地址形式，可以带 `download=1`；拒绝其他站点、额外参数、片段和越界路径，不通过服务端抓取远程 URL。上传句柄保持原值，不新增资源身份或复制文件。
+
+`PortalFileLinks` 统一识别本站上传链接和对象引用，提供探测、预览和下载；Chat 的附件、消息链接、草稿恢复和其他预览宿主复用这条路径。元数据读取返回原文件名、媒体类型、大小和受保护内容地址，不暴露可直接打开的服务器路径。文本预览有界读取；图片、PDF、音视频按需读取；ZIP 等无内容渲染器的文件显示类型、大小和下载入口。原上传 HTTP 地址复用文件下载的 Range、条件请求和按段读取规则，下载响应保留原文件名。
 
 ## 读取、保存与冲突
 

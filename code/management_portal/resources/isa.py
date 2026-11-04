@@ -100,7 +100,7 @@ def resolve_resource(inv: Invocation) -> dict[str, Any]:
     if resolved.get("exists") is False:
         raise not_found(f"资源地址不存在：{inv.argument('address')}")
     record = resolved.get("record") if isinstance(resolved.get("record"), dict) else {}
-    operations = ["read", "update", "manage"]
+    operations = ["read"] if resolved.get("domain") == "upload" else ["read", "update", "manage"]
     target = {key: value for key, value in resolved.items() if key not in {"record"}}
     return {"resource": record, "target": target, "operations": operations}
 
@@ -119,10 +119,13 @@ def read_resource(inv: Invocation) -> dict[str, Any]:
 
     address = inv.argument("address")
     limit = int(inv.argument("max_bytes") or 4 * 1024 * 1024)
-    parsed = _service().parse_address(address)
-    file_address = bool(parsed.suffix) and parsed.suffix[0] == "file"
+    from .upload_files import file_reference
+
+    upload = file_reference(address) is not None
+    parsed = None if upload else _service().parse_address(address)
+    file_address = upload or (bool(parsed.suffix) and parsed.suffix[0] == "file")
     if not file_address and (inv.argument("meta_only") or inv.argument("preview")):
-        raise invalid("meta_only 与 preview 只用于 <资源ID>/file/<相对路径> 地址")
+        raise invalid("meta_only 与 preview 只用于资源文件地址或上传文件引用")
     if file_address and (inv.argument("meta_only") or inv.argument("preview")):
         return _read_file_summary(address, inv.caller, limit, meta_only=bool(inv.argument("meta_only")))
     try:
@@ -133,7 +136,7 @@ def read_resource(inv: Invocation) -> dict[str, Any]:
         return _oversized_read(address, inv.caller)
     if resolved.get("target_kind") == "directory":
         return _directory_result(data, resolved)
-    version = _resource_version(resolved.get("record") or {}) if not parsed.suffix else ""
+    version = _resource_version(resolved.get("record") or {}) if parsed is not None and not parsed.suffix else ""
     result: dict[str, Any] = {
         "content_type": str(content_type or "application/octet-stream"),
         "version": version or hashlib.sha256(data).hexdigest(),
@@ -566,9 +569,10 @@ def _checked_media_type(purpose: str, data: bytes, media_type: str) -> str:
 def _check_target(target: str, caller: str) -> None:
     """Where an upload is sent must exist and be open to the caller.
 
-    A conversation attachment names the receiving Resident (who can see that
-    Resident may read the attachment); any other target is a workspace or
-    resource address the caller can write.
+    A conversation attachment names the receiving Resident; any other target
+    is a workspace or resource address the caller can write. This creation
+    check does not restrict subsequent reads: uploads are readable by every
+    active authenticated User or Resident through the upload file owner.
     """
 
     if target.startswith("resident_"):
@@ -1020,6 +1024,10 @@ def binding() -> OwnerBinding:
 
 def _authorization_arguments(declaration, arguments, context):
     if declaration.name in {"ReadResource", "ResolveResource"}:
+        from .upload_files import file_reference
+
+        if file_reference(arguments.get("address")) is not None:
+            return arguments
         return {**arguments, "address": _service().parse_address(arguments.get("address")).root_id}
     return arguments
 

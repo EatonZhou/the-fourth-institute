@@ -67,9 +67,9 @@
     "zh-CN": "在空位置创建由 Portal 管理的 Workspace，随所属对象删除。",
     "en": "Create a Portal-managed Workspace at an empty location; delete it with its owning object."
   },
-  "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。": {
-    "zh-CN": "将现成目录登记为新的 Workspace；注销只删登记，保留现成目录。",
-    "en": "Register an existing directory as a new Workspace; unregistering removes the record and preserves the directory."
+  "将现成目录登记为新的 Workspace，按归属管理；注销时清理其拥有的目录和文件，目录内的嵌套登记一并注销。": {
+    "zh-CN": "将现成目录登记为新的 Workspace，按归属管理；注销时清理其拥有的目录和文件，目录内的嵌套登记一并注销。",
+    "en": "Register an existing directory as a new Workspace under its recorded ownership; unregistering cleans up its owned directory and files and unregisters nested resources."
   },
   "区域内或区域外的绝对目录路径": {
     "zh-CN": "区域内或区域外的绝对目录路径",
@@ -259,9 +259,9 @@
     "zh-CN": "账号目录",
     "en": "Account directory"
   },
-  "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。": {
-    "zh-CN": "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。",
-    "en": "Enter the canonical absolute path of the account directory on this host. An existing directory uses its current login; a missing directory is created before sign-in."
+  "系统会根据账号名称自动生成并显示默认目录，保存时创建，无需提前登录。你可以直接继续，也可以修改目录或使用已有登录的目录。": {
+    "zh-CN": "系统会根据账号名称自动生成并显示默认目录，保存时创建，无需提前登录。你可以直接继续，也可以修改目录或使用已有登录的目录。",
+    "en": "The system displays a default directory based on the account name and creates it when you save. No prior sign-in is needed. Continue with this directory, edit it, or use the directory of an existing login."
   },
   "约每 ¥10 一枚金币，四舍五入": {
     "zh-CN": "约每 ¥10 一枚金币，四舍五入",

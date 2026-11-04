@@ -182,6 +182,11 @@ def _check_lendable(inv: Invocation, credentials: list[dict[str, str]]) -> None:
 def relay_family_message(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service.family_quota import relay_message
 
+    continuation = inv.argument("continue_previous")
+    if continuation is not None and type(continuation) is not bool:
+        raise invalid("continue_previous 必须为布尔值")
+    if continuation is not None and (inv.argument("notice") is True or inv.argument("reassign") is True):
+        raise invalid("notice 或 reassign 不能同时指定 continue_previous")
     if inv.argument("notice") is True:
         from management_portal.society_service.family_facade import keep_notice
 
@@ -205,7 +210,8 @@ def relay_family_message(inv: Invocation) -> dict[str, Any]:
                          reason=inv.argument("reason") or "",
                          scope_gap=inv.argument("scope_gap") or "",
                          scope_reviewed=inv.argument("scope_reviewed") is True,
-                         recover=inv.argument("recover") is True)
+                         recover=inv.argument("recover") is True,
+                         continue_previous=inv.argument("continue_previous") is True)
 
 
 def _forwarded_item(caller: str, item: Any) -> dict[str, Any]:

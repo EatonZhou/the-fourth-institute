@@ -12,13 +12,16 @@ from management_portal.society_service.resident_record_domain import find_reside
 from management_portal.society_service.domain_ports import execution_port
 from tests.cases.isa_test_support import run
 from tests.cases.test_family_recovery import _send, _record
-from tests.cases.test_family_reassign import family, delivery_resident, future_creation_store  # noqa: F401
+from tests.cases.test_family_reassign import family, delivery_resident, future_creation_store, _REAL_VALIDATE_RELAY  # noqa: F401
 from tests.cases.test_family_quota import quota_family, team, owners, ACTOR  # noqa: F401
 
 
 @pytest.fixture
 def failed_route(family, monkeypatch):
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": []}))
+    # Recovery creates its source outside the reassign fixture's synthetic marks.
+    # Exercise actual source authorization, including withdrawal after recovery.
+    monkeypatch.setattr(family_facade, "validate_relay", _REAL_VALIDATE_RELAY)
     root = _send(family, "显示阶段进展数量，保留原消息")
     repo = resident_conversation_stream.get_repository()
     repo.set_input_state(family["facade"], root, "failed", error={"message": "缺少 message.data.target"})

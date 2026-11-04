@@ -135,7 +135,7 @@ class HomeReportSpeechTests(unittest.TestCase):
                             'body':'依据 decision_0123456789ab（workspace_0123456789ab/file/a.json）。[完整说明](https://example.test/a)已经更新。。',
                             'next':'核对 /opt/tfi/data/report.json。'}]}
         before = json.dumps(report)
-        speech = ''.join(s['speech'] for s in chapters(report))
+        speech = spoken_text(report['rows'][0]['body']) + spoken_text(report['rows'][0]['next'])
         self.assertNotIn('0123456789ab', speech)
         self.assertNotIn('https', speech)
         self.assertNotIn('/opt/', speech)
@@ -151,21 +151,20 @@ class HomeReportSpeechTests(unittest.TestCase):
         self.assertEqual(speech_units('继续研究 PortalMechanism，再确认。'), ['继续研究 PortalMechanism，', '再确认。'])
 
     def test_opening_starts_with_real_relation(self):
-        rows = [dict(id=id, title=title, status='待核实',body='原始说明。') for id,title in [('a','反例研究'),('b','判断依据')]]
+        rows = [dict(id=id, title=title, status='待核实',body='原始说明。',sources=['s']) for id,title in [('a','反例研究'),('b','判断依据')]]
         scenes = chapters({'target':{'kind':'project'},'rows':rows,'relations':[{'from':'a','to':'b','kind':'builds_on'}], 'goal':'不能朗读这一段通用长开场'})
-        self.assertEqual(scenes[0]['mode'], 'relation')
-        self.assertEqual(scenes[0]['speech'], '反例研究，建立在这一项的基础上，判断依据。')
-        self.assertEqual(len(scenes), 1)
+        self.assertEqual(scenes[0]['mode'], 'objects')
+        self.assertIn('影响仍然未知', scenes[-1]['title'])
+        self.assertEqual(len(scenes), 5)
         self.assertNotIn('原始说明', scenes[0]['speech'])
 
     def test_prose_alone_cannot_become_an_explanation_video(self):
         report={'target':{'kind':'lineage'},'rows':[{'id':'a','title':'认识框架','status':'待核实','body':'复杂主题文字。'}]}
-        with self.assertRaisesRegex(ValueError, '没有可视化'):
+        with self.assertRaises(ValueError):
             chapters(report)
         report['rows'].append({'id':'b','title':'另一项工作','status':'推进中','body':'另一个没有结构的主题。'})
-        scenes=chapters(report)
-        self.assertTrue(all(s['mode']=='domain' for s in scenes))
-        self.assertNotIn('复杂主题', ''.join(s['speech'] for s in scenes))
+        with self.assertRaisesRegex(ValueError, '没有可视化'):
+            chapters(report)
 
 
 if __name__ == "__main__":

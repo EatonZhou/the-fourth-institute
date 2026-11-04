@@ -15071,8 +15071,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__ResourceService_调用协议：查询、读取、变更与动作__decision_b6e74d78f7b6.md",
-      "sha256": "01406f3dbb5af1bdc1a7620f0809a555b143db079600072879e5b3057d7b7617",
-      "size": 33709
+      "sha256": "32aae51b4f402bdfca1dbf5dc5913ddc9d6fe27da9545f70e95a65ce611af0a6",
+      "size": 34774
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__工作交接由单一Handoff对象统一记录__decision_7ef392b5f60d.md",
@@ -15206,8 +15206,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Portal文件上传附件预览与链接解析__decision_61e50306cc79.md",
-      "sha256": "a07add0a17de17d71c9539d115823a84bb4229462faaa562f19ec65c34ea58b0",
-      "size": 32256
+      "sha256": "9861981a4b01d0230d164627e18320e9be878d27a6b4a2a84daf3ac084bf52a5",
+      "size": 32914
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Portal用户UIState与工作台恢复__decision_9f6135cbbb22.md",
@@ -15216,8 +15216,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Repo：代码库登记、工作区与_Git_操作__decision_6476c69b33da.md",
-      "sha256": "d3818094c62d856c53ade563288876e3aad09b1d7a916c0ce0ffaf6dcbaaee45",
-      "size": 29560
+      "sha256": "ca6ef4988c4500ec5f4862c677b78c68948bcf9f333efb600c3c0eead20fb908",
+      "size": 30024
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__ResidentFork来源与上下文派生__decision_5bf5bfbd52cb.md",
@@ -15241,8 +15241,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__统一资源ID地址与解析协议__decision_4a9ba5dfada6.md",
-      "sha256": "ffd5afec5a490b90eae7eb233f2b8220d341faea524204fb1660c4e34990d8fe",
-      "size": 18205
+      "sha256": "103d13964a3011ffcdb7b368791120af1aef6c28f797fa632655d1e6c27d5446",
+      "size": 19539
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260902__decision__LineageService的领域边界_交互与并发模型__decision_d918ebebc062.md",
@@ -15361,8 +15361,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Conversation_Store：浏览器共享的对话列表、Resident_状态与操作回执__decision_18abbdef3da3.md",
-      "sha256": "fa31bf65c1aed63d33d27fd92f86c3a63e19b9a83ae6c660c6326d2a2baac9e4",
-      "size": 31114
+      "sha256": "d96e99ec1b29a3458d0eb0ea7088cc37b731a7728b5264e91b13572f9580203b",
+      "size": 31868
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_LAN_AI_Socket_Relay_的请求与安全协议__decision_c604274e21dd.md",
@@ -15541,8 +15541,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Resident_Bearer_令牌与机器接口认证__decision_fb910c43ab07.md",
-      "sha256": "d537327875878990320e2b0732c4fe3e17dc84687b8b03f1317c52838ec9bbe2",
-      "size": 12367
+      "sha256": "f8a5e5743b90eeb5d457b94de9b97f526bdb0290eeeeca7fcef48ac6df12f0cd",
+      "size": 13598
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Resident_上下文来源与组装__decision_c616d197abbb.md",
@@ -15721,8 +15721,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：资源指令__decision_ad3e21094f14.md",
-      "sha256": "ba5e89b8458fd34112b97f6a0e63a3f96e62b63f892105b861d74ecad4a6c1be",
-      "size": 30638
+      "sha256": "cebfdd800724554e7b7f29888d5c4d04e18326042b1d06cc7bfd8a5febc5925d",
+      "size": 31619
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
@@ -15786,8 +15786,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261013__decision__Mailbox：Resident_和_User_的收件__decision_15f7df737ed5.md",
-      "sha256": "eb17e1a9089cf8e403d9c19e27fca8f003600dd6abcacbe37ff05cdec37f8211",
-      "size": 83467
+      "sha256": "32dde1a9a49e2e5fa6b836bd89026c5993b6020aa8333724ea4e4a5da5021cbf",
+      "size": 85681
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261013__decision__Portal_新用户指引与统一入口__decision_3286d4167180.md",
@@ -15826,8 +15826,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__AI_Backend_注册与管理页：Provider、执行账号与模型_API__decision_7956d7cb4bde.md",
-      "sha256": "e943b710a96490a1dd77332966a2c07710f88055fea2aec3aeabd29ff0ed696b",
-      "size": 27889
+      "sha256": "6fdc4a51cbbc8198cf7b8b4410910794875bd2f632720b91c0914d18d16ea7d9",
+      "size": 34967
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Family_内部机制指令__decision_b77fde81e7a0.md",
@@ -15856,13 +15856,13 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_Router_与_Steward：Event、Effect_与_Prompt__decision_89b9df038a95.md",
-      "sha256": "59cbb39fab7dce384994899ea977fe49070a2bd123888cbc8013c7b0b884f083",
-      "size": 44005
+      "sha256": "22fc3f19e15b71d528332373349afae1c4a1267180fac0babdaa04feddffbced",
+      "size": 47049
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_消息路由与对外对话__decision_9ad68dd077d4.md",
-      "sha256": "cb9eac16d1199bc613be61cb1ef6843b210c8a565e85dedd2274407fd97302c8",
-      "size": 23363
+      "sha256": "ba877ec57dfd8ba05db4ce8c2de9b86d9813e4313b7b2ce4fa479444a93bd404",
+      "size": 25044
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_运行维护：记忆、队列与故障恢复__decision_a64b3ea2c3c5.md",
@@ -15886,8 +15886,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261102__decision__目录与路径协议__decision_4aa13bc21e8e.md",
-      "sha256": "1a38fc6c5bb6679aeb4a7f6d2d7adac859a78c4f05b55e58bb741e3909f9befe",
-      "size": 29419
+      "sha256": "2efbd510838fd3d5e7ae03f9f4baa28c40dee8ff9d3623b20b59424371073454",
+      "size": 30244
     },
     {
       "path": "data/projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",

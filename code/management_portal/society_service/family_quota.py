@@ -68,18 +68,21 @@ def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] 
 
 def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                   *, quota_reviewed: bool = False, reason: str = "", scope_gap: str = "",
-                  scope_reviewed: bool = False, recover: bool = False) -> dict[str, Any]:
+                  scope_reviewed: bool = False, recover: bool = False,
+                  continue_previous: bool = False) -> dict[str, Any]:
     if recover:
         return _relay_failed_route(facade_id, message_id, member_id, actor,
-            reason=reason, quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
+            reason=reason, quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
+            continue_previous=continue_previous)
     result = _relay_message(facade_id, message_id, member_id, actor, quota_reviewed=quota_reviewed,
-                            reason=reason, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
+                            reason=reason, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
+                            continue_previous=continue_previous)
     if result["status"] in {"waiting_for_quota_review", "waiting_for_steward"}:
         from . import changes
         changes.resident_changed(facade_id)
     return result
 def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: str, *, reason: str,
-                      quota_reviewed=False, scope_gap="", scope_reviewed=False) -> dict:
+                      quota_reviewed=False, scope_gap="", scope_reviewed=False, continue_previous=False) -> dict:
     """Recover the same failed request through ordinary membership/quota/delivery admission.
 
     Save intent and the failed receipt before reopening. Retrying after a crash
@@ -132,7 +135,8 @@ def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: 
         elif previous["state"] != "queued" or not entry:
             raise ValueError("仅可恢复尚未转交的失败请求，不能重启活动或完成的请求")
         result = relay_message(facade_id, message_id, member_id, actor, reason=reason,
-            quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed)
+            quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
+            continue_previous=continue_previous)
         with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
             entry = ledger["route_restorations"][message_id][-1]
             entry.update(status=result["status"], result=result)
@@ -140,7 +144,7 @@ def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: 
 
 def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                    *, quota_reviewed: bool, reason: str, scope_gap: str = "",
-                   scope_reviewed: bool = False) -> dict[str, Any]:
+                   scope_reviewed: bool = False, continue_previous: bool = False) -> dict[str, Any]:
     from . import outward_messages, resident_conversation_stream, resident_protocol
     from management_common.async_questions import answered_set
     from . import resident_record_domain
@@ -195,6 +199,8 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         raise ValueError("门面已把这条消息作为告知收下，不再转交成员")
     from . import family_chat_preferences
     family_chat_preferences.validate_target(facade, message, member_id)
+    from . import family_continuation
+    family_continuation.decide(facade, message, continue_previous)
     # The platform validates the original delegation before restoring its
     # sender. Review messages, separately, speak as the facade.
     from management_common.operation_identity import operation_identity_scope

@@ -11,6 +11,7 @@ from .content_payload import resolved_media_type
 from .contracts import normalize_resolution
 from .file_references import FILE_REFERENCE_KEYS, file_reference_address, file_reference_for
 from .providers import folder_files
+from . import upload_files
 
 if TYPE_CHECKING:
     from .service import ResourceService
@@ -22,6 +23,8 @@ def resolve(
     *,
     actor: str = "",
 ) -> dict[str, Any]:
+    if upload_files.file_reference(address) is not None:
+        return upload_files.resolve(address, actor=actor)
     parsed = service.parse_address(address)
     if parsed.resource_type in FILE_REFERENCE_KEYS.values() and parsed.suffix and parsed.suffix[0] == "file":
         return _resolve_file(service, parsed, actor=actor)
@@ -93,6 +96,8 @@ def read_content(
     actor: str = "",
     max_bytes: int = 4 * 1024 * 1024,
 ) -> tuple[bytes, str, dict[str, Any]]:
+    if upload_files.file_reference(address) is not None:
+        return upload_files.read_content(address, actor=actor, max_bytes=max_bytes)
     parsed = service.parse_address(address)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
@@ -119,6 +124,8 @@ def open_content(
     actor: str = "",
     max_bytes: int = 4 * 1024 * 1024,
 ) -> dict[str, Any] | tuple[bytes, str, dict[str, Any]]:
+    if upload_files.file_reference(address) is not None:
+        return upload_files.resolve(address, actor=actor)
     parsed = service.parse_address(address)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
@@ -157,6 +164,8 @@ def read_content_range(
 ) -> tuple[bytes, str, dict[str, Any]]:
     if type(start) is not int or type(end) is not int or start < 0 or end < start:
         raise ValueError("content range requires non-negative inclusive start and end")
+    if upload_files.file_reference(address) is not None:
+        return upload_files.read_content_range(address, actor=actor, start=start, end=end)
     parsed = service.parse_address(address)
     service._ensure_resolvers(parsed.resource_type)
     resolver = service._resolvers.resolver_for(parsed.resource_type)
@@ -183,6 +192,8 @@ def reference(
     *,
     actor: str = "",
 ) -> dict[str, Any]:
+    if upload_files.file_reference(address) is not None:
+        return upload_files.reference(address, actor=actor)
     parsed = service.parse_address(address)
     resolved = service.resolve(
         address,

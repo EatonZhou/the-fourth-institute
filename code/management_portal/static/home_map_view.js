@@ -9,13 +9,20 @@
     let active = null, presented = true, destroyed = false, generation = 0;
     const shell = document.createElement('section'); shell.className = 'homeMapView';
     const toolbar = document.createElement('header'); toolbar.className = 'homeMapToolbar';
-    const title = document.createElement('strong');
-    const report = document.createElement('button'); report.type = 'button'; report.textContent = '查看汇报';
-    const original = document.createElement('a'); original.textContent = '在原页面打开 ↗'; original.target = '_blank'; original.rel = 'noopener';
+    const identity = document.createElement('details'); identity.className = 'homeMapIdentity';
+    const title = document.createElement('summary');
+    const identityBody = document.createElement('div'); identityBody.className = 'homeMapIdentityBody';
+    const fullName = document.createElement('strong'); fullName.className = 'homeMapIdentityName';
+    const idLabel = document.createElement('label'); idLabel.textContent = '目标 ID（可复制）';
+    const idValue = document.createElement('input'); idValue.readOnly = true; idValue.onfocus = () => idValue.select();
+    idLabel.append(idValue); identityBody.append(fullName, idLabel); identity.append(title, identityBody);
+    const actions = document.createElement('div'); actions.className = 'homeMapActions';
+    const report = document.createElement('button'); report.type = 'button'; report.textContent = '汇报'; report.setAttribute('aria-label', '查看汇报');
+    const original = document.createElement('a'); original.textContent = '原页面 ↗'; original.setAttribute('aria-label', '在原页面打开（新标签页）'); original.target = '_blank'; original.rel = 'noopener';
     const status = document.createElement('p'); status.setAttribute('role', 'status'); status.hidden = true;
     const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '重试'; retry.hidden = true;
     const body = document.createElement('div'); body.className = 'homeMapBody';
-    toolbar.append(title, report, original); shell.append(toolbar, status, retry, body); root.append(shell);
+    actions.append(report, original); toolbar.append(identity, actions); shell.append(toolbar, status, retry, body); root.append(shell);
     function message(text = '') { status.textContent = text; status.hidden = !text; }
     function selected(entry, value) {
       entry.selection = value;
@@ -23,7 +30,10 @@
     }
     function open(entry, value) { if (entry === active && presented) onOpen?.(value); }
     function heading(entry) {
-      title.textContent = `${entry.target.kind === 'project' ? 'Project 研究地图' : 'Lineage 线头'} · ${entry.label || entry.target.id}`;
+      const name = entry.label || (entry.target.kind === 'project' ? entry.target.id : '团队线头');
+      title.textContent = name;
+      title.setAttribute('aria-label', name + '，查看目标信息');
+      fullName.textContent = name; idValue.value = entry.target.id;
       original.href = entry.target.kind === 'project' ? '/projects?view=map&project=' + encodeURIComponent(entry.target.id)
         : '/lineage?view=frontier&lineage=' + encodeURIComponent(entry.target.id);
     }
@@ -50,6 +60,8 @@
           const { mountFrontier } = await import('/static/frontier.js');
           if (destroyed) return;
           entry.view = mountFrontier(host, { lineage: target.id,
+            // Reuse the native, authorized GetLineage result; no second title lookup.
+            onTitleChange: label => { entry.label = label; if (entry === active) heading(entry); },
             onSelection: value => selected(entry, value), onOpen: value => open(entry, value) });
           await entry.view.ready;
         }
@@ -71,7 +83,7 @@
         if (!current()) return false;
         const entry = entryFor(target); active = entry; entry.requestId = requestId;
         entry.pendingFocus = target.focus; entry.pendingLayer = view;
-        heading(entry); message('正在读取地图与访问权限…'); retry.hidden = true;
+        identity.open = false; heading(entry); message('正在读取地图与访问权限…'); retry.hidden = true;
         await entry.ready;
         if (!current()) { if (active !== entry || !presented) await hide(entry); return false; }
         if (!presented) { await hide(entry); return true; }

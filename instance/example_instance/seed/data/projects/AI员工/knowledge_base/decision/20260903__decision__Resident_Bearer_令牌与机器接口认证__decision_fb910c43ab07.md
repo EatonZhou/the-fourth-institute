@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 21
+  number: 22
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T06:09:05Z"
+  updated_at: "2026-11-04T11:52:01Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -103,7 +103,13 @@ Resident 的自动浏览器使用同一个 Bearer 和 `X-Portal-Lineage-ID`，�
 
 自动浏览器启动器 `scripts/resident_browser.cjs` 从当前 runtime 的本人凭据引用读取令牌，拒绝与注入身份不符的 Resident ID，在首次页面导航前通过 `/api/me` 校验实际主体。它使用独立浏览器上下文，仅向指定 Portal origin 发出带身份的请求；必须使用直接原生 URL；重定向响应与其他源请求被拒绝，其余响应原样转发，原生通知流连接同一 Portal。令牌不进入 URL、页面脚本或持久浏览器状态。恢复连接或部署后通过 `verifyIdentity()` 再核对身份。调用方法与预览/运行路径见投影 SDK 文档。
 
-有限原生请求使用显式360秒传输上限，不依赖Playwright默认30秒，也不自动重试可能已提交的POST。`/api/instructions/execute`的`text/event-stream`订阅由独立Node传输按需读取真实响应头与字节，浏览器取得首批后继续消费，不等待订阅结束。该桥接只接受当前同源原生页面、固定指令端点和POST，Bearer仍只在Node内部注入，每条连接经过原认证与领域授权；拒绝重定向和跨源，不转发Cookie。取消、页面导航/关闭和上下文关闭均释放上游；连接空闲上限不代替订阅终态，重连续读由原指令客户端按cursor负责，桥接不重发。`streamState()`只返回连接数量与接收字节供原生测试检查，不返回凭据或事件正文。新增实现为`scripts/resident_browser_stream.cjs`。
+### 原生资源文件传输
+
+`/api/resources/content`与`/api/agent-workbench/link-file-raw`的同源GET由Chromium原生网络/下载栈接收文件体，保留下载名、Range、HTTP拒绝正文与实际下载终态；不先经Node整包缓冲或通过CDP序列化文件体。普通同进程iframe复用父目标，独立进程iframe使用自己的目标。认证请求释放前须先安装该实际目标的响应头守卫；所有301/302/303/307/308在浏览器跟随前拒绝，包括同源重定向，其他源请求仍拒绝。守卫安装失败时请求拒绝，不退回无守卫直通。Bearer仍由Node本人凭据注入，不进URL、页面脚本、Cookie或持久profile；领域权限每次由原服务判断。
+
+文件下载使用浏览器实际完成/取消/上下文生命周期，不以页面200或下载事件代替完整落盘；取消释放传输，导航/目标变化和关闭清理相应守卫，旧frame不能复用不再对应的目标。其他有限请求保持原有不跟随重定向的fetch路径，POST不自动重试。该传输不扩大路径、协议、资源权限或可用主体，不绕过下载确认，也不创建替代下载回执。实现为`scripts/resident_browser_files.cjs`。
+
+其余有限原生请求使用显式360秒传输上限，不依赖Playwright默认30秒，也不自动重试可能已提交的POST。`/api/instructions/execute`的`text/event-stream`订阅由独立Node传输按需读取真实响应头与字节，浏览器取得首批后继续消费，不等待订阅结束。该桥接只接受当前同源原生页面、固定指令端点和POST，Bearer仍只在Node内部注入，每条连接经过原认证与领域授权；拒绝重定向和跨源，不转发Cookie。取消、页面导航/关闭和上下文关闭均释放上游；连接空闲上限不代替订阅终态，重连续读由原指令客户端按cursor负责，桥接不重发。`streamState()`只返回连接数量与接收字节供原生测试检查，不返回凭据或事件正文。新增实现为`scripts/resident_browser_stream.cjs`。
 
 ## 认证过程
 

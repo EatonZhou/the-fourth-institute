@@ -10,16 +10,23 @@
   };
   const button = (label, action) => { const b = el('button', label); b.type = 'button'; b.onclick = action; return b; };
   const date = value => value ? new Date(value).toLocaleString() : '时间未登记';
+  const requestUUID = () => {
+    if(crypto.randomUUID) return crypto.randomUUID();
+    const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+    const value=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+    return `${value.slice(0,8)}-${value.slice(8,12)}-${value.slice(12,16)}-${value.slice(16,20)}-${value.slice(20)}`;
+  };
   async function json(url, options) {
     const response = await fetch(url, {credentials: 'same-origin', cache: 'no-store', ...options});
     const data = await response.json();
     if (!response.ok) throw Object.assign(new Error(typeof data.error === 'string' ? data.error : data.error?.message || '暂时无法读取'), {status: response.status});
     return data;
   }
-  function create({root, onOpen, onSelection}) {
+  function create({root, onOpen, onSelection, onReference}) {
     if (!root) throw new Error('报告容器不存在');
     root.classList.add('home-report');
-    let target, report, media, video, mediaRegion, banner, list, sourceRegion;
+    let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction;
+    let requestedTarget, originKey = '', readOnly = true;
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
     let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
     const active = token => !destroyed && presented && token === epoch && !controller?.signal.aborted;
@@ -80,6 +87,7 @@
         actions.append(button('打开原始对象', () => onOpen?.(row.open)), button('带入对话', () => onSelection?.({
           kind: 'report', target: {...target}, focus: row.id, label: row.title,
           version: report.version, checked_at: report.checked_at,
+          ...(report.reference ? {address:report.reference.address,report_id:report.report_id,revision:report.revision} : {}),
           text: `${row.title}\n${row.status}\n${row.body}`, sources: row.sources.map(id => sources.get(id)).filter(Boolean).map(s => ({address: s.address, read: s.read, version: s.version}))
         })));
         article.append(actions);
@@ -91,17 +99,114 @@
       const focus = target.focus;
       if (focus) [...list.querySelectorAll('[data-row]')].find(n => n.dataset.row === focus || n.dataset.row.endsWith('/' + focus))?.classList.add('hr-focused');
     }
+    function renderReasoning(plan) {
+      if (!plan?.available) {
+        if (plan?.reason) root.append(el('p', plan.reason, 'hr-muted'));
+        return;
+      }
+      const section = el('section', null, 'hr-reasoning');
+      section.setAttribute('aria-label', '本地结构推理');
+      section.append(el('h3', plan.question), el('p', plan.assumption, 'hr-notice'));
+      const controls = el('div', null, 'hr-actions');
+      const diagrams = el('div', null, 'hr-diagrams');
+      const result = el('p', null, 'hr-reasoning-result'); result.setAttribute('role','status');
+      const names = new Map(plan.nodes.map(n => [n.id,n.title]));
+      const dependency = plan.mode === 'dependency';
+      let mode = 'source';
+      const svgNode = (tag, attrs = {}, text) => {
+        const node = document.createElementNS('http://www.w3.org/2000/svg',tag);
+        Object.entries(attrs).forEach(([key,value]) => node.setAttribute(key,value));
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+      function diagram(restored) {
+        const box = el('figure'), label = el('figcaption');
+        const svg = svgNode('svg', {viewBox:'0 0 640 420', role:'img'});
+        const title = svgNode('title',{},restored ? '恢复遍历后的依赖图' : '原始关系图');
+        svg.append(title);
+        const points = new Map(plan.nodes.map(n=>[n.id,[35+n.x*570,40+n.y*335]]));
+        function line(from,to,color,labelText,dashed=false) {
+          const [x1,y1] = points.get(from), [x2,y2] = points.get(to);
+          const dx=x2-x1,dy=y2-y1,t=Math.min(65/Math.max(.01,Math.abs(dx)),30/Math.max(.01,Math.abs(dy)),.44);
+          const ax=x1+dx*t,ay=y1+dy*t,bx=x2-dx*t,by=y2-dy*t;
+          const g=svgNode('g',{'stroke':color,'fill':color});
+          g.append(svgNode('line',{x1:ax,y1:ay,x2:bx,y2:by,'stroke-width':dashed?4:2,...(dashed?{'stroke-dasharray':'7 4'}:{})}));
+          const angle=Math.atan2(dy,dx),pointsText=[[bx,by],[bx-9*Math.cos(angle-.5),by-9*Math.sin(angle-.5)],[bx-9*Math.cos(angle+.5),by-9*Math.sin(angle+.5)]].map(p=>p.join(',')).join(' ');
+          g.append(svgNode('polygon',{points:pointsText}));
+          if(labelText) g.append(svgNode('text',{x:(x1+x2)/2,y:(y1+y2)/2-12,'text-anchor':'middle','stroke':'none','font-size':13},labelText));
+          svg.append(g);return g;
+        }
+        const edgeNodes=plan.edges.map(edge=>({edge,node:line(edge.from,edge.to,edge.kind==='depends_on'?'#4263c7':'#9aa5b8',edge.kind==='depends_on'?'依赖':edge.label)}));
+        const trace=plan.after.trace.map(p=>line(p.from,p.to,'#835cc4','',true));
+        const nodeGroups=plan.nodes.map(n=>{
+          const [x,y]=points.get(n.id),g=svgNode('g',{'data-node':n.id});
+          const rect=svgNode('rect',{x:x-60,y:y-27,width:120,height:54,rx:8,fill:'#fff',stroke:n.id===plan.seed?'#4263c7':'#aebbd0','stroke-width':2});
+          g.append(rect);
+          const chars=Array.from(n.title);
+          [chars.slice(0,8).join(''),chars.slice(8,16).join('')].forEach((value,i)=>g.append(svgNode('text',{x,y:y-3+i*18,'text-anchor':'middle','font-size':15},value)));
+          g.append(svgNode('title',{},n.title));svg.append(g);return {n,rect};
+        });
+        const [sx,sy]=points.get(plan.seed),gate=svgNode('g',{fill:'#ad661d'});
+        gate.append(svgNode('rect',{x:sx+65,y:sy-29,width:6,height:58}),svgNode('text',{x:sx,y:sy-39,'text-anchor':'middle','font-size':13},'假设禁用'));
+        svg.append(gate);
+        box.append(label,svg);
+        function update() {
+          box.hidden=restored && mode!=='compare';
+          const showTrace=dependency && (restored || mode==='restored');
+          trace.forEach(n=>n.style.opacity=showTrace?'1':'0');
+          gate.style.opacity=dependency && !showTrace && mode!=='source'?'1':'0';
+          edgeNodes.forEach(({edge,node})=>node.style.opacity=!dependency && (restored || mode==='restored') && edge.kind!=='depends_on'?'.12':'1');
+          nodeGroups.forEach(({n,rect})=>rect.setAttribute('fill',showTrace && plan.after.reached.includes(n.id)?'#e8f5ef':'#fff'));
+          label.textContent=mode==='source'?'原始关系（箭头方向不变）':dependency?(showTrace?'恢复起点 · 可达 '+plan.after.reached.length+' 项':'假设禁用 · 可达 '+plan.before.reached.length+' 项'):(restored || mode==='restored'?'依赖证据不足 · 影响未知':'来源原图');
+        }
+        return {box,update};
+      }
+      const left=diagram(false),right=diagram(true);diagrams.append(left.box,right.box);
+      const buttons=[];
+      for(const [value,label] of [['source','原始关系'],['blocked',dependency?'假设禁用':'语义核对'],['restored',dependency?'恢复起点':'严格依赖图'],['compare','并排比较']]) {
+        const b=button(label,()=>{mode=value;update();});buttons.push([value,b]);controls.append(b);
+      }
+      function update() {
+        left.update();right.update();diagrams.classList.toggle('hr-compare',mode==='compare');
+        buttons.forEach(([value,b])=>b.setAttribute('aria-pressed',String(mode===value)));
+        result.textContent=dependency?'恢复后的可达集合：'+(plan.after.reached.map(id=>names.get(id)).join('、')||'空集')+'。未连入本次集合：'+(plan.unconnected.map(id=>names.get(id)).join('、')||'无')+'。':'当前没有 depends_on 证据；影响未知，不能判定没有影响。';
+      }
+      section.append(controls,diagrams,result,el('p',plan.rule,'hr-muted'),el('p',plan.limit,'hr-muted'));
+      root.append(section);update();
+    }
     function render() {
       stopMedia(); root.replaceChildren();
       const header = el('header');
       header.append(el('h2', report.title), el('p', report.goal));
       header.append(el('p', `${target.kind} · ${target.id} · 核对 ${date(report.checked_at)} · 版本 ${report.version.slice(0, 12)}`, 'hr-muted'));
       const actions = el('div', null, 'hr-actions');
-      actions.append(button('刷新报告', () => load().catch(() => {})), button('生成讲解视频', () => generate(false)));
+      if (report.report_id) actions.append(button('刷新为新版本', () => refresh()));
+      else actions.append(button('保存汇报', () => save().catch(() => {})));
+      mediaAction=el('span');actions.append(mediaAction);
+      if(report.media?.status==='ready') mediaAction.append(el('span','视频已保存','hr-muted'));
+      else if (report.reasoning?.available) mediaAction.append(button('生成讲解视频', () => generate(false)));
+      for (const item of report.exports || []) {
+        const link = el('a', ({'report.html':'下载正文','report.json':'下载来源快照','slides.pptx':'下载生成的PPT'})[item.name] || `下载关联PPT ${item.name}`);
+        link.href = item.url; link.download = item.name; actions.append(link);
+      }
       header.append(actions); root.append(header);
+      if(report.report_id) {
+        const attachment=el('details');attachment.append(el('summary','关联已有PPT'));
+        const address=el('input');address.placeholder='PPT的正式资源地址';address.setAttribute('aria-label','关联PPT资源地址');
+        const result=el('p');result.setAttribute('role','status');
+        attachment.append(address,button('导入为新版本',async()=>{
+          const token=epoch;
+          try {
+            const updated=await request(`${API}/attachments`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,expected_revision:report.latest_revision,address:address.value})});
+            if(active(token)) {result.textContent='已关联，新版本已打开。';onOpen?.({view:'report',target:updated.reference.target});}
+          }catch(error){if(active(token))result.textContent=error.message;}
+        }),result);header.append(attachment);
+      }
       banner = el('div', null, 'hr-notice'); banner.setAttribute('role','status'); banner.hidden = true; root.append(banner);
       for (const warning of report.warnings) root.append(el('p', warning, 'hr-notice'));
       mediaRegion = el('section', null, 'hr-media'); mediaRegion.hidden = true; mediaRegion.setAttribute('aria-label', '讲解视频'); root.append(mediaRegion);
+      renderReasoning(report.reasoning);
+      if (report.reasoning?.available) root.append(el('p','配音使用本地机械合成；当前没有已配置的自然语音服务。','hr-muted'));
       if (report.rows.length) {
         const interactive = el('section', null, 'hr-interactive'); interactive.setAttribute('aria-label', '筛选汇报条目');
         const filters = el('div', null, 'hr-actions');
@@ -119,6 +224,11 @@
     }
     function renderMedia(state) {
       media = state;
+      if(mediaAction) {
+        mediaAction.replaceChildren();
+        if(state.status==='ready') mediaAction.append(el('span','视频已保存','hr-muted'));
+        else if(state.status==='pending') mediaAction.append(el('span','视频生成中','hr-muted'));
+      }
       mediaRegion.hidden = false;
       mediaRegion.replaceChildren();
       if (state.status !== 'ready') {
@@ -126,22 +236,29 @@
         if (state.status === 'failed') mediaRegion.append(button('重试视频', () => generate(true)));
         return;
       }
-      const base = `${API}/media/${state.job_id}`;
+      const base = state.base_url || `${API}/reports/${report.report_id}/${report.revision}/file`;
       video = el('video'); video.controls = true; video.preload = 'metadata'; video.playsInline = true;
       video.src = `${base}/video.mp4`; video.poster = `${base}/poster.png`;
       const track = el('track'); track.kind = 'subtitles'; track.srclang = 'zh'; track.label = '中文字幕'; track.src = `${base}/captions.vtt`; video.append(track);
       video.onerror = () => { if (presented) validate().catch(() => {}); };
       mediaRegion.append(el('h3', '视频讲解'), video);
+      if(state.imported_from) mediaRegion.append(el('p','已恢复这份快照先前生成的视频。','hr-muted'));
       const chapters = el('nav', null, 'hr-actions'); chapters.setAttribute('aria-label', '视频章节');
       for (const chapter of state.chapters) chapters.append(button(`${Math.floor(chapter.start / 60)}:${String(Math.floor(chapter.start % 60)).padStart(2,'0')} ${chapter.title}`, () => {video.currentTime = chapter.start;}));
       const transcript = el('details'); transcript.append(el('summary', '文字稿'), el('pre', state.transcript));
       mediaRegion.append(chapters, transcript, el('small', `讲解时长 ${Math.round(state.duration)} 秒 · 生成用时 ${state.generation_seconds} 秒 · 报告版本 ${state.version.slice(0,12)}`));
       if (state.scope_note) mediaRegion.append(el('p', state.scope_note, 'hr-muted'));
+      if (state.voice_note) mediaRegion.append(el('p', state.voice_note, 'hr-muted'));
+      const downloads = el('nav',null,'hr-actions');
+      for (const [name,label] of [['video.mp4','下载视频'],['captions.vtt','下载字幕'],['transcript.txt','下载讲稿'],['narration.wav','下载音轨']]) {
+        const link = el('a',label); link.href = `${base}/${name}`; link.download = name; downloads.append(link);
+      }
+      mediaRegion.append(downloads);
     }
     async function pollMedia(token) {
-      if (!active(token) || !media?.job_id) return;
+      if (!active(token) || !report?.report_id || !media) return;
       try {
-        const state = await request(`${API}/media/${media.job_id}`);
+        const state = await request(`${API}/reports/${report.report_id}/${report.revision}/media`);
         if (!active(token)) return;
         if (state.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 3000);
         else renderMedia(state);
@@ -152,7 +269,9 @@
       busy = true; const token = epoch;
       mediaRegion.hidden = false; mediaRegion.replaceChildren(el('p', '正在核对来源并准备讲解…', 'hr-notice'));
       try {
-        const state = await request(`${API}/media`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({target, version: report.version, retry})});
+        if (!report.report_id) await save();
+        if (!active(token) || !report?.report_id) return;
+        const state = await request(`${API}/media`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({report_id:report.report_id, revision:report.revision, retry})});
         if (!active(token)) return;
         stopMedia(); renderMedia(state);
         if (state.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 1000);
@@ -164,31 +283,73 @@
       } finally { if (token === epoch) busy = false; }
     }
     function schedule() { clearTimeout(refreshTimer); if (presented && !destroyed) refreshTimer = setTimeout(() => validate().catch(() => {}), 20000); }
+    function accept(result) {
+      report = result; target = {...result.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
+      if (result.reference) {
+        requestedTarget = {...result.reference.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
+        onReference?.({...result.reference,target:{...requestedTarget}});
+      }
+      media = result.media || null; render(); if (media) renderMedia(media);
+      if (media?.status === 'pending') mediaTimer = setTimeout(() => pollMedia(epoch),1000);
+      schedule();
+    }
+    async function save() {
+      if (report?.report_id) return report;
+      const token = epoch;
+      originKey ||= `home-request/v1:${requestUUID()}`;
+      try {
+        const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.version,origin_key:originKey})});
+        if (active(token)) accept(result);
+        return result;
+      } catch(error) {if(active(token)) {banner.hidden=false;banner.textContent=`保存失败：${error.message}`;} throw error;}
+    }
+    async function refresh() {
+      if (!report?.report_id || busy || destroyed) return;
+      const token = epoch; busy=true;
+      try {
+        const result=await request(`${API}/refresh`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,expected_revision:report.latest_revision})});
+        if(active(token)) {
+          banner.hidden=false;banner.replaceChildren(el('span',`已生成修订 ${result.revision}，当前保留修订 ${report.revision}。`));
+          onOpen?.({view:'report',target:result.reference.target});
+        }
+      } catch(error) {if(active(token)) {banner.hidden=false;banner.textContent=`刷新失败：${error.message}`;}}
+      finally {if(token===epoch) busy=false;}
+    }
     async function validate() {
       if (!presented || destroyed || !target || !report || rechecking) return;
       rechecking = true; const token = epoch;
       try {
         // Reopen old snapshot dependencies as well as the new target. A source
         // removed from the current report can still be present in its old video.
-        await request(`${API}/validate`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sources:report.sources})});
-        const fresh = await request(`${API}?${new URLSearchParams(target)}`);
+        const validation = await request(`${API}/validate`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(report.report_id ? {report_id:report.report_id,revision:report.revision} : {sources:report.sources})});
+        const fresh = report.report_id ? null : await request(`${API}?${new URLSearchParams(target)}`);
         if (!active(token)) return;
-        if (fresh.version !== report.version) {
-          banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前报告保留原快照。'), button('显示新版', () => load().catch(() => {})));
+        if (validation.source_changed || fresh && fresh.version !== report.version) {
+          banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前报告保留原快照。'), button('生成新版', () => report.report_id ? refresh() : load().catch(() => {})));
         }
         root.hidden = false;
       } catch (error) { if (active(token)) { message(`来源暂不可读，已撤去报告：${error.message}`, true); root.hidden = false; } }
       finally { if (token === epoch) {rechecking = false; schedule();} }
     }
     async function load() {
-      stop(); if (!presented || destroyed || !target || externalSignal?.aborted) return;
+      stop(); if (!presented || destroyed || !requestedTarget || externalSignal?.aborted) return;
       controller = new AbortController(); const token = epoch;
       message('正在读取来源…'); root.hidden = false;
       try {
-        const result = await request(`${API}?${new URLSearchParams(target)}`);
+        let result;
+        if (requestedTarget.kind === 'report') result = await request(`${API}?${new URLSearchParams(requestedTarget)}`);
+        else if (originKey && readOnly) result = await request(`${API}/origin?${new URLSearchParams({origin_key:originKey})}`);
+        else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey})});
+        else result = await request(`${API}?${new URLSearchParams(requestedTarget)}`);
         if (!active(token)) return;
-        report = result; media = null; render(); schedule();
-      } catch (error) { if (active(token)) {message(`报告暂不可读：${error.message}`, true); throw error;} }
+        accept(result);
+      } catch (error) { if (active(token)) {
+        if(error.status===404 && originKey && readOnly && requestedTarget.kind!=='report') {
+          message('这次汇报尚未生成。',true);
+          root.append(button('生成汇报',()=>{readOnly=false;load().catch(()=>{});}));
+        } else message(`报告暂不可读：${error.message}`, true);
+        throw error;
+      } }
     }
     async function show(nextTarget, options = {}) {
       if (destroyed) throw new Error('报告组件已关闭');
@@ -196,7 +357,8 @@
       externalSignal = options.signal;
       externalAbort = () => {stop(); stopMedia(); root.replaceChildren();};
       externalSignal?.addEventListener('abort', externalAbort, {once:true});
-      target = {...nextTarget}; query = ''; status = ''; report = null; media = null;
+      requestedTarget = {...nextTarget}; target = {...nextTarget}; originKey=options.originKey || '';readOnly=options.readOnly !== false;
+      query = ''; status = ''; report = null; media = null;
       root.dataset.requestId = options.requestId || '';
       if (externalSignal?.aborted) {externalAbort(); return;}
       return load();
@@ -229,9 +391,11 @@
   if (standalone) {
     const query = new URLSearchParams(location.search);
     const view = create({root:standalone, onOpen({view,target}) {
-      const href = target.address ? `/r/${encodeURIComponent(target.address)}` : view === 'map' ? `/projects?project=${encodeURIComponent(target.id)}` : `/lineage?view=frontier&lineage=${encodeURIComponent(target.id)}`;
+      const href = target.kind === 'report' ? `/home-report?${new URLSearchParams({kind:'report',id:target.id,...(target.revision?{revision:target.revision}:{})})}` : target.address ? `/r/${encodeURIComponent(target.address)}` : view === 'map' ? `/projects?project=${encodeURIComponent(target.id)}` : `/lineage?view=frontier&lineage=${encodeURIComponent(target.id)}`;
       window.open(href, '_blank', 'noopener');
     }, onSelection(value) {navigator.clipboard?.writeText(value.text).catch(() => {});} });
-    view.show(Object.fromEntries(['kind','id','focus'].map(key => [key,query.get(key) || '']))).catch(() => {});
+    const target=Object.fromEntries(['kind','id','focus'].map(key => [key,query.get(key) || '']));
+    if(target.id.startsWith('report_')) {target.kind='report';if(query.has('revision')) target.revision=query.get('revision');}
+    view.show(target).catch(() => {});
   }
 })();

@@ -1304,6 +1304,10 @@
       this.readConsumer = consumer;
       this.readerId = `state-${++stateReaderSequence}`;
       this.reloadReasons = new Set();
+      this.reloadResidentIds = new Set();
+      this.retryResidentIds = new Set();
+      this.loadingResidentIds = new Set();
+      this.reloadScheduled = false;
       this.loading = null;
       this.loadingForce = false;
       this.reloadRequested = false;
@@ -1322,12 +1326,14 @@
       }
     }
 
-    async load({ force = false, reasons = ["explicit_read"] } = {}) {
+    async load({ force = false, reasons = ["explicit_read"], residentIds = this.residentIds } = {}) {
+      const targets = this.residentIds.filter(id => residentIds.includes(id) || this.retryResidentIds.has(id));
       reasons = [...new Set(Array.isArray(reasons) ? reasons.slice(0, 32) : ["unknown"])];
       if (this.loading) {
-        if (force && !this.loadingForce) {
+        if (force && (!this.loadingForce || targets.some(id => !this.loadingResidentIds.has(id)))) {
           this.reloadRequested = true;
           reasons.forEach(reason => this.reloadReasons.add(reason));
+          targets.forEach(id => this.reloadResidentIds.add(id));
         }
         const loading = this.loading;
         // A forced read queued behind an older snapshot is not finished when
@@ -1337,43 +1343,57 @@
       }
       if (this.retryTimer !== null) window.clearTimeout(this.retryTimer);
       this.retryTimer = null;
+      this.retryResidentIds.clear();
+      this.loadingResidentIds = new Set(targets);
       this.batching = true;
-      const loading = loadResidentStateSnapshots(this.residentIds, {
+      const loading = loadResidentStateSnapshots(targets, {
         force, includeViewerState: this.includeViewerState,
         readObservation: { consumer: this.readConsumer, reader_id: this.readerId, reasons: [...reasons] },
       })
         .then(states => {
           this.retryDelayMs = 1000;
-          this.states = clone(states);
+          // A target's invalidation does not invalidate its peers. Preserve
+          // their current projections, including updates received during this read.
+          for (const residentId of targets) {
+            if (Object.hasOwn(states, residentId)) this.states[residentId] = clone(states[residentId]);
+            else delete this.states[residentId];
+          }
           this.batching = false;
           this.emit({ type: "snapshot" });
           return clone(this.states);
         }).catch(error => {
           this.batching = false;
           this.emit({ type: "error", error });
-          this.scheduleRetry(error, reasons);
+          this.scheduleRetry(error, reasons, targets);
           throw error;
         }).finally(() => {
           if (this.loading !== loading) return;
           this.loading = null;
           this.loadingForce = false;
-          if (!this.reloadRequested) return;
-          this.reloadRequested = false;
-          const queuedReasons = [...this.reloadReasons];
-          this.reloadReasons.clear();
-          if (this.listener) this.load({ force: true, reasons: queuedReasons }).catch(() => {});
+          this.loadingResidentIds.clear();
+          this.reloadInvalidated();
         });
       this.loading = loading;
       this.loadingForce = force;
       return loading;
     }
 
-    scheduleRetry(error, reasons) {
+    reloadInvalidated() {
+      if (!this.reloadRequested || !this.listener) return;
+      this.reloadRequested = false;
+      const reasons = [...this.reloadReasons], residentIds = [...this.reloadResidentIds];
+      this.reloadReasons.clear();
+      this.reloadResidentIds.clear();
+      this.load({ force: true, reasons, residentIds }).catch(() => {});
+    }
+
+    scheduleRetry(error, reasons, residentIds) {
       const transient = isTransientSyncError(error);
       if (!this.listener || !transient || this.retryTimer !== null) return;
+      residentIds.forEach(id => this.retryResidentIds.add(id));
       this.retryTimer = window.setTimeout(() => {
         this.retryTimer = null;
-        if (this.listener) this.load({ force: true, reasons: [...reasons, "transient_retry"] }).catch(() => {});
+        if (this.listener) this.load({ force: true, reasons: [...reasons, "transient_retry"], residentIds }).catch(() => {});
       }, this.retryDelayMs);
       this.retryDelayMs = Math.min(this.retryDelayMs * 2, 10000);
     }
@@ -1395,25 +1415,30 @@
       this.retryTimer = null;
       this.reloadRequested = false;
       this.reloadReasons.clear();
+      this.reloadResidentIds.clear();
+      this.retryResidentIds.clear();
       this.subscriptions.forEach(unsubscribe => unsubscribe());
       this.subscriptions = [];
       this.listener = null;
     }
 
     onStateUpdate(update) {
-      if (update?.type === "invalid") {
-        if (this.loading) {
-          if (this.batching || !this.loadingForce) {
-            this.reloadRequested = true;
-            this.reloadReasons.add(update.reason || "unknown");
-          }
-          return;
-        }
-        this.load({ force: true, reasons: [update.reason || "unknown"] }).catch(() => {});
-        return;
-      }
       const residentId = String(update?.resident_id || "");
       if (!residentId || !this.residentIds.includes(residentId)) return;
+      if (update?.type === "invalid") {
+        this.reloadRequested = true;
+        this.reloadReasons.add(update.reason || "unknown");
+        this.reloadResidentIds.add(residentId);
+        if (this.loading || this.reloadScheduled) return;
+        // Focus/visibility invalidates every subscribed store synchronously.
+        // Collect that set before dispatching, retaining one grouped read.
+        this.reloadScheduled = true;
+        Promise.resolve().then(() => {
+          this.reloadScheduled = false;
+          if (!this.loading) this.reloadInvalidated();
+        });
+        return;
+      }
       if (update.type === "unavailable") delete this.states[residentId];
       else this.states[residentId] = clone(update?.state || {});
       if (!this.batching) this.emit({ type: update.type, event: clone(update?.event) });

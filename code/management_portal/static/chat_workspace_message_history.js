@@ -9,7 +9,7 @@
   // message's quote block goes to the message it quotes. A failed click goes to
   // the host's onError, or else to a toast.
   const DEPENDENCIES = Object.freeze([
-    "bindResourceChips", "composerQuoteHtml", "currentController", "els", "historyScope", "inheritanceCardHtml",
+    "bindResourceChips", "composerQuoteHtml", "currentController", "els", "historyScope", "inheritanceCardHtml", "prepareMessageNavigation",
     "messageRenderKey", "messageQuoteExcerpt", "messageQuotable", "messageRole", "contractResidentId", "messageViewportAtTail", "options", "state", "syncMessageScrollMode", "toggleMessageFold",
   ]);
 
@@ -17,7 +17,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceMessageHistory is missing: ${missing.join(", ")}`);
     const {
-      bindResourceChips, composerQuoteHtml, currentController, els, historyScope, inheritanceCardHtml,
+      bindResourceChips, composerQuoteHtml, currentController, els, historyScope, inheritanceCardHtml, prepareMessageNavigation,
       messageRenderKey, messageQuoteExcerpt, messageQuotable, messageRole, contractResidentId, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     } = dependencies;
 
@@ -28,7 +28,7 @@
     };
 
     // Shows a message of this conversation, loading earlier history until it is there.
-    const revealMessage = async messageId => {
+    const revealMessage = async (messageId, { alignStart = false } = {}) => {
       const key = String(messageId || "").trim();
       if (!key || !els.messages) return false;
       const scope = historyScope();
@@ -57,9 +57,10 @@
       }
       const fold = row.querySelector('[data-message-fold-toggle][aria-expanded="false"]');
       if (fold) toggleMessageFold(fold);
+      prepareMessageNavigation();
       const box = row.getBoundingClientRect();
       const view = els.messages.getBoundingClientRect();
-      els.messages.scrollTop += box.top - view.top - Math.max(12, (view.height - box.height) / 2);
+      els.messages.scrollTop += box.top - view.top - (alignStart ? 12 : Math.max(12, (view.height - box.height) / 2));
       state.messageTailFollowIntent = messageViewportAtTail(els.messages);
       syncMessageScrollMode();
       row.classList.remove("messageQuoteTarget");
@@ -67,6 +68,36 @@
       row.classList.add("messageQuoteTarget");
       window.setTimeout(() => row.classList.remove("messageQuoteTarget"), 1600);
       return true;
+    };
+
+    // Navigate the rendered conversation, independently of the composer's input
+    // history. Keep a message cursor because scrolling clamps near either end.
+    let userMessageCursor = null;
+    const navigateUserMessage = direction => {
+      if (destroyed || !els.messages) return;
+      const rows = Array.from(els.messages.querySelectorAll('.messageList > [data-message-key]')).filter(row => {
+        const item = state.messageByKey.get(row.dataset.messageKey);
+        const sender = item?.origin?.sender?.kind;
+        return item && messageRole(item) === "human" && (!sender || sender === "user");
+      });
+      const scope = historyScope();
+      const cursor = userMessageCursor?.scope === scope
+        && Math.abs(userMessageCursor.scrollTop - els.messages.scrollTop) < 1
+        ? rows.findIndex(row => row.dataset.messageKey === userMessageCursor.key) : -1;
+      let target;
+      if (cursor >= 0) target = rows[cursor + direction];
+      else if (state.messageTailFollowIntent) target = direction < 0 ? rows.at(-1) : null;
+      else {
+        const top = els.messages.getBoundingClientRect().top + 12;
+        const visibleRows = rows.filter(row => row.getClientRects().length);
+        target = direction < 0
+          ? visibleRows.filter(row => row.getBoundingClientRect().top < top - 1).at(-1)
+          : visibleRows.find(row => row.getBoundingClientRect().top > top + 1);
+      }
+      if (!target) return;
+      // The row already exists: reveal runs synchronously without loading pages.
+      revealMessage(target.dataset.messageKey, { alignStart: true }).catch(reportError);
+      userMessageCursor = { scope, key: target.dataset.messageKey, scrollTop: els.messages.scrollTop };
     };
 
     const loadOlder = button => {
@@ -261,7 +292,7 @@
     };
 
     return {
-      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     };
   }
 

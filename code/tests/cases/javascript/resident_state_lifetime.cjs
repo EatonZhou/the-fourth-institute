@@ -224,6 +224,74 @@ function response(wanted, options = {}) {
   }))};
 }
 
+test('one invalid Resident refreshes only its projection and preserves its peers', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 3), sub = f.acquire(wanted);
+  await sub.load();
+  f.p.invalidateViewerState(wanted[1]); await tick();
+  assert.deepEqual(f.calls.map(call => call.ids), [wanted, [wanted[1]]]);
+  assert.deepEqual(Object.keys(sub.states()).sort(), wanted);
+  await sub.load({force: true});
+  assert.deepEqual(f.calls[2].ids, wanted, 'explicit calibration still refreshes the complete collection');
+});
+
+test('focus still groups calibration of every subscribed Resident into one batch', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 3), sub = f.acquire(wanted);
+  Object.defineProperty(f.w.document, 'hidden', {value: false});
+  await sub.load();
+  f.w.dispatchEvent(new f.w.Event('focus')); await tick();
+  assert.deepEqual(f.calls.map(call => call.ids), [wanted, wanted]);
+});
+
+test('invalidations during a read coalesce only the affected Residents and recover omissions', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 3), sub = f.acquire(wanted);
+  await sub.load();
+  const pending = [];
+  f.w.PortalResidentService.loadStates = (selected, options) => {
+    f.calls.push({ids: [...selected], options});
+    const read = deferred(); pending.push({...read, selected, options}); return read.promise;
+  };
+  f.p.invalidateViewerState(wanted[0]); await tick();
+  f.p.invalidateViewerState(wanted[1]);
+  f.p.invalidateViewerState(wanted[1]);
+  pending[0].resolve(response(pending[0].selected, pending[0].options)); await tick();
+  assert.deepEqual(f.calls.slice(1).map(call => call.ids), [[wanted[0]], [wanted[1]]]);
+  pending[1].resolve({states: []}); await tick();
+  assert.deepEqual(Object.keys(sub.states()).sort(), [wanted[0], wanted[2]]);
+  const recovery = sub.load(); await tick();
+  assert.deepEqual(Array.from(pending[2].selected), [wanted[1]]);
+  pending[2].resolve(response(pending[2].selected, pending[2].options)); await recovery;
+  assert.deepEqual(Object.keys(sub.states()).sort(), wanted);
+});
+
+test('a full calibration behind a targeted read also refreshes the other members', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 3), sub = f.acquire(wanted);
+  await sub.load();
+  const pending = [];
+  f.w.PortalResidentService.loadStates = (selected, options) => {
+    f.calls.push({ids: [...selected], options});
+    const read = deferred(); pending.push({...read, selected, options}); return read.promise;
+  };
+  f.p.invalidateViewerState(wanted[0]); await tick();
+  const full = sub.load({force: true});
+  pending[0].resolve(response(pending[0].selected, pending[0].options)); await tick();
+  assert.deepEqual(f.calls[2].ids, wanted);
+  pending[1].resolve(response(pending[1].selected, pending[1].options)); await full;
+});
+
+test('a new invalidation cannot cancel a different member\'s pending recovery', async t => {
+  const f = fixture(t), wanted = ids.slice(0, 3), sub = f.acquire(wanted);
+  await sub.load();
+  f.w.PortalResidentService.loadStates = async (selected, options) => {
+    f.calls.push({ids: [...selected], options});
+    if (f.calls.length === 2) throw new f.w.TypeError('offline');
+    return response(selected, options);
+  };
+  f.p.invalidateViewerState(wanted[0]); await tick();
+  f.p.invalidateViewerState(wanted[1]); await tick();
+  assert.deepEqual(f.calls[2].ids, wanted.slice(0, 2));
+  assert.deepEqual(Object.keys(sub.states()).sort(), wanted);
+});
+
 test('subscription inspection is passive and exposes an unreleased state consumer', t => {
   const f = fixture(t), id = ids[0];
   const empty = f.p.subscriptionSnapshot(id);

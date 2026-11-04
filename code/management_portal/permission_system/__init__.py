@@ -141,8 +141,26 @@ def _signed_in(actor: Any) -> bool:
 # -- entry checks ---------------------------------------------------------------
 
 
+def _upload_read(declaration, arguments, context):
+    """Upload handles have the upload owner's authenticated-file read rule.
+
+    This domain does not contain formal resource IDs or permission-tree nodes.
+    Ordinary addresses continue through the configured PAR decision below.
+    """
+    if declaration.name not in {"ReadResource", "ResolveResource"}:
+        return False
+    from management_portal.resources import upload_files
+
+    if upload_files.file_reference(arguments.get("address")) is None:
+        return False
+    upload_files.authorize(arguments["address"], actor=context.caller)
+    return True
+
+
 def authorize_instruction(declaration: Any, arguments: Mapping[str, Any], context: Any, *, instruction_id: str = "") -> None:
     """Raise InstructionError when the caller may not run this HATG call."""
+    if _upload_read(declaration, arguments, context):
+        return None
     if _off() or administrators.passes(context.caller, declaration.name, arguments):
         return None
     return active().authorize_instruction(declaration, arguments, context, instruction_id=instruction_id)
@@ -150,6 +168,24 @@ def authorize_instruction(declaration: Any, arguments: Mapping[str, Any], contex
 
 def authorize_reads(declaration: Any, arguments: list[Mapping[str, Any]], context: Any) -> list[Any]:
     """One refusal (or ``None``) per argument set of a read instruction, in order."""
+    if declaration.name in {"ReadResource", "ResolveResource"}:
+        results, remaining, positions = [None] * len(arguments), [], []
+        from management_portal.hatg.contracts import normalize_error
+
+        for index, item in enumerate(arguments):
+            try:
+                handled = _upload_read(declaration, item, context)
+            except (ValueError, PermissionError) as error:
+                results[index] = normalize_error(error)
+                continue
+            if not handled:
+                positions.append(index)
+                remaining.append(item)
+        if remaining:
+            decisions = [None] * len(remaining) if _off() else active().authorize_reads(declaration, remaining, context)
+            for index, decision in zip(positions, decisions):
+                results[index] = decision
+        return results
     if _off():
         return [None] * len(arguments)
     return active().authorize_reads(declaration, arguments, context)

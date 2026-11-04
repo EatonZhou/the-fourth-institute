@@ -129,7 +129,7 @@
     async function fetchMeta(document = {}) {
       if (String(document.source || "") === "workspace_link") {
         const path = String(document.path || "").trim();
-        return path ? apiGet(options.linkFileUrl(path, { meta: true })) : null;
+        return path ? window.PortalFileLinks.probe(path, { throwOnError: true }) : null;
       }
       if (document.resident_id || document.directory_id || sourceType(document) === "resident") {
         const parts = residentParts(document.path || "");
@@ -163,7 +163,7 @@
       if (String(document.source || "") === "workspace_link") {
         const path = String(document.path || "").trim();
         if (!path) return null;
-        return normalize(await apiGet(options.linkFileUrl(path)), { ...document, source: "workspace_link" });
+        return normalize(await window.PortalFileLinks.load(path), { ...document, source: "workspace_link" });
       }
       if (document.resident_id || document.directory_id || sourceType(document) === "resident") {
         const parts = residentParts(document.path || "");

@@ -303,8 +303,7 @@
     const loadingId = options.loadingId || "";
     return window.PortalI18n.html`<div class="paneHead chatHead portalWorkspaceHead">
       <div class="paneHeadText chatHeadText">
-        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的通知、路由与单独对话" hidden></span></div>
-        <div class="familySoloProxy" data-family-solo="header" role="status" hidden></div>
+        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的通知、路由与单独对话" hidden></span><div class="familySoloProxy" data-family-solo="header" role="status" hidden></div></div>
         <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div>
       </div>
       <div class="paneHeadActions actionGroup">
@@ -718,7 +717,7 @@
     els.status?.addEventListener("dblclick", handleSubtitleCopy);
 
     const {
-      messageViewportMeasurable, syncMessageScrollMode, resetMessageScrollGesture, followTailAfterResize,
+      messageViewportMeasurable, syncMessageScrollMode, resetMessageScrollGesture, prepareMessageNavigation, followTailAfterResize,
       destroyMessageViewport,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageViewport").createMessageViewport({
       els, messageInstanceSelector, messageNodeKey, messageViewportAtTail, root, state,
@@ -796,9 +795,9 @@
     });
 
     const {
-      revealMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageHistory").createMessageHistory({
-      bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml,
+      bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml, prepareMessageNavigation,
       messageRenderKey, messageQuoteExcerpt, messageQuotable, messageRole, contractResidentId, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
     });
 
@@ -1540,6 +1539,7 @@
         fileInput: els.fileInput,
         historyScope,
         history,
+        onNavigateUserMessage: navigateUserMessage,
         canSend: canSubmit,
         onSend: () => {
           const payload = controller.payload();
@@ -1762,7 +1762,7 @@
         }),
         attachmentUploadContext: controller => ({ resident_id: controller.target().resident_id }),
         previewUrlForPath: path => window.PortalFileLinks.imagePreviewUrl(path),
-        renderMarkdown: text => window.MD?.render?.(text) || escapeHtml(text).replace(/\n/g, window.PortalI18n.markup("<br>")),
+        renderMarkdown: (text, renderOptions) => window.MD?.render?.(text, renderOptions) || escapeHtml(text).replace(/\n/g, window.PortalI18n.markup("<br>")),
         renderMessageBody: (item, context) => this.conversationView()?.renderMessageBody?.(item, context)
           ?? residentMessageBody(item, context),
         pinMessages: true,

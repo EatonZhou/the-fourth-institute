@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { installInstructionStreams } = require("./resident_browser_stream.cjs");
+const { installNativeFiles } = require("./resident_browser_files.cjs");
 
 async function openResidentPortal({ chromium, origin, residentId, lineageId, headless = true, python = "python3" }) {
   const url = new URL(origin);
@@ -27,6 +28,7 @@ async function openResidentPortal({ chromium, origin, residentId, lineageId, hea
   try {
     const context = await browser.newContext({ serviceWorkers: "block" });
     const streamState = await installInstructionStreams(context, { origin: url.origin, headers });
+    const nativeFiles = installNativeFiles(context, url.origin);
     await context.route("**/*", async route => {
       const request = route.request();
       const target = new URL(request.url());
@@ -39,6 +41,7 @@ async function openResidentPortal({ chromium, origin, residentId, lineageId, hea
         return route.continue({ headers: authenticated });
       }
       try {
+        if (nativeFiles.handles(request)) return await nativeFiles.forward(route, authenticated);
         const response = await route.fetch({ headers: authenticated, maxRedirects: 0, timeout: 360000 });
         if ([301, 302, 303, 307, 308].includes(response.status())) {
           await route.abort("blockedbyclient");

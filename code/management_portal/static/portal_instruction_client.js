@@ -280,7 +280,13 @@
       xhr.send(file);
     });
     const uploadId = String(created.upload_id || "");
-    return { upload_id: uploadId, url: `/api/uploads/${uploadId}`, file_name: fileName, media_type: mediaType, size: Number(file?.size || 0) };
+    const fileReference = { upload_id: uploadId };
+    const metadata = await execute("ReadResource", { address: fileReference, meta_only: true });
+    return {
+      ...metadata, upload_id: uploadId, file_reference: fileReference,
+      url: metadata.content_url, file_name: metadata.name,
+      media_type: metadata.content_type, size: metadata.size,
+    };
   }
 
   window.PortalInstructionClient = Object.freeze({

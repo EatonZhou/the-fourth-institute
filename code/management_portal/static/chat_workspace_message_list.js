@@ -353,8 +353,10 @@
         const renderMarkdown = options.renderMarkdown || ((value) => (
           window.MD?.render?.(value) || escapeHtml(value).replace(/\n/g, "<br>")
         ));
-        const renderContent = value => renderResidentHandoffs(value, text => renderMarkdownWithAttachmentRefs(
-          text, { ...options, renderMarkdown }
+        // Per-conversation semantic Markdown extensions; the default renderer
+        // and attachment/reference processing remain the owners of the body.
+        const renderContent = (value, renderOptions) => renderResidentHandoffs(value, text => renderMarkdownWithAttachmentRefs(
+          text, { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: markdown => renderMarkdown(markdown, renderOptions) }
         ));
         const defaultBodyHtml = renderContent(content);
         const customBodyHtml = options.renderMessageBody

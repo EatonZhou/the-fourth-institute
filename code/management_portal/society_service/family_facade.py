@@ -802,8 +802,9 @@ def project_messages(
                 elif review.get("status") == "waiting":
                     message["relay"] = {"state": "quota_review", "resident_id": review["member_id"],
                                         "quota_remaining_percent": review.get("quota_remaining_percent")}
-                elif direct := quoted_member(facade, message) or continued_member(facade, message):
-                    # A quote of a member's message, or a Resident's next request, goes to its member without the Router.
+                elif direct := direct_member(facade, message):
+                    # Match dispatch's frozen author policy, including Solo and
+                    # question ownership, rather than announcing Router work.
                     message["relay"] = {"state": "delivering", "resident_id": direct, **_member_view(direct)}
                 else:
                     message["relay"] = {"state": ROUTING_STATE}

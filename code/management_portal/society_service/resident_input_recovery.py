@@ -136,6 +136,17 @@ def _validate_recovery_item(record: Mapping[str, Any], item: Mapping[str, Any], 
             raise MailboxConflict(f"群体原成员或顺序不一致：{message_id}")
 
 
+def _failed_predecessor(repository, resident_id, message_id, execution_id):
+    if not execution_id:
+        return ''
+    original = repository.agent_data.execution(execution_id) or {}
+    if (original.get('agent_id') == resident_id and original.get('status') in REQUEUEABLE_STATES
+            and any(value.get('message_id') == message_id and value.get('role') == 'primary'
+                    for value in original.get('inputs') or [])):
+        return execution_id
+    return ''
+
+
 def _validate_recovery_infos(
     record: Mapping[str, Any], entry: Mapping[str, Any], job: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
@@ -153,8 +164,21 @@ def _validate_recovery_infos(
     if not execution_id:
         # Accepted inputs may not have reached reservation. An existing round
         # cannot use a lost checkpoint reference to bypass its info-set check.
-        if not infos and latest(repository.agent_data, resident_id, root_id) is None:
-            return []
+        if not infos:
+            previous = latest(repository.agent_data, resident_id, root_id)
+            if previous is None:
+                return []
+            # A previously approved retry may have lost only its preparation
+            # position in the older headless-queue path. Its exact local
+            # accepted envelope carries the immutable failed predecessor.
+            # Infos were already restored by that earlier requeue and now
+            # follow their own held/delivered lifecycle; do not replay them.
+            predecessor = str((entry.get('item') or {}).get('retry_of_execution_id') or '')
+            if (predecessor and previous.get('execution_id') == predecessor
+                    and previous.get('status') in REQUEUEABLE_STATES
+                    and repository.input_state(resident_id, root_id)['state'] == 'queued'):
+                if _failed_predecessor(repository, resident_id, root_id, predecessor):
+                    return []
         raise MailboxConflict("恢复检查点缺少原 Execution 附带身份")
     execution = repository.agent_data.execution(execution_id) or {}
     inputs = {value["message_id"]: value for value in execution.get("inputs") or []}
@@ -206,6 +230,17 @@ def _validate_recovery_infos(
     return copy.deepcopy(infos)
 
 
+def _prepare_requeued_input(record, job, item, waiting, now):
+    """Keep a real, intake-gated head, as ordinary accepted input does."""
+    from . import resident_backend, resident_record_domain
+
+    job[resident_state.INTAKE_FIELD] = resident_record_domain.resident_intake_state(record)
+    resident_execution_work.promote_queue_item(job, item, waiting, now)
+    resident_execution_work.write(record, job)
+    record['session_state'] = resident_record_domain.record_backend_session_state(record)
+    record['last_error'] = ''
+
+
 def requeue(
     resident_id: str, actor: str, message_id: str, *,
     portal_reason: str = "", automatic: bool = False,
@@ -248,6 +283,16 @@ def requeue(
             if (active and job.get("user_message_id") == message_id) or any(
                 item.get("user_message_id") == message_id for item in resident_execution_work.normalized_queue(job)
             ):
+                # Older closed-intake recovery stored only a waiting list.
+                # There is no head for opening intake to dispatch. Repair its
+                # existing first preparation without reopening, reordering or
+                # accepting any of the messages again. Never replace a real
+                # Execution or a session-control operation.
+                waiting = resident_execution_work.normalized_queue(job)
+                if not resident_execution_work.execution_id(job) and not job.get('operation') and waiting:
+                    _prepare_requeued_input(record, job, waiting[0], waiting[1:], now)
+                    record['updated_at'] = now
+                    resident_record_domain.save_resident_record(record)
                 return resident_input_queue_domain.resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
             raise MailboxConflict("这条消息已在等待或正在处理")
         entry = next((item for item in resident_input_checkpoints.checkpoints(record) if item.get("message_id") == message_id), None)
@@ -278,12 +323,11 @@ def requeue(
         infos = _validate_recovery_infos(record, entry, job)
         # Only this recovery owner may mark a fresh reservation as an explicit
         # retry. Pre-reservation accepted orphans have no terminal predecessor.
-        item.pop("retry_of_execution_id", None)
-        predecessor = str(entry.get("execution_id") or "")
-        if predecessor:
-            original = repository.agent_data.execution(predecessor) or {}
-            if original.get("status") in REQUEUEABLE_STATES:
-                item["retry_of_execution_id"] = predecessor
+        predecessor = str(entry.get("execution_id") or item.pop('retry_of_execution_id', '') or '')
+        item.pop('retry_of_execution_id', None)
+        verified = _failed_predecessor(repository, target.resident_id, message_id, predecessor)
+        if verified:
+            item['retry_of_execution_id'] = verified
         item["user_message_id"] = message_id
         item.pop("execution_id", None)
         item["enqueued_at"] = now
@@ -309,14 +353,7 @@ def requeue(
             resident_execution_work.write(record, job)
         else:
             waiting = resident_execution_work.normalized_queue(job)
-            if resident_record_domain.resident_intake_state(record) == resident_state.INTAKE_CLOSED:
-                resident_execution_work.write(record, {"queue": [item, *waiting]})
-            else:
-                next_job = {**item, "started_at": now, "updated_at": now, "error": "", "queue": waiting}
-                resident_execution_work.ensure_execution_id(next_job)
-                resident_execution_work.write(record, next_job)
-                record["session_state"] = resident_record_domain.record_backend_session_state(record)
-                record["last_error"] = ""
+            _prepare_requeued_input(record, job, item, waiting, now)
         if automatic:
             set_recovery_entry(record, message_id, attempts=attempts + 1, recovered_by=organizer,
                                recovered_at=now, disabled=False)

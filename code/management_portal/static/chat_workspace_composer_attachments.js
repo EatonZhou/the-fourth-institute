@@ -17,10 +17,12 @@
     options.workspace?.updateAttachment?.(options.item?.id, { progress: 100 });
     return {
       upload_id: uploaded.upload_id,
+      file_reference: uploaded.file_reference,
+      path: uploaded.url,
       filename: uploaded.file_name,
       content_type: uploaded.media_type,
       size: uploaded.size,
-      kind,
+      kind: String(uploaded.media_type || "").startsWith("image/") ? "image" : "file",
     };
   }
 
@@ -219,6 +221,7 @@
         state.attachments = normalizeComposerAttachments(state.attachments.map(item => item.id === target.id ? {
           ...item,
           upload_id: result?.upload_id || "",
+          file_reference: result?.file_reference || null,
           file_id: result?.file_id || "",
           name: result?.filename || item.name,
           path: result?.path || item.path || "",
@@ -353,6 +356,7 @@
       if (String(previewUrl || "").startsWith("blob:")) ownedAttachmentPreviews.add(previewUrl);
       updateAttachment(attachmentId, {
         upload_id: "",
+        file_reference: null,
         file_id: "",
         original: attachmentOriginal(current),
         name: file.name,
@@ -386,6 +390,7 @@
         if (uploadedPreview !== previewUrl) releaseAttachmentPreview(previewUrl);
         updateAttachment(attachmentId, {
           upload_id: result?.upload_id || "",
+          file_reference: result?.file_reference || null,
           file_id: result?.file_id || "",
           name: result?.filename || file.name,
           path: result?.path || "",

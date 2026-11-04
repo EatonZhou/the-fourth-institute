@@ -280,9 +280,47 @@
       : '<span class="mathInline"' + pending + ">" + body + "</span>";
   }
 
-  function renderCodeFence(lines, language, complete = true) {
+  // The same structural fence reader serves rendering and opt-in consumers.
+  // A longer outer fence, an indented example or a quote cannot expose an inner
+  // command. Consumers receive unindented standalone blocks with an explicit
+  // completeness flag; an incomplete block can be presented but not executed.
+  function fenceStart(line) {
+    const match = line.match(/^(\s*)(`{3,}|~{3,})([^\r\n]*)$/);
+    if (!match || (match[2][0] === "`" && match[3].includes("`"))) return null;
+    return { indent: match[1], marker: match[2], info: match[3].trim(), language: match[3].trim().split(/\s+/)[0].toLowerCase() };
+  }
+  function fenceEnd(line, fence) {
+    const marker = line.trim();
+    return marker.length >= fence.marker.length && [...marker].every(char => char === fence.marker[0]);
+  }
+  function fencedBlocks(src) {
+    const lines = String(src == null ? "" : src).replace(/\r\n?/g, "\n").split("\n"), blocks = [];
+    let fence = null, math = "";
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i], trimmed = line.trim();
+      if (fence) {
+        if (fenceEnd(line, fence)) {
+          if (!fence.indent) blocks.push({ ...fence, endLine: i, complete: true, source: lines.slice(fence.startLine + 1, i).join("\n") });
+          fence = null;
+        }
+        continue;
+      }
+      if (math) { if (trimmed.endsWith(math)) math = ""; continue; }
+      const start = fenceStart(line);
+      if (start) { fence = { ...start, startLine: i }; continue; }
+      if (trimmed.startsWith("$$") && (trimmed === "$$" || !trimmed.slice(2).endsWith("$$"))) math = "$$";
+      else if (trimmed.startsWith("\\[") && !trimmed.endsWith("\\]")) math = "\\]";
+    }
+    if (fence && !fence.indent) blocks.push({ ...fence, endLine: lines.length, complete: false, source: lines.slice(fence.startLine + 1).join("\n") });
+    return blocks;
+  }
+  function renderCodeFence(lines, language, complete = true, block = null) {
     const source = lines.join("\n");
     const normalizedLanguage = String(language || "").trim().toLowerCase();
+    if (block && typeof activeRenderOptions.renderCodeFence === "function") {
+      const rendered = activeRenderOptions.renderCodeFence(block);
+      if (rendered != null) return String(rendered);
+    }
     if (["math", "tex", "latex"].includes(normalizedLanguage)) {
       return renderMath(source, true);
     }
@@ -339,6 +377,7 @@
     activeRenderOptions = options || {};
     try {
     const lines = String(src == null ? "" : src).replace(/\r\n?/g, "\n").split("\n");
+    const blocks = new Map(typeof activeRenderOptions.renderCodeFence === "function" ? fencedBlocks(src).map(block => [block.startLine, block]) : []);
     const out = [];
     // Stack of open lists: { type: "ul" | "ol", indent, liOpen }
     // Task syntax `- [ ] x` is NOT a separate list type — it is a plain <ul> item
@@ -348,6 +387,7 @@
     let blockquote = [];
     let codeFence = false;
     let codeFenceLang = "";
+    let codeFenceBoundary = null, codeBlock = null;
     let codeLines = [];
     let mathFence = false;
     let mathFenceEnd = "";
@@ -482,8 +522,8 @@
 
       // Code fence body or boundary
       if (codeFence) {
-        if (trimmed.startsWith("```")) {
-          out.push(renderCodeFence(codeLines, codeFenceLang));
+        if (fenceEnd(line, codeFenceBoundary)) {
+          out.push(renderCodeFence(codeLines, codeFenceLang, true, codeBlock?.endLine === i ? codeBlock : null));
           codeLines = [];
           codeFenceLang = "";
           codeFence = false;
@@ -492,13 +532,16 @@
         }
         continue;
       }
-      if (trimmed.startsWith("```")) {
+      const openingFence = fenceStart(line);
+      if (openingFence) {
         flushPara();
         closeAllLists();
         flushBlockquote();
         flushTable();
         codeFence = true;
-        codeFenceLang = String((trimmed.match(/^```\s*([^\s`]*)/) || [])[1] || "").trim().toLowerCase();
+        codeFenceBoundary = openingFence;
+        codeBlock = blocks.get(i);
+        codeFenceLang = openingFence.language;
         codeLines = [];
         continue;
       }
@@ -644,7 +687,7 @@
     flushBlockquote();
     flushTable();
     if (codeFence) {
-      out.push(renderCodeFence(codeLines, codeFenceLang, false));
+      out.push(renderCodeFence(codeLines, codeFenceLang, false, codeBlock));
     }
     if (mathFence) out.push(renderMath(mathLines.join("\n"), true));
     const html = out.join("");
@@ -658,6 +701,7 @@
 
   global.MD = Object.freeze({
     render: render,
+    fencedBlocks: fencedBlocks,
     renderInline: renderInline,
     esc: esc,
     ensureKatex: ensureKatex,

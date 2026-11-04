@@ -24,7 +24,8 @@ from management_portal.home_report import digest, reauthorize
 _SLOTS = threading.BoundedSemaphore(2)
 _LOCK = threading.Lock()
 FILES = {"video.mp4": "video/mp4", "captions.vtt": "text/vtt; charset=utf-8",
-         "poster.png": "image/png", "transcript.txt": "text/plain; charset=utf-8"}
+         "poster.png": "image/png", "transcript.txt": "text/plain; charset=utf-8", "narration.wav": "audio/wav",
+         "reasoning.json": "application/json"}
 
 
 def executable(name, setting):
@@ -105,32 +106,11 @@ def speech_units(value):
 
 
 def chapters(report):
-    rows = report["rows"]
-    if not rows:
-        raise ValueError("当前内容不足以形成视觉讲解，请阅读文字报告。")
-    scenes = []
-    names = {row["id"]: row["title"] for row in rows}
-    relation_labels = {"builds_on": "建立在这一项的基础上", "depends_on": "依赖这一项", "converges": "与这一项汇合", "alternative": "与这一项互为替代"}
-    for relation in report.get("relations", [])[:2]:
-        if relation["kind"] in relation_labels:
-            left, right = names[relation["from"]], names[relation["to"]]
-            label = relation_labels[relation["kind"]]
-            scenes.append({"title": "已登记的工作关系", "speech": spoken_text(f"{left}，{label}，{right}。"),
-                           "mode": "relation", "left": left, "right": right, "label": label})
-    # Free-form prose is not a mechanism model. When only the registered
-    # relation is demonstrable, keep the video focused on that relation.
-    if scenes and report['target']['kind'] != 'task':
-        return scenes
-    if report['target']['kind'] != 'task' and len({r['status'] for r in rows}) < 2:
-        raise ValueError('当前报告没有可视化的登记关系或状态差异，请阅读文字内容。')
-    for row in rows[:5]:
-        reply_text = (row.get('replies') or [{}])[-1].get('text', '')
-        speech = spoken_text(row['title'], 90) + spoken_text(f"当前状态，{row['status']}。")
-        if report['target']['kind'] == 'task':
-            speech += spoken_text(row['body'], 160)
-            speech += "已读取的原始回复说：" + spoken_text(reply_text, 180) + "回复内容仍需逐项核实，不能据此判定任务完成。" if reply_text else "当前没有可读的原始回复，不能推断已有交付产物。"
-        scenes.append({"title": row["title"], "speech": speech, "mode": "domain", "row": row})
-    return scenes
+    from management_portal.home_report_reasoning import build_reasoning
+    plan = report.get('reasoning') or build_reasoning(report)
+    if not plan['available']:
+        raise ValueError(plan['reason'])
+    return [{**step, 'speech': spoken_text(step['speech'], 1800)} for step in plan['steps']]
 
 
 def _stamp(seconds):
@@ -142,36 +122,44 @@ def _stamp(seconds):
 
 
 def render(report, directory: Path):
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import ImageFont
+    from management_portal.home_report_reasoning import build_reasoning
+    from management_portal.home_report_visual import frame as draw_frame
     started = time.monotonic()
     tools = capabilities()
     if not tools["available"]:
         raise RuntimeError("视频生成依赖缺少：" + "、".join(tools["missing"]))
+    plan = report.get('reasoning') or build_reasoning(report)
     scenes = chapters(report)
-    rows = report["rows"]
-    font_path = tools["font"]
-    fonts = {size: ImageFont.truetype(font_path, size) for size in (20, 24, 28, 34, 42)}
+    fonts = {size: ImageFont.truetype(tools["font"], size) for size in (16,18,20,22,24,32)}
     cues, pcm, rate, offset = [], [], None, 0.0
     speech_started = time.monotonic()
     transcript = []
     for scene in scenes:
         scene["start"] = offset
-        # Per-sentence audio gives exact subtitle times without inferred alignment.
-        for sentence_part in speech_units(scene["speech"]):
-            wav = directory / "speech-part.wav"
-            # eSpeak's output filename buffer truncates long absolute paths.
-            # A local filename also works in deeply nested instance caches.
-            _run([tools["speech"], "-v", "cmn", "-s", "165", "-w", wav.name, "--stdin"], input=sentence_part.encode(), cwd=directory)
-            with wave.open(str(wav)) as audio:
-                if audio.getnchannels() != 1 or audio.getsampwidth() != 2:
-                    raise RuntimeError("语音输出格式不受支持")
-                if rate and rate != audio.getframerate():
-                    raise RuntimeError("语音采样率变化")
-                rate = audio.getframerate()
-                duration = audio.getnframes() / rate
-                pcm.append(audio.readframes(audio.getnframes()))
-            cues.append({"start": offset, "end": offset + duration, "text": sentence_part})
-            offset += duration
+        scene["trace_windows"] = []
+        for beat in scene.get('beats', [{'speech':scene['speech']}]):
+            beat_start = offset
+            for sentence_part in speech_units(spoken_text(beat['speech'], 1800)):
+                wav = directory / "speech-part.wav"
+                _run([tools["speech"], "-v", "cmn", "-s", "155", "-w", wav.name, "--stdin"],
+                     input=sentence_part.encode(), cwd=directory)
+                with wave.open(str(wav)) as audio:
+                    if audio.getnchannels() != 1 or audio.getsampwidth() != 2:
+                        raise RuntimeError("语音输出格式不受支持")
+                    if rate and rate != audio.getframerate():
+                        raise RuntimeError("语音采样率变化")
+                    rate = audio.getframerate()
+                    duration = audio.getnframes() / rate
+                    pcm.append(audio.readframes(audio.getnframes()))
+                pause = .35 if sentence_part[-1:] in '。！？' else .12
+                pcm.append(b'\0' * (int(rate * pause) * 2))
+                cues.append({"start": offset, "end": offset + duration + pause, "text": sentence_part})
+                offset += duration + pause
+            if beat.get('edge'):
+                scene['trace_windows'].append({'start':beat_start, 'end':offset, 'edge':beat['edge']})
+        pcm.append(b'\0' * (int(rate * .55) * 2))
+        offset += .55
         scene["end"] = offset
         transcript.append(f"{_stamp(scene['start'])} {scene['title']}\n{scene['speech']}")
     with wave.open(str(directory / "narration.wav"), "wb") as audio:
@@ -181,90 +169,46 @@ def render(report, directory: Path):
     (directory / "captions.vtt").write_text("WEBVTT\n\n" + "\n\n".join(
         f"{_stamp(c['start'])} --> {_stamp(c['end'])}\n{c['text']}" for c in cues), encoding="utf-8")
     (directory / "transcript.txt").write_text("\n\n".join(transcript), encoding="utf-8")
-
-    def draw_text(draw, xy, value, size=24, width=860, fill="#e5eaf4", max_lines=4):
-        x, y = xy
-        line, lines = "", []
-        for char in str(value).replace("\n", " "):
-            if draw.textlength(line + char, font=fonts[size]) > width:
-                lines.append(line)
-                line = ""
-            line += char
-        lines.append(line)
-        for line in lines[:max_lines]:
-            draw.text((x, y), line, font=fonts[size], fill=fill)
-            y += size + 9
-        return y
-
-    fps, width, height = 12, 960, 540
-    args = [tools["ffmpeg"], "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{width}x{height}",
-            "-r", str(fps), "-i", "pipe:0", "-i", str(directory / "narration.wav"),
+    (directory / "reasoning.json").write_text(json.dumps({'report_version':report['version'],
+        'plan':plan,'scenes':scenes},ensure_ascii=False,indent=2),encoding='utf-8')
+    fps, width, height = 12, 1280, 720
+    args = [tools["ffmpeg"], "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
+            "-s", f"{width}x{height}", "-r", str(fps), "-i", "pipe:0", "-i", str(directory / "narration.wav"),
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-pix_fmt", "yuv420p", "-threads", "2",
             "-c:a", "aac", "-b:a", "96k", "-shortest", "-movflags", "+faststart", str(directory / "video.mp4")]
     encoding_started = time.monotonic()
+    captured = set()
     with (directory / "encoding.log").open("wb") as error_log:
         process = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=error_log)
         try:
-            for frame in range(math.ceil(offset * fps)):
-                at = frame / fps
-                scene = next((s for s in scenes if at < s["end"]), scenes[-1])
-                progress = min(1, (at - scene["start"]) / 2.5)
-                img = Image.new("RGB", (width, height), "#111b2d")
-                draw = ImageDraw.Draw(img)
-                draw_text(draw, (36, 22), scene["title"], 34, max_lines=1)
-                draw_text(draw, (36, 72), f"{report['target']['kind']} · 核对 {report['checked_at'][:19]} · {report['version'][:10]}", 20, fill="#98a9c4", max_lines=1)
-                if scene["mode"] == "domain":
-                    selected = scene["row"]
-                    if report['target']['kind'] == 'task':
-                        reply = (selected.get('replies') or [{}])[-1].get('text','')
-                        nodes = [('请求', selected['body'][:45]), ('处理状态', selected['status']), ('可核实回复', reply[:45] or '尚无可读回复，未推断交付产物')]
-                        for n, (label, value) in enumerate(nodes):
-                            x = 40 + n * 310
-                            draw.rounded_rectangle((x,155,x+285,340),radius=12,outline='#83dfbc' if progress >= n/3 else '#60718b',width=3)
-                            draw_text(draw,(x+16,170),label,24,width=255)
-                            draw_text(draw,(x+16,225),value,24,width=255,max_lines=3)
-                    else:
-                        # Compare actual worklines at the same checked time. No
-                        # invented timeline or percentage-of-completion scale.
-                        for n, item in enumerate(rows[:5]):
-                            y = 124+n*57
-                            chosen = item['id']==selected['id']
-                            draw.rounded_rectangle((35,y,925,y+47),radius=8,fill='#28465f' if chosen else '#19283d')
-                            draw_text(draw,(50,y+5),item['title'],20,width=635,max_lines=1)
-                            draw_text(draw,(720,y+5),item['status'],20,width=190,max_lines=1,fill='#83dfbc' if chosen else '#b7c6db')
-                    draw_text(draw,(40,410),'当前核对时点的对照 · 不表示历史演进',20,max_lines=1)
-                elif scene["mode"] == "relation":
-                    draw.rounded_rectangle((40, 160, 360, 350), radius=14, outline="#7bb3ff", width=3)
-                    draw.rounded_rectangle((600, 160, 920, 350), radius=14, outline="#83dfbc", width=3)
-                    draw_text(draw, (62, 190), scene["left"], 28, width=274, max_lines=3)
-                    draw_text(draw, (622, 190), scene["right"], 28, width=274, max_lines=3)
-                    draw.line((362, 270, 595, 270), fill="#a5b9d4", width=3)
-                    x = 366 + int(218 * ((at - scene["start"]) % 3 / 3))
-                    draw.ellipse((x, 263, x + 14, 277), fill="#83dfbc")
-                    draw.polygon([(598,270),(585,261),(585,279)], fill="#a5b9d4")
-                    draw_text(draw, (385, 170), scene["label"], 20, width=190, max_lines=3)
-                    draw_text(draw, (70, 388), "连线表示已登记关系；可打开来源核对", 24, max_lines=1)
+            for number in range(math.ceil(offset * fps)):
+                at = number / fps
+                index = next((i for i,s in enumerate(scenes) if at < s["end"]), len(scenes)-1)
+                scene = scenes[index]
                 caption = next((c["text"] for c in cues if c["start"] <= at < c["end"]), "")
-                draw.rectangle((0, 447, width, height), fill="#080e19")
-                draw_text(draw, (35, 455), caption, 24, width=890, max_lines=2)
-                draw.rectangle((0, 536, int(width * at / offset), 539), fill="#83dfbc")
-                if frame == fps:
+                windows = scene['trace_windows']
+                fraction = sum(max(0,min(1,(at-w['start'])/max(.01,w['end']-w['start']))) for w in windows) / max(1,len(windows))
+                img = draw_frame(plan,index,at-scene['start'],scene['end']-scene['start'],caption,fonts,fraction)
+                if number == fps:
                     img.save(directory / "poster.png")
+                if index not in captured and at >= scene['start'] + min(3,(scene['end']-scene['start'])/2):
+                    img.save(directory / f"chapter-{index+1:02}.png")
+                    captured.add(index)
                 process.stdin.write(img.tobytes())
             process.stdin.close()
             if process.wait(timeout=60):
                 raise RuntimeError("视频编码失败，请检查媒体依赖后重试")
         except BaseException:
-            process.kill()
-            process.wait()
+            process.kill(); process.wait()
             raise
-    for filename in ("narration.wav", "speech-part.wav", "encoding.log"):
+    for filename in ("speech-part.wav", "encoding.log"):
         (directory / filename).unlink(missing_ok=True)
-    return {"duration": round(offset, 3), "chapters": [{"title": s["title"], "start": s["start"]} for s in scenes],
-            "scope_note": "视频只解释已登记关系、当前状态或原始任务处理；未有可验证结构支持的主题解释保留在文字报告。",
-            "transcript": "\n\n".join(transcript), "engine": "espeak-ng/cmn + Pillow + ffmpeg/libx264",
-            "generation_seconds": round(time.monotonic() - started, 3), "speech_seconds": round(speech_seconds, 3),
-            "encoding_seconds": round(time.monotonic() - encoding_started, 3)}
+    return {"duration": round(offset,3), "chapters":[{"title":s["title"],"start":s["start"]} for s in scenes],
+            "scope_note": plan['assumption'] + ' ' + plan['limit'],
+            "voice_note": "本地 eSpeak 机械合成；已加断句停顿，尚未达到自然语音质量。",
+            "transcript": "\n\n".join(transcript), "engine": "espeak-ng/cmn + continuous graph + ffmpeg/libx264",
+            "generation_seconds":round(time.monotonic()-started,3), "speech_seconds":round(speech_seconds,3),
+            "encoding_seconds":round(time.monotonic()-encoding_started,3)}
 
 
 class MediaStore:
@@ -284,7 +228,7 @@ class MediaStore:
         temporary.replace(directory / "state.json")
 
     def start(self, report, actor, *, retry=False):
-        job = digest(["home-report-media-v4", report["version"]])
+        job = digest(["home-report-media-continuous-v3", report["version"]])
         directory = self.directory(actor, job)
         task = f"home-report:{digest(actor)}:{job}"
         with _LOCK:

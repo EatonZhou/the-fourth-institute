@@ -1,5 +1,10 @@
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm'), assert = require('node:assert/strict');
-const context = { window: {} }; vm.createContext(context);
+const {JSDOM}=require('jsdom');
+const dom=new JSDOM('<!doctype html><html><body></body></html>',{runScripts:'outside-only'});
+const context=dom.getInternalVMContext();
+vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_text.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_ui_primitives.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/markdown.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home_dialogue_state.js'), 'utf8'), context);
 const api = context.window.PortalHomeDialogueState;
 let sequence = 0; const state = api.create({uuid: () => String(++sequence)});
@@ -30,12 +35,36 @@ assert.equal(state.acknowledge(sent, residentId), true);
 assert.equal(accept(response(failed)), null, 'later success never acknowledges an earlier failed submission');
 assert.equal(accept(response(sent)).present, true);
 assert.equal(api.normalizeIntent({view:'report',target:{kind:'task',id:'resident_0123456789ab/msg_0123456789abcdef'}}).target.kind,'task');
+assert.equal(api.normalizeIntent({view:'report',target:{kind:'report',id:'report_0123456789ab',revision:3}}).target.revision,3);
+assert.equal(api.normalizeIntent({view:'report',target:{kind:'report',id:'report_0123456789ab'}}).target.revision,undefined,'latest is fixed by onReference after GET');
+for (const revision of [null,0,-1,1.2,'1',Infinity]) assert.throws(()=>api.normalizeIntent({view:'report',target:{kind:'report',id:'report_0123456789ab',revision}}));
+assert.throws(()=>api.normalizeIntent({view:'map',target:{kind:'report',id:'report_0123456789ab',revision:1}}));
+assert.throws(()=>api.normalizeIntent({view:'report',target:{kind:'report',id:'report_fake',revision:1}}));
+assert.equal(api.normalizeOriginKey('home-message/v1:'+'a'.repeat(64)),'home-message/v1:'+'a'.repeat(64));
+assert.equal(api.normalizeOriginKey('home-request/v1:01234567-89ab-4cde-8fab-0123456789ab'),'home-request/v1:01234567-89ab-4cde-8fab-0123456789ab');
+for (const key of ['arbitrary','home-message/v1:nonce','home-request/v1:../bad',null]) assert.equal(api.normalizeOriginKey(key),null);
+assert.equal(api.normalizeMessageOrigin({residentId,messageId:'msg_0123456789abcdef',fenceIndex:0,request_id:'never-store'}).request_id,undefined);
+assert.equal(api.normalizeMessageOrigin({residentId,messageId:'local-temporary-id',fenceIndex:0}),null);
 assert.throws(()=>api.normalizeIntent({view:'report',target:{kind:'task',id:'task_0123456789ab'}}));
 for (const invalid of [{view:'html'}, {view:'preview',target:{address:'javascript:alert(1)'}}, {view:'map',target:{kind:'task',id:'task_0123456789ab'}}]) assert.throws(() => api.normalizeIntent(invalid));
 const fenced = '```portal-home-display\n' + JSON.stringify(response(request)) + '\n```';
 assert.equal(api.results([{role:'user',content_parts:[{type:'text',text:fenced}]}]).length, 0);
 assert.equal(api.results([{role:'assistant',content_parts:[{type:'tool_result',text:fenced}]}]).length, 0);
 assert.equal(api.results([{role:'assistant',message_id:'new',content_parts:[{type:'text',text:fenced}]}]).length, 1);
+const results = text => api.results([{role:'assistant',message_id:'new',content_parts:[{type:'text',text}]}]);
+for (const literal of ['````markdown\n'+fenced+'\n````', '~~~markdown\n'+fenced+'\n~~~', fenced.split('\n').map(l=>'> '+l).join('\n'), fenced.split('\n').map(l=>'    '+l).join('\n'), '$$\n'+fenced+'\n$$', fenced.slice(0,-3)]) {
+  assert.equal(results(literal).length,0,'examples and incomplete blocks cannot execute');
+}
+for (const invalid of [null, [], {...response(request),protocol:'portal-home-display/v2'}, {...response(request),version:0}, {...response(request),target:{kind:'task',id:'task_0123456789ab'}}, {...response(request),request_id:''}]) {
+  assert.equal(results('```portal-home-display\n'+JSON.stringify(invalid)+'\n```').length,0);
+}
+assert.equal(results(fenced+'\n\n'+fenced).length,2,'each historical directive remains distinct');
+assert.equal(results('```portal-home-display\n'+JSON.stringify({...response(request),target:{kind:'report',id:'report_0123456789ab'}})+'\n```').length,0,'chat report references require a fixed revision');
+assert.deepEqual(Array.from(results('```json\n{}\n```\n```portal-home-display\n{}\n```\n'+fenced+'\n'+fenced),r=>r.fenceIndex),[1,2],'invalid protocol fences still occupy their stable ordinal; ordinary code does not');
+assert.ok(context.window.MD.render(fenced).includes('<pre>'),'ordinary Markdown without the extension stays code');
+const incomplete = context.window.MD.fencedBlocks(fenced.slice(0,-3))[0];
+assert.equal(incomplete.complete,false); assert.equal(api.displayCommand(incomplete),null);
+assert.ok(context.window.MD.render(fenced.slice(0,-3),{renderCodeFence:b=>b.complete?null:'preparing'}).includes('preparing'));
 const stored = {schemaVersion:3, hidden:['agent-status'], layout:{id:'kept'}, savedWorkspaces:{custom:{hidden:[], layout:{id:'saved'}}}};
 const migrated = api.migrateHomeState(stored);
 assert.equal(migrated.layout.id, 'kept'); assert.equal(migrated.savedWorkspaces.custom.layout.id, 'saved');
@@ -43,3 +72,4 @@ assert.ok(migrated.hidden.includes('dialogue-display')); assert.ok(migrated.save
 assert.equal(stored.hidden.length, 1, 'migration does not mutate caller state');
 assert.equal(api.migrateHomeState({contentSchemaVersion:2, hidden:[]}).hidden.length, 0, 'explicitly added component stays visible');
 console.log('Home dialogue navigation, protocol and layout migration passed');
+dom.window.close();

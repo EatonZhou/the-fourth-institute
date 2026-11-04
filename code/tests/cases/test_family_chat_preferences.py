@@ -43,6 +43,42 @@ def test_admission_snapshot_survives_later_toggle(family_chat):
     assert p.allowed(f, family_facade.routing_snapshot(f, msg)) == [m]
     assert p.allowed(f, family_facade.routing_snapshot(f, {**msg, 'message_id': 'msg_chat_2'})) == []
 
+
+@pytest.mark.parametrize('solo_at_admission', [False, True])
+def test_unrelayed_status_matches_frozen_solo_target(family_chat, solo_at_admission):
+    """The first waiting projection must not announce Router work for Solo.
+
+    A later toggle cannot change either the destination or the displayed phase
+    of an already admitted request.
+    """
+    from management_portal.society_service import (
+        family_chat_preferences as p, resident_domain, resident_conversation_stream,
+    )
+    f, m = family_chat
+    if solo_at_admission:
+        p.change(f['resident_id'], ACTOR, m, 'solo', True)
+    mid = 'msg_0000000000000331'
+    resident_domain.deliver_resident_message_content(f['resident_id'], ACTOR, 'new topic', message_id=mid)
+    repository = resident_conversation_stream.get_repository()
+
+    def shown():
+        message = repository.message(f['resident_id'], mid)
+        return family_facade.project_snapshot(f, {
+            'messages': [message], 'input_states': [{'message_id': mid, 'state': 'queued'}],
+            'state': {'work_state': 'queued'},
+        })
+
+    before = shown()
+    relay = before['messages'][0]['relay']
+    assert relay['state'] == ('delivering' if solo_at_admission else 'routing')
+    assert before['state']['work_phase'] == ('family_waiting' if solo_at_admission else 'family_routing')
+    if solo_at_admission:
+        assert relay['resident_id'] == m
+    p.change(f['resident_id'], ACTOR, m, 'solo', not solo_at_admission)
+    after = shown()
+    assert after['messages'][0]['relay'] == relay
+    assert after['state']['work_phase'] == before['state']['work_phase']
+
 def test_mute_hides_entire_round_and_nested_replies(family_chat):
     from management_portal.society_service import family_chat_preferences as p
     f, m = family_chat
