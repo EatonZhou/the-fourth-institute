@@ -1067,6 +1067,7 @@ modules:
     instruction_owners: []
     code_paths:
       - "management_portal/static/portal_chat*"
+      - "management_portal/static/chat_workspace_*.js"
       - "management_portal/static/portal_conversation*"
       - "management_portal/static/portal_agent*"
       - "management_portal/static/resident_protocol.js"
@@ -1074,6 +1075,7 @@ modules:
       - "management_portal/static/portal_mailbox_todos.js"
     designs:
       - "decision_f560803947c6"
+      - "decision_11b944fd33e4"
       - "decision_1e2eb869bc10"
       - "decision_18abbdef3da3"
       - "decision_ce44377c3257"
