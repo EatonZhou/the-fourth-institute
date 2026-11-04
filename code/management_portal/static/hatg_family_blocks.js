@@ -144,7 +144,7 @@
 
     function functionBlockInstanceTriggersHtml(block, readonly, covered = new Set()) {
       const rows = instanceManualSources(block).filter(component => !covered.has(component.id)).map(component => window.PortalI18n.html`<div><dt>${esc(component.title || component.id)}</dt><dd><button class="portalButton" type="button" data-function-block-trigger="${esc(component.id)}"${readonly ? " disabled" : ""}>触发</button></dd></div>`);
-      return rows.length ? window.PortalI18n.html`<section class="functionBlockInstanceBindings functionBlockInstanceTriggers"><span>手动触发</span><dl>${rows.join("")}</dl></section>` : "";
+      return rows.length ? window.PortalI18n.html`<section class="functionBlockInstanceBindings functionBlockInstanceTriggers"><h3>手动触发</h3><dl>${rows.join("")}</dl></section>` : "";
     }
 
     function expandedFunctionBlockIds() {

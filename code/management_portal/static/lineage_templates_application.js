@@ -61,7 +61,7 @@
       view.content.innerHTML = `<div class="templateApplyIntro"><p>${esc(t(template.description))}</p><section data-template-behavior>${behaviorHtml(template.behavior)}</section></div>
         <p class="templateTarget">${esc(t('目标'))}：${esc(summary)}</p>
         ${rewrites ? `<section class="templateApplyFound" data-apply-found aria-live="polite"><h3>${esc(t('施加时会改动的已有元素'))}</h3><p class="templateHelp">${esc(t('正在查找…'))}</p></section>` : ''}
-        ${template.behavior.persistent ? `<label class="templateField"><span>${esc(t('结果标题'))}</span><input data-apply-title value="${esc(resultTitle)}" required></label>` : ''}
+        ${template.behavior.persistent ? `<label class="templateField"><span>${esc(t('新建功能块名称'))}</span><input data-apply-title value="${esc(resultTitle)}" required></label>` : ''}
         <div class="templateApplyParameters">${parameters.map(parameter => field(parameter, parameter.default, `data-apply-parameter="${esc(parameter.name)}"`)).join('')}</div>
         ${roles.length ? `<section><h3>${esc(t('新建 Resident 的起始设置'))}</h3><div data-resident-settings></div></section>` : ''}`;
       const typedValues = () => Object.fromEntries(parameters.map(parameter => [parameter.name, readField(view.root.querySelector(`[data-apply-parameter="${CSS.escape(parameter.name)}"]`), parameter.type)]));

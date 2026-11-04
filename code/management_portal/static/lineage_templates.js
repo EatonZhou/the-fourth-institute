@@ -17,10 +17,21 @@
     });
   }
   const button = (label, action, className = '') => `<button type="button" class="portalButton ${className}" data-action="${action}">${esc(t(label))}</button>`;
+  // Labels belong to the template UI; option values remain the protocol values.
+  const optionLabels = Object.freeze({
+    critic: '评审', questioner: '提问', ideator: '构思', supervisor: '监督',
+    queue: '排队发送', attach_to_next: '附加到下一轮',
+    idea: '想法', plan: '方案', other: '其他',
+    text: '文本', integer: '整数', number: '数值', boolean: '开关', enum: '枚举选项', duration: '时长（秒）',
+    target: '目标', lineage_leader: '当前 Lineage 的负责人', new: '新建', fork: '派生',
+    full: '完整上下文', compacted: '压缩后的上下文', 'recent-5': '最近 5 轮', 'recent-10': '最近 10 轮',
+    event_source: '事件源', effect: '执行动作', loop: '循环', filter: '筛选', selector: '选择', reducer: '汇总', seed: '种子',
+    route: '传递', watch: '观察', keep: '保留', delete: '删除', update: '修改', one: '恰好一个', all: '全部',
+  });
   const optionsHtml = (choices, chosen) => choices.map(choice => {
     const value = typeof choice === 'object' ? choice.value : choice;
-    const label = typeof choice === 'object' ? choice.label : choice;
-    return `<option value="${esc(value)}" ${String(value) === String(chosen) ? 'selected' : ''}>${esc(label)}</option>`;
+    const label = typeof choice === 'object' ? choice.label : (Object.hasOwn(optionLabels, choice) ? optionLabels[choice] : choice);
+    return `<option value="${esc(value)}" ${String(value) === String(chosen) ? 'selected' : ''}>${esc(t(label))}</option>`;
   }).join('');
 
   function field(schema, value, attribute) {

@@ -146,8 +146,8 @@
 .functionBlockObjectRow:last-child { border-bottom: 0; }
 .functionBlockObjectRow[data-selected="true"] { background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
 .functionBlockObjectMain { display: grid; gap: 2px; min-width: 0; }
-.functionBlockObjectMain strong { color: var(--text); font-size: 12px; overflow-wrap: anywhere; white-space: normal; }
-.functionBlockObjectMain small { overflow: hidden; color: var(--muted); font: 10px/1.4 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.functionBlockObjectMain strong { color: var(--text); font-size: 15px; overflow-wrap: anywhere; white-space: normal; }
+.functionBlockObjectMain small { color: var(--muted); font: 13px/1.6 var(--mono); overflow-wrap: anywhere; }
 .functionBlockObjectState { min-width: 0; }
 .functionBlockObjectState .portalStatus { max-width: 11em; white-space: normal; overflow-wrap: anywhere; }
 .functionBlockObjectAction { display: flex; min-width: 0; }
@@ -312,15 +312,25 @@
   border-radius: 12px;
 }
 
-.functionBlockMenuPanel > .functionBlockInstanceInspector {
-  padding: 4px 2px 12px;
-}
-.functionBlockMenuIdentity { display:grid; min-width:0; gap:3px; margin:0 0 16px; }
-.functionBlockMenuIdentity strong { font-size:20px; line-height:1.3; white-space:normal; overflow-wrap:anywhere; }
-.functionBlockMenuIdentity code { color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
-.functionBlockMenuPanel .functionBlockInstanceInspector > p { margin:0 0 14px; color:var(--muted); font-size:12px; line-height:1.5; }
-.functionBlockMenuPanel .functionBlockIssue { margin-bottom:12px; font-size:13px; }
-.functionBlockMenuPanel .functionBlockIssue p { margin:10px 0; font-size:13px; line-height:1.5; }
+/* A reading surface, not the canvas's compact primitive inspector. */
+.functionBlockMenuPanel { min-width:0; container-type:inline-size; font-size:15px; line-height:1.6; }
+.functionBlockInstanceInspector { display:grid; min-width:0; gap:24px; padding:0 0 12px; }
+.functionBlockInstanceInspector > * { min-width:0; overflow-wrap:anywhere; }
+.functionBlockMenuIdentity { display:grid; min-width:0; gap:6px; margin:0 0 24px; }
+.functionBlockMenuIdentity strong { font-size:22px; line-height:1.4; white-space:normal; overflow-wrap:anywhere; }
+.functionBlockMenuIdentity code { color:var(--muted); font:13px/1.6 var(--mono); overflow-wrap:anywhere; }
+.functionBlockTitleEditor { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+.functionBlockTitleEditor > label { display:grid; flex:1 1 220px; min-width:0; gap:8px; font-size:14px; font-weight:600; }
+.functionBlockTitleEditor input { box-sizing:border-box; width:100%; min-width:0; min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:400 16px/1.5 ui-sans-serif,system-ui,sans-serif; }
+.functionBlockTitleEditor input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.functionBlockTitleEditor input:disabled { opacity:.6; cursor:not-allowed; }
+.functionBlockSource { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; padding:16px; border-radius:10px; background:var(--panel-2); }
+.functionBlockSource > div { min-width:0; flex:1 1 180px; }
+.functionBlockSource h3 { margin:0 0 4px; color:var(--muted); font-size:14px; font-weight:500; }
+.functionBlockSource p { margin:0; font-size:16px; overflow-wrap:anywhere; }
+.functionBlockMenuPanel .functionBlockInstanceInspector > p { margin:0; color:var(--muted); font-size:14px; line-height:1.6; }
+.functionBlockMenuPanel .functionBlockIssue { font-size:15px; }
+.functionBlockMenuPanel .functionBlockIssue p { margin:10px 0; font-size:15px; line-height:1.6; }
 
 .functionBlockInsideResidents dd {
   display: flex;
@@ -341,15 +351,18 @@
 
 .functionBlockInstanceBindings {
   display: grid;
-  gap: 7px;
+  gap: 12px;
 }
 
-.functionBlockInstanceBindings > span {
-  color: var(--muted);
-  font-size: 8px;
-  font-weight: 850;
-  letter-spacing: .13em;
+.functionBlockInstanceBindings > span,
+.functionBlockInstanceBindings > h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 600;
 }
+.functionBlockElementCount { margin-left:6px; color:var(--muted); font-size:14px; font-weight:400; }
 
 .functionBlockInstanceBindings dl {
   margin: 0;
@@ -359,10 +372,11 @@
 }
 
 .functionBlockInstanceBindings dl > div {
-  padding: 8px 10px;
+  padding: 14px 16px;
   display: grid;
-  grid-template-columns: minmax(72px, .7fr) minmax(0, 1.3fr);
-  gap: 8px;
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -371,22 +385,36 @@
   grid-template-columns: 72px minmax(0, 1fr);
 }
 .functionBlockInstanceBindings dt {
-  overflow: hidden;
-  color: #8067d8;
-  font: 8px/1.4 var(--mono);
-  text-overflow: ellipsis;
+  min-width: 0;
+  color: var(--muted);
+  font: 14px/1.5 ui-sans-serif,system-ui,sans-serif;
+  overflow-wrap: anywhere;
 }
 .functionBlockInstanceBindings dd {
   margin: 0;
-  overflow: hidden;
+  min-width: 0;
   color: var(--text);
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 15px;
+  overflow-wrap: anywhere;
 }
+.functionBlockElementList dd code { display:block; color:var(--muted); font:13px/1.6 var(--mono); overflow-wrap:anywhere; }
+.functionBlockElementList dd > span + code { margin-top:4px; }
+.functionBlockInstanceTriggers dl > div { grid-template-columns:minmax(0,1fr) auto; }
+.functionBlockInstanceTriggers dt { color:var(--text); font:500 16px/1.5 ui-sans-serif,system-ui,sans-serif; }
+.functionBlockInstanceTriggers dd { justify-self:end; }
 
 .functionBlockInstanceActions {
+  display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.functionBlockInstanceActions > .is-danger { margin-left:auto; }
+@container (max-width:480px) {
+  .functionBlockElementList dl > div { grid-template-columns:minmax(0,1fr); gap:4px; }
+  .functionBlockSource { align-items:flex-start; }
+  .functionBlockInstanceActions > .is-danger { margin-left:0; }
 }
 
 
@@ -407,8 +435,6 @@
 .functionBlockBoundary button { pointer-events: auto; border: 0; background: var(--panel); border-radius: 6px; padding: 3px 8px; color: var(--text); }
 .functionBlockBoundaryTitle { min-width:0; white-space:normal; overflow-wrap:anywhere; text-align:left; font-weight:700; }
 .functionBlockBoundaryCollapse { flex: none; font-size: 18px; }
-.functionBlockElementList dd { white-space: normal; overflow-wrap: anywhere; }
-.functionBlockElementList dd small { display: block; font: 9px var(--mono); color: var(--muted); margin-top: 3px; }
 }
 
 /* The template editor draws a structure template with the HATG graph engine (lineage_template_graph.js). */

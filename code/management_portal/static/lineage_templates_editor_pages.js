@@ -73,15 +73,15 @@
     }
 
     function renderParameters() {
-      parametersPage.innerHTML = `<p class="templateHelp">${esc(t('参数在施加时填写；内容中使用 {{param.name}} 引用。'))}</p>
-          <div class="templateParameterTable"><table><thead><tr>${['名称', '类型', '默认值', '必填', '选项（每行一个）', '说明', ''].map(label => `<th>${esc(t(label))}</th>`).join('')}</tr></thead><tbody>
+      parametersPage.innerHTML = `<p class="templateHelp">${esc(t('参数标识用于 {{param.name}} 引用；显示名称是施加窗口中的字段标题，请写清含义和单位。'))}</p>
+          <div class="templateParameterTable"><table><thead><tr>${['参数标识', '类型', '默认值', '必填', '选项（每行一个）', '显示名称', ''].map(label => `<th>${esc(t(label))}</th>`).join('')}</tr></thead><tbody>
           ${draft.parameters.map((parameter, index) => `<tr data-parameter-row="${index}">
-            <td><input data-parameter-field="name" aria-label="${esc(t('名称'))}" value="${esc(parameter.name)}" required pattern="[A-Za-z_][A-Za-z0-9_]*"></td>
+            <td><input data-parameter-field="name" aria-label="${esc(t('参数标识'))}" value="${esc(parameter.name)}" required pattern="[A-Za-z_][A-Za-z0-9_]*"></td>
             <td><select data-parameter-field="type" aria-label="${esc(t('类型'))}">${optionsHtml(['text', 'integer', 'number', 'boolean', 'enum', 'duration'], parameter.type)}</select></td>
             <td><textarea rows="2" data-parameter-field="default" aria-label="${esc(t('默认值'))}">${esc(parameter.default ?? '')}</textarea></td>
             <td><input type="checkbox" data-parameter-field="required" aria-label="${esc(t('必填'))}" ${parameter.required ? 'checked' : ''}></td>
             <td><textarea rows="2" data-parameter-field="options" aria-label="${esc(t('选项（每行一个）'))}">${esc((parameter.options || []).join('\n'))}</textarea></td>
-            <td><input data-parameter-field="description" aria-label="${esc(t('说明'))}" value="${esc(parameter.description || '')}"></td>
+            <td><input data-parameter-field="description" aria-label="${esc(t('显示名称'))}" value="${esc(parameter.description || '')}"></td>
             <td><button type="button" data-remove-parameter="${index}" class="portalButton is-quiet" aria-label="${esc(t('移除参数'))}">×</button></td></tr>`).join('')}</tbody></table></div>${button('添加参数', 'add-parameter')}`;
     }
 

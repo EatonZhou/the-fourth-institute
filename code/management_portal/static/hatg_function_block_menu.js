@@ -291,8 +291,13 @@
     }
 
     function functionBlockElementListHtml(block) {
-      const rows = functionBlockElements(block).map(element => window.PortalI18n.html`<div><dt>${esc(element.kind)}</dt><dd title="${esc(element.id)}">${esc(graphObjectTitle(element.id))}<small>${esc(element.id)}</small></dd></div>`).join("");
-      return window.PortalI18n.html`<section class="functionBlockInstanceBindings functionBlockElementList"><span>元素列表</span><dl>${rows}</dl></section>`;
+      const elements = functionBlockElements(block);
+      const kinds = { component: "组件", wire: "连线", resident: "Resident", function_block: "Function Block" };
+      const rows = elements.map(element => {
+        const title = graphObjectTitle(element.id);
+        return window.PortalI18n.html`<div><dt>${esc(window.PortalI18n.t(kinds[element.kind] || element.kind))}</dt><dd>${title && title !== element.id ? `<span>${esc(title)}</span>` : ""}<code>${esc(element.id)}</code></dd></div>`;
+      }).join("");
+      return window.PortalI18n.html`<section class="functionBlockInstanceBindings functionBlockElementList"><h3>元素列表 <span class="functionBlockElementCount">${elements.length}</span></h3><dl>${rows}</dl></section>`;
     }
 
     function functionBlockOverviewWorkflowHtml(block, readonly, drafts, expanded) {
@@ -421,19 +426,19 @@
         const pending = new Set(functionBlockInstanceUnacknowledgedFailures(block).map(issue => issue.id));
         const blockEffects = components.filter(item => item.kind === "effect");
         const issueRows = failures.map(issue => window.PortalI18n.html`<article class="functionBlockIssue" data-block-issue="${esc(issue.id)}"><header><strong>${esc(issue.title || issue.id)}</strong><span>${esc(window.PortalI18n.t(pending.has(issue.id) ? "未查看" : "已查看"))}</span></header><small>${esc(issue.kind)} · ${esc(issue.id)}${issue.at ? ` · ${esc(formatDate(issue.at))}` : ""}</small><p>${esc(issue.error)}</p>${issue.kind === "effect" ? window.PortalI18n.html`<div class="functionBlockIssueRecipients"><span>失败通知</span>${effectRecipientsButtonHtml(issue, { limit: 4 })}</div>` : ""}<div>${issue.kind === "resident" ? window.PortalI18n.html`<button class="portalButton" type="button" data-function-block-chat="${esc(issue.id)}">查看对话</button>` : window.PortalI18n.html`<button class="portalButton" type="button" data-block-object-edit="${esc(issue.id)}">查看设置与运行记录</button>`}</div></article>`).join("");
-        root.innerHTML = window.PortalI18n.html`<div class="portalHatgOverlayComponent functionBlockMenuPanel" data-function-block-menu-panel="${esc(block.id)}"><header class="functionBlockMenuIdentity"><strong>${esc(block.title || window.PortalI18n.t("Function Block"))}</strong><code>${esc(block.id)}</code></header><div class="programInspectorForm functionBlockInstanceInspector">
-        ${pane === "block" ? window.PortalI18n.html`<label>标题<input data-function-block-title value="${esc(titleDraft ?? block.title)}"${readonly ? " disabled" : ""}></label>
-        <button class="portalButton is-primary" type="button" data-function-block-rename${readonly ? " disabled" : ""}>保存标题</button>
+        root.innerHTML = window.PortalI18n.html`<div class="portalHatgOverlayComponent functionBlockMenuPanel" data-function-block-menu-panel="${esc(block.id)}"><header class="functionBlockMenuIdentity"><strong>${esc(block.title || window.PortalI18n.t("Function Block"))}</strong><code>${esc(block.id)}</code></header><div class="functionBlockInstanceInspector">
+        ${pane === "block" ? window.PortalI18n.html`<div class="functionBlockTitleEditor"><label>标题<input data-function-block-title value="${esc(titleDraft ?? block.title)}"${readonly ? " disabled" : ""}></label>
+        <button class="portalButton is-primary" type="button" data-function-block-rename${readonly ? " disabled" : ""}>保存标题</button></div>
         ${failures.length ? window.PortalI18n.html`<p data-function-block-failure>内部出错：${esc(failures.map(component => component.title || component.id).join("、"))}</p>` : ""}
-        <section class="functionBlockInstanceBindings"><span>来源模板</span><p>${esc(functionBlockSourceTitle(block))}</p>${block.template_id ? '<button class="portalButton" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
+        <section class="functionBlockSource"><div><h3>来源模板</h3><p>${esc(functionBlockSourceTitle(block))}</p></div>${block.template_id ? '<button class="portalButton is-quiet" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
         ${functionBlockInsideResidentsHtml(block)}
         ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
         ${roles ? "<div data-family-priority></div>" : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
-        <div class="programInspectorActions functionBlockInstanceActions">
+        <div class="functionBlockInstanceActions">
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>
           ${roles ? window.PortalI18n.html`<button class="portalButton" type="button" data-family-fold>${familyExpanded(roles) ? window.PortalI18n.t("折叠为门面") : window.PortalI18n.t("展开成员")}</button><button class="portalButton" type="button" data-family-unfamilize${readonly ? " disabled" : ""}>Unfamilize</button>`
-          : window.PortalI18n.html`<button class="portalButton" type="button" data-function-block-expand>${expandedFunctionBlockIds().has(block.id) ? window.PortalI18n.t("折叠") : window.PortalI18n.t("展开")}</button><button class="portalButton" type="button" data-function-block-unfunctionalize${readonly ? " disabled" : ""}>Unfunctionalize</button><button class="portalButton is-danger" type="button" data-function-block-delete${readonly ? " disabled" : ""}>删除</button>`}
+          : window.PortalI18n.html`<button class="portalButton" type="button" data-function-block-expand>${expandedFunctionBlockIds().has(block.id) ? window.PortalI18n.t("折叠") : window.PortalI18n.t("展开")}</button><button class="portalButton" type="button" data-function-block-unfunctionalize${readonly ? " disabled" : ""}>拆开</button><button class="portalButton is-danger" type="button" data-function-block-delete${readonly ? " disabled" : ""}>删除</button>`}
         </div>` : pane === "objects" ? functionBlockObjectsHtml(components, selected, readonly, block,
           roles ? familyWorkflowHtml(block, workflowDraft, readonly, workflowError) : "") : window.PortalI18n.html`<p>打开本页会自动消除当前错误提醒，保留错误与运行记录；新的失败会再次提示。成功运行或修正配置后，对应问题会自动移出当前清单。</p>${functionBlockInsideResidentsHtml(block)}${issueRows || '<p data-block-no-issues>当前没有问题。</p>'}`}
         <div data-block-object-editor></div>
