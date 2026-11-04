@@ -20,6 +20,7 @@ from management_portal.society_service import (
     resident_domain_common,
     resident_record_domain,
     resident_input_queue_domain,
+    resident_input_recovery,
 )
 from management_portal.society_service.state_store import get_lineage_data_store
 from management_portal.execution.agent_data_store import get_agent_data_store
@@ -380,6 +381,67 @@ def test_requeue_repairs_an_existing_headless_waiting_list_without_reordering_or
     again = resident_execution_work.read(_record(resident_id))
     assert again['execution_id'] == prepared['execution_id']
     assert [item['user_message_id'] for item in again['queue']] == [later_id]
+
+
+@pytest.mark.parametrize('predecessor_proof', [False, True])
+def test_accepted_retry_after_a_later_turn_preserves_independently_consumed_infos(team, monkeypatch, predecessor_proof):
+    """旧等待表被后到轮次挤掉后，仅有完整本地原件及原失败引用时恢复，不重放已消费 info。
+
+    :design: decision_15f7df737ed5
+    """
+    resident_id = team.target['resident_id']
+    failed, infos = _round(resident_id, state='failed', infos=((STEWARD, '旧轮的原背景'),))
+    store = get_agent_data_store()
+    previous_execution = execution_inputs.latest(store, resident_id, failed)['execution_id']
+    def legacy_prepare(record, job, item, waiting, now):
+        item = dict(item)
+        if not predecessor_proof:
+            item.pop('retry_of_execution_id', None)
+        resident_execution_work.write(record, {'queue': [item, *waiting]})
+    # Reproduce the older implementation through the real requeue owner. No
+    # prepared Execution exists for this retry, just as in the native failure.
+    with monkeypatch.context() as legacy:
+        legacy.setattr(resident_input_recovery, '_prepare_requeued_input', legacy_prepare)
+        result = instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': failed})
+        assert result.status == 'committed', result.error
+    record = _record(resident_id)
+    record['intake_open'] = True
+    resident_record_domain.save_resident_record(record, commit_intake=True)
+    later = instruction(team, 'DeliverMessage', {'resident_id': resident_id,
+        'message': {'content_parts': [{'type': 'text', 'text': '后到并已完成的交接'}]}})
+    assert later.status == 'committed', later.error
+    later_id = later.result['message_id']
+    job = resident_execution_work.read(_record(resident_id))
+    assert job['user_message_id'] == later_id and job['queue'] == []
+    repository = resident_conversation_stream.get_repository()
+    repository.commit_user_message(resident_id, job['input_message'])
+    _, carried = resident_held_infos.attach(_record(resident_id), '后到并已完成的交接')
+    resident_held_infos.consume(_record(resident_id), carried, request_message_id=later_id)
+    resident_execution_work.retain_input_checkpoint(_record(resident_id), job, carried)
+    store.finish_execution(job['execution_id'], status='completed')
+    repository.set_input_state(resident_id, later_id, 'completed')
+    resident_execution_work.clear(_record(resident_id))
+    original = repository.message(resident_id, failed)
+    consumed = repository.message(resident_id, infos[0])
+    assert consumed['released_with'] == later_id
+    assert repository.input_state(resident_id, failed)['state'] == 'queued'
+    assert not resident_held_infos.peek(_record(resident_id))
+
+    restored = instruction(team, 'RequeueMessage', {'resident_id': resident_id, 'message_id': failed})
+    if not predecessor_proof:
+        assert restored.status != 'committed' and restored.error['code'] == 'instruction.conflict'
+        assert resident_execution_work.read(_record(resident_id)) == {}
+    else:
+        assert restored.status == 'committed', restored.error
+        current = resident_execution_work.read(_record(resident_id))
+        assert current['user_message_id'] == failed and current['queue'] == []
+        assert current['retry_of_execution_id'] == previous_execution
+        assert repository.message(resident_id, failed) == original
+    assert repository.message(resident_id, infos[0]) == consumed
+    assert repository.input_state(resident_id, infos[0])['state'] == 'completed'
+    assert not resident_held_infos.peek(_record(resident_id))
+    assert store.execution(previous_execution)['status'] == 'failed'
+    assert store.execution(job['execution_id'])['status'] == 'completed'
 
 
 def test_a_waiting_info_is_withdrawn_with_cancel_queue_item(team):
