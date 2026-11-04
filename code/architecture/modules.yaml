@@ -1184,6 +1184,7 @@ modules:
       - "management_portal/distribution/initialization.py"
       - "scripts/tfi_release_platform_*.py"
       - "scripts/tfi_release_windows_service.py"
+      - "scripts/tfi_windows_user_services.py"
       - "scripts/bootstrap_portal"
       - "scripts/install_article_tooling*"
       - "scripts/article_dependencies.py"
