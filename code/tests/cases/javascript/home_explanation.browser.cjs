@@ -135,6 +135,44 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       window.adapter = PortalHomeExplanationView.create({ root: document.getElementById('root'), onOpen: x => opens.push(x), onChange: x => changes.push(x.accessStatus) });
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
+    if (process.argv.includes('--captions-only')) {
+      const first = '两路频率没有改变。把同样宽的窗口移到零点二五秒，频差累积了半圈相位。原来的两条曲线上下相反，合成曲线几乎压平；窗口起点恰好抵消。';
+      const second = '窗口继续移动，比较两条声波和它们的和。';
+      const longCaptions = put('long-captions.vtt', `WEBVTT\n\n00:00.000 --> 00:01.000\n${first}\n\n00:01.000 --> 00:02.500\n${second}\n`, 'text/vtt');
+      await setup(manifest('caption-layout', { ...base, video_plan: undefined, video: { ...videoRef, captions: longCaptions } }));
+      await page.locator('video').evaluate(async v => { v.muted = true; await v.play(); v.pause(); v.currentTime = .3; });
+      await page.waitForFunction(text => document.querySelector('.homeExplanationCaptions')?.textContent === text, first);
+      const position = () => page.locator('.homeExplanationVideo').evaluate(frame => {
+        const v = frame.querySelector('video'), c = frame.querySelector('.homeExplanationCaptions');
+        return { below: c.getBoundingClientRect().top >= v.getBoundingClientRect().bottom,
+          fits: c.scrollWidth <= c.clientWidth, font: parseFloat(getComputedStyle(c).fontSize),
+          external: frame.classList.contains('homeExplanationInlineCaptions'), hidden: c.hidden, mode: v.textTracks[0].mode };
+      });
+      check('inline captions retain native track and sit below picture', await position(), { below: true, fits: true, font: 16, external: true, hidden: false, mode: 'showing' });
+      if (out) await page.locator('.homeExplanationVideo').screenshot({ path: path.join(out, 'captions-desktop.png') });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => { document.documentElement.style.fontSize = '20px'; });
+      check('narrow captions keep reader font without covering diagram', await position(), { below: true, fits: true, font: 20, external: true, hidden: false, mode: 'showing' });
+      if (out) await page.locator('.homeExplanationVideo').screenshot({ path: path.join(out, 'captions-390.png') });
+      await page.locator('video').evaluate(v => { v.currentTime = 1.4; });
+      await page.waitForFunction(text => document.querySelector('.homeExplanationCaptions').textContent === text, second);
+      checks.push('seek updates actual active WebVTT text');
+      await page.locator('video').evaluate(v => { v.textTracks[0].mode = 'disabled'; });
+      await page.waitForFunction(() => document.querySelector('.homeExplanationCaptions').hidden);
+      checks.push('native CC off clears external caption');
+      await page.locator('video').evaluate(v => { v.textTracks[0].mode = 'showing'; });
+      await page.waitForFunction(() => !document.querySelector('.homeExplanationCaptions').hidden);
+      await page.locator('video').evaluate(v => v.requestFullscreen());
+      await page.waitForFunction(() => !!document.fullscreenElement && !document.querySelector('.homeExplanationVideo').classList.contains('homeExplanationInlineCaptions'));
+      check('native fullscreen restores native captions only', (await position()).hidden, true);
+      await page.evaluate(() => document.exitFullscreen());
+      await page.waitForFunction(() => document.querySelector('.homeExplanationVideo').classList.contains('homeExplanationInlineCaptions'));
+      check('leaving fullscreen restores external caption', (await position()).hidden, false);
+      await page.evaluate(() => adapter.destroy());
+      check('destroy releases caption media URLs', await page.evaluate(() => urls.every(u => revoked.includes(u))), true);
+      check('caption transitions produce no page errors', errors, []);
+      return;
+    }
     await setup(planned);
     if (process.argv.includes('--authoring-only')) {
       state = { status: 'awaiting_authoring', quality: 'medium', quality_met: false,

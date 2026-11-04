@@ -200,6 +200,25 @@
             if (!/^\uFEFF?WEBVTT(?:\s|$)/.test(decode(content.bytes))) throw new Error(t("字幕文件不是有效的 WebVTT。"));
             const track = node("track"); track.kind = "captions"; track.label = t("字幕"); track.srclang = spec.language || "zh"; track.default = true;
             track.src = blob(content.bytes, "text/vtt"); player.append(track);
+            // Keep the authenticated native track and its CC controls. Inline
+            // captions use document text sizing below the picture, so long
+            // sentences cannot cover the diagram or shrink with the video.
+            const captionText = node("div", null, "homeExplanationCaptions");
+            captionText.setAttribute("aria-label", t("字幕")); captionText.hidden = true; frame.append(captionText);
+            const syncCaptions = () => {
+              if (!current(key)) return;
+              const nativePresentation = document.fullscreenElement === player || player.webkitDisplayingFullscreen || document.pictureInPictureElement === player;
+              frame.classList.toggle("homeExplanationInlineCaptions", !nativePresentation);
+              const cues = track.track.mode === "showing" ? Array.from(track.track.activeCues || []) : [];
+              captionText.textContent = cues.map(cue => cue.getCueAsHTML ? cue.getCueAsHTML().textContent : cue.text).join("\n");
+              captionText.hidden = !!nativePresentation || !captionText.textContent;
+            };
+            const listeners = [[track, "load"], [track.track, "cuechange"], [player.textTracks, "change"],
+              [document, "fullscreenchange"], [player, "webkitbeginfullscreen"], [player, "webkitendfullscreen"],
+              [player, "enterpictureinpicture"], [player, "leavepictureinpicture"]];
+            for (const [target, event] of listeners) target.addEventListener(event, syncCaptions);
+            disposers.add(() => { for (const [target, event] of listeners) target.removeEventListener(event, syncCaptions); });
+            syncCaptions();
           } catch (error) { if (current(key) && error.name !== "AbortError") failure(region, error); }
         })(),
         transcript && (async () => {

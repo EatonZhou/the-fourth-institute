@@ -24,6 +24,8 @@
 .homeExplanationStep { flex: 0 0 auto; color: var(--muted, #536078); font-variant-numeric: tabular-nums; font-size: .76em; }
 .homeExplanationVideo { background: #101724; border-radius: 12px; overflow: hidden; }
 .homeExplanationVideo video { display: block; width: 100%; max-height: 65vh; aspect-ratio: 16 / 9; object-fit: contain; }
+.homeExplanationInlineCaptions video::cue { visibility: hidden; }
+.homeExplanationCaptions { padding: 12px 16px; color: #f5f7fb; font-size: 1em; line-height: 1.65; white-space: pre-line; }
 .homeExplanationChapters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .homeExplanationButton { appearance: none; border: 1px solid var(--border, #d6dde8); border-radius: 8px; padding: 9px 14px; min-height: 44px; background: var(--panel, #fff); color: var(--text, #192234); font: inherit; line-height: 1.45; text-align: start; cursor: pointer; overflow-wrap: anywhere; }
 .homeExplanationButton:hover { background: var(--panel-2, #f3f6fb); border-color: var(--accent, #365edb); }
