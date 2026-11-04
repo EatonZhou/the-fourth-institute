@@ -23,9 +23,8 @@ def ensure_routes(entry, actor):
         return []
     api_id = entry["id"]
     check_identity(api_id)
-    protocols = AIProviderRegistry.harness_protocols(entry)
     providers = ["provider_api", *(p.provider for p in AGENT_PROVIDERS.values()
-                                  if p.api_protocol and p.api_protocol in protocols)]
+                                  if p.api_protocol and p.supports_api(entry))]
     result = []
     # Serialize provisioning for this API; another API cannot take a generated
     # name silently because create_registration also owns its identity lock.

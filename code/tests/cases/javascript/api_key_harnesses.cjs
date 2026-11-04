@@ -5,11 +5,12 @@ const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
 let apis = [];
 let failRoutes = true;
-const offered = protocols => ['openai_chat', ...Object.keys(protocols || {})];
+const offered = (protocols, kind = 'openai_compatible_chat') => [...new Set([kind === 'openai_compatible_chat' ? 'openai_chat' : kind, ...Object.keys(protocols || {})])];
+const nativeProtocols = ['openai_chat', 'openai_responses', 'anthropic_messages'];
 const routes = api => [
   {account_id: api.api_id, provider: 'provider_api'},
   ...[['codex', 'openai_responses'], ['claude', 'anthropic_messages'], ['kimi', 'openai_chat'],
-    ['opencode', 'openai_chat'], ['dsh', 'anthropic_messages']].filter(([, protocol]) => offered(api.protocols).includes(protocol))
+    ['opencode', 'openai_chat'], ['dsh', 'anthropic_messages']].filter(([provider, protocol]) => ['codex', 'claude'].includes(provider) || offered(api.protocols, api.kind).includes(protocol))
     .map(([provider]) => ({account_id: `${api.api_id}-${provider}`, provider})),
 ];
 window.PortalI18n = {t: (text, values = {}) => text.replace(/\{(p\d+)\}/g, (_, key) => values[key])};
@@ -20,8 +21,8 @@ window.PortalInstructionClient = {execute: async (name, args) => {
   calls.push({name, args: JSON.parse(JSON.stringify(args))});
   switch (name) {
     case 'ListProviders': return {providers: [
-      {provider: 'codex', title: 'Codex', kinds: ['subscription_login', 'api_profile'], api_protocol: 'openai_responses'},
-      {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login', 'api_profile'], api_protocol: 'anthropic_messages'},
+      {provider: 'codex', title: 'Codex', kinds: ['subscription_login', 'api_profile'], api_protocol: 'openai_responses', api_upstream_protocols: nativeProtocols},
+      {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login', 'api_profile'], api_protocol: 'anthropic_messages', api_upstream_protocols: nativeProtocols},
       {provider: 'opencode', title: 'OpenCode', kinds: ['service', 'api_profile'], api_protocol: 'openai_chat'},
       {provider: 'kimi', title: 'Kimi Code', kinds: ['service', 'api_profile'], api_protocol: 'openai_chat'},
       {provider: 'dsh', title: 'DeepSeek Harness', kinds: ['api_profile'], api_protocol: 'anthropic_messages'},
@@ -30,14 +31,14 @@ window.PortalInstructionClient = {execute: async (name, args) => {
     case 'ListBackendRoles': return {roles: []};
     case 'ListModelApis': return {apis};
     case 'CreateModelApi': {
-      apis = [{...args, harness_protocols: offered(args.protocols), version: 1}];
+      apis = [{...args, harness_protocols: offered(args.protocols, args.kind), version: 1}];
       if (failRoutes) throw Object.assign(new Error('routes unavailable'), {details: {reason: 'model_api.routes_incomplete', api_id: args.api_id}});
       return {api: apis[0], accounts: routes(apis[0])};
     }
     case 'UpdateModelApi': {
       const index = apis.findIndex(api => api.api_id === args.api_id);
       apis[index] = {...apis[index], ...args.changes, version: apis[index].version + 1};
-      apis[index].harness_protocols = offered(apis[index].protocols);
+      apis[index].harness_protocols = offered(apis[index].protocols, apis[index].kind);
       return {api: apis[index], version: apis[index].version, accounts: routes(apis[index])};
     }
     case 'RegisterProviderAccount':
@@ -63,12 +64,12 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   form.elements.api_id.value = 'gateway'; form.elements.base_url.value = 'https://gateway.invalid/v1';
   form.querySelector('[data-backend-model-id]').value = 'gpt-test';
   // Unsupported runners stay visible with the missing protocol explained.
-  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'opencode', 'kimi']);
+  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'claude', 'opencode', 'kimi']);
   assert.match([...form.elements.harness.options].find(x => x.value === 'dsh').textContent, /Anthropic Messages/);
   assert.equal(form.elements.harness.value, 'provider_api', 'direct calls stay the default');
   assert(form.elements.anthropic_base_url.parentElement.hidden);
   toggle(form.elements.protocol_openai_responses);
-  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'opencode', 'kimi']);
+  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'claude', 'opencode', 'kimi']);
   toggle(form.elements.protocol_anthropic_messages);
   assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'claude', 'opencode', 'kimi', 'dsh']);
   form.elements.harness.value = 'dsh';
@@ -110,8 +111,8 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   form.elements.provider.value = 'codex'; form.elements.provider.dispatchEvent(new window.Event('change'));
   form.elements.kind.value = 'api_profile'; form.elements.kind.dispatchEvent(new window.Event('change'));
   const listed = choices(form.elements.api_id).filter(Boolean);
-  assert(listed.includes('gateway') && !listed.includes('chat_only'), listed.join());
-  assert.match(form.textContent, /openai_responses/);
+  assert(listed.includes('gateway') && listed.includes('chat_only'), listed.join());
+  assert.match(form.textContent, /转换/);
   form.elements.account_id.value = 'second-codex'; form.elements.api_id.value = 'gateway';
   // The default route is set from the account list, not while registering.
   assert(!form.elements.is_default, 'registration offers no default-route switch');
@@ -119,6 +120,12 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   assert.deepEqual(last('RegisterProviderAccount').config, {api_id: 'gateway'});
 
   click('新增模型 API'); form = window.document.querySelector('dialog form');
+  form.elements.api_kind.value = 'openai_responses';
+  form.elements.api_kind.dispatchEvent(new window.Event('change'));
+  assert.deepEqual(enabledChoices(form.elements.harness), ['provider_api', 'codex', 'claude']);
+  assert.equal(form.elements.protocol_openai_chat.checked, false, 'switching primary protocol does not claim native Chat support');
+  form.elements.api_kind.value = 'openai_compatible_chat';
+  form.elements.api_kind.dispatchEvent(new window.Event('change'));
   form.elements.api_id.value = 'automatic'; form.elements.base_url.value = 'https://example.invalid';
   form.querySelector('[data-backend-model-id]').value = 'chat'; form.elements.harness.value = 'kimi';
   const registeredBefore = calls.filter(call => call.name === 'RegisterProviderAccount').length;

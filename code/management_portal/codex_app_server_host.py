@@ -84,7 +84,8 @@ def connect_transport(path, *, timeout=15.0, platform=None):
         raise
 
 
-def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0):
+def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0,
+             config_overrides=(), extra_env=None):
     windows = _platform(platform) == "win32"
     path, binary, account_home = Path(path), Path(binary), Path(account_home)
     if not windows:
@@ -110,6 +111,8 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     if startup_path is not None:
         ensure_private_directory(startup_path.parent)
     command = [str(binary), "app-server", "--listen", "ws://127.0.0.1:0" if windows else f"unix://{startup_path}"]
+    for override in config_overrides:
+        command += ["-c", override]
     if windows:
         command += ["--ws-auth", "capability-token", "--ws-token-sha256", hashlib.sha256(token.encode()).hexdigest()]
     env = dict(os.environ, CODEX_HOME=str(account_home))
@@ -122,6 +125,7 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     for key in portal_network.PROXY_KEYS:
         env.pop(key, None)
     env.update(proxy)
+    env.update(extra_env or {})
     process = spawn_process(command, cwd=str(account_home), env=env, stdin=subprocess.DEVNULL,
                             stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
     addresses = queue.Queue(maxsize=1)
@@ -223,6 +227,21 @@ def main():
     try:
         from .execution.account_hosting import ensure_account_home
         home = ensure_account_home("codex", args.account_id)
+        from .execution.account_registrations import registration
+        row = registration(args.account_id)
+        if row and row["kind"] == "api_profile":
+            from .model_api_bridge import Bridge, resolve_account, local_proxy_bypass
+            from .model_api_wire import upstream, RESPONSES
+            entry = resolve_account(row["config"]["api_id"], args.account_id)
+            if upstream(entry, RESPONSES) != RESPONSES:
+                with Bridge(lambda: resolve_account(row["config"]["api_id"], args.account_id), RESPONSES) as bridge:
+                    import json
+                    overrides = ["model_providers.portal_api.base_url=" + json.dumps(bridge.base_url),
+                                 'model_providers.portal_api.env_key="TFI_MODEL_BRIDGE_TOKEN"',
+                                 "model_providers.portal_api.requires_openai_auth=false"]
+                    env = {"TFI_MODEL_BRIDGE_TOKEN": bridge.token}
+                    env.update(local_proxy_bypass(env))
+                    return run_host(args.socket, args.binary, home, stop, config_overrides=overrides, extra_env=env)
         return run_host(args.socket, args.binary, home, stop)
     finally:
         restore_shutdown_handlers(previous)

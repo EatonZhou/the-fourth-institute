@@ -72,19 +72,20 @@ DECLARATIONS = (
         P("cwd", description="终端的起始目录")), mutates=True),
     _d("ListModelApis", FIXED, "列出已登记的模型接口。", (),
        (R("apis", "array", "模型接口登记：api_id、base_url、default_model、provider、enabled、version、"
-          "harness_protocols（Agent Harness 可用的协议）…；不含密钥"),),
+          "harness_protocols（上游原生协议）、compatible_harness_protocols（含本机转换的 Harness 协议）…；不含密钥"),),
        owner="execution"),
     _d("CreateModelApi", FIXED, "登记模型接口并自动登记协议兼容的执行路线；不启动模型调用。", (
         R("api_id", description="新模型接口的 ID"),
-        R("base_url", description="接口基础地址，请求发往其下的 chat/completions"),
+        R("base_url", description="接口基础地址；OpenAI 通常包含 /v1，Anthropic 使用不含 /v1 的基础地址"),
+        P("kind", description="主要协议：openai_compatible_chat（默认）、openai_responses、anthropic_messages 或 typesafe_system_one"),
         R("default_model", description="调用时未指定 model 所用的模型"), P("secret_file", description="密钥文件路径"),
         P("secret", description="一次性密钥，只写入站点密钥文件，不回显"),
         P("provider", description="服务商名称"),
         P("routes", "array", "明确绑定的服务路线；每项包含 backend 和 route_id", items={"type": "object"}),
         P("models", "array", "模型目录；每项含唯一的 id，可选 reasoning_efforts（该模型接受的推理强度，"
           "如 low、medium、high）、enabled 等", items={"type": "object"}),
-        P("protocols", "object", "Agent Harness 可用的其他协议：openai_responses（{}，Codex 使用）、"
-          "anthropic_messages（可含 base_url 与 auth=bearer|x-api-key，Claude Code 使用）；Chat Completions 无需声明"),
+        P("protocols", "object", "上游原生支持的附加协议：openai_chat、openai_responses（{}）、"
+          "anthropic_messages（可含 base_url 与 auth=bearer|x-api-key）。Claude Code 与 Codex 可经本机转换使用其他协议，无需虚报原生支持"),
         P("default_parameters", "object", "协议允许的默认生成参数"),
         P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),

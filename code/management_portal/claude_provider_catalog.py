@@ -21,12 +21,13 @@ def is_native(profile: dict[str, Any]) -> bool:
 
 def supports_entry(entry: dict[str, Any]) -> bool:
     return AIProviderRegistry.is_enabled(entry) and (
-        is_native(entry) or "anthropic_messages" in AIProviderRegistry.harness_protocols(entry))
+        is_native(entry) or "anthropic_messages" in AIProviderRegistry.compatible_harness_protocols(entry))
 
 
 def is_declared(entry: dict[str, Any]) -> bool:
     """An API route whose Model API declares its Anthropic endpoint (any gateway, not only DeepSeek)."""
-    return not is_native(entry) and AIProviderRegistry.declares_protocols(entry)
+    legacy = entry.get("provider") == "deepseek" and not AIProviderRegistry.declares_protocols(entry)
+    return not is_native(entry) and not legacy
 
 
 def profile(profile_id: str, *, allow_disabled: bool = False) -> dict[str, Any]:
@@ -44,7 +45,8 @@ def profile(profile_id: str, *, allow_disabled: bool = False) -> dict[str, Any]:
         entry["models"] = [{"id": model} if isinstance(model, str) else model
                            for model in entry.get("models") or []]
     else:
-        entry = {**AIProviderRegistry().get(row["config"]["api_id"]), "id": row["route_id"]}
+        entry = {**AIProviderRegistry().get(row["config"]["api_id"]), "id": row["route_id"],
+                 "api_id": row["config"]["api_id"], "account_id": row["account_id"]}
         entry["enabled"] = row["enabled"] and AIProviderRegistry.is_enabled(entry)
     if not supports_entry({**entry, "enabled": True}):
         raise ValueError(f"Unsupported Claude route: {profile_id}")

@@ -90,7 +90,58 @@ class JevProtocol:
         return ApiResponse(response, "```json\n" + json.dumps(answers, ensure_ascii=False, indent=2) + "\n```", answers)
 
 
-PROTOCOLS = {adapter.name: adapter for adapter in (ChatProtocol(), JevProtocol())}
+class ResponsesProtocol(ChatProtocol):
+    name = "openai_responses"
+    wire_protocol = "openai_responses"
+    endpoint = "responses"
+    parameters = frozenset({"temperature", "top_p", "max_tokens", "max_completion_tokens",
+                            "response_format", "reasoning_effort"})
+
+    def validate(self, parameters, *, require_questions=False):
+        super().validate(parameters, require_questions=require_questions)
+        if set(parameters) - self.parameters:
+            raise ValueError(f"Unsupported {self.name} parameters: {sorted(set(parameters) - self.parameters)}")
+
+    def execute(self, registry, item, model, messages, parameters, timeout, retries, cancelled, observe, run):
+        from management_portal.model_api_wire import blocks, encode
+        canonical = {**parameters, "model": model, "tools": [], "messages": [
+            {"role": message["role"], "content": blocks(message["content"], self.wire_protocol)} for message in messages]}
+        canonical["max_tokens"] = parameters.get("max_completion_tokens", parameters.get("max_tokens"))
+        fmt = parameters.get("response_format")
+        if fmt:
+            canonical["format"] = ({"type": "json_schema", **fmt["json_schema"]}
+                                   if fmt.get("type") == "json_schema" else fmt)
+        payload = {**encode(canonical, self.wire_protocol), "stream": False}
+        for attempt in range(retries + 1):
+            if cancelled():
+                raise InterruptedError("execution was cancelled before provider retry")
+            try:
+                response = run(lambda: registry.request(item["id"], self.endpoint, payload,
+                    timeout_seconds=timeout, protocol=self.wire_protocol,
+                    observe_transport=lambda report: observe({**report, "attempt_number": attempt + 1}) if not cancelled() else None))
+                break
+            except Exception as exc:
+                if attempt >= retries or not AIProviderRegistry.retryable_error(exc):
+                    raise
+                time.sleep(min(2.0, 0.25 * (attempt + 1)))
+        if self.wire_protocol == "anthropic_messages":
+            parts = response.get("content") or []
+        else:
+            parts = [part for message in response.get("output") or []
+                     if message.get("type") == "message" for part in message.get("content") or []]
+        content = "\n".join(part.get("text", "") for part in parts if part.get("type") in ("text", "output_text")).strip()
+        if not content:
+            raise RuntimeError(f"{item['id']} returned an empty completion")
+        return ApiResponse(response, content)
+
+
+class MessagesProtocol(ResponsesProtocol):
+    name = "anthropic_messages"
+    wire_protocol = "anthropic_messages"
+    endpoint = "v1/messages"
+
+
+PROTOCOLS = {adapter.name: adapter for adapter in (ChatProtocol(), ResponsesProtocol(), MessagesProtocol(), JevProtocol())}
 
 
 def protocol_adapter(name):

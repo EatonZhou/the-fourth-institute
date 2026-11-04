@@ -8,6 +8,7 @@ MODULES = {
     "management_portal": (
         "claude_code_daemon", "claude_provider_catalog", "claude_input_media", "claude_tool_bridge",
         "claude_account_usage", "claude_runtime", "ai_provider_registry", "model_api_store",
+        "model_api_wire", "model_api_stream", "model_api_bridge",
         "provider_transport_diagnostics", "resident_shell_environment", "jev_provider",
     ),
     "management_portal/execution": ("account_registrations", "account_hosting", "model_api_protocols", "provider_failures"),

@@ -91,6 +91,7 @@ class AgentProvider:
     # an ``api_profile`` account of this Provider speaks; "" when its API-key
     # routes are fixed to one service.
     api_protocol: str = ""
+    api_protocol_conversion: bool = False
     # A session keeps the Portal tools it started with: resuming or forking
     # it cannot add one, so a session started without a required tool needs
     # a new one (``session_tools``).
@@ -111,6 +112,17 @@ class AgentProvider:
     # the Provider's shared local runtime; none for a Provider Portal does
     # not install.
     runtime_updater: str = ""
+
+    @property
+    def api_upstream_protocols(self):
+        from management_portal.ai_provider_registry import AIProviderRegistry
+        return (AIProviderRegistry.harness_upstream_protocols(self.api_protocol)
+                if self.api_protocol_conversion else (self.api_protocol,))
+
+    def supports_api(self, entry):
+        from management_portal.ai_provider_registry import AIProviderRegistry
+        offered = AIProviderRegistry.harness_protocols(entry)
+        return not self.api_protocol or any(p in offered for p in self.api_upstream_protocols)
 
     def __post_init__(self) -> None:
         if self.subagents_by_default and SUBAGENTS not in self.harness:
@@ -256,7 +268,7 @@ AGENT_PROVIDERS = {
                       ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
                       # App-server owns the running turn and its native processes.
                       # Interrupting a follower's handover can abandon those processes.
-                      handover_keeps_turn=True, upstream="openai", api_protocol="openai_responses", session_tools_fixed=True,
+                      handover_keeps_turn=True, upstream="openai", api_protocol="openai_responses", api_protocol_conversion=True, session_tools_fixed=True,
                       system_context_survives_compaction=True,
                       system_instructions_place="thread 的开发者指令，原生压缩后仍保留",
                       credential_globs=(".codex*",), runtime_updater="CodexRuntime",
@@ -275,7 +287,7 @@ AGENT_PROVIDERS = {
                       handover_keeps_turn=True,
                       harness=frozenset({CONTEXT_USAGE_EVENTS, PORTAL_TOOLS, NATIVE_TOOL_EVENTS, AUTO_COMPACT_THRESHOLD, ERROR_CONTINUATION,
                                          SUBAGENTS, SUBAGENT_EVENTS, SUBAGENT_STOP}),
-                      subagents_by_default=True, upstream="anthropic", api_protocol="anthropic_messages",
+                      subagents_by_default=True, upstream="anthropic", api_protocol="anthropic_messages", api_protocol_conversion=True,
                       system_instructions_place="系统提示，每次进程启动都带；关闭以外的时机效果相同",
                       credential_globs=(".claude*",), runtime_updater="ClaudeRuntime",
                       # Claude Code starts turns by itself (task notifications, messages).

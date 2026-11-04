@@ -247,8 +247,10 @@ def _provider_environment(profile_id: str) -> tuple[dict[str, str], dict[str, An
     if claude_provider_catalog.is_native(profile):
         env = claude_provider_catalog.login_environment(profile)
         return env, profile
-    key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(profile))
-    base_url, auth = AIProviderRegistry.harness_endpoint(profile, "anthropic_messages")
+    from management_portal.model_api_bridge import connection, local_proxy_bypass
+    from management_portal.model_api_wire import upstream, MESSAGES
+    converted = upstream(profile, MESSAGES) != MESSAGES
+    base_url, auth, key = connection(profile, MESSAGES, account_id=profile.get("account_id", ""))
     env = {
         "ANTHROPIC_BASE_URL": base_url,
         # Bearer goes in Authorization; x-api-key in Anthropic's own header.
@@ -260,7 +262,10 @@ def _provider_environment(profile_id: str) -> tuple[dict[str, str], dict[str, An
         "CLAUDE_CODE_USE_VERTEX": "",
         "CLAUDE_CODE_USE_FOUNDRY": "",
     }
-    if claude_provider_catalog.is_declared(profile):
+    if converted:
+        env["ANTHROPIC_CUSTOM_HEADERS"] = ""
+        env.update(local_proxy_bypass(env))
+    elif claude_provider_catalog.is_declared(profile):
         headers = {str(name): str(value).strip() for name, value in (profile.get("default_headers") or {}).items()
                    if str(value or "").strip()}
         env["ANTHROPIC_CUSTOM_HEADERS"] = "\n".join(f"{name}: {value}" for name, value in headers.items())
