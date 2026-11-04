@@ -6,7 +6,7 @@ const fs = require('node:fs'), path = require('node:path'), http = require('node
 const root = path.resolve(__dirname, '../../../management_portal');
 const groups = JSON.parse(fs.readFileSync(path.join(root,'script_groups.json')));
 const homeHtml = fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<script data-portal-script-group="([^"]+)"><\/script>/g,(_,id)=>groups[id].map(src=>`<script src="${src}"></script>`).join(''));
-const scripts = ['portal_state.js','portal_text.js','portal_translations.js','portal_i18n.js','portal_ui_primitives.js',
+const scripts = ['portal_state.js','portal_page_state.js','portal_text.js','portal_translations.js','portal_i18n.js','portal_ui_primitives.js',
   'portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js',
   ...groups['portal-workspace-surface'].map(x=>x.replace(/^\/static\//,'')),
   'portal_agent_preview_source.js','markdown.js','home_dialogue_state.js','home_dialogue_preview.js','home_dialogue.js'];
@@ -132,12 +132,18 @@ const server = http.createServer((req,res) => {
     await page.setViewportSize({width:945,height:860});
     await page.evaluate(()=>{
       localStorage.clear(); document.querySelector('#root').style.maxWidth=''; window.denyPreview=true;
-      window.controller=PortalHomeDialogue.connect({root:document.querySelector('#root'),context:{currentUserReady:Promise.resolve()}});
+      window.readsBeforeRestore=previewReads;
+      PortalPageState.create('home-dialogue-display',{user:()=> 'home-fixture'}).write({schemaVersion:2,
+        entries:[{intent:{view:'preview',target:{address:'article_0123456789ab'}}}],active:0,pane:'display'});
+      window.controller=PortalHomeDialogue.connect({root:document.querySelector('#root'),context:{currentUserReady:Promise.resolve({username:'home-fixture'})}});
     });
-    await page.locator('.homeDialogueOpener > summary').click();
-    await page.getByLabel('展示类型',{exact:true}).selectOption('preview');
-    await page.getByLabel('目标 ID 或文件资源地址').fill('article_0123456789ab');
-    await page.getByRole('button',{name:'展示',exact:true}).last().click();
+    await page.waitForFunction(()=>document.querySelectorAll('.homeDialogueEntry').length===1);
+    assert.equal(await page.evaluate(()=>previewReads),await page.evaluate(()=>readsBeforeRestore),'saved targets do not trigger a default read');
+    assert.equal(await page.locator('.homeDialogueCurrent').textContent(),'未选择展示');
+    assert.equal(await page.locator('.homeDialoguePreviewFailure').count(),0,'no default failure or preview adapter');
+    if(process.env.SCREENSHOT_DIR){fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'preview-idle-945.png')});}
+    await page.locator('.homeDialogueMore > summary').click();
+    await page.getByLabel('展示历史').selectOption({index:1});
     const failure=page.locator('.homeDialoguePreviewFailure');
     await failure.getByRole('heading',{name:'暂时无法访问此文件'}).waitFor();
     assert.equal(await failure.locator('code').textContent(),'article_0123456789ab');

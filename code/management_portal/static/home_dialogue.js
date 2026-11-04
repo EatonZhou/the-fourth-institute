@@ -137,7 +137,7 @@
       return { schemaVersion: 2, entries: state.entries.map(entry => ({ intent: entry.intent, queued: entry.queued,
         ...(entry.originKey ? { originKey: entry.originKey } : entry.messageOrigin
           ? { messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin) } : {}) })),
-        active: state.entries.indexOf(state.active), pinned: state.pinned, ratio,
+        pinned: state.pinned, ratio,
         expanded: root.classList.contains("homeDialogueExpanded"), pane: root.dataset.pane };
     }
     function persist() { if (!restoring && !destroyed) pageState?.debounceSnapshot(); }
@@ -154,30 +154,30 @@
         if (![1, 2].includes(saved.schemaVersion) || !Array.isArray(saved.entries) || state.entries.length) return;
         root.classList.toggle("homeDialogueExpanded", saved.expanded === true);
         expand.textContent = saved.expanded === true ? "返回原布局" : "展开";
-        root.dataset.pane = saved.pane === "display" ? "display" : "conversation";
+        root.dataset.pane = "conversation";
         if (Number.isFinite(saved.ratio)) setRatio(saved.ratio);
         resize();
-        let active = null;
-        saved.entries.forEach((item, index) => {
+        saved.entries.forEach(item => {
           let intent;
           try { intent = window.PortalHomeDialogueState.normalizeIntent(item?.intent); } catch { return; }
           if (intent.action === "back") return;
-          const entry = navigate(intent, false, false, { readOnly: true,
+          const entry = navigate(intent, false, false, { readOnly: true, deferred: true,
             originKey: window.PortalHomeDialogueState.normalizeOriginKey(item.originKey),
             messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(item.messageOrigin) });
           entry.queued = item.queued === true;
-          if (index === saved.active) active = entry;
         });
         state.pin(saved.pinned === true);
-        select(active, false);
+        // Saved addresses are history, not a new request to open a file.
+        // Create no domain adapter or reads until the user selects an entry.
+        select(null, false);
       } finally { restoring = false; refresh(); }
     }
     function dirty() { return !!state.active?.adapter?.snapshot?.().dirty; }
     function refresh() {
       if (destroyed) return;
       pin.setAttribute("aria-pressed", String(state.pinned)); pin.textContent = state.pinned ? "取消固定" : "固定展示";
-      current.textContent = state.active?.label || "展示";
-      current.title = state.active?.label || "展示";
+      current.textContent = state.active?.label || "未选择展示";
+      current.title = state.active?.label || "未选择展示";
       current.setAttribute("aria-label", `展示详情：${current.title}`);
       identityBody.textContent = state.active ? `${current.title}\n${state.active.intent.target.id || state.active.intent.target.address}` : "选择资源或在对话中请求展示";
       switchView.replaceChildren();
@@ -187,7 +187,7 @@
         switchView.value = state.active.intent.view;
       }
       viewLabel.hidden = !state.active || switchView.options.length < 2;
-      historyLabel.hidden = !state.active;
+      historyLabel.hidden = !state.entries.length;
       for (const entry of state.entries) if (entry.controls) {
         entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
       }
@@ -232,13 +232,17 @@
       for (const menu of menus) menu.open = false;
       if (entry) entry.queued = false;
       present(); refresh();
+      if (entry?.deferred) { entry.deferred = false; void load(entry); }
     }
     function back(manual) {
       const index = state.entries.indexOf(state.active);
       if (index > 0) select(state.entries[index - 1], manual);
       else if (manual) state.manual();
     }
-    history.onchange = () => select(state.entries.find(entry => entry.id === history.value) || state.active, true);
+    history.onchange = () => {
+      const entry = state.entries.find(entry => entry.id === history.value);
+      if (entry) { select(entry, true); setPane("display"); }
+    };
     async function updateLabel(entry) {
       if (!entry.presented || destroyed || entry.controller.signal.aborted) return;
       if (entry.intent.view === "preview") {
@@ -331,19 +335,19 @@
       }
       // Independent roots retain drafts, video position and camera across history.
       const sourceReport = intent.view === "report" && intent.target.kind !== "report";
-      const entry = { id: window.PortalUIPrimitives.randomUUID(), intent, queued: !allowed,
+      const entry = { id: window.PortalUIPrimitives.randomUUID(), intent, queued: !allowed, deferred: provenance.deferred === true,
         originKey: window.PortalHomeDialogueState.normalizeOriginKey(provenance.originKey)
           || (sourceReport && !provenance.messageOrigin ? `home-request/v1:${window.PortalUIPrimitives.randomUUID()}` : null),
         messageOrigin: provenance.messageOrigin, readOnly: provenance.readOnly === true || intent.target.kind === "report",
         label: intent.target.kind === "project" ? intent.target.id : intent.target.kind === "lineage" ? "Lineage" : intent.target.kind === "task" ? "任务请求"
           : intent.target.kind === "report" ? `汇报 · ${intent.target.id}${intent.target.revision ? ` · v${intent.target.revision}` : ""}` : intent.target.address.split("/").filter(Boolean).at(-1),
-        status: "等待读取", root: node("section", "", "homeDialogueEntry"), controller: new AbortController(),
+        status: provenance.deferred ? "待打开" : "等待读取", root: node("section", "", "homeDialogueEntry"), controller: new AbortController(),
         content: node("div", "", "homeDialogueEntryContent"), notice: node("p", "", "homeDialogueEntryNotice") };
       entry.notice.hidden = true; entry.root.append(entry.notice); entry.retry = button(entry.root, "重试读取", () => load(entry)); entry.retry.hidden = true; entry.root.append(entry.content);
       entry.root.hidden = true; stage.append(entry.root); state.add(entry);
       if (allowed) select(entry, manual);
       else { refresh(); }
-      void load(entry);
+      if (!provenance.deferred) void load(entry);
       if (manual) setPane("display");
       return entry;
     }

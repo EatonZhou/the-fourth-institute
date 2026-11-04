@@ -6,6 +6,13 @@ const {chromium}=require('../../../management_portal/test_framework/tau_runtime/
 const {chatWorkspaceScripts}=require('./chat_workspace_modules.cjs');
 const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
 const homeAction=require('./home_dialogue_controls.cjs');
+async function openHistory(page,index=0){
+  const menu=page.locator('.homeDialogueMore > summary');
+  if(!await menu.isVisible())await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click();
+  await menu.click();
+  const values=await page.getByLabel('展示历史').locator('option').evaluateAll(options=>options.slice(1).map(option=>option.value));
+  await page.getByLabel('展示历史').selectOption(values.at(index));
+}
 const root=path.resolve(__dirname,'../../../management_portal');
 const out=process.env.HOME_REPORT_BINDING_EVIDENCE||'/tmp/home-dialogue-report-bindings';fs.mkdirSync(out,{recursive:true});
 const modules=[...new Set(['portal_state.js','portal_page_state.js','portal_text.js','portal_translations.js','portal_i18n.js',
@@ -119,8 +126,11 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     await page.getByRole('heading',{name:'固定汇报 · 来源 2',exact:true}).waitFor();
     check('refresh preserves original origin revision',origins.get(key),first);
     await homeAction(page,'返回上一展示');await page.locator('video:visible').waitFor();check('previous entry still displays old version',await fixed().innerText(),title);
-    const beforeReload=posts();await mount(page);await fixed().waitFor();await page.locator('video:visible').waitFor();
-    check('new document restores exact version without writes',posts(),beforeReload);
+    const beforeReload=posts(),beforeReloadReads=requests.length;await mount(page);
+    check('new document starts with no display reads',requests.length,beforeReloadReads);
+    check('new document has no selected target',await page.locator('.homeDialogueCurrent').innerText(),'未选择展示');
+    await openHistory(page);await fixed().waitFor();await page.locator('video:visible').waitFor();
+    check('explicit history selection restores exact version without writes',posts(),beforeReload);
     check('navigation storage has no body, credentials or automatic-admission nonce',await page.evaluate(()=>{
       const saved=PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read();
       return saved.entries.every(e=>Object.keys(e).every(k=>['intent','queued','originKey'].includes(k)))&&!JSON.stringify(saved).includes('request_id');
@@ -138,17 +148,17 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     // the saved request identity, never replay the creation POST.
     delay=700;await page.locator('.homeDialogueOpener > summary').click();await page.getByLabel('目标类型',{exact:true}).selectOption('project');await page.getByLabel('目标 ID 或文件资源地址').fill('manual');await page.locator('.homeDialogueChooser button').click();
     await page.waitForFunction(()=>document.querySelector('.homeDialogueCurrent').textContent==='manual');
-    await new Promise(r=>setTimeout(r,100));const beforeInterrupted=posts();await mount(page);delay=0;await fixed().waitFor();
+    await new Promise(r=>setTimeout(r,100));const beforeInterrupted=posts();await mount(page);delay=0;await openHistory(page,-1);await fixed().waitFor();
     check('interrupted request restores by read only',posts(),beforeInterrupted);
     check('manual identity persisted before POST',requests.some(r=>r.path.endsWith('/save')&&/^home-request\/v1:/.test(r.body.origin_key)),true);
     await page.evaluate(()=>{host.destroy();PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).write({schemaVersion:2,entries:[{
       intent:{view:'report',target:{kind:'project',id:'demo'}},messageOrigin:{residentId:'resident_0123456789ab',messageId:'msg_0123456789abcdef',fenceIndex:0}}],active:0,pane:'display'});});
-    const beforeHashRestore=posts();await mount(page);await page.locator('video:visible').waitFor();
+    const beforeHashRestore=posts();await mount(page);await openHistory(page);await page.locator('video:visible').waitFor();
     check('navigation saved before digest completion restores the same origin without writes',posts(),beforeHashRestore);
     check('pre-digest recovery keeps original snapshot',await fixed().innerText(),title);
     // Hidden old source-only layouts have no creation authority.
     await page.evaluate(()=>{host.destroy();PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).write({schemaVersion:1,entries:[{intent:{view:'report',target:{kind:'project',id:'legacy'}}}],active:0,pane:'display'});});
-    const beforeLegacy=posts();await mount(page);await new Promise(r=>setTimeout(r,150));check('legacy restore never writes',posts(),beforeLegacy);
+    const beforeLegacy=posts();await mount(page);await openHistory(page);check('legacy restore never writes',posts(),beforeLegacy);
     await page.getByRole('button',{name:'生成汇报',exact:true}).waitFor();
     const pendingKey=await page.evaluate(()=>PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read().entries[0].originKey);
     await page.getByRole('button',{name:'生成汇报',exact:true}).click();await fixed().waitFor();

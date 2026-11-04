@@ -84,13 +84,20 @@ const server=http.createServer(async(req,res)=>{
     // Stable or older Web generations cannot trigger navigation.
     await page.evaluate(()=>{for(const stamp of [100,100,99])window.dispatchEvent(new CustomEvent('portal:events-ready',{detail:{server_started_at:stamp}}));});
     assert.equal((await state()).timeOrigin,afterKey.timeOrigin);
-    // A new Web process intentionally reloads the same URL via portal_theme.
+    // A new Web process reloads the page but saved history never opens itself.
+    const beforeRestartReads=reads.length;
     await Promise.all([page.waitForEvent('domcontentloaded'),page.evaluate(()=>window.dispatchEvent(new CustomEvent('portal:events-ready',{detail:{server_started_at:200}})))]);
     await page.waitForSelector('.homeDialogueChooser',{state:'attached'});
     evidence.afterRestart=await state();await page.screenshot({path:path.join(out,'after-restart.png')});
     assert.notEqual(evidence.afterRestart.timeOrigin,afterKey.timeOrigin);
     assert.equal(evidence.afterRestart.entries,2,'new document restores host history');
-    assert.equal(evidence.afterRestart.expanded,true);assert.equal(evidence.afterRestart.pinned,'true');assert.equal(evidence.afterRestart.pane,'display');
+    assert.equal(evidence.afterRestart.expanded,true);assert.equal(evidence.afterRestart.pinned,'true');assert.equal(evidence.afterRestart.pane,'conversation');
+    assert.equal(evidence.afterRestart.title,'未选择展示');assert.equal(reads.length,beforeRestartReads,'restoration performs no report reads');
+    async function openFirstHistory(){
+      await page.locator('.homeDialogueMore > summary').click();
+      await page.getByLabel('展示历史').selectOption({index:1});
+    }
+    await openFirstHistory();
     await page.getByRole('heading',{name:'lifecycle-first',exact:true}).waitFor();
     assert.equal(await page.locator('video').count(),1,'fixed report restores its persisted media');
     assert.equal(reads.filter(r=>r.path==='/api/home-report/save').length,2,'restoring target never replays materialization');
@@ -103,11 +110,15 @@ const server=http.createServer(async(req,res)=>{
     assert.equal(await page.evaluate(()=>cachedVideo===document.querySelector('video')&&cachedEntry===document.querySelector('.homeDialogueEntry')),true);
     evidence.cacheRestore=await state();assert.equal(evidence.cacheRestore.expanded,true);
     await page.goto(`http://127.0.0.1:${server.address().port}/away`);await page.goBack();
+    await page.waitForSelector('.homeDialogueChooser',{state:'attached'});
+    if((await state()).title==='未选择展示')await openFirstHistory();
     await page.getByRole('heading',{name:'lifecycle-first',exact:true}).waitFor();
     evidence.actualBack={...await state(),pageshow:evidence.events.filter(e=>e.name==='pageshow'&&e.trusted).at(-1)};
     assert.equal(evidence.actualBack.entries,2);assert.equal(evidence.actualBack.expanded,true);
     if(evidence.actualBack.pageshow.persisted)assert.equal(await page.evaluate(()=>cachedVideo===document.querySelector('video')),true);
-    denied=true;await page.reload();await page.getByText('fixture permission revoked',{exact:true}).waitFor();
+    denied=true;await page.reload();await page.waitForSelector('.homeDialogueChooser',{state:'attached'});
+    assert.equal(await page.getByText('fixture permission revoked',{exact:true}).count(),0,'revoked history does not surface an unsolicited error');
+    await openFirstHistory();await page.getByText('fixture permission revoked',{exact:true}).waitFor();
     evidence.deniedRestore=await state();assert.equal(await page.getByRole('heading',{name:'lifecycle-first',exact:true}).count(),0);
     denied=false;username='other-fixture';await page.reload();await page.waitForSelector('.homeDialogueChooser',{state:'attached'});
     assert.equal((await state()).entries,0,'different identity cannot adopt history');
