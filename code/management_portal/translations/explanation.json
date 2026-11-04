@@ -358,6 +358,7 @@
   "提交解释页独立检查": {"zh-CN": "提交解释页独立检查", "en": "Submit explanation for independent review"},
   "查看审核证据": {"zh-CN": "查看审核证据", "en": "View review evidence"},
   "恢复独立检查": {"zh-CN": "恢复独立检查", "en": "Resume independent review"},
+  "审核状态暂不可读，尚未通过。": {"zh-CN": "审核状态暂不可读，尚未通过。", "en": "The review status is currently unavailable; approval is not verified."},
   "视频生成已取消。": {
     "zh-CN": "视频生成已取消。",
     "en": "Video generation was cancelled."

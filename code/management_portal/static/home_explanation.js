@@ -226,6 +226,7 @@
         clearEvidence();
         area.replaceChildren();
         const state = value?.status || "not_requested";
+        const can = name => value?.capabilities ? value.capabilities[name] === true : !value?.id;
         const labels = {
           pending: "视频质量检查等待提交。",
           submitted: "视频已提交独立检查，结果待回读。",
@@ -237,6 +238,7 @@
           blocked: "审核受阻，尚未通过。",
           cancelled: "审核已取消，尚未通过。",
           invalidated: "固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。",
+          unavailable: "审核状态暂不可读，尚未通过。",
           awaiting_author: "缺少经核验的负责Resident，审核等待正式作者关联。",
         };
         const pageLabels = { pending: "解释页质量检查等待提交。", submitted: "解释页已提交独立检查，尚未通过。",
@@ -245,7 +247,7 @@
         status.setAttribute("role", "status"); area.append(status);
         if (value?.feedback) area.append(node("p", value.feedback, "homeExplanationMuted"));
         if (value?.error) area.append(node("p", value.error, "homeExplanationMuted"));
-        for (const evidence of value?.evidence || []) {
+        for (const evidence of can("can_read_evidence") ? value?.evidence || [] : []) {
           if (typeof evidence?.address === "string" && hashPattern.test(evidence.sha256 || "")) {
             const fixed = value?.handoff?.evidence?.entries?.find(entry => entry.address === evidence.address && entry.sha256 === evidence.sha256);
             if (!fixed || !hashPattern.test(value.id || "")) {
@@ -281,7 +283,7 @@
             area.append(open, body);
           }
         }
-        if (state === "blocked" && hashPattern.test(value?.id || "")) {
+        if (state === "blocked" && can("can_resume") && hashPattern.test(value?.id || "")) {
           const resume = button("恢复独立检查", async () => {
             if (!current(key)) return;
             resume.disabled = true;
@@ -301,11 +303,11 @@
               if (current(key)) draw(unpack(result));
             } catch (error) {
               if (current(key) && error.name !== "AbortError") {
-                draw({ status: "submission_failed" }); failure(area, error);
+                draw(value); failure(area, error);
               }
             }
           }));
-          if (value?.id) area.append(button("取消审核", async () => {
+          if (value?.id && can("can_cancel")) area.append(button("取消审核", async () => {
             try {
               const result = await window.PortalAPI.post("/api/home-explanation/reviews/cancel", { review_id: value.id }, { signal: controller.signal });
               if (current(key)) draw(result.review);
@@ -313,7 +315,7 @@
           }));
           return;
         }
-        if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled", "invalidated", "awaiting_author"].includes(state)) return;
+        if (quality !== "high" || !can("can_retry") || ["passed", "changes_requested", "blocked", "cancelled", "invalidated", "awaiting_author"].includes(state)) return;
         area.append(button(page ? "提交解释页独立检查" : state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
           if (!current(key)) return;
           area.querySelectorAll("button").forEach(el => { el.disabled = true; });
@@ -324,7 +326,7 @@
             if (current(key)) draw(unpack(result));
           } catch (error) {
             if (current(key) && error.name !== "AbortError") {
-              draw({ status: "submission_failed" }); failure(area, error);
+              draw({ ...value, status: "submission_failed" }); failure(area, error);
             }
           }
         }));

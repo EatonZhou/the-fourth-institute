@@ -30,6 +30,7 @@ const manifest = (name, value) => put(name + '.json', JSON.stringify(value), 'ap
 let state = null, deny = false, deniedAddress = '', delayed = '', releases = [], videoRef;
 let reviewDenied = false, delayReview = false, reviewRelease;
 let pageReviewState = null;
+let pageReviewReadDenied = false;
 let reviewCopyDenied = false, reviewCopyCorrupt = false;
 const reviewEvidence = put('private-review.md', '# 固定审核证据\n\n必须补充初始条件对照。\n', 'text/markdown');
 const server = http.createServer((req, res) => {
@@ -52,12 +53,14 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/api/home-explanation/reviews/resume') {
     const entry = { url: url.pathname, method: req.method }; requests.push(entry);
     let body = ''; req.on('data', chunk => { body += chunk; }); req.on('end', () => {
-      entry.body = JSON.parse(body); pageReviewState = { status: 'submitted', id: 'b'.repeat(64), resumes_review_id: entry.body.review_id };
+      entry.body = JSON.parse(body); pageReviewState = { status: 'submitted', id: 'b'.repeat(64), resumes_review_id: entry.body.review_id,
+        capabilities: { can_cancel: true, can_resume: false, can_retry: false, can_read_evidence: false } };
       res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ review: pageReviewState }));
     }); return;
   }
   if (url.pathname === '/api/home-explanation/reviews') {
     requests.push({ url: url.pathname, method: req.method });
+    if (req.method === 'GET' && pageReviewReadDenied) { res.writeHead(403); res.end('denied'); return; }
     if (req.method === 'POST') pageReviewState = { status: 'submitted', id: 'a'.repeat(64) };
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ review: pageReviewState })); return;
@@ -155,6 +158,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
     if (process.argv.includes('--review-transfer-only')) {
       const pageOnly = manifest('review-transfer', { ...base, quality: 'high', video_plan: undefined });
       pageReviewState = { status: 'blocked', id: 'a'.repeat(64), feedback: '等待恢复检查前提。', evidence: [reviewEvidence],
+        capabilities: { can_cancel: false, can_resume: true, can_retry: false, can_read_evidence: true },
         handoff: { evidence: { entries: [{ ...reviewEvidence, name: 'private-review.md', content_type: 'text/markdown' }] } } };
       state = null; requests.length = 0; deniedAddress = reviewEvidence.address;
       await setup(pageOnly);
@@ -175,6 +179,24 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       check('explicit resume binds previous fixed review', requests.find(r => r.url === '/api/home-explanation/reviews/resume').body, { review_id: 'a'.repeat(64) });
       check('resume does not generate media or claim passed', requests.filter(r => r.url === '/api/home-explanation/media' && r.method === 'POST').length, 0);
       check('resume never claims passed', await page.getByText('此固定版本已通过独立审核。').count(), 0);
+      const readerCapabilities = { can_cancel: false, can_resume: false, can_retry: false, can_read_evidence: false };
+      for (const status of ['blocked', 'submitted', 'submission_failed', 'unavailable']) {
+        pageReviewState = { id: 'b'.repeat(64), status, feedback: '请补充实际演化轨迹和初值对照。', capabilities: readerCapabilities,
+          evidence: [reviewEvidence] };
+        requests.length = 0;
+        await setup(pageOnly);
+        await page.locator('.homeExplanationPageReview').getByText(pageReviewState.feedback, { exact: true }).waitFor();
+        check(`${status}: artifact reader sees authenticated feedback`, await page.locator('.homeExplanationPageReview').getByText(pageReviewState.feedback).count(), 1);
+        check(`${status}: artifact reader has no review mutation or evidence buttons`, await page.locator('.homeExplanationPageReview').getByRole('button').allTextContents(), status === 'submitted' ? ['刷新审核结果'] : []);
+        check(`${status}: artifact reader does not fetch evidence or mutate`, requests.filter(r => r.method === 'POST' || r.url === '/api/home-explanation/reviews/file').length, 0);
+        if (status === 'submitted') {
+          pageReviewReadDenied = true;
+          await page.locator('.homeExplanationPageReview').getByRole('button', { name: '刷新审核结果', exact: true }).click();
+          await page.locator('.homeExplanationPageReview').getByText('HTTP 403', { exact: true }).waitFor();
+          check('refresh rejection preserves reader capabilities and only permits reads', await page.locator('.homeExplanationPageReview').getByRole('button').allTextContents(), ['刷新审核结果', '重试']);
+          pageReviewReadDenied = false;
+        }
+      }
       await page.setViewportSize({ width: 390, height: 844 });
       if (out) await page.screenshot({ path: path.join(out, 'review-transfer-390.png') });
       check('review transfer has no script errors', errors, []);
