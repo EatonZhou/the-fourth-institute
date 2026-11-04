@@ -475,6 +475,11 @@ const homeComponentTree = Object.freeze({
   connect: connectHomeShell,
   children: [
     {
+      id: "dialogue-display",
+      root: '[data-home-component="dialogue-display"]',
+      connect: options => window.PortalHomeDialogue.connect(options),
+    },
+    {
       id: "get-me-aligned",
       root: "#homeOverviewCard",
       children: groupComponents("get-me-aligned"),
@@ -570,10 +575,13 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
     },
     {
       id: "home",
+      contentSchemaVersion: 2,
+      migrateState: window.PortalHomeDialogueState.migrateHomeState,
       root: "#homeWorkbenchRoot",
       staging: "#homeWorkbenchStaging",
       label: window.PortalI18n.t("Home Workbench"),
       panels: [
+        { id: "dialogue-display", title: "对话与展示", icon: "chat", source: '[data-home-component="dialogue-display"]', minHeight: 440 },
         { id: "get-me-aligned", title: window.PortalI18n.t("Get Me Aligned"), icon: "semantic", source: '#homeOverviewCard', minHeight: 320 },
         { id: "my-pulse-publish", title: window.PortalI18n.t("My Pulse / Publish"), icon: "send", source: '[data-home-component="my-pulse-publish"]', minHeight: 240 },
         { id: "agent-status", title: window.PortalI18n.t("Agent Status"), icon: "pulse", source: '[data-home-component="agent-status"]', minHeight: 420 },
@@ -621,7 +629,7 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
           },
         },
         { id: "tabs", name: window.PortalI18n.t("标签组"), layout: homeStack(["get-me-aligned", "my-pulse-publish", "agent-status"]) },
-      ],
+      ].map(preset => ({ ...preset, hidden: [...(preset.hidden || []), "dialogue-display"] })),
       defaultPreset: "accounts-usage",
       mobilePrimaryPanelId: "get-me-aligned",
     },
@@ -640,6 +648,9 @@ window.PortalHome = Object.freeze({
   mount() {
     if (homeController.snapshot().mounted) return;
     homeWorkbench.mount();
+    if (new URLSearchParams(window.location.search).get("home_component") === "dialogue-display") {
+      window.PortalWorkbench.get("home").focusPanel("dialogue-display");
+    }
     // An explicit deep link is an open request, even if the saved layout hides
     // its host. Ordinary visits never expand panels as a side effect of loading.
     for (const panel of window.PortalHomeComponents.panels().filter(item => item.requested)) {

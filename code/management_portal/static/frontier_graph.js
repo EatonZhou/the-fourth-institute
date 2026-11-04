@@ -137,7 +137,9 @@ export function createGraph(host,{onSelect,onNew,onDirection,onTeam,onLayout}={}
     ns.select('.nodeSub').text(n=>n.row?n.row._status:n.subtitle||'');
     location();
   }
-  const observer=new ResizeObserver(()=>{if(alive&&host.clientWidth&&host.clientHeight)fit();});observer.observe(host);
+  // A container resize or hide/show must not discard the reader's camera.
+  let sized = false;
+  const observer=new ResizeObserver(()=>{if(alive&&host.clientWidth&&host.clientHeight){if(!sized){sized=true;fit();}else drawMini();}});observer.observe(host);
   svg.on('keydown',event=>{if(event.target!==svg.node())return;if(event.key==='f')fit();if(event.key==='Escape'){selection='';focus=false;paint();}if(event.key==='+'||event.key==='=')svg.call(zoom.scaleBy,1.2);if(event.key==='-')svg.call(zoom.scaleBy,1/1.2);});
   return {
     update(next,saved) {const nextSignature=next.nodes.map(n=>n.id).join('|');if(saved)positions=saved;data=next;data.nodes.forEach(n=>Object.assign(n,positions[n.id]));paint();if(signature!==nextSignature){signature=nextSignature;fit();}},
@@ -145,7 +147,7 @@ export function createGraph(host,{onSelect,onNew,onDirection,onTeam,onLayout}={}
     fit, zoom(factor){svg.call(zoom.scaleBy,factor);},focus(){focus=!focus;paint();return focus;},
     undo(){if(!undo.length)return;positions=undo.pop();onLayout?.(positions);return positions;},
     reset(){undo.push(structuredClone(positions));positions={};collapsed.clear();onLayout?.(positions);return positions;},
-    select(id){selection=id;paint();fit([id]);},
+    select(id){const node=data.nodes.find(n=>n.id===id);if(!node)return false;collapsed.delete(node.group);activate(node);fit([id]);return true;},
     destroy(){alive=false;observer.disconnect();svg.on('.zoom',null).remove();mini.remove();}
   };
 }

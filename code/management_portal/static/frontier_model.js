@@ -32,7 +32,7 @@ export function readItems(doc) {
 export async function saveDocument(call, lineageId, previous, value) {
   if (new TextEncoder().encode(JSON.stringify(value)).length > 60000) throw new Error('预览容量已满，请精简内容；此次未保存。');
   const result = await call('UpdateSharedState', {lineage_id:lineageId,key:KEY,value,expected_value:previous});
-  if (!result.matched) throw new Error('其他人已更新这条工作线。请刷新后核对，再提交；你的输入仍保留。');
+  if (!result.matched) throw Object.assign(new Error('其他人已更新这条工作线。请核对最新内容再提交；你的输入仍保留。'), {code:'instruction.version_conflict',value:result.value});
   return result.value;
 }
 export async function deliver(call, item) {

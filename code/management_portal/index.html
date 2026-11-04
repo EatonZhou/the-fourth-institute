@@ -38,12 +38,20 @@
     <script src="/static/portal_preview_contract.js"></script>
     <script src="/static/portal_resource_chips.js"></script>
     <script src="/static/portal_file_links.js"></script>
+    <script src="/static/portal_preview_runtime.js"></script>
+    <script src="/static/portal_pdf_preview.js"></script>
+    <script src="/static/portal_preview_renderers.js"></script>
+    <script src="/static/portal_agent_preview_source.js"></script>
     <script src="/static/portal_command_registry.js"></script>
     <script src="/static/portal_workbench_context.js"></script>
     <script src="/static/portal_editor_open_service.js"></script>
     <script data-portal-script-group="portal-workbench"></script>
     <script src="/static/portal_command_palette.js"></script>
+    <script data-portal-script-group="portal-workspace-surface"></script>
     <link rel="stylesheet" href="/static/home.css" />
+    <link rel="stylesheet" href="/static/home_dialogue.css" />
+    <link rel="stylesheet" href="/static/project_map.css" />
+    <link rel="stylesheet" href="/static/home_report.css" />
   </head>
   <body class="portalBoardShell">
     <header class="portalSiteHeader" data-portal-site-header data-portal-nav-active=""></header>
@@ -52,6 +60,7 @@
       <main class="homeWorkbenchRoot portalWorkbenchViewportRoot" id="homeWorkbenchRoot" aria-label="Home Workbench" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Home Workbench&quot;}"></main>
 
       <div class="homeWorkbenchStaging" id="homeWorkbenchStaging" hidden>
+        <section data-home-component="dialogue-display"></section>
         <section class="homeWorkbenchGroup" id="homeOverviewCard" data-home-component="get-me-aligned">
           <div class="homeNestedWorkbench" id="getMeAlignedWorkbench"></div>
           <div class="homeWorkbenchStaging" id="getMeAlignedStaging" hidden>
@@ -102,6 +111,15 @@
     <script src="/static/home_usage.js"></script>
     <script src="/static/home_scheduled_triggered.js"></script>
     <script src="/static/home_activity.js"></script>
+    <script src="/static/project_common.js"></script>
+    <script src="/static/project_map_layout.js"></script>
+    <script src="/static/project_map_drawer.js"></script>
+    <script src="/static/project_map.js"></script>
+    <script src="/static/home_map_view.js"></script>
+    <script src="/static/home_report.js"></script>
+    <script src="/static/home_dialogue_state.js"></script>
+    <script src="/static/home_dialogue_preview.js"></script>
+    <script src="/static/home_dialogue.js"></script>
     <script src="/static/home.js"></script>
   </body>
 </html>

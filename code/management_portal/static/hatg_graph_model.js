@@ -74,11 +74,28 @@
       return state.lineage?.nodes?.find(node => node.id === state.selectedNodeId) || null;
     }
 
+    let displayedProgramCache = null;
+
+    function displayedProgramIndex() {
+      const source = state.lineage?.program;
+      const localVersion = state.localVersion;
+      // A committed definition replaces the source; local layout edits advance
+      // localVersion. Selection and presentation reads share this read-only
+      // projection instead of cloning Program once for every identity query.
+      if (!displayedProgramCache || displayedProgramCache.source !== source
+          || displayedProgramCache.localVersion !== localVersion) {
+        const program = window.PortalLineageProgram?.authoredProgram?.(source || {})
+          || { components: [], wires: [] };
+        displayedProgramCache = { source, localVersion, program,
+          components: new Map(program.components.map(item => [item.id, item])),
+          wires: new Map(program.wires.map(item => [item.id, item])),
+        };
+      }
+      return displayedProgramCache;
+    }
+
     function displayedProgram() {
-      const authored = window.PortalLineageProgram?.authoredProgram?.(
-        state.lineage?.program || {},
-      ) || { components: [], wires: [] };
-      return authored;
+      return displayedProgramIndex().program;
     }
 
     function currentProgram() {
@@ -88,7 +105,7 @@
     }
 
     function displayProgramComponentById(componentId) {
-      return displayedProgram().components.find(component => component.id === componentId) || null;
+      return displayedProgramIndex().components.get(componentId) || null;
     }
 
     function functionBlockInstanceById(instanceId) {
@@ -133,7 +150,7 @@
     }
 
     function displayProgramWireById(wireId) {
-      return displayedProgram().wires.find(wire => wire.id === wireId) || null;
+      return displayedProgramIndex().wires.get(wireId) || null;
     }
 
     function isProgramComponent(node) {

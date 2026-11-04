@@ -16,33 +16,37 @@
   const STANCE_LABELS = Object.freeze({ focus: "主攻", explore: "探索", watch: "观望", candidate: "候选", concluded: "已收束", dropped: "放弃" });
   const ZOOM = Object.freeze({ min: 0.25, max: 2.2 });
 
-  function create({ root, onBack, onSelectionChange, onTeam } = {}) {
+  function create({ root, onBack, onSelectionChange, onTeam, onOpen, onFrontierSelection, embedded = false } = {}) {
     if (!root) throw new TypeError("PortalProjectMap.create requires root");
     const { esc, execute, avatarHtml, relativeTime } = common();
     const state = {
       projectId: "", project: null, team: null, map: null, states: new Map(), summaries: new Map(),
       view: { x: 0, y: 0, scale: 1 }, showDropped: false, generation: 0, replay: null, live: true,
     };
-    let drawer = null;
+    let drawer = null, presented = true, destroyed = false;
+    const events = new AbortController();
+    // One root owns its event listeners, including when an embedding removes it.
+    const listen = (type, handler, options = {}) => root.addEventListener(type, handler, { ...options, signal: events.signal });
     let reloadTimer = 0;
-    let frontierOpen = new URLSearchParams(location.search).get('frontier') === '1';
-    let frontierPanel = null, frontierSurface = null, frontierKey = '', frontierSequence = 0;
+    let frontierOpen = !embedded && new URLSearchParams(location.search).get('frontier') === '1';
+    let frontierPanel = null, frontierSurface = null, frontierKey = '', frontierSequence = 0, frontierReady = Promise.resolve();
     let viewportSize = '';
     const viewportObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => {
       const {width, height} = entries[0].contentRect;
       const next = `${Math.round(width)}:${Math.round(height)}`;
-      if (width && height && viewportSize && next !== viewportSize) fit();
+      if (presented && width && height && !viewportSize) fit();
       if (width && height) viewportSize = next;
     }) : null;
 
     function closeFrontier() {
       frontierOpen = false;
+      void frontierSurface?.setPresented(false);
       frontierPanel?.remove();
       root.querySelector('[data-map-viewport]')?.removeAttribute('hidden');
       const host = root.querySelector('[data-map-drawer]');
       if (host) host.hidden = !drawer?.selected();
       root.querySelector('[data-map-frontier]')?.setAttribute('aria-pressed', 'false');
-      fit();
+      applyView();
     }
 
     function renderFrontier() {
@@ -58,15 +62,18 @@
       root.querySelector('[data-map-drawer]').hidden = true;
       root.querySelector('[data-map-frontier]')?.setAttribute('aria-pressed', 'true');
       const key = JSON.stringify([state.projectId, state.map.revision,state.showDropped]);
-      if (key === frontierKey) return;
+      if (key === frontierKey) { void frontierSurface?.setPresented(presented).catch(error => window.PortalUI.toast(error.message, 'error')); return; }
       frontierKey = key;
       frontierSurface?.destroy(); frontierSurface = null;
       const sequence = ++frontierSequence;
       const host = frontierPanel.querySelector('.mapFrontierBody');
-      import('/static/frontier.js').then(module => {
+      frontierReady = import('/static/frontier.js').then(module => {
         if (sequence !== frontierSequence) return;
-        frontierSurface = module.mountFrontier(host, {project:state.projectId, map:state.map, showDropped:state.showDropped, focusDirection:drawer?.selected(), title:state.map.goal || state.projectId, onDirection:id=>{ closeFrontier(); select(id); }});
-      }).catch(error => { if(sequence === frontierSequence) { frontierKey=''; host.textContent=error.message; } });
+        frontierSurface = module.mountFrontier(host, {project:state.projectId, map:state.map, showDropped:state.showDropped, focusDirection:drawer?.selected(), title:state.map.goal || state.projectId, onOpen, onSelection:onFrontierSelection, onDirection:id=>{ closeFrontier(); select(id); }});
+        if (!presented) void frontierSurface.setPresented(false);
+        return frontierSurface.ready;
+      });
+      void frontierReady.catch(error => { if(sequence === frontierSequence) { frontierKey=''; host.textContent=error.message; } });
     }
 
     const teams = () => {
@@ -177,6 +184,8 @@
           <p>写下这个项目要攻的几条路线：每条一个方向，主攻、探索或观望由你决定。也可以在右侧请 Project Resident 根据项目的知识起草一版候选方向。</p>
           <button type="button" class="portalButton is-primary" data-map-add data-portal-icon="plus"><span>提出第一个方向</span></button></div>` : "";
       frontierPanel?.remove();
+      const retainedDrawer = drawer?.root;
+      retainedDrawer?.remove();
       root.innerHTML = window.PortalI18n.html`<section class="projectMap${state.replay ? " is-replay" : ""}">
         ${toolbarHtml(directions)}
         <div class="mapStage">
@@ -193,15 +202,14 @@
         ${replayHtml()}
       </section>`;
       window.PortalUIPrimitives.mountIcons(root);
-      const host = root.querySelector("[data-map-drawer]");
-      const previous = drawer?.selected();
-      drawer = window.PortalProjectMapDrawer.create({
+      let host = root.querySelector("[data-map-drawer]");
+      if (retainedDrawer) { host.replaceWith(retainedDrawer); host = retainedDrawer; }
+      drawer ||= window.PortalProjectMapDrawer.create({
         root: host, apply, assignTeam, formTeam,
         onClose: () => { markSelection(); onSelectionChange?.(null); },
         onSelect: id => select(id),
       });
       drawer.update({ map, teams: teams(), states: state.states, summaries: state.summaries });
-      if (previous && !state.replay && directions.some(item => item.direction_id === previous)) drawer.open(previous);
       markSelection();
       renderFrontier();
       viewportObserver?.disconnect();
@@ -250,10 +258,12 @@
     // without its resource count) and the outputs (a search over the Project's
     // resources) take a second or more and fill in when they arrive.
     async function load(projectId, { selected = "" } = {}) {
+      if (destroyed) return null;
       const current = ++state.generation;
       const first = state.projectId !== projectId;
       state.projectId = projectId;
       if (first) {
+        drawer = null;
         frontierSurface?.destroy(); frontierSurface = null; frontierKey = ''; frontierSequence++;
         state.replay = null;
         state.project = null;
@@ -291,10 +301,10 @@
       return state.map;
     }
 
-    async function apply(changes, { select: key = "" } = {}) {
+    async function apply(changes, { select: key = "", expectedRevision = state.map.revision } = {}) {
       try {
         const result = await execute("ApplyResearchMapChanges", {
-          project_id: state.projectId, expected_revision: state.map.revision, changes,
+          project_id: state.projectId, expected_revision: expectedRevision, changes,
         }, "research-map");
         await load(state.projectId);
         if (key && result.created?.[key]) select(result.created[key]);
@@ -303,7 +313,7 @@
         if (error?.code === "instruction.version_conflict") {
           await load(state.projectId);
           window.PortalUI.toast(t("地图刚被别人修改过，已刷新，请再操作一次。"), "info");
-          return null;
+          throw error;
         }
         throw error;
       }
@@ -358,6 +368,40 @@
       onSelectionChange?.(direction || null);
       renderFrontier();
       if (frontierOpen) fit();
+    }
+
+    function focus(directionId) {
+      if (!state.map?.directions.some(d => d.direction_id === directionId)) return false;
+      if (!layout().visible(state.map.directions, { showDropped: state.showDropped }).some(d => d.direction_id === directionId)) {
+        state.showDropped = true; render();
+      }
+      select(directionId);
+      const position = layout().radial(state.map.directions, state.map.layout || {})[directionId];
+      const viewport = root.querySelector('[data-map-viewport]');
+      if (position && viewport) {
+        state.view.x = viewport.clientWidth / 2 - position.x * state.view.scale;
+        state.view.y = viewport.clientHeight / 2 - position.y * state.view.scale;
+        applyView();
+      }
+      return true;
+    }
+
+    async function setPresented(value) {
+      if (destroyed || presented === Boolean(value)) return;
+      presented = Boolean(value);
+      root.hidden = true;
+      if (!presented) {
+        window.clearTimeout(reloadTimer);
+        window.clearInterval(state.replay?.timer);
+        if (state.replay) state.replay.playing = false;
+        void frontierSurface?.setPresented(false); return;
+      }
+      const currentProject = state.projectId;
+      // Reauthorize before exposing retained DOM; load keeps drawer drafts and camera.
+      try {
+        if (currentProject) await load(currentProject);
+        if (presented && !destroyed) root.hidden = false;
+      } catch (error) { presented = false; throw error; }
     }
 
     async function addDirection() {
@@ -428,7 +472,7 @@
     // -- interaction -----------------------------------------------------------------
 
     let drag = null;
-    root.addEventListener("pointerdown", event => {
+    listen("pointerdown", event => {
       const viewport = event.target.closest("[data-map-viewport]");
       if (!viewport || event.button !== 0 || event.target.closest("button, a, input, select, textarea")) return;
       const node = event.target.closest("[data-node]");
@@ -436,7 +480,7 @@
         origin: node ? { x: parseFloat(node.style.left), y: parseFloat(node.style.top) } : { x: state.view.x, y: state.view.y } };
       viewport.setPointerCapture?.(event.pointerId);
     });
-    root.addEventListener("pointermove", event => {
+    listen("pointermove", event => {
       if (!drag) return;
       const dx = event.clientX - drag.startX;
       const dy = event.clientY - drag.startY;
@@ -451,7 +495,7 @@
         applyView();
       }
     });
-    root.addEventListener("pointerup", async () => {
+    listen("pointerup", async () => {
       const finished = drag;
       drag = null;
       if (!finished) return;
@@ -472,7 +516,7 @@
         }
       }
     });
-    root.addEventListener("wheel", event => {
+    listen("wheel", event => {
       const viewport = event.target.closest("[data-map-viewport]");
       if (!viewport || event.target.closest("[data-map-drawer]")) return;
       event.preventDefault();
@@ -485,16 +529,26 @@
       state.view.scale = next;
       applyView();
     }, { passive: false });
-    root.addEventListener("keydown", event => {
+    listen("keydown", event => {
       const node = event.target.closest?.("[data-node]");
       if (node && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); select(node.dataset.node); }
       if (event.key === "Escape" && drawer?.selected()) drawer.close();
     });
-    root.addEventListener("click", async event => {
+    listen("click", async event => {
       const target = event.target;
       try {
         const back = target.closest("[data-map-back]");
         if (back && common().plainClick(event)) { event.preventDefault(); onBack?.(); return; }
+        const link = target.closest('a');
+        if (onOpen && link && common().plainClick(event)) {
+          const url = new URL(link.href, location.href);
+          if (url.origin === location.origin && url.pathname.startsWith('/r/')) {
+            event.preventDefault(); onOpen({view:'preview',target:{address:decodeURIComponent(url.pathname.slice(3))}}); return;
+          }
+          if (url.origin === location.origin && url.pathname === '/lineage' && url.searchParams.get('lineage')) {
+            event.preventDefault(); onOpen({view:'frontier',target:{kind:'lineage',id:url.searchParams.get('lineage')}}); return;
+          }
+        }
         const frontierDirection = target.closest('[data-frontier-direction]');
         if (frontierDirection) { frontierOpen = true; select(frontierDirection.dataset.frontierDirection); return; }
         if (target.closest('[data-map-frontier]')) {
@@ -519,14 +573,14 @@
         window.PortalUI.toast(window.PortalI18n.text`保存失败：${error.message || error}`, "error");
       }
     });
-    root.addEventListener("change", event => {
+    listen("change", event => {
       if (event.target.matches("[data-map-dropped]")) { state.showDropped = event.target.checked; render(); }
     });
 
     // Someone else changed the map: read it again, keeping what is open.
     const onChange = event => {
       const changes = event.detail?.projection_changes?.["research-map"] || {};
-      if (!state.projectId || !(state.projectId in changes) || state.replay || drawer?.editing()) return;
+      if (!presented || !state.projectId || !(state.projectId in changes) || state.replay || drawer?.editing()) return;
       window.clearTimeout(reloadTimer);
       reloadTimer = window.setTimeout(() => void load(state.projectId).catch(() => {}), 400);
     };
@@ -536,6 +590,17 @@
       root,
       load,
       select,
+      focus,
+      async showLayer(layer, value) {
+        if (layer === 'frontier') {
+          frontierOpen = true; renderFrontier(); await frontierReady;
+          return value ? frontierSurface.focus(value) : true;
+        }
+        if (layer === 'map' && frontierOpen) closeFrontier();
+        return value ? focus(value) : true;
+      },
+      setPresented,
+      editing: () => !!drawer?.editing(),
       selected: () => {
         const id = drawer?.selected();
         return id ? state.map?.directions.find(item => item.direction_id === id) || null : null;
@@ -544,6 +609,7 @@
       team: () => state.team,
       snapshot: () => JSON.parse(JSON.stringify({ map: state.map, view: state.view, replay: state.replay ? { index: state.replay.index, revision: state.replay.map.revision } : null })),
       destroy() {
+        destroyed = true; events.abort();
         viewportObserver?.disconnect();
         frontierSequence++; frontierSurface?.destroy(); frontierPanel?.remove();
         state.generation += 1;

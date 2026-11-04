@@ -33,6 +33,7 @@
     let current = null;
     let context = null;
     let editing = false;
+    let editRevision = null;
 
     const directionsById = () => new Map((context?.map.directions || []).map(item => [item.direction_id, item]));
     const titleOf = id => directionsById().get(id)?.title || id;
@@ -212,7 +213,7 @@
       const target = event.target;
       try {
         if (target.closest("[data-close]")) return close();
-        if (target.closest("[data-edit]")) { editing = !editing; return render(); }
+        if (target.closest("[data-edit]")) { editing = !editing; editRevision = context.map.revision; return render(); }
         if (target.closest("[data-edit-cancel]")) { editing = false; return render(); }
         const select = target.closest("[data-select]");
         if (select) return onSelect?.(select.dataset.select);
@@ -270,7 +271,7 @@
         if (form.matches("[data-edit-form]")) {
           const fields = Object.fromEntries(["title", "question", "approach", "expectation"]
             .map(name => [name, form.elements[name].value.trim()]).filter(([name, value]) => value !== (direction[name] || "")));
-          if (Object.keys(fields).length) await apply([{ op: "update_direction", direction_id: direction.direction_id, fields }]);
+          if (Object.keys(fields).length) await apply([{ op: "update_direction", direction_id: direction.direction_id, fields }], { expectedRevision: editRevision });
           editing = false;
           render();
         } else if (form.matches("[data-note-form]")) {
@@ -282,6 +283,7 @@
           }
         }
       } catch (error) {
+        if (error?.code === 'instruction.version_conflict') editRevision = context.map.revision;
         window.PortalUI.toast(window.PortalI18n.text`保存失败：${error.message || error}`, "error");
       }
     });
@@ -290,7 +292,7 @@
       root,
       open(directionId) { if (current !== directionId) editing = false; current = directionId; render(); },
       close,
-      update(next) { context = next; render(); },
+      update(next) { context = next; if (!editing) render(); },
       selected: () => current,
       editing: () => editing,
     };

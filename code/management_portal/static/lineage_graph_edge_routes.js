@@ -25,6 +25,7 @@
     let parallelEdgeLaneMap = new Map();
 
     let edgeGeometryMap = new Map();
+    let routingNodes = null;
 
     function isProgramWire(edge) {
       return !!(edge?._program_wire);
@@ -32,10 +33,12 @@
 
     function invalidateEdgeGeometry() {
       edgeGeometryMap.clear();
+      routingNodes = null;
     }
 
     function forgetEdgeGeometry(edgeId) {
       edgeGeometryMap.delete(edgeId);
+      routingNodes = null;
     }
 
     function rememberEdgeGeometry(edgeId, geometry) {
@@ -127,16 +130,24 @@
 
     function routeBlockingNodes(edge, segments) {
       const points = sampledRoute(segments);
-      return state.model.nodes.filter(node => {
-        const position = nodePosition(node);
-        const half = nodeHalfExtents(node);
+      // A geometry generation owns one snapshot of card bounds. Routing each
+      // candidate must not repeatedly resolve every node's position and size.
+      routingNodes ||= state.model.nodes.map(node => ({ node,
+        position: nodePosition(node), half: nodeHalfExtents(node) }));
+      const minX = Math.min(...points.map(point => point.x));
+      const maxX = Math.max(...points.map(point => point.x));
+      const minY = Math.min(...points.map(point => point.y));
+      const maxY = Math.max(...points.map(point => point.y));
+      return routingNodes.filter(({ node, position, half }) => {
         // An endpoint may touch its own boundary, but its curve must not
         // cross back through the card to reach a port on the opposite side.
         const endpoint = node.id === edge.source || node.id === edge.target;
         const marginX = Math.max(0, half.x + (endpoint ? -0.1 : 0.65));
         const marginY = Math.max(0, half.y + (endpoint ? -0.1 : 0.85));
+        if (maxX < position.x - marginX || minX > position.x + marginX
+            || maxY < position.y - marginY || minY > position.y + marginY) return false;
         return points.some(point => graphGeometry.pointInBox(point, position, { x: marginX, y: marginY }));
-      });
+      }).map(box => box.node);
     }
 
     function detourSegments(base, entryX, exitX, trackY) {
@@ -368,7 +379,7 @@
     }
 
     function resolveEdgeLabelCollisions(edges = []) {
-      edgeGeometryMap.clear();
+      invalidateEdgeGeometry();
       const placed = [];
       // Node placement does not reserve space for edge labels. Include endpoint
       // cards as obstacles here too, including the source and destination.
@@ -380,6 +391,39 @@
           halfWidth: half.x / 100 * worldSize.width,
           halfHeight: half.y / 100 * worldSize.height };
       });
+      // Query only boxes near a candidate label. Cards and labels retain the
+      // same exact collision predicate and deterministic placement order.
+      const cells = new Map();
+      const cellSize = 256;
+      function visitCells(box, visit) {
+        for (let x = Math.floor((box.x - box.halfWidth) / cellSize);
+          x <= Math.floor((box.x + box.halfWidth) / cellSize); x += 1) {
+          for (let y = Math.floor((box.y - box.halfHeight) / cellSize);
+            y <= Math.floor((box.y + box.halfHeight) / cellSize); y += 1) {
+            if (visit(`${x}:${y}`) === false) return false;
+          }
+        }
+        return true;
+      }
+      function indexBox(box) {
+        visitCells(box, key => {
+          if (!cells.has(key)) cells.set(key, []);
+          cells.get(key).push(box);
+        });
+      }
+      cards.forEach(indexBox);
+      function place(box) {
+        placed.push(box);
+        indexBox(box);
+      }
+      function isFree(point, width, height) {
+        return visitCells({ ...point, halfWidth: width / 2, halfHeight: height / 2 }, key => (
+          (cells.get(key) || []).every(box => (
+            Math.abs(point.x - box.x) >= width / 2 + box.halfWidth
+            || Math.abs(point.y - box.y) >= height / 2 + box.halfHeight
+          ))
+        ));
+      }
       [...edges]
         .filter(edge => edge.type !== "workspace_binding")
         .sort((left, right) => String(left?.id || "").localeCompare(String(right?.id || "")))
@@ -394,7 +438,6 @@
           const labelHeight = (element?.offsetHeight || 24) + 16;
           const preferredX = geometry.labelX / 100 * worldSize.width;
           const baseY = geometry.labelY / 100 * worldSize.height;
-          const allObstacles = [...cards, ...placed];
           // Follow the routed curve before displacing a label away from it.
           // Moving only vertically can put a Route label beside a different
           // edge, especially after a detour around a card or a geometry refresh.
@@ -403,21 +446,18 @@
           })).sort((left, right) => (
             Math.hypot(left.x - preferredX, left.y - baseY)
             - Math.hypot(right.x - preferredX, right.y - baseY)
-          )).find(point => allObstacles.every(box => (
-            Math.abs(point.x - box.x) >= labelWidth / 2 + box.halfWidth
-            || Math.abs(point.y - box.y) >= labelHeight / 2 + box.halfHeight
-          )));
+          )).find(point => isFree(point, labelWidth, labelHeight));
           if (onPath) {
             geometry.labelX = onPath.x / worldSize.width * 100;
             geometry.labelY = onPath.y / worldSize.height * 100;
-            placed.push({...onPath, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2});
+            place({...onPath, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2});
             edgeGeometryMap.set(String(edge.id || ""), geometry);
             return;
           }
           // A short gap between endpoint cards may have no room on its path.
           // Keep the existing unobscured placement in that case.
           const x = preferredX;
-          const obstacles = allObstacles.filter(box =>
+          const obstacles = [...cards, ...placed].filter(box =>
             Math.abs(x - box.x) < labelWidth / 2 + box.halfWidth);
           // Nearest free vertical position lies at the desired point or at an
           // obstacle boundary. Unlike a fixed list of offsets, this also works
@@ -426,8 +466,9 @@
             box.y - box.halfHeight - labelHeight / 2 - 1,
             box.y + box.halfHeight + labelHeight / 2 + 1,
           ])].sort((left, right) => Math.abs(left - baseY) - Math.abs(right - baseY) || left - right);
-          const y = candidates.find(candidate => obstacles.every(box =>
-            Math.abs(candidate - box.y) >= labelHeight / 2 + box.halfHeight));
+          // Candidate order is unchanged; use the same local index for the
+          // fallback instead of scanning every vertically aligned obstacle.
+          const y = candidates.find(candidate => isFree({ x, y: candidate }, labelWidth, labelHeight));
           geometry.labelY = y / worldSize.height * 100;
           // When the gap cannot hold the label, preserve its association with
           // this precise curve instead of leaving an unanchored floating label.
@@ -437,7 +478,7 @@
             return !nearest || distance < nearest.distance ? { ...point, distance } : nearest;
           }, null);
           geometry.labelAnchor = { x: anchor.x, y: anchor.y };
-          placed.push({ x, y, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2 });
+          place({ x, y, halfWidth: labelWidth / 2, halfHeight: labelHeight / 2 });
           edgeGeometryMap.set(String(edge.id || ""), geometry);
         });
     }

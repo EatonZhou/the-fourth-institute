@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const root=path.resolve(__dirname,'../../../management_portal/static');
+const ctx={window:{PortalI18n:{t:x=>x}},structuredClone};
+vm.runInNewContext(fs.readFileSync(path.join(root,'hatg_graph_model.js'),'utf8'),ctx);
+let normalizations=0;
+ctx.window.PortalLineageProgram={authoredProgram:source=>{normalizations++;return {components:[],wires:[],...structuredClone(source)};}};
+const source={components:[{id:'filter',title:'Original',x:10,config:{condition:'old'}}],wires:[{id:'route',source:'filter',target:'resident'}]};
+const state={lineage:{program:source},localVersion:0};
+const api=ctx.window.PortalHatgGraphModel.createGraphModel({state,esc:String});
+for(let i=0;i<1000;i++){assert.equal(api.displayProgramComponentById('filter').title,'Original');assert.equal(api.displayProgramWireById('route').target,'resident');assert.equal(api.displayProgramWireById('absent'),null);}
+assert.equal(normalizations,1,'selection identity queries normalize once per definition');
+source.components[0].x=20;state.localVersion++;
+assert.equal(api.displayProgramComponentById('filter').x,20,'local layout changes invalidate');
+state.lineage={program:{components:[{id:'filter',title:'Updated',config:{condition:'new'}}],wires:[]}};
+assert.equal(api.displayProgramComponentById('filter').config.condition,'new','replacement is observed even at equal revision');
+assert.equal(api.displayProgramWireById('route'),null,'deleted wire is absent');
+state.lineage=null;
+assert.equal(api.displayProgramComponentById('filter'),null,'switching away clears lookup');
+state.lineage={program:source};
+assert.equal(api.displayProgramComponentById('filter').x,20,'returning to a lineage rebuilds');
+assert.equal(normalizations,5);
+console.log('Program lookup reuse, replacement, local edit, deletion and lineage switch passed');

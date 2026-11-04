@@ -389,3 +389,17 @@
 }
 
 .mapFrontier{flex:1;min-width:0;min-height:0;display:flex}.mapFrontierBody{flex:1;min-width:0;min-height:0;height:100%}
+
+/* Embedded native map: size belongs to its container, not the browser viewport. */
+.homeMapView { display:flex; flex-direction:column; height:100%; min-height:320px; min-width:0; container-type:inline-size; }
+.homeMapView [hidden] { display:none !important; }
+.homeMapToolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:8px; }
+.homeMapToolbar strong { flex:1; overflow-wrap:anywhere; }
+.homeMapBody { flex:1; min-height:0; position:relative; }
+.homeMapSurface { height:100%; min-height:0; }
+.homeMapSurface .projectMap { height:100%; min-height:320px; }
+@container (max-width:700px) {
+  .homeMapSurface .mapToolbar { flex-wrap:wrap; }
+  .homeMapSurface .mapActions { flex-wrap:wrap; }
+  .homeMapSurface .mapDrawerHost { position:absolute; right:0; top:0; bottom:0; width:min(360px,90%); z-index:4; }
+}
