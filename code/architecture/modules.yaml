@@ -142,6 +142,9 @@ features:
   - id: "telepus"
     title: "Telepus"
     modules: ["web.community"]
+  - id: "home_report"
+    title: "Persistent Reports"
+    modules: ["web.projections", "resources.types", "delivery.services"]
 modules:
   - id: "interface"
     title: "浏览器前端"
@@ -1352,6 +1355,7 @@ modules:
   - id: "web.projections"
     designs:
       - "decision_bd179998ba08"
+      - "decision_e3ced6d30f6b"
     instruction_owners: []
     title: "页面与工作台宿主"
     layer: "entry"
@@ -1366,6 +1370,9 @@ modules:
       - "management_portal/home_report_media.py"
       - "management_portal/home_report_reasoning.py"
       - "management_portal/home_report_visual.py"
+      - "management_portal/home_report_store.py"
+      - "management_portal/home_report_exports.py"
+      - "management_portal/home_report_persistent_media.py"
       - "management_portal/conversation_*.py"
       - "management_portal/local_terminal_backend.py"
       - "management_portal/resident_workspace_*.py"
@@ -1381,7 +1388,7 @@ modules:
       - "management_portal/watchboards/commands.py"
       - "management_portal/watchboards/service.py"
       - "management_portal/http_ui_state.py"
-    responsibility: "提供页面引导、投影资源白名单、反馈与焦点宿主，保存 UI 配置并代理资源和团队调用；按当前主体经领域读取生成带来源和版本的 Home 汇报及派生媒体，重开时重新核对访问，业务事实与权限仍由领域拥有。"
+    responsibility: "提供页面引导、投影资源白名单、反馈与焦点宿主，保存 UI 配置并代理资源和团队调用；按当前主体经领域读取生成 Home 汇报，由汇报领域拥有固定版本、消息来源绑定及持久媒体和导出，通过统一资源、权限与目录生命周期接口登记和清理。重开重新核对访问，原业务事实与权限仍由来源领域拥有。"
     parent: "web"
     level: "component"
   - id: "notifications.clients"

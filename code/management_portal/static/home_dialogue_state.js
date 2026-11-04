@@ -14,6 +14,13 @@
       return { action, view: value.view, target: { address } };
     }
     const kind = String(target.kind || ""), id = String(target.id || "").trim();
+    if (kind === "report") {
+      if (value.view !== "report" || !/^report_[a-f0-9]{12}$/.test(id)
+        || (target.revision !== undefined && (!Number.isSafeInteger(target.revision) || target.revision < 1))) throw new Error("汇报引用需有效的 report_ID 和正整数版本");
+      return { action, view: "report", target: { kind, id,
+        ...(target.revision === undefined ? {} : { revision: target.revision }),
+        ...(typeof target.focus === "string" ? { focus: target.focus.slice(0, 200) } : {}) } };
+    }
     if (!["task", "lineage", "project"].includes(kind) || !id || id.length > 200 || /[\x00-\x1f]/.test(id)) throw new Error("请指定任务、Lineage 或 Project");
     if (kind === "task" && !/^resident_[a-f0-9]{12}\/msg_[a-f0-9]{12,64}$/.test(id)) throw new Error("任务使用 resident_ID/msg_ID");
     if (kind === "lineage" && !/^lineage_[0-9a-f]{12}$/.test(id)) throw new Error("Lineage ID 无效");
@@ -70,7 +77,9 @@
       if (!value || value.protocol !== "portal-home-display/v1" || typeof value.request_id !== "string"
         || !value.request_id.trim() || value.request_id.length > 200 || /[\x00-\x1f]/.test(value.request_id)
         || !Number.isSafeInteger(value.version) || value.version < 1) return null;
-      return { value, intent: normalizeIntent(value) };
+      const intent = normalizeIntent(value);
+      if (intent.target?.kind === "report" && !intent.target.revision) return null;
+      return { value, intent };
     } catch { return null; }
   }
   function results(messages) {
@@ -78,12 +87,34 @@
     for (const message of messages || []) {
       if (!["assistant", "agent"].includes(message.role)) continue;
       const text = (message.content_parts || []).filter(p => p.type === "text").map(p => p.text || "").join("\n");
+      let fenceIndex = 0;
       for (const block of window.MD?.fencedBlocks(text) || []) {
+        if (block.info !== "portal-home-display") continue;
+        const index = fenceIndex++;
         const command = displayCommand(block);
-        if (command) found.push({ value: command.value, messageId: message.message_id || message.id });
+        if (command) found.push({ value: command.value, messageId: message.message_id || message.id, fenceIndex: index });
       }
     }
     return found;
   }
-  window.PortalHomeDialogueState = Object.freeze({ create, normalizeIntent, migrateHomeState, results, displayCommand });
+  // This is a materialization identity, not authorization or automatic-display
+  // admission. No request nonce, body or credentials are persisted in this key.
+  function normalizeMessageOrigin(value) {
+    const { residentId, messageId, fenceIndex } = value || {};
+    if (!/^resident_[a-f0-9]{12}$/.test(residentId) || !/^msg_[a-f0-9]{12,64}$/.test(messageId)
+      || !Number.isSafeInteger(fenceIndex) || fenceIndex < 0) return null;
+    return { residentId, messageId, fenceIndex };
+  }
+  async function messageOriginKey(source, value) {
+    const provenance = normalizeMessageOrigin(source);
+    if (!provenance) throw new Error("汇报需要真实对话消息来源");
+    const { residentId, messageId, fenceIndex } = provenance;
+    const intent = normalizeIntent(value);
+    const { sha256 } = await import("./portal_sha256.js");
+    return "home-message/v1:" + await sha256(new TextEncoder().encode(JSON.stringify([residentId, messageId, fenceIndex, intent])));
+  }
+  function normalizeOriginKey(value) {
+    return typeof value === "string" && /^(?:home-message\/v1:[a-f0-9]{64}|home-request\/v1:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.test(value) ? value : null;
+  }
+  window.PortalHomeDialogueState = Object.freeze({ create, normalizeIntent, migrateHomeState, results, displayCommand, messageOriginKey, normalizeOriginKey, normalizeMessageOrigin });
 })();

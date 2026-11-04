@@ -9,7 +9,7 @@
     const submissionRequests = new WeakMap();
     const messageActions = new Map();
     let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
-    let pageState = null, restoring = true;
+    let pageState = null, restoring = true, navigationReady = Promise.resolve();
     let narrow = false, ratio = 40, dragging = null;
     root.classList.add("homeDialogue"); root.dataset.pane = "conversation";
     const tabs = node("div", "", "homeDialogueTabs");
@@ -133,7 +133,9 @@
     function snapshot() {
       // Page State stores only navigation descriptors. Domain content, drafts,
       // credentials and submitted-request nonces never become restoration input.
-      return { schemaVersion: 1, entries: state.entries.map(entry => ({ intent: entry.intent, queued: entry.queued })),
+      return { schemaVersion: 2, entries: state.entries.map(entry => ({ intent: entry.intent, queued: entry.queued,
+        ...(entry.originKey ? { originKey: entry.originKey } : entry.messageOrigin
+          ? { messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin) } : {}) })),
         active: state.entries.indexOf(state.active), pinned: state.pinned, ratio,
         expanded: root.classList.contains("homeDialogueExpanded"), pane: root.dataset.pane };
     }
@@ -148,7 +150,7 @@
         // provides installation/user isolation and the current state transaction.
         pageState = window.PortalPageState.create("home-dialogue-display", { user: () => user, snapshot });
         const saved = pageState.read();
-        if (saved.schemaVersion !== 1 || !Array.isArray(saved.entries) || state.entries.length) return;
+        if (![1, 2].includes(saved.schemaVersion) || !Array.isArray(saved.entries) || state.entries.length) return;
         root.classList.toggle("homeDialogueExpanded", saved.expanded === true);
         expand.textContent = saved.expanded === true ? "返回原布局" : "展开";
         root.dataset.pane = saved.pane === "display" ? "display" : "conversation";
@@ -159,7 +161,9 @@
           let intent;
           try { intent = window.PortalHomeDialogueState.normalizeIntent(item?.intent); } catch { return; }
           if (intent.action === "back") return;
-          const entry = navigate(intent, false, false);
+          const entry = navigate(intent, false, false, { readOnly: true,
+            originKey: window.PortalHomeDialogueState.normalizeOriginKey(item.originKey),
+            messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(item.messageOrigin) });
           entry.queued = item.queued === true;
           if (index === saved.active) active = entry;
         });
@@ -250,6 +254,14 @@
     async function load(entry) {
       entry.status = "读取中"; refresh();
       try {
+        if (entry.intent.view === "report" && entry.intent.target.kind !== "report") {
+          if (!entry.originKey && entry.messageOrigin) entry.originKey = await window.PortalHomeDialogueState.messageOriginKey(entry.messageOrigin, entry.intent);
+          await navigationReady;
+          if (destroyed || entry.controller.signal.aborted) return;
+          // Store a manual request identity before the adapter can POST. A new
+          // document only resolves this binding; it never replays the write.
+          pageState?.writeSnapshot();
+        }
         if (!entry.adapter) {
           const api = entry.intent.view === "preview" ? window.PortalHomeDialoguePreview
             : entry.intent.view === "report" ? window.PortalHomeReportView : window.PortalHomeMapView;
@@ -261,6 +273,20 @@
           }
           entry.adapter = api.create({ root: entry.content, controls: entry.controls,
             onOpen: intent => { if (presented && !suspended && state.active === entry) navigate(intent, true); },
+            onReference: reference => {
+              if (destroyed || entry.controller.signal.aborted || entry.intent.view !== "report") return;
+              const fixed = window.PortalHomeDialogueState.normalizeIntent(reference);
+              if (fixed.target?.kind !== "report" || !fixed.target.revision) return;
+              const old = entry.intent.target;
+              // A refresh opens a separate entry through onOpen. An already
+              // fixed history reference can never silently advance its revision.
+              if (old.kind === "report" && (old.id !== fixed.target.id || (old.revision && old.revision !== fixed.target.revision))) return;
+              entry.intent = fixed; entry.readOnly = true;
+              entry.label = reference.title || `汇报 · ${fixed.target.id} · v${fixed.target.revision}`;
+              entry.status = entry.presented ? "已读取" : "待查看";
+              entry.notice.hidden = entry.retry.hidden = true;
+              pageState?.writeSnapshot(); refresh();
+            },
             onSelection: value => {
               entry.selection = value;
               if (state.active === entry) { selection = value; if (value) state.manual(); refresh(); }
@@ -269,7 +295,8 @@
         }
         entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
         if (!entry.presented) await entry.adapter.setPresented(false);
-        const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id });
+        const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id,
+          ...(entry.intent.view === "report" ? { originKey: entry.originKey, readOnly: entry.readOnly } : {}) });
         if (destroyed || entry.controller.signal.aborted) return;
         if (result?.error) throw result.error;
         entry.status = entry.presented ? "已读取" : "待查看"; entry.notice.textContent = ""; entry.notice.hidden = true;
@@ -281,7 +308,7 @@
       }
       refresh();
     }
-    function navigate(value, manual = false, allowed = true) {
+    function navigate(value, manual = false, allowed = true, provenance = {}) {
       if (destroyed) return;
       let intent;
       try { intent = window.PortalHomeDialogueState.normalizeIntent(value); }
@@ -291,8 +318,13 @@
         return;
       }
       // Independent roots retain drafts, video position and camera across history.
+      const sourceReport = intent.view === "report" && intent.target.kind !== "report";
       const entry = { id: window.PortalUIPrimitives.randomUUID(), intent, queued: !allowed,
-        label: intent.target.kind === "project" ? intent.target.id : intent.target.kind === "lineage" ? "Lineage" : intent.target.kind === "task" ? "任务请求" : intent.target.address.split("/").filter(Boolean).at(-1),
+        originKey: window.PortalHomeDialogueState.normalizeOriginKey(provenance.originKey)
+          || (sourceReport && !provenance.messageOrigin ? `home-request/v1:${window.PortalUIPrimitives.randomUUID()}` : null),
+        messageOrigin: provenance.messageOrigin, readOnly: provenance.readOnly === true || intent.target.kind === "report",
+        label: intent.target.kind === "project" ? intent.target.id : intent.target.kind === "lineage" ? "Lineage" : intent.target.kind === "task" ? "任务请求"
+          : intent.target.kind === "report" ? `汇报 · ${intent.target.id}${intent.target.revision ? ` · v${intent.target.revision}` : ""}` : intent.target.address.split("/").filter(Boolean).at(-1),
         status: "等待读取", root: node("section", "", "homeDialogueEntry"), controller: new AbortController(),
         content: node("div", "", "homeDialogueEntryContent"), notice: node("p", "", "homeDialogueEntryNotice") };
       entry.notice.hidden = true; entry.root.append(entry.notice); entry.retry = button(entry.root, "重试读取", () => load(entry)); entry.retry.hidden = true; entry.root.append(entry.content);
@@ -311,7 +343,8 @@
       for (const result of window.PortalHomeDialogueState.results(detail?.snapshot?.messages)) {
         try {
           const accepted = state.accept(result.value, { residentId: assistant.resident_id, messageId: result.messageId, dirty: dirty() });
-          if (accepted) navigate(accepted.intent, false, accepted.present);
+          if (accepted) navigate(accepted.intent, false, accepted.present, { messageOrigin: {
+            residentId: assistant.resident_id, messageId: result.messageId, fenceIndex: result.fenceIndex } });
         } catch (error) { status.dataset.notice = "true"; status.hidden = false; status.textContent = `展示指令未执行：${error.message}`; }
       }
     }
@@ -323,15 +356,17 @@
         const id = item.message_id || item.id;
         if (!id || !["assistant", "agent"].includes(item.role)) return null;
         const previousActions = messageActions.get(id) || [], actions = [];
-        let recognized = false;
+        let recognized = false, fenceIndex = 0;
         const html = rendering.renderContent(rendering.content, { renderCodeFence(block) {
           if (block.info !== "portal-home-display") return null;
+          const index = fenceIndex++;
           recognized = true;
           if (!block.complete) return '<span class="homeDialogueMessageNotice" role="status">正在准备展示…</span>';
           const command = window.PortalHomeDialogueState.displayCommand(block);
           if (!command) return '<span class="homeDialogueMessageNotice" role="status">展示操作暂不可用：指令格式无效或当前版本不支持。</span>';
           const prior = previousActions[actions.length];
-          const action = { token: prior?.source === block.source ? prior.token : window.PortalUIPrimitives.randomUUID(), source: block.source, intent: command.intent };
+          const action = { token: prior?.source === block.source ? prior.token : window.PortalUIPrimitives.randomUUID(), source: block.source, intent: command.intent,
+            messageOrigin: { residentId: assistant?.resident_id, messageId: id, fenceIndex: index } };
           actions.push(action);
           const intent = action.intent;
           const label = intent.action === "back" ? "返回上一展示" : intent.view === "preview"
@@ -349,7 +384,7 @@
       const action = [...messageActions.values()].flat().find(value => value.token === button.dataset.homeDisplayAction);
       if (!action) return;
       event.preventDefault();
-      navigate(action.intent, true);
+      navigate(action.intent, true, true, { messageOrigin: action.messageOrigin });
       setPane("display"); current.focus({ preventScroll: true });
     }
     chatRoot.addEventListener("click", openMessageAction);
@@ -362,7 +397,7 @@
         "当前入口是 Home 对话与展示。用户明确要求展示、生成汇报、切换、聚焦或返回时，可在最终回复中输出一个 portal-home-display JSON 代码围栏。",
         "此协议只导航现有真实来源，不生成 HTML/JS，不授权修改资源。先确定真实目标及其可读性，未知目标应询问用户。普通回答不输出指令。",
         "示例结构：" + JSON.stringify(protocol),
-        "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview；target 为 {kind:task|lineage|project,id,focus?:节点ID}；task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}。back 无须 view/target。version 是本次请求内递增整数。",
+        "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview；首次汇报/地图 target 为 {kind:task|lineage|project,id,focus?:节点ID}；已有汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}。back 无须 view/target。version 是本次请求内递增整数。",
         "宿主只接受本次 request_id，自动结果不会覆盖固定、草稿或用户手选展示。", 
         "当前展示：" + JSON.stringify(state.active?.intent || null), "当前选择：" + JSON.stringify(selection),
       ].join("\n") };
@@ -407,7 +442,7 @@
     root.addEventListener("portal:home-panel-lifecycle", lifecycle);
     window.addEventListener("beforeunload", beforeUnload);
     window.addEventListener("pagehide", pageHide); window.addEventListener("pageshow", pageShow);
-    void restoreNavigation().catch(() => {});
+    navigationReady = restoreNavigation().catch(() => {});
     void mountChat(); refresh();
     return { destroy() {
       pageState?.writeSnapshot(); pageState?.destroy();

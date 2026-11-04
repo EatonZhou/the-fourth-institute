@@ -25,7 +25,8 @@ const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://fixture');
   if(url.pathname==='/') {res.setHeader('Content-Type','text/html');return res.end('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+css.map(s=>`<link rel="stylesheet" href="${s}">`).join('')+'<style>body{margin:0}#root{height:calc(100dvh - 16px);margin:8px}</style>'+modules.map(s=>`<script src="/static/${s}"></script>`).join('')+'<main id="root" data-portal-workbench-panel="dialogue-display"></main>');}
   if(url.pathname==='/static/portal_resource_routes.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:[],identity_parameters:[]};');}
-  if(url.pathname==='/api/home-report') {evidence.requests.push(url.pathname+url.search);res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({title:'示例项目的真实组件汇报',target:{kind:'project',id:'demo'},version:'v1',checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],counts:{},rows:[{id:'work',title:'已核对来源',body:'组件读取了指定项目',sources:[]}]}));}
+  if(['/api/home-report','/api/home-report/save'].includes(url.pathname)) {evidence.requests.push(url.pathname+url.search);res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({report_id:'report_0123456789ab',revision:1,latest_revision:1,reference:{view:'report',target:{kind:'report',id:'report_0123456789ab',revision:1}},title:'示例项目的真实组件汇报',target:{kind:'project',id:'demo'},version:'v1',checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],counts:{},rows:[{id:'work',title:'已核对来源',body:'组件读取了指定项目',sources:[]}]}));}
+  if(url.pathname==='/api/home-report/validate'){res.setHeader('Content-Type','application/json');return res.end('{"readable":true}');}
   const file=path.resolve(root,'.'+url.pathname);
   if(file.startsWith(root+'/static/')&&fs.existsSync(file)&&fs.statSync(file).isFile()){res.setHeader('Content-Type',file.endsWith('.css')?'text/css':file.endsWith('.js')?'text/javascript':'application/octet-stream');return res.end(fs.readFileSync(file));}
   res.statusCode=404;res.end();
@@ -72,7 +73,7 @@ const server=http.createServer((req,res)=>{
       window.displayFence=value=>'```portal-home-display\n'+JSON.stringify(value)+'\n```';
       window.message=(id,text,role='agent')=>({message_id:id,role,created_at:'2026-11-04T00:00:00Z',content_parts:[{type:'text',text}]});
       window.render=()=>panel.applySnapshot(snap);
-      snap.messages=[message('msg_history','可以先预览材料，再查看汇报。\n\n'+displayFence(command())+'\n\n'+displayFence(command('older',{view:'report',target:{kind:'project',id:'demo'}})))];render();
+      snap.messages=[message('msg_0123456789abcdef','可以先预览材料，再查看汇报。\n\n'+displayFence(command())+'\n\n'+displayFence(command('older',{view:'report',target:{kind:'project',id:'demo'}})))];render();
     });
     const action=name=>page.locator('.homeDialogueChat').getByRole('button',{name,exact:true});
     await action('预览幻灯片').waitFor();

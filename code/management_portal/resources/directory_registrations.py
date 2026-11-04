@@ -14,7 +14,7 @@ from management_common.instance_locations import stored_location
 
 from .registry_store import get_registry_store
 
-COLLECTIONS = ('repo', 'article', 'paper', 'knowledge')
+COLLECTIONS = ('repo', 'article', 'paper', 'knowledge', 'report')
 IGNORE_COLLECTION = 'auto_registration_ignore'
 PROJECTION_RELEASES = 'resource_projection_releases'
 
@@ -165,7 +165,7 @@ def locations(collection, document):
     elif collection == 'article':
         entries = document.get('roots') or []
         canonical = document.get('canonical_root')
-    elif collection in {'paper', 'knowledge'}:
+    elif collection in {'paper', 'knowledge', 'report'}:
         return document.get('directories') or []
     else:
         raise ValueError('Registry collection has not declared its directory locations')

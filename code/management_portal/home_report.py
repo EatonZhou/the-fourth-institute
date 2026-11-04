@@ -66,6 +66,7 @@ class ReportReader:
         key = digest([instruction, arguments])[:20]
         self.sources[key] = {"id": key, "label": text(label, 180), "address": address,
                              "read": {"instruction": instruction, "arguments": arguments},
+                             "snapshot": value,
                              "version": str(version if version is not None else digest(value)),
                              "version_kind": "revision" if version is not None else "content_sha256"}
         return key
@@ -252,6 +253,14 @@ def build_report(target: dict, *, actor: str = "", read: Callable | None = None)
     target = normalize_target(target)
     reader = ReportReader(read or isa_reader(actor))
     title, goal, rows, relations = getattr(reader, target["kind"])(target["id"])
+    # Aggregate owners can return records whose referenced sources are unreadable.
+    # Persist only the checked projection, never the rejected rows/notes/outputs.
+    for source in reader.sources.values():
+        if source['read']['instruction'] in {'GetSharedState','GetResearchMap','GetProject'}:
+            visible = [row for row in rows if source['id'] in row['sources']]
+            ids = {row['id'] for row in visible}
+            source['snapshot'] = {'scope':'authorized_report_projection','rows':visible,
+                                  'relations':[edge for edge in relations if edge['from'] in ids and edge['to'] in ids]}
     report = {"schema": "tfi.home-report.v1", "target": target, "title": title, "goal": goal,
               "rows": rows, "relations": relations, "counts": dict(Counter(r["status"] for r in rows)),
               "sources": list(reader.sources.values()), "warnings": list(dict.fromkeys(reader.warnings)),

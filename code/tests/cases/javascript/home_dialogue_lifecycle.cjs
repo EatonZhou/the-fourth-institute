@@ -8,7 +8,9 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<script
 const out=process.env.HOME_DIALOGUE_LIFECYCLE_EVIDENCE||'/tmp/home-dialogue-lifecycle';fs.mkdirSync(out,{recursive:true});
 let videoBytes,username='lifecycle-fixture',denied=false;
 const reads=[];
-const server=http.createServer((req,res)=>{
+const reports=new Map(),origins=new Map();
+const reportResponse=(id)=>{const data=reports.get(id);return {...data,report_id:id,revision:1,latest_revision:1,reference:{view:'report',target:{kind:'report',id,revision:1}}};};
+const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url,'http://localhost'),json=data=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify(data));};
   if(url.pathname==='/') {res.setHeader('Content-Type','text/html');return res.end(html.replace('<head>',`<head><script>window.__PORTAL_IDENTITY_BOOTSTRAP__=${JSON.stringify({username,principal:{kind:'user',id:username},access:{allows:{}}})}</script>`));}
   if(url.pathname==='/away') return res.end('<!doctype html><title>Away</title>Other document');
@@ -17,10 +19,19 @@ const server=http.createServer((req,res)=>{
   if(url.pathname.endsWith('/captions.vtt')) {res.setHeader('Content-Type','text/vtt');return res.end('WEBVTT\n\n00:00.000 --> 00:08.000\nLifecycle fixture\n');}
   if(url.pathname.endsWith('/poster.png')) {res.statusCode=204;return res.end();}
   if(url.pathname.startsWith('/api/home-report')) {
+    let body={};if(req.method==='POST'){let raw='';for await(const chunk of req)raw+=chunk;body=JSON.parse(raw||'{}');}
     reads.push({path:url.pathname,id:url.searchParams.get('id'),username,denied});
     if(denied){res.statusCode=403;return json({error:'fixture permission revoked'});}
     if(url.pathname==='/api/home-report/validate') return json({readable:true});
-    if(url.pathname==='/api/home-report/media')return json({status:'ready',job_id:'fixture',chapters:[{start:4,title:'定位'}],transcript:'Isolated fixture',duration:8,generation_seconds:0,version:'fixture'});
+    if(url.pathname==='/api/home-report/save'){
+      let id=origins.get(body.origin_key);
+      if(!id){id='report_'+(reports.size+1).toString(16).padStart(12,'0');origins.set(body.origin_key,id);reports.set(id,{title:body.target.id,target:body.target,goal:'Lifecycle transport fixture',version:'fixture',checked_at:'2026-11-04T00:00:00Z',rows:[],counts:{},sources:[],warnings:[],reasoning:{available:true,mode:'dependency',nodes:[{id:'seed',title:'来源',x:.5,y:.5}],edges:[],seed:'seed',before:{reached:[]},after:{reached:['seed'],trace:[]},unconnected:[],rule:'fixture',limit:'fixture'}});}
+      return json(reportResponse(id));
+    }
+    if(url.pathname==='/api/home-report/media'){
+      const report=reports.get(body.report_id);report.media||={status:'ready',job_id:'fixture',base_url:'/api/home-report/media/fixture',chapters:[{start:4,title:'定位'}],transcript:'Isolated fixture',duration:8,generation_seconds:0,version:'fixture'};return json(report.media);
+    }
+    if(url.searchParams.get('kind')==='report')return json(reportResponse(url.searchParams.get('id')));
     return json({title:url.searchParams.get('id'),goal:'Lifecycle transport fixture',version:'fixture',checked_at:'2026-11-04T00:00:00Z',rows:[],counts:{},sources:[],warnings:[],media_capability:{available:true}});
   }
   if(url.pathname.startsWith('/api/'))return json(url.pathname==='/api/me'?{username,principal:{kind:'user',id:username},access:{allows:{}}}:{items:[],accounts:[],usage:[],result:{},schema:'tfi.hatg-instruction-result.v2',status:'committed'});
@@ -81,9 +92,11 @@ const server=http.createServer((req,res)=>{
     assert.equal(evidence.afterRestart.entries,2,'new document restores host history');
     assert.equal(evidence.afterRestart.expanded,true);assert.equal(evidence.afterRestart.pinned,'true');assert.equal(evidence.afterRestart.pane,'display');
     await page.getByRole('heading',{name:'lifecycle-first',exact:true}).waitFor();
-    assert.equal(await page.locator('video').count(),0,'restoring target never regenerates media or replays writes');
+    assert.equal(await page.locator('video').count(),1,'fixed report restores its persisted media');
+    assert.equal(reads.filter(r=>r.path==='/api/home-report/save').length,2,'restoring target never replays materialization');
+    assert.equal(reads.filter(r=>r.path==='/api/home-report/media').length,1,'restoring media never regenerates it');
     // Persisted pagehide is a suspension, not destruction of history instances.
-    await page.getByRole('button',{name:'生成讲解视频',exact:true}).click();await video.waitFor();
+    await video.waitFor();
     await page.evaluate(()=>{window.cachedVideo=document.querySelector('video');window.cachedEntry=document.querySelector('.homeDialogueEntry');window.dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true}));});
     await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));
     await page.getByRole('heading',{name:'lifecycle-first',exact:true}).waitFor();

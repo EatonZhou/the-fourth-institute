@@ -1,0 +1,13 @@
+{
+  "type": "report",
+  "category": "resource",
+  "title": {"zh": "汇报", "en": "Report"},
+  "description": "Persistent presentation snapshots and their version-owned media; source authority remains with the original domains.",
+  "provider": "management_portal.resources.providers.report:install_resolver",
+  "catalog_section": "report",
+  "catalog_order": 85,
+  "registerable": true,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}
