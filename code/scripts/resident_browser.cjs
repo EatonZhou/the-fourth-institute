@@ -24,11 +24,11 @@ async function openResidentPortal({ chromium, origin, residentId, lineageId, hea
   const token = fs.readFileSync(identity.token_path, "utf8").trim();
   if (!token) throw new Error("Current Resident has no Portal credential");
   const headers = { Authorization: `Bearer ${token}`, "X-Portal-Lineage-ID": lineageId };
-  const browser = await chromium.launch({ headless });
+  const browser = await chromium.launch({ headless, args: ["--enable-automation", "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0"] });
   try {
     const context = await browser.newContext({ serviceWorkers: "block" });
     const streamState = await installInstructionStreams(context, { origin: url.origin, headers });
-    const nativeFiles = installNativeFiles(context, url.origin);
+    const nativeFiles = await installNativeFiles(context, url.origin);
     await context.route("**/*", async route => {
       const request = route.request();
       const target = new URL(request.url());

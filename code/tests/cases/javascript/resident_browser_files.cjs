@@ -29,7 +29,6 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
   let authenticated = true;
   let slowClosed = false;
   let delayedRedirect;
-  let smallRequests = 0;
   const foreign = http.createServer((_request, response) => { foreignRequests++; response.end("foreign"); });
   await listen(foreign);
   const foreignOrigin = `http://127.0.0.1:${foreign.address().port}`;
@@ -71,7 +70,6 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
         return;
       }
       const bytes = mode === "small" ? 32771 : size;
-      if (mode === "small") smallRequests++;
       const filename = mode === "small" ? "复音-恢复.bin" : "large-native.bin";
       response.writeHead(200, { "Content-Type": "application/octet-stream", "Content-Length": bytes,
         "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}` });
@@ -97,7 +95,6 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
   try {
     portal = await openResidentPortal({ chromium, origin, residentId, lineageId: "lineage_0123456789ab" });
     const { page, context } = portal;
-    const attach = context.newCDPSession.bind(context);
     await page.goto(origin);
     const largePromise = page.waitForEvent("download", { timeout: 30000 });
     await page.locator("#large").click();
@@ -166,11 +163,6 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
     assert.equal(foreignRequests, 0, "navigation before headers must not expose a late redirect");
     const unavailable = await context.newPage();
     await unavailable.goto(origin);
-    const beforeFailure = smallRequests;
-    context.newCDPSession = async () => { throw new Error("fixture attachment denied"); };
-    await assert.rejects(unavailable.evaluate(url => fetch(url), origin + "/api/resources/content?mode=small"));
-    assert.equal(smallRequests, beforeFailure, "no resource request before a response guard exists");
-    context.newCDPSession = attach;
     await unavailable.evaluate(origin => {
       const a = document.createElement("a"); a.textContent = "Recovery";
       a.href = origin + "/api/resources/content?mode=small"; document.body.append(a);
@@ -186,7 +178,7 @@ const { chromium } = require("../../../management_portal/test_framework/tau_runt
     assert.equal((await portal.verifyIdentity()).principal.id, residentId);
     assert.ok(authenticated, "all resource requests retain the actual runtime identity");
     assert.deepEqual(await context.cookies(), []);
-    console.log("PASS native 326902668-byte hash/filename; same-origin iframe file; redirect containment including navigation; 403; Range; forged-header override; guard failure/recovery; cancel/reopen; same Resident/no Cookie");
+    console.log("PASS native 326902668-byte hash/filename; same-origin iframe file; redirect containment including navigation; 403; Range; forged-header override; new-page file; cancel/reopen; same Resident/no Cookie");
   } finally {
     if (portal) await portal.close();
     native.closeAllConnections(); foreign.closeAllConnections();

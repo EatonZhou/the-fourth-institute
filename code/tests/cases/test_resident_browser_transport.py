@@ -34,3 +34,15 @@ def test_native_large_files_and_redirect_containment():
     if "Executable doesn't exist" in result.stderr or "Cannot find module" in result.stderr:
         pytest.skip('Install the Portal test runtime and Chromium to run this native fixture')
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_popup_attachment_target_and_redirect_containment():
+    """工具栏新标签首个请求绑定实际Frame，失败时不释放认证请求。"""
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node.js is required for the native browser transport')
+    fixture = Path(__file__).parent / 'javascript/resident_browser_popup_files.cjs'
+    result = subprocess.run([node, str(fixture)], capture_output=True, text=True, timeout=25)
+    if "Executable doesn't exist" in result.stderr or "Cannot find module" in result.stderr:
+        pytest.skip('Install the Portal test runtime and Chromium to run this native fixture')
+    assert result.returncode == 0, result.stdout + result.stderr
