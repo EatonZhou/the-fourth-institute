@@ -64,8 +64,8 @@ const server=http.createServer(async(req,res)=>{
         const surface=page.locator('.homeMapSurface:not([hidden])');
         const seed=surface.locator('.graphNode[data-kind="seed"]');
         await seed.waitFor();await surface.getByRole('button',{name:'适应',exact:true}).click();await seed.click();
-        const detail=surface.getByRole('complementary',{name:'线头详情',exact:true});
-        const action=detail.getByRole('button',{name:'更新线头',exact:true});
+        const detail=surface.getByRole('complementary',{name:'节点详情',exact:true});
+        const action=detail.getByRole('button',{name:'更新节点',exact:true});
         await action.evaluate(button=>{
           window.homeHeightPointerEvents=[];
           button.addEventListener('pointerdown',event=>{

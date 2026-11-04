@@ -12,7 +12,7 @@ import pytest
 
 @pytest.mark.parametrize('mode', [[], ['--narrow'], ['--home-narrow']], ids=['native-surfaces', 'narrow-readability', 'home-narrow-hit'])
 def test_home_map_native_surfaces(tmp_path, mode):
-    """原生地图和线头支持聚焦、编辑回读、草稿恢复、权限重验及取消请求。"""
+    """原生项目地图与团队地图支持聚焦、编辑回读、草稿恢复、权限重验及取消请求。"""
     code = Path(__file__).resolve().parents[2]
     if not (code / 'management_portal/test_framework/tau_runtime/node_modules/playwright').is_dir():
         pytest.skip('requires Portal browser test runtime')

@@ -126,7 +126,7 @@ const check = (actual, expected, message) => {
     await page.evaluate(async () => {
       const shadow = document.getElementById('frontier').attachShadow({mode:'open'});
       const css = await fetch('/frontier.css').then(r=>r.text());
-      shadow.innerHTML = '<style>'+css+'</style><div class="graphTools"><button class="primary">保存线头</button><button>刷新</button></div>';
+      shadow.innerHTML = '<style>'+css+'</style><div class="graphTools"><button class="primary">保存节点</button><button>刷新</button></div>';
     });
     const primary = page.locator('#frontier .primary');
     await primary.hover();

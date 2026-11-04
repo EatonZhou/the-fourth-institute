@@ -127,7 +127,7 @@ async function checkNarrow(page, checks) {
   assert.equal(await page.evaluate(()=>opens.at(-1).view),'report');
   assert.ok((await page.getByRole('link',{name:'在原页面打开（新标签页）'}).getAttribute('href')).includes(lineage));
   // Native controls must be operable, not simply inside an overflow-hidden box.
-  for(const name of ['在此阅读','稍后关注','更新线头','交给 Agent']) {
+  for(const name of ['在此阅读','稍后关注','更新节点','交给 Agent']) {
     const button=detail.getByRole('button',{name,exact:true});
     await button.scrollIntoViewIfNeeded();
     const reachable=await button.evaluate(el=>{
@@ -139,7 +139,7 @@ async function checkNarrow(page, checks) {
   }
   await detail.getByRole('button',{name:'在此阅读',exact:true}).click();
   assert.equal(await page.evaluate(()=>opens.at(-1).target.address),'article_0123456789ab');
-  await detail.getByRole('button',{name:'更新线头',exact:true}).click();
+  await detail.getByRole('button',{name:'更新节点',exact:true}).click();
   await surface.locator('#editor').getByRole('button',{name:'关闭',exact:true}).click();
   const before=calls.length;
   await page.evaluate(async()=>{await view.setPresented(false);await view.setPresented(true);});
@@ -198,16 +198,16 @@ async function checkNarrow(page, checks) {
     await page.evaluate(id=>view.show({kind:'lineage',id,focus:'seed'}),lineage);
     const surface=page.locator('.homeMapSurface:not([hidden])');
     await surface.locator('#detail').waitFor();
-    await surface.getByRole('button',{name:'更新线头',exact:true}).click();
+    await surface.getByRole('button',{name:'更新节点',exact:true}).click();
     await surface.locator('[name="reason"]').fill('Native readback');
     await page.evaluate(()=>view.setPresented(false));
     state.items[0].progress='Concurrent change';
     await page.evaluate(()=>view.setPresented(true));
     assert.equal(await surface.locator('[name="reason"]').inputValue(),'Native readback');
-    await surface.getByRole('button',{name:'保存线头',exact:true}).click();
+    await surface.getByRole('button',{name:'保存节点',exact:true}).click();
     await surface.getByText('其他人已更新这条工作线。',{exact:false}).waitFor();
     assert.equal(state.items[0].reason,'A question');
-    await surface.getByRole('button',{name:'保存线头',exact:true}).click();
+    await surface.getByRole('button',{name:'保存节点',exact:true}).click();
     await page.waitForFunction(()=>!document.querySelector('.homeMapSurface:not([hidden])').shadowRoot.querySelector('#editor').open);
     assert.equal(state.items[0].reason,'Native readback');
     await page.evaluate(id=>view.show({kind:'lineage',id,focus:'seed'}),lineage);

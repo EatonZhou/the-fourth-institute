@@ -25,7 +25,7 @@ const server=http.createServer(async(req,res)=>{
     if(body.instruction==='GetResearchMap')result={project_id:'example',revision:1,goal:'Explore with context',relations:[],notes:[],outputs:{},layout:{},directions:[{direction_id:'direction_aaaaaaaaaaaa',title:'Research judgement',stance:'focus',teams:[lineage]},{direction_id:'direction_bbbbbbbbbbbb',title:'Unassigned question',stance:'explore',teams:[]}]};
     if(body.instruction==='ResolveResource'){
       if(denied){res.writeHead(403,{'Content-Type':'application/json'});return res.end(JSON.stringify({error:{message:'来源不可读'}}));}
-      result={resource:{title:a.address.startsWith('thinking')?'科研选题的思想框架与研究品味':'线头视图：持续呈现探索前沿',version:{number:1}}};
+      result={resource:{title:a.address.startsWith('thinking')?'科研选题的思想框架与研究品味':'地图视图：持续呈现探索前沿',version:{number:1}}};
     }
     if(body.instruction==='UpdateSharedState'){
       const matched=!conflict && JSON.stringify(a.expected_value)===JSON.stringify(state);
@@ -54,12 +54,12 @@ const server=http.createServer(async(req,res)=>{
     await page.getByRole('button',{name:'稍后关注',exact:true}).click();await page.locator('#detail [data-close]').click();assert.equal(await page.locator('[data-kind="seed"]').count(),2);
     await page.locator('[data-filter="later"]').click();assert.equal(await page.locator('[data-kind="seed"]').count(),1);
     await page.locator('[data-kind="seed"]').click();await page.getByRole('button',{name:'恢复关注'}).click();await page.locator('#detail [data-close]').click();await page.locator('[data-filter="all"]').click();
-    await page.locator('[data-kind="seed"]').first().click();await page.getByRole('button',{name:'更新线头'}).click();
+    await page.locator('[data-kind="seed"]').first().click();await page.getByRole('button',{name:'更新节点'}).click();
     await page.locator('[name="reason"]').fill('寻找可以实际反驳的方法。');conflict=true;
-    await page.getByRole('button',{name:'保存线头'}).click();await page.getByText('其他人已更新这条工作线。',{exact:false}).waitFor();assert.equal(await page.locator('[name="reason"]').inputValue(),'寻找可以实际反驳的方法。');
-    conflict=false;await page.getByRole('button',{name:'保存线头'}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#editor').open);
+    await page.getByRole('button',{name:'保存节点'}).click();await page.getByText('其他人已更新这条工作线。',{exact:false}).waitFor();assert.equal(await page.locator('[name="reason"]').inputValue(),'寻找可以实际反驳的方法。');
+    conflict=false;await page.getByRole('button',{name:'保存节点'}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#editor').open);
     await page.locator('[data-kind="seed"]').first().click();await page.getByRole('button',{name:'交给 Agent',exact:true}).click();await page.getByRole('button',{name:'确认交给 Agent',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#surface').shadowRoot.querySelector('#dispatch').open);assert.equal(delivered,1);
-    await page.getByText('推进中',{exact:true}).first().waitFor();input='completed';await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#surface').shadowRoot.querySelectorAll('[data-kind="seed"]').length===2);await page.locator('[data-filter="history"]').click();await page.getByText('已有回复',{exact:true}).waitFor();
+    await page.getByText('推进中',{exact:true}).first().waitFor();input='completed';await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#surface').shadowRoot.querySelectorAll('[data-kind="seed"]').length===2);await page.locator('[data-filter="history"]').click();await page.locator('.graphNode .nodeSub').filter({hasText:'已有回复'}).waitFor();
     denied=true;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.getByText('内容已隐藏',{exact:false}).waitFor();assert.equal(await page.locator('[data-kind="seed"]').count(),0);
     denied=false;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForSelector('[data-kind="seed"]');await page.locator('[data-filter="all"]').click();
     await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
@@ -113,7 +113,7 @@ const server=http.createServer(async(req,res)=>{
     await page.locator('[data-kind="new"]').waitFor();
     assert.equal(await page.locator('[data-kind="seed"]').count(),0);
     await page.screenshot({path:path.join(out,'empty.png'),fullPage:true});
-    await page.getByRole('button',{name:'留下第一条线头',exact:true}).click();
+    await page.getByRole('button',{name:'添加第一个地图节点',exact:true}).click();
     assert.ok(await page.locator('#editor').isVisible());
     assert.deepEqual(errors,[]);
     console.log('PASS: render, relationships, personal defer/restore, conflict preserves draft, dispatch receipt, result convergence, permission loss, mobile overflow. Fixture execution only; no live messages.');

@@ -36,9 +36,9 @@ module.exports = async ({page,out,lineage,teamTitle,checks,calls}) => {
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.evaluate(()=>document.documentElement.style.fontSize='20px');
   await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click();
-  const detail=surface.getByRole('complementary',{name:'线头详情',exact:true});
+  const detail=surface.getByRole('complementary',{name:'节点详情',exact:true});
   await detail.waitFor();
-  const action=detail.getByRole('button',{name:'更新线头',exact:true});
+  const action=detail.getByRole('button',{name:'更新节点',exact:true});
   await action.evaluate(button=>{
     window.hitEvents=[];
     window.measureHit=()=>{
