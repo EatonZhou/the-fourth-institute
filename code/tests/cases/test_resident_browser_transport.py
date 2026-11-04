@@ -22,3 +22,15 @@ def test_native_subscription_delivery_lifetime_and_authentication():
     if "Executable doesn't exist" in result.stderr or "Cannot find module" in result.stderr:
         pytest.skip('Install the Portal test runtime and Chromium to run this native fixture')
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_native_large_files_and_redirect_containment():
+    """真实附件完整落盘，拒绝/Range/iframe/取消保持原边界。"""
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node.js is required for the native browser transport')
+    fixture = Path(__file__).parent / 'javascript/resident_browser_files.cjs'
+    result = subprocess.run([node, str(fixture)], capture_output=True, text=True, timeout=75)
+    if "Executable doesn't exist" in result.stderr or "Cannot find module" in result.stderr:
+        pytest.skip('Install the Portal test runtime and Chromium to run this native fixture')
+    assert result.returncode == 0, result.stdout + result.stderr
