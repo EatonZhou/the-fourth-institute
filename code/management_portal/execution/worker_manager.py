@@ -290,6 +290,7 @@ class ExecutionWorkerManager:
         return re.sub(r"[^A-Za-z0-9_.-]+", "-", value).strip("-.")[:80]
 
     def _spawn(self) -> WorkerProcess:
+        from management_common.code_environment import runtime_python
         build_id = self._build_id()
         self._sequence += 1
         generation = self._safe_generation(build_id) or "unversioned"
@@ -316,7 +317,7 @@ class ExecutionWorkerManager:
             }
         )
         process = process_runtime.spawn_process(
-            [sys.executable, "-m", "management_portal.execution.worker"],
+            [str(runtime_python(self.source_root)), "-m", "management_portal.execution.worker"],
             cwd=str(self.source_root),
             env=env,
         )

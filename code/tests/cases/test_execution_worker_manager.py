@@ -59,6 +59,23 @@ def _worker(tmp_path: Path, name: str, pid: int) -> WorkerProcess:
     )
 
 
+def test_worker_spawn_resolves_current_code_dependencies_after_publish(monkeypatch, tmp_path):
+    from management_common import code_environment
+    manager = ExecutionWorkerManager()
+    commands = []
+    interpreters = iter([tmp_path / "before/bin/python", tmp_path / "after/bin/python"])
+    def selected(code):
+        assert code == manager.source_root
+        return next(interpreters)
+    monkeypatch.setattr(code_environment, "runtime_python", selected)
+    monkeypatch.setattr(worker_manager.process_runtime, "spawn_process",
+                        lambda command, **kwargs: commands.append(command) or FakeProcess(800 + len(commands)))
+    manager._spawn()
+    manager._spawn()
+    assert [c[0] for c in commands] == [str(tmp_path / "before/bin/python"), str(tmp_path / "after/bin/python")]
+    assert all(c[1:] == ["-m", "management_portal.execution.worker"] for c in commands)
+
+
 def test_worker_rollout_waits_for_new_worker_before_draining_old_contracts(monkeypatch, tmp_path, subtests, isolated_portal_case):
     """新工作进程就绪后才排空旧进程，替换失败按退避重试"""
     with subtests.test(contract='test_worker_rollout_waits_for_new_worker_before_draining_old'), isolated_portal_case() as case_path:
