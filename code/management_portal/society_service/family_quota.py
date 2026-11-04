@@ -70,6 +70,21 @@ def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                   *, quota_reviewed: bool = False, reason: str = "", scope_gap: str = "",
                   scope_reviewed: bool = False, recover: bool = False,
                   continue_previous: bool = False) -> dict[str, Any]:
+    from . import invariant_locks
+    from management_portal.hatg.contracts import InstructionError
+    # A resumed ordinary delivery and a reassignment must never publish two
+    # holders for the same root. This ownership does not lock cancellation.
+    with invariant_locks.family_reassignment_lock(facade_id, message_id) as owned:
+        if not owned:
+            raise InstructionError("instruction.in_progress", "原请求正在转交，请按原身份重试", retryable=True)
+        return _relay_owned(facade_id, message_id, member_id, actor,
+            quota_reviewed=quota_reviewed, reason=reason, scope_gap=scope_gap,
+            scope_reviewed=scope_reviewed, recover=recover, continue_previous=continue_previous)
+
+
+def _relay_owned(facade_id: str, message_id: str, member_id: str, actor: str,
+                 *, quota_reviewed: bool, reason: str, scope_gap: str,
+                 scope_reviewed: bool, recover: bool, continue_previous: bool) -> dict[str, Any]:
     if recover:
         return _relay_failed_route(facade_id, message_id, member_id, actor,
             reason=reason, quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
@@ -197,6 +212,21 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         raise ValueError("失败恢复已核定其他成员，不能由旧路由覆盖")
     if family_facade.kept_notice(facade, message_id):
         raise ValueError("门面已把这条消息作为告知收下，不再转交成员")
+    delivered_id = message_id if answered_set(message) else resident_message_contract.derived_message_identity(
+        "family-relay", facade_id, message_id, member_id,
+    )
+    # Accepted intake is authoritative even if the process died before the
+    # facade link/receipt commit. Revalidate the exact original identity before
+    # closing the link; current quota or preferences cannot unaccept a copy.
+    from . import resident_intake_domain
+    from management_common.operation_identity import operation_identity_scope
+    from management_common.principal import OperationIdentity
+    envelope = {"role": "user", "message_id": delivered_id, "content_parts": message["content_parts"]}
+    with operation_identity_scope(OperationIdentity.for_actor(str(message["author_id"]), initiated_by=actor)):
+        candidate = resident_intake_domain.preflight_resident_input(
+            member_id, str(message["author_id"]), envelope, business_ref=mark)
+        if resident_intake_domain.existing_resident_delivery(member_id, candidate):
+            return _finish_relay(facade, message_id, member_id, delivered_id, repository)
     from . import family_chat_preferences
     family_chat_preferences.validate_target(facade, message, member_id)
     from . import family_continuation
@@ -317,32 +347,32 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         return admission
     # An answer to a member's questions keeps the question set's answer ID,
     # so the member's Conversation knows the set answered.
-    delivered_id = message_id if answered_set(message) else resident_message_contract.derived_message_identity(
-        "family-relay", facade_id, message_id, member_id,
-    )
     # The validated facade request delegates this unchanged delivery on
     # behalf of its original author. The approving steward remains the
     # initiator, never the author of the member's input.
     author = str(message["author_id"])
     with operation_identity_scope(OperationIdentity.for_actor(author, initiated_by=actor)):
         result = outward_messages.deliver_to_resident(
-            {"resident_id": member_id, "message": {
-                "role": "user", "message_id": delivered_id,
-                "content_parts": message["content_parts"],
-            }, "activation_policy": "enqueue_and_trigger"}, author,
+            {"resident_id": member_id, "message": envelope,
+             "activation_policy": "enqueue_and_trigger"}, author,
             delivery_context=resident_protocol.ResidentDeliveryContext(
                 lineage_id=facade["lineage_id"], business_ref=mark,
             ),
         )
+    return _finish_relay(facade, message_id, member_id, str(result.get("message_id") or delivered_id), repository)
+
+
+def _finish_relay(facade, message_id, member_id, delivered_id, repository):
+    facade_id = facade["resident_id"]
     # Delivery and its after-commit effects run without the review-row lock.
-    family_facade.complete_relay((facade_id, message_id), member_id, str(result.get("message_id") or delivered_id))
+    family_facade.complete_relay((facade_id, message_id), member_id, delivered_id)
     with get_lineage_data_store().family_quota_reviews.transaction(facade['lineage_id'], facade_id) as reviews:
-        review = reviews["requests"][message_id]
+        review = reviews.setdefault("requests", {}).setdefault(message_id, {"member_id": member_id})
         withdrawn = repository.input_state(facade_id, message_id).get("state") == "cancelled"
         review["status"] = "withdrawn" if withdrawn else "relayed"
         review["result"] = ({"status": "withdrawn", "member_id": member_id} if withdrawn else
                             {"status": "relayed", "member_id": member_id,
-                             "message_id": str(result.get("message_id") or delivered_id)})
+                             "message_id": delivered_id})
         return dict(review["result"])
 
 

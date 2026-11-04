@@ -336,7 +336,8 @@ class _CallAttempt:
         # Answered from the owner's final receipt: the same key reads it again
         # on every retry. Only a pending projection can still settle by retrying.
         self.final_receipt = uncertain and bool(getattr(executed, "replayed", False)) \
-            and executed.status == "failed" and error.get("code") != "instruction.projection_pending"
+            and executed.status == "failed" and error.get("code") != "instruction.projection_pending" \
+            and (error.get("details") or {}).get("reason") != "interrupted_recovery_pending"
         return {"ok": False, "error": error, "status": "unresolved" if uncertain else executed.status}
 
 

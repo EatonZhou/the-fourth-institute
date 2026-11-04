@@ -44,6 +44,7 @@ def recovery_lineage_ids(connection: Any) -> set[str]:
     """Discover pending Program deliveries without opening idle definitions."""
     return {row["lineage_id"] for row in connection.execute("""
         SELECT lineage_id FROM pending_event_deliveries WHERE NOT delivery_json::jsonb ? 'recovery_blocked'
+            OR NOT delivery_json::jsonb ? 'owner_recovery_checked'
         UNION SELECT lineage_id FROM pending_expiry_notices WHERE NOT notice_json::jsonb ? 'recovery_blocked'
         UNION SELECT lineage_id FROM operator_work
             WHERE COALESCE(checkpoint_json::jsonb->'pending_deliveries','{}'::jsonb)<>'{}'::jsonb

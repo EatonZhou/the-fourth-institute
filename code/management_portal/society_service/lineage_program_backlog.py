@@ -216,6 +216,7 @@ def drain_event_backlog(
     _delete_exhausted_event_sources = authority.delete_exhausted_sources
 
     actor_id = _safe_actor(actor)
+    lineage_program_wire_queue.refresh_owner_recovery_holds(lineage_id)
     expired_events = dispatch_expired_deliveries(
         lineage_id,
         actor_id,

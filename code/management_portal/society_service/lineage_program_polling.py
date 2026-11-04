@@ -105,6 +105,8 @@ def poll_all_system_events(
             continue
         checked += 1
         try:
+            from .lineage_program_wire_queue import refresh_owner_recovery_holds
+            refresh_owner_recovery_holds(lineage_id)
             runtime = lineage_program_runtime.read_runtime(lineage_id)
             handoffs = lineage_program_resident_inputs.pending_resident_handoffs(lineage_id)
         except errors as exc:

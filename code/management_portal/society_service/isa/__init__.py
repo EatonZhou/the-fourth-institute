@@ -61,6 +61,22 @@ def authorization_arguments(declaration, arguments, context):
     return {**arguments, "lineage_id": owning_lineage(arguments, context.caller)}
 
 
+def recover_relay(inv: Invocation):
+    """Only ordinary, immutable handoffs have a deterministic intake identity.
+
+    Recovery, reassignment and stewardship decisions retain their own protocols.
+    The normal owner verifies cancellation, frozen target and intake receipt;
+    duplicate delivery uses the same message, origin and business reference.
+    """
+    if any(inv.argument(key) for key in (
+        "notice", "reassign", "recover", "quota_reviewed", "scope_reviewed", "scope_gap",
+    )):
+        return None
+    if not inv.argument("member_id"):
+        return None
+    return _handlers()["RelayFamilyMessage"](inv)
+
+
 def binding() -> OwnerBinding:
     return OwnerBinding(
         owner="lineage",
@@ -68,6 +84,7 @@ def binding() -> OwnerBinding:
         streams=_streams(),
         record_scope=record_scope,
         recover_projections=recover_projections,
+        recover_interrupted={"RelayFamilyMessage": recover_relay},
         authorization_arguments=authorization_arguments,
     )
 

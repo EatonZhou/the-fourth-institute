@@ -140,6 +140,9 @@ class OwnerBinding:
     execution_scope: Callable[[Invocation], ContextManager[Any]] | None = None
     # Complete projections that failed after a committed domain change.
     recover_projections: Callable[[list[dict[str, Any]], Invocation], None] | None = None
+    # Owner-specific reconciliation, never a blanket retry of interrupted writes.
+    # The original call has passed fingerprint and current authorization checks.
+    recover_interrupted: dict[str, Handler] = field(default_factory=dict)
     # A declared state-changing instruction whose concrete call reads only
     # (for example a read-only resource action) runs without a record.
     reads_only: Callable[["Invocation"], bool] | None = None
@@ -447,6 +450,10 @@ class InstructionKernel:
 
     def _replay(self, invocation: Invocation, record: dict[str, Any]) -> InstructionResult:
         instruction_id = str(record.get("instruction_id") or invocation.instruction_id)
+        if (record.get("error") or {}).get("details", {}).get("reason") in {
+            "interrupted", "interrupted_recovery_pending",
+        } and invocation.name in self.binding.recover_interrupted:
+            record = self._recover_interrupted(invocation, record)
         if (record.get("error") or {}).get("code") == "instruction.projection_pending":
             record = self._recover_projection(invocation, record, now=now_iso())
         error = record.get("error") if isinstance(record.get("error"), Mapping) else None
@@ -468,6 +475,40 @@ class InstructionKernel:
             result=copy.deepcopy(record.get("references") or {}),
             replayed=True,
         )
+
+    def _recover_interrupted(self, invocation: Invocation, record: dict[str, Any]) -> dict[str, Any]:
+        assert self.store is not None
+        instruction_id = record["instruction_id"]
+        def pending():
+            current = copy.deepcopy(record)
+            current["error"]["retryable"] = True
+            current["error"]["details"]["reason"] = "interrupted_recovery_pending"
+            return current
+        # Effect retries supply the original ID, whose activity lock is already
+        # held by _execute_mutation. A fresh retry ID needs the saved ID's lock.
+        activity = (nullcontext(True) if invocation.instruction_id == instruction_id
+                    else self.store.active_execution(instruction_id))
+        with activity as acquired:
+            if not acquired:
+                return pending()
+            current = self.store.get(instruction_id)
+            if current is None or (current.get("error") or {}).get("details", {}).get("reason") not in {
+                "interrupted", "interrupted_recovery_pending",
+            }:
+                return current or record
+            original = Invocation(invocation.declaration, invocation.call, invocation.context, instruction_id)
+            try:
+                with self._identity_scope(original.context), self._instruction_scope(instruction_id):
+                    result = self.binding.recover_interrupted[invocation.name](original)
+                if result is None:  # Owner explicitly declines this call shape.
+                    return current
+            except Exception as exc:
+                error = normalize_error(exc)
+                if error.code in {"instruction.forbidden", "instruction.not_found", "instruction.invalid_arguments"}:
+                    return current
+                return pending()
+            self.store.finish(instruction_id, status="committed", now=now_iso(), result=result)
+            return self.store.get(instruction_id)
 
     def _recover_projection(self, invocation: Invocation, record: dict[str, Any], *, now: str) -> dict[str, Any]:
         if self.binding.recover_projections is None or self.store is None:

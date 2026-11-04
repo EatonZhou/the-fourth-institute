@@ -55,15 +55,15 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 96
+  number: 97
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T13:35:55Z"
+  updated_at: "2026-11-04T14:07:29Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_0bb0b71cb03c"
 metaness: 2
 ---
 # HATG ISA：指令格式、调用入口与执行规则
@@ -428,3 +428,10 @@ ISA 定义可以执行哪些操作，权限系统决定谁能执行。普通业�
 - ResourceService 的门面与 RPC 见 decision_b6e74d78f7b6。
 - Lineage 相关执行记录保存在 LineageData 中，存储结构见 decision_71aa039e3211；各服务的数据所有权见 decision_86aed2f0e8c7。
 - 调用者身份、消息署名与异步执行归属见 decision_ae422b92c6f3。
+
+
+### 拥有服务声明的中断核验
+
+通用写指令中断后仍保留结果未知。拥有服务可以为具备稳定业务身份和受理凭据的特定操作登记核验入口：同键重试重新检查当前权限与原请求指纹，在原执行的独立活动锁内核验领域事实；核验入口使用原指令 ID，不向其他业务处理器开放通用重执许可。已有受理凭据只补齐原关联和回执，未受理的确定性输入沿同一身份继续受理。暂时不可用返回结果未知、允许后续核验；权限拒绝、身份冲突及不支持的调用形态继续保留原未知回执等待处置。Effect 将明确标为核验待续的回执留在原激活中重试，不发送不可恢复结果通知。
+
+当前登记的操作仅为普通 RelayFamilyMessage；改派、故障恢复、告知和 Steward 复核各自沿原协议。旧版已挂起的连线投递在加载新核验能力后获得一次原激活核验机会，保留原 Event、脚本指纹与指令幂等键；不支持或仍无法核验的操作继续挂起，不逐轮重新开闸。

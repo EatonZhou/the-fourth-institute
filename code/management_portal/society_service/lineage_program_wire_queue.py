@@ -20,6 +20,34 @@ MAX_PENDING_EVENTS_PER_WIRE = 100
 PENDING_EVENT_DISPATCH_LEASE_SECONDS = 360
 
 
+def refresh_owner_recovery_holds(lineage_id: str) -> None:
+    """Offer pre-upgrade holds once to newly registered owner reconciliation.
+
+    The original Event and journal retain caller, key, arguments and script
+    fingerprint. Unsupported calls stay held; no instruction is run here.
+    """
+    from management_portal.hatg import routing
+    runtime = lineage_program_runtime.read_runtime(lineage_id)
+    if not any(item.get("recovery_blocked") and not item.get("owner_recovery_checked")
+               for wire in runtime.get("event_wires", {}).values()
+               for item in wire.get("pending_events", [])):
+        return
+    supported = routing.kernel_for("lineage", required=True).binding.recover_interrupted
+    with lineage_program_runtime._runtime_transaction(lineage_id) as state:
+        for wire in state.get("event_wires", {}).values():
+            for item in wire.get("pending_events", []):
+                hold = item.get("recovery_blocked") or {}
+                if not hold or item.get("owner_recovery_checked"):
+                    continue
+                item["owner_recovery_checked"] = True
+                if hold.get("instruction") in supported and hold.get("requires_resolution"):
+                    item.pop("recovery_blocked", None)
+                    item.pop("retry_at", None)
+                    # Suspended holds have no running expiry clock. Reconcile
+                    # their original receipt before deciding their outcome.
+                    item["expires_at"] = ""
+
+
 def retry_delay_seconds(attempt_count: int) -> int:
     """Wait before retrying a failed delivery: 5 s, doubling to at most 60 s."""
     return min(60, 5 * 2 ** min(4, max(1, attempt_count) - 1))
@@ -411,6 +439,7 @@ def hold_pending_occurrence(item: dict[str, Any], hold: dict[str, Any], at: str)
     item.pop("dispatch_started_at", None)
     item.pop("retry_at", None)
     item["recovery_blocked"] = {**deepcopy(hold), "at": at}
+    item["owner_recovery_checked"] = True
 
 
 def finish_pending_event(

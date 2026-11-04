@@ -42,7 +42,7 @@ def _receipt(*, replayed: bool, code: str = "instruction.failed", commit_state: 
 ASKED: list[dict] = []
 
 
-def _setup(monkeypatch, answers):
+def _setup(monkeypatch, answers, script="GetLineage"):
     calls: list[str] = []
     ASKED.clear()
 
@@ -60,7 +60,7 @@ def _setup(monkeypatch, answers):
     monkeypatch.setattr(routing, "execute", execute)
     get_portal_access_store().upsert_user(ACTOR, actor="portal", status="active")
     lineage = make_lineage(
-        [source(), {"id": EFFECT, "kind": "effect", "config": {"script": "GetLineage", "failure_recipients": [ACTOR]}}],
+        [source(), {"id": EFFECT, "kind": "effect", "config": {"script": script, "failure_recipients": [ACTOR]}}],
         [{**event_wire({"unavailable_policy": "queue"}), "target": EFFECT}],
     )
     return lineage["lineage_id"], calls

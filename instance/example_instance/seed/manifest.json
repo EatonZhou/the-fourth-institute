@@ -15091,8 +15091,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260731__decision__HATG_Instruction_Set作为Lineage统一指令层__decision_898b8911a2ff.md",
-      "sha256": "ef9254466c96507651b751cb3cdde1fdeb372f5bb38977d61d8442f2f6a135e2",
-      "size": 61252
+      "sha256": "1686f0016dfdb1bc2fd023e09465a12a51a24c0f3504e3f7bed817677cd5eb00",
+      "size": 62345
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260803__decision__Portal_Core_NATS变化通知与浏览器实时刷新__decision_abaedeefca6f.md",
@@ -15861,8 +15861,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_消息路由与对外对话__decision_9ad68dd077d4.md",
-      "sha256": "ba877ec57dfd8ba05db4ce8c2de9b86d9813e4313b7b2ce4fa479444a93bd404",
-      "size": 25044
+      "sha256": "f28830e53d80a552ca00416704a4690f0b3f495aace32c6e25a9caf1870a8b32",
+      "size": 26130
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_运行维护：记忆、队列与故障恢复__decision_a64b3ea2c3c5.md",

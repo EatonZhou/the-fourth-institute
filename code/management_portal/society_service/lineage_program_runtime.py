@@ -322,6 +322,8 @@ def _normalized_pending_event(wire_id: str, raw_pending: object) -> dict[str, An
     }
     if isinstance(raw_pending.get("invocation"), dict):
         pending["invocation"] = _normalize_pending_delivery(raw_pending["invocation"])
+    if raw_pending.get("owner_recovery_checked"):
+        pending["owner_recovery_checked"] = True
     pending["revision"] = max(0, int(raw_pending.get("revision") or 0))
     if "prompt_override" in raw_pending:
         pending["prompt_override"] = lineage_primitives.normalize_invocation_prompt(raw_pending["prompt_override"])
