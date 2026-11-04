@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 21
+  number: 22
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-03T11:50:44Z"
+  updated_at: "2026-11-04T05:34:31Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -63,6 +63,20 @@ Family 的基础可用性由平台监督，Steward 处理需要判断的组织�
 门面摘要概述成果、进行中事项和阻塞，缺失资料明确标记，不把待办写成完成。它不向全体成员发送 info；确有成员需要行动时才定向通知。
 
 `CheckFamilyProgress`／`PublishFamilyProgress` 保留显式调用和旧批次收尾兼容，默认运行图不再调用。旧账本保留；本 Family Steward 可提交对应批次，report 与随附门面九字段摘要各不超过 500 字符，带 source_versions 和 expected_revision；冲突后重读，同内容重试不重复写入，也不恢复广播。
+
+## 组织回顾
+
+普通 Family 保存业务活动与已消费活动水位。成员 `resident.work_finished` 事件调用 CheckFamilyReview 时，只核验并登记活动，不启动模型。主体必须为当前直属业务成员，持久输入状态为 completed，消息为 user 且非 info、business_ref 非 `duty/`。事件时间戳不作完成证明；水位使用持久完成回执的 updated_at 与输入 ID 排序，每个成员只前进、不回退。重复或乱序旧事件不产生新的回顾批次，工具调用及维护工作不参与。
+
+原 periodic_review 定时事件和 review_interval_seconds 保留，普通 Family 默认一天。到点由 Effect 不带 event 调用同一指令：无未消费活动则结束，不读角色运行态或启动模型；有活动时再确认门面开放、Steward 空闲且无排队。忙碌、排队、未知运行态或并发检查由下一次定时检查补偿，不改接单或另投提示词。
+
+Family 在已有 family_relays 账本的 activity_review 中独立保存 activity、reviewed 与 pending；统一任务派发仍拥有不可变请求/文本意图，Resident intake 仍拥有受理与取消。满足条件时冻结活动快照和目标 Steward，先保存由门面、目标与快照确定的稳定消息 ID，再通过现有 review 模板派发。派发失败保留 pending，重试相同 ID；持久受理后才消费冻结的快照，派发期间的新活动留在 activity 中。检查所有权不延迟 intake 提交，不持有活动账本事务跨运行态读取或消息受理。
+
+派发已受理而消费前中断时，重试先读原目标输入回执；即使自身任务已排队或运行，也只补完同一意图。已 failed/cancelled/completed 的同材料任务不重开。成功消费表示回顾已受理，不表示 Steward 已完成组织判断。pending 的目标 Steward 已变更时返回 target_changed 并保留意图，不把同一消息 ID 改派给另一角色；需沿现有控制与诊断处理该冲突。
+
+只有生成的 review_activity 完成记录 Effect 和 notify_periodic_review_task 定时门控 Effect，可在同 Lineage、同 Family 的准确参数及事件形态下使用本门面调用身份。普通 workflow 不借用该身份，外部直接调用仍需正常 Lineage contributor 与领域角色/管理校验；原事件的外部发起者不传为新维护任务的权限主体。
+
+已有 Family 通过生成结构同步替换原无条件派发 Effect，保留 timer/route ID、已编辑回顾间隔及 review guide/prompt，增加成员完成记录 Route。不扫描旧历史补造活动，不撤销已受理的旧回顾；用户 workflow:* 和指定定时业务不变。个人助手维持独立的原对话活动机制，不宣称已具备本节的派发意图保障。
 
 ## 队列与通信整理
 

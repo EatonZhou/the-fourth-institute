@@ -70,6 +70,23 @@ def _family_note_context(
     from dataclasses import replace
     from .family_familize import facade_for_family_state, facade_for_internal_note
 
+    if instruction == "CheckFamilyReview" and context.entry == "lineage":
+        from .family_familize import component_family, role_of, member_ids
+        block = component_family(lineage, effect_id)
+        key = next((e.get("key") for e in (block or {}).get("elements", []) if e["id"] == effect_id), "")
+        observed = arguments.get("event") if isinstance(arguments.get("event"), dict) else {}
+        valid_record = (key == "review_activity" and event is not None
+                        and event.type == "resident.work_finished" and event.subject_resident_id in member_ids(block)
+                        and observed.get("subject_resident_id") == event.subject_resident_id
+                        and (observed.get("payload") or {}).get("message_id") == event.payload.get("message_id")
+                        and set(arguments) == {"lineage_id", "family_id", "event"})
+        valid_tick = (key == "notify_periodic_review_task" and event is not None and event.type == "time.reached"
+                      and set(arguments) == {"lineage_id", "family_id"})
+        if (block and arguments.get("lineage_id") == lineage_id and arguments.get("family_id") == block["id"]
+                and (valid_record or valid_tick)):
+            return replace(context, caller=role_of(block, "facade"))
+        return context
+
     if instruction in {"RelayFamilyMessage", "DispatchFamilyTask"}:
         from .family_facade import facade_for_arrival_call
         from .family_familize import facade_for_summary_call

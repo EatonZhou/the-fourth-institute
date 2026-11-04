@@ -279,7 +279,18 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
             put("invoke_" + key, "route", source=source, target=check, config={"invoke_profiles": {"effect": {
                 "arguments": {k: {"value": v} for k, v in review_args.items()}}}})
     else:
-        notify("notify_periodic_review", review)
+        review_args = {"lineage_id": {"value": body["lineage_id"]}, "family_id": {"value": block["id"]}}
+        gated = put("notify_periodic_review_task", "effect", title="按业务活动检查组织回顾", config={
+            "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
+            "endpoints": []})
+        put("notify_periodic_review", "route", source=review, target=gated, config={
+            "invoke_profiles": {"effect": {"arguments": review_args}}, "unavailable_policy": "latest"})
+        if members:
+            activity = put("review_activity", "effect", title="记录已完成业务活动", config={
+                "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}',
+                "endpoints": []})
+            put("record_review_activity", "route", source=ids["member_done"], target=activity, config={
+                "invoke_profiles": {"effect": {"arguments": review_args}}})
     inbox = put("facade_inbox", "event_source", title="门面收到消息", config={"event_type": "resident.message_received"})
     put("watch_facade", "watch", source=inbox, target=facade, config={})
     effect = put("router", "effect", title="Family Router", config={"script": FAMILY_ROUTER_SCRIPT, "endpoints": []})

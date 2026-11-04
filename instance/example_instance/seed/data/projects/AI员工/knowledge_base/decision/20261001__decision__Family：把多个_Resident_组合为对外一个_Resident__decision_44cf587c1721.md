@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 163
+  number: 164
   created_at: "2026-10-01"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-02T14:31:03Z"
+  updated_at: "2026-11-04T05:34:31Z"
   updated_by:
     user: ""
-    agent: "resident_217c1dcc230c"
+    agent: "resident_2e9ea0072551"
 importance: 8
 ai_generated: false
 links:
@@ -173,7 +173,7 @@ Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授�
 
 families 的 family_id 与 function_block_id 相同，resource_id 是持久的正式资源身份。family_residents 保存 member/facade/router/steward；普通 Resident 更新不能覆写归属。完整图和 Family 专表在同一事务更新，读取时附加只读 function_blocks[].family 投影，不在普通块配置里再存一份名册。
 
-投影包含角色、成员、标题、目标、阈值、回顾周期、previous_leader_id、human_familizer_id、lineage_scope、resource_id，以及私人 Family 的 AMA 与历史分界。route_threshold 默认 60（0–100），review_interval_seconds 默认 86400 且为正；具体 Event/prompt 用户配置以运行图为准。读取专表列出列名，避免在线加列改变长连接预备查询的结果类型。
+投影包含角色、成员、标题、目标、阈值、回顾周期、previous_leader_id、human_familizer_id、lineage_scope、resource_id，以及私人 Family 的 AMA 与历史分界。route_threshold 默认 60（0–100），review_interval_seconds 默认 86400 且为正；具体 Event/prompt 用户配置以运行图为准。普通 Family 的回顾周期只驱动业务活动门控检查，无新增业务不会派发 Steward 模型任务；个人助手保留其对话活动门控。活动与意图协议见 decision_a64b3ea2c3c5。读取专表列出列名，避免在线加列改变长连接预备查询的结果类型。
 
 Family 的正式资源类型为 family，归属当前 Lineage 并投影 Project；迁移保持 resource_id，权限关系随 Lineage 移动。ResolveResource/ReadResource/SearchResources 从当前业务事实投影，索引不能覆盖真实名册或生命周期。family_id 块键只在指定 Lineage 中匹配，不能借此访问别的 Family。
 

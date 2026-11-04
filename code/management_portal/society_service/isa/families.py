@@ -91,6 +91,12 @@ def check_family_progress(inv):
         raise invalid(str(exc)) from exc
 
 
+def check_family_review(inv):
+    from ..family_review import check
+    return check(inv.argument("lineage_id"), inv.argument("family_id"), inv.caller,
+                 event=inv.argument("event"))
+
+
 def publish_family_progress(inv):
     from ..family_progress import publish
     try:
@@ -102,6 +108,7 @@ def publish_family_progress(inv):
 
 HANDLERS = {"Familize": familize, "Unfamilize": unfamilize, "DeleteFamily": delete_family, "UpdateFamily": update_family,
             "ResolveFamilyRequest": archive_family_result,
+            "CheckFamilyReview": check_family_review,
             "CheckFamilyRecovery": check_family_recovery, "CheckFamilyProgress": check_family_progress,
             "CheckFamilyRoleAvailability": check_family_role_availability,
             "PublishFamilyProgress": publish_family_progress, "DispatchFamilyTask": dispatch_family_task}

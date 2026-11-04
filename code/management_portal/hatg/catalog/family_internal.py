@@ -11,6 +11,13 @@ def _d(name, decides, description, parameters, result, *, mutates=True, target="
 
 
 DECLARATIONS = (
+    _d("CheckFamilyReview", ON_LINEAGE, "记录本 Family 业务成员已完成输入的活动水位，或在定时检查时合并派发有新材料的组织回顾；无新增、Steward 忙碌或门面暂停时不启动模型。", (
+        R("lineage_id", description="Family 所在 Lineage"),
+        R("family_id", description="Family 资源 ID 或 Function Block 键"),
+        P("event", "object", "业务成员 resident.work_finished 事件；传入时仅记录活动，不派发。省略时执行定时门控"),
+    ), (R("family_id", description="Family Function Block 键"),
+        R("status", description="recorded、skipped、unchanged、busy、paused、requested、target_changed 或 not_applicable"),
+        P("message_id", description="合并回顾的稳定任务 ID"))),
     _d("ResolveFamilyRequest", ON_RESIDENT, "把本 Family Steward 已完成的路由复核成果归档到同一原失败请求；保留原失败回执，不重新执行或复制业务输入。限本 Steward 或门面管理者。", (
         R("resident_id", description="Family 门面"),
         R("message_id", description="门面内尚未转交的原失败请求；取消或正在执行的请求不能归档"),

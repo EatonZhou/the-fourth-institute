@@ -15756,8 +15756,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
-      "sha256": "b598005fbeadf1b07e6497364dc5fe25bfe3244c3d8b19ddd2ab2657242a0235",
-      "size": 19097
+      "sha256": "ff51aed3d4c2142a8b298c49aa8d8ed8987af766c0cf145620e571eeb7a160e6",
+      "size": 19304
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261002__decision__Chatroom：用户聊天室与_@_Resident_投递__decision_a6bebf4ac283.md",
@@ -15831,8 +15831,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Family_内部机制指令__decision_b77fde81e7a0.md",
-      "sha256": "e6ff1e86b5f9143dbcbdece86c3051ca4184a34a5d8d59054b97213de15e0306",
-      "size": 14549
+      "sha256": "449c86839eab4d90ede9c2c18642821ee7af79c68f8040296701c8897ce867b6",
+      "size": 16223
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Mailbox_指令__decision_c54e68a82d7a.md",
@@ -15855,14 +15855,19 @@
       "size": 10279
     },
     {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_Router_与_Steward：Event、Effect_与_Prompt__decision_89b9df038a95.md",
+      "sha256": "561919b197ea96ed1703cd3b5abf05efb3f1498990a80744ee55b15b452f1410",
+      "size": 43972
+    },
+    {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_消息路由与对外对话__decision_9ad68dd077d4.md",
       "sha256": "ccdb52caaec08137c9b9ae98183e1bbfcfa6965a6035c914409fc403854e0492",
       "size": 21014
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Family_运行维护：记忆、队列与故障恢复__decision_a64b3ea2c3c5.md",
-      "sha256": "187302b8918d1cfe8d1b58dd2f142b274d7b6179514ced0547374f37dea0716b",
-      "size": 24352
+      "sha256": "09dc3c874f4f212b2eadb3b303cebf668312cb7a8d143b95647126e03acfcd7f",
+      "size": 27142
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__Portal_运行维护：安装、检查、发布与恢复__decision_ab9880dc4c9d.md",

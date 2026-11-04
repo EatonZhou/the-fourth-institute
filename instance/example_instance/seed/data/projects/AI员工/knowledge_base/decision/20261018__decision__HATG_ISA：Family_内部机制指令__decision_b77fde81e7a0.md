@@ -4,20 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 15
-  created_at: '2026-10-18'
+  number: 18
+  created_at: "2026-10-18"
   created_by:
-    user: ''
-    agent: resident_7765faecc45a
-  updated_at: '2026-10-30T02:36:44Z'
+    user: ""
+    agent: "resident_7765faecc45a"
+  updated_at: "2026-11-04T05:34:31Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 5
 ai_generated: false
 links:
   source: []
   related:
+  - decision_89b9df038a95
+  - decision_a64b3ea2c3c5
   - decision_44cf587c1721
   supersedes: []
   derived_from: []
@@ -34,6 +36,7 @@ Family 内部机制指令是一个 Family 自己运转时使用的步骤：Route
 | `DispatchFamilyTask` | 是 | 按 Family 当前场景模板派发精简任务 | 对 `resident_id` 有 @contributor |
 | `ResolveFamilyRequest` | 是 | 将 Steward 已完成的路由复核成果归档到原请求，保留原失败回执且不重新执行 | 对 `resident_id` 有 @contributor |
 | `RelayFamilyMessage` | 是 | 转交门面原请求，成员周额度低于 10% 时先等待 steward 复核；纯告知由门面收下 | 对 `resident_id` 有 @contributor |
+| `CheckFamilyReview` | 是 | 记录已完成业务活动，定时检查有新材料且 Steward 可承接时合并派发回顾 | 对 `lineage_id` 有 @contributor，且通过领域角色/管理校验 |
 | `CheckFamilyProgress` | 是 | 登记门面收到的工作轮次，达到配置间隔后请 Steward 撰写简报；同一输入只计一次 | 对 `lineage_id` 有 @contributor |
 | `PublishFamilyProgress` | 是 | Steward 保存最多 500 字的简报并更新门面摘要，不向成员群发；按相关性另行定向通知 | 免检 |
 | `CheckFamilyRoleAvailability` | 是 | 维护 Router／Steward 接单并返回已有迁移状态；不查额度、不发起迁移；门面关闭暂停 | 对 `lineage_id` 有 @contributor |
@@ -49,11 +52,19 @@ Family 内部机制指令是一个 Family 自己运转时使用的步骤：Route
 
 它先核验门面是否暂停，再恢复 Router／Steward 接单，返回已有迁移状态。返回 `family_id`、`paused`、`waiting_count`，未暂停时另有 `roles`（resident_id、status、reason、intake）。waiting_count 统计已有迁移记录；本指令不读取额度、不发起迁移，全程无需模型任务。
 
-触发入口为两角色的 `resident.state_changed(intake)` 及每 5 分钟 timer 接单补查。额度随待执行原输入进入平台准入检查；不另设 usage Event。所有 Resident 共用 ExecutionService 额度准入；Router／Steward 执行前另按既有策略决定有限迁移。具体职责、执行入口和脚本见角色工作流。
+触发入口为两角色的 `resident.state_changed(intake)` 及每 5 分钟 timer 接单补查。额度随待执行原输入进入平台准入检查；不另设 usage Event。所有 Resident 共用 ExecutionService 额度准入；Router／Steward 执行前另按既有策略决定有限迁移。具体职责、执行入口和脚本见[角色工作流](/resource/knowledge?item=decision_89b9df038a95)。
+
+## 组织回顾门控
+
+`CheckFamilyReview(lineage_id, family_id, event?)` 属于 Family 内部机制，owner 为 lineage。event 提供时只记录经持久状态、当前业务成员、非 info 和非维护输入核验的 resident.work_finished，不派发回顾。省略 event 时比较未消费活动，机械核验门面暂停与 Steward 运行/排队状态后，按持久意图合并派发一次 review。参数不接受 N 次门槛、任意 facts、外部指定目标或消息 ID。
+
+结果为 family_id、status，以及派发时的稳定 message_id。status：recorded 已登记；skipped 非有效业务完成；unchanged 无新材料；busy 角色或检查忙碌/运行态不可确认；paused 门面暂停；requested 本次派发或同意图受理续投；target_changed 原派发目标角色已变更、保留待处理意图；not_applicable 个人助手使用原独立机制。requested 不代表模型任务完成。
+
+调用需 Lineage @contributor 及本 Family 门面/Steward 或管理校验；受控生成 Effect 的身份绑定不授予事件外部作者权限，普通 workflow 不继承。快照消费、失败、取消和升级协议见 decision_a64b3ea2c3c5“组织回顾”。
 
 ## 派发场景任务
 
-Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场景的实际 prompt 字段，统一见 Family 角色工作流。本篇维护指令参数和执行语义，不另存一份场景表。
+Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场景的实际 prompt 字段，统一见 [Family 角色工作流](/resource/knowledge?item=decision_89b9df038a95)。本篇维护指令参数和执行语义，不另存一份场景表。
 
 ### `DispatchFamilyTask`
 
@@ -87,7 +98,7 @@ Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场
 
 ## 进展简报与故障监督
 
-`CheckFamilyProgress`、`PublishFamilyProgress` 与 `CheckFamilyRecovery` 的调用时机、批次和升级规则见 Family 运行维护 的进展简报与持续监督。三条指令都以 `lineage_id` 和 `family_id` 指向一个 Family：
+`CheckFamilyProgress`、`PublishFamilyProgress` 与 `CheckFamilyRecovery` 的调用时机、批次和升级规则见 [Family 运行维护](/resource/knowledge?item=decision_a64b3ea2c3c5) 的进展简报与持续监督。三条指令都以 `lineage_id` 和 `family_id` 指向一个 Family：
 
 - `CheckFamilyProgress`：仅保留显式调用及旧批次兼容；当前 Family 自动运行图不调用。显式调用时记录轮次，达到 `every_turns`（默认 20）时登记待写批次并请 Steward 撰写；结果是计数和本次请求的批次。
 - `PublishFamilyProgress`：只允许本 Family Steward 提交对应批次。简报正文 1–500 字，并带九字段门面工作摘要、`expected_revision` 和 `GetFamilySummaryInputs` 的 `source_versions`；只保存简报和门面摘要，不投递成员 info。由 Steward 按相关性另用 DeliverMessage 定向通知；同批次同内容重试返回同一结果，旧部分投递批次也不继续群发。
@@ -112,6 +123,7 @@ Steward 先归纳到期成员，再读取所需 Family 材料汇总门面；材�
 | `DispatchFamilyTask` | `resident_id`、`trigger`、`facts`、`source_message_id`、`message_id`、`event` |
 | `ResolveFamilyRequest` | `resident_id`、`message_id`、`steward_message_id`、`reason` |
 | `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason` |
+| `CheckFamilyReview` | `lineage_id`、`family_id`、`event` |
 | `CheckFamilyProgress` | `lineage_id`、`family_id`、`event`、`every_turns` |
 | `PublishFamilyProgress` | `lineage_id`、`family_id`、`batch_id`、`report`、`summary`、`expected_revision`、`source_versions` |
 | `CheckFamilyRoleAvailability` | `lineage_id`、`family_id` |
