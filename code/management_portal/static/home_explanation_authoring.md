@@ -109,9 +109,9 @@
 
 只保留实际有用的模块。引用也可包含已生成的 `video`，其中 `address/sha256` 指向 MP4，`captions` 与 `transcript` 各带地址和摘要，`chapters` 为 `[{time:秒,title}]`。普通 HTML 文件在 Preview 中仍是代码；解释包的 interaction 才进入隔离宿主。自包含 HTML 内联样式、脚本、数据和所需库，禁止远程依赖及父页面访问。大型图按需更新，不维持无用动画。
 
-视频计划使用 `portal-explanation-video/v1`，不是脚本。字段为 title、nodes、scenes；nodes 含唯一 id、label、归一化 x/y；scenes 含 title、speech，可包含 edges（from/to/weight/label）和 values（node/value）。新生成还需要 audio、audio_provenance、cues；audio 为 WAV 的正式 address/sha256，每个 scene 必须按实际音轨声明 start/end 秒，cues 为实际逐句时间及 text，不得按字数猜测配音时长。
+视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、audio_provenance、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
-audio_provenance 是固定 JSON 的 address/sha256，正文 schema 为 `portal-native-audio-provenance/v1`，包含实际 provider、model、request_id，以及 audio 与 evidence 的固定 address/sha256。audio 必须与计划中的引用完全一致。该 schema 名沿用既有接口，不改变实际服务来源。作者可写的 JSON 或 Provider 名称只声明待核验的来源；正式执行能力须核验调用回执及输出音轨绑定。能力未提供时新生成明确失败，不使用本地配音补位；已有 ready 版本继续按原权限读取，不补写证明。
+audio 为同包原始 MP3 或 PCM16 WAV 的正式 address/sha256。audio_provenance 是固定 JSON 的 address/sha256，正文 schema 为 `portal-native-audio-provenance/v1`，包含实际 provider、model、request_id，以及 audio 与 evidence 的固定 address/sha256；request_id填正式语音生成的Portal execution ID。audio 必须与计划中的引用完全一致。该 schema 名沿用既有接口，不改变实际服务来源。服务查询权威完成回执，检查真实actor的原音轨权限/SHA及包内副本；作者可写JSON不自证。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。缺少可核验音轨时新生成明确失败；已有 ready 版本继续按原权限读取，不补写证明。
 
 计划、音轨、来源记录及其调用证据必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，遵循同一 Workspace 的访问与删除规则。
 

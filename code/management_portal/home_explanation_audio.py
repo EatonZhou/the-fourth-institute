@@ -1,21 +1,32 @@
-"""New-generation audio gate; author-written provenance is not provider proof.
+"""Execution-backed speech provenance; package JSON is a claim, not proof.
 
-Legacy ready media bypasses this gate. The installed execution contract currently
-has no native audio generation/receipt capability. Until an authoritative receipt
-reader is supplied by that owner, even well-formed claims fail closed here.
+The historical 'native' schema also covers the explicitly approved Microsoft
+cloud speech service. Legacy ready media bypasses this new-generation gate.
 """
+import hashlib
 import json
 
 
 def verify_native_receipt(record, actor):
-    # No external URL fetches, local TTS, secrets or author-provided commands.
-    # Do not replace this with a check of a caller-writable 'verified' flag.
-    raise ValueError('当前尚无可核验的Provider原生音频调用能力；不能生成视频，也不会回退本地配音。')
+    from management_portal.execution.speech_generation_service import verified_receipt
+    # This owner re-reads the immutable execution record, authorizes the original
+    # upload for THIS consumer, and hashes its bytes. Never impersonate its author.
+    receipt = verified_receipt(record['request_id'], actor=actor)
+    if receipt.get('schema') != 'tfi.native-speech-receipt.v1' or receipt.get('execution_id') != record['request_id']:
+        raise ValueError('语音执行回执与请求ID不符')
+    if receipt.get('provider') != record['provider'] or receipt.get('model') != record['model']:
+        raise ValueError('语音来源的Provider或模型与正式执行回执不符')
+    audio = receipt.get('audio')
+    if not isinstance(audio, dict) or audio.get('sha256') != record['audio'].get('sha256'):
+        raise ValueError('包内音轨必须与正式执行的原始音频SHA256一致，不接受作者转换后的替代文件')
+    if receipt.get('media_type') not in {'audio/mpeg', 'audio/wav', 'audio/x-wav'}:
+        raise ValueError('正式语音回执的音频格式暂不支持')
+    return receipt
 
 
 def require_native_audio(plan, read, same_package, actor):
     if not plan.get('audio') or not plan.get('audio_provenance'):
-        raise ValueError('新视频需要Provider原生生成的音轨及可核验来源记录；不会自动使用本地配音。')
+        raise ValueError('新视频需要正式语音服务生成的音轨及可核验来源记录；不会自动使用本地配音。')
     same_package(plan['audio_provenance'])
     record = json.loads(read(plan['audio_provenance'], actor))
     if not isinstance(record, dict) or set(record) != {'schema', 'provider', 'model', 'request_id', 'audio', 'evidence'}:
@@ -27,8 +38,14 @@ def require_native_audio(plan, read, same_package, actor):
         raise ValueError('原生音轨来源必须列明实际Provider、模型与请求ID')
     if record['audio'] != plan['audio']:
         raise ValueError('原生音轨来源记录与本次固定音轨不符')
+    same_package(plan['audio'])
     same_package(record['evidence'])
     # Read/hash/ACL checks establish which evidence was supplied, not its truth.
     read(record['evidence'], actor)
-    verify_native_receipt(record, actor)
+    receipt = verify_native_receipt(record, actor)
+    # Copying to a Workspace is allowed only byte-for-byte. Read using its own
+    # ACL as well as the original upload's ACL checked by verified_receipt.
+    data = read(plan['audio'], actor, 64*1024*1024)
+    if hashlib.sha256(data).hexdigest() != receipt['audio']['sha256']:
+        raise ValueError('包内音轨字节与正式语音回执不符')
     return record

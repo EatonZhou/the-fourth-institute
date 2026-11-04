@@ -71,7 +71,7 @@ def setup(tmp_path, monkeypatch):
     service = Resources(root)
     monkeypatch.setattr(lineage_access_policy, 'workspace_reaches', lambda actor, *args, **kw: actor == 'reader' and service.writes)
     monkeypatch.setattr(module, 'portal_path', lambda area: runtime)
-    # Isolate media lifecycle tests from the unavailable native-audio capability
+    # Isolate media lifecycle tests from the real speech execution store
     # and live ISA. Dedicated gate/ISA tests below exercise those boundaries.
     monkeypatch.setattr(module, 'require_native_audio', lambda *args: {})
     monkeypatch.setattr(module.review, 'discover', lambda *args: 'resident_aaaaaaaaaaaa')
@@ -357,7 +357,7 @@ def test_new_audio_gate_fails_before_output_and_old_ready_remains_readable(setup
         assert stream.read() == b'movie-content'
     service.writes = True
     new = put('new.json', {'schema': 'portal-explanation/v1', 'title': 'new', 'video_plan': put('plan.json', plan())})
-    with pytest.raises(ValueError, match='原生生成'):
+    with pytest.raises(ValueError, match='正式语音服务'):
         media.start(**new, actor='reader')
     assert not (service.root/'explanation-media'/new['sha256']).exists()
 
@@ -374,7 +374,7 @@ def test_claimed_provider_provenance_is_not_trusted_receipt(setup, monkeypatch):
     data['audio_provenance'] = put('audio-source.json', record)
     ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', data)})
     media = Media(service, fake_render)
-    with pytest.raises(ValueError, match='尚无可核验'):
+    with pytest.raises(ValueError, match='Invalid speech execution ID'):
         media.start(**ref, actor='reader')
     assert not (service.root/'explanation-media').exists()
     service.denied.add(evidence['address'])
@@ -393,7 +393,7 @@ def test_renderer_never_invokes_tts_without_audio(tmp_path, monkeypatch):
     monkeypatch.setattr(module, 'capabilities', lambda: pytest.fail('No media tool may run before audio exists'))
     output = tmp_path/'render'
     output.mkdir()
-    with pytest.raises(ValueError, match='原生音轨'):
+    with pytest.raises(ValueError, match='正式语音服务音轨'):
         module.render(validate(plan()), output)
     assert list(output.iterdir()) == []
 
