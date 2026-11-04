@@ -136,6 +136,10 @@ audio 为同包固定 MP3 或 PCM16 WAV 的正式 address/sha256。Portal检查�
 
 计划与音轨必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；medium 结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，low/high 使用 `<manifestSHA>-<quality>/`，遵循同一 Workspace 的访问与删除规则。媒体读取、生成和重试均显式带视频 quality，不能把其他质量的成片当成本次结果。
 
+独立审查交接包含固定清单、交互/补充材料、视频计划及计划引用的原音轨，并包含该次待审成片、字幕和讲稿。若核查需要另外的来源记录、真实对齐或计算依据，在 manifest 的 `review_assets` 中逐项列出 `{address,sha256}`。构建命令可重复传 `--review-asset '<包内相对文件>'`，例如实际保存的 `alignment.json`；只选择本次作品所需的现有文件。额外材料最多 32 项，整个交接最多 40 个文件。服务按当前提交者权限核读固定字节，不扫描目录，不开放整个 Workspace，也不把作者的来源 JSON 当作外部签发证明。
+
+新增送审依赖会改变 manifest 摘要，须保存新固定版本。旧 blocked 轮的快照和结论保持不变；仅恢复同一轮不会凭空补齐材料。内容实际修订沿 `changes_requested` 关联复审；补全依赖的新包按新版本正式提交，不能将旧 blocked 伪作修改意见链。页面检查与视频检查分别绑定各自固定对象，不能用已通过的页面结论代替成片检查。
+
 high 视频保存完成后，服务按实际生成 actor 查找唯一、可投递的“讲解视频独立检查” Resident，并发送固定 manifest、视频、字幕、讲稿及来源引用。检查员使用自身权限。`submitted` 表示任务已投递，只有固定版本的正式审核记录为 `passed` 才表示通过。`changes_requested` 要求作者另存修订后重审；`blocked`、`cancelled`、`submission_failed` 保留真实原因，不自动降级。low/medium 不要求独立送审。页面的独立检查重试对应 `POST /api/home-explanation/media/review`，提交 `{address,sha256,quality}`，按原请求 actor 重试，保留播放器、不重编码；送检重试有上限。GET、刷新和重开不自动投递。
 
 常用构建入口（占位值需替换为自己正式绑定与文件）：
