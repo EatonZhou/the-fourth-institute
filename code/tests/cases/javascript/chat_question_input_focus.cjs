@@ -46,8 +46,8 @@ function check(name, actual, expected) {
     page.on('pageerror', e => evidence.errors.push(e.message));
     await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
     await page.goto(origin);
-    await page.evaluate(() => {
-      window.PortalIdentity = { username: () => 'focus-fixture' };
+    const mount = (options = {}) => page.evaluate(({ owner = 'focus-fixture', resident = 'resident_111111111111', messages = null, ownerCallback = false }) => {
+      window.PortalIdentity = { username: () => owner };
       window.calls = [];
       window.PortalAPI = { get: async url => {
         if (!url.includes('session-restart')) throw new Error('Unexpected API: ' + url);
@@ -63,16 +63,18 @@ function check(name, actual, expected) {
           ? { type: 'async_questions', answer_message_id: id, state: 'open', questions: [{ question_index: 0, title: id, options: ['One', 'Two'] }] }
           : { type: 'tool_call', tool_name: 'request_user_input', request_id: id, status: 'pending',
             questions: [{ id: 'q', question: id, options: [{ label: 'One' }] }] }] });
-      window.snap = { messages: [question('answer_a')], controls: { can_send: true }, queue: { items: [] } };
+      window.snap = { messages: messages || [question('answer_a')], controls: { can_send: true }, queue: { items: [] } };
       window.panel = PortalChatWorkspace.panelPackage.create({ root: document.getElementById('chat'), id: 'questionFocus',
-        autoLoad: false, target: { resident_id: 'resident_111111111111' }, onError: error => { throw error; } });
+        autoLoad: false, ...(ownerCallback ? { draftOwner: () => owner } : {}),
+        target: { resident_id: resident }, onError: error => { throw error; } });
       panel.protocol = { snapshot: () => snap, destroy() {} };
-      panel.residentProjection = { resident: { resident_id: 'resident_111111111111' },
-        chat_workspace: { schema: 'portal.chat_workspace.v3', target: { kind: 'resident', id: 'resident_111111111111' },
+      panel.residentProjection = { resident: { resident_id: resident },
+        chat_workspace: { schema: 'portal.chat_workspace.v3', target: { kind: 'resident', id: resident },
           header: { title: 'Question focus' }, messages: [], composer: { can_send: true } } };
       window.render = () => panel.applySnapshot(snap);
       render();
-    });
+    }, options);
+    await mount();
     const input = () => page.locator('[data-question-custom]');
     const prepare = async locator => {
       await locator.fill('正在输入 draft'); await locator.focus();
@@ -174,8 +176,85 @@ function check(name, actual, expected) {
     await page.evaluate(() => { snap.messages[0].content_parts[0].status = 'expired'; render(); });
     check('late authoritative expiry clears earlier transport error', await page.locator('.residentQuestionStatus').innerText(), '请求已失效，不能再提交');
     check('late expiry never resends answer', await page.evaluate(() => answerCalls), 2);
+
+    // A server restart reloads the page: exercise real localStorage, not a
+    // reused panel or a copied in-memory progress map.
+    const reload = async (options = {}) => { await page.reload(); await mount(options); };
+    await reload();
+    check('switching away and remounting restores the earlier unconfirmed draft', await input().inputValue(), '正在X draft');
+    const draft = '  <未提交 & "回答草稿">  ';
+    await input().fill(draft);
+    await reload();
+    check('reload restores raw unconfirmed text including whitespace and HTML characters', await input().inputValue(), draft);
+    check('draft restoration never sends an answer', await page.evaluate(() => calls.filter(c => c.instruction !== 'ListInputHistory')), []);
+    check('a restored draft is not a confirmed choice', await page.locator('[data-question-option][aria-pressed="true"]').count(), 0);
+    await reload({ ownerCallback: true });
+    check('a host owner callback resolves to the same user scope', await input().inputValue(), draft);
+    await reload({ owner: 'another-user' });
+    check('another user does not receive the draft', await input().inputValue(), '');
+    await input().fill('另一用户草稿');
+    await reload({ resident: 'resident_222222222222' });
+    check('another conversation does not receive the draft', await input().inputValue(), '');
+    await reload();
+    check('isolated scopes leave the original draft intact', await input().inputValue(), draft);
+    await input().fill('');
+    await reload();
+    check('clearing a draft also survives reload', await input().inputValue(), '');
+
+    const batch = await page.evaluate(() => {
+      const message = question('draft_batch');
+      message.content_parts[1].questions.push({ question_index: 1, title: 'Second question', options: [] });
+      return [message];
+    });
+    await reload({ messages: batch });
+    await input().fill('第一题已确认');
+    await page.locator('[data-question-confirm]').click();
+    await input().fill('第二题未提交');
+    await page.locator('[data-question-back]').click();
+    check('back restores the confirmed custom answer', await input().inputValue(), '第一题已确认');
+    await input().fill('');
+    await reload({ messages: batch });
+    check('a deliberately cleared answer is not repopulated from its confirmed value', await input().inputValue(), '');
+    await page.locator('[data-question-confirm]').click();
+    check('empty draft cannot silently submit the old answer', await page.locator('.residentQuestionStepProgress').innerText(), '问题 1/2');
+    await input().fill('第一题修订');
+    await page.locator('[data-question-confirm]').click();
+    check('moving forward preserves the second question draft', await input().inputValue(), '第二题未提交');
+    await reload({ messages: batch });
+    check('reload restores the active step and its unfinished answer', [await page.locator('.residentQuestionStepProgress').innerText(), await input().inputValue()], ['问题 2/2', '第二题未提交']);
+    await page.evaluate(() => { window.PortalResidentProtocol = { ...PortalResidentProtocol,
+      sendInput: async () => { throw new Error('模拟断线'); } }; });
+    await page.locator('[data-question-confirm]').click();
+    await page.waitForFunction(() => document.querySelector('.residentQuestionStatus').textContent === '模拟断线');
+    await reload({ messages: batch });
+    check('failed submission retains the confirmed answer after reload', await input().inputValue(), '第二题未提交');
+    await page.evaluate(() => { window.PortalResidentProtocol = { ...PortalResidentProtocol, sendInput: async payload => {
+      window.sentAnswers = payload.message.content_parts.find(part => part.type === 'async_question_answer').answers;
+      snap.messages[0].content_parts[1].state = 'answered';
+      return {};
+    } }; });
+    await page.locator('[data-question-confirm]').click();
+    await page.waitForFunction(() => !document.querySelector('[data-question-custom]'));
+    check('explicit successful submission sends only the confirmed answers', await page.evaluate(() => sentAnswers.map(entry => entry.answer)), ['第一题修订', '第二题未提交']);
+    await reload({ messages: batch });
+    check('successful submission removes the saved group', await input().inputValue(), '');
+    await input().fill('不再回答的草稿');
+    await page.evaluate(() => { window.PortalResidentProtocol = { ...PortalResidentProtocol, respondUserInput: async () => ({}) }; });
+    await page.locator('[data-question-close]').click();
+    await page.waitForFunction(() => !document.querySelector('[data-question-custom]'));
+    await reload({ messages: batch });
+    check('closing a group removes its saved draft', await input().inputValue(), '');
+
+    const native = await page.evaluate(() => [question('native_draft', 'native')]);
+    await reload({ messages: native });
+    await input().fill('原生问题未确认草稿');
+    await reload({ messages: native });
+    check('native question drafts also survive reload', await input().inputValue(), '原生问题未确认草稿');
+    await page.evaluate(() => { snap.messages[0].content_parts[1].status = 'expired'; render(); });
+    await reload({ messages: native });
+    check('authoritative expiry clears the native draft', await input().inputValue(), '');
     check('browser errors', evidence.errors, []);
-    console.log('PASS question input focus, node identity, selection, composition, new groups, native and MCP lifecycle');
+    console.log('PASS question input focus, composition, draft reload, scope isolation, submission and native/MCP lifecycle');
   } finally {
     if (browser) await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
     if (process.env.EVIDENCE_PATH) fs.writeFileSync(process.env.EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\n');

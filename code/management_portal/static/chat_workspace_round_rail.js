@@ -59,7 +59,8 @@
     let coords = new Map(), nodeForKey = new Map(), currentNode = null, tickSignature = '';
     let metrics = { total: 0, client: 0, track: 0, thumb: 0, hit: 26, available: 0 };
     const observedRows = new Set(), sizes = new WeakMap(); let observedList = null;
-    let hoverTimer = 0, closeTimer = 0, press = null, suppressed = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
+    let hoverTimer = 0, closeTimer = 0, press = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
+    let hoverKey = '', activation = null, pointerRest = null, laneTop = 0;
     let previewFrame = 0, markerMenu = null;
     const previewSizes = new WeakMap();
     const identity = () => String(window.PortalIdentity?.username?.() || '');
@@ -235,6 +236,7 @@
     }
     function closePreview(returnFocus = false) {
       closeMarkerMenu();
+      hoverKey = '';
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
       if (popup?.list) releasePreview(popup.list);
@@ -365,6 +367,7 @@
     function measureLayout() {
       const bounds = viewport.getBoundingClientRect(), height = lane.clientHeight;
       if (!bounds.height || !height) return;
+      laneTop = lane.getBoundingClientRect().top;
       const total = Math.max(viewport.scrollHeight, viewport.clientHeight), top = viewport.scrollTop;
       sizes.set(viewport, { width: bounds.width, height: bounds.height });
       const list = viewport.querySelector('.messageList');
@@ -430,16 +433,36 @@
         node.setAttribute('aria-label', description(row));
       });
     }
-    function pointerRows(node, event) {
-      // Keep every marker at its measured location. Overlapping hit areas use
-      // a local list only for pointer disambiguation; keyboard targets stay 1:1.
-      const row = bindings.get(node); if (!row) return [];
-      const pixel = event.clientY - lane.getBoundingClientRect().top;
+    function pointerRow(event) {
+      // DOM hit boxes overlap, so their paint order is not message identity.
+      // Search cached centers; ties use the first row at that actual position.
+      const pixel = event.clientY - laneTop;
       let low = 0, high = rows.length;
-      while (low < high) { const middle = (low + high) >>> 1; if (rows[middle].pixel < pixel - metrics.hit / 2) low = middle + 1; else high = middle; }
-      const nearby = [];
-      for (let index = low; index < rows.length && rows[index].pixel <= pixel + metrics.hit / 2; index++) nearby.push(rows[index]);
-      return nearby.length ? nearby : [row];
+      while (low < high) { const middle = (low + high) >>> 1; if (rows[middle].pixel < pixel) low = middle + 1; else high = middle; }
+      let index = low;
+      if (index === rows.length || (index > 0 && pixel - rows[index - 1].pixel <= rows[index].pixel - pixel)) index--;
+      if (index < 0) return null;
+      const center = rows[index].pixel;
+      low = 0; high = index;
+      while (low < high) { const middle = (low + high) >>> 1; if (rows[middle].pixel < center) low = middle + 1; else high = middle; }
+      return rows[low];
+    }
+    function hoverPointer(event) {
+      if (event.pointerType === 'touch' || activation || dragging || !event.target.closest('.chatRoundNode')) return;
+      // Releasing capture/layout under a stationary pointer can emit over
+      // again after click. Reopen only after the user actually moves away.
+      if (pointerRest && Math.hypot(event.clientX - pointerRest.x, event.clientY - pointerRest.y) < 1) return;
+      pointerRest = null;
+      clearTimeout(closeTimer);
+      const row = pointerRow(event); if (!row || row.key === hoverKey) return;
+      if (popup && !popup.explicit && (popup.items.length !== 1 || popup.items[0].key !== row.key)) closePreview();
+      clearTimeout(hoverTimer); hoverKey = row.key;
+      const expected = scopeKey(), key = row.key;
+      hoverTimer = setTimeout(() => {
+        if (disposed || activation || hoverKey !== key || expected !== scopeKey()) return;
+        const node = nodeForKey.get(key), current = bindings.get(node);
+        if (current) showPreview([current], node);
+      }, 220);
     }
     function paintScroll() {
       const top = viewport.scrollTop, range = Math.max(0, metrics.total - metrics.client);
@@ -473,52 +496,73 @@
       }
     }
     on(directory, 'click', () => showPreview(rows, directory, true));
+    // Refresh only this origin on entry/down (e.g. after outer-page scrolling),
+    // never read layout per pointermove or per conversation scroll.
+    on(rail, 'pointerenter', () => { laneTop = lane.getBoundingClientRect().top; });
     on(marks, 'click', event => {
-      const node = event.target.closest('.chatRoundNode'); if (!node) return;
-      if (suppressed === node) { suppressed = null; return; }
-      const row = bindings.get(node); if (!row) return;
-      const items = event.detail === 0 ? [row] : pointerRows(node, event);
-      if (items.length > 1) showPreview(items, node, true); else void locate(items[0].key);
+      const node = event.target.closest('.chatRoundNode'); if (!node && !activation) return;
+      const pending = activation; activation = null; clearTimeout(hoverTimer); hoverKey = '';
+      if (event.detail !== 0) pointerRest = { x: event.clientX, y: event.clientY };
+      if (event.detail !== 0 && pending && (pending.cancelled || pending.longPressed || pending.scope !== scopeKey())) return;
+      const key = event.detail === 0 ? bindings.get(node)?.key : pending?.key || pointerRow(event)?.key;
+      if (key && nodeForKey.has(key)) void locate(key);
     });
-    on(marks, 'pointerover', event => {
-      if (event.pointerType === 'touch') return;
-      const node = event.target.closest('.chatRoundNode'); if (!node || node.contains(event.relatedTarget)) return;
-      clearTimeout(closeTimer); clearTimeout(hoverTimer);
-      const items = pointerRows(node, event);
-      hoverTimer = setTimeout(() => showPreview(items, node), 220);
-    });
+    on(marks, 'pointerover', hoverPointer);
+    on(marks, 'pointermove', hoverPointer);
     on(marks, 'pointerout', event => {
-      if (event.target.closest('.chatRoundNode')?.contains(event.relatedTarget)) return;
-      cancelPress(); clearTimeout(hoverTimer); closeTimer = setTimeout(() => { if (!popup?.explicit && !markerMenu) closePreview(); }, 240);
+      if (marks.contains(event.relatedTarget)) return;
+      if (press && activation) activation.cancelled = true;
+      hoverKey = ''; cancelPress(); clearTimeout(hoverTimer); closeTimer = setTimeout(() => { if (!popup?.explicit && !markerMenu) closePreview(); }, 240);
     });
     on(preview, 'pointerenter', () => clearTimeout(closeTimer));
     on(preview, 'pointerleave', () => { closeTimer = setTimeout(() => { if (!popup?.explicit && !preview.contains(document.activeElement)) closePreview(); }, 240); });
-    on(marks, 'focusin', event => { const node = event.target.closest('.chatRoundNode'); const row = bindings.get(node); if (row && !restoringFocus) showPreview([row], node); });
+    on(marks, 'focusin', event => {
+      if (restoringFocus) return;
+      clearTimeout(hoverTimer); hoverKey = '';
+      if (activation) {
+        // Touch default focus may land on the topmost overlapping DOM button.
+        restoringFocus = true; nodeForKey.get(activation.key)?.focus({ preventScroll: true }); restoringFocus = false;
+        return;
+      }
+      const node = event.target.closest('.chatRoundNode'), row = bindings.get(node);
+      if (row) showPreview([row], node);
+    });
     on(marks, 'pointerdown', event => {
-      const node = event.target.closest('.chatRoundNode');
-      cancelPress(); suppressed = null; if (!bindings.has(node) || event.button !== 0) return;
-      const items = pointerRows(node, event);
+      cancelPress(); activation = null; clearTimeout(hoverTimer); hoverKey = '';
+      if (!bindings.has(event.target.closest('.chatRoundNode')) || event.button !== 0) return;
+      laneTop = lane.getBoundingClientRect().top;
+      const row = pointerRow(event); if (!row) return;
+      if (popup && (popup.items.length !== 1 || popup.items[0].key !== row.key)) closePreview();
+      const node = nodeForKey.get(row.key);
+      const pending = activation = { key: row.key, scope: scopeKey(), cancelled: false, longPressed: false };
+      // Capture on the stable container: layout/stream updates can move or
+      // replace a button between down and up without changing the accepted ID.
+      marks.setPointerCapture(event.pointerId);
+      if (event.pointerType !== 'touch') {
+        event.preventDefault(); restoringFocus = true; node.focus({ preventScroll: true }); restoringFocus = false;
+      }
       node.classList.add('is-pressing');
       press = { node, x: event.clientX, y: event.clientY, timer: setTimeout(() => {
-        suppressed = node;
-        if (items.length > 1) showPreview(items, node, true); else toggle(items[0].key);
+        if (pending !== activation || pending.cancelled || pending.scope !== scopeKey() || !nodeForKey.has(pending.key)) return;
+        pending.longPressed = true; toggle(pending.key);
         cancelPress();
       }, 550) };
     });
     on(window, 'pointermove', event => {
-      if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 7) cancelPress();
+      if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 7) { if (activation) activation.cancelled = true; cancelPress(); }
       if (!dragging || event.pointerId !== dragging.id) return;
       const range = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
       scrollTo(Math.max(0, Math.min(range, dragging.top + (event.clientY - dragging.y) * range / Math.max(1, scroll.clientHeight - thumb.offsetHeight))));
     });
-    on(window, 'pointerup', () => { cancelPress(); dragging = null; rail.classList.remove('is-dragging'); });
-    on(window, 'pointercancel', () => { cancelPress(); dragging = null; suppressed = null; rail.classList.remove('is-dragging'); });
+    on(window, 'pointerup', event => { if (!marks.contains(event.target)) activation = null; cancelPress(); dragging = null; rail.classList.remove('is-dragging'); });
+    on(window, 'pointercancel', () => { activation = null; cancelPress(); dragging = null; rail.classList.remove('is-dragging'); });
     on(thumb, 'pointerdown', event => {
       if (event.button !== 0) return; event.preventDefault(); closePreview(); cancelPress();
       dragging = { id: event.pointerId, y: event.clientY, top: viewport.scrollTop }; thumb.setPointerCapture(event.pointerId); rail.classList.add('is-dragging');
     });
     on(scroll, 'pointerdown', event => { if (event.target !== scroll) return; closePreview(); scrollTo((event.clientY - scroll.getBoundingClientRect().top) / scroll.clientHeight * viewport.scrollHeight - viewport.clientHeight / 2); });
     on(wrapper, 'keydown', event => {
+      activation = null; clearTimeout(hoverTimer); hoverKey = '';
       if (event.key === 'Escape' && !preview.hidden) { event.preventDefault(); closePreview(true); return; }
       if (event.target === thumb) {
         const delta = { ArrowDown: 48, ArrowUp: -48, PageDown: viewport.clientHeight * .8, PageUp: -viewport.clientHeight * .8 }[event.key];
@@ -533,7 +577,8 @@
     const outsidePreview = target => !preview.contains(target) && !rail.contains(target) && !markerMenu?.panel.contains(target);
     on(document, 'pointerdown', event => { if (outsidePreview(event.target)) closePreview(); });
     on(document, 'focusin', event => { if (outsidePreview(event.target)) closePreview(); });
-    on(viewport, 'scroll', () => { cancelPress(); if (!popup?.explicit) closePreview(); schedule(); }, { passive: true });
+    on(viewport, 'wheel', () => { if (activation) activation.cancelled = true; cancelPress(); }, { passive: true });
+    on(viewport, 'scroll', () => { if (!popup?.explicit) closePreview(); schedule(); }, { passive: true });
     const lost = () => { uncertain = true; awaitingRefresh = true; for (const value of progress.values()) value.verified = false; cancelPress(); statusDirty = true; if (!visible()) paintStatus(); schedule(); };
     const refresh = async () => {
       if (!visible() || refreshing || !revalidate) return;

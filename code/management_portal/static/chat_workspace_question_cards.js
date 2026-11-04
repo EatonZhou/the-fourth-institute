@@ -50,7 +50,10 @@
       }
 
       progressKey(scope = this.scope) {
-        return ["portal.residentQuestionProgress.v1", this.panel.options.draftOwner || "anonymous", scope]
+        const configuredOwner = this.panel.options.draftOwner;
+        const owner = (typeof configuredOwner === "function" ? configuredOwner() : configuredOwner)
+          || window.PortalIdentity?.username?.() || "anonymous";
+        return ["portal.residentQuestionProgress.v1", owner, scope]
           .map(part => encodeURIComponent(part)).join(":");
       }
 
@@ -229,7 +232,7 @@
         const step = Math.min(progress.step, group.questions.length - 1);
         const question = group.questions[step];
         const chosen = progress.answers[question.id] || "";
-        const custom = chosen && !question.options.includes(chosen) ? chosen : "";
+        const custom = progress.drafts?.[question.id] ?? (chosen && !question.options.includes(chosen) ? chosen : "");
         // A permission request: its fixed options are the server's own words, the
         // first approves, and only the exact permissions it lists can be lent.
         const lending = question.credentials?.length > 0;
@@ -260,7 +263,18 @@
           this.answer(question.options[Number(button.dataset.questionOption)]);
         }));
         const input = element.querySelector("[data-question-custom]");
-        element.querySelector("[data-question-confirm]")?.addEventListener("click", () => this.answer(input.value.trim() || chosen));
+        input?.addEventListener("input", () => {
+          // Unconfirmed text is a draft, never an answer or permission grant.
+          // Save each edit so a reload does not depend on blur or confirmation.
+          (progress.drafts ||= {})[question.id] = input.value;
+          this.saveProgress();
+          // This edit is already in the mounted input. A snapshot refresh must
+          // preserve its node, selection and any ongoing IME composition.
+          this.active.signature = JSON.stringify([progress, sending, this.active.error]);
+        });
+        element.querySelector("[data-question-confirm]")?.addEventListener("click", () => {
+          this.answer(input.value.trim() || (progress.drafts?.[question.id] === undefined ? chosen : ""));
+        });
         element.querySelector("[data-question-back]")?.addEventListener("click", () => {
           progress.step = step - 1;
           this.saveProgress();
@@ -299,6 +313,7 @@
         const progress = this.progressOf(group);
         const step = Math.min(progress.step, group.questions.length - 1);
         progress.answers[group.questions[step].id] = value;
+        if (progress.drafts) delete progress.drafts[group.questions[step].id];
         this.active.error = "";
         // Go on to the next open question; a revised earlier answer walks the
         // following questions again, and the last answer submits the group.
