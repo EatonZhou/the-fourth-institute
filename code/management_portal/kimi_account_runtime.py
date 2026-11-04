@@ -117,7 +117,17 @@ def _owned_process(target, state):
 def _server_busy(client):
     sessions = client._request("GET", "sessions", timeout=3)
     rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
-    return any(client.get_status(row["id"]).get("busy") for row in rows or [])
+    return any(_session_busy(client, row) for row in rows or [])
+
+
+def _session_busy(client, row):
+    # The session listing owns this flag in newer native runtimes, whose
+    # per-session /status route was removed. Use its explicit boolean so an
+    # incompatible installed runtime can still be safely retired. Older
+    # servers retain their status probe; an absent flag is never assumed idle.
+    if isinstance(row.get("busy"), bool):
+        return row["busy"]
+    return client.get_status(row["id"]).get("busy")
 
 
 def _stop_server(account, target, state):
@@ -206,7 +216,7 @@ def client_for_route(route, *, for_control=False):
                 return client if for_control else _subscription_tools(account, client)
             rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
             for row in rows or []:
-                if client.get_status(row["id"]).get("busy"):
+                if _session_busy(client, row):
                     raise RuntimeError("Kimi account configuration changed while a turn is running; retry after it finishes")
             _stop_server(account, target, state)
         if for_control:

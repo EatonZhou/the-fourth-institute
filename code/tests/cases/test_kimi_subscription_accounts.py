@@ -13,6 +13,27 @@ from management_portal import kimi_account_runtime as runtime, kimi_provider_cat
 from management_portal.execution import account_registrations, kimi_account_login as login
 
 
+@pytest.mark.parametrize('busy', [False, True])
+def test_runtime_retirement_uses_native_session_listing_busy_flag(busy):
+    def request(method, path, **kwargs):
+        assert (method, path) == ('GET', 'sessions')
+        return {'items': [{'id': 'native-session', 'busy': busy}]}
+    def removed_status(_):
+        pytest.fail('New native runtime removed the per-session status route')
+    assert runtime._server_busy(SimpleNamespace(_request=request, get_status=removed_status)) is busy
+
+
+def test_runtime_retirement_preserves_old_status_probe_and_errors():
+    client = SimpleNamespace(_request=lambda *a, **kw: {'items': [{'id': 'old-session'}]},
+                             get_status=lambda sid: {'busy': True})
+    assert runtime._server_busy(client)
+    def unavailable(sid):
+        raise RuntimeError('Cannot establish native session state')
+    client.get_status = unavailable
+    with pytest.raises(RuntimeError, match='Cannot establish'):
+        runtime._server_busy(client)
+
+
 def test_subscription_registration_and_config_preserve_managed_credentials(tmp_path, monkeypatch):
     row = {"account_id": "kimi_sub", "provider": "kimi", "kind": "subscription_login", "config": {"account_dir": str(tmp_path / "accounts" / "kimi_sub")}}
     account_registrations._validate(row)
