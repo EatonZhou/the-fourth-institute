@@ -107,6 +107,73 @@ def test_report_and_origin_commit_together_on_interrupted_creation(reports, monk
     assert list(store.record(RID)['revisions']) == ['1']
 
 
+@pytest.mark.parametrize('operation', ['refresh', 'attach'])
+def test_revision_retry_after_registry_rollback_preserves_committed_versions(reports, monkeypatch, operation):
+    store, state = reports
+    first = create(store)
+    original_bytes = store.file(RID, 1, 'report.json', 'alice')[0].read_bytes()
+    if operation == 'attach':
+        from management_portal import resources
+        content = store.file(RID, 1, 'slides.pptx', 'alice')[0].read_bytes()
+
+        class Service:
+            def read_content(self, address, *, actor, max_bytes):
+                return content, 'application/vnd.openxmlformats-officedocument.presentationml.presentation', {}
+
+        monkeypatch.setattr(resources, 'get_resource_service', lambda: Service())
+        source_read = store.read
+        store.read = lambda name, args: {'resource': {}} if name == 'ResolveResource' else source_read(name, args)
+
+    def append():
+        if operation == 'attach':
+            return store.attach(RID, 'alice', 1, 'workspace_123456789abc/file/existing.pptx')
+        return store.refresh(RID, 'alice', 1)
+
+    from management_portal.resources.registry_store import RegistryWriter
+    original_put = RegistryWriter.put
+
+    def fail(writer, collection, identifier, value):
+        result = original_put(writer, collection, identifier, value)
+        if collection == COLLECTION and identifier == RID and value['revision'] == 2:
+            raise RuntimeError('interrupted revision registration')
+        return result
+
+    with monkeypatch.context() as patch:
+        patch.setattr(RegistryWriter, 'put', fail)
+        with pytest.raises(RuntimeError, match='interrupted revision registration'):
+            append()
+    assert store.record(RID)['revision'] == 1
+    with pytest.raises(FileNotFoundError):
+        store.get(RID, 'alice', 2)
+    state['body'] = 'Retry sees new source facts'
+    append()
+    assert store.record(RID)['revision'] == 2
+    assert store.origin('alice', KEY)['version'] == first['version']
+    assert store.file(RID, 1, 'report.json', 'alice')[0].read_bytes() == original_bytes
+    if operation == 'attach':
+        assert store.file(RID, 2, 'attachment-1.pptx', 'alice')[0].read_bytes() == content
+    else:
+        assert store.get(RID, 'alice', 2)[2]['rows'][0]['request_text'] == state['body']
+    committed = store.file(RID, 2, 'report.json', 'alice')[0].read_bytes()
+    with pytest.raises(ResourceVersionConflict):
+        append()
+    assert store.file(RID, 2, 'report.json', 'alice')[0].read_bytes() == committed
+
+
+def test_revision_retry_rejects_redirected_uncommitted_directory(reports, tmp_path):
+    store, state = reports
+    create(store)
+    external = tmp_path / 'external'
+    external.mkdir()
+    sentinel = external / 'keep.txt'
+    sentinel.write_text('unrelated content')
+    (store.directory(RID) / '2').symlink_to(external, target_is_directory=True)
+    with pytest.raises(PermissionError, match='符号链接'):
+        store.refresh(RID, 'alice', 1)
+    assert sentinel.read_text() == 'unrelated content'
+    assert store.record(RID)['revision'] == 1
+
+
 def renderer(report,directory):
     for filename in FILES:
         (directory / filename).write_bytes((filename+report['version']).encode())

@@ -179,6 +179,36 @@ class ReportStore:
             if stage.exists():
                 shutil.rmtree(stage)
 
+    def _append_revision(self, identifier, actor, expected_revision, snapshot, attachments=None):
+        """Publish a new bundle; only registered revisions are immutable.
+
+        A process or registry transaction can fail after the atomic filesystem
+        rename. Under the same writer lock, an unregistered next revision is a
+        disposable prepared bundle, not a version readers have been promised.
+        Creation uses its separate reserved-ID/first-snapshot recovery contract.
+        """
+        expected = revision_number(expected_revision)
+        with self.lock(identifier), self.writer(identifier) as writer:
+            record = self.record(identifier)
+            self.authorize(actor, 'UpdateResource', identifier)
+            if expected != record['revision']:
+                raise ResourceVersionConflict('汇报已有新版本，请重新读取',
+                                              expected_version=expected, current_version=record['revision'])
+            reauthorize(snapshot, actor=actor, read=self.read)
+            number = expected + 1
+            if str(number) in record['revisions']:
+                raise ValueError('汇报版本登记不一致，不能覆盖已有版本')
+            destination = self.directory(identifier) / str(number)
+            if destination.is_symlink():
+                raise PermissionError('汇报版本目录不能是符号链接')
+            if destination.exists():
+                shutil.rmtree(destination)
+            stored = self._save_revision(identifier, number, snapshot, attachments)
+            record['revisions'][str(number)] = stored
+            record.update(revision=number, title=snapshot['title'], updated_at=now())
+            writer.put(COLLECTION, identifier, record)
+        return record
+
     def create(self, identifier, payload, actor):
         allowed = {"target", "version", "import_job", "origin_key"}
         if set(payload) - allowed:
@@ -278,33 +308,14 @@ class ReportStore:
         snapshot.pop('version',None)
         snapshot['checked_at']=now()
         snapshot['version']=digest(snapshot)
-        with self.lock(identifier), self.writer(identifier) as writer:
-            record=self.record(identifier)
-            self.authorize(actor,'UpdateResource',identifier)
-            if revision_number(expected_revision)!=record['revision']:
-                raise ResourceVersionConflict('汇报已有新版本，请重新读取')
-            number=record['revision']+1
-            stored=self._save_revision(identifier,number,snapshot,assets)
-            record['revisions'][str(number)]=stored
-            record.update(revision=number,updated_at=now())
-            writer.put(COLLECTION,identifier,record)
-        return self.response(identifier,actor,number)
+        record = self._append_revision(identifier, actor, expected_revision, snapshot, assets)
+        return self.response(identifier, actor, record['revision'])
 
     def refresh(self, identifier, actor, expected_revision):
         record, _, previous = self.get(identifier, actor)
         self.authorize(actor, "UpdateResource", identifier)
-        expected = revision_number(expected_revision)
         snapshot = build_report(previous["target"], actor=actor, read=self.read)
-        with self.lock(identifier), self.writer(identifier) as writer:
-            record = self.record(identifier)
-            self.authorize(actor, "UpdateResource", identifier)
-            if expected != record["revision"]:
-                raise ResourceVersionConflict("汇报已有新版本，请重新读取", expected_version=expected, current_version=record["revision"])
-            number = expected + 1
-            stored = self._save_revision(identifier, number, snapshot)
-            record["revisions"][str(number)] = stored
-            record.update(revision=number, title=snapshot["title"], updated_at=now())
-            writer.put(COLLECTION, identifier, record)
+        record = self._append_revision(identifier, actor, expected_revision, snapshot)
         return self.metadata(record)
 
     def delete(self, identifier, actor, expected_revision=None):
