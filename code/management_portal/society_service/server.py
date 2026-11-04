@@ -881,6 +881,8 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     loaded_modules.track()
+    from .memory_profile import start as start_memory_profile
+    start_memory_profile()
     args = parser().parse_args()
     os.environ.setdefault("PORTAL_SOCIETY_SERVICE_PROCESS", "1")
     get_lineage_data_store()

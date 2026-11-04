@@ -4,42 +4,42 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 36
-  created_at: '2026-09-03'
+  number: 37
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T08:31:02Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T13:19:50Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_resource_projection.py
-  - ${code_root}/management_portal/society_service/function_block_domain.py
-  - ${code_root}/management_portal/society_service/templates/__init__.py
-  - ${code_root}/management_portal/hatg/socket_rpc.py
-  - ${code_root}/management_portal/hatg/routing.py
-  - ${code_root}/management_portal/hatg/kernel.py
-  - ${code_root}/management_portal/society_service/isa/__init__.py
-  - ${code_root}/management_portal/society_service/contracts.py
-  - ${code_root}/management_portal/society_service/server.py
-  - ${code_root}/management_portal/society_service/transport.py
-  - ${code_root}/management_portal/society_service/runtime
-  - ${code_root}/management_portal/society_service/application.py
-  - ${code_root}/management_portal/society_service/changes.py
-  - ${code_root}/management_portal/society_service/config.py
-  - ${code_root}/management_portal/society_service/coordinator.py
-  - ${code_root}/management_portal/society_service/invariant_locks.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/management_portal/static/hatg_panel.js
-  - ${code_root}/management_portal/static/lineage_graph.js
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/tests/cases/test_lineage_lock_boundaries.py
-  - ${code_root}/tests/cases/test_society_service_coordinator.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_resource_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/function_block_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/templates/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/socket_rpc.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/routing.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/kernel.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/server.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/transport.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/runtime
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/application.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/changes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/config.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/coordinator.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/invariant_locks.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/hatg_panel.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_graph.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_lock_boundaries.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_society_service_coordinator.py
   related:
   - decision_abaedeefca6f
   - decision_86aed2f0e8c7
@@ -253,6 +253,12 @@ SocietyService 按数据一致性边界保护提交；锁种类、取锁顺序�
 ### 健康
 
 `health` 返回服务实例、构建 ID、进程号、启动时间、读进程池、协调器、锁统计、通知发布器、对话事件转发、Resident 资源投影、生命周期操作和 LineageData 的状态。以下任一情况都会使 `ok=false`：协调器、清理、对话事件转发、资源投影或生命周期操作最近出错，协调器线程不在运行，或者启用投影的服务进程中这两个后台转发任一停止。健康结果用于运维判断，不替代具体请求的权限与一致性检查。服务进程崩溃不会丢失已经提交的数据；尚未提交的页面编辑由页面提示用户重新提交。
+
+### 有界内存诊断
+
+SocietyService 的正常启动不启用分配跟踪或堆采样。实例操作员可以在 runtime/diagnostics/society-memory-profile.json 写入短期诊断租约（expires_at 为 Unix 秒，剩余有效期最多240秒，interval_seconds 为20至60秒），在下一次该组件正式加载时采集当前服务主进程；读取 worker 不启动该采样器。采样仅记录进程代际、OS 占用、Python 类型计数与浅大小、GC 统计、分配字节及源码位置，不记录对象值、repr、locals、消息正文或原始堆。源码调用栈最多四层，每次输出固定数量的最大聚合项，最多采集八次，到期关闭跟踪。输出以私有文件写入同一诊断目录，操作员结束后移走证据并删除租约；诊断本身的引用列表、跟踪器元数据与耗时单独列出。
+
+GC 浅大小、tracemalloc 分配与 OS 私有内存是不同口径，不能直接把它们相加或将未解释差值宣称为泄漏。诊断只观察当前代际；已有服务没有启用跟踪时，不能用另一个 Python 进程的堆替代它。组件加载须遵守已有执行恢复与正在进行任务的检查点，诊断不改变输入、接单开关、历史或权限。
 
 ### 读取性能
 
