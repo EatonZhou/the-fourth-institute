@@ -259,9 +259,24 @@
         ${lending ? "" : window.PortalI18n.html`<div class="residentQuestionCustom"><input type="text" data-question-custom value="${escapeHtml(custom)}" placeholder="${escapeHtml(question.options.length ? window.PortalI18n.t("其他回答，按 Enter 确认") : window.PortalI18n.t("输入回答，按 Enter 确认"))}" aria-label="${escapeHtml(window.PortalI18n.text`回答：${question.title}`)}" /><button type="button" class="portalButton is-compact is-primary" data-question-confirm>${escapeHtml(step === group.questions.length - 1 ? window.PortalI18n.t("提交回答") : window.PortalI18n.t("下一题"))}</button></div>`}`;
         for (const control of element.querySelectorAll("button, input")) control.disabled = sending;
         if (lending && !group.lendable) element.querySelector('[data-question-option="0"]').disabled = true;
-        element.querySelectorAll("[data-question-option]").forEach(button => button.addEventListener("click", () => {
-          this.answer(question.options[Number(button.dataset.questionOption)]);
-        }));
+        element.querySelectorAll("[data-question-option]").forEach(button => {
+          let pointerStart = null;
+          button.addEventListener("pointerdown", event => { pointerStart = { x: event.clientX, y: event.clientY }; });
+          button.addEventListener("pointercancel", () => { pointerStart = null; });
+          button.addEventListener("click", event => {
+            // Releasing a text-selection drag can also dispatch click. A later
+            // ordinary click or keyboard activation still explicitly answers.
+            const dragged = pointerStart && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 4;
+            pointerStart = null;
+            const selection = window.getSelection();
+            if (event.detail > 0 && (dragged || event.shiftKey) && selection && !selection.isCollapsed) {
+              for (let index = 0; index < selection.rangeCount; index += 1) {
+                if (selection.getRangeAt(index).intersectsNode(button)) return;
+              }
+            }
+            this.answer(question.options[Number(button.dataset.questionOption)]);
+          });
+        });
         const input = element.querySelector("[data-question-custom]");
         input?.addEventListener("input", () => {
           // Unconfirmed text is a draft, never an answer or permission grant.

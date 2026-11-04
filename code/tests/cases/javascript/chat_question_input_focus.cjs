@@ -96,6 +96,7 @@ function check(name, actual, expected) {
       connected: originalInput.isConnected, detached, blurs: blurCount,
       value: originalInput.value, selection: [originalInput.selectionStart, originalInput.selectionEnd] }));
     const stable = { focused: true, connected: true, detached: false, blurs: 0, value: '正在输入 draft', selection: [2, 4] };
+    if (!process.env.QUESTION_SELECTION_ONLY) {
     await prepare(input());
     await page.evaluate(() => { snap.messages[0].content_parts[0].text = 'Updated question context'; render(); });
     check('message context refresh keeps the mounted input and composition', await state(), stable);
@@ -253,8 +254,65 @@ function check(name, actual, expected) {
     await page.evaluate(() => { snap.messages[0].content_parts[1].status = 'expired'; render(); });
     await reload({ messages: native });
     check('authoritative expiry clears the native draft', await input().inputValue(), '');
+    }
+
+    // Real pointer drags and clipboard copy with production button styles.
+    for (const name of ['portal_design_system.css', 'portal_components_turn_cards.css']) {
+      await page.addStyleTag({ path: path.join(repo, 'management_portal/static', name) });
+    }
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
+    const choiceText = '按小块弹性分配，允许队列不连续，同时保留必要的执行与输出空间';
+    const showChoices = async (id, kind = 'async') => page.evaluate(({ id, kind, text }) => {
+      const message = question(id, kind), part = message.content_parts[1];
+      part.questions[0].options = kind === 'async' ? [text, '保持连续空间'] : [{ label: text }, { label: '保持连续空间' }];
+      window.choiceSubmissions = [];
+      window.PortalResidentProtocol = { ...PortalResidentProtocol,
+        sendInput: async payload => { choiceSubmissions.push(payload); part.state = 'answered'; return {}; },
+        respondUserInput: async payload => { choiceSubmissions.push(payload); part.status = 'answered'; return { status: 'answered' }; },
+      };
+      snap.messages = [message]; render();
+    }, { id, kind, text: choiceText });
+    const choice = () => page.locator('[data-question-option="0"]');
+    const selectChoiceText = async () => {
+      const ends = await choice().locator('span').evaluate(span => {
+        const text = span.firstChild;
+        const at = index => {
+          const range = document.createRange(); range.setStart(text, index); range.setEnd(text, index + 1);
+          const rect = range.getBoundingClientRect(); return { x: rect.x + 1, y: rect.y + rect.height / 2 };
+        };
+        return [at(1), at(text.length - 1)];
+      });
+      await page.mouse.move(ends[0].x, ends[0].y); await page.mouse.down();
+      await page.mouse.move(ends[1].x, ends[1].y, { steps: 15 }); await page.mouse.up();
+      return page.evaluate(() => getSelection().toString());
+    };
+    for (const [kind, width] of [['async', 900], ['native', 360]]) {
+      await page.setViewportSize({ width, height: 850 });
+      await showChoices('select_' + kind, kind);
+      const selected = await selectChoiceText();
+      check(kind + ' pointer drag selects option text', selected.length > 5 && choiceText.includes(selected), true);
+      check(kind + ' pointer release does not submit', await page.evaluate(() => choiceSubmissions.length), 0);
+      await page.keyboard.press('Control+c');
+      check(kind + ' selected text can be copied', await page.evaluate(() => navigator.clipboard.readText()), selected);
+      await page.evaluate(() => { snap.messages[0].content_parts[0].text += ' updated'; render(); });
+      check(kind + ' passive refresh keeps the text selection', await page.evaluate(() => getSelection().toString()), selected);
+      if (process.env.SELECTION_SCREENSHOT && kind === 'native') await page.screenshot({ path: process.env.SELECTION_SCREENSHOT });
+      await choice().click();
+      await page.waitForFunction(() => choiceSubmissions.length === 1);
+      check(kind + ' ordinary click still submits once', await page.evaluate(() => choiceSubmissions.length), 1);
+    }
+    for (const key of ['Enter', 'Space', '1']) {
+      await showChoices('keyboard_' + key);
+      await selectChoiceText();
+      await choice().focus();
+      await page.keyboard.press(key);
+      await page.waitForFunction(() => choiceSubmissions.length === 1);
+      check(key + ' explicitly answers despite an existing text selection', await page.evaluate(() => choiceSubmissions.length), 1);
+    }
     check('browser errors', evidence.errors, []);
-    console.log('PASS question input focus, composition, draft reload, scope isolation, submission and native/MCP lifecycle');
+    console.log(process.env.QUESTION_SELECTION_ONLY
+      ? 'PASS question option text selection/copy and pointer/keyboard answers'
+      : 'PASS question focus, drafts, pointer text selection/copy, keyboard answers and native/MCP lifecycle');
   } finally {
     if (browser) await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
     if (process.env.EVIDENCE_PATH) fs.writeFileSync(process.env.EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\n');
