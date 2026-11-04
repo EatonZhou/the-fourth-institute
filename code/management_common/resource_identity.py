@@ -214,6 +214,7 @@ class ResourceTypeRegistry:
         self,
         resource_type: str,
         existing_ids: Iterable[str] = (),
+        *, lifecycle_owner: str = "",
     ) -> str:
         clean_type = str(resource_type or "").strip()
         self._load()
@@ -230,7 +231,7 @@ class ResourceTypeRegistry:
             if candidate not in occupied:
                 from .resource_lifecycle import record_allocation
 
-                record_allocation(candidate)
+                record_allocation(candidate, owner_id=lifecycle_owner)
                 return candidate
 
 _REGISTRY_LOCK = threading.Lock()

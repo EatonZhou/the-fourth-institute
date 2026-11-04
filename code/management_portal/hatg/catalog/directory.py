@@ -19,6 +19,14 @@ DECLARATIONS = tuple(D(
     description='查看目录文件清理进度；注销请求的原调用者或对对象有读取权限的调用者可以查看。',
     parameters=(R('resource_id', description='被删除或产生清理任务的对象 ID'),),
     result=(R('items', 'array', '文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告'),),
+), D(
+    name='CorrectResourceLifecycleAssociation', category='resource', owner='resource',
+    decides=(*FIXED, On('resource_id', 'workspace')), mutates=True,
+    description='原生命周期调用者凭owner核验的持久Project根依赖证据解除错误夹具关联；仅关闭准入后可用，保留审计，不注销或删除Workspace，不完成scope。',
+    parameters=(R('scope_id', description='原运行生命周期ID'), R('resource_id', description='错误关联的Workspace ID'),
+                R('reason', description='本次纠正的明确理由', max_length=2000)),
+    result=(R('scope_id'), R('resource_id'), R('actor'), R('reason'), R('evidence', 'object'),
+            R('original_ordinal', 'integer'), R('corrected_at'), R('outcome')),
 ),)
 
 

@@ -955,6 +955,18 @@
       "a": "@free",
       "r": "@portal"
     },
+    "ListSpeechProviders": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GenerateSpeech": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "GetSpeechGeneration": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "CreateChatroom": {
       "a": "@free",
       "r": "@portal"
@@ -999,6 +1011,13 @@
     "GetDirectoryCleanup": {
       "a": "@free",
       "r": "@portal"
+    },
+    "CorrectResourceLifecycleAssociation:fixed": {
+      "a": "@free",
+      "r": "@portal"
+    },
+    "CorrectResourceLifecycleAssociation:resource_id": {
+      "a": "@viewer"
     },
     "GetProjectDeletion": {
       "a": "@free",

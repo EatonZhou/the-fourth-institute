@@ -636,6 +636,44 @@ def create_upload(inv: Invocation) -> dict[str, Any]:
     return {"upload_id": upload_id, "ready": False, "upload_url": f"/api/uploads/{upload_id}", "expires_at": meta["expires_at"]}
 
 
+def publish_generated_file(*, owner_id: str, actor: str, file_name: str, media_type: str, data: bytes) -> dict:
+    """Publish service-produced bytes in the existing authenticated upload boundary.
+
+    This internal writer takes bytes, never a caller-supplied path or provenance claim.
+    Its deterministic identity makes publication after a worker recovery idempotent.
+    """
+    import hashlib
+    from management_common.configuration_files import atomic_json
+    from management_common.upload_retention import created, consumed
+    if not actor or not owner_id or not data or len(data) > MAX_UPLOAD_BYTES:
+        raise ValueError("Invalid generated file")
+    name = _safe_name(file_name)
+    digest = hashlib.sha256(data).hexdigest()
+    upload_id = "upload_" + hashlib.sha256(f"{owner_id}/{name}/{digest}".encode()).hexdigest()[:24]
+    directory = _upload_dir(upload_id)
+    if not (directory / "meta.json").exists():
+        stamp = _iso(_now())
+        created(directory, upload_id=upload_id, created_at=stamp)
+        destination = directory / name
+        temporary = directory / (".generated-" + secrets.token_hex(8))
+        try:
+            with temporary.open("wb") as stream:
+                stream.write(data)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+        atomic_json(directory / "meta.json", {
+            "upload_id": upload_id, "purpose": "conversation_attachment", "target": "",
+            "created_by": actor, "created_at": stamp, "file_name": name,
+            "media_type": media_type, "size": len(data), "ready": True,
+        })
+    consumed(directory, owner_id=owner_id)
+    return {"file_reference": {"upload_id": upload_id}, "address": f"/api/uploads/{upload_id}",
+            "sha256": digest, "size": len(data), "media_type": media_type}
+
+
 def _post_image_type(data: bytes) -> str:
     """A notice board image must be a readable PNG, JPEG, GIF or WebP picture."""
 
@@ -1000,7 +1038,13 @@ PERMISSION_INSTRUCTIONS = (
 from . import directory_isa
 
 
+def correct_resource_lifecycle_association(inv):
+    from .lifecycle_associations import correct
+    return correct(inv, _service())
+
+
 HANDLERS = {
+    'CorrectResourceLifecycleAssociation': correct_resource_lifecycle_association,
     "CreateWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
     "RegisterWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
     "GetDirectoryCleanup": lambda inv: directory_isa.cleanup_status(inv, _service()),

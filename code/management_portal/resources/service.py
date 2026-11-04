@@ -86,7 +86,9 @@ class ResourceService:
             return provider()
         return provider
 
-    def new_id(self, resource_type: str, existing_ids: Iterable[str] = ()) -> str:
+    def new_id(self, resource_type: str, existing_ids: Iterable[str] = (), *, lifecycle_owner: str = "") -> str:
+        if lifecycle_owner:
+            return self._identity.new_id(resource_type, existing_ids, lifecycle_owner=lifecycle_owner)
         return self._identity.new_id(resource_type, existing_ids)
 
     def validate_id(
@@ -442,8 +444,13 @@ class ResourceService:
         preferred_id: str = "",
     ) -> str:
         from .workspace_store import get_workspace_store
+        def allocate():
+            from management_common.resource_lifecycle import current_lifecycle
+            from .lifecycle_associations import project_root_owner
+            owner = project_root_owner(path) if current_lifecycle() else ''
+            return self.new_id('workspace', lifecycle_owner=owner) if owner else self.new_id('workspace')
         return get_workspace_store().for_path(str(path), preferred_id=preferred_id,
-                                             new_id=lambda: self.new_id("workspace"))
+                                             new_id=allocate)
 
     # -- the permission instance (decision_b820faf42218 §3.3) -------------------------
 

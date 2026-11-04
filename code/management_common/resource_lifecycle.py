@@ -10,6 +10,8 @@ import time
 
 from management_common.portal_database import portal_database
 from management_common.lifetime_execution_lease import execution_lease
+from management_common.json_columns import json_text, json_value
+from management_common.database_time import iso_time
 
 _CURRENT = ContextVar("resource_lifecycle", default="")
 
@@ -22,7 +24,7 @@ class LifecycleStore:
     def __init__(self):
         self.db = portal_database(schema="resource_lifecycle")
         with self.db.read() as db:
-            ready = db.execute("SELECT to_regclass('scopes')").fetchone()[0]
+            ready = db.execute("SELECT to_regclass('scopes') IS NOT NULL AND to_regclass('allocation_corrections') IS NOT NULL").fetchone()[0]
         if ready:
             return
         def initialize(db):
@@ -32,6 +34,11 @@ class LifecycleStore:
             db.execute("CREATE TABLE IF NOT EXISTS members (actor TEXT PRIMARY KEY, scope_id TEXT NOT NULL REFERENCES scopes(id))")
             db.execute("CREATE TABLE IF NOT EXISTS allocations (ordinal BIGSERIAL PRIMARY KEY, "
                        "resource_id TEXT UNIQUE NOT NULL, scope_id TEXT NOT NULL REFERENCES scopes(id), released BOOLEAN NOT NULL DEFAULT FALSE)")
+            db.execute("CREATE TABLE IF NOT EXISTS allocation_corrections ("
+                       "scope_id TEXT NOT NULL REFERENCES scopes(id), resource_id TEXT NOT NULL, "
+                       "original_ordinal BIGINT NOT NULL, actor TEXT NOT NULL, reason TEXT NOT NULL, "
+                       "evidence JSONB NOT NULL, corrected_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(), "
+                       "PRIMARY KEY(scope_id,resource_id))")
         self.db.write(initialize)
 
     def open(self, key, *, actor, run_id, case_id):
@@ -151,6 +158,49 @@ class LifecycleStore:
     def released(self, scope_id, resource_id):
         self.db.write(lambda db: db.execute("UPDATE allocations SET released=TRUE WHERE scope_id=%s AND resource_id=%s", (scope_id, resource_id)))
 
+    def correct_association(self, scope_id, resource_id, *, actor, reason, validate):
+        """The original scope actor corrects a proven dependency, never a deletion.
+
+        The resource owner supplies current proof under its directory lock.
+        Exclusive admission fences in-flight work; the original allocation is
+        retained in an immutable audit before its erroneous association goes.
+        Normal cleanup, not this operation, subsequently completes the scope.
+        """
+        if not reason or not reason.strip() or len(reason) > 2000:
+            raise ValueError('A bounded correction reason is required')
+        with self._execution_lease(scope_id, shared=False, blocking=False) as acquired:
+            if not acquired:
+                raise RuntimeError('Resource lifecycle still has active requests')
+            with self.db.transaction() as db:
+                scope = db.execute('SELECT actor,state FROM scopes WHERE id=%s FOR UPDATE', (scope_id,)).fetchone()
+                if not scope or not actor or scope['actor'] != actor:
+                    raise PermissionError('Only the original lifecycle actor may correct its association')
+                def receipt(row):
+                    return {'scope_id': scope_id, 'resource_id': resource_id, 'actor': row['actor'],
+                            'reason': row['reason'], 'evidence': json_value(row['evidence']),
+                            'original_ordinal': row['original_ordinal'],
+                            'corrected_at': iso_time(row['corrected_at']), 'outcome': 'association_corrected'}
+                prior = db.execute('SELECT * FROM allocation_corrections WHERE scope_id=%s AND resource_id=%s',
+                                   (scope_id, resource_id)).fetchone()
+                if prior:
+                    return receipt(prior)
+                if scope['state'] != 'closing':
+                    raise ValueError('Correction requires a closed admission boundary')
+                allocation = db.execute('SELECT ordinal,released FROM allocations WHERE scope_id=%s AND resource_id=%s FOR UPDATE',
+                                        (scope_id, resource_id)).fetchone()
+                if not allocation or allocation['released']:
+                    raise ValueError('No pending allocation association to correct')
+                evidence = validate(db)
+                owner = evidence.get('dependency_owner_id')
+                if not owner or owner == resource_id or db.execute(
+                        'SELECT 1 FROM allocations WHERE scope_id=%s AND resource_id=%s', (scope_id, owner)).fetchone():
+                    raise ValueError('The dependency owner must pre-exist this lifecycle')
+                row = db.execute('INSERT INTO allocation_corrections(scope_id,resource_id,original_ordinal,actor,reason,evidence) '
+                                 'VALUES(%s,%s,%s,%s,%s,%s) RETURNING *',
+                                 (scope_id, resource_id, allocation['ordinal'], actor, reason.strip(), json_text(evidence))).fetchone()
+                db.execute('DELETE FROM allocations WHERE scope_id=%s AND resource_id=%s', (scope_id, resource_id))
+                return receipt(row)
+
     def complete(self, scope_id):
         def write(db):
             if db.execute("SELECT 1 FROM allocations WHERE scope_id=%s AND NOT released LIMIT 1", (scope_id,)).fetchone():
@@ -191,12 +241,14 @@ def lifecycle_scope(scope_id='', *, actor='', discover=False):
             _CURRENT.reset(token)
 
 
-def record_allocation(resource_id):
+def record_allocation(resource_id, *, owner_id=''):
     scope_id = current_lifecycle()
     # Additional Workspaces survive unbinding and need explicit deletion.
     # Notices are durable operational history, not disposable test fixtures.
     if not scope_id or resource_id.partition('_')[0] == 'notice':
         return
     store = LifecycleStore()
+    if owner_id and not store.owns(scope_id, owner_id):
+        return  # A lazy identity for an existing owner's root is a dependency.
     store.db.write(lambda db: db.execute(
         "INSERT INTO allocations(resource_id,scope_id) VALUES (%s,%s) ON CONFLICT DO NOTHING", (resource_id, scope_id)))
