@@ -127,6 +127,7 @@
 - [探索前沿：Lineage 线头、介入与执行回执](/r/decision_82deabe891a5)
 - [WALL 语义搜索](/r/decision_1a2730dcd3d1)
 - [Home 页的信息结构与加载方式](/r/decision_00546e28e1e0)
+- [对话驱动的 Portal 主页与右侧展示区（目标设计）](/r/decision_b12782e7f490)
 - [Portal Pulse 与个人动态发布](/r/decision_865ac8ebef25)
 - [Daily News 的每日信息摘要](/r/decision_5d2bf4a72f09)
 - [Home Notice Board 的发布与讨论](/r/decision_605810a1292b)
