@@ -4,6 +4,7 @@
 :importance: P1
 """
 import base64
+import hashlib
 import io
 import json
 from types import SimpleNamespace
@@ -203,7 +204,7 @@ def test_registry_speech_configuration_cannot_point_at_unrelated_service():
 def test_cloud_speech_rejects_unknown_voice_style_and_extreme_controls():
     from management_portal.execution import microsoft_speech as cloud
     assert cloud.validate("Hello", cloud.MODEL, "en-US-GuyNeural", rate="+9%")["rate"] == "+9%"
-    for options in ({"voice": "fake"}, {"style": "dramatic"}, {"rate": "+999%"}, {"pitch": "loud"}):
+    for options in ({"voice": "fake"}, {"style": "dramatic"}, {"rate": "+999%"}, {"pitch": "loud"}, {"boundary": "guessed"}):
         args = dict(text="Hello", model=cloud.MODEL, voice="en-US-GuyNeural", **{})
         args.update(options)
         with pytest.raises(ValueError):
@@ -261,8 +262,88 @@ def test_cloud_transport_validates_container_and_records_actual_version(monkeypa
     monkeypatch.setattr(mutagen.mp3, "MP3", lambda stream: SimpleNamespace(info=SimpleNamespace(length=1.2, sample_rate=24000, channels=1)))
     data, observed = cloud.generate("hello", cloud.MODEL, "en-US-GuyNeural")
     assert data == b"test fixture bytes" and observed["client_version"] == cloud.version("edge-tts")
-    assert observed["boundaries"] == [{"type": "WordBoundary", "offset_seconds": .1, "duration_seconds": .2}]
-    assert len(seen) == 1 and "text" not in observed["boundaries"][0]
+    event = observed["boundaries"][0]
+    assert event == {"type": "WordBoundary", "offset_ticks": 1_000_000, "duration_ticks": 2_000_000,
+                     "offset_seconds": .1, "duration_seconds": .2, "text": "hello", "input_start": 0,
+                     "input_end": 5, "input_mapping": "exact"}
+    assert len(seen) == 1 and seen[0][1]["boundary"] == "SentenceBoundary"
     monkeypatch.setattr(mutagen.mp3, "MP3", lambda stream: (_ for _ in ()).throw(ValueError("invalid MP3")))
     with pytest.raises(ValueError, match="invalid MP3"):
         cloud.generate("hello", cloud.MODEL, "en-US-GuyNeural")
+
+
+def test_word_boundary_parameter_flows_through_formal_submission(isolated, monkeypatch):
+    from management_portal.execution import microsoft_speech as cloud
+    from management_portal.hatg.catalog import declaration
+    calls = []
+    monkeypatch.setattr(speech_isa, "_client", lambda: SimpleNamespace(submit=calls.append))
+    args = dict(api_id=cloud.API_ID, model=cloud.MODEL, voice="zh-CN-YunxiNeural", text="先相乘，再相加。", boundary="WordBoundary")
+    declaration("GenerateSpeech").validate_arguments(args)
+    speech_isa.generate_speech(SimpleNamespace(arguments=args, caller="alice", instruction_id="inst_words"))
+    assert calls[0].runtime_options["boundary"] == "WordBoundary"
+    from dataclasses import replace
+    with pytest.raises(ValueError, match="identity conflict"):
+        speech.prepare(replace(calls[0], runtime_options={**calls[0].runtime_options, "boundary": "SentenceBoundary"}))
+    with pytest.raises(ValueError, match="only supported"):
+        protocol.payload(ENTRY, "hi", MODEL, "Kore", boundary="WordBoundary")
+
+
+def test_mapping_uses_original_codepoints_and_no_double_xml_unescape():
+    from management_portal.execution.microsoft_speech import _boundary_evidence
+    original = " 你好，你好。\x0bA &amp; <B> 𝄞"
+    words = ["你好", "你好", "A", "&amp;", "<B>", "𝄞"]
+    chunks = [dict(type="WordBoundary", text=w, offset=i*1234567, duration=12345) for i,w in enumerate(words)]
+    events = _boundary_evidence(original, chunks)
+    cursor = 0
+    for event, word, chunk in zip(events, words, chunks):
+        assert event["input_mapping"] == "exact"
+        assert event["input_start"] >= cursor
+        assert original[event["input_start"]:event["input_end"]] == word
+        assert event["duration_ticks"] == chunk["duration"]
+        assert event["offset_seconds"] == chunk["offset"]/10_000_000
+        cursor = event["input_end"]
+    assert events[-1]["input_end"]-events[-1]["input_start"] == 1  # Not UTF-16 units.
+
+
+def test_ambiguous_normalization_never_skips_words_or_fabricates_positions():
+    from management_portal.execution.microsoft_speech import _boundary_evidence
+    events = _boundary_evidence("2相乘，二相乘", [
+        dict(type="WordBoundary", text="二", offset=100, duration=200),
+        dict(type="WordBoundary", text="相乘", offset=300, duration=400)])
+    assert [e["input_mapping"] for e in events] == ["unmatched", "unresolved_after_mismatch"]
+    assert all(e["input_start"] is None and e["input_end"] is None for e in events)
+    assert events[0]["text"] == "二" and events[0]["offset_ticks"] == 100
+
+
+def test_word_events_survive_execution_and_are_bound_to_fixed_audio(isolated, monkeypatch):
+    from management_portal.execution import microsoft_speech as cloud
+    from management_portal.execution.runtime import ExecutionRuntime
+    from management_portal.resources.service import ResourceService
+    import edge_tts
+    import mutagen.mp3
+    sent = []
+    class Communicate:
+        def __init__(self, text, voice, **options):
+            sent.append((text, voice, options))
+        async def stream(self):
+            yield dict(type="audio", data=b"mp3-test-container")
+            yield dict(type="WordBoundary", text="相乘", offset=1_000_000, duration=2_000_000)
+            yield dict(type="WordBoundary", text="相加", offset=8_000_000, duration=3_000_000)
+    monkeypatch.setattr(edge_tts, "Communicate", Communicate)
+    monkeypatch.setattr(mutagen.mp3, "MP3", lambda _: SimpleNamespace(info=SimpleNamespace(length=1.2, sample_rate=24000, channels=1)))
+    req=ExecutionRequest.new(actor="alice", prompt="相乘，相加", service_type="speech_generation", provider=cloud.API_ID,
+        operation="generate", session=SessionOptions(mode="stateless"),
+        runtime_options=dict(model=cloud.MODEL, voice="zh-CN-YunxiNeural", boundary="WordBoundary"))
+    receipt=ExecutionRuntime(state_root=isolated/"runtime").execute(req).output
+    assert sent[0][2]["boundary"] == "WordBoundary"
+    assert receipt["alignment"]["source_audio_sha256"] == hashlib.sha256(b"mp3-test-container").hexdigest()
+    assert receipt["alignment"]["input_sha256"] == receipt["text_sha256"]
+    assert receipt["alignment"]["mapped_event_count"] == 2
+    assert receipt["boundaries"][1]["input_start"] == 3
+    assert receipt["boundaries"][1]["offset_seconds"] == .8  # Never interpolated from characters.
+    def deny(self, address, *, actor, **kw):
+        assert actor == "bob"
+        raise PermissionError("denied")
+    monkeypatch.setattr(ResourceService, "read_content", deny)
+    with pytest.raises(PermissionError):
+        speech.verified_receipt(req.execution_id, actor="bob")

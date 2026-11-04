@@ -111,10 +111,11 @@ DECLARATIONS = (
         P("rate", description="Microsoft语速，-50%到+100%，默认+0%"),
         P("volume", description="Microsoft音量，-100%到+100%，默认+0%"),
         P("pitch", description="Microsoft音高，-100Hz到+100Hz，默认+0Hz"),
+        P("boundary", description="Microsoft边界粒度：WordBoundary或SentenceBoundary（默认）；返回真实边界文本/时间与严格匹配的原文码点位置，无法匹配时位置为空"),
     ), (R("execution_id", description="持久执行身份"), R("status", description="queued等执行状态")), mutates=True, owner="execution"),
     _d("GetSpeechGeneration", FIXED, "读取语音执行结果及服务端核验的固定音频与来源回执；完成音频按现有上传资源权限读取，未完成记录限提交者。", (
         R("execution_id", description="GenerateSpeech 返回的执行身份"),
-    ), (R("execution_id"), R("status"), P("receipt", "object", "实际api_id/provider/model、上游请求ID（可能缺失）、时间、音频file_reference/address/sha256和用量"),
+    ), (R("execution_id"), R("status"), P("receipt", "object", "实际来源、固定音频及SHA；Microsoft可含源音轨SHA绑定的alignment合同与boundaries文本/时间/原文位置，读取权限同音频"),
         P("error", description="脱敏失败原因；不会返回key或原始响应")), owner="execution"),
     _d("CompleteChat", FIXED, "调用一个已登记的模型接口，完成一次无状态的文本生成。", (
         R("api_id", description="模型接口 ID"), P("model", description="省略时使用接口的 default_model"),

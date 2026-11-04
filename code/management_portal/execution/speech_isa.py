@@ -30,13 +30,13 @@ def generate_speech(inv):
     try:
         entry = speech_protocol.resolve_entry(shared_ai_provider_registry, args["api_id"])
         speech_protocol.payload(entry, args["text"], args["model"], args["voice"], args.get("style", ""),
-                                **{k: args[k] for k in ("rate", "volume", "pitch") if k in args})
+                                **{k: args[k] for k in ("rate", "volume", "pitch", "boundary") if k in args})
         execution_id = "execution-" + hashlib.sha256(inv.instruction_id.encode()).hexdigest()[:24]
         request = ExecutionRequest(
             execution_id=execution_id, actor=inv.caller, agent_id=execution_id,
             prompt=args["text"], provider=args["api_id"], service_type="speech_generation", operation="generate",
             session=SessionOptions(mode="stateless"), permission_profile="provider_api",
-            runtime_options={k: args[k] for k in ("model", "voice", "style", "rate", "volume", "pitch") if k in args},
+            runtime_options={k: args[k] for k in ("model", "voice", "style", "rate", "volume", "pitch", "boundary") if k in args},
             metadata={"business_type": "native_speech", "instruction_id": inv.instruction_id},
         ).validate()
         speech.prepare(request)

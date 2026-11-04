@@ -43,7 +43,7 @@ def prepare(request):
     # the synthesis intent defines identity; transport metadata is not input.
     intent = {"actor": request.actor, "provider": request.provider, "text": request.prompt,
               "options": {k: request.runtime_options[k] for k in
-                          ("model", "voice", "style", "rate", "volume", "pitch") if k in request.runtime_options}}
+                          ("model", "voice", "style", "rate", "volume", "pitch", "boundary") if k in request.runtime_options}}
     digest = hashlib.sha256(json.dumps(intent, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     with _locked(request.execution_id) as path:
         if path.exists():
@@ -90,7 +90,7 @@ class SpeechGenerationService:
             entry = speech_protocol.resolve_entry(self.registry, request.provider)
             body = speech_protocol.payload(entry, request.prompt, options.get("model"), options.get("voice"),
                                            options.get("style", ""),
-                                           **{k: options[k] for k in ("rate", "volume", "pitch") if k in options})
+                                           **{k: options[k] for k in ("rate", "volume", "pitch", "boundary") if k in options})
             stamp = datetime.now(timezone.utc).isoformat()
             record.update(status="dispatched", started_at=stamp)
             atomic_json(path, record)  # Durably forbid duplicate charge before crossing the network.
@@ -113,6 +113,9 @@ class SpeechGenerationService:
                            "protocol": entry["speech"]["protocol"], "voice": options["voice"], "audio": audio,
                            "text_sha256": hashlib.sha256(request.prompt.encode()).hexdigest(),
                            "started_at": stamp, "completed_at": datetime.now(timezone.utc).isoformat(), **observed}
+                if "alignment" in receipt:
+                    receipt["alignment"] = {**receipt["alignment"], "source_audio_sha256": audio["sha256"],
+                                             "input_sha256": receipt["text_sha256"]}
                 record.update(status="completed", receipt=receipt)
                 atomic_json(path, record)
             except Exception as exc:

@@ -53,7 +53,7 @@ def payload(entry, text, model, voice, style="", **options):
     if entry.get("id") == microsoft_speech.API_ID:
         return microsoft_speech.validate(text, model, voice, style, **options)
     if options:
-        raise ValueError("rate/volume/pitch are only supported by Microsoft cloud speech")
+        raise ValueError("rate/volume/pitch/boundary are only supported by Microsoft cloud speech")
     config = configuration(entry)
     if model not in config["models"] or voice not in config["voices"]:
         raise ValueError("Speech model and voice must be explicitly registered")
