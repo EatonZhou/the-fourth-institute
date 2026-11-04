@@ -1165,6 +1165,7 @@ modules:
       - "scripts/instance_resident_relocation.py"
       - "scripts/directory_protocol_legacy_schema.py"
       - "scripts/directory_protocol_lifecycle_migration.py"
+      - "scripts/directory_protocol_retire.py"
       - "scripts/directory_protocol_resource_migration.py"
       - "scripts/directory_protocol_retention_migration.py"
       - "scripts/installed_article_migration.py"
