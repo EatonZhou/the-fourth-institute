@@ -1194,6 +1194,7 @@ modules:
       - "scripts/portal_services"
       - "scripts/portal_release.py"
       - "scripts/portal_dev_commit.py"
+      - "scripts/portal_seed_inventory.py"
       - "scripts/portal_services.py"
       - "scripts/portal_source_layout.py"
       - "scripts/portal_service_units.py"
