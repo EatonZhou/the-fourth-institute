@@ -4,27 +4,27 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 22
-  created_at: '2026-09-03'
+  number: 23
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T19:19:54Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T05:41:54Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 10
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_account_close_threshold.py
-  - ${code_root}/management_portal/execution/accounts.py
-  - ${code_root}/management_portal/execution/account_quota.py
-  - ${code_root}/management_portal/execution/scheduler.py
-  - ${code_root}/management_portal/execution/service.py
-  - ${code_root}/tests/cases/test_execution_scheduler.py
-  - ${code_root}/tests/cases/test_execution_token_usage.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_account_close_threshold.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/accounts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_quota.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/scheduler.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_scheduler.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_token_usage.py
   related:
   - decision_f1331d57be89
   - decision_25eb93d803a4
@@ -92,6 +92,7 @@ completed / failed / cancelled   租约到期或 Worker 失联
 - **每个容量分区独立限流。** 分区的并发上限默认取账号声明的值（没有账号的分区默认 8），可以按账号设置为 1 到 256。
 - **领取之间不互相等待，上限允许短暂超出。** 各 Worker 的领取各自读取分区占用、派发时间和公平记录后独立判断，不排队等待全局准入锁。同一时刻有几个 Worker 同时领取，分区最多就超出上限几条：例如上限 10、已运行 9 条时两个 Worker 同时领取，会运行 11 条。派发间隔同样可能在同一瞬间放行两条。超出只来自同一时刻的并发领取，分区占满后新的领取照常被挡住。派发时间或公平记录正被另一个领取写入时，本次领取跳过这次记录更新，不等待对方提交。
 - **同一分区相邻两次派发之间随机等待一段时间。** 默认在 2 到 6 秒之间均匀抽取，可以按账号设置为 0 到 3600 秒的范围；会话释放分区固定为 0 秒。每次成功派发时重新抽取一次。
+- **墙钟回拨不把短派发间隔扩展为旧时间差。** 维护发现上次派发时间超过当前时间一秒以上时，在跳过其他事务持有行的前提下，把该窗口一次性重定位到当前时间，再完整等待已抽取的原间隔；不会立即放行一批，也不重新抽样。未来的提交者公平时间同时重定位，避免旧时间让提交者长期排后。正常长间隔及一秒内的并发采样偏差保持原值，健康与队列读取仍只读。修复不改变队列输入、Execution身份、并发额度、账号保护、显式延迟或运行中租约。
 - **账号处于额度保护时，这个账号上的排队执行暂停领取。** 保护规则见 decision_d40f59f5508f。
 
 ### 顺序与公平

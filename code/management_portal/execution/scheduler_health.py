@@ -166,4 +166,6 @@ class SchedulerHealth:
             "recovered_expired_leases": maintenance[
                 "recovered_expired_leases"
             ],
+            "rebased_dispatch_windows": maintenance["rebased_dispatch_windows"],
+            "rebased_actor_dispatches": maintenance["rebased_actor_dispatches"],
         }

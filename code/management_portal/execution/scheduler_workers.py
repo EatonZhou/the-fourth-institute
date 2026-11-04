@@ -9,6 +9,7 @@ from management_common.database_time import instant
 from .contracts import execution_timestamp
 from .scheduler_changes import SchedulerChanges
 from .scheduler_recovery import LeaseRecovery
+from .scheduler_capacity import recover_dispatch_clock
 from .scheduler_rows import (
     ACTIVE_STATUSES,
     assert_owner,
@@ -33,6 +34,8 @@ class WorkerRegistry:
         self._last_maintenance_result = {
             "expired_worker_registrations": 0,
             "recovered_expired_leases": 0,
+            "rebased_dispatch_windows": 0,
+            "rebased_actor_dispatches": 0,
         }
 
     def _prune_stale_workers(
@@ -372,16 +375,18 @@ class WorkerRegistry:
         every few seconds, well inside the shortest lease.
         """
         with self.changes.connect() as connection:
+            rebased = recover_dispatch_clock(connection, now_epoch=time.time())
             recovered = self.recovery.recover_expired(connection)
             pruned_workers = self._prune_stale_workers(connection)
             connection.commit()
         result = {
             "expired_worker_registrations": pruned_workers,
             "recovered_expired_leases": recovered,
+            **rebased,
         }
         with self.changes.lock:
             self._last_maintenance_result = result
-        if recovered or pruned_workers:
+        if recovered or pruned_workers or any(rebased.values()):
             self.changes.notify("execution", "claim", "control")
         return dict(result)
 

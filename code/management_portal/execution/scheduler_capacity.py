@@ -99,6 +99,39 @@ def record_dispatch_row(
         )
 
 
+def recover_dispatch_clock(connection: Any, *, now_epoch: float) -> dict[str, int]:
+    """Rebase elapsed-time pacing/fairness after a backward wall-clock jump.
+
+    Maintenance owns this repair. Reads remain read-only and concurrent claims
+    are skipped, never blocked. Preserve the sampled interval instead of drawing
+    a new one or granting an immediate burst. A one-second margin avoids treating
+    normal sampling/commit races as clock rollback.
+    """
+    cutoff = instant(now_epoch + 1.0)
+    windows = connection.execute(
+        "SELECT capacity_key, interval_seconds FROM capacity_dispatch_state "
+        "WHERE last_dispatched_at > %s FOR UPDATE SKIP LOCKED", (cutoff,),
+    ).fetchall()
+    for row in windows:
+        connection.execute(
+            "UPDATE capacity_dispatch_state SET last_dispatched_at=%s, next_dispatch_at=%s, updated_at=%s "
+            "WHERE capacity_key=%s",
+            (instant(now_epoch), instant(now_epoch + float(row['interval_seconds'])),
+             execution_timestamp(), row['capacity_key']),
+        )
+    actors = connection.execute(
+        "SELECT priority, actor FROM execution_actor_dispatch_state "
+        "WHERE last_dispatched_at > %s FOR UPDATE SKIP LOCKED", (cutoff,),
+    ).fetchall()
+    for row in actors:
+        connection.execute(
+            "UPDATE execution_actor_dispatch_state SET last_dispatched_at=%s, updated_at=%s "
+            "WHERE priority=%s AND actor=%s",
+            (instant(now_epoch), execution_timestamp(), row['priority'], row['actor']),
+        )
+    return {'rebased_dispatch_windows': len(windows), 'rebased_actor_dispatches': len(actors)}
+
+
 class ActiveRequests:
     """The scheduling fields of claimed and running executions, kept per row version."""
 
