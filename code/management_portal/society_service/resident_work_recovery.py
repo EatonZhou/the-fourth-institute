@@ -239,7 +239,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             from .resident_default_backend import selection_mode
             automatic = selection_mode(record) == "auto"
             target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
-                                      priority=[] if automatic else resident_domain_port.auto_migration_priority(record),
+                                      priority=resident_domain_port.auto_migration_priority(record),
                                       subscription_only=bool((record.get("family") or {}).get("role")),
                               model=(record.get("execution_settings") or {}).get("model", ""),
                               effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))

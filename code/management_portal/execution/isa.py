@@ -626,7 +626,7 @@ def update_backend_role(inv):
     role = inv.argument("backend_role")
     return {"role": update_role(role, inv.argument("account_id"),
                                 inv.argument("model") or "", inv.argument("reasoning_effort") or "",
-                                _registration_expected_version(inv, role, minimum=0), inv.caller, inv.argument("account_selection") or "auto")}
+                                _registration_expected_version(inv, role, minimum=0), inv.caller, inv.argument("account_selection") or "auto", inv.argument("backend_priority"))}
 
 
 def get_execution_settings(inv: Invocation) -> dict[str, Any]:

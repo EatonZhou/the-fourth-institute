@@ -111,3 +111,53 @@ def test_no_candidate_or_missing_scope_never_uses_unrelated_api(monkeypatch):
     for anchor in ("known", "deleted"):
         with pytest.raises(DefaultAccountUnavailable):
             account_selection.select("codex", anchor=anchor, accounts=[account("known", 0)])
+
+
+def test_backend_priority_drives_first_choice_and_recovery(monkeypatch):
+    from management_portal.execution import account_selection, account_registrations
+    from management_portal.society_service import family_quota
+    source, fuller, claude = account("one", 10), account("two", 80), account("claude", 50)
+    claude.update(provider="claude", selection_catalog={"fresh": True, "default_model": "sonnet", "models": ["sonnet"]})
+    for a in [source, fuller]:
+        a["selection_catalog"]["default_model"] = "model"
+    samples = [source, fuller, claude]
+    rows = [{**a, "route_id": a["backend_route_id"]} for a in samples]
+    order = ["claude:subscription_login", "codex:subscription_login"]
+    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: ({"backend_priority": order}, None))
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider: [a for a in rows if a["provider"] == provider])
+    monkeypatch.setattr(account_selection, "observations", lambda: samples)
+    record = {"backend": "codex", "backend_route_id": "one", "execution_settings": {"model": "model", "reasoning_effort": "high", "account_selection": "auto"}}
+    selected = defaults.configuration(record, {})
+    assert selected["backend"] == "claude" and selected["runtime_settings"]["model"] == "sonnet"
+    assert "reasoning_effort" not in selected["runtime_settings"]
+    assert family_quota.auto_migration_priority(record) == order
+    # Existing sessions keep same-kind preference before crossing to the sorted fallback.
+    assert fallback_account(samples, "codex", "one", [], priority=order, model="model") == fuller
+    fuller["quota_reserve"]["remaining"] = 0
+    assert fallback_account(samples, "codex", "one", [], priority=order, model="model") == claude
+    order.reverse()
+    assert defaults.configuration(record, {})["backend_route_id"] == "one"
+    claude["selection_catalog"]["fresh"] = False
+    assert account_selection.priority_candidates(samples, ["claude:subscription_login"]) == []
+
+
+def test_backend_priority_never_includes_unlisted_paid_kind():
+    from management_portal.execution.account_selection import priority_candidates
+    paid = account("paid"); paid.update(kind="api_profile", billing_account_id="api")
+    paid["selection_catalog"]["default_model"] = "model"
+    assert priority_candidates([paid], ["codex:subscription_login"]) == []
+    assert priority_candidates([paid], ["codex:api_profile:api"]) == [paid]
+
+
+def test_explicit_priority_applies_even_when_role_reference_is_direct_api(monkeypatch):
+    from management_portal.execution import account_selection, account_registrations
+    target = account("target")
+    target["selection_catalog"]["default_model"] = "model"
+    order = ["codex:subscription_login"]
+    monkeypatch.setattr(account_registrations, "resolve_role", lambda name: ({"backend_priority": order}, None))
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider: [])
+    monkeypatch.setattr(account_selection, "observations", lambda: [target])
+    record = {"backend": "provider_api", "backend_route_id": "api", "execution_settings": {"account_selection": "auto"}}
+    assert defaults.configuration(record, {})["backend"] == "codex"
+    order.clear()
+    assert defaults.configuration(record, {})["backend"] == "provider_api"

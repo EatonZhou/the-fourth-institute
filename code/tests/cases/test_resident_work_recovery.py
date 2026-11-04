@@ -141,6 +141,7 @@ def test_explicit_resident_requeue_does_not_spend_automatic_budget(team, monkeyp
 
 def _account(provider, route, remaining, **quota):
     return {"account_id": provider + "_" + route, "provider": provider, "backend_route_id": route, "kind": "subscription_login", "login_state": "logged_in",
+            "selection_catalog": {"fresh": True, "default_model": "default", "models": ["default"]},
             "quota_reserve": {"status": "available", "fresh": True, "remaining": remaining,
                               "windows": [{"window": "seven_day", "remaining_percent": remaining}], **quota}}
 

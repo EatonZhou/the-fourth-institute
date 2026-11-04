@@ -83,16 +83,12 @@ def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
     if own:
         return own[0]
-    # Only an explicit Family priority authorizes crossing a backend/billing
-    # boundary. There is no implicit cross-provider or paid fallback order.
-    for kind in priority or []:
-        targets = [a for a in accounts if migration_type(a)["id"] == kind]
-        if targets:
-            ordered = candidates(targets, targets[0], excluded=excluded,
-                                 reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
-            if ordered:
-                return ordered[0]
-    return {}
+    # Both site and Family orders explicitly authorize crossing kind boundaries.
+    from management_portal.execution.account_selection import priority_candidates
+    ordered = priority_candidates(accounts, priority or [], source=source, model=model, effort=effort,
+                                  excluded=excluded, reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+    return ordered[0] if ordered else {}
+
 
 
 def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) -> dict[str, Any]:

@@ -33,6 +33,7 @@ from management_portal.society_service import resident_input_queue_domain
 
 def _account(route, weekly, *, short=90, provider="codex", fresh=True, duration=False, kind="subscription_login"):
     return {"account_id": f"{provider}_{route}", "provider": provider, "backend_route_id": route, "kind": kind, "login_state": "logged_in",
+            "selection_catalog": {"fresh": True, "default_model": "default", "models": ["default"]},
             "quota_reserve": {"status": "available", "fresh": fresh, "remaining": min(weekly, short),
                               "windows": [{"window": "primary" if duration else "seven_day",
                                            "window_duration_mins": 10080 if duration else None,

@@ -380,3 +380,18 @@ def test_reenable_starts_registered_codex_instance(tmp_path, monkeypatch):
                                                                       expected_version_for=lambda account_id: 1))
     assert result["registration"]["enabled"]
     assert started == ["codex_one"]
+
+
+def test_backend_priority_versioned_and_preserved_when_omitted(tmp_path):
+    from management_portal.execution import account_registrations as store
+    store.create_registration({"account_id": "ordered", "provider": "codex", "kind": "subscription_login",
+                               "route_id": "ordered", "config": {"account_dir": str(tmp_path / "ordered")}}, "alice")
+    order = ["claude:subscription_login", "codex:subscription_login"]
+    role = store.update_role("default", "ordered", "m", "", 0, "alice", backend_priority=order)
+    assert role["backend_priority"] == order
+    assert store.update_role("default", "ordered", "m", "", 1, "alice")["backend_priority"] == order
+    with pytest.raises(InstructionError):
+        store.update_role("default", "ordered", "m", "", 1, "alice", backend_priority=list(reversed(order)))
+    with pytest.raises(ValueError):
+        store.update_role("default", "ordered", "m", "", 2, "alice", backend_priority=order * 2)
+    assert store.update_role("default", "ordered", "m", "", 2, "alice", backend_priority=[])["backend_priority"] == []

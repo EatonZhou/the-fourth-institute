@@ -9,6 +9,7 @@ from management_portal.society_service.templates.familize import _values
 
 def account(provider, route, kind='subscription_login', remaining=80, api=''):
     return dict(provider=provider, backend_route_id=route, account_id=route, kind=kind,
+                selection_catalog=dict(fresh=True, default_model="default", models=["default"]),
                 billing_account_id=api, login_state="logged_in", enabled=True, quota_reserve=dict(status='available', fresh=True,
                     remaining=remaining, windows=[dict(window='five_hour', remaining_percent=remaining)]))
 

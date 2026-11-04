@@ -26,7 +26,9 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
   switch (name) {
     case 'ListProviders': return {providers: [{provider: 'claude', kinds: ['subscription_login']}]};
     case 'ListProviderAccounts': return {accounts: [{account_id: 'existing', provider: 'claude', kind: 'subscription_login',
-      registration: {version: 1, enabled: true}, login_state: 'logged_in'}]};
+      registration: {version: 1, enabled: true}, login_state: 'logged_in', migration_type: {id: 'claude:subscription_login', label: 'Claude Code · 订阅', default_priority: 0}},
+      {account_id: 'codex', provider: 'codex', kind: 'subscription_login', migration_type: {id: 'codex:subscription_login', label: 'Codex · 订阅', default_priority: 1}},
+      {account_id: 'paid', provider: 'claude', kind: 'api_profile', migration_type: {id: 'claude:api_profile:api', label: 'Claude Code · API', default_priority: 200}}]};
     case 'ListModelApis': return {apis: []};
     case 'ListBackendRoles': return {roles};
     case 'RegisterProviderAccount': return {};
@@ -64,7 +66,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       log: fail ? 'execution_check\nHTTP 401: [REDACTED]\n<script>not markup</script>' : ''}};
     case 'UpdateBackendRole':
       if (holdDefault) await new Promise(resolve => { finishDefault = resolve; });
-      roles = [{role: 'default', account_id: args.account_id, account_selection: args.account_selection, version: (roles[0]?.version || 0) + 1}];
+      roles = [{role: 'default', account_id: args.account_id, account_selection: args.account_selection, backend_priority: args.backend_priority, version: (roles[0]?.version || 0) + 1}];
       return {role: roles[0]};
     case 'PrepareProviderRuntime':
       if (holdPrepare) return new Promise(resolve => { finishPrepare = resolve; });
@@ -316,6 +318,7 @@ const openSetup = async () => {
   assert.equal(timers.size, 0); assert.equal(intervals.size, 0);
   // One selector replaces the two conflicting default buttons.
   assert(![...window.document.querySelectorAll('button')].some(el => ['设为默认路线', '设为默认 AI'].includes(el.textContent)));
+  assert.match(window.document.querySelector('[data-backend-account-selection]').textContent, /不同种类 AI 后端默认选择\/自动切换的排序可手动调整/);
   for (const policy of ['fixed', 'auto']) {
     click('账号选择设置'); await flush();
     const form = window.document.querySelector('dialog form');
@@ -323,8 +326,27 @@ const openSetup = async () => {
     form.elements.account_selection.value = policy;
     form.elements.account_selection.dispatchEvent(new window.Event('change'));
     assert.match(form.elements.account_id.parentElement.textContent, policy === 'fixed' ? /固定账号/ : /参考账号/);
+    const priority = form.querySelector('[data-backend-priority]');
+    assert.equal(priority.disabled, policy === 'fixed');
+    if (policy === 'auto') {
+      form.querySelector('[data-backend-priority-kind="codex:subscription_login"] [data-direction="-1"]').click();
+      assert.equal(form.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
+      [...form.querySelectorAll('button')].find(b => b.textContent === '加入排序').click();
+    }
     form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
-    assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').at(-1).args.account_selection, policy);
+    const saved = calls.filter(call => call.name === 'UpdateBackendRole').at(-1);
+    assert.equal(saved.args.account_selection, policy);
+    assert.equal(saved.options.expectedVersion, roles[0].version - 1);
+    if (policy === 'auto') assert.deepEqual(Array.from(saved.args.backend_priority), ['codex:subscription_login', 'claude:subscription_login', 'claude:api_profile:api']);
   }
+  click('账号选择设置'); await flush();
+  assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
+  const beforeCancel = calls.filter(call => call.name === 'UpdateBackendRole').length;
+  window.document.querySelector('[data-backend-priority-kind] [data-direction="1"]').click();
+  click('关闭'); await flush();
+  assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').length, beforeCancel);
+  click('账号选择设置'); await flush();
+  assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
+  click('关闭');
   console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});

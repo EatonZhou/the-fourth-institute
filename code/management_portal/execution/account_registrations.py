@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS backend_roles (
     updated_at TIMESTAMPTZ NOT NULL, updated_by TEXT NOT NULL
 );
 ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS account_selection TEXT NOT NULL DEFAULT 'auto' CHECK(account_selection IN ('auto','fixed'));
+ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS backend_priority JSONB NOT NULL DEFAULT '[]';
 UPDATE registrations SET config=config - 'is_default' - 'fallback_account_ids' WHERE config ?| ARRAY['is_default','fallback_account_ids'];
 """
 
@@ -229,23 +230,27 @@ def _check_version(object_id, current, expected, message):
             "object_id": object_id, "expected_version": expected, "current_version": current})
 
 
-def update_role(role, account_id, model, reasoning_effort, expected_version, actor, account_selection="auto"):
+def update_role(role, account_id, model, reasoning_effort, expected_version, actor, account_selection="auto", backend_priority=None):
     from .account_selection import mode
     account_selection = mode(account_selection)
+    if backend_priority is not None:
+        from .account_migration_types import validate_priority
+        backend_priority = validate_priority(backend_priority)
     if not IDENTIFIER.fullmatch(str(role or "")):
         raise invalid("角色名格式无效")
     with database().transaction("registrations") as c:
         account = c.execute("SELECT * FROM registrations WHERE account_id=%s", (account_id,)).fetchone()
         if account is None or not account["enabled"]:
             raise invalid("角色必须指向已启用的执行账号")
-        row = c.execute("SELECT version FROM backend_roles WHERE role=%s FOR UPDATE", (role,)).fetchone()
+        row = c.execute("SELECT version,backend_priority FROM backend_roles WHERE role=%s FOR UPDATE", (role,)).fetchone()
         _check_version(role, row["version"] if row else 0, expected_version, "Backend 角色版本已改变")
+        priority = backend_priority if backend_priority is not None else (row["backend_priority"] if row else [])
         return _decode(c.execute("""INSERT INTO backend_roles
-            (role,account_id,model,reasoning_effort,account_selection,version,created_at,created_by,updated_at,updated_by)
-            VALUES (%s,%s,%s,%s,%s,1,%s,%s,%s,%s) ON CONFLICT(role) DO UPDATE SET
-            account_id=EXCLUDED.account_id,model=EXCLUDED.model,reasoning_effort=EXCLUDED.reasoning_effort,account_selection=EXCLUDED.account_selection,
+            (role,account_id,model,reasoning_effort,account_selection,backend_priority,version,created_at,created_by,updated_at,updated_by)
+            VALUES (%s,%s,%s,%s,%s,%s,1,%s,%s,%s,%s) ON CONFLICT(role) DO UPDATE SET
+            account_id=EXCLUDED.account_id,model=EXCLUDED.model,reasoning_effort=EXCLUDED.reasoning_effort,account_selection=EXCLUDED.account_selection,backend_priority=EXCLUDED.backend_priority,
             version=backend_roles.version+1,updated_at=EXCLUDED.updated_at,updated_by=EXCLUDED.updated_by RETURNING *""",
-            (role, account_id, model, reasoning_effort, account_selection, now(), actor, now(), actor)).fetchone())
+            (role, account_id, model, reasoning_effort, account_selection, Jsonb(priority), now(), actor, now(), actor)).fetchone())
 
 
 def resolve_role(requested):

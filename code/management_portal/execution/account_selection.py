@@ -90,3 +90,26 @@ def select(provider: str, *, anchor: str = "", model: str = "", effort: str = ""
     if not selected:
         raise DefaultAccountUnavailable("No compatible account has verified available quota; waiting for account observations or quota reset")
     return next(row for row in rows if row["account_id"] == selected[0]["account_id"])
+
+
+def priority_candidates(accounts: list[dict], priority: list[str], *, source=None, model="", effort="", excluded=(), reserve=0) -> list[dict]:
+    """Order explicitly allowed kinds; each target must advertise a usable model."""
+    from .account_migration_types import migration_type
+    from .provider_catalog import AGENT_PROVIDERS
+    ordered = []
+    for kind in priority:
+        group = []
+        for account in accounts:
+            if account.get("provider") not in AGENT_PROVIDERS or migration_type(account)["id"] != kind:
+                continue
+            same = source is not None and compatible(account, source)
+            catalog = account.get("selection_catalog") or {}
+            target_model = model if same and model else catalog.get("default_model", "")
+            if not target_model or catalog.get("fresh") is not True:
+                continue
+            if candidates([account], account, model=target_model, effort=effort if same else "",
+                          excluded=excluded, reserve=reserve):
+                group.append(account)
+        if group:
+            ordered.extend(candidates(group, group[0], excluded=excluded, reserve=reserve))
+    return ordered

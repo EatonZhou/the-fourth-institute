@@ -358,7 +358,10 @@ def auto_migration_enabled(record: dict) -> bool:
 
 
 def auto_migration_priority(record: dict) -> list[str]:
-    """Read the same immediate Family policy for admission and failure recovery."""
+    """Use the site role for automatic selection, otherwise the explicit Family policy."""
+    from .resident_default_backend import selection_mode, selection_priority
+    if selection_mode(record) == "auto":
+        return selection_priority(record)
     family = record.get("family") or {}
     if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
         return []
@@ -532,7 +535,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
                                       migration["tried_accounts"], reserve=not automatic,
-                                      priority=[] if automatic else auto_migration_priority(current), subscription_only=True,
+                                      priority=auto_migration_priority(current), subscription_only=True,
                                       model=(current.get("execution_settings") or {}).get("model", ""),
                                       effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
             if target:

@@ -67,3 +67,26 @@
 .backendModelCustomEffort { display:flex; flex-wrap:wrap; align-items:end; gap:8px; }
 .backendModelCustomEffort > .portalField { flex:1 1 140px; min-width:0; }
 .backendModelCustomEffort > button { flex:none; }
+
+.backendSelectionSummary { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px; margin:4px 0 16px; border:1px solid var(--border); border-radius:10px; background:var(--panel-2); }
+.backendSelectionSummary > p { margin:0; max-width:64ch; }
+.backendSelectionSummary > button { flex:none; white-space:nowrap; }
+.backendDialog:has(.backendSelectionForm) { width:min(720px, calc(100vw - 32px)); box-sizing:border-box; }
+.backendPriority { min-width:0; margin:0; padding:16px; border:1px solid var(--border); border-radius:10px; background:var(--panel-2); }
+.backendPriority > legend { padding:0 6px; font-weight:600; }
+.backendPriority[data-disabled=true] { opacity:.55; }
+.backendPriorityList { display:grid; gap:8px; padding:0; margin:14px 0; list-style:none; }
+.backendPriorityList > li { display:flex; align-items:center; gap:10px; min-width:0; padding:10px; background:var(--panel); border:1px solid var(--border); border-radius:8px; }
+.backendPriorityNumber { display:grid; place-items:center; width:26px; height:26px; flex:none; border-radius:50%; background:var(--panel-2); color:var(--muted); font-size:12px; }
+.backendPriorityName { flex:1; min-width:0; overflow-wrap:anywhere; }
+.backendPriorityControls { display:flex; gap:6px; flex:none; }
+.backendPriorityControls > button { min-width:34px; min-height:34px; padding:4px 8px; }
+.backendPriorityOptional { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; }
+.backendPriorityOptional > span { min-width:0; overflow-wrap:anywhere; }
+.backendPriorityOptional > button { flex:none; }
+.backendPriorityOther:not(:empty) { margin-bottom:12px; padding-top:8px; border-top:1px solid var(--border); }
+@media (max-width:640px) {
+  .backendSelectionSummary { flex-direction:column; align-items:stretch; gap:12px; }
+  .backendSelectionSummary > button { align-self:flex-start; }
+  .backendPriority { padding:10px; }
+}

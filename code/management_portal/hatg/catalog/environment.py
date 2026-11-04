@@ -177,8 +177,9 @@ DECLARATIONS = (
     _d("UpdateBackendRole", FIXED, "设置 Backend 角色；调用信封的 expected_version 给出角色版本时按它比较（尚未建立的角色为 0），省略时直接写入。", (
         R("backend_role", description="角色名，如 default"),
         R("account_id", description="固定账号或自动选择的后端/计费范围参考账号，须已启用"),
-        P("account_selection", description="auto（默认）：同后端、模型与计费范围内按可用额度选账号；fixed：固定账号"),
-        P("model", description="按该角色创建 Resident 时使用的模型"),
+        P("account_selection", description="auto（默认）：按后端种类顺序及可用额度选择；fixed：固定账号"),
+        P("backend_priority", "array", "有序账号种类 ID，用于默认选择及自动切换；跨种类使用目标默认模型，API/服务种类须明确列入；省略保留原值，空数组限制在参考账号同类"),
+        P("model", description="参考账号同类后端的模型偏好；其他后端使用其默认模型"),
         P("reasoning_effort", description="按该角色创建 Resident 时使用的推理强度"),
         P("verification_execution_id", description="接入流程测试回执；提供时必须匹配当前账号、模型及登记与模型 API 版本"),
     ), (R("role", "object", "写入后的角色：role、account_id、model、reasoning_effort、version…"),),

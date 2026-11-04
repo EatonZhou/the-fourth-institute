@@ -861,18 +861,68 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     });
   }
   function roleEditor(role = null) {
-    const {view, form} = newEditor(role?.role === "default" ? "默认 AI 与账号选择" : role ? "编辑 Backend 角色" : "新增 Backend 角色");
+    const {view, form} = newEditor(role?.role === "default" ? "账号选择设置" : role ? "编辑 Backend 角色" : "新增 Backend 角色");
+    form.classList.add("backendSelectionForm");
     const name = field(form, "角色", "role", role?.role || "", {required: true, readOnly: Boolean(role)});
-    const selection = select(form, "账号选择", "account_selection", [["auto", t("自动（按可用额度）")], ["fixed", t("手动固定账号")]], role?.account_selection || "auto");
-    const account = select(form, "后端与计费范围参考账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
+    if (role?.role === "default") name.parentElement.hidden = true;
+    const selection = select(form, "选择方式", "account_selection", [["auto", t("自动（按顺序和可用额度）")], ["fixed", t("手动固定账号")]], role?.account_selection || "auto");
+    const types = new Map(state.accounts.filter(a => a.migration_type && a.provider !== "provider_api")
+      .map(a => [a.migration_type.id, a.migration_type]));
+    const defaults = [...types.values()].filter(a => a.id.split(":")[1] === "subscription_login")
+      .sort((a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(a => a.id);
+    let order = role?.backend_priority?.length ? [...role.backend_priority] : defaults;
+    const priority = node("fieldset", undefined, {class: "backendPriority", "data-backend-priority": ""});
+    priority.append(node("legend", t("AI 后端优先级")), node("p", t("默认按从上到下的顺序选择。额度不足时，先尝试同类账号，再按此顺序切换；跨后端使用目标默认模型并保留上下文。"), {class: "backendHint"}));
+    const list = node("ol", undefined, {class: "backendPriorityList"});
+    const other = node("div", undefined, {class: "backendPriorityOther"});
+    const reset = button("恢复推荐顺序", () => { order = [...defaults]; draw(); });
+    priority.append(list, other, reset); form.append(priority);
+    const label = key => types.get(key)?.label || key + t("（当前不可用）");
+    const draw = () => {
+      list.replaceChildren(); other.replaceChildren();
+      for (const [i, key] of order.entries()) {
+        const row = node("li", undefined, {"data-backend-priority-kind": key});
+        const title = node("span", label(key), {class: "backendPriorityName"});
+        const controls = node("div", undefined, {class: "backendPriorityControls"});
+        for (const [direction, text] of [[-1, "上移"], [1, "下移"]]) {
+          const move = button(direction < 0 ? "↑" : "↓", () => {
+            const j = i + direction; [order[i], order[j]] = [order[j], order[i]]; draw();
+            list.children[j]?.querySelector(`[data-direction="${direction}"]`)?.focus();
+          }, i + direction < 0 || i + direction >= order.length);
+          move.dataset.direction = String(direction); move.setAttribute("aria-label", t(text) + " " + label(key)); controls.append(move);
+        }
+        if (key.split(":")[1] !== "subscription_login") controls.append(button("移除", () => { order = order.filter(k => k !== key); draw(); }));
+        row.append(node("span", String(i + 1), {class: "backendPriorityNumber", "aria-hidden": "true"}), title, controls); list.append(row);
+      }
+      if (!order.length) list.append(node("p", t("暂无可排序的订阅后端，可在下方加入其他后端。"), {class: "backendHint"}));
+      const others = [...types.values()].filter(a => !order.includes(a.id));
+      if (others.length) {
+        other.append(node("p", t("其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。"), {class: "backendHint"}));
+        for (const item of others) {
+          const row = node("div", undefined, {class: "backendPriorityOptional"});
+          const add = button("加入排序", () => { order.push(item.id); draw(); });
+          add.setAttribute("aria-label", t("加入排序") + " " + item.label);
+          row.append(node("span", item.label), add); other.append(row);
+        }
+      }
+    };
+    draw();
+    const options = advanced(form);
+    options.parentElement.open = true;
+    const account = select(options, "模型偏好参考账号", "account_id", [["", t("选择账号")], ...state.accounts.filter(a => a.enabled !== false || a.account_id === role?.account_id).map(a => [a.account_id, a.account_id])], role?.account_id);
     account.required = true;
-    const syncAccountLabel = () => { account.parentElement.querySelector("span").textContent = t(selection.value === "fixed" ? "固定账号" : "后端与计费范围参考账号"); };
-    selection.addEventListener("change", syncAccountLabel); syncAccountLabel();
-    hint(selection, "自动选择保持后端、模型与计费范围；额度不足或状态未知时等待。固定账号不会自动迁移。");
-    const model = field(form, "模型", "model", role?.model || "");
-    const effort = field(form, "推理强度", "reasoning_effort", role?.reasoning_effort || "");
+    const syncSelection = () => {
+      priority.disabled = selection.value === "fixed";
+      priority.dataset.disabled = String(priority.disabled);
+      account.parentElement.querySelector("span").textContent = t(selection.value === "fixed" ? "固定账号" : "模型偏好参考账号");
+    };
+    selection.addEventListener("change", syncSelection); syncSelection();
+    hint(account, "模型和推理强度仅用于此账号同类的后端；其他种类使用各自默认模型。固定模式不会自动切换。");
+    const model = field(options, "模型偏好（可选）", "model", role?.model || "");
+    const effort = field(options, "推理强度（可选）", "reasoning_effort", role?.reasoning_effort || "");
     saveButton(form); form.addEventListener("submit", event => { event.preventDefault(); void run(async () => {
-      await execute("UpdateBackendRole", {backend_role: name.value.trim(), account_id: account.value, account_selection: selection.value, model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
+      await execute("UpdateBackendRole", {backend_role: name.value.trim(), account_id: account.value, account_selection: selection.value,
+        backend_priority: order, model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
       view.close(); await refresh("roles");
     }); });
   }
@@ -903,8 +953,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     output.replaceChildren();
     if (rolesReady) {
       const role = state.roles.find(row => row.role === "default") || {role: "default", version: 0};
-      const summary = node("div", undefined, {class: "backendHint", "data-backend-account-selection": ""});
-      summary.append(node("span", role.account_id ? t(role.account_selection === "fixed" ? "账号选择：手动固定" : "账号选择：自动（按可用额度）") + " · " + (role.model || role.account_id) : t("尚未配置默认模型偏好")),
+      const summary = node("div", undefined, {class: "backendSelectionSummary", "data-backend-account-selection": ""});
+      summary.append(node("p", t("不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择"), {class: "backendHint"}),
         button("账号选择设置", () => roleEditor(role), !canWrite));
       output.append(summary);
     }

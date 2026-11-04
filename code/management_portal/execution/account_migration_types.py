@@ -8,7 +8,7 @@ def migration_type(account):
     provider = str(account.get("provider") or "")
     kind = str(account.get("kind") or "unknown")
     key = f"{provider}:{kind}"
-    names = {"claude": "Claude Code", "codex": "Codex", "kimi": "Kimi Code", "dsh": "DSH", "opencode": "OpenCode"}
+    names = {"antigravity": "Google Antigravity", "claude": "Claude Code", "codex": "Codex", "kimi": "Kimi Code", "dsh": "DSH", "opencode": "OpenCode"}
     label = names.get(provider, provider)
     if kind == "api_profile":
         api = str(account.get("billing_account_id") or account.get("backend_route_id") or account.get("account_id"))
