@@ -29,13 +29,14 @@ def personal(future_creation_store, charters):
 @pytest.mark.parametrize("first_default", ["claude", "provider_api"])
 def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_store, monkeypatch, capsys, first_default):
     """首次注册完整个人 Family 不依赖 Codex 账号，执行配置留待默认 AI 就绪。"""
-    from management_portal.execution import account_registrations
+    from management_portal.execution import account_registrations, account_selection
     from management_portal.society_service import resident_runtime_domain
     from management_portal.society_service.domain_ports import execution_port
     assert account_registrations.registrations() == []
     assert account_registrations.roles() == []
     accounts = []
     monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": accounts}))
+    monkeypatch.setattr(account_selection, "observations", lambda: accounts)
     from management_portal.permission_system import personal_ama
     from management_portal.society_service import resource_client
     # The isolated resource boundary must expose the real personal-owner
@@ -89,7 +90,11 @@ def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_
     account_registrations.create_registration({"account_id": "claude_fixture", "provider": "claude",
         "kind": "subscription_login", "route_id": "claude_fixture",
         "config": {"account_dir": str(tmp_path / "accounts" / "claude_fixture"), "models": [{"id": "sonnet"}], "default_model": "sonnet"}}, "newcomer")
-    accounts.append({"account_id": "claude_fixture", "provider": "claude", "backend_route_id": "claude_fixture"})
+    accounts.append({"account_id": "claude_fixture", "provider": "claude", "backend_route_id": "claude_fixture",
+                     "kind": "subscription_login", "login_state": "logged_in",
+                     "quota_reserve": {"status": "available", "fresh": True, "remaining": 80,
+                                       "windows": [{"remaining_percent": 80}]},
+                     "selection_catalog": {"fresh": True, "default_model": "sonnet", "models": ["sonnet"]}})
     other = resident_domain.register_resident({"title": "Independent work", "project_id": "project_test", "backend": "claude",
         "backend_route_id": "claude_fixture", "mode": "new_session"}, "newcomer")
     resident_domain.deliver_resident_message_content(other["resident_id"], "newcomer", "independent input")
@@ -104,7 +109,10 @@ def test_personal_family_can_precede_first_ai_account(tmp_path, future_creation_
     if first_default == "provider_api":
         account_registrations.create_registration({"account_id": "deepseek_only", "provider": "provider_api",
             "kind": "api_profile", "config": {"api_id": "deepseek_test"}}, "newcomer")
-        accounts.append({"account_id": "deepseek_only", "provider": "deepseek_test", "backend_route_id": ""})
+        accounts.append({"account_id": "deepseek_only", "provider": "deepseek_test", "backend_route_id": "",
+                         "kind": "api_profile", "billing_account_id": "deepseek_test", "status": "ok",
+                         "quota_reserve": {"status": "available", "fresh": False, "remaining": None,
+                                           "close_threshold": {"metric": "balance", "value": 0}}})
         first_account = "deepseek_only"
     account_registrations.update_role("default", first_account, "", "", 0, "newcomer")
     coordinator._recover_resident(family["steward"])
