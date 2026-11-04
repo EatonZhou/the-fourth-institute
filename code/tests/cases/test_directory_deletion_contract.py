@@ -138,6 +138,11 @@ def test_registered_ownership_decides_cleanup_regardless_of_area(workspace, inte
     registration = instruction_catalog()['RegisterWorkspace'].description
     assert '只删登记' not in registration
     assert '归属' in registration and '清理' in registration and '文件' in registration
+    from management_portal.localization import translate_message
+    translated = translate_message(registration, 'en')
+    assert translated != registration
+    assert 'cleans up' in translated and 'owned' in translated and 'nested' in translated
+    assert 'preserves the directory' not in translated
 
 
 def test_outer_directory_removes_nested_registrations_and_preserves_siblings(workspace):
