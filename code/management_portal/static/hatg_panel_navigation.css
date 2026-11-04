@@ -37,23 +37,11 @@
   left: var(--hatg-navigation-inset);
   right: var(--hatg-navigation-inset);
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
-  pointer-events: none;
-}
-
-.graphViewportCluster,
-.graphNavigator {
   min-height: 38px;
-}
-
-.graphViewportCluster {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--panel) 92%, transparent);
@@ -61,6 +49,14 @@
   backdrop-filter: blur(9px);
   padding: 3px;
   pointer-events: auto;
+}
+
+.graphViewportCluster {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 0 auto;
 }
 
 .graphViewportControls {
@@ -109,20 +105,15 @@
 .graphNavigator {
   display: flex;
   align-items: center;
+  flex: 1 1 300px;
+  flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
-  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  box-shadow: 0 5px 16px color-mix(in srgb, #0b1020 10%, transparent);
-  backdrop-filter: blur(9px);
-  padding: 3px;
-  pointer-events: auto;
 }
 
-.graphNodeSearchCluster { display: flex; align-items: center; gap: 3px; min-width: 0; }
-.graphNodeSearch { position: relative; width: min(150px, 19vw); }
+.graphNodeSearchCluster { display: flex; flex: 1 1 150px; align-items: center; gap: 3px; min-width: 0; }
+.graphNodeSearch { position: relative; width: 100%; }
 .graphNodeSearch input { min-height: 0; }
 .graphNavigator .graphNavigatorToolBtn {
   appearance: none;
@@ -217,17 +208,6 @@
 .graphNavigator select:focus { background: var(--panel-2); color: var(--accent); }
 .graphVisibilitySummary { color: var(--muted); padding: 0 5px 0 2px; font: 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-@container lineage-hatg-viewport (max-width: 980px) {
-  .graphNavigationBar { flex-wrap: wrap; }
-  .graphNavigator {
-    margin-left: auto;
-  }
-  .graphNodeSearch {
-    width: clamp(96px, 24cqw, 150px);
-    min-width: 0;
-  }
-}
-
 @container lineage-hatg-viewport (max-width: 720px) {
   .graphViewportHint { display: none; }
   .graphVisibilitySummary { display: none; }
@@ -247,7 +227,6 @@
   }
   .graphNavigator {
     width: 100%;
-    margin-left: 0;
   }
   .graphNavigator select { display: none; }
   .graphNodeSearchCluster { flex: 1 1 140px; }
