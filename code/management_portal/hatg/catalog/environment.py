@@ -128,7 +128,7 @@ DECLARATIONS = (
         P("refresh", "boolean", "检查可用版本并保存观察；不安装或激活运行时"),
         P("include_runtime", "boolean", "默认 true；false 只读接入目录，不探测版本或准备状态，并忽略 refresh"),
     ), (R("providers", "array", "Provider：provider、title、kinds、capabilities、runtime（已装与可用版本）、"
-          "default_route_id、account_count"),), owner="execution"),
+          "default_route_id、account_count；允许新增账号时附订阅账号的 account_directory_prefix（含末尾路径分隔符）"),), owner="execution"),
     _d("PrepareProviderRuntime", FIXED, "准备所选 Provider 的运行环境；复用已装程序，缺失时异步安装。", (
         R("provider", description="Provider 名称"),
     ), (R("preparation", "object", "ready、preparing、busy、failed 或 pending；ListProviders 或账号接入状态可继续观察"),), mutates=True, target="provider", owner="execution"),
@@ -162,7 +162,7 @@ DECLARATIONS = (
         R("kind", description="账号种类，须是该 Provider 支持的种类", enum=("subscription_login", "api_profile", "service")),
         P("route_id", description="执行路由 ID；省略时由账号 ID 得出（codex 去掉 codex_ 前缀），provider_api 与 kimi 留空"),
         P("config", "object", "Provider 专属设置：api_profile 为 api_id；账号选择由 Backend 角色的 account_selection 管理；"
-          "claude 为 models、default_model；subscription_login 必须提供 account_dir（主机目录的规范绝对路径，允许尚未创建的目录）"),
+          "claude 为 models、default_model；subscription_login 的 account_dir 可省略或留空，由系统按实例/provider/account_id 生成并创建默认目录；显式路径须是主机规范绝对路径，允许尚未创建"),
         P("max_concurrency", "integer", "并发上限，默认 8", minimum=1, maximum=256),
         P("enabled", "boolean", "是否启用，默认 true"), P("secret", description="api_profile 的一次性密钥"),
     ), (R("registration", "object", REGISTRATION),), mutates=True, owner="execution"),

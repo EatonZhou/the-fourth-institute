@@ -426,6 +426,8 @@ def list_providers(inv):
     include_runtime = inv.argument("include_runtime") is not False
     runtime_status = provider_runtime_status(refresh=inv.argument("refresh") is True) if include_runtime else {}
     rows = registrations()
+    from management_portal.permission_system import permitted
+    can_register = next(permitted(getattr(inv, 'caller', ''), 'RegisterProviderAccount', 'account_id', ['preview']))[1]
     providers = []
     for provider, kinds in PROVIDER_KINDS.items():
         if provider == "kimi" and "service" in kinds:
@@ -441,6 +443,9 @@ def list_providers(inv):
                           "default_route_id": default, "account_count": len(own),
                           # The Model API protocol an api_profile account needs ("" accepts any).
                           "api_protocol": definition.api_protocol if definition else ""}
+        if can_register and 'subscription_login' in kinds:
+            from management_common.provider_account_paths import default_account_directory_prefix
+            item['account_directory_prefix'] = default_account_directory_prefix(provider)
         if include_runtime:
             from .provider_updates import preparation_status
             item["runtime"] = runtime_status.get(provider, {"installed_version": "", "available_version": "",
@@ -464,6 +469,7 @@ def register_provider_account(inv):
     data = {name: inv.argument(name) for name in
             ("account_id", "provider", "kind", "route_id", "config", "max_concurrency", "enabled")
             if inv.argument(name) is not None}
+    data = store.new_registration(data)
     store._validate(data)
     if store.registration(data["account_id"]) is not None:
         raise InstructionError("instruction.conflict", "执行账号已经登记")

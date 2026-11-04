@@ -124,8 +124,22 @@ def _validate(data):
         raise invalid("enabled 必须是 boolean")
 
 
-def create_registration(data, actor):
+def new_registration(data):
+    """Resolve new-account defaults once; stored registrations always have a path."""
     data = dict(data)
+    config = data.get('config', {})
+    if data.get('kind') == 'subscription_login' and isinstance(config, dict) and config.get('account_dir') in (None, ''):
+        from management_common.provider_account_paths import default_account_directory
+        try:
+            directory = default_account_directory(data.get('provider'), data.get('account_id'))
+        except ValueError as exc:
+            raise invalid(str(exc)) from None
+        data['config'] = {**config, 'account_dir': directory}
+    return data
+
+
+def create_registration(data, actor):
+    data = new_registration(data)
     if not data.get("route_id") and data.get("provider") != "provider_api" and not (
             data.get("provider") == "kimi" and data.get("kind") == "service"):
         data["route_id"] = str(data.get("account_id") or "").removeprefix("codex_") if data.get("provider") == "codex" else data.get("account_id", "")

@@ -665,11 +665,24 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const provider = select(form, "AI 后端", "provider", providers.map(p => [p.provider, p.title || p.provider]));
     const kind = select(form, "接入方式", "kind", []);
     const extra = node("div", undefined, {class: "backendForm"}); form.append(extra);
+    const directories = new Map();
+    const defaultDirectory = () => {
+      const prefix = state.providers.find(p => p.provider === provider.value)?.account_directory_prefix || "";
+      return prefix && /^[a-z][a-z0-9_\-]{0,127}$/.test(id.value.trim()) ? prefix + id.value.trim() : "";
+    };
+    const syncDirectory = () => {
+      const directory = form.elements.namedItem("account_dir");
+      if (directory && !directories.has(provider.value)) directory.value = defaultDirectory();
+    };
     const renderFields = () => {
       extra.replaceChildren();
       if (kind.value === "subscription_login") {
-        const directory = field(extra, "账号目录", "account_dir", "", {required: true, autocomplete: "off"});
-        hint(directory, "无需已有目录或预先登录。请填写用于保存登录状态的主机绝对路径；目录不存在时系统会创建，保存后将引导登录。已有登录可填写原目录。");
+        const directory = field(extra, "账号目录", "account_dir", directories.get(provider.value) ?? defaultDirectory(), {autocomplete: "off"});
+        directory.addEventListener("input", () => {
+          if (directory.value.trim()) directories.set(provider.value, directory.value);
+          else { directories.delete(provider.value); syncDirectory(); }
+        });
+        hint(directory, "系统会根据账号名称自动生成并显示默认目录，保存时创建，无需提前登录。你可以直接继续，也可以修改目录或使用已有登录的目录。");
       }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;
@@ -701,7 +714,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       kind.parentElement.hidden = kind.options.length < 2;
       renderFields();
     };
-    saveButton(form); provider.addEventListener("change", renderKinds); kind.addEventListener("change", renderFields); renderKinds();
+    saveButton(form); id.addEventListener("input", syncDirectory); provider.addEventListener("change", renderKinds); kind.addEventListener("change", renderFields); renderKinds();
     form.addEventListener("submit", event => {
       event.preventDefault(); if (busy) return;
       const value = name => form.elements.namedItem(name)?.value || "";

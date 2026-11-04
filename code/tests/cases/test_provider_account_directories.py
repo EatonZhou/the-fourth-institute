@@ -18,10 +18,48 @@ def isolated_registry(tmp_path, monkeypatch):
     return source
 
 
-def test_subscription_requires_explicit_directory_and_creates_selected_path(tmp_path):
-    with pytest.raises(InstructionError, match='account_dir'):
-        store.create_registration({'account_id': 'codex_missing', 'provider': 'codex',
-            'kind': 'subscription_login'}, 'test')
+def test_default_directory_is_host_owned_scoped_and_preview_has_no_side_effects(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from management_common import instance_manifest
+    monkeypatch.setattr(paths.Path, 'home', classmethod(lambda cls: tmp_path))
+    monkeypatch.setattr(instance_manifest, 'current_instance', lambda: SimpleNamespace(instance_id='instance_test'))
+    prefix = paths.default_account_directory_prefix('codex')
+    expected = tmp_path / '.tfi-provider-accounts/instance_test/codex/new_account'
+    assert paths.default_account_directory('codex', 'new_account') == prefix + 'new_account' == str(expected)
+    assert not expected.parent.exists()
+    for invalid in ('../elsewhere', '/absolute', ''):
+        with pytest.raises(ValueError):
+            paths.default_account_directory('codex', invalid)
+
+
+@pytest.mark.parametrize('allowed', [False, True])
+def test_catalog_default_path_visible_only_to_account_registrars(tmp_path, monkeypatch, allowed):
+    from types import SimpleNamespace
+    from management_portal.execution import isa
+    from management_portal import permission_system
+    monkeypatch.setattr(store, 'registrations', lambda: [])
+    monkeypatch.setattr(permission_system, 'permitted', lambda *args: iter([('preview', allowed)]))
+    monkeypatch.setattr(paths, 'default_account_directory_prefix', lambda p: str(tmp_path / p) + '/')
+    rows = isa.list_providers(SimpleNamespace(caller='test', argument={'include_runtime': False}.get))['providers']
+    for row in rows:
+        assert ('account_directory_prefix' in row) is (allowed and 'subscription_login' in row['kinds'])
+
+
+@pytest.mark.parametrize('config', [None, {}, {'account_dir': ''}])
+def test_subscription_defaults_create_and_store_directory(tmp_path, monkeypatch, config):
+    monkeypatch.setattr(paths, 'default_account_directory_prefix', lambda provider: str(tmp_path / provider) + '/')
+    data = {'account_id': 'codex_new', 'provider': 'codex', 'kind': 'subscription_login'}
+    if config is not None:
+        data['config'] = config
+    row = store.create_registration(data, 'test')
+    expected = tmp_path / 'codex/codex_new'
+    assert row['config']['account_dir'] == str(expected)
+    assert expected.is_dir()
+    assert hosting.account_home('codex', 'codex_new') == expected
+    assert data.get('config') == config  # Caller envelope is not modified.
+
+
+def test_subscription_creates_selected_path(tmp_path):
     directory = tmp_path / 'chosen/nested/account'
     row = store.create_registration({'account_id': 'codex_selected', 'provider': 'codex',
         'kind': 'subscription_login', 'config': {'account_dir': str(directory)}}, 'test')

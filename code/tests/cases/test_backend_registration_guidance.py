@@ -3,6 +3,12 @@ from pathlib import Path
 import subprocess
 
 
+def test_subscription_default_directory():
+    root = Path(__file__).resolve().parents[2]
+    subprocess.run(['node', str(Path(__file__).with_name('javascript') / 'subscription_directory.cjs')],
+                   cwd=root, check=True, timeout=30)
+
+
 def test_backend_registration_guidance():
     """Subscription and API setup, including safe retry after partial success.
 
