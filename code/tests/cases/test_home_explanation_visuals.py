@@ -198,27 +198,96 @@ def test_partial_sum_operands_and_query_weights_have_distinct_labels(fonts, monk
     monkeypatch.setattr(renderer._Canvas, 'text', record)
     p, s = dict(title='test'), scene(weighted())
     renderer.frame(p, s, 0, 3.5, fonts)
-    assert ((800, 155), '累加前') in drawn and ((940, 155), '本项贡献') in drawn
-    assert ((1080, 155), '累加后') in drawn
-    assert ((700, 195), 'alpha') in drawn
-    assert ((800, 195), '(0,\n 0)') in drawn
-    assert ((800, 303), '(1,\n -0.5)') in drawn
-    assert ((940, 303), '(-0.5,\n 0.75)') in drawn
-    assert ((1080, 303), '(0.5,\n 0.25)') in drawn
+    text = [value for _, value in drawn]
+    assert '累加前' in text and '本项贡献' in text and '输出' in text
+    assert 'gamma' in text and 'alpha' not in text, 'expand only the final active addition'
+    assert '(1, -0.5)' in text
+    assert '+ (-0.5, 0.75)' in text
+    assert '= (0.5, 0.25)' in text
     drawn.clear()
     renderer.frame(p, s, 0, 1.2, fonts)
-    assert not any(xy == (1080, 195) for xy, _ in drawn), 'moving endpoint is not a partial sum'
+    assert not any(value.startswith('= ') for _, value in drawn), 'moving endpoint is not a partial sum'
+    assert '平移中 · 到位后读数' in [value for _, value in drawn]
     drawn.clear()
     items = [dict(id='a', label='Alpha', key=[1, 0], vector=[2, 0]),
              dict(id='b', label='Beta', key=[0, 1], vector=[0, 2])]
     v = visual('matrix', dict(items=items, divisor=1, causal=False,
         rows=[dict(id='r', label='Selected query', vector=[1, 0])]), [event('result')])
     renderer.frame(p, scene(v), 0, 1, fonts)
-    assert ((730, 150), '查询 = Selected query · 本行权重') in drawn
-    assert ((730, 190), 'a[Selected query, j] · 按 key 列排列') in drawn
-    assert ((500, 205), '输出 O') in drawn
-    assert ((730, 535), 'O = AV  (1×2)') in drawn
-    assert not any(xy == (730, 150) and 'V (' in text for xy, text in drawn)
+    text = [value for _, value in drawn]
+    assert '查询 = Selected query' in text
+    assert '本行权重 a[Selected query, j]' in text
+    assert '本行输出 (1.4621, 0.5379)' in text
+    assert 'A (1×2) · V (2×2) = O (1×2)' in text
+
+
+def test_narrow_normalization_keeps_common_denominator_and_reveal_order(fonts, monkeypatch):
+    drawn = []
+    original = renderer._Canvas.text
+    def record(self, xy, text, color=renderer._INK, size=28, width=None, anchor=None):
+        drawn.append((text, size))
+        return original(self, xy, text, color, size, width, anchor)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    v = normal()
+    v['data']['items'][2]['masked'] = True
+    v['events'] = [event('scores'), event('denominator', at=1), event('weights', 0, at=2), event('weights', 2, at=3)]
+    s = scene(v)
+    for time in (.5, 1.5, 2.5, 3.5):
+        drawn.clear()
+        renderer.frame({}, s, 0, time, fonts)
+        text = [value for value, _ in drawn]
+        if time < 1:
+            assert '共同分母 Z' not in text and '≈ 0.8808' not in text
+        elif time < 2:
+            assert ('= 8.3891', 56) in drawn and '≈ 0.8808' not in text
+        elif time < 3:
+            assert ('Z = 8.3891', 44) in drawn and ('≈ 0.8808', 56) in drawn
+            assert '0.1192' not in text, 'later weights still wait for their event'
+        else:
+            assert ('Z = 8.3891', 44) in drawn and ('≈ 0', 56) in drawn
+            assert ('0.1192', 44) in drawn, 'earlier revealed weights persist'
+
+
+def test_projection_focus_keeps_nonzero_terms_and_exact_signed_operands(fonts, monkeypatch):
+    drawn = []
+    original = renderer._Canvas.text
+    def record(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return original(self, xy, text, *args, **kwargs)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    data = dict(input_label='x', input=[0, -1, 0], lanes=[
+        dict(id='p', label='P', matrix=[[1, 2], [math.sqrt(2), -1], [3, 4]])])
+    v = visual('projection', data, [event('multiply'), event('result', at=2)])
+    renderer.frame({}, scene(v), 0, 1, fonts)
+    assert '−1 × (√2, −1)' in drawn
+    assert not any(value.startswith('Σ =') for value in drawn)
+    drawn.clear()
+    renderer.frame({}, scene(v), 0, 2.5, fonts)
+    assert 'Σ = (−√2, 1)' in drawn
+    # Dense input uses the same authored lane focus; it must not discard terms.
+    data['input'] = [2, -1, .5]
+    drawn.clear()
+    renderer.frame({}, scene(v), 0, 1, fonts)
+    assert {'2 × (1, 2)', '−1 × (√2, −1)', '0.5 × (3, 4)'} <= set(drawn)
+
+
+def test_comparison_does_not_show_after_weights_during_condition_change(fonts, monkeypatch):
+    drawn = []
+    original = renderer._Canvas.text
+    def record(self, xy, text, *args, **kwargs):
+        drawn.append(text)
+        return original(self, xy, text, *args, **kwargs)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    items, before = cases()
+    after = dict(before, label='after', query=[0, 1])
+    v = visual('compare', dict(items=items, divisor=1, before=before, after=after, change='query'),
+        [event('before'), event('change', at=1), event('after', at=2)])
+    output = renderer._vec(visual_math(v)['cases'][1]['output'])
+    for at in (.5, 1.5, 2.5):
+        drawn.clear()
+        renderer.frame({}, scene(v), 0, at, fonts)
+        assert (output in drawn) == (at >= 2)
+        assert ('after' in drawn) == (at >= 1)
 
 
 def test_dot_sum_does_not_reveal_scaling_before_its_event(fonts, monkeypatch):

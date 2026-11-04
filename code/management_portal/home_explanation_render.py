@@ -160,71 +160,82 @@ def _normalize_draw(c, d, m, e, t):
     exp_visible = stage in {'exp', 'denominator', 'weights'}
     z_visible = stage in {'denominator', 'weights'}
     weights_visible = stage == 'weights'
-    c.text((60, 155), '来源 / 分数', _MUTED, 24)
-    if exp_visible:
-        c.text((420, 155), f"exp(s/T − {_num(m['shift'])})" if m['shift'] else 'exp(s/T) · 未归一化', _K, 24)
+    # Keep the six sources as context, but give the current operation its own
+    # large working area. Repeating six small fractions hides their denominator.
+    c.text((60, 155), '来源', _MUTED, 32)
+    c.text((250, 155), 'exp(s/T)' if exp_visible else '分数', _K, 32)
     if weights_visible:
-        c.text((865, 155), '÷ 同一个 Z → 权重', _Q, 24)
+        c.text((470, 155), '权重', _Q, 32)
     maximum = max(m['exponentials'])
     scoremax = max(1, *[abs(x) for x in m['scores']])
     for i, item in enumerate(d['items']):
-        y = 210+i*48
+        y = 215+i*55
         masked = item['masked'] and stage != 'scores'
-        c.text((60, y), f"{item['id']} · {item['label']}", _COLORS[i], 24, 185)
-        c.text((260, y), '−∞' if masked else _num(item['score']), _INK, 28)
-        if masked:
-            c.line((60, y+16), (380, y+16), _MUTED)
-        elif not exp_visible:
-            c.line((620, y+16), (620+item['score']/scoremax*200, y+16), _COLORS[i], 12)
-            c.line((620, y+3), (620, y+30), _MUTED)
+        c.text((60, y), item['label'], _COLORS[i], 44, 180)
+        if not exp_visible:
+            c.text((250, y), '−∞' if masked else _num(item['score']).replace('-', '−'), _INK, 44)
+            if masked:
+                c.text((750, y), '不可见', _MUTED, 44)
+            else:
+                c.line((750, y+29), (750+item['score']/scoremax*350, y+29), _COLORS[i], 14)
+                c.line((750, y+10), (750, y+47), _MUTED)
         if exp_visible:
             v = m['exponentials'][i]
-            c.text((420, y), _num(v), _K)
-            c.line((570, y+17), (570+v/maximum*230, y+17), _K, 12)
+            c.text((250, y), _num(v), _K if not masked else _MUTED, 44)
+            if not z_visible:
+                c.line((750, y+29), (750+v/maximum*350, y+29), _K, 14)
         if weights_visible and i <= e['index']:
-            c.text((865, y), f"{_num(m['exponentials'][i])} / {_num(m['denominator'])}", _MUTED, 24, 280)
-            c.text((1155, y), _num(m['weights'][i]), _Q, 24)
+            c.text((470, y), _num(m['weights'][i]), _Q, 44)
     if z_visible:
-        c.text((60, 515), f"Z = {' + '.join(_num(v) for v in m['exponentials'])} = {_num(m['denominator'])}", _K, 24, 1150)
+        c.line((700, 155), (700, 565), '#344153')
+        if weights_visible:
+            idx = e['index']
+            c.text((750, 155), d['items'][idx]['label'], _COLORS[idx], 44, 470)
+            c.text((750, 225), _num(m['exponentials'][idx]), _K, 56)
+            c.line((750, 305), (1180, 305), _INK, 3)
+            c.text((750, 320), f"Z = {_num(m['denominator'])}", _K, 44)
+            c.text((750, 440), '≈ '+_num(m['weights'][idx]), _Q, 56)
+        else:
+            c.text((750, 205), '左侧各项相加', _K, 44)
+            c.text((750, 285), '共同分母 Z', _MUTED, 44)
+            c.text((750, 355), '= '+_num(m['denominator']), _K, 56)
+            c.text((750, 470), '被掩码项取 0', _MUTED, 32)
     if weights_visible:
         start = 60
-        c.box((60, 559, 1220, 585), '#263244')
+        c.box((60, 578, 1220, 590), '#263244')
         for i, weight in enumerate(m['weights']):
             stop = start + 1160*weight
             if i <= e['index'] and stop > start:
-                c.draw.rectangle((start, 559, stop, 585), fill=_COLORS[i])
+                c.draw.rectangle((start, 578, stop, 590), fill=_COLORS[i])
             start = stop
-        c.text((60, 596), '单位预算 0 → 1 · '+('Σ a = 1（读数为四位近似）' if e['index'] == len(d['items'])-1 else '按来源逐项填入'), _Q, 24)
+        c.text((60, 605), '单位预算 0 → 1 · '+('Σ a = 1（读数为四位近似）' if e['index'] == len(d['items'])-1 else '按来源逐项填入'), _Q, 24)
     elif m['shift']:
-        c.text((60, 596), f"先统一减 {_num(m['shift'])} 再取指数；归一化结果不变", _MUTED, 24)
+        c.text((60, 605), f"先统一减 {_num(m['shift'])} 再取指数；归一化结果不变", _MUTED, 24)
     else:
-        c.text((60, 596), f"exp(score / T)；T = {_num(d['temperature'])} · 被掩码项指数为 0", _MUTED, 24)
+        c.text((60, 605), f"exp(score / T)；T = {_num(d['temperature'])} · 被掩码项指数为 0", _MUTED, 24)
 
 
 def _weighted_draw(c, d, m, e, t):
     idx, stage = e['index'], e['stage']
     vectors = [x['vector'] for x in d['items']]
-    point = c.axes(vectors+m['partials'])
+    if stage == 'result':
+        idx = len(vectors)-1
+    point = c.axes(vectors+m['partials'], (70, 240, 475, 545), label_size=32)
     item, contribution = d['items'][idx], m['contributions'][idx]
-    c.text((60, 150), '二维贡献 · 坐标尺度保持不变', _MUTED, 24)
+    c.text((60, 155), '同一坐标尺度', _MUTED, 32)
+    c.text((540, 150), item['label'], _COLORS[idx], 44, 680)
     if stage in {'vector', 'scaled'}:
         c.arrow(point((0, 0)), point(item['vector']), '#5f547b', 7)
         shown = item['vector'] if stage == 'vector' else [a+(b-a)*t for a, b in zip(item['vector'], contribution)]
         c.arrow(point((0, 0)), point(shown), _V, 3)
-        c.text((700, 175), f"{item['id']} · {item['label']}", _COLORS[idx], 32)
-        c.text((700, 245), f"v = {_vec(item['vector'])}", _V)
-        c.text((700, 300), f"a = {_num(item['weight'])}", _Q)
+        c.text((540, 225), f"v = {_vec(item['vector'])}", _V, 48)
+        c.text((540, 300), f"a = {_num(item['weight'])}", _Q, 48)
         if stage == 'scaled':
             for j in range(2):
-                c.text((700, 365+58*j), f"d{j+1}: {_num(item['weight'])} × {_num(item['vector'][j])} = {_num(contribution[j])}", _INK, 26)
-            c.text((700, 495), '缩放过渡中' if t < 1 else f'贡献 = {_vec(contribution)}', _V, 28)
+                c.text((540, 385+65*j), f"{_num(item['weight'])} × {_dot_operand(item['vector'][j])} = {_num(contribution[j])}", _INK, 44)
+            c.text((540, 535), '缩放过渡中' if t < 1 else f'贡献 = {_vec(contribution)}', _V, 44)
     else:
         last = len(vectors)-1 if stage == 'result' else idx
-        for x, title in ((700, '来源'), (800, '累加前'), (940, '本项贡献'), (1080, '累加后')):
-            c.text((x, 155), title, _MUTED, 24)
-        # Stack coordinates so both numbers remain readable within each column.
-        # Source IDs are labels only and must never appear as arithmetic operands.
-        column = lambda v: f"({_num(v[0])},\n {_num(v[1])})"
         for i in range(last+1):
             start = m['partials'][i-1] if i else [0, 0]
             # Move the whole arrow without rotating/scaling. The partial sum is
@@ -233,75 +244,94 @@ def _weighted_draw(c, d, m, e, t):
             origin = [x*t for x in start] if moving else start
             end = [x+y for x, y in zip(origin, m['contributions'][i])]
             c.arrow(point(origin), point(end), _COLORS[i], 4)
-            c.text((700, 195+54*i), d['items'][i]['label'], _COLORS[i], 20, 90)
-            c.text((800, 195+54*i), column(start), _INK, 20)
-            c.text((940, 195+54*i), column(m['contributions'][i]), _COLORS[i], 20)
-            if not moving:
-                c.text((1080, 195+54*i), column(m['partials'][i]), _INK, 20)
+        # One active addition replaces the six-row decimal table. Earlier
+        # contributions remain in the geometry, with no new animation schedule.
+        active = last
+        start = m['partials'][active-1] if active else [0, 0]
+        c.text((540, 220), '累加前', _MUTED, 32)
+        c.text((540, 260), _vec(start), _INK, 52)
+        c.text((540, 335), '本项贡献', _MUTED, 32)
+        c.text((540, 375), '+ '+_vec(m['contributions'][active]), _COLORS[active], 52)
+        c.line((540, 460), (1220, 460), '#506075')
+        moving = stage == 'accumulate' and t < 1 and any(contribution)
+        c.text((540, 470), '输出' if stage == 'result' else '当前部分和', _MUTED, 32)
+        if not moving:
+            c.text((540, 510), '= '+_vec(m['partials'][active]), _INK, 52)
         if stage == 'result':
             c.arrow(point((0, 0)), point(m['output']), _INK, 2)
-            c.text((700, 545), '输出 = '+_vec(m['output']), _INK, 32)
-        elif t < 1 and any(contribution):
-            c.text((700, 550), '平移中 · 不把移动端点当作部分和', _MUTED, 24)
+        elif moving:
+            c.text((540, 525), '平移中 · 到位后读数', _MUTED, 32)
     c.text((60, 600), '零贡献保留为点；不制造信息流动 · 显示值为四位近似', _MUTED, 24)
 
 
 def _compare(c, d, m, e, t):
-    changed = {'query': '查询向量', 'masked': '掩码', 'temperature': '温度'}[d['change']]
-    c.text((60, 150), f'仅改变：{changed}；K、V及其它条件固定', _Q, 28)
+    for i, item in enumerate(d['items']):
+        c.text((60, 265+48*i), item['label'], _COLORS[i], 44, 180)
+    c.text((60, 560), '输出', _MUTED, 32)
     for side, key in enumerate(('before', 'after')):
-        x, condition, result = 60+side*620, d[key], m['cases'][side]
+        x, condition, result = 290+side*485, d[key], m['cases'][side]
         if side and e['stage'] == 'before':
             continue
-        c.text((x, 205), condition['label'], _K if side else _MUTED, 28, 550)
-        c.text((x, 250), f"q={_vec(condition['query'])}   T={_num(condition['temperature'])}", _MUTED, 24)
+        c.text((x, 150), condition['label'], _K if side else _Q, 40, 445)
+        query = '('+', '.join(_dot_number(v) for v in condition['query'])+')'
+        c.text((x, 210), f"q={query}  T={_num(condition['temperature'])}", _MUTED, 32)
         if side and e['stage'] == 'change':
-            c.text((x, 355), '改变条件 → 重新计算', _Q, 32)
-            c.text((x, 410), '过渡不显示伪造的中间权重', _MUTED, 24)
+            c.text((x, 340), '改变条件', _Q, 44)
+            c.text((x, 410), '→ 重新计算', _Q, 44)
             continue
         for i, item in enumerate(d['items']):
-            y = 300+40*i
+            y = 265+48*i
             masked = condition['masked'][i]
-            c.text((x, y), item['label'], _COLORS[i], 24, 150)
-            c.text((x+155, y), 'mask' if masked else _num(result['weights'][i]), _MUTED, 24)
-            c.line((x+270, y+15), (x+270+result['weights'][i]*270, y+15), _COLORS[i], 12)
-        c.text((x, 560), '输出 '+_vec(result['output']), _INK, 28)
+            c.text((x, y), 'mask' if masked else _num(result['weights'][i]), _INK, 44)
+            c.line((x+215, y+28), (x+215+result['weights'][i]*220, y+28), _COLORS[i], 12)
+        c.text((x, 550), _vec(result['output']), _INK, 44)
     c.text((60, 605), '两侧权重条同一 0…1 尺度；输出由各自新权重重新计算', _MUTED, 24)
 
 
 def _projection(c, d, m, e, t):
-    c.text((60, 150), f"{d['input_label']} = {_vec(d['input'])}", _Q, 32)
-    c.text((60, 198), f"同一输入 {len(d['input'])} 维 → 独立矩阵 → 各 2 维结果", _MUTED, 24)
-    for i, lane in enumerate(d['lanes']):
-        x = 60+i*410
-        c.box((x, 250, x+370, 570))
-        c.text((x+18, 270), lane['label']+' · 固定参数', _COLORS[i], 28, 335)
-        if e['stage'] == 'input':
-            continue
-        for j, (weight, row) in enumerate(zip(d['input'], lane['matrix'])):
-            c.text((x+18, 320+j*31), f'{_num(weight)} × {_vec(row)}', _INK if weight else _MUTED, 24)
-        if e['stage'] == 'result':
-            c.text((x+18, 520), 'Σ = '+_vec(m['outputs'][i]), _COLORS[i], 28)
-    c.text((60, 605), '输入系数逐行乘矩阵，再相加；参数与计算结果分别显示', _MUTED, 24)
+    c.text((60, 150), f"{d['input_label']} = {_vec(d['input'])}", _Q, 44)
+    nonzero = [j for j, weight in enumerate(d['input']) if weight]
+    vector = lambda row: '('+', '.join(_dot_number(v) for v in row)+')'
+    # Sparse inputs can show all independent projections without six rows of
+    # zero products. Dense inputs focus the event's lane; all terms are retained.
+    dense = len(nonzero) > 1 and e['stage'] == 'multiply'
+    if dense:
+        lane = d['lanes'][e['index']]
+        c.text((60, 215), lane['label']+' · 逐项相乘再求和', _COLORS[e['index']], 40, 1160)
+        for i, j in enumerate(nonzero):
+            c.text((60, 275+i*50), f"{_dot_number(d['input'][j])} × {vector(lane['matrix'][j])}", _INK, 44)
+    else:
+        for i, lane in enumerate(d['lanes']):
+            y = 255+i*110
+            c.text((60, y), lane['label'], _COLORS[i], 44, 300)
+            if e['stage'] == 'input':
+                c.text((400, y), f"{len(d['input'])}×2 独立矩阵", _MUTED, 44)
+            elif e['stage'] == 'result':
+                c.text((400, y), 'Σ = '+vector(m['outputs'][i]), _COLORS[i], 56)
+            elif nonzero:
+                j = nonzero[0]
+                c.text((400, y), f"{_dot_number(d['input'][j])} × {vector(lane['matrix'][j])}", _INK, 52)
+            else:
+                c.text((400, y), '0 × 矩阵各行 = (0, 0)', _INK, 44)
+    omitted = len(d['input'])-len(nonzero)
+    c.text((60, 605), f'{omitted} 个零系数项贡献为 (0, 0)；其余项逐行相乘再相加', _MUTED, 24)
 
 
 def _matrix(c, d, m, e, t):
     rows, cols = len(d['rows']), len(d['items'])
-    cell = 46
-    c.text((60, 150), '行 = query；列 = key · 每行归一化', _Q, 28)
+    cell = 48
+    c.text((60, 150), '行 query / 列 key', _Q, 32)
     query = d['rows'][e['index']]['label']
-    c.text((730, 150), f'查询 = {query} · 本行权重', _K, 28, 490)
-    c.text((730, 190), f'a[{query}, j] · 按 key 列排列', _MUTED, 24, 490)
-    if e['stage'] == 'result':
-        c.text((500, 205), '输出 O', _V, 24)
+    c.text((590, 150), f'查询 = {query}', _K, 44, 630)
+    c.text((590, 205), f'本行权重 a[{query}, j]', _MUTED, 32, 630)
     for j, item in enumerate(d['items']):
-        c.text((210+j*cell, 205), item['id'], _MUTED, 20, cell-4)
+        c.text((180+j*60, 205), item['label'], _MUTED, 28, 58)
     for i, row in enumerate(d['rows']):
-        y = 242+i*cell
-        c.text((60, y+10), row['label'], _Q if i == e['index'] else _MUTED, 24, 145)
+        y = 250+i*cell
+        c.text((60, y+3), row['label'], _Q if i == e['index'] else _MUTED, 32, 115)
         visible = e['stage'] != 'row' or i == e['index']
         for j, weight in enumerate(m['rows'][i]['weights']):
-            x = 206+j*cell
+            x = 180+j*60
             c.box((x, y, x+cell-4, y+cell-4), '#263244')
             if not visible:
                 continue
@@ -312,47 +342,54 @@ def _matrix(c, d, m, e, t):
                 centre = cell/2-2
                 c.draw.ellipse((x+centre-radius, y+centre-radius, x+centre+radius, y+centre+radius), fill=_K)
             if i == e['index']:
-                c.text((730, 225+j*42), f"{d['items'][j]['label']}   {_num(weight)}", _K, 26, 470)
-        if visible and e['stage'] == 'result':
-            c.text((500, y+10), _vec(m['rows'][i]['output']), _V, 24)
-    c.text((60, 585), '圆面积 ∝ 权重（0…1）；斜线 = 不可见位置', _MUTED, 24)
+                column, line = divmod(j, 3)
+                c.text((590+column*340, 270+line*70), d['items'][j]['label'], _K, 44, 130)
+                c.text((730+column*340, 270+line*70), _num(weight), _K, 44)
+    c.text((60, 605), '圆面积 ∝ 权重（0…1）；斜线 = 不可见位置', _MUTED, 24)
     if e['stage'] == 'result':
-        c.text((730, 535), f'O = AV  ({rows}×2)', _INK, 32)
-        c.text((730, 580), f'A ({rows}×{cols}) · V ({cols}×2)', _V, 24)
+        c.text((590, 485), '本行输出 '+_vec(m['rows'][e['index']]['output']), _V, 44)
+        c.text((60, 555), f'A ({rows}×{cols}) · V ({cols}×2) = O ({rows}×2)', _INK, 44)
 
 
 def _pipeline(c, d, m, e, t):
     stage = e['stage']
-    c.text((60, 150), f"符号维数示意 · {d['input_label']} : n×{d['input_width']}", _Q, 28)
     n = len(d['lanes'])
-    for i, lane in enumerate(d['lanes']):
-        left, y = 60+i*400, 215
-        c.box((left, y, left+360, y+90), outline=_COLORS[i])
-        c.text((left+18, y+9), lane['label'], _COLORS[i], 28, 324)
-        c.text((left+18, y+48), lane['detail'], _MUTED, 20, 324)
-        if stage != 'lanes':
-            x = 360+i*120
-            c.arrow((left+180, y+90), (x+58, 365), _COLORS[i], 3)
-            c.box((x, 370, x+116, 425), _COLORS[i])
-            c.text((x+10, 383), f"{lane['id']} ({d['lane_width']})", _BG, 20)
-    if stage != 'lanes':
-        c.text((60, 380), d['merge_label'], _INK, 26, 280)
-        c.text((360, 450), f"n×({n}×{d['lane_width']}) · 沿特征维拼接", _MUTED, 24)
-    if stage in {'project', 'residual', 'context'}:
-        c.arrow((360+n*120, 397), (990, 397), _INK)
-        c.text((790, 335), d['projection_label'], _V, 26, 180)
-        c.text((790, 425), f"{n*d['lane_width']}×{d['input_width']}", _MUTED, 24)
-        c.box((995, 365, 1220, 440), outline=_V)
-        c.text((1010, 375), d['output_label'], _V, 24, 195)
-        c.text((1010, 407), f"n×{d['input_width']}", _MUTED, 20)
+    if stage in {'lanes', 'concat'}:
+        c.text((60, 155), f"{d['input_label']} : n×{d['input_width']} → {n} 个独立通道", _Q, 44)
+        step = 1160/n
+        for i, lane in enumerate(d['lanes']):
+            left = 60+i*step
+            c.box((left, 250, left+step-20, 405), outline=_COLORS[i])
+            c.text((left+18, 262), lane['label'], _COLORS[i], 44, step-56)
+            c.text((left+18, 325), f"n×{d['lane_width']}", _INK, 56)
+            if stage == 'concat':
+                c.arrow((left+step/2-10, 405), (left+step/2-10, 460), _COLORS[i], 3)
+                c.box((left, 465, left+step-20, 515), _COLORS[i])
+        if stage == 'lanes':
+            for i, lane in enumerate(d['lanes']):
+                c.text((60, 435+50*i), lane['label']+' : '+lane['detail'], _COLORS[i], 32, 1160)
+        if stage == 'concat':
+            c.text((60, 535), f"{d['merge_label']} : n×({n}×{d['lane_width']}) = n×{n*d['lane_width']}", _INK, 44)
+    else:
+        # Zoom into projection once the lane/concat events have explained it.
+        c.text((60, 155), d['merge_label'], _Q, 40, 380)
+        c.text((545, 155), d['projection_label'], _V, 44, 400)
+        c.text((1040, 155), d['output_label'], _K, 44, 180)
+        c.text((60, 225), f"n×{n*d['lane_width']}", _Q, 56)
+        c.text((390, 225), '×', _INK, 56)
+        c.text((545, 225), f"{n*d['lane_width']}×{d['input_width']}", _V, 56)
+        c.text((880, 225), '→', _INK, 56)
+        c.text((1040, 225), f"n×{d['input_width']}", _K, 56)
     if stage in {'residual', 'context'}:
-        c.text((60, 530), f"{d['input_label']} (n×{d['input_width']}) + {d['output_label']} (n×{d['input_width']}) → 同维残差", _Q, 28)
+        c.line((60, 325), (1220, 325), '#344153')
+        c.text((60, 360), f"{d['input_label']} (n×{d['input_width']}) + {d['output_label']} (n×{d['input_width']})", _INK, 56)
+        c.text((60, 450), f"→ n×{d['input_width']} 同维残差", _Q, 56)
     if stage == 'context':
         width = 1150/len(d['context'])
         for i, label in enumerate(d['context']):
             x = 60+i*width
-            c.box((x, 583, x+width-15, 623))
-            c.text((x+10, 588), label, _MUTED, 20, width-35)
+            c.box((x, 570, x+width-15, 630))
+            c.text((x+10, 575), label, _MUTED, 32, width-35)
     else:
         c.text((60, 600), '各通道参数独立；拼接保留段边界；数值未定义的部分只展示维数', _MUTED, 24)
 
@@ -374,9 +411,7 @@ _DRAW = {'dot': _dot, 'normalize': _normalize_draw, 'weighted_sum': _weighted_dr
 
 def _prepare_visual(plan, scene, fonts):
     from PIL import Image, ImageFont
-    fonts = {**fonts, **{size: ImageFont.truetype(fonts[24].path, size) for size in (26, 28, 32, 40)}}
-    if scene['visual']['kind'] == 'dot':
-        fonts.update({size: ImageFont.truetype(fonts[24].path, size) for size in (44, 52, 56)})
+    fonts = {**fonts, **{size: ImageFont.truetype(fonts[24].path, size) for size in (26, 28, 32, 40, 44, 48, 52, 56)}}
     image = Image.new('RGB', (1280, 720), _BG)
     c = _Canvas(image, fonts)
     c.text((48, 24), scene['title'], _INK, 40, 1180)
