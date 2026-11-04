@@ -145,14 +145,15 @@ def apply(instance, report):
                 row = connection.execute(f'SELECT directory_json FROM {table} WHERE {key}=%s AND deleted_at IS NULL',
                                          (owner[key],)).fetchone()
             if row is None or not row['directory_json']:
-                raise RuntimeError('Directory owner requires offline provenance migration: ' + owner[key])
-            directory = json_value(row['directory_json'])
+                raise RuntimeError('Directory owner requires offline ownership migration: ' + owner[key])
+            from management_portal.society_service.directory_owner import directory_metadata
+            directory_metadata(json_value(row['directory_json']), owner[key])
             kwargs = dict(owner_id=owner[key], actor='instance-layout-migration', database=database,
                           update=relocate_nested, dependencies=reconcile_dependencies)
             if external:
                 operation_id, _ = mover.register_external_move(move.source, move.target, **kwargs)
             else:
-                operation_id, _ = mover.move(move.source, move.target, origin=directory['origin'],
+                operation_id, _ = mover.move(move.source, move.target,
                                              terminate=lambda _path: None, **kwargs)
             operations.append(operation_id)
     return {'directory_operations': operations}

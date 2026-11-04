@@ -270,6 +270,8 @@ def test_skill_text_update_forwards_actor_to_skill_backend() -> None:
                     "skill_id": skill_id,
                     "path": "/share/Skills/example/SKILL.md",
                     "mtime": 123,
+                    "project_ids": ["AI员工"],
+                    "version": "a" * 64,
                 },
             ),
         ) as save,
@@ -282,6 +284,7 @@ def test_skill_text_update_forwards_actor_to_skill_backend() -> None:
 
     assert updated["kb_id"] == skill_id
     assert updated["project_ids"] == ["AI员工"]
+    assert updated["version"] == "a" * 64
     save.assert_called_once_with(
         skill_id,
         "# Updated\n",

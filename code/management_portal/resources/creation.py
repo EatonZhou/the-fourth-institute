@@ -159,6 +159,8 @@ def initialize_creation_schema(connection, schema):
             'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped', (table,))}
         if not {'aborted', 'cleanup_complete'} <= columns:
             raise RuntimeError('Creation termination schema requires the offline maintenance window')
+        from .directory_ownership_upgrade import upgrade_creations
+        upgrade_creations(connection, schema)
         return
     connection.execute(f'''CREATE TABLE IF NOT EXISTS {table} (
         operation_id TEXT PRIMARY KEY, resource_id TEXT NOT NULL UNIQUE,
@@ -167,6 +169,8 @@ def initialize_creation_schema(connection, schema):
         aborted BOOLEAN NOT NULL DEFAULT FALSE,
         cleanup_complete BOOLEAN NOT NULL DEFAULT FALSE
     )''')
+    from .directory_ownership_upgrade import upgrade_creations
+    upgrade_creations(connection, schema)
 
 
 def _identity(path):
@@ -263,10 +267,10 @@ class Creation:
                         for parent in (path, *path.parents):
                             if filesystem_path(parent).is_symlink():
                                 raise FileExistsError('Creation path contains a symbolic link: ' + str(parent))
-                        if kind == 'adopted':
+                        if kind == 'existing_directory':
                             self.queue.assert_available(path, connection=conn)
                             if not filesystem_path(path).is_dir():
-                                raise FileNotFoundError('An adopted directory must already exist')
+                                raise FileNotFoundError('A registered directory must already exist')
                             artifact = {'identity': _identity(path), 'ready': True}
                         elif kind in {'file', 'directory'}:
                             assert_empty_location(path, connection=conn)
@@ -330,7 +334,7 @@ class Creation:
         for index, artifact in enumerate(self.artifacts):
             self.assert_owned()
             target = cleanup_path(artifact['path'])
-            if artifact['kind'] == 'adopted':
+            if artifact['kind'] == 'existing_directory':
                 _assert_identity(target, artifact['identity'])
                 continue
             for parent in target.parents:
@@ -526,7 +530,8 @@ def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None,
                     queue.lock(conn)
                     for artifact in row['artifacts']:
                         writer.check(conn)
-                        if (not row['completed'] or row['aborted']) and artifact['kind'] != 'adopted':
+                        if ((not row['completed'] or row['aborted'])
+                                and (artifact['kind'] != 'existing_directory' or row['completed'])):
                             if artifact.get('git_dependency'):
                                 from .creation_git import GitWorktreeCreation
                                 def save_artifacts():

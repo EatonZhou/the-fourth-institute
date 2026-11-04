@@ -115,6 +115,9 @@ class IndexStore:
                 ).fetchone()
             if row is None or not schema_matches(row["value"], RESOURCE_INDEX_STORE_SCHEMA):
                 raise RuntimeError("unsupported ResourceService index schema")
+            connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || '.directory_ownership', 0))")
+            from .resources.directory_ownership_upgrade import upgrade_index
+            upgrade_index(connection)
 
     def _load_database(self) -> None:
         records: dict[str, dict[str, Any]] = {}
@@ -403,6 +406,40 @@ class IndexStore:
             "resource_error_count": len(resource_errors),
             "resource_count": len(owned_after),
             "index_updated_at": index_updated_at,
+        }
+
+    def apply_batch(self, changes: Iterable[ChangeSet], *, direct: bool = False) -> dict[str, Any]:
+        """Publish multiple adapter summaries atomically, then persist once.
+
+        Preflight the entire batch before changing memory. The common lock
+        excludes queries and scan publication until every owner is updated;
+        the existing persistence transaction writes all owners together.
+        """
+        changes = list(changes)
+        if not changes:
+            raise ValueError('Index batch requires changes')
+        seen: set[str] = set()
+        with self._lock:
+            for change in changes:
+                adapter = stripped_text(change.adapter)
+                if not adapter:
+                    raise ValueError('adapter name required')
+                errors: list[dict[str, Any]] = []
+                validated, protected = self._validated_upserts(change, adapter, errors)
+                deletes = self._conflict_free_deletes(change, set(validated) | protected, errors)
+                self._drop_foreign_resources(adapter, validated, deletes, errors)
+                ids = set(validated) | deletes
+                if errors or len(validated) != len(change.upserts) or seen & ids:
+                    raise ValueError('Index batch contains invalid or conflicting resources')
+                seen.update(ids)
+            results = [self.apply(change, persist=False, direct=direct) for change in changes]
+        self._persist()
+        return {
+            'results': results,
+            'upserted_ids': sorted(rid for result in results for rid in result['upserted_ids']),
+            'deleted_ids': sorted(rid for result in results for rid in result['deleted_ids']),
+            'upserted': sum(result['upserted'] for result in results),
+            'deleted': sum(result['deleted'] for result in results),
         }
 
     def _validated_upserts(

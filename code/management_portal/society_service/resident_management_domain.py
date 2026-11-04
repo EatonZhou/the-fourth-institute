@@ -347,10 +347,10 @@ def move_resident_identities(
             for record, transfer, _previous_path in prepared:
                 directory_operation = 'directory-move_' + uuid4().hex
                 stack.enter_context(mover.operation_lock(directory_operation))
-                metadata = directory_metadata(record.get('directory'), record['resident_id'])
+                directory_metadata(record.get('directory'), record['resident_id'])
                 terminate = stack.enter_context(resident_lifecycle_domain.directory_move_execution_scope([record], actor=actor))
                 mover.prepare(transfer['source'], transfer['target'], owner_id=record['resident_id'],
-                              origin=metadata['origin'], actor=actor,
+                              actor=actor,
                               terminate=terminate,
                               operation_id=directory_operation)
                 transfer['directory_operation'] = directory_operation
@@ -435,13 +435,13 @@ def update_resident(
             directory_operation = 'directory-move_' + uuid4().hex
             source = resident_record_domain.resident_folder_path(current)
             target_folder = resident_lineage_host_port.lineage_folder(destination_lineage) / 'residents' / resident_id
-            metadata = directory_metadata(current.get('directory'), resident_id)
+            directory_metadata(current.get('directory'), resident_id)
             def update(connection, source, target):
                 relocate_nested(connection, source, target)
                 return commit()
             with resident_lifecycle_domain.directory_move_execution_scope([current], actor=actor) as terminate:
                 _operation, result = DirectoryMoveStore().move(source, target_folder, owner_id=resident_id,
-                    origin=metadata['origin'], actor=actor, terminate=terminate,
+                    actor=actor, terminate=terminate,
                     database=resident_catalog.get_catalog().state_store.database, update=update,
                     dependencies=reconcile_dependencies, operation_id=directory_operation)
             return result

@@ -436,6 +436,8 @@ class LineageDataStore:
             or not lineage_data_schema_matches(connection)
         ):
             raise RuntimeError("Lineage data database does not match its schema")
+        from .directory_owner import upgrade_ownership
+        upgrade_ownership(connection)
 
     # Read inside their own transaction by lineage_state and resident_record_domain.
     @staticmethod

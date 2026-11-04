@@ -44,7 +44,6 @@ def install_mutation_provider(service: "ResourceService") -> None:
             )
         locations = payload.get("project_ids")
         options: dict[str, Any] = {
-            "origin": 'created' if automatic else 'adopted',
             "project_ids": registration_project_ids(locations) if automatic else explicit_project_ids(locations, "Repo"),
         }
         if source_kind == "exported_tree":

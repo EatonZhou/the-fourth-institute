@@ -513,7 +513,6 @@ def _merge_record(
     group: list[dict[str, Any]],
     project_roots: list[tuple[str, Path]],
     explicit_project_ids: Iterable[str] = (),
-    origin: str = 'created',
 ) -> dict[str, Any]:
     now = utc_now_iso()
     previous = dict(existing or {})
@@ -523,8 +522,8 @@ def _merge_record(
     merged_checkouts = registry_sync.merge_locations(
         previous.get("checkouts") or [], map(_checkout_entry, group)
     )
-    from .resources.directory_registrations import merge_origins
-    merge_origins(merged_checkouts, previous.get('checkouts') or [], repo_id, origin=origin)
+    from .resources.directory_registrations import owned_locations
+    owned_locations(merged_checkouts, repo_id)
 
     remotes: list[dict[str, Any]] = []
     remote_keys: set[tuple[str, str]] = set()
@@ -655,7 +654,6 @@ def register_repo_checkout(
     *,
     project_ids: Iterable[str] = (),
     repo_id: str = "",
-    origin: str = 'adopted',
 ) -> dict[str, Any]:
     checkout = inspect_git_checkout(path)
     report = REPO_REGISTRY.sync(
@@ -664,7 +662,6 @@ def register_repo_checkout(
             _merge_record,
             project_roots=_project_roots(),
             explicit_project_ids=tuple(project_ids),
-            origin=origin,
         ),
         apply=True,
         forced_id=repo_id,
@@ -685,7 +682,6 @@ def register_exported_tree(
     path: str | Path,
     *,
     project_ids: Iterable[str] = (),
-    origin: str = 'adopted',
 ) -> dict[str, Any]:
     """Register an explicit source directory without inferring or creating Git."""
     root = Path(path).expanduser()
@@ -698,14 +694,14 @@ def register_exported_tree(
     project_roots = _project_roots()
 
     def merge(existing, repo_id, group):
-        from .resources.directory_registrations import merge_origins
+        from .resources.directory_registrations import owned_locations
 
         if existing is not None and repo_source_kind(existing) != "exported_tree":
             raise ValueError("source directory already belongs to a Git Repo; source kind cannot be changed by registration")
         previous = dict(existing or {})
         now = utc_now_iso()
         checkouts = [{"path": str(root)}]
-        merge_origins(checkouts, previous.get("checkouts") or [], repo_id, origin=origin)
+        owned_locations(checkouts, repo_id)
         return {
             **previous,
             "schema": REGISTRY_SCHEMA, "id": repo_id, "type": "repo",

@@ -42,7 +42,7 @@ def test_copy_has_durable_self_owned_identity_and_retry(tmp_path):
     first = materialize(item, tmp_path)
     wid = first['target_workspace_id']
     row = get_workspace_store().rows([wid])[wid]
-    assert row['origin'] == 'created' and row['owner_id'] == wid
+    assert row['owner_id'] == wid
     assert row['operation_id']
     (Path(row['path']) / 'file').write_text('target edited')
     assert materialize(item, tmp_path) == first
@@ -113,7 +113,7 @@ def test_official_copy_binding_and_standalone_unregistration(lineage_store, tmp_
     wid = copied['target_workspace_id']
     store = get_workspace_store()
     row = store.rows([wid])[wid]
-    assert row['origin'] == 'created' and row['owner_id'] == wid
+    assert row['owner_id'] == wid
     assert wid != source['workspace_id']
     assert Path(row['path']).is_relative_to(lineage_state._lineage_dir(lid) / 'handoff-workspaces')
     roots = lineage_resident_workspaces.get_node_workspaces(lid, target, 'sample_admin')['workspaces']
@@ -228,7 +228,7 @@ def test_draft_resolves_moved_source_by_identity(lineage_store, tmp_path):
     old = Path(source['path'])
     moved = old.with_name('moved-workspace')
     store = get_workspace_store()
-    DirectoryMoveStore().move(old, moved, owner_id=source['workspace_id'], origin='created', actor='sample_admin',
+    DirectoryMoveStore().move(old, moved, owner_id=source['workspace_id'], actor='sample_admin',
                               terminate=lambda _: None, database=store.database,
                               update=relocate_nested, dependencies=repair_git_worktrees)
     old.mkdir()
@@ -237,14 +237,14 @@ def test_draft_resolves_moved_source_by_identity(lineage_store, tmp_path):
     assert (Path(result['items'][0]['result']['target_path']) / 'handoff-fixture').read_text() == 'copy me'
 
 
-def test_ordinary_binding_still_adopts_and_direct_keeps_identity(lineage_store, tmp_path):
+def test_ordinary_binding_registers_owner_and_direct_keeps_identity(lineage_store, tmp_path):
     lid, handoff, target, source = draft(lineage_store, tmp_path)
     external = tmp_path / 'existing'
     external.mkdir()
     lineage_resident_workspaces.add_node_reference_workspace(lid, target, 'sample_admin', str(external))
     roots = lineage_resident_workspaces.get_node_workspaces(lid, target, 'sample_admin')['workspaces']
     wid = next(root['workspace_id'] for root in roots if root['path'] == str(external))
-    assert get_workspace_store().rows([wid])[wid]['origin'] == 'adopted'
+    assert get_workspace_store().rows([wid])[wid]['owner_id'] == wid
     lineage_handoffs.update_handoff(lid, handoff['id'], {'items': [{}]}, 'sample_admin')
     result = lineage_handoffs.execute_handoff(lid, handoff['id'], 'sample_admin')['handoff']
     assert result['items'][0]['result']['target_workspace_id'] == source['workspace_id']
@@ -286,7 +286,7 @@ def test_git_copy_recovers_and_repairs_worktree_links(tmp_path, monkeypatch, bou
     assert materialize(item, tmp_path) == result
     store = get_workspace_store()
     moved = target.with_name('moved-copy')
-    DirectoryMoveStore().move(target, moved, owner_id=result['target_workspace_id'], origin='created',
+    DirectoryMoveStore().move(target, moved, owner_id=result['target_workspace_id'],
                               actor='alice', terminate=lambda _: None, database=store.database,
                               update=relocate_nested, dependencies=repair_git_worktrees)
     assert _git(moved, 'branch', '--show-current') == 'handoff-copy'

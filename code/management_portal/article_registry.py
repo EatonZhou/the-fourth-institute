@@ -132,12 +132,11 @@ def _merge_record(
     article_id: str,
     group: list[dict[str, Any]],
     explicit_project_ids: Iterable[str] = (),
-    origin: str = 'created',
 ) -> dict[str, Any]:
     previous = dict(existing or {})
     roots = registry_sync.merge_locations(previous.get("roots") or [], map(_root_entry, group))
-    from .resources.directory_registrations import merge_origins
-    merge_origins(roots, previous.get('roots') or [], article_id, origin=origin)
+    from .resources.directory_registrations import owned_locations
+    owned_locations(roots, article_id)
     canonical = _select_root(roots)
     title = stripped_text(canonical.get("title")) or stripped_text(previous.get("title")) or article_id
     project_ids = article_tex._dedupe(

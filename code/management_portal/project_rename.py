@@ -587,11 +587,11 @@ def rename_project(
             from management_common.directory_move_store import DirectoryMoveStore
             record = project_registry.project(project_id)
             directory = (record or {}).get('directory')
-            if not directory:
-                raise RuntimeError('Project directory origin requires the offline migration')
+            if not directory or directory != {'owner_id': change.old_id}:
+                raise RuntimeError('Project directory ownership requires the offline migration')
             if change.moves:
                 _operation, database = DirectoryMoveStore().move(change.old_root, change.new_root,
-                    owner_id=change.new_id, origin=directory['origin'], actor=actor,
+                    owner_id=change.new_id, actor=actor,
                     terminate=terminate,
                     database=portal_database(schema='lineage'),
                     update=lambda connection, source, target: control.rewrite_database(change, rewriter, apply=True),

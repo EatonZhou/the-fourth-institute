@@ -42,12 +42,11 @@ def register_article(
     primary_file: str = "",
     compiler: str = "",
     build_root: str | Path | None = None,
-    origin: str = 'adopted',
 ) -> dict[str, Any]:
     item = article_discovery.inspect_article_root(path, primary_file=primary_file)
     report = article_registry.ARTICLE_REGISTRY.sync(
         [[item]],
-        merge=functools.partial(article_registry._merge_record, explicit_project_ids=tuple(project_ids), origin=origin),
+        merge=functools.partial(article_registry._merge_record, explicit_project_ids=tuple(project_ids)),
         apply=True,
         forced_id=article_id,
     )

@@ -11,9 +11,8 @@ from management_portal.resources.registry_store import get_registry_store
 SKILL = 'skill_0123456789ab'
 
 
-@pytest.mark.parametrize('origin', ['created', 'adopted'])
 @pytest.mark.parametrize('single_file', [True, False])
-def test_skill_unregister_by_origin(tmp_path, monkeypatch, origin, single_file):
+def test_skill_unregister_cleans_exact_registered_scope(tmp_path, monkeypatch, single_file):
     root = tmp_path / 'skill'
     root.mkdir()
     primary = root / 'SKILL.md'
@@ -22,7 +21,7 @@ def test_skill_unregister_by_origin(tmp_path, monkeypatch, origin, single_file):
     companion.parent.mkdir()
     companion.write_text('guide')
     target = primary if single_file else root
-    register_owned('knowledge', SKILL, [target], origin=origin)
+    register_owned('knowledge', SKILL, [target])
     record = {'resource_id': SKILL, 'resource_type': 'skill',
               'source': {'path': str(primary)},
               'attributes': {'content_root': str(root), 'single_file': single_file}}
@@ -31,10 +30,10 @@ def test_skill_unregister_by_origin(tmp_path, monkeypatch, origin, single_file):
     assert status == 200
     assert get_registry_store().get('knowledge', SKILL) is None
     assert target.exists()
-    assert bool(result['cleanup_ids']) == (origin == 'created')
+    assert result['cleanup_ids']
     get_directory_cleanup_store().run_pending()
-    assert target.exists() == (origin == 'adopted')
-    assert companion.exists() == (single_file or origin == 'adopted')
+    assert not target.exists()
+    assert companion.exists() == single_file
 
 
 def test_skill_delete_requires_root_address():

@@ -193,5 +193,5 @@ def test_a_project_record_holds_only_the_fields_portal_reads():
     with project_registry.mutate() as document:
         document["projects"][0].pop("db_name")
         document["projects"].append({"id": "Full", **{field: "" for field in project_registry.PROJECT_FIELDS - {"id", "directory"}},
-                                     'directory': {'origin': 'created', 'owner_id': 'Full'}})
+                                     'directory': {'owner_id': 'Full'}})
     assert project_registry.project("FlowTango") == {"id": "FlowTango", "status": "active"}

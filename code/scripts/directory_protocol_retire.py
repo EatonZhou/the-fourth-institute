@@ -1,4 +1,4 @@
-"""Retirement cleanup for created object directories outside all instance areas.
+"""Retirement cleanup for owned object directories outside all instance areas.
 
 Invoked by the installer with all application clients stopped and PostgreSQL
 available. Failure keeps the instance and durable queue intact for retry.
@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-def external_created_directories(connection, instance):
+def external_owned_directories(connection, instance):
     from management_common.instance_manifest import AREAS
     from management_common.portal_database import _database_schema
     from management_common.instance_locations import located_path
@@ -18,9 +18,7 @@ def external_created_directories(connection, instance):
     from management_portal.resources.directory_registrations import COLLECTIONS, locations
     boundaries = [instance.root, *(instance.area(area) for area in AREAS)]
     found = {}
-    def collect(owner, path, origin):
-        if origin != 'created':
-            return
+    def collect(owner, path):
         absolute = Path(located_path(path))
         if not any(absolute.is_relative_to(root) for root in boundaries):
             from management_common.directory_paths import validate_removal
@@ -28,22 +26,22 @@ def external_created_directories(connection, instance):
             found[str(absolute)] = owner
     workspace = '"' + _database_schema('workspace') + '".workspaces'
     if connection.execute('SELECT to_regclass(%s)', (workspace,)).fetchone()[0]:
-        for row in connection.execute(f'SELECT workspace_id,path,origin FROM {workspace} WHERE deleted_at IS NULL').fetchall():
-            collect(row['workspace_id'], row['path'], row['origin'])
+        for row in connection.execute(f'SELECT owner_id,path FROM {workspace} WHERE deleted_at IS NULL').fetchall():
+            collect(row['owner_id'], row['path'])
     registry = '"' + _database_schema('resource_registry') + '".registry_documents'
     if connection.execute('SELECT to_regclass(%s)', (registry,)).fetchone()[0]:
         for row in connection.execute(f'SELECT collection,document_id,document_json FROM {registry}').fetchall():
             document = json_value(row['document_json'])
             if row['collection'] in COLLECTIONS:
                 for entry in locations(row['collection'], document):
-                    collect(row['document_id'], entry['path'], entry.get('origin'))
+                    collect(entry['owner_id'], entry['path'])
             elif row['collection'] == 'project_registry':
                 for project in document.get('projects', []):
-                    collect(project['id'], project['path'], project.get('directory', {}).get('origin'))
+                    collect(project['directory']['owner_id'], project['path'])
     return found
 
 
-def cleanup_external_created():
+def cleanup_external_owned():
     from management_common.instance_manifest import current_instance, AREAS
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     from management_common.directory_paths import cleanup_path
@@ -75,7 +73,7 @@ def cleanup_external_created():
         owners = connection.execute(f"SELECT DISTINCT owner_id FROM {mover.table} WHERE phase='committed'").fetchall()
         for row in owners:
             cancel_owner_moves(connection, row['owner_id'])
-        directories = external_created_directories(connection, instance)
+        directories = external_owned_directories(connection, instance)
         boundaries = [instance.root, *(instance.area(area) for area in AREAS)]
         for task in queue.status(connection=connection):
             path = cleanup_path(task['location'])
@@ -88,8 +86,8 @@ def cleanup_external_created():
     pending = [task for cleanup_id in ids for task in queue.status(cleanup_id=cleanup_id) if not task['completed_at']]
     if pending:
         raise RuntimeError('External object cleanup remains pending: ' + ', '.join(task['location'] for task in pending))
-    return {'external_created_deleted': sorted(directories)}
+    return {'external_owned_deleted': sorted(directories)}
 
 
 if __name__ == '__main__':
-    print(json.dumps(cleanup_external_created(), ensure_ascii=False))
+    print(json.dumps(cleanup_external_owned(), ensure_ascii=False))

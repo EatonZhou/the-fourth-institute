@@ -36,19 +36,19 @@ def test_unregister_releases_retention_in_same_transaction(tmp_path, nested):
     root.mkdir()
     upload.write_text('object data')
     resource_id = 'skill_111111111111'
-    directories.register_owned('knowledge', resource_id, [root], origin='adopted')
+    directories.register_owned('knowledge', resource_id, [root])
     retention = RetentionStore()
     retention.declare(upload, category='object_data', owner_id=resource_id)
     registry = get_registry_store()
     if nested:
         with pytest.raises(RuntimeError, match='rollback'):
             with registry.database.transaction() as connection:
-                directories.unregister_nested([tmp_path], connection=connection, actor='owner')
+                directories.unregister_nested([root], connection=connection, actor='owner')
                 raise RuntimeError('rollback')
         assert registry.get('knowledge', resource_id)
         assert not get_directory_cleanup_store().pending_at(upload)
         with registry.database.transaction() as connection:
-            directories.unregister_nested([tmp_path], connection=connection, actor='owner')
+            directories.unregister_nested([root], connection=connection, actor='owner')
     else:
         directories.unregister_owned('knowledge', resource_id, actor='owner')
     assert get_directory_cleanup_store().pending_at(upload)
@@ -72,19 +72,19 @@ def test_paper_manifest_creation_does_not_take_existing_directory(tmp_path, monk
     assert get_registry_store().get('paper', 'paper_111111111111') is None
 
 
-def test_new_paper_creation_cannot_take_registered_adopted_identity(tmp_path):
+def test_new_paper_creation_cannot_take_registered_identity(tmp_path):
     from management_portal.paper_store import PaperStore
     store = PaperStore(tmp_path / 'papers')
-    root = tmp_path / 'adopted'
+    root = tmp_path / 'registered'
     root.mkdir()
     resource_id = 'paper_111111111111'
-    directories.register_owned('paper', resource_id, [root], origin='adopted')
+    directories.register_owned('paper', resource_id, [root])
     store.write_manifest({'id': resource_id, 'title': 'Original'}, root)
     before = (root / 'manifest.json').read_bytes()
     with pytest.raises(FileExistsError, match='already registered'):
         store.register({'id': resource_id, 'title': 'Different title'}, '')
     assert (root / 'manifest.json').read_bytes() == before
-    assert get_registry_store().get('paper', resource_id)['directory']['origin'] == 'adopted'
+    assert get_registry_store().get('paper', resource_id)['directory'] == {'owner_id': resource_id}
 
 
 def test_knowledge_create_rejects_unregistered_matching_file(tmp_path, monkeypatch):
@@ -182,7 +182,7 @@ def test_repo_initialization_checks_pending_before_git_writes(tmp_path, monkeypa
 
 
 @pytest.mark.parametrize('kind', ['knowledge', 'experiment'])
-def test_creation_retry_keeps_adopted_owner_and_original_content(tmp_path, monkeypatch, kind):
+def test_creation_retry_keeps_registered_owner_and_original_content(tmp_path, monkeypatch, kind):
     from knowledge_board_lan import knowledge_backend as kb
     from management_portal.resources.providers import experiment
     from management_portal.resources import ResourceService
@@ -199,12 +199,10 @@ def test_creation_retry_keeps_adopted_owner_and_original_content(tmp_path, monke
     first = create(payload)
     path = Path(first['path'])
     original = path.read_bytes()
-    with get_registry_store().writer('knowledge') as writer:
-        record = writer.get('knowledge', resource_id)
-        for entry in record['directories']:
-            entry['origin'] = 'adopted'
-        record['directory']['origin'] = 'adopted'
-        writer.put('knowledge', resource_id, record)
+    registration = get_registry_store().get('knowledge', resource_id)
+    assert registration['directory'] == {'owner_id': resource_id}
+    assert all(entry['owner_id'] == resource_id and 'origin' not in entry
+               for entry in registration['directories'])
     with pytest.raises(ValueError, match='different arguments'):
         create({**payload, 'title': 'Changed', 'body': 'Must not replace'})
     repeated = create(payload)
@@ -212,10 +210,10 @@ def test_creation_retry_keeps_adopted_owner_and_original_content(tmp_path, monke
     assert repeated['created'] is False
     assert repeated['title'] == 'Original'
     assert path.read_bytes() == original
-    assert get_registry_store().get('knowledge', resource_id)['directory']['origin'] == 'adopted'
+    assert get_registry_store().get('knowledge', resource_id) == registration
 
 
-def test_skill_scan_registers_source_and_retains_adoption(tmp_path, monkeypatch):
+def test_skill_scan_registers_source_and_retains_ownership(tmp_path, monkeypatch):
     from skill_board_lan import skill_backend as skills
     root = tmp_path / 'skills' / 'example'
     root.mkdir(parents=True)
@@ -226,14 +224,12 @@ def test_skill_scan_registers_source_and_retains_adoption(tmp_path, monkeypatch)
     monkeypatch.setattr(skills, '_parse_projects', lambda **kw: [])
     monkeypatch.setattr(skills, '_get_item_cached', lambda **kw: {'skill_id': 'skill_111111111111'})
     skills.scan_index_source()
-    assert get_registry_store().get('knowledge', 'skill_111111111111')['directory']['origin'] == 'created'
-    with get_registry_store().writer('knowledge') as writer:
-        record = writer.get('knowledge', 'skill_111111111111')
-        record['directories'][0]['origin'] = 'adopted'
-        record['directory']['origin'] = 'adopted'
-        writer.put('knowledge', 'skill_111111111111', record)
+    registration = get_registry_store().get('knowledge', 'skill_111111111111')
+    assert registration['directory'] == {'owner_id': 'skill_111111111111'}
+    assert all(entry['owner_id'] == 'skill_111111111111' and 'origin' not in entry
+               for entry in registration['directories'])
     skills.scan_index_source()
-    assert get_registry_store().get('knowledge', 'skill_111111111111')['directory']['origin'] == 'adopted'
+    assert get_registry_store().get('knowledge', 'skill_111111111111') == registration
 
 
 def test_projection_retry_batch_does_not_starve_later_resources(monkeypatch):

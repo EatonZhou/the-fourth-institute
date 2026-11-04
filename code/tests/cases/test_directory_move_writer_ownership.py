@@ -28,8 +28,12 @@ import sys
 import time
 
 from management_common.directory_move_store import DirectoryMoveStore
+from management_common import host_instances
 
 source, target, control, operation = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4]
+# Inherit the parent fixture's host registry, just as its instance and database.
+# A subprocess does not inherit conftest's in-memory monkeypatch.
+host_instances.user_home = lambda: Path(sys.argv[5])
 original = os.sendfile
 paused = False
 
@@ -59,7 +63,7 @@ def sendfile(out_fd, in_fd, offset, count):
 os.sendfile = sendfile
 try:
     DirectoryMoveStore().prepare(source, target, owner_id='workspace_123456789abc',
-        origin='created', actor='move-lease-probe', terminate=lambda _: None, operation_id=operation)
+        actor='move-lease-probe', terminate=lambda _: None, operation_id=operation)
 except BaseException as exc:
     (control / 'outcome.json').write_text(json.dumps({'type': type(exc).__name__, 'message': str(exc)}))
 else:
@@ -81,6 +85,7 @@ def wait_for(predicate, seconds=20):
 @pytest.mark.skipif(sys.platform != 'linux', reason='real sendfile and distinct /dev/shm mount')
 @pytest.mark.parametrize('ending', ['death', 'ended'])
 def test_live_copy_survives_session_loss_then_recovers(workspace, tmp_path, ending):
+    from management_common import host_instances
     mover = DirectoryMoveStore()
     # Refuse anything except the disposable server created by the standard fixture.
     host = parse_qs(urlsplit(mover.database.dsn).query)['host'][0]
@@ -101,11 +106,12 @@ def test_live_copy_survives_session_loss_then_recovers(workspace, tmp_path, endi
         writer = control / 'writer.py'
         writer.write_text(WRITER)
         child = subprocess.Popen([sys.executable, str(writer), str(workspace.root),
-            str(target), str(control), operation], env=child_env, stdout=subprocess.DEVNULL,
+            str(target), str(control), operation, str(host_instances.user_home())], env=child_env, stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE, text=True)
         try:
-            wait_for(lambda: (control / 'ready.json').exists() or child.poll() is not None)
+            wait_for(lambda: (control / 'ready.json').exists() or (control / 'outcome.json').exists() or child.poll() is not None)
             assert child.poll() is None, child.stderr.read()
+            assert not (control / 'outcome.json').exists(), (control / 'outcome.json').read_text()
             ready = json.loads((control / 'ready.json').read_text())
             assert ready['pid'] == child.pid and ready['copied'] == 4096 and ready['nlink'] == 1
             row = mover.get(operation)
@@ -179,7 +185,7 @@ def test_live_copy_survives_session_loss_then_recovers(workspace, tmp_path, endi
 
 def prepare(mover, workspace, *, operation='owner-test'):
     target = workspace.root.with_name('moved')
-    return mover.prepare(workspace.root, target, owner_id='owner', origin='created',
+    return mover.prepare(workspace.root, target, owner_id='owner',
                          actor='actor', terminate=lambda _: None, operation_id=operation)
 
 
@@ -358,7 +364,7 @@ def test_registration_callback_session_loss_rolls_back_and_never_finishes(worksp
             workspace.root.rename(target)
             mover.register_external_move(workspace.root, target, **kwargs)
         else:
-            mover.move(workspace.root, target, origin='created', terminate=lambda _: None, **kwargs)
+            mover.move(workspace.root, target, terminate=lambda _: None, **kwargs)
     operation, = operation_ids
     row = mover.get(operation)
     assert row['actor'] == 'actor' and row['phase'] == 'files_ready'
@@ -396,7 +402,7 @@ def test_dependency_session_loss_keeps_receipt_until_callback_quiesces(workspace
             workspace.root.rename(target)
             mover.register_external_move(workspace.root, target, **kwargs)
         else:
-            mover.move(workspace.root, target, origin='created', terminate=lambda _: None, **kwargs)
+            mover.move(workspace.root, target, terminate=lambda _: None, **kwargs)
     operation, = operations
     assert writer_receipt(mover, operation)['ended'] is True
     assert mover.get(operation)['phase'] == 'committed'
@@ -420,7 +426,7 @@ def test_termination_callback_lease_loss_prevents_copy(workspace):
             assert writer_receipt(mover, operation)['ended'] is False
             kill_test_lease(mover, operation)
         with pytest.raises(MoveWriterUnavailable):
-            mover.prepare(workspace.root, target, owner_id='owner', origin='created',
+            mover.prepare(workspace.root, target, owner_id='owner',
                           actor='actor', terminate=terminate, operation_id=operation)
         row = mover.get(operation)
         assert row['phase'] == 'prepared' and not target.exists()
@@ -452,7 +458,7 @@ def test_cancelled_move_retains_live_dependency_writer_even_after_session_loss(w
             assert (workspace.root / 'keep').read_text() == 'source'
             assert writer_receipt(mover, operation)['ended'] is False
         with pytest.raises(MoveWriterUnavailable):
-            mover.move(workspace.root, target, owner_id='owner', origin='created', actor='actor',
+            mover.move(workspace.root, target, owner_id='owner', actor='actor',
                        terminate=lambda _: None, database=workspace.store.database,
                        update=lambda *_: None, dependencies=dependencies, operation_id=operation)
         with mover.database.read() as c:

@@ -4,35 +4,35 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 18
-  created_at: '2026-09-03'
+  number: 19
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T18:52:39Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T07:22:54Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/skill_board_lan/skill_backend.py
-  - ${code_root}/management_portal/resource_index_knowledge.py
-  - ${code_root}/management_portal/resources/schema.py
-  - ${code_root}/management_portal/portal_access_control.py
-  - ${code_root}/knowledge_board_lan/knowledge_backend.py
-  - ${code_root}/knowledge_board_lan/knowledge_board.html
-  - ${code_root}/management_portal/resource_catalog.html
-  - ${code_root}/management_portal/static/resource_catalog.js
-  - ${code_root}/management_portal/page_renderers.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_skill_files.py
-  - ${code_root}/tests/cases/test_skill_deletion.py
-  - ${code_root}/tests/cases/test_resource_portal_routes.py
-  - ${code_root}/tests/cases/test_resource_index_backend.py
-  - ${code_root}/tests/cases/test_portal_access_control.py
+  - /opt/tfi/the-fourth-institute-dev/code/skill_board_lan/skill_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_index_knowledge.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/schema.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_access_control.py
+  - /opt/tfi/the-fourth-institute-dev/code/knowledge_board_lan/knowledge_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/knowledge_board_lan/knowledge_board.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_catalog.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/resource_catalog.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/page_renderers.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_skill_files.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_skill_deletion.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_portal_routes.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_index_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_access_control.py
   related:
   - decision_eb066fbea4ed
   - decision_58db6282c244
@@ -100,9 +100,13 @@ Portal 从三个位置发现 Skill：
 - 保存由权限系统判定（decision_b820faf42218）：默认模板要求对该 Skill 有 contributor。Project Skill 在 R 树上挂在所属 Project 下，对该 Project 的表项覆盖它；全局 Skill 挂在“共享”下（decision_600ae27b0538）。`read_scope` 是来源与展示字段，不额外推导资源权限。保存成功后，服务清除缓存并通知资源索引，再次读取即得到新文本；保存失败时页面保留正在编辑的内容。
 - 保存不比较版本，两人同时编辑时后保存的内容生效。
 
+## 项目迁移
+
+目标 Project 的 `knowledge.move` 动作可以搬迁单文件 Skill 和目录型 Skill，并与普通 Knowledge 混合提交。每项提供原 Skill ID 及 `ReadResource` 返回的 SHA256 版本；迁移保留 ID、原文件格式、正文和附件，统一更新目录登记、项目权限事实及在线索引。目录包按包根拥有文件，单文件仅拥有该文件，不搬迁共享父目录。编辑、删除和移动共用稳定资源 ID 锁；重试、部分完成和投影恢复见 decision_3ece26686464。
+
 ## 删除
 
-**只能删除 Skill 本身。** Skill 包或单文件的删除、来源保留及失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理。
+**只能删除 Skill 本身。** Skill 包或单文件的删除、文件归属及失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理。
 
 - 内部文件地址不能单独删除。目录型 Skill 的处理范围是整个目录，Project 中的单文件 Skill 是该文件；页面在删除前说明影响范围。
 - 各来源的文件清理按《目录与路径协议》（decision_4aa13bc21e8e）处理。

@@ -281,13 +281,9 @@ def _build_item(
 ) -> dict[str, Any]:
     text = _read_text(primary_path)
     meta, body = _parse_front_matter(text)
-    is_project_knowledge_entry = source == "project" and root.is_file()
-    skill_id = str(
-        meta.get("kb_id")
-        if is_project_knowledge_entry
-        else meta.get("id")
-        or ""
-    )
+    # Identity belongs to the document, independent of where the file or
+    # package is registered. Relocation must not change its interpretation.
+    skill_id = str(meta.get("kb_id") or meta.get("id") or "")
     name = str(meta.get("name") or "").strip() or root.name or primary_path.stem
     title = (
         _first_heading(body)
@@ -562,7 +558,7 @@ def _resolve_skill_record(skill_id: str, *, actor: str = "") -> dict[str, Any]:
     return record
 
 
-def _resolve_skill_address(address: str, *, actor: str = "") -> tuple[str, Path]:
+def _resolve_skill_address(address: str, *, actor: str = "") -> tuple[str, Path, dict]:
     clean = str(address or "").strip().strip("/")
     skill_id, separator, suffix = clean.partition("/")
     record = _resolve_skill_record(skill_id, actor=actor)
@@ -584,10 +580,19 @@ def _resolve_skill_address(address: str, *, actor: str = "") -> tuple[str, Path]
             raise ValueError("invalid Skill file address") from exc
     if not path.exists() or not path.is_file():
         raise KeyError("skill file not found")
-    return skill_id, path
+    return skill_id, path, record
 
 
 def delete_skill(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]:
+    from management_portal.resources.knowledge_move_locks import knowledge_identity_lock
+    clean = str(address or "").strip().strip("/")
+    if not re.fullmatch(r"skill_[0-9a-f]{12}", clean):
+        return 400, {"error": "root skill address required"}
+    with knowledge_identity_lock(clean):
+        return _delete_skill_locked(clean, actor=actor)
+
+
+def _delete_skill_locked(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]:
     clean = str(address or "").strip().strip("/")
     if "/" in clean:
         return 400, {"error": "root skill address required"}
@@ -636,6 +641,7 @@ def delete_skill(address: str, *, actor: str = "") -> tuple[int, dict[str, Any]]
         "skill_id": clean,
         "kb_id": clean,
         "path": original_path,
+        "project_ids": attrs.get("project_ids", []),
         **deletion,
     }
 
@@ -648,8 +654,17 @@ def save_address_text(
     expected_version: object = None,
 ) -> tuple[int, dict[str, Any]]:
     """Replace a Skill file; ``expected_version`` is the sha256 that ReadResource returned."""
+    from management_portal.resources.knowledge_move_locks import knowledge_identity_lock
+    root_id = str(address or "").strip().strip("/").partition("/")[0]
+    if not re.fullmatch(r"skill_[0-9a-f]{12}", root_id):
+        return 400, {"error": "canonical skill address required"}
+    with knowledge_identity_lock(root_id):
+        return _save_address_text_locked(address, text, actor=actor, expected_version=expected_version)
+
+
+def _save_address_text_locked(address, text, *, actor, expected_version):
     try:
-        skill_id, path = _resolve_skill_address(address, actor=actor)
+        skill_id, path, record = _resolve_skill_address(address, actor=actor)
     except ValueError as exc:
         return 400, {"error": str(exc)}
     except KeyError as exc:
@@ -665,7 +680,8 @@ def save_address_text(
         if expected_version is not None and str(expected_version).strip() != current:
             return 409, {"error": "Skill 已被其他修改更新；请重新加载后再保存", "current_version": current}
         before = path.read_text(encoding="utf-8")
-        path.write_text(body, encoding="utf-8")
+        from knowledge_board_lan.knowledge_backend import _write_text_atomic
+        _write_text_atomic(path, body)
         record_text_change(address, path, before, body)
     _MD_CACHE.pop(str(path.resolve()), None)
     return 200, {
@@ -674,4 +690,6 @@ def save_address_text(
         "skill_id": skill_id,
         "path": str(path),
         "mtime": int(path.stat().st_mtime),
+        "project_ids": (record.get("attributes") or {}).get("project_ids", []),
+        "version": hashlib.sha256(path.read_bytes()).hexdigest(),
     }

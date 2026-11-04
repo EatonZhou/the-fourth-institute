@@ -17,7 +17,7 @@ def test_registration_versions_and_roles(tmp_path):
                                      "kind": "subscription_login", "route_id": "test",
                                      "config": {"account_dir": str(tmp_path / "accounts" / "codex_test")}}, "alice")
     assert row["version"] == 1
-    assert row['directory_origin'] == 'adopted'
+    assert 'directory_origin' not in row
     assert row['directory_owner'] == 'host'
     assert store.registration("codex_test")["created_by"] == "alice"
     assert store.create_registration(row, "bob") is None
@@ -50,6 +50,51 @@ def test_account_routing_flags_are_replaced_by_role_selection(tmp_path):
     assert role["account_selection"] == "fixed"
     with pytest.raises(ValueError):
         store.update_role("default", "codex_one", "m", "", 2, "alice", "random")
+
+
+@pytest.mark.parametrize('existing', [False, True])
+def test_host_account_upgrade_and_unregister_preserve_files(tmp_path, existing):
+    from management_portal.execution import account_registrations as store
+    home = tmp_path / 'host-account'
+    if existing:
+        home.mkdir(mode=0o700)
+        (home / 'host-data').write_text('host owned')
+    row = store.create_registration({
+        'account_id': 'codex_host', 'provider': 'codex', 'kind': 'subscription_login',
+        'config': {'account_dir': str(home)},
+    }, 'alice')
+    (home / 'after-registration').write_text('host owned too')
+    database = store.database()
+    with database.transaction() as connection:
+        connection.execute("ALTER TABLE registrations ADD COLUMN directory_origin TEXT "
+                           "GENERATED ALWAYS AS ('adopted'::text) STORED")
+    # A fresh owner instance applies its formal DDL, including legacy-column retirement.
+    store._database.cache_clear()
+    upgraded = store.registration('codex_host')
+    assert upgraded == row
+    assert upgraded['directory_owner'] == 'host'
+    assert 'directory_origin' not in upgraded
+    assert store.delete_registration('codex_host')
+    assert (home / 'after-registration').read_text() == 'host owned too'
+    if existing:
+        assert (home / 'host-data').read_text() == 'host owned'
+
+
+def test_session_cleanup_excludes_host_account_inside_instance_area():
+    from management_common.instance_manifest import current_instance
+    from management_portal.execution import session_retention, account_registrations as store
+    root = current_instance().area('provider-state') / 'dsh'
+    host = root / 'host-session'
+    store.create_registration({
+        'account_id': 'codex_host', 'provider': 'codex', 'kind': 'subscription_login',
+        'config': {'account_dir': str(host)},
+    }, 'alice')
+    (host / 'transcript').write_text('keep')
+    owned = root / 'owned-session'
+    owned.mkdir()
+    assert session_retention.released('dsh', 'host-session') == []
+    assert session_retention.released('dsh', 'owned-session') == [owned]
+    assert (host / 'transcript').read_text() == 'keep'
 
 
 def test_registration_rejects_invalid_identity_and_sensitive_config(tmp_path):

@@ -25,6 +25,9 @@ from scripts.instance_storage_migration import require_database_alone, require_o
 def preservation_facts(connection):
     """Hash protected business fields, without returning their contents."""
     facts = {}
+    # These are exclusions from the preservation digest, not required columns.
+    # Keep retired column names here so dropping them from an old installation
+    # compares equal to a fresh schema where they are already absent.
     for schema, table, omitted in (
         ('lineage', 'residents', ['directory_json']),
         ('lineage', 'lineages', ['directory_json']),

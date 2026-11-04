@@ -31,14 +31,14 @@ def seed_owner(*, resident=RID, lineage=LID):
     from management_portal.society_service.state_store import get_lineage_data_store
     from management_portal.resources.workspace_store import get_workspace_store
     from management_common.instance_manifest import current_instance
-    get_workspace_store().ensure('workspace_000000000000', str(current_instance().area('projects') / 'seed-workspace'), origin='created')
+    get_workspace_store().ensure('workspace_000000000000', str(current_instance().area('projects') / 'seed-workspace'))
     database = get_lineage_data_store().database
     with database.transaction() as connection:
         for table, key, identifier in [('residents', 'resident_id', resident), ('lineages', 'lineage_id', lineage)]:
             extra_columns = ',owned_workspace_id' if table == 'residents' else ''
             extra_values = ",'workspace_000000000000'" if table == 'residents' else ''
             connection.execute(f'INSERT INTO {table}({key},directory_json{extra_columns}) VALUES (%s,%s::jsonb{extra_values}) ON CONFLICT DO NOTHING',
-                               (identifier, json.dumps({'origin': 'created', 'owner_id': identifier})))
+                               (identifier, json.dumps({'owner_id': identifier})))
     return database
 
 
@@ -91,7 +91,7 @@ def test_apply_moves_whole_folder_and_nested_current_registrations(instance, mon
     from management_portal.resources.workspace_store import get_workspace_store
     workspace = get_workspace_store()
     wid = 'workspace_111111111111'
-    workspace.ensure(wid, str(old / 'workspace'), origin='created', owner_id=RID)
+    workspace.ensure(wid, str(old / 'workspace'), owner_id=RID)
     schema = _database_schema('relocation_probe')
     database = portal_database(schema='relocation_probe')
     with database.transaction() as c:
@@ -174,7 +174,7 @@ def test_multiple_old_folders_keep_separate_resource_directories(instance, monke
     paths_by_id = {'workspace_111111111111': old.parents[1], 'workspace_222222222222': other,
                    'workspace_333333333333': new.parents[1]}
     for identity, path in paths_by_id.items():
-        store.ensure(identity, str(path), origin='created')
+        store.ensure(identity, str(path))
     remainder=migration.plan_remainders(instance,report,{LID:'P'})
     assert not remainder['conflicts']
     from management_portal import provider_session_relocation
@@ -197,7 +197,7 @@ def test_already_moved_owner_only_updates_registration(instance):
     from management_common.directory_move_store import DirectoryMoveStore
     store = get_workspace_store()
     wid = 'workspace_111111111111'
-    store.ensure(wid, str(old / 'workspace'), origin='adopted', owner_id=RID)
+    store.ensure(wid, str(old / 'workspace'), owner_id=RID)
     result = migration.apply(instance, migration.plan(instance, rows))
     operation = DirectoryMoveStore().get(result['directory_operations'][0])
     assert operation['mode'] == 'external' and operation['phase'] == 'completed'

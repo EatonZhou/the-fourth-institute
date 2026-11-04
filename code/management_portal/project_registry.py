@@ -64,9 +64,9 @@ def _only_known_fields(payload: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(item, dict) or 'directory' not in item:
             continue
         directory = item['directory']
-        if (not isinstance(directory, dict) or set(directory) != {'origin', 'owner_id'}
-                or directory['origin'] not in {'created', 'adopted'} or directory['owner_id'] != item.get('id')):
-            raise ValueError('Project directory requires its origin and Project owner ID')
+        if (not isinstance(directory, dict) or set(directory) != {'owner_id'}
+                or directory['owner_id'] != item.get('id')):
+            raise ValueError('Project directory requires its Project owner ID')
     extra = [
         f"{item.get('id') or '?'}.{key}"
         for item in payload["projects"] if isinstance(item, dict)
@@ -80,6 +80,37 @@ def _only_known_fields(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def upgrade_directory_ownership(connection) -> int:
+    """Retire directory classification through the registry's writer transaction.
+
+    The installer supplies the transaction, before new clients start. Decode
+    stored JSON without expanding location references; preserve every other fact.
+    """
+    from management_common.portal_database import _database_schema
+    from psycopg import sql
+    from .resources.registry_store import RegistryWriter
+    schema = _database_schema('resource_registry')
+    connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                       (schema + ':registry:' + COLLECTION,))
+    row = connection.execute(sql.SQL(
+        'SELECT document_json FROM {} WHERE collection=%s AND document_id=%s FOR UPDATE'
+    ).format(sql.Identifier(schema, 'registry_documents')), (COLLECTION, DOCUMENT_ID)).fetchone()
+    if row is None:
+        return 0
+    document = row['document_json']
+    if isinstance(document, str):
+        document = json.loads(document)
+    changed = 0
+    for item in document.get('projects', []):
+        directory = item.get('directory')
+        if isinstance(directory, dict) and 'origin' in directory:
+            del directory['origin']
+            changed += 1
+    if changed:
+        RegistryWriter(connection, (COLLECTION,), schema).put(COLLECTION, DOCUMENT_ID, document)
+    return changed
+
+
 def load() -> dict[str, Any]:
     """The current registry; an empty registry when none was ever written."""
     global _cache
@@ -88,6 +119,12 @@ def load() -> dict[str, Any]:
     with _cache_lock:
         if _cache is not None and _cache[0] == revision:
             return copy.deepcopy(_cache[1])
+    # The Project document owner upgrades stored metadata before exposing it.
+    # Cache hits above stay read-only; a new revision is checked under the same
+    # registry lock used by writers, and conversion commits before this read.
+    with store.database.transaction() as connection:
+        upgrade_directory_ownership(connection)
+    revision = store.revision(COLLECTION)
     document = store.get(COLLECTION, DOCUMENT_ID)
     payload = empty_registry() if document is None else _normalized(document)
     with _cache_lock:
@@ -230,6 +267,7 @@ def mutate(*, before_commit: Callable[[dict[str, Any], Any], None] | None = None
     store = get_registry_store()
     changed = False
     with store.writer(COLLECTION) as writer:
+        upgrade_directory_ownership(writer.connection)
         document = writer.get(COLLECTION, DOCUMENT_ID)
         before = empty_registry() if document is None else _normalized(document)
         payload = copy.deepcopy(before)

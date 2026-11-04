@@ -316,7 +316,7 @@ def update_lineage_metadata(
         from .directory_owner import directory_metadata
         store = lineage_aggregate.lineage_catalog_store().state_store
         members = resident_catalog.get_catalog().for_lineage(lineage_id)
-        metadata = directory_metadata(current.get('directory'), lineage_id)
+        directory_metadata(current.get('directory'), lineage_id)
         source = _lineage_project_folder(lineage_id, previous_project_id)
         target = _lineage_project_folder(lineage_id, project_id)
 
@@ -328,7 +328,7 @@ def update_lineage_metadata(
                 store.enqueue_resident_resource_projection(rid, store.resident_record(rid))
 
         with resident_domain.directory_move_execution_scope(members, lineage_ids=[lineage_id], actor=actor_id) as terminate:
-            DirectoryMoveStore().move(source, target, owner_id=lineage_id, origin=metadata['origin'], actor=actor_id,
+            DirectoryMoveStore().move(source, target, owner_id=lineage_id, actor=actor_id,
                 terminate=terminate, database=store.database, update=update, dependencies=reconcile_dependencies)
         return _clone_json(lineage)
 

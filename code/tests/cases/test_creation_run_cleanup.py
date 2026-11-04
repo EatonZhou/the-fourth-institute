@@ -27,23 +27,23 @@ def attempt(target):
     return Creation('paper_121212121212', actor='alice', payload={}, operation_id='failed-request')
 
 
-@pytest.mark.parametrize('adopted', [False, True])
-def test_instance_retirement_finishes_unregistered_external_creation(workspace, adopted):
-    from scripts.directory_protocol_retire import cleanup_external_created
+@pytest.mark.parametrize('existing', [False, True])
+def test_instance_retirement_finishes_unregistered_external_creation(workspace, existing):
+    from scripts.directory_protocol_retire import cleanup_external_owned
     target = workspace.root.with_name('unregistered-external')
-    if adopted:
+    if existing:
         target.mkdir()
         (target / 'host-data').write_text('keep')
     creation = attempt(target)
-    with creation.prepare([(target, 'adopted' if adopted else 'directory')]):
-        if not adopted:
+    with creation.prepare([(target, 'existing_directory' if existing else 'directory')]):
+        if not existing:
             creation.publish(lambda _, stage: (stage / 'data').write_text('ours'))
-    cleanup_external_created()
-    assert target.exists() is adopted
+    cleanup_external_owned()
+    assert target.exists() is existing
 
 
 def test_instance_retirement_preserves_replaced_creation_and_refuses_completion(workspace):
-    from scripts.directory_protocol_retire import cleanup_external_created
+    from scripts.directory_protocol_retire import cleanup_external_owned
     target = workspace.root.with_name('replaced-external')
     creation = attempt(target)
     with creation.prepare([(target, 'directory')]):
@@ -52,7 +52,7 @@ def test_instance_retirement_preserves_replaced_creation_and_refuses_completion(
     target.mkdir()
     (target / 'host-data').write_text('keep')
     with pytest.raises(RuntimeError, match='Creation cleanup remains pending'):
-        cleanup_external_created()
+        cleanup_external_owned()
     assert (target / 'host-data').read_text() == 'keep'
 
 
@@ -213,15 +213,15 @@ def test_finish_run_fences_inflight_registration_and_delayed_retry(tmp_path):
     assert not target.exists()
 
 
-def test_failed_adoption_does_not_delete_foreign_directory(tmp_path, monkeypatch):
+def test_failed_registration_does_not_delete_foreign_directory(tmp_path, monkeypatch):
     _, scope = open_scope()
-    target = tmp_path / 'adopted'
+    target = tmp_path / 'existing'
     target.mkdir()
     (target / 'keep').write_text('foreign')
     creator = WorkspaceCreationStore()
     monkeypatch.setattr(creator.workspaces, 'ensure', lambda *a, **k: (_ for _ in ()).throw(RuntimeError('rollback')))
     with lifecycle_scope(scope, actor='alice'), pytest.raises(RuntimeError):
-        creator.create(path=target, owner_id='', actor='alice', operation_id='adopt', origin='adopted')
+        creator.register(path=target, owner_id='', actor='alice', operation_id='register-existing')
     assert finish_run('run-failed')['status'] == 'complete'
     assert (target / 'keep').read_text() == 'foreign'
 

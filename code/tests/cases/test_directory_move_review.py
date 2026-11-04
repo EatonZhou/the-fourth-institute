@@ -27,7 +27,7 @@ def test_move_retention_must_not_delete_reused_source(workspace):
                       created_at=now, finished_at=now)
     target = workspace.root.with_name('moved')
     mover = DirectoryMoveStore()
-    mover.move(workspace.root, target, owner_id=WID, origin='created', actor='alice',
+    mover.move(workspace.root, target, owner_id=WID, actor='alice',
                terminate=lambda _: None, database=workspace.store.database,
                update=relocate_nested, dependencies=lambda *_: None)
     mover.cleanup.run_pending()
@@ -53,7 +53,7 @@ def test_move_crash_between_stage_mkdir_and_marker_recovers(workspace, monkeypat
         patch.setattr(Path, 'open', crash)
         patch.setattr(mover, 'abort', lambda *_: None)
         with pytest.raises(SystemExit):
-            mover.prepare(workspace.root, target, owner_id=WID, origin='created',
+            mover.prepare(workspace.root, target, owner_id=WID,
                           actor='alice', terminate=lambda _: None, operation_id='stage-gap')
     result, = DirectoryMoveStore().recover(dependencies=lambda *_: None)
     assert result['phase'] == 'aborted', result
@@ -75,7 +75,7 @@ def test_unproven_stage_aborts_preserving_files_and_allows_new_move(workspace, m
         patch.setattr(module, '_directory_identity', crash)
         patch.setattr(mover, 'abort', lambda *_: None)
         with pytest.raises(SystemExit):
-            mover.prepare(workspace.root, target, owner_id=WID, origin='created',
+            mover.prepare(workspace.root, target, owner_id=WID,
                           actor='alice', terminate=lambda _: None, operation_id='no-proof')
     result, = DirectoryMoveStore().recover(dependencies=lambda *_: pytest.fail('uncommitted'))
     assert result['phase'] == 'aborted' and 'ownership' in result['last_error']
@@ -84,7 +84,7 @@ def test_unproven_stage_aborts_preserving_files_and_allows_new_move(workspace, m
     assert (stage / 'unknown-file').read_text() == 'must keep'
     with pytest.raises(FileExistsError, match='reserved'):
         mover.database.write(lambda c: mover.cleanup.assert_available(stage, connection=c))
-    mover.move(workspace.root, target, owner_id=WID, origin='created', actor='alice',
+    mover.move(workspace.root, target, owner_id=WID, actor='alice',
                terminate=lambda _: None, database=workspace.store.database,
                update=relocate_nested, dependencies=lambda *_: None, operation_id='next-move')
     mover.cleanup.run_pending()
@@ -109,7 +109,7 @@ def test_copied_marker_does_not_prove_replaced_staging(workspace, monkeypatch):
         patch.setattr('shutil.copytree', replace_stage)
         patch.setattr(mover, 'abort', lambda *_: None)
         with pytest.raises(SystemExit):
-            mover.prepare(workspace.root, target, owner_id=WID, origin='created',
+            mover.prepare(workspace.root, target, owner_id=WID,
                           actor='alice', terminate=lambda _: None)
     result, = DirectoryMoveStore().recover(dependencies=lambda *_: None)
     assert result['phase'] == 'aborted'
@@ -139,7 +139,7 @@ def test_retention_metadata_and_link_location_follow_move(workspace, monkeypatch
         workspace.root.rename(target)
         mover.register_external_move(workspace.root, target, **kwargs)
     else:
-        mover.move(workspace.root, target, origin='created', terminate=lambda _: None, **kwargs)
+        mover.move(workspace.root, target, terminate=lambda _: None, **kwargs)
     with retention.database.read() as c:
         after = dict(c.execute(f'SELECT * FROM {retention.table}').fetchone())
     assert after == {**before, 'location': cleanup_location(target / link.name)}
@@ -160,7 +160,7 @@ def test_pending_cleanup_and_retention_share_registration_transaction(workspace,
     retention.declare(second, category='object_data', owner_id='live-job')
     mover = DirectoryMoveStore()
     target = workspace.root.with_name('moved')
-    operation = mover.prepare(workspace.root, target, owner_id=WID, origin='created',
+    operation = mover.prepare(workspace.root, target, owner_id=WID,
                               actor='alice', terminate=lambda _: None)
     # An owner enqueues cleanup after prepare. The intent follows moved files
     # only when registration commits; historical completed receipts stay put.
@@ -195,7 +195,7 @@ def test_pending_cleanup_blocks_new_move_before_files_change(workspace):
         operation_id='expire', actor='alice', connection=c))
     target = workspace.root.with_name('moved')
     with pytest.raises(FileExistsError, match='pending cleanup'):
-        mover.prepare(workspace.root, target, owner_id=WID, origin='created',
+        mover.prepare(workspace.root, target, owner_id=WID,
                       actor='alice', terminate=lambda _: None)
     assert artifact.exists() and not target.exists()
 
@@ -212,7 +212,7 @@ def test_completed_creation_receipt_stays_historical_after_move_and_reuse(worksp
         before = dict(c.execute(f'SELECT * FROM {table} WHERE resource_id=%s',
                                (created['workspace_id'],)).fetchone())
     target = workspace.root.with_name('moved')
-    mover.move(workspace.root, target, owner_id=WID, origin='created', actor='alice',
+    mover.move(workspace.root, target, owner_id=WID, actor='alice',
                terminate=lambda _: None, database=workspace.store.database,
                update=relocate_nested, dependencies=lambda *_: None)
     mover.cleanup.run_pending()
@@ -240,7 +240,7 @@ def test_move_does_not_rewrite_completed_cleanup_receipts(workspace):
     before, = mover.cleanup.status(cleanup_id=cleanup_id)
     path.write_text('new')
     target = workspace.root.with_name('moved')
-    mover.move(workspace.root, target, owner_id=WID, origin='created', actor='alice',
+    mover.move(workspace.root, target, owner_id=WID, actor='alice',
                terminate=lambda _: None, database=workspace.store.database,
                update=relocate_nested, dependencies=lambda *_: None)
     mover.cleanup.run_pending()

@@ -87,7 +87,7 @@ def _manifest(path):
 
 
 def _request(target, payload, actor):
-    from .providers.knowledge import MARKDOWN_REGISTERABLE_RESOURCE_TYPES
+    from .providers.knowledge import MUTABLE_RESOURCE_TYPES
     if not isinstance(target, str) or not target.strip() or not actor:
         raise ValueError("Knowledge move requires target Project and actor")
     if not isinstance(payload, dict) or set(payload) - {"items", "operation_id"}:
@@ -101,9 +101,14 @@ def _request(target, payload, actor):
             raise ValueError("Each move item requires resource_id and expected_version")
         rid = item["resource_id"]
         if (not isinstance(rid, str) or not re.fullmatch(r"[a-z][a-z0-9]*_[0-9a-f]{12}", rid)
-                or rid.partition("_")[0] not in MARKDOWN_REGISTERABLE_RESOURCE_TYPES):
-            raise ValueError("Only Markdown Knowledge resources can be moved")
+                or rid.partition("_")[0] not in MUTABLE_RESOURCE_TYPES):
+            raise ValueError("Only Knowledge and Skill resources can be moved")
         expected = item["expected_version"]
+        if rid.startswith("skill_"):
+            if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+                raise ValueError("Skill expected_version must be the SHA256 returned by ReadResource")
+            normalized.append({"resource_id": rid, "expected_version": expected})
+            continue
         number = expected.get("number") if isinstance(expected, dict) else expected
         if isinstance(number, bool) or not str(number).isdigit() or int(number) < 1:
             raise ValueError("A positive expected_version is required")
@@ -127,7 +132,7 @@ def _permissions(actor, ids, projects):
         raise PermissionError("Knowledge move requires contributor permission on source and target Projects")
 
 
-def _project_text(before, target, actor):
+def _project_text(before, target, actor, *, skill=False):
     from knowledge_board_lan.knowledge_source import _FRONT_MATTER_PATTERN
     from knowledge_board_lan.knowledge_versions import stamp_knowledge_version
     match = _FRONT_MATTER_PATTERN.match(before)
@@ -137,23 +142,58 @@ def _project_text(before, target, actor):
     # values. Every unrelated metadata byte and the body remain intact.
     front = match.group(1)
     root = yaml.compose(front)
+    if not isinstance(root, yaml.MappingNode):
+        raise ValueError("Knowledge front matter must be a mapping")
     pairs = [(key, value) for key, value in root.value if key.value == "project"]
+    if not pairs and skill:
+        end = match.end(1)
+        text = before[:end] + "\nproject: " + json.dumps(target, ensure_ascii=False) + before[end:]
+        return text
     if len(pairs) != 1:
         raise ValueError("Knowledge must declare exactly one Project")
     value = pairs[0][1]
     start = match.start(1) + value.start_mark.index
     end = match.start(1) + value.end_mark.index
     text = before[:start] + json.dumps(target, ensure_ascii=False) + before[end:]
-    return stamp_knowledge_version(text, actor=actor, previous_text=before)
+    return text if skill else stamp_knowledge_version(text, actor=actor, previous_text=before)
 
 
 def _paths(document, rid):
     entries = locations("knowledge", document)
     paths = [_safe(Path(located_path(item["path"]))) for item in entries]
-    mains = [path for path in paths if path.suffix.lower() == ".md"]
-    if len(mains) != 1 or set(paths) != {mains[0], mains[0].parent / rid}:
-        raise ValueError("Knowledge move requires one registered Markdown and its companion directory")
-    return mains[0], mains[0].parent / rid
+    if rid.startswith("skill_"):
+        from skill_board_lan import skill_backend as skills
+        if len(paths) != 1:
+            raise ValueError("Skill registration must identify its file or package root")
+        root = paths[0]
+        primary = skills._choose_primary_file(root, skills._candidate_markdown_files(root))
+        if primary is None:
+            raise ValueError("Skill has no primary Markdown")
+        return _safe(primary), root if root.is_dir() else None
+    if len(paths) == 1 and paths[0].is_dir():
+        from knowledge_board_lan import knowledge_source as knowledge
+        root = paths[0]
+        files = [path for path in root.iterdir() if path.is_file() and path.suffix.lower() == ".md"
+                 and not path.name.startswith(".") and not knowledge._is_index_file(path)]
+        primary = knowledge._choose_primary_file(root, files)
+        if primary is None:
+            raise ValueError("Knowledge package has no primary Markdown")
+        return _safe(primary), root
+    mains = [path for path in paths if path.suffix.lower() == ".md" and path.is_file()]
+    if len(mains) != 1:
+        raise ValueError("Knowledge registration must identify one primary Markdown")
+    others = [path for path in paths if path != mains[0]]
+    return mains[0], others[0] if others else None
+
+
+def _owned(plan):
+    return plan["owned"]
+
+
+def _version(text, rid):
+    from knowledge_board_lan.knowledge_source import knowledge_version_record
+    return (hashlib.sha256(text.encode("utf-8")).hexdigest() if rid.startswith("skill_")
+            else knowledge_version_record(text))
 
 
 def _assert_no_nested_owners(plan, connection):
@@ -164,7 +204,7 @@ def _assert_no_nested_owners(plan, connection):
     """
     from management_common.portal_database import portal_database
     rid = plan["resource_id"]
-    paths = [cleanup_path(plan[name]) for name in ("source", "companion")]
+    paths = [cleanup_path(entry["source"]) for entry in _owned(plan)]
     forms = sorted({value for path in paths for value in (str(path), stored_location(path))})
     registry = get_registry_store()
     nested = connection.execute(f'''
@@ -195,55 +235,80 @@ def _assert_no_nested_owners(plan, connection):
 
 
 def _plan(item, target, actor, projects, folder_map):
-    from knowledge_board_lan.knowledge_source import _yaml_front_matter, knowledge_version_record
+    from knowledge_board_lan.knowledge_source import _yaml_front_matter, knowledge_metadata_id
     rid = item["resource_id"]
     document = get_registry_store().get("knowledge", rid)
     if document is None or is_deleted(rid):
         raise KeyError(rid)
-    if any(entry.get("origin") != "created" for entry in locations("knowledge", document)):
-        raise ValueError("Knowledge move only relocates created directories; adopted content stays at its registered location")
     source, companion = _paths(document, rid)
+    registered = [_safe(located_path(e["path"])) for e in locations("knowledge", document)]
+    if len(set(registered)) != len(registered) or any(
+            a != b and a.is_relative_to(b) for a in registered for b in registered):
+        raise ValueError("Resource registration contains overlapping paths")
     before = _read_text(source)
     meta = _yaml_front_matter(before)
     kind = rid.partition("_")[0]
-    if meta.get("kb_id") != rid or meta.get("type") != kind:
+    skill = kind == "skill"
+    metadata = meta.get("metadata") if isinstance(meta.get("metadata"), dict) else {}
+    identity = (meta.get("id") or metadata.get("id") or meta.get("kb_id")) if skill else knowledge_metadata_id(meta)
+    if identity != rid or (not skill and meta.get("type") != kind):
         raise ValueError("Registered Knowledge metadata does not match its identity")
-    version = knowledge_version_record(before)
-    if item["expected_version"] != version["number"]:
+    version = _version(before, rid)
+    if item["expected_version"] != (version if skill else version["number"]):
         raise ResourceVersionConflict(expected_version=item["expected_version"], current_version=version)
-    source_project = meta.get("project")
-    if not isinstance(source_project, str) or source_project not in projects:
-        raise ValueError("Knowledge source Project is not registered")
-    source_root = _safe(Path(projects[source_project]["path"]))
+    source_project = ""
+    source_root = None
+    type_folder = folder_map.get(kind, kind)
+    for project_id, project in projects.items():
+        root = _safe(Path(project["path"]))
+        base = root / "knowledge_base" / type_folder
+        if source.is_relative_to(base):
+            source_project, source_root, source_base = project_id, root, base
+            break
+    if source_root is None and skill:
+        from skill_board_lan import skill_backend as skills
+        if source.is_relative_to(skills.CORE_SKILLS_ROOT.resolve()):
+            raise PermissionError("Core Skill is part of the installed code")
+        shared = _safe(skills.SHARED_SKILLS_ROOT)
+        if source.is_relative_to(shared):
+            source_root = shared
+            source_base = companion.parent if companion is not None else source.parent
+    if source_root is None:
+        raise ValueError("Knowledge source is outside a registered Project or Skill source")
+    if not skill and meta.get("project") != source_project:
+        raise ValueError("Knowledge Project metadata disagrees with its registered path")
     target_root = _safe(Path(projects[target]["path"]))
-    relative = source.relative_to(source_root / "knowledge_base")
-    if len(relative.parts) != 2 or relative.parts[0] != folder_map.get(kind, kind):
-        raise ValueError("Knowledge source is outside its Project's type directory")
-    target_path = target_root / "knowledge_base" / folder_map.get(kind, kind) / source.name
-    target_companion = target_path.parent / rid
-    for path in (target_path, target_companion):
-        _safe(path)
+    target_base = target_root / "knowledge_base" / type_folder
+    target_path = target_base / source.relative_to(source_base)
+    owned = []
+    for path in registered:
+        relative = path.relative_to(source_base)
+        destination = _safe(target_base / relative)
+        manifest = _manifest(path)
+        owned.append({"source": cleanup_location(path), "target": cleanup_location(destination),
+                      "manifest": manifest, "kind": "directory" if path.is_dir() or manifest is None else "file"})
         if source_project != target:
-            assert_missing_location(path)
-    after = before if source_project == target else _project_text(before, target, actor)
-    companion_manifest = _manifest(companion)
+            assert_missing_location(destination)
+    after = before if source_project == target else _project_text(before, target, actor, skill=skill)
     parent = target_path.parent
     while not parent.exists():
         parent = parent.parent
     device = source.stat().st_dev
     if (parent.stat().st_dev != device or
-            any(entry[1] != device for entry in companion_manifest or [])):
+            any(entry[1] != device for owned_path in owned for entry in owned_path["manifest"] or [])):
         raise ValueError("Knowledge move requires one filesystem; cross-filesystem content needs an owner-coordinated copy")
     return {**item, "source_project": source_project, "source": cleanup_location(source),
-            "companion": cleanup_location(companion), "target": cleanup_location(target_path),
-            "target_companion": cleanup_location(target_companion), "before": before, "after": after,
-            "source_identity": _identity(source), "companion_manifest": companion_manifest,
+            "target": cleanup_location(target_path), "before": before, "after": after,
+            "owned": owned, "source_identity": _identity(source),
             "source_root": cleanup_location(source_root), "source_root_identity": _identity(source_root),
             "target_root": cleanup_location(target_root), "target_root_identity": _identity(target_root),
             "document": document, "phase": "pending", "artifacts": [],
             "result": {"resource_id": rid, "resource_type": kind, "path": str(target_path),
-                       "project": target, "project_ids": [target], "content_root": str(target_path.parent),
-                       "version": knowledge_version_record(after)}}
+                       "project": target, "project_ids": [target],
+                       "content_root": str(target_base / companion.relative_to(source_base))
+                           if companion and source.is_relative_to(companion) else str(target_path.parent),
+                       **({"single_file": companion is None} if skill else {}),
+                       "version": _version(after, rid)}}
 
 
 def _save(journal, *, writer=None):
@@ -261,8 +326,9 @@ def _verify_source(plan):
     _assert_identity(source, plan["source_identity"])
     if _read_text(source) != plan["before"]:
         raise ResourceVersionConflict("Knowledge changed while its relocation was being prepared")
-    if _manifest(cleanup_path(plan["companion"])) != plan["companion_manifest"]:
-        raise ResourceVersionConflict("Knowledge companions changed while relocation was being prepared")
+    for entry in _owned(plan):
+        if _manifest(cleanup_path(entry["source"])) != entry["manifest"]:
+            raise ResourceVersionConflict("Knowledge contents changed while relocation was being prepared")
 
 
 def _sync(path):
@@ -284,15 +350,15 @@ def _prepare_files(journal, plan):
     rid = plan["resource_id"]
     reservation = "knowledge-move:" + journal["key"] + ":" + rid
     plan["reservation"] = reservation
-    targets = [cleanup_path(plan["target"]), cleanup_path(plan["target_companion"])]
+    owned = _owned(plan)
+    targets = [cleanup_path(entry["target"]) for entry in owned]
     with directory_writer(JOURNAL) as writer:
         _assert_no_nested_owners(plan, writer.connection)
-        for path in [cleanup_path(plan["source"]), cleanup_path(plan["companion"]), *targets]:
+        for path in [*(cleanup_path(entry["source"]) for entry in owned), *targets]:
             queue.reserve(path, operation_id=reservation, purpose="knowledge_move", connection=writer.connection)
         _save(journal, writer=writer)
     if not plan["artifacts"]:
-        plan["artifacts"] = [{"target": cleanup_location(path), "kind": kind}
-                             for path, kind in zip(targets, ("file", "directory"))]
+        plan["artifacts"] = [{"target": entry["target"], "kind": entry["kind"]} for entry in owned]
     for index, artifact in enumerate(plan["artifacts"]):
         target = _safe(cleanup_path(artifact["target"]))
         if target.exists():
@@ -315,25 +381,39 @@ def _prepare_files(journal, plan):
             with directory_writer(JOURNAL) as writer:
                 queue.reserve(stage, operation_id=reservation, purpose="knowledge_move", connection=writer.connection)
                 _save(journal, writer=writer)
-            if index == 0:
+            if artifact["kind"] == "file":
                 stage.touch(exist_ok=False)
             else:
                 stage.mkdir()
             artifact["identity"] = _identity(stage)
             _save(journal)
-            if index == 0:
+            source = cleanup_path(owned[index]["source"])
+            if artifact["kind"] == "file" and source == cleanup_path(plan["source"]):
                 with open(stage, "w", encoding="utf-8", newline="") as stream:
                     stream.write(plan["after"])
-                shutil.copymode(cleanup_path(plan["source"]), stage)
+                shutil.copymode(source, stage)
+                _sync(stage)
+            elif artifact["kind"] == "file":
+                # Additional individually registered files are moved verbatim.
+                stage.unlink()
+                os.link(source, stage)
+                artifact["identity"] = _identity(stage)
+                _save(journal)
                 _sync(stage)
             else:
-                source = cleanup_path(plan["companion"])
                 if source.exists():
                     # Same-filesystem hard links preserve payload inodes and
                     # any already open descriptors; only directory entries
                     # are duplicated during the short registration switch.
                     shutil.copytree(source, stage, dirs_exist_ok=True, symlinks=True,
                                     copy_function=os.link)
+                    primary = cleanup_path(plan["source"])
+                    if primary.is_relative_to(source):
+                        # Never write through the hard link to the live source.
+                        from knowledge_board_lan.knowledge_backend import _write_text_atomic
+                        prepared_primary = stage / primary.relative_to(source)
+                        _write_text_atomic(prepared_primary, plan["after"])
+                        shutil.copymode(primary, prepared_primary)
                     _manifest(stage)  # refuses links, sockets and device files
                     for root, _dirs, files in os.walk(stage):
                         for filename in files:
@@ -352,7 +432,6 @@ def _prepare_files(journal, plan):
 
 def _commit(journal, plan):
     from .content_changes import capture_content_changes, record_text_change
-    from knowledge_board_lan.knowledge_source import knowledge_version_record
     rid = plan["resource_id"]
     with capture_content_changes(actor=journal["request"]["actor"], resource_id=rid):
         with directory_writer("knowledge", JOURNAL) as writer:
@@ -363,9 +442,10 @@ def _commit(journal, plan):
             for artifact in plan["artifacts"]:
                 _assert_identity(cleanup_path(artifact["target"]), artifact["identity"])
             document = deepcopy(plan["document"])
+            destinations = {entry["source"]: entry["target"] for entry in _owned(plan)}
             for entry in locations("knowledge", document):
                 old = Path(located_path(entry["path"]))
-                new = plan["target"] if old == cleanup_path(plan["source"]) else plan["target_companion"]
+                new = destinations[cleanup_location(old)]
                 entry["path"] = stored_location(cleanup_path(new))
             writer.put("knowledge", rid, document)
             permission_system.sync_resource(plan["result"], resource_type=plan["result"]["resource_type"],
@@ -374,8 +454,8 @@ def _commit(journal, plan):
             # leases in the same commit so live read/projection can use them.
             queue = get_directory_cleanup_store()
             queue.release(plan["reservation"], connection=writer.connection)
-            for field in ("source", "companion"):
-                queue.reserve(cleanup_path(plan[field]), operation_id=plan["reservation"],
+            for entry in _owned(plan):
+                queue.reserve(cleanup_path(entry["source"]), operation_id=plan["reservation"],
                               purpose="knowledge_move_cleanup", connection=writer.connection)
             committed = deepcopy(journal)
             next(p for p in committed["plans"] if p["resource_id"] == rid)["phase"] = "committed"
@@ -384,23 +464,23 @@ def _commit(journal, plan):
         plan["phase"] = "committed"
         journal["projected"] = False
         record_text_change(rid, plan["result"]["path"], plan["before"], plan["after"],
-                           before_version=knowledge_version_record(plan["before"]),
+                           before_version=_version(plan["before"], rid),
                            after_version=plan["result"]["version"])
 
 
 def _cleanup(journal, plan):
     if plan["source"] != plan["target"]:
         source = cleanup_path(plan["source"])
-        companion = cleanup_path(plan["companion"])
         if source.exists():
             if _read_text(source) != plan["before"]:
                 raise ResourceVersionConflict("Old Knowledge content changed before relocation cleanup")
-            remove_path(source, identity=plan["source_identity"])
-        if companion.exists():
-            original = plan["companion_manifest"]
-            if _manifest(companion) != original:
-                raise ResourceVersionConflict("Old Knowledge companions changed before relocation cleanup")
-            remove_path(companion, identity=original[0][1:3])
+        for entry in _owned(plan):
+            path = cleanup_path(entry["source"])
+            if path.exists():
+                original = entry["manifest"]
+                if _manifest(path) != original:
+                    raise ResourceVersionConflict("Old Knowledge contents changed before relocation cleanup")
+                remove_path(path, identity=original[0][1:3])
     with directory_writer(JOURNAL) as writer:
         if plan.get("reservation"):
             get_directory_cleanup_store().release(plan["reservation"], connection=writer.connection)
@@ -457,6 +537,17 @@ def move_knowledge(target_project_id, payload, *, actor, project_batch):
         for rid in ids:
             stack.enter_context(knowledge_identity_lock(rid))
         journal = get_registry_store().get(JOURNAL, key)
+        if journal:
+            # Upgrade persisted in-flight receipts to the path-list format.
+            # This is journal schema recovery, independent of resource provenance.
+            for plan in journal["plans"]:
+                if "owned" not in plan:
+                    plan["owned"] = [
+                        {"source": plan["source"], "target": plan["target"], "kind": "file",
+                         "manifest": _manifest(cleanup_path(plan["source"]))},
+                        {"source": plan["companion"], "target": plan["target_companion"],
+                         "kind": "directory", "manifest": plan["companion_manifest"]},
+                    ]
         if journal and journal["request"] != request:
             raise ValueError("Knowledge move operation_id was already used with different arguments")
         projects = {p["id"]: p for p in kb._parse_projects_yaml()}
@@ -473,7 +564,7 @@ def move_knowledge(target_project_id, payload, *, actor, project_batch):
                 stack.enter_context(resource_mutation_lock(source.parent, rid))
             _, folders, _, _ = kb._get_tag_config()
             plans = [_plan(item, target_project_id, actor, projects, folders) for item in request["items"]]
-            _permissions(actor, ids, {target_project_id, *(p["source_project"] for p in plans)})
+            _permissions(actor, ids, {target_project_id, *(p["source_project"] for p in plans if p["source_project"])})
             journal = {"key": key, "operation_id": operation_id, "request": request,
                        "plans": plans, "projected": False}
             # Full-batch preflight precedes the first journal or file write.
@@ -481,18 +572,23 @@ def move_knowledge(target_project_id, payload, *, actor, project_batch):
                 queue = get_directory_cleanup_store()
                 for plan in plans:
                     _assert_no_nested_owners(plan, writer.connection)
-                    for field in ("source", "companion", "target", "target_companion"):
-                        queue.assert_available(cleanup_path(plan[field]), connection=writer.connection)
+                    for entry in _owned(plan):
+                        for field in ("source", "target"):
+                            queue.assert_available(cleanup_path(entry[field]), connection=writer.connection)
                 _save(journal, writer=writer)
         else:
-            _permissions(actor, ids, {target_project_id, *(p["source_project"] for p in journal["plans"])})
+            _permissions(actor, ids, {target_project_id, *(p["source_project"] for p in journal["plans"] if p["source_project"])})
             if all(p["phase"] == "cleaned" for p in journal["plans"]) and journal.get("projected"):
                 return _result(journal)
             for plan in sorted(journal["plans"], key=lambda p: p["resource_id"]):
                 stack.enter_context(resource_mutation_lock(cleanup_path(plan["source"]).parent, plan["resource_id"]))
         for plan in sorted(journal["plans"], key=lambda p: p["resource_id"]):
-            if cleanup_path(plan["source"]).parent != cleanup_path(plan["target"]).parent:
-                stack.enter_context(resource_mutation_lock(cleanup_path(plan["target"]).parent, plan["resource_id"]))
+            # A package's primary may be nested. Lock outside the owned tree:
+            # resource_mutation_lock creates its directory, which must not
+            # pre-create the relocation's reserved destination package.
+            target_parent = Path(os.path.commonpath([str(cleanup_path(e["target"]).parent) for e in _owned(plan)]))
+            if cleanup_path(plan["source"]).parent != target_parent:
+                stack.enter_context(resource_mutation_lock(target_parent, plan["resource_id"]))
         if all(p["phase"] == "cleaned" for p in journal["plans"]) and journal.get("projected"):
             return _result(journal)
         error = ""

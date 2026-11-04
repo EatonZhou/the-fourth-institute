@@ -53,9 +53,10 @@ def apply_registered_lineage_moves(moves):
                                      'WHERE lineage_id=%s AND deleted_at IS NULL', (identity,)).fetchone()
         if row is None:
             raise ValueError('Lineage move requires a registered owner: ' + identity)
-        metadata = json_value(row['directory_json'])
+        from management_portal.society_service.directory_owner import directory_metadata
+        directory_metadata(json_value(row['directory_json']), identity)
         operation_id, _ = mover.move(move.source, move.target, owner_id=identity,
-            origin=metadata['origin'], actor='instance-lineage-migration', terminate=lambda _path: None,
+            actor='instance-lineage-migration', terminate=lambda _path: None,
             database=database, update=relocate_nested, dependencies=reconcile_dependencies)
         receipts.append(operation_id)
     return receipts

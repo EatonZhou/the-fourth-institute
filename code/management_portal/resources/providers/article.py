@@ -41,7 +41,6 @@ def install_mutation_provider(service: "ResourceService") -> None:
             # The location a caller asks permission for is where the directory really is.
             raise ValueError(f"Article 需要在 project_ids 中写明目录所在的 Project：{'、'.join(sorted(set(located)))}")
         options: dict[str, Any] = {
-            "origin": 'created' if automatic else 'adopted',
             "project_ids": projects,
             "primary_file": str(payload.get("primary_file") or "").strip(),
             "compiler": str(payload.get("compiler") or "").strip(),

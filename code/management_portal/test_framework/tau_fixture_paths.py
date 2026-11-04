@@ -118,7 +118,7 @@ def prepare(root: Path) -> Path:
             current_instance().reference(path)
         except ValueError:
             continue
-        # An unreceipted existing directory is never adopted or deleted.
+        # A directory without this case's ownership receipt is never deleted.
         path.mkdir(mode=0o700)
         assert_private_directory(path)
         stat = path.stat()

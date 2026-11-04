@@ -26,7 +26,7 @@ def existing(lineage_store, tmp_path, method):
     store = get_workspace_store()
     row = store.rows([wid])[wid]
     old = tmp_path / 'old-copy'
-    DirectoryMoveStore().move(Path(row['path']), old, owner_id=wid, origin='created', actor='sample_admin',
+    DirectoryMoveStore().move(Path(row['path']), old, owner_id=wid, actor='sample_admin',
         terminate=lambda _: None, database=get_lineage_data_store().database,
         update=directory_relocation.relocate_nested, dependencies=directory_relocation.reconcile_dependencies)
     DirectoryMoveStore().cleanup.run_pending()
@@ -49,12 +49,12 @@ def test_move_existing_identity_content_binding_nested_and_source(lineage_store,
     (home / 'workspaces.json').write_text(json.dumps({'cwd': str(old)}))
     nested = old / 'nested'; nested.mkdir()
     store = get_workspace_store()
-    store.ensure('workspace_abcdefabcdef', str(nested), origin='adopted')
+    store.ensure('workspace_abcdefabcdef', str(nested))
     result = owner.relocate_copy(lid, h['id'], item['item_id'], 'sample_admin', **args)
     row = result['workspace']; new = Path(row['path'])
     assert row['workspace_id'] == args['workspace_id'] == row['owner_id']
     assert json.loads((home / 'workspaces.json').read_text())['cwd'] == str(new)
-    assert row['origin'] == 'created' and (new / 'edited').read_text() == 'local changes survive'
+    assert (new / 'edited').read_text() == 'local changes survive'
     assert store.rows(['workspace_abcdefabcdef'])['workspace_abcdefabcdef']['path'] == str(new / 'nested')
     bindings = lineage_resident_workspaces.get_node_workspaces(lid, resident, 'sample_admin')['workspaces']
     assert any(x['workspace_id'] == row['workspace_id'] and x['path'] == str(new) for x in bindings)
@@ -64,7 +64,7 @@ def test_move_existing_identity_content_binding_nested_and_source(lineage_store,
     get_lineage_data_store().database.write(lambda c: upsert(c, 'lineage_handoff_invocations',
         {'edge_id': h['id']}, {'cwd': source['path']}))
     moved = Path(source['path']).with_name('source-moved')
-    DirectoryMoveStore().move(Path(source['path']), moved, owner_id=source['workspace_id'], origin='created',
+    DirectoryMoveStore().move(Path(source['path']), moved, owner_id=source['workspace_id'],
         actor='sample_admin', terminate=lambda _: None, database=get_lineage_data_store().database,
         update=directory_relocation.relocate_nested, dependencies=directory_relocation.reconcile_dependencies)
     current = lineage_handoffs.get_handoff(lid, h['id'], 'sample_admin')['handoff']['items'][0]
@@ -77,11 +77,12 @@ def test_move_existing_identity_content_binding_nested_and_source(lineage_store,
 
 
 @pytest.mark.parametrize('method', ['filesystem_copy', 'git_worktree'])
-def test_adopted_copy_rejected(lineage_store, tmp_path, method):
+def test_changed_owner_rejected(lineage_store, tmp_path, method):
     lid, h, item, resident, source, args = existing(lineage_store, tmp_path, method)
     store = get_workspace_store()
-    store.database.write(lambda c: c.execute(f"UPDATE {store.table} SET origin='adopted' WHERE workspace_id=%s", (args['workspace_id'],)))
-    with pytest.raises(ValueError, match='created'):
+    store.database.write(lambda c: c.execute(f"UPDATE {store.table} SET owner_id='another-owner' WHERE workspace_id=%s", (args['workspace_id'],)))
+    from management_portal.resources.errors import ResourceVersionConflict
+    with pytest.raises(ResourceVersionConflict, match='snapshot changed'):
         owner.relocate_copy(lid, h['id'], item['item_id'], 'sample_admin', **args)
     assert Path(args['expected_path']).exists()
 
@@ -229,7 +230,7 @@ def test_project_move_enlists_handoff_storage_atomically(lineage_store, tmp_path
     old = lineage_state._lineage_dir(lid)
     new = old.parent / 'New'
     write_projects({'projects': [{'id': 'Old', 'path': str(old),
-        'directory': {'origin': 'created', 'owner_id': 'Old'}}]})
+        'directory': {'owner_id': 'Old'}}]})
     project_registry.reset_cache_for_tests()
     monkeypatch.setattr(project_rename, 'PROJECTS_ROOT', old.parent)
     monkeypatch.setattr(project_rename, 'external_blockers', lambda *_: [])

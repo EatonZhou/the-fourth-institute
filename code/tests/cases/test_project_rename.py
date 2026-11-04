@@ -191,7 +191,7 @@ def world(monkeypatch, tmp_path, permissions):
 
     write_projects({"schema_version": 1, "status_vocab": ["active"], "tag_vocab": [], "projects": [
         {"id": "Old", "path": str(old_root), "status": "active", "description": "d",
-         "directory": {"origin": "created", "owner_id": "Old"}},
+         "directory": {"owner_id": "Old"}},
         {"id": "Taken", "path": str(projects / "Taken"), "status": "active"},
     ]})
     project_registry.reset_cache_for_tests()

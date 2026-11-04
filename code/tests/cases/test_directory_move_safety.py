@@ -28,7 +28,7 @@ def cross_device(monkeypatch, source):
 
 
 def prepare(mover, source, target, **kwargs):
-    return mover.prepare(source, target, owner_id='owner', origin='created',
+    return mover.prepare(source, target, owner_id='owner',
                          actor='sample_admin', terminate=lambda _: None, **kwargs)
 
 
@@ -98,35 +98,35 @@ def test_fixed_operation_retry_reports_original_state_without_mutation(workspace
     assert mover.get(operation)['phase'] == phase
 
 
-def test_retirement_does_not_delete_adopted_reuse_of_created_tombstone(workspace):
-    from scripts.directory_protocol_retire import cleanup_external_created
+def test_retirement_deletes_registered_reuse_of_tombstone(workspace):
+    from scripts.directory_protocol_retire import cleanup_external_owned
     from management_portal.resources.workspace_store import now
     root = workspace.root
-    workspace.store.ensure(WID, str(root), origin='created')
+    workspace.store.ensure(WID, str(root))
     with workspace.store.database.transaction() as connection:
         workspace.store.mark_deleted(WID, deleted_at=now(), deleted_by='sample_admin', connection=connection)
-    workspace.store.ensure('workspace_aaaaaaaaaaaa', str(root), origin='adopted')
-    (root / 'host-account-credentials').write_text('host data')
-    cleanup_external_created()
-    assert (root / 'host-account-credentials').read_text() == 'host data'
+    workspace.store.ensure('workspace_aaaaaaaaaaaa', str(root))
+    (root / 'resource-data').write_text('resource data')
+    cleanup_external_owned()
+    assert not root.exists()
 
 
 @pytest.mark.parametrize('provider', ['codex', 'claude'])
-def test_retirement_preserves_host_account_reusing_created_tombstone(workspace, provider):
-    from scripts.directory_protocol_retire import cleanup_external_created
+def test_retirement_preserves_host_account_reusing_tombstone(workspace, provider):
+    from scripts.directory_protocol_retire import cleanup_external_owned
     from management_portal.execution import account_registrations
     from management_portal.resources.workspace_store import now
     root = workspace.root
-    workspace.store.ensure(WID, str(root), origin='created')
+    workspace.store.ensure(WID, str(root))
     with workspace.store.database.transaction() as connection:
         workspace.store.mark_deleted(WID, deleted_at=now(), deleted_by='sample_admin', connection=connection)
     row = account_registrations.create_registration({
         'account_id': provider + '_retire_test', 'provider': provider,
         'kind': 'subscription_login', 'config': {'account_dir': str(root)},
     }, 'sample_admin')
-    assert row['directory_origin'] == 'adopted' and row['directory_owner'] == 'host'
+    assert row['directory_owner'] == 'host' and 'directory_origin' not in row
     (root / 'account-data').write_text('test host account data')
-    cleanup_external_created()
+    cleanup_external_owned()
     assert (root / 'account-data').read_text() == 'test host account data'
 
 
@@ -229,7 +229,7 @@ def test_operation_id_cannot_be_reused_for_different_arguments(workspace, argume
     target = workspace.root.with_name('same-operation')
     operation = prepare(mover, workspace.root, target)
     arguments = dict(source=workspace.root, target=target, owner_id='owner', actor='sample_admin',
-                     origin='created', operation_id=operation, terminate=lambda _: pytest.fail('retry side effect'))
+                     operation_id=operation, terminate=lambda _: pytest.fail('retry side effect'))
     arguments[argument] = target.with_name('other') if argument == 'target' else 'other'
     with pytest.raises(ValueError, match='different arguments'):
         mover.prepare(**arguments)
@@ -268,14 +268,14 @@ def test_case_only_move_rejection_preserves_source_on_insensitive_filesystem(wor
 
 def test_retirement_drains_old_copy_when_dependencies_were_pending(workspace, monkeypatch):
     from management_portal.directory_move_owner import relocate_nested
-    from scripts.directory_protocol_retire import cleanup_external_created
+    from scripts.directory_protocol_retire import cleanup_external_owned
     cross_device(monkeypatch, workspace.root)
     mover = DirectoryMoveStore()
     target = workspace.root.with_name('retire-pending-copy')
-    workspace.store.ensure(WID, str(workspace.root), origin='created')
+    workspace.store.ensure(WID, str(workspace.root))
     operation = prepare(mover, workspace.root, target)
     mover.database.write(lambda c: mover.commit(operation, connection=c, update=relocate_nested))
-    cleanup_external_created()
+    cleanup_external_owned()
     assert not workspace.root.exists() and not target.exists()
     assert mover.get(operation)['phase'] == 'cancelled'
 
@@ -305,7 +305,7 @@ def test_recovery_preserves_unowned_staging_entry(workspace, monkeypatch):
 
 
 def test_retirement_uses_pending_cleanup_but_not_completed_snapshot(workspace):
-    from scripts.directory_protocol_retire import cleanup_external_created
+    from scripts.directory_protocol_retire import cleanup_external_owned
     mover = DirectoryMoveStore()
     pending = workspace.root.with_name('unregistered-pending')
     completed = workspace.root.with_name('old-completed')
@@ -319,7 +319,6 @@ def test_retirement_uses_pending_cleanup_but_not_completed_snapshot(workspace):
     mover.cleanup.run_pending(cleanup_id=first)
     completed.mkdir()
     (completed / 'host-file').write_text('new owner')
-    workspace.store.ensure('workspace_bbbbbbbbbbbb', str(completed), origin='adopted')
-    cleanup_external_created()
+    cleanup_external_owned()
     assert not pending.exists()
     assert (completed / 'host-file').read_text() == 'new owner'

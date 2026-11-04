@@ -253,7 +253,8 @@ def test_skill_and_experiment_writers_capture_exact_content(receipt_store, tmp_p
     skill_id = "skill_0123456789ab"
     path = tmp_path / "SKILL.md"
     path.write_text("old skill", encoding="utf-8")
-    monkeypatch.setattr(skill_backend, "_resolve_skill_address", lambda *a, **kw: (skill_id, path))
+    monkeypatch.setattr(skill_backend, "_resolve_skill_address", lambda *a, **kw: (
+        skill_id, path, {"attributes": {"project_ids": []}}))
     monkeypatch.setattr(skill_backend, "_path_is_allowed", lambda *a, **kw: True)
     with execution_scope("execution-resource-test"), capture_content_changes(actor=ACTOR, resource_id=skill_id):
         status, _ = skill_backend.save_address_text(skill_id, "new skill", actor=ACTOR)

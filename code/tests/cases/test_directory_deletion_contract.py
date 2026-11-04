@@ -113,42 +113,42 @@ def test_unregister_bound_workspace_commits_without_waiting_for_users(
     assert '嵌套登记和绑定' in description
 
 
-@pytest.mark.parametrize('origin', ['created', 'adopted'])
 @pytest.mark.parametrize('internal', [True, False])
-def test_origin_decides_cleanup_regardless_of_area(workspace, origin, internal):
+def test_registered_ownership_decides_cleanup_regardless_of_area(workspace, internal):
     root = (current_instance().area('projects') if internal else workspace.root) / 'directory'
     root.mkdir(parents=True)
     (root / 'data').write_text('object data')
     wid = 'workspace_aaaaaaaaaaaa'
-    workspace.store.ensure(wid, str(root), origin=origin)
+    workspace.store.ensure(wid, str(root))
     result = call(workspace, wid).raise_for_error()
     assert result['attributes']['status'] == 'deleted'
     assert root.exists()
     assert workspace.store.rows([wid]) == {}
     cleanup = get_directory_cleanup_store()
     jobs = cleanup.status(owner_id=wid)
-    assert bool(jobs) == (origin == 'created')
+    assert jobs
     cleanup.run_pending()
-    assert root.exists() == (origin == 'adopted')
+    assert not root.exists()
     from management_portal.hatg.catalog import instruction_catalog
     description = instruction_catalog()['UnregisterResource'].description
-    assert '按登记来源' in description
-    assert '接入的现成目录只注销' in description
+    assert '资源归属' in description
     assert '实例区域内目录一并删除' not in description
 
 
-@pytest.mark.parametrize('outer_origin', ['created', 'adopted'])
-def test_outer_created_directory_removes_nested_adoptions(workspace, outer_origin):
+def test_outer_directory_removes_nested_registrations_and_preserves_siblings(workspace):
     parent_id, child_id = 'workspace_aaaaaaaaaaaa', 'workspace_bbbbbbbbbbbb'
     parent = workspace.root / 'outer'
     child = parent / 'inner'
     child.mkdir(parents=True)
-    workspace.store.ensure(parent_id, str(parent), origin=outer_origin)
-    workspace.store.ensure(child_id, str(child), origin='adopted')
+    sibling = workspace.root / 'unregistered-sibling'
+    sibling.write_text('keep outside owned root')
+    workspace.store.ensure(parent_id, str(parent))
+    workspace.store.ensure(child_id, str(child))
     call(workspace, parent_id).raise_for_error()
-    assert bool(workspace.store.rows([child_id])) == (outer_origin == 'adopted')
+    assert not workspace.store.rows([parent_id, child_id])
     get_directory_cleanup_store().run_pending()
-    assert child.exists() == (outer_origin == 'adopted')
+    assert not parent.exists()
+    assert sibling.read_text() == 'keep outside owned root'
 
 
 def test_cleanup_failure_does_not_restore_registration(workspace, monkeypatch):
@@ -205,20 +205,21 @@ def test_workspace_identity_deletion_enlists_binding_cleanup_and_projection(futu
         assert {'kind':'workspace_document', 'resident_id':resident['resident_id']} in json_value(row['payload_json'])['steps']
 
 
-@pytest.mark.parametrize('origin', ['created', 'adopted'])
-def test_resource_outer_directory_uses_the_same_workspace_cascade(future_creation_store, workspace, origin):
+def test_resource_outer_directory_uses_the_same_workspace_cascade(future_creation_store, workspace):
     from management_portal.resources.directory_registrations import register_owned, unregister_owned
     outer, wid = workspace.root / 'outer', 'workspace_aaaaaaaaaaaa'
     nested = outer / 'nested'
     nested.mkdir(parents=True)
-    workspace.store.ensure(wid, str(nested), origin='adopted')
+    workspace.store.ensure(wid, str(nested))
     resident = resident_domain.register_resident(_new_session_payload('Resource reader'), 'sample_admin')
     resident_workspace_domain.add_resident_reference_workspace(
         resident['resident_id'], str(nested), 'sample_admin', workspace_id=wid,
     )
-    register_owned('knowledge', 'experiment_111111111111', [outer], origin=origin)
+    register_owned('knowledge', 'experiment_111111111111', [outer])
     unregister_owned('knowledge', 'experiment_111111111111', actor='sample_admin')
-    assert bool(workspace.store.rows([wid])) == (origin == 'adopted')
+    assert not workspace.store.rows([wid])
     with get_lineage_data_store().database.read() as connection:
         bindings = connection.execute('SELECT 1 FROM resident_workspace_bindings WHERE workspace_id=%s', (wid,)).fetchall()
-        assert bool(bindings) == (origin == 'adopted')
+        assert not bindings
+    get_directory_cleanup_store().run_pending()
+    assert not outer.exists()

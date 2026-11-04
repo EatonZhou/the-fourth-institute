@@ -4,35 +4,35 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 23
-  created_at: '2026-09-01'
+  number: 24
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: "2026-11-02T19:00:18Z"
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T07:22:54Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/http_knowledge.py
-  - ${code_root}/knowledge_board_lan/knowledge_board.html
-  - ${code_root}/management_portal/knowledge_item_chat_backend.py
-  - ${code_root}/management_portal/knowledge_archive_backend.py
-  - ${code_root}/management_portal/resource_views.py
-  - ${code_root}/management_portal/static/portal_preview_runtime.js
-  - ${code_root}/management_portal/static/portal_workspace_surface.js
-  - ${code_root}/knowledge_board_lan/knowledge_backend.py
-  - ${code_root}/management_portal/resources/locking.py
-  - ${code_root}/management_portal/resources/providers/knowledge.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_knowledge_backend_entry_roots.py
-  - ${code_root}/tests/cases/test_knowledge_http_workflow.py
-  - ${code_root}/tests/cases/test_knowledge_resource_provider.py
-  - ${code_root}/tests/cases/test_knowledge_versioning.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_knowledge.py
+  - /opt/tfi/the-fourth-institute-dev/code/knowledge_board_lan/knowledge_board.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/knowledge_item_chat_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/knowledge_archive_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_views.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_runtime.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_surface.js
+  - /opt/tfi/the-fourth-institute-dev/code/knowledge_board_lan/knowledge_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/locking.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/knowledge.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_knowledge_backend_entry_roots.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_knowledge_http_workflow.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_knowledge_resource_provider.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_knowledge_versioning.py
   related:
   - decision_ad3e21094f14
   - decision_61e50306cc79
@@ -110,15 +110,15 @@ Knowledge 页面是人查看普通知识的工作台，主要区域如下。
 
 ### 项目间批量迁移
 
-Markdown 知识条目改变所属项目时，由 ResourceService 负责同时搬迁主文件与伴随目录、更新项目元数据与版本、目录登记、权限事实及运行服务的索引。调用者通过现有 `RunResourceAction` 指定目标 Project，动作 `knowledge.move`，提供 `items`（每项 `resource_id` 与 `expected_version`）；不再自行拼接全文更新、文件改名、登记修改和索引刷新。普通 `UpdateResource(text)` 若改变主文件的 `project` 字段会拒绝并指向此动作，避免出现只有元数据变化的半迁移。
+知识条目与 Skill 改变所属项目时，由 ResourceService 负责同时搬迁主文件与伴随目录、更新项目元数据与版本、目录登记、权限事实及运行服务的索引。调用者通过现有 `RunResourceAction` 指定目标 Project，动作 `knowledge.move`，提供 `items`（每项 `resource_id` 与 `expected_version`）；不再自行拼接全文更新、文件改名、登记修改和索引刷新。普通 `UpdateResource(text)` 若改变主文件的 `project` 字段会拒绝并指向此动作，避免出现只有元数据变化的半迁移。
 
-本动作接受一至一百条不同 ID 的普通 Markdown Knowledge，限登记为 created、位于 Project 类型目录中的平面主 Markdown 与 `<ID>/` 伴随目录，并要求源与目标位于同一文件系统。伴随文件以硬链接暂存，保留文件 inode 和已有打开描述符，不复制大文件内容。adopted 内容、Skill、Experiment 及伴随目录内有独立 Repo、Article、Paper、Knowledge、Workspace 或保留登记的条目须由其 owner 迁移，在任何搬动前拒绝；不会静默迁走独立资源。迁移保持统一 ID、正文、伴随文件与创建审计，项目归属变更按正常规则推进一次版本。正文中的手写绝对路径不重写；长期引用应使用资源 ID 和相对文件地址。输入的版本前提在资源锁内检查；源、目标项目和每个源条目都必须通过当前调用者的权限检查。任何一项预检失败都不会开始本批新迁移。
+本动作接受一至一百条不同 ID 的 Markdown Knowledge 与 Skill，按已登记的真实内容范围搬迁。知识条目支持平面主文件及 `<ID>/` 伴随目录，也支持独立资源目录；Skill 支持单文件与目录包。登记方式不限制迁移。同一文件系统内暂存伴随文件的硬链接，保留 payload inode 与打开的文件描述符；跨文件系统以及内容范围中有独立资源登记时，在预检中给出明确原因，避免遗漏并发写入或接管其他资源。统一 ID、正文、附件和创建审计保留；Knowledge 项目归属变更递增一次版本，Skill 的版本前提和回执使用 `ReadResource` 返回的 SHA256。手写绝对路径不重写，长期引用使用资源 ID 和相对文件地址。源条目、源项目及目标项目均检查当前 actor 的权限；任一预检失败都不会开始本批新迁移。
 
 迁移有持久操作记录。`operation_id` 可显式提供，省略时由真实调用者、目标项目及规范化条目版本列表稳定生成。一次操作的受理范围不能变更；重试必须保持原目标和条目版本。资源提交与目录登记、权限事实、单项回执协调；已提交条目重试不重复推进版本。编辑、删除和迁移共用按资源 ID 的跨进程锁，不因项目路径改变而绕过等待中的编辑。批量按条目提交，不声称全批原子性。进度记录只记录操作及恢复事实，目录登记仍是当前位置的唯一权威。
 
 返回包含 `operation_id`、`status`、`committed`、`pending`、`projected` 与可选 `error`。`completed` 表示所有条目、旧位置处理和在线索引已完成；`partial` 明确列出已经提交的条目与尚未提交的 ID，并保留可重试状态。故障后可重新调用同一动作继续处理；若 HATG 的幂等键重放了旧回执，新的继续调用保留动作 `operation_id`、使用新的指令调用键。中断期间若未提交源内容已改变，撤回能证明归属的准备文件并释放租约，调用者回读新版本后重新发起；不能证明归属的暂存路径保留并列在 `preserved_staging_paths` 中。不要把超时或未知回执解释成未提交，也不要据此另建资源。
 
-运行服务在同一批资源的修改串行边界内，直接读取新的权威路径，以一次索引 ChangeSet 发布并持久化本批结果；不逐条排队等待全量扫描。直接投影的代次保护阻止旧扫描覆盖新位置，同一资源后续更新也不能被较早投影覆盖。投影失败保留领域已提交状态并返回未完成；只有真实运行服务的索引同步确认后，才承诺原 ID 可按新位置读取。
+运行服务在同一批资源的修改串行边界内，直接读取新的权威路径，按各 owner 生成摘要，在一次索引事务中发布并持久化本批结果；不逐条排队等待全量扫描。直接投影的代次保护阻止旧扫描覆盖新位置，同一资源后续更新也不能被较早投影覆盖。投影失败保留领域已提交状态并返回未完成；只有真实运行服务的索引同步确认后，才承诺原 ID 可按新位置读取。
 
 ### 已版本化正文与受损版本恢复
 

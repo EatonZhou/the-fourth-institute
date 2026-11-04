@@ -315,24 +315,29 @@ class AdapterLayer:
         with ExitStack() as locks:
             for rid in sorted(ids):
                 locks.enter_context(mutation_projection_scope(rid))
-            owners = [adapter for adapter in self.adapters.values()
-                      if all(record.get("resource_type") in adapter.resource_types for record in records)
-                      and callable(getattr(adapter, "project_records", None))]
-            if len(owners) != 1:
-                raise ValueError("relocation batch requires one batch projection owner")
-            adapter = owners[0]
-            summaries = adapter.project_records(records)
-            if len(summaries) != len(ids) or {s.get("resource_id") for s in summaries} != set(ids):
-                raise ValueError("relocation projection changed resource identities")
-            result = self.store.apply(ChangeSet(
-                adapter.name, upserts=tuple(summaries),
-                source_state=self.store.adapter_source_state(adapter.name),
-            ), direct=True)
+            groups = {}
+            for record in records:
+                owners = [adapter for adapter in self.adapters.values()
+                          if record.get("resource_type") in adapter.resource_types
+                          and callable(getattr(adapter, "project_records", None))]
+                if len(owners) != 1:
+                    raise ValueError("relocation resource requires one batch projection owner")
+                groups.setdefault(owners[0].name, []).append(record)
+            changes = []
+            for name, items in groups.items():
+                summaries = self.adapters[name].project_records(items)
+                if (len(summaries) != len(items)
+                        or {s.get("resource_id") for s in summaries} != {r['resource_id'] for r in items}):
+                    raise ValueError("relocation projection changed resource identities")
+                changes.append(ChangeSet(name, upserts=tuple(summaries),
+                    source_state=self.store.adapter_source_state(name)))
+            result = self.store.apply_batch(changes, direct=True)
             if set(result["upserted_ids"]) != set(ids):
                 raise RuntimeError("relocation projection rejected committed resources")
-            self._completed_refresh(adapter.name, {
-                **result, "changed": True, "scanned": False, "incremental": True,
-            }, forced=True, emit=True)
+            for applied in result['results']:
+                self._completed_refresh(applied['adapter'], {
+                    **applied, "changed": True, "scanned": False, "incremental": True,
+                }, forced=True, emit=True)
             return result
 
     def _project_one(self, resource_type, record, *, refresh_source):

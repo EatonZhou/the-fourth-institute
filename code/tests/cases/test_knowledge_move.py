@@ -333,7 +333,7 @@ def test_prepared_target_is_not_discovered_by_old_scan(relocation, monkeypatch):
     observations = []
     def before_commit(journal, plan):
         target = move.cleanup_path(plan["target"])
-        companion = move.cleanup_path(plan["target_companion"])
+        companion = move.cleanup_path(plan["owned"][1]["target"])
         assert target.is_file()
         observations.append(register_owned("knowledge", KNOWLEDGE_ID, [target, companion], scanning=True))
         assert register_owned("knowledge", KNOWLEDGE_ID,
@@ -345,25 +345,20 @@ def test_prepared_target_is_not_discovered_by_old_scan(relocation, monkeypatch):
     assert observations == [None]
 
 
-@pytest.mark.parametrize("child", ["repo", "workspace", "retention", "adopted"])
-def test_nested_owners_and_adopted_directories_require_own_migration(relocation, child):
+@pytest.mark.parametrize("child", ["repo", "workspace", "retention"])
+def test_nested_owners_require_own_migration(relocation, child):
     source, payload, _create, _permissions, sync = relocation
     nested = source.parent / KNOWLEDGE_ID / "history"
     if child == "repo":
         with get_registry_store().writer("repo") as writer:
-            writer.put("repo", "repo_0123456789ab", {"checkouts": [{"path": str(nested), "origin": "created"}]})
+            writer.put("repo", "repo_0123456789ab", {"checkouts": [{"path": str(nested)}]})
     elif child == "workspace":
         from management_portal.resources.workspace_store import get_workspace_store
-        get_workspace_store().ensure("workspace_0123456789ab", str(nested), origin="created", owner_id="fixture")
+        get_workspace_store().ensure("workspace_0123456789ab", str(nested), owner_id="fixture")
     elif child == "retention":
         from management_common.directory_retention import RetentionStore
         RetentionStore().declare(nested, category="object_data", owner_id="fixture")
-    else:
-        with get_registry_store().writer("knowledge") as writer:
-            document = writer.get("knowledge", KNOWLEDGE_ID)
-            document["directories"][0]["origin"] = "adopted"
-            writer.put("knowledge", KNOWLEDGE_ID, document)
-    with pytest.raises(ValueError, match="independent|adopted"):
+    with pytest.raises(ValueError, match="independent"):
         invoke(payload)
     assert current() == source
     sync.assert_not_called()
@@ -381,7 +376,7 @@ def test_text_registry_storage_preserves_move_and_nested_owner_checks(relocation
     if nested_owner:
         with registry.writer("repo") as writer:
             writer.put("repo", "repo_0123456789ab", {"checkouts": [{
-                "path": str(source.parent / KNOWLEDGE_ID / "history"), "origin": "created",
+                "path": str(source.parent / KNOWLEDGE_ID / "history"),
             }]})
         with pytest.raises(ValueError, match="independently registered"):
             invoke(payload)

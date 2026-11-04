@@ -182,11 +182,15 @@ class RegistryStore:
                     connection.execute(
                         "INSERT INTO registry_meta(key, value) VALUES ('schema', %s)", (SCHEMA_VERSION,),
                     )
+                    from .directory_ownership_upgrade import upgrade_registry
+                    upgrade_registry(connection, self.database.schema)
                     return
                 row = connection.execute("SELECT value FROM registry_meta WHERE key='schema'").fetchone() \
                     if "registry_meta" in tables else None
                 if tables != _TABLES or row is None or not schema_matches(row["value"], SCHEMA_VERSION):
                     raise RuntimeError("Resource registry database does not match its schema")
+                from .directory_ownership_upgrade import upgrade_registry
+                upgrade_registry(connection, self.database.schema)
 
             self.database.write(initialize)
             self._ready = True

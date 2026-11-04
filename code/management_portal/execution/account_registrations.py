@@ -30,8 +30,6 @@ DDL = """
 CREATE TABLE IF NOT EXISTS registrations (
     account_id TEXT PRIMARY KEY, provider TEXT NOT NULL, kind TEXT NOT NULL,
     route_id TEXT NOT NULL DEFAULT '', config JSONB NOT NULL DEFAULT '{}',
-    directory_origin TEXT GENERATED ALWAYS AS
-        (CASE WHEN config ? 'account_dir' THEN 'adopted'::text ELSE NULL::text END) STORED,
     directory_owner TEXT GENERATED ALWAYS AS
         (CASE WHEN config ? 'account_dir' THEN 'host'::text ELSE NULL::text END) STORED,
     max_concurrency INTEGER NOT NULL CHECK(max_concurrency > 0),
@@ -48,6 +46,7 @@ CREATE TABLE IF NOT EXISTS backend_roles (
 );
 ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS account_selection TEXT NOT NULL DEFAULT 'auto' CHECK(account_selection IN ('auto','fixed'));
 ALTER TABLE backend_roles ADD COLUMN IF NOT EXISTS backend_priority JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE registrations DROP COLUMN IF EXISTS directory_origin;
 UPDATE registrations SET config=config - 'is_default' - 'fallback_account_ids' WHERE config ?| ARRAY['is_default','fallback_account_ids'];
 """
 
@@ -213,6 +212,7 @@ def require_no_role_references(account_id, connection=None):
 
 
 def delete_registration(account_id):
+    """Remove the execution identity; account directories belong to the host."""
     with database().transaction("registrations") as c:
         require_no_role_references(account_id, c)
         return bool(c.execute("DELETE FROM registrations WHERE account_id=%s", (account_id,)).rowcount)

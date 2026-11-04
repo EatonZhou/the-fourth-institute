@@ -489,6 +489,28 @@ class SkillPackageAdapter(_PathsAdapter):
     recursive_fingerprint = True
     protect_existing_sources = True
 
+    def project_records(self, items: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Project committed Skill paths, including single-file packages."""
+        statuses = _project_statuses(skill_backend._parse_projects(active_only=False))
+        records = []
+        for item in items:
+            if item.get('resource_type') != 'skill':
+                raise ValueError('Skill projection requires a Skill resource')
+            path = Path(stripped_text(item.get('path'))).resolve(strict=False)
+            project = stripped_text(item.get('project') or next(iter(item.get('project_ids') or []), ''))
+            if not project or not filesystem_path(path).is_file():
+                raise ValueError('Skill projection requires its source path and Project')
+            root = path if item.get('single_file') else Path(stripped_text(item.get('content_root')))
+            if not item.get('single_file') and not path.is_relative_to(root):
+                raise ValueError('Skill primary path is outside its registered root')
+            raw = self._raw_item(root, project=project, source='project',
+                                 source_label='Project', preferred_primary=path)
+            record = self._record_for_item(raw, statuses=statuses, order=0) if raw else None
+            if record is None or record['resource_id'] != item.get('resource_id'):
+                raise ValueError('Skill projection changed resource identity')
+            records.append(record)
+        return records
+
     def source_paths(self) -> list[Path]:
         project_roots = sorted(map(logical_path, filesystem_path(portal_path('projects')).glob("*/knowledge_base/skill")))
         roots = [

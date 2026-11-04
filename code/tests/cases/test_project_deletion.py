@@ -26,7 +26,7 @@ def _configure_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *,
     registry = ProjectRegistryYaml()
     write_projects({"schema_version": 1, "projects": [
         {"id": "Example", "path": str(project_root), "description": "test project",
-         "directory": {"origin": "created", "owner_id": "Example"}},
+         "directory": {"owner_id": "Example"}},
     ]})
     archive = tmp_path / "archive" / "project_deletions.json"
     deleted: list[str] = []

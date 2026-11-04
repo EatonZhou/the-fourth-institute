@@ -143,3 +143,62 @@ def test_projection_rejects_identity_loss_before_publishing(isolated_portal_case
                 store.internal_get(rid)
         finally:
             layer.stop()
+
+
+def test_mixed_move_is_atomic_durable_and_fences_both_scans(isolated_portal_case, monkeypatch):
+    from management_portal.resource_index_records import ChangeSet
+    ids = ['concept_0123456789ab', 'skill_0123456789ab']
+    class Adapter:
+        def __init__(self, name, kind, rid):
+            self.name, self.resource_types, self.rid = name, {kind}, rid
+        def project_records(self, records):
+            return [_record(self.rid, next(iter(self.resource_types)), adapter=self.name, title='Moved')]
+    adapters = [Adapter('project_knowledge', 'concept', ids[0]), Adapter('skill', 'skill', ids[1])]
+    with isolated_portal_case():
+        store = IndexStore()
+        layer = AdapterLayer(store, adapters, start_worker=False)
+        saved = Mock(wraps=store._persist)
+        monkeypatch.setattr(store, '_persist', saved)
+        before = store.generation()
+        try:
+            result = layer.project_relocated([
+                {'resource_id': rid, 'resource_type': rid.split('_')[0]} for rid in ids])
+            assert result['upserted_ids'] == sorted(ids)
+            assert saved.call_count == 1
+            for adapter in adapters:
+                store.apply(ChangeSet(adapter.name, upserts=(
+                    _record(adapter.rid, next(iter(adapter.resource_types)), adapter=adapter.name, title='Stale'),)),
+                    scan_started_generation=before)
+            reopened = IndexStore()
+            assert all(reopened.internal_get(rid)['title'] == 'Moved' for rid in ids)
+            # No partially published first adapter when the second is invalid.
+            with pytest.raises(ValueError, match='invalid'):
+                store.apply_batch([
+                    ChangeSet('project_knowledge', upserts=(_record(ids[0], 'concept', adapter='project_knowledge', title='Partial'),)),
+                    ChangeSet('skill', upserts=({'resource_id': ids[1]},)),
+                ], direct=True)
+            assert store.internal_get(ids[0])['title'] == 'Moved'
+        finally:
+            layer.stop()
+
+
+@pytest.mark.parametrize('single_file', [False, True])
+def test_skill_batch_reads_registered_new_path(tmp_path, monkeypatch, single_file):
+    root = tmp_path / 'Target' / 'knowledge_base' / 'skill'
+    root.mkdir(parents=True)
+    rid = 'skill_0123456789ab'
+    package = root if single_file else root / 'package'
+    package.mkdir(exist_ok=True)
+    path = package / (rid + '.md' if single_file else 'SKILL.md')
+    path.write_text(f'---\nname: Fixture\ndescription: Test relocation\nmetadata:\n  id: {rid}\n---\n# Fixture\nBody\n')
+    projects = Mock(return_value=[{'id': 'Target', 'path': str(root.parents[1]), 'status': 'active'}])
+    monkeypatch.setattr(knowledge_index.skill_backend, '_parse_projects', projects)
+    result, = knowledge_index.SkillPackageAdapter().project_records([{
+        'resource_id': rid, 'resource_type': 'skill', 'path': str(path),
+        'content_root': str(package), 'single_file': single_file, 'project': 'Target',
+    }])
+    assert result['resource_id'] == rid
+    assert result['source']['path'] == str(path)
+    assert result['attributes']['single_file'] is single_file
+    assert result['attributes']['project_ids'] == ['Target']
+    assert projects.call_count == 1

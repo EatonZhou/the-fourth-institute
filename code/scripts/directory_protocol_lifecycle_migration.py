@@ -16,12 +16,11 @@ def migrate(connection):
     connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{lifecycle}"')
     migrate_move_safety_schema(connection, lifecycle)
     counts = {}
-    # The Resident/Lineage creation contracts create these exact folders; that
-    # is evidence of Portal creation, unlike arbitrary historical Projects.
+    # Identity rows establish directory ownership, independent of registration.
     for table, key in (('residents', 'resident_id'), ('lineages', 'lineage_id')):
         connection.execute(f'ALTER TABLE {lineage}.{table} ADD COLUMN IF NOT EXISTS directory_json JSONB')
         result = connection.execute(f"UPDATE {lineage}.{table} SET directory_json="
-            f"jsonb_build_object('origin','created','owner_id',{key}) WHERE directory_json IS NULL")
+            f"jsonb_build_object('owner_id',{key}) WHERE directory_json IS NULL")
         counts[table] = result.rowcount
     row = connection.execute(f"SELECT document_json FROM {registry}.registry_documents "
                              "WHERE collection='project_registry' AND document_id='projects' FOR UPDATE").fetchone()
@@ -35,7 +34,7 @@ def migrate(connection):
         for project in document.get('projects', []):
             updated = False
             if 'directory' not in project:
-                project['directory'] = {'origin': 'adopted', 'owner_id': project['id']}
+                project['directory'] = {'owner_id': project['id']}
                 updated = True
             if project.get('path'):
                 reference = stored_location(located_path(project['path']))
@@ -48,6 +47,10 @@ def migrate(connection):
             RegistryWriter(connection, ('project_registry',), _database_schema('resource_registry')).put(
                 'project_registry', 'projects', document)
         counts['projects'] = changed
+    from management_portal.society_service.directory_owner import upgrade_ownership
+    from management_portal.project_registry import upgrade_directory_ownership
+    counts['retired_classification'] = upgrade_ownership(connection)
+    counts['retired_classification']['projects'] = upgrade_directory_ownership(connection)
     counts['converted_removals'] = migrate_cleanup_steps(connection)
     return counts
 

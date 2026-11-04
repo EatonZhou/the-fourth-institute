@@ -32,11 +32,11 @@ def test_entry_uses_owner_transaction_without_resource_index_queries(deletion, m
     from management_portal.resources.directory_registrations import is_deleted
     workspace = root / 'workspace'
     workspace.mkdir()
-    get_workspace_store().ensure('workspace_aaaaaaaaaaaa', str(workspace), origin='adopted')
+    get_workspace_store().ensure('workspace_aaaaaaaaaaaa', str(workspace))
     rid = 'repo_aaaaaaaaaaaa'
     registry = get_registry_store()
     with registry.writer('repo') as writer:
-        writer.put('repo', rid, {'id': rid, 'checkouts': [{'path': str(root / 'repo'), 'origin': 'adopted'}]})
+        writer.put('repo', rid, {'id': rid, 'checkouts': [{'path': str(root / 'repo'), 'owner_id': rid}]})
     monkeypatch.setattr(isa, '_service', lambda: pytest.fail('Deletion must not query/unregister each index record'))
     result = isa.delete_project(inv)
     assert result['registration_status'] == 'unregistered'
@@ -89,10 +89,11 @@ def test_failed_registration_rolls_back_nested_resources_and_receipt(deletion, m
     rid = 'repo_bbbbbbbbbbbb'
     registry = get_registry_store()
     with registry.writer('repo') as writer:
-        writer.put('repo', rid, {'id': rid, 'checkouts': [{'path': str(root / 'repo'), 'origin': 'adopted'}]})
+        writer.put('repo', rid, {'id': rid, 'checkouts': [{'path': str(root / 'repo'), 'owner_id': rid}]})
     def fail(*args, **kwargs):
         raise OSError('queue unavailable')
-    monkeypatch.setattr(get_directory_cleanup_store(), 'enqueue', fail)
+    from management_common.directory_cleanup_store import DirectoryCleanupStore
+    monkeypatch.setattr(DirectoryCleanupStore, 'enqueue', fail)
     with pytest.raises(InstructionError) as error:
         isa.delete_project(inv)
     assert error.value.commit_state == 'not_committed'

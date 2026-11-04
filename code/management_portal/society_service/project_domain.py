@@ -266,12 +266,12 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 if _project_lineage_ids(identities) != (ordinary, principals):
                     raise ValueError('Project membership changed during deletion; retry')
                 from .directory_owner import directory_metadata
-                directory = directory_metadata(project_record.get('directory'), registry_id)
+                directory_metadata(project_record.get('directory'), registry_id)
                 from management_common.directory_move_store import cancel_owner_moves
                 cancel_owner_moves(connection, registry_id)
                 from management_portal.resources.directory_registrations import unregister_tree
                 nested = unregister_tree(
-                    [project_root] if directory['origin'] == 'created' else [],
+                    [project_root],
                     owner_ids=[registry_id, *ordinary, *principals, *member_ids], connection=connection, actor=actor_id)
                 for lineage_id, commit in commits:
                     result = commit()
@@ -294,7 +294,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 from .resident_workspace_deletion import delete_workspaces
                 delete_workspaces(connection, owner_ids=[registry_id], deleted_at=entry['deleted_at'], deleted_by=actor_id)
                 remove_deleted_folder(project_root, connection=connection, owner_id=registry_id,
-                                      origin=directory['origin'], actor=actor_id)
+                                      actor=actor_id)
                 from management_portal.resources.directory_registrations import unregister_identity
                 unregister_identity(registry_id, connection=connection, actor=actor_id)
                 writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, document)

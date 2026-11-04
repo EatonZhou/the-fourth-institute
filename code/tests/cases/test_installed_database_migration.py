@@ -11,6 +11,18 @@ from tests.cases.test_family_chat_preferences import family_chat, lineage, chart
 from tests.cases.test_workspace_resource_rename import workspace  # noqa: F401
 
 
+def test_preservation_digest_ignores_retired_columns_and_accepts_their_absence(workspace):
+    from scripts.migrate_directory_protocol import migrate_workspaces
+    database = workspace.store.database
+    with database.transaction() as connection:
+        connection.execute(f"ALTER TABLE {workspace.store.table} ADD COLUMN origin TEXT DEFAULT 'adopted'")
+        before = preservation_facts(connection)
+        migrate_workspaces(connection, workspace_schema=database.schema, lineage_schema=_database_schema('lineage'))
+        assert preservation_facts(connection) == before
+        row = connection.execute(f'SELECT * FROM {workspace.store.table} LIMIT 1').fetchone()
+        assert 'origin' not in row
+
+
 def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, workspace, monkeypatch):
     from management_portal.society_service.state_store import get_lineage_data_store, LineageDataStore
     from management_portal.resources.registry_store import get_registry_store
@@ -54,7 +66,7 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
             c.execute(f'ALTER TABLE {table} RENAME COLUMN excluded_member_ids TO muted_member_ids')
         for table in ('lineages', 'residents'):
             c.execute(f'ALTER TABLE {table} DROP COLUMN directory_json')
-        c.execute(f'ALTER TABLE {workspace.store.table} DROP COLUMN origin, DROP COLUMN owner_id, DROP COLUMN operation_id')
+        c.execute(f'ALTER TABLE {workspace.store.table} DROP COLUMN IF EXISTS origin, DROP COLUMN owner_id, DROP COLUMN operation_id')
         c.execute("UPDATE lineage_meta SET value='tfi.lineage-data.v65' WHERE key='schema'")
         before = preservation_facts(c)
     # The framework deliberately holds pools on its disposable server. Service
@@ -174,4 +186,4 @@ def test_metadata_backfill_keeps_area_references_without_posix_encoder(future_cr
         row = c.execute(f'SELECT document_json FROM "{registry.database.schema}".registry_documents '
                         "WHERE collection='project_registry' AND document_id='projects'").fetchone()
         assert stored_json(row[0])['projects'] == [{'id': '中文', 'path': 'projects:中文',
-            'directory': {'origin': 'adopted', 'owner_id': '中文'}}]
+            'directory': {'owner_id': '中文'}}]

@@ -101,7 +101,7 @@
       $id("transferNodeBtn").setAttribute("aria-expanded", "false");
       removeButton.disabled = false;
       removeButton.textContent = window.PortalI18n.t("删除节点");
-      removeButton.title = window.PortalI18n.t("Resident 将标记为已删除，并移除 Session 和图引用；所属目录按来源处理：Portal 创建的连同嵌套对象永久删除，接入的现成目录只注销、保留文件；绑定同步解除。对话与运行轨迹保留。");
+      removeButton.title = window.PortalI18n.t("Resident 将标记为已删除，并移除 Session 和图引用；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话与运行轨迹保留。");
       dialog.open();
       if (tab !== "display") await switchNodeSettingsTab(tab);
       else await loadNodeMenuRuntime();
@@ -206,7 +206,7 @@
         finally { context.busy = false; }
         return;
       }
-      if (!await window.PortalUI.confirm({title: window.PortalI18n.t("删除 Resident？"), message: window.PortalI18n.text`删除「${node.title}」将移除 Session 和图引用；所属目录按来源处理：Portal 创建的连同嵌套对象永久删除，接入的现成目录只注销、保留文件；绑定同步解除。对话与运行轨迹保留。`, confirmLabel: window.PortalI18n.t("删除"), tone: "danger"}) || menuState.nodeMenuContext !== context) return;
+      if (!await window.PortalUI.confirm({title: window.PortalI18n.t("删除 Resident？"), message: window.PortalI18n.text`删除「${node.title}」将移除 Session 和图引用；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话与运行轨迹保留。`, confirmLabel: window.PortalI18n.t("删除"), tone: "danger"}) || menuState.nodeMenuContext !== context) return;
       context.busy = true;
       try {
         const result = await window.PortalResidentService.remove({resident_id: context.residentId});

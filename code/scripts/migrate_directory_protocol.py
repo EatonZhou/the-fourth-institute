@@ -2,7 +2,7 @@
 
 The maintenance owner runs this in the offline window after merging the
 matching code. Dry-run only reports counts. Application refuses any other
-database client and commits all schema and provenance changes together.
+database client and commits all schema and ownership changes together.
 """
 from __future__ import annotations
 
@@ -24,43 +24,43 @@ from scripts.instance_storage_migration import require_database_alone
 
 
 def migrate_workspaces(connection, *, workspace_schema, lineage_schema):
-    """The caller owns the offline transaction; no files prove provenance by name."""
+    """Backfill ownership from domain relationships in the offline transaction."""
     table = sql.Identifier(workspace_schema, 'workspaces')
     qualified = table.as_string()
     columns = {row[0] for row in connection.execute(
         'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped', (qualified,),
     ).fetchall()}
-    for name, definition in (('origin', 'TEXT'), ('owner_id', 'TEXT'), ('operation_id', 'TEXT')):
+    for name, definition in (('owner_id', 'TEXT'), ('operation_id', 'TEXT')):
         if name not in columns:
             connection.execute(sql.SQL('ALTER TABLE {} ADD COLUMN {} {}').format(
                 table, sql.Identifier(name), sql.SQL(definition)))
-    connection.execute(sql.SQL("UPDATE {} SET origin=COALESCE(origin,'adopted'),owner_id=COALESCE(owner_id,workspace_id)")
+    connection.execute(sql.SQL('ALTER TABLE {} DROP COLUMN IF EXISTS origin').format(table))
+    connection.execute(sql.SQL("UPDATE {} SET owner_id=COALESCE(owner_id,workspace_id)")
                        .format(table))
     residents = sql.Identifier(lineage_schema, 'residents')
     proven_residents = 0
     if connection.execute('SELECT to_regclass(%s)', (residents.as_string(),)).fetchone()[0]:
-        proven_residents = connection.execute(sql.SQL("UPDATE {} w SET origin='created',owner_id=r.resident_id "
-            'FROM {} r WHERE r.owned_workspace_id=w.workspace_id').format(table, residents)).rowcount
+        proven_residents = connection.execute(sql.SQL("UPDATE {} w SET owner_id=r.resident_id "
+            'FROM {} r WHERE r.owned_workspace_id=w.workspace_id AND w.owner_id=w.workspace_id').format(table, residents)).rowcount
     handoffs = sql.Identifier(lineage_schema, 'lineage_handoff_items')
     proven_handoffs = 0
     if connection.execute('SELECT to_regclass(%s)', (handoffs.as_string(),)).fetchone()[0]:
-        proven_handoffs = connection.execute(sql.SQL("UPDATE {} w SET origin='created',owner_id=e.lineage_id "
+        proven_handoffs = connection.execute(sql.SQL("UPDATE {} w SET owner_id=e.lineage_id "
             'FROM {} h JOIN {} e ON e.edge_id=h.edge_id '
-            "WHERE h.transfer_mode='copy' AND w.origin='adopted' AND "
+            "WHERE h.transfer_mode='copy' AND w.owner_id=w.workspace_id AND "
             "(h.target_workspace_id=w.workspace_id OR (h.target_path<>'' AND h.target_path=w.path))").format(
                 table, handoffs, sql.Identifier(lineage_schema, 'lineage_edges'))).rowcount
-    connection.execute(sql.SQL('ALTER TABLE {} ALTER COLUMN origin SET NOT NULL, ALTER COLUMN owner_id SET NOT NULL').format(table))
+    connection.execute(sql.SQL('ALTER TABLE {} ALTER COLUMN owner_id SET NOT NULL').format(table))
     constraints = {row[0] for row in connection.execute(
         'SELECT conname FROM pg_constraint WHERE conrelid=%s::regclass', (qualified,)).fetchall()}
     for name, definition in (
-        ('workspaces_origin_check', "CHECK(origin IN ('created','adopted'))"),
         ('workspaces_owner_id_check', "CHECK(owner_id <> '')"),
         ('workspaces_operation_id_key', 'UNIQUE(operation_id)'),
     ):
         if name not in constraints:
             connection.execute(sql.SQL('ALTER TABLE {} ADD CONSTRAINT {} {}').format(table, sql.Identifier(name), sql.SQL(definition)))
-    counts = {row[0]: row[1] for row in connection.execute(sql.SQL('SELECT origin,count(*) FROM {} GROUP BY origin').format(table)).fetchall()}
-    return {'origins': counts, 'proven_resident_workspaces': proven_residents, 'proven_handoff_workspaces': proven_handoffs}
+    count = connection.execute(sql.SQL('SELECT count(*) FROM {}').format(table)).fetchone()[0]
+    return {'owned_workspaces': count, 'proven_resident_workspaces': proven_residents, 'proven_handoff_workspaces': proven_handoffs}
 
 
 def inventory(connection):
@@ -70,7 +70,7 @@ def inventory(connection):
         (table.as_string(),)).fetchall()]
     count = connection.execute(sql.SQL('SELECT count(*) FROM {}').format(table)).fetchone()[0]
     return {'workspaces': count, 'workspace_columns': columns,
-            'requires_offline_window': not {'origin', 'owner_id', 'operation_id'} <= set(columns)}
+            'requires_offline_window': 'origin' in columns or not {'owner_id', 'operation_id'} <= set(columns)}
 
 
 def migrate_account_directories(connection, *, schema):
@@ -80,12 +80,13 @@ def migrate_account_directories(connection, *, schema):
     columns = {row[0] for row in connection.execute(
         'SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped',
         (table.as_string(),)).fetchall()}
-    for name, value in (('directory_origin', 'adopted'), ('directory_owner', 'host')):
+    connection.execute(sql.SQL('ALTER TABLE {} DROP COLUMN IF EXISTS directory_origin').format(table))
+    for name, value in (('directory_owner', 'host'),):
         if name not in columns:
             connection.execute(sql.SQL('ALTER TABLE {} ADD COLUMN {} TEXT GENERATED ALWAYS AS '
                 "(CASE WHEN config ? 'account_dir' THEN {}::text ELSE NULL::text END) STORED").format(
                     table, sql.Identifier(name), sql.Literal(value)))
-    return {'registrations': connection.execute(sql.SQL('SELECT count(*) FROM {} WHERE directory_origin IS NOT NULL').format(table)).fetchone()[0]}
+    return {'registrations': connection.execute(sql.SQL('SELECT count(*) FROM {} WHERE directory_owner IS NOT NULL').format(table)).fetchone()[0]}
 
 
 def migrate_schema(connection):

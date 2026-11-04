@@ -84,7 +84,7 @@ def relocate_copy(lineage_id, handoff_id, item_id, actor, *, workspace_id,
         from management_portal.resources.collaboration_registry import descriptor_resource_record
         from .lineage_access_policy import hidden_private_ids
         def check(connection):
-            row = store.require_created_owner(workspace_id, connection=connection, **snapshot)
+            row = store.require_owner(workspace_id, connection=connection, **snapshot)
             if hidden_private_ids(actor, [descriptor_resource_record(store.descriptor(row))]):
                 raise KeyError(workspace_id)
             if workspace_id not in permission_system.permitted_ids(actor, 'UpdateResource', 'resource_id', [workspace_id]):

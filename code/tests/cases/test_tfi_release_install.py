@@ -246,6 +246,8 @@ def test_retire_stops_removes_unregisters_and_keeps_external_areas(creation, tmp
     monkeypatch.setattr(instance_services, "remove_definitions", lambda inst: removed.append(inst.name) or ["x"])
     result = installer.retire(host_instances.find("accept_tmp"))
     assert result["external_areas"] == [str(external)] and result["external_areas_deleted"] is False
+    assert result['external_owned_deleted'] == []
+    assert 'external_created_deleted' not in result
     assert removed == ["accept_tmp"] and ("lifecycle", "stop", {}) in creation.calls
     assert not instance.root.exists() and external.is_dir()
     assert "accept_tmp" not in host_instances.read_registry()
@@ -264,7 +266,7 @@ def test_retire_cleanup_failure_keeps_registry_and_database_for_retry(creation, 
     monkeypatch.setattr(instance_services, 'wait_database', lambda _: None)
     monkeypatch.setattr(instance_services, 'remove_definitions', lambda _: pytest.fail('cleanup pending'))
     def fail(*args, **kwargs):
-        raise RuntimeError('created directory occupied')
+        raise RuntimeError('owned directory occupied')
     monkeypatch.setattr(installer, 'code_child', fail)
     with pytest.raises(RuntimeError, match='occupied'):
         installer.retire(instance)

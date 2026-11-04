@@ -259,7 +259,7 @@ def create_project(
                 raise ValueError(f"Unknown project status: {status}")
             record = {
                 "id": project_id,
-                "directory": {"origin": "created", "owner_id": project_id},
+                "directory": {"owner_id": project_id},
                 "status": status,
                 "project_type": project_type,
                 "description": description,

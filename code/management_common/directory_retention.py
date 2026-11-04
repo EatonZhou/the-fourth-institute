@@ -30,7 +30,6 @@ POLICIES = {
 DDL = """
 CREATE TABLE IF NOT EXISTS artifacts (
  location TEXT PRIMARY KEY, owner_id TEXT NOT NULL,
- origin TEXT NOT NULL CHECK(origin IN ('created','adopted')),
  category TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL,
  eligible_at TIMESTAMPTZ, last_access TIMESTAMPTZ NOT NULL,
  bytes BIGINT NOT NULL CHECK(bytes >= 0), cache_group TEXT NOT NULL DEFAULT '',
@@ -46,8 +45,8 @@ def utc_now():
 def enqueue_directory_cleanup(path, *, owner_id, operation_id, actor, connection):
     """Unregister artifacts covered by a deletion intent in its owner transaction.
 
-    Call only for a tree whose files will be removed, never an adopted tree
-    being detached. The low-level queue owns filesystem effects; retention
+    Call only for a tree whose files will be removed. The low-level queue
+    owns filesystem effects; retention
     owns invalidating declarations, including those made by other owners.
     """
     return RetentionStore(connection=connection).enqueue_cleanup(
@@ -84,27 +83,37 @@ class RetentionStore:
         if connection is not None:
             from .directory_cleanup_store import DirectoryCleanupStore
             self.queue = DirectoryCleanupStore(connection=connection)
-            if connection.execute('SELECT to_regclass(%s)', (self.table,)).fetchone()[0] is None:
+            if self._needs_initialize(connection):
                 self._initialize(connection)
             return
         self.queue = get_directory_cleanup_store()
         with self.database.read() as connection:
-            exists = connection.execute('SELECT to_regclass(%s)', (self.table,)).fetchone()[0]
-        if not exists:
+            needs_initialize = self._needs_initialize(connection)
+        if needs_initialize:
             self.database.write(self._initialize)
+
+    def _needs_initialize(self, connection):
+        return connection.execute('''SELECT to_regclass(%s) IS NULL OR EXISTS (
+            SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass(%s)
+            AND attname='origin' AND NOT attisdropped)''', (self.table, self.table)).fetchone()[0]
 
     def _initialize(self, connection):
         connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', (self.table,))
-        connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.database.schema}"')
-        # An enlisted connection has the caller's search_path. Initialization
-        # belongs to this same transaction and to retention's own schema.
-        connection.executescript(DDL.replace('CREATE TABLE IF NOT EXISTS artifacts',
-                                            f'CREATE TABLE IF NOT EXISTS {self.table}'))
+        # Recheck after serializing installers. Ordinary store construction
+        # reads the catalog only; upgraded instances do not take a DDL lock.
+        if connection.execute('SELECT to_regclass(%s)', (self.table,)).fetchone()[0] is None:
+            connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.database.schema}"')
+            connection.executescript(DDL.replace('CREATE TABLE IF NOT EXISTS artifacts',
+                                                f'CREATE TABLE IF NOT EXISTS {self.table}'))
+        if self._needs_initialize(connection):
+            # One-time schema upgrade: deadlines and ownership remain intact.
+            # The column's CHECK constraint is removed with the column.
+            connection.execute(f'ALTER TABLE {self.table} DROP COLUMN origin')
 
-    def declare(self, path, *, category, owner_id, origin='created', created_at=None,
+    def declare(self, path, *, category, owner_id, created_at=None,
                 finished_at=None, bytes=0, cache_group='', connection=None):
-        if category not in POLICIES or origin not in {'created', 'adopted'} or not owner_id:
-            raise ValueError('File category, origin and directory owner are required')
+        if category not in POLICIES or not owner_id:
+            raise ValueError('File category and directory owner are required')
         created_at = created_at or utc_now()
         clock = POLICIES[category]['clock']
         start = created_at if clock == 'created_at' else finished_at if clock == 'finished_at' else None
@@ -116,13 +125,15 @@ class RetentionStore:
         test_run_id = scope['run_id'] if scope else ''
         with nullcontext(connection) if connection is not None else self.database.transaction() as conn:
             self.queue.assert_available(path, connection=conn)
-            prior = conn.execute(f'SELECT owner_id,category,origin FROM {self.table} WHERE location=%s', (location,)).fetchone()
+            prior = conn.execute(f'SELECT owner_id,category FROM {self.table} WHERE location=%s', (location,)).fetchone()
             if prior:
-                if (prior['owner_id'], prior['category'], prior['origin']) != (owner_id, category, origin):
+                if (prior['owner_id'], prior['category']) != (owner_id, category):
                     raise ValueError('Artifact already belongs to another owner or category')
                 return  # Retries never extend an existing retention deadline.
-            conn.execute(f'INSERT INTO {self.table} VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                         (location, owner_id, origin, category, created_at, expiry, created_at, bytes, cache_group, test_run_id))
+            conn.execute(f'''INSERT INTO {self.table}
+                         (location,owner_id,category,created_at,eligible_at,last_access,bytes,cache_group,test_run_id)
+                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
+                         (location, owner_id, category, created_at, expiry, created_at, bytes, cache_group, test_run_id))
 
     def finish(self, owner_id, *, at=None, connection=None):
         """The writer confirms work has ended; live Provider sessions never age out."""
@@ -158,7 +169,7 @@ class RetentionStore:
     def unregister_tree(self, roots, *, connection):
         """Forget all declarations covered by removed roots, without new effects.
 
-        Origins and owners do not protect contents of a deleted outer tree.
+        Nested owners do not protect contents of a deleted outer tree.
         Path membership uses the same boundary rules as directory deletion;
         filesystem absence is not evidence that a declaration has expired.
         """
@@ -189,9 +200,8 @@ class RetentionStore:
         if not connection.execute(f'DELETE FROM {self.table} WHERE location=%s',
                                   (row['location'],)).rowcount:
             return False
-        if row['origin'] == 'created':
-            self.enqueue_cleanup(cleanup_path(row['location']), owner_id=row['owner_id'],
-                                 operation_id='retention:' + uuid4().hex, actor='directory-retention', connection=connection)
+        self.enqueue_cleanup(cleanup_path(row['location']), owner_id=row['owner_id'],
+                             operation_id='retention:' + uuid4().hex, actor='directory-retention', connection=connection)
         return True
 
     def release_owner(self, owner_id, *, connection=None):
@@ -250,7 +260,7 @@ class RetentionStore:
             for group, capacity in (cache_capacities or {}).items():
                 if capacity < 0:
                     raise ValueError('Cache capacity cannot be negative')
-                rows = conn.execute(f"SELECT * FROM {self.table} WHERE category='cache' AND cache_group=%s AND origin='created' ORDER BY last_access,location FOR UPDATE", (group,)).fetchall()
+                rows = conn.execute(f"SELECT * FROM {self.table} WHERE category='cache' AND cache_group=%s ORDER BY last_access,location FOR UPDATE", (group,)).fetchall()
                 size = sum(row['bytes'] for row in rows)
                 for row in rows:
                     if size <= capacity:
@@ -263,6 +273,6 @@ class RetentionStore:
                             # in this group. Do not evict unrelated survivors
                             # using the batch's now-stale byte total.
                             size = conn.execute(f"SELECT coalesce(sum(bytes),0) FROM {self.table} "
-                                                "WHERE category='cache' AND cache_group=%s AND origin='created'",
+                                                "WHERE category='cache' AND cache_group=%s",
                                                 (group,)).fetchone()[0]
         return {'queued': count}

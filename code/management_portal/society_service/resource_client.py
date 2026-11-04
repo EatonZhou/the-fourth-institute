@@ -257,7 +257,7 @@ def ensure_workspaces(record: Mapping[str, Any], *, connection: Any) -> None:
             raise ValueError('Resident deleted Workspace projection differs from its registration')
     else:
         store.ensure(own_id, canonical_path(own['path']), connection=connection, move=True,
-                     origin='created', owner_id=record['resident_id'],
+                     owner_id=record['resident_id'],
                      operation_id=current_directory_creation() or None)
     normalize_bindings(record['workspace_bindings'])
     for binding in sorted(record['workspace_bindings'], key=lambda item: item['workspace_id']):

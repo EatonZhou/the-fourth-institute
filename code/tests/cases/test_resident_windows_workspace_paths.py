@@ -46,7 +46,7 @@ def test_new_resident_workspace_commits_and_reloads(windows_record, monkeypatch)
     connection = object()
     resource_client.ensure_workspaces(record, connection=connection)
     assert calls == [((OWN, expected), dict(connection=connection, move=True,
-                                          origin="created", owner_id=RID, operation_id=None))]
+                                          owner_id=RID, operation_id=None))]
     assert record["owned_workspace"]["path"] == record["default_cwd"] == expected
     loaded = storage.project_records([record], {RID: []}, {OWN: expected},
                                      {LID: record["workspace_path"]})[0]

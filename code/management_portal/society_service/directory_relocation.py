@@ -29,10 +29,10 @@ def _reconcile_dependencies(source, target):
 
 
 def move_idle_directory(source, target, *, owner_id, actor, database, update, operation_id):
-    """Move a created copy without terminating users; hold admission exactly once."""
+    """Move an owned directory; hold execution admission exactly once."""
     with directory_execution_admission.authority():
         require_idle_directory(source, target)
-        return DirectoryMoveStore().move(source, target, owner_id=owner_id, origin='created', actor=actor,
+        return DirectoryMoveStore().move(source, target, owner_id=owner_id, actor=actor,
             terminate=require_idle_directory, database=database, update=update,
             dependencies=_reconcile_dependencies, operation_id=operation_id)
 

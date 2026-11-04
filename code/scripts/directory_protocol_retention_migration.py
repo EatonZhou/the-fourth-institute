@@ -15,6 +15,10 @@ def migrate(connection):
     finally:
         connection.execute('SELECT set_config(\'search_path\',%s,true)', (previous,))
     migrate_run_ownership(connection)
+    # The runtime store owns the one-time source-column removal as well as
+    # fresh schemas. Run it before any import uses the current row contract.
+    from management_common.directory_retention import RetentionStore
+    RetentionStore(connection=connection)
 
 
 def migrate_run_ownership(connection):
@@ -105,8 +109,8 @@ def backfill_workbench_builds(connection, *, artifact_root, now):
             builds[digest][1] = None if previous is None or deadline is None else max(previous, deadline)
     for digest, (created, deadline) in builds.items():
         connection.execute(f'''INSERT INTO "{retention}".artifacts
-            (location,owner_id,origin,category,created_at,eligible_at,last_access,bytes,cache_group)
-            VALUES (%s,%s,'created','workbench_build',%s,%s,%s,0,'') ON CONFLICT(location) DO NOTHING''',
+            (location,owner_id,category,created_at,eligible_at,last_access,bytes,cache_group)
+            VALUES (%s,%s,'workbench_build',%s,%s,%s,0,'') ON CONFLICT(location) DO NOTHING''',
             (cleanup_location(Path(artifact_root) / digest), 'build:'+digest, created, deadline, now))
     return len(builds)
 
@@ -181,8 +185,8 @@ def _insert_artifact(connection, path, *, owner_id, category, created_at,
     deadline = start + timedelta(days=policy['days']) if start is not None and policy['days'] is not None else None
     table = f'"{_database_schema("directory_retention")}".artifacts'
     connection.execute(f'''INSERT INTO {table}
-        (location,owner_id,origin,category,created_at,eligible_at,last_access,bytes,cache_group)
-        VALUES (%s,%s,'created',%s,%s,%s,%s,%s,%s) ON CONFLICT(location) DO NOTHING''',
+        (location,owner_id,category,created_at,eligible_at,last_access,bytes,cache_group)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(location) DO NOTHING''',
         (cleanup_location(path.absolute()), owner_id, category, created, deadline, created, size, cache_group))
 
 
@@ -235,7 +239,7 @@ def backfill_known_artifacts(connection, *, article_build_root=None, ccf_root=No
     """Import only owner records with explicit clocks; no filesystem-age guesses.
 
     Provider/archive owners must export receipts containing path, owner_id,
-    created_at, finished_at and origin. This function never connects to owners
+    created_at and finished_at. This function never connects to owners
     or reads account homes. Missing receipts remain the owner's inventory job.
     """
     import json
@@ -298,7 +302,7 @@ def backfill_known_artifacts(connection, *, article_build_root=None, ccf_root=No
                 report['unresolved'].append({'path': str(path), 'reason': 'legacy collector has no finished_at'})
     for category, receipts in (('provider_session', provider_receipts), ('background', archive_receipts)):
         for receipt in receipts:
-            if receipt.get('origin') != 'created' or not receipt.get('finished_at'):
+            if not receipt.get('owner_id') or not receipt.get('path') or not receipt.get('finished_at'):
                 report['unresolved'].append({'path': str(receipt.get('path', '')), 'reason': 'missing owned termination receipt'})
                 continue
             enroll(receipt['path'], owner_id=receipt['owner_id'], category=category,

@@ -180,7 +180,7 @@ def restore_registration(service, resource_id: str, payload: dict, *, actor: str
                         {item["path"] for item in group}):
                     raise ValueError("Duplicate Repo contains checkouts outside this recovery")
             prior_without_locations = {**previous, "checkouts": []}
-            result = repos._merge_record(prior_without_locations, resource_id, group, [], origin='adopted')
+            result = repos._merge_record(prior_without_locations, resource_id, group, [])
             result["canonical_checkout"] = by_path[mapping[previous["canonical_checkout"]]]["path"]
             receipt = {
                 "schema": "tfi.repo-registration-recovery.v1", "resource_id": resource_id,

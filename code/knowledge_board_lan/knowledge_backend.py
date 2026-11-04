@@ -1229,10 +1229,11 @@ def update_item_text(
         return {
             "address": str(record.get("address") or clean_address),
             "kb_id": str(record.get("kb_id") or ""),
-            "path": str(path),
+            "path": result["path"],
             "text": content,
             "mtime": int(result.get("mtime") or 0),
-            "project_ids": _knowledge_project_ids(record),
+            "project_ids": result["project_ids"],
+            "version": result["version"],
         }
     root_id = str(record.get("kb_id") or "").strip()
     primary_path = Path(str(record.get("path") or ""))
@@ -1394,7 +1395,7 @@ def delete_item(kb_id: str, *, actor: str = "") -> dict:
             _FILE_ID_TO_PATH.clear()
             _ITEM_GRAPH_CACHE.clear()
             _KNOWLEDGE_GRAPH_CACHE.clear()
-        return {**result, "project_ids": _knowledge_project_ids(record)}
+        return {"project_ids": _knowledge_project_ids(record), **result}
     if resource_type == "article":
         raise PermissionError("This resource cannot be deleted from Knowledge detail")
     path = Path(str(record.get("path") or ""))

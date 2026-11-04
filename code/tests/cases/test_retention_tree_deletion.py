@@ -51,21 +51,20 @@ def locations(store, connection=None):
 
 
 def declare_children(store, root):
-    paths = [root / 'created' / 'session.jsonl', root / 'adopted' / 'notes']
-    for path, origin in zip(paths, ('created', 'adopted')):
+    paths = [root / 'session' / 'session.jsonl', root / 'notes' / 'notes']
+    for path in paths:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('old')
-        store.declare(path, category='provider_session', owner_id='other:' + origin,
-                      origin=origin, finished_at=datetime.now(timezone.utc))
+        store.declare(path, category='provider_session', owner_id='other:' + path.name,
+                      finished_at=datetime.now(timezone.utc))
     return paths
 
 
-@pytest.mark.parametrize('origin', ['created', 'adopted'])
-def test_workspace_tree_clears_nested_artifacts_and_releases_owner_outside(tmp_path, origin):
+def test_workspace_tree_clears_nested_artifacts_and_releases_owner_outside(tmp_path):
     root = tmp_path / 'outer'
     root.mkdir()
     workspace = get_workspace_store()
-    workspace.ensure(WID, str(root), origin=origin)
+    workspace.ensure(WID, str(root))
     get_registry_store()._ensure()
     store = RetentionStore()
     children = declare_children(store, root)
@@ -78,14 +77,10 @@ def test_workspace_tree_clears_nested_artifacts_and_releases_owner_outside(tmp_p
     with workspace.database.transaction() as connection:
         unregister_tree(workspace_ids=[WID], connection=connection, actor='test')
         expected = {cleanup_location(sibling)}
-        if origin == 'adopted':
-            expected.update(map(cleanup_location, children))
         assert locations(store, connection) == expected
     store.queue.run_pending()
-    assert root.exists() == (origin == 'adopted')
+    assert not root.exists()
     assert not outside.exists()
-    if origin == 'adopted':
-        assert all(path.read_text() == 'old' for path in children)
 
 
 def test_workspace_nested_artifact_invalidation_rolls_back_with_owner(tmp_path):
@@ -158,15 +153,16 @@ def test_retention_outer_release_invalidates_other_owners(tmp_path, release):
     assert all(path.exists() and path.read_text() == 'new' for path in children)
 
 
-def test_retention_adopted_outer_preserves_live_nested_registration(tmp_path):
-    root = tmp_path / 'adopted'
+def test_retention_outer_removes_live_nested_registration(tmp_path):
+    root = tmp_path / 'outer'
     root.mkdir()
     store = RetentionStore()
-    store.declare(root, category='object_data', owner_id='outer', origin='adopted')
+    store.declare(root, category='object_data', owner_id='outer')
     children = declare_children(store, root)
     store.release_path(root)
-    assert locations(store) == set(map(cleanup_location, children))
-    assert not store.queue.status() and all(path.exists() for path in children)
+    assert not locations(store)
+    store.queue.run_pending()
+    assert not root.exists()
 
 
 def test_retention_outer_and_queue_roll_back_together(tmp_path):

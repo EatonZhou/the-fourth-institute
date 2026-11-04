@@ -365,7 +365,7 @@ def _settle_figure_artifacts(store: RetentionStore, paper_id: str) -> dict:
                 path = cleanup_path(row["location"])
                 # Never infer ownership from a directory listing, age, or an
                 # obsolete Paper location. Only this owner's declared paths.
-                if (row["category"] not in {"object_data", "runtime_tmp"} or row["origin"] != "created"
+                if (row["category"] not in {"object_data", "runtime_tmp"}
                         or path == extracted or not contains(extracted, path)):
                     raise ValueError("Figure declaration outside current owner boundary")
                 if missing_metadata and row["category"] == "object_data":

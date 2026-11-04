@@ -126,7 +126,7 @@
     const confirmed = await window.PortalUI.confirm({
       title: deleting ? window.PortalI18n.t("删除整个 Family？") : window.PortalI18n.t("Unfamilize（保留成员）？"),
       message: deleting
-        ? window.PortalI18n.text`删除「${family.title || "Family"}」及其内部全部对象：门面、Router、Steward、所有成员、子 Family 和工作流。正在运行的 Session 会停止，相关图引用会移除；所属目录按来源处理：Portal 创建的连同嵌套对象永久删除，接入的现成目录只注销、保留文件；绑定同步解除。对话和运行轨迹保留。所在 Lineage 和 Family 外的成员保留。`
+        ? window.PortalI18n.text`删除「${family.title || "Family"}」及其内部全部对象：门面、Router、Steward、所有成员、子 Family 和工作流。正在运行的 Session 会停止，相关图引用会移除；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话和运行轨迹保留。所在 Lineage 和 Family 外的成员保留。`
         : window.PortalI18n.text`解除「${family.title || "Family"}」的组合，保留成员、子 Family、业务工作流及其会话和工作区；删除门面、Router、Steward 与自动生成的协作结构，并将领导职责和门面连线交还成员。`,
       confirmLabel: deleting ? window.PortalI18n.t("删除整个 Family") : window.PortalI18n.t("Unfamilize · 保留成员"),
       tone: "danger",

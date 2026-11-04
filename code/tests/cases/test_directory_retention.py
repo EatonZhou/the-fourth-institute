@@ -82,23 +82,128 @@ def test_category_expiry_requires_confirmed_end(tmp_path, category, days):
     assert not path.exists()
 
 
-def test_upload_use_object_delete_and_adopted_files(tmp_path):
+def test_upload_use_and_object_delete(tmp_path):
     from management_common.directory_retention import RetentionStore
     store = RetentionStore()
     now = datetime.now(timezone.utc)
-    for name in ('unused', 'used', 'adopted'):
+    for name in ('unused', 'used'):
         path = tmp_path / name
         path.mkdir()
-        store.declare(path, category='unused_upload', owner_id=name, created_at=now-timedelta(days=8),
-                      origin='adopted' if name == 'adopted' else 'created')
+        store.declare(path, category='unused_upload', owner_id=name, created_at=now-timedelta(days=8))
     store.used(tmp_path / 'used', owner_id='message')
     store.sweep(now=now)
     store.queue.run_pending()
     assert not (tmp_path / 'unused').exists()
-    assert (tmp_path / 'used').exists() and (tmp_path / 'adopted').exists()
+    assert (tmp_path / 'used').exists()
     store.release_owner('message')
     store.queue.run_pending()
     assert not (tmp_path / 'used').exists()
+
+
+@pytest.mark.parametrize('enlisted', [False, True])
+@pytest.mark.parametrize('release', ['expiry', 'owner', 'capacity'])
+def test_source_column_upgrade_preserves_rows_and_unifies_cleanup(tmp_path, enlisted, release):
+    from management_common.directory_retention import RetentionStore
+    store = RetentionStore()
+    now = datetime.now(timezone.utc)
+    category = {'expiry': 'unused_upload', 'owner': 'object_data', 'capacity': 'cache'}[release]
+    paths = [tmp_path / 'first', tmp_path / 'second']
+    for path in paths:
+        path.write_bytes(b'data')
+        store.declare(path, category=category, owner_id='owner', bytes=4,
+                      cache_group='sample', created_at=now-timedelta(days=8))
+    with store.database.transaction() as connection:
+        before = connection.execute(f'SELECT * FROM {store.table} ORDER BY location').fetchall()
+        # Restore the preceding schema with both historical values. Source
+        # classification is upgrade input only, never an API option.
+        connection.execute(f'''ALTER TABLE {store.table} ADD COLUMN origin TEXT NOT NULL
+            DEFAULT 'created' CHECK(origin IN ('created','adopted'))''')
+        connection.execute(f"UPDATE {store.table} SET origin='adopted' WHERE location=%s", (before[1]['location'],))
+    if enlisted:
+        with store.database.transaction() as connection:
+            store = RetentionStore(connection=connection)
+    else:
+        store = RetentionStore()
+    with store.database.read() as connection:
+        assert connection.execute(f'SELECT * FROM {store.table} ORDER BY location').fetchall() == before
+    for path in paths:
+        # A retry with a new timestamp must retain the original deadline.
+        store.declare(path, category=category, owner_id='owner', created_at=now)
+    with store.database.read() as connection:
+        assert connection.execute(f'SELECT * FROM {store.table} ORDER BY location').fetchall() == before
+    if release == 'expiry':
+        assert store.sweep(now=now)['queued'] == 2
+    elif release == 'owner':
+        assert store.release_owner('owner') == 2
+    else:
+        assert store.sweep(cache_capacities={'sample': 0})['queued'] == 2
+    store.queue.run_pending()
+    assert all(not path.exists() for path in paths)
+
+
+def test_retention_schema_upgrade_rolls_back_and_warm_open_has_no_ddl_lock(monkeypatch):
+    from management_common.directory_retention import RetentionStore
+    store = RetentionStore()
+    with store.database.transaction() as connection:
+        connection.execute(f"ALTER TABLE {store.table} ADD COLUMN origin TEXT NOT NULL DEFAULT 'adopted'")
+    with pytest.raises(RuntimeError, match='rollback'):
+        with store.database.transaction() as connection:
+            RetentionStore(connection=connection)
+            assert not store._needs_initialize(connection)
+            raise RuntimeError('rollback')
+    with store.database.read() as connection:
+        assert store._needs_initialize(connection)
+    RetentionStore()
+    monkeypatch.setattr(RetentionStore, '_initialize', lambda *_: pytest.fail('warm open tried schema upgrade'))
+    with store.database.transaction() as connection:
+        RetentionStore(connection=connection)
+        RetentionStore(connection=connection)
+        locks = connection.execute('''SELECT locktype,mode FROM pg_locks WHERE pid=pg_backend_pid()
+            AND relation=to_regclass(%s)''', (store.table,)).fetchall()
+        assert not any(row['mode'] == 'AccessExclusiveLock' for row in locks)
+
+
+def test_concurrent_retention_schema_upgrade():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    from management_common.directory_retention import RetentionStore
+    store = RetentionStore()
+    with store.database.transaction() as connection:
+        connection.execute(f"ALTER TABLE {store.table} ADD COLUMN origin TEXT NOT NULL DEFAULT 'created'")
+    barrier = Barrier(2)
+    def initialize():
+        barrier.wait(timeout=5)
+        return RetentionStore().table
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(initialize) for _ in range(2)]
+        assert [future.result(timeout=10) for future in futures] == [store.table, store.table]
+    with store.database.read() as connection:
+        assert not store._needs_initialize(connection)
+
+
+def test_offline_retention_upgrade_and_import_without_source_classification(tmp_path):
+    from management_common.directory_retention import RetentionStore
+    from scripts.directory_protocol_retention_migration import migrate, backfill_known_artifacts
+    store = RetentionStore()
+    with store.database.transaction() as connection:
+        connection.execute(f"ALTER TABLE {store.table} ADD COLUMN origin TEXT NOT NULL DEFAULT 'adopted'")
+    now = datetime.now(timezone.utc)
+    paths = [tmp_path / name for name in ['provider', 'archive']]
+    for path in paths:
+        path.write_text('ended task output')
+    def receipt(path):
+        return dict(path=str(path), owner_id='finished-task', created_at=now-timedelta(days=40),
+                    finished_at=now-timedelta(days=35))
+    with store.database.transaction() as connection:
+        migrate(connection)
+        assert not store._needs_initialize(connection)
+        report = backfill_known_artifacts(connection, provider_receipts=[receipt(paths[0])],
+                                         archive_receipts=[receipt(paths[1])])
+        assert report == {'registered': list(map(str, paths)), 'unresolved': []}
+        assert all('origin' not in row for row in connection.execute(f'SELECT * FROM {store.table}').fetchall())
+    assert store.sweep(now=now)['queued'] == 2
+    store.queue.run_pending()
+    assert all(not path.exists() for path in paths)
 
 
 def test_cache_capacity_uses_last_access_not_age(tmp_path):

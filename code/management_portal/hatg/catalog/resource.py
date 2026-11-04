@@ -98,7 +98,7 @@ DECLARATIONS = (
         RESOURCE_RECORD,
         R("version", description="类型提供的版本号或修改时间；未提供时为空字符串"),
     ), mutates=True, target="resource_id"),
-    _d("UnregisterResource", (On("resource_id"),), "以 @admin 权限撤销资源登记。Workspace 按登记来源处理：Portal 创建的目录先注销身份、嵌套登记和绑定，再在后台删除文件；接入的现成目录只注销该登记及绑定，保留文件与独立子对象。区域内外位置不决定删除方式，文件清理失败不恢复已注销身份。", (
+    _d("UnregisterResource", (On("resource_id"),), "以 @admin 权限撤销资源登记。按资源归属先注销身份、嵌套登记和绑定，再在后台删除该资源拥有的文件；共享目录中的其他文件保留。区域内外位置不决定删除方式，文件清理失败不恢复已注销身份。", (
         R("resource_id", description="资源统一 ID"),
     ), (
         R("resource_id", description="被撤销的统一 ID"),

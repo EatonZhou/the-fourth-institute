@@ -238,7 +238,7 @@
         message: [
           window.PortalI18n.text`将删除选区中的${detail}，相关连线也会一并移除。`,
           residentCount
-            ? window.PortalI18n.t("选中的 Resident 将标记为已删除，并移除 Session 和图引用；所属目录按来源处理：Portal 创建的连同嵌套对象永久删除，接入的现成目录只注销、保留文件；绑定同步解除。对话与运行轨迹保留。")
+            ? window.PortalI18n.t("选中的 Resident 将标记为已删除，并移除 Session 和图引用；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话与运行轨迹保留。")
             : "",
           includesLeader
             ? window.PortalI18n.t("选区包含这个 Lineage 的 Leader；删除后系统从其余 Resident 中随机选出新的 Leader。")

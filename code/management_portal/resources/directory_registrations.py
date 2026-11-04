@@ -80,7 +80,7 @@ def unregister_identity(resource_id, *, connection, actor=''):
     request_projection_release(resource_id, actor=actor, connection=connection)
 
 
-def register_owned(collection, resource_id, paths, *, origin='created', scanning=False, connection=None):
+def register_owned(collection, resource_id, paths, *, scanning=False, connection=None):
     """Persist a file-backed owner's registration; disk files remain content only.
 
     This is the owner's record in ResourceService's existing registry, not a
@@ -88,8 +88,6 @@ def register_owned(collection, resource_id, paths, *, origin='created', scanning
     """
     if collection not in {'paper', 'knowledge'}:
         raise ValueError('Unsupported file-backed owner')
-    if origin not in {'created', 'adopted'}:
-        raise ValueError('Invalid directory origin')
     paths = tuple(paths)
     if not paths:
         raise ValueError('Resource directory registration requires a path')
@@ -130,8 +128,8 @@ def register_owned(collection, resource_id, paths, *, origin='created', scanning
                 raise ValueError('Resource directory differs from its owner registration: ' + resource_id)
             return previous
         document = {'id': resource_id, 'directories': [
-            {'path': stored_location(path), 'origin': origin, 'owner_id': resource_id} for path in paths
-        ], 'directory': {'origin': origin, 'owner_id': resource_id}}
+            {'path': stored_location(path), 'owner_id': resource_id} for path in paths
+        ], 'directory': {'owner_id': resource_id}}
         writer.put(collection, resource_id, document)
         return document
 
@@ -153,13 +151,9 @@ def directory_writer(*collections):
             yield writer
 
 
-def merge_origins(entries, previous, resource_id, *, origin='created'):
-    if origin not in {'created', 'adopted'}:
-        raise ValueError('Invalid directory origin')
-    old = {str(Path(located_path(item['path']))): item for item in previous}
+def owned_locations(entries, resource_id):
+    """Declare ownership identically for every registered location."""
     for entry in entries:
-        prior = old.get(str(Path(located_path(entry['path']))))
-        entry['origin'] = prior.get('origin', 'adopted') if prior else origin
         entry['owner_id'] = resource_id
     return entries
 
@@ -177,7 +171,7 @@ def locations(collection, document):
         raise ValueError('Registry collection has not declared its directory locations')
     result = [entry for entry in entries if entry.get('path')]
     if canonical and canonical not in {entry['path'] for entry in result}:
-        result.append({'path': canonical, 'origin': document.get('origin', 'adopted')})
+        result.append({'path': canonical, 'owner_id': document['id']})
     return result
 
 
@@ -217,13 +211,12 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
                 if row['workspace_id'] in selected or row['owner_id'] in owners or any(contains(root, path) for root in roots):
                     selected.add(row['workspace_id'])
                     owners.add(row['workspace_id'])
-                    if row['origin'] == 'created':
-                        roots.add(path)
+                    roots.add(path)
             for _collection, identifier, entries in documents:
                 if identifier in owners or any(contains(root, Path(located_path(item['path']))) for item in entries for root in roots):
                     resource_ids.add(identifier)
                     owners.add(identifier)
-                    roots.update(Path(located_path(item['path'])) for item in entries if item.get('origin') == 'created')
+                    roots.update(Path(located_path(item['path'])) for item in entries)
             if before == (len(roots), len(selected), len(owners), len(resource_ids)):
                 break
         timestamp = deleted_at or now()
@@ -239,8 +232,7 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             unregister_identity(row['workspace_id'], connection=connection, actor=actor)
             path = located_path(row['path'])
             deleted_paths.append(path)
-            if row['origin'] == 'created':
-                cleanup_owner(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
+            cleanup_owner(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
         for collection, identifier, entries in documents:
             if identifier not in resource_ids:
                 continue
@@ -248,9 +240,8 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             suppress_removed(writer, collection, identifier, entries)
             unregister_identity(identifier, connection=connection, actor=actor)
             for item in entries:
-                if item.get('origin') == 'created':
-                    cleanup_owner(located_path(item['path']), owner_id=identifier,
-                                  operation_id='delete:' + identifier, actor=actor, connection=connection)
+                cleanup_owner(located_path(item['path']), owner_id=identifier,
+                              operation_id='delete:' + identifier, actor=actor, connection=connection)
     return {'resource_ids': sorted(resource_ids | selected), 'workspace_paths': deleted_paths}
 
 
@@ -265,7 +256,7 @@ def unregister_registry(collection, resource_id, *, actor='', projection_ids=())
         unregister_identity(resource_id, connection=writer.connection, actor=actor)
         for projection_id in projection_ids:
             request_projection_release(projection_id, actor=actor, connection=writer.connection)
-        roots = [Path(located_path(item['path'])) for item in entries if item.get('origin') == 'created']
+        roots = [Path(located_path(item['path'])) for item in entries]
         for root in roots:
             validate_removal(root)
         cleanup_ids = [enqueue_directory_cleanup(root, owner_id=resource_id, operation_id='delete:' + resource_id,

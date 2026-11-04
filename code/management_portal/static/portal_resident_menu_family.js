@@ -44,7 +44,7 @@
         <div data-family-members></div>
         <div class="residentMenuFamilyActions">
           <section><div><strong>Unfamilize · 保留成员</strong><p>解除组合，保留成员、子 Family 和业务工作流；移除门面、Router、Steward 与自动生成的协作结构。</p></div><button class="portalButton" type="button" data-family-action="unfamilize">Unfamilize</button></section>
-          <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session；所属目录按来源处理：Portal 创建的连同嵌套对象永久删除，接入的现成目录只注销、保留文件；绑定同步解除。对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
+          <section><div><strong>删除整个 Family</strong><p>停止并删除门面及内部所有成员、子 Family 和工作流，移除 Session；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话和运行轨迹保留。</p></div><button class="portalButton is-danger" type="button" data-family-action="delete">删除整个 Family</button></section>
         </div>`;
       familyPriorityView = mountMigrationPriority(root.querySelector('[data-family-priority]'), {
         lineageId: context.lineageId, familyId: context.family.id,

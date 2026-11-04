@@ -20,7 +20,7 @@ def project_with_child():
     root = project_folders.project_root_for_id('project_test')
     write_projects({'schema_version': 1, 'projects': [{
         'id': 'project_test', 'path': str(root),
-        'directory': {'origin': 'created', 'owner_id': 'project_test'}}]})
+        'directory': {'owner_id': 'project_test'}}]})
     return child, root
 
 
@@ -135,11 +135,11 @@ def test_project_reports_resources_in_child_owned_external_workspace(future_crea
     child, _ = project_with_child()
     external = tmp_path / 'external-work'
     external.mkdir()
-    get_workspace_store().ensure('workspace_abcdefabcdef', str(external), origin='created', owner_id=child['resident_id'])
+    get_workspace_store().ensure('workspace_abcdefabcdef', str(external), owner_id=child['resident_id'])
     registry = get_registry_store()
     rid = 'repo_abcdefabcdef'
     with registry.writer('repo') as writer:
-        writer.put('repo', rid, {'id': rid, 'checkouts': [{'path': str(external / 'repo'), 'origin': 'adopted'}]})
+        writer.put('repo', rid, {'id': rid, 'checkouts': [{'path': str(external / 'repo'), 'owner_id': rid}]})
     result = project_domain.delete_project('project_test', 'sample_admin')
     assert rid in result['resource_ids']
     assert registry.get('repo', rid) is None

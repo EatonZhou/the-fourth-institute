@@ -20,7 +20,7 @@ def _paths(provider, session_id, config_dir):
         if path.exists():
             paths.append(path)
     elif provider in {'claude', 'claude-code'} and config_dir:
-        # Host account config directories are adopted and never enrolled.
+        # Host account directories are outside Portal resource ownership.
         root = Path(config_dir).absolute()
         owned_roots = [portal_path(area) for area in ('provider-state', 'lineages', 'projects')]
         if any(root.is_relative_to(area) and root != area for area in owned_roots):
@@ -28,9 +28,9 @@ def _paths(provider, session_id, config_dir):
             paths.extend((root / 'projects').glob('*/' + session_id))
     if paths:
         from .account_registrations import registrations
-        adopted = [Path(row['config']['account_dir']).expanduser().resolve()
+        host_homes = [Path(row['config']['account_dir']).expanduser().resolve()
                    for row in registrations() if row.get('config', {}).get('account_dir')]
-        paths = [path for path in paths if not any(path.resolve().is_relative_to(home) for home in adopted)]
+        paths = [path for path in paths if not any(path.resolve().is_relative_to(home) for home in host_homes)]
     return paths
 
 

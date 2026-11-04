@@ -9,8 +9,7 @@ from management_portal.resources.workspace_store import get_workspace_store, now
 def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), deleted_at, deleted_by):
     """An owned outer tree includes every nested registration, regardless of users.
 
-    Direct adoption removal only unregisters that identity. Its descendants
-    remain independently owned, unless a created outer directory is removed.
+    Deleting an owning identity also removes its directories outside this tree.
     """
     from management_portal.resources.directory_registrations import unregister_tree
     result = unregister_tree([lexical_path(located_path(str(path))) for path in paths],
@@ -33,14 +32,10 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize):
     return descriptor
 
 
-def remove_deleted_folder(folder, *, connection, owner_id, actor='', origin='created', deleted_at=None):
-    """Enlist the owner's entire created tree in its identity transaction."""
-    if origin not in {'created', 'adopted'}:
-        raise ValueError('Invalid directory origin')
+def remove_deleted_folder(folder, *, connection, owner_id, actor='', deleted_at=None):
+    """Enlist the owner's entire tree in its identity transaction."""
     if not owner_id or connection is None:
         raise ValueError('Directory cleanup requires its owner transaction')
-    if origin == 'adopted':
-        return None
     folder = lexical_path(located_path(str(folder)))
     validate_removal(folder)
     queue = get_directory_cleanup_store()

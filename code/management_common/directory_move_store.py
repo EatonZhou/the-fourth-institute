@@ -258,9 +258,7 @@ class DirectoryMoveStore:
                       (phase, str(error)[:4000], operation_id))
         return write(connection) if connection is not None else self.database.write(write)
 
-    def prepare(self, source, target, *, owner_id, origin, actor, terminate, operation_id=None):
-        if origin != 'created':
-            raise ValueError('Only created directories can be moved by Portal')
+    def prepare(self, source, target, *, owner_id, actor, terminate, operation_id=None):
         source, target = lexical_path(source), lexical_path(target)
         validate_filename(target)
         operation_id = operation_id or 'directory-move_' + uuid4().hex
@@ -370,10 +368,10 @@ class DirectoryMoveStore:
         self._phase(operation_id, 'committed', connection=connection)
         return result
 
-    def move(self, source, target, *, owner_id, origin, actor, terminate, database, update, dependencies, operation_id=None):
+    def move(self, source, target, *, owner_id, actor, terminate, database, update, dependencies, operation_id=None):
         operation_id = operation_id or 'directory-move_' + uuid4().hex
         with self.operation_lock(operation_id):
-            self.prepare(source, target, owner_id=owner_id, origin=origin, actor=actor,
+            self.prepare(source, target, owner_id=owner_id, actor=actor,
                          terminate=terminate, operation_id=operation_id)
             try:
                 result = database.write(lambda c: self.commit(operation_id, connection=c, update=update))
@@ -384,7 +382,7 @@ class DirectoryMoveStore:
         return operation_id, result
 
     def register_external_move(self, source, target, *, owner_id, actor, database, update, dependencies):
-        """The owner moved an adopted directory; Portal only updates registration."""
+        """Files were already moved by the owner; update their registration."""
         source, target = lexical_path(source), lexical_path(target)
         if not target.is_dir() or target.is_symlink() or source == target:
             raise ValueError('External relocation requires an existing real destination')

@@ -18,7 +18,7 @@ def test_invalid_outer_root_does_not_unregister_descendants(workspace):
     child = root / 'registered-child'
     child.mkdir(parents=True)
     wid = 'workspace_998877665544'
-    workspace.store.ensure(wid, str(child), origin='adopted')
+    workspace.store.ensure(wid, str(child))
     from management_portal.society_service.state_store import get_lineage_data_store
     with pytest.raises(ValueError, match='root|ancestor'):
         get_lineage_data_store().database.write(lambda c: delete_workspaces(
@@ -37,7 +37,7 @@ def test_folder_cleanup_and_nested_registration_rollback_together(workspace):
     wid = 'workspace_998877665544'
     child = workspace.root / 'child'
     child.mkdir()
-    workspace.store.ensure(wid, str(child), origin='adopted')
+    workspace.store.ensure(wid, str(child))
     with pytest.raises(RuntimeError, match='abort owner'):
         with get_lineage_data_store().database.transaction() as connection:
             remove_deleted_folder(workspace.root, connection=connection,
@@ -48,7 +48,7 @@ def test_folder_cleanup_and_nested_registration_rollback_together(workspace):
     assert not get_directory_cleanup_store().status(owner_id='resident_112233445566')
 
 
-def test_created_owner_tree_deletes_bound_workspaces_without_stopping_reader(future_creation_store):
+def test_owner_tree_deletes_bound_workspaces_without_stopping_reader(future_creation_store):
     from pathlib import Path
     from management_portal.society_service import resident_workspace_domain, lineage_lifecycle, resident_catalog
     from management_portal.resources.workspace_store import get_workspace_store
@@ -71,22 +71,21 @@ def test_created_owner_tree_deletes_bound_workspaces_without_stopping_reader(fut
     assert not path.exists()
 
 
-@pytest.mark.parametrize('origin', ['created', 'adopted'])
-def test_external_workspace_follows_its_owner_and_origin(future_creation_store, tmp_path, origin):
+def test_external_workspace_follows_its_owner(future_creation_store, tmp_path):
     from management_portal.society_service import lineage_lifecycle
     from management_portal.resources.workspace_store import get_workspace_store
     owner = resident_domain.register_resident(_new_session_payload('Owner'), 'sample_admin')
     external = tmp_path / 'external'
     external.mkdir()
     wid = 'workspace_aabbccddeeff'
-    get_workspace_store().ensure(wid, str(external), origin=origin, owner_id=owner['resident_id'])
+    get_workspace_store().ensure(wid, str(external), owner_id=owner['resident_id'])
     lineage_lifecycle.delete_lineage(owner['lineage_id'], 'sample_admin')
     assert not get_workspace_store().rows([wid])
     get_directory_cleanup_store().run_pending()
-    assert external.exists() == (origin == 'adopted')
+    assert not external.exists()
 
 
-def test_nested_resource_other_created_checkout_expands_workspace_cascade(workspace, tmp_path):
+def test_nested_resource_other_checkout_expands_workspace_cascade(workspace, tmp_path):
     from management_portal.resources.registry_store import get_registry_store
     from management_portal.society_service.state_store import get_lineage_data_store
     registry = get_registry_store()
@@ -94,12 +93,12 @@ def test_nested_resource_other_created_checkout_expands_workspace_cascade(worksp
     child = external / 'workspace'
     child.mkdir(parents=True)
     wid = 'workspace_998877665544'
-    workspace.store.ensure(wid, str(child), origin='adopted')
+    workspace.store.ensure(wid, str(child))
     rid = 'repo_112233445566'
     with registry.writer('repo') as writer:
         writer.put('repo', rid, {'id': rid, 'checkouts': [
-            {'path': str(workspace.root / 'repo'), 'origin': 'adopted'},
-            {'path': str(external), 'origin': 'created'}]})
+            {'path': str(workspace.root / 'repo'), 'owner_id': rid},
+            {'path': str(external), 'owner_id': rid}]})
     get_lineage_data_store().database.write(lambda connection: remove_deleted_folder(
         workspace.root, connection=connection, owner_id='owner', actor='sample_admin'))
     assert not workspace.store.rows([wid])
@@ -145,20 +144,20 @@ def test_project_queue_failure_rolls_back_children_without_publishing_tombstones
     project_root = project_folders.project_root_for_id('project_test')
     write_projects({'schema_version': 1, 'projects': [{
         'id': 'project_test', 'path': str(project_root),
-        'directory': {'origin': 'created', 'owner_id': 'project_test'}}]})
+        'directory': {'owner_id': 'project_test'}}]})
     published = []
     monkeypatch.setattr(ResidentResourceProjectionWorker, 'confirm_tombstone', lambda self, rid: published.append(rid))
-    queue = get_directory_cleanup_store()
-    enqueue = queue.enqueue
-    def fail_project(path, **kwargs):
+    from management_common.directory_cleanup_store import DirectoryCleanupStore
+    enqueue = DirectoryCleanupStore.enqueue
+    def fail_project(self, path, **kwargs):
         if kwargs['owner_id'] == 'project_test':
             raise RuntimeError('project queue unavailable')
-        return enqueue(path, **kwargs)
-    monkeypatch.setattr(queue, 'enqueue', fail_project)
+        return enqueue(self, path, **kwargs)
+    monkeypatch.setattr(DirectoryCleanupStore, 'enqueue', fail_project)
     with pytest.raises(InstructionError, match='project queue unavailable'):
         project_domain.delete_project('project_test', 'sample_admin')
     assert resident_catalog.get_catalog().get(owner['resident_id'])['resident_id'] == owner['resident_id']
-    assert not queue.status(owner_id=owner['resident_id'])
+    assert not get_directory_cleanup_store().status(owner_id=owner['resident_id'])
     from management_portal.resources.directory_registrations import is_deleted
     assert not any(is_deleted(identity) for identity in ('project_test', owner['resident_id'], owner['lineage_id']))
     assert published == []

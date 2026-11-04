@@ -77,15 +77,16 @@ class WorkspaceStore:
                 "SELECT attname FROM pg_attribute WHERE attrelid=%s::regclass AND NOT attisdropped",
                 (self.table,),
             ).fetchall()}
-            if not {'origin', 'owner_id', 'operation_id'} <= columns:
+            if not {'owner_id', 'operation_id'} <= columns:
                 raise RuntimeError('Workspace directory protocol migration requires the offline maintenance window')
+            if 'origin' in columns:
+                connection.execute(f'ALTER TABLE {self.table} DROP COLUMN origin')
             return
         connection.execute(f"""CREATE TABLE {self.table} (
             workspace_id TEXT PRIMARY KEY CHECK (workspace_id ~ '^workspace_[0-9a-f]{{12}}$'),
             path TEXT NOT NULL CONSTRAINT workspaces_location_check CHECK ({LOCATION_CHECK}),
             title TEXT NOT NULL,
             summary TEXT NOT NULL DEFAULT '',
-            origin TEXT NOT NULL CHECK (origin IN ('created','adopted')),
             owner_id TEXT NOT NULL CHECK (owner_id <> ''),
             operation_id TEXT UNIQUE,
             created_at TIMESTAMPTZ NOT NULL,
@@ -115,11 +116,9 @@ class WorkspaceStore:
         return {wid: row["path"] for wid, row in rows.items()}
 
     def ensure(self, workspace_id: str, path: str, *, title="", connection=None, move=False,
-               origin='created', owner_id=None, operation_id=None):
+               owner_id=None, operation_id=None):
         get_resource_type_registry().validate(workspace_id, "workspace")
         absolute = canonical_path(path)
-        if origin not in {'created', 'adopted'}:
-            raise ValueError('Workspace origin must be created or adopted')
         path = stored_location(absolute)
         def write(conn):
             self.cleanup.lock(conn)
@@ -144,9 +143,9 @@ class WorkspaceStore:
             self.cleanup.assert_available(absolute, connection=conn, operation_id=operation_id)
             self._require_distinct_location(conn, absolute, workspace_id)
             conn.execute(f"INSERT INTO {self.table} "
-                         "(workspace_id,path,title,origin,owner_id,operation_id,created_at,updated_at) "
-                         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-                         (workspace_id, path, title or Path(absolute).name, origin,
+                         "(workspace_id,path,title,owner_id,operation_id,created_at,updated_at) "
+                         "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                         (workspace_id, path, title or Path(absolute).name,
                           owner_id or workspace_id, operation_id, timestamp, timestamp))
             return workspace_id
         return write(connection) if connection is not None else self.database.write(write)
@@ -157,7 +156,7 @@ class WorkspaceStore:
             if row['workspace_id'] != workspace_id and location_key(Path(located_path(row['path']))) == key:
                 raise ValueError('Workspace location already has a different identity: ' + row['workspace_id'])
 
-    def require_created_owner(self, workspace_id, *, expected_version, expected_owner,
+    def require_owner(self, workspace_id, *, expected_version, expected_owner,
                               expected_path, connection):
         """Validate a relocation snapshot under the identity owner's row lock."""
         row = connection.execute(f'SELECT * FROM {self.table} WHERE workspace_id=%s FOR UPDATE',
@@ -165,8 +164,6 @@ class WorkspaceStore:
         if row is None or row['deleted_at'] is not None:
             raise KeyError(workspace_id)
         row = _located(decode_times(row, ('created_at', 'updated_at', 'deleted_at')))
-        if row['origin'] != 'created':
-            raise ValueError('Only created Workspace directories can be relocated')
         if (row['updated_at'] != expected_version or row['owner_id'] != expected_owner
                 or row['path'] != str(expected_path)):
             raise ResourceVersionConflict('Workspace relocation snapshot changed',
@@ -175,8 +172,8 @@ class WorkspaceStore:
 
     def restore_self_owner(self, workspace_id, *, expected_version, expected_owner,
                            expected_path, connection):
-        """Repair a proven created copy, never convert an adopted directory."""
-        self.require_created_owner(workspace_id, expected_version=expected_version,
+        """Repair ownership after validating the current relocation snapshot."""
+        self.require_owner(workspace_id, expected_version=expected_version,
             expected_owner=expected_owner, expected_path=expected_path, connection=connection)
         connection.execute(f'UPDATE {self.table} SET owner_id=%s,'
                            "updated_at=GREATEST(clock_timestamp(),updated_at+interval '1 microsecond') "
@@ -240,8 +237,8 @@ class WorkspaceStore:
                     raise ValueError("Workspace path already has a different identity")
                 return row["workspace_id"]
             if not Path(absolute).is_dir():
-                raise ValueError('An adopted Workspace directory must already exist')
-            return self.ensure(preferred_id or new_id(), absolute, connection=conn, origin='adopted')
+                raise ValueError('Workspace registration requires an existing directory')
+            return self.ensure(preferred_id or new_id(), absolute, connection=conn)
         return self.database.write(write)
 
     def deleted_under(self, paths, *, connection=None) -> list[str]:
@@ -269,7 +266,7 @@ class WorkspaceStore:
             "resource_id": row["workspace_id"], "title": row["title"], "summary": row["summary"],
             "status": "deleted" if row["deleted_at"] is not None else "active",
             "attributes": {"path": located_path(row["path"]),
-                           "directory": {"origin": row['origin'], "owner_id": row['owner_id']}},
+                           "directory": {"owner_id": row['owner_id']}},
             "relations": [], "project_ids": [],
             "created_at": row["created_at"], "updated_at": row["updated_at"],
             "deleted_at": row["deleted_at"] or "",

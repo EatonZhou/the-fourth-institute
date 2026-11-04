@@ -14,9 +14,9 @@ def create_workspace(inv, service):
         if attributes.get('status') == 'deleted' or attributes.get('deleted_at'):
             raise not_found('Workspace owner no longer exists')
     creator = WorkspaceCreationStore()
-    row = creator.create(path=inv.argument('path'), owner_id=owner_id, actor=inv.caller,
-                         operation_id=inv.argument('operation_id'), title=inv.argument('title', ''),
-                         origin='created' if inv.name == 'CreateWorkspace' else 'adopted')
+    operation = creator.create if inv.name == 'CreateWorkspace' else creator.register
+    row = operation(path=inv.argument('path'), owner_id=owner_id, actor=inv.caller,
+                    operation_id=inv.argument('operation_id'), title=inv.argument('title', ''))
     record = descriptor_resource_record(creator.workspaces.descriptor(row))
     record = service._complete_mutation(record, resource_type='workspace', expected_id=row['workspace_id'],
                                        actor=inv.caller, kind='create', wait_for_index=False, index_timeout=0)

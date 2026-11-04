@@ -223,7 +223,7 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
                         from management_common.json_columns import json_text
                         connection.execute("INSERT INTO residents(resident_id,title,backend,owned_workspace_id,directory_json) VALUES(%s,%s,%s,%s,%s)",
                                            (rid, node.get("title") or rid, node.get("backend") or "codex", wid,
-                                            json_text({'origin': 'created', 'owner_id': rid})))
+                                            json_text({'owner_id': rid})))
             return result
     if synthetic_residents:
         monkeypatch.setattr(LineageCatalog, "upsert", upsert_with_synthetic_residents)

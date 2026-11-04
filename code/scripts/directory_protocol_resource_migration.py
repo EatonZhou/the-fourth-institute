@@ -3,7 +3,7 @@
 Stop clients before invoking. No startup ALTER, connection creation, automatic
 filesystem traversal, or deletion is performed. The caller supplies the existing
 registry schema, index schema and any disk-only inventory missed by that index.
-Historical provenance defaults to adopted; created requires explicit evidence.
+All declared paths have the same owner lifecycle.
 """
 from pathlib import Path
 import os
@@ -13,20 +13,16 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 
-def migrate(connection, *, registry_schema, index_schema=None, inventory=(), created_paths=(), dry_run=False):
+def migrate(connection, *, registry_schema, index_schema=None, inventory=(), dry_run=False):
     from management_common.instance_locations import located_path, stored_location
 
     def canonical(path):
         return str(Path(located_path(str(path))).resolve(strict=False))
 
-    proven = {canonical(path) for path in created_paths}
-
     def entry(path, owner, previous=None):
-        previous = previous or {}
-        origin = previous.get('origin')
-        if origin not in {'created', 'adopted'}:
-            origin = 'created' if canonical(path) in proven else 'adopted'
-        return {**previous, 'path': stored_location(located_path(str(path))), 'origin': origin, 'owner_id': owner}
+        previous = dict(previous or {})
+        previous.pop('origin', None)
+        return {**previous, 'path': stored_location(located_path(str(path))), 'owner_id': owner}
 
     table = sql.Identifier(registry_schema, 'registry_documents')
     changed = []
@@ -56,10 +52,11 @@ def migrate(connection, *, registry_schema, index_schema=None, inventory=(), cre
         entries = [entry(item['path'], resource_id, item) for item in document.get(field) or []]
         canonical_path = document.get({'repo': 'canonical_checkout', 'article': 'canonical_root'}.get(collection, ''))
         if canonical_path and canonical(canonical_path) not in {canonical(item['path']) for item in entries}:
-            entries.append(entry(canonical_path, resource_id, {'origin': document.get('origin')}))
+            entries.append(entry(canonical_path, resource_id))
+        document.pop('origin', None)
         document[field] = entries
         if field == 'directories' and entries:
-            document['directory'] = {key: entries[0][key] for key in ('origin', 'owner_id')}
+            document['directory'] = {'owner_id': resource_id}
         if document != stored_document:
             put(collection, resource_id, document)
 
@@ -94,7 +91,7 @@ def migrate(connection, *, registry_schema, index_schema=None, inventory=(), cre
         if not entries:
             raise ValueError('Directory inventory requires paths')
         put(collection, resource_id, {'id': resource_id, 'directories': entries,
-            'directory': {key: entries[0][key] for key in ('origin', 'owner_id')}})
+            'directory': {'owner_id': resource_id}})
         existing.add((collection, resource_id))
     return changed
 
