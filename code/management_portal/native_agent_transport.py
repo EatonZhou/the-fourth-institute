@@ -1,6 +1,7 @@
 """Common local Agent control protocol, including Worker-owned tool callbacks."""
 import json
 import secrets
+import re
 import socket
 import select
 import time
@@ -80,7 +81,11 @@ class NativeAgentClient:
                             event_callback(message["event"])
                         elif kind == "error":
                             error = message.get("error") or {}
-                            raise self.error_type(str(error.get("message") or "Native Agent request failed"))
+                            failure = self.error_type(str(error.get("message") or "Native Agent request failed"))
+                            code = error.get('code')
+                            if isinstance(code, str) and re.fullmatch(r'[a-z][a-z0-9_]{1,95}', code):
+                                failure.error_code = code
+                            raise failure
                         elif kind == "result":
                             return message.get("result") or {}
                 raise self.unavailable_type("Native Agent closed before returning a result")

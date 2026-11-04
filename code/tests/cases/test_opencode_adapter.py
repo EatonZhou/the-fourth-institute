@@ -102,6 +102,33 @@ def _events(context: mock.Mock) -> list[dict]:
     return [call.args[0] for call in context.observe_provider_event.call_args_list]
 
 
+def test_bounded_turn_aborts_native_work_and_preserves_typed_failure(opencode):
+    """Explicit check deadline aborts the real bridge's native run, without a second prompt."""
+    context = _context()
+    with pytest.raises(Exception) as error:
+        OpenCodeBackend().execute(_invocation(opencode, 'slow', options={'turn_timeout_seconds': .2}), context)
+    assert getattr(error.value, 'error_code', '') == 'provider_turn_deadline'
+    assert len(opencode.prompts()) == 1
+    states = [json.loads(p.read_text()) for p in opencode.state.glob('*/state.json')]
+    outcome = next(iter(states[0]['turns'].values()))
+    assert outcome['status'] == 'failed'
+    assert outcome['diagnostic']['after_abort']['type'] == 'idle'
+
+
+def test_deadline_error_is_projected_as_a_timeout():
+    from management_portal.execution.account_setup import _check_failure
+    result = _check_failure({'status': 'failed', 'result': {'error_code': 'provider_turn_deadline'}}, {'kind': 'service'})
+    assert result['diagnostic'] == {'reason': 'timeout', 'http_status': None}
+
+
+def test_retry_diagnostics_keep_only_a_fixed_reason():
+    from management_portal.opencode_bridge import native_status
+    assert native_status({'type': 'retry', 'attempt': 2, 'next': 123,
+                          'message': 'fetch failed https://secret.invalid/?token=private'}) == {
+        'type': 'retry', 'attempt': 2, 'next': 123, 'reason': 'network_failure'}
+    assert native_status({'type': 'retry', 'message': 'private unknown failure'}) == {'type': 'retry'}
+
+
 def test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls(opencode) -> None:
     """OpenCode 一轮对话提供 Portal 工具并以通用形状报告自身工具调用
 

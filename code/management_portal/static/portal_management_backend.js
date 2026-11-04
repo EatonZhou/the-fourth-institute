@@ -981,17 +981,22 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     responses.checked = offered.has("openai_responses");
     const anthropic = field(options, "也支持 Anthropic Messages（Claude Code 使用）", "protocol_anthropic_messages", "", {type: "checkbox"});
     anthropic.checked = offered.has("anthropic_messages");
+    const cacheHint = field(options, "Chat接口支持缓存路由提示（prompt_cache_key）", "supports_prompt_cache_key", "", {type: "checkbox"});
+    cacheHint.checked = api?.protocols?.openai_chat?.supports_prompt_cache_key
+      ?? api?.harness_parameter_contracts?.openai_chat?.supports_prompt_cache_key ?? true;
+    hint(cacheHint, "接口不支持时，Portal仅省略此缓存路由提示；消息、工具、生成参数及扩展字段原样保留。");
     hint(anthropic, "只勾选接口实际提供的附加协议；Portal 会优先直连，并在需要时为 Claude Code 和 Codex 转换协议。");
     const anthropicUrl = field(options, "Anthropic 接口地址（可选）", "anthropic_base_url", anthropicOptions.base_url || "",
       {type: "url", placeholder: t("留空使用去掉 /v1 的接口基础地址")});
     const anthropicAuth = select(options, "Anthropic 认证方式", "anthropic_auth",
       [["bearer", "Authorization: Bearer"], ["x-api-key", "x-api-key"]], anthropicOptions.auth || "bearer");
-    const protocolState = () => JSON.stringify([primary.value, chat.checked, responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value]);
+    const protocolState = () => JSON.stringify([primary.value, chat.checked, responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value, cacheHint.checked]);
     const declaredProtocols = protocolState();
     const primaryWire = () => ({openai_compatible_chat: "openai_chat", openai_responses: "openai_responses", anthropic_messages: "anthropic_messages"})[primary.value];
     const showAnthropic = () => {
       for (const [box, protocol] of [[chat, "openai_chat"], [responses, "openai_responses"], [anthropic, "anthropic_messages"]]) box.parentElement.hidden = primaryWire() === protocol;
       anthropicUrl.parentElement.hidden = anthropicAuth.parentElement.hidden = !(anthropic.checked || primary.value === "anthropic_messages");
+      cacheHint.parentElement.hidden = !(chat.checked || primaryWire() === 'openai_chat');
     };
     showAnthropic();
     // The endpoint answers which protocols it serves; the result fills the boxes above, which stay editable.
@@ -1075,7 +1080,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!api || JSON.stringify(catalog.models) !== declaredModels) changes.models = catalog.models;
       if (protocolState() !== declaredProtocols) {
         changes.protocols = {};
-        if (chat.checked && !chat.parentElement.hidden) changes.protocols.openai_chat = {};
+        if ((chat.checked && !chat.parentElement.hidden) || primaryWire() === 'openai_chat') {
+          changes.protocols.openai_chat = {...(api?.protocols?.openai_chat || {}), supports_prompt_cache_key: cacheHint.checked};
+        }
         if (responses.checked && !responses.parentElement.hidden) changes.protocols.openai_responses = {};
         if (anthropic.checked || primary.value === "anthropic_messages") changes.protocols.anthropic_messages = {auth: anthropicAuth.value,
           ...(anthropicUrl.value.trim() ? {base_url: anthropicUrl.value.trim()} : {})};

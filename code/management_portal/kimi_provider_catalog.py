@@ -1,5 +1,6 @@
 """Kimi API account models come from their bound Model API, not the service template."""
 from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
+import json
 
 
 def profile(account):
@@ -38,13 +39,42 @@ def catalog(account):
             "context_windows": {m: int(AIProviderRegistry.model_entry(entry, m).get("context_window") or 32768) for m in models}}
 
 
-def runtime_config(account, key):
+def runtime_config(account, key, *, base_url=None):
     """Explicit generic OpenAI transport, with no bundled Kimi model assumptions."""
     entry = profile(account)
     models = catalog(account)
     return {"default_model": models["default_model"],
-            "providers": {"portal_api": {"type": "openai", "base_url": AIProviderRegistry.base_url(entry),
+            "providers": {"portal_api": {"type": "openai", "base_url": base_url or AIProviderRegistry.base_url(entry),
                                          "api_key": key, "custom_headers": entry.get("default_headers") or {}}},
             "models": {m: {"provider": "portal_api", "model": m,
                             "max_context_size": models["context_windows"][m]} for m in models["models"]},
             "telemetry": {"enabled": False}, "subagent": {"timeout_ms": 2147000000}}
+
+
+def write_config(account, target):
+    """The native host owns its configuration and any transient wire adapter."""
+    from management_common.file_permissions import atomic_write_private_bytes
+    from . import kimi_portal_tools
+    if account['kind'] == 'subscription_login':
+        kimi_portal_tools.install(target)
+        return
+    from .model_api_bridge import connection
+    entry = profile(account)
+    base, auth, key = connection(entry, 'openai_chat', account_id=account['account_id'])
+    if auth != 'bearer':
+        raise ValueError('Kimi Chat transport requires bearer authentication')
+    config = runtime_config(account, key, base_url=base)
+    lines = []
+    def table(value, parents=()):
+        if parents:
+            lines.append('[' + '.'.join(json.dumps(p) for p in parents) + ']')
+        for name, child in value.items():
+            if not isinstance(child, dict):
+                lines.append(json.dumps(name) + ' = ' + json.dumps(child, ensure_ascii=False))
+        for name, child in value.items():
+            if isinstance(child, dict):
+                table(child, (*parents, name))
+    table(config)
+    content = '\n'.join(lines) + '\n' + kimi_portal_tools.hook_config()
+    atomic_write_private_bytes(target / 'config.toml', content.encode())
+    kimi_portal_tools.install(target)

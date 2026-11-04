@@ -133,7 +133,7 @@ def endpoint(tmp_path):
 
 
 def _post(bridge, payload, token=None, extra_headers=None):
-    url = bridge.base_url + ("/v1/messages" if bridge.target == wire.MESSAGES else "/responses")
+    url = bridge.base_url + ({wire.MESSAGES: '/v1/messages', wire.RESPONSES: '/responses', wire.CHAT: '/chat/completions'}[bridge.target])
     request = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={
         "Authorization": "Bearer " + (bridge.token if token is None else token),
         "Content-Type": "application/json", **(extra_headers or {})})

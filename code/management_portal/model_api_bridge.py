@@ -2,7 +2,8 @@
 
 Only loopback is bound. An unguessable capability selects one registered account,
 API and client protocol; a request cannot supply a target URL or another account.
-Native model endpoints bypass this server. No Agent loop or history is kept here.
+Native endpoints remain direct unless their declared transport hints require
+projection. No Agent loop or history is kept here.
 """
 from __future__ import annotations
 
@@ -155,7 +156,7 @@ class _Handler(BaseHTTPRequestHandler):
             if entry is None:
                 return
             path = urlsplit(self.path).path
-            expected = "/v1/messages" if bridge.target == wire.MESSAGES else "/v1/responses"
+            expected = {wire.MESSAGES: "/v1/messages", wire.RESPONSES: "/v1/responses", wire.CHAT: "/v1/chat/completions"}[bridge.target]
             if path not in (expected, expected + "/count_tokens") or (path.endswith("count_tokens") and bridge.target != wire.MESSAGES):
                 self._error(404, "Unknown model adapter endpoint")
                 return
@@ -170,6 +171,25 @@ class _Handler(BaseHTTPRequestHandler):
             payload = json.loads(raw)
             if payload.get("model") not in AIProviderRegistry.harness_models(entry):
                 raise wire.WireError("The model is not enabled for the selected API")
+            if bridge.target == wire.CHAT:
+                # Same-protocol projection preserves the complete business
+                # payload and upstream response, including vendor extensions.
+                # Only the publicly declared, non-semantic routing hint may
+                # be removed; this is not a generic field-dropping mechanism.
+                contract = AIProviderRegistry.harness_parameter_contracts(entry)[wire.CHAT]['omitted_advisory_fields']
+                omitted = []
+                if 'prompt_cache_key' in payload and contract:
+                    if payload['prompt_cache_key'] is not None and not isinstance(payload['prompt_cache_key'], str):
+                        raise wire.WireError('prompt_cache_key must be text or null')
+                    payload = {k: v for k, v in payload.items() if k != 'prompt_cache_key'}
+                    omitted = contract
+                acquired = bridge.slots.acquire(blocking=False)
+                if not acquired:
+                    self._error(429, 'Model adapter concurrency limit reached')
+                    return
+                relaying = True
+                self._relay_chat(entry, payload, omitted)
+                return
             decoded = wire.request(payload, bridge.target)
             protocol = wire.upstream(entry, bridge.target)
             if path.endswith("count_tokens"):
@@ -201,6 +221,39 @@ class _Handler(BaseHTTPRequestHandler):
             if acquired:
                 bridge.slots.release()
             self.close_connection = True
+
+    def _relay_chat(self, entry, payload, omitted):
+        """Keep native Chat SSE/JSON bytes; the native SDK owns decoding."""
+        with open_upstream(entry, wire.CHAT, payload) as response:
+            content_type = response.headers.get('Content-Type', '')
+            if not any(kind in content_type for kind in ('text/event-stream', 'json')):
+                raise wire.WireError('Model API returned neither JSON nor an event stream')
+            raw = None
+            if 'text/event-stream' not in content_type:
+                raw = response.read(MAX_BODY + 1)
+                if len(raw) > MAX_BODY:
+                    raise wire.WireError('Model response exceeds 64 MiB')
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Connection', 'close')
+            if omitted:
+                self.send_header('X-TFI-Omitted-Advisory-Fields', ','.join(omitted))
+            self.end_headers()
+            self.streaming = 'text/event-stream' in content_type
+            if raw is not None:
+                self.wfile.write(raw)
+                return
+            stopped = threading.Event()
+            watcher = threading.Thread(target=self._disconnect_watch, args=(response, stopped), daemon=True)
+            watcher.start()
+            try:
+                while chunk := response.read1(65536):
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+            finally:
+                stopped.set()
+                watcher.join(1)
 
     def _relay(self, entry, protocol, payload, streaming, tool_map):
         with open_upstream(entry, protocol, payload) as response:
@@ -273,8 +326,9 @@ def resolve_account(api_id, account_id=""):
 
 
 def connection(entry, target, *, account_id=""):
-    """Return a harness endpoint and credential; native routes remain direct."""
-    if wire.upstream(entry, target) == target:
+    """Native routes are direct unless the public parameter contract needs projection."""
+    omitted = AIProviderRegistry.harness_parameter_contracts(entry).get(target, {}).get('omitted_advisory_fields', [])
+    if wire.upstream(entry, target) == target and not omitted:
         base, auth = AIProviderRegistry.harness_endpoint(entry, target)
         key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(entry))
         return base, auth, key

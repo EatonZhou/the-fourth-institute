@@ -41,8 +41,8 @@ def test_subscription_registration_and_config_preserve_managed_credentials(tmp_p
     content = b'[providers."managed:kimi-code"]\ntype="kimi"\n'
     config.write_bytes(content)
     monkeypatch.setattr(runtime.kimi_portal_tools, "install", lambda home: None)
-    monkeypatch.setattr(runtime.kimi_provider_catalog, "profile", lambda _: pytest.fail("Subscription used API credentials"))
-    runtime._write_config(row, tmp_path)
+    monkeypatch.setattr(catalog, "profile", lambda _: pytest.fail("Subscription used API credentials"))
+    catalog.write_config(row, tmp_path)
     assert config.read_bytes() == content
 
 

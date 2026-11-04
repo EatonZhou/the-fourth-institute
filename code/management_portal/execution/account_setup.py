@@ -205,6 +205,8 @@ def check(inv):
     cwd.mkdir(parents=True, exist_ok=True)
     direct = row["provider"] == "provider_api"
     options = {"model": model, "allow_subagents": False}
+    if row['provider'] == 'opencode':
+        options['turn_timeout_seconds'] = 90
     if direct:
         from management_portal.ai_provider_registry import shared_ai_provider_registry
         if shared_ai_provider_registry.get(route(row))["kind"] == "typesafe_system_one":
@@ -282,7 +284,7 @@ def _check_failure(snapshot, row):
         reason = "provider_unavailable"
     elif http_status and 400 <= http_status < 500:
         reason = "request_rejected"
-    elif kind in {"timeout", "read_timeout"}:
+    elif code == 'provider_turn_deadline' or kind in {"timeout", "read_timeout"}:
         reason = "timeout"
     elif kind == "tls_error":
         reason = "tls"

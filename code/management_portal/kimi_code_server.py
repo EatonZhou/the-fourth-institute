@@ -131,7 +131,40 @@ def _write_runtime_config(
     return config_path
 
 
-def main() -> int:
+def account_main(account_id, binary, port):
+    """Own the API adapter for exactly as long as this native account server."""
+    from . import kimi_account_runtime, kimi_provider_catalog, model_api_bridge
+    from .provider_daemon_host import run
+    from .resident_shell_environment import resident_process_environment
+    account = kimi_account_runtime.account_for_route(account_id)
+    if account['kind'] not in {'api_profile', 'subscription_login'} or not 0 < port < 65536:
+        raise ValueError('Invalid on-demand Kimi account server')
+    target = kimi_account_runtime.home(account)
+    try:
+        kimi_provider_catalog.write_config(account, target)
+        env, _ = resident_process_environment({})
+        env.update(KIMI_CODE_HOME=str(target))
+        env.update(kimi_windows_runtime.environment())
+        env = model_api_bridge.local_proxy_bypass(env)
+        close_all_database_pools()
+        return run([str(binary), 'web', '--no-open', '--host', '127.0.0.1', '--port', str(port),
+                    '--dangerous-bypass-auth'], env=env, cwd=target)
+    finally:
+        model_api_bridge.close_bridges()
+        close_all_database_pools()
+
+
+def main(argv=None) -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--account-id')
+    parser.add_argument('--binary')
+    parser.add_argument('--port', type=int)
+    args = parser.parse_args(argv or [])
+    if args.account_id:
+        if not args.binary or args.port is None:
+            parser.error('Account mode requires its binary and port')
+        return account_main(args.account_id, Path(args.binary), args.port)
     from management_common.instance_manifest import load
     instance = load()
     component = 'kimi-code' if 'kimi-code' in instance.document['services']['components'] else 'kimi'
@@ -199,4 +232,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

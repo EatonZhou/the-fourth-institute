@@ -84,7 +84,9 @@ def log(message: str) -> None:
 
 
 class BridgeError(RuntimeError):
-    pass
+    def __init__(self, message, *, error_code=''):
+        super().__init__(message)
+        self.error_code = error_code
 
 
 class OpenCodeServer:
@@ -209,6 +211,7 @@ class Turn:
         self.finished = threading.Event()
         self.result: dict | None = None
         self.failure = ""
+        self.failure_code = ''
         self.posted = False
         # The turn's model, system instructions and tool switches: OpenCode
         # takes them from the newest user message, so input sent during the
@@ -217,6 +220,9 @@ class Turn:
         self.busy = False
         self.error: dict | None = None
         self.started_ms = now_ms()
+        self.deadline = None
+        self.native_status: dict = {}
+        self.event_counts: dict[str, int] = {}
         self.items_started: set[str] = set()
         self.items_completed: set[str] = set()
         self.steered: set[str] = set()
@@ -459,6 +465,8 @@ class Bridge:
             turn = self.current
             ours = self.opencode_session
             session = str(props.get("sessionID") or (props.get("info") or {}).get("sessionID") or "")
+            if turn is not None and session == ours:
+                turn.event_counts[kind] = turn.event_counts.get(kind, 0) + 1
             if kind == "message.updated":
                 info = props.get("info") or {}
                 self.roles[str(info.get("id"))] = str(info.get("role") or "")
@@ -490,6 +498,7 @@ class Bridge:
             if turn is None or not ours:
                 return
             if kind == "session.status" and session == ours:
+                turn.native_status = native_status(props.get('status') or {})
                 state = str((props.get("status") or {}).get("type") or "")
                 if turn.posted and state in {"busy", "retry"}:
                     turn.busy = True
@@ -689,7 +698,8 @@ class Bridge:
             try:
                 turn.result = self._outcome(turn)
             except Exception as error:  # noqa: BLE001 - every Worker of the turn gets it
-                turn.failure = str(error)
+                    turn.failure = str(error)
+                    turn.failure_code = str(getattr(error, 'error_code', '') or '')
             finally:
                 with self.lock:
                     if turn.detach_timer is not None:
@@ -699,7 +709,7 @@ class Bridge:
                 turn.finished.set()
         turn.finished.wait()
         if turn.failure:
-            raise BridgeError(turn.failure)
+            raise BridgeError(turn.failure, error_code=turn.failure_code)
         return turn.result or {}
 
     def _replay(self, turn_id: str, result: dict, emit) -> dict:
@@ -732,6 +742,11 @@ class Bridge:
         if params.get("effort"):
             body["variant"] = str(params["effort"])
         turn = Turn(str(params["turn_id"]), emit, owner)
+        limit = params.get('turn_timeout_seconds', 0)
+        if isinstance(limit, bool) or not isinstance(limit, (int, float)) or not 0 <= limit <= 1800:
+            raise BridgeError('turn_timeout_seconds must be between 0 and 1800')
+        if limit:
+            turn.deadline = time.monotonic() + max(0, limit - max(0, now_ms() - int((record or {}).get('started_ms') or turn.started_ms)) / 1000)
         turn.settings = {key: value for key, value in body.items() if key != "parts"}
         with self.lock:
             if self.compacting:
@@ -767,14 +782,16 @@ class Bridge:
     def _settled(self, turn: Turn) -> bool:
         """Whether OpenCode finished the turn's run (also when its idle event was missed)."""
 
-        if turn.done.wait(STATUS_POLL_SECONDS):
+        remaining = None if turn.deadline is None else max(0, turn.deadline - time.monotonic())
+        if turn.done.wait(STATUS_POLL_SECONDS if remaining is None else min(STATUS_POLL_SECONDS, remaining)):
             return True
         try:
-            status = self.server.request("GET", "/session/status") or {}
+            status = self.server.request("GET", "/session/status", timeout=180 if remaining is None else 5) or {}
         except Exception as error:  # noqa: BLE001 - the event stream decides
             log(f"session status: {error}")
             return False
         state = str((status.get(self.opencode_session) or {}).get("type") or "idle")
+        turn.native_status = native_status(status.get(self.opencode_session) or {'type': 'idle'})
         if state == "idle" and (turn.busy or now_ms() - turn.started_ms > 15000):
             turn.done.set()
             return True
@@ -782,7 +799,23 @@ class Bridge:
 
     def _outcome(self, turn: Turn) -> dict:
         while not self._settled(turn):
-            pass
+            if turn.deadline is not None and time.monotonic() >= turn.deadline:
+                observed = dict(turn.native_status)
+                self.server.request('POST', f'/session/{self.opencode_session}/abort', timeout=10)
+                cancellation_deadline = time.monotonic() + 10
+                while True:
+                    status = self.server.request('GET', '/session/status', timeout=2) or {}
+                    after = native_status(status.get(self.opencode_session) or {'type': 'idle'})
+                    if after.get('type') == 'idle' or time.monotonic() >= cancellation_deadline:
+                        break
+                    time.sleep(.05)
+                diagnostic = {'before_abort': observed, 'after_abort': after, 'event_counts': dict(turn.event_counts)}
+                self.state['turns'][turn.id].update(status='failed', diagnostic=diagnostic)
+                self.save()
+                if after.get('type') != 'idle':
+                    raise BridgeError('Native turn deadline reached; abort is not confirmed idle', error_code='provider_turn_cancel_pending')
+                turn.done.set()
+                raise BridgeError('OpenCode turn deadline reached; native abort confirmed idle', error_code='provider_turn_deadline')
         messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
         mine = [message for message in messages
                 if int(((message.get("info") or {}).get("time") or {}).get("created") or 0) >= turn.started_ms - 1000]
@@ -988,6 +1021,15 @@ class Bridge:
             return {"ready": True, "protocol": PROTOCOL, "version": self.version,
                     "capabilities": {"turn_steer": True, "session_compact": True, "turn_reattach": True,
                                      "turn_continue": True}}
+        if method == 'session/status':
+            status = self.server.request('GET', '/session/status', timeout=5) or {}
+            with self.lock:
+                turn = self.current
+                return {'session_id': self.session_id, 'active': turn is not None and not turn.done.is_set(),
+                        'turn_id': turn.id if turn else '',
+                        'native_status': native_status(status.get(self.opencode_session) or {'type': 'idle'}),
+                        'event_counts': dict(turn.event_counts) if turn else {},
+                        'diagnostic': (self.state.get('turns', {}).get(str(params.get('turn_id') or ''), {}) or {}).get('diagnostic')}
         if method == "turn/run":
             return self.run(params, send, peer)
         if method == "turn/steer":
@@ -1031,7 +1073,7 @@ class Bridge:
                 result = self.handle(request, send, peer)
                 send({"type": "result", "result": result})
             except Exception as error:  # noqa: BLE001 - the Worker gets the message
-                send({"type": "error", "error": {"message": str(error)}})
+                send({"type": "error", "error": {"message": str(error), 'code': str(getattr(error, 'error_code', '') or '')}})
 
         buffer = b""
         try:
@@ -1133,6 +1175,23 @@ def summary_tokens(messages: list) -> int:
         if info.get("role") == "assistant" and info.get("summary"):
             return int((info.get("tokens") or {}).get("output") or 0)
     return 0
+
+
+def native_status(status):
+    """Public control state only; native retry messages may contain secrets."""
+    result = {k: v for k, v in status.items() if
+            (k == 'type' and isinstance(v, str) and v in {'busy', 'idle', 'retry'}) or
+            (k in {'attempt', 'next'} and type(v) in {int, float})}
+    if result.get('type') == 'retry':
+        message = str(status.get('message') or '').lower()
+        for reason, markers in (
+                ('rate_limited', ('rate limit', 'too many requests')),
+                ('upstream_unavailable', ('service unavailable', 'overloaded', 'bad gateway')),
+                ('network_failure', ('fetch failed', 'unable to connect', 'connection error', 'tls', 'certificate'))):
+            if any(marker in message for marker in markers):
+                result['reason'] = reason
+                break
+    return result
 
 
 def describe_error(error: dict) -> str:

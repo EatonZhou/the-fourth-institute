@@ -41,6 +41,12 @@ class OpenCodeBackend(NativeSocketBackend):
 
         return shared_client()
 
+    def turn_options(self, options):
+        result = super().turn_options(options)
+        if 'turn_timeout_seconds' in options:
+            result['turn_timeout_seconds'] = options['turn_timeout_seconds']
+        return result
+
     def interrupt(
         self,
         *,

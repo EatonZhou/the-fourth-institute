@@ -18,8 +18,7 @@ from management_common.file_permissions import atomic_write_private_bytes, ensur
 from management_common.provider_account_paths import account_runtime, runtime_root
 from management_common.provider_account_paths import registered_home
 from management_common.process_runtime import spawn_process, terminate_process_tree
-from management_portal import kimi_provider_catalog, kimi_code_server, kimi_portal_tools, model_api_store, kimi_windows_runtime
-from management_portal.ai_provider_registry import AIProviderRegistry
+from management_portal import kimi_code_server, kimi_portal_tools, model_api_store, kimi_windows_runtime
 from management_portal.execution.account_registrations import registrations
 from management_portal.resident_shell_environment import resident_process_environment
 
@@ -43,30 +42,6 @@ def control(account):
     path = account_runtime("kimi", account["account_id"])
     ensure_private_directory(path)
     return path
-
-
-def _write_config(account, target):
-    if account["kind"] == "subscription_login":
-        # Kimi owns OAuth configuration. Never replace it with an API profile.
-        kimi_portal_tools.install(target)
-        return
-    entry = kimi_provider_catalog.profile(account)
-    key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(entry))
-    config = kimi_provider_catalog.runtime_config(account, key)
-    lines = []
-    def table(value, parents=()):
-        if parents:
-            lines.append("[" + ".".join(json.dumps(p) for p in parents) + "]")
-        for name, child in value.items():
-            if not isinstance(child, dict):
-                lines.append(json.dumps(name) + " = " + json.dumps(child, ensure_ascii=False))
-        for name, child in value.items():
-            if isinstance(child, dict):
-                table(child, (*parents, name))
-    table(config)
-    content = "\n".join(lines) + "\n" + kimi_portal_tools.hook_config()
-    atomic_write_private_bytes(target / "config.toml", content.encode())
-    kimi_portal_tools.install(target)
 
 
 def _client(target, port):
@@ -212,7 +187,8 @@ def client_for_route(route, *, for_control=False):
             client = _client(target, state["port"])
             # Never start a second daemon or kill a live turn after a failed probe.
             sessions = client._request("GET", "sessions", timeout=3)
-            if for_control or (state["version"] == version and state.get("runtime") == runtime):
+            if for_control or (state["version"] == version and state.get("runtime") == runtime
+                               and state.get('host_contract') == 1):
                 return client if for_control else _subscription_tools(account, client)
             rows = sessions.get("items", sessions.get("sessions", [])) if isinstance(sessions, dict) else sessions
             for row in rows or []:
@@ -223,17 +199,19 @@ def client_for_route(route, *, for_control=False):
             raise KimiCodeUnavailable("Kimi account server is not running")
         if not binary.is_file():
             raise KimiCodeUnavailable("Kimi Code runtime is missing")
-        _write_config(account, target)
         with socket.socket() as reservation:
             reservation.bind(("127.0.0.1", 0))
             port = reservation.getsockname()[1]
         env, _ = resident_process_environment({})
         env["KIMI_CODE_HOME"] = str(target)
         env.update(kimi_windows_runtime.environment())
+        # This Python host resolves the registered API. Its native child gets
+        # a separately filtered environment; database context never reaches it.
+        env.update({k: os.environ[k] for k in ('PORTAL_DATABASE_URL', 'PORTAL_DATABASE_NAMESPACE') if k in os.environ})
         with (control(account) / "server.log").open("ab") as log:
-            process = spawn_process([os.sys.executable, str(Path(__file__).with_name("provider_daemon_host.py")),
-                                     "--", str(binary), "web", "--no-open",
-                                     "--host", "127.0.0.1", "--port", str(port), "--dangerous-bypass-auth"], cwd=target, env=env, stdout=log, stderr=log,
+            process = spawn_process([os.sys.executable, str(Path(__file__).parents[1] / 'scripts/kimi_account_server.py'),
+                                     '--account-id', account['account_id'], '--binary', str(binary), '--port', str(port)],
+                                    cwd=target, env=env, stdout=log, stderr=log,
                                     tree_id=tree_id, kill_on_owner_exit=False)
         client = _client(target, port)
         try:
@@ -243,7 +221,7 @@ def client_for_route(route, *, for_control=False):
                     client._request("GET", "sessions", timeout=1)
                     import psutil
                     atomic_write_private_bytes(marker, json.dumps({"pid": process.pid, "port": port, "version": version,
-                        "created": psutil.Process(process.pid).create_time(), "runtime": runtime}).encode())
+                        "created": psutil.Process(process.pid).create_time(), "runtime": runtime, 'host_contract': 1}).encode())
                     return _subscription_tools(account, client)
                 except KimiCodeUnavailable:
                     if time.monotonic() >= deadline:

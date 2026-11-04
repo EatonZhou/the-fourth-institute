@@ -14,11 +14,11 @@ from management_common.process_runtime import (
 )
 
 
-def run(command):
+def run(command, *, env=None, cwd=None):
     stopped = threading.Event()
     previous = install_shutdown_handlers(lambda *_: stopped.set())
     try:
-        child = spawn_process(command)
+        child = spawn_process(command, env=env, cwd=cwd)
         try:
             while not stopped.wait(.1):
                 code = child.poll()
