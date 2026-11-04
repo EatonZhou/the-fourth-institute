@@ -91,3 +91,32 @@ def test_kimi_service_account_check_explains_a_missing_shared_service(monkeypatc
         account_setup.check(inv)
     assert raised.value.details["reason"] == "account.service_unconfigured"
     assert not kimi_code_server.service_configured()
+
+
+def test_empty_route_service_check_keeps_explicit_account_selection(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from management_portal import kimi_code_server
+    from scripts import portal_service_units
+    from management_portal.execution import account_adapters, accounts, account_registrations
+    row = {'account_id': 'kimi_default', 'provider': 'kimi', 'kind': 'service',
+           'enabled': True, 'config': {}, 'route_id': '', 'max_concurrency': 1}
+    monkeypatch.setattr(account_setup, 'account', lambda _: row)
+    monkeypatch.setattr(account_setup.provider_updates, 'runtime_available', lambda _: True)
+    monkeypatch.setattr(account_setup.provider_updates, 'STATE_ROOT', tmp_path)
+    monkeypatch.setattr(kimi_code_server, 'service_configured', lambda: True)
+    monkeypatch.setattr(portal_service_units, 'start_kimi_service', lambda **kw: None)
+    monkeypatch.setattr(account_setup, 'catalog', lambda _: {'default_model': 'kimi-k2.6'})
+    monkeypatch.setattr(account_setup, 'signature', lambda _: {})
+    definition = SimpleNamespace(validate_settings=lambda *a: None, operations={'turn'}, accepts_routes=True,
+        runtime_adapter=lambda: SimpleNamespace(defaults=lambda *a: {}))
+    monkeypatch.setitem(account_setup.AGENT_PROVIDERS, 'kimi', definition)
+    monkeypatch.setattr(account_registrations, 'registrations', lambda _: [row])
+    selected = []
+    def submit(request):
+        registry = accounts.ExecutionAccounts((account_adapters.KimiAccounts(),))
+        selected.append(registry.resolve(request.provider, request.session.backend_route_id, request.runtime_options))
+        return SimpleNamespace(execution_id='service-check')
+    monkeypatch.setattr(account_setup, 'ExecutionClient', lambda: SimpleNamespace(submit=submit))
+    inv = SimpleNamespace(caller='alice', argument=lambda n: 'kimi_default' if n == 'account_id' else None)
+    account_setup.check(inv)
+    assert selected[0].account_id == 'kimi_default'

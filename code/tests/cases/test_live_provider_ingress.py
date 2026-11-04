@@ -182,6 +182,7 @@ def test_kimi_gap_or_join_never_finalizes_partial_text_but_keeps_tool_outcomes()
 @pytest.mark.parametrize('version,accepted,code,succeeds', [
     (1, ['s'], 0, True), (1, None, 0, False),
     (1, [], 0, False), (1, ['s'], 403, False), (2, None, 0, False),
+    (2, ['s'], 0, True), (3, ['s'], 0, False),
 ])
 def test_kimi_websocket_handshake_subscribes_before_ready_and_keeps_fast_tools(version, accepted, code, succeeds):
     """kimi WebSocket 握手在就绪前完成订阅，不丢失紧随其后的工具结果

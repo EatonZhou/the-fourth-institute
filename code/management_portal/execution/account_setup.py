@@ -213,6 +213,11 @@ def check(inv):
         definition = AGENT_PROVIDERS[row["provider"]]
         settings = definition.runtime_adapter().defaults(definition, {"model": model})
         options.update(is_owner=True, runtime_settings={**settings, "model": model, "allow_subagents": False})
+        if not route(row):
+            # The shared service has an empty native route. Its registration
+            # ID still explicitly selects this account; a blank unqualified
+            # request would invoke automatic subscription selection instead.
+            options["provider_profile"] = row["account_id"]
     request = ExecutionRequest.new(
         actor=inv.caller, prompt="Reply with a short greeting. Do not call tools or access files or network.",
         service_type="chat_completion" if direct else "agent_session",

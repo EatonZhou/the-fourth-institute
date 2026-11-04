@@ -67,7 +67,10 @@ class KimiLiveStream:
                         continue
                     typ = frame.get("type")
                     if typ == "server_hello":
-                        if (frame.get("payload") or {}).get("protocol_version", 1) != 1:
+                        # 2.4 advertises version 2 while retaining raw-event
+                        # subscriptions. The acknowledgement below proves the
+                        # actual contract; a transcript-only empty ACK cannot.
+                        if (frame.get("payload") or {}).get("protocol_version", 1) not in {1, 2}:
                             raise UnsupportedKimiProtocol("Unsupported Kimi live protocol version")
                         continue
                     if typ == "ping":
@@ -75,6 +78,8 @@ class KimiLiveStream:
                         continue
                     if typ == "ack" and frame.get("id") == "portal-subscribe":
                         payload = frame.get("payload") or {}
+                        if 'accepted_subscriptions' not in payload:
+                            raise UnsupportedKimiProtocol("Native server does not acknowledge raw-event subscriptions")
                         if frame.get("code", 0) != 0 or self.session_id not in payload.get("accepted_subscriptions", []):
                             raise ConnectionError("Kimi session subscription was rejected")
                         self.ready.set()
