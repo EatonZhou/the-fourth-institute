@@ -19,6 +19,11 @@ def _version_label(schema: str) -> str:
 def _actual_agent_data_schema() -> str:
     database = portal_database(schema="agent")
     with database.read() as connection:
+        exists = connection.execute(
+            "SELECT to_regclass(current_schema() || '.agent_store_meta') AS table_name"
+        ).fetchone()["table_name"]
+        if not exists:
+            return ""
         row = connection.execute(
             "SELECT value FROM agent_store_meta WHERE key = 'schema'"
         ).fetchone()
@@ -29,7 +34,7 @@ def portal_runtime_status(
     expected_agent_data_schema: str | None = None,
 ) -> dict:
     """Report the durable schema marker without treating it as a runtime gate."""
-    # The marker this code's AgentData store creates and checks.
+    # Descriptive metadata: absence/difference does not describe availability.
     expected = str(expected_agent_data_schema or AGENT_DATA_SCHEMA).strip()
     try:
         actual = _actual_agent_data_schema()

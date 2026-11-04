@@ -7,13 +7,13 @@ import hashlib
 import json
 import os
 import re
-import fcntl
 import time
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
 from management_common import secure_paths
+from management_common.file_lock import lock_stream
 from management_common.portal_paths import path as portal_path
 from management_portal.home_explanation_quality import policy
 
@@ -27,11 +27,11 @@ def invoke(actor, instruction, arguments, key=''):
                             InstructionContext(caller=actor, entry='web'))
 
 
-def discover(actor, owner='', reviewer='', call=invoke, title=TITLE):
+def discover(actor, owner='', reviewer='', call=invoke, title=TITLE, excluded=()):
     arguments = {'resident_ids': [reviewer], 'can_send': True, 'limit': 1} if reviewer else {
         'q': title, 'can_send': True, 'limit': 50}
     found = call(actor, 'SearchResidents', arguments).get('residents', [])
-    candidates = [r['resident_id'] for r in found if r.get('resident_id') not in {actor, owner}
+    candidates = [r['resident_id'] for r in found if r.get('resident_id') not in {actor, owner, *excluded}
                   and r.get('can_send') is True
                   and (r.get('resident_id') == reviewer if reviewer else r.get('title') == title)]
     if len(candidates) != 1 or len(found) >= 50:
@@ -65,6 +65,10 @@ class ReviewService:
         if not all(isinstance(value.get(k), (str, int)) and str(value[k]) for k in ('ref', 'version', 'author')):
             raise ValueError('审核缺少固定版本或作者')
         result = {k: value[k] for k in ('kind', 'ref', 'version', 'digest', 'quality', 'author')}
+        responsible = value.get('responsible_resident_id') or (value['author'] if re.fullmatch('resident_[0-9a-f]{12}', str(value['author'])) else '')
+        if responsible and not re.fullmatch('resident_[0-9a-f]{12}', str(responsible)):
+            raise ValueError('负责者必须是经业务域核验的Resident')
+        result['responsible_resident_id'] = responsible
         result['assets'] = value.get('assets', [])
         result['task'] = str(value.get('task', ''))[:4000]
         if value.get('previous_review_id'):
@@ -81,6 +85,8 @@ class ReviewService:
         value = cls.subject(subject)
         # Guidance and presentation are not part of the artifact identity.
         core = {k: value[k] for k in ('kind', 'ref', 'version', 'digest', 'quality', 'author')}
+        if value['responsible_resident_id'] and value['responsible_resident_id'] != value['author']:
+            core['responsible_resident_id'] = value['responsible_resident_id']
         return hashlib.sha256(json.dumps(core, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
     @staticmethod
@@ -95,11 +101,9 @@ class ReviewService:
         self.root.mkdir(parents=True, exist_ok=True)
         with secure_paths.open_directory(self.root, ()) as directory:
             fd = secure_paths.open_child(directory, identifier + '.lock', os.O_CREAT | os.O_RDWR, 0o600)
-            try:
-                fcntl.flock(fd, fcntl.LOCK_EX)
-                yield
-            finally:
-                os.close(fd)
+            with os.fdopen(fd, 'r+b') as stream:
+                with lock_stream(stream):
+                    yield
 
     def _load(self, identifier):
         self._id(identifier)
@@ -155,16 +159,18 @@ class ReviewService:
         with self._lock(identifier):
             record = self._load(identifier)
             if record and (record['status'] in self.TERMINAL or record['status'] == 'submitted'):
-                return record
+                return self.read(identifier, actor) if record['status'] == 'passed' else record
             if record and record['requested_by'] != actor:
                 raise PermissionError('仅原请求者可重试审核')
             previous = self.read(subject['previous_review_id'], actor) if subject.get('previous_review_id') else None
+            if subject.get('previous_review_id') and not previous:
+                raise ValueError('原审核记录不存在，不能作为复审依据')
             if previous and (previous['subject']['author'] != subject['author'] or previous['subject']['kind'] != subject['kind'] or previous['status'] != 'changes_requested' or previous['subject']['digest'] == subject['digest']):
                 raise ValueError('复审须绑定同一作者的否决记录和已修改的固定内容')
             record = record or {'id': identifier, 'subject': subject, 'requested_by': actor, 'attempts': 0,
                                 'round': previous.get('round', 1)+1 if previous else 1}
-            if record['round'] > 3:
-                record.update(status='blocked', error='连续三轮未达标，请人工处理；不再自动送检。')
+            if not subject['responsible_resident_id']:
+                record.update(status='awaiting_author', error='缺少经核验的负责Resident；保留作者User，等待业务域补齐正式关联。')
                 return self._save(record)
             if record['attempts'] >= 3:
                 return record
@@ -172,7 +178,8 @@ class ReviewService:
             self._save(record)
             try:
                 chosen = discover(actor, subject['author'], reviewer or record.get('reviewer', ''),
-                                  self.call, TITLE if 'video' in subject['kind'] else '解释页独立检查')
+                                  self.call, TITLE if 'video' in subject['kind'] else '解释页独立检查',
+                                  excluded=(subject['responsible_resident_id'],))
                 record['reviewer'] = chosen
                 payload = {'schema': 'portal-quality-review/v1', 'review_id': identifier,
                            'subject': subject, 'round': record['round'], 'policy': policy('high', video='video' in subject['kind']),
@@ -194,6 +201,11 @@ class ReviewService:
             return self._save(record)
 
     def _notify_author(self, record, actor):
+        author = record['subject'].get('responsible_resident_id') or record['subject']['author']
+        if not re.fullmatch('resident_[0-9a-f]{12}', str(author)):
+            record['feedback_delivery'] = {'status': 'awaiting_author', 'attempts': 0,
+                'error': '尚无经核验的负责Resident，不能将通知User作为Resident修改闭环。'}
+            return self._save(record)
         notice = record.get('feedback_delivery', {})
         if notice.get('status') == 'delivered' or notice.get('attempts', 0) >= 3:
             return record
@@ -201,15 +213,17 @@ class ReviewService:
         record['feedback_delivery'] = notice
         self._save(record)
         try:
-            author = record['subject']['author']
-            recipient = {'resident_id': author} if re.fullmatch('resident_[0-9a-f]{12}', author) else {'user_id': author}
             payload = {'schema': 'portal-quality-review-feedback/v1', 'review_id': record['id'],
                        'subject': record['subject'], 'status': record['status'], 'feedback': record.get('feedback', ''),
                        'evidence': record.get('evidence', []), 'round': record.get('round', 1),
                        'next_action': 'changes_requested时读取独立意见并修改实际产物，保存新固定版，带previous_review_id重新送审；'
+                       '负责Resident关联不授予资源写权限；先以本人身份CheckPermission，再通过正式UpdateResource或原域更新入口修改。'
+                       '缺少实际写权限时保留具体blocked原因并向原请求者报告待授权，不借用请求者User身份、token或权限，不自行授予权限。'
+                       '本通知delivered仅表示消息送达，不能作为作者已修改或闭环完成。'
                        '视频须重做受影响分镜/音轨并生成新固定视频。不可只重送原字节、替换quality标签或把受理称为通过。'
-                       '最多三轮，第三轮仍否决则停下报告原因；blocked/cancelled保留状态，不自动重试。'}
-            receipt = self.call(actor, 'DeliverMessage', {**recipient, 'business_ref': record['subject']['ref'],
+                       '独立审核要求修改时继续修订实际产物并复审，不按轮次数停止。仅passed、显式取消或具体无法继续的blocked停止；'
+                       'blocked/cancelled保留原因，不自动重试生成。'}
+            receipt = self.call(actor, 'DeliverMessage', {'resident_id': author, 'business_ref': record['subject']['ref'],
                 'message': {'content_parts': [{'type': 'text', 'text': json.dumps(payload, ensure_ascii=False)}]}},
                 'quality-review-feedback:' + record['id'])
             if not receipt.get('message_id'):
@@ -228,7 +242,7 @@ class ReviewService:
             record = self._load(review_id)
             if not record:
                 raise FileNotFoundError('审核不存在')
-            if actor != record.get('reviewer') or actor in {record['subject']['author'], record['requested_by']}:
+            if actor != record.get('reviewer') or actor in {record['subject']['author'], record['requested_by'], record['subject'].get('responsible_resident_id')}:
                 raise PermissionError('仅独立审核者可提交结论')
             if digest != record['subject']['digest']:
                 raise ValueError('审核摘要与固定版不符')
@@ -261,3 +275,73 @@ class ReviewService:
                 record['status'] = 'cancelled'
                 self._save(record)
             return record
+
+
+class AuthoringService(ReviewService):
+    """Idempotent author work requests; these records never assert quality passed.
+
+    Only a domain that verified the message/owner association may supply the
+    responsible Resident. No public endpoint accepts an arbitrary recipient.
+    """
+    def __init__(self, *, root=None, resources=None, call=invoke):
+        super().__init__(root=root if root is not None else portal_path('features') / 'quality-authoring',
+                         resources=resources, call=call)
+
+    @classmethod
+    def subject(cls, value):
+        if not isinstance(value, dict) or value.get('quality') not in {'medium', 'high'}:
+            raise ValueError('分镜创作任务只用于medium/high')
+        subject = super().subject({**value, 'quality': 'high'})
+        subject['quality'] = value['quality']
+        return subject
+
+    def submit(self, subject, actor):
+        subject = self.subject(subject)
+        self._authorize(subject, actor, verify=True)
+        identifier = self.identifier(subject)
+        with self._lock(identifier):
+            record = self._load(identifier)
+            if record and record['status'] in {'submitted', 'cancelled'}:
+                return record
+            if record and record['requested_by'] != actor:
+                raise PermissionError('仅原请求者可重试创作任务')
+            record = record or {'id': identifier, 'subject': subject, 'requested_by': actor, 'attempts': 0}
+            responsible = subject['responsible_resident_id']
+            if not responsible:
+                record.update(status='awaiting_author', error='缺少经核验的负责Resident，无法投递分镜创作任务。')
+                return self._save(record)
+            if record['attempts'] >= 3:
+                return record
+            record.update(status='pending', attempts=record['attempts']+1)
+            self._save(record)
+            payload = {'schema': 'portal-quality-authoring/v1', 'authoring_id': identifier, 'subject': subject,
+                'read_endpoint': '/api/home-explanation/authoring?id=' + identifier,
+                'policy': policy(subject['quality'], video='video' in subject['kind']),
+                'requirements': '开始与发布成果前用本人身份GET read_endpoint核对未取消，再读取固定来源，按quality指导实际创作或修改分镜，不只转存policy标签。'
+                '负责Resident关联不授予资源写权限；先以本人身份CheckPermission，再用正式UpdateResource或原域更新入口修改。'
+                '缺少实际写权限时保留具体blocked原因并向原请求者报告待授权，不借用请求者User身份、token或权限，不自行授予权限。'
+                'submitted或消息delivered仅表示投递，不能作为实际修改或闭环完成。'
+                + ('报告视频使用subject.task声明的presentation/question/nodes/steps合同修改真实图形与讲稿，'
+                   '用UpdateResource content.authoring_id提交实际新修订；报告域核验负责者与真实reasoning变动，不改用解释页计划结构。'
+                   if subject['kind'] == 'report_video' else
+                   '解释视频须制作通过home_explanation_plan.validate及home_explanation_quality.prepare_plan的固定计划：'
+                   '用具体对象、稳定颜色/尺度、因果递进与真实cue对齐的visual.events，不自动循环连线。'
+                   '由本人通过build_explanation_package.py --quality指定档位 --authoring-id本任务ID构建新包；'
+                   '或POST /api/home-explanation/media/authoring {address,sha256,quality,authoring_id}回填新固定包，服务核验本人及实际计划变更。') +
+                '保持事实来源，保存新固定版本/摘要并通过原域明确POST生成；不得改写原成果。'
+                '需要音轨时使用正式可读固定媒体，不虚构音轨。high成片须由其他Resident实际审核，否决后修改再审。'
+                '缺权限或具体无法继续时报告阻塞，不把任务受理当已创作、已生成或质量通过。'}
+            try:
+                receipt = self.call(actor, 'DeliverMessage', {'resident_id': responsible, 'business_ref': subject['ref'],
+                    'message': {'content_parts': [{'type': 'text', 'text': json.dumps(payload, ensure_ascii=False)}]}},
+                    'quality-authoring:' + identifier)
+                if not receipt.get('message_id'):
+                    raise ValueError('缺少作者任务回执')
+                record.update(status='submitted', message_id=receipt['message_id'])
+                record.pop('error', None)
+            except Exception:
+                record.update(status='submission_failed', error='分镜创作未投递，请检查负责Resident与权限。')
+            return self._save(record)
+
+    def verdict(self, *args, **kwargs):
+        raise ValueError('创作任务没有审核结论；新固定产物由原域生成并另行送审。')

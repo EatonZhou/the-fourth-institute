@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from management_common.format_tags import schema_matches
-
 import json
 import threading
 import time
@@ -414,30 +412,15 @@ class LineageDataStore:
             "SELECT pg_advisory_xact_lock("
             "hashtextextended(current_schema() || ':schema-init', 0))"
         )
-        current = connection.execute(
-            "SELECT to_regclass(current_schema() || '.lineage_meta') AS table_name"
-        ).fetchone()
-        has_schema = current is not None and current["table_name"] is not None
         has_any_table = connection.execute(
             "SELECT 1 AS present FROM information_schema.tables "
             "WHERE table_schema=current_schema() LIMIT 1"
         ).fetchone() is not None
-        if not has_schema:
-            if has_any_table:
-                raise RuntimeError("Lineage data database does not match its schema")
+        if not has_any_table:
             create_lineage_data_schema(connection)
-            return
-        schema = connection.execute(
-            "SELECT value FROM lineage_meta WHERE key='schema'"
-        ).fetchone()
-        if (
-            schema is None
-            or not schema_matches(schema["value"], LINEAGE_DATA_SCHEMA)
-            or not lineage_data_schema_matches(connection)
-        ):
-            raise RuntimeError("Lineage data database does not match its schema")
-        from .directory_owner import upgrade_ownership
-        upgrade_ownership(connection)
+        # Existing data is used by its owners. A metadata tag or an unrelated
+        # table/column difference must not disable every Resident. Operations
+        # requiring absent structures report their actual database error.
 
     # Read inside their own transaction by lineage_state and resident_record_domain.
     @staticmethod
@@ -671,9 +654,12 @@ class LineageDataStore:
 
     def health(self) -> dict[str, Any]:
         with self.database.read() as connection:
+            exists = connection.execute(
+                "SELECT to_regclass(current_schema() || '.lineage_meta') AS table_name"
+            ).fetchone()["table_name"]
             schema = connection.execute(
                 "SELECT value FROM lineage_meta WHERE key='schema'"
-            ).fetchone()
+            ).fetchone() if exists else None
         return {
             "schema": str(schema["value"] if schema else ""),
             "database": self.database.display_name,

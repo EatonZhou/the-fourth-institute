@@ -77,6 +77,27 @@ def test_selection_change_removes_case_and_interrupted_copy_is_replaced(tmp_path
     assert json.loads(path.read_text())['include_examples'] is False
 
 
+@pytest.mark.parametrize('tag', [None, 'different.engineering.v99'])
+def test_engineering_consumes_fields_without_schema_tag_gate(tmp_path, tag):
+    zipped, manifest = archive(tmp_path)
+    if tag is None:
+        manifest.pop('schema')
+    else:
+        manifest['schema'] = tag
+    # Repackage the same verified fixture without rewriting any content fields.
+    with zipfile.ZipFile(zipped) as source:
+        entries = {name: source.read(name) for name in source.namelist()}
+    entries['manifest.json'] = json.dumps(manifest).encode()
+    with zipfile.ZipFile(zipped, 'w') as target:
+        for name, content in entries.items():
+            target.writestr(name, content)
+    result = launcher.unpack_engineering(tmp_path)
+    assert json.loads(result.read_text()) == manifest
+    assert (result.parent / 'data/projects/Lenia/example.txt').read_text() == 'example'
+    with pytest.raises(ValueError, match='selection'):
+        launcher.unpack_engineering(tmp_path, included=False, archive=zipped)
+
+
 @pytest.mark.parametrize('name', ['../escape', '/escape', 'C:/escape', 'data\\escape'])
 def test_prepared_archive_keeps_path_boundary(tmp_path, name):
     archive(tmp_path, extra=(name, b'bad'))

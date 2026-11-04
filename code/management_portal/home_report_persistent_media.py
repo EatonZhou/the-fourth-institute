@@ -10,7 +10,7 @@ from management_common.portal_paths import path as portal_path
 
 from management_portal import business_tasks
 from management_portal.home_report import digest, reauthorize
-from management_portal.home_report_media import FILES, MediaStore, render, _SLOTS
+from management_portal.home_report_media import FILES, MediaStore, render, _SLOTS, bundle_files
 from management_portal.home_report_quality import quality as normalize_quality
 
 
@@ -32,7 +32,7 @@ def import_candidate(job, current, actor, *, read=None):
     def comparable(report):
         import copy
         value = copy.deepcopy(report)
-        for key in ('version','checked_at','read_seconds','source_version','author','format','markdown'):
+        for key in ('version','checked_at','read_seconds','source_version','author','format','markdown','authoring','origin_key'):
             value.pop(key, None)
         value.setdefault('quality', 'medium')
         for source in value['sources']:
@@ -40,10 +40,7 @@ def import_candidate(job, current, actor, *, read=None):
         return value
     if comparable(state['report']) != comparable(current):
         raise ValueError('旧缓存来源快照与当前报告不一致，不能混用媒体')
-    for name in FILES:
-        path = directory / name
-        if not path.is_file() or path.is_symlink():
-            raise FileNotFoundError('旧缓存不完整，不能恢复')
+    bundle_files(directory)
     return directory, state
 
 
@@ -72,7 +69,7 @@ def install_import(store, identifier, number, candidate, *, version=None):
     stage.mkdir(mode=0o700)
     try:
         hashes = {}
-        for name in FILES:
+        for name in bundle_files(directory):
             source=directory/name
             if source.is_symlink(): raise PermissionError('旧缓存文件被替换')
             before=hashlib.sha256(source.read_bytes()).hexdigest()
@@ -124,6 +121,9 @@ class PersistentMedia:
         pending = directory / pending_name
         state = json.loads(complete.read_text()) if complete.exists() else json.loads(pending.read_text()) if pending.exists() else None
         if state is None:
+            if quality != 'low':
+                from management_portal.home_report_review import authoring_status
+                return authoring_status(self.store,identifier,number,actor,quality)
             return None
         if state.get('quality', 'medium') != quality:
             raise ValueError('媒体质量与固定产物不一致')
@@ -143,6 +143,13 @@ class PersistentMedia:
         quality = normalize_quality(quality)
         _, number, snapshot = self.store.get(identifier, actor, number)
         self.store.authorize(actor, 'UpdateResource', identifier)
+        if quality != 'low':
+            from management_portal.home_report_review import require_authored, submit_authoring
+            existing=self.status(identifier,number,actor,quality=quality)
+            if existing and existing['status'] in {'ready','cancelled','pending'}:
+                return existing
+            if not require_authored(self.store,snapshot,actor,quality):
+                return submit_authoring(self.store,identifier,number,actor,quality)
         task = self.task(identifier, number, quality)
         with self.store.lock(identifier):
             previous = self.status(identifier, number, actor, quality=quality)
@@ -188,9 +195,11 @@ class PersistentMedia:
                         # Access may change during the long render. Do not commit revoked work.
                         self.store.get(identifier, actor, number)
                         self.store.authorize(actor, 'UpdateResource', identifier)
+                        if quality != 'low':
+                            require_authored(self.store,snapshot,actor,quality)
                         if json.loads((directory / pending_name).read_text()).get('status') == 'cancelled':
                             return
-                        hashes = {name: hashlib.sha256((stage / name).read_bytes()).hexdigest() for name in FILES}
+                        hashes = {name: hashlib.sha256((stage / name).read_bytes()).hexdigest() for name in bundle_files(stage)}
                         _atomic(stage / 'state.json', {**state, **result, 'status':'ready', 'assets':hashes})
                         commit = directory / ('.media-' + uuid.uuid4().hex)
                         shutil.copytree(stage,commit)
@@ -232,6 +241,11 @@ class PersistentMedia:
         quality = normalize_quality(quality)
         _, number, _ = self.store.get(identifier, actor, number)
         self.store.authorize(actor, 'UpdateResource', identifier)
+        state=self.status(identifier,number,actor,quality=quality)
+        if state and state.get('authoring') and state['status']=='authoring':
+            from management_portal.home_report_review import AuthoringService
+            AuthoringService().cancel(state['authoring']['id'],actor)
+            return self.status(identifier,number,actor,quality=quality)
         with self.store.lock(identifier):
             state = self.status(identifier, number, actor, quality=quality)
             if state is None:

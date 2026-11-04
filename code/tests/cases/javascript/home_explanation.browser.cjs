@@ -42,9 +42,10 @@ const server = http.createServer((req, res) => {
     if (file.startsWith(root + '/') && fs.existsSync(file)) { res.writeHead(200, { 'Content-Type': file.endsWith('.css') ? 'text/css' : 'text/javascript' }); res.end(fs.readFileSync(file)); return; }
   }
   if (url.pathname === '/api/home-explanation/media') {
-    requests.push({ url: url.pathname, method: req.method });
-    if (req.method === 'POST') state = { status: 'generating', job_id: 'fixture-job' };
-    res.writeHead(deny ? 403 : 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(deny ? { error: 'no permit' } : { media: state })); return;
+    const entry = { url: url.pathname, method: req.method, quality: url.searchParams.get('quality') }; requests.push(entry);
+    const respond = () => { res.writeHead(deny ? 403 : 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(deny ? { error: 'no permit' } : { media: state })); };
+    if (req.method === 'POST') { let body = ''; req.on('data', data => { body += data; }); req.on('end', () => { entry.body = JSON.parse(body); state = { status: 'generating', job_id: 'fixture-job', quality: entry.body.quality }; respond(); }); }
+    else respond(); return;
   }
   if (url.pathname === '/api/home-explanation/media/review') {
     requests.push({ url: url.pathname, method: req.method });
@@ -55,6 +56,13 @@ const server = http.createServer((req, res) => {
     };
     if (delayReview) reviewRelease = respond; else respond();
     return;
+  }
+  if (url.pathname === '/api/home-explanation/media/cancel') {
+    const entry = { url: url.pathname, method: req.method }; requests.push(entry);
+    let body = ''; req.on('data', data => { body += data; }); req.on('end', () => {
+      entry.body = JSON.parse(body); state = { status: 'cancelled', quality: entry.body.quality };
+      res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ media: state }));
+    }); return;
   }
   if (url.pathname === '/api/resources/content') {
     const address = url.searchParams.get('address'); requests.push({ address, method: req.method });
@@ -104,6 +112,70 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
     await setup(planned);
+    if (process.argv.includes('--authoring-only')) {
+      state = { status: 'awaiting_authoring', quality: 'medium', quality_met: false,
+        authoring: { status: 'submitted', id: 'a'.repeat(64) } };
+      await setup(planned);
+      await page.getByText('已将质量要求送交负责Resident修改分镜；尚未生成新视频。', { exact: true }).waitFor();
+      check('authoring receipt is not a playable ready movie', await page.locator('video').count(), 0);
+      await page.getByRole('button', { name: '刷新生成状态', exact: true }).click();
+      check('authoring refresh does not dispatch or generate', requests.filter(r => r.method === 'POST').length, 0);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => { document.documentElement.style.fontSize = '20px'; });
+      if (out) await page.screenshot({ path: path.join(out, 'authoring-390.png') });
+      await page.getByRole('button', { name: '取消生成', exact: true }).click();
+      await page.getByText('视频生成已取消。', { exact: true }).waitFor();
+      check('explicit cancel pins fixed reference and quality', requests.find(r => r.url?.endsWith('/cancel')).body,
+        { address: planned.address, sha256: planned.sha256, quality: 'medium' });
+      check('authoring UI has no script errors', errors, []);
+      if (out) fs.writeFileSync(path.join(out, 'authoring-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
+      return;
+    }
+    if (process.argv.includes('--invalidated-only')) {
+      state = { status: 'ready', quality: 'high', quality_met: false,
+        video_url: '/api/resources/content?address='+encodeURIComponent(videoRef.address),
+        review: { status: 'invalidated' } };
+      await setup(manifest('invalidated-quality', { ...base, quality: 'high' }));
+      await page.getByText('固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。', { exact: true }).waitFor();
+      check('invalidated does not offer same-version resubmission', await page.locator('.homeExplanationVideoReview button').count(), 0);
+      check('read does not replay generation or review', requests.filter(r => r.method === 'POST').length, 0);
+      check('invalidated UI has no script errors', errors, []);
+      if (out) fs.writeFileSync(path.join(out, 'invalidated-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
+      return;
+    }
+    if (process.argv.includes('--quality-only')) {
+      const quality = page.getByRole('combobox', { name: '视频质量' });
+      check('initial read medium without POST', [await quality.inputValue(), requests.filter(r => r.method === 'POST').length], ['medium', 0]);
+      for (const value of ['low', 'high', 'medium']) {
+        await quality.selectOption(value);
+        await page.waitForTimeout(80);
+        check('selection '+value+' is read only', requests.filter(r => r.method === 'POST').length, 0);
+        check('GET binds quality '+value, requests.filter(r => r.url === '/api/home-explanation/media').at(-1).quality, value);
+      }
+      await quality.selectOption('high'); await page.waitForTimeout(80);
+      await page.getByRole('button', { name: '生成讲解视频', exact: true }).click();
+      await page.waitForTimeout(120);
+      check('explicit click carries fixed version and high', requests.filter(r => r.method === 'POST').at(-1).body,
+        { address: planned.address, sha256: planned.sha256, quality: 'high' });
+      state = { status: 'ready', quality: 'high', quality_met: false, video_url: '/api/resources/content?address='+encodeURIComponent(videoRef.address),
+        review: { status: 'changes_requested', feedback: '请补充因果对照，并保存新固定版本。' } };
+      const high = manifest('high-quality', { ...base, quality: 'high' });
+      await setup(high);
+      await page.getByText('审核要求修改；请保存新固定版本后重新送审。', { exact: true }).waitFor();
+      check('byte ready is not review passed', await page.getByText('此固定版本已通过独立审核。').count(), 0);
+      check('reopen does not resubmit', requests.filter(r => r.method === 'POST').length, 1);
+      if (out) await page.screenshot({ path: path.join(out, 'quality-desktop.png') });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => { document.documentElement.style.fontSize = '20px'; });
+      if (out) await page.screenshot({ path: path.join(out, 'quality-390.png') });
+      check('narrow quality select inside viewport', await quality.evaluate(el => { const r=el.getBoundingClientRect(); return r.left>=0 && r.right<=innerWidth && r.height>=44; }), true);
+      const count = requests.filter(r => r.method === 'POST').length;
+      await quality.selectOption('low'); await page.waitForTimeout(100);
+      check('quality switch does not replay generation', requests.filter(r => r.method === 'POST').length, count);
+      check('no script errors', errors, []);
+      if (out) fs.writeFileSync(path.join(out, 'quality-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
+      return;
+    }
     if (process.argv.includes('--review-only')) {
       state = { status: 'ready', job_id: 'fixture-job', video_url: '/api/resources/content?address=' + encodeURIComponent(videoRef.address) };
       await setup(planned);

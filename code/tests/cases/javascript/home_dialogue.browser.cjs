@@ -51,11 +51,11 @@ const server = http.createServer((req,res) => {
     // Manual navigation and pinned late result.
     await page.locator('.homeDialogueOpener > summary').click();
     await page.getByLabel('目标类型',{exact:true}).selectOption('lineage'); await page.getByLabel('目标 ID 或文件资源地址').fill('lineage_0123456789ab'); await page.getByRole('button',{name:'展示',exact:true}).last().click();
-    await page.evaluate(()=>{
+    await page.evaluate(async()=>{
       pending.shift().resolve();
       const failedTarget={resident_id:'resident_0123456789ab'}, sentTarget={resident_id:'resident_0123456789ab'};
-      window.failedProtocol=JSON.parse(chatOptions.submissionContext(failedTarget).context_text.split('示例结构：')[1].split('\n')[0]);
-      window.protocol=JSON.parse(chatOptions.submissionContext(sentTarget).context_text.split('示例结构：')[1].split('\n')[0]);
+      window.failedProtocol=JSON.parse((await chatOptions.submissionContext(failedTarget)).context_text.split('示例结构：')[1].split('\n')[0]);
+      window.protocol=JSON.parse((await chatOptions.submissionContext(sentTarget)).context_text.split('示例结构：')[1].split('\n')[0]);
       chatOptions.onAcknowledgement({}, {target:sentTarget});
       chatOptions.onDetail({snapshot:{messages:[{role:'assistant',message_id:'failed-result',content_parts:[{type:'text',text:'```portal-home-display\n'+JSON.stringify({...failedProtocol,target:{kind:'lineage',id:'lineage_abcdefabcdef'}})+'\n```'}]}]}});
     });

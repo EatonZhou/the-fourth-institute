@@ -4,35 +4,35 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 50
-  created_at: '2026-09-03'
+  number: 52
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T03:38:34Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T19:14:23Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_domain_storage_migration.py
-  - ${code_root}/tests/cases/test_portal_database_factory.py
-  - ${code_root}/management_portal/identity_store.py
-  - ${code_root}/management_common/domain_database.py
-  - ${code_root}/management_common/portal_database.py
-  - ${code_root}/management_common/postgres_database.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/management_portal/execution/agent_data_store.py
-  - ${code_root}/management_portal/execution/scheduler.py
-  - ${code_root}/management_portal/resources/config.py
-  - ${code_root}/management_portal/resources/registration.py
-  - ${code_root}/management_portal/resource_index_backend.py
-  - ${code_root}/tests/cases/test_agent_data_store.py
-  - ${code_root}/tests/cases/test_execution_service_contracts.py
-  - ${code_root}/management_portal/execution/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_domain_storage_migration.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_database_factory.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/identity_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/domain_database.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/portal_database.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/postgres_database.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/scheduler.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/config.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_index_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_data_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_service_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/service.py
   related:
   - decision_0e043d5f81be
   - decision_f55bac7fc199
@@ -70,7 +70,7 @@ Portal 自己产生和修改的业务数据与运行数据，都以 PostgreSQL �
 - **事务**：一组要么全部提交、要么全部回滚的数据库操作。一个领域的事务只修改自己负责的数据；跨领域的流程靠待发件箱、幂等命令或重新查询协调，不能借共享数据库连接绕过对方的接口。
 - **投影与缓存**：投影是从权威数据整理出来的查询或显示视图；缓存是可以丢弃再重建的加速副本。来源指纹是投影用来判断源文件是否变化的摘要。
 - **revision、游标与待发件箱**：revision 是当前记录的版本号；游标是有序事件流中的读取位置；待发件箱是与领域事务一起写入、随后跨边界投递的待办记录。
-- **结构版本标识**：由各数据所有者维护的当前格式与结构版本。LineageData、AgentData 与 Scheduler 的具体版本分别见 decision_71aa039e3211、decision_b1ab45c4b3ec 和 decision_8ac0b5a6c0e5，本篇不复制会独立演进的版本表。
+- **结构版本标识**：各数据所有者记录的描述性格式或迁移信息。标记可缺失或与代码常量不同，不证明功能不可用，也不作为启动条件。LineageData、AgentData 与 Scheduler 的实际读写合同分别见 decision_71aa039e3211、decision_b1ab45c4b3ec 和 decision_8ac0b5a6c0e5。
 - **实时健康**：直接探测进程、连接或队列当前是否正常得到的瞬时结果；它不同于数据库中的业务状态，也不同于发布激活写出的 receipt 与激活记录。
 
 ## 数据负责者地图
@@ -146,7 +146,7 @@ Portal 自己产生和修改的业务数据与运行数据，都以 PostgreSQL �
 
 权限系统在 schema `permission` 中分表保存树节点（含物化路径）、权限表项、修订号、实例状态、模板，以及创建者、管理员、Family steward 等事实（decision_b820faf42218）；Execution 的日常维护删除到期的临时凭证。Workbench 将页面元数据、拥有者、项目和绑定分开保存，当前与已发布版本指针继续指向明确源码版本。Resident 摘要目录不再复制整份元数据；Harness 质量标签只在 `harness_quality_labels` 保存一份，观察查询通过视图组合。
 
-结构化业务记录与时间字段由各自领域保存，运行代码只支持当前结构。一次性迁移脚本和对应测试在所有目标安装完成切换后删除。
+结构化业务记录与时间字段由各自领域保存。运行代码按实际用到的字段和约束执行对应操作，不在启动时要求整个数据库与一份结构清单完全一致。一次性迁移脚本和对应测试在所有目标安装完成切换后删除。
 
 这些状态只从数据库读取，不保留旧 JSON 文件的回退、双写或启动导入；数据不可读时明确报错，不会把损坏的数据当成空状态覆盖。以下由 Portal 写入的状态同样只保存在 PostgreSQL：模型接口登记与 Relay 调用项（`model_apis`）、Paper 评审、笔记、后台任务记录与精选会议（`paper`）、Telepus 联系人（`telepus.telegram_contacts`，表位于 Telegram 程序的 schema，由 Portal 独占写入）、Pulse 公开记录（`portal_pulse.publications`）和访问审计（`portal_identity.access_audit`）。Portal 进程之外读取这些表的守护进程（Claude Code、Kimi Code、Telegram 程序、Breakglass Worker）从 `portal-postgres.env` 取得数据库地址，只读查询。两步验证的加密密钥和登录会话的签名密钥保存在单独的受限文件中，不写入数据库。
 
@@ -161,7 +161,7 @@ Chatroom 按房间、成员、阅读状态和投递分别保存；子表通过�
 
 SQL 中表示绝对时刻的字段统一使用 TIMESTAMPTZ；没有时间使用 NULL，Unix epoch 0 保留为有效时刻，只有业务明确规定的历史缺省零值在迁移时转为空。接口通过领域边界转换为既有 UTC ISO 字符串或明确单位的数值；秒和毫秒显式区分。Effect 运行摘要读取 Trigger Path 步骤的完成时间时，同样在摘要接口转换为 UTC ISO 字符串，使含运行摘要的完整 Lineage 可直接序列化。日期、时长、序号和计数保持各自类型，不作为绝对时间转换。SQL 微秒精度不承诺保存浮点数中的亚微秒尾数。
 
-Harness observations 继续使用视图读取观测和质量评价，不复制一份可独立修改的组合结果。运行时初始化仅核对当前结构并创建首次部署所需对象，不在业务请求中反复 ALTER 历史结构；旧结构必须经过显式迁移。
+Harness observations 继续使用视图读取观测和质量评价，不复制一份可独立修改的组合结果。首次部署可以由负责者创建所需对象；现存数据库不以全库表、列、索引集合相等为初始化前提，不在普通业务请求中反复 ALTER 历史结构。需要转换数据的操作由负责者提供明确迁移。
 
 ### 任务与认证记录的字段边界
 
@@ -211,9 +211,17 @@ Resident 的删除状态由 `lineage.residents.deleted_at` 保存（decision_0f5
 
 ## 结构版本的权威来源
 
-各领域存储规范与实际初始化契约负责其结构版本；本篇只规定所有权，不复制一份会独立过时的版本表。AgentData 见 decision_b1ab45c4b3ec，LineageData 见 decision_71aa039e3211，Execution 调度见 decision_8ac0b5a6c0e5；资源索引和登记由 ResourceService 报告并严格核对其实际结构。
+各领域存储规范说明实际使用的字段和约束，本篇不复制会独立过时的版本表。AgentData 见 decision_b1ab45c4b3ec，LineageData 见 decision_71aa039e3211，Execution 调度见 decision_8ac0b5a6c0e5；资源索引和登记由 ResourceService 负责。数据库元数据中的版本标签可以作为观测信息，不能单凭标签判断兼容性或阻止服务启动。
 
-结构版本相同只说明表结构符合预期，不能证明数据完整、进程在线或业务一致；这些结论需要各负责者的初始化校验和实时健康检查。
+版本标签相同不证明表结构、数据完整性、进程在线或业务一致。标签不同或缺失也不证明这些功能不可用；能力与故障由负责者的实际读写、约束和实时观察反映。
+
+### 启动与局部结构差异
+
+启动和第一次打开存储时，不扫描整库来证明表、列、索引或触发器集合与代码清单完全一致，也不要求数据库版本标签等于当前编号。新增可选功能所需的字段、额外表或索引，不应使无关列表、对话、资源读写一并停止。
+
+空分区可以在责任方事务中创建首次使用所需结构；已有分区保留其数据、额外对象和真实元数据。字段有明确业务默认值时，由相应读取者处理缺省，例如未配置的汇报策略解释为 off/medium。实际写入需要某列时，由该功能明确升级或返回可定位的错误，不把失败伪装成保存成功。必要业务表缺失、连接失败和事务约束冲突仍如实暴露。
+
+版本标签的观测读取不是就绪前提；健康接口不能因只缺描述性版本记录就判整个数据库不可用，也不为显示“兼容”而重写标签。并发修改的 revision/CAS、租约归属、权限验证和固定内容摘要继续服务于各自实际操作，它们与数据库结构标签具有不同职责。
 
 ## 状态、投影与健康的区别
 
@@ -233,12 +241,13 @@ Resident 的删除状态由 `lineage.residents.deleted_at` 保存（decision_0f5
 | 故障 | 影响范围 | 恢复方式 |
 | --- | --- | --- |
 | 数据库锁冲突、死锁或序列化冲突 | 当前事务等待或失败 | 公共访问层在 10 秒内重试；仍失败时调用方收到明确错误 |
-| 领域服务进程停止 | 该领域的查询和命令不可用 | 服务重启并校验自己的结构；Portal Web 显示 503 或状态卡片 |
+| 领域服务进程停止 | 该领域的查询和命令不可用 | 服务重启；实际依赖尚未恢复的功能返回明确错误，Portal Web 显示 503 或状态卡片 |
 | 跨领域投递失败 | 目标投影延迟 | 待发件箱保留最新版本，租约过期或退避后重试 |
 | 通知丢失 | 页面发现变化变慢 | 重新查询、定期协调或实时连接重连时的快照 |
 | 文件事件遗漏 | 由文件派生的投影过期 | 来源指纹协调和启动扫描 |
 | 浏览器刷新中断 | 单个标签页显示旧值 | 实时连接重连或刷新页面 |
-| 结构版本不匹配 | 负责者无法安全解释这些表 | 停止写入，执行受支持的迁移或运维修复 |
+| 结构标签不同或缺失 | 描述性元数据与当前代码不同 | 不据此停止服务；按具体功能实际使用的字段处理 |
+| 具体功能的必要字段或约束不可用 | 对应读写不能完成 | 该操作返回真实错误，按负责者提供的局部升级或修复处理 |
 
 ## 新增数据时的归属检查
 
@@ -256,6 +265,6 @@ Resident 的删除状态由 `lineage.residents.deleted_at` 保存（decision_0f5
 
 答案明确之后，再选择 PostgreSQL、共享文件或内存结构。存储方式服务于负责者对持久性和并发的需求，不能代替所有权设计。
 
-### 当前格式名与精确读取校验
+### 格式标签与实际兼容性
 
-当前生产者输出完整的 `tfi.*` 格式名与版本。各篇接口示例应使用其生产者当前输出的结构名；这不要求改写已有记录。`management_common/format_tags.py` 的 `schema_matches(actual, expected)` 只接受与指定 `tfi.*` 期望值精确相同的格式名和版本，不修改输入、指纹或幂等身份。DSH 原生桥接协议使用 `tfi.native-agent.v1`（decision_276105b5d67b）。持久恢复记录、历史签名和外部 Provider 协议继续由各自所有者校验。
+当前生产者输出完整的 `tfi.*` 格式名与版本。各篇接口示例应使用其生产者当前输出的结构名；这不要求改写已有记录。`management_common/format_tags.py` 的 `schema_matches(actual, expected)` 保留精确比较语义，供确实需要区分协议解释方式的调用方使用；它不是所有读取入口的前置门槛。只消费相同实际字段的配置、登记、执行输入和诊断记录，不因格式标签缺失或不同拒绝。涉及签名验证、身份解析或不同协议形状的分派仍由其所有者按真实语义核验，不因本规则放宽。任何路径都不为通过检查而改写输入、指纹或幂等身份。DSH 原生桥接协议使用 `tfi.native-agent.v1`（decision_276105b5d67b）。持久恢复记录、历史签名和外部 Provider 协议继续由各自所有者校验。

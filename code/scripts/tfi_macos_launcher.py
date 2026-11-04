@@ -132,8 +132,6 @@ def replace_code(bundle, platform, *, progress=lambda message: None):
     if platform != platform.resolve() or not platform.is_dir():
         raise ValueError("更新目录必须是原有的实际目录，不能是符号链接。")
     old, new = read_receipt(platform), read_receipt(bundle)
-    if any(r.get("schema") != "tfi.macos-package.v1" for r in (old, new)):
-        raise ValueError("安装记录不完整，请使用新的平台目录。")
     for key in ("target", "python", "bundled_native_dependencies"):
         if not old.get(key) or old[key] != new.get(key):
             raise ValueError("此版本的芯片或内置运行环境不同，不能在原目录更新程序；请使用新的平台目录。")

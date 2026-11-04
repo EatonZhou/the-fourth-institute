@@ -192,7 +192,8 @@ def create_table(connection: Any, table: str, fields: Mapping[str, tuple[str, st
 
 
 def put_fields(connection: Any, table: str, fields: Mapping[str, tuple[str, str]], resident_id: str, record: Mapping[str, Any]) -> None:
-    selected = {field: descriptor for field, descriptor in fields.items() if field != "resident_id"}
+    selected = {field: descriptor for field, descriptor in fields.items()
+                if field != "resident_id" and (field != "reporting" or field in record)}
     names = ["resident_id", *columns(selected)]
     values = [resident_id, *(encode(field, record.get(field, COLUMN_DEFAULTS.get(field)), kind) for field, (_column, kind) in selected.items())]
     assignments = ", ".join(f"{column}=excluded.{column}" for column in names[1:])

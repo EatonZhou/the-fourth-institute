@@ -40,6 +40,24 @@ class InstanceManifestTests(unittest.TestCase):
         with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(self.root)}):
             self.assertEqual(load().root, self.root)
 
+    def test_format_labels_do_not_gate_runtime_configuration(self):
+        original = copy.deepcopy(self.document)
+        for metadata in ({}, {"schema": "tfi.instance.v0"},
+                         {"schema": "tfi.instance.v999", "seed_version": "another-seed"}):
+            with self.subTest(metadata=metadata):
+                self.document = {key: value for key, value in copy.deepcopy(original).items()
+                                 if key not in {"schema", "seed_version"}}
+                self.document.update(metadata)
+                self.write()
+                instance = load(self.root)
+                self.assertEqual(instance.document, self.document)
+                self.assertEqual(instance.service_name("web"), "tfi-one-web")
+                self.assertEqual(instance.internal_web_origin(), "http://127.0.0.1:18086")
+                self.assertEqual(instance.resolve("projects:demo"), self.root / "data/projects/demo")
+                self.document["deployments"]["release"]["web_port"] = -1
+                with self.assertRaisesRegex(ValueError, "ports"):
+                    validate(self.root, self.document)
+
     def test_area_roundtrip_and_relocation_without_record_change(self):
         first = load(self.root)
         record = first.reference(first.area("projects") / "p/agents/lineage_a/file.txt")

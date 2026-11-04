@@ -9,7 +9,6 @@ what it returns.
 """
 from __future__ import annotations
 
-from management_common.format_tags import schema_matches
 from management_common.text_values import stripped_text
 
 from management_portal.execution.activity_redaction import redact_sensitive_text as redact_text
@@ -402,7 +401,7 @@ def project_conversation_messages(
     state that was not confirmed absent is a contract failure.
     """
 
-    if not schema_matches(payload.get("schema"), "tfi.resident-messages-state.v1"):
+    if not re.fullmatch(r"tfi\.resident-messages-state\.v\d+", str(payload.get("schema") or "")):
         raise ValueError("Unsupported conversation snapshot schema")
     messages = payload.get("messages")
     input_states = payload.get("input_states")

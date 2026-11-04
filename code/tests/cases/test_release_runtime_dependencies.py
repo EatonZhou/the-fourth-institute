@@ -9,6 +9,20 @@ from management_common.release_dependencies import declaration, profiles
 from scripts import tfi_release_dependencies as dependencies
 
 
+@pytest.mark.parametrize('tag', [None, 'different.runtime-dependencies.v99'])
+def test_dependency_profiles_ignore_only_the_schema_tag(tag):
+    manifest = {'features': ['tau'], 'runtime_dependencies': declaration(['tau'])}
+    if tag is None:
+        manifest['runtime_dependencies'].pop('schema')
+    else:
+        manifest['runtime_dependencies']['schema'] = tag
+    assert profiles(manifest) == ['core', 'tau']
+    for bad in [['core'], ['core', 'unknown'], ['core', 'tau', 'tau'], 'core', ['tau']]:
+        manifest['runtime_dependencies']['profiles'] = bad
+        with pytest.raises(ValueError):
+            profiles(manifest)
+
+
 def test_selected_capabilities_cannot_be_omitted_from_the_dependency_contract():
     manifest = {'features': ['tau'], 'resource_dependencies': {'types': ['article']}}
     manifest['runtime_dependencies'] = declaration(manifest['features'], ['article'])

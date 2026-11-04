@@ -93,6 +93,26 @@ def test_engineering_inventory_and_area_layout_are_enforced(tmp_path):
             installer.validate_engineering(candidate, skip_file_verification=True)
 
 
+@pytest.mark.parametrize('schema', [None, 'tfi.release-engineering.v0', 'tfi.release-engineering.v999'])
+def test_engineering_uses_content_contract_instead_of_version_label(tmp_path, schema):
+    path = engineering(tmp_path)
+    document = json.loads(path.read_text())
+    if schema is None:
+        document.pop('schema')
+    else:
+        document['schema'] = schema
+    path.write_text(json.dumps(document))
+    loaded, bundle = installer.validate_engineering(path)
+    assert loaded == document
+    assert bundle == path.parent
+    (bundle / 'database/distribution.sql').write_text('changed content')
+    with pytest.raises(ValueError, match='checksum'):
+        installer.validate_engineering(path)
+    (bundle / 'GENERATION_FAILED').touch()
+    with pytest.raises(ValueError, match='incomplete'):
+        installer.validate_engineering(path, skip_file_verification=True)
+
+
 def test_default_root_is_outside_code_and_registered_ports_are_avoided(host, tmp_path):
     root = installer.instance_root("accept_tmp")
     assert root == host / ".local/share/tfi/instances/accept_tmp"

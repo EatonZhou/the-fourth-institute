@@ -69,12 +69,67 @@ def test_resident_project_creation_preserves_accounts(
     assert (tmp_path / "Projects" / "NewProject" / "summary.md").is_file()
 
 
-def test_project_registry_requires_the_current_explicit_schema() -> None:
-    """项目注册表要求显式声明当前结构版本"""
-    put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, {"version": 1, "projects": []})
+@pytest.mark.parametrize("metadata", [{}, {"schema_version": 0}, {"schema_version": 999}, {"schema_version": None}])
+def test_project_registry_consumes_fields_and_preserves_version_metadata(metadata) -> None:
+    """已有登记按字段读取、投影及修改，不补写格式版本；CAS与回滚保持。"""
+    from management_portal.resource_index_registries import ProjectRegistryAdapter
 
-    with pytest.raises(RuntimeError, match="requires schema_version 1"):
+    raw = {**metadata, "projects": [{"id": "Kept", "status": "active"}],
+           "status_vocab": ["active", "paused"], "tag_vocab": []}
+    put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, raw)
+    store = project_registry.get_registry_store()
+    before_revision = project_registry.revision()
+    assert project.load_projects_payload() == raw
+    records, state = ProjectRegistryAdapter().scan()
+    assert [record["resource_id"] for record in records] == ["Kept"]
+    assert state["project_ids"] == ["Kept"] and state["resource_errors"] == []
+    assert {key: state[key] for key in metadata} == metadata
+    assert ("schema_version" in state) == ("schema_version" in raw)
+    with project_registry.mutate():
+        pass
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == raw
+    assert project_registry.revision() == before_revision
+
+    with pytest.raises(project_registry.TagsChanged):
+        project_registry.replace_tags([], expected_version="stale")
+    with pytest.raises(RuntimeError, match="abort"):
+        with project_registry.mutate() as document:
+            document["projects"][0]["status"] = "paused"
+            raise RuntimeError("abort")
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == raw
+    assert project_registry.revision() == before_revision
+
+    with project_registry.mutate() as document:
+        document["projects"][0]["status"] = "paused"
+    expected = {**raw, "projects": [{"id": "Kept", "status": "paused"}]}
+    assert store.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == expected
+    assert project_registry.revision() > before_revision
+
+
+@pytest.mark.parametrize("document, message", [
+    ([], "must be an object"),
+    ({}, "projects must be an array"),
+    ({"projects": {}}, "projects must be an array"),
+    ({"projects": [None]}, "entries must be objects"),
+    ({"projects": [], "status_vocab": "active"}, "status_vocab must be an array"),
+    ({"projects": [], "tag_vocab": None}, "tag_vocab must be an array"),
+])
+def test_project_registry_rejects_unreadable_fields(document, message):
+    with pytest.raises(RuntimeError, match=message):
+        project_registry._normalized(document)
+
+
+def test_project_registry_bad_projects_are_not_read_or_overwritten_as_empty():
+    raw = {"schema_version": 999, "projects": {}}
+    put_registry_document(project_registry.COLLECTION, project_registry.DOCUMENT_ID, raw)
+    revision = project_registry.revision()
+    with pytest.raises(RuntimeError, match="projects must be an array"):
         project.load_projects_payload()
+    with pytest.raises(RuntimeError, match="projects must be an array"):
+        with project_registry.mutate():
+            pytest.fail("malformed registry must not be exposed for writing")
+    assert project_registry.get_registry_store().get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) == raw
+    assert project_registry.revision() == revision
 
 
 def test_user_project_creation_does_not_write_project_roles(monkeypatch):

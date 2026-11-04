@@ -38,7 +38,8 @@ def restore_lineage_events(engineering):
     instance = load()
     document = json.loads(Path(engineering).read_text(encoding='utf-8'))
     manifest = document.get('engineering', document)
-    if manifest.get('run_id') != instance.document['seed_version']:
+    seed_version = instance.document.get('seed_version')
+    if not isinstance(seed_version, str) or not seed_version.strip() or manifest.get('run_id') != seed_version:
         raise ValueError('Repair manifest must match the installed seed_version')
     if manifest.get('history_freeze', {}).get('event_sources_paused') is not True:
         raise ValueError('Repair requires an explicitly frozen release seed')

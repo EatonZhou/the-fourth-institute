@@ -14,17 +14,6 @@ from . import service_invocation_storage as storage
 
 TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled"})
 
-STORE_COLUMNS = {
-    "service_invocations": set(storage.KEY_FIELDS) | set(storage.COLUMNS),
-    "service_search_heads": {
-        "actor", "surface", "search_id", "generation", "deleted",
-    },
-    "service_run_fences": {
-        "actor", "surface", "search_id", "generation", "reason",
-    },
-}
-
-
 class ServiceInvocationStore:
     def __init__(self, database=None):
         self.database = database if database is not None else portal_database(schema="service_invocations")
@@ -33,10 +22,14 @@ class ServiceInvocationStore:
     def _initialize(self):
         with self.database.connect() as connection:
             connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema(), 0))")
+            if connection.execute(
+                "SELECT 1 FROM information_schema.tables WHERE table_schema=current_schema() "
+                "AND table_type='BASE TABLE' LIMIT 1"
+            ).fetchone():
+                return
             connection.executescript(storage.DDL)
             connection.execute("CREATE TABLE IF NOT EXISTS service_search_heads (actor TEXT, surface TEXT, search_id TEXT, generation BIGINT, deleted BOOLEAN DEFAULT FALSE, PRIMARY KEY(actor,surface,search_id))")
             connection.execute("CREATE TABLE IF NOT EXISTS service_run_fences (actor TEXT, surface TEXT, search_id TEXT, generation BIGINT, reason TEXT, PRIMARY KEY(actor,surface,search_id,generation))")
-            self._require_schema(connection)
 
     @contextmanager
     def transaction(self, key):
@@ -46,31 +39,6 @@ class ServiceInvocationStore:
                 (":" + json.dumps(key[:3], ensure_ascii=False),),
             )
             yield connection
-
-    @staticmethod
-    def _require_schema(connection):
-        tables = {
-            row["table_name"]
-            for row in connection.execute(
-                "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema=current_schema() AND table_type='BASE TABLE'"
-            )
-        }
-        actual = {
-            table: {
-                row["column_name"]
-                for row in connection.execute(
-                    'SELECT column_name FROM information_schema.columns WHERE table_schema=current_schema() AND table_name=%s',
-                    (table,),
-                )
-            }
-            for table in STORE_COLUMNS
-            if table in tables
-        }
-        if actual != STORE_COLUMNS:
-            raise ServiceInvocationConflict(
-                "service invocation store does not match its schema"
-            )
 
     @staticmethod
     def key(job, surface):

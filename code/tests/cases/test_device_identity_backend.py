@@ -146,7 +146,8 @@ def test_device_registry_validates_topology_and_resolves_gpu_location_contracts(
         tmp_path = case_path
         _registry()
         broken_id = "device_deadbeef1234"
-        put_registry_document(device_identity_backend.DEVICE_COLLECTION, broken_id, {"schema": ["invalid"]})
+        put_registry_document(device_identity_backend.DEVICE_COLLECTION, broken_id,
+                              {"device_id": broken_id, "device_kind": "device"})
 
         records, errors = device_identity_backend.scan_device_records()
 

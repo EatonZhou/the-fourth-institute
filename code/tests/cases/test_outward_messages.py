@@ -81,7 +81,7 @@ def test_a_message_to_a_user_is_activity_and_news_only_for_that_user():
 
 
 def test_the_kept_activity_and_its_index_are_part_of_the_schema():
-    """Mailbox 最近活动表及其索引属于 AgentData schema，缺失时拒绝打开
+    """Mailbox 活动索引属于 AgentData schema，缺失不阻止打开或隐式修复
 
     :module: platform.core
     :importance: P2
@@ -89,8 +89,10 @@ def test_the_kept_activity_and_its_index_are_part_of_the_schema():
     store = AgentDataStore()
     store.database.write(lambda connection: connection.execute("DROP INDEX chat_actor_activity_actor_idx"))
     try:
-        with pytest.raises(RuntimeError, match="does not match its schema"):
-            AgentDataStore()
+        reopened = AgentDataStore()
+        assert reopened.chat_actor_activity("CASE-A") == {}
+        with reopened.database.read() as connection:
+            assert not agent_data_schema_matches(connection)
     finally:
         store.database.write(lambda connection: connection.execute(
             "CREATE INDEX chat_actor_activity_actor_idx "

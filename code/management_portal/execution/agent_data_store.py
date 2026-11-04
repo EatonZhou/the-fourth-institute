@@ -759,9 +759,12 @@ class AgentDataStore:
 
     def health(self) -> dict[str, Any]:
         with self.database.read() as connection:
+            has_metadata = connection.execute(
+                "SELECT to_regclass(current_schema() || '.agent_store_meta')"
+            ).fetchone()[0] is not None
             schema = connection.execute(
                 "SELECT value FROM agent_store_meta WHERE key = 'schema'"
-            ).fetchone()
+            ).fetchone() if has_metadata else None
         return {
             "enabled": True,
             "schema": str(schema["value"] if schema else ""),

@@ -50,12 +50,16 @@ def empty_registry() -> dict[str, Any]:
 def _normalized(document: Any) -> dict[str, Any]:
     if not isinstance(document, dict):
         raise RuntimeError("Project registry must be an object")
-    if document.get("schema_version") != SCHEMA_VERSION:
-        raise RuntimeError(f"Project registry requires schema_version {SCHEMA_VERSION}")
+    # The producer's version label does not select a different reader.
+    # Validate the fields we consume without changing that label.
     payload = dict(document)
     for key in ("status_vocab", "tag_vocab", "projects"):
-        if not isinstance(payload.get(key), list):
+        if key not in payload and key != "projects":
             payload[key] = []
+        elif not isinstance(payload.get(key), list):
+            raise RuntimeError(f"Project registry {key} must be an array")
+    if any(not isinstance(item, dict) for item in payload["projects"]):
+        raise RuntimeError("Project registry projects entries must be objects")
     return payload
 
 

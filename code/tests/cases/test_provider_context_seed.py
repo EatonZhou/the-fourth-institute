@@ -103,7 +103,7 @@ def test_context_seed_requires_adapter_support_without_provider_branching():
 
 
 def test_context_seed_schema_and_segment_references_are_validated():
-    """上下文种子的 schema 版本不受支持时被拒绝"""
+    """种子按实际字段消费，数字标签不阻断；无关类型仍拒绝"""
     invocation = _invocation("codex")
     invalid = replace(
         invocation,
@@ -117,8 +117,11 @@ def test_context_seed_schema_and_segment_references_are_validated():
             },
         ),
     )
+    assert context_seed(invalid.request)["schema"] == "tfi.provider-context-seed.v999"
+    unrelated = replace(invalid.request, metadata={"fork_context_input":{
+        "schema":"tfi.unrelated.v1","segments":[]}})
     with pytest.raises(ValueError, match="Unsupported"):
-        context_seed(invalid.request)
+        context_seed(unrelated)
 
 
 @pytest.mark.parametrize(

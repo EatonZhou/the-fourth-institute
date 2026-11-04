@@ -12,7 +12,6 @@ from management_common.json_columns import json_text, json_value
 from management_common.portal_database import portal_database
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources import timing
-from management_common.format_tags import schema_matches
 from management_common.text_values import stripped_text
 from management_portal.resources.contracts import ResourceQuery
 from management_portal.resources.index import ResourceRecordsProjector
@@ -81,41 +80,39 @@ class IndexStore:
 
     def _initialize_database(self) -> None:
         with self._connect() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS resource_index_meta (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS resource_index_records (
-                    resource_id TEXT PRIMARY KEY,
-                    adapter TEXT NOT NULL,
-                    record_json JSONB NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS resource_index_records_adapter_idx
-                    ON resource_index_records(adapter, resource_id);
-                CREATE TABLE IF NOT EXISTS resource_index_adapters (
-                    adapter TEXT PRIMARY KEY,
-                    status_json JSONB NOT NULL
-                );
-                """
-            )
-            row = connection.execute(
-                "SELECT value FROM resource_index_meta WHERE key = 'schema'"
+            # Serialize bootstrap and the existing ownership upgrade across
+            # processes. Existing index tables need neither DDL nor a matching
+            # format label; their actual reads/writes expose missing structure.
+            connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || '.directory_ownership', 0))")
+            existing = connection.execute(
+                "SELECT to_regclass('resource_index_meta') AS meta, "
+                "to_regclass('resource_index_records') AS records, "
+                "to_regclass('resource_index_adapters') AS adapters"
             ).fetchone()
-            if row is None:
+            if all(existing[name] is None for name in ('meta', 'records', 'adapters')):
+                connection.executescript(
+                    """
+                    CREATE TABLE resource_index_meta (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL
+                    );
+                    CREATE TABLE resource_index_records (
+                        resource_id TEXT PRIMARY KEY,
+                        adapter TEXT NOT NULL,
+                        record_json JSONB NOT NULL
+                    );
+                    CREATE INDEX resource_index_records_adapter_idx
+                        ON resource_index_records(adapter, resource_id);
+                    CREATE TABLE resource_index_adapters (
+                        adapter TEXT PRIMARY KEY,
+                        status_json JSONB NOT NULL
+                    );
+                    """
+                )
                 connection.execute(
-                    "INSERT INTO resource_index_meta (key, value) VALUES ('schema', %s) "
-                    "ON CONFLICT(key) DO NOTHING",
+                    "INSERT INTO resource_index_meta (key, value) VALUES ('schema', %s)",
                     (RESOURCE_INDEX_STORE_SCHEMA,),
                 )
-                # Validate the actual winner if another initializer inserted it.
-                row = connection.execute(
-                    "SELECT value FROM resource_index_meta WHERE key = 'schema'"
-                ).fetchone()
-            if row is None or not schema_matches(row["value"], RESOURCE_INDEX_STORE_SCHEMA):
-                raise RuntimeError("unsupported ResourceService index schema")
-            connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || '.directory_ownership', 0))")
             from .resources.directory_ownership_upgrade import upgrade_index
             upgrade_index(connection)
 

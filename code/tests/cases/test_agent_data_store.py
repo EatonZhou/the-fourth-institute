@@ -137,7 +137,7 @@ def test_final_replies_look_up_each_input_in_its_own_trace(monkeypatch):
 def test_agent_data_health_reports_its_schema_without_reading_table_sizes(monkeypatch):
     """AgentData 健康信息只报告 schema 与数据库
 
-    健康信息只含 enabled、schema 版本和数据库名，不报告任何表的行数；读取时只查询 agent_store_meta 一条语句。
+    健康信息只含 enabled、描述性 schema 标签和数据库名，不报告表行数；只检查元数据表是否存在并读取标签。
 
     :module: execution.persistence
     """
@@ -152,7 +152,9 @@ def test_agent_data_health_reports_its_schema_without_reading_table_sizes(monkey
 
     monkeypatch.setattr(store.database, "read", traced_read)
     assert store.health() == {"enabled": True, "schema": AGENT_DATA_SCHEMA, "database": store.database.display_name}
-    assert len(statements) == 1 and "agent_store_meta" in statements[0]
+    assert len(statements) == 2
+    assert "to_regclass" in statements[0]
+    assert all("agent_store_meta" in statement for statement in statements)
 
 
 def test_session_compaction_lookup_seeks_the_execution_index(monkeypatch):
@@ -1017,7 +1019,7 @@ def test_distinct_chat_message_ids_never_share_a_segment_contracts(tmp_path, sub
         assert len(
             store.sequence_segment_ids(store.trace_sequence_id('resident_concurrent'))
         ) == 100
-    with subtests.test(contract='test_agent_database_requires_the_exact_schema_contract'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_agent_database_uses_existing_schema_without_requiring_indexes'), isolated_portal_case() as case_path:
         tmp_path = case_path
         with monkeypatch.context() as isolated:
             isolated.setenv(
@@ -1029,8 +1031,8 @@ def test_distinct_chat_message_ids_never_share_a_segment_contracts(tmp_path, sub
                 connection.execute("DROP INDEX executions_session_turn_idx")
             store.database.close()
 
-            with pytest.raises(RuntimeError, match="does not match its schema"):
-                AgentDataStore()
+            reopened = AgentDataStore()
+            assert reopened.ensure_agent("resident_missing_optional_index")["agent_id"] == "resident_missing_optional_index"
 
 
 def test_postgres_sequence_append_locks_parent_before_allocating_ordinal():

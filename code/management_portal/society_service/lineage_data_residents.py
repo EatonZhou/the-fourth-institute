@@ -39,7 +39,11 @@ def resident_select(where: str = "", *, include_deleted: bool = False) -> str:
         if table == 'residents':
             continue
         alias = f'd{index}'
-        selections.extend(f'{alias}.{column}' for column in resident_storage.columns(fields))
+        selections.extend(
+            f"to_jsonb({alias})->'reporting_json' AS reporting_json"
+            if column == 'reporting_json' else f'{alias}.{column}'
+            for column in resident_storage.columns(fields)
+        )
         joins.append(f'LEFT JOIN {table} AS {alias} USING(resident_id)')
     if not include_deleted:
         where = 'WHERE r.deleted_at IS NULL ' + (

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from management_common.format_tags import schema_matches
+import re
 
 from copy import deepcopy
 from typing import Any, Callable, Mapping
@@ -477,7 +477,7 @@ def validate_runtime_state(
             "Lineage runtime state contains unsupported fields: "
             + ", ".join(sorted(unknown))
         )
-    if not schema_matches(state.get("schema"), "tfi.lineage-runtime-state.v1"):
+    if not re.fullmatch(r"tfi\.lineage-runtime-state\.v\d+", str(state.get("schema") or "")):
         raise ValueError("Lineage runtime state schema is invalid")
     lineage_id = str(state.get("lineage_id") or "")
     if not lineage_id:

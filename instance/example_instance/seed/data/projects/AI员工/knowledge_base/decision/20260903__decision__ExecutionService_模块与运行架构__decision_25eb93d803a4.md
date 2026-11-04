@@ -4,38 +4,38 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 33
-  created_at: '2026-09-03'
+  number: 36
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T14:02:55Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T19:19:32Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/execution/account_monitor.py
-  - ${code_root}/management_portal/execution/provider_catalog.py
-  - ${code_root}/management_portal/execution/event_projection.py
-  - ${code_root}/management_portal/execution/isa.py
-  - ${code_root}/management_portal/execution/contracts.py
-  - ${code_root}/management_portal/execution/service.py
-  - ${code_root}/management_portal/execution/transport.py
-  - ${code_root}/management_portal/execution/scheduler.py
-  - ${code_root}/management_portal/execution/worker.py
-  - ${code_root}/management_portal/execution/worker_manager.py
-  - ${code_root}/management_portal/execution/runtime.py
-  - ${code_root}/management_portal/execution/session_manager.py
-  - ${code_root}/management_portal/execution/backend_contracts.py
-  - ${code_root}/management_portal/execution/backend_services.py
-  - ${code_root}/management_portal/resident_shell_environment.py
-  - ${code_root}/management_portal/execution/agent_data_projection.py
-  - ${code_root}/scripts/portal_services.py
-  - ${code_root}/tests/cases/test_execution_service_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_monitor.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/event_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/transport.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/scheduler.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/worker.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/worker_manager.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/session_manager.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/backend_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/backend_services.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_shell_environment.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/portal_services.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_service_contracts.py
   related:
   - decision_f1331d57be89
   - decision_3dd52c0692c1
@@ -186,8 +186,6 @@ ExecutionServiceServer 每 5 秒运行一次维护（可配置，最小 0.1 秒�
 
 维护由单个后台工作线程串行推进，不占用 RPC 接收循环。关闭服务先阻止新维护，再停止接收循环；关闭时最多等待当前维护一秒，不无限等待维护。已提交事务保持，进程退出时未提交事务由数据库回滚；下一次服务启动继续按持久执行、领取资格与恢复点维护，不据关闭时间伪造执行终态。正在处理的 RPC 仍遵循既有服务关闭协议。
 
-RPC 接收停止前，服务在 SchedulerChanges 的条件锁内设置当前代次的等待关闭标记，并同时唤醒 execution、claim 和 control 等待。读完数据库但尚未休眠的请求也不能漏过关闭通知；关闭标记不会修改持久执行或 Worker 状态。执行观察和控制请求在原授权校验后返回当前正常快照，领取在原资格检查后停止新领取；与关闭并发且已提交的领取保留完整回执。服务继续使用非 daemon RPC 线程排空已受理的变更，不以丢弃线程或取消模型执行加速关闭。具体返回和 service_closing 原因见 decision_6ad0384e020d。
-
 页面所用的批量 `execution.states` 是有界观察：一次读取最多等待一秒，不等待服务重启或自动重试。服务不可达、响应超时及协议错误继续按各自错误返回，不以空状态、idle 或成功代替未知；调用方可重新读取。提交、等待结果和控制请求保持各自的重连与取消协议。
 
 Lineage 的定义读取与运行观察独立。`GetLineage` 在 Execution 暂不可达或读取结果不确定时仍返回已鉴权的图定义，附可选 `resident_runtime_observation={status:unavailable,source:execution}`，可读 Resident 节点的动态 `status` 为 `unknown`，不推断为空闲或执行失败。健康时保持原响应形状；观察恢复即重新投影。缓存按观察可用性失效，不把降级视图永久保留，不改写定义、执行、输入或持久终态。执行控制与准入仍按原错误协议失败，不能借展示降级绕过检查。
@@ -259,6 +257,15 @@ ExecutionService 不创建模型代理监听器，四类原生 Adapter 不生成
 
 部署新代码时，平台的服务管理器（Linux 的 systemd、macOS 的 launchd、Windows 的 SCM）重启 ExecutionService。旧进程收到停止信号后不再接受新连接，等已接受的请求处理完后退出；新进程重新创建 socket。重启期间的连接失败属于服务不可用，facade 按“提交与观察”中的规则用原 `execution_id` 重试或继续等待。ExecutionService 不在进程内启动自己的后继进程，SIGHUP 也不触发换代；Worker 的代际交接见 decision_075f66430606。
 
+RPC 接收停止前，服务在 SchedulerChanges 的条件锁内设置当前代次的等待关闭标记，并同时唤醒 execution、claim 和 control 等待。读完数据库但尚未休眠的请求也不能漏过关闭通知；关闭标记不会修改持久执行或 Worker 状态。执行观察和控制请求在原授权校验后返回当前正常快照，领取在原资格检查后停止新领取；与关闭并发且已提交的领取保留完整回执。服务继续使用非 daemon RPC 线程排空已受理的变更，不以丢弃线程或取消模型执行加速关闭。具体返回和 service_closing 原因见 decision_6ad0384e020d。
+
 ### 验证边界
 
 定向回归覆盖四类原生 Adapter 不需要计时服务即可执行、原目标地址与认证不被覆盖、未知时间不伪造、设置权限及持久化，以及观察失败不改变原请求参数和返回值。真实核心 TAU 用于检查模型回复、会话操作和内容持久化；每次交付报告实际运行结果及未覆盖项，不能用本地模拟测试宣称真实账号永不会 403。
+
+
+## 描述性版本与实际执行合同
+
+ExecutionRequest 的同类型数字 schema 后缀及 schema_version 不要求等于当前生产者数字；仍按实际请求字段核验执行身份、运行选项、媒体结构与权限。Provider context seed 同样按实际 Segment 引用解析，不能把类型标签不同的对象当作种子。Harness artifact 的数字 schema_version 不参与内容解释，不因其不同拒读，artifact 类型、精确 handle 与内容 SHA 继续核验。
+
+AgentData、HarnessEffectiveness、Scheduler 的现存库不因全库结构清单或版本标签不齐而启动失败。只有完全空库初始化基本结构；现存库实际 SQL 与必要能力失败由对应功能报告。health 遇描述性 meta 缺失报告未知，连接及实际读取错误仍可见。控制消息中用于选择协议路径的类型、租约及取消 token 不随数字标签放宽。

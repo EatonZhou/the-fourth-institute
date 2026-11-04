@@ -51,13 +51,19 @@
 
 manifest 的 `quality` 为 low/medium/high，构建脚本以 `--quality` 固定它。low解释包只接受Markdown supplement；medium沿用交互网页；high通过统一审核入口送审。视频按钮可另选视频质量，POST `/api/home-explanation/media` 与GET状态/文件携带相同quality。medium目录沿用 `explanation-media/<manifest_sha>`，low/high分别为 `<manifest_sha>-low`、`<manifest_sha>-high`；不同质量不复用ready结果。已有固定成果可读，GET不会生成、通知或投递。
 
-`home_explanation_quality.prepare_plan(validated_plan, quality)` 是各视频域的生成门槛。low允许既有节点图；medium/high要求每个场景都有已通过封闭校验、绑定真实字幕cue或明确静默的visual.events，避免自动循环高亮代替分镜。按钮不会调用模型重写分镜：作者必须事先按 `policy(quality)` 制作固定计划与音轨。报告域若尚不能提供合格计划，medium/high须明确失败并保留原成果，不可仅保存同名quality元数据后继续使用low策略。帧率和编码差异只表示渲染策略，不证明3b1b教学质量；high仍需要独立实际检查。
+`home_explanation_quality.prepare_plan(validated_plan, quality)` 是解释视频的生成门槛。low允许既有节点图；medium/high要求每个场景都有已通过封闭校验、绑定真实字幕cue或明确静默的visual.events，避免自动循环高亮代替分镜。按钮不会在渲染器内调用模型重写分镜：缺少合格计划时，明确POST通过同owner的 `AuthoringService.submit(subject, actor)` 投递正式负责Resident，payload携带实际 `policy(quality)` 和修改分镜、固定新版本、回原域生成的要求。作者必须实际制作计划与音轨；submitted仅是创作请求回执，界面显示awaiting_authoring，不能显示ready。帧率和编码差异只表示渲染策略，不证明3b1b教学质量；high仍需要独立实际检查。
+
+AuthoringService与ReviewService同在 `home_explanation_review.py`，使用独立的quality-authoring任务记录，绝不充当另一套审核事实。`read(id, actor)` 和GET `/api/home-explanation/authoring?id=...`只读；`cancel(id, actor)`仅原请求者可调用。作者开始和发布新产物前读取任务状态，已取消不得继续。固定同一请求重复POST不重复投递，只有投递失败可显式重试且最多三次。报告域必须消费相同策略门槛或正式作者任务入口；无法做到时明确保留未完成，不能用同模板加quality元数据冒充执行了更高质量创作。
+
+新medium/high视频即使原计划已有合法visual.events，也必须经过上述正式作者任务。解释页负责Resident修改实际计划后，以本人凭据POST `/api/home-explanation/media/authoring` `{address,sha256,quality,authoring_id}` 回填新固定包；服务核验任务状态、本人身份、档位、原固定源和新计划语义，单改标题、JSON排版或质量标签不能通过。`build_explanation_package.py --authoring-id`在保存新manifest后调用同一入口。通过后持久authoring_proof，再明确POST生成；跨质量切换不能复用证明。旧ready视频继续只读恢复，不重投作者任务、不重生成。报告通过subject.task的presentation/UpdateResource合同完成相同的实际作者修改检查，不要求解释页的visual结构。
 
 ### 单一审核事实
 
-报告、页面和视频共用 `home_explanation_review.ReviewService`。域在明确POST完成固定产物后调用 `submit(subject, actor, reviewer='')`；subject为 `{kind, ref, version, digest, quality:'high', author, assets:[{address,sha256}], task?, previous_review_id?}`，kind为report/report_video/explanation/explanation_video。ref/version/digest/quality/author共同固定审核身份；作者字段必须来自域的正式作者事实。审核者与作者、请求者分离，使用自身权限读取并实际播放/操作产物。
+报告、页面和视频共用 `home_explanation_review.ReviewService`。域在明确POST完成固定产物后调用 `submit(subject, actor, reviewer='')`；subject为 `{kind, ref, version, digest, quality:'high', author, responsible_resident_id?, assets:[{address,sha256}], task?, previous_review_id?}`，kind为report/report_video/explanation/explanation_video。ref/version/digest/quality/author共同固定审核身份，独立于作者的responsible_resident_id也进入身份。author保持实际创建者；作者为Resident时可作为负责者，作者为User时必须由业务域核验正式assistant消息关联并持久记录responsible_resident_id，不能从客户端任意指定或猜测其AMA。缺少关联保存awaiting_author，不能仅通知User声称完成Resident修改闭环。审核者同时与作者、请求者、负责Resident分离，使用自身权限读取并实际播放/操作产物。AuthoringService使用同一subject字段，但quality允许medium/high。
 
-读回 `read(review_id, actor)`；结论 `verdict(review_id, actor, digest=..., status=passed|changes_requested|blocked, evidence=[{address,sha256}], feedback=...)`；取消 `cancel(review_id, actor)`。HTTP对应GET `/api/home-explanation/reviews?id=...`、POST `/reviews/verdict`和`/reviews/cancel`；页面送审POST `/reviews`使用固定manifest地址及sha256。CLI `submit_explanation_review.py` 支持 `--read`、`--cancel`、`--verdict-file`及 `--previous-review-id`，身份来自当前Resident凭据。
+负责者关联只决定创作与反馈投递对象，不授予资源写权限。创作任务和审核反馈都要求负责Resident先以本人身份CheckPermission，再使用正式UpdateResource或原域更新入口；没有实际写权限时在正式作者回复中保留具体blocked原因并请求授权，不携带或借用请求者User凭据。submitted和feedback_delivery.delivered仅为传输事实，不能当成实际修改、质量通过或闭环完成。业务域仍须在实际修改时检查当前actor的写权限。
+
+读回 `read(review_id, actor)`；结论 `verdict(review_id, actor, digest=..., status=passed|changes_requested|blocked, evidence=[{address,sha256}], feedback=...)`；取消 `cancel(review_id, actor)`。HTTP对应GET `/api/home-explanation/reviews?id=...`、POST `/reviews/verdict`和`/reviews/cancel`；页面送审POST `/reviews`使用固定manifest地址及sha256。CLI `submit_explanation_review.py` 支持 `--read`、`--read-authoring`、`--cancel`、`--verdict-file`及 `--previous-review-id`，身份来自当前Resident凭据；页面API的X-Portal-Lineage-ID由当前Resident的正式GetResident回读取得，不能自报别人的Lineage。
 
 submitted仅表示DeliverMessage受理，ready仅表示媒体字节可用；high的quality_met只有固定摘要仍一致且passed才成立。passed须有实际检查证据，作者不能自审。changes_requested保存意见并通过幂等DeliverMessage回作者，feedback_delivery记录真实投递成功或失败。作者被唤醒后修改实际产物、保存新固定版，再携原review_id为previous_review_id送审；新摘要不继承旧pass。实际修改与独立复审不限制轮次，第4轮及以后仍可送检；仅passed、显式取消或具体无法继续的blocked停止。传输失败的送检或结果通知最多三次显式重试。取消、权限失败、生成失败、通知失败均保留可读状态，绝不自动降级为通过；GET不重投或重试。固定资产字节被改写时，原passed读回为invalidated。
 

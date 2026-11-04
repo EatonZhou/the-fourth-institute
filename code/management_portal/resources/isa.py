@@ -872,9 +872,12 @@ def _project_fields(record: dict[str, Any]) -> dict[str, Any]:
 
 def list_projects(inv: Invocation) -> dict[str, Any]:
     state = _service().projection_state("project")
-    if state.get("schema_version") != 1 or type(state.get("schema_version")) is not int:
-        raise RuntimeError("Project projection requires schema_version 1")
-    order = {str(project_id): index for index, project_id in enumerate(state.get("project_ids") or [])}
+    if not isinstance(state, dict):
+        raise RuntimeError("Project projection must be an object")
+    for key in ("project_ids", "status_vocab"):
+        if key in state and not isinstance(state[key], list):
+            raise RuntimeError(f"Project projection {key} must be an array")
+    order = {str(project_id): index for index, project_id in enumerate(state.get("project_ids", []))}
     records = sorted(_resources(inv.caller, resource_types=["project"]), key=lambda item: (
         order.get(str(item.get("resource_id") or ""), len(order)), str(item.get("resource_id") or "").casefold()))
     ids = [str(record.get("resource_id") or "") for record in records]

@@ -14,7 +14,6 @@ from contextlib import contextmanager, nullcontext
 from typing import Any
 
 from management_common.json_columns import json_text, json_value
-from management_common.format_tags import schema_matches
 from management_common.portal_database import portal_database
 
 SCHEMA = "resource_registry"
@@ -38,7 +37,6 @@ _DDL = (
     "CREATE INDEX registry_documents_revision_idx ON registry_documents(collection, revision)",
     "CREATE TABLE deleted_identities (resource_id TEXT PRIMARY KEY)",
 )
-_TABLES = frozenset({"registry_meta", "registry_collections", "registry_documents", "deleted_identities"})
 
 
 def _encode(document: Mapping[str, Any]) -> str:
@@ -182,13 +180,10 @@ class RegistryStore:
                     connection.execute(
                         "INSERT INTO registry_meta(key, value) VALUES ('schema', %s)", (SCHEMA_VERSION,),
                     )
-                    from .directory_ownership_upgrade import upgrade_registry
-                    upgrade_registry(connection, self.database.schema)
-                    return
-                row = connection.execute("SELECT value FROM registry_meta WHERE key='schema'").fetchone() \
-                    if "registry_meta" in tables else None
-                if tables != _TABLES or row is None or not schema_matches(row["value"], SCHEMA_VERSION):
-                    raise RuntimeError("Resource registry database does not match its schema")
+                # Existing stores are used as they stand. A format label or an
+                # unrelated table cannot establish whether a particular query
+                # works; required structures are exercised by that query.
+                # Only a newly created store receives the bootstrap label.
                 from .directory_ownership_upgrade import upgrade_registry
                 upgrade_registry(connection, self.database.schema)
 

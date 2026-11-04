@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 41
+  number: 42
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T17:53:26Z"
+  updated_at: "2026-11-04T19:19:32Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -274,3 +274,10 @@ tracemalloc 活分配、跟踪器开销与 OS 私有内存是不同口径，不�
 - Resident 对话快照只读取当前一页消息需要的已结束输入状态，以及这个 Resident 全部尚未结束的输入状态；读取成本随页面大小和在途输入增长，不随历史增长。
 - 批量读取 Resident 状态时，先通过输入状态索引找到每种状态的最近记录，再选出最新输入；已结束的历史越来越多，每次扫描的范围也不扩大。
 - 活跃 Agent 列表只为正在工作或有排队输入的 Resident 读取执行账号，空闲的 Resident 跳过这一步；每次仍读取当前状态，并按当前调用者的资源权限显示或匿名化。
+
+
+## 现存数据的可用性边界
+
+Society 启动不以 LineageData、Invocation 存储的全库结构集合或描述性版本标签作统一门禁。各操作使用其实际字段并报告真实错误；已定义默认值的可选汇报策略在列缺失时仍可读取默认，显式写入需要相应列。现存库初始化不自动迁移；完全空库由所属 owner 创建基本结构，规则见 decision_71aa039e3211。
+
+Conversation 快照和事件、Lineage runtime snapshot 对同一类型的数字格式后缀不要求与生产者当前数字相等，仍验证数组、Segment、lineage_id、runtime_revision 等实际结构。持久 Invocation 的输入指纹、冻结回执、控制身份与并发 CAS 保留；数字放宽不改变消息归属或取消语义。

@@ -14,7 +14,7 @@ import shutil
 import uuid
 from io import BytesIO
 from zipfile import ZipFile, BadZipFile
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -224,7 +224,7 @@ class ReportStore:
         return record
 
     def create(self, identifier, payload, actor):
-        allowed = {"target", "version", "import_job", "origin_key", "quality"}
+        allowed = {"target", "version", "import_job", "origin_key", "quality", "origin_context"}
         if set(payload) - allowed:
             raise ValueError("汇报创建仅接受target/version/import_job")
         # RegisterResource reserves this identity for its idempotent operation.
@@ -245,6 +245,11 @@ class ReportStore:
                 reauthorize(snapshot, actor=actor, read=self.read)
             else:
                 snapshot = bind(build_report(payload.get("target"), actor=actor, read=self.read), payload.get('quality'), author=actor)
+                from management_portal.home_report_origin import verified_source
+                from management_portal.home_report_quality import fingerprint
+                snapshot['authoring'] = verified_source(actor,payload.get('origin_context'),payload.get('origin_key'),snapshot['target'],read=self.read)
+                snapshot['origin_key'] = payload.get('origin_key')
+                snapshot['version'] = fingerprint(snapshot)
             if snapshot.get('quality', 'medium') != quality(payload.get('quality')):
                 raise ResourceVersionConflict('生成请求质量与已冻结版本不一致')
             return self._create_locked(identifier, payload, actor, snapshot)
@@ -324,7 +329,8 @@ class ReportStore:
             'read':{'instruction':'ResolveResource','arguments':{'address':address}},'version':sha,
             'version_kind':'content_sha256','snapshot':{'sha256':sha,'bytes':len(content)}})
         snapshot.pop('version',None)
-        snapshot['author'] = actor
+        snapshot['modified_by'] = actor
+        snapshot.pop('video_authoring',None)
         snapshot['checked_at']=now()
         snapshot['version']=digest(snapshot)
         record = self._append_revision(identifier, actor, expected_revision, snapshot, assets)
@@ -335,18 +341,28 @@ class ReportStore:
         self.authorize(actor, "UpdateResource", identifier)
         level = quality(quality_level if quality_level is not None else previous.get('quality'))
         attachments = None
+        authoring_id = content.get('authoring_id') if isinstance(content,dict) else None
         if content is not None:
             attachments = {item['filename']:self.file(identifier,record['revision'],item['filename'],actor)[0].read_bytes()
                            for item in previous.get('attachments', [])}
-            snapshot = correction(previous, content)
+            snapshot = correction(previous, {key:value for key,value in content.items() if key!='authoring_id'})
+            snapshot.pop('video_authoring',None)
             snapshot['quality'] = level
             snapshot['format'] = 'markdown' if level == 'low' else 'interactive'
-            snapshot['author'] = actor
-            from management_portal.home_report_quality import fingerprint
-            snapshot['version'] = fingerprint(snapshot)
         else:
-            snapshot = bind(build_report(previous["target"], actor=actor, read=self.read), level, author=actor)
-        record = self._append_revision(identifier, actor, expected_revision, snapshot, attachments)
+            snapshot = bind(build_report(previous["target"], actor=actor, read=self.read), level, author=previous.get('author',actor))
+            snapshot['authoring'] = copy.deepcopy(previous.get('authoring'))
+            snapshot['origin_key'] = previous.get('origin_key')
+        snapshot['modified_by'] = actor
+        from management_portal.home_report_quality import fingerprint
+        from management_portal.home_report_review import AuthoringService, accept_authoring
+        service=AuthoringService() if authoring_id else None
+        # Cancellation and the actual fixed revision commit share the task lock.
+        with service._lock(authoring_id) if service else nullcontext():
+            if service:
+                snapshot['video_authoring']=accept_authoring(self,identifier,expected_revision,actor,previous,snapshot,authoring_id,service)
+            snapshot['version'] = fingerprint(snapshot)
+            record = self._append_revision(identifier, actor, expected_revision, snapshot, attachments)
         return self.metadata(record)
 
     def delete(self, identifier, actor, expected_revision=None):

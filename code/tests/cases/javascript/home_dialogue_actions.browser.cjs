@@ -46,6 +46,11 @@ const server=http.createServer((req,res)=>{
       window.instructionCalls=[];
       window.PortalInstructionClient={execute:async(name,args)=>{
         instructionCalls.push({name,args});
+        if(name==='GetResidentSettings') {
+          if(window.reportingDenied)throw Object.assign(new Error('no_permit'),{status:403});
+          if(window.reportingMissing)return {settings:{},settings_revision:'legacy-fixture'};
+          return {settings:{reporting:window.reportingPolicy||{initiative:'off',quality:'medium'}},settings_revision:'policy-fixture'};
+        }
         if(name==='ListInputHistory')return {entries:[]};
         if(name==='CheckPermission')return {allowed:true};
         if(name==='GetProject')return {project:{id:args.project_id},team:{lineages:[]}};
@@ -92,7 +97,7 @@ const server=http.createServer((req,res)=>{
     await homeAction(page,'返回上一展示');
     check('manual history action retains document draft',await page.getByLabel('文件草稿').inputValue(),'保留未保存的手动草稿');
     // Unknown nonce click is explicit manual navigation, never an automatic ack.
-    await page.evaluate(()=>{window.submitted={resident_id:'resident_0123456789ab'};window.current=JSON.parse(chatOptions.submissionContext(submitted).context_text.split('示例结构：')[1].split('\n')[0]);chatOptions.onAcknowledgement({}, {target:submitted});});
+    await page.evaluate(async()=>{window.submitted={resident_id:'resident_0123456789ab'};window.current=JSON.parse((await chatOptions.submissionContext(submitted)).context_text.split('示例结构：')[1].split('\n')[0]);chatOptions.onAcknowledgement({}, {target:submitted});});
     await action('查看汇报').click();await page.locator('.home-report:visible h2').waitFor();
     await homeAction(page,'固定展示');
     const before=await page.locator('.homeDialogueEntry').count();
@@ -175,16 +180,69 @@ const server=http.createServer((req,res)=>{
     const instructions=contexts.map(c=>c[0].context.context_text);
     const nonces=instructions.map(t=>JSON.parse(t.split('示例结构：')[1].split('\n')[0]).request_id);
     check('each native send has a fresh request nonce',new Set(nonces).size,presentationRequests.length);
-    check('presentation guidance is unconditional across user wording',new Set(instructions.map(t=>t.split('示例结构：')[0])).size,1);
-    check('Resident owns presentation choice without keyword gates',instructions.every(t=>t.includes('由 Resident 根据')&&t.includes('等关键词为生成条件')&&t.includes('就主动生成并在右侧打开')&&t.includes('用户只在聊天里提问也如此')),true);
+    check('same verified policy applies across user wording',new Set(instructions.map(t=>t.split('示例结构：')[0])).size,1);
+    check('off never unconditionally requires generation',instructions.every(t=>t.includes('主动性 off：不主动制作')&&t.includes('用户明确要求生成')&&!t.includes('就主动生成并在右侧打开')),true);
     check('simple answers and explicit opt-outs remain available',instructions.every(t=>t.includes('简短文字已足以回答时直接回答')&&t.includes('不为每次问答创建文件')&&t.includes('不创建文件或不切换右侧时遵从其限制')),true);
     check('generation does not override user navigation',instructions.every(t=>t.includes('生成与自动切换是两件事')&&t.includes('固定、草稿、手选及迟到保护始终有效')),true);
     check('persist read back then fixed explanation guidance reaches transport',instructions.every(t=>t.includes('UpdateWorkspaceFile({address:')&&t.includes('ReadResource 回读')&&t.includes('成功才')&&t.includes('view:explanation')&&t.includes('清单字节SHA256')&&t.includes('本次 request_id')),true);
     check('generation failure and fixed-report guidance reach transport',instructions.every(t=>t.includes('不声称已经生成')&&t.includes('report_ID+revision')&&t.includes('不为它伪造')),true);
     check('composed explanation and on-demand media reach actual transport',instructions.every(t=>t.includes('portal-explanation/v1')&&t.includes('supplement')&&t.includes('video_plan')&&t.includes('用户点击‘生成讲解视频’才生成视频')&&t.includes('真实重算注意力权重')&&t.includes('HTML/JS 文件只按文本/代码')&&t.includes('不授予写权限')),true);
     check('authoring standard generalizes beyond the attention example',instructions.every(t=>t.includes('先写清读者要看懂或判断什么')&&t.includes('方案比较')&&t.includes('架构用结构导航')&&t.includes('不照抄注意力样例')&&t.includes('/static/home_explanation_authoring.md')),true);
-    check('all pages receive independent review and proportionate reference guidance',instructions.every(t=>t.includes('Distill Handwriting')&&t.includes('简单事情不强行复杂')&&t.includes('submit_explanation_review.py')&&t.includes('submitted 只表示受理')&&t.includes('普通打开与恢复历史不重投检查')&&t.includes('同一 Workspace 同一包目录')),true);
-    check('video quality and verified cloud speech standard reach every actual request',instructions.every(t=>t.includes('3Blue1Brown')&&t.includes('edge-tts调用微软云语音')&&t.includes('zh-CN-YunxiNeural')&&t.includes('并非Codex原生')&&t.includes('不用本地TTS')&&t.includes('成片须独立视频检查')&&t.includes('不能代签内容或听感')),true);
+    check('only high mandates actual independent review',instructions.every(t=>t.includes('仅high质量必须')&&t.includes('low/medium不强制')&&t.includes('作者不能审核自己')&&t.includes('旧pass对修改后的内容失效')&&t.includes('submitted 只表示受理')&&t.includes('普通打开与恢复历史不重投检查')),true);
+    check('video quality is independently selected and pinned',instructions.every(t=>t.includes('low自由发挥')&&t.includes('medium加强3b1b-style')&&t.includes('high对齐3b1b级别')&&t.includes('不能跨质量复用ready')),true);
+    evidence.policySubmissions=await page.evaluate(async()=>{
+      const results=[];
+      for(const initiative of ['off','low','medium','high'])for(const quality of ['low','medium','high']) {
+        window.reportingPolicy={initiative,quality};
+        await panel.send({text:'解释这个问题',plainText:'解释这个问题'},{clear:false,focus:false});
+        results.push(sentBodies.at(-1).message.content_parts.find(p=>p.type==='context_reference').context);
+      }
+      window.reportingDenied=true;
+      await panel.send({text:'普通问答',plainText:'普通问答'},{clear:false,focus:false});
+      results.push(sentBodies.at(-1).message.content_parts.find(p=>p.type==='context_reference').context);
+      window.reportingDenied=false;return results;
+    });
+    check('fresh effective policy reaches every native send',evidence.policySubmissions.slice(0,12).map(c=>c.reporting),['off','low','medium','high'].flatMap(initiative=>['low','medium','high'].map(quality=>({initiative,quality}))));
+    check('high initiative keeps Resident judgment',evidence.policySubmissions[11].context_text.includes('高主动性不等于每轮必生成'),true);
+    check('permission failure preserves chat but forbids automatic generation',evidence.policySubmissions.at(-1).reporting_read==='unavailable'&&evidence.policySubmissions.at(-1).reporting.initiative==='off'&&evidence.policySubmissions.at(-1).reporting_error==='no_permit',true);
+    check('explicit invalid policy is unavailable rather than configured default',await page.evaluate(async()=>{
+      window.reportingPolicy={initiative:'always',quality:'high'};
+      const context=await chatOptions.submissionContext({resident_id:'resident_0123456789ab'});
+      window.reportingPolicy={initiative:'off',quality:'medium'};
+      return context.reporting_read;
+    }),'unavailable');
+    check('legacy missing policy is labelled default rather than verified',await page.evaluate(async()=>{
+      window.reportingMissing=true;
+      const context=await chatOptions.submissionContext({resident_id:'resident_0123456789ab'});
+      window.reportingMissing=false;return [context.reporting_read,context.settings_revision,context.context_text.includes('不代表已读取到用户配置')];
+    }),['default','legacy-fixture',true]);
+    check('quality changes retain the same message generation identity',await page.evaluate(async()=>{
+      const origin={residentId:'resident_0123456789ab',messageId:'msg_0123456789abcdef',fenceIndex:0};
+      const intent={view:'report',target:{kind:'project',id:'demo'}};
+      const keys=await Promise.all([undefined,'low','medium','high'].map(quality=>PortalHomeDialogueState.messageOriginKey(origin,{...intent,quality})));
+      return new Set(keys).size;
+    }),1);
+    check('out-of-order policy reads retain submission navigation order',await page.evaluate(async()=>{
+      const execute=PortalInstructionClient.execute, issued=[], calls=[], originalOptions=chatOptions, originalPanel=panel;
+      const create=PortalHomeDialogueState.create;
+      PortalHomeDialogueState={...PortalHomeDialogueState,create(...args){const state=create(...args), issue=state.issue;state.issue=(...values)=>{const id=issue(...values);issued.push(id);return id;};return state;}};
+      const testRoot=document.createElement('div');document.body.append(testRoot);
+      const other=PortalHomeDialogue.connect({root:testRoot,context:{currentUserReady:Promise.resolve({username:'fixture'})}});
+      await new Promise(resolve=>setTimeout(resolve,50));
+      PortalInstructionClient.execute=async(name,args)=>name==='GetResidentSettings'?await new Promise(resolve=>calls.push(resolve)):execute(name,args);
+      const options=chatOptions;
+      const first=options.submissionContext({resident_id:'resident_0123456789ab'});
+      const second=options.submissionContext({resident_id:'resident_0123456789ab'});
+      const before=issued.slice();
+      calls[1]({settings:{reporting:{initiative:'high',quality:'high'}},settings_revision:'new'});
+      const secondContext=await second;
+      calls[0]({settings:{reporting:{initiative:'off',quality:'medium'}},settings_revision:'old'});
+      const firstContext=await first;
+      const nonce=context=>JSON.parse(context.context_text.split('示例结构：')[1].split('\n')[0]).request_id;
+      const result=before.length===2&&nonce(firstContext)===before[0]&&nonce(secondContext)===before[1];
+      PortalInstructionClient.execute=execute;PortalHomeDialogueState={...PortalHomeDialogueState,create};
+      other.destroy();testRoot.remove();window.chatOptions=originalOptions;window.panel=originalPanel;return result;
+    }),true);
     check('wrong facade receives no Home submission context',await page.evaluate(()=>chatOptions.submissionContext({resident_id:'resident_abcdefabcdef'})),null);
     check('sending visual request itself does not create any file',await page.evaluate(()=>instructionCalls.some(c=>c.name==='UpdateWorkspaceFile')),false);
     // Existing Preview semantics substantiate the capability guidance. Raw HTML

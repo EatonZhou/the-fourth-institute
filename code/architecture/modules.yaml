@@ -1161,7 +1161,7 @@ modules:
   - id: "delivery.services"
     title: "发布与服务生命周期控制"
     parent: "delivery"
-    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；读取与校验实例清单，维护本机实例登记、实例创建、启停、代码更新与退役，以及代码旁依赖的准备；Windows 与 macOS 安装打包入口组装程序、种子与按摘要核验的原生依赖，运行库安装属于该交付职责；通过显式迁移脚本转换已声明的持久化版本，数据结构契约由相应领域拥有。"
+    responsibility: "执行提交发布、健康检查和各服务的代际管理，持久化发布完成事实；按实际配置读取实例清单，不以格式标签对齐作为启动门槛，维护本机实例登记、实例创建、启停、代码更新与退役，以及代码旁依赖的准备；Windows 与 macOS 安装打包入口组装程序、种子与按摘要核验的原生依赖，运行库安装属于该交付职责；持久化数据的准备和转换由相应领域拥有，离线迁移通过正式脚本完成。"
     instruction_owners: []
     code_paths:
       - "scripts/tfi_dev.py"
@@ -2498,7 +2498,7 @@ protocols:
     designs: []
     related_designs:
       - "decision_15aab18c0ab3"
-    description: "实例拥有 site.json；调用方按显式选择的实例读取站点配置，缺省名称为 TFI Portal。格式标记只接受规范名称与版本。Web 仅投影公开字段，私有配置不进入页面；邮件和认证展示使用同源名称，认证身份不随显示名变化。"
+    description: "实例拥有 site.json；调用方按显式选择的实例读取站点配置，缺省名称为 TFI Portal。读取核对所消费字段，不要求格式标签与当前代码相等。Web 仅投影公开字段，私有配置不进入页面；邮件和认证展示使用同源名称，认证身份不随显示名变化。"
     example: "PORTAL_INSTANCE_ROOT 下的 site.json → management_common.site_config → 页面 bootstrap、邮件正文与认证展示。"
 
   - id: "component-status-read"

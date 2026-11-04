@@ -104,8 +104,8 @@ def validate_engineering(manifest_path, *, skip_file_verification=False):
     manifest_path = Path(manifest_path).resolve(strict=True)
     bundle = manifest_path.parent
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("schema") != "tfi.release-engineering.v1" or (bundle / "GENERATION_FAILED").exists():
-        raise ValueError("Unsupported or incomplete engineering bundle")
+    if not isinstance(manifest, dict) or (bundle / "GENERATION_FAILED").exists():
+        raise ValueError("Invalid or incomplete engineering bundle")
     if manifest.get("unresolved"):
         raise ValueError("Engineering has unresolved selection items")
     if manifest["database"]["format"] != "postgresql-sql":
@@ -771,7 +771,9 @@ def repair_lineage_events(instance, seed_manifest):
     with control_lock(instance.root), instance_services.configuration_lock(instance.root):
         document = json.loads(Path(seed_manifest).read_text(encoding='utf-8'))
         manifest = document.get('engineering', document)
-        if (manifest.get('run_id') != instance.document['seed_version']
+        seed_version = instance.document.get('seed_version')
+        if (not isinstance(seed_version, str) or not seed_version.strip()
+                or manifest.get('run_id') != seed_version
                 or manifest.get('history_freeze', {}).get('event_sources_paused') is not True):
             raise ValueError('Repair requires this instance\'s original frozen seed manifest')
         states = instance_services.status(instance)

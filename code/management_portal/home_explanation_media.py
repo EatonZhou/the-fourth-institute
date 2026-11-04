@@ -164,6 +164,11 @@ class Media:
             return None
         result = {key: state[key] for key in ('status', 'job_id', 'chapters', 'duration', 'voice_note', 'error') if key in state}
         result.update(quality=ctx['quality'], policy=policy(ctx['quality']))
+        if state.get('authoring'):
+            result['authoring'] = state['authoring']
+            if actor and result['authoring'].get('id'):
+                result['authoring'] = review.AuthoringService(resources=self.service).read(result['authoring']['id'], actor) or result['authoring']
+            result['quality_met'] = False
         if result.get('status') == 'generating' and not self.active(ctx):
             # Re-read is done by status/start under the active lease; the state
             # can only change to ready while the generation lock is held.
@@ -251,12 +256,27 @@ class Media:
     def start(self, address, sha256, actor, quality='medium', previous_review_id=None):
         ctx = self.context(address, sha256, actor, quality)
         self.writable(ctx, actor)
-        if ctx['plan'] is None:
-            raise ValueError('此解释页没有视频生成计划')
         existing = self._state(ctx, actor)
         if existing and existing['status'] == 'ready':
             return self.response(ctx, existing, actor)
-        prepare_plan(ctx['plan'], quality)
+        authored = existing.get('authoring_proof') if existing else None
+        try:
+            if ctx['plan'] is None:
+                raise ValueError('此解释页没有视频生成计划')
+            prepare_plan(ctx['plan'], quality)
+            if quality != 'low' and not self.require_authored(ctx, existing, actor):
+                raise ValueError('尚未完成正式质量分镜创作任务')
+        except ValueError:
+            if quality == 'low' or authored:
+                raise
+            authoring = review.AuthoringService(resources=self.service).submit({
+                'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
+                'digest': ctx['ref']['sha256'], 'quality': quality, 'author': ctx.get('owner_id') or actor,
+                'assets': [ctx['ref']], 'task': '修改此解释页的实际分镜，保存新manifest/plan/audio固定引用后生成视频。'}, actor)
+            state = {'status': 'cancelled' if authoring['status'] == 'cancelled' else 'awaiting_authoring',
+                     'job_id': authoring['id'], 'generation_actor': actor, 'authoring': authoring}
+            self._save(ctx, actor, state)
+            return self.response(ctx, state, actor)
         if not ctx['plan'].get('audio'):
             raise ValueError('视频需要固定音轨文件')
         audio = self.read(ctx['plan']['audio'], actor, 64*1024*1024)
@@ -273,7 +293,7 @@ class Media:
             slot = self._slot()
             # Validate every source and its hash before accepting a job.
             state = {'status': 'generating', 'job_id': uuid.uuid4().hex, 'updated_at': time.time(),
-                     'generation_actor': actor, 'previous_review_id': previous_review_id}
+                     'generation_actor': actor, 'previous_review_id': previous_review_id, 'authoring_proof': authored}
             self._save(ctx, actor, state)
             thread = threading.Thread(target=self._generate, args=(ctx, actor, state, audio, lease, slot), daemon=True)
             thread.start()
@@ -283,6 +303,54 @@ class Media:
             for fd in (lease, slot):
                 if fd is not None:
                     os.close(fd)
+
+    def require_authored(self, ctx, state, actor):
+        proof = state.get('authoring_proof') if state else None
+        if not proof:
+            return False
+        record = review.AuthoringService(resources=self.service).read(proof['id'], actor)
+        if not record or record['status'] != 'submitted' or record['subject']['quality'] != ctx['quality']:
+            raise ValueError('分镜创作任务已取消或质量不匹配')
+        if proof['resident_id'] != record['subject']['responsible_resident_id'] or proof['plan_digest'] != self.plan_digest(ctx['plan']):
+            raise ValueError('实际计划与作者回填不符')
+        return True
+
+    @staticmethod
+    def plan_digest(plan):
+        # Titles and arbitrary annotations cannot stand in for actual storyboard work.
+        value = None if plan is None else {key: plan.get(key) for key in ('nodes', 'audio', 'cues')}
+        if value is not None:
+            value['scenes'] = [{key: scene.get(key) for key in ('start', 'end', 'speech', 'visual', 'edges', 'values')}
+                               for scene in plan['scenes']]
+        return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+    def accept_authoring(self, address, sha256, actor, quality, authoring_id):
+        ctx = self.context(address, sha256, actor, quality)
+        self.writable(ctx, actor)
+        service = review.AuthoringService(resources=self.service)
+        with service._lock(authoring_id):
+            record = service.read(authoring_id, actor)
+            if not record or record['status'] != 'submitted':
+                raise ValueError('创作任务不存在或已取消')
+            subject = record['subject']
+            if actor != subject['responsible_resident_id']:
+                raise PermissionError('仅正式负责Resident可回填分镜修改')
+            if subject['kind'] != 'explanation_video' or subject['quality'] != quality or subject['digest'] == sha256:
+                raise ValueError('创作任务与新固定版本或质量不匹配')
+            if not ctx['plan']:
+                raise ValueError('新固定版本缺少分镜')
+            prepare_plan(ctx['plan'], quality)
+            source = self.context(subject['ref'], subject['digest'], actor, quality)
+            if self.plan_digest(source['plan']) == self.plan_digest(ctx['plan']):
+                raise ValueError('必须修改实际分镜或音画内容，不能只改标题、摘要或质量标签')
+            previous = self._state(ctx, actor)
+            if previous and previous.get('status') == 'ready':
+                raise ValueError('已生成固定视频不能回填更换创作证明')
+            proof = {'id': authoring_id, 'resident_id': actor, 'quality': quality,
+                     'source_digest': subject['digest'], 'plan_digest': self.plan_digest(ctx['plan'])}
+            state = {'status': 'authored', 'generation_actor': actor, 'authoring_proof': proof}
+            self._save(ctx, actor, state)
+            return {'status': 'authored', 'quality': quality, 'authoring_proof': proof, 'target': ctx['ref']}
 
     def _generate(self, ctx, actor, state, audio, lease, slot):
         try:
@@ -295,6 +363,8 @@ class Media:
                 # Reauthorize original sources after expensive work; revoked
                 # read/write access cannot publish a completed bundle.
                 self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor, ctx['quality'])
+                if ctx['quality'] != 'low':
+                    self.require_authored(ctx, state, actor)
                 self.read(ctx['plan']['audio'], actor, 64*1024*1024)
                 assets = {}
                 for name, path in files.items():
@@ -374,6 +444,9 @@ class Media:
         if state.get('generation_actor') != actor:
             raise PermissionError('仅原请求者可取消生成')
         if state.get('status') == 'generating':
+            self._save(ctx, actor, {**state, 'status': 'cancelled'})
+        elif state.get('authoring', {}).get('id'):
+            review.AuthoringService(resources=self.service).cancel(state['authoring']['id'], actor)
             self._save(ctx, actor, {**state, 'status': 'cancelled'})
         elif state.get('review', {}).get('id'):
             review.ReviewService(resources=self.service).cancel(state['review']['id'], actor)

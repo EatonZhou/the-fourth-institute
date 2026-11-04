@@ -13,7 +13,7 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 
 import pytest
-from management_portal.home_explanation_review import ReviewService
+from management_portal.home_explanation_review import ReviewService, AuthoringService
 from management_portal.home_explanation_media import Media
 from management_portal.home_explanation_quality import prepare_plan, policy
 
@@ -63,6 +63,7 @@ def rig(tmp_path, monkeypatch):
             return {'residents': [{'resident_id': CHECKER, 'can_send': True, 'title': args.get('q', '')}]}
         return {'message_id': 'msg_' + sha(key.encode())[:32]}
     reviews = ReviewService(root=tmp_path/'reviews', resources=resources, call=isa)
+    authoring = AuthoringService(root=tmp_path/'authoring', resources=resources, call=isa)
     renders = []
     def render(plan, stage, audio):
         renders.append(plan)
@@ -72,6 +73,8 @@ def rig(tmp_path, monkeypatch):
     media = Media(resources, render)
     monkeypatch.setattr(module, 'portal_path', lambda area: runtime)
     monkeypatch.setattr(module.review, 'ReviewService', lambda **kw: reviews)
+    monkeypatch.setattr(module.review, 'AuthoringService', lambda **kw: authoring)
+    monkeypatch.setattr(http, 'AuthoringService', lambda **kw: authoring)
     monkeypatch.setattr(http, 'ReviewService', lambda **kw: reviews)
     monkeypatch.setattr(http, 'Media', lambda: media)
     monkeypatch.setattr(lineage_access_policy, 'workspace_reaches', lambda actor, *args, **kwargs: actor == AUTHOR and actor not in resources.denied)
@@ -79,20 +82,27 @@ def rig(tmp_path, monkeypatch):
         value = json.dumps(content, ensure_ascii=False).encode() if isinstance(content, dict) else content
         (root/name).write_bytes(value)
         return {'address': RID + '/file/' + name, 'sha256': sha(value)}
-    def package(n, visual=True):
+    def package(n, visual=True, authored=True):
         audio = put('voice.wav', b'fixed audio')
         scene = {'title': '信息汇聚', 'speech': '来源的信息进入当前对象', 'start': 0, 'end': 2}
         plan = {'schema': 'portal-explanation-video/v1', 'title': '固定版本'+str(n), 'audio': audio,
                 'cues': [{'start': 0, 'end': 2, 'text': '来源的信息进入当前对象'}], 'scenes': [scene]}
         if visual:
             scene['visual'] = {'kind': 'sequence', 'condition': '同一来源',
-                'data': {'items': [{'id': 'a', 'label': '来源', 'detail': '解释信息的来源'}], 'note': '观察后保留画面'},
+                'data': {'items': [{'id': 'a', 'label': '来源', 'detail': '解释信息的来源'+str(n)}], 'note': '观察后保留画面'},
                 'events': [{'at': .1, 'duration': 0, 'stage': 'focus', 'index': 0, 'cue': 0}]}
         else:
             plan['nodes'] = [{'id': 'a', 'label': '来源', 'x': .1, 'y': .2}, {'id': 'b', 'label': '目标', 'x': .8, 'y': .6}]
             scene['edges'] = [{'from': 'a', 'to': 'b', 'weight': 1}]
-        return put(f'manifest{n}.json', {'schema': 'portal-explanation/v1', 'quality': 'high', 'title': '固定版',
+        ref = put(f'manifest{n}.json', {'schema': 'portal-explanation/v1', 'quality': 'high', 'title': '固定版',
                                        'video_plan': put(f'plan{n}.json', plan)})
+        if visual and authored:
+            source = package(-n-100, False, False)
+            for quality in ('medium', 'high'):
+                task = authoring.submit(dict(kind='explanation_video', ref=source['address'], version=source['sha256'],
+                    digest=source['sha256'], author=AUTHOR, quality=quality, assets=[source]), AUTHOR)
+                media.accept_authoring(**ref, actor=AUTHOR, quality=quality, authoring_id=task['id'])
+        return ref
     def done(ref, quality):
         for _ in range(100):
             state = media.status(**ref, actor=AUTHOR, quality=quality)
@@ -108,8 +118,16 @@ def test_quality_binds_artifacts_and_enforces_authored_visual_policy(rig):
     legacy = package(1, False)
     assert media.status(**legacy, actor=AUTHOR, quality='high') is None
     assert not (resources.root/'explanation-media').exists()
-    with pytest.raises(ValueError, match='visual.events'):
-        media.start(**legacy, actor=AUTHOR, quality='medium')
+    request = media.start(**legacy, actor=AUTHOR, quality='medium')
+    assert request['status'] == 'awaiting_authoring' and request['authoring']['status'] == 'submitted'
+    payload = json.loads(calls[-1][2]['message']['content_parts'][0]['text'])
+    assert payload['policy']['quality'] == 'medium' and '3Blue1Brown' in payload['policy']['guidance']
+    assert '实际创作或修改分镜' in payload['requirements']
+    assert calls[-1][2]['resident_id'] == AUTHOR
+    before_author = len(calls)
+    assert media.status(**legacy, actor=AUTHOR, quality='medium')['authoring']['id'] == request['authoring']['id']
+    media.start(**legacy, actor=AUTHOR, quality='medium')
+    assert len(calls) == before_author
     media.start(**legacy, actor=AUTHOR, quality='low')
     low = done(legacy, 'low')
     assert low['status'] == 'ready' and low['review']['status'] == 'not_required'
@@ -141,6 +159,10 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
             actor = self.headers.get('X-Fixture-Actor', '')
             if parsed.path.startswith('/api/home-explanation/reviews'):
                 http._reviews(self, parsed, actor)
+            elif parsed.path.startswith('/api/home-explanation/authoring'):
+                http._authoring(self, parsed, actor)
+            elif parsed.path.endswith('/media/authoring'):
+                http._accept_authoring(self, parsed, actor)
             else:
                 http._media(self, parsed, actor)
         do_GET = do_POST = handle_request
@@ -152,7 +174,18 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
                       headers={'Content-Type': 'application/json', 'X-Fixture-Actor': actor})
         with urlopen(req) as response: return json.load(response)
     try:
+        legacy = package(0, False)
+        author_request = request('media', {**legacy, 'quality': 'medium'})['media']['authoring']
+        assert author_request['status'] == 'submitted'
+        count = len(calls)
+        assert request('authoring?id='+author_request['id'])['authoring']['subject']['quality'] == 'medium'
+        assert len(calls) == count
         ref = package(1)
+        completion = {**ref, 'quality': 'medium', 'authoring_id': author_request['id']}
+        with pytest.raises(HTTPError) as not_author:
+            request('media/authoring', completion, CHECKER)
+        assert not_author.value.code == 403
+        assert request('media/authoring', completion)['authoring']['authoring_proof']['resident_id'] == AUTHOR
         request('media', {**ref, 'quality': 'high'})
         state = done(ref, 'high'); review_id = state['review']['id']; digest = state['review']['subject']['digest']
         evidence = put('review1.md', b'Actually inspected fixture: missing explanation of cause; needs revision.')
@@ -183,9 +216,10 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
         assert request('reviews?id='+record['id'])['review']['status'] == 'passed'
         assert len(calls) == before
         # Exact digest/old pass cannot certify a changed file.
-        evidence2 = put('review3.md', b'new evidence')
-        put('review2.md', b'changed')
-        assert reviews.read(record['id'], AUTHOR)['subject']['version'] == changed['sha256']
+        resources.path(record['subject']['assets'][0]['address']).write_bytes(b'tampered')
+        assert reviews.read(record['id'], AUTHOR)['status'] == 'invalidated'
+        assert reviews.submit(record['subject'], AUTHOR)['status'] == 'invalidated'
+        assert not done(changed, 'high')['quality_met']
     finally:
         server.shutdown(); server.server_close(); thread.join()
 
@@ -224,3 +258,157 @@ def test_permissions_missing_reviewer_and_retries_remain_failure(rig):
     assert done(ref, 'high')['review']['attempts'] == 3
     resources.denied.add(AUTHOR)
     with pytest.raises(PermissionError): media.status(**ref, actor=AUTHOR, quality='high')
+
+
+def test_rejected_versions_continue_past_three_rounds_and_require_real_predecessor(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    def subject(n, previous=None):
+        asset = put(f'bounded{n}.md', f'Actual changed content {n}'.encode())
+        return dict(kind='explanation', ref=asset['address'], version=n, digest=asset['sha256'],
+                    quality='high', author=AUTHOR, assets=[asset], **({'previous_review_id': previous} if previous else {}))
+    with pytest.raises(ValueError, match='不存在'):
+        reviews.submit(subject(0, '0'*64), AUTHOR)
+    original_call = reviews.call
+    reviews.call = lambda *args: {'residents': [{'resident_id': AUTHOR, 'can_send': True, 'title': '解释页独立检查'}]}
+    assert reviews.submit(subject(0), AUTHOR)['status'] == 'submission_failed'
+    reviews.call = original_call
+    previous = None
+    evidence = put('bounded-review.md', b'Reviewer requires a new concrete explanatory contrast.')
+    for n in range(1, 4):
+        record = reviews.submit(subject(n, previous), AUTHOR)
+        assert record['round'] == n and record['status'] == 'submitted'
+        reviews.verdict(record['id'], CHECKER, digest=record['subject']['digest'],
+                        status='changes_requested', evidence=[evidence], feedback='Modify the actual content.')
+        previous = record['id']
+    fourth = reviews.submit(subject(4, previous), AUTHOR)
+    assert fourth['status'] == 'submitted' and fourth['round'] == 4
+    passed = reviews.verdict(fourth['id'], CHECKER, digest=fourth['subject']['digest'],
+        status='passed', evidence=[evidence], feedback='The corrected fixed version now meets the fixture criteria.')
+    assert passed['status'] == 'passed' and passed['feedback_delivery']['status'] == 'delivered'
+    assert reviews.read(fourth['id'], AUTHOR)['status'] == 'passed'
+    assert reviews.read(previous, AUTHOR)['status'] == 'changes_requested'
+
+
+def test_feedback_failure_is_readable_without_get_retry_and_can_retry_same_verdict(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    asset = put('feedback.md', b'A fixed explanation requiring corrections.')
+    record = reviews.submit(dict(kind='explanation', ref=asset['address'], version=1,
+        digest=asset['sha256'], quality='high', author=AUTHOR, assets=[asset]), AUTHOR)
+    verdict = dict(digest=asset['sha256'], status='changes_requested', evidence=[], feedback='Clarify the actual cause.')
+    original_call = reviews.call
+    def fail_notice(*args):
+        if args[1] == 'DeliverMessage':
+            raise PermissionError('Fixture denies feedback delivery')
+        return original_call(*args)
+    reviews.call = fail_notice
+    failed = reviews.verdict(record['id'], CHECKER, **verdict)
+    assert failed['status'] == 'changes_requested' and failed['feedback_delivery']['status'] == 'failed'
+    for _ in range(3):
+        assert reviews.read(record['id'], AUTHOR)['feedback_delivery']['attempts'] == 1
+    reviews.call = original_call
+    delivered = reviews.verdict(record['id'], CHECKER, **verdict)
+    assert delivered['feedback_delivery']['status'] == 'delivered'
+    assert delivered['feedback_delivery']['attempts'] == 2
+    assert calls[-1][0:2] == (CHECKER, 'DeliverMessage')
+    assert calls[-1][2]['resident_id'] == AUTHOR
+    before = len(calls)
+    reviews.verdict(record['id'], CHECKER, **verdict)
+    assert len(calls) == before
+
+
+def test_verified_responsible_resident_is_not_the_user_and_cannot_review(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    asset = put('user-report.md', b'User-owned report with a domain-verified author association.')
+    value = dict(kind='report', ref=asset['address'], version=1, digest=asset['sha256'],
+        quality='high', author='fixture-user', assets=[asset])
+    waiting = reviews.submit(value, 'fixture-user')
+    assert waiting['status'] == 'awaiting_author' and not calls
+    value['responsible_resident_id'] = AUTHOR
+    rejected = reviews.submit(value, 'fixture-user', reviewer=AUTHOR)
+    assert rejected['status'] == 'submission_failed'
+    record = reviews.submit(value, 'fixture-user')
+    assert record['status'] == 'submitted'
+    with pytest.raises(PermissionError):
+        reviews.verdict(record['id'], AUTHOR, digest=asset['sha256'], status='passed', evidence=[asset])
+    result = reviews.verdict(record['id'], CHECKER, digest=asset['sha256'],
+        status='changes_requested', evidence=[asset], feedback='Add the missing explanation.')
+    assert result['subject']['author'] == 'fixture-user'
+    assert calls[-1][2]['resident_id'] == AUTHOR and 'user_id' not in calls[-1][2]
+    assert result['feedback_delivery']['status'] == 'delivered'
+    assert result['status'] == 'changes_requested'  # Delivery cannot complete author work.
+    feedback_args = calls[-1][2]
+    feedback = json.loads(feedback_args['message']['content_parts'][0]['text'])
+    assert 'CheckPermission' in feedback['next_action'] and '具体blocked' in feedback['next_action']
+    assert 'temporary_credentials' not in feedback_args and 'token' not in feedback_args
+    from management_portal import home_explanation_media as module
+    creation = module.review.AuthoringService().submit({**value, 'kind': 'report_video', 'quality': 'medium'}, 'fixture-user')
+    assert creation['status'] == 'submitted' and creation['requested_by'] == 'fixture-user'
+    author_args = calls[-1][2]
+    instructions = json.loads(author_args['message']['content_parts'][0]['text'])
+    assert author_args['resident_id'] == AUTHOR and 'user_id' not in author_args
+    assert 'CheckPermission' in instructions['requirements'] and '具体blocked' in instructions['requirements']
+    assert 'UpdateResource' in instructions['requirements'] and 'visual.events' not in instructions['requirements']
+    assert 'temporary_credentials' not in author_args and 'token' not in author_args
+
+
+def test_medium_author_request_can_be_cancelled_without_replay(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    ref = package(1, False)
+    result = media.start(**ref, actor=AUTHOR, quality='medium')
+    assert result['status'] == 'awaiting_authoring' and not renders
+    assert media.cancel(**ref, actor=AUTHOR, quality='medium')['status'] == 'cancelled'
+    count = len(calls)
+    assert media.start(**ref, actor=AUTHOR, quality='medium')['status'] == 'cancelled'
+    assert len(calls) == count and not renders
+    from management_portal import home_explanation_media as module
+    changed = package(2)
+    ctx = media.context(**changed, actor=AUTHOR, quality='medium')
+    proof = media._state(ctx, AUTHOR)['authoring_proof']
+    original_render = media.renderer
+    def cancelled_during_render(*args):
+        module.review.AuthoringService().cancel(proof['id'], AUTHOR)
+        return original_render(*args)
+    media.renderer = cancelled_during_render
+    media.start(**changed, actor=AUTHOR, quality='medium')
+    assert done(changed, 'medium')['status'] == 'failed'
+    assert not (ctx['root'].joinpath(*ctx['output'])/'video.mp4').exists()
+
+
+def test_review_module_has_no_unconditional_unix_lock_import(monkeypatch):
+    import builtins
+    import runpy
+    import management_portal.home_explanation_review as module
+    original = builtins.__import__
+    def no_unix(name, *args, **kwargs):
+        if name == 'fcntl':
+            raise ImportError('Windows fixture has no fcntl')
+        return original(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, '__import__', no_unix)
+    loaded = runpy.run_path(module.__file__)
+    assert loaded['ReviewService'] and loaded['lock_stream']
+
+
+def test_valid_old_plan_needs_actual_author_revision_for_new_quality(rig):
+    resources, reviews, media, calls, renders, put, package, done = rig
+    original = package(41, authored=False)
+    pending = media.start(**original, actor=AUTHOR, quality='medium')
+    assert pending['status'] == 'awaiting_authoring' and not renders
+    task = pending['authoring']
+    old_manifest = json.loads(resources.path(original['address']).read_text())
+    retag = put('retagged.json', {**old_manifest, 'title': 'Only renamed title'})
+    with pytest.raises(ValueError, match='必须修改实际'):
+        media.accept_authoring(**retag, actor=AUTHOR, quality='medium', authoring_id=task['id'])
+    changed = package(42, authored=False)
+    with pytest.raises(PermissionError):
+        media.accept_authoring(**changed, actor=CHECKER, quality='medium', authoring_id=task['id'])
+    accepted = media.accept_authoring(**changed, actor=AUTHOR, quality='medium', authoring_id=task['id'])
+    assert accepted['status'] == 'authored'
+    assert accepted['authoring_proof']['plan_digest'] != media.plan_digest(media.context(**original, actor=AUTHOR)['plan'])
+    media.start(**changed, actor=AUTHOR, quality='medium')
+    assert done(changed, 'medium')['status'] == 'ready'
+    count = len(calls)
+    assert media.status(**changed, actor=AUTHOR, quality='medium')['status'] == 'ready'
+    assert len(calls) == count
+    high = media.start(**changed, actor=AUTHOR, quality='high')
+    assert high['status'] == 'awaiting_authoring' and high['authoring']['id'] != task['id']
+    assert len(renders) == 1

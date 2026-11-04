@@ -110,8 +110,8 @@ def test_lineage_family_cannot_be_nested(lineage, charters):
     assert len(graph(lineage)['nodes']) == 3
 
 
-def test_old_scope_schema_requires_an_explicit_migration():
-    """缺少 lineage_scope 列的旧 schema 初始化时报不匹配，不自动升级"""
+def test_old_scope_schema_does_not_gate_unrelated_startup():
+    """局部字段缺失不阻止初始化，也不自动升级或改标签"""
     import pytest
     from management_common.portal_database import portal_database
     from management_portal.society_service.state_store import create_lineage_data_schema, LineageDataStore, lineage_data_schema_matches
@@ -120,8 +120,7 @@ def test_old_scope_schema_requires_an_explicit_migration():
         create_lineage_data_schema(connection)
         connection.execute('ALTER TABLE families DROP COLUMN lineage_scope')
         connection.execute("UPDATE lineage_meta SET value='tfi.lineage-data.v46' WHERE key='schema'")
-        with pytest.raises(RuntimeError, match="does not match"):
-            LineageDataStore._initialize(connection)
+        LineageDataStore._initialize(connection)
         assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == "tfi.lineage-data.v46"
 
 

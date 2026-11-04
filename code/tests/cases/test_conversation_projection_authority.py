@@ -212,7 +212,7 @@ def test_append_is_ordered_and_idempotent_contracts(tmp_path, subtests, isolated
         assert snapshot["state"]["work_state"] == "running"
         assert snapshot["activities"] == [activity]
         assert [event["cursor"] for event in events["events"]] == [2, 3]
-    with subtests.test(contract='test_stale_lineage_schema_is_rejected_without_runtime_migration'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_stale_lineage_marker_does_not_gate_startup_or_rewrite_data'), isolated_portal_case() as case_path:
         tmp_path = case_path
         repository = _repository(tmp_path)
         def install_stale_schema(connection) -> None:
@@ -223,8 +223,9 @@ def test_append_is_ordered_and_idempotent_contracts(tmp_path, subtests, isolated
 
         repository.state_store.database.write(install_stale_schema)
         try:
-            with pytest.raises(RuntimeError, match="does not match its schema"):
-                LineageDataStore()
+            LineageDataStore()
+            with repository.state_store.database.read() as connection:
+                assert connection.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchone()["value"] == "tfi.lineage-data.v4"
         finally:
             repository.state_store.database.write(lambda connection: connection.execute(
                 "UPDATE lineage_meta SET value = %s WHERE key = 'schema'", (LINEAGE_DATA_SCHEMA,),
@@ -693,7 +694,7 @@ def test_large_notification_omits_only_inline_payload() -> None:
     assert "payload" not in notification
 
 
-@pytest.mark.parametrize("schema", [None, "tfi.resident-messages-state.v0"])
+@pytest.mark.parametrize("schema", [None, "unrelated-event.v1"])
 def test_notification_rejects_noncurrent_event_schema(schema: object) -> None:
     """会话通知拒绝非当前版本的事件格式"""
     event = {

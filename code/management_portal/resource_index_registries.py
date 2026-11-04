@@ -129,14 +129,16 @@ class ProjectRegistryAdapter(_PathsAdapter):
                 continue
             project_ids.append(project_id)
             records.append(record)
-        return records, {
+        state = {
             "project_count": len(records),
             "project_ids": project_ids,
-            "schema_version": payload["schema_version"],
             "status_vocab": list(payload.get("status_vocab") or []),
             "tag_vocab": list(payload.get("tag_vocab") or []),
             "resource_errors": resource_errors,
         }
+        if "schema_version" in payload:
+            state["schema_version"] = payload["schema_version"]
+        return records, state
 
 
 class CollaborationRegistryAdapter(_PathsAdapter):

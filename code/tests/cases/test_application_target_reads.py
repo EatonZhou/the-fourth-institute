@@ -33,13 +33,12 @@ def configuration(monkeypatch):
     return database
 
 
-def test_readers_use_their_columns_without_weakening_owner_schema_checks(configuration):
-    """Lineage schema 版本不符时应用目标仍可按自身列读取，schema 检查照常报错"""
+def test_readers_use_their_columns_without_global_schema_gates(configuration):
+    """应用目标按自身列读取，现存库不受全库启动检查阻断"""
     from management_portal.society_service.state_store import LineageDataStore
 
-    with pytest.raises(RuntimeError, match="does not match its schema"):
-        with configuration.transaction() as connection:
-            LineageDataStore._initialize(connection)
+    with configuration.transaction() as connection:
+        LineageDataStore._initialize(connection)
     assert targets.lineage("tau") == "lineage_111111111111"
     assert targets.resource_chat_lineage("article") == "lineage_111111111111"
     expected = {"resident_id": "resident_111111111111", "lineage_id": "lineage_111111111111"}

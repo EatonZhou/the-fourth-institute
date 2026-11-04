@@ -142,5 +142,217 @@
   "需要连续讲解时，可以生成带字幕的视频。": {
     "zh-CN": "需要连续讲解时，可以生成带字幕的视频。",
     "en": "Generate a captioned video when a continuous explanation would help."
+  },
+  "视频质量": {
+    "zh-CN": "视频质量",
+    "en": "Video quality"
+  },
+  "报告质量": {
+    "zh-CN": "报告质量",
+    "en": "Report quality"
+  },
+  "高 · 独立审核": {
+    "zh-CN": "高 · 独立审核",
+    "en": "High · Independent review"
+  },
+  "视频已生成 · 高质量未通过审核": {
+    "zh-CN": "视频已生成 · 高质量未通过审核",
+    "en": "Video generated · High-quality review not passed"
+  },
+  "视频已保存": {
+    "zh-CN": "视频已保存",
+    "en": "Video saved"
+  },
+  "视频生成中": {
+    "zh-CN": "视频生成中",
+    "en": "Generating video"
+  },
+  "生成已取消": {
+    "zh-CN": "生成已取消",
+    "en": "Generation cancelled"
+  },
+  "等待分镜创作": {
+    "zh-CN": "等待分镜创作",
+    "en": "Awaiting storyboard creation"
+  },
+  "分镜已保存为新版本": {
+    "zh-CN": "分镜已保存为新版本",
+    "en": "Storyboard saved as a new version"
+  },
+  "视频独立审核": {
+    "zh-CN": "视频独立审核",
+    "en": "Independent video review"
+  },
+  "报告独立审核": {
+    "zh-CN": "报告独立审核",
+    "en": "Independent report review"
+  },
+  "尚未送审": {
+    "zh-CN": "尚未送审",
+    "en": "Not submitted for review"
+  },
+  "准备送审": {
+    "zh-CN": "准备送审",
+    "en": "Preparing review submission"
+  },
+  "已送审，尚未通过": {
+    "zh-CN": "已送审，尚未通过",
+    "en": "Submitted · Not yet passed"
+  },
+  "独立审核通过": {
+    "zh-CN": "独立审核通过",
+    "en": "Independent review passed"
+  },
+  "需要修改后重新审核": {
+    "zh-CN": "需要修改后重新审核",
+    "en": "Revision and another review required"
+  },
+  "审核受阻": {
+    "zh-CN": "审核受阻",
+    "en": "Review blocked"
+  },
+  "审核已取消": {
+    "zh-CN": "审核已取消",
+    "en": "Review cancelled"
+  },
+  "送审失败": {
+    "zh-CN": "送审失败",
+    "en": "Review submission failed"
+  },
+  "等待经核验的负责Resident": {
+    "zh-CN": "等待经核验的负责Resident",
+    "en": "Awaiting a verified responsible Resident"
+  },
+  "读取审核结果": {
+    "zh-CN": "读取审核结果",
+    "en": "Read review result"
+  },
+  "提交独立审核": {
+    "zh-CN": "提交独立审核",
+    "en": "Submit for independent review"
+  },
+  "取消审核": {
+    "zh-CN": "取消审核",
+    "en": "Cancel review"
+  },
+  "修改报告正文": {
+    "zh-CN": "修改报告正文",
+    "en": "Edit report content"
+  },
+  "修改为新版本并重新审核": {
+    "zh-CN": "修改为新版本并重新审核",
+    "en": "Revise as a new version and review again"
+  },
+  "保存修改并重新审核": {
+    "zh-CN": "保存修改并重新审核",
+    "en": "Save revision and review again"
+  },
+  "分镜任务已交给负责Resident；受理不代表已生成或达标。": {
+    "zh-CN": "分镜任务已交给负责Resident；受理不代表已生成或达标。",
+    "en": "The storyboard task was sent to the responsible Resident. Acceptance does not mean it has been generated or meets the quality standard."
+  },
+  "缺少经核验的负责Resident，等待指定作者。": {
+    "zh-CN": "缺少经核验的负责Resident，等待指定作者。",
+    "en": "No verified responsible Resident. Awaiting an assigned author."
+  },
+  "分镜任务投递失败。": {
+    "zh-CN": "分镜任务投递失败。",
+    "en": "Storyboard task delivery failed."
+  },
+  "正在提交分镜任务。": {
+    "zh-CN": "正在提交分镜任务。",
+    "en": "Submitting storyboard task."
+  },
+  "作者已保存实际分镜修改，原报告引用保持不变。": {
+    "zh-CN": "作者已保存实际分镜修改，原报告引用保持不变。",
+    "en": "The author saved the revised storyboard. The original report reference is unchanged."
+  },
+  "打开分镜新版本": {
+    "zh-CN": "打开分镜新版本",
+    "en": "Open revised storyboard"
+  },
+  "检查创作进度": {
+    "zh-CN": "检查创作进度",
+    "en": "Check authoring progress"
+  },
+  "取消创作": {
+    "zh-CN": "取消创作",
+    "en": "Cancel authoring"
+  },
+  "重试创作": {
+    "zh-CN": "重试创作",
+    "en": "Retry authoring"
+  },
+  "生成已取消；重新生成请创建新版本。": {
+    "zh-CN": "生成已取消；重新生成请创建新版本。",
+    "en": "Generation was cancelled. Create a new version to generate again."
+  },
+  "取消生成": {
+    "zh-CN": "取消生成",
+    "en": "Cancel generation"
+  },
+  "动画为无配音字幕视频。": {
+    "zh-CN": "动画为无配音字幕视频。",
+    "en": "This animation has captions and no narration."
+  },
+  "此质量档位无需独立审核。": {
+    "zh-CN": "此质量档位无需独立审核。",
+    "en": "This quality level does not require independent review."
+  },
+  "此固定版本已通过独立审核。": {
+    "zh-CN": "此固定版本已通过独立审核。",
+    "en": "This fixed version passed independent review."
+  },
+  "审核要求修改；请保存新固定版本后重新送审。": {
+    "zh-CN": "审核要求修改；请保存新固定版本后重新送审。",
+    "en": "Changes were requested. Save a new fixed version and submit it for review."
+  },
+  "审核受阻，尚未通过。": {
+    "zh-CN": "审核受阻，尚未通过。",
+    "en": "Review is blocked and has not passed."
+  },
+  "审核已取消，尚未通过。": {
+    "zh-CN": "审核已取消，尚未通过。",
+    "en": "Review was cancelled and has not passed."
+  },
+  "固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。": {
+    "zh-CN": "固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。",
+    "en": "The fixed artifact changed, invalidating its previous approval. Save a new fixed version and submit it for review."
+  },
+  "缺少经核验的负责Resident，审核等待正式作者关联。": {
+    "zh-CN": "缺少经核验的负责Resident，审核等待正式作者关联。",
+    "en": "No verified responsible Resident. Review is awaiting a formal author association."
+  },
+  "刷新审核结果": {
+    "zh-CN": "刷新审核结果",
+    "en": "Refresh review result"
+  },
+  "低 · 自由发挥": {
+    "zh-CN": "低 · 自由发挥",
+    "en": "Low · Free form"
+  },
+  "中 · 3b1b式讲解": {
+    "zh-CN": "中 · 3b1b式讲解",
+    "en": "Medium · 3b1b-style explanation"
+  },
+  "已将质量要求送交负责Resident修改分镜；尚未生成新视频。": {
+    "zh-CN": "已将质量要求送交负责Resident修改分镜；尚未生成新视频。",
+    "en": "The quality requirements were sent to the responsible Resident for storyboard revision. No new video has been generated."
+  },
+  "分镜创作等待正式负责Resident处理，尚未生成新视频。": {
+    "zh-CN": "分镜创作等待正式负责Resident处理，尚未生成新视频。",
+    "en": "Storyboard creation is awaiting the responsible Resident. No new video has been generated."
+  },
+  "重试分镜创作请求": {
+    "zh-CN": "重试分镜创作请求",
+    "en": "Retry storyboard request"
+  },
+  "刷新生成状态": {
+    "zh-CN": "刷新生成状态",
+    "en": "Refresh generation status"
+  },
+  "视频生成已取消。": {
+    "zh-CN": "视频生成已取消。",
+    "en": "Video generation was cancelled."
   }
 }

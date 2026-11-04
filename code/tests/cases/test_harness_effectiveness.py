@@ -3,7 +3,7 @@ import asyncio
 import os
 from management_common.json_columns import json_value
 from tests.cases.database_test_support import connect
-from psycopg.errors import LockNotAvailable
+from psycopg.errors import LockNotAvailable, UndefinedTable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -377,7 +377,7 @@ def test_quality_feedback_supports_score_reason_and_last_label_wins_contracts(tm
                 "bad-score", result="pass", source="test", score=1.1
             )
         store.close()
-    with subtests.test(contract='test_outdated_schema_is_rejected_without_runtime_migration'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_outdated_schema_connects_without_runtime_migration'), isolated_portal_case() as case_path:
         tmp_path = case_path
         with monkeypatch.context() as isolated:
             isolated.setenv(
@@ -404,10 +404,13 @@ def test_quality_feedback_supports_score_reason_and_last_label_wins_contracts(tm
             first.close()
 
             outdated = HarnessEffectivenessStore()
-            with pytest.raises(RuntimeError, match="does not match its schema"):
-                with outdated._connect():
-                    pass
-            outdated.close()
+            try:
+                with outdated._connect() as connection:
+                    assert connection.execute("SELECT count(*) FROM harness_quality_labels").fetchone()[0] == 0
+                    with pytest.raises(UndefinedTable, match="harness_observations"):
+                        connection.execute("SELECT * FROM harness_observations")
+            finally:
+                outdated.close()
     with subtests.test(contract='test_async_evidence_writer_is_lossless_under_concurrent_labels'), isolated_portal_case() as case_path:
         tmp_path = case_path
         store = HarnessEffectivenessStore()

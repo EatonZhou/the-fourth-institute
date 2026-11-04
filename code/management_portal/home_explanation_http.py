@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 
 from management_portal import http_auth, http_request_body, http_responses
 from management_portal.home_explanation_media import Media
-from management_portal.home_explanation_review import ReviewService
+from management_portal.home_explanation_review import ReviewService, AuthoringService
 import json
 from management_portal.http_media_range import plan_media_response
 
@@ -91,13 +91,33 @@ def _reviews(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
+def _authoring(request, parsed, actor):
+    try:
+        value = AuthoringService().read(parse_qs(parsed.query).get('id', [''])[0], actor)
+        return http_responses._serve_json(request, 200, {'authoring': value})
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
+
+
+def _accept_authoring(request, parsed, actor):
+    try:
+        body = http_request_body._read_bounded_json_object(request, max_bytes=16384)
+        value = Media().accept_authoring(body.get('address'), body.get('sha256'), actor,
+            body.get('quality'), body.get('authoring_id'))
+        return http_responses._serve_json(request, 200, {'authoring': value})
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
+
+
 def routes():
     route = http_auth._principal_route
     return (route('GET', '/api/home-explanation/media', _media, 'home-explanation'),
             route('POST', '/api/home-explanation/media', _media, 'home-explanation'),
             route('POST', '/api/home-explanation/media/review', _review, 'home-explanation'),
             route('POST', '/api/home-explanation/media/cancel', _cancel_media, 'home-explanation'),
+            route('POST', '/api/home-explanation/media/authoring', _accept_authoring, 'home-explanation'),
             route('GET', '/api/home-explanation/reviews', _reviews, 'home-explanation'),
+            route('GET', '/api/home-explanation/authoring', _authoring, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews', _reviews, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/verdict', _reviews, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/cancel', _reviews, 'home-explanation'),

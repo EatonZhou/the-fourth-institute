@@ -181,12 +181,13 @@ class InstanceManifest:
 def validate(root: str | Path, document: dict) -> InstanceManifest:
     root = absolute_path(root)
     doc = _object(document, "instance.json")
-    required = {"schema", "instance_id", "name", "created_at", "seed_version", "deployments", "network", "services", "dependencies"}
-    if not required <= doc.keys() or doc.keys() - required - {"areas"}:
+    required = {"instance_id", "name", "created_at", "deployments", "network", "services", "dependencies"}
+    if not required <= doc.keys() or doc.keys() - required - {"areas", "schema", "seed_version"}:
         raise ValueError("Instance manifest has missing or unknown fields")
-    if doc["schema"] != SCHEMA:
-        raise ValueError("Unsupported instance manifest schema")
-    for field in ("instance_id", "name", "created_at", "seed_version"):
+    # Runtime compatibility follows the configuration consumed below. Format
+    # labels and the original seed's identity are metadata, not startup gates.
+    # Offline seed repair verifies its provenance at the repair boundary.
+    for field in ("instance_id", "name", "created_at"):
         _text(doc[field], field)
     if not _NAME.fullmatch(doc["name"]):
         raise ValueError("Invalid instance name")

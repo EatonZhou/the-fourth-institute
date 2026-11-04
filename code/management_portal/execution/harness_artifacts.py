@@ -321,7 +321,6 @@ class HarnessArtifactStore:
     ) -> None:
         if (
             envelope.get("schema") != "portal.harness-artifact"
-            or int(envelope.get("schema_version") or 0) != 1
             or str(envelope.get("handle") or "") != expected_handle
         ):
             raise RuntimeError("Harness artifact identity is invalid")

@@ -74,6 +74,7 @@ def main() -> None:
     parser.add_argument("--revision", type=int, default=1)
     parser.add_argument("--quality", choices=('low', 'medium', 'high'), default='medium')
     parser.add_argument("--previous-review-id", help="Rejected fixed version this new package corrects")
+    parser.add_argument("--authoring-id", help="Formal storyboard task fulfilled by this new fixed plan")
     parser.add_argument("--resident-id", default="", help="Current author; checked against the injected identity")
     parser.add_argument("--reviewer", default="", help="Independent review Resident; otherwise discover the unique configured reviewer")
     parser.add_argument("--task", required=True, help="What the reader should understand or be able to decide")
@@ -84,6 +85,7 @@ def main() -> None:
     values = vars(args).copy()
     output = values.pop("output")
     previous_review_id = values.pop('previous_review_id')
+    authoring_id = values.pop('authoring_id')
     directory = values.pop("directory")
     resident_id, reviewer, task = (values.pop(key) for key in ("resident_id", "reviewer", "task"))
     manifest = build(directory, **values)
@@ -93,14 +95,18 @@ def main() -> None:
     # Fixed historical manifests must not be silently replaced.
     with (directory / output).open("xb") as stream:
         stream.write(data)
-    from scripts.submit_explanation_review import submit
+    from scripts.submit_explanation_review import submit, accept_authoring
     target = {"address": args.address.rstrip("/") + "/" + output, "sha256": hashlib.sha256(data).hexdigest()}
     try:
+        if authoring_id:
+            accept_authoring(target['address'], target['sha256'], args.quality, authoring_id, resident_id)
         review = submit(target["address"], target["sha256"], task, resident_id, reviewer=reviewer, previous_review_id=previous_review_id) if args.quality == 'high' else {'status': 'not_required'}
     except (RuntimeError, ValueError, OSError) as exc:
         parser.exit(1, f"Package saved; independent review pending: {exc}\n"
                        "Retry submit_explanation_review.py with this manifest; do not overwrite it.\n")
     print(json.dumps({"view": "explanation", "target": target, "review": review}, ensure_ascii=False))
+    if review.get('status') in {'submission_failed', 'blocked', 'cancelled', 'invalidated'}:
+        parser.exit(1, 'Package saved; independent review is not complete. Read the fixed review result before continuing.\n')
 
 
 if __name__ == "__main__":

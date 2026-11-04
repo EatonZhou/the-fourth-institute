@@ -28,10 +28,18 @@ STORE_INITIALIZERS = {'AgentDataStore': initialize_agent_data, 'LineageDataStore
     # Lineage data versions advance with each migration; the canonical marker is the current one.
     ('LineageDataStore', 'lineage_meta', LINEAGE_DATA_SCHEMA, 'writer_lineage'),
 ])
-def test_new_marker_and_existing_alias_startup_are_distinct(store, table, tag, schema):
-    """新库写规范标记，旧前缀与错版本均拒绝且不改写值和行版本。"""
+def test_new_marker_and_existing_alias_startup_are_distinct(store, table, tag, schema, monkeypatch):
+    """新库写规范标记，已有库接受不同标记且不改写值和行版本。"""
     initialize = STORE_INITIALIZERS[store]
     database = portal_database(schema=schema)
+    if store == 'LineageDataStore':
+        # The workspace deletion trigger targets the owning Lineage schema;
+        # this test gives that owner a dedicated schema instead of the default.
+        from management_common.portal_database import _database_schema
+        from management_portal.resources.workspace_store import get_workspace_store
+        get_workspace_store()
+        monkeypatch.setattr('management_common.portal_database._database_schema',
+                            lambda name: database.schema if name == 'lineage' else _database_schema(name))
     database.write(initialize)
     def row():
         with database.read() as connection:
@@ -42,12 +50,8 @@ def test_new_marker_and_existing_alias_startup_are_distinct(store, table, tag, s
         database.write(lambda connection: connection.execute(
             f"UPDATE {table} SET value=%s WHERE key='schema'", (marker,)))
         before = row()
-        if marker != tag:
-            with pytest.raises(RuntimeError, match='does not match its schema'):
-                database.write(initialize)
-        else:
-            database.write(initialize)
-            database.write(initialize)
+        database.write(initialize)
+        database.write(initialize)
         assert row() == before
 
 

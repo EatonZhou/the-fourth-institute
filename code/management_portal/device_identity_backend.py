@@ -1,7 +1,6 @@
 from __future__ import annotations
 from management_common.product_environment import mirror_product_env
 
-from management_common.format_tags import schema_matches
 from management_common.portal_paths import path as portal_path
 from management_common.clock import utc_now_iso
 from management_common.text_values import stripped_text
@@ -164,9 +163,8 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
             f"device registry {document_id} contains unsupported fields: "
             + ", ".join(unknown)
         )
-    if not schema_matches(raw.get("schema"), "tfi.device.v1"):
-        raise ValueError(f"device registry {document_id} has an invalid schema")
-
+    # Device records are consumed by their fields, not by a format version.
+    # The identity, topology and connection-parameter checks remain below.
     device_id = stripped_text(raw.get("device_id"))
     _RESOURCE_SERVICE.validate_id(device_id, "device")
     if document_id != device_id:
@@ -666,7 +664,7 @@ def _read_status_store(status_path: str | Path | None = None) -> dict[str, Any]:
             payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, DirectoryPendingCleanup):
         return _empty_status_store()
-    if not isinstance(payload, dict) or not schema_matches(payload.get("schema"), "tfi.device_status.v1"):
+    if not isinstance(payload, dict):
         return _empty_status_store()
     servers = payload.get("servers")
     if not isinstance(servers, dict):

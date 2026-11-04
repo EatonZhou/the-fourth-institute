@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from management_portal import society_service
 from management_portal.resources import isa as resource_isa
 from management_portal.society_service import lineage_access_policy, project_domain, resident_protocol
@@ -80,7 +82,8 @@ def invocation(**arguments):
     return SimpleNamespace(caller="alice", argument=arguments.get)
 
 
-def test_project_list_carries_registry_fields_and_signals_in_registry_order(monkeypatch):
+@pytest.mark.parametrize("metadata", [{"schema_version": 1}, {}, {"schema_version": 999}, {"schema_version": None}])
+def test_project_list_carries_registry_fields_and_signals_in_registry_order(monkeypatch, metadata):
     """ListProjects 按登记顺序列出项目，并带团队规模、运行中的 Resident 数和最近变化时间"""
     lineage = {"lineage_id": "lineage_000000000002", "title": "Speed", "leader_resident_id": "resident_000000000002",
                "member_count": 3, "running_count": 1}
@@ -89,7 +92,7 @@ def test_project_list_carries_registry_fields_and_signals_in_registry_order(monk
         resource("decision_000000000001", "decision", ["Zeta"], "2026-10-02T00:00:00Z"),
         resource("paper_000000000001", "paper", ["Zeta", "Alpha"], "2026-10-05T00:00:00Z"),
         resource("decision_000000000002", "decision", ["Zeta"], "2026-10-09T00:00:00Z"),
-    ], {"schema_version": 1, "project_ids": ["Zeta", "Alpha"], "status_vocab": ["active", "paused"]})
+    ], {**metadata, "project_ids": ["Zeta", "Alpha"], "status_vocab": ["active", "paused"]})
     calls = use(monkeypatch, index, {"Zeta": team("resident_000000000001", [lineage], running=2),
                                      "Alpha": team()})
     result = resource_isa.list_projects(invocation())
@@ -102,6 +105,18 @@ def test_project_list_carries_registry_fields_and_signals_in_registry_order(monk
                     "running_resident_count": 2, "last_changed_at": "2026-10-09T00:00:00Z"}
     assert (alpha["project_id"], alpha["status"], alpha["lineage_count"]) == ("Alpha", "paused", 0)
     assert alpha["last_changed_at"] == "2026-10-05T00:00:00Z"
+    assert index.state == {**metadata, "project_ids": ["Zeta", "Alpha"], "status_vocab": ["active", "paused"]}
+
+
+@pytest.mark.parametrize("state, message", [
+    ([], "must be an object"),
+    ({"project_ids": "Demo"}, "project_ids must be an array"),
+    ({"status_vocab": "active"}, "status_vocab must be an array"),
+])
+def test_project_list_rejects_unreadable_projection_fields(monkeypatch, state, message):
+    use(monkeypatch, Index([], state), {})
+    with pytest.raises(RuntimeError, match=message):
+        resource_isa.list_projects(invocation())
 
 
 def test_project_overview_counts_resources_and_lists_recent_changes_without_the_team(monkeypatch):

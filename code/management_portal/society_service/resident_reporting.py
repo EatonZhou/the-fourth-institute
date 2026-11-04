@@ -22,7 +22,7 @@ def normalize(value: Any) -> dict[str, str]:
 
 def configured(record: dict) -> dict[str, str]:
     value = record.get("reporting")
-    return normalize(value) if value else dict(DEFAULT)
+    return dict(DEFAULT) if value is None or value == {} else normalize(value)
 
 
 def effective(resident_id: str, message_id: str = "") -> dict:
@@ -168,16 +168,28 @@ def prompt(record: dict, job: dict) -> str:
 def install_schema(connection: Any) -> dict:
     """Explicit additive owner migration; called by the authorized integrator."""
     connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || ':schema-init', 0))")
-    version = connection.execute("SELECT value FROM lineage_meta WHERE key='schema' FOR UPDATE").fetchone()
-    if not version or version["value"] != "tfi.lineage-data.v66":
-        raise ValueError("Reporting upgrade requires LineageData v66")
-    columns = {r["column_name"]:r["data_type"] for r in connection.execute(
-        "SELECT column_name,data_type FROM information_schema.columns "
+    relation = connection.execute(
+        "SELECT relkind FROM pg_class WHERE oid=to_regclass("
+        "quote_ident(current_schema()) || '.resident_execution_configuration')").fetchone()
+    if not relation or relation["relkind"] not in {"r", "p"}:
+        raise ValueError("Reporting upgrade requires a Resident configuration table")
+    columns = {r["column_name"]:r for r in connection.execute(
+        "SELECT column_name,data_type,is_nullable FROM information_schema.columns "
         "WHERE table_schema=current_schema() AND table_name='resident_execution_configuration'").fetchall()}
-    if not {"resident_id", "execution_settings_json", "harness_config_json"} <= columns.keys():
-        raise ValueError("Unexpected Resident configuration table")
-    if "reporting_json" in columns and columns["reporting_json"] != "text":
-        raise ValueError("Unexpected reporting column type")
-    connection.execute("ALTER TABLE resident_execution_configuration ADD COLUMN IF NOT EXISTS reporting_json TEXT")
-    return {"schema":version["value"], "changed":"reporting_json" not in columns,
+    expected = {"resident_id": {"text"}, "execution_settings_json": {"text", "jsonb", "json"},
+                "harness_config_json": {"text", "jsonb", "json"}}
+    for name, types in expected.items():
+        if name not in columns or columns[name]["data_type"] not in types:
+            raise ValueError(f"Unexpected Resident configuration column: {name}")
+    if "reporting_json" in columns and (columns["reporting_json"]["data_type"] != "text"
+                                       or columns["reporting_json"]["is_nullable"] != "YES"):
+        raise ValueError("Reporting column must be nullable TEXT")
+    version = None
+    if connection.execute("SELECT to_regclass(quote_ident(current_schema()) || '.lineage_meta') AS name").fetchone()["name"]:
+        version = connection.execute(
+            "SELECT to_jsonb(meta)->>'value' AS value FROM lineage_meta meta "
+            "WHERE to_jsonb(meta)->>'key'='schema'").fetchone()
+    if "reporting_json" not in columns:
+        connection.execute("ALTER TABLE resident_execution_configuration ADD COLUMN reporting_json TEXT")
+    return {"schema":str(version["value"] or "") if version else "", "changed":"reporting_json" not in columns,
             "default":{"initiative":"off","quality":"medium"}}

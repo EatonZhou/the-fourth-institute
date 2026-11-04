@@ -6,7 +6,7 @@ orchestration independent from provider names and native fork APIs.
 """
 from __future__ import annotations
 
-from management_common.format_tags import schema_matches
+import re
 
 from dataclasses import replace
 from typing import Any, Mapping, Protocol, Sequence, TypeVar
@@ -70,7 +70,7 @@ def context_seed(request: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ValueError("Provider context seed must be an object")
     schema = str(value.get("schema") or CONTEXT_SEED_SCHEMA)
-    if not schema_matches(schema, "tfi.provider-context-seed.v1"):
+    if not re.fullmatch(r"tfi\.provider-context-seed\.v\d+", schema):
         raise ValueError("Unsupported Provider context seed schema")
     references = value.get("segments")
     if not isinstance(references, list):

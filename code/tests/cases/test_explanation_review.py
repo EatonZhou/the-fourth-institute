@@ -1,56 +1,79 @@
-import hashlib
-import json
+"""The author CLI delegates to the single authenticated HTTP review owner."""
+from scripts import submit_explanation_review as client
+from scripts.build_explanation_package import build
 import pytest
-
-from scripts import submit_explanation_review as review
-
-AUTHOR = 'resident_111111111111'
-REVIEWER = 'resident_222222222222'
-ADDRESS = 'workspace_111111111111/file/lesson/manifest.json'
-DATA = json.dumps({'schema': 'portal-explanation/v1', 'title': '比较两条路线'})
-SHA = hashlib.sha256(DATA.encode()).hexdigest()
+import io
+import json
 
 
-def client(monkeypatch, residents=None):
-    monkeypatch.setattr(review.isa, '_resident_id', lambda value: value)
+def test_builder_retains_fixed_package_and_fails_when_high_submission_fails(tmp_path, monkeypatch, capsys):
+    import sys
+    from scripts import build_explanation_package as builder, submit_explanation_review as sender
+    (tmp_path/'explanation.md').write_text('A fixed explanation.', encoding='utf-8')
+    monkeypatch.setattr(sender, 'submit', lambda *a, **k: {'status': 'submission_failed'})
+    monkeypatch.setattr(sys, 'argv', ['build_explanation_package.py', str(tmp_path),
+        '--address', 'workspace_0123456789ab/file/example', '--title', 'Example', '--task', 'Explain cause',
+        '--quality', 'high', '--supplement', 'explanation.md'])
+    with pytest.raises(SystemExit) as stopped:
+        builder.main()
+    assert stopped.value.code == 1
+    assert (tmp_path/'manifest.json').is_file()
+    assert 'submission_failed' in capsys.readouterr().out
+
+def test_cli_passes_fixed_request_without_claiming_verdict():
     calls = []
-    def call(actor, body):
-        assert actor == AUTHOR
-        calls.append(body)
-        result = {'GetInstructionSchema': {}, 'ReadResource': {'text': DATA},
-                  'SearchResidents': {'residents': residents if residents is not None else [
-                      {'resident_id': REVIEWER, 'title': review.REVIEWER_TITLE}]},
-                  'DeliverMessage': {'message_id': 'msg_review', 'accepted': True}}[body['instruction']]
-        return {'status': 'committed', 'result': result}
-    return calls, call
+    def request(actor, path, body):
+        calls.append((actor, path, body))
+        return {'status': 'submitted', 'id': 'a'*64}
+    result = client.submit('workspace_111111111111/file/lesson/manifest.json', 'a'*64,
+                           '看懂因果', 'resident_111111111111', previous_review_id='b'*64, call=request)
+    assert result['status'] == 'submitted'
+    assert calls[0][2]['previous_review_id'] == 'b'*64
+    assert 'author' not in calls[0][2] and 'status' not in calls[0][2]
+    assert calls[0][0] == 'resident_111111111111'
+
+def test_low_builder_is_markdown_and_medium_does_not_claim_review(tmp_path):
+    (tmp_path/'reading.md').write_text('# 解释')
+    (tmp_path/'interaction.html').write_text('<button>计算</button>')
+    value = build(tmp_path, 'workspace_111111111111/file/lesson', title='理解', quality='low', supplement='reading.md')
+    assert value['quality'] == 'low' and 'review' not in value
+    with pytest.raises(ValueError, match='Markdown'):
+        build(tmp_path, 'workspace_111111111111/file/lesson', title='理解', quality='low', interaction='interaction.html')
+    assert build(tmp_path, 'workspace_111111111111/file/lesson', title='理解', quality='medium', interaction='interaction.html')['quality'] == 'medium'
 
 
-def test_submission_is_pinned_independent_and_retry_safe(monkeypatch):
-    calls, call = client(monkeypatch)
-    one = review.submit(ADDRESS, SHA, '看懂路线代价', AUTHOR, call=call)
-    two = review.submit(ADDRESS, SHA, '看懂路线代价', AUTHOR, call=call)
-    sent = [c for c in calls if c['instruction'] == 'DeliverMessage']
-    assert one == two and one['status'] == 'submitted'
-    assert sent[0]['idempotency_key'] == sent[1]['idempotency_key']
-    assert sent[0]['arguments']['resident_id'] == REVIEWER
-    assert 'temporary_credentials' not in sent[0]['arguments']
-    request = json.loads(sent[0]['arguments']['message']['content_parts'][0]['text'])
-    assert request['manifest'] == {'address': ADDRESS, 'sha256': SHA}
-    assert request['author_resident_id'] == AUTHOR
+def test_cli_uses_formal_current_resident_lineage_header(monkeypatch):
+    actor, lineage = 'resident_111111111111', 'lineage_222222222222'
+    monkeypatch.setattr(client.isa, '_resident_id', lambda supplied: actor if supplied == actor else None)
+    monkeypatch.setattr(client.isa, '_token', lambda current: 'fixture-only-token')
+    def execute(current, call, **kwargs):
+        assert current == actor and call['arguments'] == {'resident_id': actor}
+        return {'result': {'resident': {'resident_id': actor, 'lineage_id': lineage}}}
+    monkeypatch.setattr(client.isa, 'execute', execute)
+    requests = []
+    def open_request(req, **kwargs):
+        requests.append(req)
+        assert req.get_header('X-portal-lineage-id') == lineage
+        assert req.get_header('Authorization') == 'Bearer fixture-only-token'
+        return io.BytesIO(json.dumps({'review': None}).encode())
+    monkeypatch.setattr(client, 'urlopen', open_request)
+    assert client.request(actor, 'reviews?id='+'0'*64) is None
+    monkeypatch.setattr(client.isa, 'execute', lambda *a, **kw: {'result': {'resident': {'resident_id': 'resident_333333333333', 'lineage_id': lineage}}})
+    with pytest.raises(ValueError, match='无法核实'):
+        client.request(actor, 'reviews?id='+'0'*64)
+    assert len(requests) == 1
 
 
-def test_changed_bytes_never_dispatch(monkeypatch):
-    calls, call = client(monkeypatch)
-    with pytest.raises(ValueError, match='bytes'):
-        review.submit(ADDRESS, '0' * 64, '看懂路线代价', AUTHOR, call=call)
-    assert not any(c['instruction'] == 'DeliverMessage' for c in calls)
-
-
-@pytest.mark.parametrize('residents', [[], [{'resident_id': AUTHOR, 'title': review.REVIEWER_TITLE}],
-    [{'resident_id': REVIEWER, 'title': review.REVIEWER_TITLE},
-     {'resident_id': 'resident_333333333333', 'title': review.REVIEWER_TITLE}]])
-def test_missing_self_or_ambiguous_reviewer_never_dispatch(monkeypatch, residents):
-    calls, call = client(monkeypatch, residents)
-    with pytest.raises(ValueError, match='independent'):
-        review.submit(ADDRESS, SHA, '看懂路线代价', AUTHOR, call=call)
-    assert not any(c['instruction'] == 'DeliverMessage' for c in calls)
+def test_builder_completes_formal_authoring_before_high_review(tmp_path, monkeypatch):
+    import sys
+    from scripts import build_explanation_package as builder
+    (tmp_path/'explanation.md').write_text('Changed fixed explanation.', encoding='utf-8')
+    calls = []
+    monkeypatch.setattr(client, 'accept_authoring', lambda *args: calls.append(('authoring', args)))
+    monkeypatch.setattr(client, 'submit', lambda *args, **kw: calls.append(('review', args)) or {'status': 'submitted'})
+    monkeypatch.setattr(sys, 'argv', ['build_explanation_package.py', str(tmp_path), '--address',
+        'workspace_0123456789ab/file/example', '--title', 'Example', '--task', 'Explain cause',
+        '--quality', 'high', '--supplement', 'explanation.md', '--authoring-id', 'a'*64])
+    builder.main()
+    assert [entry[0] for entry in calls] == ['authoring', 'review']
+    assert calls[0][1][2:4] == ('high', 'a'*64)

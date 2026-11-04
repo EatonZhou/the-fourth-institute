@@ -164,7 +164,7 @@ def unpack_engineering(platform, *, included=True, progress=None, archive=None, 
     with zipfile.ZipFile(archive) as zipped:
         marker = zipped.read('manifest.json')
         manifest = json.loads(marker)
-        if manifest.get('schema') != 'tfi.release-engineering.v1' or manifest.get('include_examples') is not included:
+        if manifest.get('include_examples') is not included:
             raise ValueError('Unexpected packaged engineering selection')
         completed = destination / 'manifest.json'
         if completed.is_symlink():

@@ -62,8 +62,8 @@ def test_failure_before_prepare_persists_exact_failed_fence_without_creating_pla
 
 
 @pytest.mark.parametrize("plan_exists", [False, True])
-def test_outdated_fence_schema_is_rejected_without_runtime_migration(runtime, plan_exists):
-    """服务调用屏障表结构过时时启动直接报错，不在运行时迁移或改动已有数据
+def test_outdated_fence_schema_fails_at_access_without_runtime_migration(runtime, plan_exists):
+    """既有屏障缺字段不阻止构造，访问时给出真实局部错误，数据不改写
 
     :module: workflow.knowledge
     :importance: P3
@@ -81,18 +81,21 @@ def test_outdated_fence_schema_is_rejected_without_runtime_migration(runtime, pl
             connection.execute('INSERT INTO service_run_fences VALUES(%s,%s,%s,%s)', store.key(job(), "knowledge"))
         with store.database.read() as connection:
             before = connection.execute("SELECT * FROM service_run_fences").fetchall()
-        with pytest.raises(ServiceInvocationConflict, match="does not match its schema"):
-            ServiceInvocationStore()
+        from psycopg.errors import UndefinedColumn
+        reopened = ServiceInvocationStore()
+        with reopened.database.read() as connection:
+            with pytest.raises(UndefinedColumn, match="reason"):
+                reopened._fence(connection, store.key(job(), "knowledge"), {})
         with store.database.read() as connection:
             assert connection.execute("SELECT * FROM service_run_fences").fetchall() == before
-        with pytest.raises(ServiceInvocationConflict, match="does not match its schema"):
-            ServiceInvocationStore()
+        ServiceInvocationStore()
         assert not runtime.executions.submitted and not runtime.executions.cancelled
     finally:
         # Put the current fence table back for the tests that follow (DDL is not truncated).
         with domain._store().database.transaction() as connection:
             connection.execute("DROP TABLE IF EXISTS service_run_fences")
-        ServiceInvocationStore()
+            connection.execute("CREATE TABLE service_run_fences (actor TEXT,surface TEXT,search_id TEXT,"
+                "generation BIGINT,reason TEXT,PRIMARY KEY(actor,surface,search_id,generation))")
 
 
 @pytest.mark.parametrize("prepare_commits_first", [False, True])

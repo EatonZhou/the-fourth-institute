@@ -22,6 +22,49 @@ from scripts import tfi_release_install as installer
 from scripts.macos.publish import validate
 
 
+class MacPackageTagConsumptionTests(unittest.TestCase):
+    def test_replace_code_consumes_fields_with_missing_or_different_schema_tags(self):
+        for old_tag in (None, 'different.old-package.v99'):
+            for new_tag in (None, 'different.new-package.v100'):
+                with self.subTest(old_tag=old_tag, new_tag=new_tag), tempfile.TemporaryDirectory() as tmp:
+                    bundle, platform = Path(tmp) / 'bundle', Path(tmp) / 'platform'
+                    expected = {}
+                    for root, tag, text in ((bundle, new_tag, 'new'), (platform, old_tag, 'old')):
+                        (root / 'code').mkdir(parents=True)
+                        (root / 'code/module.py').write_text(text)
+                        receipt = {'target': 'macos/aarch64', 'python': {'v': 1},
+                                   'bundled_native_dependencies': [{'name': 'postgres'}],
+                                   'source_dirty': False, 'prepared_engineering_validation': 'passed'}
+                        if tag is not None:
+                            receipt['schema'] = tag
+                        (root / 'macos-package.json').write_text(json.dumps(receipt))
+                        if root == bundle:
+                            expected = receipt
+                    with patch.object(launcher, 'stop_all') as stop:
+                        launcher.replace_code(bundle, platform)
+                    stop.assert_called_once()
+                    self.assertEqual((platform / 'code/module.py').read_text(), 'new')
+                    self.assertEqual(json.loads((platform / 'macos-package.json').read_text()), expected)
+
+    def test_replace_code_rejects_real_incompatibility_before_stopping_without_tags(self):
+        for field, bad in [('target', 'macos/x86_64'), ('python', {'v': 2}),
+                           ('bundled_native_dependencies', [{'name': 'different'}]),
+                           ('source_dirty', True), ('prepared_engineering_validation', 'failed')]:
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as tmp:
+                bundle, platform = Path(tmp) / 'bundle', Path(tmp) / 'platform'
+                for root in (bundle, platform):
+                    root.mkdir()
+                    receipt = {'target': 'macos/aarch64', 'python': {'v': 1},
+                               'bundled_native_dependencies': [{'name': 'postgres'}],
+                               'source_dirty': False, 'prepared_engineering_validation': 'passed'}
+                    if root == bundle:
+                        receipt[field] = bad
+                    (root / 'macos-package.json').write_text(json.dumps(receipt))
+                with patch.object(launcher, 'stop_all') as stop, self.assertRaises(ValueError):
+                    launcher.replace_code(bundle, platform)
+                stop.assert_not_called()
+
+
 class MacDesktop(unittest.TestCase):
     def test_launch_agents_belong_to_the_os_user_record(self):
         import pwd

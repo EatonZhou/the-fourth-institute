@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 33
+  number: 34
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-04T18:34:47Z"
+  updated_at: "2026-11-04T19:19:33Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -248,4 +248,4 @@ Family 门面拥有自身汇报策略。调用者只需门面 viewer/contributor
 
 主动性 off 关闭额外主动汇报，保留普通答复、任务交付与用户显式请求。低档仅在重要成果、风险或决策有汇报价值时考虑；中档在实质成果和解释能帮助理解时考虑；高档更积极判断信息增量与用户需要，仍不要求每次请求生成。明确的格式、取消及展示限制优先。汇报质量低使用 Markdown，中使用现有交互网页模板，高由独立 Resident 检查并修改复审至达标；模板、媒体与审查结果由各业务 owner 保存，不能将提示注入当成作品已经通过审查。
 
-新增 nullable reporting_json 列由 Society 正式升级入口处理，旧行按默认策略解释，不批量改写其他设置。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；核验当前 schema、列类型及初始化锁并保持幂等。旧安装转换与新安装 seed 使用同一 owner 结构。先完成匹配升级，再加载新服务代码；实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
+新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。列已存在且类型合法时不再 ALTER，不重写已有策略。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。

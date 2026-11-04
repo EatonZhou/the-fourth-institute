@@ -4,36 +4,36 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 22
-  created_at: '2026-09-03'
+  number: 24
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T20:25:09Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T19:23:30Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/resources/timing.py
-  - ${code_root}/management_portal/resources/providers/chatroom.py
-  - ${code_root}/management_portal/resource_auto_registration.py
-  - ${code_root}/management_portal/resources/runtime.py
-  - ${code_root}/management_portal/resources/service.py
-  - ${code_root}/management_portal/resources/service_reads.py
-  - ${code_root}/management_portal/resources/service_mutations.py
-  - ${code_root}/management_portal/resources/service_providers.py
-  - ${code_root}/management_portal/resources/service_index.py
-  - ${code_root}/management_portal/resources/server.py
-  - ${code_root}/management_portal/resources/transport.py
-  - ${code_root}/management_portal/resources/providers
-  - ${code_root}/management_portal/resources/providers/test.py
-  - ${code_root}/management_portal/resource_index_backend.py
-  - ${code_root}/management_portal/resource_index_store.py
-  - ${code_root}/management_portal/resource_index_refresh.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/timing.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/chatroom.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_auto_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service_reads.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service_mutations.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service_providers.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service_index.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/server.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/transport.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/test.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_index_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_index_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_index_refresh.py
   related:
   - decision_4637ca4a69e2
   - decision_b6e74d78f7b6
@@ -235,3 +235,13 @@ ResourceService 检查权限和请求内容
 一次性的 owner 迁移观测只保留在离线备份中；领域运行记录保存真实运行结果。
 
 新增一种资源类型时，只需增加对应的领域插件，必要时增加一个索引适配器；页面、Resident 和其他服务继续使用同一个 ResourceService。
+
+
+## 登记、索引初始化与可读文档
+
+资源登记和资源索引在串行事务中为空库建立基本结构；现存库不要求全表集合或描述性 schema 标签相等，也不补写未知或缺失的标签。目录归属正式升级、身份注销保护及写入事务继续由原 owner 执行。实际必要表列损坏时保留具体 SQL 错误，不伪造空查询结果。
+
+协作描述、设备登记和设备观察缓存按实际字段解析，不以格式标签缺失或版本数字不同作为拒读条件；资源 ID、预期身份、类型、拓扑和关系约束继续核验。读取不为通过检查改写文档或 revision；语义未变的协作文档写入保持原文。派生观察缓存的坏结构按既有无观察合同处理，权威登记的实际字段错误仍明确返回。删除/恢复来源证据、身份协议、CAS 与固定内容 SHA 按其实际语义核验。
+
+
+Project 登记与列表按实际字段结构消费，不以 schema_version 的存在或数字相等拒读。登记读取、无变化写入和索引投影不补造标签；已有标签原样保留。projects 必须是对象数组，可选词表缺失仍使用原默认，存在但结构错误时报告具体错误。资源 ID、CAS、权限判定及提交事务继续由各自 owner 执行。

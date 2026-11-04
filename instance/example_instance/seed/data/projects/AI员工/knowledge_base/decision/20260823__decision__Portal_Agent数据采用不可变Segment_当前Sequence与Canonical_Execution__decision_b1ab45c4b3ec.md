@@ -4,20 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-08-23'
 version:
-  number: 91
+  number: 93
   created_at: "2026-08-23"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T08:27:09Z"
+  updated_at: "2026-11-04T19:19:31Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_reasoning.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_output_capture.py
   - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_session_transcript_from_trace.py
   - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_subagent_trace.py
   - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_live_trace_ingress.py
@@ -101,7 +103,7 @@ Chat 展示策略由 Portal 的 conversation/message projection service 拥有�
 
 所有 Chat 读取都读消息定位投影 `chat_message_positions`，不逐条解析 Segment JSON。投影为 trace 中每条通信消息和运行通知保存一行：位置、Segment 类型、消息 ID 和类别，发送时间、作者、`business_ref` 和收件用户（小写的 user ID），以及这条消息回复哪个输入、能否作为回复（不是 Harness 输入，也不带工作卡片）。`chat_actor_activity` 为每条 trace 和每个人保存他们在最近一次清空之后最后一次发言或被点名的时间，Mailbox 按它排列会话，Family 门面转发的副本不算发送者的活动（decision_44cf587c1721）。Chat 显示投影中的每一行，只有一个例外：final_answer Segment 带的消息已由同一 trace 中更早的 Segment 带过时不显示。读取需要 metadata 或正文时，按行的来源逐条从 Segment 或通知取回。用户消息数、最新用户消息与作者、actor 的请求、发给 actor 的消息、最近活动、按消息 ID 查找、翻页、回复窗口、消息头和 Fork 计数都只读这两张表；按消息 ID、发送者和收件用户的部分索引支持跨 trace 的查询。输入的最终回复先从 Segment 关系找出包含它的 Mailbox 组合消息，再在投影中按 trace 和回复目标找最后一条回复。
 
-追加 Segment、放置通知、替换、清空和重排在写入它们的同一事务中维护这些行和最近活动，并把这条 trace 的同步标记设为 Sequence 行当前的 MVCC 版本。读取先核对所读 trace 的标记：标记落后时（某个写入者没有维护投影，或 Sequence 行被改写），在轨迹行锁内从 Segment 和通知重建这条 trace 后再读；先按消息 ID 查找再写入的操作在同一把锁内完成这一步。Mailbox 列表在开始时一次核对所有 trace，各页共用。这两张表属于 AgentData schema，新建存储直接创建，schema 检查要求它们的列和索引齐全。
+追加 Segment、放置通知、替换、清空和重排在写入它们的同一事务中维护这些行和最近活动，并把这条 trace 的同步标记设为 Sequence 行当前的 MVCC 版本。读取先核对所读 trace 的标记：标记落后时（某个写入者没有维护投影，或 Sequence 行被改写），在轨迹行锁内从 Segment 和通知重建这条 trace 后再读；先按消息 ID 查找再写入的操作在同一把锁内完成这一步。Mailbox 列表在开始时一次核对所有 trace，各页共用。这两张表属于 AgentData schema，新建空库存储直接创建；现存库在使用相关投影时访问实际表列，不以全库结构检查阻断初始化。
 
 Execution 的最终回复在写入时选定，记入 `executions.final_message_id`：结束 Execution 的写入和给它追加消息的写入从 trace 本身选出这条回复，因为它们持有 Execution 而不是 trace 的锁；空串表示终态 Execution 没有可显示的回复。消息只按这个指针显示用量，读取时不再补算。
 
@@ -121,7 +123,7 @@ Provider transcript 和当前 context 都从 Agent 的当前 trace 读取，没�
 
 持续会话只接收这次新增的输入。会话重建、切换 Provider 和 Fork 使用所选择窗口的 Segment 内容。Fork 创建时把选定有效窗口的 Segment ID 有序写入子 Agent 的 trace，再创建独立模型会话；最近 N 轮仅引用选中的轮次。父 Agent 后续追加或转换不改变子轨迹，未开始工作的嵌套 Fork 直接读取自身 trace。上下文接收事实通过 record_context_received 保存为运行记录，内容必须已经按顺序进入 trace；缺少成员时报告错误，不在轨迹头部补插。Resident 不再另存初始化材料或接收状态副本；首轮交付根据自身 trace 和当前会话的接收回执决定。全新会话成功替换后记录 provider_context_reset 及位置，只清空后续模型窗口，保留聊天历史。
 
-窗口按尾部分页读取，遇到最后一个压缩段即可结束，不为一个小窗口读取整个历史。只存在不透明压缩检查点而没有实际替换内容时，跨会话恢复明确报告内容不可恢复，不从 Provider 会话日志补齐。
+窗口按尾部分页读取，遇到最后一个压缩段即可结束，不为一个小窗口读取整个历史。只存在不透明压缩检查点而没有实际替换内容时，不能据此宣称上下文可恢复。显式会话迁移可按“Codex 原生有效上下文与账号切换”核验并冻结原生有效窗口；无法取得可验证的完整窗口时明确失败，不通过扫描日志补齐普通内容事件。
 
 Provider 子 Agent 的输出、工具、输入和压缩属于各自轨迹；父轨迹保留父模型实际收到的调用与返回。子 Agent 的详细上下文不混入父 Agent 的重建窗口。
 
@@ -167,10 +169,11 @@ Provider 明确返回的、已经完成的思考（thinking 或 reasoning）条�
   - Kimi：实时订阅中的 thinking.delta 在片段边界完整结束后生成；断线残片与历史快照不参与补齐。
   - DSH：从完成且未标记 interrupted 的 assistant/message 中提取可见 reasoning 内容。
   - Claude：从已完成的 AssistantMessage 中的 ThinkingBlock 生成。
-- **内容格式。** 内容是 JSON：拿到原文时保存 `text`（可同时保留签名），拿到摘要时保存 `summary`。只有密文时保存 `encrypted: true` 标记，绝不把 `encrypted_content`、`redacted_thinking.data` 或它们的编码副本写入 Segment 或 Payload；摘要与密文同时存在时保存摘要和加密标记，不把摘要称为完整思考。`metadata.formats` 列出 `full`、`summary`、`encrypted` 中出现的形式，`metadata.format` 按原文、摘要、加密占位的顺序标出首要形式。
+- **内容格式。** 内容为 JSON，区分原生事实与可读投影。Provider 在已完成条目中明确返回完整原生 reasoning（包括 `encrypted_content`、`redacted_thinking.data` 等不透明字段）时，原生条目原样写入 Segment 引用的 Payload，并以 `metadata.representation=native` 标明表示形式；不解密、不改写密文，也不以 `encrypted: true` 占位替换或丢弃已收到的原件。Provider 只返回可读原文或摘要时，如实保存 `text`（可同时保留签名）或 `summary`；只返回加密存在标记而未返回原件时，保存 `encrypted: true`，不伪造原生内容。可读投影从已保存内容提取原文、摘要或加密占位，不返回密文字段及其编码副本，不把摘要称为完整思考。`metadata.formats` 列出 `full`、`summary`、`encrypted` 中实际出现的形式，`metadata.format` 按原文、摘要、加密占位的顺序标出首要形式；这些字段描述内容形式，不代替原生完整性证明。
 - **思考 token 数。** 只在 Provider 明确给出属于这个条目的非负整数时记录 `reasoning_tokens`，可接受 `item.reasoning_tokens`、`item.usage.reasoning_tokens` 或 `item.usage.output_tokens_details.reasoning_tokens`；没有时省略，不把整轮的 token 数分给某一段，也不按密文长度估算。
 - **身份。** Segment ID 由执行范围、Provider turn 和条目身份共同确定；Provider 未提供身份时为每次观察分配独立标识，不以正文摘要判定事件相同。
-- **用途。** 这些 Segment 加入完整轨迹和对应 Provider 会话的 context，Fork 时同样只建立引用。它们不会额外发给模型，不创建聊天消息，也不成为最终回复。加密占位只用于记录和检查，不能用来重建加密的原始上下文。有权读取原轨迹的调用方可以在轨迹或调试读取中看到这些记录和占位。
+- **用途。** 这些 Segment 加入完整轨迹和对应 Provider 会话的 context，Fork 时同样只建立引用；采集不额外向模型发送思考内容，不创建聊天消息，也不成为最终回复。已保存的原生事实可由执行数据 owner 沿严格上下文导入协议用于迁移或重放；摘要和加密占位不能代替原件，也不证明有效窗口完整。Chat、上下文诊断及其他可读投影只返回可读正文、摘要或占位，不透传原生密文；有权查看轨迹或诊断不意味着这些展示接口返回原始 Payload。
+- **来源与权限。** 原生事实沿用 Segment 的 Provider、会话、执行、条目身份及来源记录，保持不可变与重放冲突检查；经核验原生窗口取得的快照另记真实来源，不伪装成实时完成事件。原生 Payload 的读取和迁移继续核验原轨迹访问权限及会话操作权限，不因持有 Segment ID、内容哈希或可读投影而绕过授权。原生窗口解析与 AgentData 写入由执行数据 owner 负责，Society 通过既有 Execution 端口编排生命周期操作。Portal 不另外获取 Provider 未提供的思考、不解密或推导隐藏原文；未收到原件时保留缺失事实，不从摘要补造。
 
 
 ## Execution 的唯一身份与生命周期
@@ -201,7 +204,7 @@ Segment 类型为 input、model、tool、compaction、harness。工具和模型�
 
 内容插入、转换关系与当前引用替换在事务中完成。现有数据的结构整理直接在原库执行：先核对类型与转换关系，将运行事实移出 Segments，清除旧正文副本，再按已记录转换关系收敛当前引用。相同正文不能作为删除独立事件的依据。整理过程中保留不可变内容的审计关系，并核对已有 Fork 与聊天窗口。
 
-AgentData 的健康查询核对数据库 schema 版本；需要内容、用量或条目数量的业务读取对应事实。调度器决定运行和重试，Provider 适配器解释原生协议，Chat service 决定投影规则，业务权限服务决定访问权限。
+AgentData 的健康查询读取数据库连接及可用的描述性标签；meta 表或标签缺失返回未知，不以标签对齐判定不可用。需要内容、用量或条目数量的业务读取对应事实，实际 SQL 错误仍如实返回。调度器决定运行和重试，Provider 适配器解释原生协议，Chat service 决定投影规则，业务权限服务决定访问权限。
 
 排队输入在 Mailbox 中也使用同一无损正文包装，读取时按规则解包；进入 trace 后删除 Mailbox 中的等待记录。群组递交在一个 AgentData 事务中将成员替换为群组，成员原文仅通过转换关系用于审计与重新排队，不重新成为当前 trace 条目。
 
@@ -209,7 +212,7 @@ AgentData 的健康查询核对数据库 schema 版本；需要内容、用量�
 
 所有 Resident 执行都以同一 Portal 输入身份建立正文替换及回复关联。原生会话传输选项中的 client_user_message_id 与 API 请求元数据中的 user_message_id 都引用该输入；录入时将其归一到同一关联规则。执行输入消费原输入当前引用，模型完成事件的 reply_to_message_id 指向该输入身份，业务服务据此读取结果。API 请求不能留下原输入与执行输入两个当前条目，也不能因 Provider 类型而失去回复关联。
 
-完成的 Provider 事件是模型 Segment 的唯一写入来源。界面通知先到达时作为运行通知保存；完成事件到达后，在同一事务中用内容事件替换该通知的位置。重复通知读取当前内容，不再次写入模型正文。相同执行的多条真实 final 事件均保留在 trace，其他消费者可以使用不同策略。聊天服务投递最终回复时，在共享该回复身份的已捕获 final 中，按时间顺序选第一条正文与这条回复相同的，没有相同的就报错 `Captured message does not match the selected content`，不随便拿一条。比较之前，两边的 `portal-question` 代码块都先转成提问卡片再去掉：投递的回复已经把代码块转成了 `async_questions` 部分，已捕获的 Segment 仍保留代码块原文（`agent_data_messages.answer_text`）。
+运行期间的模型 Segment 只从完成的 Provider 事件写入；显式迁移冻结的原生有效窗口按其独立来源保存，不补造模型完成事件。界面通知先到达时作为运行通知保存；完成事件到达后，在同一事务中用内容事件替换该通知的位置。重复通知读取当前内容，不再次写入模型正文。相同执行的多条真实 final 事件均保留在 trace，其他消费者可以使用不同策略。聊天服务投递最终回复时，在共享该回复身份的已捕获 final 中，按时间顺序选第一条正文与这条回复相同的，没有相同的就报错 `Captured message does not match the selected content`，不随便拿一条。比较之前，两边的 `portal-question` 代码块都先转成提问卡片再去掉：投递的回复已经把代码块转成了 `async_questions` 部分，已捕获的 Segment 仍保留代码块原文（`agent_data_messages.answer_text`）。
 
 模型输出中的提问卡片由聊天服务读取时解析。模型文字中出现的用户包装标签是输出正文，不执行输入解包。模型原始响应附件和用量由运行记录及 Execution 提供，消息元数据不复制正文或执行统计。多段文字与附件以结构顺序和文字长度恢复；Harness 改写后长度不再匹配时展示当前文字及附件。
 
@@ -239,7 +242,7 @@ Segment 的时间字段为 `started_at`、`finished_at`，不再保存独立的 
 
 新 Execution 不为计时启动代理，不改变模型 base URL、认证、代理环境、TLS、压缩、重试或 HTTP/WebSocket 路由，也不解析模型正文补取关联 ID。旧绑定会话所需的代理兼容代码不证明新请求启用了计时。全局开关只控制可选时间副本的持久化；关闭、读取设置失败或缺少关联都不改变业务执行，不丢弃输出或重跑请求。历史缺失值继续为空。
 
-格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+格式标签的读取按实际兼容性处理，规则见 decision_86aed2f0e8c7。描述性标签不作为服务启动门槛；确实承担身份、协议类型、内容摘要或并发控制的字段继续由对应 owner 核验。
 
 
 ### Codex 原生有效上下文与账号切换
@@ -248,4 +251,9 @@ Segment 的时间字段为 `started_at`、`finished_at`，不再保存独立的 
 
 原生窗口在执行数据 owner 中冻结为不可变、带原会话来源的 Segment 引用，沿既有严格导入及请求/确认回执进入候选会话。快照不改写旧 Segment、不补造 Chat 消息，不按文本相似度匹配历史身份。新会话确认后才条件提交绑定，原会话保留；权限、在途等待、幂等和取消机制保持。找不到原生归档时使用已有可完整验证的 canonical history；仅保存摘要的历史不冒充完整原生数据。
 
-展示思考与迁移记录分工：展示只使用可读正文、摘要或加密占位，不能输出密文；Provider 明确提供的完整原生 reasoning（含 encrypted_content）保存原样用于迁移，不能仅记录 encrypted=true 后丢弃原件。实时完成事件未提供密文时如实记录展示摘要，迁移从已验证的原生有效窗口恢复，不伪造或重复补录思考事件。
+思考内容的存储、可读投影与权限统一遵循“Provider 思考内容”：原生有效窗口中的完整 reasoning（含 Provider 已提供的密文）作为不可变重放事实保留，可读投影不输出密文。实时完成事件未提供密文时如实记录原文、摘要或占位；迁移从已验证的原生有效窗口恢复，窗口快照保留自身来源，不伪造或重复补录思考事件。
+
+
+## 初始化与格式标签
+
+AgentData、HarnessEffectiveness 和 Scheduler 只在完全空库创建基本表、索引与通知触发器。现存库不因版本号或表列索引集合不同拒绝构造，也不在启动隐式修复这些结构。缺少或禁用通知触发器可能影响对应即时唤醒，保留明确的维护入口，不能把服务启动成功当作该能力已经正常。实际身份、并发修订、租约、取消与内容摘要检查保持各自语义。

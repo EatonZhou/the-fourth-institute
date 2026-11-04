@@ -80,6 +80,9 @@ def setup(tmp_path, monkeypatch):
     service = Resources(root)
     monkeypatch.setattr(lineage_access_policy, 'workspace_reaches', lambda actor, *args, **kw: actor == 'reader' and service.writes)
     monkeypatch.setattr(module, 'portal_path', lambda area: runtime)
+    # These fixtures isolate byte/lease/permission ownership. The authenticated
+    # authoring gate and actual-plan revisions have their own quality contracts.
+    monkeypatch.setattr(Media, 'require_authored', lambda *args: True)
     monkeypatch.setattr(module.review, 'discover', lambda *args: 'resident_aaaaaaaaaaaa')
 
     def put(name, value):

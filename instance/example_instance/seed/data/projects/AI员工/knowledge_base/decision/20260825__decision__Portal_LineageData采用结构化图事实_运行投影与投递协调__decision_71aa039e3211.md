@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 66
+  number: 67
   created_at: "2026-08-25"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T07:43:36Z"
+  updated_at: "2026-11-04T19:19:31Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: true
@@ -99,9 +99,9 @@ LineageData 是 SocietyService（decision_1b2bdf5c33d6）的数据层：它把 L
 
 LineageData 通过 `PORTAL_DATABASE_URL` 连接 Portal 统一的 PostgreSQL 服务，使用其中的 `lineage` schema；这个 schema 只包含 LineageData 的表。测试环境设置 `PORTAL_DATABASE_NAMESPACE` 后，schema 名加上这个前缀，例如 `<namespace>_lineage`。连接池大小由 `PORTAL_POSTGRES_DOMAIN_POOL_SIZE` 决定，默认 8。Dev 与 Release 两个实例共用同一份 LineageData。
 
-`lineage_meta` 表中保存结构版本标识，当前为 `tfi.lineage-data.v66`。服务初始化时取得数据库咨询锁，然后：schema 为空时直接创建当前结构；已有结构时严格核对版本标识和表、列、索引、触发器与外键，任何不一致都使服务启动失败。结构升级由单独验证过的迁移脚本完成；运行中的服务不读取旧格式，也不在线修复结构。迁移脚本固定来源版本和目标版本，只随目标版本的代码运行，代码已是其他版本时拒绝执行；数据库越过该版本后，脚本在下一次结构升级时删除。
+`lineage_meta` 保存描述性结构标签，新库写当前 `tfi.lineage-data.v66`。初始化在 schema-init 咨询锁内判断是否完全空库：空库创建当前结构；现存库直接由具体功能使用，不以版本标签或全表、列、索引、触发器、外键集合相等作为启动门槛。标签缺失或不同不补写为当前值，启动也不隐式执行目录归属升级。实际操作缺少必需表列时返回对应数据库错误；局部结构演化走所属领域的显式维护入口。
 
-这个 schema 只放核心表，严格核对的也就只是核心表。可选功能的表放在功能自己的 schema 里，由功能首次使用时自行建表（`DomainDatabase`，decision_15aab18c0ab3）；打包时去掉哪些功能，lineage schema 的表都相同。v60 把原先按应用分开、在 CHECK 中写死 Paper、WALL、公告板分类器和 TAU 的七张配置表合并为通用表 `application_targets`（decision_6591e7793116），并把不属于任何 Lineage 的人类通知从公告板的 schema 移入 `portal_human_notifications`。
+这个 schema 保存核心领域表；各操作按自身实际使用的结构访问。可选功能的表放在功能自己的 schema 里，由功能首次使用时自行建表（`DomainDatabase`，decision_15aab18c0ab3）；打包时去掉哪些功能，lineage schema 的表都相同。v60 把原先按应用分开、在 CHECK 中写死 Paper、WALL、公告板分类器和 TAU 的七张配置表合并为通用表 `application_targets`（decision_6591e7793116），并把不属于任何 Lineage 的人类通知从公告板的 schema 移入 `portal_human_notifications`。
 
 Family 个人设置中，family_chat_preferences 分开保存 muted_member_ids（通知）、excluded_member_ids（自动路由）和 solo_member_id（对话）；family_chat_inputs 仅冻结原输入的 excluded_member_ids/solo_member_id。显式 v65→v66 转换保留旧 M 的路由约束并迁为 Exclude，新通知 Mute 默认关闭；不删除消息或更改既有输入目标。预演完整执行并回滚，正式转换校验身份与路由快照一致；代码与 Dev/Release 共用结构协调切换，不在服务初始化内兼容旧结构。
 
@@ -336,4 +336,11 @@ v47 / AgentData v15 → v48 / AgentData v16 使用一次性迁移。先将一致
 
 Lineage 列表在每次请求内统一核验当前 actor 的有效身份，并将该结果用于列表可见性与管理能力。此项判断只依赖 actor，不随各 Lineage 重复查询，也不跨请求缓存。资源权限批量投影与图摘要批量读取仍按各自职责执行；权限系统对每条指令的检查保持有效（decision_b820faf42218）。
 
-格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+格式标签的读取按实际兼容性处理，规则见 decision_86aed2f0e8c7。描述性标签不作为服务启动门槛；确实承担身份、协议类型、内容摘要或并发控制的字段继续由对应 owner 核验。
+
+
+## 可选汇报配置与健康读取
+
+Resident 批量读取以配置行的 JSON 投影取得可选 reporting_json。列不存在时返回空值，汇报策略解释为 off/medium、configured=false；无 reporting 的普通设置写入不引用该列。显式保存 reporting 仍需要真实列，缺列时操作明确失败，不伪称成功。非法非空策略不会被默认值隐藏。通过正式升级补列后再保存即可，居民列表、会话和无关设置不等待这项升级。
+
+health 以实际数据库可访问性为基础，描述性 meta 表或标签缺失时报告未知标签；已有 metadata 的实际读取损坏、连接错误仍明确返回。完整结构诊断函数仅供显式诊断/迁移使用，不再进入初始化门禁。

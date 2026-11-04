@@ -1,10 +1,13 @@
-"""The AgentData schema: its tables, columns and indexes, created once and checked at every start."""
+"""AgentData schema creation and explicit structure inspection.
+
+Existing storage is used as found; operations validate the data they consume.
+Structure inspection is available to maintenance, never a startup gate.
+"""
 from __future__ import annotations
 
 from typing import Any
 
 from management_common.agent_data_schema import AGENT_DATA_SCHEMA
-from management_common.format_tags import schema_matches
 
 from .agent_operations import TABLE_SQL
 from .conversation_projection import CHAT_PREDICATE
@@ -156,20 +159,11 @@ def initialize_agent_data(connection: Any) -> None:
         "SELECT pg_advisory_xact_lock("
         "hashtextextended(current_schema() || ':schema-init', 0))"
     )
-    current = connection.execute(
-        "SELECT to_regclass(current_schema() || '.agent_store_meta')"
-    ).fetchone()
-    current = current if current and current[0] is not None else None
-    if current is not None:
-        schema = connection.execute(
-            "SELECT value FROM agent_store_meta WHERE key = 'schema'"
-        ).fetchone()
-        if (
-            schema is None
-            or not schema_matches(schema["value"], "tfi.agent-data.v18")
-            or not agent_data_schema_matches(connection)
-        ):
-            raise RuntimeError("Agent data database does not match its schema")
+    # Missing metadata does not identify an empty database. Never attempt to
+    # recreate or migrate a partially populated schema during construction.
+    if connection.execute(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema=current_schema() LIMIT 1"
+    ).fetchone() is not None:
         return
 
     connection.executescript(

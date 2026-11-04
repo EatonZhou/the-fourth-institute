@@ -24,7 +24,7 @@ const css=[...fs.readFileSync(path.join(root,'index.html'),'utf8').matchAll(/hre
 const records=new Map(),origins=new Map(),requests=[],checks=[],errors=[];
 let sequence=0,live=1,denied=false,delay=0,videoBytes;
 const reference=(id,revision)=>({view:'report',target:{kind:'report',id,revision},address:`${id}/revision/${revision}`,version:`source-${revision}`,checked_at:'2026-11-04T00:00:00Z'});
-const snapshot=(target)=>({title:`固定汇报 · 来源 ${live}`,goal:'跨文档汇报契约夹具',target,version:`source-${live}`,checked_at:'2026-11-04T00:00:00Z',rows:[],counts:{},sources:[],warnings:[],
+const snapshot=(target,quality='medium')=>({title:`固定汇报 · 来源 ${live}`,goal:'跨文档汇报契约夹具',target,quality,version:`source-${live}`,checked_at:'2026-11-04T00:00:00Z',rows:[],counts:{},sources:[],warnings:[],
   reasoning:{available:true,mode:'dependency',nodes:[{id:'seed',title:'来源',x:.5,y:.5}],edges:[],seed:'seed',before:{reached:[]},after:{reached:['seed'],trace:[]},unconnected:[],rule:'fixture',limit:'fixture'}});
 function response(id,revision){const record=records.get(id),data=record?.get(revision);if(!data)return null;return {...data,report_id:id,revision,latest_revision:Math.max(...record.keys()),reference:reference(id,revision)};}
 const server=http.createServer(async(req,res)=>{
@@ -42,14 +42,15 @@ const server=http.createServer(async(req,res)=>{
     if(url.pathname.endsWith('/poster.png')){res.statusCode=204;return res.end();}
     if(url.pathname==='/api/home-report/save'){
       let binding=origins.get(body.origin_key);
-      if(!binding){assert.ok(body.origin_key,'materialization must have a stable origin');const id='report_'+(++sequence).toString(16).padStart(12,'0');binding={id,revision:1};origins.set(body.origin_key,binding);records.set(id,new Map([[1,snapshot(body.target)]]));}
+      if(binding && body.quality!==undefined && records.get(binding.id).get(binding.revision).quality!==body.quality)return json({error:'质量冲突，请显式刷新新版本'},409);
+      if(!binding){assert.ok(body.origin_key,'materialization must have a stable origin');const id='report_'+(++sequence).toString(16).padStart(12,'0');binding={id,revision:1};origins.set(body.origin_key,binding);records.set(id,new Map([[1,snapshot(body.target,body.quality)]]));}
       if(delay)await new Promise(r=>setTimeout(r,delay));
       return json(response(binding.id,binding.revision));
     }
     if(url.pathname==='/api/home-report/refresh'){
       const record=records.get(body.report_id),revision=Math.max(...record.keys());
       if(body.expected_revision!==revision)return json({error:'版本冲突'},409);
-      record.set(revision+1,snapshot(record.get(revision).target));return json(response(body.report_id,revision+1));
+      record.set(revision+1,snapshot(record.get(revision).target,body.quality));return json(response(body.report_id,revision+1));
     }
     if(url.pathname==='/api/home-report/media'&&req.method==='POST'){
       const record=records.get(body.report_id)?.get(body.revision);assert.ok(record,'media binds a fixed revision');
@@ -81,7 +82,7 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
       window.snap={messages:[],controls:{can_send:true},queue:{items:[]}};
       panel.protocol={snapshot:()=>snap,destroy(){}};
       panel.residentProjection={resident:{resident_id:'resident_0123456789ab'},chat_workspace:{schema:'portal.chat_workspace.v3',target:{kind:'resident',id:'resident_0123456789ab'},header:{title:'个人门面'},messages:[],composer:{can_send:true}}};
-      window.command=(target={kind:'project',id:'demo'},request_id='historical')=>({protocol:'portal-home-display/v1',request_id,version:1,action:'open',view:'report',target});
+      window.command=(target={kind:'project',id:'demo'},request_id='historical')=>({protocol:'portal-home-display/v1',request_id,version:1,action:'open',view:'report',quality:'low',target});
       window.displayFence=value=>'```portal-home-display\n'+JSON.stringify(value)+'\n```';
       window.message=(id,text)=>({message_id:id,role:'agent',created_at:'2026-11-04T00:00:00Z',content_parts:[{type:'text',text}]});
       snap.messages=[message('msg_0123456789abcdef',displayFence(command())+'\n\n'+displayFence(command()))];panel.applySnapshot(snap);
@@ -101,13 +102,51 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
       const provenance={residentId:'resident_0123456789ab',messageId:'msg_0123456789abcdef',fenceIndex:0};
       const a=await PortalHomeDialogueState.messageOriginKey(provenance,command());
       const b=await PortalHomeDialogueState.messageOriginKey(provenance,{target:{id:'demo',kind:'project'},view:'report',request_id:'different'});
-      const c=await PortalHomeDialogueState.messageOriginKey({...provenance,fenceIndex:1},command());return a===b&&a!==c;
+      const c=await PortalHomeDialogueState.messageOriginKey({...provenance,fenceIndex:1},command());
+      const d=await PortalHomeDialogueState.messageOriginKey(provenance,{...command(),quality:'high'});return a===b&&a!==c&&a===d;
     }),true);
     await action(page).first().click();await fixed().waitFor();
     check('first click materializes once',records.size,1);
+    check('message quality reaches the real adapter save request',requests.find(r=>r.path.endsWith('/save')).body.quality,'low');
     const key=requests.find(r=>r.path.endsWith('/save')).body.origin_key;
     check('message key is stable digest',/^home-message\/v1:[a-f0-9]{64}$/.test(key),true);
     const first=origins.get(key),title=await fixed().innerText();
+    if(process.argv.includes('--origin-context-only')) {
+      const source={resident_id:'resident_0123456789ab',message_id:'msg_0123456789abcdef',fence_index:0};
+      check('real message locator reaches save without claiming author',requests.find(r=>r.path.endsWith('/save')).body.origin_context,source);
+      check('save never claims an author',requests.filter(r=>r.path.endsWith('/save')).every(r=>!('author' in r.body)&&!('responsible_resident' in r.body)),true);
+      await page.waitForFunction(()=>PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read()?.entries?.[0]?.originKey);
+      check('saved navigation retains message locator beside origin',await page.evaluate(()=>{
+        const entry=PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read().entries[0];
+        return entry.messageOrigin;
+      }),{residentId:source.resident_id,messageId:source.message_id,fenceIndex:0});
+      const beforeRestore=posts();await mount(page);await openHistory(page);await fixed().waitFor();
+      check('restoring verified report stays read-only',posts(),beforeRestore);
+      const independent=await browser.newContext({viewport:{width:390,height:844}});page=await independent.newPage();page.setDefaultTimeout(8000);
+      page.on('pageerror',e=>errors.push(e.message));await mount(page);
+      await page.evaluate(()=>document.documentElement.style.fontSize='20px');
+      await action(page).first().focus();await action(page).first().press('Enter');await fixed().waitFor();
+      check('new document derives same message source from conversation',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_context,source);
+      check('new document preserves semantic identity',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_key,key);
+      await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();await action(page).nth(1).click();await fixed().waitFor();
+      check('second code fence is independently verifiable',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_context,{...source,fence_index:1});
+      await page.evaluate(()=>{
+        snap.messages=[message('msg_13579bdf0246','```python\nprint(1)\n```\n\n'+displayFence(command()))];panel.applySnapshot(snap);
+      });
+      await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();await action(page).first().click();await fixed().waitFor();
+      check('ordinary code does not shift stable display fence index',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_context,
+        {...source,message_id:'msg_13579bdf0246',fence_index:0});
+      await page.locator('.homeDialogueOpener > summary').click();await page.getByLabel('目标类型',{exact:true}).selectOption('project');
+      await page.getByLabel('目标 ID 或文件资源地址').fill('manual-origin');await page.locator('.homeDialogueChooser button').click();await fixed().waitFor();
+      check('manual report never invents conversation author',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_context,undefined);
+      check('source descriptors contain no credentials or message body',await page.evaluate(()=>{
+        const saved=PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read();
+        return saved.entries.every(e=>Object.keys(e).every(k=>['intent','queued','originKey','messageOrigin'].includes(k)))&&!JSON.stringify(saved).includes('request_id');
+      }),true);
+      check('no script errors',errors,[]);
+      fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({status:'passed',boundary:'native Home/report transport with isolated HTTP; server source authorization tested by report owner',checks,requests},null,2));
+      return;
+    }
     await page.getByRole('button',{name:'生成讲解视频',exact:true}).click();await page.locator('video:visible').waitFor();await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);
     await page.locator('video:visible').focus();await page.locator('video:visible').press('Space');await page.waitForFunction(()=>!document.querySelector('video').paused);await page.locator('video:visible').press('Space');
     const videoPath=await page.locator('video:visible').getAttribute('src');await page.screenshot({path:path.join(out,'01-fixed-report-video-1440.png')});
@@ -122,9 +161,11 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     check('reopen never regenerates media',requests.slice().filter(r=>r.method==='POST'&&r.path.endsWith('/media')).length,1);
     check('stable save lookup ignores changed live version',posts(),beforeOpen+1);
     await page.screenshot({path:path.join(out,'02-reopen-390-font20.png')});
+    await page.getByLabel('报告质量',{exact:true}).selectOption('high');
     await page.getByRole('button',{name:'刷新为新版本',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('.homeDialogueEntry').length===2);
     await page.getByRole('heading',{name:'固定汇报 · 来源 2',exact:true}).waitFor();
     check('refresh preserves original origin revision',origins.get(key),first);
+    check('quality refresh creates a separate revision and keeps old quality',[records.get(first.id).get(1).quality,records.get(first.id).get(2).quality],['low','high']);
     await homeAction(page,'返回上一展示');await page.locator('video:visible').waitFor();check('previous entry still displays old version',await fixed().innerText(),title);
     const beforeReload=posts(),beforeReloadReads=requests.length;await mount(page);
     check('new document starts with no display reads',requests.length,beforeReloadReads);
@@ -133,7 +174,7 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     check('explicit history selection restores exact version without writes',posts(),beforeReload);
     check('navigation storage has no body, credentials or automatic-admission nonce',await page.evaluate(()=>{
       const saved=PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read();
-      return saved.entries.every(e=>Object.keys(e).every(k=>['intent','queued','originKey'].includes(k)))&&!JSON.stringify(saved).includes('request_id');
+      return saved.entries.every(e=>Object.keys(e).every(k=>['intent','queued','originKey','messageOrigin'].includes(k)))&&!JSON.stringify(saved).includes('request_id');
     }),true);
     check('navigation descriptors contain fixed targets',await page.evaluate(()=>{
       const saved=PortalPageState.create('home-dialogue-display',{user:()=> 'report-binding-fixture'}).read();return saved.entries.map(e=>[e.intent.target.kind,e.intent.target.id,e.intent.target.revision]);
@@ -144,6 +185,12 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();await action(page).first().click();await page.locator('video:visible').waitFor();
     check('explicit report message uses GET only',posts(),directBefore);
     check('direct fixed target ignores newer revision',await fixed().innerText(),title);
+    check('fixed report restores its original quality',await page.locator('.homeDialogueEntry:not([hidden])').getByLabel('报告质量',{exact:true}).inputValue(),'low');
+    await page.evaluate(()=>{snap.messages=[message('msg_0123456789abcdef',displayFence({...command(),quality:'high'}))];panel.applySnapshot(snap);});
+    await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();await action(page).first().click();
+    await page.getByText('质量冲突，请显式刷新新版本',{exact:true}).waitFor();
+    check('same-message quality conflict does not create a new report',records.size,2);
+    check('quality conflict reuses the original origin',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_key,key);
     // Await a committed save with an interrupted response: restore must look up
     // the saved request identity, never replay the creation POST.
     delay=700;await page.locator('.homeDialogueOpener > summary').click();await page.getByLabel('目标类型',{exact:true}).selectOption('project');await page.getByLabel('目标 ID 或文件资源地址').fill('manual');await page.locator('.homeDialogueChooser button').click();
@@ -165,9 +212,9 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     check('uncommitted restore requires explicit generation with its saved identity',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_key,pendingKey);
     // A current acknowledged assistant result and its explicit historical
     // button must resolve the same semantic request, without sharing admission.
-    await page.evaluate(()=>{
+    await page.evaluate(async()=>{
       window.sent={resident_id:'resident_0123456789ab'};
-      window.currentCommand=JSON.parse(chatOptions.submissionContext(sent).context_text.split('示例结构：')[1].split('\n')[0]);
+      window.currentCommand=JSON.parse((await chatOptions.submissionContext(sent)).context_text.split('示例结构：')[1].split('\n')[0]);
       chatOptions.onAcknowledgement({}, {target:sent});
       snap.messages=[message('msg_123456789abc',displayFence(command({kind:'project',id:'automatic'},currentCommand.request_id)))];panel.applySnapshot(snap);
     });await fixed().waitFor();
@@ -176,8 +223,8 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
     check('automatic result and historical click use the same origin',requests.filter(r=>r.path.endsWith('/save')).at(-1).body.origin_key,automaticKey);
     check('explicit reopen does not mint another report',records.size,beforeExplicit);
     await homeAction(page,'固定展示');const beforeLate=posts();
-    await page.evaluate(()=>{
-      const sent={resident_id:'resident_0123456789ab'},p=JSON.parse(chatOptions.submissionContext(sent).context_text.split('示例结构：')[1].split('\n')[0]);
+    await page.evaluate(async()=>{
+      const sent={resident_id:'resident_0123456789ab'},p=JSON.parse((await chatOptions.submissionContext(sent)).context_text.split('示例结构：')[1].split('\n')[0]);
       chatOptions.onAcknowledgement({}, {target:sent});
       snap.messages.push(message('msg_23456789abcd',displayFence(command({kind:'project',id:'late'},p.request_id))));panel.applySnapshot(snap);
     });await new Promise(r=>setTimeout(r,150));

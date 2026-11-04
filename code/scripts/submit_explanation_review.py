@@ -7,6 +7,7 @@ Resident credential, never accepts an author/reviewer identity in the payload.
 from __future__ import annotations
 import argparse
 import json
+import re
 from pathlib import Path
 import sys
 from urllib.parse import urlencode
@@ -18,15 +19,28 @@ from management_common.portal_agent_http import urlopen
 
 def request(resident_id, path, body=None):
     actor = isa._resident_id(resident_id)
+    result = isa.execute(actor, {'schema': isa.SCHEMA, 'instruction': 'GetResident',
+        'arguments': {'resident_id': actor}}, request_timeout=30, max_attempts=1)
+    resident = result.get('result', {}).get('resident', {})
+    lineage = resident.get('lineage_id')
+    if resident.get('resident_id') != actor or not re.fullmatch(r'lineage_[0-9a-f]{12}', str(lineage or '')):
+        raise ValueError('无法核实当前Resident所属Lineage，未发起页面API请求')
     req = Request(isa.DEFAULT_PORTAL_URL + '/api/home-explanation/' + path,
                   data=json.dumps(body).encode() if body is not None else None,
-                  headers={'Authorization': 'Bearer ' + isa._token(actor), 'Content-Type': 'application/json', 'Accept': 'application/json'})
+                  headers={'Authorization': 'Bearer ' + isa._token(actor), 'X-Portal-Lineage-ID': lineage,
+                           'Content-Type': 'application/json', 'Accept': 'application/json'})
     with urlopen(req, timeout=60) as response:
-        return json.load(response)['review']
+        value = json.load(response)
+        return value['authoring'] if path.startswith('authoring?') or path == 'media/authoring' else value['review']
 
 
 def submit(address, sha256, task, resident_id, *, reviewer='', previous_review_id=None, call=None):
     return (call or request)(resident_id, 'reviews', {'address': address, 'sha256': sha256, 'task': task, 'reviewer': reviewer, 'previous_review_id': previous_review_id})
+
+
+def accept_authoring(address, sha256, quality, authoring_id, resident_id):
+    return request(resident_id, 'media/authoring', {'address': address, 'sha256': sha256,
+        'quality': quality, 'authoring_id': authoring_id})
 
 
 def main():
@@ -38,6 +52,7 @@ def main():
     parser.add_argument('--task', default='')
     parser.add_argument('--previous-review-id')
     parser.add_argument('--read', metavar='REVIEW_ID')
+    parser.add_argument('--read-authoring', metavar='AUTHORING_ID')
     parser.add_argument('--cancel', metavar='REVIEW_ID')
     parser.add_argument('--verdict-file', type=Path)
     args = parser.parse_args()
@@ -48,6 +63,8 @@ def main():
             value = request(args.resident_id, 'reviews/cancel', {'review_id': args.cancel})
         elif args.read:
             value = request(args.resident_id, 'reviews?' + urlencode({'id': args.read}))
+        elif args.read_authoring:
+            value = request(args.resident_id, 'authoring?' + urlencode({'id': args.read_authoring}))
         else:
             if not args.address or not args.sha256:
                 parser.error('submit requires --address and --sha256')

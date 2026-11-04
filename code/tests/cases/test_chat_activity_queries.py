@@ -194,13 +194,15 @@ def test_conversation_facts_are_read_without_writing(monkeypatch):
     assert summary["actor_request_ids"] == ["first"]
 
 
-def test_a_store_missing_a_read_index_does_not_open():
-    """缺少 Chat 读索引的 AgentDataStore 拒绝打开，补回索引后可以重新打开"""
+def test_a_store_missing_a_read_index_opens_without_repairing_it():
+    """缺少 Chat 读索引仍可打开和读取，启动不隐式补回索引。"""
     store = AgentDataStore()
     store.database.write(lambda connection: connection.execute("DROP INDEX segments_message_idx"))
     try:
-        with pytest.raises(RuntimeError, match="does not match its schema"):
-            AgentDataStore()
+        reopened = AgentDataStore()
+        assert reopened.chat_actor_activity("CASE-A") == {}
+        with reopened.database.read() as connection:
+            assert not agent_data_schema_matches(connection)
     finally:
         store.database.write(lambda connection: connection.execute(CHAT_READ_INDEX_SQL["segments_message_idx"]))
     reopened = AgentDataStore()

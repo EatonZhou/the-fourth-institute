@@ -47,6 +47,11 @@ assert.equal(accept(response(sent)).present, true);
 assert.equal(api.normalizeIntent({view:'report',target:{kind:'task',id:'resident_0123456789ab/msg_0123456789abcdef'}}).target.kind,'task');
 assert.equal(api.normalizeIntent({view:'report',target:{kind:'report',id:'report_0123456789ab',revision:3}}).target.revision,3);
 assert.equal(api.normalizeIntent({view:'report',target:{kind:'report',id:'report_0123456789ab'}}).target.revision,undefined,'latest is fixed by onReference after GET');
+for (const quality of ['low','medium','high']) {
+  assert.equal(api.normalizeIntent({view:'report',quality,target:{kind:'project',id:'demo'}}).quality,quality);
+  assert.equal(api.normalizeIntent({view:'report',quality,target:{kind:'report',id:'report_0123456789ab',revision:3}}).quality,undefined,'fixed reference consumes its own stored quality');
+}
+assert.throws(()=>api.normalizeIntent({view:'report',quality:'ultra',target:{kind:'project',id:'demo'}}));
 for (const revision of [null,0,-1,1.2,'1',Infinity]) assert.throws(()=>api.normalizeIntent({view:'report',target:{kind:'report',id:'report_0123456789ab',revision}}));
 assert.throws(()=>api.normalizeIntent({view:'map',target:{kind:'report',id:'report_0123456789ab',revision:1}}));
 assert.throws(()=>api.normalizeIntent({view:'report',target:{kind:'report',id:'report_fake',revision:1}}));

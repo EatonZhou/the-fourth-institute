@@ -27,7 +27,7 @@ def profiles(manifest):
         return []  # Historical bundles retain their original preflight contract.
     selected = value.get('profiles')
     allowed = {'core', 'article', 'test', 'tau', 'provider', 'embeddings'}
-    if (value.get('schema') != SCHEMA or not isinstance(selected, list)
+    if (not isinstance(selected, list)
             or any(not isinstance(p, str) or p not in allowed for p in selected)
             or 'core' not in selected or len(selected) != len(set(selected))):
         raise ValueError('Invalid runtime dependency declaration')

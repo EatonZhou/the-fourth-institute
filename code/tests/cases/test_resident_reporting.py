@@ -176,3 +176,75 @@ def test_seed_new_installation_has_the_same_reporting_column(resident_record):
         c.execute(ddl)
         assert c.execute("SELECT data_type FROM information_schema.columns "
             "WHERE table_name='reporting_seed_probe' AND column_name='reporting_json'").fetchone()["data_type"] == "text"
+
+
+@pytest.fixture
+def reporting_upgrade_database(resident_record):
+    from uuid import uuid4
+    from psycopg import sql
+    from management_common.portal_database import portal_database
+    database = portal_database(schema="reporting_probe_" + uuid4().hex[:8])
+    database.write(lambda c: c.execute(
+        "CREATE TABLE resident_execution_configuration (resident_id TEXT PRIMARY KEY, "
+        "execution_settings_json JSONB, harness_config_json TEXT); "
+        "INSERT INTO resident_execution_configuration VALUES ('resident_probe', '{\"model\":\"keep\"}', '{}')"))
+    try:
+        yield database
+    finally:
+        database.write(lambda c: c.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(database.schema))))
+        database.close()
+
+
+@pytest.mark.parametrize("metadata", ["absent", "empty", "different"])
+def test_reporting_upgrade_optional_metadata(reporting_upgrade_database, metadata):
+    from scripts.migrate_resident_reporting import migrate
+    database = reporting_upgrade_database
+    expected = "tfi.lineage-data.v999" if metadata == "different" else ""
+    if metadata != "absent":
+        database.write(lambda c: c.execute("CREATE TABLE lineage_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)"))
+    if metadata == "different":
+        database.write(lambda c: c.execute("INSERT INTO lineage_meta VALUES ('schema', %s)", (expected,)))
+    preview = migrate(database)
+    assert preview == {"schema":expected, "changed":True, "default":reporting.DEFAULT, "committed":False}
+    with database.read() as c:
+        assert not c.execute("SELECT 1 FROM information_schema.columns WHERE table_schema=current_schema() "
+                            "AND table_name='resident_execution_configuration' AND column_name='reporting_json'").fetchone()
+    assert migrate(database, apply=True) == {**preview, "committed":True}
+    with database.read() as c:
+        row = c.execute("SELECT * FROM resident_execution_configuration").fetchone()
+        assert row["reporting_json"] is None and row["harness_config_json"] == "{}"
+        assert row["execution_settings_json"] == {"model":"keep"}
+        if metadata != "absent":
+            rows = c.execute("SELECT value FROM lineage_meta WHERE key='schema'").fetchall()
+            assert [row["value"] for row in rows] == ([expected] if expected else [])
+
+
+def test_reporting_upgrade_existing_text_issues_no_ddl(reporting_upgrade_database):
+    from scripts.migrate_resident_reporting import migrate
+    from tests.cases.database_test_support import QueryGuard
+    database = reporting_upgrade_database
+    migrate(database, apply=True)
+    policy = '{"initiative":"high","quality":"high"}'
+    database.write(lambda c: c.execute("UPDATE resident_execution_configuration SET reporting_json=%s", (policy,)))
+    with database.transaction() as c:
+        result = reporting.install_schema(QueryGuard(c, forbidden=("alter table",)))
+        assert result["changed"] is False and result["schema"] == ""
+        assert c.execute("SELECT reporting_json FROM resident_execution_configuration").fetchone()["reporting_json"] == policy
+
+
+@pytest.mark.parametrize("damage", ["missing_table", "view", "missing_field", "wrong_field_type", "wrong_reporting_type", "not_nullable"])
+def test_reporting_upgrade_rejects_real_structure_errors(reporting_upgrade_database, damage):
+    from scripts.migrate_resident_reporting import migrate
+    database = reporting_upgrade_database
+    commands = {
+        "missing_table":"DROP TABLE resident_execution_configuration",
+        "view":"ALTER TABLE resident_execution_configuration RENAME TO configuration_source; "
+               "CREATE VIEW resident_execution_configuration AS SELECT * FROM configuration_source",
+        "missing_field":"ALTER TABLE resident_execution_configuration DROP COLUMN harness_config_json",
+        "wrong_field_type":"ALTER TABLE resident_execution_configuration ALTER COLUMN resident_id TYPE INTEGER USING 1",
+        "wrong_reporting_type":"ALTER TABLE resident_execution_configuration ADD COLUMN reporting_json JSONB",
+        "not_nullable":"ALTER TABLE resident_execution_configuration ADD COLUMN reporting_json TEXT NOT NULL DEFAULT '{}'",
+    }
+    database.write(lambda c: c.execute(commands[damage]))
+    with pytest.raises(ValueError, match="configuration|Reporting column"):
+        migrate(database, apply=True)

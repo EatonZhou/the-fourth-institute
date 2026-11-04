@@ -16,6 +16,28 @@ from tests.cases.instance_test_support import write_instance
 from tests.cases.test_distribution_application_flows import distribution_target_dsn
 
 
+@pytest.mark.parametrize('entrypoint', ['installer', 'child'])
+@pytest.mark.parametrize('seed_version', [None, '', 'different-seed'])
+def test_seed_repair_requires_positive_provenance_even_when_runtime_accepts_metadata(
+        tmp_path, monkeypatch, entrypoint, seed_version):
+    from management_common import instance_manifest
+    from scripts import tfi_release_install as installer, tfi_release_initialization as child
+    instance = load(write_instance(tmp_path / 'instance'))
+    if seed_version is None:
+        instance.document.pop('seed_version')
+    else:
+        instance.document['seed_version'] = seed_version
+    instance_manifest.validate(instance.root, instance.document)
+    manifest = tmp_path / 'seed.json'
+    manifest.write_text(json.dumps({'history_freeze': {'event_sources_paused': True}}))
+    monkeypatch.setattr(instance_manifest, 'load', lambda: instance)
+    with pytest.raises(ValueError, match='seed'):
+        if entrypoint == 'installer':
+            installer.repair_lineage_events(instance, manifest)
+        else:
+            child.restore_lineage_events(manifest)
+
+
 def test_imported_ordinary_team_accepts_new_events_and_preserves_local_choices(tmp_path, distribution_target_dsn):
     manifest = {'history_freeze': {'event_sources_paused': True},
                 'feature_resolution': {'valid': True, 'initialization': {'actions': []}}}

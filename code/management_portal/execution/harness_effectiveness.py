@@ -42,10 +42,6 @@ HARNESS_TABLE_COLUMNS = {
         "quality_score", "quality_reason", "updated_at",
     },
 }
-HARNESS_INDEXES = {
-    "harness_strategy_load_idx",
-    "harness_reasoning_quality_idx",
-}
 
 
 def create_observation_view(connection) -> None:
@@ -497,16 +493,14 @@ class HarnessEffectivenessStore:
             if not self._initialized:
                 with self._init_lock:
                     if not self._initialized:
-                        existing_tables = {
-                            str(row[0])
-                            for row in connection.execute(
-                                "SELECT table_name FROM information_schema.tables "
-                                "WHERE table_schema=current_schema() AND table_type='BASE TABLE'"
-                            )
-                        }
-                        if not existing_tables:
+                        connection.execute("SELECT pg_advisory_xact_lock("
+                                           "hashtextextended(current_schema() || ':schema-init', 0))")
+                        existing = connection.execute(
+                            "SELECT 1 FROM information_schema.tables "
+                            "WHERE table_schema=current_schema() LIMIT 1"
+                        ).fetchone()
+                        if existing is None:
                             self._create_schema(connection)
-                        _require_current_schema(connection)
                         connection.commit()
                         self._initialized = True
             yield connection
@@ -610,43 +604,6 @@ def _usage_value(usage: Mapping[str, object], *keys: str) -> int:
             if key in candidate:
                 return _int(candidate[key])
     return 0
-
-
-def _require_current_schema(connection: Any) -> None:
-    tables = {
-        str(row[0])
-        for row in connection.execute(
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema=current_schema() AND table_type='BASE TABLE'"
-        )
-    }
-    columns = {
-        table: {
-            str(row[0])
-            for row in connection.execute(
-                'SELECT column_name FROM information_schema.columns WHERE table_schema=current_schema() AND table_name=%s',
-                (table,),
-            )
-        }
-        for table in HARNESS_TABLE_COLUMNS
-        if table in tables
-    }
-    indexes = {
-        str(row[0])
-        for row in connection.execute(
-            "SELECT indexname FROM pg_indexes WHERE schemaname=current_schema()"
-        )
-        if not str(row[0]).endswith("_pkey")
-    }
-    if (
-        tables != set(HARNESS_TABLE_COLUMNS)
-        or columns != HARNESS_TABLE_COLUMNS
-        or indexes != HARNESS_INDEXES
-        or connection.execute("SELECT to_regclass('harness_observations')").fetchone()[0] is None
-    ):
-        raise RuntimeError(
-            "Harness effectiveness store does not match its schema"
-        )
 
 
 def _json(value: object) -> str:

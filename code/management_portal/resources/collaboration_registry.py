@@ -8,8 +8,6 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
-from management_common.format_tags import schema_matches
-
 from .registry_store import RegistryStore, get_registry_store, registry_change_key
 from .schema import normalize_resource_attributes
 from . import timing
@@ -178,8 +176,8 @@ class CollaborationDescriptorStore:
                 "unsupported collaboration descriptor fields: "
                 + ", ".join(sorted(unknown))
             )
-        if not schema_matches(raw.get("schema"), expected="tfi.collaboration-descriptor.v2"):
-            raise ValueError("unsupported collaboration descriptor schema")
+        # This descriptor has one field-based reader. The producer's format
+        # label does not select a parser; identity and field checks below do.
         resource_id = self._identity.parse(stripped_text(raw.get("resource_id"))).resource_id
         if expected_id and resource_id != expected_id:
             raise ValueError(

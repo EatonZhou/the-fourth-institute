@@ -1,4 +1,4 @@
-"""The execution store schema: its exact table, column and index contract, created once and checked at every start."""
+"""Create an empty execution store; consume existing storage without migration."""
 from __future__ import annotations
 
 from typing import Any
@@ -7,57 +7,6 @@ from .scheduler_changes import install_change_triggers
 
 
 EXECUTION_STORE_SCHEMA_VERSION = "19"
-
-
-EXECUTION_STORE_COLUMNS = {
-    "execution_store_meta": {"key", "value"},
-    "executions": {
-        "execution_id", "capability", "actor",
-        "priority", "correlation_id", "request_json", "status",
-        "owner_worker_id", "claim_token", "lease_expires_at",
-        "available_at",
-        "cancel_requested", "attempts", "checkpoint_json",
-        "result_json", "error", "usage_accounted",
-        "usage_accounted_json",
-        "acknowledged_at", "created_at", "updated_at",
-    },
-    "execution_workers": {
-        "worker_id", "build_id", "state",
-        "capabilities_json", "pid", "heartbeat_at", "updated_at",
-    },
-    "capacity_dispatch_state": {
-        "capacity_key", "last_dispatched_at", "next_dispatch_at",
-        "interval_seconds", "updated_at",
-    },
-    "capacity_settings": {
-        "capacity_key", "limit_value",
-        "dispatch_interval_min_seconds",
-        "dispatch_interval_max_seconds",
-        "updated_by", "updated_at",
-    },
-    "execution_actor_dispatch_state": {
-        "priority", "actor", "last_dispatched_at", "updated_at",
-    },
-    "execution_account_usage_hourly": {
-        "bucket_hour", "provider", "account_id", "resident_id",
-        "input_tokens", "cached_input_tokens", "output_tokens",
-        "reasoning_output_tokens", "total_tokens", "updated_at",
-    },
-    "execution_token_usage_events": {
-        "execution_id", "event_id", "occurred_at", "usage_json",
-    },
-    "execution_input_controls": {
-        "control_id", "execution_id", "actor", "input_json",
-        "expected_turn_id", "status", "error", "created_at",
-        "updated_at",
-    },
-}
-EXECUTION_STORE_INDEXES = {
-    "executions_schedule_idx",
-    "executions_actor_idx",
-    "executions_terminal_retention_idx",
-    "execution_input_controls_pending_idx",
-}
 
 
 def _transaction_lock(connection: Any, scope: str) -> None:
@@ -69,69 +18,14 @@ def _transaction_lock(connection: Any, scope: str) -> None:
 
 
 def initialize_execution_store(connection: Any) -> None:
-    """Check the store an earlier start created, or create it; then install its change triggers."""
+    """Create tables and notifications only for an empty store."""
     _transaction_lock(connection, "schema-init")
-    existing_tables = {
-        str(row["table_name"])
-        for row in connection.execute(
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema=current_schema() AND table_type='BASE TABLE'"
-        )
-    }
-    # ExecutionService settings are owned by their module, outside the
-    # scheduler's exact table/column contract.
-    existing_tables.discard("service_settings")
-    if existing_tables:
-        _check_contract(connection, existing_tables)
-    else:
-        _create_store(connection)
+    if connection.execute(
+        "SELECT 1 FROM information_schema.tables WHERE table_schema=current_schema() LIMIT 1"
+    ).fetchone() is not None:
+        return
+    _create_store(connection)
     install_change_triggers(connection)
-
-
-def _check_contract(connection: Any, existing_tables: set[str]) -> None:
-    if "execution_store_meta" not in existing_tables:
-        raise RuntimeError(
-            "execution store schema does not match current contract"
-        )
-    actual_columns = {
-        table: {
-            str(row["column_name"])
-            for row in connection.execute(
-                'SELECT column_name FROM information_schema.columns WHERE table_schema=current_schema() AND table_name=%s',
-                (table,),
-            ).fetchall()
-        }
-        for table in EXECUTION_STORE_COLUMNS
-        if table in existing_tables
-    }
-    actual_indexes = {
-        str(row["indexname"])
-        for row in connection.execute(
-            "SELECT indexname FROM pg_indexes "
-            "WHERE schemaname=current_schema()"
-        )
-        if not str(row["indexname"]).endswith("_pkey")
-        and not str(row["indexname"]).endswith("_key")
-    }
-    if (
-        existing_tables != set(EXECUTION_STORE_COLUMNS)
-        or actual_columns != EXECUTION_STORE_COLUMNS
-        or actual_indexes != EXECUTION_STORE_INDEXES
-    ):
-        raise RuntimeError(
-            "execution store schema does not match current contract"
-        )
-    version = connection.execute(
-        "SELECT value FROM execution_store_meta "
-        "WHERE key = 'schema_version'"
-    ).fetchone()
-    if (
-        version is None
-        or str(version["value"]) != EXECUTION_STORE_SCHEMA_VERSION
-    ):
-        raise RuntimeError(
-            "execution store schema does not match current contract"
-        )
 
 
 def _create_store(connection: Any) -> None:

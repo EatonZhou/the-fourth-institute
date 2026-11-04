@@ -21,9 +21,26 @@ from management_portal.media_tools import capabilities, stamp
 
 _SLOTS = threading.BoundedSemaphore(2)
 _LOCK = threading.Lock()
-FILES = {"video.mp4": "video/mp4", "captions.vtt": "text/vtt; charset=utf-8",
-         "poster.png": "image/png", "transcript.txt": "text/plain; charset=utf-8", "narration.wav": "audio/wav",
-         "reasoning.json": "application/json"}
+REQUIRED_FILES = {"video.mp4": "video/mp4", "captions.vtt": "text/vtt; charset=utf-8",
+                  "poster.png": "image/png", "transcript.txt": "text/plain; charset=utf-8",
+                  "reasoning.json": "application/json"}
+OPTIONAL_FILES = {"narration.wav": "audio/wav"}
+# The read contract includes historical audio; the silent renderer need not
+# create it. Persist only real optional files, never a placeholder track.
+FILES = {**REQUIRED_FILES, **OPTIONAL_FILES}
+
+
+def bundle_files(directory):
+    names=[]
+    for name in FILES:
+        path=directory/name
+        if path.is_symlink():
+            raise PermissionError('媒体产物不能是符号链接')
+        if name in REQUIRED_FILES or path.exists():
+            if not path.is_file():
+                raise FileNotFoundError('媒体必需产物缺失或无效：'+name)
+            names.append(name)
+    return names
 
 
 def caption_text(value, budget=180):

@@ -349,10 +349,10 @@ class ExecutionRequest:
         ).validate()
 
     def validate(self) -> "ExecutionRequest":
-        if not schema_matches(self.schema, "tfi.execution-request.v8"):
+        if not isinstance(self.schema, str) or not re.fullmatch(r"tfi\.execution-request\.v\d+", self.schema):
             raise ValueError("unsupported execution request schema")
-        if self.schema_version != EXECUTION_SCHEMA_VERSION:
-            raise ValueError("unsupported execution request schema version")
+        if isinstance(self.schema_version, bool) or not isinstance(self.schema_version, int) or self.schema_version < 0:
+            raise ValueError("execution request schema version must be a non-negative integer")
         if not EXECUTION_ID_RE.fullmatch(self.execution_id):
             raise ValueError("invalid execution id")
         if not self.actor.strip() or len(self.actor) > 120:
@@ -453,8 +453,10 @@ class ExecutionRequest:
         if not isinstance(payload, dict):
             raise ValueError("execution request must be an object")
         schema = str(payload.get("schema") or "")
+        if isinstance(payload.get("schema_version"), bool):
+            raise ValueError("execution request schema version must be an integer")
         schema_version = int(payload.get("schema_version") or 0)
-        if not schema_matches(schema, "tfi.execution-request.v8") or schema_version != EXECUTION_SCHEMA_VERSION:
+        if not re.fullmatch(r"tfi\.execution-request\.v\d+", schema):
             raise ValueError("invalid execution request schema")
         runtime_options = payload.get("runtime_options")
         metadata = payload.get("metadata")

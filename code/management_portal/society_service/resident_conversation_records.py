@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import Any
 
 from management_common.database_time import iso_time, instant
-from management_common.format_tags import schema_matches
 from management_common.json_columns import json_text, json_value
 from management_common.principal import message_attribution, message_quote, message_recipients
 from management_common.site_config import read_site_config
@@ -98,7 +97,7 @@ def conversation_event_notification(
     """Build the bounded realtime envelope for one durable event."""
 
     schema = str(event.get("schema") or "")
-    if not schema_matches(schema, "tfi.resident-messages-state.v1"):
+    if not re.fullmatch(r"tfi\.resident-messages-state\.v\d+", schema):
         raise ValueError("unsupported Resident Conversation event schema")
     live = event.get("live") is True
     limit = MAX_INLINE_LIVE_NOTIFICATION_BYTES if live else MAX_INLINE_NOTIFICATION_BYTES

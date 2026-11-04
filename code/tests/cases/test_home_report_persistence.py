@@ -180,9 +180,9 @@ def renderer(report,directory):
     return {'duration':1,'chapters':[],'transcript':'测试音轨接口','generation_seconds':0.01}
 
 
-def wait_ready(media):
+def wait_ready(media, quality='medium'):
     for _ in range(300):
-        result = media.status(RID,1,'alice')
+        result = media.status(RID,1,'alice',quality=quality)
         if result and result['status'] != 'pending':
             assert result['status'] == 'ready',result
             return result
@@ -194,19 +194,19 @@ def test_media_survives_store_recreation_and_requires_current_permissions(report
     store,state=reports
     create(store)
     media=PersistentMedia(store,renderer)
-    media.start(RID,1,'alice')
-    result=wait_ready(media)
-    first=media.file(RID,1,'video.mp4','alice')[0].read_bytes()
+    media.start(RID,1,'alice',quality='low')
+    result=wait_ready(media,'low')
+    first=media.file(RID,1,'video.mp4','alice',quality='low')[0].read_bytes()
     recreated=ReportStore(root=store.root,authorize=store.authorize,read=store.read)
-    restored=recreated.response(RID,'alice',1)
-    assert restored['media']['assets']['video.mp4'] == hashlib.sha256(first).hexdigest()
-    assert recreated.file(RID,1,'video.mp4','alice')[0].read_bytes()==first
-    assert PersistentMedia(recreated,lambda *args:pytest.fail('must not regenerate')).start(RID,1,'alice')['status']=='ready'
+    restored=PersistentMedia(recreated).status(RID,1,'alice',quality='low')
+    assert restored['assets']['video.mp4'] == hashlib.sha256(first).hexdigest()
+    assert recreated.file(RID,1,'low-video.mp4','alice')[0].read_bytes()==first
+    assert PersistentMedia(recreated,lambda *args:pytest.fail('must not regenerate')).start(RID,1,'alice',quality='low')['status']=='ready'
     state['deny_report']=True
     with pytest.raises(PermissionError): recreated.response(RID,'alice',1)
     state['deny_report']=False
     state['deny']=True
-    with pytest.raises(PermissionError): recreated.file(RID,1,'video.mp4','alice')
+    with pytest.raises(PermissionError): recreated.file(RID,1,'low-video.mp4','alice')
 
 
 @pytest.mark.parametrize('damage', ['modified', 'missing', 'untracked'])
@@ -214,9 +214,9 @@ def test_persisted_media_damage_is_not_served_or_regenerated(reports, damage):
     store, _ = reports
     create(store)
     media = PersistentMedia(store, renderer)
-    media.start(RID, 1, 'alice')
-    wait_ready(media)
-    path = media.file(RID, 1, 'video.mp4', 'alice')[0]
+    media.start(RID, 1, 'alice', quality='low')
+    wait_ready(media,'low')
+    path = media.file(RID, 1, 'video.mp4', 'alice', quality='low')[0]
     if damage == 'modified':
         original = path.read_bytes()
         path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
@@ -229,7 +229,7 @@ def test_persisted_media_damage_is_not_served_or_regenerated(reports, damage):
         state_path.write_text(json.dumps(state))
     before = path.read_bytes() if path.exists() else None
     with pytest.raises(FileNotFoundError, match='媒体资产'):
-        store.file(RID, 1, 'video.mp4', 'alice')
+        store.file(RID, 1, 'low-video.mp4', 'alice')
     assert (path.read_bytes() if path.exists() else None) == before
     assert store.record(RID)['revision'] == 1
 
@@ -256,7 +256,7 @@ def test_delete_unregistration_is_immediate_and_late_media_cannot_resurrect(repo
         assert release.wait(5)
         return renderer(report,directory)
     media=PersistentMedia(store,slow)
-    media.start(RID,1,'alice')
+    media.start(RID,1,'alice',quality='low')
     assert entered.wait(3)
     try:
         result=store.delete(RID,'alice',1)
@@ -267,9 +267,9 @@ def test_delete_unregistration_is_immediate_and_late_media_cannot_resurrect(repo
         release.set()
     from management_portal import business_tasks
     for _ in range(300):
-        if not business_tasks.is_active(media.task(RID,1)): break
+        if not business_tasks.is_active(media.task(RID,1,'low')): break
         time.sleep(.01)
-    assert not (store.directory(RID)/'1/media').exists()
+    assert not (store.directory(RID)/'1/media-low').exists()
     from management_portal.resources.errors import ResourceOperationError
     with pytest.raises(ResourceOperationError,match='已删除'): store.origin('alice',KEY)
 
@@ -359,7 +359,8 @@ def test_explicit_ppt_attachment_preserves_bytes_sources_and_old_revision(report
     with pytest.raises(PermissionError): store.file(RID,2,'attachment-1.pptx','alice')
 
 
-def test_existing_cache_is_discovered_only_for_same_actor_and_exact_snapshot(reports):
+@pytest.mark.parametrize('legacy_audio',[False,True],ids=['silent-cache','existing-audio-cache'])
+def test_existing_cache_is_discovered_only_for_same_actor_and_exact_snapshot(reports,legacy_audio):
     store,state=reports
     from management_portal.home_report import build_report
     from management_portal.home_report_media import MediaStore
@@ -373,11 +374,17 @@ def test_existing_cache_is_discovered_only_for_same_actor_and_exact_snapshot(rep
     assert first['media'] is None
     directory=legacy.directory('alice',job);directory.mkdir(parents=True)
     renderer(snapshot,directory)
+    if not legacy_audio: (directory/'narration.wav').unlink()
     legacy.save(directory,{'job_id':job,'status':'ready','version':snapshot['version'],'report':snapshot,'chapters':[],'transcript':'旧媒体'})
     recovered=create(store,KEY[:-1]+'d','report_123456789abd')
     assert recovered['media']['status']=='ready'
     assert recovered['media']['imported_from']['job_id']==job
     assert store.file('report_123456789abd',1,'video.mp4','alice')[0].read_bytes()==(directory/'video.mp4').read_bytes()
+    if legacy_audio:
+        assert store.file('report_123456789abd',1,'narration.wav','alice')[0].read_bytes()==(directory/'narration.wav').read_bytes()
+    else:
+        assert 'narration.wav' not in recovered['media']['assets']
+        with pytest.raises(FileNotFoundError):store.file('report_123456789abd',1,'narration.wav','alice')
     state['body']='不同请求内容'
     unmatched=create(store,KEY[:-1]+'e','report_123456789abe')
     assert unmatched['media'] is None
@@ -405,20 +412,20 @@ def test_media_lease_is_visible_across_processes_and_process_exit_allows_retry(r
     store,state=reports
     create(store)
     media=PersistentMedia(store,renderer)
-    pending=store.directory(RID)/'1/media-state.json'
-    pending.write_text(json.dumps({'status':'pending','version':store.response(RID,'alice')['version']}))
+    pending=store.directory(RID)/'1/media-low-state.json'
+    pending.write_text(json.dumps({'status':'pending','version':store.response(RID,'alice')['version'],'quality':'low'}))
     child=subprocess.Popen([sys.executable,'-c',
         "import fcntl,sys; f=open(sys.argv[1],'a'); fcntl.flock(f,fcntl.LOCK_EX); print('locked',flush=True); sys.stdin.read()",
-        str(media.lease_path(RID,1))],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+        str(media.lease_path(RID,1,'low'))],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
     try:
         assert child.stdout.readline().strip()=='locked'
-        assert media.status(RID,1,'alice')['status']=='pending'
-        assert media.start(RID,1,'alice')['status']=='pending'
+        assert media.status(RID,1,'alice',quality='low')['status']=='pending'
+        assert media.start(RID,1,'alice',quality='low')['status']=='pending'
     finally:
         child.communicate(timeout=5)
-    assert media.status(RID,1,'alice')['status']=='failed'
-    media.start(RID,1,'alice',retry=True)
-    assert wait_ready(media)['status']=='ready'
+    assert media.status(RID,1,'alice',quality='low')['status']=='failed'
+    media.start(RID,1,'alice',retry=True,quality='low')
+    assert wait_ready(media,'low')['status']=='ready'
 
 
 def test_nested_directory_cleanup_retries_after_unregister_and_stale_delete_is_safe(reports,monkeypatch):
