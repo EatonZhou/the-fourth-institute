@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import traceback
+import weakref
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
@@ -42,7 +43,9 @@ class _LockRecord:
         self.acquired_at = 0.0
 
 
-_LOCKS: dict[str, _LockRecord] = {}
+# Every holder and waiter keeps its record strongly in _invariant_scope.
+# The registry only joins concurrent users; completed scopes need no owner.
+_LOCKS: weakref.WeakValueDictionary[str, _LockRecord] = weakref.WeakValueDictionary()
 
 
 def configure_root_provider(provider: Callable[[], Path]) -> None:
@@ -91,7 +94,11 @@ def _resident_conversation_scope_id(resident_id: object) -> str:
 
 def _record(scope_id: str) -> _LockRecord:
     with _LOCKS_GUARD:
-        return _LOCKS.setdefault(scope_id, _LockRecord())
+        record = _LOCKS.get(scope_id)
+        if record is None:
+            record = _LockRecord()
+            _LOCKS[scope_id] = record
+        return record
 
 
 def _depths() -> dict[str, int]:

@@ -4,27 +4,27 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 21
-  created_at: '2026-09-03'
+  number: 22
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-27T12:47:35Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T14:34:13Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 8
 metaness: 2
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/shared_state.py
-  - ${code_root}/management_portal/portal_ui_state.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/management_portal/society_service/invariant_locks.py
-  - ${code_root}/management_portal/society_service/lineage_definition_merge.py
-  - ${code_root}/management_portal/society_service/lineage_storage.py
-  - ${code_root}/tests/cases/test_lineage_catalogs.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/shared_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_ui_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/invariant_locks.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_definition_merge.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_catalogs.py
   related:
   - decision_1b2bdf5c33d6
   - decision_f55bac7fc199
@@ -148,6 +148,12 @@ sequenceDiagram
 - **多个 Resident**：`resident_locks` 对 ID 去重、排序后依次获取，避免两个线程分别按 A→B 和 B→A 的顺序互相等待。
 - **登记目录**：`catalog_lock(name)` 的名称转为小写的安全字符串，最长 80 个字符。调用方按实际要保护的一致性选择作用域，不用宽泛的全局锁代替明确的边界。
 - **Resident 状态与对话写入不嵌套成长临界区。** 跨存储的一致性依靠稳定的消息 ID、持久的授权意图、版本检查和游标恢复。
+
+### 进程内锁记录的生命周期
+
+注册表只以弱引用关联作用域与锁记录。进入作用域的持有者、正在取锁的等待者以及健康读取的临时快照各自保留强引用；这些使用者存在期间，同一作用域始终取得同一个可重入锁。最后一个使用者离开后记录即可回收，不按历史遇到的键永久保留。命中已有记录时不另外创建锁。释放锁后不能直接从注册表删除记录，因为已有等待者可能取得了记录、尚未进入临界区。跨进程锁文件及其路径保持原有生命周期，不随进程内弱引用回收而删除。
+
+健康结果的 scope_count 表示采样时仍被使用流程引用的锁记录数，包含等待者与临时诊断引用，不是历史出现过的不同作用域总数；获取次数、等待次数和慢事件等累计统计继续独立保留。
 
 ### 延后回调
 

@@ -28,12 +28,16 @@ def _location(filename: str) -> str:
     return path.name
 
 
-def allocation_summary(limit: int = 30) -> dict:
+def allocation_summary(limit: int = 30, *, detailed: bool = True) -> dict:
     """Only source locations and allocation totals; never serialize trace values."""
     if not tracemalloc.is_tracing():
         return {"enabled": False}
     current, peak = tracemalloc.get_traced_memory()
     overhead = tracemalloc.get_tracemalloc_memory()
+    totals = {"enabled": True, "current_bytes": current, "peak_bytes": peak,
+              "tracer_metadata_bytes": overhead, "detailed": detailed}
+    if not detailed:
+        return totals
     snapshot = tracemalloc.take_snapshot()
     rows = [{"file": _location(stat.traceback[0].filename), "line": stat.traceback[0].lineno,
              "bytes": stat.size, "count": stat.count}
@@ -41,8 +45,7 @@ def allocation_summary(limit: int = 30) -> dict:
     stacks = [{"bytes": stat.size, "count": stat.count,
                "frames": [{"file": _location(frame.filename), "line": frame.lineno} for frame in stat.traceback]}
               for stat in snapshot.statistics("traceback")[:12]]
-    return {"enabled": True, "current_bytes": current, "peak_bytes": peak,
-            "tracer_metadata_bytes": overhead, "top_lines": rows, "top_stacks": stacks}
+    return {**totals, "top_lines": rows, "top_stacks": stacks}
 
 
 def gc_summary() -> dict:
@@ -55,9 +58,9 @@ def gc_summary() -> dict:
     return {"counts": gc.get_count(), "thresholds": gc.get_threshold(), "stats": gc.get_stats()}
 
 
-def sample() -> dict:
+def sample(*, detailed: bool = True) -> dict:
     started = time.monotonic()
-    allocations = allocation_summary()
+    allocations = allocation_summary(detailed=detailed)
     garbage_collection = gc_summary()
     try:
         import psutil
@@ -96,9 +99,11 @@ def start() -> threading.Thread | None:
         deadline = time.monotonic() + remaining
         try:
             with create_private_file(target) as stream:
-                for _ in range(8):
+                for index in range(8):
                     try:
-                        row = sample()
+                        # Snapshot aggregation allocates temporary objects too.
+                        # Use cheap live counters between the first/last detail.
+                        row = sample(detailed=index in (0, 7) or deadline - time.monotonic() <= interval)
                     except Exception as error:
                         # The exception's message/locals may contain business data.
                         row = {"diagnostic_error_type": type(error).__name__}

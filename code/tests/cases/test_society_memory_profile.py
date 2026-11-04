@@ -112,7 +112,11 @@ def test_profile_stops_at_lease_deadline_and_leaves_only_aggregate_rows(monkeypa
     monkeypatch.setattr(memory_profile, "time", SimpleNamespace(
         time=lambda: clock[0], monotonic=lambda: clock[0], time_ns=lambda: 123,
         sleep=lambda delay: clock.__setitem__(0, clock[0] + delay)))
-    monkeypatch.setattr(memory_profile, "sample", lambda: {"aggregate_bytes": 42})
+    detailed_samples = []
+    def aggregate_sample(*, detailed):
+        detailed_samples.append(detailed)
+        return {"aggregate_bytes": 42}
+    monkeypatch.setattr(memory_profile, "sample", aggregate_sample)
     monkeypatch.setattr(memory_profile.tracemalloc, "is_tracing", lambda: False)
     monkeypatch.setattr(memory_profile.tracemalloc, "start", lambda frames: events.append(("start", frames)))
     monkeypatch.setattr(memory_profile.tracemalloc, "stop", lambda: events.append(("stop",)))
@@ -127,6 +131,7 @@ def test_profile_stops_at_lease_deadline_and_leaves_only_aggregate_rows(monkeypa
     (folder / "society-memory-profile.json").write_text('{"expires_at":45,"interval_seconds":20}')
     memory_profile.start()
     assert clock[0] == 45
+    assert detailed_samples == [True, False, True]
     assert events == [("start", 4), ("stop",)]
     records = next(folder.glob("*.jsonl")).read_text().splitlines()
     assert [json.loads(row) for row in records] == [{"aggregate_bytes": 42}] * 3
