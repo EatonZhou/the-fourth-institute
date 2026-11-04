@@ -8,8 +8,6 @@ const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const repo = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
-const baselineProtocol = process.env.RAIL_QUEUE_BASELINE
-  ? require('node:child_process').execFileSync('git', ['show', 'HEAD:code/management_portal/static/resident_protocol.js'], { cwd: repo }) : null;
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_resource_chips.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js',
@@ -32,7 +30,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       response.setHeader('content-type', name.endsWith('.css') ? 'text/css' : 'text/javascript');
       const file = path.join(repo, 'management_portal/static', name.replace(/^static\//, ''));
       if (name !== 'routes.js' && !fs.existsSync(file)) { response.statusCode = 404; response.end(); return; }
-      response.end(name === 'routes.js' ? routeScript : name === 'resident_protocol.js' && baselineProtocol ? baselineProtocol : fs.readFileSync(file));
+      response.end(name === 'routes.js' ? routeScript : fs.readFileSync(file));
     }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -74,7 +72,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
           { message_id: 'waiting', author_id: 'fixture-reader', enqueued_at: '2026-11-04T12:01:00Z',
             content_parts: [{ type: 'text', text: '已正式受理、尚未进入执行轨迹的排队消息。' }] },
           { message_id: 'queue-unknown', author_id: 'fixture-reader', enqueued_at: '2026-11-04T12:01:01Z', content_preview: '工作状态尚未确认的已受理消息' },
-          { message_id: 'agent-queue', author_id: 'resident_222222222222', enqueued_at: '2026-11-04T12:01:02Z', content_preview: 'Resident 来信不产生用户节点' }
+          { message_id: 'agent-queue', author_id: 'resident_222222222222', enqueued_at: '2026-11-04T12:01:02Z', content_preview: 'Resident 来信不产生用户节点' },
+          { message_id: 'group-queue', author_id: 'mailbox', enqueued_at: '2026-11-04T12:01:03Z', content_preview: 'Mailbox 群体仍等待交付' }
         ] };
         raw.input_states.push({ message_id: 'waiting', state: 'queued', work: { state: 'queued', kind: 'primary', delivery: 'pending',
           primary_message_id: 'waiting', updated_at: '2026-11-04T12:01:00Z' } },
@@ -112,34 +111,32 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     await page.waitForSelector('.chatRoundNode'); await settle();
     if (process.env.RAIL_QUEUE_ONLY) {
-      const evidence = { checks, errors, isolated: true, baseline: !!baselineProtocol };
-      const visibleQueued = await node('waiting').count();
-      if (baselineProtocol) {
-        assert.equal(visibleQueued, 0);
-        evidence.reproduced = 'formal input.work.queued exists but queue-only accepted input has no body row or marker';
-      } else {
-        check('accepted queue-only input has its own body row and marker', visibleQueued === 1
-          && await page.locator('.messageList > [data-message-key="waiting"]').count() === 1);
-        check('queue-only authoritative work.queued draws a diamond', await node('waiting').evaluate(n => n.classList.contains('is-queued')));
-        const shape = await node('waiting').locator('.chatRoundCore').evaluate(n => {
+      const evidence = { checks, errors, isolated: true };
+      for (const id of ['waiting', 'queue-unknown', 'agent-queue', 'group-queue']) {
+        check(`${id} stays out of history and navigation until delivery`, await node(id).count() === 0
+          && await page.locator(`.messageList > [data-message-key="${id}"]`).count() === 0);
+      }
+      check('all pending Mailbox entries remain available in the queue', await page.evaluate(() => panel.protocol.snapshot().queue.items.length) === 4);
+      check('local draft has no human marker', await node('unsent').count() === 0);
+      {
+        check('a queued input already in server history retains its diamond', await node('queued').evaluate(n => n.classList.contains('is-queued')));
+        const shape = await node('queued').locator('.chatRoundCore').evaluate(n => {
           const s = getComputedStyle(n, '::after'); return { radius: s.borderRadius, transform: s.transform, border: s.borderTopWidth };
         });
         evidence.shape = shape;
         check('real styles render the hollow rotated square, not a circle', shape.radius === '0px' && shape.border === '1px' && shape.transform.startsWith('matrix(0.707'));
-        check('explicit unknown is not inferred queued from delivery state', !await node('queue-unknown').evaluate(n => n.classList.contains('is-queued')));
-        check('local draft and Resident-authored queue input have no human marker', await node('unsent').count() === 0 && await node('agent-queue').count() === 0);
-        await node('waiting').focus(); await page.keyboard.press('Enter'); await settle();
-        check('queued marker keyboard navigation reaches the real message row', await page.locator('.messageList > [data-message-key="waiting"]').isVisible());
-        await page.evaluate(() => panel.workspace.controller.toggleRoundFollow('waiting')); await settle();
-        check('Flag replaces queued diamond and retains queued accessible status', await node('waiting').locator('.chatRoundCore').evaluate(n => getComputedStyle(n, '::after').display === 'none')
-          && (await node('waiting').getAttribute('aria-label')).includes('排队中'));
-        await page.evaluate(() => panel.workspace.controller.toggleRoundFollow('waiting')); await settle();
+        await node('queued').focus(); await page.keyboard.press('Enter'); await settle();
+        check('queued marker keyboard navigation reaches an existing history row', await page.locator('.messageList > [data-message-key="queued"]').isVisible());
+        await page.evaluate(() => panel.workspace.controller.toggleRoundFollow('queued')); await settle();
+        check('Flag replaces queued diamond and retains queued accessible status', await node('queued').locator('.chatRoundCore').evaluate(n => getComputedStyle(n, '::after').display === 'none')
+          && (await node('queued').getAttribute('aria-label')).includes('排队中'));
+        await page.evaluate(() => panel.workspace.controller.toggleRoundFollow('queued')); await settle();
         if (output) await page.screenshot({ path: path.join(output, 'queued-desktop.png') });
         await page.setViewportSize({ width: 390, height: 844 });
         await page.evaluate(() => document.documentElement.style.fontSize = '20px'); await settle();
-        await node('waiting').focus(); await page.keyboard.press('Enter'); await settle();
+        await node('queued').focus(); await page.keyboard.press('Enter'); await settle();
         if (output) await page.screenshot({ path: path.join(output, 'queued-390.png') });
-        check('390/20px retains one keyboard reachable queued marker', await node('waiting').count() === 1 && await node('waiting').isVisible());
+        check('390/20px retains the existing history marker without inventing queued rows', await node('queued').isVisible() && await node('waiting').count() === 0);
         await page.evaluate(() => {
           raw.messages.push({ message_id: 'waiting', role: 'user', author_id: 'fixture-reader',
             origin: { sender: { kind: 'user', id: 'fixture-reader' } }, content_parts: raw.queue.items[0].content_parts });
@@ -148,14 +145,15 @@ if (output) fs.mkdirSync(output, { recursive: true });
           raw.input_states.find(x => x.message_id === 'waiting').work = { ...fact('running', 'new-queue-execution', 35), updated_at: '2026-11-04T12:02:00Z' };
           return panel.protocol.load({ force: true });
         }); await settle();
-        check('queue admission to execution keeps one stable identity and switches to running', await node('waiting').count() === 1 && await running('waiting')
+        check('delivery introduces exactly one real row and running marker', await page.locator('.messageList > [data-message-key="waiting"]').count() === 1 && await node('waiting').count() === 1 && await running('waiting')
           && !await node('waiting').evaluate(n => n.classList.contains('is-queued')));
         await page.evaluate(() => { raw.queue.items = []; raw.cursor++; return panel.protocol.load({ force: true }); }); await settle();
-        check('removed queue-only input leaves no stale marker', await node('queue-unknown').count() === 0);
+        check('withdrawn pending inputs leave no history or marker', await node('queue-unknown').count() === 0
+          && await page.locator('.messageList > [data-message-key="queue-unknown"]').count() === 0);
       }
       assert.deepEqual(errors, []);
       if (output) fs.writeFileSync(path.join(output, 'queued-result.json'), JSON.stringify(evidence, null, 2));
-      console.log('Queued admission contract: ' + (baselineProtocol ? 'baseline failure reproduced' : checks.length + ' passed'));
+      console.log('Mailbox/history separation: ' + checks.length + ' passed');
       await page.evaluate(() => panel.destroy()); return;
     }
     if (process.env.RAIL_BOTTOM_ONLY) {

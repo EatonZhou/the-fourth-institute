@@ -400,22 +400,8 @@
     submissionSnapshot() {
       if (!this.snapshot) return null;
       const snapshot = clone(this.snapshot);
-      // Accepted Mailbox inputs may not enter the execution trace until they
-      // start. Give them real message rows now, using the server queue identity
-      // and content, so reading/navigation has an actual layout anchor. Keep
-      // this projection out of the stored trace and deduplicate on admission.
-      const known = new Set((snapshot.messages || []).map(message => message.message_id));
-      for (const queued of snapshot.queue?.items || []) {
-        const id = String(queued.message_id || ""), author = String(queued.author_id || "");
-        if (!id || !author || known.has(id)) continue;
-        const parts = Array.isArray(queued.content_parts) && queued.content_parts.length
-          ? clone(queued.content_parts) : queued.content_preview ? [{ type: "text", text: String(queued.content_preview) }] : [];
-        if (!parts.length) continue;
-        snapshot.messages.push({ message_id: id, role: "user", author_id: author,
-          created_at: queued.enqueued_at, content_parts: parts,
-          origin: queued.origin || { sender: { kind: /^resident_[a-f0-9]{12}$/.test(author) ? "resident" : "user", id: author } } });
-        known.add(id);
-      }
+      // Mailbox acceptance is not delivery into the conversation. Only the
+      // server history supplies message rows; waiting inputs stay in queue.
       if (this.submissions.size) snapshot.local_submissions = [...this.submissions.values()].map(entry => ({
         ...clone(entry.preview), local_delivery: { state: entry.state, error: entry.error || "" },
       }));
