@@ -118,7 +118,7 @@ high 质量的独立检查在生成内容完成后读取固定版本、实际打
 }
 ```
 
-只保留实际有用的模块。`quality` 为 low、medium 或 high，构建器默认 medium；low 包只保留 Markdown supplement，直接文件也可用 Preview 打开。引用也可包含已生成的 `video`，其中 `address/sha256` 指向 MP4，`captions` 与 `transcript` 各带地址和摘要，`chapters` 为 `[{time:秒,title}]`。普通 HTML 文件在 Preview 中仍是代码；解释包的 interaction 才进入隔离宿主。自包含 HTML 内联样式、脚本、数据和所需库，禁止远程依赖及父页面访问。大型图按需更新，不维持无用动画。
+只保留实际有用的模块。`quality` 为 low、medium 或 high，构建命令必须显式传入当前有效档位，不提供省略后的默认值；low 包只保留 Markdown supplement，直接文件也可用 Preview 打开。引用也可包含已生成的 `video`，其中 `address/sha256` 指向 MP4，`captions` 与 `transcript` 各带地址和摘要，`chapters` 为 `[{time:秒,title}]`。普通 HTML 文件在 Preview 中仍是代码；解释包的 interaction 才进入隔离宿主。自包含 HTML 内联样式、脚本、数据和所需库，禁止远程依赖及父页面访问。大型图按需更新，不维持无用动画。
 
 视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
