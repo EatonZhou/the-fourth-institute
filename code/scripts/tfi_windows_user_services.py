@@ -183,14 +183,46 @@ def state_path(value):
     return Path(value["root"]) / "runtime" / (value["component"] + ".process.json")
 
 
-def matches_process(pid, created):
-    """Only an exact live FILETIME match establishes service ownership.
+def snapshot_contains_process(pid):
+    """Observe PID membership in the stdlib-only desktop bootstrap.
 
-    OpenProcess can deny access for an absent or recycled PID after reboot.
-    psutil's Windows system-process snapshot can disprove that identity without
-    opening the protected process. Its floating-point time must never establish
-    ownership: an ambiguous or denied observation preserves the original error.
+    Membership never establishes ownership; only absence disproves it.
     """
+    from ctypes import wintypes as w
+    class ProcessEntry(ctypes.Structure):
+        _fields_ = [("dwSize", w.DWORD), ("cntUsage", w.DWORD),
+                    ("th32ProcessID", w.DWORD), ("th32DefaultHeapID", ctypes.c_size_t),
+                    ("th32ModuleID", w.DWORD), ("cntThreads", w.DWORD),
+                    ("th32ParentProcessID", w.DWORD), ("pcPriClassBase", w.LONG),
+                    ("dwFlags", w.DWORD), ("szExeFile", w.WCHAR * 260)]
+    api = ctypes.WinDLL("kernel32", use_last_error=True)
+    api.CreateToolhelp32Snapshot.argtypes = [w.DWORD, w.DWORD]
+    api.CreateToolhelp32Snapshot.restype = w.HANDLE
+    api.Process32FirstW.argtypes = [w.HANDLE, ctypes.POINTER(ProcessEntry)]
+    api.Process32FirstW.restype = w.BOOL
+    api.Process32NextW.argtypes = [w.HANDLE, ctypes.POINTER(ProcessEntry)]
+    api.Process32NextW.restype = w.BOOL
+    api.CloseHandle.argtypes = [w.HANDLE]
+    snapshot = api.CreateToolhelp32Snapshot(2, 0)  # TH32CS_SNAPPROCESS
+    if snapshot == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        entry = ProcessEntry()
+        entry.dwSize = ctypes.sizeof(entry)
+        available = api.Process32FirstW(snapshot, ctypes.byref(entry))
+        while available:
+            if entry.th32ProcessID == pid:
+                return True
+            available = api.Process32NextW(snapshot, ctypes.byref(entry))
+        if ctypes.get_last_error() != 18:  # ERROR_NO_MORE_FILES
+            raise ctypes.WinError(ctypes.get_last_error())
+        return False
+    finally:
+        api.CloseHandle(snapshot)
+
+
+def matches_process(pid, created):
+    """An exact live FILETIME match is the only proof of service ownership."""
     if not pid or created is None:
         return False
     try:
@@ -198,17 +230,11 @@ def matches_process(pid, created):
     except PermissionError as denied:
         if getattr(denied, "winerror", None) != 5:
             raise
-        import psutil
         try:
-            observed = psutil.Process(pid).create_time()
-        except psutil.NoSuchProcess:
-            return False
-        except psutil.AccessDenied:
+            present = snapshot_contains_process(pid)
+        except OSError:
             raise denied from None
-        expected = created / 10_000_000 - 11_644_473_600
-        # FILETIME -> float loses sub-microsecond precision. A generous margin
-        # only limits what can be disproved; it never grants an approximate match.
-        if abs(observed - expected) > 0.001:
+        if not present:
             return False
         raise denied
 

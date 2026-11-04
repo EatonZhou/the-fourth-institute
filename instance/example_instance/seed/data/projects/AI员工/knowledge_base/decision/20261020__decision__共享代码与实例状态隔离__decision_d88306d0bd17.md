@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-20'
 version:
-  number: 38
+  number: 39
   created_at: "2026-10-20"
   created_by:
     user: ""
     agent: "resident_977d1a613d44"
-  updated_at: "2026-11-04T05:07:44Z"
+  updated_at: "2026-11-04T05:11:58Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -318,7 +318,7 @@ Portal 在数据库和配置中保存根位置时，继续使用以下两种形�
 
 服务监督器与其子进程分别以 PID 和 Windows 创建 FILETIME 标识；只有仍存活且精确创建时间相符的进程才属于该服务。状态、启动、停止和失败恢复共用这一判定，不能凭裸 PID 发送控制请求，也不能把无法查询进程直接解释为已经停止。
 
-机器重启或 PID 回收后，OpenProcess 可能对历史 PID 返回拒绝访问。服务身份 owner 使用系统进程快照进一步核对：快照确认 PID 不存在，或当前创建时间明确不同于记录时，旧身份已失效，可以按失败服务重新启动；快照浮点时间相近、读取被拒绝或其他查询失败都保持未知并报告原错误。快照只用于排除旧身份，不能用近似时间确认所有权，也不能放宽进程 ACL。普通活进程仍使用精确 FILETIME 和存活状态核验。
+机器重启后，OpenProcess 可能对历史 PID 返回拒绝访问。服务身份 owner 使用 Windows Toolhelp 进程快照进一步核对：快照确认 PID 不存在时，旧身份已失效，可以按失败服务重新启动；PID 仍存在、快照读取被拒绝或其他查询失败都保持未知并报告原错误。快照只用于排除已消失身份，不能凭 PID 成员关系确认所有权，也不能放宽进程 ACL。普通活进程仍使用精确 FILETIME 和存活状态核验。该能力只依赖 Windows API 和 Python 标准库，桌面精简引导解释器与完整服务环境使用同一实现。
 
 ### Windows 程序卸载中的托管目录联接
 
