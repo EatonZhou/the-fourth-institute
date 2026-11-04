@@ -255,6 +255,16 @@ class AgentDataStore:
 
     # Executions
 
+    def input_work_states(self, agent_id: str, message_ids: Sequence[str]) -> dict[str, dict[str, str]]:
+        """Work associated with each input; transport completion is independent."""
+        from .input_work_projection import input_work_states
+        return input_work_states(self, agent_id, message_ids)
+
+    def execution_input_work_states(self, agent_id: str, execution_id: str) -> dict[str, dict[str, str]]:
+        """Work of inputs admitted to exactly this execution, without following retries."""
+        from .input_work_projection import execution_input_work_states
+        return execution_input_work_states(self, agent_id, execution_id)
+
     def reserve_execution(
         self, *, execution_id: str, agent_id: str, actor_ref: str, provider: str,
         created_at: str = "",

@@ -76,24 +76,29 @@
       if (previewUrl) openMessageImageEditor(previewUrl, attachmentPath);
       else void window.PortalUI.copyText(attachmentPath, window.PortalI18n.t("附件路径"));
     };
+    // Shared by message bodies and transient navigation previews: opening a
+    // reference must keep the same Workspace target and current host callbacks.
+    const bindMessageReferences = root => {
+      const renderOptions = state.messageRenderOptions;
+      bindAttachmentRefs(root, {
+        previewUrlForPath: renderOptions.previewUrlForPath || options.previewUrlForPath,
+        onOpen: (kind, path, node) => openMessageAttachment(renderOptions, kind, path, node),
+        onImagePreview: context => openMessageImageEditor(context?.src, context?.title),
+      });
+      bindResponseSourcePaths(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
+      bindResourceChips(root, { onResourcePreview: renderOptions.onResourcePreview || options.onResourcePreview });
+      if (options.enableLinkPreview || renderOptions.enableLinkPreview) {
+        bindLinkPreview(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
+      }
+    };
     // Every render of the message list ends here. What was drawn gets its
     // buttons and previews bound and its folds measured, then the host is told.
     // `incremental` tells the host that only `roots` changed, as when one message
     // is appended; otherwise it treats the whole list as drawn again.
     const afterMessagesDrawn = (roots, { incremental = false } = {}) => {
-      const renderOptions = state.messageRenderOptions;
       for (const root of roots) {
-        bindAttachmentRefs(root, {
-          previewUrlForPath: renderOptions.previewUrlForPath || options.previewUrlForPath,
-          onOpen: (kind, path, node) => openMessageAttachment(renderOptions, kind, path, node),
-          onImagePreview: context => openMessageImageEditor(context?.src, context?.title),
-        });
-        bindResponseSourcePaths(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
-        bindResourceChips(root, { onResourcePreview: renderOptions.onResourcePreview || options.onResourcePreview });
+        bindMessageReferences(root);
         bindMessageAvatars(root);
-        if (options.enableLinkPreview || renderOptions.enableLinkPreview) {
-          bindLinkPreview(root, { onLinkPreview: renderOptions.onLinkPreview || options.onLinkPreview });
-        }
       }
       measureMessageFolds(roots);
       revealFinishedSubagents(els.messages, options.onSubagentFinished);
@@ -422,7 +427,7 @@
       }
     };
 
-    return { appendMessage, setMessages, setRuntime, redrawMessages };
+    return { appendMessage, setMessages, setRuntime, redrawMessages, bindMessageReferences };
   }
 
   window.PortalChatWorkspaceMessageDrawing = Object.freeze({ createMessageDrawing, dependencies: DEPENDENCIES });

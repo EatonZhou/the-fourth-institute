@@ -4,23 +4,23 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 55
-  created_at: '2026-09-28T10:45:00Z'
+  number: 56
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-27T12:48:40Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-04T16:23:50Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/resident_handoff.py
-  - ${code_root}/management_portal/society_service/isa/conversation.py
-  - ${code_root}/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_handoff.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/conversation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
   related:
   - decision_6591e7793116
   - decision_3e063aac15b3
@@ -84,7 +84,7 @@ links:
 
 - 参数：`resident_id` 或 `user_id`（二选一）、`message`（包含 `message_id`、`role`、`content_parts` 和可选 `quote`）、`activation_policy`（可选）、`business_ref`（可选）、`reply_to_message_id`（可选）、`temporary_credentials`（可选）。
 - `temporary_credentials` 随消息把调用者的权限临时交给收件 Resident，每项 `{a, resource_id}`：调用者此刻在该资源上持有的 A 树节点。投递与签发在同一事务中完成，凭证行记录这条消息；收件 Resident 对这条消息的输入进入完成、失败或取消时删除，最迟 7 天后失效（decision_b820faf42218 §5.6、decision_22227d0ad075）。结果的 `temporary_credentials` 列出签发的凭证。只用于发给 Resident。
-- 消息中的资源引用不做权限检查：发送方可以引用任何地址，收件方读取时按自己的权限判定（TFI portal 2026-10-18）。需要让收件方读到它原本读不到的资源时，用 `temporary_credentials` 随任务交出。
+- 消息中的资源引用不做权限检查：发送方可以引用任何地址，收件方读取时按自己的权限判定（weihao 2026-10-18）。需要让收件方读到它原本读不到的资源时，用 `temporary_credentials` 随任务交出。
 - `user_id` 把消息发给用户，只有 Resident 可以使用。消息不进入队列、不开始工作：它写在发送方自己的对话中（Family 成员或 steward 发出时写在门面的对话中，以门面署名），`recipients` 记录这位用户；收件用户必须能查看这段对话。`activation_policy` 只能省略或为默认值，`content_parts` 只包含文字和资源引用。规则见 decision_c524c775e0be。
 - Family 的成员或 steward 发给 Family 外的 Resident 时，以包含它、但不包含收件方的最外层门面投递，门面对话另记一条写明收件人的记录；Family 内部互发和外部直接找成员开始的对话保留本人身份（decision_44cf587c1721）。
 - `business_ref` 是调用方业务记录的统一 ID 或地址（例如一次论文评审任务），随输入保存。调用方据此把回复、产物和输入状态对应到自己的业务记录。
@@ -136,6 +136,25 @@ links:
 - `fork_deliveries` 返回最新至多 20 条请求/确认事实及是否还有更早记录：目标原生 Session、请求或 acknowledged 状态、记录的历史摘要、从其冻结 Segment 引用重新计算的摘要及是否一致。requested 状态不会被推断为已确认。请求和确认中的同一冻结历史只计算一次。
 - 返回内容不含原始 prompt、工具参数或输出、图片地址/Base64、压缩原文或加密正文。摘要用于核对实际持久化与交付边界；模型回答是否正确仍由真实对话验证。
 
+
+### 输入送达与执行工作关联
+
+GetConversation.input_states[] 与 GetInputState.input_state 的每项提供独立的 work：state 为 queued、running、completed、failed、cancelled 或 unknown；kind 为 primary、appended 或 unknown；execution_id、primary_message_id、provider_turn_id 在有可信关联时提供；delivery 为 pending、delivered 或 unknown；updated_at 为对应执行/送达事实时间，缺证据时为空字符串。
+
+原 state、updated_at、reply_message_ids 和 in_context 保持原语义。特别是已送达的追加输入可同时具有 state=completed、work.state=running；in_context 只说明上下文可见性。工作中的绿色标识只据 work.state=running，不据 Resident 整体 busy 或最新模型会话推测。
+
+AgentData 拥有执行输入与 Provider 追加受理的持久关联。追加输入通过 source Segment、provider_input.append 派生及 control 身份锁定原 execution/Provider turn；只读同一执行的真实主输入和状态，不能沿 primary_message_id 的最新重试串到新 execution。同一 execution 的 Provider turn 已改变时，保留已证实送达事实，工作状态回 unknown。历史无可靠证据不得回填猜测；未送达的失败控制不能成为旧轮接纳凭据。
+
+Society 拥有尚未预留 Execution 的精确 Mailbox 队列与撤回事实：确有持久队列项的输入可显示 work.queued，execution_id 可缺省；新发生的正式队列撤回保存 queue_withdrawn 原因并显示未送达的 work.cancelled。合并队列撤回在同一事务为尚未终止的原成员冻结 queue_withdrawn 与原 group 因果及撤回时间；成员不追随群体将来的重试，已有独立终态不覆盖。仅历史 state=queued/cancelled 本身不足以推断。读取只组合事实，不改旧输入终态。正式撤回导致原输入退出 Chat 的既有行为保持；GetInputState 可读取取消回执，不为显示 work 而恢复已移除正文。
+
+work.updated_at 不借用追加输入已不再变化的顶层更新时间，也不使用读取当前时间。更新经既有 resident.input.state.changed 事件发布，payload.input_state 可保持原 completed 而 work 推进；Conversation 持久 cursor 为事件顺序，状态失效为 unknown 时同样推进 cursor。调用者按 cursor 应用事件，跨 execution/turn 不以墙钟比较归属；已知状态遇缺 work 的旧增量应重读快照，不以旧顶层 state 覆盖 work。无需新增轮询或 HATG 指令。
+
+事件生产按精确 execution 的输入集合批量核验并合并未变化事实，覆盖同一 running 状态内新增 delivered 输入与 Provider turn 更换；不能只用 execution.status 是否变化做门控。旧执行的迟到通知不能把同一 primary 消息在新 attempt 的状态覆成旧终态；迟到 running 也不能使原执行终态复活。Family 转交保留实际成员的 work 与变化标识；Mailbox 不覆盖独立终态或已有独立关联。
+
+Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接成员，与同一快照的 message.relay.work 一致。工作标识以 work 为准，旧 input_state.state 或 message.relay.state 的 completed 不能覆盖 work.running；work.unknown 也不能回退旧状态或整体 busy 推断。缺 input_state.work 而有正式 relay.work 时可使用后者。此语义优先级不替代新鲜度校验：仍按同一 Conversation 的持久 cursor 更新，不跨 stream 比较 cursor，不让过期 work 覆盖更晚事实。
+
+按当前页批量解析输入，禁止逐消息 RPC 或扫描全部历史；按 execution 推送时只读取该 execution 的索引关联集合。返回关联 ID、状态和时间，不返回控制输入正文或其他消息内容。
+
 ### `ListMessages`
 
 **从快照或上一页给出的 `next_cursor` 继续读取更早的消息。**
@@ -145,12 +164,12 @@ links:
 
 ### `ListInputHistory`
 
-**读取调用者本人在一个 Resident 会话或一个聊天室里发过的输入。** 输入框按上箭头翻输入历史时，由服务端直接给出这份列表，浏览器不再从已加载的消息里推导（TFI portal 2026-10-16）。
+**读取调用者本人在一个 Resident 会话或一个聊天室里发过的输入。** 输入框按上箭头翻输入历史时，由服务端直接给出这份列表，浏览器不再从已加载的消息里推导（weihao 2026-10-16）。
 
 - 参数：`resident_id` 或 `chatroom_id`（二选一）；`cursor`（可选，上一页返回的 `next_cursor`，不填时从最新的输入读起）；`limit`（可选，默认 50，最多 200）。
 - 结果：`messages`，一页从新到旧；`next_cursor`，还有更早的输入时返回。
 - 带 `resident_id`：消息形式与 `ListMessages` 相同。范围是整条 trace，包括 Fork 继承的输入和清除上下文之前的输入。只取发送者等于调用者、并且消息来源是用户（或早期消息没有来源记录）的输入；Resident 投递、Mailbox 合并的请求和系统消息不在其中，其他成员的输入也不在其中。发送者用消息的 `actor_ref` 比较，不区分大小写。可见性与 `ListMessages` 相同；Family 门面同样投影。
-- 带 `chatroom_id`：由 Portal Web 执行，消息形式与 `ListChatroomMessages` 的基本字段相同。只含作者是调用者的用户消息；编辑过的消息取当前版本，撤回的消息返回撤回前的内容，所以撤回后仍能翻出来重发（TFI portal 2026-10-16）。读取权限与 `ListChatroomMessages` 相同（decision_3e063aac15b3）。
+- 带 `chatroom_id`：由 Portal Web 执行，消息形式与 `ListChatroomMessages` 的基本字段相同。只含作者是调用者的用户消息；编辑过的消息取当前版本，撤回的消息返回撤回前的内容，所以撤回后仍能翻出来重发（weihao 2026-10-16）。读取权限与 `ListChatroomMessages` 相同（decision_3e063aac15b3）。
 
 ### `GetMessage`
 
@@ -166,7 +185,7 @@ links:
 - 参数：`resident_id`；`sender_id`（可选，只列出这位用户或 Resident 发来的请求，以及发给它的消息）；`before_message_id`（可选，只列出这条消息之前的轮次）；`limit`（可选，1–10，默认 3）。
 - 结果：`rounds`，从旧到新。每轮包含请求的 `message_id`、发送者 `sender`、时间 `created_at`、请求开头 `request`、答复者 `answered_by`（Resident ID 与名称）、结果 `state` 和最后一条回复的开头 `reply`。门面上的答复者是请求被转交给的成员，结果与回复取自该成员；尚未转交的请求没有答复者。每轮的 `kind` 为 `request`。
 - 给出 `sender_id` 时，Resident 或它的 Family 主动发给这位发送者的消息（`recipients` 中有它，decision_c524c775e0be）也算一轮：`kind` 为 `sent`，`sender` 是这段对话的 Resident（门面），`request` 为空，`answered_by` 是写这条消息的成员（门面上取来源的 `initiated_by`，其他 Resident 是它自己），`state` 为 `sent`，`reply` 是这条消息的开头。发送者回应这条消息时，Family Router 因此交回写它的成员。
-- Family 门面上给出 `sender_id` 时，结果另有 `direct`：这位发送者在门面之外直接和成员的最近对话，从新到旧，最多 3 个成员。每项包含成员 `resident_id` 与 `title`、时间 `created_at`、`kind`（`request` 是发送者最后发给这个成员的消息；成员后来又直接发给发送者时为 `sent`，取成员那条）、`message_id` 和开头 `text`。门面转交给成员的副本不算。用户常在成员自己的 Chat 里继续讨论，再到门面说“按我们的讨论”，Router 由此知道指的是哪个成员（TFI portal 10-12）。其他 Resident 或不给 `sender_id` 时没有这一项。
+- Family 门面上给出 `sender_id` 时，结果另有 `direct`：这位发送者在门面之外直接和成员的最近对话，从新到旧，最多 3 个成员。每项包含成员 `resident_id` 与 `title`、时间 `created_at`、`kind`（`request` 是发送者最后发给这个成员的消息；成员后来又直接发给发送者时为 `sent`，取成员那条）、`message_id` 和开头 `text`。门面转交给成员的副本不算。用户常在成员自己的 Chat 里继续讨论，再到门面说“按我们的讨论”，Router 由此知道指的是哪个成员（ET 10-12）。其他 Resident 或不给 `sender_id` 时没有这一项。
 - 请求和回复各取前 400 个字符，超出时以“…”结尾；只在最近 200 条消息中查找。调用者需要能读取这段对话。
 
 ### `SearchMessages`

@@ -15551,8 +15551,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Resident_输入、执行与_Conversation_运行架构__decision_edc470e09f5a.md",
-      "sha256": "65e0a18b0d52a7e3cadf5b021932ad65548d1c0a31f02016971d0562f5d5343f",
-      "size": 38410
+      "sha256": "5a6a4885f53f75bb9d9e741257fdcfa3b02f95ad64f5958e011cd8ee9721bfd7",
+      "size": 42530
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__ResourceService_模块与运行架构__decision_cf27d39e39cd.md",
@@ -15681,8 +15681,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Resident_执行与队列指令__decision_2a3ff353165c.md",
-      "sha256": "5f9c92a4d87cfc5e2978d5fe5997e87c065a0eca10d6d77b1169e51b9a3a2ade",
-      "size": 14833
+      "sha256": "66d00d7091ffe0809a292c245ebc8b9156077f8f6b10c0d4fa066976d9f0cec0",
+      "size": 18696
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Resident_指令__decision_d19b9909a674.md",
@@ -15696,8 +15696,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：对话与上下文指令__decision_2fe6fd5367fb.md",
-      "sha256": "ff01e2d0effd683134060c3c2ecfb56048a5fb018bf990a9a00755daba53579f",
-      "size": 31708
+      "sha256": "509071d96bd1f079afdd2a2d3010601d1b6dc5f8a1d1353cb26c6d1523b0e24f",
+      "size": 35541
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：指令集自描述指令__decision_aa4fdbac8364.md",

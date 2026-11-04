@@ -233,6 +233,82 @@ class ConversationInputs:
     def _with_replies_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
         self.with_outcomes_many(values_by_resident)
         self._fill_replies_many(values_by_resident)
+        self._fill_work_many(values_by_resident)
+
+    def _fill_work_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
+        """Delivery terminality and an immutable execution's work are separate facts.
+
+        AgentData owns the accepted input/control/turn relationship. Never
+        follow a main message's latest state: it may already be another attempt.
+        """
+        for resident_id, values in values_by_resident.items():
+            work = self.agent_data.input_work_states(
+                resident_id, [str(value["message_id"]) for value in values],
+            ) if values else {}
+            queued = {item["message_id"]: item for item in self.state_store.mailbox_entries(
+                [resident_id], message_ids=[str(value["message_id"]) for value in values],
+                places=("pending", "queue", "group"),
+            )} if values else {}
+            for value in values:
+                identity = str(value["message_id"])
+                fact = work.get(identity) or {
+                    "state": "unknown", "kind": "unknown", "delivery": "unknown", "updated_at": "",
+                }
+                if fact.get("state") == "unknown" and not fact.get("execution_id"):
+                    pending = queued.get(identity)
+                    if value.get("state") == "queued" and pending:
+                        fact = {"state": "queued", "kind": "primary", "delivery": "pending",
+                                "primary_message_id": pending.get("group_id") or identity,
+                                "updated_at": pending["updated_at"]}
+                    elif (value.get("state") == "cancelled"
+                          and (value.get("error") or {}).get("code") == "queue_withdrawn"):
+                        fact = {"state": "cancelled", "kind": "primary", "delivery": "pending",
+                                "primary_message_id": value["error"].get("grouped_into_message_id") or identity,
+                                "updated_at": value["updated_at"]}
+                value["work"] = copy.deepcopy(fact)
+
+    def publish_execution_work(self, resident_id: str, execution_id: str) -> None:
+        """Advance live input work via the existing ordered Conversation log.
+
+        This never rewrites an input terminal. Under the Conversation fence,
+        read the exact Execution again so a late running callback cannot publish
+        a cached pre-terminal fact after another callback published completion.
+        """
+        with self.events.protocol_scope(resident_id):
+            work = self.agent_data.execution_input_work_states(resident_id, execution_id)
+            if not work:
+                return
+
+            def write(connection: Any) -> None:
+                rows = connection.execute(
+                    "SELECT * FROM conversation_input_states WHERE resident_id=%s AND message_id=ANY(%s)",
+                    (resident_id, list(work)),
+                ).fetchall()
+                previous = connection.execute(
+                    "SELECT DISTINCT ON (subject_id) subject_id,payload_json FROM conversation_events "
+                    "WHERE resident_id=%s AND event_type=%s AND subject_id=ANY(%s) "
+                    "ORDER BY subject_id,cursor DESC",
+                    (resident_id, INPUT_STATE_CHANGED, list(work)),
+                ).fetchall()
+                from management_common.json_columns import json_value
+                old = {str(row["subject_id"]):
+                       (json_value(row["payload_json"]).get("input_state") or {}).get("work")
+                       for row in previous}
+                for row in rows:
+                    identity = str(row["message_id"])
+                    fact = work[identity]
+                    # Unknown can invalidate a previously credible binding
+                    # after a turn change. It is itself a live work update.
+                    if old.get(identity) == fact or (
+                            old.get(identity) is None and fact.get("state") == "unknown"):
+                        continue
+                    self.events.record_event(
+                        connection, resident_id, INPUT_STATE_CHANGED,
+                        {"input_state": {**input_state_value(row), "work": copy.deepcopy(fact)}},
+                        subject_id=identity,
+                    )
+
+            self.state_store.database.write(write)
 
     def _fill_replies_many(self, values_by_resident: Mapping[str, Sequence[dict[str, Any]]]) -> None:
         finished = {

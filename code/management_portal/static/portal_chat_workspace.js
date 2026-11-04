@@ -81,6 +81,7 @@
     requestWorkspacePreview, bindResponseSourcePaths, messageAttachmentRefHtml, resourceSupportsTextPreview,
     loadResourcePreview, bindResourceChips, linkifyResourceAddresses, renderMarkdownWithAttachmentRefs,
     bindAttachmentRefs, openImagePreview, closeImagePreview, bindLinkPreview, bindImagePreview,
+    messagePreviewContent, messagePreviewText, releaseDeferredImages,
     attachmentPreviewUrl, attachmentKind, mediaPartPath,
   } = chatWorkspaceModule("PortalChatWorkspaceMessageContent").createMessageContent({
     escapeHtml, resourceChips,
@@ -805,6 +806,12 @@
     roundRail = chatWorkspaceModule("PortalChatWorkspaceRoundRail").create({
       root, viewport: els.messages, state, scope: historyScope, keyFor: messageRenderKey, roleFor: messageRole,
       reveal: revealMessage, loadOlder: () => options.onLoadOlder?.(controller),
+      previewText: messagePreviewText,
+      renderPreview: item => messagePreviewContent(item, {
+        previewUrlForPath: state.messageRenderOptions.previewUrlForPath || options.previewUrlForPath,
+      }),
+      bindPreview: node => bindMessageReferences(node),
+      releasePreview: releaseDeferredImages,
       revalidate: () => options.onRoundStatusRefresh?.(),
       scrollTo: top => {
         cancelMessageNavigation();
@@ -819,7 +826,7 @@
       .createComposerHeight({
         composerResizeEnabled, els, followTailAfterResize, id, options, root, saveActiveDraft, state,
       });
-    const { appendMessage, setMessages, setRuntime, redrawMessages } = chatWorkspaceModule("PortalChatWorkspaceMessageDrawing")
+    const { appendMessage, setMessages, setRuntime, redrawMessages, bindMessageReferences } = chatWorkspaceModule("PortalChatWorkspaceMessageDrawing")
       .createMessageDrawing({
         addFiles, bindAttachmentRefs, bindLinkPreview, bindMessageAvatars, bindResourceChips, bindResponseSourcePaths,
         contractResidentId, currentController: () => controller, currentConversationSearch: () => conversationSearch,

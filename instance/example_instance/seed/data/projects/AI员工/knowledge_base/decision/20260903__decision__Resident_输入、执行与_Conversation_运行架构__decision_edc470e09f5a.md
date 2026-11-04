@@ -4,33 +4,33 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 37
-  created_at: '2026-09-03'
+  number: 38
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:59:43Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T16:23:49Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_input_scope.py
-  - ${code_root}/management_portal/execution/service.py
-  - ${code_root}/management_portal/society_service/resident_execution_domain.py
-  - ${code_root}/management_portal/society_service/resident_intake_domain.py
-  - ${code_root}/management_portal/society_service/invariant_locks.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/society_service/resident_execution_work.py
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/management_portal/society_service/resident_execution_provider.py
-  - ${code_root}/management_portal/society_service/resident_conversation_event_relay.py
-  - ${code_root}/management_portal/execution/runtime.py
-  - ${code_root}/management_portal/execution/agent_data_projection.py
-  - ${code_root}/management_portal/resident_chat_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_input_scope.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_intake_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/invariant_locks.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_work.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_provider.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_event_relay.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/agent_data_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_chat_projection.py
   related:
   - decision_725dedbe89b2
   - decision_91eb3626d323
@@ -135,6 +135,25 @@ Conversation 投影 ──6. 回复消息、终态、事件──> 调用方 / �
 - **模型会话优先复用。** SessionManager 优先复用这个 Resident 当前有效、后端匹配的模型会话；重启或绑定失效时创建新会话并更新绑定（decision_91eb3626d323）。对话和输入 ID 不随会话更换而改变。
 - **上下文在执行时组装。** 组装器把 Resident 初始说明、规则 Skill、当前对话、Fork 继承的上下文、调用方给出的上下文引用、工作目录信息和运行设置组成实际输入，最后加上所有者边界说明和 Resident 身份信封。系统指令清单 `SystemInstructions` 标明哪些系统 Skill 只在创建模型会话时注入一次，避免每轮重复发送。哪些来源被采用由入口和上下文策略决定（decision_c616d197abbb）。组装结果随执行请求写入 AgentData，可以通过 `GetSentPrompt` 查看；对话中的消息保持用户的原始表达。
 - **工作目录默认是 Resident 的默认工作区。** owner 可以为某一轮选择另一个已绑定的工作区根目录。Provider 不支持请求中的上下文、媒体或 Skill 时，组装阶段拒绝这次输入，不悄悄丢掉材料。
+
+
+### 输入送达与执行工作关联
+
+GetConversation.input_states[] 与 GetInputState.input_state 的每项提供独立的 work：state 为 queued、running、completed、failed、cancelled 或 unknown；kind 为 primary、appended 或 unknown；execution_id、primary_message_id、provider_turn_id 在有可信关联时提供；delivery 为 pending、delivered 或 unknown；updated_at 为对应执行/送达事实时间，缺证据时为空字符串。
+
+原 state、updated_at、reply_message_ids 和 in_context 保持原语义。特别是已送达的追加输入可同时具有 state=completed、work.state=running；in_context 只说明上下文可见性。工作中的绿色标识只据 work.state=running，不据 Resident 整体 busy 或最新模型会话推测。
+
+AgentData 拥有执行输入与 Provider 追加受理的持久关联。追加输入通过 source Segment、provider_input.append 派生及 control 身份锁定原 execution/Provider turn；只读同一执行的真实主输入和状态，不能沿 primary_message_id 的最新重试串到新 execution。同一 execution 的 Provider turn 已改变时，保留已证实送达事实，工作状态回 unknown。历史无可靠证据不得回填猜测；未送达的失败控制不能成为旧轮接纳凭据。
+
+Society 拥有尚未预留 Execution 的精确 Mailbox 队列与撤回事实：确有持久队列项的输入可显示 work.queued，execution_id 可缺省；新发生的正式队列撤回保存 queue_withdrawn 原因并显示未送达的 work.cancelled。合并队列撤回在同一事务为尚未终止的原成员冻结 queue_withdrawn 与原 group 因果及撤回时间；成员不追随群体将来的重试，已有独立终态不覆盖。仅历史 state=queued/cancelled 本身不足以推断。读取只组合事实，不改旧输入终态。正式撤回导致原输入退出 Chat 的既有行为保持；GetInputState 可读取取消回执，不为显示 work 而恢复已移除正文。
+
+work.updated_at 不借用追加输入已不再变化的顶层更新时间，也不使用读取当前时间。更新经既有 resident.input.state.changed 事件发布，payload.input_state 可保持原 completed 而 work 推进；Conversation 持久 cursor 为事件顺序，状态失效为 unknown 时同样推进 cursor。调用者按 cursor 应用事件，跨 execution/turn 不以墙钟比较归属；已知状态遇缺 work 的旧增量应重读快照，不以旧顶层 state 覆盖 work。无需新增轮询或 HATG 指令。
+
+事件生产按精确 execution 的输入集合批量核验并合并未变化事实，覆盖同一 running 状态内新增 delivered 输入与 Provider turn 更换；不能只用 execution.status 是否变化做门控。旧执行的迟到通知不能把同一 primary 消息在新 attempt 的状态覆成旧终态；迟到 running 也不能使原执行终态复活。Family 转交保留实际成员的 work 与变化标识；Mailbox 不覆盖独立终态或已有独立关联。
+
+Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接成员，与同一快照的 message.relay.work 一致。工作标识以 work 为准，旧 input_state.state 或 message.relay.state 的 completed 不能覆盖 work.running；work.unknown 也不能回退旧状态或整体 busy 推断。缺 input_state.work 而有正式 relay.work 时可使用后者。此语义优先级不替代新鲜度校验：仍按同一 Conversation 的持久 cursor 更新，不跨 stream 比较 cursor，不让过期 work 覆盖更晚事实。
+
+按当前页批量解析输入，禁止逐消息 RPC 或扫描全部历史；按 execution 推送时只读取该 execution 的索引关联集合。返回关联 ID、状态和时间，不返回控制输入正文或其他消息内容。
 
 ### 结果与终态
 

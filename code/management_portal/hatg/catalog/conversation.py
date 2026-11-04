@@ -89,7 +89,7 @@ DECLARATIONS = (
     ), (
         R("resident", "object", "Resident 记录：resident_id、title、lineage_id、project_id、provider、account、workspaces…"),
         R("messages", "array", "最近的消息，从旧到新：message_id、role、author_id、content_parts、created_at…"),
-        R("input_states", "array", "输入状态：每项 message_id、state、updated_at，失败时带 error，结束的带 reply_message_ids"),
+        R("input_states", "array", "输入状态：每项 message_id、state、updated_at，失败时带 error，结束的带 reply_message_ids；work 独立给出可信执行关联、工作状态及 updated_at，追加输入送达与工作完成分离"),
         R("state", "object", "Resident 状态与可用操作"),
         R("cursor", "integer", "事件游标：交给 WatchConversationEvents 的 after_cursor，接着读快照之后的事件"),
         NEXT_CURSOR("还有更早的消息时返回，交给 ListMessages 的 cursor"),

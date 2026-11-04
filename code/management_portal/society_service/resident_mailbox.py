@@ -258,7 +258,7 @@ def group_item(
     return item
 
 
-def finish_group(record: Mapping[str, Any], group_id: str, terminal_state: str) -> list[str]:
+def finish_group(record: Mapping[str, Any], group_id: str, terminal_state: str, *, withdrawn_at: str = "") -> list[str]:
     """Give every member the group's terminal state; repeatable.  The group's replies answer its members."""
 
     if terminal_state not in TERMINAL_STATES:
@@ -269,9 +269,17 @@ def finish_group(record: Mapping[str, Any], group_id: str, terminal_state: str) 
     resident_id = resident_lineage.resident_id(record)
     repository = resident_conversation_stream.get_repository()
     for member_id in member_ids:
+        error = {"grouped_into_message_id": group_id} if terminal_state != "completed" else None
+        if withdrawn_at:
+            # Freeze the withdrawal cause on each unfinished original, rather
+            # than following a group which could later be explicitly retried.
+            if repository.input_state(resident_id, member_id).get("state") in TERMINAL_STATES:
+                continue
+            error = {**(error or {}), "code": "queue_withdrawn",
+                     "message": "等待中的输入已撤回，未送达执行"}
         repository.set_input_state(
             resident_id, member_id, terminal_state,
-            error={"grouped_into_message_id": group_id} if terminal_state != "completed" else None,
+            error=error, updated_at=withdrawn_at,
         )
     return member_ids
 
@@ -307,6 +315,11 @@ def _project_group_state(state: Mapping[str, Any], group_id: str, group_state: M
     projected["grouped_into_message_id"] = group_id
     if str(state.get("state") or "") in TERMINAL_STATES:
         return projected
+    # Only an unfinished member may follow its current group. Independent
+    # terminal inputs and inputs with their own execution evidence keep it.
+    if ((state.get("work") or {}).get("state", "unknown") == "unknown"
+            and (group_state.get("work") or {}).get("state", "unknown") != "unknown"):
+        projected["work"] = copy.deepcopy(group_state["work"])
     group_status = str(group_state.get("state") or "")
     if group_status == "running":
         projected["state"] = "running"

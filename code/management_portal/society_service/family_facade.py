@@ -731,6 +731,16 @@ def project_snapshot(facade: Mapping[str, Any], snapshot: dict[str, Any]) -> dic
         if isinstance(item, Mapping)
     }
     snapshot["messages"] = project_messages(facade, list(snapshot.get("messages") or []), input_states=states)
+    # The facade's completed routing receipt is not the worker's outcome.
+    # Reuse the already batched relay projection, without a per-message RPC.
+    work = {str(message.get("message_id") or ""): message["relay"]["work"]
+            for message in snapshot["messages"] if isinstance(message, Mapping)
+            and isinstance(message.get("relay"), Mapping) and "work" in message["relay"]}
+    snapshot["input_states"] = [
+        {**item, "work": copy.deepcopy(work[item["message_id"]])}
+        if item.get("message_id") in work else item
+        for item in snapshot.get("input_states") or []
+    ]
     snapshot.update(_project_runtime(facade, snapshot, states))
     snapshot["family_facade"] = {**facade_configuration(facade), **chat_presentation(facade)}
     return snapshot
@@ -1062,6 +1072,8 @@ def _relay_views(
             "message_id": member_message_id, "state": state,
             "relayed_at": str(link.get("relayed_at") or ""),
         }
+        if "work" in round_["input_state"]:
+            relay["work"] = copy.deepcopy(round_["input_state"]["work"])
         if state == "failed":
             relay["error"] = round_["input_state"].get("error") or {}
         group_id = str(round_["input_state"].get("grouped_into_message_id") or "")

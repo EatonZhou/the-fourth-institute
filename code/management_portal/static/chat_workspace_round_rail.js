@@ -16,31 +16,14 @@
     node.dataset.portalTooltipOptOut = '1'; return node;
   };
   const flagIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 17V3m0 1c4-3 6 3 10 0v7c-4 3-6-3-10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  function previewContent(item) {
-    const attachments = [], seen = new Set();
-    const add = (kind, label, key) => { if (!seen.has(key)) { seen.add(key); attachments.push({ kind, label }); } };
-    for (const file of item.input_media || item.attachments || []) {
-      const mime = String(file.mime_type || file.mime || file.type || '');
-      const kind = ['image', 'video', 'audio'].find(kind => mime.includes(kind)) || 'file';
-      const label = String(file.name || file.title || file.filename || '').split(/[\\/]/).pop();
-      add(kind, label || t({ image: '图片', video: '视频', audio: '音频', file: '附件' }[kind]), file.url || file.path || kind + ':' + label);
-    }
-    // Only this non-copying preview view removes renderer attachment tokens.
-    // The message and its copy/quote/attachment contracts are not modified.
-    const describedKinds = new Set(attachments.map(file => file.kind));
-    const text = String(item.content || item.text || '').replace(/\[(image|file|audio|video):([^\]\r\n]+)\]/g, (_token, kind, source) => {
-      if (!describedKinds.has(kind)) add(kind, t({ image: '图片', video: '视频', audio: '音频', file: '附件' }[kind]), source);
-      return '';
-    }).trim();
-    return { text, attachments };
-  }
   function shortTime(value) {
     if (!value) return '';
     const date = new Date(value); if (!Number.isFinite(date.getTime())) return '';
     const today = new Date().toDateString() === date.toDateString();
     return new Intl.DateTimeFormat(undefined, { ...(today ? {} : { month: 'numeric', day: 'numeric' }), hour: '2-digit', minute: '2-digit', hour12: false }).format(date);
   }
-  function create({ root, viewport, state, scope, keyFor, roleFor, reveal, scrollTo, loadOlder, revalidate }) {
+  function create({ root, viewport, state, scope, keyFor, roleFor, reveal, scrollTo, loadOlder, revalidate,
+    previewText, renderPreview, bindPreview, releasePreview }) {
     // This owner projects already accepted requests onto measured message rows.
     // It never derives work state from the workspace's global runtime/busy flag.
     const wrapper = el('div', 'chatRoundViewport');
@@ -124,24 +107,62 @@
         for (const value of progress.values()) value.verified = false;
       }
       const next = new Map();
-      for (const input of snapshot.input_states || []) next.set(String(input.message_id), { ...input });
+      const hasWork = value => value && Object.prototype.hasOwnProperty.call(value, 'work');
+      const workFact = value => {
+        const work = value && typeof value === 'object' ? value : {};
+        return { ...work, state: ['queued', 'running', 'completed', 'failed', 'cancelled'].includes(work.state) ? work.state : 'unknown' };
+      };
+      // Input.state records delivery. Only the separately proven work fact can
+      // describe execution (an appended input is often delivered while running).
+      for (const input of snapshot.input_states || []) {
+        if (!input.message_id) continue;
+        next.set(String(input.message_id), hasWork(input) ? workFact(input.work) : null);
+      }
       const relays = snapshot.relays || (snapshot.messages || []).filter(item => item.role === 'user' && item.relay)
         .map(item => ({ ...item.relay, message_id: item.message_id }));
-      for (const relay of relays) next.set(String(relay.message_id), { ...relay });
+      for (const relay of relays) {
+        // Family input.work already projects the member's execution. Only an
+        // older snapshot without that field needs the relay.work fallback.
+        if (relay.message_id && !next.get(String(relay.message_id)) && hasWork(relay)) {
+          next.set(String(relay.message_id), workFact(relay.work));
+        } else if (relay.message_id && !next.has(String(relay.message_id))) next.set(String(relay.message_id), null);
+      }
+      let needsRefresh = false;
       for (const [id, value] of next) {
         const previous = progress.get(id);
-        const previousTime = Date.parse(previous?.updated_at), nextTime = Date.parse(value.updated_at);
-        if (previous && ((Number.isFinite(previousTime) && Number.isFinite(nextTime) && nextTime < previousTime)
-          || (nextCursor === cursor && terminal.has(previous.state) && !terminal.has(value.state)))) continue;
-        progress.set(id, { ...value, verified: !awaitingRefresh });
+        const finished = new Set(previous?.finished || []);
+        const merge = (before, incoming) => {
+          const oldTime = Date.parse(before?.updated_at), newTime = Date.parse(incoming.updated_at);
+          const execution = incoming.execution_id && JSON.stringify([incoming.execution_id, incoming.provider_turn_id || '']);
+          const endedExecution = execution && finished.has(execution);
+          if (before && incoming.state !== 'unknown' && (
+            (Number.isFinite(oldTime) && Number.isFinite(newTime) && newTime < oldTime)
+            || (endedExecution && !terminal.has(incoming.state)))) return before;
+          return incoming;
+        };
+        const incoming = value || workFact(null);
+        const work = merge(previous?.work, incoming);
+        const signatureFor = fact => JSON.stringify(['state', 'kind', 'execution_id', 'provider_turn_id', 'primary_message_id', 'delivery', 'updated_at']
+          .map(key => fact?.[key] || ''));
+        // Re-rendering/history cannot invent an ordering between conflicting
+        // facts at one cursor. Certify them through the existing snapshot read.
+        const conflict = previous && previous.cursor === nextCursor && signatureFor(previous.work) !== signatureFor(work)
+          && !(refreshing && snapshot.verified === true);
+        if (conflict) needsRefresh = true;
+        const accepted = conflict ? previous.work : work;
+        if (!conflict && terminal.has(accepted.state) && accepted.execution_id) {
+          finished.add(JSON.stringify([accepted.execution_id, accepted.provider_turn_id || '']));
+        }
+        progress.set(id, { work: accepted, cursor: nextCursor, finished, state: accepted.state, verified: !awaitingRefresh && !conflict });
       }
       cursor = nextCursor; uncertain = navigator.onLine === false || awaitingRefresh; statusDirty = true; schedule();
+      if (needsRefresh && !refreshing) void refresh();
     }
     const statusFor = item => {
       const value = progress.get(String(item.message_id || keyFor(item)));
       return uncertain || !value || value.verified === false ? 'unknown' : String(value.state || 'unknown');
     };
-    const textFor = item => previewContent(item).text;
+    const textFor = previewText;
     const description = row => [textFor(row.item).slice(0, 120) || t('附件消息'), t(labels[statusFor(row.item)] || '状态待确认'),
       flags.has(row.key) ? t('已关注') : ''].filter(Boolean).join(' · ');
     function cancelPress() {
@@ -150,6 +171,7 @@
     function closePreview(returnFocus = false) {
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
+      if (popup?.list) releasePreview(popup.list);
       const trigger = popup?.trigger; popup = null; preview.hidden = true; preview.replaceChildren();
       if (returnFocus && trigger?.isConnected) { restoringFocus = true; trigger.focus({ preventScroll: true }); restoringFocus = false; }
     }
@@ -170,6 +192,7 @@
       const expanded = popup?.trigger === trigger ? popup.expanded : new Set();
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
+      if (popup?.list) releasePreview(popup.list);
       popup = { items, trigger, explicit, expanded, contents: [] }; preview.replaceChildren(); preview.hidden = false;
       const head = el('div', 'chatRoundPreviewHead', window.PortalI18n.text`${items.length} 条消息`);
       const close = button('portalButton is-icon is-quiet', t('关闭'), '×'); close.onclick = () => closePreview(true); head.append(close); preview.append(head);
@@ -184,7 +207,7 @@
       const list = el('div', 'chatRoundPreviewList');
       for (const row of items) {
         const card = el('article', 'chatRoundPreviewItem');
-        const content = previewContent(row.item), main = el('div', 'chatRoundPreviewContent');
+        const content = renderPreview(row.item), main = el('div', 'chatRoundPreviewContent');
         const meta = el('div', 'chatRoundPreviewMeta');
         meta.append(el('time', '', shortTime(row.item.created_at)));
         const status = statusFor(row.item);
@@ -194,11 +217,7 @@
         }
         const jump = button('chatRoundPreviewJump', t('定位消息') + ' · ' + description(row), content.text || t('附件消息'));
         jump.onclick = () => locate(row.key); main.append(meta, jump);
-        if (content.attachments.length) {
-          const icon = el('span', 'chatRoundAttachmentIcon', { image: '▧', video: '▷', audio: '♪', file: '▤' }[content.attachments[0].kind]);
-          icon.setAttribute('aria-hidden', 'true'); card.append(icon);
-          main.append(el('div', 'chatRoundAttachments', content.attachments.map(file => file.label).join(' · ')));
-        }
+        if (content.references.childElementCount) main.append(content.references);
         if (content.text) {
           popup.contents.push({ key: row.key, jump, meta, expand: null });
         }
@@ -213,7 +232,7 @@
         list.append(card);
       }
       if (!items.length) list.append(el('p', '', t('暂无已加载轮次')));
-      preview.append(list); measurePreview();
+      preview.append(list); popup.list = list; bindPreview(list); measurePreview();
       for (const { jump } of popup.contents) previewResize.observe(jump);
       if (focusedFlag) preview.querySelector(`[data-round-follow="${CSS.escape(focusedFlag)}"]`)?.focus({ preventScroll: true });
       else if (explicit) (preview.querySelector('.chatRoundPreviewJump') || close).focus({ preventScroll: true });
@@ -355,7 +374,11 @@
       // only the previous/new reading indicators receiving a DOM update.
       let low = 0, high = rows.length;
       while (low < high) { const middle = (low + high) >>> 1; if (rows[middle].y <= top + 24) low = middle + 1; else high = middle; }
-      const next = nodeForKey.get(rows[Math.max(0, low - 1)]?.key) || null;
+      // At the end of a long final reply the viewport top can still be above
+      // its request. Use the last measured user row, tolerating fractional
+      // scroll offsets; keep the normal reading anchor everywhere else.
+      const index = range > 0 && top >= range - 1 ? rows.length - 1 : Math.max(0, low - 1);
+      const next = nodeForKey.get(rows[index]?.key) || null;
       if (next !== currentNode) { currentNode?.classList.remove('is-current'); next?.classList.add('is-current'); currentNode = next; }
     }
     function paintSearch() {
@@ -443,7 +466,7 @@
       try {
         const snapshot = await revalidate();
         if (disposed || epoch !== refreshEpoch || expected !== scopeKey()) return;
-        if (snapshot) { awaitingRefresh = false; updateProgress(snapshot); }
+        if (snapshot) { awaitingRefresh = false; updateProgress({ ...snapshot, verified: true }); }
       } catch { /* The existing Resident protocol reports and retries access errors. */ }
       finally { if (epoch === refreshEpoch) refreshing = false; }
     };

@@ -9,7 +9,7 @@ const repo = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', ...(process.env.RAIL_PREVIEW_ONLY ? ['portal_translations.js'] : []), 'portal_i18n.js',
-  'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_resource_chips.js',
+  'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_preview_contract.js', 'portal_resource_chips.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()];
 const styles = ['portal_themes.css', 'portal_design_system.css', 'lineage_workbench.css', 'portal_components.css',
@@ -59,14 +59,16 @@ if (output) fs.mkdirSync(output, { recursive: true });
           created_at: '2026-11-04T12:00:00Z', origin: { sender: { kind: 'user', id: 'reader' } } });
         window.agent = (id, request) => ({ id, message_id: id, role: 'assistant', reply_to_message_id: request,
           content: ('这是有来源的解释与结果。\n\n').repeat(16) });
+        window.workInput = (id, state, at = '2026-11-04T12:00:00Z', execution = 'execution-' + id) => ({ message_id: id,
+          state: 'completed', work: { state, kind: 'primary', delivery: 'delivered', execution_id: execution, updated_at: at } });
         window.items = [human('h1', '比较两个方案，并解释各自限制。'), agent('a1', 'h1'),
           human('h2', '给出可以复现的验证步骤。'), agent('a2', 'h2'),
           human('h3', '检查大字体下的交互与状态。'), agent('a3', 'h3'),
-          { ...human('h4', '并行处理的 Family 请求。'), relay: { state: 'running' } }, agent('a4', 'h4'),
+          { ...human('h4', '并行处理的 Family 请求。'), relay: workInput('h4', 'running') }, agent('a4', 'h4'),
           { ...human('local', '未接收'), local_delivery: { status: 'sending' } },
           { ...human('from-agent'), origin: { sender: { kind: 'resident', id: 'resident_aaaaaaaaaaaa' } } }];
         window.contract = { messages: items, composer: { can_send: true, history_scope: scope, queue: { items: [] } },
-          request_progress: { cursor: 10, relays: [{ message_id: 'h4', state: 'running' }], input_states: [{ message_id: 'h1', state: 'completed' }, { message_id: 'h2', state: 'running' }, { message_id: 'h3', state: 'queued' }] } };
+          request_progress: { cursor: 10, relays: [workInput('h4', 'running')], input_states: [workInput('h1', 'completed'), workInput('h2', 'running'), workInput('h3', 'queued')] } };
         window.workspace = PortalChatWorkspace.createWorkspace({ root: document.getElementById('chat'), id: 'rail',
           title: 'Chat · 轮次阅读', historyScope: () => scope, refs: false, pinMessages: true, foldLongMessages: false,
           onLoadOlder: async () => { loads++; if (window.deferOlder) await new Promise(resolve => window.finishOlder = resolve); },
@@ -82,6 +84,72 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };
+    if (process.env.RAIL_REFERENCES_ONLY) {
+      const mediaRequests = [];
+      await page.route('**/api/uploads/**', route => {
+        mediaRequests.push(route.request().url());
+        return route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9QAAAABJRU5ErkJggg==', 'base64') });
+      });
+      await page.evaluate(() => {
+        window.openedFiles = []; window.openedImages = []; window.refReads = [];
+        window.previewObservers = [];
+        const NativeObserver = IntersectionObserver;
+        window.IntersectionObserver = class extends NativeObserver {
+          constructor(callback, options) { super(callback, options); if (options?.root?.classList?.contains('chatRoundPreviewList')) previewObservers.push(this); }
+          disconnect() { this.released = true; super.disconnect(); }
+        };
+        PortalImageEditor.open = (src, title) => openedImages.push({ src, title });
+        PortalAPI = { get: async url => {
+          refReads.push(url);
+          if (url.includes('reference?')) throw Object.assign(new Error('denied'), { status: 403, data: { retryable: false } });
+          throw new Error('unexpected resource request');
+        } };
+        const media = '/api/uploads/preview-ref.png', file = 'workspace_aaaaaaaaaaaa/file/notes.md';
+        items = [
+          { ...human('refs', '请看图片\n[image:' + media + ']\n[image:' + media + ']\n[file:' + file + ']\ndecision_aaaaaaaaaaaa'),
+            input_media: [{ type: 'image', source: media }], attachments: [{ kind: 'file', path: file }] },
+          ...Array.from({ length: 60 }, (_, i) => ({ ...human('media' + i, '只有媒体 ' + i), input_media: [{ type: 'image', source: '/api/uploads/history-' + i + '.png' }] })),
+        ];
+        workspace.setMessages(items, { previewUrlForPath: path => path.startsWith('/api/uploads/') ? path : '',
+          onLinkPreview: request => openedFiles.push({ path: request.path, source: request.source }),
+          onResourcePreview: () => { throw new Error('denied resource must never open'); } });
+      });
+      await settle();
+      check('closed preview has no reference DOM or historical media loads', await page.locator('.chatRoundPreview img').count() === 0
+        && !mediaRequests.some(url => url.includes('history-')));
+      await page.locator('.chatRoundDirectory').click();
+      const card = page.locator('.chatRoundPreviewItem').filter({ has: page.locator('[data-round-follow="refs"]') });
+      check('native image and attachment refs deduplicated across body and metadata', await card.locator('[data-message-attachment-path]').count() === 2
+        && await card.locator('img.composerImageRefThumb').count() === 1);
+      check('metadata-only image references use thumbnails', await page.locator('.chatRoundPreview img.composerImageRefThumb').count() === 61);
+      check('resource chip reused and removed from prose', await card.locator('.portalResourceChip').count() === 1
+        && !(await card.locator('.chatRoundPreviewJump').innerText()).match(/\[image:|\[file:|decision_aaaaaaaaaaaa/));
+      check('no substitute icons or duplicate bodies', await card.locator('.chatRoundAttachmentIcon,.chatRoundAttachments,.chatRoundFull').count() === 0);
+      await card.locator('[data-message-attachment-kind="file"]').click();
+      check('file uses existing workspace open callback once', await page.evaluate(() => openedFiles.length === 1 && openedFiles[0].path === 'workspace_aaaaaaaaaaaa/file/notes.md'));
+      await card.locator('[data-message-attachment-kind="image"]').click();
+      check('image uses existing image editor once', await page.evaluate(() => openedImages.length === 1 && openedImages[0].src === '/api/uploads/preview-ref.png'));
+      await card.locator('.portalResourceChip').click();
+      await page.waitForFunction(() => refReads.length > 0 && toasts.length > 0);
+      check('resource click preserves live authorization failure', await page.evaluate(() => refReads.some(url => url.includes('reference?'))));
+      check('offscreen historical thumbnails remain deferred', await page.locator('.chatRoundPreview img[data-portal-deferred-image]:not([src])').count() > 0
+        && mediaRequests.filter(url => url.includes('history-')).length < 60);
+      await shot('references-desktop');
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => document.documentElement.style.fontSize = '20px');
+      await settle();
+      check('390px references fit the preview', await card.evaluate(n => n.scrollWidth <= n.clientWidth + 1));
+      await shot('references-390');
+      await page.keyboard.press('Escape');
+      check('closing preview removes media DOM and disconnects observer', await page.locator('.chatRoundPreview img').count() === 0
+        && await page.evaluate(() => previewObservers.length > 0 && previewObservers.every(o => o.released)));
+      await page.locator('.chatRoundDirectory').click();
+      await page.evaluate(() => workspace.destroy());
+      check('destroy releases reopened preview observer', await page.evaluate(() => previewObservers.every(o => o.released)));
+      assert.deepEqual(errors, []);
+      if (output) fs.writeFileSync(path.join(output, 'references-result.json'), JSON.stringify({ checks, errors, mediaRequests }, null, 2));
+      console.log('Round preview reference checks passed: ' + checks.length); await context.close(); return;
+    }
     if (process.env.RAIL_PREVIEW_ONLY) {
       const seed = async target => {
         await target.evaluate(() => {
@@ -121,7 +189,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
           clipped: text.scrollHeight > text.clientHeight + 1, label: n.querySelector('.chatRoundExpand').textContent, imgs: n.querySelectorAll('img').length };
       });
       check('expanded text occupies original location once and remains safe', expanded.copies === 1 && !expanded.clipped && expanded.label === '收起' && expanded.imgs === 0);
-      check('attachment retained without placeholder leakage', (await long.locator('.chatRoundAttachments').innerText()) === '图片'
+      check('attachment retained as a native Chat reference without placeholder leakage', await long.locator('[data-message-attachment-path="/api/uploads/preview-test.png"]').count() === 1
         && !(await long.locator('.chatRoundPreviewJump').innerText()).includes('[image:') && await page.evaluate(() => items[1].content === previewSource));
       await shot('preview-expanded-desktop');
       await long.locator('.chatRoundFollow').click();
@@ -180,7 +248,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
           const titles = ['请逐步解释注意力机制如何结合上下文理解长句，并比较不同方案的限制。', '这是正在排队的已受理请求，请保留我的原始问题。', '正在运行：说明查询、键和值如何共同决定注意力权重。', '关注这条排队请求，稍后继续检查可复现的例子。', '关注正在运行的验证工作，请同时保留原文与来源。'];
           items = titles.flatMap((text, i) => [human('m' + i, text), agent('ma' + i, 'm' + i)]);
           workspace.setMessages(items);
-          workspace.setRequestProgress({ cursor: 50, input_states: titles.map((_, i) => ({ message_id: 'm' + i, state: ['completed', 'queued', 'running', 'queued', 'running'][i] })) });
+          workspace.setRequestProgress({ cursor: 50, input_states: titles.map((_, i) => workInput('m' + i, ['completed', 'queued', 'running', 'queued', 'running'][i])) });
         });
         await afterLayout(target);
         await target.locator('.chatRoundDirectory').click();
@@ -207,7 +275,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
         await target.evaluate(() => {
           items = Array.from({ length: 80 }, (_, i) => human('dense' + i, '第 ' + i + ' 条独立用户请求：请保留这条消息的准确位置与完整上下文。'));
           workspace.setMessages(items);
-          workspace.setRequestProgress({ cursor: 51, input_states: [{ message_id: 'dense35', state: 'queued' }, { message_id: 'dense36', state: 'running' }] });
+          workspace.setRequestProgress({ cursor: 51, input_states: [workInput('dense35', 'queued'), workInput('dense36', 'running')] });
         }); await afterLayout(target);
         check('dense markers keep every message identity', await target.locator('.chatRoundNode').count() === 80);
         const spacing = await target.evaluate(() => {
@@ -318,9 +386,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
         const request = id => ({ message_id: id, role: 'user', origin: { sender: { kind: 'user', id: 'reader' } }, content_parts: [{ type: 'text', text: '真实协议请求 ' + id }] });
         window.raw = { cursor: 20, resident: { resident_id: 'resident_111111111111' }, controls: {}, state: { work_state: 'idle' },
           family_facade: { title: '协议契约样稿', members: [] }, messages: [
-            { ...request('family-running'), relay: { resident_id: 'resident_222222222222', message_id: 'member-input', state: 'running' } },
-            { ...request('family-done'), relay: { resident_id: 'resident_222222222222', message_id: 'member-done', state: 'completed' } },
-            { ...request('resident-running'), origin: { sender: { kind: 'resident', id: 'resident_333333333333' } }, relay: { state: 'running' } }],
+            { ...request('family-running'), relay: { resident_id: 'resident_222222222222', ...workInput('member-input', 'running') } },
+            { ...request('family-done'), relay: { resident_id: 'resident_222222222222', ...workInput('member-done', 'completed') } },
+            { ...request('resident-running'), origin: { sender: { kind: 'resident', id: 'resident_333333333333' } }, relay: workInput('resident-running', 'running') }],
           input_states: [{ message_id: 'family-running', state: 'completed' }, { message_id: 'family-done', state: 'completed' }] };
         panel.protocol = { snapshot: () => raw, load: () => Promise.resolve(raw), destroy() {} };
         panel.applySnapshot(raw, { type: 'snapshot' });
@@ -359,7 +427,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.evaluate(() => panel.setPresented(true)); await settle();
       check('native Resident resume verifies through protocol load', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
       await shot('protocol-family-running');
-      await page.evaluate(() => { raw = { ...raw, cursor: 21, messages: raw.messages.map(m => m.message_id === 'family-running' ? { ...m, relay: { ...m.relay, state: 'completed' } } : m) }; panel.applySnapshot(raw, { type: 'snapshot' }); }); await settle();
+      await page.evaluate(() => { raw = { ...raw, cursor: 21, messages: raw.messages.map(m => m.message_id === 'family-running' ? { ...m, relay: { ...m.relay, work: workInput('member-input', 'completed').work } } : m) }; panel.applySnapshot(raw, { type: 'snapshot' }); }); await settle();
       check('member completion stops only its user request', await page.locator('.chatRoundNode.is-running').count() === 0);
       assert.deepEqual(errors, []);
       if (output) fs.writeFileSync(path.join(output, 'protocol-result.json'), JSON.stringify({ checks, errors }, null, 2));
@@ -372,7 +440,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
           human('v2', '这里需要进一步说明不同方案的限制，以及实际使用时应该如何选择。不要只列术语，请使用具体过程解释，让第一次接触的人也能看明白。'), agent('va2', 'v2'),
           human('v3', '请检查窄屏与大字体的阅读体验，保存关注之后仍可通过键盘返回原消息。')];
         workspace.setMessages(items);
-        workspace.setRequestProgress({ cursor: 50, input_states: [{ message_id: 'v1', state: 'completed' }, { message_id: 'v2', state: 'running' }, { message_id: 'v3', state: 'queued' }] });
+        workspace.setRequestProgress({ cursor: 50, input_states: [workInput('v1', 'completed'), workInput('v2', 'running'), workInput('v3', 'queued')] });
       });
       await page.setViewportSize({ width: 1440, height: 1000 }); await seed(page); await settle();
       await page.locator('.chatRoundDirectory').click();
@@ -457,14 +525,14 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('hidden stops running certainty', await page.locator('.chatRoundNode.is-running').count() === 0);
       await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); }); await settle();
       check('resume requests verification and stays unknown', await page.evaluate(() => refreshCalls === 1) && await page.locator('.chatRoundNode.is-running').count() === 0);
-      await page.evaluate(() => workspace.setRequestProgress({ cursor: 12, input_states: [{ message_id: 'h2', state: 'completed', updated_at: '2026-11-04T12:02:00Z' }] }));
-      await page.evaluate(() => finishRefresh({ cursor: 11, input_states: [{ message_id: 'h2', state: 'running', updated_at: '2026-11-04T12:01:00Z' }] })); await settle();
+      await page.evaluate(() => workspace.setRequestProgress({ cursor: 12, input_states: [workInput('h2', 'completed', '2026-11-04T12:02:00Z')] }));
+      await page.evaluate(() => finishRefresh({ cursor: 11, input_states: [workInput('h2', 'running', '2026-11-04T12:01:00Z')] })); await settle();
       check('late recovery cannot resurrect terminal', await page.locator('.chatRoundNode.is-running').count() === 0);
       await page.evaluate(() => { window.dispatchEvent(new Event('portal:events-error')); window.dispatchEvent(new Event('portal:events-ready')); });
-      await page.evaluate(() => finishRefresh({ cursor: 13, input_states: [{ message_id: 'h3', state: 'running' }] })); await settle();
+      await page.evaluate(() => finishRefresh({ cursor: 13, input_states: [workInput('h3', 'running')] })); await settle();
       check('missing input state is not reused as running', !(await page.locator('[data-round-key="h2"]').getAttribute('class')).includes('is-running'));
       check('verified separate request resumes', (await page.locator('[data-round-key="h3"]').getAttribute('class')).includes('is-running'));
-      await page.evaluate(() => workspace.setRequestProgress({ cursor: 14, input_states: [{ message_id: 'h2', state: 'running', updated_at: '2026-11-04T12:00:00Z' }] })); await settle();
+      await page.evaluate(() => workspace.setRequestProgress({ cursor: 14, input_states: [workInput('h2', 'running', '2026-11-04T12:00:00Z')] })); await settle();
       check('older updated_at cannot resurrect terminal with new cursor', !(await page.locator('[data-round-key="h2"]').getAttribute('class')).includes('is-running'));
       await page.evaluate(() => { items = Array.from({ length: 80 }, (_, i) => human('d' + i, '请求 ' + i)); workspace.setMessages(items); workspace.toggleRoundFollow('d0'); workspace.toggleRoundFollow('d1'); }); await settle();
       check('dense messages retain separate flags without counts', await page.locator('.chatRoundNode').count() === 80 && await page.locator('.chatRoundNode.is-followed').count() === 2 && await page.locator('.chatRoundFlagCount').count() === 0);
@@ -544,7 +612,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const thumb = page.locator('.chatRoundThumb'), grip = await thumb.boundingBox();
     await page.mouse.move(grip.x + 5, grip.y + grip.height / 2); await page.mouse.down(); await page.mouse.move(grip.x + 5, grip.y + grip.height / 2 + 50, { steps: 5 }); await page.mouse.up(); await settle();
     check('outer thumb drag scrolls without changing flag', await page.evaluate(p => workspace.els.messages.scrollTop > p && workspace.isRoundFollowed('h2'), position));
-    await page.evaluate(() => workspace.setRequestProgress({ cursor: 11, input_states: [{ message_id: 'h2', state: 'completed' }] })); await settle();
+    await page.evaluate(() => workspace.setRequestProgress({ cursor: 11, input_states: [workInput('h2', 'completed')] })); await settle();
     check('running nodes stop independently', !(await node.getAttribute('class')).includes('is-running') && (await page.locator('[data-round-key="h4"]').getAttribute('class')).includes('is-running'));
     await page.evaluate(() => workspace.setRequestProgress(contract.request_progress)); await settle();
     check('old status cannot replace newer terminal', !(await node.getAttribute('class')).includes('is-running'));
@@ -552,7 +620,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('disconnected is unknown not running', await page.locator('.chatRoundNode.is-running').count() === 0);
     await page.evaluate(() => window.dispatchEvent(new Event('portal:events-ready'))); await settle();
     check('reconnect alone is not status verification', await page.locator('.chatRoundNode.is-running').count() === 0);
-    await page.evaluate(() => finishRefresh({ cursor: 12, relays: [{ message_id: 'h4', state: 'running' }], input_states: [{ message_id: 'h2', state: 'running' }] })); await settle();
+    await page.evaluate(() => finishRefresh({ cursor: 12, relays: [workInput('h4', 'running')], input_states: [workInput('h2', 'running', '2026-11-04T12:01:00Z', 'execution-retry-h2')] })); await settle();
     check('fresh snapshot restores running', await page.locator('.chatRoundNode.is-running').count() === 2);
     const animation = await node.locator('.chatRoundCore').evaluate(n => ({ core: getComputedStyle(n).animationName, halo: getComputedStyle(n, '::before').animationDuration }));
     check('stable core and slow separate halo', animation.core === 'none' && animation.halo === '3.6s');

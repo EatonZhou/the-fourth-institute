@@ -7,6 +7,32 @@
   let actorRevision = 0;
   const MAX_CACHED_RESIDENTS = 32;
 
+  function mergeInputState(previous, incoming, { authoritative = false } = {}) {
+    if (!previous) return clone(incoming);
+    // Delivery and execution advance independently. In particular, pagination
+    // must not replace a newer work event with the same old delivery timestamp.
+    const next = clone(incoming);
+    const result = authoritative || String(next.updated_at || "") >= String(previous.updated_at || "")
+      ? next : clone(previous);
+    const before = previous.work, work = next.work;
+    if (!before) {
+      if (work) result.work = work;
+      return result;
+    }
+    const oldTime = Date.parse(before.updated_at), newTime = Date.parse(work?.updated_at);
+    const ended = ["completed", "failed", "cancelled"].includes(before.state);
+    const sameExecution = before.execution_id && before.execution_id === work?.execution_id
+      && String(before.provider_turn_id || "") === String(work?.provider_turn_id || "");
+    const unknown = !work || work.state === "unknown";
+    const stale = Number.isFinite(oldTime) && Number.isFinite(newTime) && newTime < oldTime;
+    const resurrects = sameExecution && ended && ["running", "queued"].includes(work?.state);
+    // An ordered event may revoke proof with unknown. A history page/receipt
+    // without an event cursor cannot revoke or revive an already loaded fact.
+    const unordered = !authoritative && (unknown || before.state === "unknown" || !sameExecution);
+    result.work = clone((stale && !unknown) || resurrects || unordered ? before : (work || { state: "unknown", kind: "unknown", delivery: "unknown", updated_at: "" }));
+    return result;
+  }
+
   async function currentActorResponse(request) {
     const requestActorRevision = actorRevision;
     const response = await request;
@@ -1081,7 +1107,7 @@
           item => String(item?.message_id || "") === String(next.message_id)
         );
         if (index < 0) this.snapshot.input_states.push(next);
-        else this.snapshot.input_states[index] = next;
+        else this.snapshot.input_states[index] = mergeInputState(this.snapshot.input_states[index], next);
       }
       if (acknowledgement.queue && typeof acknowledgement.queue === "object") {
         this.snapshot.queue = clone(acknowledgement.queue);
@@ -1145,11 +1171,18 @@
           break;
         case "resident.input.state.changed": {
           const next = clone(payload.input_state || {});
+          const missingWork = !Object.prototype.hasOwnProperty.call(next, "work");
+          if (missingWork) next.work = { state: "unknown", kind: "unknown", delivery: "unknown", updated_at: "" };
           const index = this.snapshot.input_states.findIndex(
             item => item?.message_id === next.message_id
           );
           if (index < 0) this.snapshot.input_states.push(next);
-          else this.snapshot.input_states[index] = next;
+          else this.snapshot.input_states[index] = mergeInputState(this.snapshot.input_states[index], next, { authoritative: true });
+          if (missingWork) {
+            // Legacy delivery events cannot certify execution. Reuse the
+            // coalesced formal snapshot recovery, including in-flight reads.
+            this.scheduleProjectionRefresh();
+          }
           break;
         }
         case "resident.queue.changed":
@@ -1194,9 +1227,7 @@
         const inputStates = new Map((this.snapshot.input_states || []).map(input => [input.message_id, input]));
         for (const input of page.input_states || []) {
           const existingInput = inputStates.get(input.message_id);
-          if (!existingInput || String(input.updated_at || "") >= String(existingInput.updated_at || "")) {
-            inputStates.set(input.message_id, clone(input));
-          }
+          inputStates.set(input.message_id, mergeInputState(existingInput, input));
         }
         this.snapshot.input_states = [...inputStates.values()];
         this.snapshot.next_page_token = String(page?.next_page_token || "");

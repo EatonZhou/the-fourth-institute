@@ -4,24 +4,24 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 50
-  created_at: '2026-09-28T10:45:00Z'
+  number: 51
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-30T12:10:04Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-04T16:23:49Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_intake_domain.py
-  - ${code_root}/management_portal/society_service/isa/execution.py
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/management_portal/society_service/resident_execution_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_intake_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_domain.py
   related:
   - decision_4dea0db1f45a
   - decision_898b8911a2ff
@@ -78,6 +78,25 @@ Resident 执行指令控制 Resident 当前在做什么：查看它是否在工�
 - 结果：输入状态、回复消息 ID 列表、更新时间和错误。`include_progress` 为真且消息尚未完成时，另给出 `progress`：排队时为前面还有几条（`ahead`，Resident 正在处理的另一条也算在内）；运行时为 Resident 的 `work_state`、`work_phase` 和这条消息的实时活动 `activities`。这与 Family facade 在转交请求下显示的进度相同（decision_44cf587c1721），聊天室用它显示被召唤 Resident 的进度（decision_a6bebf4ac283）。
 - `include_context` 为真时另给出 `in_context`：这条消息是否会进入或仍在 Resident 当前的上下文中。等待和执行中的消息为真，它们会进入 Resident 执行时持有的上下文。已处理的消息只有在 Provider 接收了它、接收它的会话仍是 Resident 最新的会话、上下文清空时间在那之前、并且那个会话最近一次压缩在它之前时才为真；Mailbox 群体成员按所在群体判断。Family Router 用它判断给 Router Resident 的完整说明是否还在（decision_44cf587c1721）。
 
+
+### 输入送达与执行工作关联
+
+GetConversation.input_states[] 与 GetInputState.input_state 的每项提供独立的 work：state 为 queued、running、completed、failed、cancelled 或 unknown；kind 为 primary、appended 或 unknown；execution_id、primary_message_id、provider_turn_id 在有可信关联时提供；delivery 为 pending、delivered 或 unknown；updated_at 为对应执行/送达事实时间，缺证据时为空字符串。
+
+原 state、updated_at、reply_message_ids 和 in_context 保持原语义。特别是已送达的追加输入可同时具有 state=completed、work.state=running；in_context 只说明上下文可见性。工作中的绿色标识只据 work.state=running，不据 Resident 整体 busy 或最新模型会话推测。
+
+AgentData 拥有执行输入与 Provider 追加受理的持久关联。追加输入通过 source Segment、provider_input.append 派生及 control 身份锁定原 execution/Provider turn；只读同一执行的真实主输入和状态，不能沿 primary_message_id 的最新重试串到新 execution。同一 execution 的 Provider turn 已改变时，保留已证实送达事实，工作状态回 unknown。历史无可靠证据不得回填猜测；未送达的失败控制不能成为旧轮接纳凭据。
+
+Society 拥有尚未预留 Execution 的精确 Mailbox 队列与撤回事实：确有持久队列项的输入可显示 work.queued，execution_id 可缺省；新发生的正式队列撤回保存 queue_withdrawn 原因并显示未送达的 work.cancelled。合并队列撤回在同一事务为尚未终止的原成员冻结 queue_withdrawn 与原 group 因果及撤回时间；成员不追随群体将来的重试，已有独立终态不覆盖。仅历史 state=queued/cancelled 本身不足以推断。读取只组合事实，不改旧输入终态。正式撤回导致原输入退出 Chat 的既有行为保持；GetInputState 可读取取消回执，不为显示 work 而恢复已移除正文。
+
+work.updated_at 不借用追加输入已不再变化的顶层更新时间，也不使用读取当前时间。更新经既有 resident.input.state.changed 事件发布，payload.input_state 可保持原 completed 而 work 推进；Conversation 持久 cursor 为事件顺序，状态失效为 unknown 时同样推进 cursor。调用者按 cursor 应用事件，跨 execution/turn 不以墙钟比较归属；已知状态遇缺 work 的旧增量应重读快照，不以旧顶层 state 覆盖 work。无需新增轮询或 HATG 指令。
+
+事件生产按精确 execution 的输入集合批量核验并合并未变化事实，覆盖同一 running 状态内新增 delivered 输入与 Provider turn 更换；不能只用 execution.status 是否变化做门控。旧执行的迟到通知不能把同一 primary 消息在新 attempt 的状态覆成旧终态；迟到 running 也不能使原执行终态复活。Family 转交保留实际成员的 work 与变化标识；Mailbox 不覆盖独立终态或已有独立关联。
+
+Family 门面的 input_state.work 已沿正式 relay holder 投影实际承接成员，与同一快照的 message.relay.work 一致。工作标识以 work 为准，旧 input_state.state 或 message.relay.state 的 completed 不能覆盖 work.running；work.unknown 也不能回退旧状态或整体 busy 推断。缺 input_state.work 而有正式 relay.work 时可使用后者。此语义优先级不替代新鲜度校验：仍按同一 Conversation 的持久 cursor 更新，不跨 stream 比较 cursor，不让过期 work 覆盖更晚事实。
+
+按当前页批量解析输入，禁止逐消息 RPC 或扫描全部历史；按 execution 推送时只读取该 execution 的索引关联集合。返回关联 ID、状态和时间，不返回控制输入正文或其他消息内容。
+
 ## 接单开关
 
 `OpenIntake` 可以作用于一个 Resident，也可以批量作用于多个 Resident：`resident_id` 和 `resident_ids` 二者提供一个。批量执行时逐个处理每个 Resident，每个 Resident 按权限方案对它的 `resident_id` 单独判定，某个 Resident 失败不影响其他 Resident；结果分别列出发生变化、未变化（本来就处于目标状态）和失败的 Resident。Home 账号面板一次开关一个账号上的 Resident 时，从账号详情取 `open_resident_ids` 或 `closed_resident_ids` 作为 `resident_ids`（decision_4dea0db1f45a）。
@@ -108,7 +127,7 @@ CancelInput 在默认方案中要求对目标 Resident 有 contributor（decisio
 - 参数：`resident_id`、`message_id`。
 - 结果必含 `resident_id`、`message_id` 和 `input_state`；`cursor`、对象形式的 Resident `state` 与 `controls` 为可选快照，停止受理不等待完整对话或状态投影。
 - 停止入口只读取 Lineage 的访问属性和有效成员 ID 来校验归属与权限，不加载组件正文、连线和运行工作状态；Lineage 正在删除或目标已离开有效节点集合时拒绝请求。执行层仍按指定消息及其 Execution 精确取消。普通活动输入的停止意图和可恢复状态发布意图在同一短事务中提交，不等待 Workspace、Conversation 或执行服务读取；恢复发布只处理这次控制，不重投业务。
-- **目标是 Family 门面的消息时**（decision_44cf587c1721，TFI portal 10-06），作用于 Router 转交给成员的那条消息：嵌套 Family 沿转交链找到实际干活的成员，ISA 入口按请求的目标 Resident 检查权限，转交后成员按消息与转交记录执行。回执的 `resident_id`、`message_id` 和 `input_state` 指向成员上的那条消息，完整状态、队列和游标属于该成员，另带 `member_resident_id`、`member_message_id` 和门面原请求 `facade_message_id`。门面保存的原请求和转交身份保持不变，显示按 Family 对话投影处理：成员尚未收到即撤回时，门面只显示“用户已撤回一条信息”，隐藏正文、引用和附件，不补写取消回复；成员已经收到并开始执行后停止时，保留原请求正文及既有输出。投影用成员持久轨迹区分撤回和停止，清空当前 Chat 不改变判断。Router 还没转交的门面消息从门面自己撤回，也只保留撤回提示；普通 Resident 的排队撤回不会因此新增对话消息。
+- **目标是 Family 门面的消息时**（decision_44cf587c1721，ET 10-06），作用于 Router 转交给成员的那条消息：嵌套 Family 沿转交链找到实际干活的成员，ISA 入口按请求的目标 Resident 检查权限，转交后成员按消息与转交记录执行。回执的 `resident_id`、`message_id` 和 `input_state` 指向成员上的那条消息，完整状态、队列和游标属于该成员，另带 `member_resident_id`、`member_message_id` 和门面原请求 `facade_message_id`。门面保存的原请求和转交身份保持不变，显示按 Family 对话投影处理：成员尚未收到即撤回时，门面只显示“用户已撤回一条信息”，隐藏正文、引用和附件，不补写取消回复；成员已经收到并开始执行后停止时，保留原请求正文及既有输出。投影用成员持久轨迹区分撤回和停止，清空当前 Chat 不改变判断。Router 还没转交的门面消息从门面自己撤回，也只保留撤回提示；普通 Resident 的排队撤回不会因此新增对话消息。
 
 ### `CancelSubagent`
 
@@ -132,6 +151,6 @@ CancelInput 在默认方案中要求对目标 Resident 有 contributor（decisio
 
 Resident 接单时在事务内创建 agent.executions 与 execution_inputs，之后准备输入、等待 Worker、Provider 执行和收尾共用同一 execution_id。准备失败和执行前取消也保留执行记录；单纯等待的消息不提前创建执行。终态输入显式重试时新建 Execution，原记录保留。带 `resident_id` 的 ClearMailbox 撤回未接单输入，不停止已接单但仍在调度器等待的 Execution。多个来源可合并进入一个执行，来源授权按各输入保留；执行表不保存 Trigger Path ID。
 
-### Family 门面的输入状态（TFI portal 10-15）
+### Family 门面的输入状态（ET 10-15）
 
 `GetInputState` 对门面返回原请求的处理状态，而不是 Router 转交回执。已转交时沿 Family 的转交关联（包括嵌套 Family）读取实际成员的状态、最终回复 ID、更新时间和错误，返回的 `message_id` 仍为门面原输入。`include_progress` 给出排队位置、启动阶段和实时活动；尚未转交时给出与门面对话相同的路由进度。`include_context` 跟随实际成员的上下文，尚未转交时为 false。调用者仍通过门面 `GetMessage` 读取对应回复。

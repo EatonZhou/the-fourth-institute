@@ -807,8 +807,11 @@ def withdraw_waiting_inputs(record, job, message_ids, now):
     def commit():
         for item in removed:
             message_id = item["user_message_id"]
-            resident_mailbox.finish_group(record, message_id, "cancelled")
-            repository.set_input_state(record["resident_id"], message_id, "cancelled", updated_at=now)
+            resident_mailbox.finish_group(record, message_id, "cancelled", withdrawn_at=now)
+            repository.set_input_state(
+                record["resident_id"], message_id, "cancelled", updated_at=now,
+                error={"code": "queue_withdrawn", "message": "等待中的输入已撤回，未送达执行"},
+            )
         job["queue"] = [item for item in queue if item["user_message_id"] not in ids]
         job["updated_at"] = now
         resident_execution_work.write(record, job)

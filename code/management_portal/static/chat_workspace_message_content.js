@@ -559,6 +559,46 @@
 
     const deferredImageObservers = new WeakMap();
 
+    // Navigation previews use the same reference markup as the message body.
+    // Build only for an opened preview; no hidden historical media DOM is kept.
+    function messagePreviewText(item) {
+      return String(item.content || item.text || "")
+        .replace(MESSAGE_ATTACHMENT_REF_RE, "").replace(MARKDOWN_IMAGE_RE, "")
+        .replace(MESSAGE_REFERENCE_REF_RE, "")
+        .replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "").trim();
+    }
+
+    function messagePreviewContent(item, options = {}) {
+      const body = document.createElement("div");
+      body.innerHTML = renderMarkdownWithAttachmentRefs(item.content || item.text || "", { ...options, renderMarkdown: escapeHtml });
+      const references = document.createElement("div");
+      references.className = "composerImageTray messageAttachmentTray";
+      const seen = new Set();
+      const append = node => {
+        const path = node.dataset.messageAttachmentPath || node.dataset.resourceAddress || node.dataset.navigationReference;
+        const key = window.PortalFileLinks?.describe(path)?.path || path;
+        node.remove();
+        if (!seen.has(key)) { seen.add(key); references.append(node); }
+      };
+      body.querySelectorAll("[data-message-attachment-path],.portalResourceChip").forEach(append);
+      const extra = [...(item.input_media || []), ...(item.context_refs?.attachments || item.attachments || [])];
+      for (const part of extra) {
+        const path = mediaPartPath(part);
+        if (!path) continue;
+        const holder = document.createElement("div");
+        holder.innerHTML = messageAttachmentRefHtml(attachmentKind({ ...part,
+          kind: part.kind || part.type, content_type: part.content_type || part.mime_type || part.media_type || (part.type === "image" ? "image/" : part.type),
+        }), path, options);
+        append(holder.firstElementChild);
+      }
+      return { text: body.textContent.trim(), references };
+    }
+
+    function releaseDeferredImages(root) {
+      deferredImageObservers.get(root)?.disconnect();
+      deferredImageObservers.delete(root);
+    }
+
     function bindDeferredImages(root) {
       const images = [...(root?.querySelectorAll?.("img[data-portal-deferred-image]:not([src])") || [])];
       deferredImageObservers.get(root)?.disconnect?.();
@@ -629,6 +669,7 @@
       requestWorkspacePreview, bindResponseSourcePaths, messageAttachmentRefHtml,
       resourceSupportsTextPreview, loadResourcePreview, bindResourceChips,
       linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, bindAttachmentRefs,
+      messagePreviewContent, messagePreviewText, releaseDeferredImages,
       openImagePreview, closeImagePreview, bindLinkPreview, bindImagePreview,
       attachmentPreviewUrl, attachmentKind, mediaPartPath,
     });

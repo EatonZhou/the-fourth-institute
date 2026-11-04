@@ -818,6 +818,12 @@ def wait_for_resident_execution(
             # its transient control event. Reconcile durable receipts on state
             # changes, including the initial snapshot after reconnect.
             resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, execution_id)
+            # A control can become delivered, or a Provider turn can change,
+            # while the scheduler remains running. Re-read the exact input
+            # associations; the Conversation owner deduplicates unchanged work.
+            resident_conversation_stream.get_repository().inputs.publish_execution_work(
+                resident_id, execution_id,
+            )
             _project_resident_execution_snapshot(
                 resident_id,
 
