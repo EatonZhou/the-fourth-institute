@@ -1,7 +1,7 @@
 {
   "type": "workspace",
   "category": "resource",
-  "description": "A stable directory identity. Admins may unregister unused Workspaces without active nested registrations; instance-area directories are removed and external host directories are preserved.",
+  "description": "A stable directory identity. Authorized unregistration retires its identity, nested registrations and bindings, then deletes its owned directory through the directory cleanup protocol; location inside or outside instance areas does not change ownership.",
   "title": {
     "zh": "工作区",
     "en": "Workspace"
