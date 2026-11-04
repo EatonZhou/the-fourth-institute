@@ -17,7 +17,7 @@
 
     // The search owns only its query/results. Conversation messages and navigation
     // remain owned by the Workspace and its existing history loader.
-    function createConversationSearch({ root, scope, messages, rendering, search, loadOlder, canLoadOlder, reveal }) {
+    function createConversationSearch({ root, scope, messages, rendering, search, loadOlder, canLoadOlder, reveal, onResults, cancelReveal }) {
       const trigger = root.querySelector("[data-workspace-history-search]");
       const panel = document.createElement("section");
       panel.className = "portalConversationSearch";
@@ -25,6 +25,7 @@
       panel.setAttribute("aria-label", window.PortalI18n.t("查找当前对话"));
       panel.innerHTML = window.PortalI18n.html`<div data-portal-search-field data-portal-search-density="compact"><label>查找当前对话</label><input data-portal-search-input type="search" aria-label="搜索当前对话" placeholder="搜索当前对话…" autocomplete="off" /></div>
       <div class="paneNote conversationSearchStatus" role="status"></div>
+      <div class="conversationSearchNavigation"><button type="button" class="portalButton is-quiet is-compact" data-search-previous>上一个结果</button><button type="button" class="portalButton is-quiet is-compact" data-search-next>下一个结果</button></div>
       <div class="conversationSearchResults" aria-label="对话片段"></div>
       <button class="portalButton is-quiet is-compact conversationSearchMore" type="button" hidden>加载更多</button>`;
       root.appendChild(panel);
@@ -32,13 +33,22 @@
       const status = panel.querySelector('[role="status"]');
       const list = panel.querySelector(".conversationSearchResults");
       const more = panel.querySelector(".conversationSearchMore");
+      const previous = panel.querySelector('[data-search-previous]'), next = panel.querySelector('[data-search-next]');
+      let selectedKey = '';
       let revision = 0, timer = 0, currentScope = scope(), query = "", rows = [], nextPage = "", busy = false, error = "";
       let disposed = false;
+      let opened = false;
       const binding = window.PortalOverlay.bindPopover({
-        trigger, panel, portal: true, placement: "bottom-end", gap: 6,
-        onOpen: () => { refresh(); input.focus({ preventScroll: true }); },
-        onClose: () => { revision += 1; clearTimeout(timer); busy = false; },
+        trigger, panel, portal: true, placement: "bottom-end", gap: 6, closeOnOutside: false,
+        boundary: () => root.querySelector('.chatRoundViewport > .paneBody') || root,
+        onOpen: () => { opened = true; refresh(); input.focus({ preventScroll: true }); },
+        onClose: () => { opened = false; revision += 1; clearTimeout(timer); busy = false; cancelReveal?.(); onResults?.([]); },
       });
+      const closeOutside = event => {
+        if (opened && !panel.contains(event.target) && !trigger.contains(event.target)
+          && !root.querySelector('.chatRoundRail')?.contains(event.target)) binding.close();
+      };
+      document.addEventListener('pointerdown', closeOutside, true);
       function snippet(text) {
         const value = String(text || "").replace(/\s+/g, " ").trim();
         const needle = query.toLocaleLowerCase();
@@ -55,6 +65,7 @@
         return html + escapeHtml(excerpt.slice(offset));
       }
       function render() {
+        onResults?.(opened && query && !error ? rows : []);
         const opts = rendering();
         const scrollTop = list.scrollTop;
         list.innerHTML = rows.map((item, index) => window.PortalI18n.html`<button type="button" class="conversationSearchResult" data-search-message="${escapeHtml(messageRenderKey(item))}" data-portal-tooltip="${escapeHtml(String(item.content || "").trim())}">
@@ -65,7 +76,19 @@
         more.hidden = !(error || (query && search ? nextPage : canLoadOlder()));
         more.disabled = busy;
         more.textContent = error ? window.PortalI18n.t("重试") : query ? window.PortalI18n.t("加载更多结果") : window.PortalI18n.t("加载更早片段");
+        previous.disabled = next.disabled = busy || !rows.length;
       }
+      async function moveResult(direction) {
+        const index = rows.findIndex(item => messageRenderKey(item) === selectedKey);
+        const item = rows[Math.max(0, Math.min(rows.length - 1, index < 0 ? (direction > 0 ? 0 : rows.length - 1) : index + direction))];
+        if (!item || busy) return;
+        selectedKey = messageRenderKey(item);
+        const request = revision, targetScope = scope();
+        try { await reveal(selectedKey); }
+        catch (err) { if (!disposed && request === revision && scope() === targetScope) { error = `定位失败：${err.message || err}`; render(); } }
+      }
+      previous.addEventListener('click', () => moveResult(-1));
+      next.addEventListener('click', () => moveResult(1));
       async function refresh(append = false, preserveScroll = false) {
         const request = ++revision;
         clearTimeout(timer);
@@ -95,9 +118,10 @@
       }
       trigger.addEventListener("click", () => binding.toggle());
       input.addEventListener("input", () => {
+        cancelReveal?.();
         revision += 1;
         clearTimeout(timer);
-        query = input.value.trim(); rows = []; nextPage = ""; error = "";
+        query = input.value.trim(); rows = []; nextPage = ""; error = ""; selectedKey = '';
         busy = !!query && !!search; render();
         timer = window.setTimeout(() => refresh(), 220);
       });
@@ -114,9 +138,10 @@
       list.addEventListener("click", async event => {
         const button = event.target.closest("[data-search-message]");
         if (!button) return;
-        binding.close();
+        selectedKey = button.dataset.searchMessage;
+        const request = revision, targetScope = scope();
         try { await reveal(button.dataset.searchMessage); }
-        catch (err) { window.PortalUI.toast(window.PortalI18n.text`定位失败：${err.message || err}`, "error"); }
+        catch (err) { if (!disposed && request === revision && scope() === targetScope) window.PortalUI.toast(window.PortalI18n.text`定位失败：${err.message || err}`, "error"); }
       });
       more.addEventListener("click", async () => {
         if (busy) return;
@@ -139,7 +164,7 @@
           if (messagesChanged && binding.isOpen() && !query && !busy) refresh(false, true);
         },
         close() { binding.close(); },
-        destroy() { disposed = true; revision += 1; clearTimeout(timer); binding.destroy(); panel.remove(); },
+        destroy() { disposed = true; revision += 1; clearTimeout(timer); cancelReveal?.(); onResults?.([]); document.removeEventListener('pointerdown', closeOutside, true); binding.destroy(); panel.remove(); },
       };
     }
 

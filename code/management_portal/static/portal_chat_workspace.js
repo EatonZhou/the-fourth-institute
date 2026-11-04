@@ -536,6 +536,7 @@
     const composer = root.querySelector(`#${CSS.escape(dom.composerId)}`);
     let refsControlBinding = null;
     let conversationSearch = null;
+    let roundRail = null;
     // The Resident whose Chat this is; empty in other Chats (a Chatroom, an article).
     const contractResidentId = () => {
       const target = state.contract?.target || {};
@@ -795,10 +796,22 @@
     });
 
     const {
-      revealMessage, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, cancelMessageNavigation, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageHistory").createMessageHistory({
       bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml, prepareMessageNavigation,
       messageRenderKey, messageQuoteExcerpt, messageQuotable, messageRole, contractResidentId, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
+    });
+    roundRail = chatWorkspaceModule("PortalChatWorkspaceRoundRail").create({
+      root, viewport: els.messages, state, scope: historyScope, keyFor: messageRenderKey, roleFor: messageRole,
+      reveal: revealMessage, loadOlder: () => options.onLoadOlder?.(controller),
+      revalidate: () => options.onRoundStatusRefresh?.(),
+      scrollTo: top => {
+        cancelMessageNavigation();
+        prepareMessageNavigation();
+        els.messages.scrollTop = Math.max(0, Math.min(top, els.messages.scrollHeight - els.messages.clientHeight));
+        state.messageTailFollowIntent = messageViewportAtTail(els.messages);
+        syncMessageScrollMode();
+      },
     });
 
     const { applyComposerInputLayout, destroyComposerHeight } = chatWorkspaceModule("PortalChatWorkspaceComposerHeight")
@@ -1171,6 +1184,13 @@
       },
       attachments: () => state.attachments.slice(),
       messages: () => state.messages.slice(),
+      roundNavigationTarget: key => roundRail.requestFor(key),
+      toggleRoundFollow: key => roundRail.toggle(key),
+      isRoundFollowed: key => roundRail.isFollowed(key),
+      setRequestProgress: snapshot => roundRail.updateProgress(snapshot),
+      setRoundRailPresented: value => roundRail.setPresented(value),
+      cancelMessageNavigation,
+      requestProgressDisconnected: () => roundRail.connectionLost(),
       setAttachments,
       setTitle(title) {
         const node = root.querySelector(".portalWorkspaceHead .paneTitle");
@@ -1504,6 +1524,7 @@
             : !!rendering.auto_collapse_agent_groups,
         });
         clearWorkspaceLoading();
+        roundRail.updateProgress(contract.request_progress);
         updateControls();
         options.onContractApplied?.(contract, controller);
       },
@@ -1514,6 +1535,7 @@
       destroy() {
         destroyRuntimeControls();
         conversationSearch?.destroy();
+        roundRail?.destroy();
         refsCatalog.disposed = true;
         destroyMentionMenu();
         destroyComposerDrafts();
@@ -1648,6 +1670,8 @@
     };
     conversationSearch = createConversationSearch({
       root, scope: historyScope, messages: () => state.messages,
+      onResults: items => roundRail.setSearch(items),
+      cancelReveal: cancelMessageNavigation,
       rendering: () => ({ ...options, ...state.messageRenderOptions }),
       search: options.onSearchMessages,
       canLoadOlder: () => !!options.onLoadOlder && !!state.messageRenderOptions?.history?.can_load_older,
@@ -1736,6 +1760,7 @@
         onStop: () => this.stop().catch(error => this.reportError(error)),
         onRefresh: () => this.reload().catch(error => this.reportError(error)),
         onLoadOlder: () => this.loadOlder(),
+        onRoundStatusRefresh: () => this.protocol?.load({ force: true }),
         onLoadInputHistory: (scope, pageToken) => this.loadInputHistory(scope, pageToken),
         onLoadInheritedContext: () => window.PortalResidentService.inheritedContext(this.target().resident_id),
         onQueueInject: id => this.queueAction("injectInput", id),
@@ -2589,7 +2614,10 @@
             if (update.type === "error") {
               // While staged, load() owns the error through its rejected promise.
               // Only an installed protocol owns asynchronous error notifications.
-              if (installed) this.reportBackgroundSyncError(update.error);
+              if (installed) {
+                this.workspace.controller.requestProgressDisconnected();
+                this.reportBackgroundSyncError(update.error);
+              }
             } else if (installed && update.snapshot) {
               this.applySnapshot(update.snapshot, update);
             } else if (pending && update.snapshot) {
@@ -2814,6 +2842,9 @@
       const contract = this.contractFromDetail(detail);
       if (!contract) throw new Error("Resident projection is missing Chat Workspace contract");
       const projected = projectResidentConversation({ ...detail, chat_workspace: contract }, snapshot);
+      // Only a completed protocol snapshot (not a cached event projection)
+      // establishes status certainty after a transport interruption.
+      projected.chat_workspace.request_progress.verified = !update || update.type === "snapshot";
       const chatContract = this.projectContract(projected.chat_workspace, projected, snapshot, update);
       this.detail = {
         ...projected,
@@ -3391,6 +3422,7 @@
     // Hover hosts change presentation without resizing the mounted workspace.
     setPresented(presented) {
       this.presented = Boolean(presented);
+      this.workspace.controller.setRoundRailPresented(this.presented);
       this.readObserver.schedule();
     }
     target() { return this.workspace.target(); }

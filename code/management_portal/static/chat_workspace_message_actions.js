@@ -61,6 +61,7 @@
     const openMessageMenuAt = (menu, point) => {
       const pin = options.pinMessages && menu.querySelector('[data-portal-message-action="pin"]');
       if (pin) pin.textContent = window.PortalI18n.t(currentController().isMessagePinned(menu.dataset.portalMessageKey) ? "取消置顶" : "置顶消息");
+      syncRoundAction(menu);
       if (openMessageMenu !== menu) closeMessageMenu();
       bindMessageSubmenus(menu);
       closeMessageSubmenus(menu);
@@ -69,6 +70,21 @@
     const closeMessageMenu = () => {
       if (openMessageMenu) messageMenuPopovers.get(openMessageMenu).close();
     };
+    const syncRoundAction = menu => {
+      if (!menu) return;
+      let action = menu.querySelector('[data-portal-message-action="round-follow"]');
+      const controller = currentController(), key = menu.dataset.portalMessageKey;
+      if (!controller.roundNavigationTarget?.(key)) { action?.remove(); return; }
+      if (!action) {
+        action = document.createElement('button'); action.type = 'button';
+        action.className = 'messageMenuItem'; action.dataset.portalMessageAction = 'round-follow'; menu.append(action);
+      }
+      action.textContent = window.PortalI18n.t(controller.isRoundFollowed(key) ? '取消本轮关注' : '标记本轮关注');
+      action.setAttribute('aria-pressed', String(controller.isRoundFollowed(key)));
+    };
+    const syncOpenRoundAction = () => syncRoundAction(openMessageMenu);
+    window.addEventListener('portal:chat-round-flags-changed', syncOpenRoundAction);
+    window.addEventListener('storage', syncOpenRoundAction);
 
     const toggleWorkGroup = toggle => {
       const groupId = toggle.dataset.portalWorkGroupToggle;
@@ -111,6 +127,7 @@
       const item = state.messageByKey.get(key);
       const action = String(button.dataset.portalMessageAction || "");
       if (menu) closeMessageMenu();
+      if (action === 'round-follow') { currentController().toggleRoundFollow(key); return; }
       if (action === "pin" && options.pinMessages) {
         currentController().toggleMessagePin(key);
         return;
@@ -255,6 +272,8 @@
     els.messages?.addEventListener("click", handleMessagesClick);
     els.messages?.addEventListener("contextmenu", handleMessagesContextMenu);
     const destroyMessageActions = () => {
+      window.removeEventListener('portal:chat-round-flags-changed', syncOpenRoundAction);
+      window.removeEventListener('storage', syncOpenRoundAction);
       els.messages?.removeEventListener("click", handleMessagesClick);
       els.messages?.removeEventListener("contextmenu", handleMessagesContextMenu);
       closeMessageMenu();

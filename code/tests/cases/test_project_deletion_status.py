@@ -1,6 +1,6 @@
 """Deletion completion is readable without resurrecting removed permissions.
 
-:module: workflow.projects
+:module: workflow.project
 :design: decision_4648f7fa3295
 """
 from copy import deepcopy

@@ -125,13 +125,11 @@ async function localSearch() {
     await debounce();
     ui.result('m1').click();
     await settle();
-    assert.equal(ui.trigger.getAttribute('aria-expanded'), 'false', 'choosing a result closes the search');
+    assert.equal(ui.trigger.getAttribute('aria-expanded'), 'true', 'choosing a result retains search and static ticks');
     assert.ok(root.querySelector('.messageList > [data-message-key="m1"]').classList.contains('messageQuoteTarget'),
       'and moves to the message');
 
-    ui.trigger.click();
-    await settle();
-    assert.deepEqual(ui.keys(), ['m4', 'm2', 'm1'], 'the query is kept when the search opens again');
+    assert.deepEqual(ui.keys(), ['m4', 'm2', 'm1'], 'the query is kept while navigating results');
     ui.input.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     assert.equal(w.document.activeElement, ui.result('m4'), 'arrow keys move through the results');
     ui.input.focus();
@@ -140,8 +138,6 @@ async function localSearch() {
     assert.ok(root.querySelector('.messageList > [data-message-key="m4"]').classList.contains('messageQuoteTarget'),
       'Enter opens the first result');
 
-    ui.trigger.click();
-    await settle();
     type(ui.input, '');
     await debounce();
     assert.equal(text(ui.more), '加载更早片段');

@@ -41387,5 +41387,41 @@
   "继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。": {
     "zh-CN": "继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。",
     "en": "Continue the current initialization, preserving inherited context and queued messages. Credits consent applies only to this initialization and the Session it creates."
+  },
+  "仅显示已加载范围；可加载更早消息": {"zh-CN": "仅显示已加载范围；可加载更早消息", "en": "Showing loaded history; load earlier messages to see more"},
+  "保存未确认": {"zh-CN": "保存未确认", "en": "Save could not be confirmed"},
+  "关注未保存，请重试": {"zh-CN": "关注未保存，请重试", "en": "Could not save the flag. Please try again."},
+  "取消本轮关注": {"zh-CN": "取消本轮关注", "en": "Remove flag from this request"},
+  "定位失败": {"zh-CN": "定位失败", "en": "Could not locate message"},
+  "已关注": {"zh-CN": "已关注", "en": "Flagged"},
+  "已加载轮次": {"zh-CN": "已加载轮次", "en": "Loaded requests"},
+  "恢复中": {"zh-CN": "恢复中", "en": "Recovering"},
+  "无法定位这条消息，请重试": {"zh-CN": "无法定位这条消息，请重试", "en": "Could not locate this message. Please try again."},
+  "暂无已加载轮次": {"zh-CN": "暂无已加载轮次", "en": "No requests loaded"},
+  "查找结果": {"zh-CN": "查找结果", "en": "Search results"},
+  "标记本轮关注": {"zh-CN": "标记本轮关注", "en": "Flag this request"},
+  "正在分派": {"zh-CN": "正在分派", "en": "Routing"},
+  "正在转交": {"zh-CN": "正在转交", "en": "Delivering"},
+  "浏览已加载轮次": {"zh-CN": "浏览已加载轮次", "en": "Browse loaded requests"},
+  "滚动对话": {"zh-CN": "滚动对话", "en": "Scroll conversation"},
+  "状态待确认": {"zh-CN": "状态待确认", "en": "Status not confirmed"},
+  "等待分工": {"zh-CN": "等待分工", "en": "Waiting for assignment"},
+  "等待成员": {"zh-CN": "等待成员", "en": "Waiting for members"},
+  "请先登录": {"zh-CN": "请先登录", "en": "Please sign in"},
+  "轮次": {"zh-CN": "轮次", "en": "Requests"},
+  "轮次导航": {"zh-CN": "轮次导航", "en": "Request navigation"},
+  "轮次预览": {"zh-CN": "轮次预览", "en": "Request preview"},
+  "附件消息": {"zh-CN": "附件消息", "en": "Message with attachments"},
+  "定位消息": {
+    "zh-CN": "定位消息",
+    "en": "Locate message"
+  },
+  "视频": {
+    "zh-CN": "视频",
+    "en": "Video"
+  },
+  "音频": {
+    "zh-CN": "音频",
+    "en": "Audio"
   }
 }

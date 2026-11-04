@@ -237,6 +237,12 @@
             }).concat(familyIssueLabel ? [{ text: familyIssueLabel, identity: "family_availability" }] : []),
           } } : {}),
           runtime: { live, details: activities, phase },
+          request_progress: {
+            cursor: snapshot.cursor,
+            input_states: Array.isArray(snapshot.input_states) ? snapshot.input_states : [],
+            relays: (snapshot.messages || []).filter(item => item.role === 'user' && item.relay)
+              .map(item => ({ ...item.relay, message_id: item.message_id })),
+          },
           composer: {
             ...(base.chat_workspace.composer || {}),
             can_send: controls.can_send === true,

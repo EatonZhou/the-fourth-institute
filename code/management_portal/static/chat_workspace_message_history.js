@@ -22,6 +22,13 @@
     } = dependencies;
 
     let destroyed = false;
+    let revealRevision = 0;
+    const cancelMessageNavigation = () => { revealRevision += 1; };
+    const cancelForReadingKey = event => {
+      if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'].includes(event.key)) cancelMessageNavigation();
+    };
+    for (const name of ['wheel', 'touchstart', 'pointerdown']) els.messages?.addEventListener(name, cancelMessageNavigation, { passive: true });
+    els.messages?.addEventListener('keydown', cancelForReadingKey);
     const reportError = error => {
       if (options.onError) options.onError(error);
       else window.PortalUI?.toast?.(error?.message || String(error), "error");
@@ -32,6 +39,7 @@
       const key = String(messageId || "").trim();
       if (!key || !els.messages) return false;
       const scope = historyScope();
+      const revision = ++revealRevision;
       const find = () => els.messages.querySelector(`.messageList > [data-message-key="${CSS.escape(key)}"]`);
       let row = find();
       while (!row) {
@@ -39,7 +47,7 @@
         const before = `${state.messages.length}:${messageRenderKey(state.messages[0] || {})}`;
         await options.onLoadOlder(currentController());
         await new Promise(resolve => window.requestAnimationFrame(resolve));
-        if (destroyed || historyScope() !== scope) return false;
+        if (destroyed || historyScope() !== scope || revision !== revealRevision) return false;
         row = find();
         if (!row && before === `${state.messages.length}:${messageRenderKey(state.messages[0] || {})}`) break;
       }
@@ -282,6 +290,9 @@
     els.composer?.addEventListener("click", handleComposerClick);
     // A destroyed Workspace answers none of these clicks, and a reveal under way stops.
     const destroyMessageHistory = () => {
+      cancelMessageNavigation();
+      for (const name of ['wheel', 'touchstart', 'pointerdown']) els.messages?.removeEventListener(name, cancelMessageNavigation);
+      els.messages?.removeEventListener('keydown', cancelForReadingKey);
       pinHost.remove();
       window.removeEventListener("storage", renderPinnedMessages);
       window.removeEventListener("portal:chat-pins-changed", renderPinnedMessages);
@@ -292,7 +303,7 @@
     };
 
     return {
-      revealMessage, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, cancelMessageNavigation, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
     };
   }
 
