@@ -85,6 +85,10 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };
+    if (process.env.RAIL_HIT_ONLY) {
+      await require('./chat_round_hit.browser.cjs')({ page, context, browser, setup, output, errors });
+      await context.close(); return;
+    }
     const togglePreviewFlag = async (target, trigger, touch = false) => {
       const followed = await trigger.getAttribute('aria-pressed') === 'true';
       if (touch) await trigger.tap(); else await trigger.click();
@@ -270,6 +274,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await small.evaluate(() => { items = Array.from({ length: 80 }, (_, i) => human('dense' + i, i === 35 ? previewSource : '短文')); workspace.setMessages(items); });
       await small.waitForTimeout(100);
       const box = await small.locator('[data-round-key="dense35"]').boundingBox(); await small.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+      await small.locator('.chatRoundDirectory').tap();
       const denseLong = card(small, 'dense35');
       await denseLong.locator('.chatRoundExpand').tap();
       check('dense preview expands only the actual long item', await small.locator('.chatRoundExpand').count() === 1 && await denseLong.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')));
@@ -325,7 +330,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
         const box = await target.locator('[data-round-key="dense35"]').boundingBox();
         if (touch) await target.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
         else await target.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-        check('overlapping pointer targets open local disambiguation', await target.locator('.chatRoundPreviewItem').count() > 1 && await target.locator('.chatRoundPreviewItem').count() < 80);
+        check('overlapping pointer targets locate nearest message directly', await target.locator('[data-message-key="dense35"]').evaluate(n => n.classList.contains('messageQuoteTarget')));
+        await target.locator('.chatRoundDirectory').click();
         const follow = target.locator('[data-round-follow="dense35"]');
         await togglePreviewFlag(target, follow, touch);
         await afterLayout(target);
@@ -681,7 +687,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('dense rounds keep individual measured markers', await page.locator('.chatRoundNode').count() === 80);
     const firstDense = await page.locator('.chatRoundNode').first().boundingBox();
     await page.mouse.click(firstDense.x + firstDense.width / 2, firstDense.y + firstDense.height / 2);
-    check('overlapping hit areas expose individual targets', await page.locator('.chatRoundPreviewItem').count() > 1); await shot('desktop-dense');
+    check('overlapping hit areas locate one measured target', await page.locator('[data-message-key="dense0"]').evaluate(n => n.classList.contains('messageQuoteTarget')) && await page.locator('.chatRoundPreviewItem').count() === 0);
+    await page.locator('.chatRoundDirectory').click(); await shot('desktop-dense');
     await page.keyboard.press('Escape');
     await page.evaluate(() => { scope = 'another'; workspace.setMessages([human('other')]); }); await settle();
     check('conversation switch drops marks and previous states', await page.locator('.chatRoundNode').count() === 1 && await page.locator('.chatRoundNode.is-followed').count() === 0);
