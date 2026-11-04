@@ -11,6 +11,7 @@ from typing import Any, Mapping
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
 from management_portal.execution.account_migration_types import migration_type
+from management_portal.execution.account_selection import available
 
 MIGRATION_RESERVE_PERCENT = 5.0
 
@@ -46,13 +47,7 @@ def reserve_remaining(account: Mapping[str, Any]) -> float | None:
 
 
 def account_available(account: Mapping[str, Any]) -> bool:
-    quota = account.get("quota_reserve") or {}
-    remaining = quota.get("remaining")
-    return bool(
-        account.get("provider") in AGENT_PROVIDERS
-        and quota.get("status") == "available" and quota.get("fresh") is True
-        and type(remaining) in (int, float) and math.isfinite(remaining) and remaining > 0
-    )
+    return account.get("provider") in AGENT_PROVIDERS and available(account)
 
 
 def sufficient_reserve(account: Mapping[str, Any]) -> bool:
