@@ -24,12 +24,15 @@ from management_portal import model_api_stream as stream, model_api_wire as wire
 from management_portal.model_api_bridge import Bridge
 
 
-def _reply(protocol, tool, name="read_file", arguments=None):
+def _reply(protocol, tool, name="read_file", arguments=None, reasoning=False):
     arguments = arguments or {"path": "hello.txt"}
     encoded = json.dumps(arguments)
     if protocol == wire.RESPONSES:
         output = ([{"type": "function_call", "id": "fc-1", "call_id": "call-1", "name": name, "arguments": encoded}]
                   if tool else [{"type": "message", "id": "msg-1", "role": "assistant", "content": [{"type": "output_text", "text": "读取成功"}]}])
+        if reasoning:
+            output.insert(0, {"type": "reasoning", "id": "rs-1", "summary": [{"type": "summary_text", "text": "Read the local file."}],
+                              "encrypted_content": "opaque-upstream-reasoning"})
         return {"id": "resp-1", "object": "response", "status": "completed", "model": "test-model", "output": output,
                 "usage": {"input_tokens": 21, "output_tokens": 7, "input_tokens_details": {"cached_tokens": 3}}}
     if protocol == wire.MESSAGES:
@@ -44,20 +47,20 @@ def _reply(protocol, tool, name="read_file", arguments=None):
             "usage": {"prompt_tokens": 21, "completion_tokens": 7, "prompt_tokens_details": {"cached_tokens": 3}}}
 
 
-def _events(protocol, tool, name="read_file", arguments=None):
-    reply = _reply(protocol, tool, name, arguments)
+def _events(protocol, tool, name="read_file", arguments=None, reasoning=False):
+    reply = _reply(protocol, tool, name, arguments, reasoning)
     arguments = json.dumps(arguments or {"path": "hello.txt"})
     if protocol == wire.RESPONSES:
         yield {"type": "response.created", "response": {"id": "resp-1", "model": "test-model"}}
-        item = reply["output"][0]
-        if tool:
-            yield {"type": "response.output_item.added", "output_index": 0, "item": {**item, "arguments": ""}}
-            for args in [arguments[:8], arguments[8:]]:
-                yield {"type": "response.function_call_arguments.delta", "output_index": 0, "delta": args}
-        else:
-            for text in ["读取", "成功"]:
-                yield {"type": "response.output_text.delta", "output_index": 0, "content_index": 0, "delta": text}
-        yield {"type": "response.output_item.done", "output_index": 0, "item": item}
+        for index, item in enumerate(reply["output"]):
+            if item["type"] == "function_call":
+                yield {"type": "response.output_item.added", "output_index": index, "item": {**item, "arguments": ""}}
+                for args in [arguments[:8], arguments[8:]]:
+                    yield {"type": "response.function_call_arguments.delta", "output_index": index, "delta": args}
+            elif item["type"] == "message":
+                for text in ["读取", "成功"]:
+                    yield {"type": "response.output_text.delta", "output_index": index, "content_index": 0, "delta": text}
+            yield {"type": "response.output_item.done", "output_index": index, "item": item}
         yield {"type": "response.completed", "response": reply}
     elif protocol == wire.MESSAGES:
         yield {"type": "message_start", "message": {**reply, "content": [], "stop_reason": None}}
@@ -106,15 +109,16 @@ def endpoint(tmp_path):
                           any(m.get("role") == "tool" or any(isinstance(b, dict) and b.get("type") == "tool_result" for b in m.get("content") or [])
                               for m in payload.get("messages", [])))
             if self.server.json:
-                self.wfile.write(json.dumps(_reply(protocol, not has_result, server.tool_name, server.tool_arguments)).encode())
+                self.wfile.write(json.dumps(_reply(protocol, not has_result, server.tool_name, server.tool_arguments, server.reasoning)).encode())
             else:
-                for event in _events(protocol, not has_result, server.tool_name, server.tool_arguments):
+                for event in _events(protocol, not has_result, server.tool_name, server.tool_arguments, server.reasoning):
                     self.wfile.write(("data: " + json.dumps(event, ensure_ascii=False) + "\n\n").encode())
                     self.wfile.flush()
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     server.daemon_threads = True
     server.requests, server.protocol, server.json, server.status = [], wire.RESPONSES, False, 200
     server.tool_name, server.tool_arguments = "read_file", None
+    server.reasoning = False
     server.pause, server.disconnected = False, threading.Event()
     threading.Thread(target=server.serve_forever, daemon=True).start()
     secret = tmp_path / "upstream.key"
@@ -258,6 +262,21 @@ def test_custom_namespace_tools_images_and_opaque_thinking_survive_round_trip():
     assert restored["messages"][1]["content"][1]["input"] == {"input": "*** PATCH ***"}
 
 
+@pytest.mark.parametrize("protocol", [wire.RESPONSES, wire.CHAT])
+def test_empty_thinking_does_not_block_resuming_history_but_foreign_state_is_rejected(protocol):
+    payload = {"model": "m", "messages": [
+        {"role": "assistant", "content": [{"type": "thinking", "thinking": "", "signature": ""},
+                                          {"type": "text", "text": "Previous answer"}]},
+        {"role": "user", "content": "Continue"}]}
+    canonical = wire.request(payload, wire.MESSAGES)
+    assert canonical["messages"][0]["content"] == [{"type": "text", "text": "Previous answer"}]
+    converted = wire.encode(canonical, protocol)
+    assert "Previous answer" in json.dumps(converted) and "Continue" in json.dumps(converted)
+    payload["messages"][0]["content"][0]["signature"] = "native-anthropic-state"
+    with pytest.raises(wire.WireError, match="different upstream"):
+        wire.encode(wire.request(payload, wire.MESSAGES), protocol)
+
+
 def _instruction(handler, **arguments):
     return handler(SimpleNamespace(caller="alice", argument=lambda name, default=None: arguments.get(name, default),
                                    expected_version_for=lambda _: None))
@@ -265,12 +284,14 @@ def _instruction(handler, **arguments):
 
 @pytest.mark.skipif(not os.environ.get("PORTAL_CLAUDE_NATIVE_TEST_BINARY"), reason="Native Claude Code binary was not selected")
 @pytest.mark.parametrize("protocol", [wire.RESPONSES, wire.CHAT])
-def test_real_claude_code_executes_a_local_tool_through_an_openai_only_api(endpoint, tmp_path, protocol):
+@pytest.mark.parametrize("as_json", [False, True])
+def test_real_claude_code_executes_a_local_tool_through_an_openai_only_api(endpoint, tmp_path, protocol, as_json):
     from management_portal.execution import isa
     from tests.cases.claude_sdk_support import load_claude_module
     daemon = load_claude_module("claude_code_daemon")
     server, entry = endpoint
     server.protocol, server.tool_name = protocol, "Read"
+    server.json, server.reasoning = as_json, protocol == wire.RESPONSES
     note = tmp_path / "hello.txt"
     note.write_text("NATIVE_HARNESS_FILE_MARKER")
     server.tool_arguments = {"file_path": str(note)}
@@ -285,6 +306,9 @@ def test_real_claude_code_executes_a_local_tool_through_an_openai_only_api(endpo
     assert result.returncode == 0, result.stderr[-2000:] + result.stdout[-2000:]
     assert "读取成功" in result.stdout
     assert any("NATIVE_HARNESS_FILE_MARKER" in json.dumps(body) for _, body, _ in server.requests), result.stdout[-2000:]
+    if protocol == wire.RESPONSES:
+        assert any(item.get("encrypted_content") == "opaque-upstream-reasoning"
+                   for _, body, _ in server.requests for item in body.get("input", []))
     assert {path for path, _, _ in server.requests} == ({"/v1/responses"} if protocol == wire.RESPONSES else {"/v1/chat/completions"})
     from management_portal.model_api_bridge import close_bridges
     close_bridges()

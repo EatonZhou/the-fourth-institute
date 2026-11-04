@@ -214,6 +214,12 @@ class Writer:
             self.sequence += 1
         return value
 
+    def _message_block_delta(self, index, field, value):
+        kind = {"text": "text_delta", "arguments": "input_json_delta",
+                "thinking": "thinking_delta", "signature": "signature_delta"}[field]
+        return self._event("content_block_delta", index=index,
+                           delta={"type": kind, "partial_json" if field == "arguments" else field: value})
+
     def _response(self, status="in_progress", totals=None):
         totals = totals or {}
         result = {"id": self.id, "object": "response", "created_at": int(time.time()), "model": self.model,
@@ -262,14 +268,21 @@ class Writer:
             self.blocks.append(block)
             if self.protocol == MESSAGES:
                 part = {**block}
+                initial = {}
                 if part["type"] == "tool_use":
-                    arguments = part.pop("arguments", "")
+                    initial["arguments"] = part.pop("arguments", "")
                     part["input"] = {}
-                    yield self._event("content_block_start", index=index, content_block=part)
-                    if arguments:
-                        yield self._event("content_block_delta", index=index, delta={"type": "input_json_delta", "partial_json": arguments})
-                else:
-                    yield self._event("content_block_start", index=index, content_block=part)
+                elif part["type"] in ("text", "thinking"):
+                    field = part["type"]
+                    initial[field], part[field] = part.get(field, ""), ""
+                    if field == "thinking":
+                        initial["signature"] = part.pop("signature", "")
+                # Native clients accumulate text and reasoning signatures from
+                # deltas, even when the upstream delivered a complete JSON block.
+                yield self._event("content_block_start", index=index, content_block=part)
+                for field, text in initial.items():
+                    if text:
+                        yield self._message_block_delta(index, field, text)
             else:
                 yield self._event("response.output_item.added", output_index=index, item=self._item(index, block, "in_progress"))
                 if block["type"] == "text":
@@ -284,8 +297,7 @@ class Writer:
                     continue
                 block[field] = block.get(field, "") + value[field]
                 if self.protocol == MESSAGES:
-                    delta_type = {"text": "text_delta", "arguments": "input_json_delta", "thinking": "thinking_delta", "signature": "signature_delta"}[field]
-                    yield self._event("content_block_delta", index=index, delta={"type": delta_type, "partial_json" if field == "arguments" else field: value[field]})
+                    yield self._message_block_delta(index, field, value[field])
                 elif field in ("text", "arguments"):
                     # A custom tool's JSON envelope must be decoded before its raw input is streamed.
                     custom = field == "arguments" and self.tool_map.get(block.get("name"), {}).get("type") == "custom"

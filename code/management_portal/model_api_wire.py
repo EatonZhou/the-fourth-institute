@@ -76,6 +76,8 @@ def blocks(value, protocol, *, role="user"):
                 content.insert(0, {"type": "text", "text": "Tool execution failed:"})
             result.append({"type": kind, "id": part["tool_use_id"], "content": content})
         elif kind in ("thinking", "redacted_thinking"):
+            if kind == "thinking" and not part.get("thinking") and not part.get("signature"):
+                continue  # An empty block carries neither text nor upstream state.
             native = _restore("responses", part.get("signature"))
             result.append({"type": "reasoning", "responses": native} if native else {**part})
         elif kind == "refusal":
