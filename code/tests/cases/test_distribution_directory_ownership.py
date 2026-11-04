@@ -1,6 +1,6 @@
 """The shipped SQL installs ownership facts without resource classification.
 
-:module: delivery.services
+:module: operations.deployment
 :design: decision_4aa13bc21e8e
 """
 from copy import deepcopy
