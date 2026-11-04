@@ -161,7 +161,6 @@ class LineageReadProcessPool:
         self.workers = max(0, int(workers))
         self._lock = threading.Lock()
         self._executor: concurrent.futures.ProcessPoolExecutor | None = None
-        self._worker_pids: tuple[int, ...] = ()
         self._closed = False
         # Set before close() takes the lock. A service stop kills the workers,
         # so a read may be restarting the pool while holding the lock; it gives
@@ -192,13 +191,13 @@ class LineageReadProcessPool:
                 if time.monotonic() >= deadline:
                     raise RuntimeError("Lineage read workers did not start")
                 _done, pending = concurrent.futures.wait(pending, timeout=0.1)
-            worker_pids = tuple(sorted({future.result() for future in futures}))
+            for future in futures:
+                future.result()
         except BaseException:
             # These workers started after any stop signal, so nothing else ends them.
             _terminate_executor(executor)
             raise
         self._executor = executor
-        self._worker_pids = worker_pids
 
     def _replace(self, failed: concurrent.futures.ProcessPoolExecutor) -> None:
         with self._lock:
@@ -235,10 +234,14 @@ class LineageReadProcessPool:
         return response["result"]
 
     def health(self) -> dict[str, Any]:
+        executor = self._executor
+        # Warm-up tasks may all run on a subset of ready children. Report the
+        # executor's actual generation, including a child with no warm-up task.
+        processes = _executor_processes(executor) if executor is not None else []
         return {
             "enabled": bool(self.workers),
             "workers": self.workers,
-            "worker_pids": list(self._worker_pids),
+            "worker_pids": sorted({process.pid for process in processes if process.pid is not None}),
         }
 
     def close(self) -> None:
@@ -251,10 +254,16 @@ class LineageReadProcessPool:
             _terminate_executor(executor)
 
 
+def _executor_processes(executor: concurrent.futures.ProcessPoolExecutor) -> list:
+    # Python 3.12 has no public process inventory. Keep its one representation
+    # here for health and shutdown rather than maintaining a second PID cache.
+    return list((executor._processes or {}).values())
+
+
 def _terminate_executor(executor: concurrent.futures.ProcessPoolExecutor) -> None:
     # Python 3.12 has no public terminate_workers API. These workers
     # only execute reads, so ending an in-flight read cannot lose a job.
-    processes = list((executor._processes or {}).values())
+    processes = _executor_processes(executor)
     executor.shutdown(wait=False, cancel_futures=True)
     for process in processes:
         if process.is_alive():
