@@ -5,6 +5,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
+const { installInstructionStreams } = require("./resident_browser_stream.cjs");
 
 async function openResidentPortal({ chromium, origin, residentId, lineageId, headless = true, python = "python3" }) {
   const url = new URL(origin);
@@ -25,6 +26,7 @@ async function openResidentPortal({ chromium, origin, residentId, lineageId, hea
   const browser = await chromium.launch({ headless });
   try {
     const context = await browser.newContext({ serviceWorkers: "block" });
+    const streamState = await installInstructionStreams(context, { origin: url.origin, headers });
     await context.route("**/*", async route => {
       const request = route.request();
       const target = new URL(request.url());
@@ -37,7 +39,7 @@ async function openResidentPortal({ chromium, origin, residentId, lineageId, hea
         return route.continue({ headers: authenticated });
       }
       try {
-        const response = await route.fetch({ headers: authenticated, maxRedirects: 0 });
+        const response = await route.fetch({ headers: authenticated, maxRedirects: 0, timeout: 360000 });
         if ([301, 302, 303, 307, 308].includes(response.status())) {
           await route.abort("blockedbyclient");
           return;
@@ -62,7 +64,7 @@ async function openResidentPortal({ chromium, origin, residentId, lineageId, hea
     }
     const me = await verifyIdentity();
     const page = await context.newPage();
-    return { browser, context, page, identity: me, verifyIdentity, close: () => browser.close() };
+    return { browser, context, page, identity: me, verifyIdentity, streamState, close: () => browser.close() };
   } catch (error) {
     await browser.close();
     throw error;

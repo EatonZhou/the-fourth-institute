@@ -1,0 +1,24 @@
+"""Resident 原生浏览器的真实流式传输与认证边界。
+
+:module: identity.machine-api
+:design: decision_fb910c43ab07
+:profiles: local.fixture
+:risk: no-external-side-effects
+"""
+from pathlib import Path
+import shutil
+import subprocess
+
+import pytest
+
+
+def test_native_subscription_delivery_lifetime_and_authentication():
+    """真实 Chromium 收到首批、跨30秒续读并取消，拒绝边界保持。"""
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node.js is required for the native browser transport')
+    fixture = Path(__file__).parent / 'javascript/resident_browser.cjs'
+    result = subprocess.run([node, str(fixture)], capture_output=True, text=True, timeout=75)
+    if "Executable doesn't exist" in result.stderr or "Cannot find module" in result.stderr:
+        pytest.skip('Install the Portal test runtime and Chromium to run this native fixture')
+    assert result.returncode == 0, result.stdout + result.stderr
