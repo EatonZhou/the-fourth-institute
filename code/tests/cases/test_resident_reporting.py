@@ -1,4 +1,8 @@
 """Reporting intent is persisted by Society and delivered on every input."""
+import hashlib
+import json
+from pathlib import Path
+
 import pytest
 
 from management_portal.society_service import resident_reporting as reporting
@@ -48,6 +52,8 @@ def test_default_roundtrip_cas_and_no_model_operation(resident_record, monkeypat
 
 
 def test_each_later_input_and_scoped_input_receives_current_policy(resident_record, monkeypatch):
+    from management_portal.society_service.resident_input_queue_domain import _running_turn_prompt
+
     rid = resident_record["resident_id"]
     monkeypatch.setattr(prompts.resident_input_scope, "get", lambda *_a: {"scoped":True})
     job = {"user_message_id":"msg_report", "message":"请写汇报", "raw_message":"原始输入"}
@@ -58,6 +64,16 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     later = prompts.build_resident_prompt(resident_record, job)
     assert '"initiative": "high"' in later and "绝不每轮固定生成" in later
     assert "独立 Resident" in later and "取消时停止" in later
+    appended = _running_turn_prompt(resident_record, {**job, "raw_message":"继续完成已委托的解释"})
+    assert appended["actual_sent_prompt"].split("</reporting-policy>")[0] == later.split("</reporting-policy>")[0]
+    assert "继续完成已委托的解释" in appended["actual_sent_prompt"]
+    assert "已委托的高质量解释即使采用简洁文字" in later
+    assert "简单事实可直接简答" in later and "这一分类不取消上述已委托成果的质量要求" in later
+    assert "--quality" in later and "--previous-review-id" in later
+    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"off","quality":"low"}}})
+    lowered = _running_turn_prompt(resident_record, job)["actual_sent_prompt"]
+    assert '"quality": "low"' in lowered and "汇报使用清晰的 Markdown" in lowered
+    assert "高质量汇报与解释成果须交独立 Resident 审查" not in lowered
 
 
 def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
@@ -93,6 +109,37 @@ def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
     materialized = prompts.build_resident_prompt(records.find_resident(member), {
         "user_message_id":leaf,"message":"请汇报"})
     assert '"source_resident_id": "'+facade+'"' in materialized
+    assert "高质量汇报与解释成果须交独立 Resident 审查" in materialized
+    assert "home_explanation_authoring.md" in materialized and "build_explanation_package.py" in materialized
+    from management_portal.society_service.resident_input_queue_domain import _running_turn_prompt
+    appended = _running_turn_prompt(records.find_resident(member), {
+        "user_message_id":leaf,"raw_message":"解释一个新问题"})["actual_sent_prompt"]
+    assert appended.split("</reporting-policy>")[0] == materialized.split("</reporting-policy>")[0]
+
+
+def test_non_home_prompt_links_existing_authoring_entry_for_concise_high_artifact(resident_record, tmp_path):
+    from scripts.build_explanation_package import build
+
+    rid = resident_record["resident_id"]
+    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"off","quality":"high"}}})
+    text = prompts.build_resident_prompt(resident_record, {"message":"完成之前委托的解释"})
+    policy = json.loads(text.split("<reporting-policy>\n", 1)[1].split("\n", 1)[0])
+    assert policy["initiative"] == "off" and policy["quality"] == "high"
+    code_root = Path(__file__).resolve().parents[2]
+    for relative in ("management_portal/static/home_explanation_authoring.md",
+                     "scripts/build_explanation_package.py", "scripts/submit_explanation_review.py"):
+        entry = code_root / relative
+        assert entry.is_file() and str(entry) in text
+    # The advertised authoring contract also supports a short explanation without
+    # imposing a page, interaction or video; its fixed quality still requires review.
+    content = "# 两种策略\n在同一收益表上比较各自最坏情况下的结果。\n"
+    (tmp_path / "explanation.md").write_text(content, encoding="utf-8")
+    manifest = build(tmp_path, "workspace_0123456789ab/file/concise", title="简洁解释",
+                     supplement="explanation.md", quality=policy["quality"])
+    assert manifest["quality"] == "high"
+    assert manifest["supplement"]["sha256"] == hashlib.sha256(content.encode()).hexdigest()
+    assert "interaction" not in manifest and "video_plan" not in manifest
+    assert "submitted、可打开或媒体 ready 均不表示通过" in text
 
 
 def test_unknown_source_is_explicit(monkeypatch):

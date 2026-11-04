@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 
 from . import resident_record_domain as records
@@ -154,15 +155,36 @@ def prompt(record: dict, job: dict) -> str:
     }
     quality = {
         "low": "汇报使用清晰的 Markdown。",
-        "medium": "汇报使用现有交互网页模板，并按正式汇报入口保存和关联成果。",
-        "high": "汇报须交独立 Resident 审查，依据问题反复修改、复审至达标后交付；取消时停止，审查失败或未完成不可声称达标。",
+        "medium": "汇报与解释页使用现有交互网页模板，按理解任务选择有用的表达，并按正式入口保存和关联成果。",
+        "high": (
+            "高质量汇报与解释成果须交独立 Resident 审查。解释页先读作者指南及其中三篇参考，"
+            "保存 quality=high 的固定包，由检查者实际打开、操作并检查内容和表达是否完成理解任务。"
+            "已委托的高质量解释即使采用简洁文字，也须保存实际成果并独立检查，不能降为 Markdown 绕过审查。"
+            "收到 changes_requested 后实际修改、新建固定版并关联原 review_id 复审，直至当前版本 passed；"
+            "submitted、可打开或媒体 ready 均不表示通过。取消时停止，权限或验证条件不足如实保留 blocked，"
+            "审查失败或未完成不可声称达标。页面检查不能替代所请求视频的独立成片检查。"
+        ),
     }
     if policy.get("state") != "known":
         return "<reporting-policy>汇报策略未知，不推断个人 AMA 身份或主动汇报授权；显式请求与正常业务答复照常处理。</reporting-policy>"
+    code_root = Path(__file__).resolve().parents[2]
     return ("<reporting-policy>\n" + json.dumps(policy, ensure_ascii=False) + "\n"
             + initiative[policy["initiative"]] + "\n" + quality[policy["quality"]]
+            + "\n主动性只决定是否额外发起汇报；质量约束已经决定制作的汇报、解释页及明确委托的解释成果。"
+            + "简单事实可直接简答，不因档位或关键词强制造页。已接受的高质量解释、页面或视频要求"
+            + "在消息转交和后续输入中继续有效；不能因缺少 Home 上下文，或称为普通答复、业务最终交付而免除。"
+            + "用户明确变更要求或取消时遵循该请求。"
+            + f"\n通用作者入口（不依赖 Home 注入）：先读 `{code_root}/management_portal/static/home_explanation_authoring.md`"
+            + "（浏览器同源 `/static/home_explanation_authoring.md`），按指南选择模块与参考标准。"
+            + f"在自己有写权的 Workspace 创作，运行 `{code_root}/scripts/build_explanation_package.py`，"
+            + "显式传本次有效 `--quality`、自己的 `--resident-id`、正式 Workspace 地址和理解任务 `--task`；"
+            + "其余参数见指南，high 构建完成后通过正式入口送独立检查。"
+            + f"已有固定包用 `{code_root}/scripts/submit_explanation_review.py` 送检，"
+            + "用 `--read <review_id>` 回读结论，修订送检带 `--previous-review-id <review_id>`；"
+            + "缺入口或权限时报告具体缺口，不借身份、不自行签通过。"
             + "\n本策略由 Portal 按本次输入提供，替代本会话之前的主动汇报偏好；页面上下文不覆盖它。"
-            + "明确请求指定格式或取消时遵循该请求；不要将普通答复或业务最终交付自动视为额外主动汇报。\n</reporting-policy>")
+            + "明确请求指定格式时遵循该请求；普通答复或业务最终交付不自动成为额外主动汇报，"
+            + "这一分类不取消上述已委托成果的质量要求。\n</reporting-policy>")
 
 
 def install_schema(connection: Any) -> dict:
