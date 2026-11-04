@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 34
+  number: 35
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-04T19:19:33Z"
+  updated_at: "2026-11-04T20:15:21Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -246,6 +246,12 @@ Family 门面拥有自身汇报策略。调用者只需门面 viewer/contributor
 
 执行成员依据已核验的持久转交链取得最外层门面在本次输入上的策略。直接成员输入使用其自身策略，不向成员批量复制门面配置。每条主输入与追加输入都由 Society 重新物化策略提示；已送达内容不重写，保存不重启模型、不生成报告、不发起审查。该业务约束独立于可选 message envelope 和 pure 注入预设；Execution 接收物化后的提示，不解释主动性、报告质量或审核业务。Home 上下文只提供能力与展示合同，不覆盖执行时的权威策略。
 
-主动性 off 关闭额外主动汇报，保留普通答复、任务交付与用户显式请求。低档仅在重要成果、风险或决策有汇报价值时考虑；中档在实质成果和解释能帮助理解时考虑；高档更积极判断信息增量与用户需要，仍不要求每次请求生成。明确的格式、取消及展示限制优先。汇报质量低使用 Markdown，中使用现有交互网页模板，高由独立 Resident 检查并修改复审至达标；模板、媒体与审查结果由各业务 owner 保存，不能将提示注入当成作品已经通过审查。
+主动性只决定是否额外发起汇报。off 保留普通答复、任务交付与用户显式请求；低档仅在重要成果、风险或决策有汇报价值时考虑；中档在实质成果和解释能帮助理解时考虑；高档更积极判断信息增量与用户需要，仍不要求每次请求生成。简单事实可直接简答，不按档位或关键词强制生成复杂页面。用户明确的格式、取消及展示限制优先。
+
+质量约束已经决定制作的汇报、解释页及明确委托的解释成果。已接受的高质量解释、页面或视频要求在消息转交及后续输入中继续有效，除非用户明确变更或取消；缺少 Home 上下文、改称普通答复或业务最终交付均不免除已有委托。质量低使用 Markdown，中使用现有交互网页模板并按理解任务选择有用的表达，高由独立 Resident 检查内容与形式是否足以完成理解任务。高档委托采用简洁文字时仍保存实际成果的固定包并独立检查，不以降为 Markdown 绕过审查。没有该委托的简单事实回答不因此增加报告或审查任务。
+
+Society 的 resident_reporting.prompt 在每条主输入和运行中追加输入中提供统一作者入口，独立于 Home 前端上下文、可选消息外壳和输入隔离模式。提示从当前代码根定位 management_portal/static/home_explanation_authoring.md，同时给出同源 /static/home_explanation_authoring.md；该指南拥有解释创作标准及三篇参考。构建入口 scripts/build_explanation_package.py 显式接收本次 --quality、作者自己的 --resident-id、正式 Workspace 地址和 --task，保存固定包，high 经正式入口送检。已有固定包由 scripts/submit_explanation_review.py 送检和 --read 回读；代码根随实际运行部署解析，不依赖某个实例绝对路径或 Home 注入。提示只指向这些既有 owner，不复制其媒体实现，不增加身份或资源权限。
+
+high 检查者须独立于作者，按理解任务实际打开、操作和核对固定成果。changes_requested 要求作者实际修改为新固定版并以 --previous-review-id 关联前轮复审，直到当前版本正式记录 passed；submitted、可打开或媒体 ready 不等于通过。取消时停止；缺权限、无法实际验证等原因保留 blocked，不伪称达标。页面通过不能替代用户所请求视频的独立成片检查。模板、媒体、固定版本和审查记录仍由各业务 owner 保存；提示已经送达只能证明作者获得了指导，不能证明模型遵循或作品通过。
 
 新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。列已存在且类型合法时不再 ALTER，不重写已有策略。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
