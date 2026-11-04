@@ -126,7 +126,7 @@ def project_session(value: object, actor: str = "") -> dict[str, Any]:
         )
         empty_text = (
             f"这是 Family「{assistant_name}」的门面。发到这里的消息由 Family Router 交给最合适的成员处理，"
-            "成员的回复显示在这里。还没有经过门面的对话；直接发给成员的对话在各成员自己的对话里。"
+            "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。"
             + (f"成员：{members}。" if members else "")
         )
         composer["slash_commands"] = []

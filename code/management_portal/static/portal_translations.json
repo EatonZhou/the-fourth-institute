@@ -1,4 +1,22 @@
 {
+  "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。": {
+    "zh-CN": "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。",
+    "en": "Members' replies appear here. There are currently no facade conversations to display. Solo/Mute affects which exchanges are shown here; conversations sent directly to members appear in their own chats."
+  },
+  "汇报设置": {"zh-CN":"汇报设置","en":"Reporting settings"},
+  "汇报主动性": {"zh-CN":"汇报主动性","en":"Reporting initiative"},
+  "汇报质量": {"zh-CN":"汇报质量","en":"Report quality"},
+  "正在读取汇报设置…": {"zh-CN":"正在读取汇报设置…","en":"Loading reporting settings…"},
+  "汇报设置暂不可用，请重试。": {"zh-CN":"汇报设置暂不可用，请重试。","en":"Reporting settings are unavailable. Please retry."},
+  "0（不主动汇报）": {"zh-CN":"0（不主动汇报）","en":"0 (no proactive reports)"},
+  "低 · Markdown": {"zh-CN":"低 · Markdown","en":"Low · Markdown"},
+  "中 · 交互网页": {"zh-CN":"中 · 交互网页","en":"Medium · interactive webpage"},
+  "高 · 独立 Resident 审查与修改直至达标": {"zh-CN":"高 · 独立 Resident 审查与修改直至达标","en":"High · independent Resident review and revision until the standard is met"},
+  "主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。": {"zh-CN":"主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。","en":"Initiative only affects proactive reports; explicit report requests are still fulfilled. High initiative still depends on actual value and does not produce a report for every request."},
+  "保存汇报设置": {"zh-CN":"保存汇报设置","en":"Save reporting settings"},
+  "汇报设置已保存。": {"zh-CN":"汇报设置已保存。","en":"Reporting settings saved."},
+  "上次保存结果待确认，请先重试原设置。": {"zh-CN":"上次保存结果待确认，请先重试原设置。","en":"The previous save is unconfirmed. Retry those settings first."},
+  "设置已提交，回读失败；再次保存只重试读取。": {"zh-CN":"设置已提交，回读失败；再次保存只重试读取。","en":"Settings were submitted, but could not be read back. Saving again only retries the read."},
   "评审、提问、构思或监督职责": {"zh-CN": "评审、提问、构思或监督职责", "en": "Reviewing, questioning, ideation, or supervision role"},
   "自动迁移": {"zh-CN": "自动迁移", "en": "Automatic migration"},
   "提问": {
