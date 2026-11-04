@@ -685,6 +685,12 @@
     });
     input.addEventListener("keydown", event => {
       if (isComposerImeActive(input, event)) return;
+      if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey
+          && (event.key === "ArrowUp" || event.key === "ArrowDown") && currentOptions().onNavigateUserMessage) {
+        event.preventDefault();
+        currentOptions().onNavigateUserMessage(event.key === "ArrowUp" ? -1 : 1);
+        return;
+      }
       if (currentOptions().onBeforeKeydown?.(event)) return;
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && String(event.key || "").toLowerCase() === "z") {
         if (currentOptions().onUndo?.(event)) {

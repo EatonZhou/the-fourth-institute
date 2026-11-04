@@ -355,7 +355,7 @@ class PortalSlashCommandsTest(unittest.TestCase):
         groups = {block.split("\n", 1)[0]: block for block in content.split("\n\n")}
         self.assertIn("全局搜索", groups["通用快捷键："])
         chat = groups["Chat 快捷键："]
-        for key in ("`Ctrl/⌘ + Enter`", "`Ctrl/⌘ + Z`", "输入 `/`", "`@`", "`1`–`9`", "`Shift + F10`", "`Alt + ↑`"):
+        for key in ("`Ctrl/⌘ + Enter`", "`Ctrl/⌘ + Z`", "`Ctrl + ↑`", "`Ctrl + ↓`", "输入 `/`", "`@`", "`1`–`9`", "`Shift + F10`", "`Alt + ↑`"):
             self.assertIn(key, chat)
         # sample_admin 10-16: the help leaves out the selection's add-to-context action.
         self.assertNotIn("添加到上下文", content)

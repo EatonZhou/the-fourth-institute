@@ -225,6 +225,11 @@
 
     return Object.freeze({
       messageViewportMeasurable, syncMessageScrollMode, resetMessageScrollGesture,
+      prepareMessageNavigation: () => {
+        dropPendingWorkbenchViewport();
+        resetMessageScrollGesture();
+        workbenchAnchorKey = "";
+      },
       followTailAfterResize, destroyMessageViewport,
     });
   }
