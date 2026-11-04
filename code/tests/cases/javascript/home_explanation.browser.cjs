@@ -165,6 +165,18 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await page.locator('.homeExplanationExpand').click();
       await page.waitForFunction(() => document.fullscreenElement?.classList.contains('homeExplanationVideo'));
       check('fullscreen keeps captions below the diagram', await position(), { below: true, fits: true, font: 20, external: true, hidden: false, mode: 'showing' });
+      check('fullscreen removes native control overlay from picture', await page.locator('video').evaluate(v => v.controls), false);
+      const fullControls = page.locator('.homeExplanationTransport');
+      await fullControls.getByRole('button', { name: '字幕', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('.homeExplanationCaptions').hidden);
+      await fullControls.getByRole('button', { name: '字幕', exact: true }).click();
+      await page.waitForFunction(() => !document.querySelector('.homeExplanationCaptions').hidden);
+      await fullControls.getByRole('button', { name: '播放', exact: true }).click();
+      await fullControls.getByRole('button', { name: '暂停', exact: true }).click();
+      check('fullscreen transport actually pauses video', await page.locator('video').evaluate(v => v.paused), true);
+      await fullControls.getByRole('slider', { name: '播放位置' }).evaluate(e => { e.value = '.3'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+      await page.waitForFunction(text => document.querySelector('.homeExplanationCaptions').textContent === text, first);
+      checks.push('fullscreen seek and CC operate the real track');
       check('fullscreen exit is accessible', await page.locator('.homeExplanationExpand').getAttribute('aria-pressed'), 'true');
       await page.locator('.homeExplanationExpand').click();
       await page.waitForFunction(() => !document.fullscreenElement);
@@ -182,6 +194,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await page.locator('.homeExplanationExpand').click();
       await page.waitForFunction(() => !document.fullscreenElement);
       check('fullscreen exit restores page layout', (await position()).external, true);
+      check('fullscreen exit restores native controls', await page.locator('video').evaluate(v => v.controls), true);
       await page.locator('video').evaluate(v => v.requestFullscreen());
       await page.waitForFunction(() => !!document.fullscreenElement && !document.querySelector('.homeExplanationVideo').classList.contains('homeExplanationInlineCaptions'));
       check('native fullscreen restores native captions only', (await position()).hidden, true);

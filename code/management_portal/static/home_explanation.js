@@ -180,6 +180,31 @@
       const frame = node("div", null, "homeExplanationVideo"); frame.append(player); region.append(frame);
       if (document.fullscreenEnabled && frame.requestFullscreen) {
         const controls = node("div", null, "homeExplanationVideoControls");
+        const transport = node("div", null, "homeExplanationTransport"); transport.hidden = true;
+        const play = button("播放", async () => {
+          if (!player.paused) player.pause();
+          else try { await player.play(); } catch (error) { if (current(key)) failure(region, error); }
+        });
+        const seek = node("input"); seek.type = "range"; seek.min = "0"; seek.step = "0.1";
+        seek.setAttribute("aria-label", t("播放位置"));
+        seek.oninput = () => { if (Number.isFinite(player.duration)) player.currentTime = Number(seek.value); };
+        const time = node("span", null, "homeExplanationTime");
+        const mute = button("静音", () => { player.muted = !player.muted; });
+        const volume = node("input"); volume.type = "range"; volume.min = "0"; volume.max = "1"; volume.step = "0.05";
+        volume.className = "homeExplanationVolume"; volume.setAttribute("aria-label", t("音量"));
+        volume.oninput = () => { player.volume = Number(volume.value); player.muted = player.volume === 0; };
+        const cc = button("字幕", () => { const track = player.textTracks[0]; if (track) track.mode = track.mode === "showing" ? "disabled" : "showing"; });
+        const clock = seconds => `${Math.floor((seconds || 0) / 60)}:${String(Math.floor((seconds || 0) % 60)).padStart(2, "0")}`;
+        const syncTransport = () => {
+          play.textContent = t(player.paused ? "播放" : "暂停");
+          seek.disabled = !Number.isFinite(player.duration); seek.max = String(seek.disabled ? 0 : player.duration); seek.value = String(player.currentTime);
+          time.textContent = `${clock(player.currentTime)} / ${clock(seek.disabled ? 0 : player.duration)}`;
+          seek.setAttribute("aria-valuetext", time.textContent);
+          mute.textContent = t(player.muted ? "取消静音" : "静音"); mute.setAttribute("aria-pressed", String(player.muted));
+          volume.value = String(player.muted ? 0 : player.volume);
+          cc.disabled = !player.textTracks.length; cc.setAttribute("aria-pressed", String(player.textTracks[0]?.mode === "showing"));
+        };
+        transport.append(play, seek, time, mute, volume, cc); controls.append(transport);
         const expand = button(t("全屏观看"), async () => {
           try {
             if (document.fullscreenElement === frame) await document.exitFullscreen();
@@ -190,6 +215,8 @@
           const expanded = document.fullscreenElement === frame;
           expand.textContent = t(expanded ? "退出全屏" : "全屏观看");
           expand.setAttribute("aria-pressed", String(expanded));
+          transport.hidden = !expanded; player.controls = !expanded;
+          syncTransport();
         };
         expand.classList.add("homeExplanationExpand");
         controls.append(expand); frame.prepend(controls);
@@ -197,7 +224,13 @@
         // diagram keeps the same unobscured caption layout as the page.
         player.controlsList?.add("nofullscreen");
         document.addEventListener("fullscreenchange", syncFullscreen);
-        disposers.add(() => { document.removeEventListener("fullscreenchange", syncFullscreen); });
+        const transportEvents = [[player, "timeupdate"], [player, "durationchange"], [player, "loadedmetadata"],
+          [player, "play"], [player, "pause"], [player, "volumechange"], [player.textTracks, "change"], [player.textTracks, "addtrack"]];
+        for (const [target, event] of transportEvents) target.addEventListener(event, syncTransport);
+        disposers.add(() => {
+          document.removeEventListener("fullscreenchange", syncFullscreen);
+          for (const [target, event] of transportEvents) target.removeEventListener(event, syncTransport);
+        });
         syncFullscreen();
       }
       player.addEventListener("loadedmetadata", () => { if (current(key) && playbackTime < player.duration) player.currentTime = playbackTime; });

@@ -1,4 +1,20 @@
 {
+  "静音": {
+    "zh-CN": "静音",
+    "en": "Mute"
+  },
+  "取消静音": {
+    "zh-CN": "取消静音",
+    "en": "Unmute"
+  },
+  "音量": {
+    "zh-CN": "音量",
+    "en": "Volume"
+  },
+  "播放位置": {
+    "zh-CN": "播放位置",
+    "en": "Playback position"
+  },
   "全屏观看": {
     "zh-CN": "全屏观看",
     "en": "Watch fullscreen"
