@@ -173,7 +173,7 @@ def test_raster_reveal_hold_zero_and_partial_landing(fonts, monkeypatch):
     assert not any('score =' in value or '×' in value for value in text)
     text.clear()
     late = renderer.frame(p, s, 0, 3.5, fonts, prepared)
-    assert 'score = 1' in text
+    assert '2 ÷ 2 = 1' in text
     assert early.tobytes() != late.tobytes()
     assert late.tobytes() == renderer.frame(p, s, 0, 30, fonts, prepared).tobytes()
     assert late.size == (1280, 720)
@@ -230,11 +230,92 @@ def test_dot_sum_does_not_reveal_scaling_before_its_event(fonts, monkeypatch):
     monkeypatch.setattr(renderer._Canvas, 'text', record)
     p, s = dict(title='test'), scene(dot())
     renderer.frame(p, s, 0, 2.5, fonts)
-    assert '6 + -4 = 2' in text
-    assert not any('/ ' in value or 'score =' in value for value in text)
+    assert '6 + (−4) = 2' in text
+    assert not any('÷' in value or value == 'score' for value in text)
     text.clear()
     renderer.frame(p, s, 0, 3.5, fonts)
-    assert '(6 + -4) / 2' in text and 'score = 1' in text
+    assert '6 + (−4) = 2' in text and '2 ÷ 2 = 1' in text
+
+
+def test_dot_narrow_math_uses_full_width_without_changing_event_order(fonts, monkeypatch):
+    root = math.sqrt(2)
+    v = visual('dot', dict(query_label='它', query=[root, 0], divisor=root,
+        items=[dict(id='positive', label='小猫', vector=[2, 0]),
+               dict(id='negative', label='因为', vector=[-1, 0])]), [
+        event('vectors', at=.1), event('products', at=2.3), event('sum', at=3.775), event('result', at=6.475),
+        event('vectors', 1, at=9.6), event('products', 1, at=10),
+        event('sum', 1, at=11), event('result', 1, at=12.45)])
+    s = {**scene(v), 'end': 17.664}
+    prepared = renderer.prepare_frame(dict(title='fixed sample'), s, fonts)
+    drawn = []
+    original = renderer._Canvas.text
+    def record(self, xy, text, color=renderer._INK, size=28, width=None, anchor=None):
+        drawn.append((text, size, self.draw.textbbox(xy, text, font=self.fonts[size], anchor=anchor)))
+        return original(self, xy, text, color, size, width, anchor)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    def at(time):
+        drawn.clear()
+        image = renderer.frame(dict(title='fixed sample'), s, 0, time, fonts, prepared)
+        # Critical input and calculation lines are at least 19.5px at 480px wide;
+        # they are complete, unellipsized and clear of the subtitle safe area.
+        for text, size, box in drawn:
+            if size >= 52:
+                assert size * 480 / 1280 >= 19.5
+                assert 0 <= box[0] < box[2] <= 1232, (text, box)
+                assert 140 <= box[1] < box[3] < 605, (text, box)
+        assert len(image.crop((0, 644, 1280, 720)).getcolors()) == 1
+        return [text for text, _, _ in drawn]
+    assert not any('×' in text or '÷' in text for text in at(.5))
+    assert '√2 × 2 = 2√2' in at(2.5)
+    assert '2√2 + 0 = 2√2' in at(4)
+    assert '2√2 ÷ √2 = 2' in at(7)
+    assert not any('×' in text or '求和' in text or '÷' in text for text in at(9.7))
+    assert '√2 × (−1) = −√2' in at(10.5)
+    assert not any('求和' in text or '÷' in text for text in at(10.99))
+    assert '−√2 + 0 = −√2' in at(11.7)
+    assert not any('÷' in text for text in at(12.449))
+    assert '−√2 ÷ √2 = −1' in at(12.45)
+    # Authored negative-key dwell remains 24 product-only frames and 35 sum frames.
+    assert math.ceil(11*24)-math.ceil(10*24) == 24
+    assert math.ceil(12.45*24)-math.ceil(11*24) == 35
+
+
+def test_dot_radical_notation_does_not_claim_rounded_decimal_is_exact():
+    assert renderer._dot_number(math.sqrt(2)) == '√2'
+    assert renderer._dot_number(-math.sqrt(2)) == '−√2'
+    assert renderer._dot_number(2*math.sqrt(2)) == '2√2'
+    assert renderer._dot_number(0) == '0'
+    assert renderer._dot_number(-1) == '−1'
+    assert renderer._dot_number(1.4142) == '1.4142'
+    assert '√' not in renderer._dot_number(math.sqrt(2)+1e-8)
+
+
+def test_dot_vectors_and_six_score_terminal_remain_legible_at_480(fonts, monkeypatch):
+    drawn = []
+    original = renderer._Canvas.text
+    def record(self, xy, text, color=renderer._INK, size=28, width=None, anchor=None):
+        drawn.append((xy, text, size, self.draw.textbbox(xy, text, font=self.fonts[size], anchor=anchor)))
+        return original(self, xy, text, color, size, width, anchor)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    v = visual('dot', dict(query_label='它', query=[math.sqrt(2), 0], divisor=math.sqrt(2),
+        items=[dict(id=str(i), label=label, vector=vector) for i, (label, vector) in enumerate([
+            ('小猫', [2, 0]), ('跳上', [0, 1]), ('沙发', [1, 1]),
+            ('因为', [-1, 0]), ('它', [0, 0]), ('累了', [1, 2])])]), [event('vectors')])
+    renderer.frame(dict(title='terminal fixture'), scene(v), 0, .5, fonts)
+    assert all(size == 40 for _, text, size, _ in drawn if text in {'d1', 'd2', '0', '1', '2', '-1'})
+    assert any(text == '= (√2, 0)' and size == 56 for _, text, size, _ in drawn)
+    assert not any('÷' in text for _, text, _, _ in drawn)
+    drawn.clear()
+    v['events'] = [event('scores')]
+    image = renderer.frame(dict(title='terminal fixture'), scene(v), 0, .5, fonts)
+    scores = [(text, size, box) for xy, text, size, box in drawn if xy[0] == 1020]
+    assert [text for text, _, _ in scores] == ['2', '0', '1', '−1', '0', '1']
+    assert all(size * 480/1280 >= 16.5 for _, size, _ in scores)
+    assert any(text == '÷ √2' and size == 44 for _, text, size, _ in drawn)
+    for _, text, size, box in drawn:
+        if size >= 44:
+            assert 0 <= box[0] < box[2] <= 1232 and box[3] <= 605, (text, box)
+    assert len(image.crop((0, 644, 1280, 720)).getcolors()) == 1
 
 
 def test_mixed_scene_encoder_geometry_and_cache(tmp_path, fonts, monkeypatch):

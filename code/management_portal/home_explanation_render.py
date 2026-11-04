@@ -61,7 +61,7 @@ class _Canvas:
     def box(self, bounds, color='#263244', outline=None):
         self.draw.rounded_rectangle(bounds, radius=8, fill=color, outline=outline, width=2)
 
-    def axes(self, vectors, bounds=(70, 205, 640, 570)):
+    def axes(self, vectors, bounds=(70, 205, 640, 570), label_size=20):
         # Both coordinates have the same unit length. Bounds include original
         # vectors AND all partials, so an event cannot silently rescale geometry.
         left, top, right, bottom = bounds
@@ -73,9 +73,9 @@ class _Canvas:
             return origin[0]+v[0]*scale, origin[1]-v[1]*scale
         self.line((left, origin[1]), (right, origin[1]), '#506075')
         self.line((origin[0], top), (origin[0], bottom), '#506075')
-        self.text((right-45, origin[1]+7), 'd1', _MUTED, 20)
-        self.text((origin[0]+9, top), 'd2', _MUTED, 20)
-        self.text((origin[0]-18, origin[1]+7), '0', _MUTED, 20)
+        self.text((right-45, origin[1]+7), 'd1', _MUTED, label_size)
+        self.text((origin[0]+9, top), 'd2', _MUTED, label_size)
+        self.text((origin[0]-18, origin[1]+7), '0', _MUTED, label_size)
         for dim, lo, hi in ((0, lo_x, hi_x), (1, lo_y, hi_y)):
             step = 10**math.floor(math.log10(max(1, hi-lo)))
             for i in range(math.floor(lo/step), math.ceil(hi/step)+1):
@@ -84,44 +84,75 @@ class _Canvas:
                     continue
                 p = point((v, 0) if dim == 0 else (0, v))
                 self.line((p[0]-4, p[1]-4), (p[0]+4, p[1]+4), _MUTED)
-                self.text((p[0]+6, p[1]+7), _num(v), _MUTED, 20)
+                self.text((p[0]+6, p[1]+7), _num(v), _MUTED, label_size)
         return point
+
+
+def _dot_number(value):
+    """Compact math notation without turning rounded decimals into exact roots."""
+    if value == int(value):
+        return str(int(value)).replace('-', '−')
+    for radicand in (2, 3, 5, 6, 7, 10, 11, 13, 14, 15):
+        coefficient = round(value / math.sqrt(radicand))
+        if 0 < abs(coefficient) <= 12 and abs(value-coefficient*math.sqrt(radicand)) <= 4*math.ulp(value):
+            sign = '−' if coefficient < 0 else ''
+            multiple = '' if abs(coefficient) == 1 else str(abs(coefficient))
+            return f'{sign}{multiple}√{radicand}'
+    return _num(value).replace('-', '−')
+
+
+def _dot_operand(value):
+    text = _dot_number(value)
+    return f'({text})' if value < 0 else text
 
 
 def _dot(c, d, m, e, t):
     items, q, idx, stage = d['items'], d['query'], e['index'], e['stage']
     if stage == 'scores':
         maximum = max(1, *[abs(v) for v in m['scores']])
-        c.text((60, 155), f"q [{d['query_label']}] = {_vec(q)}    ÷ {_num(d['divisor'])}", _Q)
-        c.line((810, 218), (810, 565), '#6e7c91')
-        c.text((790, 575), '0', _MUTED, 20)
+        c.text((60, 150), f"q [{d['query_label']}]", _Q, 44, 230)
+        c.text((320, 144), '= (' + ', '.join(_dot_number(v) for v in q) + ')', _Q, 56)
+        c.text((60, 212), f"÷ {_dot_number(d['divisor'])}", _Q, 44)
+        c.text((350, 224), '匹配分数 · 尚未归一化', _MUTED, 28)
+        c.line((870, 256), (870, 598), '#6e7c91')
+        c.text((853, 604), '0', _MUTED, 28)
         for i, (item, value) in enumerate(zip(items, m['scores'])):
-            y = 232+i*52
-            c.text((60, y), f"{item['id']} · {item['label']}", width=240)
-            c.text((310, y), _vec(item['vector']), _K)
-            c.line((810, y+17), (810+value/maximum*220, y+17), _COLORS[i], 16)
-            c.text((1120, y), _num(value), _INK, 28)
-        c.text((60, 600), '匹配分数 · 尚未归一化 · 正负共用零线', _MUTED, 24)
+            y = 258+i*57
+            c.text((60, y), item['label'], size=44, width=225)
+            c.text((300, y), '(' + ', '.join(_dot_number(v) for v in item['vector']) + ')', _K, 44)
+            c.line((870, y+28), (870+value/maximum*100, y+28), _COLORS[i], 16)
+            c.text((1020, y), _dot_number(value), _INK, 44)
+        c.text((60, 608), '正负共用零线 · 小数为近似值', _MUTED, 24)
         return
     item = items[idx]
     k = item['vector']
-    point = c.axes([q]+[x['vector'] for x in items])
-    c.arrow(point((0, 0)), point(k), _K, 8)
-    # A narrower arrow on top keeps collinear vectors distinguishable.
-    c.arrow(point((0, 0)), point(q), _Q, 3)
-    c.text((60, 150), f"q [{d['query_label']}] = {_vec(q)}", _Q)
-    c.text((680, 150), f"k [{item['label']}] = {_vec(k)}", _K)
+    # Keep inputs in the same place through every step. At 480px playback width,
+    # operands remain 21px instead of sharing half the frame with empty axes.
+    for y, name, label, vector, color in ((150, 'q', d['query_label'], q, _Q),
+                                          (215, 'k', item['label'], k, _K)):
+        c.text((60, y), f'{name} [{label}]', color, 44, 230)
+        c.text((320, y-6), '= (' + ', '.join(_dot_number(v) for v in vector) + ')', color, 56)
+    if stage == 'vectors':
+        point = c.axes([q]+[x['vector'] for x in items], bounds=(70, 300, 1210, 565), label_size=40)
+        c.arrow(point((0, 0)), point(k), _K, 8)
+        # A narrower arrow on top keeps collinear vectors distinguishable.
+        c.arrow(point((0, 0)), point(q), _Q, 3)
     if stage != 'vectors':
         for j, product in enumerate(m['products'][idx]):
-            c.text((700, 235+j*65), f'd{j+1}    {_num(q[j])} × {_num(k[j])} = {_num(product)}', _INK, 28)
+            y = 294+j*66
+            c.text((60, y+10), f'分量 {j+1}', _MUTED, 32)
+            c.text((260, y), f'{_dot_operand(q[j])} × {_dot_operand(k[j])} = {_dot_number(product)}', _INK, 52)
     if stage in {'sum', 'result'}:
-        c.line((700, 370), (1220, 370))
-        terms = f"{_num(m['products'][idx][0])} + {_num(m['products'][idx][1])}"
-        formula = f"({terms}) / {_num(d['divisor'])}" if stage == 'result' else f"{terms} = {_num(sum(m['products'][idx]))}"
-        c.text((700, 395), formula)
+        c.line((60, 428), (1220, 428), '#344153')
+        terms = f"{_dot_number(m['products'][idx][0])} + {_dot_operand(m['products'][idx][1])}"
+        c.text((60, 452), '求和', _MUTED, 32)
+        c.text((260, 440), f'{terms} = {_dot_number(sum(m["products"][idx]))}', _INK, 56)
     if stage == 'result':
-        c.text((700, 470), f"score = {_num(m['scores'][idx])}", _Q, 40)
-    c.text((60, 600), '同一原点、同一单位 · 分量乘加后缩放 · 显示为近似值', _MUTED, 24)
+        c.text((60, 538), 'score', _Q, 32)
+        c.text((260, 524), f'{_dot_number(sum(m["products"][idx]))} ÷ {_dot_number(d["divisor"])} = {_dot_number(m["scores"][idx])}', _Q, 56)
+    root = next((v for v in [*q, *k, d['divisor']] if '√' in _dot_number(v)), None)
+    note = f'{_dot_number(root)} ≈ {_num(root)} · ' if root is not None else ''
+    c.text((60, 605), note + '同一原点、同一单位 · 小数为近似值', _MUTED, 24)
 
 
 def _normalize_draw(c, d, m, e, t):
@@ -344,6 +375,8 @@ _DRAW = {'dot': _dot, 'normalize': _normalize_draw, 'weighted_sum': _weighted_dr
 def _prepare_visual(plan, scene, fonts):
     from PIL import Image, ImageFont
     fonts = {**fonts, **{size: ImageFont.truetype(fonts[24].path, size) for size in (26, 28, 32, 40)}}
+    if scene['visual']['kind'] == 'dot':
+        fonts.update({size: ImageFont.truetype(fonts[24].path, size) for size in (44, 52, 56)})
     image = Image.new('RGB', (1280, 720), _BG)
     c = _Canvas(image, fonts)
     c.text((48, 24), scene['title'], _INK, 40, 1180)
