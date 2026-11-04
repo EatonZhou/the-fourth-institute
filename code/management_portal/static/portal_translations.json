@@ -1,4 +1,118 @@
 {
+  "评审、提问、构思或监督职责": {"zh-CN": "评审、提问、构思或监督职责", "en": "Reviewing, questioning, ideation, or supervision role"},
+  "自动迁移": {"zh-CN": "自动迁移", "en": "Automatic migration"},
+  "提问": {
+    "en": "Questioning",
+    "zh-CN": "提问"
+  },
+  "构思": {
+    "en": "Ideation",
+    "zh-CN": "构思"
+  },
+  "监督": {
+    "en": "Supervision",
+    "zh-CN": "监督"
+  },
+  "排队发送": {
+    "en": "Send to queue",
+    "zh-CN": "排队发送"
+  },
+  "附加到下一轮": {
+    "en": "Attach to the next turn",
+    "zh-CN": "附加到下一轮"
+  },
+  "文本": {
+    "en": "Text",
+    "zh-CN": "文本"
+  },
+  "整数": {
+    "en": "Integer",
+    "zh-CN": "整数"
+  },
+  "数值": {
+    "en": "Number",
+    "zh-CN": "数值"
+  },
+  "开关": {
+    "en": "Toggle",
+    "zh-CN": "开关"
+  },
+  "枚举选项": {
+    "en": "Enumeration",
+    "zh-CN": "枚举选项"
+  },
+  "时长（秒）": {
+    "en": "Duration (seconds)",
+    "zh-CN": "时长（秒）"
+  },
+  "当前 Lineage 的负责人": {
+    "en": "Current Lineage leader",
+    "zh-CN": "当前 Lineage 的负责人"
+  },
+  "压缩后的上下文": {
+    "en": "Compacted context",
+    "zh-CN": "压缩后的上下文"
+  },
+  "事件源": {
+    "en": "Event source",
+    "zh-CN": "事件源"
+  },
+  "执行动作": {
+    "en": "Action",
+    "zh-CN": "执行动作"
+  },
+  "汇总": {
+    "en": "Aggregation",
+    "zh-CN": "汇总"
+  },
+  "传递": {
+    "en": "Route",
+    "zh-CN": "传递"
+  },
+  "恰好一个": {
+    "en": "Exactly one",
+    "zh-CN": "恰好一个"
+  },
+  "新建功能块名称": {
+    "en": "New Function Block name",
+    "zh-CN": "新建功能块名称"
+  },
+  "参数标识": {
+    "en": "Parameter identifier",
+    "zh-CN": "参数标识"
+  },
+  "参数标识用于 {{param.name}} 引用；显示名称是施加窗口中的字段标题，请写清含义和单位。": {
+    "en": "Use the parameter identifier in {{param.name}} references. The display name is the field title shown when applying the template; include its meaning and units.",
+    "zh-CN": "参数标识用于 {{param.name}} 引用；显示名称是施加窗口中的字段标题，请写清含义和单位。"
+  },
+  "Agent Loop": {
+    "en": "Agent Loop",
+    "zh-CN": "循环评审"
+  },
+  "Leader Pulse": {
+    "en": "Leader Pulse",
+    "zh-CN": "定期检查进展"
+  },
+  "每次触发发送的消息": {
+    "en": "Message sent on each trigger",
+    "zh-CN": "每次触发发送的消息"
+  },
+  "每轮发送给评审节点的消息": {
+    "en": "Message sent to the reviewer on each round",
+    "zh-CN": "每轮发送给评审节点的消息"
+  },
+  "发送给探索者的消息": {
+    "en": "Message sent to the explorer",
+    "zh-CN": "发送给探索者的消息"
+  },
+  "触发间隔（秒）": {
+    "en": "Trigger interval (seconds)",
+    "zh-CN": "触发间隔（秒）"
+  },
+  "最多循环轮数": {
+    "en": "Maximum number of rounds",
+    "zh-CN": "最多循环轮数"
+  },
 "Flag":{"zh-CN":"Flag","en":"Flag"},
 "取消Flag":{"zh-CN":"取消Flag","en":"Unflag"},
 "地图":{"zh-CN":"地图","en":"Map"},
