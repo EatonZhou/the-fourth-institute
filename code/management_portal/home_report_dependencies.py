@@ -14,11 +14,12 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+if __package__ in (None, ''):
+    # Keep the documented direct-script installer entry point working.
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-
-def directory(code=ROOT):
-    return Path(code).parent / 'dependencies/native/home-report-media-v2'
+from management_portal.media_tools import ROOT, directory
 
 
 def sha(path):

@@ -7,7 +7,8 @@ from management_portal import http_auth, http_request_body, http_responses
 from management_portal.home_report import build_report, reauthorize, isa_reader
 from management_portal.home_report_store import ReportStore, revision_number
 from management_portal.home_report_persistent_media import PersistentMedia
-from management_portal.home_report_media import MediaStore, capabilities
+from management_portal.home_report_media import MediaStore
+from management_portal.media_tools import capabilities
 from management_portal.http_media_range import plan_media_response
 
 _MEDIA = None

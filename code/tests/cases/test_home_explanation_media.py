@@ -291,10 +291,11 @@ def test_http_byte_range_uses_authorized_pinned_file(setup, monkeypatch):
     assert request.response_headers['Content-Range'] == 'bytes 1-4/13'
 
 
-def test_real_renderer_with_fixed_audio(tmp_path):
+def test_real_renderer_with_fixed_audio(tmp_path, monkeypatch):
     """Real encoder, bounded two-second animation; no model/User request."""
     from management_portal.home_explanation_render import render, frame
-    from management_portal.home_report_media import capabilities
+    from management_portal import home_explanation_render as rendering
+    from management_portal.media_tools import capabilities
     tools = capabilities()
     if not tools.get('ffmpeg') or not Path(tools['font']).is_file():
         pytest.skip('local ffmpeg/font unavailable')
@@ -307,10 +308,21 @@ def test_real_renderer_with_fixed_audio(tmp_path):
     with wave.open(buf, 'wb') as wav:
         wav.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))
         wav.writeframes(b'\0'*64000)
+    painted_stages = []
+    prepare = rendering.prepare_frame
+    def counted_prepare(*args):
+        painted_stages.append(args[1]['title'])
+        return prepare(*args)
+    monkeypatch.setattr(rendering, 'prepare_frame', counted_prepare)
     result = render(data, tmp_path, buf.getvalue())
+    assert painted_stages == [data['scenes'][0]['title']]
     assert result['duration'] == 2
     assert (tmp_path/'video.mp4').stat().st_size > 1000
     assert '信息流动' in (tmp_path/'captions.vtt').read_text()
     from PIL import ImageFont
     fonts = {size: ImageFont.truetype(tools['font'], size) for size in (16, 20, 24)}
     assert frame(data, data['scenes'][0], .1, .2, fonts).tobytes() != frame(data, data['scenes'][0], .8, 1.6, fonts).tobytes()
+    # Masked edges must not carry an animated parcel, even as the clock advances.
+    for edge in data['scenes'][0]['edges']:
+        edge['weight'] = 0
+    assert frame(data, data['scenes'][0], .5, .2, fonts).tobytes() == frame(data, data['scenes'][0], .5, 1.4, fonts).tobytes()

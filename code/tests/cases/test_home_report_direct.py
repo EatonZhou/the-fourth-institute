@@ -7,7 +7,8 @@ import unittest
 from pathlib import Path
 
 from management_portal.home_report import build_report, normalize_target, reauthorize
-from management_portal.home_report_media import MediaStore, chapters, spoken_text, speech_units
+from management_portal.home_report_media import MediaStore, chapters, spoken_text
+from management_portal.media_tools import speech_units
 from management_portal.http_media_range import parse_byte_range
 
 RESIDENT = "resident_0123456789ab"

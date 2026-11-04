@@ -7,40 +7,92 @@ import threading
 import time
 import wave
 
-from management_portal.home_report_media import capabilities, _run, _stamp, speech_units
+from management_portal.media_tools import capabilities, run, stamp, speech_units
 
 
-def frame(plan, scene, progress, at, fonts):
+def _fit(draw, text, font, width):
+    if draw.textlength(text, font=font) <= width:
+        return text
+    while text and draw.textlength(text + '…', font=font) > width:
+        text = text[:-1]
+    return text + '…'
+
+
+def _endpoint(a, b, box):
+    """Intersect a centre-to-centre line with the source card's boundary."""
+    dx, dy = b[0]-a[0], b[1]-a[1]
+    scale = min(box[0]/abs(dx) if dx else math.inf,
+                box[1]/abs(dy) if dy else math.inf)
+    if not math.isfinite(scale):
+        return a
+    return a[0]+dx*scale, a[1]+dy*scale
+
+
+def prepare_frame(plan, scene, fonts):
+    """Lay out the static stage once; animation adds only its active connection."""
     from PIL import Image, ImageDraw
     image = Image.new('RGB', (960, 540), '#f5f8ff')
     draw = ImageDraw.Draw(image)
-    draw.text((30, 22), plan['title'], font=fonts[24], fill='#172440')
+    draw.text((30, 22), _fit(draw, plan['title'], fonts[24], 900), font=fonts[24], fill='#172440')
     draw.text((30, 62), scene['title'], font=fonts[20], fill='#52617c')
-    nodes = {n['id']: (90 + n['x'] * 780, 140 + n['y'] * 250) for n in plan['nodes']}
+    nodes = {n['id']: (120 + n['x'] * 720, 112 + n['y'] * 332) for n in plan['nodes']}
+    boxes = {}
+    for key, (x, y) in nodes.items():
+        heights = [(abs(y-oy)-10)/2 for other, (ox, oy) in nodes.items()
+                   if key != other and abs(x-ox) < 188 and y != oy]
+        widths = [(abs(x-ox)-16)/2 for other, (ox, oy) in nodes.items()
+                  if key != other and abs(y-oy) < 48 and x != ox]
+        boxes[key] = (max(40, min([94] + widths)), max(12, min([24] + heights)))
+    connections = []
     for edge in scene['edges']:
         a, b = nodes[edge['from']], nodes[edge['to']]
-        width = max(1, round(1 + edge['weight'] * 8))
-        draw.line((a, b), fill='#bac8dc', width=width)
-        phase = max(0, min(1, progress * 1.4))
-        end = (a[0] + (b[0] - a[0]) * phase, a[1] + (b[1] - a[1]) * phase)
-        draw.line((a, end), fill='#527be8', width=width)
-        # Moving information parcels continue through the full narrated stage.
-        fraction = (at * .35) % 1
-        x, y = a[0] + (b[0] - a[0]) * fraction, a[1] + (b[1] - a[1]) * fraction
-        draw.ellipse((x-5, y-5, x+5, y+5), fill='#2ca386')
-        if edge['label']:
-            draw.text(((a[0]+b[0])/2, (a[1]+b[1])/2-20), edge['label'], font=fonts[16], fill='#29446b', anchor='mm')
+        start, end = _endpoint(a, b, boxes[edge['from']]), _endpoint(b, a, boxes[edge['to']])
+        width = max(1, round(1 + edge['weight'] * 7))
+        if edge['weight'] > 0:
+            draw.line((start, end), fill='#b6c6e1', width=width)
+            connections.append((edge, start, end, width))
+        else:
+            # A masked/zero-weight connection has no moving information parcel.
+            distance = math.dist(start, end)
+            for offset in range(0, math.ceil(distance), 12):
+                lo, hi = offset/max(1, distance), min(1, (offset+5)/max(1, distance))
+                draw.line(((start[0]+(end[0]-start[0])*lo, start[1]+(end[1]-start[1])*lo),
+                           (start[0]+(end[0]-start[0])*hi, start[1]+(end[1]-start[1])*hi)), fill='#cbd2df', width=1)
     values = {v['node']: v['value'] for v in scene['values']}
     for node in plan['nodes']:
         x, y = nodes[node['id']]
-        draw.rounded_rectangle((x-65, y-26, x+65, y+26), radius=12, fill='#ffffff', outline='#6989d0', width=2)
-        label = node['label']
-        draw.text((x, y), label[:10], font=fonts[20], fill='#243554', anchor='mm')
-        if node['id'] in values:
-            value = values[node['id']] * min(1, progress * 1.5)
-            draw.text((x, y+45), f'{value:.3f}', font=fonts[20], fill='#168465', anchor='mm')
+        w, h = boxes[node['id']]
+        font = fonts[20 if h >= 22 else 16]
+        value = f"{values[node['id']]:.3f}" if node['id'] in values else ''
+        value_width = draw.textlength(value, font=font) + 14 if value else 0
+        label = _fit(draw, node['label'], font, max(12, 2*w-24-value_width))
+        draw.rounded_rectangle((x-w, y-h, x+w, y+h), radius=9, fill='#ffffff', outline='#c0cde2', width=1)
+        draw.text((x-w+12, y), label, font=font, fill='#243554', anchor='lm')
+        if value:
+            draw.text((x+w-12, y), value, font=font, fill='#168465', anchor='rm')
+    draw.text((30, 510), '连线粗细表示权重 · 高亮依次说明连接 · 虚线不传递信息', font=fonts[16], fill='#6d7c95')
+    return image, connections
+
+
+def frame(plan, scene, progress, at, fonts, prepared=None):
+    from PIL import ImageDraw
+    base, connections = prepared or prepare_frame(plan, scene, fonts)
+    image = base.copy()
+    draw = ImageDraw.Draw(image)
+    if connections:
+        phase = max(0, at-scene.get('start', 0)) / 1.6
+        edge, a, b, width = connections[int(phase) % len(connections)]
+        draw.line((a, b), fill='#547fe5', width=width)
+        fraction = phase % 1
+        x, y = a[0]+(b[0]-a[0])*fraction, a[1]+(b[1]-a[1])*fraction
+        draw.ellipse((x-5, y-5, x+5, y+5), fill='#159b7a')
+        labels = {n['id']: n['label'] for n in plan['nodes']}
+        detail = f"{labels[edge['from']]} → {labels[edge['to']]}"
+        if edge['label']:
+            detail += '    ' + edge['label']
+        draw.text((30, 462), _fit(draw, detail, fonts[16], 900), font=fonts[16], fill='#29446b')
     draw.rounded_rectangle((30, 485, 930, 490), radius=2, fill='#dce5f5')
-    draw.rounded_rectangle((30, 485, 30+max(1, 900*progress), 490), radius=2, fill='#527be8')
+    draw.rounded_rectangle((30, 485, 30+max(1, 900*min(1, max(0, progress))), 490), radius=2, fill='#527be8')
     return image
 
 
@@ -72,7 +124,7 @@ def render(plan, directory, audio=None):
                 if time.monotonic()-started > 180:
                     raise TimeoutError('配音超过生成时限')
                 part = directory / 'part.wav'
-                _run([tools['speech'], '-v', 'cmn', '-s', '155', '-w', str(part), '--stdin'], input=sentence.encode())
+                run([tools['speech'], '-v', 'cmn', '-s', '155', '-w', str(part), '--stdin'], input=sentence.encode())
                 with wave.open(str(part)) as wav:
                     if wav.getnchannels() != 1 or wav.getsampwidth() != 2 or (rate and rate != wav.getframerate()):
                         raise ValueError('不支持的配音输出')
@@ -90,7 +142,7 @@ def render(plan, directory, audio=None):
             wav.setparams((1, 2, rate, 0, 'NONE', 'not compressed'))
             wav.writeframes(b''.join(pcm))
         voice = '本地eSpeak机械配音'
-    captions = 'WEBVTT\n\n' + '\n\n'.join(f"{_stamp(c['start'])} --> {_stamp(c['end'])}\n{c['text'].replace('-->', '→')}" for c in cues)
+    captions = 'WEBVTT\n\n' + '\n\n'.join(f"{stamp(c['start'])} --> {stamp(c['end'])}\n{c['text'].replace('-->', '→')}" for c in cues)
     (directory/'captions.vtt').write_text(captions, encoding='utf-8')
     (directory/'transcript.txt').write_text('\n\n'.join(s['speech'] for s in scenes), encoding='utf-8')
     args = [tools['ffmpeg'], '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '960x540',
@@ -102,11 +154,14 @@ def render(plan, directory, audio=None):
         timer = threading.Timer(300, process.kill)
         timer.start()
         try:
+            prepared_scene, prepared = None, None
             for index in range(math.ceil(duration*12)):
                 at = index/12
                 scene = next((s for s in scenes if at < s['end']), scenes[-1])
                 progress = min(1, max(0, (at-scene['start'])/max(.01, scene['end']-scene['start'])))
-                image = frame(plan, scene, progress, at, fonts)
+                if scene is not prepared_scene:
+                    prepared_scene, prepared = scene, prepare_frame(plan, scene, fonts)
+                image = frame(plan, scene, progress, at, fonts, prepared)
                 if index == 12:
                     image.save(directory/'poster.png')
                 process.stdin.write(image.tobytes())

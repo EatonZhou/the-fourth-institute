@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import re
 import shutil
 import subprocess
@@ -20,49 +19,13 @@ from pathlib import Path
 from management_common.portal_paths import path as portal_path
 from management_portal import business_tasks
 from management_portal.home_report import digest, reauthorize
+from management_portal.media_tools import capabilities, run, stamp, speech_units
 
 _SLOTS = threading.BoundedSemaphore(2)
 _LOCK = threading.Lock()
 FILES = {"video.mp4": "video/mp4", "captions.vtt": "text/vtt; charset=utf-8",
          "poster.png": "image/png", "transcript.txt": "text/plain; charset=utf-8", "narration.wav": "audio/wav",
          "reasoning.json": "application/json"}
-
-
-def executable(name, setting):
-    from management_portal.home_report_dependencies import directory
-    managed = directory() / 'bin' / name
-    candidate = os.environ.get(setting) or (str(managed) if managed.is_file() else shutil.which(name))
-    if not candidate or not Path(candidate).is_file():
-        raise RuntimeError(f"视频依赖未安装：{name}（可配置 {setting}）")
-    return str(candidate)
-
-
-def capabilities():
-    missing = []
-    result = {}
-    for key, name, setting in (("ffmpeg", "ffmpeg", "TFI_HOME_REPORT_FFMPEG"), ("speech", "espeak-ng", "TFI_HOME_REPORT_ESPEAK")):
-        try:
-            result[key] = executable(name, setting)
-        except RuntimeError:
-            missing.append(name)
-    from management_portal.home_report_dependencies import directory
-    managed_font = directory() / 'share/font.ttc'
-    font = os.environ.get("TFI_HOME_REPORT_FONT") or (str(managed_font) if managed_font.is_file() else "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
-    if not Path(font).is_file():
-        missing.append("CJK font / TFI_HOME_REPORT_FONT")
-    return {"available": not missing, "missing": missing, "font": font, **result}
-
-
-def _run(args, **kwargs):
-    from management_portal.home_report_dependencies import directory
-    if Path(args[0]).parent == directory() / 'bin':
-        env = dict(os.environ)
-        env['LD_LIBRARY_PATH'] = str(directory() / 'lib')
-        env['ESPEAK_DATA_PATH'] = str(directory() / 'share')
-        kwargs['env'] = env
-    result = subprocess.run(args, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, timeout=180, **kwargs)
-    if result.returncode:
-        raise RuntimeError(f"媒体工具退出 {result.returncode}: {result.stderr.decode(errors='replace')[-600:]}")
 
 
 def spoken_text(value, budget=180):
@@ -100,25 +63,12 @@ def spoken_text(value, budget=180):
     return result if result[-1] in "。！？" else result + "。"
 
 
-def speech_units(value):
-    # Punctuation is a natural speech/caption boundary. Keep words intact.
-    return re.findall(r"[^。！？，,；;：:]+[。！？，,；;：:]?", value)
-
-
 def chapters(report):
     from management_portal.home_report_reasoning import build_reasoning
     plan = report.get('reasoning') or build_reasoning(report)
     if not plan['available']:
         raise ValueError(plan['reason'])
     return [{**step, 'speech': spoken_text(step['speech'], 1800)} for step in plan['steps']]
-
-
-def _stamp(seconds):
-    milliseconds = round(seconds * 1000)
-    hours, milliseconds = divmod(milliseconds, 3600000)
-    minutes, milliseconds = divmod(milliseconds, 60000)
-    seconds, milliseconds = divmod(milliseconds, 1000)
-    return f"{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}"
 
 
 def render(report, directory: Path):
@@ -142,7 +92,7 @@ def render(report, directory: Path):
             beat_start = offset
             for sentence_part in speech_units(spoken_text(beat['speech'], 1800)):
                 wav = directory / "speech-part.wav"
-                _run([tools["speech"], "-v", "cmn", "-s", "155", "-w", wav.name, "--stdin"],
+                run([tools["speech"], "-v", "cmn", "-s", "155", "-w", wav.name, "--stdin"],
                      input=sentence_part.encode(), cwd=directory)
                 with wave.open(str(wav)) as audio:
                     if audio.getnchannels() != 1 or audio.getsampwidth() != 2:
@@ -161,13 +111,13 @@ def render(report, directory: Path):
         pcm.append(b'\0' * (int(rate * .55) * 2))
         offset += .55
         scene["end"] = offset
-        transcript.append(f"{_stamp(scene['start'])} {scene['title']}\n{scene['speech']}")
+        transcript.append(f"{stamp(scene['start'])} {scene['title']}\n{scene['speech']}")
     with wave.open(str(directory / "narration.wav"), "wb") as audio:
         audio.setparams((1, 2, rate, 0, "NONE", "not compressed"))
         audio.writeframes(b"".join(pcm))
     speech_seconds = time.monotonic() - speech_started
     (directory / "captions.vtt").write_text("WEBVTT\n\n" + "\n\n".join(
-        f"{_stamp(c['start'])} --> {_stamp(c['end'])}\n{c['text']}" for c in cues), encoding="utf-8")
+        f"{stamp(c['start'])} --> {stamp(c['end'])}\n{c['text']}" for c in cues), encoding="utf-8")
     (directory / "transcript.txt").write_text("\n\n".join(transcript), encoding="utf-8")
     (directory / "reasoning.json").write_text(json.dumps({'report_version':report['version'],
         'plan':plan,'scenes':scenes},ensure_ascii=False,indent=2),encoding='utf-8')
