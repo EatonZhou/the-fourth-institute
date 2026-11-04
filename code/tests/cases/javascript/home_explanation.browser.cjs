@@ -9,7 +9,7 @@ const out = process.env.HOME_EXPLANATION_EVIDENCE;
 if (out) fs.mkdirSync(out, { recursive: true });
 const scripts = ['portal_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_api.js', 'markdown.js',
   'portal_preview_contract.js', 'portal_preview_runtime.js', 'portal_pdf_preview.js', 'portal_preview_renderers.js', 'home_explanation.js'];
-const css = ['portal_themes.css', 'portal_design_system.css', 'portal_components.css', 'portal_components_markdown.css', 'home_explanation.css'];
+const css = ['portal_themes.css', 'portal_design_system.css', 'portal_components.css', 'portal_components_markdown.css', 'home_dialogue.css', 'home_explanation.css'];
 const records = new Map(), requests = [], checks = [], errors = [];
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const prefix = 'workspace_0123456789ab/file/explanation/';
@@ -33,7 +33,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end('<!doctype html><html lang="zh-CN" data-portal-theme="light"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' + css.map(n => `<link rel="stylesheet" href="/static/${n}">`).join('')
-      + '<style>html,body{margin:0;height:100%;font-family:system-ui}#root{height:100dvh;width:100%}</style><main id="root"></main>'
+      + '<style>html,body{margin:0;height:100%;font-family:system-ui}#root{height:100dvh;width:100%}</style><main id="root" class="homeDialogueEntryContent"></main>'
       + scripts.map(n => `<script src="/static/${n}"></script>`).join('')); return;
   }
   if (url.pathname.startsWith('/static/')) {
@@ -95,6 +95,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
     await setup(planned);
     check('no implicit generation', requests.filter(r => r.method === 'POST').length, 0);
     check('plan opens native supplement and interactive page', await page.locator('.homeExplanationSupplement article').count(), 1);
+    check('native Home host gives interactive diagram the reading width', await page.locator('.homeExplanationInteraction').evaluate(el => el.getBoundingClientRect().width > Math.min(800, innerWidth * .7)), true);
     check('normal markdown stays escaped', await page.evaluate(() => !!window.injected), false);
     const demo = () => page.frameLocator('.homeExplanationInteraction').frameLocator('iframe');
     await demo().getByRole('button', { name: '沙发', exact: true }).click();

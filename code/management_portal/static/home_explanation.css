@@ -1,6 +1,7 @@
 .homeExplanation {
   --explanation-reading-width: 920px;
   box-sizing: border-box;
+  display: block;
   min-width: 0;
   height: 100%;
   overflow: auto;
