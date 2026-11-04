@@ -528,6 +528,17 @@
 .chatRoundFollow { flex:0 0 32px; width:32px; height:32px; margin-top:22px; }
 .chatRoundFollow svg { width:18px; height:18px; }
 .chatRoundFollow[aria-pressed=true] { color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, transparent); }
+.chatRoundMarkerMenu { width:max-content; max-width:calc(100vw - 16px); padding:6px; color:var(--text); background:var(--panel); background:rgb(from var(--panel) r g b / 1); border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 18px #0002; }
+.chatRoundMarkerMenu[hidden] { display:none; }
+.chatRoundMarkerChoices { display:grid; grid-template-columns:repeat(4, minmax(44px, 1fr)); gap:4px; }
+.chatRoundMarkerChoice,.chatRoundMarkerRemove { min-width:44px; min-height:44px; border:1px solid transparent; border-radius:5px; padding:5px; background:transparent; color:inherit; font:inherit; font-size:.75rem; cursor:pointer; }
+.chatRoundMarkerChoice { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+.chatRoundMarkerChoice svg { width:20px; height:20px; }
+.chatRoundMarkerChoice[aria-checked=true] { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb, var(--accent) 12%, transparent); }
+.chatRoundMarkerRemove { display:block; width:100%; margin-top:4px; border-top-color:var(--border); }
+.chatRoundMarkerMenu button:hover:not(:disabled) { background:color-mix(in srgb, var(--accent) 9%, transparent); }
+.chatRoundMarkerMenu button:disabled { opacity:.45; cursor:default; }
+.chatRoundMarkerMenu button:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 .chatRoundExpand:hover,.chatRoundFollow:hover { background:var(--bg, #8291a414); }
 .chatRoundPreview button:focus-visible { outline:2px solid var(--accent, #578fcf); outline-offset:1px; }
 .chatRoundNotice { position:absolute; bottom:0; left:8px; right:48px; font-size:.8rem; background:var(--panel, #fff); color:var(--text, #243343); }

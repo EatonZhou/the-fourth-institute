@@ -10,6 +10,7 @@ const { chromium } = require(path.join(repo, 'management_portal/test_framework/t
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', ...(process.env.RAIL_PREVIEW_ONLY ? ['portal_translations.js'] : []), 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_preview_contract.js', 'portal_resource_chips.js',
+  ...(process.env.RAIL_REFERENCES_ONLY ? ['portal_file_links.js'] : []),
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()];
 const styles = ['portal_themes.css', 'portal_design_system.css', 'lineage_workbench.css', 'portal_components.css',
@@ -84,6 +85,12 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };
+    const togglePreviewFlag = async (target, trigger, touch = false) => {
+      const followed = await trigger.getAttribute('aria-pressed') === 'true';
+      if (touch) await trigger.tap(); else await trigger.click();
+      const choice = target.locator(followed ? '.chatRoundMarkerRemove' : '.chatRoundMarkerChoice[data-round-marker="flag"]');
+      if (touch) await choice.tap(); else await choice.click();
+    };
     if (process.env.RAIL_REFERENCES_ONLY) {
       const mediaRequests = [];
       await page.route('**/api/uploads/**', route => {
@@ -107,7 +114,18 @@ if (output) fs.mkdirSync(output, { recursive: true });
         const media = '/api/uploads/preview-ref.png', file = 'workspace_aaaaaaaaaaaa/file/notes.md';
         items = [
           { ...human('refs', '请看图片\n[image:' + media + ']\n[image:' + media + ']\n[file:' + file + ']\ndecision_aaaaaaaaaaaa'),
-            input_media: [{ type: 'image', source: media }], attachments: [{ kind: 'file', path: file }] },
+            input_media: [{ type: 'image', source: media, name: '图片说明.png' }], attachments: [{ kind: 'file', path: file, name: '阅读笔记.md' }] },
+          // Protocol upload metadata carries the name; the projected text only
+          // carries a path. These are isolated component values, never uploads.
+          { ...human('named-upload', '[file: /api/uploads/upload_aaaaaaaaaaaaaaaaaaaaaaaa] 请核对附件。'),
+            content_parts: [{ type: 'file', media_type: 'file', mime_type: 'text/plain', name: '社区花园需求.txt', upload_id: 'upload_aaaaaaaaaaaaaaaaaaaaaaaa' }],
+            input_media: [{ type: 'file', upload_id: 'upload_aaaaaaaaaaaaaaaaaaaaaaaa' }] },
+          { ...human('named-reference', '继续检查。'),
+            input_media: [{ type: 'file', filename: '社区花园需求.txt', file_reference: { upload_id: 'upload_bbbbbbbbbbbbbbbbbbbbbbbb' } }] },
+          { ...human('safe-name', '[file: /api/uploads/upload_cccccccccccccccccccccccc]'),
+            context_refs: { attachments: [{ type: 'file', name: '<img src=x onerror=alert(1)>.txt', upload_id: 'upload_cccccccccccccccccccccccc' }] } },
+          { ...human('unnamed', '[file: /api/uploads/upload_dddddddddddddddddddddddd]'),
+            input_media: [{ type: 'file', upload_id: 'upload_dddddddddddddddddddddddd' }] },
           ...Array.from({ length: 60 }, (_, i) => ({ ...human('media' + i, '只有媒体 ' + i), input_media: [{ type: 'image', source: '/api/uploads/history-' + i + '.png' }] })),
         ];
         workspace.setMessages(items, { previewUrlForPath: path => path.startsWith('/api/uploads/') ? path : '',
@@ -125,8 +143,26 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('resource chip reused and removed from prose', await card.locator('.portalResourceChip').count() === 1
         && !(await card.locator('.chatRoundPreviewJump').innerText()).match(/\[image:|\[file:|decision_aaaaaaaaaaaa/));
       check('no substitute icons or duplicate bodies', await card.locator('.chatRoundAttachmentIcon,.chatRoundAttachments,.chatRoundFull').count() === 0);
+      const previewCard = id => page.locator('.chatRoundPreviewItem').filter({ has: page.locator(`[data-round-follow="${id}"]`) });
+      const named = previewCard('named-upload'), reference = previewCard('named-reference'), safe = previewCard('safe-name');
+      assert.deepEqual(await named.evaluate(node => ({ count: node.querySelectorAll('[data-message-attachment-path]').length,
+        name: node.querySelector('.composerImageRefLabel')?.textContent,
+        title: node.querySelector('[data-message-attachment-path]')?.dataset.portalTooltip,
+        text: node.querySelector('.chatRoundPreviewJump')?.textContent })),
+      { count: 1, name: '社区花园需求.txt', title: '社区花园需求.txt', text: '请核对附件。' });
+      check('body reference is enriched from protocol name before deduplication', true);
+      check('metadata file_reference and filename use the same native label', await reference.locator('.composerImageRefLabel').innerText() === '社区花园需求.txt'
+        && await reference.locator('[data-message-attachment-path]').getAttribute('data-message-attachment-path') === '/api/uploads/upload_bbbbbbbbbbbbbbbbbbbbbbbb');
+      check('names are text and do not create injected markup', await safe.locator('.composerImageRefLabel').innerText() === '<img src=x onerror=alert(1)>.txt'
+        && await safe.locator('img').count() === 0);
+      check('unnamed references retain their existing fallback', await previewCard('unnamed').locator('.composerImageRefLabel').innerText() === 'file');
+      check('existing attachment and image metadata supply titles', await card.locator('[data-message-attachment-kind="file"] .composerImageRefLabel').innerText() === '阅读笔记.md'
+        && await card.locator('[data-message-attachment-kind="image"]').getAttribute('data-portal-tooltip') === '图片说明.png');
+      check('labels require no upload or metadata reads', !mediaRequests.some(url => /upload_[a-d]{24}/.test(url)));
       await card.locator('[data-message-attachment-kind="file"]').click();
       check('file uses existing workspace open callback once', await page.evaluate(() => openedFiles.length === 1 && openedFiles[0].path === 'workspace_aaaaaaaaaaaa/file/notes.md'));
+      await named.locator('[data-message-attachment-path]').click();
+      check('named upload opens its canonical reference once', await page.evaluate(() => openedFiles.length === 2 && openedFiles[1].path === '/api/uploads/upload_aaaaaaaaaaaaaaaaaaaaaaaa'));
       await card.locator('[data-message-attachment-kind="image"]').click();
       check('image uses existing image editor once', await page.evaluate(() => openedImages.length === 1 && openedImages[0].src === '/api/uploads/preview-ref.png'));
       await card.locator('.portalResourceChip').click();
@@ -138,7 +174,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.setViewportSize({ width: 390, height: 844 });
       await page.evaluate(() => document.documentElement.style.fontSize = '20px');
       await settle();
-      check('390px references fit the preview', await card.evaluate(n => n.scrollWidth <= n.clientWidth + 1));
+      check('390px references fit the preview', await card.evaluate(n => n.scrollWidth <= n.clientWidth + 1)
+        && await named.evaluate(n => n.scrollWidth <= n.clientWidth + 1));
       await shot('references-390');
       await page.keyboard.press('Escape');
       check('closing preview removes media DOM and disconnects observer', await page.locator('.chatRoundPreview img').count() === 0
@@ -168,9 +205,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('short prose has no ineffective expand button', await short.locator('.chatRoundExpand').count() === 0);
       check('long and multiline prose expose explicit expand', await long.getByRole('button', { name: '展开', exact: true }).count() === 1
         && await card(page, 'multiline').getByRole('button', { name: '展开', exact: true }).count() === 1);
-      check('Flag action uses requested wording', await short.locator('.chatRoundFollow').getAttribute('aria-label') === 'Flag');
-      await short.locator('.chatRoundFollow').click();
-      check('preview action changes to 取消Flag', await short.locator('.chatRoundFollow').getAttribute('aria-label') === '取消Flag');
+      check('preview exposes marker chooser', await short.locator('.chatRoundFollow').getAttribute('aria-label') === '选择标记');
+      await togglePreviewFlag(page, short.locator('.chatRoundFollow'));
+      check('preview shows selected flag', await short.locator('.chatRoundFollow').getAttribute('aria-pressed') === 'true');
       await page.keyboard.press('Escape');
       await page.locator('[data-message-key="reply"]').click({ button: 'right' });
       const menu = page.locator('body > [data-portal-message-menu]');
@@ -192,7 +229,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('attachment retained as a native Chat reference without placeholder leakage', await long.locator('[data-message-attachment-path="/api/uploads/preview-test.png"]').count() === 1
         && !(await long.locator('.chatRoundPreviewJump').innerText()).includes('[image:') && await page.evaluate(() => items[1].content === previewSource));
       await shot('preview-expanded-desktop');
-      await long.locator('.chatRoundFollow').click();
+      await togglePreviewFlag(page, long.locator('.chatRoundFollow'));
       check('flag refresh preserves inline expansion', await long.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')));
       await long.locator('.chatRoundExpand').focus(); await page.keyboard.press('Enter');
       check('keyboard collapses same text', await long.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'false'
@@ -211,8 +248,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot('preview-collapsed-desktop-dark');
       await page.keyboard.press('Escape'); await page.evaluate(() => PortalI18n.apply('en'));
       await page.locator('.chatRoundDirectory').click();
-      check('English catalog exposes Flag and Unflag', await short.locator('.chatRoundFollow').getAttribute('aria-label') === 'Flag'
-        && await long.locator('.chatRoundFollow').getAttribute('aria-label') === 'Unflag');
+      check('English catalog exposes marker choices', await short.locator('.chatRoundFollow').getAttribute('aria-label') === 'Choose marker'
+        && await long.locator('.chatRoundFollow').getAttribute('aria-label') === 'Choose marker · Flag');
       await page.keyboard.press('Escape'); await page.locator('[data-message-key="long"]').click({ button: 'right' });
       check('English message menu uses same Unflag', await menu.locator('[data-portal-message-action="round-follow"]').innerText() === 'Unflag');
       await page.keyboard.press('Escape');
@@ -252,7 +289,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
         });
         await afterLayout(target);
         await target.locator('.chatRoundDirectory').click();
-        for (const key of ['m3', 'm4']) await target.locator(`[data-round-follow="${key}"]`).click();
+        for (const key of ['m3', 'm4']) await togglePreviewFlag(target, target.locator(`[data-round-follow="${key}"]`));
         await target.keyboard.press('Escape'); await afterLayout(target);
       };
       const inspect = target => target.evaluate(() => ({
@@ -290,7 +327,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
         else await target.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
         check('overlapping pointer targets open local disambiguation', await target.locator('.chatRoundPreviewItem').count() > 1 && await target.locator('.chatRoundPreviewItem').count() < 80);
         const follow = target.locator('[data-round-follow="dense35"]');
-        if (touch) await follow.tap(); else await follow.click();
+        await togglePreviewFlag(target, follow, touch);
         await afterLayout(target);
         check('dense list flags only selected identity', await target.evaluate(() => workspace.isRoundFollowed('dense35') && !workspace.isRoundFollowed('dense36')));
         if (output) await target.screenshot({ path: path.join(output, touch ? 'markers-dense-390.png' : 'markers-dense-desktop.png') });
@@ -449,12 +486,12 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('compact preview width and rows', desktop.width >= 300 && desktop.width <= 340 && desktop.itemHeights.every(h => h < 115));
       check('short local time and clean attachment display', !/2026-|\[image:|\/api\/uploads/.test(desktop.text) && await first.locator('.chatRoundAttachments').innerText() === '图片 · 图片');
       check('no repeated follow text or tooltip', !(desktop.text.includes('标记本轮关注')) && await page.locator('.chatRoundNode:not([data-portal-tooltip-opt-out="1"])').count() === 0);
-      await first.locator('.chatRoundFollow').click(); await settle();
+      await togglePreviewFlag(page, first.locator('.chatRoundFollow')); await settle();
       check('compact flag is an actual action', await page.evaluate(() => workspace.isRoundFollowed('v1')));
       await shot('preview-desktop-light');
       await first.locator('.chatRoundExpand').focus(); await page.keyboard.press('Enter');
       check('keyboard exposes full original prose inline', await first.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')) && await first.locator('.chatRoundExpand').innerText() === '收起');
-      await first.locator('.chatRoundFollow').click();
+      await togglePreviewFlag(page, first.locator('.chatRoundFollow'));
       check('flag preserves expanded prose and source unchanged', await first.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')) && await page.evaluate(() => items[0].content === originalText));
       await first.locator('.chatRoundExpand').click(); await page.mouse.move(10, 10);
       await first.locator('.chatRoundExpand').hover(); await page.waitForTimeout(570);
@@ -474,7 +511,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
         targets: [...n.querySelectorAll('.chatRoundFollow,.chatRoundExpand,.chatRoundPreviewHead button')].map(b => ({ w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height })) }));
       geometry.push({ desktop, narrow });
       check('390 large type keeps preview and touch targets reachable', narrow.x >= 0 && narrow.right <= 390 && narrow.bottom <= 844 && narrow.targets.every(r => r.w >= 44 && r.h >= 44));
-      await small.locator('.chatRoundFollow').first().tap();
+      await togglePreviewFlag(small, small.locator('.chatRoundFollow').first(), true);
       check('touch flag action works without double tap', await small.evaluate(() => workspace.isRoundFollowed('v1')));
       if (output) await small.screenshot({ path: path.join(output, 'preview-390-font20-light.png') });
       await small.locator('.chatRoundExpand').first().focus(); await small.keyboard.press('Enter');
@@ -575,7 +612,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('hover shows enterable preview', await page.locator('.chatRoundPreview').isVisible());
     await page.locator('.chatRoundPreview').hover(); await page.waitForTimeout(280);
     check('preview survives pointer transfer', await page.locator('.chatRoundPreview').isVisible());
-    await page.locator('.chatRoundPreview').getByRole('button', { name: 'Flag', exact: true }).click();
+    await togglePreviewFlag(page, page.locator('.chatRoundPreview').getByRole('button', { name: '选择标记', exact: true }));
     await settle(); check('preview flag synchronized', (await node.getAttribute('class')).includes('is-followed'));
     await page.keyboard.press('Escape');
     check('escape closes preview', !(await page.locator('.chatRoundPreview').isVisible()));

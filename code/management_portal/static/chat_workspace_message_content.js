@@ -462,8 +462,9 @@
       const previewUrl = attachmentKind === "image" && options.previewUrlForPath
         ? options.previewUrlForPath(attachmentPath)
         : "";
-      const label = String(options.label || attachmentKind);
-      const title = String(options.title || attachmentPath);
+      const name = options.attachmentNameForPath?.(attachmentPath);
+      const label = String(name || options.label || attachmentKind);
+      const title = String(name || options.title || attachmentPath);
       return window.PortalI18n.html`<button class="${options.buttonClass || "composerImageRef messageImageRef"}" type="button" data-message-attachment-kind="${escapeHtml(attachmentKind)}" data-message-attachment-path="${escapeHtml(attachmentPath)}" ${previewUrl ? `data-portal-preview-image="${escapeHtml(previewUrl)}" aria-label="${escapeHtml(window.PortalI18n.text`查看图片：${title}`)}"` : ""} title="${escapeHtml(title)}">
       ${previewUrl ? window.PortalI18n.html`<img class="${options.thumbClass || "composerImageRefThumb"}" data-portal-deferred-image="${escapeHtml(previewUrl)}" alt="" loading="lazy" decoding="async" fetchpriority="low" />` : ""}
       ${previewUrl ? "" : window.PortalI18n.html`<span class="${options.iconClass || "composerFileRefIcon"}">${attachmentKind === "file" ? "F" : "I"}</span>`}
@@ -569,26 +570,37 @@
     }
 
     function messagePreviewContent(item, options = {}) {
+      // The protocol keeps display names on media parts, while the projected
+      // body contains only references. Join them before deduplicating so a body
+      // reference does not hide the named copy of the same attachment.
+      const extra = [...(item.content_parts || []).filter(part => part?.type === "image" || part?.type === "file"),
+        ...(item.input_media || []), ...(item.context_refs?.attachments || item.attachments || [])];
+      const referenceKey = path => window.PortalFileLinks?.describe(path)?.path || path;
+      const names = new Map();
+      for (const part of extra) {
+        const path = mediaPartPath(part), name = String(part.name || part.filename || "").trim();
+        if (path && name && !names.has(referenceKey(path))) names.set(referenceKey(path), name);
+      }
+      const referenceOptions = { ...options, attachmentNameForPath: path => names.get(referenceKey(path)) };
       const body = document.createElement("div");
-      body.innerHTML = renderMarkdownWithAttachmentRefs(item.content || item.text || "", { ...options, renderMarkdown: escapeHtml });
+      body.innerHTML = renderMarkdownWithAttachmentRefs(item.content || item.text || "", { ...referenceOptions, renderMarkdown: escapeHtml });
       const references = document.createElement("div");
       references.className = "composerImageTray messageAttachmentTray";
       const seen = new Set();
       const append = node => {
         const path = node.dataset.messageAttachmentPath || node.dataset.resourceAddress || node.dataset.navigationReference;
-        const key = window.PortalFileLinks?.describe(path)?.path || path;
+        const key = referenceKey(path);
         node.remove();
         if (!seen.has(key)) { seen.add(key); references.append(node); }
       };
       body.querySelectorAll("[data-message-attachment-path],.portalResourceChip").forEach(append);
-      const extra = [...(item.input_media || []), ...(item.context_refs?.attachments || item.attachments || [])];
       for (const part of extra) {
         const path = mediaPartPath(part);
-        if (!path) continue;
+        if (!path || seen.has(referenceKey(path))) continue;
         const holder = document.createElement("div");
         holder.innerHTML = messageAttachmentRefHtml(attachmentKind({ ...part,
           kind: part.kind || part.type, content_type: part.content_type || part.mime_type || part.media_type || (part.type === "image" ? "image/" : part.type),
-        }), path, options);
+        }), path, referenceOptions);
         append(holder.firstElementChild);
       }
       return { text: body.textContent.trim(), references };

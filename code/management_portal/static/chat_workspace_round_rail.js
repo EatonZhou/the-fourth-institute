@@ -15,7 +15,16 @@
     const node = el('button', className, text); node.type = 'button'; node.setAttribute('aria-label', label);
     node.dataset.portalTooltipOptOut = '1'; return node;
   };
-  const flagIcon = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 17V3m0 1c4-3 6 3 10 0v7c-4 3-6-3-10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const markerPaths = {
+    flag: 'M5 17V3m0 1c4-3 6 3 10 0v7c-4 3-6-3-10 0',
+    star: 'm10 2 2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8Z',
+    turtle: 'M8 5V3a2 2 0 0 1 4 0v2m2 3c3-4 5-1 1 1m-1 4c4 1 3 4 0 2M6 8C3 4 1 7 5 9m1 4c-4 1-3 4 0 2m3 1 1 2 1-2M14.5 10.5a4.5 5.5 0 1 1-9 0 4.5 5.5 0 0 1 9 0Z',
+    octopus: 'M5 11V7a5 5 0 0 1 10 0v4m-10 0c-5 5 0 8 2 3m0-3c-2 7 3 8 3 2m0 0c0 6 5 5 3-2m0 3c2 5 7 2 2-3M8 7v1m4-1v1',
+  };
+  const markerLabels = { flag: '旗帜', star: '星星', turtle: '乌龟', octopus: '章鱼' };
+  const markerKind = value => Object.hasOwn(markerPaths, value) ? value : 'flag';
+  const markerIcon = value => '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + markerPaths[markerKind(value)]
+    + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function shortTime(value) {
     if (!value) return '';
     const date = new Date(value); if (!Number.isFinite(date.getTime())) return '';
@@ -43,7 +52,7 @@
     const notice = el('div', 'chatRoundNotice'); notice.setAttribute('role', 'status'); wrapper.append(notice);
     const cleanups = [];
     const on = (node, type, fn, options) => { node.addEventListener(type, fn, options); cleanups.push(() => node.removeEventListener(type, fn, options)); };
-    let disposed = false, frame = 0, currentScope = '', flags = new Set(), rows = [], search = [];
+    let disposed = false, frame = 0, currentScope = '', flags = new Map(), rows = [], search = [];
     let progress = new Map(), cursor = -1, uncertain = false, bindings = new Map(), signature = '';
     let awaitingRefresh = false, refreshEpoch = 0, refreshing = false;
     let layoutDirty = true, statusDirty = true, searchDirty = true, presented = true, intersecting = true, observing = false;
@@ -51,14 +60,20 @@
     let metrics = { total: 0, client: 0, track: 0, thumb: 0, hit: 26, available: 0 };
     const observedRows = new Set(), sizes = new WeakMap(); let observedList = null;
     let hoverTimer = 0, closeTimer = 0, press = null, suppressed = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
-    let previewFrame = 0;
+    let previewFrame = 0, markerMenu = null;
     const previewSizes = new WeakMap();
     const identity = () => String(window.PortalIdentity?.username?.() || '');
     const scopeKey = () => JSON.stringify([identity(), String(scope())]);
     const storageKey = () => window.PortalState.storage.key('portal.chat.round-flags.v1.' + scopeKey());
     const readFlags = () => {
-      try { const value = JSON.parse(localStorage.getItem(storageKey()) || '[]'); return new Set(Array.isArray(value) ? value.filter(id => typeof id === 'string') : []); }
-      catch { return new Set(flags); }
+      try {
+        const value = JSON.parse(localStorage.getItem(storageKey()) || '[]');
+        // Keep one installation/user/conversation key. Legacy ID arrays are
+        // flags; migrate on the next confirmed edit, never on a read.
+        if (Array.isArray(value)) return new Map(value.filter(id => typeof id === 'string').map(id => [id, 'flag']));
+        return new Map((value?.version === 2 && Array.isArray(value.markers) ? value.markers : [])
+          .filter(item => item && typeof item.id === 'string').map(item => [item.id, markerKind(item.icon)]));
+      } catch { return new Map(flags); }
     };
     const human = item => roleFor(item) === 'human' && !item.local_delivery && !item.pending
       && (!item.origin?.sender?.kind || item.origin.sender.kind === 'user');
@@ -72,23 +87,35 @@
     };
     function resetScope() {
       if (currentScope === scopeKey()) return;
-      currentScope = scopeKey(); flags = readFlags(); progress.clear(); cursor = -1;
+      currentScope = scopeKey(); flags = new Map(); flags = readFlags(); progress.clear(); cursor = -1;
       uncertain = false; awaitingRefresh = false; refreshing = false; refreshEpoch++; search = []; navigation++; closePreview(); cancelPress(); signature = ''; layoutDirty = statusDirty = searchDirty = true;
     }
     function toggle(key) {
       resetScope(); const request = requestFor(key); if (!request) return false;
-      const before = readFlags(), next = new Set(before);
-      if (next.has(request)) next.delete(request); else next.add(request);
-      const value = JSON.stringify([...next].sort());
+      return setMarker(key, readFlags().has(request) ? null : 'flag');
+    }
+    function setMarker(key, kind) {
+      resetScope(); const request = requestFor(key); if (!request) return false;
+      const before = readFlags(), next = new Map(before);
+      if (kind === null) next.delete(request); else next.set(request, markerKind(kind));
+      const value = JSON.stringify({ version: 2, markers: [...next].sort(([a], [b]) => a.localeCompare(b)).map(([id, icon]) => ({ id, icon })) });
+      let previousValue, attempted = false;
       try {
         if (!identity()) throw new Error(t('请先登录'));
         // PortalState's writers are intentionally best-effort. Personal flags
         // need a confirmed write, using the same installation-scoped key.
+        previousValue = localStorage.getItem(storageKey()); attempted = true;
         localStorage.setItem(storageKey(), value);
         if (localStorage.getItem(storageKey()) !== value) throw new Error(t('保存未确认'));
         flags = next; notice.textContent = '';
         window.dispatchEvent(new CustomEvent(flagEvent, { detail: { key: storageKey() } }));
       } catch {
+        // Preserve the previous persisted value as well as the rendered choice
+        // when a writer silently drops/corrupts the value or cannot read it back.
+        if (attempted) try {
+          if (previousValue === null) localStorage.removeItem(storageKey());
+          else localStorage.setItem(storageKey(), previousValue);
+        } catch { /* Storage remains unavailable; keep the last confirmed UI. */ }
         flags = before;
         notice.textContent = t('关注未保存，请重试');
         window.PortalUI?.toast?.(notice.textContent, 'error');
@@ -164,11 +191,50 @@
     };
     const textFor = previewText;
     const description = row => [textFor(row.item).slice(0, 120) || t('附件消息'), t(labels[statusFor(row.item)] || '状态待确认'),
-      flags.has(row.key) ? t('已关注') : ''].filter(Boolean).join(' · ');
+      flags.has(row.key) ? t(markerLabels[flags.get(row.key)]) : ''].filter(Boolean).join(' · ');
+    function closeMarkerMenu() {
+      const current = markerMenu; markerMenu = null;
+      if (current) { current.binding.destroy(); current.panel.remove(); }
+    }
+    function openMarkerMenu(key, trigger) {
+      if (markerMenu?.trigger === trigger) { closeMarkerMenu(); return; }
+      closeMarkerMenu(); clearTimeout(closeTimer); clearTimeout(hoverTimer);
+      if (popup) popup.explicit = true;
+      const panel = el('div', 'chatRoundMarkerMenu'); panel.setAttribute('role', 'menu');
+      panel.setAttribute('aria-label', t('选择标记')); wrapper.append(panel);
+      const selected = flags.get(requestFor(key));
+      const choices = el('div', 'chatRoundMarkerChoices'); panel.append(choices);
+      const choose = value => {
+        closeMarkerMenu(); setMarker(key, value);
+        preview.querySelector(`[data-round-follow="${CSS.escape(key)}"]`)?.focus({ preventScroll: true });
+      };
+      for (const kind of Object.keys(markerPaths)) {
+        const item = button('chatRoundMarkerChoice', t(markerLabels[kind]), ''); item.dataset.roundMarker = kind;
+        item.setAttribute('role', 'menuitemradio'); item.setAttribute('aria-checked', String(selected === kind));
+        item.tabIndex = -1; item.innerHTML = markerIcon(kind); item.append(el('span', '', t(markerLabels[kind])));
+        item.onclick = () => choose(kind); choices.append(item);
+      }
+      const remove = button('chatRoundMarkerRemove', t('取消Flag')); remove.setAttribute('role', 'menuitem'); remove.tabIndex = -1;
+      remove.disabled = !selected; remove.onclick = () => choose(null); panel.append(remove);
+      const binding = window.PortalOverlay.bindPopover({ trigger, panel, portal: true, placement: 'bottom-end',
+        closeOnOutside: true, closeOnEscape: true, onClose: () => { closeMarkerMenu(); } });
+      markerMenu = { panel, trigger, binding }; binding.open();
+      const enabled = () => [...panel.querySelectorAll('button:not(:disabled)')];
+      const focus = item => { enabled().forEach(node => node.tabIndex = node === item ? 0 : -1); item.focus({ preventScroll: true }); };
+      focus(panel.querySelector('[aria-checked="true"]') || enabled()[0]);
+      panel.addEventListener('keydown', event => {
+        if (event.key === 'Tab') { closeMarkerMenu(); trigger.focus({ preventScroll: true }); return; }
+        if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault(); const items = enabled(), index = items.indexOf(document.activeElement);
+        focus(items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+          : (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + items.length) % items.length]);
+      });
+    }
     function cancelPress() {
       if (press) { clearTimeout(press.timer); press.node.classList.remove('is-pressing'); press = null; }
     }
     function closePreview(returnFocus = false) {
+      closeMarkerMenu();
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
       if (popup?.list) releasePreview(popup.list);
@@ -188,6 +254,7 @@
     }
     function showPreview(items, trigger, explicit = false) {
       if (disposed || dragging) return;
+      closeMarkerMenu();
       const focusedFlag = preview.contains(document.activeElement) ? document.activeElement.dataset.roundFollow : '';
       const expanded = popup?.trigger === trigger ? popup.expanded : new Set();
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
@@ -222,12 +289,14 @@
           popup.contents.push({ key: row.key, jump, meta, expand: null });
         }
         card.append(main);
-        const flag = button('chatRoundFollow', t(flags.has(row.key) ? '取消Flag' : 'Flag'), ''); flag.innerHTML = flagIcon;
         const request = requestFor(row.key);
         if (request) {
+          const kind = flags.get(request);
+          const flag = button('chatRoundFollow', t('选择标记') + (kind ? ' · ' + t(markerLabels[kind]) : ''), '');
+          flag.innerHTML = markerIcon(kind);
           flag.dataset.roundFollow = row.key;
-          flag.setAttribute('aria-label', t(flags.has(request) ? '取消Flag' : 'Flag'));
-          flag.setAttribute('aria-pressed', String(flags.has(request))); flag.onclick = () => toggle(row.key); card.append(flag);
+          flag.setAttribute('aria-haspopup', 'menu'); flag.setAttribute('aria-expanded', 'false');
+          flag.setAttribute('aria-pressed', String(!!kind)); flag.onclick = () => openMarkerMenu(row.key, flag); card.append(flag);
         }
         list.append(card);
       }
@@ -347,9 +416,15 @@
         node.classList.toggle('is-running', status === 'running');
         node.classList.toggle('is-queued', status === 'queued');
         const followed = flags.has(row.key);
-        if (followed !== node.classList.contains('is-followed')) {
-          if (followed) { const flag = el('span', 'chatRoundFlag'); flag.innerHTML = flagIcon; node.append(flag); }
+        const kind = flags.get(row.key) || '';
+        if (kind !== (node.dataset.roundMarker || '')) {
+          if (followed) {
+            let flag = node.querySelector('.chatRoundFlag');
+            if (!flag) { flag = el('span', 'chatRoundFlag'); node.append(flag); }
+            flag.innerHTML = markerIcon(kind);
+          }
           else node.querySelector('.chatRoundFlag')?.remove();
+          node.dataset.roundMarker = kind;
           node.classList.toggle('is-followed', followed);
         }
         node.setAttribute('aria-label', description(row));
@@ -414,7 +489,7 @@
     });
     on(marks, 'pointerout', event => {
       if (event.target.closest('.chatRoundNode')?.contains(event.relatedTarget)) return;
-      cancelPress(); clearTimeout(hoverTimer); closeTimer = setTimeout(() => { if (!popup?.explicit) closePreview(); }, 240);
+      cancelPress(); clearTimeout(hoverTimer); closeTimer = setTimeout(() => { if (!popup?.explicit && !markerMenu) closePreview(); }, 240);
     });
     on(preview, 'pointerenter', () => clearTimeout(closeTimer));
     on(preview, 'pointerleave', () => { closeTimer = setTimeout(() => { if (!popup?.explicit && !preview.contains(document.activeElement)) closePreview(); }, 240); });
@@ -455,8 +530,9 @@
         }
       }
     });
-    on(document, 'pointerdown', event => { if (!preview.contains(event.target) && !rail.contains(event.target)) closePreview(); });
-    on(document, 'focusin', event => { if (!preview.contains(event.target) && !rail.contains(event.target)) closePreview(); });
+    const outsidePreview = target => !preview.contains(target) && !rail.contains(target) && !markerMenu?.panel.contains(target);
+    on(document, 'pointerdown', event => { if (outsidePreview(event.target)) closePreview(); });
+    on(document, 'focusin', event => { if (outsidePreview(event.target)) closePreview(); });
     on(viewport, 'scroll', () => { cancelPress(); if (!popup?.explicit) closePreview(); schedule(); }, { passive: true });
     const lost = () => { uncertain = true; awaitingRefresh = true; for (const value of progress.values()) value.verified = false; cancelPress(); statusDirty = true; if (!visible()) paintStatus(); schedule(); };
     const refresh = async () => {
