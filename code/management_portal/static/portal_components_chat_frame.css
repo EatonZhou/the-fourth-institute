@@ -492,7 +492,8 @@
 .chatRoundCore { position:absolute; width:6px; height:6px; left:12px; top:calc(50% - 3px); }
 .chatRoundCore::after { content:''; position:absolute; inset:1px; border-radius:50%; background:currentColor; }
 .chatRoundNode.is-queued .chatRoundCore::after { inset:0; border:1px solid currentColor; border-radius:0; background:var(--panel, #fff); transform:rotate(45deg); }
-.chatRoundNode.is-current::after { content:''; position:absolute; left:7px; top:calc(50% - 8px); width:16px; height:16px; box-sizing:border-box; border:1px solid var(--accent, #578fcf); border-radius:50%; pointer-events:none; }
+.chatRoundNode.is-current::after { content:''; position:absolute; left:9px; top:calc(50% - 6px); width:12px; height:12px; box-sizing:border-box; border:1px solid color-mix(in srgb, var(--accent, #578fcf) 65%, transparent); border-radius:50%; pointer-events:none; }
+.chatRoundNode.is-current.is-followed::after { left:7px; top:calc(50% - 8px); width:16px; height:16px; }
 .chatRoundNode.is-running .chatRoundCore { color:#32a86b; }
 .chatRoundNode.is-running .chatRoundCore::before { content:''; position:absolute; inset:-6px; border-radius:50%; background:#59d38e; opacity:.14; animation:chatRoundBreath 3.6s ease-in-out infinite; pointer-events:none; }
 @keyframes chatRoundBreath { 0%,100% { opacity:.09; transform:scale(.8); } 50% { opacity:.25; transform:scale(1.15); } }
@@ -541,7 +542,8 @@
   .chatRoundLane { width:44px; top:48px; }
   .chatRoundLane::before { left:20.5px; }
   .chatRoundCore { left:18px; }
-  .chatRoundNode.is-current::after { left:13px; }
+  .chatRoundNode.is-current::after { left:15px; }
+  .chatRoundNode.is-current.is-followed::after { left:13px; }
   .chatRoundFlag { left:14px; }
   .chatRoundPreview { right:64px; width:min(328px, calc(100% - 72px)); }
   .chatRoundPreview button { min-height:44px; }
