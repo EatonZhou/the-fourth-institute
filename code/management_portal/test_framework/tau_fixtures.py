@@ -78,6 +78,19 @@ def _release_resource_once(resource_id: str, key: str) -> None:
             try:
                 result = isa_client.call(TAU_ACTOR, 'DeleteProject', {'project_id': resource_id}, key=key)
             except InstructionError as error:
+                if error.code == 'instruction.forbidden':
+                    # A completed deletion removed its permission facts. Ask
+                    # the owner for this actor's receipt; never infer absence
+                    # from a denied read or bypass authorization to delete.
+                    try:
+                        result = isa_client.call(TAU_ACTOR, 'GetProjectDeletion', {'project_id': resource_id})
+                    except InstructionError:
+                        raise error
+                    if (result.get('project_id') != resource_id
+                            or result.get('registration_status') != 'unregistered'
+                            or result.get('effects', {}).get('status') != 'complete'):
+                        raise RuntimeError('Project deletion has unfinished or unconfirmed owner effects')
+                    return
                 if error.code != 'instruction.not_found' or error.details.get('reason') == 'no_permit':
                     raise
                 from management_portal import wall_backend
@@ -113,7 +126,7 @@ def _release_resource_once(resource_id: str, key: str) -> None:
             try:
                 isa_client.call(TAU_ACTOR, 'ResolveResource', {'address': resource_id})
             except InstructionError as resolution:
-                if resolution.code == 'instruction.not_found':
+                if resolution.code == 'instruction.not_found' and resolution.details.get('reason') != 'no_permit':
                     return
         raise
 

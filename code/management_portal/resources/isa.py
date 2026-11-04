@@ -948,6 +948,15 @@ def delete_project(inv: Invocation) -> dict[str, Any]:
     return finish(contents)
 
 
+def get_project_deletion(inv: Invocation) -> dict[str, Any]:
+    from .project_deletion_effects import status_for_actor
+
+    try:
+        return status_for_actor(inv.argument('project_id'), inv.caller)
+    except KeyError as exc:
+        raise not_found('Project deletion is not available to this caller') from exc
+
+
 def rename_project(inv: Invocation) -> dict[str, Any]:
     from management_portal.society_service import get_society_service
 
@@ -1013,6 +1022,7 @@ HANDLERS = {
     "GetProject": get_project,
     "UpdateProject": update_project,
     "DeleteProject": delete_project,
+    "GetProjectDeletion": get_project_deletion,
     "RenameProject": rename_project,
 }
 

@@ -5,10 +5,31 @@ Maintenance and the foreground share this worker; no paths or threads are owned
 here. Each feature owns its relation mutation and each effect is idempotent.
 """
 from hashlib import sha256
+from copy import deepcopy
 
 from .registry_store import get_registry_store
 
 COLLECTION = 'project_deletions'
+
+
+def status_for_actor(project_id, actor):
+    """Read the original deleter's receipt only while that identity is absent.
+
+    Removing permission facts is part of deletion. Its completion observation
+    must not require permission on an object that no longer exists, nor expose
+    another actor's audit or mistake a reused Project name for the old object.
+    """
+    from management_portal import project_registry
+
+    registry = get_registry_store()
+    entry = registry.get(COLLECTION, project_id)
+    if not actor or not entry or entry.get('deleted_by') != actor:
+        raise KeyError(project_id)
+    document = registry.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) or {}
+    if any(item.get('id') == project_id for item in document.get('projects', [])):
+        raise KeyError(project_id)
+    return {'project_id': project_id, 'registration_status': 'unregistered',
+            'deleted_at': entry.get('deleted_at'), 'effects': deepcopy(entry.get('effects') or {})}
 
 
 def _permissions(entry):

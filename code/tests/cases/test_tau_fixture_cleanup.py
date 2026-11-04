@@ -335,7 +335,7 @@ def test_missing_fixture_is_complete_but_denied_fixture_is_preserved(tmp_path, m
 
 
 @pytest.mark.parametrize('resolution', ['instruction.not_found', 'instruction.forbidden',
-                                        'instruction.owner_unavailable', 'existing'])
+                                        'instruction.owner_unavailable', 'hidden', 'existing'])
 def test_deleted_fixture_permission_facts_do_not_prevent_confirming_absence(monkeypatch, resolution):
     """注销删除权限事实后，框架用同一主体的正式解析确认缺失。
 
@@ -353,6 +353,8 @@ def test_deleted_fixture_permission_facts_do_not_prevent_confirming_absence(monk
             assert arguments == {'resource_id': rid}
             raise InstructionError('instruction.forbidden', 'permission facts removed or denied')
         assert name == 'ResolveResource' and arguments == {'address': rid}
+        if resolution == 'hidden':
+            raise InstructionError('instruction.not_found', 'hidden', details={'reason': 'no_permit'})
         if resolution != 'existing':
             raise InstructionError(resolution, 'resolution result')
         return {'resource': {'resource_id': rid}}
@@ -363,6 +365,36 @@ def test_deleted_fixture_permission_facts_do_not_prevent_confirming_absence(monk
         with pytest.raises(InstructionError):
             tau_fixtures._release_resource(rid, 'cleanup')
     assert calls == ['UnregisterResource', 'ResolveResource']
+
+
+@pytest.mark.parametrize('outcome', ['complete', 'pending', 'hidden', 'wrong_identity'])
+def test_project_cleanup_requires_original_deleter_owner_receipt(monkeypatch, outcome):
+    """Removed permission facts require authoritative completion, never a denied read.
+
+    :module: operations.test-workbench
+    :design: decision_c953eab654cd
+    """
+    from management_portal import isa_client
+    from management_portal.hatg.contracts import InstructionError
+    calls = []
+    def instruction(actor, name, arguments, **kwargs):
+        assert actor == 'test-actor' and arguments == {'project_id': 'sample'}
+        calls.append(name)
+        if name == 'DeleteProject':
+            raise InstructionError('instruction.forbidden', 'no remaining permission facts')
+        assert name == 'GetProjectDeletion'
+        if outcome == 'hidden':
+            raise InstructionError('instruction.not_found', 'not available')
+        return {'project_id': 'other' if outcome == 'wrong_identity' else 'sample',
+                'registration_status': 'unregistered',
+                'effects': {'status': 'pending' if outcome == 'pending' else 'complete'}}
+    monkeypatch.setattr(isa_client, 'call', instruction)
+    if outcome == 'complete':
+        tau_fixtures._release_resource('sample', 'cleanup')
+    else:
+        with pytest.raises((InstructionError, RuntimeError)):
+            tau_fixtures._release_resource('sample', 'cleanup')
+    assert calls == ['DeleteProject', 'GetProjectDeletion']
 
 
 @pytest.mark.parametrize('outcome', ['deleted', 'missing', 'raced', 'busy', 'denied', 'incomplete'])

@@ -1000,6 +1000,10 @@
       "a": "@free",
       "r": "@portal"
     },
+    "GetProjectDeletion": {
+      "a": "@free",
+      "r": "@portal"
+    },
     "GetResourceCreation": {
       "a": "@viewer"
     },
