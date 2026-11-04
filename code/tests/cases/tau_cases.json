@@ -8,9 +8,15 @@
       "description": "连续输入尚未停顿时切换项目、清除筛选或刷新，仍能按当前搜索词浏览资源。",
       "importance": "P1",
       "module": "resource.index-search",
-      "aspects": ["functional", "behavior", "ui"],
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
       "is_design_point": false,
-      "design_refs": ["decision_2f67ed28db67"],
+      "design_refs": [
+        "decision_2f67ed28db67"
+      ],
       "lifecycle": "active",
       "implementations": [
         {
@@ -18,8 +24,10 @@
           "runner": "tau",
           "entrypoint": "tau:resource-catalog-search-filter-recovery",
           "source": "tests/cases/tau_cases.json",
-          "profiles": ["live.controlled"],
-          "risk": "read-only",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "no-external-side-effects",
           "task_prompt": "用户目标：连续输入尚未停顿时切换项目、清除筛选或刷新，仍能按当前搜索词浏览资源。\n用户会怎么操作：从 Resource 的 Skill 目录打开项目筛选，输入一段独特关键词后立即选择一个已有项目；再换一段关键词并立即清除项目筛选；再输入第三段关键词并立即点击重新加载。观察输入、筛选、地址和结果是否一致，等待页面稳定后刷新，再用后退和前进检查视图恢复。输入和紧随动作应在同一短交互内完成，可使用浏览器同一事件循环设置输入并触发真实 input/change/click 事件来稳定复现快速操作。只查询资源，不提交语义 AI 搜索。再在 Experiment 或 Device 目录复查一个同类组合；没有项目选项时如实记录该条件未覆盖。\n要留意什么：输入不能被旧地址覆盖；切换项目后仍按当前关键词查询，不应在输入计时结束后再发一份相同查询。过期响应不能覆盖新条件，空结果、加载和权限拒绝分别说明。只观察当前列表和工具栏，不采集无关内容，不打开设备终端。\n性能体验：能测量时记录操作到可用结果耗时，区分网络等待和页面等待；未测量写未记录。\n报告什么：写真实使用报告，说明实际过程、问题和性能；材料缺失写未记录，不以截图或计时齐全判断 PASS/FAIL。问题区分产品、用例、工具和执行偏差，给出实际步骤及原始响应。短暂发布断线后恢复原视图，不重复业务。\n操作范围与清理：使用框架指定的实际实例与受控测试会话。只读查询和改变本页筛选，不创建资源、消息或 AI 任务，不修改共享设置。结束关闭本轮浏览器和辅助进程，不在 TAU 内启动 Campaign。"
         }
       ]
@@ -2618,6 +2626,271 @@
           "risk": "external-side-effects",
           "lineage_fixture": "需在本轮独立临时团队创建成员与 Family，验证新 Family 默认设置并隔离自动化提问，不触碰既有业务。",
           "task_prompt": "用户目标：调整 Family 自动转组并从门面回答问题卡。\n用户会怎么操作：隔离团队创建成员与 Family，在门面 Settings 查看默认自动转组，关闭、重开、再开启并刷新；窄屏查看设置。让门面先提选择题等待回答，工具不可用可使用正式 portal-question 围栏；刷新后在门面选 Small，等成员回复，再刷新检查已回答状态。\n要留意什么：问题与答复属于同一成员，重复操作不应重复投递；未提供原生提问工具写未覆盖，文字回答与问题卡分开说明。\n性能体验：值得记录的关键步骤为设置保存、问题出现、回答送达、回复、刷新。能测量时记录从操作到可用结果的耗时，说明哪里慢、慢多少；区分排队、生成和页面等待，未测量的写“未记录”。\n报告什么：输出一份使用报告，说明过程是否走完；未走完写明卡在哪步及原因。问题按产品问题、用例问题、执行偏差、工具问题区分，每条写现象、步骤、截图或原始响应及严重程度（阻断、影响使用、小问题）。计时、截图或因果材料缺失写“未记录”；可以补充观察并注明时间与来源，不编造材料。用例步骤或接口写错时修正文并列用例问题，工具错误修工具。发布重启或短暂断网后等待、刷新并继续已有工作；能恢复的不算产品问题，只有无法自恢复、数据丢失或需要人工处理才列产品问题。结果不以证据完整性判 PASS/FAIL，不为补材料重复已受理的创建或消息。\n操作范围与清理：使用框架提供的受测实例和受控测试用户会话，通过真实产品入口完成操作；需要正式指令时先查当前 schema，使用执行者自己的身份。只操作本例授权对象，自建对象带 [TAU:<run_id>:<module_id>] 标记；未声明独立 Lineage 夹具时复用框架固定团队。清理只针对本轮自建资源，关闭本轮浏览器和辅助进程，不删除既有业务或其他 Run 对象。仍在处理的业务沿原任务观察或记录恢复入口，不为清理强删在途对象。不采集凭据或无关私有内容，不在 TAU 内启动 TAU/Campaign。"
+        }
+      ]
+    },
+    {
+      "id": "test_9aadb8363311",
+      "key": "tau.combination.identity-content-chain",
+      "title": "工作台到资源正文与原生附件的双主体闭环",
+      "description": "从本例声明的工作台进入Repo、Workspace、Unicode子目录、文本及二进制预览，再点击真实工具栏下载并等完成，核对服务端文件名、大小与夹具内容。分别记录受控User和实际执行Resident路径；先核对/api/me，Resident只用本人正式helper独立context。检查页面依赖目录/正文API，不以壳200代替。匿名API与路径越界必须拒绝；仅对自有临时会话正式退出/撤销，再读相同接口须拒绝，重新登录后继续原对象。没有合法第二主体或撤销能力时准确记未覆盖，不借Cookie、他人令牌或临时放宽ACL。",
+      "importance": "P1",
+      "module": "workbench.preview",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_fb910c43ab07",
+        "decision_61e50306cc79",
+        "decision_6476c69b33da"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-9aadb83633113a3f",
+          "runner": "tau",
+          "entrypoint": "tau:combination-identity-content-chain",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：工作台到资源正文与原生附件的双主体闭环。\n实际组合流程：从本例声明的工作台进入Repo、Workspace、Unicode子目录、文本及二进制预览，再点击真实工具栏下载并等完成，核对服务端文件名、大小与夹具内容。分别记录受控User和实际执行Resident路径；先核对/api/me，Resident只用本人正式helper独立context。检查页面依赖目录/正文API，不以壳200代替。匿名API与路径越界必须拒绝；仅对自有临时会话正式退出/撤销，再读相同接口须拒绝，重新登录后继续原对象。没有合法第二主体或撤销能力时准确记未覆盖，不借Cookie、他人令牌或临时放宽ACL。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_08d60d645cab",
+      "key": "tau.combination.native-download-recovery",
+      "title": "原生附件取消重开及下载身份边界",
+      "description": "在本例自建Workspace准备有已知内容/大小的Unicode文件和二进制附件，经目录→普通预览工具栏、unsupported预览两入口实际下载。先取消本次下载并保留原页，再从同一对象正常完成；记录下载对象终态和实际文件，不把事件到达或requested当完成。Resident以本人helper验证；HTTP附件及blob生成文件分别观察名称。helper跨源/重定向和无权目标继续拒绝。只对自建夹具构造拒绝路径，不访问真实秘密；没有某渲染器时记录条件。",
+      "importance": "P1",
+      "module": "workbench.preview",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_61e50306cc79",
+        "decision_fb910c43ab07"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-08d60d645cab0c91",
+          "runner": "tau",
+          "entrypoint": "tau:combination-native-download-recovery",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：原生附件取消重开及下载身份边界。\n实际组合流程：在本例自建Workspace准备有已知内容/大小的Unicode文件和二进制附件，经目录→普通预览工具栏、unsupported预览两入口实际下载。先取消本次下载并保留原页，再从同一对象正常完成；记录下载对象终态和实际文件，不把事件到达或requested当完成。Resident以本人helper验证；HTTP附件及blob生成文件分别观察名称。helper跨源/重定向和无权目标继续拒绝。只对自建夹具构造拒绝路径，不访问真实秘密；没有某渲染器时记录条件。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_0ce4f243b098",
+      "key": "tau.combination.repo-source-lifecycle",
+      "title": "导出来源的长路径读取及注销重接保护",
+      "description": "在隔离临时目录准备无Git源码树，含Unicode、嵌套长路径、只读文件及已知二进制；经正式RegisterResource显式exported_tree登记。重复同目录登记应复用身份；从Repo页面、Workspace树和资源文件地址核对相同内容。确认来源只读、Git/写操作拒绝、越界拒绝；不以页面隐藏代替后端。正式注销后登记不可读而外部adopted树仍保留，再接入同一内容并按新回执验证身份。不得宣称注销后必须复用旧ID。对另建Git夹具拒绝改变来源；保持其他引用与内容。长路径不能准备时写前提，不改系统权限或全局策略。",
+      "importance": "P1",
+      "module": "workflow.repository",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_6476c69b33da",
+        "decision_4aa13bc21e8e"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-0ce4f243b098eefb",
+          "runner": "tau",
+          "entrypoint": "tau:combination-repo-source-lifecycle",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：导出来源的长路径读取及注销重接保护。\n实际组合流程：在隔离临时目录准备无Git源码树，含Unicode、嵌套长路径、只读文件及已知二进制；经正式RegisterResource显式exported_tree登记。重复同目录登记应复用身份；从Repo页面、Workspace树和资源文件地址核对相同内容。确认来源只读、Git/写操作拒绝、越界拒绝；不以页面隐藏代替后端。正式注销后登记不可读而外部adopted树仍保留，再接入同一内容并按新回执验证身份。不得宣称注销后必须复用旧ID。对另建Git夹具拒绝改变来源；保持其他引用与内容。长路径不能准备时写前提，不改系统权限或全局策略。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_5f49b59f1118",
+      "key": "tau.combination.repo-edit-conflict-reopen",
+      "title": "两窗口文件冲突与移动后重开恢复",
+      "description": "只在本例新建临时Git Repo里用两窗口打开同一Unicode文本。A保存新内容后B带旧摘要保存，应出现冲突且B草稿保留；B重新读取最新版本并明确合并，再保存。分别检查取消放弃、关闭重开、标签切换、移动/重命名和旧地址失败后的恢复；核对准确字节及保存回执。已经提交而响应不明时先读实际目标再决定，不无脑重投没有幂等键的移动/删除。只读文件写失败保持原文件及可执行恢复入口；不要调整ACL来制造通过。",
+      "importance": "P1",
+      "module": "workflow.repository",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_6476c69b33da",
+        "decision_769a35d6b5c7"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-5f49b59f111813c9",
+          "runner": "tau",
+          "entrypoint": "tau:combination-repo-edit-conflict-reopen",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：两窗口文件冲突与移动后重开恢复。\n实际组合流程：只在本例新建临时Git Repo里用两窗口打开同一Unicode文本。A保存新内容后B带旧摘要保存，应出现冲突且B草稿保留；B重新读取最新版本并明确合并，再保存。分别检查取消放弃、关闭重开、标签切换、移动/重命名和旧地址失败后的恢复；核对准确字节及保存回执。已经提交而响应不明时先读实际目标再决定，不无脑重投没有幂等键的移动/删除。只读文件写失败保持原文件及可执行恢复入口；不要调整ACL来制造通过。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_ffef6a35203d",
+      "key": "tau.combination.external-link-confirm-lifecycle",
+      "title": "宿主外链确认取消和目标应用可用性",
+      "description": "使用本例临时工作台的正式external_links声明，打开一个本次可控制的本机应用。先取消确认，再重开确认并检查完整URL、noopener及真实目标页面可用；requested只记导航请求。验证非法协议声明拒绝、合法但目标未启动的链接明确不可用、启动后沿同入口恢复。确认期间隐藏/关闭面板、重复点击及重新打开不产生悬挂确认或多余标签。只改临时工作台及本次应用，保留已有持久工作台与服务。",
+      "importance": "P1",
+      "module": "workbench.panels",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_7a5ae487e2e9",
+        "decision_4348ed990621"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-ffef6a35203d798b",
+          "runner": "tau",
+          "entrypoint": "tau:combination-external-link-confirm-lifecycle",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：宿主外链确认取消和目标应用可用性。\n实际组合流程：使用本例临时工作台的正式external_links声明，打开一个本次可控制的本机应用。先取消确认，再重开确认并检查完整URL、noopener及真实目标页面可用；requested只记导航请求。验证非法协议声明拒绝、合法但目标未启动的链接明确不可用、启动后沿同入口恢复。确认期间隐藏/关闭面板、重复点击及重新打开不产生悬挂确认或多余标签。只改临时工作台及本次应用，保留已有持久工作台与服务。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_9427ed98ac03",
+      "key": "tau.combination.async-operator-serial-lifetime",
+      "title": "异步算子纯串联到目标与观察终态",
+      "description": "在隔离Lineage以当前合法账号建立手动事件→Resident Filter→Resident Selector→Resident Reducer→Effect→Target，并由Watch观察本次实际结束。首条纯串联不得保留并行等待分支。执行者按真实输入的包ID回复合法判定；检查原发起者、原批次、每个实际接收次数和最终可见结果。至少捕获一次上游Execution已终结而判定转交尚未完成的状态；未捕获写未记录，不能伪造时序。再用不匹配输入确认空分支终结且无下游业务。暂停一个组件后触发一次，确认待投递，恢复后沿原输入继续，各一次，路径在最后工作完成后才终结。账号额度不足不得换账号/授权credits凑覆盖。",
+      "importance": "P1",
+      "module": "lineage.hatg",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_4adcc1ff2f2c",
+        "decision_68215b3a825b"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-9427ed98ac0337fb",
+          "runner": "tau",
+          "entrypoint": "tau:combination-async-operator-serial-lifetime",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：异步算子纯串联到目标与观察终态。\n实际组合流程：在隔离Lineage以当前合法账号建立手动事件→Resident Filter→Resident Selector→Resident Reducer→Effect→Target，并由Watch观察本次实际结束。首条纯串联不得保留并行等待分支。执行者按真实输入的包ID回复合法判定；检查原发起者、原批次、每个实际接收次数和最终可见结果。至少捕获一次上游Execution已终结而判定转交尚未完成的状态；未捕获写未记录，不能伪造时序。再用不匹配输入确认空分支终结且无下游业务。暂停一个组件后触发一次，确认待投递，恢复后沿原输入继续，各一次，路径在最后工作完成后才终结。账号额度不足不得换账号/授权credits凑覆盖。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_cccaeef20f28",
+      "key": "tau.combination.operator-reuse-join-cas",
+      "title": "普通成员复用算子与多路汇合CAS恢复",
+      "description": "隔离Lineage的普通Leader绑定两个Resident算子，确认仍是普通成员和Leader；删除一个绑定后另一仍有效，专门创建的执行者继续拒绝跨算子共用。构建同一次事件的规则和异步两来源经Selector空/非空分支汇入Reducer，确认只汇合一次，不把两个独立Resident输出误作同一批。Effect对本例共享状态做带expected_value的更新；从第二入口制造CAS冲突，旧值不能覆盖，读最新后显式恢复。刷新/重开后核对状态、绑定及接收次数，保留失败输入而不重投刷通过。",
+      "importance": "P1",
+      "module": "lineage.hatg",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_4adcc1ff2f2c",
+        "decision_71ba0494b93e"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-cccaeef20f28bab5",
+          "runner": "tau",
+          "entrypoint": "tau:combination-operator-reuse-join-cas",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：普通成员复用算子与多路汇合CAS恢复。\n实际组合流程：隔离Lineage的普通Leader绑定两个Resident算子，确认仍是普通成员和Leader；删除一个绑定后另一仍有效，专门创建的执行者继续拒绝跨算子共用。构建同一次事件的规则和异步两来源经Selector空/非空分支汇入Reducer，确认只汇合一次，不把两个独立Resident输出误作同一批。Effect对本例共享状态做带expected_value的更新；从第二入口制造CAS冲突，旧值不能覆盖，读最新后显式恢复。刷新/重开后核对状态、绑定及接收次数，保留失败输入而不重投刷通过。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。",
+          "lineage_fixture": "只在本例隔离临时Lineage/资源/目录内准备和修改夹具；双主体仅使用已授权受控User及本人Resident，不修改固定业务团队。"
+        }
+      ]
+    },
+    {
+      "id": "test_edc8fa208a14",
+      "key": "tau.combination.windows-update-reopen-assets",
+      "title": "Windows长时工作后的正常更新与持久资产恢复",
+      "description": "仅在明确授权的自有Windows实例及本次音乐/开发负载中执行。先记录原团队、资源、输入/幂等键、曲目历史及旧包；贯穿至少一小时有内容开发/识别/编辑/下载，分时采样内存句柄队列及操作到可用耗时，不空等凑时长。到自然检查点用严格seed校验通过的最新完整安装包正常更新，再从普通桌面正式启动并登录，恢复原输入及业务，核对新增依赖、团队/历史/旧交付保留。只观察可授权的本机重开：不存在的历史PID不得阻塞启动；无法确认的进程归属不能假定已停止或凭PID杀死。新命名完整源码包在独立目录/环境按文档安装启动，并经正式Workspace实际完成下载。禁止在无授权共享实例重启/关机；不具前提记未覆盖。",
+      "importance": "P1",
+      "module": "operations.deployment",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": true,
+      "design_refs": [
+        "decision_d88306d0bd17",
+        "decision_15aab18c0ab3",
+        "decision_08bb2d9141f9"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-edc8fa208a14af55",
+          "runner": "tau",
+          "entrypoint": "tau:combination-windows-update-reopen-assets",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "task_prompt": "用户目标：Windows长时工作后的正常更新与持久资产恢复。\n实际组合流程：仅在明确授权的自有Windows实例及本次音乐/开发负载中执行。先记录原团队、资源、输入/幂等键、曲目历史及旧包；贯穿至少一小时有内容开发/识别/编辑/下载，分时采样内存句柄队列及操作到可用耗时，不空等凑时长。到自然检查点用严格seed校验通过的最新完整安装包正常更新，再从普通桌面正式启动并登录，恢复原输入及业务，核对新增依赖、团队/历史/旧交付保留。只观察可授权的本机重开：不存在的历史PID不得阻塞启动；无法确认的进程归属不能假定已停止或凭PID杀死。新命名完整源码包在独立目录/环境按文档安装启动，并经正式Workspace实际完成下载。禁止在无授权共享实例重启/关机；不具前提记未覆盖。\n报告要求：保存实际过程、原ID/输入/回执与前后结果，问题按产品/用例/执行偏差/工具分类；计时、截图或因果缺失写未记录，不据此判失败。修复后只复验受影响步骤，原失败保留。主体与能力分别核验，路径/绑定不是授权，不修改暂停中的通用输入生命周期。只清理本轮独占对象，活动工作先自然结束，不删除持久团队/Repo/曲目/旧包；清理失败保留恢复信息，不假装删除。"
         }
       ]
     }
