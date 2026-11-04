@@ -212,6 +212,54 @@
         })(),
       ]);
     }
+    function videoReview(region, review, key) {
+      if (!current(key)) return;
+      const area = node("div", null, "homeExplanationVideoReview"); region.append(area);
+      const draw = value => {
+        if (!current(key)) return;
+        clearTimeout(mediaTimer); mediaTimer = null;
+        area.replaceChildren();
+        const state = value?.status || "not_requested";
+        const labels = {
+          pending: "视频质量检查等待提交。",
+          submitted: "视频已提交独立检查，结果待回读。",
+          submission_failed: "视频检查暂未提交，已保存的视频仍可播放。",
+          not_requested: "视频尚未经过独立检查。",
+        };
+        const status = node("p", t(labels[state] || labels.not_requested), "homeExplanationMuted");
+        status.setAttribute("role", "status"); area.append(status);
+        if (state === "submitted") return;
+        if (state === "pending") {
+          mediaTimer = setTimeout(async () => {
+            if (!current(key)) return;
+            try {
+              const result = await window.PortalAPI.get(`/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}`, { signal: controller.signal, cache: "no-store" });
+              if (current(key)) draw((result?.media === undefined ? result : result.media)?.review);
+            } catch (error) {
+              if (current(key) && error.name !== "AbortError") {
+                draw({ status: "submission_failed" }); failure(area, error);
+              }
+            }
+          }, 2500);
+          return;
+        }
+        area.append(button(state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
+          if (!current(key)) return;
+          area.querySelectorAll("button").forEach(el => { el.disabled = true; });
+          try {
+            const result = await window.PortalAPI.post("/api/home-explanation/media/review", {
+              address: target.address, sha256: target.sha256,
+            }, { signal: controller.signal });
+            if (current(key)) draw((result?.media === undefined ? result : result.media)?.review);
+          } catch (error) {
+            if (current(key) && error.name !== "AbortError") {
+              draw({ status: "submission_failed" }); failure(area, error);
+            }
+          }
+        }));
+      };
+      draw(review);
+    }
     async function plannedVideo(region, plan, key) {
       // Reading a plan only verifies provenance. A POST requires a button click.
       await read(plan, limits.text, key);
@@ -231,6 +279,7 @@
           content.replaceChildren();
           if (media?.status === "ready") {
             await renderVideo(content, media, key, true);
+            if (current(key)) videoReview(content, media.review, key);
           } else if (media?.status === "generating") {
             const progress = node("p", t("讲解视频正在生成，可以先探索交互和图文。"), "homeExplanationMuted"); progress.setAttribute("role", "status");
             content.append(progress);

@@ -42,8 +42,18 @@ def _file(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
+def _review(request, parsed, actor):
+    try:
+        body = http_request_body._read_bounded_json_object(request, max_bytes=4096)
+        state = Media().retry_review(body.get('address'), body.get('sha256'), actor)
+        return http_responses._serve_json(request, 200, {'media': state})
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
+
+
 def routes():
     route = http_auth._principal_route
     return (route('GET', '/api/home-explanation/media', _media, 'home-explanation'),
             route('POST', '/api/home-explanation/media', _media, 'home-explanation'),
+            route('POST', '/api/home-explanation/media/review', _review, 'home-explanation'),
             route('GET', '/api/home-explanation/media/file', _file, 'home-explanation'))

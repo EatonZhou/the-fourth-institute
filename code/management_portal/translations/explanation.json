@@ -83,6 +83,30 @@
     "zh-CN": "视频章节",
     "en": "Video chapters"
   },
+  "视频质量检查等待提交。": {
+    "zh-CN": "视频质量检查等待提交。",
+    "en": "Video quality review is awaiting submission."
+  },
+  "视频已提交独立检查，结果待回读。": {
+    "zh-CN": "视频已提交独立检查，结果待回读。",
+    "en": "The video has been submitted for independent review; the result is pending."
+  },
+  "视频检查暂未提交，已保存的视频仍可播放。": {
+    "zh-CN": "视频检查暂未提交，已保存的视频仍可播放。",
+    "en": "Video review has not been submitted. The saved video can still be played."
+  },
+  "视频尚未经过独立检查。": {
+    "zh-CN": "视频尚未经过独立检查。",
+    "en": "The video has not been independently reviewed."
+  },
+  "重试视频检查": {
+    "zh-CN": "重试视频检查",
+    "en": "Retry video review"
+  },
+  "检查视频质量": {
+    "zh-CN": "检查视频质量",
+    "en": "Review video quality"
+  },
   "视频讲解": {
     "zh-CN": "视频讲解",
     "en": "Video explanation"

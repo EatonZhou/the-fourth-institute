@@ -26,6 +26,8 @@ from management_common import secure_paths
 from management_common.portal_paths import path as portal_path
 from management_portal.home_explanation_plan import validate
 from management_portal.home_explanation_render import render
+from management_portal.home_explanation_audio import require_native_audio
+from management_portal import home_explanation_review as review
 
 MAX_BUNDLE = 128 * 1024 * 1024
 FILES = {'video.mp4': 'video/mp4', 'captions.vtt': 'text/vtt; charset=utf-8',
@@ -103,6 +105,16 @@ class Media:
             if audio_root != root_id or audio_parts[:-1] != parts[:-1]:
                 raise ValueError('视频音轨须与解释页位于同一Workspace内容包目录')
             refs.append(plan['audio'])
+        if plan and plan.get('audio_provenance'):
+            proof_root, proof_parts = pointer(plan['audio_provenance'])
+            if proof_root != root_id or proof_parts[:-1] != parts[:-1]:
+                raise ValueError('音轨来源须位于同一内容包')
+            proof = json.loads(self.read(plan['audio_provenance'], actor))
+            evidence = proof.get('evidence') if isinstance(proof, dict) else None
+            evidence_root, evidence_parts = pointer(evidence)
+            if evidence_root != root_id or evidence_parts[:-1] != parts[:-1]:
+                raise ValueError('音轨调用证据须位于同一内容包')
+            self.read(evidence, actor)
         sources = manifest.get('sources', [])
         if not isinstance(sources, list) or len(sources) > 32:
             raise ValueError('解释页来源列表超过限制')
@@ -117,7 +129,15 @@ class Media:
         from management_portal.resources.providers.workspace import _root
         root = _root(record)
         output = (*parts[:-1], 'explanation-media', sha256)
-        return {'ref': ref, 'root_id': root_id, 'root': root, 'output': output, 'plan': plan}
+        return {'ref': ref, 'root_id': root_id, 'root': root, 'output': output, 'plan': plan,
+                'owner_id': record.get('attributes', {}).get('directory', {}).get('owner_id', '')}
+
+    def native_audio(self, ctx, actor):
+        def same_package(ref):
+            root_id, parts = pointer(ref)
+            if root_id != ctx['root_id'] or parts[:-1] != ctx['output'][:-2]:
+                raise ValueError('原生音轨来源和调用证据须与解释页同包')
+        return require_native_audio(ctx['plan'], self.read, same_package, actor)
 
     def writable(self, ctx, actor):
         from management_portal.society_service.lineage_access_policy import workspace_reaches
@@ -167,6 +187,9 @@ class Media:
             base = '/api/home-explanation/media/file?' + urlencode(ctx['ref'])
             result.update(video_url=base+'&file=video.mp4', captions_url=base+'&file=captions.vtt',
                           transcript_url=base+'&file=transcript.txt')
+            result['review'] = dict(state.get('review') or {'status': 'not_requested'})
+            if result['review']['status'] == 'pending' and not self.active(ctx):
+                result['review'].update(status='submission_failed', error='送检未完成，可由原请求者重试。')
         return result
 
     def status(self, address, sha256, actor):
@@ -231,6 +254,12 @@ class Media:
         self.writable(ctx, actor)
         if ctx['plan'] is None:
             raise ValueError('此解释页没有视频生成计划')
+        # Existing immutable ready versions need no new provenance. New jobs
+        # fail before creating even a lock/output directory if audio is unverified.
+        existing = self._state(ctx, actor)
+        if existing and existing['status'] == 'ready':
+            return self.response(ctx, existing)
+        self.native_audio(ctx, actor)
         lease = self._lease(ctx, actor)
         if lease is None:
             return self.status(address, sha256, actor) or {'status': 'generating', 'job_id': sha256}
@@ -243,8 +272,9 @@ class Media:
                 raise ValueError('生成刚刚失败，请十秒后重试')
             slot = self._slot()
             # Validate every source and its hash before accepting a job.
-            audio = self.read(ctx['plan']['audio'], actor, 64*1024*1024) if ctx['plan'].get('audio') else None
-            state = {'status': 'generating', 'job_id': uuid.uuid4().hex, 'updated_at': time.time()}
+            audio = self.read(ctx['plan']['audio'], actor, 64*1024*1024)
+            state = {'status': 'generating', 'job_id': uuid.uuid4().hex, 'updated_at': time.time(),
+                     'generation_actor': actor}
             self._save(ctx, actor, state)
             thread = threading.Thread(target=self._generate, args=(ctx, actor, state, audio, lease, slot), daemon=True)
             thread.start()
@@ -266,13 +296,17 @@ class Media:
                 # Reauthorize original sources after expensive work; revoked
                 # read/write access cannot publish a completed bundle.
                 self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor)
+                self.native_audio(ctx, actor)
                 assets = {}
                 for name, path in files.items():
                     data = path.read_bytes()
                     assets[name] = {'sha256': hashlib.sha256(data).hexdigest(), 'size': len(data)}
                     self._write(ctx, actor, name, data)
-                self._save(ctx, actor, {**state, **result, 'assets': assets, 'status': 'ready', 'updated_at': time.time()})
+                state = {**state, **result, 'assets': assets, 'status': 'ready', 'updated_at': time.time(),
+                         'review': {'status': 'pending', 'requested_by': actor}}
+                self._save(ctx, actor, state)
                 self.service.notify_source_changed(resource_id=ctx['root_id'], resource_type='workspace', kind='updated')
+                self._submit_review(ctx, actor, state)
         except Exception:
             try:
                 self._save(ctx, actor, {**state, 'status': 'failed', 'updated_at': time.time(),
@@ -282,6 +316,51 @@ class Media:
         finally:
             os.close(lease)
             os.close(slot)
+
+    def _submit_review(self, ctx, actor, state):
+        previous = state.get('review') or {}
+        if previous.get('status') == 'submitted':
+            return state
+        if previous.get('requested_by', actor) != actor or state.get('generation_actor', actor) != actor:
+            raise PermissionError('独立检查须由原生成或送检请求者重试')
+        pending = {**previous, 'status': 'pending', 'requested_by': actor}
+        try:
+            self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor)
+            self.writable(ctx, actor)
+            for name in state['assets']:
+                with self.file(**ctx['ref'], name=name, actor=actor):
+                    pass
+            reviewer = review.discover(actor, ctx.get('owner_id', ''), previous.get('reviewer_resident_id', ''))
+            pending['reviewer_resident_id'] = reviewer
+            self._save(ctx, actor, {**state, 'review': pending})
+            message_id = review.submit(ctx, state, actor, reviewer)
+            pending.update(status='submitted', message_id=message_id)
+            pending.pop('error', None)
+        except Exception:
+            pending.update(status='submission_failed', error='独立视频检查未提交，请核对检查员与当前权限后重试。')
+        updated = {**state, 'review': pending}
+        try:
+            self._save(ctx, actor, updated)
+        except Exception:
+            # Preserve the last ready state when permission is revoked. A stale
+            # pending state is exposed as retryable, never as passed.
+            pass
+        return updated
+
+    def retry_review(self, address, sha256, actor):
+        ctx = self.context(address, sha256, actor)
+        self.writable(ctx, actor)
+        state = self._state(ctx, actor)
+        if not state or state.get('status') != 'ready':
+            raise ValueError('视频尚未生成，无法提交独立检查')
+        lease = self._lease(ctx, actor)
+        if lease is None:
+            return self.status(address, sha256, actor)
+        try:
+            state = self._state(ctx, actor)
+            return self.response(ctx, self._submit_review(ctx, actor, state))
+        finally:
+            os.close(lease)
 
     @contextmanager
     def file(self, address, sha256, name, actor):

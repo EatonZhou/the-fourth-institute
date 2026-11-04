@@ -4,10 +4,9 @@ from __future__ import annotations
 import math
 import subprocess
 import threading
-import time
 import wave
 
-from management_portal.media_tools import capabilities, run, stamp, speech_units
+from management_portal.media_tools import capabilities, stamp
 
 
 def _fit(draw, text, font, width):
@@ -98,50 +97,24 @@ def frame(plan, scene, progress, at, fonts, prepared=None):
 
 def render(plan, directory, audio=None):
     from PIL import ImageFont
-    started = time.monotonic()
+    if audio is None:
+        raise ValueError('视频需要已验证的Provider原生音轨；不支持本地配音回退')
     tools = capabilities()
     needed = [key for key in ('ffmpeg', 'font') if not tools.get(key)]
-    if needed or (audio is None and not tools.get('speech')):
+    if needed:
         raise RuntimeError('视频生成依赖未就绪')
     fonts = {size: ImageFont.truetype(tools['font'], size) for size in (16, 20, 24)}
     scenes = [dict(s) for s in plan['scenes']]
     wav_path = directory / 'narration.wav'
-    if audio is not None:
-        wav_path.write_bytes(audio)
-        with wave.open(str(wav_path)) as wav:
-            duration = wav.getnframes() / wav.getframerate()
-            if wav.getnchannels() not in (1, 2) or wav.getsampwidth() != 2 or wav.getframerate() > 48000 or not 0 < duration <= 300:
-                raise ValueError('音轨须为不超过五分钟的PCM16 WAV')
-        cues = plan['cues']
-        if scenes[-1]['end'] > duration+.05 or cues[-1]['end'] > duration+.05:
-            raise ValueError('字幕或阶段时间超出实际音轨')
-        voice = '内容作者提供的固定音轨'
-    else:
-        pcm, cues, offset, rate = [], [], 0.0, None
-        for scene in scenes:
-            scene['start'] = offset
-            for sentence in speech_units(scene['speech']):
-                if time.monotonic()-started > 180:
-                    raise TimeoutError('配音超过生成时限')
-                part = directory / 'part.wav'
-                run([tools['speech'], '-v', 'cmn', '-s', '155', '-w', str(part), '--stdin'], input=sentence.encode())
-                with wave.open(str(part)) as wav:
-                    if wav.getnchannels() != 1 or wav.getsampwidth() != 2 or (rate and rate != wav.getframerate()):
-                        raise ValueError('不支持的配音输出')
-                    rate = wav.getframerate()
-                    seconds = wav.getnframes()/rate
-                    pcm.append(wav.readframes(wav.getnframes()))
-                cues.append({'start': offset, 'end': offset+seconds, 'text': sentence})
-                offset += seconds+.25
-                if offset > 300:
-                    raise ValueError('配音超过五分钟限制')
-                pcm.append(b'\0'*(round(rate*.25)*2))
-            scene['end'] = offset
-        duration = offset
-        with wave.open(str(wav_path), 'wb') as wav:
-            wav.setparams((1, 2, rate, 0, 'NONE', 'not compressed'))
-            wav.writeframes(b''.join(pcm))
-        voice = '本地eSpeak机械配音'
+    wav_path.write_bytes(audio)
+    with wave.open(str(wav_path)) as wav:
+        duration = wav.getnframes() / wav.getframerate()
+        if wav.getnchannels() not in (1, 2) or wav.getsampwidth() != 2 or wav.getframerate() > 48000 or not 0 < duration <= 300:
+            raise ValueError('音轨须为不超过五分钟的PCM16 WAV')
+    cues = plan['cues']
+    if scenes[-1]['end'] > duration+.05 or cues[-1]['end'] > duration+.05:
+        raise ValueError('字幕或阶段时间超出实际音轨')
+    voice = '固定音轨；原生来源核验由生成入口负责'
     captions = 'WEBVTT\n\n' + '\n\n'.join(f"{stamp(c['start'])} --> {stamp(c['end'])}\n{c['text'].replace('-->', '→')}" for c in cues)
     (directory/'captions.vtt').write_text(captions, encoding='utf-8')
     (directory/'transcript.txt').write_text('\n\n'.join(s['speech'] for s in scenes), encoding='utf-8')

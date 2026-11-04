@@ -28,6 +28,7 @@ const base = { schema: 'portal-explanation/v1', revision: 1, title: '注意力�
   sources: [{ label: '原理说明', url: 'https://example.org/paper' }] };
 const manifest = (name, value) => put(name + '.json', JSON.stringify(value), 'application/json');
 let state = null, deny = false, deniedAddress = '', delayed = '', releases = [], videoRef;
+let reviewDenied = false, delayReview = false, reviewRelease;
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://fixture');
   if (url.pathname === '/') {
@@ -44,6 +45,16 @@ const server = http.createServer((req, res) => {
     requests.push({ url: url.pathname, method: req.method });
     if (req.method === 'POST') state = { status: 'generating', job_id: 'fixture-job' };
     res.writeHead(deny ? 403 : 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(deny ? { error: 'no permit' } : { media: state })); return;
+  }
+  if (url.pathname === '/api/home-explanation/media/review') {
+    requests.push({ url: url.pathname, method: req.method });
+    const respond = () => {
+      if (!reviewDenied) state = { ...state, review: { status: 'submitted', message_id: 'msg_review' } };
+      res.writeHead(reviewDenied ? 403 : 200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(reviewDenied ? { error: 'review permission denied' } : { media: state }));
+    };
+    if (delayReview) reviewRelease = respond; else respond();
+    return;
   }
   if (url.pathname === '/api/resources/content') {
     const address = url.searchParams.get('address'); requests.push({ address, method: req.method });
@@ -93,6 +104,37 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
     await setup(planned);
+    if (process.argv.includes('--review-only')) {
+      state = { status: 'ready', job_id: 'fixture-job', video_url: '/api/resources/content?address=' + encodeURIComponent(videoRef.address) };
+      await setup(planned);
+      check('legacy ready media does not submit review on read', requests.filter(r => r.method === 'POST').length, 0);
+      await page.getByText('视频尚未经过独立检查。', { exact: true }).waitFor();
+      await page.locator('video').evaluate(v => { v.pause(); v.dataset.stablePlayer = 'yes'; });
+      reviewDenied = true;
+      await page.getByRole('button', { name: '检查视频质量', exact: true }).click();
+      await page.getByRole('button', { name: '重试视频检查', exact: true }).waitFor();
+      check('failed review keeps the saved player', await page.locator('video').getAttribute('data-stable-player'), 'yes');
+      reviewDenied = false;
+      await page.getByRole('button', { name: '重试视频检查', exact: true }).click();
+      await page.getByText('视频已提交独立检查，结果待回读。', { exact: true }).waitFor();
+      check('successful review submission keeps player and does not claim passed', await page.locator('video').getAttribute('data-stable-player'), 'yes');
+      check('review retries never regenerate media', requests.filter(r => r.method === 'POST' && r.url === '/api/home-explanation/media').length, 0);
+      state.review = { status: 'pending' }; await setup(planned);
+      check('pending review has no duplicate submit button', await page.locator('.homeExplanationVideoReview button').count(), 0);
+      await page.locator('video').evaluate(v => { v.dataset.reviewPollPlayer = 'same'; });
+      state.review = { status: 'submitted' };
+      await page.getByText('视频已提交独立检查，结果待回读。', { exact: true }).waitFor();
+      check('pending review polling updates only review UI', await page.locator('video').getAttribute('data-review-poll-player'), 'same');
+      const reviewPollCount = requests.length; await page.waitForTimeout(2700);
+      check('submitted review stops status polling', requests.length, reviewPollCount);
+      state.review = { status: 'not_requested' }; delayReview = true; await setup(planned);
+      await page.getByRole('button', { name: '检查视频质量', exact: true }).click();
+      await page.waitForTimeout(50); await page.evaluate(() => adapter.destroy()); reviewRelease?.();
+      await page.waitForTimeout(50);
+      check('late review response after destroy cannot remount', await page.locator('#root').evaluate(el => el.childElementCount), 0);
+      check('review UI has no browser errors', errors, []);
+      return;
+    }
     check('no implicit generation', requests.filter(r => r.method === 'POST').length, 0);
     check('plan opens native supplement and interactive page', await page.locator('.homeExplanationSupplement article').count(), 1);
     check('native Home host gives interactive diagram the reading width', await page.locator('.homeExplanationInteraction').evaluate(el => el.getBoundingClientRect().width > Math.min(800, innerWidth * .7)), true);
