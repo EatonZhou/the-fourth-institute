@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from management_common import process_runtime
+from management_portal.hatg.contracts import InstructionError
 from management_portal.society_service import SocietyServiceUnavailable
 from management_portal.resources.errors import ResourceServiceUnavailable
 
@@ -25,6 +26,19 @@ class UnsupportedRunner(RuntimeError):
 
 class SubmissionPending(RuntimeError):
     """Observation has no terminal business fact; keep the original work alive."""
+
+
+def _confirmed_terminal_input(resident_id: str, message_id: str) -> bool:
+    """A completed checkpoint cannot authorize cleanup after explicit requeue."""
+    from management_portal import isa_client
+    try:
+        state = isa_client.call(TAU_ACTOR, 'GetInputState', {
+            'resident_id': resident_id, 'message_id': message_id,
+        })['input_state']
+    except (InstructionError, SocietyServiceUnavailable, ResourceServiceUnavailable, KeyError, OSError):
+        return False
+    return (isinstance(state, dict) and state.get('message_id') == message_id
+            and state.get('state') in {'completed', 'failed', 'cancelled'})
 
 
 @dataclass(frozen=True)
@@ -185,9 +199,18 @@ class TauAdapter(RunnerAdapter):
         # A corrupt checkpoint cannot authorize destructive cleanup.
         try:
             checkpoint = json.loads(path.read_text(encoding="utf-8"))
-            return (isinstance(checkpoint, dict)
-                    and checkpoint.get("schema") == "tfi.tau-invocation-checkpoint.v1"
-                    and checkpoint.get("safe_to_cleanup") is True)
+            if (not isinstance(checkpoint, dict)
+                    or checkpoint.get("schema") != "tfi.tau-invocation-checkpoint.v1"
+                    or checkpoint.get("safe_to_cleanup") is not True):
+                return False
+            handle = checkpoint.get('handle') or {}
+            if not isinstance(handle, dict):
+                return False
+            if not handle.get('message_id'):
+                return True  # No accepted input; the checkpoint confirmed rejection.
+            if not handle.get('resident_id'):
+                return False
+            return _confirmed_terminal_input(handle['resident_id'], handle['message_id'])
         except (ValueError, OSError):
             return False
 

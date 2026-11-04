@@ -30,11 +30,45 @@ VERDICT = {**ACCEPTED, "message": 'PORTAL_TAU_RESULT: {"status":"reported","proc
 
 
 @pytest.fixture
-def config(tmp_path):
+def config(tmp_path, monkeypatch):
     storage = tmp_path / "state.json"
     storage.write_text("{}")
     storage.chmod(0o600)
+    # These delivery tests use synthetic inputs. Cleanup-state reconciliation
+    # is exercised separately below against the official ISA boundary.
+    monkeypatch.setattr(runner_adapters, '_confirmed_terminal_input', lambda *_: True)
     return _tau_config(storage)
+
+
+@pytest.mark.parametrize('state', ['queued', 'running', 'cancelling', 'completed', 'failed', 'cancelled'])
+def test_cleanup_rechecks_original_input_after_explicit_requeue(tmp_path, monkeypatch, state):
+    """旧终态检查点不能允许清理已正式放回队列的同一输入。"""
+    from management_portal import isa_client
+    resident_id, message_id = 'resident_0123456789ab', 'msg_original'
+    (tmp_path / 'tau-invocation.json').write_text(json.dumps({
+        'schema': 'tfi.tau-invocation-checkpoint.v1', 'safe_to_cleanup': True,
+        'handle': {'resident_id': resident_id, 'message_id': message_id},
+    }))
+    def call(actor, instruction, arguments):
+        assert actor == runner_adapters.TAU_ACTOR
+        assert instruction == 'GetInputState'
+        assert arguments == {'resident_id': resident_id, 'message_id': message_id}
+        return {'input_state': {'message_id': message_id, 'state': state}}
+    monkeypatch.setattr(isa_client, 'call', call)
+    assert TauAdapter.cleanup_ready(run_dir=tmp_path) is (state in {'completed', 'failed', 'cancelled'})
+
+
+def test_cleanup_retains_resources_if_current_input_cannot_be_read(tmp_path, monkeypatch):
+    """正式终态读取失败时保留资源，不沿用旧的safe标志。"""
+    from management_portal import isa_client
+    (tmp_path / 'tau-invocation.json').write_text(json.dumps({
+        'schema': 'tfi.tau-invocation-checkpoint.v1', 'safe_to_cleanup': True,
+        'handle': {'resident_id': 'resident_0123456789ab', 'message_id': 'msg_original'},
+    }))
+    def unavailable(*args, **kwargs):
+        raise InstructionError('instruction.owner_unavailable', 'temporary restart')
+    monkeypatch.setattr(isa_client, 'call', unavailable)
+    assert not TauAdapter.cleanup_ready(run_dir=tmp_path)
 
 
 def execute(adapter, tmp_path, **options):
