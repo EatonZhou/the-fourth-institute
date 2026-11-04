@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import stat
 from datetime import datetime
 from pathlib import Path
 
@@ -86,6 +87,40 @@ def test_no_remote_does_not_treat_current_branch_as_default(tmp_path: Path) -> N
     overview = repo_workspace_overview.repo_overview(repo_id)
     assert overview["current_branch"] == "feature/navigation"
     assert overview["default_branch"] == ""
+
+
+def test_windows_readonly_save_has_no_payload_residue_and_recovers(tmp_path, monkeypatch):
+    """Windows只读元数据拒绝先于临时写入，恢复后沿原摘要保存。"""
+    repo_id, checkout = _repo(tmp_path)
+    target = checkout / "README.md"
+    original = target.read_bytes()
+    expected_hash = hashlib.sha256(original).hexdigest()
+    native_stat = Path.stat
+
+    class ReadonlyStat:
+        st_file_attributes = stat.FILE_ATTRIBUTE_READONLY
+
+        def __init__(self, value):
+            self.value = value
+
+        def __getattr__(self, name):
+            return getattr(self.value, name)
+
+    def readonly_metadata(path, *args, **kwargs):
+        info = native_stat(path, *args, **kwargs)
+        return ReadonlyStat(info) if path == target else info
+
+    # Only the native metadata adapter is substituted; the checkout, payload,
+    # filesystem operations and recovery use their real implementations.
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "stat", readonly_metadata)
+        with pytest.raises(PermissionError, match="只读"):
+            repo_workspace_files.write_repo_file(repo_id, "README.md", "draft\n", expected_hash=expected_hash)
+        assert target.read_bytes() == original
+        assert not list(checkout.glob("*.portal-save"))
+    saved = repo_workspace_files.write_repo_file(repo_id, "README.md", "draft\n", expected_hash=expected_hash)
+    assert saved["content"] == "draft\n"
+    assert not list(checkout.glob("*.portal-save"))
 
 
 def test_remote_records_include_sanitized_web_url_contracts(tmp_path, subtests, isolated_portal_case):

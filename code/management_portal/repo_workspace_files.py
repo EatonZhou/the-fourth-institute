@@ -6,6 +6,7 @@ import hashlib
 import mimetypes
 import os
 import shutil
+import stat
 import tempfile
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -353,7 +354,14 @@ def write_repo_file(
             raise RepoWorkspaceConflict(
                 "文件已被其他操作修改，请刷新后重新编辑。"
             )
-        mode = target.stat().st_mode if target.exists() else None
+        target_info = target.stat() if target.exists() else None
+        if target_info is not None and getattr(target_info, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_READONLY:
+            # Windows atomic replacement cannot overwrite a readonly target.
+            # Copying that mode onto a payload temporary would also prevent
+            # cleanup after the rejected replace. Do not change the target ACL
+            # or readonly attribute, and do not create a payload temporary.
+            raise PermissionError("文件为只读。请由文件所有者解除只读状态后重试；未保存的编辑仍保留在编辑器中。")
+        mode = target_info.st_mode if target_info is not None else None
         fd, temporary = tempfile.mkstemp(
             prefix=f".{target.name}.",
             suffix=".portal-save",
