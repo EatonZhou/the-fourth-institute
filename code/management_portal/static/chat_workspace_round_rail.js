@@ -67,7 +67,9 @@
     let coords = new Map(), nodeForKey = new Map(), currentNode = null, tickSignature = '';
     let metrics = { total: 0, client: 0, track: 0, thumb: 0, hit: 26, available: 0 };
     const observedRows = new Set(), sizes = new WeakMap(); let observedList = null;
-    let hoverTimer = 0, fullTimer = 0, closeTimer = 0, press = null, suppressed = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
+    let hoverTimer = 0, closeTimer = 0, press = null, suppressed = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
+    let previewFrame = 0;
+    const previewSizes = new WeakMap();
     const identity = () => String(window.PortalIdentity?.username?.() || '');
     const scopeKey = () => JSON.stringify([identity(), String(scope())]);
     const storageKey = () => window.PortalState.storage.key('portal.chat.round-flags.v1.' + scopeKey());
@@ -146,7 +148,8 @@
       if (press) { clearTimeout(press.timer); press.node.classList.remove('is-pressing'); press = null; }
     }
     function closePreview(returnFocus = false) {
-      clearTimeout(hoverTimer); clearTimeout(fullTimer); clearTimeout(closeTimer);
+      clearTimeout(hoverTimer); clearTimeout(closeTimer);
+      previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
       const trigger = popup?.trigger; popup = null; preview.hidden = true; preview.replaceChildren();
       if (returnFocus && trigger?.isConnected) { restoringFocus = true; trigger.focus({ preventScroll: true }); restoringFocus = false; }
     }
@@ -166,7 +169,8 @@
       const focusedFlag = preview.contains(document.activeElement) ? document.activeElement.dataset.roundFollow : '';
       const expanded = popup?.trigger === trigger ? popup.expanded : new Set();
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
-      popup = { items, trigger, explicit, expanded }; preview.replaceChildren(); preview.hidden = false;
+      previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
+      popup = { items, trigger, explicit, expanded, contents: [] }; preview.replaceChildren(); preview.hidden = false;
       const head = el('div', 'chatRoundPreviewHead', window.PortalI18n.text`${items.length} 条消息`);
       const close = button('portalButton is-icon is-quiet', t('关闭'), '×'); close.onclick = () => closePreview(true); head.append(close); preview.append(head);
       if (trigger === directory && state.messageRenderOptions?.history?.can_load_older) {
@@ -196,33 +200,64 @@
           main.append(el('div', 'chatRoundAttachments', content.attachments.map(file => file.label).join(' · ')));
         }
         if (content.text) {
-          const full = el('div', 'chatRoundFull', content.text);
-          const expand = button('chatRoundExpand', t('展开全文'), '…');
-          const setExpanded = value => {
-            full.hidden = !value; if (value) expanded.add(row.key); else expanded.delete(row.key);
-            expand.setAttribute('aria-expanded', String(value)); expand.setAttribute('aria-label', t(value ? '收起全文' : '展开全文')); positionPreview();
-          };
-          setExpanded(expanded.has(row.key));
-          expand.onclick = () => { clearTimeout(fullTimer); setExpanded(full.hidden); };
-          expand.onpointerenter = event => { if (event.pointerType === 'mouse') fullTimer = setTimeout(() => { if (!disposed && expand.isConnected) setExpanded(true); }, 500); };
-          expand.onpointerleave = () => clearTimeout(fullTimer);
-          meta.append(expand); main.append(full);
+          popup.contents.push({ key: row.key, jump, meta, expand: null });
         }
         card.append(main);
-        const flag = button('chatRoundFollow', t(flags.has(row.key) ? '取消本轮关注' : '标记本轮关注'), ''); flag.innerHTML = flagIcon;
+        const flag = button('chatRoundFollow', t(flags.has(row.key) ? '取消Flag' : 'Flag'), ''); flag.innerHTML = flagIcon;
         const request = requestFor(row.key);
         if (request) {
           flag.dataset.roundFollow = row.key;
-          flag.setAttribute('aria-label', t(flags.has(request) ? '取消本轮关注' : '标记本轮关注'));
+          flag.setAttribute('aria-label', t(flags.has(request) ? '取消Flag' : 'Flag'));
           flag.setAttribute('aria-pressed', String(flags.has(request))); flag.onclick = () => toggle(row.key); card.append(flag);
         }
         list.append(card);
       }
       if (!items.length) list.append(el('p', '', t('暂无已加载轮次')));
-      preview.append(list); positionPreview();
+      preview.append(list); measurePreview();
+      for (const { jump } of popup.contents) previewResize.observe(jump);
       if (focusedFlag) preview.querySelector(`[data-round-follow="${CSS.escape(focusedFlag)}"]`)?.focus({ preventScroll: true });
       else if (explicit) (preview.querySelector('.chatRoundPreviewJump') || close).focus({ preventScroll: true });
     }
+    function applyExpanded(content, value) {
+      if (value) popup.expanded.add(content.key); else popup.expanded.delete(content.key);
+      content.jump.classList.toggle('is-expanded', value);
+      if (content.expand) {
+        const label = t(value ? '收起' : '展开');
+        content.expand.textContent = label; content.expand.setAttribute('aria-label', label);
+        content.expand.setAttribute('aria-expanded', String(value));
+      }
+    }
+    function measurePreview() {
+      if (disposed || !popup || preview.hidden) return;
+      // Measure the clamped original once per preview/width/font change. No
+      // duplicate full-text DOM and no measurement on conversation/list scroll.
+      for (const content of popup.contents) content.jump.classList.remove('is-expanded');
+      const measurements = popup.contents.map(content => {
+        const { jump } = content;
+        previewSizes.set(jump, { width: jump.clientWidth, lineHeight: getComputedStyle(jump).lineHeight });
+        return { content, truncated: jump.scrollHeight > jump.clientHeight + 1 };
+      });
+      for (const { content, truncated } of measurements) {
+        if (truncated && !content.expand) {
+          content.expand = button('chatRoundExpand', t('展开'));
+          content.expand.onclick = () => { applyExpanded(content, !popup.expanded.has(content.key)); positionPreview(); };
+          content.meta.append(content.expand);
+        } else if (!truncated && content.expand) {
+          if (document.activeElement === content.expand) content.jump.focus({ preventScroll: true });
+          content.expand.remove(); content.expand = null;
+        }
+        applyExpanded(content, truncated && popup.expanded.has(content.key));
+      }
+      positionPreview();
+    }
+    const previewResize = new ResizeObserver(entries => {
+      if (!popup || disposed || preview.hidden) return;
+      const changed = entries.some(({ target }) => {
+        const previous = previewSizes.get(target);
+        return !previous || previous.width !== target.clientWidth || previous.lineHeight !== getComputedStyle(target).lineHeight;
+      });
+      if (changed && !previewFrame) previewFrame = requestAnimationFrame(() => { previewFrame = 0; measurePreview(); });
+    });
     function positionPreview() {
       if (preview.hidden) return;
       const bounds = wrapper.getBoundingClientRect(), source = popup?.trigger?.getBoundingClientRect();

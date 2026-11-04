@@ -283,7 +283,8 @@
   // One input as the history recalls it: its text with the attachments in place.
   function messageInputHistoryItem(item, options = {}) {
     const draft = messageHistoryDraft(item, options);
-    return { id: messageIdentity(item), text: draft.text, meta: { attachments: draft.attachments } };
+    return { id: messageIdentity(item), created_at: item.created_at || item.enqueued_at,
+      text: draft.text, meta: { attachments: draft.attachments } };
   }
 
   function messageAvatarPlaceholderHtml(id, label) {
@@ -861,7 +862,7 @@
       },
     });
     // Keep the input history with the conversation shown: this person's inputs
-    // still queued for a turn come first, and when the Chat
+    // are merged by send time, and when the Chat
     // shows a new input of theirs, from here or another browser, the history
     // reads the server's first page again.
     const ownInputMarks = new Map();
@@ -1375,6 +1376,7 @@
           snapshot,
           workspace: controller,
           messageIdentity: newMessageIdentity(),
+          submittedAt: new Date().toISOString(),
         };
         const optimistic = submitOptions.optimistic === true;
         if (submitOptions.clear !== false) controller.clear();
@@ -1409,6 +1411,7 @@
             history.remember(scope, {
               // A conversation that names the message itself (a Chatroom) gives its ID back.
               id: submitOptions.sentMessageId?.(result) || context.messageIdentity,
+              created_at: context.submittedAt,
               text: historyDraftText,
               meta: { attachments: draftSnapshot.attachments },
             });

@@ -117,7 +117,7 @@ async function deletedQueueInputRemainsRecallable() {
   let scope = 'deleted-queue';
   const fullText = input.longQueueText || 'queued input '.repeat(80) + 'the complete ending';
   const queued = (id, text, author = 'sample_admin', extra = []) => ({
-    message_id: id, author_id: author,
+    message_id: id, author_id: author, created_at: '2026-09-14T00:00:00Z',
     content_parts: [{ type: 'text', text }, ...extra],
   });
   let items = [
@@ -169,11 +169,14 @@ async function deletedQueueInputRemainsRecallable() {
     await press('ArrowDown');
 
     // Leaving the queue for execution must still deduplicate when the trace catches up.
+    // A newer server input must precede an older removed queue input.
     items = [];
     workspace.setComposer({ can_send: true, queue: { items } });
-    listed = [message('mine-first', 'earlier queued input')];
+    listed = [message('newest', 'github remote PR', { created_at: '2026-09-15T00:00:00Z' }), message('mine-first', 'earlier queued input')];
     workspace.setMessages(listed);
     await settle();
+    assert.equal(await press('ArrowUp'), 'github remote PR');
+    assert.equal(workspace.attachments().length, 0, 'newer input must not restore old attachments');
     assert.ok((await press('ArrowUp')).includes(fullText));
     assert.equal(await press('ArrowUp'), 'earlier queued input');
     assert.ok((await press('ArrowDown')).includes(fullText), 'the server-listed input must not appear twice');

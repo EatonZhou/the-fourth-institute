@@ -133,9 +133,8 @@
     }
 
     // The composer's input history, newest first: this person's
-    // inputs still queued for a turn and the ones just sent that the server
-    // does not list yet, then what the server lists of everything they typed in
-    // the conversation, a page at a time (``loadPage``).
+    // queued and locally retained inputs merge with server pages by send time.
+    // Leaving the queue must not promote an old input above newer history.
     function createInputHistory(options = {}) {
       const cursor = { scope: "", index: -1, draft: "", draftMeta: null };
       let loadingOlder = null;
@@ -153,7 +152,8 @@
         if (!text) return null;
         const identity = String(raw?.id || raw?.message_id || "").trim();
         const meta = raw?.meta && typeof raw.meta === "object" ? raw.meta : null;
-        return { key: identity ? `message:${identity}` : `text:${text}`, text, meta };
+        return { key: identity ? `message:${identity}` : `text:${text}`, text, meta,
+          sentAt: Date.parse(raw?.created_at || "") || 0 };
       };
       const normalizeItems = items => (Array.isArray(items) ? items : []).map(normalizeItem).filter(Boolean);
       // A sent input leaves once the queue or the server lists it.
@@ -164,7 +164,11 @@
       const readEntries = (scope = cursor.scope) => {
         const state = scopeState(scope);
         const seen = new Set();
-        return [...state.sent, ...state.queued, ...state.listed].filter(item => !seen.has(item.key) && seen.add(item.key));
+        // Queue membership and cache lifetime do not determine when an input was sent.
+        // Stable sorting retains server page order for equal/legacy timestamps.
+        return [...state.sent, ...state.queued, ...state.listed]
+          .filter(item => !seen.has(item.key) && seen.add(item.key))
+          .sort((a, b) => b.sentAt - a.sentAt);
       };
       // The next page of the server's list, or its first page again when ``fresh``.
       const load = (scope, { fresh = false } = {}) => {

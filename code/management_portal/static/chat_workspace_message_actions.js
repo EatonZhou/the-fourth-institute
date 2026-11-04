@@ -79,7 +79,7 @@
         action = document.createElement('button'); action.type = 'button';
         action.className = 'messageMenuItem'; action.dataset.portalMessageAction = 'round-follow'; menu.append(action);
       }
-      action.textContent = window.PortalI18n.t(controller.isRoundFollowed(key) ? '取消本轮关注' : '标记本轮关注');
+      action.textContent = window.PortalI18n.t(controller.isRoundFollowed(key) ? '取消Flag' : 'Flag');
       action.setAttribute('aria-pressed', String(controller.isRoundFollowed(key)));
     };
     const syncOpenRoundAction = () => syncRoundAction(openMessageMenu);
