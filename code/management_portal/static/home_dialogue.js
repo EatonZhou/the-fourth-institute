@@ -20,6 +20,11 @@
     status.setAttribute("role", "status"); chatStatus.setAttribute("role", "status");
     const heading = node("strong", "对话与展示"), current = node("span", "未选择展示", "homeDialogueCurrent");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
+    const viewNames = { report: "汇报", map: "研究地图", frontier: "Lineage 线头", preview: "文件/资源" };
+    const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
+    switchView.setAttribute("aria-label", "当前视图");
+    const opener = node("details", "", "homeDialogueOpener"), openLabel = node("summary", "打开…");
+    opener.append(openLabel);
     function button(parent, title, fn) { const el = node("button", title); el.type = "button"; el.addEventListener("click", fn); parent.append(el); return el; }
     bar.append(heading);
     button(bar, "返回上一展示", () => back(true));
@@ -33,8 +38,16 @@
     target.placeholder = "目标 ID 或资源地址"; target.required = true;
     form.append(view, kind, target); const openButton = node("button", "展示"); openButton.type = "submit"; form.append(openButton);
     view.onchange = () => { kind.hidden = view.value === "preview"; if (["map", "frontier"].includes(view.value)) kind.value = view.value === "map" ? "project" : "lineage"; };
-    form.onsubmit = event => { event.preventDefault(); navigate({ view: view.value, target: view.value === "preview" ? { address: target.value } : { kind: kind.value, id: target.value } }, true); };
-    const tools = node("div", "", "homeDialogueToolbar"); tools.append(history);
+    form.onsubmit = event => { event.preventDefault(); if (navigate({ view: view.value, target: view.value === "preview" ? { address: target.value } : { kind: kind.value, id: target.value } }, true)) opener.open = false; };
+    opener.append(form);
+    const tools = node("div", "", "homeDialogueToolbar"), more = node("details", "", "homeDialogueMore");
+    more.append(node("summary", "更多"), tools);
+    switchView.onchange = () => {
+      if (!state.active) return;
+      const intent = { view: switchView.value, target: state.active.intent.target };
+      const existing = state.entries.find(e => e.intent.view === intent.view && JSON.stringify(e.intent.target) === JSON.stringify(intent.target));
+      if (existing) { select(existing, true); setPane("display"); } else navigate(intent, true);
+    };
     const cite = button(tools, "引用到对话", () => {
       if (!selection || !chat) return;
       if (state.active?.intent.view === "preview") {
@@ -48,6 +61,7 @@
           text: `${selection.text || selection.label || ""}\n来源与目标：${JSON.stringify(domain)}`,
           source_message_ids: domain.target?.kind === "task" ? [domain.target.id.split("/")[1]] : [] });
       }
+      more.open = false;
       setPane("conversation");
     }); cite.disabled = true;
     button(tools, "关闭当前展示", async () => {
@@ -59,7 +73,8 @@
       state.entries.splice(state.entries.indexOf(entry), 1); state.select(null, false);
       select(state.entries.at(-1) || null, true);
     });
-    left.append(chatStatus, chatRoot); right.append(current, form, tools, status, stage); columns.append(left, divider, right); root.append(bar, tabs, columns);
+    displayBar.append(current, switchView, history, opener, more);
+    left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(bar, tabs, columns);
     function setRatio(value) {
       ratio = Math.max(25, Math.min(70, value));
       root.style.setProperty("--home-dialogue-left", `${ratio}%`);
@@ -68,6 +83,8 @@
     }
     function resize() {
       if (destroyed) return;
+      const navigation = document.querySelector(".portalSiteHeader");
+      root.style.setProperty("--home-dialogue-top", `${Math.max(0, navigation?.getBoundingClientRect().bottom || 0) + 8}px`);
       narrow = root.getBoundingClientRect().width < 760;
       root.dataset.narrow = String(narrow); divider.tabIndex = narrow ? -1 : 0;
       present();
@@ -80,20 +97,32 @@
     divider.addEventListener("pointermove", event => { if (dragging !== event.pointerId) return; const box = columns.getBoundingClientRect(); if (box.width) setRatio((event.clientX - box.left) / box.width * 100); });
     divider.addEventListener("pointerup", () => { dragging = null; });
     divider.addEventListener("lostpointercapture", () => { dragging = null; });
-    const observer = new ResizeObserver(resize); observer.observe(root); setRatio(ratio); resize();
+    const observer = new ResizeObserver(resize); observer.observe(root);
+    const navigation = document.querySelector(".portalSiteHeader"); if (navigation) observer.observe(navigation);
+    setRatio(ratio); resize();
     function setPane(name) { root.dataset.pane = name; present(); }
     function dirty() { return !!state.active?.adapter?.snapshot?.().dirty; }
     function refresh() {
       if (destroyed) return;
       pin.setAttribute("aria-pressed", String(state.pinned)); pin.textContent = state.pinned ? "取消固定" : "固定展示";
-      current.textContent = state.active ? `${state.active.label} · ${state.active.status}` : "未选择展示";
-      history.replaceChildren(new Option("展示历史", ""));
+      current.textContent = state.active?.label || "展示";
+      current.title = state.active ? `${state.active.intent.target.id || state.active.intent.target.address} · ${state.active.status}` : "";
+      switchView.replaceChildren();
+      if (state.active) {
+        const choices = ["lineage", "project"].includes(state.active.intent.target.kind) ? ["report", "map", "frontier"] : [state.active.intent.view];
+        for (const id of choices) switchView.add(new Option(viewNames[id], id));
+        switchView.value = state.active.intent.view;
+      }
+      switchView.hidden = more.hidden = history.hidden = !state.active;
+      history.replaceChildren(new Option(`历史 (${state.entries.length})`, ""));
       for (const entry of state.entries) {
         const draft = entry.adapter?.snapshot?.().dirty ? " · 草稿" : "";
-        history.add(new Option(`${entry.label} · ${entry.status}${entry.queued ? " · 待查看" : ""}${draft}`, entry.id));
+        history.add(new Option(`${viewNames[entry.intent.view]} · ${entry.label} · ${entry.status}${entry.queued ? " · 待查看" : ""}${draft}`, entry.id));
       }
-      history.value = state.active?.id || "";
+      history.value = "";
       cite.disabled = !selection || !chat;
+      if (!state.active) status.textContent = "选择资源或在对话中请求展示";
+      status.hidden = !!state.active && !status.dataset.notice;
     }
     function present() {
       chat?.setPresented(presented && (!narrow || root.dataset.pane === "conversation"));
@@ -110,16 +139,17 @@
             if (destroyed || entry.controller.signal.aborted || generation !== entry.presentationGeneration) return;
             if (result?.error) throw result.error;
             if (entry.presented) {
-              entry.status = "已读取"; refresh();
+              entry.status = "已读取"; void updateLabel(entry); refresh();
             }
           }).catch(error => {
-            if (!destroyed && !entry.controller.signal.aborted && generation === entry.presentationGeneration) { entry.status = "读取失败"; entry.notice.textContent = error.message; entry.retry.hidden = false; refresh(); }
+            if (!destroyed && !entry.controller.signal.aborted && generation === entry.presentationGeneration) { entry.status = "读取失败"; entry.notice.textContent = error.message; entry.notice.hidden = false; entry.retry.hidden = false; refresh(); }
           });
         }
       }
     }
     function select(entry, manual) {
-      state.select(entry, manual); selection = entry?.selection || null;
+      state.select(entry, manual); selection = entry?.selection || null; delete status.dataset.notice;
+      more.open = false;
       if (entry) entry.queued = false;
       present(); refresh();
     }
@@ -129,6 +159,19 @@
       else if (manual) state.manual();
     }
     history.onchange = () => select(state.entries.find(entry => entry.id === history.value) || state.active, true);
+    async function updateLabel(entry) {
+      if (!entry.presented || destroyed || entry.controller.signal.aborted) return;
+      if (entry.intent.view === "preview") {
+        entry.label = entry.adapter?.snapshot?.().payload?.title || entry.label; refresh(); return;
+      }
+      if (entry.intent.target.kind !== "lineage" || !window.PortalResourceChips?.loadReference || entry.labelPending) return;
+      entry.labelPending = true;
+      try {
+        const reference = await window.PortalResourceChips.loadReference(entry.intent.target.id, { allowCached: false, signal: entry.controller.signal });
+        if (!destroyed && !entry.controller.signal.aborted && entry.presented && reference?.title) { entry.label = reference.title; refresh(); }
+      } catch { /* The adapter owns its access/error UI; an optional title cannot replace it. */ }
+      finally { entry.labelPending = false; }
+    }
     async function load(entry) {
       entry.status = "读取中"; refresh();
       try {
@@ -140,7 +183,7 @@
             onOpen: intent => { if (presented && state.active === entry) navigate(intent, true); },
             onSelection: value => {
               entry.selection = value;
-              if (state.active === entry) { selection = value; state.manual(); refresh(); }
+              if (state.active === entry) { selection = value; if (value) state.manual(); refresh(); }
             }, onChange: refresh,
           });
         }
@@ -149,11 +192,12 @@
         const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id });
         if (destroyed || entry.controller.signal.aborted) return;
         if (result?.error) throw result.error;
-        entry.status = entry.presented ? "已读取" : "待查看"; entry.notice.textContent = `本次展示 · ${new Date().toLocaleString()}`;
+        entry.status = entry.presented ? "已读取" : "待查看"; entry.notice.textContent = ""; entry.notice.hidden = true;
+        void updateLabel(entry);
         entry.retry.hidden = true;
       } catch (error) {
         if (destroyed || entry.controller.signal.aborted) return;
-        entry.status = "读取失败"; entry.notice.textContent = error.message || String(error); entry.retry.hidden = false;
+        entry.status = "读取失败"; entry.notice.textContent = error.message || String(error); entry.notice.hidden = false; entry.retry.hidden = false;
       }
       refresh();
     }
@@ -161,20 +205,20 @@
       if (destroyed) return;
       let intent;
       try { intent = window.PortalHomeDialogueState.normalizeIntent(value); }
-      catch (error) { status.textContent = error.message; return; }
+      catch (error) { status.dataset.notice = "true"; status.hidden = false; status.textContent = error.message; return; }
       if (intent.action === "back") {
         if (allowed) back(manual); else status.textContent = "返回请求已完成；当前展示已固定或手动切换，保持当前内容。";
         return;
       }
       // Independent roots retain drafts, video position and camera across history.
       const entry = { id: window.PortalUIPrimitives.randomUUID(), intent, queued: !allowed,
-        label: `${({report:"汇报",map:"地图",frontier:"线头",preview:"预览"})[intent.view]} · ${intent.target.id || intent.target.address}`,
+        label: intent.target.kind === "project" ? intent.target.id : intent.target.kind === "lineage" ? "Lineage" : intent.target.kind === "task" ? "任务请求" : intent.target.address.split("/").filter(Boolean).at(-1),
         status: "等待读取", root: node("section", "", "homeDialogueEntry"), controller: new AbortController(),
         content: node("div", "", "homeDialogueEntryContent"), notice: node("p", "", "homeDialogueEntryNotice") };
-      entry.root.append(entry.notice); entry.retry = button(entry.root, "重试读取", () => load(entry)); entry.retry.hidden = true; entry.root.append(entry.content);
+      entry.notice.hidden = true; entry.root.append(entry.notice); entry.retry = button(entry.root, "重试读取", () => load(entry)); entry.retry.hidden = true; entry.root.append(entry.content);
       entry.root.hidden = true; stage.append(entry.root); state.add(entry);
       if (allowed) select(entry, manual);
-      else { refresh(); status.textContent = "新结果已加入展示历史，当前展示保持不变。"; }
+      else { refresh(); }
       void load(entry);
       if (manual) setPane("display");
       return entry;
@@ -186,7 +230,7 @@
         try {
           const accepted = state.accept(result.value, { residentId: assistant.resident_id, messageId: result.messageId, dirty: dirty() });
           if (accepted) navigate(accepted.intent, false, accepted.present);
-        } catch (error) { status.textContent = `展示指令未执行：${error.message}`; }
+        } catch (error) { status.dataset.notice = "true"; status.hidden = false; status.textContent = `展示指令未执行：${error.message}`; }
       }
     }
     function submissionContext(submittedTarget) {

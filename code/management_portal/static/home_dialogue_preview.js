@@ -14,11 +14,11 @@
     };
     const ownerIdentity = identityKey();
     let destroyed = false, presented = true, authorized = false, checking = false, address = "";
-    let epoch = 0, controller = null, externalSignal = null, verified = null, accessError = "", rendered = null, session;
+    let epoch = 0, controller = null, externalSignal = null, verified = null, accessError = "", externalUrl = "", rendered = null, session;
     const source = window.PortalAgentPreviewSource.create({
       apiGet: (url, options = {}) => window.PortalAPI.get(url, { ...options, signal: controller?.signal, cache: "no-store" }),
       apiPost: window.PortalAPI.post,
-      resourceLoader: (resource, options = {}) => window.PortalResourceChips.loadPreview(resource, { ...options, allowCached: false, signal: controller?.signal }),
+      resourceLoader: (resource, options = {}) => window.PortalResourceChips.loadPreview(resource, { ...options, allowCached: false, readOnly: false, signal: controller?.signal }),
       linkFileUrl: path => `/api/agent-workbench/link-file?path=${encodeURIComponent(path)}`,
     });
     const readable = () => presented && authorized && !destroyed && identityKey() === ownerIdentity;
@@ -38,6 +38,7 @@
       editor.disabled = !canEdit || state.saving;
       if (allowed && state.editing && editor.value !== state.draft) editor.value = state.draft;
       link.hidden = !allowed || !source.rawUrl(state.payload || {});
+      if (externalUrl && presented && identityKey() === ownerIdentity) { link.href = externalUrl; link.textContent = "在原页面打开 ↗"; link.hidden = false; }
       retry.hidden = !presented || !accessError || checking;
       status.textContent = accessError || (checking ? "正在核对当前访问权限…" : state.error || state.readError || (state.status === "loading" ? "正在读取…" : state.saving ? "正在保存…" : state.dirty ? "有未保存草稿（切换展示会保留）" : ""));
       status.hidden = !status.textContent; onChange?.(state);
@@ -74,6 +75,8 @@
       if (resource) return source.reload({ source: "resource", resource_address: resource });
       const local = window.PortalFileLinks.describe(address, { allowAnyLocalPath: true });
       if (local?.path) return source.reload({ source: "workspace_link", path: local.path });
+      const url = new URL(address, window.location.href);
+      if (["http:", "https:"].includes(url.protocol)) externalUrl = url.href;
       throw new Error("此链接不支持内嵌预览，请从原页面打开");
     }
     async function revalidate() {
@@ -90,7 +93,7 @@
         // Re-read through the existing authenticated source, never a cached preview.
         // Retain the editing base/version and draft; reauthorization is not a rebase.
         const cached = session.snapshot().payload;
-        const fresh = await (cached ? source.reload(cached) : readInitial());
+        const fresh = await readInitial();
         if (!valid()) return;
         if (!fresh) throw new Error("当前资源不可预览或已不可读");
         verified = fresh; authorized = true; checking = false;

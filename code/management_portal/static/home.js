@@ -579,6 +579,9 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
       migrateState: window.PortalHomeDialogueState.migrateHomeState,
       root: "#homeWorkbenchRoot",
       staging: "#homeWorkbenchStaging",
+      // Home sits directly below the sticky navigation. Keep tab controls in
+      // their layout track instead of retracting a single tab above the shell.
+      showSingleTabHeader: true,
       label: window.PortalI18n.t("Home Workbench"),
       panels: [
         { id: "dialogue-display", title: "对话与展示", icon: "chat", source: '[data-home-component="dialogue-display"]', minHeight: 440 },

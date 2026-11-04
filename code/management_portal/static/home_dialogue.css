@@ -18,11 +18,24 @@
 .homeDialogueStage,.homeDialogueEntry,.homeDialogueEntryContent { flex:1; display:flex; flex-direction:column; min-height:0; overflow:auto; }
 .homeDialogueDocument { flex:1; overflow:auto; padding:12px; }
 .homeDialogueEditor { flex:1; min-height:180px; resize:none; font:14px/1.5 monospace; background:var(--panel, #fff); color:inherit; padding:12px; }
-.homeDialogueExpanded { position:fixed; inset:52px 8px 8px; z-index:900; box-shadow:0 6px 30px #0004; border:1px solid var(--border, #ccc); }
+.homeDialogueExpanded { position:fixed; inset:var(--home-dialogue-top, 8px) 8px 8px; width:auto !important; max-width:none !important; height:auto; z-index:900; box-shadow:0 6px 30px #0004; border:1px solid var(--border, #ccc); }
 .homeDialogueTabs { display:none; }
+.homeDialogueDisplayBar { display:flex; align-items:center; gap:6px; padding:6px 8px; flex-wrap:wrap; position:relative; }
+.homeDialogueDisplayBar .homeDialogueCurrent { flex:1 1 0; min-width:0; padding:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.homeDialogueDisplayBar > select { flex:0 1 auto; max-width:115px; min-width:0; font-size:14px; padding:5px 6px; }
+.homeDialogueDisplayBar > select[aria-label="展示历史"] { width:80px; }
+.homeDialogue summary { cursor:pointer; white-space:nowrap; padding:5px 7px; border:1px solid var(--border,#ccc); border-radius:5px; }
+.homeDialogueDisplayBar summary { list-style:none; padding:5px 6px; font-size:14px; }
+.homeDialogueDisplayBar summary::-webkit-details-marker { display:none; }
+.homeDialogueOpener[open] .homeDialogueChooser,.homeDialogueMore[open] .homeDialogueToolbar { position:absolute; top:100%; right:8px; left:8px; z-index:2; background:var(--panel,#fff); border:1px solid var(--border,#ccc); border-radius:5px; box-shadow:0 4px 12px #0002; }
+.homeDialogueOpener .homeDialogueChooser > select { max-width:100%; }
 .homeDialogue[data-narrow="true"] .homeDialogueTabs { display:flex; }
+.homeDialogue[data-narrow="true"] > .homeDialogueToolbar > strong { display:none; }
 .homeDialogue[data-narrow="true"] .homeDialogueColumns { display:flex; }
 .homeDialogue[data-narrow="true"] .homeDialogueDivider { display:none; }
 .homeDialogue[data-narrow="true"] .homeDialogueConversation,.homeDialogue[data-narrow="true"] .homeDialogueDisplay { flex:1; }
 .homeDialogue[data-narrow="true"][data-pane="conversation"] .homeDialogueDisplay,.homeDialogue[data-narrow="true"][data-pane="display"] .homeDialogueConversation { display:none; }
-@media(max-width:760px) { .homeDialogueExpanded { inset:48px 0 0; } }
+/* Keep this Home panel's native close tab reachable in the mobile shell too. */
+html[data-portal-viewport="mobile"] #homeWorkbenchRoot .portalWorkbenchStack[data-portal-mobile-active="true"]:has(.homeDialogue) { grid-template-rows:28px minmax(0,1fr); }
+html[data-portal-viewport="mobile"] #homeWorkbenchRoot .portalWorkbenchStack:has(.homeDialogue) > .portalWorkbenchTabs { display:flex; }
+@media(max-width:760px) { .homeDialogueExpanded { inset:var(--home-dialogue-top, 8px) 0 0; } }

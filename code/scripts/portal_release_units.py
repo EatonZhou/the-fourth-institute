@@ -218,6 +218,25 @@ def page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
 MANAGEMENT_PAGE = ('management_portal/portal_management.html', 'portal_management')
 PERMISSION_SCHEMES_PREFIX = 'portal_permission_schemes'
 
+# Home embeds the native map surfaces through adapters. The host and adapters
+# must reach Release with the native lifecycle/focus interfaces they consume;
+# their different filename prefixes are not captured by page_unit alone.
+HOME_DISPLAY_RELEASE_UNIT = (
+    'management_portal/index.html',
+    'management_portal/static/home_dialogue.js',
+    'management_portal/static/home_dialogue_state.js',
+    'management_portal/static/home_dialogue_preview.js',
+    'management_portal/static/home_dialogue.css',
+    'management_portal/static/home_report.js',
+    'management_portal/static/home_report.css',
+    'management_portal/static/home_map_view.js',
+    'management_portal/static/project_map.js',
+    'management_portal/static/project_map.css',
+    'management_portal/static/project_map_drawer.js',
+    'management_portal/static/project_map_layout.js',
+    'management_portal/static/frontier.js',
+)
+
 
 def prefix_unit(root: Path, prefix: str) -> tuple[str, ...]:
     """The static scripts named ``prefix``.js or ``prefix``_*.js, as source paths under ``root``."""
@@ -238,7 +257,7 @@ def release_units(root: Path) -> tuple[tuple[str, ...], ...]:
         'management_portal/static/hatg_graph_view.js',
         'management_portal/static/project_map.js',
     )
-    return (LINEAGE_WORKBENCH_RELEASE_UNIT, frontier, chat_workspace_unit(root),
+    return (LINEAGE_WORKBENCH_RELEASE_UNIT, frontier, HOME_DISPLAY_RELEASE_UNIT, chat_workspace_unit(root),
             *(script_group_unit(root, group) for group in PART_SCRIPT_GROUPS),
             *(page_unit(root, page, prefix) for page, prefix in PAGES),
             page_unit(root, *MANAGEMENT_PAGE), prefix_unit(root, PERMISSION_SCHEMES_PREFIX))

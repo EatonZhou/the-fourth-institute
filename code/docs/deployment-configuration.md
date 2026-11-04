@@ -14,6 +14,27 @@
 
 运行时路径读取通过 `instance_manifest.current_instance()` 复用已经校验的清单，`portal_paths` 与登记位置解析共用此入口。每次读取核对所选实例及清单文件的身份、修改时间、变更时间与大小，修改、替换、删除或切换实例立即使旧版本失效；清单不能是软链接。安装与管理操作使用 `load()` 完整校验。此复用只保存配置，文件遍历、资源授权、个人空间边界和正文仍按各自领域的当前事实检查。
 
+## Home 汇报的可选媒体依赖
+
+文字汇报不依赖媒体工具。配音视频需要 FFmpeg（libx264、AAC）、eSpeak NG
+（cmn 中文语音数据）和 CJK 字体。媒体工具属于代码部署依赖，不依赖 Resident
+Workspace。可使用主机已安装的工具，或将与目标平台匹配的已验证离线包导入代码旁：
+
+```sh
+python3 code/management_portal/home_report_dependencies.py --code code \
+  --bundle /path/to/home-report-media.tar.gz --sha256 <交付的完整摘要>
+```
+
+命令核对包摘要与逐文件清单，再安装到
+`dependencies/native/home-report-media-v2/`。包包含工具、非 glibc 动态库、
+语音数据和字体；当前包针对 Ubuntu 24 x86_64，其平台及 glibc 要求见包内清单。
+Dev 与 Release 的代码旁分别准备，版本不同的包不能原位覆盖。
+该命令不安装系统包，不改实例配置或重启。启用前实际生成并播放中文视频，
+核对字幕、章节和音轨；安装完成本身不代表播放验收。
+需要自定义工具或字体位置时，进程可显式设置 `TFI_HOME_REPORT_FFMPEG`、
+`TFI_HOME_REPORT_ESPEAK`、`TFI_HOME_REPORT_FONT`；默认字体是 Noto Sans CJK。
+视频生成失败独立显示并支持重试，不能将文字汇报可用视为视频能力已验证。
+
 ## 设备 SSH 本机路径
 
 设备连接用的 SSH 配置文件（`config_path`）和私钥文件引用（`identity_file`）保存在设备登记的 `access_methods.ssh` 中，站点设置不含这类路径。值必须是主机上文件的规范绝对路径（不含 `..`），这些文件属于主机，不随实例备份、搬迁或退役；登记中只保存路径，不保存私钥或密码。

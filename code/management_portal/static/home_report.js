@@ -34,6 +34,7 @@
       const b = button(source.label, () => {
         if (source.read.instruction === 'GetMessage' || source.read.instruction === 'GetInputState') {
           const args = source.read.arguments;
+          if (target.kind === 'task') { onOpen?.({view:'report',target:{...target,focus:args.message_id}}); return; }
           onOpen?.({view:'report',target:{kind:'task',id:`${args.resident_id}/${args.message_id}`}}); return;
         }
         if (source.address) onOpen?.({view: 'preview', target: {address: source.address}});
@@ -55,6 +56,16 @@
         const heading = el('div', null, 'hr-card-heading');
         heading.append(el('span', row.group, 'hr-muted'), el('span', row.status, 'hr-status'));
         article.append(heading, el('h3', row.title), el('p', row.body));
+        if (row.request_text !== undefined) {
+          const original = el('details'); original.append(el('summary','原始任务全文'),el('pre',row.request_text));
+          if (target.focus === target.id.split('/')[1]) original.open = true;
+          article.append(original);
+          for (const reply of row.replies || []) {
+            const detail = el('details'); detail.append(el('summary',`原始回复 · ${reply.message_id}`),el('pre',reply.text));
+            if (target.focus === reply.message_id) detail.open = true;
+            article.append(detail);
+          }
+        }
         if (row.detail) article.append(el('p', row.detail, 'hr-muted'));
         if (row.conclusion) article.append(el('p', `已登记结论：${row.conclusion}`));
         for (const note of row.notes || []) article.append(el('p', note));
@@ -125,6 +136,7 @@
       for (const chapter of state.chapters) chapters.append(button(`${Math.floor(chapter.start / 60)}:${String(Math.floor(chapter.start % 60)).padStart(2,'0')} ${chapter.title}`, () => {video.currentTime = chapter.start;}));
       const transcript = el('details'); transcript.append(el('summary', '文字稿'), el('pre', state.transcript));
       mediaRegion.append(chapters, transcript, el('small', `讲解时长 ${Math.round(state.duration)} 秒 · 生成用时 ${state.generation_seconds} 秒 · 报告版本 ${state.version.slice(0,12)}`));
+      if (state.scope_note) mediaRegion.append(el('p', state.scope_note, 'hr-muted'));
     }
     async function pollMedia(token) {
       if (!active(token) || !media?.job_id) return;

@@ -115,3 +115,18 @@ def test_lineage_and_server_publications_stay_apart_from_the_chat():
     assert ENTRY not in lineage
     assert expand('management_portal/serve_management_portal.py') == {'management_portal/serve_management_portal.py'}
     assert expand('scripts/tfi_dev.py') == {'scripts/tfi_dev.py'}
+
+
+def test_home_display_publishes_with_native_surface_contracts(tmp_path):
+    """Home 适配器、宿主与原生地图生命周期接口一起发布，服务端和 Chat 保持独立。"""
+    paths = set(units.HOME_DISPLAY_RELEASE_UNIT)
+    for filename in paths | {'management_portal/home_report.py', ENTRY}:
+        file = tmp_path / filename
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text('')
+    for selected in ('management_portal/static/home_dialogue.js',
+                     'management_portal/static/home_map_view.js',
+                     'management_portal/static/project_map.js',
+                     'management_portal/static/frontier.js',
+                     'management_portal/static/home_report.js'):
+        assert expand(selected, root=tmp_path) == paths

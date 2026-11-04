@@ -369,11 +369,13 @@ def _portal_route_definitions() -> tuple[RouteDefinition, ...]:
     prefix fallback covering it, and the fallbacks come last; ``RouteDispatcher``
     checks both, so the groups may come in any order before the fallbacks.
     """
+    from management_portal.home_report_http import routes as home_report_routes
     principal_route = http_auth._principal_route
     return (
         *http_overview.routes(),
         *http_auth.routes(),
         *_shell_routes(),
+        *home_report_routes(),
         *_AGENT_WORKBENCH_HTTP.routes(principal_route),
         *_LINEAGE_HTTP.routes(principal_route),
         *_KNOWLEDGE_HTTP.routes(),
