@@ -171,7 +171,9 @@ class PortalSessionHttp:
 
         ``principal_route`` declares a route Users and Residents both call.
         """
+        from management_portal.http_account_directories import account_directories
         return (
+            RouteDefinition("GET", "/api/management/account-directories", account_directories, "portal-portal-get"),
             principal_route("GET", "/api/me", self.me, "portal-portal-get"),
             principal_route("GET", "/__portal_router/preference", self.router_preference, "portal-portal-get"),
             principal_route("GET", "/api/preferences", self.preferences_get, "portal-portal-get"),

@@ -55,15 +55,15 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 94
+  number: 96
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T23:20:19Z"
+  updated_at: "2026-11-04T13:35:55Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_2e9ea0072551"
 metaness: 2
 ---
 # HATG ISA：指令格式、调用入口与执行规则

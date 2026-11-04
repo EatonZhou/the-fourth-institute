@@ -15091,7 +15091,7 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260731__decision__HATG_Instruction_Set作为Lineage统一指令层__decision_898b8911a2ff.md",
-      "sha256": "da1522cc93e952656987be855aaaa1f1ae32013fcb546dfcc2b354601e5c2f9e",
+      "sha256": "ef9254466c96507651b751cb3cdde1fdeb372f5bb38977d61d8442f2f6a135e2",
       "size": 61252
     },
     {
@@ -15811,8 +15811,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限系统：PAR_引擎架构与开关__decision_b820faf42218.md",
-      "sha256": "5288cbf28a987fcd1e6b043156a964b07aecec956c5b19eaa0a8bdd212a60574",
-      "size": 90075
+      "sha256": "0c1d012f5778ce75c90ec4ae0fe410ccca1a70e1bd77ef46c867a107c73d9b46",
+      "size": 90078
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限默认方案：P、A、R_三棵树与表规则__decision_600ae27b0538.md",
@@ -15826,8 +15826,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__AI_Backend_注册与管理页：Provider、执行账号与模型_API__decision_7956d7cb4bde.md",
-      "sha256": "6fdc4a51cbbc8198cf7b8b4410910794875bd2f632720b91c0914d18d16ea7d9",
-      "size": 34967
+      "sha256": "15014341f2e7ef6cb7a74df6eb66af82bd10ea44e72bddfe3d630533a07dfe98",
+      "size": 37530
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Family_内部机制指令__decision_b77fde81e7a0.md",
@@ -15886,8 +15886,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261102__decision__目录与路径协议__decision_4aa13bc21e8e.md",
-      "sha256": "2efbd510838fd3d5e7ae03f9f4baa28c40dee8ff9d3623b20b59424371073454",
-      "size": 30244
+      "sha256": "71e73a2d30619a86bbd0e3eb7ab4aaf824b135eb16bd989664ea409b95c5a35a",
+      "size": 30217
     },
     {
       "path": "data/projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",

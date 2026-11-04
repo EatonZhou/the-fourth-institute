@@ -138,7 +138,17 @@ def new_registration(data):
     return data
 
 
-def create_registration(data, actor):
+def create_registration(data, actor, *, require_existing=False):
+    if require_existing:
+        # Validate before defaults and again at the actual filesystem boundary.
+        from management_common.provider_account_paths import canonical_directory
+        config = data.get("config")
+        value = config.get("account_dir") if isinstance(config, dict) else None
+        try:
+            if data.get("kind") != "subscription_login" or not canonical_directory(value).is_dir():
+                raise ValueError("Existing subscription directory is required")
+        except (OSError, ValueError):
+            raise invalid("复用登录必须指定现有的主机规范绝对目录") from None
     data = new_registration(data)
     if not data.get("route_id") and data.get("provider") != "provider_api" and not (
             data.get("provider") == "kimi" and data.get("kind") == "service"):
@@ -158,7 +168,8 @@ def create_registration(data, actor):
             _check_relationships(c, data)
             from management_common.provider_account_paths import prepare_registration_directory
             try:
-                created = prepare_registration_directory(data)
+                created = (prepare_registration_directory(data, require_existing=True) if require_existing
+                           else prepare_registration_directory(data))
             except (OSError, ValueError) as exc:
                 raise invalid(str(exc)) from None
             _check_relationships(c, data)

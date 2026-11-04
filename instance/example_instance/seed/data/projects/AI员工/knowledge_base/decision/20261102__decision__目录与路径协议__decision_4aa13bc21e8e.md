@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-11-02'
 version:
-  number: 12
+  number: 13
   created_at: "2026-11-02"
   created_by:
     user: ""
     agent: "resident_24014e2b9bf6"
-  updated_at: "2026-11-04T12:37:53Z"
+  updated_at: "2026-11-04T13:35:30Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -110,7 +110,7 @@ Portal 在主机上为各种对象保存文件，例如项目资料、Resident �
 
 **额外 Workspace 可以属于它自己。** 这种 Workspace 不跟随其他对象，只在直接删除它时清理。它位于另一对象目录内时，也随外层目录删除。
 
-**主机执行账号目录属于主机。** 新建订阅账号时系统显示主机用户目录下 `.tfi-provider-accounts/<instance_id>/<provider>/<account_id>` 的默认绝对路径，用户可修改或复用已有登录目录；保存时创建，不要求手填或预先登录。该默认位置在实例可退役的数据区域之外。 其中保存 Codex、Claude 等账号登录信息和会话记录，可由多个实例与主机命令行共用；它不是 Portal 资源拥有的目录。
+**主机执行账号目录属于主机。** 新建订阅账号时系统显示主机用户目录下 `.<provider>-accounts/<account_id>` 的默认绝对路径，用户可修改或复用已有登录目录；保存时创建，不要求手填或预先登录。该默认位置在实例可退役的数据区域之外。 其中保存 Codex、Claude 等账号登录信息和会话记录，可由多个实例与主机命令行共用；它不是 Portal 资源拥有的目录。
 
 登记账号时如果目录还不存在，Portal 会准备空目录供登录使用；归属仍为主机。注销账号只删除账号登记，不删除或移动主机目录。
 

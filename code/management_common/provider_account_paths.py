@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import re
 
-from .file_permissions import ensure_private_directory
+from .file_permissions import assert_private_directory, ensure_private_directory
 
 def canonical_directory(value: str | Path) -> Path:
     if not isinstance(value, (str, Path)) or not str(value) or any(c in str(value) for c in "\0\r\n"):
@@ -32,10 +32,8 @@ def runtime_root() -> Path:
 
 def default_account_directory_prefix(provider: str) -> str:
     """Host paths for new subscriptions, projected from this instance's storage."""
-    from .instance_manifest import current_instance
-    # Credentials outlive registration and instance retirement; keep defaults
-    # outside disposable instance areas, with an explicit per-instance scope.
-    root = Path.home() / '.tfi-provider-accounts' / validate_identity(current_instance().instance_id) / validate_identity(provider)
+    # Credentials belong to the host and may be shared by its CLI and Portals.
+    root = Path.home() / f'.{validate_identity(provider)}-accounts'
     return str(root.resolve()) + os.sep
 
 
@@ -55,14 +53,19 @@ def registered_home(row: dict) -> Path:
     raise ValueError("Account has no Provider directory")
 
 
-def prepare_registration_directory(data: dict) -> Path | None:
-    """Create or reuse the resolved host directory for the new registration."""
+def prepare_registration_directory(data: dict, *, require_existing: bool = False) -> Path | None:
+    """Prepare the host directory; require_existing never creates directories."""
     if data["kind"] != "subscription_login":
         return
     config = dict(data.get("config", {}))
     path = canonical_directory(config.get("account_dir", ""))
     created = None
-    if not path.exists():
+    if require_existing:
+        # Do not fall into the new-directory branch if a preflighted directory
+        # was removed before this owner's actual preparation.
+        if not path.is_dir():
+            raise ValueError("Existing account directory is required")
+    elif not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         try:
             path.mkdir(mode=0o700)
@@ -73,7 +76,10 @@ def prepare_registration_directory(data: dict) -> Path | None:
     # Validate existing directories before committing their registration too.
     # Hosting performs the same check; discovering an unsafe ACL only there
     # would report not_committed after the database row had already been saved.
-    ensure_private_directory(path)
+    if require_existing:
+        assert_private_directory(path)
+    else:
+        ensure_private_directory(path)
     config["account_dir"] = str(path)
     data["config"] = config
     return created

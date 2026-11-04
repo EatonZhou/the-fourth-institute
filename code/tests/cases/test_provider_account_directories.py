@@ -18,13 +18,10 @@ def isolated_registry(tmp_path, monkeypatch):
     return source
 
 
-def test_default_directory_is_host_owned_scoped_and_preview_has_no_side_effects(tmp_path, monkeypatch):
-    from types import SimpleNamespace
-    from management_common import instance_manifest
+def test_default_directory_is_host_owned_and_preview_has_no_side_effects(tmp_path, monkeypatch):
     monkeypatch.setattr(paths.Path, 'home', classmethod(lambda cls: tmp_path))
-    monkeypatch.setattr(instance_manifest, 'current_instance', lambda: SimpleNamespace(instance_id='instance_test'))
     prefix = paths.default_account_directory_prefix('codex')
-    expected = tmp_path / '.tfi-provider-accounts/instance_test/codex/new_account'
+    expected = tmp_path / '.codex-accounts/new_account'
     assert paths.default_account_directory('codex', 'new_account') == prefix + 'new_account' == str(expected)
     assert not expected.parent.exists()
     for invalid in ('../elsewhere', '/absolute', ''):

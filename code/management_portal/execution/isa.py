@@ -469,6 +469,9 @@ def register_provider_account(inv):
     data = {name: inv.argument(name) for name in
             ("account_id", "provider", "kind", "route_id", "config", "max_concurrency", "enabled")
             if inv.argument(name) is not None}
+    if inv.argument("reuse_existing") is True:
+        from .account_directory_discovery import validate_reuse_directory
+        validate_reuse_directory(data)
     data = store.new_registration(data)
     store._validate(data)
     if store.registration(data["account_id"]) is not None:
@@ -484,7 +487,8 @@ def register_provider_account(inv):
         if secret is not None:
             _refuse_busy_codex_api_accounts(api_id)
             model_api_store.update_api(api_id, {}, inv.caller, secret=secret)
-    row = store.create_registration(data, inv.caller)
+    row = (store.create_registration(data, inv.caller, require_existing=True)
+           if inv.argument("reuse_existing") is True else store.create_registration(data, inv.caller))
     if row is None:
         raise InstructionError("instruction.conflict", "执行账号已经登记")
     from .provider_updates import runtime_available

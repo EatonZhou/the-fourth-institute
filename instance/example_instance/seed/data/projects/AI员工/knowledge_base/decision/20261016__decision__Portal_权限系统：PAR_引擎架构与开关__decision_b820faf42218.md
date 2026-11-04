@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 85
+  number: 87
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-11-02T17:47:45Z"
+  updated_at: "2026-11-04T13:35:55Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -135,6 +135,7 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 开关保持开启（weihao 2026-10-19，2575e9af 走查时打开）。WALL 与 Test 归在 AI员工 Project 下，开启后其他 Project 的 Resident 对它们只有 viewer：不为此加实例中的编辑，也不把这些 Resident 加入 AI员工；需要写入时，由有权限的主体签发临时凭证（第 3.6 节）。
 
 ### 3.2 请求适配层
+
 
 一条 ISA 指令按它声明的判定槽拆成一组请求（weihao 2026-10-19）。判定槽写在指令声明的 `decides` 中（decision_898b8911a2ff“声明格式”），随代码发布：参数槽按参数所指的对象判定，可带类型限定、`optional`、`via`（按已保存记录的字段判定）或 `place`（按新对象将要落下的位置判定）；固定槽不指向对象。每个判定槽是一个 A 元素：指令只有一个槽时，元素就是指令名；有多个槽时，元素是 `指令:参数` 或 `指令:固定槽名`。方案只给 A 元素分类：把它放在一个 A 树分类节点下，固定槽另指定一个 R 树分类节点（例如默认方案中 CreateUser 在“管理”下、对“共享”判定）。参数槽所指的每个资源（地址取根 ID，列表取每一项）是一个 r，资源类型不符或必填参数缺失时返回 `instruction.invalid_arguments`。拥有服务可以在判定前补上调用者能省略、由服务推导的参数（`OwnerBinding.authorization_arguments`），记录的调用和处理代码仍用调用者给出的参数：目前只有 RunScript，按运行所属的 Lineage 判定，这个 Lineage 与处理代码使用的由同一个函数确定（decision_8b510cbd9c58）。因此 AI员工 实例中的编辑（AI员工，@admin，“Portal 运维”）不再让 AI员工 的 Resident 在其他 Project 的 Lineage 中运行 RunScript。weihao 2026-10-23 定：保持现状，不为此增加实例中的编辑；需要时由对方签发临时凭证。方案没有分类的 A 元素放在 A 树的默认节点下，没有分类的固定槽按 R 树的默认节点判定，参数槽仍按声明拆出对象：默认方案为“未归类”和“共享”，只有管理员表项覆盖，新增指令忘记分类时只有管理员能用。所有人都能调用的指令必须显式放在免检节点下（默认方案写成 `{"a": "@free", "r": "@portal"}`）。编译后的方案对有未归类元素的指令，`describe` 带 `unmapped: true`；GetPermissionScheme 与方案指令的 `dry_run` 列出未归类的 A 元素。一组请求在一次引擎调用中判定，全部允许才放行；读指令被拒时报告 `instruction.not_found`，写指令报告 `instruction.forbidden`，details 带目标、动作、要求挂靠的 A 节点（`a`）和原因（`no_permit` 或 `denied`）。CancelInput 要求对目标 Resident 有 `@contributor`，输入的发起人不另外放行。
 

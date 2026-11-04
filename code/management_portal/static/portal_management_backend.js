@@ -1,6 +1,12 @@
 // AI Backend registration and login, shared by Management and Home.
 const t = (key, values) => window.PortalI18n.t(key, values);
 const call = (name, args = {}, options = {}) => window.PortalInstructionClient.execute(name, args, options);
+async function accountDirectoryRequest(action, args = {}, options = {}) {
+  const query = new URLSearchParams({action, ...args});
+  const result = await window.PortalAPI.requestResult('/api/management/account-directories?' + query, {method: 'GET', credentials: 'same-origin', ...options});
+  if (!result.response.ok) throw Object.assign(new Error(result.payload?.error || t("操作失败，请重试。")), {code: result.payload?.code});
+  return result.payload;
+}
 const kinds = {subscription_login: "订阅登录", api_profile: "模型 API 账号", service: "服务账号"};
 const loginStates = {logged_in: "已登录", login_expired: "登录已过期", logged_out: "未登录", not_applicable: "无需登录",
   unavailable: "等待准备环境或检查授权",
@@ -182,6 +188,44 @@ function dialog(title, onClose = () => {}) {
     onClose: () => { onClose(); controller.destroy(); el.remove(); }});
   heading.append(button("关闭", () => controller.close()));
   return {el, open: () => controller.open(), close: () => controller.close()};
+}
+
+function browseHostDirectory(initialPath, onSelect) {
+  let closed = false, generation = 0, current = "", parent = "";
+  const abort = new AbortController();
+  const view = dialog(t("选择 Portal 主机目录"), () => { closed = true; generation++; abort.abort(); });
+  const body = node("div", undefined, {class: "backendForm"});
+  const address = field(body, "目录路径", "browse_path", initialPath, {autocomplete: "off"});
+  const status = node("p", "", {role: "status", "aria-live": "polite"});
+  const roots = node("div", undefined, {class: "backendActions"});
+  const list = node("div", undefined, {class: "backendDirectoryList"});
+  const choose = button("选择此目录", () => { if (current) { onSelect(current); view.close(); } }, true);
+  const up = button("上一级", () => void load(parent), true);
+  const controls = node("div", undefined, {class: "backendActions"});
+  controls.append(button("主目录", () => void load()), up, button("打开目录", () => void load(address.value.trim())));
+  address.addEventListener("keydown", event => { if (event.key === "Enter") { event.preventDefault(); void load(address.value.trim()); } });
+  address.addEventListener("input", () => { choose.disabled = true; });
+  body.append(node("small", t("浏览 Portal 所在主机的目录。")), controls, roots, status, list, choose);
+  view.el.append(body); view.open();
+  async function load(path, fallback = false) {
+    const token = ++generation; choose.disabled = up.disabled = true; current = "";
+    status.textContent = t("正在读取目录…"); list.replaceChildren();
+    try {
+      const result = await accountDirectoryRequest("browse", path ? {path} : {}, {signal: abort.signal});
+      if (closed || token !== generation) return;
+      current = result.path; parent = result.parent || ""; address.value = current;
+      choose.disabled = false; up.disabled = !parent || parent === current;
+      roots.replaceChildren(...(result.roots || []).map(root => button(root.name, () => void load(root.path))));
+      list.replaceChildren(...(result.directories || []).map(entry => button(entry.name, () => void load(entry.path))));
+      status.textContent = result.truncated ? t("目录较多，仅显示部分；可输入完整路径。") : result.directories?.length ? "" : t("此目录没有子目录。");
+    } catch (error) {
+      if (closed || token !== generation) return;
+      if (fallback) { await load(); return; }
+      status.textContent = errorText(error);
+    }
+  }
+  void load(initialPath, Boolean(initialPath));
+  return view;
 }
 
 export function openLogin(accountId, {onChanged = () => {}} = {}) {
@@ -657,7 +701,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     if (destroyed || busy || editor) return;
     if (!canRegister) throw new Error(t("你没有新增 AI 账号的权限。"));
     if (!providersReady || !state.providers.length) throw new Error(t("Provider 列表不可用，请刷新后重试。"));
-    const {view, form} = newEditor("新增执行账号");
+    let directoryBrowser = null, closed = false, scanGeneration = 0;
+    const {view, form} = newEditor("新增执行账号", () => { closed = true; scanGeneration++; directoryBrowser?.close(); });
     form.append(node("p", t("在这里添加可用的 Agent 后端，作为 Portal Resident 的来源。"), {class: "backendHint"}));
     const id = field(form, "账号名称", "account_id", "", {required: true, pattern: "[a-z][a-z0-9_\\-]{0,127}", autocomplete: "off", placeholder: "my-ai"});
     hint(id, "为这个 Agent 后端添加指代名称。");
@@ -666,23 +711,65 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const kind = select(form, "接入方式", "kind", []);
     const extra = node("div", undefined, {class: "backendForm"}); form.append(extra);
     const directories = new Map();
+    const reuseProviders = new Set();
+    const provisionalName = "new-account";
+    const directoryKey = () => provider.value + (reuseProviders.has(provider.value) ? ":existing" : ":new");
     const defaultDirectory = () => {
       const prefix = state.providers.find(p => p.provider === provider.value)?.account_directory_prefix || "";
-      return prefix && /^[a-z][a-z0-9_\-]{0,127}$/.test(id.value.trim()) ? prefix + id.value.trim() : "";
+      return prefix ? prefix + (/^[a-z][a-z0-9_\-]{0,127}$/.test(id.value.trim()) ? id.value.trim() : provisionalName) : "";
     };
     const syncDirectory = () => {
       const directory = form.elements.namedItem("account_dir");
-      if (directory && !directories.has(provider.value)) directory.value = defaultDirectory();
+      if (directory && !reuseProviders.has(provider.value) && !directories.has(directoryKey())) directory.value = defaultDirectory();
     };
     const renderFields = () => {
+      scanGeneration++; directoryBrowser?.close(); directoryBrowser = null;
       extra.replaceChildren();
       if (kind.value === "subscription_login") {
-        const directory = field(extra, "账号目录", "account_dir", directories.get(provider.value) ?? defaultDirectory(), {autocomplete: "off"});
-        directory.addEventListener("input", () => {
-          if (directory.value.trim()) directories.set(provider.value, directory.value);
-          else { directories.delete(provider.value); syncDirectory(); }
+        const reuse = field(extra, "使用本机已有登录", "reuse_existing", "", {type: "checkbox"});
+        reuse.parentElement.classList.add("backendReuse");
+        reuse.checked = reuseProviders.has(provider.value);
+        reuse.addEventListener("change", () => {
+          if (reuse.checked) reuseProviders.add(provider.value); else reuseProviders.delete(provider.value);
+          renderFields();
         });
-        hint(directory, "系统会根据账号名称自动生成并显示默认目录，保存时创建，无需提前登录。你可以直接继续，也可以修改目录或使用已有登录的目录。");
+        const directory = field(extra, "账号目录", "account_dir", directories.get(directoryKey()) ?? (reuse.checked ? "" : defaultDirectory()), {autocomplete: "off", required: reuse.checked});
+        const choosePath = path => {
+          directory.value = path; directories.set(directoryKey(), path);
+        };
+        directory.addEventListener("input", () => {
+          if (directory.value.trim()) directories.set(directoryKey(), directory.value);
+          else { directories.delete(directoryKey()); syncDirectory(); }
+        });
+        hint(directory, reuse.checked ? "选择 Portal 主机上已有登录的目录，也可以手动输入。候选目录的登录状态将在接入后验证。" : "已自动填写待创建目录，可直接继续；保存后创建目录并引导登录。目录可修改。");
+        const row = node("div", undefined, {class: "backendDirectoryRow"});
+        directory.parentElement.append(row); row.append(directory, button("浏览", () => {
+          directoryBrowser?.close(); directoryBrowser = browseHostDirectory(directory.value.trim(), choosePath);
+        }));
+        if (reuse.checked) {
+          const candidates = node("div", undefined, {class: "backendDirectoryList"});
+          const status = node("p", "", {role: "status", "aria-live": "polite"});
+          const scan = async () => {
+            const token = ++scanGeneration, selectedProvider = provider.value;
+            status.textContent = t("正在查找本机账号目录…"); scanButton.disabled = true;
+            try {
+              const result = await accountDirectoryRequest("discover", {provider: selectedProvider});
+              if (closed || token !== scanGeneration || !extra.contains(candidates)) return;
+              candidates.replaceChildren(...(result.candidates || []).map(candidate => {
+                const choice = button(candidate.path, () => choosePath(candidate.path));
+                const item = node("div"); item.append(choice, node("small", candidate.evidence || "")); return item;
+              }));
+              status.textContent = (result.candidates?.length ? t("选择一个候选目录，或手动输入。登录状态尚未验证。") : t("未找到候选目录，可手动输入或浏览主机目录。"))
+                + (result.truncated ? " " + t("仅显示部分扫描结果。") : "")
+                + (result.warnings?.length ? " " + result.warnings.join("；") : "");
+            } catch (error) {
+              if (closed || token !== scanGeneration) return;
+              status.textContent = t("扫描失败，可手动输入或浏览主机目录。") + " " + errorText(error);
+            } finally { if (!closed && token === scanGeneration) scanButton.disabled = false; }
+          };
+          const scanButton = button("重新扫描", () => void scan());
+          extra.append(scanButton, status, candidates); void scan();
+        }
       }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;
@@ -721,6 +808,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       const config = {};
       if (kind.value === "subscription_login") {
         config.account_dir = value("account_dir").trim();
+        if (reuseProviders.has(provider.value) && !config.account_dir) { form.elements.namedItem("account_dir").reportValidity(); return; }
       }
       if (kind.value === "subscription_login" && provider.value === "claude") {
         config.default_model = value("default_model");
@@ -731,6 +819,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         if (!config.api_id) return;
       }
       const args = {account_id: id.value.trim(), provider: provider.value, kind: kind.value, config, max_concurrency: 1};
+      if (kind.value === "subscription_login" && reuseProviders.has(provider.value)) args.reuse_existing = true;
       void run(async () => {
         await execute("RegisterProviderAccount", args);
         view.close(); await refresh("accounts"); setupEditor(args.account_id);

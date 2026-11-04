@@ -164,6 +164,7 @@ DECLARATIONS = (
         P("config", "object", "Provider 专属设置：api_profile 为 api_id；账号选择由 Backend 角色的 account_selection 管理；"
           "claude 为 models、default_model；subscription_login 的 account_dir 可省略或留空，由系统按实例/provider/account_id 生成并创建默认目录；显式路径须是主机规范绝对路径，允许尚未创建"),
         P("max_concurrency", "integer", "并发上限，默认 8", minimum=1, maximum=256),
+        P("reuse_existing", "boolean", "默认 false；为 true 时仅复用显式指定的现有订阅登录目录，禁止空值落到默认新建目录"),
         P("enabled", "boolean", "是否启用，默认 true"), P("secret", description="api_profile 的一次性密钥"),
     ), (R("registration", "object", REGISTRATION),), mutates=True, owner="execution"),
     _d("UpdateProviderAccountRegistration", FIXED, "修改账号登记；调用信封的 expected_version 给出登记版本时按它比较，省略时直接更新。调度设置仍由 UpdateProviderAccount 修改。", (

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 44
+  number: 46
   created_at: "2026-10-18T14:45:00Z"
   created_by:
     user: "ET"
     agent: "resident_667111522609"
-  updated_at: "2026-11-04T12:37:53Z"
+  updated_at: "2026-11-04T13:35:30Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -69,13 +69,16 @@ Resident 的每一轮工作通过一个 AI Backend 执行：某个 Provider（Co
 
 - **执行账号的登记保存在 PostgreSQL schema `execution_accounts`。** 表 `registrations` 记录 `account_id`、`provider`、`kind`、`route_id`、Provider 专有配置（JSONB：Claude 的模型目录；`api_profile` 的 `api_id`）、初始并发上限、`enabled`、版本和修改审计。账号适配器从登记读取配置。
 - **模型 API 条目只保存可直接调用的 HTTP 接口。** 订阅登录账号一律使用 `subscription_login` 执行账号登记，不在模型 API 表中保存订阅 profile。新建 API 执行账号以 config.api_id 显式绑定条目；DSH 与 OpenCode 的既有服务路线保留原有身份及显式绑定。
-- **订阅账号目录由系统生成并显示，用户可修改。** 新增页面按当前主机服务进程用户的主目录 `.tfi-provider-accounts/<instance_id>/<provider>/<account_id>` 显示默认绝对路径；该目录属于主机，位于实例可退役数据区域之外。无需先创建目录或登录，用户填写账号名称即可继续，也可修改路径以复用已有登录。`ListProviders` 仅向有新增账号权限的调用者提供 `account_directory_prefix`，前端据此展示，不硬编码主机目录。`RegisterProviderAccount` 在 `config.account_dir` 省略或留空时使用同一默认规则，保存前解析并校验，持久登记始终保存实际规范绝对路径；目录不能是软链接。登记保存时创建缺失目录，随后自动进入环境准备、辅助登录与连接测试。自定义目录和现有凭据按原规则就地复用，删除登记或退役实例都不删除主机账号目录。App Server 的 socket 留在实例 `runtime/` 下。
+- **订阅账号目录由系统生成并显示，用户可修改。** 新增页面按当前主机服务进程用户的主目录 `.<provider>-accounts/<account_id>` 显示默认绝对路径；该目录属于主机，位于实例可退役数据区域之外。无需先创建目录或登录，用户填写账号名称即可继续，也可修改路径以复用已有登录。`ListProviders` 仅向有新增账号权限的调用者提供 `account_directory_prefix`，前端据此展示，不硬编码主机目录。`RegisterProviderAccount` 在 `config.account_dir` 省略或留空时使用同一默认规则，保存前解析并校验，持久登记始终保存实际规范绝对路径；目录不能是软链接。登记保存时创建缺失目录，随后自动进入环境准备、辅助登录与连接测试。自定义目录和现有凭据按原规则就地复用，删除登记或退役实例都不删除主机账号目录。App Server 的 socket 留在实例 `runtime/` 下。
 - **Provider 的账号服务由登记驱动。** 需要常驻进程的账号（Codex App Server）使用 systemd 模板单元 `<服务前缀>-codex-app-server@.service`（服务前缀是实例的服务名前缀，现在记在 `config/target.json` 的 `service_prefix`；源码模板为 `config/systemd/portal-codex-app-server@.service.in`），实例名就是 `account_id`：登记启用的账号时准备并启动实例，启动受账号认证文件条件约束；停用只停止新工作派发，保留进程以承接既有运行；满足空闲条件后删除登记时移除实例。服务操作经服务控制面执行（decision_850e6248d680）。重新启用账号使用同一个模板实例控制入口。账号目录不接受软链接。
 - **登记存储与部署变更保留账号身份。** 账号 ID、路由 ID 和容量键保持稳定，已保存的调度设置、额度状态和会话归属继续有效。
 - **删除登记要求账号空闲。** 没有会话绑定到它（需要先用 `RestartSession` 迁移）、没有排队或运行中的执行时才能删除；否则只能停用。停用的账号不接收新工作，已绑定会话的 Resident 在会话设置中看到“账号已停用”。
 - **调度设置的修改仍走 `UpdateProviderAccount`。** 并发、派发间隔与 Close 阈值的规则不变（decision_d40f59f5508f）。
 
 ### 登录在页面中完成
+
+- **账号目录发现与浏览由 Execution 的主机目录服务统一提供。** 管理页使用已认证的 `GET /api/management/account-directories`，`action=discover&provider=...` 发现候选，`action=browse&path=...` 浏览目录；服务端在读取目录或登记列表前，用真实调用者检查既有 `RegisterProviderAccount` 权限，原方案的允许、拒绝和临时授权直接生效。不新增 HATG 指令、权限元素或权限别名，也不迁移既有方案。HTTP 层向纯发现引擎显式提供本实例全部已登记目录用于排除，离线脚本不访问 Portal 登记。 通用只读发现引擎按各 Provider 的目录和标志规则，检查环境变量、主机用户常见配置位置和 Portal 生成目录；采用有界广度与深度，不遍历整盘、不读取或返回凭据值，不修改发现的目录或启动模型。候选规范化去重，排除本实例已登记路径；不可读位置与截断通过公开提示说明。独立命令行扫描脚本复用同一引擎。管理页目录 HTTP 接口使用既有 `RegisterProviderAccount` 的权限边界，不向只读用户暴露主机目录。
+- **目录输入框提供“浏览”。** 该入口通过管理页目录 HTTP 接口 显示 Portal 主机的目录、上一级与可用根，支持输入地址、打开目录和确认选择；取消不修改原输入。远程 Web 页面使用主机目录选择窗口，避免浏览器本地文件选择结果被误当作服务器路径。只枚举目录名称与规范路径，不返回文件或读取内容；不存在的待创建默认目录可从主目录开始浏览。
 
 - **订阅账号在页面内登录。** 管理员点“登录”后，Portal 在该账号目录下启动 Provider 原生登录命令。Codex 展示设备码和授权链接；Claude 使用 `claude auth login --claudeai`，展示授权链接，并在 `session.requires_code_input` 为 true 时提供一次性返回码输入。页面通过 `UpdateProviderAccountLogin.authorization_code` 把返回码交给已有的 `awaiting_user` Claude 会话；Codex 不接受该输入。授权完成后，Portal 分别用 `codex login status` 或 `claude auth status --json` 确认成功，账号状态变为 `logged_in`。Kimi 使用该账号本地原生服务的设备授权接口，复用尚有效的授权流程并按 Provider 返回的到期时间显示设备码；取消与认证观察也交给同一服务。凭据及托管模型配置由 Kimi 写入并保存，Portal 只记录公开授权提示与认证状态；订阅目录只暴露已认证的 `managed:kimi-code` 模型，不回退为 Moonshot API 计费。Portal 工具配置仅合并自身 hook 和 MCP 接入，不将脱敏配置写回凭据。
 - **Kimi 登录先选择账号所属区域。** `GetProviderAccountLogin` 返回公开 `login_options`（`regions` 的 id、label 及当前 `region`）；弹窗提供“中国区 / 国际区”，通过 `OpenProviderAccountLogin.region` 提交 `mainland-cn` 或 `global`。新流程默认建议中国区，已有授权流程显示其实际区域；用户点击获取授权后才开始流程。同区域的有效设备码复用，切换区域后由原生服务替换旧授权，并同步更新 Portal 会话有效期。页面在切换时隐藏旧链接和设备码，迟到的旧轮询不能覆盖新流程；失败可重试。区域只影响该账号本次登录，不重写授权 URL、不退出其他账号。其他 Provider 的登录行为保持不变。
@@ -92,7 +95,7 @@ Resident 的每一轮工作通过一个 AI Backend 执行：某个 Provider（Co
 
 ### 管理页
 
-首次登录的欢迎卡片保留使用指南与关闭操作，不放置依赖 AI Backend 的 AMA 对话入口。AI Backend 页顶部仅保留一行“添加 AI 后端”，提供“接入订阅帐号”和“新增 API Key”。新增账号仅等待 Provider 接入目录；ListProviders 的 include_runtime=false 返回名称、接入种类、能力、协议及登记信息，不探测运行版本或准备状态，refresh 在此模式下不生效。完整版本与账号、API、角色列表独立加载，不阻塞新增窗口，不禁用已就绪的接入按钮，也不覆盖正在填写的草稿；省略 include_runtime 时继续返回完整运行状态。新增执行账号页说明用途和账号指代名称，只展示当前接入必需字段，初始并发上限为 1；备用账号、路线等高级字段在后续管理入口维护。接入方式只有一项时不展示无选择意义的下拉框。
+首次登录的欢迎卡片保留使用指南与关闭操作，不放置依赖 AI Backend 的 AMA 对话入口。AI Backend 页顶部仅保留一行“添加 AI 后端”，提供“接入订阅帐号”和“新增 API Key”。新增账号仅等待 Provider 接入目录；ListProviders 的 include_runtime=false 返回名称、接入种类、能力、协议及登记信息，不探测运行版本或准备状态，refresh 在此模式下不生效。完整版本与账号、API、角色列表独立加载，不阻塞新增窗口，不禁用已就绪的接入按钮，也不覆盖正在填写的草稿；省略 include_runtime 时继续返回完整运行状态。新增订阅账号提供默认未勾选的“使用本机已有登录”。未勾选时，打开窗口即显示待创建的默认绝对路径；账号名称尚未输入时使用清晰的 `new-account` 预览名，填写名称后自动更新未手动编辑的默认路径。勾选时通过管理页 HTTP 接口按当前 Provider 查找目录，展示尚未由当前 Portal 登记的候选目录、发现依据及未验证登录状态；选择前不替用户认领候选。扫描失败或未发现时仍可手动输入或点击“浏览”，重新扫描与迟到结果不覆盖输入，不把目录存在当作已登录。新登录和已有登录的目录草稿按 Provider 分别保留，切换不丢失手动路径。保存复用目录时提交 `RegisterProviderAccount(reuse_existing=true)`，服务端要求显式存在的规范目录，拒绝以空值生成新目录或在错误路径创建目录；随后由既有设置流程确认真实登录状态。新增执行账号页说明用途和账号指代名称，只展示当前接入必需字段，初始并发上限为 1；备用账号、路线等高级字段在后续管理入口维护。接入方式只有一项时不展示无选择意义的下拉框。
 
 新建 API 账号可在同一流程点击“新建模型 API 并接入”，直接填写接口地址、API Key 和服务商模型列表，并保留所选运行器。模型目录通过逐项表单维护标识、启用状态、默认模型及可选推理强度，不要求输入 JSON；模型标识不得为空或重复，默认模型必须已启用。既有模型的额外元数据与推理强度顺序保留，预设可取消勾选，自定义强度可明确移除。已有兼容接口可以直接复用；没有兼容接口时显示创建入口并禁用空提交。运行器与接口协议仍按显式声明匹配；协议不匹配时要求用户确认，不自动猜测协议或切换运行器。第三方 API 的模型名称沿用服务商实际配置。
 
