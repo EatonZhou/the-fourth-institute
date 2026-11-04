@@ -548,17 +548,23 @@
 
 .composerImageChip {
   position: relative;
-  flex: 0 1 240px;
+  font-size: 12px;
+  line-height: 1.45;
+  flex: 0 1 260px;
   min-width: 0;
   max-width: 100%;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 7px;
+  gap: 9px;
   align-items: center;
   border: 1px solid var(--border, rgba(148, 163, 184, 0.32));
   border-radius: 8px;
   background: var(--panel, #fff);
-  padding: 6px 7px;
+  padding: 8px;
+}
+
+.composerImageDetails {
+  min-width: 0;
 }
 
 .composerImageChipPreview {
@@ -578,7 +584,7 @@
 
 .composerFileThumb {
   width: 42px;
-  height: 32px;
+  height: 38px;
   border-radius: 5px;
   display: inline-flex;
   align-items: center;
@@ -589,22 +595,68 @@
   font-weight: 800;
 }
 
+.composerAttachmentIcon {
+  flex-shrink: 0;
+}
+
+.composerAttachmentIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .composerImageName,
 .composerImagePath {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .composerImageName {
   color: var(--text, #111827);
-  font-weight: 700;
+  font-weight: 600;
+}
+
+/* File links keep the shared opening contract; the card owns their layout. */
+.composerImageChip button.composerImageName,
+.composerImageRef button.composerImageRefLabel {
+  display: block;
+  max-width: 100%;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.composerImageChip button.composerImageName:hover,
+.composerImageRef button.composerImageRefLabel:hover {
+  color: var(--accent, #2563eb);
+  text-decoration: underline;
+}
+
+.composerImageChipActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .composerImagePath {
   color: var(--muted, #64748b);
+  font-size: 11px;
+}
+
+.composerImageChip.error .composerImagePath {
+  color: var(--danger, #b91c1c);
 }
 
 .composerUploadProgress {
@@ -659,7 +711,29 @@
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
-  padding: 0 2px;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.composerImageRefRemove:hover,
+.composerImageRemove:hover,
+.composerImageRetry:hover {
+  background: var(--panel-2, rgba(148, 163, 184, 0.12));
+}
+
+@media (pointer: coarse) {
+  .composerImageRefRemove,
+  .composerImageRemove,
+  .composerImageRetry {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .composerImageRetry {

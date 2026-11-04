@@ -773,7 +773,7 @@
       }
       const media = preview && kind === "image"
         ? window.PortalI18n.html`<img class="${options.thumbClass || "composerImageRefThumb"}" src="${escapeHtml(preview)}" alt="" />`
-        : window.PortalI18n.html`<span class="${options.iconClass || "composerFileRefIcon"}">${kind === "file" ? "F" : "I"}</span>`;
+        : `<span class="${options.iconClass || "composerFileRefIcon"} composerAttachmentIcon" data-portal-icon="${kind === "file" ? "file" : "image"}" aria-hidden="true"></span>`;
       const file = kind === "file" && !item.uploading && !item.error && !previewRef
         ? window.PortalFileLinks?.describe(item.path) : null;
       const labelHtml = file
@@ -946,6 +946,17 @@
       return parts;
     }
 
+    function composerAttachmentSummary(item, kind) {
+      const extension = String(item?.name || "").match(/\.([a-z0-9]{1,10})$/i)?.[1]?.toUpperCase();
+      const type = extension || window.PortalI18n.t(kind === "file" ? "文件" : "图片");
+      const rawSize = item?.size_bytes ?? item?.size;
+      const size = Number(rawSize);
+      if (rawSize == null || rawSize === "" || !Number.isFinite(size) || size < 0) return type;
+      const unit = Math.min(3, Math.floor(Math.log(Math.max(1, size)) / Math.log(1024)));
+      const value = size / (1024 ** unit);
+      return `${type} · ${Number(value.toFixed(value < 10 && unit > 0 ? 1 : 0))} ${["B", "KB", "MB", "GB"][unit]}`;
+    }
+
     function renderComposerAttachmentTray(tray, items, options = {}) {
       if (!tray) return;
       const attachments = (Array.isArray(items) ? items : []).filter(item => !composerPreviewReference(item));
@@ -954,16 +965,19 @@
         const kind = attachmentKind(item);
         const preview = attachmentPreviewUrl(item);
         const progress = Math.max(0, Math.min(100, Number(item?.progress || 0)));
-        const status = item?.error || (item?.uploading ? `上传中 ${Math.round(progress)}%` : (item?.path || item?.name || ""));
+        const status = item?.error || (item?.uploading ? `上传中 ${Math.round(progress)}%` : composerAttachmentSummary(item, kind));
         const file = kind === "file" && !item.uploading && !item.error ? window.PortalFileLinks?.describe(item.path) : null;
         const media = preview && kind === "image"
           ? window.PortalI18n.html`<button class="composerImageChipPreview" type="button" data-portal-preview-image="${escapeHtml(preview)}" title="${escapeHtml(item?.name || "image")}" aria-label="放大图片"><img class="composerImageThumb" src="${escapeHtml(preview)}" alt="" /></button>`
-          : file ? `<button type="button" class="composerFileThumb" data-portal-file-path="${escapeHtml(file.path)}" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</button>`
-          : window.PortalI18n.html`<span class="composerFileThumb">${kind === "file" ? window.PortalI18n.t("文件") : window.PortalI18n.t("图片")}</span>`;
-        return window.PortalI18n.html`<div class="composerImageChip ${item?.uploading ? "uploading" : ""} ${item?.error ? "error" : ""}" data-portal-composer-attachment-id="${escapeHtml(id)}" ${item?.path ? `data-portal-attachment-path="${escapeHtml(item.path)}"` : ""} title="${escapeHtml(status)}">
+          : `<span class="composerFileThumb composerAttachmentIcon" data-portal-icon="${kind === "file" ? "file" : "image"}" aria-hidden="true"></span>`;
+        const name = escapeHtml(item?.name || kind);
+        const nameHtml = file
+          ? `<button type="button" class="composerImageName" data-portal-file-path="${escapeHtml(file.path)}">${name}</button>`
+          : `<span class="composerImageName">${name}</span>`;
+        return window.PortalI18n.html`<div class="composerImageChip ${item?.uploading ? "uploading" : ""} ${item?.error ? "error" : ""}" data-portal-composer-attachment-id="${escapeHtml(id)}" ${item?.path ? `data-portal-attachment-path="${escapeHtml(item.path)}"` : ""} title="${escapeHtml([item?.name, item?.path, status].filter(Boolean).join("\n"))}">
         ${media}
-        <div>
-          <div class="composerImageName">${escapeHtml(item?.name || kind)}</div>
+        <div class="composerImageDetails">
+          ${nameHtml}
           <div class="composerImagePath">${escapeHtml(status)}</div>
         </div>
         <span class="composerImageChipActions">${item?.error ? window.PortalI18n.html`<button class="composerImageRetry" type="button" data-retry-portal-composer-attachment="${escapeHtml(id)}" aria-label="重新上传附件" title="重新上传" data-portal-icon="refresh"></button>` : ""}<button class="composerImageRemove" type="button" data-remove-portal-composer-attachment="${escapeHtml(id)}" aria-label="移除附件" title="移除" data-portal-icon="close"></button></span>

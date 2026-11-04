@@ -21,3 +21,13 @@ def test_composer_attachments_upload_change_and_release_their_previews():
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_composer_attachment_cards_keep_both_positions_without_overlapping_labels():
+    """附件托盘和输入位置引用均保留；文件名、图标、状态与操作在窄屏清晰可用。"""
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("javascript") / "chat_composer_attachments.browser.cjs")],
+        input=json.dumps({"routeScript": portal_route_script().decode()}),
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

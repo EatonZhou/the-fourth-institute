@@ -33,7 +33,7 @@ let previewOptions = null;
 w.PortalImageEditor = { open() {}, bind(root, options) { previewOptions = options; return root; } };
 w.eval(input.routeScript);
 for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js',
-  'portal_overlay.js', 'portal_resource_chips.js', 'portal_editor_open_service.js',
+  'portal_overlay.js', 'portal_resource_chips.js', 'portal_preview_contract.js', 'portal_file_links.js', 'portal_editor_open_service.js',
   'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()]) {
   w.eval(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', name), 'utf8'));
 }
@@ -340,6 +340,25 @@ const uploaded = (id, extra = {}) => ({ upload_id: id, path: `uploads/${id}.png`
       await settle();
       assert.equal(workspace.attachments().length, 1, 'once more was typed, undo leaves the attachment to the input\'s own undo');
       assert.deepEqual(take(deleted), []);
+    }
+    {
+      // The tray lists attachments, while inline tokens preserve their position.
+      // Each representation has one name; the storage URL is only a tooltip.
+      const { workspace, root, inputEl, chip, tokens } = fresh('file-presentation');
+      const path = '/api/uploads/upload_aaaaaaaaaaaaaaaaaaaaaaaa';
+      workspace.setAttachments([{ id: 'archive', kind: 'file', name: 'hdl.zip', path, size_bytes: 1536 }]);
+      assert.equal(chip('archive').querySelectorAll('[data-portal-file-path]').length, 1);
+      assert.equal(chip('archive').querySelector('.composerImageName').textContent, 'hdl.zip');
+      assert.equal(chip('archive').querySelector('.composerImagePath').textContent, 'ZIP · 1.5 KB');
+      assert.equal(chip('archive').textContent.split('hdl.zip').length - 1, 1);
+      assert.ok(!chip('archive').textContent.includes('/api/uploads/'));
+      assert.ok(chip('archive').title.includes(path));
+      assert.equal(inputEl().querySelector('[data-portal-file-path]').dataset.portalFilePath, path);
+      assert.deepEqual(tokens(), ['archive']);
+      assert.equal(root.querySelectorAll('[data-remove-portal-composer-attachment="archive"]').length, 2);
+      assert.equal(root.querySelectorAll('[data-portal-icon="file"]').length, 2);
+      workspace.updateAttachment('archive', { size_bytes: 0, size: 0 });
+      assert.equal(chip('archive').querySelector('.composerImagePath').textContent, 'ZIP · 0 B');
     }
     {
       // A host can set or patch the attachments.
