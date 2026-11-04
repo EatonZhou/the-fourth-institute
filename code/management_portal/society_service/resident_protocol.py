@@ -944,7 +944,8 @@ def get_input_history(
         target.record, list(page.get("messages") or []), handed_to_steward=facade,
     )
     if facade:
-        page["messages"] = family_facade.project_messages(target.record, list(page.get("messages") or []))
+        # Recall original caller inputs, not the conversation display projection:
+        # that projection appends member replies and changes input page order.
         from . import family_chat_preferences
         page["messages"] = family_chat_preferences.filter_messages(target.record, actor, page["messages"])
     return page

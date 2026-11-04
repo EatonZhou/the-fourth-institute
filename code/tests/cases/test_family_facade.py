@@ -1511,3 +1511,39 @@ def test_waiting_request_shows_member_availability(facade, monkeypatch, members,
     projected = family_facade.project_messages(facade, [message], input_states={"msg_waiting": "queued"})
     assert projected[0]["relay"]["state"] == state
     assert "resident_id" not in projected[0]["relay"]
+
+
+def test_facade_input_recall_excludes_projected_member_replies(facade):
+    """门面输入历史只含本人原始输入；Chromium 实按上下键不召回成员回复。"""
+    import json
+    import subprocess
+    from pathlib import Path
+    from management_portal.society_service import resident_protocol
+    from management_portal.resources.portal import portal_route_script
+
+    _register_test_member(facade, '成员')
+    repository = resident_conversation_stream.get_repository()
+    facade_id = facade['resident_id']
+    request_id, member_id, reply_id = ('msg_0000000000000ab1', 'msg_0000000000000ab2', 'msg_0000000000000ab3')
+    backend.deliver_resident_message_content(facade_id, 'CASE-A', '请修复这个bug', message_id=request_id)
+    repository.append_message(MEMBER, {
+        'message_id': member_id, 'role': 'user', 'author_id': 'CASE-A',
+        'created_at': '2026-11-04T15:54:07Z',
+        'content_parts': [{'type': 'text', 'text': '请修复这个bug'}],
+        'business_ref': family_facade.relay_mark(facade_id, request_id),
+    })
+    family_facade.complete_relay((facade_id, request_id), MEMBER, member_id)
+    repository.append_message(MEMBER, {
+        'message_id': reply_id, 'role': 'agent', 'author_id': MEMBER,
+        'created_at': '2026-11-04T15:57:17Z', 'reply_to_message_id': member_id,
+        'content_parts': [{'type': 'text', 'text': '已修复并上线。刷新页面后生效。'}],
+    })
+    repository.set_input_state(MEMBER, member_id, 'completed')
+    original = repository.message(facade_id, request_id)
+    assert reply_id in [m['message_id'] for m in family_facade.project_messages(facade, [original])]
+    page = resident_protocol.get_input_history(facade_id, 'CASE-A', limit=1)
+    assert [m['message_id'] for m in page['messages']] == [request_id]
+    result = subprocess.run(['node', str(Path(__file__).with_name('javascript') / 'chat_input_history.browser.cjs')],
+        input=json.dumps({'routeScript': portal_route_script().decode(), 'page': page}),
+        text=True, capture_output=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
