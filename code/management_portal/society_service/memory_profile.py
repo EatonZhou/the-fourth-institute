@@ -1,15 +1,13 @@
 """Opt-in, expiring aggregate memory evidence for the Society service owner.
 
 The operator's runtime lease enables a short capture at service load. No object
-values, repr, locals, request data or heap dumps are recorded. Normal starts do
-not enable tracing, scan the heap, or create a sampler thread.
+values, repr, locals, request data or heap dumps are recorded. Live diagnostics
+never enumerate GC objects. Normal starts do not enable tracing or create a
+sampler thread.
 """
 from __future__ import annotations
 
-from collections import Counter
-import ctypes
 import gc
-from itertools import islice
 import json
 import os
 from pathlib import Path
@@ -47,48 +45,20 @@ def allocation_summary(limit: int = 30) -> dict:
             "tracer_metadata_bytes": overhead, "top_lines": rows, "top_stacks": stacks}
 
 
-def heap_summary(*, object_limit: int = 500_000) -> dict:
-    """Shallow size by type, bounded inspection with its reference-list cost shown.
+def gc_summary() -> dict:
+    """Read counters without acquiring references to live application objects.
 
-    Untracked strings/bytes and native allocations are not a complete GC heap;
-    allocation_summary and OS counters are independent evidence for those.
+    gc.get_objects() can retain a tuple still being built in another thread;
+    CPython's subsequent _PyTuple_Resize then fails its exclusive-reference
+    check. Filtering the snapshot afterwards cannot prevent that interference.
     """
-    objects = gc.get_objects()
-    counts, sizes = Counter(), Counter()
-    for item in islice(objects, object_limit):
-        kind = type(item)
-        module, name = kind.__module__, kind.__qualname__
-        # Some extension metatypes expose descriptors instead of these strings.
-        # Do not stringify a descriptor or inspect an instance to name its type.
-        name = (module if isinstance(module, str) else "<native>") + "." + (
-            name if isinstance(name, str) else "<type>")
-        counts[name] += 1
-        # Do not dispatch arbitrary application __sizeof__ implementations.
-        if kind in (dict, list, tuple, set, frozenset, str, bytes, bytearray):
-            sizes[name] += sys.getsizeof(item)
-        else:
-            # object.__sizeof__ is not valid for every variable-size extension
-            # layout (frames, for example, define their own sizing). Report a
-            # static lower bound without invoking application methods.
-            basic = kind.__basicsize__
-            sizes[name] += basic if isinstance(basic, int) else 0
-    pointer_modules = Counter()
-    for kind in list(getattr(ctypes, "_pointer_type_cache", {})):
-        module = getattr(kind, "__module__", "<native>")
-        pointer_modules[module if isinstance(module, str) else "<native>"] += 1
-    return {"tracked_objects": len(objects), "inspected_objects": min(len(objects), object_limit),
-            "reference_list_bytes": sys.getsizeof(objects), "truncated": len(objects) > object_limit,
-            "ctypes_pointer_types_by_module": dict(pointer_modules.most_common(20)),
-            "top_types": [{"type": kind, "count": counts[kind], "shallow_bytes": size}
-                          for kind, size in sizes.most_common(30)],
-            "non_builtin_sizes": "static type basicsize lower bounds",
-            "gc_counts": gc.get_count(), "gc_thresholds": gc.get_threshold(), "gc_stats": gc.get_stats()}
+    return {"counts": gc.get_count(), "thresholds": gc.get_threshold(), "stats": gc.get_stats()}
 
 
 def sample() -> dict:
     started = time.monotonic()
     allocations = allocation_summary()
-    heap = heap_summary()
+    garbage_collection = gc_summary()
     try:
         import psutil
         process = psutil.Process()
@@ -99,7 +69,7 @@ def sample() -> dict:
     except ImportError:
         native = {"available": False}
     return {"pid": os.getpid(), "sample_epoch": time.time(), "allocated_blocks": sys.getallocatedblocks(),
-            "allocations": allocations, "heap": heap, "process": native,
+            "allocations": allocations, "gc": garbage_collection, "process": native,
             "sampling_seconds": time.monotonic() - started}
 
 

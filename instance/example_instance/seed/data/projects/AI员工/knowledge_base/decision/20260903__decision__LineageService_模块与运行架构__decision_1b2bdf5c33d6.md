@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 37
+  number: 38
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T13:19:50Z"
+  updated_at: "2026-11-04T13:55:45Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -256,9 +256,9 @@ SocietyService 按数据一致性边界保护提交；锁种类、取锁顺序�
 
 ### 有界内存诊断
 
-SocietyService 的正常启动不启用分配跟踪或堆采样。实例操作员可以在 runtime/diagnostics/society-memory-profile.json 写入短期诊断租约（expires_at 为 Unix 秒，剩余有效期最多240秒，interval_seconds 为20至60秒），在下一次该组件正式加载时采集当前服务主进程；读取 worker 不启动该采样器。采样仅记录进程代际、OS 占用、Python 类型计数与浅大小、GC 统计、分配字节及源码位置，不记录对象值、repr、locals、消息正文或原始堆。源码调用栈最多四层，每次输出固定数量的最大聚合项，最多采集八次，到期关闭跟踪。输出以私有文件写入同一诊断目录，操作员结束后移走证据并删除租约；诊断本身的引用列表、跟踪器元数据与耗时单独列出。
+SocietyService 的正常启动不启用分配跟踪或堆采样。实例操作员可以在 runtime/diagnostics/society-memory-profile.json 写入短期诊断租约（expires_at 为 Unix 秒，剩余有效期最多240秒，interval_seconds 为20至60秒），在下一次该组件正式加载时采集当前服务主进程；读取 worker 不启动该采样器。采样仅记录进程代际、OS 占用、已分配块数量、GC 计数/阈值/累计收集统计、分配字节及源码位置，不记录对象值、repr、locals、消息正文或原始堆。禁止在活跃服务中通过 gc.get_objects/get_referrers/get_referents 枚举业务对象：取得引用列表本身可能持有其他线程正在构造的元组，破坏 CPython 元组缩放所需的独占引用，导致业务线程抛出 SystemError；事后过滤元组、限制检查数量或仅捕获采样异常均不能消除此影响。源码调用栈最多四层，每次输出固定数量的最大聚合项，最多采集八次，到期关闭跟踪。输出以私有文件写入同一诊断目录，操作员结束后移走证据并删除租约；跟踪器元数据与采样耗时单独列出。
 
-GC 浅大小、tracemalloc 分配与 OS 私有内存是不同口径，不能直接把它们相加或将未解释差值宣称为泄漏。诊断只观察当前代际；已有服务没有启用跟踪时，不能用另一个 Python 进程的堆替代它。组件加载须遵守已有执行恢复与正在进行任务的检查点，诊断不改变输入、接单开关、历史或权限。
+GC 统计、tracemalloc 分配与 OS 私有内存是不同口径，不能直接把它们相加或将未解释差值宣称为泄漏。诊断只观察当前代际；已有服务没有启用跟踪时，不能用另一个 Python 进程的堆替代它。组件加载须遵守已有执行恢复与正在进行任务的检查点，诊断不改变输入、接单开关、历史或权限。
 
 ### 读取性能
 

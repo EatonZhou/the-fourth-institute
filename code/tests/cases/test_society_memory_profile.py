@@ -1,39 +1,82 @@
 """Society diagnostics expose aggregates, never the values being investigated."""
 import json
+import subprocess
+import sys
+import textwrap
 import tracemalloc
 from types import SimpleNamespace
 
 from management_portal.society_service import memory_profile
 
 
-def test_heap_profile_never_uses_application_repr_or_size(monkeypatch):
-    secret = "credential-and-private-conversation-sentinel"
+def test_sample_reads_gc_counters_without_obtaining_heap_references(monkeypatch):
+    def forbidden(*_, **__):
+        raise AssertionError("live heap enumeration can retain tuples under construction")
 
-    class Private:
-        def __repr__(self):
-            raise AssertionError("object repr is forbidden")
-
-        def __sizeof__(self):
-            raise AssertionError("application size hooks are forbidden")
-
-    objects = [Private(), {"password": secret}, [secret], (secret,)]
-    monkeypatch.setattr(memory_profile.gc, "get_objects", lambda: objects)
-    result = memory_profile.heap_summary(object_limit=3)
-    assert result["tracked_objects"] == 4
-    assert result["inspected_objects"] == 3
-    assert result["truncated"] is True
-    assert secret not in json.dumps(result)
-    assert "password" not in json.dumps(result)
+    for name in ("get_objects", "get_referrers", "get_referents"):
+        monkeypatch.setattr(memory_profile.gc, name, forbidden)
+    result = memory_profile.sample()
+    assert "heap" not in result
+    assert all(isinstance(n, int) for n in result["gc"]["counts"])
+    assert all(isinstance(n, int) for n in result["gc"]["thresholds"])
+    assert all(isinstance(n, int) for row in result["gc"]["stats"] for n in row.values())
 
 
-def test_extension_type_metadata_descriptors_do_not_break_sampling(monkeypatch):
-    class NativeType:
-        pass
-    NativeType.__module__ = property(lambda _: "never evaluate a descriptor")
-    monkeypatch.setattr(memory_profile.gc, "get_objects", lambda: [NativeType()])
-    result = memory_profile.heap_summary()
-    assert result["inspected_objects"] == 1
-    assert result["top_types"][0]["type"].startswith("<native>.")
+def test_memory_sample_does_not_keep_in_flight_tuples_alive():
+    # A separate interpreter contains the old sampler's references, including
+    # partially constructed tuples. Force its snapshot to overlap tuple resize;
+    # do not rely on thread scheduling or a long stochastic stress test.
+    script = textwrap.dedent('''
+        import gc
+        import threading
+        import tracemalloc
+        from management_portal.society_service import memory_profile
+
+        sampled = threading.Event()
+        release = threading.Event()
+        errors = []
+        original_get_objects = gc.get_objects
+
+        def overlapping_snapshot(*args, **kwargs):
+            objects = original_get_objects(*args, **kwargs)
+            sampled.set()
+            if not release.wait(5):
+                raise AssertionError("tuple constructor did not resume")
+            return objects
+
+        gc.get_objects = overlapping_snapshot
+
+        def capture():
+            try:
+                memory_profile.sample()
+            except BaseException as error:
+                errors.append(error)
+            finally:
+                sampled.set()
+
+        sampler = threading.Thread(target=capture, daemon=True)
+
+        def values():
+            yield object()
+            sampler.start()
+            if not sampled.wait(5):
+                raise AssertionError("sampler did not finish or obtain its snapshot")
+            yield object()
+
+        tracemalloc.start(1)
+        try:
+            result = tuple(values())
+            assert len(result) == 2
+        finally:
+            release.set()
+            sampler.join(5)
+            tracemalloc.stop()
+        assert not sampler.is_alive()
+        if errors:
+            raise errors[0]
+    ''')
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
 
 
 def test_profile_is_inert_without_a_current_bounded_operator_lease(monkeypatch, tmp_path):
