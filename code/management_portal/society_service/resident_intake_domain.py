@@ -644,7 +644,14 @@ def _input_request(
     if request.requested_quote not in (None, {}) and (activation.waits_as_info or isolated):
         raise ValueError("info 消息和授权调用的输入不带引用")
     quote_record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
-    return _with_accepted_quote(request, quote_record)
+    request = _with_accepted_quote(request, quote_record)
+    if request.relay.sender and request.relay.source:
+        from . import family_continuation
+        background = family_continuation.background(request.relay.source)
+        if background:
+            request = replace(request, runtime_context=resident_prompt_domain.normalized_runtime_context(
+                '\n\n'.join(part for part in (request.runtime_context, background) if part)))
+    return request
 
 
 def _check_isolated_input(
