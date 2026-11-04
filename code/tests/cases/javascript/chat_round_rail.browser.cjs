@@ -8,7 +8,7 @@ const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const repo = path.resolve(__dirname, '../../..');
 const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
-const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
+const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', ...(process.env.RAIL_PREVIEW_ONLY ? ['portal_translations.js'] : []), 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_resource_chips.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()];
@@ -82,6 +82,97 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };
+    if (process.env.RAIL_PREVIEW_ONLY) {
+      const seed = async target => {
+        await target.evaluate(() => {
+          PortalI18n.apply('zh-CN');
+          window.previewSource = '请逐步说明这个真实问题的上下文与来源，保留每一步推导和限制。'.repeat(8)
+            + '\n第二行包含很长的地址：https://example.invalid/' + 'long-path-'.repeat(35)
+            + '\n<img src=x onerror=alert(1)> 只是用户原文，不应执行。\n[image:/api/uploads/preview-test.png]';
+          items = [human('short', '谢谢。'), human('long', previewSource),
+            human('medium', '请解释这段文字的实际含义和上下文联系'), human('multiline', '第一行\n第二行\n第三行\n第四行'), agent('reply', 'short')];
+          workspace.setMessages(items);
+        }); await target.locator('.chatRoundDirectory').click();
+      };
+      const card = (target, key) => target.locator('.chatRoundPreviewItem').filter({ has: target.locator(`[data-round-follow="${key}"]`) });
+      await page.setViewportSize({ width: 1440, height: 1000 }); await seed(page);
+      const short = card(page, 'short'), long = card(page, 'long'), medium = card(page, 'medium');
+      check('short prose has no ineffective expand button', await short.locator('.chatRoundExpand').count() === 0);
+      check('long and multiline prose expose explicit expand', await long.getByRole('button', { name: '展开', exact: true }).count() === 1
+        && await card(page, 'multiline').getByRole('button', { name: '展开', exact: true }).count() === 1);
+      check('Flag action uses requested wording', await short.locator('.chatRoundFollow').getAttribute('aria-label') === 'Flag');
+      await short.locator('.chatRoundFollow').click();
+      check('preview action changes to 取消Flag', await short.locator('.chatRoundFollow').getAttribute('aria-label') === '取消Flag');
+      await page.keyboard.press('Escape');
+      await page.locator('[data-message-key="reply"]').click({ button: 'right' });
+      const menu = page.locator('body > [data-portal-message-menu]');
+      check('reply menu uses same cancel action and preserves pin', await menu.locator('[data-portal-message-action="round-follow"]').innerText() === '取消Flag'
+        && await menu.locator('[data-portal-message-action="pin"]').innerText() === '置顶消息');
+      await menu.locator('[data-portal-message-action="round-follow"]').click();
+      await page.locator('[data-message-key="reply"]').click({ button: 'right' });
+      check('message menu cancellation synchronizes to Flag', await menu.locator('[data-portal-message-action="round-follow"]').innerText() === 'Flag');
+      await page.keyboard.press('Escape'); await page.locator('.chatRoundDirectory').click();
+      await long.locator('.chatRoundExpand').hover(); await page.waitForTimeout(600);
+      check('hover does not expand or create duplicate text', await long.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'false' && await page.locator('.chatRoundFull').count() === 0);
+      await long.locator('.chatRoundExpand').click();
+      const expanded = await long.evaluate(n => {
+        const text = n.querySelector('.chatRoundPreviewJump');
+        return { copies: [...n.querySelectorAll('*')].filter(e => e.childNodes.length === 1 && e.firstChild.nodeType === Node.TEXT_NODE && e.textContent === text.textContent).length,
+          clipped: text.scrollHeight > text.clientHeight + 1, label: n.querySelector('.chatRoundExpand').textContent, imgs: n.querySelectorAll('img').length };
+      });
+      check('expanded text occupies original location once and remains safe', expanded.copies === 1 && !expanded.clipped && expanded.label === '收起' && expanded.imgs === 0);
+      check('attachment retained without placeholder leakage', (await long.locator('.chatRoundAttachments').innerText()) === '图片'
+        && !(await long.locator('.chatRoundPreviewJump').innerText()).includes('[image:') && await page.evaluate(() => items[1].content === previewSource));
+      await shot('preview-expanded-desktop');
+      await long.locator('.chatRoundFollow').click();
+      check('flag refresh preserves inline expansion', await long.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')));
+      await long.locator('.chatRoundExpand').focus(); await page.keyboard.press('Enter');
+      check('keyboard collapses same text', await long.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'false'
+        && await long.locator('.chatRoundPreviewJump').evaluate(n => n.scrollHeight > n.clientHeight));
+      check('medium text fits desktop without expand', await medium.locator('.chatRoundExpand').count() === 0);
+      await page.setViewportSize({ width: 240, height: 844 }); await page.waitForTimeout(100);
+      check('resize adds expansion only when text becomes truncated', await medium.locator('.chatRoundExpand').count() === 1);
+      await page.setViewportSize({ width: 1440, height: 1000 }); await page.waitForTimeout(100);
+      check('resize removes obsolete expansion', await medium.locator('.chatRoundExpand').count() === 0);
+      await page.evaluate(() => {
+        const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollHeight'); window.previewReads = 0;
+        Object.defineProperty(Element.prototype, 'scrollHeight', { configurable: true, get() { if (this.matches('.chatRoundPreviewJump')) previewReads++; return descriptor.get.call(this); } });
+      });
+      await page.locator('.chatRoundPreviewList').evaluate(n => { n.scrollTop = 200; }); await page.waitForTimeout(150);
+      check('preview scrolling does not remeasure all text', await page.evaluate(() => previewReads === 0));
+      await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot('preview-collapsed-desktop-dark');
+      await page.keyboard.press('Escape'); await page.evaluate(() => PortalI18n.apply('en'));
+      await page.locator('.chatRoundDirectory').click();
+      check('English catalog exposes Flag and Unflag', await short.locator('.chatRoundFollow').getAttribute('aria-label') === 'Flag'
+        && await long.locator('.chatRoundFollow').getAttribute('aria-label') === 'Unflag');
+      await page.keyboard.press('Escape'); await page.locator('[data-message-key="long"]').click({ button: 'right' });
+      check('English message menu uses same Unflag', await menu.locator('[data-portal-message-action="round-follow"]').innerText() === 'Unflag');
+      await page.keyboard.press('Escape');
+      const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+      const small = await mobile.newPage(); small.on('pageerror', e => errors.push(e.message)); await setup(small);
+      await small.evaluate(() => document.documentElement.style.fontSize = '20px'); await seed(small);
+      const smallLong = card(small, 'long');
+      await smallLong.locator('.chatRoundExpand').tap();
+      check('390 font20 tap expands original prose with reachable control', await smallLong.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'true'
+        && await smallLong.locator('.chatRoundExpand').evaluate(n => n.getBoundingClientRect().width >= 44 && n.getBoundingClientRect().height >= 44));
+      geometry.push(await small.locator('.chatRoundPreview').evaluate(n => ({ width: n.clientWidth, x: n.getBoundingClientRect().x, right: n.getBoundingClientRect().right, bottom: n.getBoundingClientRect().bottom, scrollWidth: n.scrollWidth })));
+      check('long links and large text stay within viewport', geometry.at(-1).x >= 0 && geometry.at(-1).right <= 390 && geometry.at(-1).bottom <= 844 && geometry.at(-1).scrollWidth === geometry.at(-1).width);
+      if (output) await small.screenshot({ path: path.join(output, 'preview-expanded-390-font20.png') });
+      await smallLong.locator('.chatRoundExpand').tap();
+      check('tap collapses without duplicate text', await smallLong.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'false' && await small.locator('.chatRoundFull').count() === 0);
+      await smallLong.locator('.chatRoundPreviewJump').tap();
+      check('expanded contract preserves exact message navigation', await small.locator('[data-message-key="long"]').evaluate(n => n.classList.contains('messageQuoteTarget')));
+      await small.evaluate(() => { items = Array.from({ length: 80 }, (_, i) => human('dense' + i, i === 35 ? previewSource : '短文')); workspace.setMessages(items); });
+      await small.waitForTimeout(100);
+      const box = await small.locator('[data-round-key="dense35"]').boundingBox(); await small.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+      const denseLong = card(small, 'dense35');
+      await denseLong.locator('.chatRoundExpand').tap();
+      check('dense preview expands only the actual long item', await small.locator('.chatRoundExpand').count() === 1 && await denseLong.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')));
+      if (output) await small.screenshot({ path: path.join(output, 'preview-dense-390.png') });
+      assert.deepEqual(errors, []);
+      if (output) fs.writeFileSync(path.join(output, 'preview-result.json'), JSON.stringify({ checks, geometry, errors }, null, 2));
+      console.log('Round rail preview/Flag checks passed: ' + checks.length); await mobile.close(); await context.close(); return;
+    }
     if (process.env.RAIL_MARKERS_ONLY) {
       const afterLayout = target => target.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const seed = async target => {
@@ -294,12 +385,12 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('compact flag is an actual action', await page.evaluate(() => workspace.isRoundFollowed('v1')));
       await shot('preview-desktop-light');
       await first.locator('.chatRoundExpand').focus(); await page.keyboard.press('Enter');
-      check('keyboard exposes full original prose', await first.locator('.chatRoundFull').isVisible() && (await first.locator('.chatRoundFull').innerText()).includes('截图中的细节'));
+      check('keyboard exposes full original prose inline', await first.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')) && await first.locator('.chatRoundExpand').innerText() === '收起');
       await first.locator('.chatRoundFollow').click();
-      check('flag preserves expanded prose and source unchanged', await first.locator('.chatRoundFull').isVisible() && await page.evaluate(() => items[0].content === originalText));
+      check('flag preserves expanded prose and source unchanged', await first.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')) && await page.evaluate(() => items[0].content === originalText));
       await first.locator('.chatRoundExpand').click(); await page.mouse.move(10, 10);
       await first.locator('.chatRoundExpand').hover(); await page.waitForTimeout(570);
-      check('hover exposes complete prose without black tooltip', await first.locator('.chatRoundFull').isVisible() && await page.locator('[role="tooltip"]:visible').count() === 0);
+      check('hover does not expand prose or show black tooltip', await first.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'false' && await page.locator('[role="tooltip"]:visible').count() === 0);
       await page.mouse.move(10, 10); await first.locator('.chatRoundExpand').click();
       await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot('preview-desktop-dark');
       check('dark preview is opaque; node line remains without a divider beside the text', await popup.evaluate(n => !getComputedStyle(n).backgroundColor.includes('rgba'))
@@ -319,7 +410,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('touch flag action works without double tap', await small.evaluate(() => workspace.isRoundFollowed('v1')));
       if (output) await small.screenshot({ path: path.join(output, 'preview-390-font20-light.png') });
       await small.locator('.chatRoundExpand').first().focus(); await small.keyboard.press('Enter');
-      check('390 keyboard full text stays scrollable', await small.locator('.chatRoundFull').first().isVisible());
+      check('390 keyboard full text stays scrollable', await small.locator('.chatRoundPreviewJump').first().evaluate(n => n.classList.contains('is-expanded')));
       await small.keyboard.press('Escape');
       check('escape restores rail focus without reopening preview', !(await small.locator('.chatRoundPreview').isVisible()) && await small.evaluate(() => document.activeElement.classList.contains('chatRoundDirectory')));
       await small.locator('.chatRoundDirectory').tap();
@@ -416,12 +507,12 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('hover shows enterable preview', await page.locator('.chatRoundPreview').isVisible());
     await page.locator('.chatRoundPreview').hover(); await page.waitForTimeout(280);
     check('preview survives pointer transfer', await page.locator('.chatRoundPreview').isVisible());
-    await page.locator('.chatRoundPreview').getByRole('button', { name: '标记本轮关注', exact: true }).click();
+    await page.locator('.chatRoundPreview').getByRole('button', { name: 'Flag', exact: true }).click();
     await settle(); check('preview flag synchronized', (await node.getAttribute('class')).includes('is-followed'));
     await page.keyboard.press('Escape');
     check('escape closes preview', !(await page.locator('.chatRoundPreview').isVisible()));
     await page.locator('[data-message-key="a2"]').click({ button: 'right' });
-    check('reply menu resolves formal request flag', await page.locator('body > [data-portal-message-menu] [data-portal-message-action="round-follow"]').innerText() === '取消本轮关注');
+    check('reply menu resolves formal request flag', await page.locator('body > [data-portal-message-menu] [data-portal-message-action="round-follow"]').innerText() === '取消Flag');
     await page.locator('body > [data-portal-message-menu] [data-portal-message-action="round-follow"]').click(); await settle();
     check('menu flag synchronized', !(await node.getAttribute('class')).includes('is-followed'));
     const pressPosition = await page.evaluate(() => workspace.els.messages.scrollTop);

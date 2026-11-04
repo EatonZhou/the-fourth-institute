@@ -12,7 +12,7 @@ import pytest
 from management_portal.resources.portal import portal_route_script
 
 
-@pytest.mark.parametrize('mode', ['', 'RAIL_REVIEW_ONLY', 'RAIL_PROTOCOL_ONLY', 'RAIL_VISUAL_ONLY', 'RAIL_MARKERS_ONLY'])
+@pytest.mark.parametrize('mode', ['', 'RAIL_REVIEW_ONLY', 'RAIL_PROTOCOL_ONLY', 'RAIL_VISUAL_ONLY', 'RAIL_MARKERS_ONLY', 'RAIL_PREVIEW_ONLY'])
 def test_round_rail_real_component(mode):
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'chat_round_rail.browser.cjs')],

@@ -480,7 +480,8 @@
 /* One measured round rail next to the existing message viewport. The outer
    strip alone owns continuous scrolling; it never overlaps message content. */
 .chatRoundViewport { display:flex; flex:1 1 auto; min-width:0; min-height:0; position:relative; overflow:hidden; }
-.chatRoundViewport > .paneBody { scrollbar-width:none; }
+.chatRoundViewport > .paneBody { scrollbar-width:none; padding-inline-end:4px; }
+.chatRoundViewport > .paneBody > .messageList { padding-inline-end:4px; }
 .chatRoundViewport > .paneBody::-webkit-scrollbar { display:none; }
 .chatRoundRail { position:relative; flex:0 0 46px; width:46px; min-height:0; color:var(--muted, #687887); background:var(--panel, transparent); }
 .chatRoundDirectory { position:absolute; top:0; left:0; width:30px; height:30px; padding:0; border:0; background:transparent; color:inherit; cursor:pointer; font-size:1.1rem; }
@@ -520,17 +521,16 @@
 .chatRoundPreviewState { font-size:.65rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .chatRoundPreviewState.is-running { color:var(--success, #278555); }
 .chatRoundPreviewJump { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; width:100%; min-height:2.8em; text-align:start; border:0; padding:0; color:inherit; background:transparent; font:inherit; font-size:.85rem; line-height:1.4; white-space:pre-wrap; overflow-wrap:anywhere; cursor:pointer; }
+.chatRoundPreviewJump.is-expanded { display:block; -webkit-line-clamp:unset; }
 .chatRoundAttachmentIcon { display:grid; place-items:center; width:28px; height:32px; flex:0 0 28px; margin-top:26px; border-radius:4px; color:var(--muted); background:var(--bg, transparent); font-size:1.2rem; }
 .chatRoundAttachments { color:var(--muted, #687887); font-size:.68rem; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; margin-top:3px; }
 .chatRoundExpand,.chatRoundFollow { display:grid; place-items:center; border:0; border-radius:4px; padding:0; background:transparent; color:var(--muted); cursor:pointer; }
-.chatRoundExpand { flex:0 0 24px; height:24px; margin-left:auto; font:inherit; font-size:1rem; line-height:1; }
+.chatRoundExpand { flex:0 0 auto; min-width:44px; height:24px; padding:0 4px; margin-left:auto; font:inherit; line-height:1; white-space:nowrap; }
 .chatRoundFollow { flex:0 0 32px; width:32px; height:32px; margin-top:22px; }
 .chatRoundFollow svg { width:18px; height:18px; }
 .chatRoundFollow[aria-pressed=true] { color:var(--accent); background:color-mix(in srgb, var(--accent) 9%, transparent); }
 .chatRoundExpand:hover,.chatRoundFollow:hover { background:var(--bg, #8291a414); }
 .chatRoundPreview button:focus-visible { outline:2px solid var(--accent, #578fcf); outline-offset:1px; }
-.chatRoundFull { margin-top:8px; padding-top:6px; border-top:1px solid var(--border); font-size:.85rem; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
-.chatRoundFull[hidden] { display:none; }
 .chatRoundNotice { position:absolute; bottom:0; left:8px; right:48px; font-size:.8rem; background:var(--panel, #fff); color:var(--text, #243343); }
 .chatRoundNotice:empty { display:none; }
 .is-paused .chatRoundCore::before { animation-play-state:paused !important; }
@@ -545,7 +545,7 @@
   .chatRoundFlag { left:14px; }
   .chatRoundPreview { right:64px; width:min(328px, calc(100% - 72px)); }
   .chatRoundPreview button { min-height:44px; }
-  .chatRoundPreviewHead > button,.chatRoundExpand,.chatRoundFollow { width:44px; flex-basis:44px; }
+  .chatRoundPreviewHead > button,.chatRoundFollow { width:44px; flex-basis:44px; }
   .chatRoundFollow { margin-top:42px; }
   .chatRoundAttachmentIcon { margin-top:46px; width:22px; flex-basis:22px; }
 }
