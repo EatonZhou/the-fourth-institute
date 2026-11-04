@@ -359,7 +359,7 @@ class KimiRuntime(ProviderRuntime):
     # 2.5 replaces raw live events and snapshot APIs with transcript protocol
     # v2. This adapter owns the v1 contract; install its newest compatible
     # release until the v2 adapter is implemented and validated.
-    VERSION_RANGE = "<2.5.0"
+    VERSION_RANGE = "~2.4.0"
 
     def supports_versions(self, versions):
         return all(Version(value) < Version("2.5.0") for value in versions)

@@ -464,8 +464,8 @@ def test_npm_range_chooses_latest_stable_compatible_release(monkeypatch):
         calls.append(args)
         return '["2.3.3", "2.4.0", "2.4.1"]'
     monkeypatch.setattr(updates, 'run_command', command)
-    assert updates.npm_version('@moonshot-ai/kimi-code', '<2.5.0') == '2.4.1'
-    assert calls == [('npm', 'view', '@moonshot-ai/kimi-code@<2.5.0', 'version', '--json')]
+    assert updates.npm_version('@moonshot-ai/kimi-code', '~2.4.0') == '2.4.1'
+    assert calls == [('npm', 'view', '@moonshot-ai/kimi-code@~2.4.0', 'version', '--json')]
 
 
 def test_kimi_incompatible_protocol_is_not_ready_or_staged(monkeypatch, tmp_path):
