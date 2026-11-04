@@ -2,6 +2,72 @@
   "schema": "tfi.portal-tau-cases.v1",
   "cases": [
     {
+      "id": "test_63b7a9d2e410",
+      "key": "tau.combination.development-structure-change",
+      "title": "开发中途移动源码、改项目名并转移成员后继续交付",
+      "description": "在独占项目和小团队制作并运行一个小程序；中途正式移动源码、调整工作区绑定、重命名项目，再将有真实历史的临时成员转移到第二个临时团队，继续修改和交付。检查稳定身份、内容、历史、目录与页面入口，最后精确回收临时团队。",
+      "importance": "P1",
+      "module": "workflow.repository",
+      "aspects": ["functional", "behavior", "ui"],
+      "is_design_point": true,
+      "design_refs": ["decision_6476c69b33da", "decision_8838269736d3", "decision_6fc653d55c79", "decision_4aa13bc21e8e"],
+      "lifecycle": "active",
+      "implementations": [{
+        "id": "impl-63b7a9d2e41001aa",
+        "runner": "tau",
+        "entrypoint": "tau:combination-development-structure-change",
+        "source": "tests/cases/tau_cases.json",
+        "profiles": ["live.controlled"],
+        "risk": "external-side-effects",
+        "task_prompt": "用户想在开发中途调整结构，仍能继续交付。只在本例独占临时Project、Git Repo、Workspace和小开发团队里，让实际成员完成一个有文件、有真实运行结果的小程序。已有内容和对话后，用户从正式入口移动源码并调整Workspace绑定，重命名Project；沿原资源和对话入口刷新重开、继续编辑运行，核对稳定ID、当前名称、路径、内容和成员cwd。另建独占Lineage，将已产生会话与文件的临时成员通过MoveResident及当前UI协议转移，核对同一成员、历史、绑定、队列、源目标关系，再让它继续真实工作和交付。活跃工作不支持转移时记录正式拒绝，等自然结束后继续；不猜移动API，不直接改登记或物理搬目录冒充支持。实际打开工作台/资源与交付验证可用。自然结束或正式停止自有工作后，正式删除临时Lineage并核对引用、页面、后台清理及独立资源边界；Unbind不冒充删除。记录每个追加功能的步骤和真实结果。只本例一次业务流程，修复后仅复验受影响步骤；旧失败、输入和历史保留。",
+        "lineage_fixture": "为结构变更及成员转移新建独占项目、Repo、两个临时Lineage和业务成员；固定TAU执行者仅组织验证，不被移动或删除。绑定不是授权，按实际主体核对精确许可，只清理本例对象。"
+      }]
+    },
+    {
+      "id": "test_92a4c6e8b135",
+      "key": "tau.combination.nested-family-failure-requirement-change",
+      "title": "嵌套Family分支失败后通过原门面改需求并恢复交付",
+      "description": "在独占外内Family中用至少两个业务成员完成协作；一个分支遇到可控真实失败，另一分支交付有效成果。用户从原外门面修改要求，恢复后核对最终成果、原请求和派工关系，再按正式入口清理。",
+      "importance": "P1",
+      "module": "lineage.family",
+      "aspects": ["functional", "behavior", "ui"],
+      "is_design_point": true,
+      "design_refs": ["decision_44cf587c1721", "decision_9ad68dd077d4", "decision_4adcc1ff2f2c", "decision_c524c775e0be"],
+      "lifecycle": "active",
+      "implementations": [{
+        "id": "impl-92a4c6e8b13501aa",
+        "runner": "tau",
+        "entrypoint": "tau:combination-nested-family-failure-requirement-change",
+        "source": "tests/cases/tau_cases.json",
+        "profiles": ["live.controlled"],
+        "risk": "external-side-effects",
+        "task_prompt": "用户要在协作失败后修改原需求并拿到新交付。通过正式Family/Lineage机制创建本例独占外层与内层Family，至少两个实际业务成员各有明确职责。经外门面提出有实际文件交付的小任务，让一个分支遭遇本例可控的真实失败（例如本例缺失的必需输入文件），另一分支产出有效成果。用户仍从原外门面补充或修改需求，合法补齐该失败前提后沿原请求恢复，让成员交付符合新要求的最终成果。核对内外门面路由、原输入及实际执行者、派工次数、旧成果是否覆盖新要求、依赖是否自然结束。不能绕过门面替成员完成业务，不能伪造失败状态、改库或删除依赖。门面无模型Session；分别核对Router、Steward及实际业务成员的原生新鲜正额度和执行条件。记录原输入、改需求输入、失败和恢复操作ID及最终文件。自然结束后正式清理独占Family/成员/Lineage，验证清理边界；不碰固定TAU执行团队或持久音乐团队。只本例一轮，修后仅定点复验，缺少真实前提如实记录。",
+        "lineage_fixture": "嵌套Family必须新建独占Lineage和至少两个业务成员；只在该隔离图制造可恢复失败，保存原请求与失败事实。门面与成员使用各自正式身份，不借用User或其他Resident身份。"
+      }]
+    },
+    {
+      "id": "test_c5e8a120d746",
+      "key": "tau.combination.submission-disconnect-resource-dialogue",
+      "title": "提交断线恢复后继续资源对话与语义查找",
+      "description": "在自建资源上真实保存并启动小任务，请求发出后断开本例页面，再进入核对状态并继续；随后在实际支持的不同资源Chat中提问追问、切换返回，并分别使用关键词和语义搜索核对更名更新删除后的结果。",
+      "importance": "P1",
+      "module": "resident.conversation",
+      "aspects": ["functional", "behavior", "ui"],
+      "is_design_point": true,
+      "design_refs": ["decision_daba6706a788", "decision_f25266e5a0e7", "decision_c524c775e0be", "decision_8dc6b3d03ca7", "decision_eb066fbea4ed"],
+      "lifecycle": "active",
+      "implementations": [{
+        "id": "impl-c5e8a120d74601aa",
+        "runner": "tau",
+        "entrypoint": "tau:combination-submission-disconnect-resource-dialogue",
+        "source": "tests/cases/tau_cases.json",
+        "profiles": ["live.controlled"],
+        "risk": "external-side-effects",
+        "task_prompt": "用户提交后断线，希望回来仍能继续。准备独占可编辑文件与小任务，经真实UI保存/创建或启动任务，请求发出后仅断开本例浏览器页面或连接；重新进入先读取实际受理状态与原对象，再继续原业务，核对无重复创建/执行、无丢草稿。至少完成一条正式受理→断线→恢复→真实交付的流程。若没有捕获已提交但响应未知，明确记该分支未覆盖；明确标注的传输故障可作补充，不能替代真实使用或关闭全机网络。随后读取当前资源类型和实际支持的Chat入口，用内容明确不同的独占知识条目、Repo/Workspace文件及其他支持类型各进行有内容的真实模型对话和引用追问，切换另一资源再返回刷新，核对上下文、会话和历史不串台；没有独立Chat的类型按契约记录。准备关键词不同而语义相关的独占资料，分别走关键词和真实语义入口检索；名称/内容变更后再查，正式删除本例资料后核对搜索不再打开已删或无权内容。全文命中不能冒认向量搜索，embedding或合法额度缺失如实记录并继续其余分支，不充值、不换账号、不伪造索引。保存原输入/幂等键、受理回执、资源/会话/搜索实际来源与恢复结果；只本例一轮，修后定点复验并精确清理。",
+        "lineage_fixture": "仅本例独占Project/资源/可编辑文件/业务成员与浏览器context；实际User和Resident分开核对身份及权限。不同资源使用可区分内容，不读取真人私聊或持久音乐资料，不删除固定TAU执行者。"
+      }]
+    },
+    {
       "id": "test_732fcbc88a64",
       "key": "tau.home.conversation-display",
       "title": "Home 对话与展示：真实门面、汇报媒体、文件与原生图连续使用",
