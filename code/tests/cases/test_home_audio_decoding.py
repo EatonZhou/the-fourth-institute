@@ -1,4 +1,4 @@
-"""Ordinary fixed audio decoding; synthesis and producer receipts are external."""
+"""Fixed audio decoding, source integrity and format limits."""
 import hashlib
 import io
 import math

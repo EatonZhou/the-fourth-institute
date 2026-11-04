@@ -164,8 +164,8 @@
       // Page State stores only navigation descriptors. Domain content, drafts,
       // credentials and submitted-request nonces never become restoration input.
       return { schemaVersion: 2, entries: state.entries.map(entry => ({ intent: entry.intent, queued: entry.queued,
-        ...(entry.originKey ? { originKey: entry.originKey } : entry.messageOrigin
-          ? { messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin) } : {}) })),
+        ...(entry.originKey ? { originKey: entry.originKey } : {}),
+        ...(entry.messageOrigin ? { messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin) } : {}) })),
         pinned: state.pinned, ratio,
         expanded: root.classList.contains("homeDialogueExpanded"), pane: root.dataset.pane };
     }
@@ -341,8 +341,13 @@
         }
         entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
         if (!entry.presented) await entry.adapter.setPresented(false);
+        const messageOrigin = window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin);
         const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id,
-          ...(entry.intent.view === "report" ? { originKey: entry.originKey, readOnly: entry.readOnly, quality: entry.intent.quality } : {}) });
+          ...(entry.intent.view === "report" ? { originKey: entry.originKey, readOnly: entry.readOnly, quality: entry.intent.quality,
+            // A locator for server-side message verification, never a claimed
+            // author or authorization. Keep it alongside the stable origin.
+            ...(messageOrigin ? { originContext: { resident_id: messageOrigin.residentId,
+              message_id: messageOrigin.messageId, fence_index: messageOrigin.fenceIndex } } : {}) } : {}) });
         if (destroyed || entry.controller.signal.aborted) return;
         if (result?.error && !entry.adapter.handlesReadErrors) throw result.error;
         entry.status = result?.error ? "读取失败" : entry.presented ? "已读取" : "待查看"; entry.notice.textContent = ""; entry.notice.hidden = true;
@@ -368,7 +373,7 @@
       const entry = { id: window.PortalUIPrimitives.randomUUID(), intent, queued: !allowed, deferred: provenance.deferred === true,
         originKey: window.PortalHomeDialogueState.normalizeOriginKey(provenance.originKey)
           || (sourceReport && !provenance.messageOrigin ? `home-request/v1:${window.PortalUIPrimitives.randomUUID()}` : null),
-        messageOrigin: provenance.messageOrigin, readOnly: provenance.readOnly === true || intent.target.kind === "report",
+        messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(provenance.messageOrigin), readOnly: provenance.readOnly === true || intent.target.kind === "report",
         label: intent.target.kind === "project" ? intent.target.id : intent.target.kind === "lineage" ? "Lineage" : intent.target.kind === "task" ? "任务请求"
           : intent.target.kind === "report" ? `汇报 · ${intent.target.id}${intent.target.revision ? ` · v${intent.target.revision}` : ""}` : intent.target.address.split("/").filter(Boolean).at(-1),
         status: provenance.deferred ? "待打开" : "等待读取", root: node("section", "", "homeDialogueEntry"), controller: new AbortController(),
@@ -475,7 +480,7 @@
         "解释材料的生成路径：仅在有效主动性允许或用户明确请求时制作；按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释包目录。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 保存包内文件，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由，确实缺少必要范围时才询问。",
         "medium/high解释页用 view:explanation：页面组合视频、可选交互、图文补充；low直接Markdown即可。初开先呈现交互与图文，用户点击‘生成讲解视频’才生成视频，不在打开或回复时抢先生成；视频及字幕持久保存，重开恢复已有成果。视频按钮的质量独立选择：low自由发挥、medium加强3b1b-style、high对齐3b1b级别并独立实际审查与修改再审。选择属于固定生成版本，不能跨质量复用ready。交互应帮助理解因果，例如选择查询词、调整温度或遮罩，真实重算注意力权重及结果。按内容选择有效呈现，不用无意义滑块、占位视频或空模块凑模板。",
         "通用创作标准：先写清读者要看懂或判断什么，再按所选质量选择形式。medium/high的操作、图形、数值、算式和文字同步反馈并能核对来源；机制用过程与参数探索，方案比较用同尺度对照，架构用结构导航与细节，不照抄注意力样例或固定卡片布局。low直接Markdown同样要求内容准确。可把本地D3库打包进交互文件并保留许可，禁止远程依赖。交付前检查事实、计算、密度、键盘/触屏/大字体、减少动态效果和性能；隐藏时停止活动，不用持续动画代替解释。完整创作与包格式入口：当前 Portal 同源 /static/home_explanation_authoring.md。",
-        "high报告创作参考 Transformer Circuits Global Workspace、Distill Paths Perspective on Value Learning 和 Distill Handwriting；简单事情不强行复杂。视频质量由生成按钮单独选择：medium增强3Blue1Brown风格提示，high再要求独立成片审查；low不强制该风格。音轨由作者在外部准备，Portal只消费固定音频文件与真实字幕时间，不管理合成方式或生成回执。页面检查、编码成功与可播放均不能代签内容或听感。",
+        "high报告创作参考 Transformer Circuits Global Workspace、Distill Paths Perspective on Value Learning 和 Distill Handwriting；简单事情不强行复杂。视频质量由生成按钮单独选择：medium增强3Blue1Brown风格提示，high再要求独立成片审查；low不强制该风格。作者提交固定音频文件与真实字幕时间。页面检查、编码成功与可播放均不能代签内容或听感。",
         "仅high质量必须触发独立检查 Resident：构建 scripts/build_explanation_package.py 时显式传 --quality；high由脚本送检，手写high清单或重试用 scripts/submit_explanation_review.py，传自己的 --resident-id、正式 --address、清单 --sha256 与读者 --task。作者不能审核自己。按固定版本与摘要幂等投递，作者回读匹配此版本的独立报告，changes_requested后修改成新固定版再审，旧pass对修改后的内容失效；submitted 只表示受理，缺权限、取消、生成失败或未实际操作不能说通过，不自动降级，不无限忙重试。普通打开与恢复历史不重投检查。",
         "解释包清单是 UTF-8 JSON：{schema:'portal-explanation/v1',title,summary,revision:1,quality:'low'|'medium'|'high',interaction?:{address,sha256,title},supplement?:{address,sha256},video_plan?:{address,sha256},video?:{address,sha256,captions?:{address,sha256},transcript?:{address,sha256},chapters?:[{time,title}]},sources?:[{label,url或address}]}。address 均为实际 workspace_ID/file/...；sha256 是对应文件字节的 SHA-256。low包仅Markdown supplement；medium/high交互使用独立自包含 HTML/CSS/JS，在隔离沙箱中运行，不能联网、访问父页面/凭据或导航外部页面；把所需数据写入交互文件，用语义控件支持键盘、窄屏和减少动态效果。supplement 引用 Markdown。video_plan 引用已保存的声明式视频生成计划，计划与其 WAV 音轨必须与 manifest 在同一 Workspace 同一包目录，scene start/end 与 cues 使用真实配音时间；具体生成合同见解释页创作指南，不要把可执行脚本当生成计划。普通 Preview 的 HTML/JS 文件只按文本/代码展示，其边界保持不变。",
         "写入成功后用 ReadResource 回读清单和各文件，核对内容/媒体、摘要及可读性；成功才输出 view:explanation、action:open、target:{address:真实workspace_ID/file/.../manifest.json,sha256:清单字节SHA256} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久目录，历史固定该清单与材料版本；不把临时下载凭据写进引用。已有普通文件仍可用 view:preview 打开。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确具体失败和现有可读内容，不把只改提示或只完成图文说成完整解释页交付。",

@@ -346,10 +346,9 @@ def test_producer_annotations_do_not_gate_audio_or_ready_media(setup):
     service, _, put = setup
     data = visual_plan()
     data['producer_metadata'] = {'evidence': {'address': 'private/nonexistent', 'sha256': '0'*64}}
-    data['audio_provenance'] = {'address': 'missing-old-report', 'sha256': '0'*64}
     data['script'] = 'raise Exception("must never execute")'
     clean = validate(data)
-    assert not {'producer_metadata', 'audio_provenance', 'script'} & clean.keys()
+    assert not {'producer_metadata', 'script'} & clean.keys()
     ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', data)})
     media = Media(service, fake_render)
     media.start(**ref, actor='reader')

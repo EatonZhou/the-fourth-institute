@@ -41,11 +41,25 @@
 
 ## 输出和资源边界
 
-含 visual 的片段为1280×720、12fps；底部80px为真实字幕保留区。显示数值取四位近似，内部计算保留完整精度。源字图和数学结果每场景准备一次；每帧仅查当前事件和绘制该阶段。混合旧图与新图时统一输出尺寸。
+含 visual 的片段为1280×720；low为12fps，medium/high为24fps；底部80px为真实字幕保留区。显示数值取四位近似，内部计算保留完整精度。源字图和数学结果每场景准备一次；每帧仅查当前事件和绘制该阶段。混合旧图与新图时统一输出尺寸。
 
 渲染器不读取来源、调用模型、执行作者脚本或提交检查。媒体与检查入口负责鉴权、固定哈希、租约、持久结果与独立送检。音轨由作者在外部准备，缺少音轨只影响需要它的新视频任务。
 
 ## 作者接入
+
+### 质量与固定版本
+
+manifest 的 `quality` 为 low/medium/high，构建脚本以 `--quality` 固定它。low解释包只接受Markdown supplement；medium沿用交互网页；high通过统一审核入口送审。视频按钮可另选视频质量，POST `/api/home-explanation/media` 与GET状态/文件携带相同quality。medium目录沿用 `explanation-media/<manifest_sha>`，low/high分别为 `<manifest_sha>-low`、`<manifest_sha>-high`；不同质量不复用ready结果。已有固定成果可读，GET不会生成、通知或投递。
+
+`home_explanation_quality.prepare_plan(validated_plan, quality)` 是各视频域的生成门槛。low允许既有节点图；medium/high要求每个场景都有已通过封闭校验、绑定真实字幕cue或明确静默的visual.events，避免自动循环高亮代替分镜。按钮不会调用模型重写分镜：作者必须事先按 `policy(quality)` 制作固定计划与音轨。报告域若尚不能提供合格计划，medium/high须明确失败并保留原成果，不可仅保存同名quality元数据后继续使用low策略。帧率和编码差异只表示渲染策略，不证明3b1b教学质量；high仍需要独立实际检查。
+
+### 单一审核事实
+
+报告、页面和视频共用 `home_explanation_review.ReviewService`。域在明确POST完成固定产物后调用 `submit(subject, actor, reviewer='')`；subject为 `{kind, ref, version, digest, quality:'high', author, assets:[{address,sha256}], task?, previous_review_id?}`，kind为report/report_video/explanation/explanation_video。ref/version/digest/quality/author共同固定审核身份；作者字段必须来自域的正式作者事实。审核者与作者、请求者分离，使用自身权限读取并实际播放/操作产物。
+
+读回 `read(review_id, actor)`；结论 `verdict(review_id, actor, digest=..., status=passed|changes_requested|blocked, evidence=[{address,sha256}], feedback=...)`；取消 `cancel(review_id, actor)`。HTTP对应GET `/api/home-explanation/reviews?id=...`、POST `/reviews/verdict`和`/reviews/cancel`；页面送审POST `/reviews`使用固定manifest地址及sha256。CLI `submit_explanation_review.py` 支持 `--read`、`--cancel`、`--verdict-file`及 `--previous-review-id`，身份来自当前Resident凭据。
+
+submitted仅表示DeliverMessage受理，ready仅表示媒体字节可用；high的quality_met只有固定摘要仍一致且passed才成立。passed须有实际检查证据，作者不能自审。changes_requested保存意见并通过幂等DeliverMessage回作者，feedback_delivery记录真实投递成功或失败。作者被唤醒后修改实际产物、保存新固定版，再携原review_id为previous_review_id送审；新摘要不继承旧pass。实际修改与独立复审不限制轮次，第4轮及以后仍可送检；仅passed、显式取消或具体无法继续的blocked停止。传输失败的送检或结果通知最多三次显式重试。取消、权限失败、生成失败、通知失败均保留可读状态，绝不自动降级为通过；GET不重投或重试。固定资产字节被改写时，原passed读回为invalidated。
 
 [14镜数据形状示例](/r/workspace_9a9d56f3d1af/file/explanation-pages-evidence/backend/visual-v3/estimated-preview-plan.json)展示各操作的组合。它使用分镜估时，**没有音轨或真实cues，不能直接提交为生产视频**。该示例仅用于理解字段，服务端不加载作者适配脚本。
 
@@ -56,8 +70,8 @@
 
 ## 固定音轨输入
 
-Portal不生成配音，也不管理语音工具、服务模型、生成任务或专用回执。作者在Portal之外准备音轨和真实字幕时间，使用普通资源接口提交文件；生成方式与工具记录属于外部创作流程。没有安装语音工具不影响Portal启动、测试、鉴权与普通媒体读取。
+作者提交固定音轨文件和对应的真实字幕时间，文件使用普通资源地址与内容摘要引用。
 
 计划audio接受同包固定MP3或PCM16 WAV的address/sha256。每次媒体请求使用当前主体重新检查来源读取权限；生成前及写入成果前核对音轨字节摘要，撤销权限或内容变化不能发布成果。计划顶层允许附带创作注释，渲染器只接收已验证的定义字段，不解释、读取或执行这些注释；场景和visual仍遵守封闭字段校验。
 
-原MP3字节复制保留原SHA。受管ffmpeg在生成目录中解码成PCM16/24kHz单声道，固定demuxer与file/pipe协议，不执行作者命令；解码最多30秒，实际音轨超过300秒直接拒绝。生成记录保存source_sha256、source_media_type及实际解码时长，派生WAV不得冒用原MP3摘要。已有音轨、创作附件与ready视频保持原件，按普通资源权限读取，不要求旧成果重新生成或补交专用证明。
+原MP3字节复制保留原SHA。受管ffmpeg在生成目录中解码成PCM16/24kHz单声道，固定demuxer与file/pipe协议，不执行作者命令；解码最多30秒，实际音轨超过300秒直接拒绝。生成记录保存source_sha256、source_media_type及实际解码时长，派生WAV不得冒用原MP3摘要。已有音轨、创作附件与ready视频保持原件，按普通资源权限读取。
