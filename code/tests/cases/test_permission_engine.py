@@ -705,6 +705,38 @@ def test_project_admin_and_shared_administration_boundaries(store):
     assert allowed(RESIDENT, "DeleteFamily", {"lineage_id": LINEAGE}) and not allowed("bob", "DeleteFamily", {"lineage_id": LINEAGE})
 
 
+def test_lifecycle_correction_keeps_target_read_permission(store, default):
+    """生命周期纠正的固定入口不能豁免 Workspace 读权限或扩大到删除权限。
+
+    :design: decision_600ae27b0538
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    from management_portal.permission_system.requests import requests
+
+    workspace = "workspace_111111111111"
+    instruction = "CorrectResourceLifecycleAssociation"
+    assert default.describe(instruction) == {"required": True, "requirements": [
+        {"element": instruction + ":fixed", "a": "@free", "resource": "@portal"},
+        {"element": instruction + ":resource_id", "argument": "resource_id",
+         "a": "@viewer", "types": ["workspace"]},
+    ]}
+    build(default, store, portal_facts(), interns=["bob"])
+    engine = engine_for(default, store)
+    asked = [(r.action, r.resource) for r in requests(default, instruction, {
+        "scope_id": "fixture-scope", "resource_id": workspace, "reason": "verified dependency",
+    })]
+    for principal in ("bob", OTHER):
+        assert levels(engine, default, principal, workspace) == "viewer"
+        assert all(d.allowed for d in engine.decide(principal, asked))
+        assert not engine.decide(principal, [("@contributor", workspace)])[0].allowed
+        with store.transaction() as connection:
+            store.add(connection, [Entry(new_entry_id(), DENY, principal, "@viewer", workspace)])
+        decisions = engine.decide(principal, asked)
+        assert decisions[0].allowed  # The fixed slot alone is insufficient.
+        assert not decisions[1].allowed
+
+
 def test_a_free_argument_slot_passes_an_object_the_instance_does_not_hold(store):
     """免检的参数槽遇到实例中没有的对象照常放行，对象是否存在由指令自己报告
 
