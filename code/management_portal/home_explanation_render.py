@@ -116,7 +116,9 @@ def _dot(c, d, m, e, t):
             c.text((700, 235+j*65), f'd{j+1}    {_num(q[j])} × {_num(k[j])} = {_num(product)}', _INK, 28)
     if stage in {'sum', 'result'}:
         c.line((700, 370), (1220, 370))
-        c.text((700, 395), f"({_num(m['products'][idx][0])} + {_num(m['products'][idx][1])}) / {_num(d['divisor'])}")
+        terms = f"{_num(m['products'][idx][0])} + {_num(m['products'][idx][1])}"
+        formula = f"({terms}) / {_num(d['divisor'])}" if stage == 'result' else f"{terms} = {_num(sum(m['products'][idx]))}"
+        c.text((700, 395), formula)
     if stage == 'result':
         c.text((700, 470), f"score = {_num(m['scores'][idx])}", _Q, 40)
     c.text((60, 600), '同一原点、同一单位 · 分量乘加后缩放 · 显示为近似值', _MUTED, 24)

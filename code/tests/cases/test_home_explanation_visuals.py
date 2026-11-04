@@ -221,6 +221,22 @@ def test_partial_sum_operands_and_query_weights_have_distinct_labels(fonts, monk
     assert not any(xy == (730, 150) and 'V (' in text for xy, text in drawn)
 
 
+def test_dot_sum_does_not_reveal_scaling_before_its_event(fonts, monkeypatch):
+    text = []
+    original = renderer._Canvas.text
+    def record(self, xy, value, *args, **kwargs):
+        text.append(value)
+        return original(self, xy, value, *args, **kwargs)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    p, s = dict(title='test'), scene(dot())
+    renderer.frame(p, s, 0, 2.5, fonts)
+    assert '6 + -4 = 2' in text
+    assert not any('/ ' in value or 'score =' in value for value in text)
+    text.clear()
+    renderer.frame(p, s, 0, 3.5, fonts)
+    assert '(6 + -4) / 2' in text and 'score = 1' in text
+
+
 def test_mixed_scene_encoder_geometry_and_cache(tmp_path, fonts, monkeypatch):
     v = dot()
     v['events'] = [event('result', cue=0)]
