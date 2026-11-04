@@ -65,8 +65,23 @@ try {
       {id: shortId, remaining_percent: 100, window_duration_mins: 300, resets_at: shortReset},
       {id: weeklyId, remaining_percent: 2.17, window_duration_mins: minutes, resets_at: weeklyReset},
     ]};
-    assert.equal(context.accountLimitStatus(row), `周刷新 ${new Date(weeklyReset * 1000).toISOString()}`,
+    const weeklyLabel = `周刷新：${new Date(weeklyReset * 1000).toISOString()}`;
+    assert.equal(context.accountLimitStatus(row), weeklyLabel,
       `${provider} shows the weekly reset even when the short window resets earlier`);
+    const protectedRow = {...row, quota_reserve: {
+      status: 'reserved', remaining_percent: 1.9, reserve_percent: 2,
+      windows: [{window: weeklyId, remaining_percent: 1.9, resets_at: weeklyReset}],
+    }};
+    assert.equal(context.accountLimitStatus(protectedRow), weeklyLabel,
+      'remaining quota shows the weekly reset even when the account is protected');
+    assert.equal(context.accountLimitStatus({...protectedRow, error: 'failed'}), '用量刷新失败');
+    const exhaustedRow = {...row, quota_reserve: {
+      status: 'reserved', remaining_percent: 0, reserve_percent: 2,
+      windows: [{window: weeklyId, remaining_percent: 0, resets_at: weeklyReset}],
+    }};
+    assert.equal(context.accountLimitStatus(exhaustedRow), `预计恢复 ${new Date(weeklyReset * 1000).toISOString()}`);
+    exhaustedRow.quota_reserve.windows[0].resets_at = now - 1;
+    assert.equal(context.accountLimitStatus(exhaustedRow), '等待额度恢复确认');
     assert.equal(context.accountLimitStatus({...row, refreshing: true}), '正在刷新用量…');
     assert.equal(context.accountLimitStatus({...row, error: 'failed'}), '用量刷新失败');
     assert.equal(context.accountLimitStatus({...row, rate_limits: row.rate_limits.slice(0, 1)}), '等待用量刷新',

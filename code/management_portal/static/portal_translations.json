@@ -37527,9 +37527,9 @@
     "en": "Could not read the preview: {p0}",
     "zh-CN": "预览读取失败：{p0}"
   },
-  "周刷新 {p0}": {
-    "en": "Weekly reset {p0}",
-    "zh-CN": "周刷新 {p0}"
+  "周刷新：{p0}": {
+    "en": "Weekly reset: {p0}",
+    "zh-CN": "周刷新：{p0}"
   },
   "预计恢复 {p0}": {
     "en": "Estimated recovery {p0}",
