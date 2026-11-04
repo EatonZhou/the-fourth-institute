@@ -49,6 +49,13 @@ def test_cache_hint_contract_has_explicit_gateway_override_and_no_business_drop_
         _validate_protocols({wire.CHAT: {'drop_messages': True}})
 
 
+def test_rejection_diagnostics_cannot_echo_private_upstream_values():
+    assert model_api_bridge.rejection_terms(
+        b'{"error":"tools function_declarations parameters properties should be non-empty for OBJECT type; '
+        b'sk-private-value https://private.invalid/?token=private private@example.com"}') == [
+            'tools', 'function_declarations', 'parameters', 'properties', 'should', 'non-empty', 'object', 'type', 'invalid']
+
+
 def test_kimi_account_host_filters_native_environment_and_closes_transient_adapter(tmp_path, monkeypatch):
     from management_portal import kimi_code_server as host, kimi_account_runtime as accounts, kimi_provider_catalog as catalog
     from management_portal import provider_daemon_host

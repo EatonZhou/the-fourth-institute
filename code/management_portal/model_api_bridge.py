@@ -12,6 +12,7 @@ import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import re
 import secrets
 import select
 import socket
@@ -87,6 +88,19 @@ class Bridge:
 
     def __exit__(self, *_):
         self.close()
+
+
+def rejection_terms(raw):
+    """Fixed contract vocabulary only, excluding echoed body values and names."""
+    vocabulary = {'invalid', 'unknown', 'unsupported', 'required', 'empty', 'non-empty', 'must', 'should',
+                  'not', 'allowed', 'exceed', 'maximum', 'minimum', 'number', 'length', 'size', 'limit',
+                  'name', 'type', 'object', 'array', 'string', 'integer', 'boolean', 'null',
+                  'properties', 'parameters', 'items', 'enum', 'additionalproperties', 'anyof', 'oneof',
+                  'tools', 'function', 'function_declarations', 'declarations', 'schema', 'role',
+                  'contents', 'messages', 'reasoning_effort', 'thinking', 'thinking_budget',
+                  'prompt_cache_key', 'tool_choice', 'parallel_tool_calls', 'model'}
+    text = raw.decode('utf-8', errors='replace').lower()
+    return list(dict.fromkeys(word for word in re.findall(r'[a-z_][a-z_-]*', text) if word in vocabulary))[:40]
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -207,7 +221,9 @@ class _Handler(BaseHTTPRequestHandler):
         except urllib.error.HTTPError as error:
             # Provider bodies can echo authorization or request data. Return the
             # status without exposing credentials/prompts or retrying a model call.
-            self._error(error.code if 400 <= error.code <= 599 else 502, f"Selected Model API returned HTTP {error.code}")
+            terms = rejection_terms(error.read(65536)) if error.code == 400 else []
+            detail = ('; contract terms: ' + ', '.join(terms)) if terms else ''
+            self._error(error.code if 400 <= error.code <= 599 else 502, f"Selected Model API returned HTTP {error.code}" + detail)
             error.close()
         except AccountUnavailable as error:
             self._error(503, str(error))
