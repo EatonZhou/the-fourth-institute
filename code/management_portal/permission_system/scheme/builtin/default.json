@@ -919,6 +919,9 @@
     "CheckFamilyProgress": {
       "a": "@contributor"
     },
+    "CheckFamilyReview": {
+      "a": "@contributor"
+    },
     "CheckFamilyRecovery": {
       "a": "@contributor"
     },
