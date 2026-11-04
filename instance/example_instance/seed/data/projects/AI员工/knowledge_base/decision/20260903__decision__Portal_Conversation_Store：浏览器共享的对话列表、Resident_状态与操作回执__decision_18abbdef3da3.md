@@ -4,26 +4,26 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 33
-  created_at: '2026-09-03'
+  number: 34
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-27T17:32:44Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-04T13:06:32Z"
   updated_by:
-    user: ''
-    agent: resident_7e15b6943c19
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/resident_view_projection.py
-  - ${code_root}/management_portal/static/portal_resident_service.js
-  - ${code_root}/management_portal/static/resident_protocol.js
-  - ${code_root}/management_portal/static/portal_conversation_store.js
-  - ${code_root}/management_portal/static/portal_identity.js
-  - ${code_root}/management_portal/static/portal_refresh_coordinator.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_view_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_service.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/resident_protocol.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_conversation_store.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_identity.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_refresh_coordinator.js
   related:
   - decision_2a3ff353165c
   - decision_2fe6fd5367fb
@@ -86,7 +86,7 @@ Portal 的多个页面同时显示对话相关的信息：User Mailbox（页面�
 
 首批列表响应携带 `mailbox_summary`：服务端按同一份用户阅读状态行列出全局未读成员，旧页仅提供条目键、分类、阅读修订号等轻量字段，不读取其聊天历史、头像或运行状态。前端将摘要与已加载条目组成一份视图；外部角标、分类角标与行未读均由这份视图产生。后续 Resident 定向响应更新同一份成员集合。独立计数接口及其缓存不再存在。
 
-- **每个条目只保留修订号最高的阅读状态。** 列表快照、角标汇总、单个 Resident 的读取、Resident 状态快照的 `viewer_state` 和指令结果，无论哪一份先到，状态层只接受修订号不低于手中的一份（TFI portal 2026-10-16）。修改之前发出、之后才到的快照带着较低的修订号，不能让已读的条目重新未读；真正的新提醒带着更高的修订号，从任何来源到达都会显示。角标汇总列出它那一刻的未读成员，并给出快照读到的最新修订号；汇总中缺席、而手中修订号更新的条目保留到更新的汇总到来。不再按完成签名匹配，也不以请求开始时的本地修改序号丢弃快照。
+- **每个条目只保留修订号最高的阅读状态。** 列表快照、角标汇总、单个 Resident 的读取、Resident 状态快照的 `viewer_state` 和指令结果，无论哪一份先到，状态层只接受修订号不低于手中的一份（weihao 2026-10-16）。修改之前发出、之后才到的快照带着较低的修订号，不能让已读的条目重新未读；真正的新提醒带着更高的修订号，从任何来源到达都会显示。角标汇总列出它那一刻的未读成员，并给出快照读到的最新修订号；汇总中缺席、而手中修订号更新的条目保留到更新的汇总到来。不再按完成签名匹配，也不以请求开始时的本地修改序号丢弃快照。
 - **标记已读或未读时，未读点立即变化，服务端结果决定最终状态。** `setReadState` 记下一项进行中的修改，先显示目标状态，再调用 `MarkMailboxItemRead`，以页面看到的修订号作为 `expected_version`。服务端接受后，状态层采用结果中的状态和修订号并结束这项修改；服务端因条目之后有新提醒而拒绝时，状态层撤销显示并重新读取列表；其他失败撤销显示并报告错误。同一条目连续操作时只有最后一项进行中的修改决定显示。
 - **清除以服务端处理时的条目为依据。** `clear("unread")` 或 `clear("all")` 调用 `ClearMailbox`（带当前栏 `section`）。“清除未读”点击后立即把视图中当前栏的未读条目显示为已读，不等待服务端遍历整个 Mailbox。服务端返回状态发生变化的各行（已读、修订号、清除时间），状态层采用它们；“清除全部”的条目在活动时间不晚于清除时间时隐藏，出现更晚的活动或新提醒后重新显示。请求失败时撤销显示并报告错误。
 - **本地移除和清除会作废旧请求。** `discard`、`discardResident`、清除和切换用户都会取消较早的单个 Resident 重试，此后收到的新游标只能发起新的读取。
@@ -106,6 +106,8 @@ Portal 的多个页面同时显示对话相关的信息：User Mailbox（页面�
 - **对话列表只组合运行状态。** 对话列表输出的条目带有 `resident_state`、`resident_state_cursor` 和 `resident_state_ready`，都来自 Resident 协议状态层，不写回列表的游标。条目中最后一次结果为失败、中断或归档时，Resident 空闲期间继续显示这个结果；Resident 开始新工作时显示当前状态。
 - **Resident 状态快照带有当前用户的未读。** 批量读取状态的 `ListResidentStates` 为每个 Resident 附带 `viewer_state.unread`，即当前用户对这个 Resident 的对话是否有未读结果。对话列表中这个 Resident 的条目以它为准（本地正在进行已读操作时除外）。用户的已读标记变化时，服务端发出 `resident-view-state` 变化通知；Resident 的一条输入进入终态时，状态层也重新读取状态。
 - **状态订阅在同一标签页内共享。** `acquireStates` 为一组 Resident 建立订阅，复用每个 Resident 已有的状态和正在进行的读取，只读取缺少的成员；`stateSnapshot` 只读取已有状态，不发请求。页面恢复可见、获得焦点时，以及可见页面每两分钟，由状态协议统一作废已有订阅的快照并批量补读，修复漏掉的通知。最后一个订阅释放后，解除页面监听和计时器，缓存的生命周期由状态层管理。不同标签页各自读取服务端结果，通过 Portal 的变化通知保持一致。
+
+单个 Resident 的状态或未读投影失效时，状态集合只为该成员补读；同一轮通知中的多个失效成员合并为一次批量读取，其他成员保持当前投影。读取期间新增的失效成员在当前读取结束后合并补读；暂时失败的成员保留恢复责任，后来的其他成员读取不能取消它的恢复。首次订阅、身份切换以及前台或周期校准仍覆盖需要校准的完整成员集合。部分读取只替换所请求的成员；服务端省略的成员清除该成员的状态与未读，不能将它解释为空闲或删除。
 
 ### 人工接单与执行保护的共同投影
 
