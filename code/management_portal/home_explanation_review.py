@@ -93,6 +93,17 @@ class ReviewService:
         return hashlib.sha256(json.dumps(core, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
     @staticmethod
+    def _task_context(subject, previous=None):
+        # Preserve submission scope across revisions without certifying that an
+        # author's text is the user's request. Client task_context is not read.
+        initial = subject['task']
+        if previous:
+            initial = previous.get('task_context', {}).get(
+                'initial_submission_task', previous['subject'].get('task', ''))
+        return {'source': 'author_submission', 'initial_submission_task': initial,
+                'current_submission_task': subject['task']}
+
+    @staticmethod
     def _id(identifier):
         if not isinstance(identifier, str) or not re.fullmatch('[0-9a-f]{64}', identifier):
             raise ValueError('无效审核ID')
@@ -336,6 +347,7 @@ class ReviewService:
                 raise ValueError('复审须绑定同一作者的否决记录和已修改的固定内容')
             record = record or {'id': identifier, 'subject': subject, 'requested_by': actor, 'attempts': 0,
                                 'feedback_contract': 'artifact-readers-v1',
+                                'task_context': self._task_context(subject, previous),
                                 'round': previous.get('round', 1)+1 if previous else 1}
             if not subject['responsible_resident_id']:
                 record.update(status='awaiting_author', error='缺少经核验的负责Resident；保留作者User，等待业务域补齐正式关联。')
@@ -370,6 +382,7 @@ class ReviewService:
             self._save(record)
             payload = {'schema': 'portal-quality-review/v1', 'review_id': identifier,
                        'subject': subject, 'round': record['round'], 'policy': policy('high', video='video' in subject['kind']),
+                       'task_context': record.get('task_context') or self._task_context(subject),
                        'handoff': record['handoff'],
                        'verdict_endpoint': '/api/home-explanation/reviews/verdict',
                        'requirements': '原私有来源不授予读取权限。使用本人Resident凭据调用submit_explanation_review.py --export '+identifier+' --output-dir 本人Workspace内新空目录，'
@@ -427,6 +440,7 @@ class ReviewService:
                 record = self._load(identifier) or {'id': identifier, 'subject': previous['subject'],
                     'requested_by': actor, 'attempts': 0, 'round': previous.get('round', 1) + 1,
                     'feedback_contract': 'artifact-readers-v1',
+                    'task_context': self._task_context(previous['subject'], previous),
                     'resumes_review_id': review_id}
                 if record.get('status') != 'submitted':
                     record = self._dispatch(record, actor, reviewer or previous.get('reviewer', ''))
@@ -448,6 +462,7 @@ class ReviewService:
         try:
             payload = {'schema': 'portal-quality-review-feedback/v1', 'review_id': record['id'],
                        'subject': record['subject'], 'status': record['status'], 'feedback': record.get('feedback', ''),
+                       'task_context': record.get('task_context') or self._task_context(record['subject']),
                        'evidence': record.get('evidence', []), 'round': record.get('round', 1),
                        'evidence_handoff': record.get('handoff', {}).get('evidence'),
                        'next_action': 'changes_requested时读取独立意见并修改实际产物，保存新固定版，带previous_review_id重新送审；'

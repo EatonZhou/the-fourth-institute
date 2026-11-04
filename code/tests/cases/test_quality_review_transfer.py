@@ -210,6 +210,9 @@ def test_package_index_backfills_only_server_records_and_follows_resume(exchange
     resumed = owner.resume(first['id'], AUTHOR)
     projected = owner.package_projection(subject['ref'], subject['version'], AUTHOR)
     assert projected['id'] == resumed['id'] and projected['status'] == 'submitted'
+    assert resumed['task_context'] == first['task_context']
+    payload = json.loads(calls[-1][2]['message']['content_parts'][0]['text'])
+    assert payload['task_context'] == first['task_context']
     assert projected['capabilities']['can_cancel']
     assert not projected['capabilities']['can_resume']
 
@@ -276,6 +279,42 @@ def test_package_author_conflict_never_dispatches_a_second_author(exchange):
         owner.submit(conflicting, OTHER)
     assert len(calls) == count
     assert owner.package_binding(subject['ref'], subject['version'], AUTHOR)['author'] == AUTHOR
+
+
+@pytest.mark.parametrize('kind', ['explanation', 'report_video'])
+def test_high_review_preserves_task_scope_and_requires_core_experience(exchange, kind):
+    owner, resources, subject, roots, put, request, calls = exchange
+    initial = '理解近邻初始条件怎样改变演化轨迹，能够干预并比较结果'
+    subject = {**subject, 'kind': kind, 'task': initial,
+               'task_context': {'source': 'user', 'initial_submission_task': '只验收静态表'}}
+    first = owner.submit(subject, AUTHOR, CHECKER)
+    for number, task in enumerate((initial, '只检查单轮收益', '只检查外层按钮')):
+        if number:
+            ref = put(SOURCE, f'selected/revision-{number}.html', f'<p>version {number}</p>'.encode())
+            subject = {**subject, 'ref': ref['address'], 'version': ref['sha256'],
+                       'digest': ref['sha256'], 'assets': [ref], 'task': task,
+                       'previous_review_id': record['id']}
+            record = owner.submit(subject, AUTHOR, CHECKER)
+        else:
+            record = first
+        payload = json.loads(calls[-1][2]['message']['content_parts'][0]['text'])
+        assert payload['task_context'] == {
+            'source': 'author_submission', 'initial_submission_task': initial,
+            'current_submission_task': task}
+        guidance = payload['policy']['guidance']
+        assert all(term in guidance for term in ('核心图形', '有意义的干预或对照', '旁支交互',
+            '事实正确和核心体验达标的证据', '不能覆盖已接受的原始要求', '无法核实时明确blocked'))
+        assert '禁止按控件、D3或动画数量验收' in guidance
+        assert record['status'] == 'submitted'
+        owner.verdict(record['id'], CHECKER, digest=subject['digest'], status='changes_requested',
+                      evidence=[], feedback='事实可核对，但核心机制仍未可观察；继续修改。')
+        feedback = json.loads(calls[-1][2]['message']['content_parts'][0]['text'])
+        assert feedback['task_context'] == payload['task_context']
+    # Returning to an old fixed revision cannot rewrite its verdict or task.
+    old = owner._load(first['id'])
+    before, count = copy.deepcopy(old), len(calls)
+    owner.submit({**old['subject'], 'task': '改称普通答复跳过体验'}, AUTHOR, CHECKER)
+    assert owner._load(first['id']) == before and len(calls) == count
 
 
 def test_private_source_http_range_export_and_return_evidence(exchange, tmp_path):
