@@ -1,4 +1,10 @@
 {
+  "编辑已保留，正在读取最新汇报设置…": {"zh-CN":"编辑已保留，正在读取最新汇报设置…","en":"Your edits are preserved. Reading the latest reporting settings…"},
+  "当前已保存：主动性 {p0}；质量 {p1}。请核对后选择。": {"zh-CN":"当前已保存：主动性 {p0}；质量 {p1}。请核对后选择。","en":"Currently saved: initiative {p0}; quality {p1}. Review before choosing."},
+  "加载最新设置，替换当前编辑": {"zh-CN":"加载最新设置，替换当前编辑","en":"Load latest settings and replace these edits"},
+  "已加载最新设置，尚未提交修改。": {"zh-CN":"已加载最新设置，尚未提交修改。","en":"Latest settings loaded. No changes have been submitted."},
+  "保留当前编辑，按最新版本重试保存": {"zh-CN":"保留当前编辑，按最新版本重试保存","en":"Keep these edits and retry saving against the latest version"},
+  "重新读取最新设置": {"zh-CN":"重新读取最新设置","en":"Read the latest settings again"},
   "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。": {
     "zh-CN": "成员的回复显示在这里。当前没有可显示的门面对话；Solo/Mute 会影响这里显示的往来，直接发给成员的对话在各成员自己的对话里。",
     "en": "Members' replies appear here. There are currently no facade conversations to display. Solo/Mute affects which exchanges are shown here; conversations sent directly to members appear in their own chats."

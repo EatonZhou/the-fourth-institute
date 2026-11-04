@@ -978,7 +978,8 @@ def get_resident_runtime_settings(
     resident_id: str,
     actor: str,
 ) -> dict[str, Any]:
-    return dict(resident_execution_domain.read_resident_runtime_settings(resident_id, actor))
+    from . import resident_reporting
+    return resident_reporting.read(resident_id, actor)
 
 
 def get_actual_sent_prompt(
@@ -1766,10 +1767,5 @@ def update_resident_runtime_settings(
     actor: str,
     payload: object = None,
 ) -> dict[str, Any]:
-    return dict(
-        resident_execution_domain.change_resident_runtime_settings(
-            resident_id,
-            actor,
-            payload,
-        )
-    )
+    from . import resident_reporting
+    return resident_reporting.update(resident_id, actor, payload)

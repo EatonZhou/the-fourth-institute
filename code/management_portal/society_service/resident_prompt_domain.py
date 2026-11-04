@@ -96,6 +96,11 @@ def _sender_line(job: dict[str, Any]) -> str:
 
 
 def build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
+    from . import resident_reporting
+    return resident_reporting.prompt(record, job) + "\n\n" + _build_resident_prompt(record, job)
+
+
+def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     """The turn's prompt: the message, its attached content and Portal's envelope.
 
     Portal's other injected input (rules, resident.md, runtime identity,

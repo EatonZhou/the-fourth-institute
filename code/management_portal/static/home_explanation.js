@@ -230,6 +230,7 @@
           changes_requested: "审核要求修改；请保存新固定版本后重新送审。",
           blocked: "审核受阻，尚未通过。",
           cancelled: "审核已取消，尚未通过。",
+          invalidated: "固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。",
         };
         const status = node("p", t(labels[state] || labels.not_requested), "homeExplanationMuted");
         status.setAttribute("role", "status"); area.append(status);
@@ -254,7 +255,7 @@
           }));
           return;
         }
-        if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled"].includes(state)) return;
+        if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled", "invalidated"].includes(state)) return;
         area.append(button(state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
           if (!current(key)) return;
           area.querySelectorAll("button").forEach(el => { el.disabled = true; });

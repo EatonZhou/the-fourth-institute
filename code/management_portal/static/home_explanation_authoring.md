@@ -118,11 +118,13 @@ high 质量的独立检查在生成内容完成后读取固定版本、实际打
 
 视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
+视频 low 可采用已有节点图计划。medium/high 要求每段都有与真实字幕对应的 `visual.events`；生成前缺少这些事件会明确失败。作者须补齐分镜并保存新固定版，不能只改质量标签或让生成按钮替作者猜测。medium 按 3Blue1Brown 式概念递进、连续图形与音画同步要求创作；high 还须实际独立审片。结构检查通过只说明计划可渲染，不代表画面已经达到质量标准。
+
 audio 为同包固定 MP3 或 PCM16 WAV 的正式 address/sha256。Portal只检查当前主体的读取权限、固定摘要和媒体格式，不要求特定合成工具、模型、生成任务ID或语音回执。外部制作记录可作为普通创作附件保留，由作者与检查者核实；计划顶层的创作注释不参与渲染，也不会由Portal读取或执行。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。已有音轨、附件与 ready 视频保持原件，继续按普通资源权限读取。
 
 句内有多个因果动作时，依据固定音轨实际内容安排事件与字幕时间。没有真实对齐依据时保留未对齐，不按字符比例、旧音轨或估时编造新时序。可读停顿和音质仍需连续观看及具备能力时的听辨；求和、缩放等不同推理步骤应各有清楚的语言和阅读时间。
 
-计划、音轨、来源记录及其调用证据必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；medium 结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，low/high 使用 `<manifestSHA>-<quality>/`，遵循同一 Workspace 的访问与删除规则。媒体读取、生成和重试均显式带视频 quality，不能把其他质量的成片当成本次结果。
+计划与音轨必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；medium 结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，low/high 使用 `<manifestSHA>-<quality>/`，遵循同一 Workspace 的访问与删除规则。媒体读取、生成和重试均显式带视频 quality，不能把其他质量的成片当成本次结果。
 
 high 视频保存完成后，服务按实际生成 actor 查找唯一、可投递的“讲解视频独立检查” Resident，并发送固定 manifest、视频、字幕、讲稿及来源引用。检查员使用自身权限。`submitted` 表示任务已投递，只有固定版本的正式审核记录为 `passed` 才表示通过。`changes_requested` 要求作者另存修订后重审；`blocked`、`cancelled`、`submission_failed` 保留真实原因，不自动降级。low/medium 不要求独立送审。页面的独立检查重试对应 `POST /api/home-explanation/media/review`，提交 `{address,sha256,quality}`，按原请求 actor 重试，保留播放器、不重编码；送检重试有上限。GET、刷新和重开不自动投递。
 
@@ -149,6 +151,8 @@ python3 scripts/submit_explanation_review.py --resident-id '<自己的ResidentID
 相同作者、检查者、清单地址和 SHA 使用同一幂等提交键，不重复投递检查。回执 `submitted` 仅表明受理；检查者以自己的权限读取并真实操作，报告保存其 Workspace。作者读取该报告，核对清单地址和 SHA，再修复被指出的问题、生成新固定版并只复验受影响路径。检查者无法读取或打开时记录 blocked 及精确缺口，不改 ACL 来冒充通过。未完成检查的页面可以明确作为待检查预览，不得称已经验收。
 
 用同一脚本 `--read '<review_id>'` 回读正式结论，原请求者可用 `--cancel '<review_id>'` 取消。独立审核者以自己的 `--resident-id` 加 `--verdict-file '<结论JSON路径>'` 提交：JSON 含 `review_id`、当前固定 `digest`、`status`（passed/changes_requested/blocked）、`evidence:[{address,sha256}]` 和可操作的 `feedback`。服务验证实际鉴权主体必须为该请求的审核者，不能是作者或请求者；通过必须有真实检查证据。该脚本通过同源 `/api/home-explanation/reviews` 读取或提交，`/verdict` 记录结论，`/cancel` 取消。请求已受理和作者写的通过声明均不替代此记录。
+
+正式结论保存后，服务向真实作者投递固定版本的反馈；投递失败另存 `feedback_delivery`，不把通知失败改写为审核通过。作者收到 changes_requested 后按意见生成新固定版，以 `--previous-review-id '<原review_id>'` 关联上次审核并再提交。质量修订不设固定轮数上限，每轮须有实际修改的新摘要和可检查证据；相同版不会凭重试获得新结论。传输重试仍有限，权限缺失、取消和无法继续的真实原因须如实保留，不能无限忙重试或自动降级通过。只读回结果不会触发通知或新审核。
 
 high 质量生成链路须完成上述独立检查，手写 high 清单也要送检。不要在打开历史、刷新页面或普通读取时重复触发检查。独立检查与产品正式 User TAU 分开，不能代替真实门面对话验证。
 

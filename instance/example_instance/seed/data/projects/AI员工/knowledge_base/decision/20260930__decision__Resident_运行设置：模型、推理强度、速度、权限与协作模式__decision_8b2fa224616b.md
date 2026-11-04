@@ -4,41 +4,42 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 31
-  created_at: '2026-09-30T11:40:00Z'
+  number: 33
+  created_at: "2026-09-30T11:40:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_57f585eb8ae9
-  updated_at: '2026-10-31T02:00:16Z'
+    user: "weihao"
+    agent: "resident_57f585eb8ae9"
+  updated_at: "2026-11-04T18:34:47Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/portal_lineage_catalogs.js
-  - ${code_root}/management_portal/execution/resident_runtime_settings.py
-  - ${code_root}/management_portal/execution/codex_runtime_settings.py
-  - ${code_root}/management_portal/execution/slash_commands.py
-  - ${code_root}/management_portal/society_service/resident_runtime_domain.py
-  - ${code_root}/management_portal/society_service/resident_settings_contract.py
-  - ${code_root}/management_portal/society_service/resident_storage.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/tests/cases/test_resident_settings_authority.py
-  - ${code_root}/management_portal/execution/provider_catalog.py
-  - ${code_root}/management_portal/execution/native_options.py
-  - ${code_root}/management_portal/codex_app_server_client.py
-  - ${code_root}/management_portal/society_service/isa/residents.py
-  - ${code_root}/management_portal/hatg/catalog/resident.py
-  - ${code_root}/management_portal/static/portal_resident_runtime_controller.js
-  - ${code_root}/management_portal/static/portal_resident_service.js
-  - ${code_root}/management_portal/static/portal_resident_menu.js
-  - ${code_root}/tests/cases/javascript/resident_runtime_controller.cjs
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_lineage_catalogs.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/resident_runtime_settings.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_runtime_settings.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/slash_commands.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_runtime_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_settings_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_settings_authority.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/native_options.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/codex_app_server_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/residents.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/resident.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_runtime_controller.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_service.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_menu.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/javascript/resident_runtime_controller.cjs
   related:
+  - decision_ccbb1cac24aa
   - decision_f560803947c6
   - decision_d19b9909a674
   - decision_c47a13e8b962
@@ -53,6 +54,8 @@ links:
 # Resident 统一执行配置：模型、Prompt、后端参数与 Harness
 
 每个 Resident 通过统一设置 owner 保存下一轮使用的模型、推理强度、速度、Provider 权限、协作模式，以及能力与 Prompt 配置。用户从聊天运行摘要或 Resident/Family 设置入口进入，按操作目的修改；Agent 通过 GetResidentSettings 与 UpdateResidentSettings 读写同一份有版本的设置（decision_d19b9909a674）。
+
+汇报主动性和质量通过同一设置接口读写，由 Society 拥有独立的 `reporting` 策略，不属于模型或 Harness 参数。
 
 统一规范入口为 decision_ccbb1cac24aa。本篇细化配置字段、能力目录、并发保存与生效时机；会话切换见 decision_c47a13e8b962，上下文装配见 decision_c616d197abbb，聊天区域见 decision_f560803947c6。保存参数、保存能力配置、切换账号和显式重新开始会话分别提交，不把它们混成一次保存。
 
@@ -159,7 +162,7 @@ hatg_instruction 的参数定义与执行处理由正式 ISA 接口拥有；Mark
 - **斜杠命令菜单由 Provider 的声明推出。** `AgentProvider.native_commands` 按声明决定菜单里有哪些原生命令：`/model`、`/fast`、`/permissions`、`/plan` 分别要求能力描述的 `runtime_settings` 含 `model`、`service_tier`、`permissions`、`collaboration_mode`；`/compact` 要求 `operations` 含 `compact`；`/goal` 要求 `native_goals`；`/status` 总是提供。按当前声明，Codex 提供全部七条，Claude Code 与 Kimi Code 提供 `/status`、`/model`、`/permissions`、`/compact`，DSH 提供 `/status`、`/model`、`/compact`。用户仍然输入了没有声明的命令时，Portal 回复“该 Provider 没有这条命令”，不把它当作提示词交给模型。此前菜单按 Provider 名称写死，Claude Code、Kimi Code 和 DSH 也会显示无法执行的 `/fast`、`/goal`、`/permissions`。
 - **`/status` 列出 Provider、设置和 token 统计。** 每个 Provider 都先列出 Provider 名称。Codex 接着列出模型、推理强度、Fast 和权限；Claude Code、Kimi Code 和 DSH 接着列出路线（接受路线的 Provider）、模型、推理强度（运行设置含 `reasoning_effort` 的 Provider）和权限（运行设置含 `permissions` 的 Provider，显示该 Provider 的权限名称）。两者都在后面附上与 `/portal-tokens` 相同的 token 统计（上一轮用量，即这次执行计入的全部请求之和，decision_f1331d57be89）。
 - **`/permissions` 查看或切换 Provider 自己的权限预设。** 不带参数时，回复当前权限名称和可选预设（例如 Claude Code 的 `default`（Restricted）、`full-access`（Full Access），Kimi Code 的 `default`（Manual）、`full-access`（Full Access））；`/permissions <预设>` 由能管理该会话权限的用户切换，与 Runtime Settings 弹窗中的 Permissions 写入同一个设置，后续 turn 生效。Codex 的 `/permissions` 另外提供它自己的三种预设。2026-10-11 之前，Claude Code 和 Kimi Code 的 `/permissions` 只回复“由 Resident owner 关系管理”，既不显示真实预设，也不能切换。
-- **菜单只来自会话合同。** Chat 输入框只列 `composer.slash_commands` 中的命令，前端不再内置命令清单；给出空列表的会话（Family 门面）和没有给出列表的 Chat（Resident 以外的 Chat、聊天室）不显示菜单。`/portal-help` 按当前 Provider 的声明列出“当前会话命令”和 Portal 私有命令，标题不写 Provider 名称（TFI portal 2026-10-16）；未知命令的回复列出当前会话支持的命令。Model API Resident 没有 Provider 声明的命令，只有 Portal 私有命令。
+- **菜单只来自会话合同。** Chat 输入框只列 `composer.slash_commands` 中的命令，前端不再内置命令清单；给出空列表的会话（Family 门面）和没有给出列表的 Chat（Resident 以外的 Chat、聊天室）不显示菜单。`/portal-help` 按当前 Provider 的声明列出“当前会话命令”和 Portal 私有命令，标题不写 Provider 名称（weihao 2026-10-16）；未知命令的回复列出当前会话支持的命令。Model API Resident 没有 Provider 声明的命令，只有 Portal 私有命令。
 - **Fast 只表示是否使用加速服务等级。** 页面显示 `Fast on` 或 `Fast off`，不显示 `1x`、`2x` 之类的倍率：实际速度和额度消耗随模型、账号和计费方式变化，Portal 没有可靠的统一倍率。
 - **能力描述声明了 Full Access，用户就可以选择它。** Portal 不另按管理员或 owner 身份限制；Resident 实际能读写的文件和资源仍受 Portal 授权检查约束。
 
@@ -170,6 +173,8 @@ hatg_instruction 的参数定义与执行处理由正式 ISA 接口拥有；Mark
 - **推理强度为空时，页面显示执行实际会用的强度。** 目录为每个模型给出 `default_efforts_by_model`：所选模型支持 Portal 默认强度时就是它，不支持时是执行层为该模型解析出的回退强度。摘要和弹窗按所选模型取这个值显示，不显示 Provider 的推荐强度，也不对所有模型套用同一个默认值。
 - **弹窗回填已保存的值，即使目录里暂时找不到它。** 目录缺少当前模型时，弹窗保留原模型和推理强度，并在控件的悬停提示中说明“Provider 目录未返回此模型的能力信息”；页面不会自动换成其他模型或降低强度。已保存的 Fast 在当前模型不支持时显示为“Fast (saved; unavailable)”。
 - **只校验用户这次改动的模型或推理强度。** 用户只修改协作模式等其他项时，已保存的模型即使不在目录中也不受影响。 仅修改 Harness、协作模式或权限等非模型字段时，服务端只做本地字段与能力校验，不读取 Codex 模型目录、不要求已登记 Codex 账号；非法 Harness 配置仍拒绝。Codex 命令适配器先识别命令，只在 `/model` 读取账号目录；Portal 私有命令、普通文本与文件路径继续交给原有受理链，`/status`、`/goal` 等本地状态操作不依赖登录。已有 Session 的账号绑定保持不变。切换模型时保留原推理强度；新模型不支持它时，要求用户明确选择，页面不自动套用推荐值或第一个可选值。通过 `UpdateResidentSettings` 只改模型时，Claude、Kimi、DeepSeek Harness、OpenCode 同样拒绝，错误中列出新模型可选的推理强度（空值表示 Provider 默认），调用方连同推理强度一起再提交。
+- **已保存设置的执行翻译不重新发现动态模型目录。** 原生适配器把已保存 model、effort 和权限参数翻译到真实调用；每轮 turn、会话创建与 release 不为验证模型额外查询 auth/config、创建目录探测空会话或等待目录新鲜。模型为空时沿各 Provider 的原生默认选择，Codex 继续使用本篇明确的 Portal 默认值。设置编辑、显式跨 Provider 切换及主动目录刷新保留原校验；实际认证、模型不可用、余额不足与限流错误由真实调用返回并沿执行失败处理。
+
 - **目录刷新不覆盖用户尚未保存的选择。**
 
 ### 何时生效
@@ -194,7 +199,8 @@ SocietyService Resident 设置 owner：鉴权、能力校验与归一
         ▼
 PostgreSQL resident_execution_configuration
         ├─ execution_settings_json：模型、调用策略、Prompt 与 capability_config v1
-        └─ harness_config_json：Harness 结构
+        ├─ harness_config_json：Harness 结构
+        └─ reporting_json：Society 汇报策略，独立于 Execution 参数
         │  settings_revision / expected_revision 条件提交
         ▼
 当前设置读取投影 → 参数/能力面板与摘要 / ExecutionRequest 时点快照
@@ -230,3 +236,16 @@ Portal Web 通过已鉴权 SocietyService 接口读取当前 Provider、稳定�
 构造执行请求时从唯一设置 owner 读取完整配置，校验 capability_config 引用并形成当轮工具/MCP/Skill 与 Prompt 装配计划；Harness 结构进入 runtime_options.agent_harness。记录配置版本、实际发送位置及接受证据。该请求只是一轮快照，不能替代之后的权威设置读取，也不能把 Provider 未确认的能力标记为已生效。
 
 Codex 开始新一轮时，Provider 适配器把协作模式、模型和推理强度写入 `turn/start` 请求的 `collaborationMode`，并把 `settings.developer_instructions` 设为 `null`，让 Codex 使用自己内置的模式说明。从 Plan 切回 Default 时同样显式传 `default`，不依赖 Codex 线程沿用上一轮的模式。Resident 不需要调用任何 Portal 接口来切换模式。
+
+
+## 汇报主动性、质量与门面策略
+
+`settings.reporting` 与 `changes.reporting` 使用完整对象 `{initiative, quality}`。主动性 `off|low|medium|high` 与质量 `low|medium|high` 独立设置，缺省为 off/medium。Society 保存 `resident_execution_configuration.reporting_json`，统一版本校验覆盖本次可读运行参数、汇报策略及是否已配置。非法值和未知字段拒绝；显式保存默认值同样记录为配置。页面保存冲突时保留草稿，回读最新值，由用户选择采用最新内容或按新版本重试，不静默覆盖。
+
+Family 门面拥有自身汇报策略。调用者只需门面 viewer/contributor 即可读取或保存该策略；Router 模型参数另按原有权限核验，不因策略授权而泄露。没有 Router 读取权限时返回可读的 reporting，并明确运行设置与 Prompt 注入观察 unavailable。`reporting_effective` 保存来源 Resident、resident/family_facade 来源类型、known/unknown、configured 与 next_input 生效说明，默认不能冒充显式配置。
+
+执行成员依据已核验的持久转交链取得最外层门面在本次输入上的策略。直接成员输入使用其自身策略，不向成员批量复制门面配置。每条主输入与追加输入都由 Society 重新物化策略提示；已送达内容不重写，保存不重启模型、不生成报告、不发起审查。该业务约束独立于可选 message envelope 和 pure 注入预设；Execution 接收物化后的提示，不解释主动性、报告质量或审核业务。Home 上下文只提供能力与展示合同，不覆盖执行时的权威策略。
+
+主动性 off 关闭额外主动汇报，保留普通答复、任务交付与用户显式请求。低档仅在重要成果、风险或决策有汇报价值时考虑；中档在实质成果和解释能帮助理解时考虑；高档更积极判断信息增量与用户需要，仍不要求每次请求生成。明确的格式、取消及展示限制优先。汇报质量低使用 Markdown，中使用现有交互网页模板，高由独立 Resident 检查并修改复审至达标；模板、媒体与审查结果由各业务 owner 保存，不能将提示注入当成作品已经通过审查。
+
+新增 nullable reporting_json 列由 Society 正式升级入口处理，旧行按默认策略解释，不批量改写其他设置。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；核验当前 schema、列类型及初始化锁并保持幂等。旧安装转换与新安装 seed 使用同一 owner 结构。先完成匹配升级，再加载新服务代码；实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。

@@ -61,6 +61,7 @@ IDENTITY_FIELDS.update({"registration_state": ("registration_state", "text"),
 COLUMN_DEFAULTS = {"intake_open": True, "registration_state": "ready"}
 
 CONFIGURATION_FIELDS = {
+    "reporting": ("reporting_json", "object"),
     "backend_route_id": ("backend_route_id", "text"),
     "execution_settings": ("execution_settings_json", "object"),
     "harness_config": ("harness_config_json", "object"),
@@ -146,6 +147,9 @@ def validate_record_fields(record: Mapping[str, Any]) -> None:
     if "execution_settings" in record:
         from .resident_settings_contract import runtime_settings_from_parts
         runtime_settings_from_parts({**record["execution_settings"], "backend": record.get("backend", "")}, record.get("harness_config") or {})
+    if record.get("reporting"):
+        from .resident_reporting import normalize
+        normalize(record["reporting"])
     if record.get("quota_reserve_override"):
         from management_portal.execution.account_quota import normalize_quota_override
         normalize_quota_override(record["quota_reserve_override"])

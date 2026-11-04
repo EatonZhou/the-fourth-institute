@@ -7,10 +7,10 @@ importance: 8
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_initialization.py
-  - ${code_root}/management_portal/society_service/isa/residents.py
-  - ${code_root}/management_portal/society_service/resident_fork_domain.py
-  - ${code_root}/management_portal/society_service/resident_context
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_initialization.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/residents.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_fork_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_context
   related:
   - decision_898b8911a2ff
   - decision_0f57656a2acd
@@ -26,15 +26,15 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 version:
-  number: 68
-  created_at: '2026-09-28T10:45:00Z'
+  number: 70
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-29T15:50:58Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-04T18:34:47Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_6199a7a36480"
 metaness: 2
 ---
 # HATG ISA：Resident 指令
@@ -192,7 +192,7 @@ include_maintenance 另返回 layers（recent、phase、long_term）、maintenan
 
 active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧事项自动补入 phase；关闭必须在 resolved_threads 中提供「原事项：解决、取消或交接说明」。重要项目历史另存工作记录，摘要保留有效结论与记录入口；不改变原始日志保留策略。
 
-所有新写入共用总预算，默认 3000 字符，计算各时间层、各语义字段所有文字之和（包括重复文字、标点和空格）。超限整次写入失败，不静默截断；高层合计最多占 75%，保留近期空间。平台按时间、工作量与容量判断归纳待办，不决定信息重要性。默认阶段 20 个新覆盖轮次或 86400 秒，长期 100 轮或 604800 秒，达到总预算 80% 提前归纳。部署配置 PORTAL_SUMMARY_TOTAL_CHARS、PORTAL_SUMMARY_PHASE_ROUNDS、PORTAL_SUMMARY_PHASE_SECONDS、PORTAL_SUMMARY_LONG_TERM_ROUNDS、PORTAL_SUMMARY_LONG_TERM_SECONDS；预算至少 400，其余为正整数。维护轮次不计数量，重复覆盖不重计。独立 Resident 的认领结果也返回 summary_policy，写入执行相同总预算。
+所有新写入共用总预算，默认 3000 字符，计算各时间层、各语义字段所有文字之和（包括重复文字、标点和空格）。超限整次写入失败，不静默截断；高层合计最多占 75%，保留近期空间。平台只按新增工作量与容量判断归纳待办，不决定信息重要性：默认阶段 20 个新覆盖轮次，长期 100 轮，达到总预算 80% 提前归纳。单纯经过时间不形成待办，没有新工作的成员摘要保持原状，闲置不会让它反复进入归纳。部署配置 PORTAL_SUMMARY_TOTAL_CHARS、PORTAL_SUMMARY_PHASE_ROUNDS、PORTAL_SUMMARY_LONG_TERM_ROUNDS；预算至少 400，其余为正整数。维护轮次不计数量，重复覆盖不重计。独立 Resident 的认领结果也返回 summary_policy，写入执行相同总预算。
 
 Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇总材料的 GetFamilySummaryInputs 属于 Family 内部机制类（decision_b77fde81e7a0）。
 
@@ -251,7 +251,7 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 
 **修改 Resident 的运行设置。**
 
-- 参数：`resident_id`、`expected_revision`（可选，读取时得到的 `settings_revision`）、`changes`。`changes` 只接受以下字段：`model`、`reasoning_effort`、`service_tier`、`permission_preset`、`prompt_injection`、`allow_subagents`、`agent_harness`、`capability_config`、`collaboration_mode`、`prompt_context`、`backend_options` 和仅供 Model API 使用的 `backend_route_id`。字段取值由目标 Provider 校验。
+- 参数：`resident_id`、`expected_revision`（可选，读取时得到的 `settings_revision`）、`changes`。`changes` 只接受以下字段：`model`、`reasoning_effort`、`service_tier`、`permission_preset`、`prompt_injection`、`allow_subagents`、`agent_harness`、`capability_config`、`collaboration_mode`、`prompt_context`、`backend_options` 、`reporting` 和仅供 Model API 使用的 `backend_route_id`。模型相关字段取值由目标 Provider 校验，汇报策略由 Society 校验。
 - `changes.prompt_injection` 给出 `preset`（`standard`、`full`、`minimal`、`pure`、`custom`）、`parts`（要改的类别及其时机），至少一项：
   - 只给 `preset` 时，设置换成这个预设。
   - 给了 `parts` 时，在所给预设上修改；没给预设时，在当前设置上修改。结果记为自定义；与某个预设完全相同时，记为该预设。
@@ -261,7 +261,9 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 - 设置按版本条件保存：`expected_revision` 与当前 `settings_revision` 不一致时拒绝，调用者重新读取并合并后再提交；省略只为兼容旧调用，页面保存总是携带已读版本。版本覆盖完整运行配置，规则见 decision_8b2fa224616b。
 - 这条指令不改变 Lineage 定义。原生后端切换 Provider 或账号需要迁移模型会话，使用 `RestartSession`。Model API 无原生会话，允许通过 `changes.backend_route_id` 选择登记的 API 账号，并与模型、上下文及协议参数在同一事务中保存；失败时全部回滚，从下一轮生效。账号只存放在 Resident 配置中，不复制到运行设置。
 - Model API 的 `prompt_context` 可配置系统提示、预设消息及 `history: {enabled, max_tokens}`；`backend_options` 保存协议参数、超时和重试。新建文本类 Resident 默认携带历史，新建 Jev 默认关闭；已有记录缺少历史设置时保持关闭。Settings 的能力展示、历史选择与 Jev 题型规则见 decision_6c2f91a7d84e。
-- 目标是 Family 门面时，读取和修改的是这个 Family 的 Router Resident 的设置；门面自己不运行，没有独立设置。
+- 目标是 Family 门面时，模型、Prompt 与 Harness 等运行设置仍来自 Router，按 Router 的相应权限读取和修改；汇报策略 `reporting` 属于门面自身，按门面的 viewer/contributor 权限读写。仅有门面权限时仍可读写汇报策略，结果 `settings` 仅含可读字段，`runtime_settings_access=unavailable`、`prompt_injection.state=unavailable`，不暴露或猜测 Router 参数。
+- `reporting` 是完整对象 `{initiative, quality}`：主动性为 `off|low|medium|high`，质量为 `low|medium|high`，缺省 `off/medium`；未知键、缺键、非法枚举拒绝。`reporting_effective` 给出策略、`state`、`source_resident_id`、`source`、`configured` 与 `application=next_input`；`configured=false` 表示默认，不能称为用户已配置。显式保存默认值同样形成配置事实。版本校验覆盖可读运行设置、策略及是否已配置。
+- `application.items` 的 `reporting` 项记录 `next_turn` 与未知交付观察；保存不重启会话、不调用模型、不生成报告或发起审查。每条适用的新主输入或追加输入从可信转交链取得源门面策略；直接成员输入使用自身策略，已送达输入不被改写。主动性 off 保留正常答复、业务交付及用户明确要求的汇报；高主动性仍由 Resident 判断价值。质量与独立检查规则见 decision_b12782e7f490、decision_e3ced6d30f6b。
 
 ### `PreviewPromptInjection`
 

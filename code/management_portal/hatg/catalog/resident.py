@@ -22,6 +22,10 @@ PROMPT_INJECTION_PARTS = {
     for name, (label, description, choices) in prompt_injection.CATEGORIES.items()
 }
 SETTINGS_FIELDS = {
+    "reporting": {"type": "object", "description": "汇报策略；门面自身配置，对实际承接输入的成员生效，下一次输入生效",
+        "properties": {"initiative": {"type": "string", "enum": ["off", "low", "medium", "high"]},
+                       "quality": {"type": "string", "enum": ["low", "medium", "high"]}},
+        "required": ["initiative", "quality"], "additionalProperties": False},
     "model": {"type": "string"},
     "backend_route_id": {"type": "string", "description": "仅 Model API：切换登记的 API 账号，从下一轮生效"},
     "reasoning_effort": {"type": "string"},
@@ -69,7 +73,7 @@ DECLARATIONS = (
         P("provider", description="执行后端；provider_api 使用 account_id 指定已登记的模型 API", enum=(*PROVIDERS, "provider_api")),
         P("account_id", description="账号路线；省略时 Resident 调用者继承自己的账号，其他调用者使用系统默认账号"),
         P("backend_role", description="创建时解析的 Backend 角色；未映射时回退 default"),
-        P("settings", "object", "初始运行设置", properties=SETTINGS_FIELDS),
+        P("settings", "object", "初始运行设置；汇报默认 off/medium，创建后通过设置修改", properties={k: v for k, v in SETTINGS_FIELDS.items() if k != "reporting"}),
         P("workspace_paths", "array", "额外绑定的工作目录", items={"type": "string"}),
         FAMILY_TO_JOIN,
         *PLACEMENT,
@@ -194,19 +198,23 @@ DECLARATIONS = (
         R("updated_at", description="摘要内容最近一次变化的时间"),
         R("writer_id", description="最近写入摘要内容的身份")), mutates=True, target="resident_id"),
     _d("GetResidentSettings", ON_RESIDENT, "读取 Resident 当前的运行设置，以及 Prompt 注入每个类别的时机和它在当前 Provider 中的位置；"
-       "Family 门面不运行，读到的是它的 Router Resident 的设置。", (R("resident_id", description="要读取设置的 Resident"),), (
+       "Family 门面汇报策略属于门面；其他运行设置仅在有 Router 权限时返回。", (R("resident_id", description="要读取设置的 Resident"),), (
+        R("reporting_effective", "object", "汇报策略和来源；实际输入按核验后的 Family 转交链选择来源"),
+        R("runtime_settings_access", description="available 或 unavailable；不可读不推测模型参数"),
         R("settings", "object", "当前运行设置"),
         R("settings_revision", description="当前设置版本；并发保存时作 expected_revision"),
         R("application", "object", "逐项配置生效时机与实际交付观察，未知不等于缺失"),
         PROMPT_INJECTION_VIEW,
     ), target="resident_id"),
-    _d("UpdateResidentSettings", ON_RESIDENT, "修改 Resident 的运行设置；对 Family 门面修改的是它的 Router Resident 的设置。", (
+    _d("UpdateResidentSettings", ON_RESIDENT, "修改设置；门面 reporting 独立鉴权和保存，其他运行设置仍需 Router 权限。", (
         R("resident_id", description="要修改设置的 Resident"),
         P("expected_revision", description="读取时的 settings_revision；过期保存拒绝，省略兼容旧调用"),
         R("changes", "object", "只接受 model、reasoning_effort、service_tier、permission_preset、"
-          "prompt_injection、allow_subagents、agent_harness、capability_config、collaboration_mode、prompt_context、backend_options、backend_route_id（仅 Model API）",
+          "reporting、prompt_injection、allow_subagents、agent_harness、capability_config、collaboration_mode、prompt_context、backend_options、backend_route_id（仅 Model API）",
           properties=SETTINGS_FIELDS),
     ), (
+        R("reporting_effective", "object", "汇报策略和来源"),
+        R("runtime_settings_access", description="运行参数是否可读"),
         R("settings", "object", "保存后的设置"),
         R("settings_revision", description="保存后的配置版本"),
         R("application", "object", "逐项生效状态；不表示后端已接受"),

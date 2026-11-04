@@ -4883,7 +4883,7 @@
     "database": {
       "path": "database/distribution.sql",
       "format": "postgresql-sql",
-      "sha256": "a613fd7db2a2a9a0b546056c63c63a89c4d05a2979320e60b5a7fe9ed3e1814a"
+      "sha256": "8d39739c36ff066780705fbe78634b06e094c9b59b9b7c376ab33cb824131ea8"
     },
     "files": {
       "features": "data/features",
@@ -15686,8 +15686,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Resident_指令__decision_d19b9909a674.md",
-      "sha256": "431da4456a329e6cb837469d4ad7b78607a711bac539659c4ff9f084a6eeae5a",
-      "size": 42367
+      "sha256": "0bcfb8c9cebe8eccc817540b770ceb8129ce9f1d8efa5d75120b5a2407c94465",
+      "size": 43847
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：公共讨论指令__decision_3e063aac15b3.md",
@@ -15751,8 +15751,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_运行设置：模型、推理强度、速度、权限与协作模式__decision_8b2fa224616b.md",
-      "sha256": "847ffe6fde479a4e187a65f25a075978738842063d2e48be5711f82841b5338e",
-      "size": 29860
+      "sha256": "29d4e45cb77e705b49e0381ddd0569415ec5e5d550964641f94234d905d19f45",
+      "size": 33954
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
@@ -31286,8 +31286,8 @@
     },
     {
       "path": "database/distribution.sql",
-      "sha256": "a613fd7db2a2a9a0b546056c63c63a89c4d05a2979320e60b5a7fe9ed3e1814a",
-      "size": 3145173
+      "sha256": "8d39739c36ff066780705fbe78634b06e094c9b59b9b7c376ab33cb824131ea8",
+      "size": 3145198
     }
   ]
 }

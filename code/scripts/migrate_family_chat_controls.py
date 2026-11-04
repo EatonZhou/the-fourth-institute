@@ -25,6 +25,8 @@ def convert(connection):
     connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || ':schema-init', 0))")
     schema = connection.execute("SELECT value FROM lineage_meta WHERE key='schema' FOR UPDATE").fetchone()
     if schema and schema['value'] == state_store.LINEAGE_DATA_SCHEMA:
+        from management_portal.society_service.resident_reporting import install_schema
+        install_schema(connection)
         if not state_store.lineage_data_schema_matches(connection):
             raise ValueError('Current LineageData has an unexpected structure')
         return {'schema': schema['value'], 'changed': False}
@@ -47,6 +49,8 @@ def convert(connection):
         if before[table] != after:
             raise ValueError('Family control identity or routing snapshot changed')
     connection.execute("UPDATE lineage_meta SET value=%s WHERE key='schema'", (state_store.LINEAGE_DATA_SCHEMA,))
+    from management_portal.society_service.resident_reporting import install_schema
+    install_schema(connection)
     if not state_store.lineage_data_schema_matches(connection):
         raise ValueError('Converted LineageData does not match the current structure')
     return {'schema': state_store.LINEAGE_DATA_SCHEMA, 'changed': True,

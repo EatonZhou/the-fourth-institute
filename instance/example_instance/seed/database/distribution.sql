@@ -1085,6 +1085,7 @@ CREATE TABLE lineage.resident_derivations (
 
 CREATE TABLE lineage.resident_execution_configuration (
     resident_id text NOT NULL,
+    reporting_json text,
     backend_route_id text,
     execution_settings_json text,
     harness_config_json text,

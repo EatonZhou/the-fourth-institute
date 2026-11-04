@@ -426,20 +426,21 @@ def release_resident_summary_job(inv: Invocation) -> dict[str, Any]:
 
 def _prompt_injection_view(settings: dict[str, Any]) -> dict[str, Any]:
     from management_portal import prompt_injection
-
+    if not settings.get("backend"):
+        return {"state": "unavailable"}
     return prompt_injection.describe(settings.get("prompt_injection"), provider=str(settings.get("backend") or ""))
 
 
 def get_resident_settings(inv: Invocation) -> dict[str, Any]:
     resident_id = inv.argument("resident_id")
-    if _family_role(resident_id) == "facade":
-        resident_id = _facade_router(resident_id)
     result = protocol().get_resident_runtime_settings(resident_id, inv.caller)
     settings = result["runtime_settings"]
     # The same settings object UpdateResidentSettings accepts and returns.
     return {"settings": settings, "prompt_injection": _prompt_injection_view(settings),
             "settings_revision": result.get("settings_revision", ""),
-            "application": result.get("application", {})}
+            "application": result.get("application", {}),
+            "reporting_effective": result["reporting_effective"],
+            "runtime_settings_access": result["runtime_settings_access"]}
 
 
 def _prompt_injection_change(resident_id: str, caller: str, change: Any) -> dict[str, Any]:
@@ -468,8 +469,6 @@ def update_resident_settings(inv: Invocation) -> dict[str, Any]:
         raise invalid("changes 不接受字段：" + "、".join(unknown), unknown_fields=unknown)
     if not changes:
         raise invalid("changes 不能为空")
-    if _family_role(resident_id) == "facade":
-        resident_id = _facade_router(resident_id)
     if "prompt_injection" in changes:
         changes["prompt_injection"] = _prompt_injection_change(resident_id, inv.caller, changes["prompt_injection"])
     payload = {"runtime_settings": changes}
@@ -481,7 +480,9 @@ def update_resident_settings(inv: Invocation) -> dict[str, Any]:
     return {"settings": settings, "next_turn_fields": list(next_turn),
             "prompt_injection": _prompt_injection_view(dict(settings)),
             "settings_revision": result.get("settings_revision", ""),
-            "application": result.get("application", {})}
+            "application": result.get("application", {}),
+            "reporting_effective": result["reporting_effective"],
+            "runtime_settings_access": result["runtime_settings_access"]}
 
 
 def _readable_settings(inv: Invocation) -> tuple[str, dict[str, Any]]:

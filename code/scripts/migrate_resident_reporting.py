@@ -1,0 +1,45 @@
+"""Explicit additive Resident reporting upgrade; preview rolls back by default.
+
+Select the instance with PORTAL_INSTANCE_ROOT. Run --apply before loading the
+new Society owner. Existing policy values and execution configurations are never
+rewritten; settings initialization uses UpdateResidentSettings afterwards.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from management_common.portal_database import portal_database
+from management_portal.society_service.resident_reporting import install_schema
+
+
+class PreviewRollback(Exception):
+    pass
+
+
+def migrate(database, *, apply=False):
+    result = {}
+    try:
+        with database.transaction() as connection:
+            connection.execute("SET LOCAL lock_timeout='5s'")
+            result = install_schema(connection)
+            if not apply:
+                raise PreviewRollback()
+    except PreviewRollback:
+        pass
+    return {**result, "committed":apply}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--apply", action="store_true")
+    args = parser.parse_args()
+    print(json.dumps(migrate(portal_database(schema="lineage"), apply=args.apply)))
+
+
+if __name__ == "__main__":
+    main()
