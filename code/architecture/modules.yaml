@@ -1403,6 +1403,7 @@ modules:
       - "management_portal/home_report_store.py"
       - "management_portal/home_report_quality.py"
       - "management_portal/home_report_review.py"
+      - "management_portal/home_report_origin.py"
       - "management_portal/home_report_exports.py"
       - "management_portal/home_report_persistent_media.py"
       - "management_portal/conversation_*.py"
