@@ -669,7 +669,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       extra.replaceChildren();
       if (kind.value === "subscription_login") {
         const directory = field(extra, "账号目录", "account_dir", "", {required: true, autocomplete: "off"});
-        hint(directory, "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。");
+        hint(directory, "无需已有目录或预先登录。请填写用于保存登录状态的主机绝对路径；目录不存在时系统会创建，保存后将引导登录。已有登录可填写原目录。");
       }
       if (kind.value === "service") extra.append(node("p", t("复用 Provider 已有的服务配置和授权。")));
       form.querySelector('[type="submit"]').disabled = false;

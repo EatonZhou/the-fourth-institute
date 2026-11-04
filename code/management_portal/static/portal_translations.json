@@ -259,9 +259,9 @@
     "zh-CN": "账号目录",
     "en": "Account directory"
   },
-  "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。": {
-    "zh-CN": "填写主机上账号目录的规范绝对路径。已有目录直接使用其中的登录；目录不存在时会创建空目录，再进行登录。",
-    "en": "Enter the canonical absolute path of the account directory on this host. An existing directory uses its current login; a missing directory is created before sign-in."
+  "无需已有目录或预先登录。请填写用于保存登录状态的主机绝对路径；目录不存在时系统会创建，保存后将引导登录。已有登录可填写原目录。": {
+    "zh-CN": "无需已有目录或预先登录。请填写用于保存登录状态的主机绝对路径；目录不存在时系统会创建，保存后将引导登录。已有登录可填写原目录。",
+    "en": "No existing directory or prior sign-in is needed. Enter an absolute path on this host to store the login. The system creates a missing directory and guides you through sign-in after saving. To reuse an existing login, enter its current directory."
   },
   "约每 ¥10 一枚金币，四舍五入": {
     "zh-CN": "约每 ¥10 一枚金币，四舍五入",
