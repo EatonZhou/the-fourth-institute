@@ -227,7 +227,7 @@ class IndexStore:
                         statuses,
                     )
                     connection.execute(
-                        "\n                        INSERT INTO resource_index_meta (key, value)\n                        VALUES ('index_updated_at', %s)\n                        ON CONFLICT(key) DO UPDATE SET value = excluded.value\n                        ",
+                        "\n                        INSERT INTO resource_index_meta (key, value)\n                        VALUES ('index_updated_at', %s)\n                        ON CONFLICT(key) DO UPDATE SET value = excluded.value\n                        WHERE resource_index_meta.value IS DISTINCT FROM excluded.value\n                        ",
                         (index_updated_at,),
                     )
                     connection.commit()
