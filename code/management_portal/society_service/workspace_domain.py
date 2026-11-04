@@ -1,6 +1,7 @@
 from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 from management_common.clock import utc_now_iso
+from management_common.filesystem_paths import filesystem_path, logical_path
 
 import base64
 import binascii
@@ -232,9 +233,9 @@ def _normalize_link_path(raw_path: str) -> Path:
     current = Path(path.anchor)
     for part in path.parts[1:]:
         current /= part
-        if current.is_symlink():
+        if filesystem_path(current).is_symlink():
             raise ValueError("symlink preview is not supported")
-    return path.resolve(strict=False)
+    return logical_path(filesystem_path(path).resolve(strict=False))
 
 
 def _authorize_link_path(path: Path, actor: str) -> _LinkFileAuthorization:
@@ -264,9 +265,9 @@ def _resolve_authorized_link_file_path(
 ) -> tuple[Path, _LinkFileAuthorization]:
     path = _normalize_link_path(raw_path)
     authorization = _authorize_link_path(path, actor)
-    if not path.exists():
+    if not filesystem_path(path).exists():
         raise FileNotFoundError("file not found")
-    if path.is_symlink():
+    if filesystem_path(path).is_symlink():
         raise ValueError("symlink preview is not supported")
     return path, authorization
 
@@ -282,6 +283,7 @@ def resolve_workspace_link_file_path(
 
 
 def _file_kind(path: Path) -> str:
+    path = filesystem_path(path)
     if path.is_symlink():
         return "symlink"
     if path.is_dir():
@@ -306,7 +308,8 @@ def _file_kind(path: Path) -> str:
 
 def _entry(root: Path, path: Path, depth: int = 0) -> dict[str, Any]:
     try:
-        stat = path.lstat() if path.is_symlink() else path.stat()
+        native = filesystem_path(path)
+        stat = native.lstat() if native.is_symlink() else native.stat()
         size = int(stat.st_size)
         mtime = float(stat.st_mtime)
         mtime_ns = int(stat.st_mtime_ns)
@@ -380,20 +383,26 @@ def _workspace_link_file_payload(
     }
     if meta_only:
         return {**common, "kind": _file_kind(path), "meta_only": True}
-    if path.is_dir():
+    if filesystem_path(path).is_dir():
         children = []
         for child in sorted(
-            path.iterdir(), key=lambda item: (not item.is_dir(), item.name.lower())
+            filesystem_path(path).iterdir(), key=lambda item: (not item.is_dir(), item.name.lower())
         ):
             if not child.is_symlink():
-                children.append(_entry(root, child.resolve(strict=False)))
+                children.append(_entry(root, logical_path(child.resolve(strict=False))))
         return {
             **common,
             "kind": "directory",
             "children": children,
         }
     kind = _file_kind(path)
-    data = path.read_bytes()[: FILE_PREVIEW_MAX_BYTES + 1]
+    # Media and unsupported binary previews need metadata and a download URL,
+    # never the full attachment. Text probing is bounded at the I/O boundary.
+    if kind == "binary" or kind in MEDIA_KINDS:
+        data = b""
+    else:
+        with filesystem_path(path).open("rb") as stream:
+            data = stream.read(FILE_PREVIEW_MAX_BYTES + 1)
     truncated = len(data) > FILE_PREVIEW_MAX_BYTES
     if truncated:
         data = data[:FILE_PREVIEW_MAX_BYTES]

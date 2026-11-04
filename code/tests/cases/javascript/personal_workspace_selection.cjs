@@ -1,0 +1,31 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {JSDOM}=require('jsdom');
+const dom=new JSDOM('<main id="workspace"></main>',{runScripts:'outside-only'});
+const w=dom.window,root=w.document.getElementById('workspace');
+const html=(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'');
+w.PortalI18n={html,text:html,t:String};
+w.PortalUIPrimitives={escapeHtml:String,iconHtml:()=>''};
+w.PortalIdentity={listUIAssociations:async()=>({items:[]})};
+w.PortalFileLinks={load:async target=>({kind:'directory',path:target,children:['old.zip','failed.zip','slow.zip','new.zip'].map(name=>({name,type:'file'}))})};
+for(const name of ['portal_file_tree.js','portal_personal_workspaces.js'])w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static',name),'utf8'));
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+let resolveSlow;
+(async()=>{
+ const panel=w.PortalPersonalWorkspaces.mount({root,onOpen:async target=>{
+  if(target.endsWith('/failed.zip'))return {accepted:true,error:Error('fixture 404')};
+  if(target.endsWith('/slow.zip'))return await new Promise(resolve=>{resolveSlow=resolve;});
+  return {accepted:true,payload:{path:target}};
+ }});
+ await panel.openResource({workspaceId:'workspace_fixture',title:'Fixture',path:'/fixture/shared'});
+ const click=async name=>{root.querySelector(`[data-portal-file-path="/fixture/shared/${name}"]`).click();await tick();};
+ const selected=()=>root.querySelector('[role=treeitem][aria-selected=true]')?.dataset.portalFilePath;
+ await click('old.zip');assert.equal(selected(),'/fixture/shared/old.zip');
+ await click('failed.zip');assert.equal(selected(),'/fixture/shared/old.zip');
+ assert.match(root.textContent,/failed.zip.*fixture 404/,'failure names the attempted file while the old document stays selected');
+ await click('slow.zip');assert.equal(selected(),'/fixture/shared/old.zip','pending is not readable');
+ await click('new.zip');assert.equal(selected(),'/fixture/shared/new.zip');
+ resolveSlow({accepted:true,payload:{path:'/fixture/shared/slow.zip'}});await tick();
+ assert.equal(selected(),'/fixture/shared/new.zip','late completion cannot change the current selection');
+ panel.destroy();dom.window.close();console.log('Workspace selection commits only a current readable document; failures preserve the previous identity');
+})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -20,6 +20,7 @@
     let destroyed = false;
     let error = "";
     let selected = "";
+    let selectionRevision = 0;
     let revision = 0;
     const closed = new Set();
     const expanded = new Map();
@@ -118,9 +119,22 @@
             root: treeRoot, membership: membership(key), render,
             afterToggle: path => { if (membership(key).has(path)) void readDirectory(path); },
             open: async path => {
-              selected = path;
+              const opening = ++selectionRevision;
+              error = "";
               render();
-              try { await onOpen(path, previewRequest(path)); } catch (failure) { report(failure); }
+              try {
+                const result = await onOpen(path, previewRequest(path));
+                if (opening !== selectionRevision || destroyed) return;
+                if (result?.error) {
+                  report(new Error(window.PortalI18n.text`无法打开 ${path}：${result.error.message || result.error}`));
+                  return;
+                }
+                if (result?.stale || result?.accepted === false) return;
+                selected = path;
+                render();
+              } catch (failure) {
+                if (opening === selectionRevision && !destroyed) report(new Error(window.PortalI18n.text`无法打开 ${path}：${failure.message || failure}`));
+              }
             },
             openMenu: ({ path, trigger, event }) => window.PortalPreview.openFileMenu({
               event, trigger, request: previewRequest(path),

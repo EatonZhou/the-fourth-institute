@@ -11,6 +11,7 @@ from urllib.parse import quote
 
 from management_portal import http_responses
 from management_portal.http_media_range import plan_media_response
+from management_common.filesystem_paths import filesystem_path
 
 
 def _society_service_resolved_path(value: object, label: str) -> Path:
@@ -19,7 +20,7 @@ def _society_service_resolved_path(value: object, label: str) -> Path:
     raw_value = os.fspath(value)
     if not isinstance(raw_value, str) or not raw_value.strip():
         raise ValueError(f"SocietyService returned an empty {label}")
-    return Path(raw_value).expanduser().resolve(strict=False)
+    return filesystem_path(Path(raw_value).expanduser()).resolve(strict=False)
 
 
 def _serve_media_file(handler: SimpleHTTPRequestHandler, path: Path, content_type: str) -> None:

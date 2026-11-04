@@ -31,9 +31,11 @@
       requests.set(id, { id, epoch, residentId, baseline: new Set(baseline), version: 0, acknowledged: false });
       return id;
     }
-    function acknowledge(residentId) {
-      const request = [...requests.values()].find(r => !r.acknowledged && r.residentId === residentId);
-      if (request) request.acknowledged = true;
+    function acknowledge(requestId, residentId) {
+      const request = requests.get(requestId);
+      if (!request || request.residentId !== residentId) return false;
+      request.acknowledged = true;
+      return true;
     }
     function accept(value, { residentId, messageId, dirty = false } = {}) {
       const request = requests.get(value?.request_id);

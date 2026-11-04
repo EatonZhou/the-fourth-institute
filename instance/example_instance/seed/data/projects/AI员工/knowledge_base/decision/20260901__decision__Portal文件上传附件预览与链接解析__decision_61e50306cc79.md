@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 40
+  number: 41
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-03T21:23:43Z"
+  updated_at: "2026-11-04T06:31:28Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -18,25 +18,25 @@ metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/hatg/catalog/resource.py
-  - ${code_root}/management_portal/http_media_range.py
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/portal_instruction_client.js
-  - ${code_root}/management_portal/asgi.py
-  - ${code_root}/management_portal/resources/isa.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/management_portal/resources/service.py
-  - ${code_root}/management_portal/resources/providers/workspace.py
-  - ${code_root}/management_portal/static/portal_agent_preview_source.js
-  - ${code_root}/management_portal/static/portal_resource_chips.js
-  - ${code_root}/management_portal/static/portal_preview_contract.js
-  - ${code_root}/management_portal/static/portal_preview_runtime.js
-  - ${code_root}/management_portal/static/portal_preview_renderers.js
-  - ${code_root}/management_portal/static/portal_workspace_surface.js
-  - ${code_root}/management_portal/static/portal_file_links.js
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/management_portal/society_service/workspace_contracts.py
-  - ${code_root}/tests/cases/test_paper_registration_upload.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/resource.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_media_range.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_instruction_client.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/asgi.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/workspace.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_agent_preview_source.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resource_chips.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_contract.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_runtime.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_renderers.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_surface.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_file_links.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/workspace_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_paper_registration_upload.py
   related:
   - decision_e5f66e2f6a5e
   - decision_864d4fe41934
@@ -211,6 +211,8 @@ PPT 和 PPTX 以只读的静态幻灯片显示。服务端在本机用 LibreOffi
 - **内容地址支持字节区间。** 响应带有 `Accept-Ranges: bytes`，支持 `start-end`、`start-` 和 `-末尾长度` 三种单个区间，返回 206、准确的 `Content-Range` 和区间长度；无法满足或无法解析时返回 416 和 `Content-Range: bytes */<大小>`；不支持多个区间。带 `If-Range` 的请求只有实体标签与当前文件一致时才返回区间，否则返回完整的当前文件。视频因此可以读取元数据、拖动进度条并从新位置继续播放。
 - **不公开真实路径的来源按段读取。** 来源只公开内容大小、修改版本和文件名；HTTP 层每次最多读取 1 MiB 并写入响应，每一段都重新经过 ResourceService 的权限检查和来源自己的路径检查。读取期间大小或修改版本变化时终止响应，不会把两个版本拼成一个文件。
 - **保存资源使用 `UpdateResource`。** 编辑时由 Document Session 保存草稿（decision_769a35d6b5c7）；资源来源以根 `resource_id` 定位目标，在 `changes.address` 与 `changes.text` 中提交地址和新文本，并按该类型支持的合同携带读取版本 `expected_version`（decision_ad3e21094f14）。成功回执返回资源记录与版本；文档来源将已提交草稿与回执合成为新的文档基线，不假定指令回执自带正文。版本冲突返回 `instruction.version_conflict`，保留草稿；无权限或资源已删除时同样保留草稿，且不影响其他文档。刷新时跳过缓存重新读取，用新版本作为基线。
+
+文件链接的Windows长路径在I/O边界使用扩展DOS表示，身份、授权比较、显示路径和下载地址继续使用规范逻辑路径；不依赖全局LongPathsEnabled，也不将路径转换当作授权。普通预览、目录条目、原始下载与媒体读取保持同一边界。工作目录的二进制/媒体预览只取元数据和受保护内容地址，文本仅限量读取预览上限加一字节，不在全量分配后截断。Workspace目录选择只在当前文档读取成功后提交；失败或过期结果保留原可读文档与其选择，错误明确列出尝试打开的路径，不使新选中行与旧文件下载动作错配。
 
 ### 工作目录与其他文件
 

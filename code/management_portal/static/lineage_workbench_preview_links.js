@@ -123,7 +123,7 @@
       if (!targetPath) return;
       ensurePreviewVisible();
       stopPreviewRefresh();
-      await openAgentPreviewDocument({
+      return await openAgentPreviewDocument({
         key: `link:${targetPath}`,
         mode: options.mode,
         path: targetPath,

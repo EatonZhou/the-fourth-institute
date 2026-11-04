@@ -5,7 +5,9 @@
 .homeDialogue button { cursor:pointer; }
 .homeDialogue button:disabled { opacity:.55; cursor:default; }
 .homeDialogue button[aria-pressed="true"] { outline:2px solid var(--accent, #5871b8); }
-.homeDialogueColumns { display:grid; grid-template-columns:minmax(280px, 2fr) minmax(320px, 3fr); flex:1; min-height:0; overflow:hidden; }
+.homeDialogueColumns { display:grid; grid-template-columns:minmax(0, var(--home-dialogue-left,40%)) 8px minmax(0,1fr); flex:1; min-height:0; overflow:hidden; }
+.homeDialogueDivider { cursor:col-resize; touch-action:none; background:var(--border,#ccc); border:2px solid var(--bg,#fff); }
+.homeDialogueDivider:focus-visible { outline:2px solid var(--accent,#5871b8); outline-offset:-2px; }
 .homeDialogueConversation,.homeDialogueDisplay { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; }
 .homeDialogueConversation { border-right:1px solid var(--border, #ccc); }
 .homeDialogueChat { flex:1; min-height:0; overflow:hidden; }
@@ -18,10 +20,9 @@
 .homeDialogueEditor { flex:1; min-height:180px; resize:none; font:14px/1.5 monospace; background:var(--panel, #fff); color:inherit; padding:12px; }
 .homeDialogueExpanded { position:fixed; inset:52px 8px 8px; z-index:900; box-shadow:0 6px 30px #0004; border:1px solid var(--border, #ccc); }
 .homeDialogueTabs { display:none; }
-@media(max-width:760px) {
-  .homeDialogueTabs { display:flex; }
-  .homeDialogueColumns { display:flex; }
-  .homeDialogueConversation,.homeDialogueDisplay { flex:1; }
-  .homeDialogue[data-pane="conversation"] .homeDialogueDisplay,.homeDialogue[data-pane="display"] .homeDialogueConversation { display:none; }
-  .homeDialogueExpanded { inset:48px 0 0; }
-}
+.homeDialogue[data-narrow="true"] .homeDialogueTabs { display:flex; }
+.homeDialogue[data-narrow="true"] .homeDialogueColumns { display:flex; }
+.homeDialogue[data-narrow="true"] .homeDialogueDivider { display:none; }
+.homeDialogue[data-narrow="true"] .homeDialogueConversation,.homeDialogue[data-narrow="true"] .homeDialogueDisplay { flex:1; }
+.homeDialogue[data-narrow="true"][data-pane="conversation"] .homeDialogueDisplay,.homeDialogue[data-narrow="true"][data-pane="display"] .homeDialogueConversation { display:none; }
+@media(max-width:760px) { .homeDialogueExpanded { inset:48px 0 0; } }

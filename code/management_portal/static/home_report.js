@@ -19,7 +19,7 @@
   function create({root, onOpen, onSelection}) {
     if (!root) throw new Error('报告容器不存在');
     root.classList.add('home-report');
-    let target, report, latest, media, video, mediaRegion, banner, list, sourceRegion;
+    let target, report, media, video, mediaRegion, banner, list, sourceRegion;
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
     let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
     const active = token => !destroyed && presented && token === epoch && !controller?.signal.aborted;
@@ -32,6 +32,10 @@
     }
     function sourceButton(source) {
       const b = button(source.label, () => {
+        if (source.read.instruction === 'GetMessage' || source.read.instruction === 'GetInputState') {
+          const args = source.read.arguments;
+          onOpen?.({view:'report',target:{kind:'task',id:`${args.resident_id}/${args.message_id}`}}); return;
+        }
         if (source.address) onOpen?.({view: 'preview', target: {address: source.address}});
         else if (source.read.instruction === 'GetResearchMap') onOpen?.({view: 'map', target: {kind: 'project', id: target.id}});
         else if (target.kind === 'task') onOpen?.({view: 'preview', target: {address: target.id.split('/')[0]}});
@@ -55,6 +59,11 @@
         if (row.conclusion) article.append(el('p', `已登记结论：${row.conclusion}`));
         for (const note of row.notes || []) article.append(el('p', note));
         if (row.next) article.append(el('p', `下一步：${row.next}`));
+        const relationLabels = {builds_on:'建立在此基础',depends_on:'依赖',converges:'汇合',alternative:'互为替代'};
+        for (const relation of report.relations || []) if (relation.from === row.id && relationLabels[relation.kind]) {
+          const related = report.rows.find(item => item.id === relation.to);
+          if (related) article.append(button(`${relationLabels[relation.kind]}：${related.title}`, () => onOpen?.(related.open)));
+        }
         article.append(el('p', `来源更新时间：${date(row.updated_at)}`, 'hr-muted'));
         const actions = el('div', null, 'hr-actions');
         actions.append(button('打开原始对象', () => onOpen?.(row.open)), button('带入对话', () => onSelection?.({
@@ -149,14 +158,11 @@
       try {
         // Reopen old snapshot dependencies as well as the new target. A source
         // removed from the current report can still be present in its old video.
-        if (media?.job_id) await request(`${API}/media/${media.job_id}`);
+        await request(`${API}/validate`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sources:report.sources})});
         const fresh = await request(`${API}?${new URLSearchParams(target)}`);
         if (!active(token)) return;
         if (fresh.version !== report.version) {
-          latest = fresh;
-          if (video && !video.paused) {
-            banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前视频保留原快照。'), button('显示新版', () => load().catch(() => {})));
-          } else { report = fresh; media = null; render(); }
+          banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前报告保留原快照。'), button('显示新版', () => load().catch(() => {})));
         }
         root.hidden = false;
       } catch (error) { if (active(token)) { message(`来源暂不可读，已撤去报告：${error.message}`, true); root.hidden = false; } }
@@ -169,7 +175,7 @@
       try {
         const result = await request(`${API}?${new URLSearchParams(target)}`);
         if (!active(token)) return;
-        report = result; latest = null; media = null; render(); schedule();
+        report = result; media = null; render(); schedule();
       } catch (error) { if (active(token)) {message(`报告暂不可读：${error.message}`, true); throw error;} }
     }
     async function show(nextTarget, options = {}) {
@@ -180,6 +186,7 @@
       externalSignal?.addEventListener('abort', externalAbort, {once:true});
       target = {...nextTarget}; query = ''; status = ''; report = null; media = null;
       root.dataset.requestId = options.requestId || '';
+      if (externalSignal?.aborted) {externalAbort(); return;}
       return load();
     }
     async function setPresented(value) {
