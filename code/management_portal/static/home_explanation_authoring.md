@@ -43,7 +43,9 @@
 
 视频参照 [3Blue1Brown：Attention in transformers](https://www.3blue1brown.com/lessons/attention/) 的解释质量。先确定每个镜头要让读者理解的一步关系，再选择向量、矩阵、路径、空间变换或其他合适图形。符号、颜色与对象跨镜头保持含义；由具体对象逐步建立抽象表示，用连续变换交代“从哪里来、为何改变、得到什么”。高亮和镜头移动跟随正在解释的对象，给关键推导留出阅读时间。不能让所有主题都套成固定节点图加移动粒子，也不能把增加对象数量当作精细制作。复杂度以解释所需为准。
 
-配音只使用当前正式可调用的 AI Provider 原生语音生成能力。保存实际 Provider、模型、音轨摘要和可核对的生成来源，字幕、镜头与真实音轨对齐。能力未暴露、权限不足或生成失败时明确报告具体前提；禁止回退到本地 TTS、机械语音或以其他工具生成的音轨冒称原生。旧成果保留原始来源与版本，不给旧音轨补写虚假证明。
+配音采用经过核实、正式可调用的云端神经语音能力。用户指定的 [AI Society 宣传动画制作源](/r/workspace_6424a63b9629/file/ai_society_film/prepare_audio.py) 使用 edge-tts 调用微软云语音，英文男声 en-US-GuyNeural；[中文版制作源](/r/workspace_6424a63b9629/file/ai_society_film/institute_v9.py) 的配置为 zh-CN-YunxiNeural。该方式属于云端生成，来源应如实记录为微软云语音，不能标为 Codex 原生。语言、音色与节奏依题材选择；沿用按真实逐句音轨编排镜头、留出阅读与呼吸空间、检查响度和字幕同步的制作方法，不机械套固定语速。
+
+保存实际服务、模型或音色、生成回执与音轨摘要；字幕、镜头按真实音轨时间对齐。会话工具未暴露能力时先核对已有正式能力和成功案例，再报告精确缺口；禁止回退本地 TTS 或把作者声明当调用证明。旧成果保留原始来源与版本，不给旧音轨补写虚假证明。
 
 生成后的成片由独立视频检查 Resident 检查，页面检查结论不能替代视频质量结论。检查完整解释路径与关键帧、数值和视觉含义、镜头连续性、字幕与旁白时序，并在具备听辨能力时实际听声音。无法听辨时应写清音质未验。检查要绑定成片及字幕的实际 SHA；可播放、编码完成或任务已受理均不表示内容质量通过。
 
@@ -103,7 +105,7 @@
 
 视频计划使用 `portal-explanation-video/v1`，不是脚本。字段为 title、nodes、scenes；nodes 含唯一 id、label、归一化 x/y；scenes 含 title、speech，可包含 edges（from/to/weight/label）和 values（node/value）。新生成还需要 audio、audio_provenance、cues；audio 为 WAV 的正式 address/sha256，每个 scene 必须按实际音轨声明 start/end 秒，cues 为实际逐句时间及 text，不得按字数猜测配音时长。
 
-audio_provenance 是固定 JSON 的 address/sha256，正文 schema 为 `portal-native-audio-provenance/v1`，包含实际 provider、model、request_id，以及 audio 与 evidence 的固定 address/sha256。audio 必须与计划中的引用完全一致。作者可写的 JSON 或 Provider 名称只声明待核验的来源；必须由正式执行能力提供权威调用回执核验，才能证明音轨来自原生语音生成。能力未提供时新生成明确失败，不使用本地配音补位；已有 ready 版本继续按原权限读取，不补写证明。
+audio_provenance 是固定 JSON 的 address/sha256，正文 schema 为 `portal-native-audio-provenance/v1`，包含实际 provider、model、request_id，以及 audio 与 evidence 的固定 address/sha256。audio 必须与计划中的引用完全一致。该 schema 名沿用既有接口，不改变实际服务来源。作者可写的 JSON 或 Provider 名称只声明待核验的来源；正式执行能力须核验调用回执及输出音轨绑定。能力未提供时新生成明确失败，不使用本地配音补位；已有 ready 版本继续按原权限读取，不补写证明。
 
 计划、音轨、来源记录及其调用证据必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，遵循同一 Workspace 的访问与删除规则。
 
