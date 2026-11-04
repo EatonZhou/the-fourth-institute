@@ -231,6 +231,7 @@
           blocked: "审核受阻，尚未通过。",
           cancelled: "审核已取消，尚未通过。",
           invalidated: "固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。",
+          awaiting_author: "缺少经核验的负责Resident，审核等待正式作者关联。",
         };
         const status = node("p", t(labels[state] || labels.not_requested), "homeExplanationMuted");
         status.setAttribute("role", "status"); area.append(status);
@@ -255,7 +256,7 @@
           }));
           return;
         }
-        if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled", "invalidated"].includes(state)) return;
+        if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled", "invalidated", "awaiting_author"].includes(state)) return;
         area.append(button(state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
           if (!current(key)) return;
           area.querySelectorAll("button").forEach(el => { el.disabled = true; });
@@ -309,6 +310,16 @@
             else content.append(button("刷新生成状态", () => { attempts = 0; void fetchState(); }));
             content.append(button("取消生成", async () => {
               clearTimeout(mediaTimer);
+              try { await window.PortalAPI.post("/api/home-explanation/media/cancel", { ...target, quality }, { signal: controller.signal }); if (current(key)) void fetchState(); }
+              catch (error) { if (current(key)) failure(content, error); }
+            }));
+          } else if (media?.status === "awaiting_authoring") {
+            content.append(node("p", media.authoring?.error || t(media.authoring?.status === "submitted"
+              ? "已将质量要求送交负责Resident修改分镜；尚未生成新视频。"
+              : "分镜创作等待正式负责Resident处理，尚未生成新视频。"), "homeExplanationMuted"));
+            content.append(button("刷新生成状态", () => { void fetchState(); }));
+            if (media.authoring?.status === "submission_failed") content.append(button("重试分镜创作请求", () => { void fetchState(true); }));
+            content.append(button("取消生成", async () => {
               try { await window.PortalAPI.post("/api/home-explanation/media/cancel", { ...target, quality }, { signal: controller.signal }); if (current(key)) void fetchState(); }
               catch (error) { if (current(key)) failure(content, error); }
             }));

@@ -602,8 +602,32 @@
 .familyMigrationPriority li { display:flex; align-items:center; gap:6px; margin:5px 0; }
 .familyMigrationPriority li > span { flex:1; min-width:0; overflow-wrap:anywhere; }
 .familyMigrationPriority li > button { flex:none; }
-.residentMenuReportingForm { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
-.residentMenuReportingForm label { display: grid; gap: 4px; min-width: 0; }
-.residentMenuReportingForm select { width: 100%; min-width: 0; }
-.residentMenuReportingForm p { margin: 0; }
-.residentMenuReportingForm button { justify-self: start; }
+.residentMenuReportingForm { display:grid; gap:24px; min-width:0; padding:20px 0; margin-bottom:20px; border-bottom:1px solid var(--border); color:var(--text); font-size:14px; line-height:1.6; container-type:inline-size; }
+.residentMenuReportingForm > h3 { margin:0; font-size:18px; line-height:1.4; font-weight:650; }
+.residentMenuReportingForm fieldset { min-width:0; margin:0; padding:0; border:0; }
+.residentMenuReportingForm legend { padding:0; margin-bottom:10px; font-size:15px; font-weight:600; }
+.residentReportingLevels { display:grid; grid-template-columns:minmax(140px,1.6fr) repeat(3,minmax(0,1fr)); gap:8px; }
+.residentReportingFormats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.residentMenuReportingForm .residentReportingChoice { display:flex; align-items:flex-start; gap:10px; min-width:0; padding:14px 12px; border:1px solid var(--border); border-radius:10px; background:var(--panel); cursor:pointer; }
+.residentReportingChoice > input { appearance:auto; flex:none; width:16px; height:16px; min-height:0; margin:3px 0 0; padding:0; accent-color:var(--accent); }
+.residentReportingChoice > span { min-width:0; }
+.residentReportingChoice strong { display:block; font-size:14px; font-weight:550; line-height:1.5; overflow-wrap:anywhere; }
+.residentReportingChoice small { display:block; margin-top:6px; color:var(--muted); font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.residentReportingLevels .residentReportingChoice { align-items:center; justify-content:center; padding:10px 8px; }
+.residentReportingLevels .residentReportingChoice > input { margin-top:0; }
+.residentReportingChoice:has(input:checked) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--panel)); }
+.residentReportingChoice:has(input:focus-visible) { outline:2px solid var(--accent); outline-offset:3px; }
+.residentReportingChoice:hover:not(:has(input:disabled)) { border-color:var(--accent); }
+.residentReportingChoice:has(input:disabled) { opacity:.6; cursor:not-allowed; }
+.residentMenuReportingForm .residentReportingNote { margin:10px 0 0; color:var(--muted); font-size:13px; line-height:1.7; }
+.residentReportingActions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.residentReportingActions > p { margin:0; font-size:14px; overflow-wrap:anywhere; }
+.residentMenuReportingForm [data-reporting-conflict] { padding:14px; border:1px solid var(--border); border-radius:10px; background:var(--panel-2); }
+.residentMenuReportingForm [data-reporting-conflict][hidden] { display:none; }
+.residentMenuReportingForm [data-reporting-conflict] p { margin:0 0 10px; }
+.residentMenuReportingForm [data-reporting-conflict] button { margin:4px 8px 4px 0; white-space:normal; line-height:1.5; }
+@container (max-width:480px) {
+  .residentReportingLevels { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .residentReportingFormats { grid-template-columns:minmax(0,1fr); }
+  .residentReportingFormats .residentReportingChoice { padding:12px; }
+}

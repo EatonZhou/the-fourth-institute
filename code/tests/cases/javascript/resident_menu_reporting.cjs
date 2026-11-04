@@ -24,12 +24,12 @@ function fixture(family=false,canEdit=true){
 for(const family of [false,true]) test(`${family?'Family facade':'Resident'} consumes reporting and saves independent choices with CAS/readback`,async()=>{
  const f=fixture(family);await f.load();
  assert.equal(f.form.elements.initiative.value,'medium');assert.equal(f.form.elements.quality.value,'low');
- assert.deepEqual([...f.form.elements.initiative.options].map(o=>o.value),['off','low','medium','high']);
- assert.deepEqual([...f.form.elements.quality.options].map(o=>o.value),['low','medium','high']);
+ assert.deepEqual([...f.form.elements.initiative].map(o=>o.value),['off','low','medium','high']);
+ assert.deepEqual([...f.form.elements.quality].map(o=>o.value),['low','medium','high']);
  f.form.elements.initiative.value='off';f.form.elements.quality.value='high';await f.save();
  const write=f.calls.find(c=>c.changes);assert.equal(write.id,f.state.nodeMenuContext.residentId);assert.equal(write.expected,7);
  assert.deepEqual(JSON.parse(JSON.stringify(write.changes)),{reporting:{initiative:'off',quality:'high'}});
- assert.equal(f.calls.filter(c=>c.read).length,2);assert.equal(f.form.elements.quality.disabled,false);
+ assert.equal(f.calls.filter(c=>c.read).length,2);assert.equal([...f.form.elements.quality].every(r => r.disabled),false);
  assert.match(f.form.textContent,/用户明确要求的汇报仍会执行/);
  assert.match(f.form.textContent,/高主动性也按实际价值判断/);
  assert.match(f.form.textContent,/独立 Resident 审查与修改直至达标/);
@@ -39,20 +39,20 @@ for(const family of [false,true]) test(`${family?'Family facade':'Resident'} con
 test('permission rejection preserves draft and does not claim saved',async()=>{
  const f=fixture();await f.load();f.setWriteError(Object.assign(Error('permission denied'),{status:403}));
  f.form.elements.quality.value='high';await f.save();
- assert.equal(f.form.elements.quality.value,'high');assert.equal(f.form.elements.quality.disabled,false);
+ assert.equal(f.form.elements.quality.value,'high');assert.equal([...f.form.elements.quality].every(r => r.disabled),false);
  assert.equal(f.form.querySelector('[data-reporting-status]').textContent,'permission denied');
  assert.equal(f.calls.filter(c=>c.changes).length,1);assert.equal(f.calls.filter(c=>c.read).length,1);f.dom.window.close();
 });
 test('read-only view, conflict and switching menus retain the correct target',async()=>{
- const readOnly=fixture(true,false);await readOnly.load();assert.equal(readOnly.form.elements.quality.disabled,true);await readOnly.save();assert.equal(readOnly.calls.some(c=>c.changes),false);readOnly.dom.window.close();
+ const readOnly=fixture(true,false);await readOnly.load();assert.equal([...readOnly.form.elements.quality].every(r => r.disabled),true);await readOnly.save();assert.equal(readOnly.calls.some(c=>c.changes),false);readOnly.dom.window.close();
  const f=fixture();await f.load();f.setWriteError(Object.assign(Error('settings conflict'),{status:409}));f.form.elements.initiative.value='low';await f.save();
  assert.equal(f.form.elements.initiative.value,'low');assert.match(f.form.textContent,/settings conflict/);
  const prior=f.form;f.state.nodeMenuContext={residentId:'other',node:{}};await f.load();assert.notEqual(f.form,prior);assert.equal(f.calls.at(-1).read,'other');f.dom.window.close();
 });
 test('committed write with failed read retries only the read',async()=>{
  const f=fixture();await f.load();f.setReadError(true);f.form.elements.quality.value='medium';await f.save();
- assert.equal(f.calls.filter(c=>c.changes).length,1);assert.equal(f.form.elements.quality.disabled,true);assert.match(f.form.textContent,/设置已提交/);
- f.setReadError(false);await f.save();assert.equal(f.calls.filter(c=>c.changes).length,1);assert.equal(f.form.elements.quality.disabled,false);assert.equal(f.form.elements.quality.value,'medium');f.dom.window.close();
+ assert.equal(f.calls.filter(c=>c.changes).length,1);assert.equal([...f.form.elements.quality].every(r => r.disabled),true);assert.match(f.form.textContent,/设置已提交/);
+ f.setReadError(false);await f.save();assert.equal(f.calls.filter(c=>c.changes).length,1);assert.equal([...f.form.elements.quality].every(r => r.disabled),false);assert.equal(f.form.elements.quality.value,'medium');f.dom.window.close();
 });
 test('resident service forwards reporting through the existing ISA revision contract',async()=>{
  const {window:w}=new JSDOM('',{runScripts:'outside-only'}),calls=[];

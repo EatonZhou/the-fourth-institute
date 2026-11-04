@@ -118,7 +118,7 @@ high 质量的独立检查在生成内容完成后读取固定版本、实际打
 
 视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
-视频 low 可采用已有节点图计划。medium/high 要求每段都有与真实字幕对应的 `visual.events`；生成前缺少这些事件会明确失败。作者须补齐分镜并保存新固定版，不能只改质量标签或让生成按钮替作者猜测。medium 按 3Blue1Brown 式概念递进、连续图形与音画同步要求创作；high 还须实际独立审片。结构检查通过只说明计划可渲染，不代表画面已经达到质量标准。
+视频 low 可采用已有节点图计划。所有新生成的 medium/high 视频都需要正式作者任务及其完成证明，即使旧计划已有合法 `visual.events` 也不能直接跳过。没有本次质量对应的 `authoring_proof` 时，显式生成操作先派发带质量指导的创作任务，不开始渲染。作者须按任务中的固定来源实际修改分镜，每段提供与真实字幕对应的 `visual.events`，保存新固定版并完成正式回填；只改标题、JSON排版或质量标签均不算修改。medium 按 3Blue1Brown 式概念递进、连续图形与音画同步要求创作；high 还须实际独立审片。结构检查和创作回填成功均不代表审核通过。已 ready 的旧视频仍可只读恢复，不因重开自动生成或投递任务。
 
 audio 为同包固定 MP3 或 PCM16 WAV 的正式 address/sha256。Portal检查当前主体的读取权限、固定摘要和媒体格式。计划顶层的创作注释不参与渲染，也不会由Portal读取或执行。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。已有音轨、附件与 ready 视频保持原件，继续按普通资源权限读取。
 
@@ -140,6 +140,10 @@ python3 scripts/build_explanation_package.py '<包目录>' \
 
 构建器核对文件、生成固定摘要清单，再经当前作者身份的 HATG ReadResource 回读；显式选择 high 时触发独立检查，low/medium 不强制送审。它用 SearchResidents 发现唯一可投递的“解释页独立检查”；也可用 `--reviewer` 指定已正式查得的检查 Resident。检查者不能是作者本人。不直接读取别人的凭据，也不代签通过。
 
+完成视频创作任务时，负责 Resident 本人在上述构建命令中增加 `--authoring-id '<正式任务ID>'`，并使用任务规定的 `--quality medium` 或 `--quality high`、新包目录与修订。构建器先保存并回读新清单，再回填创作任务；选择 high 时，回填成功后才送独立检查。回填失败须保留失败，不把已保存的包视为已完成任务，也不继续送审。
+
+正式回填是 `POST /api/home-explanation/media/authoring`，请求为 `{address,sha256,quality,authoring_id}`，其中 address/sha256 指新 manifest。服务核验原任务来源、质量、实际负责 Resident 身份、未取消状态，以及新旧计划的实际语义变化；不能在客户端自行添加证明。回填后对新固定清单显式请求生成视频，生成前与产物发布前再次核验任务状态。证明不能跨质量档复用；取消或核验失败不能借旧证明继续生成。
+
 已有作者工具生成的清单，或提交中断后的同版重试，使用：
 
 ```bash
@@ -159,4 +163,6 @@ high 质量生成链路须完成上述独立检查，手写 high 清单也要送
 打开动作仍使用本次 Home request_id 的 `portal-home-display/v1`，`view:explanation` 与 `target:{address,sha256}`。正文只展示读者需要的结论、页面入口和真实检查状态；不把内部协议当作品。固定展示、未保存草稿、手动选择和迟到保护仍由 Home 宿主管理。
 
 来源汇报由 User 点击聊天按钮保存时，创建者仍是该 User。Home 附带对话 Resident、真实消息 ID 和代码围栏序号作为待核对的出处；服务须以当前身份回读正式消息，验证展示意图后绑定负责修订的 Resident，不能信任客户端 `author` 或按名称猜测个人门面。审核反馈和 medium 视频分镜修改任务发给该已核验的负责者。作者要据固定报告与具体反馈实际修改图形、讲稿和分镜，保存新版本后再生成或送审；修改质量标签或收到任务均不等于完成。手动来源没有可核验回复时应明确待指定负责者，保留可读报告，不把通知 User 算作 Resident 修订闭环。
+
+创作任务与质量审核是两种不同的记录。收到 `portal-quality-authoring/v1` 后，作者可用 `scripts/submit_explanation_review.py --resident-id '<自己的ResidentID>' --read-authoring '<authoring_id>'` 读取正式任务；开始和提交成果前都核对未取消。报告分支沿正式 UpdateResource 的 `content={authoring_id,presentation}` 提交实际修订，由报告域核验负责者和内容变化，再生成新revision的媒体；不把解释页的 visual 计划字段套给报告 presentation。创作任务的 `submitted` 只表示已通知作者，不能称为已完成修改或审核通过。GET任务、打开报告或恢复旧视频不会自动再派任务。
 

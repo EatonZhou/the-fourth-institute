@@ -102,19 +102,29 @@
         const canEdit = detail.allows?.UpdateResidentSettings ?? Boolean(detail.chat_workspace?.actions?.runtime_settings);
         context.reportingRevision = result.settings_revision;
         context.reportingCommitted = false;
-        const option = (value, label) => `<option value="${value}">${esc(window.PortalI18n.t(label))}</option>`;
+        const choice = (name, value, label, description = "") => `<label class="residentReportingChoice">
+          <input type="radio" name="${name}" value="${value}" ${canEdit ? "" : "disabled"}>
+          <span><strong>${esc(window.PortalI18n.t(label))}</strong>${description ? `<small>${esc(window.PortalI18n.t(description))}</small>` : ""}</span>
+        </label>`;
         root.innerHTML = window.PortalI18n.html`<form class="residentMenuReportingForm">
-          <strong>汇报设置</strong>
-          <label>汇报主动性<select name="initiative" ${canEdit ? "" : "disabled"}>
-            ${option("off", "0（不主动汇报）")}${option("low", "低")}${option("medium", "中")}${option("high", "高")}
-          </select></label>
-          <p class="paneNote">主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。</p>
-          <label>汇报质量<select name="quality" ${canEdit ? "" : "disabled"}>
-            ${option("low", "低 · Markdown")}${option("medium", "中 · 交互网页")}${option("high", "高 · 独立 Resident 审查与修改直至达标")}
-          </select></label>
-          <p role="status" data-reporting-status></p>
+          <h3>汇报设置</h3>
+          <fieldset class="residentReportingInitiative" aria-describedby="resident-reporting-initiative-note">
+            <legend>汇报主动性</legend>
+            <div class="residentReportingLevels">
+              ${choice("initiative", "off", "0（不主动汇报）")}${choice("initiative", "low", "低")}${choice("initiative", "medium", "中")}${choice("initiative", "high", "高")}
+            </div>
+            <p class="residentReportingNote" id="resident-reporting-initiative-note">主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。</p>
+          </fieldset>
+          <fieldset class="residentReportingQuality">
+            <legend>汇报质量</legend>
+            <div class="residentReportingFormats">
+              ${choice("quality", "low", "低", "直接输出 Markdown")}
+              ${choice("quality", "medium", "中", "使用网页交互模板")}
+              ${choice("quality", "high", "高", "独立 Resident 审查与修改直至达标")}
+            </div>
+          </fieldset>
           <div data-reporting-conflict hidden></div>
-          <button class="portalButton is-compact" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button>
+          <footer class="residentReportingActions"><button class="portalButton is-primary" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button><p role="status" data-reporting-status></p></footer>
         </form>`;
         const form = root.querySelector("form");
         context.reportingForm = form;
@@ -172,7 +182,7 @@
           context.reportingSaving = true;
           context.saving = true;
           $id("nodeMenuRuntime").inert = true;
-          form.querySelectorAll("select, button").forEach(control => { control.disabled = true; });
+          form.querySelectorAll("input, button").forEach(control => { control.disabled = true; });
           try {
             if (!context.reportingCommitted) {
               const signature = JSON.stringify(selected);
@@ -206,8 +216,8 @@
             context.saving = Boolean(context.runtimeSaving);
             if (menuState.nodeMenuContext === context) {
               $id("nodeMenuRuntime").inert = false;
-              form.querySelectorAll("select, button").forEach(control => {
-                control.disabled = Boolean(context.reportingCommitted || context.reportingPending) && control.tagName === "SELECT";
+              form.querySelectorAll("input, button").forEach(control => {
+                control.disabled = Boolean(context.reportingCommitted || context.reportingPending) && control.tagName === "INPUT";
                 if (context.reportingConflict && control.type === "submit") control.disabled = true;
               });
             }

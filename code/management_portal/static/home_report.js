@@ -27,7 +27,7 @@
     if (!root) throw new Error('报告容器不存在');
     root.classList.add('home-report');
     let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction;
-    let requestedTarget, originKey = '', readOnly = true, reportQuality = 'medium', videoQuality = 'medium';
+    let requestedTarget, originKey = '', originContext = null, readOnly = true, reportQuality = 'medium', videoQuality = 'medium';
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
     let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
     const active = token => !destroyed && presented && token === epoch && !controller?.signal.aborted;
@@ -55,11 +55,13 @@
       if (state?.status === 'ready') mediaAction.append(el('span', state.quality === 'high' && state.review?.status !== 'passed' ? '视频已生成 · 高质量未通过审核' : '视频已保存','hr-muted'));
       else if (state?.status === 'pending') mediaAction.append(el('span','视频生成中','hr-muted'));
       else if (state?.status === 'cancelled') mediaAction.append(el('span','生成已取消','hr-muted'));
+      else if (state?.status === 'authoring') mediaAction.append(el('span','等待分镜创作','hr-muted'));
+      else if (state?.status === 'authored') mediaAction.append(el('span','分镜已保存为新版本','hr-muted'));
       else if (!state && report.reasoning?.available) mediaAction.append(button('生成讲解视频', () => generate(false)));
     }
     function reviewRegion(review, isVideo = false) {
       const section = el('section', null, 'hr-review'); section.setAttribute('aria-label', isVideo ? '视频独立审核' : '报告独立审核');
-      const labels = {not_requested:'尚未送审',pending:'准备送审',submitted:'已送审，尚未通过',passed:'独立审核通过',changes_requested:'需要修改后重新审核',blocked:'审核受阻',cancelled:'审核已取消',submission_failed:'送审失败'};
+      const labels = {not_requested:'尚未送审',pending:'准备送审',submitted:'已送审，尚未通过',passed:'独立审核通过',changes_requested:'需要修改后重新审核',blocked:'审核受阻',cancelled:'审核已取消',submission_failed:'送审失败',awaiting_author:'等待经核验的负责Resident'};
       section.append(el('p', labels[review?.status] || '尚未送审'));
       if(review?.feedback || review?.error) section.append(el('p', review.feedback || review.error));
       const controls = el('div',null,'hr-actions');
@@ -293,6 +295,23 @@
       mediaRegion.hidden = false;
       mediaRegion.replaceChildren();
       if (state.status !== 'ready') {
+        if (state.authoring && ['authoring','authored'].includes(state.status)) {
+          const labels={submitted:'分镜任务已交给负责Resident；受理不代表已生成或达标。',awaiting_author:'缺少经核验的负责Resident，等待指定作者。',submission_failed:'分镜任务投递失败。',pending:'正在提交分镜任务。'};
+          mediaRegion.append(el('p',state.status==='authored' ? '作者已保存实际分镜修改，原报告引用保持不变。' : labels[state.authoring.status] || state.error,'hr-notice'));
+          if(state.error) mediaRegion.append(el('p',state.error,'hr-notice'));
+          if(state.reference) mediaRegion.append(button('打开分镜新版本',()=>onOpen?.(state.reference)));
+          const token=epoch,level=videoQuality;
+          mediaRegion.append(button('检查创作进度',async()=>{
+            try {const value=await request(`${API}/reports/${report.report_id}/${report.revision}/media/${level}`);if(active(token)&&level===videoQuality)renderMedia(value);}
+            catch(error){if(active(token))mediaRegion.append(el('p',error.message));}
+          }));
+          if(state.status==='authoring') mediaRegion.append(button('取消创作',async()=>{
+            try {const value=await request(`${API}/media/cancel`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,revision:report.revision,quality:level})});if(active(token)&&level===videoQuality)renderMedia(value);}
+            catch(error){if(active(token))mediaRegion.append(el('p',error.message));}
+          }));
+          if(state.authoring.status==='submission_failed') mediaRegion.append(button('重试创作',()=>generate(true)));
+          return;
+        }
         mediaRegion.append(el('p', state.status === 'pending' ? '讲解视频正在生成，可以先阅读下方报告。' : state.status === 'cancelled' ? '生成已取消；重新生成请创建新版本。' : `视频暂未生成：${state.error || '请重试'}`, 'hr-notice'));
         if (state.status === 'pending') mediaRegion.append(button('取消生成', async () => {
           const token=epoch,level=videoQuality;
@@ -319,6 +338,7 @@
       if (state.voice_note) mediaRegion.append(el('p', state.voice_note, 'hr-muted'));
       const downloads = el('nav',null,'hr-actions');
       for (const [name,label] of [['video.mp4','下载视频'],['captions.vtt','下载字幕'],['transcript.txt','下载讲稿'],['narration.wav','下载音轨']]) {
+        if (name === 'narration.wav' && !state.assets?.[name]) continue;
         const link = el('a',label); link.href = `${base}/${name}`; link.download = name; downloads.append(link);
       }
       mediaRegion.append(downloads);
@@ -368,7 +388,7 @@
       const token = epoch;
       originKey ||= `home-request/v1:${requestUUID()}`;
       try {
-        const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.source_version || report?.version,origin_key:originKey,quality:reportQuality})});
+        const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.source_version || report?.version,origin_key:originKey,quality:reportQuality,...(originContext ? {origin_context:originContext} : {})})});
         if (active(token)) accept(result);
         return result;
       } catch(error) {if(active(token)) {banner.hidden=false;banner.textContent=`保存失败：${error.message}`;} throw error;}
@@ -409,7 +429,7 @@
         let result;
         if (requestedTarget.kind === 'report') result = await request(`${API}?${new URLSearchParams(requestedTarget)}`);
         else if (originKey && readOnly) result = await request(`${API}/origin?${new URLSearchParams({origin_key:originKey})}`);
-        else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey,quality:reportQuality})});
+        else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey,quality:reportQuality,...(originContext ? {origin_context:originContext} : {})})});
         else result = await request(`${API}?${new URLSearchParams({...requestedTarget,quality:reportQuality})}`);
         if (!active(token)) return;
         accept(result);
@@ -428,6 +448,7 @@
       externalAbort = () => {stop(); stopMedia(); root.replaceChildren();};
       externalSignal?.addEventListener('abort', externalAbort, {once:true});
       requestedTarget = {...nextTarget}; target = {...nextTarget}; originKey=options.originKey || '';readOnly=options.readOnly !== false;
+      originContext = options.originContext || null;
       reportQuality = ['low','medium','high'].includes(options.quality) ? options.quality : 'medium'; videoQuality = 'medium';
       query = ''; status = ''; report = null; media = null;
       root.dataset.requestId = options.requestId || '';
