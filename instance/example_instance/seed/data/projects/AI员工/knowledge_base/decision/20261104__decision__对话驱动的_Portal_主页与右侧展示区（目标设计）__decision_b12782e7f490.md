@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-11-04'
 version:
-  number: 29
+  number: 30
   created_at: "2026-11-04"
   created_by:
     user: ""
     agent: "resident_37dd0dcc31bf"
-  updated_at: "2026-11-04T21:06:14Z"
+  updated_at: "2026-11-04T21:20:54Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -285,6 +285,9 @@ Home 传入 `origin_context={resident_id,message_id,fence_index}`；报告服务
 高质量解释页的页头展示与当前清单地址和 SHA 绑定的独立审核状态、具体反馈及证据入口。宿主通过只读查询恢复作者提交的检查；尚未送检明确显示未检查，并提供显式补送入口。已提交不显示为通过，整改和阻塞持续可见；修改后用新固定版关联旧检查，不能借用旧版结论。作者接收到的 high 设置必须写入清单与构建参数，不能沿用 medium 默认值造成降档。构建命令要求显式填写质量参数；省略时在生成清单前拒绝，避免遗漏参数绕过高质量送检。
 
 ## 跨题材创作标准与独立检查
+
+
+独立检查先核对用户已经委托的理解任务，再识别页面必须讲清的核心关系；作者自行缩小的局部目标不能替代原要求。事实与数值正确性、读者理解体验分别提供证据。涉及演化、连续变化或多对象关联时，页面须让读者观察过程、定位当前状态与差异，并在适合时通过控制条件检验关系。外层按钮、折叠区或旁支小实验不能代替核心机制的表达，静态数表可作为核对材料。检查者实际完成关键观察或干预，指出仍需读者自行想象的步骤和具体缺口；不得以控件存在或局部算数正确作为整体通过依据。简单事实保持简单表达，不以D3、动画或控件数量作为门槛。旧固定版的结论保留原范围；发现用户目标尚未满足时，以新固定修订和关联复审接续。
 
 作者指南位于 Portal 同源 /static/home_explanation_authoring.md。三个参照为 [Transformer Circuits Global Workspace](https://transformer-circuits.pub/2026/workspace/index.html)、[Distill Paths Perspective on Value Learning](https://distill.pub/2019/paths-perspective-on-value-learning/) 和 [Distill Handwriting](https://distill.pub/2016/handwriting/)。学习其图文论证、可检验操作与因果反馈；不把某个主题、固定布局、D3、视频或控件数量作为质量门槛。简单事情采用清楚而完整的简单表达，复杂关系提供足以理解的交互与材料。
 
