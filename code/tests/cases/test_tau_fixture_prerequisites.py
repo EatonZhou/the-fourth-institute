@@ -261,6 +261,28 @@ def test_no_credits_policy_blocks_paid_initialization_before_interaction(executi
     callback.assert_not_called()
 
 
+@pytest.mark.parametrize('native_only', [False, True])
+def test_family_facade_points_to_real_executor_checks_without_session_recovery(execution, native_only):
+    call, state, init, account = execution
+    account['quota_reserve'].update(remaining=70.0, fresh=True, used_up=False)
+    calls = []
+    def facade(name, args):
+        calls.append(name)
+        result = call(name, args)
+        if name == 'GetResident':
+            result['resident'].update(lineage_id='lineage_0123456789ab',
+                family={'role': 'facade', 'family_id': 'fbi_0123456789ab'})
+        return result
+    state['execution_gate'] = {'state': 'open'}
+    callback = Mock()
+    result = prepare_execution_prerequisite(facade, R, require_native_quota=native_only, interact=callback)
+    assert not result['ready'] and result['reason'] == 'family_facade_not_executing'
+    assert result['recovery'] == {'instruction': 'GetLineage',
+        'arguments': {'lineage_id': 'lineage_0123456789ab'}, 'scope': 'family_execution_members'}
+    assert calls == ['GetResident']
+    callback.assert_not_called()
+
+
 def test_fork_initialization_and_human_interaction_require_authoritative_reread(execution):
     call, state, init, account = execution
     init.update(status='running', initialization_id='exact-attempt')

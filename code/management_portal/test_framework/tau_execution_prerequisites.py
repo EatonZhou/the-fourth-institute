@@ -19,6 +19,19 @@ def read_execution_prerequisite(instruction, resident_id: str, *, new_context: b
     if not re.fullmatch(r'resident_[0-9a-f]{12}', resident_id):
         raise ValueError('Expected an exact Resident ID')
     resident = instruction('GetResident', {'resident_id': resident_id})['resident']
+    if resident.get('resident_id') != resident_id:
+        raise ValueError('Execution prerequisite identity is missing or changed')
+    if (resident.get('family') or {}).get('role') == 'facade':
+        lineage_id = resident.get('lineage_id')
+        if not isinstance(lineage_id, str) or not re.fullmatch(r'lineage_[0-9a-f]{12}', lineage_id):
+            raise ValueError('Family facade has no exact Lineage identity')
+        # A facade receives and routes messages; it has no model Session gate.
+        # Never turn its proxy account or absent gate into execution consent.
+        return {'resident_id': resident_id, 'account_id': resident.get('account') or '',
+                'scope': 'family_facade', 'ready': False, 'reason': 'family_facade_not_executing',
+                'initialization': None, 'execution_gate': None,
+                'recovery': {'instruction': 'GetLineage', 'arguments': {'lineage_id': lineage_id},
+                             'scope': 'family_execution_members'}}
     initialization = instruction('GetResidentInitialization', {'resident_id': resident_id})
     rows = instruction('ListResidentStates', {'resident_ids': [resident_id], 'include_viewer_state': False})['states']
     states = [row['state'] for row in rows if row.get('resident_id') == resident_id]
@@ -87,7 +100,8 @@ def prepare_execution_prerequisite(instruction, resident_id: str, *, new_context
     """
     before = read_execution_prerequisite(instruction, resident_id, new_context=new_context,
                                         require_native_quota=require_native_quota)
-    if before['ready'] or interact is None or before['reason'] == 'native_quota_unavailable':
+    if before['ready'] or interact is None or before['reason'] in {
+            'native_quota_unavailable', 'family_facade_not_executing'}:
         return before
     interact(before)
     after = read_execution_prerequisite(instruction, resident_id, new_context=new_context,
