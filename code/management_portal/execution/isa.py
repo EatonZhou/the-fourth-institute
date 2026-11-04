@@ -35,7 +35,6 @@ MODEL_API_FIELDS = {
     "default_parameters": "default_parameters",
     "routes": "routes",
     "protocols": "protocols",
-    "speech": "speech",
 }
 _SERVER: Any = None
 
@@ -97,9 +96,6 @@ def _stored_fields(values: dict[str, Any]) -> dict[str, Any]:
         _validate_models(stored["models"])
     if stored.get("protocols") is not None:
         _validate_protocols(stored["protocols"])
-    if "speech" in stored:
-        from .speech_protocol import validate_configuration
-        validate_configuration(stored["speech"])
     return stored
 
 
@@ -128,12 +124,6 @@ def _check_api_kind(entry: dict[str, Any]) -> None:
         raise invalid("不支持的模型接口协议")
     if entry.get("protocols") and entry.get("kind") not in KINDS:
         raise invalid("该模型接口不能声明附加模型协议")
-    if entry.get("speech"):
-        from .speech_protocol import configuration
-        try:
-            configuration(entry, require_enabled=False)
-        except ValueError as exc:
-            raise invalid(str(exc)) from None
 
 
 def _api_users(api_id: str) -> list[dict[str, Any]]:
@@ -941,11 +931,6 @@ HANDLERS = {
     "UpdateProviderAccount": update_provider_account,
     "GetUsage": get_usage,
 }
-
-
-from .speech_isa import HANDLERS as SPEECH_HANDLERS
-HANDLERS.update(SPEECH_HANDLERS)
-
 
 def version_of(inv: Invocation, object_id: str) -> Any:
     """A model API's registration version for the model API instructions.

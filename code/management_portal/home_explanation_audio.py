@@ -1,14 +1,14 @@
-"""Execution-backed speech provenance; package JSON is a claim, not proof.
+"""Audio package integrity; synthesis is an optional Resident tool concern.
 
-The historical 'native' schema also covers the explicitly approved Microsoft
-cloud speech service. Legacy ready media bypasses this new-generation gate.
+Tool reports describe source claims, not Portal/vendor attestations. Historical
+server receipts remain readable for the media already produced under that contract.
 """
 import hashlib
 import json
 
 
-def verify_native_receipt(record, actor):
-    from management_portal.execution.speech_generation_service import verified_receipt
+def verify_legacy_receipt(record, actor):
+    from management_portal.media_audio_receipts import verified_receipt
     # This owner re-reads the immutable execution record, authorizes the original
     # upload for THIS consumer, and hashes its bytes. Never impersonate its author.
     receipt = verified_receipt(record['request_id'], actor=actor)
@@ -24,28 +24,39 @@ def verify_native_receipt(record, actor):
     return receipt
 
 
-def require_native_audio(plan, read, same_package, actor):
+def require_audio_provenance(plan, read, same_package, actor):
     if not plan.get('audio') or not plan.get('audio_provenance'):
-        raise ValueError('新视频需要正式语音服务生成的音轨及可核验来源记录；不会自动使用本地配音。')
+        raise ValueError('新视频需要固定音轨及来源记录；配音由可选工具提供，Portal不会自动生成。')
     same_package(plan['audio_provenance'])
     record = json.loads(read(plan['audio_provenance'], actor))
     if not isinstance(record, dict) or set(record) != {'schema', 'provider', 'model', 'request_id', 'audio', 'evidence'}:
-        raise ValueError('原生音轨来源记录字段无效')
-    if record['schema'] != 'portal-native-audio-provenance/v1':
-        raise ValueError('不支持的原生音轨来源记录')
+        raise ValueError('音轨来源记录字段无效')
+    if record['schema'] not in {'portal-native-audio-provenance/v1', 'portal-audio-provenance/v1'}:
+        raise ValueError('不支持的音轨来源记录')
     if any(not isinstance(record[k], str) or not record[k].strip() or len(record[k]) > 200
            for k in ('provider', 'model', 'request_id')):
-        raise ValueError('原生音轨来源必须列明实际Provider、模型与请求ID')
+        raise ValueError('音轨来源必须列明实际Provider、模型与请求ID')
     if record['audio'] != plan['audio']:
-        raise ValueError('原生音轨来源记录与本次固定音轨不符')
+        raise ValueError('音轨来源记录与本次固定音轨不符')
     same_package(plan['audio'])
     same_package(record['evidence'])
     # Read/hash/ACL checks establish which evidence was supplied, not its truth.
-    read(record['evidence'], actor)
-    receipt = verify_native_receipt(record, actor)
-    # Copying to a Workspace is allowed only byte-for-byte. Read using its own
-    # ACL as well as the original upload's ACL checked by verified_receipt.
+    evidence = read(record['evidence'], actor)
+    if record['schema'] == 'portal-native-audio-provenance/v1':
+        receipt = verify_legacy_receipt(record, actor)
+    else:
+        report = json.loads(evidence)
+        if (not isinstance(report, dict) or report.get('schema') != 'resident-tool-audio/v1'
+                or report.get('run_id') != record['request_id']
+                or report.get('provider') != record['provider'] or report.get('model') != record['model']
+                or not isinstance(report.get('audio'), dict)
+                or report['audio'].get('sha256') != record['audio'].get('sha256')):
+            raise ValueError('工具来源记录与固定音轨不一致')
+        # Integrity only. A tool/author JSON is not a server or vendor attestation.
+        receipt = report
+    # Hash package bytes under the consumer's ACL. Historical receipts also
+    # require the original upload's ACL; tool reports carry no such attestation.
     data = read(plan['audio'], actor, 64*1024*1024)
     if hashlib.sha256(data).hexdigest() != receipt['audio']['sha256']:
-        raise ValueError('包内音轨字节与正式语音回执不符')
+        raise ValueError('包内音轨字节与来源记录不符')
     return record

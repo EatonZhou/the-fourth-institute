@@ -276,7 +276,7 @@ def test_a_model_api_in_use_by_an_execution_account_is_not_deleted():
     assert _call(execution_isa.delete_model_api, api_id="moonshot_test") == {"api_id": "moonshot_test"}
 
 
-@pytest.mark.parametrize("column", ["protocols", "speech"])
+@pytest.mark.parametrize("column", ["protocols"])
 def test_an_older_model_api_table_gains_the_protocols_column_once(column):
     """已有实例的模型接口表在首次使用时补上 protocols 列，之后的检查不锁表
 

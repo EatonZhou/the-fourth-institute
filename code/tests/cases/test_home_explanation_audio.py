@@ -1,4 +1,4 @@
-"""Execution-backed audio gate and real MP3 decoding, with isolated fixture actors.
+"""Optional tool provenance, historical audio audit and MP3 decoding.
 
 These checks make no cloud requests and do not certify a production voice/video.
 """
@@ -17,7 +17,7 @@ import pytest
 from management_portal import home_explanation_audio as gate
 from management_portal import home_explanation_render as rendering
 from management_portal.home_explanation_plan import validate
-from management_portal.execution import speech_generation_service as speech
+from management_portal import media_audio_receipts as speech
 
 
 PACKAGE = 'workspace_0123456789ab/file/explanation/'
@@ -75,7 +75,7 @@ def provenance(tmp_path, monkeypatch):
         if not ref['address'].startswith(PACKAGE):
             raise ValueError('outside package')
     def check():
-        return gate.require_native_audio(plan, read, same_package, ACTOR)
+        return gate.require_audio_provenance(plan, read, same_package, ACTOR)
     return SimpleNamespace(**locals())
 
 
@@ -91,6 +91,36 @@ def test_authoritative_receipt_and_original_copy_use_actual_consumer(provenance)
         f.check()
     speech._path(EXECUTION).unlink()
     with pytest.raises(ValueError, match='not found'):
+        f.check()
+
+
+def test_optional_tool_audio_needs_no_execution_receipt(provenance):
+    f = provenance
+    speech._path(EXECUTION).unlink()
+    f.record.update(schema='portal-audio-provenance/v1', request_id='edge-speech-fixture')
+    report = {'schema': 'resident-tool-audio/v1', 'run_id': 'edge-speech-fixture',
+              'provider': 'microsoft', 'model': 'edge-neural-tts',
+              'audio': {'sha256': f.audio['sha256']}}
+    f.record['evidence'] = f.put('tool-report.json', report)
+    f.plan['audio_provenance'] = f.put('audio-source.json', f.record)
+    assert f.check()['schema'] == 'portal-audio-provenance/v1'
+    assert not any(row[0] == 'original' for row in f.reads)
+    # Tool provenance remains a claim, even when pinned and internally consistent.
+    f.record['schema'] = 'portal-native-audio-provenance/v1'
+    f.plan['audio_provenance'] = f.put('audio-source.json', f.record)
+    with pytest.raises(ValueError, match='Invalid speech execution ID'):
+        f.check()
+    f.record['schema'] = 'portal-audio-provenance/v1'
+    report['audio']['sha256'] = '0'*64
+    f.record['evidence'] = f.put('tool-report.json', report)
+    f.plan['audio_provenance'] = f.put('audio-source.json', f.record)
+    with pytest.raises(ValueError, match='不一致'):
+        f.check()
+    report['audio']['sha256'] = f.audio['sha256']
+    f.record['evidence'] = f.put('tool-report.json', report)
+    f.plan['audio_provenance'] = f.put('audio-source.json', f.record)
+    f.denied.add(f.record['evidence']['address'])
+    with pytest.raises(PermissionError):
         f.check()
 
 

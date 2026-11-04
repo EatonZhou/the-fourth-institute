@@ -26,7 +26,7 @@ from management_common import secure_paths
 from management_common.portal_paths import path as portal_path
 from management_portal.home_explanation_plan import validate
 from management_portal.home_explanation_render import render
-from management_portal.home_explanation_audio import require_native_audio
+from management_portal.home_explanation_audio import require_audio_provenance
 from management_portal import home_explanation_review as review
 
 MAX_BUNDLE = 128 * 1024 * 1024
@@ -136,8 +136,8 @@ class Media:
         def same_package(ref):
             root_id, parts = pointer(ref)
             if root_id != ctx['root_id'] or parts[:-1] != ctx['output'][:-2]:
-                raise ValueError('原生音轨来源和调用证据须与解释页同包')
-        return require_native_audio(ctx['plan'], self.read, same_package, actor)
+                raise ValueError('音轨来源和调用证据须与解释页同包')
+        return require_audio_provenance(ctx['plan'], self.read, same_package, actor)
 
     def writable(self, ctx, actor):
         from management_portal.society_service.lineage_access_policy import workspace_reaches

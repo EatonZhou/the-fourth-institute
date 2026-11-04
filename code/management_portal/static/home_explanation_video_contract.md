@@ -13,7 +13,7 @@
 - events 最多48项，绝对时间严格递增且动画不重叠。事件为 `{at, stage, index, duration, cue}`：at 是音轨绝对秒；duration 为0–3秒；index 为当前对象的0起始索引；cue 是根 cues 的索引。事件 onset 必须位于该真实字幕段内。cue:null 表示明确静默停读，校验拒绝其时间范围与任何字幕相交。
 - 事件之前只保留标题与条件；最后事件结束后稳定停留，不按时钟循环切换高亮。
 - `duration` 仅用于缩放和平移的连续画面，其余阶段为精确时间切换。作者可以在一条字幕内用多个显式事件安排分量展开。静默保持无需重复事件。
-- 音轨与字幕时间的真实性仍由已有正式语音来源准入及实际制作回读负责。数字时间在合法区间，并不能证明旁白已正确对齐。
+- 音轨与字幕时间的真实性仍由已有音频来源记录准入及实际制作回读负责。数字时间在合法区间，并不能证明旁白已正确对齐。
 
 对象列表最多6项；每项共用稳定 `id`（<=32字符）与 `label`（<=16字符）。单场景不得重名；跨镜头应沿用同一来源ID。数值向量目前为2维，分量范围[-100,100]，均须有限数；高维机制先选取明确的2维教学切片。不要把任意高维数据悄悄裁成2维。
 
@@ -43,7 +43,7 @@
 
 含 visual 的片段为1280×720、12fps；底部80px为真实字幕保留区。显示数值取四位近似，内部计算保留完整精度。源字图和数学结果每场景准备一次；每帧仅查当前事件和绘制该阶段。混合旧图与新图时统一输出尺寸。
 
-渲染器不读取来源、调用模型、执行作者脚本或提交检查。原有 media/audio/review/http owner继续负责鉴权、固定哈希、正式语音来源、租约、持久结果与独立送检。本次没有放宽任何准入；缺少合规音轨仍无法生产新片。
+渲染器不读取来源、调用模型、执行作者脚本或提交检查。原有 media/audio/review/http owner继续负责鉴权、固定哈希、音频来源记录、租约、持久结果与独立送检。缺少音轨只影响需要新增配音的视频任务，不影响Portal基础功能。
 
 ## 作者接入
 
@@ -52,11 +52,12 @@
 正式音轨就绪后，逐句校准 scenes.start/end 与 events.at，填写对应真实cue索引；留白时间显式cue:null。实际时长超过300秒时按语义拆片或重录。固定manifest与plan的来源和SHA沿既有接口更新，新固定版单独生成；不要改写已保存的视频。
 
 
-## 正式云语音与原始音轨
+## 可选配音工具与固定音轨
 
-先经 `ListSpeechProviders` 发现服务，再用 `GenerateSpeech` 的稳定幂等键提交一次旁白，使用 `GetSpeechGeneration` 回读 completed 回执。微软云服务当前使用 `api_id=microsoft-edge-tts`、`model=edge-neural-tts`，后者为服务引擎别名；记录实际 voice，不冒称厂商披露的模型版本。交付未知时不自动重放请求。
+edge-tts是部署可选的Resident工具，不是Portal内置语音服务、执行类型或HATG指令。部署可不安装或无法访问云服务，这只影响使用该工具的新配音任务，不阻止Portal启动、常规测试、普通对话和已有音视频读取。使用部署已注册的可选工具；代码中的optional_tools/cloud_speech提供独立命令行实现与选装依赖，不由Portal自动安装或调用。
 
-计划 audio 接受同包原始 MP3 或 PCM16 WAV。`audio_provenance` 为同包固定JSON引用，正文 schema=`portal-native-audio-provenance/v1`，字段 provider、model、request_id、audio、evidence；request_id填实际Portal execution ID，audio与计划完全一致，evidence指向保存的正式回执JSON。服务端另行查询执行服务的权威完成记录，以真实actor验证原上传权限、音频SHA与provider/model/MIME，再验证包内副本权限及字节。作者保存的JSON只作索引，不能自行证明生成发生。
+计划audio接受同包固定MP3或PCM16 WAV。新工具的audio_provenance为同包JSON引用，schema=portal-audio-provenance/v1，字段provider、model、request_id（工具run_id）、audio、evidence。evidence引用resident-tool-audio/v1工具记录，记录实际voice/客户端版本/音轨SHA等；audio须与计划完全一致。Portal检查真实actor读取权限、内容摘要及记录一致性。工具报告/作者JSON是来源材料，不是Portal或厂商签名证明，仍需独立来源与成片审查；不捏造不存在的服务端执行ID。
+
+已有portal-native-audio-provenance/v1包继续使用只读历史回执核验，不再受理新的系统语音生成。原MP3/旧receipt不重写，不重放或重标来源。新工具不可用时可保留解释页/既有视频；只有要求新增配音的任务明确报告缺少工具或云服务失败。
 
 原MP3字节复制保留原SHA。受管ffmpeg在生成目录中解码成PCM16/24kHz单声道，固定demuxer与file/pipe协议，不执行作者命令；解码最多30秒，实际音轨超过300秒直接拒绝。生成记录保存source_sha256、source_media_type及实际解码时长，派生WAV不得冒用原MP3摘要。旧ready成果仍按原合同读取，不补写新来源证明。
-

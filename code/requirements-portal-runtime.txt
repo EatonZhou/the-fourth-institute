@@ -1,7 +1,5 @@
 nats-py
 aiohttp
-edge-tts>=7.3.0
-mutagen>=1.47.0
 certifi
 jsonschema
 markdown-it-py

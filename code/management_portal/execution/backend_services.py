@@ -12,7 +12,6 @@ from typing import Any, Protocol
 
 from .backend_contracts import Backend, BackendContext, BackendInvocation, BackendResult
 from .chat_completion_service import ChatCompletionService
-from .speech_generation_service import SpeechGenerationService
 from .context_seed import prepare_backend_context_seed
 from .contracts import ExecutionRecoveryDeferred
 from .harness import AgentHarness, default_agent_harness
@@ -131,6 +130,5 @@ def default_execution_services(
     services: tuple[ExecutionServiceAdapter, ...] = (
         AgentSessionService(harness=agent_harness),
         ChatCompletionService(),
-        SpeechGenerationService(),
     )
     return {service.service_type: service for service in services}

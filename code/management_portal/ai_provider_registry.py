@@ -213,45 +213,6 @@ class AIProviderRegistry:
             headers.setdefault("X-OpenRouter-Title", "TFI Portal")
         return headers
 
-    def request_speech(self, provider_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        """One native speech call. No redirect, retry, alternate key or billing setup."""
-        from .execution.speech_protocol import configuration, MAX_RESPONSE
-        item = self.get(provider_id)
-        config = configuration(item)
-        if payload.get("model") not in config["models"]:
-            raise ValueError("Speech model is not registered")
-        secret = self.read_secret(self.secret_path(item))
-
-        class NoRedirect(urllib.request.HTTPRedirectHandler):
-            def redirect_request(self, *args, **kwargs):
-                return None
-
-        request = urllib.request.Request(
-            "https://generativelanguage.googleapis.com/v1beta/interactions",
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-            headers={"x-goog-api-key": secret, "Content-Type": "application/json", "Accept": "application/json"},
-            method="POST",
-        )
-        try:
-            with urllib.request.build_opener(NoRedirect()).open(
-                request, timeout=min(180, max(1, float(item.get("timeout_s") or 120))),
-            ) as response:
-                data = response.read(MAX_RESPONSE + 1)
-            if len(data) > MAX_RESPONSE:
-                raise ValueError("Native speech response exceeds the size limit")
-            decoded = json.loads(data)
-            if not isinstance(decoded, dict):
-                raise ValueError("Invalid native speech response")
-            return decoded
-        except urllib.error.HTTPError as exc:
-            reason = {401: "authentication_failed", 403: "permission_or_entitlement_denied",
-                      404: "model_or_endpoint_unavailable", 429: "quota_or_rate_limited"}.get(exc.code, "request_rejected")
-            raise AIProviderHTTPError(exc.code, f"Native speech HTTP {exc.code}: {reason}") from None
-        except (urllib.error.URLError, TimeoutError, ConnectionError):
-            raise RuntimeError("Native speech transport failed; delivery unknown; no automatic retry") from None
-        except (UnicodeError, json.JSONDecodeError):
-            raise ValueError("Invalid native speech JSON response") from None
-
     def request(
         self,
         provider_id: str,

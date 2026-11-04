@@ -73,7 +73,7 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(module, 'portal_path', lambda area: runtime)
     # Isolate media lifecycle tests from the real speech execution store
     # and live ISA. Dedicated gate/ISA tests below exercise those boundaries.
-    monkeypatch.setattr(module, 'require_native_audio', lambda *args: {})
+    monkeypatch.setattr(module, 'require_audio_provenance', lambda *args: {})
     monkeypatch.setattr(module.review, 'discover', lambda *args: 'resident_aaaaaaaaaaaa')
     monkeypatch.setattr(module.review, 'submit', lambda *args: 'msg_fixture_review')
 
@@ -339,7 +339,7 @@ def test_real_renderer_with_fixed_audio(tmp_path, monkeypatch):
 
 def test_new_audio_gate_fails_before_output_and_old_ready_remains_readable(setup, monkeypatch):
     from management_portal import home_explanation_media as module
-    from management_portal.home_explanation_audio import require_native_audio
+    from management_portal.home_explanation_audio import require_audio_provenance
     service, ref, put = setup
     media = Media(service, fake_render)
     media.start(**ref, actor='reader')
@@ -349,7 +349,7 @@ def test_new_audio_gate_fails_before_output_and_old_ready_remains_readable(setup
     state.pop('review', None)
     state.pop('generation_actor', None)
     state_path.write_text(json.dumps(state))
-    monkeypatch.setattr(module, 'require_native_audio', require_native_audio)
+    monkeypatch.setattr(module, 'require_audio_provenance', require_audio_provenance)
     assert media.start(**ref, actor='reader')['job_id'] == state['job_id']
     service.writes = False
     assert media.status(**ref, actor='reader')['review']['status'] == 'not_requested'
@@ -357,16 +357,16 @@ def test_new_audio_gate_fails_before_output_and_old_ready_remains_readable(setup
         assert stream.read() == b'movie-content'
     service.writes = True
     new = put('new.json', {'schema': 'portal-explanation/v1', 'title': 'new', 'video_plan': put('plan.json', plan())})
-    with pytest.raises(ValueError, match='正式语音服务'):
+    with pytest.raises(ValueError, match='固定音轨及来源记录'):
         media.start(**new, actor='reader')
     assert not (service.root/'explanation-media'/new['sha256']).exists()
 
 
 def test_claimed_provider_provenance_is_not_trusted_receipt(setup, monkeypatch):
     from management_portal import home_explanation_media as module
-    from management_portal.home_explanation_audio import require_native_audio
+    from management_portal.home_explanation_audio import require_audio_provenance
     service, _, put = setup
-    monkeypatch.setattr(module, 'require_native_audio', require_native_audio)
+    monkeypatch.setattr(module, 'require_audio_provenance', require_audio_provenance)
     data = plan()
     evidence = put('receipt.json', {'claimed': 'native', 'verified': True})
     record = {'schema': 'portal-native-audio-provenance/v1', 'provider': 'claimed-provider',
