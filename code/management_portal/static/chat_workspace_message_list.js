@@ -356,7 +356,7 @@
         // Per-conversation semantic Markdown extensions; the default renderer
         // and attachment/reference processing remain the owners of the body.
         const renderContent = (value, renderOptions) => renderResidentHandoffs(value, text => renderMarkdownWithAttachmentRefs(
-          text, { ...options, renderMarkdown: markdown => renderMarkdown(markdown, renderOptions) }
+          text, { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: markdown => renderMarkdown(markdown, renderOptions) }
         ));
         const defaultBodyHtml = renderContent(content);
         const customBodyHtml = options.renderMessageBody

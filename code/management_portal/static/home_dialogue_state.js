@@ -63,19 +63,27 @@
     }
     return next;
   }
+  function displayCommand(block) {
+    if (!block?.complete || block.info !== "portal-home-display" || block.source.length > 8192) return null;
+    try {
+      const value = JSON.parse(block.source);
+      if (!value || value.protocol !== "portal-home-display/v1" || typeof value.request_id !== "string"
+        || !value.request_id.trim() || value.request_id.length > 200 || /[\x00-\x1f]/.test(value.request_id)
+        || !Number.isSafeInteger(value.version) || value.version < 1) return null;
+      return { value, intent: normalizeIntent(value) };
+    } catch { return null; }
+  }
   function results(messages) {
     const found = [];
     for (const message of messages || []) {
       if (!["assistant", "agent"].includes(message.role)) continue;
       const text = (message.content_parts || []).filter(p => p.type === "text").map(p => p.text || "").join("\n");
-      // Only an explicit fenced result in an assistant message is executable;
-      // quoted user text, tool outputs, HTML and arbitrary DOM events are not.
-      for (const match of text.matchAll(/(?:^|\n)```portal-home-display\s*\n([\s\S]*?)\n```/g)) {
-        if (match[1].length > 8192) continue;
-        try { found.push({ value: JSON.parse(match[1]), messageId: message.message_id || message.id }); } catch { /* incomplete streaming result */ }
+      for (const block of window.MD?.fencedBlocks(text) || []) {
+        const command = displayCommand(block);
+        if (command) found.push({ value: command.value, messageId: message.message_id || message.id });
       }
     }
     return found;
   }
-  window.PortalHomeDialogueState = Object.freeze({ create, normalizeIntent, migrateHomeState, results });
+  window.PortalHomeDialogueState = Object.freeze({ create, normalizeIntent, migrateHomeState, results, displayCommand });
 })();

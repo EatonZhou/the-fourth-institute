@@ -541,7 +541,10 @@
             : messageAttachmentRefHtml("file", ref.path, { ...options, label: referenceAttachmentLabel(path), title }));
       });
       const attachedRefs = options.includeAttachedFiles === false ? [] : extractAttachedFileRefs(source);
-      source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "").trim();
+      source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "");
+      // Semantic fence extensions need the original indentation: trimming an
+      // indented example would otherwise turn it into a standalone action.
+      if (!options.preserveWhitespace) source = source.trim();
       for (const ref of attachedRefs) {
         const token = stashAttachmentRef(messageAttachmentRefHtml(ref.kind, ref.path, options));
         source = `${source}${source ? "\n\n" : ""}${token}`;

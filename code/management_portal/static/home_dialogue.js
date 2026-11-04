@@ -7,6 +7,7 @@
     // that same object to submissionContext and onAcknowledgement. Bind the
     // nonce to that submission, never to a Resident-wide FIFO or mutable target.
     const submissionRequests = new WeakMap();
+    const messageActions = new Map();
     let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
     let pageState = null, restoring = true;
     let narrow = false, ratio = 40, dragging = null;
@@ -305,6 +306,8 @@
     function consume(detail) {
       lastDetail = detail;
       if (!assistant || destroyed) return;
+      const messageIds = new Set((detail?.snapshot?.messages || []).map(message => message.message_id || message.id));
+      for (const id of messageActions.keys()) if (!messageIds.has(id)) messageActions.delete(id);
       for (const result of window.PortalHomeDialogueState.results(detail?.snapshot?.messages)) {
         try {
           const accepted = state.accept(result.value, { residentId: assistant.resident_id, messageId: result.messageId, dirty: dirty() });
@@ -312,6 +315,44 @@
         } catch (error) { status.dataset.notice = "true"; status.hidden = false; status.textContent = `展示指令未执行：${error.message}`; }
       }
     }
+    // Rendering and automatic consumption share the Markdown fence structure
+    // and command schema. A historical click is a new, explicit navigation;
+    // it never acknowledges or re-admits the old request nonce.
+    const conversationView = {
+      renderMessageBody(item, rendering) {
+        const id = item.message_id || item.id;
+        if (!id || !["assistant", "agent"].includes(item.role)) return null;
+        const previousActions = messageActions.get(id) || [], actions = [];
+        let recognized = false;
+        const html = rendering.renderContent(rendering.content, { renderCodeFence(block) {
+          if (block.info !== "portal-home-display") return null;
+          recognized = true;
+          if (!block.complete) return '<span class="homeDialogueMessageNotice" role="status">正在准备展示…</span>';
+          const command = window.PortalHomeDialogueState.displayCommand(block);
+          if (!command) return '<span class="homeDialogueMessageNotice" role="status">展示操作暂不可用：指令格式无效或当前版本不支持。</span>';
+          const prior = previousActions[actions.length];
+          const action = { token: prior?.source === block.source ? prior.token : window.PortalUIPrimitives.randomUUID(), source: block.source, intent: command.intent };
+          actions.push(action);
+          const intent = action.intent;
+          const label = intent.action === "back" ? "返回上一展示" : intent.view === "preview"
+            ? /(?:slides?|\.pptx?)(?:[/.?#]|$)/i.test(intent.target.address) ? "预览幻灯片" : "预览文件/资源"
+            : ({ report: "查看汇报", map: "打开研究地图", frontier: "查看 Lineage 线头" })[intent.view];
+          return `<button type="button" class="homeDialogueMessageAction btn" data-home-display-action="${window.MD.esc(action.token)}">${window.MD.esc(label)}</button>`;
+        } });
+        messageActions.set(id, actions);
+        return recognized ? html : null;
+      },
+    };
+    function openMessageAction(event) {
+      const button = event.target.closest?.("button[data-home-display-action]");
+      if (!button || !chatRoot.contains(button) || destroyed || !presented || suspended) return;
+      const action = [...messageActions.values()].flat().find(value => value.token === button.dataset.homeDisplayAction);
+      if (!action) return;
+      event.preventDefault();
+      navigate(action.intent, true);
+      setPane("display"); current.focus({ preventScroll: true });
+    }
+    chatRoot.addEventListener("click", openMessageAction);
     function submissionContext(submittedTarget) {
       if (!submittedTarget || submittedTarget.resident_id !== assistant?.resident_id) return null;
       const requestId = state.issue(assistant.resident_id, (lastDetail?.snapshot?.messages || []).map(m => m.message_id || m.id));
@@ -334,7 +375,7 @@
         if (!target) throw new Error("当前用户尚未配置个人门面，请先在个人设置中配置");
         assistant = target;
         chat = window.PortalChatWorkspace.panelPackage.create({ root: chatRoot, id: "home-dialogue-assistant", panelId: "home-dialogue-assistant", target,
-          title: target.title || "个人门面", submissionContext, onDetail: consume,
+          title: target.title || "个人门面", submissionContext, onDetail: consume, conversationView: () => conversationView,
           onAcknowledgement: (_result, submitted) => {
             const requestId = submissionRequests.get(submitted.target);
             if (state.acknowledge(requestId, submitted.target.resident_id)) {
@@ -371,6 +412,7 @@
     return { destroy() {
       pageState?.writeSnapshot(); pageState?.destroy();
       destroyed = true; unregister(); chat?.destroy();
+      chatRoot.removeEventListener("click", openMessageAction); messageActions.clear();
       for (const entry of state.entries) { entry.controller.abort(); entry.adapter?.destroy(); }
       state.clear(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);
       observer.disconnect(); window.removeEventListener("beforeunload", beforeUnload);

@@ -9,7 +9,7 @@ const homeHtml = fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<
 const scripts = ['portal_state.js','portal_text.js','portal_translations.js','portal_i18n.js','portal_ui_primitives.js',
   'portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js',
   ...groups['portal-workspace-surface'].map(x=>x.replace(/^\/static\//,'')),
-  'portal_agent_preview_source.js','home_dialogue_state.js','home_dialogue_preview.js','home_dialogue.js'];
+  'portal_agent_preview_source.js','markdown.js','home_dialogue_state.js','home_dialogue_preview.js','home_dialogue.js'];
 const server = http.createServer((req,res) => {
   const pathname = new URL(req.url,'http://localhost').pathname;
   if(pathname === '/static/portal_resource_routes.js') {res.setHeader('Content-Type','text/javascript');return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:[],identity_parameters:[]};');}
