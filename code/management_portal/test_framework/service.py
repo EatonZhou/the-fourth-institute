@@ -234,6 +234,12 @@ class TestFrameworkService:
             raise PermissionError("需要已认证用户")
         if module_id not in {module.id for group in MODULE_GROUPS for module in group.modules}:
             raise KeyError(f"未知功能模块：{module_id}")
+        if backend_route_id:
+            from management_portal.execution.account_adapters import CodexRoutes
+
+            # Match configure/preview before releasing the old assignment.
+            # Public account aliases must never become a different slot route.
+            backend_route_id = CodexRoutes().get(backend_route_id).account_id
         return self.tau_residents.rotate(module_id, changed_by=actor, backend_route_id=backend_route_id)
 
     def configure_tau_residents(self, module_ids: list[str], *, actor: str, backend_route_id: str, fast: bool) -> dict[str, Any]:
