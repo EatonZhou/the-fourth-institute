@@ -206,6 +206,17 @@ def _validate_recovery_infos(
     return copy.deepcopy(infos)
 
 
+def _prepare_requeued_input(record, job, item, waiting, now):
+    """Keep a real, intake-gated head, as ordinary accepted input does."""
+    from . import resident_backend, resident_record_domain
+
+    job[resident_state.INTAKE_FIELD] = resident_record_domain.resident_intake_state(record)
+    resident_execution_work.promote_queue_item(job, item, waiting, now)
+    resident_execution_work.write(record, job)
+    record['session_state'] = resident_record_domain.record_backend_session_state(record)
+    record['last_error'] = ''
+
+
 def requeue(
     resident_id: str, actor: str, message_id: str, *,
     portal_reason: str = "", automatic: bool = False,
@@ -248,6 +259,16 @@ def requeue(
             if (active and job.get("user_message_id") == message_id) or any(
                 item.get("user_message_id") == message_id for item in resident_execution_work.normalized_queue(job)
             ):
+                # Older closed-intake recovery stored only a waiting list.
+                # There is no head for opening intake to dispatch. Repair its
+                # existing first preparation without reopening, reordering or
+                # accepting any of the messages again. Never replace a real
+                # Execution or a session-control operation.
+                waiting = resident_execution_work.normalized_queue(job)
+                if not resident_execution_work.execution_id(job) and not job.get('operation') and waiting:
+                    _prepare_requeued_input(record, job, waiting[0], waiting[1:], now)
+                    record['updated_at'] = now
+                    resident_record_domain.save_resident_record(record)
                 return resident_input_queue_domain.resident_operation_result(target.resident_id, message_id=message_id, message_ids=[message_id])
             raise MailboxConflict("这条消息已在等待或正在处理")
         entry = next((item for item in resident_input_checkpoints.checkpoints(record) if item.get("message_id") == message_id), None)
@@ -309,14 +330,7 @@ def requeue(
             resident_execution_work.write(record, job)
         else:
             waiting = resident_execution_work.normalized_queue(job)
-            if resident_record_domain.resident_intake_state(record) == resident_state.INTAKE_CLOSED:
-                resident_execution_work.write(record, {"queue": [item, *waiting]})
-            else:
-                next_job = {**item, "started_at": now, "updated_at": now, "error": "", "queue": waiting}
-                resident_execution_work.ensure_execution_id(next_job)
-                resident_execution_work.write(record, next_job)
-                record["session_state"] = resident_record_domain.record_backend_session_state(record)
-                record["last_error"] = ""
+            _prepare_requeued_input(record, job, item, waiting, now)
         if automatic:
             set_recovery_entry(record, message_id, attempts=attempts + 1, recovered_by=organizer,
                                recovered_at=now, disabled=False)
