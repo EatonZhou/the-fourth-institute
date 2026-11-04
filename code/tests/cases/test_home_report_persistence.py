@@ -142,6 +142,31 @@ def test_media_survives_store_recreation_and_requires_current_permissions(report
     with pytest.raises(PermissionError): recreated.file(RID,1,'video.mp4','alice')
 
 
+@pytest.mark.parametrize('damage', ['modified', 'missing', 'untracked'])
+def test_persisted_media_damage_is_not_served_or_regenerated(reports, damage):
+    store, _ = reports
+    create(store)
+    media = PersistentMedia(store, renderer)
+    media.start(RID, 1, 'alice')
+    wait_ready(media)
+    path = media.file(RID, 1, 'video.mp4', 'alice')[0]
+    if damage == 'modified':
+        original = path.read_bytes()
+        path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+    elif damage == 'missing':
+        path.unlink()
+    else:
+        state_path = path.parent / 'state.json'
+        state = json.loads(state_path.read_text())
+        del state['assets']['video.mp4']
+        state_path.write_text(json.dumps(state))
+    before = path.read_bytes() if path.exists() else None
+    with pytest.raises(FileNotFoundError, match='媒体资产'):
+        store.file(RID, 1, 'video.mp4', 'alice')
+    assert (path.read_bytes() if path.exists() else None) == before
+    assert store.record(RID)['revision'] == 1
+
+
 def test_exports_are_real_ooxml_and_escaped_html(reports):
     store,state=reports
     state['body']='<script>alert(1)</script>'

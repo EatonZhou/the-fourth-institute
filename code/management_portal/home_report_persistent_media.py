@@ -210,5 +210,14 @@ class PersistentMedia:
         path = self.store.directory(identifier) / str(number) / 'media' / name
         if path.is_symlink() or not path.is_file():
             raise FileNotFoundError('媒体资产不存在')
-        # Hash checks at commit/import bind each asset. Reads never regenerate.
+        # The saved digest binds this file to the immutable report revision.
+        # Check in bounded chunks: a damaged video is an explicit failure,
+        # never an invitation to replace the published bundle by rendering.
+        expected = (state.get('assets') or {}).get(name)
+        digest = hashlib.sha256()
+        with path.open('rb') as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                digest.update(chunk)
+        if digest.hexdigest() != expected:
+            raise FileNotFoundError('媒体资产摘要缺失或不符')
         return path, FILES[name]
