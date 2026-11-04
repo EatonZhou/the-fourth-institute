@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 164
+  number: 165
   created_at: "2026-10-01"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-04T05:34:31Z"
+  updated_at: "2026-11-04T06:08:40Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -129,10 +129,10 @@ auto_migrate 与 auto_migrate_priority 只决定额度不足时是否自动更�
 
 | 指令 | 改变状态 | 责任 | 默认方案要求 |
 | --- | --- | --- | --- |
-| `GetFamilyChatPreferences` | 否 | 读取调用者本人在该门面的 Solo、Mute 与 Exclude 三项设置 | 对 `resident_id` 有 @viewer |
-| `UpdateFamilyChatPreferences` | 是 | 独立切换调用者对业务成员的 Solo 对话、Mute 通知或 Exclude 自动路由 | 对 `resident_id` 有 @viewer |
+| `GetFamilyChatPreferences` | 否 | 读取调用者本人在该门面的 Solo 与 Mute 设置 | 对 `resident_id` 有 @viewer |
+| `UpdateFamilyChatPreferences` | 是 | 切换 Solo 对话，或用 Mute 隐藏成员往来并排除后续自动路由 | 对 `resident_id` 有 @viewer |
 
-两条指令的 `resident_id` 是 Family 门面，只读写实际调用者自己的偏好；门面 @viewer 即可管理。Solo 决定当前对话对象与视图，Mute 只抑制之后的新 Mailbox 提醒，Exclude 只排除自动路由；三者独立，不改变在途工作、名册、原消息、权限或其他用户。返回 muted_member_ids、excluded_member_ids、solo_member_id，修改 control 为 mute、exclude 或 solo。Solo 代理头部与退出入口、问题卡片、显式引用及旧 M 迁移见[消息路由与对外对话](/resource/knowledge?item=decision_9ad68dd077d4)。
+两条指令的 `resident_id` 是 Family 门面，只读写实际调用者自己的偏好；门面 @viewer 即可管理。Solo 决定当前对话对象与视图；Mute 隐藏该成员关联的门面请求、进度、问题卡片和回复，并排除后续自动路由与自动延续，不改变 Mailbox 消息或未读通知。不提供独立 Exclude。两项设置不改变在途工作、名册、原消息、权限或其他用户。返回 muted_member_ids、solo_member_id，修改 control 为 mute 或 solo。Solo 优先，退出后恢复 Mute 过滤。Solo 代理头部与退出入口、问题卡片、显式引用及旧 Mute/Exclude 合并和历史快照迁移见[消息路由与对外对话](/resource/knowledge?item=decision_9ad68dd077d4)。
 
 ## 工作派发的权限范围
 
@@ -152,7 +152,7 @@ Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授�
 
 **MoveResident 迁出即离开原 Family。** 名册和结构在同一提交中更新，权限树随新 Lineage 移动。已经交给该成员的请求仍由它完成，回复沿 family_relays 回门面；以后引用其旧回复时因不在名册而重新路由。迁移结构信号通知 Steward，自己发起则不重复通知。内部三个角色不能单独迁出；可移动整个 Family 或先解除。私人默认 AMA 的迁移限制由个人助手专题定义。
 
-**Unfamilize 先使内部角色安静，再拆结构。** 关闭三个角色接单、停止当前工作并撤回队列；等待期间不持有 Program 投递锁。停下后在 Lineage 执行权内再次清理迟到输入，交还 leader、改接所有保留的门面入线，删除生成结构。超时返回可重试冲突，图、leader、连线不发生部分拆除；保留业务成员不被停止。
+**Unfamilize 先使内部角色安静，再拆结构。** 关闭三个角色接单、停止当前工作并撤回队列；等待期间不持有 Program 投递锁。停下后在 Lineage 执行权内重新核对已冻结的成员、角色、继任和结构范围；等待期间相关范围变化则返回可重试冲突，保留当前结构供重读后继续，不混用旧名册与新元素。范围一致后再次清理迟到输入，交还 leader、改接所有保留的门面入线，删除生成结构。超时返回可重试冲突，图、leader、连线不发生部分拆除；保留业务成员不被停止。
 
 解除保留普通工作流和子 Family；解除内层时，其保留成员进入外层名册。门面为 leader 时交给指定成员，默认原 leader；原 leader 已离开须显式指定。无原 leader 的范围 Family 有成员时可交名册首位，无成员则恢复空 Lineage。范围解除后停止新 Resident 的默认入组。
 
@@ -169,7 +169,7 @@ Steward 的管理能力来自权限模板对当前 Family 所在 Lineage 的授�
 | 时间层摘要与覆盖 | Resident 摘要领域；Family 内按角色分工写入 |
 | 账号准入、Session 迁移 | Execution 与 Restart/lifecycle |
 | Family 恢复、额度复核与升级记录 | Family 监督领域 |
-| 用户个人的 Solo／Mute／Exclude 设置，及按原输入冻结的 Exclude／Solo 路由约束 | family_chat_preferences、family_chat_inputs |
+| 用户个人的 Solo／Mute 设置，及按原输入冻结的 Mute／Solo 路由约束（旧私有列仅作迁移和历史快照兼容） | family_chat_preferences、family_chat_inputs |
 
 families 的 family_id 与 function_block_id 相同，resource_id 是持久的正式资源身份。family_residents 保存 member/facade/router/steward；普通 Resident 更新不能覆写归属。完整图和 Family 专表在同一事务更新，读取时附加只读 function_blocks[].family 投影，不在普通块配置里再存一份名册。
 

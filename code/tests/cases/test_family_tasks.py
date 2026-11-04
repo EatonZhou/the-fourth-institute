@@ -394,12 +394,28 @@ def test_both_roles_migrate_on_short_window_pressure_and_keep_context(configured
     record = _find_resident(block["family"][role])
     resident_input_queue_domain.commit_resident_intake_state(record, "open")
     accounts = [_account("one", 90, short=4), _account("two", 90)]
+    # Familize configures the Router's model and effort. Both account
+    # observations must advertise those capabilities to be valid targets.
+    settings = record.get("execution_settings") or {}
+    model = settings.get("model") or "default"
+    effort = settings.get("reasoning_effort")
+    for account in accounts:
+        account["selection_catalog"].update(
+            default_model=model, models=[model],
+            efforts_by_model={model: [effort] if effort else []},
+        )
     monkeypatch.setattr(family_quota, "resident_account", lambda record, accounts: accounts[0])
     calls = []
     monkeypatch.setattr(resident_restart_domain, "restart_resident_session", lambda *args, **kwargs: calls.append((args, kwargs)))
+    before = _find_resident(record["resident_id"])
     assert family_quota.ensure_role_reserve(_find_resident(record["resident_id"]), accounts)
+    assert len(calls) == 1
+    assert calls[0][0][:2] == (record["resident_id"], record["resident_id"])
+    assert calls[0][0][2]["target_provider"] == "codex"
     assert calls[0][0][2]["target_account"] == "two"
-    assert calls[0][0][2]["context_strategy"] == "compact"
+    assert calls[0][0][2]["context_strategy"] == "preserve"
+    assert calls[0][0][2]["active_execution_policy"] == "wait"
+    assert _find_resident(record["resident_id"]) == before
     assert family_quota.role_availability(record)["status"] == "migrating"
 
 

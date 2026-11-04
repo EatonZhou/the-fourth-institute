@@ -399,6 +399,15 @@ def family_review_lock(facade_id: str) -> Iterator[bool]:
 
 
 @contextmanager
+def family_reassignment_lock(facade_id: str, message_id: str) -> Iterator[bool]:
+    """Own one handoff across processes without deferring intake callbacks."""
+    if not facade_id or not message_id:
+        raise ValueError("Family request identity required")
+    with _try_ownership_scope(f"family-reassign:{facade_id}:{message_id}") as owned:
+        yield owned
+
+
+@contextmanager
 def resident_lifecycle_lock(operation_id: str) -> Iterator[bool]:
     """Own an external lifecycle effect without locking Resident commands."""
 

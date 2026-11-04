@@ -131,9 +131,8 @@ def test_continue_requeues_failed_member_once_and_keeps_original_link(family):
 
 
 @pytest.mark.parametrize("control,selected,visible", [
-    ("mute", "wrong", True),
+    ("mute", "wrong", False),
     ("mute", "right", True),
-    ("exclude", "wrong", True),
     ("solo", "wrong", True),
     ("solo", "right", False),
 ])
@@ -141,7 +140,7 @@ def test_recovery_history_opens_with_personal_chat_controls(family, control, sel
     """A recovered request uses the same relay projection as ordinary history."""
     from management_portal.society_service import family_chat_preferences, resident_protocol
 
-    root = _send(family, "恢复后的历史遵守Solo视图，Mute与Exclude保留展示")
+    root = _send(family, "恢复后的历史遵守Solo视图与Mute隐藏，原始输入不变")
     member_message, _ = _round(family["wrong"], state="failed", text="原请求")
     family_facade.complete_relay((family["facade"], root), family["wrong"], member_message)
     command = _send(family, "continue")

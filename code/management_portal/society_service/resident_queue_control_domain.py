@@ -23,6 +23,58 @@ from . import (
 from .resident_message_contract import message_identity
 
 
+def cancel_reassignment_input(facade_id: str, request_id: str, holder_id: str, holder_message_id: str, actor: str) -> dict:
+    """Withdraw only the exact copy reserved by an authorized Family handoff.
+
+    This narrow internal authority does not grant visibility into a member.
+    A persisted intent, its current holder and the accepted copy's business
+    reference must all bind the input back to the same original request.
+    """
+    from .state_store import get_lineage_data_store
+    facade = resident_record_domain.find_resident_for_admission(facade_id)
+    if not family_facade.is_facade(facade):
+        raise PermissionError("撤回改派需要真实 Family 门面")
+    mark = family_facade.relay_mark(facade_id, request_id)
+    if family_facade.validate_relay(mark, actor) != (facade_id, request_id):
+        raise PermissionError("撤回改派没有原请求授权")
+    repository = resident_conversation_stream.get_repository()
+    original = repository.message(facade_id, request_id)
+    state = get_lineage_data_store().family_relays.get(facade["lineage_id"], facade_id)
+    entries = (state.get("reassignments") or {}).get(request_id) or []
+    if not entries or not original or original.get("role") != "user":
+        raise PermissionError("这条请求没有改派意图")
+    intent = entries[-1]
+    old, new = intent["previous"], intent["link"]
+    candidate = (holder_id, holder_message_id)
+    previous = candidate == (old["resident_id"], old["message_id"])
+    withdrawing = intent["status"] == "withdrawn"
+    from management_portal import permission_system
+    if not permission_system.allows(actor, "CancelInput" if withdrawing else "RelayFamilyMessage",
+                                   {"resident_id": facade_id, "message_id": request_id}):
+        raise PermissionError("没有门面原请求的改派或取消权限")
+    if (intent["author"] != original.get("author_id")
+            or (not previous and (not withdrawing or candidate != (new["resident_id"], new["message_id"])))
+            or (state.get("links") or {}).get(request_id) not in (old, new)):
+        raise PermissionError("改派撤回的原请求或副本绑定不符")
+    # Nested facades keep completed routing receipts while their leaf still
+    # works; follow the same canonical relay relation as public CancelInput.
+    _, (resident_id, message_id) = family_facade.relay_holder(holder_id, holder_message_id)
+    input_state = repository.input_state(resident_id, message_id)
+    status = input_state.get("state")
+    if status in {"completed", "failed", "cancelled"}:
+        return {"already_terminal": True, "input_state": input_state}
+    message = repository.message(holder_id, holder_message_id)
+    if (not message or message.get("author_id") != original["author_id"]
+            or repository.message_business_ref(holder_id, holder_message_id) != mark):
+        raise PermissionError("待撤回副本不属于这个门面原请求")
+    if status in {"running", "stopping"}:
+        if not withdrawing:
+            raise ValueError("原成员正在处理这条请求，先停止本轮再改派")
+        return resident_execution_domain.cancel_resident_execution_for_target(
+            resident_id, original["author_id"], message_id)
+    return _cancel_resident_queue_item(resident_id, original["author_id"], message_id)
+
+
 def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str) -> dict:
     actor_id = canonical_actor_id(actor)
     if not actor_id:

@@ -745,10 +745,33 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
     parents = [b for b in lineage.get("function_blocks", []) if any(e["id"] == family_id for e in b["elements"])]
     if (external or any(b.get("family") for b in parents)) and not target:
         raise TemplateError("门面上有外部连线或外层 Family 引用，需要指定改接的成员")
+
+    def unfold_scope(body):
+        if not any(b["id"] == family_id for b in body.get("function_blocks", [])):
+            return None
+        ids, residents = function_block_authoring.deletion_scope(body, family_id)
+        program = body.get("program", {})
+        # Freeze the retained contents and affected parent/entry references too:
+        # expanding current elements with an older roster loses new members.
+        references = {successor, target, family.get("previous_leader_id", "")} - {""}
+        return {
+            "scope": (ids, residents),
+            "blocks": {b["id"]: b for b in body.get("function_blocks", [])
+                       if b["id"] in ids or any(e["id"] == family_id for e in b["elements"])},
+            "components": {c["id"]: c for c in program.get("components", []) if c["id"] in ids},
+            "wires": {w["id"]: w for w in program.get("wires", [])
+                      if w["id"] in ids or w["source"] in ids or w["target"] in ids},
+            "leader": body.get("leader_resident_id", ""),
+            "surviving_references": {n["id"] for n in body.get("nodes", []) if n["id"] in references},
+        }
+
+    frozen_scope = copy.deepcopy(unfold_scope(lineage))
     _stop_roles(lineage_id, roles, actor)
     with lineage_aggregate.execution_authority(lineage_id):
         _stop_roles(lineage_id, roles, actor, wait_seconds=0)
         def edit(body):
+            if unfold_scope(body) != frozen_scope:
+                raise FamilyBusy("Family 内容或展开目标已改变，未执行解除，请重新核对后重试。")
             current = facts.family_block(body, family_id)
             rewired = _rewire(body, {facade}, target, current, removing=True) if target else []
             if successor:

@@ -150,6 +150,12 @@ def cancel_input(inv: Invocation) -> dict[str, Any]:
     the member message the Router relayed it to, and one not relayed yet is
     withdrawn from the facade (decision_44cf587c1721).
     """
+    from management_portal.society_service import family_reassign
+    withdrawn = family_reassign.withdraw_reassignment(
+        inv.argument("resident_id"), inv.argument("message_id"), inv.caller)
+    if withdrawn is not None:
+        return {**withdrawn, "resident_id": inv.argument("resident_id"),
+                "input_state": _stored_input_state(inv.argument("resident_id"), inv.argument("message_id"))}
     _, relayed = _relayed_message(inv.argument("resident_id"), inv.argument("message_id"))
     resident_id, message_id = relayed or (inv.argument("resident_id"), inv.argument("message_id"))
     lineage_id = lineage_of_resident(resident_id)

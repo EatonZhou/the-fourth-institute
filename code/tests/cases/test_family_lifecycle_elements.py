@@ -300,3 +300,107 @@ def test_unfamilize_nested_family_restores_outer_leader_successor(lineage, chart
     assert any(e["id"] == first and e["kind"] == "resident" for e in remaining["elements"])
     ok("Unfamilize", {"lineage_id": lineage, "family_id": outer["family_id"]})
     assert graph(lineage)["leader_resident_id"] == first
+
+
+@pytest.mark.parametrize("change", ["member", "workflow", "parent", "entry", "leader"])
+def test_unfamilize_rejects_changed_scope_without_partial_unfold(lineage, charters, monkeypatch, change):
+    """停止等待期间的公开图更新保留，解除须冲突重试，不能混用新结构与旧名册。"""
+    from management_portal.society_service import lineage_resident_controls
+
+    first, sibling, added = [resident(lineage, title) for title in ("First", "Sibling", "Added")]
+    source = ok("CreateComponent", {"lineage_id": lineage, "kind": "event_source",
+        "config": {"event_type": "manual.triggered"}})["component_id"]
+    inner = ok("Familize", {"lineage_id": lineage, "resident_ids": [first]})
+    outer = ok("Familize", {"lineage_id": lineage,
+        "resident_ids": [inner["facade_resident_id"], sibling]})
+    changed = []
+
+    def quiesce(*_args):
+        if changed:
+            return
+        if change in {"member", "parent"}:
+            ok("UpdateFamily", {"lineage_id": lineage,
+                "family_id": (inner if change == "member" else outer)["family_id"],
+                "add_member_ids": [added]})
+        elif change == "workflow":
+            ok("UpdateFamily", {"lineage_id": lineage, "family_id": inner["family_id"],
+                "add_element_ids": [source]})
+        elif change == "entry":
+            ok("CreateWire", {"lineage_id": lineage, "kind": "route", "source": source,
+                "target": inner["facade_resident_id"]})
+        else:
+            ok("UpdateLineage", {"lineage_id": lineage, "changes": {"leader_resident_id": added}})
+        changed.append(graph(lineage))
+
+    monkeypatch.setattr(lineage_resident_controls, "quiesce_lineage_resident", quiesce)
+    arguments = {"lineage_id": lineage, "family_id": inner["family_id"],
+                 "rewire_to_resident_id": first}
+    result = run("Unfamilize", arguments)
+    assert result.error["code"] == "instruction.conflict" and result.error["retryable"] is True
+    # The concurrent edit remains authoritative; no roles, parent members,
+    # leader or wires were partially removed by the rejected unfold.
+    assert graph(lineage) == changed[0]
+    ok("Unfamilize", arguments)
+    view = graph(lineage)
+    parent = next(b for b in view["function_blocks"] if b["id"] == outer["family_id"])
+    assert set(parent["family"]["members"]) == {first, sibling} | (
+        {added} if change in {"member", "parent"} else set())
+    assert inner["family_id"] not in {b["id"] for b in view["function_blocks"]}
+    if change == "workflow":
+        assert source in {e["id"] for e in parent["elements"]}
+    if change == "leader":
+        assert view["leader_resident_id"] == added
+    if change == "entry":
+        assert next(w for w in view["program"]["wires"] if w["source"] == source)["target"] == first
+
+
+def test_unfamilize_rejects_role_replacement_at_commit_boundary(lineage, charters, monkeypatch):
+    """最终事务内角色身份变更也须拒绝，不能删除等待前的旧角色。"""
+    from management_portal.society_service import lineage_graph_edits
+
+    first, replacement = resident(lineage, "First"), resident(lineage, "Replacement")
+    family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first]})
+    before = graph(lineage)
+    commit = lineage_graph_edits.commit_lineage_edit
+
+    def replace_before_edit(lineage_id, actor, edit, **kwargs):
+        def changed(body):
+            block = next(b for b in body["function_blocks"] if b["id"] == family["family_id"])
+            block["family"]["steward"] = replacement
+            for element in block["elements"]:
+                if element.get("key") == "steward":
+                    element["id"] = replacement
+            return edit(body)
+        return commit(lineage_id, actor, changed, **kwargs)
+
+    monkeypatch.setattr(lineage_graph_edits, "commit_lineage_edit", replace_before_edit)
+    result = run("Unfamilize", {"lineage_id": lineage, "family_id": family["family_id"]})
+    assert result.error["code"] == "instruction.conflict" and result.error["retryable"] is True
+    after = graph(lineage)
+    # Stopping closes intake even when a later conflict aborts the structural
+    # transaction; retained runtime effects must not be mistaken for deletion.
+    for key in ("function_blocks", "program", "leader_resident_id"):
+        assert after[key] == before[key]
+    assert {n["id"] for n in after["nodes"]} == {n["id"] for n in before["nodes"]}
+
+
+def test_unfamilize_allows_unrelated_graph_edit_while_stopping(lineage, charters, monkeypatch):
+    """冻结解除范围不因无关组件新增而阻止正常解除。"""
+    from management_portal.society_service import lineage_resident_controls
+
+    member = resident(lineage, "Member")
+    family = ok("Familize", {"lineage_id": lineage, "resident_ids": [member]})
+    added = []
+
+    def quiesce(*_args):
+        if not added:
+            added.append(ok("CreateComponent", {"lineage_id": lineage, "kind": "event_source",
+                "config": {"event_type": "manual.triggered"}})["component_id"])
+
+    monkeypatch.setattr(lineage_resident_controls, "quiesce_lineage_resident", quiesce)
+    ok("Unfamilize", {"lineage_id": lineage, "family_id": family["family_id"]})
+    view = graph(lineage)
+    assert not view["function_blocks"]
+    assert {n["id"] for n in view["nodes"]} == {member}
+    assert view["leader_resident_id"] == member
+    assert added[0] in {c["id"] for c in view["program"]["components"]}

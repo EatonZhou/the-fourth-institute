@@ -569,6 +569,49 @@ def persist_resident_input(
     lending=None,
 ) -> dict:
     """Admit one input to the Resident and make it the work its activation policy asks for."""
+    request = _input_request(
+        resident_id, actor, content, context_refs, working_directory, runtime_context,
+        additional_skills, activation_policy, lineage_id, input_media, message_id,
+        protocol_input, business_ref, reply_source_message_id, lending,
+    )
+    return _admit_input(request)
+
+
+def preflight_resident_input(resident_id: str, actor: str, envelope: Mapping[str, Any], *, business_ref: str = "") -> dict:
+    """Validate a prospective delivery and return its authored envelope without admitting it.
+
+    Identity, quote, parsing and capability rules are shared with admission.
+    File staging, session creation, queue writes and model calls are deferred
+    to real intake; observations here never promise subsequent acceptance.
+    """
+    from . import resident_protocol
+    resident_message_contract.validate_delivery_message(envelope)
+    content, media, refs, runtime, skills, cwd = resident_protocol._input_parts(envelope)
+    request = _input_request(
+        resident_id, actor, content, refs, cwd, runtime, skills, "enqueue_and_trigger",
+        "", media, str(envelope.get("message_id") or ""),
+        envelope, business_ref, "", None,
+    )
+    record = _deliverable_record(request)
+    if record.get("deleted_at"):
+        raise ValueError("该 Resident 已删除，不能接收消息")
+    _require_supported_input(request, resident_execution_provider.provider_for(record).capabilities)
+    _ensure_backend_accepts_context_refs(record, request.context_refs)
+    candidate = request.with_business_ref(request.user_message(resident_id))
+    repository = resident_conversation_stream.get_repository()
+    if repository.message(resident_id, request.message_id) is not None:
+        repository.validate_message_identity(resident_id, candidate)
+        if repository.message_business_ref(resident_id, request.message_id) != business_ref:
+            raise resident_message_contract.MessageIdentityConflict("Resident input belongs to another business record")
+    return candidate
+
+
+def _input_request(
+    resident_id, actor, content, context_refs, working_directory, runtime_context,
+    additional_skills, activation_policy, lineage_id, input_media, message_id,
+    protocol_input, business_ref, reply_source_message_id, lending,
+) -> ResidentInput:
+    """The normalized request shared by read-only preflight and durable intake."""
     from .outward_messages import speaking_for
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -601,7 +644,7 @@ def persist_resident_input(
     if request.requested_quote not in (None, {}) and (activation.waits_as_info or isolated):
         raise ValueError("info 消息和授权调用的输入不带引用")
     quote_record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
-    return _admit_input(_with_accepted_quote(request, quote_record))
+    return _with_accepted_quote(request, quote_record)
 
 
 def _check_isolated_input(
@@ -697,6 +740,8 @@ def _deliverable_record(request: ResidentInput) -> dict[str, Any]:
         raise KeyError("resident not found")
     if not request.isolated and not request.relay.delegated and not _resident_deliverable_to_actor(record, request.actor_id):
         raise KeyError("resident not found")
+    if not request.isolated:
+        resident_record_domain.require_resident_registration_ready(record)
     return record
 
 
@@ -1401,8 +1446,9 @@ def deliver_resident_message_content(
     target = resident_record_domain.resolve_resident_admission_target(
         resident_id,
         actor,
-        require_visible=not resident_input_scope.permits(resident_id, actor, options.get("message_id", "")),
-        delivery=True,
+        # The normalized request validates an exact relay before deciding
+        # whether direct visibility is required (_deliverable_record).
+        require_visible=False,
     )
     result = persist_resident_input(
         target.resident_id,
