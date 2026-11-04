@@ -903,7 +903,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         hint(model, "已自动选择默认模型，接入后可在模型目录中修改。");
       } else if (kind.value === "api_profile") {
         const backend = state.providers.find(p => p.provider === provider.value) || {};
-        const compatible = state.apis.filter(item => !backend.api_protocol || (item.harness_protocols || []).includes(backend.api_protocol));
+        const compatible = state.apis.filter(item => !backend.api_protocol || (backend.api_upstream_protocols || [backend.api_protocol]).some(protocol => (item.harness_protocols || []).includes(protocol)));
         extra.append(button("新建模型 API 并接入", () => {
           if (id.value && !id.reportValidity()) return;
           apiEditor(null, {newProvider: provider.value});
@@ -916,7 +916,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           form.querySelector('[type="submit"]').disabled = true;
         }
         if (backend.api_protocol && backend.api_protocol !== "openai_chat") {
-          extra.append(node("small", t("只列出声明了 {p0} 协议的接口；可在模型 API 的高级设置中勾选。", {p0: backend.api_protocol}), {class: "backendHint"}));
+          extra.append(node("small", t("Claude Code 和 Codex 可通过 Portal 转换 OpenAI 与 Anthropic 协议，工具仍由所选运行器执行。"), {class: "backendHint"}));
         }
       }
     };
@@ -958,6 +958,10 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     hint(url, "复制服务商提供的 API 基础地址，不是官网或聊天网页；不要附加 /chat/completions。");
     const secret = field(form, "API Key（密钥）", "secret", "", {type: "password", autocomplete: "new-password"});
     hint(secret, api ? "留空保留当前密钥；填写则替换。密钥不会回显，也不是一次性验证码。" : "粘贴服务商生成的 API Key。Portal 会保存供后续调用使用，提交后不回显；这不是一次性验证码。无需密钥的接口可留空。");
+    const primary = select(form, "接口协议", "api_kind", [["openai_compatible_chat", "OpenAI Chat Completions"],
+      ["openai_responses", "OpenAI Responses"], ["anthropic_messages", "Anthropic Messages"],
+      ...(api?.kind === "typesafe_system_one" ? [["typesafe_system_one", "Jev"]] : [])], api?.kind || "openai_compatible_chat");
+    hint(primary, "选择服务商实际支持的协议。Claude Code 和 Codex 可自动转换使用，无需接口同时支持两家的协议。");
     const models = modelCatalog(form, api);
     const declaredModels = JSON.stringify(models.read(false).models);
     const options = advanced(form);
@@ -971,18 +975,24 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     // Agent harnesses speak their own protocol to the API; Chat Completions follows the kind.
     const offered = new Set(api?.harness_protocols || ["openai_chat"]);
     const anthropicOptions = api?.protocols?.anthropic_messages || {};
+    const chat = field(options, "也支持 OpenAI Chat Completions", "protocol_openai_chat", "", {type: "checkbox"});
+    chat.checked = offered.has("openai_chat");
     const responses = field(options, "也支持 OpenAI Responses（/responses，Codex 使用）", "protocol_openai_responses", "", {type: "checkbox"});
     responses.checked = offered.has("openai_responses");
     const anthropic = field(options, "也支持 Anthropic Messages（Claude Code 使用）", "protocol_anthropic_messages", "", {type: "checkbox"});
     anthropic.checked = offered.has("anthropic_messages");
-    hint(anthropic, "只勾选接口确实提供的协议；Chat Completions 总是可用。接入测试会实际调用一次。");
+    hint(anthropic, "只勾选接口实际提供的附加协议；Portal 会优先直连，并在需要时为 Claude Code 和 Codex 转换协议。");
     const anthropicUrl = field(options, "Anthropic 接口地址（可选）", "anthropic_base_url", anthropicOptions.base_url || "",
       {type: "url", placeholder: t("留空使用去掉 /v1 的接口基础地址")});
     const anthropicAuth = select(options, "Anthropic 认证方式", "anthropic_auth",
       [["bearer", "Authorization: Bearer"], ["x-api-key", "x-api-key"]], anthropicOptions.auth || "bearer");
-    const protocolState = () => JSON.stringify([responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value]);
+    const protocolState = () => JSON.stringify([primary.value, chat.checked, responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value]);
     const declaredProtocols = protocolState();
-    const showAnthropic = () => { anthropicUrl.parentElement.hidden = anthropicAuth.parentElement.hidden = !anthropic.checked; };
+    const primaryWire = () => ({openai_compatible_chat: "openai_chat", openai_responses: "openai_responses", anthropic_messages: "anthropic_messages"})[primary.value];
+    const showAnthropic = () => {
+      for (const [box, protocol] of [[chat, "openai_chat"], [responses, "openai_responses"], [anthropic, "anthropic_messages"]]) box.parentElement.hidden = primaryWire() === protocol;
+      anthropicUrl.parentElement.hidden = anthropicAuth.parentElement.hidden = !(anthropic.checked || primary.value === "anthropic_messages");
+    };
     showAnthropic();
     // The endpoint answers which protocols it serves; the result fills the boxes above, which stay editable.
     const probeResults = node("ul", undefined, {class: "backendProbe", "aria-live": "polite"});
@@ -1000,9 +1010,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           return node("li", `${t(label)}：${t(probeStates[result.status] || result.status || "—")}${detail ? `（${detail}）` : ""}`,
             {"data-protocol": name, "data-status": result.status || ""});
         }));
-        for (const [box, name] of [[responses, "openai_responses"], [anthropic, "anthropic_messages"]]) {
+        for (const [box, name] of [[chat, "openai_chat"], [responses, "openai_responses"], [anthropic, "anthropic_messages"]]) {
           if (results[name]?.status === "supported") box.checked = true;
           else if (results[name]?.status === "unsupported") box.checked = false;
+        }
+        if (results[primaryWire()]?.status === "unsupported") {
+          const supported = ["openai_responses", "openai_chat", "anthropic_messages"].find(name => results[name]?.status === "supported");
+          if (supported) primary.value = supported === "openai_chat" ? "openai_compatible_chat" : supported;
         }
         if (results.anthropic_messages?.auth) anthropicAuth.value = results.anthropic_messages.auth;
         showAnthropic(); renderHarnesses();
@@ -1016,16 +1030,16 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const register = !api && canWrite ? field(options, "保存后继续接入与测试", "register_account", "", {type: "checkbox"}) : null;
     if (register) { register.checked = true; hint(register, "保存后自动提供所有协议兼容的运行器，创建 Resident 时均可选择。这里选择一个继续测试；测试会发起模型调用，可能产生费用。"); }
     const harness = register ? select(form, "Agent 运行器", "harness", []) : null;
-    if (harness) hint(harness, "Agent 运行器能执行命令、编辑文件和使用工具；请在高级设置中声明或测试接口支持的协议。直连只对话。模型还需支持工具调用。");
+    if (harness) hint(harness, "Claude Code 和 Codex 可通过 Portal 转换 OpenAI 与 Anthropic 协议，工具仍由所选运行器执行。");
     const renderHarnesses = () => {
       if (!harness) return;
-      const protocols = new Set(["openai_chat", ...(responses.checked ? ["openai_responses"] : []),
-        ...(anthropic.checked ? ["anthropic_messages"] : [])]);
+      const protocols = new Set([primaryWire(), ...(chat.checked && !chat.parentElement.hidden ? ["openai_chat"] : []), ...(responses.checked && !responses.parentElement.hidden ? ["openai_responses"] : []),
+        ...(anthropic.checked && !anthropic.parentElement.hidden ? ["anthropic_messages"] : [])]);
       const previous = harness.value || newProvider;
       harness.replaceChildren(node("option", t("直连模型（只对话，不执行工具）"), {value: "provider_api"}),
         ...state.providers.filter(p => p.api_protocol && p.kinds.includes("api_profile"))
           .map(p => {
-            const supported = protocols.has(p.api_protocol);
+            const supported = (p.api_upstream_protocols || [p.api_protocol]).some(protocol => protocols.has(protocol));
             const protocol = {openai_chat: "Chat Completions", openai_responses: "OpenAI Responses", anthropic_messages: "Anthropic Messages"}[p.api_protocol] || p.api_protocol;
             return node("option", (p.title || p.provider) + (supported ? "" : ` — ${t("需要协议")} ${protocol}`),
               {value: p.provider, disabled: !supported});
@@ -1039,6 +1053,15 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     renderHarnesses();
     if (harness && [...harness.options].some(option => option.value === newProvider && !option.disabled)) harness.value = newProvider;
     responses.addEventListener("change", renderHarnesses);
+    chat.addEventListener("change", renderHarnesses);
+    let previousPrimary = primaryWire();
+    primary.addEventListener("change", () => {
+      const previous = {openai_chat: chat, openai_responses: responses, anthropic_messages: anthropic}[previousPrimary];
+      if (previous) previous.checked = false;
+      previousPrimary = primaryWire();
+      if (!api && primary.value === "anthropic_messages") anthropicAuth.value = "x-api-key";
+      showAnthropic(); renderHarnesses();
+    });
     anthropic.addEventListener("change", () => { showAnthropic(); renderHarnesses(); });
     let createdId = "", provisionedAccounts = [], retryApiRoutes = false;
     saveButton(form); form.addEventListener("submit", event => {
@@ -1048,11 +1071,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       try { catalog = models.read(); }
       catch (error) { form.querySelector('[role="alert"]').textContent = errorText(error); return; }
       const changes = {provider: provider.value.trim(), base_url: url.value.trim(), default_model: catalog.default_model, enabled: enabled.checked};
+      if (!api || primary.value !== api.kind) changes.kind = primary.value;
       if (!api || JSON.stringify(catalog.models) !== declaredModels) changes.models = catalog.models;
       if (protocolState() !== declaredProtocols) {
         changes.protocols = {};
-        if (responses.checked) changes.protocols.openai_responses = {};
-        if (anthropic.checked) changes.protocols.anthropic_messages = {auth: anthropicAuth.value,
+        if (chat.checked && !chat.parentElement.hidden) changes.protocols.openai_chat = {};
+        if (responses.checked && !responses.parentElement.hidden) changes.protocols.openai_responses = {};
+        if (anthropic.checked || primary.value === "anthropic_messages") changes.protocols.anthropic_messages = {auth: anthropicAuth.value,
           ...(anthropicUrl.value.trim() ? {base_url: anthropicUrl.value.trim()} : {})};
       }
       if (path.value.trim()) changes.secret_file = path.value.trim();

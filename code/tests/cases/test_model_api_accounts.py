@@ -8,6 +8,12 @@ from management_portal.execution.accounts import default_execution_accounts
 from tests.cases.test_model_api_registry_postgres import _call
 
 
+@pytest.fixture(autouse=True)
+def registry_without_running_work(monkeypatch):
+    monkeypatch.setattr(isa, 'account_busy_counts', lambda row: {'session_count': 0, 'execution_count': 0})
+    monkeypatch.setattr('management_portal.execution.provider_updates.runtime_available', lambda provider: False)
+
+
 def test_api_registration_exposes_all_compatible_harnesses_and_preserves_existing_routes():
     created = _call(isa.create_model_api, api_id='gateway', base_url='https://example.invalid/v1',
                     default_model='chat', protocols={'anthropic_messages': {}, 'openai_responses': {}})
@@ -27,11 +33,15 @@ def test_api_registration_exposes_all_compatible_harnesses_and_preserves_existin
 
 def test_protocols_limit_harnesses_and_jev_is_direct_only():
     chat = _call(isa.create_model_api, api_id='chat', base_url='https://example.invalid/v1', default_model='chat')
-    assert {r['provider'] for r in chat['accounts']} == {'provider_api', 'kimi', 'opencode'}
+    assert {r['provider'] for r in chat['accounts']} == {'provider_api', 'kimi', 'opencode', 'claude', 'codex'}
     jev = _call(isa.create_model_api, api_id='jev', kind='typesafe_system_one', base_url='https://example.invalid', default_model='jev')
     assert {r['provider'] for r in jev['accounts']} == {'provider_api'}
     changed = _call(isa.update_model_api, api_id='chat', changes={'protocols': {'anthropic_messages': {}}})
-    assert {r['provider'] for r in changed['accounts']} == {'provider_api', 'kimi', 'opencode', 'claude', 'dsh'}
+    assert {r['provider'] for r in changed['accounts']} == {'provider_api', 'kimi', 'opencode', 'claude', 'codex', 'dsh'}
+    responses = _call(isa.create_model_api, api_id='responses', kind='openai_responses', base_url='https://example.invalid/v1', default_model='m')
+    assert {r['provider'] for r in responses['accounts']} == {'provider_api', 'claude', 'codex'}
+    messages = _call(isa.create_model_api, api_id='messages', kind='anthropic_messages', base_url='https://example.invalid', default_model='m')
+    assert {r['provider'] for r in messages['accounts']} == {'provider_api', 'claude', 'codex', 'dsh'}
 
 
 def test_existing_api_routes_are_reused():
@@ -43,8 +53,8 @@ def test_existing_api_routes_are_reused():
         accounts.create_registration({'account_id': name, 'provider': provider, 'kind': 'api_profile',
                                       'config': {'api_id': 'deepseek'}, 'max_concurrency': 5}, 'test')
     saved = _call(isa.update_model_api, api_id='deepseek', changes={})
-    assert {r['account_id'] for r in saved['accounts']} == {'deepseek', 'dsh_deepseek', 'deepseek-kimi', 'deepseek-opencode'}
-    assert len(saved['accounts']) == 4, 'native and direct reuse must not duplicate the returned identity'
+    assert {r['account_id'] for r in saved['accounts']} == {'deepseek', 'dsh_deepseek', 'deepseek-kimi', 'deepseek-opencode', 'deepseek-codex'}
+    assert len(saved['accounts']) == 5, 'native and direct reuse must not duplicate the returned identity'
     assert accounts.registration('deepseek')['max_concurrency'] == 5
 
 
@@ -64,7 +74,7 @@ def test_route_registration_failure_can_be_repaired_without_recreating_api(monke
     assert accounts.registrations() == [], 'route batch rolls back on a partial failure'
     monkeypatch.setattr(accounts, 'create_registration', original)
     repaired = _call(isa.update_model_api, api_id='retry', changes={})
-    assert len(repaired['accounts']) == 3
+    assert len(repaired['accounts']) == 5
 
 
 def test_api_identity_collision_does_not_save_an_unusable_interface():

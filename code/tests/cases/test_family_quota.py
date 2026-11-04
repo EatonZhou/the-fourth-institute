@@ -746,3 +746,65 @@ def test_ordinary_resident_automatic_selection_preserves_context_and_fixed_waits
     record['execution_settings']['account_selection'] = 'fixed'
     assert not family_quota.ensure_role_reserve(record, [one, two])
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("resident_kind", ["steward", "spare"])
+@pytest.mark.parametrize("inherit_role", [False, True])
+def test_automatic_api_without_balance_resumes_original_input(quota_family, monkeypatch, resident_kind, inherit_role):
+    """An API permitted by admission must also pass the pre-continuation check."""
+    from management_portal.execution import account_registrations
+    from management_portal.society_service import resident_execution_domain
+    from tests.cases.test_account_selection import api_account
+
+    f = quota_family
+    resident_id = getattr(f, resident_kind)
+    record = _record(resident_id)
+    settings = {**record["execution_settings"], "account_selection": "auto"}
+    if inherit_role:
+        settings.pop("account_selection")
+        settings["backend_role"] = "default"
+        monkeypatch.setattr(account_registrations, "resolve_role", lambda _: ({"account_selection": "auto"}, False))
+    record["execution_settings"] = settings
+    resident_record_domain.save_resident_record(record, commit_configuration=True)
+    resident_input_queue_domain.commit_resident_intake_state(record, "open")
+    f.accounts[:] = [api_account(record["backend_route_id"])]
+    # Binding is covered by the account-selection tests; no native session or
+    # model request is needed to exercise durable continuation admission.
+    monkeypatch.setattr(resident_execution_domain, "bind_before_execution", lambda *_: None)
+    resident_domain.deliver_resident_message_content(resident_id, ACTOR, "Continue the original request",
+                                                   message_id="msg_0123456789abcdef0123456789abcdef")
+    original = resident_execution_work.read(_record(resident_id))
+    assert original["execution_id"] and not original.get("submitted_at")
+    with resident_record_domain.state_lock(resident_id):
+        prepared = resident_execution_domain._prepare_resident_continuation(_record(resident_id))
+    assert prepared is not None
+    current = resident_execution_work.read(_record(resident_id))
+    assert current["continuation_id"] == prepared[1]
+    assert current["execution_id"] == original["execution_id"]
+    assert current["user_message_id"] == original["user_message_id"]
+    assert current["raw_message"] == original["raw_message"]
+    assert f.accounts[0]["quota_reserve"]["remaining"] is None
+
+
+@pytest.mark.parametrize("change", [
+    {"enabled": False}, {"status": "unavailable"},
+    {"quota_reserve": {"status": "reserved"}},
+    {"quota_reserve": {"used_up": True}},
+    {"quota_reserve": {"automatic_paused": True}},
+    {"quota_reserve": {"remaining": 0}},
+    {"quota_reserve": {"close_threshold": {"metric": "balance", "value": 5}}},
+])
+def test_automatic_api_reserve_check_keeps_real_account_restrictions(quota_family, change):
+    from tests.cases.test_account_selection import api_account
+
+    f = quota_family
+    record = _record(f.steward)
+    record["execution_settings"] = {**record["execution_settings"], "account_selection": "auto"}
+    resident_record_domain.save_resident_record(record, commit_configuration=True)
+    row = api_account("one")
+    for key, value in change.items():
+        if key == "quota_reserve":
+            row[key].update(value)
+        else:
+            row[key] = value
+    assert family_quota.ensure_role_reserve(record, [row])

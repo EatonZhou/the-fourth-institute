@@ -30,6 +30,17 @@ DEEPSEEK = {"api_id": "deepseek_test", "base_url": "https://deepseek.invalid", "
             "secret_file": "/secrets/deepseek"}
 
 
+@pytest.fixture(autouse=True)
+def account_usage_stores(monkeypatch):
+    # Compatible Codex accounts now also exist for Chat-only registrations;
+    # editing them checks the ordinary provider/session and scheduler stores.
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from management_portal.execution.scheduler_schema import initialize_execution_store
+    get_agent_data_store()
+    portal_database(schema="execution_runtime").write(initialize_execution_store)
+    monkeypatch.setattr("management_portal.execution.provider_updates.runtime_available", lambda provider: False)
+
+
 def _call(handler, caller="alice", **arguments):
     invocation = SimpleNamespace(caller=caller, argument=lambda name, default=None: arguments.get(name, default))
     return handler(invocation)
@@ -55,7 +66,7 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
     """
     created = _call(execution_isa.create_model_api, **MOONSHOT)
     assert created["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "enabled": True,
-                              "harness_protocols": ["openai_chat"], "version": 1}
+                              "harness_protocols": ["openai_chat"], "compatible_harness_protocols": ["openai_chat", "openai_responses", "anthropic_messages"], "version": 1}
     _call(execution_isa.create_model_api, **DEEPSEEK)
     assert _failure(execution_isa.create_model_api, **MOONSHOT) == "instruction.conflict"
     assert _failure(execution_isa.create_model_api, **{**DEEPSEEK, "api_id": "  "}) == "instruction.invalid_arguments"
@@ -64,7 +75,7 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
                     changes={"default_model": "kimi-k2", "enabled": False})
     assert updated["version"] == 2
     assert updated["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "default_model": "kimi-k2",
-                              "enabled": False, "harness_protocols": ["openai_chat"], "version": 2}
+                              "enabled": False, "harness_protocols": ["openai_chat"], "compatible_harness_protocols": ["openai_chat", "openai_responses", "anthropic_messages"], "version": 2}
     assert [(api["api_id"], api["version"]) for api in _call(execution_isa.list_model_apis)["apis"]] == [
         ("moonshot_test", 2), ("deepseek_test", 1)]
     from management_portal.hatg.catalog import declaration
@@ -199,7 +210,7 @@ def test_explicit_routes_are_validated_and_follow_the_api_lifecycle():
 def test_model_apis_declare_the_protocols_agent_harnesses_may_use():
     """模型接口声明 Agent Harness 可用的协议；未声明的 DeepSeek 登记保持原有 Anthropic 地址
 
-    Chat Completions 跟随 kind；openai_responses（Codex）与 anthropic_messages（Claude Code）需要显式声明，后者可指定地址与认证方式，缺省为去掉 /v1 的基础地址和 Bearer。未声明 protocols 的 DeepSeek 登记仍按原规则提供 /anthropic；一旦声明，就只以声明为准。未知协议、chat 声明、错误选项、非 http(s) 地址、未知认证方式都返回 invalid_arguments；非 Chat 接口不能声明协议。
+    主协议跟随 kind，附加协议只声明上游原生能力；Anthropic 可指定地址与认证方式。未声明 protocols 的 DeepSeek 登记保留 /anthropic。Claude 和 Codex 另由转换能力决定可用性；未知协议、错误选项、非 http(s) 地址和未知认证方式均无效，Jev 不能声明这些协议。
     """
     gateway = {"api_id": "gateway_test", "base_url": "https://gateway.invalid/v1", "default_model": "gpt-test",
                "secret_file": "/secrets/gateway", "provider": "example"}
@@ -228,7 +239,7 @@ def test_model_apis_declare_the_protocols_agent_harnesses_may_use():
     declared = _call(execution_isa.update_model_api, api_id="deepseek_test", changes={"protocols": {}})
     assert declared["api"]["harness_protocols"] == ["openai_chat"]
 
-    for rejected in ("openai_responses", {"openai_chat": {}}, {"websocket": {}}, {"openai_responses": {"base_url": "x"}},
+    for rejected in ("openai_responses", {"websocket": {}}, {"openai_responses": {"base_url": "x"}},
                      {"anthropic_messages": {"base_url": "ftp://gateway.invalid"}},
                      {"anthropic_messages": {"auth": "cookie"}}, {"anthropic_messages": []}):
         assert _failure(execution_isa.update_model_api, api_id="gateway_test",
@@ -256,7 +267,7 @@ def test_a_model_api_in_use_by_an_execution_account_is_not_deleted():
     with pytest.raises(InstructionError) as error:
         _call(execution_isa.delete_model_api, api_id="moonshot_test")
     assert error.value.code == "instruction.conflict"
-    assert error.value.details == {"reason": "account.api_in_use", "account_ids": ["moonshot_test", "moonshot_test-kimi", "moonshot_test-opencode", "moonshot_direct"]}
+    assert error.value.details == {"reason": "account.api_in_use", "account_ids": ["moonshot_test", "moonshot_test-codex", "moonshot_test-claude", "moonshot_test-kimi", "moonshot_test-opencode", "moonshot_direct"]}
     assert model_api_store.api_version("moonshot_test") == 1
     account_registrations.delete_registration("moonshot_direct")
     _remove_api_accounts("moonshot_test")

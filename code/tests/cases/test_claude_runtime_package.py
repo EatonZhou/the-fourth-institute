@@ -28,6 +28,9 @@ for name in (
     'management_common.file_lock',
     'management_common.local_ipc',
     'management_portal.execution.model_api_protocols',
+    'management_portal.model_api_wire',
+    'management_portal.model_api_stream',
+    'management_portal.model_api_bridge',
     'management_portal.jev_provider',
 ):
     module = importlib.import_module(name)

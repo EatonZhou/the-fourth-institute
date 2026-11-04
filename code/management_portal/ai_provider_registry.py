@@ -16,7 +16,8 @@ from management_portal.provider_transport_diagnostics import ProviderTransportOb
 # names the one its API-key accounts need.
 HARNESS_PROTOCOLS = ("openai_chat", "openai_responses", "anthropic_messages")
 # Options a registration may declare per protocol; chat follows ``kind``.
-DECLARED_PROTOCOL_OPTIONS = {"openai_responses": frozenset(), "anthropic_messages": frozenset({"base_url", "auth"})}
+DECLARED_PROTOCOL_OPTIONS = {"openai_chat": frozenset(), "openai_responses": frozenset(),
+                             "anthropic_messages": frozenset({"base_url", "auth"})}
 ANTHROPIC_AUTH = ("bearer", "x-api-key")
 
 
@@ -96,19 +97,32 @@ class AIProviderRegistry:
 
     @staticmethod
     def harness_protocols(item: dict[str, Any]) -> dict[str, dict[str, Any]]:
-        """Wire protocols an agent harness can use with this registration.
+        """Native upstream protocols, without claiming adapter capabilities.
 
-        Chat follows the direct-call kind; the others are declared. A DeepSeek
+        The primary protocol follows kind; others are declared. A DeepSeek
         registration that declares nothing keeps its historical Anthropic route.
         """
-        chat = item.get("kind") == "openai_compatible_chat"
-        protocols: dict[str, dict[str, Any]] = {"openai_chat": {}} if chat else {}
+        from .model_api_wire import KINDS
+        primary = KINDS.get(item.get("kind"))
+        chat = primary == "openai_chat"
+        protocols: dict[str, dict[str, Any]] = {primary: {}} if primary else {}
         if AIProviderRegistry.declares_protocols(item):
             protocols.update({str(name): dict(options or {}) for name, options in item["protocols"].items()
                               if name in DECLARED_PROTOCOL_OPTIONS})
         elif chat and item.get("provider") == "deepseek":
             protocols["anthropic_messages"] = {}
         return protocols
+
+    @staticmethod
+    def harness_upstream_protocols(protocol: str) -> tuple[str, ...]:
+        """Native protocols accepted by a harness, including the local adapter."""
+        return HARNESS_PROTOCOLS if protocol in ("openai_responses", "anthropic_messages") else (protocol,)
+
+    @staticmethod
+    def compatible_harness_protocols(item: dict[str, Any]) -> list[str]:
+        native = AIProviderRegistry.harness_protocols(item)
+        return [protocol for protocol in HARNESS_PROTOCOLS
+                if any(p in native for p in AIProviderRegistry.harness_upstream_protocols(protocol))]
 
     @staticmethod
     def harness_endpoint(item: dict[str, Any], protocol: str) -> tuple[str, str]:
@@ -118,10 +132,11 @@ class AIProviderRegistry:
             raise ValueError(f"Model API {item.get('id')} does not offer {protocol}")
         if protocol != "anthropic_messages":
             return AIProviderRegistry.base_url(item), "bearer"
-        if not AIProviderRegistry.declares_protocols(item):
+        if not AIProviderRegistry.declares_protocols(item) and item.get("kind") != "anthropic_messages":
             return AIProviderRegistry.base_url(item, protocol="anthropic"), "bearer"
         url = str(options.get("base_url") or "").strip().rstrip("/")
-        return url or AIProviderRegistry.base_url(item).removesuffix("/v1"), str(options.get("auth") or "bearer")
+        default_auth = "x-api-key" if item.get("kind") == "anthropic_messages" else "bearer"
+        return url or AIProviderRegistry.base_url(item).removesuffix("/v1"), str(options.get("auth") or default_auth)
 
     @staticmethod
     def harness_models(item: dict[str, Any]) -> list[str]:
@@ -188,11 +203,12 @@ class AIProviderRegistry:
         timeout_seconds: float,
         observe_transport: Callable[[dict], None] | None = None,
         configuration: dict[str, Any] | None = None,
+        protocol: str | None = None,
     ) -> dict[str, Any]:
         item = self.get(provider_id) if configuration is None else self._entry(configuration)
         if item["id"] != provider_id or not self.is_enabled(item):
             raise ValueError(f"AI provider is not available: {provider_id}")
-        base_url = self.base_url(item)
+        base_url, auth = self.harness_endpoint(item, protocol) if protocol else (self.base_url(item), "bearer")
         secret_path = self.secret_path(item)
         if not base_url or not secret_path:
             raise ValueError(
@@ -201,6 +217,11 @@ class AIProviderRegistry:
         provider = str(item.get("provider") or "").strip().lower()
         secret = self.read_secret(secret_path)
         headers = self.headers(provider, secret, item)
+        if protocol == "anthropic_messages":
+            headers["anthropic-version"] = "2023-06-01"
+            if auth == "x-api-key":
+                headers.pop("Authorization", None)
+                headers["x-api-key"] = secret
         headers["Content-Type"] = "application/json"
         request = urllib.request.Request(
             f"{base_url}/{endpoint.lstrip('/')}",

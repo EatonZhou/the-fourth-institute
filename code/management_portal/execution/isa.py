@@ -71,6 +71,7 @@ def _public_api(item: dict[str, Any], version: int) -> dict[str, Any]:
     from management_portal.ai_provider_registry import HARNESS_PROTOCOLS, AIProviderRegistry
     offered = AIProviderRegistry.harness_protocols(item)
     result["harness_protocols"] = [name for name in HARNESS_PROTOCOLS if name in offered]
+    result["compatible_harness_protocols"] = AIProviderRegistry.compatible_harness_protocols(item)
     routes = model_api_store.route_bindings(result["api_id"])
     if routes:
         result["routes"] = routes
@@ -113,9 +114,12 @@ def _validate_protocols(protocols: Any) -> None:
 
 
 def _check_api_kind(entry: dict[str, Any]) -> None:
-    # Declared harness protocols describe an OpenAI-compatible endpoint.
-    if entry.get("protocols") and entry.get("kind") != "openai_compatible_chat":
-        raise invalid("只有 openai_compatible_chat 模型接口可以声明 protocols")
+    from .model_api_protocols import PROTOCOLS
+    from management_portal.model_api_wire import KINDS
+    if entry.get("kind") not in PROTOCOLS:
+        raise invalid("不支持的模型接口协议")
+    if entry.get("protocols") and entry.get("kind") not in KINDS:
+        raise invalid("该模型接口不能声明附加模型协议")
 
 
 def _api_users(api_id: str) -> list[dict[str, Any]]:
@@ -131,18 +135,17 @@ def _required_protocol(provider: str) -> tuple[str, str]:
 
 def _check_api_protocol(provider: str, api_id: str) -> None:
     """An api_profile account's Model API must speak the protocol its harness uses."""
-    from management_portal.ai_provider_registry import AIProviderRegistry
     protocol, label = _required_protocol(provider)
     entry = next((item for item, _version in model_api_store.apis() if item["id"] == api_id), None)
-    if protocol and entry is not None and protocol not in AIProviderRegistry.harness_protocols(entry):
-        raise invalid(f"模型 API {api_id} 没有声明 {label} 需要的 {protocol} 协议")
+    from .provider_catalog import AGENT_PROVIDERS
+    if protocol and entry is not None and not AGENT_PROVIDERS[provider].supports_api(entry):
+        raise invalid(f"模型 API {api_id} 无法提供 {label} 需要的 {protocol} 协议")
 
 
 def _check_api_users_keep_protocols(api_id: str, entry: dict[str, Any]) -> None:
-    from management_portal.ai_provider_registry import AIProviderRegistry
-    offered = AIProviderRegistry.harness_protocols(entry)
+    from .provider_catalog import AGENT_PROVIDERS
     stranded = [row["account_id"] for row in _api_users(api_id)
-                if _required_protocol(row["provider"])[0] not in ("", *offered)]
+                if row["provider"] in AGENT_PROVIDERS and not AGENT_PROVIDERS[row["provider"]].supports_api(entry)]
     if stranded:
         raise InstructionError("instruction.conflict", "执行账号仍需要该模型 API 的协议：" + "、".join(stranded),
                                details={"reason": "account.api_in_use", "account_ids": stranded})
@@ -351,6 +354,14 @@ def complete_chat(inv: Invocation) -> dict[str, Any]:
     }
     if not payload["model"]:
         raise invalid(f"{api_id} 没有默认模型，请提供 model")
+    if adapter.name in ("openai_responses", "anthropic_messages"):
+        answer = adapter.execute(registry, item, payload["model"], messages, options,
+            float(item.get("timeout_s") or 360), 0, lambda: False, lambda observation: None, lambda call: call())
+        message = {"role": "assistant", "content": answer.content}
+        result = {"message": message, "usage": dict(answer.response.get("usage") or {})}
+        if validator is not None:
+            result["structured"] = _structured_answer(api_id, message, validator)
+        return result
     response = registry.request(
         api_id, "chat/completions", payload,
         timeout_seconds=float(item.get("timeout_s") or 360),
@@ -442,7 +453,8 @@ def list_providers(inv):
                           "kinds": list(kinds), "capabilities": definition.runtime_capabilities() if definition else {},
                           "default_route_id": default, "account_count": len(own),
                           # The Model API protocol an api_profile account needs ("" accepts any).
-                          "api_protocol": definition.api_protocol if definition else ""}
+                          "api_protocol": definition.api_protocol if definition else "",
+                          "api_upstream_protocols": list(definition.api_upstream_protocols) if definition and definition.api_protocol else []}
         if can_register and 'subscription_login' in kinds:
             from management_common.provider_account_paths import default_account_directory_prefix
             item['account_directory_prefix'] = default_account_directory_prefix(provider)

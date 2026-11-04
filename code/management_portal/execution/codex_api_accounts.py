@@ -27,7 +27,7 @@ PROVIDER_ID = "portal_api"
 # (e.g. "ultra") with its default effort, so those are not offered.
 EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
 # Model API fields that change what the app-server process is configured with.
-CONFIGURED_FIELDS = frozenset({"base_url", "protocols", "default_headers", "max_retries", "timeout_s", "label",
+CONFIGURED_FIELDS = frozenset({"kind", "base_url", "protocols", "default_headers", "max_retries", "timeout_s", "label",
                                "default_model", "api_key_file", "enabled"})
 
 
@@ -51,12 +51,18 @@ def catalog(entry: dict[str, Any], account_id: str) -> dict[str, Any]:
 
 
 def managed_config(entry: dict[str, Any]) -> dict[str, Any]:
-    base_url, _auth = AIProviderRegistry.harness_endpoint(entry, PROTOCOL)
+    from management_portal.model_api_wire import upstream
+    converted = upstream(entry, PROTOCOL) != PROTOCOL
+    # The process owner injects its ephemeral local endpoint and capability.
+    # A standalone CLI using this file must fail closed after the host exits.
+    base_url = "http://127.0.0.1:1/v1" if converted else AIProviderRegistry.harness_endpoint(entry, PROTOCOL)[0]
     provider: dict[str, Any] = {"name": str(entry.get("label") or entry["id"]), "base_url": base_url,
-                                "wire_api": "responses", "requires_openai_auth": True}
+                                "wire_api": "responses", "requires_openai_auth": not converted}
+    if converted:
+        provider["env_key"] = "TFI_MODEL_BRIDGE_TOKEN"
     headers = {str(name): str(value).strip() for name, value in (entry.get("default_headers") or {}).items()
                if str(value or "").strip()}
-    if headers:
+    if headers and not converted:
         provider["http_headers"] = headers
     if entry.get("max_retries") is not None:
         provider["request_max_retries"] = int(entry["max_retries"])

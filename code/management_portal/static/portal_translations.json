@@ -40866,6 +40866,26 @@
     "zh-CN": "也支持 OpenAI Responses（/responses，Codex 使用）",
     "en": "Also supports OpenAI Responses (/responses, used by Codex)"
   },
+  "接口协议": {
+    "zh-CN": "接口协议",
+    "en": "API protocol"
+  },
+  "也支持 OpenAI Chat Completions": {
+    "zh-CN": "也支持 OpenAI Chat Completions",
+    "en": "Also supports OpenAI Chat Completions"
+  },
+  "选择服务商实际支持的协议。Claude Code 和 Codex 可自动转换使用，无需接口同时支持两家的协议。": {
+    "zh-CN": "选择服务商实际支持的协议。Claude Code 和 Codex 可自动转换使用，无需接口同时支持两家的协议。",
+    "en": "Select the protocol your provider actually supports. Portal can convert it for Claude Code and Codex; the API does not need to support both vendors' protocols."
+  },
+  "Claude Code 和 Codex 可通过 Portal 转换 OpenAI 与 Anthropic 协议，工具仍由所选运行器执行。": {
+    "zh-CN": "Claude Code 和 Codex 可通过 Portal 转换 OpenAI 与 Anthropic 协议，工具仍由所选运行器执行。",
+    "en": "Portal can convert OpenAI and Anthropic protocols for Claude Code and Codex. The selected harness continues to execute its own tools."
+  },
+  "只勾选接口实际提供的附加协议；Portal 会优先直连，并在需要时为 Claude Code 和 Codex 转换协议。": {
+    "zh-CN": "只勾选接口实际提供的附加协议；Portal 会优先直连，并在需要时为 Claude Code 和 Codex 转换协议。",
+    "en": "Check only additional protocols this API actually supports. Portal prefers native connections and converts protocols for Claude Code and Codex when needed."
+  },
   "也支持 Anthropic Messages（Claude Code 使用）": {
     "zh-CN": "也支持 Anthropic Messages（Claude Code 使用）",
     "en": "Also supports Anthropic Messages (used by Claude Code)"

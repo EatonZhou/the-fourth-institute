@@ -12,6 +12,8 @@ import logging
 import time
 from typing import Any, Mapping
 
+from management_portal.execution.account_selection import available
+
 from . import family_facade, family_role_quota_questions, family_storage, resident_execution_work, resident_message_contract
 from .resident_session_credits import override_enabled
 from .domain_ports import execution_port
@@ -526,10 +528,15 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             state.pop("account_wait", None)
     from .resident_default_backend import selection_mode
     automatic = selection_mode(record) == "auto"
-    threshold = 0 if automatic else MIGRATION_RESERVE_PERCENT
     remaining = reserve_remaining(account)
-    if (remaining is not None and remaining > threshold and (not automatic or (account.get("quota_reserve") or {}).get("status") == "available")
-            or remaining is None and sufficient_reserve(account)):
+    if automatic:
+        # Automatic admission uses the shared availability policy, including
+        # configured APIs whose balance cannot be measured. Preventative
+        # migrations still require verified reserve headroom below.
+        ready = available(account)
+    else:
+        ready = remaining > MIGRATION_RESERVE_PERCENT if remaining is not None else sufficient_reserve(account)
+    if ready:
         if role_migration(record):
             with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
                 asked = (healthy.get("question_facade_id"), healthy.get("question_message_id"))

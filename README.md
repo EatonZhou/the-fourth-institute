@@ -32,7 +32,9 @@ Choose an agent or team, add your materials, and tell it what to do. For example
 
 Use a common browser interface for **Codex, Claude Code, DeepSeek Harness (DSH), OpenCode, and Kimi Code**. Think of it as a shared graphical interface for agents you would otherwise operate through separate terminal applications: manage conversations, accounts, execution status, and usage in one place.
 
-You can also connect cloud services or self-hosted model endpoints compatible with the **OpenAI Chat Completions API**, using an API base URL, API key, and model configuration. API connections can supply models to compatible agent backends.
+You can also connect cloud services or self-hosted endpoints using **OpenAI Chat Completions, OpenAI Responses, or Anthropic Messages**. In execution settings, choose the protocol the service actually supports and provide its base URL, API key, and models. Portal automatically provides compatible execution accounts: **Claude Code can use an OpenAI-only API, and Codex can use an Anthropic-only API**. Prefer a native protocol when available; otherwise Portal converts requests and streaming responses locally while the selected harness continues to run its own tools.
+
+Protocol conversion carries text, images, function calls and results, streamed output, usage, and reasoning state through the selected API. It requires full conversation history and harness-owned tools; vendor server tools and server-side Responses conversation/compaction IDs cannot cross protocols. Thinking token budgets are approximated as low (<4,096), medium (<16,384), or high effort when no explicit effort is supplied. Claude's converted token-count endpoint uses a conservative UTF-8 byte estimate, separate from actual upstream usage and billing. Only the registered models and account can be used; the adapter listens on loopback with a temporary credential and sends the upstream key only to the configured service.
 
 **One Person Managing an Agent Team**
 

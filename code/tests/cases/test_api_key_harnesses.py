@@ -1,7 +1,7 @@
 """API-key execution accounts on agent harnesses: Codex, Claude Code and OpenCode.
 
-A Model API declares the wire protocols it speaks; an ``api_profile`` account
-of a harness runs on any registration that speaks the harness's protocol.
+A Model API declares its native protocols. Codex and Claude Code can also use
+the local wire adapter; other harnesses require their own native protocol.
 
 :module: execution.providers
 :importance: P1
@@ -171,39 +171,39 @@ def test_a_codex_api_account_is_billed_by_its_model_api_and_lists_its_declared_m
     assert NATIVE_IMAGE_INPUT in codex.harness_capabilities("one")
 
 
-def test_a_sites_only_codex_account_is_its_default_without_being_marked(gateway, fake_codex, monkeypatch, tmp_path):
-    """站点唯一启用的 Codex 账号不用勾选“默认路线”也是 Codex 默认账号；有多个账号时仍须明确指定
-
-    从模型 API 页面以 Codex 运行器添加的 API 账号不带默认标记；未指定账号的 Resident 和个人助理使用它。有第二个启用账号后，没有标记就没有默认账号。
-    """
+def test_an_api_codex_account_requires_an_explicit_billing_scope(gateway, fake_codex, monkeypatch, tmp_path):
+    """模型 API 账号可按明确账号使用；无账号的原生默认选择不隐式开启 API 计费。"""
     from management_portal.execution.account_adapters import CodexRoutes
     from tests.cases.account_registration_test_support import register_codex
     register_codex(monkeypatch, tmp_path, names=())
     _call(isa.update_model_api, api_id="gateway", changes={})
     _account("gateway-codex", "codex")
-    assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
+    assert CodexRoutes().get("gateway-codex").account_id == "gateway-codex"
+    with pytest.raises(ValueError):
+        CodexRoutes().default_for_new_session()
     _call(isa.register_provider_account, account_id="spare-codex", provider="codex",
           kind="api_profile", config={"api_id": "gateway"})
-    with pytest.raises(ValueError, match="No enabled default Codex account"):
+    with pytest.raises(ValueError):
         CodexRoutes().default_for_new_session()
     _call(isa.update_provider_account_registration, account_id="spare-codex", changes={"enabled": False})
-    assert CodexRoutes().default_for_new_session().account_id == "gateway-codex"
+    assert CodexRoutes().get("gateway-codex").account_id == "gateway-codex"
 
 
-def test_api_key_accounts_need_a_model_api_that_speaks_their_harness_protocol(gateway, fake_codex):
-    """API 账号的模型 API 必须提供其 Harness 使用的协议，使用中的协议不能撤下
-
-    Codex 需要 openai_responses，Claude Code 需要 anthropic_messages，OpenCode 用 Chat Completions；不满足时登记返回 invalid_arguments。账号仍在使用时，撤下它需要的协议返回 conflict（account.api_in_use）。Codex API 账号不能设置备用账号，订阅账号也不能把 API 账号设为备用。
-    """
+def test_api_key_accounts_use_native_or_converted_protocols_without_crossing_billing_scope(gateway, fake_codex):
+    """Claude 和 Codex 可转换协议；其他运行器仍需原生协议，备用账号不越过计费边界。"""
     _call(isa.create_model_api, api_id="chat_only", base_url="https://chat.invalid/v1", default_model="m",
           secret_file=str(gateway.key_file))
     for provider in ("codex", "claude"):
-        assert _failure(isa.register_provider_account, account_id=f"chat-{provider}", provider=provider,
-                        kind="api_profile", config={"api_id": "chat_only"}).code == "instruction.invalid_arguments"
+        _account(f"chat_only-{provider}", provider, "chat_only")
+    assert _failure(isa.register_provider_account, account_id="chat-dsh", provider="dsh",
+                    kind="api_profile", config={"api_id": "chat_only"}).code == "instruction.invalid_arguments"
     assert _account("chat_only-opencode", "opencode", "chat_only")["provider"] == "opencode"
     _account("gateway-codex", "codex")
-    error = _failure(isa.update_model_api, api_id="gateway", changes={"protocols": {"anthropic_messages": {}}})
-    assert error.details == {"reason": "account.api_in_use", "account_ids": ["gateway-codex"]}
+    _call(isa.update_model_api, api_id="gateway", changes={"protocols": {"anthropic_messages": {}}})
+    from management_portal.ai_provider_registry import AIProviderRegistry
+    converted = codex_api_accounts.managed_config(AIProviderRegistry().get("gateway"))["model_providers"]["portal_api"]
+    assert converted["base_url"].startswith("http://127.0.0.1:1/")
+    assert converted["requires_openai_auth"] is False and converted["env_key"] == "TFI_MODEL_BRIDGE_TOKEN"
     assert _failure(isa.register_provider_account, account_id="spare-codex", provider="codex", kind="api_profile",
                     config={"api_id": "gateway", "fallback_account_ids": ["codex_one"]}).code == "instruction.invalid_arguments"
     assert _failure(isa.update_provider_account_registration, account_id="codex_one", changes={

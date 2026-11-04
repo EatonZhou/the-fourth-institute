@@ -60,6 +60,8 @@ python3 code/scripts/install_tfi_release first-admin --instance my_portal --user
 登录后的基本使用顺序是：
 
 1. 配置自己的模型后端、个人或agent账号及运行环境。我们也建议借助本机上的 AI Agent，将自己的 AI Provider 或 API 注册到 TFI Portal 中。
+
+   模型 API 可选择 OpenAI Chat Completions、OpenAI Responses 或 Anthropic Messages 协议。选择服务商实际支持的协议即可：Portal 会在需要时进行本机转换，让 Claude Code 使用 OpenAI 接口，也让 Codex 使用 Anthropic 接口；工具始终由所选运行器执行。附加协议只勾选上游原生提供的协议。
 2. 围绕研究课题创建 Project 和 Lineage，并加入承担具体职责的 Resident。
 3. 添加所需资料与工作区，从一个可检查结果的小任务开始，例如阅读论文并整理问题，或运行一组基线实验。
 4. 在讨论和工作区中检查结果，再按需要增加协作者、连接事件流程或组成 Family。

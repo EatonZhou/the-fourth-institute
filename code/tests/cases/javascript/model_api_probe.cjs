@@ -4,7 +4,6 @@ const {JSDOM} = require('jsdom');
 const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
 let probe = {};
-let codexDefault = 'one';
 const apis = [{api_id: 'gateway', base_url: 'https://gateway.invalid/v1', default_model: 'gpt-test',
   harness_protocols: ['openai_chat'], version: 1}];
 const accounts = [
@@ -21,8 +20,9 @@ window.PortalInstructionClient = {execute: async (name, args, options = {}) => {
   switch (name) {
     case 'ListProviders': return {providers: [
       {provider: 'codex', title: 'Codex', kinds: ['subscription_login', 'api_profile'], api_protocol: 'openai_responses',
-       default_route_id: codexDefault},
-      {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login', 'api_profile'], api_protocol: 'anthropic_messages'},
+       api_upstream_protocols: ['openai_chat', 'openai_responses', 'anthropic_messages']},
+      {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login', 'api_profile'], api_protocol: 'anthropic_messages',
+       api_upstream_protocols: ['openai_chat', 'openai_responses', 'anthropic_messages']},
       {provider: 'opencode', title: 'OpenCode', kinds: ['service', 'api_profile'], api_protocol: 'openai_chat'},
       {provider: 'provider_api', title: 'Model API', kinds: ['api_profile'], api_protocol: ''}]};
     case 'ListProviderAccounts': return {accounts: accounts.map(({version, login_state, ...registration}) => ({
@@ -30,7 +30,6 @@ window.PortalInstructionClient = {execute: async (name, args, options = {}) => {
     case 'ListBackendRoles': return {roles: []};
     case 'ListModelApis': return {apis};
     case 'ProbeModelApi': return {model: args.default_model, results: probe};
-    case 'UpdateProviderAccountRegistration': codexDefault = 'gateway-codex'; return {registration: {}};
     default: throw Error(name);
   }
 }};
@@ -70,7 +69,7 @@ const status = id => row(id).children[2].textContent;
   click('检测接口协议', form); await flush();
   assert.equal(form.elements.protocol_openai_responses.checked, false);
   assert.equal(form.elements.protocol_anthropic_messages.checked, true);
-  assert.deepEqual(choices(form.elements.harness), ['provider_api', 'claude', 'opencode']);
+  assert.deepEqual(choices(form.elements.harness), ['provider_api', 'codex', 'claude', 'opencode']);
   assert.match(form.querySelector('[data-protocol="openai_responses"]').textContent, /不支持（HTTP 404 · Not Found）/);
   click('关闭');
 
@@ -80,19 +79,10 @@ const status = id => row(id).children[2].textContent;
   assert.deepEqual(last('ProbeModelApi').args, {api_id: 'gateway', base_url: 'https://gateway.invalid/v1', default_model: 'gpt-test'});
   click('关闭');
 
-  // The default route is marked, and another enabled Codex account can take it over.
-  assert.equal(status('codex_one'), '已启用 · 已登录 · 默认路线');
-  assert.equal(buttons(row('codex_one'), '设为默认路线').length, 0);
-  assert.equal(status('gateway-codex'), '已启用');
-  click('设为默认路线', row('gateway-codex')); await flush();
-  const update = last('UpdateProviderAccountRegistration');
-  assert.deepEqual(update.args, {account_id: 'gateway-codex', changes: {config: {api_id: 'gateway', is_default: true}}});
-  assert.equal(update.expectedVersion, 3);
-  const order = calls.slice(calls.indexOf(update) + 1).map(call => call.name);
-  assert.deepEqual(order.slice(0, 2), ['ListProviders', 'ListProviderAccounts']);
-  assert.equal(status('gateway-codex'), '已启用 · 默认路线');
+  // Provider registration defaults do not claim the site's default AI role.
   assert.equal(status('codex_one'), '已启用 · 已登录');
-  assert.equal(buttons(row('codex_one'), '设为默认路线').length, 1);
+  assert.equal(buttons(window.document, '设为默认路线').length, 0);
+  assert.equal(status('gateway-codex'), '已启用');
 
-  panel.destroy(); dom.window.close(); console.log('Model API probe and default route passed');
+  panel.destroy(); dom.window.close(); console.log('Model API probe and converted harness choices passed');
 })().catch(error => {console.error(error); dom.window.close(); process.exitCode = 1;});
