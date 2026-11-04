@@ -23,6 +23,8 @@
 
 本次运行明确禁止付费 credits 时，每次向 Codex 成员发送业务消息或触发 AI 工作前，必须调用上述助手并传 `require_native_quota=True`，包括复用的固定共享业务成员。它刷新并核对原账号的新鲜、正数原生额度，同时保留当前执行门检查；旧 Session 的 ready、开放 gate 或 override 不是本轮许可。原生额度耗尽、未知或陈旧时停在发送前，记录前提缺口，不迁移共享角色、确认 credits 或修改保护。普通 API 业务的登记 Provider 与计费配置保持原契约，不把这项 Codex 原生额度检查误用于不提供该额度的 API。
 
+对直接 Model API 成员，同一前提助手会刷新原登记账号的余额或可用性观察：金额型账号要求新鲜、有限且严格为正的余额；只提供可用性的接口要求新鲜的明确可用结果。API 执行门开放不能替代上游余额，余额为零、未知或陈旧时停在业务受理或初始化恢复之前，记录精确账号与恢复条件。不充值、不切换固定绑定，也不把 API 余额冒充 Codex 原生额度。
+
 Family 门面收件和路由但自身不执行模型。助手返回 `family_facade_not_executing` 是目标类型说明，不是业务额度不足，也不能改成 ready。使用原 Familize 或当前 GetLineage 回执确定 Router、Steward、可路由业务成员及嵌套 Family 的真实执行者，逐个检查这些成员；禁止 credits 时仍逐个传 `require_native_quota=True`，同时核对门面接单、发送权限和本例开关。不得因门面没有执行门账号字段放弃有效问题卡目标，也不得跳过真实成员的前提或改投其他成员来绕过。无需为检查门面重启 Session 或做初始化确认。
 
 定时 time.reached 及其他独立新上下文使用同一助手的 `new_context=True`：从 ListProviderAccounts 读取原账号的自动执行额度状态，当前 Session 的付费例外不能继承。waiting_quota 表示执行前提不足，保留已建立的自动触发和原输入，记录尚未覆盖自动回复；不得为了报告完整关闭保护或扩大 Family 许可。

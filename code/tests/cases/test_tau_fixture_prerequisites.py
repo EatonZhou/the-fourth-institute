@@ -199,6 +199,55 @@ def test_current_session_credits_never_authorize_independent_automatic_context(e
     assert read_execution_prerequisite(call, R, new_context=True)['ready']
 
 
+@pytest.mark.parametrize('amount,fresh,expected', [
+    (0.0, True, False), (-0.5, True, False), (None, True, False),
+    (float('nan'), True, False), (True, True, False), (8.0, False, False),
+    (8.0, True, True),
+])
+def test_api_balance_prerequisite_refreshes_original_account_before_recovery(
+        execution, amount, fresh, expected):
+    """API 执行门开放不替代原计费账号的新鲜可用余额。"""
+    call, state, init, account = execution
+    account['quota_reserve']['fresh'] = fresh
+    account['balance'] = {'metric_kind': 'balance', 'status': 'ok', 'amount': amount}
+    calls = []
+    def api(name, args):
+        calls.append((name, args))
+        result = call(name, args)
+        if name == 'GetResident':
+            result['resident']['provider'] = 'provider_api'
+        return result
+    result = read_execution_prerequisite(api, R)
+    assert result['ready'] is expected
+    assert ('ListProviderAccounts', {'account_id': 'codex_fixture', 'refresh': True}) in calls
+    if not expected:
+        assert result['reason'] == 'api_balance_unavailable'
+        init.update(status='running', initialization_id='original-api-initialization')
+        interact = Mock()
+        assert not prepare_execution_prerequisite(api, R, interact=interact)['ready']
+        interact.assert_not_called()
+
+
+@pytest.mark.parametrize('available,fresh,expected', [
+    (True, True, True), (False, True, False), (None, True, False), (True, False, False),
+])
+def test_api_availability_only_accounts_keep_their_registered_billing_contract(
+        execution, available, fresh, expected):
+    """只提供可用性观察的 API 不被要求伪造货币余额或 Codex 额度。"""
+    call, state, init, account = execution
+    account['quota_reserve']['fresh'] = fresh
+    account['balance'] = {'metric_kind': 'availability', 'status': 'ok', 'is_available': available}
+    def api(name, args):
+        result = call(name, args)
+        if name == 'GetResident':
+            result['resident']['provider'] = 'provider_api'
+        return result
+    result = read_execution_prerequisite(api, R)
+    assert result['ready'] is expected
+    assert result['api_availability']['metric_kind'] == 'availability'
+    assert 'native_quota' not in result
+
+
 def test_no_credits_run_does_not_reuse_paid_session_override(execution):
     call, state, init, account = execution
     assert read_execution_prerequisite(call, R)['ready']

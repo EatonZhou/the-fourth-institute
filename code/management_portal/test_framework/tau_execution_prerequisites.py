@@ -45,8 +45,26 @@ def read_execution_prerequisite(instruction, resident_id: str, *, new_context: b
     reason = ''
     recovery = None
     native_quota = None
+    api_availability = None
     account, quota = {}, {}
     native_unavailable = False
+    api_unavailable = False
+    if resident.get('provider') == 'provider_api':
+        account = _execution_account(instruction, account_id, refresh=True)
+        quota = account.get('quota_reserve') or {}
+        balance = account.get('balance') or {}
+        api_availability = {key: balance.get(key) for key in (
+            'metric_kind', 'status', 'amount', 'currency', 'is_available')}
+        api_availability['fresh'] = quota.get('fresh')
+        amount = balance.get('amount')
+        funded = (balance.get('metric_kind') == 'balance'
+            and not isinstance(amount, bool) and isinstance(amount, (int, float))
+            and math.isfinite(amount) and amount > 0)
+        available = balance.get('metric_kind') == 'availability' and balance.get('is_available') is True
+        api_unavailable = (not account or account.get('enabled') is False
+            or (account.get('registration') or {}).get('enabled') is False
+            or quota.get('fresh') is not True or balance.get('status') != 'ok'
+            or balance.get('is_available') is False or not (funded or available))
     if require_native_quota:
         # Check before offering initialization recovery too: that recovery can
         # itself prepare a model Session under an older paid exception.
@@ -61,7 +79,9 @@ def read_execution_prerequisite(instruction, resident_id: str, *, new_context: b
             or quota.get('exhausted') is True or isinstance(remaining, bool)
             or not isinstance(remaining, (int, float))
             or not math.isfinite(remaining) or remaining <= 0)
-    if native_unavailable:
+    if api_unavailable:
+        reason = 'api_balance_unavailable'
+    elif native_unavailable:
         reason = 'native_quota_unavailable'
     elif initialization.get('status') not in {'completed', 'not_required'}:
         reason = 'initialization_required'
@@ -87,6 +107,8 @@ def read_execution_prerequisite(instruction, resident_id: str, *, new_context: b
             'execution_gate': gate, 'recovery': recovery}
     if require_native_quota:
         result['native_quota'] = native_quota
+    if api_availability is not None:
+        result['api_availability'] = api_availability
     return result
 
 
@@ -101,7 +123,7 @@ def prepare_execution_prerequisite(instruction, resident_id: str, *, new_context
     before = read_execution_prerequisite(instruction, resident_id, new_context=new_context,
                                         require_native_quota=require_native_quota)
     if before['ready'] or interact is None or before['reason'] in {
-            'native_quota_unavailable', 'family_facade_not_executing'}:
+            'native_quota_unavailable', 'api_balance_unavailable', 'family_facade_not_executing'}:
         return before
     interact(before)
     after = read_execution_prerequisite(instruction, resident_id, new_context=new_context,
