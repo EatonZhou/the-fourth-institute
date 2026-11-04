@@ -27,7 +27,9 @@ Family 门面收件和路由但自身不执行模型。助手返回 `family_faca
 
 定时 time.reached 及其他独立新上下文使用同一助手的 `new_context=True`：从 ListProviderAccounts 读取原账号的自动执行额度状态，当前 Session 的付费例外不能继承。waiting_quota 表示执行前提不足，保留已建立的自动触发和原输入，记录尚未覆盖自动回复；不得为了报告完整关闭保护或扩大 Family 许可。
 
-普通内容文件放运行上下文的 fixture_dir；独立 Git 例放声明提供的 standalone_fixture_dir，不用执行者 Workspace、runtime 区或既有 Git checkout 代替。产品对业务目录的正式契约优先：Article 文稿必须放在本例有权使用的已登记 Project 内的独占新子目录，不能强制放到 features 区的 fixture_dir。写入前核对实际 Project、目录边界与精确权限，记录本轮子目录和资源 ID；结束只清理该独占子目录，不移动既有文稿或删除 Project 根目录。额外 Workspace 的绑定不授予编辑/注销权。需要这些动作时使用 `tau_fixture_access.prepare_workspace_access(evidence_dir, workspace_id, check=测试用户的正式ISA, issue=实际有权控制者的正式ISA)`，只借给配置的测试用户单一 Workspace 的 UpdateWorkspaceFile/UnregisterResource，保存原幂等请求与许可回执；没有合法控制者则返回明确前提。不要冒充控制者或扩展 Resident 管理权限。清理先停工作、经资源 owner 释放本轮分配对象，再撤销已记录许可并删自有目录；不凭不存在 ID、权限拒绝或路径相近宣称回收。
+普通内容文件放运行上下文的 fixture_dir；独立 Git 例放声明提供的 standalone_fixture_dir，不用执行者 Workspace、runtime 区或既有 Git checkout 代替。产品对业务目录的正式契约优先：Article 文稿必须放在本例有权使用的已登记 Project 内的独占新子目录，不能强制放到 features 区的 fixture_dir。写入前核对实际 Project、目录边界与精确权限，记录本轮子目录和资源 ID；结束只清理该独占子目录，不移动既有文稿或删除 Project 根目录。
+
+额外 Workspace 的绑定不授予编辑/注销权。按用例分支的实际操作主体检查精确权限：Resident Harness 分支必须使用执行者自己的正式 ISA；缺权限时由实际持有该能力的合法 owner 向该 Resident 提供精确许可，否则记录前提不足。不得改走测试用户的浏览器 API、借其他身份或直接写本机文件来补齐 Resident 分支。仅浏览器测试用户操作的分支使用 `tau_fixture_access.prepare_workspace_access(evidence_dir, workspace_id, check=测试用户的正式ISA, issue=实际有权控制者的正式ISA)`；该助手只给配置的测试用户检查或借用单一 Workspace 的 UpdateWorkspaceFile/UnregisterResource，不检查或授予 Resident 的权限。保存原幂等请求与许可回执；没有合法控制者则返回明确前提。不要冒充控制者或扩展 Resident 管理权限。清理先停工作、经资源 owner 释放本轮分配对象，再撤销已记录许可并删自有目录；不凭不存在 ID、权限拒绝或路径相近宣称回收。
 
 以下是经过原生页面小样例验证的操作示例，按用例需要选用。变量来自当前页面与正式响应；不要求每个用例使用全部示例或采集全部内部字段。
 
