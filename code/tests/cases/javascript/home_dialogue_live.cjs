@@ -65,7 +65,7 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<sc
     await homeAction(page,'返回上一展示');
     await page.locator('.homeDialogueDocument:visible').waitFor();
     assert.equal(await page.locator('.homeDialogueDocument:visible').count(),1);
-    await page.getByLabel('展示历史',{exact:true}).selectOption(entries[2]);
+    await page.locator('.homeDialogueMore > summary').click(); await page.getByLabel('展示历史',{exact:true}).selectOption(entries[2]);
     await search.waitFor({state:'visible'}); assert.equal(await search.inputValue(),'研究');
     await homeAction(page,'取消固定');
     await homeAction(page,'返回原布局');assert.equal(await search.inputValue(),'研究');

@@ -1,13 +1,16 @@
 (() => {
   "use strict";
-  function create({ root, onOpen, onSelection, onChange }) {
+  function create({ root, controls, onOpen, onSelection, onChange }) {
     const node = (tag, text) => { const el = document.createElement(tag); if (text) el.textContent = text; return el; };
-    const toolbar = node("div"), status = node("p"), body = node("div"), editor = node("textarea");
+    const toolbar = controls?.primary || node("div"), secondary = controls?.secondary || node("div"), status = node("p"), progress = node("span"), body = node("div"), editor = node("textarea");
     const renderRoot = node("div"); body.append(renderRoot);
-    toolbar.className = "homeDialogueToolbar"; body.className = "homeDialogueDocument";
+    toolbar.className = "homeDialoguePreviewActions"; secondary.className = "homeDialoguePreviewMenu"; body.className = "homeDialogueDocument";
     editor.className = "homeDialogueEditor"; editor.setAttribute("aria-label", "文件草稿"); editor.hidden = true;
-    status.setAttribute("role", "status"); root.append(toolbar, status, body, editor);
-    const button = (title, fn) => { const el = node("button", title); el.type = "button"; el.onclick = fn; toolbar.append(el); return el; };
+    status.className = "homeDialoguePreviewError"; status.setAttribute("role", "status");
+    progress.className = "homeDialogueSaveStatus"; progress.setAttribute("role", "status");
+    if (!controls) root.append(toolbar, secondary);
+    root.append(status, body, editor);
+    const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
     const identityKey = () => {
       const identity = window.PortalIdentity?.peek?.() || {};
       return JSON.stringify([identity.principal?.kind || "user", identity.principal?.id || identity.username || window.PortalIdentity?.username?.() || ""]);
@@ -25,9 +28,9 @@
     const editable = () => readable() && !!verified && source.canEdit(verified);
     const edit = button("编辑", () => session.beginEdit());
     const save = button("保存", () => session.save({ save: ({ payload, draft }) => source.save(payload, draft) }));
-    const cancel = button("返回预览", () => session.cancelEdit());
+    const cancel = button("返回预览", () => { session.cancelEdit(); const menu = secondary.closest("details"); if (menu) { menu.open = false; menu.querySelector("summary").focus(); } }, secondary);
     const retry = button("重试访问", () => { void revalidate(); });
-    const link = node("a", "打开原文件 ↗"); link.target = "_blank"; link.rel = "noopener"; link.hidden = true; toolbar.append(link);
+    const link = node("a", "打开原文件 ↗"); link.target = "_blank"; link.rel = "noopener"; link.hidden = true; secondary.append(link); toolbar.append(progress);
     function update(state = session?.snapshot() || {}) {
       if (destroyed) return;
       const allowed = readable(), canEdit = editable();
@@ -40,7 +43,10 @@
       link.hidden = !allowed || !source.rawUrl(state.payload || {});
       if (externalUrl && presented && identityKey() === ownerIdentity) { link.href = externalUrl; link.textContent = "在原页面打开 ↗"; link.hidden = false; }
       retry.hidden = !presented || (!accessError && !editError) || checking;
-      status.textContent = accessError || (checking ? "正在核对当前访问权限…" : state.error || state.readError || editError || (state.status === "loading" ? "正在读取…" : state.saving ? "正在保存…" : state.dirty ? "有未保存草稿（切换展示会保留）" : ""));
+      status.textContent = accessError || state.error || state.readError || editError || "";
+      progress.textContent = checking ? "核验中" : state.status === "loading" ? "读取中" : state.saving ? "保存中" : state.dirty ? "未保存" : state.editing ? "已保存" : allowed && !canEdit ? "只读" : "";
+      progress.title = checking ? "正在核对当前访问权限" : state.dirty ? "有未保存草稿，切换展示会保留" : progress.textContent;
+      progress.hidden = !progress.textContent;
       status.hidden = !status.textContent; onChange?.(state);
     }
     function disposeView() {
@@ -167,7 +173,7 @@
         for (const event of events) window.removeEventListener(event, accessChanged);
         window.removeEventListener("focus", focus); document.removeEventListener("visibilitychange", visibility);
         root.removeEventListener("mouseup", selection); root.removeEventListener("keyup", selection);
-        session.destroy(); disposeView(); root.replaceChildren();
+        session.destroy(); disposeView(); toolbar.remove(); secondary.remove(); root.replaceChildren();
       },
     };
   }

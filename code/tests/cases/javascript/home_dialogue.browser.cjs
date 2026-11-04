@@ -103,13 +103,14 @@ const server = http.createServer((req,res) => {
     await page.evaluate(()=>{window.rejectSave=true;}); await page.getByRole('button',{name:'保存',exact:true}).click(); await page.getByText('保存冲突',{exact:true}).waitFor();
     await homeAction(page,'返回上一展示');
     const values=await page.getByLabel('展示历史').locator('option').evaluateAll(options=>options.map(o=>o.value));
+    await page.locator('.homeDialogueMore > summary').click();
     await page.getByLabel('展示历史').selectOption(values.at(-1)); assert.equal(await page.getByLabel('文件草稿').inputValue(),'draft kept');
     await page.evaluate(()=>{window.rejectSave=false;}); await page.getByRole('button',{name:'保存',exact:true}).click();
     await page.waitForFunction(()=>calls.filter(c=>c.name==='UpdateResource').length===2);
     assert.equal(await page.evaluate(()=>calls.filter(c=>c.name==='UpdateResource').at(-1).args.changes.text),'draft kept');
-    await page.evaluate(()=>{window.rejectPresentation=true;}); await page.getByLabel('展示历史').selectOption(values[1]);
+    await page.evaluate(()=>{window.rejectPresentation=true;}); await page.locator('.homeDialogueMore > summary').click(); await page.getByLabel('展示历史').selectOption(values[1]);
     await page.getByText('地图恢复失败',{exact:true}).waitFor();
-    await page.evaluate(()=>{window.rejectPresentation=false;}); await page.getByLabel('展示历史').selectOption(values.at(-1)); await page.getByLabel('文件草稿').waitFor({state:'visible'});
+    await page.evaluate(()=>{window.rejectPresentation=false;}); await page.locator('.homeDialogueMore > summary').click(); await page.getByLabel('展示历史').selectOption(values.at(-1)); await page.getByLabel('文件草稿').waitFor({state:'visible'});
     // Keyboard and pointer resizing; narrow component in a wide desktop viewport.
     const divider=page.getByRole('separator',{name:'调整对话与展示宽度',includeHidden:true});
     await divider.focus(); await divider.press('ArrowRight'); assert.equal(await divider.getAttribute('aria-valuenow'),'45');

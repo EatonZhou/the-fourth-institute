@@ -19,7 +19,10 @@
     divider.setAttribute("aria-valuemin", "25"); divider.setAttribute("aria-valuemax", "70");
     const chatRoot = node("div", "", "homeDialogueChat"), chatStatus = node("p", "正在读取个人门面…"), status = node("p", "选择资源或在对话中请求展示", "homeDialogueStatus");
     status.setAttribute("role", "status"); chatStatus.setAttribute("role", "status");
-    const current = node("span", "未选择展示", "homeDialogueCurrent");
+    const current = node("summary", "未选择展示", "homeDialogueCurrent");
+    const identityMenu = node("details", "", "homeDialogueIdentity"), identityBody = node("div", "", "homeDialogueIdentityBody");
+    identityMenu.append(current, identityBody);
+    const contentActions = node("div", "", "homeDialogueContentActions");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
     const viewNames = { report: "汇报", map: "研究地图", frontier: "Lineage 线头", preview: "文件/资源" };
     const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
@@ -39,6 +42,8 @@
     opener.append(form);
     const tools = node("div", "", "homeDialogueToolbar"), more = node("details", "", "homeDialogueMore");
     more.append(node("summary", "更多"), tools);
+    const viewLabel = node("label", "视图"), historyLabel = node("label", "历史");
+    viewLabel.append(switchView); historyLabel.append(history); tools.append(viewLabel, historyLabel);
     function closeMore() { more.open = false; more.querySelector("summary").focus(); }
     const previous = button(tools, "返回上一展示", () => { closeMore(); back(true); });
     const pin = button(tools, "固定展示", () => { state.pin(!state.pinned); closeMore(); refresh(); });
@@ -47,7 +52,7 @@
       expand.textContent = expanded ? "返回原布局" : "展开";
       closeMore(); resize(); persist();
     });
-    const menus = [opener, more], menuGroup = `home-dialogue-${window.PortalUIPrimitives.randomUUID()}`;
+    const menus = [opener, more, identityMenu], menuGroup = `home-dialogue-${window.PortalUIPrimitives.randomUUID()}`;
     for (const menu of menus) {
       menu.name = menuGroup;
       menu.addEventListener("toggle", () => {
@@ -95,7 +100,7 @@
       state.entries.splice(state.entries.indexOf(entry), 1); state.select(null, false);
       select(state.entries.at(-1) || null, true);
     });
-    displayBar.append(current, switchView, history, opener, more);
+    displayBar.append(identityMenu, contentActions, opener, more);
     left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(tabs, columns);
     function setRatio(value) {
       ratio = Math.max(25, Math.min(70, value));
@@ -166,14 +171,20 @@
       if (destroyed) return;
       pin.setAttribute("aria-pressed", String(state.pinned)); pin.textContent = state.pinned ? "取消固定" : "固定展示";
       current.textContent = state.active?.label || "展示";
-      current.title = state.active ? `${state.active.intent.target.id || state.active.intent.target.address} · ${state.active.status}` : "";
+      current.title = state.active?.label || "展示";
+      current.setAttribute("aria-label", `展示详情：${current.title}`);
+      identityBody.textContent = state.active ? `${current.title}\n${state.active.intent.target.id || state.active.intent.target.address}` : "选择资源或在对话中请求展示";
       switchView.replaceChildren();
       if (state.active) {
         const choices = ["lineage", "project"].includes(state.active.intent.target.kind) ? ["report", "map", "frontier"] : [state.active.intent.view];
         for (const id of choices) switchView.add(new Option(viewNames[id], id));
         switchView.value = state.active.intent.view;
       }
-      switchView.hidden = history.hidden = !state.active;
+      viewLabel.hidden = !state.active || switchView.options.length < 2;
+      historyLabel.hidden = !state.active;
+      for (const entry of state.entries) if (entry.controls) {
+        entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
+      }
       previous.disabled = state.entries.indexOf(state.active) <= 0;
       closeDisplay.disabled = !state.active;
       history.replaceChildren(new Option(`历史 (${state.entries.length})`, ""));
@@ -212,7 +223,7 @@
     }
     function select(entry, manual) {
       state.select(entry, manual); selection = entry?.selection || null; delete status.dataset.notice;
-      more.open = false;
+      for (const menu of menus) menu.open = false;
       if (entry) entry.queued = false;
       present(); refresh();
     }
@@ -242,7 +253,12 @@
           const api = entry.intent.view === "preview" ? window.PortalHomeDialoguePreview
             : entry.intent.view === "report" ? window.PortalHomeReportView : window.PortalHomeMapView;
           if (!api) throw new Error("展示组件尚未加载，请重试或刷新页面");
-          entry.adapter = api.create({ root: entry.content,
+          if (entry.intent.view === "preview") {
+            entry.controls = { primary: node("div", "", "homeDialoguePreviewActions"), secondary: node("div", "", "homeDialoguePreviewMenu") };
+            entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
+            contentActions.append(entry.controls.primary); tools.append(entry.controls.secondary);
+          }
+          entry.adapter = api.create({ root: entry.content, controls: entry.controls,
             onOpen: intent => { if (presented && !suspended && state.active === entry) navigate(intent, true); },
             onSelection: value => {
               entry.selection = value;
