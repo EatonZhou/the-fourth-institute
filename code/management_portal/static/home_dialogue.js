@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   function createDialogue({ root, context }) {
-    const node = (tag, text, cls) => { const el = document.createElement(tag); if (text) el.textContent = text; if (cls) el.className = cls; return el; };
+    const node = (tag, text, cls) => { const el = document.createElement(tag); if (text) el.textContent = text; if (cls) el.className = cls; if (["button", "input", "select", "summary"].includes(tag)) el.classList.add("homeDialogueControl"); return el; };
     const state = window.PortalHomeDialogueState.create();
     // ResidentChatPanel creates a fresh submittedTarget for each send and passes
     // that same object to submissionContext and onAcknowledgement. Bind the

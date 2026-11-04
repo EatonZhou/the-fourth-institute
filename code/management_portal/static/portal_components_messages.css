@@ -325,8 +325,8 @@
   mask-image: linear-gradient(to bottom, #000 55%, transparent);
 }
 
-/* Own this reading control even inside pages with generic button styling. */
-.messageItem .messageFoldToggle {
+/* Reading controls own their skin; hosts must not override component internals. */
+.messageFoldToggle {
   appearance: none;
   display: none;
   align-items: center;

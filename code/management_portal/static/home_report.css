@@ -1,12 +1,13 @@
+/* Report controls opt into their skin; embedded components keep theirs. */
 .home-report { box-sizing:border-box; color:var(--text,#17243b); background:var(--panel,#f7f9fc); padding:clamp(16px,3vw,32px); font:15px/1.65 system-ui,sans-serif; min-width:0; overflow-wrap:anywhere; }
 .home-report *, .home-report *::before, .home-report *::after {box-sizing:border-box;}
 .home-report [hidden] {display:none!important;}
 .home-report h2 {font-size:26px;line-height:1.3;margin:0 0 12px;}
 .home-report h3 {font-size:19px;line-height:1.45;margin:10px 0;}
 .home-report p {white-space:pre-wrap;margin:10px 0;}
-.home-report button {font:inherit;cursor:pointer;background:var(--panel,#fff);color:var(--text,#234472);border:1px solid var(--border,#ccd6e5);border-radius:7px;padding:7px 12px;text-align:left;max-width:100%;overflow-wrap:anywhere;}
-.home-report button:hover {background:var(--hover,#edf2fc);}
-.home-report button:focus-visible, .home-report input:focus-visible, .home-report summary:focus-visible {outline:3px solid #5586db;outline-offset:2px;}
+button.homeReportControl {font:inherit;cursor:pointer;background:var(--panel,#fff);color:var(--text,#234472);border:1px solid var(--border,#ccd6e5);border-radius:7px;padding:7px 12px;text-align:left;max-width:100%;overflow-wrap:anywhere;}
+button.homeReportControl:hover {background:var(--hover,#edf2fc);}
+button.homeReportControl:focus-visible, input.homeReportControl:focus-visible, summary.homeReportControl:focus-visible {outline:3px solid #5586db;outline-offset:2px;}
 .home-report .hr-actions {display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
 .home-report .hr-muted, .home-report small {color:var(--muted,#5e6a7e);font-size:13px;}
 .home-report .hr-notice {padding:12px 15px;background:var(--subtle,#eaf0fb);border-radius:8px;margin:14px 0;}
@@ -15,10 +16,10 @@
 .home-report .hr-status {font-size:13px;color:var(--accent,#245b9b);}
 .home-report .hr-focused {border-left:3px solid #5586db;padding-left:14px;}
 .home-report .hr-interactive {margin-top:22px;border-top:1px solid var(--border,#d1dbe9);padding-top:12px;}
-.home-report input {width:100%;max-width:600px;font:inherit;border:1px solid var(--border,#ccd6e5);border-radius:7px;padding:9px 12px;background:var(--panel,#fff);color:inherit;}
+input.homeReportControl {width:100%;max-width:600px;font:inherit;border:1px solid var(--border,#ccd6e5);border-radius:7px;padding:9px 12px;background:var(--panel,#fff);color:inherit;}
 .home-report details {margin:14px 0;}
-.home-report summary {cursor:pointer;}
-.home-report details button {margin:6px 8px 0 0;}
+summary.homeReportControl {cursor:pointer;}
+.home-report details > button.homeReportControl {margin:6px 8px 0 0;}
 .home-report video {display:block;width:100%;max-height:540px;background:#111b2d;border-radius:10px;}
 .home-report pre {white-space:pre-wrap;font:inherit;max-height:420px;overflow:auto;}
 .home-report .hr-media {margin:20px 0;}
@@ -30,8 +31,8 @@
 .home-report .hr-diagrams svg {display:block;width:100%;height:auto;fill:var(--text,#17243b);font-family:system-ui,sans-serif;}
 .home-report .hr-diagrams g {transition:opacity .6s;}
 .home-report .hr-diagrams figcaption {font-size:14px;}
-.home-report button[aria-pressed=true] {background:var(--subtle,#eaf0fb);border-color:#4263c7;}
+button.homeReportControl[aria-pressed=true] {background:var(--subtle,#eaf0fb);border-color:#4263c7;}
 @media(max-width:760px) {.home-report .hr-diagrams.hr-compare {grid-template-columns:minmax(0,1fr);}}
 @media(prefers-reduced-motion:reduce) {.home-report .hr-diagrams g {transition:none;}}
 [data-home-report-standalone] {max-width:1120px;margin:0 auto;min-height:100vh;}
-@media(max-width:480px) {.home-report .hr-actions button {font-size:14px;} .home-report h2 {font-size:23px;}}
+@media(max-width:480px) {.home-report .hr-actions > button.homeReportControl {font-size:14px;} .home-report h2 {font-size:23px;}}

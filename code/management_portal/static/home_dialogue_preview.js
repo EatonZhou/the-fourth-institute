@@ -10,7 +10,7 @@
     progress.className = "homeDialogueSaveStatus"; progress.setAttribute("role", "status");
     if (!controls) root.append(toolbar, secondary);
     root.append(status, body, editor);
-    const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
+    const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.classList.add("homeDialogueControl"); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
     const identityKey = () => {
       const identity = window.PortalIdentity?.peek?.() || {};
       return JSON.stringify([identity.principal?.kind || "user", identity.principal?.id || identity.username || window.PortalIdentity?.username?.() || ""]);

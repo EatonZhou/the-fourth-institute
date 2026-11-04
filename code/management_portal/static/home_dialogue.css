@@ -1,10 +1,12 @@
 .homeDialogue { display:flex; flex-direction:column; height:100%; min-height:420px; min-width:0; background:var(--bg, #fff); color:var(--text, #222); }
 .homeDialogue [hidden] { display:none !important; }
 .homeDialogueToolbar,.homeDialogueChooser,.homeDialogueTabs { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px; }
-.homeDialogue button,.homeDialogue select,.homeDialogue input { font:inherit; color:inherit; background:var(--panel, #fff); border:1px solid var(--border, #ccc); border-radius:5px; padding:5px 9px; }
-.homeDialogue button { cursor:pointer; }
-.homeDialogue button:disabled { opacity:.55; cursor:default; }
-.homeDialogue button[aria-pressed="true"] { outline:2px solid var(--accent, #5871b8); }
+/* Only Home-created controls use this skin. Mounted Chat, reports and editors
+   keep their own control styles, including hover/pressed/disabled states. */
+:where(button, select, input).homeDialogueControl,.homeDialogueMessageAction { font:inherit; color:inherit; background:var(--panel, #fff); border:1px solid var(--border, #ccc); border-radius:5px; padding:5px 9px; }
+button.homeDialogueControl,.homeDialogueMessageAction { cursor:pointer; }
+.homeDialogueControl:disabled { opacity:.55; cursor:default; }
+.homeDialogueControl[aria-pressed="true"] { outline:2px solid var(--accent, #5871b8); }
 .homeDialogueColumns { display:grid; grid-template-columns:minmax(0, var(--home-dialogue-left,40%)) 8px minmax(0,1fr); flex:1; min-height:0; overflow:hidden; }
 .homeDialogueDivider { cursor:col-resize; touch-action:none; background:var(--border,#ccc); border:2px solid var(--bg,#fff); }
 .homeDialogueDivider:focus-visible { outline:2px solid var(--accent,#5871b8); outline-offset:-2px; }
@@ -33,7 +35,7 @@
 .homeDialoguePreviewMenu { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .homeDialoguePreviewError { margin:0; padding:6px 8px; color:var(--muted, #666); }
 .homeDialogueToolbar > label { display:flex; align-items:center; gap:6px; min-width:0; width:100%; }
-.homeDialogue summary { cursor:pointer; white-space:nowrap; padding:5px 7px; border:1px solid var(--border,#ccc); border-radius:5px; }
+summary.homeDialogueControl { cursor:pointer; white-space:nowrap; padding:5px 7px; border:1px solid var(--border,#ccc); border-radius:5px; }
 .homeDialogueDisplayBar summary { list-style:none; padding:5px 6px; font-size:inherit; }
 .homeDialogueDisplayBar summary::-webkit-details-marker { display:none; }
 .homeDialogueOpener[open] .homeDialogueChooser,.homeDialogueMore[open] .homeDialogueToolbar,.homeDialogueIdentity[open] .homeDialogueIdentityBody { position:absolute; top:100%; right:8px; left:8px; z-index:2; background:var(--panel,#fff); border:1px solid var(--border,#ccc); border-radius:5px; box-shadow:0 4px 12px #0002; max-height:60vh; overflow:auto; }

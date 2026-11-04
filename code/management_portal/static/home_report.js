@@ -6,6 +6,7 @@
     const node = document.createElement(tag);
     if (text != null) node.textContent = String(text);
     if (cls) node.className = cls;
+    if (['button', 'input', 'summary'].includes(tag)) node.classList.add('homeReportControl');
     return node;
   };
   const button = (label, action) => { const b = el('button', label); b.type = 'button'; b.onclick = action; return b; };

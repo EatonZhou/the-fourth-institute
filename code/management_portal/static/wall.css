@@ -24,8 +24,8 @@ body:has(.portalAgentInbox:not([hidden])) .wallWorkspaceView { padding-right: 50
 .wallModuleField { max-width: 100%; }
 .wallPage select, .wallForm input, .wallForm textarea { color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 5px; font: inherit; padding: 6px 8px; min-width: 0; }
 .wallPage select { min-height: 32px; }
-.wallPage :where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.wallPage button:disabled { cursor: not-allowed; opacity: .5; }
+:where(.wallPage :is(button, a, input, select, textarea):focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+:where(:is(.wallFilters, .wallActions, .wallRelated, .wallJobs, .wallChatTabs, .wallCompletedLinks, .wallForm) > button:disabled) { cursor: not-allowed; opacity: .5; }
 .wallFilters { display: flex; gap: 5px; flex-wrap: wrap; }
 .wallFilters button { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); color: var(--text); cursor: pointer; font: inherit; font-size: 12px; }
 .wallFilters button::before { content: ''; width: 7px; height: 7px; background: var(--wall-category, var(--muted)); }
