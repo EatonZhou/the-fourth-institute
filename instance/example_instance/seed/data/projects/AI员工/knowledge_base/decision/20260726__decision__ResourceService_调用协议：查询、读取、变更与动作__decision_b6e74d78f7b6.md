@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 37
+  number: 38
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T11:03:43Z"
+  updated_at: "2026-11-04T11:12:13Z"
   updated_by:
     user: ""
     agent: "resident_83d75ad3a6c7"
@@ -185,7 +185,7 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 
 ### 上传文件引用
 
-`resolve`、`reference`、`open_content`、`read_content` 与 `read_content_range` 接受 `{"upload_id":"upload_<原24位句柄>"}`，或严格属于本实例的上传 URL。地址形态与 ISA 参数见 decision_ad3e21094f14；上传句柄不进入根资源解析、资源登记或索引，不生成新 ID。
+`resolve`、`reference`、`open_content`、`read_content` 与 `read_content_range` 接受 `{"upload_id":"upload_<原24位句柄>"}`，或严格属于本实例的上传 URL（包含部署显式登记的 public_origin_aliases）。地址形态与 ISA 参数见 decision_ad3e21094f14；上传句柄不进入根资源解析、资源登记或索引，不生成新 ID。
 
 上传领域统一负责活跃 User/Resident 身份、完成状态、清理登记和 no-follow 文件访问。上传内容对所有活跃认证身份可读；普通资源仍走原读取授权。解析与引用只读取元数据和文件状态，返回文件名、类型、大小、修改时间、`file_reference` 和 `content_url`；`open_content` 也只返回这份元数据，不公开可绕过逐次检查的真实路径。内容读取受 `max_bytes` 限制，区间读取使用 inclusive start/end；浏览器上传 HTTP 入口和资源 HTTP 入口共用 Range 与条件响应规则，每段重新检查身份、路径、大小和修改时间，发生变化即中止。
 

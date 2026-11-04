@@ -75,6 +75,29 @@ def test_real_par_all_active_callers_and_all_address_forms(files, actor):
     assert isa.read_upload(HANDLE)["ready"] is True  # Mutable creation/consumer metadata stays compatible.
 
 
+def test_explicit_deployment_origin_alias_is_readable_but_other_sites_are_not(files, monkeypatch):
+    from management_common import site_config
+
+    monkeypatch.setattr(site_config, "read_site_config", lambda: {
+        "deployment": {"auth": {"public_origin_aliases": ["https://192.0.2.25"]}}})
+    result = files.call(actor=RESIDENT, address="https://192.0.2.25/api/uploads/" + HANDLE).raise_for_error()
+    assert result["text"] == "hello upload"
+    for origin in ("https://192.0.2.26", "http://192.0.2.25", "https://192.0.2.25:444"):
+        with pytest.raises(ValueError, match="another Portal origin"):
+            upload_files.file_reference(origin + "/api/uploads/" + HANDLE)
+
+
+@pytest.mark.parametrize("aliases", ["https://example.org", [None], ["https://example.org/path"],
+                                     ["https://example.org?x=1"], ["https://example.org#x"]])
+def test_invalid_deployment_origin_aliases_fail_closed(files, monkeypatch, aliases):
+    from management_common import site_config
+
+    monkeypatch.setattr(site_config, "read_site_config", lambda: {
+        "deployment": {"auth": {"public_origin_aliases": aliases}}})
+    with pytest.raises(ValueError):
+        upload_files.file_reference("https://portal.example/api/uploads/" + HANDLE)
+
+
 @pytest.mark.parametrize("actor", ["", "nobody", "resident_ffffffffffff", "service:portal"])
 def test_anonymous_and_unregistered_principals_rejected_before_files(files, monkeypatch, actor):
     inspect = Mock(side_effect=AssertionError("anonymous read reached files"))

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 44
+  number: 45
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-04T11:03:42Z"
+  updated_at: "2026-11-04T11:12:12Z"
   updated_by:
     user: ""
     agent: "resident_83d75ad3a6c7"
@@ -85,7 +85,7 @@ links:
 
 ### 上传文件引用
 
-`ResolveResource` 和 `ReadResource` 也接受恰好一个 `upload_id` 字段的文件引用，例如 `{"address":{"upload_id":"upload_ba95597e97d28c70bae9994c"}}`。值沿用上传时取得的句柄。`/api/uploads/<句柄>` 和本实例正式 public/internal origin 下的完整 URL 可作为等价地址，仅允许可选的 `download=1` 查询参数。其他站点、片段和额外字段会被拒绝，不触发远程抓取。
+`ResolveResource` 和 `ReadResource` 也接受恰好一个 `upload_id` 字段的文件引用，例如 `{"address":{"upload_id":"upload_ba95597e97d28c70bae9994c"}}`。值沿用上传时取得的句柄。`/api/uploads/<句柄>` 和本实例正式 public/internal origin 或部署显式登记的 public_origin_aliases 下的完整 URL 可作为等价地址，仅允许可选的 `download=1` 查询参数。其他站点、片段和额外字段会被拒绝，不触发远程抓取。
 
 上传文件由上传领域检查活跃认证身份、完成状态、清理登记和安全路径；所有已认证 User/Resident 都可读。上传句柄不作为资源树节点，普通资源仍按表中的 viewer 权限检查。`ResolveResource` 返回文件 `target` 和只读操作，根 `resource` 为空；`ReadResource` 支持 `meta_only`、`preview`、有界正文及超限下载，返回 `file_reference`、原文件名、类型、大小与内容地址，二进制预览不加载全部字节。
 

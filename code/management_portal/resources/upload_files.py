@@ -30,6 +30,7 @@ def _origin(value):
 
 def _origins():
     from management_common.instance_manifest import current_instance
+    from management_common.site_config import read_site_config
     from management_portal.portal_session_auth import authentication_setting
 
     instance = current_instance()
@@ -37,6 +38,16 @@ def _origins():
     public = authentication_setting("public_origin")
     if public:
         origins.add(_origin(public))
+    aliases = read_site_config().get("deployment", {}).get("auth", {}).get("public_origin_aliases", [])
+    if not isinstance(aliases, list):
+        raise ValueError("deployment.auth.public_origin_aliases must be a list of origins")
+    for alias in aliases:
+        if not isinstance(alias, str):
+            raise ValueError("Public origin aliases must be strings")
+        parsed = urlsplit(alias)
+        if parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
+            raise ValueError("Public origin aliases cannot contain paths, queries or fragments")
+        origins.add(_origin(alias))
     return origins
 
 

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 21
+  number: 22
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T11:03:43Z"
+  updated_at: "2026-11-04T11:12:12Z"
   updated_by:
     user: ""
     agent: "resident_83d75ad3a6c7"
@@ -88,6 +88,8 @@ Portal 管理很多种业务对象：知识条目、论文、代码仓库、文�
 统一文件读取也接受 `{"upload_id":"upload_<原24位句柄>"}`。这是上传领域的文件引用，不进入统一资源类型注册表或资源索引，也不改动根资源 ID 的语法。相对 `/api/uploads/<句柄>` 与本实例正式 public/internal origin 下的完整 HTTP(S) URL 规范化为同一引用，只允许可选 `download=1`；外站、额外字段、参数、片段和路径穿越均拒绝，不读取远程 URL。
 
 ResourceService 在普通资源地址解析之前把这类引用交给上传文件 owner。owner 检查当前调用者为活跃 User/Resident、上传已完成且不在清理中，并以 no-follow 路径访问文件；引用返回文件元数据、原文件名、受保护内容 URL 和 `file_reference`，不伪造根 ID。该读取规则由上传领域承担，普通资源的 PAR 授权和根身份契约继续保持。
+
+部署可在 `site.json` 的 `deployment.auth.public_origin_aliases` 中声明额外的本站入口，例如已由本站反向代理提供的内网 HTTPS 地址。值是只含 scheme、host、port 的 origin 字符串列表，与主 public origin 一起精确匹配；端口和协议不相同仍拒绝。别名只用于文件地址识别，不替换认证或授权，不从调用者输入、DNS或任意外站自动信任地址。
 
 ### 解析始终使用当前访问者
 

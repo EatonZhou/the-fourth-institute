@@ -26,14 +26,14 @@ DECLARATIONS = (
         NEXT_CURSOR(),
     )),
     _d("ResolveResource", (On("address"),), "把一个资源地址解析为资源记录，并说明调用者可以对它执行哪些操作。", (
-        R("address", "any", description="字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 .."),
+        R("address", "any", description="字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 .."),
     ), (
         RESOURCE_RECORD,
         P("target", "object", "地址中的内部目标"),
         R("operations", "array", "调用者当前可以执行的操作"),
     ), target="address"),
     _d("ReadResource", (On("address"),), "读取资源正文，或读取文件夹资源里的文件和目录：Workspace、Resident（Resident Folder）和 Lineage（Lineage Folder）的文件都用 <资源ID>/file/<相对路径> 寻址；读目录（含 <资源ID>/file 本身）返回它的直接子项。", (
-        R("address", "any", description="字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变"),
+        R("address", "any", description="字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变"),
         P("max_bytes", "integer", "直接返回内容的上限，默认 4 MiB；preview 时为预览长度", minimum=1),
         P("meta_only", "boolean", "只返回文件的名称、种类、大小和修改时间，不读内容；只用于文件地址"),
         P("preview", "boolean", "返回不超过 max_bytes 的文本预览：更长的文件截断并标记 truncated，图片、PDF 和其他二进制文件不返回内容，只标记 binary；只用于文件地址"),
