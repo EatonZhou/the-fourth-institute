@@ -1,6 +1,6 @@
 """Uploads use unified file reads with their existing authenticated-user rule.
 
-:module: resources.access
+:module: resource.service
 """
 import hashlib
 import json
