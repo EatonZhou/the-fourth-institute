@@ -62,11 +62,28 @@ def _cancel_media(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
+def _page_subject(media, address, sha256, actor, task=''):
+    ref = {'address': address, 'sha256': sha256}
+    ctx = media.context(**ref, actor=actor)
+    manifest = json.loads(media.read(ref, actor))
+    if manifest.get('quality') != 'high':
+        raise ValueError('仅high解释页需要独立审核')
+    return {'kind': 'explanation', 'ref': address, 'version': sha256,
+            'digest': sha256, 'quality': 'high', 'author': ctx.get('owner_id') or actor,
+            'assets': [ref] + [manifest[k] for k in ('interaction', 'supplement', 'video_plan', 'video') if manifest.get(k)],
+            'task': task or manifest.get('summary', '')}
+
+
 def _reviews(request, parsed, actor):
     try:
         owner = ReviewService()
         if request.command == 'GET':
-            value = owner.read(parse_qs(parsed.query).get('id', [''])[0], actor)
+            query = parse_qs(parsed.query)
+            identifier = query.get('id', [''])[0]
+            if not identifier:
+                subject = _page_subject(Media(), query.get('address', [''])[0], query.get('sha256', [''])[0], actor)
+                identifier = owner.identifier(subject)
+            value = owner.read(identifier, actor)
         else:
             body = http_request_body._read_bounded_json_object(request, max_bytes=16384)
             if parsed.path.endswith('/verdict'):
@@ -75,17 +92,9 @@ def _reviews(request, parsed, actor):
             elif parsed.path.endswith('/cancel'):
                 value = owner.cancel(body.get('review_id'), actor)
             else:
-                media = Media()
-                ref = {'address': body.get('address'), 'sha256': body.get('sha256')}
-                ctx = media.context(**ref, actor=actor)
-                manifest = json.loads(media.read(ref, actor))
-                if manifest.get('quality') != 'high':
-                    raise ValueError('仅high解释页需要独立审核')
-                assets = [ref] + [manifest[k] for k in ('interaction', 'supplement', 'video_plan', 'video') if manifest.get(k)]
-                value = owner.submit({'kind': 'explanation', 'ref': ref['address'], 'version': ref['sha256'],
-                    'digest': ref['sha256'], 'quality': 'high', 'author': ctx.get('owner_id') or actor,
-                    'assets': assets, 'task': body.get('task', manifest.get('summary', '')),
-                    'previous_review_id': body.get('previous_review_id')}, actor, body.get('reviewer', ''))
+                subject = _page_subject(Media(), body.get('address'), body.get('sha256'), actor, body.get('task', ''))
+                subject['previous_review_id'] = body.get('previous_review_id')
+                value = owner.submit(subject, actor, body.get('reviewer', ''))
         return http_responses._serve_json(request, 200, {'review': value})
     except Exception as exc:
         return http_responses._serve_exception_json(request, exc)

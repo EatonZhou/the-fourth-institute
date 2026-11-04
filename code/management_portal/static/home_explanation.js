@@ -212,12 +212,14 @@
         })(),
       ]);
     }
-    function videoReview(region, review, key, quality) {
+    function videoReview(region, review, key, quality, page = false) {
       if (!current(key)) return;
-      const area = node("div", null, "homeExplanationVideoReview"); region.append(area);
+      const area = node("div", null, page ? "homeExplanationPageReview" : "homeExplanationVideoReview"); region.append(area);
+      const endpoint = `/api/home-explanation/${page ? "reviews" : "media"}?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`;
+      const unpack = result => page ? result?.review : (result?.media === undefined ? result : result.media)?.review;
       const draw = value => {
         if (!current(key)) return;
-        clearTimeout(mediaTimer); mediaTimer = null;
+        if (!page) { clearTimeout(mediaTimer); mediaTimer = null; }
         area.replaceChildren();
         const state = value?.status || "not_requested";
         const labels = {
@@ -233,15 +235,23 @@
           invalidated: "固定产物已变化，原审核通过结论失效；请保存新固定版本后重新送审。",
           awaiting_author: "缺少经核验的负责Resident，审核等待正式作者关联。",
         };
-        const status = node("p", t(labels[state] || labels.not_requested), "homeExplanationMuted");
+        const pageLabels = { pending: "解释页质量检查等待提交。", submitted: "解释页已提交独立检查，尚未通过。",
+          submission_failed: "解释页检查暂未提交。", not_requested: "解释页尚未经过独立检查，不能视为高质量达标。" };
+        const status = node("p", t((page && pageLabels[state]) || labels[state] || labels.not_requested), "homeExplanationMuted");
         status.setAttribute("role", "status"); area.append(status);
         if (value?.feedback) area.append(node("p", value.feedback, "homeExplanationMuted"));
+        if (value?.error) area.append(node("p", value.error, "homeExplanationMuted"));
+        for (const evidence of value?.evidence || []) {
+          if (typeof evidence?.address === "string" && hashPattern.test(evidence.sha256 || "")) {
+            area.append(button("查看审核证据", () => onOpen?.({ view: "preview", target: { address: evidence.address } })));
+          }
+        }
         if (["submitted", "pending"].includes(state)) {
           area.append(button("刷新审核结果", async () => {
             if (!current(key)) return;
             try {
-              const result = await window.PortalAPI.get(`/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`, { signal: controller.signal, cache: "no-store" });
-              if (current(key)) draw((result?.media === undefined ? result : result.media)?.review);
+              const result = await window.PortalAPI.get(endpoint, { signal: controller.signal, cache: "no-store" });
+              if (current(key)) draw(unpack(result));
             } catch (error) {
               if (current(key) && error.name !== "AbortError") {
                 draw({ status: "submission_failed" }); failure(area, error);
@@ -257,14 +267,14 @@
           return;
         }
         if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled", "invalidated", "awaiting_author"].includes(state)) return;
-        area.append(button(state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
+        area.append(button(page ? "提交解释页独立检查" : state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
           if (!current(key)) return;
           area.querySelectorAll("button").forEach(el => { el.disabled = true; });
           try {
-            const result = await window.PortalAPI.post("/api/home-explanation/media/review", {
+            const result = await window.PortalAPI.post(page ? "/api/home-explanation/reviews" : "/api/home-explanation/media/review", {
               address: target.address, sha256: target.sha256, quality,
             }, { signal: controller.signal });
-            if (current(key)) draw((result?.media === undefined ? result : result.media)?.review);
+            if (current(key)) draw(unpack(result));
           } catch (error) {
             if (current(key) && error.name !== "AbortError") {
               draw({ status: "submission_failed" }); failure(area, error);
@@ -276,7 +286,7 @@
     }
     async function plannedVideo(region, plan, key) {
       // Reading a plan only verifies provenance. A POST requires a button click.
-      await read(plan, limits.text, key);
+      if (plan) await read(plan, limits.text, key);
       const content = node("div", null, "homeExplanationMediaState"); region.append(content);
       const controls = node("label", t("视频质量"), "homeExplanationQuality");
       const select = node("select"); select.setAttribute("aria-label", t("视频质量"));
@@ -349,7 +359,14 @@
         if (typeof value.summary === "string" && value.summary.trim()) header.append(node("p", value.summary.slice(0, 4000), "homeExplanationSummary"));
         root.append(header);
         const tasks = []; let index = 0;
-        if (value.video || value.video_plan) {
+        if (value.quality === "high") {
+          const reviewArea = node("div"); header.append(reviewArea);
+          tasks.push(moduleTask(reviewArea, async () => {
+            const result = await window.PortalAPI.get(`/api/home-explanation/reviews?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}`, { signal: controller.signal, cache: "no-store" });
+            if (current(key)) videoReview(reviewArea, result?.review, key, "high", true);
+          }, key));
+        }
+        if (value.video || value.video_plan || value.quality !== "low") {
           const region = section("视频讲解", String(++index).padStart(2, "0"));
           tasks.push(moduleTask(region, () => value.video ? renderVideo(region, value.video, key) : plannedVideo(region, value.video_plan, key), key));
         }

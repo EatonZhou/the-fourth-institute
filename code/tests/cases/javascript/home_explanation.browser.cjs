@@ -29,6 +29,7 @@ const base = { schema: 'portal-explanation/v1', revision: 1, title: '注意力�
 const manifest = (name, value) => put(name + '.json', JSON.stringify(value), 'application/json');
 let state = null, deny = false, deniedAddress = '', delayed = '', releases = [], videoRef;
 let reviewDenied = false, delayReview = false, reviewRelease;
+let pageReviewState = null;
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://fixture');
   if (url.pathname === '/') {
@@ -40,6 +41,12 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/static/')) {
     const file = path.resolve(root, url.pathname.slice(8));
     if (file.startsWith(root + '/') && fs.existsSync(file)) { res.writeHead(200, { 'Content-Type': file.endsWith('.css') ? 'text/css' : 'text/javascript' }); res.end(fs.readFileSync(file)); return; }
+  }
+  if (url.pathname === '/api/home-explanation/reviews') {
+    requests.push({ url: url.pathname, method: req.method });
+    if (req.method === 'POST') pageReviewState = { status: 'submitted', id: 'a'.repeat(64) };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ review: pageReviewState })); return;
   }
   if (url.pathname === '/api/home-explanation/media') {
     const entry = { url: url.pathname, method: req.method, quality: url.searchParams.get('quality') }; requests.push(entry);
@@ -129,6 +136,36 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
         { address: planned.address, sha256: planned.sha256, quality: 'medium' });
       check('authoring UI has no script errors', errors, []);
       if (out) fs.writeFileSync(path.join(out, 'authoring-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
+      return;
+    }
+    if (process.argv.includes('--page-workflow-only')) {
+      const pageOnly = manifest('page-without-plan', { ...base, quality: 'high', video_plan: undefined });
+      state = null; requests.length = 0;
+      await setup(pageOnly);
+      await page.getByRole('button', { name: '生成讲解视频', exact: true }).waitFor();
+      check('opening without a plan does not create audio, video or review work', requests.filter(r => r.method === 'POST').length, 0);
+      await page.getByText('解释页尚未经过独立检查，不能视为高质量达标。', { exact: true }).waitFor();
+      await page.getByRole('button', { name: '提交解释页独立检查', exact: true }).click();
+      await page.getByText('解释页已提交独立检查，尚未通过。', { exact: true }).waitFor();
+      check('explicit review submits once', requests.filter(r => r.url === '/api/home-explanation/reviews' && r.method === 'POST').length, 1);
+      pageReviewState = { status: 'changes_requested', feedback: '缺少可操作的反例与因果解释。', evidence: [supplement] };
+      await page.locator('.homeExplanationPageReview').getByRole('button', { name: '刷新审核结果' }).click();
+      await page.getByText(pageReviewState.feedback, { exact: true }).waitFor();
+      await page.getByRole('button', { name: '查看审核证据', exact: true }).click();
+      check('evidence uses native authenticated preview', await page.evaluate(() => opens.at(-1)), { view: 'preview', target: { address: supplement.address } });
+      await page.getByRole('button', { name: '生成讲解视频', exact: true }).click();
+      check('video request without plan retains high quality', requests.find(r => r.url === '/api/home-explanation/media' && r.method === 'POST').body,
+        { ...pageOnly, quality: 'high' });
+      state = { status: 'awaiting_authoring', authoring: { status: 'submitted' } };
+      await setup(pageOnly);
+      await page.getByText('已将质量要求送交负责Resident修改分镜；尚未生成新视频。', { exact: true }).waitFor();
+      check('reopen retains feedback without resubmitting', requests.filter(r => r.url === '/api/home-explanation/reviews' && r.method === 'POST').length, 1);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => { document.documentElement.style.fontSize = '20px'; });
+      check('narrow explanation stays within viewport', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      if (out) await page.screenshot({ path: path.join(out, 'page-review-390.png') });
+      check('page workflow has no script errors', errors, []);
+      if (out) fs.writeFileSync(path.join(out, 'page-workflow-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
       return;
     }
     if (process.argv.includes('--invalidated-only')) {

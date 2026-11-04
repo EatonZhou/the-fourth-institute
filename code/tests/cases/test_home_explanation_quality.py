@@ -113,6 +113,29 @@ def rig(tmp_path, monkeypatch):
     return resources, reviews, media, calls, renders, put, package, done
 
 
+def test_page_review_identity_and_planless_video_request(rig):
+    from management_portal.home_explanation_http import _page_subject
+    resources, reviews, media, calls, renders, put, package, done = rig
+    ref = put('page-only.json', {'schema': 'portal-explanation/v1', 'quality': 'high',
+        'title': '先理解因果', 'supplement': put('reading.md', b'Explain the cause.')})
+    subject = _page_subject(media, **ref, actor=AUTHOR)
+    assert reviews.read(reviews.identifier(subject), AUTHOR) is None
+    assert not calls and not renders
+    submitted = reviews.submit(subject, AUTHOR)
+    # The fixed target lookup and author submission identify the same review.
+    assert reviews.read(reviews.identifier(_page_subject(media, **ref, actor=AUTHOR)), AUTHOR)['id'] == submitted['id']
+    count = len(calls)
+    with pytest.raises(ValueError, match='内容已变化'):
+        _page_subject(media, ref['address'], '0'*64, AUTHOR)
+    resources.denied.add(CHECKER)
+    with pytest.raises(PermissionError):
+        _page_subject(media, **ref, actor=CHECKER)
+    assert len(calls) == count
+    result = media.start(**ref, actor=AUTHOR, quality='high')
+    assert result['status'] == 'awaiting_authoring' and result['authoring']['status'] == 'submitted'
+    assert calls[-1][2]['resident_id'] == AUTHOR and not renders
+
+
 def test_quality_binds_artifacts_and_enforces_authored_visual_policy(rig):
     resources, reviews, media, calls, renders, put, package, done = rig
     legacy = package(1, False)
@@ -174,6 +197,21 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
                       headers={'Content-Type': 'application/json', 'X-Fixture-Actor': actor})
         with urlopen(req) as response: return json.load(response)
     try:
+        page_ref = put('page-http.json', {'schema': 'portal-explanation/v1', 'quality': 'high',
+            'title': 'A fixed explanation', 'supplement': put('page-http.md', b'Cause and effect.')})
+        page_query = 'reviews?address='+page_ref['address']+'&sha256='+page_ref['sha256']
+        before_page = len(calls)
+        assert request(page_query)['review'] is None
+        assert len(calls) == before_page
+        submitted_page = request('reviews', page_ref)['review']
+        after_page = len(calls)
+        assert request(page_query)['review']['id'] == submitted_page['id']
+        assert len(calls) == after_page
+        resources.denied.add(CHECKER)
+        with pytest.raises(HTTPError) as forbidden_page:
+            request(page_query, actor=CHECKER)
+        assert forbidden_page.value.code == 403
+        resources.denied.remove(CHECKER)
         legacy = package(0, False)
         author_request = request('media', {**legacy, 'quality': 'medium'})['media']['authoring']
         assert author_request['status'] == 'submitted'
