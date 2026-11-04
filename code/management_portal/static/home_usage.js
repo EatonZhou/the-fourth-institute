@@ -34,7 +34,7 @@
     let usageError = "";
     let usageRequestPending = false;
     let usageRenderedSignature = "";
-    const RESIDENT_USAGE_RANK_LIMIT = 20;
+    const USAGE_RANK_LIMIT = 20;
     const AGENT_STATUS_USAGE_RANGES = ["today", "week", "month", "year"];
 
     function formatTokens(value) {
@@ -146,7 +146,7 @@
       const tokenUsage = selectedTokenUsage(data);
       const windows = tokenUsage.windows || {};
       const ranking = tokenUsage[AGENT_STATUS_GROUPINGS[agentStatusGrouping].ranking];
-      const residents = Array.isArray(ranking) ? ranking : [];
+      const rankingEntries = Array.isArray(ranking) ? ranking : [];
       const groupingLabel = AGENT_STATUS_GROUPINGS[agentStatusGrouping].label;
       const visibleSeries = chartSeries(tokenUsage);
       const legendSource = visibleSeries.flatMap(item => chartSegments(item));
@@ -177,17 +177,30 @@
         ? agentStatusChartRange
         : "today";
       const detailRangeLabel = detailRange[0].toUpperCase() + detailRange.slice(1);
-      const topResidents = [...residents]
+      const topEntries = [...rankingEntries]
         .filter(item => Number(item.periods?.[detailRange] || 0) > 0)
         .sort((left, right) => (
           Number(right.periods?.[detailRange] || 0)
           - Number(left.periods?.[detailRange] || 0)
         ))
-        .slice(0, RESIDENT_USAGE_RANK_LIMIT);
-      const maxResident = Math.max(1, ...topResidents.map(item => Number(item.periods?.[detailRange] || 0)));
-      const residentRows = topResidents.length ? topResidents.map(item => {
+        .slice(0, USAGE_RANK_LIMIT);
+      // The chart already contains the authorized anonymous aggregates for
+      // this exact grouping, period, account and cache variant. Keep them
+      // outside the limit on named objects, using the same values as its legend.
+      const summaryGroups = new Map();
+      for (const segment of legendSource) {
+        if (!["other_residents", "unregistered"].includes(segment.key)) continue;
+        summaryGroups.set(segment.key, (summaryGroups.get(segment.key) || 0) + usageWindowValue(segment, "tokens"));
+      }
+      const detailEntries = [...topEntries];
+      for (const [key, title] of [["other_residents", "Other resident(s)"], ["unregistered", "Unregistered session(s)"]]) {
+        const tokens = summaryGroups.get(key) || 0;
+        if (tokens > 0) detailEntries.push({title: legendMap.get(key) || title, periods: {[detailRange]: tokens}});
+      }
+      const maxEntry = Math.max(1, ...detailEntries.map(item => Number(item.periods?.[detailRange] || 0)));
+      const detailRows = detailEntries.length ? detailEntries.map(item => {
         const tokens = Number(item.periods?.[detailRange] || 0);
-        const width = Math.max(2, Math.round((tokens / maxResident) * 100));
+        const width = Math.max(2, Math.round((tokens / maxEntry) * 100));
         return window.PortalI18n.html`
       <div class="agent-status-row">
         <span class="agent-status-row-name" title="${esc(item.title || item.project_id || item.lineage_id || item.resident_id)}">${esc(item.title || item.project_id || item.lineage_id || item.resident_id)}</span>
@@ -248,7 +261,7 @@
         <summary><span>Details</span><span data-portal-icon="chevron-down" data-portal-icon-class="statusDisclosureIcon" class="statusDisclosureIcon" aria-hidden="true"></span></summary>
         <div class="agent-status-section">
           <div class="agent-status-section-title">${groupingLabel} attributed usage · ${esc(detailRangeLabel)}</div>
-          <div class="agent-status-rows">${residentRows}</div>
+          <div class="agent-status-rows">${detailRows}</div>
         </div>
         <div class="agent-status-muted">${esc(detailSummary)}</div>
         <div class="agent-status-muted">Updated ${esc(formatDateTime(data?.updated_at) || window.PortalI18n.t("just now"))}</div>
