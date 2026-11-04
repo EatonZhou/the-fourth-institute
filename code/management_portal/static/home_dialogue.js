@@ -394,8 +394,11 @@
       submissionRequests.set(submittedTarget, requestId);
       const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", target: { kind: "lineage", id: "<真实资源ID>" } };
       return { context_text: [
-        "当前入口是 Home 对话与展示。用户明确要求展示、生成汇报、切换、聚焦或返回时，可在最终回复中输出一个 portal-home-display JSON 代码围栏。",
-        "此协议只导航现有真实来源，不生成 HTML/JS，不授权修改资源。先确定真实目标及其可读性，未知目标应询问用户。普通回答不输出指令。",
+        "当前入口是 Home 对话与展示。用户明确要求视觉讲解、直观解释、图解、演示或可视化（例如‘直观解释注意力机制，Transformer的核心’），即使没有现成文件，也应作为右侧内容任务：生成可阅读的解释材料并打开。明确要求展示、生成汇报、切换、聚焦或返回也使用右侧。普通纯文本问答、只要文字或明确不创建文件时，不强制创建内容、不输出展示指令；不要仅因提到某个术语就生成文件。",
+        "视觉解释的生成路径：按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释文件。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 写入 Markdown，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由；主题足够明确就制作，确实缺少必要范围时才询问。",
+        "Preview 实际能力：优先制作 .md 图文解释页，使用分步示例、表格、公式和 Mermaid 图；可预览 PNG/SVG 等图片、PDF、MP4/WebM 视频与音频。图和媒体只能引用已生成并回读可用的文件/正式内容地址；视频适宜且现有工具可用时再生成，配字幕（可烧录）及独立文字讲解，失败仍保留可读图文。当前 Preview 的 HTML/JS 文件只按文本/代码展示，Markdown 原始 HTML 会转义，不运行任意脚本或生成页面的交互；需要交互时仅使用已支持的原生能力，否则明确说明并提供静态分步图解，不伪称交互已可用。",
+        "写入成功后用 ReadResource 回读同一正式文件地址，核对内容/媒体及可读性；成功才在最终回复说明产物并输出 view:preview、action:open、target:{address:真实workspace_ID/file/相对路径} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久文件地址以保留历史，不把临时下载凭据写进引用。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确失败原因，在对话提供可用的文字解释或已核实的图文入口。",
+        "展示协议只导航已存在且可读的目标，不执行协议内 HTML/脚本、不授予写权限；实际生成通过上述文件工具完成，不能把页面正文、脚本或凭据塞进协议。概念解释走 preview，不为它伪造 Project、Lineage 或 task 来源。已有来源的状态汇报仍走 report：首次意图由报告适配器按稳定来源身份持久化，已有报告必须引用确定 report_ID+revision，显式刷新另建版本且保留旧引用。未知的已有资源目标先查询，无法确认才询问。",
         "示例结构：" + JSON.stringify(protocol),
         "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview；首次汇报/地图 target 为 {kind:task|lineage|project,id,focus?:节点ID}；已有汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}。back 无须 view/target。version 是本次请求内递增整数。",
         "宿主只接受本次 request_id，自动结果不会覆盖固定、草稿或用户手选展示。", 

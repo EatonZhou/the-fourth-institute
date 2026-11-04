@@ -142,6 +142,46 @@ const server=http.createServer((req,res)=>{
     await page.screenshot({path:path.join(out,'05-map-action-390.png')});
     // Without Home's conversationView the exact same assistant output is code.
     check('global Markdown is unchanged for ordinary callers',await page.evaluate(()=>MD.render(displayFence(command())).includes('<pre>')),true);
+    // Exercise the native Chat send -> Protocol prepare -> service boundary,
+    // not a direct call to submissionContext. Only transport is substituted;
+    // no model or private conversation is involved.
+    evidence.submissions=await page.evaluate(async()=>{
+      window.sentBodies=[];
+      window.PortalResidentService={...PortalResidentService,sendInput:async body=>{
+        sentBodies.push(structuredClone(body));
+        return {resident_id:body.resident_id,message_id:body.message.message_id};
+      }};
+      for(const text of ['只用文字回答：注意力机制是什么？不要创建文件。','查看已有汇报 report_0123456789ab 的第 3 版。','直观解释注意力机制，Transformer的核心']) {
+        await panel.send({text,plainText:text},{clear:false,focus:false});
+      }
+      return sentBodies;
+    });
+    check('native Chat sends each request to the current facade',evidence.submissions.map(s=>s.resident_id),Array(3).fill('resident_0123456789ab'));
+    const contexts=evidence.submissions.map(s=>s.message.content_parts.filter(p=>p.type==='context_reference'));
+    check('native Protocol prepare attaches exactly one Home context',contexts.map(c=>c.length),[1,1,1]);
+    const instructions=contexts.map(c=>c[0].context.context_text);
+    const nonces=instructions.map(t=>JSON.parse(t.split('示例结构：')[1].split('\n')[0]).request_id);
+    check('each native send has a fresh request nonce',new Set(nonces).size,3);
+    check('visual generation and plain-answer opt-out reach transport',instructions.every(t=>t.includes('即使没有现成文件')&&t.includes('普通纯文本问答')&&t.includes('不强制创建内容')),true);
+    check('persist read back then preview guidance reaches transport',instructions.every(t=>t.includes('UpdateWorkspaceFile({address:')&&t.includes('ReadResource 回读')&&t.includes('成功才')&&t.includes('view:preview')&&t.includes('本次 request_id')),true);
+    check('generation failure and fixed-report guidance reach transport',instructions.every(t=>t.includes('不声称已经生成')&&t.includes('report_ID+revision')&&t.includes('不为它伪造')),true);
+    check('unsupported scripts and media fallback are explicit',instructions.every(t=>t.includes('HTML/JS 文件只按文本/代码')&&t.includes('静态分步图解')&&t.includes('字幕')&&t.includes('不授予写权限')),true);
+    check('wrong facade receives no Home submission context',await page.evaluate(()=>chatOptions.submissionContext({resident_id:'resident_abcdefabcdef'})),null);
+    check('sending visual request itself does not create any file',await page.evaluate(()=>instructionCalls.some(c=>c.name==='UpdateWorkspaceFile')),false);
+    // Existing Preview semantics substantiate the capability guidance. Raw HTML
+    // is escaped in both .md and .html files; the host adds no script renderer.
+    check('Preview renders Markdown and HTML without executing scripts',await page.evaluate(async()=>{
+      const testRoot=document.createElement('div');document.body.append(testRoot);
+      const markup='<script>window.previewScriptExecuted=true</script><img src=x onerror="window.previewScriptExecuted=true">';
+      const results=[];
+      for(const extension of ['md','html']) {
+        const handle=PortalPreview.render({root:testRoot,document:{path:'explanation.'+extension,content:markup}});
+        await handle.promise;
+        results.push(testRoot.querySelector('script,img,iframe')===null&&!window.previewScriptExecuted&&testRoot.textContent.includes('<script>'));
+        PortalPreview.dispose(testRoot);
+      }
+      testRoot.remove();return results;
+    }),[true,true]);
     await page.evaluate(()=>host.destroy());check('no browser errors',evidence.errors,[]);
     evidence.status='passed';
   }catch(error){evidence.status='failed';evidence.error=error.stack;if(page){evidence.page=await page.evaluate(()=>({text:document.body.innerText,previews:window.previewCalls,entries:document.querySelectorAll('.homeDialogueEntry').length}));await page.screenshot({path:path.join(out,'failure.png')});}throw error;}
