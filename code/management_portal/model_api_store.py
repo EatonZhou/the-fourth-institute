@@ -18,9 +18,10 @@ API_FIELDS = {
     "models": "JSONB", "default_headers": "JSONB", "default_parameters": "JSONB",
     # Wire protocols agent harnesses may use, beyond the direct-call kind.
     "protocols": "JSONB",
+    "speech": "JSONB",
 }
 # Columns added after the first release; older instances gain them in place.
-ADDED_FIELDS = ("protocols",)
+ADDED_FIELDS = ("protocols", "speech")
 SERVICE_ROUTES = {("dsh", "deepseek"): "deepseek", ("opencode", "openrouter"): "openrouter"}
 DDL = """
 CREATE TABLE IF NOT EXISTS apis (

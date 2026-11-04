@@ -170,7 +170,12 @@ class ExecutionAccounts:
 
     def for_request(self, request: dict[str, Any]) -> ExecutionAccount | None:
         self.refresh()
-        if request.get("service_type") == "chat_completion":
+        if request.get("service_type") == "speech_generation":
+            from .microsoft_speech import API_ID
+            if request.get("provider") == API_ID:
+                return ExecutionAccount(provider="microsoft", account_id=API_ID, route_id=API_ID,
+                                        capacity_key=API_ID, max_concurrency=2, kind="service")
+        if request.get("service_type") in {"chat_completion", "speech_generation"}:
             return self._accounts.get(str(request.get("provider") or ""))
         if request.get("service_type") != "agent_session":
             return None
@@ -211,7 +216,11 @@ class ExecutionAccounts:
     def usage_identity(self, request: dict[str, Any]) -> tuple[str, str]:
         """Resolve the actual execution route, never a Resident's current binding."""
         provider = str(request.get("provider") or "unknown").strip().lower()
-        if request.get("service_type") == "chat_completion":
+        if request.get("service_type") == "speech_generation":
+            from .microsoft_speech import API_ID
+            if provider == API_ID:
+                return "microsoft", API_ID
+        if request.get("service_type") in {"chat_completion", "speech_generation"}:
             from management_portal.ai_provider_registry import shared_ai_provider_registry
             try:
                 entry = shared_ai_provider_registry.get(provider)

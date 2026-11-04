@@ -35,6 +35,7 @@ MODEL_API_FIELDS = {
     "default_parameters": "default_parameters",
     "routes": "routes",
     "protocols": "protocols",
+    "speech": "speech",
 }
 _SERVER: Any = None
 
@@ -72,6 +73,7 @@ def _public_api(item: dict[str, Any], version: int) -> dict[str, Any]:
     offered = AIProviderRegistry.harness_protocols(item)
     result["harness_protocols"] = [name for name in HARNESS_PROTOCOLS if name in offered]
     result["compatible_harness_protocols"] = AIProviderRegistry.compatible_harness_protocols(item)
+    result["harness_parameter_contracts"] = AIProviderRegistry.harness_parameter_contracts(item)
     routes = model_api_store.route_bindings(result["api_id"])
     if routes:
         result["routes"] = routes
@@ -95,6 +97,9 @@ def _stored_fields(values: dict[str, Any]) -> dict[str, Any]:
         _validate_models(stored["models"])
     if stored.get("protocols") is not None:
         _validate_protocols(stored["protocols"])
+    if "speech" in stored:
+        from .speech_protocol import validate_configuration
+        validate_configuration(stored["speech"])
     return stored
 
 
@@ -105,6 +110,9 @@ def _validate_protocols(protocols: Any) -> None:
     for name, options in protocols.items():
         if not isinstance(options, dict) or set(options) - DECLARED_PROTOCOL_OPTIONS[name]:
             raise invalid(f"protocols.{name} 只接受：" + ("、".join(sorted(DECLARED_PROTOCOL_OPTIONS[name])) or "空对象"))
+    chat = protocols.get('openai_chat') or {}
+    if 'supports_prompt_cache_key' in chat and type(chat['supports_prompt_cache_key']) is not bool:
+        raise invalid('protocols.openai_chat.supports_prompt_cache_key 必须是布尔值')
     anthropic = protocols.get("anthropic_messages") or {}
     url = anthropic.get("base_url")
     if url is not None and not (isinstance(url, str) and re.fullmatch(r"https?://\S+", url.strip())):
@@ -120,6 +128,12 @@ def _check_api_kind(entry: dict[str, Any]) -> None:
         raise invalid("不支持的模型接口协议")
     if entry.get("protocols") and entry.get("kind") not in KINDS:
         raise invalid("该模型接口不能声明附加模型协议")
+    if entry.get("speech"):
+        from .speech_protocol import configuration
+        try:
+            configuration(entry, require_enabled=False)
+        except ValueError as exc:
+            raise invalid(str(exc)) from None
 
 
 def _api_users(api_id: str) -> list[dict[str, Any]]:
@@ -927,6 +941,10 @@ HANDLERS = {
     "UpdateProviderAccount": update_provider_account,
     "GetUsage": get_usage,
 }
+
+
+from .speech_isa import HANDLERS as SPEECH_HANDLERS
+HANDLERS.update(SPEECH_HANDLERS)
 
 
 def version_of(inv: Invocation, object_id: str) -> Any:

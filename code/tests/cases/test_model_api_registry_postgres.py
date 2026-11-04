@@ -66,6 +66,7 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
     """
     created = _call(execution_isa.create_model_api, **MOONSHOT)
     assert created["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "enabled": True,
+                              "harness_parameter_contracts": {"openai_chat": {"omitted_advisory_fields": [], "supports_prompt_cache_key": True}},
                               "harness_protocols": ["openai_chat"], "compatible_harness_protocols": ["openai_chat", "openai_responses", "anthropic_messages"], "version": 1}
     _call(execution_isa.create_model_api, **DEEPSEEK)
     assert _failure(execution_isa.create_model_api, **MOONSHOT) == "instruction.conflict"
@@ -75,6 +76,7 @@ def test_model_api_instructions_keep_versioned_rows_in_postgres():
                     changes={"default_model": "kimi-k2", "enabled": False})
     assert updated["version"] == 2
     assert updated["api"] == {**MOONSHOT, "kind": "openai_compatible_chat", "default_model": "kimi-k2",
+                              "harness_parameter_contracts": {"openai_chat": {"omitted_advisory_fields": [], "supports_prompt_cache_key": True}},
                               "enabled": False, "harness_protocols": ["openai_chat"], "compatible_harness_protocols": ["openai_chat", "openai_responses", "anthropic_messages"], "version": 2}
     assert [(api["api_id"], api["version"]) for api in _call(execution_isa.list_model_apis)["apis"]] == [
         ("moonshot_test", 2), ("deepseek_test", 1)]
@@ -274,7 +276,8 @@ def test_a_model_api_in_use_by_an_execution_account_is_not_deleted():
     assert _call(execution_isa.delete_model_api, api_id="moonshot_test") == {"api_id": "moonshot_test"}
 
 
-def test_an_older_model_api_table_gains_the_protocols_column_once():
+@pytest.mark.parametrize("column", ["protocols", "speech"])
+def test_an_older_model_api_table_gains_the_protocols_column_once(column):
     """已有实例的模型接口表在首次使用时补上 protocols 列，之后的检查不锁表
 
     旧实例的 apis 表没有 protocols 列，而读取会解码全部字段；DDL 先查 pg_attribute，缺列时才 ALTER TABLE，列已存在时不对 apis 加任何锁。
@@ -288,11 +291,11 @@ def test_an_older_model_api_table_gains_the_protocols_column_once():
             "SELECT attname FROM pg_attribute WHERE attrelid=to_regclass(%s) AND NOT attisdropped", (table,))}
 
     with database.database.transaction() as connection:
-        connection.execute("ALTER TABLE apis DROP COLUMN protocols")
+        connection.execute(f"ALTER TABLE apis DROP COLUMN {column}")
     with database.database.transaction() as connection:
-        assert "protocols" not in columns(connection)
+        assert column not in columns(connection)
         connection.executescript(model_api_store.DDL)
-        assert "protocols" in columns(connection)
+        assert column in columns(connection)
     with database.database.transaction() as connection:
         connection.executescript(model_api_store.DDL)
         assert [row["mode"] for row in connection.execute(

@@ -84,9 +84,10 @@ DECLARATIONS = (
         P("routes", "array", "明确绑定的服务路线；每项包含 backend 和 route_id", items={"type": "object"}),
         P("models", "array", "模型目录；每项含唯一的 id，可选 reasoning_efforts（该模型接受的推理强度，"
           "如 low、medium、high）、enabled 等", items={"type": "object"}),
-        P("protocols", "object", "上游原生支持的附加协议：openai_chat、openai_responses（{}）、"
+        P("protocols", "object", "上游原生支持的附加协议：openai_chat（可声明 supports_prompt_cache_key 布尔值；Google默认不接收此缓存路由提示，业务字段原样保留）、openai_responses（{}）、"
           "anthropic_messages（可含 base_url 与 auth=bearer|x-api-key）。Claude Code 与 Codex 可经本机转换使用其他协议，无需虚报原生支持"),
         P("default_parameters", "object", "协议允许的默认生成参数"),
+        P("speech", "object", "显式原生语音能力：protocol、models、voices；与聊天模型目录分开，登记不代表账号已获额度"),
         P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),
         P("headers", "object", "不含密钥"), P("enabled", "boolean", "是否启用，默认 true；停用后不能调用"),
@@ -101,6 +102,20 @@ DECLARATIONS = (
     _d("DeleteModelApi", FIXED, "删除一个模型接口的登记；仍有执行账号使用时拒绝。", (R("api_id", description="模型接口 ID"),),
        (R("api_id", description="被删除的模型接口"),),
        mutates=True, target="api_id", owner="execution"),
+    _d("ListSpeechProviders", FIXED, "发现正式云语音能力（含Microsoft/edge-tts）、已登记原生语音接口、声音及限制；不证明实时可用性。", (),
+       (R("providers", "array", "原生语音登记；不含密钥或私有路径", items={"type": "object"}),), owner="execution"),
+    _d("GenerateSpeech", FIXED, "通过正式云语音能力生成固定音频；异步提交，沿execution_id观察，交付未知时不自动重放。", (
+        R("api_id", description="ListSpeechProviders 返回的接口"), R("model", description="登记的原生语音模型"),
+        R("text", description="逐字朗读正文，最多8000字符"), R("voice", description="登记的声音"),
+        P("style", description="语气/语速说明，最多500字符；不混入朗读正文"),
+        P("rate", description="Microsoft语速，-50%到+100%，默认+0%"),
+        P("volume", description="Microsoft音量，-100%到+100%，默认+0%"),
+        P("pitch", description="Microsoft音高，-100Hz到+100Hz，默认+0Hz"),
+    ), (R("execution_id", description="持久执行身份"), R("status", description="queued等执行状态")), mutates=True, owner="execution"),
+    _d("GetSpeechGeneration", FIXED, "读取语音执行结果及服务端核验的固定音频与来源回执；完成音频按现有上传资源权限读取，未完成记录限提交者。", (
+        R("execution_id", description="GenerateSpeech 返回的执行身份"),
+    ), (R("execution_id"), R("status"), P("receipt", "object", "实际api_id/provider/model、上游请求ID（可能缺失）、时间、音频file_reference/address/sha256和用量"),
+        P("error", description="脱敏失败原因；不会返回key或原始响应")), owner="execution"),
     _d("CompleteChat", FIXED, "调用一个已登记的模型接口，完成一次无状态的文本生成。", (
         R("api_id", description="模型接口 ID"), P("model", description="省略时使用接口的 default_model"),
         R("messages", "array", "OpenAI 兼容的对话消息，每项含 role 与 content", items={"type": "object"}),

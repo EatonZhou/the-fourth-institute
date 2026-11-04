@@ -30,7 +30,7 @@ EXECUTION_INPUT_CONTROL_ID_RE = re.compile(r"^control-[0-9a-f]{24}$")
 MAX_EXECUTION_INPUT_CONTROL_ITEMS = 16
 MAX_EXECUTION_INPUT_CONTROL_TEXT_CHARS = 200_000
 TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled"})
-EXECUTION_SERVICE_TYPES = frozenset({"agent_session", "chat_completion"})
+EXECUTION_SERVICE_TYPES = frozenset({"agent_session", "chat_completion", "speech_generation"})
 from .provider_catalog import AGENT_PROVIDERS
 AGENT_SESSION_OPERATIONS = frozenset({"create", "turn", "fork", "compact", "release"})
 GENERATION_OPERATIONS = frozenset({"generate"})
@@ -425,11 +425,13 @@ class ExecutionRequest:
                 raise ValueError(
                     f"Agent Session {self.operation} requires a persistent session"
                 )
-        elif self.service_type == "chat_completion":
+        elif self.service_type in {"chat_completion", "speech_generation"}:
             if self.operation not in GENERATION_OPERATIONS:
-                raise ValueError("invalid Chat Completion operation")
+                raise ValueError("invalid stateless generation operation")
             if self.session.mode != "stateless":
-                raise ValueError("Chat Completion requires a stateless session")
+                raise ValueError("Generation requires a stateless session")
+            if self.service_type == "speech_generation" and (self.input_media or self.system_instructions.parts):
+                raise ValueError("Speech accepts a verbatim transcript, not media or system instructions")
         return self
 
     @property
