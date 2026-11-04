@@ -1,15 +1,21 @@
 (() => {
   "use strict";
-  function create({ root, controls, onOpen, onSelection, onChange }) {
+  function create({ root, controls, onOpen, onSelection, onChange, onChoose, onClose }) {
     const node = (tag, text) => { const el = document.createElement(tag); if (text) el.textContent = text; return el; };
     const toolbar = controls?.primary || node("div"), secondary = controls?.secondary || node("div"), status = node("p"), progress = node("span"), body = node("div"), editor = node("textarea");
     const renderRoot = node("div"); body.append(renderRoot);
     toolbar.className = "homeDialoguePreviewActions"; secondary.className = "homeDialoguePreviewMenu"; body.className = "homeDialogueDocument";
     editor.className = "homeDialogueEditor"; editor.setAttribute("aria-label", "文件草稿"); editor.hidden = true;
     status.className = "homeDialoguePreviewError"; status.setAttribute("role", "status");
+    const failure = node("section"), failureTitle = node("h3"), explanation = node("p"), targetLabel = node("p", "目标文件"), targetAddress = node("code"), details = node("details"), reason = node("p"), recovery = node("div");
+    failure.className = "homeDialoguePreviewFailure"; failure.setAttribute("role", "status"); failure.hidden = true;
+    targetLabel.className = "homeDialoguePreviewTargetLabel"; targetAddress.className = "homeDialoguePreviewTarget";
+    recovery.className = "homeDialoguePreviewRecovery";
+    details.append(node("summary", "查看错误详情"), reason);
+    failure.append(failureTitle, explanation, targetLabel, targetAddress, recovery, details);
     progress.className = "homeDialogueSaveStatus"; progress.setAttribute("role", "status");
     if (!controls) root.append(toolbar, secondary);
-    root.append(status, body, editor);
+    root.append(status, failure, body, editor);
     const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.classList.add("homeDialogueControl"); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
     const identityKey = () => {
       const identity = window.PortalIdentity?.peek?.() || {};
@@ -17,7 +23,7 @@
     };
     const ownerIdentity = identityKey();
     let destroyed = false, presented = true, authorized = false, checking = false, address = "";
-    let epoch = 0, controller = null, externalSignal = null, verified = null, accessError = "", editError = "", externalUrl = "", rendered = null, session;
+    let epoch = 0, controller = null, externalSignal = null, verified = null, accessError = "", accessStatus = 0, editError = "", externalUrl = "", rendered = null, session;
     const source = window.PortalAgentPreviewSource.create({
       apiGet: (url, options = {}) => window.PortalAPI.get(url, { ...options, signal: controller?.signal, cache: "no-store" }),
       apiPost: window.PortalAPI.post,
@@ -30,6 +36,8 @@
     const save = button("保存", () => session.save({ save: ({ payload, draft }) => source.save(payload, draft) }));
     const cancel = button("返回预览", () => { session.cancelEdit(); const menu = secondary.closest("details"); if (menu) { menu.open = false; menu.querySelector("summary").focus(); } }, secondary);
     const retry = button("重试访问", () => { void revalidate(); });
+    const choose = button("打开其他内容", () => onChoose?.(), recovery); choose.hidden = !onChoose;
+    const close = button("关闭此展示", () => onClose?.(), recovery); close.hidden = !onClose;
     const link = node("a", "打开原文件 ↗"); link.target = "_blank"; link.rel = "noopener"; link.hidden = true; secondary.append(link); toolbar.append(progress);
     function update(state = session?.snapshot() || {}) {
       if (destroyed) return;
@@ -43,11 +51,22 @@
       link.hidden = !allowed || !source.rawUrl(state.payload || {});
       if (externalUrl && presented && identityKey() === ownerIdentity) { link.href = externalUrl; link.textContent = "在原页面打开 ↗"; link.hidden = false; }
       retry.hidden = !presented || (!accessError && !editError) || checking;
-      status.textContent = accessError || state.error || state.readError || editError || "";
+      failure.hidden = !presented || !accessError;
+      if (accessError) {
+        failureTitle.textContent = accessStatus === 403 ? "暂时无法访问此文件" : accessStatus === 404 ? "找不到这个文件" : "暂时无法展示此文件";
+        explanation.textContent = accessStatus === 403
+          ? "当前账号未获准读取这个文件。权限或文件地址更新后，可以重试；也可以打开其他内容。"
+          : accessStatus === 404 ? "文件可能已移动或删除。请核对下方地址，或打开其他内容。"
+            : "读取未完成。可以重试，或打开其他内容继续使用展示区。";
+        targetAddress.textContent = address; reason.textContent = accessError;
+        recovery.prepend(retry);
+      } else if (retry.parentElement !== toolbar) toolbar.prepend(retry);
+      status.textContent = accessError ? "" : state.error || state.readError || editError || "";
       progress.textContent = checking ? "核验中" : state.status === "loading" ? "读取中" : state.saving ? "保存中" : state.dirty ? "未保存" : state.editing ? "已保存" : allowed && !canEdit ? "只读" : "";
       progress.title = checking ? "正在核对当前访问权限" : state.dirty ? "有未保存草稿，切换展示会保留" : progress.textContent;
       progress.hidden = !progress.textContent;
-      status.hidden = !status.textContent; onChange?.(state);
+      status.hidden = !status.textContent;
+      onChange?.({ ...state, accessStatus: checking ? "checking" : accessError ? "error" : allowed ? "ready" : "hidden" });
     }
     function disposeView() {
       window.PortalPreview.dispose(renderRoot); renderRoot.replaceChildren(); rendered = null; editor.value = "";
@@ -121,6 +140,7 @@
       invalidate();
       if (destroyed || !presented || !address || externalSignal?.aborted) return;
       const current = epoch;
+      accessStatus = 0;
       if (identityKey() !== ownerIdentity) {
         accessError = "当前身份已变化；原草稿已保留，返回原身份后可重试。";
         disposeView(); update(); return { error: new Error(accessError) };
@@ -141,7 +161,7 @@
         return { payload: session.snapshot().payload };
       } catch (error) {
         if (!valid()) return;
-        authorized = false; checking = false; accessError = error.message || String(error);
+        authorized = false; checking = false; accessError = error.message || String(error); accessStatus = Number(error.status || error.statusCode || 0);
         disposeView(); update(); return { error };
       }
     }
@@ -160,7 +180,7 @@
     const events = ["portal:identity-changed", "portal:permissions-changed", "portal:history-restored", "portal:history-restored-error"];
     for (const event of events) window.addEventListener(event, accessChanged);
     window.addEventListener("focus", focus); document.addEventListener("visibilitychange", visibility);
-    return { show, snapshot: session.snapshot, canClose: () => session.guardDiscard(),
+    return { show, handlesReadErrors: true, snapshot: session.snapshot, canClose: () => session.guardDiscard(),
       setPresented(value) {
         const next = !!value;
         if (next === presented || destroyed) return;

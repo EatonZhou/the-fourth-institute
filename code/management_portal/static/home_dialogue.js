@@ -91,7 +91,7 @@
       more.open = false;
       setPane("conversation");
     }); cite.disabled = true;
-    const closeDisplay = button(tools, "关闭当前展示", async () => {
+    async function closeCurrentDisplay() {
       closeMore();
       const entry = state.active;
       if (!entry || (entry.adapter?.canClose && !await entry.adapter.canClose())) return;
@@ -100,7 +100,8 @@
       state.manual(); entry.controller.abort(); entry.adapter?.destroy(); entry.root.remove();
       state.entries.splice(state.entries.indexOf(entry), 1); state.select(null, false);
       select(state.entries.at(-1) || null, true);
-    });
+    }
+    const closeDisplay = button(tools, "关闭当前展示", closeCurrentDisplay);
     displayBar.append(identityMenu, contentActions, opener, more);
     left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(tabs, columns);
     function setRatio(value) {
@@ -216,9 +217,9 @@
             return entry.adapter.setPresented(visible);
           }).then(result => {
             if (destroyed || entry.controller.signal.aborted || generation !== entry.presentationGeneration) return;
-            if (result?.error) throw result.error;
+            if (result?.error && !entry.adapter.handlesReadErrors) throw result.error;
             if (entry.presented) {
-              entry.status = "已读取"; void updateLabel(entry); refresh();
+              entry.status = result?.error ? "读取失败" : "已读取"; void updateLabel(entry); refresh();
             }
           }).catch(error => {
             if (!destroyed && !entry.controller.signal.aborted && generation === entry.presentationGeneration) { entry.status = "读取失败"; entry.notice.textContent = error.message; entry.notice.hidden = false; entry.retry.hidden = false; refresh(); }
@@ -290,7 +291,18 @@
             onSelection: value => {
               entry.selection = value;
               if (state.active === entry) { selection = value; if (value) state.manual(); refresh(); }
-            }, onChange: refresh,
+            }, onChoose: () => {
+              view.value = "preview"; view.onchange(); target.value = entry.intent.target.address;
+              opener.open = true; target.focus(); target.select();
+            }, onClose: closeCurrentDisplay, onChange: snapshot => {
+              if (entry.intent.view === "preview" && snapshot?.accessStatus) {
+                entry.notice.hidden = entry.retry.hidden = true;
+                entry.notice.textContent = "";
+                entry.status = { checking: "读取中", error: "读取失败", ready: "已读取", hidden: "待查看" }[snapshot.accessStatus];
+                if (snapshot.accessStatus === "ready" && snapshot.payload?.title) entry.label = snapshot.payload.title;
+              }
+              refresh();
+            },
           });
         }
         entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
@@ -298,8 +310,8 @@
         const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id,
           ...(entry.intent.view === "report" ? { originKey: entry.originKey, readOnly: entry.readOnly } : {}) });
         if (destroyed || entry.controller.signal.aborted) return;
-        if (result?.error) throw result.error;
-        entry.status = entry.presented ? "已读取" : "待查看"; entry.notice.textContent = ""; entry.notice.hidden = true;
+        if (result?.error && !entry.adapter.handlesReadErrors) throw result.error;
+        entry.status = result?.error ? "读取失败" : entry.presented ? "已读取" : "待查看"; entry.notice.textContent = ""; entry.notice.hidden = true;
         void updateLabel(entry);
         entry.retry.hidden = true;
       } catch (error) {

@@ -90,8 +90,10 @@ const server = http.createServer((req,res) => {
     const reference=await page.evaluate(()=>calls.find(c=>c.reference).reference);
     assert.equal(reference.path,undefined); assert.ok(reference.text.includes('resident_0123456789ab/msg_abcdefabcdef')); assert.ok(reference.text.includes('article_0123456789ab')); assert.deepEqual(reference.source_message_ids,['msg_abcdefabcdef']);
     await homeAction(page,'固定展示');
-    await page.evaluate(()=>{chatOptions.onDetail({snapshot:{messages:[{role:'assistant',message_id:'new',content_parts:[{type:'text',text:'```portal-home-display\n'+JSON.stringify({...protocol,target:{kind:'lineage',id:'lineage_abcdefabcdef'}})+'\n```'}]}]}});});
-    await page.waitForFunction(()=>document.querySelectorAll('.homeDialogueEntry').length===2);
+    await page.evaluate(()=>{chatOptions.onDetail({snapshot:{messages:[{role:'assistant',message_id:'msg_123456789abc',content_parts:[{type:'text',text:'```portal-home-display\n'+JSON.stringify({...protocol,target:{kind:'lineage',id:'lineage_abcdefabcdef'}})+'\n```'}]}]}});});
+    await page.waitForFunction(()=>calls.filter(c=>'reportShowPresented' in c).length===2).catch(async error=>{
+      throw new Error(`${error.message}; entry failures: ${await page.locator('.homeDialogueEntryNotice').allTextContents()}`);
+    });
     assert.equal(await page.evaluate(()=>calls.filter(c=>'reportShowPresented' in c).at(-1).reportShowPresented),false,'queued report receives hidden state before show');
     assert.ok((await page.locator('.homeDialogueCurrent').textContent()).includes('0123456789ab'));
     await page.evaluate(()=>pending.shift().resolve());
@@ -126,6 +128,51 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.locator('.homeDialogueDisplay').isVisible(),false);
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click(); assert.equal(await page.getByLabel('文件草稿').inputValue(),'draft kept');
     await page.evaluate(()=>controller.destroy()); assert.equal(await page.locator('#root').textContent(),'');
+    // The real host and preview own a single recoverable failure, including restoration.
+    await page.setViewportSize({width:945,height:860});
+    await page.evaluate(()=>{
+      localStorage.clear(); document.querySelector('#root').style.maxWidth=''; window.denyPreview=true;
+      window.controller=PortalHomeDialogue.connect({root:document.querySelector('#root'),context:{currentUserReady:Promise.resolve()}});
+    });
+    await page.locator('.homeDialogueOpener > summary').click();
+    await page.getByLabel('展示类型',{exact:true}).selectOption('preview');
+    await page.getByLabel('目标 ID 或文件资源地址').fill('article_0123456789ab');
+    await page.getByRole('button',{name:'展示',exact:true}).last().click();
+    const failure=page.locator('.homeDialoguePreviewFailure');
+    await failure.getByRole('heading',{name:'暂时无法访问此文件'}).waitFor();
+    assert.equal(await failure.locator('code').textContent(),'article_0123456789ab');
+    assert.equal(await page.getByRole('button',{name:'重试访问',exact:true}).count(),1);
+    assert.equal(await page.getByRole('button',{name:'重试读取',exact:true}).count(),0);
+    assert.ok((await page.getByLabel('展示历史').textContent()).includes('读取失败'));
+    await failure.getByText('查看错误详情',{exact:true}).click();
+    assert.equal(await page.getByText('当前来源不可读',{exact:true}).count(),1);
+    await failure.getByText('查看错误详情',{exact:true}).click();
+    if(process.env.SCREENSHOT_DIR){fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'preview-denied-945.png')});}
+    await page.setViewportSize({width:390,height:844});
+    await page.waitForFunction(()=>document.querySelector('#root').dataset.narrow==='true');
+    await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click();
+    await failure.waitFor({state:'visible'});
+    assert.ok(await failure.evaluate(el=>el.scrollWidth<=el.clientWidth),'failure card fits narrow display');
+    if(process.env.SCREENSHOT_DIR)await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'preview-denied-390.png')});
+    await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
+    await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click();
+    await failure.waitFor({state:'visible'});
+    assert.equal(await page.getByRole('button',{name:'重试读取',exact:true}).count(),0,'restoring a denied preview does not duplicate the failure');
+    await page.evaluate(()=>{window.denyPreview=false;});
+    await failure.getByRole('button',{name:'重试访问',exact:true}).click();
+    await failure.waitFor({state:'hidden'});
+    await page.waitForFunction(()=>document.querySelector('.homeDialogueDocument').textContent.includes('original'));
+    assert.ok(!(await page.getByLabel('展示历史').textContent()).includes('读取失败'),'successful internal retry updates the host status');
+    await page.evaluate(()=>{window.denyPreview=true;window.dispatchEvent(new Event('portal:permissions-changed'));});
+    await failure.waitFor({state:'visible'});
+    assert.equal(await page.locator('.homeDialogueDocument').textContent(),'','permission loss clears the previously rendered content');
+    await failure.getByRole('button',{name:'打开其他内容',exact:true}).click();
+    assert.equal(await page.getByLabel('目标 ID 或文件资源地址').inputValue(),'article_0123456789ab');
+    await page.locator('.homeDialogueOpener > summary').click();
+    await failure.getByRole('button',{name:'关闭此展示',exact:true}).click();
+    await failure.waitFor({state:'detached'});
+    assert.equal(await page.getByRole('button',{name:'重试访问',exact:true}).count(),0);
+    await page.evaluate(()=>{controller.destroy();window.denyPreview=false;});
     // Real DocumentSession + Preview access lifecycle. No cached content is revealed before the new read.
     await page.evaluate(()=>{window.access=PortalHomeDialoguePreview.create({root:document.querySelector('#root')}); access.setPresented(false); window.readsBefore=previewReads; return access.show({address:'article_0123456789ab'});});
     assert.equal(await page.evaluate(()=>previewReads),await page.evaluate(()=>readsBefore),'hidden preview does not read');
