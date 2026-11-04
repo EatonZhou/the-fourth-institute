@@ -183,6 +183,36 @@ def state_path(value):
     return Path(value["root"]) / "runtime" / (value["component"] + ".process.json")
 
 
+def matches_process(pid, created):
+    """Only an exact live FILETIME match establishes service ownership.
+
+    OpenProcess can deny access for an absent or recycled PID after reboot.
+    psutil's Windows system-process snapshot can disprove that identity without
+    opening the protected process. Its floating-point time must never establish
+    ownership: an ambiguous or denied observation preserves the original error.
+    """
+    if not pid or created is None:
+        return False
+    try:
+        return process_stamp(pid) == created
+    except PermissionError as denied:
+        if getattr(denied, "winerror", None) != 5:
+            raise
+        import psutil
+        try:
+            observed = psutil.Process(pid).create_time()
+        except psutil.NoSuchProcess:
+            return False
+        except psutil.AccessDenied:
+            raise denied from None
+        expected = created / 10_000_000 - 11_644_473_600
+        # FILETIME -> float loses sub-microsecond precision. A generous margin
+        # only limits what can be disproved; it never grants an approximate match.
+        if abs(observed - expected) > 0.001:
+            return False
+        raise denied
+
+
 def register(directory, units):
     """Write current definitions; a replaced one must belong to the same component."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -243,14 +273,10 @@ class WindowsServiceControl:
             record = json.loads(read_record(path))
         except FileNotFoundError:
             pass
-        active = bool(record.get("pid") and record.get("created") is not None
-                      and process_stamp(record["pid"]) == record["created"]
-                      and record.get("child_pid") and record.get("child_created") is not None
-                      and process_stamp(record["child_pid"]) == record["child_created"])
         # Keep a living supervisor visible even while its child is stopping
         # or waiting to restart after a failure.
-        supervisor = bool(record.get("pid") and record.get("created") is not None
-                          and process_stamp(record["pid"]) == record["created"])
+        supervisor = matches_process(record.get("pid"), record.get("created"))
+        active = supervisor and matches_process(record.get("child_pid"), record.get("child_created"))
         if active:
             return {"service": name, "load": "loaded", "active": "active", "sub": "running", "pid": record["pid"]}
         if supervisor:
