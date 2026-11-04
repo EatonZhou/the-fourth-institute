@@ -292,6 +292,20 @@ def link_input(lineage_id: str, resident_id: str, message_id: str, execution_id:
             predecessors = [link["execution_id"] for link in connection.execute(
                 "SELECT execution_id FROM trigger_path_execution_links WHERE step_id=%s", (row["step_id"],),
             ).fetchall()]
+            if not predecessors:
+                original = input_retries.original_execution(connection, execution_id=execution_id,
+                    resident_id=resident_id, message_id=message_id)
+                if original != execution_id:
+                    # A late step belongs to the first delivery of this exact
+                    # input. Requeue/regroup does not reopen that old path.
+                    storage.link_execution(connection, row["step_id"], original)
+                    accepted = connection.execute(
+                        f"SELECT COALESCE(started_at,created_at) AS accepted_at FROM {agent_executions_table()} "
+                        "WHERE execution_id=%s", (original,),
+                    ).fetchone()
+                    storage.transition_step(connection, row["step_id"], status="completed", at=iso_time(accepted["accepted_at"]))
+                    _settle(connection, row["trigger_path_id"])
+                    continue
             if input_retries.independent_of(connection, predecessors=predecessors, execution_id=execution_id,
                                             resident_id=resident_id, message_id=message_id):
                 # The owner authorized new work on the same input, not another

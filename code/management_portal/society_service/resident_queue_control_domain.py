@@ -329,7 +329,7 @@ def split_resident_queue_item(resident_id: str, actor: str, group_id: str) -> di
         item = queue[position]
         if not resident_mailbox.is_group_item(item):
             raise resident_mailbox.MailboxConflict("这条消息不是群体消息")
-        members = [copy.deepcopy(entry) for entry in item["mailbox_members"]]
+        members = resident_mailbox.expand(queue, [group_id])
         job["queue"] = queue[:position] + members + queue[position + 1:]
         job["updated_at"] = now
         resident_execution_work.write(record, job)

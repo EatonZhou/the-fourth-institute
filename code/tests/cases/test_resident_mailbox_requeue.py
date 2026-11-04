@@ -71,27 +71,27 @@ def _info(resident_id: str, author: str, text: str) -> str:
     return info_id
 
 
-def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), text: str = "整理本周的测试报告") -> tuple[str, list[str]]:
+def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), text: str = "整理本周的测试报告", actor: str = ACTOR) -> tuple[str, list[str]]:
     """A request that ran with the infos it carried and ended in ``state``."""
 
     repository = resident_conversation_stream.get_repository()
     for author, info_text in infos:
         _info(resident_id, author, info_text)
     message_id = "msg_" + uuid.uuid4().hex
-    request = resident_input_queue_domain.build_message("user", text, ACTOR, message_id=message_id)
+    request = resident_input_queue_domain.build_message("user", text, actor, message_id=message_id)
     resident_lifecycle_domain.append_conversation_message(resident_id, request)
     record = _record(resident_id)
     _, carried = resident_held_infos.attach(record, text)
     resident_held_infos.consume(record, carried, request_message_id=message_id)
     job = {
          "user_message_id": message_id, "input_message": request,
-        "raw_message": text, "message": text, "actual_sent_prompt": text, "actor": ACTOR,
+        "raw_message": text, "message": text, "actual_sent_prompt": text, "actor": actor,
         "enqueued_at": "2026-10-06T00:00:00Z", "started_at": "2026-10-06T00:00:01Z",
         "execution_id": "execution-" + uuid.uuid4().hex[:12], "execution_request": {"prompt": "x"},
         "stop_requested_at": "2026-10-06T00:00:05Z", "authorization": {"subject_ref": "old"}, "queue": [],
      "submitted_at": "2026-10-14T00:00:00Z"}
     store = get_agent_data_store()
-    store.begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=ACTOR,
+    store.begin_execution(execution_id=job["execution_id"], agent_id=resident_id, actor_ref=actor,
                           provider=resident_backend.execution_provider(record), started_at=datetime.now(timezone.utc).isoformat())
     execution_inputs.attach(store, job["execution_id"], [{"message_id": message_id, "role": "primary", "accepted_at": resident_domain_common.now_iso()}])
     resident_execution_work.retain_input_checkpoint(record, job, carried)
@@ -100,7 +100,7 @@ def _round(resident_id: str, *, state: str = "cancelled", infos: tuple = (), tex
         store.finish_execution(job["execution_id"], status=state, finished_at=resident_domain_common.now_iso())
         repository.set_input_state(resident_id, message_id, state, error={"message": "provider error"} if state == "failed" else None)
     if state == "cancelled":
-        notice = resident_input_queue_domain.resident_execution_stopped_event(ACTOR, job)
+        notice = resident_input_queue_domain.resident_execution_stopped_event(actor, job)
         resident_lifecycle_domain.append_conversation_message(resident_id, notice)
     return message_id, [item["message_id"] for item in carried]
 
@@ -175,6 +175,139 @@ def test_an_idle_resident_takes_a_failed_round_back_as_its_next_input(team):
     # Intake is closed here: the input waits, and the Mailbox lists it first.
     pending = instruction(team, "GetMailbox", {"resident_id": resident_id}).result["pending"]
     assert [item["message_id"] for item in pending if item["kind"] != "info"] == [failed]
+
+
+@pytest.mark.parametrize("legacy_inherited_marker", [False, True])
+def test_requeued_member_group_advances_completed_head_without_rewriting_old_path(team, monkeypatch, legacy_inherited_marker):
+    """原请求重试合并成新群体后，真实完成收尾可推进且原失败路径不变。"""
+    from management_portal.society_service import resident_execution_domain, trigger_paths, trigger_path_storage
+    resident_id, (head, waiting, tail) = _queue(team, 3)
+    failed, _ = _round(resident_id, state="failed", actor=STEWARD)
+    store = get_agent_data_store()
+    predecessor = execution_inputs.latest(store, resident_id, failed)["execution_id"]
+    record = _record(resident_id)
+    lineage_id = record["lineage_id"]
+    at = resident_domain_common.now_iso()
+    event = {"id":"regroup-source-" + uuid.uuid4().hex, "type":"manual.triggered", "occurred_at":at, "payload":{}}
+    source = "event_regroup"
+    path = trigger_paths.begin_event(lineage_id, source, event, cause_kind="external", cause_id=event["id"])
+    with get_lineage_data_store().database.transaction() as c:
+        trigger_path_storage.admit_step(c, trigger_path_id=path, node_id=resident_id, kind="resident",
+                                      activation_key=failed, input_message_id=failed, created_at=at)
+    trigger_paths.link_input(lineage_id, resident_id, failed, predecessor)
+    trigger_paths.event_settled(path, source, event["id"])
+    original_path = trigger_paths.get(lineage_id, path)
+    assert original_path["status"] == "failed"
+    assert instruction(team, "RequeueMessage", {"resident_id":resident_id, "message_id":failed}).status == "committed"
+    merged = instruction(team, "MergeMailboxItems", {"resident_id":resident_id, "message_ids":[failed, waiting]})
+    assert merged.status == "committed", merged.error
+    group = merged.result["group_message_id"]
+    job = resident_execution_work.read(_record(resident_id))
+    grouped = job["queue"][0]
+    assert "retry_of_execution_id" not in grouped
+    assert grouped["mailbox_members"][0]["retry_of_execution_id"] == predecessor
+    if legacy_inherited_marker:
+        # Exact previously persisted shape, without changing any old terminal.
+        grouped["retry_of_execution_id"] = predecessor
+    record = _record(resident_id)
+    record["intake_open"] = True
+    resident_record_domain.save_resident_record(record, commit_intake=True)
+    job.update(resident_execution_work.continuation_fields(record))
+    resident_execution_domain._mark_completion_applied(job, at)
+    resident_execution_work.write(record, job)
+    repository = resident_conversation_stream.get_repository()
+    store.finish_execution(job["execution_id"], status="completed")
+    repository.set_input_state(resident_id, head, "completed")
+    monkeypatch.setattr(resident_input_queue_domain, "acknowledge_execution", lambda *_a: True)
+    monkeypatch.setattr(resident_input_queue_domain, "reconcile_queued_turn_inputs", lambda *_a, **_k: True)
+    assert resident_execution_domain._finalize_applied_execution(
+        resident_id, job["continuation_id"], job) is True
+    current = resident_execution_work.read(_record(resident_id))
+    assert current["user_message_id"] == group
+    assert [item["user_message_id"] for item in current["queue"]] == [tail]
+    assert trigger_paths.get(lineage_id, path) == original_path
+    from management_portal.execution import agent_data_input_retries
+    with get_lineage_data_store().database.read() as c:
+        assert agent_data_input_retries.independent_of(c, predecessors=[predecessor],
+            execution_id=current["execution_id"], resident_id=resident_id, message_id=failed)
+        assert not agent_data_input_retries.independent_of(c, predecessors=[predecessor],
+            execution_id=current["execution_id"], resident_id=resident_id, message_id=waiting)
+    # Subsequent progress writes are idempotent and the remaining tail starts.
+    resident_execution_work.write(_record(resident_id), current)
+    store.finish_execution(current["execution_id"], status="completed")
+    repository.set_input_state(resident_id, group, "completed")
+    resident_mailbox.finish_group(_record(resident_id), group, "completed")
+    assert resident_execution_domain._finalize_applied_execution(
+        resident_id, current["continuation_id"], current) is True
+    assert resident_execution_work.read(_record(resident_id))["user_message_id"] == tail
+    assert trigger_paths.get(lineage_id, path) == original_path
+
+
+@pytest.mark.parametrize("damage", ["completed_source", "foreign_resident", "missing_source_member", "wrong_source_primary", "wrong_source_actor"])
+def test_grouped_retry_provenance_rejects_unrelated_or_incomplete_source(team, damage):
+    from management_common.portal_database import _database_schema
+    from management_portal.execution import agent_data_input_retries as retries
+    resident_id, (_head, member, _tail) = _queue(team, 3)
+    failed, _ = _round(resident_id, state="failed")
+    store = get_agent_data_store()
+    predecessor = execution_inputs.latest(store, resident_id, failed)["execution_id"]
+    group = "msg_group_" + uuid.uuid4().hex
+    successor = "execution-" + uuid.uuid4().hex[:24]
+    job = {"execution_id":successor, "user_message_id":group, "actor":ACTOR,
+           "started_at":resident_domain_common.now_iso(), "queue":[],
+           "mailbox_members":[{"user_message_id":failed}, {"user_message_id":member}]}
+    resident_execution_work.write(_record(resident_id), job)
+    table = '"' + _database_schema("agent") + '".'
+    with pytest.raises(ValueError, match="Grouped retry"):
+        with get_lineage_data_store().database.transaction() as c:
+            if damage == "completed_source":
+                c.execute(f"UPDATE {table}executions SET status='completed' WHERE execution_id=%s", (predecessor,))
+            elif damage == "foreign_resident":
+                c.execute(f"UPDATE {table}executions SET agent_id='resident_other' WHERE execution_id=%s", (predecessor,))
+            elif damage == "missing_source_member":
+                c.execute(f"INSERT INTO {table}execution_inputs(execution_id,message_id,role,accepted_at) "
+                          "VALUES (%s,'missing-source-member','member',now())", (predecessor,))
+            retries.record_member(c, predecessor=predecessor, execution_id=successor, resident_id=resident_id,
+                                  source_message_id=member if damage == "wrong_source_primary" else failed,
+                                  group_message_id=group, source_actor="wrong" if damage == "wrong_source_actor" else ACTOR,
+                                  at=resident_domain_common.now_iso())
+
+
+def test_grouped_then_exact_retry_preserves_ancestry_and_late_graph_source(team):
+    from management_portal.society_service import trigger_paths, resident_execution_storage
+    from management_portal.execution import agent_data_input_retries as retries
+    resident_id, (_head, waiting) = _queue(team, 2)
+    failed, _ = _round(resident_id, state="failed")
+    store = get_agent_data_store()
+    predecessor = execution_inputs.latest(store, resident_id, failed)["execution_id"]
+    assert instruction(team, "RequeueMessage", {"resident_id":resident_id, "message_id":failed}).status == "committed"
+    merged = instruction(team, "MergeMailboxItems", {"resident_id":resident_id, "message_ids":[failed, waiting]})
+    assert merged.status == "committed", merged.error
+    record = _record(resident_id)
+    group = resident_execution_storage.queue_input(resident_execution_work.read(record)["queue"][0])
+    now = resident_domain_common.now_iso()
+    group.update(execution_id="execution-" + uuid.uuid4().hex[:24], started_at=now, queue=[])
+    resident_execution_work.write(record, group)
+    previous_group = group["execution_id"]
+    store.finish_execution(previous_group, status="failed")
+    group.update(execution_id="execution-" + uuid.uuid4().hex[:24], retry_of_execution_id=previous_group)
+    resident_execution_work.write(record, group)
+    with get_lineage_data_store().database.read() as c:
+        assert retries.independent_of(c, predecessors=[predecessor], execution_id=group["execution_id"],
+                                      resident_id=resident_id, message_id=failed)
+        assert retries.original_execution(c, execution_id=group["execution_id"],
+            resident_id=resident_id, message_id=failed) == predecessor
+    event = {"id":"late-source-" + uuid.uuid4().hex, "type":"manual.triggered", "occurred_at":now, "payload":{}}
+    source = "event_late_retry_source"
+    path = trigger_paths.begin_event(record["lineage_id"], source, event, cause_kind="external", cause_id=event["id"])
+    trigger_paths.admit_resident(lineage_id=record["lineage_id"], trigger_path_id=path,
+        resident_id=resident_id, message_id=failed, source_wire_id="wire_late", event=event)
+    trigger_paths.event_settled(path, source, event["id"])
+    actual = trigger_paths.get(record["lineage_id"], path)
+    assert actual["status"] == "failed"
+    assert {item["execution_id"] for item in actual["executions"]} == {predecessor}
+    with pytest.raises(resident_mailbox.MailboxConflict, match="整组重试"):
+        resident_mailbox.expand([group], [group["user_message_id"]])
 
 
 def test_completed_running_or_missing_inputs_cannot_go_back(team):

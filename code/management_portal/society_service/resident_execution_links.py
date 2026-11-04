@@ -12,7 +12,8 @@ def link_inputs(resident_id: str, execution: Mapping[str, Any], *, connection: A
         return False
     main_message = str(execution.get("user_message_id") or "")
     messages = {main_message: "primary"} if main_message else {}
-    for member in execution.get("mailbox_members") or []:
+    members = execution.get("mailbox_members") or []
+    for member in members:
         message = str(member.get("message_id") or member.get("user_message_id") or "") if isinstance(member, Mapping) else str(member)
         if message and message != main_message:
             messages[message] = "member"
@@ -21,8 +22,26 @@ def link_inputs(resident_id: str, execution: Mapping[str, Any], *, connection: A
     execution_inputs.attach_in(connection, identity, [{"message_id":message,"role":role,"accepted_at":at}
                                                      for message,role in messages.items()],
                                prefix='"' + _database_schema("agent") + '".')
-    if execution.get("retry_of_execution_id"):
-        from management_portal.execution import agent_data_input_retries as input_retries
+    from management_portal.execution import agent_data_input_retries as input_retries
+    retry = str(execution.get("retry_of_execution_id") or "")
+    whole_retry = bool(retry and input_retries.is_whole_retry(connection, retry, main_message))
+    if whole_retry:
+        input_retries.record(connection, predecessor=retry, execution_id=identity,
+                             resident_id=resident_id, message_id=main_message, at=at)
+    inherited_retry = False
+    for member in ([] if whole_retry else members):
+        if not isinstance(member, Mapping) or not member.get("retry_of_execution_id"):
+            continue
+        predecessor = str(member["retry_of_execution_id"])
+        input_retries.record_member(connection, predecessor=predecessor, execution_id=identity,
+                                    resident_id=resident_id,
+                                    source_message_id=str(member.get("user_message_id") or ""),
+                                    group_message_id=main_message, source_actor=str(member.get("actor") or ""), at=at)
+        # Earlier group construction copied the first member's retry marker.
+        # Only the verified member relation above identifies that legacy shape;
+        # a genuine whole-group retry continues through strict record().
+        inherited_retry = inherited_retry or predecessor == execution.get("retry_of_execution_id")
+    if retry and not whole_retry and not inherited_retry:
         input_retries.record(connection, predecessor=str(execution["retry_of_execution_id"]),
                              execution_id=identity, resident_id=resident_id, message_id=main_message, at=at)
     changed = False

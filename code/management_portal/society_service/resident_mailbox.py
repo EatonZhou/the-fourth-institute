@@ -176,6 +176,10 @@ def expand(queue: list[dict[str, Any]], message_ids: list[str]) -> list[dict[str
     members: list[dict[str, Any]] = []
     for message_id in ordered:
         item = by_id[message_id]
+        if (is_group_item(item) and item.get("retry_of_execution_id")
+                and not any(member.get("retry_of_execution_id") == item["retry_of_execution_id"]
+                            for member in item["mailbox_members"])):
+            raise MailboxConflict("放回的整组重试须保留原群体，不能拆分或重新合并")
         members.extend(copy.deepcopy(item["mailbox_members"]) if is_group_item(item) else [copy.deepcopy(item)])
     seen: set[str] = set()
     for item in members:
@@ -224,7 +228,7 @@ def group_item(
     item = {
         key: copy.deepcopy(value) for key, value in first.items()
         if key not in {"execution_id", "user_message_id", "input_message", "business_ref", "lineage_id",
-                       "execution_request", "mailbox_members"}
+                       "execution_request", "mailbox_members", "retry_of_execution_id"}
     }
     context_refs: dict[str, Any] = {}
     input_media: list[Any] = []
