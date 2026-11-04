@@ -162,9 +162,14 @@ class ReportReader:
                          "sources": [lineage_source, source, *sources],
                          "open": {"view": "frontier", "target": {"kind": "lineage", "id": identifier, "focus": item.get("id")}}})
         visible = {row["id"] for row in rows}
-        self.relations.extend({"from": f'{identifier}/{item["id"]}', "to": f'{identifier}/{item["parent"]}', "kind": item["relation"]}
-                              for item in items[:MAX_ROWS] if item.get("parent") and item.get("relation") in {"builds_on", "depends_on", "converges"}
-                              and f'{identifier}/{item["id"]}' in visible and f'{identifier}/{item["parent"]}' in visible)
+        for item in items[:MAX_ROWS]:
+            if not item.get("parent"):
+                continue
+            edge = {"from": f'{identifier}/{item["id"]}', "to": f'{identifier}/{item["parent"]}', "kind": item.get("relation")}
+            if edge["from"] not in visible or edge["to"] not in visible or not edge["kind"]:
+                self.warnings.append("部分工作线关系的端点或类型不完整，未据此推断完整影响。")
+                continue
+            self.relations.append(edge)
         return rows
 
     def project(self, identifier):
@@ -236,6 +241,8 @@ class ReportReader:
         visible = {r["id"] for r in rows}
         relations = [{k: r.get(k) for k in ("from", "to", "kind")} for r in research.get("relations", [])
                      if r.get("from") in visible and r.get("to") in visible]
+        if len(relations) != len(research.get("relations", [])):
+            self.warnings.append("部分研究关系的端点不在本次可读范围，未据此推断完整影响。")
         relations.extend(r for r in self.relations if r["from"] in visible and r["to"] in visible)
         return project.get("title") or identifier, text(research.get("goal") or project.get("description")), rows, relations
 
@@ -249,6 +256,8 @@ def build_report(target: dict, *, actor: str = "", read: Callable | None = None)
               "rows": rows, "relations": relations, "counts": dict(Counter(r["status"] for r in rows)),
               "sources": list(reader.sources.values()), "warnings": list(dict.fromkeys(reader.warnings)),
               "empty": not rows}
+    from management_portal.home_report_reasoning import build_reasoning
+    report["reasoning"] = build_reasoning(report)
     report["version"] = digest(report)
     report["checked_at"] = datetime.now(timezone.utc).isoformat()
     report["read_seconds"] = round(time.monotonic() - started, 3)

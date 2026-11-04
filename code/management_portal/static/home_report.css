@@ -23,5 +23,15 @@
 .home-report pre {white-space:pre-wrap;font:inherit;max-height:420px;overflow:auto;}
 .home-report .hr-media {margin:20px 0;}
 .home-report .hr-sources small {display:block;}
+.home-report .hr-reasoning {margin:24px 0;border-block:1px solid var(--border,#d1dbe9);padding:12px 0;}
+.home-report .hr-diagrams {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}
+.home-report .hr-diagrams.hr-compare {grid-template-columns:repeat(2,minmax(0,1fr));}
+.home-report .hr-diagrams figure {margin:0;min-width:0;background:var(--panel,#f7f9fc);border:1px solid var(--border,#d1dbe9);border-radius:10px;padding:10px;}
+.home-report .hr-diagrams svg {display:block;width:100%;height:auto;fill:var(--text,#17243b);font-family:system-ui,sans-serif;}
+.home-report .hr-diagrams g {transition:opacity .6s;}
+.home-report .hr-diagrams figcaption {font-size:14px;}
+.home-report button[aria-pressed=true] {background:var(--subtle,#eaf0fb);border-color:#4263c7;}
+@media(max-width:760px) {.home-report .hr-diagrams.hr-compare {grid-template-columns:minmax(0,1fr);}}
+@media(prefers-reduced-motion:reduce) {.home-report .hr-diagrams g {transition:none;}}
 [data-home-report-standalone] {max-width:1120px;margin:0 auto;min-height:100vh;}
 @media(max-width:480px) {.home-report .hr-actions button {font-size:14px;} .home-report h2 {font-size:23px;}}

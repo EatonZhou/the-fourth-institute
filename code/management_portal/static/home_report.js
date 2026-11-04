@@ -91,17 +91,95 @@
       const focus = target.focus;
       if (focus) [...list.querySelectorAll('[data-row]')].find(n => n.dataset.row === focus || n.dataset.row.endsWith('/' + focus))?.classList.add('hr-focused');
     }
+    function renderReasoning(plan) {
+      if (!plan?.available) {
+        if (plan?.reason) root.append(el('p', plan.reason, 'hr-muted'));
+        return;
+      }
+      const section = el('section', null, 'hr-reasoning');
+      section.setAttribute('aria-label', '本地结构推理');
+      section.append(el('h3', plan.question), el('p', plan.assumption, 'hr-notice'));
+      const controls = el('div', null, 'hr-actions');
+      const diagrams = el('div', null, 'hr-diagrams');
+      const result = el('p', null, 'hr-reasoning-result'); result.setAttribute('role','status');
+      const names = new Map(plan.nodes.map(n => [n.id,n.title]));
+      const dependency = plan.mode === 'dependency';
+      let mode = 'source';
+      const svgNode = (tag, attrs = {}, text) => {
+        const node = document.createElementNS('http://www.w3.org/2000/svg',tag);
+        Object.entries(attrs).forEach(([key,value]) => node.setAttribute(key,value));
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+      function diagram(restored) {
+        const box = el('figure'), label = el('figcaption');
+        const svg = svgNode('svg', {viewBox:'0 0 640 420', role:'img'});
+        const title = svgNode('title',{},restored ? '恢复遍历后的依赖图' : '原始关系图');
+        svg.append(title);
+        const points = new Map(plan.nodes.map(n=>[n.id,[35+n.x*570,40+n.y*335]]));
+        function line(from,to,color,labelText,dashed=false) {
+          const [x1,y1] = points.get(from), [x2,y2] = points.get(to);
+          const dx=x2-x1,dy=y2-y1,t=Math.min(65/Math.max(.01,Math.abs(dx)),30/Math.max(.01,Math.abs(dy)),.44);
+          const ax=x1+dx*t,ay=y1+dy*t,bx=x2-dx*t,by=y2-dy*t;
+          const g=svgNode('g',{'stroke':color,'fill':color});
+          g.append(svgNode('line',{x1:ax,y1:ay,x2:bx,y2:by,'stroke-width':dashed?4:2,...(dashed?{'stroke-dasharray':'7 4'}:{})}));
+          const angle=Math.atan2(dy,dx),pointsText=[[bx,by],[bx-9*Math.cos(angle-.5),by-9*Math.sin(angle-.5)],[bx-9*Math.cos(angle+.5),by-9*Math.sin(angle+.5)]].map(p=>p.join(',')).join(' ');
+          g.append(svgNode('polygon',{points:pointsText}));
+          if(labelText) g.append(svgNode('text',{x:(x1+x2)/2,y:(y1+y2)/2-12,'text-anchor':'middle','stroke':'none','font-size':13},labelText));
+          svg.append(g);return g;
+        }
+        const edgeNodes=plan.edges.map(edge=>({edge,node:line(edge.from,edge.to,edge.kind==='depends_on'?'#4263c7':'#9aa5b8',edge.kind==='depends_on'?'依赖':edge.label)}));
+        const trace=plan.after.trace.map(p=>line(p.from,p.to,'#835cc4','',true));
+        const nodeGroups=plan.nodes.map(n=>{
+          const [x,y]=points.get(n.id),g=svgNode('g',{'data-node':n.id});
+          const rect=svgNode('rect',{x:x-60,y:y-27,width:120,height:54,rx:8,fill:'#fff',stroke:n.id===plan.seed?'#4263c7':'#aebbd0','stroke-width':2});
+          g.append(rect);
+          const chars=Array.from(n.title);
+          [chars.slice(0,8).join(''),chars.slice(8,16).join('')].forEach((value,i)=>g.append(svgNode('text',{x,y:y-3+i*18,'text-anchor':'middle','font-size':15},value)));
+          g.append(svgNode('title',{},n.title));svg.append(g);return {n,rect};
+        });
+        const [sx,sy]=points.get(plan.seed),gate=svgNode('g',{fill:'#ad661d'});
+        gate.append(svgNode('rect',{x:sx+65,y:sy-29,width:6,height:58}),svgNode('text',{x:sx,y:sy-39,'text-anchor':'middle','font-size':13},'假设禁用'));
+        svg.append(gate);
+        box.append(label,svg);
+        function update() {
+          box.hidden=restored && mode!=='compare';
+          const showTrace=dependency && (restored || mode==='restored');
+          trace.forEach(n=>n.style.opacity=showTrace?'1':'0');
+          gate.style.opacity=dependency && !showTrace && mode!=='source'?'1':'0';
+          edgeNodes.forEach(({edge,node})=>node.style.opacity=!dependency && (restored || mode==='restored') && edge.kind!=='depends_on'?'.12':'1');
+          nodeGroups.forEach(({n,rect})=>rect.setAttribute('fill',showTrace && plan.after.reached.includes(n.id)?'#e8f5ef':'#fff'));
+          label.textContent=mode==='source'?'原始关系（箭头方向不变）':dependency?(showTrace?'恢复起点 · 可达 '+plan.after.reached.length+' 项':'假设禁用 · 可达 '+plan.before.reached.length+' 项'):(restored || mode==='restored'?'依赖证据不足 · 影响未知':'来源原图');
+        }
+        return {box,update};
+      }
+      const left=diagram(false),right=diagram(true);diagrams.append(left.box,right.box);
+      const buttons=[];
+      for(const [value,label] of [['source','原始关系'],['blocked',dependency?'假设禁用':'语义核对'],['restored',dependency?'恢复起点':'严格依赖图'],['compare','并排比较']]) {
+        const b=button(label,()=>{mode=value;update();});buttons.push([value,b]);controls.append(b);
+      }
+      function update() {
+        left.update();right.update();diagrams.classList.toggle('hr-compare',mode==='compare');
+        buttons.forEach(([value,b])=>b.setAttribute('aria-pressed',String(mode===value)));
+        result.textContent=dependency?'恢复后的可达集合：'+(plan.after.reached.map(id=>names.get(id)).join('、')||'空集')+'。未连入本次集合：'+(plan.unconnected.map(id=>names.get(id)).join('、')||'无')+'。':'当前没有 depends_on 证据；影响未知，不能判定没有影响。';
+      }
+      section.append(controls,diagrams,result,el('p',plan.rule,'hr-muted'),el('p',plan.limit,'hr-muted'));
+      root.append(section);update();
+    }
     function render() {
       stopMedia(); root.replaceChildren();
       const header = el('header');
       header.append(el('h2', report.title), el('p', report.goal));
       header.append(el('p', `${target.kind} · ${target.id} · 核对 ${date(report.checked_at)} · 版本 ${report.version.slice(0, 12)}`, 'hr-muted'));
       const actions = el('div', null, 'hr-actions');
-      actions.append(button('刷新报告', () => load().catch(() => {})), button('生成讲解视频', () => generate(false)));
+      actions.append(button('刷新报告', () => load().catch(() => {})));
+      if (report.reasoning?.available) actions.append(button('生成讲解视频', () => generate(false)));
       header.append(actions); root.append(header);
       banner = el('div', null, 'hr-notice'); banner.setAttribute('role','status'); banner.hidden = true; root.append(banner);
       for (const warning of report.warnings) root.append(el('p', warning, 'hr-notice'));
       mediaRegion = el('section', null, 'hr-media'); mediaRegion.hidden = true; mediaRegion.setAttribute('aria-label', '讲解视频'); root.append(mediaRegion);
+      renderReasoning(report.reasoning);
+      if (report.reasoning?.available) root.append(el('p','配音使用本地机械合成；当前没有已配置的自然语音服务。','hr-muted'));
       if (report.rows.length) {
         const interactive = el('section', null, 'hr-interactive'); interactive.setAttribute('aria-label', '筛选汇报条目');
         const filters = el('div', null, 'hr-actions');
@@ -137,6 +215,7 @@
       const transcript = el('details'); transcript.append(el('summary', '文字稿'), el('pre', state.transcript));
       mediaRegion.append(chapters, transcript, el('small', `讲解时长 ${Math.round(state.duration)} 秒 · 生成用时 ${state.generation_seconds} 秒 · 报告版本 ${state.version.slice(0,12)}`));
       if (state.scope_note) mediaRegion.append(el('p', state.scope_note, 'hr-muted'));
+      if (state.voice_note) mediaRegion.append(el('p', state.voice_note, 'hr-muted'));
     }
     async function pollMedia(token) {
       if (!active(token) || !media?.job_id) return;
