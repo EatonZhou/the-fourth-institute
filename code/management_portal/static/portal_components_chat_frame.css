@@ -482,9 +482,10 @@
 .chatRoundViewport { display:flex; flex:1 1 auto; min-width:0; min-height:0; position:relative; overflow:hidden; }
 .chatRoundViewport > .paneBody { scrollbar-width:none; }
 .chatRoundViewport > .paneBody::-webkit-scrollbar { display:none; }
-.chatRoundRail { position:relative; flex:0 0 46px; width:46px; min-height:0; color:var(--muted, #687887); background:var(--panel, transparent); border-inline-start:1px solid var(--border, #8291a426); }
+.chatRoundRail { position:relative; flex:0 0 46px; width:46px; min-height:0; color:var(--muted, #687887); background:var(--panel, transparent); }
 .chatRoundDirectory { position:absolute; top:0; left:0; width:30px; height:30px; padding:0; border:0; background:transparent; color:inherit; cursor:pointer; font-size:1.1rem; }
 .chatRoundLane { position:absolute; top:32px; bottom:8px; left:0; width:30px; }
+.chatRoundLane::before { content:''; position:absolute; left:14.5px; top:0; bottom:0; width:1px; background:var(--border, #8291a426); pointer-events:none; }
 .chatRoundNode { position:absolute; transform:translateY(-50%); left:0; width:30px; height:26px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; touch-action:pan-y; }
 .chatRoundCore { position:absolute; width:6px; height:6px; left:12px; top:calc(50% - 3px); border-radius:50%; background:currentColor; }
 .chatRoundNode.is-current .chatRoundCore { outline:1px solid var(--accent, #578fcf); outline-offset:3px; }
@@ -536,6 +537,7 @@
   .chatRoundRail { flex-basis:62px; width:62px; }
   .chatRoundDirectory,.chatRoundNode { width:44px; min-height:44px; }
   .chatRoundLane { width:44px; top:48px; }
+  .chatRoundLane::before { left:20.5px; }
   .chatRoundCore { left:18px; }
   .chatRoundCount { left:28px; }
   .chatRoundFlag { left:4px; }

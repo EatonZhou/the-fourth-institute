@@ -187,8 +187,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('hover exposes complete prose without black tooltip', await first.locator('.chatRoundFull').isVisible() && await page.locator('[role="tooltip"]:visible').count() === 0);
       await page.mouse.move(10, 10); await first.locator('.chatRoundExpand').click();
       await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot('preview-desktop-dark');
-      check('dark preview is opaque and nodes have no connecting line', await popup.evaluate(n => !getComputedStyle(n).backgroundColor.includes('rgba'))
-        && await page.locator('.chatRoundLane').evaluate(n => getComputedStyle(n, '::before').content === 'none'));
+      check('dark preview is opaque; node line remains without a divider beside the text', await popup.evaluate(n => !getComputedStyle(n).backgroundColor.includes('rgba'))
+        && await page.locator('.chatRoundLane').evaluate(n => getComputedStyle(n, '::before').content !== 'none')
+        && await page.locator('.chatRoundRail').evaluate(n => getComputedStyle(n).borderInlineStartWidth === '0px'));
       await first.locator('.chatRoundPreviewJump').click(); await settle();
       check('preview native click locates original message', await page.locator('[data-message-key="v1"]').evaluate(n => n.classList.contains('messageQuoteTarget')));
       const smallContext = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
