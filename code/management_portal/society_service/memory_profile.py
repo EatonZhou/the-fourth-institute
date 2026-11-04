@@ -7,6 +7,7 @@ not enable tracing, scan the heap, or create a sampler thread.
 from __future__ import annotations
 
 from collections import Counter
+import ctypes
 import gc
 from itertools import islice
 import json
@@ -17,7 +18,7 @@ import threading
 import time
 import tracemalloc
 
-from management_common.file_permissions import create_private_file, ensure_private_directory
+from management_common.file_permissions import atomic_write_private_bytes, create_private_file, ensure_private_directory
 from management_common.instance_manifest import instance_runtime_root
 
 
@@ -71,8 +72,13 @@ def heap_summary(*, object_limit: int = 500_000) -> dict:
             # static lower bound without invoking application methods.
             basic = kind.__basicsize__
             sizes[name] += basic if isinstance(basic, int) else 0
+    pointer_modules = Counter()
+    for kind in list(getattr(ctypes, "_pointer_type_cache", {})):
+        module = getattr(kind, "__module__", "<native>")
+        pointer_modules[module if isinstance(module, str) else "<native>"] += 1
     return {"tracked_objects": len(objects), "inspected_objects": min(len(objects), object_limit),
             "reference_list_bytes": sys.getsizeof(objects), "truncated": len(objects) > object_limit,
+            "ctypes_pointer_types_by_module": dict(pointer_modules.most_common(20)),
             "top_types": [{"type": kind, "count": counts[kind], "shallow_bytes": size}
                           for kind, size in sizes.most_common(30)],
             "non_builtin_sizes": "static type basicsize lower bounds",
@@ -136,6 +142,9 @@ def start() -> threading.Thread | None:
                         break
         finally:
             tracemalloc.stop()
+            atomic_write_private_bytes(target.with_suffix(".done.json"), json.dumps({
+                "pid": os.getpid(), "stopped_epoch": time.time(), "tracing": tracemalloc.is_tracing(),
+            }).encode())
     thread = threading.Thread(target=run, name="society-memory-profile", daemon=True)
     try:
         thread.start()
