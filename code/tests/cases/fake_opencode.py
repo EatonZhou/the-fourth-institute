@@ -109,6 +109,7 @@ def step(session: str, model: str, body, finish: str) -> dict:
 def run(session: str, body: dict) -> None:
     state = SESSIONS[session]
     text = body["parts"][0]["text"]
+    state['retry_message'] = 'Free usage exceeded' if 'quota slow' in text else ''
     model = body.get("model", {}).get("modelID", "")
     message(session, "user")
     emit("session.status", sessionID=session, status={"type": "busy"})
@@ -250,7 +251,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path.startswith("/session/") and path.endswith("/message"):
             self.reply(copy.deepcopy(SESSIONS[path.split("/")[2]]["messages"]))
         elif path == "/session/status":
-            self.reply({key: {"type": "busy"} for key, state in SESSIONS.items() if state.get("busy")})
+            self.reply({key: ({'type':'retry','attempt':1,'message':state['retry_message']}
+                             if state.get('retry_message') else {"type": "busy"})
+                        for key, state in SESSIONS.items() if state.get("busy")})
         elif path == "/config/providers":
             self.reply({"providers": [{"id": "opencode", "models": {"free-model": {"limit": {"context": 200000}}}}]})
         else:

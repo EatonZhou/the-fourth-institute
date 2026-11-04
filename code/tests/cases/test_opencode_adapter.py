@@ -122,6 +122,19 @@ def test_deadline_error_is_projected_as_a_timeout():
     assert result['diagnostic'] == {'reason': 'timeout', 'http_status': None}
 
 
+def test_native_free_usage_exhaustion_aborts_without_a_recovery_prompt(opencode):
+    start = time.monotonic()
+    with pytest.raises(Exception) as error:
+        OpenCodeBackend().execute(_invocation(opencode, 'quota slow', options={'turn_timeout_seconds':30},
+                                             policy=ProviderErrorRecoveryPolicy(2)), _context())
+    assert getattr(error.value, 'error_code', '') == 'provider_usage_limit'
+    assert time.monotonic() - start < 15
+    assert len(opencode.prompts()) == 1
+    from management_portal.execution.account_setup import _check_failure
+    assert _check_failure({'status':'failed','result':{'error_code':'provider_usage_limit'}},
+                          {'kind':'service'})['diagnostic']['reason'] == 'quota'
+
+
 def test_retry_diagnostics_keep_only_a_fixed_reason():
     from management_portal.opencode_bridge import native_status, retry_failure
     assert native_status({'type': 'retry', 'attempt': 2, 'next': 123,

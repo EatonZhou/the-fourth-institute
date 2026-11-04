@@ -802,7 +802,8 @@ class Bridge:
 
     def _outcome(self, turn: Turn) -> dict:
         while not self._settled(turn):
-            if turn.deadline is not None and time.monotonic() >= turn.deadline:
+            quota = turn.native_status.get('reason') == 'quota_exhausted'
+            if quota or (turn.deadline is not None and time.monotonic() >= turn.deadline):
                 observed = dict(turn.native_status)
                 self.server.request('POST', f'/session/{self.opencode_session}/abort', timeout=10)
                 cancellation_deadline = time.monotonic() + 10
@@ -819,6 +820,8 @@ class Bridge:
                 if after.get('type') != 'idle':
                     raise BridgeError('Native turn deadline reached; abort is not confirmed idle', error_code='provider_turn_cancel_pending')
                 turn.done.set()
+                if quota:
+                    raise BridgeError('OpenCode upstream usage limit reached; native abort confirmed idle', error_code='provider_usage_limit')
                 raise BridgeError('OpenCode turn deadline reached; native abort confirmed idle', error_code='provider_turn_deadline')
         messages = self.server.request("GET", f"/session/{self.opencode_session}/message", timeout=360) or []
         mine = [message for message in messages
@@ -1205,6 +1208,7 @@ def native_status(status):
     if result.get('type') == 'retry':
         message = str(status.get('message') or '').lower()
         for reason, markers in (
+                ('quota_exhausted', ('free usage exceeded', 'usage limit exceeded', 'quota exhausted')),
                 ('rate_limited', ('rate limit', 'too many requests')),
                 ('upstream_unavailable', ('service unavailable', 'overloaded', 'bad gateway')),
                 ('network_failure', ('fetch failed', 'unable to connect', 'connection error', 'tls', 'certificate'))):
