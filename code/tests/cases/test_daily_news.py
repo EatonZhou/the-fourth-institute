@@ -1,15 +1,29 @@
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
-from management_portal import serve_management_portal as portal
+import pytest
+
 from management_portal import http_overview
 
 
 def test_daily_news_follows_registered_lineage_folder(monkeypatch, tmp_path):
-    from management_portal.society_service import lineage_locations
+    from management_portal.society_service import lineage_storage, state_store
     folder = tmp_path / "projects" / "research" / "agents" / "lineage_7e2464bbdb60"
     monkeypatch.setenv("PORTAL_DAILY_NEWS_ROOT", str(tmp_path / "wrong"))
     calls = []
-    monkeypatch.setattr(lineage_locations, "lineage_folder", lambda identity: calls.append(identity) or folder)
+    def projection(identity):
+        calls.append(identity)
+        return {"project_id": "research"}
+
+    def locate(identity, project):
+        assert identity == "lineage_7e2464bbdb60"
+        assert project == "research"
+        return folder
+
+    monkeypatch.setattr(http_overview.web_clients, "lineage_domain", SimpleNamespace(
+        get_lineage_resource_projection=projection))
+    monkeypatch.setattr(lineage_storage, "lineage_folder_for_project", locate)
+    monkeypatch.setattr(state_store, "get_lineage_data_store", lambda: pytest.fail("Web opened Lineage store"))
     assert http_overview._daily_news_root() == folder / "memory" / "reports"
     assert calls == ["lineage_7e2464bbdb60"]
 
@@ -42,3 +56,59 @@ def test_daily_news_uses_latest_valid_report_until_today_exists(
     assert current["date"] == today.isoformat()
     assert current["stale"] is False
     assert current["content"] == "# Current report\n"
+
+
+@pytest.mark.parametrize("failure", [OSError("read failed"), UnicodeError("invalid UTF-8")])
+def test_daily_news_current_failure_does_not_fall_back(monkeypatch, tmp_path, failure):
+    from pathlib import Path
+
+    today = datetime.now().astimezone().date()
+    current = tmp_path / f"{today.isoformat()}__daily_news.md"
+    current.write_text("# Today", encoding="utf-8")
+    (tmp_path / f"{(today - timedelta(days=1)).isoformat()}__daily_news.md").write_text("# Old")
+    monkeypatch.setattr(http_overview, "_daily_news_root", lambda: tmp_path)
+    read = Path.read_text
+
+    def read_text(path, *args, **kwargs):
+        if path == current:
+            raise failure
+        return read(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    result = http_overview._daily_news_payload()
+    assert result["status"] == "error"
+    assert result["content"] == ""
+    assert result["error"] == str(failure)
+    assert result["path"] == str(current)
+
+
+def test_daily_news_owner_unavailable_is_panel_error(monkeypatch):
+    from management_portal.society_service import SocietyServiceUnavailable
+
+    def unavailable(_identity):
+        raise SocietyServiceUnavailable("Society temporarily unavailable")
+
+    monkeypatch.setattr(http_overview.web_clients, "lineage_domain", SimpleNamespace(
+        get_lineage_resource_projection=unavailable))
+    result = http_overview._daily_news_payload()
+    assert result["status"] == "error"
+    assert result["path"] == ""
+    assert result["content"] == ""
+    assert result["error"] == "Society temporarily unavailable"
+
+
+@pytest.mark.parametrize("actor", ["fixture-user", "resident_111111111111", None])
+def test_daily_news_requires_authenticated_page_principal(monkeypatch, actor):
+    from urllib.parse import urlparse
+
+    request = SimpleNamespace(headers={"Authorization": "fixture-only"})
+    monkeypatch.setattr(http_overview.http_auth, "_get_page_api_actor", lambda request: actor)
+    monkeypatch.setattr(http_overview.http_responses, "_serve_json", lambda request, status, data: (status, data))
+    monkeypatch.setattr(http_overview.http_responses, "_serve_http_error", lambda request, status, error: (status, error))
+    monkeypatch.setattr(http_overview, "_daily_news_payload", lambda: {"status": "ok", "content": "# News"})
+    route = next(r for r in http_overview.routes() if r.path == "/api/daily-news")
+    assert route.phase == "dual-auth"
+    status, data = route.handler(request, urlparse(route.path), None)
+    assert status == (200 if actor else 401)
+    if actor:
+        assert data["content"] == "# News"

@@ -12,20 +12,25 @@ from management_common.site_registry import get_portal_summary, get_runtime_conf
 from management_portal import agent_context_selection, http_auth, http_instance, http_responses, web_clients
 from management_portal.portal_access_control import list_users
 from management_portal.resources import get_resource_service
-from management_portal.society_service import SocietyServiceBusy, SocietyServiceClient
+from management_portal.society_service import SocietyServiceBusy, SocietyServiceClient, SocietyServiceUnavailable
 from management_portal.http_routes import RouteDefinition
 
 
 def _daily_news_root() -> Path:
-    from management_portal.society_service.lineage_locations import lineage_folder
-    return lineage_folder("lineage_7e2464bbdb60") / "memory" / "reports"
+    from management_portal.society_service.lineage_storage import lineage_folder_for_project
+
+    lineage_id = "lineage_7e2464bbdb60"
+    # Web consumes the owning service's committed registration. It must not
+    # initialize or validate the Lineage database in its own long-lived process.
+    lineage = web_clients.lineage_domain.get_lineage_resource_projection(lineage_id)
+    return lineage_folder_for_project(lineage_id, lineage["project_id"]) / "memory" / "reports"
 
 
 def _daily_news_payload() -> dict:
     requested_date = datetime.now().astimezone().date().isoformat()
     try:
         root = _daily_news_root()
-    except (KeyError, ValueError, OSError) as exc:
+    except (KeyError, ValueError, OSError, SocietyServiceUnavailable) as exc:
         return {"status": "error", "date": requested_date, "path": "", "content": "", "error": str(exc)}
     requested_path = root / f"{requested_date}__daily_news.md"
     report_path = requested_path
@@ -60,7 +65,7 @@ def _daily_news_payload() -> dict:
             "path": str(requested_path),
             "content": "",
         }
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         return {
             "status": "error",
             "date": requested_date,
@@ -225,5 +230,5 @@ def routes() -> tuple[RouteDefinition, ...]:
         http_auth._principal_route("GET", "/api/agent-context-options", _route_agent_context_options, "portal-overview"),
         RouteDefinition("GET", "/api/config", _route_config, "portal-overview"),
         RouteDefinition("GET", "/api/summary", _route_summary, "portal-overview"),
-        RouteDefinition("GET", "/api/daily-news", _route_daily_news, "portal-overview"),
+        http_auth._principal_route("GET", "/api/daily-news", _route_daily_news, "portal-overview"),
     )

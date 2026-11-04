@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 10
+  number: 11
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T18:15:27Z'
+  updated_at: '2026-11-04T18:56:09Z'
   updated_by:
     user: ''
-    agent: resident_24014e2b9bf6
+    agent: resident_83d75ad3a6c7
 importance: 8
 metaness: 1
 ai_generated: true
@@ -73,7 +73,9 @@ Daily News 区域由三部分组成：
 
 ## 读取接口
 
-`GET /api/daily-news` 不接受页面日期选择。服务以服务器本地“今天”构造目标文件名 `<日期>__daily_news.md`，在报告目录中查找；报告目录从负责日报的 Lineage 登记所属 Project 解析，位于其 Lineage Folder 的 `memory/reports`，并返回以下字段：
+`GET /api/daily-news` 使用 Portal 统一页面身份入口，接受已认证 User 或 Resident，匿名请求返回 401；不接受页面日期选择。Web 通过 SocietyService 的 `get_lineage_resource_projection` 读取负责日报的 Lineage 已登记的 `project_id`，再由不访问数据库的 `lineage_folder_for_project` 定位其 Lineage Folder 下的 `memory/reports`。Lineage 数据库的初始化与结构校验由 SocietyService 负责，Web 读取日报时不打开该数据库。
+
+服务以服务器本地“今天”构造目标文件名 `<日期>__daily_news.md`，在报告目录中查找，并返回以下字段：
 
 | 字段 | 含义 |
 | --- | --- |
@@ -86,6 +88,6 @@ Daily News 区域由三部分组成：
 | `content` | Markdown 正文；`missing` 与 `error` 时为空 |
 | `error` | 读取失败的原因；只在 `error` 时返回，页面直接显示 |
 
-服务先检查今天文件。文件存在且可读时返回 `status: ok` 和 `stale: false`。今天文件缺失时，它按文件名日期排序，从不晚于今天的候选中选最新一份，并返回 `stale: true`。今天文件存在但读取异常时返回 `status: error`；候选也不存在时返回 `status: missing`。
+服务先检查今天文件。文件存在且可读时返回 `status: ok` 和 `stale: false`。今天文件缺失时，它按文件名日期排序，从不晚于今天的候选中选最新一份，并返回 `stale: true`。今天文件存在但读取异常（包括文件不可读或 UTF-8 解码失败）时返回 `status: error`；候选也不存在时返回 `status: missing`。SocietyService 暂不可用或登记目录无法解析时，同样返回 Panel 的错误状态，保留原因供页面显示。
 
 `path` 是服务诊断字段，页面不会把主机文件路径当作普通用户可浏览资源。用户对 Daily News 的页面访问权限来自 Portal 登录；研究 Resident 对网络、模型和报告目录的权限由其运行设置与 Workspace 绑定持有。
