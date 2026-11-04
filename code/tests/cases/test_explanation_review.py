@@ -6,6 +6,23 @@ import io
 import json
 
 
+def test_builder_requires_quality_before_writing_or_submitting(tmp_path, monkeypatch, capsys):
+    import sys
+    from scripts import build_explanation_package as builder
+    (tmp_path/'explanation.md').write_text('A fixed explanation.', encoding='utf-8')
+    calls = []
+    monkeypatch.setattr(client, 'submit', lambda *a, **k: calls.append(a))
+    monkeypatch.setattr(sys, 'argv', ['build_explanation_package.py', str(tmp_path),
+        '--address', 'workspace_0123456789ab/file/example', '--title', 'Example',
+        '--task', 'Explain cause', '--supplement', 'explanation.md'])
+    with pytest.raises(SystemExit) as stopped:
+        builder.main()
+    assert stopped.value.code == 2
+    assert '--quality' in capsys.readouterr().err
+    assert not (tmp_path/'manifest.json').exists()
+    assert calls == []
+
+
 def test_builder_retains_fixed_package_and_fails_when_high_submission_fails(tmp_path, monkeypatch, capsys):
     import sys
     from scripts import build_explanation_package as builder, submit_explanation_review as sender

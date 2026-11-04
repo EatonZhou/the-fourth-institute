@@ -72,7 +72,8 @@ def main() -> None:
     parser.add_argument("--title", required=True)
     parser.add_argument("--summary", default="")
     parser.add_argument("--revision", type=int, default=1)
-    parser.add_argument("--quality", choices=('low', 'medium', 'high'), default='medium')
+    parser.add_argument("--quality", choices=('low', 'medium', 'high'), required=True,
+                        help="Effective requested quality; omission must not silently bypass high review")
     parser.add_argument("--previous-review-id", help="Rejected fixed version this new package corrects")
     parser.add_argument("--authoring-id", help="Formal storyboard task fulfilled by this new fixed plan")
     parser.add_argument("--resident-id", default="", help="Current author; checked against the injected identity")
