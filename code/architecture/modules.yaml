@@ -1314,6 +1314,7 @@ modules:
     code_paths:
       - "management_portal/execution/agent_data_*.py"
       - "management_portal/execution/conversation_projection.py"
+      - "management_portal/execution/input_work_projection.py"
       - "management_portal/execution/event_projection.py"
       - "management_portal/execution/runtime_details.py"
       - "management_portal/execution/provider_event_projection.py"
