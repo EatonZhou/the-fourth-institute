@@ -144,6 +144,117 @@ class ReviewService:
         if len(data) > 128*1024*1024 or hashlib.sha256(data).hexdigest() != asset['sha256']:
             raise ValueError('审核引用内容已变化')
 
+    def _package_store(self):
+        return type(self)(root=self.root / 'package-bindings', resources=self.resources, call=self.call)
+
+    @staticmethod
+    def _package_key(address, version):
+        return hashlib.sha256(json.dumps([address, version], ensure_ascii=False).encode()).hexdigest()
+
+    def bind_package(self, record, *, allow_pending=False):
+        """Index only a server-recorded, authenticated Resident submission."""
+        subject = record.get('subject', {})
+        author = subject.get('author', '')
+        if (subject.get('kind') != 'explanation' or author != record.get('requested_by')
+                or not re.fullmatch(r'resident_[0-9a-f]{12}', author)
+                or not re.fullmatch(r'[0-9a-f]{64}', str(subject.get('version', '')))
+                or subject.get('digest') != subject['version']
+                or {'address': subject['ref'], 'sha256': subject['version']} not in subject.get('assets', [])
+                or record.get('status') not in ({'pending', 'submission_failed'} if allow_pending else set()) |
+                    {'submitted', 'passed', 'changes_requested', 'blocked', 'cancelled'}):
+            return False
+        store = self._package_store()
+        key = self._package_key(subject['ref'], subject['version'])
+        with store._lock(key):
+            previous = store._load(key)
+            if previous:
+                if previous['author'] != author:
+                    raise ValueError('固定解释包已有不同的认证作者，不能覆盖作者关联')
+                return False
+            store._save({'id': key, 'ref': subject['ref'], 'version': subject['version'],
+                         'author': author, 'review_id': record['id']})
+        return True
+
+    def package_binding(self, address, version, actor):
+        # No scan, source-owner inference, or write occurs on a read request.
+        self.resources.resolve(address, actor=actor)
+        self._verify({'address': address, 'sha256': version}, actor)
+        binding = self._package_store()._load(self._package_key(address, version))
+        if binding:
+            if binding.get('ambiguous'):
+                raise ValueError('历史固定包存在不同作者提交，需明确核对来源')
+            record = self._load(binding['review_id'])
+            subject = (record or {}).get('subject', {})
+            if (subject.get('ref') != address or subject.get('version') != version
+                    or subject.get('author') != binding['author']
+                    or record.get('requested_by') != binding['author']):
+                raise ValueError('固定解释包作者关联与正式提交不一致')
+        return binding
+
+    def index_existing_packages(self):
+        """Explicit maintenance of review metadata only; never read private sources."""
+        result = {'indexed': 0, 'conflicts': []}
+        for path in sorted(self.root.glob('*.json')):
+            if not re.fullmatch('[0-9a-f]{64}', path.stem):
+                continue
+            record = self._load(path.stem)
+            try:
+                result['indexed'] += int(self.bind_package(record))
+            except ValueError:
+                result['conflicts'].append(path.stem)
+                subject = record['subject']
+                store = self._package_store()
+                key = self._package_key(subject['ref'], subject['version'])
+                with store._lock(key):
+                    binding = store._load(key)
+                    if binding:
+                        store._save({**binding, 'ambiguous': True})
+        return result
+
+    def package_projection(self, address, version, actor):
+        binding = self.package_binding(address, version, actor)
+        return self.artifact_projection(binding['review_id'], actor, address, version) if binding else None
+
+    def artifact_projection(self, review_id, actor, address, version):
+        """Artifact readers see quality feedback, not the private review exchange."""
+        record, seen = self._load(review_id), set()
+        while record:
+            if record['id'] in seen:
+                raise ValueError('审查续接关系有循环')
+            seen.add(record['id'])
+            subject = record['subject']
+            if subject['ref'] != address or subject['version'] != version:
+                raise ValueError('审查不属于本固定成果')
+            if not record.get('continuation_review_id'):
+                break
+            record = self._load(record['continuation_review_id'])
+        if not record:
+            return None
+        self._authorize(record['subject'], actor)
+        status = record['status']
+        if status == 'passed':
+            try:
+                self._authorize(record['subject'], actor, verify=True)
+                if record.get('handoff'):
+                    self.transfers.verify(record['id'], record['handoff']['subject'])
+            except ValueError:
+                status = 'invalidated'
+        requester = actor == record['requested_by']
+        expired = bool(record.get('handoff')) and time.time() >= record['handoff']['expires_at']
+        result = {k: record[k] for k in ('id', 'round', 'updated_at') if k in record}
+        if requester or record.get('feedback_audience') == 'artifact_readers':
+            result.update({k: record[k] for k in ('feedback', 'error') if k in record})
+        result.update(status=status, digest=record['subject']['digest'],
+                      capabilities={'can_cancel': requester and status not in self.TERMINAL,
+                          'can_resume': requester and not record.get('cancelled_at') and
+                              (status == 'blocked' or status in {'submitted', 'submission_failed'} and expired),
+                          'can_retry': requester and status == 'submission_failed',
+                          'can_read_evidence': requester})
+        if requester and record.get('handoff', {}).get('evidence'):
+            result['handoff'] = {'evidence': record['handoff']['evidence']}
+            result['evidence'] = record.get('evidence', [])
+        return result
+
     def read(self, review_id, actor):
         record = self._load(review_id)
         if record:
@@ -224,10 +335,18 @@ class ReviewService:
             if previous and (previous['subject']['author'] != subject['author'] or previous['subject']['kind'] != subject['kind'] or previous['status'] != 'changes_requested' or previous['subject']['digest'] == subject['digest']):
                 raise ValueError('复审须绑定同一作者的否决记录和已修改的固定内容')
             record = record or {'id': identifier, 'subject': subject, 'requested_by': actor, 'attempts': 0,
+                                'feedback_contract': 'artifact-readers-v1',
                                 'round': previous.get('round', 1)+1 if previous else 1}
             if not subject['responsible_resident_id']:
                 record.update(status='awaiting_author', error='缺少经核验的负责Resident；保留作者User，等待业务域补齐正式关联。')
                 return self._save(record)
+            if subject['kind'] == 'explanation' and subject['author'] == actor:
+                self._authorize(subject, actor, verify=True)
+                record.setdefault('status', 'pending')
+                self._save(record)
+                # Reserve the fixed package author before notifying a checker.
+                # Conflicting concurrent submissions cannot both dispatch.
+                self.bind_package(record, allow_pending=True)
             return self._dispatch(record, actor, reviewer)
 
     def _dispatch(self, record, actor, reviewer=''):
@@ -260,16 +379,26 @@ class ReviewService:
                        'verdict字段review_id/digest/status(passed|changes_requested|blocked)/evidence([{address,sha256}])/feedback。'
                        'passed必须有实际证据。作者不能自审。缺权限或不能实际检查请blocked。'
                        'changes_requested须给可操作修改意见；作者修改为新固定版后另行送审，不循环自动重试。'}
+            public_feedback = record.get('feedback_contract') == 'artifact-readers-v1'
+            if public_feedback:
+                payload['requirements'] += ('质量状态及feedback会向该固定成果的合法读者展示；feedback只写完成理解任务所需的具体结论和修改要求，'
+                                            '私有检查证据放evidence，不在feedback展开私有资料或证据路径。')
+            else:
+                payload['requirements'] += '本轮沿用原私有反馈受众，完整反馈仅交原请求者。'
             receipt = self.call(actor, 'DeliverMessage', {'resident_id': chosen, 'business_ref': subject['ref'],
                 'message': {'content_parts': [{'type': 'text', 'text': json.dumps(payload, ensure_ascii=False)}]}},
-                'quality-review:' + identifier)
+                'quality-review:' + identifier + (':artifact-readers-v1' if public_feedback else ''))
             if not receipt.get('message_id'):
                 raise ValueError('缺少送检回执')
             record.update(status='submitted', message_id=receipt['message_id'])
+            if public_feedback:
+                record['feedback_audience'] = 'artifact_readers'
             record.pop('error', None)
         except Exception:
             record.update(status='submission_failed', error='独立审核未提交；请检查审核员与权限。')
-        return self._save(record)
+        result = self._save(record)
+        self.bind_package(result)
+        return result
 
     def resume(self, review_id, actor, reviewer=''):
         """Explicitly re-submit a blocked fixed version; old verdicts remain immutable."""
@@ -297,6 +426,7 @@ class ReviewService:
             with self._lock(identifier):
                 record = self._load(identifier) or {'id': identifier, 'subject': previous['subject'],
                     'requested_by': actor, 'attempts': 0, 'round': previous.get('round', 1) + 1,
+                    'feedback_contract': 'artifact-readers-v1',
                     'resumes_review_id': review_id}
                 if record.get('status') != 'submitted':
                     record = self._dispatch(record, actor, reviewer or previous.get('reviewer', ''))

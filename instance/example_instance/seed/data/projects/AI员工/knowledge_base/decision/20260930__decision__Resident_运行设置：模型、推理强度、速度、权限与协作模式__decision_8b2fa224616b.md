@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 37
+  number: 40
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-04T20:48:46Z"
+  updated_at: "2026-11-04T21:06:12Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -270,3 +270,15 @@ high 的显式送审同时授权向本轮指定检查者交付选定固定成果
 Resident 直接提交解释包时，作者依据已认证提交主体；Workspace directory.owner_id 只表达目录归属，不作为创作身份。视频负责者可沿经核验的正式分镜创作回执确定。User 没有正式业务来源关联时保留 awaiting_author，不接受客户端自报 author 或 responsible_resident_id。指定检查者到期后仅可提交不含证据资产的 blocked 说明；不得继续读取资产或提交 passed/changes_requested。
 
 blocked 或已到期轮次可由原请求者显式 --resume REVIEW_ID 以同一固定内容发起新审查 ID 和轮次，保留原结论及续接关系；更换检查者也在新轮次中完成。原轮迟到回执不能修改新轮，幂等提交不能延长期限、扩大清单或复活已关闭授权。changes_requested 仍要求实际修改新固定版并关联原否决；GET 不投递、blocked 不自动续审。
+
+
+### 固定解释成果的跨主体质量读取
+
+ReviewService 用精确 manifest 地址与 SHA256 建立服务端 package-bindings 索引。关联依据是已认证 Resident 自己提交的固定解释包及持久审查记录（requested_by 与 author 相同），不按当前读者、目录 owner_id、名称或前端自报作者重建身份。显式提交需要原成果写权，绑定不授予源权限；不同作者不能覆盖同一固定包关联。历史索引通过 scripts/index_explanation_reviews.py 显式维护，只读取已有审查元数据，不回读私有成果；无可靠关联或作者冲突不推断，正常 GET 不扫描审查库、不写索引。
+
+GET reviews?address&sha256 按当前 actor 重新核验固定成果及依赖读取权限，再沿该绑定和续审关系返回同一质量结论。合法成果读者得到最小 id/status/digest/round/updated_at/feedback/error，以及 capabilities.can_cancel/can_resume/can_retry/can_read_evidence。新送检在向检查者明确反馈受众后记录 feedback_audience=artifact_readers，只有此类轮次的 feedback/error 才向合法成果读者展示；没有该标记的历史反馈保持只向原请求者可见，维护索引不改变历史受众。反馈受众合同在新轮创建时固定，并以独立版本化通知幂等键送达；旧失败请求重试保留原合同与通知键，即使重放原回执也不升级受众，显式新轮才可采用新合同。feedback 是供成果读者理解质量与修改要求的具体结论，检查者不得在其中展开私有证据或路径；源资产清单、检查者身份、requested_by、handoff 和证据不随公共质量投影返回。原请求者可取得自己的 evidence 交接映射；其他读者不因此获得证据或固定审查副本权限，按 id 读完整审查、export 和文件入口保持原鉴权。取消、续审和重试能力只属于相应原请求者，前端据 capabilities 显示，不由 status 或整体忙碌状态猜测。
+
+User 显式发起该解释包的 medium/high 视频创作时，作者任务的 requested_by/author 保持实际 User，responsible_resident_id 从已认证包提交者关联取得；不因 User 打开 Home 丢失负责 Resident，也不接受 payload 自报身份。负责者仍以自己身份核验源读写权限并完成实际新分镜。视频质量展示同样按固定成果读权返回最小审查投影，不能把原请求者的完整私有审查记录复制给其他读者。没有可靠绑定时仍 awaiting_author，不回退到目录 owner。
+
+
+媒体状态缓存不构成审查读取授权或质量通过依据。主审查记录、续审记录或审查 ID 缺失时返回最小 unavailable 状态及全 false 操作能力，high 的 quality_met=false；不得回退缓存中的完整 subject、handoff、evidence 或 passed。已受理并由 ASGI 缓冲的网络响应仍可能完成发送，撤销/到期阻止后续新请求与新 Range，不宣称截断已形成的响应。

@@ -225,7 +225,7 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
         assert not_author.value.code == 403
         assert request('media/authoring', completion)['authoring']['authoring_proof']['resident_id'] == AUTHOR
         request('media', {**ref, 'quality': 'high'})
-        state = done(ref, 'high'); review_id = state['review']['id']; digest = state['review']['subject']['digest']
+        state = done(ref, 'high'); review_id = state['review']['id']; digest = state['review']['digest']
         evidence = put('review1.md', b'Actually inspected fixture: missing explanation of cause; needs revision.')
         verdict = {'review_id': review_id, 'digest': digest, 'status': 'changes_requested', 'evidence': [evidence], 'feedback': 'Add a concrete cause and contrast.'}
         with pytest.raises(HTTPError) as denied:
@@ -243,7 +243,7 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
         next_state = done(changed, 'high'); record = next_state['review']
         assert record['id'] != review_id and record['round'] == 2
         assert not next_state['quality_met']
-        passed = {'review_id': record['id'], 'digest': record['subject']['digest'], 'status': 'passed',
+        passed = {'review_id': record['id'], 'digest': record['digest'], 'status': 'passed',
                   'evidence': [put('review2.md', b'Fixed fixture version inspected: cause and contrast present.')], 'feedback': 'Fixed.'}
         with pytest.raises(HTTPError):
             request('reviews/verdict', {**passed, 'digest': digest}, CHECKER)
@@ -254,10 +254,11 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
         assert request('reviews?id='+record['id'])['review']['status'] == 'passed'
         assert len(calls) == before
         # Exact digest/old pass cannot certify a changed file.
-        resources.path(record['subject']['assets'][0]['address']).write_bytes(b'tampered')
+        private_subject = reviews.read(record['id'], AUTHOR)['subject']
+        resources.path(private_subject['assets'][0]['address']).write_bytes(b'tampered')
         assert reviews.read(record['id'], AUTHOR)['status'] == 'passed'  # immutable handoff audit
         assert reviews.current(record['id'], AUTHOR)['status'] == 'invalidated'
-        assert reviews.submit(record['subject'], AUTHOR)['status'] == 'invalidated'
+        assert reviews.submit(private_subject, AUTHOR)['status'] == 'invalidated'
         assert not done(changed, 'high')['quality_met']
     finally:
         server.shutdown(); server.server_close(); thread.join()
@@ -282,7 +283,7 @@ def test_cancel_late_worker_and_review_cannot_overwrite(rig):
     record = done(ref, 'high')['review']
     reviews.cancel(record['id'], AUTHOR)
     with pytest.raises(ValueError, match='已结束'):
-        reviews.verdict(record['id'], CHECKER, digest=record['subject']['digest'], status='passed',
+        reviews.verdict(record['id'], CHECKER, digest=record['digest'], status='passed',
                         evidence=[put('proof.md', b'read')])
     assert reviews.read(record['id'], AUTHOR)['status'] == 'cancelled'
 
@@ -295,7 +296,7 @@ def test_permissions_missing_reviewer_and_retries_remain_failure(rig):
     state = done(ref, 'high')
     assert state['status'] == 'ready' and state['review']['status'] == 'submission_failed'
     for _ in range(5): media.retry_review(**ref, actor=AUTHOR, quality='high')
-    assert done(ref, 'high')['review']['attempts'] == 3
+    assert reviews.read(done(ref, 'high')['review']['id'], AUTHOR)['attempts'] == 3
     resources.denied.add(AUTHOR)
     with pytest.raises(PermissionError): media.status(**ref, actor=AUTHOR, quality='high')
 

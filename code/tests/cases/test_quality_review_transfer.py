@@ -64,12 +64,17 @@ def exchange(tmp_path, monkeypatch, permissions):
     monkeypatch.setattr(http, 'ReviewService', lambda: owner)
     from management_portal.home_explanation_media import Media
     monkeypatch.setattr(http, 'Media', lambda: Media(resources))
+    from management_portal import home_explanation_review as review_module
+    authoring = review_module.AuthoringService(root=tmp_path / 'authoring', resources=resources, call=isa)
+    monkeypatch.setattr(review_module, 'ReviewService', lambda **kw: owner)
+    monkeypatch.setattr(review_module, 'AuthoringService', lambda **kw: authoring)
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_): pass
         def handle_request(self):
             parsed = urlparse(self.path)
             actor = self.headers.get('X-Fixture-Actor', '')
-            (http._review_file if parsed.path.endswith('/file') else http._reviews)(self, parsed, actor)
+            route = http._media if parsed.path.endswith('/media') else http._review_file if parsed.path.endswith('/file') else http._reviews
+            route(self, parsed, actor)
         do_GET = do_POST = handle_request
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
@@ -78,7 +83,7 @@ def exchange(tmp_path, monkeypatch, permissions):
             data=json.dumps(body).encode() if body is not None else None,
             headers={'X-Fixture-Actor': actor, 'Content-Type': 'application/json', **(headers or {})})
         with urlopen(req) as response:
-            return response.read() if raw else json.load(response)['review']
+            return response.read() if raw else json.load(response)['media' if path == 'media' else 'review']
     def put(rid, name, data):
         path = roots[rid] / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
         return {'address': rid + '/file/' + name, 'sha256': sha(data)}
@@ -88,6 +93,26 @@ def exchange(tmp_path, monkeypatch, permissions):
         digest=artifact['sha256'], quality='high', author=AUTHOR, assets=[artifact], task='Operate the button')
     yield owner, resources, subject, roots, put, request, calls
     server.shutdown(); server.server_close(); thread.join()
+
+
+@pytest.mark.parametrize('missing', ['record', 'continuation', 'id'])
+def test_media_missing_review_never_exposes_private_cache(exchange, missing):
+    from management_portal.home_explanation_media import Media
+    owner, resources, subject, roots, put, request, calls = exchange
+    record = owner.submit(subject, AUTHOR, CHECKER)
+    cached = {**record, 'status': 'passed', 'evidence': [{'address': 'private'}]}
+    if missing == 'record':
+        (owner.root / (record['id'] + '.json')).unlink()
+    elif missing == 'continuation':
+        owner._save({**record, 'continuation_review_id': 'f' * 64})
+    else:
+        cached.pop('id')
+    ctx = {'quality': 'high', 'ref': subject['assets'][0]}
+    result = Media(resources).response(ctx, {'status': 'ready', 'review': cached}, OTHER)
+    assert result['review']['status'] == 'unavailable'
+    assert result['quality_met'] is False
+    assert not any(result['review']['capabilities'].values())
+    assert not {'id', 'subject', 'handoff', 'evidence'} & result['review'].keys()
 
 
 def test_real_page_post_uses_authenticated_resident_not_workspace_owner(exchange, permissions):
@@ -111,12 +136,146 @@ def test_real_page_post_uses_authenticated_resident_not_workspace_owner(exchange
         resources.read_content(manifest['address'], actor=CHECKER)
     permissions.place(Fact('user', 'isolated_author'))
     permissions.grant('isolated_author', SOURCE)
-    unbound = request('isolated_author', 'reviews', {**manifest,
+    with pytest.raises(HTTPError) as denied:
+        request('isolated_author', 'reviews', {**manifest, 'author': AUTHOR})
+    assert denied.value.code == 403
+    new_manifest = put(SOURCE, 'selected/new-manifest.json', json.dumps({
+        'schema': 'portal-explanation/v1', 'quality': 'high',
+        'interaction': subject['assets'][0], 'summary': 'Another unbound package'
+    }).encode())
+    unbound = request('isolated_author', 'reviews', {**new_manifest,
         'author': AUTHOR, 'responsible_resident_id': AUTHOR})
     assert unbound['status'] == 'awaiting_author'
     assert unbound['subject']['author'] == 'isolated_author'
     assert not unbound['subject']['responsible_resident_id']
     assert not unbound.get('handoff')
+
+
+def test_user_reads_authors_fixed_quality_and_video_task_returns_to_author(exchange, permissions):
+    owner, resources, subject, roots, put, request, calls = exchange
+    user = 'isolated_reader'
+    permissions.place(Fact('user', user))
+    permissions.grant(user, SOURCE)
+    manifest = put(SOURCE, 'selected/manifest.json', json.dumps({
+        'schema': 'portal-explanation/v1', 'quality': 'high',
+        'interaction': subject['assets'][0], 'summary': 'Show the actual fixed button'
+    }).encode())
+    first = request(AUTHOR, 'reviews', manifest)
+    proof = put(PROOF, 'private-review.md', b'Private inspection details')
+    owner.verdict(first['id'], CHECKER, digest=manifest['sha256'], status='changes_requested',
+                  evidence=[proof], feedback='Make the button label readable on narrow screens.')
+    before = len(calls)
+    public = request(user, 'reviews?' + urlencode(manifest))
+    assert public['id'] == first['id'] and public['status'] == 'changes_requested'
+    assert public['feedback'].startswith('Make the button')
+    assert not any(public['capabilities'].values())
+    assert not {'handoff', 'evidence', 'subject', 'requested_by', 'reviewer'} & public.keys()
+    assert len(calls) == before  # Read does not submit or grant anything.
+    for path in ('reviews?' + urlencode({'id': first['id']}),
+                 'reviews/file?' + urlencode({'id': first['id'], 'sha256': proof['sha256'], 'group': 'evidence'})):
+        with pytest.raises(HTTPError) as denied:
+            request(user, path)
+        assert denied.value.code == 403
+    with pytest.raises(HTTPError) as denied:
+        request(OTHER, 'reviews?' + urlencode(manifest))
+    assert denied.value.code == 403
+    result = request(user, 'media', {**manifest, 'quality': 'high', 'author': OTHER,
+                                    'responsible_resident_id': OTHER})
+    assert result['status'] == 'awaiting_authoring'
+    task = result['authoring']
+    assert task['status'] == 'submitted' and task['requested_by'] == user
+    assert task['subject']['author'] == user
+    assert task['subject']['responsible_resident_id'] == AUTHOR
+    assert calls[-1][2]['resident_id'] == AUTHOR
+    calls_before = len(calls)
+    assert request(user, 'media', {**manifest, 'quality': 'high'})['authoring']['id'] == task['id']
+    assert len(calls) == calls_before
+    permissions.deny(user, SOURCE)
+    with pytest.raises(HTTPError) as denied:
+        request(user, 'reviews?' + urlencode(manifest))
+    assert denied.value.code == 403  # No cached read grant from the index.
+
+
+def test_package_index_backfills_only_server_records_and_follows_resume(exchange, monkeypatch):
+    owner, resources, subject, roots, put, request, calls = exchange
+    first = owner.submit(subject, AUTHOR)
+    owner.verdict(first['id'], CHECKER, digest=subject['digest'], status='blocked', evidence=[], feedback='Pending inspection')
+    binding = owner.package_binding(subject['ref'], subject['version'], AUTHOR)
+    store = owner._package_store()
+    (store.root / (binding['id'] + '.json')).unlink()
+    with monkeypatch.context() as scoped:
+        scoped.setattr(resources, 'read_content', lambda *a, **kw: pytest.fail('index must not read private source'))
+        assert owner.index_existing_packages() == {'indexed': 1, 'conflicts': []}
+        assert owner.index_existing_packages() == {'indexed': 0, 'conflicts': []}
+    resumed = owner.resume(first['id'], AUTHOR)
+    projected = owner.package_projection(subject['ref'], subject['version'], AUTHOR)
+    assert projected['id'] == resumed['id'] and projected['status'] == 'submitted'
+    assert projected['capabilities']['can_cancel']
+    assert not projected['capabilities']['can_resume']
+
+
+def test_historical_feedback_stays_private_after_indexing(exchange, permissions):
+    owner, resources, subject, roots, put, request, calls = exchange
+    user = 'historical-reader'
+    permissions.grant(user, SOURCE)
+    record = owner.submit(subject, AUTHOR)
+    owner.verdict(record['id'], CHECKER, digest=subject['digest'],
+                  status='changes_requested', evidence=[], feedback='private proof path: /private/checker.md')
+    legacy = owner._load(record['id'])
+    legacy.pop('feedback_audience')
+    legacy.pop('feedback_contract')
+    legacy['error'] = 'private legacy diagnostic'
+    owner._save(legacy)
+    binding = owner.package_binding(subject['ref'], subject['version'], AUTHOR)
+    (owner._package_store().root / (binding['id'] + '.json')).unlink()
+    assert owner.index_existing_packages() == {'indexed': 1, 'conflicts': []}
+    projected = owner.package_projection(subject['ref'], subject['version'], user)
+    assert projected['status'] == 'changes_requested'
+    assert not {'feedback', 'error', 'evidence', 'handoff'} & projected.keys()
+    assert owner.package_projection(subject['ref'], subject['version'], AUTHOR)['feedback'] == legacy['feedback']
+    assert 'feedback_audience' not in owner._load(record['id'])
+
+
+def test_legacy_delivery_retry_cannot_upgrade_feedback_audience(exchange):
+    owner, resources, subject, roots, put, request, calls = exchange
+    record = owner.submit(subject, AUTHOR)
+    legacy = owner._load(record['id'])
+    legacy.pop('feedback_audience')
+    legacy.pop('feedback_contract')
+    legacy['status'] = 'submission_failed'
+    owner._save(legacy)
+    original_call = owner.call
+    def replay(actor, instruction, args, key=''):
+        if instruction == 'DeliverMessage':
+            assert key == 'quality-review:' + record['id']
+            return {'message_id': 'msg_original_private_delivery'}
+        return original_call(actor, instruction, args, key)
+    owner.call = replay
+    retried = owner.submit(subject, AUTHOR)
+    assert retried['status'] == 'submitted'
+    assert 'feedback_audience' not in retried and 'feedback_contract' not in retried
+    owner.call = original_call
+    owner.verdict(record['id'], CHECKER, digest=subject['digest'], status='blocked', evidence=[], feedback='Old private feedback')
+    resumed = owner.resume(record['id'], AUTHOR)
+    assert resumed['feedback_audience'] == 'artifact_readers'
+    assert calls[-1][3].endswith(':artifact-readers-v1')
+    assert 'feedback_audience' not in owner._load(record['id'])
+
+
+def test_package_author_conflict_never_dispatches_a_second_author(exchange):
+    owner, resources, subject, roots, put, request, calls = exchange
+    owner.submit(subject, AUTHOR)
+    count = len(calls)
+    # Same real principal cannot silently replace the original author identity.
+    conflicting = {**subject, 'author': OTHER, 'responsible_resident_id': OTHER}
+    # Exercise the business owner with isolated source authorization; the HTTP
+    # boundary independently checks the actual source write permission.
+    original = owner._authorize
+    owner._authorize = lambda s, a, verify=False: original(s, AUTHOR, verify)
+    with pytest.raises(ValueError, match='不同的认证作者'):
+        owner.submit(conflicting, OTHER)
+    assert len(calls) == count
+    assert owner.package_binding(subject['ref'], subject['version'], AUTHOR)['author'] == AUTHOR
 
 
 def test_private_source_http_range_export_and_return_evidence(exchange, tmp_path):

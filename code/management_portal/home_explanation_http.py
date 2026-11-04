@@ -62,9 +62,11 @@ def _cancel_media(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
-def _page_subject(media, address, sha256, actor, task=''):
+def _page_subject(media, address, sha256, actor, task='', *, creating=False):
     ref = {'address': address, 'sha256': sha256}
-    media.context(**ref, actor=actor)
+    context = media.context(**ref, actor=actor)
+    if creating:
+        media.writable(context, actor)
     manifest = json.loads(media.read(ref, actor))
     if manifest.get('quality') != 'high':
         raise ValueError('仅high解释页需要独立审核')
@@ -85,8 +87,9 @@ def _reviews(request, parsed, actor):
             identifier = query.get('id', [''])[0]
             if not identifier:
                 subject = _page_subject(Media(), query.get('address', [''])[0], query.get('sha256', [''])[0], actor)
-                identifier = owner.identifier(subject)
-            value = owner.read(identifier, actor) if query.get('id') else owner.current(identifier, actor)
+                value = owner.package_projection(subject['ref'], subject['version'], actor)
+            else:
+                value = owner.read(identifier, actor)
         else:
             body = http_request_body._read_bounded_json_object(request, max_bytes=16384)
             if parsed.path.endswith('/verdict'):
@@ -97,8 +100,11 @@ def _reviews(request, parsed, actor):
             elif parsed.path.endswith('/resume'):
                 value = owner.resume(body.get('review_id'), actor, body.get('reviewer', ''))
             else:
-                subject = _page_subject(Media(), body.get('address'), body.get('sha256'), actor, body.get('task', ''))
+                subject = _page_subject(Media(), body.get('address'), body.get('sha256'), actor, body.get('task', ''), creating=True)
                 subject['previous_review_id'] = body.get('previous_review_id')
+                binding = owner.package_binding(subject['ref'], subject['version'], actor)
+                if binding and binding['author'] != actor:
+                    raise PermissionError('该固定包已关联正式作者；合法读者可读质量状态，不能冒充作者重新送审')
                 value = owner.submit(subject, actor, body.get('reviewer', ''))
         return http_responses._serve_json(request, 200, {'review': value})
     except Exception as exc:

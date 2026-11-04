@@ -177,11 +177,19 @@ class Media:
             base = '/api/home-explanation/media/file?' + urlencode({**ctx['ref'], 'quality': ctx['quality']})
             result.update(video_url=base+'&file=video.mp4', captions_url=base+'&file=captions.vtt',
                           transcript_url=base+'&file=transcript.txt')
-            result['review'] = dict(state.get('review') or {'status': 'not_requested'})
-            if result['review']['status'] == 'pending' and not self.active(ctx):
-                result['review'].update(status='submission_failed', error='送检未完成，可由原请求者重试。')
-            if result['review'].get('id') and actor:
-                result['review'] = review.ReviewService(resources=self.service).current(result['review']['id'], actor) or result['review']
+            cached_review = state.get('review') or {}
+            result['review'] = None
+            if cached_review.get('id') and actor:
+                result['review'] = review.ReviewService(resources=self.service).artifact_projection(
+                    cached_review['id'], actor, ctx['ref']['address'], ctx['ref']['sha256'])
+            if result['review'] is None:
+                # Media caches never confer review access or prove a verdict.
+                # Missing canonical records must not expose their private copy.
+                result['review'] = {
+                    'status': 'unavailable' if cached_review else 'not_requested',
+                    'capabilities': dict.fromkeys(('can_cancel', 'can_resume', 'can_retry', 'can_read_evidence'), False)}
+                if cached_review:
+                    result['review']['error'] = '审查记录不可确认；不能依据媒体缓存判定质量通过。'
             result['quality_met'] = ctx['quality'] != 'high' or result['review'].get('status') == 'passed'
         return result
 
@@ -269,9 +277,12 @@ class Media:
         except ValueError:
             if quality == 'low' or authored:
                 raise
+            binding = review.ReviewService(resources=self.service).package_binding(
+                ctx['ref']['address'], ctx['ref']['sha256'], actor)
             authoring = review.AuthoringService(resources=self.service).submit({
                 'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
                 'digest': ctx['ref']['sha256'], 'quality': quality, 'author': actor,
+                'responsible_resident_id': binding['author'] if binding else '',
                 'assets': [ctx['ref']], 'task': '修改此解释页的实际分镜，保存新manifest/plan/audio固定引用后生成视频。'}, actor)
             state = {'status': 'cancelled' if authoring['status'] == 'cancelled' else 'awaiting_authoring',
                      'job_id': authoring['id'], 'generation_actor': actor, 'authoring': authoring}
