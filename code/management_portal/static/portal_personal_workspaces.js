@@ -130,6 +130,7 @@
                   return;
                 }
                 if (result?.stale || result?.accepted === false) return;
+                if (result && "payload" in result && result.payload == null) return;
                 selected = path;
                 render();
               } catch (failure) {

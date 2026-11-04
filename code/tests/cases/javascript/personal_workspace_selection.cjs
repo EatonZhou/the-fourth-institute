@@ -11,9 +11,10 @@ w.PortalFileLinks={load:async target=>({kind:'directory',path:target,children:['
 for(const name of ['portal_file_tree.js','portal_personal_workspaces.js'])w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static',name),'utf8'));
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 let resolveSlow;
+let failures=0;
 (async()=>{
  const panel=w.PortalPersonalWorkspaces.mount({root,onOpen:async target=>{
-  if(target.endsWith('/failed.zip'))return {accepted:true,error:Error('fixture 404')};
+  if(target.endsWith('/failed.zip'))return ++failures===1 ? {accepted:true,error:Error('fixture 404')} : {accepted:true,payload:null};
   if(target.endsWith('/slow.zip'))return await new Promise(resolve=>{resolveSlow=resolve;});
   return {accepted:true,payload:{path:target}};
  }});
@@ -23,6 +24,7 @@ let resolveSlow;
  await click('old.zip');assert.equal(selected(),'/fixture/shared/old.zip');
  await click('failed.zip');assert.equal(selected(),'/fixture/shared/old.zip');
  assert.match(root.textContent,/failed.zip.*fixture 404/,'failure names the attempted file while the old document stays selected');
+ await click('failed.zip');assert.equal(selected(),'/fixture/shared/old.zip','an existing unreadable tab has no readable payload');
  await click('slow.zip');assert.equal(selected(),'/fixture/shared/old.zip','pending is not readable');
  await click('new.zip');assert.equal(selected(),'/fixture/shared/new.zip');
  resolveSlow({accepted:true,payload:{path:'/fixture/shared/slow.zip'}});await tick();
