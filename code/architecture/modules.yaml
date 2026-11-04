@@ -1362,6 +1362,8 @@ modules:
       - "management_portal/home_report.py"
       - "management_portal/home_report_http.py"
       - "management_portal/home_report_media.py"
+      - "management_portal/home_report_reasoning.py"
+      - "management_portal/home_report_visual.py"
       - "management_portal/conversation_*.py"
       - "management_portal/local_terminal_backend.py"
       - "management_portal/resident_workspace_*.py"
