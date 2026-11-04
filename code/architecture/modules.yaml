@@ -742,6 +742,7 @@ modules:
       - "management_portal/execution/account*.py"
       - "management_portal/execution/accounts.py"
       - "management_common/provider_account_paths.py"
+      - "scripts/discover_provider_account_directories.py"
       - "management_portal/execution/provider_usage_events.py"
       - "management_portal/execution/provider_failures.py"
       - "management_portal/execution/request_timing.py"
