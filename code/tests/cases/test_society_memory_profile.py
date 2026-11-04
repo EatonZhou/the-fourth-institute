@@ -147,3 +147,43 @@ def test_diagnostic_directory_failure_cannot_prevent_service_start(monkeypatch, 
         raise PermissionError("private-path-sentinel")
     monkeypatch.setattr(memory_profile, "ensure_private_directory", denied)
     assert memory_profile.start() is None
+
+
+def test_allocator_only_lease_never_starts_tracing_and_rejects_overlapping_capture(monkeypatch, tmp_path):
+    clock = [0.0]
+    pending = []
+    monkeypatch.setattr(memory_profile, 'instance_runtime_root', lambda: tmp_path)
+    monkeypatch.setattr(memory_profile, 'time', SimpleNamespace(
+        time=lambda: clock[0], monotonic=lambda: clock[0], time_ns=lambda: 456,
+        sleep=lambda delay: clock.__setitem__(0, clock[0] + delay)))
+    def forbidden(*_):
+        raise AssertionError('allocator-only mode does not own a tracer')
+    monkeypatch.setattr(memory_profile.tracemalloc, 'start', forbidden)
+    monkeypatch.setattr(memory_profile.tracemalloc, 'stop', forbidden)
+    monkeypatch.setattr(memory_profile.tracemalloc, 'is_tracing', lambda: False)
+    monkeypatch.setattr(memory_profile, 'sample', lambda **_: {'counter': 1})
+    class DeferredThread:
+        def __init__(self, *, target, **_):
+            self.target = target
+        def start(self):
+            pending.append(self.target)
+    monkeypatch.setattr(memory_profile.threading, 'Thread', DeferredThread)
+    folder = tmp_path / 'diagnostics'
+    folder.mkdir()
+    (folder / 'society-memory-profile.json').write_text(json.dumps({
+        'expires_at': 45, 'interval_seconds': 20, 'trace_allocations': False}))
+    assert memory_profile.start() is not None
+    assert memory_profile.start() is None
+    pending.pop()()
+    assert not memory_profile._running.locked()
+    assert json.loads(next(folder.glob('*.done.json')).read_text())['tracing'] is False
+
+
+def test_operator_trigger_does_not_override_an_existing_signal_handler(monkeypatch):
+    registered = []
+    sentinel = object()
+    monkeypatch.setattr(memory_profile, 'signal', SimpleNamespace(
+        SIGUSR1=10, SIG_DFL=0, getsignal=lambda _: sentinel,
+        signal=lambda *args: registered.append(args)))
+    assert memory_profile.install() is False
+    assert not registered

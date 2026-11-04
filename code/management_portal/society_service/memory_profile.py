@@ -11,6 +11,7 @@ import gc
 import json
 import os
 from pathlib import Path
+import signal
 import sys
 import threading
 import time
@@ -18,6 +19,20 @@ import tracemalloc
 
 from management_common.file_permissions import atomic_write_private_bytes, create_private_file, ensure_private_directory
 from management_common.instance_manifest import instance_runtime_root
+
+_running = threading.Lock()
+
+
+def install() -> bool:
+    """POSIX operator trigger: sample an existing generation under a new lease.
+
+    SIGUSR1 is installed only when unused. It does no work without a current
+    private operator lease; Windows retains the startup-lease entry.
+    """
+    if not hasattr(signal, 'SIGUSR1') or signal.getsignal(signal.SIGUSR1) != signal.SIG_DFL:
+        return False
+    signal.signal(signal.SIGUSR1, lambda *_: start())
+    return True
 
 
 def _location(filename: str) -> str:
@@ -62,6 +77,8 @@ def sample(*, detailed: bool = True) -> dict:
     started = time.monotonic()
     allocations = allocation_summary(detailed=detailed)
     garbage_collection = gc_summary()
+    from .allocator_memory import summary as allocator_summary
+    allocators = allocator_summary()
     try:
         import psutil
         process = psutil.Process()
@@ -73,6 +90,7 @@ def sample(*, detailed: bool = True) -> dict:
         native = {"available": False}
     return {"pid": os.getpid(), "sample_epoch": time.time(), "allocated_blocks": sys.getallocatedblocks(),
             "allocations": allocations, "gc": garbage_collection, "process": native,
+            "allocators": allocators,
             "sampling_seconds": time.monotonic() - started}
 
 
@@ -85,14 +103,21 @@ def start() -> threading.Thread | None:
         if not 0 < remaining <= 240 or tracemalloc.is_tracing():
             return None
         interval = max(20.0, min(float(lease.get("interval_seconds", 30)), 60.0))
+        trace_allocations = lease.get("trace_allocations", True)
+        if not isinstance(trace_allocations, bool):
+            return None
     except (OSError, ValueError, TypeError, KeyError):
+        return None
+    if not _running.acquire(blocking=False):
         return None
     try:
         ensure_private_directory(folder)
         target = folder / f"society-memory-profile-{os.getpid()}-{time.time_ns()}.jsonl"
-        tracemalloc.start(4)
+        if trace_allocations:
+            tracemalloc.start(4)
     except Exception:
         # Optional observation must not prevent the business owner from starting.
+        _running.release()
         return None
 
     def run() -> None:
@@ -116,14 +141,20 @@ def start() -> threading.Thread | None:
                     if time.monotonic() >= deadline:
                         break
         finally:
-            tracemalloc.stop()
-            atomic_write_private_bytes(target.with_suffix(".done.json"), json.dumps({
-                "pid": os.getpid(), "stopped_epoch": time.time(), "tracing": tracemalloc.is_tracing(),
-            }).encode())
+            try:
+                if trace_allocations:
+                    tracemalloc.stop()
+                atomic_write_private_bytes(target.with_suffix(".done.json"), json.dumps({
+                    "pid": os.getpid(), "stopped_epoch": time.time(), "tracing": tracemalloc.is_tracing(),
+                }).encode())
+            finally:
+                _running.release()
     thread = threading.Thread(target=run, name="society-memory-profile", daemon=True)
     try:
         thread.start()
     except Exception:
-        tracemalloc.stop()
+        if trace_allocations:
+            tracemalloc.stop()
+        _running.release()
         return None
     return thread

@@ -881,7 +881,8 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     loaded_modules.track()
-    from .memory_profile import start as start_memory_profile
+    from .memory_profile import install as install_memory_profile, start as start_memory_profile
+    install_memory_profile()
     start_memory_profile()
     args = parser().parse_args()
     os.environ.setdefault("PORTAL_SOCIETY_SERVICE_PROCESS", "1")

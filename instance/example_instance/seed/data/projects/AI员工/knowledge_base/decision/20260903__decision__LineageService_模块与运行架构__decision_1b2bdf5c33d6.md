@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 39
+  number: 40
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T14:34:14Z"
+  updated_at: "2026-11-04T17:27:04Z"
   updated_by:
     user: ""
     agent: "resident_dbcd3920b7cc"
@@ -261,6 +261,11 @@ SocietyService 的正常启动不启用分配跟踪或采样。实例操作员�
 诊断不枚举活对象或调用 gc.get_objects/get_referrers/get_referents，不取得构造中对象的强引用；仅为聚合而保留这些引用也可能干扰 CPython 对 tuple 等对象的构造。诊断不记录对象值、repr、locals、消息正文或原始堆，不强制GC或释放业务缓存。输出以私有文件写入同一诊断目录，操作员结束后移走证据并删除租约；跟踪器元数据与采样耗时单独列出。
 
 tracemalloc 活分配、跟踪器开销与 OS 私有内存是不同口径，不能直接相加或将差值宣称为泄漏。诊断只观察当前代际；已有服务没有启用跟踪时，不能用另一个 Python 进程的堆替代它。组件加载遵守已有执行恢复与正在进行任务的检查点，诊断不改变输入、接单开关、历史或权限。
+
+
+诊断同时读取分配器自身的数值计量：CPython 3.12 的小对象 arena 容量、已用块、空闲块及未用pool；Linux glibc 的 arena 已用/空闲与 mmap 容量；Windows 默认进程堆的已分配/提交/保留容量。CPython统计持有GIL，通过独立私有FILE流读取固定大小级表，不重定向服务日志、不枚举对象。版本或API不支持时明确记录不可用。glibc的已用块可包含Python的大对象与线程tcache，统计不提供所有native对象的类型；这些容量与RSS、tracemalloc互有重叠，不能简单相加。
+
+租约可指定严格布尔值 trace_allocations=false，仅采集分配器、OS和GC计数，不启动或停止tracemalloc。每个服务同一时刻只接受一份有界采集。Linux在SIGUSR1未被使用时安装操作员触发入口：确认已加载此能力及当前进程创建身份后，写入新短期租约并发送SIGUSR1，可观察同一代际的后续业务/空闲，无需再次重载；没有有效租约不执行采集。Windows沿普通桌面加载时读取租约。所有入口保持240秒与八个样本上限，到期退出并保留停止回执，不轮询租约、不改变分配器策略或回收业务对象。
 
 ### 读取性能
 
