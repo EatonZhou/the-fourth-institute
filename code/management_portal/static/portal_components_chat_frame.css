@@ -489,8 +489,8 @@
 .chatRoundNode { position:absolute; transform:translateY(-50%); left:0; width:30px; height:26px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; touch-action:pan-y; }
 .chatRoundNode > span { pointer-events:none; }
 .chatRoundCore { position:absolute; width:6px; height:6px; left:12px; top:calc(50% - 3px); }
-.chatRoundCore::after { content:''; position:absolute; inset:0; border-radius:50%; background:currentColor; }
-.chatRoundNode.is-queued .chatRoundCore::after { border:1px solid currentColor; border-radius:0; background:var(--panel, #fff); transform:rotate(45deg); }
+.chatRoundCore::after { content:''; position:absolute; inset:1px; border-radius:50%; background:currentColor; }
+.chatRoundNode.is-queued .chatRoundCore::after { inset:0; border:1px solid currentColor; border-radius:0; background:var(--panel, #fff); transform:rotate(45deg); }
 .chatRoundNode.is-current::after { content:''; position:absolute; left:7px; top:calc(50% - 8px); width:16px; height:16px; box-sizing:border-box; border:1px solid var(--accent, #578fcf); border-radius:50%; pointer-events:none; }
 .chatRoundNode.is-running .chatRoundCore { color:#32a86b; }
 .chatRoundNode.is-running .chatRoundCore::before { content:''; position:absolute; inset:-6px; border-radius:50%; background:#59d38e; opacity:.14; animation:chatRoundBreath 3.6s ease-in-out infinite; pointer-events:none; }
