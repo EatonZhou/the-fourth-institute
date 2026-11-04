@@ -29,7 +29,7 @@
 | projection | input_label, input:[1..6个系数], lanes:[{id,label,matrix:[[x,y],…]}] | input / multiply / result |
 | pipeline | input_label,input_width,lane_width,lanes:[{id,label,detail}],merge_label,projection_label,output_label,context:[文字] | lanes / concat / project / residual / context |
 | sequence | items:[{id,label,detail}], note | focus |
-| plot | parameter, axes, views, series；固定样本和显式视窗，详见下文 | overview / trace / inspect |
+| plot | parameter, axes, views, series；可选 readout，固定样本和显式视窗，详见下文 | overview / trace / inspect |
 
 - dot：逐分量相乘，相加后除 divisor；所有向量共用实际长度与坐标尺度。scores 显示完整带零线的正负分数行，不把分数称作概率。
 - normalize：mask先进入score，排除项指数为0；其余做 exp(score/T)，共同分母求和后相除。极端数值先减共同偏移 h 以避免溢出，非零时表头显示 exp(s/T−h)，指数、分母和权重阶段持续显示实际 h 及统一平移不改变权重的含义。exp(0)=1。weights阶段按index逐项填入同一长度为1的预算条。
@@ -59,6 +59,7 @@ plot 用于演化轨迹、波形、参数曲线和离散数值观察。作者先
 
 - `mode:samples` 只画真实样本点；读数显示实际样本的 u。`mode:linear` 只在同一段内连线和线性插值。段间缺测不连线、不补零、不外推；作者须选择足够的采样密度，避免把插值误作模型细节。
 - `views` 使用显式固定窗口；`aspect:equal` 保持 x/y 同单位长度，`free` 按各轴范围映射。视窗按事件切换，不随数据自动缩放。名称和单位必须与模型一致。
+- `readout` 可选，为 `parameter`、`x`、`y` 中不重复的非空列表，最多三项，顺序决定主读数顺序，默认 `["x","y"]`。横轴已经表示数据时间时使用默认值；平面轨迹需要另外显示时间时可选 `["parameter","x","y"]`。宿主不凭数值相等猜测物理量同义。画面直接显示作者的轴名、系列名、单位和近似数值，不添加 u/x/y 前缀或实现模式标签；缺测时保留已知参数并说明此处没有数据。
 - 每镜最多4个系列、4个视窗；每系列最多16段、2048个样本，全计划最多8192个样本，计划仍受512KiB读取限额约束。ID最多32字符，标签最多24字符，单位最多12字符。超限报错，不静默裁掉来源数据。
 
 plot 事件沿用真实音轨的 `at/stage/index/duration/cue`，另有 `view`（视窗ID）、`visible`（可见系列ID列表）和 `range:[u0,u1]`。index 指定当前聚焦系列，必须包含在 visible 中；所有范围位于 parameter.domain 内。
@@ -67,7 +68,7 @@ plot 事件沿用真实音轨的 `at/stage/index/duration/cue`，另有 `view`�
 - `trace` 从 u0 展开到 u1，要求 u1>u0、duration>0。音轨进度按 `u=u0+(u1-u0)×进度` 线性映射，不套用数学操作的 smoothstep，以免改变表观频率或速度。事件时长仍不超过3秒；较长过程分成明确的连续事件。
 - `inspect` 在完整上下文中定位 `cursor` 指定的数据参数，cursor 必须在 range 内，duration 为0。静态范围允许单点。
 
-暂停或跳转按同一时间直接重建画面；显示近似读数，保留实际单位、负号、缺测和插值说明。作者须在480px宽度的实际成片检查坐标、关键读数和字幕。模型求解、FFT、公式执行、外部读取和配音均不在 plot 内执行；数值绘制能力不等于主题解释通过。
+暂停或跳转按同一时间直接重建画面；显示近似读数，保留实际单位、负号和缺测，采样与插值依据在配套解释中说明。作者须在480px宽度的实际成片检查坐标、关键读数和字幕。模型求解、FFT、公式执行、外部读取和配音均不在 plot 内执行；数值绘制能力不等于主题解释通过。
 
 ## 输出和资源边界
 

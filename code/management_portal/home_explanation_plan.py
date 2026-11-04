@@ -71,7 +71,10 @@ def _plot_range(value, domain=None, nonzero=False):
 
 
 def _plot_data(data):
-    _object(data, {'parameter', 'axes', 'views', 'series'})
+    _object(data, {'parameter', 'axes', 'views', 'series'}, {'readout'})
+    readout = _items(data.get('readout', ['x', 'y']), 3)
+    if any(not isinstance(key, str) or key not in ('parameter', 'x', 'y') for key in readout) or len(set(readout)) != len(readout):
+        raise ValueError('绘图主读数须为不重复的parameter/x/y')
     p = _object(data['parameter'], {'label', 'unit', 'domain'})
     parameter = {'label': _text(p['label'], 24), 'unit': _text(p['unit'], 12, False),
                  'domain': _plot_range(p['domain'], nonzero=True)}
@@ -110,7 +113,7 @@ def _plot_data(data):
     for values in (views, series):
         if len({v['id'] for v in values}) != len(values):
             raise ValueError('绘图标识重复')
-    return {'parameter': parameter, 'axes': axes, 'views': views, 'series': series}
+    return {'parameter': parameter, 'axes': axes, 'views': views, 'series': series, 'readout': list(readout)}
 
 
 def _plot_event(event, data):

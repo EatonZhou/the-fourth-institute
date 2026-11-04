@@ -473,13 +473,19 @@ def _plot_draw(c, d, m, e, t):
     point = lambda xy: _plot_point(g, xy)
     # Names and source units stay explicit. Only the focused series gets a
     # detailed numeric readout, rather than four simultaneous tables.
+    legend_index = 0
+    legend_width = 1160/len(e['visible'])
     for i, series in enumerate(d['series']):
         if series['id'] in e['visible']:
-            c.text((60+i*295, 148), f"{i+1} · {series['label']}", _COLORS[i], 32, 275)
+            x = 60+legend_index*legend_width
+            c.text((x, 148), series['label'], _COLORS[i], 32, legend_width-20)
+            if i == e['index'] and len(e['visible']) > 1:
+                c.line((x, 188), (x+40, 188), _COLORS[i], 3)
+            legend_index += 1
     def axis_name(axis):
         return axis['label'] + (f" ({axis['unit']})" if axis['unit'] else '')
-    for x, key, axis in ((60, 'u', d['parameter']), (455, 'x', d['axes']['x']), (850, 'y', d['axes']['y'])):
-        c.text((x, 184), key+': '+axis_name(axis), _MUTED, 32, 350)
+    c.text((60, 184), axis_name(d['axes']['y']), _MUTED, 32, 540)
+    c.text((670, 184), axis_name(d['axes']['x']), _MUTED, 32, 540)
     for dim, low, high in ((0, x0, x1), (1, y0, y1)):
         ticks = [low, (low+high)/2, high]
         if low < 0 < high and 0 not in ticks:
@@ -523,19 +529,25 @@ def _plot_draw(c, d, m, e, t):
         if sample is not None and inside(*sample[1:]):
             px, py = point(sample[1:])
             c.draw.ellipse((px-9, py-9, px+9, py+9), fill=_BG, outline=color, width=4)
-    focused = d['series'][e['index']]
-    mode = '真实样本' if focused['mode'] == 'samples' else '线性连接'
     sample = focus_state['sample']
-    note = (' · 插值' if focus_state['interpolated'] else ' · 样本') if sample is not None else ''
-    c.text((60, 540), f"{e['index']+1} · {focused['label']} · {mode}{note}", _COLORS[e['index']], 32, 1150)
     if cursor is None:
         label = next(v['label'] for v in d['views'] if v['id'] == e['view'])
-        c.text((60, 589), f"{label} · {d['parameter']['label']} [{_plot_number(lo)}, {_plot_number(hi)}] {d['parameter']['unit']}", _INK, 32, 1150)
+        c.text((60, 550), label, _MUTED, 32, 1150)
     elif sample is None:
-        c.text((60, 589), f"u = {_plot_number(cursor)} · 无样本（缺测或范围外）", _INK, 40, 1150)
+        c.text((60, 540), axis_name(d['parameter']), _MUTED, 32, 1150)
+        c.text((60, 584), f"{_plot_number(cursor)} · 此处没有数据", _INK, 40, 1150)
     else:
-        for x, key, value in zip((60, 455, 850), ('u', 'x', 'y'), sample):
-            c.text((x, 584), f'{key} ≈ {_plot_number(value)}', _INK, 40)
+        # Presentation selection does not change samples, interpolation or time.
+        # Default coordinate readouts avoid displaying a time parameter twice.
+        fields = d.get('readout', ['x', 'y'])
+        width = 1160/len(fields)
+        for i, key in enumerate(fields):
+            axis = d['parameter'] if key == 'parameter' else d['axes'][key]
+            value = sample[('parameter', 'x', 'y').index(key)]
+            x = 60+i*width
+            c.text((x, 540), axis['label'], _MUTED, 32, width-24)
+            unit = ' '+axis['unit'] if axis['unit'] else ''
+            c.text((x, 584), f'≈ {_plot_number(value)}{unit}', _INK, 40, width-24)
 
 
 _DRAW = {'dot': _dot, 'normalize': _normalize_draw, 'weighted_sum': _weighted_draw,

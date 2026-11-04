@@ -181,14 +181,70 @@ def test_raster_seek_readouts_narrow_and_subtitle_safe(fonts, monkeypatch):
     before = renderer.frame({}, s, 0, .5, fonts, prepared)
     a = renderer.frame({}, s, 0, 1.5, fonts, prepared)
     assert seen == [([0., .5], .5), ([0., .5], .5)]
-    assert ('u ≈ 0.5', 40) in texts and ('y ≈ 1', 40) in texts
+    assert ('时间', 32) in texts and ('≈ 0.5 s', 40) in texts and ('≈ 1', 40) in texts
+    assert not any(t.startswith(('u:', 'x:', 'y:', 'u ≈', 'x ≈', 'y ≈')) for t, _ in texts)
+    assert not any(word in t for t, _ in texts for word in ('样本', '插值', '线性连接'))
     gap = renderer.frame({}, s, 0, 3.5, fonts, prepared)
-    assert any('无样本' in t for t, _ in texts)
+    assert any('此处没有数据' in t for t, _ in texts)
     assert a.tobytes() == renderer.frame({}, s, 0, 1.5, fonts, prepared).tobytes()
     assert before.tobytes() != a.tobytes() != gap.tobytes()
     assert len(a.crop((0, 644, 1280, 720)).getcolors()) == 1
     assert a.resize((480, 270)).getbbox() == (0, 0, 480, 270)
-    assert all(size >= 32 for t, size in texts if t.startswith(('u ≈', 'x ≈', 'y ≈')))
+    assert all(size >= 32 for t, size in texts if t.startswith('≈ '))
+
+
+@pytest.mark.parametrize('fields', [[], ['x', 'x'], ['u'], ['x', 'y', 'parameter', 'x'], [True], 'x'])
+def test_invalid_readout_is_rejected(fields):
+    v = plot()
+    v['data']['readout'] = fields
+    with pytest.raises(ValueError):
+        checked(v)
+
+
+def test_readout_selection_preserves_data_clock_and_all_numerical_results(fonts, monkeypatch):
+    baseline = checked()
+    assert baseline['data']['readout'] == ['x', 'y']
+    text = []
+    original = renderer._Canvas.text
+    def record(self, xy, value, *args, **kwargs):
+        if xy[1] >= 540:
+            text.append(value)
+        return original(self, xy, value, *args, **kwargs)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    for fields in (['parameter', 'x', 'y'], ['y'], ['parameter']):
+        v = plot()
+        v['data']['readout'] = fields
+        v = checked(v)
+        assert v['events'] == baseline['events']
+        assert visual_math(v) == visual_math(baseline)
+        assert renderer.visual_event(v, 1.5)[1] == .25
+        text.clear()
+        renderer.frame({}, scene(v), 0, 1.5, fonts)
+        assert ('数据时间' in text) == ('parameter' in fields)
+        assert ('时间' in text) == ('x' in fields)
+        assert ('数值' in text) == ('y' in fields)
+        assert not any(word in t for t in text for word in ('样本', '插值', '线性连接'))
+
+
+def test_default_uses_author_semantics_without_alias_inference(fonts, monkeypatch):
+    v = plot()
+    v['data']['parameter']['label'] = '物理时间'
+    v['data']['axes']['y'] = {'label': '测量量', 'unit': 'U'}
+    text = []
+    original = renderer._Canvas.text
+    def record(self, xy, value, *args, **kwargs):
+        text.append(value)
+        return original(self, xy, value, *args, **kwargs)
+    monkeypatch.setattr(renderer._Canvas, 'text', record)
+    s = scene(checked(v))
+    renderer.frame({}, s, 0, 1.5, fonts)
+    assert '物理时间' not in text and '时间 (s)' in text
+    assert '时间' in text and '测量量' in text and '≈ 1 U' in text
+    assert text.count('≈ 0.5 s') == 1
+    text.clear()
+    renderer.frame({}, s, 0, 3.5, fonts)
+    assert '物理时间 (s)' in text
+    assert any('此处没有数据' in t for t in text)
 
 
 def test_discrete_points_do_not_draw_a_continuous_line(fonts, monkeypatch):
