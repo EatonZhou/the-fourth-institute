@@ -303,10 +303,12 @@ modules:
       - "management_portal/claude_code_daemon.py"
       - "management_portal/claude_app_server_version.txt"
       - "management_portal/kimi_code_server.py"
+      - "management_portal/provider_daemon_host.py"
+      - "scripts/kimi_account_server.py"
       - "management_portal/dsh_runtime"
       - "management_portal/opencode_bridge.py"
       - "systemd/portal-kimi-code-config.toml"
-    responsibility: "隔离并承载 Codex、Claude、Kimi、DSH、OpenCode 和 Antigravity 原生会话；把本地 IPC 请求送入各自模型客户端。"
+    responsibility: "隔离并承载 Codex、Claude、Kimi、DSH、OpenCode 和 Antigravity 原生会话；账号宿主持有原生进程及其短期回环协议桥，管理进程树退出和凭据环境边界；把本地 IPC 请求送入各自模型客户端。"
     runtime: "多个可独立重启的服务或子进程；不是一个统一 daemon"
     deployment:
       - "<service_prefix>-codex-app-server@<account_id>.service"
