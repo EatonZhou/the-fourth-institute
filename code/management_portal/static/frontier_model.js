@@ -1,4 +1,5 @@
 export const KEY = 'exploration.frontier.v1';
+export const t = source => globalThis.PortalI18n?.t(source) ?? source;
 export const LABELS = {optional:'可以介入', decision:'需要决定', explore:'留待探索'};
 export const RELATIONS = {builds_on:'从此发展 →', depends_on:'依赖 →', converges:'汇合 ↔'};
 export function progressOf(item, input) {
@@ -11,21 +12,21 @@ export function isHistory(item, input) {
   return !!item.closed || ['completed','cancelled'].includes(input?.state);
 }
 export function validateItem(item, items = []) {
-  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(item.id || '')) throw new Error('线头局部标识无效。');
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(item.id || '')) throw new Error(t('地图节点局部标识无效。'));
   for (const field of ['title','line','progress','reason','next']) {
     if (!String(item[field] || '').trim()) throw new Error('请填写问题、工作线、进展、理由和下一步。');
   }
   if (!LABELS[item.attention]) throw new Error('请选择介入要求。');
   if (!item.sources?.length || item.sources.length > 8 || item.sources.some(s => !/^[a-z][a-z0-9_]*_[a-f0-9]{12}(\/[^\s]*)?$/.test(s))) throw new Error('请填写 1–8 个有效资源地址。');
-  if (item.parent && (!items.some(x => x.id === item.parent) || item.parent === item.id)) throw new Error('关联线头不存在或指向自身。');
+  if (item.parent && (!items.some(x => x.id === item.parent) || item.parent === item.id)) throw new Error(t('关联节点不存在或指向自身。'));
   if (item.parent && !RELATIONS[item.relation]) throw new Error('关联类型无效。');
-  if (items.some(x => x.id !== item.id && x.title.trim() === item.title.trim() && x.sources.join('\n') === item.sources.join('\n'))) throw new Error('这条来源下已有同一问题，请更新原线头。');
+  if (items.some(x => x.id !== item.id && x.title.trim() === item.title.trim() && x.sources.join('\n') === item.sources.join('\n'))) throw new Error(t('这条来源下已有同一问题，请更新原地图节点。'));
   if (new TextEncoder().encode(JSON.stringify(item)).length > 12000) throw new Error('单条内容过长，请精简判断，完整材料通过来源关联。');
   return item;
 }
 export function readItems(doc) {
   if (doc == null) return [];
-  if (doc.schema !== 'tfi.exploration-frontier.v1' || !Array.isArray(doc.items)) throw new Error('线头数据格式不受支持。');
+  if (doc.schema !== 'tfi.exploration-frontier.v1' || !Array.isArray(doc.items)) throw new Error(t('地图节点数据格式不受支持。'));
   for (const item of doc.items) validateItem(item,doc.items);
   return doc.items;
 }

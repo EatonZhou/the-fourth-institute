@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   if (window.PortalHomeMapView) return;
+  const t = source => window.PortalI18n?.t(source) ?? source;
 
   // Home owns navigation. Native surfaces own their data, edits, permissions and camera.
   function create({ root, onOpen, onSelection } = {}) {
@@ -30,7 +31,7 @@
     }
     function open(entry, value) { if (entry === active && presented) onOpen?.(value); }
     function heading(entry) {
-      const name = entry.label || (entry.target.kind === 'project' ? entry.target.id : '团队线头');
+      const name = entry.label || (entry.target.kind === 'project' ? entry.target.id : t('团队地图'));
       title.textContent = name;
       title.setAttribute('aria-label', name + '，查看目标信息');
       fullName.textContent = name; idValue.value = entry.target.id;

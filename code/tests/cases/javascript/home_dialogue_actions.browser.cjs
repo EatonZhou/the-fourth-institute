@@ -20,6 +20,8 @@ const modules=[...new Set(['portal_state.js','portal_page_state.js','portal_text
 const css=[...fs.readFileSync(path.join(root,'index.html'),'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(m=>m[1]);
 const out=process.env.HOME_DIALOGUE_EVIDENCE||'/tmp/home-dialogue-actions';fs.mkdirSync(out,{recursive:true});
 const evidence={boundary:'real components; synthetic conversation/resource transport; no borrowed User or TAU session',checks:[],errors:[],requests:[]};
+const contextOnly=process.argv.includes('--submission-context-only');
+evidence.scope=contextOnly?'submission context and Preview script boundary':'message actions, submission context and Preview script boundary';
 function check(name,actual,expected){evidence.checks.push({name,actual,expected});assert.deepEqual(actual,expected,name);}
 const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://fixture');
@@ -75,6 +77,7 @@ const server=http.createServer((req,res)=>{
       window.render=()=>panel.applySnapshot(snap);
       snap.messages=[message('msg_0123456789abcdef','可以先预览材料，再查看汇报。\n\n'+displayFence(command())+'\n\n'+displayFence(command('older',{view:'report',target:{kind:'project',id:'demo'}})))];render();
     });
+    if(!contextOnly) {
     const action=name=>page.locator('.homeDialogueChat').getByRole('button',{name,exact:true});
     await action('预览幻灯片').waitFor();
     check('valid directives are compact actions',await page.locator('.homeDialogueMessageAction').count(),2);
@@ -142,27 +145,40 @@ const server=http.createServer((req,res)=>{
     await page.screenshot({path:path.join(out,'05-map-action-390.png')});
     // Without Home's conversationView the exact same assistant output is code.
     check('global Markdown is unchanged for ordinary callers',await page.evaluate(()=>MD.render(displayFence(command())).includes('<pre>')),true);
+    }
     // Exercise the native Chat send -> Protocol prepare -> service boundary,
     // not a direct call to submissionContext. Only transport is substituted;
     // no model or private conversation is involved.
-    evidence.submissions=await page.evaluate(async()=>{
+    const presentationRequests=[
+      '注意力机制里的查询、键和值怎样共同工作？',
+      '帮我理解这两种方案的差别。',
+      '直观解释注意力机制，Transformer的核心',
+      '这个词的英文是什么？',
+      '只用文字回答：注意力机制是什么？不要创建文件，不切换右侧。',
+      '查看已有汇报 report_0123456789ab 的第 3 版。',
+    ];
+    evidence.submissions=await page.evaluate(async requests=>{
       window.sentBodies=[];
       window.PortalResidentService={...PortalResidentService,sendInput:async body=>{
         sentBodies.push(structuredClone(body));
         return {resident_id:body.resident_id,message_id:body.message.message_id};
       }};
-      for(const text of ['只用文字回答：注意力机制是什么？不要创建文件。','查看已有汇报 report_0123456789ab 的第 3 版。','直观解释注意力机制，Transformer的核心']) {
+      for(const text of requests) {
         await panel.send({text,plainText:text},{clear:false,focus:false});
       }
       return sentBodies;
-    });
-    check('native Chat sends each request to the current facade',evidence.submissions.map(s=>s.resident_id),Array(3).fill('resident_0123456789ab'));
+    },presentationRequests);
+    check('native Chat sends each request to the current facade',evidence.submissions.map(s=>s.resident_id),presentationRequests.map(()=>'resident_0123456789ab'));
+    check('native send preserves user wording and presentation constraints',evidence.submissions.map(s=>s.message.content_parts.filter(p=>p.type==='text').map(p=>p.text).join('')),presentationRequests);
     const contexts=evidence.submissions.map(s=>s.message.content_parts.filter(p=>p.type==='context_reference'));
-    check('native Protocol prepare attaches exactly one Home context',contexts.map(c=>c.length),[1,1,1]);
+    check('native Protocol prepare attaches exactly one Home context',contexts.map(c=>c.length),presentationRequests.map(()=>1));
     const instructions=contexts.map(c=>c[0].context.context_text);
     const nonces=instructions.map(t=>JSON.parse(t.split('示例结构：')[1].split('\n')[0]).request_id);
-    check('each native send has a fresh request nonce',new Set(nonces).size,3);
-    check('visual generation and plain-answer opt-out reach transport',instructions.every(t=>t.includes('即使没有现成文件')&&t.includes('普通纯文本问答')&&t.includes('不强制创建内容')),true);
+    check('each native send has a fresh request nonce',new Set(nonces).size,presentationRequests.length);
+    check('presentation guidance is unconditional across user wording',new Set(instructions.map(t=>t.split('示例结构：')[0])).size,1);
+    check('Resident owns presentation choice without keyword gates',instructions.every(t=>t.includes('由 Resident 根据')&&t.includes('等关键词为生成条件')&&t.includes('就主动生成并在右侧打开')&&t.includes('用户只在聊天里提问也如此')),true);
+    check('simple answers and explicit opt-outs remain available',instructions.every(t=>t.includes('简短文字已足以回答时直接回答')&&t.includes('不为每次问答创建文件')&&t.includes('不创建文件或不切换右侧时遵从其限制')),true);
+    check('generation does not override user navigation',instructions.every(t=>t.includes('生成与自动切换是两件事')&&t.includes('固定、草稿、手选及迟到保护始终有效')),true);
     check('persist read back then preview guidance reaches transport',instructions.every(t=>t.includes('UpdateWorkspaceFile({address:')&&t.includes('ReadResource 回读')&&t.includes('成功才')&&t.includes('view:preview')&&t.includes('本次 request_id')),true);
     check('generation failure and fixed-report guidance reach transport',instructions.every(t=>t.includes('不声称已经生成')&&t.includes('report_ID+revision')&&t.includes('不为它伪造')),true);
     check('unsupported scripts and media fallback are explicit',instructions.every(t=>t.includes('HTML/JS 文件只按文本/代码')&&t.includes('静态分步图解')&&t.includes('字幕')&&t.includes('不授予写权限')),true);

@@ -1,4 +1,4 @@
-import {KEY,LABELS,progressOf,isHistory,validateItem,readItems,saveDocument,deliver} from './frontier_model.js';
+import {KEY,LABELS,progressOf,isHistory,validateItem,readItems,saveDocument,deliver,t} from './frontier_model.js';
 import template from './frontier_template.js';
 import {ensureD3,createGraph,graphData,itemKey} from './frontier_graph.js';
 export function mountFrontier(host, config = {}) {
@@ -6,7 +6,7 @@ const shadow = host.shadowRoot || host.attachShadow({mode:'open'});
 shadow.innerHTML = '<link rel="stylesheet" href="/static/frontier.css">';
 const root = document.createElement('div');
 if (config.project) root.className = 'projectFrontier';
-root.innerHTML = template;
+root.innerHTML = globalThis.PortalI18n?.markup(template) ?? template;
 shadow.append(root);
 const detail=root.querySelector('#detail');
 if (config.project) root.querySelector('#new').hidden = true;
@@ -23,9 +23,9 @@ const call = async (...args) => {
 let presented = true, openDialogs = [], loading, editDocument;
 const uid = () => crypto.randomUUID().replaceAll('-','');
 let lineage='', project='', doc=null, rows=[], members=[], selected=null, editing=null, filter='all', epoch=0, busy=false, actor='', prefs, later=[];
-let graph, positions={}, scopeTitle=config.title||'探索前沿', projectMap=config.map, projectTeams=[];
+let graph, positions={}, scopeTitle=config.title||t('地图'), projectMap=config.map, projectTeams=[];
 const states=new Map(), sources=new Map();
-const labels={all:'全部前沿',decision:'需要决定',active:'正在推进',explore:'留待探索',later:'稍后关注',history:'结果与历史'};
+const labels={all:t('全部节点'),decision:'需要决定',active:'正在推进',explore:'留待探索',later:'稍后关注',history:'结果与历史'};
 const notice = text => {$('#notice').textContent=text;};
 function options(items) { return items.map(m=>`<option value="${esc(m.resident_id || m.id)}">${esc(m.title || m.name || m.resident_id || m.id)}</option>`).join(''); }
 function inputOf(row) {return states.get(`${row._lineage}:${row.id}`);}
@@ -47,7 +47,7 @@ function render() {
   $('#filters').innerHTML=Object.entries(labels).map(([key,label])=>`<button data-filter="${key}" aria-current="${filter===key}">${label}<small>${available.filter(r=>visible(r,key)).length}</small></button>`).join('');
   const shown=available.filter(r=>visible(r)).map(r=>({...r,_status:progressOf(r,inputOf(r))}));
   const hidden=rows.length-available.length;
-  if(hidden) notice(`${hidden} 条线头的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。`);
+  if(hidden) notice(`${hidden} 个地图节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。`);
   graph?.update(graphData(shown,{title:scopeTitle,project,map:projectMap,teams:projectTeams}),positions);
   if($('#search').value)graph?.search($('#search').value);
 }
@@ -91,7 +91,7 @@ async function load() {
           catch {incomplete=true;return [];}
         }));rows.push(...batches.flat());
       }
-    } else {notice('选择一个项目，打开它的探索前沿。'); return;}
+    } else {notice(t('选择一个项目，打开它的地图。')); return;}
     await verify(rows);
     if(generation!==epoch)return;
     config.onTitleChange?.(scopeTitle);
@@ -105,7 +105,7 @@ function openDetail(id) {
   selected=rows.find(r=>rowKey(r)===id && permitted(r)); if(!selected){config.onSelection?.(null);return;}
   const r=selected,s=inputOf(r),history=isHistory(r,s);
   config.onSelection?.({address:r._lineage,label:r.title,kind:'frontier',lineage_id:r._lineage,item_id:r.id,focus:r.id,sources:[...r.sources]});
-  $('#detail-body').innerHTML=`<div class="dialog-heading"><span class="tag ${esc(r.attention)}">${LABELS[r.attention]}</span><button data-close="detail" aria-label="关闭">×</button></div><h1 style="font-size:27px">${esc(r.title)}</h1><div class="muted">${esc(r.line)} · ${esc(progressOf(r,s))}</div><h3>已经推进到哪里</h3><p>${esc(r.progress)}</p><h3>为什么值得继续</h3><p>${esc(r.reason)}</p><h3>下一步</h3><p>${esc(r.next)}</p><h3>依据与来路</h3><ul>${r.sources.map(address=>`<li><a href="/r/${encodeURI(address)}" target="_blank" rel="noopener">${esc(sources.get(address)?.resource?.title || address)} ↗</a></li>`).join('')}</ul>${r.dispatch?`<h3>这次交付</h3><p class="muted">${esc(progressOf(r,s))}${s?.error?' · '+esc(typeof s.error==='string'?s.error:JSON.stringify(s.error)):''}</p><a href="/lineage?resident=${encodeURIComponent(r.dispatch.owner)}" target="_blank" rel="noopener">打开负责 Agent 的对话与结果 ↗</a><p class="muted">${(s?.reply_message_ids||[]).length?'已收到回复，结论请以原对话和产物为准。':'投递成功不代表任务完成。'}</p>`:''}<footer><button data-action="later">${later.includes(rowKey(r))?'恢复关注':'稍后关注'}</button>${lineage?'<button data-action="edit">更新线头</button>':`<a href="/lineage?view=frontier&lineage=${r._lineage}">进入团队继续 ↗</a>`}${lineage&&!history?`<button class="primary" data-action="dispatch">${r.dispatch?'查看 / 重试投递':'交给 Agent'}</button>`:''}</footer>`;
+  $('#detail-body').innerHTML=`<div class="dialog-heading"><span class="tag ${esc(r.attention)}">${LABELS[r.attention]}</span><button data-close="detail" aria-label="关闭">×</button></div><h1 style="font-size:27px">${esc(r.title)}</h1><div class="muted">${esc(r.line)} · ${esc(progressOf(r,s))}</div><h3>已经推进到哪里</h3><p>${esc(r.progress)}</p><h3>为什么值得继续</h3><p>${esc(r.reason)}</p><h3>下一步</h3><p>${esc(r.next)}</p><h3>依据与来路</h3><ul>${r.sources.map(address=>`<li><a href="/r/${encodeURI(address)}" target="_blank" rel="noopener">${esc(sources.get(address)?.resource?.title || address)} ↗</a></li>`).join('')}</ul>${r.dispatch?`<h3>这次交付</h3><p class="muted">${esc(progressOf(r,s))}${s?.error?' · '+esc(typeof s.error==='string'?s.error:JSON.stringify(s.error)):''}</p><a href="/lineage?resident=${encodeURIComponent(r.dispatch.owner)}" target="_blank" rel="noopener">打开负责 Agent 的对话与结果 ↗</a><p class="muted">${(s?.reply_message_ids||[]).length?'已收到回复，结论请以原对话和产物为准。':'投递成功不代表任务完成。'}</p>`:''}<footer><button data-action="later">${later.includes(rowKey(r))?'恢复关注':'稍后关注'}</button>${lineage?'<button data-action="edit">${esc(t('更新节点'))}</button>':`<a href="/lineage?view=frontier&lineage=${r._lineage}">进入团队继续 ↗</a>`}${lineage&&!history?`<button class="primary" data-action="dispatch">${r.dispatch?'查看 / 重试投递':'交给 Agent'}</button>`:''}</footer>`;
   detail.hidden=false;
   $('#detail-body').querySelectorAll('li a').forEach((a,index)=>{
     const b=document.createElement('button');b.textContent='在此阅读';b.className='sourceRead';
@@ -121,7 +121,7 @@ function edit(item=null) {
   editDocument=structuredClone(doc);
   editing=item ? structuredClone(doc.items.find(r=>r.id===item.id)) : null;
   const form=$('#edit-form');form.reset();form.querySelector('.form-error').textContent='';
-  $('#edit-title').textContent=item?'更新这条线':'留下一条线头';
+  $('#edit-title').textContent=item?t('更新节点'):t('新增地图节点');
   form.elements.owner.innerHTML='<option value="">暂不指定</option>'+options(members);
   form.elements.parent.innerHTML='<option value="">独立线索</option>'+rows.filter(r=>r.id!==item?.id && permitted(r)).map(r=>`<option value="${r.id}">${esc(r.title)}</option>`).join('');
   if(item) for(const key of ['title','line','attention','progress','reason','next','owner','parent','relation','closed']) form.elements[key].value=item[key]||'';
@@ -167,10 +167,10 @@ $('#dispatch-form').onsubmit=async e=>{
     // viewers recover this exact message ID; a lost receipt cannot duplicate work.
     if(!item.dispatch) {
       const owner=form.elements.owner.value;if(!owner)throw new Error('请选择负责 Agent。');
-      item={...item,dispatch:{owner,message_id:'msg_'+uid(),text:`${item.title}\n\n${form.elements.instruction.value.trim()}\n\n依据：\n${item.sources.join('\n')}\n\n线头入口：/lineage?view=frontier&lineage=${lineage}`,created_at:new Date().toISOString()}};
+      item={...item,dispatch:{owner,message_id:'msg_'+uid(),text:`${item.title}\n\n${form.elements.instruction.value.trim()}\n\n依据：\n${item.sources.join('\n')}\n\n地图入口：/lineage?view=frontier&lineage=${lineage}`,created_at:new Date().toISOString()}};
       await commit(item);
     }
-    await deliver(call,item);$('#dispatch').close();detail.hidden=true;await load();notice('已接收。执行与结果可在线头详情中查看。');
+    await deliver(call,item);$('#dispatch').close();detail.hidden=true;await load();notice(t('已接收。执行与结果可在节点详情中查看。'));
   }catch(error){form.querySelector('.form-error').textContent=error.message;}
   finally{button.disabled=false;}
 };
@@ -217,10 +217,10 @@ async function init() {
     positions=layoutPrefs.read({positions:{}}).positions;
     graph=createGraph($('#graph'),{
       onSelect:r=>openDetail(rowKey(r)),onNew:()=>edit(),
-      onDirection:d=>{config.onSelection?.({address:d.direction_id,label:d.title,kind:'direction',project_id:project});contextDetail(d.title,d.question || '通过负责团队展开探索线头。团队关联不表示每条线头都直接属于该方向。',config.onDirection?{label:'管理研究方向',run:()=>config.onDirection(d.direction_id)}:null);},
+      onDirection:d=>{config.onSelection?.({address:d.direction_id,label:d.title,kind:'direction',project_id:project});contextDetail(d.title,d.question || t('通过负责团队展开地图节点。团队关联不表示每个地图节点都直接属于该方向。'),config.onDirection?{label:'管理研究方向',run:()=>config.onDirection(d.direction_id)}:null);},
       onTeam:n=>{
-        if(!n.teams){config.onSelection?.({address:n.lineage,label:n.label,kind:'lineage'});return contextDetail(n.label,'团队的工作线与探索问题在右侧展开。',{label:'进入团队线头',run:()=>{if(config.onOpen)config.onOpen({view:'frontier',target:{kind:'lineage',id:n.lineage}});else location.href='/lineage?view=frontier&lineage='+encodeURIComponent(n.lineage);}});}
-        contextDetail(n.label,'这些团队当前没有可展示的线头。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。');
+        if(!n.teams){config.onSelection?.({address:n.lineage,label:n.label,kind:'lineage'});return contextDetail(n.label,'团队的工作线与探索问题在右侧展开。',{label:t('进入团队地图'),run:()=>{if(config.onOpen)config.onOpen({view:'frontier',target:{kind:'lineage',id:n.lineage}});else location.href='/lineage?view=frontier&lineage='+encodeURIComponent(n.lineage);}});}
+        contextDetail(n.label,t('这些团队当前没有可展示的地图节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。'));
         const list=document.createElement('ul');for(const team of n.teams){const li=document.createElement('li'),a=document.createElement('a');a.textContent=team.title||team.lineage_id;a.href='/lineage?view=frontier&lineage='+encodeURIComponent(team.lineage_id);li.append(a);list.append(li);}$('#detail-body').append(list);
       },
       onLayout:value=>{positions=value;layoutPrefs.write({positions:value});}

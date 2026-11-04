@@ -54,7 +54,7 @@
       if (!frontierPanel) {
         frontierPanel = document.createElement('aside');
         frontierPanel.className = 'mapFrontier';
-        frontierPanel.setAttribute('aria-label', '研究地图探索前沿');
+        frontierPanel.setAttribute('aria-label', t('研究地图探索图层'));
         frontierPanel.innerHTML = '<div class="mapFrontierBody"></div>';
       }
       root.querySelector('.mapStage').append(frontierPanel);
@@ -106,7 +106,7 @@
           style="left:${position.x}px;top:${position.y}px;--heat:${heat.toFixed(2)}">
         <div class="mapNodeHead"><span class="mapNodeStance">${esc(t(STANCE_LABELS[direction.stance]))}</span>${outputs.length ? `<span class="mapNodeCount" title="${esc(t("产出"))}">${outputs.length}</span>` : ""}</div>
         <strong class="mapNodeTitle">${esc(direction.title)}</strong>
-        ${!state.replay ? `<button class="mapNodeFrontier" type="button" data-frontier-direction="${esc(direction.direction_id)}">${esc(t('探索'))} · Frontier ↗</button>` : ""}
+        ${!state.replay ? `<button class="mapNodeFrontier" type="button" data-frontier-direction="${esc(direction.direction_id)}">${esc(t('地图'))} ↗</button>` : ""}
         ${line ? `<p class="mapNodeLine">${esc(line)}</p>` : ""}
         ${direction.stance === "candidate" ? `<div class="mapNodeCandidate"><button type="button" data-accept="${esc(direction.direction_id)}">${esc(t("接纳"))}</button><button type="button" data-discard="${esc(direction.direction_id)}">${esc(t("丢弃"))}</button></div>` : ""}
         ${avatars || running ? `<div class="mapNodeFoot">${avatars}${running ? `<span class="mapNodeLive"><i class="projectPulse" aria-hidden="true"></i>${esc(t("正在工作"))}</span>` : ""}</div>` : ""}
@@ -147,7 +147,7 @@
         <div class="mapTitle"><h1>研究地图</h1><span class="mapRevision">${esc(revision)}</span></div>
         <div class="mapCounts">${summary}</div>
         <div class="mapActions">
-          ${state.replay ? "" : `<button type="button" class="portalButton is-compact" data-map-frontier aria-pressed="${frontierOpen}">Frontier</button>`}
+          ${state.replay ? "" : `<button type="button" class="portalButton is-compact" data-map-frontier aria-pressed="${frontierOpen}">${esc(t('地图'))}</button>`}
           ${state.replay ? "" : `<button type="button" class="portalButton is-compact is-primary" data-map-add data-portal-icon="plus"><span>${esc(t("新方向"))}</span></button>`}
           <label class="mapToggle"><input type="checkbox" data-map-dropped${state.showDropped ? " checked" : ""} /> ${esc(t("显示放弃的方向"))}</label>
           <button type="button" class="portalButton is-compact" data-map-fit data-portal-icon="fit-view"><span>${esc(t("适应视图"))}</span></button>

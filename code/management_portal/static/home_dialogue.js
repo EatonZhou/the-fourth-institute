@@ -1,6 +1,7 @@
 (() => {
   "use strict";
   function createDialogue({ root, context }) {
+    const t = source => window.PortalI18n?.t(source) ?? source;
     const node = (tag, text, cls) => { const el = document.createElement(tag); if (text) el.textContent = text; if (cls) el.className = cls; if (["button", "input", "select", "summary"].includes(tag)) el.classList.add("homeDialogueControl"); return el; };
     const state = window.PortalHomeDialogueState.create();
     // ResidentChatPanel creates a fresh submittedTarget for each send and passes
@@ -25,7 +26,7 @@
     identityMenu.append(current, identityBody);
     const contentActions = node("div", "", "homeDialogueContentActions");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
-    const viewNames = { report: "汇报", map: "研究地图", frontier: "Lineage 线头", preview: "文件/资源" };
+    const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage 地图"), preview: "文件/资源" };
     const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
     switchView.setAttribute("aria-label", "当前视图");
     const opener = node("details", "", "homeDialogueOpener"), openLabel = node("summary", "打开…");
@@ -34,7 +35,7 @@
     button(tabs, "对话", () => setPane("conversation")); button(tabs, "展示", () => setPane("display"));
     const form = node("form", "", "homeDialogueChooser"), view = node("select"), kind = node("select"), target = node("input");
     view.setAttribute("aria-label", "展示类型"); kind.setAttribute("aria-label", "目标类型"); target.setAttribute("aria-label", "目标 ID 或文件资源地址");
-    for (const [id, label] of [["report", "汇报"], ["map", "研究地图"], ["frontier", "Lineage 线头"], ["preview", "文件/资源"]]) view.add(new Option(label, id));
+    for (const [id, label] of [["report", "汇报"], ["map", "研究地图"], ["frontier", t("Lineage 地图")], ["preview", "文件/资源"]]) view.add(new Option(label, id));
     for (const [id, label] of [["task", "任务"], ["lineage", "Lineage"], ["project", "Project"]]) kind.add(new Option(label, id));
     target.placeholder = "目标 ID 或资源地址"; target.required = true;
     form.append(view, kind, target); const openButton = node("button", "展示"); openButton.type = "submit"; form.append(openButton);
@@ -387,7 +388,7 @@
           const intent = action.intent;
           const label = intent.action === "back" ? "返回上一展示" : intent.view === "preview"
             ? /(?:slides?|\.pptx?)(?:[/.?#]|$)/i.test(intent.target.address) ? "预览幻灯片" : "预览文件/资源"
-            : ({ report: "查看汇报", map: "打开研究地图", frontier: "查看 Lineage 线头" })[intent.view];
+            : ({ report: "查看汇报", map: "打开研究地图", frontier: t("查看 Lineage 地图") })[intent.view];
           return `<button type="button" class="homeDialogueMessageAction btn" data-home-display-action="${window.MD.esc(action.token)}">${window.MD.esc(label)}</button>`;
         } });
         messageActions.set(id, actions);
@@ -410,8 +411,9 @@
       submissionRequests.set(submittedTarget, requestId);
       const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", target: { kind: "lineage", id: "<真实资源ID>" } };
       return { context_text: [
-        "当前入口是 Home 对话与展示。用户明确要求视觉讲解、直观解释、图解、演示或可视化（例如‘直观解释注意力机制，Transformer的核心’），即使没有现成文件，也应作为右侧内容任务：生成可阅读的解释材料并打开。明确要求展示、生成汇报、切换、聚焦或返回也使用右侧。普通纯文本问答、只要文字或明确不创建文件时，不强制创建内容、不输出展示指令；不要仅因提到某个术语就生成文件。",
-        "视觉解释的生成路径：按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释文件。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 写入 Markdown，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由；主题足够明确就制作，确实缺少必要范围时才询问。",
+        "当前入口是 Home 对话与展示，右侧是你可主动使用的解释与操作空间。由 Resident 根据用户要理解的问题、内容复杂度和已有上下文决定呈现方式，不以用户是否说出‘直观解释’、‘图解’、‘可视化’或‘放在右侧’等关键词为生成条件。若图示、对照、分步示例或可持续阅读的材料能帮助用户更好地理解，就主动生成并在右侧打开，即使没有现成文件、用户只在聊天里提问也如此；不要等待用户追加展示指令。例如解释注意力机制中查询、键、值如何共同作用，应主动用分步图文帮助建立理解。",
+        "按实际需要选择内容和形式：聊天中简短文字已足以回答时直接回答，不为每次问答创建文件；用户明确要求只用文字、不创建文件或不切换右侧时遵从其限制。已有合适材料可直接打开，明确要求展示、生成汇报、切换、聚焦或返回时按意图处理。生成材料后在聊天中简要说明关键结论和可查看的内容；生成与自动切换是两件事，固定、草稿、手选及迟到保护始终有效。",
+        "解释材料的生成路径：按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释文件。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 写入 Markdown，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由；主题足够明确且判断材料有助于理解时就制作，确实缺少必要范围时才询问。",
         "Preview 实际能力：优先制作 .md 图文解释页，使用分步示例、表格、公式和 Mermaid 图；可预览 PNG/SVG 等图片、PDF、MP4/WebM 视频与音频。图和媒体只能引用已生成并回读可用的文件/正式内容地址；视频适宜且现有工具可用时再生成，配字幕（可烧录）及独立文字讲解，失败仍保留可读图文。当前 Preview 的 HTML/JS 文件只按文本/代码展示，Markdown 原始 HTML 会转义，不运行任意脚本或生成页面的交互；需要交互时仅使用已支持的原生能力，否则明确说明并提供静态分步图解，不伪称交互已可用。",
         "写入成功后用 ReadResource 回读同一正式文件地址，核对内容/媒体及可读性；成功才在最终回复说明产物并输出 view:preview、action:open、target:{address:真实workspace_ID/file/相对路径} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久文件地址以保留历史，不把临时下载凭据写进引用。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确失败原因，在对话提供可用的文字解释或已核实的图文入口。",
         "展示协议只导航已存在且可读的目标，不执行协议内 HTML/脚本、不授予写权限；实际生成通过上述文件工具完成，不能把页面正文、脚本或凭据塞进协议。概念解释走 preview，不为它伪造 Project、Lineage 或 task 来源。已有来源的状态汇报仍走 report：首次意图由报告适配器按稳定来源身份持久化，已有报告必须引用确定 report_ID+revision，显式刷新另建版本且保留旧引用。未知的已有资源目标先查询，无法确认才询问。",

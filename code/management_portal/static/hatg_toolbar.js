@@ -225,7 +225,7 @@
       });
       const graphActions = $id("graphActions");
       if (graphActions) {
-        const viewLabel = ({ context: "Context", workspace: "Workspace", frontier: "线头" })[state.graphViewMode] || "HATG";
+        const viewLabel = ({ context: "Context", workspace: "Workspace", frontier: window.PortalI18n.t("地图") })[state.graphViewMode] || "HATG";
         graphActions.dataset.viewMode = state.graphViewMode;
         graphActions.dataset.selectionActive = selectedCanvasCount > 0 ? "true" : "false";
         graphActions.setAttribute(
