@@ -14,6 +14,7 @@ a general-purpose target is private.
 from __future__ import annotations
 
 import ctypes
+from ctypes import wintypes as _windows_types
 import errno
 import os
 import secrets
@@ -131,6 +132,30 @@ def _validate_windows_object(kind, attributes, *, directory):
         raise PrivateFileError("Private storage requires a regular, non-reparse object")
 
 
+# ctypes caches POINTER(T) by T for the process lifetime. These immutable ABI
+# layouts must have one identity; defining them per file check retains a new
+# family of structures and pointer types on every operation. Identity and ACL
+# observations below still belong to each newly opened operation.
+class _WindowsAttributes(ctypes.Structure):
+    _fields_ = [("length", _windows_types.DWORD), ("descriptor", ctypes.c_void_p), ("inherit", _windows_types.BOOL)]
+
+
+class _WindowsTagInfo(ctypes.Structure):
+    _fields_ = [("attributes", _windows_types.DWORD), ("tag", _windows_types.DWORD)]
+
+
+class _WindowsBasicInfo(ctypes.Structure):
+    _fields_ = [(name, ctypes.c_longlong) for name in ("creation", "access", "write", "change")] + [("attributes", _windows_types.DWORD)]
+
+
+class _WindowsAcl(ctypes.Structure):
+    _fields_ = [("revision", _windows_types.BYTE), ("reserved", _windows_types.BYTE), ("size", _windows_types.WORD), ("count", _windows_types.WORD), ("reserved2", _windows_types.WORD)]
+
+
+class _WindowsAce(ctypes.Structure):
+    _fields_ = [("type", _windows_types.BYTE), ("flags", _windows_types.BYTE), ("size", _windows_types.WORD), ("mask", _windows_types.DWORD), ("sid", _windows_types.DWORD)]
+
+
 class _WindowsSecurity:
     """Small Win32 adapter. All security inspection is by an open handle."""
 
@@ -141,22 +166,8 @@ class _WindowsSecurity:
         self.advapi = ctypes.WinDLL("advapi32", use_last_error=True)
         p = ctypes.c_void_p
 
-        class Attributes(ctypes.Structure):
-            _fields_ = [("length", w.DWORD), ("descriptor", p), ("inherit", w.BOOL)]
-
-        class TagInfo(ctypes.Structure):
-            _fields_ = [("attributes", w.DWORD), ("tag", w.DWORD)]
-
-        class BasicInfo(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_longlong) for name in ("creation", "access", "write", "change")] + [("attributes", w.DWORD)]
-
-        class Acl(ctypes.Structure):
-            _fields_ = [("revision", w.BYTE), ("reserved", w.BYTE), ("size", w.WORD), ("count", w.WORD), ("reserved2", w.WORD)]
-
-        class Ace(ctypes.Structure):
-            _fields_ = [("type", w.BYTE), ("flags", w.BYTE), ("size", w.WORD), ("mask", w.DWORD), ("sid", w.DWORD)]
-
-        self.Attributes, self.TagInfo, self.BasicInfo, self.Acl, self.Ace = Attributes, TagInfo, BasicInfo, Acl, Ace
+        self.Attributes, self.TagInfo, self.BasicInfo, self.Acl, self.Ace = (
+            _WindowsAttributes, _WindowsTagInfo, _WindowsBasicInfo, _WindowsAcl, _WindowsAce)
         def bind(dll, name, args, result):
             f = getattr(dll, name)
             f.argtypes, f.restype = args, result

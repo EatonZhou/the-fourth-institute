@@ -66,11 +66,16 @@ def heap_summary(*, object_limit: int = 500_000) -> dict:
         if kind in (dict, list, tuple, set, frozenset, str, bytes, bytearray):
             sizes[name] += sys.getsizeof(item)
         else:
-            sizes[name] += object.__sizeof__(item)
+            # object.__sizeof__ is not valid for every variable-size extension
+            # layout (frames, for example, define their own sizing). Report a
+            # static lower bound without invoking application methods.
+            basic = kind.__basicsize__
+            sizes[name] += basic if isinstance(basic, int) else 0
     return {"tracked_objects": len(objects), "inspected_objects": min(len(objects), object_limit),
             "reference_list_bytes": sys.getsizeof(objects), "truncated": len(objects) > object_limit,
             "top_types": [{"type": kind, "count": counts[kind], "shallow_bytes": size}
                           for kind, size in sizes.most_common(30)],
+            "non_builtin_sizes": "static type basicsize lower bounds",
             "gc_counts": gc.get_count(), "gc_thresholds": gc.get_threshold(), "gc_stats": gc.get_stats()}
 
 

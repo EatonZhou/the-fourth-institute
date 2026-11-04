@@ -9,6 +9,7 @@ import unittest
 from contextlib import contextmanager
 from pathlib import Path, PureWindowsPath
 from unittest.mock import patch
+from types import SimpleNamespace
 
 from management_portal import repo_credentials_backend as credentials
 
@@ -24,6 +25,20 @@ class PrivateFilesTests(unittest.TestCase):
 
     def capability(self):
         return importlib.import_module("management_common.file_permissions")
+
+    def test_windows_abi_types_reused_without_caching_effective_identity(self):
+        private = self.capability()
+        class Library:
+            def __getattr__(self, _):
+                return SimpleNamespace()
+        with patch.object(private.ctypes, "WinDLL", side_effect=lambda *_a, **_k: Library(), create=True), \
+                patch.object(private._WindowsSecurity, "_current_identity", side_effect=[("first", "owner1"), ("second", "owner2")]):
+            first, second = private._WindowsSecurity(), private._WindowsSecurity()
+        self.assertEqual((first.current_sid, second.current_sid), ("first", "second"))
+        for field in ("Attributes", "TagInfo", "BasicInfo", "Acl", "Ace"):
+            self.assertIs(getattr(first, field), getattr(second, field))
+        self.assertIs(private.ctypes.POINTER(first.Acl), private.ctypes.POINTER(second.Acl))
+        self.assertIs(private.ctypes.POINTER(first.Ace), private.ctypes.POINTER(second.Ace))
 
     @unittest.skipIf(os.name == "nt", "POSIX symlink fixture")
     def test_repo_rejects_linked_key_before_reading_it(self):
