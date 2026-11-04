@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import secrets
 from pathlib import Path
 
 from . import isa_client
@@ -134,8 +135,13 @@ class WorkflowBindings:
                 raise
             # A previous attempt may have committed the deletion but not yet
             # completed folder/session finalization.
+            # Each explicit recovery is a new finalization attempt. A prior
+            # definitive failure must remain in history, rather than being
+            # replayed forever by the old key. The owner reconciles the same
+            # immutable deletion; projection retries inside this call retain
+            # this attempt's key.
             return isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
-                                   key=f'release:{resident_id}:finalize')
+                                   key=f'release:{resident_id}:finalize:{secrets.token_hex(8)}')
         lineage_id = record['lineage_id']
         keep = {Path(path).resolve(strict=False) for path in preserve_paths}
         bindings = record.get('workspaces', [])
