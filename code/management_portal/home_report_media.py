@@ -1,8 +1,7 @@
-"""Derived, principal-scoped report media; local speech and animated diagrams.
+"""Derived report videos with animated diagrams and readable captions.
 
-Requires ffmpeg, espeak-ng and a CJK font. Explicit executable paths can be
-configured with TFI_HOME_REPORT_FFMPEG / TFI_HOME_REPORT_ESPEAK. No model/API
-call, external upload, task mutation or persistent fact storage is involved.
+This renderer produces silent video. Audio creation belongs to external tools;
+existing media files remain readable through the ordinary resource boundary.
 """
 from __future__ import annotations
 
@@ -13,13 +12,12 @@ import shutil
 import subprocess
 import threading
 import time
-import wave
 from pathlib import Path
 
 from management_common.portal_paths import path as portal_path
 from management_portal import business_tasks
 from management_portal.home_report import digest, reauthorize
-from management_portal.media_tools import capabilities, run, stamp, speech_units
+from management_portal.media_tools import capabilities, stamp
 
 _SLOTS = threading.BoundedSemaphore(2)
 _LOCK = threading.Lock()
@@ -28,8 +26,8 @@ FILES = {"video.mp4": "video/mp4", "captions.vtt": "text/vtt; charset=utf-8",
          "reasoning.json": "application/json"}
 
 
-def spoken_text(value, budget=180):
-    """Prepare speech only; keep source IDs, addresses and wording in reports.
+def caption_text(value, budget=180):
+    """Prepare display captions; keep source IDs, addresses and wording in reports.
 
     Select complete sentences/clauses. Never cut through a word to meet a
     character budget; a single unbroken overlong fragment stays in the text.
@@ -68,7 +66,7 @@ def chapters(report):
     plan = report.get('reasoning') or build_reasoning(report)
     if not plan['available']:
         raise ValueError(plan['reason'])
-    return [{**step, 'speech': spoken_text(step['speech'], 1800)} for step in plan['steps']]
+    return [{**step, 'speech': caption_text(step['speech'], 1800)} for step in plan['steps']]
 
 
 def render(report, directory: Path):
@@ -76,56 +74,39 @@ def render(report, directory: Path):
     from management_portal.home_report_reasoning import build_reasoning
     from management_portal.home_report_visual import frame as draw_frame
     started = time.monotonic()
+    from management_portal.home_explanation_quality import policy
+    quality_policy = policy(report.get('media_quality', 'medium'))
     tools = capabilities()
     if not tools["available"]:
         raise RuntimeError("视频生成依赖缺少：" + "、".join(tools["missing"]))
     plan = report.get('reasoning') or build_reasoning(report)
     scenes = chapters(report)
     fonts = {size: ImageFont.truetype(tools["font"], size) for size in (16,18,20,22,24,32)}
-    cues, pcm, rate, offset = [], [], None, 0.0
-    speech_started = time.monotonic()
-    transcript = []
+    cues, offset, transcript = [], 0.0, []
     for scene in scenes:
-        scene["start"] = offset
-        scene["trace_windows"] = []
-        for beat in scene.get('beats', [{'speech':scene['speech']}]):
+        scene['start'], scene['trace_windows'] = offset, []
+        for beat in scene.get('beats', [{'speech': scene['speech']}]):
             beat_start = offset
-            for sentence_part in speech_units(spoken_text(beat['speech'], 1800)):
-                wav = directory / "speech-part.wav"
-                run([tools["speech"], "-v", "cmn", "-s", "155", "-w", wav.name, "--stdin"],
-                     input=sentence_part.encode(), cwd=directory)
-                with wave.open(str(wav)) as audio:
-                    if audio.getnchannels() != 1 or audio.getsampwidth() != 2:
-                        raise RuntimeError("语音输出格式不受支持")
-                    if rate and rate != audio.getframerate():
-                        raise RuntimeError("语音采样率变化")
-                    rate = audio.getframerate()
-                    duration = audio.getnframes() / rate
-                    pcm.append(audio.readframes(audio.getnframes()))
-                pause = .35 if sentence_part[-1:] in '。！？' else .12
-                pcm.append(b'\0' * (int(rate * pause) * 2))
-                cues.append({"start": offset, "end": offset + duration + pause, "text": sentence_part})
-                offset += duration + pause
+            # Reading-time pacing for silent captions, never audio alignment.
+            for part in re.findall(r"[^。！？，,；;：:]+[。！？，,；;：:]?", caption_text(beat['speech'], 1800)):
+                duration = max(2.0, min(12.0, len(part) / 5.0))
+                cues.append({'start': offset, 'end': offset + duration, 'text': part})
+                offset += duration
             if beat.get('edge'):
-                scene['trace_windows'].append({'start':beat_start, 'end':offset, 'edge':beat['edge']})
-        pcm.append(b'\0' * (int(rate * .55) * 2))
+                scene['trace_windows'].append({'start': beat_start, 'end': offset, 'edge': beat['edge']})
         offset += .55
-        scene["end"] = offset
+        scene['end'] = offset
         transcript.append(f"{stamp(scene['start'])} {scene['title']}\n{scene['speech']}")
-    with wave.open(str(directory / "narration.wav"), "wb") as audio:
-        audio.setparams((1, 2, rate, 0, "NONE", "not compressed"))
-        audio.writeframes(b"".join(pcm))
-    speech_seconds = time.monotonic() - speech_started
     (directory / "captions.vtt").write_text("WEBVTT\n\n" + "\n\n".join(
         f"{stamp(c['start'])} --> {stamp(c['end'])}\n{c['text']}" for c in cues), encoding="utf-8")
     (directory / "transcript.txt").write_text("\n\n".join(transcript), encoding="utf-8")
     (directory / "reasoning.json").write_text(json.dumps({'report_version':report['version'],
-        'plan':plan,'scenes':scenes},ensure_ascii=False,indent=2),encoding='utf-8')
+        'quality_policy':quality_policy,'plan':plan,'scenes':scenes},ensure_ascii=False,indent=2),encoding='utf-8')
     fps, width, height = 12, 1280, 720
     args = [tools["ffmpeg"], "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
-            "-s", f"{width}x{height}", "-r", str(fps), "-i", "pipe:0", "-i", str(directory / "narration.wav"),
+            "-s", f"{width}x{height}", "-r", str(fps), "-i", "pipe:0",
             "-c:v", "libx264", "-preset", "veryfast", "-crf", "24", "-pix_fmt", "yuv420p", "-threads", "2",
-            "-c:a", "aac", "-b:a", "96k", "-shortest", "-movflags", "+faststart", str(directory / "video.mp4")]
+            "-an", "-movflags", "+faststart", str(directory / "video.mp4")]
     encoding_started = time.monotonic()
     captured = set()
     with (directory / "encoding.log").open("wb") as error_log:
@@ -151,13 +132,12 @@ def render(report, directory: Path):
         except BaseException:
             process.kill(); process.wait()
             raise
-    for filename in ("speech-part.wav", "encoding.log"):
-        (directory / filename).unlink(missing_ok=True)
-    return {"duration": round(offset,3), "chapters":[{"title":s["title"],"start":s["start"]} for s in scenes],
+    (directory / "encoding.log").unlink(missing_ok=True)
+    return {"quality_policy":quality_policy,"duration": round(offset,3), "chapters":[{"title":s["title"],"start":s["start"]} for s in scenes],
             "scope_note": plan['assumption'] + ' ' + plan['limit'],
-            "voice_note": "本地 eSpeak 机械合成；已加断句停顿，尚未达到自然语音质量。",
-            "transcript": "\n\n".join(transcript), "engine": "espeak-ng/cmn + continuous graph + ffmpeg/libx264",
-            "generation_seconds":round(time.monotonic()-started,3), "speech_seconds":round(speech_seconds,3),
+            "voice_note": "无配音；按字幕阅读时间播放。",
+            "transcript": "\n\n".join(transcript), "engine": "continuous graph + ffmpeg/libx264",
+            "generation_seconds":round(time.monotonic()-started,3),
             "encoding_seconds":round(time.monotonic()-encoding_started,3)}
 
 

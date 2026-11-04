@@ -9,6 +9,8 @@ from management_portal.home_report_store import ReportStore, revision_number
 from management_portal.home_report_persistent_media import PersistentMedia
 from management_portal.home_report_media import MediaStore
 from management_portal.media_tools import capabilities
+from management_portal.home_report_quality import bind
+from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.http_media_range import plan_media_response
 
 _MEDIA = None
@@ -29,7 +31,7 @@ def _get(request, parsed, actor):
         if target['kind'] == 'report' or target['id'].startswith('report_'):
             report = ReportStore().response(target['id'], actor, query.get('revision', [None])[0])
             return http_responses._serve_json(request, 200, report)
-        report = build_report(target, actor=actor)
+        report = bind(build_report(target, actor=actor), query.get('quality', [None])[0], author=actor)
         available = capabilities()
         report["media_capability"] = {key: available[key] for key in ("available", "missing")}
         return http_responses._serve_json(request, 200, report)
@@ -40,10 +42,20 @@ def _get(request, parsed, actor):
 def _generate(request, parsed, actor):
     try:
         body = http_request_body._read_bounded_json_object(request, max_bytes=4096)
-        state = PersistentMedia(ReportStore()).start(body.get('report_id'), body.get('revision'), actor, retry=body.get('retry') is True)
+        state = PersistentMedia(ReportStore()).start(body.get('report_id'), body.get('revision'), actor,
+            retry=body.get('retry') is True, quality=body.get('quality', 'medium'))
         return http_responses._serve_json(request, 202, state)
     except Exception as exc:
         return http_responses._serve_exception_json(request, exc)
+
+
+def _cancel_media(request, parsed, actor):
+    try:
+        body = http_request_body._read_bounded_json_object(request,max_bytes=4096)
+        result = PersistentMedia(ReportStore()).cancel(body.get('report_id'),body.get('revision'),actor,quality=body.get('quality','medium'))
+        return http_responses._serve_json(request,200,result)
+    except Exception as exc:
+        return http_responses._serve_exception_json(request,exc)
 
 
 def _validate(request, parsed, actor):
@@ -86,19 +98,46 @@ def _save(request, parsed, actor):
             # HTTP retries must not replay a permanently failed ISA response.
             return get_resource_service().register('report',fields,actor=actor,operation_id=operation)
         result = store.materialize(body,actor,register)
+        if result.get('quality') == 'high':
+            from management_portal.home_report_review import submit
+            result['review'] = submit(store, result['report_id'], result['revision'], actor)
         return http_responses._serve_json(request,200,result)
+    except ResourceVersionConflict as exc:
+        return http_responses._serve_json(request,409,{'error':str(exc)})
     except Exception as exc:
         return http_responses._serve_exception_json(request,exc)
 
 
 def _refresh(request, parsed, actor):
     try:
-        body = http_request_body._read_bounded_json_object(request,max_bytes=4096)
-        result = isa_reader(actor)('UpdateResource',{'resource_id':body.get('report_id'), 'changes':{'expected_revision':body.get('expected_revision')}})
+        body = http_request_body._read_bounded_json_object(request,max_bytes=131072)
+        changes = {key: body[key] for key in ('expected_revision', 'quality', 'content') if key in body}
+        result = isa_reader(actor)('UpdateResource',{'resource_id':body.get('report_id'), 'changes':changes})
         resource = result.get('resource') or result
-        return http_responses._serve_json(request,200,ReportStore().response(body['report_id'],actor,resource.get('revision')))
+        store = ReportStore()
+        result = store.response(body['report_id'],actor,resource.get('revision'))
+        if result.get('quality') == 'high':
+            from management_portal.home_report_review import submit
+            result['review'] = submit(store, result['report_id'], result['revision'], actor)
+        return http_responses._serve_json(request,200,result)
     except Exception as exc:
         return http_responses._serve_exception_json(request,exc)
+
+
+def _review(request, parsed, actor):
+    try:
+        from management_portal.home_report_review import submit
+        body = http_request_body._read_bounded_json_object(request, max_bytes=4096)
+        store = ReportStore()
+        media = None
+        if body.get('video') is True:
+            media = PersistentMedia(store).status(body.get('report_id'), body.get('revision'), actor, quality='high', include_review=False)
+            if not media or media.get('status') != 'ready':
+                raise ValueError('请先生成固定视频')
+        result = submit(store, body.get('report_id'), body.get('revision'), actor, media=media)
+        return http_responses._serve_json(request, 200, result)
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
 
 
 def _delete(request, parsed, actor):
@@ -115,7 +154,11 @@ def _delete(request, parsed, actor):
 def _attach(request, parsed, actor):
     try:
         body=http_request_body._read_bounded_json_object(request,max_bytes=8192)
-        result=ReportStore().attach(body.get('report_id'),actor,body.get('expected_revision'),body.get('address'))
+        store=ReportStore()
+        result=store.attach(body.get('report_id'),actor,body.get('expected_revision'),body.get('address'))
+        if result.get('quality') == 'high':
+            from management_portal.home_report_review import submit
+            result['review'] = submit(store, result['report_id'], result['revision'], actor)
         return http_responses._serve_json(request,200,result)
     except Exception as exc:
         return http_responses._serve_exception_json(request,exc)
@@ -126,8 +169,11 @@ def _persistent(request, parsed, actor, params):
         store = ReportStore()
         identifier, number = params['id'], params['revision']
         if not params.get('file'):
-            return http_responses._serve_json(request,200,PersistentMedia(store).status(identifier,number,actor))
-        path, mime = store.file(identifier,number,params['file'],actor)
+            return http_responses._serve_json(request,200,PersistentMedia(store).status(identifier,number,actor,quality=params.get('quality','medium')))
+        if params.get('quality'):
+            path, mime = PersistentMedia(store).file(identifier,number,params['file'],actor,quality=params['quality'])
+        else:
+            path, mime = store.file(identifier,number,params['file'],actor)
         stat = path.stat()
         response = plan_media_response(request,size=stat.st_size,mtime_ns=stat.st_mtime_ns,download=True)
         response.send_headers(request,mime,extra_headers={'X-Content-Type-Options':'nosniff','Cache-Control':'no-store'})
@@ -187,12 +233,16 @@ def routes():
             route('GET','/api/home-report/origin',_origin,'home-report'),
             route('POST','/api/home-report/save',_save,'home-report'),
             route('POST','/api/home-report/refresh',_refresh,'home-report'),
+            route('POST','/api/home-report/review',_review,'home-report'),
             route('POST','/api/home-report/delete',_delete,'home-report'),
             route('POST','/api/home-report/attachments',_attach,'home-report'),
             route('GET','/api/home-report/reports/{id}/{revision}/media',_persistent,'home-report',match='template'),
+            route('GET','/api/home-report/reports/{id}/{revision}/media/{quality}',_persistent,'home-report',match='template'),
+            route('GET','/api/home-report/reports/{id}/{revision}/media/{quality}/file/{file}',_persistent,'home-report',match='template'),
             route('GET','/api/home-report/reports/{id}/{revision}/file/{file}',_persistent,'home-report',match='template'),
             route("POST", "/api/home-report/validate", _validate, "home-report"),
             route("POST", "/api/home-report/media", _generate, "home-report"),
+            route("POST", "/api/home-report/media/cancel", _cancel_media, "home-report"),
             route("GET", "/api/home-report/media/{job}", _media, "home-report", match="template"),
             route("GET", "/api/home-report/media/{job}/{file}", _media, "home-report", match="template"),
             route("GET", "/home-report", _page, "home-report", page=True))

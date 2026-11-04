@@ -23,6 +23,11 @@ summary.homeReportControl {cursor:pointer;}
 .home-report video {display:block;width:100%;max-height:540px;background:#111b2d;border-radius:10px;}
 .home-report pre {white-space:pre-wrap;font:inherit;max-height:420px;overflow:auto;}
 .home-report .hr-media {margin:20px 0;}
+.home-report .hr-quality {display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.home-report select.homeReportControl {font:inherit;color:inherit;background:var(--panel,#fff);min-height:44px;max-width:100%;border:1px solid var(--border,#ccd6e5);border-radius:7px;}
+.home-report .hr-markdown pre {max-height:none;}
+.home-report .hr-review {border-inline-start:3px solid var(--accent,#245b9b);padding-inline-start:12px;margin-block:12px;}
+.home-report .hr-review textarea {display:block;width:100%;min-height:180px;font:inherit;background:var(--panel,#fff);color:inherit;}
 .home-report .hr-sources small {display:block;}
 .home-report .hr-reasoning {margin:24px 0;border-block:1px solid var(--border,#d1dbe9);padding:12px 0;}
 .home-report .hr-diagrams {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}

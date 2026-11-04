@@ -27,11 +27,67 @@
     if (!root) throw new Error('报告容器不存在');
     root.classList.add('home-report');
     let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction;
-    let requestedTarget, originKey = '', readOnly = true;
+    let requestedTarget, originKey = '', readOnly = true, reportQuality = 'medium', videoQuality = 'medium';
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
     let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
     const active = token => !destroyed && presented && token === epoch && !controller?.signal.aborted;
     const request = (url, options = {}) => json(url, {...options, signal: controller.signal});
+    function qualitySelect(label, value, change) {
+      const wrapper = el('label', label + ' ', 'hr-quality'), select = el('select', null, 'homeReportControl');
+      select.setAttribute('aria-label', label);
+      for (const [key, name] of [['low','低'],['medium','中'],['high','高 · 独立审核']]) {
+        const option = el('option', name); option.value = key; select.append(option);
+      }
+      select.value = value; select.onchange = () => change(select.value); wrapper.append(select); return wrapper;
+    }
+    function mediaActions(state = null) {
+      mediaAction.replaceChildren(qualitySelect('视频质量', videoQuality, async value => {
+        videoQuality = value; clearTimeout(mediaTimer); stopMedia();
+        const token = epoch;
+        try {
+          const found = report.report_id ? await request(`${API}/reports/${report.report_id}/${report.revision}/media/${value}`) : null;
+          if (!active(token) || videoQuality !== value) return;
+          media = found;
+          if (found) {renderMedia(found); if (found.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 1000);}
+          else {mediaRegion.replaceChildren(); mediaRegion.hidden = true; mediaActions();}
+        } catch(error) {if(active(token) && videoQuality===value) renderMedia({status:'failed',error:error.message,quality:value});}
+      }));
+      if (state?.status === 'ready') mediaAction.append(el('span', state.quality === 'high' && state.review?.status !== 'passed' ? '视频已生成 · 高质量未通过审核' : '视频已保存','hr-muted'));
+      else if (state?.status === 'pending') mediaAction.append(el('span','视频生成中','hr-muted'));
+      else if (state?.status === 'cancelled') mediaAction.append(el('span','生成已取消','hr-muted'));
+      else if (!state && report.reasoning?.available) mediaAction.append(button('生成讲解视频', () => generate(false)));
+    }
+    function reviewRegion(review, isVideo = false) {
+      const section = el('section', null, 'hr-review'); section.setAttribute('aria-label', isVideo ? '视频独立审核' : '报告独立审核');
+      const labels = {not_requested:'尚未送审',pending:'准备送审',submitted:'已送审，尚未通过',passed:'独立审核通过',changes_requested:'需要修改后重新审核',blocked:'审核受阻',cancelled:'审核已取消',submission_failed:'送审失败'};
+      section.append(el('p', labels[review?.status] || '尚未送审'));
+      if(review?.feedback || review?.error) section.append(el('p', review.feedback || review.error));
+      const controls = el('div',null,'hr-actions');
+      const reload = async () => {
+        const token = epoch;
+        try {
+          const data = await request(isVideo ? `${API}/reports/${report.report_id}/${report.revision}/media/high` : `${API}?${new URLSearchParams({kind:'report',id:report.report_id,revision:report.revision})}`);
+          if(active(token)) {if(isVideo) renderMedia(data); else accept(data);}
+        } catch(error) {if(active(token)) section.append(el('p',error.message));}
+      };
+      controls.append(button('读取审核结果',reload));
+      if (['not_requested','submission_failed'].includes(review?.status || 'not_requested')) controls.append(button('提交独立审核', async () => {
+        const token = epoch;
+        try {await request(`${API}/review`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,revision:report.revision,video:isVideo})}); if(active(token)) await reload();}
+        catch(error){if(active(token)) section.append(el('p',error.message));}
+      }));
+      if (review?.id && ['submitted','pending','submission_failed'].includes(review.status)) controls.append(button('取消审核',async()=>{
+        const token=epoch;
+        try {await request('/api/home-explanation/reviews/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({review_id:review.id})}); if(active(token)) await reload();}
+        catch(error){if(active(token)) section.append(el('p',error.message));}
+      }));
+      section.append(controls);
+      if (!isVideo && ['changes_requested','blocked','cancelled'].includes(review?.status)) {
+        const details=el('details'), text=el('textarea'); text.value=report.markdown || ''; text.setAttribute('aria-label','修改报告正文');
+        details.append(el('summary','修改为新版本并重新审核'),text,button('保存修改并重新审核',()=>refresh({markdown:text.value}))); section.append(details);
+      }
+      return section;
+    }
     function stopMedia() { if (video) { video.pause(); video.removeAttribute('src'); video.load(); video = null; } }
     function stop() { ++epoch; controller?.abort(); clearTimeout(refreshTimer); clearTimeout(mediaTimer); busy = false; rechecking = false; }
     function message(value, retry) {
@@ -179,15 +235,15 @@
       stopMedia(); root.replaceChildren();
       const header = el('header');
       header.append(el('h2', report.title), el('p', report.goal));
-      header.append(el('p', `${target.kind} · ${target.id} · 核对 ${date(report.checked_at)} · 版本 ${report.version.slice(0, 12)}`, 'hr-muted'));
+      header.append(el('p', `${target.kind} · ${target.id} · 核对 ${date(report.checked_at)} · 版本 ${report.version.slice(0, 12)} · 当前质量 ${report.quality || 'medium'}`, 'hr-muted'));
       const actions = el('div', null, 'hr-actions');
+      actions.append(qualitySelect('报告质量', reportQuality, value => {reportQuality = value;}));
       if (report.report_id) actions.append(button('刷新为新版本', () => refresh()));
       else actions.append(button('保存汇报', () => save().catch(() => {})));
       mediaAction=el('span');actions.append(mediaAction);
-      if(report.media?.status==='ready') mediaAction.append(el('span','视频已保存','hr-muted'));
-      else if (report.reasoning?.available) mediaAction.append(button('生成讲解视频', () => generate(false)));
+      mediaActions(report.media);
       for (const item of report.exports || []) {
-        const link = el('a', ({'report.html':'下载正文','report.json':'下载来源快照','slides.pptx':'下载生成的PPT'})[item.name] || `下载关联PPT ${item.name}`);
+        const link = el('a', ({'report.md':'下载Markdown','report.html':'下载正文','report.json':'下载来源快照','slides.pptx':'下载生成的PPT'})[item.name] || `下载关联PPT ${item.name}`);
         link.href = item.url; link.download = item.name; actions.append(link);
       }
       header.append(actions); root.append(header);
@@ -204,11 +260,12 @@
         }),result);header.append(attachment);
       }
       banner = el('div', null, 'hr-notice'); banner.setAttribute('role','status'); banner.hidden = true; root.append(banner);
+      if(report.quality === 'high' && report.report_id) root.append(reviewRegion(report.review));
       for (const warning of report.warnings) root.append(el('p', warning, 'hr-notice'));
       mediaRegion = el('section', null, 'hr-media'); mediaRegion.hidden = true; mediaRegion.setAttribute('aria-label', '讲解视频'); root.append(mediaRegion);
-      renderReasoning(report.reasoning);
-      if (report.reasoning?.available) root.append(el('p','配音使用本地机械合成；当前没有已配置的自然语音服务。','hr-muted'));
-      if (report.rows.length) {
+      if (report.quality !== 'low') renderReasoning(report.reasoning);
+      if (report.reasoning?.available) root.append(el('p','动画为无配音字幕视频。','hr-muted'));
+      if (report.quality !== 'low' && report.rows.length) {
         const interactive = el('section', null, 'hr-interactive'); interactive.setAttribute('aria-label', '筛选汇报条目');
         const filters = el('div', null, 'hr-actions');
         filters.append(button(`全部 ${report.rows.length}`, () => {status = ''; renderRows();}));
@@ -216,7 +273,14 @@
         const search = el('input'); search.type = 'search'; search.placeholder = '搜索工作线、方向或进展'; search.setAttribute('aria-label', '搜索汇报'); search.value = query;
         search.oninput = () => {query = search.value; renderRows();}; interactive.append(filters, search); root.append(interactive);
       }
-      list = el('section', null, 'hr-text'); list.setAttribute('aria-label', '汇报正文'); root.append(list); renderRows();
+      list = el('section', null, 'hr-text'); list.setAttribute('aria-label', '汇报正文'); root.append(list);
+      if (report.quality === 'low' || report.revised_content) {
+        const prose = el('div', null, 'hr-markdown');
+        if (window.MD?.render) prose.innerHTML = window.MD.render(report.markdown, {linkifyResources:false});
+        else prose.append(el('pre', report.markdown));
+        list.before(prose);
+      }
+      if (report.quality !== 'low') renderRows();
       sourceRegion = el('details', null, 'hr-sources'); sourceRegion.append(el('summary', `全部来源与版本 · ${report.sources.length}`));
       for (const source of report.sources) {
         const p = el('p'); p.append(sourceButton(source), el('small', ` ${source.version_kind === 'revision' ? '修订' : 'SHA256'} ${source.version}`)); sourceRegion.append(p);
@@ -225,15 +289,17 @@
     }
     function renderMedia(state) {
       media = state;
-      if(mediaAction) {
-        mediaAction.replaceChildren();
-        if(state.status==='ready') mediaAction.append(el('span','视频已保存','hr-muted'));
-        else if(state.status==='pending') mediaAction.append(el('span','视频生成中','hr-muted'));
-      }
+      if(mediaAction) mediaActions(state);
       mediaRegion.hidden = false;
       mediaRegion.replaceChildren();
       if (state.status !== 'ready') {
-        mediaRegion.append(el('p', state.status === 'pending' ? '讲解视频正在生成，可以先阅读下方报告。' : `视频暂未生成：${state.error || '请重试'}`, 'hr-notice'));
+        mediaRegion.append(el('p', state.status === 'pending' ? '讲解视频正在生成，可以先阅读下方报告。' : state.status === 'cancelled' ? '生成已取消；重新生成请创建新版本。' : `视频暂未生成：${state.error || '请重试'}`, 'hr-notice'));
+        if (state.status === 'pending') mediaRegion.append(button('取消生成', async () => {
+          const token=epoch,level=videoQuality;
+          try {const cancelled=await request(`${API}/media/cancel`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,revision:report.revision,quality:level})});
+            if(active(token)&&level===videoQuality){clearTimeout(mediaTimer);renderMedia(cancelled);}
+          } catch(error){if(active(token)&&level===videoQuality) mediaRegion.append(el('p',error.message));}
+        }));
         if (state.status === 'failed') mediaRegion.append(button('重试视频', () => generate(true)));
         return;
       }
@@ -243,6 +309,7 @@
       const track = el('track'); track.kind = 'subtitles'; track.srclang = 'zh'; track.label = '中文字幕'; track.src = `${base}/captions.vtt`; video.append(track);
       video.onerror = () => { if (presented) validate().catch(() => {}); };
       mediaRegion.append(el('h3', '视频讲解'), video);
+      if (state.quality === 'high') mediaRegion.append(reviewRegion(state.review,true));
       if(state.imported_from) mediaRegion.append(el('p','已恢复这份快照先前生成的视频。','hr-muted'));
       const chapters = el('nav', null, 'hr-actions'); chapters.setAttribute('aria-label', '视频章节');
       for (const chapter of state.chapters) chapters.append(button(`${Math.floor(chapter.start / 60)}:${String(Math.floor(chapter.start % 60)).padStart(2,'0')} ${chapter.title}`, () => {video.currentTime = chapter.start;}));
@@ -259,25 +326,26 @@
     async function pollMedia(token) {
       if (!active(token) || !report?.report_id || !media) return;
       try {
-        const state = await request(`${API}/reports/${report.report_id}/${report.revision}/media`);
-        if (!active(token)) return;
+        const level = videoQuality;
+        const state = await request(`${API}/reports/${report.report_id}/${report.revision}/media/${level}`);
+        if (!active(token) || level !== videoQuality || !state) return;
         if (state.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 3000);
         else renderMedia(state);
       } catch (error) { if (active(token)) message(`来源暂不可读，已撤去报告：${error.message}`, true); }
     }
     async function generate(retry) {
       if (!presented || !report || busy || destroyed) return;
-      busy = true; const token = epoch;
+      busy = true; const token = epoch, level = videoQuality;
       mediaRegion.hidden = false; mediaRegion.replaceChildren(el('p', '正在核对来源并准备讲解…', 'hr-notice'));
       try {
-        if (!report.report_id) await save();
+        if (!report.report_id) {await save(); videoQuality = level;}
         if (!active(token) || !report?.report_id) return;
-        const state = await request(`${API}/media`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({report_id:report.report_id, revision:report.revision, retry})});
-        if (!active(token)) return;
+        const state = await request(`${API}/media`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({report_id:report.report_id, revision:report.revision, quality:level, retry})});
+        if (!active(token) || videoQuality !== level) return;
         stopMedia(); renderMedia(state);
         if (state.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 1000);
       } catch (error) {
-        if (active(token)) {
+        if (active(token) && videoQuality === level) {
           if ([401,403,404].includes(error.status)) message('来源已不可读，报告已撤去。', true);
           else renderMedia({status:'failed',error:error.message});
         }
@@ -285,6 +353,7 @@
     }
     function schedule() { clearTimeout(refreshTimer); if (presented && !destroyed) refreshTimer = setTimeout(() => validate().catch(() => {}), 20000); }
     function accept(result) {
+      reportQuality = result.quality || 'medium'; videoQuality = result.media?.quality || 'medium';
       report = result; target = {...result.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
       if (result.reference) {
         requestedTarget = {...result.reference.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
@@ -299,16 +368,16 @@
       const token = epoch;
       originKey ||= `home-request/v1:${requestUUID()}`;
       try {
-        const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.version,origin_key:originKey})});
+        const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.source_version || report?.version,origin_key:originKey,quality:reportQuality})});
         if (active(token)) accept(result);
         return result;
       } catch(error) {if(active(token)) {banner.hidden=false;banner.textContent=`保存失败：${error.message}`;} throw error;}
     }
-    async function refresh() {
+    async function refresh(content) {
       if (!report?.report_id || busy || destroyed) return;
       const token = epoch; busy=true;
       try {
-        const result=await request(`${API}/refresh`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,expected_revision:report.latest_revision})});
+        const result=await request(`${API}/refresh`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({report_id:report.report_id,expected_revision:report.latest_revision,quality:reportQuality,...(content ? {content} : {})})});
         if(active(token)) {
           banner.hidden=false;banner.replaceChildren(el('span',`已生成修订 ${result.revision}，当前保留修订 ${report.revision}。`));
           onOpen?.({view:'report',target:result.reference.target});
@@ -323,7 +392,7 @@
         // Reopen old snapshot dependencies as well as the new target. A source
         // removed from the current report can still be present in its old video.
         const validation = await request(`${API}/validate`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(report.report_id ? {report_id:report.report_id,revision:report.revision} : {sources:report.sources})});
-        const fresh = report.report_id ? null : await request(`${API}?${new URLSearchParams(target)}`);
+        const fresh = report.report_id ? null : await request(`${API}?${new URLSearchParams({...target,quality:report.quality || 'medium'})}`);
         if (!active(token)) return;
         if (validation.source_changed || fresh && fresh.version !== report.version) {
           banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前报告保留原快照。'), button('生成新版', () => report.report_id ? refresh() : load().catch(() => {})));
@@ -340,8 +409,8 @@
         let result;
         if (requestedTarget.kind === 'report') result = await request(`${API}?${new URLSearchParams(requestedTarget)}`);
         else if (originKey && readOnly) result = await request(`${API}/origin?${new URLSearchParams({origin_key:originKey})}`);
-        else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey})});
-        else result = await request(`${API}?${new URLSearchParams(requestedTarget)}`);
+        else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey,quality:reportQuality})});
+        else result = await request(`${API}?${new URLSearchParams({...requestedTarget,quality:reportQuality})}`);
         if (!active(token)) return;
         accept(result);
       } catch (error) { if (active(token)) {
@@ -359,6 +428,7 @@
       externalAbort = () => {stop(); stopMedia(); root.replaceChildren();};
       externalSignal?.addEventListener('abort', externalAbort, {once:true});
       requestedTarget = {...nextTarget}; target = {...nextTarget}; originKey=options.originKey || '';readOnly=options.readOnly !== false;
+      reportQuality = ['low','medium','high'].includes(options.quality) ? options.quality : 'medium'; videoQuality = 'medium';
       query = ''; status = ''; report = null; media = null;
       root.dataset.requestId = options.requestId || '';
       if (externalSignal?.aborted) {externalAbort(); return;}

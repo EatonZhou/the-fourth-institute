@@ -15,11 +15,13 @@ def install_resolver(service):
         record, number, snapshot = store.get(identifier, actor, revision)
         result = {'address':address,'root_id':identifier,'resource_type':'report','target_kind':'report',
                   'record':store.metadata(record),'exists':True,'content_kind':'json',
-                  'detail':store.response(identifier,actor,number),'version':snapshot['version'],
+                  'version':snapshot['version'],
                   'filename':filename or 'report.json','portal_url':f'/home-report?kind=report&id={identifier}&revision={number}'}
         if filename:
             path, mime = store.file(identifier, number, filename, actor)
             result.update(path=str(path),content_type=mime,content_kind='file',size=path.stat().st_size)
+        else:
+            result['detail'] = store.response(identifier,actor,number)
         return result
 
     def read(resolved, *, actor='', max_bytes=4*1024*1024, **context):
@@ -39,9 +41,10 @@ def install_mutation_provider(service):
     def register(payload, *, actor='', resource_id='', **context):
         return ReportStore().create(resource_id, payload, actor)
     def update(resource_id, payload, *, actor='', **context):
-        if set(payload) != {'expected_revision'}:
-            raise ValueError('汇报只支持显式刷新expected_revision；历史正文不可修改')
-        return ReportStore().refresh(resource_id,actor,payload['expected_revision'])
+        if 'expected_revision' not in payload or set(payload) - {'expected_revision', 'quality', 'content'}:
+            raise ValueError('汇报只支持带expected_revision的显式刷新或新修订修改')
+        return ReportStore().refresh(resource_id,actor,payload['expected_revision'],
+            quality_level=payload.get('quality'), content=payload.get('content'))
     def unregister(resource_id, *, actor='', **context):
         return ReportStore().delete(resource_id,actor)
     service.register_mutation_provider('report',register=register,update=update,unregister=unregister,service_managed_registration=True)

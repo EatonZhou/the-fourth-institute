@@ -206,8 +206,8 @@ def _number(value, low, high):
 def validate(value):
     if not isinstance(value, dict) or value.get('schema') != 'portal-explanation-video/v1':
         raise ValueError('不支持的视频生成计划')
-    if set(value) - {'schema', 'title', 'nodes', 'scenes', 'audio', 'cues', 'audio_provenance'}:
-        raise ValueError('生成计划含未声明字段')
+    # The envelope may carry producer annotations. Only the validated render
+    # fields below cross into the renderer; annotations are never read/executed.
     result = {'schema': value['schema'], 'title': _text(value.get('title'), 100)}
     nodes, scenes = value.get('nodes', []), value.get('scenes')
     if not isinstance(nodes, list) or len(nodes) > 16 or not isinstance(scenes, list) or not 1 <= len(scenes) <= 24:
@@ -271,11 +271,6 @@ def validate(value):
             result['cues'].append({'start': start, 'end': end, 'text': _text(cue['text'], 250)})
     elif 'cues' in value:
         raise ValueError('字幕时间须配合固定音轨')
-    if 'audio_provenance' in value:
-        proof = value['audio_provenance']
-        if not isinstance(proof, dict) or set(proof) != {'address', 'sha256'} or 'audio' not in value:
-            raise ValueError('原生音轨来源需要音轨及固定记录引用')
-        result['audio_provenance'] = proof
     for source, scene in zip(scenes, result['scenes']):
         if 'visual' in source:
             scene['visual'] = validate_visual(source['visual'], scene['start'], scene['end'], result.get('cues', []))

@@ -11,6 +11,7 @@ from management_common.portal_paths import path as portal_path
 from management_portal import business_tasks
 from management_portal.home_report import digest, reauthorize
 from management_portal.home_report_media import FILES, MediaStore, render, _SLOTS
+from management_portal.home_report_quality import quality as normalize_quality
 
 
 def _atomic(path, value):
@@ -31,8 +32,9 @@ def import_candidate(job, current, actor, *, read=None):
     def comparable(report):
         import copy
         value = copy.deepcopy(report)
-        for key in ('version','checked_at','read_seconds'):
+        for key in ('version','checked_at','read_seconds','source_version','author','format','markdown'):
             value.pop(key, None)
+        value.setdefault('quality', 'medium')
         for source in value['sources']:
             source.pop('snapshot', None)
         return value
@@ -63,7 +65,7 @@ def discover_candidate(current, actor, *, read=None):
     return None
 
 
-def install_import(store, identifier, number, candidate):
+def install_import(store, identifier, number, candidate, *, version=None):
     directory, state = candidate
     parent=store.directory(identifier) / str(number)
     stage=parent / ('.import-'+uuid.uuid4().hex)
@@ -79,6 +81,7 @@ def install_import(store, identifier, number, candidate):
             if hashes[name]!=before: raise ValueError('旧缓存复制期间内容变化')
         state = {k:v for k,v in state.items() if k != 'report'}
         state.update(status='ready', assets=hashes, imported_from={'job_id':state['job_id'], 'report_version':state['version']})
+        state.update(version=version or state['version'], quality='medium')
         _atomic(stage / 'state.json', state)
         stage.rename(parent/'media')
     finally:
@@ -91,14 +94,19 @@ class PersistentMedia:
         self.renderer = renderer
 
     @staticmethod
-    def task(identifier, revision):
-        return f'persistent-home-report:{identifier}:{revision}'
+    def task(identifier, revision, quality='medium'):
+        return f'persistent-home-report:{identifier}:{revision}:{quality}'
 
-    def lease_path(self,identifier,number):
-        return self.store.root/'.locks'/f'media-{identifier}-{number}'
+    def names(self, quality):
+        quality = normalize_quality(quality)
+        return ('media', 'media-state.json') if quality == 'medium' else (f'media-{quality}', f'media-{quality}-state.json')
 
-    def active(self,identifier,number):
-        path=self.lease_path(identifier,number)
+    def lease_path(self,identifier,number,quality='medium'):
+        suffix = '' if quality == 'medium' else '-' + normalize_quality(quality)
+        return self.store.root/'.locks'/f'media-{identifier}-{number}{suffix}'
+
+    def active(self,identifier,number,quality='medium'):
+        path=self.lease_path(identifier,number,quality)
         if not path.exists(): return False
         with path.open('r') as stream:
             try:
@@ -107,40 +115,50 @@ class PersistentMedia:
                 return True
         return False
 
-    def status(self, identifier, number, actor):
+    def status(self, identifier, number, actor, *, quality='medium', include_review=True):
+        quality = normalize_quality(quality)
         _, number, snapshot = self.store.get(identifier, actor, number)
         directory = self.store.directory(identifier) / str(number)
-        complete = directory / 'media/state.json'
-        pending = directory / 'media-state.json'
+        folder, pending_name = self.names(quality)
+        complete = directory / folder / 'state.json'
+        pending = directory / pending_name
         state = json.loads(complete.read_text()) if complete.exists() else json.loads(pending.read_text()) if pending.exists() else None
         if state is None:
             return None
-        if state['status'] == 'pending' and not self.active(identifier,number):
+        if state.get('quality', 'medium') != quality:
+            raise ValueError('媒体质量与固定产物不一致')
+        if state['status'] == 'pending' and not self.active(identifier,number,quality):
             # A worker can finish between the first read and the lease check.
             state = json.loads(complete.read_text()) if complete.exists() else json.loads(pending.read_text())
             if state['status'] == 'pending':
                 state = {**state,'status':'failed','error':'上次生成已中断，可以重试。'}
-        return {**state, 'report_id':identifier, 'revision':number,
-                'base_url':f'/api/home-report/reports/{identifier}/{number}/file'}
+        result = {**state, 'report_id':identifier, 'revision':number, 'quality':quality,
+                  'base_url':f'/api/home-report/reports/{identifier}/{number}/media/{quality}/file'}
+        if quality == 'high' and result['status'] == 'ready' and include_review:
+            from management_portal.home_report_review import status
+            result['review'] = status(self.store, identifier, number, actor, media=result)
+        return result
 
-    def start(self, identifier, number, actor, *, retry=False):
+    def start(self, identifier, number, actor, *, retry=False, quality='medium'):
+        quality = normalize_quality(quality)
         _, number, snapshot = self.store.get(identifier, actor, number)
         self.store.authorize(actor, 'UpdateResource', identifier)
-        task = self.task(identifier, number)
+        task = self.task(identifier, number, quality)
         with self.store.lock(identifier):
-            previous = self.status(identifier, number, actor)
-            if previous and (previous['status'] == 'ready' or self.active(identifier,number) or not retry):
+            previous = self.status(identifier, number, actor, quality=quality)
+            if previous and (previous['status'] in {'ready','cancelled'} or self.active(identifier,number,quality) or not retry):
                 return previous
             if not _SLOTS.acquire(blocking=False):
                 raise RuntimeError('视频生成繁忙，请稍后重试')
             directory = self.store.directory(identifier) / str(number)
+            folder, pending_name = self.names(quality)
             lease=None
-            state = {'status':'pending','version':snapshot['version']}
+            state = {'status':'pending','version':snapshot['version'], 'quality':quality}
             try:
-                lease=self.lease_path(identifier,number).open('a')
+                lease=self.lease_path(identifier,number,quality).open('a')
                 fcntl.flock(lease,fcntl.LOCK_EX)
                 with self.store.writer(identifier):
-                    _atomic(directory / 'media-state.json', state)
+                    _atomic(directory / pending_name, state)
             except BaseException:
                 if lease is not None: lease.close()
                 _SLOTS.release()
@@ -149,7 +167,7 @@ class PersistentMedia:
                 started = time.monotonic()
                 stage = None
                 retention = None
-                temporary_owner=f'home-report-render:{identifier}:{number}'
+                temporary_owner=f'home-report-render:{identifier}:{number}:{quality}'
                 try:
                     self.store.get(identifier, actor, number)
                     self.store.authorize(actor, 'UpdateResource', identifier)
@@ -165,20 +183,27 @@ class PersistentMedia:
                     retention.release_owner(temporary_owner)
                     retention.declare(stage,category='runtime_tmp',owner_id=temporary_owner)
                     stage.mkdir(mode=0o700)
-                    result = self.renderer(snapshot, stage)
+                    result = self.renderer({**snapshot, 'media_quality':quality}, stage)
                     with self.store.lock(identifier), self.store.writer(identifier):
                         # Access may change during the long render. Do not commit revoked work.
                         self.store.get(identifier, actor, number)
                         self.store.authorize(actor, 'UpdateResource', identifier)
+                        if json.loads((directory / pending_name).read_text()).get('status') == 'cancelled':
+                            return
                         hashes = {name: hashlib.sha256((stage / name).read_bytes()).hexdigest() for name in FILES}
                         _atomic(stage / 'state.json', {**state, **result, 'status':'ready', 'assets':hashes})
                         commit = directory / ('.media-' + uuid.uuid4().hex)
                         shutil.copytree(stage,commit)
-                        commit.rename(directory / 'media')
+                        commit.rename(directory / folder)
+                    if quality == 'high':
+                        from management_portal.home_report_review import submit
+                        submit(self.store, identifier, number, actor, media={**state, 'assets':hashes})
                 except Exception as exc:
                     try:
                         with self.store.writer(identifier):
-                            _atomic(directory / 'media-state.json', {**state, 'status':'failed','error':str(exc)[:800],
+                            if (directory / pending_name).exists() and json.loads((directory / pending_name).read_text()).get('status') == 'cancelled':
+                                return
+                            _atomic(directory / pending_name, {**state, 'status':'failed','error':str(exc)[:800],
                                     'generation_seconds':round(time.monotonic()-started,3)})
                     except FileNotFoundError:
                         pass  # A deleted report is never recreated by a late worker.
@@ -203,11 +228,27 @@ class PersistentMedia:
                 raise
         return {**state,'report_id':identifier,'revision':number}
 
-    def file(self, identifier, number, name, actor):
-        state = self.status(identifier, number, actor)
+    def cancel(self, identifier, number, actor, *, quality='medium'):
+        quality = normalize_quality(quality)
+        _, number, _ = self.store.get(identifier, actor, number)
+        self.store.authorize(actor, 'UpdateResource', identifier)
+        with self.store.lock(identifier):
+            state = self.status(identifier, number, actor, quality=quality)
+            if state is None:
+                raise FileNotFoundError('尚未生成视频')
+            if state['status'] != 'pending':
+                return state
+            state = {**state, 'status':'cancelled','cancelled_by':actor}
+            with self.store.writer(identifier):
+                _atomic(self.store.directory(identifier) / str(number) / self.names(quality)[1], state)
+            return state
+
+    def file(self, identifier, number, name, actor, *, quality='medium'):
+        quality = normalize_quality(quality)
+        state = self.status(identifier, number, actor, quality=quality, include_review=False)
         if name not in FILES or not state or state['status'] != 'ready':
             raise FileNotFoundError('媒体尚未生成')
-        path = self.store.directory(identifier) / str(number) / 'media' / name
+        path = self.store.directory(identifier) / str(number) / self.names(quality)[0] / name
         if path.is_symlink() or not path.is_file():
             raise FileNotFoundError('媒体资产不存在')
         # The saved digest binds this file to the immutable report revision.

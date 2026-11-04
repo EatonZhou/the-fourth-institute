@@ -7,6 +7,7 @@
     if (!["open", "generate", "focus", "back"].includes(action)) throw new Error("不支持的展示动作");
     if (action === "back") return { action };
     if (!views.has(value.view)) throw new Error("不支持的展示视图");
+    if (value.view === "report" && value.quality !== undefined && !["low", "medium", "high"].includes(value.quality)) throw new Error("汇报质量无效");
     const target = value.target || {};
     if (value.view === "explanation") {
       const address = String(target.address || "").trim(), sha256 = String(target.sha256 || "").toLowerCase();
@@ -32,7 +33,8 @@
     if (kind === "lineage" && !/^lineage_[0-9a-f]{12}$/.test(id)) throw new Error("Lineage ID 无效");
     if (kind === "project" && !/^[\p{L}\p{N}_.@+\-]{1,80}$/u.test(id)) throw new Error("Project ID 无效");
     if (value.view !== "report" && kind === "task") throw new Error("地图需要 Lineage 或 Project");
-    return { action, view: value.view, target: { kind, id, ...(typeof target.focus === "string" ? { focus: target.focus.slice(0, 200) } : {}) } };
+    return { action, view: value.view, target: { kind, id, ...(typeof target.focus === "string" ? { focus: target.focus.slice(0, 200) } : {}) },
+      ...(value.view === "report" && value.quality !== undefined ? { quality: value.quality } : {}) };
   }
   // The host owns selection. Requests only acquire permission to present at the
   // user's current navigation epoch; data loaders never acquire that permission.
@@ -115,8 +117,10 @@
     const provenance = normalizeMessageOrigin(source);
     if (!provenance) throw new Error("汇报需要真实对话消息来源");
     const { residentId, messageId, fenceIndex } = provenance;
-    const intent = normalizeIntent(value);
+    const { quality, ...intent } = normalizeIntent(value);
     const { sha256 } = await import("./portal_sha256.js");
+    // A different quality must conflict with the original binding at save,
+    // not manufacture a new origin and silently replace the same request.
     return "home-message/v1:" + await sha256(new TextEncoder().encode(JSON.stringify([residentId, messageId, fenceIndex, intent])));
   }
   function normalizeOriginKey(value) {

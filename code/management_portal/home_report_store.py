@@ -20,6 +20,7 @@ from pathlib import Path
 
 from management_common.portal_paths import path as portal_path
 from management_portal.home_report import build_report, reauthorize, normalize_target
+from management_portal.home_report_quality import bind, quality, correction
 from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.resources.registry_store import get_registry_store
 
@@ -75,7 +76,10 @@ class ReportStore:
         with (locks / ("origin-" + origin)).open("a") as stream:
             fcntl.flock(stream, fcntl.LOCK_EX)
             if self.registry.get(ORIGINS, origin):
-                return self.origin(actor, payload["origin_key"])
+                existing = self.origin(actor, payload["origin_key"])
+                if 'quality' in payload and quality(payload['quality']) != existing.get('quality', 'medium'):
+                    raise ResourceVersionConflict('此请求已绑定其他质量的固定汇报；请显式刷新为新版本')
+                return existing
             result = register(payload)
             identifier = result.get("resource_id") or result["resource"]["resource_id"]
             return self.response(identifier, actor, 1)
@@ -138,8 +142,10 @@ class ReportStore:
     def response(self, identifier, actor, revision=None):
         record, number, snapshot = self.get(identifier, actor, revision)
         from management_portal.home_report_persistent_media import PersistentMedia
+        from management_portal.home_report_review import status
         return {**snapshot, "report_id": identifier, "revision": number, "latest_revision": record["revision"],
                 "reference": self.reference(identifier, number, snapshot),
+                "review": status(self, identifier, number, actor),
                 "media": PersistentMedia(self).status(identifier, number, actor),
                 "exports": self.exports(identifier, number, snapshot)}
 
@@ -147,6 +153,10 @@ class ReportStore:
     def exports(identifier, number, snapshot):
         base = f"/api/home-report/reports/{identifier}/{number}/file/"
         names = ['report.html','report.json','slides.pptx'] + [a['filename'] for a in snapshot.get('attachments',[])]
+        if snapshot.get('quality') == 'low':
+            names = ['report.json'] + [a['filename'] for a in snapshot.get('attachments',[])]
+        if 'markdown' in snapshot:
+            names.insert(0, 'report.md')
         return [{"name": name, "url": base + name} for name in names]
 
     def _save_revision(self, identifier, number, snapshot, attachments=None):
@@ -159,6 +169,10 @@ class ReportStore:
             if previous.get('version') != snapshot.get('version'):
                 raise FileExistsError('未完成版本与当前快照不符，需要恢复原创建请求')
             names = ['report.json','report.html','slides.pptx'] + [item['filename'] for item in previous.get('attachments',[])]
+            if previous.get('quality') == 'low':
+                names = ['report.json'] + [item['filename'] for item in previous.get('attachments',[])]
+            if 'markdown' in previous:
+                names.append('report.md')
             return {'report':previous,'assets':{name:hashlib.sha256((destination/name).read_bytes()).hexdigest()
                                                for name in names}}
         stage = parent / (".revision-" + uuid.uuid4().hex)
@@ -210,7 +224,7 @@ class ReportStore:
         return record
 
     def create(self, identifier, payload, actor):
-        allowed = {"target", "version", "import_job", "origin_key"}
+        allowed = {"target", "version", "import_job", "origin_key", "quality"}
         if set(payload) - allowed:
             raise ValueError("汇报创建仅接受target/version/import_job")
         # RegisterResource reserves this identity for its idempotent operation.
@@ -219,7 +233,9 @@ class ReportStore:
         with self.lock(identifier):
             existing = self.registry.get(COLLECTION, identifier)
             if existing:
-                self.get(identifier, actor)
+                _, _, original = self.get(identifier, actor)
+                if 'quality' in payload and quality(payload['quality']) != original.get('quality','medium'):
+                    raise ResourceVersionConflict('固定身份的质量不能通过重试改写')
                 return self.metadata(existing)
             frozen = self.directory(identifier) / '1/report.json'
             if frozen.exists():
@@ -228,11 +244,13 @@ class ReportStore:
                     raise ValueError('未完成创建的目标与重试不一致')
                 reauthorize(snapshot, actor=actor, read=self.read)
             else:
-                snapshot = build_report(payload.get("target"), actor=actor, read=self.read)
+                snapshot = bind(build_report(payload.get("target"), actor=actor, read=self.read), payload.get('quality'), author=actor)
+            if snapshot.get('quality', 'medium') != quality(payload.get('quality')):
+                raise ResourceVersionConflict('生成请求质量与已冻结版本不一致')
             return self._create_locked(identifier, payload, actor, snapshot)
 
     def _create_locked(self, identifier, payload, actor, snapshot):
-        if payload.get("version") is not None and payload["version"] != snapshot["version"]:
+        if payload.get("version") is not None and payload["version"] not in {snapshot["version"], snapshot.get('source_version')}:
             raise ResourceVersionConflict("来源已改变，请重新核对后保存")
         imported = None
         if payload.get("import_job"):
@@ -260,7 +278,7 @@ class ReportStore:
             if imported:
                 from management_portal.home_report_persistent_media import install_import
                 try:
-                    install_import(self, identifier, 1, imported)
+                    install_import(self, identifier, 1, imported, version=snapshot['version'])
                 except (OSError,ValueError):
                     if payload.get('import_job'):
                         raise
@@ -306,16 +324,29 @@ class ReportStore:
             'read':{'instruction':'ResolveResource','arguments':{'address':address}},'version':sha,
             'version_kind':'content_sha256','snapshot':{'sha256':sha,'bytes':len(content)}})
         snapshot.pop('version',None)
+        snapshot['author'] = actor
         snapshot['checked_at']=now()
         snapshot['version']=digest(snapshot)
         record = self._append_revision(identifier, actor, expected_revision, snapshot, assets)
         return self.response(identifier, actor, record['revision'])
 
-    def refresh(self, identifier, actor, expected_revision):
+    def refresh(self, identifier, actor, expected_revision, *, quality_level=None, content=None):
         record, _, previous = self.get(identifier, actor)
         self.authorize(actor, "UpdateResource", identifier)
-        snapshot = build_report(previous["target"], actor=actor, read=self.read)
-        record = self._append_revision(identifier, actor, expected_revision, snapshot)
+        level = quality(quality_level if quality_level is not None else previous.get('quality'))
+        attachments = None
+        if content is not None:
+            attachments = {item['filename']:self.file(identifier,record['revision'],item['filename'],actor)[0].read_bytes()
+                           for item in previous.get('attachments', [])}
+            snapshot = correction(previous, content)
+            snapshot['quality'] = level
+            snapshot['format'] = 'markdown' if level == 'low' else 'interactive'
+            snapshot['author'] = actor
+            from management_portal.home_report_quality import fingerprint
+            snapshot['version'] = fingerprint(snapshot)
+        else:
+            snapshot = bind(build_report(previous["target"], actor=actor, read=self.read), level, author=actor)
+        record = self._append_revision(identifier, actor, expected_revision, snapshot, attachments)
         return self.metadata(record)
 
     def delete(self, identifier, actor, expected_revision=None):
@@ -333,13 +364,19 @@ class ReportStore:
     def file(self, identifier, number, name, actor):
         record, number, snapshot = self.get(identifier, actor, number)
         from management_portal.home_report_media import FILES
-        types = {"report.json": "application/json", "report.html": "text/html; charset=utf-8",
+        matched = re.fullmatch(r'(low|medium|high)-(.+)', name)
+        if matched and matched[2] in FILES:
+            from management_portal.home_report_persistent_media import PersistentMedia
+            return PersistentMedia(self).file(identifier, number, matched[2], actor, quality=matched[1])
+        types = {"report.json": "application/json", "report.html": "text/html; charset=utf-8", "report.md": "text/markdown; charset=utf-8",
                  "slides.pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"}
         for item in snapshot.get('attachments',[]):
             types[item['filename']]=types['slides.pptx']
         if name in types:
             path = self.directory(identifier) / str(number) / name
-            expected = record["revisions"][str(number)]["assets"][name]
+            expected = record["revisions"][str(number)]["assets"].get(name)
+            if not expected:
+                raise FileNotFoundError('该版本没有此资产')
             if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
                 raise FileNotFoundError("汇报资产不存在或摘要不符")
             return path, types[name]

@@ -16,24 +16,18 @@
 
 ## Home 汇报的可选媒体依赖
 
-文字汇报不依赖媒体工具。配音视频需要 FFmpeg（libx264、AAC）、eSpeak NG
-（cmn 中文语音数据）和 CJK 字体。媒体工具属于代码部署依赖，不依赖 Resident
-Workspace。可使用主机已安装的工具，或将与目标平台匹配的已验证离线包导入代码旁：
+文字汇报不依赖媒体工具。Portal视频编码仅需要FFmpeg（libx264；合成已有音轨时使用AAC）和CJK字体。报告自带的动画为无配音字幕视频；需要配音时，由创作任务在Portal之外准备固定音轨，再经解释页的普通文件合同合成。Portal不安装、探测或调用语音合成工具，缺少语音包不影响启动、测试或正常使用。
+
+可使用主机已安装的编码器和字体，或导入与目标平台匹配的已验证离线包：
 
 ```sh
 python3 code/management_portal/home_report_dependencies.py --code code \
   --bundle /path/to/home-report-media.tar.gz --sha256 <交付的完整摘要>
 ```
 
-命令核对包摘要与逐文件清单，再安装到
-`dependencies/native/home-report-media-v2/`。包包含工具、非 glibc 动态库、
-语音数据和字体；当前包针对 Ubuntu 24 x86_64，其平台及 glibc 要求见包内清单。
-Dev 与 Release 的代码旁分别准备，版本不同的包不能原位覆盖。
-该命令不安装系统包，不改实例配置或重启。启用前实际生成并播放中文视频，
-核对字幕、章节和音轨；安装完成本身不代表播放验收。
-需要自定义工具或字体位置时，进程可显式设置 `TFI_HOME_REPORT_FFMPEG`、
-`TFI_HOME_REPORT_ESPEAK`、`TFI_HOME_REPORT_FONT`；默认字体是 Noto Sans CJK。
-视频生成失败独立显示并支持重试，不能将文字汇报可用视为视频能力已验证。
+命令核对包摘要与逐文件清单，再安装到`dependencies/native/home-report-media-v2/`。构建器只打包视频编码器和字体；目标平台要求见包内清单。Dev与Release的代码旁分别准备，版本不同的包不能原位覆盖。该命令不安装系统包，不改实例配置或重启。
+
+需要自定义工具或字体位置时，进程可显式设置`TFI_HOME_REPORT_FFMPEG`、`TFI_HOME_REPORT_FONT`；默认字体为Noto Sans CJK。视频生成失败独立显示并支持重试，不能将文字汇报可用或依赖安装完成当作播放验收。
 
 ## 设备 SSH 本机路径
 

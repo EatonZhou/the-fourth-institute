@@ -28,7 +28,7 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
       [...root.querySelectorAll('button')].find(b=>b.textContent==='带入对话').click();
       [...root.querySelectorAll('button')].find(b=>b.textContent==='打开原始对象').click();
       const generating = [...root.querySelectorAll('button')].find(b=>b.textContent==='生成讲解视频');generating.click();
-      pending[2](reply({error:'speech temporarily unavailable'},503)); await new Promise(r=>setTimeout(r,0));
+      pending[2](reply({error:'encoder temporarily unavailable'},503)); await new Promise(r=>setTimeout(r,0));
       const textSurvivesVideoFailure = root.querySelector('.hr-text').textContent.includes('第一条正文') && root.textContent.includes('重试视频');
       const aborter = new AbortController();aborter.abort();
       await view.show({kind:'project',id:'aborted'},{signal:aborter.signal});

@@ -247,6 +247,7 @@ def test_mixed_scene_encoder_geometry_and_cache(tmp_path, fonts, monkeypatch):
         nodes=[dict(id='a', label='a', x=.5, y=.5)], scenes=[s, graph],
         audio=dict(address='workspace_0123456789ab/file/a.wav', sha256='0'*64),
         cues=[dict(start=0, end=2, text='fixture')]))
+    plan['_quality'] = 'low'  # Mixed legacy scenes use the low-quality rendering policy.
     audio = io.BytesIO()
     with wave.open(audio, 'wb') as wav:
         wav.setparams((1, 2, 16000, 0, 'NONE', 'not compressed'))

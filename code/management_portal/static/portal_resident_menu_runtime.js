@@ -113,16 +113,60 @@
             ${option("low", "低 · Markdown")}${option("medium", "中 · 交互网页")}${option("high", "高 · 独立 Resident 审查与修改直至达标")}
           </select></label>
           <p role="status" data-reporting-status></p>
+          <div data-reporting-conflict hidden></div>
           <button class="portalButton is-compact" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button>
         </form>`;
         const form = root.querySelector("form");
         context.reportingForm = form;
         form.elements.initiative.value = reporting.initiative;
         form.elements.quality.value = reporting.quality;
+        const conflictRoot = form.querySelector("[data-reporting-conflict]");
+        const refreshConflict = async () => {
+          const current = () => menuState.nodeMenuContext === context && context.reportingForm === form;
+          if (!current()) return;
+          conflictRoot.hidden = false;
+          conflictRoot.replaceChildren();
+          const note = document.createElement("p");
+          note.textContent = window.PortalI18n.t("编辑已保留，正在读取最新汇报设置…");
+          conflictRoot.append(note);
+          try {
+            const latest = await window.PortalResidentService.runtimeSettings(context.residentId);
+            if (!current()) return;
+            if (!latest.settings?.reporting || latest.settings_revision == null) throw new Error(window.PortalI18n.t("汇报设置暂不可用，请重试。"));
+            const names = {off: "0（不主动汇报）", low: "低", medium: "中", high: "高"};
+            note.textContent = window.PortalI18n.text`当前已保存：主动性 ${window.PortalI18n.t(names[latest.settings.reporting.initiative])}；质量 ${window.PortalI18n.t(names[latest.settings.reporting.quality])}。请核对后选择。`;
+            const choose = (label, apply) => {
+              const button = document.createElement("button");
+              button.type = "button"; button.className = "portalButton is-compact";
+              button.textContent = window.PortalI18n.t(label);
+              button.onclick = () => {
+                if (!current() || context.reportingSaving) return;
+                context.reportingRevision = latest.settings_revision;
+                context.reportingConflict = false;
+                conflictRoot.replaceChildren(); conflictRoot.hidden = true;
+                form.querySelector('[type="submit"]').disabled = false;
+                apply();
+              };
+              conflictRoot.append(button);
+            };
+            choose("加载最新设置，替换当前编辑", () => {
+              form.elements.initiative.value = latest.settings.reporting.initiative;
+              form.elements.quality.value = latest.settings.reporting.quality;
+              form.querySelector("[data-reporting-status]").textContent = window.PortalI18n.t("已加载最新设置，尚未提交修改。");
+            });
+            choose("保留当前编辑，按最新版本重试保存", () => form.requestSubmit());
+          } catch (error) {
+            if (!current()) return;
+            note.textContent = error.message;
+            const retry = document.createElement("button"); retry.type = "button"; retry.className = "portalButton is-compact";
+            retry.textContent = window.PortalI18n.t("重新读取最新设置"); retry.onclick = refreshConflict;
+            conflictRoot.append(retry);
+          }
+        };
         if (!canEdit) form.querySelector("[data-reporting-status]").textContent = window.PortalI18n.t("无权限");
         form.addEventListener("submit", async event => {
           event.preventDefault();
-          if (!canEdit || context.reportingSaving || menuState.nodeMenuContext !== context) return;
+          if (!canEdit || context.reportingSaving || context.reportingConflict || menuState.nodeMenuContext !== context) return;
           const selected = {initiative: form.elements.initiative.value, quality: form.elements.quality.value};
           const status = form.querySelector("[data-reporting-status]");
           context.reportingSaving = true;
@@ -153,6 +197,10 @@
             if (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408) context.reportingPending = null;
             if (menuState.nodeMenuContext === context) status.textContent = context.reportingCommitted
               ? window.PortalI18n.t("设置已提交，回读失败；再次保存只重试读取。") : error.message;
+            if (!context.reportingCommitted && (Number(error.status) === 409 || error.code === "instruction.version_conflict" || error.code === "instruction.conflict")) {
+              context.reportingConflict = true;
+              await refreshConflict();
+            }
           } finally {
             context.reportingSaving = false;
             context.saving = Boolean(context.runtimeSaving);
@@ -160,6 +208,7 @@
               $id("nodeMenuRuntime").inert = false;
               form.querySelectorAll("select, button").forEach(control => {
                 control.disabled = Boolean(context.reportingCommitted || context.reportingPending) && control.tagName === "SELECT";
+                if (context.reportingConflict && control.type === "submit") control.disabled = true;
               });
             }
           }

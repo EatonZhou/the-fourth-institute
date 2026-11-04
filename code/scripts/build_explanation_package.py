@@ -12,12 +12,18 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import re
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from management_portal.home_explanation_quality import quality as normalize_quality
 
 
 def build(directory: Path, address: str, *, title: str, summary: str = "", revision: int = 1,
           interaction: str | None = None, supplement: str | None = None,
           video_plan: str | None = None, video: str | None = None,
-          captions: str | None = None, transcript: str | None = None) -> dict:
+          captions: str | None = None, transcript: str | None = None, quality: str = 'medium') -> dict:
+    quality = normalize_quality(quality)
+    if quality == 'low' and (interaction or video or video_plan or not supplement or not supplement.lower().endswith(('.md', '.markdown'))):
+        raise ValueError('low解释页直接使用Markdown supplement')
     root = directory.resolve(strict=True)
     address = address.rstrip("/")
     if not re.fullmatch(r"workspace_[a-f0-9]{12}/file/[^\x00-\x1f]+", address):
@@ -45,7 +51,7 @@ def build(directory: Path, address: str, *, title: str, summary: str = "", revis
         return {"address": f"{address}/{name.as_posix()}", "sha256": digest.hexdigest()}
 
     manifest = {"schema": "portal-explanation/v1", "title": title.strip(), "summary": summary,
-                "revision": revision}
+                "revision": revision, "quality": quality}
     for key, filename in (("interaction", interaction), ("supplement", supplement),
                           ("video_plan", video_plan), ("video", video)):
         if filename:
@@ -66,6 +72,8 @@ def main() -> None:
     parser.add_argument("--title", required=True)
     parser.add_argument("--summary", default="")
     parser.add_argument("--revision", type=int, default=1)
+    parser.add_argument("--quality", choices=('low', 'medium', 'high'), default='medium')
+    parser.add_argument("--previous-review-id", help="Rejected fixed version this new package corrects")
     parser.add_argument("--resident-id", default="", help="Current author; checked against the injected identity")
     parser.add_argument("--reviewer", default="", help="Independent review Resident; otherwise discover the unique configured reviewer")
     parser.add_argument("--task", required=True, help="What the reader should understand or be able to decide")
@@ -75,6 +83,7 @@ def main() -> None:
     args = parser.parse_args()
     values = vars(args).copy()
     output = values.pop("output")
+    previous_review_id = values.pop('previous_review_id')
     directory = values.pop("directory")
     resident_id, reviewer, task = (values.pop(key) for key in ("resident_id", "reviewer", "task"))
     manifest = build(directory, **values)
@@ -84,10 +93,10 @@ def main() -> None:
     # Fixed historical manifests must not be silently replaced.
     with (directory / output).open("xb") as stream:
         stream.write(data)
-    from submit_explanation_review import submit
+    from scripts.submit_explanation_review import submit
     target = {"address": args.address.rstrip("/") + "/" + output, "sha256": hashlib.sha256(data).hexdigest()}
     try:
-        review = submit(target["address"], target["sha256"], task, resident_id, reviewer=reviewer)
+        review = submit(target["address"], target["sha256"], task, resident_id, reviewer=reviewer, previous_review_id=previous_review_id) if args.quality == 'high' else {'status': 'not_required'}
     except (RuntimeError, ValueError, OSError) as exc:
         parser.exit(1, f"Package saved; independent review pending: {exc}\n"
                        "Retry submit_explanation_review.py with this manifest; do not overwrite it.\n")

@@ -27,6 +27,15 @@ def plan():
                         'values': [{'node': 'b', 'value': 2}]}]}
 
 
+def visual_plan():
+    value = plan()
+    value['scenes'] = [{'title': '信息汇聚', 'speech': '测试', 'start': 0, 'end': 2,
+        'visual': {'kind': 'sequence', 'condition': '固定音轨',
+                   'data': {'items': [{'id': 'a', 'label': '来源', 'detail': '固定输入'}], 'note': '测试'},
+                   'events': [{'at': 0, 'stage': 'focus', 'index': 0, 'duration': 0, 'cue': 0}]}}]
+    return value
+
+
 class Resources:
     def __init__(self, root):
         self.root, self.denied, self.writes, self.notifications = root, set(), True, []
@@ -71,11 +80,7 @@ def setup(tmp_path, monkeypatch):
     service = Resources(root)
     monkeypatch.setattr(lineage_access_policy, 'workspace_reaches', lambda actor, *args, **kw: actor == 'reader' and service.writes)
     monkeypatch.setattr(module, 'portal_path', lambda area: runtime)
-    # Isolate media lifecycle tests from the real speech execution store
-    # and live ISA. Dedicated gate/ISA tests below exercise those boundaries.
-    monkeypatch.setattr(module, 'require_audio_provenance', lambda *args: {})
     monkeypatch.setattr(module.review, 'discover', lambda *args: 'resident_aaaaaaaaaaaa')
-    monkeypatch.setattr(module.review, 'submit', lambda *args: 'msg_fixture_review')
 
     def put(name, value):
         data = json.dumps(value).encode() if isinstance(value, dict) else value
@@ -85,7 +90,7 @@ def setup(tmp_path, monkeypatch):
         return {'address': f'{RID}/file/{name}', 'sha256': hashlib.sha256(data).hexdigest()}
 
     put('voice.wav', b'fixed-audio')
-    ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', plan())})
+    ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', visual_plan())})
     return service, ref, put
 
 
@@ -96,11 +101,11 @@ def fake_render(plan, stage, audio):
     return {'chapters': [{'time': 0, 'title': '信息流动'}], 'duration': 2}
 
 
-def done(media, ref):
+def done(media, ref, quality='medium'):
     until = time.monotonic()+5
     while time.monotonic() < until:
-        value = media.status(**ref, actor='reader')
-        if value and value['status'] != 'generating' and not media.active(media.context(**ref, actor='reader')):
+        value = media.status(**ref, actor='reader', quality=quality)
+        if value and value['status'] != 'generating' and not media.active(media.context(**ref, actor='reader', quality=quality)):
             return value
         time.sleep(.01)
     pytest.fail('worker did not finish')
@@ -204,7 +209,7 @@ def test_revoked_write_during_render_does_not_publish(setup):
 
 def test_audio_permission_checked_on_reopen_and_audio_hash_checked_on_start(setup):
     service, _, put = setup
-    data = plan()
+    data = visual_plan()
     audio = put('voice.wav', b'fixed-audio')
     data.update(audio=audio, cues=[{'start': 0, 'end': 2, 'text': '测试'}])
     data['scenes'][0].update(start=0, end=2)
@@ -266,7 +271,7 @@ def test_cross_instance_slot_cap_and_abandoned_job_retry(setup):
     assert done(media, ref)['status'] == 'ready'
 
 
-@pytest.mark.parametrize('edit', [lambda p: p.update(script='evil'),
+@pytest.mark.parametrize('edit', [
     lambda p: p['nodes'][0].update(x=float('nan')),
     lambda p: p['scenes'][0]['edges'][0].update(to='missing'),
     lambda p: p['scenes'][0].update(speech='a'*501)])
@@ -337,63 +342,42 @@ def test_real_renderer_with_fixed_audio(tmp_path, monkeypatch):
     assert frame(data, data['scenes'][0], .5, .2, fonts).tobytes() == frame(data, data['scenes'][0], .5, 1.4, fonts).tobytes()
 
 
-def test_new_audio_gate_fails_before_output_and_old_ready_remains_readable(setup, monkeypatch):
-    from management_portal import home_explanation_media as module
-    from management_portal.home_explanation_audio import require_audio_provenance
-    service, ref, put = setup
+def test_producer_annotations_do_not_gate_audio_or_ready_media(setup):
+    service, _, put = setup
+    data = visual_plan()
+    data['producer_metadata'] = {'evidence': {'address': 'private/nonexistent', 'sha256': '0'*64}}
+    data['audio_provenance'] = {'address': 'missing-old-report', 'sha256': '0'*64}
+    data['script'] = 'raise Exception("must never execute")'
+    clean = validate(data)
+    assert not {'producer_metadata', 'audio_provenance', 'script'} & clean.keys()
+    ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', data)})
     media = Media(service, fake_render)
     media.start(**ref, actor='reader')
-    done(media, ref)
-    state_path = service.root/'explanation-media'/ref['sha256']/'state.json'
-    state = json.loads(state_path.read_text())
-    state.pop('review', None)
-    state.pop('generation_actor', None)
-    state_path.write_text(json.dumps(state))
-    monkeypatch.setattr(module, 'require_audio_provenance', require_audio_provenance)
-    assert media.start(**ref, actor='reader')['job_id'] == state['job_id']
+    assert done(media, ref)['status'] == 'ready'
     service.writes = False
-    assert media.status(**ref, actor='reader')['review']['status'] == 'not_requested'
     with media.file(**ref, name='video.mp4', actor='reader') as (stream, _, _):
         assert stream.read() == b'movie-content'
-    service.writes = True
-    new = put('new.json', {'schema': 'portal-explanation/v1', 'title': 'new', 'video_plan': put('plan.json', plan())})
-    with pytest.raises(ValueError, match='固定音轨及来源记录'):
-        media.start(**new, actor='reader')
-    assert not (service.root/'explanation-media'/new['sha256']).exists()
-
-
-def test_claimed_provider_provenance_is_not_trusted_receipt(setup, monkeypatch):
-    from management_portal import home_explanation_media as module
-    from management_portal.home_explanation_audio import require_audio_provenance
-    service, _, put = setup
-    monkeypatch.setattr(module, 'require_audio_provenance', require_audio_provenance)
-    data = plan()
-    evidence = put('receipt.json', {'claimed': 'native', 'verified': True})
-    record = {'schema': 'portal-native-audio-provenance/v1', 'provider': 'claimed-provider',
-              'model': 'claimed-model', 'request_id': 'claimed-call', 'audio': data['audio'], 'evidence': evidence}
-    data['audio_provenance'] = put('audio-source.json', record)
-    ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', data)})
-    media = Media(service, fake_render)
-    with pytest.raises(ValueError, match='Invalid speech execution ID'):
-        media.start(**ref, actor='reader')
-    assert not (service.root/'explanation-media').exists()
-    service.denied.add(evidence['address'])
+    service.denied.add(data['audio']['address'])
     with pytest.raises(PermissionError):
-        media.start(**ref, actor='reader')
-    service.denied.clear()
-    record['audio'] = {**data['audio'], 'sha256': '0'*64}
-    data['audio_provenance'] = put('audio-source.json', record)
+        media.status(**ref, actor='reader')
+
+
+def test_missing_fixed_audio_rejected_before_job_creation(setup):
+    service, _, put = setup
+    data = plan()
+    data.pop('audio'); data.pop('cues')
     ref = put('page.json', {'schema': 'portal-explanation/v1', 'video_plan': put('plan.json', data)})
-    with pytest.raises(ValueError, match='固定音轨不符'):
-        media.start(**ref, actor='reader')
+    with pytest.raises(ValueError, match='固定音轨'):
+        Media(service, fake_render).start(**ref, actor='reader', quality='low')
+    assert not (service.root/'explanation-media').exists()
 
 
-def test_renderer_never_invokes_tts_without_audio(tmp_path, monkeypatch):
+def test_renderer_requires_fixed_audio(tmp_path, monkeypatch):
     from management_portal import home_explanation_render as module
     monkeypatch.setattr(module, 'capabilities', lambda: pytest.fail('No media tool may run before audio exists'))
     output = tmp_path/'render'
     output.mkdir()
-    with pytest.raises(ValueError, match='正式语音服务音轨'):
+    with pytest.raises(ValueError, match='固定音轨文件'):
         module.render(validate(plan()), output)
     assert list(output.iterdir()) == []
 
@@ -402,23 +386,23 @@ def test_auto_review_failure_retry_and_delivery_dedup(setup, monkeypatch):
     from management_portal import home_explanation_media as module
     service, ref, _ = setup
     calls = []
-    def submission(ctx, state, actor, reviewer):
-        calls.append((actor, reviewer, state['job_id']))
+    def submission(self, subject, actor):
+        calls.append((actor, subject['ref'], subject['digest']))
         if len(calls) == 1:
             raise PermissionError('private permission details')
-        return 'msg_review_committed'
-    monkeypatch.setattr(module.review, 'submit', submission)
+        return {'status': 'submitted', 'requested_by': actor, 'message_id': 'msg_review_committed'}
+    monkeypatch.setattr(module.review.ReviewService, 'submit', submission)
     media = Media(service, fake_render)
-    media.start(**ref, actor='reader')
-    state = done(media, ref)
+    media.start(**ref, actor='reader', quality='high')
+    state = done(media, ref, quality='high')
     assert state['status'] == 'ready' and state['review']['status'] == 'submission_failed'
     assert 'private' not in state['review']['error']
     assert state['review']['requested_by'] == 'reader'
-    receipt = media.retry_review(**ref, actor='reader')
+    receipt = media.retry_review(**ref, actor='reader', quality='high')
     assert receipt['status'] == 'ready' and receipt['review']['status'] == 'submitted'
     assert receipt['review']['message_id'] == 'msg_review_committed'
     assert calls[0] == calls[1]
-    media.retry_review(**ref, actor='reader')
+    media.retry_review(**ref, actor='reader', quality='high')
     assert len(calls) == 2
     assert 'passed' not in receipt['review'].values()
 
@@ -429,19 +413,19 @@ def test_review_revocation_does_not_fail_ready_media(setup, monkeypatch):
     def revoked(*args):
         service.writes = False
         raise PermissionError('revoked')
-    monkeypatch.setattr(module.review, 'submit', revoked)
+    monkeypatch.setattr(module.review.ReviewService, 'submit', revoked)
     media = Media(service, fake_render)
-    media.start(**ref, actor='reader')
-    state = done(media, ref)
+    media.start(**ref, actor='reader', quality='high')
+    state = done(media, ref, quality='high')
     assert state['status'] == 'ready'
     assert state['review']['status'] == 'submission_failed'
     with pytest.raises(PermissionError):
-        media.retry_review(**ref, actor='reader')
-    with media.file(**ref, name='video.mp4', actor='reader') as (stream, _, _):
+        media.retry_review(**ref, actor='reader', quality='high')
+    with media.file(**ref, name='video.mp4', actor='reader', quality='high') as (stream, _, _):
         assert stream.read() == b'movie-content'
 
 
-def test_review_discovery_and_instruction_use_actual_actor(monkeypatch):
+def test_review_discovery_and_instruction_use_actual_actor(tmp_path, monkeypatch):
     from management_portal import home_explanation_review as helper
     from management_portal.hatg import routing
     calls = []
@@ -453,18 +437,21 @@ def test_review_discovery_and_instruction_use_actual_actor(monkeypatch):
     monkeypatch.setattr(routing, 'execute_or_raise', execute)
     for actor in ('weihao', 'resident_0123456789ab'):
         reviewer = helper.discover(actor)
-        ctx = {'ref': {'address': RID+'/file/page.json', 'sha256': 'a'*64}, 'root_id': RID,
-               'output': ('explanation-media', 'a'*64), 'plan': plan()}
-        state = {'job_id': 'fixed-job', 'assets': {'video.mp4': {'sha256': 'b'*64}}}
-        assert helper.submit(ctx, state, actor, reviewer) == 'msg_review'
-        key = calls[-1][0].idempotency_key
-        helper.submit(ctx, state, actor, reviewer)
-        assert key == calls[-1][0].idempotency_key
+        from types import SimpleNamespace
+        service = helper.ReviewService(root=tmp_path/actor,
+            resources=SimpleNamespace(resolve=lambda address, **kwargs: {}))
+        subject = {'kind': 'explanation_video', 'ref': RID+'/file/page.json', 'version': 'a'*64,
+                   'digest': 'b'*64, 'quality': 'high', 'author': actor,
+                   'assets': [{'address': RID+'/file/video.mp4', 'sha256': 'b'*64}]}
+        assert service.submit(subject, actor, reviewer)['message_id'] == 'msg_review'
+        count = len(calls)
+        service.submit(subject, actor, reviewer)
+        assert len(calls) == count
         assert calls[-1][1].caller == actor and calls[-1][1].entry == 'web'
         assert 'temporary_credentials' not in calls[-1][0].arguments
         payload = json.loads(calls[-1][0].arguments['message']['content_parts'][0]['text'])
-        assert payload['assets']['video.mp4']['sha256'] == 'b'*64
-        assert payload['requested_by'] == actor
+        assert payload['subject']['assets'][0]['sha256'] == 'b'*64
+        assert payload['subject']['author'] == actor
     for results in ([], [{'resident_id': 'resident_aaaaaaaaaaaa', 'title': helper.TITLE, 'can_send': True}]*2):
         with pytest.raises(ValueError):
             helper.discover('weihao', call=lambda *args: {'residents': results})
@@ -476,13 +463,13 @@ def test_http_review_endpoint_passes_authenticated_actor(monkeypatch):
     from management_portal import home_explanation_http as http
     calls = []
     class Backend:
-        def retry_review(self, address, sha256, actor):
-            calls.append((address, sha256, actor))
+        def retry_review(self, address, sha256, actor, quality):
+            calls.append((address, sha256, actor, quality))
             return {'status': 'ready', 'review': {'status': 'submission_failed'}}
     monkeypatch.setattr(http, 'Media', Backend)
     monkeypatch.setattr(http.http_request_body, '_read_bounded_json_object',
                         lambda *a, **kw: {'address': 'fixed', 'sha256': 'hash', 'actor': 'forged'})
     monkeypatch.setattr(http.http_responses, '_serve_json', lambda request, code, value: (code, value))
     code, body = http._review(object(), None, 'resident_0123456789ab')
-    assert calls == [('fixed', 'hash', 'resident_0123456789ab')]
+    assert calls == [('fixed', 'hash', 'resident_0123456789ab', 'medium')]
     assert code == 200 and body['media']['review']['status'] == 'submission_failed'

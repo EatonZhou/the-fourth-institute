@@ -7,8 +7,7 @@ import unittest
 from pathlib import Path
 
 from management_portal.home_report import build_report, normalize_target, reauthorize
-from management_portal.home_report_media import MediaStore, chapters, spoken_text
-from management_portal.media_tools import speech_units
+from management_portal.home_report_media import MediaStore, chapters, caption_text
 from management_portal.http_media_range import parse_byte_range
 
 RESIDENT = "resident_0123456789ab"
@@ -69,7 +68,7 @@ class HomeReportTests(unittest.TestCase):
         def render(snapshot, directory):
             attempts.append(1)
             release.wait(2)
-            if len(attempts) == 1: raise RuntimeError("speech unavailable")
+            if len(attempts) == 1: raise RuntimeError("encoder unavailable")
             return {"duration": 1, "generation_seconds": 0.01}
         with tempfile.TemporaryDirectory() as folder:
             store = MediaStore(folder, renderer=render)
@@ -130,13 +129,13 @@ class HomeReportTests(unittest.TestCase):
 
 
 class HomeReportSpeechTests(unittest.TestCase):
-    def test_speech_omits_identifiers_and_addresses_without_changing_sources(self):
+    def test_captions_omits_identifiers_and_addresses_without_changing_sources(self):
         report = {'target': {'kind': 'task'}, 'goal': 'decision_0123456789ab 的开场介绍',
                   'rows': [{'id':'original-id', 'title':'关系说明', 'status':'已有回复',
                             'body':'依据 decision_0123456789ab（workspace_0123456789ab/file/a.json）。[完整说明](https://example.test/a)已经更新。。',
                             'next':'核对 /opt/tfi/data/report.json。'}]}
         before = json.dumps(report)
-        speech = spoken_text(report['rows'][0]['body']) + spoken_text(report['rows'][0]['next'])
+        speech = caption_text(report['rows'][0]['body']) + caption_text(report['rows'][0]['next'])
         self.assertNotIn('0123456789ab', speech)
         self.assertNotIn('https', speech)
         self.assertNotIn('/opt/', speech)
@@ -144,12 +143,11 @@ class HomeReportSpeechTests(unittest.TestCase):
         self.assertIn('完整说明已经更新。', speech)
         self.assertEqual(before, json.dumps(report))
 
-    def test_speech_uses_complete_clauses_and_does_not_split_words(self):
-        self.assertEqual(spoken_text('先显示文字。然后结合 Portal 实现逐项说明。', 14), '先显示文字。')
-        self.assertEqual(spoken_text('完成第一项，再结合 Portal 显示下一项。', 11), '完成第一项。')
-        self.assertEqual(spoken_text('PortalMechanism', 6), '完整内容请阅读文字报告。')
-        self.assertIn('1.5 秒', spoken_text('生成用时 1.5 秒。。'))
-        self.assertEqual(speech_units('继续研究 PortalMechanism，再确认。'), ['继续研究 PortalMechanism，', '再确认。'])
+    def test_captions_uses_complete_clauses_and_does_not_split_words(self):
+        self.assertEqual(caption_text('先显示文字。然后结合 Portal 实现逐项说明。', 14), '先显示文字。')
+        self.assertEqual(caption_text('完成第一项，再结合 Portal 显示下一项。', 11), '完成第一项。')
+        self.assertEqual(caption_text('PortalMechanism', 6), '完整内容请阅读文字报告。')
+        self.assertIn('1.5 秒', caption_text('生成用时 1.5 秒。。'))
 
     def test_opening_starts_with_real_relation(self):
         rows = [dict(id=id, title=title, status='待核实',body='原始说明。',sources=['s']) for id,title in [('a','反例研究'),('b','判断依据')]]

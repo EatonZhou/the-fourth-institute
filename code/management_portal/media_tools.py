@@ -4,7 +4,6 @@ The bundle location and TFI_HOME_REPORT_* settings are existing deployment
 contracts. Resolving or running tools never imports a presentation feature.
 """
 import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -27,7 +26,7 @@ def executable(name, setting):
 def capabilities():
     missing = []
     result = {}
-    for key, name, setting in (("ffmpeg", "ffmpeg", "TFI_HOME_REPORT_FFMPEG"), ("speech", "espeak-ng", "TFI_HOME_REPORT_ESPEAK")):
+    for key, name, setting in (("ffmpeg", "ffmpeg", "TFI_HOME_REPORT_FFMPEG"),):
         try:
             result[key] = executable(name, setting)
         except RuntimeError:
@@ -43,16 +42,10 @@ def run(args, **kwargs):
     if Path(args[0]).parent == directory() / 'bin':
         env = dict(os.environ)
         env['LD_LIBRARY_PATH'] = str(directory() / 'lib')
-        env['ESPEAK_DATA_PATH'] = str(directory() / 'share')
         kwargs['env'] = env
     result = subprocess.run(args, stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, timeout=180, **kwargs)
     if result.returncode:
         raise RuntimeError(f"媒体工具退出 {result.returncode}: {result.stderr.decode(errors='replace')[-600:]}")
-
-
-def speech_units(value):
-    # Punctuation is a natural speech/caption boundary. Keep words intact.
-    return re.findall(r"[^。！？，,；;：:]+[。！？，,；;：:]?", value)
 
 
 def stamp(seconds):

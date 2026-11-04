@@ -489,7 +489,7 @@ def prepare_audio(audio, directory, ffmpeg):
 def render(plan, directory, audio=None):
     from PIL import ImageFont
     if audio is None:
-        raise ValueError('视频需要已验证的正式语音服务音轨；不支持本地配音回退')
+        raise ValueError('视频需要固定音轨文件')
     tools = capabilities()
     needed = [key for key in ('ffmpeg', 'font') if not tools.get(key)]
     if needed:
@@ -500,13 +500,17 @@ def render(plan, directory, audio=None):
     cues = plan['cues']
     if scenes[-1]['end'] > duration+.05 or cues[-1]['end'] > duration+.05:
         raise ValueError('字幕或阶段时间超出实际音轨')
-    voice = '固定音轨；实际云服务与模型以正式语音执行回执为准'
+    voice = '固定音轨文件'
     captions = 'WEBVTT\n\n' + '\n\n'.join(f"{stamp(c['start'])} --> {stamp(c['end'])}\n{c['text'].replace('-->', '→')}" for c in cues)
     (directory/'captions.vtt').write_text(captions, encoding='utf-8')
     (directory/'transcript.txt').write_text('\n\n'.join(s['speech'] for s in scenes), encoding='utf-8')
     size = (1280, 720) if any('visual' in s for s in scenes) else (960, 540)
+    # Better temporal continuity supports authored transformations; it is not a
+    # substitute for the independent high-quality content verdict.
+    fps = 12 if plan.get('_quality', 'medium') == 'low' else 24
+    crf = '24' if fps == 12 else '20'
     args = [tools['ffmpeg'], '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{size[0]}x{size[1]}',
-            '-r', '12', '-i', 'pipe:0', '-i', str(wav_path), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '24',
+            '-r', str(fps), '-i', 'pipe:0', '-i', str(wav_path), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', crf,
             '-pix_fmt', 'yuv420p', '-threads', '2', '-c:a', 'aac', '-shortest', '-movflags', '+faststart',
             '-fs', str(128*1024*1024), str(directory/'video.mp4')]
     with (directory/'encoding.log').open('wb') as log:
@@ -515,8 +519,8 @@ def render(plan, directory, audio=None):
         timer.start()
         try:
             prepared_scene, prepared = None, None
-            for index in range(math.ceil(duration*12)):
-                at = index/12
+            for index in range(math.ceil(duration*fps)):
+                at = index/fps
                 scene = next((s for s in scenes if at < s['end']), scenes[-1])
                 progress = min(1, max(0, (at-scene['start'])/max(.01, scene['end']-scene['start'])))
                 if scene is not prepared_scene:
@@ -524,7 +528,7 @@ def render(plan, directory, audio=None):
                 image = frame(plan, scene, progress, at, fonts, prepared)
                 if image.size != size:
                     image = image.resize(size)
-                if index == 12:
+                if index == fps:
                     image.save(directory/'poster.png')
                 process.stdin.write(image.tobytes())
             process.stdin.close()

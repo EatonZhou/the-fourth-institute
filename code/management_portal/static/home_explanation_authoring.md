@@ -2,6 +2,12 @@
 
 解释页帮助读者形成可操作的理解：能说清关键关系，能预测改变一个条件之后会发生什么，也能查到支撑结论的材料。页面的复杂度由理解任务决定。一个清楚的图、一张简洁的表或一段短文足以回答问题时，应当停在那里。
 
+## 主动性与本次质量
+
+先消费 Portal 为本次输入提供的有效 `reporting` 策略，Home 提交时的设置快照只提供入口上下文，不能覆盖服务端策略。`initiative=off` 不主动另做汇报，仍完成用户明确要求的成果；low 只在重要成果、风险或决策需要时考虑，medium 按信息增量与理解收益判断，high 更积极判断机会，仍不要求每轮生成。普通回答和业务最终交付不自动变成额外汇报。设置读取失败须保留失败，不能声称用户配置了默认值。
+
+报告质量 low 使用清晰的 Markdown，medium 使用现有交互网页模板，high 按下述参考标准创作并交另一名 Resident 实际审查。low/medium 不强制独立审核。简单任务仍可用简单表达，高质量不以页面复杂或动画数量衡量。首次生成显式记录质量，质量与成果固定版本绑定；更改质量或内容产生新版本，原消息和历史继续读取原版。视频按钮单独选择质量：low 自由选择表达方式，medium 加强 3Blue1Brown 风格的讲解指导，high 还必须完成独立成片审查与修改后复审。不同质量不能复用同一个 ready 结果。
+
 ## 三个参照，学习表达方法
 
 | 参照 | 值得迁移的表达方法 | 适用的理解任务 |
@@ -49,11 +55,11 @@
 
 先完成一段可播放样稿，再展开全片。分镜估时仅用于创作；拿到真实音轨后再确定字幕、语义事件与阅读停顿。暂停时仍能看清当前输入、操作与结果。时长超出上限时缩减不必要内容或拆章，不机械加速旁白。视频在右侧窄栏和全屏都应能读清关键关系；密集细节使用局部放大，并在图文区域提供可核对的数值或推导。
 
-配音可使用部署为Resident选装的云语音工具。edge-tts不是Portal核心依赖，不提供专用HATG指令；未安装或云服务不可用不影响Portal正常使用，只影响相应配音任务。用户指定的 [AI Society 宣传动画制作源](/r/workspace_6424a63b9629/file/ai_society_film/prepare_audio.py) 使用 edge-tts 调用微软云语音，英文男声 en-US-GuyNeural；[中文版制作源](/r/workspace_6424a63b9629/file/ai_society_film/institute_v9.py) 的配置为 zh-CN-YunxiNeural。该方式属于云端生成，来源应如实记录为微软云语音，不能标为 Codex 原生。语言、音色与节奏依题材选择；沿用按真实逐句音轨编排镜头、留出阅读与呼吸空间、检查响度和字幕同步的制作方法，不机械套固定语速。
+音轨由作者使用外部扩展工具或其他已授权制作方式准备；Portal不安装、调用或管理配音服务。音色、语言与节奏依题材选择，制作方法遵守用户要求。按真实音轨编排镜头、留出阅读与呼吸空间、检查响度和字幕同步，不机械套固定语速。工具不可用只影响相应创作任务。
 
 保存实际服务、模型或音色、生成回执与音轨摘要；字幕、镜头按真实音轨时间对齐。会话工具未暴露能力时先核对已有正式能力和成功案例，再报告精确缺口；禁止回退本地 TTS 或把作者声明当调用证明。旧成果保留原始来源与版本，不给旧音轨补写虚假证明。
 
-生成后的成片由独立视频检查 Resident 检查，页面检查结论不能替代视频质量结论。检查完整解释路径与关键帧、数值和视觉含义、镜头连续性、字幕与旁白时序，并在具备听辨能力时实际听声音。无法听辨时应写清音质未验。检查要绑定成片及字幕的实际 SHA；可播放、编码完成或任务已受理均不表示内容质量通过。
+high 质量的成片由独立视频检查 Resident 检查，页面检查结论不能替代视频质量结论。检查完整解释路径与关键帧、数值和视觉含义、镜头连续性、字幕与旁白时序，并在具备听辨能力时实际听声音。无法听辨时应写清音质未验。检查要绑定成片及字幕的实际 SHA；可播放、编码完成或任务已受理均不表示内容质量通过。low/medium 不自动送独立审查，作者仍须检查实际成果。
 
 内容包只提供经验证的声明式生成计划与资源引用。服务端不可执行生成页面中的任意 Python、Shell 或 JavaScript。
 
@@ -67,7 +73,7 @@
 
 ## 独立 Resident 的检查方式
 
-独立检查在生成内容完成后读取固定版本、实际打开页面并操作。检查范围按理解任务确定；若只有一段短说明，检验其准确、清楚、完整即可。视频未被用户要求生成时，不把缺少视频判为失败。
+high 质量的独立检查在生成内容完成后读取固定版本、实际打开页面并操作，检查者不能是作者本人。检查范围按理解任务确定；若只有一段短说明，检验其准确、清楚、完整即可。视频未被用户要求生成时，不把缺少视频判为失败。
 
 检查者要回答：
 
@@ -85,7 +91,7 @@
 2. 确定图形的语义和最有价值的操作，先把计算与数据核对正确。
 3. 制作正文与互动图，让同一对象在不同视图中保持一致。
 4. 保存固定成果；视频按用户点击后的请求生成。
-5. 独立检查者真实操作并给出修改意见；作者修复并回读最终版本。
+5. high 质量由独立检查者真实操作并给出修改意见；作者修复成新固定版后再审，并回读匹配当前版本的结论。修改使旧版的通过结论对新版失效。缺权限、取消、生成失败或验证条件不足如实保留，不自动降级、不用无限重试掩盖阻塞。
 
 本目录的注意力模型、视频渲染脚本和交互页演示了这个顺序。它们不是其他主题的固定界面：面对地理、流程、设计比较、财务估计或日程，作者应重新选择适合对象的图形、计算和操作。
 ## 固定解释包与实际生成入口
@@ -100,6 +106,7 @@
   "title": "解释主题",
   "summary": "读者将理解的关系",
   "revision": 1,
+  "quality": "medium",
   "interaction": {"address": "workspace_ID/file/包目录/interaction.html", "sha256": "实际64位SHA256", "title": "互动图解"},
   "supplement": {"address": "workspace_ID/file/包目录/supplement.md", "sha256": "实际64位SHA256"},
   "video_plan": {"address": "workspace_ID/file/包目录/generation-plan.json", "sha256": "实际64位SHA256"},
@@ -107,17 +114,17 @@
 }
 ```
 
-只保留实际有用的模块。引用也可包含已生成的 `video`，其中 `address/sha256` 指向 MP4，`captions` 与 `transcript` 各带地址和摘要，`chapters` 为 `[{time:秒,title}]`。普通 HTML 文件在 Preview 中仍是代码；解释包的 interaction 才进入隔离宿主。自包含 HTML 内联样式、脚本、数据和所需库，禁止远程依赖及父页面访问。大型图按需更新，不维持无用动画。
+只保留实际有用的模块。`quality` 为 low、medium 或 high，构建器默认 medium；low 包只保留 Markdown supplement，直接文件也可用 Preview 打开。引用也可包含已生成的 `video`，其中 `address/sha256` 指向 MP4，`captions` 与 `transcript` 各带地址和摘要，`chapters` 为 `[{time:秒,title}]`。普通 HTML 文件在 Preview 中仍是代码；解释包的 interaction 才进入隔离宿主。自包含 HTML 内联样式、脚本、数据和所需库，禁止远程依赖及父页面访问。大型图按需更新，不维持无用动画。
 
-视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、audio_provenance、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
+视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
-audio 为同包原始 MP3 或 PCM16 WAV 的正式 address/sha256。audio_provenance 是同包固定 JSON 的 address/sha256；新工具使用 `portal-audio-provenance/v1`，包含实际 provider、model、request_id（工具 run_id），以及 audio 与 evidence 的固定 address/sha256。evidence 指向 `resident-tool-audio/v1` 工具运行记录，audio 必须与计划完全一致。Portal 检查当前主体的读取权限、摘要和记录一致性；工具报告是来源材料，其可信度依据实际执行与独立检查，不是 Portal 或厂商签名。已有 `portal-native-audio-provenance/v1` 音轨保留原 Portal execution ID，通过历史回执与原上传权限/SHA只读核验；不再以专用 ISA 创建语音，也不把旧包改标为新工具成果。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。缺少配音工具仅阻止需要新增音轨的任务，已有图文与 ready 视频继续按原权限读取。
+audio 为同包固定 MP3 或 PCM16 WAV 的正式 address/sha256。Portal只检查当前主体的读取权限、固定摘要和媒体格式，不要求特定合成工具、模型、生成任务ID或语音回执。外部制作记录可作为普通创作附件保留，由作者与检查者核实；计划顶层的创作注释不参与渲染，也不会由Portal读取或执行。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。已有音轨、附件与 ready 视频保持原件，继续按普通资源权限读取。
 
-句内有多个因果动作时，选择工具支持的 WordBoundary。把实际提交原文、原始音轨和边界记录一起固定：音轨 SHA 对应边界的 source_audio_sha256，UTF-8 原文 SHA 对应 input_sha256。100ns tick 除以 10,000,000 得秒；input_start/input_end 是 Unicode 码点的左闭右开位置，JavaScript 先用 Array.from 切分。按顺序核对词文本及偏移，未匹配时停止自动关联，不跳到后面的同名词猜测。事件保留边界索引、触发词与原文位置，cue 用首末真实词边界合并；不把字符比例、旧音轨或估时混进新版本。来源绑定证明时序从何而来；可读停顿和音质仍需连续观看及具备能力时的听辨。求和、缩放等不同推理步骤应各有清楚的语言和阅读时间。
+句内有多个因果动作时，依据固定音轨实际内容安排事件与字幕时间。没有真实对齐依据时保留未对齐，不按字符比例、旧音轨或估时编造新时序。可读停顿和音质仍需连续观看及具备能力时的听辨；求和、缩放等不同推理步骤应各有清楚的语言和阅读时间。
 
-计划、音轨、来源记录及其调用证据必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，遵循同一 Workspace 的访问与删除规则。
+计划、音轨、来源记录及其调用证据必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；medium 结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，low/high 使用 `<manifestSHA>-<quality>/`，遵循同一 Workspace 的访问与删除规则。媒体读取、生成和重试均显式带视频 quality，不能把其他质量的成片当成本次结果。
 
-新视频保存完成后，服务按实际生成 actor 查找唯一、可投递的“讲解视频独立检查” Resident，并发送固定 manifest、视频、字幕、讲稿及来源引用。检查员使用自身权限。媒体的 review.status 分为 not_requested、pending、submitted、submission_failed；submitted 表示任务已投递，质量结论需回读检查员报告。页面提供独立检查重试按钮，对应 `POST /api/home-explanation/media/review`，仅提交 `{address,sha256}`，按原请求 actor 重试；保留播放器、不重编码。旧视频默认 not_requested，GET、刷新和重开不自动投递。
+high 视频保存完成后，服务按实际生成 actor 查找唯一、可投递的“讲解视频独立检查” Resident，并发送固定 manifest、视频、字幕、讲稿及来源引用。检查员使用自身权限。`submitted` 表示任务已投递，只有固定版本的正式审核记录为 `passed` 才表示通过。`changes_requested` 要求作者另存修订后重审；`blocked`、`cancelled`、`submission_failed` 保留真实原因，不自动降级。low/medium 不要求独立送审。页面的独立检查重试对应 `POST /api/home-explanation/media/review`，提交 `{address,sha256,quality}`，按原请求 actor 重试，保留播放器、不重编码；送检重试有上限。GET、刷新和重开不自动投递。
 
 常用构建入口（占位值需替换为自己正式绑定与文件）：
 
@@ -126,10 +133,10 @@ python3 scripts/build_explanation_package.py '<包目录>' \
   --address 'workspace_ID/file/<包目录>' --title '<主题>' \
   --interaction interaction.html --supplement supplement.md \
   --video-plan generation-plan.json --resident-id '<自己的ResidentID>' \
-  --task '<读者当前困惑、读完能判断什么>'
+  --quality high --task '<读者当前困惑、读完能判断什么>'
 ```
 
-构建器核对文件、生成固定摘要清单，再经当前作者身份的 HATG ReadResource 回读，自动触发独立检查。它用 SearchResidents 发现唯一可投递的“解释页独立检查”；也可用 `--reviewer` 指定已正式查得的检查 Resident。检查者不能是作者本人。不直接读取别人的凭据，也不代签通过。
+构建器核对文件、生成固定摘要清单，再经当前作者身份的 HATG ReadResource 回读；显式选择 high 时触发独立检查，low/medium 不强制送审。它用 SearchResidents 发现唯一可投递的“解释页独立检查”；也可用 `--reviewer` 指定已正式查得的检查 Resident。检查者不能是作者本人。不直接读取别人的凭据，也不代签通过。
 
 已有作者工具生成的清单，或提交中断后的同版重试，使用：
 
@@ -141,7 +148,9 @@ python3 scripts/submit_explanation_review.py --resident-id '<自己的ResidentID
 
 相同作者、检查者、清单地址和 SHA 使用同一幂等提交键，不重复投递检查。回执 `submitted` 仅表明受理；检查者以自己的权限读取并真实操作，报告保存其 Workspace。作者读取该报告，核对清单地址和 SHA，再修复被指出的问题、生成新固定版并只复验受影响路径。检查者无法读取或打开时记录 blocked 及精确缺口，不改 ACL 来冒充通过。未完成检查的页面可以明确作为待检查预览，不得称已经验收。
 
-生成链路必须走上述提交步骤；手写清单也要送检。不要在打开历史、刷新页面或普通读取时重复触发检查。独立检查与产品正式 User TAU 分开，不能代替真实门面对话验证。
+用同一脚本 `--read '<review_id>'` 回读正式结论，原请求者可用 `--cancel '<review_id>'` 取消。独立审核者以自己的 `--resident-id` 加 `--verdict-file '<结论JSON路径>'` 提交：JSON 含 `review_id`、当前固定 `digest`、`status`（passed/changes_requested/blocked）、`evidence:[{address,sha256}]` 和可操作的 `feedback`。服务验证实际鉴权主体必须为该请求的审核者，不能是作者或请求者；通过必须有真实检查证据。该脚本通过同源 `/api/home-explanation/reviews` 读取或提交，`/verdict` 记录结论，`/cancel` 取消。请求已受理和作者写的通过声明均不替代此记录。
+
+high 质量生成链路须完成上述独立检查，手写 high 清单也要送检。不要在打开历史、刷新页面或普通读取时重复触发检查。独立检查与产品正式 User TAU 分开，不能代替真实门面对话验证。
 
 打开动作仍使用本次 Home request_id 的 `portal-home-display/v1`，`view:explanation` 与 `target:{address,sha256}`。正文只展示读者需要的结论、页面入口和真实检查状态；不把内部协议当作品。固定展示、未保存草稿、手动选择和迟到保护仍由 Home 宿主管理。
 

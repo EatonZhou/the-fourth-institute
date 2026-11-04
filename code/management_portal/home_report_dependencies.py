@@ -1,7 +1,7 @@
 """Build/install a verified offline media bundle for Ubuntu 24 x86_64.
 
 Prepare before Web starts. No global install, activation or network download.
-The bundle contains tools, speech data, non-glibc shared libraries and CJK font.
+The bundle contains a video encoder and CJK font.
 Pass the delivered bundle SHA256 when installing on another code checkout.
 """
 import argparse
@@ -9,7 +9,6 @@ import hashlib
 import json
 import platform
 import shutil
-import subprocess
 import tarfile
 import tempfile
 from pathlib import Path
@@ -32,21 +31,10 @@ def build(tools, bundle):
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         (root/'bin').mkdir(); (root/'lib').mkdir(); (root/'share').mkdir()
-        speech = tools/'espeak/usr/bin/espeak-ng'
-        shutil.copy2(speech, root/'bin/espeak-ng')
         shutil.copy2(tools/'imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v9.0.2', root/'bin/ffmpeg')
-        # Pin transitive dependencies from the tested Ubuntu installation.
-        libs = subprocess.check_output(['ldd', str(speech)], text=True)
-        for line in libs.splitlines():
-            if '=>' not in line: continue
-            name, resolved = line.split('=>', 1)
-            path = Path(resolved.strip().split()[0])
-            if name.strip() not in {'libc.so.6','libm.so.6'} and path.is_file():
-                shutil.copy2(path, root/'lib'/name.strip())
-        shutil.copytree('/usr/lib/x86_64-linux-gnu/espeak-ng-data', root/'share/espeak-ng-data')
         shutil.copy2('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc', root/'share/font.ttc')
         files = {str(p.relative_to(root)): sha(p) for p in root.rglob('*') if p.is_file()}
-        (root/'manifest.json').write_text(json.dumps({'platform':'linux/x86_64','glibc_min':'2.39', 'versions':{'ffmpeg':'9.0.2 imageio build','espeak-ng':'1.51 Ubuntu noble'},'files':files},indent=2))
+        (root/'manifest.json').write_text(json.dumps({'platform':'linux/x86_64','glibc_min':'2.39', 'versions':{'ffmpeg':'9.0.2 imageio build'},'files':files},indent=2))
         with tarfile.open(bundle,'w:gz') as archive:
             for child in root.iterdir(): archive.add(child,arcname=child.name)
     return sha(bundle)

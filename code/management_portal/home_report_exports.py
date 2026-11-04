@@ -7,11 +7,17 @@ from xml.sax.saxutils import escape
 
 def write_exports(report, directory):
     (directory / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    if 'markdown' in report:
+        (directory / 'report.md').write_text(report['markdown'], encoding='utf-8')
+    if report.get('quality') == 'low':
+        return
     e = lambda value: html.escape(str(value or ""))
     sections = [(report["title"], report["goal"])]
     sections += [(row["title"], "\n".join(str(row.get(k) or "") for k in ("status", "body", "detail", "conclusion", "next"))) for row in report["rows"]]
     sources = "\n".join(f'{s["label"]}: {s.get("address") or s["read"]} · {s["version"]}' for s in report["sources"])
     body = "".join(f"<section><h2>{e(title)}</h2><pre>{e(text)}</pre></section>" for title, text in sections)
+    if report.get('revised_content') or report.get('quality') == 'low':
+        body = '<pre>' + e(report['markdown']) + '</pre>'
     document = '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
     document += '<title>'+e(report["title"])+'</title><style>body{font:17px system-ui;max-width:960px;margin:32px auto;padding:16px;color:#24344b}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}section{border-bottom:1px solid #dce2ef;padding:12px 0}</style>'
     document += f'<p>核对时间 {e(report["checked_at"])} · 快照 {e(report["version"])}</p>' + body

@@ -26,8 +26,8 @@ from management_common import secure_paths
 from management_common.portal_paths import path as portal_path
 from management_portal.home_explanation_plan import validate
 from management_portal.home_explanation_render import render
-from management_portal.home_explanation_audio import require_audio_provenance
 from management_portal import home_explanation_review as review
+from management_portal.home_explanation_quality import quality as normalize_quality, policy, prepare_plan
 
 MAX_BUNDLE = 128 * 1024 * 1024
 FILES = {'video.mp4': 'video/mp4', 'captions.vtt': 'text/vtt; charset=utf-8',
@@ -82,7 +82,8 @@ class Media:
             raise ValueError('内容已变化或超过大小限制，请重新生成解释页引用')
         return data
 
-    def context(self, address, sha256, actor):
+    def context(self, address, sha256, actor, quality='medium'):
+        quality = normalize_quality(quality)
         ref = {'address': address, 'sha256': sha256}
         root_id, parts = pointer(ref)
         manifest = json.loads(self.read(ref, actor))
@@ -105,16 +106,6 @@ class Media:
             if audio_root != root_id or audio_parts[:-1] != parts[:-1]:
                 raise ValueError('视频音轨须与解释页位于同一Workspace内容包目录')
             refs.append(plan['audio'])
-        if plan and plan.get('audio_provenance'):
-            proof_root, proof_parts = pointer(plan['audio_provenance'])
-            if proof_root != root_id or proof_parts[:-1] != parts[:-1]:
-                raise ValueError('音轨来源须位于同一内容包')
-            proof = json.loads(self.read(plan['audio_provenance'], actor))
-            evidence = proof.get('evidence') if isinstance(proof, dict) else None
-            evidence_root, evidence_parts = pointer(evidence)
-            if evidence_root != root_id or evidence_parts[:-1] != parts[:-1]:
-                raise ValueError('音轨调用证据须位于同一内容包')
-            self.read(evidence, actor)
         sources = manifest.get('sources', [])
         if not isinstance(sources, list) or len(sources) > 32:
             raise ValueError('解释页来源列表超过限制')
@@ -128,16 +119,9 @@ class Media:
         record = self.service.get(root_id, actor=actor)
         from management_portal.resources.providers.workspace import _root
         root = _root(record)
-        output = (*parts[:-1], 'explanation-media', sha256)
-        return {'ref': ref, 'root_id': root_id, 'root': root, 'output': output, 'plan': plan,
+        output = (*parts[:-1], 'explanation-media', sha256 if quality == 'medium' else sha256 + '-' + quality)
+        return {'ref': ref, 'root_id': root_id, 'root': root, 'output': output, 'plan': plan, 'quality': quality,
                 'owner_id': record.get('attributes', {}).get('directory', {}).get('owner_id', '')}
-
-    def native_audio(self, ctx, actor):
-        def same_package(ref):
-            root_id, parts = pointer(ref)
-            if root_id != ctx['root_id'] or parts[:-1] != ctx['output'][:-2]:
-                raise ValueError('音轨来源和调用证据须与解释页同包')
-        return require_audio_provenance(ctx['plan'], self.read, same_package, actor)
 
     def writable(self, ctx, actor):
         from management_portal.society_service.lineage_access_policy import workspace_reaches
@@ -158,7 +142,7 @@ class Media:
         if len(data) > 65536:
             raise ValueError('媒体状态无效')
         state = json.loads(data)
-        if state.get('manifest_sha256') != ctx['ref']['sha256']:
+        if state.get('manifest_sha256') != ctx['ref']['sha256'] or state.get('quality', 'medium') != ctx['quality']:
             raise ValueError('媒体状态与内容版本不符')
         return state
 
@@ -175,29 +159,33 @@ class Media:
             pass
         return False
 
-    def response(self, ctx, state):
+    def response(self, ctx, state, actor=None):
         if state is None:
             return None
         result = {key: state[key] for key in ('status', 'job_id', 'chapters', 'duration', 'voice_note', 'error') if key in state}
+        result.update(quality=ctx['quality'], policy=policy(ctx['quality']))
         if result.get('status') == 'generating' and not self.active(ctx):
             # Re-read is done by status/start under the active lease; the state
             # can only change to ready while the generation lock is held.
             result.update(status='failed', error='上次生成已中断，可以重试。')
         if result.get('status') == 'ready':
-            base = '/api/home-explanation/media/file?' + urlencode(ctx['ref'])
+            base = '/api/home-explanation/media/file?' + urlencode({**ctx['ref'], 'quality': ctx['quality']})
             result.update(video_url=base+'&file=video.mp4', captions_url=base+'&file=captions.vtt',
                           transcript_url=base+'&file=transcript.txt')
             result['review'] = dict(state.get('review') or {'status': 'not_requested'})
             if result['review']['status'] == 'pending' and not self.active(ctx):
                 result['review'].update(status='submission_failed', error='送检未完成，可由原请求者重试。')
+            if result['review'].get('id') and actor:
+                result['review'] = review.ReviewService(resources=self.service).read(result['review']['id'], actor) or result['review']
+            result['quality_met'] = ctx['quality'] != 'high' or result['review'].get('status') == 'passed'
         return result
 
-    def status(self, address, sha256, actor):
-        ctx = self.context(address, sha256, actor)
+    def status(self, address, sha256, actor, quality='medium'):
+        ctx = self.context(address, sha256, actor, quality)
         state = self._state(ctx, actor)
         if state and state['status'] == 'generating' and not self.active(ctx):
             state = self._state(ctx, actor)  # close finish/read race
-        return self.response(ctx, state)
+        return self.response(ctx, state, actor)
 
     def _write(self, ctx, actor, filename, data):
         self.writable(ctx, actor)
@@ -217,8 +205,19 @@ class Media:
                     pass
 
     def _save(self, ctx, actor, state):
-        state = {**state, 'manifest_sha256': ctx['ref']['sha256']}
-        self._write(ctx, actor, 'state.json', json.dumps(state, ensure_ascii=False).encode())
+        state = {**state, 'manifest_sha256': ctx['ref']['sha256'], 'quality': ctx['quality']}
+        self.writable(ctx, actor)
+        with secure_paths.open_directory(ctx['root'], ctx['output'], create=True) as directory:
+            fd = secure_paths.open_child(directory, 'state.lock', os.O_RDWR | os.O_CREAT, 0o600)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX)
+                old = self._state(ctx, actor)
+                if old and old.get('status') == 'cancelled' and old.get('job_id') == state.get('job_id') and state['status'] != 'cancelled':
+                    return False
+                self._write(ctx, actor, 'state.json', json.dumps(state, ensure_ascii=False).encode())
+                return True
+            finally:
+                os.close(fd)
 
     def _lease(self, ctx, actor):
         self.writable(ctx, actor)
@@ -249,32 +248,32 @@ class Media:
                     os.close(fd)
         raise RuntimeError('视频生成繁忙，请稍后重试')
 
-    def start(self, address, sha256, actor):
-        ctx = self.context(address, sha256, actor)
+    def start(self, address, sha256, actor, quality='medium', previous_review_id=None):
+        ctx = self.context(address, sha256, actor, quality)
         self.writable(ctx, actor)
         if ctx['plan'] is None:
             raise ValueError('此解释页没有视频生成计划')
-        # Existing immutable ready versions need no new provenance. New jobs
-        # fail before creating even a lock/output directory if audio is unverified.
         existing = self._state(ctx, actor)
         if existing and existing['status'] == 'ready':
-            return self.response(ctx, existing)
-        self.native_audio(ctx, actor)
+            return self.response(ctx, existing, actor)
+        prepare_plan(ctx['plan'], quality)
+        if not ctx['plan'].get('audio'):
+            raise ValueError('视频需要固定音轨文件')
+        audio = self.read(ctx['plan']['audio'], actor, 64*1024*1024)
         lease = self._lease(ctx, actor)
         if lease is None:
-            return self.status(address, sha256, actor) or {'status': 'generating', 'job_id': sha256}
+            return self.status(address, sha256, actor, quality) or {'status': 'generating', 'job_id': sha256, 'quality': quality}
         slot = None
         try:
             state = self._state(ctx, actor)
             if state and state['status'] == 'ready':
-                return self.response(ctx, state)
+                return self.response(ctx, state, actor)
             if state and state.get('status') == 'failed' and time.time()-state.get('updated_at', 0) < 10:
                 raise ValueError('生成刚刚失败，请十秒后重试')
             slot = self._slot()
             # Validate every source and its hash before accepting a job.
-            audio = self.read(ctx['plan']['audio'], actor, 64*1024*1024)
             state = {'status': 'generating', 'job_id': uuid.uuid4().hex, 'updated_at': time.time(),
-                     'generation_actor': actor}
+                     'generation_actor': actor, 'previous_review_id': previous_review_id}
             self._save(ctx, actor, state)
             thread = threading.Thread(target=self._generate, args=(ctx, actor, state, audio, lease, slot), daemon=True)
             thread.start()
@@ -289,24 +288,26 @@ class Media:
         try:
             with tempfile.TemporaryDirectory(prefix='portal-explanation-') as stage:
                 stage = Path(stage)
-                result = self.renderer(ctx['plan'], stage, audio)
+                result = self.renderer(prepare_plan(ctx['plan'], ctx['quality']), stage, audio)
                 files = {name: stage/name for name in FILES if (stage/name).is_file()}
                 if not {'video.mp4', 'captions.vtt', 'transcript.txt'} <= files.keys() or sum(p.stat().st_size for p in files.values()) > MAX_BUNDLE:
                     raise ValueError('生成结果不完整或超过128MiB限制')
                 # Reauthorize original sources after expensive work; revoked
                 # read/write access cannot publish a completed bundle.
-                self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor)
-                self.native_audio(ctx, actor)
+                self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor, ctx['quality'])
+                self.read(ctx['plan']['audio'], actor, 64*1024*1024)
                 assets = {}
                 for name, path in files.items():
                     data = path.read_bytes()
                     assets[name] = {'sha256': hashlib.sha256(data).hexdigest(), 'size': len(data)}
                     self._write(ctx, actor, name, data)
                 state = {**state, **result, 'assets': assets, 'status': 'ready', 'updated_at': time.time(),
-                         'review': {'status': 'pending', 'requested_by': actor}}
-                self._save(ctx, actor, state)
+                         'review': {'status': 'pending' if ctx['quality'] == 'high' else 'not_required', 'requested_by': actor}}
+                if not self._save(ctx, actor, state):
+                    return
                 self.service.notify_source_changed(resource_id=ctx['root_id'], resource_type='workspace', kind='updated')
-                self._submit_review(ctx, actor, state)
+                if ctx['quality'] == 'high':
+                    self._submit_review(ctx, actor, state)
         except Exception:
             try:
                 self._save(ctx, actor, {**state, 'status': 'failed', 'updated_at': time.time(),
@@ -325,17 +326,18 @@ class Media:
             raise PermissionError('独立检查须由原生成或送检请求者重试')
         pending = {**previous, 'status': 'pending', 'requested_by': actor}
         try:
-            self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor)
+            self.context(ctx['ref']['address'], ctx['ref']['sha256'], actor, ctx['quality'])
             self.writable(ctx, actor)
             for name in state['assets']:
-                with self.file(**ctx['ref'], name=name, actor=actor):
+                with self.file(**ctx['ref'], name=name, actor=actor, quality=ctx['quality']):
                     pass
-            reviewer = review.discover(actor, ctx.get('owner_id', ''), previous.get('reviewer_resident_id', ''))
-            pending['reviewer_resident_id'] = reviewer
-            self._save(ctx, actor, {**state, 'review': pending})
-            message_id = review.submit(ctx, state, actor, reviewer)
-            pending.update(status='submitted', message_id=message_id)
-            pending.pop('error', None)
+            prefix = ctx['root_id'] + '/file/' + '/'.join(ctx['output']) + '/'
+            assets = [{'address': prefix+name, 'sha256': entry['sha256']} for name, entry in sorted(state['assets'].items())]
+            digest = hashlib.sha256(json.dumps(assets, sort_keys=True).encode()).hexdigest()
+            pending = review.ReviewService(resources=self.service).submit({
+                'kind': 'explanation_video', 'ref': ctx['ref']['address'], 'version': ctx['ref']['sha256'],
+                'digest': digest, 'quality': 'high', 'author': ctx.get('owner_id') or state['generation_actor'], 'assets': assets,
+                'task': ctx['plan']['title'], 'previous_review_id': state.get('previous_review_id')}, actor)
         except Exception:
             pending.update(status='submission_failed', error='独立视频检查未提交，请核对检查员与当前权限后重试。')
         updated = {**state, 'review': pending}
@@ -347,26 +349,41 @@ class Media:
             pass
         return updated
 
-    def retry_review(self, address, sha256, actor):
-        ctx = self.context(address, sha256, actor)
+    def retry_review(self, address, sha256, actor, quality='medium'):
+        ctx = self.context(address, sha256, actor, quality)
+        if quality != 'high':
+            raise ValueError('独立审核仅用于high；请选择high生成固定视频')
         self.writable(ctx, actor)
         state = self._state(ctx, actor)
         if not state or state.get('status') != 'ready':
             raise ValueError('视频尚未生成，无法提交独立检查')
         lease = self._lease(ctx, actor)
         if lease is None:
-            return self.status(address, sha256, actor)
+            return self.status(address, sha256, actor, quality)
         try:
             state = self._state(ctx, actor)
-            return self.response(ctx, self._submit_review(ctx, actor, state))
+            return self.response(ctx, self._submit_review(ctx, actor, state), actor)
         finally:
             os.close(lease)
 
+    def cancel(self, address, sha256, actor, quality='medium'):
+        ctx = self.context(address, sha256, actor, quality)
+        state = self._state(ctx, actor)
+        if not state:
+            return None
+        if state.get('generation_actor') != actor:
+            raise PermissionError('仅原请求者可取消生成')
+        if state.get('status') == 'generating':
+            self._save(ctx, actor, {**state, 'status': 'cancelled'})
+        elif state.get('review', {}).get('id'):
+            review.ReviewService(resources=self.service).cancel(state['review']['id'], actor)
+        return self.status(address, sha256, actor, quality)
+
     @contextmanager
-    def file(self, address, sha256, name, actor):
+    def file(self, address, sha256, name, actor, quality='medium'):
         if name not in FILES:
             raise FileNotFoundError('媒体文件不存在')
-        ctx = self.context(address, sha256, actor)
+        ctx = self.context(address, sha256, actor, quality)
         state = self._state(ctx, actor)
         if not state or state['status'] != 'ready' or name not in state.get('assets', {}):
             raise FileNotFoundError('视频尚未生成')

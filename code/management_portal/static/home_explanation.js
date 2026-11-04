@@ -212,7 +212,7 @@
         })(),
       ]);
     }
-    function videoReview(region, review, key) {
+    function videoReview(region, review, key, quality) {
       if (!current(key)) return;
       const area = node("div", null, "homeExplanationVideoReview"); region.append(area);
       const draw = value => {
@@ -225,30 +225,42 @@
           submitted: "视频已提交独立检查，结果待回读。",
           submission_failed: "视频检查暂未提交，已保存的视频仍可播放。",
           not_requested: "视频尚未经过独立检查。",
+          not_required: "此质量档位无需独立审核。",
+          passed: "此固定版本已通过独立审核。",
+          changes_requested: "审核要求修改；请保存新固定版本后重新送审。",
+          blocked: "审核受阻，尚未通过。",
+          cancelled: "审核已取消，尚未通过。",
         };
         const status = node("p", t(labels[state] || labels.not_requested), "homeExplanationMuted");
         status.setAttribute("role", "status"); area.append(status);
-        if (state === "submitted") return;
-        if (state === "pending") {
-          mediaTimer = setTimeout(async () => {
+        if (value?.feedback) area.append(node("p", value.feedback, "homeExplanationMuted"));
+        if (["submitted", "pending"].includes(state)) {
+          area.append(button("刷新审核结果", async () => {
             if (!current(key)) return;
             try {
-              const result = await window.PortalAPI.get(`/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}`, { signal: controller.signal, cache: "no-store" });
+              const result = await window.PortalAPI.get(`/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`, { signal: controller.signal, cache: "no-store" });
               if (current(key)) draw((result?.media === undefined ? result : result.media)?.review);
             } catch (error) {
               if (current(key) && error.name !== "AbortError") {
                 draw({ status: "submission_failed" }); failure(area, error);
               }
             }
-          }, 2500);
+          }));
+          if (value?.id) area.append(button("取消审核", async () => {
+            try {
+              const result = await window.PortalAPI.post("/api/home-explanation/reviews/cancel", { review_id: value.id }, { signal: controller.signal });
+              if (current(key)) draw(result.review);
+            } catch (error) { if (current(key)) failure(area, error); }
+          }));
           return;
         }
+        if (quality !== "high" || ["passed", "changes_requested", "blocked", "cancelled"].includes(state)) return;
         area.append(button(state === "submission_failed" ? "重试视频检查" : "检查视频质量", async () => {
           if (!current(key)) return;
           area.querySelectorAll("button").forEach(el => { el.disabled = true; });
           try {
             const result = await window.PortalAPI.post("/api/home-explanation/media/review", {
-              address: target.address, sha256: target.sha256,
+              address: target.address, sha256: target.sha256, quality,
             }, { signal: controller.signal });
             if (current(key)) draw((result?.media === undefined ? result : result.media)?.review);
           } catch (error) {
@@ -264,35 +276,50 @@
       // Reading a plan only verifies provenance. A POST requires a button click.
       await read(plan, limits.text, key);
       const content = node("div", null, "homeExplanationMediaState"); region.append(content);
-      const endpoint = `/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}`;
-      let busy = false;
+      const controls = node("label", t("视频质量"), "homeExplanationQuality");
+      const select = node("select"); select.setAttribute("aria-label", t("视频质量"));
+      for (const [value, label] of [["low", "低 · 自由发挥"], ["medium", "中 · 3b1b式讲解"], ["high", "高 · 独立审核"]]) {
+        const option = node("option", t(label)); option.value = value; select.append(option);
+      }
+      select.value = ["low", "medium", "high"].includes(manifest?.quality) ? manifest.quality : "medium";
+      controls.append(select); region.insertBefore(controls, content);
+      let busy = false, attempts = 0;
+      select.onchange = () => { attempts = 0; clearTimeout(mediaTimer); void fetchState(); };
       async function fetchState(generate = false) {
         if (!current(key) || busy) return;
-        busy = true; clearTimeout(mediaTimer);
+        busy = true; select.disabled = true; clearTimeout(mediaTimer);
+        const quality = select.value;
+        const endpoint = `/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`;
         content.querySelectorAll("button").forEach(el => { el.disabled = true; });
         try {
           const result = generate
-            ? await window.PortalAPI.post("/api/home-explanation/media", { address: target.address, sha256: target.sha256 }, { signal: controller.signal })
+            ? await window.PortalAPI.post("/api/home-explanation/media", { address: target.address, sha256: target.sha256, quality }, { signal: controller.signal })
             : await window.PortalAPI.get(endpoint, { signal: controller.signal, cache: "no-store" });
           if (!current(key)) return;
           const media = result?.media === undefined ? result : result.media;
           content.replaceChildren();
           if (media?.status === "ready") {
             await renderVideo(content, media, key, true);
-            if (current(key)) videoReview(content, media.review, key);
+            if (current(key)) videoReview(content, media.review, key, quality);
           } else if (media?.status === "generating") {
             const progress = node("p", t("讲解视频正在生成，可以先探索交互和图文。"), "homeExplanationMuted"); progress.setAttribute("role", "status");
             content.append(progress);
-            mediaTimer = setTimeout(() => { void fetchState(); }, 2500);
+            if (++attempts < 120) mediaTimer = setTimeout(() => { void fetchState(); }, 2500);
+            else content.append(button("刷新生成状态", () => { attempts = 0; void fetchState(); }));
+            content.append(button("取消生成", async () => {
+              clearTimeout(mediaTimer);
+              try { await window.PortalAPI.post("/api/home-explanation/media/cancel", { ...target, quality }, { signal: controller.signal }); if (current(key)) void fetchState(); }
+              catch (error) { if (current(key)) failure(content, error); }
+            }));
           } else {
-            content.append(node("p", media?.error || t("需要连续讲解时，可以生成带字幕的视频。"), "homeExplanationMuted"));
+            content.append(node("p", media?.error || t(media?.status === "cancelled" ? "视频生成已取消。" : "需要连续讲解时，可以生成带字幕的视频。"), "homeExplanationMuted"));
             content.append(button(media?.status === "failed" ? "重试生成视频" : "生成讲解视频", () => { void fetchState(true); }));
           }
         } catch (error) {
           if (current(key) && error.name !== "AbortError") {
             content.replaceChildren(); failure(content, error, () => fetchState(false));
           }
-        } finally { busy = false; }
+        } finally { busy = false; select.disabled = false; }
       }
       await fetchState();
     }
