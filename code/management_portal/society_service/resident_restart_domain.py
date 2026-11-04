@@ -515,8 +515,6 @@ def restart_resident_session(
         raise ValueError("active_execution_policy 必须是 wait 或 cancel")
     restart_target = _restart_target(body, source, source_provider, target_provider)
     use_credits = resident_session_credits.validate_consent(body, actor_id, restart_target)
-    if use_credits:
-        resident_session_credits.account_open_quota(restart_target.account, use_credits=True)
     if operation == "switch_account" and restart_target.same_route:
         return _unchanged_restart(resident_id, operation, source_binding)
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
@@ -1010,8 +1008,8 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
     quota_override: dict[str, Any] = {}
     quota_admission: dict[str, Any] = {}
     authorization = resident_session_credits.authorization(restart)
-    if restart.target.account.get("quota_protection_enabled") is True:
-        quota_admission = resident_session_credits.account_open_quota(restart.target.account, use_credits=bool(authorization))
+    if authorization:
+        quota_admission = resident_session_credits.account_open_quota(restart.target.account)
         quota_override = {
             "binding_id": prepared_binding_id,
             "revision": 1,

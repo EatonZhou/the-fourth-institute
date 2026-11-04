@@ -1,6 +1,4 @@
 """:importance: P2"""
-from management_portal.society_service.domain_ports import execution_port
-from management_portal.society_service import resident_restart_domain
 import time
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -222,18 +220,6 @@ def test_shared_billing_routes_reuse_one_sample(monkeypatch):
     assert calls == ['shared']
 
 
-@pytest.mark.parametrize('remaining,fresh,allowed', [(5, True, True), (0, True, False), (5, False, False)])
-def test_session_open_uses_the_common_remaining_metric(monkeypatch, remaining, fresh, allowed):
-    """打开会话按通用剩余量判断额度，余量为 0 或样本不新鲜时拒绝"""
-    monkeypatch.setattr(execution_port, 'health', lambda: {'scheduler': {'capacity_partitions': {
-        'account:usd': {'quota_reserve': {'status': 'reserved', 'remaining': remaining, 'fresh': fresh,
-                                        'remaining_balance': remaining, 'currency': 'USD'}}}}})
-    if allowed:
-        assert resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'account:usd'})['remaining'] == remaining
-    else:
-        with pytest.raises(ValueError):resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'account:usd'})
-
-
 def test_monitor_keeps_successful_balance_current_without_time_expiry(scheduler, monkeypatch):
     """成功读取的余额不随时间过期，阈值为 0 时账号保持可用"""
     monitor = AccountMonitor(scheduler.accounts, scheduler)
@@ -341,24 +327,3 @@ def test_zero_releases_queued_work_and_does_not_cancel_on_empty_balance(schedule
     # A positive threshold still restores automatic protection.
     configure(scheduler, account, 1, unit)
     assert state(scheduler, account)['automatic_paused']
-
-
-@pytest.mark.parametrize('metric,unit', [('percent', '%'), ('balance', 'USD')])
-def test_session_open_respects_disabled_threshold_without_fresh_positive_quota(monkeypatch, metric, unit):
-    """关闭阈值为 0 时，打开会话不要求新鲜的正余量"""
-    quota = quota_state({'status': 'reserved', 'observed_at': 1}, now=1000,
-        threshold={'metric': metric, 'unit': unit, 'value': 0, 'supported': True})
-    monkeypatch.setattr(execution_port, 'health', lambda: {'scheduler': {'capacity_partitions': {
-        'test': {'quota_reserve': quota}}}})
-    assert resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'test'}) == quota
-
-
-def test_session_open_refuses_a_used_up_account_with_zero_threshold(monkeypatch):
-    """额度已用完的账号即使 Close 阈值为 0 也不能创建新 Session"""
-    quota = quota_state({'status': 'available', 'complete': True, 'observed_at': 1000, 'remaining_percent': 20,
-                         'exhausted': True}, now=1000,
-                        threshold={'metric': 'percent', 'unit': '%', 'value': 0, 'supported': True})
-    monkeypatch.setattr(execution_port, 'health', lambda: {'scheduler': {'capacity_partitions': {
-        'test': {'quota_reserve': quota}}}})
-    with pytest.raises(ValueError, match='额度已用完'):
-        resident_restart_domain.resident_session_credits.account_open_quota({'capacity_key': 'test'})

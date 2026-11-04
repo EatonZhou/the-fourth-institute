@@ -36,20 +36,15 @@ def available(account: Mapping[str, Any], *, reserve: float = 0) -> bool:
     """Separate permission to use an account from measurable quota headroom."""
     if account.get("enabled") is False:
         return False
-    if account.get("kind") == "subscription_login" and account.get("login_state") != "logged_in":
+    if account.get("kind") == "subscription_login" and account.get("login_state") in {"logged_out", "login_expired"}:
         return False
     quota = account.get("quota_reserve") or {}
-    if quota.get("status") != "available" or quota.get("used_up") or quota.get("automatic_paused"):
+    if quota.get("status") == "reserved" or quota.get("used_up") or quota.get("automatic_paused"):
         return False
-    threshold = quota.get("close_threshold") or {}
-    # Scheduler owns admission. With balance protection disabled, a balance
-    # observation (including zero) must not add another startup prerequisite.
-    # A positive reserve is a separate, preventative migration requirement.
-    if reserve == 0 and threshold.get("metric") == "balance" and threshold.get("value") == 0:
-        return account.get("kind") != "api_profile" or bool(
-            account.get("status") == "ok"
-            and (account.get("billing_account_id") or (account.get("config") or {}).get("api_id"))
-        )
+    # Monitoring is advisory at startup. The Scheduler owns actual protection;
+    # only preventative migration needs proof of positive headroom.
+    if reserve == 0:
+        return True
     remaining = headroom(account)
     if remaining is not None:
         return remaining > reserve
@@ -77,9 +72,12 @@ def candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str = 
         if not available(account, reserve=reserve):
             continue
         catalog = account.get("selection_catalog") or {}
-        if model and (catalog.get("fresh") is not True or model not in catalog.get("models", [])):
-            continue
-        if effort and effort not in (catalog.get("efforts_by_model") or {}).get(model, []):
+        if catalog.get("fresh") is True:
+            if model and model not in catalog.get("models", []):
+                continue
+            if effort and effort not in (catalog.get("efforts_by_model") or {}).get(model, []):
+                continue
+        elif reserve > 0:
             continue
         eligible.append(account)
     def rank(account):
@@ -130,7 +128,7 @@ def priority_candidates(accounts: list[dict], priority: list[str], *, source=Non
             same = source is not None and compatible(account, source)
             catalog = account.get("selection_catalog") or {}
             target_model = model if same and model else catalog.get("default_model", "")
-            if not target_model or catalog.get("fresh") is not True:
+            if reserve > 0 and (not target_model or catalog.get("fresh") is not True):
                 continue
             if candidates([account], account, model=target_model, effort=effort if same else "",
                           excluded=excluded, reserve=reserve):

@@ -99,7 +99,7 @@ def retry(resident_id: str, actor: str, *, credits_consent=None,
         account = resident_backend.execution_account(record)
         resident_session_credits.validate_target_consent(
             credits_consent, actor, account, resident_backend.execution_backend(record), request_id)
-        resident_session_credits.account_open_quota(account, use_credits=True)
+        resident_session_credits.account_open_quota(account)
     result = _prepare_retry(resident_id, actor, expected_initialization_id=expected_initialization_id if credits_consent is not None else "")
     if credits_consent is not None:
         resident_initialization_credits.authorize(resident_id, result['initialization_id'], actor,

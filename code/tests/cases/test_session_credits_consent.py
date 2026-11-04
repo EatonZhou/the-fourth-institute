@@ -24,15 +24,13 @@ def paid_quota(**credit_changes):
     {"observed_at": 1}, {"observed_at": time.time() + 1000}])
 def test_credit_consent_cannot_replace_real_usable_account_reading(changes):
     with pytest.raises(ValueError, match="可用 credits"):
-        admit_session({"enabled": True}, paid_quota(**changes), use_credits=True)
+        admit_session({"enabled": True}, paid_quota(**changes))
 
 
 def test_credit_consent_neither_enables_account_nor_changes_default_policy():
     with pytest.raises(ValueError, match="停用"):
-        admit_session({"enabled": False}, paid_quota(), use_credits=True)
-    with pytest.raises(ValueError, match="额度已用完"):
-        admit_session({"enabled": True}, paid_quota())
-    assert admit_session({"enabled": True}, paid_quota(), use_credits=True)["used_up"]
+        admit_session({"enabled": False}, paid_quota())
+    assert admit_session({"enabled": True}, paid_quota())["used_up"]
 
 
 @pytest.mark.parametrize("actor", ["resident_dbcd3920b7cc", "service-user"])
@@ -63,8 +61,11 @@ def test_confirmation_requires_explicit_matching_scope(monkeypatch, bad):
 def test_paid_migration_and_new_session_persist_consent_promote_and_replay(monkeypatch, isolated_portal_case, strategy):
     with isolated_portal_case():
         record, operations, saved = _restart_domain(monkeypatch)
-        monkeypatch.setattr(execution_port, "health", lambda: {"scheduler": {"capacity_partitions": {
-            "codex:one": {"quota_reserve": paid_quota()}}}})
+        reads = []
+        def health():
+            reads.append(True)
+            return {"scheduler": {"capacity_partitions": {"codex:one": {"quota_reserve": paid_quota()}}}}
+        monkeypatch.setattr(execution_port, "health", health)
         body = {"target_provider": "codex", "target_account": "one", "context_strategy": strategy,
                 "idempotency_key": "paid-create", "credits_consent": {"account_id": "one", "confirmed": True}}
         result = resident_domain.restart_resident_session(record["resident_id"], "alice", body)
@@ -75,6 +76,7 @@ def test_paid_migration_and_new_session_persist_consent_promote_and_replay(monke
         assert scope == {"account_id": "one", "operation_id": result["restart_id"], "execution_id": result["execution_id"]}
         assert resident_domain.restart_resident_session(record["resident_id"], "alice", body) == result
         assert len(operations) == 1
+        assert len(reads) == 1
         resident_restart_domain.resume_resident_session_restart(step)
         assert record["session_restart"]["status"] == "completed"
         assert record["quota_reserve_override"]["credits_scope"] == {
@@ -158,12 +160,12 @@ def test_monitor_publishes_authenticated_credit_readings_and_revokes_on_failure(
     monkeypatch.setattr(scheduler.accounts, "observe", lambda *_, **__: reading)
     monitor.refresh_account(account)
     quota = scheduler.health()["capacity_partitions"][account.capacity_key]["quota_reserve"]
-    assert admit_session({"enabled": True}, quota, use_credits=True)
+    assert admit_session({"enabled": True}, quota)
     monkeypatch.setattr(scheduler.accounts, "observe", lambda *_, **__: (_ for _ in ()).throw(TimeoutError()))
     monitor.refresh_account(account)
     quota = scheduler.health()["capacity_partitions"][account.capacity_key]["quota_reserve"]
     with pytest.raises(ValueError, match="可用 credits"):
-        admit_session({"enabled": True}, quota, use_credits=True)
+        admit_session({"enabled": True}, quota)
 
 
 def test_paid_new_session_without_source_uses_candidate_not_lazy_configuration(monkeypatch, isolated_portal_case):

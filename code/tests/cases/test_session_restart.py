@@ -747,59 +747,24 @@ def test_same_provider_smart_restart_uses_native_fork_contracts(monkeypatch, sub
             # A restart with other parameters replaces this one: test_session_restart_supersede.
 
 
-@pytest.mark.parametrize("metric", ["remaining_percent", "remaining_balance"])
-def test_explicit_session_restart_uses_positive_reserved_quota_and_rejects_zero(
+def test_normal_session_restart_does_not_read_health_or_grant_quota_override(
     monkeypatch: pytest.MonkeyPatch,
     isolated_portal_case,
-    metric,
 ) -> None:
-    """显式重启可使用正数保留额度且拒绝零额度"""
+    """普通会话准备直接提交，额度保护由 Scheduler 执行。"""
     with isolated_portal_case():
         record, operations, _saved = _restart_domain(monkeypatch)
-        quota = {"status": "reserved", "remaining": 2.0, metric: 2.0, "fresh": True, "observed_at": 1.0}
-        monkeypatch.setattr(execution_port, "health", lambda: {"scheduler": {"capacity_partitions": {
-            "codex:one": {"quota_reserve": quota}}}})
+        monkeypatch.setattr(execution_port, "health", lambda: pytest.fail("ordinary startup must not read health"))
         result = resident_domain.restart_resident_session(
             record["resident_id"],
             "alice",
             {"target_provider": "codex", "target_account": "one"},
         )
         assert result["status"] == "accepted"
-        assert result["quota_admission"]["remaining"] == 2.0
-        assert result["quota_admission"] == quota
+        assert result["quota_admission"] == {}
         # The new thread is the Resident's: it starts with the HATG ISA tool.
         assert operations[0]["step"]["request"]["metadata"]["resident_id"] == record["resident_id"]
-        assert operations[0]["step"]["quota_override"] == {
-            "binding_id": f"session-restart:{result['restart_id']}",
-            "revision": 1,
-            "enabled": True,
-        }
-
-    with isolated_portal_case():
-        record, operations, _saved = _restart_domain(monkeypatch)
-        monkeypatch.setattr(
-            execution_port,
-            "health",
-            lambda: {
-                "scheduler": {
-                    "capacity_partitions": {
-                        "codex:one": {
-                            "quota_reserve": {
-                                "status": "reserved",
-                                "remaining": 0.0, "remaining_percent": 0.0, "fresh": True,
-                            },
-                        },
-                    },
-                },
-            },
-        )
-        with pytest.raises(ValueError, match="没有可用额度"):
-            resident_domain.restart_resident_session(
-                record["resident_id"],
-                "alice",
-                {"target_provider": "codex", "target_account": "one"},
-            )
-        assert operations == []
+        assert operations[0]["step"]["quota_override"] == {}
 
 
 def test_session_restart_cancellation_is_quota_independent_and_preserves_source(

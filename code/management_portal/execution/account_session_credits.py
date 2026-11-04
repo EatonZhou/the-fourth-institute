@@ -5,21 +5,12 @@ import time
 from .account_quota import finite_number
 
 
-def admit_session(account, quota, *, use_credits=False):
-    """The same account policy for explicit creation and migration preparation."""
+def admit_session(account, quota):
+    """Validate a requested paid-credit grant; ordinary work uses Scheduler admission."""
     if account.get("enabled") is False:
         raise ValueError("目标 Backend 账号已停用，不能创建新 Session")
-    if use_credits:
-        if not credits_available(quota):
-            raise ValueError("目标账号没有新鲜、已认证的可用 credits；请检查登录和余额后重新确认")
-        return dict(quota)
-    if quota.get("used_up") is True:
-        raise ValueError("目标 Backend 账号额度已用完，不能创建新 Session；可由人类明确确认本次使用 credits")
-    if quota.get("threshold_enabled") is False:
-        return dict(quota)
-    if (quota.get("status") not in {"available", "reserved"} or quota.get("fresh") is False
-            or not finite_number(quota.get("remaining")) or quota["remaining"] <= 0):
-        raise ValueError("目标 Backend 账号没有可用额度，不能创建新 Session")
+    if not credits_available(quota):
+        raise ValueError("目标账号没有新鲜、已认证的可用 credits；请检查登录和余额后重新确认")
     return dict(quota)
 
 

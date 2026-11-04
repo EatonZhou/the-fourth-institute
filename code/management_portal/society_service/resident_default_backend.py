@@ -68,17 +68,14 @@ def configuration(record, binding):
             ordered = priority_candidates(samples, priority, source=source, model=model,
                                           effort=runtime.get("reasoning_effort", ""))
             if not ordered:
-                raise DefaultAccountUnavailable("No backend in the configured order has verified available quota")
+                raise DefaultAccountUnavailable("No enabled compatible backend in the configured order is available")
             chosen = ordered[0]
             if not model or not compatible(chosen, source):
-                model = chosen["selection_catalog"]["default_model"]
+                model = (chosen.get("selection_catalog") or {}).get("default_model", "")
                 runtime.pop("reasoning_effort", None)
             configured.update(backend=chosen["provider"], backend_route_id=chosen["backend_route_id"])
             runtime.update(model=model, account_selection="auto")
             return configured
-        if not model:
-            from management_portal.execution.accounts import DefaultAccountUnavailable
-            raise DefaultAccountUnavailable("Account model catalog is not ready")
         row = select(backend, anchor=source.get("account_id", ""), model=model,
                      effort=runtime.get("reasoning_effort", ""), accounts=samples)
         configured["backend_route_id"] = row["route_id"]

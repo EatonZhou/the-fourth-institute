@@ -11,6 +11,7 @@ def account(name, remaining=80, **extra):
     return dict(account_id=name, provider="codex", backend_route_id=name, kind="subscription_login",
                 enabled=True, login_state="logged_in", max_concurrency=2, active_count=0,
                 quota_reserve={"status": "available", "fresh": True, "remaining": remaining,
+                               "used_up": remaining <= 0,
                                "windows": [{"remaining_percent": remaining}, {"remaining_percent": 100}]},
                 selection_catalog={"fresh": True, "models": ["model"], "efforts_by_model": {"model": ["high"]}}, **extra)
 
@@ -63,13 +64,10 @@ def test_first_admission_uses_the_default_api_without_a_balance_endpoint(monkeyp
 
 
 @pytest.mark.parametrize("change", [
-    {"enabled": False}, {"status": "loading"}, {"status": "unavailable"},
+    {"enabled": False},
     {"quota_reserve": {"status": "reserved"}},
     {"quota_reserve": {"used_up": True}},
     {"quota_reserve": {"automatic_paused": True}},
-    {"quota_reserve": {"close_threshold": {"metric": "balance", "value": 5}}},
-    {"quota_reserve": {"close_threshold": {}}},
-    {"selection_catalog": {"fresh": False, "models": ["model"]}},
     {"selection_catalog": {"fresh": True, "models": ["other"]}},
 ])
 def test_unmeasured_api_still_respects_account_and_model_readiness(change):
@@ -91,6 +89,31 @@ def test_optional_balance_reading_does_not_gate_the_configured_api(balance):
     row = api_account()
     row["balance"] = balance
     assert candidates([row], row, model="model") == [row]
+
+
+@pytest.mark.parametrize("catalog", [{}, {"fresh": False, "models": ["old-model"]}])
+@pytest.mark.parametrize("login_state", ["unknown", "loading", None])
+def test_startup_does_not_wait_for_optional_monitor_observations(catalog, login_state):
+    row = account("one")
+    row.update(selection_catalog=catalog, login_state=login_state, status="loading", quota_reserve={})
+    assert candidates([row], row, model="new-model", effort="high") == [row]
+    assert candidates([row], row, model="new-model", reserve=5) == []
+
+
+@pytest.mark.parametrize("priority", [[], ["codex:subscription_login"]])
+def test_first_admission_without_catalog_uses_provider_default(monkeypatch, priority):
+    from management_portal.execution import account_selection, account_registrations
+    row = account("one")
+    row.update(selection_catalog={}, login_state="unknown", quota_reserve={})
+    registration = {**row, "route_id": "one"}
+    monkeypatch.setattr(account_selection, "observations", lambda: [row])
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider=None: [registration])
+    monkeypatch.setattr(defaults, "selection_priority", lambda record: priority)
+    record = {"backend": "codex", "backend_route_id": "one",
+              "execution_settings": {"account_selection": "auto"}}
+    chosen = defaults.configuration(record, {})
+    assert chosen["backend_route_id"] == "one"
+    assert chosen["runtime_settings"]["model"] == ""
 
 
 @pytest.mark.parametrize("remaining", [None, 0, -1, float("nan")])
@@ -150,12 +173,8 @@ def test_api_ranking_handles_unknown_balances_without_inventing_headroom():
 
 @pytest.mark.parametrize("change", [
     {"enabled": False}, {"login_state": "login_expired"},
-    {"quota_reserve": {"fresh": False, "status": "available", "remaining": 100}},
-    {"quota_reserve": {"fresh": True, "status": "available", "remaining": 100,
-                       "windows": [{"remaining_percent": 100}, {"remaining_percent": 0}]}},
-    {"quota_reserve": {"fresh": True, "status": "available", "remaining": float('nan')}},
+    {"quota_reserve": {"status": "reserved", "used_up": True}},
     {"selection_catalog": {"fresh": True, "models": ["other"]}},
-    {"selection_catalog": {"fresh": False, "models": ["model"]}},
     {"provider": "claude"}, {"kind": "api_profile", "billing_account_id": "paid"},
 ])
 def test_automatic_excludes_unavailable_and_incompatible_accounts(change):
@@ -267,11 +286,12 @@ def test_backend_priority_drives_first_choice_and_recovery(monkeypatch):
     # Existing sessions keep same-kind preference before crossing to the sorted fallback.
     assert fallback_account(samples, "codex", "one", [], priority=order, model="model") == fuller
     fuller["quota_reserve"]["remaining"] = 0
+    fuller["quota_reserve"]["used_up"] = True
     assert fallback_account(samples, "codex", "one", [], priority=order, model="model") == claude
     order.reverse()
     assert defaults.configuration(record, {})["backend_route_id"] == "one"
     claude["selection_catalog"]["fresh"] = False
-    assert account_selection.priority_candidates(samples, ["claude:subscription_login"]) == []
+    assert account_selection.priority_candidates(samples, ["claude:subscription_login"]) == [claude]
 
 
 def test_backend_priority_never_includes_unlisted_paid_kind():

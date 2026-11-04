@@ -30,7 +30,7 @@ def validate_target_consent(consent, actor, account, provider, request_id):
     return True
 
 
-def account_open_quota(account, *, use_credits=False):
+def account_open_quota(account):
     from .domain_ports import execution_port
     from management_portal.execution.account_session_credits import admit_session
     try:
@@ -39,7 +39,7 @@ def account_open_quota(account, *, use_credits=False):
         raise ValueError("无法读取目标 Backend 账号额度，请刷新后重试") from error
     quota = ((health.get("scheduler") or {}).get("capacity_partitions") or {}).get(
         str(account["capacity_key"]), {}).get("quota_reserve") or {}
-    return admit_session(account, quota, use_credits=use_credits)
+    return admit_session(account, quota)
 
 
 def authorization(restart):
