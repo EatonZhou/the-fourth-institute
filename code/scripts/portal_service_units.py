@@ -121,16 +121,6 @@ def install_claude_unit(runtime: Path, package: Path) -> Path:
     return _definition_path(_instance(), 'claude-code')
 
 
-def _switch_claude_link(link: Path, target: Path) -> None:
-    if link.exists() and not link.is_symlink():
-        raise ValueError("Refusing to replace non-symlink Claude current path")
-    link.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=link.parent) as temporary:
-        candidate = Path(temporary) / "current"
-        candidate.symlink_to(target)
-        candidate.replace(link)
-
-
 def _install_claude_backend(*, app_server_only: bool) -> Path:
     from management_portal.execution import provider_updates as updates
     from scripts.claude_app_server_package import build_package
@@ -156,7 +146,7 @@ def _install_claude_backend(*, app_server_only: bool) -> Path:
     with tempfile.TemporaryDirectory(prefix=".claude-app-server-", dir=package.parent) as temporary:
         candidate = Path(temporary) / "package"
         build_package(SOURCE_ROOT, candidate)
-        subprocess.run([str(runtime_root / "bin/python"), "-I", "-B", "-c",
+        subprocess.run([str(updates.venv_python(runtime_root)), "-I", "-B", "-c",
                         "import sys; sys.path.insert(0, sys.argv[2]); "
                         "from management_portal import claude_code_daemon as daemon; "
                         "assert daemon.APP_SERVER_VERSION == sys.argv[1]; "
@@ -174,9 +164,9 @@ def _install_claude_backend(*, app_server_only: bool) -> Path:
             candidate.replace(package)
     if staged:
         current_sdk = runtime.activation_link()
-        _switch_claude_link(current_sdk, runtime_root)
+        updates._link(current_sdk, runtime_root)
         runtime_root = current_sdk
-    _switch_claude_link(current, package)
+    updates._link(current, package)
     return install_claude_unit(runtime_root, current)
 
 
@@ -200,10 +190,7 @@ def start_claude_service(*, wait_ready=None) -> None:
             return
         created = not ("claude-code" in instance.document['services']['components']
                        and _definition_path(instance, "claude-code").exists())
-        if created and sys.platform in {"win32", "darwin"}:
-            # Native packages ship the prepared daemon; first use defines it.
-            _define("claude-code")
-        elif created:
+        if created:
             _install_claude_backend(app_server_only=True)
         instance = _instance()
         name = unit_name(instance, "claude-code")

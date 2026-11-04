@@ -93,7 +93,16 @@ class AntigravityRuntime(updates.ProviderRuntime):
         # Handshake verifies the executable and framing without login or an AI call.
         from management_portal.antigravity_client import AcpClient
         with tempfile.TemporaryDirectory() as scratch:
-            env = {"PATH": os.environ.get("PATH", os.defpath), "GEMINI_HOME": scratch}
+            env = {"PATH": os.environ.get("PATH", os.defpath), "HOME": scratch, "GEMINI_HOME": scratch}
+            if sys.platform == "win32":
+                # The native binary needs a Windows user profile even for the
+                # credential-free initialize handshake. Keep every profile
+                # directory in scratch; never inherit an operator's login.
+                allowed = {"SYSTEMROOT": "SystemRoot", "WINDIR": "WINDIR", "COMSPEC": "COMSPEC",
+                           "PATHEXT": "PATHEXT", "TEMP": "TEMP", "TMP": "TMP"}
+                env.update({allowed[key.upper()]: item for key, item in os.environ.items()
+                            if key.upper() in allowed})
+                env.update(USERPROFILE=scratch, APPDATA=scratch, LOCALAPPDATA=scratch)
             with AcpClient(command(root), env=env) as client:
                 info = client.initialize()
                 if info.get("agentInfo", {}).get("version") != value["version"]:

@@ -210,6 +210,26 @@ def test_concurrent_first_start_installs_and_starts_once(control):
     assert (control.sdk / "bin/python").read_text() == "SDK remains unmodified"
 
 
+@pytest.mark.parametrize("platform", ["win32", "darwin"])
+def test_native_first_start_prepares_daemon_before_start(control, monkeypatch, platform):
+    # A native distribution may have an SDK without a packaged daemon. First
+    # onboarding must use the same package/validation owner as standard install.
+    monkeypatch.setattr(units, "sys", SimpleNamespace(platform=platform))
+    install = Mock(side_effect=lambda **kwargs: units._define("claude-code"))
+    monkeypatch.setattr(units, "_install_claude_backend", install)
+    start = control.service.start
+
+    def start_after_install(*names):
+        install.assert_called_once_with(app_server_only=True)
+        start(*names)
+
+    monkeypatch.setattr(control.service, "start", start_after_install)
+    units.start_claude_service()
+    units.start_claude_service()
+    install.assert_called_once_with(app_server_only=True)
+    assert len([call for call in control.service.calls if call[0] == "start"]) == 1
+
+
 def test_foreign_dropin_rejected_before_new_start(control):
     target = units.install_claude_backend(app_server_only=True)
     before = target.read_bytes()

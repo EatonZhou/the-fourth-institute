@@ -528,7 +528,8 @@ def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path
     assert login._session_result({"provider": "antigravity"}, {"state": "pending"})["requires_code_input"]
 
 
-def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path):
+@pytest.mark.parametrize("platform", ["linux", "win32"])
+def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path, platform):
     data = io.BytesIO()
     with zipfile.ZipFile(data, "w") as bundle:
         bundle.writestr("agy_acp_server.par", b"test")
@@ -538,10 +539,21 @@ def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path):
     monkeypatch.setattr(runtime, "platform_key", lambda: "linux-x86_64")
     monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
     monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(raw))
+    monkeypatch.setattr(runtime.sys, "platform", platform)
+    monkeypatch.setenv("SystemRoot", r"C:\Windows")
+    monkeypatch.setenv("USERPROFILE", "operator-home-must-not-be-used")
+    monkeypatch.setenv("APPDATA", "operator-appdata-must-not-be-used")
+    monkeypatch.setenv("GEMINI_API_KEY", "must-not-leak")
     with mock.patch("management_portal.antigravity_client.AcpClient") as client:
         client.return_value.__enter__.return_value.initialize.return_value = {"agentInfo": {"version": "1.4.5"}}
         root = runtime.AntigravityRuntime().stage(("1.4.5",))
         assert (root / ".portal-validated").is_file()
+        env = client.call_args.kwargs["env"]
+        assert env["HOME"] == env["GEMINI_HOME"]
+        assert "GEMINI_API_KEY" not in env
+        if platform == "win32":
+            assert env["SystemRoot"] == r"C:\Windows"
+            assert env["USERPROFILE"] == env["APPDATA"] == env["LOCALAPPDATA"] == env["GEMINI_HOME"]
     (root / ".portal-validated").unlink()
     item["sha256"] = "0" * 64
     with pytest.raises(ValueError, match="checksum"):
