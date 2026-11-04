@@ -1,0 +1,122 @@
+{
+  "交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。": {
+    "zh-CN": "交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。",
+    "en": "Interactive pages must be self-contained, without embedded pages or external scripts."
+  },
+  "交互演示": {
+    "zh-CN": "交互演示",
+    "en": "Interactive demonstration"
+  },
+  "动手探索": {
+    "zh-CN": "动手探索",
+    "en": "Explore interactively"
+  },
+  "图片与文字解释补充": {
+    "zh-CN": "图片与文字解释补充",
+    "en": "Images and further explanation"
+  },
+  "媒体地址无效。": {
+    "zh-CN": "媒体地址无效。",
+    "en": "Invalid media address."
+  },
+  "字幕": {
+    "zh-CN": "字幕",
+    "en": "Captions"
+  },
+  "字幕文件不是有效的 WebVTT。": {
+    "zh-CN": "字幕文件不是有效的 WebVTT。",
+    "en": "The captions file is not valid WebVTT."
+  },
+  "当前账号无权读取此内容。": {
+    "zh-CN": "当前账号无权读取此内容。",
+    "en": "Your account cannot read this content."
+  },
+  "找不到此文件。": {
+    "zh-CN": "找不到此文件。",
+    "en": "File not found."
+  },
+  "探索与理解": {
+    "zh-CN": "探索与理解",
+    "en": "Explore and understand"
+  },
+  "文件内容已改变，无法打开这个固定版本。": {
+    "zh-CN": "文件内容已改变，无法打开这个固定版本。",
+    "en": "The file has changed; this fixed version cannot be opened."
+  },
+  "文件地址或内容摘要无效。": {
+    "zh-CN": "文件地址或内容摘要无效。",
+    "en": "Invalid file address or content hash."
+  },
+  "文件超过解释页的读取上限。": {
+    "zh-CN": "文件超过解释页的读取上限。",
+    "en": "The file exceeds the explanation page size limit."
+  },
+  "无法核对文件内容摘要。": {
+    "zh-CN": "无法核对文件内容摘要。",
+    "en": "Unable to verify the file content hash."
+  },
+  "来源与延伸阅读": {
+    "zh-CN": "来源与延伸阅读",
+    "en": "Sources and further reading"
+  },
+  "正在读取解释页…": {
+    "zh-CN": "正在读取解释页…",
+    "en": "Loading explanation…"
+  },
+  "每个历史条目只绑定一个固定解释版本。": {
+    "zh-CN": "每个历史条目只绑定一个固定解释版本。",
+    "en": "Each history entry is bound to one fixed explanation version."
+  },
+  "浏览器不支持受限文件读取。": {
+    "zh-CN": "浏览器不支持受限文件读取。",
+    "en": "This browser does not support bounded file reading."
+  },
+  "生成讲解视频": {
+    "zh-CN": "生成讲解视频",
+    "en": "Generate explanation video"
+  },
+  "视频无法播放，请重试或阅读下方图文。": {
+    "zh-CN": "视频无法播放，请重试或阅读下方图文。",
+    "en": "Video playback failed. Retry or read the explanation below."
+  },
+  "视频章节": {
+    "zh-CN": "视频章节",
+    "en": "Video chapters"
+  },
+  "视频讲解": {
+    "zh-CN": "视频讲解",
+    "en": "Video explanation"
+  },
+  "解释页内容包格式无效。": {
+    "zh-CN": "解释页内容包格式无效。",
+    "en": "Invalid explanation package format."
+  },
+  "讲解视频": {
+    "zh-CN": "讲解视频",
+    "en": "Explanation video"
+  },
+  "讲解视频正在生成，可以先探索交互和图文。": {
+    "zh-CN": "讲解视频正在生成，可以先探索交互和图文。",
+    "en": "The video is being generated. Explore the interaction and text in the meantime."
+  },
+  "读取失败，请重试。": {
+    "zh-CN": "读取失败，请重试。",
+    "en": "Unable to read. Please retry."
+  },
+  "身份已切换，请重新打开解释页。": {
+    "zh-CN": "身份已切换，请重新打开解释页。",
+    "en": "Your identity has changed. Reopen the explanation."
+  },
+  "重试生成视频": {
+    "zh-CN": "重试生成视频",
+    "en": "Retry video generation"
+  },
+  "阅读讲稿": {
+    "zh-CN": "阅读讲稿",
+    "en": "Read transcript"
+  },
+  "需要连续讲解时，可以生成带字幕的视频。": {
+    "zh-CN": "需要连续讲解时，可以生成带字幕的视频。",
+    "en": "Generate a captioned video when a continuous explanation would help."
+  }
+}

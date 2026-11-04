@@ -7,6 +7,12 @@ vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_por
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/markdown.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home_dialogue_state.js'), 'utf8'), context);
 const api = context.window.PortalHomeDialogueState;
+const explanation = {view:'explanation',target:{address:'workspace_0123456789ab/file/explanation/manifest.json',sha256:'b'.repeat(64)}};
+assert.equal(api.normalizeIntent(explanation).target.sha256,'b'.repeat(64));
+for (const invalid of [{...explanation.target,sha256:undefined},{...explanation.target,sha256:'latest'},
+  {...explanation.target,address:'https://example.org/manifest.json'}, {...explanation.target,address:'workspace_0123456789ab/file/../private'}]) {
+  assert.throws(()=>api.normalizeIntent({view:'explanation',target:invalid}), 'explanations are fixed formal files, not executable protocol content');
+}
 let sequence = 0; const state = api.create({uuid: () => String(++sequence)});
 const residentId = 'resident_0123456789ab';
 const response = request_id => ({protocol:'portal-home-display/v1', request_id, version:1, view:'report', target:{kind:'lineage', id:'lineage_0123456789ab'}});
@@ -28,6 +34,10 @@ const old = state.issue(residentId); state.acknowledge(old, residentId);
 request = state.issue(residentId); state.acknowledge(request, residentId);
 assert.equal(accept(response(old)).present, false, 'older request is history only');
 assert.equal(accept(response(request)).present, true);
+const explanationRequest=state.issue(residentId);state.acknowledge(explanationRequest,residentId);
+assert.equal(accept({...response(explanationRequest),...explanation}).present,true);
+const lateExplanation=state.issue(residentId);state.acknowledge(lateExplanation,residentId);state.manual();
+assert.equal(accept({...response(lateExplanation),...explanation}).present,false,'explanation respects manual navigation');
 const failed = state.issue(residentId), sent = state.issue(residentId);
 assert.equal(state.acknowledge(sent, 'resident_abcdefabcdef'), false);
 assert.equal(state.acknowledge('unknown', residentId), false);

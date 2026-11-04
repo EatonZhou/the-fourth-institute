@@ -1,0 +1,55 @@
+.homeExplanation {
+  --explanation-reading-width: 920px;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  color: var(--text, #192234);
+  background: var(--panel, #fff);
+  padding: clamp(16px, 4vw, 44px);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  scrollbar-gutter: stable;
+}
+.homeExplanation > * { max-width: var(--explanation-reading-width); margin-inline: auto; }
+.homeExplanationHeader { padding-block: 8px 30px; }
+.homeExplanationEyebrow { margin: 0 0 12px; color: var(--accent, #365edb); font-size: .78em; letter-spacing: .12em; font-weight: 650; }
+.homeExplanation h1 { margin: 0; font-size: clamp(1.55em, 3vw, 2.2em); line-height: 1.3; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.homeExplanationSummary { margin: 18px 0 0; max-width: 54em; color: var(--muted, #536078); font-size: 1.05em; }
+.homeExplanationSection { padding-block: 28px; border-top: 1px solid var(--border, #d6dde8); }
+.homeExplanationSectionHead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+.homeExplanation h2 { font-size: 1.1em; margin: 0; line-height: 1.5; }
+.homeExplanationStep { flex: 0 0 auto; color: var(--muted, #536078); font-variant-numeric: tabular-nums; font-size: .76em; }
+.homeExplanationVideo { background: #101724; border-radius: 12px; overflow: hidden; }
+.homeExplanationVideo video { display: block; width: 100%; max-height: 65vh; aspect-ratio: 16 / 9; object-fit: contain; }
+.homeExplanationChapters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.homeExplanationButton { appearance: none; border: 1px solid var(--border, #d6dde8); border-radius: 8px; padding: 9px 14px; min-height: 44px; background: var(--panel, #fff); color: var(--text, #192234); font: inherit; line-height: 1.45; text-align: start; cursor: pointer; overflow-wrap: anywhere; }
+.homeExplanationButton:hover { background: var(--panel-2, #f3f6fb); border-color: var(--accent, #365edb); }
+.homeExplanationButton:focus-visible, .homeExplanation a:focus-visible, .homeExplanation summary:focus-visible { outline: 3px solid var(--accent, #365edb); outline-offset: 3px; }
+.homeExplanationButton:disabled { cursor: wait; opacity: .6; }
+.homeExplanationChapters .homeExplanationButton { display: inline-flex; gap: 10px; align-items: baseline; font-size: .86em; }
+.homeExplanationChapters span { color: var(--muted, #536078); font-variant-numeric: tabular-nums; }
+.homeExplanationInteraction { display: block; width: 100%; border: 0; background: var(--panel, #fff); }
+.homeExplanationDemo { border: 1px solid var(--border, #d6dde8); border-radius: 12px; overflow: hidden; }
+.homeExplanation .homeExplanationSupplement { padding: 0; border: 0; background: transparent; max-height: none; }
+.homeExplanationSupplement .markdownBody { font-size: inherit; line-height: 1.75; }
+.homeExplanationSupplement pre { max-width: 100%; overflow-x: auto; }
+.homeExplanationTranscript { margin-top: 16px; font-size: .94em; }
+.homeExplanationTranscript summary { cursor: pointer; min-height: 44px; display: list-item; padding-block: 9px; }
+.homeExplanationTranscript div { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted, #536078); }
+.homeExplanationMuted { color: var(--muted, #536078); margin: 0 0 12px; }
+.homeExplanationError { padding: 14px 16px; border-inline-start: 3px solid var(--accent, #365edb); background: var(--panel-2, #f3f6fb); border-radius: 0 8px 8px 0; margin-block: 12px; overflow-wrap: anywhere; }
+.homeExplanationError p { margin: 0 0 12px; }
+.homeExplanationMediaState > .homeExplanationButton { color: var(--accent, #365edb); font-weight: 600; }
+.homeExplanationSources { padding-block: 24px; border-top: 1px solid var(--border, #d6dde8); display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.homeExplanationSources h2 { flex-basis: 100%; margin-bottom: 4px; color: var(--muted, #536078); font-size: .84em; }
+.homeExplanationSources a { color: var(--accent, #365edb); min-height: 44px; display: inline-flex; align-items: center; overflow-wrap: anywhere; }
+@media (max-width: 480px) {
+  .homeExplanation { padding: 18px 14px; scrollbar-gutter: auto; }
+  .homeExplanationHeader { padding-bottom: 22px; }
+  .homeExplanationSection { padding-block: 22px; }
+  .homeExplanationChapters { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .homeExplanation h1 { font-size: 1.6em; }
+}
+@media (prefers-reduced-motion: reduce) { .homeExplanation, .homeExplanation * { scroll-behavior: auto !important; } }

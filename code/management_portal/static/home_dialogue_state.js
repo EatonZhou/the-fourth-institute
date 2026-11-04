@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const views = new Set(["report", "map", "frontier", "preview"]);
+  const views = new Set(["report", "map", "frontier", "preview", "explanation"]);
   function normalizeIntent(value) {
     if (!value || typeof value !== "object") throw new Error("展示指令为空");
     const action = value.action || "open";
@@ -8,6 +8,12 @@
     if (action === "back") return { action };
     if (!views.has(value.view)) throw new Error("不支持的展示视图");
     const target = value.target || {};
+    if (value.view === "explanation") {
+      const address = String(target.address || "").trim(), sha256 = String(target.sha256 || "").toLowerCase();
+      if (!/^workspace_[a-f0-9]{12}\/file\/.+/.test(address) || address.length > 4096 || /[\x00-\x1f\x7f\\?#]/.test(address)
+        || address.split("/").some(part => !part || part === "." || part === "..") || !/^[a-f0-9]{64}$/.test(sha256)) throw new Error("解释页需要正式 Workspace 文件地址和 SHA-256 版本");
+      return { action, view: value.view, target: { address, sha256 } };
+    }
     if (value.view === "preview") {
       const address = String(target.address || target.resourceAddress || target.path || target.href || "").trim();
       if (!address || address.length > 4096 || /[\x00-\x1f]/.test(address) || /^(javascript|data|vbscript):/i.test(address)) throw new Error("无效的预览地址");

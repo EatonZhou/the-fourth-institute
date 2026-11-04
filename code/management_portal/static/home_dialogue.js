@@ -10,7 +10,7 @@
     const submissionRequests = new WeakMap();
     const messageActions = new Map();
     let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
-    let pageState = null, restoring = true, navigationReady = Promise.resolve();
+    let pageState = null, restoring = true, navigationReady = Promise.resolve(), opening = null;
     let narrow = false, ratio = 40, dragging = null;
     root.classList.add("homeDialogue"); root.dataset.pane = "conversation";
     const tabs = node("div", "", "homeDialogueTabs");
@@ -26,7 +26,7 @@
     identityMenu.append(current, identityBody);
     const contentActions = node("div", "", "homeDialogueContentActions");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
-    const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage 地图"), preview: "文件/资源" };
+    const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage 地图"), preview: "文件/资源", explanation: "解释页" };
     const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
     switchView.setAttribute("aria-label", "当前视图");
     const opener = node("details", "", "homeDialogueOpener"), openLabel = node("summary", "打开…");
@@ -35,12 +35,39 @@
     button(tabs, "对话", () => setPane("conversation")); button(tabs, "展示", () => setPane("display"));
     const form = node("form", "", "homeDialogueChooser"), view = node("select"), kind = node("select"), target = node("input");
     view.setAttribute("aria-label", "展示类型"); kind.setAttribute("aria-label", "目标类型"); target.setAttribute("aria-label", "目标 ID 或文件资源地址");
-    for (const [id, label] of [["report", "汇报"], ["map", "研究地图"], ["frontier", t("Lineage 地图")], ["preview", "文件/资源"]]) view.add(new Option(label, id));
+    for (const [id, label] of Object.entries(viewNames)) view.add(new Option(label, id));
     for (const [id, label] of [["task", "任务"], ["lineage", "Lineage"], ["project", "Project"]]) kind.add(new Option(label, id));
     target.placeholder = "目标 ID 或资源地址"; target.required = true;
     form.append(view, kind, target); const openButton = node("button", "展示"); openButton.type = "submit"; form.append(openButton);
-    view.onchange = () => { kind.hidden = view.value === "preview"; if (["map", "frontier"].includes(view.value)) kind.value = view.value === "map" ? "project" : "lineage"; };
-    form.onsubmit = event => { event.preventDefault(); if (navigate({ view: view.value, target: view.value === "preview" ? { address: target.value } : { kind: kind.value, id: target.value } }, true)) opener.open = false; };
+    view.onchange = () => { kind.hidden = ["preview", "explanation"].includes(view.value); if (["map", "frontier"].includes(view.value)) kind.value = view.value === "map" ? "project" : "lineage"; };
+    form.onsubmit = async event => {
+      event.preventDefault(); opening?.abort();
+      const controller = opening = new AbortController(), chosenView = view.value, chosenAddress = target.value.trim();
+      let chosenTarget = ["preview", "explanation"].includes(chosenView) ? { address: chosenAddress } : { kind: kind.value, id: chosenAddress };
+      state.manual(); openButton.disabled = true;
+      try {
+        if (chosenView === "explanation") {
+          // Manual file selection pins the bytes that were actually read. The
+          // history/protocol always carries that fixed version, never a hash
+          // that the user has to copy into a form.
+          window.PortalHomeDialogueState.normalizeIntent({ view: chosenView, target: { ...chosenTarget, sha256: "0".repeat(64) } });
+          const response = await window.PortalAPI.raw(`/api/resources/content?address=${encodeURIComponent(chosenAddress)}`, { credentials: "same-origin", cache: "no-store", redirect: "error", signal: controller.signal });
+          if (!response.ok) throw new Error(`无法读取解释页 (${response.status})`);
+          const reader = response.body.getReader(), chunks = []; let size = 0;
+          for (;;) { const { value, done } = await reader.read(); if (done) break; size += value.byteLength;
+            if (size > 1024 * 1024) { await reader.cancel(); throw new Error("解释页清单过大"); } chunks.push(value); }
+          const bytes = new Uint8Array(size); let offset = 0;
+          for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+          if (JSON.parse(new TextDecoder().decode(bytes)).schema !== "portal-explanation/v1") throw new Error("所选文件不是解释页清单");
+          const { sha256 } = await import("./portal_sha256.js");
+          chosenTarget = { address: chosenAddress, sha256: await sha256(bytes) };
+        }
+        if (!destroyed && !controller.signal.aborted && opener.open && view.value === chosenView && target.value.trim() === chosenAddress)
+          if (navigate({ view: chosenView, target: chosenTarget }, true)) opener.open = false;
+      } catch (error) {
+        if (!destroyed && !controller.signal.aborted) { status.dataset.notice = "true"; status.hidden = false; status.textContent = error.message; }
+      } finally { if (opening === controller) { opening = null; openButton.disabled = false; } }
+    };
     opener.append(form);
     const tools = node("div", "", "homeDialogueToolbar"), more = node("details", "", "homeDialogueMore");
     more.append(node("summary", "更多"), tools);
@@ -59,6 +86,7 @@
       menu.name = menuGroup;
       menu.addEventListener("toggle", () => {
         if (menu.open) for (const other of menus) if (other !== menu) other.open = false;
+        if (menu === opener && !menu.open) opening?.abort();
       });
       menu.addEventListener("keydown", event => {
         if (event.key !== "Escape" || !menu.open) return;
@@ -246,7 +274,7 @@
     };
     async function updateLabel(entry) {
       if (!entry.presented || destroyed || entry.controller.signal.aborted) return;
-      if (entry.intent.view === "preview") {
+      if (["preview", "explanation"].includes(entry.intent.view)) {
         entry.label = entry.adapter?.snapshot?.().payload?.title || entry.label; refresh(); return;
       }
       if (entry.intent.target.kind !== "lineage" || !window.PortalResourceChips?.loadReference || entry.labelPending) return;
@@ -270,6 +298,7 @@
         }
         if (!entry.adapter) {
           const api = entry.intent.view === "preview" ? window.PortalHomeDialoguePreview
+            : entry.intent.view === "explanation" ? window.PortalHomeExplanationView
             : entry.intent.view === "report" ? window.PortalHomeReportView : window.PortalHomeMapView;
           if (!api) throw new Error("展示组件尚未加载，请重试或刷新页面");
           if (entry.intent.view === "preview") {
@@ -300,7 +329,7 @@
               view.value = "preview"; view.onchange(); target.value = entry.intent.target.address;
               opener.open = true; target.focus(); target.select();
             }, onClose: closeCurrentDisplay, onChange: snapshot => {
-              if (entry.intent.view === "preview" && snapshot?.accessStatus) {
+              if (["preview", "explanation"].includes(entry.intent.view) && snapshot?.accessStatus) {
                 entry.notice.hidden = entry.retry.hidden = true;
                 entry.notice.textContent = "";
                 entry.status = { checking: "读取中", error: "读取失败", ready: "已读取", hidden: "待查看" }[snapshot.accessStatus];
@@ -388,7 +417,7 @@
           const intent = action.intent;
           const label = intent.action === "back" ? "返回上一展示" : intent.view === "preview"
             ? /(?:slides?|\.pptx?)(?:[/.?#]|$)/i.test(intent.target.address) ? "预览幻灯片" : "预览文件/资源"
-            : ({ report: "查看汇报", map: "打开研究地图", frontier: t("查看 Lineage 地图") })[intent.view];
+            : ({ report: "查看汇报", explanation: "打开解释页", map: "打开研究地图", frontier: t("查看 Lineage 地图") })[intent.view];
           return `<button type="button" class="homeDialogueMessageAction btn" data-home-display-action="${window.MD.esc(action.token)}">${window.MD.esc(label)}</button>`;
         } });
         messageActions.set(id, actions);
@@ -413,12 +442,15 @@
       return { context_text: [
         "当前入口是 Home 对话与展示，右侧是你可主动使用的解释与操作空间。由 Resident 根据用户要理解的问题、内容复杂度和已有上下文决定呈现方式，不以用户是否说出‘直观解释’、‘图解’、‘可视化’或‘放在右侧’等关键词为生成条件。若图示、对照、分步示例或可持续阅读的材料能帮助用户更好地理解，就主动生成并在右侧打开，即使没有现成文件、用户只在聊天里提问也如此；不要等待用户追加展示指令。例如解释注意力机制中查询、键、值如何共同作用，应主动用分步图文帮助建立理解。",
         "按实际需要选择内容和形式：聊天中简短文字已足以回答时直接回答，不为每次问答创建文件；用户明确要求只用文字、不创建文件或不切换右侧时遵从其限制。已有合适材料可直接打开，明确要求展示、生成汇报、切换、聚焦或返回时按意图处理。生成材料后在聊天中简要说明关键结论和可查看的内容；生成与自动切换是两件事，固定、草稿、手选及迟到保护始终有效。",
-        "解释材料的生成路径：按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释文件。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 写入 Markdown，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由；主题足够明确且判断材料有助于理解时就制作，确实缺少必要范围时才询问。",
-        "Preview 实际能力：优先制作 .md 图文解释页，使用分步示例、表格、公式和 Mermaid 图；可预览 PNG/SVG 等图片、PDF、MP4/WebM 视频与音频。图和媒体只能引用已生成并回读可用的文件/正式内容地址；视频适宜且现有工具可用时再生成，配字幕（可烧录）及独立文字讲解，失败仍保留可读图文。当前 Preview 的 HTML/JS 文件只按文本/代码展示，Markdown 原始 HTML 会转义，不运行任意脚本或生成页面的交互；需要交互时仅使用已支持的原生能力，否则明确说明并提供静态分步图解，不伪称交互已可用。",
-        "写入成功后用 ReadResource 回读同一正式文件地址，核对内容/媒体及可读性；成功才在最终回复说明产物并输出 view:preview、action:open、target:{address:真实workspace_ID/file/相对路径} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久文件地址以保留历史，不把临时下载凭据写进引用。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确失败原因，在对话提供可用的文字解释或已核实的图文入口。",
-        "展示协议只导航已存在且可读的目标，不执行协议内 HTML/脚本、不授予写权限；实际生成通过上述文件工具完成，不能把页面正文、脚本或凭据塞进协议。概念解释走 preview，不为它伪造 Project、Lineage 或 task 来源。已有来源的状态汇报仍走 report：首次意图由报告适配器按稳定来源身份持久化，已有报告必须引用确定 report_ID+revision，显式刷新另建版本且保留旧引用。未知的已有资源目标先查询，无法确认才询问。",
+        "解释材料的生成路径：按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释包目录。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 保存包内文件，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由；主题足够明确且判断材料有助于理解时就制作，确实缺少必要范围时才询问。",
+        "完整解释页用 view:explanation：页面组合视频、可选交互、图文补充。初开先呈现交互与图文，用户点击‘生成讲解视频’才生成视频，不在打开或回复时抢先生成；视频及字幕持久保存，重开恢复已有成果。已有 Markdown、公式、Mermaid 和图片放在 supplement 图文补充区，不把它当作机制解释的整页替代品。交互应帮助理解因果，例如选择查询词、调整温度或遮罩，真实重算注意力权重及结果。按内容选择有效呈现，不用无意义滑块、占位视频或空模块凑模板。",
+        "通用创作标准：先写清读者要看懂或判断什么，再为对象、关系、数量和变化选择图形语义；提供能检验理解的操作，操作后图形、数值、算式和相关文字同步反馈，并能回到可核对来源。机制用过程与参数探索，方案比较用同尺度对照，架构用结构导航与细节，时间变化用时间轴和局部追踪；依据题材组织页面，不照抄注意力样例或固定卡片布局。图文可以是可操作、联动的解释，不默认降级为静态 Markdown。可把本地完整 D3 等库打包进交互文件并保留许可；禁止远程依赖。交付前亲自操作关键路径，检查事实与计算、默认视角、图例、密度、键盘/触屏/大字体、减少动态效果和性能；隐藏时停止活动，不用持续动画代替解释。完整创作与包格式入口：当前 Portal 同源 /static/home_explanation_authoring.md。",
+        "创作指南记录 Transformer Circuits Global Workspace、Distill Paths Perspective on Value Learning 和 Distill Handwriting 三篇参照，学习其解释与交互方法；简单事情不强行复杂，合适最好。生成后必须触发独立检查 Resident：用 scripts/build_explanation_package.py 构建并自动送检；手写清单或重试用 scripts/submit_explanation_review.py，传自己的 --resident-id、正式 --address、清单 --sha256 与读者 --task。脚本正式发现可投递的独立检查者，按固定版本幂等投递。作者回读匹配此版本的独立报告，修复意见生成新固定版；submitted 只表示受理，缺权限或未实际操作不能说通过。普通打开与恢复历史不重投检查。",
+        "解释包清单是 UTF-8 JSON：{schema:'portal-explanation/v1',title,summary,revision:1,interaction?:{address,sha256,title},supplement?:{address,sha256},video_plan?:{address,sha256},video?:{address,sha256,captions?:{address,sha256},transcript?:{address,sha256},chapters?:[{time,title}]},sources?:[{label,url或address}]}。address 均为实际 workspace_ID/file/...；sha256 是对应文件字节的 SHA-256。交互使用独立自包含 HTML/CSS/JS，在隔离沙箱中运行，不能联网、访问父页面/凭据或导航外部页面；把所需数据写入交互文件，用语义控件支持键盘、窄屏和减少动态效果。supplement 引用 Markdown。video_plan 引用已保存的声明式视频生成计划，计划与其 WAV 音轨必须与 manifest 在同一 Workspace 同一包目录，scene start/end 与 cues 使用真实配音时间；具体生成合同见解释页创作指南，不要把可执行脚本当生成计划。普通 Preview 的 HTML/JS 文件只按文本/代码展示，其边界保持不变。",
+        "写入成功后用 ReadResource 回读清单和各文件，核对内容/媒体、摘要及可读性；成功才输出 view:explanation、action:open、target:{address:真实workspace_ID/file/.../manifest.json,sha256:清单字节SHA256} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久目录，历史固定该清单与材料版本；不把临时下载凭据写进引用。已有普通文件仍可用 view:preview 打开。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确具体失败和现有可读内容，不把只改提示或只完成图文说成完整解释页交付。",
+        "展示协议只导航已存在且可读的目标，不执行协议内 HTML/脚本、不授予写权限；实际生成通过正式文件工具完成，不能把页面正文、脚本或凭据塞进协议。概念解释不为它伪造 Project、Lineage 或 task 来源。已有来源的状态汇报仍走 report：首次意图由报告适配器按稳定来源身份持久化，已有报告必须引用确定 report_ID+revision，显式刷新另建版本且保留旧引用。未知的已有资源目标先查询，无法确认才询问。",
         "示例结构：" + JSON.stringify(protocol),
-        "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview；首次汇报/地图 target 为 {kind:task|lineage|project,id,focus?:节点ID}；已有汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}。back 无须 view/target。version 是本次请求内递增整数。",
+        "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview/explanation；首次汇报/地图 target 为 {kind:task|lineage|project,id,focus?:节点ID}；已有汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}；explanation 使用 {address:清单的正式Workspace文件地址,sha256:64位小写字节摘要}。back 无须 view/target。version 是本次请求内递增整数。",
         "宿主只接受本次 request_id，自动结果不会覆盖固定、草稿或用户手选展示。", 
         "当前展示：" + JSON.stringify(state.active?.intent || null), "当前选择：" + JSON.stringify(selection),
       ].join("\n") };
@@ -467,7 +499,7 @@
     void mountChat(); refresh();
     return { destroy() {
       pageState?.writeSnapshot(); pageState?.destroy();
-      destroyed = true; unregister(); chat?.destroy();
+      destroyed = true; opening?.abort(); unregister(); chat?.destroy();
       chatRoot.removeEventListener("click", openMessageAction); messageActions.clear();
       for (const entry of state.entries) { entry.controller.abort(); entry.adapter?.destroy(); }
       state.clear(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);

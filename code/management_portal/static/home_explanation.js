@@ -1,0 +1,367 @@
+(() => {
+  "use strict";
+
+  // The manifest is content, never executable host configuration. ResourceService
+  // owns authorization; this adapter owns bounded reads, integrity and lifetime.
+  const MiB = 1024 * 1024;
+  const limits = Object.freeze({ manifest: MiB, video: 64 * MiB, text: 2 * MiB, interaction: 2 * MiB });
+  const hashPattern = /^[a-f0-9]{64}$/;
+  const t = value => window.PortalI18n?.t?.(value) || value;
+  const node = (tag, text, className) => {
+    const el = document.createElement(tag);
+    if (text != null) el.textContent = text;
+    if (className) el.className = className;
+    return el;
+  };
+  const resourceUrl = address => `/api/resources/content?address=${encodeURIComponent(address)}`;
+  function asset(value) {
+    if (!value || typeof value !== "object" || typeof value.address !== "string"
+      || !/^workspace_[a-f0-9]{12}\/file\/.+/.test(value.address)
+      || value.address.length > 4096 || /[\x00-\x1f\x7f\\?#]/.test(value.address)
+      || value.address.split("/").some(part => part === "." || part === ".." || !part)
+      || !hashPattern.test(value.sha256 || "")) throw new Error(t("文件地址或内容摘要无效。"));
+    return { address: value.address, sha256: value.sha256 };
+  }
+  const identity = () => {
+    const current = window.PortalIdentity?.peek?.() || {};
+    return JSON.stringify([current.principal?.kind || "user", current.principal?.id || current.username || window.PortalIdentity?.username?.() || ""]);
+  };
+  const abortError = () => new DOMException("Explanation view cancelled", "AbortError");
+  async function digest(bytes, signal) {
+    if (signal.aborted) throw abortError();
+    if (globalThis.crypto?.subtle || bytes.byteLength < MiB) {
+      const { sha256 } = await import("/static/portal_sha256.js");
+      return sha256(bytes);
+    }
+    // LAN HTTP has no WebCrypto. Keep the large-video fallback off the UI thread.
+    const code = `import {sha256} from ${JSON.stringify(new URL("/static/portal_sha256.js", location.href).href)};onmessage=async e=>{try{postMessage({hash:await sha256(e.data)})}catch(e){postMessage({error:String(e)})}}`;
+    const url = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+    const worker = new Worker(url, { type: "module" });
+    try {
+      return await new Promise((resolve, reject) => {
+        const cancel = () => reject(abortError());
+        signal.addEventListener("abort", cancel, { once: true });
+        worker.onmessage = event => { signal.removeEventListener("abort", cancel); event.data.error ? reject(new Error(event.data.error)) : resolve(event.data.hash); };
+        worker.onerror = () => { signal.removeEventListener("abort", cancel); reject(new Error(t("无法核对文件内容摘要。"))); };
+        // The original bytes remain available for the authorized Blob.
+        const copy = bytes.slice(); worker.postMessage(copy, [copy.buffer]);
+      });
+    } finally { worker.terminate(); URL.revokeObjectURL(url); }
+  }
+  async function readBytes(url, maxBytes, signal, expectedHash) {
+    const response = await window.PortalAPI.raw(url, { signal, cache: "no-store", credentials: "same-origin", redirect: "error" });
+    if (!response.ok) {
+      await response.body?.cancel?.();
+      throw Object.assign(new Error(t(response.status === 403 ? "当前账号无权读取此内容。" : response.status === 404 ? "找不到此文件。" : "读取失败，请重试。")), { status: response.status });
+    }
+    const tooLarge = () => new Error(t("文件超过解释页的读取上限。"));
+    if (Number(response.headers.get("Content-Length")) > maxBytes) { await response.body?.cancel?.(); throw tooLarge(); }
+    if (!response.body?.getReader) throw new Error(t("浏览器不支持受限文件读取。"));
+    const reader = response.body.getReader(), chunks = [];
+    let length = 0;
+    try {
+      while (true) {
+        if (signal.aborted) throw abortError();
+        const part = await reader.read();
+        if (part.done) break;
+        length += part.value.byteLength;
+        if (length > maxBytes) throw tooLarge();
+        chunks.push(part.value);
+      }
+    } catch (error) { await reader.cancel().catch(() => {}); throw error; }
+    finally { reader.releaseLock(); }
+    const bytes = new Uint8Array(length);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    if (expectedHash && await digest(bytes, signal) !== expectedHash) throw new Error(t("文件内容已改变，无法打开这个固定版本。"));
+    if (signal.aborted) throw abortError();
+    return { bytes, type: (response.headers.get("Content-Type") || "").split(";")[0] };
+  }
+  const decode = bytes => new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  function chapters(value) {
+    if (!Array.isArray(value)) return [];
+    return value.slice(0, 80).filter(item => item && Number.isFinite(item.time) && item.time >= 0 && typeof item.title === "string")
+      .map(item => ({ time: item.time, title: item.title.slice(0, 240) })).sort((a, b) => a.time - b.time);
+  }
+  function mediaUrl(value) {
+    const url = new URL(String(value || ""), location.href);
+    if (!value || url.origin !== location.origin || !url.pathname.startsWith("/api/") || url.username || url.password) throw new Error(t("媒体地址无效。"));
+    return url.href;
+  }
+
+  // Local demos use the same opaque-inner / trusted-empty-outer boundary as
+  // projection_host. The outer frame's CSP also blocks inner self-navigation.
+  // No SDK, host callbacks, credentials or business APIs enter this document.
+  function mountInteraction(container, html, title, height) {
+    // Template contents are inert even for image loads during parsing.
+    const template = document.createElement("template"); template.innerHTML = html;
+    const parsed = document.implementation.createHTMLDocument(""); parsed.body.append(template.content);
+    if (parsed.querySelector("base,iframe,frame,object,embed,script[src],link")) throw new Error(t("交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。"));
+    parsed.querySelectorAll("meta[http-equiv]").forEach(el => el.remove());
+    const policy = parsed.createElement("meta");
+    policy.httpEquiv = "Content-Security-Policy";
+    policy.content = "default-src 'none'; script-src 'unsafe-inline'; script-src-attr 'none'; style-src 'unsafe-inline'; img-src data:; media-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'";
+    const style = parsed.createElement("style");
+    const computed = getComputedStyle(container);
+    const color = name => computed.getPropertyValue(name).trim().replace(/[;{}<>]/g, "");
+    style.textContent = `:root{color-scheme:${computed.colorScheme || "light"};--bg:${color("--panel") || "#fff"};--panel:${color("--panel") || "#fff"};--text:${color("--text") || "#192234"};--muted:${color("--muted") || "#536078"};--border:${color("--border") || "#d6dde8"};--accent:${color("--accent") || "#365edb"}}*{box-sizing:border-box}body{margin:0;padding:16px;background:var(--panel);color:var(--text);font:${computed.fontSize} / 1.6 system-ui,sans-serif}button,input,select{font:inherit}button,input[type=range],select{min-height:44px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}img,svg,canvas{max-width:100%}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
+    parsed.head.prepend(policy, style);
+    const surface = node("iframe", null, "homeExplanationInteraction");
+    surface.title = title; surface.referrerPolicy = "no-referrer";
+    surface.style.height = `${Math.min(1200, Math.max(240, Number(height) || 480))}px`;
+    container.append(surface);
+    const outer = surface.contentDocument;
+    const navigation = outer.createElement("meta");
+    navigation.httpEquiv = "Content-Security-Policy"; navigation.content = "frame-src 'none'";
+    outer.head.append(navigation);
+    outer.documentElement.style.height = "100%";
+    outer.body.style.cssText = "margin:0;height:100%;overflow:hidden";
+    const inner = outer.createElement("iframe"); inner.title = title;
+    inner.setAttribute("sandbox", "allow-scripts"); inner.referrerPolicy = "no-referrer";
+    inner.style.cssText = "display:block;width:100%;height:100%;border:0";
+    outer.body.append(inner); inner.srcdoc = "<!doctype html>" + parsed.documentElement.outerHTML;
+    return () => surface.remove();
+  }
+
+  function create({ root, onOpen, onSelection, onChange }) {
+    const owner = identity(), urls = new Set(), disposers = new Set();
+    let presented = true, destroyed = false, token = 0, controller = null, externalSignal = null;
+    let target = null, manifest = null, status = "idle", video = null, playbackTime = 0, scrollTop = 0;
+    let mediaTimer = null, loading = null, requestId = "", externalBlur = false;
+    root.classList.add("homeExplanation");
+    const snapshot = () => ({ target, payload: manifest, accessStatus: status, hasDraft: false, requestId });
+    const notify = () => { if (!destroyed) onChange?.(snapshot()); };
+    const current = key => !destroyed && presented && !document.hidden && key === token && !controller?.signal.aborted && !externalSignal?.aborted && identity() === owner;
+    const button = (label, action) => { const el = node("button", t(label), "homeExplanationButton"); el.type = "button"; el.onclick = action; return el; };
+    const blob = (bytes, type) => { const url = URL.createObjectURL(new Blob([bytes], { type })); urls.add(url); return url; };
+    function cleanup() {
+      clearTimeout(mediaTimer); mediaTimer = null;
+      if (video) { playbackTime = Number.isFinite(video.currentTime) ? video.currentTime : playbackTime; video.pause(); video.removeAttribute("src"); video.load(); video = null; }
+      for (const dispose of disposers) dispose(); disposers.clear();
+      for (const url of urls) URL.revokeObjectURL(url); urls.clear();
+    }
+    function invalidate() {
+      token++; controller?.abort(); loading = null;
+      if (root.childElementCount) scrollTop = root.scrollTop;
+      cleanup(); root.replaceChildren(); manifest = null; status = "hidden"; notify();
+    }
+    function failure(container, error, retry = revalidate) {
+      const box = node("div", null, "homeExplanationError"); box.setAttribute("role", "status");
+      box.append(node("p", error.message || t("读取失败，请重试。")));
+      box.append(button("重试", () => { void retry(); })); container.append(box);
+    }
+    async function read(ref, limit, key) {
+      if (!current(key)) throw abortError();
+      const fixed = asset(ref), result = await readBytes(resourceUrl(fixed.address), limit, controller.signal, fixed.sha256);
+      if (!current(key)) throw abortError();
+      return result;
+    }
+    function section(title, label) {
+      const region = node("section", null, "homeExplanationSection");
+      const heading = node("div", null, "homeExplanationSectionHead");
+      heading.append(node("span", label, "homeExplanationStep"), node("h2", t(title)));
+      region.append(heading); root.append(region); return region;
+    }
+    async function moduleTask(region, task, key) {
+      const progress = node("p", t("正在读取…"), "homeExplanationMuted"); progress.setAttribute("role", "status"); region.append(progress);
+      try { await task(); }
+      catch (error) { if (current(key) && error.name !== "AbortError") failure(region, error); }
+      finally { progress.remove(); }
+    }
+    async function renderVideo(region, spec, key, generated = false) {
+      const source = generated
+        ? await readBytes(mediaUrl(spec.video_url), limits.video, controller.signal, spec.video_sha256 || undefined)
+        : await read(spec, limits.video, key);
+      if (!current(key)) return;
+      const type = source.type.startsWith("video/") ? source.type : "video/mp4";
+      const player = node("video"); player.controls = true; player.playsInline = true; player.preload = "metadata";
+      player.setAttribute("aria-label", t("讲解视频")); player.src = blob(source.bytes, type);
+      video = player;
+      const frame = node("div", null, "homeExplanationVideo"); frame.append(player); region.append(frame);
+      player.addEventListener("loadedmetadata", () => { if (current(key) && playbackTime < player.duration) player.currentTime = playbackTime; });
+      player.addEventListener("error", () => { if (current(key)) failure(region, new Error(t("视频无法播放，请重试或阅读下方图文。"))); }, { once: true });
+      const items = chapters(spec.chapters);
+      if (items.length) {
+        const list = node("nav", null, "homeExplanationChapters"); list.setAttribute("aria-label", t("视频章节"));
+        for (const chapter of items) {
+          const time = `${Math.floor(chapter.time / 60)}:${String(Math.floor(chapter.time % 60)).padStart(2, "0")}`;
+          const jump = button(chapter.title, () => { if (current(key)) { player.currentTime = chapter.time; player.focus(); } });
+          jump.prepend(node("span", time)); list.append(jump);
+        }
+        region.append(list);
+      }
+      const captions = generated ? spec.captions_url : spec.captions;
+      const transcript = generated ? spec.transcript_url : spec.transcript;
+      await Promise.all([
+        captions && (async () => {
+          try {
+            const content = generated ? await readBytes(mediaUrl(captions), limits.text, controller.signal, spec.captions_sha256) : await read(captions, limits.text, key);
+            if (!current(key)) return;
+            if (!/^\uFEFF?WEBVTT(?:\s|$)/.test(decode(content.bytes))) throw new Error(t("字幕文件不是有效的 WebVTT。"));
+            const track = node("track"); track.kind = "captions"; track.label = t("字幕"); track.srclang = spec.language || "zh"; track.default = true;
+            track.src = blob(content.bytes, "text/vtt"); player.append(track);
+          } catch (error) { if (current(key) && error.name !== "AbortError") failure(region, error); }
+        })(),
+        transcript && (async () => {
+          try {
+            const content = generated ? await readBytes(mediaUrl(transcript), limits.text, controller.signal, spec.transcript_sha256) : await read(transcript, limits.text, key);
+            if (!current(key)) return;
+            const details = node("details", null, "homeExplanationTranscript"); details.append(node("summary", t("阅读讲稿")), node("div", decode(content.bytes)));
+            region.append(details);
+          } catch (error) { if (current(key) && error.name !== "AbortError") failure(region, error); }
+        })(),
+      ]);
+    }
+    async function plannedVideo(region, plan, key) {
+      // Reading a plan only verifies provenance. A POST requires a button click.
+      await read(plan, limits.text, key);
+      const content = node("div", null, "homeExplanationMediaState"); region.append(content);
+      const endpoint = `/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}`;
+      let busy = false;
+      async function fetchState(generate = false) {
+        if (!current(key) || busy) return;
+        busy = true; clearTimeout(mediaTimer);
+        content.querySelectorAll("button").forEach(el => { el.disabled = true; });
+        try {
+          const result = generate
+            ? await window.PortalAPI.post("/api/home-explanation/media", { address: target.address, sha256: target.sha256 }, { signal: controller.signal })
+            : await window.PortalAPI.get(endpoint, { signal: controller.signal, cache: "no-store" });
+          if (!current(key)) return;
+          const media = result?.media === undefined ? result : result.media;
+          content.replaceChildren();
+          if (media?.status === "ready") {
+            await renderVideo(content, media, key, true);
+          } else if (media?.status === "generating") {
+            const progress = node("p", t("讲解视频正在生成，可以先探索交互和图文。"), "homeExplanationMuted"); progress.setAttribute("role", "status");
+            content.append(progress);
+            mediaTimer = setTimeout(() => { void fetchState(); }, 2500);
+          } else {
+            content.append(node("p", media?.error || t("需要连续讲解时，可以生成带字幕的视频。"), "homeExplanationMuted"));
+            content.append(button(media?.status === "failed" ? "重试生成视频" : "生成讲解视频", () => { void fetchState(true); }));
+          }
+        } catch (error) {
+          if (current(key) && error.name !== "AbortError") {
+            content.replaceChildren(); failure(content, error, () => fetchState(false));
+          }
+        } finally { busy = false; }
+      }
+      await fetchState();
+    }
+    async function load(key) {
+      try {
+        if (identity() !== owner) throw new Error(t("身份已切换，请重新打开解释页。"));
+        const data = await read(target, limits.manifest, key);
+        const value = JSON.parse(decode(data.bytes));
+        if (value.schema !== "portal-explanation/v1" || !Number.isSafeInteger(value.revision) || value.revision < 1
+          || typeof value.title !== "string" || !value.title.trim() || value.title.length > 300
+          || ![value.video, value.video_plan, value.interaction, value.supplement].some(Boolean)) throw new Error(t("解释页内容包格式无效。"));
+        manifest = value; root.replaceChildren();
+        const header = node("header", null, "homeExplanationHeader");
+        header.append(node("p", t("探索与理解"), "homeExplanationEyebrow"), node("h1", value.title));
+        if (typeof value.summary === "string" && value.summary.trim()) header.append(node("p", value.summary.slice(0, 4000), "homeExplanationSummary"));
+        root.append(header);
+        const tasks = []; let index = 0;
+        if (value.video || value.video_plan) {
+          const region = section("视频讲解", String(++index).padStart(2, "0"));
+          tasks.push(moduleTask(region, () => value.video ? renderVideo(region, value.video, key) : plannedVideo(region, value.video_plan, key), key));
+        }
+        if (value.interaction) {
+          const region = section(value.interaction.title || "动手探索", String(++index).padStart(2, "0"));
+          tasks.push(moduleTask(region, async () => {
+            const content = await read(value.interaction, limits.interaction, key);
+            if (!current(key)) return;
+            const panel = node("div", null, "homeExplanationDemo"); region.append(panel);
+            disposers.add(mountInteraction(panel, decode(content.bytes), value.interaction.title || t("交互演示"), value.interaction.height));
+          }, key));
+        }
+        if (value.supplement) {
+          const region = section("图片与文字解释补充", String(++index).padStart(2, "0"));
+          tasks.push(moduleTask(region, async () => {
+            const content = await read(value.supplement, limits.text, key);
+            if (!current(key)) return;
+            const body = node("div", null, "homeExplanationSupplement"); region.append(body);
+            disposers.add(() => window.PortalPreview.dispose(body));
+            window.PortalPreview.render({ root: body, document: { source: "resource", address: value.supplement.address,
+              path: value.supplement.address, title: value.title, contentKind: "markdown", content: decode(content.bytes),
+              version: value.supplement.sha256, capabilities: { edit: false, save: false } },
+              onPreviewRequest: request => onOpen?.({ view: "preview", target: { address: request.resourceAddress || request.address || request.path } }) });
+            body.classList.add("homeExplanationSupplement");
+          }, key));
+        }
+        if (Array.isArray(value.sources) && value.sources.length) {
+          const sources = node("footer", null, "homeExplanationSources"); sources.append(node("h2", t("来源与延伸阅读")));
+          for (const source of value.sources.slice(0, 40)) {
+            if (!source || typeof source.label !== "string") continue;
+            if (source.address && typeof source.address === "string" && /^[a-z]+_[a-f0-9]{12}(?:\/|$)/.test(source.address)) {
+              sources.append(button(source.label, () => { if (current(key)) onOpen?.({ view: "preview", target: { address: source.address } }); }));
+            } else if (source.url) {
+              try {
+                const url = new URL(source.url);
+                if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) continue;
+                const link = node("a", source.label); link.href = url.href; link.target = "_blank"; link.rel = "noopener noreferrer"; sources.append(link);
+              } catch (_) { /* Invalid source links are not navigation capabilities. */ }
+            }
+          }
+          if (sources.childElementCount > 1) root.append(sources);
+        }
+        notify();
+        await Promise.all(tasks);
+        if (current(key)) { status = "ready"; root.scrollTop = scrollTop; notify(); }
+      } catch (error) {
+        if (key !== token || destroyed || !presented || error.name === "AbortError") return;
+        cleanup(); root.replaceChildren(); status = "error"; failure(root, error); notify();
+      }
+    }
+    function revalidate() {
+      if (!presented || destroyed || document.hidden || !target || externalSignal?.aborted) return Promise.resolve();
+      if (loading) return loading;
+      invalidate(); controller = new AbortController(); const key = token;
+      status = "checking"; root.append(node("p", t("正在读取解释页…"), "homeExplanationMuted")); notify();
+      const promise = load(key); loading = promise;
+      return promise.finally(() => { if (loading === promise) loading = null; });
+    }
+    const abort = () => invalidate();
+    async function show(next, options = {}) {
+      if (destroyed) return;
+      const fixed = asset(next);
+      if (target && (fixed.address !== target.address || fixed.sha256 !== target.sha256)) throw new Error(t("每个历史条目只绑定一个固定解释版本。"));
+      target = fixed; requestId = options.requestId || "";
+      externalSignal?.removeEventListener("abort", abort); externalSignal = options.signal;
+      externalSignal?.addEventListener("abort", abort, { once: true });
+      if (externalSignal?.aborted) { invalidate(); return; }
+      return revalidate();
+    }
+    const accessChanged = () => { invalidate(); if (presented) void revalidate(); };
+    const focus = () => { if (externalBlur) { externalBlur = false; if (presented) void revalidate(); } };
+    const blur = () => { externalBlur = !document.hasFocus(); };
+    const resume = () => { if (presented) void revalidate(); };
+    const visibility = () => { if (document.hidden) invalidate(); else resume(); };
+    const selection = () => {
+      const selected = window.getSelection();
+      if (current(token) && selected && root.contains(selected.anchorNode) && root.contains(selected.focusNode) && selected.toString().trim())
+        onSelection?.({ view: "explanation", target, address: target.address, title: manifest?.title || "", text: selected.toString().slice(0, 12000) });
+    };
+    const events = ["portal:identity-changed", "portal:permissions-changed"];
+    for (const event of events) window.addEventListener(event, accessChanged);
+    window.addEventListener("focus", focus); window.addEventListener("blur", blur); window.addEventListener("pagehide", abort); window.addEventListener("pageshow", resume);
+    document.addEventListener("visibilitychange", visibility);
+    root.addEventListener("mouseup", selection); root.addEventListener("keyup", selection);
+    return { show, snapshot, handlesReadErrors: true, hasDraft: () => false, canClose: () => true,
+      setPresented(value) {
+        if (destroyed || presented === !!value) return;
+        presented = !!value;
+        if (!presented) { invalidate(); return; }
+        return revalidate();
+      },
+      destroy() {
+        if (destroyed) return;
+        destroyed = true; invalidate(); externalSignal?.removeEventListener("abort", abort);
+        for (const event of events) window.removeEventListener(event, accessChanged);
+        window.removeEventListener("focus", focus); window.removeEventListener("blur", blur); window.removeEventListener("pagehide", abort); window.removeEventListener("pageshow", resume);
+        document.removeEventListener("visibilitychange", visibility);
+        root.removeEventListener("mouseup", selection); root.removeEventListener("keyup", selection); root.classList.remove("homeExplanation");
+      },
+    };
+  }
+  window.PortalHomeExplanationView = Object.freeze({ create });
+})();

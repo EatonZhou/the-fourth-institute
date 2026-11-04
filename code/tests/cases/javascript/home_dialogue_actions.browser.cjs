@@ -179,9 +179,11 @@ const server=http.createServer((req,res)=>{
     check('Resident owns presentation choice without keyword gates',instructions.every(t=>t.includes('由 Resident 根据')&&t.includes('等关键词为生成条件')&&t.includes('就主动生成并在右侧打开')&&t.includes('用户只在聊天里提问也如此')),true);
     check('simple answers and explicit opt-outs remain available',instructions.every(t=>t.includes('简短文字已足以回答时直接回答')&&t.includes('不为每次问答创建文件')&&t.includes('不创建文件或不切换右侧时遵从其限制')),true);
     check('generation does not override user navigation',instructions.every(t=>t.includes('生成与自动切换是两件事')&&t.includes('固定、草稿、手选及迟到保护始终有效')),true);
-    check('persist read back then preview guidance reaches transport',instructions.every(t=>t.includes('UpdateWorkspaceFile({address:')&&t.includes('ReadResource 回读')&&t.includes('成功才')&&t.includes('view:preview')&&t.includes('本次 request_id')),true);
+    check('persist read back then fixed explanation guidance reaches transport',instructions.every(t=>t.includes('UpdateWorkspaceFile({address:')&&t.includes('ReadResource 回读')&&t.includes('成功才')&&t.includes('view:explanation')&&t.includes('清单字节SHA256')&&t.includes('本次 request_id')),true);
     check('generation failure and fixed-report guidance reach transport',instructions.every(t=>t.includes('不声称已经生成')&&t.includes('report_ID+revision')&&t.includes('不为它伪造')),true);
-    check('unsupported scripts and media fallback are explicit',instructions.every(t=>t.includes('HTML/JS 文件只按文本/代码')&&t.includes('静态分步图解')&&t.includes('字幕')&&t.includes('不授予写权限')),true);
+    check('composed explanation and on-demand media reach actual transport',instructions.every(t=>t.includes('portal-explanation/v1')&&t.includes('supplement')&&t.includes('video_plan')&&t.includes('用户点击‘生成讲解视频’才生成视频')&&t.includes('真实重算注意力权重')&&t.includes('HTML/JS 文件只按文本/代码')&&t.includes('不授予写权限')),true);
+    check('authoring standard generalizes beyond the attention example',instructions.every(t=>t.includes('先写清读者要看懂或判断什么')&&t.includes('方案比较')&&t.includes('架构用结构导航')&&t.includes('不照抄注意力样例')&&t.includes('/static/home_explanation_authoring.md')),true);
+    check('all pages receive independent review and proportionate reference guidance',instructions.every(t=>t.includes('Distill Handwriting')&&t.includes('简单事情不强行复杂')&&t.includes('submit_explanation_review.py')&&t.includes('submitted 只表示受理')&&t.includes('普通打开与恢复历史不重投检查')&&t.includes('同一 Workspace 同一包目录')),true);
     check('wrong facade receives no Home submission context',await page.evaluate(()=>chatOptions.submissionContext({resident_id:'resident_abcdefabcdef'})),null);
     check('sending visual request itself does not create any file',await page.evaluate(()=>instructionCalls.some(c=>c.name==='UpdateWorkspaceFile')),false);
     // Existing Preview semantics substantiate the capability guidance. Raw HTML
