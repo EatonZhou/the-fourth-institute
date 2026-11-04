@@ -4,10 +4,10 @@
   if (window.PortalHatgGraphSearch) return;
 
   // Finding objects on the HATG canvas: local matches by identity and text,
-  // the server-side smart search with its deep rerank, and the results popover.
+  // the server-side smart search, and the results popover.
   const DEPENDENCIES = Object.freeze([
     "$id", "$query", "activeSeeds", "currentPanelActive", "esc", "focusGraphNode",
-    "nodeResidentId", "residentDiscovery", "state", "toast", "workspaceGraphModel",
+    "nodeResidentId", "residentDiscovery", "state", "workspaceGraphModel",
   ]);
 
   function createGraphSearch(dependencies) {
@@ -15,7 +15,7 @@
     if (missing.length) throw new Error(`PortalHatgGraphSearch is missing: ${missing.join(", ")}`);
     const {
       $id, $query, activeSeeds, currentPanelActive, esc, focusGraphNode, nodeResidentId,
-      residentDiscovery, state, toast, workspaceGraphModel,
+      residentDiscovery, state, workspaceGraphModel,
     } = dependencies;
 
     let graphNodeSearchPopover = null;
@@ -117,15 +117,7 @@
       return [...new Set((state.lineage?.nodes || []).map(nodeResidentId).filter(Boolean))];
     }
 
-    function setGraphDeepRerankBusy(busy) {
-      const button = $id("graphDeepRerankBtn");
-      if (!button) return;
-      button.disabled = Boolean(busy);
-      button.setAttribute("aria-busy", busy ? "true" : "false");
-      button.textContent = busy ? window.PortalI18n.t("深度中…") : window.PortalI18n.t("深度");
-    }
-
-    async function runGraphSmartSearch(query, { deep = false } = {}) {
+    async function runGraphSmartSearch(query) {
       if (state.graphViewMode === "workspace") {
         graphSmartSearch = { query: "", loading: false, mode: "", results: [], error: "" };
         renderGraphNodeSearchResults();
@@ -134,55 +126,39 @@
       const clean = String(query || "").trim();
       if (clean.length < 2) {
         graphSmartSearch = { query: clean, loading: false, mode: "", results: [], error: "" };
-        setGraphDeepRerankBusy(false);
         renderGraphNodeSearchResults();
         return;
       }
       const requestId = ++graphSmartSearchRequest;
-      const mode = deep ? "deep" : "search";
+      const mode = "search";
       graphSmartSearch = { query: clean, loading: true, mode, results: [], error: "" };
-      setGraphDeepRerankBusy(deep);
       renderGraphNodeSearchResults();
-      let autoFocusNodeId = "";
       const residentIds = graphSearchResidentIds();
       if (!residentIds.length) {
         graphSmartSearch = { query: clean, loading: false, mode, results: [], error: "" };
-        setGraphDeepRerankBusy(false);
         renderGraphNodeSearchResults();
         return;
       }
       try {
-        const result = deep
-          ? await residentDiscovery.recommend({
-              query: clean,
-              limit: 8,
-              resident_ids: residentIds,
-              allow_fallback: false,
-            })
-          : await residentDiscovery.search({
-              query: clean,
-              limit: 8,
-              resident_ids: residentIds,
-            });
+        const result = await residentDiscovery.search({
+          query: clean,
+          limit: 8,
+          resident_ids: residentIds,
+        });
         if (requestId !== graphSmartSearchRequest) return;
         if (!result) return;
         graphSmartSearch = {
           query: clean,
           loading: false,
           mode,
-          results: deep ? result.recommendations || [] : result.results || [],
+          results: result.results || [],
           error: "",
         };
-        if (deep) autoFocusNodeId = graphSearchMatches(clean)[0]?.id || "";
-        if (deep && result.fallback) toast(window.PortalI18n.t("深度判断不可用，已保留常规搜索排序。"), "warning");
       } catch (error) {
         if (requestId !== graphSmartSearchRequest) return;
         graphSmartSearch = { query: clean, loading: false, mode, results: [], error: error.message || String(error) };
-      } finally {
-        if (requestId === graphSmartSearchRequest) setGraphDeepRerankBusy(false);
       }
       renderGraphNodeSearchResults();
-      if (autoFocusNodeId) await focusGraphNode(autoFocusNodeId);
     }
 
     function scheduleGraphSmartSearch(query) {
@@ -191,21 +167,10 @@
       ++graphSmartSearchRequest;
       if (clean.length < 2) {
         graphSmartSearch = { query: clean, loading: false, mode: "", results: [], error: "" };
-        setGraphDeepRerankBusy(false);
         return;
       }
       graphSmartSearch = { query: clean, loading: true, mode: "search", results: [], error: "" };
       graphSmartSearchTimer = window.setTimeout(() => runGraphSmartSearch(clean), 320);
-    }
-
-    function runGraphDeepRerank() {
-      window.clearTimeout(graphSmartSearchTimer);
-      const query = $id("graphNodeSearchInput").value;
-      if (String(query || "").trim().length < 2) {
-        toast(window.PortalI18n.t("先输入至少两个字，再进行深度重排。"), "warning");
-        return;
-      }
-      runGraphSmartSearch(query, { deep: true });
     }
 
     function renderGraphNodeSearchResults() {
@@ -220,9 +185,7 @@
         root.innerHTML = "";
         return;
       }
-      const loadingText = graphSmartSearch.mode === "deep"
-        ? "正在深度重排当前 Lineage 节点…"
-        : "正在搜索当前 Lineage 节点…";
+      const loadingText = "正在搜索当前 Lineage 节点…";
       const content = matches.length
         ? `${matches.map(node => window.PortalI18n.html`<button type="button" data-graph-search-node="${esc(node.id)}"><strong>${esc(node.display_title || node.title)}</strong><small>${esc(node.kind === "workspace" ? `${node.workspace_id} · ${node.workspace_path}` : node.kind === "seed" ? window.PortalI18n.text`种子 · ${node.artifact_path}` : node.smartReason || nodeResidentId(node))}</small></button>`).join("")}${graphSmartSearch.loading ? window.PortalI18n.html`<div class="graphSearchEmpty">${loadingText}</div>` : ""}`
         : window.PortalI18n.html`<div class="graphSearchEmpty">${graphSmartSearch.loading ? loadingText : graphSmartSearch.error ? window.PortalI18n.t("智能搜索暂时不可用") : window.PortalI18n.t("没有匹配节点")}</div>`;
@@ -249,7 +212,6 @@
       graphNodeSearchRenderFrame = 0;
       ++graphSmartSearchRequest;
       graphSmartSearch.loading = false;
-      setGraphDeepRerankBusy(false);
     }
 
     function clearGraphNodeSearch() {
@@ -281,7 +243,6 @@
         if (!button) return;
         focusGraphNode(button.dataset.graphSearchNode || "");
       });
-      $id("graphDeepRerankBtn").addEventListener("click", runGraphDeepRerank);
       $id("graphNodeSearchInput").addEventListener("keydown", event => {
         if (event.key !== "Enter") return;
         if (graphSmartSearch.loading) {

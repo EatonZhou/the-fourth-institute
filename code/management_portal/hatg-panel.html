@@ -128,11 +128,6 @@
           <div class="graphNavigationBar" id="graphNavigationBar" role="toolbar" aria-label="HATG 画布工具" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 画布工具&quot;}">
             <div class="graphViewportCluster">
               <div class="graphViewportControls" role="group" aria-label="HATG 画布导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 画布导航&quot;}">
-                <div class="graphSemanticZoom" id="graphSemanticZoom" role="group" aria-label="语义缩放层级" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;语义缩放层级&quot;}">
-                  <button type="button" data-semantic-zoom="overview" aria-label="切换到总览镜头" title="总览：只保留拓扑、状态与活动流" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;切换到总览镜头&quot;, &quot;title&quot;: &quot;总览：只保留拓扑、状态与活动流&quot;}"><i></i><span><!--portal-i18n:"总览"-->总览</span></button>
-                  <button type="button" data-semantic-zoom="operate" aria-label="切换到操作镜头" title="操作：显示目标与常用节点信息" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;切换到操作镜头&quot;, &quot;title&quot;: &quot;操作：显示目标与常用节点信息&quot;}"><i></i><span><!--portal-i18n:"操作"-->操作</span></button>
-                  <button type="button" data-semantic-zoom="inspect" aria-label="切换到检视镜头" title="检视：展开完整节点上下文" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;切换到检视镜头&quot;, &quot;title&quot;: &quot;检视：展开完整节点上下文&quot;}"><i></i><span><!--portal-i18n:"检视"-->检视</span></button>
-                </div>
                 <button class="graphViewportBtn" id="graphZoomOutBtn" type="button" aria-label="缩小 HATG" title="缩小（-）" aria-keyshortcuts="-" data-portal-icon="minus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;缩小 HATG&quot;, &quot;title&quot;: &quot;缩小（-）&quot;}"></button>
                 <button class="graphZoomResetBtn" id="graphZoomResetBtn" type="button" aria-label="恢复 HATG 100% 视图" title="恢复 100%（0）" aria-keyshortcuts="0" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;恢复 HATG 100% 视图&quot;, &quot;title&quot;: &quot;恢复 100%（0）&quot;}"><span id="graphZoomValue">100%</span></button>
                 <button class="graphViewportBtn" id="graphZoomInBtn" type="button" aria-label="放大 HATG" title="放大（+）" aria-keyshortcuts="+" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;放大 HATG&quot;, &quot;title&quot;: &quot;放大（+）&quot;}"></button>
@@ -146,7 +141,6 @@
                   <input data-portal-search-input id="graphNodeSearchInput" type="search" autocomplete="off" placeholder="名称或自然语言" aria-label="按名称、目标、上下文摘要或 Agent id 查找节点" aria-controls="graphNodeSearchResults"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;名称或自然语言&quot;, &quot;aria-label&quot;: &quot;按名称、目标、上下文摘要或 Agent id 查找节点&quot;}"/>
                   <div class="graphNodeSearchResults portalHatgOverlayComponent" id="graphNodeSearchResults" hidden></div>
                 </div>
-                <button class="graphNavigatorToolBtn graphDeepRerankBtn" id="graphDeepRerankBtn" type="button" title="深度重排当前 Lineage 节点" aria-label="深度重排当前 Lineage 节点" aria-busy="false" data-portal-i18n-attrs="{&quot;title&quot;: &quot;深度重排当前 Lineage 节点&quot;, &quot;aria-label&quot;: &quot;深度重排当前 Lineage 节点&quot;}"><!--portal-i18n:"深度"-->深度</button>
               </div>
               <select id="graphRelationFilter" aria-label="筛选关系类型" title="筛选关系类型" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;筛选关系类型&quot;, &quot;title&quot;: &quot;筛选关系类型&quot;}">
                 <option value="all"><!--portal-i18n:"全部关系"-->全部关系</option>

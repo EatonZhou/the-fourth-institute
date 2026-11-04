@@ -70,51 +70,6 @@
   min-width: 0;
 }
 
-.graphSemanticZoom {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  margin-right: 2px;
-  border-right: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  padding-right: 4px;
-}
-
-.graphSemanticZoom button {
-  height: 23px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  padding: 0 6px;
-  font-size: 8px;
-  white-space: nowrap;
-}
-
-.graphSemanticZoom button i {
-  width: 5px;
-  height: 5px;
-  flex: 0 0 auto;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-}
-
-.graphSemanticZoom button:nth-child(2) i { width: 7px; height: 7px; }
-.graphSemanticZoom button:nth-child(3) i { width: 9px; height: 9px; }
-.graphSemanticZoom button:hover { background: var(--panel-2); color: var(--text); }
-.graphSemanticZoom button.active {
-  background: color-mix(in srgb, var(--accent) 11%, var(--panel));
-  color: var(--accent);
-  font-weight: 800;
-}
-.graphSemanticZoom button.active i {
-  border-color: var(--accent);
-  background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 11%, transparent);
-}
-
 .graphViewportBtn,
 .graphZoomResetBtn {
   height: 23px;
@@ -275,12 +230,6 @@
 
 @container lineage-hatg-viewport (max-width: 720px) {
   .graphViewportHint { display: none; }
-  .graphSemanticZoom button {
-    width: 24px;
-    justify-content: center;
-    padding: 0;
-  }
-  .graphSemanticZoom button span { display: none; }
   .graphVisibilitySummary { display: none; }
   .graphNavigator select { max-width: 92px; }
 }
@@ -307,7 +256,6 @@
     min-width: 82px;
     flex: 1 1 auto;
   }
-  .graphDeepRerankBtn { padding-inline: 4px; }
   .graphLegend { display: none; }
 }
 

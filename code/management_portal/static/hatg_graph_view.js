@@ -251,7 +251,6 @@
       filter.disabled = !hasLineage;
       filter.value = state.graphRelationFilter;
       search.disabled = !hasLineage;
-      $id("graphDeepRerankBtn").hidden = state.graphViewMode === "workspace";
       $id("collaborationGraphLegend").hidden = (
         state.graphViewMode !== "context"
         || state.graphRelationFilter === "program"
@@ -387,7 +386,6 @@
         worldWidth: HATG_WORLD_SIZE.width,
         worldHeight: HATG_WORLD_SIZE.height,
         zoomValue: $id("graphZoomValue"),
-        semanticZoomRoot: $id("graphSemanticZoom"),
         nodeDoubleClickDelay: 260,
         zoomInButton: $id("graphZoomInBtn"),
         zoomOutButton: $id("graphZoomOutBtn"),
