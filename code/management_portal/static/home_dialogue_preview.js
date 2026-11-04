@@ -14,7 +14,7 @@
     };
     const ownerIdentity = identityKey();
     let destroyed = false, presented = true, authorized = false, checking = false, address = "";
-    let epoch = 0, controller = null, externalSignal = null, verified = null, accessError = "", externalUrl = "", rendered = null, session;
+    let epoch = 0, controller = null, externalSignal = null, verified = null, accessError = "", editError = "", externalUrl = "", rendered = null, session;
     const source = window.PortalAgentPreviewSource.create({
       apiGet: (url, options = {}) => window.PortalAPI.get(url, { ...options, signal: controller?.signal, cache: "no-store" }),
       apiPost: window.PortalAPI.post,
@@ -39,8 +39,8 @@
       if (allowed && state.editing && editor.value !== state.draft) editor.value = state.draft;
       link.hidden = !allowed || !source.rawUrl(state.payload || {});
       if (externalUrl && presented && identityKey() === ownerIdentity) { link.href = externalUrl; link.textContent = "在原页面打开 ↗"; link.hidden = false; }
-      retry.hidden = !presented || !accessError || checking;
-      status.textContent = accessError || (checking ? "正在核对当前访问权限…" : state.error || state.readError || (state.status === "loading" ? "正在读取…" : state.saving ? "正在保存…" : state.dirty ? "有未保存草稿（切换展示会保留）" : ""));
+      retry.hidden = !presented || (!accessError && !editError) || checking;
+      status.textContent = accessError || (checking ? "正在核对当前访问权限…" : state.error || state.readError || editError || (state.status === "loading" ? "正在读取…" : state.saving ? "正在保存…" : state.dirty ? "有未保存草稿（切换展示会保留）" : ""));
       status.hidden = !status.textContent; onChange?.(state);
     }
     function disposeView() {
@@ -71,8 +71,40 @@
       update();
     }
     async function readInitial() {
+      const signal = controller?.signal;
       const resource = window.PortalResourceChips.resourceAddressFromPreviewRequest({ resourceAddress: address, href: address });
-      if (resource) return source.reload({ source: "resource", resource_address: resource });
+      if (resource) {
+        const payload = await source.reload({ source: "resource", resource_address: resource });
+        if (signal?.aborted) throw signal.reason;
+        if (!payload || !/^workspace_[a-f0-9]{12}\/file\//.test(resource)) return payload;
+        // Resource content capabilities describe UpdateResource, not the file
+        // mutation. Resolve the registered Workspace file and check the exact
+        // instruction used by the existing DocumentSession source adapter.
+        const resolved = await window.PortalInstructionClient.execute("ResolveResource", { address: resource }, { signal });
+        const target = resolved?.target, reference = target?.file_reference;
+        if (target?.target_kind !== "file" || target.exists !== true || !/^workspace_[a-f0-9]{12}$/.test(reference?.workspace_id || "")) return payload;
+        const prefix = `${reference.workspace_id}/file/`;
+        if (!target.address?.startsWith(prefix) || !reference.relative_path) return payload;
+        let allowed = false;
+        try {
+          const identity = window.PortalIdentity?.peek?.() || {};
+          const principal = identity.principal?.id || identity.username || window.PortalIdentity?.username?.();
+          if (!principal) throw new Error("当前身份尚未就绪");
+          const permission = await window.PortalInstructionClient.execute("CheckPermission", {
+            principal_id: principal, a: "UpdateWorkspaceFile", resource_id: reference.workspace_id,
+          }, { signal });
+          allowed = permission?.allowed === true;
+        } catch (error) {
+          if (signal?.aborted) throw error;
+          editError = `文件可读，但无法核对编辑权限：${error.message || error}`;
+        }
+        // Keep the authenticated resource URLs for reads. The canonical suffix
+        // preserves server address escaping; no filesystem path is inferred.
+        return source.normalize({ ...payload, source: "lineage-workspace", previewSource: "lineage-workspace",
+          workspace_id: reference.workspace_id, rel_path: target.address.slice(prefix.length),
+          allows: { UpdateWorkspaceFile: allowed },
+        });
+      }
       const local = window.PortalFileLinks.describe(address, { allowAnyLocalPath: true });
       if (local?.path) return source.reload({ source: "workspace_link", path: local.path });
       const url = new URL(address, window.location.href);
@@ -87,7 +119,7 @@
         accessError = "当前身份已变化；原草稿已保留，返回原身份后可重试。";
         disposeView(); update(); return { error: new Error(accessError) };
       }
-      controller = new AbortController(); checking = true; accessError = ""; update();
+      controller = new AbortController(); checking = true; accessError = ""; editError = ""; update();
       const valid = () => !destroyed && presented && current === epoch && !externalSignal?.aborted && identityKey() === ownerIdentity;
       try {
         // Re-read through the existing authenticated source, never a cached preview.

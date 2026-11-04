@@ -30,7 +30,6 @@
 .homeDialogueOpener[open] .homeDialogueChooser,.homeDialogueMore[open] .homeDialogueToolbar { position:absolute; top:100%; right:8px; left:8px; z-index:2; background:var(--panel,#fff); border:1px solid var(--border,#ccc); border-radius:5px; box-shadow:0 4px 12px #0002; }
 .homeDialogueOpener .homeDialogueChooser > select { max-width:100%; }
 .homeDialogue[data-narrow="true"] .homeDialogueTabs { display:flex; }
-.homeDialogue[data-narrow="true"] > .homeDialogueToolbar > strong { display:none; }
 .homeDialogue[data-narrow="true"] .homeDialogueColumns { display:flex; }
 .homeDialogue[data-narrow="true"] .homeDialogueDivider { display:none; }
 .homeDialogue[data-narrow="true"] .homeDialogueConversation,.homeDialogue[data-narrow="true"] .homeDialogueDisplay { flex:1; }

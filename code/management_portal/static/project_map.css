@@ -393,11 +393,22 @@
 /* Embedded native map: size belongs to its container, not the browser viewport. */
 .homeMapView { display:flex; flex-direction:column; height:100%; min-height:320px; min-width:0; container-type:inline-size; }
 .homeMapView [hidden] { display:none !important; }
-.homeMapToolbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:8px; }
-.homeMapToolbar strong { flex:1; overflow-wrap:anywhere; }
+.homeMapToolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px; position:relative; }
+.homeMapIdentity { flex:1 1 160px; min-width:0; }
+.homeMapIdentity summary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; font-weight:600; padding:4px 0; }
+.homeMapIdentity summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.homeMapIdentityBody { position:absolute; top:100%; left:8px; right:8px; z-index:6; padding:12px; background:var(--panel); border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px #15244322; overflow-wrap:anywhere; }
+.homeMapIdentityBody label { display:grid; gap:4px; margin-top:8px; min-width:0; }
+.homeMapIdentityBody input { width:100%; min-width:0; box-sizing:border-box; }
+.homeMapActions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.homeMapActions > * { white-space:normal; max-width:100%; }
 .homeMapBody { flex:1; min-height:0; position:relative; }
 .homeMapSurface { height:100%; min-height:0; }
 .homeMapSurface .projectMap { height:100%; min-height:320px; }
+@container (max-width:500px) {
+  .homeMapToolbar { gap:4px; }
+  .homeMapIdentity { flex-basis:100%; }
+}
 @container (max-width:700px) {
   .homeMapSurface .mapToolbar { flex-wrap:wrap; }
   .homeMapSurface .mapActions { flex-wrap:wrap; }

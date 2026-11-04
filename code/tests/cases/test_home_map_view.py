@@ -10,13 +10,14 @@ import subprocess
 import pytest
 
 
-def test_home_map_native_surfaces(tmp_path):
+@pytest.mark.parametrize('mode', [[], ['--narrow']], ids=['native-surfaces', 'narrow-readability'])
+def test_home_map_native_surfaces(tmp_path, mode):
     """原生地图和线头支持聚焦、编辑回读、草稿恢复、权限重验及取消请求。"""
     code = Path(__file__).resolve().parents[2]
     if not (code / 'management_portal/test_framework/tau_runtime/node_modules/playwright').is_dir():
         pytest.skip('requires Portal browser test runtime')
     result = subprocess.run(
-        ['node', str(Path(__file__).with_name('javascript') / 'home_map_view.browser.cjs')],
+        ['node', str(Path(__file__).with_name('javascript') / 'home_map_view.browser.cjs'), *mode],
         env={**os.environ, 'HOME_MAP_EVIDENCE': str(tmp_path)},
         capture_output=True, text=True, timeout=120,
     )

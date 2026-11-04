@@ -5,6 +5,7 @@
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const {openResidentPortal} = require('../../../scripts/resident_browser.cjs');
+const homeAction = require('./home_dialogue_controls.cjs');
 const portal = path.resolve(__dirname,'../../../management_portal');
 const groups = JSON.parse(fs.readFileSync(path.join(portal,'script_groups.json')));
 const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<script data-portal-script-group="([^"]+)"><\/script>/g, (_,id)=>groups[id].map(src=>`<script src="${src}"></script>`).join(''))
@@ -29,6 +30,7 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<sc
     });
     await page.setViewportSize({width:1440,height:1000});
     await page.goto(origin); await page.waitForFunction(()=>!!window.PortalHomeDialogue);
+    await page.evaluate(()=>PortalIdentity.load());
     await page.evaluate(()=>{
       const root=document.createElement('section'); root.style.height='100%'; document.querySelector('#homeWorkbenchRoot').append(root);
       window.host=PortalHomeDialogue.connect({root,context:{currentUserReady:Promise.reject(new Error('Resident 只读预览验收：个人门面由用户会话验收'))}});
@@ -46,7 +48,8 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<sc
     await page.locator('.homeDialogueChooser').getByRole('button',{name:'展示',exact:true}).click();
     await page.locator('.home-report h2').waitFor();
     await page.waitForFunction(()=>document.querySelector('.homeDialogueCurrent').textContent !== 'Lineage');
-    await page.getByRole('button',{name:'展开',exact:true}).click();
+    assert.equal(await page.locator('.homeDialogue > header').count(),0);
+    await homeAction(page,'展开');
     evidence.density=await page.evaluate(()=>{
       const display=document.querySelector('.homeDialogueDisplay').getBoundingClientRect(), content=document.querySelector('.home-report').getBoundingClientRect();
       return {hostControlsHeight:content.top-display.top,title:document.querySelector('.homeDialogueCurrent').textContent,manualFormOpen:document.querySelector('.homeDialogueOpener').open,duplicateTimestamp:document.querySelector('.homeDialogueEntryNotice').textContent};
@@ -55,17 +58,27 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<sc
     await page.screenshot({path:path.join(out,'report-expanded-1440.png')});
     const search=page.locator('.home-report input'); await search.fill('研究');
     const entries=await page.getByLabel('展示历史',{exact:true}).locator('option').evaluateAll(options=>options.map(o=>o.value));
-    await page.getByLabel('展示历史',{exact:true}).selectOption(entries[1]);
+    await page.locator('.homeDialogueMore > summary').click();
+    await page.screenshot({path:path.join(out,'more-1440.png')});
+    await homeAction(page,'固定展示');
+    assert.equal(await page.getByRole('button',{name:'取消固定',exact:true,includeHidden:true}).getAttribute('aria-pressed'),'true');
+    await homeAction(page,'返回上一展示');
+    await page.locator('.homeDialogueDocument:visible').waitFor();
+    assert.equal(await page.locator('.homeDialogueDocument:visible').count(),1);
     await page.getByLabel('展示历史',{exact:true}).selectOption(entries[2]);
     await search.waitFor({state:'visible'}); assert.equal(await search.inputValue(),'研究');
-    await page.getByRole('button',{name:'返回原布局',exact:true}).click();assert.equal(await search.inputValue(),'研究');
+    await homeAction(page,'取消固定');
+    await homeAction(page,'返回原布局');assert.equal(await search.inputValue(),'研究');
     for(const width of [390,720]) {
       await page.setViewportSize({width,height:844});
-      await page.getByRole('button',{name:'展开',exact:true}).click();
+      await homeAction(page,'展开');
       await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click();
       await page.screenshot({path:path.join(out,`report-expanded-${width}.png`)});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-      await page.getByRole('button',{name:'返回原布局',exact:true}).click();
+      await page.locator('.homeDialogueMore > summary').click();
+      await page.screenshot({path:path.join(out,`more-${width}.png`)});
+      await homeAction(page,'固定展示'); await homeAction(page,'取消固定');
+      await homeAction(page,'返回原布局');
     }
     evidence.reportFilterRetained=true;
     fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(evidence,null,2));

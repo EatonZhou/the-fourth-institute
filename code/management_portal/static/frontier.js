@@ -94,6 +94,7 @@ async function load() {
     } else {notice('选择一个项目，打开它的探索前沿。'); return;}
     await verify(rows);
     if(generation!==epoch)return;
+    config.onTitleChange?.(scopeTitle);
     notice(incomplete?'部分团队当前不可读；仅显示已核对的工作线。':''); render(); $('#new').disabled=!lineage;
     if (selected) openDetail(rowKey(selected));
     $('#checked').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+' 核对 · 手动刷新';
@@ -107,7 +108,7 @@ function openDetail(id) {
   $('#detail-body').innerHTML=`<div class="dialog-heading"><span class="tag ${esc(r.attention)}">${LABELS[r.attention]}</span><button data-close="detail" aria-label="关闭">×</button></div><h1 style="font-size:27px">${esc(r.title)}</h1><div class="muted">${esc(r.line)} · ${esc(progressOf(r,s))}</div><h3>已经推进到哪里</h3><p>${esc(r.progress)}</p><h3>为什么值得继续</h3><p>${esc(r.reason)}</p><h3>下一步</h3><p>${esc(r.next)}</p><h3>依据与来路</h3><ul>${r.sources.map(address=>`<li><a href="/r/${encodeURI(address)}" target="_blank" rel="noopener">${esc(sources.get(address)?.resource?.title || address)} ↗</a></li>`).join('')}</ul>${r.dispatch?`<h3>这次交付</h3><p class="muted">${esc(progressOf(r,s))}${s?.error?' · '+esc(typeof s.error==='string'?s.error:JSON.stringify(s.error)):''}</p><a href="/lineage?resident=${encodeURIComponent(r.dispatch.owner)}" target="_blank" rel="noopener">打开负责 Agent 的对话与结果 ↗</a><p class="muted">${(s?.reply_message_ids||[]).length?'已收到回复，结论请以原对话和产物为准。':'投递成功不代表任务完成。'}</p>`:''}<footer><button data-action="later">${later.includes(rowKey(r))?'恢复关注':'稍后关注'}</button>${lineage?'<button data-action="edit">更新线头</button>':`<a href="/lineage?view=frontier&lineage=${r._lineage}">进入团队继续 ↗</a>`}${lineage&&!history?`<button class="primary" data-action="dispatch">${r.dispatch?'查看 / 重试投递':'交给 Agent'}</button>`:''}</footer>`;
   detail.hidden=false;
   $('#detail-body').querySelectorAll('li a').forEach((a,index)=>{
-    const b=document.createElement('button');b.textContent='在此阅读';b.style.marginLeft='10px';
+    const b=document.createElement('button');b.textContent='在此阅读';b.className='sourceRead';
     b.onclick=async()=>{
       if(config.onOpen) { config.onOpen({view:'preview',target:{address:r.sources[index]}}); return; }
       $('#source-text').textContent='正在读取…';$('#source').showModal();

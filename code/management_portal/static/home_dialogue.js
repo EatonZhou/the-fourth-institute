@@ -7,10 +7,11 @@
     // that same object to submissionContext and onAcknowledgement. Bind the
     // nonce to that submission, never to a Resident-wide FIFO or mutable target.
     const submissionRequests = new WeakMap();
-    let destroyed = false, presented = true, chat = null, selection = null, assistant = null, lastDetail = null;
+    let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
+    let pageState = null, restoring = true;
     let narrow = false, ratio = 40, dragging = null;
     root.classList.add("homeDialogue"); root.dataset.pane = "conversation";
-    const bar = node("header", "", "homeDialogueToolbar"), tabs = node("div", "", "homeDialogueTabs");
+    const tabs = node("div", "", "homeDialogueTabs");
     const columns = node("div", "", "homeDialogueColumns"), left = node("section", "", "homeDialogueConversation"), right = node("section", "", "homeDialogueDisplay");
     const divider = node("div", "", "homeDialogueDivider");
     divider.tabIndex = 0; divider.setAttribute("role", "separator"); divider.setAttribute("aria-orientation", "vertical");
@@ -18,7 +19,7 @@
     divider.setAttribute("aria-valuemin", "25"); divider.setAttribute("aria-valuemax", "70");
     const chatRoot = node("div", "", "homeDialogueChat"), chatStatus = node("p", "正在读取个人门面…"), status = node("p", "选择资源或在对话中请求展示", "homeDialogueStatus");
     status.setAttribute("role", "status"); chatStatus.setAttribute("role", "status");
-    const heading = node("strong", "对话与展示"), current = node("span", "未选择展示", "homeDialogueCurrent");
+    const current = node("span", "未选择展示", "homeDialogueCurrent");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
     const viewNames = { report: "汇报", map: "研究地图", frontier: "Lineage 线头", preview: "文件/资源" };
     const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
@@ -26,10 +27,6 @@
     const opener = node("details", "", "homeDialogueOpener"), openLabel = node("summary", "打开…");
     opener.append(openLabel);
     function button(parent, title, fn) { const el = node("button", title); el.type = "button"; el.addEventListener("click", fn); parent.append(el); return el; }
-    bar.append(heading);
-    button(bar, "返回上一展示", () => back(true));
-    const pin = button(bar, "固定展示", () => { state.pin(!state.pinned); refresh(); });
-    const expand = button(bar, "展开", () => { const expanded = root.classList.toggle("homeDialogueExpanded"); expand.textContent = expanded ? "返回原布局" : "展开"; resize(); });
     button(tabs, "对话", () => setPane("conversation")); button(tabs, "展示", () => setPane("display"));
     const form = node("form", "", "homeDialogueChooser"), view = node("select"), kind = node("select"), target = node("input");
     view.setAttribute("aria-label", "展示类型"); kind.setAttribute("aria-label", "目标类型"); target.setAttribute("aria-label", "目标 ID 或文件资源地址");
@@ -42,6 +39,30 @@
     opener.append(form);
     const tools = node("div", "", "homeDialogueToolbar"), more = node("details", "", "homeDialogueMore");
     more.append(node("summary", "更多"), tools);
+    function closeMore() { more.open = false; more.querySelector("summary").focus(); }
+    const previous = button(tools, "返回上一展示", () => { closeMore(); back(true); });
+    const pin = button(tools, "固定展示", () => { state.pin(!state.pinned); closeMore(); refresh(); });
+    const expand = button(tools, "展开", () => {
+      const expanded = root.classList.toggle("homeDialogueExpanded");
+      expand.textContent = expanded ? "返回原布局" : "展开";
+      closeMore(); resize(); persist();
+    });
+    const menus = [opener, more], menuGroup = `home-dialogue-${window.PortalUIPrimitives.randomUUID()}`;
+    for (const menu of menus) {
+      menu.name = menuGroup;
+      menu.addEventListener("toggle", () => {
+        if (menu.open) for (const other of menus) if (other !== menu) other.open = false;
+      });
+      menu.addEventListener("keydown", event => {
+        if (event.key !== "Escape" || !menu.open) return;
+        event.preventDefault(); event.stopPropagation(); menu.open = false; menu.querySelector("summary").focus();
+      });
+    }
+    function dismissMenus(event) {
+      for (const menu of menus) if (menu.open && !menu.contains(event.target)) menu.open = false;
+    }
+    document.addEventListener("pointerdown", dismissMenus, true);
+    document.addEventListener("focusin", dismissMenus, true);
     switchView.onchange = () => {
       if (!state.active) return;
       const intent = { view: switchView.value, target: state.active.intent.target };
@@ -64,7 +85,8 @@
       more.open = false;
       setPane("conversation");
     }); cite.disabled = true;
-    button(tools, "关闭当前展示", async () => {
+    const closeDisplay = button(tools, "关闭当前展示", async () => {
+      closeMore();
       const entry = state.active;
       if (!entry || (entry.adapter?.canClose && !await entry.adapter.canClose())) return;
       if (!entry.adapter?.canClose && entry.adapter?.snapshot?.().dirty && !await window.PortalUI.confirm({ title: "关闭有未保存修改的展示？", message: "关闭后将丢失尚未保存的修改。", confirmLabel: "关闭", tone: "danger" })) return;
@@ -74,12 +96,13 @@
       select(state.entries.at(-1) || null, true);
     });
     displayBar.append(current, switchView, history, opener, more);
-    left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(bar, tabs, columns);
+    left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(tabs, columns);
     function setRatio(value) {
       ratio = Math.max(25, Math.min(70, value));
       root.style.setProperty("--home-dialogue-left", `${ratio}%`);
       divider.setAttribute("aria-valuenow", String(Math.round(ratio)));
       divider.setAttribute("aria-valuetext", `对话 ${Math.round(ratio)}%，展示 ${100 - Math.round(ratio)}%`);
+      persist();
     }
     function resize() {
       if (destroyed) return;
@@ -100,7 +123,44 @@
     const observer = new ResizeObserver(resize); observer.observe(root);
     const navigation = document.querySelector(".portalSiteHeader"); if (navigation) observer.observe(navigation);
     setRatio(ratio); resize();
-    function setPane(name) { root.dataset.pane = name; present(); }
+    function setPane(name) { root.dataset.pane = name; present(); persist(); }
+    function snapshot() {
+      // Page State stores only navigation descriptors. Domain content, drafts,
+      // credentials and submitted-request nonces never become restoration input.
+      return { schemaVersion: 1, entries: state.entries.map(entry => ({ intent: entry.intent, queued: entry.queued })),
+        active: state.entries.indexOf(state.active), pinned: state.pinned, ratio,
+        expanded: root.classList.contains("homeDialogueExpanded"), pane: root.dataset.pane };
+    }
+    function persist() { if (!restoring && !destroyed) pageState?.debounceSnapshot(); }
+    async function restoreNavigation() {
+      try {
+        const identity = await context.currentUserReady;
+        if (destroyed) return;
+        const user = identity?.username || window.PortalIdentity?.username?.();
+        if (!user || user === "anonymous" || !window.PortalPageState) return;
+        // The owner is captured after current-user validation. Portal Page State
+        // provides installation/user isolation and the current state transaction.
+        pageState = window.PortalPageState.create("home-dialogue-display", { user: () => user, snapshot });
+        const saved = pageState.read();
+        if (saved.schemaVersion !== 1 || !Array.isArray(saved.entries) || state.entries.length) return;
+        root.classList.toggle("homeDialogueExpanded", saved.expanded === true);
+        expand.textContent = saved.expanded === true ? "返回原布局" : "展开";
+        root.dataset.pane = saved.pane === "display" ? "display" : "conversation";
+        if (Number.isFinite(saved.ratio)) setRatio(saved.ratio);
+        resize();
+        let active = null;
+        saved.entries.forEach((item, index) => {
+          let intent;
+          try { intent = window.PortalHomeDialogueState.normalizeIntent(item?.intent); } catch { return; }
+          if (intent.action === "back") return;
+          const entry = navigate(intent, false, false);
+          entry.queued = item.queued === true;
+          if (index === saved.active) active = entry;
+        });
+        state.pin(saved.pinned === true);
+        select(active, false);
+      } finally { restoring = false; refresh(); }
+    }
     function dirty() { return !!state.active?.adapter?.snapshot?.().dirty; }
     function refresh() {
       if (destroyed) return;
@@ -113,7 +173,9 @@
         for (const id of choices) switchView.add(new Option(viewNames[id], id));
         switchView.value = state.active.intent.view;
       }
-      switchView.hidden = more.hidden = history.hidden = !state.active;
+      switchView.hidden = history.hidden = !state.active;
+      previous.disabled = state.entries.indexOf(state.active) <= 0;
+      closeDisplay.disabled = !state.active;
       history.replaceChildren(new Option(`历史 (${state.entries.length})`, ""));
       for (const entry of state.entries) {
         const draft = entry.adapter?.snapshot?.().dirty ? " · 草稿" : "";
@@ -123,11 +185,12 @@
       cite.disabled = !selection || !chat;
       if (!state.active) status.textContent = "选择资源或在对话中请求展示";
       status.hidden = !!state.active && !status.dataset.notice;
+      persist();
     }
     function present() {
-      chat?.setPresented(presented && (!narrow || root.dataset.pane === "conversation"));
+      chat?.setPresented(presented && !suspended && (!narrow || root.dataset.pane === "conversation"));
       for (const entry of state.entries) {
-        const visible = presented && state.active === entry && (!narrow || root.dataset.pane === "display");
+        const visible = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
         entry.root.hidden = state.active !== entry;
         if (entry.adapter && entry.presented !== visible) {
           entry.presented = visible;
@@ -180,14 +243,14 @@
             : entry.intent.view === "report" ? window.PortalHomeReportView : window.PortalHomeMapView;
           if (!api) throw new Error("展示组件尚未加载，请重试或刷新页面");
           entry.adapter = api.create({ root: entry.content,
-            onOpen: intent => { if (presented && state.active === entry) navigate(intent, true); },
+            onOpen: intent => { if (presented && !suspended && state.active === entry) navigate(intent, true); },
             onSelection: value => {
               entry.selection = value;
               if (state.active === entry) { selection = value; if (value) state.manual(); refresh(); }
             }, onChange: refresh,
           });
         }
-        entry.presented = presented && state.active === entry && (!narrow || root.dataset.pane === "display");
+        entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
         if (!entry.presented) await entry.adapter.setPresented(false);
         const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id });
         if (destroyed || entry.controller.signal.aborted) return;
@@ -269,21 +332,34 @@
     }
     const retryChat = button(left, "重试个人门面", () => { retryChat.hidden = true; mountChat(); }); retryChat.hidden = true;
     const unregister = window.PortalPreview.registerHost("home-dialogue", request => {
-      if (!presented || destroyed) return false;
+      if (!presented || suspended || destroyed) return false;
       navigate({ view: "preview", target: { address: request.resourceAddress || request.path || request.href } }, true); return true;
     }, { priority: 80 });
     function lifecycle(event) { presented = event.detail.phase === "show"; if (!presented) { root.classList.remove("homeDialogueExpanded"); expand.textContent = "展开"; } resize(); }
     function beforeUnload(event) {
       if (state.entries.some(entry => entry.adapter?.snapshot?.().dirty)) { event.preventDefault(); event.returnValue = ""; }
     }
+    function pageHide(event) {
+      if (!event.persisted) return;
+      pageState?.writeSnapshot(); suspended = true; present();
+    }
+    function pageShow(event) {
+      if (!event.persisted || destroyed) return;
+      suspended = false; resize();
+    }
     root.addEventListener("portal:home-panel-lifecycle", lifecycle);
     window.addEventListener("beforeunload", beforeUnload);
+    window.addEventListener("pagehide", pageHide); window.addEventListener("pageshow", pageShow);
+    void restoreNavigation().catch(() => {});
     void mountChat(); refresh();
     return { destroy() {
+      pageState?.writeSnapshot(); pageState?.destroy();
       destroyed = true; unregister(); chat?.destroy();
       for (const entry of state.entries) { entry.controller.abort(); entry.adapter?.destroy(); }
       state.clear(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);
       observer.disconnect(); window.removeEventListener("beforeunload", beforeUnload);
+      document.removeEventListener("pointerdown", dismissMenus, true); document.removeEventListener("focusin", dismissMenus, true);
+      window.removeEventListener("pagehide", pageHide); window.removeEventListener("pageshow", pageShow);
       root.classList.remove("homeDialogueExpanded"); root.replaceChildren();
     } };
   }

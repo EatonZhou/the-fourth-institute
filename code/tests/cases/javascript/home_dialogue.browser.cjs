@@ -1,6 +1,7 @@
 // Exercise host integration with real DocumentSession and Preview; only transport
 // and independently owned adapters are fixtures. Live auth is a separate check.
 const {chromium} = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const homeAction = require('./home_dialogue_controls.cjs');
 const fs = require('node:fs'), path = require('node:path'), http = require('node:http'), assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../../../management_portal');
 const groups = JSON.parse(fs.readFileSync(path.join(root,'script_groups.json')));
@@ -28,10 +29,18 @@ const server = http.createServer((req,res) => {
       window.fixtureIdentity='home-fixture'; window.PortalIdentity={peek:()=>({username:fixtureIdentity})};
       window.PortalUI = {confirm:async()=>true};
       window.PortalAPI = {get:async()=>({}),post:async()=>({})}; window.PortalResidentService={};
-      window.PortalInstructionClient={execute:async(name,args)=>{calls.push({name,args});if(rejectSave)throw new Error('保存冲突'); return {resource:{content:args.changes.text,version:2}};}};
-      window.PortalResourceChips={resourceAddressFromPreviewRequest:r=>r.resourceAddress.startsWith('article_')?r.resourceAddress:'',
+      window.workspaceContent='workspace original'; window.failPermission=false;
+      window.PortalInstructionClient={execute:async(name,args,options)=>{
+        calls.push({name,args,options});
+        if(name==='ResolveResource') return {target:{target_kind:'file',exists:true,address:args.address,file_reference:{workspace_id:'workspace_0123456789ab',relative_path:'notes 100%.md'}}};
+        if(name==='CheckPermission') {if(failPermission)throw new Error('权限服务暂不可用'); return {allowed:canEditPreview};}
+        if(rejectSave)throw new Error('保存冲突');
+        if(name==='UpdateWorkspaceFile') {window.workspaceContent=args.content; return {version:'updated'};}
+        return {resource:{content:args.changes.text,version:2}};
+      }};
+      window.PortalResourceChips={resourceAddressFromPreviewRequest:r=>/^(article|workspace)_/.test(r.resourceAddress)?r.resourceAddress:'',
         loadReference:async address=>({title:'真实目标 '+address.slice(-12)}),
-        loadPreview:async (address,options)=>{previewReads++; calls.push({previewOptions:options}); if(window.holdPreview) await new Promise(resolve=>window.finishPreview=resolve); if(denyPreview)throw Object.assign(new Error('当前来源不可读'),{status:403}); return {source:'resource',resource_id:address,resource_address:address,title:'真实预览契约',kind:'text',content:'original',version:1,capabilities:{edit:canEditPreview,save:canEditPreview}};}};
+        loadPreview:async (address,options)=>{previewReads++; calls.push({previewOptions:options}); if(window.holdPreview) await new Promise(resolve=>window.finishPreview=resolve); if(denyPreview)throw Object.assign(new Error('当前来源不可读'),{status:403}); const workspace=address.startsWith('workspace_'); return {source:'resource',resource_id:address.split('/')[0],resource_address:address,title:'真实预览契约',kind:'text',content:workspace?workspaceContent:'original',content_url:'/api/resources/content?address='+encodeURIComponent(address),version:1,capabilities:{edit:!workspace&&canEditPreview,save:!workspace&&canEditPreview}};}};
       window.PortalFileLinks={describe:()=>null};
       window.PortalNav={personalAssistantTarget:async()=>({resident_id:'resident_0123456789ab',lineage_id:'lineage_0123456789ab',title:'current facade'})};
       window.PortalChatWorkspace={panelPackage:{create:options=>{window.chatOptions=options; options.root.textContent='Chat transport fixture'; return {workspace:{addReference:value=>calls.push({reference:value})},setPresented:value=>calls.push({chatPresented:value}),destroy:()=>calls.push({chatDestroyed:true})};}}};
@@ -51,6 +60,25 @@ const server = http.createServer((req,res) => {
       chatOptions.onDetail({snapshot:{messages:[{role:'assistant',message_id:'failed-result',content_parts:[{type:'text',text:'```portal-home-display\n'+JSON.stringify({...failedProtocol,target:{kind:'lineage',id:'lineage_abcdefabcdef'}})+'\n```'}]}]}});
     });
     assert.equal(await page.locator('.homeDialogueEntry').count(),1,'failed send is not acknowledged by the next success');
+    // Pointer and keyboard dismissal operate on the existing menus, not a new
+    // component tree. More is available once a display is selected.
+    for (const width of [1200,390]) {
+      await page.setViewportSize({width,height:860});
+      if(width===390) await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click();
+      const opener=page.locator('.homeDialogueOpener'), more=page.locator('.homeDialogueMore');
+      await opener.locator('summary').click(); await page.getByLabel('目标 ID 或文件资源地址').fill('menu input retained');
+      await more.locator('summary').click();
+      assert.equal(await opener.evaluate(e=>e.open),false); assert.equal(await more.evaluate(e=>e.open),true);
+      await more.locator('summary').press('Escape'); assert.equal(await more.evaluate(e=>e.open),false);
+      assert.equal(await more.locator('summary').evaluate(e=>e===document.activeElement),true);
+      await opener.locator('summary').focus(); await opener.locator('summary').press('Enter');
+      await page.getByLabel('目标 ID 或文件资源地址').waitFor({state:'visible'});
+      assert.equal(await page.getByLabel('目标 ID 或文件资源地址').inputValue(),'menu input retained');
+      await more.locator('summary').focus(); assert.equal(await opener.evaluate(e=>e.open),false,'tabbing outside dismisses the menu');
+      await more.locator('summary').press('Enter');
+      await page.locator('.homeDialogueCurrent').click(); assert.equal(await more.evaluate(e=>e.open),false,'outside pointer dismisses the menu');
+    }
+    await page.setViewportSize({width:1200,height:860});
     assert.equal(await page.evaluate(async()=>{
       const before=calls.filter(c=>'reportPresented' in c).length;
       document.querySelector('#root').style.height='780px'; await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -61,7 +89,7 @@ const server = http.createServer((req,res) => {
     await page.locator('.homeDialogueMore > summary').click(); await page.getByRole('button',{name:'引用到对话',exact:true}).click();
     const reference=await page.evaluate(()=>calls.find(c=>c.reference).reference);
     assert.equal(reference.path,undefined); assert.ok(reference.text.includes('resident_0123456789ab/msg_abcdefabcdef')); assert.ok(reference.text.includes('article_0123456789ab')); assert.deepEqual(reference.source_message_ids,['msg_abcdefabcdef']);
-    await page.getByRole('button',{name:'固定展示',exact:true}).click();
+    await homeAction(page,'固定展示');
     await page.evaluate(()=>{chatOptions.onDetail({snapshot:{messages:[{role:'assistant',message_id:'new',content_parts:[{type:'text',text:'```portal-home-display\n'+JSON.stringify({...protocol,target:{kind:'lineage',id:'lineage_abcdefabcdef'}})+'\n```'}]}]}});});
     await page.waitForFunction(()=>document.querySelectorAll('.homeDialogueEntry').length===2);
     assert.equal(await page.evaluate(()=>calls.filter(c=>'reportShowPresented' in c).at(-1).reportShowPresented),false,'queued report receives hidden state before show');
@@ -73,7 +101,7 @@ const server = http.createServer((req,res) => {
     await page.getByLabel('展示类型',{exact:true}).selectOption('preview'); await page.getByLabel('目标 ID 或文件资源地址').fill('article_0123456789ab'); await page.getByRole('button',{name:'展示',exact:true}).last().click();
     await page.getByRole('button',{name:'编辑',exact:true}).click(); await page.getByLabel('文件草稿').fill('draft kept');
     await page.evaluate(()=>{window.rejectSave=true;}); await page.getByRole('button',{name:'保存',exact:true}).click(); await page.getByText('保存冲突',{exact:true}).waitFor();
-    await page.getByRole('button',{name:'返回上一展示',exact:true}).click();
+    await homeAction(page,'返回上一展示');
     const values=await page.getByLabel('展示历史').locator('option').evaluateAll(options=>options.map(o=>o.value));
     await page.getByLabel('展示历史').selectOption(values.at(-1)); assert.equal(await page.getByLabel('文件草稿').inputValue(),'draft kept');
     await page.evaluate(()=>{window.rejectSave=false;}); await page.getByRole('button',{name:'保存',exact:true}).click();
@@ -89,8 +117,8 @@ const server = http.createServer((req,res) => {
     const ratio=await divider.getAttribute('aria-valuenow'); assert.equal(ratio,'50');
     const beforeResize=await page.evaluate(()=>calls.filter(c=>'reportPresented' in c).length);
     await page.evaluate(()=>{document.querySelector('#root').style.maxWidth='520px';}); await page.waitForFunction(()=>document.querySelector('#root').dataset.narrow==='true');
-    await page.getByRole('button',{name:'展开',exact:true}).click(); await page.waitForFunction(()=>document.querySelector('#root').dataset.narrow==='false');
-    await page.getByRole('button',{name:'返回原布局',exact:true}).click(); await page.waitForFunction(()=>document.querySelector('#root').dataset.narrow==='true');
+    await homeAction(page,'展开'); await page.waitForFunction(()=>document.querySelector('#root').dataset.narrow==='false');
+    await homeAction(page,'返回原布局'); await page.waitForFunction(()=>document.querySelector('#root').dataset.narrow==='true');
     assert.equal(await divider.getAttribute('aria-valuenow'),ratio);
     assert.equal(await page.evaluate(()=>calls.filter(c=>'reportPresented' in c).length),beforeResize,'resize does not reload hidden history adapters');
     await page.setViewportSize({width:480,height:800}); await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
@@ -118,6 +146,29 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.getByLabel('文件草稿').isVisible(),false);
     await page.evaluate(async()=>{access.destroy(); finishPreview(); await restoring;});
     assert.equal(await page.locator('#root').textContent(),'','late authorization completion never recreates a destroyed view');
+    // Workspace resources expose no UpdateResource text capability. Use the
+    // server-resolved Workspace address and current-actor file permission.
+    await page.evaluate(async()=>{
+      window.holdPreview=false; window.workspaceAddress='workspace_0123456789ab/file/notes 100%25.md';
+      window.filePreview=PortalHomeDialoguePreview.create({root:document.querySelector('#root')});
+      await filePreview.show({address:workspaceAddress});
+    });
+    await page.getByRole('button',{name:'编辑',exact:true}).click(); await page.getByLabel('文件草稿').fill('workspace saved');
+    await page.getByRole('button',{name:'保存',exact:true}).click();
+    await page.waitForFunction(()=>calls.some(c=>c.name==='UpdateWorkspaceFile'));
+    const fileSave=await page.evaluate(()=>calls.find(c=>c.name==='UpdateWorkspaceFile'));
+    assert.equal(fileSave.args.address,'workspace_0123456789ab/file/notes 100%25.md'); assert.equal(fileSave.args.content,'workspace saved');
+    assert.equal(fileSave.options.expectedVersion[fileSave.args.address],require('node:crypto').createHash('sha256').update('workspace original').digest('hex'));
+    assert.deepEqual(await page.evaluate(()=>calls.filter(c=>c.name==='CheckPermission').at(-1).args),{principal_id:'home-fixture',a:'UpdateWorkspaceFile',resource_id:'workspace_0123456789ab'});
+    await page.evaluate(async()=>{filePreview.destroy(); window.filePreview=PortalHomeDialoguePreview.create({root:document.querySelector('#root')}); await filePreview.show({address:workspaceAddress});});
+    assert.equal(await page.evaluate(()=>filePreview.snapshot().payload.content),'workspace saved','fresh read returns saved file content');
+    assert.ok((await page.locator('.homeDialogueDocument').innerText()).includes('workspace saved'));
+    await page.evaluate(async()=>{window.canEditPreview=false; filePreview.setPresented(false); await filePreview.setPresented(true);});
+    assert.equal(await page.getByRole('button',{name:'编辑',exact:true}).isVisible(),false); assert.equal(await page.locator('.homeDialogueDocument').isVisible(),true,'readable but not writable stays read-only');
+    await page.evaluate(async()=>{window.canEditPreview=true; window.failPermission=true; filePreview.setPresented(false); await filePreview.setPresented(true);});
+    assert.equal(await page.getByRole('button',{name:'编辑',exact:true}).isVisible(),false); await page.getByText('文件可读，但无法核对编辑权限：权限服务暂不可用',{exact:true}).waitFor();
+    await page.evaluate(()=>{window.failPermission=false;}); await page.getByRole('button',{name:'重试访问',exact:true}).click(); await page.getByRole('button',{name:'编辑',exact:true}).waitFor();
+    await page.evaluate(()=>filePreview.destroy());
     assert.deepEqual(errors,[]);
     await page.setViewportSize({width:1200,height:860});
     await page.goto(`http://127.0.0.1:${server.address().port}/home`);
@@ -139,7 +190,7 @@ const server = http.createServer((req,res) => {
     await page.goto(`http://127.0.0.1:${server.address().port}/home?home_component=dialogue-display`);
     await page.waitForSelector('.homeDialogueChooser',{state:'attached'});
     const beforeExpand=await page.evaluate(()=>JSON.stringify(PortalWorkbench.get('home').getState().layout));
-    await page.getByRole('button',{name:'展开',exact:true}).click(); await page.getByRole('button',{name:'返回原布局',exact:true}).click();
+    await homeAction(page,'展开'); await homeAction(page,'返回原布局');
     assert.equal(await page.evaluate(()=>JSON.stringify(PortalWorkbench.get('home').getState().layout)),beforeExpand);
     assert.deepEqual(errors,[]);
     console.log('Home dialogue browser: late results, pin, draft/save conflict, history, narrow layout, dispose, defaults, old layout and deep link passed');
