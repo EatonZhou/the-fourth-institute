@@ -144,10 +144,33 @@ if (output) fs.mkdirSync(output, { recursive: true });
       }); await settle();
       check('formal Family relay overrides router completion under user request ID', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
       check('resident request is not promoted to a human node', await page.locator('[data-round-key="resident-running"]').count() === 0);
+      // Native Portal traces: an instruction first-batch read closes normally,
+      // then a ready successor closes its predecessor without another global
+      // events-ready. These receipts diagnose transport disposal, not failure.
+      await page.evaluate(() => {
+        window.dispatchEvent(new CustomEvent('portal:connection-closed', { detail: {
+          instruction: 'WatchConversationEvents', reason: 'first_batch_read', transport_id: 'read-1',
+        } }));
+        window.dispatchEvent(new CustomEvent('portal:connection-ready', { detail: { stream_id: 'next', predecessor_stream_id: 'old' } }));
+        window.dispatchEvent(new CustomEvent('portal:connection-closed', { detail: { reason: 'handover_complete', stream_id: 'old', successor_stream_id: 'next' } }));
+        window.dispatchEvent(new CustomEvent('portal:events-resubscribed', { detail: { added_resident_ids: [] } }));
+      }); await settle();
+      check('normal first-batch close and ready successor handover retain verified running', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
+      check('normal transport receipts retain completed request labels', (await page.locator('[data-round-key="family-done"]').getAttribute('aria-label')).includes('已完成'));
+      await page.evaluate(() => window.dispatchEvent(new CustomEvent('portal:connection-closed', { detail: { reason: 'leadership_released', stream_id: 'old' } })));
+      await settle();
+      check('stream ownership release does not invalidate the independent Resident snapshot', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
+      await page.evaluate(() => panel.workspace.controller.requestProgressDisconnected()); await settle();
+      check('Resident protocol errors still invalidate request progress', await page.locator('.chatRoundNode.is-running').count() === 0);
+      await page.evaluate(() => panel.applySnapshot(raw, { type: 'snapshot' })); await settle();
+      check('formal snapshot restores progress after Resident error', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
       await page.evaluate(() => { window.dispatchEvent(new Event('portal:events-error')); panel.applySnapshot(raw, { type: 'event' }); }); await settle();
       check('cached event cannot certify disconnected progress', await page.locator('.chatRoundNode.is-running').count() === 0);
       await page.evaluate(() => panel.applySnapshot(raw, { type: 'snapshot' })); await settle();
       check('protocol snapshot clears unknown after recovery without requiring global ready', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
+      await page.evaluate(() => window.dispatchEvent(new Event('offline'))); await settle();
+      check('offline still clears running certainty', await page.locator('.chatRoundNode.is-running').count() === 0);
+      await page.evaluate(() => panel.applySnapshot(raw, { type: 'snapshot' })); await settle();
       await page.evaluate(() => panel.setPresented(false));
       check('native Resident presentation suspends running certainty', await page.locator('.chatRoundNode.is-running').count() === 0);
       await page.evaluate(() => panel.setPresented(true)); await settle();

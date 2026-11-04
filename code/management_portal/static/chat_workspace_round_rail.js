@@ -400,7 +400,12 @@
       finally { if (epoch === refreshEpoch) refreshing = false; }
     };
     on(document, 'visibilitychange', () => { lost(); updateObservation(); if (visible()) void refresh(); });
-    for (const name of ['offline', 'portal:events-error', 'portal:connection-closed']) on(window, name, lost);
+    // connection-closed is a disposal receipt shared by event streams and
+    // instruction reads (normal handover/first batch/leadership release).
+    // It is not a health signal and may follow a healthy successor's ready.
+    // Invalidate on actual transport failure or the Resident protocol's own
+    // connectionLost callback, not on unrelated diagnostic receipts.
+    for (const name of ['offline', 'portal:events-error']) on(window, name, lost);
     for (const name of ['online', 'portal:events-ready']) on(window, name, () => { if (awaitingRefresh) void refresh(); });
     on(window, 'portal:identity-changed', () => { resetScope(); schedule(); });
     const syncFlags = event => { if (event.key === storageKey() || event.detail?.key === storageKey() || event.key === null) { flags = readFlags(); statusDirty = true; schedule(); if (popup) showPreview(popup.items, popup.trigger, popup.explicit); } };
