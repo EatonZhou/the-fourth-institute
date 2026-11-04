@@ -4883,7 +4883,7 @@
     "database": {
       "path": "database/distribution.sql",
       "format": "postgresql-sql",
-      "sha256": "ae9ef1f0a4ad2273252a3f5c8cfd762790d4fc223c29268034e3101d8ea66dde"
+      "sha256": "a613fd7db2a2a9a0b546056c63c63a89c4d05a2979320e60b5a7fe9ed3e1814a"
     },
     "files": {
       "features": "data/features",
@@ -15656,8 +15656,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260924__decision__Portal_共享运行基础与_Dev_到_Release_的发布流程__decision_08bb2d9141f9.md",
-      "sha256": "c1657a270361425e76b9c8e4017f5254ce9befe9e6210f6f8f19f393e43c3656",
-      "size": 14940
+      "sha256": "6016f2d0bf43f83378a566d4152e7d38a4bb572b471bbfd2af90eed952e6a99c",
+      "size": 15340
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Function_Block_可复用模块与指令__decision_5b5653c3eaa5.md",

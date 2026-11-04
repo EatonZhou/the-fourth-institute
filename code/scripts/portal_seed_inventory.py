@@ -34,6 +34,8 @@ def corrected_inventory(root, reference, baseline):
     document = json.loads(original)
     rows = {row['path']: row for row in document['inventory']}
     candidates = {path[len(PREFIX):] for path in changed if path != MANIFEST}
+    database = document.get('engineering', {}).get('database', {})
+    database_path = database.get('path')
     if MANIFEST in changed:
         try:
             previous = json.loads(blob(root, baseline, MANIFEST))
@@ -41,6 +43,8 @@ def corrected_inventory(root, reference, baseline):
             previous = {'inventory': []}
         prior_rows = {row['path']: row for row in previous['inventory']}
         candidates.update(path for path in rows.keys() | prior_rows.keys() if rows.get(path) != prior_rows.get(path))
+        if database != previous.get('engineering', {}).get('database', {}) and database_path:
+            candidates.add(database_path)
     # The index and committed snapshots include tracked deletions/additions;
     # never use Path.exists() from the concurrently edited worktree.
     if reference == ':':
@@ -64,6 +68,12 @@ def corrected_inventory(root, reference, baseline):
             raise ValueError('Public seed inventory requires regular files: ' + path)
         content = blob(root, reference, full)
         rows[path] = {'path': path, 'sha256': hashlib.sha256(content).hexdigest(), 'size': len(content)}
+    if database_path in candidates:
+        if database_path not in rows:
+            raise ValueError('Public seed database must remain a tracked regular file: ' + database_path)
+        # The engineering declaration and its inventory describe the same SQL
+        # bytes. Derive both from the same index/commit, never live Dev content.
+        database['sha256'] = rows[database_path]['sha256']
     document['inventory'] = sorted(rows.values(), key=lambda row: row['path'])
     if document == json.loads(original):
         return None

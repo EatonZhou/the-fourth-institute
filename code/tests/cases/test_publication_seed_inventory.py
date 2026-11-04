@@ -41,6 +41,21 @@ def staged(root):
     return json.loads(git(root, 'show', ':' + MANIFEST))
 
 
+def add_database(root):
+    path = 'database/distribution.sql'
+    source = root / PREFIX / path
+    source.parent.mkdir()
+    source.write_bytes(b'SELECT 1;\n')
+    document = json.loads((root / MANIFEST).read_text())
+    row = {'path': path, 'size': source.stat().st_size, 'sha256': hashlib.sha256(source.read_bytes()).hexdigest()}
+    document['inventory'].append(row)
+    document['engineering'] = {'database': {'path': path, 'format': 'postgresql-sql', 'sha256': row['sha256']}}
+    (root / MANIFEST).write_text(json.dumps(document))
+    git(root, 'add', PREFIX)
+    git(root, 'commit', '-qm', 'database baseline')
+    return source
+
+
 def test_selected_seed_content_gets_matching_inventory_without_live_edits(repo):
     source = repo / PREFIX / 'data/first.md'
     source.write_text('staged source')
@@ -85,3 +100,38 @@ def test_add_delete_and_unpublished_ancestors_are_in_the_same_closure(repo):
     git(repo, 'commit', '-qm', 'repair closure')
     verify_publication_inventory(repo, 'HEAD', baseline)
     assert {r['path'] for r in staged(repo)['inventory']} == {'data/new.md', 'data/other.md'}
+
+
+def test_database_declaration_and_inventory_share_the_selected_sql_bytes(repo):
+    source = add_database(repo)
+    source.write_bytes(b'SELECT 2;\n')
+    git(repo, 'add', PREFIX + 'database/distribution.sql')
+    source.write_bytes(b'SELECT 99; -- unselected later edit\n')
+    live_manifest = (repo / MANIFEST).read_bytes()
+    assert refresh_staged_inventory(repo)
+    document = staged(repo)
+    expected = hashlib.sha256(b'SELECT 2;\n').hexdigest()
+    assert document['engineering']['database']['sha256'] == expected
+    assert next(r for r in document['inventory'] if r['path'] == 'database/distribution.sql')['sha256'] == expected
+    assert (repo / MANIFEST).read_bytes() == live_manifest
+    assert source.read_bytes().startswith(b'SELECT 99;')
+    git(repo, 'commit', '-qm', 'coherent SQL publication')
+    verify_publication_inventory(repo, 'HEAD', 'HEAD~1')
+
+
+def test_changed_database_declaration_cannot_invent_a_checksum(repo):
+    source = add_database(repo)
+    document = staged(repo)
+    document['engineering']['database']['sha256'] = 'invented'
+    (repo / MANIFEST).write_text(json.dumps(document))
+    git(repo, 'add', MANIFEST)
+    assert refresh_staged_inventory(repo)
+    assert staged(repo)['engineering']['database']['sha256'] == hashlib.sha256(source.read_bytes()).hexdigest()
+
+
+def test_deleting_declared_seed_database_rejects_publication(repo):
+    source = add_database(repo)
+    source.unlink()
+    git(repo, 'add', PREFIX)
+    with pytest.raises(ValueError, match='database must remain'):
+        refresh_staged_inventory(repo)
