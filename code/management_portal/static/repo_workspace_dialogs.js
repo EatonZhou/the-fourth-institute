@@ -20,6 +20,7 @@
       loadWorkspace, markdown, postJson, queryState, renderWorkspace, setBusy, showToast, state,
       workspaceCapability, writeQuery,
     } = dependencies;
+    let editorOpenSequence = 0;
 
     function openRegisterModal() {
       syncRegisterPlacement();
@@ -108,8 +109,32 @@
       }
     }
 
-    function openEditor(file = null) {
+    async function openEditor(file = null) {
       if (!workspaceCapability("write_files")) return;
+      const sequence = ++editorOpenSequence;
+      if (file) {
+        const repoId = state.selectedId;
+        const navigation = state.navigationSequence;
+        const current = () => sequence === editorOpenSequence
+          && repoId === state.selectedId && navigation === state.navigationSequence;
+        try {
+          const latest = await getJson(
+            `/api/repos/${encodeURIComponent(repoId)}/workspace/file?path=${encodeURIComponent(file.path)}`,
+            { cache: "no-store" },
+          );
+          if (!current()) return;
+          if (!latest.editable) {
+            showToast(window.PortalI18n.t("当前文件种类不支持编辑"), "error");
+            return;
+          }
+          file = latest;
+          state.file = latest;
+          renderWorkspace();
+        } catch (error) {
+          if (current()) showToast(error.message || error, "error");
+          return;
+        }
+      }
       const basePath = state.tree?.path || queryState().path || "";
       state.editorOriginalPath = String(file?.path || "");
       state.editorExpectedHash = String(file?.hash || "");
@@ -131,6 +156,7 @@
     }
 
     function closeEditor(options = {}) {
+      editorOpenSequence++;
       return dialogs.editor.close(options);
     }
 

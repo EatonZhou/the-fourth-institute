@@ -29,7 +29,50 @@ function setup(failAt, browser=window) {
   });
   return {owner:browser.PortalRepoWorkspaceDialogs.createDialogs(dependencies), calls, state, elements, queries, toasts, closed};
 }
+
+function setupOpen(read) {
+  const state = {selectedId:'repo_123456789abc', navigationSequence:1, tree:{path:''}};
+  const fields = ['editorEyebrow','editorTitle','editorPath','editorSource','editorStatus','editorPreview'];
+  const elements = Object.fromEntries(fields.map(key => [key, {value:'', textContent:''}]));
+  elements.editorTabs = [];
+  const opened = [], toasts = [], reads = [];
+  const dependencies = Object.fromEntries(window.PortalRepoWorkspaceDialogs.dependencies.map(key => [key, () => {}]));
+  Object.assign(dependencies, {state, elements, queryState:()=>({}), workspaceCapability:()=>true,
+    dialogs:{editor:{open:value=>opened.push(value),close:()=>{}}},
+    getJson:async (url, options)=>{reads.push({url, options}); return read();},
+    showToast:(...args)=>toasts.push(args),
+  });
+  return {owner:window.PortalRepoWorkspaceDialogs.createDialogs(dependencies),state,elements,opened,toasts,reads};
+}
 (async () => {
+  const old = {path:'协作.txt', name:'协作.txt', content:'old baseline', hash:'old-hash', editable:true};
+  let current = {...old};
+  const reopened = setupOpen(()=>({...current}));
+  await reopened.owner.openEditor(old);
+  reopened.elements.editorSource.value = 'B unsaved draft';
+  await reopened.owner.closeEditor(); // User has confirmed discarding B's draft.
+  current = {...old, content:'saved by A', hash:'new-hash'};
+  await reopened.owner.openEditor(old); // Preview metadata is still the old read.
+  assert.equal(reopened.elements.editorSource.value, 'saved by A');
+  assert.equal(reopened.state.editorExpectedHash, 'new-hash');
+  assert.equal(reopened.state.file.content, 'saved by A');
+  assert(reopened.reads[1].url.endsWith('path='+encodeURIComponent('协作.txt')));
+
+  const denied = setupOpen(()=>{throw Error('read denied');});
+  await denied.owner.openEditor(old);
+  assert.equal(denied.opened.length, 0, 'a failed refresh cannot open stale writable content');
+  assert.equal(denied.toasts[0][0], 'read denied');
+  const binary = setupOpen(()=>({...old, editable:false}));
+  await binary.owner.openEditor(old);
+  assert.equal(binary.opened.length, 0, 'fresh server editability is authoritative');
+  let finish;
+  const navigation = setupOpen(()=>new Promise(resolve=>{finish=resolve;}));
+  const opening = navigation.owner.openEditor(old);
+  navigation.state.navigationSequence++;
+  finish(current);
+  await opening;
+  assert.equal(navigation.opened.length, 0, 'late file read cannot reopen an old navigation');
+
   const stale = setup('move');
   await stale.owner.saveEditor();
   assert.equal(stale.calls.length, 1);
@@ -66,5 +109,5 @@ function setup(failAt, browser=window) {
   assert.equal(good.closed.length, 1);
   assert.deepEqual(good.calls.map(x => x.url.split('/').at(-1)), ['move', 'file']);
   assert.equal(good.calls[1].body.expected_hash, 'old-hash');
-  console.log('Repo editor: stale rename, partial-save recovery, explicit retry and successful save verified');
+  console.log('Repo editor: current reopen baseline, read refusal/navigation, stale rename, partial-save recovery and successful save verified');
 })().catch(error => {console.error(error);process.exitCode=1;});
