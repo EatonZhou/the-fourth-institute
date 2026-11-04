@@ -197,6 +197,7 @@
         <section id="nodeMailboxPanel" class="nodeMailboxPanel" role="tabpanel" aria-labelledby="nodeMailboxTab" hidden></section>
         <section id="nodeJournalPanel" role="tabpanel" aria-labelledby="nodeJournalTab" hidden><div id="nodeJournalRows" aria-live="polite"></div><button class="portalButton" type="button" id="nodeJournalRetry" hidden>重试</button></section>
         <section id="nodeDisplayPanel" role="tabpanel" aria-labelledby="nodeDisplayTab">
+        <section id="nodeMenuReporting" aria-label="汇报设置"></section>
         <div id="nodeMenuFamilySettings" hidden></div>
         <form id="nodeSettingsForm" class="nodeSettingsForm">
           <div id="nodeMenuRuntime"><p>正在读取运行设置…</p></div>

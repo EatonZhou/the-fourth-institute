@@ -602,3 +602,8 @@
 .familyMigrationPriority li { display:flex; align-items:center; gap:6px; margin:5px 0; }
 .familyMigrationPriority li > span { flex:1; min-width:0; overflow-wrap:anywhere; }
 .familyMigrationPriority li > button { flex:none; }
+.residentMenuReportingForm { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.residentMenuReportingForm label { display: grid; gap: 4px; min-width: 0; }
+.residentMenuReportingForm select { width: 100%; min-width: 0; }
+.residentMenuReportingForm p { margin: 0; }
+.residentMenuReportingForm button { justify-self: start; }

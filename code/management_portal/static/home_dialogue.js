@@ -434,19 +434,39 @@
       setPane("display"); current.focus({ preventScroll: true });
     }
     chatRoot.addEventListener("click", openMessageAction);
-    function submissionContext(submittedTarget) {
+    async function submissionContext(submittedTarget) {
       if (!submittedTarget || submittedTarget.resident_id !== assistant?.resident_id) return null;
+      const residentId = submittedTarget.resident_id;
+      let reporting = { initiative: "off", quality: "medium" }, reportingRead = "unavailable", settingsRevision = "";
+      try {
+        const result = await window.PortalInstructionClient.execute("GetResidentSettings", { resident_id: residentId });
+        const value = result.settings?.reporting;
+        if (value && ["off", "low", "medium", "high"].includes(value.initiative) && ["low", "medium", "high"].includes(value.quality)) {
+          reporting = { initiative: value.initiative, quality: value.quality }; reportingRead = "verified";
+        } else if (result.settings && !value) reportingRead = "default";
+        settingsRevision = result.settings_revision || "";
+      } catch { /* Missing access never becomes permission to generate. Ordinary chat remains usable. */ }
+      if (destroyed || residentId !== assistant?.resident_id) return null;
       const requestId = state.issue(assistant.resident_id, (lastDetail?.snapshot?.messages || []).map(m => m.message_id || m.id));
       submissionRequests.set(submittedTarget, requestId);
       const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", target: { kind: "lineage", id: "<真实资源ID>" } };
-      return { context_text: [
-        "当前入口是 Home 对话与展示，右侧是你可主动使用的解释与操作空间。由 Resident 根据用户要理解的问题、内容复杂度和已有上下文决定呈现方式，不以用户是否说出‘直观解释’、‘图解’、‘可视化’或‘放在右侧’等关键词为生成条件。若图示、对照、分步示例或可持续阅读的材料能帮助用户更好地理解，就主动生成并在右侧打开，即使没有现成文件、用户只在聊天里提问也如此；不要等待用户追加展示指令。例如解释注意力机制中查询、键、值如何共同作用，应主动用分步图文帮助建立理解。",
+      const initiativeGuidance = {
+        off: "主动性 off：不主动制作汇报或解释页；用户明确要求生成、展示或视觉讲解时仍可在授权范围完成。普通聊天只回答，不因右侧可用而创建文件。",
+        low: "主动性 low：只有明显值得持久阅读的重要结果才考虑制作；其余直接聊天回答，避免打断。",
+        medium: "主动性 medium：根据理解任务、复杂度与上下文判断，图示、对照或分步示例明显有帮助时主动制作。",
+        high: "主动性 high：积极判断哪些结果值得制作与展示，但仍自行判断价值；高主动性不等于每轮必生成。",
+      }[reporting.initiative];
+      return { reporting, reporting_read: reportingRead, settings_revision: settingsRevision, context_text: [
+        "当前入口是 Home 对话与展示。提交时核对的汇报策略：" + JSON.stringify(reporting) + "；读取状态：" + reportingRead + "。执行时正式服务端有效设置优先，Home指导不覆盖后续策略变更或用户限制。",
+        initiativeGuidance,
+        ...(reportingRead === "unavailable" ? ["未能核实当前汇报策略，禁止据此主动生成或送审；可以正常回答，显式生成请求先重新核对设置与权限，失败如实说明。"] : []),
+        "由 Resident 根据问题和实际收益选择形式，不以关键词列表代替判断。报告质量 low：直接Markdown，保存真实可读文件后以preview引用；medium：现有交互网页模板与必要图文；high：按Transformer Circuits/Distill标准完成后，由另一个Resident实际审查、作者修改、再审直到达标或真实阻塞。当前报告质量：" + reporting.quality + "。low/medium不强制送独立审核；high不能仅写高质量prompt或以受理冒充passed。",
         "按实际需要选择内容和形式：聊天中简短文字已足以回答时直接回答，不为每次问答创建文件；用户明确要求只用文字、不创建文件或不切换右侧时遵从其限制。已有合适材料可直接打开，明确要求展示、生成汇报、切换、聚焦或返回时按意图处理。生成材料后在聊天中简要说明关键结论和可查看的内容；生成与自动切换是两件事，固定、草稿、手选及迟到保护始终有效。",
-        "解释材料的生成路径：按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释包目录。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 保存包内文件，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由；主题足够明确且判断材料有助于理解时就制作，确实缺少必要范围时才询问。",
-        "完整解释页用 view:explanation：页面组合视频、可选交互、图文补充。初开先呈现交互与图文，用户点击‘生成讲解视频’才生成视频，不在打开或回复时抢先生成；视频及字幕持久保存，重开恢复已有成果。已有 Markdown、公式、Mermaid 和图片放在 supplement 图文补充区，不把它当作机制解释的整页替代品。交互应帮助理解因果，例如选择查询词、调整温度或遮罩，真实重算注意力权重及结果。按内容选择有效呈现，不用无意义滑块、占位视频或空模块凑模板。",
-        "通用创作标准：先写清读者要看懂或判断什么，再为对象、关系、数量和变化选择图形语义；提供能检验理解的操作，操作后图形、数值、算式和相关文字同步反馈，并能回到可核对来源。机制用过程与参数探索，方案比较用同尺度对照，架构用结构导航与细节，时间变化用时间轴和局部追踪；依据题材组织页面，不照抄注意力样例或固定卡片布局。图文可以是可操作、联动的解释，不默认降级为静态 Markdown。可把本地完整 D3 等库打包进交互文件并保留许可；禁止远程依赖。交付前亲自操作关键路径，检查事实与计算、默认视角、图例、密度、键盘/触屏/大字体、减少动态效果和性能；隐藏时停止活动，不用持续动画代替解释。完整创作与包格式入口：当前 Portal 同源 /static/home_explanation_authoring.md。",
-        "创作指南记录 Transformer Circuits Global Workspace、Distill Paths Perspective on Value Learning 和 Distill Handwriting 三篇参照，学习其解释与交互方法；简单事情不强行复杂，合适最好。视频参照3Blue1Brown的解释与制作质量：先设计每个镜头的理解目标，让符号、数值、图形变换与叙述形成连续推理，不把所有主题套成节点图加粒子。配音可使用部署选装的Resident云语音工具；edge-tts不是Portal必备功能，也没有专用HATG指令，不可用时只影响该配音任务；用户指定的AI Society宣传动画案例使用edge-tts调用微软云语音，英文en-US-GuyNeural、中文zh-CN-YunxiNeural，并非Codex原生。沿已核实的能力调用、保存实际来源和音轨摘要，按真实逐句音轨编排字幕与镜头，不用本地TTS或把作者JSON当调用证明。能力或权限缺口须具体说明，不从会话工具缺失推断全系统无语音能力。成片须独立视频检查，页面检查、编码成功与可播放均不能代签内容或听感。",
-        "生成后必须触发独立检查 Resident：用 scripts/build_explanation_package.py 构建并自动送检；手写清单或重试用 scripts/submit_explanation_review.py，传自己的 --resident-id、正式 --address、清单 --sha256 与读者 --task。脚本正式发现可投递的独立检查者，按固定版本幂等投递。作者回读匹配此版本的独立报告，修复意见生成新固定版；submitted 只表示受理，缺权限或未实际操作不能说通过。普通打开与恢复历史不重投检查。",
+        "解释材料的生成路径：仅在有效主动性允许或用户明确请求时制作；按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释包目录。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 保存包内文件，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由，确实缺少必要范围时才询问。",
+        "medium/high解释页用 view:explanation：页面组合视频、可选交互、图文补充；low直接Markdown即可。初开先呈现交互与图文，用户点击‘生成讲解视频’才生成视频，不在打开或回复时抢先生成；视频及字幕持久保存，重开恢复已有成果。视频按钮的质量独立选择：low自由发挥、medium加强3b1b-style、high对齐3b1b级别并独立实际审查与修改再审。选择属于固定生成版本，不能跨质量复用ready。交互应帮助理解因果，例如选择查询词、调整温度或遮罩，真实重算注意力权重及结果。按内容选择有效呈现，不用无意义滑块、占位视频或空模块凑模板。",
+        "通用创作标准：先写清读者要看懂或判断什么，再按所选质量选择形式。medium/high的操作、图形、数值、算式和文字同步反馈并能核对来源；机制用过程与参数探索，方案比较用同尺度对照，架构用结构导航与细节，不照抄注意力样例或固定卡片布局。low直接Markdown同样要求内容准确。可把本地D3库打包进交互文件并保留许可，禁止远程依赖。交付前检查事实、计算、密度、键盘/触屏/大字体、减少动态效果和性能；隐藏时停止活动，不用持续动画代替解释。完整创作与包格式入口：当前 Portal 同源 /static/home_explanation_authoring.md。",
+        "high报告创作参考 Transformer Circuits Global Workspace、Distill Paths Perspective on Value Learning 和 Distill Handwriting；简单事情不强行复杂。视频质量由生成按钮单独选择：medium增强3Blue1Brown风格提示，high再要求独立成片审查；low不强制该风格。配音沿已核实的正式能力调用，保存真实来源和音轨摘要，按实际时间编排字幕；不把作者JSON当调用证明。edge-tts为部署选装工具，不是Codex原生；不可用时明确说明。页面检查、编码成功与可播放均不能代签内容或听感。",
+        "仅high质量必须触发独立检查 Resident：构建 scripts/build_explanation_package.py 时显式传 --quality；high由脚本送检，手写high清单或重试用 scripts/submit_explanation_review.py，传自己的 --resident-id、正式 --address、清单 --sha256 与读者 --task。作者不能审核自己。按固定版本与摘要幂等投递，作者回读匹配此版本的独立报告，changes_requested后修改成新固定版再审，旧pass对修改后的内容失效；submitted 只表示受理，缺权限、取消、生成失败或未实际操作不能说通过，不自动降级，不无限忙重试。普通打开与恢复历史不重投检查。",
         "解释包清单是 UTF-8 JSON：{schema:'portal-explanation/v1',title,summary,revision:1,interaction?:{address,sha256,title},supplement?:{address,sha256},video_plan?:{address,sha256},video?:{address,sha256,captions?:{address,sha256},transcript?:{address,sha256},chapters?:[{time,title}]},sources?:[{label,url或address}]}。address 均为实际 workspace_ID/file/...；sha256 是对应文件字节的 SHA-256。交互使用独立自包含 HTML/CSS/JS，在隔离沙箱中运行，不能联网、访问父页面/凭据或导航外部页面；把所需数据写入交互文件，用语义控件支持键盘、窄屏和减少动态效果。supplement 引用 Markdown。video_plan 引用已保存的声明式视频生成计划，计划与其 WAV 音轨必须与 manifest 在同一 Workspace 同一包目录，scene start/end 与 cues 使用真实配音时间；具体生成合同见解释页创作指南，不要把可执行脚本当生成计划。普通 Preview 的 HTML/JS 文件只按文本/代码展示，其边界保持不变。",
         "写入成功后用 ReadResource 回读清单和各文件，核对内容/媒体、摘要及可读性；成功才输出 view:explanation、action:open、target:{address:真实workspace_ID/file/.../manifest.json,sha256:清单字节SHA256} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久目录，历史固定该清单与材料版本；不把临时下载凭据写进引用。已有普通文件仍可用 view:preview 打开。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确具体失败和现有可读内容，不把只改提示或只完成图文说成完整解释页交付。",
         "展示协议只导航已存在且可读的目标，不执行协议内 HTML/脚本、不授予写权限；实际生成通过正式文件工具完成，不能把页面正文、脚本或凭据塞进协议。概念解释不为它伪造 Project、Lineage 或 task 来源。已有来源的状态汇报仍走 report：首次意图由报告适配器按稳定来源身份持久化，已有报告必须引用确定 report_ID+revision，显式刷新另建版本且保留旧引用。未知的已有资源目标先查询，无法确认才询问。",

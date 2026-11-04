@@ -111,7 +111,9 @@
 
 视频计划使用 `portal-explanation-video/v1`，包含 title、scenes、audio、audio_provenance、cues；不执行作者脚本。新计算画面使用 scene.visual 的封闭操作，支持点积、归一化、逐项贡献、单条件对比、矩阵、投影、多头管线和步骤索引；数据与事件完整字段见[声明式计算画面合同](/static/home_explanation_video_contract.md)。旧节点图计划仍支持 nodes、edges 和 values。每个 scene 按真实音轨声明 start/end 秒；cues 为实际逐句时间及 text，visual.events 按真实cue安排绝对秒动作，不得按字数猜测配音时长。
 
-audio 为同包原始 MP3 或 PCM16 WAV 的正式 address/sha256。audio_provenance 是固定 JSON 的 address/sha256，正文 schema 为 `portal-native-audio-provenance/v1`，包含实际 provider、model、request_id，以及 audio 与 evidence 的固定 address/sha256；request_id填正式语音生成的Portal execution ID。audio 必须与计划中的引用完全一致。该 schema 名沿用既有接口，不改变实际服务来源。服务查询权威完成回执，检查真实actor的原音轨权限/SHA及包内副本；作者可写JSON不自证。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。缺少可核验音轨时新生成明确失败；已有 ready 版本继续按原权限读取，不补写证明。
+audio 为同包原始 MP3 或 PCM16 WAV 的正式 address/sha256。audio_provenance 是同包固定 JSON 的 address/sha256；新工具使用 `portal-audio-provenance/v1`，包含实际 provider、model、request_id（工具 run_id），以及 audio 与 evidence 的固定 address/sha256。evidence 指向 `resident-tool-audio/v1` 工具运行记录，audio 必须与计划完全一致。Portal 检查当前主体的读取权限、摘要和记录一致性；工具报告是来源材料，其可信度依据实际执行与独立检查，不是 Portal 或厂商签名。已有 `portal-native-audio-provenance/v1` 音轨保留原 Portal execution ID，通过历史回执与原上传权限/SHA只读核验；不再以专用 ISA 创建语音，也不把旧包改标为新工具成果。原始MP3可逐字节复制，转码/混音须另记派生关系，不能借用源SHA。缺少配音工具仅阻止需要新增音轨的任务，已有图文与 ready 视频继续按原权限读取。
+
+句内有多个因果动作时，选择工具支持的 WordBoundary。把实际提交原文、原始音轨和边界记录一起固定：音轨 SHA 对应边界的 source_audio_sha256，UTF-8 原文 SHA 对应 input_sha256。100ns tick 除以 10,000,000 得秒；input_start/input_end 是 Unicode 码点的左闭右开位置，JavaScript 先用 Array.from 切分。按顺序核对词文本及偏移，未匹配时停止自动关联，不跳到后面的同名词猜测。事件保留边界索引、触发词与原文位置，cue 用首末真实词边界合并；不把字符比例、旧音轨或估时混进新版本。来源绑定证明时序从何而来；可读停顿和音质仍需连续观看及具备能力时的听辨。求和、缩放等不同推理步骤应各有清楚的语言和阅读时间。
 
 计划、音轨、来源记录及其调用证据必须与 manifest 处于同一 Workspace、同一包目录。生成服务逐次重新鉴权各来源，检查摘要、音轨绑定和目标写权限；结果持久保存在 `包目录/explanation-media/<manifestSHA>/`，遵循同一 Workspace 的访问与删除规则。
 
