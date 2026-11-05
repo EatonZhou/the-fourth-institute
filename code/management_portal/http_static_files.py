@@ -14,7 +14,7 @@ from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, parse_qsl, urlencode, unquote, urlparse, urlunparse
 
-from management_portal import http_auth, http_instance, http_responses
+from management_portal import http_auth, http_instance, http_responses, http_static_versions
 from management_portal.http_routes import RouteDefinition
 
 
@@ -44,9 +44,10 @@ def _version_static_asset_urls(data: bytes) -> bytes:
         if path is None:
             return match.group(0)
         try:
-            _, _, version = _cached_static_payload(path, gzip_variant=False)
+            payload, _, version = _cached_static_payload(path, gzip_variant=False)
         except OSError:
             return match.group(0)
+        http_static_versions.remember(path, version, payload)
         query = [(key, value) for key, value in parse_qsl(url.query, keep_blank_values=True) if key != "portal_v"]
         query.append(("portal_v", version))
         versioned = urlunparse(url._replace(query=urlencode(query)))
@@ -148,9 +149,14 @@ def _serve_static_file(
         return http_responses._send_empty(handler, 404)
     requested = (parse_qs(urlparse(handler.path).query).get("portal_v") or [""])[0]
     if requested.startswith("sha256-") and requested != version:
-        # A document crossed a deployment. Never put new bytes under an old
-        # immutable URL; the document's bounded boot recovery loads fresh HTML.
-        return http_responses._serve_payload(handler, 409, b"Static asset version changed; reload the document", "text/plain", cache_control="no-store")
+        # Finish documents already in flight across deployment with the exact
+        # bytes promised by their URLs, including after Web process replacement.
+        previous = http_static_versions.recall(path, requested)
+        if previous is None:
+            return http_responses._serve_payload(handler, 409, b"Static asset version changed; reload the document", "text/plain", cache_control="no-store")
+        data = gzip.compress(previous, compresslevel=4, mtime=0) if gzip_variant else previous
+        content_encoding = "gzip" if gzip_variant else ""
+        version = requested
     variant = "-gzip" if gzip_variant else ""
     etag = f'"{version}{variant}"'
     cache_control = _static_cache_control(handler, version)
