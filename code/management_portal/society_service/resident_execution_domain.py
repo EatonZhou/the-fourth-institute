@@ -534,6 +534,17 @@ def _run_resident_execution_scoped(resident_id: str, continuation_id: str) -> No
                     continue
                 return
             except Exception as exc:
+                from management_portal.execution.transport import ExecutionResponseUnknown, ExecutionServiceUnavailable
+
+                if isinstance(exc, (ExecutionServiceUnavailable, ExecutionResponseUnknown)) and claimed.job.get("execution_id"):
+                    # A local observer lost contact, not the accepted Provider
+                    # turn. Leave the durable binding intact; finalization wakes
+                    # another observer of this same execution without new input.
+                    logging.getLogger(__name__).warning(
+                        "Resident %s observation deferred for Execution %s: %s",
+                        resident_id, claimed.job["execution_id"], type(exc).__name__,
+                    )
+                    return
                 if _recover_completed_turn(resident_id, continuation_id, claimed):
                     return
                 terminal_applied_job = _settle_failed_job(resident_id, continuation_id, claimed, exc)

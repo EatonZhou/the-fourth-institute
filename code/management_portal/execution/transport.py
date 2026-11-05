@@ -21,6 +21,11 @@ class ExecutionServiceUnavailable(OperationError):
 
     code = "execution.unavailable"
     http_status = 503
+    error_code = "execution_rpc_unavailable"
+
+    @property
+    def error_details(self) -> dict[str, Any]:
+        return {"source": "execution_rpc", "commit_state": "not_committed"}
 
     def failure_payload(self) -> dict[str, Any]:
         # Keep endpoint diagnostics in the local exception, not the public RPC/HTTP envelope.
@@ -29,6 +34,12 @@ class ExecutionServiceUnavailable(OperationError):
 
 class ExecutionResponseUnknown(RuntimeError):
     """The connection accepted a request but its result was not observed."""
+
+    error_code = "execution_rpc_response_unknown"
+
+    @property
+    def error_details(self) -> dict[str, Any]:
+        return {"source": "execution_rpc", "commit_state": "unknown"}
 
 
 class ExecutionClaimOwnershipLost(RuntimeError):

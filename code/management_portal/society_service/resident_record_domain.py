@@ -344,6 +344,11 @@ def _runtime_error_code(message: str) -> str:
     from management_portal.execution.provider_failures import is_usage_limit_failure
 
     text = str(message or "").casefold()
+    # Persisted failures may predate structured transport codes. Only the
+    # local service's own diagnostic prefix identifies these old records;
+    # a bare connection reset still does not prove a planned handover.
+    if text.startswith("executionservice "):
+        return "execution_rpc"
     if is_usage_limit_failure(message):
         return "provider_usage_limit"
     if (
@@ -400,6 +405,8 @@ def runtime_failure_summary(
     message = str(details.get("message") or raw_error or "").strip()
     folded = message.casefold()
     code = str(details.get("code") or _runtime_error_code(message)).strip().lower()
+    if code in {"network", "timeout", "unknown"} and folded.startswith("executionservice "):
+        code = "execution_rpc"
     if "app-server" in folded and any(
         marker in folded
         for marker in ("connection", "closed", "disconnected", "lost", "unavailable")
@@ -417,6 +424,9 @@ def runtime_failure_summary(
         "database_lock_timeout": "数据库锁等待超时",
         "permission": "执行权限不足",
         "network": "模型后端连接中断",
+        "execution_rpc": "本地执行服务通信中断，执行状态待确认",
+        "execution_rpc_unavailable": "本地执行服务暂不可用",
+        "execution_rpc_response_unknown": "本地执行服务响应丢失，执行状态待确认",
         "provider_turn_interrupted": "模型后端中断了本轮执行",
         "provider_usage_limit": "当前模型账号额度不足",
     }

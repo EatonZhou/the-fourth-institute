@@ -139,17 +139,17 @@ class _ClaimedExecution:
 
     def run(self) -> dict[str, Any]:
         self._heartbeat.start()
-        result, deferred_reason = self._execute()
-        if self.planned_handover.is_set() and not deferred_reason:
+        result, deferred_outcome = self._execute()
+        if self.planned_handover.is_set() and not deferred_outcome:
             released = self._release_for_handover()
             if released is not None:
                 return released
         if self.ownership_lost.is_set():
             self._heartbeat.join(timeout=6)
             return self._outcome("claim_lost", _CLAIM_LOST_REASON)
-        if deferred_reason:
+        if deferred_outcome:
             self._heartbeat.join(timeout=6)
-            return self._outcome("requeued", deferred_reason)
+            return deferred_outcome
         if result is None:
             self._heartbeat.join(timeout=6)
             raise RuntimeError("execution produced no terminal result")
@@ -190,12 +190,12 @@ class _ClaimedExecution:
                 pass
             self.ownership_lost.wait(max(0.0, min(0.25, self.lease_deadline - time.monotonic())))
 
-    def _execute(self) -> tuple[ExecutionResult | None, str]:
+    def _execute(self) -> tuple[ExecutionResult | None, dict[str, Any] | None]:
         """Run the request; the terminal result, or why the claim was given back."""
 
         scheduler = self._worker.scheduler
         result: ExecutionResult | None = None
-        deferred_reason = ""
+        deferred_outcome = None
         try:
             self.claim_scoped(
                 lambda: scheduler.start(self.execution_id, self.claim_token),
@@ -215,7 +215,7 @@ class _ClaimedExecution:
                 usage=dict(backend_result.usage),
             )
         except ExecutionRecoveryDeferred as exc:
-            deferred_reason = self._defer(exc)
+            deferred_outcome = self._defer(exc)
         except (ExecutionCancelled, InterruptedError) as exc:
             result = ExecutionResult(
                 execution_id=self.execution_id,
@@ -232,7 +232,7 @@ class _ClaimedExecution:
             with self._receipt_lock:
                 pass
             self.heartbeat_stop.set()
-        return result, deferred_reason
+        return result, deferred_outcome
 
     def _request(self) -> ExecutionRequest:
         request = ExecutionRequest.from_payload(self._execution.get("request"))
@@ -259,8 +259,8 @@ class _ClaimedExecution:
             turn_control_result_callback=self._record_turn_control_result,
         )
 
-    def _defer(self, exc: ExecutionRecoveryDeferred) -> str:
-        """Give the claim back for a later attempt; return the reason."""
+    def _defer(self, exc: ExecutionRecoveryDeferred) -> dict[str, Any]:
+        """Give the claim back, preserving the Scheduler's cancellation decision."""
 
         with self._receipt_lock:
             pass
@@ -272,41 +272,48 @@ class _ClaimedExecution:
             if self.planned_handover.is_set()
             else str(exc or "provider recovery deferred")
         )
-        try:
-            retry_after_seconds = float(
-                getattr(exc, "retry_after_seconds", 0) or 0
-            )
-            if retry_after_seconds > 0:
-                self._worker.scheduler.requeue(
-                    self.execution_id,
-                    self.claim_token,
-                    deferred_reason,
-                    retry_after_seconds=retry_after_seconds,
+        released = self._requeue_claim(
+            deferred_reason,
+            retry_after_seconds=float(getattr(exc, "retry_after_seconds", 0) or 0),
+        )
+        if released is None:
+            return self._outcome("claim_lost", _CLAIM_LOST_REASON)
+        return self._outcome(
+            "cancelled" if released.get("status") == "cancelled" else "requeued",
+            deferred_reason,
+        )
+
+    def _requeue_claim(self, reason: str, *, retry_after_seconds: float = 0) -> dict[str, Any] | None:
+        """Release this exact claim; a lost reply never replays Provider input.
+
+        During planned handover ownership_lost is also our local detach flag,
+        so claim_scoped cannot be used here. The Scheduler's claim token fences
+        every retry, including a requeue whose first reply was lost after commit.
+        Once the stopped heartbeat's lease expires, durable recovery owns it.
+        """
+        while time.monotonic() < self.lease_deadline:
+            try:
+                options = {"retry_after_seconds": retry_after_seconds} if retry_after_seconds > 0 else {}
+                released = self._worker.scheduler.requeue(
+                    self.execution_id, self.claim_token, reason, **options,
                 )
-            else:
-                self._worker.scheduler.requeue(
-                    self.execution_id,
-                    self.claim_token,
-                    deferred_reason,
-                )
+            except ExecutionClaimOwnershipLost:
+                break
+            except (ExecutionServiceUnavailable, ExecutionResponseUnknown):
+                time.sleep(max(0.0, min(0.25, self.lease_deadline - time.monotonic())))
+                continue
             if self.planned_handover.is_set():
-                # A successful fenced requeue released our own claim. The
-                # local detach flag is not evidence that another owner stole it.
                 self.ownership_lost.clear()
-        except ExecutionClaimOwnershipLost:
-            self.ownership_lost.set()
-        return deferred_reason
+            return released
+        self.ownership_lost.set()
+        return None
 
     def _release_for_handover(self) -> dict[str, Any] | None:
         """Requeue for the next Worker generation; None when the claim is gone."""
 
         self._heartbeat.join()
-        try:
-            released = self._worker.scheduler.requeue(
-                self.execution_id, self.claim_token, _HANDOVER_REASON,
-            )
-        except (ExecutionClaimOwnershipLost, ExecutionServiceUnavailable):
-            self.ownership_lost.set()
+        released = self._requeue_claim(_HANDOVER_REASON)
+        if released is None:
             return None
         return self._outcome(
             "cancelled" if released.get("status") == "cancelled" else "requeued",
